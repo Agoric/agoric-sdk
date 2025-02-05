@@ -22,8 +22,6 @@ import {
   waitUntilContractDeployed,
 } from '@agoric/client-utils';
 
-const ADD_PSM_DIR = 'addUsdLemons';
-const UPGRADE_AR_DIR = 'upgradeAssetReserve';
 const ADD_COLLATERAL = 'addCollateral';
 
 const ambientAuthority = {
@@ -51,12 +49,12 @@ test.before(async t => {
   };
 });
 
-test.serial('add collatoral to reserve', async t => {
+test.serial('add Collateral to reserve', async t => {
   // @ts-expect-error casting
   const { vstorageKit } = t.context;
 
-  // Introduce USD_LEMONS
-  await evalBundles(ADD_PSM_DIR);
+  // USD_LEMONS introduced in provisionPool test
+  // await evalBundles(ADD_PSM_DIR);
   await waitUntilContractDeployed('psm-IST-USD_LEMONS', ambientAuthority, {
     errorMessage: 'psm-IST-USD_LEMONS instance not observed.',
   });
@@ -74,8 +72,6 @@ test.serial('add collatoral to reserve', async t => {
 test.serial('upgrade', async t => {
   // @ts-expect-error casting
   const { vstorageKit } = t.context;
-
-  await evalBundles(UPGRADE_AR_DIR);
 
   const vatDetailsAfter = await getDetailsMatchingVats('reserve');
   const { incarnation } = vatDetailsAfter.find(vat => vat.vatID === 'v36'); // assetReserve is v36
