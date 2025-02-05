@@ -99,6 +99,7 @@ test.serial('drop presence (export retains)', t => dropPresence(t, false));
 test.serial('drop presence (export drops)', t => dropPresence(t, true));
 
 test('forward to fake zoe', async t => {
+  /** @type {SwingSetConfig} */
   const config = {
     bootstrap: 'bootstrap',
     vats: {
@@ -180,6 +181,7 @@ test('drop without retire', async t => {
     }
     // if (msgs.includes(o.type)) console.log(JSON.stringify(o));
   }
+  /** @type {SwingSetConfig} */
   const config = {
     bootstrap: 'bootstrap', // v6
     vats: {

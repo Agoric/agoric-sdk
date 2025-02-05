@@ -3,7 +3,7 @@ import { E, Far } from '@endo/far';
 import { M, getInterfaceGuardPayload } from '@endo/patterns';
 
 import { AmountMath, AssetKind, BrandShape } from '@agoric/ertp';
-import { deeplyFulfilledObject } from '@agoric/internal';
+import { deeplyFulfilledObject, BridgeBigIntShape } from '@agoric/internal';
 import { prepareGuardedAttenuator } from '@agoric/internal/src/callback.js';
 import {
   IterableEachTopicI,
@@ -23,8 +23,8 @@ import {
 
 /**
  * @import {Guarded} from '@endo/exo';
- * @import {Passable, RemotableObject} from '@endo/pass-style';
- * @import {BridgeMessage} from '@agoric/cosmic-swingset/src/types.js';
+ * @import {RemotableObject} from '@endo/pass-style';
+ * @import {BridgeMessage, BridgeBigInt} from '@agoric/cosmic-swingset/src/types.js';
  */
 
 const { VirtualPurseControllerI } = makeVirtualPurseKitIKit();
@@ -42,12 +42,12 @@ const BridgeChannelI = M.interface('BridgeChannel', {
 
 /**
  * @typedef {Guarded<{
- *   update: (value: string, nonce?: string) => void;
+ *   update: (value: string, nonce?: BridgeBigInt) => void;
  * }>} BalanceUpdater
  */
 
 const BalanceUpdaterI = M.interface('BalanceUpdater', {
-  update: M.call(M.string()).optional(M.string()).returns(),
+  update: M.call(M.string()).optional(BridgeBigIntShape).returns(),
 });
 
 /**
@@ -71,6 +71,10 @@ const prepareBalanceUpdater = zone =>
       lastBalanceUpdate: -1n,
     }),
     {
+      /**
+       * @param {string} value
+       * @param {BridgeBigInt} [nonce]
+       */
       update(value, nonce = undefined) {
         if (nonce !== undefined) {
           const thisBalanceUpdate = BigInt(nonce);

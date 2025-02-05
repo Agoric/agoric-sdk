@@ -442,26 +442,24 @@ export async function initializeSwingset(
    * The host application gives us
    * config.[vats|devices].NAME.[bundle|bundleSpec|sourceSpec|bundleName] .
    * The 'bundleName' option points into
-   * config.bundles.BUNDLENAME.[bundle|bundleSpec|sourceSpec] , which can
+   * config.bundles.BUNDLENAME.[bundle|bundleSpec|sourceSpec], which can
    * also include arbitrary named bundles that will be made available to
-   * E(vatAdminService).getNamedBundleCap(bundleName) ,and temporarily as
+   * E(vatAdminService).getNamedBundleCap(bundleName), and temporarily as
    * E(vatAdminService).createVatByName(bundleName)
    *
    * The 'kconfig' we pass through to initializeKernel has
    * kconfig.[vats|devices].NAME.bundleID and
-   * kconfig.namedBundleIDs.BUNDLENAME=bundleID , which both point into
+   * kconfig.namedBundleIDs.BUNDLENAME=bundleID, which both point into
    * kconfig.idToBundle.BUNDLEID=bundle
    *
-   * @param {SwingSetConfigProperties | { bundleName: string }} desc
+   * @param {SwingSetConfigProperties} desc
    * @param {Record<string, *>} [nameToBundle]
    */
   async function getBundle(desc, nameToBundle) {
     trace(
       'getBundle',
       Object.keys(desc),
-      // @ts-expect-error optional
       desc.moduleFormat,
-      // @ts-expect-error optional
       desc.endoZipBase64Sha512 || desc.sourceSpec,
     );
 
@@ -489,8 +487,9 @@ export async function initializeSwingset(
     throw Error(`unknown mode in desc`, desc);
   }
 
-  // fires with BundleWithID: { ...bundle, id }
   /**
+   * Returns a bundle record with an "id" property from an input that might be missing it.
+   *
    * @param {EndoZipBase64Bundle & {id?: string}} bundle
    * @returns {Promise<EndoZipBase64Bundle & {id: string}>} bundle
    */
@@ -508,11 +507,9 @@ export async function initializeSwingset(
     };
   }
 
-  // fires with BundleWithID: { ...bundle, id }
-
   /**
    *
-   * @param {(SwingSetConfigProperties | { bundleName: string }) & {bundleID?: string }} desc
+   * @param {SwingSetConfigProperties & {bundleID?: string}} desc
    * @param {Record<string, EndoZipBase64Bundle>} [nameToBundle]
    */
   async function processDesc(desc, nameToBundle) {
@@ -526,14 +523,14 @@ export async function initializeSwingset(
     modes.length === 1 ||
       Fail`need =1 of bundle/bundleSpec/sourceSpec/bundleName, got ${modes}`;
     const mode = modes[0];
-    return getBundle(desc, nameToBundle)
-      .then(addBundleID)
-      .then(bundleWithID => {
-        // replace original .sourceSpec/etc with a uniform .bundleID
-        delete desc[mode];
-        desc.bundleID = bundleWithID.id;
-        return bundleWithID;
-      });
+
+    // Remove the original mode in favor of a uniform "bundleID" property.
+    const bundle = await getBundle(desc, nameToBundle);
+    const bundleWithID = await addBundleID(bundle);
+    delete desc[mode];
+    desc.bundleID = bundleWithID.id;
+
+    return bundleWithID;
   }
 
   /**
