@@ -745,7 +745,7 @@ export const makeSwingsetHarness = () => {
   const c2b = defaultBeansPerXsnapComputron;
   const beansPerUnit = {
     // see https://cosgov.org/agoric?msgType=parameterChangeProposal&network=main
-    blockComputeLimit: 65_000_000n * c2b,
+    blockComputeLimit: 65_000_000_000n * c2b, // XXX increase block budget for fusd testing
     vatCreation: defaultBeansPerVatCreation,
     xsnapComputron: c2b,
   };
