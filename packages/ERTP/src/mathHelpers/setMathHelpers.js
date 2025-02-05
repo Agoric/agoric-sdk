@@ -1,8 +1,9 @@
 // @jessie-check
 
-import { passStyleOf } from '@endo/marshal';
+import { Fail } from '@endo/errors';
+import { passStyleOf, assertChecker } from '@endo/pass-style';
+import { isKey, assertKey, elementsHasSplit, kindOf } from '@endo/patterns';
 import {
-  assertKey,
   elementsIsSuperset,
   elementsDisjointUnion,
   elementsDisjointSubtract,
@@ -10,7 +11,10 @@ import {
   elementsCompare,
 } from '@agoric/store';
 
-/** @import {MathHelpers, SetValue} from '../types.js' */
+/**
+ * @import {Key} from '@endo/patterns'
+ * @import {MathHelpers, SetValue} from '../types.js'
+ */
 
 // Operations for arrays with unique objects identifying and providing
 // information about digital assets. Used for Zoe invites.
@@ -19,7 +23,7 @@ const empty = harden([]);
 
 /**
  * @deprecated Replace array-based SetMath with CopySet-based CopySetMath
- * @type {MathHelpers<SetValue>}
+ * @type {MathHelpers<'set', Key, SetValue<Key>>}
  */
 export const setMathHelpers = harden({
   doCoerce: list => {
@@ -33,8 +37,37 @@ export const setMathHelpers = harden({
   },
   doMakeEmpty: () => empty,
   doIsEmpty: list => passStyleOf(list) === 'copyArray' && list.length === 0,
-  doIsGTE: elementsIsSuperset,
+  doIsGTE: (left, rightBound) => {
+    if (isKey(rightBound)) {
+      return elementsIsSuperset(left, rightBound);
+    }
+    kindOf(rightBound) === 'match:has' ||
+      Fail`rightBound must either be a key or an M.has pattern ${rightBound}`;
+    const {
+      payload: [elementPatt, bound],
+    } = rightBound;
+    return elementsHasSplit(left, elementPatt, bound);
+  },
   doIsEqual: (x, y) => elementsCompare(x, y) === 0,
   doAdd: elementsDisjointUnion,
-  doSubtract: elementsDisjointSubtract,
+  doSubtract: (left, rightBound) => {
+    if (isKey(rightBound)) {
+      return elementsDisjointSubtract(left, rightBound);
+    }
+    kindOf(rightBound) === 'match:has' ||
+      Fail`rightBound must either be a key or an M.has pattern ${rightBound}`;
+    const {
+      payload: [elementPatt, bound],
+    } = rightBound;
+    const result = [];
+    elementsHasSplit(
+      left,
+      elementPatt,
+      bound,
+      undefined,
+      result,
+      assertChecker,
+    );
+    return harden(result);
+  },
 });
