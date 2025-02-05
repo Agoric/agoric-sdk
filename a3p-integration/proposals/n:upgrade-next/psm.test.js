@@ -35,11 +35,11 @@ test.serial('check stats pre-swap', async t => {
     'published.psm.IST.USDC.metrics',
   );
 
-  t.is(metrics.anchorPoolBalance.value, 500000n);
-  t.is(metrics.feePoolBalance.value, 0n);
-  t.is(metrics.mintedPoolBalance.value, 500000n);
-  t.is(metrics.totalAnchorProvided.value, 0n);
-  t.is(metrics.totalMintedProvided.value, 500000n);
+  t.is(metrics.anchorPoolBalance.value, 0n, 'anchorPool empty');
+  t.is(metrics.feePoolBalance.value, 0n, 'feePool empty');
+  t.is(metrics.mintedPoolBalance.value, 0n, 'mintedPool 500K');
+  t.is(metrics.totalAnchorProvided.value, 0n, 'totalAnchor empty');
+  t.is(metrics.totalMintedProvided.value, 0n, 'totalMinted 500K');
 });
 
 test.serial('verify trading after upgrade', async t => {
@@ -52,9 +52,9 @@ test.serial('verify trading after upgrade', async t => {
     'published.psm.IST.USDC.metrics',
   );
 
-  t.is(metrics.anchorPoolBalance.value, 1000000n);
-  t.is(metrics.feePoolBalance.value, 0n);
-  t.is(metrics.mintedPoolBalance.value, 1000000n);
-  t.is(metrics.totalAnchorProvided.value, 0n);
-  t.is(metrics.totalMintedProvided.value, 1000000n);
+  t.is(metrics.anchorPoolBalance.value, 500_000n, 'AnchorPool +500K');
+  t.is(metrics.feePoolBalance.value, 0n, 'feePool empty');
+  t.is(metrics.mintedPoolBalance.value, 500_000n, 'mintedPool +500K');
+  t.is(metrics.totalAnchorProvided.value, 0n, 'totalAnchor empty');
+  t.is(metrics.totalMintedProvided.value, 500_000n, 'totalMinted +500K');
 });
