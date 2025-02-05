@@ -674,9 +674,6 @@ const stringifyBigint = (_p, v) => (typeof v === 'bigint' ? `${v}` : v);
 
 test.serial('analyze observations', async t => {
   const { observations, writeStats } = t.context;
-  for (const obs of observations) {
-    t.log(obs);
-  }
   if (writeStats) {
     const lines = observations.map(
       (o, ix) => JSON.stringify({ ix, ...o }, stringifyBigint) + '\n',
