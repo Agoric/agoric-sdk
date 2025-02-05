@@ -1,5 +1,6 @@
-import type { Brand, Issuer } from '@agoric/ertp';
+import type { ERef } from '@endo/eventual-send';
 import type { RemotableObject } from '@endo/pass-style';
+import type { Issuer, Brand } from '@agoric/ertp';
 
 /**
  * Alias for RemotableObject
@@ -17,10 +18,7 @@ export type Keyword = string;
  */
 export type InvitationHandle = Handle<'Invitation'>;
 export type IssuerKeywordRecord = Record<Keyword, Issuer<any>>;
-export type IssuerPKeywordRecord = Record<
-  Keyword,
-  import('@endo/far').ERef<Issuer<any>>
->;
+export type IssuerPKeywordRecord = Record<Keyword, ERef<Issuer<any>>>;
 export type BrandKeywordRecord = Record<Keyword, Brand<any>>;
 export type StandardTerms = {
   /**

@@ -1,15 +1,24 @@
+import type { ERef, EReturn } from '@endo/eventual-send';
+import type { Pattern } from '@endo/patterns';
 import type {
-  AnyAmount,
+  Amount,
+  AmountBound,
   AssetKind,
   DisplayInfo,
   Issuer,
   NatValue,
   Payment,
 } from '@agoric/ertp';
+import type { TimerService, Timestamp } from '@agoric/time';
 import type { Subscriber } from '@agoric/notifier';
-import type { ERef, EReturn } from '@endo/eventual-send';
-import type { Bundle, BundleID } from '@agoric/swingset-vat';
-import type { ContractStartFunction, StartParams } from './utils.js';
+import type { Bundle, BundleID, BundleCap } from '@agoric/swingset-vat';
+import type {
+  ContractStartFunction,
+  StartParams,
+  StartInstance,
+  Instance,
+  Installation,
+} from './utils.js';
 import type {
   Keyword,
   InvitationHandle,
@@ -17,7 +26,7 @@ import type {
   Handle,
   IssuerKeywordRecord,
 } from '../types.js';
-import type { Allocation } from '../types-index.js';
+import type { Allocation, Invitation, Completion } from '../types-index.js';
 
 /**
  * @see {@link https://github.com/sindresorhus/type-fest/blob/main/source/is-any.d.ts}
@@ -49,16 +58,14 @@ export type ZoeService = {
   getInvitationIssuer: GetInvitationIssuer;
   install: InstallBundle;
   installBundleID: InstallBundleID;
-  startInstance: import('./utils.js').StartInstance;
+  startInstance: StartInstance;
   offer: Offer;
   getPublicFacet: <I extends Instance>(
     instance: ERef<I>,
   ) => Promise<
     IsAny<I> extends true
       ? any
-      : I extends import('./utils.js').Instance<
-            infer SF extends ContractStartFunction
-          >
+      : I extends Instance<infer SF extends ContractStartFunction>
         ? IsAny<SF> extends true
           ? unknown
           : EReturn<SF>['publicFacet']
@@ -70,9 +77,7 @@ export type ZoeService = {
     instance: I,
   ) => IsAny<I> extends true
     ? Promise<any>
-    : I extends ERef<
-          import('./utils.js').Instance<infer SF extends ContractStartFunction>
-        >
+    : I extends ERef<Instance<infer SF extends ContractStartFunction>>
       ? IsAny<SF> extends true
         ? Promise<unknown>
         : Promise<StartParams<SF>['terms']>
@@ -95,7 +100,7 @@ export type ZoeService = {
    */
   getProposalShapeForInvitation: (
     invitationHandle: InvitationHandle,
-  ) => import('@endo/patterns').Pattern | undefined;
+  ) => Pattern | undefined;
 };
 type GetInvitationIssuer = () => Promise<Issuer<'set', InvitationDetails>>;
 type GetFeeIssuer = () => Promise<Issuer<'nat'>>;
@@ -103,22 +108,22 @@ type GetConfiguration = () => {
   feeIssuerConfig: FeeIssuerConfig;
 };
 export type GetIssuers = (
-  instance: import('./utils.js').Instance<any>,
+  instance: Instance<any>,
 ) => Promise<IssuerKeywordRecord>;
 export type GetBrands = (
-  instance: import('./utils.js').Instance<any>,
+  instance: Instance<any>,
 ) => Promise<BrandKeywordRecord>;
 type GetInstallationForInstance = (
-  instance: import('./utils.js').Instance<any>,
+  instance: Instance<any>,
 ) => Promise<Installation>;
 export type GetInstance = (
-  invitation: ERef<import('../types-index.js').Invitation>,
-) => Promise<import('./utils.js').Instance<any>>;
+  invitation: ERef<Invitation>,
+) => Promise<Instance<any>>;
 export type GetInstallation = (
-  invitation: ERef<import('../types-index.js').Invitation>,
+  invitation: ERef<Invitation>,
 ) => Promise<Installation>;
 export type GetInvitationDetails = (
-  invitation: ERef<import('../types-index.js').Invitation<any, any>>,
+  invitation: ERef<Invitation<any, any>>,
 ) => Promise<InvitationDetails>;
 /**
  * Create an installation by safely evaluating the code and
@@ -158,7 +163,7 @@ export type GetBundleIDFromInstallation = (
  * expected for every rule under `give`.
  */
 export type Offer = <Result, Args = undefined>(
-  invitation: ERef<import('../types-index.js').Invitation<Result, Args>>,
+  invitation: ERef<Invitation<Result, Args>>,
   proposal?: Proposal,
   paymentKeywordRecord?: PaymentPKeywordRecord,
   offerArgs?: Args,
@@ -227,12 +232,12 @@ export type UserSeat<OR = unknown> = {
    * returns a subscriber that
    * will be notified when the seat has exited or failed.
    */
-  getExitSubscriber: () => Subscriber<import('../types-index.js').Completion>;
+  getExitSubscriber: () => Subscriber<Completion>;
 };
 export type Proposal = Partial<ProposalRecord>;
 export type ProposalRecord = {
   give: AmountKeywordRecord;
-  want: AmountKeywordRecord;
+  want: AmountBoundKeywordRecord;
   exit: ExitRule;
 };
 /**
@@ -240,7 +245,8 @@ export type ProposalRecord = {
  * { Asset: AmountMath.make(assetBrand, 5n), Price:
  * AmountMath.make(priceBrand, 9n) }
  */
-export type AmountKeywordRecord = Record<Keyword, AnyAmount>;
+export type AmountKeywordRecord = Record<Keyword, Amount>;
+export type AmountBoundKeywordRecord = Record<Keyword, AmountBound>;
 export type Waker = {
   wake: () => void;
 };
@@ -252,8 +258,8 @@ export type WaivedExitRule = {
 };
 export type AfterDeadlineExitRule = {
   afterDeadline: {
-    timer: import('@agoric/time').TimerService;
-    deadline: import('@agoric/time').Timestamp;
+    timer: TimerService;
+    deadline: Timestamp;
   };
 };
 /**
@@ -268,10 +274,9 @@ export type ExitRule =
   | OnDemandExitRule
   | WaivedExitRule
   | AfterDeadlineExitRule;
-export type Instance<SF = any> = import('./utils.js').Instance<SF>;
 export type ZCFSpec =
   | {
-      bundleCap: import('@agoric/swingset-vat').BundleCap;
+      bundleCap: BundleCap;
     }
   | {
       name: string;
@@ -288,14 +293,11 @@ export type PaymentPKeywordRecord = Record<Keyword, ERef<Payment<any>>>;
 export type PaymentKeywordRecord = Record<Keyword, Payment<any>>;
 export type InvitationDetails = {
   installation: Installation;
-  instance: import('./utils.js').Instance<any>;
+  instance: Instance<any>;
   handle: InvitationHandle;
   description: string;
   customDetails?: Record<string, any> | undefined;
 };
-export type Installation<SF = any> = import('./utils.js').Installation<SF>;
-export type InstallationStart<I extends Installation> =
-  import('./utils.js').InstallationStart<I>;
 export type FeeIssuerConfig = {
   name: string;
   assetKind: AssetKind;

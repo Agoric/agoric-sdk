@@ -5,6 +5,10 @@ import { cleanProposal } from '../../src/cleanProposal.js';
 import { setup } from './setupBasicMints.js';
 import buildManualTimer from '../../tools/manualTimer.js';
 
+/**
+ * @import {HasBound} from '@agoric/ertp';
+ */
+
 const proposeGood = (t, proposal, assetKind, expected) =>
   t.deepEqual(
     cleanProposal(harden(proposal), () => assetKind),
@@ -96,17 +100,20 @@ test('cleanProposal - wrong assetKind', t => {
 test('cleanProposal - want patterns', t => {
   const { moola, simoleans } = setup();
   const timer = buildManualTimer(t.log);
+  const wantAsset2HasBound = simoleans(
+    /** @type {HasBound} */ (M.containerHas(M.any())),
+  );
 
   proposeGood(
     t,
     {
-      want: { Asset2: M.any() },
+      want: { Asset2: wantAsset2HasBound },
       give: { Price2: moola(3n) },
       exit: { afterDeadline: { timer, deadline: 100n } },
     },
     'nat',
     {
-      want: { Asset2: M.any() },
+      want: { Asset2: wantAsset2HasBound },
       give: { Price2: moola(3n) },
       exit: { afterDeadline: { timer, deadline: 100n } },
     },
@@ -127,22 +134,22 @@ test('cleanProposal - want patterns', t => {
     t,
     {
       want: { Asset2: simoleans(1n) },
-      give: { Price2: M.any() },
+      give: { Price2: moola(M.containerHas(M.any())) },
       exit: { afterDeadline: { timer, deadline: 100n } },
     },
     'nat',
-    'A passable tagged "match:any" is not a key: "[match:any]"',
+    'A passable tagged "match:containerHas" is not a key: "[match:containerHas]"',
   );
 
   proposeBad(
     t,
     {
       want: { Asset2: simoleans(1n) },
-      give: { Price2: M.any() },
+      give: { Price2: moola(M.containerHas(M.any())) },
       exit: { afterDeadline: { timer, deadline: M.any() } },
     },
     'nat',
-    'A passable tagged "match:any" is not a key: "[match:any]"',
+    'A passable tagged "match:containerHas" is not a key: "[match:containerHas]"',
   );
 });
 

@@ -12,14 +12,14 @@ type SourceBundle = Record<string, any>;
 /**
  * Installation of a contract, typed by its start function.
  */
-export type Installation<SF extends ContractStartFunction | unknown> =
+export type Installation<SF extends ContractStartFunction | unknown = any> =
   TagContainer<SF> &
     RemotableObject & {
       getBundle: () => SourceBundle;
       getBundleLabel: () => string;
     };
 
-export type Instance<SF extends ContractStartFunction | unknown> =
+export type Instance<SF extends ContractStartFunction | unknown = any> =
   TagContainer<SF> & RemotableObject & Handle<'Instance'>;
 
 export type InstallationStart<I> =

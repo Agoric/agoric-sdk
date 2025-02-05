@@ -1,4 +1,4 @@
-import { AmountMath } from '@agoric/ertp';
+import { AmountMath, assertValueGetAssetKind } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { q, Fail } from '@endo/errors';
 import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
@@ -17,8 +17,22 @@ import { cleanKeywords } from '../cleanProposal.js';
  * purse per brand.
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {GetAssetKindByBrand} _getAssetKindByBrand
  */
-export const provideEscrowStorage = baggage => {
+export const provideEscrowStorage = (baggage, _getAssetKindByBrand) => {
+  const getAssetKindByAmount = amount => {
+    const { /* brand, */ value } = amount;
+    // const ak1 = getAssetKindByBrand(brand);
+    const ak2 = assertValueGetAssetKind(value);
+    // TODO this fails in escrowStorage.test.js, likely meaning we
+    // don't do enough checking elsewhere that the storage assetKind is the
+    // assetKind of the value.
+    // ak1 === ak2 ||
+    //   // line break for ease of interactive breakpointing
+    //   Fail`${q(ak1)} must === ${q(ak2)}`;
+    return ak2;
+  };
+
   /** @type {WeakMapStore<Brand, Purse>} */
   const brandToPurse = provideDurableWeakMapStore(baggage, 'brandToPurse');
 
@@ -111,7 +125,9 @@ export const provideEscrowStorage = baggage => {
     const deposits = await deeplyFulfilledObject(depositPs);
 
     const initialAllocation = harden({
-      ...objectMap(want, amount => AmountMath.makeEmptyFromAmount(amount)),
+      ...objectMap(want, amount =>
+        AmountMath.makeEmpty(amount.brand, getAssetKindByAmount(amount)),
+      ),
       // Deposits should win in case of overlapping give/want keywords
       // (which are not allowed as of 2024-01).
       ...deposits,

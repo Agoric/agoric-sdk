@@ -11,8 +11,7 @@ export const calcWinnerAndClose = (zcf, sellSeat, bidSeats) => {
     want: { Ask: minBid },
   } = sellSeat.getProposal();
 
-  /** @type {Brand<'nat'>} */
-  const bidBrand = minBid.brand;
+  const bidBrand = /** @type {Brand<'nat'>} */ (minBid.brand);
   const emptyBid = AmountMath.makeEmpty(bidBrand);
 
   let highestBid = emptyBid;

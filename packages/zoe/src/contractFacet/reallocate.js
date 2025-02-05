@@ -3,6 +3,7 @@ import { makeScalarMapStore } from '@agoric/vat-data';
 
 import { assertRightsConserved } from './rightsConservation.js';
 import { addToAllocation, subtractFromAllocation } from './allocationMath.js';
+import { mustBeKey } from '../contractSupport/zoeHelpers.js';
 
 /**
  * @import {MapStore} from '@agoric/swingset-liveslots';
@@ -47,11 +48,15 @@ export const makeAllocationMap = transfers => {
     allocations.set(seat, [newIncr, decr]);
   };
 
-  for (const [fromSeat, toSeat, fromAmounts, toAmounts] of transfers) {
+  for (const [fromSeat, toSeat, fromAmountBounds, toAmounts] of transfers) {
     if (fromSeat) {
-      if (!fromAmounts) {
+      if (!fromAmountBounds) {
         throw Fail`Transfer from ${fromSeat} must say how much`;
       }
+      const fromAmounts = mustBeKey(
+        fromAmountBounds,
+        'TODO: atomicRearange does not yet support AmountBounds',
+      );
       decrementAllocation(fromSeat, fromAmounts);
       if (toSeat) {
         // Conserved transfer between seats
@@ -74,8 +79,8 @@ export const makeAllocationMap = transfers => {
     } else {
       toSeat || Fail`Transfer must have at least one of fromSeat or toSeat`;
       // Transfer only to toSeat
-      !fromAmounts ||
-        Fail`Transfer without fromSeat cannot have fromAmounts ${fromAmounts}`;
+      !fromAmountBounds ||
+        Fail`Transfer without fromSeat cannot have fromAmountBounds ${fromAmountBounds}`;
       toAmounts || Fail`Transfer to ${toSeat} must say how much`;
       incrementAllocation(toSeat, toAmounts);
     }
@@ -93,5 +98,5 @@ export const makeAllocationMap = transfers => {
     }
     resultingAllocations.push([seat, newAlloc]);
   }
-  return resultingAllocations;
+  return harden(resultingAllocations);
 };

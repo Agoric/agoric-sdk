@@ -1,7 +1,7 @@
-import { Fail } from '@endo/errors';
+import { Fail, b } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
-import { mustMatch, keyEQ } from '@agoric/store';
+import { mustMatch, keyEQ, isKey, isPattern } from '@endo/patterns';
 import { AssetKind } from '@agoric/ertp';
 import { fromUniqueEntries } from '@agoric/internal';
 import { satisfiesWant } from '../contractFacet/offerSafety.js';
@@ -9,7 +9,7 @@ import { atomicTransfer, fromOnly, toOnly } from './atomicTransfer.js';
 
 /**
  * @import {Pattern} from '@endo/patterns';
- * @import {ContractMeta, Invitation, Proposal, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {Invitation, Proposal, ZCF, ZCFSeat, AmountBoundKeywordRecord} from '@agoric/zoe';
  */
 
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
@@ -73,16 +73,42 @@ export const swap = (zcf, leftSeat, rightSeat) => {
   return defaultAcceptanceMsg;
 };
 
+/**
+ * @param {AmountBoundKeywordRecord} want
+ * @param {string} complaint
+ * @returns {AmountKeywordRecord}
+ */
+export const mustBeKey = (want, complaint) => {
+  if (isKey(want)) {
+    return want;
+  }
+  if (isPattern(want)) {
+    throw Fail`${b(complaint)}: ${want}`;
+  }
+  throw Fail`Must be key: ${want}`;
+};
+harden(mustBeKey);
+
 /** @type {SwapExact} */
 export const swapExact = (zcf, leftSeat, rightSeat) => {
   try {
+    const { give: rightGive, want: rightWantBound } = rightSeat.getProposal();
+    const { give: leftGive, want: leftWantBound } = leftSeat.getProposal();
+    const rightWant = mustBeKey(
+      rightWantBound,
+      'TODO: swapExact does not yet support want patterns',
+    );
+    const leftWant = mustBeKey(
+      leftWantBound,
+      'TODO: swapExact does not yet support want patterns',
+    );
     zcf.atomicRearrange(
       harden([
-        fromOnly(rightSeat, rightSeat.getProposal().give),
-        fromOnly(leftSeat, leftSeat.getProposal().give),
+        fromOnly(rightSeat, rightGive),
+        fromOnly(leftSeat, leftGive),
 
-        toOnly(leftSeat, leftSeat.getProposal().want),
-        toOnly(rightSeat, rightSeat.getProposal().want),
+        toOnly(leftSeat, leftWant),
+        toOnly(rightSeat, rightWant),
       ]),
     );
   } catch (err) {
