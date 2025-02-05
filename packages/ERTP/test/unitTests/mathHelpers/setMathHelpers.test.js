@@ -9,7 +9,11 @@ import { mockSetBrand as mockBrand } from './mockBrand.js';
 // AmountMath so that we can test that any duplication is handled
 // correctly.
 
-const runSetMathHelpersTests = (t, [a, b, c], a2) => {
+const runSetMathHelpersTests = (
+  t,
+  [a, b, c],
+  a2 = /** @type {any} */ (undefined),
+) => {
   // a2 is a copy of a which should have the same values but not same
   // identity. This doesn't make sense to use for handle tests, but
   // makes sense for anything where the identity is based on data.
@@ -51,8 +55,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2) => {
     // @ts-expect-error deliberate invalid arguments for testing
     () => m.make(mockBrand, 'a'),
     {
-      message:
-        'value "a" must be a bigint, copySet, copyBag, or an array, not "string"',
+      message: 'value "a" must be an AmountValue, not "string"',
     },
     'strings are not valid',
   );
@@ -98,8 +101,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2) => {
     // @ts-expect-error deliberate invalid arguments for testing
     () => m.coerce(mockBrand, harden({ brand: mockBrand, value: 'a' })),
     {
-      message:
-        'value "a" must be a bigint, copySet, copyBag, or an array, not "string"',
+      message: 'value "a" must be an AmountValue, not "string"',
     },
     'strings are not valid',
   );
@@ -134,8 +136,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2) => {
     // @ts-expect-error deliberate invalid arguments for testing
     () => m.isEmpty(harden({ brand: mockBrand, value: {} })),
     {
-      message:
-        'value {} must be a bigint, copySet, copyBag, or an array, not "copyRecord"',
+      message: 'value {} must be an AmountValue, not "copyRecord"',
     },
     `m.isEmpty({}) throws`,
   );

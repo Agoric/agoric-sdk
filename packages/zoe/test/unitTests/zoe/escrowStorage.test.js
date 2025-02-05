@@ -1,7 +1,8 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
-
+import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
+
+import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { provideEscrowStorage } from '../../../src/zoeService/escrowStorage.js';
 import {
@@ -13,6 +14,7 @@ test('provideEscrowStorage', async t => {
   const { createPurse, provideLocalPurse, withdrawPayments, depositPayments } =
     provideEscrowStorage(
       makeScalarBigMapStore('zoe baggage', { durable: true }),
+      _brand => 'nat',
     );
 
   const stableKit = makeIssuerKit(
@@ -138,6 +140,7 @@ const setupPurses = async createPurse => {
 test('payments without matching give keywords', async t => {
   const { createPurse, depositPayments } = provideEscrowStorage(
     makeScalarBigMapStore('zoe baggage', { durable: true }),
+    _brand => Fail`Not in a mock test`,
   );
 
   const { ticketKit, stableKit } = await setupPurses(createPurse);
@@ -175,6 +178,7 @@ test('payments without matching give keywords', async t => {
 test(`give keywords without matching payments`, async t => {
   const { createPurse, depositPayments } = provideEscrowStorage(
     makeScalarBigMapStore('zoe baggage', { durable: true }),
+    _brand => Fail`Not in a mock test`,
   );
 
   const { ticketKit, stableKit } = await setupPurses(createPurse);
