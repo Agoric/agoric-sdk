@@ -188,6 +188,10 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 				vm.CoreProposalStepForModules(
 					"@agoric/builders/scripts/smart-wallet/build-wallet-factory2-upgrade.js",
 				),
+				// Register a new ZCF to be used for all future contract instances and upgrades
+				vm.CoreProposalStepForModules(
+					"@agoric/builders/scripts/vats/upgrade-zcf.js",
+				),
 			)
 
 			upgradeMintHolderStep, err := upgradeMintHolderCoreProposal(targetUpgrade)
