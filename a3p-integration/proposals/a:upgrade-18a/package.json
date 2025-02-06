@@ -1,0 +1,19 @@
+{
+    "agoricProposal": {
+        "releaseNotes": false,
+        "sdkImageTag": "unreleased",
+        "planName": "agoric-upgrade-18a",
+        "upgradeInfo": {
+            "coreProposals": [],
+            "releaseNotes": false
+        },
+        "sdk-generate": [],
+        "type": "Software Upgrade Proposal"
+    },
+    "type": "module",
+    "license": "Apache-2.0",
+    "scripts": {
+        "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops"
+    },
+    "packageManager": "yarn@4.5.3"
+}

@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+      "target": "ESNext",
+      "module": "NodeNext",
+      "allowJs": true,
+      "checkJs": true,
+      "strict": false,
+      "strictNullChecks": true,
+      "noEmit": true,
+      "noImplicitThis": true,
+      // XXX synthetic-chain has some errors
+      "skipLibCheck": true
+    }
+  }
