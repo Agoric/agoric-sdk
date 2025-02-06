@@ -338,7 +338,13 @@ export const prepareSettler = (
          */
         forward(txHash, fullValue, EUD) {
           const { settlementAccount, intermediateRecipient } = this.state;
-          const dest = chainHub.makeChainAddress(EUD);
+          let dest;
+          try {
+            dest = chainHub.makeChainAddress(EUD);
+          } catch (e) {
+            log('⚠️ forward transfer failed!', e, txHash);
+            return statusManager.forwarded(txHash, false);
+          }
           const txfrV = E(settlementAccount).transfer(
             dest,
             AmountMath.make(USDC, fullValue),

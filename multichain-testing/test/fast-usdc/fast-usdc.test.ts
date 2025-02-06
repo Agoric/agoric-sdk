@@ -7,6 +7,7 @@ import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.j
 import type {
   CctpTxEvidence,
   EvmAddress,
+  NobleAddress,
 } from '@agoric/fast-usdc/src/types.js';
 import { makeTracer } from '@agoric/internal';
 import { divideBy, multiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
@@ -20,6 +21,7 @@ import { createWallet } from '../../tools/wallet.js';
 import { commonSetup } from '../support.js';
 import { makeFeedPolicyPartial, oracleMnemonics } from './config.js';
 import { agoricNamesQ, fastLPQ, makeTxOracle } from './fu-actors.js';
+import { sleep } from '@agoric/client-utils';
 
 const { RELAYER_TYPE } = process.env;
 
@@ -104,14 +106,79 @@ const makeTestContext = async t => {
     makeTxOracle(oKeys[ix], { wd, vstorageClient, blockIter, now }),
   );
 
+  const makeFakeEvidence = (
+    mintAmt: bigint,
+    userForwardingAddr: NobleAddress,
+    recipientAddress: string,
+  ) =>
+    harden({
+      blockHash:
+        '0x90d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee665',
+      blockNumber: 21037663n,
+      txHash: `0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff3875527617${makeRandomDigits(makeRandomNumber(), 2n)}`,
+      tx: {
+        amount: mintAmt,
+        forwardingAddress: userForwardingAddr,
+        sender: '0x9a9eE9e9e9e9e9e9e9e9e9e9e9e9e9e9e9e9e9e9' as EvmAddress,
+      },
+      aux: {
+        forwardingChannel: nobleAgoricChannelId,
+        recipientAddress,
+      },
+      chainId: 42161,
+    }) as CctpTxEvidence;
+
+  const queryTxStatus = async (txHash: string) => {
+    const record = await common.smartWalletKit.readPublished(
+      `fastUsdc.txns.${txHash}`,
+    );
+    if (!record) {
+      throw new Error(`no record for ${txHash}`);
+    }
+    // @ts-expect-error unknown may not have 'status'
+    if (!record.status) {
+      throw new Error(`no status for ${txHash}`);
+    }
+    // @ts-expect-error still unknown?
+    return record.status;
+  };
+
+  const assertTxStatus = async (txHash: string, status: string) =>
+    t.notThrowsAsync(() =>
+      common.retryUntilCondition(
+        () => queryTxStatus(txHash),
+        txStatus => {
+          log('tx status', txStatus);
+          return txStatus === status;
+        },
+        `${txHash} is ${status}`,
+      ),
+    );
+
+  const getUsdcDenom = (chainName: string) => {
+    switch (chainName) {
+      case 'agoric':
+        return usdcDenom;
+      case 'osmosis':
+        return usdcOnOsmosis;
+      case 'noble':
+        return 'uusdc';
+      default:
+        throw new Error(`${chainName} not supported in 'getUsdcDenom'`);
+    }
+  };
+
   return {
     ...common,
     api,
-    lpUser,
+    assertTxStatus,
     feeUser,
+    getUsdcDenom,
+    lpUser,
+    makeFakeEvidence,
+    nobleAgoricChannelId,
     oracleWds,
     txOracles,
-    nobleAgoricChannelId,
     usdcOnOsmosis,
     usdcDenom,
     wallets,
@@ -214,14 +281,14 @@ const advanceAndSettleScenario = test.macro({
   exec: async (t, mintAmt: bigint, eudChain: string) => {
     const {
       api,
+      assertTxStatus,
+      getUsdcDenom,
+      makeFakeEvidence,
       nobleTools,
       nobleAgoricChannelId,
-      txOracles,
       retryUntilCondition,
-      smartWalletKit,
+      txOracles,
       useChain,
-      usdcDenom,
-      usdcOnOsmosis,
       vstorageClient,
     } = t.context;
 
@@ -254,22 +321,11 @@ const advanceAndSettleScenario = test.macro({
     );
     t.log('got forwardingAddress', userForwardingAddr);
 
-    const evidence: CctpTxEvidence = harden({
-      blockHash:
-        '0x90d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee665',
-      blockNumber: 21037663n,
-      txHash: `0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff3875527617${makeRandomDigits(makeRandomNumber(), 2n)}`,
-      tx: {
-        amount: mintAmt,
-        forwardingAddress: userForwardingAddr,
-        sender: '0x9a9eE9e9e9e9e9e9e9e9e9e9e9e9e9e9e9e9e9e9' as EvmAddress,
-      },
-      aux: {
-        forwardingChannel: nobleAgoricChannelId,
-        recipientAddress,
-      },
-      chainId: 42161,
-    });
+    const evidence = makeFakeEvidence(
+      mintAmt,
+      userForwardingAddr,
+      recipientAddress,
+    );
 
     log('User initiates EVM burn:', evidence.txHash);
     const { block: initialBlock } = await api.queryBlock();
@@ -293,19 +349,6 @@ const advanceAndSettleScenario = test.macro({
     const queryClient = makeQueryClient(
       await useChain(eudChain).getRestEndpoint(),
     );
-
-    const getUsdcDenom = (chainName: string) => {
-      switch (chainName) {
-        case 'agoric':
-          return usdcDenom;
-        case 'osmosis':
-          return usdcOnOsmosis;
-        case 'noble':
-          return 'uusdc';
-        default:
-          throw new Error(`${chainName} not supported in 'getUsdcDenom'`);
-      }
-    };
 
     let finalBlock;
     await t.notThrowsAsync(async () => {
@@ -349,34 +392,7 @@ const advanceAndSettleScenario = test.macro({
     });
     t.true(mainWallClockEstimate * (1 + MARGIN_OF_ERROR) <= MAIN_MAX_DUR);
 
-    const queryTxStatus = async () => {
-      const record = await smartWalletKit.readPublished(
-        `fastUsdc.txns.${evidence.txHash}`,
-      );
-      if (!record) {
-        throw new Error(`no record for ${evidence.txHash}`);
-      }
-      // @ts-expect-error unknown may not have 'status'
-      if (!record.status) {
-        throw new Error(`no status for ${evidence.txHash}`);
-      }
-      // @ts-expect-error still unknown?
-      return record.status;
-    };
-
-    const assertTxStatus = async (status: string) =>
-      t.notThrowsAsync(() =>
-        retryUntilCondition(
-          () => queryTxStatus(),
-          txStatus => {
-            log('tx status', txStatus);
-            return txStatus === status;
-          },
-          `${evidence.txHash} is ${status}`,
-        ),
-      );
-
-    await assertTxStatus('ADVANCED');
+    await assertTxStatus(evidence.txHash, 'ADVANCED');
     log('Advance completed, waiting for mint...');
 
     nobleTools.mockCctpMint(mintAmt, userForwardingAddr);
@@ -389,13 +405,70 @@ const advanceAndSettleScenario = test.macro({
       ),
     );
 
-    await assertTxStatus('DISBURSED');
+    await assertTxStatus(evidence.txHash, 'DISBURSED');
   },
 });
 
 test.serial(advanceAndSettleScenario, LP_DEPOSIT_AMOUNT / 4n, 'osmosis');
 test.serial(advanceAndSettleScenario, LP_DEPOSIT_AMOUNT / 8n, 'noble');
 test.serial(advanceAndSettleScenario, LP_DEPOSIT_AMOUNT / 5n, 'agoric');
+
+test.skip('advance failed (e.g. to missing chain)', async t => {
+  const mintAmt = LP_DEPOSIT_AMOUNT / 10n;
+  const {
+    assertTxStatus,
+    makeFakeEvidence,
+    nobleTools,
+    nobleAgoricChannelId,
+    txOracles,
+    vstorageClient,
+  } = t.context;
+
+  // EUD wallet on the specified chain
+  const eudWallet = await createWallet('cosmos1');
+  const EUD = (await eudWallet.getAccounts())[0].address;
+  t.log(`EUD wallet created: ${EUD}`);
+
+  // parameterize agoric address
+  const { settlementAccount } = await vstorageClient.queryData(
+    `published.${contractName}`,
+  );
+  t.log('settlementAccount address', settlementAccount);
+
+  const recipientAddress = encodeAddressHook(settlementAccount, { EUD });
+  t.log('recipientAddress', recipientAddress);
+
+  // register forwarding address on noble
+  const txRes = nobleTools.registerForwardingAcct(
+    nobleAgoricChannelId,
+    recipientAddress,
+  );
+  t.is(txRes?.code, 0, 'registered forwarding account');
+
+  const { address: userForwardingAddr } = nobleTools.queryForwardingAddress(
+    nobleAgoricChannelId,
+    recipientAddress,
+  );
+  t.log('got forwardingAddress', userForwardingAddr);
+
+  const evidence = makeFakeEvidence(
+    mintAmt,
+    userForwardingAddr,
+    recipientAddress,
+  );
+
+  t.log('User initiates EVM burn:', evidence.txHash);
+  // submit evidences
+  await Promise.all(txOracles.map(async o => o.submit(evidence)));
+
+  // XXX Not sure if the behavior should actually be ADVANCE_FAILED.
+  // It only reaches that state if the destination chain is valid.
+  await assertTxStatus(evidence.txHash, 'OBSERVED');
+
+  nobleTools.mockCctpMint(mintAmt, userForwardingAddr);
+
+  await assertTxStatus(evidence.txHash, 'FORWARD_FAILED');
+});
 
 test.serial('lp withdraws', async t => {
   const {
@@ -493,6 +566,221 @@ test.serial('distribute FastUSDC contract fees', async t => {
   t.truthy(balance?.amount);
 });
 
-test.todo('insufficient LP funds; forward path');
+test.serial('insufficient LP funds; forward path', async t => {
+  const eudChain = 'osmosis';
+  const mintAmt = LP_DEPOSIT_AMOUNT * 2n;
+  const {
+    assertTxStatus,
+    getUsdcDenom,
+    makeFakeEvidence,
+    nobleTools,
+    nobleAgoricChannelId,
+    retryUntilCondition,
+    txOracles,
+    useChain,
+    vstorageClient,
+  } = t.context;
+
+  // EUD wallet on the specified chain
+  const eudWallet = await createWallet(useChain(eudChain).chain.bech32_prefix);
+  const EUD = (await eudWallet.getAccounts())[0].address;
+  t.log(`EUD wallet created: ${EUD}`);
+
+  // parameterize agoric address
+  const { settlementAccount } = await vstorageClient.queryData(
+    `published.${contractName}`,
+  );
+  t.log('settlementAccount address', settlementAccount);
+
+  const recipientAddress = encodeAddressHook(settlementAccount, { EUD });
+  t.log('recipientAddress', recipientAddress);
+
+  // register forwarding address on noble
+  const txRes = nobleTools.registerForwardingAcct(
+    nobleAgoricChannelId,
+    recipientAddress,
+  );
+  t.is(txRes?.code, 0, 'registered forwarding account');
+
+  const { address: userForwardingAddr } = nobleTools.queryForwardingAddress(
+    nobleAgoricChannelId,
+    recipientAddress,
+  );
+  t.log('got forwardingAddress', userForwardingAddr);
+
+  const evidence = makeFakeEvidence(
+    mintAmt,
+    userForwardingAddr,
+    recipientAddress,
+  );
+
+  t.log('User initiates EVM burn:', evidence.txHash);
+  // submit evidences
+  await Promise.all(txOracles.map(async o => o.submit(evidence)));
+
+  const queryClient = makeQueryClient(
+    await useChain(eudChain).getRestEndpoint(),
+  );
+
+  await assertTxStatus(evidence.txHash, 'OBSERVED');
+
+  nobleTools.mockCctpMint(mintAmt, userForwardingAddr);
+
+  await assertTxStatus(evidence.txHash, 'FORWARDED');
+  await t.notThrowsAsync(async () => {
+    await retryUntilCondition(
+      () => queryClient.queryBalance(EUD, getUsdcDenom(eudChain)),
+      ({ balance }) => {
+        if (!balance) return false; // retry
+        const value = BigInt(balance.amount);
+        if (value === 0n) return false; // retry
+        if (value < mintAmt) {
+          throw Error(`fees were deducted: ${value} < ${mintAmt}`);
+        }
+        t.log('forward done', value, 'uusdc');
+        return true;
+      },
+      `${EUD} forward available from fast-usdc`,
+      // this resolves quickly, so _decrease_ the interval so the timing is more apparent
+      { retryIntervalMs: 500, maxRetries: 20 },
+    );
+  });
+});
+
+test.serial('minted before observed; forward path', async t => {
+  const eudChain = 'osmosis';
+  const mintAmt = LP_DEPOSIT_AMOUNT / 10n;
+  const {
+    assertTxStatus,
+    getUsdcDenom,
+    makeFakeEvidence,
+    nobleTools,
+    nobleAgoricChannelId,
+    retryUntilCondition,
+    txOracles,
+    useChain,
+    vstorageClient,
+  } = t.context;
+
+  // EUD wallet on the specified chain
+  const eudWallet = await createWallet(useChain(eudChain).chain.bech32_prefix);
+  const EUD = (await eudWallet.getAccounts())[0].address;
+  t.log(`EUD wallet created: ${EUD}`);
+
+  // parameterize agoric address
+  const { settlementAccount } = await vstorageClient.queryData(
+    `published.${contractName}`,
+  );
+  t.log('settlementAccount address', settlementAccount);
+
+  const recipientAddress = encodeAddressHook(settlementAccount, { EUD });
+  t.log('recipientAddress', recipientAddress);
+
+  // register forwarding address on noble
+  const txRes = nobleTools.registerForwardingAcct(
+    nobleAgoricChannelId,
+    recipientAddress,
+  );
+  t.is(txRes?.code, 0, 'registered forwarding account');
+
+  const { address: userForwardingAddr } = nobleTools.queryForwardingAddress(
+    nobleAgoricChannelId,
+    recipientAddress,
+  );
+  t.log('got forwardingAddress', userForwardingAddr);
+
+  const evidence = makeFakeEvidence(
+    mintAmt,
+    userForwardingAddr,
+    recipientAddress,
+  );
+
+  const queryClient = makeQueryClient(
+    await useChain(eudChain).getRestEndpoint(),
+  );
+
+  t.log(`UX->${eudChain}`, 'minting before evidence observed');
+  nobleTools.mockCctpMint(mintAmt, userForwardingAddr);
+  // Wait for mint to complete before submitting evidence
+  await sleep(5000, { log: t.log, setTimeout });
+
+  // submit evidences
+  await Promise.all(txOracles.map(o => o.submit(evidence)));
+  t.log(`UX->${eudChain}`, 'submitted x', txOracles.length);
+
+  await assertTxStatus(evidence.txHash, 'FORWARDED');
+  await t.notThrowsAsync(async () => {
+    await retryUntilCondition(
+      () => queryClient.queryBalance(EUD, getUsdcDenom(eudChain)),
+      ({ balance }) => {
+        if (!balance) return false; // retry
+        const value = BigInt(balance.amount);
+        if (value === 0n) return false; // retry
+        if (value < mintAmt) {
+          throw Error(`fees were deducted: ${value} < ${mintAmt}`);
+        }
+        t.log('forward done', value, 'uusdc');
+        return true;
+      },
+      `${EUD} forward available from fast-usdc`,
+      // this resolves quickly, so _decrease_ the interval so the timing is more apparent
+      { retryIntervalMs: 500, maxRetries: 20 },
+    );
+  });
+});
+
+test.serial('insufficient LP funds and forward failed', async t => {
+  const mintAmt = LP_DEPOSIT_AMOUNT * 2n;
+  const {
+    assertTxStatus,
+    makeFakeEvidence,
+    nobleTools,
+    nobleAgoricChannelId,
+    txOracles,
+    vstorageClient,
+  } = t.context;
+
+  // EUD wallet on the specified chain
+  const eudWallet = await createWallet('invalideud');
+  const EUD = (await eudWallet.getAccounts())[0].address;
+  t.log(`EUD wallet created: ${EUD}`);
+
+  // parameterize agoric address
+  const { settlementAccount } = await vstorageClient.queryData(
+    `published.${contractName}`,
+  );
+  t.log('settlementAccount address', settlementAccount);
+
+  const recipientAddress = encodeAddressHook(settlementAccount, { EUD });
+  t.log('recipientAddress', recipientAddress);
+
+  // register forwarding address on noble
+  const txRes = nobleTools.registerForwardingAcct(
+    nobleAgoricChannelId,
+    recipientAddress,
+  );
+  t.is(txRes?.code, 0, 'registered forwarding account');
+
+  const { address: userForwardingAddr } = nobleTools.queryForwardingAddress(
+    nobleAgoricChannelId,
+    recipientAddress,
+  );
+  t.log('got forwardingAddress', userForwardingAddr);
+
+  const evidence = makeFakeEvidence(
+    mintAmt,
+    userForwardingAddr,
+    recipientAddress,
+  );
+
+  // submit evidences
+  await Promise.all(txOracles.map(async o => o.submit(evidence)));
+
+  await assertTxStatus(evidence.txHash, 'OBSERVED');
+
+  nobleTools.mockCctpMint(mintAmt, userForwardingAddr);
+
+  await assertTxStatus(evidence.txHash, 'FORWARD_FAILED');
+});
+
 test.todo('mint while Advancing; still Disbursed');
-test.todo('transfer failed (e.g. to cosmos, not in env)');
