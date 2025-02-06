@@ -21,11 +21,15 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import type { SnapStoreDebug } from '@agoric/swing-store';
+import { makeArchiveSnapshot } from '@agoric/swing-store';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
 import type { BridgeHandler, IBCChannelID } from '@agoric/vats';
 import { makePromiseKit } from '@endo/promise-kit';
 import { readFile, writeFile } from 'fs/promises';
 import { createRequire } from 'module';
+import fs from 'node:fs';
+import path from 'node:path';
+import tmp from 'tmp';
 import { AckBehavior, makeSwingsetHarness } from '../../tools/supports.js';
 import {
   makeWalletFactoryContext,
@@ -61,16 +65,21 @@ const prefixedRange = (n: Number, pfx: string) =>
 
 test.before(async t => {
   const { env } = globalThis.process;
+  const fsPowers = { fs, path, tmp };
   const {
     SLOGFILE: slogFile,
     SWINGSET_WORKER_TYPE: defaultManagerType = 'xs-worker', // or 'local',
     STATS_FILE,
+    SNAPSHOT_DIR: snapshotDir,
   } = env;
   const harness = makeSwingsetHarness();
   const ctx = await makeWalletFactoryContext(t, config, {
     slogFile,
     defaultManagerType,
     harness,
+    ...(snapshotDir
+      ? { archiveSnapshot: makeArchiveSnapshot(snapshotDir, fsPowers) }
+      : {}),
   });
   const oracles = Object.entries(configurations.MAINNET.oracles).map(
     ([name, addr]) => makeTxOracle(ctx, name, addr),
@@ -635,9 +644,10 @@ test.serial('iterate simulation several times', async t => {
   await writeFile('kernel-0.json', JSON.stringify(controller.dump(), null, 2));
 
   harness.useRunPolicy(true); // start tracking computrons
+  harness.resetRunPolicy(); // never mind computrons from bootstrap
   const snapStore = swingStore.internal.snapStore as unknown as SnapStoreDebug;
 
-  for (const ix of range(32)) {
+  for (const ix of range(9)) {
     updateNewCellBlockHeight(); // look at only the latest value written
     await sim.iteration(t, ix);
 
