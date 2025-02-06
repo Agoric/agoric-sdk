@@ -1,11 +1,7 @@
 package gaia
 
 import (
-	"encoding/json"
 	"fmt"
-	"reflect"
-	"strings"
-	"text/template"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	swingsetkeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
@@ -15,13 +11,7 @@ import (
 )
 
 var upgradeNamesOfThisVersion = []string{
-	"agoric-upgrade-18-mainnet",
-	"agoric-upgrade-18-devnet",
-	"agoric-upgrade-18-emerynet",
-	"agoric-upgrade-18-basic",
-	"agoric-upgrade-18-basic-2",
-	"agoric-upgrade-18-emerynet-rc3",
-	"agoric-upgrade-18-a3p",
+	"agoric-upgrade-18a",
 }
 
 // isUpgradeNameOfThisVersion returns whether the provided plan name is a
@@ -55,15 +45,8 @@ func isPrimaryUpgradeName(name string) bool {
 		return false
 	}
 	switch name {
-	case validUpgradeName("agoric-upgrade-18-mainnet"),
-		validUpgradeName("agoric-upgrade-18-devnet"),
-		validUpgradeName("agoric-upgrade-18-emerynet"),
-		validUpgradeName("agoric-upgrade-18-basic"),
-		validUpgradeName("agoric-upgrade-18-a3p"):
+	case validUpgradeName("agoric-upgrade-18a"):
 		return true
-	case validUpgradeName("agoric-upgrade-18-basic-2"),
-		validUpgradeName("agoric-upgrade-18-emerynet-rc3"):
-		return false
 	default:
 		panic(fmt.Errorf("unexpected upgrade name %s", validUpgradeName(name)))
 	}
@@ -78,118 +61,6 @@ func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
 		}
 	}
 	return true
-}
-
-func buildProposalStepWithArgs(moduleName string, entrypoint string, extra any) (vm.CoreProposalStep, error) {
-	t := template.Must(template.New("").Parse(`{
-  "module": "{{.moduleName}}",
-  "entrypoint": "{{.entrypoint}}",
-  "args": {{.args}}
-}`))
-
-	var args []byte
-	var err error
-	if extra == nil {
-		// The specified entrypoint will be called with no extra arguments after powers.
-		args = []byte(`[]`)
-	} else if reflect.TypeOf(extra).Kind() == reflect.Map && reflect.TypeOf(extra).Key().Kind() == reflect.String {
-		// The specified entrypoint will be called with this options argument after powers.
-		args, err = json.Marshal([]any{extra})
-	} else if reflect.TypeOf(extra).Kind() == reflect.Slice {
-		// The specified entrypoint will be called with each of these arguments after powers.
-		args, err = json.Marshal(extra)
-	} else {
-		return nil, fmt.Errorf("proposal extra must be nil, array, or string map, not %v", extra)
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	var result strings.Builder
-	err = t.Execute(&result, map[string]any{
-		"moduleName": moduleName,
-		"entrypoint": entrypoint,
-		"args":       string(args),
-	})
-	if err != nil {
-		return nil, err
-	}
-	jsonStr := result.String()
-	jsonBz := []byte(jsonStr)
-	if !json.Valid(jsonBz) {
-		return nil, fmt.Errorf("invalid JSON: %s", jsonStr)
-	}
-	proposal := vm.ArbitraryCoreProposal{Json: jsonBz}
-	return vm.CoreProposalStepForModules(proposal), nil
-}
-
-func getVariantFromUpgradeName(upgradeName string) string {
-	switch upgradeName {
-	case "agoric-upgrade-18-mainnet":
-		return "MAINNET"
-	case "agoric-upgrade-18-devnet":
-		return "DEVNET"
-	case "agoric-upgrade-18-emerynet":
-		return "EMERYNET"
-	case "agoric-upgrade-18-basic":
-		return ""
-	case "agoric-upgrade-18-a3p":
-		return "A3P_INTEGRATION"
-	default:
-		return ""
-	}
-}
-
-func replaceElectorateCoreProposalStep(upgradeName string) (vm.CoreProposalStep, error) {
-	variant := getVariantFromUpgradeName(upgradeName)
-
-	if variant == "" {
-		return nil, nil
-	}
-
-	return buildProposalStepWithArgs(
-		"@agoric/builders/scripts/inter-protocol/replace-electorate-core.js",
-		"defaultProposalBuilder",
-		map[string]any{
-			"variant": variant,
-		},
-	)
-}
-
-func replacePriceFeedsCoreProposal(upgradeName string) (vm.CoreProposalStep, error) {
-	variant := getVariantFromUpgradeName(upgradeName)
-
-	if variant == "" {
-		return nil, nil
-	}
-
-	return buildProposalStepWithArgs(
-		"@agoric/builders/scripts/inter-protocol/updatePriceFeeds.js",
-		"defaultProposalBuilder",
-		map[string]any{
-			"variant": variant,
-		},
-	)
-}
-
-func terminateGovernorCoreProposal(upgradeName string) (vm.CoreProposalStep, error) {
-	// targets is a slice of "$boardID:$instanceKitLabel" strings.
-	var targets []string
-	switch getVariantFromUpgradeName(upgradeName) {
-	case "MAINNET":
-		targets = []string{"board052184:stkATOM-USD_price_feed"}
-	case "A3P_INTEGRATION":
-		targets = []string{"board04091:stATOM-USD_price_feed"}
-	default:
-		return nil, nil
-	}
-
-	return buildProposalStepWithArgs(
-		"@agoric/builders/scripts/vats/terminate-governor-instance.js",
-		// Request `defaultProposalBuilder(powers, targets)`.
-		"defaultProposalBuilder",
-		[]any{targets},
-	)
 }
 
 // func upgradeMintHolderCoreProposal(upgradeName string) (vm.CoreProposalStep, error) {
@@ -208,8 +79,8 @@ func terminateGovernorCoreProposal(upgradeName string) (vm.CoreProposalStep, err
 // 	)
 // }
 
-// upgrade18Handler performs standard upgrade actions plus custom actions for upgrade-18.
-func upgrade18Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
+// upgrade18aHandler performs standard upgrade actions plus custom actions for upgrade-18a.
+func upgrade18aHandler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
 		app.CheckControllerInited(false)
 
@@ -224,57 +95,6 @@ func upgrade18Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgr
 			if !isPrimaryUpgradeName(plan.Name) {
 				return module.VersionMap{}, fmt.Errorf("cannot run %s as first upgrade", plan.Name)
 			}
-
-			replaceElectorateStep, err := replaceElectorateCoreProposalStep(targetUpgrade)
-			if err != nil {
-				return nil, err
-			} else if replaceElectorateStep != nil {
-				CoreProposalSteps = append(CoreProposalSteps, replaceElectorateStep)
-			}
-
-			priceFeedUpdate, err := replacePriceFeedsCoreProposal(targetUpgrade)
-			if err != nil {
-				return nil, err
-			} else if priceFeedUpdate != nil {
-				CoreProposalSteps = append(CoreProposalSteps,
-					priceFeedUpdate,
-					// The following have a dependency onto the price feed proposal
-					vm.CoreProposalStepForModules(
-						"@agoric/builders/scripts/vats/add-auction.js",
-					),
-					vm.CoreProposalStepForModules(
-						"@agoric/builders/scripts/vats/upgradeVaults.js",
-					),
-				)
-			}
-
-			// Each CoreProposalStep runs sequentially, and can be constructed from
-			// one or more modules executing in parallel within the step.
-			CoreProposalSteps = append(CoreProposalSteps,
-				vm.CoreProposalStepForModules(
-					// Upgrade Zoe (no new ZCF needed).
-					"@agoric/builders/scripts/vats/upgrade-zoe.js",
-				),
-				// Revive KREAd characters
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/revive-kread.js",
-				),
-				vm.CoreProposalStepForModules(
-					// Upgrade to include a cleanup from https://github.com/Agoric/agoric-sdk/pull/10319
-					"@agoric/builders/scripts/smart-wallet/build-wallet-factory2-upgrade.js",
-				),
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/upgrade-board.js",
-				),
-			)
-
-			// Upgrade vats using Vows in Upgrade 18 in order to use a new liveslots that
-			// avoids a memory leak in watchPromise.
-			CoreProposalSteps = append(CoreProposalSteps,
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/upgrade-orchestration.js",
-				),
-			)
 
 			// CoreProposals for Upgrade 19. These should not be introduced
 			// before upgrade 18 is done because they would be run in n:upgrade-next
@@ -307,12 +127,6 @@ func upgrade18Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgr
 			// 	),
 			// )
 
-			terminateOldGovernor, err := terminateGovernorCoreProposal(targetUpgrade)
-			if err != nil {
-				return nil, err
-			} else if terminateOldGovernor != nil {
-				CoreProposalSteps = append(CoreProposalSteps, terminateOldGovernor)
-			}
 		}
 
 		app.upgradeDetails = &upgradeDetails{

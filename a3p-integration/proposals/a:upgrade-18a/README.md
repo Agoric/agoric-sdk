@@ -1,6 +1,6 @@
 # Proposal to upgrade the chain software
 
-This holds the draft proposal for agoric-upgrade-18, which will be added to
+This holds the draft proposal for agoric-upgrade-18a, which will be added to
 [agoric-3-proposals](https://github.com/Agoric/agoric-3-proposals) after it
 passes.
 

@@ -894,7 +894,7 @@ func NewAgoricApp(
 	for _, name := range upgradeNamesOfThisVersion {
 		app.UpgradeKeeper.SetUpgradeHandler(
 			name,
-			upgrade18Handler(app, name),
+			upgrade18aHandler(app, name),
 		)
 	}
 
