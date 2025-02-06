@@ -240,46 +240,28 @@ export function makeXsSubprocessFactory({
      * @returns {Promise<SnapshotResult>}
      */
     async function makeSnapshot(snapPos, snapStore, restartWorker) {
-      async function saveSnapshot(vatID_, snapPos_, snapshotStream_) {
-        const saveResultP = snapStore.saveSnapshot(
-          vatID_,
-          snapPos_,
-          snapshotStream_,
-        );
-        saveResultP
-          .then(
-            ({
-              hash: snapshotID,
-              uncompressedSize,
-              dbSaveSeconds,
-              compressedSize,
-              compressSeconds,
-            }) => {
-              const uncompressedSizeDelta =
-                uncompressedSizeLoaded &&
-                uncompressedSize - uncompressedSizeLoaded;
-              kernelSlog.write({
-                type: 'heap-snapshot-save',
-                vatID: vatID_,
-                snapshotID,
-                uncompressedSize,
-                dbSaveSeconds,
-                compressedSize,
-                compressSeconds,
-                endPosition: snapPos_,
-                restartWorker,
-                uncompressedSizeDelta,
-              });
-            },
-          )
-          .catch(err => {
-            throw err;
-          });
-
-        return saveResultP;
-      }
       const snapshotDescription = `${vatID}-${snapPos}`;
       const snapshotStream = worker.makeSnapshotStream(snapshotDescription);
+      const saveSnapshot = async () => {
+        const results = await snapStore.saveSnapshot(
+          vatID,
+          snapPos,
+          snapshotStream,
+        );
+        const { hash: snapshotID, ...metrics } = results;
+        const uncompressedSizeDelta =
+          uncompressedSizeLoaded &&
+          metrics.uncompressedSize - uncompressedSizeLoaded;
+        kernelSlog.write({
+          type: 'heap-snapshot-save',
+          vatID,
+          snapshotID,
+          endPosition: snapPos,
+          ...metrics,
+          restartWorker,
+        });
+        return results;
+      };
 
       if (!restartWorker) {
         return saveSnapshot(vatID, snapPos, snapshotStream);
@@ -310,8 +292,8 @@ export function makeXsSubprocessFactory({
         }),
         saveSnapshot(vatID, snapPos, snapStoreSaveStream),
       ]);
-      await closeP;
       uncompressedSizeLoaded = snapshotResults.uncompressedSize;
+      await closeP;
 
       /** @type {Partial<import('@agoric/swing-store').SnapshotInfo>} */
       const reloadSnapshotInfo = {
