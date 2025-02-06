@@ -166,7 +166,7 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
               data.delete(key);
             }
           }
-          break;
+          return true;
         }
         case 'append': {
           trace('toStorage append', message);
@@ -205,7 +205,7 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
             streamCell.values.push(value);
             data.set(key, JSON.stringify(streamCell));
           }
-          break;
+          return true;
         }
         case 'size':
           // Intentionally incorrect because it counts non-child descendants,
