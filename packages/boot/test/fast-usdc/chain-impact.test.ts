@@ -641,10 +641,13 @@ test.serial('iterate simulation several times', async t => {
     updateNewCellBlockHeight(); // look at only the latest value written
     await sim.iteration(t, ix);
 
+    const computrons = harness.totalComputronCount();
+    const snapshots = [...snapStore.listAllSnapshots()];
     observations.push({
       id: `iter-${ix}`,
       time: Date.now(),
-      computrons: harness.totalComputronCount(),
+      computrons,
+      snapshots,
       ...getResourceUsageStats(controller, storage.data),
     });
     harness.resetRunPolicy(); // stay under block budget
@@ -655,13 +658,11 @@ test.serial('iterate simulation several times', async t => {
       controller.reapAllVats();
       await controller.run();
       const { kernelTable } = controller.dump();
-      const snapshots = [...snapStore.listAllSnapshots()];
 
       observations.push({
         id: `post-prune-${ix}`,
         time: Date.now(),
         kernelTable,
-        snapshots,
         ...getResourceUsageStats(controller, storage.data),
       });
     }
