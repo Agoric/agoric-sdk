@@ -1,10 +1,6 @@
-import { M } from '@endo/patterns';
-// import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
-// import { preparePortfolioHolder } from '../exos/portfolio-holder-kit.js';
 import { withOrchestration } from '../utils/start-helper.js';
 import { prepareStrideStakingTap } from './elys-contract-tap-kit.js';
-import * as flows from './elys-contract-flow.js';
-// import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
+import * as flows from './elys-contract.flow.js';
 import { E } from '@endo/far';
 
 const interfaceTODO = undefined;
@@ -12,7 +8,6 @@ const interfaceTODO = undefined;
  * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '../types.js';
- * @import {SupportedHostChainShape} from './elys-contract-tap-kit.js';
  */
 
 /**
@@ -21,18 +16,18 @@ const interfaceTODO = undefined;
  *
  * To be wrapped with `withOrchestration`.
  *
- * @param {ZCF} zcf
+ * @param {ZCF} _zcf
  * @param {OrchestrationPowers & {
  *   marshaller: Marshaller;
  *   chainInfo?: Record<string, CosmosChainInfo>;
  *   assetInfo?: [Denom, DenomDetail & { brandKey?: string }][];
- * }} privateArgs
+ * }} _privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
  */
 const contract = async (
-  zcf,
-  privateArgs,
+  _zcf,
+  _privateArgs,
   zone,
   { chainHub, orchestrateAll, vowTools }, // orchestration tools
 ) => {
