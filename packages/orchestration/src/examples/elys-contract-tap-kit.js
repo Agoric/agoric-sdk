@@ -4,6 +4,7 @@ import { VowShape } from '@agoric/vow';
 import { makeTracer } from '@agoric/internal';
 import { atob } from '@endo/base64';
 import { ChainAddressShape } from '../typeGuards.js';
+import { makeScalarMapStore } from '@agoric/store';
 import { validateRemoteIbcAddress } from '@agoric/vats/tools/ibc-utils.js';
 import { denomHash } from '../utils/denomHash.js';
 
@@ -25,7 +26,7 @@ const trace = makeTracer('AutoStakeItTap');
  *   remoteDenom: string;
  *   localDenom: string;
  *   hostChainName: string;
- *   hostAccountICA: ERef<OrchestrationAccount<{ chainId: string }>>;
+ *   hostAccountICA: OrchestrationAccount<any>;
  *   hostChainAddressICA;
  * }} SupportedHostChainShape
  */
@@ -47,7 +48,7 @@ harden(SupportedHostChainShape);
  *   localChainAddress: ChainAddress;
  *   strideICAChainAddress: ChainAddress;
  *   elysICAChainAddress: ChainAddress;
- *   supportedHostChains: Map<string, SupportedHostChainShape>;
+ *   supportedHostChains: MapStore<string, SupportedHostChainShape>
  * }} StakingTapState
  */
 /** @type {TypedPattern<StakingTapState>} */
@@ -265,4 +266,10 @@ harden(ibcConnectionInfos);
  * ibcTransfer to elys fails on stride, then stride transfers to this address
  *
  * - Assuming that there would be only one staking tokens on the chain
+ */
+
+/**
+ * 1. how many stAtoms received on stride
+ * 2. If transfer from stride to elys fails for stAtom then how to get this info that stAtom are in the strideICA account
+ * 3. 
  */
