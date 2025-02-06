@@ -113,6 +113,28 @@ const validateSwingsetConfig = swingsetConfig => {
 };
 
 /**
+ * Capture "port numbers" for communicating with cosmos modules.
+ *
+ * @param {object} action
+ */
+const extractPortNums = action => {
+  const portNums = {};
+  for (const [key, value] of Object.entries(action)) {
+    const portAlias = CosmosInitKeyToBridgeId[key];
+    if (portAlias) {
+      // Use the alias if it exists.
+      portNums[portAlias] = value;
+    } else if (key.endsWith(PORT_SUFFIX)) {
+      // Anything else that ends in the suffix is assumed to be a port
+      // number, as described in app.go/cosmosInitAction.
+      const portName = key.slice(0, key.length - PORT_SUFFIX.length);
+      portNums[portName] = value;
+    }
+  }
+  return harden(portNums);
+};
+
+/**
  * @template {unknown} [T=unknown]
  * @param {(req: string) => string} call
  * @param {string} prefix
@@ -179,8 +201,6 @@ export default async function main(
   args,
   { env, homedir, path = nativePath, agcc },
 ) {
-  const portNums = {};
-
   // TODO: use the 'basedir' pattern
 
   const processValue = makeProcessValue({ env, args });
@@ -299,11 +319,9 @@ export default async function main(
   /** @type {((obj: object) => void) | undefined} */
   let writeSlogObject;
 
-  // In the past, storagePort could change with every message. It's defined out
-  // here so 'sendToChainStorage' can close over the single mutable instance,
-  // when we updated the 'portNums.storage' value each time toSwingSet was called.
   async function launchAndInitializeSwingSet(initAction) {
     const { XSNAP_KEEP_SNAPSHOTS, NODE_HEAP_SNAPSHOTS = -1 } = env;
+    const portNums = extractPortNums(initAction);
 
     /** @type {CosmosSwingsetConfig} */
     const swingsetConfig = harden(initAction.resolvedConfig || {});
@@ -736,24 +754,7 @@ export default async function main(
 
     switch (action.type) {
       case ActionType.AG_COSMOS_INIT: {
-        // console.error('got AG_COSMOS_INIT', action);
-
         !blockingSend || Fail`Swingset already initialized`;
-
-        // Capture "port numbers" for communicating with cosmos modules.
-        for (const [key, value] of Object.entries(action)) {
-          const portAlias = CosmosInitKeyToBridgeId[key];
-          if (portAlias) {
-            // Use the alias if it exists.
-            portNums[portAlias] = value;
-          } else if (key.endsWith(PORT_SUFFIX)) {
-            // Anything else that ends in the suffix is assumed to be a port
-            // number, as described in app.go/cosmosInitAction.
-            const portName = key.slice(0, key.length - PORT_SUFFIX.length);
-            portNums[portName] = value;
-          }
-        }
-        harden(portNums);
 
         // Ensure that initialization has completed.
         blockingSend = await launchAndInitializeSwingSet(action);
