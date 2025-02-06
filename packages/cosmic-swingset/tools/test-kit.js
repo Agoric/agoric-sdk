@@ -36,30 +36,28 @@ const stripUndefined = obj =>
   );
 
 /** @type {InitMsg} */
-export const defaultInitMessage = harden(
-  makeInitMsg({
-    type: SwingsetMessageType.AG_COSMOS_INIT,
-    blockHeight: 100,
-    blockTime: Math.floor(Date.parse('2020-01-01T00:00Z') / 1000),
-    chainID: 'localtest',
-    params: DEFAULT_SIM_SWINGSET_PARAMS,
-    supplyCoins: [],
+export const defaultInitMessage = harden({
+  type: SwingsetMessageType.AG_COSMOS_INIT,
+  blockHeight: 100,
+  blockTime: Math.floor(Date.parse('2020-01-01T00:00Z') / 1000),
+  chainID: 'localtest',
+  params: DEFAULT_SIM_SWINGSET_PARAMS,
+  supplyCoins: [],
 
-    // cosmos-sdk module port mappings are generally ignored in testing, but
-    // relevant in live blockchains.
-    // Include them with unpredictable values.
-    ...Object.fromEntries(
-      Object.entries({
-        storagePort: 0,
-        swingsetPort: 0,
-        vbankPort: 0,
-        vibcPort: 0,
-      })
-        .sort(() => Math.random() - 0.5)
-        .map(([name, _zero], i) => [name, i + 1]),
-    ),
-  }),
-);
+  // cosmos-sdk module port mappings are generally ignored in testing, but
+  // relevant in live blockchains.
+  // Include them with unpredictable values.
+  ...Object.fromEntries(
+    Object.entries({
+      storagePort: 0,
+      swingsetPort: 0,
+      vbankPort: 0,
+      vibcPort: 0,
+    })
+      .sort(() => Math.random() - 0.5)
+      .map(([name, _zero], i) => [name, i + 1]),
+  ),
+});
 /** @type {InitMsg} */
 export const defaultBootstrapMessage = harden({
   ...deepCopyJsonable(defaultInitMessage),
@@ -247,7 +245,7 @@ export const makeCosmicSwingsetTestKit = async (
     replayChainSends,
     bridgeOutbound: receiveBridgeSend,
     vatconfig: config,
-    argv: { bootMsg: initMessage },
+    argv: { bootMsg: makeInitMsg(initMessage) },
     env,
     debugName,
     slogSender,
