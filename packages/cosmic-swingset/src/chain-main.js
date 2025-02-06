@@ -22,7 +22,11 @@ import {
   exportMailbox,
 } from '@agoric/swingset-vat/src/devices/mailbox/mailbox.js';
 
-import { makeSlogSender, tryFlushSlogSender } from '@agoric/telemetry';
+import {
+  getTelemetryProviders,
+  makeSlogSender,
+  tryFlushSlogSender,
+} from '@agoric/telemetry';
 
 import {
   makeChainStorageRoot,
@@ -44,7 +48,6 @@ import {
 } from './helpers/bufferedStorage.js';
 import stringify from './helpers/json-stable-stringify.js';
 import { launch } from './launch-chain.js';
-import { getTelemetryProviders } from './kernel-stats.js';
 import { makeProcessValue } from './helpers/process-value.js';
 import {
   spawnSwingStoreExport,

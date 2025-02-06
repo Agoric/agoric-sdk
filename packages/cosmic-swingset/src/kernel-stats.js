@@ -1,9 +1,5 @@
 // @ts-check
-import {
-  ExplicitBucketHistogramAggregation,
-  MeterProvider,
-  View,
-} from '@opentelemetry/sdk-metrics';
+import { MeterProvider } from '@opentelemetry/sdk-metrics';
 
 import { Fail } from '@endo/errors';
 import { isNat } from '@endo/nat';
@@ -14,8 +10,6 @@ import {
   KERNEL_STATS_SUM_METRICS,
   KERNEL_STATS_UPDOWN_METRICS,
 } from '@agoric/swingset-vat/src/kernel/metrics.js';
-
-import { getTelemetryProviders as getTelemetryProvidersOriginal } from '@agoric/telemetry';
 
 import v8 from 'node:v8';
 import process from 'node:process';
@@ -132,33 +126,8 @@ const recordToKey = record =>
     Object.entries(record).sort(([ka], [kb]) => (ka < kb ? -1 : 1)),
   );
 
-/**
- * Return an array of Views defining explicit buckets for Histogram instruments
- * to which we record measurements.
- */
-export function getMetricsProviderViews() {
-  return Object.entries(HISTOGRAM_METRICS).map(
-    ([instrumentName, { boundaries }]) =>
-      // TODO: Add `instrumentType: InstrumentType.HISTOGRAM` and `meterName`
-      // filters (the latter of which should be a parameter of the exported
-      // function).
-      new View({
-        instrumentName,
-        aggregation: new ExplicitBucketHistogramAggregation([...boundaries]),
-      }),
-  );
-}
-
 export function makeDefaultMeterProvider() {
-  return new MeterProvider({ views: getMetricsProviderViews() });
-}
-
-/** @param {Omit<NonNullable<Parameters<typeof getTelemetryProvidersOriginal>[0]>, 'views'>} [powers] */
-export function getTelemetryProviders(powers = {}) {
-  return getTelemetryProvidersOriginal({
-    ...powers,
-    views: getMetricsProviderViews(),
-  });
+  return new MeterProvider();
 }
 
 /**
@@ -166,8 +135,9 @@ export function getTelemetryProviders(powers = {}) {
  * @param {string} name
  */
 function createHistogram(metricMeter, name) {
-  const { description } = HISTOGRAM_METRICS[name] || {};
-  return metricMeter.createHistogram(name, { description });
+  const { description, boundaries } = HISTOGRAM_METRICS[name] || {};
+  const advice = boundaries && { explicitBucketBoundaries: boundaries };
+  return metricMeter.createHistogram(name, { description, advice });
 }
 
 /**
