@@ -664,7 +664,7 @@ test.serial('iterate simulation several times', async t => {
 
     // force GC and prune vstorage at regular intervals
     if (ix % 4 === 0) {
-      await doCoreEval('@agoric/fast-usdc/src/delete-completed-txs.js');
+      await doCoreEval('@agoric/fast-usdc/scripts/delete-completed-txs.js');
       controller.reapAllVats();
       await controller.run();
       const { kernelTable } = controller.dump();
