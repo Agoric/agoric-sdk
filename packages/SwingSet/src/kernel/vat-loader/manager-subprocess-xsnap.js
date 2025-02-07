@@ -252,6 +252,7 @@ export function makeXsSubprocessFactory({
         const uncompressedSizeDelta =
           uncompressedSizeLoaded &&
           metrics.uncompressedSize - uncompressedSizeLoaded;
+        uncompressedSizeLoaded = snapshotResults.uncompressedSize;
         kernelSlog.write({
           type: 'heap-snapshot-save',
           vatID,
@@ -265,7 +266,7 @@ export function makeXsSubprocessFactory({
       };
 
       if (!restartWorker) {
-        return saveSnapshot(vatID, snapPos, snapshotStream);
+        return saveSnapshot();
       }
 
       /** @type {AsyncGenerator<Uint8Array, void, void>[]} */
@@ -291,9 +292,8 @@ export function makeXsSubprocessFactory({
             snapshotDescription,
           },
         }),
-        saveSnapshot(vatID, snapPos, snapStoreSaveStream),
+        saveSnapshot(),
       ]);
-      uncompressedSizeLoaded = snapshotResults.uncompressedSize;
       await closeP;
 
       /** @type {Partial<import('@agoric/swing-store').SnapshotInfo>} */
