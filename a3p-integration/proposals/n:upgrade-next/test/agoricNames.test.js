@@ -70,9 +70,9 @@ import { getBalances, listVaults } from './test-lib/utils.js';
 import { walletUtils } from './test-lib/index.js';
 
 const WRITE_AGORIC_NAMES_DIR = 'agoricNamesCoreEvals/writeToAgoricNames';
-const ADD_USD_OLIVES_DIR = 'agoricNamesCoreEvals/addUsdOlives';
+const ADD_USD_OLIVES_DIR = 'generated/agoricNamesCoreEvals/addUsdOlives';
 const DEPOSIT_USD_OLIVES_DIR = 'agoricNamesCoreEvals/depositUsdOlives';
-const PUBLISH_TEST_INFO_DIR = 'agoricNamesCoreEvals/publishTestInfo';
+const PUBLISH_TEST_INFO_DIR = 'generated/agoricNamesCoreEvals/publishTestInfo';
 const WRITE_TEST_INFO_DIR = 'agoricNamesCoreEvals/writeToTestInfo';
 
 const makeWaitUntilKeyFound = (keyFinder, vstorage) => (path, targetKey) =>

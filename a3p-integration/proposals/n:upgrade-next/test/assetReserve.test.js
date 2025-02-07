@@ -22,6 +22,7 @@ import {
   waitUntilContractDeployed,
 } from '@agoric/client-utils';
 
+const ADD_PSM_DIR = 'generated/addUsdLemons';
 const ADD_COLLATERAL = 'addCollateral';
 
 const ambientAuthority = {
@@ -53,8 +54,7 @@ test.serial('add Collateral to reserve', async t => {
   // @ts-expect-error casting
   const { vstorageKit } = t.context;
 
-  // USD_LEMONS introduced in provisionPool test
-  // await evalBundles(ADD_PSM_DIR);
+  await evalBundles(ADD_PSM_DIR);
   await waitUntilContractDeployed('psm-IST-USD_LEMONS', ambientAuthority, {
     errorMessage: 'psm-IST-USD_LEMONS instance not observed.',
   });

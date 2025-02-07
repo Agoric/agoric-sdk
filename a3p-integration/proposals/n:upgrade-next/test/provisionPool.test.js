@@ -55,7 +55,6 @@ import { getIncarnationFromDetails } from './test-lib/utils.js';
 
 const PROVISIONING_POOL_ADDR = 'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346';
 
-const ADD_PSM_DIR = 'addUsdLemons';
 const DEPOSIT_USD_LEMONS_DIR = 'depositUSD-LEMONS';
 const NULL_UPGRADE_PP_DIR = 'nullUpgradePP';
 
@@ -109,8 +108,8 @@ test.serial(
       { errorMessage: 'Provision pool not able to swap USDC_axl for IST.' },
     );
 
-    // Introduce USD_LEMONS
-    await evalBundles(ADD_PSM_DIR);
+    // agoricNames already added USD_LEMONS
+    // await evalBundles(ADD_PSM_DIR);
     await waitUntilContractDeployed('psm-IST-USD_LEMONS', ambientAuthority, {
       errorMessage: 'psm-IST-USD_LEMONS instance not observed.',
     });

@@ -17,7 +17,7 @@ test('verify mintHolder contract upgrade', async t => {
 
   let assetList = await getAssetList();
   t.log('List of mintHolder vats being upgraded: ', assetList);
-  // FastUSDC doesn't have a contractKit indexed by its label
+  // The FastLP mint is not in a mintHolder; it's a ZCFMint from the FastUSDC contract
   const assetListNoFastUSDC = assetList.filter(x => x.label !== 'FastLP');
   await mintPayment(t, receiver, assetListNoFastUSDC, 10);
 

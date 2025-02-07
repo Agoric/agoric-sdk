@@ -8,9 +8,9 @@
     },
     "type": "Software Upgrade Proposal",
     "sdk-generate": [
-      "testing/add-USD-LEMONS.js addUsdLemons",
-      "testing/add-USD-OLIVES.js agoricNamesCoreEvals/addUsdOlives",
-      "testing/publish-test-info.js agoricNamesCoreEvals/publishTestInfo"
+      "testing/add-USD-LEMONS.js test/generated/addUsdLemons",
+      "testing/add-USD-OLIVES.js test/generated/agoricNamesCoreEvals/addUsdOlives",
+      "testing/publish-test-info.js test/generated/agoricNamesCoreEvals/publishTestInfo"
     ]
   },
   "type": "module",

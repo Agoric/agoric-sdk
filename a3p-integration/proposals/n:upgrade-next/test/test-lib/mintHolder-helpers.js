@@ -62,6 +62,12 @@ export const mintPayment = async (t, address, assetList, value) => {
 
   for (const asset of assetList) {
     const { label, denom } = asset;
+
+    // XXX I don't know what asset shows up like this, but let's ignore it.
+    if (!label) {
+      console.log('MINT PAYMENT  undef', asset);
+      continue;
+    }
     const scaled = BigInt(parseInt(value, 10) * 1_000_000).toString();
 
     await replaceTemplateValuesInFile(`${SUBMISSION_DIR}/send-script`, {
