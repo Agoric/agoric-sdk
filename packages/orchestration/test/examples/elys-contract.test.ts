@@ -15,7 +15,7 @@ const nodeRequire = createRequire(import.meta.url);
 
 const contractName = 'elysStrideContract';
 const contractFile = nodeRequire.resolve('../../src/examples/elys-contract.js');
-type StartFn = typeof import('../../src/examples/elys-contract.js').start;
+type StartFn = typeof import('../../src/examples/elys.contract.js').start;
 
 test('start Elys-stride contract', async t => {
   const common = await commonSetup(t);
