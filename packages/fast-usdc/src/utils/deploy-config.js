@@ -46,6 +46,169 @@ const agoricAssetInfo = defaultAssetInfo.filter(
 const DepositForBurnEvent =
   'DepositForBurn(uint64,address,uint256,address,bytes32,uint32,bytes32,bytes32)';
 
+/** @satisfies {Record<string, CosmosChainInfo & Passable>} */
+const devnetChainInfo = {
+  agoric: {
+    bech32Prefix: 'agoric',
+    chainId: 'agoricdev-23',
+    stakingTokens: [{ denom: 'ubld' }],
+    icqEnabled: false,
+    connections: {
+      'grand-1': {
+        id: 'connection-85',
+        client_id: '07-tendermint-131',
+        counterparty: {
+          client_id: '07-tendermint-387',
+          connection_id: 'connection-351',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-64',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-304',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+      'osmo-test-5': {
+        id: 'connection-81',
+        client_id: '07-tendermint-127',
+        counterparty: {
+          client_id: '07-tendermint-4326',
+          connection_id: 'connection-3786',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-61',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-10041',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+    },
+  },
+  noble: {
+    bech32Prefix: 'noble',
+    chainId: 'grand-1',
+    icqEnabled: false,
+    connections: {
+      'agoricdev-23': {
+        id: 'connection-351',
+        client_id: '07-tendermint-387',
+        counterparty: {
+          client_id: '07-tendermint-131',
+          connection_id: 'connection-85',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-304',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-64',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+      'osmo-test-5': {
+        id: 'connection-31',
+        client_id: '07-tendermint-42',
+        counterparty: {
+          client_id: '07-tendermint-1374',
+          connection_id: 'connection-1275',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-22',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-4280',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+    },
+  },
+  osmosis: {
+    bech32Prefix: 'osmo',
+    chainId: 'osmo-test-5',
+    stakingTokens: [
+      {
+        denom: 'uosmo',
+      },
+    ],
+    icqEnabled: true,
+    connections: {
+      'agoricdev-23': {
+        id: 'connection-3786',
+        client_id: '07-tendermint-4326',
+        counterparty: {
+          client_id: '07-tendermint-127',
+          connection_id: 'connection-81',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-10041',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-61',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+      'grand-1': {
+        id: 'connection-1275',
+        client_id: '07-tendermint-1374',
+        counterparty: {
+          client_id: '07-tendermint-42',
+          connection_id: 'connection-31',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-4280',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-22',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+    },
+  },
+};
+harden(devnetChainInfo);
+
+/** @type {[Denom, DenomDetail & { brandKey?: string}][]} */
+export const devnetAssetInfo = [
+  ['uusdc', { baseName: 'noble', chainName: 'noble', baseDenom: 'uusdc' }],
+  [
+    `ibc/${denomHash({ denom: 'uusdc', channelId: devnetChainInfo.agoric.connections['grand-1'].transferChannel.channelId })}`,
+    {
+      baseName: 'noble',
+      chainName: 'agoric',
+      baseDenom: 'uusdc',
+      brandKey: 'USDC',
+    },
+  ],
+  [
+    `ibc/${denomHash({ denom: 'uusdc', channelId: devnetChainInfo.osmosis.connections['grand-1'].transferChannel.channelId })}`,
+    {
+      baseName: 'noble',
+      chainName: 'osmosis',
+      baseDenom: 'uusdc',
+    },
+  ],
+];
+harden(devnetAssetInfo);
+
 /**
  * @type {Record<string, Pick<FastUSDCConfig, 'oracles' | 'feedPolicy' | 'chainInfo' | 'assetInfo' >>}
  *
@@ -108,13 +271,11 @@ export const configurations = {
       // grand-1->agoricdev-23: channel-304
       nobleAgoricChannelId: 'channel-304',
       nobleDomainId: 4,
-      chainPolicies: ChainPolicies.TESTNET,
+      chainPolicies: ChainPolicies.TESTNET, // TODO: devnet chainPolicies
       eventFilter: DepositForBurnEvent,
     },
-    chainInfo: /** @type {Record<string, CosmosChainInfo & Passable>} */ (
-      withChainCapabilities(fetchedChainInfo) // TODO: use devnet values
-    ),
-    assetInfo: defaultAssetInfo, // TODO: use emerynet values
+    chainInfo: devnetChainInfo,
+    assetInfo: devnetAssetInfo,
   },
   EMERYNET: {
     oracles: {
