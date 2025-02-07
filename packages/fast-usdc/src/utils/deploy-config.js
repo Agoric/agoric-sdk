@@ -98,8 +98,11 @@ export const configurations = {
   },
   DEVNET: {
     oracles: {
-      jcv1: 'agoric1f6au5xffuuph97w85zg9qf062gddsnw0sx9xj3',
-      jcv2: 'agoric1vxygktgl0zd7aznq9kw2msdx6gfyz0t0wjreag',
+      gov1: 'agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce',
+      gov2: 'agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang',
+      gov3: 'agoric1w8wktaur4zf8qmmtn3n7x3r0jhsjkjntcm3u6h',
+      // jcv1: 'agoric1f6au5xffuuph97w85zg9qf062gddsnw0sx9xj3',
+      // jcv2: 'agoric1vxygktgl0zd7aznq9kw2msdx6gfyz0t0wjreag',
     },
     feedPolicy: {
       // grand-1->agoricdev-23: channel-304
