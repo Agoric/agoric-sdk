@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.35.0-u18a.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.35.0-u18.5...@agoric/cosmos@0.35.0-u18a.0) (2025-02-07)
+
+
+### Features
+
+* **cosmos:** Next upgrade is agoric-upgrade-18a ([b87159a](https://github.com/Agoric/agoric-sdk/commit/b87159ad77c3c13ae0c2123cb1373d59463f68ef))
+
+
+### Bug Fixes
+
+* **vtransfer:** some tweaks for ack handling ([a6d295a](https://github.com/Agoric/agoric-sdk/commit/a6d295a730126580262f96c383a4c69412a2e54e))
+
+
+
 ## [0.35.0-u18.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.35.0-u18.4...@agoric/cosmos@0.35.0-u18.5) (2024-12-24)
 
 

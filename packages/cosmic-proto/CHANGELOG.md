@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.0-u18a.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-proto@0.5.0-u18.5...@agoric/cosmic-proto@0.5.0-u18a.0) (2025-02-07)
+
+**Note:** Version bump only for package @agoric/cosmic-proto
+
+
+
+
+
 ## [0.5.0-u18.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-proto@0.5.0-u18.4...@agoric/cosmic-proto@0.5.0-u18.5) (2024-12-24)
 
 
