@@ -305,7 +305,7 @@ export interface NobleMethods {
   /** burn USDC on Noble and mint on a destination chain via CCTP */
   depositForBurn: (
     mintRecipient: ChainAddress,
-    amount: AmountArg,
+    amount: AmountArg, // is bigint better?
   ) => Promise<void>;
   // consider including `registerForwardingAccount` (`MsgRegisterAccount`), so a contract can create its own forwarding address
   // Requires `noble/forwarding` protos: https://github.com/noble-assets/forwarding/blob/main/proto/noble/forwarding/v1/tx.proto
