@@ -1,5 +1,5 @@
 /**
- * @file pure types types, no runtime, ignored by Ava
+ * @file pure types, no runtime, ignored by Ava
  */
 
 import type { HostInterface, HostOf } from '@agoric/async-flow';
@@ -322,6 +322,32 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   // Verify delegate is available via stakingTokens parameter
   expectType<
     (validator: CosmosValidatorAddress, amount: AmountArg) => Promise<void>
+  >(account.delegate);
+
+  expectType<(destination, amount: AmountArg) => Promise<void>>(
+    // @ts-expect-error `depositForBurn` only available for noble
+    account.depositForBurn,
+  );
+}
+
+// Test NobleAccountMethods
+{
+  type ChainFacade = Chain<
+    CosmosChainInfo & {
+      chainId: 'noble-1';
+    }
+  >;
+  const remoteChain: ChainFacade = null as any;
+  const account = await remoteChain.makeAccount();
+
+  expectType<(destination, amount: AmountArg) => Promise<void>>(
+    account.depositForBurn,
+  );
+
+  // Verify delegate is not available (no stakingTokens parameter)
+  expectType<
+    (validator: CosmosValidatorAddress, amount: AmountArg) => Promise<void>
+    // @ts-expect-error StakingMethods not available on noble
   >(account.delegate);
 }
 

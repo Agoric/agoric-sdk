@@ -18,6 +18,7 @@ import type {
   LocalAccountMethods,
   ICQQueryFunction,
   KnownNamespace,
+  NobleMethods,
 } from './types.js';
 import type { ResolvedContinuingOfferResult } from './utils/zoe-tools.js';
 
@@ -132,7 +133,9 @@ export type OrchestrationAccount<CI extends Partial<ChainInfo>> =
     (CI extends { chainId: string }
       ? CI['chainId'] extends `agoric${string}`
         ? LocalAccountMethods
-        : CosmosChainAccountMethods<CI>
+        : CI['chainId'] extends `noble${string}`
+          ? CosmosChainAccountMethods<CI> & NobleMethods
+          : CosmosChainAccountMethods<CI>
       : object);
 
 /**

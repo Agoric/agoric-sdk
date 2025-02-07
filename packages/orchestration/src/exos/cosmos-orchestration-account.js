@@ -1,5 +1,6 @@
 /** @file Use-object for the owner of a staking account */
 import { toRequestQueryJson } from '@agoric/cosmic-proto';
+import { MsgDepositForBurn } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
 import {
   QueryAllBalancesRequest,
   QueryAllBalancesResponse,
@@ -64,10 +65,14 @@ import {
 } from '../utils/cosmos.js';
 import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
 import { makeTimestampHelper } from '../utils/time.js';
+import {
+  leftPadEthAddressTo32Bytes,
+  parseAccountId,
+} from '../utils/address.js';
 
 /**
  * @import {HostOf} from '@agoric/async-flow';
- * @import {AmountArg, IcaAccount, CosmosChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, StakingAccountQueries, OrchestrationAccountCommon, CosmosRewardsResponse, IBCConnectionInfo, IBCMsgTransferOptions, ChainHub, CosmosDelegationResponse} from '../types.js';
+ * @import {AmountArg, IcaAccount, CosmosChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, StakingAccountQueries, NobleMethods, OrchestrationAccountCommon, CosmosRewardsResponse, IBCConnectionInfo, IBCMsgTransferOptions, ChainHub, CosmosDelegationResponse, CaipChainId} from '../types.js';
  * @import {ContractMeta, Invitation, OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
@@ -139,8 +144,14 @@ const stakingAccountQueriesMethods = {
   getRewards: M.call().returns(VowShape),
 };
 
+/** @see {NobleMethods} */
+const nobleMethods = {
+  depositForBurn: M.call(M.string(), AmountArgShape).returns(VowShape),
+};
+
 /** @see {OrchestrationAccountCommon} */
 export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
+  ...nobleMethods,
   ...orchestrationAccountMethods,
   ...stakingAccountActionsMethods,
   ...stakingAccountQueriesMethods,
@@ -208,7 +219,7 @@ export const prepareCosmosOrchestrationAccountKit = (
         amountToCoin: M.call(AmountArgShape).returns(M.record()),
       }),
       returnVoidWatcher: M.interface('returnVoidWatcher', {
-        onFulfilled: M.call(M.or(M.string(), M.record()))
+        onFulfilled: M.call(M.any())
           .optional(M.arrayOf(M.undefined()))
           .returns(M.undefined()),
       }),
@@ -1127,6 +1138,52 @@ export const prepareCosmosOrchestrationAccountKit = (
           return asVow(() =>
             watch(E(this.facets.helper.owned()).executeEncodedTx(msgs, opts)),
           );
+        },
+        /**
+         * @type {HostOf<NobleMethods['depositForBurn']>}
+         *
+         *   TODO: support MsgDepositForBurnWithCaller
+         *   (https://github.com/Agoric/agoric-private/issues/288)
+         *   (Functionally, only destinationCaller can call MsgReceive on the
+         *   destination chain to mint)
+         */
+        depositForBurn(destination, amount) {
+          return asVow(() => {
+            trace('depositForBurn', { destination, amount });
+            const { helper } = this.facets;
+            const { chainAddress } = this.state;
+
+            const parts = parseAccountId(destination);
+            /** @type {CaipChainId} */
+            const chainId = `${parts.namespace}:${parts.reference}`;
+            const mintRecipient = leftPadEthAddressTo32Bytes(
+              parts.accountAddress,
+            );
+
+            const chainInfo = chainHub.getChainInfoByChainId(chainId);
+            typeof chainInfo.cctpDestinationDomain === 'number' ||
+              Fail`${q(chainId)} does not have "cctpDestinationDomain" set in ChainInfo`;
+            const { cctpDestinationDomain } = chainInfo;
+
+            // see https://github.com/circlefin/noble-cctp/blob/master/examples/depositForBurn.ts#L52-L70
+            chainInfo.namespace === 'eip155' ||
+              Fail`Only Ethereum supported currently`;
+
+            const msg = MsgDepositForBurn.toProtoMsg({
+              amount: helper.amountToCoin(amount)?.amount,
+              from: chainAddress.value,
+              // @ts-expect-error Verified it's a number just above
+              destinationDomain: cctpDestinationDomain,
+              mintRecipient,
+              // safe to hardcode since `uusdc` is the only asset supported by CCTP
+              burnToken: 'uusdc',
+            });
+
+            return watch(
+              E(helper.owned()).executeEncodedTx([Any.toJSON(msg)]),
+              this.facets.returnVoidWatcher,
+            );
+          });
         },
       },
     },
