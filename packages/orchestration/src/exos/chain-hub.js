@@ -15,6 +15,7 @@ import {
   IBCConnectionInfoShape,
   AccountArgShape,
   ChainInfoShape,
+  CosmosChainInfoShape,
 } from '../typeGuards.js';
 import { getBech32Prefix, parseAccountId } from '../utils/address.js';
 
@@ -207,6 +208,7 @@ const ChainHubI = M.interface('ChainHub', {
   registerChain: M.call(M.string(), ChainInfoShape).returns(),
   updateChain: M.call(M.string(), ChainInfoShape).returns(),
   getChainInfo: M.call(M.string()).returns(VowShape),
+  getChainInfoByChainId: M.call(M.string()).returns(CosmosChainInfoShape),
   registerConnection: M.call(
     M.string(),
     M.string(),
@@ -280,6 +282,11 @@ export const makeChainHub = (
     keyShape: M.string(),
     valueShape: M.string(),
   });
+  /** @type {MapStore<string, string>} */
+  const chainIdToChainName = zone.mapStore('chainIdToChainName', {
+    keyShape: M.string(),
+    valueShape: M.string(),
+  });
 
   /**
    * @param {Denom} denom - from perspective of the src/holding chain
@@ -317,6 +324,7 @@ export const makeChainHub = (
         // TODO consider makeAtomicProvider for vows
         if (!chainInfos.has(chainName)) {
           chainInfos.init(chainName, chainInfo);
+          chainIdToChainName.init(chainInfo.chainId, chainName);
           if (chainInfo.bech32Prefix) {
             bech32PrefixToChainName.init(chainInfo.bech32Prefix, chainName);
           }
@@ -417,6 +425,12 @@ export const makeChainHub = (
      */
     registerChain(name, chainInfo) {
       chainInfos.init(name, chainInfo);
+      const chainId =
+        'chainId' in chainInfo ? chainInfo.chainId : chainInfo.reference;
+      if (!chainIdToChainName.has(chainId)) {
+        chainIdToChainName.init(chainId, name);
+      }
+
       if (/** @type {CosmosChainInfo} */ (chainInfo).bech32Prefix) {
         bech32PrefixToChainName.init(
           /** @type {CosmosChainInfo} */ (chainInfo).bech32Prefix,
@@ -463,6 +477,17 @@ export const makeChainHub = (
       }
 
       return lookupChainInfo(chainName);
+    },
+    /** @param {string} chainId */
+    getChainInfoByChainId(chainId) {
+      // Either from registerChain or memoized remote lookup()
+      chainIdToChainName.has(chainId) ||
+        Fail`Chain Info not found for ${q(chainId)}`;
+      const chainName = chainIdToChainName.get(chainId);
+      chainInfos.has(chainName) || Fail`Chain Info not found for ${q(chainId)}`;
+      return /** @type {ActualChainInfo<chainName>} */ (
+        chainInfos.get(chainName)
+      );
     },
     /**
      * @param {string} primaryChainId
