@@ -193,6 +193,9 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
       await publishAddresses(storageNode, addresses);
       return addresses;
     },
+    deleteCompletedTxs() {
+      return statusManager.deleteCompletedTxs();
+    },
   });
 
   const publicFacet = zone.exo('Fast USDC Public', undefined, {
