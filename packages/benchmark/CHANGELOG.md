@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.1.1-u18a.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/benchmark@0.1.1-u18.6...@agoric/benchmark@0.1.1-u18a.0) (2025-02-07)
+
+**Note:** Version bump only for package @agoric/benchmark
+
+
+
+
+
 ### [0.1.1-u18.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/benchmark@0.1.1-u18.5...@agoric/benchmark@0.1.1-u18.6) (2024-12-24)
 
 **Note:** Version bump only for package @agoric/benchmark

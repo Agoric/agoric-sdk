@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.0-u18a.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet@0.19.0-u18.1...@agoric/wallet@0.19.0-u18a.0) (2025-02-07)
+
+**Note:** Version bump only for package @agoric/wallet
+
+
+
+
+
 ## [0.19.0-u18.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet@0.19.0-u18.0...@agoric/wallet@0.19.0-u18.1) (2024-12-24)
 
 ## 0.35.0-u18.4 (2024-12-17)
