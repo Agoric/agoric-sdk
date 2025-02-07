@@ -19,12 +19,13 @@ import { denomHash } from '../utils/denomHash.js';
  * @param {{
  *   chainNames: string[];
  *   supportedHostChains: MapStore<any, any>;
+ *   stDenomOnElysTohostToAgoricChannelMap: MapStore<any, any>;
  * }} offerArgs
  */
 export const makeICAHookAccounts = async (
   orch,
   { makeStrideStakingTap, chainHub },
-  { chainNames, supportedHostChains },
+  { chainNames, supportedHostChains,stDenomOnElysTohostToAgoricChannelMap },
 ) => {
   const allRemoteChains = await Promise.all(
     chainNames.map(n => orch.getChain(n)),
@@ -53,10 +54,6 @@ export const makeICAHookAccounts = async (
   const { transferChannel: transferChannelStrideElys } =
     await chainHub.getConnectionInfo(strideChainId, elysChainId);
 
-  /** @type {MapStore<string, string>} */
-  const stDenomOnElysTohostToAgoricChannelMap = makeScalarMapStore(
-    'stDenomOnElysToHostChannelMap',
-  );
   // ICA account on all the supported host chains
   for (const [index, remoteChain] of allRemoteChains.entries()) {
     const chainInfo = await remoteChain.getChainInfo();

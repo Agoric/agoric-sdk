@@ -39,11 +39,13 @@ const contract = async (
   });
 
   const passablesupportedHostChains = zone.mapStore('supportedHostChains');
+  const stDenomOnElysTohostToAgoricChannelMap = zone.mapStore('stDenomOnElysToHostChannelMap');
 
   const icaAndLocalAccount = zone.makeOnce('icaAndLocalAccount', _key =>
     makeICAHookAccounts({
       chainNames: allowedChains,
-      supportedHostChains: passablesupportedHostChains
+      supportedHostChains: passablesupportedHostChains,
+      stDenomOnElysTohostToAgoricChannelMap,
     }),
   );
 

@@ -10,7 +10,7 @@ import {
   MsgLiquidStake,
   MsgLiquidStakeResponse,
   MsgRedeemStake,
-} from '../../../cosmic-proto/dist/codegen/stride/stakeibc/tx.js';
+} from '../../cosmic-proto/dist/codegen/stride/stakeibc/tx.js';
 import { decodeBase64 } from '@endo/base64';
 import {
   decodeBech32,
@@ -77,7 +77,7 @@ const StakingTapStateShape = {
   supportedHostChains: M.remotable('MapStore'),
   elysToAgoricChannel: M.string(),
   AgoricToElysChannel: M.string(),
-  stDenomOnElysTohostToAgoricChannelMap: M.remotable('DenomToChannelMap'),
+  stDenomOnElysTohostToAgoricChannelMap: M.remotable('stDenomOnElysToHostChannelMap'),
   elysChainId: M.string(),
 };
 harden(StakingTapStateShape);
