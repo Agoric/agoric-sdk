@@ -469,9 +469,6 @@ export default async function main(
       return pathname;
     };
 
-    // Delay makeShutdown to override the golang interrupts
-    const { registerShutdown } = makeShutdown();
-
     const { metricsProvider } = getTelemetryProviders({
       console,
       env,
@@ -561,7 +558,7 @@ export default async function main(
       ? makeArchiveTranscript(vatTranscriptArchiveDir, fsPowers)
       : undefined;
 
-    const s = await launch({
+    return launch({
       actionQueueStorage,
       highPriorityQueueStorage,
       kernelStateDBDir: stateDBDir,
@@ -585,25 +582,6 @@ export default async function main(
       afterCommitCallback,
       swingsetConfig,
     });
-
-    const { blockingSend, shutdown } = s;
-    ({ writeSlogObject, savedChainSends } = s);
-
-    let pendingBlockingSend = Promise.resolve();
-
-    registerShutdown(async interrupted => {
-      await Promise.all([
-        interrupted && pendingBlockingSend.then(shutdown),
-        discardStateSyncExport(),
-      ]);
-    });
-
-    const blockingSendSpy = async action => {
-      const result = blockingSend(action);
-      pendingBlockingSend = Promise.resolve(result).then(ignore, ignore);
-      return result;
-    };
-    return blockingSendSpy;
   }
 
   /** @type {EReturn<typeof launch>['blockingSend'] | undefined} */
@@ -756,8 +734,25 @@ export default async function main(
       case ActionType.AG_COSMOS_INIT: {
         !blockingSend || Fail`Swingset already initialized`;
 
-        // Ensure that initialization has completed.
-        blockingSend = await launchAndInitializeSwingSet(action);
+        const s = await launchAndInitializeSwingSet(action);
+        const { blockingSend: sendToSwingset, shutdown } = s;
+        ({ writeSlogObject, savedChainSends } = s);
+
+        // Wrap `blockingSend` with a spy for supporting clean shutdowns.
+        const { registerShutdown } = makeShutdown();
+        let pendingBlockingSend = Promise.resolve();
+        registerShutdown(async interrupted => {
+          await Promise.all([
+            interrupted && pendingBlockingSend.then(shutdown),
+            discardStateSyncExport(),
+          ]);
+        });
+        // eslint-disable-next-line no-shadow
+        blockingSend = async action => {
+          const result = sendToSwingset(action);
+          pendingBlockingSend = Promise.resolve(result).then(ignore, ignore);
+          return result;
+        };
 
         return blockingSend(action);
       }
