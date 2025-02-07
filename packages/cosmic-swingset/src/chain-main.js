@@ -276,6 +276,8 @@ export default async function main(
     await exportData?.cleanup?.();
   }
 
+  /** @typedef {[args: Parameters<typeof agcc.send>, ret: ReturnType<typeof agcc.send>]} SavedChainSend */
+  /** @type {SavedChainSend[]} */
   let savedChainSends = [];
 
   // Send a chain downcall, recording what we sent and received.
@@ -302,7 +304,9 @@ export default async function main(
 
     // Just send all the things we saved.
     while (chainSends.length > 0) {
-      const [sendArgs, expectedRet] = chainSends.shift();
+      const [sendArgs, expectedRet] = /** @type {SavedChainSend} */ (
+        chainSends.shift()
+      );
       const actualRet = agcc.send(...sendArgs);
 
       // Enforce that we got back what we expected.
@@ -320,7 +324,7 @@ export default async function main(
   let writeSlogObject;
 
   const launchChain = async initAction => {
-    const { XSNAP_KEEP_SNAPSHOTS, NODE_HEAP_SNAPSHOTS = -1 } = env;
+    const { XSNAP_KEEP_SNAPSHOTS = '', NODE_HEAP_SNAPSHOTS = '-1' } = env;
     const portNums = extractPortNums(initAction);
 
     /** @type {CosmosSwingsetConfig} */
