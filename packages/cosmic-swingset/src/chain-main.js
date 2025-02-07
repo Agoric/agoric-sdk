@@ -197,6 +197,23 @@ const makePrefixedBridgeStorage = (
 };
 
 /**
+ * @param {(req: string) => string} call
+ * @param {string} queuePath
+ */
+export const makeQueueStorage = (call, queuePath) => {
+  const { kvStore, commit, abort } = makeBufferedStorage(
+    makePrefixedBridgeStorage(
+      call,
+      `${queuePath}.`,
+      'setWithoutNotify',
+      x => x,
+      x => x,
+    ),
+  );
+  return harden({ ...kvStore, commit, abort });
+};
+
+/**
  * @param {any} agcc
  * @param {string} stateDBDir
  * @param {object} options
@@ -308,20 +325,12 @@ export const makeLaunchChain = (
         val => stringify(exportMailbox(val)),
       ),
     );
-    const makeQueueStorage = queuePath => {
-      const { kvStore, commit, abort } = makeBufferedStorage(
-        makePrefixedBridgeStorage(
-          sendToChainStorage,
-          `${queuePath}.`,
-          'setWithoutNotify',
-          x => x,
-          x => x,
-        ),
-      );
-      return harden({ ...kvStore, commit, abort });
-    };
-    const actionQueueStorage = makeQueueStorage(STORAGE_PATH.ACTION_QUEUE);
+    const actionQueueStorage = makeQueueStorage(
+      sendToChainStorage,
+      STORAGE_PATH.ACTION_QUEUE,
+    );
     const highPriorityQueueStorage = makeQueueStorage(
+      sendToChainStorage,
       STORAGE_PATH.HIGH_PRIORITY_QUEUE,
     );
     /**
