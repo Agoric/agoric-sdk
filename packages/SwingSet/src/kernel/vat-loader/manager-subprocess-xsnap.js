@@ -258,6 +258,7 @@ export function makeXsSubprocessFactory({
           snapshotID,
           endPosition: snapPos,
           ...metrics,
+          uncompressedSizeDelta,
           restartWorker,
         });
         return results;
