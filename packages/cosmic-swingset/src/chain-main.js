@@ -214,7 +214,8 @@ export default async function main(
   const stateDBDir = `${cosmosHome}/data/agoric`;
   fs.mkdirSync(stateDBDir, { recursive: true });
 
-  // console.log('Have AG_COSMOS', agcc);
+  /** @type {EReturn<typeof launch>['blockingSend'] | undefined} */
+  let blockingSend;
 
   const portHandlers = {};
   let lastPort = 0;
@@ -319,9 +320,6 @@ export default async function main(
       }
     }
   }
-
-  /** @type {((obj: object) => void) | undefined} */
-  let writeSlogObject;
 
   const launchChain = async initAction => {
     const { XSNAP_KEEP_SNAPSHOTS = '', NODE_HEAP_SNAPSHOTS = '-1' } = env;
@@ -588,9 +586,6 @@ export default async function main(
     });
   };
 
-  /** @type {EReturn<typeof launch>['blockingSend'] | undefined} */
-  let blockingSend;
-
   async function handleSwingStoreExport(blockHeight, request, requestArgs) {
     await null;
     switch (request) {
@@ -728,6 +723,9 @@ export default async function main(
         throw Fail`Unknown cosmos snapshot request ${request}`;
     }
   }
+
+  /** @type {((obj: object) => void) | undefined} */
+  let writeSlogObject;
 
   async function toSwingSet(action, _replier) {
     // console.log(`toSwingSet`, action);
