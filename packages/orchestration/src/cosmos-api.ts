@@ -34,6 +34,7 @@ import type {
 } from '@agoric/vats/tools/ibc-utils.js';
 import { PFM_RECEIVER } from './exos/chain-hub.js';
 import type {
+  AccountId,
   AmountArg,
   BaseChainInfo,
   CosmosChainAddress,
@@ -315,6 +316,18 @@ export interface IcaAccount extends IcaAccountMethods {
 /** Methods on chains that support Liquid Staking */
 export interface LiquidStakingMethods {
   liquidStake: (amount: AmountArg) => Promise<void>;
+}
+
+/**
+ * Noble is the gateway to transferring USDC among Cosmos chains. We can
+ * transfer funds from any cosmos account using depositForBurn().
+ */
+export interface NobleMethods {
+  /** burn USDC on Noble and mint on a destination chain via CCTP */
+  depositForBurn: (
+    mintRecipient: AccountId,
+    amount: AmountArg,
+  ) => Promise<void>;
 }
 
 // TODO support StakingAccountQueries

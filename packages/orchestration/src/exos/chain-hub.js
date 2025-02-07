@@ -1,10 +1,12 @@
+import { BrandShape } from '@agoric/ertp/src/typeGuards.js';
 import { Fail, makeError, q } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { BrandShape } from '@agoric/ertp/src/typeGuards.js';
 
 import { VowShape } from '@agoric/vow';
 import {
+  AccountArgShape,
+  ChainInfoShape,
   CoinShape,
   CosmosChainAddressShape,
   DenomAmountShape,
@@ -13,8 +15,6 @@ import {
   ForwardOptsShape,
   IBCChannelIDShape,
   IBCConnectionInfoShape,
-  AccountArgShape,
-  ChainInfoShape,
 } from '../typeGuards.js';
 import { getBech32Prefix } from '../utils/address.js';
 import { chainInfoCaipId } from '../utils/chain-info.js';
@@ -504,14 +504,15 @@ export const makeChainHub = (
     },
     /**
      * @param {CaipChainId} chainId
-     * @returns {ChainInfo | null}
+     * @returns {ChainInfo}
      */
     getChainInfoByChainId(chainId) {
-      if (chainIdToChainName.has(chainId)) {
-        const name = chainIdToChainName.get(chainId);
-        return chainInfos.get(name);
-      }
-      return null;
+      // Either from registerChain or memoized remote lookup()
+      chainIdToChainName.has(chainId) ||
+        Fail`Chain name not found for ${q(chainId)}`;
+      const chainName = chainIdToChainName.get(chainId);
+      chainInfos.has(chainName) || Fail`Chain Info not found for ${q(chainId)}`;
+      return chainInfos.get(chainName);
     },
     /**
      * Register information for a Cosmos chain
