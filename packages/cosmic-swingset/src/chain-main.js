@@ -117,7 +117,7 @@ const validateSwingsetConfig = swingsetConfig => {
  *
  * @param {object} action
  */
-const extractPortNums = action => {
+export const extractPortNums = action => {
   const portNums = {};
   for (const [key, value] of Object.entries(action)) {
     const portAlias = CosmosInitKeyToBridgeId[key];
@@ -223,6 +223,12 @@ export const makeQueueStorage = (call, queuePath) => {
  * @param {import('tmp')} [options.tmp] required to support vatSnapshotArchiveDir/vatTranscriptArchiveDir
  * @param {ReturnType<typeof makeProcessValue>} [options.processValue]
  * @param {() => Promise<void>} [options.readyForCommit]
+ * @param {{
+ *   debugName?: string,
+ *   slogSender?: ERef<EReturn<typeof makeSlogSender>>,
+ *   swingStore?: import('@agoric/swing-store').SwingStore,
+ *   vatconfig?: Parameters<typeof launch>[0]['vatconfig'],
+ * }} [options.testingOverrides]
  */
 export const makeLaunchChain = (
   agcc,
@@ -236,6 +242,7 @@ export const makeLaunchChain = (
     tmp,
     processValue = makeProcessValue({ env, args: [] }),
     readyForCommit,
+    testingOverrides = {},
   },
 ) => {
   /** @typedef {[args: Parameters<typeof agcc.send>, ret: ReturnType<typeof agcc.send>]} SavedChainSend */
@@ -432,11 +439,12 @@ export const makeLaunchChain = (
       serviceName: TELEMETRY_SERVICE_NAME,
     });
 
-    const slogSender = await makeSlogSender({
-      stateDir: stateDBDir,
-      env,
-      serviceName: TELEMETRY_SERVICE_NAME,
-    });
+    const slogSender = await (testingOverrides.slogSender ||
+      makeSlogSender({
+        stateDir: stateDBDir,
+        env,
+        serviceName: TELEMETRY_SERVICE_NAME,
+      }));
 
     const swingStoreTraceFile = processValue.getPath({
       envName: 'SWING_STORE_TRACE',
@@ -518,19 +526,23 @@ export const makeLaunchChain = (
     const s = await launch({
       actionQueueStorage,
       highPriorityQueueStorage,
-      kernelStateDBDir: stateDBDir,
+      swingStore: testingOverrides.swingStore,
+      kernelStateDBDir: testingOverrides.swingStore ? undefined : stateDBDir,
       makeInstallationPublisher,
       mailboxStorage,
       clearChainSends,
       replayChainSends,
       bridgeOutbound: doOutboundBridge,
-      vatconfig: getVatConfig,
+      vatconfig: testingOverrides.vatconfig || getVatConfig,
       argv,
       env,
       verboseBlocks: true,
       metricsProvider,
+      debugName: testingOverrides.debugName,
       slogSender,
-      swingStoreExportCallback,
+      swingStoreExportCallback: testingOverrides.swingStore
+        ? undefined
+        : swingStoreExportCallback,
       swingStoreTraceFile,
       keepSnapshots,
       keepTranscripts,
