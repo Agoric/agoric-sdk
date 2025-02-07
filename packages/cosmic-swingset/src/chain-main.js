@@ -319,7 +319,7 @@ export default async function main(
   /** @type {((obj: object) => void) | undefined} */
   let writeSlogObject;
 
-  async function launchAndInitializeSwingSet(initAction) {
+  const launchChain = async initAction => {
     const { XSNAP_KEEP_SNAPSHOTS, NODE_HEAP_SNAPSHOTS = -1 } = env;
     const portNums = extractPortNums(initAction);
 
@@ -582,7 +582,7 @@ export default async function main(
       afterCommitCallback,
       swingsetConfig,
     });
-  }
+  };
 
   /** @type {EReturn<typeof launch>['blockingSend'] | undefined} */
   let blockingSend;
@@ -734,7 +734,7 @@ export default async function main(
       case ActionType.AG_COSMOS_INIT: {
         !blockingSend || Fail`Swingset already initialized`;
 
-        const s = await launchAndInitializeSwingSet(action);
+        const s = await launchChain(action);
         const { blockingSend: sendToSwingset, shutdown } = s;
         ({ writeSlogObject, savedChainSends } = s);
 
