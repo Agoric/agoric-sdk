@@ -11,9 +11,6 @@ const interfaceTODO = undefined;
  */
 
 /**
- * AutoStakeIt allows users to to create an auto-forwarding address that
- * transfers and stakes tokens on a remote chain when received.
- *
  * To be wrapped with `withOrchestration`.
  *
  * @param {ZCF} _zcf
@@ -63,7 +60,7 @@ const contract = async (
 export const start = withOrchestration(contract);
 harden(start);
 
-/** @typedef {typeof start} AutoStakeItSF */
 
+// TODO: Send these params during initialisation of the contract
 const allowedChains = ['cosmoshub'];
 harden(allowedChains);

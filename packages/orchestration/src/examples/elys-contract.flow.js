@@ -1,4 +1,5 @@
 import { Fail } from '@endo/errors';
+import { makeScalarMapStore } from '@agoric/store';
 import { denomHash } from '../utils/denomHash.js';
 
 /**
@@ -17,95 +18,109 @@ import { denomHash } from '../utils/denomHash.js';
  * }} ctx
  * @param {{
  *   chainNames: string[];
- *  supportedHostChains: MapStore<any, any>
+ *   supportedHostChains: MapStore<any, any>;
  * }} offerArgs
  */
 export const makeICAHookAccounts = async (
   orch,
   { makeStrideStakingTap, chainHub },
-  { chainNames,supportedHostChains },
+  { chainNames, supportedHostChains },
 ) => {
-
   const allRemoteChains = await Promise.all(
     chainNames.map(n => orch.getChain(n)),
   );
+
+  // Agoric local account
   const agoric = await orch.getChain('agoric');
   const { chainId: agoricChainId } = await agoric.getChainInfo();
   const localAccount = await agoric.makeAccount();
-  const localChainAddress = await localAccount.getAddress();
+  const localAccountAddress = localAccount.getAddress();
 
-  // stride ICA
+  // stride ICA account
   const stride = await orch.getChain('stride');
   const { chainId: strideChainId } = await stride.getChainInfo();
   const strideICAAccount = await stride.makeAccount();
-  const strideICAChainAddress = await strideICAAccount.getAddress();
-  
-  // Elys ICA
+  const strideICAAddress = strideICAAccount.getAddress();
+
+  // Elys ICA account
   const elys = await orch.getChain('elys');
   const { chainId: elysChainId } = await elys.getChainInfo();
   const elysICAAccount = await elys.makeAccount();
-  const elysICAChainAddress = await elysICAAccount.getAddress();
+  const elysICAAddress = elysICAAccount.getAddress();
 
-  // all remote chains supported for the auto-staking
-  for (const remoteChain of allRemoteChains) {
-    
-    const { chainId, stakingTokens } = await remoteChain.getChainInfo();
-    if (!stakingTokens || stakingTokens.length === 0) {
-      throw new Error(`${chainId} does not have stakingTokens in config`);
-    }
-    
-    const remoteDenom = stakingTokens[0].denom;
-    remoteDenom ||
+  const { transferChannel: transferChannelAgoricElys } =
+    await chainHub.getConnectionInfo(agoricChainId, elysChainId);
+  const { transferChannel: transferChannelStrideElys } =
+    await chainHub.getConnectionInfo(strideChainId, elysChainId);
+
+  /** @type {MapStore<string, string>} */
+  const stDenomOnElysTohostToAgoricChannelMap = makeScalarMapStore(
+    'stDenomOnElysToHostChannelMap',
+  );
+  // ICA account on all the supported host chains
+  for (const [index, remoteChain] of allRemoteChains.entries()) {
+    const chainInfo = await remoteChain.getChainInfo();
+    const { chainId, stakingTokens, bech32Prefix } = chainInfo;
+    stakingTokens || Fail`${chainId} does not have stakingTokens in config`;
+
+    const nativeDenom = stakingTokens[0].denom;
+    nativeDenom ||
       Fail`${chainId || chainId} does not have stakingTokens in config`;
-      const remoteICAAccount = await remoteChain.makeAccount();
-      const remoteChainICAAddress = await remoteICAAccount.getAddress();
+
+    const ICAAccount = await remoteChain.makeAccount();
+    const ICAAddress = ICAAccount.getAddress();
+
     // get the connection info between agoric and remote chain
     const { transferChannel } = await chainHub.getConnectionInfo(
       agoricChainId,
       chainId,
     );
+    const { transferChannel: transferChannelhostStride } =
+      await chainHub.getConnectionInfo(chainId, strideChainId);
 
-    const localDenom = `ibc/${denomHash({ denom: remoteDenom, channelId: transferChannel.channelId })}`;
-    const hostChainName = hostChainChainIdToNameMap.get(chainId)
-    hostChainName || Fail`${chainId} does not have a mapping to host chain name`;
+    const ibcDenomOnAgoric = `ibc/${denomHash({ denom: nativeDenom, channelId: transferChannel.channelId })}`;
+
+    // Required in retrieving native token back from stTokens on elys chain
+    const stTokenDenomOnElys = `ibc/${denomHash({ denom: `st${nativeDenom}`, channelId: transferChannelStrideElys.channelId })}`;
+    stDenomOnElysTohostToAgoricChannelMap.init(
+      stTokenDenomOnElys,
+      transferChannel.counterPartyChannelId,
+    );
+
+    const chainName = chainNames[index];
 
     /** @type {SupportedHostChainShape} */
     const hostChainInfo = {
-      sourceChannel: transferChannel.counterPartyChannelId,
-      remoteDenom: remoteDenom,
-      localDenom: localDenom,
-      hostChainName: hostChainName ?? '', // never undefined
-      hostAccountICA: remoteICAAccount,
-      hostChainAddressICA: remoteChainICAAddress,
+      hostToAgoricChannel: transferChannel.counterPartyChannelId,
+      nativeDenom,
+      ibcDenomOnAgoric,
+      hostICAAccount: ICAAccount,
+      hostICAAccountAddress: ICAAddress,
+      chainId,
+      bech32Prefix,
     };
-    supportedHostChains.init(hostChainInfo.sourceChannel, hostChainInfo)
-  } 
-  // const passablesupportedHostChains = makeCopyMap(supportedHostChains)
-  // Every time the `localAccount` receives remoteDenom from any of the host chains over IBC
-  // it will auto delegate to the stride and send the st token to the elys ICA account
+    supportedHostChains.init(
+      transferChannel.counterPartyChannelId,
+      hostChainInfo,
+    );
+  }
+
   const tap = makeStrideStakingTap({
     localAccount,
+    localAccountAddress,
     strideICAAccount,
+    strideICAAddress,
     elysICAAccount,
-    localChainAddress,
-    strideICAChainAddress,
-    elysICAChainAddress,
-    supportedHostChains
+    elysICAAddress,
+    supportedHostChains,
+    elysToAgoricChannel: transferChannelAgoricElys.counterPartyChannelId,
+    AgoricToElysChannel: transferChannelAgoricElys.channelId,
+    stDenomOnElysTohostToAgoricChannelMap,
+    elysChainId,
   });
 
-  // @ts-expect-error tap.receiveUpcall: 'Vow<void> | undefined' not assignable to 'Promise<any>'
   await localAccount.monitorTransfers(tap);
 
   return localAccount;
 };
 harden(makeICAHookAccounts);
-
-const hostChainChainIdToNameMap = new Map([
-  ['cosmoshub-4', 'cosmoshub'],
-  ['osmosis-1', 'osmosis'],
-  ['agoric-1', 'agoric'],
-  ['elys-1', 'elys'],
-  ['stride-1', 'stride'],
-]);
-
-harden(hostChainChainIdToNameMap)
