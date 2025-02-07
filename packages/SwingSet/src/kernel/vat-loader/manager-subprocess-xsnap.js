@@ -252,7 +252,7 @@ export function makeXsSubprocessFactory({
         const uncompressedSizeDelta =
           uncompressedSizeLoaded &&
           metrics.uncompressedSize - uncompressedSizeLoaded;
-        uncompressedSizeLoaded = snapshotResults.uncompressedSize;
+        uncompressedSizeLoaded = results.uncompressedSize;
         kernelSlog.write({
           type: 'heap-snapshot-save',
           vatID,
