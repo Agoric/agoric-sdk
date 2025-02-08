@@ -3,7 +3,7 @@
 // @jessie-check
 
 // This file functions as both an importable module and a standalone script.
-import './helpers/maybe-lockdown.js';
+import './helpers/maybe-unsafe-lockdown.js';
 
 import os from 'os';
 import process from 'process';
