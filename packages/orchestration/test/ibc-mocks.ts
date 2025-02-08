@@ -28,6 +28,7 @@ import {
   buildQueryPacketString,
   createMockAckMap,
 } from '../tools/ibc-mocks.js';
+import { MsgLiquidStake, MsgLiquidStakeResponse } from '../cosmic-proto/dist/codegen/stride/stakeibc/tx.js';
 
 /**
  * TODO: provide mappings to cosmos error codes (and module specific error codes)
@@ -40,6 +41,11 @@ export const errorAcknowledgments = {
   ),
 };
 
+const liquidStake = {
+  creator: 'cosmos1test',
+  amount: "10000000",
+  hostDenom: 'uatom',
+};
 const delegation = {
   amount: {
     denom: 'uatom',
@@ -79,6 +85,15 @@ const getUnbondingTime = (): Timestamp => ({
 });
 
 export const protoMsgMocks = {
+  liquidStake: {
+    msg: buildTxPacketString([MsgLiquidStake.toProtoMsg(liquidStake)]),
+    ack: buildMsgResponseString(MsgLiquidStakeResponse, {
+      stToken: {
+        denom: 'statom',
+        amount: '1800000',
+      }
+    }),
+  },
   delegate: {
     msg: buildTxPacketString([MsgDelegate.toProtoMsg(delegation)]),
     ack: buildMsgResponseString(MsgDelegateResponse, {}),

@@ -169,7 +169,7 @@ export const makeFakeIbcBridge = (zone, onToBridge) => {
   });
 };
 
-export const LOCALCHAIN_DEFAULT_ADDRESS = 'agoric1fakeLCAAddress';
+export const LOCALCHAIN_DEFAULT_ADDRESS = 'agoric1uydrqcdmr720ck7c9w54azswpavdzzednrvfwy';
 
 /**
  * Constants that can be used to force an error state in a bridge transaction.
