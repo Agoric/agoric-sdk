@@ -1,6 +1,7 @@
 import { Fail } from '@endo/errors';
 import { makeScalarMapStore } from '@agoric/store';
 import { denomHash } from '../utils/denomHash.js';
+import { makeTracer } from '@agoric/internal';
 
 /**
  * @import {GuestInterface} from '@agoric/async-flow';
@@ -8,6 +9,7 @@ import { denomHash } from '../utils/denomHash.js';
  * @import {MakeStrideStakingTap, SupportedHostChainShape} from './elys-contract-tap-kit.js';
  * @import {ChainHub} from '../exos/chain-hub.js';
  */
+const trace = makeTracer('StrideStakingFlow');
 
 /**
  * @satisfies {OrchestrationFlow}
@@ -61,6 +63,7 @@ export const makeICAHookAccounts = async (
     stakingTokens || Fail`${chainId} does not have stakingTokens in config`;
 
     const nativeDenom = stakingTokens[0].denom;
+    trace('NativeDenom ', nativeDenom);
     nativeDenom ||
       Fail`${chainId || chainId} does not have stakingTokens in config`;
 
@@ -116,6 +119,7 @@ export const makeICAHookAccounts = async (
     elysChainId,
   });
 
+  // @ts-expect-error tap.receiveUpcall: 'Vow<void> | undefined' not assignable to 'Promise<any>'
   await localAccount.monitorTransfers(tap);
 
   return localAccount;
