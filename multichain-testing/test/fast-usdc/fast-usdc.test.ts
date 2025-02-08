@@ -11,12 +11,11 @@ import type {
 } from '@agoric/fast-usdc/src/types.js';
 import { makeTracer } from '@agoric/internal';
 import { divideBy, multiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
-import type { TestFn } from 'ava';
+import type { ExecutionContext, TestFn } from 'ava';
 import { makeDenomTools } from '../../tools/asset-info.js';
 import { makeBlocksIterable } from '../../tools/block-iter.js';
 import { makeDoOffer } from '../../tools/e2e-tools.js';
 import { makeQueryClient } from '../../tools/query.js';
-import { makeRandomDigits } from '../../tools/random.js';
 import { createWallet } from '../../tools/wallet.js';
 import { commonSetup } from '../support.js';
 import { makeFeedPolicyPartial, oracleMnemonics } from './config.js';
@@ -30,8 +29,6 @@ const log = makeTracer('MCFU');
 const { keys, values } = Object;
 const { isGTE, isEmpty, make, subtract } = AmountMath;
 
-const makeRandomNumber = () => Math.random();
-
 const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
 
 const accounts = [...keys(oracleMnemonics), 'lp', 'feeDest'];
@@ -40,7 +37,9 @@ const contractBuilder =
   '../packages/builders/scripts/fast-usdc/start-fast-usdc.build.js';
 const LP_DEPOSIT_AMOUNT = 8_000n * 10n ** 6n;
 
-const makeTestContext = async t => {
+type QueryClient = ReturnType<typeof makeQueryClient>;
+
+const makeTestContext = async (t: ExecutionContext) => {
   const { setupTestKeys, ...common } = await commonSetup(t, {
     config: `../config.fusdc${RELAYER_TYPE ? '.' + RELAYER_TYPE : ''}.yaml`,
   });
@@ -106,6 +105,7 @@ const makeTestContext = async t => {
     makeTxOracle(oKeys[ix], { wd, vstorageClient, blockIter, now }),
   );
 
+  let callCount = 0;
   const makeFakeEvidence = (
     mintAmt: bigint,
     userForwardingAddr: NobleAddress,
@@ -115,7 +115,7 @@ const makeTestContext = async t => {
       blockHash:
         '0x90d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee665',
       blockNumber: 21037663n,
-      txHash: `0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff3875527617${makeRandomDigits(makeRandomNumber(), 2n)}`,
+      txHash: `0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff3875527617${String(callCount++).padStart(2, '0')}`,
       tx: {
         amount: mintAmt,
         forwardingAddress: userForwardingAddr,
@@ -168,9 +168,35 @@ const makeTestContext = async t => {
     }
   };
 
+  const assertAmtForwarded = (
+    queryClient: QueryClient,
+    EUD: string,
+    eudChain: string,
+    mintAmt: bigint,
+  ) =>
+    t.notThrowsAsync(async () => {
+      await common.retryUntilCondition(
+        () => queryClient.queryBalance(EUD, getUsdcDenom(eudChain)),
+        ({ balance }) => {
+          if (!balance) return false; // retry
+          const value = BigInt(balance.amount);
+          if (value === 0n) return false; // retry
+          if (value < mintAmt) {
+            throw Error(`fees were deducted: ${value} < ${mintAmt}`);
+          }
+          t.log('forward done', value, 'uusdc');
+          return true;
+        },
+        `${EUD} forward available from fast-usdc`,
+        // this resolves quickly, so _decrease_ the interval so the timing is more apparent
+        { retryIntervalMs: 500, maxRetries: 20 },
+      );
+    });
+
   return {
     ...common,
     api,
+    assertAmtForwarded,
     assertTxStatus,
     feeUser,
     getUsdcDenom,
@@ -425,7 +451,7 @@ test.skip('advance failed (e.g. to missing chain)', async t => {
   } = t.context;
 
   // EUD wallet on the specified chain
-  const eudWallet = await createWallet('cosmos1');
+  const eudWallet = await createWallet('cosmos');
   const EUD = (await eudWallet.getAccounts())[0].address;
   t.log(`EUD wallet created: ${EUD}`);
 
@@ -570,12 +596,11 @@ test.serial('insufficient LP funds; forward path', async t => {
   const eudChain = 'osmosis';
   const mintAmt = LP_DEPOSIT_AMOUNT * 2n;
   const {
+    assertAmtForwarded,
     assertTxStatus,
-    getUsdcDenom,
     makeFakeEvidence,
     nobleTools,
     nobleAgoricChannelId,
-    retryUntilCondition,
     txOracles,
     useChain,
     vstorageClient,
@@ -627,36 +652,18 @@ test.serial('insufficient LP funds; forward path', async t => {
   nobleTools.mockCctpMint(mintAmt, userForwardingAddr);
 
   await assertTxStatus(evidence.txHash, 'FORWARDED');
-  await t.notThrowsAsync(async () => {
-    await retryUntilCondition(
-      () => queryClient.queryBalance(EUD, getUsdcDenom(eudChain)),
-      ({ balance }) => {
-        if (!balance) return false; // retry
-        const value = BigInt(balance.amount);
-        if (value === 0n) return false; // retry
-        if (value < mintAmt) {
-          throw Error(`fees were deducted: ${value} < ${mintAmt}`);
-        }
-        t.log('forward done', value, 'uusdc');
-        return true;
-      },
-      `${EUD} forward available from fast-usdc`,
-      // this resolves quickly, so _decrease_ the interval so the timing is more apparent
-      { retryIntervalMs: 500, maxRetries: 20 },
-    );
-  });
+  await assertAmtForwarded(queryClient, EUD, eudChain, mintAmt);
 });
 
 test.serial('minted before observed; forward path', async t => {
   const eudChain = 'osmosis';
   const mintAmt = LP_DEPOSIT_AMOUNT / 10n;
   const {
+    assertAmtForwarded,
     assertTxStatus,
-    getUsdcDenom,
     makeFakeEvidence,
     nobleTools,
     nobleAgoricChannelId,
-    retryUntilCondition,
     txOracles,
     useChain,
     vstorageClient,
@@ -709,30 +716,15 @@ test.serial('minted before observed; forward path', async t => {
   t.log(`UX->${eudChain}`, 'submitted x', txOracles.length);
 
   await assertTxStatus(evidence.txHash, 'FORWARDED');
-  await t.notThrowsAsync(async () => {
-    await retryUntilCondition(
-      () => queryClient.queryBalance(EUD, getUsdcDenom(eudChain)),
-      ({ balance }) => {
-        if (!balance) return false; // retry
-        const value = BigInt(balance.amount);
-        if (value === 0n) return false; // retry
-        if (value < mintAmt) {
-          throw Error(`fees were deducted: ${value} < ${mintAmt}`);
-        }
-        t.log('forward done', value, 'uusdc');
-        return true;
-      },
-      `${EUD} forward available from fast-usdc`,
-      // this resolves quickly, so _decrease_ the interval so the timing is more apparent
-      { retryIntervalMs: 500, maxRetries: 20 },
-    );
-  });
+  await assertAmtForwarded(queryClient, EUD, eudChain, mintAmt);
 });
 
 test.serial('insufficient LP funds and forward failed', async t => {
   const mintAmt = LP_DEPOSIT_AMOUNT * 2n;
   const {
+    api,
     assertTxStatus,
+    getUsdcDenom,
     makeFakeEvidence,
     nobleTools,
     nobleAgoricChannelId,
@@ -750,6 +742,15 @@ test.serial('insufficient LP funds and forward failed', async t => {
     `published.${contractName}`,
   );
   t.log('settlementAccount address', settlementAccount);
+
+  const querySettlementAccountBalance = async () =>
+    (await api.queryBalance(settlementAccount, getUsdcDenom('agoric'))).balance;
+  const startingSettlementBalance = await querySettlementAccountBalance();
+  t.log(
+    'starting settlementAccount balance',
+    startingSettlementBalance?.amount,
+    startingSettlementBalance?.denom,
+  );
 
   const recipientAddress = encodeAddressHook(settlementAccount, { EUD });
   t.log('recipientAddress', recipientAddress);
@@ -781,6 +782,17 @@ test.serial('insufficient LP funds and forward failed', async t => {
   nobleTools.mockCctpMint(mintAmt, userForwardingAddr);
 
   await assertTxStatus(evidence.txHash, 'FORWARD_FAILED');
+
+  const endingSettlementAccountBalance = await querySettlementAccountBalance();
+  t.log(
+    'ending settlementAccount balance',
+    endingSettlementAccountBalance?.amount,
+    endingSettlementAccountBalance?.denom,
+  );
+  t.is(
+    BigInt(endingSettlementAccountBalance?.amount ?? '0'),
+    BigInt(startingSettlementBalance?.amount ?? '0') + mintAmt,
+  );
 });
 
 test.todo('mint while Advancing; still Disbursed');
