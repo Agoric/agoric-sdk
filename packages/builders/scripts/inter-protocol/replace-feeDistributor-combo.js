@@ -21,9 +21,24 @@ const configurations = {
       },
     },
   },
-  // TODO(CTH): fill in something for DEVNET and EMERYNET
-  DEVNET: {},
-  EMERYNET: {},
+  DEVNET: {
+    params: {
+      collectionInterval: 1n * SECONDS_PER_HOUR,
+      keywordShares: {
+        RewardDistributor: 0n,
+        Reserve: 1n,
+      },
+    },
+  },
+  EMERYNET: {
+    params: {
+      collectionInterval: 1n * SECONDS_PER_HOUR,
+      keywordShares: {
+        RewardDistributor: 0n,
+        Reserve: 1n,
+      },
+    },
+  },
 };
 
 const { keys } = Object;
