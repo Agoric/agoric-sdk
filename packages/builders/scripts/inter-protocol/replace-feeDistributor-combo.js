@@ -1,4 +1,4 @@
-import { makeHelpers } from '@agoric/deploy-script-support';
+import { parseScriptArgs, makeHelpers } from '@agoric/deploy-script-support';
 import { getManifestForReplaceFeeDistributor } from '@agoric/inter-protocol/src/proposals/replace-fee-distributor.js';
 import { SECONDS_PER_HOUR } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 
@@ -47,31 +47,10 @@ export const defaultProposalBuilder = async (_, opts) => {
   });
 };
 
-const Usage = `agoric run replace-feedDistributor-combo.js ${[...knownVariants, '<json-config>'].join(' | ')}`;
-
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
-  const { scriptArgs } = endowments;
-  const variantOrConfig = scriptArgs?.[0];
-  console.log('replace-feeDistributor-combo', variantOrConfig);
-
-  const opts = {};
-
-  if (typeof variantOrConfig === 'string') {
-    if (variantOrConfig[0] === '{') {
-      try {
-        opts.config = JSON.parse(variantOrConfig);
-      } catch (err) {
-        throw Error(`Failed to parse config argument ${variantOrConfig}`);
-      }
-    } else {
-      opts.variant = variantOrConfig;
-    }
-  } else {
-    console.error(Usage);
-    throw Error(Usage);
-  }
-
+  const name = 'replace-feeDistributor-combo';
+  const opts = parseScriptArgs(endowments, name, knownVariants);
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
 
   await writeCoreEval('replace-feeDistributor', utils =>
