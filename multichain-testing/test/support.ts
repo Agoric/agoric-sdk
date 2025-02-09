@@ -102,6 +102,26 @@ export const commonSetup = async (
   const unreachableChain: CosmosChainInfo = {
     chainId: 'unreachable-chain',
     bech32Prefix: 'unreachable',
+    connections: {
+      noblelocal: {
+        client_id: '07-tendermint-898989',
+        counterparty: {
+          client_id: '07-tendermint-989898',
+          connection_id: 'connection-767676',
+        },
+        id: 'connection-424242',
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-242424',
+          counterPartyChannelId: 'channel-656565',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          portId: 'transfer',
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+    },
   };
 
   const chainInfo = {

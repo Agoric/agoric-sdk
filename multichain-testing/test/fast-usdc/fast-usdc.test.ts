@@ -492,7 +492,6 @@ test.serial('advance failed', async t => {
   nobleTools.mockCctpMint(mintAmt, userForwardingAddr);
 
   await assertTxStatus(evidence.txHash, 'FORWARD_FAILED');
-  await sleep(5000, { log: t.log, setTimeout });
 });
 
 test.serial('lp withdraws', async t => {
