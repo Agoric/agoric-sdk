@@ -3,7 +3,10 @@ import { dirname, join } from 'path';
 import { execa } from 'execa';
 import fse from 'fs-extra';
 import childProcess from 'node:child_process';
-import { withChainCapabilities } from '@agoric/orchestration';
+import {
+  withChainCapabilities,
+  type CosmosChainInfo,
+} from '@agoric/orchestration';
 import { makeAgdTools } from '../tools/agd-tools.js';
 import { type E2ETools } from '../tools/e2e-tools.js';
 import {
@@ -95,7 +98,16 @@ export const commonSetup = async (
   const relayer = makeRelayer(childProcess);
   const nobleTools = makeNobleTools(childProcess);
   const assetInfo = makeAssetInfo(starshipChainInfo);
-  const chainInfo = withChainCapabilities(starshipChainInfo);
+
+  const unreachableChain: CosmosChainInfo = {
+    chainId: 'unreachable-chain',
+    bech32Prefix: 'unreachable',
+  };
+
+  const chainInfo = {
+    ...withChainCapabilities(starshipChainInfo),
+    ...withChainCapabilities({ unreachableChain }),
+  };
   const faucetTools = makeFaucetTools(
     t,
     tools.agd,

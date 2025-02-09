@@ -439,7 +439,7 @@ test.serial(advanceAndSettleScenario, LP_DEPOSIT_AMOUNT / 4n, 'osmosis');
 test.serial(advanceAndSettleScenario, LP_DEPOSIT_AMOUNT / 8n, 'noble');
 test.serial(advanceAndSettleScenario, LP_DEPOSIT_AMOUNT / 5n, 'agoric');
 
-test.skip('advance failed (e.g. to missing chain)', async t => {
+test.serial('advance failed', async t => {
   const mintAmt = LP_DEPOSIT_AMOUNT / 10n;
   const {
     assertTxStatus,
@@ -451,7 +451,7 @@ test.skip('advance failed (e.g. to missing chain)', async t => {
   } = t.context;
 
   // EUD wallet on the specified chain
-  const eudWallet = await createWallet('cosmos');
+  const eudWallet = await createWallet('unreachable');
   const EUD = (await eudWallet.getAccounts())[0].address;
   t.log(`EUD wallet created: ${EUD}`);
 
@@ -487,13 +487,12 @@ test.skip('advance failed (e.g. to missing chain)', async t => {
   // submit evidences
   await Promise.all(txOracles.map(async o => o.submit(evidence)));
 
-  // XXX Not sure if the behavior should actually be ADVANCE_FAILED.
-  // It only reaches that state if the destination chain is valid.
-  await assertTxStatus(evidence.txHash, 'OBSERVED');
+  await assertTxStatus(evidence.txHash, 'ADVANCE_FAILED');
 
   nobleTools.mockCctpMint(mintAmt, userForwardingAddr);
 
   await assertTxStatus(evidence.txHash, 'FORWARD_FAILED');
+  await sleep(5000, { log: t.log, setTimeout });
 });
 
 test.serial('lp withdraws', async t => {
