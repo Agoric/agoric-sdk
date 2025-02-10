@@ -920,8 +920,8 @@ test('notifies of advance failure if bank send fails', async t => {
   const {
     extensions: {
       services: { advancer },
-      helpers: { inspectLogs, inspectNotifyCalls },
-      mocks: { mockPoolAccount, resolveLocalTransferV },
+      helpers: { inspectLogs, inspectBorrowerFacetCalls, inspectNotifyCalls },
+      mocks: { mockPoolAccount, resolveLocalTransferV, resolveWithdrawToSeatV },
     },
     brands: { usdc },
   } = t.context;
@@ -956,5 +956,17 @@ test('notifies of advance failure if bank send fails', async t => {
     ],
   ]);
 
-  // TODO: returnToPool is called
+  // verify funds are returned to pool
+  resolveWithdrawToSeatV();
+  await eventLoopIteration();
+  const { returnToPool } = inspectBorrowerFacetCalls();
+  t.is(returnToPool.length, 1, 'returnToPool is called after bank send fails');
+  t.deepEqual(
+    returnToPool[0],
+    [
+      Far('MockZCFSeat', { exit: theExit }),
+      usdc.make(244999999n), // 250000000n net of fees
+    ],
+    'same amount borrowed is returned to LP',
+  );
 });
