@@ -242,7 +242,7 @@ export function makeXsSubprocessFactory({
     async function makeSnapshot(snapPos, snapStore, restartWorker) {
       const snapshotDescription = `${vatID}-${snapPos}`;
       const snapshotStream = worker.makeSnapshotStream(snapshotDescription);
-      const saveSnapshot = async (saveStream) => {
+      const saveSnapshot = async saveStream => {
         const results = await snapStore.saveSnapshot(
           vatID,
           snapPos,
