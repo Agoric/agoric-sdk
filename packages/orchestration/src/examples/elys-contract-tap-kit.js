@@ -154,15 +154,19 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
           trace('receiveUpcall', event);
 
           // Receiving native from host chain
-          const hostChainInfo = this.state.supportedHostChains.get(
-            event.packet.source_channel,
-          );
+          
           if (
-            hostChainInfo === undefined &&
+            !this.state.supportedHostChains.has(
+              event.packet.source_channel,
+            ) &&
             event.packet.source_channel !== this.state.elysToAgoricChannel
           ) {
             return;
           }
+
+          const hostChainInfo = this.state.supportedHostChains.get(
+            event.packet.source_channel,
+          );
 
           const {
             localAccount,
@@ -183,6 +187,10 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
           }
 
           if (hostChainInfo !== undefined) {
+            if (tx.denom !== hostChainInfo.nativeDenom) {
+              return;
+            }
+            trace('LiquidStake: Moving funds to host-chain')
             return watch(
               E(localAccount).transfer(hostChainInfo.hostICAAccountAddress, {
                 denom: hostChainInfo.ibcDenomOnAgoric,
@@ -209,6 +217,7 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
 
             const ibcDenomOnAgoricFromElys = `ibc/${denomHash({ denom: `st${tx.denom}`, channelId: AgoricToElysChannel })}`;
 
+            trace('LiquidStakeRedeem: Moving funds to elys')
             // Transfer to elys ICA account
             return watch(
               E(localAccount).transfer(elysICAAddress, {
@@ -236,6 +245,7 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
          */
         onFulfilled(_result, amount, denom, senderAddress, fromRemoteAccount) {
           const { strideICAAddress } = this.state;
+          trace('LiquidStake: Moving funds to stride from host')
           return watch(
             E(fromRemoteAccount).transfer(strideICAAddress, {
               denom,
@@ -267,6 +277,7 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
           hostChainId,
         ) {
           const { strideICAAddress, elysICAAccount } = this.state;
+          trace('LiquidStakeRedeem: Moving funds to stride from elys')
           return watch(
             E(elysICAAccount).transfer(strideICAAddress, {
               denom,
@@ -303,6 +314,7 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
             senderAddress,
             hostChainPrefix,
           );
+          trace(`Derived Native address from elys address ${senderAddress} is ${senderNativeAddress}`)
 
           // UnStake Tokens and get stTokens on strideICA wallet
           const strideRedeemStakeMsg = Any.toJSON(
@@ -313,6 +325,8 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
               receiver: senderNativeAddress,
             }),
           );
+
+          trace('LiquidStakeRedeem: unstaking now')
           return watch(
             E(strideICAAccount).executeEncodedTx([strideRedeemStakeMsg]),
           );
@@ -336,6 +350,8 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
               hostDenom: nativeDenom,
             }),
           );
+
+          trace('LiquidStake: Calling liquid stake')
           return watch(
             E(strideICAAccount).executeEncodedTx([strideLiquidStakeMsg]),
             this.facets.watchAndSendSTtokensToUsersElysAccount,
@@ -363,6 +379,7 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
 
           // TODO: verify the address derivation
           const senderElysAddress = deriveAddress(senderAddress, 'elys');
+          trace(`Derived Elys address from ${senderAddress} is ${senderElysAddress}`)
 
           /** @type {ChainAddress} */
           const senderChainAddress = {
@@ -371,6 +388,7 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
             value: senderElysAddress.toString(),
           };
 
+          trace('LiquidStake: Moving funds to elys from stride')
           // Move stTokens from stride ICA to user's elys address
           return watch(
             E(strideICAAccount).transfer(senderChainAddress, {
