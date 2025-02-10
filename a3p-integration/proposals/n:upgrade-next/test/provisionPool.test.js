@@ -50,8 +50,8 @@ import {
   checkUserProvisioned,
   introduceAndProvision,
   provision,
-} from './test-lib/provision-helpers.js';
-import { getIncarnationFromDetails } from './test-lib/utils.js';
+} from '../test-lib/provision-helpers.js';
+import { getIncarnationFromDetails } from '../test-lib/utils.js';
 
 const PROVISIONING_POOL_ADDR = 'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346';
 

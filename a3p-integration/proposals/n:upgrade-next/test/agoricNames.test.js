@@ -65,9 +65,9 @@ import {
   extractBalance,
   psmSwap,
   tryISTBalances,
-} from './test-lib/psm-lib.js';
-import { getBalances, listVaults } from './test-lib/utils.js';
-import { walletUtils } from './test-lib/index.js';
+} from '../test-lib/psm-lib.js';
+import { getBalances, listVaults } from '../test-lib/utils.js';
+import { walletUtils } from '../test-lib/index.js';
 
 const WRITE_AGORIC_NAMES_DIR = 'agoricNamesCoreEvals/writeToAgoricNames';
 const ADD_USD_OLIVES_DIR = 'generated/agoricNamesCoreEvals/addUsdOlives';

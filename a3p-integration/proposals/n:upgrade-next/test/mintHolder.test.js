@@ -8,8 +8,8 @@ import {
   getAssetList,
   swap,
   getPSMChildren,
-} from './test-lib/mintHolder-helpers.js';
-import { networkConfig } from './test-lib/index.js';
+} from '../test-lib/mintHolder-helpers.js';
+import { networkConfig } from '../test-lib/index.js';
 
 test('verify mintHolder contract upgrade', async t => {
   const receiver = await addUser('receiver');
