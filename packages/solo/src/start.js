@@ -17,7 +17,11 @@ import anylogger from 'anylogger';
 // import djson from 'deterministic-json';
 
 import { assert, Fail } from '@endo/errors';
-import { makeSlogSender, tryFlushSlogSender } from '@agoric/telemetry';
+import {
+  getTelemetryProviders,
+  makeSlogSender,
+  tryFlushSlogSender,
+} from '@agoric/telemetry';
 import {
   loadSwingsetConfigFile,
   buildCommand,
@@ -36,7 +40,6 @@ import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 import {
   makeDefaultMeterProvider,
-  getTelemetryProviders,
   makeSlogCallbacks,
   exportKernelStats,
 } from '@agoric/cosmic-swingset/src/kernel-stats.js';

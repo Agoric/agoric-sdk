@@ -7,42 +7,30 @@ import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.j
 import type {
   CctpTxEvidence,
   EvmAddress,
-  PoolMetrics,
 } from '@agoric/fast-usdc/src/types.js';
 import { makeTracer } from '@agoric/internal';
-import type { Denom } from '@agoric/orchestration';
-import type { CurrentWalletRecord } from '@agoric/smart-wallet/src/smartWallet.js';
-import type { IBCChannelID } from '@agoric/vats';
 import { divideBy, multiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
 import type { TestFn } from 'ava';
 import { makeDenomTools } from '../../tools/asset-info.js';
-import { makeDoOffer, type WalletDriver } from '../../tools/e2e-tools.js';
+import { makeBlocksIterable } from '../../tools/block-iter.js';
+import { makeDoOffer } from '../../tools/e2e-tools.js';
 import { makeQueryClient } from '../../tools/query.js';
 import { makeRandomDigits } from '../../tools/random.js';
 import { createWallet } from '../../tools/wallet.js';
-import { commonSetup, type SetupContextWithWallets } from '../support.js';
+import { commonSetup } from '../support.js';
 import { makeFeedPolicyPartial, oracleMnemonics } from './config.js';
+import { agoricNamesQ, fastLPQ, makeTxOracle } from './fu-actors.js';
 
 const { RELAYER_TYPE } = process.env;
 
 const log = makeTracer('MCFU');
 
-const { keys, values, fromEntries } = Object;
+const { keys, values } = Object;
 const { isGTE, isEmpty, make, subtract } = AmountMath;
 
 const makeRandomNumber = () => Math.random();
 
-const test = anyTest as TestFn<
-  SetupContextWithWallets & {
-    lpUser: WalletDriver;
-    feeUser: WalletDriver;
-    oracleWds: WalletDriver[];
-    nobleAgoricChannelId: IBCChannelID;
-    usdcOnOsmosis: Denom;
-    /** usdc on agoric */
-    usdcDenom: Denom;
-  }
->;
+const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
 
 const accounts = [...keys(oracleMnemonics), 'lp', 'feeDest'];
 const contractName = 'fastUsdc';
@@ -50,7 +38,7 @@ const contractBuilder =
   '../packages/builders/scripts/fast-usdc/start-fast-usdc.build.js';
 const LP_DEPOSIT_AMOUNT = 8_000n * 10n ** 6n;
 
-test.before(async t => {
+const makeTestContext = async t => {
   const { setupTestKeys, ...common } = await commonSetup(t, {
     config: `../config.fusdc${RELAYER_TYPE ? '.' + RELAYER_TYPE : ''}.yaml`,
   });
@@ -61,9 +49,11 @@ test.before(async t => {
     faucetTools,
     provisionSmartWallet,
     startContract,
+    useChain,
   } = common;
   await deleteTestKeys(accounts).catch();
   const wallets = await setupTestKeys(accounts, values(oracleMnemonics));
+  t.log('setupTestKeys:', wallets);
 
   // provision oracle wallets first so invitation deposits don't fail
   const oracleWds = await Promise.all(
@@ -100,82 +90,49 @@ test.before(async t => {
   });
   const feeUser = await provisionSmartWallet(wallets['feeDest'], { BLD: 100n });
 
-  t.context = {
+  const { vstorageClient } = common;
+  const api = makeQueryClient(await useChain('agoric').getRestEndpoint());
+  const now = () => Date.now();
+  const blockIter = makeBlocksIterable({
+    api,
+    setTimeout,
+    clearTimeout,
+    now,
+  });
+  const oKeys = keys(oracleMnemonics);
+  const txOracles = oracleWds.map((wd, ix) =>
+    makeTxOracle(oKeys[ix], { wd, vstorageClient, blockIter, now }),
+  );
+
+  return {
     ...common,
+    api,
     lpUser,
     feeUser,
     oracleWds,
+    txOracles,
     nobleAgoricChannelId,
     usdcOnOsmosis,
     usdcDenom,
     wallets,
   };
-});
+};
+test.before(async t => (t.context = await makeTestContext(t)));
 
 test.after(async t => {
   const { deleteTestKeys } = t.context;
   deleteTestKeys(accounts);
 });
 
-type VStorageClient = Awaited<ReturnType<typeof commonSetup>>['vstorageClient'];
-const agoricNamesQ = (vsc: VStorageClient) =>
-  harden({
-    brands: <K extends AssetKind>(_assetKind: K) =>
-      vsc
-        .queryData('published.agoricNames.brand')
-        .then(pairs => fromEntries(pairs) as Record<string, Brand<K>>),
-  });
-const walletQ = (vsc: VStorageClient) => {
-  const self = harden({
-    current: (addr: string) =>
-      vsc.queryData(
-        `published.wallet.${addr}.current`,
-      ) as Promise<CurrentWalletRecord>,
-    findInvitationDetail: async (addr: string, description: string) => {
-      const { Invitation } = await agoricNamesQ(vsc).brands('set');
-      const current = await self.current(addr);
-      const { purses } = current;
-      const { value: details } = purses.find(p => p.brand === Invitation)!
-        .balance as Amount<'set', InvitationDetails>;
-      const detail = details.find(x => x.description === description);
-      return { current, detail };
-    },
-  });
-  return self;
-};
-
-const fastLPQ = (vsc: VStorageClient) =>
-  harden({
-    metrics: () =>
-      vsc.queryData(`published.fastUsdc.poolMetrics`) as Promise<PoolMetrics>,
-    info: () =>
-      vsc.queryData(`published.${contractName}`) as Promise<{
-        poolAccount: string;
-        settlementAccount: string;
-      }>,
-  });
-
-const toOracleOfferId = (idx: number) => `oracle${idx + 1}-accept`;
-
 test.serial('oracles accept', async t => {
-  const { oracleWds, retryUntilCondition, vstorageClient, wallets } = t.context;
-
-  const description = 'oracle operator invitation';
+  const { txOracles, retryUntilCondition } = t.context;
 
   // ensure we have an unused (or used) oracle invitation in each purse
   let hasAccepted = false;
-  for (const name of keys(oracleMnemonics)) {
-    const {
-      current: { offerToUsedInvitation },
-      detail,
-    } = await walletQ(vstorageClient).findInvitationDetail(
-      wallets[name],
-      description,
-    );
-    const hasInvitation = !!detail;
-    const usedInvitation = offerToUsedInvitation?.[0]?.[0] === `${name}-accept`;
-    t.log({ name, hasInvitation, usedInvitation });
-    t.true(hasInvitation || usedInvitation, 'has or accepted invitation');
+  for (const op of txOracles) {
+    const { detail, usedInvitation } = await op.checkInvitation();
+    t.log({ name: op.getName(), hasInvitation: !!detail, usedInvitation });
+    t.true(!!detail || usedInvitation, 'has or accepted invitation');
     if (usedInvitation) hasAccepted = true;
   }
   // if the oracles have already accepted, skip the rest of the test this is
@@ -184,32 +141,14 @@ test.serial('oracles accept', async t => {
   if (hasAccepted) return t.pass();
 
   // accept oracle operator invitations
-  const instance = fromEntries(
-    await vstorageClient.queryData('published.agoricNames.instance'),
-  )[contractName];
-  await Promise.all(
-    oracleWds.map(makeDoOffer).map((doOffer, i) =>
-      doOffer({
-        id: toOracleOfferId(i),
-        invitationSpec: {
-          source: 'purse',
-          instance,
-          description,
-        },
-        proposal: {},
-      }),
-    ),
-  );
+  await Promise.all(txOracles.map(op => op.acceptInvitation()));
 
-  for (const name of keys(oracleMnemonics)) {
-    const addr = wallets[name];
+  for (const op of txOracles) {
     await t.notThrowsAsync(() =>
       retryUntilCondition(
-        () => vstorageClient.queryData(`published.wallet.${addr}.current`),
-        ({ offerToUsedInvitation }) => {
-          return offerToUsedInvitation[0][0] === `${name}-accept`;
-        },
-        `${name} invitation used`,
+        () => op.checkInvitation(),
+        ({ usedInvitation }) => !!usedInvitation,
+        `${op.getName()} invitation used`,
         { log },
       ),
     );
@@ -274,9 +213,10 @@ const advanceAndSettleScenario = test.macro({
     `advance ${mintAmt} uusdc to ${eudChain} and settle`,
   exec: async (t, mintAmt: bigint, eudChain: string) => {
     const {
+      api,
       nobleTools,
       nobleAgoricChannelId,
-      oracleWds,
+      txOracles,
       retryUntilCondition,
       smartWalletKit,
       useChain,
@@ -331,23 +271,24 @@ const advanceAndSettleScenario = test.macro({
       chainId: 42161,
     });
 
-    log('User initiates evm mint:', evidence.txHash);
+    log('User initiates EVM burn:', evidence.txHash);
+    const { block: initialBlock } = await api.queryBlock();
+    console.time(`UX->${eudChain}`);
+    console.timeLog(
+      `UX->${eudChain}`,
+      'initial block',
+      initialBlock.header.height,
+      initialBlock.header.time,
+    );
 
     // submit evidences
     await Promise.all(
-      oracleWds.map(makeDoOffer).map((doOffer, i) =>
-        doOffer({
-          id: `${Date.now()}-evm-evidence`,
-          invitationSpec: {
-            source: 'continuing',
-            previousOffer: toOracleOfferId(i),
-            invitationMakerName: 'SubmitEvidence',
-            invitationArgs: [evidence],
-          },
-          proposal: {},
-        }),
-      ),
+      txOracles.map(async o => {
+        const { block } = await o.submit(evidence);
+        console.timeLog(`UX->${eudChain}`, o.getName(), block);
+      }),
     );
+    console.timeLog(`UX->${eudChain}`, 'submitted x', txOracles.length);
 
     const queryClient = makeQueryClient(
       await useChain(eudChain).getRestEndpoint(),
@@ -366,18 +307,47 @@ const advanceAndSettleScenario = test.macro({
       }
     };
 
-    await t.notThrowsAsync(() =>
-      retryUntilCondition(
+    let finalBlock;
+    await t.notThrowsAsync(async () => {
+      const q = await retryUntilCondition(
         () => queryClient.queryBalance(EUD, getUsdcDenom(eudChain)),
-        ({ balance }) =>
-          !!balance?.amount &&
-          BigInt(balance?.amount) > 0n &&
-          BigInt(balance.amount) < mintAmt,
+        ({ balance }) => {
+          if (!balance) return false; // retry
+          const value = BigInt(balance.amount);
+          if (value >= mintAmt) {
+            throw Error(`no fees were deducted: ${value} >= ${mintAmt}`);
+          }
+          if (value === 0n) return false; // retry
+          t.log('advance done', value, 'uusdc');
+          return true;
+        },
         `${EUD} advance available from fast-usdc`,
         // this resolves quickly, so _decrease_ the interval so the timing is more apparent
-        { retryIntervalMs: 500 },
-      ),
-    );
+        { retryIntervalMs: 500, maxRetries: 20 },
+      );
+      console.timeLog(`UX->${eudChain}`, 'rxd', q.balance?.amount);
+      ({ block: finalBlock } = await api.queryBlock());
+      console.timeLog(
+        `UX->${eudChain}`,
+        'final block',
+        finalBlock.header.height,
+        finalBlock.header.time,
+      );
+    });
+    console.timeEnd(`UX->${eudChain}`);
+    const blockDur =
+      Number(finalBlock.header.height) - Number(initialBlock.header.height);
+    const MAIN_BLOCK_SECS = 7;
+    const MAIN_MAX_DUR = 120; // product requirement: 2 min
+    const MARGIN_OF_ERROR = 0.2;
+    const mainWallClockEstimate = blockDur * MAIN_BLOCK_SECS;
+    t.log({
+      initialHeight: initialBlock.header.height,
+      finalHeight: finalBlock.header.height,
+      blockDur,
+      mainWallClockEstimate,
+    });
+    t.true(mainWallClockEstimate * (1 + MARGIN_OF_ERROR) <= MAIN_MAX_DUR);
 
     const queryTxStatus = async () => {
       const record = await smartWalletKit.readPublished(
@@ -421,33 +391,6 @@ const advanceAndSettleScenario = test.macro({
 
     await assertTxStatus('DISBURSED');
   },
-});
-
-test('distribute FastUSDC contract fees', async t => {
-  const io = t.context;
-  const queryClient = makeQueryClient(
-    await io.useChain('agoric').getRestEndpoint(),
-  );
-  const builder =
-    '../packages/builders/scripts/fast-usdc/fast-usdc-fees.build.js';
-
-  const opts = {
-    destinationAddress: io.wallets['feeDest'],
-    feePortion: 0.25,
-  };
-  t.log('build, run proposal to distribute fees', opts);
-  await io.deployBuilder(builder, {
-    ...opts,
-    feePortion: `${opts.feePortion}`,
-  });
-
-  const { balance } = await io.retryUntilCondition(
-    () => queryClient.queryBalance(opts.destinationAddress, io.usdcDenom),
-    ({ balance }) => !!balance && BigInt(balance.amount) > 0n,
-    `fees received at ${opts.destinationAddress}`,
-  );
-  t.log('fees received', balance);
-  t.truthy(balance?.amount);
 });
 
 test.serial(advanceAndSettleScenario, LP_DEPOSIT_AMOUNT / 4n, 'osmosis');
@@ -521,6 +464,33 @@ test.serial('lp withdraws', async t => {
       { log },
     ),
   );
+});
+
+test.serial('distribute FastUSDC contract fees', async t => {
+  const io = t.context;
+  const queryClient = makeQueryClient(
+    await io.useChain('agoric').getRestEndpoint(),
+  );
+  const builder =
+    '../packages/builders/scripts/fast-usdc/fast-usdc-fees.build.js';
+
+  const opts = {
+    destinationAddress: io.wallets['feeDest'],
+    feePortion: 0.25,
+  };
+  t.log('build, run proposal to distribute fees', opts);
+  await io.deployBuilder(builder, {
+    ...opts,
+    feePortion: `${opts.feePortion}`,
+  });
+
+  const { balance } = await io.retryUntilCondition(
+    () => queryClient.queryBalance(opts.destinationAddress, io.usdcDenom),
+    ({ balance }) => !!balance && BigInt(balance.amount) > 0n,
+    `fees received at ${opts.destinationAddress}`,
+  );
+  t.log('fees received', balance);
+  t.truthy(balance?.amount);
 });
 
 test.todo('insufficient LP funds; forward path');

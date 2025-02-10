@@ -523,7 +523,7 @@ export {};
  * @property {CreateQuestion} createQuestion
  */
 
-/** @typedef {{ [methodName: string]: (...args: any) => unknown }} GovernedApis */
+/** @typedef {Record<string, (...any) => unknown>} GovernedApis */
 
 /**
  * @typedef {object} GovernorPublic

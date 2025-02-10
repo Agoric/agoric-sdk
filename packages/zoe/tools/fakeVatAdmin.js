@@ -12,8 +12,11 @@ import { handlePKitWarning } from '../src/handleWarning.js';
 import { makeHandle } from '../src/makeHandle.js';
 import zcfBundle from '../bundles/bundle-contractFacet.js';
 
-/** @typedef { import('@agoric/swingset-vat').BundleID} BundleID */
-/** @typedef { import('@agoric/swingset-vat').EndoZipBase64Bundle} EndoZipBase64Bundle */
+/**
+ * @import {LegacyWeakMap, WeakMapStore} from '@agoric/store';
+ * @import {MapStore} from '@agoric/swingset-liveslots';
+ * @import {BundleID, EndoZipBase64Bundle} from '@agoric/swingset-vat';
+ */
 
 // this simulates a bundlecap, which is normally a swingset "device node"
 /** @typedef { import('@agoric/swingset-vat').BundleCap } BundleCap */

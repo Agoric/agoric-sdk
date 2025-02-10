@@ -7,16 +7,16 @@ import {
   pickEndpoint,
 } from '@agoric/client-utils';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
-import { queryFastUSDCLocalChainAccount } from '../util/agoric.js';
-import { depositForBurn, makeProvider } from '../util/cctp.js';
+import { queryFastUSDCLocalChainAccount } from './util/agoric.js';
+import { depositForBurn, makeProvider } from './util/cctp.js';
 import {
   makeSigner,
   queryForwardingAccount,
   registerFwdAccount,
-} from '../util/noble.js';
-import { queryUSDCBalance } from '../util/bank.js';
+} from './util/noble.js';
+import { queryUSDCBalance } from './util/bank.js';
 
-/** @import { File } from '../util/file' */
+/** @import { File } from './util/file' */
 /** @import { VStorage } from '@agoric/client-utils' */
 /** @import { SigningStargateClient } from '@cosmjs/stargate' */
 /** @import { JsonRpcProvider as ethProvider } from 'ethers' */

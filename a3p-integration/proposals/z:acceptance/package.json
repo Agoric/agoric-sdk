@@ -2,12 +2,12 @@
   "agoricProposal": {
     "type": "/agoric.swingset.CoreEvalProposal",
     "sdk-generate": [
-      "testing/start-valueVow.js start-valueVow",
-      "testing/recorded-retired-instances.js recorded-instances-submission",
-      "vats/test-localchain.js localchaintest-submission",
-      "testing/restart-valueVow.js restart-valueVow",
-      "testing/upgrade-vaultFactory.js upgrade-vaultFactory",
-      "vats/upgrade-provisionPool.js upgrade-provisionPool",
+      "testing/start-valueVow.js test/start-valueVow",
+      "testing/recorded-retired-instances.js test/recorded-instances-submission",
+      "vats/test-localchain.js test/localchaintest-submission",
+      "testing/restart-valueVow.js test/restart-valueVow",
+      "testing/upgrade-vaultFactory.js test/upgrade-vaultFactory",
+      "vats/upgrade-provisionPool.js test/upgrade-provisionPool",
       "orchestration/init-stakeBld.js"
     ]
   },
@@ -19,19 +19,18 @@
     "@agoric/inter-protocol": "dev",
     "@agoric/internal": "dev",
     "@agoric/store": "dev",
-    "@agoric/synthetic-chain": "^0.4.3",
+    "@agoric/synthetic-chain": "^0.5.2",
     "@agoric/zoe": "dev",
     "@cosmjs/stargate": "^0.32.3",
     "@cosmjs/tendermint-rpc": "^0.32.3",
-    "@endo/errors": "^1.2.7",
-    "@endo/far": "^1.1.8",
-    "@endo/init": "^1.1.6",
-    "@endo/marshal": "^1.6.1",
+    "@endo/errors": "^1.2.9",
+    "@endo/far": "^1.1.10",
+    "@endo/init": "^1.1.8",
+    "@endo/marshal": "^1.6.3",
     "agoric": "dev",
     "ava": "^6.1.2",
     "execa": "9.1.0"
   },
-  "$comment": "UNTIL https://github.com/Agoric/agoric-sdk/issues/10259",
   "resolutions": {
     "$commentXsnap": "UNTIL https://github.com/Agoric/agoric-sdk/issues/10259",
     "@agoric/xsnap": "beta",
@@ -91,13 +90,14 @@
     "serial": true,
     "timeout": "2m",
     "files": [
+      "test/**/*.test.*",
       "!submission"
     ]
   },
   "scripts": {
     "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops"
   },
-  "packageManager": "yarn@4.5.3",
+  "packageManager": "yarn@4.6.0",
   "devDependencies": {
     "eslint": "^8.57.0",
     "npm-run-all": "^4.1.5",

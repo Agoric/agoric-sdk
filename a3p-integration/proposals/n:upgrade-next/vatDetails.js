@@ -1,3 +1,7 @@
+// Temporary fork of
+// https://github.com/Agoric/agoric-3-proposals/blob/main/packages/synthetic-chain/src/lib/vat-status.js
+// for deleted vat information.
+// See https://github.com/Agoric/agoric-3-proposals/issues/208
 /* eslint-env node */
 
 import dbOpenAmbient from 'better-sqlite3';
@@ -57,47 +61,68 @@ const makeSwingstore = db => {
       options: () => kvGetJSON(`${vatID}.options`),
       currentSpan: () =>
         sql.get`select * from transcriptSpans where isCurrent = 1 and vatID = ${vatID}`,
+      getTerminated: () => kvGetJSON('vats.terminated').includes(vatID),
     });
   };
 
+  /**
+   * @param {string} vatName
+   * @param {boolean} [includeTerminated]
+   * @returns {string[]}
+   */
+  const findDynamicVatIDs = (vatName, includeTerminated = false) => {
+    /** @type {string[]} */
+    const terminatedVatIDs = kvGetJSON('vats.terminated');
+    /** @type {string[]} */
+    const allDynamicIDs = kvGetJSON('vat.dynamicIDs');
+    const dynamicIDs = includeTerminated
+      ? allDynamicIDs
+      : allDynamicIDs.filter(vatID => !terminatedVatIDs.includes(vatID));
+    const matchingIDs = dynamicIDs.filter(vatID =>
+      lookupVat(vatID).options().name.includes(vatName),
+    );
+    return matchingIDs;
+  };
+
   return Object.freeze({
-    /** @param {string} vatName */
-    findVat: vatName => {
+    /**
+     * @param {string} vatName
+     * @param {boolean} [includeTerminated]
+     * @returns {string}
+     */
+    findVat: (vatName, includeTerminated = false) => {
       /** @type {string[]} */
-      const dynamicIDs = kvGetJSON('vat.dynamicIDs');
-      const targetVat = dynamicIDs.find(vatID =>
-        lookupVat(vatID).options().name.includes(vatName),
-      );
-      if (!targetVat) throw Error(`vat not found: ${vatName}`);
-      return targetVat;
+      const matchingIDs = findDynamicVatIDs(vatName, includeTerminated);
+      if (matchingIDs.length === 0) throw Error(`vat not found: ${vatName}`);
+      return matchingIDs[0];
     },
-    /** @param {string} vatName */
-    findVats: vatName => {
-      /** @type {string[]} */
-      const dynamicIDs = kvGetJSON('vat.dynamicIDs');
-      return dynamicIDs.filter(vatID =>
-        lookupVat(vatID).options().name.includes(vatName),
-      );
-    },
+    findVats: findDynamicVatIDs,
     lookupVat,
   });
 };
 
-/** @param {string} vatName */
-export const getDetailsMatchingVats = async vatName => {
+/**
+ * @param {string} vatName
+ * @param {boolean} [includeTerminated]
+ */
+export const getDetailsMatchingVats = async (
+  vatName,
+  includeTerminated = false,
+) => {
   const kStore = makeSwingstore(
     dbOpenAmbient(swingstorePath, { readonly: true }),
   );
 
-  const vatIDs = kStore.findVats(vatName);
+  const vatIDs = kStore.findVats(vatName, includeTerminated);
   const infos = [];
   for (const vatID of vatIDs) {
     const vatInfo = kStore.lookupVat(vatID);
     const name = vatInfo.options().name;
     const source = vatInfo.source();
+    const terminated = includeTerminated && vatInfo.getTerminated();
     // @ts-expect-error cast
     const { incarnation } = vatInfo.currentSpan();
-    infos.push({ vatName: name, vatID, incarnation, ...source });
+    infos.push({ vatName: name, vatID, incarnation, terminated, ...source });
   }
 
   return infos;

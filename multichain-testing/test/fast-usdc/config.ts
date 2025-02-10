@@ -1,5 +1,5 @@
 import type { IBCChannelID } from '@agoric/vats';
-import type { FeedPolicy } from '@agoric/fast-usdc/src/types.js';
+import type { FeedPolicy } from '@agoric/fast-usdc';
 
 export const oracleMnemonics = {
   oracle1:

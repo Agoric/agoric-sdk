@@ -4,6 +4,7 @@ import type { TestFn } from 'ava';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { configurations } from '@agoric/fast-usdc/src/utils/deploy-config.js';
 import { MockCctpTxEvidences } from '@agoric/fast-usdc/test/fixtures.js';
+import { Offers } from '@agoric/fast-usdc/src/clientSupport.js';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { BridgeId, NonNullish } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
@@ -12,6 +13,8 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { Fail } from '@endo/errors';
 import { makeMarshal } from '@endo/marshal';
+import { AmountMath } from '@agoric/ertp';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import {
   AckBehavior,
   insistManagerType,
@@ -34,7 +37,7 @@ const {
 } = process.env;
 
 test.before('bootstrap', async t => {
-  const config = '@agoric/vm-config/decentral-itest-orchestration-config.json';
+  const config = '@agoric/vm-config/decentral-itest-fast-usdc-config.json';
   insistManagerType(defaultManagerType);
   const harness = ['xs-worker', 'xsnap'].includes(defaultManagerType)
     ? makeSwingsetHarness()
@@ -217,22 +220,13 @@ test.serial('LP deposits', async t => {
     },
   });
 
-  await lp.sendOffer({
-    id: 'deposit-lp-1',
-    invitationSpec: {
-      source: 'agoricContract',
-      instancePath: ['fastUsdc'],
-      callPipe: [['makeDepositInvitation', []]],
-    },
-    proposal: {
-      give: {
-        USDC: { brand: usdc, value: 150_000_000n },
-      },
-      want: {
-        PoolShare: { brand: fastLP, value: 150_000_000n },
-      },
-    },
-  });
+  await lp.sendOffer(
+    Offers.fastUsdc.Deposit(agoricNamesRemotes, {
+      offerId: 'deposit-lp-1',
+      fastLPAmount: 150_000_000n,
+      usdcAmount: 150_000_000n,
+    }),
+  );
   await eventLoopIteration();
 
   const { getOutboundMessages } = t.context.bridgeUtils;
@@ -262,6 +256,7 @@ test.serial('makes usdc advance', async t => {
     storage,
     agoricNamesRemotes,
     harness,
+    runUtils: { EV },
   } = t.context;
   const oracles = await Promise.all([
     wfd.provideSmartWallet('agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8'),
@@ -324,6 +319,11 @@ test.serial('makes usdc advance', async t => {
     { evidence, status: 'OBSERVED' }, // observation includes evidence observed
     { status: 'ADVANCING' },
   ]);
+
+  // Restart contract to make sure it doesn't break advance flow
+  const kit = await EV.vat('bootstrap').consumeItem('fastUsdcKit');
+  const actual = await EV(kit.adminFacet).restartContract(kit.privateArgs);
+  t.deepEqual(actual, { incarnationNumber: 1 });
 
   const { runInbound } = t.context.bridgeUtils;
   await runInbound(
@@ -486,22 +486,13 @@ test.serial('LP withdraws', async t => {
     },
   });
 
-  await lp.sendOffer({
-    id: 'withdraw-lp-1',
-    invitationSpec: {
-      source: 'agoricContract',
-      instancePath: ['fastUsdc'],
-      callPipe: [['makeWithdrawInvitation', []]],
-    },
-    proposal: {
-      give: {
-        PoolShare: { brand: fastLP, value: 369_000n },
-      },
-      want: {
-        USDC: { brand: usdc, value: 369_000n },
-      },
-    },
-  });
+  await lp.sendOffer(
+    Offers.fastUsdc.Withdraw(agoricNamesRemotes, {
+      offerId: 'withdraw-lp-1',
+      fastLPAmount: 369_000n,
+      usdcAmount: 369_000n,
+    }),
+  );
   await eventLoopIteration();
 
   const { denom: usdcDenom } = agoricNamesRemotes.vbankAsset.USDC;
@@ -521,11 +512,45 @@ test.serial('LP withdraws', async t => {
 });
 
 test.serial('restart contract', async t => {
-  const { EV } = t.context.runUtils;
-  await null;
+  const {
+    runUtils: { EV },
+    storage,
+  } = t.context;
   const kit = await EV.vat('bootstrap').consumeItem('fastUsdcKit');
-  const actual = await EV(kit.adminFacet).restartContract(kit.privateArgs);
-  t.deepEqual(actual, { incarnationNumber: 1 });
+  const usdc = kit.privateArgs.feeConfig.flat.brand;
+  const newFlat = AmountMath.make(usdc, 9_999n);
+  const newVariableRate = makeRatio(3n, usdc, 100n, usdc);
+  const newContractRate = makeRatio(1n, usdc, 11n, usdc);
+  const newArgs = {
+    ...kit.privateArgs,
+    feeConfig: {
+      flat: newFlat,
+      variableRate: newVariableRate,
+      contractRate: newContractRate,
+    },
+  };
+
+  const actual = await EV(kit.adminFacet).restartContract(newArgs);
+
+  // Incarnation 2 because previous test already restarted it once.
+  t.deepEqual(actual, { incarnationNumber: 2 });
+  const { flat, variableRate, contractRate } = storage
+    .getValues(`published.fastUsdc.feeConfig`)
+    .map(defaultSerializer.parse)
+    .at(-1) as typeof newArgs.feeConfig;
+  // Omitting brands UNTIL https://github.com/Agoric/agoric-sdk/issues/10491
+  t.is(flat.value, newFlat.value);
+  t.is(variableRate.numerator.value, newVariableRate.numerator.value);
+  t.is(variableRate.denominator.value, newVariableRate.denominator.value);
+  t.is(contractRate.numerator.value, newContractRate.numerator.value);
+  t.is(contractRate.denominator.value, newContractRate.denominator.value);
+
+  const doc = {
+    node: 'fastUsdc.feeConfig',
+    owner: 'the updated fee configuration for Fast USDC after contract upgrade',
+    showValue: defaultSerializer.parse,
+  };
+  await documentStorageSchema(t, storage, doc);
 });
 
 test.serial('replace operators', async t => {

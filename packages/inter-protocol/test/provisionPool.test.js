@@ -28,6 +28,7 @@ import {
 } from './supports.js';
 
 /**
+ * @import {EReturn} from '@endo/far';
  * @import {Bank} from '@agoric/vats/src/vat-bank.js'
  * @import {SmartWallet} from '@agoric/smart-wallet/src/smartWallet.js'
  * @import {WalletReviver} from '@agoric/smart-wallet/src/walletFactory.js'
@@ -133,7 +134,7 @@ test.before(async t => {
   t.context = await makeTestContext();
 });
 
-/** @param {Awaited<ReturnType<typeof makeTestContext>>} context */
+/** @param {EReturn<typeof makeTestContext>} context */
 const tools = context => {
   const { zoe, anchor, installs, storageRoot } = context;
   // @ts-expect-error missing mint

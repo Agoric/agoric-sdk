@@ -37,7 +37,8 @@ const ADDRESSES_BAGGAGE_KEY = 'addresses';
  * @import {Marshaller, StorageNode} from '@agoric/internal/src/lib-chainStorage.js'
  * @import {Zone} from '@agoric/zone';
  * @import {OperatorOfferResult} from './exos/transaction-feed.js';
- * @import {CctpTxEvidence, FeeConfig, RiskAssessment} from './types.js';
+ * @import {OperatorKit} from './exos/operator-kit.js';
+ * @import {CctpTxEvidence, ContractRecord, FeeConfig} from './types.js';
  */
 
 /**
@@ -75,10 +76,7 @@ const publishFeeConfig = async (node, marshaller, feeConfig) => {
 
 /**
  * @param {Remote<StorageNode>} contractNode
- * @param {{
- *  poolAccount: ChainAddress['value'];
- *  settlementAccount: ChainAddress['value'];
- * }} addresses
+ * @param {ContractRecord} addresses
  */
 const publishAddresses = (contractNode, addresses) => {
   return E(contractNode).setValue(JSON.stringify(addresses));
@@ -195,6 +193,9 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
       await publishAddresses(storageNode, addresses);
       return addresses;
     },
+    deleteCompletedTxs() {
+      return statusManager.deleteCompletedTxs();
+    },
   });
 
   const publicFacet = zone.exo('Fast USDC Public', undefined, {
@@ -286,8 +287,8 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
 
   const advancer = zone.makeOnce('Advancer', () =>
     makeAdvancer({
-      borrowerFacet: poolKit.borrower,
-      notifyFacet: settlerKit.notify,
+      borrower: poolKit.borrower,
+      notifier: settlerKit.notifier,
       poolAccount,
       settlementAddress,
     }),

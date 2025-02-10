@@ -32,16 +32,15 @@ function makeSupervisorDispatch(dispatch) {
   async function dispatchToVat(delivery) {
     // the (low-level) vat is responsible for giving up agency, but we still
     // protect against exceptions
-    return Promise.resolve(delivery)
-      .then(dispatch)
-      .then(
-        res => harden(['ok', res, null]),
-        err => {
-          // TODO react more thoughtfully, maybe terminate the vat
-          console.warn(`error during vat dispatch() of ${delivery}`, err);
-          return harden(['error', `${err}`, null]);
-        },
-      );
+    await null;
+    try {
+      const res = await dispatch(delivery);
+      return harden(['ok', res, null]);
+    } catch (err) {
+      // TODO react more thoughtfully, maybe terminate the vat
+      console.warn(`error during vat dispatch() of ${delivery}`, err);
+      return harden(['error', `${err}`, null]);
+    }
   }
 
   return harden(dispatchToVat);

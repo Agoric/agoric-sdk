@@ -2,6 +2,7 @@ import type { LatestTopic } from '@agoric/notifier';
 import type { ERef } from '@endo/far';
 import type { RemotableObject } from '@endo/pass-style';
 import type { CopyBag, CopySet, Key, Pattern } from '@endo/patterns';
+import type { TypeTag } from '@agoric/internal/src/tagged.js';
 import type { AssetKind } from './amountMath.js';
 
 export type { AssetKind } from './amountMath.js';
@@ -405,16 +406,21 @@ export type PurseMethods<
 export type Payment<
   K extends AssetKind = AssetKind,
   M extends Key = Key,
-> = RemotableObject & PaymentMethods<K>;
-export type PaymentMethods<K extends AssetKind = AssetKind> = {
-  /**
-   * Get the allegedBrand, indicating
-   * the type of digital asset this payment purports to be, and which issuer to
-   * use. Because payments are not trusted, any method calls on payments should
-   * be treated with suspicion and verified elsewhere.
-   */
-  getAllegedBrand: () => Brand<K>;
-};
+> = RemotableObject &
+  TypeTag<
+    {
+      /**
+       * Get the allegedBrand, indicating
+       * the type of digital asset this payment purports to be, and which issuer to
+       * use. Because payments are not trusted, any method calls on payments should
+       * be treated with suspicion and verified elsewhere.
+       */
+      getAllegedBrand: () => Brand<K>;
+    },
+    'Set-like value type',
+    M
+  >;
+
 /**
  * All of the difference in how digital asset
  *   amount are manipulated can be reduced to the behavior of the math on

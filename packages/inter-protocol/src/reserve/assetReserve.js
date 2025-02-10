@@ -8,6 +8,10 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { prepareAssetReserveKit } from './assetReserveKit.js';
 
+/**
+ * @import {EReturn} from '@endo/far';
+ */
+
 const trace = makeTracer('AR', true);
 
 /** @type {ContractMeta<typeof start>} */
@@ -118,8 +122,8 @@ harden(start);
  * @property {() => Promise<Invitation<ShortfallReporter>>} makeShortfallReportingInvitation
  */
 
-/** @typedef {Awaited<ReturnType<typeof start>>['publicFacet']} AssetReservePublicFacet */
+/** @typedef {EReturn<typeof start>['publicFacet']} AssetReservePublicFacet */
 /**
- * @typedef {Awaited<ReturnType<typeof start>>['creatorFacet']} AssetReserveCreatorFacet
+ * @typedef {EReturn<typeof start>['creatorFacet']} AssetReserveCreatorFacet
  *   the creator facet for the governor
  */
