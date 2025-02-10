@@ -81,19 +81,26 @@ const createTestExtensions = (t, common: CommonSetup) => {
   });
 
   const localTransferVK = vowTools.makeVowKit<void>();
-  const resolveLocalTransferV = () => {
-    // pretend funds move from tmpSeat to poolAccount
-    localTransferVK.resolver.resolve();
-  };
-  const rejectLocalTransfeferV = () => {
+  // pretend funds move from tmpSeat to poolAccount
+  const resolveLocalTransferV = () => localTransferVK.resolver.resolve();
+  const rejectLocalTransfeferV = () =>
     localTransferVK.resolver.reject(
       new Error('One or more deposits failed: simulated error'),
     );
-  };
+  const withdrawToSeatVK = vowTools.makeVowKit<void>();
+  const resolveWithdrawToSeatV = () => withdrawToSeatVK.resolver.resolve();
+  const rejectWithdrawToSeatV = () =>
+    withdrawToSeatVK.resolver.reject(
+      new Error('One or more deposits failed: simulated error'),
+    );
   const mockZoeTools = Far('MockZoeTools', {
     localTransfer(...args: Parameters<ZoeTools['localTransfer']>) {
       trace('ZoeTools.localTransfer called with', args);
       return localTransferVK.vow;
+    },
+    withdrawToSeat(...args: Parameters<ZoeTools['withdrawToSeat']>) {
+      trace('ZoeTools.withdrawToSeat called with', args);
+      return withdrawToSeatVK.vow;
     },
   });
 
@@ -101,7 +108,6 @@ const createTestExtensions = (t, common: CommonSetup) => {
   const makeAdvancer = prepareAdvancer(contractZone.subZone('advancer'), {
     chainHub,
     feeConfig,
-    localTransfer: mockZoeTools.localTransfer,
     log,
     statusManager,
     usdc: harden({
@@ -111,6 +117,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
     vowTools,
     // @ts-expect-error mocked zcf
     zcf: mockZCF,
+    zoeTools: mockZoeTools,
   });
 
   type NotifyArgs = Parameters<SettlerKit['notifier']['notifyAdvancingResult']>;
@@ -169,6 +176,8 @@ const createTestExtensions = (t, common: CommonSetup) => {
       mockNotifyF,
       resolveLocalTransferV,
       rejectLocalTransfeferV,
+      resolveWithdrawToSeatV,
+      rejectWithdrawToSeatV,
     },
     services: {
       advancer,
@@ -340,13 +349,13 @@ test('updates status to OBSERVED if makeChainAddress fails', async t => {
   ]);
 });
 
-test('calls notifyAdvancingResult (AdvancedFailed) on failed transfer', async t => {
+test('recovery behavior if Advance Fails (ADVANCE_FAILED)', async t => {
   const {
     bootstrap: { storage },
     extensions: {
       services: { advancer, feeTools },
-      helpers: { inspectLogs, inspectNotifyCalls },
-      mocks: { mockPoolAccount, resolveLocalTransferV },
+      helpers: { inspectBorrowerFacetCalls, inspectLogs, inspectNotifyCalls },
+      mocks: { mockPoolAccount, resolveLocalTransferV, resolveWithdrawToSeatV },
     },
     brands: { usdc },
   } = t.context;
@@ -390,7 +399,30 @@ test('calls notifyAdvancingResult (AdvancedFailed) on failed transfer', async t 
       false, // this indicates transfer failed
     ],
   ]);
+
+  // simulate withdrawing `advanceAmount` from PoolAccount to tmpReturnSeat
+  resolveWithdrawToSeatV();
+  await eventLoopIteration();
+  const { returnToPool } = inspectBorrowerFacetCalls();
+  t.is(
+    returnToPool.length,
+    1,
+    'returnToPool is called after ibc transfer fails',
+  );
+  t.deepEqual(
+    returnToPool[0],
+    [
+      Far('MockZCFSeat', { exit: theExit }),
+      usdc.make(293999999n), // 300000000n net of fees
+    ],
+    'same amount borrowed is returned to LP',
+  );
 });
+
+// unexpected, terminal state. test that log('🚨') is called
+test.todo('witdrawToSeat fails during AdvanceFailed recovery');
+// unexpected, terminal state. test that log('🚨') is called
+test.todo('returnToPool fails during AdvanceFailed recovery');
 
 test('updates status to OBSERVED if pre-condition checks fail', async t => {
   const {
@@ -816,4 +848,6 @@ test('notifies of advance failure if bank send fails', async t => {
       false, // indicates send failed
     ],
   ]);
+
+  // TODO: returnToPool is called
 });
