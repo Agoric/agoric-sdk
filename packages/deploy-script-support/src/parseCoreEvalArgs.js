@@ -8,7 +8,10 @@
  */
 export const parseScriptArgs = async (endowments, name, knownVariants) => {
   const { scriptArgs } = endowments;
-  const variantOrConfig = scriptArgs?.[0];
+  // const variantOrConfig = scriptArgs?.[0];
+  const variantOrConfig =
+    scriptArgs && scriptArgs.length > 0 ? scriptArgs : undefined;
+
   console.log(`${name}`, variantOrConfig);
 
   const Usage = `agoric run ${name}.js ${[...knownVariants, '<json-config>'].join(' | ')}`;
