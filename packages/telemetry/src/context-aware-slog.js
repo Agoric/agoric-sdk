@@ -49,7 +49,7 @@
  * }} Slog
  */
 
-const SLOG_TYPES = {
+export const SLOG_TYPES = {
   CLIST: 'clist',
   CONSOLE: 'console',
   COSMIC_SWINGSET: {
