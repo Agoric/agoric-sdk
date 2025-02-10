@@ -1,5 +1,4 @@
 /* eslint-env node */
-
 import { logs, SeverityNumber } from '@opentelemetry/api-logs';
 import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
 import { Resource } from '@opentelemetry/resources';
@@ -7,12 +6,45 @@ import {
   LoggerProvider,
   SimpleLogRecordProcessor,
 } from '@opentelemetry/sdk-logs';
+import { readFileSync, writeFileSync } from 'fs';
 import { makeContextualSlogProcessor } from './context-aware-slog.js';
-import getContextFilePersistenceUtils, {
-  DEFAULT_CONTEXT_FILE,
-} from './context-aware-slog-persistent-util.js';
 import { getResourceAttributes } from './index.js';
 import { serializeSlogObj } from './serialize-slog-obj.js';
+
+const DEFAULT_CONTEXT_FILE = 'slog-context.json';
+const FILE_ENCODING = 'utf8';
+
+/**
+ * @param {string} filePath
+ */
+export const getContextFilePersistenceUtils = filePath => {
+  console.warn(`Using file ${filePath} for slogger context`);
+
+  return {
+    /**
+     * @param {import('./context-aware-slog.js').Context} context
+     */
+    persistContext: context => {
+      try {
+        writeFileSync(filePath, serializeSlogObj(context), FILE_ENCODING);
+      } catch (err) {
+        console.error('Error writing context to file: ', err);
+      }
+    },
+
+    /**
+     * @returns {import('./context-aware-slog.js').Context | null}
+     */
+    restoreContext: () => {
+      try {
+        return JSON.parse(readFileSync(filePath, FILE_ENCODING));
+      } catch (parseErr) {
+        console.error('Error reading context from file: ', parseErr);
+        return null;
+      }
+    },
+  };
+};
 
 /**
  * @param {import('./index.js').MakeSlogSenderOptions} options

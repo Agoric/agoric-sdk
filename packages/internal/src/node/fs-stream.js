@@ -47,12 +47,14 @@ const noPath = /** @type {import('fs').PathLike} */ (
 /** @typedef {NonNullable<Awaited<ReturnType<typeof makeFsStreamWriter>>>} FsStreamWriter */
 /** @param {string | undefined | null} filePath */
 export const makeFsStreamWriter = async filePath => {
-  if (!filePath) return undefined;
+  if (!filePath) {
+    return undefined;
+  }
 
-  const handle = await (filePath === '-' ? undefined : open(filePath, 'a'));
+  const handle = await (filePath !== '-' ? open(filePath, 'a') : undefined);
 
   const stream = handle
-    ? createWriteStream(noPath, { autoClose: false, fd: handle.fd })
+    ? createWriteStream(noPath, { fd: handle.fd })
     : process.stdout;
   await fsStreamReady(stream);
 
@@ -93,27 +95,23 @@ export const makeFsStreamWriter = async filePath => {
 
   const flush = async () => {
     await flushed;
-    if (handle)
-      await handle.sync().catch(err => {
-        if (err.code === 'EINVAL') {
-          return;
-        }
-        throw err;
-      });
+    await handle?.sync().catch(err => {
+      if (err.code === 'EINVAL') {
+        return;
+      }
+      throw err;
+    });
   };
 
   const close = async () => {
     // TODO: Consider creating a single Error here to use a write rejection
     closed = true;
     await flush();
-
-    if (handle) {
-      await new Promise(resolve => stream.end(() => resolve(null)));
-      await handle.close();
-    }
+    // @ts-expect-error calling a possibly missing method
+    stream.close?.();
   };
 
   stream.on('error', err => updateFlushed(Promise.reject(err)));
 
-  return harden({ close, filePath, flush, write });
+  return harden({ write, flush, close });
 };

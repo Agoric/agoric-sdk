@@ -1,97 +1,100 @@
 /* eslint-env node */
 
-import { makeFsStreamWriter } from '@agoric/internal/src/node/fs-stream.js';
-import {
-  makeContextualSlogProcessor,
-  SLOG_TYPES,
-} from './context-aware-slog.js';
-import getContextFilePersistenceUtils, {
-  DEFAULT_CONTEXT_FILE,
-} from './context-aware-slog-persistent-util.js';
+import { open } from 'node:fs/promises';
+import { SLOG_TYPES } from './context-aware-slog.js';
 import { serializeSlogObj } from './serialize-slog-obj.js';
 
 /**
  * @typedef {import('./context-aware-slog.js').Slog} Slog
- * @typedef {ReturnType<ReturnType<typeof makeContextualSlogProcessor>>} ContextSlog
  */
 
 /**
  * @param {import('./index.js').MakeSlogSenderOptions} options
  */
 export const makeSlogSender = async options => {
-  const { CHAIN_ID, CONTEXTUAL_BLOCK_SLOGS } = options.env || {};
+  const { CONTEXTUAL_BLOCK_SLOGS } = options.env || {};
   if (!(options.stateDir || CONTEXTUAL_BLOCK_SLOGS))
     return console.error(
       'Ignoring invocation of slogger "block-slog" without the presence of "stateDir" or "CONTEXTUAL_BLOCK_SLOGS"',
     );
 
-  const persistenceUtils = getContextFilePersistenceUtils(
-    process.env.SLOG_CONTEXT_FILE_PATH ||
-      `${options.stateDir}/${DEFAULT_CONTEXT_FILE}`,
-  );
-
-  const contextualSlogProcessor = makeContextualSlogProcessor(
-    { 'chain-id': CHAIN_ID },
-    persistenceUtils,
-  );
+  let chainedPromises = Promise.resolve();
   /**
-   * @type {ReturnType<typeof createFileStream> | null}
+   * @type {import('node:fs/promises').FileHandle | null}
    */
-  let createFileStreamPromise = null;
+  let currentFileHandle = null;
   /**
-   * @type {Awaited<ReturnType<typeof makeFsStreamWriter>> | null}
+   * @type {import('node:fs').WriteStream | null}
    */
   let currentStream = null;
 
   /**
-   * Immediately frees the `currentStream` assignment and lazily closes the open file stream
+   * @param {Array<() => Promise<void>>} promises
    */
-  const closeStream = () => {
-    if (currentStream) {
-      const streamClosePromise = currentStream.close();
-      currentStream = null;
-      return streamClosePromise;
-    } else console.error('No stream to close');
+  const chainPromises = (...promises) =>
+    // eslint-disable-next-line github/array-foreach
+    promises.forEach(
+      promise => (chainedPromises = chainedPromises.then(promise)),
+    );
+
+  const closeStream = async () => {
+    if (currentStream)
+      return new Promise(resolve =>
+        currentStream?.close(err => {
+          if (err) console.error("Couldn't close stream due to error: ", err);
+          resolve(undefined);
+        }),
+      )
+        .then(() => {
+          currentStream = null;
+        })
+        .then(() => currentFileHandle?.close())
+        .then(() => {
+          currentFileHandle = null;
+        });
+    else {
+      console.error('No stream to close');
+      return Promise.resolve();
+    }
   };
 
   /**
    * @param {string} fileName
    */
   const createFileStream = async fileName => {
-    if (currentStream)
-      throw Error(`Stream already open on file ${currentStream.filePath}`);
+    if (currentStream) throw Error('Stream already open');
 
     const filePath = `${options.stateDir || CONTEXTUAL_BLOCK_SLOGS}/slogfile_${fileName}.jsonl`;
-    currentStream = await makeFsStreamWriter(filePath);
+    currentFileHandle = await open(filePath, 'w');
+    currentStream = currentFileHandle.createWriteStream({
+      autoClose: true,
+      encoding: 'utf-8',
+    });
 
     if (!currentStream)
       throw Error(`Couldn't create a write stream on file "${filePath}"`);
   };
 
   /**
-   * @param {import('./context-aware-slog.js').Slog} slog
+   * @param {Slog} slog
    */
-  const slogSender = async slog => {
-    await new Promise(resolve => resolve(null));
-
+  const slogSender = slog => {
     const { blockHeight, type: slogType } = slog;
 
     switch (slogType) {
       case SLOG_TYPES.KERNEL.INIT.START: {
-        createFileStreamPromise = createFileStream(
-          `init_${new Date().getTime()}`,
-        );
+        chainPromises(() => createFileStream(`init_${new Date().getTime()}`));
         break;
       }
       case SLOG_TYPES.COSMIC_SWINGSET.BOOTSTRAP_BLOCK.START: {
-        createFileStreamPromise = createFileStream(
-          `bootstrap_${new Date().getTime()}`,
+        chainPromises(() =>
+          createFileStream(`bootstrap_${new Date().getTime()}`),
         );
         break;
       }
       case SLOG_TYPES.COSMIC_SWINGSET.BEGIN_BLOCK: {
-        createFileStreamPromise = createFileStream(
-          `block_${blockHeight}_${new Date().getTime()}`,
+        chainPromises(() =>
+          createFileStream(`block_${blockHeight}_${new Date().getTime()}`),
         );
         break;
       }
@@ -100,18 +103,13 @@ export const makeSlogSender = async options => {
       }
     }
 
-    const contextualSlog = contextualSlogProcessor(slog);
-
-    if (createFileStreamPromise) await createFileStreamPromise;
-    createFileStreamPromise = null;
-
-    writeSlogToStream(contextualSlog)?.catch(console.error);
+    chainPromises(() => writeSlogToStream(slog));
 
     switch (slogType) {
       case SLOG_TYPES.KERNEL.INIT.FINISH:
       case SLOG_TYPES.COSMIC_SWINGSET.BOOTSTRAP_BLOCK.FINISH:
       case SLOG_TYPES.COSMIC_SWINGSET.AFTER_COMMIT_STATS: {
-        closeStream()?.catch(console.error);
+        chainPromises(closeStream);
         break;
       }
       default: {
@@ -121,15 +119,31 @@ export const makeSlogSender = async options => {
   };
 
   /**
-   * @param {ReturnType<contextualSlogProcessor>} slog
+   * @param {Slog} slog
+   * @returns {Promise<void>}
    */
   const writeSlogToStream = slog =>
-    !currentStream
-      ? console.error(`No stream available for slog type "${slog.body.type}"`) // eslint-disable-next-line prefer-template
-      : currentStream.write(serializeSlogObj(slog) + '\n');
+    new Promise(resolve => {
+      if (!currentStream) {
+        console.error(`No stream available for slog type "${slog.type}"`);
+        resolve();
+      } else {
+        // eslint-disable-next-line prefer-template
+        const message = serializeSlogObj(slog) + '\n';
+
+        const wrote = currentStream.write(message);
+        if (!wrote) {
+          console.warn('Stream full, waiting for drain');
+          currentStream.once('drain', () => {
+            currentStream?.write(message);
+            resolve();
+          });
+        } else resolve();
+      }
+    });
 
   return Object.assign(slogSender, {
-    forceFlush: () => currentStream?.flush(),
+    forceFlush: () => chainedPromises,
     shutdown: closeStream,
   });
 };
