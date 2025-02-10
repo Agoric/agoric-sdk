@@ -36,15 +36,11 @@ jobs:
   dev-canary:
     needs: build
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # note: only use one node-version
-        node-version: ['node-old']
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 'node-new'
 
       # Adapted from https://johnny.sh/notes/publish-canary-lerna-cicd/
       - name: configure NPM token
@@ -94,16 +90,12 @@ jobs:
   coverage:
     needs: build
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # note: only use one node-version
-        node-version: ['node-old']
     if: ${{github.event_name == 'push' }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 'node-new'
 
       - name: generate test coverage report
         run: ./scripts/ci/generate-test-coverage-report.sh
@@ -136,16 +128,12 @@ jobs:
   benchmark:
     needs: build
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # note: only use one node-version
-        node-version: ['node-old']
     if: ${{github.event_name == 'push'}}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 'node-new'
 
       - name: benchmark changes
         env:

@@ -64,7 +64,7 @@ jobs:
       # Prerequisites
       - uses: ./.github/actions/restore-node
         with:
-          node-version: 18.18
+          node-version: node-new
           keep-endo: 'true'
 
       # Select a branch of the
@@ -280,7 +280,7 @@ jobs:
           # and since we can't build core eval submissions from the SDK using a newer endo,
           # simply ignore any endo branch integration (this means we don't have full coverage)
           ignore-endo-branch: 'true'
-          node-version: 'node-old'
+          node-version: 'node-new'
           path: ./agoric-sdk
           # Forces xsnap to initialize all memory to random data, which increases
           # the chances the content of snapshots may deviate between validators
