@@ -242,11 +242,11 @@ export function makeXsSubprocessFactory({
     async function makeSnapshot(snapPos, snapStore, restartWorker) {
       const snapshotDescription = `${vatID}-${snapPos}`;
       const snapshotStream = worker.makeSnapshotStream(snapshotDescription);
-      const saveSnapshot = async () => {
+      const saveSnapshot = async (saveStream) => {
         const results = await snapStore.saveSnapshot(
           vatID,
           snapPos,
-          snapshotStream,
+          saveStream,
         );
         const { hash: snapshotID, ...metrics } = results;
         const uncompressedSizeDelta =
@@ -266,7 +266,7 @@ export function makeXsSubprocessFactory({
       };
 
       if (!restartWorker) {
-        return saveSnapshot();
+        return saveSnapshot(snapshotStream);
       }
 
       /** @type {AsyncGenerator<Uint8Array, void, void>[]} */
@@ -292,7 +292,7 @@ export function makeXsSubprocessFactory({
             snapshotDescription,
           },
         }),
-        saveSnapshot(),
+        saveSnapshot(snapStoreSaveStream),
       ]);
       await closeP;
 
