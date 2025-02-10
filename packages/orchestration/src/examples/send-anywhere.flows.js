@@ -11,6 +11,19 @@ import { M, mustMatch } from '@endo/patterns';
  * @import {Orchestrator, OrchestrationFlow, LocalAccountMethods, ChainHub} from '../types.js';
  */
 
+const addresses = {
+  AXELAR_GMP:
+    'axelar1dv4u5k73pzqrxlzujxg3qp8kvc3pje7jtdvu72npnt5zhq05ejcsn5qme5',
+  AXELAR_GAS: 'axelar1zl3rxpp70lmte2xr6c4lgske2fyuj3hupcsvcd',
+  OSMOSIS: 'osmo1yh3ra8eage5xtr9a3m5utg6mx0pmqreytudaqj',
+};
+
+const channels = {
+  AGORIC_XNET_TO_OSMOSIS: 'channel-6',
+  AGORIC_DEVNET_TO_OSMOSIS: 'channel-61',
+  OSMOSIS_TO_AXELAR: 'channel-4118',
+};
+
 const { entries } = Object;
 
 // in guest file (the orchestration functions)
@@ -25,7 +38,13 @@ const { entries } = Object;
  * @param {GuestInterface<ZoeTools>} ctx.zoeTools
  * @param {GuestOf<(msg: string) => Vow<void>>} ctx.log
  * @param {ZCFSeat} seat
- * @param {{ chainName: string; destAddr: string }} offerArgs
+ * @param {{
+ *   chainName: string;
+ *   destAddr: string;
+ *   type: number;
+ *   destinationEVMChain: string;
+ *   gasAmount: number;
+ * }} offerArgs
  */
 export const sendIt = async (
   orch,
@@ -38,8 +57,18 @@ export const sendIt = async (
   seat,
   offerArgs,
 ) => {
-  mustMatch(offerArgs, harden({ chainName: M.scalar(), destAddr: M.string() }));
-  const { chainName, destAddr } = offerArgs;
+  mustMatch(
+    offerArgs,
+    harden({
+      chainName: M.scalar(),
+      destAddr: M.string(),
+      type: M.number(),
+      destinationEVMChain: M.string(),
+      gasAmount: M.number(),
+    }),
+  );
+  const { chainName, destAddr, type, destinationEVMChain, gasAmount } =
+    offerArgs;
   // NOTE the proposal shape ensures that the `give` is a single asset
   const { give } = seat.getProposal();
   const [[_kw, amt]] = entries(give);
@@ -64,6 +93,31 @@ export const sendIt = async (
 
   void log(`completed transfer to localAccount`);
 
+  const memoToAxelar = {
+    destination_chain: destinationEVMChain,
+    destination_address: destAddr,
+    payload: null,
+    type,
+  };
+
+  if (type === 1 || type === 2) {
+    memoToAxelar.fee = {
+      amount: gasAmount,
+      recipient: addresses.AXELAR_GAS,
+    };
+  }
+
+  const memo = {
+    forward: {
+      receiver: addresses.AXELAR_GMP,
+      port: 'transfer',
+      channel: channels.OSMOSIS_TO_AXELAR,
+      timeout: '10m',
+      retries: 2,
+      next: JSON.stringify(memoToAxelar),
+    },
+  };
+
   try {
     await sharedLocalAccount.transfer(
       {
@@ -72,6 +126,7 @@ export const sendIt = async (
         chainId,
       },
       { denom, value: amt.value },
+      { memo: JSON.stringify(memo) },
     );
     void log(`completed transfer to ${destAddr}`);
   } catch (e) {
