@@ -13,6 +13,19 @@ import { M, mustMatch } from '@endo/patterns';
  * @import {AccountIdArg} from '../orchestration-api.ts';
  */
 
+const addresses = {
+  AXELAR_GMP:
+    'axelar1dv4u5k73pzqrxlzujxg3qp8kvc3pje7jtdvu72npnt5zhq05ejcsn5qme5',
+  AXELAR_GAS: 'axelar1zl3rxpp70lmte2xr6c4lgske2fyuj3hupcsvcd',
+  OSMOSIS: 'osmo1yh3ra8eage5xtr9a3m5utg6mx0pmqreytudaqj',
+};
+
+const channels = {
+  AGORIC_XNET_TO_OSMOSIS: 'channel-6',
+  AGORIC_DEVNET_TO_OSMOSIS: 'channel-61',
+  OSMOSIS_TO_AXELAR: 'channel-4118',
+};
+
 const { entries } = Object;
 
 // in guest file (the orchestration functions)
@@ -53,7 +66,13 @@ const denomForBrand = async (orch, brand) => {
  * @param {GuestOf<(msg: string) => Vow<void>>} ctx.log
  * @param {Brand} ctx.USDC
  * @param {ZCFSeat} seat
- * @param {{ chainName: string; destAddr: string }} offerArgs
+ * @param {{
+ *   chainName: string;
+ *   destAddr: string;
+ *   type: number;
+ *   destinationEVMChain: string;
+ *   gasAmount: number;
+ * }} offerArgs
  */
 export const sendIt = async (
   orch,
@@ -68,8 +87,18 @@ export const sendIt = async (
   seat,
   offerArgs,
 ) => {
-  mustMatch(offerArgs, harden({ chainName: M.scalar(), destAddr: M.string() }));
-  const { chainName, destAddr } = offerArgs;
+  mustMatch(
+    offerArgs,
+    harden({
+      chainName: M.scalar(),
+      destAddr: M.string(),
+      type: M.number(),
+      destinationEVMChain: M.string(),
+      gasAmount: M.number(),
+    }),
+  );
+  const { chainName, destAddr, type, destinationEVMChain, gasAmount } =
+    offerArgs;
   // NOTE the proposal shape ensures that the `give` is a single asset
   const { give } = seat.getProposal();
   const [[_kw, amt]] = entries(give);
