@@ -424,9 +424,112 @@ test('recovery behavior if Advance Fails (ADVANCE_FAILED)', async t => {
 });
 
 // unexpected, terminal state. test that log('🚨') is called
-test.todo('witdrawToSeat fails during AdvanceFailed recovery');
-// unexpected, terminal state. test that log('🚨') is called
-test.todo('returnToPool fails during AdvanceFailed recovery');
+test('logs error if withdrawToSeat fails during AdvanceFailed recovery', async t => {
+  const {
+    extensions: {
+      services: { advancer },
+      helpers: { inspectLogs, inspectNotifyCalls },
+      mocks: { mockPoolAccount, resolveLocalTransferV, rejectWithdrawToSeatV },
+    },
+    brands: { usdc },
+  } = t.context;
+
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  void advancer.handleTransactionEvent({ evidence, risk: {} });
+
+  // pretend borrow succeeded and funds were depositing to the LCA
+  resolveLocalTransferV();
+  // pretend the IBC Transfer failed
+  mockPoolAccount.transferVResolver.reject(new Error('transfer failed'));
+  // pretend withdrawToSeat failed
+  rejectWithdrawToSeatV();
+  await eventLoopIteration();
+
+  t.deepEqual(inspectLogs(), [
+    ['decoded EUD: osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men'],
+    ['Advance failed', Error('transfer failed')],
+    [
+      '🚨 withdraw {"brand":"[Alleged: USDC brand]","value":"[146999999n]"} from "poolAccount" to return to pool failed',
+      Error('One or more deposits failed: simulated error'),
+    ],
+  ]);
+
+  // ensure Settler is notified of failed advance
+  t.like(inspectNotifyCalls(), [
+    [
+      {
+        txHash: evidence.txHash,
+        forwardingAddress: evidence.tx.forwardingAddress,
+      },
+      false, // indicates transfer failed
+    ],
+  ]);
+});
+
+test('logs error if returnToPool fails during AdvanceFailed recovery', async t => {
+  const {
+    brands: { usdc },
+    extensions: {
+      services: { makeAdvancer },
+      helpers: { inspectLogs, inspectNotifyCalls },
+      mocks: {
+        mockPoolAccount,
+        mockNotifyF,
+        resolveLocalTransferV,
+        resolveWithdrawToSeatV,
+      },
+    },
+  } = t.context;
+
+  const mockBorrowerFacet = Far('LiquidityPool Borrow Facet', {
+    borrow: (seat: ZCFSeat, amount: NatAmount) => {
+      // note: will not be tracked by `inspectBorrowerFacetCalls`
+    },
+    returnToPool: (seat: ZCFSeat, amount: NatAmount) => {
+      throw new Error('returnToPool failed');
+    },
+  });
+
+  // make a new advancer that intentionally throws during returnToPool
+  const advancer = makeAdvancer({
+    borrower: mockBorrowerFacet,
+    notifier: mockNotifyF,
+    poolAccount: mockPoolAccount.account,
+    intermediateRecipient,
+    settlementAddress,
+  });
+
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  void advancer.handleTransactionEvent({ evidence, risk: {} });
+
+  // pretend borrow succeeded and funds were depositing to the LCA
+  resolveLocalTransferV();
+  // pretend the IBC Transfer failed
+  mockPoolAccount.transferVResolver.reject(new Error('transfer failed'));
+  // pretend withdrawToSeat succeeded
+  resolveWithdrawToSeatV();
+  await eventLoopIteration();
+
+  t.deepEqual(inspectLogs(), [
+    ['decoded EUD: osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men'],
+    ['Advance failed', Error('transfer failed')],
+    [
+      '🚨 return {"brand":"[Alleged: USDC brand]","value":"[146999999n]"} to pool failed. funds remain on "tmpReturnSeat"',
+      Error('returnToPool failed'),
+    ],
+  ]);
+
+  // ensure Settler is notified of failed advance
+  t.like(inspectNotifyCalls(), [
+    [
+      {
+        txHash: evidence.txHash,
+        forwardingAddress: evidence.tx.forwardingAddress,
+      },
+      false, // indicates transfer failed
+    ],
+  ]);
+});
 
 test('updates status to OBSERVED if pre-condition checks fail', async t => {
   const {
