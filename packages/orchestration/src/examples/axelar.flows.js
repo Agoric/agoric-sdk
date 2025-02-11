@@ -1,6 +1,5 @@
 import { NonNullish } from '@agoric/internal';
 import { makeError, q } from '@endo/errors';
-import { M, mustMatch } from '@endo/patterns';
 import { ethers } from 'ethers';
 
 /**
@@ -36,6 +35,7 @@ const channels = {
  *   contract method.
  * @param {string} params.encodedArgs - The ABI-encoded arguments for the
  *   contract method.
+ * @param {number} params.deadline
  * @param {number} params.nonce - A unique identifier for the transaction.
  * @returns {number[]} The encoded contract call payload as an array of numbers.
  */
@@ -43,10 +43,11 @@ const getContractInvocationPayload = ({
   evmContractAddress,
   functionSelector,
   encodedArgs,
+  deadline,
   nonce,
 }) => {
   const LOGIC_CALL_MSG_ID = 0;
-  const deadline = Math.floor(Date.now() / 1000) + 3600;
+
   const abiCoder = new ethers.utils.AbiCoder();
 
   const payload = abiCoder.encode(
@@ -83,6 +84,7 @@ const getContractInvocationPayload = ({
  *     functionSelector: string;
  *     encodedArgs: string;
  *     nonce: number;
+ *     deadline: number;
  *   };
  * }} offerArgs
  */
@@ -92,16 +94,6 @@ export const sendIt = async (
   seat,
   offerArgs,
 ) => {
-  mustMatch(
-    offerArgs,
-    harden({
-      chainName: M.scalar(),
-      destAddr: M.string(),
-      type: M.number(),
-      destinationEVMChain: M.string(),
-      gasAmount: M.number(),
-    }),
-  );
   const {
     destAddr,
     type,
@@ -110,8 +102,14 @@ export const sendIt = async (
     contractInvocationDetails,
   } = offerArgs;
 
-  const { evmContractAddress, functionSelector, encodedArgs, nonce } =
+  const { evmContractAddress, functionSelector, encodedArgs, nonce, deadline } =
     contractInvocationDetails;
+
+  void log(`offer args`);
+  void log(`evmContractAddress:${evmContractAddress}`);
+  void log(`functionSelector:${functionSelector}`);
+  void log(`encodedArgs:${encodedArgs}`);
+  void log(`nonce:${nonce}`);
 
   const { give } = seat.getProposal();
   const [[_kw, amt]] = entries(give);
@@ -128,7 +126,7 @@ export const sendIt = async (
   const info = await osmosisChain.getChainInfo();
   const { chainId } = info;
   assert(typeof chainId === 'string', 'bad chainId');
-  void log(`got info for chain: ${osmosisChain} ${chainId}`);
+  void log(`got info for chain: ${chainId}`);
 
   /**
    * @type {any} XXX methods returning vows
@@ -146,8 +144,11 @@ export const sendIt = async (
           functionSelector,
           encodedArgs,
           nonce,
+          deadline,
         })
       : null;
+
+  void log(`payload received`);
 
   const memoToAxelar = {
     destination_chain: destinationEVMChain,
