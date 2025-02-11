@@ -141,18 +141,20 @@ index b1989a4..fa1617f 100644
  			error: evt.err ? dumpError(evt.err) : null,
  			index: ++this.i,
 diff --git a/node_modules/ava/lib/run-status.js b/node_modules/ava/lib/run-status.js
-index 8471345..5d07de3 100644
+index 8471345..3110074 100644
 --- a/node_modules/ava/lib/run-status.js
 +++ b/node_modules/ava/lib/run-status.js
-@@ -228,7 +228,7 @@ export default class RunStatus extends Emittery {
- 			|| this.stats.sharedWorkerErrors > 0
- 			|| this.stats.timeouts > 0
+@@ -230,6 +230,10 @@ export default class RunStatus extends Emittery {
  			|| this.stats.uncaughtExceptions > 0
--			|| this.stats.unhandledRejections > 0
-+			|| (!process.env.AGORIC_AVA_ALLOW_UNHANDLED_REJECTIONS && this.stats.unhandledRejections > 0)
+ 			|| this.stats.unhandledRejections > 0
  		) {
++      const allowed = Number(process.env.AGORIC_AVA_ALLOW_UNHANDLED_REJECTIONS);
++      if (this.stats.unhandledRejections <= allowed) {
++        return 0;
++      }
  			return 1;
  		}
+ 
 diff --git a/node_modules/ava/lib/worker/base.js b/node_modules/ava/lib/worker/base.js
 index cdd3c4a..4302a4a 100644
 --- a/node_modules/ava/lib/worker/base.js
