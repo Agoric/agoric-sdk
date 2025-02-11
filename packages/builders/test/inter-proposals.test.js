@@ -13,7 +13,7 @@ const test = anyTest;
 const makeTestContext = t => {
   /** @param {string} specifier */
   const loadConfig = async specifier => {
-    const fullPath = await importMetaResolve(specifier, import.meta.url).then(
+    const fullPath = importMetaResolve(specifier, import.meta.url).then(
       u => new URL(u).pathname,
     );
     t.is(typeof fullPath, 'string');

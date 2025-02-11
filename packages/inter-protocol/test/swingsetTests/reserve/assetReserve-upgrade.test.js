@@ -21,7 +21,7 @@ test('assetReserve service upgrade', async t => {
         sourceSpec: bfile('bootstrap-assetReserve-upgrade.js'),
       },
       zoe: {
-        sourceSpec: await importMetaResolve(
+        sourceSpec: importMetaResolve(
           '@agoric/vats/src/vat-zoe.js',
           import.meta.url,
         ).then(href => new URL(href).pathname),
@@ -29,25 +29,25 @@ test('assetReserve service upgrade', async t => {
     },
     bundles: {
       zcf: {
-        sourceSpec: await importMetaResolve(
+        sourceSpec: importMetaResolve(
           '@agoric/zoe/src/contractFacet/vatRoot.js',
           import.meta.url,
         ).then(href => new URL(href).pathname),
       },
       committee: {
-        sourceSpec: await importMetaResolve(
+        sourceSpec: importMetaResolve(
           '@agoric/governance/src/committee.js',
           import.meta.url,
         ).then(href => new URL(href).pathname),
       },
       puppetContractGovernor: {
-        sourceSpec: await importMetaResolve(
+        sourceSpec: importMetaResolve(
           '@agoric/governance/tools/puppetContractGovernor.js',
           import.meta.url,
         ).then(href => new URL(href).pathname),
       },
       [arV1BundleName]: {
-        sourceSpec: await importMetaResolve(
+        sourceSpec: importMetaResolve(
           '@agoric/inter-protocol/src/reserve/assetReserve.js',
           import.meta.url,
         ).then(href => new URL(href).pathname),
