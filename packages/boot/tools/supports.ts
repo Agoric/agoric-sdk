@@ -115,9 +115,8 @@ export const getNodeTestVaultsConfig = async ({
   defaultManagerType = 'local' as ManagerType,
   discriminator = '',
 }) => {
-  const fullPath = importMetaResolve(specifier, import.meta.url).then(
-    u => new URL(u).pathname,
-  );
+  const fullPath = new URL(importMetaResolve(specifier, import.meta.url))
+    .pathname;
   const config: SwingSetConfig & { coreProposals?: any[] } = NonNullish(
     await loadSwingsetConfigFile(fullPath),
   );
