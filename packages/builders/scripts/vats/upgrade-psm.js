@@ -14,6 +14,6 @@ export const defaultProposalBuilder = async ({ publishRef, install }) =>
 
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
-  const { writeCoreProposal } = await makeHelpers(homeP, endowments);
-  await writeCoreProposal('upgrade-psm', defaultProposalBuilder);
+  const { writeCoreEval } = await makeHelpers(homeP, endowments);
+  await writeCoreEval('upgrade-psm', defaultProposalBuilder);
 };
