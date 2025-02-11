@@ -16,11 +16,12 @@ import { makeQueue } from '@endo/stream';
 // @ts-ignore TS7016 The 'jessie.js' library may need to update its package.json or typings
 import { asyncGenerate } from 'jessie.js';
 
+/** @import {ERef} from '@endo/far'; */
+/** @import {Permit, Attenuated} from './types.js'; */
+
 export { objectMap, objectMetaMap, fromUniqueEntries };
 
 const { fromEntries, keys, values } = Object;
-
-/** @import {ERef} from '@endo/far' */
 
 /**
  * @template T
@@ -171,25 +172,59 @@ export const assertAllDefined = obj => {
 };
 
 /**
- * @template {Record<PropertyKey, unknown>} T
- * @template {Partial<{ [K in keyof T]: true }>} U
- * @param {T} target
- * @param {U} [permits]
- * @returns {keyof U extends keyof T ? Pick<T, keyof U> : never}
+ * Attenuate `specimen` to only properties allowed by `permit`.
+ *
+ * @template T
+ * @template {Permit<T>} P
+ * @param {T} specimen
+ * @param {P} permit
+ * @param {<U, SubP extends Permit<U>>(attenuation: U, permit: SubP) => U} [transform]
+ * @returns {Attenuated<T, P>}
  */
-export const pick = (
-  target,
-  permits = /** @type {U} */ (objectMap(target, () => true)),
-) => {
-  const attenuation = objectMap(permits, (permit, key) => {
-    permit === true || Fail`internal: ${q(key)} permit must be true`;
-    // eslint-disable-next-line no-restricted-syntax
-    key in target || Fail`internal: target is missing ${q(key)}`;
-    // eslint-disable-next-line no-restricted-syntax
-    return target[key];
-  });
-  // @ts-expect-error cast
-  return attenuation;
+export const attenuate = (specimen, permit, transform = x => x) => {
+  // Entry-point arguments get special checks and error messages.
+  if (permit === true || typeof permit === 'string') {
+    return /** @type {Attenuated<T, P>} */ (specimen);
+  } else if (permit === null || typeof permit !== 'object') {
+    throw Fail`invalid permit: ${q(permit)}`;
+  } else if (specimen === null || typeof specimen !== 'object') {
+    throw Fail`specimen must be an object for permit ${q(permit)}`;
+  }
+
+  /** @type {string[]} */
+  const path = [];
+  /**
+   * @template SubT
+   * @template {Permit<SubT>} SubP
+   * @type {(specimen: SubT, permit: SubP) => Attenuated<SubT, SubP>}
+   */
+  const extract = (subSpecimen, subPermit) => {
+    if (subPermit === true || typeof subPermit === 'string') {
+      return /** @type {Attenuated<SubT, SubP>} */ (subSpecimen);
+    } else if (subPermit === null || typeof subPermit !== 'object') {
+      throw Fail`invalid permit at path ${q(path)}: ${q(subPermit)}`;
+    } else if (subSpecimen === null || typeof subSpecimen !== 'object') {
+      throw Fail`specimen at path ${q(path)} must be an object for permit ${q(subPermit)}`;
+    }
+    const attenuated = Object.fromEntries(
+      Object.entries(subPermit).map(([subKey, deepPermit]) => {
+        path.push(subKey);
+        // eslint-disable-next-line no-restricted-syntax
+        subKey in subSpecimen || Fail`specimen is missing path ${q(path)}`;
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore TS7053 does not manifest in all import sites
+        // eslint-disable-next-line no-restricted-syntax
+        const deepSpecimen = subSpecimen[subKey];
+        const entry = [subKey, extract(deepSpecimen, deepPermit)];
+        path.pop();
+        return entry;
+      }),
+    );
+    return transform(attenuated, subPermit);
+  };
+
+  // @ts-expect-error
+  return extract(specimen, permit);
 };
 
 /** @type {IteratorResult<undefined, never>} */

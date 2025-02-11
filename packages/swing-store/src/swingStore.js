@@ -7,7 +7,7 @@ import sqlite3 from 'better-sqlite3';
 
 import { Fail, q } from '@endo/errors';
 
-import { pick } from '@agoric/internal';
+import { attenuate } from '@agoric/internal';
 
 import { dbFileInDirectory } from './util.js';
 import { makeKVStore, getKeyType } from './kvStore.js';
@@ -565,41 +565,32 @@ export function makeSwingStore(path, forceReset, options = {}) {
     return db;
   }
 
-  const transcriptStore = pick(
-    transcriptStoreInternal,
-    /** @type {const} */ ({
-      initTranscript: true,
-      rolloverSpan: true,
-      rolloverIncarnation: true,
-      getCurrentSpanBounds: true,
-      addItem: true,
-      readSpan: true,
-      stopUsingTranscript: true,
-      deleteVatTranscripts: true,
-    }),
-  );
+  const transcriptStore = attenuate(transcriptStoreInternal, {
+    initTranscript: 'pick',
+    rolloverSpan: 'pick',
+    rolloverIncarnation: 'pick',
+    getCurrentSpanBounds: 'pick',
+    addItem: 'pick',
+    readSpan: 'pick',
+    stopUsingTranscript: 'pick',
+    deleteVatTranscripts: 'pick',
+  });
 
-  const snapStore = pick(
-    snapStoreInternal,
-    /** @type {const} */ ({
-      loadSnapshot: true,
-      saveSnapshot: true,
-      deleteAllUnusedSnapshots: true,
-      deleteVatSnapshots: true,
-      stopUsingLastSnapshot: true,
-      getSnapshotInfo: true,
-    }),
-  );
+  const snapStore = attenuate(snapStoreInternal, {
+    loadSnapshot: 'pick',
+    saveSnapshot: 'pick',
+    deleteAllUnusedSnapshots: 'pick',
+    deleteVatSnapshots: 'pick',
+    stopUsingLastSnapshot: 'pick',
+    getSnapshotInfo: 'pick',
+  });
 
-  const bundleStore = pick(
-    bundleStoreInternal,
-    /** @type {const} */ ({
-      addBundle: true,
-      hasBundle: true,
-      getBundle: true,
-      deleteBundle: true,
-    }),
-  );
+  const bundleStore = attenuate(bundleStoreInternal, {
+    addBundle: 'pick',
+    hasBundle: 'pick',
+    getBundle: 'pick',
+    deleteBundle: 'pick',
+  });
 
   const kernelStorage = {
     kvStore: kernelKVStore,
