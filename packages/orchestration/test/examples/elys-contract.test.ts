@@ -1,5 +1,4 @@
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import type { TestFn } from 'ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { heapVowE as VE } from '@agoric/vow/vat.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
@@ -19,6 +18,9 @@ import {
   MsgTransfer,
   MsgTransferResponse,
 } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import type { IBCEvent } from '@agoric/vats';
+import type { ChainAddress } from '../../src/orchestration-api.js';
+import { MsgLiquidStakeResponse } from '../../cosmic-proto/dist/codegen/stride/stakeibc/tx.js';
 
 const nodeRequire = createRequire(import.meta.url);
 
@@ -26,16 +28,21 @@ const contractName = 'elysStrideContract';
 const contractFile = nodeRequire.resolve('../../src/examples/elys.contract.js');
 type StartFn = typeof import('../../src/examples/elys.contract.js').start;
 
-type TestContext = Awaited<ReturnType<typeof commonSetup>>;
-
-const test = anyTest as TestFn<TestContext>;
-
-test.beforeEach(async t => {
-  t.context = await commonSetup(t);
-});
+// test.beforeEach(async t => {
+//   t.context = await commonSetup(t);
+// });
 
 test('start Elys-stride contract', async t => {
-  const { mocks, commonPrivateArgs, bootstrap } = t.context;
+  // const { mocks, commonPrivateArgs, bootstrap } = t.context;
+  // const {transmitTransferAck,inspectLocalBridge} = t.context.utils;
+
+  const {
+    bootstrap: { storage },
+    commonPrivateArgs,
+    mocks: { transferBridge, ibcBridge, },
+    utils: { inspectLocalBridge,inspectDibcBridge, transmitTransferAck },
+  } = await commonSetup(t);
+
 
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
   t.log('contract deployment', contractName);
@@ -44,7 +51,7 @@ test('start Elys-stride contract', async t => {
     await bundleAndInstall(contractFile);
   t.is(passStyleOf(installation), 'remotable');
 
-  const storageNode = await E(bootstrap.storage.rootNode).makeChildNode(contractName);
+  const storageNode = await E(storage.rootNode).makeChildNode(contractName);
   
 
   const myContract = await E(zoe).startInstance(
@@ -71,16 +78,16 @@ test('start Elys-stride contract', async t => {
   // By this time, agoric contract is ready to accept the deposit request from all the remote chains
 
   // transfer Atom from cosmoshub to agoric chain
-  const { transferBridge, ibcBridge } = mocks;
   const deposit = async (
     coins: CoinSDKType,
     source_channel: any,
     sender: string,
+    receiver: ChainAddress,
   ) => {
     await E(transferBridge).fromBridge(
       buildVTransferEvent({
-        receiver: agorichookAddress.value,
-        target: agorichookAddress.value,
+        receiver: receiver.value,
+        target: receiver.value,
         sourceChannel: source_channel,
         denom: coins.denom,
         amount: Nat(BigInt(coins.amount)),
@@ -88,6 +95,11 @@ test('start Elys-stride contract', async t => {
       }),
     );
     await eventLoopIteration();
+
+    const { messages, address: execAddr } = inspectLocalBridge().at(-1);
+    t.log('deposit messages :', messages)
+    t.log('execAddress :', execAddr)
+    t.is(messages?.length, 1, 'transfer message sent');
   };
 
   // const mockIbcTransferFromAgoricToHost = {
@@ -95,10 +107,10 @@ test('start Elys-stride contract', async t => {
   //   sourceChannel: 'channel-5',
   //   token: {
   //     denom: 'uatom',
-  //     amount: '10000000',
+  //     amount: '10',
   //   },
-  //   sender: 'cosmos175c7xwly7nwycghwww87x83h56tdkjxzjfv55d',
-  //   receiver: 'agoric1uydrqcdmr720ck7c9w54azswpavdzzednrvfwy',
+  //   sender: 'agoric1fakeLCAAddress',
+  //   receiver: 'cosmos1test2',
   //   timeoutHeight: {
   //     revisionHeight: 0n,
   //     revisionNumber: 0n,
@@ -116,7 +128,7 @@ test('start Elys-stride contract', async t => {
   //   );
 
   //   const transferResp = buildMsgResponseString(MsgTransferResponse, {
-  //     sequence: 0n,
+  //     sequence: 1n,
   //   });
 
   //   return {
@@ -126,54 +138,39 @@ test('start Elys-stride contract', async t => {
   // ibcBridge.setMockAck(buildMocks());
 
   // send atom for stride liquid staking
-  // await t.notThrowsAsync(
-  //   deposit(
-  //     { amount: '10000000', denom: 'uatom' },
-  //     'channel-405',
-  //     'cosmos175c7xwly7nwycghwww87x83h56tdkjxzjfv55d',
-  //   ),
-  // );
-  await deposit(
-    { amount: '10000000', denom: 'uatom' },
-    'channel-405',
-    'cosmos175c7xwly7nwycghwww87x83h56tdkjxzjfv55d',
+  await t.notThrowsAsync(
+    deposit(
+      { amount: '10', denom: 'uatom' },
+      'channel-405',
+      'cosmos175c7xwly7nwycghwww87x83h56tdkjxzjfv55d',
+      agorichookAddress,
+    ),
   );
 
-  const {transmitTransferAck,inspectLocalBridge} = t.context.utils;
-
   const { messages, address: execAddr } = inspectLocalBridge().at(-1);
-  t.log("MESSAGE ", messages?.length);
-  // t.log("execAddr  ",execAddr);
-  // t.is(messages?.length, 1, 'transfer message sent');
-  // t.like(
-  //   messages[0],
-  //   {
-  //     '@type': '/ibc.applications.transfer.v1.MsgTransfer',
-  //     receiver: 'cosmos175c7xwly7nwycghwww87x83h56tdkjxzjfv55d',
-  //     sender: execAddr,
-  //     sourceChannel: 'channel-5',
-  //     token: {
-  //       amount: '10000000',
-  //     },
-  //   },
-  //   'tokens transferred from LOA to COA',
-  // );
+  t.is(messages?.length, 1, 'transfer message sent');
+  t.like(
+    messages[0],
+    {
+      '@type': '/ibc.applications.transfer.v1.MsgTransfer',
+      receiver: 'cosmos1test2',
+      sender: execAddr,
+      sourceChannel: 'channel-5',
+      token: {
+        amount: '10',
+      },
+    },
+    'tokens transferred from LOA to COA',
+  );
 
+  ibcBridge.addMockAck(
+    'eyJ0eXBlIjoxLCJkYXRhIjoiQ2pzS0h5OXpkSEpwWkdVdWMzUmhhMlZwWW1NdVRYTm5UR2x4ZFdsa1UzUmhhMlVTR0FvTFkyOXpiVzl6TVhSbGMzUVNBakV3R2dWMVlYUnZiUT09IiwibWVtbyI6IiJ9',
+    buildMsgResponseString(MsgLiquidStakeResponse, {stToken: {denom: 'statom', amount: '1800000'}}),
+  );
+  ibcBridge.addMockAck(
+    'eyJ0eXBlIjoxLCJkYXRhIjoiQ25VS0tTOXBZbU11WVhCd2JHbGpZWFJwYjI1ekxuUnlZVzV6Wm1WeUxuWXhMazF6WjFSeVlXNXpabVZ5RWtnS0NIUnlZVzV6Wm1WeUVndGphR0Z1Ym1Wc0xUTTVNUm9MQ2dWMVlYUnZiUklDTVRBaURHTnZjMjF2Y3pGMFpYTjBNaW9MWTI5emJXOXpNWFJsYzNReUFEaUE4SkxMM1FnPSIsIm1lbW8iOiIifQ==',
+    buildMsgResponseString(MsgTransferResponse, { sequence: 1n }),
+  );
+  
   await transmitTransferAck();
-
-  // let lastSequence = 0n;
-  // await VE(transferBridge).fromBridge(
-  //   buildVTransferEvent({
-  //     receiver: 'cosmos175c7xwly7nwycghwww87x83h56tdkjxzjfv55d',
-  //     sender: 'agoric1uydrqcdmr720ck7c9w54azswpavdzzednrvfwy',
-  //     sourceChannel: 'channel-5',
-  //     denom: 'ibc/uatom',
-  //     amount: Nat(BigInt('10000000')),
-  //     sequence: lastSequence,
-  //   }),
-  // );
-
-  // await eventLoopIteration();
-  // // send statom for stride liquid staking redeem
-  // await t.notThrowsAsync(deposit({ amount: '10000000', denom: 'statom' },'channel-1266','elys1ultpdjygr6lnhhcrtsua8p22l5shvnz44mnhvy'));
 });
