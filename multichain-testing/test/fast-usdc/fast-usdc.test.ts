@@ -258,7 +258,7 @@ const advanceAndSettleScenario = test.macro({
       blockHash:
         '0x90d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee665',
       blockNumber: 21037663n,
-      txHash: `0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff3875527617${makeRandomDigits(makeRandomNumber(), 2n)}`,
+      txHash: `0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff3875${makeRandomDigits(makeRandomNumber(), 8n)}`,
       tx: {
         amount: mintAmt,
         forwardingAddress: userForwardingAddr,
