@@ -1,9 +1,27 @@
 {
-    "name": "benchmark",
-    "version": "1.0.0",
-    "type": "module",
-    "scripts": {
-        "test": "yarn rollup -c && eshost -h v8,xs dist/bundle.js"
-    },
-    "license": "MIT"
+  "name": "@agoric/benchmark-test",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "exit 0",
+    "prepack": "tsc --build tsconfig.build.json",
+    "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
+    "test": "yarn rollup -c && eshost -h 'V8,Moddable XS' dist/bundle.js",
+    "lint": "run-s --continue-on-error lint:*",
+    "lint:eslint": "eslint .",
+    "lint:types": "tsc"
+  },
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/Agoric/agoric-sdk/issues"
+  },
+  "homepage": "https://github.com/Agoric/agoric-sdk#readme",
+  "devDependencies": {
+    "tsd": "^0.31.1",
+    "@rollup/plugin-node-resolve": "^16.0.0",
+    "@rollup/plugin-commonjs": "^28.0.2",
+    "@endo/init": "^1.1.8",
+    "@endo/pass-style": "^1.4.8"
+  }
 }

@@ -1,0 +1,12 @@
+{
+    "extends": [
+        "../../typedoc.base.json"
+    ],
+    "entryPoints": [
+        "tools/benchmark.js"
+    ],
+    "validation": {
+        "notExported": false,
+        "invalidLink": false,
+    }
+}

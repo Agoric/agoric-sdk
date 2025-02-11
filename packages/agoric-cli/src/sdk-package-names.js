@@ -5,6 +5,7 @@ export default [
   "@agoric/async-flow",
   "@agoric/base-zone",
   "@agoric/benchmark",
+  "@agoric/benchmark-test",
   "@agoric/boot",
   "@agoric/builders",
   "@agoric/cache",
