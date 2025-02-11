@@ -90,6 +90,7 @@ const publishAddresses = (contractNode, addresses) => {
  *   feeConfig: FeeConfig;
  *   marshaller: Marshaller;
  *   poolMetricsNode: Remote<StorageNode>;
+ *   storageNode: Remote<StorageNode>;
  * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
