@@ -1,0 +1,36 @@
+name: Nix Flake Check
+
+on:
+  pull_request:
+  push:
+    branches:
+      # $default-branch
+      - master
+      - 'release-*'
+      - 'dev-*'
+permissions:
+  contents: read
+
+jobs:
+  flake-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v9
+
+      - name: Enable flakes
+        uses: DeterminateSystems/magic-nix-cache-action@v2
+
+      - name: Check Nix flake inputs
+        run: nix flake check
+
+      - name: Show flake metadata
+        if: always()  # Run even if previous step fails
+        run: nix flake metadata
+
+      - name: Validate flake outputs
+        if: always()  # Run even if previous step fails
+        run: nix flake show
