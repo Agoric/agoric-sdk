@@ -141,7 +141,7 @@ __metadata:
     "@endo/marshal": "npm:^1.6.3"
     "@endo/nat": "npm:^5.0.14"
     "@endo/promise-kit": "npm:^1.1.9"
-    import-meta-resolve: "npm:^2.2.1"
+    import-meta-resolve: "npm:^4.1.0"
   languageName: node
   linkType: soft
 
@@ -331,7 +331,7 @@ __metadata:
     ansi-styles: "npm:^6.2.1"
     anylogger: "npm:^0.21.0"
     better-sqlite3: "npm:^9.1.1"
-    import-meta-resolve: "npm:^2.2.1"
+    import-meta-resolve: "npm:^4.1.0"
     microtime: "npm:^3.1.0"
     semver: "npm:^6.3.0"
     tmp: "npm:^0.2.1"
@@ -420,7 +420,7 @@ __metadata:
     "@endo/pass-style": "npm:^1.4.8"
     "@endo/patterns": "npm:^1.4.8"
     "@endo/promise-kit": "npm:^1.1.9"
-    import-meta-resolve: "npm:^2.2.1"
+    import-meta-resolve: "npm:^4.1.0"
     jessie.js: "npm:^0.3.4"
   languageName: node
   linkType: soft
@@ -3778,10 +3778,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"import-meta-resolve@npm:^2.2.1":
-  version: 2.2.2
-  resolution: "import-meta-resolve@npm:2.2.2"
-  checksum: 10c0/80873aebf0d2a66e824e278fb6cbb16a6660f86df49b367404e5de80928720ecb44f643243b46dc5c5fae506abb666ef54d6f281b45ee0f1034951acb2261eb5
+"import-meta-resolve@npm:^4.1.0":
+  version: 4.1.0
+  resolution: "import-meta-resolve@npm:4.1.0"
+  checksum: 10c0/42f3284b0460635ddf105c4ad99c6716099c3ce76702602290ad5cbbcd295700cbc04e4bdf47bacf9e3f1a4cec2e1ff887dabc20458bef398f9de22ddff45ef5
   languageName: node
   linkType: hard
 
