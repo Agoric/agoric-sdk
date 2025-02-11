@@ -9,23 +9,14 @@ const nullUpgradePP = async powers => {
     },
   } = powers;
 
-  console.log('awaiting powers');
   const { adminFacet, instance } = await provisionPoolStartResultP;
   const instancePrivateArgs = await instancePrivateArgsP;
 
-  console.log('get privateArgs');
   const privateArgs = instancePrivateArgs.get(instance);
   const [poolBank, poserInvitation] = await Promise.all([
     privateArgs.poolBank,
     E(economicCommitteeCreatorFacet).getPoserInvitation(),
   ]);
-
-  console.log('DEBUG', {
-    adminFacet,
-    instance,
-    privateArgs,
-    poserInvitation,
-  });
 
   await E(adminFacet).restartContract({
     ...privateArgs,
