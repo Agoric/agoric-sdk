@@ -1,6 +1,7 @@
 import { NonNullish } from '@agoric/internal';
 import { makeError, q } from '@endo/errors';
 import { M, mustMatch } from '@endo/patterns';
+import { ethers } from 'ethers';
 
 /**
  * @import {GuestInterface, GuestOf} from '@agoric/async-flow';
@@ -23,6 +24,52 @@ const channels = {
   OSMOSIS_TO_AXELAR: 'channel-4118',
 };
 
+const getType1Payload = ({ evmContractAddresss, functionSelector, nonce }) => {
+  const LOGIC_CALL_MSG_ID = 0;
+  const deadline = Math.floor(Date.now() / 1000) + 3600;
+  const abiCoder = new ethers.utils.AbiCoder();
+
+  const newCountValue = 234;
+  const encodedArgs = abiCoder.encode(['uint256'], [newCountValue]);
+
+  const payload = abiCoder.encode(
+    ['uint256', 'address', 'uint256', 'uint256', 'bytes'],
+    [
+      LOGIC_CALL_MSG_ID,
+      evmContractAddresss,
+      nonce,
+      deadline,
+      ethers.utils.hexlify(
+        ethers.utils.concat([functionSelector, encodedArgs]),
+      ),
+    ],
+  );
+
+  return Array.from(ethers.utils.arrayify(payload));
+};
+
+export const getPayload = ({ type }) => {
+  const abiCoder = new ethers.utils.AbiCoder();
+
+  switch (type) {
+    case 1:
+      return getType1Payload();
+    case 2:
+      return Array.from(
+        ethers.utils.arrayify(
+          abiCoder.encode(
+            ['address'],
+            ['0x20E68F6c276AC6E297aC46c84Ab260928276691D'],
+          ),
+        ),
+      );
+    case 3:
+      return null;
+    default:
+      throw new Error('Invalid payload type');
+  }
+};
+
 const { entries } = Object;
 
 // in guest file (the orchestration functions)
@@ -37,7 +84,6 @@ const { entries } = Object;
  * @param {GuestOf<(msg: string) => Vow<void>>} ctx.log
  * @param {ZCFSeat} seat
  * @param {{
- *   chainName: string;
  *   destAddr: string;
  *   type: number;
  *   destinationEVMChain: string;
@@ -60,12 +106,11 @@ export const sendIt = async (
       gasAmount: M.number(),
     }),
   );
-  const { chainName, destAddr, type, destinationEVMChain, gasAmount } =
-    offerArgs;
-  // NOTE the proposal shape ensures that the `give` is a single asset
+  const { destAddr, type, destinationEVMChain, gasAmount } = offerArgs;
+
   const { give } = seat.getProposal();
   const [[_kw, amt]] = entries(give);
-  void log(`sending {${amt.value}} from ${chainName} to ${destAddr}`);
+
   const agoric = await orch.getChain('agoric');
   const assets = await agoric.getVBankAssetInfo();
   void log(`got info for denoms: ${assets.map(a => a.denom).join(', ')}`);
@@ -74,11 +119,11 @@ export const sendIt = async (
     `${amt.brand} not registered in vbank`,
   );
 
-  const chain = await orch.getChain(chainName);
-  const info = await chain.getChainInfo();
+  const osmosisChain = await orch.getChain('osmosis');
+  const info = await osmosisChain.getChainInfo();
   const { chainId } = info;
   assert(typeof chainId === 'string', 'bad chainId');
-  void log(`got info for chain: ${chainName} ${chainId}`);
+  void log(`got info for chain: ${osmosisChain} ${chainId}`);
 
   /**
    * @type {any} XXX methods returning vows
@@ -117,7 +162,7 @@ export const sendIt = async (
   try {
     await sharedLocalAccount.transfer(
       {
-        value: destAddr,
+        value: addresses.OSMOSIS,
         encoding: 'bech32',
         chainId,
       },
