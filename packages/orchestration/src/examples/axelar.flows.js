@@ -11,11 +11,13 @@ import { ethers } from 'ethers';
  * @import {Orchestrator, OrchestrationFlow, LocalAccountMethods} from '../types.js';
  */
 
+const { entries } = Object;
+
 const addresses = {
   AXELAR_GMP:
     'axelar1dv4u5k73pzqrxlzujxg3qp8kvc3pje7jtdvu72npnt5zhq05ejcsn5qme5',
   AXELAR_GAS: 'axelar1zl3rxpp70lmte2xr6c4lgske2fyuj3hupcsvcd',
-  OSMOSIS: 'osmo1yh3ra8eage5xtr9a3m5utg6mx0pmqreytudaqj',
+  OSMOSIS_RECEIVER: 'osmo1yh3ra8eage5xtr9a3m5utg6mx0pmqreytudaqj',
 };
 
 const channels = {
@@ -24,19 +26,34 @@ const channels = {
   OSMOSIS_TO_AXELAR: 'channel-4118',
 };
 
-const getType1Payload = ({ evmContractAddresss, functionSelector, nonce }) => {
+/**
+ * Generates a contract call payload for an EVM-based contract.
+ *
+ * @param {Object} params - The parameters for encoding the contract call.
+ * @param {string} params.evmContractAddress - The address of the EVM contract
+ *   to call.
+ * @param {string} params.functionSelector - The function selector of the
+ *   contract method.
+ * @param {string} params.encodedArgs - The ABI-encoded arguments for the
+ *   contract method.
+ * @param {number} params.nonce - A unique identifier for the transaction.
+ * @returns {number[]} The encoded contract call payload as an array of numbers.
+ */
+const getContractInvocationPayload = ({
+  evmContractAddress,
+  functionSelector,
+  encodedArgs,
+  nonce,
+}) => {
   const LOGIC_CALL_MSG_ID = 0;
   const deadline = Math.floor(Date.now() / 1000) + 3600;
   const abiCoder = new ethers.utils.AbiCoder();
-
-  const newCountValue = 234;
-  const encodedArgs = abiCoder.encode(['uint256'], [newCountValue]);
 
   const payload = abiCoder.encode(
     ['uint256', 'address', 'uint256', 'uint256', 'bytes'],
     [
       LOGIC_CALL_MSG_ID,
-      evmContractAddresss,
+      evmContractAddress,
       nonce,
       deadline,
       ethers.utils.hexlify(
@@ -47,33 +64,6 @@ const getType1Payload = ({ evmContractAddresss, functionSelector, nonce }) => {
 
   return Array.from(ethers.utils.arrayify(payload));
 };
-
-export const getPayload = ({ type }) => {
-  const abiCoder = new ethers.utils.AbiCoder();
-
-  switch (type) {
-    case 1:
-      return getType1Payload();
-    case 2:
-      return Array.from(
-        ethers.utils.arrayify(
-          abiCoder.encode(
-            ['address'],
-            ['0x20E68F6c276AC6E297aC46c84Ab260928276691D'],
-          ),
-        ),
-      );
-    case 3:
-      return null;
-    default:
-      throw new Error('Invalid payload type');
-  }
-};
-
-const { entries } = Object;
-
-// in guest file (the orchestration functions)
-// the second argument is all the endowments provided
 
 /**
  * @satisfies {OrchestrationFlow}
@@ -88,6 +78,12 @@ const { entries } = Object;
  *   type: number;
  *   destinationEVMChain: string;
  *   gasAmount: number;
+ *   contractInvocationDetails: {
+ *     evmContractAddress: string;
+ *     functionSelector: string;
+ *     encodedArgs: string;
+ *     nonce: number;
+ *   };
  * }} offerArgs
  */
 export const sendIt = async (
@@ -106,7 +102,16 @@ export const sendIt = async (
       gasAmount: M.number(),
     }),
   );
-  const { destAddr, type, destinationEVMChain, gasAmount } = offerArgs;
+  const {
+    destAddr,
+    type,
+    destinationEVMChain,
+    gasAmount,
+    contractInvocationDetails,
+  } = offerArgs;
+
+  const { evmContractAddress, functionSelector, encodedArgs, nonce } =
+    contractInvocationDetails;
 
   const { give } = seat.getProposal();
   const [[_kw, amt]] = entries(give);
@@ -134,10 +139,20 @@ export const sendIt = async (
 
   void log(`completed transfer to localAccount`);
 
+  const payload =
+    type === 1 || type === 2
+      ? getContractInvocationPayload({
+          evmContractAddress,
+          functionSelector,
+          encodedArgs,
+          nonce,
+        })
+      : null;
+
   const memoToAxelar = {
     destination_chain: destinationEVMChain,
     destination_address: destAddr,
-    payload: null,
+    payload,
     type,
   };
 
@@ -162,7 +177,7 @@ export const sendIt = async (
   try {
     await sharedLocalAccount.transfer(
       {
-        value: addresses.OSMOSIS,
+        value: addresses.OSMOSIS_RECEIVER,
         encoding: 'bech32',
         chainId,
       },
