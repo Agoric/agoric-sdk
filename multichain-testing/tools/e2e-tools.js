@@ -23,8 +23,8 @@ import { makeTracer } from '@agoric/internal';
 const trace = makeTracer('E2ET');
 
 // The default of 6 retries was failing.
-// XXX even 15 wasn't enough
-const SMART_WALLET_PROVISION_RETRIES = 30;
+// XXX also tried 15, 30. There's probably something deeper to fix.
+const SMART_WALLET_PROVISION_RETRIES = 100;
 
 const BLD = '000000ubld';
 

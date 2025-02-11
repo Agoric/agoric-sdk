@@ -125,11 +125,10 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     chainHub,
   });
 
-  const { localTransfer } = makeZoeTools(zcf, vowTools);
+  const zoeTools = makeZoeTools(zcf, vowTools);
   const makeAdvancer = prepareAdvancer(zone, {
     chainHub,
     feeConfig,
-    localTransfer,
     usdc: harden({
       brand: terms.brands.USDC,
       denom: terms.usdcDenom,
@@ -137,6 +136,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     statusManager,
     vowTools,
     zcf,
+    zoeTools,
   });
 
   const makeFeedKit = prepareTransactionFeedKit(zone, zcf);

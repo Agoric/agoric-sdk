@@ -6,7 +6,8 @@
  * - https://github.com/Agoric/agoric-sdk/issues/8724
  *
  * The test scenario is as follows;
- * 1. Upgrade provisionPool. This upgrade overrides provisionWalletBridgerManager with a durable one
+ * 1. Upgrade provisionPool in upgrade.go. This upgrade overrides
+ *    provisionWalletBridgerManager with a durable one
  * 2. Add a new account and successfully provision it
  *   - Observe new account's address under `published.wallet.${address}`
  * 3. Send some USDC_axl to provisionPoolAddress and observe its IST balances increases accordingly
@@ -49,14 +50,12 @@ import {
   checkUserProvisioned,
   introduceAndProvision,
   provision,
-} from './test-lib/provision-helpers.js';
-import { getIncarnationFromDetails } from './test-lib/utils.js';
+} from '../test-lib/provision-helpers.js';
+import { getIncarnationFromDetails } from '../test-lib/utils.js';
 
 const PROVISIONING_POOL_ADDR = 'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346';
 
-const ADD_PSM_DIR = 'addUsdLemons';
 const DEPOSIT_USD_LEMONS_DIR = 'depositUSD-LEMONS';
-const UPGRADE_PP_DIR = 'upgradeProvisionPool';
 const NULL_UPGRADE_PP_DIR = 'nullUpgradePP';
 
 const USDC_DENOM = NonNullish(process.env.USDC_DENOM);
@@ -87,24 +86,6 @@ test.before(async t => {
   };
 });
 
-test.serial('upgrade provisionPool', async t => {
-  // @ts-expect-error casting
-  const { currentVatIncarnations } = t.context;
-  console.log(currentVatIncarnations);
-  await evalBundles(UPGRADE_PP_DIR);
-
-  for await (const vatName of upgradedVats) {
-    const incarnationAfterUpgrade = await getIncarnationFromDetails(vatName);
-    const previousIncarnation = currentVatIncarnations[vatName];
-
-    t.is(
-      incarnationAfterUpgrade,
-      previousIncarnation + 1,
-      `${vatName} does not meet the expected incarnation number`,
-    );
-  }
-});
-
 test.serial(
   `check provisionPool can recover purse and asset subscribers after upgrade`,
   async t => {
@@ -127,8 +108,8 @@ test.serial(
       { errorMessage: 'Provision pool not able to swap USDC_axl for IST.' },
     );
 
-    // Introduce USD_LEMONS
-    await evalBundles(ADD_PSM_DIR);
+    // agoricNames already added USD_LEMONS
+    // await evalBundles(ADD_PSM_DIR);
     await waitUntilContractDeployed('psm-IST-USD_LEMONS', ambientAuthority, {
       errorMessage: 'psm-IST-USD_LEMONS instance not observed.',
     });
