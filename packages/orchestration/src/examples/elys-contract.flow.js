@@ -27,7 +27,7 @@ const trace = makeTracer('StrideStakingFlow');
 export const makeICAHookAccounts = async (
   orch,
   { makeStrideStakingTap, chainHub },
-  { chainNames, supportedHostChains,stDenomOnElysTohostToAgoricChannelMap },
+  { chainNames, supportedHostChains, stDenomOnElysTohostToAgoricChannelMap },
 ) => {
   const allRemoteChains = await Promise.all(
     chainNames.map(n => orch.getChain(n)),
@@ -35,19 +35,22 @@ export const makeICAHookAccounts = async (
 
   // Agoric local account
   const agoric = await orch.getChain('agoric');
-  const { chainId: agoricChainId } = await agoric.getChainInfo();
+  const { chainId: agoricChainId, bech32Prefix: agoricBech32Prefix } =
+    await agoric.getChainInfo();
   const localAccount = await agoric.makeAccount();
   const localAccountAddress = localAccount.getAddress();
 
   // stride ICA account
   const stride = await orch.getChain('stride');
-  const { chainId: strideChainId } = await stride.getChainInfo();
+  const { chainId: strideChainId, bech32Prefix: strideBech32Prefix } =
+    await stride.getChainInfo();
   const strideICAAccount = await stride.makeAccount();
   const strideICAAddress = strideICAAccount.getAddress();
 
   // Elys ICA account
   const elys = await orch.getChain('elys');
-  const { chainId: elysChainId } = await elys.getChainInfo();
+  const { chainId: elysChainId, bech32Prefix: elysBech32Prefix } =
+    await elys.getChainInfo();
   const elysICAAccount = await elys.makeAccount();
   const elysICAAddress = elysICAAccount.getAddress();
 
@@ -79,6 +82,7 @@ export const makeICAHookAccounts = async (
       await chainHub.getConnectionInfo(chainId, strideChainId);
 
     const ibcDenomOnAgoric = `ibc/${denomHash({ denom: nativeDenom, channelId: transferChannel.channelId })}`;
+    const ibcDenomOnStride = `ibc/${denomHash({ denom: nativeDenom, channelId: transferChannelhostStride.channelId })}`;
 
     // Required in retrieving native token back from stTokens on elys chain
     const stTokenDenomOnElys = `ibc/${denomHash({ denom: `st${nativeDenom}`, channelId: transferChannelStrideElys.channelId })}`;
@@ -94,9 +98,9 @@ export const makeICAHookAccounts = async (
       hostToAgoricChannel: transferChannel.counterPartyChannelId,
       nativeDenom,
       ibcDenomOnAgoric,
+      ibcDenomOnStride,
       hostICAAccount: ICAAccount,
       hostICAAccountAddress: ICAAddress,
-      chainId,
       bech32Prefix,
     };
     supportedHostChains.init(
@@ -116,7 +120,9 @@ export const makeICAHookAccounts = async (
     elysToAgoricChannel: transferChannelAgoricElys.counterPartyChannelId,
     AgoricToElysChannel: transferChannelAgoricElys.channelId,
     stDenomOnElysTohostToAgoricChannelMap,
-    elysChainId,
+    agoricBech32Prefix,
+    strideBech32Prefix,
+    elysBech32Prefix,
   });
 
   // @ts-expect-error tap.receiveUpcall: 'Vow<void> | undefined' not assignable to 'Promise<any>'

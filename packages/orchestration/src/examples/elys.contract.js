@@ -1,7 +1,11 @@
+import { makeTracer } from '@agoric/internal';
+import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
 import { withOrchestration } from '../utils/start-helper.js';
 import { prepareStrideStakingTap } from './elys-contract-tap-kit.js';
 import * as flows from './elys-contract.flow.js';
 import { E } from '@endo/far';
+
+const trace = makeTracer('ContractInstantiation');
 
 const interfaceTODO = undefined;
 /**
@@ -13,18 +17,18 @@ const interfaceTODO = undefined;
 /**
  * To be wrapped with `withOrchestration`.
  *
- * @param {ZCF} _zcf
+ * @param {ZCF} zcf
  * @param {OrchestrationPowers & {
  *   marshaller: Marshaller;
  *   chainInfo?: Record<string, CosmosChainInfo>;
  *   assetInfo?: [Denom, DenomDetail & { brandKey?: string }][];
- * }} _privateArgs
+ * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
  */
 const contract = async (
-  _zcf,
-  _privateArgs,
+  zcf,
+  privateArgs,
   zone,
   { chainHub, orchestrateAll, vowTools }, // orchestration tools
 ) => {
@@ -38,8 +42,22 @@ const contract = async (
     chainHub,
   });
 
+  trace(
+    'Registered chains and assets :',
+    privateArgs.chainInfo,
+    privateArgs.assetInfo,
+  );
+  registerChainsAndAssets(
+    chainHub,
+    zcf.getTerms().brands,
+    privateArgs.chainInfo,
+    privateArgs.assetInfo,
+  );
+
   const passablesupportedHostChains = zone.mapStore('supportedHostChains');
-  const stDenomOnElysTohostToAgoricChannelMap = zone.mapStore('stDenomOnElysToHostChannelMap');
+  const stDenomOnElysTohostToAgoricChannelMap = zone.mapStore(
+    'stDenomOnElysToHostChannelMap',
+  );
 
   const icaAndLocalAccount = zone.makeOnce('icaAndLocalAccount', _key =>
     makeICAHookAccounts({
@@ -61,7 +79,6 @@ const contract = async (
 
 export const start = withOrchestration(contract);
 harden(start);
-
 
 // TODO: Send these params during initialisation of the contract
 const allowedChains = ['cosmoshub'];
