@@ -13,7 +13,7 @@ import { E } from '@endo/far';
  * @import {start as StartFn} from '@agoric/orchestration/src/examples/axelar-gmp.contract.js';
  */
 
-const trace = makeTracer('StartAxelarGMP', true);
+const trace = makeTracer('start axelarGmp', true);
 
 /**
  * @param {BootstrapPowers & {
@@ -74,9 +74,7 @@ export const startAxelarGmp = async (
       localchain,
       marshaller,
       orchestrationService: cosmosInterchainService,
-      storageNode: E(NonNullish(await chainStorage)).makeChildNode(
-        'axelar-gmp',
-      ),
+      storageNode: E(NonNullish(await chainStorage)).makeChildNode('axelarGmp'),
       timerService: chainTimerService,
       chainInfo,
       assetInfo,
