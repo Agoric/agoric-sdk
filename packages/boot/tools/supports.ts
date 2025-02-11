@@ -163,12 +163,12 @@ interface Powers {
   fs: typeof import('node:fs/promises');
 }
 
+const importSpec = async spec =>
+  new URL(importMetaResolve(spec, import.meta.url)).pathname;
+
 export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
   const getPkgPath = (pkg, fileName = '') =>
     new URL(`../../${pkg}/${fileName}`, import.meta.url).pathname;
-
-  const importSpec = spec =>
-    importMetaResolve(spec, import.meta.url).then(u => new URL(u).pathname);
 
   const runPackageScript = (
     outputDir: string,
