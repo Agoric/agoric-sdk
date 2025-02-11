@@ -106,6 +106,7 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
         'WatchAndMoveFromHostToStride',
         {
           onFulfilled: M.call(
+            M.undefined(),
             M.bigint(),
             M.string(),
             M.string(),
@@ -113,6 +114,7 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
           ).returns(VowShape),
           // On rejected, move funds to use address on agoric chain
           onRejected: M.call(
+            M.error(),
             M.bigint(),
             M.string(),
             M.string(),
@@ -123,6 +125,7 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
       watchAndLiquidStakeOnStride: M.interface('WatchAndLiquidStakeOnStride', {
         // move from host to stride
         onFulfilled: M.call(
+          M.undefined(),
           M.string(),
           M.string(),
           M.string(),
@@ -130,6 +133,7 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
         ).returns(VowShape),
         // On rejected, move funds to user address on host chain
         onRejected: M.call(
+          M.error(),
           M.string(),
           M.string(),
           M.string(),
@@ -141,12 +145,14 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
         {
           // move from host to stride
           onFulfilled: M.call(
+            M.undefined(),
             M.bigint(),
             M.string(),
             SupportedHostChainShape,
           ).returns(VowShape),
           // On rejected, move funds to user address on stride chain
           onRejected: M.call(
+            M.error(),
             M.bigint(),
             M.string(),
             SupportedHostChainShape,
@@ -157,6 +163,7 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
         'WatchAndMoveFromElysToStride',
         {
           onFulfilled: M.call(
+            M.undefined(),
             M.bigint(),
             M.string(),
             M.string(),
@@ -165,6 +172,7 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
           ).returns(M.or(VowShape, M.undefined())),
           // On rejected, move funds to user address on elys chain
           onRejected: M.call(
+            M.undefined(),
             M.bigint(),
             M.string(),
             M.string(),
@@ -176,12 +184,14 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
       watchAndRedeemOnStride: M.interface('WatchAndRedeemOnStride', {
         // move from host to stride
         onFulfilled: M.call(
+          M.undefined(),
           M.string(),
           M.string(),
           M.string(),
           SupportedHostChainShape,
         ).returns(M.or(VowShape, M.undefined())),
         onRejected: M.call(
+          M.undefined(),
           M.string(),
           M.string(),
           M.string(),
@@ -237,17 +247,11 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
             if (tx.denom !== hostChainInfo.nativeDenom) {
               return;
             }
-            trace('LiquidStake: Moving funds to host-chain');
-            trace(
-              'hostChainInfo.hostICAAccountAddress ',
-              hostChainInfo.hostICAAccountAddress,
-            );
-            trace(
-              'hostChainInfo.ibcDenomOnAgoric ',
-              hostChainInfo.ibcDenomOnAgoric,
-            );
-            trace('BigInt(tx.amount) ', BigInt(tx.amount));
 
+            trace('LiquidStake: Moving funds to host-chain');
+            trace('hostChainInfo.hostICAAccountAddress ',hostChainInfo.hostICAAccountAddress,);
+            trace('hostChainInfo.ibcDenomOnAgoric ',hostChainInfo.ibcDenomOnAgoric,);
+            trace('BigInt(tx.amount) ', BigInt(tx.amount));
             return watch(
               E(localAccount).transfer(hostChainInfo.hostICAAccountAddress, {
                 denom: hostChainInfo.ibcDenomOnAgoric,
@@ -274,7 +278,7 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
             const { hostICAAccountAddress } = hostChainInfo;
             const ibcDenomOnAgoricFromElys = `ibc/${denomHash({ denom: `st${tx.denom}`, channelId: AgoricToElysChannel })}`;
 
-            trace('LiquidStakeRedeem: Moving funds to elys');
+            trace('LiquidStakeRedeem: Moving funds to elys ICA');
             // Transfer to elys ICA account
             return watch(
               E(localAccount).transfer(elysICAAddress, {
@@ -302,8 +306,8 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
          */
         onFulfilled(_result, amount, denom, senderAddress, hostChainInfo) {
           const { strideICAAddress } = this.state;
-          const { hostICAAccount } = hostChainInfo;
-          trace('LiquidStake: Moving funds to stride from host');
+          const { hostICAAccount,hostICAAccountAddress } = hostChainInfo;
+          trace(`LiquidStake: Moving funds to stride from host ${hostICAAccountAddress.chainId}`);
           return watch(
             E(hostICAAccount).transfer(strideICAAddress, {
               denom,
@@ -325,6 +329,8 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
          */
         // move funds to users agoric address
         onRejected(_result, amount, _denom, senderAddress, hostChainInfo) {
+          trace('LiquidStakeFailed: Moving funds to host-chain failed');
+          
           const { localAccount, localAccountAddress, agoricBech32Prefix } =
             this.state;
           const { ibcDenomOnAgoric } = hostChainInfo;
@@ -339,6 +345,7 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
             value: senderAgoricAddress,
           };
 
+          trace('LiquidStakeFailed: Moving funds to user agoric address');
           return watch(
             E(localAccount).send(senderAgoricChainAddress, {
               denom: ibcDenomOnAgoric,
@@ -397,6 +404,7 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
           senderAddress,
           _hostChainInfo,
         ) {
+          trace('LiquidStakeRedeem: Moving stToken to elys ICA failed');
           const { localAccount, localAccountAddress, agoricBech32Prefix } =
             this.state;
 
@@ -410,6 +418,7 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
             value: senderAgoricAddress,
           };
 
+          trace('LiquidStakeRedeem: Moving stToken to users agoric address');
           return watch(
             E(localAccount).send(senderAgoricChainAddress, {
               denom: ibcDenomOnAgoricFromElys,
@@ -475,6 +484,7 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
           senderAddress,
           _hostChainInfo,
         ) {
+          trace('LiquidStakeRedeemFailed: Moving stToken to stride ICA failed');
           const { elysICAAccount, elysICAAddress, elysBech32Prefix } =
             this.state;
 
@@ -492,6 +502,7 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
             value: senderElysAddress,
           };
 
+          trace('LiquidStakeRedeemFailed: Moving stToken to users stride address');
           return watch(
             E(elysICAAccount).send(senderElysChainAddress, {
               denom: ibcDenomOnElys,
@@ -544,6 +555,7 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
          */
         // move funds to users host address
         onRejected(_result, amount, nativeDenom, senderAddress, hostChainInfo) {
+          trace('LiquidStakeFailed: Transfer failed from host to stride');
           const { hostICAAccount, hostICAAccountAddress, bech32Prefix } =
             hostChainInfo;
 
@@ -553,7 +565,7 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
             encoding: hostICAAccountAddress.encoding,
             value: senderHostAddress,
           };
-
+          trace('LiquidStakeFailed: Moving funds to users host address');
           return watch(
             E(hostICAAccount).send(senderHostChainAddress, {
               denom: nativeDenom,
@@ -599,7 +611,7 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
             value: senderElysAddress.toString(),
           };
 
-          trace('LiquidStake: Moving funds to elys from stride');
+          trace('LiquidStake: Moving stTokens to elys from stride');
           // Move stTokens from stride ICA to user's elys address
           return watch(
             E(strideICAAccount).transfer(senderChainAddress, {
@@ -616,6 +628,7 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
          */
         // move funds to user address on stride chain
         onRejected(_result, amount, senderAddress, hostChainInfo) {
+          trace('LiquidStakeFailed: Staking on stride failed');
           const { ibcDenomOnStride } = hostChainInfo;
           const { strideICAAccount, strideICAAddress, strideBech32Prefix } =
             this.state;
@@ -630,7 +643,7 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
             encoding: strideICAAddress.encoding,
             value: senderStrideAddress,
           };
-
+          trace('LiquidStakeFailed: moving funds to users stride address');
           return watch(
             E(strideICAAccount).send(senderStrideChainAddress, {
               denom: ibcDenomOnStride,
