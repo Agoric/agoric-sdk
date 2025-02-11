@@ -36,7 +36,10 @@ export const getAssetList = async labelList => {
 
   // Determine the assets to consider based on labelList
   const assetsToConsider =
-    labelList || Object.values(vbankAssets).map(asset => asset.issuerName);
+    labelList ||
+    Object.values(vbankAssets)
+      .map(asset => asset.issuerName)
+      .filter(Boolean); // testvbankAsset can be malformed.
 
   for (const label of assetsToConsider) {
     if (label === 'IST') {
@@ -63,11 +66,6 @@ export const mintPayment = async (t, address, assetList, value) => {
   for (const asset of assetList) {
     const { label, denom } = asset;
 
-    // XXX I don't know what asset shows up like this, but let's ignore it.
-    if (!label) {
-      console.log('MINT PAYMENT  undef', asset);
-      continue;
-    }
     const scaled = BigInt(parseInt(value, 10) * 1_000_000).toString();
 
     await replaceTemplateValuesInFile(`${SUBMISSION_DIR}/send-script`, {
