@@ -19,11 +19,13 @@ import { logLevels } from './js-utils.js';
 
 /** @import {LimitedConsole} from './js-utils.js'; */
 
+/** @import {ERef} from '@endo/far'; */
+/** @import {Primitive} from '@endo/pass-style'; */
+/** @import {Permit, Attenuated} from './types.js'; */
+
 export { objectMap, objectMetaMap, fromUniqueEntries };
 
 const { fromEntries, keys, values } = Object;
-
-/** @import {ERef} from '@endo/far' */
 
 /** @param {(level: string) => (...args: unknown[]) => void} makeLogger */
 export const makeLimitedConsole = makeLogger => {
@@ -183,25 +185,58 @@ export const assertAllDefined = obj => {
 };
 
 /**
- * @template {Record<PropertyKey, unknown>} T
- * @template {Partial<{ [K in keyof T]: true }>} U
- * @param {T} target
- * @param {U} [permits]
- * @returns {keyof U extends keyof T ? Pick<T, keyof U> : never}
+ * Attenuate `specimen` to only properties allowed by `permit`.
+ *
+ * @template T
+ * @template {Permit<T>} P
+ * @param {T} specimen
+ * @param {P} permit
+ * @param {<U, SubP extends Permit<U>>(attenuation: U, permit: SubP) => U} [transform]
+ *   used to replace the results of recursive picks (but not blanket permits)
+ * @returns {Attenuated<T, P>}
  */
-export const pick = (
-  target,
-  permits = /** @type {U} */ (objectMap(target, () => true)),
-) => {
-  const attenuation = objectMap(permits, (permit, key) => {
-    permit === true || Fail`internal: ${q(key)} permit must be true`;
-    // eslint-disable-next-line no-restricted-syntax
-    key in target || Fail`internal: target is missing ${q(key)}`;
-    // eslint-disable-next-line no-restricted-syntax
-    return target[key];
-  });
+export const attenuate = (specimen, permit, transform = x => x) => {
+  // Fast-path for no attenuation.
+  if (permit === true || typeof permit === 'string') {
+    return /** @type {Attenuated<T, P>} */ (specimen);
+  }
+
+  /** @type {string[]} */
+  const path = [];
+  /**
+   * @template SubT
+   * @template {Exclude<Permit<SubT>, Primitive>} SubP
+   * @type {(specimen: SubT, permit: SubP) => Attenuated<SubT, SubP>}
+   */
+  const extract = (subSpecimen, subPermit) => {
+    if (subPermit === null || typeof subPermit !== 'object') {
+      throw path.length === 0
+        ? Fail`invalid permit: ${q(permit)}`
+        : Fail`invalid permit at path ${q(path)}: ${q(subPermit)}`;
+    } else if (subSpecimen === null || typeof subSpecimen !== 'object') {
+      throw path.length === 0
+        ? Fail`specimen must be an object for permit ${q(permit)}`
+        : Fail`specimen at path ${q(path)} must be an object for permit ${q(subPermit)}`;
+    }
+    const picks = Object.entries(subPermit).map(([subKey, deepPermit]) => {
+      if (!Object.hasOwn(subSpecimen, subKey)) {
+        throw Fail`specimen is missing path ${q(path.concat(subKey))}`;
+      }
+      const deepSpecimen = Reflect.get(subSpecimen, subKey);
+      if (deepPermit === true || typeof deepPermit === 'string') {
+        return [subKey, deepSpecimen];
+      }
+      path.push(subKey);
+      const extracted = extract(/** @type {any} */ (deepSpecimen), deepPermit);
+      const entry = [subKey, extracted];
+      path.pop();
+      return entry;
+    });
+    return transform(Object.fromEntries(picks), subPermit);
+  };
+
   // @ts-expect-error cast
-  return attenuation;
+  return extract(specimen, permit);
 };
 
 /** @type {IteratorResult<undefined, never>} */
