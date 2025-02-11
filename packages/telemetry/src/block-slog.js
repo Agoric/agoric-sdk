@@ -1,6 +1,7 @@
 /* eslint-env node */
 
 import { open } from 'node:fs/promises';
+import { createGzip } from 'node:zlib';
 import { SLOG_TYPES } from './context-aware-slog.js';
 import { serializeSlogObj } from './serialize-slog-obj.js';
 
@@ -26,53 +27,50 @@ export const makeSlogSender = async options => {
   /**
    * @type {import('node:fs').WriteStream | null}
    */
+  let currentFileStream = null;
+  /**
+   * @type {import('node:zlib').Gzip | null}
+   */
   let currentStream = null;
 
   /**
    * @param {Array<() => Promise<void>>} promises
    */
-  const chainPromises = (...promises) =>
-    // eslint-disable-next-line github/array-foreach
-    promises.forEach(
-      promise => (chainedPromises = chainedPromises.then(promise)),
-    );
-
-  const closeStream = async () => {
-    if (currentStream)
-      return new Promise(resolve =>
-        currentStream?.close(err => {
-          if (err) console.error("Couldn't close stream due to error: ", err);
-          resolve(undefined);
-        }),
-      )
-        .then(() => {
-          currentStream = null;
-        })
-        .then(() => currentFileHandle?.close())
-        .then(() => {
-          currentFileHandle = null;
-        });
-    else {
-      console.error('No stream to close');
-      return Promise.resolve();
-    }
+  const chainPromises = (...promises) => {
+    for (const promise of promises)
+      chainedPromises = chainedPromises.then(promise);
   };
+
+  const closeStream = () =>
+    currentStream
+      ? chainPromises(
+          () =>
+            new Promise(resolve =>
+              // @ts-expect-error
+              currentStream.end(() => currentStream.once('finish', resolve)),
+            ),
+          () =>
+            // @ts-expect-error
+            new Promise(resolve => currentFileStream.once('finish', resolve)),
+          async () => {
+            currentStream = null;
+            currentFileStream = null;
+            currentFileHandle = null;
+          },
+        )
+      : console.error('No stream to close');
 
   /**
    * @param {string} fileName
    */
-  const createFileStream = async fileName => {
+  const createStream = async fileName => {
     if (currentStream) throw Error('Stream already open');
 
-    const filePath = `${options.stateDir || CONTEXTUAL_BLOCK_SLOGS}/slogfile_${fileName}.jsonl`;
+    const filePath = `${options.stateDir || CONTEXTUAL_BLOCK_SLOGS}/slogfile_${fileName}.gz`;
     currentFileHandle = await open(filePath, 'w');
-    currentStream = currentFileHandle.createWriteStream({
-      autoClose: true,
-      encoding: 'utf-8',
-    });
-
-    if (!currentStream)
-      throw Error(`Couldn't create a write stream on file "${filePath}"`);
+    currentFileStream = currentFileHandle.createWriteStream();
+    currentStream = createGzip();
+    currentStream.pipe(currentFileStream);
   };
 
   /**
@@ -83,18 +81,20 @@ export const makeSlogSender = async options => {
 
     switch (slogType) {
       case SLOG_TYPES.KERNEL.INIT.START: {
-        chainPromises(() => createFileStream(`init_${new Date().getTime()}`));
+        chainPromises(() => createStream(`init_${new Date().getTime()}`));
         break;
       }
       case SLOG_TYPES.COSMIC_SWINGSET.BOOTSTRAP_BLOCK.START: {
-        chainPromises(() =>
-          createFileStream(`bootstrap_${new Date().getTime()}`),
-        );
+        chainPromises(() => createStream(`bootstrap_${new Date().getTime()}`));
+        break;
+      }
+      case SLOG_TYPES.COSMIC_SWINGSET.UPGRADE.START: {
+        chainPromises(() => createStream(`upgrade_${new Date().getTime()}`));
         break;
       }
       case SLOG_TYPES.COSMIC_SWINGSET.BEGIN_BLOCK: {
         chainPromises(() =>
-          createFileStream(`block_${blockHeight}_${new Date().getTime()}`),
+          createStream(`block_${blockHeight}_${new Date().getTime()}`),
         );
         break;
       }
@@ -108,8 +108,9 @@ export const makeSlogSender = async options => {
     switch (slogType) {
       case SLOG_TYPES.KERNEL.INIT.FINISH:
       case SLOG_TYPES.COSMIC_SWINGSET.BOOTSTRAP_BLOCK.FINISH:
+      case SLOG_TYPES.COSMIC_SWINGSET.UPGRADE.FINISH:
       case SLOG_TYPES.COSMIC_SWINGSET.AFTER_COMMIT_STATS: {
-        chainPromises(closeStream);
+        closeStream();
         break;
       }
       default: {
@@ -131,19 +132,22 @@ export const makeSlogSender = async options => {
         // eslint-disable-next-line prefer-template
         const message = serializeSlogObj(slog) + '\n';
 
-        const wrote = currentStream.write(message);
-        if (!wrote) {
-          console.warn('Stream full, waiting for drain');
-          currentStream.once('drain', () => {
-            currentStream?.write(message);
-            resolve();
-          });
-        } else resolve();
+        if (!currentStream.write(message)) currentStream.once('drain', resolve);
+        else resolve();
       }
     });
 
   return Object.assign(slogSender, {
-    forceFlush: () => chainedPromises,
-    shutdown: closeStream,
+    forceFlush: () =>
+      chainedPromises.then(
+        () =>
+          /** @type {Promise<void>} */ (
+            new Promise(resolve => currentStream?.flush(resolve))
+          ),
+      ),
+    shutdown: async () => {
+      closeStream();
+      await chainedPromises;
+    },
   });
 };
