@@ -7,6 +7,7 @@
     "prepack": "tsc --build tsconfig.build.json",
     "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
     "test": "yarn rollup -c && eshost -h 'V8,Moddable XS' dist/bundle.js",
+    "bench": "yarn rollup -c && node --jitless --cpu-prof dist/bundle.js",
     "lint": "run-s --continue-on-error lint:*",
     "lint:eslint": "eslint .",
     "lint:types": "tsc"
