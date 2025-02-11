@@ -5,11 +5,11 @@ import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
 import { AnyNatAmountShape } from '../typeGuards.js';
 import { withOrchestration } from '../utils/start-helper.js';
 import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
-import * as flows from './send-anywhere.flows.js';
+import * as flows from './axelar.flows.js';
 import * as sharedFlows from './shared.flows.js';
 
 /**
- * @import {Remote, Vow} from '@agoric/vow';
+ * @import {Vow} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
@@ -28,10 +28,9 @@ harden(SingleNatAmountRecord);
  *
  * @param {ZCF} zcf
  * @param {OrchestrationPowers & {
- *   assetInfo?: [Denom, DenomDetail & { brandKey?: string }][];
- *   chainInfo?: Record<string, CosmosChainInfo>;
  *   marshaller: Marshaller;
- *   storageNode: Remote<StorageNode>;
+ *   chainInfo?: Record<string, CosmosChainInfo>;
+ *   assetInfo?: [Denom, DenomDetail & { brandKey?: string }][];
  * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
@@ -98,5 +97,5 @@ export const contract = async (
 };
 harden(contract);
 
-export const start = withOrchestration(contract, { publishAccountInfo: true });
+export const start = withOrchestration(contract);
 harden(start);
