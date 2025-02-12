@@ -205,7 +205,7 @@ export const prepareVowKit = (zone, vowRejectionTracker) => {
           this.state.stepStatus = 'rejected';
 
           const { resolver, vowV0 } = this.facets;
-          const { reject, promise, potentiallyHandled } =
+          const { reject, potentiallyHandled } =
             getPromiseKitForResolution(resolver);
           harden(reason);
           reject && reject(reason);
