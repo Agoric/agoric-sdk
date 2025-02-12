@@ -27,8 +27,21 @@ export interface CctpTxEvidence {
     forwardingChannel: IBCChannelID;
     recipientAddress: ChainAddress['value'];
   };
+  /** on the source chain (e.g. L1 Ethereum and L2s Arbitrum, Base) */
   blockHash: EvmHash;
+  /** height of blockHash on the source chain */
   blockNumber: bigint;
+  /**
+   * Seconds since Unix epoch. Not all CCTP source chains update time the same
+   * way but they all use Unix epoch and thus are approximately equal. (Within
+   * minutes apart.)
+   */
+  blockTimestamp: bigint;
+  //
+  /**
+   * [Domain of values](https://chainid.network/) per [EIP-155](https://eips.ethereum.org/EIPS/eip-155)
+   * (We don't have [CCTP `domain`](https://developers.circle.com/stablecoins/supported-domains) )
+   */
   chainId: number;
   /** data covered by signature (aka txHash) */
   tx: {
