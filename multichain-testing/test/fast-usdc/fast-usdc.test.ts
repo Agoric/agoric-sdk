@@ -115,6 +115,7 @@ const makeTestContext = async (t: ExecutionContext) => {
       blockHash:
         '0x90d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee665',
       blockNumber: 21037663n,
+      blockTimestamp: 1632340000n,
       txHash: `0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff3875527617${String(callCount++).padStart(2, '0')}`,
       tx: {
         amount: mintAmt,

@@ -76,6 +76,7 @@ export const CctpTxEvidenceShape = {
   },
   blockHash: EvmHashShape,
   blockNumber: M.nat(),
+  blockTimestamp: M.nat(),
   chainId: M.number(),
   tx: {
     amount: M.nat(),
