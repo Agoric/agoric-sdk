@@ -131,7 +131,6 @@ export const prepareFluxAggregatorKit = async (
   const makeOracleAdminKit = prepareOracleAdminKit(baggage);
 
   const makeRecorderKit = defineRecorderKit({
-    // @ts-expect-error XXX
     makeDurablePublishKit,
     makeRecorder,
   });
