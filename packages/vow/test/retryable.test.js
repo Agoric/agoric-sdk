@@ -22,8 +22,8 @@ import { makeWhen } from '../src/when.js';
  */
 const makeTestTools = ({ isRetryableReason = () => false } = {}) => {
   const zone = makeHeapZone();
-  const makeVowRejectionTracker = prepareVowRejectionTracker(zone);
-  const makeVowKit = prepareVowKit(zone, makeVowRejectionTracker());
+  const vowRejectionTracker = prepareVowRejectionTracker(zone);
+  const makeVowKit = prepareVowKit(zone, vowRejectionTracker);
   const when = makeWhen(isRetryableReason);
 
   const { retryable, adminRetryableFlow } = prepareRetryableTools(zone, {
