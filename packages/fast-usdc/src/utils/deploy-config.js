@@ -49,7 +49,6 @@ const DepositForBurnEvent =
 /**
  * @type {Record<string, Pick<FastUSDCConfig, 'oracles' | 'feedPolicy' | 'chainInfo' | 'assetInfo' >>}
  *
- * TODO: determine OCW operator addresses
  * meanwhile, use price oracle addresses (from updatePriceFeeds.js).
  */
 export const configurations = {
@@ -80,10 +79,11 @@ export const configurations = {
     assetInfo: agoricAssetInfo,
   },
   MAINNET: {
+    // per JVC 12 Feb 2025
     oracles: {
-      '01node': 'agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8',
-      'Simply Staking': 'agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr',
-      P2P: 'agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj',
+      '01node': 'agoric1ym488t6j24x3ys3va3452ftx44lhs64rz8pu7h',
+      SimplyStaking: 'agoric1s5yawjgj6xcw4ea5r2x4cjrnkprmd0fcun2tyk',
+      DSRV: 'agoric17crpkfxarq658e9ddru2petrfr0fhjzvjfccq9',
     },
     feedPolicy: {
       nobleAgoricChannelId: 'channel-21',
