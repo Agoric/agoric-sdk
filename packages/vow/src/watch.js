@@ -56,6 +56,8 @@ const settle = async (resolver, watcher, wcb, value, watcherArgs = []) => {
       return;
     }
 
+    // We want to propagate rejections (but not fulfillment values) to our
+    // caller if no resolver was provided.
     await chainedValue;
   } catch (e) {
     if (resolver) {
@@ -114,6 +116,9 @@ const preparePromiseWatcher = (zone, isRetryableReason, watchNextStep) => {
       /** @type {Required<PromiseWatcher>['onFulfilled']} */
       onFulfilled(value) {
         const { watcher, watcherArgs, resolver } = this.state;
+        if (!resolver) {
+          throw Error('Unexpected multiple calls to PromiseWatcher');
+        }
         const payload = getVowPayload(value);
         if (payload) {
           const seenPayloads = getSeenPayloads(this.self);
@@ -137,6 +142,9 @@ const preparePromiseWatcher = (zone, isRetryableReason, watchNextStep) => {
       onRejected(reason) {
         const { vow, watcher, watcherArgs, resolver, priorRetryValue } =
           this.state;
+        if (!resolver) {
+          throw Error('Unexpected multiple calls to PromiseWatcher');
+        }
         const retryValue = isRetryableReason(reason, priorRetryValue);
         if (retryValue) {
           this.state.priorRetryValue = retryValue;

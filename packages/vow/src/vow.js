@@ -6,6 +6,9 @@ import { PromiseWatcherI } from '@agoric/base-zone';
 
 const { details: X } = assert;
 
+const noop = () => {};
+harden(noop);
+
 /**
  * @import {PromiseKit} from '@endo/promise-kit';
  * @import {Zone} from '@agoric/base-zone';
@@ -15,7 +18,8 @@ const { details: X } = assert;
 
 /**
  * @typedef {Partial<PromiseKit<any>> &
- *   Pick<PromiseKit<any>, 'promise'>} VowEphemera
+ *   Pick<PromiseKit<any>, 'promise'> &
+ *   { potentiallyHandled?: boolean }} VowEphemera
  */
 
 /**
@@ -33,14 +37,18 @@ export const prepareVowKit = (zone, vowRejectionTracker) => {
    * Get the current incarnation's promise kit associated with a vowV0.
    *
    * @param {VowResolver} resolver
+   * @param {{ potentiallyHandled?: boolean }} [options]
    */
-  const provideCurrentKit = resolver => {
+  const provideCurrentKit = (resolver, options) => {
     let pk = resolverToEphemera.get(resolver);
-    if (pk) {
-      return pk;
+    if (!pk) {
+      pk = makePromiseKit();
+      // Silence this internal promise's rejections, since we use the
+      // rejectionTracker instead.
+      pk.promise.catch(noop);
     }
 
-    pk = makePromiseKit();
+    pk = harden({ ...pk, ...options });
     resolverToEphemera.set(resolver, pk);
     return pk;
   };
@@ -52,7 +60,8 @@ export const prepareVowKit = (zone, vowRejectionTracker) => {
     const kit = provideCurrentKit(resolver);
     if (kit.resolve) {
       // Resolution is a one-time event, so forget the resolve/reject functions.
-      resolverToEphemera.set(resolver, harden({ promise: kit.promise }));
+      const { resolve: _1, reject: _2, ...ephemera } = kit;
+      resolverToEphemera.set(resolver, harden(ephemera));
     }
     return kit;
   };
@@ -70,13 +79,25 @@ export const prepareVowKit = (zone, vowRejectionTracker) => {
       watchNextStep: PromiseWatcherI,
     },
     () => ({
-      value: /** @type {any} */ (undefined),
-      // The stepStatus is null if the promise step hasn't settled yet.
-      stepStatus: /** @type {null | 'pending' | 'fulfilled' | 'rejected'} */ (
-        null
-      ),
-      isStoredValue: /** @type {boolean} */ (false),
-      vowIsHandled: /** @type {boolean} */ (false),
+      /** @type {any} */
+      value: undefined,
+      /**
+       * The stepStatus is null if the promise step hasn't settled yet.
+       * @type {null | 'pending' | 'fulfilled' | 'rejected'}
+       */
+      stepStatus: null,
+      isStoredValue: false,
+      /**
+       * Some versions of the VowInternalsKit will not have this property,
+       * (and it cannot be added dynamically).
+       * @type {boolean | undefined}
+       */
+      vowIsHandled: false,
+      /**
+       * Record for future properties that aren't in the schema.
+       * UNTIL https://github.com/Agoric/agoric-sdk/issues/7407
+       * @type {Record<string, any> | undefined}
+       */
       extra: undefined,
     }),
     {
@@ -117,7 +138,9 @@ export const prepareVowKit = (zone, vowRejectionTracker) => {
             }
             case null:
             case 'pending':
-              return provideCurrentKit(this.facets.resolver).promise;
+              return provideCurrentKit(this.facets.resolver, {
+                potentiallyHandled: true,
+              }).promise;
             default:
               throw TypeError(`unexpected stepStatus ${stepStatus}`);
           }
@@ -128,44 +151,46 @@ export const prepareVowKit = (zone, vowRejectionTracker) => {
          * @param {any} [value]
          */
         resolve(value) {
-          const { resolver } = this.facets;
           const { stepStatus } = this.state;
+          if (stepStatus !== null) {
+            return;
+          }
+          this.state.stepStatus = 'pending';
+
+          const { resolver } = this.facets;
           const { resolve } = getPromiseKitForResolution(resolver);
-          if (resolve) {
-            resolve(value);
-          }
-          if (stepStatus === null) {
-            this.state.stepStatus = 'pending';
-            zone.watchPromise(
-              HandledPromise.resolve(value),
-              this.facets.watchNextStep,
-            );
-          }
+          resolve && resolve(value);
+
+          zone.watchPromise(
+            HandledPromise.resolve(value),
+            this.facets.watchNextStep,
+          );
         },
         /**
          * @param {any} [reason]
          */
         reject(reason) {
-          const { resolver, watchNextStep } = this.facets;
           const { stepStatus } = this.state;
+          if (stepStatus !== null) {
+            return;
+          }
+          this.state.stepStatus = 'rejected';
+
+          const { resolver, watchNextStep } = this.facets;
           const { reject } = getPromiseKitForResolution(resolver);
-          if (reject) {
-            reject(reason);
-          }
-          if (stepStatus === null) {
-            watchNextStep.onRejected(reason);
-          }
+          reject && reject(reason);
+          watchNextStep.onRejected(reason);
         },
       },
       watchNextStep: {
         onFulfilled(value) {
+          this.state.stepStatus = 'fulfilled';
+
           const { resolver } = this.facets;
           const { resolve } = getPromiseKitForResolution(resolver);
           harden(value);
-          if (resolve) {
-            resolve(value);
-          }
-          this.state.stepStatus = 'fulfilled';
+          resolve && resolve(value);
+
           this.state.isStoredValue = zone.isStorable(value);
           if (this.state.isStoredValue) {
             this.state.value = value;
@@ -177,25 +202,30 @@ export const prepareVowKit = (zone, vowRejectionTracker) => {
           }
         },
         onRejected(reason) {
-          const { resolver, vowV0 } = this.facets;
-          const { reject, promise } = getPromiseKitForResolution(resolver);
-          harden(reason);
-          if (reject) {
-            reject(reason);
-          }
-          if (this.state.vowIsHandled === false) {
-            vowRejectionTracker?.reject(vowV0, reason, promise);
-          }
           this.state.stepStatus = 'rejected';
+
+          const { resolver, vowV0 } = this.facets;
+          const { reject, promise, potentiallyHandled } =
+            getPromiseKitForResolution(resolver);
+          harden(reason);
+          reject && reject(reason);
+
+          if (this.state.vowIsHandled === false) {
+            if (potentiallyHandled) {
+              this.state.vowIsHandled = true;
+            } else {
+              vowRejectionTracker?.reject(vowV0, reason);
+            }
+          }
           this.state.isStoredValue = zone.isStorable(reason);
           if (this.state.isStoredValue) {
             this.state.value = reason;
           } else {
+            resolverToNonStoredValue.set(resolver, reason);
             this.state.value = assert.error(
               X`Vow rejection reason was not stored: ${reason}`,
             );
           }
-          resolverToNonStoredValue.set(resolver, reason);
         },
       },
     },

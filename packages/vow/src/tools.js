@@ -25,8 +25,8 @@ import { makeWhen } from './when.js';
 export const prepareBasicVowTools = (zone, powers = {}) => {
   const { isRetryableReason = /** @type {IsRetryableReason} */ (() => false) } =
     powers;
-  const makeVowRejectionTracker = prepareVowRejectionTracker(zone);
-  const makeVowKit = prepareVowKit(zone, makeVowRejectionTracker());
+  const vowRejectionTracker = prepareVowRejectionTracker(zone);
+  const makeVowKit = prepareVowKit(zone, vowRejectionTracker);
   const when = makeWhen(isRetryableReason);
   const watch = prepareWatch(zone, makeVowKit, isRetryableReason);
   const makeWatchUtils = prepareWatchUtils(zone, {
