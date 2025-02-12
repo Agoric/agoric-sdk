@@ -31,6 +31,11 @@ const test: TestFn<
   }
 > = anyTest;
 
+// oracles, which were started with MAINNET config
+const theConfig = configurations.MAINNET;
+const { oracles: oracleRecord } = theConfig;
+const oracleAddrs = Object.values(oracleRecord);
+
 const {
   SLOGFILE: slogFile,
   SWINGSET_WORKER_TYPE: defaultManagerType = 'local',
@@ -70,9 +75,8 @@ test.serial(
       walletFactoryDriver: wfd,
     } = t.context;
 
-    const { oracles } = configurations.MAINNET;
     const [watcherWallet] = await Promise.all(
-      Object.values(oracles).map(addr => wfd.provideSmartWallet(addr)),
+      oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
     );
 
     // inbound `startChannelOpenInit` responses immediately.
@@ -254,11 +258,9 @@ test.serial('makes usdc advance', async t => {
     harness,
     runUtils: { EV },
   } = t.context;
-  const oracles = await Promise.all([
-    wfd.provideSmartWallet('agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8'),
-    wfd.provideSmartWallet('agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr'),
-    wfd.provideSmartWallet('agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj'),
-  ]);
+  const oracles = await Promise.all(
+    oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
+  );
   await Promise.all(
     oracles.map(wallet =>
       wallet.sendOffer({
@@ -405,11 +407,9 @@ test.serial('distributes fees per BLD staker decision', async t => {
 
 test.serial('skips usdc advance when risks identified', async t => {
   const { walletFactoryDriver: wfd, storage } = t.context;
-  const oracles = await Promise.all([
-    wfd.provideSmartWallet('agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8'),
-    wfd.provideSmartWallet('agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr'),
-    wfd.provideSmartWallet('agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj'),
-  ]);
+  const oracles = await Promise.all(
+    oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
+  );
 
   const EUD = 'dydx1riskyeud';
   const lastNodeValue = storage.getValues('published.fastUsdc').at(-1);
@@ -570,16 +570,13 @@ test.serial('replace operators', async t => {
 
   // Remove old oracle operators (nested in block to isolate bindings)
   {
-    // old oracles, which were started with MAINNET config
-    const { oracles } = configurations.MAINNET;
-
-    for (const [name, address] of Object.entries(oracles)) {
+    for (const [name, address] of Object.entries(oracleRecord)) {
       t.log('Removing operator', name, 'at', address);
       await EV(creatorFacet).removeOperator(address);
     }
 
     const wallets = await Promise.all(
-      Object.values(oracles).map(addr => wfd.provideSmartWallet(addr)),
+      oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
     );
 
     await Promise.all(
