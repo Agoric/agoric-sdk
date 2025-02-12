@@ -13,8 +13,6 @@
     "skipLibCheck": true
   },
   "exclude": [
-    "addUsdLemons/",
-    "replaceFeeDistributor/",
-    "upgradeProvisionPool/"
+    "generated/"
   ]
 }

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 # evaluate the proposals in the /submission/ directory
 
 echo "UPGRADE-19  Running proposal declared in package.json"

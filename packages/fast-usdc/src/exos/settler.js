@@ -362,7 +362,9 @@ export const prepareSettler = (
          * @param {EvmHash} txHash
          */
         onRejected(reason, txHash) {
-          log('⚠️ forward transfer rejected!', reason, txHash);
+          // funds remain in `settlementAccount` and must be recovered via a
+          // contract upgrade
+          log('🚨 forward transfer rejected!', reason, txHash);
           // update status manager, flagging a terminal state that needs to be
           // manual intervention or a code update to remediate
           statusManager.forwarded(txHash, false);

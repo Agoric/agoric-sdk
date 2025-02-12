@@ -181,11 +181,7 @@ test.serial('writes account addresses to vstorage', async t => {
     showValue: JSON.parse,
     pattern: /published\.fastUsdc\.(feeConfig|feedPolicy|poolMetrics)/,
     replacement: '',
-    note: `Under "published", the "fastUsdc" node is delegated to FastUSDC contract.
-    Note: published.fastUsdc.[settleAcctAddr], published.fastUsdc.[poolAcctAddr],
-    and published.fastUsdc.[intermediateAcctAddr] are published by @agoric/orchestration
-    via 'withOrchestration' and (local|cosmos)-orch-account-kit.js.
-    `,
+    note: 'Under "published", the "fastUsdc" node is delegated to FastUSDC contract.',
   };
 
   await documentStorageSchema(t, storage, doc);

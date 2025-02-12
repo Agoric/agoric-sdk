@@ -24,8 +24,6 @@ const sendBankAsset = async powers => {
   const valueStr = '{{VALUE}}';
   const value = BigInt(valueStr)
 
-  console.log(`Start sendBankAsset for ${label}`);
-
   const contractKits = await contractKitsP;
   const mintHolderKit = Array.from(contractKits.values()).filter(
     kit => kit.label && kit.label === label,
@@ -49,8 +47,6 @@ const sendBankAsset = async powers => {
   );
 
   await E(receiverDepositFacet).receive(payment);
-
-  console.log(`Finished sendBankAsset for ${label}`);
 };
 
 sendBankAsset;

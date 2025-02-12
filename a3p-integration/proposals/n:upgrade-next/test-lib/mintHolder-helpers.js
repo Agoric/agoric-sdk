@@ -1,12 +1,7 @@
 /* eslint-env node */
 
-import {
-  agoric,
-  evalBundles,
-  getDetailsMatchingVats,
-  getISTBalance,
-} from '@agoric/synthetic-chain';
-import { makeVstorageKit, retryUntilCondition } from '@agoric/client-utils';
+import { agoric, evalBundles, getISTBalance } from '@agoric/synthetic-chain';
+import { makeVstorageKit } from '@agoric/client-utils';
 import { readFile, writeFile } from 'node:fs/promises';
 import { psmSwap, snapshotAgoricNames, tryISTBalances } from './psm-lib.js';
 
@@ -41,7 +36,10 @@ export const getAssetList = async labelList => {
 
   // Determine the assets to consider based on labelList
   const assetsToConsider =
-    labelList || Object.values(vbankAssets).map(asset => asset.issuerName);
+    labelList ||
+    Object.values(vbankAssets)
+      .map(asset => asset.issuerName)
+      .filter(Boolean); // testvbankAsset can be malformed.
 
   for (const label of assetsToConsider) {
     if (label === 'IST') {
@@ -67,6 +65,7 @@ export const mintPayment = async (t, address, assetList, value) => {
 
   for (const asset of assetList) {
     const { label, denom } = asset;
+
     const scaled = BigInt(parseInt(value, 10) * 1_000_000).toString();
 
     await replaceTemplateValuesInFile(`${SUBMISSION_DIR}/send-script`, {
@@ -136,41 +135,4 @@ export const swap = async (t, address, assetList, want) => {
     );
     t.is(anchorBalanceAfter, anchorBalanceBefore - want);
   }
-};
-
-const getIncarnationForAllVats = async assetList => {
-  const vatsIncarnation = {};
-
-  for (const asset of assetList) {
-    const { label, mintHolderVat } = asset;
-    const matchingVats = await getDetailsMatchingVats(label);
-    const expectedVat = matchingVats.find(vat => vat.vatName === mintHolderVat);
-    vatsIncarnation[label] = expectedVat.incarnation;
-  }
-  assert(Object.keys(vatsIncarnation).length === assetList.length);
-
-  return vatsIncarnation;
-};
-
-const checkVatsUpgraded = (before, current) => {
-  for (const vatLabel in before) {
-    if (current[vatLabel] !== before[vatLabel] + 1) {
-      console.log(`${vatLabel} upgrade failed. `);
-      return false;
-    }
-  }
-  return true;
-};
-
-export const upgradeMintHolder = async (submissionPath, assetList) => {
-  const before = await getIncarnationForAllVats(assetList);
-
-  await evalBundles(submissionPath);
-
-  return retryUntilCondition(
-    async () => getIncarnationForAllVats(assetList),
-    current => checkVatsUpgraded(before, current),
-    `mintHolder upgrade not processed yet`,
-    { setTimeout, retryIntervalMs: 5000, maxRetries: 15 },
-  );
 };
