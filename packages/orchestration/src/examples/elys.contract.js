@@ -42,11 +42,6 @@ const contract = async (
     chainHub,
   });
 
-  trace(
-    'Registered chains and assets :',
-    privateArgs.chainInfo,
-    privateArgs.assetInfo,
-  );
   registerChainsAndAssets(
     chainHub,
     zcf.getTerms().brands,

@@ -145,7 +145,7 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
         {
           // move from host to stride
           onFulfilled: M.call(
-            M.undefined(),
+            M.string(),
             M.bigint(),
             M.string(),
             SupportedHostChainShape,
@@ -156,6 +156,18 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
             M.bigint(),
             M.string(),
             SupportedHostChainShape,
+          ).returns(VowShape),
+        },
+      ),
+      watchAndSendSTtokensToUsersStrideAccount: M.interface(
+        'watchAndSendSTtokensToUsersStrideAccount',
+        {
+          // On rejected, move stTokens to user address on stride chain
+          onRejected: M.call(
+            M.error(),
+            M.string(),
+            M.bigint(),
+            M.string(),
           ).returns(VowShape),
         },
       ),
@@ -618,6 +630,10 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
               denom: strideLSDResponse.stToken.denom,
               value: BigInt(strideLSDResponse.stToken.amount),
             }),
+            this.facets.watchAndSendSTtokensToUsersStrideAccount,
+            strideLSDResponse.stToken.denom,
+            BigInt(strideLSDResponse.stToken.amount),
+            senderAddress,
           );
         },
         /**
@@ -648,6 +664,38 @@ const prepareStrideStakingTapKit = (zone, { watch }) => {
             E(strideICAAccount).send(senderStrideChainAddress, {
               denom: ibcDenomOnStride,
               value: BigInt(amount),
+            }),
+          );
+        },
+      },
+      watchAndSendSTtokensToUsersStrideAccount: {
+        /**
+         * @param {Error} _result
+         * @param {string} stTokenDenom
+         * @param {bigint} stTokenAmount
+         * @param {string} senderAddress
+         */
+        // move stTokens to user address on stride chain
+        onRejected(_result, stTokenDenom, stTokenAmount, senderAddress) {
+          trace('LiquidStakeFailed: Moving stToken to elys from stride failed');
+          const { strideICAAccount, strideICAAddress, strideBech32Prefix } =
+            this.state;
+
+          const senderStrideAddress = deriveAddress(
+            senderAddress,
+            strideBech32Prefix,
+          );
+
+          const senderStrideChainAddress = {
+            chainId: strideICAAddress.chainId,
+            encoding: strideICAAddress.encoding,
+            value: senderStrideAddress,
+          };
+          trace('LiquidStakeFailed: Moving stToken to users stride address');
+          return watch(
+            E(strideICAAccount).send(senderStrideChainAddress, {
+              denom: stTokenDenom,
+              value: BigInt(stTokenAmount),
             }),
           );
         },
