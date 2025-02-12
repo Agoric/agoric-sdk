@@ -32,12 +32,12 @@ import { makeFeeTools } from '../utils/fees.js';
  * @typedef {{
  *  chainHub: ChainHub;
  *  feeConfig: FeeConfig;
- *  localTransfer: ZoeTools['localTransfer'];
  *  log?: LogFn;
  *  statusManager: StatusManager;
  *  usdc: { brand: Brand<'nat'>; denom: Denom; };
  *  vowTools: VowTools;
  *  zcf: ZCF;
+ *  zoeTools: ZoeTools;
  * }} AdvancerKitPowers
  */
 
@@ -69,6 +69,16 @@ const AdvancerKitI = harden({
     ),
     onRejected: M.call(M.error(), AdvancerVowCtxShape).returns(M.undefined()),
   }),
+  withdrawHandler: M.interface('WithdrawHandlerI', {
+    onFulfilled: M.call(M.undefined(), {
+      advanceAmount: AnyNatAmountShape,
+      tmpReturnSeat: M.remotable(),
+    }).returns(M.undefined()),
+    onRejected: M.call(M.error(), {
+      advanceAmount: AnyNatAmountShape,
+      tmpReturnSeat: M.remotable(),
+    }).returns(M.undefined()),
+  }),
 });
 
 /**
@@ -98,12 +108,12 @@ export const prepareAdvancerKit = (
   {
     chainHub,
     feeConfig,
-    localTransfer,
     log = makeTracer('Advancer', true),
     statusManager,
     usdc,
     vowTools: { watch, when },
     zcf,
+    zoeTools: { localTransfer, withdrawToSeat },
   },
 ) => {
   assertAllDefined({
@@ -289,10 +299,55 @@ export const prepareAdvancerKit = (
          * @param {AdvancerVowCtx} ctx
          */
         onRejected(error, ctx) {
-          const { notifier } = this.state;
+          const { notifier, poolAccount } = this.state;
           log('Advance failed', error);
-          const { advanceAmount: _, ...restCtx } = ctx;
+          const { advanceAmount, ...restCtx } = ctx;
           notifier.notifyAdvancingResult(restCtx, false);
+          const { zcfSeat: tmpReturnSeat } = zcf.makeEmptySeatKit();
+          const withdrawV = withdrawToSeat(
+            // @ts-expect-error LocalAccountMethods vs OrchestrationAccount
+            poolAccount,
+            tmpReturnSeat,
+            harden({ USDC: advanceAmount }),
+          );
+          void watch(withdrawV, this.facets.withdrawHandler, {
+            advanceAmount,
+            tmpReturnSeat,
+          });
+        },
+      },
+      withdrawHandler: {
+        /**
+         *
+         * @param {undefined} result
+         * @param {{ advanceAmount: Amount<'nat'>; tmpReturnSeat: ZCFSeat; }} ctx
+         */
+        onFulfilled(result, { advanceAmount, tmpReturnSeat }) {
+          const { borrower } = this.state;
+          try {
+            borrower.returnToPool(tmpReturnSeat, advanceAmount);
+          } catch (e) {
+            // If we reach here, the unused advance funds will remain in `tmpReturnSeat`
+            // and must be retrieved from recovery sets.
+            log(
+              `🚨 return ${q(advanceAmount)} to pool failed. funds remain on "tmpReturnSeat"`,
+              e,
+            );
+          }
+          tmpReturnSeat.exit();
+        },
+        /**
+         * @param {Error} error
+         * @param {{ advanceAmount: Amount<'nat'>; tmpReturnSeat: ZCFSeat; }} ctx
+         */
+        onRejected(error, { advanceAmount, tmpReturnSeat }) {
+          log(
+            `🚨 withdraw ${q(advanceAmount)} from "poolAccount" to return to pool failed`,
+            error,
+          );
+          // If we reach here, the unused advance funds will remain in the `poolAccount`.
+          // A contract update will be required to return them to the LiquidityPool.
+          tmpReturnSeat.exit();
         },
       },
     },

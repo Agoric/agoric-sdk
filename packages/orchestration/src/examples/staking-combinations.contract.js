@@ -159,5 +159,5 @@ const contract = async (
   return harden({ publicFacet, creatorFacet });
 };
 
-export const start = withOrchestration(contract);
+export const start = withOrchestration(contract, { publishAccountInfo: true });
 harden(start);

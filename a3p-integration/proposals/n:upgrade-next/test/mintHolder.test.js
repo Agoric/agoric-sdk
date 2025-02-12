@@ -8,18 +8,18 @@ import {
   getAssetList,
   swap,
   getPSMChildren,
-  upgradeMintHolder,
-} from './test-lib/mintHolder-helpers.js';
-import { networkConfig } from './test-lib/index.js';
+} from '../test-lib/mintHolder-helpers.js';
+import { networkConfig } from '../test-lib/index.js';
 
-test('mintHolder contract is upgraded', async t => {
+test('verify mintHolder contract upgrade', async t => {
   const receiver = await addUser('receiver');
   await provisionSmartWallet(receiver, `20000000ubld`);
 
   let assetList = await getAssetList();
   t.log('List of mintHolder vats being upgraded: ', assetList);
-  await upgradeMintHolder(`upgrade-mintHolder`, assetList);
-  await mintPayment(t, receiver, assetList, 10);
+  // The FastLP mint is not in a mintHolder; it's a ZCFMint from the FastUSDC contract
+  const assetListNoFastUSDC = assetList.filter(x => x.label !== 'FastLP');
+  await mintPayment(t, receiver, assetListNoFastUSDC, 10);
 
   const psmLabelList = await getPSMChildren(fetch, networkConfig);
   assetList = await getAssetList(psmLabelList);
