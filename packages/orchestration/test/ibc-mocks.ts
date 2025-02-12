@@ -43,7 +43,7 @@ export const errorAcknowledgments = {
 
 const liquidStake = {
   creator: 'cosmos1test',
-  amount: "10000000",
+  amount: "10000",
   hostDenom: 'uatom',
 };
 const liquidStakeRedeem = {
