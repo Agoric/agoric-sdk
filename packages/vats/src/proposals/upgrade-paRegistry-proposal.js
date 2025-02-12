@@ -39,7 +39,10 @@ export const upgradePriceAuthorityRegistry = async (
 };
 
 const par = 'paRegistry';
-export const getManifestForUpgradingRegistry = (_powers, { registryRef }) => ({
+export const getManifestForUpgradingRegistry = (
+  { restoreRef },
+  { registryRef },
+) => ({
   manifest: {
     [upgradePriceAuthorityRegistry.name]: {
       consume: {
@@ -50,6 +53,9 @@ export const getManifestForUpgradingRegistry = (_powers, { registryRef }) => ({
       },
       brand: { consume: { [Stable.symbol]: par } },
     },
+  },
+  installations: {
+    walletFactory: restoreRef(registryRef),
   },
   options: {
     registryRef,

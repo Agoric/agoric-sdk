@@ -28,7 +28,7 @@ export const upgradeBank = async (
   await E(adminNode).upgrade(bankBundleCap, {});
 };
 
-export const getManifestForUpgradingBank = (_powers, { bankRef }) => ({
+export const getManifestForUpgradingBank = ({ restoreRef }, { bankRef }) => ({
   manifest: {
     [upgradeBank.name]: {
       consume: {
@@ -36,6 +36,9 @@ export const getManifestForUpgradingBank = (_powers, { bankRef }) => ({
         vatStore: 'vatStore',
       },
       produce: {},
+    },
+    installations: {
+      walletFactory: restoreRef(bankRef),
     },
   },
   options: { bankRef },

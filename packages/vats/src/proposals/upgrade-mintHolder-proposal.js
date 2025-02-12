@@ -59,7 +59,7 @@ export const upgradeMintHolder = async (
 };
 
 export const getManifestForUpgradingMintHolder = (
-  _powers,
+  { restoreRef },
   { contractRef, labelList },
 ) => ({
   manifest: {
@@ -69,6 +69,9 @@ export const getManifestForUpgradingMintHolder = (
         instancePrivateArgs: true,
       },
     },
+  },
+  installations: {
+    mintHolder: restoreRef(contractRef),
   },
   options: { contractRef, labelList },
 });

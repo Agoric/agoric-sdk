@@ -45,7 +45,7 @@ export const upgradeWalletFactory = async (
   console.log(`Successfully upgraded WalletFactory`);
 };
 
-export const getManifestForUpgradeWallet = (_powers, { walletRef }) => ({
+export const getManifestForUpgradeWallet = ({ restoreRef }, { walletRef }) => ({
   manifest: {
     [upgradeWalletFactory.name]: {
       consume: {
@@ -55,6 +55,9 @@ export const getManifestForUpgradeWallet = (_powers, { walletRef }) => ({
         walletBridgeManager: 'walletBridgeManager',
       },
     },
+  },
+  installations: {
+    walletFactory: restoreRef(walletRef),
   },
   options: { walletRef },
 });
