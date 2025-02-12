@@ -14,21 +14,21 @@ import { ChainAddressShape } from '../typeGuards.js';
 const trace = makeTracer('AutoStakeIt');
 
 /**
- * @import {GuestInterface} from '@agoric/async-flow';
  * @import {Zone} from '@agoric/zone';
  * @import {IBCChannelID, VTransferIBCEvent} from '@agoric/vats';
  * @import {TargetApp} from '@agoric/vats/src/bridge-target.js';
- * @import {ChainAddress, CosmosValidatorAddress, Denom, CosmosChainInfo, DenomDetail} from '@agoric/orchestration';
+ * @import {ChainAddress, CosmosValidatorAddress, CosmosChainInfo, Denom, DenomDetail, OrchestrationAccount} from '@agoric/orchestration';
  * @import {Passable} from '@endo/marshal';
- * @import {CosmosOrchestrationAccount} from '../exos/cosmos-orchestration-account.js';
- * @import {LocalOrchestrationAccount} from '../exos/local-orchestration-account.js';
  * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
  */
 
 /**
  * @typedef {{
- *   stakingAccount: GuestInterface<CosmosOrchestrationAccount>;
- *   localAccount: GuestInterface<LocalOrchestrationAccount>;
+ *   stakingAccount: OrchestrationAccount<{
+ *     chainId: 'osmosis-1';
+ *     stakingTokens: [{ denom: 'uosmo' }];
+ *   }>;
+ *   localAccount: OrchestrationAccount<{ chainId: 'agoric-3' }>;
  *   config: {
  *     validator: CosmosValidatorAddress;
  *     localChainAddress: ChainAddress;

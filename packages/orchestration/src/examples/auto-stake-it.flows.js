@@ -74,9 +74,7 @@ export const makeAccounts = async (
 
   // Every time the `localAccount` receives `remoteDenom` over IBC, delegate it.
   const tap = makeStakingTap({
-    // @ts-expect-error LocalOrchestrationAccount vs. OrchestrationAccount<any>
     localAccount,
-    // @ts-expect-error CosmosOrchestrationAccount vs. OrchestrationAccount<any>
     stakingAccount,
     config: {
       validator,
@@ -88,7 +86,6 @@ export const makeAccounts = async (
     },
   });
   // XXX consider storing appRegistration, so we can .revoke() or .updateTargetApp()
-  // @ts-expect-error tap.receiveUpcall: 'Vow<void> | undefined' not assignable to 'Promise<any>'
   await localAccount.monitorTransfers(tap);
 
   const accountEntries = harden(

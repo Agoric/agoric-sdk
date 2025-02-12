@@ -69,13 +69,12 @@ export type ChainAddress = {
  *
  * The methods available depend on the chain and its capabilities.
  */
-export type OrchestrationAccount<CI extends ChainInfo> =
-  OrchestrationAccountCommon &
-    (CI extends CosmosChainInfo
-      ? CI['chainId'] extends `agoric${string}`
-        ? LocalAccountMethods
-        : CosmosChainAccountMethods<CI>
-      : object);
+export type OrchestrationAccount<CI extends ChainInfo> = OrchestrationAccountCommon &
+  (CI extends CosmosChainInfo
+    ? CI['chainId'] extends `agoric${string}`
+      ? LocalAccountMethods & Passable
+      : CosmosChainAccountMethods<CI> & Passable
+    : Passable);
 
 /**
  * An object for access the core functions of a remote chain.
