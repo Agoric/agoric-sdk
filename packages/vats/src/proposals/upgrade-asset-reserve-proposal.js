@@ -1,6 +1,7 @@
 import { E } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import { makeTracer } from '@agoric/internal';
+import { agoricNamesReserved } from '../core/utils.js';
 
 const tracer = makeTracer('UpgradeAssetReserve');
 
@@ -90,7 +91,7 @@ export const getManifestForUpgradingAssetReserve = (
     },
   },
   installations: {
-    reserve: restoreRef(assetReserveRef),
+    [agoricNamesReserved.installation.reserve]: restoreRef(assetReserveRef),
   },
   options: { assetReserveRef },
 });

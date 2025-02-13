@@ -1,6 +1,7 @@
 import { E } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import { makeTracer } from '@agoric/internal';
+import { agoricNamesReserved } from '../core/utils.js';
 
 const trace = makeTracer('UpgradeProvisionPool');
 
@@ -129,7 +130,8 @@ export const getManifestForUpgradingProvisionPool = (
     },
   },
   installations: {
-    provisionPool: restoreRef(provisionPoolRef),
+    [agoricNamesReserved.installation.provisionPool]:
+      restoreRef(provisionPoolRef),
   },
   options: { provisionPoolRef },
 });

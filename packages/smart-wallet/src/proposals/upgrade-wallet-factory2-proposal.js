@@ -3,6 +3,7 @@
 
 import { E } from '@endo/far';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
+import { agoricNamesReserved } from '@agoric/vats/src/core/utils.js';
 
 /**
  * @param {BootstrapPowers & ChainBootstrapSpace} powers
@@ -57,7 +58,7 @@ export const getManifestForUpgradeWallet = ({ restoreRef }, { walletRef }) => ({
     },
   },
   installations: {
-    walletFactory: restoreRef(walletRef),
+    [agoricNamesReserved.installation.walletFactory]: restoreRef(walletRef),
   },
   options: { walletRef },
 });

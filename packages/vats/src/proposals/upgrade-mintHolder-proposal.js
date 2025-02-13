@@ -1,5 +1,6 @@
 import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
+import { agoricNamesReserved } from '../core/utils.js';
 
 const trace = makeTracer('upgrade mintHolder', true);
 
@@ -71,7 +72,7 @@ export const getManifestForUpgradingMintHolder = (
     },
   },
   installations: {
-    mintHolder: restoreRef(contractRef),
+    [agoricNamesReserved.installation.mintHolder]: restoreRef(contractRef),
   },
   options: { contractRef, labelList },
 });
