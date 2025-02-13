@@ -90,7 +90,7 @@ export const getManifestForUpgradingAssetReserve = (
     },
   },
   installations: {
-    assetReserve: restoreRef(assetReserveRef),
+    reserve: restoreRef(assetReserveRef),
   },
   options: { assetReserveRef },
 });
