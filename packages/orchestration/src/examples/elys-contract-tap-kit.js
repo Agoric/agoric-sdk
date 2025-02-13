@@ -44,7 +44,7 @@ const SupportedHostChainShape = {
   nativeDenom: M.string(),
   ibcDenomOnAgoric: M.string(),
   ibcDenomOnStride: M.string(),
-  hostICAAccount: M.remotable('HostAccountICA'),
+  hostICAAccount: M.any(),
   hostICAAccountAddress: ChainAddressShape,
   bech32Prefix: M.string(),
 };
@@ -69,18 +69,16 @@ harden(SupportedHostChainShape);
  */
 /** @type {TypedPattern<StrideStakingTapState>} */
 const StakingTapStateShape = {
-  localAccount: M.remotable('LocalOrchestrationAccount'),
+  localAccount: M.any(),
   localAccountAddress: ChainAddressShape,
-  strideICAAccount: M.remotable('StrideICAAccount'),
+  strideICAAccount: M.any(),
   strideICAAddress: ChainAddressShape,
-  elysICAAccount: M.remotable('ElysICAAccount'),
+  elysICAAccount: M.any(),
   elysICAAddress: ChainAddressShape,
-  supportedHostChains: M.remotable('MapStore'),
+  supportedHostChains: M.any(),
   elysToAgoricChannel: M.string(),
   AgoricToElysChannel: M.string(),
-  stDenomOnElysTohostToAgoricChannelMap: M.remotable(
-    'stDenomOnElysToHostChannelMap',
-  ),
+  stDenomOnElysTohostToAgoricChannelMap: M.any(),
   agoricBech32Prefix: M.string(),
   strideBech32Prefix: M.string(),
   elysBech32Prefix: M.string(),
@@ -120,13 +118,35 @@ const prepareStrideStakingTapKit = (zone, tools) => {
          */
         receiveUpcall(event) {
           trace('receiveUpcall', event);
-          const {orchestrateAll,vowTools} = tools;
+          const {orchestrate,orchestrateAll,vowTools} = tools;
           const {watch} = vowTools;
+
           const state = this.state;
-          const { tokenMovementAndStrideLSDFlow } = orchestrateAll(tokenflows, {});
+          const localAccount = /** @type {OrchestrationAccount<{ chainId: string }> & Passable} */ (this.state.localAccount);
+          const strideICAAccount = /** @type {OrchestrationAccount<{ chainId: string }> & Passable} */ (this.state.strideICAAccount);
+          const elysICAAccount = /** @type {OrchestrationAccount<{ chainId: string }> & Passable} */ (this.state.elysICAAccount);
+          
+          trace('contracttapkit, calling orchestateAll');
+
+          // TODO: create random strings each time
+          const durableName = `${event.acknowledgement}+${event.packet.destination_channel}+${event.packet.source_channel}`;
+          const tokenMovementAndStrideLSDFlow = orchestrate(durableName, {}, tokenflows.tokenMovementAndStrideLSDFlow);
+
           return watch(tokenMovementAndStrideLSDFlow(
             harden(event),
-            harden(state),
+            localAccount,
+            state.localAccountAddress,
+            strideICAAccount,
+            state.strideICAAddress,
+            elysICAAccount,
+            state.elysICAAddress,
+            state.supportedHostChains,
+            state.elysToAgoricChannel,
+            state.AgoricToElysChannel,
+            state.stDenomOnElysTohostToAgoricChannelMap,
+            state.agoricBech32Prefix,
+            state.strideBech32Prefix,
+            state.elysBech32Prefix,
           ));
         },
       },
