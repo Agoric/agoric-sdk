@@ -90,7 +90,7 @@ export const getManifestForUpgradingAssetReserve = (
     },
   },
   installations: {
-    walletFactory: restoreRef(assetReserveRef),
+    assetReserve: restoreRef(assetReserveRef),
   },
   options: { assetReserveRef },
 });

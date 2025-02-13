@@ -55,7 +55,7 @@ export const getManifestForUpgradingRegistry = (
     },
   },
   installations: {
-    walletFactory: restoreRef(registryRef),
+    priceAuthority: restoreRef(registryRef),
   },
   options: {
     registryRef,

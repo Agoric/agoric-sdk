@@ -129,7 +129,7 @@ export const getManifestForUpgradingProvisionPool = (
     },
   },
   installations: {
-    walletFactory: restoreRef(provisionPoolRef),
+    provisionPool: restoreRef(provisionPoolRef),
   },
   options: { provisionPoolRef },
 });
