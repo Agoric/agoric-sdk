@@ -91,13 +91,18 @@ export const prepareStatusManager = (
   /**
    * Transactions seen *ever* by the contract.
    *
-   * Note that like all durable stores, this SetStore is stored in IAVL. It
-   * grows without bound (though the amount of growth per incoming message to
-   * the contract is bounded). At some point in the future we may want to prune.
-   * @type {SetStore<EvmHash>}
+   * Note that like all durable stores, this MapStore is kept in IAVL. It stores
+   * the `blockTimestamp` so that later we can prune old transactions.
+   *
+   * Note that `blockTimestamp` can drift between chains. Fortunately all CCTP
+   * chains use the same Unix epoch and won't drift more than minutes apart,
+   * which is more than enough precision for pruning old transaction.
+   *
+   * @type {MapStore<EvmHash, NatValue>}
    */
-  const seenTxs = zone.setStore('SeenTxs', {
+  const seenTxs = zone.mapStore('SeenTxs', {
     keyShape: M.string(),
+    valueShape: M.nat(),
   });
 
   /**
@@ -160,7 +165,7 @@ export const prepareStatusManager = (
     if (seenTxs.has(txHash)) {
       throw makeError(`Transaction already seen: ${q(txHash)}`);
     }
-    seenTxs.add(txHash);
+    seenTxs.init(txHash, evidence.blockTimestamp);
 
     appendToStoredArray(
       pendingSettleTxs,
@@ -305,7 +310,7 @@ export const prepareStatusManager = (
         if (seenTxs.has(txHash)) {
           throw makeError(`Transaction already seen: ${q(txHash)}`);
         }
-        seenTxs.add(txHash);
+        seenTxs.init(txHash, evidence.blockTimestamp);
         publishEvidence(txHash, evidence);
       },
 

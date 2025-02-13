@@ -96,6 +96,7 @@ export const addOperatorCommands = (
     .requiredOption('--recipientAddress <string>', 'bech32 address', String)
     .requiredOption('--blockHash <0xhex>', 'hex hash', parseHex)
     .requiredOption('--blockNumber <number>', 'number', parseNat)
+    .requiredOption('--blockTimestamp <number>', 'number', parseNat)
     .requiredOption('--chainId <string>', 'chain id', Number)
     .requiredOption('--amount <number>', 'number', parseNat)
     .requiredOption('--forwardingAddress <string>', 'bech32 address', String)
