@@ -32,6 +32,3 @@ export const getContractInvocationPayload = ({
 
   return Array.from(utils.arrayify(payload));
 };
-
-console.log(testData);
-console.log(getContractInvocationPayload(testData));
