@@ -46,50 +46,57 @@ export const prepareVowRejectionTracker = zone => {
     },
   );
 
-  const vowRejectionTracker = harden({
-    /**
-     * @param {PassableCap} vowCap
-     */
-    handle(vowCap) {
-      const cancel = vowToCancelUnhandledRejection.get(vowCap);
-      if (!cancel) {
-        console.warn(
-          X`Now handling a VOW_REJECTION from a prior incarnation of ${vowCap}`,
+  const vowRejectionTracker = zone.exo(
+    'VowRejectionTracker',
+    M.interface('VowRejectionTracker', {
+      handle: M.call(M.remotable()).returns(),
+      reject: M.call(M.remotable(), M.raw()).returns(),
+    }),
+    {
+      /**
+       * @param {PassableCap} vowCap
+       */
+      handle(vowCap) {
+        const cancel = vowToCancelUnhandledRejection.get(vowCap);
+        if (!cancel) {
+          console.warn(
+            X`Now handling a VOW_REJECTION from a prior incarnation for ${vowCap}`,
+          );
+          return;
+        }
+        vowToCancelUnhandledRejection.delete(vowCap);
+        cancel();
+      },
+      /**
+       * @param {PassableCap} vowCap
+       * @param {any} reason
+       */
+      reject(vowCap, reason) {
+        if (vowToCancelUnhandledRejection.has(vowCap)) {
+          return;
+        }
+
+        harden(reason);
+        const baseReason = zone.isStorable(reason)
+          ? reason
+          : assert.error(X`Vow rejection reason was not stored: ${reason}`);
+
+        // Register a never-resolved native promise with liveslots, so it
+        // can reject on upgrade.
+        const upgradedPK = makePromiseKit();
+        zone.watchPromise(
+          upgradedPK.promise,
+          upgradeRejectionWatcher,
+          baseReason,
         );
-        return;
-      }
-      vowToCancelUnhandledRejection.set(vowCap, sink);
-      cancel();
+
+        // Save the cancel function.
+        const rejected = Promise.reject(reason);
+        const cancel = makeUnhandledRejectionCanceller(rejected, upgradedPK);
+        vowToCancelUnhandledRejection.set(vowCap, cancel);
+      },
     },
-    /**
-     * @param {PassableCap} vowCap
-     * @param {any} reason
-     */
-    reject(vowCap, reason) {
-      if (vowToCancelUnhandledRejection.has(vowCap)) {
-        return;
-      }
-
-      harden(reason);
-      const baseReason = zone.isStorable(reason)
-        ? reason
-        : assert.error(`Vow rejection reason was not stored: ${reason}`);
-
-      // Register a never-resolved native promise with liveslots, so it
-      // can reject on upgrade.
-      const upgradedPK = makePromiseKit();
-      zone.watchPromise(
-        upgradedPK.promise,
-        upgradeRejectionWatcher,
-        baseReason,
-      );
-
-      // Save the cancel function.
-      const rejected = Promise.reject(reason);
-      const cancel = makeUnhandledRejectionCanceller(rejected, upgradedPK);
-      vowToCancelUnhandledRejection.set(vowCap, cancel);
-    },
-  });
+  );
 
   return vowRejectionTracker;
 };

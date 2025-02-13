@@ -34,36 +34,36 @@ export const prepareVowKit = (zone, vowRejectionTracker) => {
   const resolverToNonStoredValue = new WeakMap();
 
   /**
-   * Get the current incarnation's promise kit associated with a vowV0.
+   * Get the ephemera associated with a vowKit.resolver.
    *
    * @param {VowResolver} resolver
    * @param {{ potentiallyHandled?: boolean }} [options]
    */
-  const provideCurrentKit = (resolver, options) => {
-    let pk = resolverToEphemera.get(resolver);
-    if (!pk) {
-      pk = makePromiseKit();
+  const provideEphemera = (resolver, options) => {
+    let ephemera = resolverToEphemera.get(resolver);
+    if (!ephemera) {
+      ephemera = makePromiseKit();
       // Silence this internal promise's rejections, since we use the
       // rejectionTracker instead.
-      pk.promise.catch(noop);
+      ephemera.promise.catch(noop);
     }
 
-    pk = harden({ ...pk, ...options });
-    resolverToEphemera.set(resolver, pk);
-    return pk;
+    ephemera = harden({ ...ephemera, ...options });
+    resolverToEphemera.set(resolver, ephemera);
+    return ephemera;
   };
 
   /**
    * @param {VowResolver} resolver
    */
-  const getPromiseKitForResolution = resolver => {
-    const kit = provideCurrentKit(resolver);
-    if (kit.resolve) {
+  const provideEphemeraForResolution = resolver => {
+    const ephemera = provideEphemera(resolver);
+    if (ephemera.resolve) {
       // Resolution is a one-time event, so forget the resolve/reject functions.
-      const { resolve: _1, reject: _2, ...ephemera } = kit;
-      resolverToEphemera.set(resolver, harden(ephemera));
+      const { resolve: _1, reject: _2, ...rest } = ephemera;
+      resolverToEphemera.set(resolver, harden(rest));
     }
-    return kit;
+    return ephemera;
   };
 
   const makeVowInternalsKit = zone.exoClassKit(
@@ -138,7 +138,7 @@ export const prepareVowKit = (zone, vowRejectionTracker) => {
             }
             case null:
             case 'pending':
-              return provideCurrentKit(this.facets.resolver, {
+              return provideEphemera(this.facets.resolver, {
                 potentiallyHandled: true,
               }).promise;
             default:
@@ -158,7 +158,7 @@ export const prepareVowKit = (zone, vowRejectionTracker) => {
           this.state.stepStatus = 'pending';
 
           const { resolver } = this.facets;
-          const { resolve } = getPromiseKitForResolution(resolver);
+          const { resolve } = provideEphemeraForResolution(resolver);
           resolve && resolve(value);
 
           zone.watchPromise(
@@ -177,7 +177,7 @@ export const prepareVowKit = (zone, vowRejectionTracker) => {
           this.state.stepStatus = 'rejected';
 
           const { resolver, watchNextStep } = this.facets;
-          const { reject } = getPromiseKitForResolution(resolver);
+          const { reject } = provideEphemeraForResolution(resolver);
           reject && reject(reason);
           watchNextStep.onRejected(reason);
         },
@@ -187,7 +187,7 @@ export const prepareVowKit = (zone, vowRejectionTracker) => {
           this.state.stepStatus = 'fulfilled';
 
           const { resolver } = this.facets;
-          const { resolve } = getPromiseKitForResolution(resolver);
+          const { resolve } = provideEphemeraForResolution(resolver);
           harden(value);
           resolve && resolve(value);
 
@@ -206,7 +206,7 @@ export const prepareVowKit = (zone, vowRejectionTracker) => {
 
           const { resolver, vowV0 } = this.facets;
           const { reject, potentiallyHandled } =
-            getPromiseKitForResolution(resolver);
+            provideEphemeraForResolution(resolver);
           harden(reason);
           reject && reject(reason);
 
