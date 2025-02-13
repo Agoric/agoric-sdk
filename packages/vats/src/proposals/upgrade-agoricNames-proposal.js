@@ -31,7 +31,7 @@ export const upgradeAgoricNames = async (
 };
 
 export const getManifestForUpgradingAgoricNames = (
-  { restoreRef },
+  _powers,
   { agoricNamesRef },
 ) => ({
   manifest: {
@@ -42,9 +42,6 @@ export const getManifestForUpgradingAgoricNames = (
       },
       produce: {},
     },
-  },
-  installations: {
-    walletFactory: restoreRef(agoricNamesRef),
   },
   options: { agoricNamesRef },
 });
