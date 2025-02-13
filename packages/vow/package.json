@@ -11,7 +11,7 @@
     "build": "exit 0",
     "prepack": "tsc --build tsconfig.build.json",
     "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
-    "test": "AGORIC_AVA_ALLOW_UNHANDLED_REJECTIONS=3 ava",
+    "test": "AGORIC_AVA_ALLOW_UNHANDLED_REJECTIONS=5 ava",
     "test:ci": "npm run test && npm run test:expected-fail",
     "test:expected-fail": "ava; test $? -eq 1",
     "test:xs": "exit 0",

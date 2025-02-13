@@ -43,6 +43,9 @@ test.serial('vow resolve across upgrade', async t => {
     const testVowKit3 = zone.makeOnce('testVowKit3', () =>
       vowTools.makeVowKit(),
     );
+    const testVowKit4 = zone.makeOnce('testVowKit4', () =>
+      vowTools.makeVowKit(),
+    );
 
     vowTools.watch(testVowKit.vow, watcher);
 
@@ -52,6 +55,7 @@ test.serial('vow resolve across upgrade', async t => {
 
     vowTools.watch(testVowKit3.vow, watcher2);
     testVowKit3.resolver.resolve(42);
+    testVowKit4.resolver.reject(() => 'is not storable');
   });
 
   await startLife(
