@@ -8,39 +8,23 @@ import { ChainPolicies } from './chain-policies.js';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  */
 
-/** @type {[Denom, DenomDetail & { brandKey?: string}][]} */
-export const defaultAssetInfo = [
-  [
-    'uusdc',
-    {
-      baseName: 'noble',
-      chainName: 'noble',
-      baseDenom: 'uusdc',
-    },
-  ],
-  [
-    `ibc/${denomHash({ denom: 'uusdc', channelId: fetchedChainInfo.agoric.connections['noble-1'].transferChannel.channelId })}`,
-    {
-      baseName: 'noble',
-      chainName: 'agoric',
-      baseDenom: 'uusdc',
-      brandKey: 'USDC',
-    },
-  ],
-  [
-    `ibc/${denomHash({ denom: 'uusdc', channelId: fetchedChainInfo.osmosis.connections['noble-1'].transferChannel.channelId })}`,
-    {
-      baseName: 'noble',
-      chainName: 'osmosis',
-      baseDenom: 'uusdc',
-    },
-  ],
+/** @type {[Denom, DenomDetail & { brandKey?: string}]} */
+const usdcOnAgoric = [
+  `ibc/${denomHash({ denom: 'uusdc', channelId: fetchedChainInfo.agoric.connections['noble-1'].transferChannel.channelId })}`,
+  {
+    baseName: 'noble',
+    chainName: 'agoric',
+    baseDenom: 'uusdc',
+    brandKey: 'USDC',
+  },
 ];
-harden(defaultAssetInfo);
 
-const agoricAssetInfo = defaultAssetInfo.filter(
-  ([_d, i]) => i.chainName === 'agoric',
-);
+/** @type {[Denom, DenomDetail & { brandKey?: string}][]} */
+export const transferAssetInfo = [
+  ['uusdc', { baseName: 'noble', chainName: 'noble', baseDenom: 'uusdc' }],
+  usdcOnAgoric,
+];
+harden(transferAssetInfo);
 
 /** ABI for DepositForBurn event in TokenMessenger contract */
 const DepositForBurnEvent =
@@ -76,7 +60,7 @@ export const configurations = {
         noble: fetchedChainInfo.noble,
       })
     ),
-    assetInfo: agoricAssetInfo,
+    assetInfo: [usdcOnAgoric],
   },
   MAINNET: {
     // per JVC 12 Feb 2025
@@ -94,7 +78,7 @@ export const configurations = {
     chainInfo: /** @type {Record<string, CosmosChainInfo & Passable>} */ (
       withChainCapabilities(fetchedChainInfo)
     ),
-    assetInfo: defaultAssetInfo,
+    assetInfo: transferAssetInfo,
   },
   DEVNET: {
     oracles: {
@@ -113,7 +97,7 @@ export const configurations = {
     chainInfo: /** @type {Record<string, CosmosChainInfo & Passable>} */ (
       withChainCapabilities(fetchedChainInfo) // TODO: use devnet values
     ),
-    assetInfo: defaultAssetInfo, // TODO: use emerynet values
+    assetInfo: transferAssetInfo,
   },
   EMERYNET: {
     oracles: {
@@ -129,7 +113,7 @@ export const configurations = {
     chainInfo: /** @type {Record<string, CosmosChainInfo & Passable>} */ (
       withChainCapabilities(fetchedChainInfo) // TODO: use emerynet values
     ),
-    assetInfo: defaultAssetInfo, // TODO: use emerynet values
+    assetInfo: transferAssetInfo,
   },
 };
 harden(configurations);
