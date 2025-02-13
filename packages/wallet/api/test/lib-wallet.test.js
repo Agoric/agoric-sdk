@@ -137,7 +137,7 @@ test.before(async t => {
   const zoe = makeZoeForTest();
 
   // Create AutomaticRefund instance
-  const automaticRefundContractUrl = await importMetaResolve(
+  const automaticRefundContractUrl = importMetaResolve(
     '@agoric/zoe/src/contracts/automaticRefund.js',
     import.meta.url,
   );
@@ -149,7 +149,7 @@ test.before(async t => {
   );
 
   // Create Autoswap instance
-  const autoswapContractUrl = await importMetaResolve(
+  const autoswapContractUrl = importMetaResolve(
     '@agoric/zoe/src/contracts/autoswap.js',
     import.meta.url,
   );
@@ -1491,7 +1491,7 @@ test('addOffer makeContinuingInvitation', async t => {
   const board = makeFakeBoard();
 
   // Create ContinuingInvitationExample instance
-  const url = await importMetaResolve(
+  const url = importMetaResolve(
     './continuingInvitationExample.js',
     import.meta.url,
   );

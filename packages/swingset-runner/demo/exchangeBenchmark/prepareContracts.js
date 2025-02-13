@@ -9,7 +9,7 @@ const CONTRACT_FILES = ['simpleExchange.js'];
 
 const generateBundlesP = Promise.all(
   CONTRACT_FILES.map(async contract => {
-    const contractUrl = await importMetaResolve(
+    const contractUrl = importMetaResolve(
       `@agoric/zoe/src/contracts/${contract}`,
       import.meta.url,
     );

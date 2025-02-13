@@ -83,7 +83,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   };
 
   const getVatConfig = async () => {
-    const href = await importMetaResolve(
+    const href = importMetaResolve(
       env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
         argv.bootMsg.params.bootstrap_vat_config,
       import.meta.url,

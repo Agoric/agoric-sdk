@@ -41,7 +41,7 @@ trace('makeZoe');
  * @param {string} sourceRoot
  */
 async function launch(zoeP, sourceRoot) {
-  const contractUrl = await importMetaResolve(sourceRoot, import.meta.url);
+  const contractUrl = importMetaResolve(sourceRoot, import.meta.url);
   const contractPath = new URL(contractUrl).pathname;
   const contractBundle = await bundleSource(contractPath);
   const installation = await E(zoeP).install(contractBundle);

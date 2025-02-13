@@ -21,7 +21,7 @@ test('startInstance', async t => {
   const zoe = makeZoeForTest();
 
   const bundleUrl = new URL(
-    await importMetaResolve(
+    importMetaResolve(
       '@agoric/zoe/src/contracts/automaticRefund.js',
       import.meta.url,
     ),

@@ -15,8 +15,8 @@ import { makeDefaultTestContext } from './contexts.js';
 import { ActionType, headValue, makeMockTestSpace } from './supports.js';
 import { makeImportContext } from '../src/marshal-contexts.js';
 
-const importSpec = spec =>
-  importMetaResolve(spec, import.meta.url).then(u => new URL(u).pathname);
+const importSpec = async spec =>
+  new URL(importMetaResolve(spec, import.meta.url)).pathname;
 
 /**
  * @type {import('ava').TestFn<
