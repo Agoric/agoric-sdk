@@ -3,6 +3,7 @@ import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
 import { withOrchestration } from '../utils/start-helper.js';
 import { prepareStrideStakingTap } from './elys-contract-tap-kit.js';
 import * as flows from './elys-contract.flow.js';
+import * as tokenflows from './elys-contract-token.flow.js';
 import { E } from '@endo/far';
 
 const trace = makeTracer('ContractInstantiation');
@@ -30,11 +31,13 @@ const contract = async (
   zcf,
   privateArgs,
   zone,
-  { chainHub, orchestrateAll, vowTools }, // orchestration tools
+  tools, // orchestration tools
 ) => {
+  const { chainHub, orchestrateAll, vowTools } = tools;
+
   const makeStrideStakingTap = prepareStrideStakingTap(
     zone.subZone('strideStakingTap'),
-    vowTools,
+    tools,
   );
 
   const { makeICAHookAccounts } = orchestrateAll(flows, {
