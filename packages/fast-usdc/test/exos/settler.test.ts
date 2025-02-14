@@ -367,7 +367,6 @@ test('slow path: forward to EUD; remove pending tx', async t => {
       'transfer',
       {
         chainId: 'osmosis-1',
-        encoding: 'bech32',
         value: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
       },
       usdc.units(150),
@@ -375,7 +374,6 @@ test('slow path: forward to EUD; remove pending tx', async t => {
         forwardOpts: {
           intermediateRecipient: {
             chainId: 'noble-1',
-            encoding: 'bech32',
             value: 'noble1test',
           },
         },
@@ -446,7 +444,6 @@ test('skip advance: forward to EUD; remove pending tx', async t => {
       'transfer',
       {
         chainId: 'osmosis-1',
-        encoding: 'bech32',
         value: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
       },
       usdc.units(150),
@@ -454,7 +451,6 @@ test('skip advance: forward to EUD; remove pending tx', async t => {
         forwardOpts: {
           intermediateRecipient: {
             chainId: 'noble-1',
-            encoding: 'bech32',
             value: 'noble1test',
           },
         },

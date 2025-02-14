@@ -39,7 +39,6 @@ import type { AmountArg, ChainAddress, Denom, DenomAmount } from './types.js';
 export type CosmosValidatorAddress = ChainAddress & {
   // infix for Validator Operator https://docs.cosmos.network/main/learn/beginner/accounts#addresses
   value: `${string}valoper${string}`;
-  encoding: 'bech32';
 };
 
 /** Represents an IBC Connection between two chains, which can contain multiple Channels. */

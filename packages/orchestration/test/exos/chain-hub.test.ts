@@ -173,7 +173,6 @@ test('makeChainAddress', async t => {
   t.deepEqual(chainHub.makeChainAddress(MOCK_ICA_ADDRESS), {
     chainId: 'osmosis-1',
     value: MOCK_ICA_ADDRESS,
-    encoding: 'bech32',
   });
 
   t.throws(

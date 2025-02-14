@@ -70,8 +70,6 @@ export type ChainAddress = {
   // TODO should we call this accountAddress to align with CAIP-10?
   /** The address value used on-chain */
   value: string;
-  // TODO remove this, not helping
-  encoding: 'bech32' | 'ethereum';
 };
 
 /**
