@@ -4,6 +4,7 @@ import { VowShape } from '@agoric/vow';
 import { makeTracer } from '@agoric/internal';
 import { ChainAddressShape } from '../typeGuards.js';
 import * as tokenflows from './elys-contract-token.flow.js';
+import { FeeConfigShape } from './elys-contract-type-gaurd.js';
 
 const trace = makeTracer('StrideStakingTap');
 
@@ -65,6 +66,7 @@ harden(SupportedHostChainShape);
  *   agoricBech32Prefix: string;
  *   strideBech32Prefix: string;
  *   elysBech32Prefix: string;
+ *   feeConfig: FeeConfigShape;
  * }} StrideStakingTapState
  */
 /** @type {TypedPattern<StrideStakingTapState>} */
@@ -82,6 +84,7 @@ const StakingTapStateShape = {
   agoricBech32Prefix: M.string(),
   strideBech32Prefix: M.string(),
   elysBech32Prefix: M.string(),
+  feeConfig: FeeConfigShape,
 };
 harden(StakingTapStateShape);
 
@@ -126,7 +129,7 @@ const prepareStrideStakingTapKit = (zone, tools) => {
           const strideICAAccount = /** @type {OrchestrationAccount<{ chainId: string }> & Passable} */ (this.state.strideICAAccount);
           const elysICAAccount = /** @type {OrchestrationAccount<{ chainId: string }> & Passable} */ (this.state.elysICAAccount);
           
-          trace('contracttapkit, calling orchestateAll');
+          trace('contractTapKit, calling orchestateAll');
 
           // TODO: create random strings each time
           const durableName = `${event.acknowledgement}+${event.packet.destination_channel}+${event.packet.source_channel}`;
@@ -147,6 +150,7 @@ const prepareStrideStakingTapKit = (zone, tools) => {
             state.agoricBech32Prefix,
             state.strideBech32Prefix,
             state.elysBech32Prefix,
+            state.feeConfig,
           ));
         },
       },

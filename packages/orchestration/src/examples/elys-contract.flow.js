@@ -1,6 +1,7 @@
 import { Fail } from '@endo/errors';
 import { denomHash } from '../utils/denomHash.js';
 import { makeTracer } from '@agoric/internal';
+import { FeeConfigShape } from './elys-contract-type-gaurd.js';
 
 
 /**
@@ -23,12 +24,13 @@ const trace = makeTracer('StrideStakingFlow');
  *   chainNames: string[];
  *   supportedHostChains: MapStore<any, any>;
  *   stDenomOnElysTohostToAgoricChannelMap: MapStore<any, any>;
+ *   feeConfig: FeeConfigShape;
  * }} offerArgs
  */
 export const makeICAHookAccounts = async (
   orch,
   { makeStrideStakingTap, chainHub },
-  { chainNames, supportedHostChains, stDenomOnElysTohostToAgoricChannelMap },
+  { chainNames, supportedHostChains, stDenomOnElysTohostToAgoricChannelMap, feeConfig },
 ) => {
   const allRemoteChains = await Promise.all(
     chainNames.map(n => orch.getChain(n)),
@@ -125,6 +127,7 @@ export const makeICAHookAccounts = async (
     agoricBech32Prefix,
     strideBech32Prefix,
     elysBech32Prefix,
+    feeConfig,
   }
   const tap = makeStrideStakingTap(s);
 

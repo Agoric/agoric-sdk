@@ -3,6 +3,7 @@ import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
 import { withOrchestration } from '../utils/start-helper.js';
 import { prepareStrideStakingTap } from './elys-contract-tap-kit.js';
 import * as flows from './elys-contract.flow.js';
+import { FeeConfigShape } from './elys-contract-type-gaurd.js';
 import { E } from '@endo/far';
 
 const trace = makeTracer('ContractInstantiation');
@@ -12,6 +13,7 @@ const interfaceTODO = undefined;
  * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '../types.js';
+ * import { FeeConfig } from './elys-contract-type-gaurd.js';
  */
 
 /**
@@ -22,6 +24,7 @@ const interfaceTODO = undefined;
  *   marshaller: Marshaller;
  *   chainInfo?: Record<string, CosmosChainInfo>;
  *   assetInfo?: [Denom, DenomDetail & { brandKey?: string }][];
+ *   feeConfig: FeeConfigShape,
  * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
@@ -32,6 +35,7 @@ const contract = async (
   zone,
   tools, // orchestration tools
 ) => {
+  // TODO: Add assertions for privateArgs feeInfo
   const { chainHub, orchestrateAll, vowTools } = tools;
 
   const makeStrideStakingTap = prepareStrideStakingTap(
@@ -61,6 +65,7 @@ const contract = async (
       chainNames: allowedChains,
       supportedHostChains: passablesupportedHostChains,
       stDenomOnElysTohostToAgoricChannelMap,
+      feeConfig: privateArgs.feeConfig,
     }),
   );
 
