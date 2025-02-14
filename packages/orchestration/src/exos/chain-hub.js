@@ -490,12 +490,14 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
       return undefined;
     },
     /**
-     * @param {string} address bech32 address
+     * @param {string} accountId CAIP-10 account ID or a Cosmos bech32 address
      * @returns {ChainAddress}
      * @throws {Error} if chain info not found for bech32Prefix
      */
-    makeChainAddress(address) {
-      const prefix = getBech32Prefix(address);
+    makeChainAddress(accountId) {
+      // FIXME if accountId has colons, parse it into chainId and value,
+      // otherwise the chainId comes from the bech32 prefix of the value
+      const prefix = getBech32Prefix(accountId);
       if (!bech32PrefixToChainName.has(prefix)) {
         throw makeError(`Chain info not found for bech32Prefix ${q(prefix)}`);
       }
@@ -503,10 +505,12 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
       const { chainId } = chainInfos.get(chainName);
       return harden({
         chainId,
-        value: address,
+        value: accountId,
         encoding: /** @type {const} */ ('bech32'),
       });
     },
+    // TODO document whether this is limited to IBC
+    // Not urgent because it's vat-local
     /**
      * Determine the transfer route for a destination and amount given the
      * current holding chain.
