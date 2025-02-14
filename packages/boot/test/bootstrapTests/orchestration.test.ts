@@ -35,7 +35,6 @@ const test: TestFn<
 const validatorAddress: CosmosValidatorAddress = {
   value: 'cosmosvaloper1test',
   chainId: 'gaiatest',
-  encoding: 'bech32',
 };
 
 const ATOM_DENOM = 'uatom';
@@ -236,7 +235,6 @@ test.serial('stakeAtom - smart wallet', async t => {
   const validatorAddressFail: CosmosValidatorAddress = {
     value: 'cosmosvaloper1fail',
     chainId: 'gaiatest',
-    encoding: 'bech32',
   };
 
   // This will trigger the immediate ack of the mock bridge
