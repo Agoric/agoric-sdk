@@ -9,7 +9,6 @@
     "src/**/*.js",
     "test/**/*.js",
     "*.cjs",
-    "tools/**/*.js",
-    "tools/**/*.mjs",
+    "tools",
   ],
 }
