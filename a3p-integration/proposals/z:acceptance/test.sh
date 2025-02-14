@@ -55,7 +55,7 @@ yarn ava stakeBld.test.js
 
 if ! test -z "$MESSAGE_FILE_PATH"; then
   if [[ "$(cat "$MESSAGE_FILE_PATH")" == "ready" ]]; then
-    echo -n "stop" >> "$MESSAGE_FILE_PATH"
+    echo -n "stop" > "$MESSAGE_FILE_PATH"
   fi
 
   exit_message="$(node "$DIRECTORY_PATH/wait-for-follower.mjs" "^exit code \d+$")"

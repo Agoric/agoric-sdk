@@ -5,17 +5,19 @@ set -o errexit -o errtrace -o pipefail -o xtrace
 
 CONTAINER_MESSAGE_FILE_PATH="/root/message-file-path"
 DIRECTORY_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
-BRANCH_NAME="usman/monitoring-follower"
 FOLLOWER_LOGS_FILE="/tmp/loadgen-follower-logs"
+LOADGEN_BRANCH_NAME="usman/monitoring-follower"
 LOADGEN_REPOSITORY_NAME="testnet-load-generator"
 LOGS_FILE="/tmp/before-test-run-hook-logs"
 ORGANIZATION_NAME="agoric"
+SDK_REPOSITORY_NAME="agoric-sdk"
 TIMESTAMP="$(date '+%s')"
 
 CONTAINER_IMAGE_NAME="ghcr.io/$ORGANIZATION_NAME/agoric-3-proposals"
 LOADGEN_REPOSITORY_LINK="https://github.com/$ORGANIZATION_NAME/$LOADGEN_REPOSITORY_NAME.git"
 NETWORK_CONFIG_FILE_PATH="/tmp/network-config-$TIMESTAMP"
 OUTPUT_DIRECTORY="/tmp/loadgen-output"
+SDK_REPOSITORY_LINK="https://github.com/$ORGANIZATION_NAME/$SDK_REPOSITORY_NAME.git"
 TEMP="${DIRECTORY_PATH#*/proposals/}"
 
 FOLDER_NAME="${TEMP%%/*}"
@@ -76,11 +78,6 @@ start_follower() {
   local entrypoint="
                 #! /bin/bash
 
-                clone_repository() {
-                        cd \$HOME
-                        git clone $LOADGEN_REPOSITORY_LINK --branch $BRANCH_NAME
-                }
-
                 install_dependencies() {
                         apt-get update
                         apt-get install curl --yes
@@ -90,11 +87,12 @@ start_follower() {
                 # Hacky way to get go lang in the container                                      #
                 ##################################################################################
                 install_go() {
-                        curl --location --output /tmp/go.tar.gz \
+                        local go_tar=/tmp/go.tar.gz
+                        curl --location --output \$go_tar --silent \
                          https://go.dev/dl/go1.20.6.linux-amd64.tar.gz
 
-                        tar --directory /usr/local --extract --file /tmp/go.tar.gz --gzip
-                        rm --force /tmp/go.tar.gz
+                        tar --directory /usr/local --extract --file \$go_tar --gzip
+                        rm --force \$go_tar
 
                         export PATH=/usr/local/go/bin:\$PATH
 
@@ -102,36 +100,51 @@ start_follower() {
                 }
                 ##################################################################################
 
-                start_loadgen() {
+                setup_loadgen_runner() {
+                        cd \$HOME
+                        git clone $LOADGEN_REPOSITORY_LINK --branch $LOADGEN_BRANCH_NAME
+                        cd $LOADGEN_REPOSITORY_NAME/runner
+                        yarn install
+                }
+
+                setup_sdk() {
+                        cd \$HOME
+                        git clone $SDK_REPOSITORY_LINK
+                        cd $SDK_REPOSITORY_NAME
+                        yarn install
+                }
+
+                start_loadgen_runner() {
                         cd \$HOME/$LOADGEN_REPOSITORY_NAME
-                        yarn --cwd runner install
-                        agoric install
 
-                        cwd=\$(pwd)
-                        agd_path=\$(which agd)
-
-                        mkdir --parents \$cwd/node_modules/cosmic-swingset/bin \$cwd/golang/cosmos/build
-                        ln --force --symbolic \$agd_path \$cwd/node_modules/cosmic-swingset/bin/ag-chain-cosmos
-                        ln --force --symbolic \$agd_path \$cwd/golang/cosmos/build/ag-cosmos-helper
+                        if ! test -f \$HOME/$SDK_REPOSITORY_NAME/golang/cosmos/build/agd
+                        then
+                          mkdir --parents \$HOME/$SDK_REPOSITORY_NAME/golang/cosmos/build
+                          ln --force --symbolic \$(which agd) \$HOME/$SDK_REPOSITORY_NAME/golang/cosmos/build/agd
+                        fi
 
                         AG_CHAIN_COSMOS_HOME=\$HOME/.agoric \
                         SDK_BUILD=0 \
+                        SDK_SRC=\$HOME/$SDK_REPOSITORY_NAME \
                         ./runner/bin/loadgen-runner \
+                         --acceptance-integration-message-file \$MESSAGE_FILE_PATH \
                          --chain-only \
                          --custom-bootstrap \
-                         --integrate-acceptance \
                          --no-stage.save-storage \
                          --output-dir ./results/a3p-test/ \
                          --profile testnet \
                          --stages 3 \
                          --testnet-origin file://$NETWORK_CONFIG_FILE_PATH \
                          --use-state-sync
+
+                        echo -n \"exit code \$?\" > \$MESSAGE_FILE_PATH
                 }
 
                 install_dependencies
                 install_go
-                clone_repository
-                start_loadgen
+                setup_sdk
+                setup_loadgen_runner
+                start_loadgen_runner
         "
   run_command_inside_container \
     "$entrypoint" \
