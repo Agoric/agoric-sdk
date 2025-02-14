@@ -55,12 +55,22 @@ export type DenomAmount = {
 /** Amounts can be provided as pure data using denoms or as ERTP Amounts */
 export type AmountArg = DenomAmount | Amount<'nat'>;
 
+// TODO should this be AccountId to align with CAIP-10?
 /** An address on some blockchain, e.g., cosmos, eth, etc. */
 export type ChainAddress = {
-  /** e.g. 1 for Ethereum, agoric-3 for Agoric, cosmoshub-4 for Cosmos */
+  /**
+   * CAIP-2 chain ID, with default namespace 'cosmos'
+   *
+   * @example
+   * `agoric-3` is equivalent to `cosmos:agoric-3`
+   * `eip155:1` is Ethereum mainnet
+   * `solana` is Solana mainnet
+   */
   chainId: string;
+  // TODO should we call this accountAddress to align with CAIP-10?
   /** The address value used on-chain */
   value: string;
+  // TODO remove this, not helping
   encoding: 'bech32' | 'ethereum';
 };
 
