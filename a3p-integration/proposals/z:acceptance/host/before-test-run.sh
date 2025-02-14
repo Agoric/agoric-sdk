@@ -32,7 +32,6 @@ create_volume_assets() {
 
 main() {
   create_volume_assets
-  set_trusted_block_data
   start_follower
 }
 
@@ -50,26 +49,6 @@ run_command_inside_container() {
     "$@" \
     "$CONTAINER_IMAGE_NAME:test-$PROPOSAL_NAME" \
     -c "$entrypoint"
-}
-
-set_trusted_block_data() {
-  local entrypoint
-  local last_block_info
-
-  entrypoint="
-            #! /bin/bash
-            set -o errexit -o errtrace -o pipefail
-
-            source /usr/src/upgrade-test-scripts/env_setup.sh > /dev/null 2>&1
-            cat \$STATUS_FILE
-        "
-  last_block_info="$(
-    run_command_inside_container \
-      "$entrypoint"
-  )"
-
-  TRUSTED_BLOCK_HASH="$(echo "$last_block_info" | jq '.SyncInfo.latest_block_hash' --raw-output)"
-  TRUSTED_BLOCK_HEIGHT="$(echo "$last_block_info" | jq '.SyncInfo.latest_block_height' --raw-output)"
 }
 
 start_follower() {
@@ -150,8 +129,6 @@ start_follower() {
     "$entrypoint" \
     --env "MESSAGE_FILE_PATH=$CONTAINER_MESSAGE_FILE_PATH" \
     --env "OUTPUT_DIR=$OUTPUT_DIRECTORY" \
-    --env "TRUSTED_BLOCK_HASH=$TRUSTED_BLOCK_HASH" \
-    --env "TRUSTED_BLOCK_HEIGHT=$TRUSTED_BLOCK_HEIGHT" \
     --mount "source=$MESSAGE_FILE_PATH,target=$CONTAINER_MESSAGE_FILE_PATH,type=bind" \
     --mount "source=$OUTPUT_DIRECTORY,target=$OUTPUT_DIRECTORY,type=bind" \
     --mount "source=$NETWORK_CONFIG_FILE_PATH,target=$NETWORK_CONFIG_FILE_PATH/network-config,type=bind" > "$FOLLOWER_LOGS_FILE" 2>&1
