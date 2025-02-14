@@ -21,6 +21,10 @@ import {
   MsgSendResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
 import {
+  MsgDepositForBurn,
+  MsgDepositForBurnResponse,
+} from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
+import {
   buildMsgResponseString,
   buildQueryResponseString,
   buildMsgErrorString,
@@ -121,6 +125,13 @@ export const protoMsgMocks = {
   bankSendMulti: {
     msg: buildTxPacketString([MsgSend.toProtoMsg(bankSendMulti)]),
     ack: buildMsgResponseString(MsgSendResponse, {}),
+  },
+  depositForBurn: {
+    msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ2owS0lTOWphWEpqYkdVdVkyTjBjQzUyTVM1TmMyZEVaWEJ2YzJsMFJtOXlRblZ5YmhJWUNndGpiM050YjNNeGRHVnpkQklDTVRBcUJYVjFjMlJqIiwibWVtbyI6IiJ9',
+    //   buildTxPacketString([
+    //   MsgDepositForBurn.toProtoMsg({ amount, burnToken, from, destinationDomain, mintRecipient }),
+    // ]),
+    ack: buildMsgResponseString(MsgDepositForBurnResponse, {}),
   },
 };
 

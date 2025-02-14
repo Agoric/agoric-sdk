@@ -251,6 +251,7 @@ export const makeFakeIBCBridge = (
             return undefined;
           }
           case 'sendPacket': {
+            debugger;
             const mockAckMapHasData = obj.packet.data in mockAckMap;
             if (!mockAckMapHasData) {
               trace(

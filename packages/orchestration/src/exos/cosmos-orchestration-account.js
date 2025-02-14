@@ -1126,13 +1126,18 @@ export const prepareCosmosOrchestrationAccountKit = (
             const { helper } = this.facets;
             const { chainAddress } = this.state;
 
-            chainAddress.chainId.startsWith('noble') ||
-              Fail`'depositForBurn' not supported on chain: ${q(chainAddress.chainId)}`;
+            // chainHub.getChainInfoByChainId(chainAddress.chainId)
+            //   .cctpDestinationDomain ||
+            //   Fail`'depositForBurn' not supported on chain: ${q(chainAddress.chainId)}, no cctpDestinationDomain`;
+
+            console.log('COA  check for being on Noble');
 
             const { cctpDestinationDomain } = chainHub.getChainInfoByChainId(
               destination.chainId,
             );
-            if (!cctpDestinationDomain || cctpDestinationDomain !== 0) {
+
+            debugger;
+            if (typeof cctpDestinationDomain !== 'number') {
               throw Fail`${q(destination.chainId)} does not have "cctpDestinationDomain" set in ChainInfo`;
             }
 

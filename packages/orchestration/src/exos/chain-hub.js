@@ -6,6 +6,7 @@ import { BrandShape } from '@agoric/ertp/src/typeGuards.js';
 import { VowShape } from '@agoric/vow';
 import {
   ChainAddressShape,
+  ChainInfoShape,
   CoinShape,
   CosmosChainInfoShape,
   DenomAmountShape,
@@ -203,9 +204,9 @@ export const TransferRouteShape = M.splitRecord(
 
 const ChainHubI = M.interface('ChainHub', {
   // TODO: support more than `CosmosChainInfoShape`
-  registerChain: M.call(M.string(), CosmosChainInfoShape).returns(),
+  registerChain: M.call(M.or(M.string(), M.number()), ChainInfoShape).returns(),
   getChainInfo: M.call(M.string()).returns(VowShape),
-  getChainInfoByChainId: M.call(M.string()).returns(VowShape),
+  getChainInfoByChainId: M.call(M.string()).returns(CosmosChainInfoShape),
   registerConnection: M.call(
     M.string(),
     M.string(),
@@ -239,7 +240,7 @@ const ChainHubI = M.interface('ChainHub', {
 export const makeChainHub = (zone, agoricNames, vowTools) => {
   /** @type {MapStore<string, CosmosChainInfo>} */
   const chainInfos = zone.mapStore('chainInfos', {
-    keyShape: M.string(),
+    keyShape: M.or(M.string(), M.number()),
     // TODO: support more than `CosmosChainInfoShape`
     valueShape: CosmosChainInfoShape,
   });
@@ -374,11 +375,12 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
      * contract `start` the call will happen again naturally.
      *
      * @param {string} name
-     * @param {CosmosChainInfo} chainInfo
+     * @param {ChainInfo} chainInfo
      */
     registerChain(name, chainInfo) {
       chainInfos.init(name, chainInfo);
-      if (chainInfo.bech32Prefix) {
+      chainIdToChainName.init(chainInfo.chainId, name);
+      if ('bech32Prefix' in chainInfo && chainInfo.bech32Prefix) {
         bech32PrefixToChainName.init(chainInfo.bech32Prefix, name);
       }
     },

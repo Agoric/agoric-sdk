@@ -938,3 +938,34 @@ test('executeEncodedTx', async t => {
     'delegateMsgSuccess',
   );
 });
+
+test.only(`depositForBurn`, async t => {
+  // TODO(cth) make a Noble account
+  t.log('Make account on cosmoshub');
+  t.context.utils.populateChainHub();
+  const { chainHub } = t.context.facadeServices;
+  chainHub.registerChain('base', {
+    chainId: 'E8453',
+    allegedName: 'base',
+    cctpDestinationDomain: 0,
+  });
+  const makeTestCOAKit = prepareMakeTestCOAKit(t, t.context, { noble: true });
+  const account = await makeTestCOAKit();
+  const amount = {
+    // TODO(cth) should it be the denom of USDC on agoric ??
+    denom: 'uusdc',
+    value: 10n,
+  };
+
+  const actual = await E(account).depositForBurn(
+    {
+      value: '0xe0d43135EBd2593907F8f56c25ADC1Bf94FCf993',
+      chainId: 'E8453', // TODO(cth)  should be a number
+      encoding: 'ethereum',
+    },
+    amount,
+  );
+
+  t.log('check the bridge');
+  t.deepEqual(actual, undefined);
+});
