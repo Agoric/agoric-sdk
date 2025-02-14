@@ -282,29 +282,7 @@ jobs:
           fi
         working-directory: a3p-integration
       - name: build proposals tests
-        run: |
-          BRANCH_NAME="usman/before-after-test-scripts"
-          FILES=("env_setup.sh" "run_eval.sh" "run_test.sh" "run_use.sh")
-          FOLDER_NAME="upgrade-test-scripts"
-          ORG="Agoric"
-          REPO="agoric-3-proposals"
-
-          for file in "${FILES[@]}"
-          do
-            curl \
-             "https://github.com/$ORG/$REPO/raw/refs/heads/$BRANCH_NAME/packages/synthetic-chain/public/$FOLDER_NAME/$file" \
-             --location \
-             --output "node_modules/@agoric/synthetic-chain/dist/$FOLDER_NAME/$file" \
-             --silent
-          done
-
-          curl \
-           "https://storage.googleapis.com/agoric-snapshots-public/share/temp-a3p-cli.js" \
-           --location \
-           --output "node_modules/@agoric/synthetic-chain/dist/cli/cli.js" \
-           --silent
-
-          yarn build
+        run: yarn build
         working-directory: a3p-integration
       - name: run proposals tests
         run: yarn test
