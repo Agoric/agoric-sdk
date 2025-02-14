@@ -15,7 +15,7 @@ import {
   IBCChannelIDShape,
   IBCConnectionInfoShape,
 } from '../typeGuards.js';
-import { getBech32Prefix } from '../utils/address.js';
+import { getBech32Prefix, parseAccountId } from '../utils/address.js';
 
 /**
  * @import {NameHub} from '@agoric/vats';
@@ -495,8 +495,14 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
      * @throws {Error} if chain info not found for bech32Prefix
      */
     makeChainAddress(accountId) {
-      // FIXME if accountId has colons, parse it into chainId and value,
-      // otherwise the chainId comes from the bech32 prefix of the value
+      const parsed = parseAccountId(accountId);
+      if (parsed.chainId) {
+        return harden({
+          chainId: parsed.chainId,
+          value: parsed.accountAddress,
+        });
+      }
+      // Infer it from the bech32 prefix
       const prefix = getBech32Prefix(accountId);
       if (!bech32PrefixToChainName.has(prefix)) {
         throw makeError(`Chain info not found for bech32Prefix ${q(prefix)}`);
@@ -505,7 +511,7 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
       const { chainId } = chainInfos.get(chainName);
       return harden({
         chainId,
-        value: accountId,
+        value: parsed.accountAddress,
       });
     },
     // TODO document whether this is limited to IBC
