@@ -2,7 +2,7 @@ import { Fail, q } from '@endo/errors';
 
 /**
  * @import {IBCConnectionID} from '@agoric/vats';
- * @import {ChainAddress} from '../types.js';
+ * @import {ChainAddress, ScopedChainId} from '../types.js';
  * @import {RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  */
 
@@ -92,7 +92,6 @@ harden(findAddressField);
  * [bech32.js](https://github.com/bitcoinjs/bech32/blob/5ceb0e3d4625561a459c85643ca6947739b2d83c/src/index.ts#L146)
  * for the reference implementation.
  *
- * @param {string} address
  * @param {string} address - The full Bech32-encoded address.
  * @returns {string} - The extracted HRP (prefix).
  */
@@ -103,3 +102,42 @@ export const getBech32Prefix = address => {
   if (split === 0) return Fail`Missing prefix for ${q(address)}`;
   return address.slice(0, split);
 };
+
+/**
+ * Parses an account ID into a structured format following CAIP-10 standards.
+ *
+ * @param {string} partialId CAIP-10 account ID or an unscoped on-chain address
+ * @returns {{
+ *       namespace: string;
+ *       reference: string;
+ *       accountAddress: string;
+ *     }
+ *   | {
+ *       accountAddress: string;
+ *     }}
+ *   - The parsed account details.
+ */
+export const parseAccountId = partialId => {
+  if (typeof partialId !== 'string' || !partialId.length) {
+    Fail`Empty accountId: ${q(partialId)}`;
+  }
+
+  const parts = partialId.split(':');
+
+  if (parts.length === 3) {
+    // Full CAIP-10
+    const [namespace, reference, accountAddress] = parts;
+    return {
+      namespace,
+      reference,
+      accountAddress,
+    };
+  } else if (parts.length === 1) {
+    return {
+      accountAddress: partialId,
+    };
+  }
+
+  throw Fail`Invalid accountId: ${q(partialId)}`;
+};
+harden(parseAccountId);

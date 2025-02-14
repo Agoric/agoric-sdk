@@ -15,7 +15,7 @@ import {
   IBCChannelIDShape,
   IBCConnectionInfoShape,
 } from '../typeGuards.js';
-import { getBech32Prefix } from '../utils/address.js';
+import { getBech32Prefix, parseAccountId } from '../utils/address.js';
 
 /**
  * @import {NameHub} from '@agoric/vats';
@@ -490,12 +490,20 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
       return undefined;
     },
     /**
-     * @param {string} address bech32 address
+     * @param {string} accountId CAIP-10 account ID or a Cosmos bech32 address
      * @returns {ChainAddress}
      * @throws {Error} if chain info not found for bech32Prefix
      */
-    makeChainAddress(address) {
-      const prefix = getBech32Prefix(address);
+    makeChainAddress(accountId) {
+      const parsed = parseAccountId(accountId);
+      if (parsed.chainId) {
+        return harden({
+          chainId: parsed.chainId,
+          value: parsed.accountAddress,
+        });
+      }
+      // Infer it from the bech32 prefix
+      const prefix = getBech32Prefix(accountId);
       if (!bech32PrefixToChainName.has(prefix)) {
         throw makeError(`Chain info not found for bech32Prefix ${q(prefix)}`);
       }
@@ -503,9 +511,11 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
       const { chainId } = chainInfos.get(chainName);
       return harden({
         chainId,
-        value: address,
+        value: parsed.accountAddress,
       });
     },
+    // TODO document whether this is limited to IBC
+    // Not urgent because it's vat-local
     /**
      * Determine the transfer route for a destination and amount given the
      * current holding chain.
