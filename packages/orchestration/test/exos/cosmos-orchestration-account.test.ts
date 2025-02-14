@@ -47,6 +47,7 @@ import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { decodeBase64 } from '@endo/base64';
 import type { EReturn } from '@endo/far';
 import type { TestFn } from 'ava';
+import { MsgDepositForBurn } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
 import type { CosmosValidatorAddress } from '../../src/cosmos-api.js';
 import fetchedChainInfo from '../../src/fetched-chain-info.js';
 import type {
@@ -968,4 +969,29 @@ test.only(`depositForBurn`, async t => {
 
   t.log('check the bridge');
   t.deepEqual(actual, undefined);
+
+  //  TODO(cth)  stolen from above
+  const getAndDecodeLatestPacket = async () => {
+    await eventLoopIteration();
+    const { bridgeDowncalls } = await t.context.utils.inspectDibcBridge();
+    const latest = bridgeDowncalls[
+      bridgeDowncalls.length - 1
+    ] as IBCMethod<'sendPacket'>;
+    const { messages } = parseOutgoingTxPacket(latest.packet.data);
+    return MsgDepositForBurn.decode(messages[0].value);
+  };
+
+  const packet = await getAndDecodeLatestPacket();
+  t.log({ packet });
+  t.like(
+    packet,
+    {
+      amount: '10',
+      burnToken: 'uusdc',
+      destinationDomain: 0,
+      // TODO(cth)  ???
+      from: 'cosmos1test',
+    },
+    'it worked',
+  );
 });

@@ -184,6 +184,15 @@ export const CosmosOrchestrationInvitationMakersI = M.interface(
 );
 harden(CosmosOrchestrationInvitationMakersI);
 
+// Left pad the mint recipient address with 0's to 32 bytes
+const frobEthThingy = rawMintRecipient => {
+  const cleanedMintRecipient = rawMintRecipient.replace(/^0x/, '');
+  const zeroesNeeded = 64 - cleanedMintRecipient.length;
+  const mintRecipient = '0'.repeat(zeroesNeeded) + cleanedMintRecipient;
+  const buffer = Buffer.from(mintRecipient, 'hex');
+  return new Uint8Array(buffer);
+};
+
 /**
  * @param {Zone} zone
  * @param {object} powers
@@ -1143,7 +1152,7 @@ export const prepareCosmosOrchestrationAccountKit = (
 
             // TODO: logic for encoding solana + evm addresses
             // see https://github.com/circlefin/noble-cctp/blob/master/examples/depositForBurn.ts#L52-L70
-            const mintRecipient = new Uint8Array();
+            const mintRecipient = frobEthThingy(destination.value);
 
             // TODO: do we need to support MsgDepositForBurnWithCaller? It's the same payload, plus `destinationCaller: Uint8Array`.
             // (Functionally, only destinationCaller can call MsgReceive on the destination chain to mint)

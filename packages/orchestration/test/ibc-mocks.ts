@@ -127,7 +127,7 @@ export const protoMsgMocks = {
     ack: buildMsgResponseString(MsgSendResponse, {}),
   },
   depositForBurn: {
-    msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ2owS0lTOWphWEpqYkdVdVkyTjBjQzUyTVM1TmMyZEVaWEJ2YzJsMFJtOXlRblZ5YmhJWUNndGpiM050YjNNeGRHVnpkQklDTVRBcUJYVjFjMlJqIiwibWVtbyI6IiJ9',
+    msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ2w4S0lTOWphWEpqYkdVdVkyTjBjQzUyTVM1TmMyZEVaWEJ2YzJsMFJtOXlRblZ5YmhJNkNndGpiM050YjNNeGRHVnpkQklDTVRBaUlBQUFBQUFBQUFBQUFBQUFBT0RVTVRYcjBsazVCL2oxYkNXdHdiK1UvUG1US2dWMWRYTmtZdz09IiwibWVtbyI6IiJ9',
     //   buildTxPacketString([
     //   MsgDepositForBurn.toProtoMsg({ amount, burnToken, from, destinationDomain, mintRecipient }),
     // ]),
