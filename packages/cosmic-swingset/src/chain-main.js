@@ -229,7 +229,10 @@ export const makeQueueStorage = (call, queuePath) => {
  *   swingStore?: import('@agoric/swing-store').SwingStore,
  *   vatconfig?: Parameters<typeof launch>[0]['vatconfig'],
  *   withInternals?: boolean,
- * }} [options.testingOverrides]
+ * }} [options.testingOverrides] Exposed only for testing purposes.
+ *   `debugName`/`slogSender`/`swingStore`/`vatConfig` are pure overrides, while
+ *   `withInternals` expands the return value to expose internal objects
+ *   `controller`/`bridgeInbound`/`timer`.
  */
 export const makeLaunchChain = (
   agcc,
