@@ -566,30 +566,30 @@ export function makeSwingStore(path, forceReset, options = {}) {
   }
 
   const transcriptStore = attenuate(transcriptStoreInternal, {
-    initTranscript: 'pick',
-    rolloverSpan: 'pick',
-    rolloverIncarnation: 'pick',
-    getCurrentSpanBounds: 'pick',
-    addItem: 'pick',
-    readSpan: 'pick',
-    stopUsingTranscript: 'pick',
-    deleteVatTranscripts: 'pick',
+    initTranscript: true,
+    rolloverSpan: true,
+    rolloverIncarnation: true,
+    getCurrentSpanBounds: true,
+    addItem: true,
+    readSpan: true,
+    stopUsingTranscript: true,
+    deleteVatTranscripts: true,
   });
 
   const snapStore = attenuate(snapStoreInternal, {
-    loadSnapshot: 'pick',
-    saveSnapshot: 'pick',
-    deleteAllUnusedSnapshots: 'pick',
-    deleteVatSnapshots: 'pick',
-    stopUsingLastSnapshot: 'pick',
-    getSnapshotInfo: 'pick',
+    loadSnapshot: true,
+    saveSnapshot: true,
+    deleteAllUnusedSnapshots: true,
+    deleteVatSnapshots: true,
+    stopUsingLastSnapshot: true,
+    getSnapshotInfo: true,
   });
 
   const bundleStore = attenuate(bundleStoreInternal, {
-    addBundle: 'pick',
-    hasBundle: 'pick',
-    getBundle: 'pick',
-    deleteBundle: 'pick',
+    addBundle: true,
+    hasBundle: true,
+    getBundle: true,
+    deleteBundle: true,
   });
 
   const kernelStorage = {

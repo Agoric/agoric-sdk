@@ -1278,11 +1278,14 @@ export async function launchAndShareInternals({
  */
 export async function launch(options) {
   const launchResult = await launchAndShareInternals(options);
-  return attenuate(launchResult, {
-    blockingSend: 'pick',
-    shutdown: 'pick',
-    writeSlogObject: 'pick',
-    savedHeight: 'pick',
-    savedChainSends: 'pick',
-  });
+  return attenuate(
+    launchResult,
+    /** @type {const} */ ({
+      blockingSend: true,
+      shutdown: true,
+      writeSlogObject: true,
+      savedHeight: true,
+      savedChainSends: true,
+    }),
+  );
 }
