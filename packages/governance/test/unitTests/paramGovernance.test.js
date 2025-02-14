@@ -23,7 +23,7 @@ const contractGovernorRoot = '../../src/contractGovernor.js';
 const committeeRoot = '../../src/committee.js';
 
 const makeBundle = async sourceRoot => {
-  const url = await importMetaResolve(sourceRoot, import.meta.url);
+  const url = importMetaResolve(sourceRoot, import.meta.url);
   const path = new URL(url).pathname;
   const contractBundle = await bundleSource(path);
   return contractBundle;

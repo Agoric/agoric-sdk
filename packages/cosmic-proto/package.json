@@ -32,6 +32,10 @@
       "types": "./dist/codegen/cosmos/*.d.ts",
       "default": "./dist/codegen/cosmos/*.js"
     },
+    "./circle/cctp/v1/tx.js": {
+      "types": "./dist/codegen/circle/cctp/v1/tx.d.ts",
+      "default": "./dist/codegen/circle/cctp/v1/tx.js"
+    },
     "./cosmos/bank/v1beta1/query.js": {
       "types": "./dist/codegen/cosmos/bank/v1beta1/query.d.ts",
       "default": "./dist/codegen/cosmos/bank/v1beta1/query.js"
@@ -95,6 +99,18 @@
     "./icq/v1/packet.js": {
       "types": "./dist/codegen/icq/v1/packet.d.ts",
       "default": "./dist/codegen/icq/v1/packet.js"
+    },
+    "./stride/stakedym/tx.js": {
+      "types": "./dist/codegen/stride/stakedym/tx.d.ts",
+      "default": "./dist/codegen/stride/stakedym/tx.js"
+    },
+    "./stride/stakeibc/tx.js": {
+      "types": "./dist/codegen/stride/stakeibc/tx.d.ts",
+      "default": "./dist/codegen/stride/stakeibc/tx.js"
+    },
+    "./stride/staketia/tx.js": {
+      "types": "./dist/codegen/stride/staketia/tx.d.ts",
+      "default": "./dist/codegen/stride/staketia/tx.js"
     },
     "./swingset/msgs.js": {
       "types": "./dist/codegen/agoric/swingset/msgs.d.ts",

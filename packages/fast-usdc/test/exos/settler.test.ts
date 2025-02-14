@@ -33,6 +33,7 @@ const mockZcf = (zone: Zone) => {
 
   const makeSeatKit = zone.exoClassKit('MockSeatKit', undefined, () => ({}), {
     zcfSeat: {
+      exit() {},
       getCurrentAllocation() {
         return {};
       },

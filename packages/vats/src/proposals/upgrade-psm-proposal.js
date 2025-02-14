@@ -59,7 +59,7 @@ export const upgradePSMProposal = async (
   trace('Done.');
 };
 
-export const getManifestForUpgradingPSM = (_powers, { psmRef }) => ({
+export const getManifestForUpgradingPSM = ({ restoreRef }, { psmRef }) => ({
   manifest: {
     [upgradePSMProposal.name]: {
       consume: {
@@ -71,4 +71,5 @@ export const getManifestForUpgradingPSM = (_powers, { psmRef }) => ({
     },
   },
   options: { psmRef },
+  installations: { psm: restoreRef(psmRef) },
 });

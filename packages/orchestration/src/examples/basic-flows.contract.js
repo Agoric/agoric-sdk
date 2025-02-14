@@ -70,7 +70,7 @@ const contract = async (
   return { publicFacet };
 };
 
-export const start = withOrchestration(contract);
+export const start = withOrchestration(contract, { publishAccountInfo: true });
 harden(start);
 
 /** @typedef {typeof start} BasicFlowsSF */

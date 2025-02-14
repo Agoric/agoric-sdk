@@ -13,6 +13,8 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { Fail } from '@endo/errors';
 import { makeMarshal } from '@endo/marshal';
+import { AmountMath } from '@agoric/ertp';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import {
   AckBehavior,
   insistManagerType,
@@ -29,13 +31,18 @@ const test: TestFn<
   }
 > = anyTest;
 
+// oracles, which were started with MAINNET config
+const theConfig = configurations.MAINNET;
+const { oracles: oracleRecord } = theConfig;
+const oracleAddrs = Object.values(oracleRecord);
+
 const {
   SLOGFILE: slogFile,
   SWINGSET_WORKER_TYPE: defaultManagerType = 'local',
 } = process.env;
 
 test.before('bootstrap', async t => {
-  const config = '@agoric/vm-config/decentral-itest-orchestration-config.json';
+  const config = '@agoric/vm-config/decentral-itest-fast-usdc-config.json';
   insistManagerType(defaultManagerType);
   const harness = ['xs-worker', 'xsnap'].includes(defaultManagerType)
     ? makeSwingsetHarness()
@@ -68,9 +75,8 @@ test.serial(
       walletFactoryDriver: wfd,
     } = t.context;
 
-    const { oracles } = configurations.MAINNET;
     const [watcherWallet] = await Promise.all(
-      Object.values(oracles).map(addr => wfd.provideSmartWallet(addr)),
+      oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
     );
 
     // inbound `startChannelOpenInit` responses immediately.
@@ -179,11 +185,7 @@ test.serial('writes account addresses to vstorage', async t => {
     showValue: JSON.parse,
     pattern: /published\.fastUsdc\.(feeConfig|feedPolicy|poolMetrics)/,
     replacement: '',
-    note: `Under "published", the "fastUsdc" node is delegated to FastUSDC contract.
-    Note: published.fastUsdc.[settleAcctAddr], published.fastUsdc.[poolAcctAddr],
-    and published.fastUsdc.[intermediateAcctAddr] are published by @agoric/orchestration
-    via 'withOrchestration' and (local|cosmos)-orch-account-kit.js.
-    `,
+    note: 'Under "published", the "fastUsdc" node is delegated to FastUSDC contract.',
   };
 
   await documentStorageSchema(t, storage, doc);
@@ -254,12 +256,11 @@ test.serial('makes usdc advance', async t => {
     storage,
     agoricNamesRemotes,
     harness,
+    runUtils: { EV },
   } = t.context;
-  const oracles = await Promise.all([
-    wfd.provideSmartWallet('agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8'),
-    wfd.provideSmartWallet('agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr'),
-    wfd.provideSmartWallet('agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj'),
-  ]);
+  const oracles = await Promise.all(
+    oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
+  );
   await Promise.all(
     oracles.map(wallet =>
       wallet.sendOffer({
@@ -316,6 +317,11 @@ test.serial('makes usdc advance', async t => {
     { evidence, status: 'OBSERVED' }, // observation includes evidence observed
     { status: 'ADVANCING' },
   ]);
+
+  // Restart contract to make sure it doesn't break advance flow
+  const kit = await EV.vat('bootstrap').consumeItem('fastUsdcKit');
+  const actual = await EV(kit.adminFacet).restartContract(kit.privateArgs);
+  t.deepEqual(actual, { incarnationNumber: 1 });
 
   const { runInbound } = t.context.bridgeUtils;
   await runInbound(
@@ -401,11 +407,9 @@ test.serial('distributes fees per BLD staker decision', async t => {
 
 test.serial('skips usdc advance when risks identified', async t => {
   const { walletFactoryDriver: wfd, storage } = t.context;
-  const oracles = await Promise.all([
-    wfd.provideSmartWallet('agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8'),
-    wfd.provideSmartWallet('agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr'),
-    wfd.provideSmartWallet('agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj'),
-  ]);
+  const oracles = await Promise.all(
+    oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
+  );
 
   const EUD = 'dydx1riskyeud';
   const lastNodeValue = storage.getValues('published.fastUsdc').at(-1);
@@ -504,11 +508,45 @@ test.serial('LP withdraws', async t => {
 });
 
 test.serial('restart contract', async t => {
-  const { EV } = t.context.runUtils;
-  await null;
+  const {
+    runUtils: { EV },
+    storage,
+  } = t.context;
   const kit = await EV.vat('bootstrap').consumeItem('fastUsdcKit');
-  const actual = await EV(kit.adminFacet).restartContract(kit.privateArgs);
-  t.deepEqual(actual, { incarnationNumber: 1 });
+  const usdc = kit.privateArgs.feeConfig.flat.brand;
+  const newFlat = AmountMath.make(usdc, 9_999n);
+  const newVariableRate = makeRatio(3n, usdc, 100n, usdc);
+  const newContractRate = makeRatio(1n, usdc, 11n, usdc);
+  const newArgs = {
+    ...kit.privateArgs,
+    feeConfig: {
+      flat: newFlat,
+      variableRate: newVariableRate,
+      contractRate: newContractRate,
+    },
+  };
+
+  const actual = await EV(kit.adminFacet).restartContract(newArgs);
+
+  // Incarnation 2 because previous test already restarted it once.
+  t.deepEqual(actual, { incarnationNumber: 2 });
+  const { flat, variableRate, contractRate } = storage
+    .getValues(`published.fastUsdc.feeConfig`)
+    .map(defaultSerializer.parse)
+    .at(-1) as typeof newArgs.feeConfig;
+  // Omitting brands UNTIL https://github.com/Agoric/agoric-sdk/issues/10491
+  t.is(flat.value, newFlat.value);
+  t.is(variableRate.numerator.value, newVariableRate.numerator.value);
+  t.is(variableRate.denominator.value, newVariableRate.denominator.value);
+  t.is(contractRate.numerator.value, newContractRate.numerator.value);
+  t.is(contractRate.denominator.value, newContractRate.denominator.value);
+
+  const doc = {
+    node: 'fastUsdc.feeConfig',
+    owner: 'the updated fee configuration for Fast USDC after contract upgrade',
+    showValue: defaultSerializer.parse,
+  };
+  await documentStorageSchema(t, storage, doc);
 });
 
 test.serial('replace operators', async t => {
@@ -532,16 +570,13 @@ test.serial('replace operators', async t => {
 
   // Remove old oracle operators (nested in block to isolate bindings)
   {
-    // old oracles, which were started with MAINNET config
-    const { oracles } = configurations.MAINNET;
-
-    for (const [name, address] of Object.entries(oracles)) {
+    for (const [name, address] of Object.entries(oracleRecord)) {
       t.log('Removing operator', name, 'at', address);
       await EV(creatorFacet).removeOperator(address);
     }
 
     const wallets = await Promise.all(
-      Object.values(oracles).map(addr => wfd.provideSmartWallet(addr)),
+      oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
     );
 
     await Promise.all(

@@ -74,7 +74,7 @@ export const upgradeAssetReserve = async (
 };
 
 export const getManifestForUpgradingAssetReserve = (
-  _powers,
+  { restoreRef },
   { assetReserveRef },
 ) => ({
   manifest: {
@@ -89,5 +89,6 @@ export const getManifestForUpgradingAssetReserve = (
       },
     },
   },
+  installations: { reserve: restoreRef(assetReserveRef) },
   options: { assetReserveRef },
 });

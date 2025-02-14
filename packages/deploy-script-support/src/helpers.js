@@ -20,6 +20,7 @@ import { installInPieces } from './installInPieces.js';
 import { makeWriteCoreEval } from './writeCoreEvalParts.js';
 
 export * from '@agoric/internal/src/node/createBundles.js';
+export { parseScriptArgs } from './parseCoreEvalArgs.js';
 
 // These are also hard-coded in lib-wallet.js.
 // TODO: Add methods to the wallet to access these without hard-coding
