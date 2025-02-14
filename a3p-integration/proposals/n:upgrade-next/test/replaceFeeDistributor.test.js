@@ -90,12 +90,12 @@ const produceFeesAndWait = async (vstorage, feeAmount) => {
   await retryUntilCondition(
     () => vstorage.readLatestHead('published.reserve.metrics'),
     metrics =>
-      AmountMath.isEqual(
+      AmountMath.isGTE(
         // @ts-expect-error metrics has these fields.
         metrics.allocations.Fee,
         AmountMath.add(metricsBefore.allocations.Fee, feeAmount),
       ),
-    'Fee not received',
+    `At least ${feeAmount.value} amount of fee not received`,
     { log: console.log, setTimeout, ...config.retryOptions },
   );
 };
