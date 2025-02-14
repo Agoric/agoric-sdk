@@ -197,12 +197,10 @@ export const MockVTransferEvents: Record<
 export const intermediateRecipient: ChainAddress = harden({
   chainId: 'noble-1',
   value: 'noble1test',
-  encoding: 'bech32',
 });
 
 export const settlementAddress: ChainAddress = harden({
   chainId: 'agoric-3',
-  encoding: 'bech32' as const,
   // Random value, copied from tests of address hooks
   value: 'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek',
 });

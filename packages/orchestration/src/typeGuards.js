@@ -28,11 +28,16 @@ export const OutboundConnectionHandlerI = M.interface(
 );
 
 /** @type {TypedPattern<ChainAddress>} */
-export const ChainAddressShape = {
-  chainId: M.string(),
-  encoding: M.string(),
-  value: M.string(),
-};
+export const ChainAddressShape = M.splitRecord(
+  {
+    chainId: M.string(),
+    value: M.string(),
+  },
+  {
+    // Ignored but maintained for backwards compatibility
+    encoding: 'bech32',
+  },
+);
 harden(ChainAddressShape);
 
 /** @type {TypedPattern<Proto3Msg>} */

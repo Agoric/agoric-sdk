@@ -251,7 +251,6 @@ test('updates status to ADVANCING in happy path', async t => {
         },
         destination: {
           chainId: 'osmosis-1',
-          encoding: 'bech32',
           value: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
         },
       },
@@ -660,7 +659,6 @@ test('will not advance same txHash:chainId evidence twice', async t => {
         advanceAmount: { brand: usdc.brand, value: 146999999n },
         destination: {
           chainId: 'osmosis-1',
-          encoding: 'bech32',
           value: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
         },
       },
@@ -913,7 +911,6 @@ test('uses bank send for agoric1 EUD', async t => {
         },
         destination: {
           chainId: 'agoric-3',
-          encoding: 'bech32',
           value: 'agoric13rj0cc0hm5ac2nt0sdup2l7gvkx4v9tyvgq3h2',
         },
       },

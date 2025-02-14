@@ -191,7 +191,6 @@ export const prepareIcaAccountKit = (zone, { watch, asVow }) =>
           this.state.chainAddress = harden({
             value: address || UNPARSABLE_CHAIN_ADDRESS,
             chainId: this.state.chainId,
-            encoding: 'bech32',
           });
         },
         /**

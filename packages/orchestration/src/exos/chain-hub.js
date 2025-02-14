@@ -504,7 +504,6 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
       return harden({
         chainId,
         value: address,
-        encoding: /** @type {const} */ ('bech32'),
       });
     },
     /**
