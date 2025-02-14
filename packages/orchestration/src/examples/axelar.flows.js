@@ -1,6 +1,15 @@
+/**
+ * @file axelar.flows.js Offer handlers for axelar-gmp.contract.js
+ */
+
 import { NonNullish } from '@agoric/internal';
 import { makeError, q } from '@endo/errors';
-import { ethers } from 'ethers';
+import { buildGMPPayload, GMPMessageType } from '../utils/gmp.js';
+import {
+  aaveContractFns,
+  counterContractFns,
+  ContractAddresses,
+} from '../utils/contract-abis.js';
 
 /**
  * @import {GuestInterface, GuestOf} from '@agoric/async-flow';
@@ -9,8 +18,6 @@ import { ethers } from 'ethers';
  * @import {ZoeTools} from '../utils/zoe-tools.js';
  * @import {Orchestrator, OrchestrationFlow, LocalAccountMethods} from '../types.js';
  */
-
-const { entries } = Object;
 
 const addresses = {
   AXELAR_GMP:
@@ -26,48 +33,6 @@ const channels = {
 };
 
 /**
- * Generates a contract call payload for an EVM-based contract.
- *
- * @param {Object} params - The parameters for encoding the contract call.
- * @param {string} params.evmContractAddress - The address of the EVM contract
- *   to call.
- * @param {string} params.functionSelector - The function selector of the
- *   contract method.
- * @param {string} params.encodedArgs - The ABI-encoded arguments for the
- *   contract method.
- * @param {number} params.deadline
- * @param {number} params.nonce - A unique identifier for the transaction.
- * @returns {number[]} The encoded contract call payload as an array of numbers.
- */
-const getContractInvocationPayload = ({
-  evmContractAddress,
-  functionSelector,
-  encodedArgs,
-  deadline,
-  nonce,
-}) => {
-  const LOGIC_CALL_MSG_ID = 0;
-
-  const abiCoder = new ethers.utils.AbiCoder();
-
-  const payload = abiCoder.encode(
-    ['uint256', 'address', 'uint256', 'uint256', 'bytes'],
-    [
-      LOGIC_CALL_MSG_ID,
-      evmContractAddress,
-      nonce,
-      deadline,
-      ethers.utils.hexlify(
-        ethers.utils.concat([functionSelector, encodedArgs]),
-      ),
-    ],
-  );
-
-  return Array.from(ethers.utils.arrayify(payload));
-};
-
-/**
- * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {object} ctx
  * @param {Promise<GuestInterface<LocalOrchestrationAccountKit['holder']>>} ctx.sharedLocalAccountP
@@ -79,76 +44,41 @@ const getContractInvocationPayload = ({
  *   type: number;
  *   destinationEVMChain: string;
  *   gasAmount: number;
- *   contractInvocationDetails: {
- *     evmContractAddress: string;
- *     functionSelector: string;
- *     encodedArgs: string;
- *     nonce: number;
- *     deadline: number;
- *   };
+ *   payload?: number[];
  * }} offerArgs
  */
-export const sendIt = async (
+export const sendGMP = async (
   orch,
   { sharedLocalAccountP, log, zoeTools: { localTransfer, withdrawToSeat } },
   seat,
   offerArgs,
 ) => {
-  const {
-    destAddr,
-    type,
-    destinationEVMChain,
-    gasAmount,
-    contractInvocationDetails,
-  } = offerArgs;
-
-  const { evmContractAddress, functionSelector, encodedArgs, nonce, deadline } =
-    contractInvocationDetails;
-
-  void log(`offer args`);
-  void log(`evmContractAddress:${evmContractAddress}`);
-  void log(`functionSelector:${functionSelector}`);
-  void log(`encodedArgs:${encodedArgs}`);
-  void log(`nonce:${nonce}`);
-
+  const { destAddr, destinationEVMChain, gasAmount, type, payload } = offerArgs;
   const { give } = seat.getProposal();
-  const [[_kw, amt]] = entries(give);
+
+  if (type !== GMPMessageType.MESSAGE_ONLY && !give) {
+    throw makeError('Token transfer required for this message type');
+  }
 
   const agoric = await orch.getChain('agoric');
   const assets = await agoric.getVBankAssetInfo();
-  void log(`got info for denoms: ${assets.map(a => a.denom).join(', ')}`);
-  const { denom } = NonNullish(
-    assets.find(a => a.brand === amt.brand),
-    `${amt.brand} not registered in vbank`,
-  );
+  let denom;
+
+  if (give) {
+    const [[_kw, amt]] = Object.entries(give);
+    denom = NonNullish(
+      assets.find(a => a.brand === amt.brand),
+      `${amt.brand} not registered in vbank`,
+    ).denom;
+  }
 
   const osmosisChain = await orch.getChain('osmosis');
-  const info = await osmosisChain.getChainInfo();
-  const { chainId } = info;
-  assert(typeof chainId === 'string', 'bad chainId');
-  void log(`got info for chain: ${chainId}`);
+  const { chainId } = await osmosisChain.getChainInfo();
 
-  /**
-   * @type {any} XXX methods returning vows
-   *   https://github.com/Agoric/agoric-sdk/issues/9822
-   */
   const sharedLocalAccount = await sharedLocalAccountP;
-  await localTransfer(seat, sharedLocalAccount, give);
-
-  void log(`completed transfer to localAccount`);
-
-  const payload =
-    type === 1 || type === 2
-      ? getContractInvocationPayload({
-          evmContractAddress,
-          functionSelector,
-          encodedArgs,
-          nonce,
-          deadline,
-        })
-      : null;
-
-  void log(`payload received`);
+  if (give) {
+    await localTransfer(seat, sharedLocalAccount, give);
+  }
 
   const memoToAxelar = {
     destination_chain: destinationEVMChain,
@@ -157,7 +87,7 @@ export const sendIt = async (
     type,
   };
 
-  if (type === 1 || type === 2) {
+  if (type !== GMPMessageType.TOKEN_ONLY) {
     memoToAxelar.fee = {
       amount: gasAmount,
       recipient: addresses.AXELAR_GAS,
@@ -176,18 +106,33 @@ export const sendIt = async (
   };
 
   try {
-    await sharedLocalAccount.transfer(
-      {
-        value: addresses.OSMOSIS_RECEIVER,
-        encoding: 'bech32',
-        chainId,
-      },
-      { denom, value: amt.value },
-      { memo: JSON.stringify(memo) },
-    );
-    void log(`completed transfer to ${destAddr}`);
+    if (give) {
+      const [[_kw, amt]] = Object.entries(give);
+      await sharedLocalAccount.transfer(
+        {
+          value: addresses.OSMOSIS_RECEIVER,
+          encoding: 'bech32',
+          chainId,
+        },
+        { denom, value: amt.value },
+        { memo: JSON.stringify(memo) },
+      );
+    } else {
+      // For message-only calls, only send gas fee
+      await sharedLocalAccount.transfer(
+        {
+          value: addresses.OSMOSIS_RECEIVER,
+          encoding: 'bech32',
+          chainId,
+        },
+        { denom: 'uosmo', value: gasAmount.toString() },
+        { memo: JSON.stringify(memo) },
+      );
+    }
   } catch (e) {
-    await withdrawToSeat(sharedLocalAccount, seat, give);
+    if (give) {
+      await withdrawToSeat(sharedLocalAccount, seat, give);
+    }
     const errorMsg = `IBC Transfer failed ${q(e)}`;
     void log(`ERROR: ${errorMsg}`);
     seat.exit(errorMsg);
@@ -195,6 +140,109 @@ export const sendIt = async (
   }
 
   seat.exit();
-  void log(`transfer complete, seat exited`);
+  void log('Transfer complete, seat exited');
 };
-harden(sendIt);
+harden(sendGMP);
+
+/**
+ * @param {Orchestrator} orch
+ * @param {object} ctx
+ * @param {Promise<GuestInterface<LocalOrchestrationAccountKit['holder']>>} ctx.sharedLocalAccountP
+ * @param {GuestInterface<ZoeTools>} ctx.zoeTools
+ * @param {GuestOf<(msg: string) => Vow<void>>} ctx.log
+ * @param {ZCFSeat} seat
+ * @param {{
+ *   destAddr: string;
+ *   destinationEVMChain: string;
+ *   gasAmount: number;
+ *   params: {
+ *     newCount: number;
+ *   };
+ * }} offerArgs
+ */
+export const setCount = async (
+  orch,
+  { sharedLocalAccountP, log, zoeTools },
+  seat,
+  offerArgs,
+) => {
+  const { destAddr, destinationEVMChain, gasAmount, params } = offerArgs;
+  const { newCount } = params;
+
+  const { functionSelector, encodedArgs } =
+    counterContractFns.setCount(newCount);
+
+  const deadline = Math.floor(Date.now() / 1000) + 3600;
+  const nonce = Math.floor(Math.random() * 1000000);
+
+  const payload = buildGMPPayload({
+    type: GMPMessageType.MESSAGE_ONLY,
+    evmContractAddress: ContractAddresses.counter[destinationEVMChain],
+    functionSelector,
+    encodedArgs,
+    deadline,
+    nonce,
+  });
+
+  return sendGMP(orch, { sharedLocalAccountP, log, zoeTools }, seat, {
+    destAddr,
+    destinationEVMChain,
+    gasAmount,
+    type: GMPMessageType.MESSAGE_ONLY,
+    payload,
+  });
+};
+harden(setCount);
+
+/**
+ * @param {Orchestrator} orch
+ * @param {object} ctx
+ * @param {Promise<GuestInterface<LocalOrchestrationAccountKit['holder']>>} ctx.sharedLocalAccountP
+ * @param {GuestInterface<ZoeTools>} ctx.zoeTools
+ * @param {GuestOf<(msg: string) => Vow<void>>} ctx.log
+ * @param {ZCFSeat} seat
+ * @param {{
+ *   destAddr: string;
+ *   destinationEVMChain: string;
+ *   gasAmount: number;
+ *   params: {
+ *     onBehalfOf: string;
+ *     referralCode?: number;
+ *   };
+ * }} offerArgs
+ */
+export const depositToAave = async (
+  orch,
+  { sharedLocalAccountP, log, zoeTools },
+  seat,
+  offerArgs,
+) => {
+  const { destAddr, destinationEVMChain, gasAmount, params } = offerArgs;
+  const { onBehalfOf, referralCode } = params;
+
+  const { functionSelector, encodedArgs } = aaveContractFns.depositETH(
+    onBehalfOf,
+    referralCode,
+  );
+
+  const deadline = Math.floor(Date.now() / 1000) + 3600;
+  const nonce = Math.floor(Math.random() * 1000000);
+
+  const payload = buildGMPPayload({
+    type: GMPMessageType.MESSAGE_WITH_TOKEN,
+    evmContractAddress: ContractAddresses.aaveV3[destinationEVMChain],
+    functionSelector,
+    encodedArgs,
+    deadline,
+    nonce,
+  });
+
+  return sendGMP(orch, { sharedLocalAccountP, log, zoeTools }, seat, {
+    destAddr,
+    destinationEVMChain,
+    gasAmount,
+    type: GMPMessageType.MESSAGE_WITH_TOKEN,
+    payload,
+  });
+};
+harden(depositToAave);

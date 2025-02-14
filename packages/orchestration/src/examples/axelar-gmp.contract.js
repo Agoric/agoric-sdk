@@ -1,3 +1,13 @@
+/**
+ * @file axelar-gmp.contract.js
+ *
+ *   demonstrates the three types of transactions possible with axelar gmp to evm
+ *   chains:
+ *
+ *   - call contract
+ *   - call contract with tokens
+ *   - send tokens
+ */
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
@@ -7,6 +17,7 @@ import { withOrchestration } from '../utils/start-helper.js';
 import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
 import * as flows from './axelar.flows.js';
 import * as sharedFlows from './shared.flows.js';
+import { GMPMessageType } from '../utils/gmp.js';
 
 /**
  * @import {Vow} from '@agoric/vow';
@@ -15,13 +26,51 @@ import * as sharedFlows from './shared.flows.js';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  */
 
-export const SingleNatAmountRecord = M.and(
+// Proposal shapes for different invitation types
+const SingleNatAmountRecord = M.and(
   M.recordOf(M.string(), AnyNatAmountShape, {
     numPropertiesLimit: 1,
   }),
   M.not(harden({})),
 );
 harden(SingleNatAmountRecord);
+
+const BaseGMPShape = {
+  destAddr: M.string(),
+  destinationEVMChain: M.string(),
+  gasAmount: M.number(),
+};
+harden(BaseGMPShape);
+
+const SendGMPShape = {
+  ...BaseGMPShape,
+  type: M.or([
+    GMPMessageType.MESSAGE_ONLY,
+    GMPMessageType.MESSAGE_WITH_TOKEN,
+    GMPMessageType.TOKEN_ONLY,
+  ]),
+  payload: M.opt(M.arrayOf(M.nat())),
+  proposal: M.splitRecord({}, { give: SingleNatAmountRecord }),
+};
+harden(SendGMPShape);
+
+const SetCountShape = {
+  ...BaseGMPShape,
+  params: {
+    newCount: M.number(),
+  },
+};
+harden(SetCountShape);
+
+const DepositToAaveShape = {
+  ...BaseGMPShape,
+  params: {
+    onBehalfOf: M.string(),
+    referralCode: M.opt(M.number()),
+  },
+  proposal: M.splitRecord({ give: SingleNatAmountRecord }),
+};
+harden(DepositToAaveShape);
 
 /**
  * Orchestration contract to be wrapped by withOrchestration for Zoe
@@ -49,20 +98,10 @@ export const contract = async (
   const log = msg => vowTools.watch(E(logNode).setValue(msg));
 
   const { makeLocalAccount } = orchestrateAll(sharedFlows, {});
-  /**
-   * Setup a shared local account for use in async-flow functions. Typically,
-   * exo initState functions need to resolve synchronously, but `makeOnce`
-   * allows us to provide a Promise. When using this inside a flow, we must
-   * await it to ensure the account is available for use.
-   *
-   * @type {any} sharedLocalAccountP expects a Promise but this is a vow
-   *   https://github.com/Agoric/agoric-sdk/issues/9822
-   */
   const sharedLocalAccountP = zone.makeOnce('localAccount', () =>
     makeLocalAccount(),
   );
 
-  // orchestrate uses the names on orchestrationFns to do a "prepare" of the associated behavior
   const orchFns = orchestrateAll(flows, {
     log,
     sharedLocalAccountP,
@@ -70,17 +109,35 @@ export const contract = async (
   });
 
   const publicFacet = zone.exo(
-    'Send PF',
-    M.interface('Send PF', {
-      makeSendInvitation: M.callWhen().returns(InvitationShape),
+    'GMP PF',
+    M.interface('GMP PF', {
+      makeSendGMPInvitation: M.callWhen().returns(InvitationShape),
+      makeSetCountInvitation: M.callWhen().returns(InvitationShape),
+      makeDepositToAaveInvitation: M.callWhen().returns(InvitationShape),
     }),
     {
-      makeSendInvitation() {
+      makeSendGMPInvitation() {
         return zcf.makeInvitation(
-          orchFns.sendIt,
-          'send',
+          orchFns.sendGMP,
+          'sendGMP',
           undefined,
-          M.splitRecord({ give: SingleNatAmountRecord }),
+          SendGMPShape,
+        );
+      },
+      makeSetCountInvitation() {
+        return zcf.makeInvitation(
+          orchFns.setCount,
+          'setCount',
+          undefined,
+          SetCountShape,
+        );
+      },
+      makeDepositToAaveInvitation() {
+        return zcf.makeInvitation(
+          orchFns.depositToAave,
+          'depositToAave',
+          undefined,
+          DepositToAaveShape,
         );
       },
     },

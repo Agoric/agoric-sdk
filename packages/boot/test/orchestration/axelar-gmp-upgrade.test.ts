@@ -1,7 +1,7 @@
 /** @file Bootstrap test of restarting contracts using orchestration */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
-import { withChainCapabilities } from '@agoric/orchestration';
+import { withChainCapabilities, GMPMessageType } from '@agoric/orchestration';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
@@ -17,11 +17,7 @@ test.before(async t => {
 });
 test.after.always(t => t.context.shutdown?.());
 
-/**
- * This test core-evals an installation of the axelarGmp contract that
- * initiates an IBC Transfer.
- */
-test('start axelarGmp and send an offer', async t => {
+const testSetup = async t => {
   const {
     walletFactoryDriver,
     bridgeUtils: { runInbound },
@@ -29,8 +25,6 @@ test('start axelarGmp and send an offer', async t => {
     evalProposal,
     storage,
   } = t.context;
-
-  const { IST } = t.context.agoricNamesRemotes.brand;
 
   t.log('start axelarGmp');
   await evalProposal(
@@ -51,50 +45,96 @@ test('start axelarGmp and send an offer', async t => {
     ]),
   );
 
-  t.log('making offer');
   const wallet = await walletFactoryDriver.provideSmartWallet('agoric1test');
-  // no money in wallet to actually send
+  const getLogged = () =>
+    JSON.parse(storage.data.get('published.axelarGmp.log')!).values;
+
+  return { wallet, getLogged };
+};
+
+test('sendGMP with message only', async t => {
+  const { wallet, getLogged } = await testSetup(t);
+  const { IST } = t.context.agoricNamesRemotes.brand;
   const zero = { brand: IST, value: 0n };
-  // send because it won't resolve
+
   await wallet.sendOffer({
-    id: 'invokeEVMContract',
+    id: 'sendGMPMessage',
     invitationSpec: {
       source: 'agoricContract',
       instancePath: ['axelarGmp'],
-      callPipe: [['makeSendInvitation']],
+      callPipe: [['makeSendGMPInvitation']],
     },
-    proposal: {
-      // @ts-expect-error XXX BoardRemote
-      give: { Send: zero },
-    },
+    proposal: {},
     offerArgs: {
       destAddr: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
-      type: 1,
+      type: GMPMessageType.MESSAGE_ONLY,
       destinationEVMChain: 'ethereum',
       gasAmount: 33,
-      contractInvocationDetails: {
-        evmContractAddress: 'anyContract',
-        functionSelector: 'fnSelector',
-        encodedArgs: 'args',
-        nonce: 25,
-        deadline: 3444,
+      payload: [1, 2, 3, 4], // Example payload
+    },
+  });
+
+  const logs = getLogged();
+  t.true(logs.includes('got info for chain: osmosis-1'));
+  t.true(logs.includes('payload received'));
+});
+
+test.todo('sendGMP with only tokens');
+
+test('setCount on Counter contract (invoke contract)', async t => {
+  const { wallet, getLogged } = await testSetup(t);
+
+  await wallet.sendOffer({
+    id: 'setCount',
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: ['axelarGmp'],
+      callPipe: [['makeSetCountInvitation']],
+    },
+    proposal: {},
+    offerArgs: {
+      destAddr: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
+      destinationEVMChain: 'ethereum',
+      gasAmount: 33,
+      params: {
+        newCount: 42,
       },
     },
   });
 
-  const getLogged = () =>
-    JSON.parse(storage.data.get('published.axelarGmp.log')!).values;
+  const logs = getLogged();
+  t.true(logs.includes('got info for chain: osmosis-1'));
+  t.true(logs.includes('payload received'));
+});
 
-  // This log shows the flow started, but didn't get past the IBC Transfer settlement
-  t.deepEqual(getLogged(), [
-    'offer args',
-    'evmContractAddress:anyContract',
-    'functionSelector:fnSelector',
-    'encodedArgs:args',
-    'nonce:25',
-    'got info for denoms: ibc/FE98AAD68F02F03565E9FA39A5E627946699B2B07115889ED812D8BA639576A9, ibc/toyatom, ibc/toyusdc, ubld, uist',
-    'got info for chain: osmosis-1',
-    'completed transfer to localAccount',
-    'payload received',
-  ]);
+test('depositToAave with tokens (invoke contract with tokens)', async t => {
+  const { wallet, getLogged } = await testSetup(t);
+  const { IST } = t.context.agoricNamesRemotes.brand;
+  const amount = { brand: IST, value: 1000000n }; // 1 IST
+
+  await wallet.sendOffer({
+    id: 'depositToAave',
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: ['axelarGmp'],
+      callPipe: [['makeDepositToAaveInvitation']],
+    },
+    proposal: {
+      give: { Send: amount },
+    },
+    offerArgs: {
+      destAddr: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
+      destinationEVMChain: 'ethereum',
+      gasAmount: 33,
+      params: {
+        onBehalfOf: '0x6Ae43d3271ff6888e7Fc43Fd7321a503ff738951',
+        referralCode: 0,
+      },
+    },
+  });
+
+  const logs = getLogged();
+  t.true(logs.includes('got info for chain: osmosis-1'));
+  t.true(logs.includes('completed transfer to localAccount'));
+  t.true(logs.includes('payload received'));
 });
