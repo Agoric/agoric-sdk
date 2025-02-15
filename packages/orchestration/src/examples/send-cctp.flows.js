@@ -13,6 +13,16 @@ import { M, mustMatch } from '@endo/patterns';
 
 const { entries } = Object;
 
+/**
+ * @satisfies {OrchestrationFlow}
+ * @param {Orchestrator} orch
+ */
+export const makeNobleAccount = async orch => {
+  const nobleChain = await orch.getChain('noble');
+  return nobleChain.makeAccount();
+};
+harden(makeNobleAccount);
+
 // TODO use case should be handled by `sendIt` based on the destination
 /**
  * @deprecated `sendIt` should handle this
@@ -61,7 +71,7 @@ export const sendByCCTP = async (
   const info = await chain.getChainInfo();
   const { chainId } = info;
   assert(typeof chainId === 'string', 'bad chainId');
-  void log(`got info for chain: ${chainName} ${chainId}`);
+  console.log(`got info for chain: ${chainName} ${chainId}`, info);
 
   /**
    * @type {OrchestrationAccount<{ chainId: 'agoric' }>}

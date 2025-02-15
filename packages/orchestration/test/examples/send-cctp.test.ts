@@ -10,10 +10,10 @@ import type {
 } from '../../src/cosmos-api.js';
 import { commonSetup } from '../supports.js';
 import { denomHash } from '../../src/utils/denomHash.js';
-import { AxelarTestNet } from '../../src/fixtures/axelar-testnet.js';
 import { makeIssuerKit } from '@agoric/ertp';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import type { DenomDetail } from '../../src/types.js';
+import fetchedChainInfo from '../../src/fetched-chain-info.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -94,45 +94,18 @@ const AgoricDevnetConfig = {
   },
 };
 
-test('agoric / osmosis / axelar USDC denom info', t => {
-  // Where did this denom come from?
-  const DENOM_SENDING_TOKEN =
-    'ibc/D6077E64A3747322E1C053ED156B902F78CC40AE4C7240349A26E3BC216497BF';
-
-  // aha!
-  // $ agd query ibc-transfer denom-trace D6077E64A3747322E1C053ED156B902F78CC40AE4C7240349A26E3BC216497BF --node https://devnet.rpc.agoric.net:443
-  // denom_trace:
-  //   base_denom: uausdc
-  //   path: transfer/channel-65/transfer/channel-4118
-  //
-  // Now what is channel-65?
-  // $ agd query ibc channel client-state transfer channel-65 --node https://devnet.rpc.agoric.net:443 -o json | jq -C '.client_state.chain_id'
-  // "osmo-test-5"
-
-  const baseDenom = 'uausdc';
-  const { osmosis } = AgoricDevnetConfig.chains;
-  const { channelId: agoricToOsmosis } =
-    AgoricDevnetConfig.connections[osmosis.chainId].transferChannel;
-  const { counterPartyChannelId: osmosisToAxelar } =
-    AxelarTestNet.ibcConnections.osmosis.transferChannel;
-  const path = `transfer/${agoricToOsmosis}/transfer/${osmosisToAxelar}`;
-
-  t.log({ baseDenom, agoricToOsmosis, osmosisToAxelar, path });
-  const denom = `ibc/${denomHash({ path, denom: baseDenom })}`;
-  t.is(denom, DENOM_SENDING_TOKEN);
-});
-
-const registerAUSDC = async ({ bankManager, agoricNamesAdmin }) => {
-  const ausdcKit = withAmountUtils(makeIssuerKit('AUSDC'));
+const registerUSDC = async ({ bankManager, agoricNamesAdmin }) => {
+  const ausdcKit = withAmountUtils(makeIssuerKit('USDC'));
   const { issuer, mint, brand } = ausdcKit;
 
+  // TODO: use USDC denom
   const { axelar } = AgoricDevnetConfig.chains;
   const { channelId: agoricToAxelar } =
     AgoricDevnetConfig.connections[axelar.chainId].transferChannel;
   const denom = `ibc/${denomHash({ channelId: agoricToAxelar, denom: 'uausdc' })}`;
 
-  const issuerName = 'AUSDC_axl_osmo';
-  const proposedName = 'Axelar USDC via Osmosis';
+  const issuerName = 'USDC';
+  const proposedName = 'USDC noble';
   await E(bankManager).addAsset(denom, issuerName, proposedName, {
     issuer,
     mint,
@@ -152,13 +125,13 @@ const registerAUSDC = async ({ bankManager, agoricNamesAdmin }) => {
   return harden({ ...ausdcKit, denom });
 };
 
-test('send to avalance via osmosis and axelar', async t => {
+test('send to base via noble CCTP', async t => {
   t.log('bootstrap, orchestration core-eval');
   const {
     bootstrap,
     commonPrivateArgs,
     brands: { ist },
-    utils: { inspectLocalBridge, pourPayment, transmitTransferAck },
+    utils: { inspectLocalBridge, transmitTransferAck },
   } = await commonSetup(t);
   const vt = bootstrap.vowTools;
 
@@ -170,7 +143,7 @@ test('send to avalance via osmosis and axelar', async t => {
     await bundleAndInstall(contractFile);
 
   const { bankManager, agoricNamesAdmin } = bootstrap;
-  const ausdcKit = await registerAUSDC({ bankManager, agoricNamesAdmin });
+  const usdcKit = await registerUSDC({ bankManager, agoricNamesAdmin });
 
   const storageNode = await E(bootstrap.storage.rootNode).makeChildNode(
     contractName,
@@ -193,24 +166,13 @@ test('send to avalance via osmosis and axelar', async t => {
     ...withoutOsmosis,
     osmosis,
     agoric: { ...agoric, connections },
-    avalanche: AxelarTestNet.evmChains.avalanche,
-    axelar: { chainId: 'axelar-testnet-lisbon-3', pfmEnabled: true },
   };
   const assetInfo: Array<[string, DenomDetail]> = [
     ...commonPrivateArgs.assetInfo,
-    [
-      ausdcKit.denom,
-      {
-        baseDenom: 'uausdc',
-        baseName: 'axelar',
-        chainName: 'agoric',
-        brand: ausdcKit.brand,
-      },
-    ],
   ];
   const sendKit = await E(zoe).startInstance(
     installation,
-    { Stable: ist.issuer, AUSDC: ausdcKit.issuer },
+    { Stable: ist.issuer, USDC: usdcKit.issuer },
     {},
     {
       ...commonPrivateArgs,
@@ -220,12 +182,24 @@ test('send to avalance via osmosis and axelar', async t => {
     },
   );
 
-  t.log('client uses contract to send to EVM chain');
+  t.log('register the base chain');
+  await E(sendKit.creatorFacet).registerChain(
+    'base',
+    {
+      chainId: 'E8453',
+      allegedName: 'base',
+      // https://developers.circle.com/stablecoins/supported-domains
+      cctpDestinationDomain: 6,
+    },
+    // TODO: make this optional, since we don't really use it
+    fetchedChainInfo.agoric.connections['noble-1'],
+  );
+
+  t.log('client uses contract to send to EVM chain via CCTP');
   {
-    const anAmt = ausdcKit.units(4.25);
-    const Send = await E(ausdcKit.mint).mintPayment(anAmt);
-    // const anAmt = ist.units(4.25);
-    // const Send = await pourPayment(anAmt);
+    const anAmt = usdcKit.units(4.25);
+    const Send = await E(usdcKit.mint).mintPayment(anAmt);
+
     const publicFacet = await E(zoe).getPublicFacet(sendKit.instance);
     const inv = E(publicFacet).makeSendInvitation();
     const userSeat = await E(zoe).offer(
@@ -234,7 +208,7 @@ test('send to avalance via osmosis and axelar', async t => {
       { Send },
       {
         destAddr: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
-        chainName: 'avalanche',
+        chainName: 'base',
       },
     );
     await transmitTransferAck();
@@ -259,7 +233,7 @@ test('send to avalance via osmosis and axelar', async t => {
       },
     });
     t.is(
-      ausdcKit.denom,
+      usdcKit.denom,
       'ibc/3700CA58769864917DC803669BE7993283BD5F375926F4E7C6A935588F872765',
     );
     // check memo for Axelar

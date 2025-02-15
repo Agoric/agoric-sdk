@@ -31,6 +31,7 @@ export const sendIt = async (
   seat,
   offerArgs,
 ) => {
+  throw Error('NO!!!!');
   mustMatch(offerArgs, harden({ chainName: M.scalar(), destAddr: M.string() }));
   const { chainName, destAddr } = offerArgs;
   // NOTE the proposal shape ensures that the `give` is a single asset
