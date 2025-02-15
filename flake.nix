@@ -50,13 +50,14 @@
             (yarn.override { nodejs = custom_node_20_9; })
             python3
             pkg-config
-            go
+            go_1_23
             gopls
             delve
             gcc
             gnumake
             protobuf
             buf
+            git
           ];
 
           shellHook = ''
