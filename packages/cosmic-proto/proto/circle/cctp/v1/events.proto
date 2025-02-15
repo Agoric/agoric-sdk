@@ -1,0 +1,261 @@
+// Copyright 2024 Circle Internet Group, Inc.  All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package circle.cctp.v1;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/circlefin/noble-cctp/x/cctp/types";
+
+/**
+ * Event signatures in the CCTP module
+ */
+
+/**
+ * Emitted when an attester is enabled
+ * @param attester newly enabled attester
+ */
+message AttesterEnabled {
+  string attester = 1;
+}
+
+/**
+ * Emitted when an attester is disabled
+ * @param attester newly disabled attester
+ */
+message AttesterDisabled {
+  string attester = 1;
+}
+
+/**
+ * Emitted when threshold number of attestations (m in m/n multisig) is updated
+ * @param old_signature_threshold old signature threshold
+ * @param new_signature_threshold new signature threshold
+ */
+message SignatureThresholdUpdated {
+  uint64 old_signature_threshold = 1;
+  uint64 new_signature_threshold = 2;
+}
+
+/**
+ * Emitted when owner address is updated
+ * @param previous_owner representing the address of the previous owner
+ * @param new_owner representing the address of the new owner
+ */
+message OwnerUpdated {
+  string previous_owner = 1;
+  string new_owner = 2;
+}
+
+/**
+ * Emitted when starting the two stage transfer ownership process
+ * @param previousOwner representing the address of the previous owner
+ * @param newOwner representing the address of the new owner
+ */
+message OwnershipTransferStarted {
+  string previous_owner = 1;
+  string new_owner = 2;
+}
+
+/**
+ * Emitted when pauser address is updated
+ * @param previous_pauser representing the address of the previous pauser
+ * @param new_pauser representing the address of the new pauser
+ */
+message PauserUpdated {
+  string previous_pauser = 1;
+  string new_pauser = 2;
+}
+
+/**
+ * Emitted when attester manager address is updated
+ * @param previous_attester_manager representing the address of the previous
+ * attester manager
+ * @param new_attester_manager representing the address of the new attester
+ * manager
+ */
+message AttesterManagerUpdated {
+  string previous_attester_manager = 1;
+  string new_attester_manager = 2;
+}
+
+/**
+ * Emitted when token controller address is updated
+ * @param previous_token_controller representing the address of the previous
+ * token controller
+ * @param new_token_controller representing the address of the new token
+ * controller
+ */
+message TokenControllerUpdated {
+  string previous_token_controller = 1;
+  string new_token_controller = 2;
+}
+
+/**
+ * Emitted when burning and minting tokens is paused
+ */
+message BurningAndMintingPausedEvent {}
+
+/**
+ * Emitted when burning and minting tokens is unpaused
+ */
+message BurningAndMintingUnpausedEvent {}
+
+/**
+ * Emitted when sending and receiving messages is paused
+ */
+message SendingAndReceivingPausedEvent {}
+
+/**
+ * Emitted when sending and receiving messages is paused
+ */
+message SendingAndReceivingUnpausedEvent {}
+
+/**
+ * Emitted when a DepositForBurn message is sent
+ * @param nonce unique nonce reserved by message
+ * @param burn_token address of token burnt on source domain
+ * @param amount deposit amount
+ * @param depositor address where deposit is transferred from
+ * @param mint_recipient address receiving minted tokens on destination domain
+ * as bytes32
+ * @param destination_domain destination domain
+ * @param destination_token_messenger address of TokenMessenger on destination
+ * domain as bytes32
+ * @param destination_caller authorized caller as bytes32 of receiveMessage() on
+ * destination domain, if not equal to bytes32(0). If equal to bytes32(0), any
+ * address can call receiveMessage().
+ */
+message DepositForBurn {
+  uint64 nonce = 1;
+  string burn_token = 2;
+  string amount = 3 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+  string depositor = 4;
+  bytes mint_recipient = 5;
+  uint32 destination_domain = 6;
+  bytes destination_token_messenger = 7;
+  bytes destination_caller = 8;
+}
+
+/**
+ * Emitted when tokens are minted
+ * @param mint_recipient recipient address of minted tokens
+ * @param amount amount of minted tokens
+ * @param mint_token contract address of minted token
+ */
+message MintAndWithdraw {
+  bytes mint_recipient = 1;
+  string amount = 2 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+  string mint_token = 3;
+}
+
+/**
+ * Emitted when a token pair is linked
+ * @param local_token local token to support
+ * @param remote_domain remote domain
+ * @param remote_token token on `remoteDomain` corresponding to `localToken`
+ */
+message TokenPairLinked {
+  string local_token = 1;
+  uint32 remote_domain = 2;
+  bytes remote_token = 3;
+}
+
+/**
+ * Emitted when a token pair is unlinked
+ * @param local_token local token address
+ * @param remote_domain remote domain
+ * @param remote_token token on `remoteDomain` unlinked from `localToken`
+ */
+message TokenPairUnlinked {
+  string local_token = 1;
+  uint32 remote_domain = 2;
+  bytes remote_token = 3;
+}
+
+/**
+ * Emitted when a new message is dispatched
+ * @param message Raw bytes of message
+ */
+message MessageSent {
+  bytes message = 1;
+}
+
+/**
+ * Emitted when a new message is received
+ * @param caller caller (msg.sender) on destination domain
+ * @param source_domain the source domain this message originated from
+ * @param nonce the nonce unique to this message
+ * @param sender the sender of this message
+ * @param message_body message body bytes
+ */
+message MessageReceived {
+  string caller = 1;
+  uint32 source_domain = 2;
+  uint64 nonce = 3;
+  bytes sender = 4;
+  bytes message_body = 5;
+}
+
+/**
+ * Emitted when max message body size is updated
+ * @param new_max_message_body_size new maximum message body size, in bytes
+ */
+message MaxMessageBodySizeUpdated {
+  uint64 new_max_message_body_size = 1;
+}
+
+/**
+ * Emitted when a RemoteTokenMessenger is added
+ * @param domain remote domain
+ * @param remote_token_messenger RemoteTokenMessenger on domain
+ */
+message RemoteTokenMessengerAdded {
+  uint32 domain = 1;
+  bytes remote_token_messenger = 2;
+}
+
+/**
+ * Emitted when a RemoteTokenMessenger is removed
+ * @param domain remote domain
+ * @param remote_token_messenger RemoteTokenMessenger on domain
+ */
+message RemoteTokenMessengerRemoved {
+  uint32 domain = 1;
+  bytes remote_token_messenger = 2;
+}
+
+/**
+ * Emitted when max burn amount per message is updated
+ * @param local_token
+ * @param old_amount old max burn amount
+ * @param new_amount new max burn amount
+ */
+message SetBurnLimitPerMessage {
+  string token = 1;
+  string burn_limit_per_message = 2 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+}

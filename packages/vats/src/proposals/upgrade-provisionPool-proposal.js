@@ -111,7 +111,7 @@ export const upgradeProvisionPool = async (
 };
 
 export const getManifestForUpgradingProvisionPool = (
-  _powers,
+  { restoreRef },
   { provisionPoolRef },
 ) => ({
   manifest: {
@@ -128,5 +128,6 @@ export const getManifestForUpgradingProvisionPool = (
       produce: {},
     },
   },
+  installations: { provisionPool: restoreRef(provisionPoolRef) },
   options: { provisionPoolRef },
 });

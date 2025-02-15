@@ -1,5 +1,5 @@
 /* eslint-env node */
-// from z:acceptance/test-lib/psm-lib.js
+// from z:acceptance/lib/psm-lib.js
 
 import { execa } from 'execa';
 import { getNetworkConfig } from 'agoric/src/helpers.js';

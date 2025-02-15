@@ -1,8 +1,6 @@
-import type { AnyJson, TypedJson, JsonSafe } from '@agoric/cosmic-proto';
+import type { AnyJson, JsonSafe, TypedJson } from '@agoric/cosmic-proto';
+import type { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
 import type {
-  Delegation,
-  DelegationResponse,
-  Redelegation,
   RedelegationResponse,
   UnbondingDelegation,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
@@ -18,7 +16,7 @@ import type {
   RequestQuery,
   ResponseQuery,
 } from '@agoric/cosmic-proto/tendermint/abci/types.js';
-import type { Brand, Purse, Payment, Amount } from '@agoric/ertp/src/types.js';
+import type { Amount, Payment } from '@agoric/ertp/src/types.js';
 import type { Port } from '@agoric/network';
 import type {
   IBCChannelID,
@@ -34,10 +32,8 @@ import type {
   LocalIbcAddress,
   RemoteIbcAddress,
 } from '@agoric/vats/tools/ibc-utils.js';
-import type { QueryDelegationTotalRewardsResponse } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/query.js';
-import type { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
-import type { AmountArg, ChainAddress, Denom, DenomAmount } from './types.js';
 import { PFM_RECEIVER } from './exos/chain-hub.js';
+import type { AmountArg, ChainAddress, Denom, DenomAmount } from './types.js';
 
 /** An address for a validator on some blockchain, e.g., cosmos, eth, etc. */
 export type CosmosValidatorAddress = ChainAddress & {

@@ -175,7 +175,10 @@ export const makeUserAgent = (
       t.log('got forwardingAddress', userForwardingAddr);
 
       const senderDigits = 'FAKE_SENDER_ADDR' as string & { length: 40 };
-      const tx: Omit<CctpTxEvidence, 'blockHash' | 'blockNumber'> = harden({
+      const tx: Omit<
+        CctpTxEvidence,
+        'blockHash' | 'blockNumber' | 'blockTimestamp'
+      > = harden({
         txHash: `0xFAKE_TX_HASH`,
         tx: {
           sender: `0x${senderDigits}`,

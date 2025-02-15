@@ -21,14 +21,25 @@ type BlockHeaderPartial = {
 // TODO: inject fetch
 export function makeQueryClient(apiUrl: string) {
   const query = async <T>(path: string): Promise<T> => {
-    try {
-      const res = await fetch(`${apiUrl}${path}`);
-      const json = await res.json();
-      return json as T;
-    } catch (err) {
-      console.error(err);
-      throw err;
-    }
+    const maxRetries = 5;
+    const retryDelayMS = 500;
+    return new Promise<T>((resolve, reject) => {
+      const doFetch = async retries => {
+        try {
+          const response = await fetch(`${apiUrl}${path}`);
+          const json = await response.json();
+          resolve(json as T);
+        } catch (err) {
+          if (retries === maxRetries) {
+            console.error(err);
+            reject(err);
+            return;
+          }
+          setTimeout(() => doFetch(retries + 1), retryDelayMS);
+        }
+      };
+      doFetch(0);
+    });
   };
 
   return {

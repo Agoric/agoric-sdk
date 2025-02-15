@@ -266,21 +266,21 @@ test('makeFakeStorageKit sequence data', async t => {
     'manual-sequence grandchild setValue message',
   );
   t.deepEqual(getValues(deepPath), ['baz', 'qux']);
-  await deepNode.setValue('quux');
+  await deepNode.setValue('');
   t.deepEqual(
     messages.slice(-1),
-    [{ method: 'append', args: [[deepPath, 'quux']] }],
+    [{ method: 'append', args: [[deepPath, '']] }],
     'manual-sequence grandchild setValue message',
   );
-  t.deepEqual(getValues(deepPath), ['baz', 'qux', 'quux']);
+  t.deepEqual(getValues(deepPath), ['baz', 'qux', '']);
   updateNewCellBlockHeight();
-  await deepNode.setValue('quuz');
+  await deepNode.setValue('quz');
   t.deepEqual(
     messages.slice(-1),
-    [{ method: 'append', args: [[deepPath, 'quuz']] }],
+    [{ method: 'append', args: [[deepPath, 'quz']] }],
     'manual-sequence grandchild setValue message',
   );
-  t.deepEqual(getValues(deepPath), ['quuz']);
+  t.deepEqual(getValues(deepPath), ['quz']);
 });
 
 const testUnmarshaller = test.macro((t, format) => {

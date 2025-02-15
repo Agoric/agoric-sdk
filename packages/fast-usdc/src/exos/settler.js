@@ -327,6 +327,7 @@ export const prepareSettler = (
             harden([[settlingSeat, settlingSeat, { In: received }, split]]),
           );
           repayer.repay(settlingSeat, split);
+          settlingSeat.exit();
 
           // update status manager, marking tx `DISBURSED`
           statusManager.disbursed(txHash, split);
@@ -338,7 +339,18 @@ export const prepareSettler = (
          */
         forward(txHash, fullValue, EUD) {
           const { settlementAccount, intermediateRecipient } = this.state;
-          const dest = chainHub.makeChainAddress(EUD);
+
+          const dest = (() => {
+            try {
+              return chainHub.makeChainAddress(EUD);
+            } catch (e) {
+              log('⚠️ forward transfer failed!', e, txHash);
+              statusManager.forwarded(txHash, false);
+              return null;
+            }
+          })();
+          if (!dest) return;
+
           const txfrV = E(settlementAccount).transfer(
             dest,
             AmountMath.make(USDC, fullValue),
@@ -361,7 +373,9 @@ export const prepareSettler = (
          * @param {EvmHash} txHash
          */
         onRejected(reason, txHash) {
-          log('⚠️ forward transfer rejected!', reason, txHash);
+          // funds remain in `settlementAccount` and must be recovered via a
+          // contract upgrade
+          log('🚨 forward transfer rejected!', reason, txHash);
           // update status manager, flagging a terminal state that needs to be
           // manual intervention or a code update to remediate
           statusManager.forwarded(txHash, false);

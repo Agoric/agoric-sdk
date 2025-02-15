@@ -87,20 +87,20 @@ const trace = makeTracer('CosmosOrchAccount');
 const { Vow$ } = NetworkShape; // TODO #9611
 
 /**
- * @typedef {object} ComosOrchestrationAccountNotification
+ * @typedef {object} CosmosOrchestrationAccountNotification
  * @property {ChainAddress} chainAddress
  */
 
 /**
  * @private
  * @typedef {{
- *   topicKit: RecorderKit<ComosOrchestrationAccountNotification>;
  *   account: IcaAccount;
  *   chainAddress: ChainAddress;
+ *   icqConnection: ICQConnection | undefined;
  *   localAddress: LocalIbcAddress;
  *   remoteAddress: RemoteIbcAddress;
- *   icqConnection: ICQConnection | undefined;
  *   timer: Remote<TimerService>;
+ *   topicKit: RecorderKit<CosmosOrchestrationAccountNotification> | undefined;
  * }} State
  *   Internal to the IcaAccountHolder exo
  */
@@ -291,26 +291,29 @@ export const prepareCosmosOrchestrationAccountKit = (
      * @param {RemoteIbcAddress} info.remoteAddress
      * @param {object} io
      * @param {IcaAccount} io.account
-     * @param {Remote<StorageNode>} io.storageNode
-     * @param {ICQConnection | undefined} io.icqConnection
+     * @param {Remote<StorageNode>} [io.storageNode]
+     * @param {ICQConnection} [io.icqConnection]
      * @param {Remote<TimerService>} io.timer
      * @returns {State}
      */
     ({ chainAddress, localAddress, remoteAddress }, io) => {
       const { storageNode } = io;
       // must be the fully synchronous maker because the kit is held in durable state
-      const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1]);
+      const topicKit = storageNode
+        ? makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1])
+        : undefined;
       // TODO determine what goes in vstorage https://github.com/Agoric/agoric-sdk/issues/9066
       // XXX consider parsing local/remoteAddr to portId, channelId, counterpartyPortId, counterpartyChannelId, connectionId, counterpartyConnectionId
       // FIXME these values will not update if IcaAccount gets new values after reopening.
       // consider having IcaAccount responsible for the owning the writer. It might choose to share it with COA.
-      void E(topicKit.recorder).write(
-        /** @type {CosmosOrchestrationAccountStorageState} */ ({
-          localAddress,
-          remoteAddress,
-        }),
-      );
-
+      if (topicKit) {
+        void E(topicKit.recorder).write(
+          /** @type {CosmosOrchestrationAccountStorageState} */ ({
+            localAddress,
+            remoteAddress,
+          }),
+        );
+      }
       const { account, icqConnection, timer } = io;
       return {
         account,
@@ -333,6 +336,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           return account;
         },
         getUpdater() {
+          if (!this.state.topicKit) throw Fail`no topicKit`;
           return this.state.topicKit.recorder;
         },
         /**
@@ -731,6 +735,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           return asVow(async () => {
             await null;
             const { topicKit } = this.state;
+            if (!topicKit) throw Fail`No topicKit; storageNode not provided`;
             return harden({
               account: {
                 description: PUBLIC_TOPICS.account[0],

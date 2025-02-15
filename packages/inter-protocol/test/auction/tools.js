@@ -26,7 +26,7 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 /** @param {ZoeService} zoe */
 export const setUpInstallations = async zoe => {
   const autoRefund = '@agoric/zoe/src/contracts/automaticRefund.js';
-  const autoRefundUrl = await importMetaResolve(autoRefund, import.meta.url);
+  const autoRefundUrl = importMetaResolve(autoRefund, import.meta.url);
   const autoRefundPath = new URL(autoRefundUrl).pathname;
 
   const bundleCache = await unsafeMakeBundleCache('./bundles/'); // package-relative

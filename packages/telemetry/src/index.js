@@ -111,6 +111,7 @@ const getPrometheusMeterProvider = ({
   const exporter = new PrometheusExporter(
     {
       port,
+      appendTimestamp: true,
     },
     () => {
       console.warn(

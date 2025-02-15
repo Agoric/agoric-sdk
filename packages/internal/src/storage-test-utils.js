@@ -11,7 +11,7 @@ import { eventLoopIteration } from './testing-utils.js';
 
 /**
  * @import {TotalMap} from './types.js';
- * @import {Marshaller, StorageEntry, StorageMessage, StorageNode} from './lib-chainStorage.js';
+ * @import {Marshaller, StorageEntry, StorageMessage, StorageNode, StreamCell} from './lib-chainStorage.js';
  */
 
 const trace = makeTracer('StorTU', false);
@@ -166,7 +166,7 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
               data.delete(key);
             }
           }
-          break;
+          return true;
         }
         case 'append': {
           trace('toStorage append', message);
@@ -174,8 +174,10 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
           const newEntries = message.args;
           for (const [key, value] of newEntries) {
             value != null || Fail`attempt to append with no value`;
-            // In the absence of block boundaries, everything goes in a single StreamCell.
-            const oldVal = data.get(key);
+
+            /** @type {string | undefined} */
+            let oldVal = data.get(key);
+            /** @type {StreamCell | undefined} */
             let streamCell;
             if (oldVal != null) {
               try {
@@ -184,20 +186,26 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
               } catch (_err) {
                 streamCell = undefined;
               }
+              // StreamCells reset at block boundaries.
+              if (
+                streamCell &&
+                Number(streamCell.blockHeight) !== currentBlockHeight
+              ) {
+                streamCell = undefined;
+                oldVal = undefined;
+              }
             }
-            if (
-              streamCell === undefined ||
-              Number(streamCell.blockHeight) !== currentBlockHeight
-            ) {
+
+            if (streamCell === undefined) {
               streamCell = {
                 blockHeight: String(currentBlockHeight),
-                values: !streamCell && oldVal != null ? [oldVal] : [],
+                values: oldVal != null ? [oldVal] : [],
               };
             }
             streamCell.values.push(value);
             data.set(key, JSON.stringify(streamCell));
           }
-          break;
+          return true;
         }
         case 'size':
           // Intentionally incorrect because it counts non-child descendants,

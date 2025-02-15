@@ -17,7 +17,11 @@ import anylogger from 'anylogger';
 // import djson from 'deterministic-json';
 
 import { assert, Fail } from '@endo/errors';
-import { makeSlogSender, tryFlushSlogSender } from '@agoric/telemetry';
+import {
+  getTelemetryProviders,
+  makeSlogSender,
+  tryFlushSlogSender,
+} from '@agoric/telemetry';
 import {
   loadSwingsetConfigFile,
   buildCommand,
@@ -36,7 +40,6 @@ import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 import {
   makeDefaultMeterProvider,
-  getTelemetryProviders,
   makeSlogCallbacks,
   exportKernelStats,
 } from '@agoric/cosmic-swingset/src/kernel-stats.js';
@@ -364,7 +367,7 @@ const deployWallet = async ({ agWallet, deploys, hostport }) => {
   // This part only runs if there were wallet deploys to do.
   const resolvedDeploys = deploys.map(dep => path.resolve(agWallet, dep));
 
-  const resolvedUrl = await importMetaResolve(
+  const resolvedUrl = importMetaResolve(
     'agoric/src/entrypoint.js',
     import.meta.url,
   );
@@ -480,7 +483,7 @@ const start = async (basedir, argv) => {
   // Remove wallet traces.
   await unlink('html/wallet').catch(_ => {});
 
-  const packageUrl = await importMetaResolve(
+  const packageUrl = importMetaResolve(
     `${wallet}/package.json`,
     import.meta.url,
   );
@@ -495,7 +498,7 @@ const start = async (basedir, argv) => {
   );
 
   const agWallet = path.dirname(pjs);
-  const agWalletHtmlUrl = await importMetaResolve(htmlBasePath, packageUrl);
+  const agWalletHtmlUrl = importMetaResolve(htmlBasePath, packageUrl);
   const agWalletHtml = new URL(agWalletHtmlUrl).pathname;
 
   let hostport;
