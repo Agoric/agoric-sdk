@@ -96,7 +96,6 @@ test('send (to addr on same chain)', async t => {
   const toAddress: ChainAddress = {
     value: 'cosmos99test',
     chainId: 'cosmoshub-4',
-    encoding: 'bech32',
   };
 
   // single send
@@ -285,7 +284,6 @@ test('transfer', async t => {
   const mockDestination: ChainAddress = {
     value: 'noble1test',
     chainId: 'noble-1',
-    encoding: 'bech32',
   };
   const mockAmountArg: AmountArg = { value: 10n, denom: 'ibc/uusdchash' };
   const res = E(account).transfer(mockDestination, mockAmountArg);
@@ -533,7 +531,6 @@ test('StakingAccountQueries', async t => {
     const mockValidator: CosmosValidatorAddress = {
       value: 'cosmosvaloper1xyz',
       chainId: 'cosmoshub-4',
-      encoding: 'bech32',
     };
 
     const makeDelegationReq = () =>
@@ -768,7 +765,6 @@ test('StakingAccountQueries', async t => {
   const mockValidator: CosmosValidatorAddress = {
     value: 'cosmosvaloper1xyz',
     chainId: 'cosmoshub-4',
-    encoding: 'bech32',
   };
 
   // Test getDelegation
@@ -777,12 +773,10 @@ test('StakingAccountQueries', async t => {
     amount: { denom: 'uatom', value: 1000000n },
     delegator: {
       chainId: 'cosmoshub-4',
-      encoding: 'bech32',
       value: 'cosmos1test',
     },
     validator: {
       chainId: 'cosmoshub-4',
-      encoding: 'bech32',
       value: mockValidator.value,
     },
   });
@@ -795,12 +789,10 @@ test('StakingAccountQueries', async t => {
 
       delegator: {
         chainId: 'cosmoshub-4',
-        encoding: 'bech32',
         value: 'cosmos1test',
       },
       validator: {
         chainId: 'cosmoshub-4',
-        encoding: 'bech32',
         value: mockValidator.value,
       },
     },
@@ -880,7 +872,6 @@ test('StakingAccountQueries', async t => {
     rewards: [
       {
         validator: {
-          encoding: 'bech32',
           value: mockValidator.value,
           chainId: 'cosmoshub-4',
         },

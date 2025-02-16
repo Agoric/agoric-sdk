@@ -137,7 +137,6 @@ test('transfer', async t => {
   const destination: ChainAddress = {
     chainId: 'cosmoshub-4',
     value: 'cosmos1pleab',
-    encoding: 'bech32',
   };
 
   /** The running tally of transfer messages that were sent over the bridge */
@@ -199,7 +198,6 @@ test('transfer', async t => {
   const unknownDestination: ChainAddress = {
     chainId: 'fakenet',
     value: 'fakenet1pleab',
-    encoding: 'bech32',
   };
   // XXX dev has to know not to startTransfer here
   await t.throwsAsync(
@@ -279,7 +277,6 @@ test('transfer', async t => {
   );
   const dydxDest: ChainAddress = {
     chainId: 'dydx-mainnet-1',
-    encoding: 'bech32',
     value: 'dydx1test',
   };
   const aDenomAmount: DenomAmount = {
@@ -389,7 +386,6 @@ test('send', async t => {
   const toAddress = {
     value: 'agoric1EOAAccAddress',
     chainId: 'agoric-3',
-    encoding: 'bech32' as const,
   };
 
   t.log(`send 10 bld to ${toAddress.value}`);

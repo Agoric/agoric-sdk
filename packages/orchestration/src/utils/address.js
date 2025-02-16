@@ -101,3 +101,24 @@ export const getBech32Prefix = address => {
   if (split === 0) return Fail`Missing prefix for ${q(address)}`;
   return address.slice(0, split);
 };
+
+/**
+ * @param {string} accountId
+ * @see {@link https://github.com/ChainAgnostic/CAIPs/blob/main/CAIPs/caip-10.md}
+ */
+export const parseAccountId = accountId => {
+  const parts = accountId.split(':');
+
+  if (parts.length >= 3) {
+    return {
+      chainId: `${parts[0]}:${parts[1]}`,
+      accountAddress: parts.slice(2).join(':'), // Handles cases where the address contains colons
+    };
+  } else {
+    return {
+      chainId: null,
+      accountAddress: accountId,
+    };
+  }
+};
+harden(parseAccountId);

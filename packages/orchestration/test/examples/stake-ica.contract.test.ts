@@ -122,7 +122,6 @@ test('delegate, undelegate, redelegate, withdrawReward', async t => {
   const validatorAddr = {
     value: 'cosmosvaloper1test' as const,
     chainId: 'cosmoshub-4',
-    encoding: 'bech32' as const,
   };
   const delegation = {
     denom: 'uatom',
