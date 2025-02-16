@@ -39,7 +39,10 @@ const contractName = 'fastUsdc';
  *   board: ERef<Board>;
  * }} io
  */
-const makePublishingStorageKit = async (path, { chainStorage, board }) => {
+export const makePublishingStorageKit = async (
+  path,
+  { chainStorage, board },
+) => {
   const storageNode = await E(chainStorage).makeChildNode(path);
 
   const marshaller = await E(board).getPublishingMarshaller();

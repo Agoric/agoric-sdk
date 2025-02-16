@@ -197,6 +197,9 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     deleteCompletedTxs() {
       return statusManager.deleteCompletedTxs();
     },
+    getChainHub() {
+      return chainHub;
+    },
   });
 
   const publicFacet = zone.exo('Fast USDC Public', undefined, {
@@ -258,7 +261,10 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     );
   }
 
-  const nobleAccountV = zone.makeOnce('NobleAccount', () => makeNobleAccount());
+  // v1 has `NobleAccount` which we don't expect to ever settle. how can we delete it?
+  const nobleAccountV = zone.makeOnce('NobleAccount2', () =>
+    makeNobleAccount(),
+  );
 
   const feedKit = zone.makeOnce('Feed Kit', () => makeFeedKit());
 
@@ -279,6 +285,8 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   const [_agoric, _noble, agToNoble] = await vowTools.when(
     chainHub.getChainsAndConnection('agoric', 'noble'),
   );
+  // 1) should we have used zone.makeOnce here?
+  // 2) will we get an error since we're trying to register a tap on the same LCA?
   const settlerKit = makeSettler({
     repayer: poolKit.repayer,
     sourceChannel: agToNoble.transferChannel.counterPartyChannelId,
@@ -305,6 +313,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     },
   });
 
+  // TODO do we need to wrap this in `if (!baggage.has(firstIncarnationKey))` ?
   await settlerKit.creator.monitorMintingDeposits();
 
   return harden({ creatorFacet, publicFacet });
