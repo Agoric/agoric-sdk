@@ -1,20 +1,30 @@
+import { makeTracer } from '@agoric/internal';
+import { atob } from '@endo/base64';
 import { Fail } from '@endo/errors';
 import { denomHash } from '../utils/denomHash.js';
+
+const trace = makeTracer('AutoStakeItFlows');
 
 /**
  * @import {ResolvedPublicTopic} from '@agoric/zoe/src/contractSupport/topics.js';
  * @import {GuestInterface} from '@agoric/async-flow';
- * @import {CosmosValidatorAddress, Orchestrator, CosmosInterchainService, Denom, OrchestrationAccount, StakingAccountActions, OrchestrationFlow} from '@agoric/orchestration';
- * @import {MakeStakingTap} from './auto-stake-it-tap-kit.js';
+ * @import {VTransferIBCEvent} from '@agoric/vats';
+ * @import {CosmosValidatorAddress, Orchestrator, OrchestrationAccount, StakingAccountActions, OrchestrationFlow} from '@agoric/orchestration';
+ * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
+ * @import {Guarded} from '@endo/exo';
+ * @import {Passable} from '@endo/marshal';
  * @import {MakePortfolioHolder} from '../exos/portfolio-holder-kit.js';
  * @import {ChainHub} from '../exos/chain-hub.js';
+ * @import {StakingTapState} from './auto-stake-it.contract.js';
  */
 
 /**
  * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {{
- *   makeStakingTap: MakeStakingTap;
+ *   makeStakingTap: (
+ *     initialState: StakingTapState,
+ *   ) => Guarded<{ receiveUpcall: (event: VTransferIBCEvent) => void }>;
  *   makePortfolioHolder: MakePortfolioHolder;
  *   chainHub: GuestInterface<ChainHub>;
  * }} ctx
@@ -66,15 +76,16 @@ export const makeAccounts = async (
   const tap = makeStakingTap({
     localAccount,
     stakingAccount,
-    validator,
-    localChainAddress,
-    remoteChainAddress,
-    sourceChannel: transferChannel.counterPartyChannelId,
-    remoteDenom,
-    localDenom,
+    config: {
+      validator,
+      localChainAddress,
+      remoteChainAddress,
+      sourceChannel: transferChannel.counterPartyChannelId,
+      remoteDenom,
+      localDenom,
+    },
   });
   // XXX consider storing appRegistration, so we can .revoke() or .updateTargetApp()
-  // @ts-expect-error tap.receiveUpcall: 'Vow<void> | undefined' not assignable to 'Promise<any>'
   await localAccount.monitorTransfers(tap);
 
   const accountEntries = harden(
@@ -100,3 +111,52 @@ export const makeAccounts = async (
   return portfolioHolder.asContinuingOffer();
 };
 harden(makeAccounts);
+
+/**
+ * @satisfies {OrchestrationFlow}
+ * @param {Orchestrator} orch
+ * @param {object} ctx
+ * @param {StakingTapState['localAccount']} localAccount
+ * @param {StakingTapState['stakingAccount']} stakingAccount
+ * @param {StakingTapState['config']} config
+ * @param {VTransferIBCEvent & Passable} event
+ */
+export const autoStake = async (
+  orch,
+  ctx,
+  localAccount,
+  stakingAccount,
+  config,
+  event,
+) => {
+  // ignore packets from unknown channels
+  if (event.packet.source_channel !== config.sourceChannel) {
+    return;
+  }
+  const tx = /** @type {FungibleTokenPacketData} */ (
+    JSON.parse(atob(event.packet.data))
+  );
+  trace('receiveUpcall packet data', tx);
+  const { remoteDenom, localChainAddress } = config;
+  // ignore outgoing transfers
+  if (tx.receiver !== localChainAddress.value) {
+    return;
+  }
+  // only interested in transfers of `remoteDenom`
+  if (tx.denom !== remoteDenom) {
+    return;
+  }
+
+  const { localDenom, remoteChainAddress, validator } = config;
+
+  await localAccount.transfer(remoteChainAddress, {
+    denom: localDenom,
+    value: BigInt(tx.amount),
+  });
+
+  await stakingAccount.delegate(validator, {
+    denom: remoteDenom,
+    value: BigInt(tx.amount),
+  });
+};
+harden(autoStake);
