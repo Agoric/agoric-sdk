@@ -4,7 +4,7 @@
 set -o errexit -o errtrace -o pipefail -o xtrace
 
 CONTAINER_MESSAGE_FILE_PATH="/root/message-file-path"
-DIRECTORY_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+DIRECTORY_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 FOLLOWER_LOGS_FILE="/tmp/loadgen-follower-logs"
 LOADGEN_REPOSITORY_NAME="testnet-load-generator"
 LOGS_FILE="/tmp/before-test-run-hook-logs"
@@ -97,13 +97,13 @@ start_follower() {
     --env "MESSAGE_FILE_PATH=$CONTAINER_MESSAGE_FILE_PATH" \
     --mount "source=$MESSAGE_FILE_PATH,target=$CONTAINER_MESSAGE_FILE_PATH,type=bind" \
     --mount "source=$OUTPUT_DIRECTORY,target=$OUTPUT_DIRECTORY,type=bind" \
-    --mount "source=$NETWORK_CONFIG_FILE_PATH,target=$NETWORK_CONFIG_FILE_PATH/network-config,type=bind" >"$FOLLOWER_LOGS_FILE" 2>&1
+    --mount "source=$NETWORK_CONFIG_FILE_PATH,target=$NETWORK_CONFIG_FILE_PATH/network-config,type=bind" > "$FOLLOWER_LOGS_FILE" 2>&1
 }
 
 wait_for_network_config() {
   local network_config=$(node "$DIRECTORY_PATH/../wait-for-follower.mjs" "^{.*")
   echo "Got network config: $network_config"
-  echo "$network_config" >"$NETWORK_CONFIG_FILE_PATH"
+  echo "$network_config" > "$NETWORK_CONFIG_FILE_PATH"
 }
 
-start_follower >"$LOGS_FILE" 2>&1 &
+start_follower > "$LOGS_FILE" 2>&1 &
