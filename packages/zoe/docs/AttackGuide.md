@@ -18,6 +18,8 @@ The main focus of most threats would be a breach of one of Zoe's core invariants
 
 ## Reallocation
 
+THIS SECTION IS OBSOLETE. We've converted all code to use atomicRearrange
+
 The current approach (staging, incrementBy/decrementBy and the fact that all seats must
 be included in realloc) has led to a few bugs. It's probably worth looking for other cases
 that create new stagings or presume there are none outstanding. We plan to replace this
