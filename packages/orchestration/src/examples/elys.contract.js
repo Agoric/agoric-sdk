@@ -2,11 +2,15 @@ import { makeTracer } from '@agoric/internal';
 import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
 import { withOrchestration } from '../utils/start-helper.js';
 import * as flows from './elys-contract.flow.js';
-import { FeeConfigShape } from './elys-contract-type-gaurd.js';
+import {
+  FeeConfigShape,
+  validateFeeConfigShape,
+} from './elys-contract-type-gaurd.js';
 import { E } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
 import { VowShape } from '@agoric/vow';
 import { ChainAddressShape } from '../typeGuards.js';
+import { Fail } from '@endo/errors';
 
 const trace = makeTracer('ContractInstantiation');
 
@@ -110,13 +114,12 @@ const contract = async (
   zone,
   tools, // orchestration tools
 ) => {
-  // TODO: Add assertions for privateArgs feeInfo
-  const { chainHub, orchestrateAll, vowTools } = tools;
+  const isValid = validateFeeConfigShape(privateArgs.feeConfig);
+  if (!isValid) {
+    throw Fail`Invalid fee config`;
+  }
 
-  // const makeStrideStakingTap = prepareStrideStakingTap(
-  //   zone.subZone('strideStakingTap'),
-  //   tools,
-  // );
+  const { chainHub, orchestrateAll, vowTools } = tools;
 
   /**
    * Provides a {@link TargetApp} that reacts to an incoming IBC transfer.

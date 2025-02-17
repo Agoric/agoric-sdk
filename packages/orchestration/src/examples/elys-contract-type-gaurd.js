@@ -28,3 +28,17 @@ export const FeeConfigShape = {
 };
 harden(FeeConfigShape);
 
+export function validateFeeConfigShape(feeConfigShape) {
+  const { onBoardRate, offBoardRate } = feeConfigShape;
+  const isValidRatio = ({ nominator, denominator }) => {
+    if (denominator === 0n) {
+      return false;
+    }
+    return nominator >= 0n && nominator <= denominator;
+  };
+
+  return isValidRatio(onBoardRate) && isValidRatio(offBoardRate);
+}
+
+
+
