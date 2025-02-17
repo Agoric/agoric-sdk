@@ -33,7 +33,7 @@ const trace = makeTracer('RemoteChainFacade');
  *     typeof prepareCosmosOrchestrationAccount
  *   >;
  *   orchestration: Remote<CosmosInterchainService>;
- *   storageNode: Remote<StorageNode>;
+ *   storageNode: Remote<StorageNode> | undefined;
  *   timer: Remote<TimerService>;
  *   vowTools: VowTools;
  * }} RemoteChainFacadePowers
@@ -94,7 +94,7 @@ const prepareRemoteChainFacadeKit = (
         ).returns(VowShape),
       }),
       makeChildNodeWatcher: M.interface('makeChildNodeWatcher', {
-        onFulfilled: M.call(M.remotable(), {
+        onFulfilled: M.call(M.or(M.remotable(), M.undefined()), {
           account: M.remotable(),
           chainAddress: ChainAddressShape,
           localAddress: M.string(),
@@ -210,16 +210,20 @@ const prepareRemoteChainFacadeKit = (
          * @param {IcaAccount} account
          */
         onFulfilled([chainAddress, localAddress, remoteAddress], account) {
-          return watch(
-            E(storageNode).makeChildNode(chainAddress.value),
-            this.facets.makeChildNodeWatcher,
-            { account, chainAddress, localAddress, remoteAddress },
-          );
+          const optionalStorageNode = storageNode
+            ? E(storageNode).makeChildNode(chainAddress.value)
+            : undefined;
+          return watch(optionalStorageNode, this.facets.makeChildNodeWatcher, {
+            account,
+            chainAddress,
+            localAddress,
+            remoteAddress,
+          });
         },
       },
       makeChildNodeWatcher: {
         /**
-         * @param {Remote<StorageNode>} childNode
+         * @param {Remote<StorageNode> | undefined} childNode
          * @param {{
          *   account: IcaAccount;
          *   chainAddress: ChainAddress;

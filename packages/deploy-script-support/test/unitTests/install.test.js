@@ -25,7 +25,7 @@ test('install', async t => {
   const board = makeFakeBoard();
   const install = makeInstall(bundleSource, zoe, installationManager, board);
 
-  const resolvedUrl = await importMetaResolve(
+  const resolvedUrl = importMetaResolve(
     '@agoric/zoe/src/contracts/automaticRefund.js',
     import.meta.url,
   );

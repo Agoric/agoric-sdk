@@ -131,29 +131,37 @@ func getVariantFromUpgradeName(upgradeName string) string {
 		return "DEVNET"
 	case "UNRELEASED_emerynet":
 		return "EMERYNET"
-		// Noupgrade for this version.
 	case "UNRELEASED_BASIC":
+		// Noupgrade for this version.
 		return ""
 	default:
 		return ""
 	}
 }
 
-// func upgradeMintHolderCoreProposal(upgradeName string) (vm.CoreProposalStep, error) {
-// 	variant := getVariantFromUpgradeName(upgradeName)
+func upgradeMintHolderCoreProposal(targetUpgrade string) (vm.CoreProposalStep, error) {
+	return buildProposalStepFromScript(targetUpgrade, "@agoric/builders/scripts/vats/upgrade-mintHolder.js")
+}
 
-// 	if variant == "" {
-// 		return nil, nil
-// 	}
+func restartFeeDistributorCoreProposal(targetUpgrade string) (vm.CoreProposalStep, error) {
+	return buildProposalStepFromScript(targetUpgrade, "@agoric/builders/scripts/inter-protocol/replace-feeDistributor-combo.js")
+}
 
-// 	return buildProposalStepWithArgs(
-// 		"@agoric/builders/scripts/vats/upgrade-mintHolder.js",
-// 		"defaultProposalBuilder",
-// 		map[string]any{
-// 			"variant": variant,
-// 		},
-// 	)
-// }
+func buildProposalStepFromScript(targetUpgrade string, builderScript string) (vm.CoreProposalStep, error) {
+	variant := getVariantFromUpgradeName(targetUpgrade)
+
+	if variant == "" {
+		return nil, nil
+	}
+
+	return buildProposalStepWithArgs(
+		builderScript,
+		"defaultProposalBuilder",
+		map[string]any{
+			"variant": variant,
+		},
+	)
+}
 
 // unreleasedUpgradeHandler performs standard upgrade actions plus custom actions for the unreleased upgrade.
 func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
@@ -175,54 +183,50 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 			// Each CoreProposalStep runs sequentially, and can be constructed from
 			// one or more modules executing in parallel within the step.
 			CoreProposalSteps = append(CoreProposalSteps,
+				// Register a new ZCF to be used for all future contract instances and upgrades
 				vm.CoreProposalStepForModules(
-					// Upgrade Zoe (no new ZCF needed).
-					"@agoric/builders/scripts/vats/upgrade-zoe.js",
+					"@agoric/builders/scripts/vats/upgrade-zcf.js",
 				),
-				// Revive KREAd characters
+				// because of #10794, we need to do at least a null upgrade of
+				// the walletFactory on every software upgrade
 				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/revive-kread.js",
-				),
-				vm.CoreProposalStepForModules(
-					// Upgrade to include a cleanup from https://github.com/Agoric/agoric-sdk/pull/10319
 					"@agoric/builders/scripts/smart-wallet/build-wallet-factory2-upgrade.js",
 				),
 			)
 
-			// CoreProposals for Upgrade 19. These should not be introduced
-			// before upgrade 18 is done because they would be run in n:upgrade-next
-			//
-			// upgradeMintHolderStep, err := upgradeMintHolderCoreProposal(targetUpgrade)
-			// if err != nil {
-			// 	return nil, err
-			// } else if upgradeMintHolderStep != nil {
-			// 	CoreProposalSteps = append(CoreProposalSteps, upgradeMintHolderStep)
-			// }
-			//
-			// CoreProposalSteps = append(CoreProposalSteps,
-			// 	vm.CoreProposalStepForModules(
-			// 		"@agoric/builders/scripts/inter-protocol/replace-feeDistributor.js",
-			// 	),
-			// 	vm.CoreProposalStepForModules(
-			// 		"@agoric/builders/scripts/vats/upgrade-paRegistry.js",
-			// 	),
-			// 	vm.CoreProposalStepForModules(
-			// 		"@agoric/builders/scripts/vats/upgrade-provisionPool.js",
-			// 	),
-			// 	vm.CoreProposalStepForModules(
-			// 		"@agoric/builders/scripts/vats/upgrade-bank.js",
-			// 	),
-			// 	vm.CoreProposalStepForModules(
-			// 		"@agoric/builders/scripts/vats/upgrade-agoricNames.js",
-			// 	),
-			// 	vm.CoreProposalStepForModules(
-			// 		"@agoric/builders/scripts/vats/upgrade-asset-reserve.js",
-			// 	),
-			// 	vm.CoreProposalStepForModules(
-			// 		"@agoric/builders/scripts/vats/upgrade-psm.js",
-			// 	),
-			// )
+			upgradeMintHolderStep, err := upgradeMintHolderCoreProposal(targetUpgrade)
+			if err != nil {
+				return nil, err
+			} else if upgradeMintHolderStep != nil {
+				CoreProposalSteps = append(CoreProposalSteps, upgradeMintHolderStep)
+			}
+			restartFeeDistributorStep, err := restartFeeDistributorCoreProposal(targetUpgrade)
+			if err != nil {
+				return nil, err
+			} else if restartFeeDistributorStep != nil {
+				CoreProposalSteps = append(CoreProposalSteps, restartFeeDistributorStep)
+			}
 
+			CoreProposalSteps = append(CoreProposalSteps,
+				vm.CoreProposalStepForModules(
+					"@agoric/builders/scripts/vats/upgrade-paRegistry.js",
+				),
+				vm.CoreProposalStepForModules(
+					"@agoric/builders/scripts/vats/upgrade-provisionPool.js",
+				),
+				vm.CoreProposalStepForModules(
+					"@agoric/builders/scripts/vats/upgrade-bank.js",
+				),
+				vm.CoreProposalStepForModules(
+					"@agoric/builders/scripts/vats/upgrade-agoricNames.js",
+				),
+				vm.CoreProposalStepForModules(
+					"@agoric/builders/scripts/vats/upgrade-asset-reserve.js",
+				),
+				vm.CoreProposalStepForModules(
+					"@agoric/builders/scripts/vats/upgrade-psm.js",
+				),
+			)
 		}
 
 		app.upgradeDetails = &upgradeDetails{

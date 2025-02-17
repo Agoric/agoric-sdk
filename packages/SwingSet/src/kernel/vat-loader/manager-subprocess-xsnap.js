@@ -128,8 +128,10 @@ export function makeXsSubprocessFactory({
 
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const snapshotInfo = vatKeeper.getSnapshotInfo();
+    let uncompressedSizeLoaded = null;
     if (snapshotInfo) {
       kernelSlog.write({ type: 'heap-snapshot-load', vatID, ...snapshotInfo });
+      uncompressedSizeLoaded = snapshotInfo.uncompressedSize;
     }
 
     // `startXSnap` adds `nameDisplayArg` as a dummy argument so that 'ps'
@@ -240,9 +242,31 @@ export function makeXsSubprocessFactory({
     async function makeSnapshot(snapPos, snapStore, restartWorker) {
       const snapshotDescription = `${vatID}-${snapPos}`;
       const snapshotStream = worker.makeSnapshotStream(snapshotDescription);
+      const saveSnapshot = async saveStream => {
+        const results = await snapStore.saveSnapshot(
+          vatID,
+          snapPos,
+          saveStream,
+        );
+        const { hash: snapshotID, ...metrics } = results;
+        const uncompressedSizeDelta =
+          uncompressedSizeLoaded &&
+          metrics.uncompressedSize - uncompressedSizeLoaded;
+        uncompressedSizeLoaded = results.uncompressedSize;
+        kernelSlog.write({
+          type: 'heap-snapshot-save',
+          vatID,
+          snapshotID,
+          endPosition: snapPos,
+          ...metrics,
+          uncompressedSizeDelta,
+          restartWorker,
+        });
+        return results;
+      };
 
       if (!restartWorker) {
-        return snapStore.saveSnapshot(vatID, snapPos, snapshotStream);
+        return saveSnapshot(snapshotStream);
       }
 
       /** @type {AsyncGenerator<Uint8Array, void, void>[]} */
@@ -268,7 +292,7 @@ export function makeXsSubprocessFactory({
             snapshotDescription,
           },
         }),
-        snapStore.saveSnapshot(vatID, snapPos, snapStoreSaveStream),
+        saveSnapshot(snapStoreSaveStream),
       ]);
       await closeP;
 
