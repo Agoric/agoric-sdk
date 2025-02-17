@@ -27,9 +27,9 @@ jobs:
         run: nix flake check
 
       - name: Show flake metadata
-        if: always()  # Run even if previous step fails
+        if: always() # Run even if previous step fails
         run: nix flake metadata
 
       - name: Validate flake outputs
-        if: always()  # Run even if previous step fails
+        if: always() # Run even if previous step fails
         run: nix flake show
