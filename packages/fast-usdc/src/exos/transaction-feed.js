@@ -1,7 +1,7 @@
 import { makeTracer } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import { keyEQ, M } from '@endo/patterns';
-import { Fail } from '@endo/errors';
+import { Fail, quote } from '@endo/errors';
 import { CctpTxEvidenceShape, RiskAssessmentShape } from '../type-guards.js';
 import { defineInertInvitation } from '../utils/zoe.js';
 import { prepareOperatorKit } from './operator-kit.js';
@@ -57,6 +57,12 @@ const allRisksIdentified = (riskStores, txHash) => {
     }
   }
   return [...setOfRisks.values()].sort();
+};
+
+export const stateShape = {
+  operators: M.remotable(),
+  pending: M.remotable(),
+  risks: M.remotable(),
 };
 
 /**
@@ -215,7 +221,7 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
                   '!=',
                   next,
                 );
-                Fail`conflicting evidence for ${txHash}`;
+                Fail`conflicting evidence for ${quote(txHash)}`;
               }
             }
             lastEvidence = next;
@@ -245,6 +251,7 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
         getEvidenceSubscriber: () => subscriber,
       },
     },
+    { stateShape },
   );
 };
 harden(prepareTransactionFeedKit);

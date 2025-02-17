@@ -677,13 +677,7 @@ export function makeVatKeeper(
       restartWorker,
     );
 
-    const {
-      hash: snapshotID,
-      uncompressedSize,
-      dbSaveSeconds,
-      compressedSize,
-      compressSeconds,
-    } = info;
+    const { hash: snapshotID } = info;
 
     // push a save-snapshot transcript entry
     addToTranscript(makeSaveSnapshotItem(snapshotID));
@@ -695,18 +689,6 @@ export function makeVatKeeper(
     // always starts with an initialize-worker or load-snapshot
     // pseudo-delivery
     addToTranscript(makeLoadSnapshotItem(snapshotID));
-
-    kernelSlog.write({
-      type: 'heap-snapshot-save',
-      vatID,
-      snapshotID,
-      uncompressedSize,
-      dbSaveSeconds,
-      compressedSize,
-      compressSeconds,
-      endPosition,
-      restartWorker,
-    });
   }
 
   /**

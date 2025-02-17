@@ -13,7 +13,7 @@ import { addConfigCommands } from './config-commands.js';
 import { addOperatorCommands } from './operator-commands.js';
 import * as configLib from './config.js';
 import transferLib from './transfer.js';
-import { makeFile } from '../util/file.js';
+import { makeFile } from './util/file.js';
 import { addLPCommands } from './lp-commands.js';
 
 const packageJson = JSON.parse(

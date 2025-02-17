@@ -14,7 +14,7 @@ import { makeZcfTools } from './zcf-tools.js';
 
 /**
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
- * @import {TimerService, TimerBrand} from '@agoric/time';
+ * @import {TimerService} from '@agoric/time';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {NameHub} from '@agoric/vats';
  * @import {Remote} from '@agoric/vow';
@@ -26,10 +26,17 @@ import { makeZcfTools } from './zcf-tools.js';
  * @typedef {{
  *   localchain: Remote<LocalChain>;
  *   orchestrationService: Remote<CosmosInterchainService>;
- *   storageNode: Remote<StorageNode>;
+ *   storageNode?: Remote<StorageNode>;
  *   timerService: Remote<TimerService>;
  *   agoricNames: Remote<NameHub>;
  * }} OrchestrationPowers
+ */
+
+/**
+ * @typedef {object} WithOrchestrationOpts
+ * @property {boolean} [publishAccountInfo] - Controls whether account
+ *   information (address, channel identifiers for ICAs) should be automatically
+ *   published to vstorage
  */
 
 /**
@@ -144,7 +151,6 @@ export const provideOrchestration = (
     makeOrchestrationFacade({
       zone,
       zcf,
-      makeRecorderKit,
       makeOrchestrator,
       asyncFlowTools,
       vowTools,
@@ -199,16 +205,19 @@ harden(provideOrchestration);
  *   zone: Zone,
  *   tools: OrchestrationTools,
  * ) => Promise<R>} contractFn
+ * @param {WithOrchestrationOpts} [opts]
  * @returns {(zcf: ZCF<CT>, privateArgs: PA, baggage: Baggage) => Promise<R>} a
  *   Zoe start function
  */
 export const withOrchestration =
-  contractFn => async (zcf, privateArgs, baggage) => {
+  (contractFn, opts) => async (zcf, privateArgs, baggage) => {
+    const { marshaller, ...allOrchPowers } = privateArgs;
+    const { storageNode: _, ...requiredOrchPowers } = allOrchPowers;
     const { zone, ...tools } = provideOrchestration(
       zcf,
       baggage,
-      privateArgs,
-      privateArgs.marshaller,
+      opts?.publishAccountInfo ? allOrchPowers : requiredOrchPowers,
+      marshaller,
     );
     return contractFn(zcf, privateArgs, zone, tools);
   };

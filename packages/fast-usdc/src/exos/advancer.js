@@ -32,12 +32,12 @@ import { makeFeeTools } from '../utils/fees.js';
  * @typedef {{
  *  chainHub: ChainHub;
  *  feeConfig: FeeConfig;
- *  localTransfer: ZoeTools['localTransfer'];
  *  log?: LogFn;
  *  statusManager: StatusManager;
  *  usdc: { brand: Brand<'nat'>; denom: Denom; };
  *  vowTools: VowTools;
  *  zcf: ZCF;
+ *  zoeTools: ZoeTools;
  * }} AdvancerKitPowers
  */
 
@@ -69,6 +69,16 @@ const AdvancerKitI = harden({
     ),
     onRejected: M.call(M.error(), AdvancerVowCtxShape).returns(M.undefined()),
   }),
+  withdrawHandler: M.interface('WithdrawHandlerI', {
+    onFulfilled: M.call(M.undefined(), {
+      advanceAmount: AnyNatAmountShape,
+      tmpReturnSeat: M.remotable(),
+    }).returns(M.undefined()),
+    onRejected: M.call(M.error(), {
+      advanceAmount: AnyNatAmountShape,
+      tmpReturnSeat: M.remotable(),
+    }).returns(M.undefined()),
+  }),
 });
 
 /**
@@ -81,6 +91,14 @@ const AdvancerKitI = harden({
  * }} AdvancerVowCtx
  */
 
+export const stateShape = harden({
+  notifier: M.remotable(),
+  borrower: M.remotable(),
+  poolAccount: M.remotable(),
+  intermediateRecipient: M.opt(ChainAddressShape),
+  settlementAddress: M.opt(ChainAddressShape),
+});
+
 /**
  * @param {Zone} zone
  * @param {AdvancerKitPowers} caps
@@ -90,12 +108,12 @@ export const prepareAdvancerKit = (
   {
     chainHub,
     feeConfig,
-    localTransfer,
     log = makeTracer('Advancer', true),
     statusManager,
     usdc,
     vowTools: { watch, when },
     zcf,
+    zoeTools: { localTransfer, withdrawToSeat },
   },
 ) => {
   assertAllDefined({
@@ -114,8 +132,8 @@ export const prepareAdvancerKit = (
     AdvancerKitI,
     /**
      * @param {{
-     *   notifyFacet: import('./settler.js').SettlerKit['notify'];
-     *   borrowerFacet: LiquidityPoolKit['borrower'];
+     *   notifier: import('./settler.js').SettlerKit['notifier'];
+     *   borrower: LiquidityPoolKit['borrower'];
      *   poolAccount: HostInterface<OrchestrationAccount<{chainId: 'agoric'}>>;
      *   settlementAddress: ChainAddress;
      *   intermediateRecipient?: ChainAddress;
@@ -165,9 +183,9 @@ export const prepareAdvancerKit = (
             const destination = chainHub.makeChainAddress(EUD);
 
             const fullAmount = toAmount(evidence.tx.amount);
-            const { borrowerFacet, notifyFacet, poolAccount } = this.state;
+            const { borrower, notifier, poolAccount } = this.state;
             // do not advance if we've already received a mint/settlement
-            const mintedEarly = notifyFacet.checkMintedEarly(
+            const mintedEarly = notifier.checkMintedEarly(
               evidence,
               destination,
             );
@@ -178,7 +196,7 @@ export const prepareAdvancerKit = (
 
             const { zcfSeat: tmpSeat } = zcf.makeEmptySeatKit();
             // throws if the pool has insufficient funds
-            borrowerFacet.borrow(tmpSeat, advanceAmount);
+            borrower.borrow(tmpSeat, advanceAmount);
 
             // this cannot throw since `.isSeen()` is called in the same turn
             statusManager.advance(evidence);
@@ -215,7 +233,8 @@ export const prepareAdvancerKit = (
         onFulfilled(result, ctx) {
           const { poolAccount, intermediateRecipient, settlementAddress } =
             this.state;
-          const { destination, advanceAmount, tmpSeat: _, ...detail } = ctx;
+          const { destination, advanceAmount, tmpSeat, ...detail } = ctx;
+          tmpSeat.exit();
           const amount = harden({
             denom: usdc.denom,
             value: advanceAmount.value,
@@ -249,9 +268,10 @@ export const prepareAdvancerKit = (
             error,
           );
           try {
-            const { borrowerFacet, notifyFacet } = this.state;
-            notifyFacet.notifyAdvancingResult(restCtx, false);
-            borrowerFacet.returnToPool(tmpSeat, advanceAmount);
+            const { borrower, notifier } = this.state;
+            notifier.notifyAdvancingResult(restCtx, false);
+            borrower.returnToPool(tmpSeat, advanceAmount);
+            tmpSeat.exit();
           } catch (e) {
             log('🚨 deposit to localOrchAccount failure recovery failed', e);
           }
@@ -263,37 +283,76 @@ export const prepareAdvancerKit = (
          * @param {AdvancerVowCtx} ctx
          */
         onFulfilled(result, ctx) {
-          const { notifyFacet } = this.state;
+          const { notifier } = this.state;
           const { advanceAmount, destination, ...detail } = ctx;
           log('Advance succeeded', { advanceAmount, destination });
           // During development, due to a bug, this call threw.
           // The failure was silent (no diagnostics) due to:
           //  - #10576 Vows do not report unhandled rejections
           // For now, the advancer kit relies on consistency between
-          // notifyFacet, statusManager, and callers of handleTransactionEvent().
+          // notify, statusManager, and callers of handleTransactionEvent().
           // TODO: revisit #10576 during #10510
-          notifyFacet.notifyAdvancingResult({ destination, ...detail }, true);
+          notifier.notifyAdvancingResult({ destination, ...detail }, true);
         },
         /**
          * @param {Error} error
          * @param {AdvancerVowCtx} ctx
          */
         onRejected(error, ctx) {
-          const { notifyFacet } = this.state;
+          const { notifier, poolAccount } = this.state;
           log('Advance failed', error);
-          const { advanceAmount: _, ...restCtx } = ctx;
-          notifyFacet.notifyAdvancingResult(restCtx, false);
+          const { advanceAmount, ...restCtx } = ctx;
+          notifier.notifyAdvancingResult(restCtx, false);
+          const { zcfSeat: tmpReturnSeat } = zcf.makeEmptySeatKit();
+          const withdrawV = withdrawToSeat(
+            // @ts-expect-error LocalAccountMethods vs OrchestrationAccount
+            poolAccount,
+            tmpReturnSeat,
+            harden({ USDC: advanceAmount }),
+          );
+          void watch(withdrawV, this.facets.withdrawHandler, {
+            advanceAmount,
+            tmpReturnSeat,
+          });
+        },
+      },
+      withdrawHandler: {
+        /**
+         *
+         * @param {undefined} result
+         * @param {{ advanceAmount: Amount<'nat'>; tmpReturnSeat: ZCFSeat; }} ctx
+         */
+        onFulfilled(result, { advanceAmount, tmpReturnSeat }) {
+          const { borrower } = this.state;
+          try {
+            borrower.returnToPool(tmpReturnSeat, advanceAmount);
+          } catch (e) {
+            // If we reach here, the unused advance funds will remain in `tmpReturnSeat`
+            // and must be retrieved from recovery sets.
+            log(
+              `🚨 return ${q(advanceAmount)} to pool failed. funds remain on "tmpReturnSeat"`,
+              e,
+            );
+          }
+          tmpReturnSeat.exit();
+        },
+        /**
+         * @param {Error} error
+         * @param {{ advanceAmount: Amount<'nat'>; tmpReturnSeat: ZCFSeat; }} ctx
+         */
+        onRejected(error, { advanceAmount, tmpReturnSeat }) {
+          log(
+            `🚨 withdraw ${q(advanceAmount)} from "poolAccount" to return to pool failed`,
+            error,
+          );
+          // If we reach here, the unused advance funds will remain in the `poolAccount`.
+          // A contract update will be required to return them to the LiquidityPool.
+          tmpReturnSeat.exit();
         },
       },
     },
     {
-      stateShape: harden({
-        notifyFacet: M.remotable(),
-        borrowerFacet: M.remotable(),
-        poolAccount: M.remotable(),
-        settlementAddress: ChainAddressShape,
-        intermediateRecipient: M.opt(ChainAddressShape),
-      }),
+      stateShape,
     },
   );
 };

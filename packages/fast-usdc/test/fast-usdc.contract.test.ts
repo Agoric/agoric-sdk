@@ -28,7 +28,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E } from '@endo/far';
+import { E, type EReturn } from '@endo/far';
 import { matches } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
 import path from 'path';
@@ -61,7 +61,7 @@ const getInvitationProperties = async (
 // Spec for Mainnet. Other values are covered in unit tests of TransactionFeed.
 const operatorQty = 3;
 
-type CommonSetup = Awaited<ReturnType<typeof commonSetup>>;
+type CommonSetup = EReturn<typeof commonSetup>;
 const startContract = async (
   common: Pick<CommonSetup, 'brands' | 'commonPrivateArgs' | 'utils'>,
 ) => {
@@ -70,7 +70,12 @@ const startContract = async (
     commonPrivateArgs,
   } = common;
 
-  const { zoe, bundleAndInstall } = await setUpZoeForTest();
+  let contractBaggage;
+  const setJig = ({ baggage }) => {
+    contractBaggage = baggage;
+  };
+
+  const { zoe, bundleAndInstall } = await setUpZoeForTest({ setJig });
   const installation: Installation<FastUsdcSF> =
     await bundleAndInstall(contractFile);
 
@@ -97,6 +102,7 @@ const startContract = async (
 
   return {
     ...startKit,
+    contractBaggage,
     terms,
     zoe,
     metricsSub,
@@ -124,7 +130,7 @@ const makeTestContext = async (t: ExecutionContext) => {
   });
 
   const sync = {
-    ocw: makePromiseKit<Awaited<ReturnType<typeof makeOracleOperator>>[]>(),
+    ocw: makePromiseKit<EReturn<typeof makeOracleOperator>[]>(),
     lp: makePromiseKit<Record<string, ReturnType<typeof makeLP>>>(),
   };
 
@@ -171,11 +177,12 @@ const makeTestContext = async (t: ExecutionContext) => {
   };
 };
 
-type FucContext = Awaited<ReturnType<typeof makeTestContext>>;
+type FucContext = EReturn<typeof makeTestContext>;
 const test = anyTest as TestFn<FucContext>;
 test.before(async t => (t.context = await makeTestContext(t)));
 
-test('baggage', async t => {
+// baggage after a simple startInstance, without any other startup logic
+test('initial baggage', async t => {
   const {
     brands: { usdc },
     commonPrivateArgs,
@@ -198,6 +205,13 @@ test('baggage', async t => {
   );
 
   const tree = inspectMapStore(contractBaggage);
+  t.snapshot(tree, 'contract baggage after start');
+});
+
+test('used baggage', async t => {
+  const { startKit } = t.context;
+
+  const tree = inspectMapStore(startKit.contractBaggage);
   t.snapshot(tree, 'contract baggage after start');
 });
 

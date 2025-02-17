@@ -1,13 +1,22 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
-import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
+import {
+  decodeAddressHook,
+  encodeAddressHook,
+} from '@agoric/cosmic-proto/address-hooks.js';
 import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
+import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import type { Zone } from '@agoric/zone';
+import type { EReturn } from '@endo/far';
 import { PendingTxStatus, TxStatus } from '../../src/constants.js';
-import { prepareSettler, type SettlerKit } from '../../src/exos/settler.js';
+import {
+  prepareSettler,
+  stateShape,
+  type SettlerKit,
+} from '../../src/exos/settler.js';
 import { prepareStatusManager } from '../../src/exos/status-manager.js';
 import type { CctpTxEvidence } from '../../src/types.js';
 import { makeFeeTools } from '../../src/utils/fees.js';
@@ -24,6 +33,7 @@ const mockZcf = (zone: Zone) => {
 
   const makeSeatKit = zone.exoClassKit('MockSeatKit', undefined, () => ({}), {
     zcfSeat: {
+      exit() {},
       getCurrentAllocation() {
         return {};
       },
@@ -45,7 +55,7 @@ const mockZcf = (zone: Zone) => {
 
 const makeTestContext = async t => {
   const common = await commonSetup(t);
-  const { rootZone: zone } = common.bootstrap;
+  const { contractZone: zone } = common.utils;
   const { log, inspectLogs } = makeTestLogger(t.log);
   const statusManager = prepareStatusManager(
     zone.subZone('status-manager'),
@@ -54,9 +64,9 @@ const makeTestContext = async t => {
   );
   const { zcf, callLog } = mockZcf(zone.subZone('Mock ZCF'));
 
-  const { rootZone, vowTools } = common.bootstrap;
+  const { vowTools } = common.utils;
   const { usdc } = common.brands;
-  const mockAccounts = prepareMockOrchAccounts(rootZone.subZone('accounts'), {
+  const mockAccounts = prepareMockOrchAccounts(zone.subZone('accounts'), {
     vowTools,
     log: t.log,
     usdc,
@@ -83,7 +93,7 @@ const makeTestContext = async t => {
     zcf,
     withdrawToSeat: mockWithdrawToSeat,
     feeConfig: common.commonPrivateArgs.feeConfig,
-    vowTools: common.bootstrap.vowTools,
+    vowTools: common.utils.vowTools,
     chainHub,
     log,
   });
@@ -96,7 +106,7 @@ const makeTestContext = async t => {
     intermediateRecipient,
   });
 
-  const makeSimulate = (notifyFacet: SettlerKit['notify']) => {
+  const makeSimulate = (notifier: SettlerKit['notifier']) => {
     const makeEvidence = (evidence?: CctpTxEvidence): CctpTxEvidence =>
       harden({
         ...MockCctpTxEvidences.AGORIC_PLUS_OSMO(),
@@ -141,7 +151,7 @@ const makeTestContext = async t => {
         const { Advanced, AdvanceFailed } = TxStatus;
         t.log(`Simulate ${success ? Advanced : AdvanceFailed}`);
         const info = makeNotifyInfo(evidence);
-        notifyFacet.notifyAdvancingResult(info, success);
+        notifier.notifyAdvancingResult(info, success);
       },
       /**
        * start and finish advance successfully
@@ -180,7 +190,7 @@ const makeTestContext = async t => {
         const cctpTxEvidence = makeEvidence(evidence);
         const { destination, forwardingAddress, fullAmount, txHash } =
           makeNotifyInfo(cctpTxEvidence);
-        notifyFacet.checkMintedEarly(cctpTxEvidence, destination);
+        notifier.checkMintedEarly(cctpTxEvidence, destination);
         return cctpTxEvidence;
       },
     });
@@ -207,9 +217,13 @@ const makeTestContext = async t => {
   };
 };
 
-const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
+const test = anyTest as TestFn<EReturn<typeof makeTestContext>>;
 
 test.beforeEach(async t => (t.context = await makeTestContext(t)));
+
+test('stateShape', t => {
+  t.snapshot(stateShape);
+});
 
 test('happy path: disburse to LPs; StatusManager removes tx', async t => {
   const {
@@ -230,7 +244,7 @@ test('happy path: disburse to LPs; StatusManager removes tx', async t => {
     settlementAccount: accounts.settlement.account,
     ...defaultSettlerParams,
   });
-  const simulate = makeSimulate(settler.notify);
+  const simulate = makeSimulate(settler.notifier);
   const cctpTxEvidence = simulate.advance();
   t.deepEqual(
     statusManager.lookupPending(
@@ -331,7 +345,7 @@ test('slow path: forward to EUD; remove pending tx', async t => {
     settlementAccount: accounts.settlement.account,
     ...defaultSettlerParams,
   });
-  const simulate = makeSimulate(settler.notify);
+  const simulate = makeSimulate(settler.notifier);
   const cctpTxEvidence = simulate.observe();
   t.deepEqual(
     statusManager.lookupPending(
@@ -410,7 +424,7 @@ test('skip advance: forward to EUD; remove pending tx', async t => {
     ...defaultSettlerParams,
   });
 
-  const simulate = makeSimulate(settler.notify);
+  const simulate = makeSimulate(settler.notifier);
   const cctpTxEvidence = simulate.skipAdvance(['TOO_LARGE_AMOUNT']);
   t.deepEqual(
     statusManager.lookupPending(
@@ -491,7 +505,7 @@ test('Settlement for unknown transaction (minted early)', async t => {
     settlementAccount: accounts.settlement.account,
     ...defaultSettlerParams,
   });
-  const simulate = makeSimulate(settler.notify);
+  const simulate = makeSimulate(settler.notifier);
 
   t.log('Simulate incoming IBC settlement');
   void settler.tap.receiveUpcall(MockVTransferEvents.AGORIC_PLUS_OSMO());
@@ -563,7 +577,7 @@ test('Settlement for Advancing transaction (advance succeeds)', async t => {
     settlementAccount: accounts.settlement.account,
     ...defaultSettlerParams,
   });
-  const simulate = makeSimulate(settler.notify);
+  const simulate = makeSimulate(settler.notifier);
   const cctpTxEvidence = simulate.startAdvance();
   const { forwardingAddress, amount } = cctpTxEvidence.tx;
 
@@ -617,7 +631,7 @@ test('Settlement for Advancing transaction (advance fails)', async t => {
     settlementAccount: accounts.settlement.account,
     ...defaultSettlerParams,
   });
-  const simulate = makeSimulate(settler.notify);
+  const simulate = makeSimulate(settler.notifier);
   const cctpTxEvidence = simulate.startAdvance();
 
   t.log('Simulate incoming IBC settlement');
@@ -683,7 +697,7 @@ test('slow path, and forward fails (terminal state)', async t => {
     settlementAccount: accounts.settlement.account,
     ...defaultSettlerParams,
   });
-  const simulate = makeSimulate(settler.notify);
+  const simulate = makeSimulate(settler.notifier);
   const cctpTxEvidence = simulate.observe();
   t.deepEqual(
     statusManager.lookupPending(
@@ -729,3 +743,92 @@ test('slow path, and forward fails (terminal state)', async t => {
 test.todo('creator facet methods');
 
 test.todo('ignored packets');
+
+test('bad packet data', async t => {
+  const { makeSettler, defaultSettlerParams, repayer, accounts, inspectLogs } =
+    t.context;
+  const settler = makeSettler({
+    repayer,
+    settlementAccount: accounts.settlement.account,
+    ...defaultSettlerParams,
+  });
+
+  await settler.tap.receiveUpcall(
+    buildVTransferEvent({ sourceChannel: 'channel-21' }),
+  );
+  t.deepEqual(inspectLogs().at(-1), [
+    'invalid event packet',
+    ['unexpected denom', { actual: 'uatom', expected: 'uusdc' }],
+  ]);
+
+  await settler.tap.receiveUpcall(
+    buildVTransferEvent({ sourceChannel: 'channel-21', denom: 'uusdc' }),
+  );
+  t.deepEqual(inspectLogs().at(-1), [
+    'invalid event packet',
+    ['no query params', 'agoric1fakeLCAAddress'],
+  ]);
+
+  await settler.tap.receiveUpcall(
+    buildVTransferEvent({
+      sourceChannel: 'channel-21',
+      denom: 'uusdc',
+      receiver: encodeAddressHook(
+        // valid but meaningless address
+        'agoric1c9gyu460lu70rtcdp95vummd6032psmpdx7wdy',
+        {},
+      ),
+    }),
+  );
+  t.deepEqual(inspectLogs().at(-1), [
+    'invalid event packet',
+    [
+      'no EUD parameter',
+      'agoric10rchps2sfet5lleu7xhs6ztgeehkm5lz5rpkz0cqzs95zdge',
+    ],
+  ]);
+
+  await settler.tap.receiveUpcall(
+    buildVTransferEvent({
+      sourceChannel: 'channel-21',
+      denom: 'uusdc',
+      receiver: encodeAddressHook(
+        // valid but meaningless address
+        'agoric1c9gyu460lu70rtcdp95vummd6032psmpdx7wdy',
+        { EUD: 'cosmos1foo' },
+      ),
+      // @ts-expect-error intentionally bad
+      amount: 'bad',
+    }),
+  );
+  t.deepEqual(inspectLogs().at(-1), [
+    'invalid event packet',
+    ['invalid amount', 'bad'],
+  ]);
+
+  const goodEvent = buildVTransferEvent({
+    sourceChannel: 'channel-21',
+    denom: 'uusdc',
+    receiver: encodeAddressHook(
+      // valid but meaningless address
+      'agoric1c9gyu460lu70rtcdp95vummd6032psmpdx7wdy',
+      { EUD: 'cosmos1foo' },
+    ),
+  });
+  await settler.tap.receiveUpcall(goodEvent);
+  t.deepEqual(inspectLogs().at(-1), [
+    '⚠️ tap: minted before observed',
+    'cosmos1AccAddress',
+    10n,
+  ]);
+
+  const badJson = {
+    ...goodEvent,
+    packet: { ...goodEvent.packet, data: 'not json' },
+  };
+  await settler.tap.receiveUpcall(badJson);
+  t.deepEqual(inspectLogs().at(-1), [
+    'invalid event packet',
+    ['could not parse packet data', 'not json'],
+  ]);
+});

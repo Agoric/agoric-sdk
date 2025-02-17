@@ -38,7 +38,6 @@ import { fileURLToPath } from 'url';
 
 import {
   makeDefaultMeterProvider,
-  makeInboundQueueMetrics,
   exportKernelStats,
   makeSlogCallbacks,
 } from './kernel-stats.js';
@@ -88,17 +87,35 @@ const parseUpgradePlanInfo = (upgradePlan, prefix = '') => {
  */
 
 /**
- * @typedef {'leftover' | 'forced' | 'high-priority' | 'timer' | 'queued' | 'cleanup'} CrankerPhase
- *   - leftover: work from a previous block
- *   - forced: work that claims the entirety of the current block
- *   - high-priority: queued work the precedes timer advancement
- *   - intermission: needed to note state exports and update consistency hashes
- *   - queued: queued work the follows timer advancement
- *   - cleanup: for dealing with data from terminated vats
+ * The phase associated with a controller run.
+ *   - Leftover: work from a previous block
+ *   - Forced: work that claims the entirety of the current block
+ *   - Priority: queued work that precedes timer device advancement (e.g., oracle price updates)
+ *   - Timer: work prompted by timer advancement to the new external time
+ *   - Inbound: queued work that follows timer advancement (e.g., normal messages)
+ *   - Cleanup: for dealing with data from terminated vats
+ *
+ * @enum {(typeof CrankerPhase)[keyof typeof CrankerPhase]} CrankerPhase
  */
+const CrankerPhase = /** @type {const} */ ({
+  Leftover: 'leftover',
+  Forced: 'forced',
+  Priority: 'priority',
+  Timer: 'timer',
+  Inbound: 'inbound',
+  Cleanup: 'cleanup',
+});
 
-/** @type {CrankerPhase} */
-const CLEANUP = 'cleanup';
+/**
+ * Some phases correspond with inbound message queues.
+ *
+ * @enum {(typeof InboundQueueName)[keyof typeof InboundQueueName]} InboundQueueName
+ */
+const InboundQueueName = /** @type {const} */ ({
+  Forced: CrankerPhase.Forced,
+  Priority: CrankerPhase.Priority,
+  Inbound: CrankerPhase.Inbound,
+});
 
 /**
  * @typedef {(phase: CrankerPhase) => Promise<boolean>} Cranker runs the kernel
@@ -466,15 +483,17 @@ export async function launch({
     ? parseInt(env.END_BLOCK_SPIN_MS, 10)
     : 0;
 
-  const inboundQueueMetrics = makeInboundQueueMetrics(
-    actionQueue.size() + highPriorityQueue.size(),
-  );
-  const { crankScheduler } = exportKernelStats({
+  const initialQueueLengths = /** @type {Record<InboundQueueName, number>} */ ({
+    [InboundQueueName.Forced]: runThisBlock.size(),
+    [InboundQueueName.Priority]: highPriorityQueue.size(),
+    [InboundQueueName.Inbound]: actionQueue.size(),
+  });
+  const { crankScheduler, inboundQueueMetrics } = exportKernelStats({
     controller,
     metricMeter,
     // @ts-expect-error Type 'Logger<BaseLevels>' is not assignable to type 'Console'.
     log: console,
-    inboundQueueMetrics,
+    initialQueueLengths,
   });
 
   /**
@@ -485,7 +504,7 @@ export async function launch({
   function makeRunSwingset(blockHeight, runPolicy) {
     let runNum = 0;
     async function runSwingset(phase) {
-      if (phase === CLEANUP) {
+      if (phase === CrankerPhase.Cleanup) {
         const allowCleanup = runPolicy.startCleanup();
         if (!allowCleanup) return false;
       }
@@ -532,7 +551,7 @@ export async function launch({
     const runPolicy = computronCounter(params, true);
     const runSwingset = makeRunSwingset(blockHeight, runPolicy);
 
-    await runSwingset('forced');
+    await runSwingset(CrankerPhase.Forced);
   }
 
   async function saveChainState() {
@@ -734,13 +753,13 @@ export async function launch({
    *
    * @param {InboundQueue} inboundQueue
    * @param {Cranker} runSwingset
-   * @param {CrankerPhase} phase
+   * @param {InboundQueueName} phase
    */
   async function processActions(inboundQueue, runSwingset, phase) {
     let keepGoing = true;
     for await (const { action, context } of inboundQueue.consumeAll()) {
       const inboundNum = `${context.blockHeight}-${context.txHash}-${context.msgIdx}`;
-      inboundQueueMetrics.decStat();
+      inboundQueueMetrics.decStat(phase);
       countInboundAction(action.type);
       await performAction(action, inboundNum);
       keepGoing = await runSwingset(phase);
@@ -763,13 +782,13 @@ export async function launch({
    */
   async function processBlockActions(runSwingset, blockHeight, blockTime) {
     // First, complete leftover work, if any
-    let keepGoing = await runSwingset('leftover');
+    let keepGoing = await runSwingset(CrankerPhase.Leftover);
     if (!keepGoing) return;
 
     // Then, if we have anything in the special runThisBlock queue, process
     // it and do no further work.
     if (runThisBlock.size()) {
-      await processActions(runThisBlock, runSwingset, 'forced');
+      await processActions(runThisBlock, runSwingset, CrankerPhase.Forced);
       return;
     }
 
@@ -777,7 +796,7 @@ export async function launch({
     keepGoing = await processActions(
       highPriorityQueue,
       runSwingset,
-      'high-priority',
+      CrankerPhase.Priority,
     );
     if (!keepGoing) return;
 
@@ -797,14 +816,14 @@ export async function launch({
     // We must run the kernel even if nothing was added since the kernel
     // only notes state exports and updates consistency hashes when attempting
     // to perform a crank.
-    keepGoing = await runSwingset('timer');
+    keepGoing = await runSwingset(CrankerPhase.Timer);
     if (!keepGoing) return;
 
     // Finally, process as much as we can from the actionQueue.
-    await processActions(actionQueue, runSwingset, 'queued');
+    await processActions(actionQueue, runSwingset, CrankerPhase.Inbound);
 
     // Cleanup after terminated vats as allowed.
-    await runSwingset('cleanup');
+    await runSwingset(CrankerPhase.Cleanup);
   }
 
   async function endBlock(blockHeight, blockTime, params) {
@@ -814,9 +833,12 @@ export async function launch({
 
     // First, record new actions (bridge/mailbox/etc events that cosmos
     // added up for delivery to swingset) into our inboundQueue metrics
-    inboundQueueMetrics.updateLength(
-      actionQueue.size() + highPriorityQueue.size() + runThisBlock.size(),
-    );
+    const newLengths = /** @type {Record<InboundQueueName, number>} */ ({
+      [InboundQueueName.Forced]: runThisBlock.size(),
+      [InboundQueueName.Priority]: highPriorityQueue.size(),
+      [InboundQueueName.Inbound]: actionQueue.size(),
+    });
+    inboundQueueMetrics.updateLengths(newLengths);
 
     // If we have work to complete this block, it needs to run to completion.
     // It will also run to completion any work that swingset still had pending.

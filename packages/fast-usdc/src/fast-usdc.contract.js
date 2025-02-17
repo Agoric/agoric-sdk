@@ -90,6 +90,7 @@ const publishAddresses = (contractNode, addresses) => {
  *   feeConfig: FeeConfig;
  *   marshaller: Marshaller;
  *   poolMetricsNode: Remote<StorageNode>;
+ *   storageNode: Remote<StorageNode>;
  * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
@@ -125,11 +126,10 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     chainHub,
   });
 
-  const { localTransfer } = makeZoeTools(zcf, vowTools);
+  const zoeTools = makeZoeTools(zcf, vowTools);
   const makeAdvancer = prepareAdvancer(zone, {
     chainHub,
     feeConfig,
-    localTransfer,
     usdc: harden({
       brand: terms.brands.USDC,
       denom: terms.usdcDenom,
@@ -137,6 +137,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     statusManager,
     vowTools,
     zcf,
+    zoeTools,
   });
 
   const makeFeedKit = prepareTransactionFeedKit(zone, zcf);
@@ -192,6 +193,9 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
       baggage.init(ADDRESSES_BAGGAGE_KEY, addresses);
       await publishAddresses(storageNode, addresses);
       return addresses;
+    },
+    deleteCompletedTxs() {
+      return statusManager.deleteCompletedTxs();
     },
   });
 
@@ -284,8 +288,8 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
 
   const advancer = zone.makeOnce('Advancer', () =>
     makeAdvancer({
-      borrowerFacet: poolKit.borrower,
-      notifyFacet: settlerKit.notify,
+      borrower: poolKit.borrower,
+      notifier: settlerKit.notifier,
       poolAccount,
       settlementAddress,
     }),

@@ -8,6 +8,8 @@ import { arV1BundleName } from './bootstrap-assetReserve-upgrade.js';
 
 // so paths can be expresssed relative to this file and made absolute
 const bfile = name => new URL(name, import.meta.url).pathname;
+const resolvePathname = spec =>
+  new URL(importMetaResolve(spec, import.meta.url)).pathname;
 
 test('assetReserve service upgrade', async t => {
   /** @type {SwingSetConfig} */
@@ -21,36 +23,25 @@ test('assetReserve service upgrade', async t => {
         sourceSpec: bfile('bootstrap-assetReserve-upgrade.js'),
       },
       zoe: {
-        sourceSpec: await importMetaResolve(
-          '@agoric/vats/src/vat-zoe.js',
-          import.meta.url,
-        ).then(href => new URL(href).pathname),
+        sourceSpec: resolvePathname('@agoric/vats/src/vat-zoe.js'),
       },
     },
     bundles: {
       zcf: {
-        sourceSpec: await importMetaResolve(
-          '@agoric/zoe/src/contractFacet/vatRoot.js',
-          import.meta.url,
-        ).then(href => new URL(href).pathname),
+        sourceSpec: resolvePathname('@agoric/zoe/src/contractFacet/vatRoot.js'),
       },
       committee: {
-        sourceSpec: await importMetaResolve(
-          '@agoric/governance/src/committee.js',
-          import.meta.url,
-        ).then(href => new URL(href).pathname),
+        sourceSpec: resolvePathname('@agoric/governance/src/committee.js'),
       },
       puppetContractGovernor: {
-        sourceSpec: await importMetaResolve(
+        sourceSpec: resolvePathname(
           '@agoric/governance/tools/puppetContractGovernor.js',
-          import.meta.url,
-        ).then(href => new URL(href).pathname),
+        ),
       },
       [arV1BundleName]: {
-        sourceSpec: await importMetaResolve(
+        sourceSpec: resolvePathname(
           '@agoric/inter-protocol/src/reserve/assetReserve.js',
-          import.meta.url,
-        ).then(href => new URL(href).pathname),
+        ),
       },
     },
   };

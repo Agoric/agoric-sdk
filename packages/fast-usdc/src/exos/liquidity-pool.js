@@ -1,8 +1,9 @@
-import { AmountMath, AmountShape } from '@agoric/ertp';
+import { AmountMath, AmountShape, RatioShape } from '@agoric/ertp';
 import {
   makeRecorderTopic,
+  RecorderKitShape,
   TopicsRecordShape,
-} from '@agoric/zoe/src/contractSupport/topics.js';
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { M } from '@endo/patterns';
 import { Fail, q } from '@endo/errors';
@@ -47,6 +48,22 @@ const { add, isGTE, makeEmpty } = AmountMath;
  *  ContractFee: Payment<'nat'>;
  * }} RepayPaymentKWR
  */
+
+export const stateShape = harden({
+  encumberedBalance: AmountShape,
+  feeSeat: M.remotable(),
+  poolStats: M.record(),
+  poolMetricsRecorderKit: RecorderKitShape,
+  poolSeat: M.remotable(),
+  PoolShares: M.remotable(),
+  proposalShapes: {
+    deposit: M.pattern(),
+    withdraw: M.pattern(),
+    withdrawFees: M.pattern(),
+  },
+  shareMint: M.remotable(),
+  shareWorth: RatioShape,
+});
 
 /**
  * @param {Zone} zone
@@ -175,7 +192,9 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
           zcf.atomicRearrange(
             harden([[borrowSeat, repaySeat, { USDC: amount }, returnAmounts]]),
           );
-          return this.facets.repayer.repay(repaySeat, returnAmounts);
+          this.facets.repayer.repay(repaySeat, returnAmounts);
+          borrowSeat.exit();
+          repaySeat.exit();
         },
       },
       repayer: {
@@ -384,6 +403,7 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
       finish: ({ facets: { external } }) => {
         void external.publishPoolMetrics();
       },
+      stateShape,
     },
   );
 };

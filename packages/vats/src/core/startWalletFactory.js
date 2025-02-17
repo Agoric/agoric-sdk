@@ -12,6 +12,10 @@ import {
   slotToBoardRemote,
 } from '../../tools/board-utils.js';
 
+/**
+ * @import {EReturn} from '@endo/far';
+ */
+
 const trace = makeTracer('StartWF');
 
 /**
@@ -21,7 +25,7 @@ const trace = makeTracer('StartWF');
  * >} inst
  *
  *
- * @typedef {Awaited<ReturnType<typeof startFactoryInstance>>} WalletFactoryStartResult
+ * @typedef {EReturn<typeof startFactoryInstance>} WalletFactoryStartResult
  */
 // eslint-disable-next-line no-unused-vars
 const startFactoryInstance = (zoe, inst) => E(zoe).startInstance(inst);

@@ -13,11 +13,6 @@ __ZCFSeat.exit() Flow:__
 
 ![ZCFSeat Exit Flow](./zcf-seat-exit-flow.png)
 
-__ZCF.reallocate() Flow:__
-
-![ZCF Reallocate Flow](./zcf-reallocate-flow.png)
-
-
 ## UserSeat 
 
 The `UserSeat` is what is returned when a user calls
@@ -67,12 +62,7 @@ The type of the ZCFSeat is:
  * @property {() => ProposalRecord} getProposal
  * @property {ZCFGetAmountAllocated} getAmountAllocated
  * @property {() => Allocation} getCurrentAllocation
- * @property {() => Allocation} getStagedAllocation
- * @property {() => boolean} hasStagedAllocation
  * @property {(newAllocation: Allocation) => boolean} isOfferSafe
- * @property {(amountKeywordRecord: AmountKeywordRecord) => AmountKeywordRecord} incrementBy
- * @property {(amountKeywordRecord: AmountKeywordRecord) => AmountKeywordRecord} decrementBy
- * @property {() => void} clear
  */
  ```
 

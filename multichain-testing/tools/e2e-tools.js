@@ -23,7 +23,8 @@ import { makeTracer } from '@agoric/internal';
 const trace = makeTracer('E2ET');
 
 // The default of 6 retries was failing.
-const SMART_WALLET_PROVISION_RETRIES = 15;
+// XXX also tried 15, 30. There's probably something deeper to fix.
+const SMART_WALLET_PROVISION_RETRIES = 100;
 
 const BLD = '000000ubld';
 
@@ -65,25 +66,29 @@ const makeBlockTool = ({ rpc, delay }) => {
     }
   };
 
-  let last;
-  const waitForBlock = async (times = 1, info = {}) => {
+  /**
+   * @param {number} [advance] number of blocks to wait for
+   * @param {object} [info] add to logging
+   * @returns {Promise<void>}
+   */
+  const waitForBlock = async (advance = 1, info = {}) => {
     await null;
-    for (let time = 0; time < times; time += 1) {
-      for (;;) {
-        const cur = await waitForBootstrap(2000, { ...info, last });
+    const startHeight = await waitForBootstrap();
+    for (
+      let latestHeight = startHeight;
+      latestHeight < startHeight + advance;
 
-        if (cur !== last) {
-          last = cur;
-          break;
-        }
-
-        await delay(1000, info);
-      }
-      time += 1;
+    ) {
+      // Give some time for a new block
+      await delay(1000, { ...info, latestHeight });
+      latestHeight = await waitForBootstrap(2000, {
+        ...info,
+        startHeight,
+      });
     }
   };
 
-  return { waitForBootstrap, waitForBlock };
+  return { waitForBlock };
 };
 /** @typedef {ReturnType<makeBlockTool>} BlockTool */
 
@@ -109,10 +114,11 @@ const installBundle = async (fullPath, opts) => {
   // };
   // const updates = follow('bundles', { delay: explainDelay });
   // await updates.next();
-  const tx = await agd.tx(
-    ['swingset', 'install-bundle', `@${fullPath}`, '--gas', 'auto'],
-    { from, chainId, yes: true },
-  );
+  const tx = await agd.tx(['swingset', 'install-bundle', `@${fullPath}`], {
+    from,
+    chainId,
+    yes: true,
+  });
   assert(tx);
 
   progress({ id, installTx: tx.txhash, height: tx.height });
@@ -157,6 +163,7 @@ export const provisionSmartWallet = async (
     retryUntilCondition,
   },
 ) => {
+  trace('provisionSmartWallet', address);
   // TODO: skip this query if balances is {}
   const vbankEntries = await q.queryData('published.agoricNames.vbankAsset');
   const byName = Object.fromEntries(
@@ -169,6 +176,9 @@ export const provisionSmartWallet = async (
   progress({ send: balances, to: address });
 
   /**
+   * Submit the `bank send` and wait for the next block.
+   * (Clients have an obligation not to submit >1 tx/block.)
+   *
    * @param {string} denom
    * @param {bigint} value
    */
@@ -183,7 +193,7 @@ export const provisionSmartWallet = async (
       from: whale,
       yes: true,
     });
-    await blockTool.waitForBlock(1, { step: 'bank send' });
+    await blockTool.waitForBlock(1, { address, step: 'bank send' });
   };
 
   for await (const [name, qty] of Object.entries(balances)) {
@@ -203,12 +213,12 @@ export const provisionSmartWallet = async (
     { chainId, from: address, yes: true },
   );
 
+  trace('waiting for wallet to appear in vstorage', address);
   const info = await retryUntilCondition(
     () => q.queryData(`published.wallet.${address}.current`),
     result => !!result,
     `wallet in vstorage ${address}`,
     {
-      log: () => {}, // suppress logs as this is already noisy
       maxRetries: SMART_WALLET_PROVISION_RETRIES,
     },
   );
@@ -235,7 +245,7 @@ export const provisionSmartWallet = async (
     /** @type {AsyncGenerator<UpdateRecord, void, void>} */
     const updates = q.follow(`published.wallet.${address}`, { delay });
     const txInfo = await sendAction({ method: 'executeOffer', offer });
-    console.debug('spendAction', txInfo);
+    trace('spendAction', txInfo);
     for await (const update of updates) {
       trace('update', address, update);
       if (update.updated !== 'offerStatus' || update.status.id !== offer.id) {
@@ -481,7 +491,7 @@ export const makeE2ETools = async (
     if (typeof info === 'object' && Object.keys(info).length > 0) {
       // XXX normally we have the caller pass in the log function
       // later, but the way blockTool is factored, we have to supply it early.
-      trace({ ...info, delay: ms / 1000 }, '...');
+      trace('delay', { ...info, delay: ms / 1000 }, '...');
     }
     return delay(ms);
   };
@@ -620,7 +630,7 @@ export const seatLike = updates => {
         if ('result' in update.status) sync.result.resolve(result);
         if ('payouts' in update.status && payouts) {
           sync.payouts.resolve(payouts);
-          console.debug('paid out', update.status.id);
+          trace('paid out', update.status.id);
           return;
         }
       }

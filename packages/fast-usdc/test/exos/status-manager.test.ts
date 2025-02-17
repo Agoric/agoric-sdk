@@ -1,25 +1,30 @@
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import type { EReturn } from '@endo/far';
 import { PendingTxStatus } from '../../src/constants.js';
 import {
   prepareStatusManager,
+  stateShape,
   type StatusManager,
 } from '../../src/exos/status-manager.js';
-import { commonSetup, provideDurableZone } from '../supports.js';
-import { MockCctpTxEvidences } from '../fixtures.js';
 import type { CctpTxEvidence } from '../../src/types.js';
+import { MockCctpTxEvidences } from '../fixtures.js';
+import { commonSetup, provideDurableZone } from '../supports.js';
 
-type Common = Awaited<ReturnType<typeof commonSetup>>;
+type Common = EReturn<typeof commonSetup>;
 type TestContext = {
   statusManager: StatusManager;
   storage: Common['bootstrap']['storage'];
 };
 
 const test = anyTest as TestFn<TestContext>;
+
+test('stateShape', t => {
+  t.snapshot(stateShape);
+});
 
 test.beforeEach(async t => {
   const common = await commonSetup(t);

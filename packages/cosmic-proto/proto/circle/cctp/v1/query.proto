@@ -1,0 +1,334 @@
+// Copyright 2024 Circle Internet Group, Inc.  All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package circle.cctp.v1;
+
+import "circle/cctp/v1/attester.proto";
+import "circle/cctp/v1/burning_and_minting_paused.proto";
+import "circle/cctp/v1/max_message_body_size.proto";
+import "circle/cctp/v1/nonce.proto";
+import "circle/cctp/v1/per_message_burn_limit.proto";
+import "circle/cctp/v1/remote_token_messenger.proto";
+import "circle/cctp/v1/sending_and_receiving_messages_paused.proto";
+import "circle/cctp/v1/signature_threshold.proto";
+import "circle/cctp/v1/token_pair.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+
+option go_package = "github.com/circlefin/noble-cctp/x/cctp/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  rpc Roles(QueryRolesRequest) returns (QueryRolesResponse) {
+    option (google.api.http).get = "/circle/cctp/v1/roles";
+  }
+
+  // Queries an Attester by index
+  rpc Attester(QueryGetAttesterRequest) returns (QueryGetAttesterResponse) {
+    option (google.api.http).get = "/circle/cctp/v1/attesters/{attester}";
+  }
+  // Queries a list of Attesters
+  rpc Attesters(QueryAllAttestersRequest) returns (QueryAllAttestersResponse) {
+    option (google.api.http).get = "/circle/cctp/v1/attesters";
+  }
+  // Queries a PerMessageBurnLimit by index
+  rpc PerMessageBurnLimit(QueryGetPerMessageBurnLimitRequest) returns (QueryGetPerMessageBurnLimitResponse) {
+    option (google.api.http).get = "/circle/cctp/v1/per_message_burn_limits/{denom}";
+  }
+  // Queries a list of PerMessageBurnLimits
+  rpc PerMessageBurnLimits(QueryAllPerMessageBurnLimitsRequest) returns (QueryAllPerMessageBurnLimitsResponse) {
+    option (google.api.http).get = "/circle/cctp/v1/per_message_burn_limits";
+  }
+  // Queries BurningAndMintingPaused
+  rpc BurningAndMintingPaused(QueryGetBurningAndMintingPausedRequest) returns (QueryGetBurningAndMintingPausedResponse) {
+    option (google.api.http).get = "/circle/cctp/v1/burning_and_minting_paused";
+  }
+  // Queries SendingAndReceivingPaused
+  rpc SendingAndReceivingMessagesPaused(QueryGetSendingAndReceivingMessagesPausedRequest) returns (QueryGetSendingAndReceivingMessagesPausedResponse) {
+    option (google.api.http).get = "/circle/cctp/v1/sending_and_receiving_messages_paused";
+  }
+  // Queries the MaxMessageBodySize
+  rpc MaxMessageBodySize(QueryGetMaxMessageBodySizeRequest) returns (QueryGetMaxMessageBodySizeResponse) {
+    option (google.api.http).get = "/circle/cctp/v1/max_message_body_size";
+  }
+  // Queries the NextAvailableNonce
+  rpc NextAvailableNonce(QueryGetNextAvailableNonceRequest) returns (QueryGetNextAvailableNonceResponse) {
+    option (google.api.http).get = "/circle/cctp/v1/next_available_nonce";
+  }
+  // Queries the SignatureThreshold
+  rpc SignatureThreshold(QueryGetSignatureThresholdRequest) returns (QueryGetSignatureThresholdResponse) {
+    option (google.api.http).get = "/circle/cctp/v1/signature_threshold";
+  }
+  // Queries a TokenPair by index
+  rpc TokenPair(QueryGetTokenPairRequest) returns (QueryGetTokenPairResponse) {
+    option (google.api.http).get = "/circle/cctp/v1/token_pairs/{remote_domain}/{remote_token}";
+  }
+  // Queries a list of TokenPair
+  rpc TokenPairs(QueryAllTokenPairsRequest) returns (QueryAllTokenPairsResponse) {
+    option (google.api.http).get = "/circle/cctp/v1/token_pairs";
+  }
+  // Queries a UsedNonce by index
+  rpc UsedNonce(QueryGetUsedNonceRequest) returns (QueryGetUsedNonceResponse) {
+    option (google.api.http).get = "/circle/cctp/v1/used_nonces/{source_domain}/{nonce}";
+  }
+  // Queries a list of UsedNonces
+  rpc UsedNonces(QueryAllUsedNoncesRequest) returns (QueryAllUsedNoncesResponse) {
+    option (google.api.http).get = "/circle/cctp/v1/used_nonces";
+  }
+  // Query the RemoteTokenMessenger of a specific domain.
+  rpc RemoteTokenMessenger(QueryRemoteTokenMessengerRequest) returns (QueryRemoteTokenMessengerResponse) {
+    option (google.api.http).get = "/circle/cctp/v1/remote_token_messengers/{domain_id}";
+  }
+  // Query all RemoteTokenMessenger's.
+  rpc RemoteTokenMessengers(QueryRemoteTokenMessengersRequest) returns (QueryRemoteTokenMessengersResponse) {
+    option (google.api.http).get = "/circle/cctp/v1/remote_token_messengers";
+  }
+
+  rpc BurnMessageVersion(QueryBurnMessageVersionRequest) returns (QueryBurnMessageVersionResponse) {
+    option (google.api.http).get = "/circle/cctp/v1/burn_message_version";
+  }
+
+  rpc LocalMessageVersion(QueryLocalMessageVersionRequest) returns (QueryLocalMessageVersionResponse) {
+    option (google.api.http).get = "/circle/cctp/v1/local_message_version";
+  }
+
+  rpc LocalDomain(QueryLocalDomainRequest) returns (QueryLocalDomainResponse) {
+    option (google.api.http).get = "/circle/cctp/v1/local_domain";
+  }
+}
+
+// QueryRolesRequest is the request type for the Query/Roles RPC method.
+message QueryRolesRequest {}
+
+// QueryRolesResponse is the response type for the Query/Roles RPC method.
+message QueryRolesResponse {
+  string owner = 1;
+  string attester_manager = 2;
+  string pauser = 3;
+  string token_controller = 4;
+}
+
+// QueryAttestersRequest is the request type for the Query/Attester RPC method.
+message QueryGetAttesterRequest {
+  string attester = 1;
+}
+
+// QueryAttestersResponse is the response type for the Query/Attester RPC
+// method.
+message QueryGetAttesterResponse {
+  Attester attester = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryAllAttestersRequest is the request type for the Query/Attesters RPC
+// method.
+message QueryAllAttestersRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+// QueryAllAttestersResponse is the response type for the Query/Attesters RPC
+// method.
+message QueryAllAttestersResponse {
+  repeated Attester attesters = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryPerMessageBurnLimitRequest is the request type for the
+// Query/PerMessageBurnLimit RPC method.
+message QueryGetPerMessageBurnLimitRequest {
+  string denom = 1;
+}
+
+// QueryPerMessageBurnLimitResponse is the response type for the
+// Query/PerMessageBurnLimit RPC method.
+message QueryGetPerMessageBurnLimitResponse {
+  PerMessageBurnLimit burn_limit = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryAllPerMessageBurnLimitsRequest is the response type for the
+// Query/PerMessageBurnLimit RPC method.
+message QueryAllPerMessageBurnLimitsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+// QueryAllPerMessageBurnLimitsRequest is the response type for the
+// Query/PerMessageBurnLimit RPC method.
+message QueryAllPerMessageBurnLimitsResponse {
+  repeated PerMessageBurnLimit burn_limits = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryBurningAndMintingPausedRequest is the request type for the
+// Query/BurningAndMintingPaused RPC method.
+message QueryGetBurningAndMintingPausedRequest {}
+
+// QueryBurningAndMintingPausedResponse is the response type for the
+// Query/BurningAndMintingPaused RPC method.
+message QueryGetBurningAndMintingPausedResponse {
+  BurningAndMintingPaused paused = 1 [(gogoproto.nullable) = false];
+}
+
+// QuerySendingAndReceivingPausedRequest is the request type for the
+// Query/SendingAndReceivingPaused RPC method.
+message QueryGetSendingAndReceivingMessagesPausedRequest {}
+
+// QuerySendingAndReceivingPausedResponse is the response type for the
+// Query/SendingAndReceivingPaused RPC method.
+message QueryGetSendingAndReceivingMessagesPausedResponse {
+  SendingAndReceivingMessagesPaused paused = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryMaxMessageBodySizeRequest is the request type for the
+// Query/MaxMessageBodySize RPC method.
+message QueryGetMaxMessageBodySizeRequest {}
+
+// QueryMaxMessageBodySizeResponse is the response type for the
+// Query/MaxMessageBodySize RPC method.
+message QueryGetMaxMessageBodySizeResponse {
+  MaxMessageBodySize amount = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryGetNextAvailableNonceRequest is the request type for the
+// Query/NextAvailableNonce RPC method.
+message QueryGetNextAvailableNonceRequest {}
+
+// Query QueryGetNextAvailableNonceResponse is the response type for the
+// Query/NextAvailableNonce RPC method.
+message QueryGetNextAvailableNonceResponse {
+  Nonce nonce = 1 [(gogoproto.nullable) = false];
+}
+
+// QuerySignatureThresholdRequest is the request type for the
+// Query/SignatureThreshold RPC method.
+message QueryGetSignatureThresholdRequest {}
+
+// QuerySignatureThresholdResponse is the response type for the
+// Query/SignatureThreshold RPC method.
+message QueryGetSignatureThresholdResponse {
+  SignatureThreshold amount = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryGetTokenPairRequest is the request type for the Query/TokenPair RPC
+// method.
+message QueryGetTokenPairRequest {
+  uint32 remote_domain = 1;
+  string remote_token = 2;
+}
+
+// QueryGetTokenPairResponse is the response type for the Query/TokenPair RPC
+// method.
+message QueryGetTokenPairResponse {
+  TokenPair pair = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryAllTokenPairsRequest is the request type for the Query/TokenPairs RPC
+// method.
+message QueryAllTokenPairsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+// QueryAllTokenPairsResponse is the response type for the Query/TokenPairs RPC
+// method.
+message QueryAllTokenPairsResponse {
+  repeated TokenPair token_pairs = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryGetUsedNonceRequest is the request type for the Query/UsedNonce RPC
+// method.
+message QueryGetUsedNonceRequest {
+  uint32 source_domain = 1;
+  uint64 nonce = 2;
+}
+
+// QueryGetUsedNonceResponse is the response type for the Query/UsedNonce RPC
+// method.
+message QueryGetUsedNonceResponse {
+  Nonce nonce = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryAllUsedNonceRequest is the request type for the Query/UsedNonces RPC
+// method.
+message QueryAllUsedNoncesRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+// QueryAllUsedNonceResponse is the response type for the Query/UsedNonces RPC
+// method.
+message QueryAllUsedNoncesResponse {
+  repeated Nonce used_nonces = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryRemoteTokenMessengerRequest is the request type for the
+// Query/RemoteTokenMessenger RPC method.
+message QueryRemoteTokenMessengerRequest {
+  uint32 domain_id = 1;
+}
+
+// QueryRemoteTokenMessengerResponse is the response type for the
+// Query/RemoteTokenMessenger RPC method.
+message QueryRemoteTokenMessengerResponse {
+  RemoteTokenMessenger remote_token_messenger = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryRemoteTokenMessengersRequest is the request type for the
+// Query/RemoteTokenMessengers RPC method.
+message QueryRemoteTokenMessengersRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+// QueryRemoteTokenMessengersResponse is the response type for the
+// Query/RemoteTokenMessengers RPC method.
+message QueryRemoteTokenMessengersResponse {
+  repeated RemoteTokenMessenger remote_token_messengers = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryBurnMessageVersionRequest is the request type for the
+// Query/BurnMessageVersion RPC method.
+message QueryBurnMessageVersionRequest {}
+
+// QueryBurnMessageVersionResponse is the response type for the
+// Query/BurnMessageVersion RPC method.
+message QueryBurnMessageVersionResponse {
+  // version is the burn message version of the local domain.
+  uint32 version = 1;
+}
+
+// QueryLocalMessageVersionRequest is the request type for the
+// Query/LocalMessageVersion RPC method.
+message QueryLocalMessageVersionRequest {}
+
+// QueryLocalMessageVersionResponse is the response type for the
+// Query/LocalMessageVersion RPC method.
+message QueryLocalMessageVersionResponse {
+  // version is the message version of the local domain.
+  uint32 version = 1;
+}
+
+// QueryLocalDomainRequest is the request type for the Query/LocalDomain RPC
+// method.
+message QueryLocalDomainRequest {}
+
+// QueryLocalDomainResponse is the response type for the Query/LocalDomain RPC
+// method.
+message QueryLocalDomainResponse {
+  // domain_id is the id of the local domain.
+  uint32 domain_id = 1;
+}

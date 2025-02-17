@@ -9,6 +9,10 @@ import {
 import { makePromiseSpace } from './promise-space.js';
 
 /**
+ * @import {EReturn} from '@endo/far';
+ */
+
+/**
  * @typedef {true
  *   | string
  *   | { [key: string]: BootstrapManifestPermit | undefined }} BootstrapManifestPermit
@@ -217,4 +221,4 @@ export const makeBootstrap = (
     //#endregion
   });
 };
-/** @typedef {Awaited<ReturnType<typeof makeBootstrap>>} BootstrapRootObject */
+/** @typedef {EReturn<typeof makeBootstrap>} BootstrapRootObject */

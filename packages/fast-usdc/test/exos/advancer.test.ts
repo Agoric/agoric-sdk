@@ -5,28 +5,30 @@ import {
   encodeAddressHook,
 } from '@agoric/cosmic-proto/address-hooks.js';
 import type { NatAmount } from '@agoric/ertp';
+import { makeTracer } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { ChainAddressShape, denomHash } from '@agoric/orchestration';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { type ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { q } from '@endo/errors';
+import type { EReturn } from '@endo/far';
 import { Far } from '@endo/pass-style';
-import type { TestFn } from 'ava';
-import { makeTracer } from '@agoric/internal';
 import { M, mustMatch } from '@endo/patterns';
+import type { TestFn } from 'ava';
 import { PendingTxStatus } from '../../src/constants.js';
-import { prepareAdvancer } from '../../src/exos/advancer.js';
+import { prepareAdvancer, stateShape } from '../../src/exos/advancer.js';
 import {
   makeAdvanceDetailsShape,
   type SettlerKit,
 } from '../../src/exos/settler.js';
 import { prepareStatusManager } from '../../src/exos/status-manager.js';
+import { CctpTxEvidenceShape } from '../../src/type-guards.js';
 import type { LiquidityPoolKit } from '../../src/types.js';
 import { makeFeeTools } from '../../src/utils/fees.js';
 import {
+  intermediateRecipient,
   MockCctpTxEvidences,
   settlementAddress,
-  intermediateRecipient,
 } from '../fixtures.js';
 import {
   makeTestFeeConfig,
@@ -34,7 +36,6 @@ import {
   prepareMockOrchAccounts,
 } from '../mocks.js';
 import { commonSetup } from '../supports.js';
-import { CctpTxEvidenceShape } from '../../src/type-guards.js';
 
 const trace = makeTracer('AdvancerTest', false);
 
@@ -44,14 +45,16 @@ const LOCAL_DENOM = `ibc/${denomHash({
     fetchedChainInfo.agoric.connections['noble-1'].transferChannel.channelId,
 })}`;
 
-type CommonSetup = Awaited<ReturnType<typeof commonSetup>>;
+type CommonSetup = EReturn<typeof commonSetup>;
+
+const theExit = harden(() => {}); // for ava comparison
 
 const createTestExtensions = (t, common: CommonSetup) => {
   const {
-    bootstrap: { rootZone, vowTools },
     facadeServices: { chainHub },
     brands: { usdc },
     commonPrivateArgs: { storageNode },
+    utils: { contractZone, vowTools },
   } = common;
 
   const { log, inspectLogs } = makeTestLogger(t.log);
@@ -61,43 +64,54 @@ const createTestExtensions = (t, common: CommonSetup) => {
   chainHub.registerChain('osmosis', fetchedChainInfo.osmosis);
 
   const statusManager = prepareStatusManager(
-    rootZone.subZone('status-manager'),
+    contractZone.subZone('status-manager'),
     storageNode.makeChildNode('txns'),
     { marshaller: common.commonPrivateArgs.marshaller },
   );
 
-  const mockAccounts = prepareMockOrchAccounts(rootZone.subZone('accounts'), {
-    vowTools,
-    log: t.log,
-    usdc,
-  });
+  const mockAccounts = prepareMockOrchAccounts(
+    contractZone.subZone('accounts'),
+    {
+      vowTools,
+      log: t.log,
+      usdc,
+    },
+  );
 
   const mockZCF = Far('MockZCF', {
-    makeEmptySeatKit: () => ({ zcfSeat: Far('MockZCFSeat', {}) }),
+    makeEmptySeatKit: () => ({
+      zcfSeat: Far('MockZCFSeat', { exit: theExit }),
+    }),
   });
 
   const localTransferVK = vowTools.makeVowKit<void>();
-  const resolveLocalTransferV = () => {
-    // pretend funds move from tmpSeat to poolAccount
-    localTransferVK.resolver.resolve();
-  };
-  const rejectLocalTransfeferV = () => {
+  // pretend funds move from tmpSeat to poolAccount
+  const resolveLocalTransferV = () => localTransferVK.resolver.resolve();
+  const rejectLocalTransfeferV = () =>
     localTransferVK.resolver.reject(
       new Error('One or more deposits failed: simulated error'),
     );
-  };
+  const withdrawToSeatVK = vowTools.makeVowKit<void>();
+  const resolveWithdrawToSeatV = () => withdrawToSeatVK.resolver.resolve();
+  const rejectWithdrawToSeatV = () =>
+    withdrawToSeatVK.resolver.reject(
+      new Error('One or more deposits failed: simulated error'),
+    );
   const mockZoeTools = Far('MockZoeTools', {
     localTransfer(...args: Parameters<ZoeTools['localTransfer']>) {
       trace('ZoeTools.localTransfer called with', args);
       return localTransferVK.vow;
     },
+    withdrawToSeat(...args: Parameters<ZoeTools['withdrawToSeat']>) {
+      trace('ZoeTools.withdrawToSeat called with', args);
+      return withdrawToSeatVK.vow;
+    },
   });
 
   const feeConfig = makeTestFeeConfig(usdc);
-  const makeAdvancer = prepareAdvancer(rootZone.subZone('advancer'), {
+  const makeAdvancer = prepareAdvancer(contractZone.subZone('advancer'), {
     chainHub,
     feeConfig,
-    localTransfer: mockZoeTools.localTransfer,
     log,
     statusManager,
     usdc: harden({
@@ -107,9 +121,10 @@ const createTestExtensions = (t, common: CommonSetup) => {
     vowTools,
     // @ts-expect-error mocked zcf
     zcf: mockZCF,
+    zoeTools: mockZoeTools,
   });
 
-  type NotifyArgs = Parameters<SettlerKit['notify']['notifyAdvancingResult']>;
+  type NotifyArgs = Parameters<SettlerKit['notifier']['notifyAdvancingResult']>;
   const notifyAdvancingResultCalls: NotifyArgs[] = [];
   const mockNotifyF = Far('Settler Notify Facet', {
     notifyAdvancingResult: (...args: NotifyArgs) => {
@@ -142,8 +157,8 @@ const createTestExtensions = (t, common: CommonSetup) => {
   });
 
   const advancer = makeAdvancer({
-    borrowerFacet: mockBorrowerF,
-    notifyFacet: mockNotifyF,
+    borrower: mockBorrowerF,
+    notifier: mockNotifyF,
     poolAccount: mockAccounts.mockPoolAccount.account,
     intermediateRecipient,
     settlementAddress,
@@ -165,6 +180,8 @@ const createTestExtensions = (t, common: CommonSetup) => {
       mockNotifyF,
       resolveLocalTransferV,
       rejectLocalTransfeferV,
+      resolveWithdrawToSeatV,
+      rejectWithdrawToSeatV,
     },
     services: {
       advancer,
@@ -187,6 +204,10 @@ test.beforeEach(async t => {
     ...common,
     extensions: createTestExtensions(t, common),
   };
+});
+
+test('stateShape', t => {
+  t.snapshot(stateShape);
 });
 
 test('updates status to ADVANCING in happy path', async t => {
@@ -276,8 +297,8 @@ test('updates status to OBSERVED on insufficient pool funds', async t => {
 
   // make a new advancer that intentionally throws
   const advancer = makeAdvancer({
-    borrowerFacet: mockBorrowerFacet,
-    notifyFacet: mockNotifyF,
+    borrower: mockBorrowerFacet,
+    notifier: mockNotifyF,
     poolAccount: mockPoolAccount.account,
     intermediateRecipient,
     settlementAddress,
@@ -332,13 +353,13 @@ test('updates status to OBSERVED if makeChainAddress fails', async t => {
   ]);
 });
 
-test('calls notifyAdvancingResult (AdvancedFailed) on failed transfer', async t => {
+test('recovery behavior if Advance Fails (ADVANCE_FAILED)', async t => {
   const {
     bootstrap: { storage },
     extensions: {
       services: { advancer, feeTools },
-      helpers: { inspectLogs, inspectNotifyCalls },
-      mocks: { mockPoolAccount, resolveLocalTransferV },
+      helpers: { inspectBorrowerFacetCalls, inspectLogs, inspectNotifyCalls },
+      mocks: { mockPoolAccount, resolveLocalTransferV, resolveWithdrawToSeatV },
     },
     brands: { usdc },
   } = t.context;
@@ -380,6 +401,132 @@ test('calls notifyAdvancingResult (AdvancedFailed) on failed transfer', async t 
         },
       },
       false, // this indicates transfer failed
+    ],
+  ]);
+
+  // simulate withdrawing `advanceAmount` from PoolAccount to tmpReturnSeat
+  resolveWithdrawToSeatV();
+  await eventLoopIteration();
+  const { returnToPool } = inspectBorrowerFacetCalls();
+  t.is(
+    returnToPool.length,
+    1,
+    'returnToPool is called after ibc transfer fails',
+  );
+  t.deepEqual(
+    returnToPool[0],
+    [
+      Far('MockZCFSeat', { exit: theExit }),
+      usdc.make(293999999n), // 300000000n net of fees
+    ],
+    'same amount borrowed is returned to LP',
+  );
+});
+
+// unexpected, terminal state. test that log('🚨') is called
+test('logs error if withdrawToSeat fails during AdvanceFailed recovery', async t => {
+  const {
+    extensions: {
+      services: { advancer },
+      helpers: { inspectLogs, inspectNotifyCalls },
+      mocks: { mockPoolAccount, resolveLocalTransferV, rejectWithdrawToSeatV },
+    },
+    brands: { usdc },
+  } = t.context;
+
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  void advancer.handleTransactionEvent({ evidence, risk: {} });
+
+  // pretend borrow succeeded and funds were depositing to the LCA
+  resolveLocalTransferV();
+  // pretend the IBC Transfer failed
+  mockPoolAccount.transferVResolver.reject(new Error('transfer failed'));
+  // pretend withdrawToSeat failed
+  rejectWithdrawToSeatV();
+  await eventLoopIteration();
+
+  t.deepEqual(inspectLogs(), [
+    ['decoded EUD: osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men'],
+    ['Advance failed', Error('transfer failed')],
+    [
+      '🚨 withdraw {"brand":"[Alleged: USDC brand]","value":"[146999999n]"} from "poolAccount" to return to pool failed',
+      Error('One or more deposits failed: simulated error'),
+    ],
+  ]);
+
+  // ensure Settler is notified of failed advance
+  t.like(inspectNotifyCalls(), [
+    [
+      {
+        txHash: evidence.txHash,
+        forwardingAddress: evidence.tx.forwardingAddress,
+      },
+      false, // indicates transfer failed
+    ],
+  ]);
+});
+
+test('logs error if returnToPool fails during AdvanceFailed recovery', async t => {
+  const {
+    brands: { usdc },
+    extensions: {
+      services: { makeAdvancer },
+      helpers: { inspectLogs, inspectNotifyCalls },
+      mocks: {
+        mockPoolAccount,
+        mockNotifyF,
+        resolveLocalTransferV,
+        resolveWithdrawToSeatV,
+      },
+    },
+  } = t.context;
+
+  const mockBorrowerFacet = Far('LiquidityPool Borrow Facet', {
+    borrow: (seat: ZCFSeat, amount: NatAmount) => {
+      // note: will not be tracked by `inspectBorrowerFacetCalls`
+    },
+    returnToPool: (seat: ZCFSeat, amount: NatAmount) => {
+      throw new Error('returnToPool failed');
+    },
+  });
+
+  // make a new advancer that intentionally throws during returnToPool
+  const advancer = makeAdvancer({
+    borrower: mockBorrowerFacet,
+    notifier: mockNotifyF,
+    poolAccount: mockPoolAccount.account,
+    intermediateRecipient,
+    settlementAddress,
+  });
+
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  void advancer.handleTransactionEvent({ evidence, risk: {} });
+
+  // pretend borrow succeeded and funds were depositing to the LCA
+  resolveLocalTransferV();
+  // pretend the IBC Transfer failed
+  mockPoolAccount.transferVResolver.reject(new Error('transfer failed'));
+  // pretend withdrawToSeat succeeded
+  resolveWithdrawToSeatV();
+  await eventLoopIteration();
+
+  t.deepEqual(inspectLogs(), [
+    ['decoded EUD: osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men'],
+    ['Advance failed', Error('transfer failed')],
+    [
+      '🚨 return {"brand":"[Alleged: USDC brand]","value":"[146999999n]"} to pool failed. funds remain on "tmpReturnSeat"',
+      Error('returnToPool failed'),
+    ],
+  ]);
+
+  // ensure Settler is notified of failed advance
+  t.like(inspectNotifyCalls(), [
+    [
+      {
+        txHash: evidence.txHash,
+        forwardingAddress: evidence.tx.forwardingAddress,
+      },
+      false, // indicates transfer failed
     ],
   ]);
 });
@@ -543,7 +690,7 @@ test('returns payment to LP if zoeTools.localTransfer fails', async t => {
   const { borrow, returnToPool } = inspectBorrowerFacetCalls();
 
   const expectedArguments = [
-    Far('MockZCFSeat', {}),
+    Far('MockZCFSeat', { exit: theExit }),
     usdc.make(146999999n), // net of fees
   ];
 
@@ -599,8 +746,8 @@ test('alerts if `returnToPool` fallback fails', async t => {
 
   // make a new advancer that intentionally throws during returnToPool
   const advancer = makeAdvancer({
-    borrowerFacet: mockBorrowerFacet,
-    notifyFacet: mockNotifyF,
+    borrower: mockBorrowerFacet,
+    notifier: mockNotifyF,
     poolAccount: mockPoolAccount.account,
     intermediateRecipient,
     settlementAddress,
@@ -691,8 +838,8 @@ test('no status update if `checkMintedEarly` returns true', async t => {
   });
 
   const advancer = makeAdvancer({
-    borrowerFacet: mockBorrowerF,
-    notifyFacet: mockNotifyF,
+    borrower: mockBorrowerF,
+    notifier: mockNotifyF,
     poolAccount: mockPoolAccount.account,
     intermediateRecipient,
     settlementAddress,
@@ -773,8 +920,8 @@ test('notifies of advance failure if bank send fails', async t => {
   const {
     extensions: {
       services: { advancer },
-      helpers: { inspectLogs, inspectNotifyCalls },
-      mocks: { mockPoolAccount, resolveLocalTransferV },
+      helpers: { inspectLogs, inspectBorrowerFacetCalls, inspectNotifyCalls },
+      mocks: { mockPoolAccount, resolveLocalTransferV, resolveWithdrawToSeatV },
     },
     brands: { usdc },
   } = t.context;
@@ -808,4 +955,18 @@ test('notifies of advance failure if bank send fails', async t => {
       false, // indicates send failed
     ],
   ]);
+
+  // verify funds are returned to pool
+  resolveWithdrawToSeatV();
+  await eventLoopIteration();
+  const { returnToPool } = inspectBorrowerFacetCalls();
+  t.is(returnToPool.length, 1, 'returnToPool is called after bank send fails');
+  t.deepEqual(
+    returnToPool[0],
+    [
+      Far('MockZCFSeat', { exit: theExit }),
+      usdc.make(244999999n), // 250000000n net of fees
+    ],
+    'same amount borrowed is returned to LP',
+  );
 });

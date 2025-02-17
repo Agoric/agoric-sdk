@@ -4,6 +4,7 @@ import { makeStargateClient } from './rpc.js';
 import { makeAgoricNames, makeVstorageKit } from './vstorage-kit.js';
 
 /**
+ * @import {EReturn} from '@endo/far';
  * @import {Amount, Brand} from '@agoric/ertp/src/types.js'
  * @import {CurrentWalletRecord, UpdateRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {MinimalNetworkConfig} from './network-config.js';
@@ -110,4 +111,4 @@ export const makeSmartWalletKit = async ({ fetch, delay }, networkConfig) => {
     pollOffer,
   };
 };
-/** @typedef {Awaited<ReturnType<typeof makeSmartWalletKit>>} SmartWalletKit */
+/** @typedef {EReturn<typeof makeSmartWalletKit>} SmartWalletKit */

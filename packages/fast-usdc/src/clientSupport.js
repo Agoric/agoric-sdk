@@ -14,7 +14,7 @@ import { assertAllDefined } from '@agoric/internal';
  * @param {string} opts.offerId
  * @param {bigint} opts.fastLPAmount
  * @param {bigint} opts.usdcAmount
- * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
+ * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec & {proposal: USDCProposalShapes['deposit']}}
  */
 const makeDepositOffer = ({ brand }, { offerId, fastLPAmount, usdcAmount }) => {
   assertAllDefined({ offerId, fastLPAmount, usdcAmount });

@@ -7,6 +7,7 @@
 
 export * from './agoric/bundle.js';
 export * from './amino/bundle.js';
+export * from './circle/bundle.js';
 export * from './cosmos_proto/bundle.js';
 export * from './cosmos/bundle.js';
 export * from './gogoproto/bundle.js';
