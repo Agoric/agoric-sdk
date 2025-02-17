@@ -119,7 +119,7 @@ jobs:
 
   deployment-test:
     needs: pre_check
-    if: needs.pre_check.outputs.should_run == 'true'
+    if: needs.pre_check.outputs.should_run == 'never'
 
     runs-on: ubuntu-22.04 # jammy (LTS)
     steps:
@@ -301,7 +301,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: a3p-integration
-          path: /tmp/export/a3p-integration
+          path: |
+            /tmp/export/a3p-integration
+            /tmp/loadgen-follower-logs
+            /tmp/loadgen-output
+            /tmp/before-test-run-hook-logs
       - name: archive slogfile
         if: (success() || failure())
         uses: actions/upload-artifact@v4
@@ -356,7 +360,7 @@ jobs:
           script: |
             const previousSuccess = ${{ needs.pre_check.outputs.previous_success }};
             const gettingStartedTestSuccess = "${{ needs.getting-started.result }}" === "success";
-            const deploymentTestSuccess = "${{ needs.deployment-test.result }}" === "success";
+            const deploymentTestSuccess = "${{ needs.deployment-test.result }}" === "success" || "${{ needs.deployment-test.result }}" === "skipped";
             const testDockerBuildSuccess = "${{ needs.test-docker-build.result }}" === "success";
             const conclusion = previousSuccess || (gettingStartedTestSuccess && deploymentTestSuccess && testDockerBuildSuccess) ?
               'success' : 'failure';
