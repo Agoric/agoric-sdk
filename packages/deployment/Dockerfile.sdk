@@ -104,6 +104,7 @@ COPY --link scripts scripts
 COPY --from=cosmos-package --link /usr/src/agoric-sdk/golang golang
 COPY --from=xsnap-package --link /usr/src/agoric-sdk/packages/xsnap packages/xsnap
 
+RUN corepack enable
 # XXX until https://github.com/Agoric/agoric-sdk/issues/9043, then just:
 # RUN --mount=type=cache,target=$YARN_CACHE_FOLDER yarn install --frozen-lockfile
 RUN --mount=type=cache,target=$YARN_CACHE_FOLDER bash -c \
