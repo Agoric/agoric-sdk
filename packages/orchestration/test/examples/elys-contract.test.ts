@@ -22,6 +22,10 @@ import type { IBCEvent } from '@agoric/vats';
 import type { ChainAddress } from '../../src/orchestration-api.js';
 import { MsgLiquidStakeResponse } from '../../cosmic-proto/dist/codegen/stride/stakeibc/tx.js';
 import { MsgSendResponse } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
+import type { FeeConfigShape } from '../../src/examples/elys-contract-type-gaurd.js';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
+import { makeIssuerKit } from '@agoric/ertp';
 
 const nodeRequire = createRequire(import.meta.url);
 
@@ -49,6 +53,23 @@ const deposit = async (
   await eventLoopIteration();
 };
 
+const USDC = withAmountUtils(makeIssuerKit('USDC'));
+
+const createFeeTestConfig = (feeCollector): FeeConfigShape => {
+  const feeConfig = {
+    feeCollector,
+    onBoardRate: {
+      nominator: BigInt(20),
+      denominator: BigInt(100),
+    }, // 20%
+    offBoardRate: {
+      nominator: BigInt(10),
+      denominator: BigInt(100),
+    }, // 10%
+  }
+  return feeConfig
+}
+
 test('Failing case: IBC transfer from host to stride chain fails, user receives token at host chain address', async t => {
   const {
     bootstrap: { storage },
@@ -64,12 +85,12 @@ test('Failing case: IBC transfer from host to stride chain fails, user receives 
   t.is(passStyleOf(installation), 'remotable');
 
   const storageNode = await E(storage.rootNode).makeChildNode(contractName);
-
+  const feeConfig = createFeeTestConfig('agoric1feeCollectorAddress');
   const myContract = await E(zoe).startInstance(
     installation,
     undefined,
     {},
-    { ...commonPrivateArgs, storageNode },
+    { ...commonPrivateArgs, storageNode,feeConfig },
   );
   t.notThrows(() =>
     mustMatch(
@@ -108,7 +129,7 @@ test('Failing case: IBC transfer from host to stride chain fails, user receives 
       sender: execAddr,
       sourceChannel: 'channel-5',
       token: {
-        amount: '10',
+        amount: '8', // 20% fee
       },
     },
     'tokens transferred from LOA to COA',
@@ -142,13 +163,13 @@ test('Failing case: Liquid stake on stride fails, user receives token at stride 
   t.is(passStyleOf(installation), 'remotable');
 
   const storageNode = await E(storage.rootNode).makeChildNode(contractName);
-  
+  const feeConfig = createFeeTestConfig('agoric1feeCollectorAddress');
 
   const myContract = await E(zoe).startInstance(
     installation,
     undefined, // issuers
     {}, // terms
-    { ...commonPrivateArgs, storageNode },
+    { ...commonPrivateArgs, storageNode, feeConfig },
   );
   t.notThrows(() =>
     mustMatch(
@@ -187,7 +208,7 @@ test('Failing case: Liquid stake on stride fails, user receives token at stride 
       sender: execAddr,
       sourceChannel: 'channel-5',
       token: {
-        amount: '10',
+        amount: '8',
       },
     },
     'tokens transferred from LOA to COA',
@@ -231,12 +252,13 @@ test('Failing case: IBC transfer of statom from stride to elys chain fails, user
   t.is(passStyleOf(installation), 'remotable');
 
   const storageNode = await E(storage.rootNode).makeChildNode(contractName);
+  const feeConfig = createFeeTestConfig('agoric1feeCollectorAddress');
 
   const myContract = await E(zoe).startInstance(
     installation,
     undefined, // issuers
     {}, // terms
-    { ...commonPrivateArgs, storageNode },
+    { ...commonPrivateArgs, storageNode, feeConfig },
   );
   t.notThrows(() =>
     mustMatch(
@@ -275,7 +297,7 @@ test('Failing case: IBC transfer of statom from stride to elys chain fails, user
       sender: execAddr,
       sourceChannel: 'channel-5',
       token: {
-        amount: '10',
+        amount: '8',
       },
     },
     'tokens transferred from LOA to COA',
@@ -323,13 +345,13 @@ test('Happy Flow: input atom at agoric receives statom on elys', async t => {
   t.is(passStyleOf(installation), 'remotable');
 
   const storageNode = await E(storage.rootNode).makeChildNode(contractName);
-  
+  const feeConfig = createFeeTestConfig('agoric1feeCollectorAddress');
 
   const myContract = await E(zoe).startInstance(
     installation,
     undefined, // issuers
     {}, // terms
-    { ...commonPrivateArgs, storageNode },
+    { ...commonPrivateArgs, storageNode, feeConfig },
   );
   t.notThrows(() =>
     mustMatch(
@@ -368,7 +390,7 @@ test('Happy Flow: input atom at agoric receives statom on elys', async t => {
       sender: execAddr,
       sourceChannel: 'channel-5',
       token: {
-        amount: '10',
+        amount: '8',
       },
     },
     'tokens transferred from LOA to COA',
