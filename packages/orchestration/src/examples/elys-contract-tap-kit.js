@@ -1,5 +1,4 @@
 import { M, mustMatch } from '@endo/patterns';
-import { E } from '@endo/far';
 import { VowShape } from '@agoric/vow';
 import { makeTracer } from '@agoric/internal';
 import { ChainAddressShape } from '../typeGuards.js';
@@ -13,19 +12,17 @@ const trace = makeTracer('StrideStakingTap');
  *   orch: Orchestrator,
  *   ctx: any,
  *   incomingIbcTransferEvent: any,
- *   state: any
+ *   state: any,
  * ) => Promise<void>} TokenMovementAndStrideLSDFlow
  */
 
 /**
  * @import {IBCChannelID, VTransferIBCEvent} from '@agoric/vats';
- * @import {VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
  * @import {TargetApp} from '@agoric/vats/src/bridge-target.js';
  * @import {ChainAddress, OrchestrationAccount, Orchestrator} from '@agoric/orchestration';
- * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
  * @import {TypedPattern} from '@agoric/internal';
- * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
+ * @import {OrchestrationTools} from '../utils/start-helper.js';
  * @import {Passable} from '@endo/pass-style'
  */
 
@@ -103,10 +100,8 @@ const prepareStrideStakingTapKit = (zone, tools) => {
         ),
       }),
       voidWatcher: M.interface('voidWatcher', {
-        nothingDoer: M.call(M.undefined()).returns(
-          M.undefined(),
-        ),
-      })
+        nothingDoer: M.call(M.undefined()).returns(M.undefined()),
+      }),
     },
     // @param {StrideStakingTapState & import('@endo/marshal').Passable} initialState
     /** @param {StrideStakingTapState & Passable} initialState */
@@ -117,48 +112,63 @@ const prepareStrideStakingTapKit = (zone, tools) => {
     {
       tap: {
         /**
-         * @param {VTransferIBCEvent &  Passable} event
+         * @param {VTransferIBCEvent & Passable} event
          */
         receiveUpcall(event) {
           trace('receiveUpcall', event);
-          const {orchestrate,orchestrateAll,vowTools} = tools;
-          const {watch} = vowTools;
+          const { orchestrate, orchestrateAll, vowTools } = tools;
+          const { watch } = vowTools;
 
           const state = this.state;
-          const localAccount = /** @type {OrchestrationAccount<{ chainId: string }> & Passable} */ (this.state.localAccount);
-          const strideICAAccount = /** @type {OrchestrationAccount<{ chainId: string }> & Passable} */ (this.state.strideICAAccount);
-          const elysICAAccount = /** @type {OrchestrationAccount<{ chainId: string }> & Passable} */ (this.state.elysICAAccount);
-          
+          const localAccount =
+            /** @type {OrchestrationAccount<{ chainId: string }> & Passable} */ (
+              this.state.localAccount
+            );
+          const strideICAAccount =
+            /** @type {OrchestrationAccount<{ chainId: string }> & Passable} */ (
+              this.state.strideICAAccount
+            );
+          const elysICAAccount =
+            /** @type {OrchestrationAccount<{ chainId: string }> & Passable} */ (
+              this.state.elysICAAccount
+            );
+
           trace('contractTapKit, calling orchestateAll');
 
           // TODO: create random strings each time
           const durableName = `${event.acknowledgement}+${event.packet.destination_channel}+${event.packet.source_channel}`;
-          const tokenMovementAndStrideLSDFlow = orchestrate(durableName, {}, tokenflows.tokenMovementAndStrideLSDFlow);
+          const tokenMovementAndStrideLSDFlow = orchestrate(
+            durableName,
+            {},
+            tokenflows.tokenMovementAndStrideLSDFlow,
+          );
 
-          return watch(tokenMovementAndStrideLSDFlow(
-            harden(event),
-            localAccount,
-            state.localAccountAddress,
-            strideICAAccount,
-            state.strideICAAddress,
-            elysICAAccount,
-            state.elysICAAddress,
-            state.supportedHostChains,
-            state.elysToAgoricChannel,
-            state.AgoricToElysChannel,
-            state.stDenomOnElysTohostToAgoricChannelMap,
-            state.agoricBech32Prefix,
-            state.strideBech32Prefix,
-            state.elysBech32Prefix,
-            state.feeConfig,
-          ));
+          return watch(
+            tokenMovementAndStrideLSDFlow(
+              harden(event),
+              localAccount,
+              state.localAccountAddress,
+              strideICAAccount,
+              state.strideICAAddress,
+              elysICAAccount,
+              state.elysICAAddress,
+              state.supportedHostChains,
+              state.elysToAgoricChannel,
+              state.AgoricToElysChannel,
+              state.stDenomOnElysTohostToAgoricChannelMap,
+              state.agoricBech32Prefix,
+              state.strideBech32Prefix,
+              state.elysBech32Prefix,
+              state.feeConfig,
+            ),
+          );
         },
       },
       voidWatcher: {
         nothingDoer() {
-         return;
+          return;
         },
-      }
+      },
     },
   );
 };

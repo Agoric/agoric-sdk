@@ -10,13 +10,13 @@ import {
   MsgLiquidStake,
   MsgLiquidStakeResponse,
   MsgRedeemStake,
-} from '../../cosmic-proto/dist/codegen/stride/stakeibc/tx.js';
+} from '@agoric/cosmic-proto/stride/stakeibc/tx.js';
 import { tryDecodeResponse } from '../utils/cosmos.js';
 import { FeeConfigShape } from './elys-contract-type-gaurd.js';
 
 /**
  * @import {Orchestrator, OrchestrationFlow} from '@agoric/orchestration';
- * @import {Coin} from '../../cosmic-proto/dist/codegen/cosmos/base/v1beta1/coin.js';
+ * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  */
 const trace = makeTracer('StrideStakingFlow');
 

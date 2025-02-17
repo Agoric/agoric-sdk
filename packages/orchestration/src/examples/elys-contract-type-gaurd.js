@@ -1,4 +1,3 @@
-import { ChainAddressShape } from '../typeGuards';
 import { M } from '@endo/patterns';
 
 /**
