@@ -28,7 +28,7 @@ import {
   buildQueryPacketString,
   createMockAckMap,
 } from '../tools/ibc-mocks.js';
-import { MsgLiquidStake, MsgLiquidStakeResponse, MsgRedeemStake, MsgRedeemStakeResponse } from '../cosmic-proto/dist/codegen/stride/stakeibc/tx.js';
+import { MsgLiquidStake, MsgLiquidStakeResponse, MsgRedeemStake, MsgRedeemStakeResponse } from '@agoric/cosmic-proto/stride/stakeibc/tx.js';
 
 /**
  * TODO: provide mappings to cosmos error codes (and module specific error codes)
