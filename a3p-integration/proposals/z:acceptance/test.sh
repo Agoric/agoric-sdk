@@ -60,7 +60,7 @@ if ! test -z "$MESSAGE_FILE_PATH"; then
 
   exit_message="$(node "$DIRECTORY_PATH/wait-for-follower.mjs" "^exit code \d+$")"
   echo "follower test result: $exit_message"
-  echo "$exit_message" | grep --extended-regexp --silent  "^exit code 0$"
+  echo "$exit_message" | grep --extended-regexp --silent "^exit code 0$"
 fi
 
 echo ACCEPTANCE TESTING state sync
