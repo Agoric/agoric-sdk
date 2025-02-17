@@ -46,7 +46,7 @@ const deposit = async (
 };
 
 const createFeeTestConfig = (feeCollector): FeeConfigShape => {
-  const feeConfig = {
+  let feeConfig = {
     feeCollector,
     onBoardRate: {
       nominator: BigInt(20),
@@ -59,6 +59,40 @@ const createFeeTestConfig = (feeCollector): FeeConfigShape => {
   };
   return feeConfig;
 };
+
+test('Failing case: Wrong fee config', async t => {
+  const {
+    bootstrap: { storage },
+    commonPrivateArgs,
+    mocks: { transferBridge, ibcBridge },
+    utils: { inspectLocalBridge, inspectDibcBridge, transmitTransferAck },
+  } = await commonSetup(t);
+
+  const { zoe, bundleAndInstall } = await setUpZoeForTest();
+
+  const installation: Installation<StartFn> =
+    await bundleAndInstall(contractFile);
+  t.is(passStyleOf(installation), 'remotable');
+
+  const storageNode = await E(storage.rootNode).makeChildNode(contractName);
+  const allowedChains = ['cosmoshub'];
+
+  let feeConfig = createFeeTestConfig('agoric1feeCollectorAddress');
+  feeConfig.onBoardRate.denominator = BigInt(123);
+  feeConfig.onBoardRate.nominator = BigInt(124);
+
+  await t.throwsAsync(
+    async () => {
+      await E(zoe).startInstance(
+        installation,
+        undefined,
+        {},
+        { ...commonPrivateArgs, storageNode, feeConfig, allowedChains },
+      );
+    },
+    { message: /Invalid fee config/ },
+  );
+});
 
 test('Failing case: IBC transfer from host to stride chain fails, user receives token at host chain address', async t => {
   const {
