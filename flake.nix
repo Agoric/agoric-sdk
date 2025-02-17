@@ -20,11 +20,13 @@
             sha256 = if pkgs.stdenv.isDarwin && pkgs.stdenv.isAarch64 then
               "0snfsz2mmjdavi38nglayw5yia74q9h1xzz2ahpri8yqx1md9lii" # darwin-arm64
             else if pkgs.stdenv.isDarwin then
-              "a754c4ef8a4ef3704a04975306a1c59b4b1345661d744927d8f06dd2397c1210" # darwin-x64
+              "1j6cw6i3hjqv8zk1nbsqg560k7rgcmyl9cfd4vlvn5wclzr76nzw" # darwin-x64
             else if pkgs.stdenv.isAarch64 then
-              "06d64757931d08d47c159d124ecd3c8328827c40fd220d09b5c65c5c98aa0568" # linux-arm64
+              "0skah3bal5irvramnfn86vgi0c375ywsyb4xaxmx3gvlnbpdp9yj" # linux-arm64
+            else if (pkgs.stdenv.isLinux && !pkgs.stdenv.isAarch64) then
+              "0q3gy4z5b8dd0w37ya5wlkbv4xhyqa1s0zwh71258x5z5w4rz4gh" # linux-x64
             else
-              "39db293cf8e3d8875557d056821bbacc4755d9bc4fb670c7425143d3453e809e"; # linux-x64
+              throw "Unsupported system: This derivation only supports Linux (x64/arm64) and Darwin (x64/arm64) systems";
           };
 
           installPhase = ''
