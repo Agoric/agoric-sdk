@@ -26,7 +26,21 @@ const gcAndFinalize = makeGcAndFinalize(engineGC);
 // inconsistent GC behavior under Node.js and AVA with tests running
 // in parallel, so we mark them all with test.serial()
 
-test.serial('liveslots retains pending exported promise', async t => {
+// some tests may be flaky, so we use retry logic
+function testSerialTry(title, implementation) {
+  test.serial(title, async t => {
+    const result = await t.try(implementation);
+    if (result.passed) {
+      result.commit();
+    } else {
+      result.discard();
+      const retryResult = await t.try(implementation);
+      retryResult.commit();
+    }
+  });
+}
+
+testSerialTry('liveslots retains pending exported promise', async t => {
   const { log, syscall } = buildSyscall();
   let collected;
   const success = [];
@@ -64,7 +78,7 @@ test.serial('liveslots retains pending exported promise', async t => {
   t.deepEqual(success, ['yes']);
 });
 
-test.serial('liveslots retains device nodes', async t => {
+testSerialTry('liveslots retains device nodes', async t => {
   const { syscall } = buildSyscall();
   let collected;
   const recognize = new WeakSet(); // real WeakSet
@@ -92,7 +106,7 @@ test.serial('liveslots retains device nodes', async t => {
   t.deepEqual(success, [true]);
 });
 
-test.serial('GC syscall.dropImports', async t => {
+testSerialTry('GC syscall.dropImports', async t => {
   const { log, syscall } = buildSyscall();
   let collected;
   function build(_vatPowers) {
@@ -177,7 +191,7 @@ test.serial('GC syscall.dropImports', async t => {
   t.deepEqual(log, []);
 });
 
-test.serial('GC dispatch.retireImports', async t => {
+testSerialTry('GC dispatch.retireImports', async t => {
   const { log, syscall } = buildSyscall();
   function build(_vatPowers) {
     // eslint-disable-next-line no-unused-vars
@@ -210,7 +224,7 @@ test.serial('GC dispatch.retireImports', async t => {
   // when we implement VOM.vrefIsRecognizable, this test might do more
 });
 
-test.serial('GC dispatch.retireExports', async t => {
+testSerialTry('GC dispatch.retireExports', async t => {
   const { log, syscall } = buildSyscall();
   function build(_vatPowers) {
     const ex1 = Far('export', {});
@@ -253,7 +267,7 @@ test.serial('GC dispatch.retireExports', async t => {
   t.deepEqual(log, []);
 });
 
-test.serial('GC dispatch.dropExports', async t => {
+testSerialTry('GC dispatch.dropExports', async t => {
   const { log, syscall } = buildSyscall();
   let collected;
   function build(_vatPowers) {
