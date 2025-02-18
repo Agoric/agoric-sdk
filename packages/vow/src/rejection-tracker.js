@@ -60,7 +60,9 @@ export const prepareVowRejectionTracker = zone => {
         const cancel = vowToCancelUnhandledRejection.get(vowCap);
         if (!cancel) {
           console.warn(
-            X`Now handling a VOW_REJECTION from a prior incarnation for ${vowCap}`,
+            assert.error(
+              X`Now handling a VOW_REJECTION from a prior incarnation for ${vowCap}`,
+            ),
           );
           return;
         }
