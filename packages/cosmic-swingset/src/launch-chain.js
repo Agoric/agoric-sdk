@@ -35,6 +35,7 @@ import {
   mergeCoreProposals,
 } from '@agoric/deploy-script-support/src/extract-proposal.js';
 import { fileURLToPath } from 'url';
+import { ValueType } from '@opentelemetry/api';
 
 import {
   makeDefaultMeterProvider,
@@ -495,6 +496,82 @@ export async function launch({
     log: console,
     initialQueueLengths,
   });
+
+  const chainNodeMetrics = {
+    swingsetRunTime: metricMeter.createHistogram('swingsetRunTime', {
+      description: 'The time spent per block executing SwingSet',
+      valueType: ValueType.DOUBLE,
+      unit: 's',
+      advice: {
+        explicitBucketBoundaries: [
+          0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10, 15, 30,
+        ],
+      },
+    }),
+    swingsetChainSaveTime: metricMeter.createHistogram(
+      'swingsetChainSaveTime',
+      {
+        description:
+          'The time spent per block explicitly waiting for SwingSet state to be saved in cosmos state',
+        valueType: ValueType.DOUBLE,
+        unit: 's',
+        advice: {
+          explicitBucketBoundaries: [0.1, 0.2, 0.3, 0.4, 0.5, 1],
+        },
+      },
+    ),
+    commitTime: metricMeter.createHistogram('commitTime', {
+      description: 'The time spent per block committing state',
+      valueType: ValueType.DOUBLE,
+      unit: 's',
+      advice: {
+        explicitBucketBoundaries: [0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10],
+      },
+    }),
+    swingsetCommitTime: metricMeter.createHistogram('swingsetCommitTime', {
+      description: 'The time spent per block committing SwingSet state',
+      valueType: ValueType.DOUBLE,
+      unit: 's',
+      advice: {
+        explicitBucketBoundaries: [0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10],
+      },
+    }),
+    cosmosCommitTime: metricMeter.createHistogram('cosmosCommitTime', {
+      description: 'The time spent per block committing cosmos state',
+      valueType: ValueType.DOUBLE,
+      unit: 's',
+      advice: {
+        explicitBucketBoundaries: [0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10],
+      },
+    }),
+    interBlockTime: metricMeter.createHistogram('interBlockTime', {
+      description: 'The time spent idle between blocks',
+      valueType: ValueType.DOUBLE,
+      unit: 's',
+      advice: {
+        explicitBucketBoundaries: [0.1, 0.5, 1, 2, 3, 4, 5, 6, 7, 10],
+      },
+    }),
+    afterCommitWaitTime: metricMeter.createHistogram('afterCommitWaitTime', {
+      description: 'The time spent per block waiting for after commit work',
+      valueType: ValueType.DOUBLE,
+      unit: 's',
+      advice: {
+        explicitBucketBoundaries: [0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10],
+      },
+    }),
+    blockLag: metricMeter.createHistogram('blockLag', {
+      description: 'The delay with which this node is processing blocks',
+      valueType: ValueType.DOUBLE,
+      unit: 's',
+      advice: {
+        explicitBucketBoundaries: [
+          0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 6, 10, 30, 60, 120, 180, 240,
+          300, 600, 3600,
+        ],
+      },
+    }),
+  };
 
   /**
    * @param {number} blockHeight
@@ -1139,6 +1216,12 @@ export async function launch({
           fullSaveTime: fullSaveTime / 1000,
         });
 
+        chainNodeMetrics.swingsetRunTime.record(runTime / 1000);
+        chainNodeMetrics.swingsetChainSaveTime.record(chainTime / 1000);
+        chainNodeMetrics.swingsetCommitTime.record(saveTime / 1000);
+        chainNodeMetrics.cosmosCommitTime.record(cosmosSaveTime / 1000);
+        chainNodeMetrics.commitTime.record(fullSaveTime / 1000);
+
         afterCommitWorkDone = afterCommit(blockHeight, blockTime);
 
         afterCommitFinish = Date.now();
@@ -1188,6 +1271,12 @@ export async function launch({
           previousBlockLagTime: previousBlockLagTime / 1000,
           inboundQueueStats: inboundQueueMetrics.getStats(),
         });
+
+        Number.isNaN(interBlockTime) ||
+          chainNodeMetrics.interBlockTime.record(interBlockTime / 1000);
+        chainNodeMetrics.afterCommitWaitTime.record(waitAfterCommitTime / 1000);
+        Number.isNaN(previousBlockLagTime) ||
+          chainNodeMetrics.blockLag.record(previousBlockLagTime / 1000);
 
         return undefined;
       }
