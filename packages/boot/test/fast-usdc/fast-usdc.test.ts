@@ -24,6 +24,7 @@ import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
 } from '../bootstrapTests/walletFactory.js';
+import type { EndoZipBase64Bundle } from '@agoric/swingset-vat';
 
 const test: TestFn<
   WalletFactoryTestContext & {
@@ -62,6 +63,57 @@ test.serial('oracles provision before contract deployment', async t => {
     oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
   );
   t.truthy(watcherWallet);
+});
+
+test.serial('prop 87: Beta', async t => {
+  const { evalProposal } = t.context;
+  const download = async (
+    config = {
+      repo: 'Agoric/agoric-sdk',
+      release: 'fast-usdc-beta-1',
+      name: 'start-fast-usdc',
+    },
+    artifacts = `https://github.com/${config.repo}/releases/download/${config.release}`,
+    planUrl = `${artifacts}/${config.name}-plan.json`,
+  ) => {
+    const plan = (await fetch(planUrl).then(r => r.json())) as {
+      name: string;
+      permit: string;
+      script: string;
+      bundles: Array<{
+        bundleID: string;
+        entrypoint: string;
+        fileName: string;
+      }>;
+    };
+    t.is(plan.name, config.name);
+    const script = await fetch(`${artifacts}/${plan.script}`).then(r =>
+      r.text(),
+    );
+    const permit = await fetch(`${artifacts}/${plan.permit}`).then(r =>
+      r.text(),
+    );
+    const bundles: EndoZipBase64Bundle[] = await Promise.all(
+      plan.bundles.map(b =>
+        fetch(`${artifacts}/${b.bundleID}.json`).then(r => r.json()),
+      ),
+    );
+    return { bundles, evals: [{ js_code: script, json_permits: permit }] };
+  };
+  const materials = await download();
+
+  // Proposal 87 doesn't quite complete: noble ICA is mis-configured
+  try {
+    await evalProposal(materials);
+  } catch (err) {
+    t.log(err.message);
+    if (!err.message.startsWith('unsettled value')) throw err;
+  }
+
+  const { agoricNamesRemotes, refreshAgoricNamesRemotes } = t.context;
+  // update now that fastUsdc is instantiated
+  refreshAgoricNamesRemotes();
+  t.truthy(agoricNamesRemotes.instance.fastUsdc);
 });
 
 test.serial(
