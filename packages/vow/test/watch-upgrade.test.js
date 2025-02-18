@@ -60,7 +60,8 @@ test(expectUnhandled, 5, 'vow resolve across upgrade', async t => {
 
     vowTools.watch(testVowKit3.vow, watcher2);
     testVowKit3.resolver.resolve(42);
-    testVowKit4.resolver.reject(() => 'is not storable');
+    const nonStorable = () => 'is not storable';
+    testVowKit4.resolver.reject(nonStorable);
   });
 
   await startLife(
