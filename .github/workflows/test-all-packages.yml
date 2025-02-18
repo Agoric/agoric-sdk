@@ -174,7 +174,7 @@ jobs:
         run: cd packages/notifier && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (orchestration)
         if: (success() || failure())
-        run: cd packages/orchestration && yarn ${{ steps.vars.outputs.test }}:ci | $TEST_COLLECT
+        run: cd packages/orchestration && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (sparse-ints)
         if: (success() || failure())
         run: cd packages/sparse-ints && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -195,7 +195,7 @@ jobs:
         run: cd packages/cosmic-proto && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (vow)
         if: (success() || failure())
-        run: cd packages/vow && yarn ${{ steps.vars.outputs.test }}:ci | $TEST_COLLECT
+        run: cd packages/vow && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (xsnap-lockdown)
         if: (success() || failure())
         run: cd packages/xsnap-lockdown && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
