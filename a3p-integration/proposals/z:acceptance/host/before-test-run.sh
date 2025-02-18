@@ -58,8 +58,11 @@ setup_loadgen_runner() {
 }
 
 setup_sdk() {
+  local branch_name="$(get_branch_name)"
+  echo "Checking out branch '$branch_name' of sdk"
+
   cd "$HOME"
-  git clone "$SDK_REPOSITORY_LINK" --branch "$(get_branch_name)"
+  git clone "$SDK_REPOSITORY_LINK" --branch "$branch_name"
   cd "$SDK_REPOSITORY_NAME"
   yarn install
   make --directory "packages/cosmic-swingset" all
