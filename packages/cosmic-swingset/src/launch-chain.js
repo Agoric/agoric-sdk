@@ -318,7 +318,7 @@ export async function buildSwingset(
  * @property {ReturnType<typeof import('./kernel-stats.js').makeDefaultMeterProvider>} [metricsProvider]
  * @property {import('@agoric/telemetry').SlogSender} [slogSender]
  * @property {string} [swingStoreTraceFile]
- * @property {(...args: unknown[]) => void} [swingStoreExportCallback]
+ * @property {(...args: unknown[]) => Promise<void> | void} [swingStoreExportCallback]
  * @property {boolean} [keepSnapshots]
  * @property {boolean} [keepTranscripts]
  * @property {ReturnType<typeof import('@agoric/swing-store').makeArchiveSnapshot>} [archiveSnapshot]
@@ -1136,6 +1136,10 @@ export async function launch({
       }
 
       case ActionType.BEGIN_BLOCK: {
+        // It's not strictly necessary to wait for this to be done, but it avoids
+        // confusing our metrics with work attributable to the previous block.
+        await afterCommitWorkDone;
+
         allowExportCallback = true; // cleared by saveOutsideState in COMMIT_BLOCK
         const { blockHeight, blockTime, params } = action;
         blockParams = parseParams(params);
@@ -1215,6 +1219,9 @@ export async function launch({
           // We write out our on-chain state as a number of chainSends.
           const start2 = Date.now();
           await saveChainState();
+          // Not strictly necessary for correctness (the caller ensures this is
+          // done before returning), but account for time taken to flush.
+          await pendingSwingStoreExport;
           chainTime = Date.now() - start2;
 
           // Advance our saved state variables.
@@ -1241,8 +1248,6 @@ export async function launch({
     if (decohered) {
       throw decohered;
     }
-
-    await afterCommitWorkDone;
 
     return doBlockingSend(action).finally(() => pendingSwingStoreExport);
   }
