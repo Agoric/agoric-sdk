@@ -26,8 +26,12 @@ const gcAndFinalize = makeGcAndFinalize(engineGC);
 // inconsistent GC behavior under Node.js and AVA with tests running
 // in parallel, so we mark them all with test.serial()
 
-// some tests may be flaky, so we use retry logic
-function testSerialTry(title, implementation) {
+/**
+  * Run the test serially, and if it fails retry once.
+  * @param {string} title
+  * @param (Function) predicate
+  */
+function testSerialRetry(title, implementation) {
   test.serial(title, async t => {
     const result = await t.try(implementation);
     if (result.passed) {
