@@ -668,7 +668,10 @@ export async function launch({
   let chainTime;
   /** duration of the latest saveOutsideState(), which commits to swing-store host storage */
   let saveTime = 0;
+  let previousBeginBlock = NaN;
   let endBlockFinish = 0;
+  let commitSwingSetFinish = 0;
+  let afterCommitFinish = NaN;
   let blockParams;
   let decohered;
   /** @type {undefined | Promise<void>} */
@@ -1117,20 +1120,26 @@ export async function launch({
           `wrote SwingSet checkpoint [run=${runTime}ms, chainSave=${chainTime}ms, kernelSave=${saveTime}ms]`,
         );
 
+        commitSwingSetFinish = now();
+
         return undefined;
       }
 
       case ActionType.AFTER_COMMIT_BLOCK: {
         const { blockHeight, blockTime } = action;
 
-        const fullSaveTime = now() - endBlockFinish;
+        const afterCommitTimestamp = now();
+        const fullSaveTime = afterCommitTimestamp - endBlockFinish;
+        const cosmosSaveTime = afterCommitTimestamp - commitSwingSetFinish;
 
         controller.writeSlogObject({
           type: 'cosmic-swingset-commit-block-finish',
           blockHeight,
           blockTime,
-          saveTime: saveTime / 1000,
+          runTime: runTime / 1000,
           chainTime: chainTime / 1000,
+          saveTime: saveTime / 1000,
+          cosmosSaveTime: cosmosSaveTime / 1000,
           fullSaveTime: fullSaveTime / 1000,
         });
 
@@ -1145,15 +1154,23 @@ export async function launch({
           afterCommitWorkDone = undefined;
         });
 
+        afterCommitFinish = now();
+
         return undefined;
       }
 
       case ActionType.BEGIN_BLOCK: {
+        const beginStart = now();
+        const interBlockTime = beginStart - afterCommitFinish;
+
         // Awaiting completion of afterCommitWorkDone ensures that timings
         // correspond exclusively with work for a single block.
+        let afterCommitTS = beginStart;
         if (afterCommitWorkDone) {
           await afterCommitWorkDone;
+          afterCommitTS = now();
         }
+        const waitAfterCommitTime = afterCommitTS - beginStart;
 
         allowExportCallback = true; // cleared by saveOutsideState in COMMIT_BLOCK
         const { blockHeight, blockTime, params } = action;
@@ -1161,6 +1178,11 @@ export async function launch({
         verboseBlocks &&
           blockManagerConsole.info('block', blockHeight, 'begin');
         runTime = 0;
+        // The blockTime of current block is decided in consensus when
+        // starting to execute the previous block.
+        const previousBlockLagTime = previousBeginBlock - blockTime * 1000;
+        // Include the await of after commit work in our lag time
+        previousBeginBlock = afterCommitTS;
 
         if (blockNeedsExecution(blockHeight)) {
           if (savedBeginHeight === blockHeight) {
@@ -1177,6 +1199,9 @@ export async function launch({
           type: 'cosmic-swingset-begin-block',
           blockHeight,
           blockTime,
+          interBlockTime: interBlockTime / 1000,
+          waitAfterCommitTime: waitAfterCommitTime / 1000,
+          previousBlockLagTime: previousBlockLagTime / 1000,
           inboundQueueStats: inboundQueueMetrics.getStats(),
         });
 
