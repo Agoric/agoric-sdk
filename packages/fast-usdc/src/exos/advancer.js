@@ -217,7 +217,7 @@ export const prepareAdvancerKit = (
             });
           } catch (error) {
             log('Advancer error:', error);
-            statusManager.observe(evidence);
+            statusManager.skipAdvance(evidence, [error.message]);
           }
         },
         /** @param {ChainAddress} intermediateRecipient */
