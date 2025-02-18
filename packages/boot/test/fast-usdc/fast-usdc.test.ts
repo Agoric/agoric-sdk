@@ -131,20 +131,23 @@ test.serial(
 
     const watcherWallet = await wfd.provideSmartWallet(oracleAddrs[0]);
 
-    // inbound `startChannelOpenInit` responses immediately.
-    // needed since the Fusdc StartFn relies on an ICA being created
-    bridgeUtils.setAckBehavior(
-      BridgeId.DIBC,
-      'startChannelOpenInit',
-      AckBehavior.Immediate,
-    );
-    bridgeUtils.setBech32Prefix('noble');
+    const freshDeploy = false; // prop 87 done
+    if (!freshDeploy) {
+      // inbound `startChannelOpenInit` responses immediately.
+      // needed since the Fusdc StartFn relies on an ICA being created
+      bridgeUtils.setAckBehavior(
+        BridgeId.DIBC,
+        'startChannelOpenInit',
+        AckBehavior.Immediate,
+      );
+      bridgeUtils.setBech32Prefix('noble');
 
-    const materials = buildProposal(
-      '@agoric/builders/scripts/fast-usdc/start-fast-usdc.build.js',
-      ['--net', 'MAINNET'],
-    );
-    await evalProposal(materials);
+      const materials = buildProposal(
+        '@agoric/builders/scripts/fast-usdc/start-fast-usdc.build.js',
+        ['--net', 'MAINNET'],
+      );
+      await evalProposal(materials);
+    }
 
     // update now that fastUsdc is instantiated
     refreshAgoricNamesRemotes();
