@@ -6,9 +6,14 @@ import {
 
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
+import { makeExpectUnhandledRejectionMacro } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
 import { prepareVowTools } from '../vat.js';
 
-test.serial('vow resolve across upgrade', async t => {
+const expectUnhandled = test.macro(
+  makeExpectUnhandledRejectionMacro(import.meta.url),
+);
+
+test(expectUnhandled, 5, 'vow resolve across upgrade', async t => {
   annihilate();
 
   t.plan(3);

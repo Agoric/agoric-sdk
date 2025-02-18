@@ -9,6 +9,7 @@ import {
   eventLoopIteration,
   inspectMapStore,
 } from '@agoric/internal/src/testing-utils.js';
+import { makeExpectUnhandledRejectionMacro } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
 import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import type {
@@ -20,6 +21,7 @@ import { SingleNatAmountRecord } from '../../src/examples/send-anywhere.contract
 import { registerChain } from '../../src/chain-info.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
+const unhandledRejection = makeExpectUnhandledRejectionMacro(import.meta.url);
 
 const contractName = 'sendAnywhere';
 const contractFile = `${dirname}/../../src/examples/send-anywhere.contract.js`;
@@ -252,7 +254,7 @@ test('baggage', async t => {
   t.snapshot(tree, 'contract baggage after start');
 });
 
-test('failed ibc transfer returns give', async t => {
+test(unhandledRejection, 1, 'failed ibc transfer returns give', async t => {
   t.log('bootstrap, orchestration core-eval');
   const {
     bootstrap,
@@ -350,51 +352,56 @@ test('failed ibc transfer returns give', async t => {
   );
 });
 
-test('non-vbank asset presented is returned', async t => {
-  t.log('bootstrap, orchestration core-eval');
-  const { bootstrap, commonPrivateArgs } = await commonSetup(t);
-  const vt = bootstrap.vowTools;
+test(
+  unhandledRejection,
+  1,
+  'non-vbank asset presented is returned',
+  async t => {
+    t.log('bootstrap, orchestration core-eval');
+    const { bootstrap, commonPrivateArgs } = await commonSetup(t);
+    const vt = bootstrap.vowTools;
 
-  const { zoe, bundleAndInstall } = await setUpZoeForTest();
+    const { zoe, bundleAndInstall } = await setUpZoeForTest();
 
-  const moolah = withAmountUtils(makeIssuerKit('MOO'));
+    const moolah = withAmountUtils(makeIssuerKit('MOO'));
 
-  const installation: Installation<StartFn> =
-    await bundleAndInstall(contractFile);
-  const storageNode = await E(bootstrap.storage.rootNode).makeChildNode(
-    contractName,
-  );
-  const sendKit = await E(zoe).startInstance(
-    installation,
-    { MOO: moolah.issuer },
-    {},
-    { ...commonPrivateArgs, storageNode },
-  );
+    const installation: Installation<StartFn> =
+      await bundleAndInstall(contractFile);
+    const storageNode = await E(bootstrap.storage.rootNode).makeChildNode(
+      contractName,
+    );
+    const sendKit = await E(zoe).startInstance(
+      installation,
+      { MOO: moolah.issuer },
+      {},
+      { ...commonPrivateArgs, storageNode },
+    );
 
-  const publicFacet = await E(zoe).getPublicFacet(sendKit.instance);
-  const inv = E(publicFacet).makeSendInvitation();
+    const publicFacet = await E(zoe).getPublicFacet(sendKit.instance);
+    const inv = E(publicFacet).makeSendInvitation();
 
-  const anAmt = moolah.make(10n);
-  const Moo = moolah.mint.mintPayment(anAmt);
-  const userSeat = await E(zoe).offer(
-    inv,
-    { give: { Moo: anAmt } },
-    { Moo },
-    { destAddr: 'cosmos1destAddr', chainName: 'cosmoshub' },
-  );
+    const anAmt = moolah.make(10n);
+    const Moo = moolah.mint.mintPayment(anAmt);
+    const userSeat = await E(zoe).offer(
+      inv,
+      { give: { Moo: anAmt } },
+      { Moo },
+      { destAddr: 'cosmos1destAddr', chainName: 'cosmoshub' },
+    );
 
-  await t.throwsAsync(vt.when(E(userSeat).getOfferResult()), {
-    message:
-      '[object Alleged: MOO brand guest wrapper] not registered in vbank',
-  });
+    await t.throwsAsync(vt.when(E(userSeat).getOfferResult()), {
+      message:
+        '[object Alleged: MOO brand guest wrapper] not registered in vbank',
+    });
 
-  await E(userSeat).tryExit();
-  const payouts = await E(userSeat).getPayouts();
-  const amountReturned = await moolah.issuer.getAmountOf(payouts.Moo);
-  t.deepEqual(anAmt, amountReturned, 'give is returned');
-});
+    await E(userSeat).tryExit();
+    const payouts = await E(userSeat).getPayouts();
+    const amountReturned = await moolah.issuer.getAmountOf(payouts.Moo);
+    t.deepEqual(anAmt, amountReturned, 'give is returned');
+  },
+);
 
-test('rejects multi-asset send', async t => {
+test(unhandledRejection, 1, 'rejects multi-asset send', async t => {
   t.log('bootstrap, orchestration core-eval');
   const {
     bootstrap,

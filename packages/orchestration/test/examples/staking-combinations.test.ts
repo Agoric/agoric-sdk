@@ -4,6 +4,7 @@ import {
   eventLoopIteration,
   inspectMapStore,
 } from '@agoric/internal/src/testing-utils.js';
+import { makeExpectUnhandledRejectionMacro } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
 import path from 'path';
@@ -22,12 +23,13 @@ import {
 } from '../../tools/ibc-mocks.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
+const unhandledRejection = makeExpectUnhandledRejectionMacro(import.meta.url);
 
 const contractFile = `${dirname}/../../src/examples/staking-combinations.contract.js`;
 type StartFn =
   typeof import('@agoric/orchestration/src/examples/staking-combinations.contract.js').start;
 
-test('start', async t => {
+test(unhandledRejection, 1, 'start', async t => {
   const {
     bootstrap: { timer, vowTools: vt },
     brands: { bld },
