@@ -169,7 +169,7 @@ test('makeChainAddress', async t => {
   await vt.asPromise(chainHub.getChainInfo('osmosis'));
 
   const MOCK_ICA_ADDRESS =
-    'osmo1ht7u569vpuryp6utadsydcne9ckeh2v8dkd38v5hptjl3u2ewppqc6kzgd';
+    'osmo1ht7u569vpuryp6utadsydcne9ckeh2v8dkd38v5hptjl3u2ewppqc6kzgd' as const;
   t.deepEqual(chainHub.makeChainAddress(MOCK_ICA_ADDRESS), {
     chainId: 'osmosis-1',
     value: MOCK_ICA_ADDRESS,
