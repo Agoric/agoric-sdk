@@ -320,7 +320,7 @@ export async function buildSwingset(
  * @property {ReturnType<typeof import('./kernel-stats.js').makeDefaultMeterProvider>} [metricsProvider]
  * @property {import('@agoric/telemetry').SlogSender} [slogSender]
  * @property {string} [swingStoreTraceFile]
- * @property {(...args: unknown[]) => void} [swingStoreExportCallback]
+ * @property {(...args: unknown[]) => Promise<void> | void} [swingStoreExportCallback]
  * @property {boolean} [keepSnapshots]
  * @property {boolean} [keepTranscripts]
  * @property {ReturnType<typeof import('@agoric/swing-store').makeArchiveSnapshot>} [archiveSnapshot]
@@ -671,7 +671,8 @@ export async function launch({
   let endBlockFinish = 0;
   let blockParams;
   let decohered;
-  let afterCommitWorkDone = Promise.resolve();
+  /** @type {undefined | Promise<void>} */
+  let afterCommitWorkDone;
 
   /**
    * Dispatch an action from an inbound queue to an appropriate handler based on
@@ -911,6 +912,7 @@ export async function launch({
     kvStore.set(getHostKey('beginHeight'), `${savedBeginHeight}`);
   }
 
+  /** @type {(blockHeight: BlockInfo['blockHeight'], blockTime: BlockInfo['blockTime']) => Promise<void>} */
   async function afterCommit(blockHeight, blockTime) {
     await waitUntilQuiescent()
       .then(afterCommitCallback)
@@ -1134,10 +1136,25 @@ export async function launch({
 
         afterCommitWorkDone = afterCommit(blockHeight, blockTime);
 
+        // In the expected case where afterCommit work finishes before the next
+        // block starts, don't incorrectly attribute `await` time to it.
+        const latestAfterCommitP = afterCommitWorkDone;
+        void afterCommitWorkDone.then(() => {
+          afterCommitWorkDone === latestAfterCommitP ||
+            Fail`Unexpected afterCommit overlap`;
+          afterCommitWorkDone = undefined;
+        });
+
         return undefined;
       }
 
       case ActionType.BEGIN_BLOCK: {
+        // Awaiting completion of afterCommitWorkDone ensures that timings
+        // correspond exclusively with work for a single block.
+        if (afterCommitWorkDone) {
+          await afterCommitWorkDone;
+        }
+
         allowExportCallback = true; // cleared by saveOutsideState in COMMIT_BLOCK
         const { blockHeight, blockTime, params } = action;
         blockParams = parseParams(params);
@@ -1217,6 +1234,9 @@ export async function launch({
           // We write out our on-chain state as a number of chainSends.
           const start2 = now();
           await saveChainState();
+          // Not strictly necessary for correctness (the caller ensures this is
+          // done before returning), but account for time taken to flush.
+          await pendingSwingStoreExport;
           chainTime = now() - start2;
 
           // Advance our saved state variables.
@@ -1243,8 +1263,6 @@ export async function launch({
     if (decohered) {
       throw decohered;
     }
-
-    await afterCommitWorkDone;
 
     return doBlockingSend(action).finally(() => pendingSwingStoreExport);
   }
