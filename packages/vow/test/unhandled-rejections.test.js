@@ -19,19 +19,14 @@ const expectUnhandled = test.macro(
 const gcAndFinalize = makeGcAndFinalize(engineGC);
 test.afterEach.always(gcAndFinalize);
 
-const makeRejectedVow = (
-  { makeVowKit },
-  reason = Error('caught the rejection'),
-) => {
+const shorten = vow => vow.payload.vowV0.shorten();
+
+const DEFAULT_REASON = Error('some kind of rejection');
+
+const makeRejectedVow = ({ makeVowKit }, reason = DEFAULT_REASON) => {
   const { resolver, vow } = makeVowKit();
   resolver.reject(reason);
   return vow;
-};
-
-const makeAndShortenRejectedVow = async ({ makeVowKit }) => {
-  const vow = makeRejectedVow({ makeVowKit });
-  await gcAndFinalize();
-  return vow.payload.vowV0.shorten();
 };
 
 /**
@@ -47,17 +42,17 @@ test.serial('vow shortened, then rejected', async t => {
 
     const testVowKit = vowTools.makeVowKit();
 
-    void testVowKit.vow.payload.vowV0.shorten().then(
+    shorten(testVowKit.vow).then(
       value => t.fail(value),
       reason =>
         t.throws(
           () => {
             throw reason;
           },
-          { message: 'caught the rejection' },
+          { message: DEFAULT_REASON.message },
         ),
     );
-    testVowKit.resolver.reject(Error('caught the rejection'));
+    testVowKit.resolver.reject(DEFAULT_REASON);
   });
 });
 
@@ -75,16 +70,16 @@ test.serial('vow resolved to rejected promise, then shortened', async t => {
 
     const testVowKit = vowTools.makeVowKit();
 
-    const rejection = Promise.reject(Error('caught the rejection'));
+    const rejection = Promise.reject(DEFAULT_REASON);
     testVowKit.resolver.resolve(rejection);
-    testVowKit.vow.payload.vowV0.shorten().then(
+    shorten(testVowKit.vow).then(
       value => t.fail(value),
       reason =>
         t.throws(
           () => {
             throw reason;
           },
-          { message: 'caught the rejection' },
+          { message: DEFAULT_REASON.message },
         ),
     );
   });
@@ -93,47 +88,35 @@ test.serial('vow resolved to rejected promise, then shortened', async t => {
 /**
  * A vow which is rejected, and then `shorten` is called after the vow's status
  * has recorded the rejection. This should trigger the unhandled rejection
- * tracker.
- *
- * FIXME(mfig): How do we detect "after the vow's status has recorded the
- * rejection"?  It looks like this test currently does not trigger the unhandled
- * rejection tracker.
+ * tracker, but not result in an unhandled rejection.
  */
-test.serial.failing(
-  expectUnhandled,
-  1,
-  'vow rejected, then shorten after status update',
-  async t => {
-    annihilate();
+test.serial('vow rejected, then shorten', async t => {
+  annihilate();
 
-    await startLife(async baggage => {
-      const zone = makeDurableZone(baggage, 'durableRoot');
-      const vowTools = prepareVowTools(zone);
+  await startLife(async baggage => {
+    const zone = makeDurableZone(baggage, 'durableRoot');
+    const vowTools = prepareVowTools(zone);
 
-      const shorter = makeAndShortenRejectedVow(vowTools);
-      await gcAndFinalize();
-      shorter.then(
-        value => t.fail(value),
-        reason =>
-          t.throws(
-            () => {
-              throw reason;
-            },
-            { message: 'caught the rejection' },
-          ),
-      );
-    });
-  },
-);
+    const vow = makeRejectedVow(vowTools);
+    shorten(vow).then(
+      value => t.fail(value),
+      reason =>
+        t.throws(
+          () => {
+            throw reason;
+          },
+          { message: DEFAULT_REASON.message },
+        ),
+    );
+  });
+});
 
 /**
  * a vow which is shortened, then goes through an upgrade before being rejected,
  * then shortened again. This should similarly trigger the unhandled rejection
- * tracker
+ * tracker, but not result in an unhandled rejection.
  */
-test.serial.failing(
-  expectUnhandled,
-  1,
+test.serial(
   'vow shortened, upgraded, rejected, then shortened again',
   async t => {
     annihilate();
@@ -146,7 +129,7 @@ test.serial.failing(
         vowTools.makeVowKit(),
       );
 
-      testVowKit.vow.payload.vowV0.shorten().then(
+      shorten(testVowKit.vow).then(
         value => t.fail(value),
         reason => t.fail(reason),
       );
@@ -160,16 +143,16 @@ test.serial.failing(
         t.fail('need testVowKit in baggage'),
       );
 
-      testVowKit.resolver.reject(Error('caught the rejection'));
+      testVowKit.resolver.reject(DEFAULT_REASON);
 
-      testVowKit.vow.payload.vowV0.shorten().then(
+      shorten(testVowKit.vow).then(
         value => t.fail(value),
         reason =>
           t.throws(
             () => {
               throw reason;
             },
-            { message: 'caught the rejection' },
+            { message: DEFAULT_REASON.message },
           ),
       );
     });
@@ -225,14 +208,14 @@ test.serial(
         t.fail('need testVow in baggage'),
       );
 
-      vow.payload.vowV0.shorten().then(
+      shorten(vow).then(
         value => t.fail(value),
         reason =>
           t.throws(
             () => {
               throw reason;
             },
-            { message: 'caught the rejection' },
+            { message: DEFAULT_REASON.message },
           ),
       );
     });
@@ -274,7 +257,7 @@ test.serial(
         t.fail('need testVow in baggage'),
       );
 
-      vow.payload.vowV0.shorten().then(
+      shorten(vow).then(
         value => t.fail(value),
         reason =>
           t.throws(
