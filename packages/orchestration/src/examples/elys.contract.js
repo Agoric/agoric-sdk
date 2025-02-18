@@ -1,4 +1,8 @@
 import { makeTracer } from '@agoric/internal';
+import { Fail } from '@endo/errors';
+import { E } from '@endo/far';
+import { M, mustMatch } from '@endo/patterns';
+import { VowShape } from '@agoric/vow';
 import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
 import { withOrchestration } from '../utils/start-helper.js';
 import * as flows from './elys-contract.flow.js';
@@ -6,11 +10,7 @@ import {
   FeeConfigShape,
   validateFeeConfigShape,
 } from './elys-contract-type-gaurd.js';
-import { E } from '@endo/far';
-import { M, mustMatch } from '@endo/patterns';
-import { VowShape } from '@agoric/vow';
 import { ChainAddressShape } from '../typeGuards.js';
-import { Fail } from '@endo/errors';
 
 const trace = makeTracer('ContractInstantiation');
 

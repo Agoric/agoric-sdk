@@ -1,7 +1,5 @@
 import { Fail } from '@endo/errors';
-import { denomHash } from '../utils/denomHash.js';
 import { makeTracer } from '@agoric/internal';
-import { FeeConfigShape } from './elys-contract-type-gaurd.js';
 import {
   decodeBech32,
   encodeBech32,
@@ -13,6 +11,7 @@ import {
   MsgRedeemStake,
 } from '@agoric/cosmic-proto/stride/stakeibc/tx.js';
 import { tryDecodeResponse } from '../utils/cosmos.js';
+import { denomHash } from '../utils/denomHash.js';
 
 /**
  * @import {GuestInterface} from '@agoric/async-flow';
@@ -25,6 +24,7 @@ import { tryDecodeResponse } from '../utils/cosmos.js';
  * @import {ChainAddress, OrchestrationAccount} from '@agoric/orchestration';
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
  * @import {Guarded} from '@endo/exo';
+ * @import {FeeConfigShape} from './elys-contract-type-gaurd.js';
  */
 const trace = makeTracer('StrideStakingFlow');
 
@@ -85,7 +85,7 @@ export const makeICAHookAccounts = async (
     await chainHub.getConnectionInfo(strideChainId, elysChainId);
 
   // ICA account on all the supported host chains
-  for (const [index, remoteChain] of allRemoteChains.entries()) {
+  for (const [_index, remoteChain] of allRemoteChains.entries()) {
     const chainInfo = await remoteChain.getChainInfo();
     const { chainId, stakingTokens, bech32Prefix } = chainInfo;
     stakingTokens || Fail`${chainId} does not have stakingTokens in config`;
@@ -115,8 +115,6 @@ export const makeICAHookAccounts = async (
       stTokenDenomOnElys,
       transferChannel.counterPartyChannelId,
     );
-
-    const chainName = chainNames[index];
 
     /** @type {SupportedHostChainShape} */
     const hostChainInfo = {
@@ -166,20 +164,20 @@ harden(makeICAHookAccounts);
  * @param {Orchestrator} orch
  * @param {object} ctx
  * @param {VTransferIBCEvent & Passable} incomingIbcTransferEvent
- * @param {OrchestrationAccount<{ chainId: string }> & Passable} localAccount,
- * @param {ChainAddress} localAccountAddress,
- * @param {OrchestrationAccount<{ chainId: string }> & Passable} strideICAAccount,
- * @param {ChainAddress} strideICAAddress,
- * @param {OrchestrationAccount<{ chainId: string }> & Passable} elysICAAccount,
- * @param {ChainAddress} elysICAAddress,
- * @param {MapStore<string, SupportedHostChainShape>} supportedHostChains,
- * @param {string} elysToAgoricChannel,
- * @param {string} AgoricToElysChannel,
- * @param {MapStore<string, string>} stDenomOnElysTohostToAgoricChannelMap,
- * @param {string} agoricBech32Prefix,
- * @param {string} strideBech32Prefix,
- * @param {string} elysBech32Prefix,
- * @param {FeeConfigShape} feeConfig,,
+ * @param {OrchestrationAccount<{ chainId: string }> & Passable} localAccount
+ * @param {ChainAddress} localAccountAddress
+ * @param {OrchestrationAccount<{ chainId: string }> & Passable} strideICAAccount
+ * @param {ChainAddress} strideICAAddress
+ * @param {OrchestrationAccount<{ chainId: string }> & Passable} elysICAAccount
+ * @param {ChainAddress} elysICAAddress
+ * @param {MapStore<string, SupportedHostChainShape>} supportedHostChains
+ * @param {string} elysToAgoricChannel
+ * @param {string} AgoricToElysChannel
+ * @param {MapStore<string, string>} stDenomOnElysTohostToAgoricChannelMap
+ * @param {string} agoricBech32Prefix
+ * @param {string} strideBech32Prefix
+ * @param {string} elysBech32Prefix
+ * @param {FeeConfigShape} feeConfig
  */
 // * @param {StrideStakingTapState & Passable} state/
 export const tokenMovementAndStrideLSDFlow = async (
@@ -238,6 +236,10 @@ export const tokenMovementAndStrideLSDFlow = async (
     encoding: elysICAAddress.encoding,
     value: senderElysAddress,
   };
+
+  // https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
+  await null;
+
   // Receiving tokens for liquid staking
   if (hostChainInfo !== undefined) {
     if (tx.denom !== hostChainInfo.nativeDenom) {
@@ -342,7 +344,6 @@ export const tokenMovementAndStrideLSDFlow = async (
         BigInt(stakingResponse.stToken.amount),
         'Moving stTokens to elys from stride chain failed, sending it to users wallet on stride chain',
       );
-      return;
     }
   } else {
     const hostToAgoricChannel = stDenomOnElysTohostToAgoricChannelMap.get(
@@ -351,8 +352,8 @@ export const tokenMovementAndStrideLSDFlow = async (
     if (hostToAgoricChannel === undefined) {
       return;
     }
-    const hostChainInfo = supportedHostChains.get(hostToAgoricChannel);
-    if (hostChainInfo === undefined) {
+    const hostChain = supportedHostChains.get(hostToAgoricChannel);
+    if (hostChain === undefined) {
       return;
     }
     let incomingStTokenAmount;
@@ -418,7 +419,7 @@ export const tokenMovementAndStrideLSDFlow = async (
     try {
       const senderNativeAddress = deriveAddress(
         tx.sender,
-        hostChainInfo.bech32Prefix,
+        hostChain.bech32Prefix,
       );
       trace(
         `Derived Native address from elys address ${tx.sender} is ${senderNativeAddress}`,
@@ -427,25 +428,24 @@ export const tokenMovementAndStrideLSDFlow = async (
         strideICAAccount,
         strideICAAddress,
         tx.amount,
-        hostChainInfo.hostICAAccountAddress.chainId,
+        hostChain.hostICAAccountAddress.chainId,
         senderNativeAddress,
       );
     } catch (error) {
       await handleTransferFailure(
         strideICAAccount,
         senderStrideChainAddress,
-        `st${hostChainInfo.nativeDenom}`,
+        `st${hostChain.nativeDenom}`,
         amountAfterFeeDeduction,
         'Unstaking on stride failed, sending it to users wallet on stride chain',
       );
-      return;
     }
   }
 };
 harden(tokenMovementAndStrideLSDFlow);
 
 const deriveAddress = (sender, hrp) => {
-  const { prefix, bytes } = decodeBech32(sender);
+  const { bytes } = decodeBech32(sender);
   const derivedAddress = encodeBech32(hrp, bytes);
   return harden(derivedAddress);
 };
@@ -466,6 +466,10 @@ const handleTransferFailure = async (
   traceMessage,
 ) => {
   trace(traceMessage);
+
+  // https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
+  await null;
+
   try {
     await account.send(address, { denom, value: amount });
   } catch (error) {
@@ -573,7 +577,10 @@ const redeemOnStride = async (
     }),
   );
 
-  return await strideICAAccount.executeEncodedTx([strideRedeemStakeMsg]);
+  // https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
+  await null;
+
+  await strideICAAccount.executeEncodedTx([strideRedeemStakeMsg]);
 };
 harden(redeemOnStride);
 
