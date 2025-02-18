@@ -215,7 +215,6 @@ jobs:
         continue-on-error: true
         timeout-minutes: 4
         with:
-          datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
 
@@ -341,7 +340,6 @@ jobs:
         continue-on-error: true
         timeout-minutes: 4
         with:
-          datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
 
@@ -385,7 +383,6 @@ jobs:
         continue-on-error: true
         timeout-minutes: 4
         with:
-          datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
 
@@ -427,7 +424,6 @@ jobs:
         continue-on-error: true
         timeout-minutes: 4
         with:
-          datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
 
@@ -472,7 +468,6 @@ jobs:
         continue-on-error: true
         timeout-minutes: 4
         with:
-          datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
 
@@ -514,7 +509,6 @@ jobs:
         continue-on-error: true
         timeout-minutes: 4
         with:
-          datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
 
@@ -560,7 +554,6 @@ jobs:
         continue-on-error: true
         timeout-minutes: 4
         with:
-          datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
 
@@ -612,7 +605,6 @@ jobs:
         continue-on-error: true
         timeout-minutes: 4
         with:
-          datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
 
@@ -656,7 +648,6 @@ jobs:
         continue-on-error: true
         timeout-minutes: 4
         with:
-          datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
 
@@ -699,6 +690,5 @@ jobs:
         continue-on-error: true
         timeout-minutes: 4
         with:
-          datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
