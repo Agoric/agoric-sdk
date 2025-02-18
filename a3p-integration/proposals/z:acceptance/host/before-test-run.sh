@@ -35,9 +35,9 @@ install_go() {
     local go_tar="/tmp/go.tar.gz"
 
     curl --location --output "$go_tar" --silent "https://go.dev/dl/go$GO_VERSION.linux-amd64.tar.gz"
-    tar --directory "/usr/local" --extract --file "$go_tar" --gzip
+    tar --directory "$HOME" --extract --file "$go_tar" --gzip
     rm --force "$go_tar"
-    export PATH="/usr/local/go/bin:$PATH"
+    export PATH="$HOME/go/bin:$PATH"
   fi
 }
 
