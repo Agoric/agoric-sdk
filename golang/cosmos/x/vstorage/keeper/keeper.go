@@ -12,6 +12,7 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	db "github.com/tendermint/tm-db"
 
@@ -188,6 +189,8 @@ func getEncodedKeysWithPrefixFromIterator(iterator sdk.Iterator, prefix string) 
 	return keys
 }
 
+const vstorageMetricKey = "vstorage_size_delta"
+
 // RemoveEntriesWithPrefix removes all storage entries starting with the
 // supplied pathPrefix, which may not be empty.
 // It has the same effect as listing children of the prefix and removing each
@@ -215,6 +218,8 @@ func (k Keeper) RemoveEntriesWithPrefix(ctx sdk.Context, pathPrefix string) {
 	keys := getEncodedKeysWithPrefixFromIterator(iterator, descendantPrefix)
 
 	for _, key := range keys {
+		rawValue := store.Get(key)
+		telemetry.IncrCounter(float32(-len(key) - len(rawValue)), vstorageMetricKey)
 		store.Delete(key)
 	}
 
@@ -366,17 +371,22 @@ func (k Keeper) SetStorage(ctx sdk.Context, entry agoric.KVEntry) {
 	store := ctx.KVStore(k.storeKey)
 	path := entry.Key()
 	encodedKey := types.PathToEncodedKey(path)
+	rawValue := store.Get(encodedKey)
 
 	if !entry.HasValue() {
 		if !k.HasChildren(ctx, path) {
 			// We have no children, can delete.
+			telemetry.IncrCounter(float32(-len(encodedKey) - len(rawValue)), vstorageMetricKey)
 			store.Delete(encodedKey)
 		} else {
+			// We have children, remove the value
+			telemetry.IncrCounter(float32(len(types.EncodedNoDataValue) - len(rawValue)), vstorageMetricKey)
 			store.Set(encodedKey, types.EncodedNoDataValue)
 		}
 	} else {
 		// Update the value.
 		bz := bytes.Join([][]byte{types.EncodedDataPrefix, []byte(entry.StringValue())}, []byte{})
+		telemetry.IncrCounter(float32(len(bz) - len(rawValue)), vstorageMetricKey)
 		store.Set(encodedKey, bz)
 	}
 
@@ -390,7 +400,9 @@ func (k Keeper) SetStorage(ctx sdk.Context, entry agoric.KVEntry) {
 				// this and further ancestors are needed, skip out
 				break
 			}
-			store.Delete(types.PathToEncodedKey(ancestor))
+			encodedAncestor := types.PathToEncodedKey(ancestor)
+			telemetry.IncrCounter(float32(-len(encodedAncestor) - len(types.EncodedNoDataValue)), vstorageMetricKey)
+			store.Delete(encodedAncestor)
 		}
 	} else {
 		// add placeholders as needed
@@ -400,7 +412,9 @@ func (k Keeper) SetStorage(ctx sdk.Context, entry agoric.KVEntry) {
 				// The ancestor exists, implying all further ancestors exist, so we can break.
 				break
 			}
-			store.Set(types.PathToEncodedKey(ancestor), types.EncodedNoDataValue)
+			encodedAncestor := types.PathToEncodedKey(ancestor)
+			telemetry.IncrCounter(float32(len(encodedAncestor) + len(types.EncodedNoDataValue)), vstorageMetricKey)
+			store.Set(encodedAncestor, types.EncodedNoDataValue)
 		}
 	}
 }
