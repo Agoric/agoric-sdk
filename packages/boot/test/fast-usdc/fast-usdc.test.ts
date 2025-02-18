@@ -58,7 +58,9 @@ test.after.always(t => t.context.shutdown?.());
 
 test.serial('oracles provision before contract deployment', async t => {
   const { walletFactoryDriver: wfd } = t.context;
-  const watcherWallet = await wfd.provideSmartWallet('agoric1watcher1');
+  const [watcherWallet] = await Promise.all(
+    oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
+  );
   t.truthy(watcherWallet);
 });
 
@@ -75,9 +77,7 @@ test.serial(
       walletFactoryDriver: wfd,
     } = t.context;
 
-    const [watcherWallet] = await Promise.all(
-      oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
-    );
+    const watcherWallet = await wfd.provideSmartWallet(oracleAddrs[0]);
 
     // inbound `startChannelOpenInit` responses immediately.
     // needed since the Fusdc StartFn relies on an ICA being created
