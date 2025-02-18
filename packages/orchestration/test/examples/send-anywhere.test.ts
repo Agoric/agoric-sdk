@@ -352,56 +352,51 @@ test(unhandledRejection, 1, 'failed ibc transfer returns give', async t => {
   );
 });
 
-test(
-  unhandledRejection,
-  1,
-  'non-vbank asset presented is returned',
-  async t => {
-    t.log('bootstrap, orchestration core-eval');
-    const { bootstrap, commonPrivateArgs } = await commonSetup(t);
-    const vt = bootstrap.vowTools;
+test('non-vbank asset presented is returned', async t => {
+  t.log('bootstrap, orchestration core-eval');
+  const { bootstrap, commonPrivateArgs } = await commonSetup(t);
+  const vt = bootstrap.vowTools;
 
-    const { zoe, bundleAndInstall } = await setUpZoeForTest();
+  const { zoe, bundleAndInstall } = await setUpZoeForTest();
 
-    const moolah = withAmountUtils(makeIssuerKit('MOO'));
+  const moolah = withAmountUtils(makeIssuerKit('MOO'));
 
-    const installation: Installation<StartFn> =
-      await bundleAndInstall(contractFile);
-    const storageNode = await E(bootstrap.storage.rootNode).makeChildNode(
-      contractName,
-    );
-    const sendKit = await E(zoe).startInstance(
-      installation,
-      { MOO: moolah.issuer },
-      {},
-      { ...commonPrivateArgs, storageNode },
-    );
+  const installation: Installation<StartFn> =
+    await bundleAndInstall(contractFile);
+  const storageNode = await E(bootstrap.storage.rootNode).makeChildNode(
+    contractName,
+  );
+  const sendKit = await E(zoe).startInstance(
+    installation,
+    { MOO: moolah.issuer },
+    {},
+    { ...commonPrivateArgs, storageNode },
+  );
 
-    const publicFacet = await E(zoe).getPublicFacet(sendKit.instance);
-    const inv = E(publicFacet).makeSendInvitation();
+  const publicFacet = await E(zoe).getPublicFacet(sendKit.instance);
+  const inv = E(publicFacet).makeSendInvitation();
 
-    const anAmt = moolah.make(10n);
-    const Moo = moolah.mint.mintPayment(anAmt);
-    const userSeat = await E(zoe).offer(
-      inv,
-      { give: { Moo: anAmt } },
-      { Moo },
-      { destAddr: 'cosmos1destAddr', chainName: 'cosmoshub' },
-    );
+  const anAmt = moolah.make(10n);
+  const Moo = moolah.mint.mintPayment(anAmt);
+  const userSeat = await E(zoe).offer(
+    inv,
+    { give: { Moo: anAmt } },
+    { Moo },
+    { destAddr: 'cosmos1destAddr', chainName: 'cosmoshub' },
+  );
 
-    await t.throwsAsync(vt.when(E(userSeat).getOfferResult()), {
-      message:
-        '[object Alleged: MOO brand guest wrapper] not registered in vbank',
-    });
+  await t.throwsAsync(vt.when(E(userSeat).getOfferResult()), {
+    message:
+      '[object Alleged: MOO brand guest wrapper] not registered in vbank',
+  });
 
-    await E(userSeat).tryExit();
-    const payouts = await E(userSeat).getPayouts();
-    const amountReturned = await moolah.issuer.getAmountOf(payouts.Moo);
-    t.deepEqual(anAmt, amountReturned, 'give is returned');
-  },
-);
+  await E(userSeat).tryExit();
+  const payouts = await E(userSeat).getPayouts();
+  const amountReturned = await moolah.issuer.getAmountOf(payouts.Moo);
+  t.deepEqual(anAmt, amountReturned, 'give is returned');
+});
 
-test(unhandledRejection, 1, 'rejects multi-asset send', async t => {
+test('rejects multi-asset send', async t => {
   t.log('bootstrap, orchestration core-eval');
   const {
     bootstrap,

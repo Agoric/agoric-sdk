@@ -16,7 +16,6 @@
     "test": "ava",
     "test:c8": "c8 --all $C8_OPTIONS ava",
     "test:xs": "exit 0",
-    "test:xs:ci": "npm run test:xs",
     "lint": "run-s --continue-on-error lint:*",
     "lint:types": "tsc",
     "lint:eslint": "eslint .",
