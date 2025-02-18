@@ -132,7 +132,7 @@ test.serial(
     const watcherWallet = await wfd.provideSmartWallet(oracleAddrs[0]);
 
     const freshDeploy = false; // prop 87 done
-    if (!freshDeploy) {
+    if (freshDeploy) {
       // inbound `startChannelOpenInit` responses immediately.
       // needed since the Fusdc StartFn relies on an ICA being created
       bridgeUtils.setAckBehavior(
