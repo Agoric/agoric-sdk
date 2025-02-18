@@ -6,7 +6,7 @@ import engineGC from './engine-gc.js';
 import { makeGcAndFinalize } from './gc-and-finalize.js';
 
 /**
- * @import {ExecutionContext, Macro} from 'ava';
+ * @import {ExecutionContext, Macro, TestFn} from 'ava';
  */
 
 export const AVA_EXPECT_UNHANDLED_REJECTIONS =
@@ -16,52 +16,51 @@ export const SUBTEST_PREFIX = '(unhandled rejection subprocess): ';
 
 /**
  * @template C
- * @param {string} importMetaUrl
- * @returns {Macro<
- *   [
- *     expectedUnhandled: number,
- *     name: string,
- *     testFn: (t: ExecutionContext<C>) => any,
- *   ],
- *   C
- * >}
+ * @param {object} powers
+ * @param {TestFn<C>} powers.test
+ * @param {string} powers.importMetaUrl
+ * @returns {(
+ *   expectedUnhandled: number,
+ * ) => Macro<[name: string, impl: (t: ExecutionContext<C>) => any], C>}
  */
-export const makeExpectUnhandledRejectionMacro = importMetaUrl => {
+export const makeExpectUnhandledRejection = ({ test, importMetaUrl }) => {
   const self = fileURLToPath(importMetaUrl);
   const gcAndFinalize = makeGcAndFinalize(engineGC);
 
   if (process.env[AVA_EXPECT_UNHANDLED_REJECTIONS]) {
-    return {
-      title: (_, _expectedUnhandled, name, _testFn) => SUBTEST_PREFIX + name,
-      exec: async (t, _expectedUnhandled, _name, testFn) => {
-        await null;
-        try {
-          const result = await testFn(t);
-          return result;
-        } finally {
-          await gcAndFinalize();
-        }
-      },
-    };
+    return _expectedUnhandled =>
+      test.macro({
+        title: (_, name, _impl) => SUBTEST_PREFIX + name,
+        exec: async (t, _name, impl) => {
+          await null;
+          try {
+            const result = await impl(t);
+            return result;
+          } finally {
+            await gcAndFinalize();
+          }
+        },
+      });
   }
 
-  return {
-    title: (_, _expectedUnhandled, name, _testFn) => name,
-    exec: async (t, expectedUnhandled, name, _testFn) =>
-      new Promise((resolve, reject) => {
-        const ps = spawn('ava', [self, '-m', SUBTEST_PREFIX + name], {
-          env: {
-            ...process.env,
-            [AVA_EXPECT_UNHANDLED_REJECTIONS]: `${expectedUnhandled}`,
-          },
-          stdio: ['ignore', 'inherit', 'inherit', 'ignore'],
-        });
+  return expectedUnhandled =>
+    test.macro({
+      title: (_, name, _impl) => name,
+      exec: async (t, name, _impl) =>
+        new Promise((resolve, reject) => {
+          const ps = spawn('ava', [self, '-m', SUBTEST_PREFIX + name], {
+            env: {
+              ...process.env,
+              [AVA_EXPECT_UNHANDLED_REJECTIONS]: `${expectedUnhandled}`,
+            },
+            stdio: ['ignore', 'inherit', 'inherit', 'ignore'],
+          });
 
-        ps.on('close', code => {
-          t.is(code, 0, `got exit code ${code}, expected 0 for ${name}`);
-          resolve();
-        });
-        ps.on('error', reject);
-      }),
-  };
+          ps.on('close', code => {
+            t.is(code, 0, `got exit code ${code}, expected 0 for ${name}`);
+            resolve();
+          });
+          ps.on('error', reject);
+        }),
+    });
 };

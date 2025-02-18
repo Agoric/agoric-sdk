@@ -6,9 +6,26 @@ import {
 
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
+import { makeExpectUnhandledRejection } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
 import { prepareVowTools } from '../vat.js';
 
-test.serial('vow resolve across upgrade', async t => {
+const expectUnhandled = makeExpectUnhandledRejection({
+  test,
+  importMetaUrl: import.meta.url,
+});
+
+/**
+ * We should be more explicit about why we have various unhandled rejections:
+ * - add a onRejected that makes a plain assertion t.pass() (that can be
+ *   accounted for in the t.plan()), before rethrowing the error.
+ * - Maybe add comments about how many time the onRejected is expected to be
+ *   hit, and by which vows.
+ * - Add comment when resolving each vow or setting up a watch which ones are
+ *   expected to create an unhandled rejection.
+ *
+ * XXX: Split this test up into more bite-sized pieces.
+ */
+test(expectUnhandled(5), 'vow resolve across upgrade', async t => {
   annihilate();
 
   t.plan(3);
@@ -55,7 +72,8 @@ test.serial('vow resolve across upgrade', async t => {
 
     vowTools.watch(testVowKit3.vow, watcher2);
     testVowKit3.resolver.resolve(42);
-    testVowKit4.resolver.reject(() => 'is not storable');
+    const nonStorable = () => 'is not storable';
+    testVowKit4.resolver.reject(nonStorable);
   });
 
   await startLife(

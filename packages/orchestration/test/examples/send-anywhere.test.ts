@@ -9,6 +9,7 @@ import {
   eventLoopIteration,
   inspectMapStore,
 } from '@agoric/internal/src/testing-utils.js';
+import { makeExpectUnhandledRejection } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
 import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import type {
@@ -20,6 +21,10 @@ import { SingleNatAmountRecord } from '../../src/examples/send-anywhere.contract
 import { registerChain } from '../../src/chain-info.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
+const expectUnhandled = makeExpectUnhandledRejection({
+  test,
+  importMetaUrl: import.meta.url,
+});
 
 const contractName = 'sendAnywhere';
 const contractFile = `${dirname}/../../src/examples/send-anywhere.contract.js`;
@@ -252,7 +257,8 @@ test('baggage', async t => {
   t.snapshot(tree, 'contract baggage after start');
 });
 
-test('failed ibc transfer returns give', async t => {
+// TODO(#11026): This use of expectUnhandled should not be necessary.
+test(expectUnhandled(1), 'failed ibc transfer returns give', async t => {
   t.log('bootstrap, orchestration core-eval');
   const {
     bootstrap,
