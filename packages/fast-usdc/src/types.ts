@@ -1,5 +1,7 @@
 import type {
+  AccountId,
   ChainAddress,
+  CosmosAddress,
   CosmosChainInfo,
   Denom,
   DenomDetail,
@@ -142,7 +144,7 @@ export type AddressHook = {
   baseAddress: string;
   query: {
     /** end user destination address */
-    EUD: string;
+    EUD: CosmosAddress;
   };
 };
 

@@ -121,6 +121,7 @@ const makeTestContext = async t => {
       if (typeof EUD !== 'string') {
         throw Error(`EUD not found in ${recipientAddress}`);
       }
+      // @ts-expect-error FIXME support any AccountId
       const destination = chainHub.makeChainAddress(EUD);
       return harden({
         txHash,

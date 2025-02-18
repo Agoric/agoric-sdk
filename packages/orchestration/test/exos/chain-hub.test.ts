@@ -169,19 +169,21 @@ test('makeChainAddress', async t => {
   await vt.asPromise(chainHub.getChainInfo('osmosis'));
 
   const MOCK_ICA_ADDRESS =
-    'osmo1ht7u569vpuryp6utadsydcne9ckeh2v8dkd38v5hptjl3u2ewppqc6kzgd';
+    'osmo1ht7u569vpuryp6utadsydcne9ckeh2v8dkd38v5hptjl3u2ewppqc6kzgd' as const;
   t.deepEqual(chainHub.makeChainAddress(MOCK_ICA_ADDRESS), {
     chainId: 'osmosis-1',
     value: MOCK_ICA_ADDRESS,
   });
 
   t.throws(
+    // @ts-expect-error intentional error
     () => chainHub.makeChainAddress(MOCK_ICA_ADDRESS.replace('osmo1', 'foo1')),
     {
       message: 'Chain info not found for bech32Prefix "foo"',
     },
   );
 
+  // @ts-expect-error intentional error
   t.throws(() => chainHub.makeChainAddress('notbech32'), {
     message: 'No separator character for "notbech32"',
   });
