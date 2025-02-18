@@ -4,7 +4,7 @@ import {
   CosmosChainInfoShape,
   DenomDetailShape,
   DenomShape,
-} from '@agoric/orchestration';
+} from '@agoric/orchestration/src/typeGuards.js';
 import { PendingTxStatus } from './constants.js';
 
 /**

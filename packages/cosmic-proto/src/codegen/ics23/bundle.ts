@@ -1,5 +1,5 @@
 //@ts-nocheck
-import * as _124 from '../proofs.js';
+import * as _139 from '../proofs.js';
 export const ics23 = {
-  ..._124,
+  ..._139,
 };

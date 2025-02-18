@@ -183,6 +183,10 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 			// Each CoreProposalStep runs sequentially, and can be constructed from
 			// one or more modules executing in parallel within the step.
 			CoreProposalSteps = append(CoreProposalSteps,
+				// Register a new ZCF to be used for all future contract instances and upgrades
+				vm.CoreProposalStepForModules(
+					"@agoric/builders/scripts/vats/upgrade-zcf.js",
+				),
 				// because of #10794, we need to do at least a null upgrade of
 				// the walletFactory on every software upgrade
 				vm.CoreProposalStepForModules(

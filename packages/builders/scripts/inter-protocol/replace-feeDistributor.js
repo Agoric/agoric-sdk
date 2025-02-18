@@ -3,12 +3,20 @@ import { getManifestForReplaceFeeDistributor } from '@agoric/inter-protocol/src/
 import { SECONDS_PER_HOUR } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
-export const defaultProposalBuilder = async (_, opts) => {
+export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
   console.log('feeDist OPTS', opts);
   return harden({
     sourceSpec:
       '@agoric/inter-protocol/src/proposals/replace-fee-distributor.js',
-    getManifestCall: [getManifestForReplaceFeeDistributor.name, { ...opts }],
+    getManifestCall: [
+      getManifestForReplaceFeeDistributor.name,
+      {
+        feeDistributorRef: publishRef(
+          install('@agoric/inter-protocol/src/feeDistributor.js'),
+        ),
+        ...opts,
+      },
+    ],
   });
 };
 
