@@ -5,6 +5,7 @@ import test from 'ava';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 import { kslot, kser } from '@agoric/kmarshal';
+import { avaRetry } from '@agoric/internal/tools/avaRetry.js';
 import engineGC from './engine-gc.js';
 import { watchCollected, makeGcAndFinalize } from './gc-and-finalize.js';
 import { buildSyscall, makeDispatch } from './liveslots-helpers.js';
@@ -26,25 +27,7 @@ const gcAndFinalize = makeGcAndFinalize(engineGC);
 // inconsistent GC behavior under Node.js and AVA with tests running
 // in parallel, so we mark them all with test.serial()
 
-/**
-  * Run the test serially, and if it fails retry once.
-  * @param {string} title
-  * @param (Function) predicate
-  */
-function testSerialRetry(title, implementation) {
-  test.serial(title, async t => {
-    const result = await t.try(implementation);
-    if (result.passed) {
-      result.commit();
-    } else {
-      result.discard();
-      const retryResult = await t.try(implementation);
-      retryResult.commit();
-    }
-  });
-}
-
-testSerialTry('liveslots retains pending exported promise', async t => {
+avaRetry(test.serial, 'liveslots retains pending exported promise', async t => {
   const { log, syscall } = buildSyscall();
   let collected;
   const success = [];
@@ -82,7 +65,7 @@ testSerialTry('liveslots retains pending exported promise', async t => {
   t.deepEqual(success, ['yes']);
 });
 
-testSerialTry('liveslots retains device nodes', async t => {
+avaRetry(test.serial, 'liveslots retains device nodes', async t => {
   const { syscall } = buildSyscall();
   let collected;
   const recognize = new WeakSet(); // real WeakSet
@@ -110,7 +93,7 @@ testSerialTry('liveslots retains device nodes', async t => {
   t.deepEqual(success, [true]);
 });
 
-testSerialTry('GC syscall.dropImports', async t => {
+avaRetry(test.serial, 'GC syscall.dropImports', async t => {
   const { log, syscall } = buildSyscall();
   let collected;
   function build(_vatPowers) {
@@ -195,7 +178,7 @@ testSerialTry('GC syscall.dropImports', async t => {
   t.deepEqual(log, []);
 });
 
-testSerialTry('GC dispatch.retireImports', async t => {
+avaRetry(test.serial, 'GC dispatch.retireImports', async t => {
   const { log, syscall } = buildSyscall();
   function build(_vatPowers) {
     // eslint-disable-next-line no-unused-vars
@@ -228,7 +211,7 @@ testSerialTry('GC dispatch.retireImports', async t => {
   // when we implement VOM.vrefIsRecognizable, this test might do more
 });
 
-testSerialTry('GC dispatch.retireExports', async t => {
+avaRetry(test.serial, 'GC dispatch.retireExports', async t => {
   const { log, syscall } = buildSyscall();
   function build(_vatPowers) {
     const ex1 = Far('export', {});
@@ -271,7 +254,7 @@ testSerialTry('GC dispatch.retireExports', async t => {
   t.deepEqual(log, []);
 });
 
-testSerialTry('GC dispatch.dropExports', async t => {
+avaRetry(test.serial, 'GC dispatch.dropExports', async t => {
   const { log, syscall } = buildSyscall();
   let collected;
   function build(_vatPowers) {
@@ -344,7 +327,8 @@ testSerialTry('GC dispatch.dropExports', async t => {
   t.deepEqual(log, []);
 });
 
-test.serial(
+avaRetry(
+  test.serial,
   'GC dispatch.retireExports inhibits syscall.retireExports',
   async t => {
     const { log, syscall } = buildSyscall();
