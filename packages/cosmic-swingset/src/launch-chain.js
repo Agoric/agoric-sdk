@@ -35,6 +35,7 @@ import {
   mergeCoreProposals,
 } from '@agoric/deploy-script-support/src/extract-proposal.js';
 import { fileURLToPath } from 'url';
+import { ValueType } from '@opentelemetry/api';
 
 import {
   makeDefaultMeterProvider,
@@ -55,6 +56,19 @@ import { computronCounter } from './computron-counter.js';
 /** @typedef {ReturnType<typeof makeQueue<{context: any, action: any}>>} InboundQueue */
 
 const { now } = Date;
+/**
+ * Convert a milliseconds timestamp from `now()` into milliseconds since the
+ * POSIX epoch. The result will match (or approximately match) the input when
+ * `now` is `Date.now`, but may differ dramatically when it is `performance.now`
+ * or otherwise not already relative to the POSIX epoch.
+ *
+ * @param {ReturnType<typeof now>} nowMilliseconds
+ * @returns {number}
+ */
+const toPosix = nowMilliseconds => {
+  const offset = Date.now() - now();
+  return offset + nowMilliseconds;
+};
 
 const console = anylogger('launch-chain');
 const blockManagerConsole = anylogger('block-manager');
@@ -498,6 +512,82 @@ export async function launch({
     initialQueueLengths,
   });
 
+  const chainNodeMetrics = {
+    swingsetRunTime: metricMeter.createHistogram('swingsetRunTime', {
+      description: 'The time spent per block executing SwingSet',
+      valueType: ValueType.DOUBLE,
+      unit: 's',
+      advice: {
+        explicitBucketBoundaries: [
+          0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10, 15, 30,
+        ],
+      },
+    }),
+    swingsetChainSaveTime: metricMeter.createHistogram(
+      'swingsetChainSaveTime',
+      {
+        description:
+          'The time spent per block explicitly waiting for SwingSet state to be saved in cosmos state',
+        valueType: ValueType.DOUBLE,
+        unit: 's',
+        advice: {
+          explicitBucketBoundaries: [0.1, 0.2, 0.3, 0.4, 0.5, 1],
+        },
+      },
+    ),
+    commitTime: metricMeter.createHistogram('commitTime', {
+      description: 'The time spent per block committing state',
+      valueType: ValueType.DOUBLE,
+      unit: 's',
+      advice: {
+        explicitBucketBoundaries: [0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10],
+      },
+    }),
+    swingsetCommitTime: metricMeter.createHistogram('swingsetCommitTime', {
+      description: 'The time spent per block committing SwingSet state',
+      valueType: ValueType.DOUBLE,
+      unit: 's',
+      advice: {
+        explicitBucketBoundaries: [0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10],
+      },
+    }),
+    cosmosCommitTime: metricMeter.createHistogram('cosmosCommitTime', {
+      description: 'The time spent per block committing cosmos state',
+      valueType: ValueType.DOUBLE,
+      unit: 's',
+      advice: {
+        explicitBucketBoundaries: [0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10],
+      },
+    }),
+    interBlockTime: metricMeter.createHistogram('interBlockTime', {
+      description: 'The time spent idle between blocks',
+      valueType: ValueType.DOUBLE,
+      unit: 's',
+      advice: {
+        explicitBucketBoundaries: [0.1, 0.5, 1, 2, 3, 4, 5, 6, 7, 10],
+      },
+    }),
+    afterCommitWaitTime: metricMeter.createHistogram('afterCommitWaitTime', {
+      description: 'The time spent per block waiting for after commit work',
+      valueType: ValueType.DOUBLE,
+      unit: 's',
+      advice: {
+        explicitBucketBoundaries: [0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10],
+      },
+    }),
+    blockLag: metricMeter.createHistogram('blockLag', {
+      description: 'The delay with which this node is processing blocks',
+      valueType: ValueType.DOUBLE,
+      unit: 's',
+      advice: {
+        explicitBucketBoundaries: [
+          0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 6, 10, 30, 60, 120, 180, 240,
+          300, 600, 3600,
+        ],
+      },
+    }),
+  };
+
   /**
    * @param {number} blockHeight
    * @param {ChainRunPolicy} runPolicy
@@ -668,14 +758,17 @@ export async function launch({
   let chainTime;
   /** duration of the latest saveOutsideState(), which commits to swing-store host storage */
   let saveTime = 0;
-  let previousBeginBlock = NaN;
-  let endBlockFinish = 0;
-  let commitSwingSetFinish = 0;
-  let afterCommitFinish = NaN;
   let blockParams;
   let decohered;
   /** @type {undefined | Promise<void>} */
   let afterCommitWorkDone;
+  /** Timestamps that are relevant across block lifecycle events. */
+  const times = {
+    endBlockDone: NaN,
+    commitBlockDone: NaN,
+    afterCommitBlockDone: NaN,
+    previousAfterCommitBlockPosix: NaN,
+  };
 
   /**
    * Dispatch an action from an inbound queue to an appropriate handler based on
@@ -1120,7 +1213,7 @@ export async function launch({
           `wrote SwingSet checkpoint [run=${runTime}ms, chainSave=${chainTime}ms, kernelSave=${saveTime}ms]`,
         );
 
-        commitSwingSetFinish = now();
+        times.commitBlockDone = now();
 
         return undefined;
       }
@@ -1128,9 +1221,11 @@ export async function launch({
       case ActionType.AFTER_COMMIT_BLOCK: {
         const { blockHeight, blockTime } = action;
 
-        const afterCommitTimestamp = now();
-        const fullSaveTime = afterCommitTimestamp - endBlockFinish;
-        const cosmosSaveTime = afterCommitTimestamp - commitSwingSetFinish;
+        const afterCommitStart = now();
+        // Time spent since the end of COMMIT_BLOCK.
+        const cosmosCommitDuration = afterCommitStart - times.commitBlockDone;
+        // Time spent since the end of END_BLOCK (inclusive of COMMIT_BLOCK).
+        const fullCommitDuration = afterCommitStart - times.endBlockDone;
 
         controller.writeSlogObject({
           type: 'cosmic-swingset-commit-block-finish',
@@ -1139,9 +1234,15 @@ export async function launch({
           runTime: runTime / 1000,
           chainTime: chainTime / 1000,
           saveTime: saveTime / 1000,
-          cosmosSaveTime: cosmosSaveTime / 1000,
-          fullSaveTime: fullSaveTime / 1000,
+          cosmosSaveTime: cosmosCommitDuration / 1000,
+          fullSaveTime: fullCommitDuration / 1000,
         });
+
+        chainNodeMetrics.swingsetRunTime.record(runTime / 1000);
+        chainNodeMetrics.swingsetChainSaveTime.record(chainTime / 1000);
+        chainNodeMetrics.swingsetCommitTime.record(saveTime / 1000);
+        chainNodeMetrics.cosmosCommitTime.record(cosmosCommitDuration / 1000);
+        chainNodeMetrics.commitTime.record(fullCommitDuration / 1000);
 
         afterCommitWorkDone = afterCommit(blockHeight, blockTime);
 
@@ -1154,14 +1255,14 @@ export async function launch({
           afterCommitWorkDone = undefined;
         });
 
-        afterCommitFinish = now();
+        times.afterCommitBlockDone = now();
 
         return undefined;
       }
 
       case ActionType.BEGIN_BLOCK: {
         const beginStart = now();
-        const interBlockTime = beginStart - afterCommitFinish;
+        const interBlockTime = beginStart - times.afterCommitBlockDone;
 
         // Awaiting completion of afterCommitWorkDone ensures that timings
         // correspond exclusively with work for a single block.
@@ -1178,11 +1279,11 @@ export async function launch({
         verboseBlocks &&
           blockManagerConsole.info('block', blockHeight, 'begin');
         runTime = 0;
-        // The blockTime of current block is decided in consensus when
-        // starting to execute the previous block.
-        const previousBlockLagTime = previousBeginBlock - blockTime * 1000;
-        // Include the await of after commit work in our lag time
-        previousBeginBlock = afterCommitTS;
+        // blockTime is decided in consensus when starting to execute the
+        // *previous* block.
+        // TODO: Link to documentation of this.
+        const blockLag = times.previousAfterCommitBlockPosix - blockTime * 1000;
+        times.previousAfterCommitBlockPosix = toPosix(afterCommitTS);
 
         if (blockNeedsExecution(blockHeight)) {
           if (savedBeginHeight === blockHeight) {
@@ -1201,9 +1302,15 @@ export async function launch({
           blockTime,
           interBlockTime: interBlockTime / 1000,
           waitAfterCommitTime: waitAfterCommitTime / 1000,
-          previousBlockLagTime: previousBlockLagTime / 1000,
+          previousBlockLagTime: blockLag / 1000,
           inboundQueueStats: inboundQueueMetrics.getStats(),
         });
+
+        Number.isNaN(interBlockTime) ||
+          chainNodeMetrics.interBlockTime.record(interBlockTime / 1000);
+        chainNodeMetrics.afterCommitWaitTime.record(waitAfterCommitTime / 1000);
+        Number.isNaN(blockLag) ||
+          chainNodeMetrics.blockLag.record(blockLag / 1000);
 
         return undefined;
       }
@@ -1274,7 +1381,7 @@ export async function launch({
           inboundQueueStats: inboundQueueMetrics.getStats(),
         });
 
-        endBlockFinish = now();
+        times.endBlockDone = now();
 
         return undefined;
       }
