@@ -9,7 +9,6 @@
   "engines": {
     "node": "^18.12 || ^20.9"
   },
-  "packageManager": "yarn@1.22.22",
   "scripts": {
     "test": "exit 0",
     "build:all": "make",
