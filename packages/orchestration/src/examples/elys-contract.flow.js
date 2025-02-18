@@ -509,7 +509,7 @@ harden(moveToHostChain);
  * @param {ChainAddress} strideICAAddress
  * @param {bigint} amount
  * @param {string} denom
- * @returns
+ * @returns {Promise<MsgLiquidStakeResponse>}
  */
 const liquidStakeOnStride = async (
   strideICAAccount,
@@ -559,7 +559,7 @@ harden(moveStTokensToElys);
  * @param {string} amount
  * @param {string} hostZone
  * @param {string} receiver
- * @returns
+ * @returns {Promise<void>}
  */
 const redeemOnStride = async (
   strideICAAccount,
@@ -590,7 +590,7 @@ harden(redeemOnStride);
  * @param {bigint} amount
  * @param {string} denom
  * @param {boolean} onBoard
- * @returns
+ * @returns {Promise<bigint>}
  */
 const deductedFeeAmount = async (
   account,

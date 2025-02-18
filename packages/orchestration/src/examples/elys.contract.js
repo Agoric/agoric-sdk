@@ -143,15 +143,18 @@ const contract = async (
         trace('receiveUpcall', event);
 
         const state = this.state;
-        const localAccount = /**
-         * @type {OrchestrationAccount<{ chainId: string }> & Passable}
-         */ (this.state.localAccount);
-        const strideICAAccount = /**
-         * @type {OrchestrationAccount<{ chainId: string }> & Passable}
-         */ (this.state.strideICAAccount);
-        const elysICAAccount = /**
-         * @type {OrchestrationAccount<{ chainId: string }> & Passable}
-         */ (this.state.elysICAAccount);
+        const localAccount =
+          /** @type {OrchestrationAccount<{ chainId: string }> & Passable} */ (
+            this.state.localAccount
+          );
+        const strideICAAccount =
+          /** @type {OrchestrationAccount<{ chainId: string }> & Passable} */ (
+            this.state.strideICAAccount
+          );
+        const elysICAAccount =
+          /** @type {OrchestrationAccount<{ chainId: string }> & Passable} */ (
+            this.state.elysICAAccount
+          );
 
         orchFns.tokenMovementAndStrideLSDFlow(
           event,
