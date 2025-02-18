@@ -4925,7 +4925,7 @@ __metadata:
     patch-package: "npm:^8.0.0"
     starshipjs: "npm:2.4.1"
     ts-blank-space: "npm:^0.4.4"
-    typescript: "npm:~5.8.0-beta"
+    typescript: "npm:~5.8.1-rc"
   languageName: unknown
   linkType: soft
 
@@ -5468,13 +5468,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:~5.8.0-beta":
-  version: 5.8.0-dev.20250130
-  resolution: "typescript@npm:5.8.0-dev.20250130"
+"typescript@npm:~5.8.1-rc":
+  version: 5.8.1-rc
+  resolution: "typescript@npm:5.8.1-rc"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10c0/20852f1703f109576c925a6710d6d0001656ecc77d60fca4ea94ecd562290cef4aa529f919f45f6ab3c8334d3746a938ecca700ed7d2fd563d7cbc3dbf75f2bf
+  checksum: 10c0/7692b2584d0bddbab2b9a76457908276cb968935b9e1a89b7429939b1c02c7c47b5b23f1e989e18bf441fc545a311f02e143e7594a3914e240554637011a7d70
   languageName: node
   linkType: hard
 
@@ -5488,13 +5488,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A~5.8.0-beta#optional!builtin<compat/typescript>":
-  version: 5.8.0-dev.20250130
-  resolution: "typescript@patch:typescript@npm%3A5.8.0-dev.20250130#optional!builtin<compat/typescript>::version=5.8.0-dev.20250130&hash=5786d5"
+"typescript@patch:typescript@npm%3A~5.8.1-rc#optional!builtin<compat/typescript>":
+  version: 5.8.1-rc
+  resolution: "typescript@patch:typescript@npm%3A5.8.1-rc#optional!builtin<compat/typescript>::version=5.8.1-rc&hash=5786d5"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10c0/8cc5b8c72a84ff58ca8c2e3bdd25ea50e98aed8b6c079ddfa43f14744cd20d97529edd61ca930e99deb9c9d6321650fd69030169bbbd546187c426fcff83d360
+  checksum: 10c0/45267f3c53240100da1d53ec8ebaa008f019055fe339c79baf596bab180aab2821751781bfc3202d5f6180fe01200aed9ebf45dec84490ef3a9d90359326c075
   languageName: node
   linkType: hard
 
