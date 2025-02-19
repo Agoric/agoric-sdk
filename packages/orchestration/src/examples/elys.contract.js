@@ -1,16 +1,16 @@
 import { makeTracer } from '@agoric/internal';
+import { Fail } from '@endo/errors';
+import { E } from '@endo/far';
+import { M, mustMatch } from '@endo/patterns';
+import { VowShape } from '@agoric/vow';
 import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
 import { withOrchestration } from '../utils/start-helper.js';
-import * as flows from './elys-contract.flow.js';
+import * as flows from './elys-contract.flows.js';
 import {
   FeeConfigShape,
   validateFeeConfigShape,
 } from './elys-contract-type-gaurd.js';
-import { E } from '@endo/far';
-import { M, mustMatch } from '@endo/patterns';
-import { VowShape } from '@agoric/vow';
 import { ChainAddressShape } from '../typeGuards.js';
-import { Fail } from '@endo/errors';
 
 const trace = makeTracer('ContractInstantiation');
 
@@ -143,15 +143,18 @@ const contract = async (
         trace('receiveUpcall', event);
 
         const state = this.state;
-        const localAccount = /**
-         * @type {OrchestrationAccount<{ chainId: string }> & Passable}
-         */ (this.state.localAccount);
-        const strideICAAccount = /**
-         * @type {OrchestrationAccount<{ chainId: string }> & Passable}
-         */ (this.state.strideICAAccount);
-        const elysICAAccount = /**
-         * @type {OrchestrationAccount<{ chainId: string }> & Passable}
-         */ (this.state.elysICAAccount);
+        const localAccount =
+          /** @type {OrchestrationAccount<{ chainId: string }> & Passable} */ (
+            this.state.localAccount
+          );
+        const strideICAAccount =
+          /** @type {OrchestrationAccount<{ chainId: string }> & Passable} */ (
+            this.state.strideICAAccount
+          );
+        const elysICAAccount =
+          /** @type {OrchestrationAccount<{ chainId: string }> & Passable} */ (
+            this.state.elysICAAccount
+          );
 
         orchFns.tokenMovementAndStrideLSDFlow(
           event,

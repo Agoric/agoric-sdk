@@ -5,18 +5,18 @@ import { E, passStyleOf } from '@endo/far';
 import { Nat } from '@endo/nat';
 import { M, mustMatch } from '@endo/patterns';
 import { createRequire } from 'module';
-import { ChainAddressShape } from '../../src/typeGuards.js';
-import { buildVTransferEvent } from '../../tools/ibc-mocks.js';
-import { commonSetup } from '../supports.js';
 import type { CoinSDKType } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
-import { buildMsgResponseString } from '../../tools/ibc-mocks.js';
-import {
-  MsgTransferResponse,
-} from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import { MsgTransferResponse } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import type { IBCEvent } from '@agoric/vats';
-import type { ChainAddress } from '../../src/orchestration-api.js';
 import { MsgLiquidStakeResponse } from '@agoric/cosmic-proto/stride/stakeibc/tx.js';
 import { MsgSendResponse } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
+import { ChainAddressShape } from '../../src/typeGuards.js';
+import { commonSetup } from '../supports.js';
+import {
+  buildVTransferEvent,
+  buildMsgResponseString,
+} from '../../tools/ibc-mocks.js';
+import type { ChainAddress } from '../../src/orchestration-api.js';
 import type { FeeConfigShape } from '../../src/examples/elys-contract-type-gaurd.js';
 
 const nodeRequire = createRequire(import.meta.url);
@@ -27,7 +27,7 @@ type StartFn = typeof import('../../src/examples/elys.contract.js').start;
 
 const deposit = async (
   coins: CoinSDKType,
-  source_channel: any,
+  sourceChannel: any,
   sender: string,
   receiver: ChainAddress,
   transferBridge,
@@ -36,7 +36,7 @@ const deposit = async (
     buildVTransferEvent({
       receiver: receiver.value,
       target: receiver.value,
-      sourceChannel: source_channel,
+      sourceChannel,
       denom: coins.denom,
       amount: Nat(BigInt(coins.amount)),
       sender,
@@ -46,7 +46,7 @@ const deposit = async (
 };
 
 const createFeeTestConfig = (feeCollector): FeeConfigShape => {
-  let feeConfig = {
+  const feeConfig = {
     feeCollector,
     onBoardRate: {
       nominator: BigInt(20),
@@ -77,7 +77,7 @@ test('Failing case: Wrong fee config', async t => {
   const storageNode = await E(storage.rootNode).makeChildNode(contractName);
   const allowedChains = ['cosmoshub'];
 
-  let feeConfig = createFeeTestConfig('agoric1feeCollectorAddress');
+  const feeConfig = createFeeTestConfig('agoric1feeCollectorAddress');
   feeConfig.onBoardRate.denominator = BigInt(123);
   feeConfig.onBoardRate.nominator = BigInt(124);
 
