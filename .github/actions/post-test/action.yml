@@ -18,6 +18,12 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: collect coverage
+      shell: bash
+      if: ${{ github.repository_owner == 'agoric' }} && (success() || failure())
+      continue-on-error: true
+      run: |
+        ./scripts/ci/collect-testruns.sh
     - name: upload coverage prepare
       shell: bash
       id: coverage-prep
