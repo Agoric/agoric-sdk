@@ -2,6 +2,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { makeExpectUnhandledRejectionMacro } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
 import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
 import {
   LOCALCHAIN_QUERY_ALL_BALANCES_RESPONSE,
@@ -25,6 +26,10 @@ import fetchedChainInfo from '../../src/fetched-chain-info.js';
 import type { IBCMsgTransferOptions } from '../../src/cosmos-api.js';
 import { PFM_RECEIVER } from '../../src/exos/chain-hub.js';
 import { assetOn } from '../../src/utils/asset.js';
+
+const expectUnhandledRejection = makeExpectUnhandledRejectionMacro(
+  import.meta.url,
+);
 
 test('deposit, withdraw', async t => {
   const common = await commonSetup(t);
@@ -109,7 +114,7 @@ test('delegate, undelegate', async t => {
   );
 });
 
-test('transfer', async t => {
+test(expectUnhandledRejection, 1, 'transfer', async t => {
   const common = await commonSetup(t);
   common.utils.populateChainHub();
   const makeTestLOAKit = prepareMakeTestLOAKit(t, common);
