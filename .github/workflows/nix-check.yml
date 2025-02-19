@@ -47,4 +47,3 @@ jobs:
             # Build cosmic-swingset
             cd packages/cosmic-swingset && make
           '
-
