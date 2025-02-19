@@ -84,7 +84,6 @@ const sendAnywhereScenario = test.macro({
       const receiver = {
         chainId: chain.chain_id,
         value: (await wallet.getAccounts())[0].address,
-        encoding: 'bech32',
       };
       t.log('Will send payment to:', receiver);
       t.log(`${destChainName} offer`);

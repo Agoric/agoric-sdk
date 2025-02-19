@@ -2,7 +2,7 @@ import { Fail, q } from '@endo/errors';
 
 /**
  * @import {IBCConnectionID} from '@agoric/vats';
- * @import {ChainAddress} from '../types.js';
+ * @import {CosmosChainAddress, ScopedChainId} from '../types.js';
  * @import {RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  */
 
@@ -70,7 +70,7 @@ harden(makeICQChannelAddress);
  *
  * @param {RemoteIbcAddress} remoteAddressString - remote address string,
  *   including version
- * @returns {ChainAddress['value'] | undefined} returns undefined on error
+ * @returns {CosmosChainAddress['value'] | undefined} returns undefined on error
  */
 export const findAddressField = remoteAddressString => {
   try {
@@ -101,3 +101,24 @@ export const getBech32Prefix = address => {
   if (split === 0) return Fail`Missing prefix for ${q(address)}`;
   return address.slice(0, split);
 };
+
+/**
+ * @param {string} accountId
+ * @see {@link https://github.com/ChainAgnostic/CAIPs/blob/main/CAIPs/caip-10.md}
+ */
+export const parseAccountId = accountId => {
+  const parts = accountId.split(':');
+
+  if (parts.length >= 3) {
+    return {
+      chainId: /** @type {ScopedChainId} */ (`${parts[0]}:${parts[1]}`),
+      accountAddress: parts.slice(2).join(':'), // Handles cases where the address contains colons
+    };
+  } else {
+    return {
+      chainId: null,
+      accountAddress: accountId,
+    };
+  }
+};
+harden(parseAccountId);

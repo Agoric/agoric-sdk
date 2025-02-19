@@ -4,7 +4,7 @@ import { M } from '@endo/patterns';
 
 /**
  * @import {TypedPattern} from '@agoric/internal';
- * @import {ChainAddress, CosmosAssetInfo, Chain, ChainInfo, CosmosChainInfo, DenomAmount, DenomInfo, AmountArg, CosmosValidatorAddress, OrchestrationPowers, ForwardInfo, IBCMsgTransferOptions} from './types.js';
+ * @import {CosmosChainAddress, CosmosAssetInfo, Chain, ChainInfo, CosmosChainInfo, DenomAmount, DenomInfo, AmountArg, CosmosValidatorAddress, OrchestrationPowers, ForwardInfo, IBCMsgTransferOptions} from './types.js';
  * @import {Any as Proto3Msg} from '@agoric/cosmic-proto/google/protobuf/any.js';
  * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
@@ -27,17 +27,24 @@ export const OutboundConnectionHandlerI = M.interface(
   },
 );
 
-/** @type {TypedPattern<ChainAddress>} */
-export const ChainAddressShape = {
-  chainId: M.string(),
-  encoding: M.string(),
-  value: M.string(),
-};
-harden(ChainAddressShape);
+/** @type {TypedPattern<CosmosChainAddress>} */
+export const CosmosChainAddressShape = M.splitRecord(
+  {
+    chainId: M.string(),
+    value: M.string(),
+  },
+  {
+    // Ignored but maintained for backwards compatibility
+    encoding: M.string(),
+  },
+);
+harden(CosmosChainAddressShape);
+/** @deprecated use CosmosChainAddressShape */
+export const ChainAddressShape = CosmosChainAddressShape;
 
 /** @type {TypedPattern<Proto3Msg>} */
 export const Proto3Shape = { typeUrl: M.string(), value: M.string() };
-harden(ChainAddressShape);
+harden(Proto3Shape);
 
 /** @internal */
 export const IBCChannelIDShape = M.string();
@@ -146,10 +153,10 @@ export const AmountArgShape = M.or(AnyNatAmountShape, DenomAmountShape);
  */
 export const DelegationShape = M.splitRecord(
   {
-    validator: ChainAddressShape,
+    validator: CosmosChainAddressShape,
     amount: AmountArgShape,
   },
-  { delegator: ChainAddressShape },
+  { delegator: CosmosChainAddressShape },
 );
 
 /** Approximately @see RequestQuery */
@@ -245,7 +252,7 @@ export const ForwardOptsShape = M.splitRecord(
   {
     timeout: M.string(),
     retries: M.number(),
-    intermediateRecipient: ChainAddressShape,
+    intermediateRecipient: CosmosChainAddressShape,
   },
   {},
 );

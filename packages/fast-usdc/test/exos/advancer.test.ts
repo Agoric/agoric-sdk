@@ -7,7 +7,7 @@ import {
 import type { NatAmount } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { ChainAddressShape, denomHash } from '@agoric/orchestration';
+import { CosmosChainAddressShape, denomHash } from '@agoric/orchestration';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { type ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { q } from '@endo/errors';
@@ -137,7 +137,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
     // assume this never returns true for most tests
     checkMintedEarly: (evidence, destination) => {
       mustMatch(harden(evidence), CctpTxEvidenceShape);
-      mustMatch(destination, ChainAddressShape);
+      mustMatch(destination, CosmosChainAddressShape);
       return false;
     },
   });
@@ -251,7 +251,6 @@ test('updates status to ADVANCING in happy path', async t => {
         },
         destination: {
           chainId: 'osmosis-1',
-          encoding: 'bech32',
           value: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
         },
       },
@@ -660,7 +659,6 @@ test('will not advance same txHash:chainId evidence twice', async t => {
         advanceAmount: { brand: usdc.brand, value: 146999999n },
         destination: {
           chainId: 'osmosis-1',
-          encoding: 'bech32',
           value: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
         },
       },
@@ -913,7 +911,6 @@ test('uses bank send for agoric1 EUD', async t => {
         },
         destination: {
           chainId: 'agoric-3',
-          encoding: 'bech32',
           value: 'agoric13rj0cc0hm5ac2nt0sdup2l7gvkx4v9tyvgq3h2',
         },
       },

@@ -89,7 +89,6 @@ const autoStakeItScenario = test.macro({
         chainName,
         validator: {
           value: validatorAddress,
-          encoding: 'bech32',
           chainId: remoteChainInfo.chainId,
         },
       },

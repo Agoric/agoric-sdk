@@ -51,7 +51,7 @@ import type { CosmosValidatorAddress } from '../../src/cosmos-api.js';
 import fetchedChainInfo from '../../src/fetched-chain-info.js';
 import type {
   AmountArg,
-  ChainAddress,
+  CosmosChainAddress,
   Denom,
 } from '../../src/orchestration-api.js';
 import { assetOn } from '../../src/utils/asset.js';
@@ -93,10 +93,9 @@ test('send (to addr on same chain)', async t => {
   const account = await makeTestCOAKit();
   t.assert(account, 'account is returned');
 
-  const toAddress: ChainAddress = {
+  const toAddress: CosmosChainAddress = {
     value: 'cosmos99test',
     chainId: 'cosmoshub-4',
-    encoding: 'bech32',
   };
 
   // single send
@@ -282,10 +281,9 @@ test('transfer', async t => {
   const account = await makeTestCOAKit();
 
   t.log('Send tokens from cosmoshub to noble');
-  const mockDestination: ChainAddress = {
+  const mockDestination: CosmosChainAddress = {
     value: 'noble1test',
     chainId: 'noble-1',
-    encoding: 'bech32',
   };
   const mockAmountArg: AmountArg = { value: 10n, denom: 'ibc/uusdchash' };
   const res = E(account).transfer(mockDestination, mockAmountArg);
@@ -429,7 +427,7 @@ test('getBalance and getBalances', async t => {
 
   const buildMocks = () => {
     const makeBalanceReq = (
-      address: ChainAddress['value'] = 'osmo1test',
+      address: CosmosChainAddress['value'] = 'osmo1test',
       denom: Denom = 'uosmo',
     ) =>
       buildQueryPacketString([
@@ -438,7 +436,9 @@ test('getBalance and getBalances', async t => {
           denom,
         }),
       ]);
-    const makeAllBalanceReq = (address: ChainAddress['value'] = 'osmo1test') =>
+    const makeAllBalanceReq = (
+      address: CosmosChainAddress['value'] = 'osmo1test',
+    ) =>
       buildQueryPacketString([
         QueryAllBalancesRequest.toProtoMsg({
           address,
@@ -533,7 +533,6 @@ test('StakingAccountQueries', async t => {
     const mockValidator: CosmosValidatorAddress = {
       value: 'cosmosvaloper1xyz',
       chainId: 'cosmoshub-4',
-      encoding: 'bech32',
     };
 
     const makeDelegationReq = () =>
@@ -768,7 +767,6 @@ test('StakingAccountQueries', async t => {
   const mockValidator: CosmosValidatorAddress = {
     value: 'cosmosvaloper1xyz',
     chainId: 'cosmoshub-4',
-    encoding: 'bech32',
   };
 
   // Test getDelegation
@@ -777,12 +775,10 @@ test('StakingAccountQueries', async t => {
     amount: { denom: 'uatom', value: 1000000n },
     delegator: {
       chainId: 'cosmoshub-4',
-      encoding: 'bech32',
       value: 'cosmos1test',
     },
     validator: {
       chainId: 'cosmoshub-4',
-      encoding: 'bech32',
       value: mockValidator.value,
     },
   });
@@ -795,12 +791,10 @@ test('StakingAccountQueries', async t => {
 
       delegator: {
         chainId: 'cosmoshub-4',
-        encoding: 'bech32',
         value: 'cosmos1test',
       },
       validator: {
         chainId: 'cosmoshub-4',
-        encoding: 'bech32',
         value: mockValidator.value,
       },
     },
@@ -880,7 +874,6 @@ test('StakingAccountQueries', async t => {
     rewards: [
       {
         validator: {
-          encoding: 'bech32',
           value: mockValidator.value,
           chainId: 'cosmoshub-4',
         },
