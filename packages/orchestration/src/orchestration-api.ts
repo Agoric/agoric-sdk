@@ -88,6 +88,12 @@ export type CosmosChainAddress = {
 };
 
 /**
+ * A value that can be converted mechanically to an AccountId.
+ * @see {@link ChainHub.resolveAccountId}
+ */
+export type AccountIdArg = AccountId | CosmosChainAddress;
+
+/**
  * Object that controls an account on a particular chain.
  *
  * The methods available depend on the chain and its capabilities.
