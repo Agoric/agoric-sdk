@@ -55,8 +55,13 @@ export type DenomAmount = {
 /** Amounts can be provided as pure data using denoms or as ERTP Amounts */
 export type AmountArg = DenomAmount | Amount<'nat'>;
 
-/** à la CAIP-2 */
-export type ChainId = `${string}:${string}`;
+/**
+ * Per `chain_id` in CAIP-2. In that spec all chain IDs are scoped
+ * (namespace:reference) but in the Cosmos ecosystem the namespace is implied
+ * and they use `chain_id`/`chainId` for what CAIP-2 calls the `reference`. We
+ * qualify the term here to avoid confusion.
+ */
+export type ScopedChainId = `${string}:${string}`;
 
 /**
  * à la CAIP-10
@@ -66,12 +71,12 @@ export type ChainId = `${string}:${string}`;
  *   account_address:   [-.%a-zA-Z0-9]{1,128}
  *
  */
-export type AccountId = `${string}:${string}:${string}`;
+export type AccountId = `${ScopedChainId}:${string}`;
 
 // TODO rename and move to Cosmos API
 /** Specific to Cosmos chains */
 export type ChainAddress = {
-  /** e.g. `agoric-3' or 'cosmoshub-4' */
+  /** Within the Cosmos ecosystem. e.g. `agoric-3' or 'cosmoshub-4' */
   chainId: string;
   /** The address value used on-chain */
   value: string;
