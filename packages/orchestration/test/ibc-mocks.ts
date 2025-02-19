@@ -21,6 +21,12 @@ import {
   MsgSendResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
 import {
+  MsgLiquidStake,
+  MsgLiquidStakeResponse,
+  MsgRedeemStake,
+  MsgRedeemStakeResponse,
+} from '@agoric/cosmic-proto/stride/stakeibc/tx.js';
+import {
   buildMsgResponseString,
   buildQueryResponseString,
   buildMsgErrorString,
@@ -28,7 +34,6 @@ import {
   buildQueryPacketString,
   createMockAckMap,
 } from '../tools/ibc-mocks.js';
-import { MsgLiquidStake, MsgLiquidStakeResponse, MsgRedeemStake, MsgRedeemStakeResponse } from '@agoric/cosmic-proto/stride/stakeibc/tx.js';
 
 /**
  * TODO: provide mappings to cosmos error codes (and module specific error codes)
@@ -43,7 +48,7 @@ export const errorAcknowledgments = {
 
 const liquidStake = {
   creator: 'cosmos1test',
-  amount: "10000",
+  amount: '10000',
   hostDenom: 'uatom',
 };
 const liquidStakeRedeem = {
@@ -97,7 +102,7 @@ export const protoMsgMocks = {
       stToken: {
         denom: 'statom',
         amount: '1800000',
-      }
+      },
     }),
   },
   liquidStakeRedeem: {

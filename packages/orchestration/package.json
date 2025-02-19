@@ -51,6 +51,7 @@
     "@endo/errors": "^1.2.9",
     "@endo/far": "^1.1.10",
     "@endo/marshal": "^1.6.3",
+    "@endo/nat": "^5.0.14",
     "@endo/patterns": "^1.4.8",
     "@noble/hashes": "^1.5.0",
     "eslint-plugin-github": "^5.1.8"

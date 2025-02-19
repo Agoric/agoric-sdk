@@ -5,7 +5,7 @@ import { M, mustMatch } from '@endo/patterns';
 import { VowShape } from '@agoric/vow';
 import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
 import { withOrchestration } from '../utils/start-helper.js';
-import * as flows from './elys-contract.flow.js';
+import * as flows from './elys-contract.flows.js';
 import {
   FeeConfigShape,
   validateFeeConfigShape,
