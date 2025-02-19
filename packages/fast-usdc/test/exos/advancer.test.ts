@@ -7,7 +7,7 @@ import {
 import type { NatAmount } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { ChainAddressShape, denomHash } from '@agoric/orchestration';
+import { CosmosChainAddressShape, denomHash } from '@agoric/orchestration';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { type ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { q } from '@endo/errors';
@@ -137,7 +137,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
     // assume this never returns true for most tests
     checkMintedEarly: (evidence, destination) => {
       mustMatch(harden(evidence), CctpTxEvidenceShape);
-      mustMatch(destination, ChainAddressShape);
+      mustMatch(destination, CosmosChainAddressShape);
       return false;
     },
   });

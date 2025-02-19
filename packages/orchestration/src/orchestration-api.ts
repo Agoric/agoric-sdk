@@ -73,9 +73,11 @@ export type ScopedChainId = `${string}:${string}`;
  */
 export type AccountId = `${ScopedChainId}:${string}`;
 
-// TODO rename and move to Cosmos API
-/** Specific to Cosmos chains */
-export type ChainAddress = {
+/**
+ * Specific to Cosmos chains
+ * @see {AccountId} for universal account identifier
+ */
+export type CosmosChainAddress = {
   /** Within the Cosmos ecosystem. e.g. `agoric-3' or 'cosmoshub-4' */
   chainId: string;
   /** The address value used on-chain */
@@ -183,7 +185,7 @@ export interface OrchestrationAccountCommon {
   /**
    * @returns the address of the account on the remote chain
    */
-  getAddress: () => ChainAddress;
+  getAddress: () => CosmosChainAddress;
 
   /** @returns an array of amounts for every balance in the account. */
   getBalances: () => Promise<DenomAmount[]>;
@@ -197,7 +199,7 @@ export interface OrchestrationAccountCommon {
    * @param amount - the amount to send
    * @returns void
    */
-  send: (toAccount: ChainAddress, amount: AmountArg) => Promise<void>;
+  send: (toAccount: CosmosChainAddress, amount: AmountArg) => Promise<void>;
 
   /**
    * Transfer multiple amounts to another account on the same chain. The promise settles when the transfer is complete.
@@ -205,7 +207,10 @@ export interface OrchestrationAccountCommon {
    * @param amounts - the amounts to send
    * @returns void
    */
-  sendAll: (toAccount: ChainAddress, amounts: AmountArg[]) => Promise<void>;
+  sendAll: (
+    toAccount: CosmosChainAddress,
+    amounts: AmountArg[],
+  ) => Promise<void>;
 
   /**
    * Transfer an amount to another account, typically on another chain.
@@ -218,7 +223,7 @@ export interface OrchestrationAccountCommon {
    * the transfer is rejected (insufficient funds, timeout)
    */
   transfer: (
-    destination: ChainAddress,
+    destination: CosmosChainAddress,
     amount: AmountArg,
     opts?: IBCMsgTransferOptions,
   ) => Promise<void>;
@@ -280,7 +285,7 @@ export interface OrchestrationFlow<CT = unknown> {
  * @internal
  */
 export interface TransferMsg {
-  toAccount: ChainAddress;
+  toAccount: CosmosChainAddress;
   timeout?: Timestamp;
   next?: TransferMsg;
   data?: object;
@@ -289,7 +294,7 @@ export interface TransferMsg {
 /** @alpha */
 export interface AfterAction {
   destChain: string;
-  destAddress: ChainAddress;
+  destAddress: CosmosChainAddress;
 }
 /** @alpha */
 export interface SwapExact {

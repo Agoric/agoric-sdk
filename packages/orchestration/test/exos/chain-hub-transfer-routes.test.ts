@@ -8,7 +8,10 @@ import { objectMap } from '@endo/patterns';
 import { withChainCapabilities } from '../../src/chain-capabilities.js';
 import { makeChainHub } from '../../src/exos/chain-hub.js';
 import knownChains from '../../src/fetched-chain-info.js';
-import type { ChainAddress, DenomAmount } from '../../src/orchestration-api.js';
+import type {
+  CosmosChainAddress,
+  DenomAmount,
+} from '../../src/orchestration-api.js';
 import { assetOn } from '../../src/utils/asset.js';
 import { registerChainsAndAssets } from '../../src/utils/chain-hub-helper.js';
 import { provideFreshRootZone } from '../durability.js';
@@ -50,7 +53,7 @@ test('to issuing chain', async t => {
     ]),
   );
 
-  const dest: ChainAddress = chainHub.makeChainAddress('noble1234');
+  const dest: CosmosChainAddress = chainHub.makeChainAddress('noble1234');
   {
     // 100 USDC on agoric -> noble
     const amt: DenomAmount = harden({ denom: uusdcOnAgoric, value: 100n });
@@ -91,7 +94,7 @@ test('from issuing chain', async t => {
     harden([assetOn('uist', 'agoric'), assetOn('uosmo', 'osmosis')]),
   );
 
-  const dest: ChainAddress = chainHub.makeChainAddress('noble1234');
+  const dest: CosmosChainAddress = chainHub.makeChainAddress('noble1234');
   {
     // IST on agoric -> noble
     const amt: DenomAmount = harden({ denom: 'uist', value: 100n });
@@ -130,7 +133,7 @@ test('through issuing chain', async t => {
     harden([[uusdcOnAgoric, agDetail]]),
   );
 
-  const dest: ChainAddress = chainHub.makeChainAddress('osmo1234');
+  const dest: CosmosChainAddress = chainHub.makeChainAddress('osmo1234');
   const amt: DenomAmount = harden({ denom: uusdcOnAgoric, value: 100n });
 
   // 100 USDC on agoric -> osmosis
@@ -188,7 +191,7 @@ test('takes forwardOpts', t => {
     harden([[uusdcOnOsmosis, osDetail]]),
   );
 
-  const dest: ChainAddress = chainHub.makeChainAddress('agoric1234');
+  const dest: CosmosChainAddress = chainHub.makeChainAddress('agoric1234');
   const amt: DenomAmount = harden({ denom: uusdcOnOsmosis, value: 100n });
   const forwardOpts = harden({
     retries: 1,
@@ -248,7 +251,7 @@ test('takes forwardOpts', t => {
   );
 });
 
-const nobleDest: ChainAddress = harden({
+const nobleDest: CosmosChainAddress = harden({
   value: 'noble1234',
   chainId: 'noble-1',
 });

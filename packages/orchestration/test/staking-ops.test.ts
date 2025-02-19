@@ -27,7 +27,7 @@ import { Timestamp } from '@agoric/cosmic-proto/google/protobuf/timestamp.js';
 import { makeNameHubKit } from '@agoric/vats';
 import { prepareCosmosOrchestrationAccountKit } from '../src/exos/cosmos-orchestration-account.js';
 import type {
-  ChainAddress,
+  CosmosChainAddress,
   DenomAmount,
   IcaAccount,
   ICQConnection,
@@ -154,7 +154,7 @@ const makeScenario = () => {
       },
     };
 
-    const chainAddress: ChainAddress = harden({
+    const chainAddress: CosmosChainAddress = harden({
       value: addr,
       chainId: 'mock-1',
     });

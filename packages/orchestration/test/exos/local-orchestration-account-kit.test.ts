@@ -11,7 +11,7 @@ import { heapVowE as VE } from '@agoric/vow/vat.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import type { IBCChannelID } from '@agoric/vats';
 import type {
-  ChainAddress,
+  CosmosChainAddress,
   AmountArg,
   DenomAmount,
 } from '../../src/orchestration-api.js';
@@ -134,7 +134,7 @@ test('transfer', async t => {
     value: stake.units(100).value,
   });
 
-  const destination: ChainAddress = {
+  const destination: CosmosChainAddress = {
     chainId: 'cosmoshub-4',
     value: 'cosmos1pleab',
   };
@@ -151,7 +151,7 @@ test('transfer', async t => {
    */
   const startTransfer = async (
     amount: AmountArg,
-    dest: ChainAddress,
+    dest: CosmosChainAddress,
     opts: IBCMsgTransferOptions = {},
   ) => {
     const transferP = VE(account).transfer(dest, amount, opts);
@@ -195,7 +195,7 @@ test('transfer', async t => {
     },
   );
 
-  const unknownDestination: ChainAddress = {
+  const unknownDestination: CosmosChainAddress = {
     chainId: 'fakenet',
     value: 'fakenet1pleab',
   };
@@ -215,7 +215,7 @@ test('transfer', async t => {
    */
   const doTransfer = async (
     amount: AmountArg,
-    dest: ChainAddress,
+    dest: CosmosChainAddress,
     opts: IBCMsgTransferOptions = {},
     sourceChannel?: IBCChannelID,
   ) => {
@@ -275,7 +275,7 @@ test('transfer', async t => {
     'agoric',
     fetchedChainInfo,
   );
-  const dydxDest: ChainAddress = {
+  const dydxDest: CosmosChainAddress = {
     chainId: 'dydx-mainnet-1',
     value: 'dydx1test',
   };

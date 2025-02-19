@@ -5,7 +5,7 @@ import { M } from '@endo/patterns';
 import { NonNullish, makeTracer } from '@agoric/internal';
 import { VowShape } from '@agoric/vow';
 import {
-  ChainAddressShape,
+  CosmosChainAddressShape,
   OutboundConnectionHandlerI,
   Proto3Shape,
   TxBodyOptsShape,
@@ -21,7 +21,7 @@ import { makeTxPacket, parseTxPacket } from '../utils/packet.js';
  * @import {AnyJson} from '@agoric/cosmic-proto';
  * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
  * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
- * @import {ChainAddress, IcaAccount} from '../types.js';
+ * @import {CosmosChainAddress, IcaAccount} from '../types.js';
  */
 
 const trace = makeTracer('IcaAccountKit');
@@ -29,7 +29,7 @@ const trace = makeTracer('IcaAccountKit');
 const UNPARSABLE_CHAIN_ADDRESS = 'UNPARSABLE_CHAIN_ADDRESS';
 
 export const IcaAccountI = M.interface('IcaAccount', {
-  getAddress: M.call().returns(ChainAddressShape),
+  getAddress: M.call().returns(CosmosChainAddressShape),
   getLocalAddress: M.call().returns(M.string()),
   getRemoteAddress: M.call().returns(M.string()),
   getPort: M.call().returns(M.remotable('Port')),
@@ -51,7 +51,7 @@ export const IcaAccountI = M.interface('IcaAccount', {
  *   localAddress: LocalIbcAddress | undefined;
  *   requestedRemoteAddress: string;
  *   remoteAddress: RemoteIbcAddress | undefined;
- *   chainAddress: ChainAddress | undefined;
+ *   chainAddress: CosmosChainAddress | undefined;
  *   isInitiatingClose: boolean;
  * }} State
  *   Internal to the IcaAccountKit exo
@@ -101,7 +101,7 @@ export const prepareIcaAccountKit = (zone, { watch, asVow }) =>
         },
       },
       account: {
-        /** @returns {ChainAddress} */
+        /** @returns {CosmosChainAddress} */
         getAddress() {
           return NonNullish(
             this.state.chainAddress,

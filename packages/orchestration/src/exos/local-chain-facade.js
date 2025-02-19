@@ -19,7 +19,7 @@ import { chainFacadeMethods, TypedJsonShape } from '../typeGuards.js';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {CosmosInterchainService} from './exo-interfaces.js';
  * @import {LocalOrchestrationAccountKit, MakeLocalOrchestrationAccountKit} from './local-orchestration-account.js';
- * @import {Chain, ChainAddress, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount} from '../types.js';
+ * @import {Chain, CosmosChainAddress, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount} from '../types.js';
  */
 
 /**
@@ -142,7 +142,7 @@ const prepareLocalChainFacadeKit = (
       },
       makeAccountWatcher: {
         /**
-         * @param {[LocalChainAccount, ChainAddress['value']]} results
+         * @param {[LocalChainAccount, CosmosChainAddress['value']]} results
          */
         onFulfilled([account, address]) {
           const optionalStorageNode = storageNode
@@ -159,7 +159,7 @@ const prepareLocalChainFacadeKit = (
          * @param {Remote<StorageNode>} childNode
          * @param {{
          *   account: LocalChainAccount;
-         *   address: ChainAddress['value'];
+         *   address: CosmosChainAddress['value'];
          * }} ctx
          */
         onFulfilled(childNode, { account, address }) {

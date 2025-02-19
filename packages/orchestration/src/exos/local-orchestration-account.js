@@ -28,7 +28,7 @@ import { TransferRouteShape } from './chain-hub.js';
 /**
  * @import {HostOf} from '@agoric/async-flow';
  * @import {LocalChain, LocalChainAccount} from '@agoric/vats/src/localchain.js';
- * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, IBCConnectionInfo, OrchestrationAccountCommon, LocalAccountMethods, TransferRoute} from '@agoric/orchestration';
+ * @import {AmountArg, CosmosChainAddress, DenomAmount, IBCMsgTransferOptions, IBCConnectionInfo, OrchestrationAccountCommon, LocalAccountMethods, TransferRoute} from '@agoric/orchestration';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Zone} from '@agoric/zone';
  * @import {Remote} from '@agoric/internal';
@@ -60,7 +60,7 @@ const EVow$ = shape => M.or(Vow$(shape), M.promise(/* shape */));
  *   topicKit: RecorderKit<LocalChainAccountNotification> | undefined;
  *   packetTools: PacketTools;
  *   account: LocalChainAccount;
- *   address: ChainAddress;
+ *   address: CosmosChainAddress;
  * }} State
  *   Internal to the LocalOrchestrationAccount exo
  */
@@ -180,7 +180,7 @@ export const prepareLocalOrchestrationAccountKit = (
     /**
      * @param {object} initState
      * @param {LocalChainAccount} initState.account
-     * @param {ChainAddress} initState.address
+     * @param {CosmosChainAddress} initState.address
      * @param {Remote<StorageNode>} [initState.storageNode]
      * @returns {State}
      */
@@ -265,7 +265,7 @@ export const prepareLocalOrchestrationAccountKit = (
           /**
            * @type {OfferHandler<
            *   Vow<void>,
-           *   { toAccount: ChainAddress; amount: AmountArg }
+           *   { toAccount: CosmosChainAddress; amount: AmountArg }
            * >}
            */
           const offerHandler = (seat, { toAccount, amount }) => {
@@ -278,7 +278,7 @@ export const prepareLocalOrchestrationAccountKit = (
           /**
            * @type {OfferHandler<
            *   Vow<void>,
-           *   { toAccount: ChainAddress; amounts: AmountArg[] }
+           *   { toAccount: CosmosChainAddress; amounts: AmountArg[] }
            * >}
            */
           const offerHandler = (seat, { toAccount, amounts }) => {
@@ -293,7 +293,7 @@ export const prepareLocalOrchestrationAccountKit = (
            *   Vow<void>,
            *   {
            *     amount: AmountArg;
-           *     destination: ChainAddress;
+           *     destination: CosmosChainAddress;
            *     opts?: IBCMsgTransferOptions;
            *   }
            * >}
@@ -671,7 +671,7 @@ export const prepareLocalOrchestrationAccountKit = (
           });
         },
         /**
-         * @param {ChainAddress} destination
+         * @param {CosmosChainAddress} destination
          * @param {AmountArg} amount an ERTP {@link Amount} or a
          *   {@link DenomAmount}
          * @param {IBCMsgTransferOptions} [opts] if either timeoutHeight or

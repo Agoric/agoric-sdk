@@ -5,7 +5,7 @@
 
 import { makeError, q } from '@endo/errors';
 import { mustMatch } from '@endo/patterns';
-import { ChainAddressShape } from '../../src/typeGuards.js';
+import { CosmosChainAddressShape } from '../../src/typeGuards.js';
 
 const { values } = Object;
 
@@ -13,7 +13,7 @@ const { values } = Object;
  * @import {GuestInterface} from '@agoric/async-flow';
  * @import {AtomicProvider} from '@agoric/store/src/stores/store-utils.js';
  * @import {LocalOrchestrationAccountKit} from '../../src/exos/local-orchestration-account.js';
- * @import {Orchestrator, LocalAccountMethods, OrchestrationAccountCommon, OrchestrationFlow, ChainAddress} from '@agoric/orchestration';
+ * @import {Orchestrator, LocalAccountMethods, OrchestrationAccountCommon, OrchestrationFlow, CosmosChainAddress} from '@agoric/orchestration';
  * @import {ZoeTools} from '../../src/utils/zoe-tools.js';
  */
 
@@ -28,7 +28,7 @@ const { values } = Object;
  * @param {Promise<GuestInterface<LocalOrchestrationAccountKit['holder']>>} ctx.sharedLocalAccountP
  * @param {GuestInterface<ZoeTools>} ctx.zoeTools
  * @param {ZCFSeat} seat
- * @param {{ destAddr: ChainAddress }} offerArgs
+ * @param {{ destAddr: CosmosChainAddress }} offerArgs
  */
 export const depositSend = async (
   orch,
@@ -36,7 +36,7 @@ export const depositSend = async (
   seat,
   offerArgs,
 ) => {
-  mustMatch(offerArgs, harden({ destAddr: ChainAddressShape }));
+  mustMatch(offerArgs, harden({ destAddr: CosmosChainAddressShape }));
   const { destAddr } = offerArgs;
   assert(destAddr.value.startsWith('agoric1'), 'must send to a local address');
 
