@@ -31,7 +31,7 @@ const ADDRESSES_BAGGAGE_KEY = 'addresses';
 
 /**
  * @import {HostInterface} from '@agoric/async-flow';
- * @import {ChainAddress, CosmosChainInfo, Denom, DenomDetail, OrchestrationAccount} from '@agoric/orchestration';
+ * @import {CosmosChainAddress, CosmosChainInfo, Denom, DenomDetail, OrchestrationAccount} from '@agoric/orchestration';
  * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration/src/utils/start-helper.js';
  * @import {Remote} from '@agoric/internal';
  * @import {Marshaller, StorageNode} from '@agoric/internal/src/lib-chainStorage.js'

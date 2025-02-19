@@ -46,7 +46,7 @@ import { Fail, makeError, q } from '@endo/errors';
 import { E } from '@endo/far';
 import {
   AmountArgShape,
-  ChainAddressShape,
+  CosmosChainAddressShape,
   DelegationShape,
   DenomAmountShape,
   IBCTransferOptionsShape,
@@ -67,7 +67,7 @@ import { makeTimestampHelper } from '../utils/time.js';
 
 /**
  * @import {HostOf} from '@agoric/async-flow';
- * @import {AmountArg, IcaAccount, ChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, StakingAccountQueries, OrchestrationAccountCommon, CosmosRewardsResponse, IBCConnectionInfo, IBCMsgTransferOptions, ChainHub, CosmosDelegationResponse} from '../types.js';
+ * @import {AmountArg, IcaAccount, CosmosChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, StakingAccountQueries, OrchestrationAccountCommon, CosmosRewardsResponse, IBCConnectionInfo, IBCMsgTransferOptions, ChainHub, CosmosDelegationResponse} from '../types.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  * @import {Remote} from '@agoric/internal';
@@ -88,14 +88,14 @@ const { Vow$ } = NetworkShape; // TODO #9611
 
 /**
  * @typedef {object} CosmosOrchestrationAccountNotification
- * @property {ChainAddress} chainAddress
+ * @property {CosmosChainAddress} chainAddress
  */
 
 /**
  * @private
  * @typedef {{
  *   account: IcaAccount;
- *   chainAddress: ChainAddress;
+ *   chainAddress: CosmosChainAddress;
  *   icqConnection: ICQConnection | undefined;
  *   localAddress: LocalIbcAddress;
  *   remoteAddress: RemoteIbcAddress;
@@ -114,14 +114,14 @@ const { Vow$ } = NetworkShape; // TODO #9611
 
 /** @see {StakingAccountActions} */
 const stakingAccountActionsMethods = {
-  delegate: M.call(ChainAddressShape, AmountArgShape).returns(VowShape),
+  delegate: M.call(CosmosChainAddressShape, AmountArgShape).returns(VowShape),
   redelegate: M.call(
-    ChainAddressShape,
-    ChainAddressShape,
+    CosmosChainAddressShape,
+    CosmosChainAddressShape,
     AmountArgShape,
   ).returns(VowShape),
   undelegate: M.call(M.arrayOf(DelegationShape)).returns(VowShape),
-  withdrawReward: M.call(ChainAddressShape).returns(
+  withdrawReward: M.call(CosmosChainAddressShape).returns(
     Vow$(M.arrayOf(DenomAmountShape)),
   ),
   withdrawRewards: M.call().returns(Vow$(M.arrayOf(DenomAmountShape))),
@@ -129,12 +129,12 @@ const stakingAccountActionsMethods = {
 
 /** @see {StakingAccountQueries} */
 const stakingAccountQueriesMethods = {
-  getDelegation: M.call(ChainAddressShape).returns(VowShape),
+  getDelegation: M.call(CosmosChainAddressShape).returns(VowShape),
   getDelegations: M.call().returns(VowShape),
-  getUnbondingDelegation: M.call(ChainAddressShape).returns(VowShape),
+  getUnbondingDelegation: M.call(CosmosChainAddressShape).returns(VowShape),
   getUnbondingDelegations: M.call().returns(VowShape),
   getRedelegations: M.call().returns(VowShape),
-  getReward: M.call(ChainAddressShape).returns(VowShape),
+  getReward: M.call(CosmosChainAddressShape).returns(VowShape),
   getRewards: M.call().returns(VowShape),
 };
 
@@ -158,13 +158,15 @@ const PUBLIC_TOPICS = {
 export const CosmosOrchestrationInvitationMakersI = M.interface(
   'invitationMakers',
   {
-    Delegate: M.call(ChainAddressShape, AmountArgShape).returns(M.promise()),
+    Delegate: M.call(CosmosChainAddressShape, AmountArgShape).returns(
+      M.promise(),
+    ),
     Redelegate: M.call(
-      ChainAddressShape,
-      ChainAddressShape,
+      CosmosChainAddressShape,
+      CosmosChainAddressShape,
       AmountArgShape,
     ).returns(M.promise()),
-    WithdrawReward: M.call(ChainAddressShape).returns(M.promise()),
+    WithdrawReward: M.call(CosmosChainAddressShape).returns(M.promise()),
     Undelegate: M.call(M.arrayOf(DelegationShape)).returns(M.promise()),
     DeactivateAccount: M.call().returns(M.promise()),
     ReactivateAccount: M.call().returns(M.promise()),
@@ -232,7 +234,7 @@ export const prepareCosmosOrchestrationAccountKit = (
       transferWatcher: M.interface('transferWatcher', {
         onFulfilled: M.call([M.record(), M.nat()])
           .optional({
-            destination: ChainAddressShape,
+            destination: CosmosChainAddressShape,
             opts: M.or(M.undefined(), IBCTransferOptionsShape),
             token: {
               denom: M.string(),
@@ -286,7 +288,7 @@ export const prepareCosmosOrchestrationAccountKit = (
     },
     /**
      * @param {object} info
-     * @param {ChainAddress} info.chainAddress
+     * @param {CosmosChainAddress} info.chainAddress
      * @param {LocalIbcAddress} info.localAddress
      * @param {RemoteIbcAddress} info.remoteAddress
      * @param {object} io
@@ -561,7 +563,7 @@ export const prepareCosmosOrchestrationAccountKit = (
          *   bigint,
          * ]} results
          * @param {{
-         *   destination: ChainAddress;
+         *   destination: CosmosChainAddress;
          *   opts?: IBCMsgTransferOptions;
          *   token: Coin;
          * }} ctx
@@ -655,7 +657,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           /**
            * @type {OfferHandler<
            *   Vow<void>,
-           *   { toAccount: ChainAddress; amount: AmountArg }
+           *   { toAccount: CosmosChainAddress; amount: AmountArg }
            * >}
            */
           const offerHandler = (seat, { toAccount, amount }) => {
@@ -668,7 +670,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           /**
            * @type {OfferHandler<
            *   Vow<void>,
-           *   { toAccount: ChainAddress; amounts: AmountArg[] }
+           *   { toAccount: CosmosChainAddress; amounts: AmountArg[] }
            * >}
            */
           const offerHandler = (seat, { toAccount, amounts }) => {
@@ -691,7 +693,7 @@ export const prepareCosmosOrchestrationAccountKit = (
            *   Vow<void>,
            *   {
            *     amount: AmountArg;
-           *     destination: ChainAddress;
+           *     destination: CosmosChainAddress;
            *     opts?: IBCMsgTransferOptions;
            *   }
            * >}

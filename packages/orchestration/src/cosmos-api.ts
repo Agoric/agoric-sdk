@@ -33,7 +33,12 @@ import type {
   RemoteIbcAddress,
 } from '@agoric/vats/tools/ibc-utils.js';
 import { PFM_RECEIVER } from './exos/chain-hub.js';
-import type { AmountArg, ChainAddress, Denom, DenomAmount } from './types.js';
+import type {
+  AmountArg,
+  CosmosChainAddress,
+  Denom,
+  DenomAmount,
+} from './types.js';
 
 /**
  * @example
@@ -44,7 +49,7 @@ import type { AmountArg, ChainAddress, Denom, DenomAmount } from './types.js';
 export type Bech32Address = `${string}1${string}`;
 
 /** An address for a validator on some blockchain, e.g., cosmos, eth, etc. */
-export type CosmosValidatorAddress = ChainAddress & {
+export type CosmosValidatorAddress = CosmosChainAddress & {
   // infix for Validator Operator https://docs.cosmos.network/main/learn/beginner/accounts#addresses
   value: `${string}valoper${string}`;
 };
@@ -127,7 +132,7 @@ export interface CosmosRewardsResponse {
 
 /** @see {DelegationResponse} */
 export interface CosmosDelegationResponse {
-  delegator: ChainAddress;
+  delegator: CosmosChainAddress;
   validator: CosmosValidatorAddress;
   amount: DenomAmount;
 }
@@ -222,7 +227,7 @@ export interface StakingAccountActions {
   undelegate: (
     delegations: {
       amount: AmountArg;
-      delegator?: ChainAddress;
+      delegator?: CosmosChainAddress;
       validator: CosmosValidatorAddress;
     }[],
   ) => Promise<void>;
@@ -282,7 +287,7 @@ export interface IcaAccount extends IcaAccountMethods {
   /**
    * @returns the address of the account on the remote chain
    */
-  getAddress: () => ChainAddress;
+  getAddress: () => CosmosChainAddress;
 
   /**
    * Submit a transaction on behalf of the remote account for execution on the remote chain.
@@ -339,7 +344,7 @@ export interface IBCMsgTransferOptions {
   memo?: string;
   forwardOpts?: {
     /** The recipient address for the intermediate transfer. Defaults to 'pfm' unless specified */
-    intermediateRecipient?: ChainAddress;
+    intermediateRecipient?: CosmosChainAddress;
     timeout?: ForwardInfo['forward']['timeout'];
     retries?: ForwardInfo['forward']['retries'];
   };
@@ -373,7 +378,7 @@ export type ICQQueryFunction = (
  */
 export interface ForwardInfo {
   forward: {
-    receiver: ChainAddress['value'];
+    receiver: CosmosChainAddress['value'];
     port: IBCPortID;
     channel: IBCChannelID;
     /** e.g. '10m' */
@@ -401,7 +406,7 @@ export type TransferRoute = {
   token: Coin;
 } & (
   | {
-      receiver: typeof PFM_RECEIVER | ChainAddress['value'];
+      receiver: typeof PFM_RECEIVER | CosmosChainAddress['value'];
       /** contains PFM forwarding info */
       forwardInfo: ForwardInfo;
     }

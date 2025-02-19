@@ -5,7 +5,7 @@ import { BrandShape } from '@agoric/ertp/src/typeGuards.js';
 
 import { VowShape } from '@agoric/vow';
 import {
-  ChainAddressShape,
+  CosmosChainAddressShape,
   CoinShape,
   CosmosChainInfoShape,
   DenomAmountShape,
@@ -23,7 +23,7 @@ import { getBech32Prefix, parseAccountId } from '../utils/address.js';
  * @import {Zone} from '@agoric/zone';
  * @import {CosmosAssetInfo, CosmosChainInfo, ForwardInfo, IBCConnectionInfo, IBCMsgTransferOptions, TransferRoute, GoDuration, Bech32Address} from '../cosmos-api.js';
  * @import {ChainInfo, KnownChains} from '../chain-info.js';
- * @import {AccountId, ChainAddress, ScopedChainId, Denom, DenomAmount} from '../orchestration-api.js';
+ * @import {AccountId, CosmosChainAddress, ScopedChainId, Denom, DenomAmount} from '../orchestration-api.js';
  * @import {Remote, TypedPattern} from '@agoric/internal';
  */
 
@@ -216,9 +216,13 @@ const ChainHubI = M.interface('ChainHub', {
     M.or(DenomDetailShape, M.undefined()),
   ),
   getDenom: M.call(BrandShape).returns(M.or(M.string(), M.undefined())),
-  makeChainAddress: M.call(M.string()).returns(ChainAddressShape),
+  makeChainAddress: M.call(M.string()).returns(CosmosChainAddressShape),
   resolveAccountId: M.call(M.string()).returns(M.string()),
-  makeTransferRoute: M.call(ChainAddressShape, DenomAmountShape, M.string())
+  makeTransferRoute: M.call(
+    CosmosChainAddressShape,
+    DenomAmountShape,
+    M.string(),
+  )
     .optional(ForwardOptsShape)
     .returns(M.or(M.undefined(), TransferRouteShape)),
 });
@@ -522,7 +526,7 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
     },
     /**
      * @param {CosmosAddress} address Cosmos bech32 address
-     * @returns {ChainAddress}
+     * @returns {CosmosChainAddress}
      * @throws {Error} if chain info not found for bech32Prefix
      */
     makeChainAddress(address) {
@@ -543,7 +547,7 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
      *
      * XXX consider accepting AmountArg #10449
      *
-     * @param {ChainAddress} destination
+     * @param {CosmosChainAddress} destination
      * @param {DenomAmount} denomAmount
      * @param {string} srcChainName
      * @param {IBCMsgTransferOptions['forwardOpts']} [forwardOpts]

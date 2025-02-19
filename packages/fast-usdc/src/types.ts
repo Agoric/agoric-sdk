@@ -1,7 +1,7 @@
 import type {
   AccountId,
-  ChainAddress,
-  CosmosAddress,
+  CosmosChainAddress,
+  Bech32Address,
   CosmosChainInfo,
   Denom,
   DenomDetail,
@@ -35,7 +35,7 @@ export interface CctpTxEvidence {
   /** from Noble RPC */
   aux: {
     forwardingChannel: IBCChannelID;
-    recipientAddress: ChainAddress['value'];
+    recipientAddress: CosmosChainAddress['value'];
   };
   /** on the source chain (e.g. L1 Ethereum and L2s Arbitrum, Base) */
   blockHash: EvmHash;
@@ -80,8 +80,8 @@ export interface TransactionRecord extends CopyRecord {
 
 /** the record in vstorage at the path of the contract's node */
 export interface ContractRecord extends CopyRecord {
-  poolAccount: ChainAddress['value'];
-  settlementAccount: ChainAddress['value'];
+  poolAccount: CosmosChainAddress['value'];
+  settlementAccount: CosmosChainAddress['value'];
 }
 
 export type LogFn = (...args: unknown[]) => void;
