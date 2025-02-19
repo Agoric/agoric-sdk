@@ -58,6 +58,10 @@ import { icaMocks, protoMsgMockMap, protoMsgMocks } from './ibc/mocks.js';
 
 const trace = makeTracer('BSTSupport', false);
 
+const cliEntrypoint = new URL(
+  importMetaResolve('agoric/src/entrypoint.js', import.meta.url),
+).pathname;
+
 type ConsumeBootrapItem = <N extends string>(
   name: N,
 ) => N extends keyof FastUSDCCorePowers['consume']
@@ -176,12 +180,8 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
     cliArgs: string[] = [],
   ) => {
     console.info('running package script:', scriptPath);
-    const out = childProcess.execFileSync('yarn', ['bin', 'agoric'], {
-      cwd: outputDir,
-      env,
-    });
     return childProcess.execFileSync(
-      out.toString().trim(),
+      cliEntrypoint,
       ['run', scriptPath, ...cliArgs],
       {
         cwd: outputDir,
