@@ -2,7 +2,7 @@ import { Fail, q } from '@endo/errors';
 
 /**
  * @import {IBCConnectionID} from '@agoric/vats';
- * @import {ChainAddress} from '../types.js';
+ * @import {ChainAddress, ChainId} from '../types.js';
  * @import {RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  */
 
@@ -111,7 +111,7 @@ export const parseAccountId = accountId => {
 
   if (parts.length >= 3) {
     return {
-      chainId: `${parts[0]}:${parts[1]}`,
+      chainId: /** @type {ChainId} */ (`${parts[0]}:${parts[1]}`),
       accountAddress: parts.slice(2).join(':'), // Handles cases where the address contains colons
     };
   } else {
