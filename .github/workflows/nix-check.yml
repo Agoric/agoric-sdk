@@ -33,3 +33,18 @@ jobs:
       - name: Validate flake outputs
         if: always() # Run even if previous step fails
         run: nix flake show
+
+      - name: Check build in Nix dev shell
+        run: |
+          # Enter nix develop and run build commands
+          nix develop --command bash -c '
+            # Install dependencies
+            yarn install
+            
+            # Build the project
+            yarn build
+            
+            # Build cosmic-swingset
+            cd packages/cosmic-swingset && make
+          '
+
