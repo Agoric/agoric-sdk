@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	sdkmath "cosmossdk.io/math"
+	metrics "github.com/armon/go-metrics"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -189,7 +190,11 @@ func getEncodedKeysWithPrefixFromIterator(iterator sdk.Iterator, prefix string) 
 	return keys
 }
 
-const vstorageMetricKey = "vstorage_size_delta"
+```suggestion
+var MetricKeysSizeDelta = []string{"store", "size_delta"}
+var MetricLabels = []metrics.Label{
+	telemetry.NewLabel("storeKey", k.GetStoreName()),
+}
 
 // RemoveEntriesWithPrefix removes all storage entries starting with the
 // supplied pathPrefix, which may not be empty.
@@ -219,7 +224,8 @@ func (k Keeper) RemoveEntriesWithPrefix(ctx sdk.Context, pathPrefix string) {
 
 	for _, key := range keys {
 		rawValue := store.Get(key)
-		telemetry.IncrCounter(float32(-len(key) - len(rawValue)), vstorageMetricKey)
+		sizeDelta := float32(-len(key) - len(rawValue))
+		telemetry.IncrCounterWithLabels(MetricKeysSizeDelta, sizeDelta, MetricLabels)
 		store.Delete(key)
 	}
 
@@ -376,17 +382,20 @@ func (k Keeper) SetStorage(ctx sdk.Context, entry agoric.KVEntry) {
 	if !entry.HasValue() {
 		if !k.HasChildren(ctx, path) {
 			// We have no children, can delete.
-			telemetry.IncrCounter(float32(-len(encodedKey) - len(rawValue)), vstorageMetricKey)
+			sizeDelta := float32(-len(encodedKey) - len(rawValue))
+			telemetry.IncrCounterWithLabels(MetricKeysSizeDelta, sizeDelta, MetricLabels)
 			store.Delete(encodedKey)
 		} else {
-			// We have children, remove the value
-			telemetry.IncrCounter(float32(len(types.EncodedNoDataValue) - len(rawValue)), vstorageMetricKey)
+			// We have children, mark as an empty placeholder without deleting.
+			sizeDelta := float32(len(types.EncodedNoDataValue) - len(rawValue))
+			telemetry.IncrCounterWithLabels(MetricKeysSizeDelta, sizeDelta, MetricLabels)
 			store.Set(encodedKey, types.EncodedNoDataValue)
 		}
 	} else {
 		// Update the value.
 		bz := bytes.Join([][]byte{types.EncodedDataPrefix, []byte(entry.StringValue())}, []byte{})
-		telemetry.IncrCounter(float32(len(bz) - len(rawValue)), vstorageMetricKey)
+		sizeDelta := float32(len(bz) - len(rawValue))
+		telemetry.IncrCounterWithLabels(MetricKeysSizeDelta, sizeDelta, MetricLabels)
 		store.Set(encodedKey, bz)
 	}
 
@@ -401,7 +410,8 @@ func (k Keeper) SetStorage(ctx sdk.Context, entry agoric.KVEntry) {
 				break
 			}
 			encodedAncestor := types.PathToEncodedKey(ancestor)
-			telemetry.IncrCounter(float32(-len(encodedAncestor) - len(types.EncodedNoDataValue)), vstorageMetricKey)
+			sizeDelta := float32(-len(encodedAncestor) - len(types.EncodedNoDataValue))
+			telemetry.IncrCounterWithLabels(MetricKeysSizeDelta, sizeDelta, MetricLabels)
 			store.Delete(encodedAncestor)
 		}
 	} else {
@@ -413,7 +423,8 @@ func (k Keeper) SetStorage(ctx sdk.Context, entry agoric.KVEntry) {
 				break
 			}
 			encodedAncestor := types.PathToEncodedKey(ancestor)
-			telemetry.IncrCounter(float32(len(encodedAncestor) + len(types.EncodedNoDataValue)), vstorageMetricKey)
+			sizeDelta := float32(len(encodedAncestor) + len(types.EncodedNoDataValue))
+			telemetry.IncrCounterWithLabels(MetricKeysSizeDelta, sizeDelta, MetricLabels)
 			store.Set(encodedAncestor, types.EncodedNoDataValue)
 		}
 	}
