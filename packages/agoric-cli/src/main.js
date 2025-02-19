@@ -210,17 +210,13 @@ const main = async (progname, rawArgs, powers) => {
   baseCmd('follow <path-spec...>')
     .description('follow an Agoric Casting leader')
     .option(
-      '--proof <strict | optimistic | none>',
-      'set proof mode',
+      '--proof <none>',
+      `set proof mode (currently only 'none' is supported)`,
       value => {
-        assert(
-          ['strict', 'optimistic', 'none'].includes(value),
-          X`--proof must be one of 'strict', 'optimistic', or 'none'`,
-          TypeError,
-        );
+        assert.equal(value, 'none', X`--proof can only be 'none'`, TypeError);
         return value;
       },
-      'optimistic',
+      'none',
     )
     .option(
       '--sleep <seconds>',
