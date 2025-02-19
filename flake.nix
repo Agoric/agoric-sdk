@@ -50,7 +50,7 @@
           buildInputs = with pkgs; [
             custom_node_20_9
             (yarn.override { nodejs = custom_node_20_9; })
-            python3
+            (python3.withPackages (ps: [ ps.distutils ]))
             pkg-config
             go_1_23
             gopls
