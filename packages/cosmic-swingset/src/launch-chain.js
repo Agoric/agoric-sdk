@@ -54,6 +54,8 @@ import { computronCounter } from './computron-counter.js';
 
 /** @typedef {ReturnType<typeof makeQueue<{context: any, action: any}>>} InboundQueue */
 
+const { now } = Date;
+
 const console = anylogger('launch-chain');
 const blockManagerConsole = anylogger('block-manager');
 
@@ -852,8 +854,8 @@ export async function launch({
 
     if (END_BLOCK_SPIN_MS) {
       // Introduce a busy-wait to artificially put load on the chain.
-      const startTime = Date.now();
-      while (Date.now() - startTime < END_BLOCK_SPIN_MS);
+      const startTime = now();
+      while (now() - startTime < END_BLOCK_SPIN_MS);
     }
   }
 
@@ -939,12 +941,12 @@ export async function launch({
       // Start a block transaction, but without changing state
       // for the upcoming begin block check
       saveBeginHeight(savedBeginHeight);
-      const start = Date.now();
+      const start = now();
       await withErrorLogging(
         action.type,
         () => bootstrapBlock(blockHeight, blockTime, bootstrapBlockParams),
         () => {
-          runTime += Date.now() - start;
+          runTime += now() - start;
         },
       );
     } finally {
@@ -1103,9 +1105,9 @@ export async function launch({
         });
 
         // Save the kernel's computed state just before the chain commits.
-        const start = Date.now();
+        const start = now();
         await saveOutsideState(savedHeight);
-        saveTime = Date.now() - start;
+        saveTime = now() - start;
 
         blockParams = undefined;
 
@@ -1119,7 +1121,7 @@ export async function launch({
       case ActionType.AFTER_COMMIT_BLOCK: {
         const { blockHeight, blockTime } = action;
 
-        const fullSaveTime = Date.now() - endBlockFinish;
+        const fullSaveTime = now() - endBlockFinish;
 
         controller.writeSlogObject({
           type: 'cosmic-swingset-commit-block-finish',
@@ -1203,19 +1205,19 @@ export async function launch({
 
           provideInstallationPublisher();
 
-          const start = Date.now();
+          const start = now();
           await withErrorLogging(
             action.type,
             () => endBlock(blockHeight, blockTime, blockParams),
             () => {
-              runTime += Date.now() - start;
+              runTime += now() - start;
             },
           );
 
           // We write out our on-chain state as a number of chainSends.
-          const start2 = Date.now();
+          const start2 = now();
           await saveChainState();
-          chainTime = Date.now() - start2;
+          chainTime = now() - start2;
 
           // Advance our saved state variables.
           savedHeight = blockHeight;
@@ -1227,7 +1229,7 @@ export async function launch({
           inboundQueueStats: inboundQueueMetrics.getStats(),
         });
 
-        endBlockFinish = Date.now();
+        endBlockFinish = now();
 
         return undefined;
       }
