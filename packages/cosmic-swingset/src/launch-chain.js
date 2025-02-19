@@ -35,6 +35,7 @@ import {
   mergeCoreProposals,
 } from '@agoric/deploy-script-support/src/extract-proposal.js';
 import { fileURLToPath } from 'url';
+import { ValueType } from '@opentelemetry/api';
 
 import {
   makeDefaultMeterProvider,
@@ -318,7 +319,7 @@ export async function buildSwingset(
  * @property {ReturnType<typeof import('./kernel-stats.js').makeDefaultMeterProvider>} [metricsProvider]
  * @property {import('@agoric/telemetry').SlogSender} [slogSender]
  * @property {string} [swingStoreTraceFile]
- * @property {(...args: unknown[]) => void} [swingStoreExportCallback]
+ * @property {(...args: unknown[]) => Promise<void> | void} [swingStoreExportCallback]
  * @property {boolean} [keepSnapshots]
  * @property {boolean} [keepTranscripts]
  * @property {ReturnType<typeof import('@agoric/swing-store').makeArchiveSnapshot>} [archiveSnapshot]
@@ -496,6 +497,82 @@ export async function launch({
     initialQueueLengths,
   });
 
+  const chainNodeMetrics = {
+    swingsetRunTime: metricMeter.createHistogram('swingsetRunTime', {
+      description: 'The time spent per block executing SwingSet',
+      valueType: ValueType.DOUBLE,
+      unit: 's',
+      advice: {
+        explicitBucketBoundaries: [
+          0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10, 15, 30,
+        ],
+      },
+    }),
+    swingsetChainSaveTime: metricMeter.createHistogram(
+      'swingsetChainSaveTime',
+      {
+        description:
+          'The time spent per block explicitly waiting for SwingSet state to be saved in cosmos state',
+        valueType: ValueType.DOUBLE,
+        unit: 's',
+        advice: {
+          explicitBucketBoundaries: [0.1, 0.2, 0.3, 0.4, 0.5, 1],
+        },
+      },
+    ),
+    commitTime: metricMeter.createHistogram('commitTime', {
+      description: 'The time spent per block committing state',
+      valueType: ValueType.DOUBLE,
+      unit: 's',
+      advice: {
+        explicitBucketBoundaries: [0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10],
+      },
+    }),
+    swingsetCommitTime: metricMeter.createHistogram('swingsetCommitTime', {
+      description: 'The time spent per block committing SwingSet state',
+      valueType: ValueType.DOUBLE,
+      unit: 's',
+      advice: {
+        explicitBucketBoundaries: [0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10],
+      },
+    }),
+    cosmosCommitTime: metricMeter.createHistogram('cosmosCommitTime', {
+      description: 'The time spent per block committing cosmos state',
+      valueType: ValueType.DOUBLE,
+      unit: 's',
+      advice: {
+        explicitBucketBoundaries: [0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10],
+      },
+    }),
+    interBlockTime: metricMeter.createHistogram('interBlockTime', {
+      description: 'The time spent idle between blocks',
+      valueType: ValueType.DOUBLE,
+      unit: 's',
+      advice: {
+        explicitBucketBoundaries: [0.1, 0.5, 1, 2, 3, 4, 5, 6, 7, 10],
+      },
+    }),
+    afterCommitWaitTime: metricMeter.createHistogram('afterCommitWaitTime', {
+      description: 'The time spent per block waiting for after commit work',
+      valueType: ValueType.DOUBLE,
+      unit: 's',
+      advice: {
+        explicitBucketBoundaries: [0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10],
+      },
+    }),
+    blockLag: metricMeter.createHistogram('blockLag', {
+      description: 'The delay with which this node is processing blocks',
+      valueType: ValueType.DOUBLE,
+      unit: 's',
+      advice: {
+        explicitBucketBoundaries: [
+          0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 6, 10, 30, 60, 120, 180, 240,
+          300, 600, 3600,
+        ],
+      },
+    }),
+  };
+
   /**
    * @param {number} blockHeight
    * @param {ChainRunPolicy} runPolicy
@@ -666,7 +743,10 @@ export async function launch({
   let chainTime;
   /** duration of the latest saveOutsideState(), which commits to swing-store host storage */
   let saveTime = 0;
+  let previousBeginBlock = NaN;
   let endBlockFinish = 0;
+  let commitSwingSetFinish = 0;
+  let afterCommitFinish = NaN;
   let blockParams;
   let decohered;
   let afterCommitWorkDone = Promise.resolve();
@@ -1113,35 +1193,63 @@ export async function launch({
           `wrote SwingSet checkpoint [run=${runTime}ms, chainSave=${chainTime}ms, kernelSave=${saveTime}ms]`,
         );
 
+        commitSwingSetFinish = Date.now();
+
         return undefined;
       }
 
       case ActionType.AFTER_COMMIT_BLOCK: {
         const { blockHeight, blockTime } = action;
 
-        const fullSaveTime = Date.now() - endBlockFinish;
+        const now = Date.now();
+        const fullSaveTime = now - endBlockFinish;
+        const cosmosSaveTime = now - commitSwingSetFinish;
 
         controller.writeSlogObject({
           type: 'cosmic-swingset-commit-block-finish',
           blockHeight,
           blockTime,
-          saveTime: saveTime / 1000,
+          runTime: runTime / 1000,
           chainTime: chainTime / 1000,
+          saveTime: saveTime / 1000,
+          cosmosSaveTime: cosmosSaveTime / 1000,
           fullSaveTime: fullSaveTime / 1000,
         });
 
+        chainNodeMetrics.swingsetRunTime.record(runTime / 1000);
+        chainNodeMetrics.swingsetChainSaveTime.record(chainTime / 1000);
+        chainNodeMetrics.swingsetCommitTime.record(saveTime / 1000);
+        chainNodeMetrics.cosmosCommitTime.record(cosmosSaveTime / 1000);
+        chainNodeMetrics.commitTime.record(fullSaveTime / 1000);
+
         afterCommitWorkDone = afterCommit(blockHeight, blockTime);
+
+        afterCommitFinish = Date.now();
 
         return undefined;
       }
 
       case ActionType.BEGIN_BLOCK: {
+        const beginStart = Date.now();
+        const interBlockTime = beginStart - afterCommitFinish;
+
+        // It's not strictly necessary to wait for this to be done, but it avoids
+        // confusing our metrics with work attributable to the previous block.
+        await afterCommitWorkDone;
+        const afterCommitTS = Date.now();
+        const waitAfterCommitTime = afterCommitTS - beginStart;
+
         allowExportCallback = true; // cleared by saveOutsideState in COMMIT_BLOCK
         const { blockHeight, blockTime, params } = action;
         blockParams = parseParams(params);
         verboseBlocks &&
           blockManagerConsole.info('block', blockHeight, 'begin');
         runTime = 0;
+        // The blockTime of current block is decided in consensus when
+        // starting to execute the previous block.
+        const previousBlockLagTime = previousBeginBlock - blockTime * 1000;
+        // Include the await of after commit work in our lag time
+        previousBeginBlock = afterCommitTS;
 
         if (blockNeedsExecution(blockHeight)) {
           if (savedBeginHeight === blockHeight) {
@@ -1158,8 +1266,17 @@ export async function launch({
           type: 'cosmic-swingset-begin-block',
           blockHeight,
           blockTime,
+          interBlockTime: interBlockTime / 1000,
+          waitAfterCommitTime: waitAfterCommitTime / 1000,
+          previousBlockLagTime: previousBlockLagTime / 1000,
           inboundQueueStats: inboundQueueMetrics.getStats(),
         });
+
+        Number.isNaN(interBlockTime) ||
+          chainNodeMetrics.interBlockTime.record(interBlockTime / 1000);
+        chainNodeMetrics.afterCommitWaitTime.record(waitAfterCommitTime / 1000);
+        Number.isNaN(previousBlockLagTime) ||
+          chainNodeMetrics.blockLag.record(previousBlockLagTime / 1000);
 
         return undefined;
       }
@@ -1215,6 +1332,9 @@ export async function launch({
           // We write out our on-chain state as a number of chainSends.
           const start2 = Date.now();
           await saveChainState();
+          // Not strictly necessary for correctness (the caller ensures this is
+          // done before returning), but account for time taken to flush.
+          await pendingSwingStoreExport;
           chainTime = Date.now() - start2;
 
           // Advance our saved state variables.
@@ -1241,8 +1361,6 @@ export async function launch({
     if (decohered) {
       throw decohered;
     }
-
-    await afterCommitWorkDone;
 
     return doBlockingSend(action).finally(() => pendingSwingStoreExport);
   }
