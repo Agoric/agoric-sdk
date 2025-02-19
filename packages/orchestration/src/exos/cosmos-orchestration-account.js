@@ -898,6 +898,11 @@ export const prepareCosmosOrchestrationAccountKit = (
         transfer(destination, amount, opts) {
           trace('transfer', destination, amount, opts);
           return asVow(() => {
+            destination =
+              typeof destination === 'string'
+                ? chainHub.makeChainAddress(destination)
+                : destination;
+
             const { helper } = this.facets;
             const token = helper.amountToCoin(amount);
 

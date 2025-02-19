@@ -525,15 +525,29 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
       return `${fqChainId}:${parsed.accountAddress}`;
     },
     /**
-     * @param {CosmosAddress} address Cosmos bech32 address
+     * @param {AccountId | CosmosAddress} partialId CAIP-10 account ID or a
+     *   Cosmos bech32 address
      * @returns {CosmosChainAddress}
      * @throws {Error} if chain info not found for bech32Prefix
      */
-    makeChainAddress(address) {
-      const chainId = resolveCosmosChainId(address);
+    makeChainAddress(partialId) {
+      const parsed = parseAccountId(partialId);
+      if (parsed.chainId) {
+        // that's the CAIP chainId and we want the Cosmos one
+        const [namespace, reference] = parsed.chainId.split(':');
+        assert.equal(namespace, 'cosmos');
+        return harden({
+          chainId: reference,
+          value: parsed.accountAddress,
+        });
+      }
+
+      const chainId = resolveCosmosChainId(
+        /** @type {CosmosAddress} */ (partialId),
+      );
       return harden({
         chainId,
-        value: address,
+        value: partialId,
       });
     },
     // TODO document whether this is limited to IBC
@@ -547,7 +561,7 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
      *
      * XXX consider accepting AmountArg #10449
      *
-     * @param {CosmosChainAddress} destination
+     * @param {AccountId | CosmosChainAddress} destination
      * @param {DenomAmount} denomAmount
      * @param {string} srcChainName
      * @param {IBCMsgTransferOptions['forwardOpts']} [forwardOpts]
@@ -575,6 +589,11 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
       const { chainId: baseChainId, pfmEnabled } = chainInfos.get(baseName);
 
       const holdingChainId = chainInfos.get(srcChainName).chainId;
+
+      destination =
+        typeof destination === 'string'
+          ? this.makeChainAddress(destination)
+          : destination;
 
       // asset is transferring to or from the issuing chain, return direct route
       if (baseChainId === destination.chainId || baseName === srcChainName) {

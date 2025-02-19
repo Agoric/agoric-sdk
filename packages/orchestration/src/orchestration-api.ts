@@ -223,7 +223,7 @@ export interface OrchestrationAccountCommon {
    * the transfer is rejected (insufficient funds, timeout)
    */
   transfer: (
-    destination: CosmosChainAddress,
+    destination: AccountId | CosmosChainAddress,
     amount: AmountArg,
     opts?: IBCMsgTransferOptions,
   ) => Promise<void>;
