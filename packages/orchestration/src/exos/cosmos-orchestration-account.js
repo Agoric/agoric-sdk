@@ -898,6 +898,15 @@ export const prepareCosmosOrchestrationAccountKit = (
         transfer(destination, amount, opts) {
           trace('transfer', destination, amount, opts);
           return asVow(() => {
+            // `destination` arg can be non-Cosmos per the common `.transfer` method signature
+            // but this implementation only supports transferring to another Cosmos chain.
+            // It relies on `makeChainAddress` to throw if `destination` has another namespace.
+            destination =
+              typeof destination === 'string'
+                ? // If `destination` is not actually CAIP-10 then this will throw
+                  chainHub.makeChainAddress(destination)
+                : destination;
+
             const { helper } = this.facets;
             const token = helper.amountToCoin(amount);
 

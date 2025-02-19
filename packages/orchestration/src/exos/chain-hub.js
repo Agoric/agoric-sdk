@@ -14,6 +14,7 @@ import {
   ForwardOptsShape,
   IBCChannelIDShape,
   IBCConnectionInfoShape,
+  AccountArgShape,
 } from '../typeGuards.js';
 import { getBech32Prefix, parseAccountId } from '../utils/address.js';
 
@@ -23,7 +24,7 @@ import { getBech32Prefix, parseAccountId } from '../utils/address.js';
  * @import {Zone} from '@agoric/zone';
  * @import {CosmosAssetInfo, CosmosChainInfo, ForwardInfo, IBCConnectionInfo, IBCMsgTransferOptions, TransferRoute, GoDuration, Bech32Address} from '../cosmos-api.js';
  * @import {ChainInfo, KnownChains} from '../chain-info.js';
- * @import {AccountId, CosmosChainAddress, ScopedChainId, Denom, DenomAmount} from '../orchestration-api.js';
+ * @import {AccountId, CosmosChainAddress, ScopedChainId, Denom, DenomAmount, AccountIdArg} from '../orchestration-api.js';
  * @import {Remote, TypedPattern} from '@agoric/internal';
  */
 
@@ -218,11 +219,7 @@ const ChainHubI = M.interface('ChainHub', {
   getDenom: M.call(BrandShape).returns(M.or(M.string(), M.undefined())),
   makeChainAddress: M.call(M.string()).returns(CosmosChainAddressShape),
   resolveAccountId: M.call(M.string()).returns(M.string()),
-  makeTransferRoute: M.call(
-    CosmosChainAddressShape,
-    DenomAmountShape,
-    M.string(),
-  )
+  makeTransferRoute: M.call(AccountArgShape, DenomAmountShape, M.string())
     .optional(ForwardOptsShape)
     .returns(M.or(M.undefined(), TransferRouteShape)),
 });
@@ -510,30 +507,40 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
       return undefined;
     },
     /**
-     * @param {AccountId | CosmosAddress} partialId CAIP-10 account ID or a
-     *   Cosmos bech32 address
+     * @param {string} partialId CAIP-10 account ID or a Cosmos bech32 address
      * @returns {AccountId}
      * @throws {Error} if chain info not found for bech32Prefix
      */
     resolveAccountId(partialId) {
       const parsed = parseAccountId(partialId);
-      /** @type {ScopedChainId} */
-      const fqChainId = parsed.chainId
-        ? parsed.chainId
-        : // @ts-expect-error we know partialId is a Cosmos bech32 address
-          `cosmos:${resolveCosmosChainId(partialId)}`;
-      return `${fqChainId}:${parsed.accountAddress}`;
+      if ('namespace' in parsed) {
+        // It is already fully qualified
+        return /** @type {AccountId} */ (partialId);
+      }
+
+      const reference = resolveCosmosChainId(partialId);
+      return `cosmos:${reference}:${partialId}`;
     },
     /**
-     * @param {CosmosAddress} address Cosmos bech32 address
+     * @param {string} partialId CAIP-10 account ID or a Cosmos bech32 address
      * @returns {CosmosChainAddress}
      * @throws {Error} if chain info not found for bech32Prefix
      */
-    makeChainAddress(address) {
-      const chainId = resolveCosmosChainId(address);
+    makeChainAddress(partialId) {
+      const parsed = parseAccountId(partialId);
+
+      if ('namespace' in parsed) {
+        assert.equal(parsed.namespace, 'cosmos');
+        return harden({
+          chainId: parsed.reference,
+          value: parsed.accountAddress,
+        });
+      }
+
+      const chainId = resolveCosmosChainId(parsed.accountAddress);
       return harden({
         chainId,
-        value: address,
+        value: parsed.accountAddress,
       });
     },
     // TODO document whether this is limited to IBC
@@ -547,7 +554,7 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
      *
      * XXX consider accepting AmountArg #10449
      *
-     * @param {CosmosChainAddress} destination
+     * @param {AccountIdArg} destination
      * @param {DenomAmount} denomAmount
      * @param {string} srcChainName
      * @param {IBCMsgTransferOptions['forwardOpts']} [forwardOpts]
@@ -575,6 +582,11 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
       const { chainId: baseChainId, pfmEnabled } = chainInfos.get(baseName);
 
       const holdingChainId = chainInfos.get(srcChainName).chainId;
+
+      destination =
+        typeof destination === 'string'
+          ? chainHub.makeChainAddress(destination)
+          : destination;
 
       // asset is transferring to or from the issuing chain, return direct route
       if (baseChainId === destination.chainId || baseName === srcChainName) {

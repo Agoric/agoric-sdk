@@ -4,6 +4,7 @@ import { VowShape } from '@agoric/vow';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/topics.js';
 import { M } from '@endo/patterns';
 import {
+  AccountArgShape,
   AmountArgShape,
   CosmosChainAddressShape,
   DenomAmountShape,
@@ -25,7 +26,7 @@ export const orchestrationAccountMethods = {
   sendAll: M.call(CosmosChainAddressShape, M.arrayOf(AmountArgShape)).returns(
     VowShape,
   ),
-  transfer: M.call(CosmosChainAddressShape, AmountArgShape)
+  transfer: M.call(AccountArgShape, AmountArgShape)
     .optional(IBCTransferOptionsShape)
     .returns(VowShape),
   transferSteps: M.call(AmountArgShape, M.any()).returns(VowShape),

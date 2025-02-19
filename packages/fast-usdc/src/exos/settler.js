@@ -17,7 +17,7 @@ import {
 /**
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
  * @import {Amount, Brand, NatValue, Payment} from '@agoric/ertp';
- * @import {Denom, OrchestrationAccount, ChainHub, CosmosChainAddress} from '@agoric/orchestration';
+ * @import {AccountId, Denom, OrchestrationAccount, ChainHub, CosmosChainAddress} from '@agoric/orchestration';
  * @import {WithdrawToSeat} from '@agoric/orchestration/src/utils/zoe-tools'
  * @import {IBCChannelID, IBCPacket, VTransferIBCEvent} from '@agoric/vats';
  * @import {Zone} from '@agoric/zone';
@@ -340,10 +340,10 @@ export const prepareSettler = (
         forward(txHash, fullValue, EUD) {
           const { settlementAccount, intermediateRecipient } = this.state;
 
+          /** @type {AccountId | null} */
           const dest = (() => {
             try {
-              // @ts-expect-error FIXME support any AccountId
-              return chainHub.makeChainAddress(EUD);
+              return chainHub.resolveAccountId(EUD);
             } catch (e) {
               log('⚠️ forward transfer failed!', e, txHash);
               statusManager.forwarded(txHash, false);

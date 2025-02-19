@@ -28,7 +28,7 @@ import { TransferRouteShape } from './chain-hub.js';
 /**
  * @import {HostOf} from '@agoric/async-flow';
  * @import {LocalChain, LocalChainAccount} from '@agoric/vats/src/localchain.js';
- * @import {AmountArg, CosmosChainAddress, DenomAmount, IBCMsgTransferOptions, IBCConnectionInfo, OrchestrationAccountCommon, LocalAccountMethods, TransferRoute} from '@agoric/orchestration';
+ * @import {AmountArg, CosmosChainAddress, DenomAmount, IBCMsgTransferOptions, IBCConnectionInfo, OrchestrationAccountCommon, LocalAccountMethods, TransferRoute, AccountId, AccountIdArg} from '@agoric/orchestration';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Zone} from '@agoric/zone';
  * @import {Remote} from '@agoric/internal';
@@ -671,7 +671,7 @@ export const prepareLocalOrchestrationAccountKit = (
           });
         },
         /**
-         * @param {CosmosChainAddress} destination
+         * @param {AccountIdArg} destination
          * @param {AmountArg} amount an ERTP {@link Amount} or a
          *   {@link DenomAmount}
          * @param {IBCMsgTransferOptions} [opts] if either timeoutHeight or
@@ -685,6 +685,7 @@ export const prepareLocalOrchestrationAccountKit = (
         transfer(destination, amount, opts) {
           return asVow(() => {
             trace('Transferring funds over IBC');
+
             const denomAmount = coerceDenomAmount(chainHub, amount);
 
             const { forwardOpts, ...rest } = opts ?? {};
