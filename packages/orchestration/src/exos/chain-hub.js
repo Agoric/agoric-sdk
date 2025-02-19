@@ -21,9 +21,9 @@ import { getBech32Prefix, parseAccountId } from '../utils/address.js';
  * @import {NameHub} from '@agoric/vats';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
- * @import {CosmosAssetInfo, CosmosChainInfo, ForwardInfo, IBCConnectionInfo, IBCMsgTransferOptions, TransferRoute, GoDuration} from '../cosmos-api.js';
+ * @import {CosmosAssetInfo, CosmosChainInfo, ForwardInfo, IBCConnectionInfo, IBCMsgTransferOptions, TransferRoute, GoDuration, Bech32Address} from '../cosmos-api.js';
  * @import {ChainInfo, KnownChains} from '../chain-info.js';
- * @import {ChainAddress, Denom, DenomAmount} from '../orchestration-api.js';
+ * @import {AccountId, ChainAddress, ScopedChainId, Denom, DenomAmount} from '../orchestration-api.js';
  * @import {Remote, TypedPattern} from '@agoric/internal';
  */
 
@@ -217,6 +217,7 @@ const ChainHubI = M.interface('ChainHub', {
   ),
   getDenom: M.call(BrandShape).returns(M.or(M.string(), M.undefined())),
   makeChainAddress: M.call(M.string()).returns(ChainAddressShape),
+  resolveAccountId: M.call(M.string()).returns(M.string()),
   makeTransferRoute: M.call(ChainAddressShape, DenomAmountShape, M.string())
     .optional(ForwardOptsShape)
     .returns(M.or(M.undefined(), TransferRouteShape)),
@@ -267,6 +268,21 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
    * @param {DenomDetail['chainName']} srcChainName
    */
   const makeDenomKey = (denom, srcChainName) => `${srcChainName}:${denom}`;
+
+  /**
+   * @param {string} address
+   * @returns {string}
+   */
+  const resolveCosmosChainId = address => {
+    // Infer it from the bech32 prefix
+    const prefix = getBech32Prefix(address);
+    if (!bech32PrefixToChainName.has(prefix)) {
+      throw makeError(`Chain info not found for bech32Prefix ${q(prefix)}`);
+    }
+    const chainName = bech32PrefixToChainName.get(prefix);
+    const { chainId } = chainInfos.get(chainName);
+    return chainId;
+  };
 
   const lookupChainInfo = vowTools.retryable(
     zone,
@@ -490,28 +506,30 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
       return undefined;
     },
     /**
-     * @param {string} accountId CAIP-10 account ID or a Cosmos bech32 address
+     * @param {AccountId | CosmosAddress} partialId CAIP-10 account ID or a
+     *   Cosmos bech32 address
+     * @returns {AccountId}
+     * @throws {Error} if chain info not found for bech32Prefix
+     */
+    resolveAccountId(partialId) {
+      const parsed = parseAccountId(partialId);
+      /** @type {ScopedChainId} */
+      const fqChainId = parsed.chainId
+        ? parsed.chainId
+        : // @ts-expect-error we know partialId is a Cosmos bech32 address
+          `cosmos:${resolveCosmosChainId(partialId)}`;
+      return `${fqChainId}:${parsed.accountAddress}`;
+    },
+    /**
+     * @param {CosmosAddress} address Cosmos bech32 address
      * @returns {ChainAddress}
      * @throws {Error} if chain info not found for bech32Prefix
      */
-    makeChainAddress(accountId) {
-      const parsed = parseAccountId(accountId);
-      if (parsed.chainId) {
-        return harden({
-          chainId: parsed.chainId,
-          value: parsed.accountAddress,
-        });
-      }
-      // Infer it from the bech32 prefix
-      const prefix = getBech32Prefix(accountId);
-      if (!bech32PrefixToChainName.has(prefix)) {
-        throw makeError(`Chain info not found for bech32Prefix ${q(prefix)}`);
-      }
-      const chainName = bech32PrefixToChainName.get(prefix);
-      const { chainId } = chainInfos.get(chainName);
+    makeChainAddress(address) {
+      const chainId = resolveCosmosChainId(address);
       return harden({
         chainId,
-        value: parsed.accountAddress,
+        value: address,
       });
     },
     // TODO document whether this is limited to IBC

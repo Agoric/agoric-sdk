@@ -342,6 +342,7 @@ export const prepareSettler = (
 
           const dest = (() => {
             try {
+              // @ts-expect-error FIXME support any AccountId
               return chainHub.makeChainAddress(EUD);
             } catch (e) {
               log('⚠️ forward transfer failed!', e, txHash);
