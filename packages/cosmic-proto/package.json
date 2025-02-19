@@ -173,7 +173,7 @@
     "ava": "^5.3.1",
     "rimraf": "^5.0.0",
     "tsd": "^0.31.1",
-    "typescript": "^5.8.0-beta"
+    "typescript": "~5.8.1-rc"
   },
   "dependencies": {
     "@endo/base64": "^1.0.9",
