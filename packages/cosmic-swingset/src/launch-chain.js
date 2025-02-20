@@ -27,6 +27,7 @@ import {
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 import { openSwingStore } from '@agoric/swing-store';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
+import { objectMapMutable } from '@agoric/internal/src/js-utils.js';
 import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import * as ActionType from '@agoric/internal/src/action-types.js';
 
@@ -82,8 +83,7 @@ const blockHistogramMetricDesc = {
     ],
   },
 };
-/** @type {Record<string, import('@opentelemetry/api').MetricOptions>} */
-const BLOCK_HISTOGRAM_METRICS = {
+const BLOCK_HISTOGRAM_METRICS = /** @type {const} */ ({
   swingsetRunSeconds: {
     description: 'Per-block time spent executing SwingSet',
     ...blockHistogramMetricDesc,
@@ -121,13 +121,13 @@ const BLOCK_HISTOGRAM_METRICS = {
     // Add buckets for excessively long delays.
     advice: {
       ...blockHistogramMetricDesc.advice,
-      explicitBucketBoundaries: [
+      explicitBucketBoundaries: /** @type {number[]} */ ([
         ...blockHistogramMetricDesc.advice.explicitBucketBoundaries,
         ...[60, 120, 180, 240, 300, 600, 3600],
-      ],
+      ]),
     },
   },
-};
+});
 
 /**
  * @param {{ info: string } | null | undefined} upgradePlan
@@ -568,10 +568,8 @@ export async function launch({
     initialQueueLengths,
   });
 
-  const blockMetrics = Object.fromEntries(
-    Object.entries(BLOCK_HISTOGRAM_METRICS).map(([name, desc]) => {
-      return [name, metricMeter.createHistogram(name, desc)];
-    }),
+  const blockMetrics = objectMapMutable(BLOCK_HISTOGRAM_METRICS, (desc, name) =>
+    metricMeter.createHistogram(name, desc),
   );
 
   /**
