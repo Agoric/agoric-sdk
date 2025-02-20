@@ -1,7 +1,6 @@
 // @ts-nocheck
 /* global WeakRef, FinalizationRegistry */
 
-import anylogger from 'anylogger';
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
@@ -18,21 +17,13 @@ import {
   makeSwingsetController,
 } from '../src/index.js';
 import {
+  makeConsole,
   makeMessage,
   makeResolutions,
   makeDropExports,
   makeRetireExports,
   makeRetireImports,
 } from './util.js';
-
-function makeConsole(tag) {
-  const log = anylogger(tag);
-  const cons = {};
-  for (const level of ['debug', 'log', 'info', 'warn', 'error']) {
-    cons[level] = log[level];
-  }
-  return harden(cons);
-}
 
 function writeSlogObject(o) {
   function bigintReplacer(_, arg) {
