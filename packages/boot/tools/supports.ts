@@ -586,6 +586,10 @@ export const makeSwingsetTestKit = async (
 
   console.timeLog('makeBaseSwingsetTestKit', 'buildSwingset');
 
+  // XXX This initial run() might not be necessary. Tests pass without it as of
+  // 2025-02, but we suspect that `makeSwingsetTestKit` just isn't being
+  // exercised in the right way.
+  await controller.run();
   const runUtils = makeBootstrapRunUtils(controller, harness);
 
   const buildProposal = makeProposalExtractor({

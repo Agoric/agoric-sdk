@@ -6,13 +6,11 @@ import BufferLineTransform from '@agoric/internal/src/node/buffer-line-transform
 import { createSHA256 } from './hasher.js';
 
 /**
- * @template T
- *  @typedef  { IterableIterator<T> | AsyncIterableIterator<T> } AnyIterableIterator<T>
+ * @import { AnyIterable } from './exporter.js';
+ * @import { ArtifactMode } from './internal.js';
  */
 
 /**
- * @typedef { import('./internal.js').ArtifactMode } ArtifactMode
- *
  * @typedef {{
  *   initTranscript: (vatID: string) => void,
  *   rolloverSpan: (vatID: string) => Promise<number>,
@@ -29,7 +27,7 @@ import { createSHA256 } from './hasher.js';
  *   getExportRecords: (includeHistorical: boolean) => IterableIterator<readonly [key: string, value: string]>,
  *   getArtifactNames: (artifactMode: ArtifactMode) => AsyncIterableIterator<string>,
  *   importTranscriptSpanRecord: (key: string, value: string) => void,
- *   populateTranscriptSpan: (name: string, makeChunkIterator: () => AnyIterableIterator<Uint8Array>, options: { artifactMode: ArtifactMode }) => Promise<void>,
+ *   populateTranscriptSpan: (name: string, makeChunkIterator: () => AnyIterable<Uint8Array>, options: { artifactMode: ArtifactMode }) => Promise<void>,
  *   assertComplete: (checkMode: Omit<ArtifactMode, 'debug'>) => void,
  *   repairTranscriptSpanRecord: (key: string, value: string) => void,
  *   readFullVatTranscript: (vatID: string) => Iterable<{position: number, item: string}>
@@ -39,6 +37,11 @@ import { createSHA256 } from './hasher.js';
  *   dumpTranscripts: (includeHistorical?: boolean) => {[vatID: string]: {[position: number]: string}}
  * }} TranscriptStoreDebug
  *
+ * @callback TranscriptCallback
+ * Called with the entries of a newly-finalized transcript span.
+ * @param {string} spanName  e.g., `transcript.${vatID}.${startPos}.${endPos}`
+ * @param {AnyIterable<Uint8Array>} entries  as from `exportSpan`
+ * @returns {Promise<void>}
  */
 
 function* empty() {
@@ -62,7 +65,7 @@ function insistTranscriptPosition(position) {
  * @param {(key: string, value: string | undefined ) => void} noteExport
  * @param {object} [options]
  * @param {boolean} [options.keepTranscripts]
- * @param {(spanName: string, entries: ReturnType<exportSpan>) => Promise<void>} [options.archiveTranscript]
+ * @param {TranscriptCallback} [options.archiveTranscript]
  * @returns { TranscriptStore & TranscriptStoreInternal & TranscriptStoreDebug }
  */
 export function makeTranscriptStore(
@@ -775,7 +778,7 @@ export function makeTranscriptStore(
    * Import a transcript span from another store.
    *
    * @param {string} name  Artifact Name of the transcript span
-   * @param {() => AnyIterableIterator<Uint8Array>} makeChunkIterator  get an iterator of transcript byte chunks
+   * @param {() => AnyIterable<Uint8Array>} makeChunkIterator  get an iterator of transcript byte chunks
    * @param {object} options
    * @param {ArtifactMode} options.artifactMode
    *
