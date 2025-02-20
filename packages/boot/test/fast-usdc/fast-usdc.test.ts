@@ -333,6 +333,28 @@ test.serial('LP deposits', async t => {
   );
 });
 
+test.serial('oracles accept invitations', async t => {
+  const { walletFactoryDriver: wfd, agoricNamesRemotes } = t.context;
+  const oracles = await Promise.all(
+    oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
+  );
+  await Promise.all(
+    oracles.map(wallet =>
+      wallet.sendOffer({
+        id: 'claim-oracle-invitation',
+        invitationSpec: {
+          source: 'purse',
+          instance: agoricNamesRemotes.instance.fastUsdc,
+          description: 'oracle operator invitation',
+        },
+        proposal: {},
+      }),
+    ),
+  );
+  t.log('TODO: check that invitations are used');
+  t.pass();
+});
+
 test.serial('upgrade; update noble ICA', async t => {
   const { bridgeUtils, buildProposal, evalProposal } = t.context;
 
@@ -361,25 +383,11 @@ test.serial('makes usdc advance', async t => {
   const {
     walletFactoryDriver: wfd,
     storage,
-    agoricNamesRemotes,
     harness,
     runUtils: { EV },
   } = t.context;
   const oracles = await Promise.all(
     oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
-  );
-  await Promise.all(
-    oracles.map(wallet =>
-      wallet.sendOffer({
-        id: 'claim-oracle-invitation',
-        invitationSpec: {
-          source: 'purse',
-          instance: agoricNamesRemotes.instance.fastUsdc,
-          description: 'oracle operator invitation',
-        },
-        proposal: {},
-      }),
-    ),
   );
 
   const EUD = 'dydx1anything';
