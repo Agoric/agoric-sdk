@@ -11,7 +11,15 @@ import type { PendingTxStatus, TxStatus } from './constants.js';
 import type { FastUsdcTerms } from './fast-usdc.contract.js';
 import type { RepayAmountKWR } from './exos/liquidity-pool.js';
 
+/**
+ * Block hash is calculated using the keccak256 algorithm that always results
+ * in 32 bytes (64 hex characters prepended by 0x) no matter the input length.
+ */
 export type EvmHash = `0x${string}`;
+/**
+ * An address is always the last 20 bytes (40 hex charaters prepended by 0x) of
+ * the public key hash.
+ */
 export type EvmAddress = `0x${string & { length: 40 }}`;
 export type NobleAddress = `noble1${string}`;
 export type EvmChainID = number;
