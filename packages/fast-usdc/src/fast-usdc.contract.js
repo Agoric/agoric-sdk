@@ -31,14 +31,13 @@ const ADDRESSES_BAGGAGE_KEY = 'addresses';
 
 /**
  * @import {HostInterface} from '@agoric/async-flow';
- * @import {CosmosChainAddress, CosmosChainInfo, Denom, DenomDetail, OrchestrationAccount} from '@agoric/orchestration';
+ * @import {CosmosChainInfo, Denom, DenomDetail, OrchestrationAccount} from '@agoric/orchestration';
  * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration/src/utils/start-helper.js';
  * @import {Remote} from '@agoric/internal';
  * @import {Marshaller, StorageNode} from '@agoric/internal/src/lib-chainStorage.js'
  * @import {Zone} from '@agoric/zone';
  * @import {OperatorOfferResult} from './exos/transaction-feed.js';
- * @import {OperatorKit} from './exos/operator-kit.js';
- * @import {CctpTxEvidence, ContractRecord, FeeConfig} from './types.js';
+ * @import {ContractRecord, FeeConfig} from './types.js';
  */
 
 /**
@@ -215,8 +214,10 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     getStaticInfo() {
       baggage.has(ADDRESSES_BAGGAGE_KEY) ||
         Fail`no addresses. creator must 'publishAddresses' first`;
+      /** @type {ContractRecord} */
+      const addresses = baggage.get(ADDRESSES_BAGGAGE_KEY);
       return harden({
-        [ADDRESSES_BAGGAGE_KEY]: baggage.get(ADDRESSES_BAGGAGE_KEY),
+        [ADDRESSES_BAGGAGE_KEY]: addresses,
       });
     },
   });
@@ -261,7 +262,8 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     );
   }
 
-  const nobleAccountV = zone.makeOnce('NobleAccount', () => makeNobleAccount());
+  // v1 has `NobleAccount` which we don't expect to ever settle.
+  const nobleAccountV = zone.makeOnce('NobleICA', () => makeNobleAccount());
 
   const feedKit = zone.makeOnce('Feed Kit', () => makeFeedKit());
 
@@ -282,12 +284,14 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   const [_agoric, _noble, agToNoble] = await vowTools.when(
     chainHub.getChainsAndConnection('agoric', 'noble'),
   );
-  const settlerKit = makeSettler({
-    repayer: poolKit.repayer,
-    sourceChannel: agToNoble.transferChannel.counterPartyChannelId,
-    remoteDenom: 'uusdc',
-    settlementAccount,
-  });
+  const settlerKit = zone.makeOnce('settlerKit', () =>
+    makeSettler({
+      repayer: poolKit.repayer,
+      sourceChannel: agToNoble.transferChannel.counterPartyChannelId,
+      remoteDenom: 'uusdc',
+      settlementAccount,
+    }),
+  );
 
   const advancer = zone.makeOnce('Advancer', () =>
     makeAdvancer({
