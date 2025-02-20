@@ -751,7 +751,7 @@ export async function launch({
     endBlockDone: NaN,
     commitBlockDone: NaN,
     afterCommitBlockDone: NaN,
-    previousAfterCommitBlockPosix: NaN,
+    previousBeginBlockPosix: NaN,
   };
 
   /**
@@ -1273,8 +1273,8 @@ export async function launch({
         // blockTime is decided in consensus when starting to execute the
         // *previous* block.
         // TODO: Link to documentation of this.
-        const blockLag = times.previousAfterCommitBlockPosix - blockTime * 1000;
-        times.previousAfterCommitBlockPosix = toPosix(hangoverTimestamp);
+        const blockLag = times.previousBeginBlockPosix - blockTime * 1000;
+        times.previousBeginBlockPosix = toPosix(beginBlockTimestamp);
 
         if (blockNeedsExecution(blockHeight)) {
           if (savedBeginHeight === blockHeight) {
