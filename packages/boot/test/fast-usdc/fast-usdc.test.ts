@@ -333,6 +333,53 @@ test.serial('LP deposits', async t => {
   );
 });
 
+test.serial('upgrade; update noble ICA', async t => {
+  const { bridgeUtils, buildProposal, evalProposal } = t.context;
+
+  bridgeUtils.setAckBehavior(
+    BridgeId.DIBC,
+    'startChannelOpenInit',
+    AckBehavior.Immediate,
+  );
+  bridgeUtils.setBech32Prefix('noble');
+
+  const materials = await buildProposal(
+    '@agoric/builders/scripts/fast-usdc/fast-usdc-reconfigure.build.js',
+  );
+  await evalProposal(materials);
+
+  // XXX bridgeUtils.getOutboundMessages(BridgeId.DIBC) should
+  // show the updated connection id, but we struggled to confirm.
+  // We'll use multichain-testing to be sure.
+
+  const { storage } = t.context;
+  const doc = {
+    node: 'fastUsdc',
+    owner: 'Fast USDC',
+    pattern: /published\.fastUsdc\.(feeConfig|feedPolicy|poolMetrics)/,
+    replacement: '',
+    showValue: JSON.parse,
+  };
+  await documentStorageSchema(t, storage, doc);
+
+  await documentStorageSchema(t, storage, {
+    node: 'fastUsdc.feeConfig',
+    showValue: defaultSerializer.parse,
+    note: 'feeConfig: 0.01USDC flat, 0.5% variable, 20% contract cut',
+  });
+
+  const outboundDIBC = bridgeUtils.getOutboundMessages(BridgeId.DIBC);
+  const icaAccountReqs = outboundDIBC.filter(
+    x =>
+      x.method === 'startChannelOpenInit' &&
+      x.packet.destination_port === 'icahost',
+  );
+  t.deepEqual(
+    icaAccountReqs.map(r => JSON.parse(r.version).hostConnectionId),
+    ['connection-40', 'connection-38'],
+  );
+});
+
 test.serial('makes usdc advance', async t => {
   const {
     walletFactoryDriver: wfd,
@@ -404,7 +451,7 @@ test.serial('makes usdc advance', async t => {
   // Restart contract to make sure it doesn't break advance flow
   const kit = await EV.vat('bootstrap').consumeItem('fastUsdcKit');
   const actual = await EV(kit.adminFacet).restartContract(kit.privateArgs);
-  t.deepEqual(actual, { incarnationNumber: 1 });
+  t.deepEqual(actual, { incarnationNumber: 2 });
 
   const { runInbound } = t.context.bridgeUtils;
   await runInbound(
@@ -611,8 +658,8 @@ test.serial('restart contract', async t => {
 
   const actual = await EV(kit.adminFacet).restartContract(newArgs);
 
-  // Incarnation 2 because previous test already restarted it once.
-  t.deepEqual(actual, { incarnationNumber: 2 });
+  // Incarnation 3 because of upgrade, previous test
+  t.deepEqual(actual, { incarnationNumber: 3 });
   const { flat, variableRate, contractRate } = storage
     .getValues(`published.fastUsdc.feeConfig`)
     .map(defaultSerializer.parse)
