@@ -73,77 +73,57 @@ const toPosix = nowMilliseconds => {
 const console = anylogger('launch-chain');
 const blockManagerConsole = anylogger('block-manager');
 
+const blockHistogramMetricDesc = {
+  valueType: ValueType.DOUBLE,
+  unit: 's',
+  advice: {
+    explicitBucketBoundaries: [
+      0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 6, 7, 10, 15, 30,
+    ],
+  },
+};
 /** @type {Record<string, import('@opentelemetry/api').MetricOptions>} */
 const BLOCK_HISTOGRAM_METRICS = {
   swingsetRunSeconds: {
     description: 'Per-block time spent executing SwingSet',
-    valueType: ValueType.DOUBLE,
-    unit: 's',
-    advice: {
-      explicitBucketBoundaries: [
-        0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10, 15, 30,
-      ],
-    },
+    ...blockHistogramMetricDesc,
   },
   swingsetChainSaveSeconds: {
     description: 'Per-block time spent propagating SwingSet state into cosmos',
-    valueType: ValueType.DOUBLE,
-    unit: 's',
-    advice: {
-      explicitBucketBoundaries: [0.1, 0.2, 0.3, 0.4, 0.5, 1],
-    },
+    ...blockHistogramMetricDesc,
   },
   swingsetCommitSeconds: {
     description:
       'Per-block time spent committing SwingSet state to host storage',
-    valueType: ValueType.DOUBLE,
-    unit: 's',
-    advice: {
-      explicitBucketBoundaries: [0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10],
-    },
+    ...blockHistogramMetricDesc,
   },
   cosmosCommitSeconds: {
     description: 'Per-block time spent committing cosmos state',
-    valueType: ValueType.DOUBLE,
-    unit: 's',
-    advice: {
-      explicitBucketBoundaries: [0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10],
-    },
+    ...blockHistogramMetricDesc,
   },
   fullCommitSeconds: {
     description:
       'Per-block time spent committing state, inclusive of COMMIT_BLOCK processing plus time spent [outside of cosmic-swingset] before and after it',
-    valueType: ValueType.DOUBLE,
-    unit: 's',
-    advice: {
-      explicitBucketBoundaries: [0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10],
-    },
+    ...blockHistogramMetricDesc,
   },
   interBlockSeconds: {
     description: 'Time spent idle between blocks',
-    valueType: ValueType.DOUBLE,
-    unit: 's',
-    advice: {
-      explicitBucketBoundaries: [0.1, 0.5, 1, 2, 3, 4, 5, 6, 7, 10],
-    },
+    ...blockHistogramMetricDesc,
   },
   afterCommitHangoverSeconds: {
     description:
       'Per-block time spent waiting for previous-block afterCommit work',
-    valueType: ValueType.DOUBLE,
-    unit: 's',
-    advice: {
-      explicitBucketBoundaries: [0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10],
-    },
+    ...blockHistogramMetricDesc,
   },
   blockLagSeconds: {
     description: 'The delay of each block from its expected begin time',
-    valueType: ValueType.DOUBLE,
-    unit: 's',
+    ...blockHistogramMetricDesc,
+    // Add buckets for excessively long delays.
     advice: {
+      ...blockHistogramMetricDesc.advice,
       explicitBucketBoundaries: [
-        0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 6, 10, 30, 60, 120, 180, 240,
-        300, 600, 3600,
+        ...blockHistogramMetricDesc.advice.explicitBucketBoundaries,
+        ...[60, 120, 180, 240, 300, 600, 3600],
       ],
     },
   },
