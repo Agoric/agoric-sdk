@@ -73,6 +73,82 @@ const toPosix = nowMilliseconds => {
 const console = anylogger('launch-chain');
 const blockManagerConsole = anylogger('block-manager');
 
+/** @type {Record<string, import('@opentelemetry/api').MetricOptions>} */
+const BLOCK_HISTOGRAM_METRICS = {
+  swingsetRunSeconds: {
+    description: 'Per-block time spent executing SwingSet',
+    valueType: ValueType.DOUBLE,
+    unit: 's',
+    advice: {
+      explicitBucketBoundaries: [
+        0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10, 15, 30,
+      ],
+    },
+  },
+  swingsetChainSaveSeconds: {
+    description: 'Per-block time spent propagating SwingSet state into cosmos',
+    valueType: ValueType.DOUBLE,
+    unit: 's',
+    advice: {
+      explicitBucketBoundaries: [0.1, 0.2, 0.3, 0.4, 0.5, 1],
+    },
+  },
+  swingsetCommitSeconds: {
+    description:
+      'Per-block time spent committing SwingSet state to host storage',
+    valueType: ValueType.DOUBLE,
+    unit: 's',
+    advice: {
+      explicitBucketBoundaries: [0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10],
+    },
+  },
+  cosmosCommitSeconds: {
+    description: 'Per-block time spent committing cosmos state',
+    valueType: ValueType.DOUBLE,
+    unit: 's',
+    advice: {
+      explicitBucketBoundaries: [0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10],
+    },
+  },
+  fullCommitSeconds: {
+    description:
+      'Per-block time spent committing state, inclusive of COMMIT_BLOCK processing plus time spent [outside of cosmic-swingset] before and after it',
+    valueType: ValueType.DOUBLE,
+    unit: 's',
+    advice: {
+      explicitBucketBoundaries: [0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10],
+    },
+  },
+  interBlockSeconds: {
+    description: 'Time spent idle between blocks',
+    valueType: ValueType.DOUBLE,
+    unit: 's',
+    advice: {
+      explicitBucketBoundaries: [0.1, 0.5, 1, 2, 3, 4, 5, 6, 7, 10],
+    },
+  },
+  afterCommitHangoverSeconds: {
+    description:
+      'Per-block time spent waiting for previous-block afterCommit work',
+    valueType: ValueType.DOUBLE,
+    unit: 's',
+    advice: {
+      explicitBucketBoundaries: [0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10],
+    },
+  },
+  blockLagSeconds: {
+    description: 'The delay of each block from its expected begin time',
+    valueType: ValueType.DOUBLE,
+    unit: 's',
+    advice: {
+      explicitBucketBoundaries: [
+        0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 6, 10, 30, 60, 120, 180, 240,
+        300, 600, 3600,
+      ],
+    },
+  },
+};
+
 /**
  * @param {{ info: string } | null | undefined} upgradePlan
  * @param {string} prefix
@@ -512,94 +588,11 @@ export async function launch({
     initialQueueLengths,
   });
 
-  const blockMetrics = {
-    swingsetRunSeconds: metricMeter.createHistogram('swingsetRunSeconds', {
-      description: 'Per-block time spent executing SwingSet',
-      valueType: ValueType.DOUBLE,
-      unit: 's',
-      advice: {
-        explicitBucketBoundaries: [
-          0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10, 15, 30,
-        ],
-      },
+  const blockMetrics = Object.fromEntries(
+    Object.entries(BLOCK_HISTOGRAM_METRICS).map(([name, desc]) => {
+      return [name, metricMeter.createHistogram(name, desc)];
     }),
-    swingsetChainSaveSeconds: metricMeter.createHistogram(
-      'swingsetChainSaveSeconds',
-      {
-        description:
-          'Per-block time spent propagating SwingSet state into cosmos',
-        valueType: ValueType.DOUBLE,
-        unit: 's',
-        advice: {
-          explicitBucketBoundaries: [0.1, 0.2, 0.3, 0.4, 0.5, 1],
-        },
-      },
-    ),
-    swingsetCommitSeconds: metricMeter.createHistogram(
-      'swingsetCommitSeconds',
-      {
-        description:
-          'Per-block time spent committing SwingSet state to host storage',
-        valueType: ValueType.DOUBLE,
-        unit: 's',
-        advice: {
-          explicitBucketBoundaries: [
-            0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10,
-          ],
-        },
-      },
-    ),
-    cosmosCommitSeconds: metricMeter.createHistogram('cosmosCommitSeconds', {
-      description: 'Per-block time spent committing cosmos state',
-      valueType: ValueType.DOUBLE,
-      unit: 's',
-      advice: {
-        explicitBucketBoundaries: [0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10],
-      },
-    }),
-    fullCommitSeconds: metricMeter.createHistogram('fullCommitSeconds', {
-      description:
-        'Per-block time spent committing state, inclusive of COMMIT_BLOCK processing plus time spent [outside of cosmic-swingset] before and after it',
-      valueType: ValueType.DOUBLE,
-      unit: 's',
-      advice: {
-        explicitBucketBoundaries: [0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10],
-      },
-    }),
-    interBlockSeconds: metricMeter.createHistogram('interBlockSeconds', {
-      description: 'Time spent idle between blocks',
-      valueType: ValueType.DOUBLE,
-      unit: 's',
-      advice: {
-        explicitBucketBoundaries: [0.1, 0.5, 1, 2, 3, 4, 5, 6, 7, 10],
-      },
-    }),
-    afterCommitHangoverSeconds: metricMeter.createHistogram(
-      'afterCommitHangoverSeconds',
-      {
-        description:
-          'Per-block time spent waiting for previous-block afterCommit work',
-        valueType: ValueType.DOUBLE,
-        unit: 's',
-        advice: {
-          explicitBucketBoundaries: [
-            0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10,
-          ],
-        },
-      },
-    ),
-    blockLagSeconds: metricMeter.createHistogram('blockLagSeconds', {
-      description: 'The delay of each block from its expected begin time',
-      valueType: ValueType.DOUBLE,
-      unit: 's',
-      advice: {
-        explicitBucketBoundaries: [
-          0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 6, 10, 30, 60, 120, 180, 240,
-          300, 600, 3600,
-        ],
-      },
-    }),
-  };
+  );
 
   /**
    * @param {number} blockHeight
