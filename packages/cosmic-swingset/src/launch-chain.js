@@ -512,7 +512,7 @@ export async function launch({
     initialQueueLengths,
   });
 
-  const chainNodeMetrics = {
+  const blockMetrics = {
     swingsetRunSeconds: metricMeter.createHistogram('swingsetRunSeconds', {
       description: 'Per-block time spent executing SwingSet',
       valueType: ValueType.DOUBLE,
@@ -535,15 +535,6 @@ export async function launch({
         },
       },
     ),
-    fullCommitSeconds: metricMeter.createHistogram('fullCommitSeconds', {
-      description:
-        'Per-block time spent committing state, inclusive of COMMIT_BLOCK processing plus time spent [outside of cosmic-swingset] before and after it',
-      valueType: ValueType.DOUBLE,
-      unit: 's',
-      advice: {
-        explicitBucketBoundaries: [0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10],
-      },
-    }),
     swingsetCommitSeconds: metricMeter.createHistogram(
       'swingsetCommitSeconds',
       {
@@ -560,6 +551,15 @@ export async function launch({
     ),
     cosmosCommitSeconds: metricMeter.createHistogram('cosmosCommitSeconds', {
       description: 'Per-block time spent committing cosmos state',
+      valueType: ValueType.DOUBLE,
+      unit: 's',
+      advice: {
+        explicitBucketBoundaries: [0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 10],
+      },
+    }),
+    fullCommitSeconds: metricMeter.createHistogram('fullCommitSeconds', {
+      description:
+        'Per-block time spent committing state, inclusive of COMMIT_BLOCK processing plus time spent [outside of cosmic-swingset] before and after it',
       valueType: ValueType.DOUBLE,
       unit: 's',
       advice: {
@@ -1255,17 +1255,13 @@ export async function launch({
           fullSaveTime: fullCommitDuration / 1000,
         });
 
-        chainNodeMetrics.swingsetRunSeconds.record(runDuration / 1000);
-        chainNodeMetrics.swingsetChainSaveSeconds.record(
-          chainSaveDuration / 1000,
-        );
-        chainNodeMetrics.swingsetCommitSeconds.record(
+        blockMetrics.swingsetRunSeconds.record(runDuration / 1000);
+        blockMetrics.swingsetChainSaveSeconds.record(chainSaveDuration / 1000);
+        blockMetrics.swingsetCommitSeconds.record(
           swingsetCommitDuration / 1000,
         );
-        chainNodeMetrics.cosmosCommitSeconds.record(
-          cosmosCommitDuration / 1000,
-        );
-        chainNodeMetrics.fullCommitSeconds.record(fullCommitDuration / 1000);
+        blockMetrics.cosmosCommitSeconds.record(cosmosCommitDuration / 1000);
+        blockMetrics.fullCommitSeconds.record(fullCommitDuration / 1000);
 
         afterCommitWorkDone = afterCommit(blockHeight, blockTime);
 
@@ -1331,12 +1327,12 @@ export async function launch({
         });
 
         Number.isNaN(interBlockDuration) ||
-          chainNodeMetrics.interBlockSeconds.record(interBlockDuration / 1000);
-        chainNodeMetrics.afterCommitHangoverSeconds.record(
+          blockMetrics.interBlockSeconds.record(interBlockDuration / 1000);
+        blockMetrics.afterCommitHangoverSeconds.record(
           afterCommitHangover / 1000,
         );
         Number.isNaN(blockLag) ||
-          chainNodeMetrics.blockLagSeconds.record(blockLag / 1000);
+          blockMetrics.blockLagSeconds.record(blockLag / 1000);
 
         return undefined;
       }
