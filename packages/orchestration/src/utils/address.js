@@ -86,13 +86,15 @@ export const findAddressField = remoteAddressString => {
 harden(findAddressField);
 
 /**
- * Extracts the human readable part (HRP), aka `bech32Prefix`, from an address.
+ * Extracts the human-readable part (HRP), aka `bech32Prefix`, from an address.
  *
  * see
  * [bech32.js](https://github.com/bitcoinjs/bech32/blob/5ceb0e3d4625561a459c85643ca6947739b2d83c/src/index.ts#L146)
- * for reference implementation
+ * for the reference implementation.
  *
  * @param {string} address
+ * @param {string} address - The full Bech32-encoded address.
+ * @returns {string} - The extracted HRP (prefix).
  */
 export const getBech32Prefix = address => {
   assert(address, 'address is required');
