@@ -15,12 +15,11 @@ import (
 )
 
 var upgradeNamesOfThisVersion = []string{
-	"UNRELEASED_BASIC", // no-frills
-	"UNRELEASED_A3P_INTEGRATION",
-	"UNRELEASED_main",
-	"UNRELEASED_devnet",
-	"UNRELEASED_emerynet",
-	"UNRELEASED_REAPPLY",
+	"agoric-upgrade-19-mainnet",
+	"agoric-upgrade-19-devnet",
+	"agoric-upgrade-19-emerynet",
+	"agoric-upgrade-19-a3p",
+	"agoric-upgrade-19-basic",
 }
 
 // isUpgradeNameOfThisVersion returns whether the provided plan name is a
@@ -54,14 +53,12 @@ func isPrimaryUpgradeName(name string) bool {
 		return false
 	}
 	switch name {
-	case validUpgradeName("UNRELEASED_BASIC"),
-		validUpgradeName("UNRELEASED_A3P_INTEGRATION"),
-		validUpgradeName("UNRELEASED_main"),
-		validUpgradeName("UNRELEASED_devnet"),
-		validUpgradeName("UNRELEASED_emerynet"):
+	case validUpgradeName("agoric-upgrade-19-mainnet"),
+		validUpgradeName("agoric-upgrade-19-devnet"),
+		validUpgradeName("agoric-upgrade-19-emerynet"),
+		validUpgradeName("agoric-upgrade-19-a3p"),
+		validUpgradeName("agoric-upgrade-19-basic"):
 		return true
-	case validUpgradeName("UNRELEASED_REAPPLY"):
-		return false
 	default:
 		panic(fmt.Errorf("unexpected upgrade name %s", validUpgradeName(name)))
 	}
@@ -123,15 +120,15 @@ func buildProposalStepWithArgs(moduleName string, entrypoint string, extra any) 
 
 func getVariantFromUpgradeName(upgradeName string) string {
 	switch upgradeName {
-	case "UNRELEASED_A3P_INTEGRATION":
+	case "agoric-upgrade-19-a3p":
 		return "A3P_INTEGRATION"
-	case "UNRELEASED_main":
+	case "agoric-upgrade-19-mainnet":
 		return "MAINNET"
-	case "UNRELEASED_devnet":
+	case "agoric-upgrade-19-devnet":
 		return "DEVNET"
-	case "UNRELEASED_emerynet":
+	case "agoric-upgrade-19-emerynet":
 		return "EMERYNET"
-	case "UNRELEASED_BASIC":
+	case "agoric-upgrade-19-basic":
 		// Noupgrade for this version.
 		return ""
 	default:
@@ -163,8 +160,8 @@ func buildProposalStepFromScript(targetUpgrade string, builderScript string) (vm
 	)
 }
 
-// unreleasedUpgradeHandler performs standard upgrade actions plus custom actions for the unreleased upgrade.
-func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
+// upgrade19Handler performs standard upgrade actions plus custom actions for upgrade-19.
+func upgrade19Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
 		app.CheckControllerInited(false)
 
