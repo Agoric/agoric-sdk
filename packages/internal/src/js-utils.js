@@ -5,6 +5,21 @@
  *   dependent upon a hardened environment.
  */
 
+export const logLevels = /** @type {const} */ ([
+  'debug',
+  'log',
+  'info',
+  'warn',
+  'error',
+]);
+Object.freeze(logLevels);
+
+/** @typedef {(typeof logLevels)[keyof logLevels & number]} LogLevel */
+
+/** @typedef {Pick<Console, LogLevel>} LimitedConsole */
+
+const { entries, fromEntries } = Object;
+
 /**
  * Deep-copy a value by round-tripping it through JSON (which drops
  * function/symbol/undefined values and properties that are non-enumerable
@@ -65,6 +80,18 @@ const deepMapObjectInternal = (value, name, container, mapper) => {
  */
 export const deepMapObject = (obj, mapper) =>
   deepMapObjectInternal(obj, undefined, undefined, mapper);
+
+/**
+ * @template {Record<PropertyKey, any>} O
+ * @template V
+ * @param {O} obj
+ * @param {<K extends keyof O>(value: O[K], key: K) => V} mapFn
+ * @returns {{ [K in keyof O]: V }}
+ */
+export const objectMapMutable = (obj, mapFn) => {
+  const newEntries = entries(obj).map(([k, v]) => [k, mapFn(v, k)]);
+  return /** @type {{ [K in keyof O]: V }} */ (fromEntries(newEntries));
+};
 
 /**
  * Returns a function that uses a millisecond-based current-time capability

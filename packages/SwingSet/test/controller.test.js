@@ -11,6 +11,7 @@ import {
   initializeSwingset,
   makeSwingsetController,
 } from '../src/index.js';
+import { makeDummySlogger } from '../src/kernel/slogger.js';
 import makeKernelKeeper, {
   CURRENT_SCHEMA_VERSION,
 } from '../src/kernel/state/kernelKeeper.js';
@@ -496,7 +497,11 @@ test('comms vat does not BOYD', async t => {
   const kernelStorage = initSwingStore().kernelStorage;
   const controller = await buildVatController(config, [], { kernelStorage });
   t.teardown(controller.shutdown);
-  const k = makeKernelKeeper(kernelStorage, CURRENT_SCHEMA_VERSION);
+  const k = makeKernelKeeper(
+    kernelStorage,
+    CURRENT_SCHEMA_VERSION,
+    makeDummySlogger({}),
+  );
   const commsVatID = k.getVatIDForName('comms');
   t.deepEqual(
     JSON.parse(k.kvStore.get(`${commsVatID}.options`)).reapDirtThreshold,

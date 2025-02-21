@@ -111,7 +111,7 @@ export {};
  *   enableDisavow: boolean,
  *   useTranscript: boolean,
  *   name: string,
- *   sourcedConsole: Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>,
+ *   sourcedConsole: import('@agoric/internal/src/js-utils.js').LimitedConsole,
  *   enableSetup: boolean,
  *   setup?: unknown,
  *   retainSyscall?: boolean
