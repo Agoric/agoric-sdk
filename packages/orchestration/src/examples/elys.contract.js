@@ -4,6 +4,7 @@ import { E } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
 import { VowShape } from '@agoric/vow';
 import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
+import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
 import { withOrchestration } from '../utils/start-helper.js';
 import * as flows from './elys-contract.flows.js';
 import {
@@ -182,6 +183,8 @@ const contract = async (
     chainHub,
   });
 
+  const creatorFacet = prepareChainHubAdmin(zone, chainHub);
+  
   registerChainsAndAssets(
     chainHub,
     zcf.getTerms().brands,
@@ -209,9 +212,11 @@ const contract = async (
     publicFacet: zone.exo('Public', interfaceTODO, {
       getLocalAddress: () => E(when(icaAndLocalAccount)).getAddress(),
     }),
-    creatorFacet: zone.exo('MyCreator', undefined, {}),
+    creatorFacet,
   };
 };
 
 export const start = withOrchestration(contract);
 harden(start);
+
+/** @typedef {typeof start} ElysContract */
