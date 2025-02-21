@@ -380,26 +380,26 @@ func (k Keeper) SetStorage(ctx sdk.Context, entry agoric.KVEntry) {
 	store := ctx.KVStore(k.storeKey)
 	path := entry.Key()
 	encodedKey := types.PathToEncodedKey(path)
-	rawValue := store.Get(encodedKey)
+	oldRawValue := store.Get(encodedKey)
 
 	if !entry.HasValue() {
 		if !k.HasChildren(ctx, path) {
 			// We have no children, can delete.
-			sizeDelta := float32(-len(encodedKey) - len(rawValue))
+			sizeDelta := float32(-len(encodedKey) - len(oldRawValue))
 			telemetry.IncrCounterWithLabels(MetricKeysSizeDelta, sizeDelta, NewMetricsLabels(k))
 			store.Delete(encodedKey)
 		} else {
 			// We have children, mark as an empty placeholder without deleting.
-			sizeDelta := float32(len(types.EncodedNoDataValue) - len(rawValue))
+			sizeDelta := float32(len(types.EncodedNoDataValue) - len(oldRawValue))
 			telemetry.IncrCounterWithLabels(MetricKeysSizeDelta, sizeDelta, NewMetricsLabels(k))
 			store.Set(encodedKey, types.EncodedNoDataValue)
 		}
 	} else {
 		// Update the value.
-		bz := bytes.Join([][]byte{types.EncodedDataPrefix, []byte(entry.StringValue())}, []byte{})
-		sizeDelta := float32(len(bz) - len(rawValue))
+		newRawValue := bytes.Join([][]byte{types.EncodedDataPrefix, []byte(entry.StringValue())}, []byte{})
+		sizeDelta := float32(len(newRawValue) - len(oldRawValue))
 		telemetry.IncrCounterWithLabels(MetricKeysSizeDelta, sizeDelta, NewMetricsLabels(k))
-		store.Set(encodedKey, bz)
+		store.Set(encodedKey, newRawValue)
 	}
 
 	// Update our other parent children.
