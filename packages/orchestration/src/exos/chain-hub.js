@@ -236,10 +236,10 @@ const ChainHubI = M.interface('ChainHub', {
 /**
  * Make a new ChainHub in the zone.
  *
- * The resulting object is an Exo singleton. It has no precious state. It's only
+ * The resulting object is an Exo singleton. It has no precious state. Its only
  * state is a cache of queries to agoricNames and whatever info was provided in
  * registration calls. When you need a newer version you can simply make a hub
- * hub and repeat the registrations.
+ * and repeat the registrations.
  *
  * @param {Zone} zone
  * @param {Remote<NameHub>} agoricNames
@@ -364,9 +364,7 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
      * @template {string} C2
      * @param {C1} primaryName
      * @param {C2} counterName
-     * @returns {Promise<
-     *   [ActualChainInfo<C1>, ActualChainInfo<C2>, IBCConnectionInfo]
-     * >}
+     * @returns {Promise<[ChainInfo, ChainInfo, IBCConnectionInfo]>}
      */
     // eslint-disable-next-line no-restricted-syntax -- TODO more exact rules for vow best practices
     async (primaryName, counterName) => {
@@ -379,7 +377,7 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
       const connectionInfo = await vowTools.asPromise(
         chainHub.getConnectionInfo(primary, counter),
       );
-      return /** @type {[ActualChainInfo<C1>, ActualChainInfo<C2>, IBCConnectionInfo]} */ ([
+      return /** @type {[ChainInfo, ChainInfo, IBCConnectionInfo]} */ ([
         primary,
         counter,
         connectionInfo,
@@ -430,14 +428,13 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
       }
     },
     /**
-     * @template {string} K
-     * @param {K} chainName
-     * @returns {Vow<ActualChainInfo<K>>}
+     * @param {string} chainName
+     * @returns {Vow<ChainInfo>}
      */
     getChainInfo(chainName) {
       // Either from registerChain or memoized remote lookup()
       if (chainInfos.has(chainName)) {
-        return /** @type {Vow<ActualChainInfo<K>>} */ (
+        return /** @type {Vow<ChainInfo>} */ (
           vowTools.asVow(() => chainInfos.get(chainName))
         );
       }
@@ -517,12 +514,9 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
      * @template {string} C2
      * @param {C1} primaryName the primary chain name
      * @param {C2} counterName the counterparty chain name
-     * @returns {Vow<
-     *   [ActualChainInfo<C1>, ActualChainInfo<C2>, IBCConnectionInfo]
-     * >}
+     * @returns {Vow<[ChainInfo, ChainInfo, IBCConnectionInfo]>}
      */
     getChainsAndConnection(primaryName, counterName) {
-      // @ts-expect-error XXX generic parameter propagation
       return lookupChainsAndConnection(primaryName, counterName);
     },
 
