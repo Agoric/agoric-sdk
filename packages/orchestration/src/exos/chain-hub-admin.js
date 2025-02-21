@@ -1,8 +1,11 @@
-/* we expect promises to resolved promptly,  */
+/* we expect promises to resolve promptly,  */
 /* eslint-disable no-restricted-syntax */
 import { heapVowE } from '@agoric/vow/vat.js';
+import { makeTracer } from '@agoric/internal';
 import { M } from '@endo/patterns';
 import { ChainInfoShape, DenomDetailShape } from '../typeGuards.js';
+
+const trace = makeTracer('ChainHubAdmin');
 
 /**
  * @import {Zone} from '@agoric/zone';
@@ -34,11 +37,9 @@ export const prepareChainHubAdmin = (zone, chainHub) => {
   const makeCreatorFacet = zone.exo(
     'ChainHub Admin',
     M.interface('ChainHub Admin', {
-      registerChain: M.callWhen(
-        M.string(),
-        ChainInfoShape,
-        ConnectionInfoShape,
-      ).returns(M.undefined()),
+      registerChain: M.callWhen(M.string(), ChainInfoShape)
+        .optional(ConnectionInfoShape)
+        .returns(M.undefined()),
       registerAsset: M.call(M.string(), DenomDetailShape).returns(M.promise()),
     }),
     {
@@ -63,6 +64,19 @@ export const prepareChainHubAdmin = (zone, chainHub) => {
             ibcConnectionInfo,
           );
         }
+
+        if (!ibcConnectionInfo) {
+          trace(chainName, 'registered without connection info');
+          return;
+        }
+
+        const chainId =
+          'chainId' in chainInfo ? chainInfo.chainId : chainInfo.reference;
+        chainHub.registerConnection(
+          agoricChainInfo.chainId,
+          chainId,
+          ibcConnectionInfo,
+        );
       },
       /**
        * Register an asset that may be held on a chain other than the issuing
