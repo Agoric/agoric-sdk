@@ -190,3 +190,49 @@ test('makeChainAddress', async t => {
     message: 'Missing prefix for "1notbech32"',
   });
 });
+
+test('resolveAccountId', async t => {
+  const { chainHub, nameAdmin, vt } = setup();
+  // use fetched chain info
+  await registerKnownChains(nameAdmin);
+
+  // call getChainInfo so ChainHub performs agoricNames lookup that populates its local cache
+  await vt.asPromise(chainHub.getChainInfo('osmosis'));
+
+  const MOCK_ICA_ADDRESS =
+    'osmo1ht7u569vpuryp6utadsydcne9ckeh2v8dkd38v5hptjl3u2ewppqc6kzgd' as const;
+
+  // Should return CAIP-10 account ID when given a bech32 address
+  t.is(
+    chainHub.resolveAccountId(MOCK_ICA_ADDRESS),
+    'cosmos:osmosis-1:osmo1ht7u569vpuryp6utadsydcne9ckeh2v8dkd38v5hptjl3u2ewppqc6kzgd',
+    'resolves bech32 address to CAIP-10',
+  );
+
+  // Should return same CAIP-10 account ID when given one, regardless of the
+  // hub's bech32 mapping
+  const CAIP10_ID = `cosmos:osmosis-notinhub:${MOCK_ICA_ADDRESS}` as const;
+  t.is(
+    chainHub.resolveAccountId(CAIP10_ID),
+    CAIP10_ID,
+    'returns same CAIP-10 ID when given one',
+  );
+
+  // Should throw for invalid bech32 prefix
+  t.throws(
+    () => chainHub.resolveAccountId('foo1xyz'),
+    {
+      message: 'Chain info not found for bech32Prefix "foo"',
+    },
+    'throws on unknown bech32 prefix',
+  );
+
+  // Should throw for invalid address format
+  t.throws(
+    () => chainHub.resolveAccountId('notbech32'),
+    {
+      message: 'No separator character for "notbech32"',
+    },
+    'throws on invalid address format',
+  );
+});
