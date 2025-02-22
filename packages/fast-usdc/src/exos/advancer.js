@@ -177,8 +177,9 @@ export const prepareAdvancerKit = (
             if (decoded.baseAddress !== settlementAddress.value) {
               throw Fail`⚠️ baseAddress of address hook ${q(decoded.baseAddress)} does not match the expected address ${q(settlementAddress.value)}`;
             }
-            const { EUD } = /** @type {AddressHook['query']} */ (decoded.query);
+            const { EUD } = decoded.query;
             log(`decoded EUD: ${EUD}`);
+            assert.typeof(EUD, 'string');
             // throws if the bech32 prefix is not found
             const destination = chainHub.makeChainAddress(EUD);
 
