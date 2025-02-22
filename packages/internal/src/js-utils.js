@@ -18,7 +18,7 @@ Object.freeze(logLevels);
 
 /** @typedef {Pick<Console, LogLevel>} LimitedConsole */
 
-const { entries, fromEntries } = Object;
+const { defineProperty, entries, fromEntries } = Object;
 
 /**
  * Deep-copy a value by round-tripping it through JSON (which drops
@@ -80,6 +80,23 @@ const deepMapObjectInternal = (value, name, container, mapper) => {
  */
 export const deepMapObject = (obj, mapper) =>
   deepMapObjectInternal(obj, undefined, undefined, mapper);
+
+/**
+ * Explicitly set a function's name, supporting use of arrow functions for which
+ * source text doesn't include a name and no initial name is set by
+ * NamedEvaluation
+ * https://tc39.es/ecma262/multipage/syntax-directed-operations.html#sec-runtime-semantics-namedevaluation
+ *
+ * `name` is the first parameter for better readability at call sites (e.g.,
+ * `return defineName('foo', () => { ... })`).
+ *
+ * @template {Function} F
+ * @param {string} name
+ * @param {F} fn
+ * @returns {F}
+ */
+export const defineName = (name, fn) =>
+  defineProperty(fn, 'name', { value: name });
 
 /**
  * @template {Record<PropertyKey, any>} O
