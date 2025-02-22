@@ -118,7 +118,7 @@ export const makeOrchestrationFacade = ({
 
     const mappedContext = deepMapObject(
       hostCtx,
-      val => mappedFlows.get(val) || val,
+      val => mappedFlows.get(/** @type {any} */ (val)) || val,
     );
 
     const orcFns = /** @type {{ [N in keyof GFM]: HostForGuest<GFM[N]> }} */ (
