@@ -7,6 +7,9 @@
 
 const { defineProperty } = Object;
 
+/** For overriding TypeScript inferring the type of `true` as boolean. */
+export const TRUE = /** @type {const} */ (true);
+
 /**
  * @typedef {<O extends Record<string, unknown>>(
  *   obj: O,
