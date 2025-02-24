@@ -102,6 +102,8 @@ const makeTestContext = async t => {
     sourceChannel:
       fetchedChainInfo.agoric.connections['noble-1'].transferChannel
         .counterPartyChannelId,
+    destChannel:
+      fetchedChainInfo.agoric.connections['noble-1'].transferChannel.channelId,
     remoteDenom: 'uusdc',
     intermediateRecipient,
   });

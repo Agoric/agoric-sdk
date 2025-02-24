@@ -282,6 +282,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   const settlerKit = makeSettler({
     repayer: poolKit.repayer,
     sourceChannel: agToNoble.transferChannel.counterPartyChannelId,
+    destChannel: agToNoble.transferChannel.channelId,
     remoteDenom: 'uusdc',
     settlementAccount,
   });

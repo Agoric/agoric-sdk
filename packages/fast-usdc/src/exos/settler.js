@@ -97,6 +97,7 @@ export const stateShape = harden({
   settlementAccount: M.remotable('Account'),
   registration: M.or(M.undefined(), M.remotable('Registration')),
   sourceChannel: M.string(),
+  destChannel: M.string(),
   remoteDenom: M.string(),
   mintedEarly: M.remotable('mintedEarly'),
   intermediateRecipient: M.opt(CosmosChainAddressShape),
@@ -160,6 +161,7 @@ export const prepareSettler = (
     /**
      * @param {{
      *   sourceChannel: IBCChannelID;
+     *   destChannel: IBCChannelID;
      *   remoteDenom: Denom;
      *   repayer: LiquidityPoolKit['repayer'];
      *   settlementAccount: HostInterface<OrchestrationAccount<{ chainId: 'agoric' }>>
@@ -197,11 +199,13 @@ export const prepareSettler = (
         /** @param {VTransferIBCEvent} event */
         async receiveUpcall(event) {
           log('upcall event', event.packet.sequence, event.blockTime);
-          const { sourceChannel, remoteDenom } = this.state;
+          const { destChannel, sourceChannel, remoteDenom } = this.state;
           const { packet } = event;
           if (packet.source_channel !== sourceChannel) {
             const { source_channel: actual } = packet;
-            log('unexpected channel', { actual, expected: sourceChannel });
+            if (packet.source_channel !== destChannel) {
+              log('unexpected channel', { actual, expected: sourceChannel });
+            }
             return;
           }
 
