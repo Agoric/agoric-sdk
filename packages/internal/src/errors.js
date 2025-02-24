@@ -1,17 +1,41 @@
 /* global globalThis */
 
-const { create, freeze } = Object;
+const { defineProperty, freeze } = Object;
 
-/** @import {quote as QuoteI, Fail as FailTagI} from "@endo/errors"; */
+// cf. https://github.com/endojs/endo/blob/master/packages/ses/src/lockdown.js
+const seemsToBeLockedDown = () =>
+  globalThis.Function.prototype.constructor !== globalThis.Function;
 
 /**
- * @type {{
- *   quote: QuoteI;
- *   fail: import('@endo/errors').assert['fail'];
- *   Fail: FailTagI;
- * }}
+ * @typedef {{
+ *   quote: import('@endo/errors').quote;
+ *   fail: import('@endo/errors')['assert']['fail'];
+ *   Fail: import('@endo/errors').Fail;
+ * }} EndoAssertMethods
  */
-const assert = globalThis.assert || create(null);
+
+/**
+ * @template {'quote' | 'fail' | 'Fail'} Name
+ * @param {Name} name
+ * @param {EndoAssertMethods[Name]} unsafeFn
+ */
+const polyfillAssertMethod = (name, unsafeFn) => {
+  if (seemsToBeLockedDown()) return globalThis.assert[name];
+  const namedFn = {
+    /** @type {typeof unsafeFn} */
+    [name]: (...args) => {
+      if (seemsToBeLockedDown()) {
+        // NOTE: In the future, we might instead defer to Endo's assert even
+        // after the fact, which would allow for arbitrary import ordering but
+        // open up a window before `lockdown()` in which error messages are
+        // uncensored.
+        throw Error(`Use of unsafe ${name} polyfill after lockdown!`);
+      }
+      return unsafeFn(...args);
+    },
+  }[name];
+  return freeze(namedFn);
+};
 
 // https://tc39.es/ecma262/multipage/ecmascript-language-lexical-grammar.html#prod-IdentifierName
 const rIdentifierName = /^[\p{ID_Start}$_][\p{ID_Continue}$]*$/u;
@@ -83,34 +107,46 @@ const qReplacer = (_key, val) => {
 
 const quotes = new WeakSet();
 
-/** @type {QuoteI} */
-export const q =
-  assert.quote ||
-  ((x, spaces) => {
-    if (quotes.has(/** @type {any} */ (x))) x = /** @type {any} */ (x).x;
-    // TODO: Use a proper `inspect` for depth truncation/cycle handling/etc.
-    const str = JSON.stringify(x, qReplacer, spaces);
-    const quote = freeze({ x, toString: freeze(() => str) });
-    quotes.add(quote);
-    return /** @type {any} */ (quote);
-  });
-freeze(q);
+export const q = polyfillAssertMethod('quote', (x, spaces) => {
+  if (quotes.has(/** @type {any} */ (x))) x = /** @type {any} */ (x).x;
+  // TODO: Use a proper `inspect` for depth truncation/cycle handling/etc.
+  const str = JSON.stringify(x, qReplacer, spaces);
+  const quote = freeze({ x, toString: freeze(() => str) });
+  quotes.add(quote);
+  return /** @type {any} */ (quote);
+});
 
-/** @type {FailTagI} */
-export const Fail =
-  assert.Fail ||
-  ((strings, ...subs) => {
-    const templateStrings = /** @type {TemplateStringsArray} */ (strings);
-    throw Error(String.raw(templateStrings, ...subs.map(q)));
-  });
-freeze(Fail);
+export const Fail = polyfillAssertMethod('Fail', (strings, ...subs) => {
+  const templateStrings = /** @type {TemplateStringsArray} */ (strings);
+  throw Error(String.raw(templateStrings, ...subs.map(q)));
+});
 
-/** @type {(details: string) => never} */
-const fail =
-  assert.fail ||
-  (details => {
-    throw Error(details);
-  });
+const fail = polyfillAssertMethod(
+  'fail',
+  (optDetails, errConstructor = Error, { errorName, cause, errors } = {}) => {
+    const messageString = /** @type {any} */ (optDetails);
+    const opts = cause && { cause };
+    let error;
+    if (errConstructor && errConstructor === globalThis.AggregateError) {
+      error = AggregateError(errors || [], messageString, opts);
+    } else {
+      error = /** @type {ErrorConstructor} */ (errConstructor)(
+        messageString,
+        opts,
+      );
+      if (errors) {
+        defineProperty(error, 'errors', {
+          value: errors,
+          writable: true,
+          enumerable: false,
+          configurable: true,
+        });
+      }
+    }
+    if (errorName) error.name = `${errorName} ${error.name}`;
+    throw error;
+  },
+);
 
 /**
  * @template T
@@ -119,10 +155,10 @@ const fail =
  * @returns {T}
  */
 export const NonNullish = (val, optDetails) => {
-  // This `!= null` idiom checks that `val` is neither `null` nor `undefined`.
-  if (val != null) {
-    return val;
+  // This `== null` idiom checks if `val` is `null` or `undefined`.
+  if (val == null) {
+    throw fail(optDetails !== undefined ? optDetails : `unexpected ${q(val)}`);
   }
-  fail(optDetails !== undefined ? optDetails : `unexpected ${q(val)}`);
+  return val;
 };
 freeze(NonNullish);
