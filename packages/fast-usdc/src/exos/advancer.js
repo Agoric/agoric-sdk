@@ -1,7 +1,10 @@
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
-import { AnyNatAmountShape, ChainAddressShape } from '@agoric/orchestration';
+import {
+  AnyNatAmountShape,
+  CosmosChainAddressShape,
+} from '@agoric/orchestration';
 import { pickFacet } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
 import { E } from '@endo/far';
@@ -19,7 +22,7 @@ import { makeFeeTools } from '../utils/fees.js';
  * @import {Amount, Brand} from '@agoric/ertp';
  * @import {TypedPattern} from '@agoric/internal'
  * @import {NatAmount} from '@agoric/ertp';
- * @import {ChainAddress, ChainHub, Denom, OrchestrationAccount} from '@agoric/orchestration';
+ * @import {CosmosChainAddress, ChainHub, Denom, OrchestrationAccount} from '@agoric/orchestration';
  * @import {ZoeTools} from '@agoric/orchestration/src/utils/zoe-tools.js';
  * @import {VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
@@ -46,7 +49,7 @@ const AdvancerVowCtxShape = M.splitRecord(
   {
     fullAmount: AnyNatAmountShape,
     advanceAmount: AnyNatAmountShape,
-    destination: ChainAddressShape,
+    destination: CosmosChainAddressShape,
     forwardingAddress: M.string(),
     txHash: EvmHashShape,
   },
@@ -57,7 +60,7 @@ const AdvancerVowCtxShape = M.splitRecord(
 const AdvancerKitI = harden({
   advancer: M.interface('AdvancerI', {
     handleTransactionEvent: M.callWhen(EvidenceWithRiskShape).returns(),
-    setIntermediateRecipient: M.call(ChainAddressShape).returns(),
+    setIntermediateRecipient: M.call(CosmosChainAddressShape).returns(),
   }),
   depositHandler: M.interface('DepositHandlerI', {
     onFulfilled: M.call(M.undefined(), AdvancerVowCtxShape).returns(VowShape),
@@ -85,7 +88,7 @@ const AdvancerKitI = harden({
  * @typedef {{
  *  fullAmount: NatAmount;
  *  advanceAmount: NatAmount;
- *  destination: ChainAddress;
+ *  destination: CosmosChainAddress;
  *  forwardingAddress: NobleAddress;
  *  txHash: EvmHash;
  * }} AdvancerVowCtx
@@ -95,8 +98,8 @@ export const stateShape = harden({
   notifier: M.remotable(),
   borrower: M.remotable(),
   poolAccount: M.remotable(),
-  intermediateRecipient: M.opt(ChainAddressShape),
-  settlementAddress: M.opt(ChainAddressShape),
+  intermediateRecipient: M.opt(CosmosChainAddressShape),
+  settlementAddress: M.opt(CosmosChainAddressShape),
 });
 
 /**
@@ -135,8 +138,8 @@ export const prepareAdvancerKit = (
      *   notifier: import('./settler.js').SettlerKit['notifier'];
      *   borrower: LiquidityPoolKit['borrower'];
      *   poolAccount: HostInterface<OrchestrationAccount<{chainId: 'agoric'}>>;
-     *   settlementAddress: ChainAddress;
-     *   intermediateRecipient?: ChainAddress;
+     *   settlementAddress: CosmosChainAddress;
+     *   intermediateRecipient?: CosmosChainAddress;
      * }} config
      */
     config =>
@@ -177,8 +180,9 @@ export const prepareAdvancerKit = (
             if (decoded.baseAddress !== settlementAddress.value) {
               throw Fail`⚠️ baseAddress of address hook ${q(decoded.baseAddress)} does not match the expected address ${q(settlementAddress.value)}`;
             }
-            const { EUD } = /** @type {AddressHook['query']} */ (decoded.query);
+            const { EUD } = decoded.query;
             log(`decoded EUD: ${EUD}`);
+            assert.typeof(EUD, 'string');
             // throws if the bech32 prefix is not found
             const destination = chainHub.makeChainAddress(EUD);
 
@@ -220,7 +224,7 @@ export const prepareAdvancerKit = (
             statusManager.skipAdvance(evidence, [error.message]);
           }
         },
-        /** @param {ChainAddress} intermediateRecipient */
+        /** @param {CosmosChainAddress} intermediateRecipient */
         setIntermediateRecipient(intermediateRecipient) {
           this.state.intermediateRecipient = intermediateRecipient;
         },

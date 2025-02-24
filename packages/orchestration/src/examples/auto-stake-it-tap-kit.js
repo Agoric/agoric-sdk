@@ -3,7 +3,7 @@ import { E } from '@endo/far';
 import { VowShape } from '@agoric/vow';
 import { makeTracer } from '@agoric/internal';
 import { atob } from '@endo/base64';
-import { ChainAddressShape } from '../typeGuards.js';
+import { CosmosChainAddressShape } from '../typeGuards.js';
 
 const trace = makeTracer('AutoStakeItTap');
 
@@ -12,7 +12,7 @@ const trace = makeTracer('AutoStakeItTap');
  * @import {VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
  * @import {TargetApp} from '@agoric/vats/src/bridge-target.js';
- * @import {ChainAddress, CosmosValidatorAddress, Denom, OrchestrationAccount, StakingAccountActions} from '@agoric/orchestration';
+ * @import {CosmosChainAddress, CosmosValidatorAddress, Denom, OrchestrationAccount, StakingAccountActions} from '@agoric/orchestration';
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
  * @import {TypedPattern} from '@agoric/internal';
  */
@@ -22,8 +22,8 @@ const trace = makeTracer('AutoStakeItTap');
  *   stakingAccount: ERef<OrchestrationAccount<any> & StakingAccountActions>;
  *   localAccount: ERef<OrchestrationAccount<{ chainId: 'agoric' }>>;
  *   validator: CosmosValidatorAddress;
- *   localChainAddress: ChainAddress;
- *   remoteChainAddress: ChainAddress;
+ *   localChainAddress: CosmosChainAddress;
+ *   remoteChainAddress: CosmosChainAddress;
  *   sourceChannel: IBCChannelID;
  *   remoteDenom: Denom;
  *   localDenom: Denom;
@@ -34,9 +34,9 @@ const trace = makeTracer('AutoStakeItTap');
 const StakingTapStateShape = {
   stakingAccount: M.remotable('CosmosOrchestrationAccount'),
   localAccount: M.remotable('LocalOrchestrationAccount'),
-  validator: ChainAddressShape,
-  localChainAddress: ChainAddressShape,
-  remoteChainAddress: ChainAddressShape,
+  validator: CosmosChainAddressShape,
+  localChainAddress: CosmosChainAddressShape,
+  remoteChainAddress: CosmosChainAddressShape,
   sourceChannel: M.string(),
   remoteDenom: M.string(),
   localDenom: M.string(),
