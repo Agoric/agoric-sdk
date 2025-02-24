@@ -130,6 +130,7 @@ test.serial('stakeBld', async t => {
       toAccount: {
         value: 'agoric1EOAAccAddress',
         chainId: 'agoriclocal',
+        encoding: 'bech32',
       },
       amount: { denom: 'ibc/1234', value: 10n },
     },
@@ -150,6 +151,7 @@ test.serial('stakeBld', async t => {
       toAccount: {
         value: 'agoric1EOAAccAddress',
         chainId: 'agoriclocal',
+        encoding: 'bech32',
       },
       amounts: [
         { denom: 'uatom', value: 10n },
@@ -174,6 +176,7 @@ test.serial('stakeBld', async t => {
         toAccount: {
           value: 'agoric1EOAAccAddress',
           chainId: 'agoriclocal',
+          encoding: 'bech32',
         },
         amount: {
           denom: 'ibc/1234',

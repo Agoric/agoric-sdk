@@ -533,6 +533,7 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
         assert.equal(parsed.namespace, 'cosmos');
         return harden({
           chainId: parsed.reference,
+          encoding: 'bech32',
           value: parsed.accountAddress,
         });
       }
@@ -541,6 +542,7 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
       return harden({
         chainId,
         value: parsed.accountAddress,
+        encoding: /** @type {const} */ ('bech32'),
       });
     },
     // TODO document whether this is limited to IBC
