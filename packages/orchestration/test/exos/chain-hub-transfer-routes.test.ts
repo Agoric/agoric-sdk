@@ -216,6 +216,7 @@ test('takes forwardOpts', t => {
 
   const nobleAddr = harden({
     value: 'noble1234',
+    encoding: 'bech32' as const,
     chainId: 'noble-1',
   });
 
@@ -254,6 +255,7 @@ test('takes forwardOpts', t => {
 const nobleDest: CosmosChainAddress = harden({
   value: 'noble1234',
   chainId: 'noble-1',
+  encoding: 'bech32',
 });
 
 test('no chain info', t => {

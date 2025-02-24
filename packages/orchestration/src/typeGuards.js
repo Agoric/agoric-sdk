@@ -29,16 +29,12 @@ export const OutboundConnectionHandlerI = M.interface(
 
 // XXX @type {TypedPattern<CosmosChainAddress>} but that's causing error:
 // Declaration emit for this file requires using private name 'validatedType' from module '"/opt/agoric/agoric-sdk/packages/internal/src/types"'. An explicit type annotation may unblock declaration emit.
-export const CosmosChainAddressShape = M.splitRecord(
-  {
-    chainId: M.string(),
-    value: M.string(),
-  },
-  {
-    // Ignored but maintained for backwards compatibility
-    encoding: 'bech32',
-  },
-);
+export const CosmosChainAddressShape = {
+  chainId: M.string(),
+  // Ignored but maintained for backwards compatibility
+  encoding: M.string(),
+  value: M.string(),
+};
 harden(CosmosChainAddressShape);
 /** @deprecated use CosmosChainAddressShape */
 export const ChainAddressShape = CosmosChainAddressShape;
