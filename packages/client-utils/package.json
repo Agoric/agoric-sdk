@@ -1,6 +1,6 @@
 {
   "name": "@agoric/client-utils",
-  "version": "0.1.0",
+  "version": "0.2.0-u19.0",
   "description": "Utilities for building Agoric clients",
   "license": "Apache-2.0",
   "publishConfig": {
@@ -27,11 +27,11 @@
     "ts-blank-space": "^0.4.4"
   },
   "dependencies": {
-    "@agoric/casting": "^0.4.2",
-    "@agoric/ertp": "^0.16.2",
-    "@agoric/internal": "^0.3.2",
-    "@agoric/smart-wallet": "^0.5.3",
-    "@agoric/vats": "^0.15.1",
+    "@agoric/casting": "^0.4.3-u19.0",
+    "@agoric/ertp": "^0.16.3-u19.0",
+    "@agoric/internal": "^0.4.0-u19.0",
+    "@agoric/smart-wallet": "^0.5.4-u19.0",
+    "@agoric/vats": "^0.16.0-u19.0",
     "@cosmjs/stargate": "^0.32.3",
     "@cosmjs/tendermint-rpc": "^0.32.3",
     "@endo/common": "^1.2.9",
