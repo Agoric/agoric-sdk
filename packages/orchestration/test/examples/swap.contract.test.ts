@@ -56,6 +56,7 @@ test('start', async t => {
       validator: {
         chainId: 'agoric-3',
         value: 'agoric1valoperfufu',
+        encoding: 'bech32',
       } as const,
     },
   );

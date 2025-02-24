@@ -371,6 +371,7 @@ test('slow path: forward to EUD; remove pending tx', async t => {
         forwardOpts: {
           intermediateRecipient: {
             chainId: 'noble-1',
+            encoding: 'bech32',
             value: 'noble1test',
           },
         },
@@ -445,6 +446,7 @@ test('skip advance: forward to EUD; remove pending tx', async t => {
         forwardOpts: {
           intermediateRecipient: {
             chainId: 'noble-1',
+            encoding: 'bech32',
             value: 'noble1test',
           },
         },

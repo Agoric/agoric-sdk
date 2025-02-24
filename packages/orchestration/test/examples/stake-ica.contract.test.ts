@@ -80,7 +80,7 @@ test('makeAccount, getAddress', async t => {
     t.truthy(account, 'account is returned');
     const chainAddress = await E(account).getAddress();
     t.regex(chainAddress.value, /cosmos1/);
-    t.like(chainAddress, { chainId: 'cosmoshub-4' });
+    t.like(chainAddress, { chainId: 'cosmoshub-4', encoding: 'bech32' });
 
     const accountP = E(publicFacet).makeAccount();
     const { value: address2 } = await E(accountP).getAddress();
@@ -122,6 +122,7 @@ test('delegate, undelegate, redelegate, withdrawReward', async t => {
   const validatorAddr = {
     value: 'cosmosvaloper1test' as const,
     chainId: 'cosmoshub-4',
+    encoding: 'bech32' as const,
   };
   const delegation = {
     denom: 'uatom',

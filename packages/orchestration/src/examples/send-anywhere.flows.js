@@ -64,6 +64,7 @@ export const sendIt = async (
     await sharedLocalAccount.transfer(
       {
         value: destAddr,
+        encoding: 'bech32',
         chainId,
       },
       { denom, value: amt.value },
