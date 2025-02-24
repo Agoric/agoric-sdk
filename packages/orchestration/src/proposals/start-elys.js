@@ -8,7 +8,6 @@ import { makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
-import { createFeeTestConfig } from '../../test/examples/elys-contract.test';
 
 /**
  * @import {ElysContract} from '@agoric/orchestration/src/examples/elys.contract.js';
@@ -55,7 +54,17 @@ export const startElys = async (
   const storageNode = await makeStorageNodeChild(chainStorage, contractName);
   const marshaller = await E(board).getPublishingMarshaller();
 
-  const feeConfig = createFeeTestConfig('agoric1feeCollectorAddress');
+  const feeConfig = {
+    feeCollector: 'agoric1feeCollectorAddress',
+    onBoardRate: {
+      nominator: BigInt(20),
+      denominator: BigInt(100),
+    }, // 20%
+    offBoardRate: {
+      nominator: BigInt(10),
+      denominator: BigInt(100),
+    }, // 10%
+  }
   const allowedChains = ['cosmoshub'];
 
   /** @type {StartUpgradableOpts<ElysContract>} */

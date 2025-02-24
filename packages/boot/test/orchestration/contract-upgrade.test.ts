@@ -43,7 +43,7 @@ test('resume', async t => {
 
   t.log('Elys-Stride contract');
   await evalProposal(
-    buildProposal('../../../builders/scripts/testing/init-elys-contract.js', [
+    buildProposal('@agoric/builders/scripts/testing/init-elys-contract.js', [
       '--chainInfo',
       JSON.stringify(withChainCapabilities(minimalChainInfos)),
       '--assetInfo',

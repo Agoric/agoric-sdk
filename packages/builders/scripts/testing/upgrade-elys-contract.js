@@ -8,7 +8,6 @@ import {
   NonNullish,
 } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage';
-import { createFeeTestConfig } from '@agoric/orchestration/test/examples/elys-contract.test';
 import { E } from '@endo/far';
 
 /// <reference types="@agoric/vats/src/core/types-ambient"/>
@@ -55,7 +54,17 @@ export const upgradeElysContract = async (
 
   const marshaller = await E(board).getReadonlyMarshaller();
   const storageNode = await makeStorageNodeChild(chainStorage, "ElysContract");
-  const feeConfig = createFeeTestConfig('agoric1feeCollectorAddress');
+  const feeConfig = {
+    feeCollector: 'agoric1feeCollectorAddress',
+    onBoardRate: {
+      nominator: BigInt(20),
+      denominator: BigInt(100),
+    }, // 20%
+    offBoardRate: {
+      nominator: BigInt(10),
+      denominator: BigInt(100),
+    }, // 10%
+  }
   const allowedChains = ['cosmoshub'];
   
 

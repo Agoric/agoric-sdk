@@ -4,7 +4,7 @@
  *   Elys Contract allows users to liquid stake their tokens on stride and receive the stTokens on Elys, in one click. 
  */
 import { makeHelpers } from '@agoric/deploy-script-support';
-import { startElys } from '../../../orchestration/src/proposals/start-elys.js';
+import { startElys } from '@agoric/orchestration/src/proposals/start-elys.js';
 import { parseArgs } from 'node:util';
 
 /**
@@ -23,14 +23,14 @@ export const defaultProposalBuilder = async (
   options,
 ) => {
   return harden({
-    sourceSpec: '../../../orchestration/src/proposals/start-elys.js',
+    sourceSpec: '@agoric/orchestration/src/proposals/start-elys.js',
     getManifestCall: [
       'getManifest',
       {
         installKeys: {
-          elysContract: publishRef(
+          ElysContract: publishRef(
             install(
-              '../../../orchestration/src/examples/elys.contract.js',
+              '@agoric/orchestration/src/examples/elys.contract.js',
             ),
           ),
         },
