@@ -94,16 +94,12 @@ export const updateNobleICA = async (
   });
   trace(upgraded);
 
-  const chainHub = await E(creatorFacet).getChainHub();
-  trace('chainHub', chainHub);
   const { agoric, noble } = privateArgs.chainInfo;
-  await E(chainHub).updateConnection(
+  const nobleICAaddr = await E(creatorFacet).connectToNoble(
     agoric.chainId,
     noble.chainId,
     agoricToNoble,
   );
-
-  const nobleICAaddr = await E(creatorFacet).connectToNoble();
   trace('noble ICA', nobleICAaddr);
 
   // publish ICA addr with the other addresses
