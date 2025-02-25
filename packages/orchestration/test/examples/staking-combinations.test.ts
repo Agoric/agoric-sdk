@@ -4,6 +4,7 @@ import {
   eventLoopIteration,
   inspectMapStore,
 } from '@agoric/internal/src/testing-utils.js';
+import { makeExpectUnhandledRejection } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
 import path from 'path';
@@ -22,12 +23,17 @@ import {
 } from '../../tools/ibc-mocks.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
+const expectUnhandled = makeExpectUnhandledRejection({
+  test,
+  importMetaUrl: import.meta.url,
+});
 
 const contractFile = `${dirname}/../../src/examples/staking-combinations.contract.js`;
 type StartFn =
   typeof import('@agoric/orchestration/src/examples/staking-combinations.contract.js').start;
 
-test('start', async t => {
+// TODO(#11026): This use of expectUnhandled should not be necessary.
+test(expectUnhandled(1), 'start', async t => {
   const {
     bootstrap: { timer, vowTools: vt },
     brands: { bld },
@@ -115,7 +121,6 @@ test('start', async t => {
       validator: {
         chainId: 'cosmoshub',
         value: 'cosmosvaloper1test',
-        encoding: 'bech32',
       },
     },
   );
@@ -153,7 +158,6 @@ test('start', async t => {
   const destination = {
     chainId: 'osmosis-1',
     value: 'osmo1receiver',
-    encoding: 'bech32',
   };
   const undelegateAndTransferInv = await E(
     result.invitationMakers,
@@ -162,7 +166,6 @@ test('start', async t => {
       {
         validator: {
           value: 'osmovaloper1test',
-          encoding: 'bech32',
           chainId: 'osmosis',
         },
         amount: { denom: 'uosmo', value: 100n },
@@ -224,7 +227,6 @@ test('start', async t => {
         validator: {
           chainId: 'cosmoshub',
           value: 'cosmosvaloper1test',
-          encoding: 'bech32',
         },
       },
     );

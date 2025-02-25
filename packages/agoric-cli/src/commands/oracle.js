@@ -12,7 +12,6 @@ import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { oracleBrandFeedName } from '@agoric/inter-protocol/src/proposals/utils.js';
 import { Fail } from '@endo/errors';
 import { Nat } from '@endo/nat';
-import * as cp from 'child_process';
 import { Command } from 'commander';
 import { inspect } from 'util';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
@@ -28,26 +27,33 @@ import {
 
 // XXX support other decimal places
 const COSMOS_UNIT = 1_000_000n;
-const scaleDecimals = num => BigInt(num * Number(COSMOS_UNIT));
+/** @param {number} num */
+const scaleDecimals = num => BigInt(Math.round(num * Number(COSMOS_UNIT)));
 
 /**
  * Prints JSON output to stdout and diagnostic info (like logs) to stderr
  *
- * @param {import('anylogger').Logger} logger
  * @param {{
- *   delay?: (ms: number) => Promise<void>,
- *   execFileSync?: typeof import('child_process').execFileSync,
- *   env?: Record<string, string | undefined>,
- *   stdout?: Pick<import('stream').Writable,'write'>,
- * }} [io]
+ *   createCommand: typeof import('commander').createCommand,
+ *   env: Partial<Record<string, string>>,
+ *   execFileSync: typeof import('child_process').execFileSync,
+ *   now: () => number,
+ *   setTimeout: typeof setTimeout,
+ *   stderr: Pick<import('stream').Writable,'write'>,
+ *   stdout: Pick<import('stream').Writable,'write'>,
+ * }} process
+ * @param {import('anylogger').Logger} [logger]
  */
-export const makeOracleCommand = (logger, io = {}) => {
-  const {
-    delay = ms => new Promise(resolve => setTimeout(resolve, ms)),
-    execFileSync = cp.execFileSync,
-    env = process.env,
-    stdout = process.stdout,
-  } = io;
+export const makeOracleCommand = (
+  { env, execFileSync, setTimeout, stderr, stdout },
+  logger,
+) => {
+  /**
+   * @param {number} ms
+   * @returns {Promise<void>}
+   */
+  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
   const oracle = new Command('oracle')
     .description('Oracle commands')
     .usage(
@@ -98,7 +104,7 @@ export const makeOracleCommand = (logger, io = {}) => {
       const name = oracleBrandFeedName(brandIn, brandOut);
       const instance = agoricNames.instance[name];
       if (!instance) {
-        logger.debug('known instances:', agoricNames.instance);
+        logger && logger.debug('known instances:', agoricNames.instance);
         throw Error(`Unknown instance ${name}`);
       }
       return instance;
@@ -137,12 +143,15 @@ export const makeOracleCommand = (logger, io = {}) => {
         proposal: {},
       };
 
-      outputAction({
-        method: 'executeOffer',
-        offer,
-      });
+      outputAction(
+        {
+          method: 'executeOffer',
+          offer,
+        },
+        stdout,
+      );
 
-      console.warn(sendHint);
+      stderr.write(sendHint);
     });
 
   oracle
@@ -172,12 +181,15 @@ export const makeOracleCommand = (logger, io = {}) => {
         opts.oracleAdminAcceptOfferId,
       );
 
-      outputAction({
-        method: 'executeOffer',
-        offer,
-      });
+      outputAction(
+        {
+          method: 'executeOffer',
+          offer,
+        },
+        stdout,
+      );
 
-      console.warn(sendHint);
+      stderr.write(sendHint);
     });
 
   const findOracleCap = async (instance, from, readPublished) => {
@@ -288,7 +300,7 @@ export const makeOracleCommand = (logger, io = {}) => {
           /** @type {Promise<PriceDescription>} */ (
             readLatestHead(feedPath).catch(() => {
               const viewer = `https://vstorage.agoric.net/#${networkConfig.rpcAddrs[0]}|published,published.priceFeed|${feedPath}`;
-              console.warn(`no existing price data; see ${viewer}`);
+              stderr.write(`no existing price data; see ${viewer}`);
               return undefined;
             })
           );
@@ -333,7 +345,7 @@ export const makeOracleCommand = (logger, io = {}) => {
               }
             }),
           ]).catch(err => {
-            console.warn(err);
+            stderr.write(err);
           });
         }
 

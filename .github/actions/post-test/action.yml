@@ -10,10 +10,6 @@ inputs:
     description: 'token for datadog'
     required: false
     default: ''
-  datadog-site:
-    description: 'site for datadog'
-    required: false
-    default: 'us3.datadoghq.com'
   gcp-credentials:
     description: 'gcp'
     required: false
@@ -22,23 +18,12 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: upload tests
+    - name: collect coverage
       shell: bash
       if: ${{ github.repository_owner == 'agoric' }} && (success() || failure())
-      env:
-        DD_ENV: ci
-        DATADOG_SITE: ${{ inputs.datadog-site }}
       continue-on-error: true
       run: |
         ./scripts/ci/collect-testruns.sh
-        if [ "${{ inputs.datadog-token }}" != "" ]; then
-          export DATADOG_API_KEY="${{ inputs.datadog-token }}"
-          export DD_ENV="ci"
-          export DD_SITE="${{ inputs.datadog-site }}"
-
-          npx @datadog/datadog-ci --version 
-          timeout 30 npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
-        fi
     - name: upload coverage prepare
       shell: bash
       id: coverage-prep

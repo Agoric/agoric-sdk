@@ -86,7 +86,6 @@ test('portfolio holder kit behaviors', async t => {
       {
         value: 'cosmos1valoper',
         chainId: 'cosmoshub-99',
-        encoding: 'bech32',
       },
       {
         denom: 'uatom',

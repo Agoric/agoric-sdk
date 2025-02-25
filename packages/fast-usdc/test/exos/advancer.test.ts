@@ -7,7 +7,7 @@ import {
 import type { NatAmount } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { ChainAddressShape, denomHash } from '@agoric/orchestration';
+import { CosmosChainAddressShape, denomHash } from '@agoric/orchestration';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { type ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { q } from '@endo/errors';
@@ -137,7 +137,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
     // assume this never returns true for most tests
     checkMintedEarly: (evidence, destination) => {
       mustMatch(harden(evidence), CctpTxEvidenceShape);
-      mustMatch(destination, ChainAddressShape);
+      mustMatch(destination, CosmosChainAddressShape);
       return false;
     },
   });
@@ -251,7 +251,6 @@ test('updates status to ADVANCING in happy path', async t => {
         },
         destination: {
           chainId: 'osmosis-1',
-          encoding: 'bech32',
           value: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
         },
       },
@@ -275,7 +274,7 @@ test('updates status to ADVANCING in happy path', async t => {
   ]);
 });
 
-test('updates status to OBSERVED on insufficient pool funds', async t => {
+test('updates status to ADVANCE_SKIPPED on insufficient pool funds', async t => {
   const {
     brands: { usdc },
     bootstrap: { storage },
@@ -310,8 +309,16 @@ test('updates status to OBSERVED on insufficient pool funds', async t => {
 
   t.deepEqual(
     storage.getDeserialized(`fun.txns.${evidence.txHash}`),
-    [{ evidence, status: PendingTxStatus.Observed }],
-    'OBSERVED status on insufficient pool funds',
+    [
+      { evidence, status: PendingTxStatus.Observed },
+      {
+        risksIdentified: [
+          'Cannot borrow. Requested {"brand":"[Alleged: USDC brand]","value":"[293999999n]"} must be less than pool balance {"brand":"[Alleged: USDC brand]","value":"[1n]"}.',
+        ],
+        status: 'ADVANCE_SKIPPED',
+      },
+    ],
+    'ADVANCE_SKIPPED status on insufficient pool funds',
   );
 
   t.deepEqual(inspectLogs(), [
@@ -325,7 +332,7 @@ test('updates status to OBSERVED on insufficient pool funds', async t => {
   ]);
 });
 
-test('updates status to OBSERVED if makeChainAddress fails', async t => {
+test('updates status to ADVANCE_SKIPPED if makeChainAddress fails', async t => {
   const {
     bootstrap: { storage },
     extensions: {
@@ -340,8 +347,14 @@ test('updates status to OBSERVED if makeChainAddress fails', async t => {
 
   t.deepEqual(
     storage.getDeserialized(`fun.txns.${evidence.txHash}`),
-    [{ evidence, status: PendingTxStatus.Observed }],
-    'OBSERVED status on makeChainAddress failure',
+    [
+      { evidence, status: PendingTxStatus.Observed },
+      {
+        risksIdentified: ['Chain info not found for bech32Prefix "random"'],
+        status: 'ADVANCE_SKIPPED',
+      },
+    ],
+    'ADVANCE_SKIPPED status on makeChainAddress failure',
   );
 
   t.deepEqual(inspectLogs(), [
@@ -531,7 +544,7 @@ test('logs error if returnToPool fails during AdvanceFailed recovery', async t =
   ]);
 });
 
-test('updates status to OBSERVED if pre-condition checks fail', async t => {
+test('updates status to ADVANCE_SKIPPED if pre-condition checks fail', async t => {
   const {
     bootstrap: { storage },
     extensions: {
@@ -547,8 +560,14 @@ test('updates status to OBSERVED if pre-condition checks fail', async t => {
 
   t.deepEqual(
     storage.getDeserialized(`fun.txns.${evidence.txHash}`),
-    [{ evidence, status: PendingTxStatus.Observed }],
-    'tx is recorded as OBSERVED',
+    [
+      { evidence, status: PendingTxStatus.Observed },
+      {
+        risksIdentified: ['query: {} - Must have missing properties ["EUD"]'],
+        status: 'ADVANCE_SKIPPED',
+      },
+    ],
+    'tx is recorded as ADVANCE_SKIPPED',
   );
 
   t.deepEqual(inspectLogs(), [
@@ -640,7 +659,6 @@ test('will not advance same txHash:chainId evidence twice', async t => {
         advanceAmount: { brand: usdc.brand, value: 146999999n },
         destination: {
           chainId: 'osmosis-1',
-          encoding: 'bech32',
           value: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
         },
       },
@@ -893,7 +911,6 @@ test('uses bank send for agoric1 EUD', async t => {
         },
         destination: {
           chainId: 'agoric-3',
-          encoding: 'bech32',
           value: 'agoric13rj0cc0hm5ac2nt0sdup2l7gvkx4v9tyvgq3h2',
         },
       },

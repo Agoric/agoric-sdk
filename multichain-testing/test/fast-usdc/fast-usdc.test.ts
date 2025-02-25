@@ -658,7 +658,7 @@ test.serial('insufficient LP funds; forward path', async t => {
     await useChain(eudChain).getRestEndpoint(),
   );
 
-  await assertTxStatus(evidence.txHash, 'OBSERVED');
+  await assertTxStatus(evidence.txHash, 'ADVANCE_SKIPPED');
 
   nobleTools.mockCctpMint(mintAmt, userForwardingAddr);
 
@@ -788,7 +788,7 @@ test.serial('insufficient LP funds and forward failed', async t => {
   // submit evidences
   await Promise.all(txOracles.map(async o => o.submit(evidence)));
 
-  await assertTxStatus(evidence.txHash, 'OBSERVED');
+  await assertTxStatus(evidence.txHash, 'ADVANCE_SKIPPED');
 
   nobleTools.mockCctpMint(mintAmt, userForwardingAddr);
 
