@@ -76,6 +76,7 @@ export const CctpTxEvidenceShape = {
   },
   blockHash: EvmHashShape,
   blockNumber: M.nat(),
+  /** @deprecated Currently not relied upon. May be removed or made real again in the future. */
   blockTimestamp: M.nat(),
   chainId: M.number(),
   tx: {

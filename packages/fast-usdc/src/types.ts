@@ -42,6 +42,8 @@ export interface CctpTxEvidence {
   /** height of blockHash on the source chain */
   blockNumber: bigint;
   /**
+   * @deprecated Currently not relied upon. May be removed or made real again in the future.
+   *
    * Seconds since Unix epoch. Not all CCTP source chains update time the same
    * way but they all use Unix epoch and thus are approximately equal. (Within
    * minutes apart.)

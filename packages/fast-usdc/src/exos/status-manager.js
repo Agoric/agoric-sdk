@@ -100,6 +100,8 @@ export const prepareStatusManager = (
    *
    * @type {MapStore<EvmHash, NatValue>}
    */
+  // TODO make prunable https://github.com/Agoric/agoric-sdk/issues/11050
+  // NB: the blockTimestamp coming in from OCW is not reliable as yet.
   const seenTxs = zone.mapStore('SeenTxs', {
     keyShape: M.string(),
     valueShape: M.nat(),
