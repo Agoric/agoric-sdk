@@ -370,6 +370,10 @@ test.serial('upgrade; update noble ICA', async t => {
   );
   await evalProposal(materials);
 
+  // XXX bridgeUtils.getOutboundMessages(BridgeId.DIBC) should
+  // show the updated connection id, but we struggled to confirm.
+  // We'll use multichain-testing to be sure.
+
   const { storage } = t.context;
   const doc = {
     node: 'fastUsdc',
