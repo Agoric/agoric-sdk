@@ -1,10 +1,13 @@
 /**
  * @file A proposal to start the Elys contract.
  *
- *   Elys Contract allows users to liquid stake their tokens on stride and receive the stTokens on Elys, in one click. 
+ *   Elys Contract allows users to liquid stake their tokens on stride and receive the stTokens on Elys, in one click.
  */
 import { makeHelpers } from '@agoric/deploy-script-support';
-import { startElys } from '@agoric/orchestration/src/proposals/start-elys.js';
+import {
+  getManifest,
+  startElys,
+} from '@agoric/orchestration/src/proposals/start-elys.js';
 import { parseArgs } from 'node:util';
 
 /**
@@ -25,13 +28,11 @@ export const defaultProposalBuilder = async (
   return harden({
     sourceSpec: '@agoric/orchestration/src/proposals/start-elys.js',
     getManifestCall: [
-      'getManifest',
+      getManifest.name,
       {
         installKeys: {
           ElysContract: publishRef(
-            install(
-              '@agoric/orchestration/src/examples/elys.contract.js',
-            ),
+            install('@agoric/orchestration/src/examples/elys.contract.js'),
           ),
         },
         options,

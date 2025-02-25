@@ -5,9 +5,8 @@
 import {
   deeplyFulfilledObject,
   makeTracer,
-  NonNullish,
 } from '@agoric/internal';
-import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage';
+import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
 
 /// <reference types="@agoric/vats/src/core/types-ambient"/>
@@ -25,7 +24,7 @@ const trace = makeTracer('UpgradeElysContract', true);
  * @param {BootstrapPowers & {
  *   instance: {
  *     consume: {
- *       elysContract: Instance<StartFn>;
+ *       ElysContract: Instance<StartFn>;
  *     };
  *   };
  * }} powers
@@ -48,12 +47,11 @@ export const upgradeElysContract = async (
 ) => {
   trace(upgradeElysContract.name);
 
-  const elysContractInstance = await instances.consume.elysContract;
-  trace('elysContractInstance', elysContractInstance);
+  const elysContractInstance = await instances.consume.ElysContract;
   const elysContractKit = await E(contractKits).get(elysContractInstance);
 
   const marshaller = await E(board).getReadonlyMarshaller();
-  const storageNode = await makeStorageNodeChild(chainStorage, "ElysContract");
+  const storageNode = await makeStorageNodeChild(chainStorage, 'ElysContract');
   const feeConfig = {
     feeCollector: 'agoric1feeCollectorAddress',
     onBoardRate: {
@@ -64,9 +62,8 @@ export const upgradeElysContract = async (
       nominator: BigInt(10),
       denominator: BigInt(100),
     }, // 10%
-  }
+  };
   const allowedChains = ['cosmoshub'];
-  
 
   const privateArgs = await deeplyFulfilledObject(
     harden({
@@ -84,14 +81,13 @@ export const upgradeElysContract = async (
     }),
   );
 
-  trace('upgrading...');
-  trace('ref', elysContractRef);
+  trace('upgrading Elys Contract...');
   await E(elysContractKit.adminFacet).upgradeContract(
     elysContractRef.bundleID,
     privateArgs,
   );
 
-  trace('done');
+  trace('Upgrade done');
 };
 harden(upgradeElysContract);
 
@@ -111,18 +107,18 @@ export const getManifestForValueVow = ({ restoreRef }, { elysContractRef }) => {
           contractKits: true,
         },
         installation: {
-          consume: { elysContract: true },
+          consume: { ElysContract: true },
         },
         instance: {
-          consume: { elysContract: true },
+          consume: { ElysContract: true },
         },
       },
     },
     installations: {
-        elysContract: restoreRef(elysContractRef),
+      ElysContract: restoreRef(elysContractRef),
     },
     options: {
-        elysContractRef,
+      elysContractRef,
     },
   };
 };
@@ -136,9 +132,7 @@ export const defaultProposalBuilder = async ({ publishRef, install }) =>
       'getManifestForValueVow',
       {
         elysContractRef: publishRef(
-          install(
-            '@agoric/orchestration/src/examples/elys.contract.js',
-          ),
+          install('@agoric/orchestration/src/examples/elys.contract.js'),
         ),
       },
     ],
