@@ -374,9 +374,17 @@ test.serial('upgrade; update noble ICA', async t => {
   const doc = {
     node: 'fastUsdc',
     owner: 'Fast USDC',
+    pattern: /published\.fastUsdc\.(feeConfig|feedPolicy|poolMetrics)/,
+    replacement: '',
     showValue: JSON.parse,
   };
   await documentStorageSchema(t, storage, doc);
+
+  await documentStorageSchema(t, storage, {
+    node: 'fastUsdc.feeConfig',
+    showValue: defaultSerializer.parse,
+    note: 'feeConfig: 0.01USDC flat, 0.5% variable, 20% contract cut',
+  });
 });
 
 test.serial('makes usdc advance', async t => {
