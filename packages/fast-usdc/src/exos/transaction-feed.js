@@ -209,20 +209,19 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
           let lastEvidence;
           for (const store of found) {
             const next = store.get(txHash);
-            if (lastEvidence) {
-              if (keyEQ(lastEvidence, next)) {
-                lastEvidence = next;
-              } else {
-                trace(
-                  '🚨 conflicting evidence for',
-                  txHash,
-                  ':',
-                  lastEvidence,
-                  '!=',
-                  next,
-                );
-                Fail`conflicting evidence for ${quote(txHash)}`;
-              }
+            if (lastEvidence && !keyEQ(lastEvidence, next)) {
+              // Ignore conflicting evidence, but treat it as an error
+              // because it should never happen and needs to be prevented
+              // from happening again.
+              trace(
+                '🚨 conflicting evidence for',
+                txHash,
+                ':',
+                lastEvidence,
+                '!=',
+                next,
+              );
+              Fail`conflicting evidence for ${quote(txHash)}`;
             }
             lastEvidence = next;
           }
