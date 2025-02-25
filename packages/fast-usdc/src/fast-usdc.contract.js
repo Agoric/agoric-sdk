@@ -196,9 +196,6 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     deleteCompletedTxs() {
       return statusManager.deleteCompletedTxs();
     },
-    getChainHub() {
-      return chainHub;
-    },
   });
 
   const publicFacet = zone.exo('Fast USDC Public', undefined, {
