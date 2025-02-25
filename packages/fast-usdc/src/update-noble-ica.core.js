@@ -96,10 +96,10 @@ export const updateNobleICA = async (
 
   const chainHub = await E(creatorFacet).getChainHub();
   trace('chainHub', chainHub);
-  const { chainInfo } = privateArgs;
+  const { agoric, noble } = privateArgs.chainInfo;
   await E(chainHub).updateConnection(
-    chainInfo.agoric.chainId,
-    chainInfo.noble.chainId,
+    agoric.chainId,
+    noble.chainId,
     agoricToNoble,
   );
 
