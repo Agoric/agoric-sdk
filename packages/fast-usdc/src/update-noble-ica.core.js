@@ -52,7 +52,7 @@ const config = /** @type {const} */ ({
       client_id: '07-tendermint-77',
       counterparty: {
         client_id: '07-tendermint-32',
-        connection_id: 'connection-38',
+        connection_id: 'connection-38', // was: connection-40
       },
       state: 3,
       transferChannel: {
