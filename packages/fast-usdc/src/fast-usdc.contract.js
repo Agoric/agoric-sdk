@@ -31,7 +31,7 @@ const ADDRESSES_BAGGAGE_KEY = 'addresses';
 
 /**
  * @import {HostInterface} from '@agoric/async-flow';
- * @import {CosmosChainInfo, Denom, DenomDetail, OrchestrationAccount} from '@agoric/orchestration';
+ * @import {CosmosChainInfo, Denom, DenomDetail, OrchestrationAccount, IBCConnectionInfo} from '@agoric/orchestration';
  * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration/src/utils/start-helper.js';
  * @import {Remote} from '@agoric/internal';
  * @import {Marshaller, StorageNode} from '@agoric/internal/src/lib-chainStorage.js'
@@ -166,7 +166,17 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     async makeWithdrawFeesInvitation() {
       return poolKit.feeRecipient.makeWithdrawFeesInvitation();
     },
-    async connectToNoble() {
+    /**
+     * @param {string} agoricChainId
+     * @param {string} nobleChainId
+     * @param {IBCConnectionInfo} agoricToNoble
+     */
+    async connectToNoble(agoricChainId, nobleChainId, agoricToNoble) {
+      trace('connectToNoble', agoricChainId, nobleChainId, agoricToNoble);
+      chainHub.updateConnection(agoricChainId, nobleChainId, agoricToNoble);
+      // v1 has `NobleAccount` which we don't expect to ever settle.
+      const nobleAccountV = zone.makeOnce('NobleICA', () => makeNobleAccount());
+
       return vowTools.when(nobleAccountV, nobleAccount => {
         trace('nobleAccount', nobleAccount);
         return vowTools.when(
@@ -258,9 +268,6 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
       privateArgs.assetInfo,
     );
   }
-
-  // v1 has `NobleAccount` which we don't expect to ever settle.
-  const nobleAccountV = zone.makeOnce('NobleICA', () => makeNobleAccount());
 
   const feedKit = zone.makeOnce('Feed Kit', () => makeFeedKit());
 
