@@ -5,14 +5,39 @@ import { makeTracer } from '@agoric/internal';
 
 const trace = makeTracer('FUSD-2', true);
 
+// avoid importing all of @agoric/ertp
+/** @type {typeof import('@agoric/ertp').AmountMath.make} */
+// @ts-expect-error AssetKind conditionals aren't captured
+const make = (brand, value) => harden({ brand, value });
+/** @type {typeof import('@agoric/zoe/src/contractSupport/ratio').makeRatio} */
+const makeRatio = (numerator, numeratorBrand, denominator = 100n) =>
+  harden({
+    numerator: make(numeratorBrand, numerator),
+    denominator: make(numeratorBrand, denominator),
+  });
+
 /**
  * @import {CopyRecord} from '@endo/pass-style'
  * @import {IBCConnectionInfo} from '@agoric/orchestration'
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js'
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
  * @import {FastUSDCCorePowers} from './start-fast-usdc.core.js'
- * @import {ContractRecord} from './types.js'
+ * @import {ContractRecord, FeeConfig} from './types.js'
  */
+
+/**
+ * Update feeConfig.variableRate to 0.5%, i.e. 5n/1000n
+ *
+ * @param {FeeConfig} feeConfigPre
+ * @param {Brand<'nat'>} usdcBrand
+ * @param {Ratio} [variableRate]
+ * @returns {FeeConfig}
+ */
+const updateFeeConfig = (
+  feeConfigPre,
+  usdcBrand,
+  variableRate = makeRatio(5n, usdcBrand, 1000n),
+) => harden({ ...feeConfigPre, variableRate });
 
 /**
  * @typedef {object} UpdateOpts
@@ -62,10 +87,11 @@ export const updateNobleICA = async (
     await fastUsdcKit;
   trace('got privateArgs', Object.keys(privateArgs));
 
-  const upgraded = await E(adminFacet).upgradeContract(
-    fastUsdcCode.bundleID,
-    privateArgs,
-  );
+  const { brand: usdcBrand } = privateArgs.feeConfig.flat;
+  const upgraded = await E(adminFacet).upgradeContract(fastUsdcCode.bundleID, {
+    ...privateArgs,
+    feeConfig: updateFeeConfig(privateArgs.feeConfig, usdcBrand),
+  });
   trace(upgraded);
 
   const chainHub = await E(creatorFacet).getChainHub();
