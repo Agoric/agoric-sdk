@@ -4,7 +4,9 @@ set -o errexit -o nounset -o pipefail
 DIRECTORY_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 
 if ! test -z "$MESSAGE_FILE_PATH"; then
-  node "$DIRECTORY_PATH/wait-for-follower.mjs" '^ready$'
+  # make sure the follower has not crashed
+  node "$DIRECTORY_PATH/wait-for-follower.mjs" '^(ready)|(exit code \d+)$' | \
+  grep --extended-regexp --silent "^ready$"
 fi
 
 # Place here any test that should be executed using the executed proposal.
