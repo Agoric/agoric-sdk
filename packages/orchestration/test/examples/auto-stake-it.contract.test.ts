@@ -49,6 +49,7 @@ test('make accounts, register tap, return invitationMakers', async t => {
     validator: {
       chainId: 'cosmoshub-4',
       value: 'cosmosvaloper1test',
+      encoding: 'bech32',
     },
   });
   const result = await heapVowE(userSeat).getOfferResult();
@@ -136,6 +137,7 @@ test('make accounts, register tap, return invitationMakers', async t => {
     validator: {
       chainId: 'cosmoshub-4',
       value: 'cosmosvaloper1test',
+      encoding: 'bech32',
     },
   });
   const { publicSubscribers: pubSubs2 } =

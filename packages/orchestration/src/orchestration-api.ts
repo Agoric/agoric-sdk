@@ -85,6 +85,7 @@ export type CosmosChainAddress = {
   chainId: string;
   /** The address value used on-chain */
   value: string;
+  encoding: 'bech32' | 'ethereum';
 };
 
 /**

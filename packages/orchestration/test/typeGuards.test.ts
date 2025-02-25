@@ -9,30 +9,33 @@ test('CosmosChainAddress', t => {
   mustMatch(
     harden({
       chainId: 'noble-1',
+      encoding: 'bech32',
       value: 'noble1test',
     }),
     CosmosChainAddressShape,
+  );
+
+  t.throws(() =>
+    mustMatch(
+      harden({
+        chainId: 'noble-1',
+        encoding: 'bech32',
+        value: 'noble1test',
+        extraField: 'extraValue',
+      }),
+      CosmosChainAddressShape,
+    ),
   );
 
   mustMatch(
     harden({
       chainId: 'noble-1',
+      // ignored
+      encoding: 'invalid',
       value: 'noble1test',
-      extraField: 'extraValue',
     }),
     CosmosChainAddressShape,
   );
-
-  t.throws(() => {
-    mustMatch(
-      harden({
-        chainId: 'noble-1',
-        encoding: 'bech32boo',
-        value: 'noble1test',
-      }),
-      CosmosChainAddressShape,
-    );
-  });
 });
 
 test('backwards compatibility', t => {

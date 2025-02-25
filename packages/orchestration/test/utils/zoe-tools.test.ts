@@ -100,6 +100,7 @@ test('zoeTool.localTransfer error paths', async t => {
   const destAddr = {
     chainId: 'agoriclocal',
     value: 'agoric1testrecipient',
+    encoding: 'bech32',
   };
 
   t.log('localTransfer recovers when presented non-vbank asset');
@@ -232,6 +233,7 @@ test('localTransfer happy path', async t => {
   const destAddr = {
     chainId: 'agoriclocal',
     value: 'agoric1testrecipient',
+    encoding: 'bech32',
   };
 
   const tenStable = ist.make(10n);

@@ -43,12 +43,14 @@ const vt: VowTools = null as any;
 const validatorAddr = {
   chainId: 'agoric3',
   value: 'agoric1valoperhello',
+  encoding: 'bech32',
 } as const;
 expectType<CosmosValidatorAddress>(validatorAddr);
 
 const chainAddr = {
   chainId: 'agoric-3',
   value: 'agoric1pleab',
+  encoding: 'bech32',
 } as const;
 expectType<CosmosChainAddress>(chainAddr);
 expectNotType<CosmosValidatorAddress>(chainAddr);
@@ -259,6 +261,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
 {
   const addr = {
     chainId: 'chainId',
+    encoding: 'bech32',
     value: 'agoric1valoperfoo',
   };
   expectAssignable<Passable>(addr);

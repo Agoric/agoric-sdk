@@ -52,6 +52,7 @@ export type Bech32Address = `${string}1${string}`;
 export type CosmosValidatorAddress = CosmosChainAddress & {
   // infix for Validator Operator https://docs.cosmos.network/main/learn/beginner/accounts#addresses
   value: `${string}valoper${string}`;
+  encoding: 'bech32';
 };
 
 /** Represents an IBC Connection between two chains, which can contain multiple Channels. */

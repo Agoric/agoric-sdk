@@ -57,6 +57,7 @@ export const toTruncatedDenomAmount = c => ({
  * ) => CosmosValidatorAddress}
  */
 export const toCosmosValidatorAddress = (r, chainId) => ({
+  encoding: 'bech32',
   value: /** @type {CosmosValidatorAddress['value']} */ (r.validatorAddress),
   chainId,
 });
@@ -73,6 +74,7 @@ export const toCosmosValidatorAddress = (r, chainId) => ({
 export const toCosmosDelegationResponse = ({ chainId }, r) => ({
   delegator: {
     chainId,
+    encoding: 'bech32',
     value: r.delegation.delegatorAddress,
   },
   validator: toCosmosValidatorAddress(r.delegation, chainId),

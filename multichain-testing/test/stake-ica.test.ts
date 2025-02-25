@@ -126,6 +126,7 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
   const validatorChainAddress = {
     value: validatorAddress,
     chainId: scenario.chainId,
+    encoding: 'bech32',
   };
   await doOffer({
     id: delegateOfferId,
