@@ -5,18 +5,7 @@
   "coreProposals": {
     "steps": [
       [
-        "@agoric/builders/scripts/vats/init-core.js"
-      ],
-      [
-        "@agoric/builders/scripts/vats/init-network.js",
-        "@agoric/builders/scripts/vats/init-localchain.js",
-        "@agoric/builders/scripts/vats/init-transfer.js"
-      ],
-      [
-        "@agoric/builders/scripts/vats/init-orchestration.js",
-        "@agoric/builders/scripts/orchestration/write-chain-info.js"
-      ],
-      [
+        "@agoric/builders/scripts/vats/init-core.js",
         {
           "module": "@agoric/builders/scripts/inter-protocol/init-core.js",
           "entrypoint": "defaultProposalBuilder",
@@ -30,6 +19,30 @@
             }
           ]
         },
+        {
+          "module": "@agoric/builders/scripts/inter-protocol/invite-committee-core.js",
+          "entrypoint": "defaultProposalBuilder",
+          "args": [
+            {
+              "voterAddresses": {
+                "gov1": "agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce",
+                "gov2": "agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang",
+                "gov3": "agoric1w8wktaur4zf8qmmtn3n7x3r0jhsjkjntcm3u6h"
+              }
+            }
+          ]
+        }
+      ],
+      [
+        "@agoric/builders/scripts/vats/init-network.js",
+        "@agoric/builders/scripts/vats/init-localchain.js",
+        "@agoric/builders/scripts/vats/init-transfer.js"
+      ],
+      [
+        "@agoric/builders/scripts/vats/init-orchestration.js",
+        "@agoric/builders/scripts/orchestration/write-chain-info.js"
+      ],
+      [
         {
           "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
           "entrypoint": "defaultProposalBuilder",
@@ -150,19 +163,6 @@
                 "USD"
               ],
               "OUT_BRAND_DECIMALS": 4
-            }
-          ]
-        },
-        {
-          "module": "@agoric/builders/scripts/inter-protocol/invite-committee-core.js",
-          "entrypoint": "defaultProposalBuilder",
-          "args": [
-            {
-              "voterAddresses": {
-                "gov1": "agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce",
-                "gov2": "agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang",
-                "gov3": "agoric1w8wktaur4zf8qmmtn3n7x3r0jhsjkjntcm3u6h"
-              }
             }
           ]
         }
