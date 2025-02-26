@@ -389,6 +389,16 @@ test.serial('upgrade; update noble ICA', async t => {
     showValue: defaultSerializer.parse,
     note: 'feeConfig: 0.01USDC flat, 0.5% variable, 20% contract cut',
   });
+
+  const outboundDIBC = bridgeUtils.getOutboundMessages(BridgeId.DIBC);
+  const icaAccountReqs = outboundDIBC.filter(
+    x =>
+      x.method === 'startChannelOpenInit' &&
+      x.packet.destination_port === 'icahost',
+  );
+  t.is(icaAccountReqs.length, 2);
+  const version = JSON.parse(icaAccountReqs.at(-1).version);
+  t.is(version.hostConnectionId, 'connection-38'); // fails, still getting 'connection-40'
 });
 
 test.serial('makes usdc advance', async t => {
