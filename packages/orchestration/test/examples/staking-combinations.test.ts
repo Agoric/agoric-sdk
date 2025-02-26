@@ -33,7 +33,7 @@ type StartFn =
   typeof import('@agoric/orchestration/src/examples/staking-combinations.contract.js').start;
 
 // TODO(#11026): This use of expectUnhandled should not be necessary.
-test(expectUnhandled(1), 'start', async t => {
+test('start', async t => {
   const {
     bootstrap: { timer, vowTools: vt },
     brands: { bld },
@@ -232,7 +232,7 @@ test(expectUnhandled(1), 'start', async t => {
     );
     await t.throwsAsync(vt.when(E(seat).getOfferResult()), {
       message:
-        'ibc transfer failed "[Error: simulated unexpected MsgTransfer packet timeout]"',
+        'ibc transfer failed "[Error: unknown operation received timeout packet]"',
     });
     await vt.when(E(seat).hasExited());
     const payouts = await E(seat).getPayouts();

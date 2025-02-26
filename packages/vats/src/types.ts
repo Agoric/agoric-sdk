@@ -290,7 +290,7 @@ export type VTransferIBCEvent = {
    * - 'acknowledgementPacket': passive tap that communicates the result of an acknowledged packet
    * - 'writeAcknowledgement': active tap where the receiver can return a write acknowledgement
    */
-  event: 'acknowledgementPacket' | 'writeAcknowledgement';
+  event: 'acknowledgementPacket' | 'writeAcknowledgement' | 'timeoutPacket';
   acknowledgement: Bytes;
   /**
    * Use `JSON.parse(atob(packet.data))` to get a

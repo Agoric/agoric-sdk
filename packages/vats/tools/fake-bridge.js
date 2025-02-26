@@ -4,12 +4,13 @@ import { makeTracer, VBankAccount } from '@agoric/internal';
 import { E } from '@endo/far';
 import { makeWhen } from '@agoric/vow/src/when.js';
 import { Nat } from '@endo/nat';
+import { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 
 /**
- * @import {JsonSafe} from '@agoric/cosmic-proto';
+ * @import {JsonSafe, Proto3Shape, TypedJson} from '@agoric/cosmic-proto';
  * @import {MsgDelegateResponse, MsgUndelegateResponse} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
  * @import {MsgSendResponse} from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
- * @import {BridgeHandler, ScopedBridgeManager} from '../src/types.js';
+ * @import {BridgeHandler, IBCChannelID, IBCPacket, ScopedBridgeManager} from '../src/types.js';
  * @import {Remote} from '@agoric/vow';
  */
 const trace = makeTracer('FakeBridge');
@@ -188,18 +189,62 @@ export const SIMULATED_ERRORS = {
  *
  * Returns an empty object per message unless specified.
  *
- * @param {object} message
+ * @template {keyof Proto3Shape} T
+ * @param {TypedJson<T>} message
  * @param {number} sequence
+ * @param {ScopedBridgeManager<'vtransfer'>['fromBridge']} fromTransferBridge
+ *   not the actual handler, but mimic the interface
  * @returns {unknown}
  * @throws {Error} to simulate failures in certain cases
  */
-export const fakeLocalChainBridgeTxMsgHandler = (message, sequence) => {
+export const fakeLocalChainBridgeTxMsgHandler = (
+  message,
+  sequence,
+  fromTransferBridge,
+) => {
   switch (message['@type']) {
     // TODO #9402 reference bank to ensure caller has tokens they are transferring
     case '/ibc.applications.transfer.v1.MsgTransfer': {
+      // not how we signify a timeout; we'll always get a sequence
       if (message.token.amount === String(SIMULATED_ERRORS.TIMEOUT)) {
-        throw Error('simulated unexpected MsgTransfer packet timeout');
+        // throw Error('simulated unexpected MsgTransfer packet timeout');
+        /** @type {IBCPacket} */
+        const packet = {
+          data: btoa(
+            JSON.stringify(
+              FungibleTokenPacketData.fromPartial({
+                amount: String(message.token.amount),
+                denom: message.token.denom,
+                sender: message.sender,
+                receiver: message.receiver,
+              }),
+            ),
+          ),
+          sequence: BigInt(sequence),
+          source_channel: /** @type {IBCChannelID} */ (message.sourceChannel),
+          source_port: message.sourcePort,
+          destination_channel: /** @type {IBCChannelID} */ ('channel-000'),
+          destination_port: 'transfer',
+          timeout_height: {
+            revision_height: message.timeoutHeight.revisionHeight,
+            revision_number: message.timeoutHeight.revisionNumber,
+          },
+          timeout_timestamp: message.timeoutTimestamp,
+        };
+        setTimeout(
+          () =>
+            fromTransferBridge({
+              type: 'VTRANSFER_IBC_EVENT',
+              target: message.sender,
+              event: 'timeoutPacket',
+              packet,
+              acknowledgement: null,
+              relayer: 'agoric123',
+            }),
+          0,
+        );
       }
+
       // like `JsonSafe<MsgTransferResponse>`, but bigints are converted to numbers
       // FIXME should vlocalchain return a string instead of number for bigint?
       return {
@@ -290,12 +335,14 @@ export const fakeLocalChainBridgeQueryHandler = message => {
 
 /**
  * @param {import('@agoric/zone').Zone} zone
+ * @param {ScopedBridgeManager<'dibc'>['fromBridge']} fromDibcBridge
  * @param {(obj) => void} [onToBridge]
  * @param {(number) => string} makeAddressFn
  * @returns {ScopedBridgeManager<'vlocalchain'>}
  */
 export const makeFakeLocalchainBridge = (
   zone,
+  fromDibcBridge,
   onToBridge = () => {},
   makeAddressFn = index => `${LOCALCHAIN_DEFAULT_ADDRESS}${index || ''}`,
 ) => {
@@ -317,8 +364,13 @@ export const makeFakeLocalchainBridge = (
         }
         case 'VLOCALCHAIN_EXECUTE_TX': {
           lcaExecuteTxSequence += 1;
+
           return obj.messages.map(message =>
-            fakeLocalChainBridgeTxMsgHandler(message, lcaExecuteTxSequence),
+            fakeLocalChainBridgeTxMsgHandler(
+              message,
+              lcaExecuteTxSequence,
+              fromDibcBridge,
+            ),
           );
         }
         case 'VLOCALCHAIN_QUERY_MANY': {

@@ -388,7 +388,10 @@ export const prepareLocalOrchestrationAccountKit = (
           // Begin capturing packets, send the transfer packet, then return a
           // vow that rejects unless the packet acknowledgment comes back and is
           // verified.
-          return holder.sendThenWaitForAck(sender);
+          return holder.sendThenWaitForAck(sender, {
+            // TODO why does error say "unknown operation"
+            opName: 'localchain transfer',
+          });
         },
       },
       /**

@@ -110,9 +110,14 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
   finisher.useRegistry(bridgeTargetKit.targetRegistry);
   await E(transferBridge).initHandler(bridgeTargetKit.bridgeHandler);
 
+  const fromVtransferBridge = async (obj: any) =>
+    transferBridge.fromBridge(obj);
+
   const localBridgeMessages = [] as any[];
-  const localchainBridge = makeFakeLocalchainBridge(rootZone, obj =>
-    localBridgeMessages.push(obj),
+  const localchainBridge = makeFakeLocalchainBridge(
+    rootZone,
+    fromVtransferBridge,
+    obj => localBridgeMessages.push(obj),
   );
   const localchain = prepareLocalChainTools(
     rootZone.subZone('localchain'),
