@@ -127,7 +127,6 @@ test.serial('send-anywhere', async t => {
 const validatorAddress: CosmosValidatorAddress = {
   value: 'cosmosvaloper1test',
   chainId: 'gaiatest',
-  encoding: 'bech32',
 };
 const ATOM_DENOM = 'uatom';
 

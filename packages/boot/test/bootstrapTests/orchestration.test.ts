@@ -35,7 +35,6 @@ const test: TestFn<
 const validatorAddress: CosmosValidatorAddress = {
   value: 'cosmosvaloper1test',
   chainId: 'gaiatest',
-  encoding: 'bech32',
 };
 
 const ATOM_DENOM = 'uatom';
@@ -236,7 +235,6 @@ test.serial('stakeAtom - smart wallet', async t => {
   const validatorAddressFail: CosmosValidatorAddress = {
     value: 'cosmosvaloper1fail',
     chainId: 'gaiatest',
-    encoding: 'bech32',
   };
 
   // This will trigger the immediate ack of the mock bridge
@@ -432,7 +430,7 @@ test.serial('basic-flows', async t => {
       destination: {
         chainId: 'noble-1',
         value: 'noble1test',
-        encoding: 'bech32,',
+        encoding: 'bech32',
       },
     },
   });
@@ -456,7 +454,7 @@ test.serial('basic-flows', async t => {
       destination: {
         chainId: 'noble-1',
         value: 'noble1test',
-        encoding: 'bech32,',
+        encoding: 'bech32',
       },
     },
   });
@@ -481,7 +479,7 @@ test.serial('basic-flows', async t => {
       destination: {
         chainId: 'noble-1',
         value: 'noble1test',
-        encoding: 'bech32,',
+        encoding: 'bech32',
       },
     },
   });
@@ -525,7 +523,7 @@ test.serial('basic-flows', async t => {
         destination: {
           chainId: 'noble-1',
           value: 'noble1test',
-          encoding: 'bech32,',
+          encoding: 'bech32',
         },
       },
     }),

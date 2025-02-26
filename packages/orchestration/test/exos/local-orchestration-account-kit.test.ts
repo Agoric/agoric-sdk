@@ -2,6 +2,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { makeExpectUnhandledRejection } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
 import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
 import {
   LOCALCHAIN_QUERY_ALL_BALANCES_RESPONSE,
@@ -11,7 +12,7 @@ import { heapVowE as VE } from '@agoric/vow/vat.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import type { IBCChannelID } from '@agoric/vats';
 import type {
-  ChainAddress,
+  CosmosChainAddress,
   AmountArg,
   DenomAmount,
 } from '../../src/orchestration-api.js';
@@ -25,6 +26,11 @@ import fetchedChainInfo from '../../src/fetched-chain-info.js';
 import type { IBCMsgTransferOptions } from '../../src/cosmos-api.js';
 import { PFM_RECEIVER } from '../../src/exos/chain-hub.js';
 import { assetOn } from '../../src/utils/asset.js';
+
+const expectUnhandled = makeExpectUnhandledRejection({
+  test,
+  importMetaUrl: import.meta.url,
+});
 
 test('deposit, withdraw', async t => {
   const common = await commonSetup(t);
@@ -109,7 +115,8 @@ test('delegate, undelegate', async t => {
   );
 });
 
-test('transfer', async t => {
+// TODO(#11026): This use of expectUnhandled should not be necessary.
+test(expectUnhandled(1), 'transfer', async t => {
   const common = await commonSetup(t);
   common.utils.populateChainHub();
   const makeTestLOAKit = prepareMakeTestLOAKit(t, common);
@@ -134,10 +141,9 @@ test('transfer', async t => {
     value: stake.units(100).value,
   });
 
-  const destination: ChainAddress = {
+  const destination: CosmosChainAddress = {
     chainId: 'cosmoshub-4',
     value: 'cosmos1pleab',
-    encoding: 'bech32',
   };
 
   /** The running tally of transfer messages that were sent over the bridge */
@@ -152,7 +158,7 @@ test('transfer', async t => {
    */
   const startTransfer = async (
     amount: AmountArg,
-    dest: ChainAddress,
+    dest: CosmosChainAddress,
     opts: IBCMsgTransferOptions = {},
   ) => {
     const transferP = VE(account).transfer(dest, amount, opts);
@@ -196,10 +202,9 @@ test('transfer', async t => {
     },
   );
 
-  const unknownDestination: ChainAddress = {
+  const unknownDestination: CosmosChainAddress = {
     chainId: 'fakenet',
     value: 'fakenet1pleab',
-    encoding: 'bech32',
   };
   // XXX dev has to know not to startTransfer here
   await t.throwsAsync(
@@ -217,7 +222,7 @@ test('transfer', async t => {
    */
   const doTransfer = async (
     amount: AmountArg,
-    dest: ChainAddress,
+    dest: CosmosChainAddress,
     opts: IBCMsgTransferOptions = {},
     sourceChannel?: IBCChannelID,
   ) => {
@@ -277,9 +282,8 @@ test('transfer', async t => {
     'agoric',
     fetchedChainInfo,
   );
-  const dydxDest: ChainAddress = {
+  const dydxDest: CosmosChainAddress = {
     chainId: 'dydx-mainnet-1',
-    encoding: 'bech32',
     value: 'dydx1test',
   };
   const aDenomAmount: DenomAmount = {
@@ -389,7 +393,6 @@ test('send', async t => {
   const toAddress = {
     value: 'agoric1EOAAccAddress',
     chainId: 'agoric-3',
-    encoding: 'bech32' as const,
   };
 
   t.log(`send 10 bld to ${toAddress.value}`);

@@ -365,17 +365,12 @@ test('slow path: forward to EUD; remove pending tx', async t => {
   t.deepEqual(accounts.settlement.callLog, [
     [
       'transfer',
-      {
-        chainId: 'osmosis-1',
-        encoding: 'bech32',
-        value: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
-      },
+      'cosmos:osmosis-1:osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
       usdc.units(150),
       {
         forwardOpts: {
           intermediateRecipient: {
             chainId: 'noble-1',
-            encoding: 'bech32',
             value: 'noble1test',
           },
         },
@@ -444,17 +439,12 @@ test('skip advance: forward to EUD; remove pending tx', async t => {
   t.deepEqual(accounts.settlement.callLog, [
     [
       'transfer',
-      {
-        chainId: 'osmosis-1',
-        encoding: 'bech32',
-        value: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
-      },
+      'cosmos:osmosis-1:osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
       usdc.units(150),
       {
         forwardOpts: {
           intermediateRecipient: {
             chainId: 'noble-1',
-            encoding: 'bech32',
             value: 'noble1test',
           },
         },
@@ -535,9 +525,7 @@ test('Settlement for unknown transaction (minted early)', async t => {
   t.like(accounts.settlement.callLog, [
     [
       'transfer',
-      {
-        value: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
-      },
+      'cosmos:osmosis-1:osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
       usdc.units(150),
       {
         forwardOpts: {
@@ -653,9 +641,7 @@ test('Settlement for Advancing transaction (advance fails)', async t => {
   t.like(accounts.settlement.callLog, [
     [
       'transfer',
-      {
-        value: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
-      },
+      'cosmos:osmosis-1:osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
       usdc.units(150),
       {
         forwardOpts: {
@@ -716,9 +702,7 @@ test('slow path, and forward fails (terminal state)', async t => {
   t.like(accounts.settlement.callLog, [
     [
       'transfer',
-      {
-        value: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
-      },
+      'cosmos:osmosis-1:osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
       usdc.units(150),
       {
         forwardOpts: {

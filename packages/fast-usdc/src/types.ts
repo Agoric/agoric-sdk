@@ -1,5 +1,7 @@
 import type {
-  ChainAddress,
+  AccountId,
+  CosmosChainAddress,
+  Bech32Address,
   CosmosChainInfo,
   Denom,
   DenomDetail,
@@ -11,7 +13,15 @@ import type { PendingTxStatus, TxStatus } from './constants.js';
 import type { FastUsdcTerms } from './fast-usdc.contract.js';
 import type { RepayAmountKWR } from './exos/liquidity-pool.js';
 
+/**
+ * Block hash is calculated using the keccak256 algorithm that always results
+ * in 32 bytes (64 hex characters prepended by 0x) no matter the input length.
+ */
 export type EvmHash = `0x${string}`;
+/**
+ * An address is always the last 20 bytes (40 hex charaters prepended by 0x) of
+ * the public key hash.
+ */
 export type EvmAddress = `0x${string & { length: 40 }}`;
 export type NobleAddress = `noble1${string}`;
 export type EvmChainID = number;
@@ -25,7 +35,7 @@ export interface CctpTxEvidence {
   /** from Noble RPC */
   aux: {
     forwardingChannel: IBCChannelID;
-    recipientAddress: ChainAddress['value'];
+    recipientAddress: CosmosChainAddress['value'];
   };
   /** on the source chain (e.g. L1 Ethereum and L2s Arbitrum, Base) */
   blockHash: EvmHash;
@@ -70,8 +80,8 @@ export interface TransactionRecord extends CopyRecord {
 
 /** the record in vstorage at the path of the contract's node */
 export interface ContractRecord extends CopyRecord {
-  poolAccount: ChainAddress['value'];
-  settlementAccount: ChainAddress['value'];
+  poolAccount: CosmosChainAddress['value'];
+  settlementAccount: CosmosChainAddress['value'];
 }
 
 export type LogFn = (...args: unknown[]) => void;
@@ -142,7 +152,7 @@ export type AddressHook = {
   baseAddress: string;
   query: {
     /** end user destination address */
-    EUD: string;
+    EUD: Bech32Address;
   };
 };
 
