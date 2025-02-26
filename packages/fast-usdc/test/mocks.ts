@@ -1,7 +1,7 @@
 import type { HostInterface } from '@agoric/async-flow';
 import type { Brand, Issuer, Payment } from '@agoric/ertp';
 import type {
-  ChainAddress,
+  CosmosChainAddress,
   DenomAmount,
   OrchestrationAccount,
 } from '@agoric/orchestration';
@@ -29,7 +29,7 @@ export const prepareMockOrchAccounts = (
   const settleAccountTransferVK = makeVowKit<undefined>();
 
   const mockedPoolAccount = zone.exo('Mock Pool LocalOrchAccount', undefined, {
-    transfer(destination: ChainAddress, amount: DenomAmount) {
+    transfer(destination: CosmosChainAddress, amount: DenomAmount) {
       log('PoolAccount.transfer() called with', destination, amount);
       return poolAccountTransferVK.vow;
     },
@@ -38,7 +38,7 @@ export const prepareMockOrchAccounts = (
       // XXX consider a mock for deposit failure
       return asVow(async () => usdc.issuer.getAmountOf(payment));
     },
-    send(destination: ChainAddress, amount: DenomAmount) {
+    send(destination: CosmosChainAddress, amount: DenomAmount) {
       log('PoolAccount.send() called with', destination, amount);
       return poolAccountSendVK.vow;
     },

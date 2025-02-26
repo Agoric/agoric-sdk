@@ -152,12 +152,12 @@ test.serial('check all existing values are preserved', async t => {
   const agoricNamesAfter = await getAgoricNames();
   t.like(agoricNamesAfter, agoricNamesBefore);
 
-  agoricNamesChildren.forEach(child =>
+  for (const child of agoricNamesChildren) {
     assert(
       agoricNamesAfter[child][`test${child}`],
       'we should be able to add new value',
-    ),
-  );
+    );
+  }
 });
 
 test.serial('check testInfo still works', async t => {

@@ -1,7 +1,7 @@
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
-import type { ChainAddress } from '@agoric/orchestration';
+import type { CosmosChainAddress } from '@agoric/orchestration';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { CctpTxEvidence, EvmAddress } from '../src/types.js';
 
@@ -194,15 +194,13 @@ export const MockVTransferEvents: Record<
     }),
 };
 
-export const intermediateRecipient: ChainAddress = harden({
+export const intermediateRecipient: CosmosChainAddress = harden({
   chainId: 'noble-1',
   value: 'noble1test',
-  encoding: 'bech32',
 });
 
-export const settlementAddress: ChainAddress = harden({
+export const settlementAddress: CosmosChainAddress = harden({
   chainId: 'agoric-3',
-  encoding: 'bech32' as const,
   // Random value, copied from tests of address hooks
   value: 'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek',
 });

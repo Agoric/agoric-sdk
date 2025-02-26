@@ -1,6 +1,6 @@
 import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
-import { ChainAddressShape } from '@agoric/orchestration';
+import { CosmosChainAddressShape } from '@agoric/orchestration';
 import { atob } from '@endo/base64';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
@@ -17,7 +17,7 @@ import {
 /**
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
  * @import {Amount, Brand, NatValue, Payment} from '@agoric/ertp';
- * @import {Denom, OrchestrationAccount, ChainHub, ChainAddress} from '@agoric/orchestration';
+ * @import {AccountId, Denom, OrchestrationAccount, ChainHub, CosmosChainAddress} from '@agoric/orchestration';
  * @import {WithdrawToSeat} from '@agoric/orchestration/src/utils/zoe-tools'
  * @import {IBCChannelID, IBCPacket, VTransferIBCEvent} from '@agoric/vats';
  * @import {Zone} from '@agoric/zone';
@@ -86,7 +86,7 @@ const makeMintedEarlyKey = (addr, amount) =>
 /** @param {Brand<'nat'>} USDC */
 export const makeAdvanceDetailsShape = USDC =>
   harden({
-    destination: ChainAddressShape,
+    destination: CosmosChainAddressShape,
     forwardingAddress: M.string(),
     fullAmount: makeNatAmountShape(USDC),
     txHash: EvmHashShape,
@@ -99,7 +99,7 @@ export const stateShape = harden({
   sourceChannel: M.string(),
   remoteDenom: M.string(),
   mintedEarly: M.remotable('mintedEarly'),
-  intermediateRecipient: M.opt(ChainAddressShape),
+  intermediateRecipient: M.opt(CosmosChainAddressShape),
 });
 
 /**
@@ -133,7 +133,7 @@ export const prepareSettler = (
     {
       creator: M.interface('SettlerCreatorI', {
         monitorMintingDeposits: M.callWhen().returns(M.any()),
-        setIntermediateRecipient: M.call(ChainAddressShape).returns(),
+        setIntermediateRecipient: M.call(CosmosChainAddressShape).returns(),
       }),
       tap: M.interface('SettlerTapI', {
         receiveUpcall: M.call(M.record()).returns(M.promise()),
@@ -145,7 +145,7 @@ export const prepareSettler = (
         ).returns(),
         checkMintedEarly: M.call(
           CctpTxEvidenceShape,
-          ChainAddressShape,
+          CosmosChainAddressShape,
         ).returns(M.boolean()),
       }),
       self: M.interface('SettlerSelfI', {
@@ -163,7 +163,7 @@ export const prepareSettler = (
      *   remoteDenom: Denom;
      *   repayer: LiquidityPoolKit['repayer'];
      *   settlementAccount: HostInterface<OrchestrationAccount<{ chainId: 'agoric' }>>
-     *   intermediateRecipient?: ChainAddress;
+     *   intermediateRecipient?: CosmosChainAddress;
      * }} config
      */
     config => {
@@ -188,7 +188,7 @@ export const prepareSettler = (
           assert.typeof(registration, 'object');
           this.state.registration = registration;
         },
-        /** @param {ChainAddress} intermediateRecipient */
+        /** @param {CosmosChainAddress} intermediateRecipient */
         setIntermediateRecipient(intermediateRecipient) {
           this.state.intermediateRecipient = intermediateRecipient;
         },
@@ -244,7 +244,7 @@ export const prepareSettler = (
          * @param {EvmHash} ctx.txHash
          * @param {NobleAddress} ctx.forwardingAddress
          * @param {Amount<'nat'>} ctx.fullAmount
-         * @param {ChainAddress} ctx.destination
+         * @param {CosmosChainAddress} ctx.destination
          * @param {boolean} success
          * @returns {void}
          */
@@ -273,7 +273,7 @@ export const prepareSettler = (
         },
         /**
          * @param {CctpTxEvidence} evidence
-         * @param {ChainAddress} destination
+         * @param {CosmosChainAddress} destination
          * @returns {boolean}
          * @throws {Error} if minted early, so advancer doesn't advance
          */
@@ -340,9 +340,10 @@ export const prepareSettler = (
         forward(txHash, fullValue, EUD) {
           const { settlementAccount, intermediateRecipient } = this.state;
 
+          /** @type {AccountId | null} */
           const dest = (() => {
             try {
-              return chainHub.makeChainAddress(EUD);
+              return chainHub.resolveAccountId(EUD);
             } catch (e) {
               log('⚠️ forward transfer failed!', e, txHash);
               statusManager.forwarded(txHash, false);
