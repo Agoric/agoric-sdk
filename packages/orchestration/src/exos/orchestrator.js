@@ -117,25 +117,23 @@ const prepareOrchestratorKit = (
       orchestrator: {
         /** @type {HostOf<Orchestrator['getChain']>} */
         getChain(name) {
-          return asVow(() => {
-            if (chainByName.has(name)) {
-              const maybeChain = chainByName.get(name);
-              return maybeChain.pending ? maybeChain.vow : maybeChain.value;
-            }
-            const vow =
-              name === 'agoric'
-                ? watch(
-                    chainHub.getChainInfo('agoric'),
-                    this.facets.makeLocalChainFacadeWatcher,
-                  )
-                : watch(
-                    chainHub.getChainsAndConnection('agoric', name),
-                    this.facets.makeRemoteChainFacadeWatcher,
-                    name,
-                  );
+          const vow =
+            name === 'agoric'
+              ? watch(
+                  chainHub.getChainInfo('agoric'),
+                  this.facets.makeLocalChainFacadeWatcher,
+                )
+              : watch(
+                  chainHub.getChainsAndConnection('agoric', name),
+                  this.facets.makeRemoteChainFacadeWatcher,
+                  name,
+                );
+          if (chainByName.has(name)) {
+            chainByName.set(name, harden({ vow, pending: true }));
+          } else {
             chainByName.init(name, harden({ vow, pending: true }));
-            return vow;
-          });
+          }
+          return vow;
         },
         /** @type {HostOf<Orchestrator['getDenomInfo']>} */
         getDenomInfo(denom, holdingChainName) {
