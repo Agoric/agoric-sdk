@@ -184,7 +184,7 @@ const contract = async (
   });
 
   const creatorFacet = prepareChainHubAdmin(zone, chainHub);
-  
+
   registerChainsAndAssets(
     chainHub,
     zcf.getTerms().brands,
