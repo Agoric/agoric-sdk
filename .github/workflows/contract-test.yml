@@ -24,7 +24,12 @@ jobs:
       - name: Build the project
         run: yarn build
 
-      - name: Run tests
+      - name: Run tests for elys-contract
         run: |
           cd packages/orchestration
           yarn test test/examples/elys-contract.test.ts
+
+      - name: Run tests for contract-upgrade
+        run: |
+          cd packages/boot
+          yarn test test/orchestration/contract-upgrade.test.ts

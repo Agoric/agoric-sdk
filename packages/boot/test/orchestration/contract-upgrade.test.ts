@@ -38,11 +38,13 @@ test('resume', async t => {
     runUtils: { EV },
   } = t.context;
 
-  const {
-    // commonPrivateArgs,
-    // mocks: { transferBridge, ibcBridge },
-    // utils: { inspectLocalBridge, inspectDibcBridge, transmitTransferAck },
-  } = await commonSetup(t);
+  // const {
+  //   commonPrivateArgs,
+  //   mocks: { transferBridge, ibcBridge },
+  //   utils: { inspectLocalBridge, inspectDibcBridge, transmitTransferAck },
+  // } = await commonSetup(t);
+
+  await commonSetup(t);
 
   t.log('Initialising Elys contract');
 
