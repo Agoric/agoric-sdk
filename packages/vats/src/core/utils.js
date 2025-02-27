@@ -212,19 +212,27 @@ const noop = harden(() => {});
 export const makePromiseSpaceForNameHub = (nameAdmin, log = noop) => {
   const logHooks = makeLogHooks(log);
 
+  const readonlyP = E(nameAdmin).readonly();
+
   /** @type {PromiseSpaceOf<any>} */
   const space = makePromiseSpace({
     hooks: harden({
       ...logHooks,
       onAddKey: name => {
-        void E(nameAdmin).reserve(name);
+        void E.sendOnly(nameAdmin).reserve(name);
         logHooks.onAddKey(name);
       },
       onResolve: (name, valueP) => {
-        void E.when(valueP, value => E(nameAdmin).update(name, value));
+        void E.when(valueP, value => E.sendOnly(nameAdmin).update(name, value));
       },
       onReset: name => {
-        void E(nameAdmin).delete(name);
+        void E(readonlyP)
+          .has(name)
+          .then(present => {
+            if (present) {
+              void E.sendOnly(nameAdmin).delete(name);
+            }
+          });
       },
     }),
     log,
