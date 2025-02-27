@@ -315,8 +315,11 @@ export const prepareStatusManager = (
       },
 
       /**
-       * Add a new transaction with OBSERVED status
-       * @param evidence
+       * Add a new transaction with OBSERVED status.
+       *
+       * This message isn't currently being sent.
+       *
+       * @param {CctpTxEvidence} evidence
        */
       observe(evidence: CctpTxEvidence): void {
         initPendingTx(evidence, PendingTxStatus.Observed);
@@ -348,9 +351,9 @@ export const prepareStatusManager = (
        * forwarding account and amount. Since multiple pending transactions may exist with
        * identical (account, amount) pairs, we process them in FIFO order.
        *
-       * @param nfa
-       * @param amount
-       * @returns undefined if no pending transactions exist for this address and amount combination.
+       * @param {bigint} nfa
+       * @param {NobleAddress} amount
+       * @returns {undefined} if no pending transactions exist for this address and amount combination.
        */
       dequeueStatus(
         nfa: NobleAddress,
