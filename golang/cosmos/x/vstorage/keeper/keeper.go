@@ -119,8 +119,8 @@ func NewKeeper(storeKey storetypes.StoreKey) Keeper {
 	}
 }
 
-var MetricKeyStoreAllocated = []string{"store", "allocated"}
-var MetricKeyStoreReleased = []string{"store", "released"}
+var MetricKeyStoreSizeIncrease = []string{"store", "size_increase"}
+var MetricKeyStoreSizeDecrese = []string{"store", "size_decrease"}
 const MetricLabelStoreKey = "storeKey"
 
 func ReportStoreSizeMetrics(k Keeper, sizeDelta float32) {
@@ -128,9 +128,9 @@ func ReportStoreSizeMetrics(k Keeper, sizeDelta float32) {
 		telemetry.NewLabel(MetricLabelStoreKey, k.storeKey.Name()),
 	}
 	if sizeDelta >= 0 {
-		telemetry.IncrCounterWithLabels(MetricKeyStoreAllocated, sizeDelta, metricsLabel)
+		telemetry.IncrCounterWithLabels(MetricKeyStoreSizeIncrease, sizeDelta, metricsLabel)
 	} else {
-		telemetry.IncrCounterWithLabels(MetricKeyStoreReleased, -sizeDelta, metricsLabel)
+		telemetry.IncrCounterWithLabels(MetricKeyStoreSizeDecrese, -sizeDelta, metricsLabel)
 	}
 }
 
