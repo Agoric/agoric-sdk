@@ -42,7 +42,7 @@ import { createSHA256 } from './hasher.js';
  *
  */
 
-function bundleIDFromName(name) {
+export const bundleIDFromName = name => {
   typeof name === 'string' || Fail`artifact name must be a string`;
   const [tag, ...pieces] = name.split('.');
   if (tag !== 'bundle' || pieces.length !== 1) {
@@ -52,7 +52,8 @@ function bundleIDFromName(name) {
   }
   const bundleID = pieces[0];
   return bundleID;
-}
+};
+harden(bundleIDFromName);
 
 /**
  * @param {*} db
