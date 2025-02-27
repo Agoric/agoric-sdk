@@ -119,12 +119,18 @@ func NewKeeper(storeKey storetypes.StoreKey) Keeper {
 	}
 }
 
-var MetricKeysSizeDelta = []string{"store", "size_delta"}
+var MetricKeyStoreAllocated = []string{"store", "allocated"}
+var MetricKeyStoreReleased = []string{"store", "released"}
 const MetricLabelStoreKey = "storeKey"
 
-func NewMetricsLabels(k Keeper) []metrics.Label {
-	return []metrics.Label{
+func ReportStoreSizeMetrics(k Keeper, sizeDelta float32) {
+	metricsLabel := []metrics.Label{
 		telemetry.NewLabel(MetricLabelStoreKey, k.storeKey.Name()),
+	}
+	if sizeDelta >= 0 {
+		telemetry.IncrCounterWithLabels(MetricKeyStoreAllocated, sizeDelta, metricsLabel)
+	} else {
+		telemetry.IncrCounterWithLabels(MetricKeyStoreReleased, -sizeDelta, metricsLabel)
 	}
 }
 
@@ -228,7 +234,7 @@ func (k Keeper) RemoveEntriesWithPrefix(ctx sdk.Context, pathPrefix string) {
 	for _, key := range keys {
 		rawValue := store.Get(key)
 		sizeDelta := float32(-len(key) - len(rawValue))
-		telemetry.IncrCounterWithLabels(MetricKeysSizeDelta, sizeDelta, NewMetricsLabels(k))
+		ReportStoreSizeMetrics(k, sizeDelta)
 		store.Delete(key)
 	}
 
@@ -386,19 +392,19 @@ func (k Keeper) SetStorage(ctx sdk.Context, entry agoric.KVEntry) {
 		if !k.HasChildren(ctx, path) {
 			// We have no children, can delete.
 			sizeDelta := float32(-len(encodedKey) - len(oldRawValue))
-			telemetry.IncrCounterWithLabels(MetricKeysSizeDelta, sizeDelta, NewMetricsLabels(k))
+			ReportStoreSizeMetrics(k, sizeDelta)
 			store.Delete(encodedKey)
 		} else {
 			// We have children, mark as an empty placeholder without deleting.
 			sizeDelta := float32(len(types.EncodedNoDataValue) - len(oldRawValue))
-			telemetry.IncrCounterWithLabels(MetricKeysSizeDelta, sizeDelta, NewMetricsLabels(k))
+			ReportStoreSizeMetrics(k, sizeDelta)
 			store.Set(encodedKey, types.EncodedNoDataValue)
 		}
 	} else {
 		// Update the value.
 		newRawValue := bytes.Join([][]byte{types.EncodedDataPrefix, []byte(entry.StringValue())}, []byte{})
 		sizeDelta := float32(len(newRawValue) - len(oldRawValue))
-		telemetry.IncrCounterWithLabels(MetricKeysSizeDelta, sizeDelta, NewMetricsLabels(k))
+		ReportStoreSizeMetrics(k, sizeDelta)
 		store.Set(encodedKey, newRawValue)
 	}
 
@@ -414,7 +420,7 @@ func (k Keeper) SetStorage(ctx sdk.Context, entry agoric.KVEntry) {
 			}
 			encodedAncestor := types.PathToEncodedKey(ancestor)
 			sizeDelta := float32(-len(encodedAncestor) - len(types.EncodedNoDataValue))
-			telemetry.IncrCounterWithLabels(MetricKeysSizeDelta, sizeDelta, NewMetricsLabels(k))
+			ReportStoreSizeMetrics(k, sizeDelta)
 			store.Delete(encodedAncestor)
 		}
 	} else {
@@ -427,7 +433,7 @@ func (k Keeper) SetStorage(ctx sdk.Context, entry agoric.KVEntry) {
 			}
 			encodedAncestor := types.PathToEncodedKey(ancestor)
 			sizeDelta := float32(len(encodedAncestor) + len(types.EncodedNoDataValue))
-			telemetry.IncrCounterWithLabels(MetricKeysSizeDelta, sizeDelta, NewMetricsLabels(k))
+			ReportStoreSizeMetrics(k, sizeDelta)
 			store.Set(encodedAncestor, types.EncodedNoDataValue)
 		}
 	}
