@@ -187,7 +187,7 @@ export const makeHelpers = ({ db, EV }) => {
   // @see {@link ../../SwingSet/docs/c-lists.md}
   // @see {@link ../../swingset-liveslots/src/vatstore-usage.md}
   const refPatt =
-    /(?<kref>^k[opd][1-9][0-9]*$)|(?<vref>^[opd][+-][1-9][0-9]*$|^(?<baseref>o[+][vd]?(?<kindID>[1-9][0-9]*)\/[1-9][0-9]*)(?<facetSuffix>:(?<facetID>0|[1-9][0-9]*))?)/;
+    /(?<kref>^k[opd][1-9][0-9]*$)|(?<vref>^[opd][+-](?:0|[1-9][0-9]*)$|^(?<baseref>o[+][vd]?(?<kindID>[1-9][0-9]*)\/[1-9][0-9]*)(?<facetSuffix>:(?<facetID>0|[1-9][0-9]*))?)/;
   const krefToVrefValuePatt = /^([R_]) ([^ ]+)$/;
   const getKindMeta = (vatID, kindID) => {
     const kindMetaJSON =
@@ -209,8 +209,8 @@ export const makeHelpers = ({ db, EV }) => {
       contextVatID.match(vatIDPatt) ||
       Fail`invalid contextVatID ${contextVatID}`;
 
-    // Search for rows like (`v${vatID}.c.${kref}`, `${flag} ${vref}`), where
-    // kref might be exracted from rows like (`v${vatID}.c.${vref}`, kref).
+    // Search for rows like (`${vatID}.c.${kref}`, `${flag} ${vref}`), where
+    // kref might be exracted from rows like (`${vatID}.c.${vref}`, kref).
     // @see {@link ../../SwingSet/docs/c-lists.md}
     const krefs = [];
     let kindMeta;
