@@ -2,19 +2,22 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
+import { AmountMath } from '@agoric/ertp';
+import { Offers } from '@agoric/fast-usdc/src/clientSupport.js';
 import { configurations } from '@agoric/fast-usdc/src/utils/deploy-config.js';
 import { MockCctpTxEvidences } from '@agoric/fast-usdc/test/fixtures.js';
-import { Offers } from '@agoric/fast-usdc/src/clientSupport.js';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { BridgeId, NonNullish } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { defaultSerializer } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
+import type { EndoZipBase64Bundle } from '@agoric/swingset-vat';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Fail } from '@endo/errors';
 import { makeMarshal } from '@endo/marshal';
-import { AmountMath } from '@agoric/ertp';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { readFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import {
   AckBehavior,
   insistManagerType,
@@ -24,6 +27,8 @@ import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
 } from '../bootstrapTests/walletFactory.js';
+
+const nodeRequire = createRequire(import.meta.url);
 
 const test: TestFn<
   WalletFactoryTestContext & {
@@ -64,6 +69,81 @@ test.serial('oracles provision before contract deployment', async t => {
   t.truthy(watcherWallet);
 });
 
+const downloadCoreEval = async (
+  { fetch = globalThis.fetch } = {},
+  config = {
+    repo: 'Agoric/agoric-sdk',
+    release: 'fast-usdc-beta-1',
+    name: 'start-fast-usdc',
+  },
+  artifacts = `https://github.com/${config.repo}/releases/download/${config.release}`,
+  planUrl = `${artifacts}/${config.name}-plan.json`,
+) => {
+  const plan = (await fetch(planUrl).then(r => r.json())) as {
+    name: string;
+    permit: string;
+    script: string;
+    bundles: Array<{
+      bundleID: string;
+      entrypoint: string;
+      fileName: string;
+    }>;
+  };
+  assert.equal(plan.name, config.name);
+  const script = await fetch(`${artifacts}/${plan.script}`).then(r => r.text());
+  const permit = await fetch(`${artifacts}/${plan.permit}`).then(r => r.text());
+  const bundles: EndoZipBase64Bundle[] = await Promise.all(
+    plan.bundles.map(b =>
+      fetch(`${artifacts}/${b.bundleID}.json`).then(r => r.json()),
+    ),
+  );
+  return { bundles, evals: [{ js_code: script, json_permits: permit }] };
+};
+
+/**
+ * Start with the Core Eval from proposal 87, the Fast USDC Beta release.
+ *
+ * UNTIL https://github.com/Agoric/agoric-sdk/issues/10079
+ *
+ * Usually, we do upgrade testing from mainnet state in a3p-integration, but that
+ * environment does not yet have a connection to Noble (nor any other chains).
+ */
+test.serial('prop 87: Beta', async t => {
+  const { evalProposal, bridgeUtils } = t.context;
+
+  const fetchFixture = async url => {
+    const basename = url.split('/').at(-1);
+    const cachePath = nodeRequire.resolve(`./bundles/${basename}`);
+    t.log('load', url, 'from', cachePath);
+    const txt = await readFile(cachePath, 'utf-8');
+    return {
+      text: async () => txt,
+      json: async () => JSON.parse(txt),
+    };
+  };
+  const materials = await downloadCoreEval({
+    fetch: fetchFixture as unknown as typeof fetch,
+  });
+
+  // Proposal 87 doesn't quite complete: noble ICA is mis-configured
+  bridgeUtils.setAckBehavior(
+    BridgeId.DIBC,
+    'startChannelOpenInit',
+    AckBehavior.Never,
+  );
+  try {
+    await evalProposal(materials);
+  } catch (err) {
+    t.log(err.message);
+    if (!err.message.startsWith('unsettled value')) throw err;
+  }
+
+  const { agoricNamesRemotes, refreshAgoricNamesRemotes } = t.context;
+  // update now that fastUsdc is instantiated
+  refreshAgoricNamesRemotes();
+  t.truthy(agoricNamesRemotes.instance.fastUsdc);
+});
+
 test.serial(
   'contract starts; adds to agoricNames; sends invitation',
   async t => {
@@ -79,20 +159,23 @@ test.serial(
 
     const watcherWallet = await wfd.provideSmartWallet(oracleAddrs[0]);
 
-    // inbound `startChannelOpenInit` responses immediately.
-    // needed since the Fusdc StartFn relies on an ICA being created
-    bridgeUtils.setAckBehavior(
-      BridgeId.DIBC,
-      'startChannelOpenInit',
-      AckBehavior.Immediate,
-    );
-    bridgeUtils.setBech32Prefix('noble');
+    const freshDeploy = false; // prop 87 done
+    if (freshDeploy) {
+      // inbound `startChannelOpenInit` responses immediately.
+      // needed since the Fusdc StartFn relies on an ICA being created
+      bridgeUtils.setAckBehavior(
+        BridgeId.DIBC,
+        'startChannelOpenInit',
+        AckBehavior.Immediate,
+      );
+      bridgeUtils.setBech32Prefix('noble');
 
-    const materials = buildProposal(
-      '@agoric/builders/scripts/fast-usdc/start-fast-usdc.build.js',
-      ['--net', 'MAINNET'],
-    );
-    await evalProposal(materials);
+      const materials = buildProposal(
+        '@agoric/builders/scripts/fast-usdc/start-fast-usdc.build.js',
+        ['--net', 'MAINNET'],
+      );
+      await evalProposal(materials);
+    }
 
     // update now that fastUsdc is instantiated
     refreshAgoricNamesRemotes();
@@ -250,14 +333,8 @@ test.serial('LP deposits', async t => {
   );
 });
 
-test.serial('makes usdc advance', async t => {
-  const {
-    walletFactoryDriver: wfd,
-    storage,
-    agoricNamesRemotes,
-    harness,
-    runUtils: { EV },
-  } = t.context;
+test.serial('oracles accept invitations', async t => {
+  const { walletFactoryDriver: wfd, agoricNamesRemotes } = t.context;
   const oracles = await Promise.all(
     oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
   );
@@ -273,6 +350,67 @@ test.serial('makes usdc advance', async t => {
         proposal: {},
       }),
     ),
+  );
+  t.log('TODO: check that invitations are used');
+  t.pass();
+});
+
+test.serial('upgrade; update noble ICA', async t => {
+  const { bridgeUtils, buildProposal, evalProposal } = t.context;
+
+  bridgeUtils.setAckBehavior(
+    BridgeId.DIBC,
+    'startChannelOpenInit',
+    AckBehavior.Immediate,
+  );
+  bridgeUtils.setBech32Prefix('noble');
+
+  const materials = await buildProposal(
+    '@agoric/builders/scripts/fast-usdc/fast-usdc-reconfigure.build.js',
+  );
+  await evalProposal(materials);
+
+  // XXX bridgeUtils.getOutboundMessages(BridgeId.DIBC) should
+  // show the updated connection id, but we struggled to confirm.
+  // We'll use multichain-testing to be sure.
+
+  const { storage } = t.context;
+  const doc = {
+    node: 'fastUsdc',
+    owner: 'Fast USDC',
+    pattern: /published\.fastUsdc\.(feeConfig|feedPolicy|poolMetrics)/,
+    replacement: '',
+    showValue: JSON.parse,
+  };
+  await documentStorageSchema(t, storage, doc);
+
+  await documentStorageSchema(t, storage, {
+    node: 'fastUsdc.feeConfig',
+    showValue: defaultSerializer.parse,
+    note: 'feeConfig: 0.01USDC flat, 0.5% variable, 20% contract cut',
+  });
+
+  const outboundDIBC = bridgeUtils.getOutboundMessages(BridgeId.DIBC);
+  const icaAccountReqs = outboundDIBC.filter(
+    x =>
+      x.method === 'startChannelOpenInit' &&
+      x.packet.destination_port === 'icahost',
+  );
+  t.deepEqual(
+    icaAccountReqs.map(r => JSON.parse(r.version).hostConnectionId),
+    ['connection-40', 'connection-38'],
+  );
+});
+
+test.serial('makes usdc advance', async t => {
+  const {
+    walletFactoryDriver: wfd,
+    storage,
+    harness,
+    runUtils: { EV },
+  } = t.context;
+  const oracles = await Promise.all(
+    oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
   );
 
   const EUD = 'dydx1anything';
@@ -321,7 +459,7 @@ test.serial('makes usdc advance', async t => {
   // Restart contract to make sure it doesn't break advance flow
   const kit = await EV.vat('bootstrap').consumeItem('fastUsdcKit');
   const actual = await EV(kit.adminFacet).restartContract(kit.privateArgs);
-  t.deepEqual(actual, { incarnationNumber: 1 });
+  t.deepEqual(actual, { incarnationNumber: 2 });
 
   const { runInbound } = t.context.bridgeUtils;
   await runInbound(
@@ -528,8 +666,8 @@ test.serial('restart contract', async t => {
 
   const actual = await EV(kit.adminFacet).restartContract(newArgs);
 
-  // Incarnation 2 because previous test already restarted it once.
-  t.deepEqual(actual, { incarnationNumber: 2 });
+  // Incarnation 3 because of upgrade, previous test
+  t.deepEqual(actual, { incarnationNumber: 3 });
   const { flat, variableRate, contractRate } = storage
     .getValues(`published.fastUsdc.feeConfig`)
     .map(defaultSerializer.parse)
