@@ -121,6 +121,7 @@ test(expectUnhandled(1), 'start', async t => {
       validator: {
         chainId: 'cosmoshub',
         value: 'cosmosvaloper1test',
+        encoding: 'bech32',
       },
     },
   );
@@ -158,6 +159,7 @@ test(expectUnhandled(1), 'start', async t => {
   const destination = {
     chainId: 'osmosis-1',
     value: 'osmo1receiver',
+    encoding: 'bech32',
   };
   const undelegateAndTransferInv = await E(
     result.invitationMakers,
@@ -166,6 +168,7 @@ test(expectUnhandled(1), 'start', async t => {
       {
         validator: {
           value: 'osmovaloper1test',
+          encoding: 'bech32',
           chainId: 'osmosis',
         },
         amount: { denom: 'uosmo', value: 100n },
@@ -227,6 +230,7 @@ test(expectUnhandled(1), 'start', async t => {
         validator: {
           chainId: 'cosmoshub',
           value: 'cosmosvaloper1test',
+          encoding: 'bech32',
         },
       },
     );
