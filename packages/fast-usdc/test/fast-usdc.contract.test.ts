@@ -97,7 +97,13 @@ const startContract = async (
       E(startKit.creatorFacet).makeOperatorInvitation(`operator-${opIx}`),
     ),
   );
-  await E(startKit.creatorFacet).connectToNoble();
+  const { agoric, noble } = commonPrivateArgs.chainInfo;
+  const agoricToNoble = agoric.connections![noble.chainId];
+  await E(startKit.creatorFacet).connectToNoble(
+    agoric.chainId,
+    noble.chainId,
+    agoricToNoble,
+  );
   await E(startKit.creatorFacet).publishAddresses();
 
   return {
