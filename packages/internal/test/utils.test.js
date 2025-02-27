@@ -30,6 +30,7 @@ test('deeplyFulfilledObject', async t => {
   });
 });
 
+// #region deepMapObject
 /**
  * @typedef {object} DeepMapObjectTestParams
  * @property {any} input
@@ -121,6 +122,7 @@ test('deep mapping', deepMapObjectTest, {
     another: 'replaced',
   },
 });
+// #endregion
 
 test('makeMeasureSeconds', async t => {
   const times = [1000.25, 2000.75, NaN];
@@ -207,6 +209,7 @@ test('forever', async t => {
   t.is(count, 4, 'count is expected');
 });
 
+// #region synchronizedTee
 /**
  * @template T
  * @param {AsyncIterable<T>} stream
@@ -238,7 +241,7 @@ test('synchronizedTee - consumeAll - 1 reader', async t => {
   t.deepEqual(output, sourceData);
 });
 
-test('synchronizedTee - consumeAll - 2 reader', async t => {
+test('synchronizedTee - consumeAll - 2 readers', async t => {
   const sourceData = [1, 2, 3];
   const source = generateStream(sourceData);
   const output1 = /** @type {number[]} */ ([]);
@@ -309,3 +312,4 @@ test('synchronizedTee - consume synchronized', async t => {
   t.deepEqual(output1, sourceData.slice(0, i));
   t.deepEqual(output2, sourceData.slice(0, i));
 });
+// #endregion
