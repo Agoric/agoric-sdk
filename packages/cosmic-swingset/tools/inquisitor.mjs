@@ -77,7 +77,7 @@ const parseNumber = input => (input.match(/[0-9]/) ? Number(input) : NaN);
 const storeExportAPI = ['getExportRecords', 'getArtifactNames'];
 
 // TODO: getVatAdminNode('v112') # scan the vatAdmin vom v2.vs.vom.* vrefs for value matching /\b${vatID}\b/
-const makeHelpers = ({ db, EV }) => {
+export const makeHelpers = ({ db, EV }) => {
   const sqlKVGet = db
     .prepare('SELECT value FROM kvStore WHERE key = ?')
     .pluck();
