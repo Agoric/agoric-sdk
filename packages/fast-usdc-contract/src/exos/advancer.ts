@@ -1,3 +1,9 @@
+/**
+ * @file Advancer subscribes (handleTransactionEvent) to events published by the
+ * transaction feed. When notified of an appropriate opportunity, it is
+ * responsible for advancing funds to fastUSDC payees.
+ */
+
 import type { HostInterface } from '@agoric/async-flow';
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import type { Amount, Brand, NatAmount } from '@agoric/ertp';
