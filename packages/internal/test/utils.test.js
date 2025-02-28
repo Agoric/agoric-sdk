@@ -70,242 +70,249 @@ const { value: arbShallow } = fc.letrec(tie => ({
 }));
 
 // #region attenuate
-const arbPermitLeaf = fc.oneof(fastShrink, fc.constant(true), arbString);
-/**
- * @template [T=unknown]
- * @template {Permit<T>} [P=Permit<T>]
- * @typedef {{
- *   specimen: T;
- *   permit: P;
- *   attenuation: Attenuated<T, P>;
- *   problem:
- *     | undefined
- *     | 'bad permit'
- *     | 'bad specimen'
- *     | 'specimen missing key';
- * }} AttenuateExpectation
- */
+{
+  const arbPermitLeaf = fc.oneof(fastShrink, fc.constant(true), arbString);
+  /**
+   * @template [T=unknown]
+   * @template {Permit<T>} [P=Permit<T>]
+   * @typedef {{
+   *   specimen: T;
+   *   permit: P;
+   *   attenuation: Attenuated<T, P>;
+   *   problem:
+   *     | undefined
+   *     | 'bad permit'
+   *     | 'bad specimen'
+   *     | 'specimen missing key';
+   * }} AttenuateExpectation
+   */
 
-/**
- * An Arbitrary for generating `attenuate` test cases, including those in which
- * either or both of the permit and specimen may be invalid in some way.
- *
- * @template {AttenuateExpectation} T
- * @template B
- * @param {Arbitrary<T>} arbRecursive a self-reference for recursion
- * @param {Arbitrary<B>} [arbBad] for generating a "bad" value. Required by
- *   `makeBad`.
- * @param {(testCase: T, badValue: B) => T} [makeBad] derive a "bad" test case
- *   from a generic one and a value from `arrBad`
- * @returns {Arbitrary<T>}
- */
-const makeArbExpectation = (arbRecursive, arbBad, makeBad) => {
-  /** Test case for an arbitrary value with no attenuation. */
-  const base = fc
-    .tuple(arbShallow, arbPermitLeaf)
-    .map(([specimen, permit]) => ({
-      specimen,
-      permit,
-      attenuation: specimen,
-      problem: undefined,
-    }));
+  /**
+   * An Arbitrary for generating `attenuate` test cases, including those in
+   * which either or both of the permit and specimen may be invalid in some
+   * way.
+   *
+   * @template {AttenuateExpectation} T
+   * @template B
+   * @param {Arbitrary<T>} arbRecursive a self-reference for recursion
+   * @param {Arbitrary<B>} [arbBad] for generating a "bad" value. Required by
+   *   `makeBad`.
+   * @param {(testCase: T, badValue: B) => T} [makeBad] derive a "bad" test case
+   *   from a generic one and a value from `arrBad`
+   * @returns {Arbitrary<T>}
+   */
+  const makeArbExpectation = (arbRecursive, arbBad, makeBad) => {
+    /** Test case for an arbitrary value with no attenuation. */
+    const base = fc
+      .tuple(arbShallow, arbPermitLeaf)
+      .map(([specimen, permit]) => ({
+        specimen,
+        permit,
+        attenuation: specimen,
+        problem: undefined,
+      }));
 
-  if (makeBad && !arbBad) throw Error('arbBad is required with makeBad');
-  // eslint-disable-next-line no-self-assign
-  arbBad = /** @type {Arbitrary<B>} */ (arbBad);
-  const badBase =
-    makeBad &&
-    fc.tuple(base, arbBad).map((testCase, bad) => makeBad(testCase, bad));
+    if (makeBad && !arbBad) throw Error('arbBad is required with makeBad');
+    // eslint-disable-next-line no-self-assign
+    arbBad = /** @type {Arbitrary<B>} */ (arbBad);
+    const badBase =
+      makeBad &&
+      fc.tuple(base, arbBad).map((testCase, bad) => makeBad(testCase, bad));
 
-  const recurse = /** @type {Arbitrary<T>} */ (
-    fc
-      .uniqueArray(
-        fc.record({
-          name: arbString,
-          subExpectation: arbRecursive,
-          skip: fc.boolean(),
-          corruption: arbBad ? fc.oneof(arbBad, arbUndefined) : arbUndefined,
-        }),
-        {
-          selector: propRecord => propRecord.name,
-          maxLength: 5,
-        },
-      )
-      .map(propRecords => {
-        const specimen = {};
-        const permit = {};
-        const attenuation = {};
-        let problem;
-        for (const propRecord of propRecords) {
-          const { name, skip, corruption } = propRecord;
-          let { subExpectation } = /** @type {{ subExpectation: T }} */ (
-            propRecord
-          );
-          defineDataProperty(specimen, name, subExpectation.specimen);
-          if (skip) continue;
-          problem ||= subExpectation.problem;
-          if (!problem && corruption) {
-            // @ts-expect-error TS2722 makeBad is not undefined here
-            subExpectation = makeBad(subExpectation, corruption);
+    const recurse = /** @type {Arbitrary<T>} */ (
+      fc
+        .uniqueArray(
+          fc.record({
+            name: arbString,
+            subExpectation: arbRecursive,
+            skip: fc.boolean(),
+            corruption: arbBad ? fc.oneof(arbBad, arbUndefined) : arbUndefined,
+          }),
+          {
+            selector: propRecord => propRecord.name,
+            maxLength: 5,
+          },
+        )
+        .map(propRecords => {
+          const specimen = {};
+          const permit = {};
+          const attenuation = {};
+          let problem;
+          for (const propRecord of propRecords) {
+            const { name, skip, corruption } = propRecord;
+            let { subExpectation } = /** @type {{ subExpectation: T }} */ (
+              propRecord
+            );
             defineDataProperty(specimen, name, subExpectation.specimen);
-            problem = subExpectation.problem;
+            if (skip) continue;
+            problem ||= subExpectation.problem;
+            if (!problem && corruption) {
+              // @ts-expect-error TS2722 makeBad is not undefined here
+              subExpectation = makeBad(subExpectation, corruption);
+              defineDataProperty(specimen, name, subExpectation.specimen);
+              problem = subExpectation.problem;
+            }
+            defineDataProperty(permit, name, subExpectation.permit);
+            defineDataProperty(attenuation, name, subExpectation.attenuation);
           }
-          defineDataProperty(permit, name, subExpectation.permit);
-          defineDataProperty(attenuation, name, subExpectation.attenuation);
+          return { specimen, permit, attenuation, problem };
+        })
+    );
+
+    return fc.oneof(
+      fastShrink,
+      .../** @type {Arbitrary<T>[]} */ (makeBad ? [badBase, base] : [base]),
+      recurse,
+    );
+  };
+  const {
+    expectation: arbExpectation,
+    badPermit: arbBadPermit,
+    badSpecimen: arbBadSpecimen,
+    specimenMissingKey: arbSpecimenMissingKey,
+  } = fc.letrec(tie => ({
+    // Happy-path test cases.
+    expectation: makeArbExpectation(tie('expectation')),
+
+    // Test cases in which the permit is invalid.
+    badPermit: makeArbExpectation(
+      tie('badPermit'),
+      arbShallow.filter(
+        x => x !== true && typeof x !== 'string' && !isObject(x),
+      ),
+      (expectation, badPermit) => {
+        expectation.permit = badPermit;
+        expectation.problem = 'bad permit';
+        return expectation;
+      },
+    ).filter(
+      expectation =>
+        !!(/** @type {AttenuateExpectation} */ (expectation).problem),
+    ),
+
+    // Test cases in which the permit is an object but the specimen is not.
+    badSpecimen: makeArbExpectation(
+      tie('badSpecimen'),
+      fc.oneof(arbPrimitive, arbFunction),
+      (expectation, badSpecimen) => {
+        if (!isObject(expectation.permit)) expectation.permit = {};
+        expectation.specimen = badSpecimen;
+        expectation.problem = 'bad specimen';
+        return expectation;
+      },
+    ).filter(
+      expectation =>
+        !!(/** @type {AttenuateExpectation} */ (expectation).problem),
+    ),
+
+    // Test cases in which the specimen is missing a permit property.
+    specimenMissingKey: makeArbExpectation(
+      tie('specimenMissingKey'),
+      arbString,
+      (expectation, prop) => {
+        if (!isObject(expectation.specimen)) expectation.specimen = {};
+        if (!isObject(expectation.permit)) {
+          expectation.permit = { [prop]: true };
         }
-        return { specimen, permit, attenuation, problem };
-      })
+        // Some properties are not configurable (e.g., an array's `length`), so
+        // accept failure as an option.
+        try {
+          delete (/** @type {any} */ (expectation.specimen)[prop]);
+          expectation.problem = 'specimen missing key';
+          // eslint-disable-next-line no-empty
+        } catch (err) {}
+        return expectation;
+      },
+    ).filter(
+      expectation =>
+        !!(/** @type {AttenuateExpectation} */ (expectation).problem),
+    ),
+  }));
+  testProp(
+    'attenuate',
+    /** @type {any} */ ([arbExpectation]),
+    // @ts-expect-error TS2345 function signature
+    async (t, { specimen, permit, attenuation }) => {
+      const actualAttenuation = attenuate(specimen, permit);
+      t.deepEqual(actualAttenuation, attenuation);
+    },
   );
+  testProp(
+    'attenuate - transform',
+    /** @type {any} */ ([
+      arbExpectation.filter(({ specimen }) => isObject(specimen)),
+    ]),
+    // @ts-expect-error TS2345 function signature
+    async (t, { specimen, permit }) => {
+      const tag = Symbol('transformed');
 
-  return fc.oneof(
-    fastShrink,
-    .../** @type {Arbitrary<T>[]} */ (makeBad ? [badBase, base] : [base]),
-    recurse,
-  );
-};
-const {
-  expectation: arbExpectation,
-  badPermit: arbBadPermit,
-  badSpecimen: arbBadSpecimen,
-  specimenMissingKey: arbSpecimenMissingKey,
-} = fc.letrec(tie => ({
-  // Happy-path test cases.
-  expectation: makeArbExpectation(tie('expectation')),
+      let mutationCallCount = 0;
+      const mutatedAttenuation = attenuate(specimen, permit, obj => {
+        mutationCallCount += 1;
+        obj[tag] = true;
+        return obj;
+      });
+      let mutationOk = true;
+      (function visit(subObj, subPermit) {
+        if (subPermit === true || typeof subPermit === 'string') return;
+        mutationOk &&= subObj[tag];
+        const allKeys = [...ownKeys(subObj), ...ownKeys(subPermit)];
+        for (const k of new Set(allKeys)) {
+          if (k === tag) continue;
+          visit(subObj[k], subPermit[k]);
+        }
+      })(mutatedAttenuation, permit);
+      if (!mutationOk) t.log({ specimen, permit, mutatedAttenuation });
+      t.true(mutationOk, 'mutation must visit all attenuations');
 
-  // Test cases in which the permit is invalid.
-  badPermit: makeArbExpectation(
-    tie('badPermit'),
-    arbShallow.filter(x => x !== true && typeof x !== 'string' && !isObject(x)),
-    (expectation, badPermit) => {
-      expectation.permit = badPermit;
-      expectation.problem = 'bad permit';
-      return expectation;
-    },
-  ).filter(
-    expectation =>
-      !!(/** @type {AttenuateExpectation} */ (expectation).problem),
-  ),
-
-  // Test cases in which the permit is an object but the specimen is not.
-  badSpecimen: makeArbExpectation(
-    tie('badSpecimen'),
-    fc.oneof(arbPrimitive, arbFunction),
-    (expectation, badSpecimen) => {
-      if (!isObject(expectation.permit)) expectation.permit = {};
-      expectation.specimen = badSpecimen;
-      expectation.problem = 'bad specimen';
-      return expectation;
-    },
-  ).filter(
-    expectation =>
-      !!(/** @type {AttenuateExpectation} */ (expectation).problem),
-  ),
-
-  // Test cases in which the specimen is missing a permit property.
-  specimenMissingKey: makeArbExpectation(
-    tie('specimenMissingKey'),
-    arbString,
-    (expectation, prop) => {
-      if (!isObject(expectation.specimen)) expectation.specimen = {};
-      if (!isObject(expectation.permit)) expectation.permit = { [prop]: true };
-      // Some properties are not configurable (e.g., an array's `length`), so
-      // accept failure as an option.
-      try {
-        delete (/** @type {any} */ (expectation.specimen)[prop]);
-        expectation.problem = 'specimen missing key';
-        // eslint-disable-next-line no-empty
-      } catch (err) {}
-      return expectation;
-    },
-  ).filter(
-    expectation =>
-      !!(/** @type {AttenuateExpectation} */ (expectation).problem),
-  ),
-}));
-testProp(
-  'attenuate',
-  /** @type {any} */ ([arbExpectation]),
-  // @ts-expect-error TS2345 function signature
-  async (t, { specimen, permit, attenuation }) => {
-    const actualAttenuation = attenuate(specimen, permit);
-    t.deepEqual(actualAttenuation, attenuation);
-  },
-);
-testProp(
-  'attenuate - transform',
-  /** @type {any} */ ([
-    arbExpectation.filter(({ specimen }) => isObject(specimen)),
-  ]),
-  // @ts-expect-error TS2345 function signature
-  async (t, { specimen, permit }) => {
-    const tag = Symbol('transformed');
-
-    let mutationCallCount = 0;
-    const mutatedAttenuation = attenuate(specimen, permit, obj => {
-      mutationCallCount += 1;
-      obj[tag] = true;
-      return obj;
-    });
-    let mutationOk = true;
-    (function visit(subObj, subPermit) {
-      if (subPermit === true || typeof subPermit === 'string') return;
-      mutationOk &&= subObj[tag];
-      const allKeys = [...ownKeys(subObj), ...ownKeys(subPermit)];
-      for (const k of new Set(allKeys)) {
-        if (k === tag) continue;
-        visit(subObj[k], subPermit[k]);
+      let replacementCallCount = 0;
+      const replacedAttenuation = attenuate(specimen, permit, _obj => {
+        replacementCallCount += 1;
+        return /** @type {any} */ ({ [tag]: replacementCallCount });
+      });
+      t.is(mutationCallCount, replacementCallCount);
+      if (mutationCallCount > 0) {
+        const replacementKeys = ownKeys(replacedAttenuation);
+        t.true(replacementKeys.includes(tag));
+        t.is(replacementKeys.length, 1);
+        t.is(replacedAttenuation[tag], replacementCallCount);
       }
-    })(mutatedAttenuation, permit);
-    if (!mutationOk) t.log({ specimen, permit, mutatedAttenuation });
-    t.true(mutationOk, 'mutation must visit all attenuations');
-
-    let replacementCallCount = 0;
-    const replacedAttenuation = attenuate(specimen, permit, _obj => {
-      replacementCallCount += 1;
-      return /** @type {any} */ ({ [tag]: replacementCallCount });
-    });
-    t.is(mutationCallCount, replacementCallCount);
-    if (mutationCallCount > 0) {
-      const replacementKeys = ownKeys(replacedAttenuation);
-      t.true(replacementKeys.includes(tag));
-      t.is(replacementKeys.length, 1);
-      t.is(replacedAttenuation[tag], replacementCallCount);
-    }
-  },
-);
-testProp(
-  'attenuate - bad permit',
-  /** @type {any} */ ([arbBadPermit]),
-  // @ts-expect-error TS2345 function signature
-  async (t, { specimen, permit, problem: _problem }) => {
-    // t.log({ specimen, permit, problem });
-    t.throws(() => attenuate(specimen, permit), {
-      message: /^invalid permit\b/,
-    });
-  },
-);
-testProp(
-  'attenuate - bad specimen',
-  /** @type {any} */ ([arbBadSpecimen]),
-  // @ts-expect-error TS2345 function signature
-  async (t, { specimen, permit, problem: _problem }) => {
-    // t.log({ specimen, permit, problem });
-    t.throws(() => attenuate(specimen, permit), {
-      message: /^specimen( at path .*)? must be an object for permit\b/,
-    });
-  },
-);
-testProp(
-  'attenuate - specimen missing key',
-  /** @type {any} */ ([arbSpecimenMissingKey]),
-  // @ts-expect-error TS2345 function signature
-  async (t, { specimen, permit, problem: _problem }) => {
-    // t.log({ specimen, permit, problem });
-    t.throws(() => attenuate(specimen, permit), {
-      message: /^specimen is missing path /,
-    });
-  },
-);
+    },
+  );
+  testProp(
+    'attenuate - bad permit',
+    /** @type {any} */ ([arbBadPermit]),
+    // @ts-expect-error TS2345 function signature
+    async (t, { specimen, permit, problem: _problem }) => {
+      // t.log({ specimen, permit, problem });
+      t.throws(() => attenuate(specimen, permit), {
+        message: /^invalid permit\b/,
+      });
+    },
+  );
+  testProp(
+    'attenuate - bad specimen',
+    /** @type {any} */ ([arbBadSpecimen]),
+    // @ts-expect-error TS2345 function signature
+    async (t, { specimen, permit, problem: _problem }) => {
+      // t.log({ specimen, permit, problem });
+      t.throws(() => attenuate(specimen, permit), {
+        message: /^specimen( at path .*)? must be an object for permit\b/,
+      });
+    },
+  );
+  testProp(
+    'attenuate - specimen missing key',
+    /** @type {any} */ ([arbSpecimenMissingKey]),
+    // @ts-expect-error TS2345 function signature
+    async (t, { specimen, permit, problem: _problem }) => {
+      // t.log({ specimen, permit, problem });
+      t.throws(() => attenuate(specimen, permit), {
+        message: /^specimen is missing path /,
+      });
+    },
+  );
+}
 // #endregion
 
 test('deeplyFulfilledObject', async t => {
