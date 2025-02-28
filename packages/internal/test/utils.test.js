@@ -177,8 +177,13 @@ const {
     (expectation, prop) => {
       if (!isObject(expectation.specimen)) expectation.specimen = {};
       if (!isObject(expectation.permit)) expectation.permit = { [prop]: true };
-      delete expectation.specimen[prop];
-      expectation.problem = 'specimen missing key';
+      try {
+        // The "length" property of an array is not configurable, so accept
+        // failure as an option.
+        delete expectation.specimen[prop];
+        expectation.problem = 'specimen missing key';
+        // eslint-disable-next-line no-empty
+      } catch (err) {}
       return expectation;
     },
   ).filter(
