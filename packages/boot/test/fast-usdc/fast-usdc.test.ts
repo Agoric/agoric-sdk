@@ -241,39 +241,6 @@ test.serial(
   },
 );
 
-test.serial('writes feed policy to vstorage', async t => {
-  const { storage } = t.context;
-  const opts = {
-    node: 'fastUsdc.feedPolicy',
-    owner: 'the general and chain-specific policies for the Fast USDC feed',
-    showValue: defaultSerializer.parse,
-  };
-  await documentStorageSchema(t, storage, opts);
-});
-
-test.serial('writes fee config to vstorage', async t => {
-  const { storage } = t.context;
-  const doc = {
-    node: 'fastUsdc.feeConfig',
-    owner: 'the fee configuration for Fast USDC',
-    showValue: defaultSerializer.parse,
-  };
-  await documentStorageSchema(t, storage, doc);
-});
-
-test.serial('writes account addresses to vstorage', async t => {
-  const { storage } = t.context;
-  const doc = {
-    node: 'fastUsdc',
-    showValue: JSON.parse,
-    pattern: /published\.fastUsdc\.(feeConfig|feedPolicy|poolMetrics)/,
-    replacement: '',
-    note: 'Under "published", the "fastUsdc" node is delegated to FastUSDC contract.',
-  };
-
-  await documentStorageSchema(t, storage, doc);
-});
-
 test.serial('LP deposits', async t => {
   const { walletFactoryDriver: wfd, agoricNamesRemotes } = t.context;
   const lp = await wfd.provideSmartWallet(
@@ -400,6 +367,39 @@ test.serial('upgrade; update noble ICA', async t => {
     icaAccountReqs.map(r => JSON.parse(r.version).hostConnectionId),
     ['connection-40', 'connection-38'],
   );
+});
+
+test.serial('writes GTM feed policy to vstorage', async t => {
+  const { storage } = t.context;
+  const opts = {
+    node: 'fastUsdc.feedPolicy',
+    owner: 'the general and chain-specific policies for the Fast USDC feed',
+    showValue: defaultSerializer.parse,
+  };
+  await documentStorageSchema(t, storage, opts);
+});
+
+test.serial('writes GTM fee config to vstorage', async t => {
+  const { storage } = t.context;
+  const doc = {
+    node: 'fastUsdc.feeConfig',
+    owner: 'the fee configuration for Fast USDC',
+    showValue: defaultSerializer.parse,
+  };
+  await documentStorageSchema(t, storage, doc);
+});
+
+test.serial('writes GTM account addresses to vstorage', async t => {
+  const { storage } = t.context;
+  const doc = {
+    node: 'fastUsdc',
+    showValue: JSON.parse,
+    pattern: /published\.fastUsdc\.(feeConfig|feedPolicy|poolMetrics)/,
+    replacement: '',
+    note: 'Under "published", the "fastUsdc" node is delegated to FastUSDC contract.',
+  };
+
+  await documentStorageSchema(t, storage, doc);
 });
 
 test.serial('makes usdc advance', async t => {
