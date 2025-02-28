@@ -233,6 +233,61 @@ const { value: arbShallow } = fc.letrec(tie => ({
     ),
   }));
 
+  test('attenuate static cases', t => {
+    const specimen = {
+      foo: 'bar',
+      baz: [42],
+      deep: { qux: 1, quux: 2, quuux: 3 },
+    };
+    const { foo, baz, deep } = specimen;
+
+    t.is(
+      attenuate(specimen, true),
+      specimen,
+      'blanket permit must preserve identity',
+    );
+    t.is(
+      attenuate(specimen, 'ok'),
+      specimen,
+      'blanket string permit must preserve identity',
+    );
+    const deepExtraction = attenuate(specimen, { deep: true });
+    t.deepEqual(deepExtraction, { deep });
+    t.is(
+      deepExtraction.deep,
+      deep,
+      'deep permit must preserve identity at its depth',
+    );
+
+    /** @typedef {Pick<AttenuateTestCase, 'permit' | 'attenuation'>} PartialCase */
+    /** @type {Record<string, PartialCase>} */
+    const cases = {
+      'pick 1': { permit: { deep: true }, attenuation: { deep } },
+      'pick 2': {
+        permit: { foo: true, baz: true },
+        attenuation: { foo, baz },
+      },
+      'pick 3': {
+        permit: { foo: true, baz: true, deep: true },
+        attenuation: { foo, baz, deep },
+      },
+      hollow: {
+        permit: { foo: true, deep: {} },
+        attenuation: { foo, deep: {} },
+      },
+      deep: {
+        permit: { foo, deep: { quux: true } },
+        attenuation: { foo, deep: { quux: 2 } },
+      },
+    };
+    for (const [label, testCase] of Object.entries(cases)) {
+      const { permit, attenuation: expected } = testCase;
+      const actual = attenuate(specimen, permit);
+      // eslint-disable-next-line ava/assertion-arguments
+      t.deepEqual(actual, expected, label);
+    }
+  });
+
   testProp(
     'attenuate',
     /** @type {any} */ ([arbGoodCase]),
@@ -242,6 +297,35 @@ const { value: arbShallow } = fc.letrec(tie => ({
       t.deepEqual(actualAttenuation, attenuation);
     },
   );
+
+  test('attenuate - transform static cases', t => {
+    const specimen = {
+      foo: 'bar',
+      arr: [42],
+      empty: {},
+      deep: { qux: 1, quux: 2, quuux: 3 },
+    };
+    const { foo, arr, empty, deep } = specimen;
+    const deepClone = { ...deep };
+
+    const marked = true;
+    const attenuation = attenuate(
+      specimen,
+      { foo: true, arr: true, empty: {}, deep: true },
+      /** @type {any} */ (obj => Object.assign(obj, { marked })),
+    );
+    const expected = { marked, foo, arr, empty: { marked }, deep: deepClone };
+    t.deepEqual(attenuation, expected);
+    for (const [label, obj] of Object.entries({
+      specimen,
+      'array in specimen': arr,
+      'object in specimen': empty,
+      'whole object in specimen': deep,
+    })) {
+      // @ts-expect-error
+      t.is(obj.marked, undefined, `transformation must not affect ${label}`);
+    }
+  });
 
   testProp(
     'attenuate - transform',
