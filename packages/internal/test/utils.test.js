@@ -25,7 +25,15 @@ const defineDataProperty = (obj, key, value) =>
     enumerable: true,
     writable: true,
   });
-const isObject = x => x !== null && typeof x === 'object';
+
+/**
+ * A predicate for matching non-null non-function objects. Note that this
+ * category includes arrays and other built-in exotic objects.
+ *
+ * @param {unknown} x
+ * @returns {x is (Array | Record<PropertyKey, unknown>)}
+ */
+const hasObjectType = x => x !== null && typeof x === 'object';
 
 const fastShrink = { withCrossShrink: true };
 const arbUndefined = fc.constant(undefined);
@@ -178,7 +186,7 @@ const { value: arbShallow } = fc.letrec(tie => ({
     badPermit: makeArbExpectation(
       tie('badPermit'),
       arbShallow.filter(
-        x => x !== true && typeof x !== 'string' && !isObject(x),
+        x => x !== true && typeof x !== 'string' && !hasObjectType(x),
       ),
       (expectation, badPermit) => {
         expectation.permit = badPermit;
@@ -195,7 +203,7 @@ const { value: arbShallow } = fc.letrec(tie => ({
       tie('badSpecimen'),
       fc.oneof(arbPrimitive, arbFunction),
       (expectation, badSpecimen) => {
-        if (!isObject(expectation.permit)) expectation.permit = {};
+        if (!hasObjectType(expectation.permit)) expectation.permit = {};
         expectation.specimen = badSpecimen;
         expectation.problem = 'bad specimen';
         return expectation;
@@ -210,8 +218,8 @@ const { value: arbShallow } = fc.letrec(tie => ({
       tie('specimenMissingKey'),
       arbString,
       (expectation, prop) => {
-        if (!isObject(expectation.specimen)) expectation.specimen = {};
-        if (!isObject(expectation.permit)) {
+        if (!hasObjectType(expectation.specimen)) expectation.specimen = {};
+        if (!hasObjectType(expectation.permit)) {
           expectation.permit = { [prop]: true };
         }
         // Some properties are not configurable (e.g., an array's `length`), so
@@ -240,7 +248,7 @@ const { value: arbShallow } = fc.letrec(tie => ({
   testProp(
     'attenuate - transform',
     /** @type {any} */ ([
-      arbExpectation.filter(({ specimen }) => isObject(specimen)),
+      arbExpectation.filter(({ specimen }) => hasObjectType(specimen)),
     ]),
     // @ts-expect-error TS2345 function signature
     async (t, { specimen, permit }) => {
