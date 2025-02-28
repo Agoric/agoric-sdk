@@ -3,13 +3,29 @@ import { text } from 'node:stream/consumers';
 
 const { freeze, entries } = Object;
 
+/**
+ * @import { ChildProcess, SpawnOptions, StdioOptions } from 'child_process';
+ */
+
+/** @type {StdioOptions} */
 const onlyStderr = ['ignore', 'ignore', 'inherit'];
+/** @type {StdioOptions} */
 const noOutput = ['ignore', 'ignore', 'ignore'];
+// /* @type {StdioOptions} */
 // const noisyDebug = ['ignore', 'inherit', 'inherit'];
 
+/**
+ *
+ * @param {string} bin
+ * @param {{ cwd: string, spawn: import('child_process')['spawn']}} param1
+ */
 export const pspawn = (bin, { spawn, cwd }) => {
+  /**
+   * @param {string[]} [args]
+   * @param {SpawnOptions & { stdio?: StdioOptions }} [opts]
+   */
   return (args = [], opts = {}) => {
-    /** @type {import('child_process').ChildProcess} */
+    /** @type {ChildProcess} */
     let child;
     const exit = new Promise((resolve, reject) => {
       // When stderr is otherwise ignored, spy on it for inclusion in error messages.
@@ -34,7 +50,7 @@ export const pspawn = (bin, { spawn, cwd }) => {
       }
       child.addListener('exit', async code => {
         if (code !== 0) {
-          let msg = `exit ${code} from command: ${bin} ${args}`;
+          let msg = `exit ${code} from command: ${bin} ${args.join(' ')}`;
           const errStr = await stderrP;
           if (errStr) {
             const errTail = errStr.split('\n').slice(-3);
@@ -65,19 +81,20 @@ export const pspawn = (bin, { spawn, cwd }) => {
  * Shared state for tests using scenario2 chain in ../
  *
  * @param {object} io
- * @param {*} io.pspawnMake promise-style spawn of 'make' with cwd set
- * @param {*} io.pspawnAgd promise-style spawn of 'agd' with cwd set
+ * @param {ReturnType<typeof pspawn>} io.pspawnMake promise-style spawn of 'make' with cwd set
+ * @param {ReturnType<typeof pspawn>} io.pspawnAgd promise-style spawn of 'agd' with cwd set
+ * @param {import('child_process').StdioOptions} [io.stdio]
  * @param {typeof console.log} io.log
  */
-export const makeScenario2 = ({ pspawnMake, pspawnAgd, log }) => {
-  const runMake = (args, opts = { stdio: onlyStderr }) => {
+export const makeScenario2 = ({ pspawnMake, pspawnAgd, log, stdio }) => {
+  const runMake = (args, opts = { stdio: stdio || onlyStderr }) => {
     // console.debug('make', ...args);
     log('make', ...args);
 
     return pspawnMake(args, opts).exit;
   };
 
-  const spawnMake = (args, opts = { stdio: onlyStderr }) => {
+  const spawnMake = (args, opts = { stdio: stdio || onlyStderr }) => {
     log('make', ...args);
     return pspawnMake(args, opts);
   };
@@ -92,7 +109,13 @@ export const makeScenario2 = ({ pspawnMake, pspawnAgd, log }) => {
   return freeze({
     runMake,
     spawnMake,
-    setup: () => runMake(['scenario2-setup'], { stdio: noOutput }),
+    setup: () => runMake(['scenario2-setup'], { stdio: stdio || noOutput }),
+    /**
+     *
+     * @param {object} [opts]
+     * @param {number} [opts.BLOCKS_TO_RUN]
+     * @param {number} [opts.INITIAL_HEIGHT]
+     */
     runToHalt: ({
       BLOCKS_TO_RUN = undefined,
       INITIAL_HEIGHT = undefined,
@@ -102,12 +125,14 @@ export const makeScenario2 = ({ pspawnMake, pspawnAgd, log }) => {
         ...bind({ BLOCKS_TO_RUN, INITIAL_HEIGHT }),
       ]),
     runRosettaCI: async () => {
-      return runMake(['scenario2-run-rosetta-ci'], { stdio: onlyStderr });
+      return runMake(['scenario2-run-rosetta-ci'], {
+        stdio: stdio || onlyStderr,
+      });
     },
     export: () =>
       pspawnAgd(
         ['export', '--home=t1/n0', '--export-dir=t1/n0/genesis-export'],
-        { stdio: onlyStderr },
+        { stdio: stdio || onlyStderr },
       ).exit,
   });
 };
@@ -116,52 +141,87 @@ export const makeScenario2 = ({ pspawnMake, pspawnAgd, log }) => {
  * Wallet utilities for scenario2.
  *
  * @param {object} io
- * @param {*} io.runMake from makeScenario2 above
- * @param {*} io.pspawnAgd as to makeScenario2 above
+ * @param {ReturnType<typeof makeScenario2>['runMake']} io.runMake from makeScenario2 above
+ * @param {ReturnType<typeof pspawn>} io.pspawnAgd as to makeScenario2 above
  * @param {(ms: number) => Promise<void>} io.delay
  * @param {typeof console.log} io.log
  */
 export const makeWalletTool = ({ runMake, pspawnAgd, delay, log }) => {
   /**
    * @param {string[]} args
+   * @param {object} [opts]
    * @returns {Promise<any>} JSON.parse of stdout of `ag-chain-cosmos query <...args>`
    * @throws if agd exits non-0 or gives empty output
    */
-  const query = async args => {
+  const agd = async (args, opts = {}) => {
     const parts = [];
-    const cmd = pspawnAgd(['query', ...args]);
-    cmd.child.stdout.on('data', chunk => parts.push(chunk));
+    /** @type {StdioOptions} */
+    const pipedStdio = ['ignore', 'pipe', 'inherit'];
+    if (typeof opts.stdio === 'string') {
+      pipedStdio[2] = opts.stdio;
+    } else if (opts.stdio) {
+      pipedStdio[0] = opts.stdio?.[0] || 'ignore';
+      pipedStdio[2] = opts.stdio?.[2] || 'inherit';
+    }
+    const cmd = pspawnAgd(args, { stdio: pipedStdio });
+    const { stdout } = cmd.child;
+    assert(stdout);
+    stdout.on('data', chunk => parts.push(chunk));
     await cmd.exit;
     const txt = parts.join('').trim();
     if (txt === '') {
-      throw Error(`empty output from: query ${args}`);
+      throw Error(`empty output from: ${args.join(' ')}`);
     }
     return JSON.parse(txt);
   };
 
+  /** @type {typeof agd}*/
+  const query = (args, opts) => agd(['query', ...args], opts);
+
+  /**
+   * @param {string} addr
+   */
   const queryBalance = addr =>
     query(['bank', 'balances', addr, '--output', 'json']).then(b => {
       console.log(addr, b);
       return b;
     });
 
-  let currentHeight;
+  let consensusHeight;
   const waitForBlock = async (why, targetHeight, relative = false) => {
+    let firstHeight = 0n;
+    targetHeight = BigInt(targetHeight);
     if (relative) {
-      if (typeof currentHeight === 'undefined') {
+      if (typeof consensusHeight === 'undefined') {
         throw Error('cannot use relative before starting');
       }
-      targetHeight += currentHeight;
+      targetHeight += consensusHeight;
     }
     for (;;) {
       try {
         const info = await query(['block']);
-        currentHeight = Number(info?.block?.header?.height);
-        if (currentHeight >= targetHeight) {
-          log(info?.block?.header?.time, ' block ', currentHeight);
-          return currentHeight;
+        consensusHeight = BigInt(info?.block?.last_commit?.height);
+        if (!consensusHeight) {
+          throw Error('no consensus block yet');
         }
-        console.log(why, ':', currentHeight, '<', targetHeight, '5 sec...');
+
+        if (!firstHeight) {
+          firstHeight = consensusHeight + 1n;
+        }
+
+        if (consensusHeight <= firstHeight) {
+          throw Error(
+            `consensusHeight ${consensusHeight} <= firstHeight ${firstHeight}`,
+          );
+        }
+
+        if (consensusHeight >= targetHeight) {
+          log(info?.block?.header?.time, ' block ', consensusHeight);
+          console.warn(why, ':', consensusHeight, '>=', targetHeight);
+          // XXX: For backward compatibility, we dumb the height down to a Number.
+          return Number(consensusHeight);
+        }
+        console.warn(why, ':', consensusHeight, '<', targetHeight, '5 sec...');
       } catch (reason) {
         console.warn(why, '2:', reason?.message, '5sec...');
       }
@@ -185,6 +245,7 @@ export const makeWalletTool = ({ runMake, pspawnAgd, delay, log }) => {
       .flat();
 
   return freeze({
+    agd,
     query,
     queryBalance,
     waitForBlock,
