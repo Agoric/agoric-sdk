@@ -1,4 +1,5 @@
 /** @file Exo for @see {prepareTransactionFeedKit} */
+
 import { makeTracer } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import { Fail, quote } from '@endo/errors';
@@ -6,12 +7,6 @@ import { keyEQ, M } from '@endo/patterns';
 import { CctpTxEvidenceShape, RiskAssessmentShape } from '../type-guards.js';
 import { defineInertInvitation } from '../utils/zoe.js';
 import { prepareOperatorKit } from './operator-kit.js';
-
-/**
- * @file transaction-feed receives attestations from Oracles, records their
- * evidence, and when enough oracles agree, (if no risks are identified)
- * publishes the results for the advancer to act on.
- */
 
 /**
  * @import {Zone} from '@agoric/zone';
