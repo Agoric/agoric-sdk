@@ -175,7 +175,12 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
       trace('connectToNoble', agoricChainId, nobleChainId, agoricToNoble);
       chainHub.updateConnection(agoricChainId, nobleChainId, agoricToNoble);
       // v1 has `NobleAccount` which we don't expect to ever settle.
-      const nobleAccountV = zone.makeOnce('NobleICA', () => makeNobleAccount());
+      // Including the connection_id in the zone key lets us use
+      // this before and after null-upgrade in multichain-testing.
+      const nobleAccountV = zone.makeOnce(
+        `NobleICA-${agoricToNoble.counterparty.connection_id}`,
+        () => makeNobleAccount(),
+      );
 
       return vowTools.when(nobleAccountV, nobleAccount => {
         trace('nobleAccount', nobleAccount);
