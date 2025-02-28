@@ -192,38 +192,43 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
           const found = [...pending.values()].filter(store =>
             store.has(txHash),
           );
-          const minAttestations = Math.ceil(operators.getSize() / 2);
-          trace(
-            'transaction',
-            txHash,
-            'has',
-            found.length,
-            'of',
-            minAttestations,
-            'necessary attestations',
-          );
-          if (found.length < minAttestations) {
-            return;
+
+          {
+            let lastEvidence;
+            for (const store of found) {
+              const next = store.get(txHash);
+              if (lastEvidence && !keyEQ(lastEvidence, next)) {
+                // Ignore conflicting evidence, but treat it as an error
+                // because it should never happen and needs to be prevented
+                // from happening again.
+                trace(
+                  '🚨 conflicting evidence for',
+                  txHash,
+                  ':',
+                  lastEvidence,
+                  '!=',
+                  next,
+                );
+                Fail`conflicting evidence for ${quote(txHash)}`;
+              }
+              lastEvidence = next;
+            }
           }
 
-          let lastEvidence;
-          for (const store of found) {
-            const next = store.get(txHash);
-            if (lastEvidence && !keyEQ(lastEvidence, next)) {
-              // Ignore conflicting evidence, but treat it as an error
-              // because it should never happen and needs to be prevented
-              // from happening again.
-              trace(
-                '🚨 conflicting evidence for',
-                txHash,
-                ':',
-                lastEvidence,
-                '!=',
-                next,
-              );
-              Fail`conflicting evidence for ${quote(txHash)}`;
+          {
+            const minAttestations = Math.ceil(operators.getSize() / 2);
+            trace(
+              'transaction',
+              txHash,
+              'has',
+              found.length,
+              'of',
+              minAttestations,
+              'necessary attestations',
+            );
+            if (found.length < minAttestations) {
+              return;
             }
-            lastEvidence = next;
           }
 
           const riskStores = [...risks.values()].filter(store =>
