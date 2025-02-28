@@ -3,6 +3,8 @@
  * settlementAccount. It either "disburses" funds to the Pool (if funds were
  * "advance"d to the payee), or "forwards" funds to the payee (if pool funds
  * were not advanced).
+ *
+ * main export: @see {prepareSettler}
  */
 
 import { AmountMath } from '@agoric/ertp';
@@ -124,6 +126,22 @@ export const stateShape = harden({
   intermediateRecipient: M.opt(CosmosChainAddressShape),
 });
 
+/**
+ * Settler is responsible for monitoring (using receiveUpcall) deposits to the
+ * settlementAccount. It either "disburses" funds to the Pool (if funds were
+ * "advance"d to the payee), or "forwards" funds to the payee (if pool funds
+ * were not advanced).
+ * @param zone
+ * @param root0
+ * @param root0.chainHub
+ * @param root0.feeConfig
+ * @param root0.log
+ * @param root0.statusManager
+ * @param root0.USDC
+ * @param root0.vowTools
+ * @param root0.withdrawToSeat
+ * @param root0.zcf
+ */
 export const prepareSettler = (
   zone: Zone,
   {
