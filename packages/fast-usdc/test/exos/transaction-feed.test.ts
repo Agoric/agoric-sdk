@@ -185,17 +185,19 @@ test('disagreement after publishing', async t => {
     updateCount: 1n,
   });
 
-  // it's simply ignored
-  t.notThrows(() => op3.operator.submitEvidence(e1bad));
+  t.throws(() => op3.operator.submitEvidence(e1bad), {
+    message: /conflicting evidence/,
+  });
   t.like(await evidenceSubscriber.getUpdateSince(0), {
     updateCount: 1n,
   });
 
-  // now another op repeats the bad evidence, so it's published to the stream.
-  // It's the responsibility of the Advancer to fail because it has already processed that tx hash.
-  op1.operator.submitEvidence(e1bad);
+  // Disagreement is still detected after publishing
+  t.throws(() => op1.operator.submitEvidence(e1bad), {
+    message: /conflicting evidence/,
+  });
   t.like(await evidenceSubscriber.getUpdateSince(0), {
-    updateCount: 2n,
+    updateCount: 1n,
   });
 });
 

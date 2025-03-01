@@ -217,40 +217,46 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
             }
           }
 
-          {
-            const minAttestations = Math.ceil(operators.getSize() / 2);
-            trace(
-              'transaction',
-              txHash,
-              'has',
-              found.length,
-              'of',
-              minAttestations,
-              'necessary attestations',
-            );
-            if (found.length < minAttestations) {
-              return;
-            }
+          const minAttestations = Math.ceil(operators.getSize() / 2);
+          trace(
+            'transaction',
+            txHash,
+            'has',
+            found.length,
+            'of',
+            minAttestations,
+            'necessary attestations',
+          );
+
+          if (found.length < minAttestations) {
+            return;
           }
 
           const riskStores = [...risks.values()].filter(store =>
             store.has(txHash),
           );
-          // take the union of risks identified from all operators
-          const risksIdentified = allRisksIdentified(riskStores, txHash);
 
-          // sufficient agreement, so remove from pending risks, then publish
-          for (const store of found) {
-            store.delete(txHash);
+          // Publish at the threshold of agreement
+          if (found.length === minAttestations) {
+            // take the union of risks identified from all operators
+            const risksIdentified = allRisksIdentified(riskStores, txHash);
+            trace('publishing evidence', evidence, risksIdentified);
+            publisher.publish({
+              evidence,
+              risk: { risksIdentified },
+            });
+            return;
           }
-          for (const store of riskStores) {
-            store.delete(txHash);
+
+          if (found.length === pending.getSize()) {
+            // all have reported so stop tracking
+            for (const store of found) {
+              store.delete(txHash);
+            }
+            for (const store of riskStores) {
+              store.delete(txHash);
+            }
           }
-          trace('publishing evidence', evidence, risksIdentified);
-          publisher.publish({
-            evidence,
-            risk: { risksIdentified },
-          });
         },
       },
       public: {
