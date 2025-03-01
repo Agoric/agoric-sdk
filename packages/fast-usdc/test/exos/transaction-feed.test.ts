@@ -160,9 +160,14 @@ test('disagreement', async t => {
   assert(e1.txHash === e1bad.txHash);
   op1.operator.submitEvidence(e1);
 
+  // conflicting between operators
   t.throws(() => op2.operator.submitEvidence(e1bad), {
-    message:
-      'conflicting evidence for "0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761702"',
+    message: /conflicting evidence/,
+  });
+
+  // self conflicting
+  t.throws(() => op1.operator.submitEvidence(e1bad), {
+    message: /conflicting evidence/,
   });
 });
 
