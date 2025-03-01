@@ -107,10 +107,16 @@ export const stateShape = harden({
 });
 
 /**
- * Settler is responsible for monitoring (using receiveUpcall) deposits to the
- * settlementAccount. It either "disburses" funds to the Pool (if funds were
+ * The Settler is responsible for monitoring (using receiveUpcall) deposits to
+ * the settlementAccount. It either "disburses" funds to the Pool (if funds were
  * "advance"d to the payee), or "forwards" funds to the payee (if pool funds
  * were not advanced).
+ *
+ * Funds are forwarded
+ *
+ * `receivUpcall` is configured to receive notifications in
+ * `monitorMintingDeposits()`, with a call to
+ * `settlementAccount.monitorTransfers()`.
  *
  * @param {Zone} zone
  * @param {object} caps
@@ -234,7 +240,6 @@ export const prepareSettler = (
               self.addMintedEarly(nfa, amount);
               return;
 
-            case PendingTxStatus.Observed:
             case PendingTxStatus.AdvanceSkipped:
             case PendingTxStatus.AdvanceFailed:
               return self.forward(found.txHash, amount, EUD);
@@ -282,10 +287,12 @@ export const prepareSettler = (
           }
         },
         /**
+         * If the EUD received minted funds without an advance, forward the
+         * funds to the pool.
+         *
          * @param {CctpTxEvidence} evidence
          * @param {CosmosChainAddress} destination
-         * @returns {boolean}
-         * @throws {Error} if minted early, so advancer doesn't advance
+         * @returns {boolean} whether the EUD received funds without an advance
          */
         checkMintedEarly(evidence, destination) {
           const {
@@ -321,7 +328,7 @@ export const prepareSettler = (
         },
         /**
          * The intended payee received an advance from the pool. When the funds
-         * are minted disburse them to the pool.
+         * are minted, disburse them to the pool and fee seats.
          *
          * @param {EvmHash} txHash
          * @param {NatValue} fullValue
