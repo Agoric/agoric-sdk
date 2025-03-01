@@ -127,20 +127,25 @@ export const stateShape = harden({
 });
 
 /**
- * Settler is responsible for monitoring (using receiveUpcall) deposits to the
- * settlementAccount. It either "disburses" funds to the Pool (if funds were
+ * The Settler is responsible for monitoring (using receiveUpcall) deposits to
+ * the settlementAccount. It either "disburses" funds to the Pool (if funds were
  * "advance"d to the payee), or "forwards" funds to the payee (if pool funds
  * were not advanced).
- * @param zone
- * @param root0
- * @param root0.chainHub
- * @param root0.feeConfig
- * @param root0.log
- * @param root0.statusManager
- * @param root0.USDC
- * @param root0.vowTools
- * @param root0.withdrawToSeat
- * @param root0.zcf
+ *
+ * `receiveUpcall` is configured to receive notifications in
+ * `monitorMintingDeposits()`, with a call to
+ * `settlementAccount.monitorTransfers()`.
+ *
+ * @param {Zone} zone
+ * @param {object} caps
+ * @param {StatusManager} caps.statusManager
+ * @param {Brand<'nat'>} caps.USDC
+ * @param {Pick<ZCF, 'makeEmptySeatKit' | 'atomicRearrange'>} caps.zcf
+ * @param {FeeConfig} caps.feeConfig
+ * @param {HostOf<WithdrawToSeat>} caps.withdrawToSeat
+ * @param {import('@agoric/vow').VowTools} caps.vowTools
+ * @param {ChainHub} caps.chainHub
+ * @param {LogFn} [caps.log]
  */
 export const prepareSettler = (
   zone: Zone,
@@ -263,7 +268,6 @@ export const prepareSettler = (
               self.addMintedEarly(nfa, amount);
               return;
 
-            case PendingTxStatus.Observed:
             case PendingTxStatus.AdvanceSkipped:
             case PendingTxStatus.AdvanceFailed:
               return self.forward(found.txHash, amount, EUD);
@@ -312,9 +316,12 @@ export const prepareSettler = (
           }
         },
         /**
-         * @param evidence
-         * @param destination
-         * @throws {Error} if minted early, so advancer doesn't advance
+         * If the EUD received minted funds without an advance, forward the
+         * funds to the pool.
+         *
+         * @param {CctpTxEvidence} evidence
+         * @param {CosmosChainAddress} destination
+         * @returns {boolean} whether the EUD received funds without an advance
          */
         checkMintedEarly(
           evidence: CctpTxEvidence,
@@ -353,7 +360,7 @@ export const prepareSettler = (
         },
         /**
          * The intended payee received an advance from the pool. When the funds
-         * are minted disburse them to the pool.
+         * are minted, disburse them to the pool and fee seats.
          *
          * @param {EvmHash} txHash
          * @param {NatValue} fullValue

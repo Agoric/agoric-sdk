@@ -116,8 +116,8 @@ export const stateShape = harden({
 
 /**
  * Advancer subscribes (using handleTransactionEvent) to events published by the
- * transaction feed. When notified of an appropriate opportunity, it is
- * responsible for advancing funds to fastUSDC payees.
+ * {@link TransactionFeedKit}. When notified of an appropriate opportunity, it
+ * is responsible for advancing funds to EUD.
  *
  * @param {Zone} zone
  * @param {AdvancerKitPowers} caps
