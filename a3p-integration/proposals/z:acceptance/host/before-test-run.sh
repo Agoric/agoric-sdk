@@ -1,7 +1,6 @@
 #! /bin/bash
-# shellcheck disable=SC2155
 
-set -o errexit -o errtrace -o pipefail
+set -o xtrace
 
 DIRECTORY_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 FOLLOWER_LOGS_FILE="/tmp/loadgen-follower-logs"
@@ -13,10 +12,10 @@ ORGANIZATION_NAME="agoric"
 SDK_REPOSITORY_NAME="agoric-sdk"
 TIMESTAMP="$(date '+%s')"
 
+COMMON_PARENT="$(echo "$DIRECTORY_PATH" | sed -En "s|^(.*)/$SDK_REPOSITORY_NAME/.*$|\1|p")"
 LOADGEN_REPOSITORY_LINK="$GITHUB_HOST_NAME/$ORGANIZATION_NAME/$LOADGEN_REPOSITORY_NAME.git"
 NETWORK_CONFIG="/tmp/network-config-$TIMESTAMP"
 OUTPUT_DIRECTORY="/tmp/loadgen-output"
-SDK_REPOSITORY_LINK="$GITHUB_HOST_NAME/$ORGANIZATION_NAME/$SDK_REPOSITORY_NAME.git"
 
 get_branch_name() {
   if ! test -n "$GITHUB_HEAD_REF"; then
@@ -36,7 +35,7 @@ install_go() {
 
     curl --location --output "$go_tar" --silent "https://go.dev/dl/go$GO_VERSION.linux-amd64.tar.gz"
     tar --directory "$HOME" --extract --file "$go_tar" --gzip
-    rm --force "$go_tar"
+    rm -f "$go_tar"
     export PATH="$HOME/go/bin:$PATH"
   fi
 }
@@ -45,25 +44,20 @@ main() {
   install_go
   setup_sdk
   setup_loadgen_runner
-  mkdir --parents "$NETWORK_CONFIG" "$OUTPUT_DIRECTORY"
+  mkdir -p "$NETWORK_CONFIG" "$OUTPUT_DIRECTORY"
   wait_for_network_config
   start_follower > "$FOLLOWER_LOGS_FILE" 2>&1
 }
 
 setup_loadgen_runner() {
-  cd "$HOME"
+  cd "$COMMON_PARENT" || exit
   git clone "$LOADGEN_REPOSITORY_LINK"
-  cd "$LOADGEN_REPOSITORY_NAME/runner"
+  cd "$LOADGEN_REPOSITORY_NAME/runner" || exit
   yarn install
 }
 
 setup_sdk() {
-  local branch_name="$(get_branch_name)"
-  echo "Checking out branch '$branch_name' of sdk"
-
-  cd "$HOME"
-  git clone "$SDK_REPOSITORY_LINK" --branch "$branch_name"
-  cd "$SDK_REPOSITORY_NAME"
+  cd "$COMMON_PARENT/$SDK_REPOSITORY_NAME" || exit
   yarn install
   make --directory "packages/cosmic-swingset" all
 }
@@ -86,7 +80,9 @@ start_follower() {
 }
 
 wait_for_network_config() {
-  local network_config=$(node "$DIRECTORY_PATH/../wait-for-follower.mjs" "^{.*")
+  local network_config
+
+  network_config=$(node "$DIRECTORY_PATH/../wait-for-follower.mjs" "^{.*")
   echo "Got network config: $network_config"
   echo "$network_config" > "$NETWORK_CONFIG/network-config"
 }
