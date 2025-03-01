@@ -385,10 +385,12 @@ test.serial('reconfigure: fix noble ICA', async t => {
 
   const { vstorageClient, retryUntilCondition } = t.context;
 
-  await retryUntilCondition(
-    () => fastLPQ(vstorageClient).info(),
-    info => 'nobleICA' in info,
-    `${contractName} nobleICA is available`,
+  await t.notThrowsAsync(() =>
+    retryUntilCondition(
+      () => fastLPQ(vstorageClient).info(),
+      info => 'nobleICA' in info,
+      `${contractName} nobleICA is available`,
+    ),
   );
 });
 
