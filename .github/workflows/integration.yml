@@ -274,14 +274,11 @@ jobs:
           # simply ignore any endo branch integration (this means we don't have full coverage)
           ignore-endo-branch: 'true'
         id: restore-node
-      - id: temp
-        run: |
-          pwd
-          ls -al
-          ls -al agoric-sdk
+
       - name: setup a3p-integration
         run: yarn install
         working-directory: agoric-sdk/a3p-integration
+
       - name: verify SDK image didn't change
         # In the future when we can rebuild the SDK image with resolved endo packages, it would
         # be expected that the SDK image previously built has changed
