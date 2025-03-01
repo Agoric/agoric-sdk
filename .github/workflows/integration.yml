@@ -264,7 +264,7 @@ jobs:
         # run: cd packages/deployment && ./scripts/test-docker-build.sh | $TEST_COLLECT
         # XXX skip TAP test output and collection for now; it hides the output from the logs
         run: make docker-build-sdk
-        working-directory: packages/deployment
+        working-directory: ./agoric-sdk/packages/deployment
       - uses: ./.github/actions/restore-node
         with:
           node-version: '18.x'
@@ -275,7 +275,7 @@ jobs:
         id: restore-node
       - name: setup a3p-integration
         run: yarn install
-        working-directory: a3p-integration
+        working-directory: ./agoric-sdk/a3p-integration
       - name: verify SDK image didn't change
         # In the future when we can rebuild the SDK image with resolved endo packages, it would
         # be expected that the SDK image previously built has changed
@@ -288,7 +288,7 @@ jobs:
             echo "New SDK docker image ($new) changed after restore-node (original $original)" 1>&2
             exit 1
           fi
-        working-directory: a3p-integration
+        working-directory: ./agoric-sdk/a3p-integration
 
       - id: build-cosmic-swingset
         name: Build cosmic-swingset dependencies
