@@ -7,14 +7,39 @@ import { feedPolicies } from './utils/chain-policies.js';
 
 const trace = makeTracer('FUSD-2', true);
 
+// avoid importing all of @agoric/ertp
+/** @type {typeof import('@agoric/ertp').AmountMath.make} */
+// @ts-expect-error AssetKind conditionals aren't captured
+const make = (brand, value) => harden({ brand, value });
+/** @type {typeof import('@agoric/zoe/src/contractSupport/ratio').makeRatio} */
+const makeRatio = (numerator, numeratorBrand, denominator = 100n) =>
+  harden({
+    numerator: make(numeratorBrand, numerator),
+    denominator: make(numeratorBrand, denominator),
+  });
+
 /**
  * @import {CopyRecord} from '@endo/pass-style'
  * @import {IBCConnectionInfo} from '@agoric/orchestration'
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js'
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
  * @import {FastUSDCCorePowers} from './start-fast-usdc.core.js'
- * @import {ContractRecord, FeedPolicy} from './types.js'
+ * @import {ContractRecord, FeeConfig, FeedPolicy} from './types.js'
  */
+
+/**
+ * Update feeConfig.variableRate to 0.5%, i.e. 5n/1000n
+ *
+ * @param {FeeConfig} feeConfigPre
+ * @param {Brand<'nat'>} usdcBrand
+ * @param {Ratio} [variableRate]
+ * @returns {FeeConfig}
+ */
+const updateFeeConfig = (
+  feeConfigPre,
+  usdcBrand,
+  variableRate = makeRatio(5n, usdcBrand, 1000n),
+) => harden({ ...feeConfigPre, variableRate });
 
 /**
  * @typedef {object} UpdateOpts
@@ -46,13 +71,15 @@ const config = /** @type {const} */ ({
 });
 harden(config);
 
+const { keys } = Object;
+
 /**
  * @param {BootstrapPowers & FastUSDCCorePowers} powers
  * @param {object} [config]
  * @param {UpdateOpts} [config.options]
  */
 export const updateNobleICA = async (
-  { consume: { chainStorage, fastUsdcKit } },
+  { consume: { chainStorage, fastUsdcKit }, produce },
   { options = {} } = {},
 ) => {
   trace('options', options);
@@ -60,17 +87,29 @@ export const updateNobleICA = async (
     agoricToNoble = config.MAINNET.agoricToNoble,
     fastUsdcCode = assert.fail('missing bundleID'),
   } = options;
-  const { adminFacet, creatorFacet, privateArgs, publicFacet } =
-    await fastUsdcKit;
-  trace('upgradeContract follows with privateArgs:', Object.keys(privateArgs));
+  const kitPre = await fastUsdcKit;
+  trace('fastUsdcKit.privateArgs keys:', keys(kitPre.privateArgs));
+  const { adminFacet, creatorFacet, publicFacet } = kitPre;
+
+  const { brand: usdcBrand } = kitPre.privateArgs.feeConfig.flat;
+  // TODO: update agoricToNoble in kitPost.privateArgs.chainInfo too
+  const kitPost = harden({
+    ...kitPre,
+    privateArgs: {
+      ...kitPre.privateArgs,
+      feeConfig: updateFeeConfig(kitPre.privateArgs.feeConfig, usdcBrand),
+    },
+  });
   const upgraded = await E(adminFacet).upgradeContract(
     fastUsdcCode.bundleID,
-    privateArgs,
+    kitPost.privateArgs,
   );
   trace(`DON'T PANIC if you see "CORE_EVAL failed" from v1 above. See #11013`);
   trace('fastUsdc upgraded', upgraded);
+  produce.fastUsdcKit.reset();
+  produce.fastUsdcKit.resolve(kitPost);
 
-  const { agoric, noble } = privateArgs.chainInfo;
+  const { agoric, noble } = kitPre.privateArgs.chainInfo;
   const nobleICAaddr = await E(creatorFacet).connectToNoble(
     agoric.chainId,
     noble.chainId,
@@ -112,6 +151,7 @@ export const getManifestForUpdateNobleICA = (
     manifest: {
       [updateNobleICA.name]: {
         consume: { chainStorage: true, fastUsdcKit: true },
+        produce: { fastUsdcKit: true },
       },
       [updateFeedPolicy.name]: {
         consume: { chainStorage: true },
