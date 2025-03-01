@@ -1,3 +1,4 @@
+/** @file Exo for @see {prepareTransactionFeedKit} */
 import { makeTracer } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import { keyEQ, M } from '@endo/patterns';
@@ -66,6 +67,11 @@ export const stateShape = {
 };
 
 /**
+ * A TransactionFeed is responsible for finding quorum among oracles.
+ *
+ * It receives attestations, records their evidence, and when enough oracles
+ * agree, publishes the results for the advancer to act on.
+ *
  * @param {Zone} zone
  * @param {ZCF} zcf
  */
@@ -159,7 +165,7 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
         /**
          * Add evidence from an operator.
          *
-         * NB: the operatorKit is responsible for
+         * NB: the operatorKit is responsible for revoking access.
          *
          * @param {CctpTxEvidence} evidence
          * @param {RiskAssessment} riskAssessment
@@ -169,10 +175,6 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
           const { operators, pending, risks } = this.state;
           trace('attest', operatorId, evidence);
 
-          // TODO https://github.com/Agoric/agoric-sdk/pull/10720
-          // TODO validate that it's a valid for Fast USDC before accepting
-          // E.g. that the `recipientAddress` is the FU settlement account and that
-          // the EUD is a chain supported by FU.
           const { txHash } = evidence;
 
           // accept the evidence
