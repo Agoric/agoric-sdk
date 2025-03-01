@@ -338,7 +338,6 @@ export const prepareAdvancerKit = (
               e,
             );
           }
-          tmpReturnSeat.exit();
         },
         /**
          * @param {Error} error
