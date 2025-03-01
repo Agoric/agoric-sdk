@@ -1,3 +1,4 @@
+/** @file Exo for @see {prepareTransactionFeedKit} */
 import { makeTracer } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import { keyEQ, M } from '@endo/patterns';
@@ -66,6 +67,11 @@ export const stateShape = {
 };
 
 /**
+ * A TransactionFeed is responsible for finding quorum among oracles.
+ *
+ * It receives attestations, records their evidence, and when enough oracles
+ * agree, publishes the results for the advancer to act on.
+ *
  * @param {Zone} zone
  * @param {ZCF} zcf
  */
@@ -159,7 +165,7 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
         /**
          * Add evidence from an operator.
          *
-         * NB: the operatorKit is responsible for
+         * NB: the operatorKit is responsible for revoking access.
          *
          * @param {CctpTxEvidence} evidence
          * @param {RiskAssessment} riskAssessment
@@ -169,10 +175,6 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
           const { operators, pending, risks } = this.state;
           trace('attest', operatorId, evidence);
 
-          // TODO https://github.com/Agoric/agoric-sdk/pull/10720
-          // TODO validate that it's a valid for Fast USDC before accepting
-          // E.g. that the `recipientAddress` is the FU settlement account and that
-          // the EUD is a chain supported by FU.
           const { txHash } = evidence;
 
           // accept the evidence
@@ -192,6 +194,29 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
           const found = [...pending.values()].filter(store =>
             store.has(txHash),
           );
+
+          {
+            let lastEvidence;
+            for (const store of found) {
+              const next = store.get(txHash);
+              if (lastEvidence && !keyEQ(lastEvidence, next)) {
+                // Ignore conflicting evidence, but treat it as an error
+                // because it should never happen and needs to be prevented
+                // from happening again.
+                trace(
+                  '🚨 conflicting evidence for',
+                  txHash,
+                  ':',
+                  lastEvidence,
+                  '!=',
+                  next,
+                );
+                Fail`conflicting evidence for ${quote(txHash)}`;
+              }
+              lastEvidence = next;
+            }
+          }
+
           const minAttestations = Math.ceil(operators.getSize() / 2);
           trace(
             'transaction',
@@ -202,48 +227,36 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
             minAttestations,
             'necessary attestations',
           );
+
           if (found.length < minAttestations) {
             return;
-          }
-
-          let lastEvidence;
-          for (const store of found) {
-            const next = store.get(txHash);
-            if (lastEvidence && !keyEQ(lastEvidence, next)) {
-              // Ignore conflicting evidence, but treat it as an error
-              // because it should never happen and needs to be prevented
-              // from happening again.
-              trace(
-                '🚨 conflicting evidence for',
-                txHash,
-                ':',
-                lastEvidence,
-                '!=',
-                next,
-              );
-              Fail`conflicting evidence for ${quote(txHash)}`;
-            }
-            lastEvidence = next;
           }
 
           const riskStores = [...risks.values()].filter(store =>
             store.has(txHash),
           );
-          // take the union of risks identified from all operators
-          const risksIdentified = allRisksIdentified(riskStores, txHash);
 
-          // sufficient agreement, so remove from pending risks, then publish
-          for (const store of found) {
-            store.delete(txHash);
+          // Publish at the threshold of agreement
+          if (found.length === minAttestations) {
+            // take the union of risks identified from all operators
+            const risksIdentified = allRisksIdentified(riskStores, txHash);
+            trace('publishing evidence', evidence, risksIdentified);
+            publisher.publish({
+              evidence,
+              risk: { risksIdentified },
+            });
+            return;
           }
-          for (const store of riskStores) {
-            store.delete(txHash);
+
+          if (found.length === pending.getSize()) {
+            // all have reported so stop tracking
+            for (const store of found) {
+              store.delete(txHash);
+            }
+            for (const store of riskStores) {
+              store.delete(txHash);
+            }
           }
-          trace('publishing evidence', evidence, risksIdentified);
-          publisher.publish({
-            evidence,
-            risk: { risksIdentified },
-          });
         },
       },
       public: {
