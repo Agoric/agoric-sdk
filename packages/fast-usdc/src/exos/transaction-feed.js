@@ -1,8 +1,8 @@
 /** @file Exo for @see {prepareTransactionFeedKit} */
 import { makeTracer } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
-import { keyEQ, M } from '@endo/patterns';
 import { Fail, quote } from '@endo/errors';
+import { keyEQ, M } from '@endo/patterns';
 import { CctpTxEvidenceShape, RiskAssessmentShape } from '../type-guards.js';
 import { defineInertInvitation } from '../utils/zoe.js';
 import { prepareOperatorKit } from './operator-kit.js';
@@ -65,6 +65,7 @@ export const stateShape = {
   pending: M.remotable(),
   risks: M.remotable(),
 };
+harden(stateShape);
 
 /**
  * A TransactionFeed is responsible for finding quorum among oracles.
@@ -154,11 +155,13 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
 
         /** @param {string} operatorId */
         removeOperator(operatorId) {
-          const { operators } = this.state;
+          const { operators, pending, risks } = this.state;
           trace('removeOperator', operatorId);
           const operatorKit = operators.get(operatorId);
           operatorKit.admin.disable();
           operators.delete(operatorId);
+          pending.delete(operatorId);
+          risks.delete(operatorId);
         },
       },
       operatorPowers: {
@@ -217,40 +220,47 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
             }
           }
 
-          {
-            const minAttestations = Math.ceil(operators.getSize() / 2);
-            trace(
-              'transaction',
-              txHash,
-              'has',
-              found.length,
-              'of',
-              minAttestations,
-              'necessary attestations',
-            );
-            if (found.length < minAttestations) {
-              return;
-            }
+          const minAttestations = Math.ceil(operators.getSize() / 2);
+          trace(
+            'transaction',
+            txHash,
+            'has',
+            found.length,
+            'of',
+            minAttestations,
+            'necessary attestations',
+          );
+
+          if (found.length < minAttestations) {
+            // wait for more
+            return;
           }
 
           const riskStores = [...risks.values()].filter(store =>
             store.has(txHash),
           );
-          // take the union of risks identified from all operators
-          const risksIdentified = allRisksIdentified(riskStores, txHash);
 
-          // sufficient agreement, so remove from pending risks, then publish
-          for (const store of found) {
-            store.delete(txHash);
+          // Publish at the threshold of agreement
+          if (found.length === minAttestations) {
+            // take the union of risks identified from all operators
+            const risksIdentified = allRisksIdentified(riskStores, txHash);
+            trace('publishing evidence', evidence, risksIdentified);
+            publisher.publish({
+              evidence,
+              risk: { risksIdentified },
+            });
+            return;
           }
-          for (const store of riskStores) {
-            store.delete(txHash);
+
+          if (found.length === pending.getSize()) {
+            // all have reported so clean up
+            for (const store of found) {
+              store.delete(txHash);
+            }
+            for (const store of riskStores) {
+              store.delete(txHash);
+            }
           }
-          trace('publishing evidence', evidence, risksIdentified);
-          publisher.publish({
-            evidence,
-            risk: { risksIdentified },
-          });
         },
       },
       public: {
