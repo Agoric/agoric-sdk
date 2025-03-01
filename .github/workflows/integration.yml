@@ -274,6 +274,11 @@ jobs:
           # simply ignore any endo branch integration (this means we don't have full coverage)
           ignore-endo-branch: 'true'
         id: restore-node
+      - id: temp
+        run: |
+          pwd
+          ls -al
+          ls -al agoric-sdk
       - name: setup a3p-integration
         run: yarn install
         working-directory: agoric-sdk/a3p-integration
