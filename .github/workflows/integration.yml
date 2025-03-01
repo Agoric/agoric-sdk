@@ -264,7 +264,8 @@ jobs:
         # run: cd packages/deployment && ./scripts/test-docker-build.sh | $TEST_COLLECT
         # XXX skip TAP test output and collection for now; it hides the output from the logs
         run: make docker-build-sdk
-        working-directory: ./agoric-sdk/packages/deployment
+        working-directory: agoric-sdk/packages/deployment
+
       - uses: ./agoric-sdk/.github/actions/restore-node
         with:
           node-version: '18.x'
@@ -275,7 +276,7 @@ jobs:
         id: restore-node
       - name: setup a3p-integration
         run: yarn install
-        working-directory: ./agoric-sdk/a3p-integration
+        working-directory: agoric-sdk/a3p-integration
       - name: verify SDK image didn't change
         # In the future when we can rebuild the SDK image with resolved endo packages, it would
         # be expected that the SDK image previously built has changed
@@ -288,7 +289,7 @@ jobs:
             echo "New SDK docker image ($new) changed after restore-node (original $original)" 1>&2
             exit 1
           fi
-        working-directory: ./agoric-sdk/a3p-integration
+        working-directory: agoric-sdk/a3p-integration
 
       - id: build-cosmic-swingset
         name: Build cosmic-swingset dependencies
@@ -297,7 +298,7 @@ jobs:
 
           yarn install
           make --directory packages/cosmic-swingset all
-        working-directory: ./agoric-sdk
+        working-directory: agoric-sdk
 
       - id: get-loadgen-branch
         name: Get the appropriate loadgen branch
@@ -332,7 +333,7 @@ jobs:
 
           cd runner
           yarn install
-        working-directory: ./${{ env.LOADGEN_REPO_NAME }}
+        working-directory: ${{ env.LOADGEN_REPO_NAME }}
 
       - id: add-loadgen-path-to-env
         name: Add loadgen path to env
@@ -344,11 +345,11 @@ jobs:
 
       - name: build proposals tests
         run: yarn build
-        working-directory: ./agoric-sdk/a3p-integration
+        working-directory: agoric-sdk/a3p-integration
 
       - name: run proposals tests
         run: yarn test
-        working-directory: ./agoric-sdk/a3p-integration
+        working-directory: agoric-sdk/a3p-integration
 
       - name: copy a3p-integration
         if: (success() || failure())
@@ -356,7 +357,7 @@ jobs:
           dir='/tmp/export/a3p-integration'
           rm -rf "$dir"
           scripts/ci/export-a3p.sh a3p-integration "$dir"
-        working-directory: ./agoric-sdk
+        working-directory: agoric-sdk
 
       # Artifacts can be found at the bottom of `Summary` page of
       # `Integration tests` workflow once the workflow is completed.
@@ -386,7 +387,7 @@ jobs:
           from: ${{ secrets.NOTIFY_EMAIL_FROM }}
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
-      - uses: ./.github/actions/post-test
+      - uses: ./agoric-sdk/.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
         timeout-minutes: 4
