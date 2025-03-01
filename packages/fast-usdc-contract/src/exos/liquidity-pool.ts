@@ -230,13 +230,14 @@ export const prepareLiquidityPoolKit = (
       },
 
       depositHandler: {
-        async handle(lpSeat: ZCFSeat) {
+        async handle(lp: ZCFSeat) {
           const { shareWorth, shareMint, poolSeat, encumberedBalance } =
             this.state;
           const { external } = this.facets;
 
-          // @ts-expect-error ensured by proposalShape
-          const proposal = lp.getProposal() as USDCProposalShapes['deposit'];
+          const proposal =
+            // @ts-expect-error ensured by proposalShape
+            lp.getProposal() as USDCProposalShapes['deposit'];
           checkPoolBalance(
             poolSeat.getCurrentAllocation(),
             shareWorth,
@@ -245,23 +246,23 @@ export const prepareLiquidityPoolKit = (
           const post = depositCalc(shareWorth, proposal);
 
           // COMMIT POINT
-          const sharePayoutSeat = shareMint.mintGains(post.payouts);
+          const sharePayout = shareMint.mintGains(post.payouts);
           try {
             this.state.shareWorth = post.shareWorth;
             zcf.atomicRearrange(
               harden([
-                // zoe guarantees lpSeat has proposal.give allocated
-                [lpSeat, poolSeat, proposal.give],
-                // mintGains() above establishes that sharePayoutSeat has post.payouts
-                [sharePayoutSeat, lpSeat, post.payouts],
+                // zoe guarantees lp has proposal.give allocated
+                [lp, poolSeat, proposal.give],
+                // mintGains() above establishes that sharePayout has post.payouts
+                [sharePayout, lp, post.payouts],
               ]),
             );
           } catch (cause) {
             // UNTIL #10684: ability to terminate an incarnation w/o terminating the contract
             throw new Error('🚨 cannot commit deposit', { cause });
           } finally {
-            lpSeat.exit();
-            sharePayoutSeat.exit();
+            lp.exit();
+            sharePayout.exit();
           }
           external.publishPoolMetrics();
         },
