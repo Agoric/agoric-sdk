@@ -1,3 +1,7 @@
+env:
+  LOADGEN_REPO_NAME: 'testnet-load-generator'
+  ORG_NAME: 'Agoric'
+
 name: Integration tests
 
 on:
@@ -167,8 +171,8 @@ jobs:
       - name: Check out loadgen
         uses: actions/checkout@v4
         with:
-          repository: Agoric/testnet-load-generator
-          path: ./testnet-load-generator
+          repository: ${{ env.ORG_NAME }}/${{ env.LOADGEN_REPO_NAME }}
+          path: ./${{ env.LOADGEN_REPO_NAME }}
           ref: ${{steps.get-loadgen-branch.outputs.result}}
 
       - name: Build cosmic-swingset dependencies
@@ -281,6 +285,59 @@ jobs:
             exit 1
           fi
         working-directory: a3p-integration
+
+      - id: build-cosmic-swingset
+        name: Build cosmic-swingset dependencies
+        run: |
+          set -o errexit
+
+          yarn install
+          make --directory packages/cosmic-swingset all
+        working-directory: ./agoric-sdk
+
+      - id: get-loadgen-branch
+        name: Get the appropriate loadgen branch
+        uses: actions/github-script@v7
+        with:
+          result-encoding: string
+          script: |
+            let branch = 'main';
+            if (context.payload.pull_request) {
+              const { body } = context.payload.pull_request;
+              const regex = /^\#loadgen-branch:\s+(\S+)/m;
+              const result = regex.exec(body);
+              if (result) {
+                branch = result[1];
+              }
+            }
+            console.log('loadgen branch: ' + branch);
+            return branch;
+
+      - id: checkout-loadgen
+        name: Check out loadgen
+        uses: actions/checkout@v4
+        with:
+          path: ./${{ env.LOADGEN_REPO_NAME }}
+          ref: ${{ steps.get-loadgen-branch.outputs.result }}
+          repository: ${{ env.ORG_NAME }}/${{ env.LOADGEN_REPO_NAME }}
+
+      - id: install-loadgen-runner-dependencies
+        name: Build cosmic-swingset dependencies
+        run: |
+          set -o errexit
+
+          cd runner
+          yarn install
+        working-directory: ./${{ env.LOADGEN_REPO_NAME }}
+
+      - id: add-loadgen-path-to-env
+        name: Add loadgen path to env
+        run: |
+          set -o errexit
+
+          echo "Adding $GITHUB_WORKSPACE/${{ env.LOADGEN_REPO_NAME }} as loadgen path to env"
+          echo "LOADGEN_PATH=$GITHUB_WORKSPACE/${{ env.LOADGEN_REPO_NAME }}" >> "$GITHUB_ENV"
+
       - name: build proposals tests
         run: yarn build
         working-directory: a3p-integration

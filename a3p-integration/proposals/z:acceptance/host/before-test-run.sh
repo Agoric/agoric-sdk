@@ -1,33 +1,18 @@
 #! /bin/bash
 
-set -o xtrace
+set -o nounset -o xtrace
 
+AG_CHAIN_COSMOS_HOME="/tmp/agoric"
 DIRECTORY_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 FOLLOWER_LOGS_FILE="/tmp/loadgen-follower-logs"
-GITHUB_HOST_NAME="https://github.com"
 GO_VERSION="1.22.12"
-LOADGEN_REPOSITORY_NAME="testnet-load-generator"
 LOGS_FILE="/tmp/before-test-run-hook-logs"
-ORGANIZATION_NAME="agoric"
 SDK_REPOSITORY_NAME="agoric-sdk"
 TIMESTAMP="$(date '+%s')"
 
 COMMON_PARENT="${DIRECTORY_PATH%/"$SDK_REPOSITORY_NAME"*}"
-LOADGEN_REPOSITORY_LINK="$GITHUB_HOST_NAME/$ORGANIZATION_NAME/$LOADGEN_REPOSITORY_NAME.git"
 NETWORK_CONFIG="/tmp/network-config-$TIMESTAMP"
 OUTPUT_DIRECTORY="/tmp/loadgen-output"
-
-get_branch_name() {
-  if ! test -n "$GITHUB_HEAD_REF"; then
-    if test -n "$GITHUB_REF"; then
-      GITHUB_HEAD_REF="${GITHUB_REF#refs/heads/}"
-    else
-      GITHUB_HEAD_REF="master"
-    fi
-  fi
-
-  echo "$GITHUB_HEAD_REF"
-}
 
 install_go() {
   if ! which go > /dev/null; then
@@ -42,30 +27,15 @@ install_go() {
 
 main() {
   install_go
-  setup_sdk
-  setup_loadgen_runner
-  mkdir -p "$NETWORK_CONFIG" "$OUTPUT_DIRECTORY"
+  mkdir -p "$AG_CHAIN_COSMOS_HOME" "$NETWORK_CONFIG" "$OUTPUT_DIRECTORY"
   wait_for_network_config
   start_follower > "$FOLLOWER_LOGS_FILE" 2>&1
 }
 
-setup_loadgen_runner() {
-  cd "$COMMON_PARENT" || exit
-  git clone "$LOADGEN_REPOSITORY_LINK"
-  cd "$LOADGEN_REPOSITORY_NAME/runner" || exit
-  yarn install
-}
-
-setup_sdk() {
-  cd "$COMMON_PARENT/$SDK_REPOSITORY_NAME" || exit
-  yarn install
-  make --directory "packages/cosmic-swingset" all
-}
-
 start_follower() {
-  AG_CHAIN_COSMOS_HOME="$HOME/.agoric" \
-    SDK_SRC="$HOME/$SDK_REPOSITORY_NAME" \
-    "$HOME/$LOADGEN_REPOSITORY_NAME/runner/bin/loadgen-runner" \
+  AG_CHAIN_COSMOS_HOME="$AG_CHAIN_COSMOS_HOME" \
+    SDK_SRC="$COMMON_PARENT/$SDK_REPOSITORY_NAME" \
+    "$LOADGEN_PATH/runner/bin/loadgen-runner" \
     --acceptance-integration-message-file "$MESSAGE_FILE_PATH" \
     --chain-only \
     --custom-bootstrap \
