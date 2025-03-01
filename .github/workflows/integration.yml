@@ -265,7 +265,7 @@ jobs:
         # XXX skip TAP test output and collection for now; it hides the output from the logs
         run: make docker-build-sdk
         working-directory: ./agoric-sdk/packages/deployment
-      - uses: ./.github/actions/restore-node
+      - uses: ./agoric-sdk/.github/actions/restore-node
         with:
           node-version: '18.x'
           # Rebuilding the SDK image with resolved endo packages is not currently supported
