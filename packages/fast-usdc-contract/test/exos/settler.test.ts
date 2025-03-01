@@ -176,18 +176,6 @@ const makeTestContext = async t => {
         return cctpTxEvidence;
       },
       /**
-       * slow path - e.g. insufficient pool funds
-       * @param evidence
-       */
-      observe: (evidence?: CctpTxEvidence) => {
-        const cctpTxEvidence = makeEvidence(evidence);
-        t.log('Mock CCTP Evidence:', cctpTxEvidence);
-        t.log('Pretend we `OBSERVED` (did not advance)');
-        statusManager.observe(cctpTxEvidence);
-
-        return cctpTxEvidence;
-      },
-      /**
        * mint early path. caller must simulate tap before calling
        * @param evidence
        */
@@ -343,15 +331,7 @@ test('slow path: forward to EUD; remove pending tx', async t => {
     ...defaultSettlerParams,
   });
   const simulate = makeSimulate(settler.notifier);
-  const cctpTxEvidence = simulate.observe();
-  t.deepEqual(
-    statusManager.lookupPending(
-      cctpTxEvidence.tx.forwardingAddress,
-      cctpTxEvidence.tx.amount,
-    ),
-    [{ ...cctpTxEvidence, status: PendingTxStatus.Observed }],
-    'statusManager shows this tx is only observed',
-  );
+  const cctpTxEvidence = simulate.skipAdvance(['TOO_LARGE_AMOUNT']);
 
   t.log('Simulate incoming IBC settlement');
   void settler.tap.receiveUpcall(MockVTransferEvents.AGORIC_PLUS_OSMO());
@@ -389,6 +369,7 @@ test('slow path: forward to EUD; remove pending tx', async t => {
   await eventLoopIteration();
   t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
     { evidence: cctpTxEvidence, status: 'OBSERVED' },
+    { risksIdentified: ['TOO_LARGE_AMOUNT'], status: 'ADVANCE_SKIPPED' },
     { status: 'FORWARDED' },
   ]);
 
@@ -641,7 +622,7 @@ test('Multiple minted early transactions with same address and amount', async t 
   ]);
 
   // Simulate a third transaction and verify no more are tracked as minted early
-  simulate.observe({
+  simulate.observeLate({
     ...MockCctpTxEvidences.AGORIC_PLUS_OSMO(),
     txHash:
       '0x0000000000000000000000000000000000000000000000000000000000000001',
@@ -788,12 +769,11 @@ test('slow path, and forward fails (terminal state)', async t => {
   const {
     common,
     makeSettler,
-    statusManager,
     defaultSettlerParams,
     repayer,
     makeSimulate,
+    inspectLogs,
     accounts,
-    peekCalls,
     storage,
   } = t.context;
   const { usdc } = common.brands;
@@ -803,43 +783,32 @@ test('slow path, and forward fails (terminal state)', async t => {
     settlementAccount: accounts.settlement.account,
     ...defaultSettlerParams,
   });
-  const simulate = makeSimulate(settler.notifier);
-  const cctpTxEvidence = simulate.observe();
-  t.deepEqual(
-    statusManager.lookupPending(
-      cctpTxEvidence.tx.forwardingAddress,
-      cctpTxEvidence.tx.amount,
-    ),
-    [{ ...cctpTxEvidence, status: PendingTxStatus.Observed }],
-    'statusManager shows this tx is only observed',
-  );
-
-  t.log('Simulate incoming IBC settlement');
-  void settler.tap.receiveUpcall(MockVTransferEvents.AGORIC_PLUS_OSMO());
-  await eventLoopIteration();
-
-  t.log('funds are forwarded; no interaction with LP');
-  t.like(accounts.settlement.callLog, [
-    [
-      'transfer',
-      'cosmos:osmosis-1:osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
-      usdc.units(150),
-      {
-        forwardOpts: {
-          intermediateRecipient: {
-            value: 'noble1test',
-          },
-        },
-      },
-    ],
-  ]);
 
   t.log('simulating forward failure (e.g. unknown route)');
   const mockE = Error('no connection info found');
   accounts.settlement.transferVResolver.reject(mockE);
   await eventLoopIteration();
-  t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
-    { evidence: cctpTxEvidence, status: 'OBSERVED' },
+
+  t.log('Simulate incoming IBC settlement');
+  void settler.tap.receiveUpcall(MockVTransferEvents.AGORIC_PLUS_OSMO());
+  await eventLoopIteration();
+  const simulate = makeSimulate(settler.notifier);
+
+  const evidence = simulate.observeLate();
+
+  const rawLogs = inspectLogs();
+  const penultimateLog = rawLogs.slice(rawLogs.length - 2, rawLogs.length - 1);
+  await eventLoopIteration();
+  t.deepEqual(penultimateLog, [
+    [
+      'matched minted early key, initiating forward',
+      'noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd',
+      150000000n,
+    ],
+  ]);
+
+  t.deepEqual(storage.getDeserialized(`fun.txns.${evidence.txHash}`), [
+    { evidence, status: 'OBSERVED' },
     { status: 'FORWARD_FAILED' },
   ]);
 });
