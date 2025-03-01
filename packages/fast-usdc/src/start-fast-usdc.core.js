@@ -59,6 +59,7 @@ const POOL_METRICS = 'poolMetrics';
  * }} FastUSDCCorePowers
  *
  * @typedef {StartedInstanceKitWithLabel & {
+ *   publicFacet: StartedInstanceKit<FastUsdcSF>['publicFacet'];
  *   creatorFacet: StartedInstanceKit<FastUsdcSF>['creatorFacet'];
  *   privateArgs: StartParams<FastUsdcSF>['privateArgs'];
  * }} FastUSDCKit
@@ -180,7 +181,13 @@ export const startFastUSDC = async (
   const addresses = await E(kit.creatorFacet).publishAddresses();
   trace('contract orch account addresses', addresses);
   if (!net.noNoble) {
-    const addr = await E(kit.creatorFacet).connectToNoble();
+    const { agoric, noble } = privateArgs.chainInfo;
+    const agoricToNoble = agoric.connections[noble.chainId];
+    const addr = await E(kit.creatorFacet).connectToNoble(
+      agoric.chainId,
+      noble.chainId,
+      agoricToNoble,
+    );
     trace('noble intermediate recipient', addr);
   }
   trace('startFastUSDC done', instance);

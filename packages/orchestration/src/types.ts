@@ -1,5 +1,8 @@
 /** @file Rollup of all type definitions in the package, for local import and external export */
 
+// For ZCF which is only available ambiently
+/// <reference types="@agoric/zoe/src/contractFacet/types-ambient" />
+
 export type * from './chain-info.js';
 export type * from './cosmos-api.js';
 export type * from './ethereum-api.js';

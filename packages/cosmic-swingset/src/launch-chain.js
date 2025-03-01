@@ -26,8 +26,8 @@ import {
 } from '@agoric/swingset-vat';
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 import { openSwingStore } from '@agoric/swing-store';
-import { BridgeId as BRIDGE_ID } from '@agoric/internal';
-import { objectMapMutable } from '@agoric/internal/src/js-utils.js';
+import { attenuate, BridgeId as BRIDGE_ID } from '@agoric/internal';
+import { objectMapMutable, TRUE } from '@agoric/internal/src/js-utils.js';
 import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import * as ActionType from '@agoric/internal/src/action-types.js';
 
@@ -405,7 +405,7 @@ export async function buildSwingset(
 /**
  * @param {LaunchOptions} options
  */
-export async function launch({
+export async function launchAndShareInternals({
   actionQueueStorage,
   highPriorityQueueStorage,
   kernelStateDBDir,
@@ -1408,5 +1408,26 @@ export async function launch({
     writeSlogObject,
     savedHeight,
     savedChainSends: JSON.parse(kvStore.get(getHostKey('chainSends')) || '[]'),
+    // NOTE: to be used only for testing purposes!
+    internals: {
+      controller,
+      bridgeInbound,
+      timer,
+    },
   };
+}
+
+/**
+ * @param {LaunchOptions} options
+ * @returns {Promise<Omit<Awaited<ReturnType<typeof launchAndShareInternals>>, 'internals'>>}
+ */
+export async function launch(options) {
+  const launchResult = await launchAndShareInternals(options);
+  return attenuate(launchResult, {
+    blockingSend: TRUE,
+    shutdown: TRUE,
+    writeSlogObject: TRUE,
+    savedHeight: TRUE,
+    savedChainSends: TRUE,
+  });
 }

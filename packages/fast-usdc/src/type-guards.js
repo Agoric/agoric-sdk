@@ -150,8 +150,7 @@ harden(ChainPolicyShape);
 /**
  * @type {TypedPattern<FeedPolicy>}
  *
- * Should be JSON serializable so CLI can specify policy. E.g. no bigint,
- * undefined, remotable, etc.
+ * must be CopyData; no Brands or other Remotables
  */
 export const FeedPolicyShape = M.splitRecord(
   {

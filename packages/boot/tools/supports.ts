@@ -294,6 +294,8 @@ export const AckBehavior = {
   Queued: 'QUEUED',
   /** inbound messages are delivered immediately */
   Immediate: 'IMMEDIATE',
+  /** inbound responses never arrive (to simulate mis-configured connections etc.) */
+  Never: 'NEVER',
 } as const;
 type AckBehaviorType = (typeof AckBehavior)[keyof typeof AckBehavior];
 
@@ -509,6 +511,12 @@ export const makeSwingsetTestKit = async (
         switch (obj.method) {
           case 'startChannelOpenInit': {
             const message = icaMocks.channelOpenAck(obj, bech32Prefix);
+            if (
+              ackBehaviors?.[bridgeId]?.startChannelOpenInit ===
+              AckBehavior.Never
+            ) {
+              return undefined;
+            }
             const handle = shouldAckImmediately(
               bridgeId,
               'startChannelOpenInit',
@@ -586,6 +594,10 @@ export const makeSwingsetTestKit = async (
 
   console.timeLog('makeBaseSwingsetTestKit', 'buildSwingset');
 
+  // XXX This initial run() might not be necessary. Tests pass without it as of
+  // 2025-02, but we suspect that `makeSwingsetTestKit` just isn't being
+  // exercised in the right way.
+  await controller.run();
   const runUtils = makeBootstrapRunUtils(controller, harness);
 
   const buildProposal = makeProposalExtractor({

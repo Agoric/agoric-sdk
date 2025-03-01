@@ -12,4 +12,5 @@
     "tools/**/*.js",
     "tools/**/*.ts",
   ],
+  "exclude": ["test/fast-usdc/bundles/"]
 }
