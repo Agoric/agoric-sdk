@@ -4,8 +4,6 @@
  * @enum {(typeof TxStatus)[keyof typeof TxStatus]}
  */
 export const TxStatus = /** @type {const} */ ({
-  /** tx was observed but not advanced */
-  Observed: 'OBSERVED',
   /** IBC transfer is initiated */
   Advancing: 'ADVANCING',
   /** IBC transfer is complete */
@@ -36,8 +34,6 @@ export const TerminalTxStatus = {
  * @enum {(typeof PendingTxStatus)[keyof typeof PendingTxStatus]}
  */
 export const PendingTxStatus = /** @type {const} */ ({
-  /** tx was observed but not advanced */
-  Observed: 'OBSERVED',
   /** IBC transfer is initiated */
   Advancing: 'ADVANCING',
   /** IBC transfer failed (timed out) */

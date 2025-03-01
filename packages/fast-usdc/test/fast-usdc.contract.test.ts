@@ -626,7 +626,7 @@ test.serial('STORY01: advancing happy path for 100 USDC', async t => {
   const sent1 = await cust1.sendFast(t, 108_000_000n, 'osmo1234advanceHappy');
   await transmitTransferAck(); // ack IBC transfer for advance
   const expectedTransitions = [
-    { evidence: sent1, status: 'OBSERVED' },
+    { evidence: sent1, status: undefined },
     { status: 'ADVANCING' },
     { status: 'ADVANCED' },
   ];
@@ -835,7 +835,7 @@ test.serial('withdraw all liquidity while ADVANCING', async t => {
   await mint(sent);
   await utils.transmitTransferAck();
   t.like(storage.getDeserialized(`fun.txns.${sent.txHash}`), [
-    { evidence: sent, status: 'OBSERVED' },
+    { evidence: sent, status: undefined },
     { status: 'ADVANCING' },
     { status: 'ADVANCED' },
     { status: 'DISBURSED' },
@@ -1019,7 +1019,7 @@ test.serial('Settlement for unknown transaction (operator down)', async t => {
   await eventLoopIteration();
 
   t.deepEqual(storage.getDeserialized(`fun.txns.${sent.txHash}`), [
-    { evidence: sent, status: 'OBSERVED' },
+    { evidence: sent, status: undefined },
     { status: 'FORWARDED' },
   ]);
 });
@@ -1058,7 +1058,7 @@ test.serial('mint received while ADVANCING', async t => {
 
   const split = makeFeeTools(feeConfig).calculateSplit(usdc.make(5_000_000n));
   t.deepEqual(storage.getDeserialized(`fun.txns.${sent.txHash}`), [
-    { evidence: sent, status: 'OBSERVED' },
+    { evidence: sent, status: undefined },
     { status: 'ADVANCING' },
     { status: 'ADVANCED' },
     { split, status: 'DISBURSED' },
