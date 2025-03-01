@@ -1,3 +1,5 @@
+/** @file main export: @see {prepareSettler} */
+
 import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
 import { CosmosChainAddressShape } from '@agoric/orchestration';
@@ -103,6 +105,17 @@ export const stateShape = harden({
 });
 
 /**
+ * The Settler is responsible for monitoring (using receiveUpcall) deposits to
+ * the settlementAccount. It either "disburses" funds to the Pool (if funds were
+ * "advance"d to the payee), or "forwards" funds to the payee (if pool funds
+ * were not advanced).
+ *
+ * Funds are forwarded
+ *
+ * `receivUpcall` is configured to receive notifications in
+ * `monitorMintingDeposits()`, with a call to
+ * `settlementAccount.monitorTransfers()`.
+ *
  * @param {Zone} zone
  * @param {object} caps
  * @param {StatusManager} caps.statusManager
@@ -224,7 +237,6 @@ export const prepareSettler = (
               this.state.mintedEarly.add(makeMintedEarlyKey(nfa, amount));
               return;
 
-            case PendingTxStatus.Observed:
             case PendingTxStatus.AdvanceSkipped:
             case PendingTxStatus.AdvanceFailed:
               return self.forward(found.txHash, amount, EUD);
@@ -272,10 +284,12 @@ export const prepareSettler = (
           }
         },
         /**
+         * If the EUD received minted funds without an advance, forward the
+         * funds to the pool.
+         *
          * @param {CctpTxEvidence} evidence
          * @param {CosmosChainAddress} destination
-         * @returns {boolean}
-         * @throws {Error} if minted early, so advancer doesn't advance
+         * @returns {boolean} whether the EUD received funds without an advance
          */
         checkMintedEarly(evidence, destination) {
           const {
@@ -300,6 +314,9 @@ export const prepareSettler = (
       },
       self: {
         /**
+         * The intended payee received an advance from the pool. When the funds
+         * are minted, disburse them to the pool and fee seats.
+         *
          * @param {EvmHash} txHash
          * @param {NatValue} fullValue
          */
@@ -333,6 +350,8 @@ export const prepareSettler = (
           statusManager.disbursed(txHash, split);
         },
         /**
+         * Funds were not advanced. Forward proceeds to the payee directly.
+         *
          * @param {EvmHash} txHash
          * @param {NatValue} fullValue
          * @param {string} EUD

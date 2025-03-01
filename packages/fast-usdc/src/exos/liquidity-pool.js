@@ -279,15 +279,15 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
           const post = depositCalc(shareWorth, proposal);
 
           // COMMIT POINT
-          const mint = shareMint.mintGains(post.payouts);
+          const sharePayout = shareMint.mintGains(post.payouts);
           try {
             this.state.shareWorth = post.shareWorth;
             zcf.atomicRearrange(
               harden([
                 // zoe guarantees lp has proposal.give allocated
                 [lp, poolSeat, proposal.give],
-                // mintGains() above establishes that mint has post.payouts
-                [mint, lp, post.payouts],
+                // mintGains() above establishes that sharePayout has post.payouts
+                [sharePayout, lp, post.payouts],
               ]),
             );
           } catch (cause) {
@@ -295,7 +295,7 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
             throw new Error('🚨 cannot commit deposit', { cause });
           } finally {
             lp.exit();
-            mint.exit();
+            sharePayout.exit();
           }
           external.publishPoolMetrics();
         },

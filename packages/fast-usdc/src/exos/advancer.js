@@ -1,3 +1,5 @@
+/** @file main export: @see {prepareAdvancerKit} */
+
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
@@ -29,6 +31,7 @@ import { makeFeeTools } from '../utils/fees.js';
  * @import {AddressHook, EvmHash, FeeConfig, LogFn, NobleAddress, EvidenceWithRisk} from '../types.js';
  * @import {StatusManager} from './status-manager.js';
  * @import {LiquidityPoolKit} from './liquidity-pool.js';
+ * @import { TransactionFeedKit } from './transaction-feed.js';
  */
 
 /**
@@ -103,6 +106,10 @@ export const stateShape = harden({
 });
 
 /**
+ * Advancer subscribes (using handleTransactionEvent) to events published by the
+ * {@link TransactionFeedKit}. When notified of an appropriate opportunity, it
+ * is responsible for advancing funds to EUD.
+ *
  * @param {Zone} zone
  * @param {AdvancerKitPowers} caps
  */
