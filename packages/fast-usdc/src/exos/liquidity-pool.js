@@ -252,15 +252,15 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
       },
 
       depositHandler: {
-        /** @param {ZCFSeat} lpSeat */
-        async handle(lpSeat) {
+        /** @param {ZCFSeat} lp */
+        async handle(lp) {
           const { shareWorth, shareMint, poolSeat, encumberedBalance } =
             this.state;
           const { external } = this.facets;
 
           /** @type {USDCProposalShapes['deposit']} */
           // @ts-expect-error ensured by proposalShape
-          const proposal = lpSeat.getProposal();
+          const proposal = lp.getProposal();
           checkPoolBalance(
             poolSeat.getCurrentAllocation(),
             shareWorth,
@@ -269,23 +269,23 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
           const post = depositCalc(shareWorth, proposal);
 
           // COMMIT POINT
-          const sharePayoutSeat = shareMint.mintGains(post.payouts);
+          const sharePayout = shareMint.mintGains(post.payouts);
           try {
             this.state.shareWorth = post.shareWorth;
             zcf.atomicRearrange(
               harden([
-                // zoe guarantees lpSeat has proposal.give allocated
-                [lpSeat, poolSeat, proposal.give],
-                // mintGains() above establishes that sharePayoutSeat has post.payouts
-                [sharePayoutSeat, lpSeat, post.payouts],
+                // zoe guarantees lp has proposal.give allocated
+                [lp, poolSeat, proposal.give],
+                // mintGains() above establishes that sharePayout has post.payouts
+                [sharePayout, lp, post.payouts],
               ]),
             );
           } catch (cause) {
             // UNTIL #10684: ability to terminate an incarnation w/o terminating the contract
             throw new Error('🚨 cannot commit deposit', { cause });
           } finally {
-            lpSeat.exit();
-            sharePayoutSeat.exit();
+            lp.exit();
+            sharePayout.exit();
           }
           external.publishPoolMetrics();
         },
