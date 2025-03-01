@@ -57,9 +57,12 @@ export const makeFsStreamWriter = async filePath => {
   })();
   await fsStreamReady(stream);
   const writeAsync = promisify(stream.write.bind(stream));
-  const endAsync = useStdout
-    ? undefined
-    : stream.end && promisify(stream.end.bind(stream));
+  const closeAsync =
+    useStdout || !(/** @type {any} */ (stream).close)
+      ? undefined
+      : promisify(
+          /** @type {import('fs').WriteStream} */ (stream).close.bind(stream),
+        );
 
   let flushed = Promise.resolve();
   let closed = false;
@@ -104,7 +107,7 @@ export const makeFsStreamWriter = async filePath => {
     // TODO: Consider creating a single Error here to use a write rejection
     closed = true;
     await flush();
-    await endAsync?.();
+    await closeAsync?.();
   };
 
   stream.on('error', err => updateFlushed(Promise.reject(err)));
