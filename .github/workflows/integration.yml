@@ -1,4 +1,5 @@
 env:
+  GOLANG_VERSION: '1.22'
   LOADGEN_REPO_NAME: 'testnet-load-generator'
   ORG_NAME: 'Agoric'
 
@@ -135,7 +136,7 @@ jobs:
         working-directory: ./agoric-sdk
       - uses: ./agoric-sdk/.github/actions/restore-golang
         with:
-          go-version: '1.22'
+          go-version: '${{ env.GOLANG_VERSION }}'
           path: ./agoric-sdk
       - uses: ./agoric-sdk/.github/actions/restore-node
         with:
@@ -266,7 +267,14 @@ jobs:
         run: make docker-build-sdk
         working-directory: agoric-sdk/packages/deployment
 
-      - uses: ./agoric-sdk/.github/actions/restore-node
+      - id: restore-golang
+        uses: ./agoric-sdk/.github/actions/restore-golang
+        with:
+          go-version: '${{ env.GOLANG_VERSION }}'
+          path: ./agoric-sdk
+
+      - id: restore-node
+        uses: ./agoric-sdk/.github/actions/restore-node
         with:
           # Rebuilding the SDK image with resolved endo packages is not currently supported
           # and since we can't build core eval submissions from the SDK using a newer endo,
@@ -274,7 +282,6 @@ jobs:
           ignore-endo-branch: 'true'
           node-version: '18.x'
           path: ./agoric-sdk
-        id: restore-node
 
       - name: setup a3p-integration
         run: yarn install
