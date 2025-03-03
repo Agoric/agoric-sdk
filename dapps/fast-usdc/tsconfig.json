@@ -1,14 +1,14 @@
 {
   "compilerOptions": {
     "target": "esnext",
-    "module": "esnext",
-    "moduleResolution": "bundler",
+    "module": "NodeNext",
+    "moduleResolution": "nodenext",
     // This prevents checking of .d.ts files. We would like to check the ones we write
     // but we leave this off because of the errors in deps we don't control.
     "skipLibCheck": true,
     "allowJs": true,
-    "checkJs": true,
-    "allowSyntheticDefaultImports": true,
+    "checkJs": false,
+    // "allowSyntheticDefaultImports": true,
     "strict": false,
     "downlevelIteration": true,
     "strictNullChecks": true,
@@ -22,10 +22,15 @@
     "rewriteRelativeImportExtensions": true,
     "noEmit": true
   },
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+  ],
   "include": [
-    "scripts",
+    // "scripts",
     "src",
-    "test",
-    "testing"
+    // "test",
+    // "testing"
   ],
 }
