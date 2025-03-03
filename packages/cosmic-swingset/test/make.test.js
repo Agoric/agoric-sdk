@@ -86,7 +86,7 @@ test.serial('integration test: rosetta CI', async t => {
 
   // Run the chain until error or rosetta-cli exits.
   const chain = scenario2.spawnMake(['scenario2-run-chain'], {
-    stdio: ['ignore', 'ignore', 'ignore'],
+    stdio: fdList,
   });
   const rosetta = scenario2.spawnMake(['scenario2-run-rosetta-ci'], {
     stdio: fdList,
@@ -120,7 +120,7 @@ const walletProvisioning = test.macro({
 
     // Run the chain until error or this test exits.
     const chain = scenario2.spawnMake(['scenario2-run-chain'], {
-      stdio: ['ignore', 'inherit', 'inherit'],
+      stdio: fdList,
     });
     t.teardown(async () => {
       chain.kill();
@@ -218,9 +218,103 @@ const walletProvisioning = test.macro({
       retryCount < retryCountMax,
       `wallet is provisioned within ${retryCount} retries out of ${retryCountMax}`,
     );
-
     await verifier?.stop(t);
   },
 });
 
 test.serial(walletProvisioning, 'wallet provisioning');
+
+const makeMetricsVerifier = (url, metricNames) => {
+  /** @type {Promise<void>} */
+  let finished;
+  let metricStartValues;
+
+  const getMetricValues = async () => {
+    const metricValues = {};
+    const metricsResponse = await fetch(url);
+    if (!metricsResponse.ok) {
+      throw new Error(`Failed to fetch metrics: ${metricsResponse.statusText}`);
+    }
+
+    const metricsText = await metricsResponse.text();
+
+    for (const metricName of metricNames) {
+      const regex = new RegExp(`${metricName}\\{storeKey="vstorage"\\} (\\d+)`);
+      const match = metricsText.match(regex);
+      if (!match) {
+        // Prometheus does not publish counter values that are zero.
+        metricValues[metricName] = 0;
+        continue;
+      }
+
+      const value = parseInt(match[1], 10);
+      if (String(value) !== match[1]) {
+        throw new Error(`${metricName} ${match[1]} is not a base-10 number`);
+      }
+
+      if (Number.isNaN(value)) {
+        throw new Error(`${metricName} ${match[1]} is not a valid number`);
+      }
+
+      if (!(value > 0)) {
+        throw new Error(
+          `${metricName} ${match[1]} should be greater than zero`,
+        );
+      }
+
+      metricValues[metricName] = value;
+    }
+    return metricValues;
+  };
+
+  const start = async t => {
+    try {
+      metricStartValues = await getMetricValues();
+      t.log('metric start values:', metricStartValues);
+    } catch (error) {
+      t.fail(error.message);
+      return;
+    }
+
+    finished = new Promise((resolve, reject) => {
+      t.teardown(() =>
+        reject(
+          new Error('test finished without calling stop() on metrics verifier'),
+        ),
+      );
+      resolve();
+    });
+  };
+
+  const stop = async t => {
+    let metricEndValues;
+    try {
+      metricEndValues = await getMetricValues();
+      t.log('metric end values:', metricEndValues);
+    } catch (error) {
+      t.fail(error.message);
+      return;
+    }
+    for (const metricName of metricNames) {
+      const startValue = metricStartValues[metricName];
+      const endValue = metricEndValues[metricName];
+      if (endValue <= startValue) {
+        t.fail(
+          `${metricName} end value ${endValue} should be greater than start value ${startValue}`,
+        );
+      }
+    }
+    return finished;
+  };
+
+  return { start, stop };
+};
+
+test.serial(
+  walletProvisioning,
+  'vstorage metrics',
+  makeMetricsVerifier('http://localhost:26660/metrics', [
+    'store_size_decrease',
+    'store_size_increase',
+  ]),
+);
