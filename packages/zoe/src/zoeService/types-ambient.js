@@ -1,4 +1,5 @@
 // @jessie-check
+// @ts-check
 
 /// <reference types="ses" />
 
@@ -51,12 +52,12 @@
 
 /**
  * @callback GetInvitationIssuer
- * @returns {Promise<Issuer<'set', InvitationDetails>>}
+ * @returns {Promise<import('@agoric/ertp').Issuer<'set', InvitationDetails>>}
  */
 
 /**
  * @callback GetFeeIssuer
- * @returns {Promise<Issuer<'nat'>>}
+ * @returns {Promise<import('@agoric/ertp').Issuer<'nat'>>}
  */
 
 /**
@@ -69,7 +70,7 @@
 /**
  * @callback GetIssuers
  * @param {import('./utils.js').Instance<any>} instance
- * @returns {Promise<IssuerKeywordRecord>}
+ * @returns {Promise<import('@agoric/ertp').IssuerKeywordRecord>}
  */
 
 /**
@@ -98,19 +99,19 @@
 
 /**
  * @callback GetInstance
- * @param {ERef<Invitation>} invitation
+ * @param {ERef<import('../types-index.js').Invitation>} invitation
  * @returns {Promise<import('./utils.js').Instance<any>>}
  */
 
 /**
  * @callback GetInstallation
- * @param {ERef<Invitation>} invitation
+ * @param {ERef<import('../types-index.js').Invitation>} invitation
  * @returns {Promise<Installation>}
  */
 
 /**
  * @callback GetInvitationDetails
- * @param {ERef<Invitation<any, any>>} invitation
+ * @param {ERef<import('../types-index.js').Invitation<any, any>>} invitation
  * @returns {Promise<InvitationDetails>}
  */
 
@@ -151,7 +152,7 @@
 
 /**
  * @typedef {<Result, Args = undefined>(
- *   invitation: ERef<Invitation<Result, Args>>,
+ *   invitation: ERef<import('../types-index.js').Invitation<Result, Args>>,
  *   proposal?: Proposal,
  *   paymentKeywordRecord?: PaymentPKeywordRecord,
  *   offerArgs?: Args,
@@ -199,7 +200,7 @@
  * @property {() => Promise<PaymentPKeywordRecord>} getPayouts
  * returns a promise for a KeywordPaymentRecord containing all the payouts from
  * this seat. The promise will resolve after the seat has exited.
- * @property {(keyword: Keyword) => Promise<Payment<any, any>>} getPayout
+ * @property {(keyword: Keyword) => Promise<import('@agoric/ertp').Payment<any, any>>} getPayout
  * returns a promise for the Payment corresponding to the indicated keyword.
  * The promise will resolve after the seat has exited. If there is no payment
  * corresponding to the keyword, an error will be thrown. (It used to return
@@ -222,7 +223,7 @@
  * @property {() => Promise<Allocation>} getFinalAllocation
  * return a promise for the final allocation. The promise will resolve after the
  * seat has exited.
- * @property {() => Subscriber<Completion>} getExitSubscriber returns a subscriber that
+ * @property {() => Subscriber<import('../types-index.js').Completion>} getExitSubscriber returns a subscriber that
  * will be notified when the seat has exited or failed.
  */
 
@@ -288,8 +289,8 @@
  */
 
 /**
- * @typedef {Record<Keyword,ERef<Payment<any>>>} PaymentPKeywordRecord
- * @typedef {Record<Keyword,Payment<any>>} PaymentKeywordRecord
+ * @typedef {Record<Keyword,ERef<import('@agoric/ertp').Payment<any>>>} PaymentPKeywordRecord
+ * @typedef {Record<Keyword, import('@agoric/ertp').Payment<any>>} PaymentKeywordRecord
  */
 
 /**
@@ -314,13 +315,13 @@
 /**
  * @typedef {object} FeeIssuerConfig
  * @property {string} name
- * @property {AssetKind} assetKind
- * @property {DisplayInfo} displayInfo
+ * @property {import('@agoric/ertp').AssetKind} assetKind
+ * @property {import('@agoric/ertp').DisplayInfo} displayInfo
  */
 
 /**
  * @typedef {object} ZoeFeesConfig
- * @property {NatValue} getPublicFacetFee
+ * @property {import('@agoric/ertp').NatValue} getPublicFacetFee
  */
 
 /**

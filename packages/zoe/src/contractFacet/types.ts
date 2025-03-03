@@ -1,14 +1,20 @@
-/// <reference types="@agoric/ertp/exported" />
-/// <reference types="@endo/pass-style" />
-/// <reference path="../zoeService/utils.d.ts" />
+import type { Passable } from '@endo/pass-style';
+import type {
+  AdditionalDisplayInfo,
+  Amount,
+  AssetKind,
+  Brand,
+  Issuer,
+  Payment,
+} from '@agoric/ertp';
 
 /**
  * Any passable non-thenable. Often an explanatory string.
  */
-type Completion = import('@endo/pass-style').Passable;
-type ZCFMakeEmptySeatKit = (exit?: ExitRule | undefined) => ZcfSeatKit;
+export type Completion = Passable;
+export type ZCFMakeEmptySeatKit = (exit?: ExitRule | undefined) => ZcfSeatKit;
 
-type InvitationAmount = Amount<'set', InvitationDetails>;
+export type InvitationAmount = Amount<'set', InvitationDetails>;
 
 /**
  * Zoe Contract Facet
@@ -19,7 +25,7 @@ type InvitationAmount = Amount<'set', InvitationDetails>;
  * synchronously from within the contract, and usually is referred to
  * in code as zcf.
  */
-type ZCF<CT = Record<string, unknown>> = {
+export type ZCF<CT = Record<string, unknown>> = {
   /**
    * - atomically reallocate amounts among seats.
    */
@@ -81,14 +87,14 @@ type ZCF<CT = Record<string, unknown>> = {
   getInstance: () => Instance;
 };
 
-type TransferPart = [
+export type TransferPart = [
   fromSeat?: ZCFSeat,
   toSeat?: ZCFSeat,
   fromAmounts?: AmountKeywordRecord,
   toAmounts?: AmountKeywordRecord,
 ];
 
-type ZCFRegisterFeeMint = (
+export type ZCFRegisterFeeMint = (
   keyword: Keyword,
   allegedFeeMintAccess: FeeMintAccess,
 ) => Promise<ZCFMint<'nat'>>;
@@ -106,8 +112,8 @@ type ZCFRegisterFeeMint = (
  * will be appended to the returned jig object (overriding any
  * provided by the `testFn`).
  */
-type SetTestJig = (testFn?: () => Record<string, unknown>) => void;
-type ZCFMint<K extends AssetKind = AssetKind> = {
+export type SetTestJig = (testFn?: () => Record<string, unknown>) => void;
+export type ZCFMint<K extends AssetKind = AssetKind> = {
   getIssuerRecord: () => IssuerRecord<K>;
   /**
    * All the amounts in gains must be of this ZCFMint's brand.
@@ -135,8 +141,8 @@ type ZCFMint<K extends AssetKind = AssetKind> = {
  * fail called with the reason for this failure, where reason is
  * normally an instanceof Error.
  */
-type ZCFSeatFail = (reason: unknown) => Error;
-type ZCFSeat = import('@endo/pass-style').RemotableObject & {
+export type ZCFSeatFail = (reason: unknown) => Error;
+export type ZCFSeat = import('@endo/pass-style').RemotableObject & {
   exit: (completion?: Completion) => void;
   fail: ZCFSeatFail;
   getSubscriber: () => Promise<Subscriber<Allocation>>;
@@ -153,17 +159,17 @@ type ZCFSeat = import('@endo/pass-style').RemotableObject & {
   getCurrentAllocation: () => Allocation;
   isOfferSafe: (newAllocation: Allocation) => boolean;
 };
-type ZcfSeatKit = {
+export type ZcfSeatKit = {
   zcfSeat: ZCFSeat;
   userSeat: Promise<UserSeat>;
 };
-type HandleOffer<OR, OA> = (seat: ZCFSeat, offerArgs: OA) => OR;
-type OfferHandler<OR = unknown, OA = never> =
+export type HandleOffer<OR, OA> = (seat: ZCFSeat, offerArgs: OA) => OR;
+export type OfferHandler<OR = unknown, OA = never> =
   | HandleOffer<OR, OA>
   | {
       handle: HandleOffer<OR, OA>;
     };
-type ContractMeta<
+export type ContractMeta<
   SF extends // import inline to maintain ambient mode
     import('../zoeService/utils').ContractStartFunction = import('../zoeService/utils').ContractStartFunction,
 > = {
@@ -184,25 +190,25 @@ type ContractMeta<
  *
  * CAVEAT: assumes synchronous
  */
-type ContractStartFn<PF = any, CF = any, CT = any, PA = any> = (
+export type ContractStartFn<PF = any, CF = any, CT = any, PA = any> = (
   zcf: ZCF<CT>,
   privateArgs: PA,
   baggage: import('@agoric/vat-data').Baggage,
 ) => ContractStartFnResult<PF, CF>;
-type ContractStartFnResult<PF, CF> = {
+export type ContractStartFnResult<PF, CF> = {
   publicFacet?: PF;
   creatorFacet?: CF;
   creatorInvitation?: Promise<Invitation<any, any>> | undefined;
 };
 
 // XXX redef, losing documentation
-type ContractOf<S extends (...args: any) => any> =
+export type ContractOf<S extends (...args: any) => any> =
   import('../zoeService/utils').ContractOf<S>;
-type AdminFacet = import('../zoeService/utils').AdminFacet<any>;
+export type AdminFacet = import('../zoeService/utils').AdminFacet<any>;
 
 declare const OfferReturn: unique symbol;
 declare const OfferArgs: unique symbol;
-type Invitation<R = unknown, A = undefined> = Payment<
+export type Invitation<R = unknown, A = undefined> = Payment<
   'set',
   InvitationDetails
 > & {

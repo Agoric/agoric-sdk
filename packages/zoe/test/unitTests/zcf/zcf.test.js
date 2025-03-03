@@ -12,6 +12,10 @@ import buildManualTimer from '../../../tools/manualTimer.js';
 import { setupZCFTest } from './setupZcfTest.js';
 import { assertAmountsEqual } from '../../zoeTestHelpers.js';
 
+/**
+ * @import {ContractMeta, Invitation, OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
+ */
+
 test(`zcf.getZoeService`, async t => {
   const { zoe, zcf } = await setupZCFTest();
   const zoeService = await zcf.getZoeService();

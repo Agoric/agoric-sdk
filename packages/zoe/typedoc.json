@@ -4,7 +4,7 @@
     ],
     "entryPoints": [
         "src/contractFacet/internal-types.js",
-        "src/contractFacet/types-ambient.d.ts",
+        "src/contractFacet/types.js",
         "src/contractSupport/index.js",
         "src/contractSupport/types-ambient.js",
         "src/types.js",

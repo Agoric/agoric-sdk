@@ -289,3 +289,6 @@ export { makeDurableZoeKit, makeZoeKit };
 /**
  * @typedef {ReturnType<typeof makeDurableZoeKit>} ZoeKit
  */
+
+// eslint-disable-next-line import/export -- no named value exports; only types
+export * from '../types-index.js';

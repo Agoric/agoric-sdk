@@ -2,6 +2,10 @@
 /// <reference types="@agoric/ertp/exported" />
 
 /**
+ * @import {Completion, ContractMeta, ContractStartFn, Invitation, OfferHandler, TransferPart, ZCF, ZCFSeat} from '@agoric/zoe';
+ */
+
+/**
  * @typedef {object} SeatData
  * @property {ProposalRecord} proposal
  * @property {Allocation} initialAllocation

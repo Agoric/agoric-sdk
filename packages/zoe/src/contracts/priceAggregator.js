@@ -34,7 +34,9 @@ import {
  * @import {LegacyMap} from '@agoric/store'
  * @import {ContractOf} from '../zoeService/utils.js';
  * @import {PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {ContractMeta, ContractStartFn, Invitation, OfferHandler, TransferPart, ZCF, ZCFSeat} from '@agoric/zoe';
  */
+
 /** @typedef {bigint | number | string} ParsableNumber */
 /**
  * @typedef {Readonly<ParsableNumber | { data: ParsableNumber }>} OraclePriceSubmission

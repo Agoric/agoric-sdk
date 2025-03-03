@@ -32,7 +32,10 @@ import { ZcfI } from './typeGuards.js';
 /// <reference path="../internal-types.js" />
 /// <reference path="./internal-types.js" />
 
-/** @import {IssuerOptionsRecord} from '@agoric/ertp' */
+/**
+ * @import {IssuerOptionsRecord} from '@agoric/ertp';
+ * @import {ContractMeta, ContractStartFn, Invitation, OfferHandler, SetTestJig, TransferPart, ZCF, ZCFMint, ZCFRegisterFeeMint, ZCFSeat} from '@agoric/zoe';
+ */
 
 /**
  * Make the ZCF vat in zygote-usable form. First, a generic ZCF is

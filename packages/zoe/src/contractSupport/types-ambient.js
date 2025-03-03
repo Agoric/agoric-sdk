@@ -4,7 +4,7 @@
 
 /**
  * @typedef {object} SeatGainsLossesRecord
- * @property {ZCFSeat} seat
+ * @property {import('../types-index').ZCFSeat} seat
  * @property {AmountKeywordRecord} gains - what the seat will
  * gain as a result of this trade
  * @property {AmountKeywordRecord} losses - what the seat [will]
@@ -28,9 +28,9 @@
  *
  * The keywords for both seats must match.
  *
- * @param {ZCF} zcf
- * @param {ZCFSeat} leftSeat
- * @param {ZCFSeat} rightSeat
+ * @param {import('../types-index').ZCF} zcf
+ * @param {import('../types-index').ZCFSeat} leftSeat
+ * @param {import('../types-index').ZCFSeat} rightSeat
  * @returns {string}
  */
 
@@ -45,9 +45,9 @@
  * If the swap fails, no assets are transferred, both seats will fail,
  * and the function throws.
  *
- * @param {ZCF} zcf
- * @param {ZCFSeat} leftSeat
- * @param {ZCFSeat} rightSeat
+ * @param {import('../types-index').ZCF} zcf
+ * @param {import('../types-index').ZCFSeat} leftSeat
+ * @param {import('../types-index').ZCFSeat} rightSeat
  * @returns {string}
  */
 
