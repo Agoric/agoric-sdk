@@ -6,6 +6,7 @@ import { BrandShape } from '@agoric/ertp/src/typeGuards.js';
 import { VowShape } from '@agoric/vow';
 import {
   CosmosChainAddressShape,
+  ChainInfoShape,
   CoinShape,
   CosmosChainInfoShape,
   DenomAmountShape,
@@ -203,9 +204,13 @@ export const TransferRouteShape = M.splitRecord(
 );
 
 const ChainHubI = M.interface('ChainHub', {
+  // TODO: support more than `CosmosChainInfoShape`
   registerChain: M.call(M.string(), CosmosChainInfoShape).returns(),
   updateChain: M.call(M.string(), CosmosChainInfoShape).returns(),
-  getChainInfo: M.call(M.string()).returns(VowShape),
+  getChainInfo: M.call(M.or(M.string(), M.number())).returns(VowShape),
+  getChainInfoByChainId: M.call(M.or(M.string(), M.number())).returns(
+    CosmosChainInfoShape,
+  ),
   registerConnection: M.call(
     M.string(),
     M.string(),
@@ -246,7 +251,8 @@ const ChainHubI = M.interface('ChainHub', {
 export const makeChainHub = (zone, agoricNames, vowTools) => {
   /** @type {MapStore<string, CosmosChainInfo>} */
   const chainInfos = zone.mapStore('chainInfos', {
-    keyShape: M.string(),
+    keyShape: M.or(M.string(), M.number()),
+    // TODO: support more than `CosmosChainInfoShape`
     valueShape: CosmosChainInfoShape,
   });
   /** @type {MapStore<string, IBCConnectionInfo>} */
@@ -267,6 +273,11 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
   });
   /** @type {MapStore<string, string>} */
   const bech32PrefixToChainName = zone.mapStore('bech32PrefixToChainName', {
+    keyShape: M.string(),
+    valueShape: M.string(),
+  });
+  /** @type {MapStore<string | number, string>} */
+  const chainIdToChainName = zone.mapStore('chainIdToChainName', {
     keyShape: M.string(),
     valueShape: M.string(),
   });
@@ -305,6 +316,7 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
         // TODO consider makeAtomicProvider for vows
         if (!chainInfos.has(chainName)) {
           chainInfos.init(chainName, chainInfo);
+          chainIdToChainName.init(chainInfo.chainId, chainName);
           if (chainInfo.bech32Prefix) {
             bech32PrefixToChainName.init(chainInfo.bech32Prefix, chainName);
           }
@@ -355,9 +367,7 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
      * @template {string} C2
      * @param {C1} primaryName
      * @param {C2} counterName
-     * @returns {Promise<
-     *   [ActualChainInfo<C1>, ActualChainInfo<C2>, IBCConnectionInfo]
-     * >}
+     * @returns {Promise<[ChainInfo, ChainInfo, IBCConnectionInfo]>}
      */
     // eslint-disable-next-line no-restricted-syntax -- TODO more exact rules for vow best practices
     async (primaryName, counterName) => {
@@ -370,7 +380,7 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
       const connectionInfo = await vowTools.asPromise(
         chainHub.getConnectionInfo(primary, counter),
       );
-      return /** @type {[ActualChainInfo<C1>, ActualChainInfo<C2>, IBCConnectionInfo]} */ ([
+      return /** @type {[ChainInfo, ChainInfo, IBCConnectionInfo]} */ ([
         primary,
         counter,
         connectionInfo,
@@ -393,7 +403,8 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
      */
     registerChain(name, chainInfo) {
       chainInfos.init(name, chainInfo);
-      if (chainInfo.bech32Prefix) {
+      chainIdToChainName.init(`${chainInfo.chainId}`, name);
+      if ('bech32Prefix' in chainInfo && chainInfo.bech32Prefix) {
         bech32PrefixToChainName.init(chainInfo.bech32Prefix, name);
       }
     },
@@ -418,14 +429,13 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
       }
     },
     /**
-     * @template {string} K
-     * @param {K} chainName
-     * @returns {Vow<ActualChainInfo<K>>}
+     * @param {string} chainName
+     * @returns {Vow<ChainInfo>}
      */
     getChainInfo(chainName) {
       // Either from registerChain or memoized remote lookup()
       if (chainInfos.has(chainName)) {
-        return /** @type {Vow<ActualChainInfo<K>>} */ (
+        return /** @type {Vow<ChainInfo>} */ (
           vowTools.asVow(() => chainInfos.get(chainName))
         );
       }
@@ -433,14 +443,25 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
       return lookupChainInfo(chainName);
     },
     /**
-     * @param {string} primaryChainId
-     * @param {string} counterpartyChainId
+     * @param {string | number} chainId
+     */
+    getChainInfoByChainId(chainId) {
+      // Either from registerChain or memoized remote lookup()
+      chainIdToChainName.has(chainId) ||
+        Fail`Chain Info not found for ${q(chainId)}`;
+      const chainName = chainIdToChainName.get(chainId);
+      chainInfos.has(chainName) || Fail`Chain Info not found for ${q(chainId)}`;
+      return /** @type {ChainInfo} */ (chainInfos.get(chainName));
+    },
+    /**
+     * @param {string | number} primaryChainId
+     * @param {string | number} counterpartyChainId
      * @param {IBCConnectionInfo} connectionInfo from primary to counterparty
      */
     registerConnection(primaryChainId, counterpartyChainId, connectionInfo) {
       const [key, normalized] = normalizeConnectionInfo(
-        primaryChainId,
-        counterpartyChainId,
+        `${primaryChainId}`,
+        `${counterpartyChainId}`,
         connectionInfo,
       );
       connectionInfos.init(key, normalized);
@@ -494,12 +515,9 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
      * @template {string} C2
      * @param {C1} primaryName the primary chain name
      * @param {C2} counterName the counterparty chain name
-     * @returns {Vow<
-     *   [ActualChainInfo<C1>, ActualChainInfo<C2>, IBCConnectionInfo]
-     * >}
+     * @returns {Vow<[ChainInfo, ChainInfo, IBCConnectionInfo]>}
      */
     getChainsAndConnection(primaryName, counterName) {
-      // @ts-expect-error XXX generic parameter propagation
       return lookupChainsAndConnection(primaryName, counterName);
     },
 
