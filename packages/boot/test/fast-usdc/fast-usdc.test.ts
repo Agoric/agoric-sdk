@@ -354,7 +354,7 @@ test.serial('upgrade; update noble ICA', async t => {
   await documentStorageSchema(t, storage, {
     node: 'fastUsdc.feeConfig',
     showValue: defaultSerializer.parse,
-    note: 'feeConfig: 0.01USDC flat, 0.5% variable, 20% contract cut',
+    note: 'feeConfig: 0.01USDC flat, 0.1% variable, 20% contract cut',
   });
 
   const outboundDIBC = bridgeUtils.getOutboundMessages(BridgeId.DIBC);
@@ -495,7 +495,7 @@ test.serial('makes usdc advance', async t => {
     { status: 'OBSERVED' },
     { status: 'ADVANCING' },
     { status: 'ADVANCED' },
-    { status: 'DISBURSED', split: { ContractFee: { value: 152_000n } } },
+    { status: 'DISBURSED', split: { ContractFee: { value: 32_000n } } },
   ]);
 
   const doc = {
@@ -519,12 +519,12 @@ test.serial('writes pool metrics to vstorage', async t => {
 test.serial('distributes fees per BLD staker decision', async t => {
   const { walletFactoryDriver: wd, buildProposal, evalProposal } = t.context;
 
-  const ContractFee = 152_000n; // see split above
-  t.is(((ContractFee - 60_000n) * 5n) / 10n, 46_000n);
+  const ContractFee = 32000n; // see split above
+  t.is(((ContractFee - 16_000n) * 5n) / 10n, 8_000n);
 
   const cases = [
-    { dest: 'agoric1a', args: ['--fixedFees', '0.06'], rxd: '60000' },
-    { dest: 'agoric1b', args: ['--feePortion', '0.5'], rxd: '46000' },
+    { dest: 'agoric1a', args: ['--fixedFees', '0.016'], rxd: '16000' },
+    { dest: 'agoric1b', args: ['--feePortion', '0.5'], rxd: '8000' },
   ];
   for (const { dest, args, rxd } of cases) {
     await wd.provideSmartWallet(dest);
