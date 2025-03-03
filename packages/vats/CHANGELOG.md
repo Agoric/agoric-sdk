@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.16.0-u19.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.16.0-u19.0...@agoric/vats@0.16.0-u19.1) (2025-03-03)
+
+**Note:** Version bump only for package @agoric/vats
+
+
+
+
+
 ## [0.16.0-u19.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.15.1...@agoric/vats@0.16.0-u19.0) (2025-02-24)
 
 

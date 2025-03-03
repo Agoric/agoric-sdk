@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.42.0-u19.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.42.0-u19.0...@agoric/cosmic-swingset@0.42.0-u19.1) (2025-03-03)
+
+
+### Bug Fixes
+
+* Properly synchronize slog sender termination ([2fc342c](https://github.com/Agoric/agoric-sdk/commit/2fc342c180e296208d077a1d4799da139d3b7848))
+
+
+
 ## [0.42.0-u19.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.41.3...@agoric/cosmic-swingset@0.42.0-u19.0) (2025-02-24)
 
 

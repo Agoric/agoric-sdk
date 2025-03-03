@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.4.0-u19.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/internal@0.4.0-u19.0...@agoric/internal@0.4.0-u19.1) (2025-03-03)
+
+
+### Bug Fixes
+
+* **internal:** Exempt process.stdout from being closed by makeFsStreamWriter ([ff29903](https://github.com/Agoric/agoric-sdk/commit/ff29903c5cb0667a802fc9a8ed2402d0c323e68d))
+* Properly synchronize slog sender termination ([2fc342c](https://github.com/Agoric/agoric-sdk/commit/2fc342c180e296208d077a1d4799da139d3b7848))
+
+
+
 ## [0.4.0-u19.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/internal@0.3.2...@agoric/internal@0.4.0-u19.0) (2025-02-24)
 
 
