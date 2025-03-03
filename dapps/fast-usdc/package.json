@@ -9,16 +9,12 @@
     "tools"
   ],
   "main": "src/main.js",
-  "bin": {
-    "fast-usdc": "./src/cli/bin.js"
-  },
+  "bin": "./src/cli/bin.js",
   "scripts": {
     "build": "exit 0",
     "test": "ava",
     "test:c8": "c8 --all $C8_OPTIONS ava",
-    "test:xs": "exit 0",
-    "lint-fix": "yarn lint:eslint --fix",
-    "lint": "run-s --continue-on-error lint:*",
+    "lint": "yarn lint:types && yarn lint:eslint",
     "lint:types": "tsc",
     "lint:eslint": "eslint ."
   },
@@ -26,6 +22,7 @@
     "@agoric/eslint-config": "^0.4.1-dev-7efdf47.0",
     "@agoric/swingset-liveslots": "dev",
     "@agoric/vats": "dev",
+    "@agoric/zoe": "dev",
     "@agoric/zone": "dev",
     "@fast-check/ava": "^2.0.1",
     "ava": "^5.3.0",
@@ -33,7 +30,8 @@
     "eslint": "^9.19.0",
     "execa": "9.1.0",
     "npm-run-all": "^4.1.5",
-    "ts-blank-space": "^0.4.4"
+    "ts-blank-space": "^0.4.4",
+    "typescript": "^5.8.2"
   },
   "dependencies": {
     "@agoric/client-utils": "dev",
@@ -62,8 +60,7 @@
     "@nick134-bit/noblejs": "0.0.2",
     "bech32": "^2.0.0",
     "commander": "^12.1.0",
-    "ethers": "^6.13.4",
-    "yarn": "^1.22.22"
+    "ethers": "^6.13.4"
   },
   "ava": {
     "extensions": {
@@ -82,6 +79,7 @@
     ],
     "timeout": "20m"
   },
+  "packageManager": "yarn@4.7.0",
   "license": "Apache-2.0",
   "publishConfig": {
     "access": "public"
