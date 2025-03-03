@@ -19,6 +19,7 @@
     "lint:eslint": "eslint ."
   },
   "devDependencies": {
+    "@agoric/deploy-script-support": "dev",
     "@agoric/eslint-config": "^0.4.1-dev-7efdf47.0",
     "@agoric/swingset-liveslots": "dev",
     "@agoric/vats": "dev",

@@ -7,7 +7,7 @@ import type {
   DenomDetail,
 } from '@agoric/orchestration';
 import type { IBCChannelID } from '@agoric/vats';
-import type { Amount } from '@agoric/ertp';
+import type { Amount, Ratio } from '@agoric/ertp';
 import type { CopyRecord, Passable } from '@endo/pass-style';
 import type { PendingTxStatus, TxStatus } from './constants.js';
 import type { FastUsdcTerms } from './fast-usdc.contract.js';
