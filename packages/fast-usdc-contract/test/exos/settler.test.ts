@@ -296,7 +296,7 @@ test('happy path: disburse to LPs; StatusManager removes tx', async t => {
   await eventLoopIteration();
   const { storage } = t.context;
   t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
-    { evidence: cctpTxEvidence, status: undefined },
+    { evidence: cctpTxEvidence, status: 'OBSERVED' },
     { status: 'ADVANCING' },
     { status: 'ADVANCED' },
     { split: expectedSplit, status: 'DISBURSED' },
@@ -364,7 +364,7 @@ test('slow path: forward to EUD; remove pending tx', async t => {
   accounts.settlement.transferVResolver.resolve(undefined);
   await eventLoopIteration();
   t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
-    { evidence: cctpTxEvidence, status: undefined },
+    { evidence: cctpTxEvidence, status: 'OBSERVED' },
     { risksIdentified: ['TOO_LARGE_AMOUNT'], status: 'ADVANCE_SKIPPED' },
     { status: 'FORWARDED' },
   ]);
@@ -440,7 +440,7 @@ test('skip advance: forward to EUD; remove pending tx', async t => {
   );
   const { storage } = t.context;
   t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
-    { evidence: cctpTxEvidence, status: undefined },
+    { evidence: cctpTxEvidence, status: 'OBSERVED' },
     { status: 'ADVANCE_SKIPPED', risksIdentified: ['TOO_LARGE_AMOUNT'] },
     { status: 'FORWARDED' },
   ]);
@@ -523,7 +523,7 @@ test('Settlement for unknown transaction (minted early)', async t => {
   accounts.settlement.transferVResolver.resolve(undefined);
   await eventLoopIteration();
   t.deepEqual(storage.getDeserialized(`fun.txns.${evidence.txHash}`), [
-    { evidence, status: undefined },
+    { evidence, status: 'OBSERVED' },
     { status: 'FORWARDED' },
   ]);
 });
@@ -690,7 +690,7 @@ test('Settlement for Advancing transaction (advance succeeds)', async t => {
   simulate.finishAdvance(cctpTxEvidence, true);
   await eventLoopIteration();
   t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
-    { evidence: cctpTxEvidence, status: undefined },
+    { evidence: cctpTxEvidence, status: 'OBSERVED' },
     { status: 'ADVANCING' },
     { status: 'ADVANCED' },
     { split: expectedSplit, status: 'DISBURSED' },
@@ -754,7 +754,7 @@ test('Settlement for Advancing transaction (advance fails)', async t => {
   accounts.settlement.transferVResolver.resolve(undefined);
   await eventLoopIteration();
   t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
-    { evidence: cctpTxEvidence, status: undefined },
+    { evidence: cctpTxEvidence, status: 'OBSERVED' },
     { status: 'ADVANCING' },
     { status: 'ADVANCE_FAILED' },
     { status: 'FORWARDED' },
@@ -804,7 +804,7 @@ test('slow path, and forward fails (terminal state)', async t => {
   ]);
 
   t.deepEqual(storage.getDeserialized(`fun.txns.${evidence.txHash}`), [
-    { evidence, status: undefined },
+    { evidence, status: 'OBSERVED' },
     { status: 'FORWARD_FAILED' },
   ]);
 });
