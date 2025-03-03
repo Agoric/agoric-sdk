@@ -5,11 +5,14 @@ import fs from 'fs/promises';
 import { spawn as ambientSpawn } from 'child_process';
 import * as ambientPath from 'path';
 
-import { stderr } from 'process';
 import { makeScenario2, makeWalletTool, pspawn } from './scenario2.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
 const test = anyTest;
+
+const defaultFDs = ['ignore', 'ignore', 'ignore'];
+const debugFDs = ['ignore', 'inherit', 'inherit'];
+const fdList = process.env.DEBUG ? debugFDs : defaultFDs;
 
 const makeTestContext = async t => {
   const filename = new URL(import.meta.url).pathname;
@@ -57,7 +60,7 @@ test.serial('integration test: rosetta CI', async t => {
 
   // Run the chain until error or rosetta-cli exits.
   const chain = scenario2.spawnMake(['scenario2-run-chain'], {
-    stdio: ['ignore', 'ignore', 'ignore'],
+    stdio: fdList,
   });
   const rosetta = scenario2.spawnMake(['scenario2-run-rosetta-ci']);
   const cleanup = async () => {
@@ -81,7 +84,7 @@ const walletProvisioning = test.macro({
   title(_, title, _verifier) {
     return title;
   },
-  async exec(t, _title, _verifier) {
+  async exec(t, _title, verifier) {
     const retryCountMax = 5;
     // Resume the chain... and concurrently, start a faucet AND run the rosetta-cli tests
     const { pspawnAgd, scenario2 } = t.context;
@@ -95,7 +98,7 @@ const walletProvisioning = test.macro({
 
     // Run the chain until error or rosetta-cli exits.
     const chain = scenario2.spawnMake(['scenario2-run-chain'], {
-      stdio: ['ignore', 'inherit', 'inherit'],
+      stdio: fdList,
     });
 
     await waitForBlock('chain bootstrap', 1);
@@ -143,9 +146,10 @@ const walletProvisioning = test.macro({
     );
 
     await waitForBlock('after funding', 1, true);
+    await verifier?.start(t);
     const provisionAcct = scenario2.spawnMake(
       ['provision-acct', `ACCT_ADDR=${soloAddr}`],
-      { stdio: ['ignore', 'inherit', 'inherit'] },
+      { stdio: fdList },
     );
 
     const cleanupProvisionAcct = async () => {
@@ -183,7 +187,91 @@ const walletProvisioning = test.macro({
       retryCount < retryCountMax,
       `wallet is provisioned within ${retryCount} retries out of ${retryCountMax}`,
     );
+    await verifier?.stop(t);
   },
 });
 
 test.serial(walletProvisioning, 'wallet provisioning');
+
+const makeMetricsVerifier = (url, metricNames) => {
+  /** @type {Promise<void>} */
+  let finished;
+  let metricStartValues;
+
+  const getMetricValues = async () => {
+    const metricValues = {};
+    const metricsResponse = await fetch(url);
+    if (!metricsResponse.ok) {
+      throw new Error(`Failed to fetch metrics: ${metricsResponse.statusText}`);
+    }
+
+    const metricsText = await metricsResponse.text();
+
+    for (const metricName of metricNames) {
+      const regex = new RegExp(`${metricName}\\{storeKey="vstorage"\\} (\\d+)`);
+      const match = metricsText.match(regex);
+      if (!match) {
+        throw new Error(
+          `Fetch response text does not contain required line for ${metricName}`,
+        );
+      }
+      const value = parseInt(match[1], 10);
+      if (value <= 0) {
+        throw new Error(`${metricName} should be greater than zero`);
+      }
+      metricValues[metricName] = value;
+    }
+    return metricValues;
+  };
+
+  const start = async t => {
+    try {
+      metricStartValues = await getMetricValues();
+      t.log('metric start values:', metricStartValues);
+    } catch (error) {
+      t.fail(error.message);
+      return;
+    }
+
+    finished = new Promise((resolve, reject) => {
+      t.teardown(() =>
+        reject(
+          new Error('test finished without calling stop() on metrics verifier'),
+        ),
+      );
+      resolve();
+    });
+  };
+
+  const stop = async t => {
+    let metricEndValues;
+    try {
+      metricEndValues = await getMetricValues();
+      t.log('metric end values:', metricEndValues);
+    } catch (error) {
+      t.fail(error.message);
+      return;
+    }
+    for (const metricName of metricNames) {
+      const startValue = metricStartValues[metricName];
+      const endValue = metricEndValues[metricName];
+      if (endValue <= startValue) {
+        t.fail(
+          `${metricName} end value ${endValue} should be greater than start value ${startValue}`,
+        );
+      }
+    }
+    return finished;
+  };
+
+  return { start, stop };
+};
+
+test.serial(
+  walletProvisioning,
+  'vstorage metrics',
+  makeMetricsVerifier('http://localhost:26660/metrics', [
+    'store_size_decrease',
+    'store_size_increase',
+  ]),
+);
