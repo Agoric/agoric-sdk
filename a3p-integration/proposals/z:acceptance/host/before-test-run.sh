@@ -2,10 +2,9 @@
 
 set -o nounset -o xtrace
 
-AG_CHAIN_COSMOS_HOME="/tmp/agoric"
+AG_CHAIN_COSMOS_HOME="$HOME/.agoric"
 DIRECTORY_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 FOLLOWER_LOGS_FILE="/tmp/loadgen-follower-logs"
-GO_VERSION="1.22.12"
 LOGS_FILE="/tmp/before-test-run-hook-logs"
 SDK_REPOSITORY_NAME="agoric-sdk"
 TIMESTAMP="$(date '+%s')"
@@ -14,19 +13,7 @@ COMMON_PARENT="${DIRECTORY_PATH%/"$SDK_REPOSITORY_NAME"*}"
 NETWORK_CONFIG="/tmp/network-config-$TIMESTAMP"
 OUTPUT_DIRECTORY="/tmp/loadgen-output"
 
-install_go() {
-  if ! which go > /dev/null; then
-    local go_tar="/tmp/go.tar.gz"
-
-    curl --location --output "$go_tar" --silent "https://go.dev/dl/go$GO_VERSION.linux-amd64.tar.gz"
-    tar --directory "$HOME" --extract --file "$go_tar" --gzip
-    rm -f "$go_tar"
-    export PATH="$HOME/go/bin:$PATH"
-  fi
-}
-
 main() {
-  install_go
   mkdir -p "$AG_CHAIN_COSMOS_HOME" "$NETWORK_CONFIG" "$OUTPUT_DIRECTORY"
   wait_for_network_config
   start_follower > "$FOLLOWER_LOGS_FILE" 2>&1
