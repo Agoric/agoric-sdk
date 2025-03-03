@@ -10,7 +10,10 @@ import { makeGovernedTerms as makeGovernedATerms } from '../auction/params.js';
 import { makeReserveTerms } from '../reserve/params.js';
 import { makeGovernedTerms as makeGovernedVFTerms } from '../vaultFactory/params.js';
 
-/** @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils.js' */
+/**
+ * @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
+ */
 
 const trace = makeTracer('RunEconBehaviors', true);
 

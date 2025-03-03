@@ -3,6 +3,7 @@ export {};
 /**
  * @import {Guarded} from '@endo/exo';
  * @import {Passable, Container} from '@endo/pass-style';
+ * @import {AdminFacet, InvitationAmount} from '@agoric/zoe';
  * @import {ContractStartFunction} from '@agoric/zoe/src/zoeService/utils.js';
  */
 

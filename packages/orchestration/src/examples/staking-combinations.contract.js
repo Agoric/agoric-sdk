@@ -17,6 +17,7 @@ import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
 
 /**
  * @import {GuestInterface} from '@agoric/async-flow';
+ * @import {ContractMeta, Invitation, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationTools, OrchestrationPowers} from '../utils/start-helper.js';
  * @import {CosmosOrchestrationAccount} from '../exos/cosmos-orchestration-account.js';

@@ -19,6 +19,7 @@ import { makeZoeTools } from '../utils/zoe-tools.js';
  * @import {Remote} from '@agoric/internal';
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
+ * @import {ZCF} from '@agoric/zoe';
  */
 
 const trace = makeTracer('StakeBld');
