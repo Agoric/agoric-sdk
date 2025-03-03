@@ -16,6 +16,7 @@ OUTPUT_DIRECTORY="/tmp/loadgen-output"
 main() {
   mkdir -p "$AG_CHAIN_COSMOS_HOME" "$NETWORK_CONFIG" "$OUTPUT_DIRECTORY"
   wait_for_network_config
+  wait_for_rpc
   start_follower > "$FOLLOWER_LOGS_FILE" 2>&1
 }
 
@@ -42,6 +43,30 @@ wait_for_network_config() {
   network_config=$(node "$DIRECTORY_PATH/../wait-for-follower.mjs" "^{.*")
   echo "Got network config: $network_config"
   echo "$network_config" > "$NETWORK_CONFIG/network-config"
+}
+
+wait_for_rpc() {
+  local rpc_address
+  local status_code
+
+  rpc_address="$(jq --raw-output '.rpcAddrs[0]' < "$NETWORK_CONFIG/network-config")"
+
+  echo "Waiting for rpc '$rpc_address' to respond"
+
+  while true; do
+    curl "$rpc_address" --max-time "5" --silent > /dev/null 2>&1
+    status_code="$?"
+
+    echo "rpc '$rpc_address' responded with '$status_code'"
+
+    if ! test "$status_code" -eq "0"; then
+      sleep 5
+    else
+      break
+    fi
+  done
+
+  echo "rpc '$rpc_address' is up"
 }
 
 main > "$LOGS_FILE" 2>&1 &
