@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.33.0-u19.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.33.0-u19.0...@agoric/swingset-vat@0.33.0-u19.1) (2025-03-03)
+
+
+### Bug Fixes
+
+* **SwingSet:** Include level in kernel console slog output ([9e1ce5b](https://github.com/Agoric/agoric-sdk/commit/9e1ce5bb5be8ab589d926676e778b6920f4d8270)), closes [#10925](https://github.com/Agoric/agoric-sdk/issues/10925)
+
+
+
 ## [0.33.0-u19.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.32.2...@agoric/swingset-vat@0.33.0-u19.0) (2025-02-24)
 
 
