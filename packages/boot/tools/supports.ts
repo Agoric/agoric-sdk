@@ -51,6 +51,7 @@ import type { SwingsetController } from '@agoric/swingset-vat/src/controller/con
 import type { BridgeHandler, IBCDowncallMethod, IBCMethod } from '@agoric/vats';
 import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
 import type { EProxy } from '@endo/eventual-send';
+import { tmpdir } from 'node:os';
 import { icaMocks, protoMsgMockMap, protoMsgMocks } from './ibc/mocks.js';
 
 const trace = makeTracer('BSTSupport', false);
@@ -192,9 +193,6 @@ interface Powers {
  * @returns A function that builds and extracts proposal data
  */
 export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
-  const getPkgPath = (pkg, fileName = '') =>
-    importSpec(`../../${pkg}/${fileName}`);
-
   const runPackageScript = (
     outputDir: string,
     scriptPath: string,
@@ -236,8 +234,9 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
   };
 
   const buildAndExtract = async (builderPath: string, args: string[] = []) => {
+    // XXX rebuilds every time
     const tmpDir = await fsAmbientPromises.mkdtemp(
-      join(getPkgPath('builders'), 'proposal-'),
+      join(tmpdir(), 'agoric-proposal-'),
     );
 
     const built = parseProposalParts(
