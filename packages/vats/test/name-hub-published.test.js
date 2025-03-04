@@ -57,4 +57,22 @@ test('promise space reserves non-well-known names', async t => {
   t.is(await thing1, true);
 
   t.is(await nameHub.lookup('thing1'), true);
+
+  // Ensure the name is reserved immediately, but the promise is resolved a
+  // while later.
+  t.falsy(nameHub.has('thing2'));
+  space.produce.thing2.resolve(
+    new Promise(resolve => setTimeout(() => resolve(true), 100)),
+  );
+
+  // The name wasn't reserved yet.
+  t.falsy(nameHub.has('thing2'));
+
+  // But after one event loop iteration, it is.
+  await eventLoopIteration();
+  t.true(nameHub.has('thing2'));
+
+  // And after we consume the thing, it's still there.
+  t.is(await space.consume.thing2, true);
+  t.is(await nameHub.lookup('thing2'), true);
 });

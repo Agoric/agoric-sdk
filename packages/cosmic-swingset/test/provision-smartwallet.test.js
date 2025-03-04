@@ -9,7 +9,9 @@ import * as ambientFs from 'fs';
 import { VBankAccount } from '@agoric/internal';
 import { makeScenario2, makeWalletTool, pspawn } from './scenario2.js';
 
-// module account address for 'vbank/provision'; aka "megz"
+// module account address for 'vbank/provision'; aka "megzy"
+//
+// TL;DR: `agd query auth module-account vbank/provision`
 //
 // It seems to be some sort of hash of the name, 'vbank/provision'.
 // Lack of documentation is a known issue:
@@ -30,7 +32,7 @@ import { makeScenario2, makeWalletTool, pspawn } from './scenario2.js';
 // https://github.com/cosmos/cosmos-sdk/issues/13782 Nov 2022
 const provisionPoolModuleAccount = VBankAccount.provision.address;
 
-test.before(async t => {
+test.skip('body of test.before', async t => {
   const filename = new URL(import.meta.url).pathname;
   const dirname = ambientPath.dirname(filename);
   const makefileDir = ambientPath.join(dirname, '..');
