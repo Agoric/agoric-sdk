@@ -4,6 +4,7 @@
 import childProcessAmbient from 'child_process';
 import { promises as fsAmbientPromises } from 'fs';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
+import { createRequire } from 'node:module';
 import { basename, join } from 'path';
 import { inspect } from 'util';
 
@@ -52,13 +53,10 @@ import type { BridgeHandler, IBCDowncallMethod, IBCMethod } from '@agoric/vats';
 import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
 import type { EProxy } from '@endo/eventual-send';
 import { tmpdir } from 'node:os';
+import { create } from 'node:domain';
 import { icaMocks, protoMsgMockMap, protoMsgMocks } from './ibc/mocks.js';
 
 const trace = makeTracer('BSTSupport', false);
-
-/** @param {string} spec package resource specifier */
-const importSpec = spec =>
-  new URL(importMetaResolve(spec, import.meta.url)).pathname;
 
 type ConsumeBootrapItem = <N extends string>(
   name: N,
@@ -190,7 +188,11 @@ interface Powers {
  * @param powers.fs - Node fs/promises module for file operations
  * @returns A function that builds and extracts proposal data
  */
-export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
+export const makeProposalExtractor = (
+  { childProcess, fs }: Powers,
+  resolveBase = import.meta.url,
+) => {
+  const importSpec = createRequire(resolveBase).resolve;
   const runPackageScript = (
     outputDir: string,
     scriptPath: string,
@@ -400,6 +402,7 @@ type AckBehaviorType = (typeof AckBehavior)[keyof typeof AckBehavior];
  * @param options.debugVats - Array of vat names to debug
  * @param options.defaultManagerType - SwingSet manager type to use
  * @param options.harness - Optional run harness
+ * @param options.resolveBase - Base URL or path for resolving module paths
  * @returns A test kit with various utilities for interacting with the SwingSet
  */
 export const makeSwingsetTestKit = async (
@@ -415,8 +418,10 @@ export const makeSwingsetTestKit = async (
     debugVats = [] as string[],
     defaultManagerType = 'local' as ManagerType,
     harness = undefined as RunHarness | undefined,
+    resolveBase = import.meta.url,
   } = {},
 ) => {
+  const importSpec = createRequire(resolveBase).resolve;
   console.time('makeBaseSwingsetTestKit');
   const configPath = await getNodeTestVaultsConfig({
     bundleDir,
