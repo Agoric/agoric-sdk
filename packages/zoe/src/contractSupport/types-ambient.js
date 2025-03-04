@@ -1,10 +1,11 @@
 // @jessie-check
 
 /// <reference types="ses" />
+/// <reference types="@agoric/zoe/exported" />
 
 /**
  * @typedef {object} SeatGainsLossesRecord
- * @property {import('../types-index').ZCFSeat} seat
+ * @property {ZCFSeat} seat
  * @property {AmountKeywordRecord} gains - what the seat will
  * gain as a result of this trade
  * @property {AmountKeywordRecord} losses - what the seat [will]
@@ -28,9 +29,9 @@
  *
  * The keywords for both seats must match.
  *
- * @param {import('../types-index').ZCF} zcf
- * @param {import('../types-index').ZCFSeat} leftSeat
- * @param {import('../types-index').ZCFSeat} rightSeat
+ * @param {ZCF} zcf
+ * @param {ZCFSeat} leftSeat
+ * @param {ZCFSeat} rightSeat
  * @returns {string}
  */
 
@@ -45,9 +46,9 @@
  * If the swap fails, no assets are transferred, both seats will fail,
  * and the function throws.
  *
- * @param {import('../types-index').ZCF} zcf
- * @param {import('../types-index').ZCFSeat} leftSeat
- * @param {import('../types-index').ZCFSeat} rightSeat
+ * @param {ZCF} zcf
+ * @param {ZCFSeat} leftSeat
+ * @param {ZCFSeat} rightSeat
  * @returns {string}
  */
 

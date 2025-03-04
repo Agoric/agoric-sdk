@@ -113,7 +113,8 @@ export const start = async (zcf, privateArgs, baggage) => {
             trace('makeStakeBldInvitation', give);
             const { holder } = await makeLocalAccountKit();
             /** @type {Record<string, Payment<'nat'>>} */
-            // @ts-expect-error XXX PaymentPKeywordRecord throught deeplyFulfilled will be a PaymnentKeywordRecord
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- fails only through some build paths
+            // @ts-ignore XXX PaymentPKeywordRecord, though after deeplyFulfilled it will be a PaymentKeywordRecord
             const { In } = await deeplyFulfilled(
               withdrawFromSeat(zcf, seat, give),
             );
