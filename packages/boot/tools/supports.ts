@@ -127,20 +127,19 @@ export const keyArrayEqual = (
  *
  * @param options - Configuration options
  * @param options.bundleDir - Directory to store bundle cache files
- * @param options.specifier - Path to the base config file
+ * @param options.configPath - Path to the base config file
  * @param options.defaultManagerType - SwingSet manager type to use
  * @param options.discriminator - Optional string to include in the config filename
  * @returns Path to the generated config file
  */
 export const getNodeTestVaultsConfig = async ({
-  bundleDir = 'bundles',
-  specifier = '@agoric/vm-config/decentral-itest-vaults-config.json',
+  bundleDir,
+  configPath,
   defaultManagerType = 'local' as ManagerType,
   discriminator = '',
 }) => {
-  const fullPath = importSpec(specifier);
   const config: SwingSetConfig & { coreProposals?: any[] } = NonNullish(
-    await loadSwingsetConfigFile(fullPath),
+    await loadSwingsetConfigFile(configPath),
   );
 
   // Manager types:
@@ -168,7 +167,7 @@ export const getNodeTestVaultsConfig = async ({
     discriminator,
     new Date().toISOString().replaceAll(/[^0-9TZ]/g, ''),
     `${Math.random()}`.replace(/.*[.]/, '').padEnd(8, '0').slice(0, 8),
-    basename(specifier),
+    basename(configPath),
   ].filter(s => !!s);
   const testConfigPath = `${bundleDir}/${configFilenameParts.join('.')}`;
   await fsAmbientPromises.writeFile(
@@ -410,7 +409,7 @@ export const makeSwingsetTestKit = async (
   log: (..._: any[]) => void,
   bundleDir = 'bundles',
   {
-    configSpecifier = undefined as string | undefined,
+    configSpecifier = '@agoric/vm-config/decentral-itest-vaults-config.json',
     label = undefined as string | undefined,
     storage = makeFakeStorageKit('bootstrapTests'),
     verbose = false,
@@ -424,7 +423,7 @@ export const makeSwingsetTestKit = async (
   console.time('makeBaseSwingsetTestKit');
   const configPath = await getNodeTestVaultsConfig({
     bundleDir,
-    specifier: configSpecifier,
+    configPath: importSpec(configSpecifier),
     discriminator: label,
     defaultManagerType,
   });
