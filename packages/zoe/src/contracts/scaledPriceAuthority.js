@@ -11,6 +11,7 @@ import { provideQuoteMint } from '../contractSupport/priceAuthorityQuoteMint.js'
 
 /**
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {ZCF} from '@agoric/zoe';
  */
 
 /**

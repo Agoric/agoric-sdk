@@ -9,8 +9,16 @@ import { expectNotType, expectType } from 'tsd';
 
 import { M, type Key } from '@endo/patterns';
 // 'prepare' is deprecated but still supported
+import type { Brand } from '@agoric/ertp';
 import type { prepare as scaledPriceAuthorityStart } from '../src/contracts/scaledPriceAuthority.js';
 import type { Instance } from '../src/zoeService/utils.js';
+import type {
+  ContractMeta,
+  Invitation,
+  ZCF,
+  ZCFSeat,
+  ZoeService,
+} from '../src/types-index.js';
 
 const zoe = {} as ZoeService;
 const scaledPriceInstallation = {} as Installation<

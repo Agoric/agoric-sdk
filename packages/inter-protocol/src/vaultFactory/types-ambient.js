@@ -96,7 +96,10 @@
 /**
  * @typedef {object} LiquidationStrategy
  * @property {() => KeywordKeywordRecord} keywordMapping
- * @property {(collateral: Amount, run: Amount) => Proposal} makeProposal
+ * @property {(
+ *   collateral: Amount,
+ *   run: Amount,
+ * ) => import('@agoric/zoe').Proposal} makeProposal
  * @property {(debt: Amount) => Promise<Invitation>} makeInvitation
  */
 

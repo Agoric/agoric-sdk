@@ -4,6 +4,9 @@ import { Fail, q } from '@endo/errors';
 import { provideDurableMapStore } from '@agoric/vat-data';
 import { AssetKind, hasIssuer, prepareIssuerKit } from '@agoric/ertp';
 import { InvitationElementShape } from '../typeGuards.js';
+/**
+ * @import {FeeIssuerConfig, InvitationDetails} from '@agoric/zoe';
+ */
 
 /**
  * Not deprecated because the first use below is still correct.

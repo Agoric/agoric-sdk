@@ -47,6 +47,7 @@ import { prepareOfferWatcher, makeWatchOfferOutcomes } from './offerWatcher.js';
 
 /**
  * @import {WeakMapStore, MapStore} from '@agoric/store'
+ * @import {InvitationDetails, PaymentPKeywordRecord, Proposal, UserSeat} from '@agoric/zoe';
  * @import {EReturn} from '@endo/far';
  * @import {OfferId, OfferStatus} from './offers.js';
  */

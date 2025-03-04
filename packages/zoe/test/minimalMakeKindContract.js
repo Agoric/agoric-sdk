@@ -1,4 +1,5 @@
 /* global VatData */
+// @ts-nocheck
 
 const start = _zcf => {
   VatData.defineKind('x', () => {}, {});

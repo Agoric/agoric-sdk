@@ -23,6 +23,7 @@ import { TransferPartShape } from '../contractSupport/atomicTransfer.js';
 /**
  * @import {LegacyWeakMap, WeakMapStore} from '@agoric/store';
  * @import {MapStore} from '@agoric/swingset-liveslots';
+ * @import {ContractMeta, Invitation, OfferHandler, TransferPart, ZCF, ZCFSeat} from '@agoric/zoe';
  */
 
 /**

@@ -12,6 +12,7 @@ import { preparePurseKind } from './purse.js';
 import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
 
 /**
+ * @import {Key, Pattern} from '@endo/patterns';
  * @import {Amount, AssetKind, DisplayInfo, PaymentLedger, Payment, Brand, RecoverySetsOption, Purse, Issuer, Mint} from './types.js'
  * @import {ShutdownWithFailure} from '@agoric/swingset-vat'
  * @import {TypedPattern} from '@agoric/internal';

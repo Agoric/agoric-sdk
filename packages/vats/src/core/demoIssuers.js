@@ -11,6 +11,8 @@ import {
 import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
 import { Stake, Stable } from '@agoric/internal/src/tokens.js';
 
+/** @import {FeeMintAccess, Installation} from '@agoric/zoe' */
+
 const { multiply, floorDivide } = natSafeMath;
 const { entries, fromEntries, keys, values } = Object;
 

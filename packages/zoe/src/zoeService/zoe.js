@@ -28,7 +28,11 @@ import { getZcfBundleCap } from './createZCFVat.js';
 import { defaultFeeIssuerConfig, prepareFeeMint } from './feeMint.js';
 import { ZoeServiceI } from '../typeGuards.js';
 
-/** @import {Baggage} from '@agoric/vat-data' */
+/**
+ * @import {VatAdminSvc} from '@agoric/swingset-vat';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {FeeIssuerConfig, FeeMintAccess, ZCFSpec, ZoeService} from './types.js';
+ */
 
 /**
  * Create a durable instance of Zoe.
@@ -289,3 +293,6 @@ export { makeDurableZoeKit, makeZoeKit };
 /**
  * @typedef {ReturnType<typeof makeDurableZoeKit>} ZoeKit
  */
+
+// eslint-disable-next-line import/export -- no named value exports; only types
+export * from '../types-index.js';

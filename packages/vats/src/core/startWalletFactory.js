@@ -14,6 +14,7 @@ import {
 
 /**
  * @import {EReturn} from '@endo/far';
+ * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
  */
 
 const trace = makeTracer('StartWF');

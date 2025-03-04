@@ -14,6 +14,7 @@ const { Vow$ } = NetworkShape;
 
 /**
  * @import {EReturn} from '@endo/far';
+ * @import {Key, Pattern} from '@endo/patterns';
  * @import {TypedJson, ResponseTo, JsonSafe} from '@agoric/cosmic-proto';
  * @import {PromiseVow, VowTools} from '@agoric/vow';
  * @import {TargetApp, TargetRegistration} from './bridge-target.js';

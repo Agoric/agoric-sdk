@@ -4,7 +4,7 @@ import { X, Fail, q, makeError, annotateError } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 
 export const makeInvitationQueryFns = invitationIssuer => {
-  /** @type {GetInvitationDetails} */
+  /** @type {import('./types.ts').GetInvitationDetails} */
   const getInvitationDetails = async invitationP => {
     const onRejected = reason => {
       const err = makeError(
@@ -21,11 +21,11 @@ export const makeInvitationQueryFns = invitationIssuer => {
     return invAmount.value[0];
   };
 
-  /** @type {GetInstance} */
+  /** @type {import('./types.ts').GetInstance} */
   const getInstance = invitation =>
     E.get(getInvitationDetails(invitation)).instance;
 
-  /** @type {GetInstallation} */
+  /** @type {import('./types.ts').GetInstallation} */
   const getInstallation = invitation =>
     E.get(getInvitationDetails(invitation)).installation;
 

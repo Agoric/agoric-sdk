@@ -5,6 +5,7 @@ import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import { makeHeapZone } from '@agoric/zone';
 import type { TestFn } from 'ava';
+import type { ZCF } from '@agoric/zoe';
 import type { OrchestrationFlow } from '../src/orchestration-api.js';
 import { provideOrchestration } from '../src/utils/start-helper.js';
 import { commonSetup } from './supports.js';
