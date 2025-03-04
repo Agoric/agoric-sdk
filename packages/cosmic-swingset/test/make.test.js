@@ -5,7 +5,6 @@ import fs from 'fs/promises';
 import { spawn as ambientSpawn } from 'child_process';
 import * as ambientPath from 'path';
 
-import { stderr } from 'process';
 import { makeScenario2, makeWalletTool, pspawn } from './scenario2.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
@@ -26,6 +25,12 @@ const makeTestContext = async t => {
 test.before(async t => {
   t.context = await makeTestContext(t);
   await t.context.scenario2.setup();
+  t.log('run chain to halt');
+  t.is(
+    await t.context.scenario2.runToHalt(),
+    0,
+    'make scenario2-run-chain-to-halt is successful',
+  );
 });
 
 test.serial('make and exec', async t => {
@@ -35,12 +40,6 @@ test.serial('make and exec', async t => {
   const { pspawnAgd, scenario2 } = t.context;
   t.log('exec agd');
   t.is(await pspawnAgd([]).exit, 0, 'exec agd exits successfully');
-  t.log('run chain to halt');
-  t.is(
-    await scenario2.runToHalt(),
-    0,
-    'make scenario2-run-chain-to-halt is successful',
-  );
   t.log('resume chain and halt');
   t.is(
     await scenario2.runToHalt(),
@@ -83,7 +82,7 @@ const walletProvisioning = test.macro({
   },
   async exec(t, _title, _verifier) {
     const retryCountMax = 5;
-    // Resume the chain... and concurrently, start a faucet AND run the rosetta-cli tests
+    // Resume the chain...
     const { pspawnAgd, scenario2 } = t.context;
     const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
     const { query, waitForBlock } = makeWalletTool({
@@ -93,7 +92,7 @@ const walletProvisioning = test.macro({
       delay,
     });
 
-    // Run the chain until error or rosetta-cli exits.
+    // Run the chain until error or this test exits.
     const chain = scenario2.spawnMake(['scenario2-run-chain'], {
       stdio: ['ignore', 'inherit', 'inherit'],
     });
