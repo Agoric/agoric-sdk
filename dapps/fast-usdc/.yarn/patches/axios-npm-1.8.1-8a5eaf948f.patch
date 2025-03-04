@@ -1,0 +1,60 @@
+diff --git a/dist/axios.js b/dist/axios.js
+index d914deb36c6ea4385a5efb83fda55fccdf3e486e..b256b8d9cb68bdf2499ec08ae4658b264df448f0 100644
+--- a/dist/axios.js
++++ b/dist/axios.js
+@@ -1063,7 +1063,9 @@
+    */
+   var inherits = function inherits(constructor, superConstructor, props, descriptors) {
+     constructor.prototype = Object.create(superConstructor.prototype, descriptors);
+-    constructor.prototype.constructor = constructor;
++    Object.defineProperty(constructor.prototype, 'constructor', {
++      value: constructor
++    });
+     Object.defineProperty(constructor, 'super', {
+       value: superConstructor.prototype
+     });
+diff --git a/dist/node/axios.cjs b/dist/node/axios.cjs
+index db4997bee1aa48aca215c6b2e7443292c94c086f..fb39f7e0046c66b1c0275c1a82ed49d3cc7cff83 100644
+--- a/dist/node/axios.cjs
++++ b/dist/node/axios.cjs
+@@ -371,9 +371,18 @@ function merge(/* obj1, obj2, obj3, ... */) {
+ const extend = (a, b, thisArg, {allOwnKeys}= {}) => {
+   forEach(b, (val, key) => {
+     if (thisArg && isFunction(val)) {
+-      a[key] = bind(val, thisArg);
+-    } else {
++      val = bind(val, thisArg);
++    }
++    const oldDesc = Object.getOwnPropertyDescriptor(a, key);
++    if (oldDesc) {
+       a[key] = val;
++    } else {
++      Object.defineProperty(a, key, {
++        value: val,
++        writable: true,
++        enumerable: true,
++        configurable: true
++      });
+     }
+   }, {allOwnKeys});
+   return a;
+@@ -404,7 +413,9 @@ const stripBOM = (content) => {
+  */
+ const inherits = (constructor, superConstructor, props, descriptors) => {
+   constructor.prototype = Object.create(superConstructor.prototype, descriptors);
+-  constructor.prototype.constructor = constructor;
++  Object.defineProperty(constructor.prototype, 'constructor', {
++    value: constructor
++  });
+   Object.defineProperty(constructor, 'super', {
+     value: superConstructor.prototype
+   });
+@@ -566,7 +577,7 @@ const isRegExp = kindOfTest('RegExp');
+ 
+ const reduceDescriptors = (obj, reducer) => {
+   const descriptors = Object.getOwnPropertyDescriptors(obj);
+-  const reducedDescriptors = {};
++  const reducedDescriptors = Object.create(null);
+ 
+   forEach(descriptors, (descriptor, name) => {
+     let ret;

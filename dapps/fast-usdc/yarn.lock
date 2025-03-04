@@ -1952,7 +1952,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios@npm:^1.6.0":
+"axios@npm:1.8.1":
   version: 1.8.1
   resolution: "axios@npm:1.8.1"
   dependencies:
@@ -1960,6 +1960,17 @@ __metadata:
     form-data: "npm:^4.0.0"
     proxy-from-env: "npm:^1.1.0"
   checksum: 10c0/b2e1d5a61264502deee4b50f0a6df0aa3b174c546ccf68c0dff714a2b8863232e0bd8cb5b84f853303e97f242a98260f9bb9beabeafe451ad5af538e9eb7ac22
+  languageName: node
+  linkType: hard
+
+"axios@patch:axios@npm%3A1.8.1#~/.yarn/patches/axios-npm-1.8.1-8a5eaf948f.patch":
+  version: 1.8.1
+  resolution: "axios@patch:axios@npm%3A1.8.1#~/.yarn/patches/axios-npm-1.8.1-8a5eaf948f.patch::version=1.8.1&hash=22d412"
+  dependencies:
+    follow-redirects: "npm:^1.15.6"
+    form-data: "npm:^4.0.0"
+    proxy-from-env: "npm:^1.1.0"
+  checksum: 10c0/cad23eff1d6d32fd345781da0b96761511e1a8ca24277901120bb503648e636557b7b305a2320892e5e480d1f92c08b730cd867b361ad34485716449155343bc
   languageName: node
   linkType: hard
 
