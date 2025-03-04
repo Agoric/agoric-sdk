@@ -188,6 +188,7 @@ export const prepareBridgeTargetKit = (zone, makeTargetRegistration) =>
     {
       bridgeHandler: {
         fromBridge(obj) {
+          debugger;
           const { inboundEventType, targetToApp } = this.state;
           const { type, target } = obj;
 

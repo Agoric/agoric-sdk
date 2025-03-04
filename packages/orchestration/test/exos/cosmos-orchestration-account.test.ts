@@ -526,7 +526,7 @@ test('getBalance and getBalances', async t => {
   }
 });
 
-test('StakingAccountQueries', async t => {
+test.only('StakingAccountQueries', async t => {
   const {
     mocks: { ibcBridge },
   } = t.context;
@@ -775,6 +775,7 @@ test('StakingAccountQueries', async t => {
   };
 
   // Test getDelegation
+  debugger;
   const delegationResult = await E(account).getDelegation(mockValidator);
   t.deepEqual(delegationResult, {
     amount: { denom: 'uatom', value: 1000000n },

@@ -81,6 +81,11 @@ const prepareTransferInterceptor = (zone, vowTools) => {
                 );
             // Upon failure, respond with an error acknowledgement.
             retP = watch(retP, this.facets.nackSender, { response });
+          } else {
+            console.log(
+              'TransferInterceptor received unknown packet, ignoring',
+              obj.event,
+            );
           }
 
           // Always log errors.

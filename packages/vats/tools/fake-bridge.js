@@ -376,6 +376,8 @@ export const makeFakeTransferBridge = (zone, onToBridge = () => {}) => {
       return undefined;
     },
     fromBridge: async obj => {
+      debugger;
+      console.log('FakeTBridge', obj);
       if (!hndlr) throw Error('no handler!');
       return when(E(hndlr).fromBridge(obj));
     },

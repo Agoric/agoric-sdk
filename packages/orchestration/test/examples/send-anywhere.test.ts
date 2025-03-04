@@ -65,7 +65,7 @@ test('single amount proposal shape (keyword record)', async t => {
   }
 });
 
-test('send using arbitrary chain info', async t => {
+test.only('send using arbitrary chain info', async t => {
   t.log('bootstrap, orchestration core-eval');
   const {
     bootstrap,
@@ -119,6 +119,7 @@ test('send using arbitrary chain info', async t => {
     agoricToHotConnection,
   );
 
+  console.log('SAt G');
   t.log('client uses contract to send to hot new chain');
   {
     const publicFacet = await E(zoe).getPublicFacet(sendKit.instance);
@@ -126,16 +127,21 @@ test('send using arbitrary chain info', async t => {
     const amt = await E(zoe).getInvitationDetails(inv);
     t.is(amt.description, 'send');
 
+    console.log('SAt H');
     const anAmt = ist.units(3.5);
     const Send = await pourPayment(anAmt);
+    console.log('SAt H3');
     const userSeat = await E(zoe).offer(
       inv,
       { give: { Send: anAmt } },
       { Send },
       { destAddr: 'hot1destAddr', chainName },
     );
+    console.log('SAt H5');
     await transmitTransferAck();
+    console.log('SAt H7');
     await vt.when(E(userSeat).getOfferResult());
+    console.log('SAt I');
 
     const history = inspectLocalBridge();
     t.like(history, [
@@ -146,6 +152,8 @@ test('send using arbitrary chain info', async t => {
     t.is(messages.length, 1);
     const [txfr] = messages;
     t.log('local bridge', txfr);
+
+    console.log('SAt J');
     t.like(txfr, {
       '@type': '/ibc.applications.transfer.v1.MsgTransfer',
       receiver: 'hot1destAddr',
@@ -156,6 +164,7 @@ test('send using arbitrary chain info', async t => {
     });
   }
 
+  console.log('SAt K');
   t.log('well-known chains such as cosmos work the same way');
   {
     const anAmt = ist.units(1.25);

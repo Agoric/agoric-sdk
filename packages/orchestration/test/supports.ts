@@ -151,6 +151,8 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     ibcSequenceNonce += 1n;
     // let the promise for the transfer start
     await eventLoopIteration();
+    debugger;
+
     if (localBridgeMessages.length < 1)
       throw Error('no messages on the local bridge');
 
@@ -159,15 +161,15 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       throw Error('no messages in the last tx');
 
     const lastMsgTransfer = b1.messages[0];
-    await E(transferBridge).fromBridge(
-      buildVTransferEvent({
-        receiver: lastMsgTransfer.receiver,
-        sender: lastMsgTransfer.sender,
-        target: lastMsgTransfer.sender,
-        sourceChannel: lastMsgTransfer.sourceChannel,
-        sequence: ibcSequenceNonce,
-      }),
-    );
+    const event = buildVTransferEvent({
+      receiver: lastMsgTransfer.receiver,
+      sender: lastMsgTransfer.sender,
+      target: lastMsgTransfer.sender,
+      sourceChannel: lastMsgTransfer.sourceChannel,
+      sequence: ibcSequenceNonce,
+    });
+    debugger;
+    await E(transferBridge).fromBridge(event);
     // let the bridge handler finish
     await eventLoopIteration();
   };

@@ -1021,6 +1021,7 @@ export const prepareCosmosOrchestrationAccountKit = (
                 }),
               ),
             ]);
+            debugger;
             return watch(results, this.facets.delegationQueryWatcher);
           });
         },

@@ -231,6 +231,7 @@ export const preparePacketTools = (zone, vowTools) => {
             console.debug('Stashing object in upcallQueue');
             this.state.upcallQueue = harden(upcallQueue.concat(obj));
           }
+          debugger;
           console.debug('No match yet.');
         },
       },
@@ -289,6 +290,7 @@ export const preparePacketTools = (zone, vowTools) => {
           if (i < 0) {
             // No match yet. Save the pattern for later.
             console.debug('No match yet. Save the pattern for later.');
+            console.log('No match', { pattern });
             resolverToPattern.init(resolver, pattern);
             return;
           }

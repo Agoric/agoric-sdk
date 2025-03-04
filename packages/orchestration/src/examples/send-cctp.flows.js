@@ -7,7 +7,7 @@ import { M, mustMatch } from '@endo/patterns';
  * @import {Vow} from '@agoric/vow';
  * @import {LocalOrchestrationAccountKit} from '../exos/local-orchestration-account.js';
  * @import {ZoeTools} from '../utils/zoe-tools.js';
- * @import {Orchestrator, OrchestrationFlow, LocalAccountMethods, OrchestrationAccountCommon, OrchestrationAccount, IBCConnectionInfo, ChainAddress, ForwardInfo, Chain} from '../types.js';
+ * @import {Orchestrator, OrchestrationFlow, LocalAccountMethods, OrchestrationAccountCommon, OrchestrationAccount, IBCConnectionInfo, AccountIdArg, ForwardInfo, Chain} from '../types.js';
  * @import {IBCChannelID} from '@agoric/vats';
  */
 
@@ -25,7 +25,6 @@ harden(makeNobleAccount);
 
 // TODO use case should be handled by `sendIt` based on the destination
 /**
- * @deprecated `sendIt` should handle this
  * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {object} ctx
@@ -79,9 +78,14 @@ export const sendByCCTP = async (
   const sharedLocalAccount = await sharedLocalAccountP;
   await localTransfer(seat, sharedLocalAccount, give);
 
+  debugger;
+
   if (typeof info.cctpDestinationDomain !== 'number') {
     // within the inter-chain; no CCTP needed
+    console.log('CCTP via IBC');
     try {
+      debugger;
+
       await sharedLocalAccount.transfer(
         {
           value: destAddr,
@@ -91,6 +95,7 @@ export const sendByCCTP = async (
         { denom, value: amt.value },
       );
       void log(`completed transfer to ${destAddr}`);
+      console.log(`completed transfer to ${destAddr}`);
     } catch (e) {
       await withdrawToSeat(sharedLocalAccount, seat, give);
       const errorMsg = `IBC Transfer failed ${q(e)}`;
@@ -98,24 +103,24 @@ export const sendByCCTP = async (
       seat.exit(errorMsg);
       throw makeError(errorMsg);
     }
+  } else {
+    console.log(`CCTP case: assume USDC`, amt.brand);
+
+    debugger;
+    const nobleAccount = await nobleAccountP;
+    const nobleAddr = await nobleAccount.getAddress();
+    const denomAmt = { denom, value: amt.value };
+    await sharedLocalAccount.transfer(nobleAddr, denomAmt);
+    console.log('assets are now on noble');
+
+    const encoding = 'ethereum'; // XXX TODO. could be solana?
+    /** @type {AccountIdArg} */
+    const mintRecipient = { chainId, encoding, value: destAddr };
+    await nobleAccount.depositForBurn(mintRecipient, denomAmt);
+    console.log(
+      `transfer complete, we hope; could have FAILed between noble and dest, though`,
+    );
   }
-
-  console.log(`CCTP case: assume USDC`, amt.brand);
-
-  const nobleAccount = await nobleAccountP;
-  const nobleAddr = await nobleAccount.getAddress();
-  const denomAmt = { denom, value: amt.value };
-  await sharedLocalAccount.transfer(nobleAddr, denomAmt);
-  console.log('assets are now on noble');
-
-  const encoding = 'ethereum'; // XXX TODO. could be solana?
-  /** @type {ChainAddress} */
-  const mintRecipient = { chainId, encoding, value: destAddr };
-  await nobleAccount.depositForBurn(mintRecipient, denomAmt);
-  console.log(
-    `transfer complete, we hope; could have FAILed between noble and dest, though`,
-  );
-
   seat.exit();
 };
 harden(sendByCCTP);

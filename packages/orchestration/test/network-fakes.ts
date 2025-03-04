@@ -268,6 +268,7 @@ export const makeFakeIBCBridge = (
                 trace('Could not decode packet data', err);
               }
             }
+            debugger;
             const ackEvent = ibcBridgeMocks.acknowledgementPacket(obj, {
               sequence: ibcSequenceNonce,
               acknowledgement: mockAckMapHasData
@@ -286,6 +287,7 @@ export const makeFakeIBCBridge = (
       return undefined;
     },
     fromBridge: async obj => {
+      debugger;
       trace('fromBridge', obj);
       bridgeEvents = bridgeEvents.concat(obj);
       if (!bridgeHandler) throw Error('no handler!');

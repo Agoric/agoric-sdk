@@ -140,6 +140,7 @@ export const prepareLocalOrchestrationAccountKit = (
             route: TransferRouteShape,
           })
           .returns(Vow$(M.record())),
+        onRejected: M.call(M.error(), M.any()).returns(M.undefined()),
       }),
       extractFirstResultWatcher: M.interface('extractFirstResultWatcher', {
         onFulfilled: M.call([M.record()])
@@ -356,6 +357,8 @@ export const prepareLocalOrchestrationAccountKit = (
          * }} ctx
          */
         onFulfilled(timeoutTimestamp, { opts, route }) {
+          console.log('LOA tw', opts, route);
+          debugger;
           const { forwardInfo, ...transferDetails } = route;
           /** @type {string | undefined} */
           let memo;
@@ -389,6 +392,9 @@ export const prepareLocalOrchestrationAccountKit = (
           // vow that rejects unless the packet acknowledgment comes back and is
           // verified.
           return holder.sendThenWaitForAck(sender);
+        },
+        onRejected(reason, ...rest) {
+          console.log('LOA transferWatcher fail', { reason, rest });
         },
       },
       /**
@@ -685,6 +691,7 @@ export const prepareLocalOrchestrationAccountKit = (
         transfer(destination, amount, opts) {
           return asVow(() => {
             trace('Transferring funds over IBC');
+            debugger;
 
             const denomAmount = coerceDenomAmount(chainHub, amount);
 

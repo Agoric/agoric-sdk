@@ -44,6 +44,7 @@ export const sendIt = async (
     assets.find(a => a.brand === amt.brand),
     `${amt.brand} not registered in vbank`,
   );
+  debugger;
 
   const chain = await orch.getChain(chainName);
   const info = await chain.getChainInfo();
@@ -59,6 +60,7 @@ export const sendIt = async (
   await localTransfer(seat, sharedLocalAccount, give);
 
   void log(`completed transfer to localAccount`);
+  console.log(`completed transfer to localAccount`);
 
   try {
     await sharedLocalAccount.transfer(
@@ -69,6 +71,7 @@ export const sendIt = async (
       },
       { denom, value: amt.value },
     );
+    console.log(`completed transfer to ${destAddr}`);
     void log(`completed transfer to ${destAddr}`);
   } catch (e) {
     await withdrawToSeat(sharedLocalAccount, seat, give);
