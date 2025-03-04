@@ -282,10 +282,22 @@ jobs:
           ignore-endo-branch: 'true'
           node-version: '18.x'
           path: ./agoric-sdk
+          # Forces xsnap to initialize all memory to random data, which increases
+          # the chances the content of snapshots may deviate between validators
+          xsnap-random-init: '1'
 
       - name: setup a3p-integration
         run: yarn install
         working-directory: agoric-sdk/a3p-integration
+
+      - id: build-cosmic-swingset
+        name: Build cosmic-swingset dependencies
+        run: |
+          set -o errexit
+
+          yarn install
+          make --directory packages/cosmic-swingset all
+        working-directory: agoric-sdk
 
       - name: verify SDK image didn't change
         # In the future when we can rebuild the SDK image with resolved endo packages, it would
@@ -300,15 +312,6 @@ jobs:
             exit 1
           fi
         working-directory: agoric-sdk/a3p-integration
-
-      - id: build-cosmic-swingset
-        name: Build cosmic-swingset dependencies
-        run: |
-          set -o errexit
-
-          yarn install
-          make --directory packages/cosmic-swingset all
-        working-directory: agoric-sdk
 
       - id: get-loadgen-branch
         name: Get the appropriate loadgen branch
