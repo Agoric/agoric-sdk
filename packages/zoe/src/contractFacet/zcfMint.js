@@ -9,7 +9,6 @@ import { addToAllocation, subtractFromAllocation } from './allocationMath.js';
 
 import '../internal-types.js';
 import { ZcfMintI } from './typeGuards.js';
-import './internal-types.js';
 
 /**
  * @import {ContractMeta, ContractStartFn, Invitation, OfferHandler, TransferPart, ZCF, ZCFMint, ZCFSeat} from '@agoric/zoe';

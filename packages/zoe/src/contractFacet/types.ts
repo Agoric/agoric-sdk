@@ -21,9 +21,6 @@ import type {
   ZoeService,
 } from '../types-index.js';
 
-// XXX runtime import of types
-import './internal-types.js';
-
 /**
  * Any passable non-thenable. Often an explanatory string.
  */
