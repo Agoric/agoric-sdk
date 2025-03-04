@@ -83,5 +83,8 @@
   "license": "Apache-2.0",
   "publishConfig": {
     "access": "public"
+  },
+  "resolutions": {
+    "axios@npm:^1.6.0": "patch:axios@npm%3A1.8.1#~/.yarn/patches/axios-npm-1.8.1-8a5eaf948f.patch"
   }
 }
