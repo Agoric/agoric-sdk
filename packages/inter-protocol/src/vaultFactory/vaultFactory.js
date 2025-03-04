@@ -72,7 +72,7 @@ harden(meta);
  *   initialShortfallInvitation: Invitation;
  *   storageNode: ERef<StorageNode>;
  *   marshaller: ERef<Marshaller>;
- *   auctioneerInstance: Instance;
+ *   auctioneerInstance: Instance<import('../auction/auctioneer.js').start>;
  *   managerParams: Record<
  *     string,
  *     import('./params.js').VaultManagerParamOverrides

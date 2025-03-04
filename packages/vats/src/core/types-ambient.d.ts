@@ -232,6 +232,7 @@ type WellKnownContracts = {
   provisionPool: typeof import('@agoric/inter-protocol/src/provisionPool.js').start;
   priceAggregator: typeof import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js').start;
   reserve: typeof import('@agoric/inter-protocol/src/reserve/assetReserve.js').start;
+  reserveGovernor: typeof import('@agoric/governance/src/contractGovernor.js').start;
   VaultFactory: typeof import('@agoric/inter-protocol/src/vaultFactory/vaultFactory.js').start;
   // no typeof because walletFactory is exporting `start` as a type
   walletFactory: import('@agoric/smart-wallet/src/walletFactory.js').start;

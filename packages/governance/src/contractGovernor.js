@@ -62,6 +62,7 @@ export const validateQuestionFromCounter = async (
   electorate,
   voteCounter,
 ) => {
+  /** @type {Promise<any>} */
   const counterPublicP = E(zoe).getPublicFacet(voteCounter);
   const questionDetails = await E(counterPublicP).getDetails();
 

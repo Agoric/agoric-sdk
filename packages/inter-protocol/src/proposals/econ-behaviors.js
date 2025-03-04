@@ -28,8 +28,10 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
 /**
  * @typedef {object} PSMKit
  * @property {string} label
- * @property {Instance} psm
- * @property {Instance} psmGovernor
+ * @property {Instance<import('../psm/psm.js').start>} psm
+ * @property {Instance<
+ *   import('../../../governance/src/contractGovernor.js').start
+ * >} psmGovernor
  * @property {Awaited<
  *   ReturnType<
  *     Awaited<
