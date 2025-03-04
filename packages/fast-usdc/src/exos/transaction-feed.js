@@ -1,4 +1,5 @@
 /** @file Exo for @see {prepareTransactionFeedKit} */
+
 import { makeTracer } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import { Fail, quote } from '@endo/errors';
