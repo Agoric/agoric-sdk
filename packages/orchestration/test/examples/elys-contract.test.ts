@@ -45,7 +45,7 @@ const deposit = async (
   await eventLoopIteration();
 };
 
-const createFeeTestConfig = (feeCollector): FeeConfigShape => {
+export const createFeeTestConfig = (feeCollector): FeeConfigShape => {
   const feeConfig = {
     feeCollector,
     onBoardRate: {

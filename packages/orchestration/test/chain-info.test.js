@@ -25,6 +25,7 @@ test('chain-info', async t => {
     'doravota',
     'dydx',
     'dymension',
+    'elys',
     'empowerchain',
     'evmos',
     'haqq',
