@@ -28,7 +28,7 @@ const makeRatio = (numerator, numeratorBrand, denominator = 100n) =>
  */
 
 /**
- * Update feeConfig.variableRate to 0.5%, i.e. 5n/1000n
+ * Update feeConfig.variableRate to 0.1%, i.e. 1n/1000n
  *
  * @param {FeeConfig} feeConfigPre
  * @param {Brand<'nat'>} usdcBrand
@@ -38,7 +38,7 @@ const makeRatio = (numerator, numeratorBrand, denominator = 100n) =>
 const updateFeeConfig = (
   feeConfigPre,
   usdcBrand,
-  variableRate = makeRatio(5n, usdcBrand, 1000n),
+  variableRate = makeRatio(1n, usdcBrand, 1000n),
 ) => harden({ ...feeConfigPre, variableRate });
 
 /**
