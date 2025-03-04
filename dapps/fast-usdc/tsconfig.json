@@ -28,9 +28,7 @@
     "build",
   ],
   "include": [
-    // "scripts",
-    "src",
-    // "test",
-    // "testing"
+    "*/src",
+    "*/test",
   ],
 }
