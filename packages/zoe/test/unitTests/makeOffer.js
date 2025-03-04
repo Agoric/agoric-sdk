@@ -3,6 +3,7 @@ import { E } from '@endo/eventual-send';
 
 /**
  * @import {PaymentPKeywordRecord, Proposal, UserSeat, ZoeService } from '@agoric/zoe';
+ * @import {Pattern} from '@endo/patterns';
  */
 
 /**

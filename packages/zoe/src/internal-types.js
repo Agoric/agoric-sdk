@@ -3,6 +3,7 @@
 
 /**
  * @import {AmountKeywordRecord, Completion, ContractMeta, ContractStartFn, Invitation, OfferHandler, PaymentPKeywordRecord, ProposalRecord, TransferPart, UserSeat, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {Pattern} from '@endo/patterns';
  */
 
 /**

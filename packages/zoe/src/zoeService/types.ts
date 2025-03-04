@@ -1,6 +1,14 @@
-import type { AnyAmount } from '@agoric/ertp';
+import type {
+  AnyAmount,
+  AssetKind,
+  DisplayInfo,
+  Issuer,
+  NatValue,
+  Payment,
+} from '@agoric/ertp';
 import type { Subscriber } from '@agoric/notifier';
-import type { EReturn } from '@endo/eventual-send';
+import type { ERef, EReturn } from '@endo/eventual-send';
+import type { Bundle, BundleID } from '@agoric/swingset-vat';
 import type { ContractStartFunction, StartParams } from './utils.js';
 
 export type IssuerKeywordRecord = Record<Keyword, Issuer<any>>;
@@ -125,7 +133,7 @@ export type InstallBundleID = (
  */
 export type GetBundleIDFromInstallation = (
   allegedInstallation: ERef<Installation>,
-) => Promise<BundleID>;
+) => Promise<string>;
 /**
  * To redeem an invitation, the user normally provides a proposal (their
  * rules for the offer) as well as payments to be escrowed by Zoe.  If
@@ -261,7 +269,8 @@ export type ZCFSpec =
       name: string;
     }
   | {
-      id: BundleID;
+      /** Bundle ID */
+      id: string;
     };
 /**
  * Opaque type for a JSONable source bundle

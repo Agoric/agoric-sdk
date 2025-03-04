@@ -13,9 +13,16 @@ import type { Subscriber } from '@agoric/notifier';
 import type {
   AmountKeywordRecord,
   ExitRule,
+  FeeMintAccess,
+  Instance,
   InvitationDetails,
+  ProposalRecord,
+  UserSeat,
   ZoeService,
 } from '../types-index.js';
+
+// XXX runtime import of types
+import './internal-types.js';
 
 /**
  * Any passable non-thenable. Often an explanatory string.
@@ -80,7 +87,7 @@ export type ZCF<CT = Record<string, unknown>> = {
   getTerms: () => StandardTerms & CT;
   getBrandForIssuer: <K extends AssetKind>(issuer: Issuer<K>) => Brand<K>;
   getIssuerForBrand: <K_1 extends AssetKind>(brand: Brand<K_1>) => Issuer<K_1>;
-  getAssetKind: GetAssetKindByBrand;
+  getAssetKind: (brand: Brand) => AssetKind;
   makeZCFMint: <K_2 extends AssetKind = 'nat'>(
     keyword: Keyword,
     assetKind?: K_2 | undefined,
