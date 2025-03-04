@@ -14,7 +14,9 @@ import { E } from '@endo/far';
 import '../internal-types.js';
 
 import { makeZCFZygote } from './zcfZygote.js';
-
+/**
+ * @import {ZoeService} from '@agoric/zoe';
+ 
 /**
  * @param {VatPowers & { testJigSetter: TestJigSetter }} powers
  * @param {{contractBundleCap: BundleCap, zoeService: ZoeService, invitationIssuer: Issuer<'set'>, privateArgs?: any}} vatParameters

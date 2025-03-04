@@ -34,7 +34,7 @@ import { ZcfI } from './typeGuards.js';
 
 /**
  * @import {IssuerOptionsRecord} from '@agoric/ertp';
- * @import {ContractMeta, ContractStartFn, Invitation, OfferHandler, SetTestJig, TransferPart, ZCF, ZCFMint, ZCFRegisterFeeMint, ZCFSeat} from '@agoric/zoe';
+ * @import {ContractMeta, ContractStartFn, Invitation, OfferHandler, SetTestJig, TransferPart, ZCF, ZCFMint, ZCFRegisterFeeMint, ZoeService} from '@agoric/zoe';
  */
 
 /**

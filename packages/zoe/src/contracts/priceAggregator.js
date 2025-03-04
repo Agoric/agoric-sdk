@@ -590,8 +590,10 @@ const start = async (zcf, privateArgs) => {
 
       // Obtain the oracle's publicFacet.
       assert(oracleInstance);
-      /** @type {import('./oracle.js').OracleContract['publicFacet']} */
-      const oracle = await E(zoe).getPublicFacet(oracleInstance);
+      const oracle =
+        /** @type {import('./oracle.js').OracleContract['publicFacet']} */ (
+          await E(zoe).getPublicFacet(oracleInstance)
+        );
       assert(records.has(record), 'Oracle record is already deleted');
 
       /** @type {import('@agoric/time').Timestamp} */

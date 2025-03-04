@@ -28,7 +28,10 @@ import { getZcfBundleCap } from './createZCFVat.js';
 import { defaultFeeIssuerConfig, prepareFeeMint } from './feeMint.js';
 import { ZoeServiceI } from '../typeGuards.js';
 
-/** @import {Baggage} from '@agoric/vat-data' */
+/**
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {FeeIssuerConfig, ZCFSpec, ZoeService} from './types.js';
+ */
 
 /**
  * Create a durable instance of Zoe.

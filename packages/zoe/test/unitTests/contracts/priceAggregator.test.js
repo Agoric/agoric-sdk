@@ -29,6 +29,7 @@ import {
 } from '../../../src/contractSupport/ratio.js';
 
 /**
+ * @import {FeeIssuerConfig, ZoeService} from '@agoric/zoe';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  * @import {ZoeManualTimer} from '../../../tools/manualTimer.js';
  */

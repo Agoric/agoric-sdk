@@ -1,4 +1,6 @@
 import type { Passable } from '@endo/pass-style';
+import type { ERef } from '@endo/far';
+import type { Pattern } from '@endo/patterns';
 import type {
   AdditionalDisplayInfo,
   Amount,
@@ -7,6 +9,13 @@ import type {
   Issuer,
   Payment,
 } from '@agoric/ertp';
+import type { Subscriber } from '@agoric/notifier';
+import type {
+  AmountKeywordRecord,
+  ExitRule,
+  InvitationDetails,
+  ZoeService,
+} from '../types-index.js';
 
 /**
  * Any passable non-thenable. Often an explanatory string.

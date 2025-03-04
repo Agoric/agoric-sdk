@@ -2,7 +2,7 @@
 /// <reference types="@agoric/ertp/exported" />
 
 /**
- * @import {Completion, ContractMeta, ContractStartFn, Invitation, OfferHandler, TransferPart, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {AmountKeywordRecord, Completion, ContractMeta, ContractStartFn, Invitation, OfferHandler, PaymentPKeywordRecord, ProposalRecord, TransferPart, UserSeat, ZCF, ZCFSeat} from '@agoric/zoe';
  */
 
 /**

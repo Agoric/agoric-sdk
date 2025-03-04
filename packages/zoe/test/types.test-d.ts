@@ -17,6 +17,7 @@ import type {
   Invitation,
   ZCF,
   ZCFSeat,
+  ZoeService,
 } from '../src/types-index.js';
 
 const zoe = {} as ZoeService;
