@@ -39,7 +39,10 @@ import { setUpInstallations } from './tools.js';
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;
 
-/** @import {AmountUtils} from '@agoric/zoe/tools/test-utils.js'; */
+/**
+ * @import {AmountUtils} from '@agoric/zoe/tools/test-utils.js'
+ * @import {ExitRule} from '@agoric/zoe';
+ */
 
 /**
  * @typedef {Record<string, any> & {

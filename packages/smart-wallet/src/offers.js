@@ -1,4 +1,8 @@
 /**
+ * @import {InvitationDetails, Proposal} from '@agoric/zoe';
+ */
+
+/**
  * @typedef {number | string} OfferId
  */
 
