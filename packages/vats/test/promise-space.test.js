@@ -40,31 +40,29 @@ test('makePromiseSpace', async t => {
 test('makePromiseSpace copied into store', async t => {
   /** @type {MapStore<string, string>} */
   const store = makeScalarBigMapStore('stuff', { durable: true });
-  const { produce, consume } = makePromiseSpace({ store });
+
   {
+    const { produce, consume } = makePromiseSpace({ store });
+
     produce.alice.resolve(`Hi, I'm Alice!`);
     await consume.alice;
-  }
-  t.is(store.get('alice'), `Hi, I'm Alice!`);
+    t.is(store.get('alice'), `Hi, I'm Alice!`);
 
-  {
     // Reusing the same store with a new promise space should not need to reset
     // for an update.
-    const { produce: p, consume: c } = makePromiseSpace({ store });
-    p.alice.resolve(`I updated the store!`);
-    await c.alice;
-  }
-  t.is(store.get('alice'), `I updated the store!`);
+    const pc2 = makePromiseSpace({ store });
+    pc2.produce.alice.resolve(`I updated the store!`);
+    await pc2.consume.alice;
+    t.is(store.get('alice'), `I updated the store!`);
 
-  const p = Promise.resolve(`Hi again!`);
-  {
+    const p = Promise.resolve(`Hi again!`);
     produce.alice.reset();
     produce.alice.resolve(p);
     produce.alice.reject(Error('should be ignored (alice has not been reset)'));
     await consume.alice;
+    await p;
+    t.is(store.get('alice'), `Hi again!`);
   }
-  await p;
-  t.is(store.get('alice'), `Hi again!`);
 
   {
     const { produce } = makePromiseSpace({ store });
