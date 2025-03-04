@@ -101,6 +101,16 @@ const keysToObject = <K extends PropertyKey, V>(
  * AVA's default t.deepEqual() is nearly unreadable for sorted arrays of
  * strings.
  */
+/**
+ * Compare two arrays of property keys for equality in a way that's more readable
+ * in AVA test output than the default t.deepEqual().
+ *
+ * @param t - AVA test context
+ * @param a - First array of property keys to compare
+ * @param b - Second array of property keys to compare
+ * @param message - Optional message to display on failure
+ * @returns The result of t.deepEqual() on objects created from the arrays
+ */
 export const keyArrayEqual = (
   t: AvaT,
   a: PropertyKey[],
@@ -112,6 +122,16 @@ export const keyArrayEqual = (
   return t.deepEqual(aobj, bobj, message);
 };
 
+/**
+ * Prepares a SwingSet configuration for testing vaults.
+ *
+ * @param options - Configuration options
+ * @param options.bundleDir - Directory to store bundle cache files
+ * @param options.specifier - Path to the base config file
+ * @param options.defaultManagerType - SwingSet manager type to use
+ * @param options.discriminator - Optional string to include in the config filename
+ * @returns Path to the generated config file
+ */
 export const getNodeTestVaultsConfig = async ({
   bundleDir = 'bundles',
   specifier = '@agoric/vm-config/decentral-itest-vaults-config.json',
@@ -164,6 +184,14 @@ interface Powers {
   fs: typeof import('node:fs/promises');
 }
 
+/**
+ * Creates a function that can build and extract proposal data from package scripts.
+ *
+ * @param powers - Object containing required capabilities
+ * @param powers.childProcess - Node child_process module for executing commands
+ * @param powers.fs - Node fs/promises module for file operations
+ * @returns A function that builds and extracts proposal data
+ */
 export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
   const getPkgPath = (pkg, fileName = '') =>
     importSpec(`../../${pkg}/${fileName}`);
@@ -253,6 +281,15 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
 };
 harden(makeProposalExtractor);
 
+/**
+ * Compares two references for equality using krefOf.
+ *
+ * @param t - AVA test context
+ * @param ref1 - First reference to compare
+ * @param ref2 - Second reference to compare
+ * @param message - Optional message to display on failure
+ * @returns The result of t.is() on the kref values
+ */
 export const matchRef = (
   t: AvaT,
   ref1: unknown,
@@ -260,6 +297,15 @@ export const matchRef = (
   message?: string,
 ) => t.is(krefOf(ref1), krefOf(ref2), message);
 
+/**
+ * Compares an amount object with expected brand and value.
+ *
+ * @param t - AVA test context
+ * @param amount - Amount object to test
+ * @param refBrand - Expected brand reference
+ * @param refValue - Expected value
+ * @param message - Optional message to display on failure
+ */
 export const matchAmount = (
   t: AvaT,
   amount: Amount,
@@ -271,6 +317,14 @@ export const matchAmount = (
   t.is(amount.value, refValue, message);
 };
 
+/**
+ * Compares a value object with a reference value object.
+ * Checks brand, denom, issuer, issuerName, and proposedName.
+ *
+ * @param t - AVA test context
+ * @param value - Value object to test
+ * @param ref - Reference value object to compare against
+ */
 export const matchValue = (t: AvaT, value, ref) => {
   matchRef(t, value.brand, ref.brand);
   t.is(value.denom, ref.denom);
@@ -279,11 +333,21 @@ export const matchValue = (t: AvaT, value, ref) => {
   t.is(value.proposedName, ref.proposedName);
 };
 
+/**
+ * Checks that an iterator is not done and its current value matches the reference.
+ *
+ * @param t - AVA test context
+ * @param iter - Iterator to test
+ * @param valueRef - Reference value to compare against the iterator's current value
+ */
 export const matchIter = (t: AvaT, iter, valueRef) => {
   t.is(iter.done, false);
   matchValue(t, iter.value, valueRef);
 };
 
+/**
+ * Enumeration of acknowledgment behaviors for IBC bridge messages.
+ */
 export const AckBehavior = {
   /** inbound responses are queued. use `flushInboundQueue()` to simulate the remote response */
   Queued: 'QUEUED',
@@ -321,6 +385,26 @@ type AckBehaviorType = (typeof AckBehavior)[keyof typeof AckBehavior];
  * @param [options.debugVats]
  * @param [options.defaultManagerType]
  * @param [options.harness]
+ */
+/**
+ * Creates a SwingSet test environment with various utilities for testing.
+ *
+ * This function sets up a complete SwingSet kernel with mocked bridges and
+ * utilities for time manipulation, proposal evaluation, and more.
+ *
+ * @param log - Logging function
+ * @param bundleDir - Directory to store bundle cache files
+ * @param options - Configuration options
+ * @param options.configSpecifier - Path to the base config file
+ * @param options.label - Optional label for the test environment
+ * @param options.storage - Storage kit to use (defaults to fake storage)
+ * @param options.verbose - Whether to enable verbose logging
+ * @param options.slogFile - Path to write slog output
+ * @param options.profileVats - Array of vat names to profile
+ * @param options.debugVats - Array of vat names to debug
+ * @param options.defaultManagerType - SwingSet manager type to use
+ * @param options.harness - Optional run harness
+ * @returns A test kit with various utilities for interacting with the SwingSet
  */
 export const makeSwingsetTestKit = async (
   log: (..._: any[]) => void,
@@ -742,6 +826,14 @@ export type SwingsetTestKit = Awaited<ReturnType<typeof makeSwingsetTestKit>>;
  * counting run policy (and queried for the count of computrons recorded since
  * the last reset).
  */
+/**
+ * Creates a harness for measuring computron usage in SwingSet tests.
+ *
+ * The harness can be dynamically configured to provide a computron-counting
+ * run policy and queried for the count of computrons recorded since the last reset.
+ *
+ * @returns A harness object with methods to control and query computron counting
+ */
 export const makeSwingsetHarness = () => {
   const c2b = defaultBeansPerXsnapComputron;
   const beansPerUnit = {
@@ -779,6 +871,12 @@ export const makeSwingsetHarness = () => {
  *
  * @param {string} mt
  * @returns {asserts mt is ManagerType}
+ */
+/**
+ * Validates that a string is a valid SwingSet manager type.
+ *
+ * @param mt - The manager type string to validate
+ * @throws If the string is not a valid manager type
  */
 export function insistManagerType(mt) {
   assert(['local', 'node-subprocess', 'xsnap', 'xs-worker'].includes(mt));
