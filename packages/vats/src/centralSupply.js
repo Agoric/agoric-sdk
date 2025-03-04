@@ -2,7 +2,7 @@ import { AmountMath } from '@agoric/ertp';
 import { E, Far } from '@endo/far';
 
 /**
- * @import {ContractMeta, ContractOf, HandleOffer, Invitation, OfferHandler, TransferPart, ZCF, ZCFMint, ZCFSeat} from '@agoric/zoe';
+ * @import {ContractMeta, ContractOf, FeeMintAccess, Invitation, OfferHandler, TransferPart, ZCF, ZCFMint, ZCFSeat} from '@agoric/zoe';
  */
 
 /**
