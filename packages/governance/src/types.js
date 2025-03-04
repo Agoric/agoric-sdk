@@ -5,6 +5,7 @@ export {};
  * @import {Passable, Container} from '@endo/pass-style';
  * @import {Publisher} from '@agoric/notifier';
  * @import {AdminFacet, InstallationStart, InvitationAmount} from '@agoric/zoe';
+ * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
  * @import {ContractStartFunction} from '@agoric/zoe/src/zoeService/utils.js';
  */
 

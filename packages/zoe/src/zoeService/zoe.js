@@ -29,8 +29,9 @@ import { defaultFeeIssuerConfig, prepareFeeMint } from './feeMint.js';
 import { ZoeServiceI } from '../typeGuards.js';
 
 /**
+ * @import {VatAdminSvc} from '@agoric/swingset-vat';
  * @import {Baggage} from '@agoric/vat-data';
- * @import {FeeIssuerConfig, ZCFSpec, ZoeService} from './types.js';
+ * @import {FeeIssuerConfig, FeeMintAccess, ZCFSpec, ZoeService} from './types.js';
  */
 
 /**
