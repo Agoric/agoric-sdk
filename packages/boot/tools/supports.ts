@@ -7,9 +7,8 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { basename, join } from 'path';
 import { inspect } from 'util';
 
-import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
-import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
 import type { TypedPublished } from '@agoric/client-utils';
+import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
 import {
   BridgeId,
   makeTracer,
@@ -20,20 +19,18 @@ import {
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { krefOf } from '@agoric/kmarshal';
+import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { initSwingStore } from '@agoric/swing-store';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { makeSlogSender } from '@agoric/telemetry';
 import { TimeMath, type Timestamp } from '@agoric/time';
-import {
-  fakeLocalChainBridgeTxMsgHandler,
-  LOCALCHAIN_DEFAULT_ADDRESS,
-} from '@agoric/vats/tools/fake-bridge.js';
+import { fakeLocalChainBridgeTxMsgHandler } from '@agoric/vats/tools/fake-bridge.js';
 import { Fail } from '@endo/errors';
 
 import {
   makeRunUtils,
-  type RunUtils,
   type RunHarness,
+  type RunUtils,
 } from '@agoric/swingset-vat/tools/run-utils.js';
 import {
   boardSlottingMarshaller,
@@ -43,24 +40,26 @@ import {
 import type { ExecutionContext as AvaT } from 'ava';
 
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
+import { computronCounter } from '@agoric/cosmic-swingset/src/computron-counter.js';
+import {
+  defaultBeansPerVatCreation,
+  defaultBeansPerXsnapComputron,
+} from '@agoric/cosmic-swingset/src/sim-params.js';
+import type { FastUSDCCorePowers } from '@agoric/fast-usdc/src/start-fast-usdc.core.js';
 import type { EconomyBootstrapPowers } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
 import type { BridgeHandler, IBCDowncallMethod, IBCMethod } from '@agoric/vats';
 import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
 import type { EProxy } from '@endo/eventual-send';
-import type { FastUSDCCorePowers } from '@agoric/fast-usdc/src/start-fast-usdc.core.js';
-import {
-  defaultBeansPerVatCreation,
-  defaultBeansPerXsnapComputron,
-} from '@agoric/cosmic-swingset/src/sim-params.js';
-import { computronCounter } from '@agoric/cosmic-swingset/src/computron-counter.js';
 import { icaMocks, protoMsgMockMap, protoMsgMocks } from './ibc/mocks.js';
 
 const trace = makeTracer('BSTSupport', false);
 
-const cliEntrypoint = new URL(
-  importMetaResolve('agoric/src/entrypoint.js', import.meta.url),
-).pathname;
+/** @param {string} spec package resource specifier */
+const importSpec = spec =>
+  new URL(importMetaResolve(spec, import.meta.url)).pathname;
+
+const cliEntrypoint = importSpec('agoric/src/entrypoint.js');
 
 type ConsumeBootrapItem = <N extends string>(
   name: N,
@@ -119,8 +118,7 @@ export const getNodeTestVaultsConfig = async ({
   defaultManagerType = 'local' as ManagerType,
   discriminator = '',
 }) => {
-  const fullPath = new URL(importMetaResolve(specifier, import.meta.url))
-    .pathname;
+  const fullPath = importSpec(specifier);
   const config: SwingSetConfig & { coreProposals?: any[] } = NonNullish(
     await loadSwingsetConfigFile(fullPath),
   );
@@ -166,12 +164,9 @@ interface Powers {
   fs: typeof import('node:fs/promises');
 }
 
-const importSpec = async spec =>
-  new URL(importMetaResolve(spec, import.meta.url)).pathname;
-
 export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
   const getPkgPath = (pkg, fileName = '') =>
-    new URL(`../../${pkg}/${fileName}`, import.meta.url).pathname;
+    importSpec(`../../${pkg}/${fileName}`);
 
   const runPackageScript = (
     outputDir: string,
@@ -221,7 +216,7 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
     const built = parseProposalParts(
       runPackageScript(
         tmpDir,
-        await importSpec(builderPath),
+        importSpec(builderPath),
         process.env,
         args,
       ).toString(),
