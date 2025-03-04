@@ -60,8 +60,6 @@ const trace = makeTracer('BSTSupport', false);
 const importSpec = spec =>
   new URL(importMetaResolve(spec, import.meta.url)).pathname;
 
-const cliEntrypoint = importSpec('agoric/src/entrypoint.js');
-
 type ConsumeBootrapItem = <N extends string>(
   name: N,
 ) => N extends keyof FastUSDCCorePowers['consume']
@@ -201,7 +199,7 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
   ) => {
     console.info('running package script:', scriptPath);
     return childProcess.execFileSync(
-      cliEntrypoint,
+      importSpec('agoric/src/entrypoint.js'),
       ['run', scriptPath, ...cliArgs],
       {
         cwd: outputDir,
