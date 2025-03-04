@@ -85,6 +85,7 @@
     "access": "public"
   },
   "resolutions": {
+    "protobufjs@npm:^6.8.8": "patch:protobufjs@npm%3A6.11.4#~/.yarn/patches/protobufjs-npm-6.11.4-af11968b80.patch",
     "axios@npm:^1.6.0": "patch:axios@npm%3A1.8.1#~/.yarn/patches/axios-npm-1.8.1-8a5eaf948f.patch"
   }
 }
