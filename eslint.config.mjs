@@ -193,6 +193,7 @@ export default [
   },
   {
     files: [
+      'dapps/**/test/**',
       'packages/**/demo/**/*.js',
       'packages/*/test/**/*.*s',
       'packages/*/test/**/*.test.*s',
