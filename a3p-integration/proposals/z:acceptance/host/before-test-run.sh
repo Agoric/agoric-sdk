@@ -3,7 +3,7 @@
 # as the exit code has to be written to the message file and the tests
 # will get stuck if the exit code (wether failure or success) is never
 # written to the message file
-set -o nounset
+set -o nounset -o xtrace
 
 AG_CHAIN_COSMOS_HOME="$HOME/.agoric"
 DIRECTORY_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"

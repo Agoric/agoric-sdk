@@ -5,6 +5,8 @@ set -o errexit -o pipefail
 # shellcheck disable=SC1091
 source /usr/src/upgrade-test-scripts/env_setup.sh
 
+set -o xtrace
+
 AGORIC_HOME="$HOME/.agoric"
 
 CHAIN_ID="$(jq --raw-output '.chain_id' < "$AGORIC_HOME/config/genesis.json")"
