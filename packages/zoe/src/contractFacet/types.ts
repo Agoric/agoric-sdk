@@ -11,12 +11,16 @@ import type {
 } from '@agoric/ertp';
 import type { Subscriber } from '@agoric/notifier';
 import type {
+  Allocation,
   AmountKeywordRecord,
   ExitRule,
   FeeMintAccess,
   Instance,
   InvitationDetails,
+  IssuerRecord,
+  Keyword,
   ProposalRecord,
+  StandardTerms,
   UserSeat,
   ZoeService,
 } from '../types-index.js';
