@@ -20,9 +20,7 @@ export const asMultiset = mapStore =>
      * @param {number} [count] How many to add (defaults to 1)
      */
     add: (item, count = 1) => {
-      if (count <= 0) {
-        throw Fail`Cannot add a non-positive count ${count} to bag`;
-      }
+      count > 0 || Fail`Cannot add a non-positive count ${count} to bag`;
 
       if (mapStore.has(item)) {
         const currentCount = mapStore.get(item);
@@ -42,9 +40,7 @@ export const asMultiset = mapStore =>
      * @throws {Error} If trying to remove more items than exist
      */
     remove: (item, count = 1) => {
-      if (count <= 0) {
-        throw Fail`Cannot remove a non-positive count ${count} from bag`;
-      }
+      count > 0 || Fail`Cannot remove a non-positive count ${count} from bag`;
 
       if (!mapStore.has(item)) {
         return false;
@@ -52,7 +48,7 @@ export const asMultiset = mapStore =>
 
       const currentCount = mapStore.get(item);
       if (currentCount < count) {
-        throw Fail`Cannot remove ${count} of ${item} from bag; only ${currentCount} exist`;
+        return false;
       }
 
       if (currentCount === count) {
