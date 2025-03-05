@@ -232,7 +232,7 @@ jobs:
     needs: pre_check
     if: needs.pre_check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 80
+    timeout-minutes: 60
     steps:
       - name: update job environment
         run: |
@@ -358,11 +358,10 @@ jobs:
 
       - name: run proposals tests
         run: yarn test
-        timeout-minutes: 50
         working-directory: agoric-sdk/a3p-integration
 
       - name: copy a3p-integration
-        if: (success() || failure())
+        if: always()
         run: |
           dir='/tmp/export/a3p-integration'
           rm -rf "$dir"
@@ -373,7 +372,7 @@ jobs:
       # `Integration tests` workflow once the workflow is completed.
       # Ref: https://github.com/actions/upload-artifact?tab=readme-ov-file#where-does-the-upload-go
       - name: archive a3p-integration
-        if: (success() || failure())
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: a3p-integration
@@ -382,13 +381,15 @@ jobs:
             /tmp/export/a3p-integration
             /tmp/loadgen-follower-logs
             /tmp/loadgen-output
+
       - name: archive slogfile
-        if: (success() || failure())
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: slogfile
           path: ${{ env.SLOGFILE }}
           retention-days: 10
+
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
         uses: ./.github/actions/notify-status
@@ -397,8 +398,9 @@ jobs:
           from: ${{ secrets.NOTIFY_EMAIL_FROM }}
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
+
       - uses: ./agoric-sdk/.github/actions/post-test
-        if: (success() || failure())
+        if: always()
         continue-on-error: true
         timeout-minutes: 4
         with:
