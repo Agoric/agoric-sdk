@@ -3,7 +3,6 @@
 
 import childProcessAmbient from 'child_process';
 import { promises as fsAmbientPromises } from 'fs';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { createRequire } from 'node:module';
 import { basename, join } from 'path';
 import { inspect } from 'util';
@@ -53,7 +52,6 @@ import type { BridgeHandler, IBCDowncallMethod, IBCMethod } from '@agoric/vats';
 import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
 import type { EProxy } from '@endo/eventual-send';
 import { tmpdir } from 'node:os';
-import { create } from 'node:domain';
 import { icaMocks, protoMsgMockMap, protoMsgMocks } from './ibc/mocks.js';
 
 const trace = makeTracer('BSTSupport', false);
@@ -882,3 +880,35 @@ export const makeSwingsetHarness = () => {
 export function insistManagerType(mt) {
   assert(['local', 'node-subprocess', 'xsnap', 'xs-worker'].includes(mt));
 }
+
+// TODO explore doing this as part of a post-install script
+// and having the test import it statically instead of fetching lazily
+/**
+ * Fetch a core-eval from a Github Release.
+ */
+export const fetchCoreEvalRelease = async (
+  { fetch }: { fetch: typeof global.fetch },
+  config: { repo: string; release: string; name: string },
+  artifacts = `https://github.com/${config.repo}/releases/download/${config.release}`,
+  planUrl = `${artifacts}/${config.name}-plan.json`,
+) => {
+  const plan = (await fetch(planUrl).then(r => r.json())) as {
+    name: string;
+    permit: string;
+    script: string;
+    bundles: Array<{
+      bundleID: string;
+      entrypoint: string;
+      fileName: string;
+    }>;
+  };
+  assert.equal(plan.name, config.name);
+  const script = await fetch(`${artifacts}/${plan.script}`).then(r => r.text());
+  const permit = await fetch(`${artifacts}/${plan.permit}`).then(r => r.text());
+  const bundles: EndoZipBase64Bundle[] = await Promise.all(
+    plan.bundles.map(b =>
+      fetch(`${artifacts}/${b.bundleID}.json`).then(r => r.json()),
+    ),
+  );
+  return { bundles, evals: [{ js_code: script, json_permits: permit }] };
+};
