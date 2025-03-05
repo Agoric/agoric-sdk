@@ -20,7 +20,7 @@ import {
 
 /**
  * @import {Marshal} from '@endo/marshal';
- * @import {ContractMeta, Invitation, ZCF} from '@agoric/zoe';
+ * @import {ContractMeta, Invitation, StandardTerms, ZCF} from '@agoric/zoe';
  */
 
 /** @type {ContractMeta} */

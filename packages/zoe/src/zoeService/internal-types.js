@@ -3,6 +3,7 @@
 
 /**
  * @import {FeeMintAccess, GetBrands, GetBundleIDFromInstallation, GetIssuers, InstallBundle, InstallBundleID, SourceBundle} from './types.js';
+ * @import {InstanceRecord} from './utils.js';
  */
 
 /**

@@ -4,7 +4,7 @@ import type { Baggage } from '@agoric/swingset-liveslots';
 import type { VatUpgradeResults } from '@agoric/swingset-vat';
 import type { RemotableObject } from '@endo/marshal';
 import type { FarRef } from '@endo/far';
-import type { Handle, Keyword, ZCF } from '../types-index.js';
+import type { AnyTerms, Handle, Keyword, ZCF } from '../types-index.js';
 
 // XXX https://github.com/Agoric/agoric-sdk/issues/4565
 type SourceBundle = Record<string, any>;
@@ -122,3 +122,12 @@ export type GetTerms = <SF>(instance: Instance<SF>) => Promise<
     : // XXX returning `any` in this case
       any
 >;
+
+export type InstanceRecord = {
+  installation: Installation<any>;
+  instance: Instance<any>;
+  /**
+   * - contract parameters
+   */
+  terms: AnyTerms;
+};

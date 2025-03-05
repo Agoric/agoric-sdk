@@ -14,7 +14,7 @@ import { ZcfMintI } from './typeGuards.js';
 
 /**
  * @param {AmountKeywordRecord} amr
- * @param {IssuerRecord} issuerRecord
+ * @param {ZoeIssuerRecord} issuerRecord
  * @returns {Amount}
  */
 export const sumAmountKeywordRecord = (amr, issuerRecord) => {
@@ -31,7 +31,7 @@ export const sumAmountKeywordRecord = (amr, issuerRecord) => {
 
 /**
  * @param {import('@agoric/vat-data').Baggage} zcfBaggage
- * @param {{ (keyword: string, issuerRecord: IssuerRecord): void }} recordIssuer
+ * @param {{ (keyword: string, issuerRecord: ZoeIssuerRecord): void }} recordIssuer
  * @param {GetAssetKindByBrand} getAssetKindByBrand
  * @param {(exit?: undefined) => { zcfSeat: any; userSeat: Promise<UserSeat> }} makeEmptySeatKit
  * @param {ZcfMintReallocator} reallocator
@@ -51,7 +51,7 @@ export const prepareZcMint = (
      * @template {AssetKind} [K=AssetKind]
      * @param {string} keyword
      * @param {ZoeMint<K>} zoeMint
-     * @param {Required<IssuerRecord<K>>} issuerRecord
+     * @param {Required<ZoeIssuerRecord<K>>} issuerRecord
      */
     (keyword, zoeMint, issuerRecord) => {
       const {

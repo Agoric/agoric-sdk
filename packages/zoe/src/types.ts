@@ -36,23 +36,3 @@ export type StandardTerms = {
   brands: BrandKeywordRecord;
 };
 export type AnyTerms = StandardTerms & Record<string, any>;
-export type InstanceRecord = {
-  installation: import('./zoeService/utils.js').Installation<any>;
-  instance: import('./zoeService/utils.js').Instance<any>;
-  /**
-   * - contract parameters
-   */
-  terms: AnyTerms;
-};
-
-// TODO this is a copy of the type from '@agoric/ertp'
-export type IssuerRecord<
-  K extends AssetKind = AssetKind,
-  M extends Key = Key,
-> = {
-  brand: Brand<K>;
-  issuer: Issuer<K, M>;
-  assetKind: K;
-  displayInfo?: DisplayInfo<K>;
-};
-export type Allocation = Record<Keyword, AnyAmount>;

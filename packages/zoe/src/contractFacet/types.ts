@@ -1,23 +1,23 @@
 import type { Passable } from '@endo/pass-style';
 import type { ERef } from '@endo/far';
-import type { Pattern } from '@endo/patterns';
+import type { Key, Pattern } from '@endo/patterns';
 import type {
   AdditionalDisplayInfo,
   Amount,
+  AnyAmount,
   AssetKind,
   Brand,
+  DisplayInfo,
   Issuer,
   Payment,
 } from '@agoric/ertp';
 import type { Subscriber } from '@agoric/notifier';
 import type {
-  Allocation,
   AmountKeywordRecord,
   ExitRule,
   FeeMintAccess,
   Instance,
   InvitationDetails,
-  IssuerRecord,
   Keyword,
   ProposalRecord,
   StandardTerms,
@@ -32,6 +32,17 @@ export type Completion = Passable;
 export type ZCFMakeEmptySeatKit = (exit?: ExitRule | undefined) => ZcfSeatKit;
 
 export type InvitationAmount = Amount<'set', InvitationDetails>;
+
+export type ZoeIssuerRecord<
+  K extends AssetKind = AssetKind,
+  M extends Key = Key,
+> = {
+  brand: Brand<K>;
+  issuer: Issuer<K, M>;
+  assetKind: K;
+  displayInfo?: DisplayInfo<K>;
+};
+export type Allocation = Record<Keyword, AnyAmount>;
 
 /**
  * Zoe Contract Facet
@@ -63,7 +74,9 @@ export type ZCF<CT = Record<string, unknown>> = {
   saveIssuer: <I extends Issuer>(
     issuerP: ERef<I>,
     keyword: Keyword,
-  ) => Promise<I extends Issuer<infer K, infer M> ? IssuerRecord<K, M> : never>;
+  ) => Promise<
+    I extends Issuer<infer K, infer M> ? ZoeIssuerRecord<K, M> : never
+  >;
 
   /**
    * Make a credible Zoe invitation for a particular smart contract
@@ -131,7 +144,7 @@ export type ZCFRegisterFeeMint = (
  */
 export type SetTestJig = (testFn?: () => Record<string, unknown>) => void;
 export type ZCFMint<K extends AssetKind = AssetKind> = {
-  getIssuerRecord: () => IssuerRecord<K>;
+  getIssuerRecord: () => ZoeIssuerRecord<K>;
   /**
    * All the amounts in gains must be of this ZCFMint's brand.
    * The gains' keywords are in the namespace of that seat.
@@ -218,10 +231,10 @@ export type ContractStartFnResult<PF, CF> = {
   creatorInvitation?: Promise<Invitation<any, any>> | undefined;
 };
 
-// XXX redef, losing documentation
-export type ContractOf<S extends (...args: any) => any> =
-  import('../zoeService/utils').ContractOf<S>;
-export type AdminFacet = import('../zoeService/utils').AdminFacet<any>;
+/**
+ * @deprecated use the parameterized version
+ */
+export type AdminFacet = import('../zoeService/utils.js').AdminFacet<any>;
 
 declare const OfferReturn: unique symbol;
 declare const OfferArgs: unique symbol;
