@@ -1,13 +1,13 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { AmountMath } from '@agoric/ertp';
-import { getManifestForDistributeFees } from '../src/distribute-fees.core.js';
-import { toExternalConfig } from '../src/utils/config-marshal.js';
 import {
   multiplyBy,
   parseRatio,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Far } from '@endo/far';
 import { parseArgs } from 'node:util';
+import { getManifestForDistributeFees } from '../src/distribute-fees.core.js';
+import { toExternalConfig } from '../src/utils/config-marshal.js';
 
 /**
  * @import {CoreEvalBuilder, DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js'

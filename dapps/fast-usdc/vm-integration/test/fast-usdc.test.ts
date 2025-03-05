@@ -11,10 +11,12 @@ import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { AmountMath } from '@agoric/ertp';
 import { Offers } from '@agoric/fast-usdc/src/clientSupport.js';
 import { MockCctpTxEvidences } from '@agoric/fast-usdc/src/fixtures.js';
-import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { BridgeId, NonNullish } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
-import { defaultSerializer } from '@agoric/internal/src/storage-test-utils.js';
+import {
+  defaultSerializer,
+  documentStorageSchema,
+} from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
