@@ -6,8 +6,6 @@ import { prepareExoClass } from '@agoric/vat-data';
 import { coerceAmountKeywordRecord } from '../cleanProposal.js';
 import { assertFullIssuerRecord, makeIssuerRecord } from '../issuerRecord.js';
 import { addToAllocation, subtractFromAllocation } from './allocationMath.js';
-
-import '../internal-types.js';
 import { ZcfMintI } from './typeGuards.js';
 
 /**
