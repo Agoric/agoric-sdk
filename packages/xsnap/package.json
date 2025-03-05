@@ -58,6 +58,7 @@
     "moddable/xs/makefiles",
     "moddable/xs/platforms/*.h",
     "moddable/xs/sources",
+    "moddable/xs/tools/fdlibm",
     "scripts",
     "src",
     "xsnap-native/xsnap/makefiles",
