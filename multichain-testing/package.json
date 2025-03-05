@@ -39,7 +39,7 @@
     "patch-package": "^8.0.0",
     "starshipjs": "2.4.1",
     "ts-blank-space": "^0.4.4",
-    "typescript": "~5.8.0-beta"
+    "typescript": "~5.8.2"
   },
   "resolutions": {
     "axios": "1.6.7",

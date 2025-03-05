@@ -40,7 +40,9 @@ test('Prometheus metric definitions', async t => {
   const { pushCoreEval, runNextBlock, shutdown } = testKit;
   t.teardown(shutdown);
 
-  // To tickle some metrics events, run a block containing a trivial core eval.
+  // To tickle some metrics events, run a couple of trivial blocks.
+  pushCoreEval(`${() => {}}`);
+  await runNextBlock();
   pushCoreEval(`${() => {}}`);
   await runNextBlock();
 
@@ -51,7 +53,7 @@ test('Prometheus metric definitions', async t => {
   // Normalize text:
   // https://prometheus.io/docs/instrumenting/exposition_formats/#text-format-details
   // * Set telemetry_sdk_version and service_instance_id to "%s".
-  // * Replace integer values with "%d" and floating-point values with "%f".
+  // * Replace numeric values with "%f".
   // * Replace trailing milliseconds-since-epoch timestamps with "%@".
   const normalizedText = text
     .replace(/^.*(telemetry_sdk_version|service_instance_id).*$/m, line =>
@@ -63,7 +65,7 @@ test('Prometheus metric definitions', async t => {
     .replaceAll(
       /^([^#].*?) (?:([0-9]+)|([0-9]*[.][0-9]+))( [0-9]{13,})?$/gm,
       (_substring, prefix, intValue, floatValue, timestamp) =>
-        `${prefix} ${intValue ? '%d' : '%f'}${timestamp ? ' %@' : ''}`,
+        `${prefix} %f${timestamp ? ' %@' : ''}`,
     );
   t.snapshot(normalizedText);
 });

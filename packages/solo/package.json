@@ -47,7 +47,7 @@
     "esm": "agoric-labs/esm#Agoric-built",
     "express": "^5.0.1",
     "http-proxy-middleware": "^2.0.6",
-    "import-meta-resolve": "^2.2.1",
+    "import-meta-resolve": "^4.1.0",
     "minimist": "^1.2.0",
     "morgan": "^1.10.0",
     "temp": "^0.9.1",

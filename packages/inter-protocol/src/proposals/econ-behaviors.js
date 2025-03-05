@@ -10,7 +10,10 @@ import { makeGovernedTerms as makeGovernedATerms } from '../auction/params.js';
 import { makeReserveTerms } from '../reserve/params.js';
 import { makeGovernedTerms as makeGovernedVFTerms } from '../vaultFactory/params.js';
 
-/** @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils.js' */
+/**
+ * @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
+ */
 
 const trace = makeTracer('RunEconBehaviors', true);
 
@@ -25,8 +28,10 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
 /**
  * @typedef {object} PSMKit
  * @property {string} label
- * @property {Instance} psm
- * @property {Instance} psmGovernor
+ * @property {Instance<import('../psm/psm.js').start>} psm
+ * @property {Instance<
+ *   import('../../../governance/src/contractGovernor.js').start
+ * >} psmGovernor
  * @property {Awaited<
  *   ReturnType<
  *     Awaited<

@@ -37,6 +37,7 @@ import { AuctionState } from './util.js';
 /**
  * @import {TypedPattern} from '@agoric/internal';
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {AdminFacet, ContractOf, InvitationAmount} from '@agoric/zoe';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  */
 

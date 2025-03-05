@@ -432,7 +432,7 @@ test.serial('basic-flows', async t => {
       destination: {
         chainId: 'noble-1',
         value: 'noble1test',
-        encoding: 'bech32,',
+        encoding: 'bech32',
       },
     },
   });
@@ -456,7 +456,7 @@ test.serial('basic-flows', async t => {
       destination: {
         chainId: 'noble-1',
         value: 'noble1test',
-        encoding: 'bech32,',
+        encoding: 'bech32',
       },
     },
   });
@@ -481,7 +481,7 @@ test.serial('basic-flows', async t => {
       destination: {
         chainId: 'noble-1',
         value: 'noble1test',
-        encoding: 'bech32,',
+        encoding: 'bech32',
       },
     },
   });
@@ -525,7 +525,7 @@ test.serial('basic-flows', async t => {
         destination: {
           chainId: 'noble-1',
           value: 'noble1test',
-          encoding: 'bech32,',
+          encoding: 'bech32',
         },
       },
     }),

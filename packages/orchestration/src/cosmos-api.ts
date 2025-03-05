@@ -1,8 +1,6 @@
-import type { AnyJson, TypedJson, JsonSafe } from '@agoric/cosmic-proto';
+import type { AnyJson, JsonSafe, TypedJson } from '@agoric/cosmic-proto';
+import type { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
 import type {
-  Delegation,
-  DelegationResponse,
-  Redelegation,
   RedelegationResponse,
   UnbondingDelegation,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
@@ -18,7 +16,7 @@ import type {
   RequestQuery,
   ResponseQuery,
 } from '@agoric/cosmic-proto/tendermint/abci/types.js';
-import type { Brand, Purse, Payment, Amount } from '@agoric/ertp/src/types.js';
+import type { Amount, Payment } from '@agoric/ertp/src/types.js';
 import type { Port } from '@agoric/network';
 import type {
   IBCChannelID,
@@ -34,13 +32,24 @@ import type {
   LocalIbcAddress,
   RemoteIbcAddress,
 } from '@agoric/vats/tools/ibc-utils.js';
-import type { QueryDelegationTotalRewardsResponse } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/query.js';
-import type { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
-import type { AmountArg, ChainAddress, Denom, DenomAmount } from './types.js';
 import { PFM_RECEIVER } from './exos/chain-hub.js';
+import type {
+  AmountArg,
+  CosmosChainAddress,
+  Denom,
+  DenomAmount,
+} from './types.js';
+
+/**
+ * @example
+ *
+ *    agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346
+ *    cosmosvaloper1npm9gvss52mlmk
+ */
+export type Bech32Address = `${string}1${string}`;
 
 /** An address for a validator on some blockchain, e.g., cosmos, eth, etc. */
-export type CosmosValidatorAddress = ChainAddress & {
+export type CosmosValidatorAddress = CosmosChainAddress & {
   // infix for Validator Operator https://docs.cosmos.network/main/learn/beginner/accounts#addresses
   value: `${string}valoper${string}`;
   encoding: 'bech32';
@@ -124,7 +133,7 @@ export interface CosmosRewardsResponse {
 
 /** @see {DelegationResponse} */
 export interface CosmosDelegationResponse {
-  delegator: ChainAddress;
+  delegator: CosmosChainAddress;
   validator: CosmosValidatorAddress;
   amount: DenomAmount;
 }
@@ -219,7 +228,7 @@ export interface StakingAccountActions {
   undelegate: (
     delegations: {
       amount: AmountArg;
-      delegator?: ChainAddress;
+      delegator?: CosmosChainAddress;
       validator: CosmosValidatorAddress;
     }[],
   ) => Promise<void>;
@@ -279,7 +288,7 @@ export interface IcaAccount extends IcaAccountMethods {
   /**
    * @returns the address of the account on the remote chain
    */
-  getAddress: () => ChainAddress;
+  getAddress: () => CosmosChainAddress;
 
   /**
    * Submit a transaction on behalf of the remote account for execution on the remote chain.
@@ -336,7 +345,7 @@ export interface IBCMsgTransferOptions {
   memo?: string;
   forwardOpts?: {
     /** The recipient address for the intermediate transfer. Defaults to 'pfm' unless specified */
-    intermediateRecipient?: ChainAddress;
+    intermediateRecipient?: CosmosChainAddress;
     timeout?: ForwardInfo['forward']['timeout'];
     retries?: ForwardInfo['forward']['retries'];
   };
@@ -370,7 +379,7 @@ export type ICQQueryFunction = (
  */
 export interface ForwardInfo {
   forward: {
-    receiver: ChainAddress['value'];
+    receiver: CosmosChainAddress['value'];
     port: IBCPortID;
     channel: IBCChannelID;
     /** e.g. '10m' */
@@ -398,7 +407,7 @@ export type TransferRoute = {
   token: Coin;
 } & (
   | {
-      receiver: typeof PFM_RECEIVER | ChainAddress['value'];
+      receiver: typeof PFM_RECEIVER | CosmosChainAddress['value'];
       /** contains PFM forwarding info */
       forwardInfo: ForwardInfo;
     }

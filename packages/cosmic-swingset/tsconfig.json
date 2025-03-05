@@ -9,5 +9,6 @@
     "src/**/*.js",
     "test/**/*.js",
     "*.cjs",
+    "tools",
   ],
 }

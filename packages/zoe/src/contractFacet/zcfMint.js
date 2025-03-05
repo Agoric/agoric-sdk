@@ -9,8 +9,10 @@ import { addToAllocation, subtractFromAllocation } from './allocationMath.js';
 
 import '../internal-types.js';
 import { ZcfMintI } from './typeGuards.js';
-import './internal-types.js';
-import './types-ambient.js';
+
+/**
+ * @import {ContractMeta, ContractStartFn, Invitation, OfferHandler, TransferPart, ZCF, ZCFMint, ZCFSeat} from '@agoric/zoe';
+ */
 
 /**
  * @param {AmountKeywordRecord} amr
@@ -87,19 +89,13 @@ export const prepareZcMint = (
           gains,
         );
 
-        // Increment the stagedAllocation if it exists so that the
-        // stagedAllocation is kept up to the currentAllocation
-        if (zcfSeat.hasStagedAllocation()) {
-          zcfSeat.incrementBy(gains);
-        }
-
         // Offer safety should never be able to be violated here, as
         // we are adding assets. However, we keep this check so that
         // all reallocations are covered by offer safety checks, and
         // that any bug within Zoe that may affect this is caught.
         zcfSeat.isOfferSafe(allocationPlusGains) ||
           Fail`The allocation after minting gains ${allocationPlusGains} for the zcfSeat was not offer safe`;
-        // No effects above, apart from incrementBy. Note COMMIT POINT within
+        // No effects above, Note COMMIT POINT within
         // reallocator.reallocate(). The following two steps *should* be
         // committed atomically, but it is not a disaster if they are
         // not. If we minted only, no one would ever get those
@@ -129,13 +125,7 @@ export const prepareZcMint = (
         zcfSeat.isOfferSafe(allocationMinusLosses) ||
           Fail`The allocation after burning losses ${allocationMinusLosses} for the zcfSeat was not offer safe`;
 
-        // Decrement the stagedAllocation if it exists so that the
-        // stagedAllocation is kept up to the currentAllocation
-        if (zcfSeat.hasStagedAllocation()) {
-          zcfSeat.decrementBy(losses);
-        }
-
-        // No effects above, apart from decrementBy. Note COMMIT POINT within
+        // No effects above, Note COMMIT POINT within
         // reallocator.reallocate(). The following two steps *should* be
         // committed atomically, but it is not a disaster if they are
         // not. If we only commit the allocationMinusLosses no one would

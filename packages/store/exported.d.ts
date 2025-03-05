@@ -10,7 +10,7 @@ import {
   WeakMapStore as _WeakMapStore,
   WeakSetStore as _WeakSetStore,
 } from './src/types.js';
-import { Pattern as _Pattern } from '@endo/patterns';
+
 declare global {
   // @ts-ignore TS2666: Exports and export assignments are not permitted in module augmentations.
   export {
@@ -21,7 +21,5 @@ declare global {
     _StoreOptions as StoreOptions,
     _WeakMapStore as WeakMapStore,
     _WeakSetStore as WeakSetStore,
-    // other packages
-    _Pattern as Pattern,
   };
 }

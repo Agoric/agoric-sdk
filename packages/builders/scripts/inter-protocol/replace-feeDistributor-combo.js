@@ -45,7 +45,7 @@ const { keys } = Object;
 const knownVariants = keys(configurations);
 
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
-export const defaultProposalBuilder = async (_, opts) => {
+export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
   const config = opts.config || configurations[opts.variant];
   console.log('feeDist OPTS', opts, config);
   if (!config) {
@@ -58,7 +58,15 @@ export const defaultProposalBuilder = async (_, opts) => {
   return harden({
     sourceSpec:
       '@agoric/inter-protocol/src/proposals/replace-fee-distributor.js',
-    getManifestCall: [getManifestForReplaceFeeDistributor.name, { ...params }],
+    getManifestCall: [
+      getManifestForReplaceFeeDistributor.name,
+      {
+        feeDistributorRef: publishRef(
+          install('@agoric/inter-protocol/src/feeDistributor.js'),
+        ),
+        ...params,
+      },
+    ],
   });
 };
 

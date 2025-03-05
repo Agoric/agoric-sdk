@@ -5,15 +5,36 @@
  *   either directly or indirectly (e.g. by @endo imports).
  */
 
+import { objectMap } from '@endo/common/object-map.js';
+import { objectMetaMap } from '@endo/common/object-meta-map.js';
+import { fromUniqueEntries } from '@endo/common/from-unique-entries.js';
 import { q, Fail, makeError, annotateError, X } from '@endo/errors';
 import { deeplyFulfilled, isObject } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeQueue } from '@endo/stream';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore TS7016 The 'jessie.js' library may need to update its package.json or typings
 import { asyncGenerate } from 'jessie.js';
+import { logLevels } from './js-utils.js';
+
+/** @import {LimitedConsole} from './js-utils.js'; */
+
+/** @import {ERef} from '@endo/far'; */
+/** @import {Primitive} from '@endo/pass-style'; */
+/** @import {Permit, Attenuated} from './types.js'; */
+
+export { objectMap, objectMetaMap, fromUniqueEntries };
 
 const { fromEntries, keys, values } = Object;
 
-/** @import {ERef} from '@endo/far' */
+/** @param {(level: string) => (...args: unknown[]) => void} makeLogger */
+export const makeLimitedConsole = makeLogger => {
+  const limitedConsole = /** @type {any} */ (
+    fromEntries(logLevels.map(level => [level, makeLogger(level)]))
+  );
+  return /** @type {LimitedConsole} */ (harden(limitedConsole));
+};
+harden(makeLimitedConsole);
 
 /**
  * @template T
@@ -161,6 +182,61 @@ export const assertAllDefined = obj => {
   if (missing.length > 0) {
     Fail`missing ${q(missing)}`;
   }
+};
+
+/**
+ * Attenuate `specimen` to only properties allowed by `permit`.
+ *
+ * @template T
+ * @template {Permit<T>} P
+ * @param {T} specimen
+ * @param {P} permit
+ * @param {<U, SubP extends Permit<U>>(attenuation: U, permit: SubP) => U} [transform]
+ *   used to replace the results of recursive picks (but not blanket permits)
+ * @returns {Attenuated<T, P>}
+ */
+export const attenuate = (specimen, permit, transform = x => x) => {
+  // Fast-path for no attenuation.
+  if (permit === true || typeof permit === 'string') {
+    return /** @type {Attenuated<T, P>} */ (specimen);
+  }
+
+  /** @type {string[]} */
+  const path = [];
+  /**
+   * @template SubT
+   * @template {Exclude<Permit<SubT>, Primitive>} SubP
+   * @type {(specimen: SubT, permit: SubP) => Attenuated<SubT, SubP>}
+   */
+  const extract = (subSpecimen, subPermit) => {
+    if (subPermit === null || typeof subPermit !== 'object') {
+      throw path.length === 0
+        ? Fail`invalid permit: ${q(permit)}`
+        : Fail`invalid permit at path ${q(path)}: ${q(subPermit)}`;
+    } else if (subSpecimen === null || typeof subSpecimen !== 'object') {
+      throw path.length === 0
+        ? Fail`specimen must be an object for permit ${q(permit)}`
+        : Fail`specimen at path ${q(path)} must be an object for permit ${q(subPermit)}`;
+    }
+    const picks = Object.entries(subPermit).map(([subKey, deepPermit]) => {
+      if (!Object.hasOwn(subSpecimen, subKey)) {
+        throw Fail`specimen is missing path ${q(path.concat(subKey))}`;
+      }
+      const deepSpecimen = Reflect.get(subSpecimen, subKey);
+      if (deepPermit === true || typeof deepPermit === 'string') {
+        return [subKey, deepSpecimen];
+      }
+      path.push(subKey);
+      const extracted = extract(/** @type {any} */ (deepSpecimen), deepPermit);
+      const entry = [subKey, extracted];
+      path.pop();
+      return entry;
+    });
+    return transform(Object.fromEntries(picks), subPermit);
+  };
+
+  // @ts-expect-error cast
+  return extract(specimen, permit);
 };
 
 /** @type {IteratorResult<undefined, never>} */

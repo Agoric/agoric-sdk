@@ -46,7 +46,7 @@
     "@endo/marshal": "^1.6.3",
     "@endo/nat": "^5.0.14",
     "@endo/promise-kit": "^1.1.9",
-    "import-meta-resolve": "^2.2.1"
+    "import-meta-resolve": "^4.1.0"
   },
   "devDependencies": {
     "@agoric/swingset-vat": "^0.32.2",
@@ -76,6 +76,6 @@
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 89.48
+    "atLeast": 89.54
   }
 }

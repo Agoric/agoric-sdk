@@ -91,13 +91,18 @@ export const prepareStatusManager = (
   /**
    * Transactions seen *ever* by the contract.
    *
-   * Note that like all durable stores, this SetStore is stored in IAVL. It
-   * grows without bound (though the amount of growth per incoming message to
-   * the contract is bounded). At some point in the future we may want to prune.
-   * @type {SetStore<EvmHash>}
+   * Note that like all durable stores, this MapStore is kept in IAVL. It stores
+   * the `blockTimestamp` so that later we can prune old transactions.
+   *
+   * Note that `blockTimestamp` can drift between chains. Fortunately all CCTP
+   * chains use the same Unix epoch and won't drift more than minutes apart,
+   * which is more than enough precision for pruning old transaction.
+   *
+   * @type {MapStore<EvmHash, NatValue>}
    */
-  const seenTxs = zone.setStore('SeenTxs', {
+  const seenTxs = zone.mapStore('SeenTxs', {
     keyShape: M.string(),
+    valueShape: M.nat(),
   });
 
   /**
@@ -112,9 +117,8 @@ export const prepareStatusManager = (
   /**
    * @param {EvmHash} txId
    * @param {TransactionRecord} record
-   * @returns {Promise<void>}
    */
-  const publishTxnRecord = async (txId, record) => {
+  const publishTxnRecord = (txId, record) => {
     const txNode = E(txnsNode).makeChildNode(txId, {
       sequence: true, // avoid overwriting other output in the block
     });
@@ -128,9 +132,10 @@ export const prepareStatusManager = (
       storedCompletedTxs.add(txId);
     }
 
-    const capData = await E(marshaller).toCapData(record);
-
-    await E(txNode).setValue(JSON.stringify(capData));
+    // Don't await, just writing to vstorage.
+    void E.when(E(marshaller).toCapData(record), capData =>
+      E(txNode).setValue(JSON.stringify(capData)),
+    );
   };
 
   /**
@@ -139,10 +144,7 @@ export const prepareStatusManager = (
    */
   const publishEvidence = (hash, evidence) => {
     // Don't await, just writing to vstorage.
-    void publishTxnRecord(
-      hash,
-      harden({ evidence, status: TxStatus.Observed }),
-    );
+    publishTxnRecord(hash, harden({ evidence, status: TxStatus.Observed }));
   };
 
   /**
@@ -160,7 +162,7 @@ export const prepareStatusManager = (
     if (seenTxs.has(txHash)) {
       throw makeError(`Transaction already seen: ${q(txHash)}`);
     }
-    seenTxs.add(txHash);
+    seenTxs.init(txHash, evidence.blockTimestamp);
 
     appendToStoredArray(
       pendingSettleTxs,
@@ -169,10 +171,10 @@ export const prepareStatusManager = (
     );
     publishEvidence(txHash, evidence);
     if (status === PendingTxStatus.AdvanceSkipped) {
-      void publishTxnRecord(txHash, harden({ status, risksIdentified }));
+      publishTxnRecord(txHash, harden({ status, risksIdentified }));
     } else if (status !== PendingTxStatus.Observed) {
       // publishEvidence publishes Observed
-      void publishTxnRecord(txHash, harden({ status }));
+      publishTxnRecord(txHash, harden({ status }));
     }
   };
 
@@ -195,7 +197,7 @@ export const prepareStatusManager = (
     ];
     const txpost = { ...tx, status };
     pendingSettleTxs.set(key, harden([...prefix, txpost, ...suffix]));
-    void publishTxnRecord(tx.txHash, harden({ status }));
+    publishTxnRecord(tx.txHash, harden({ status }));
   }
 
   return zone.exo(
@@ -283,7 +285,7 @@ export const prepareStatusManager = (
        * @param {boolean} success whether the Transfer succeeded
        */
       advanceOutcomeForMintedEarly(txHash, success) {
-        void publishTxnRecord(
+        publishTxnRecord(
           txHash,
           harden({
             status: success
@@ -305,7 +307,7 @@ export const prepareStatusManager = (
         if (seenTxs.has(txHash)) {
           throw makeError(`Transaction already seen: ${q(txHash)}`);
         }
-        seenTxs.add(txHash);
+        seenTxs.init(txHash, evidence.blockTimestamp);
         publishEvidence(txHash, evidence);
       },
 
@@ -376,10 +378,7 @@ export const prepareStatusManager = (
        * @param {import('./liquidity-pool.js').RepayAmountKWR} split
        */
       disbursed(txHash, split) {
-        void publishTxnRecord(
-          txHash,
-          harden({ split, status: TxStatus.Disbursed }),
-        );
+        publishTxnRecord(txHash, harden({ split, status: TxStatus.Disbursed }));
       },
 
       /**
@@ -389,7 +388,7 @@ export const prepareStatusManager = (
        * @param {boolean} success
        */
       forwarded(txHash, success) {
-        void publishTxnRecord(
+        publishTxnRecord(
           txHash,
           harden({
             status: success ? TxStatus.Forwarded : TxStatus.ForwardFailed,

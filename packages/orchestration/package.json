@@ -88,12 +88,13 @@
   "files": [
     "*.js",
     "*.ts",
-    "src"
+    "src",
+    "tools"
   ],
   "publishConfig": {
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 97.77
+    "atLeast": 97.84
   }
 }

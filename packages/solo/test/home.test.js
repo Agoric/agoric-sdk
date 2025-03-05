@@ -30,7 +30,7 @@ export const Stable = harden(
 //#region setup (ambient authority is confined to this region)
 test.before('setup', async t => {
   const loadBundle = async specifier => {
-    const contractUrl = await importMetaResolve(specifier, import.meta.url);
+    const contractUrl = importMetaResolve(specifier, import.meta.url);
     const contractRoot = new URL(contractUrl).pathname;
     t.log({ contractRoot });
     const bundle = await bundleSourceAmbient(contractRoot);

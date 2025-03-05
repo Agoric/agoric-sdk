@@ -25,6 +25,7 @@ import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 
 /**
  * @import {BridgeMessage} from '@agoric/cosmic-swingset/src/types.js';
+ * @import {ZCF} from '@agoric/zoe';
  */
 
 const trace = makeTracer('ProvPool');

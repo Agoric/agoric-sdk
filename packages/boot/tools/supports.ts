@@ -58,6 +58,10 @@ import { icaMocks, protoMsgMockMap, protoMsgMocks } from './ibc/mocks.js';
 
 const trace = makeTracer('BSTSupport', false);
 
+const cliEntrypoint = new URL(
+  importMetaResolve('agoric/src/entrypoint.js', import.meta.url),
+).pathname;
+
 type ConsumeBootrapItem = <N extends string>(
   name: N,
 ) => N extends keyof FastUSDCCorePowers['consume']
@@ -115,9 +119,8 @@ export const getNodeTestVaultsConfig = async ({
   defaultManagerType = 'local' as ManagerType,
   discriminator = '',
 }) => {
-  const fullPath = await importMetaResolve(specifier, import.meta.url).then(
-    u => new URL(u).pathname,
-  );
+  const fullPath = new URL(importMetaResolve(specifier, import.meta.url))
+    .pathname;
   const config: SwingSetConfig & { coreProposals?: any[] } = NonNullish(
     await loadSwingsetConfigFile(fullPath),
   );
@@ -163,12 +166,12 @@ interface Powers {
   fs: typeof import('node:fs/promises');
 }
 
+const importSpec = async spec =>
+  new URL(importMetaResolve(spec, import.meta.url)).pathname;
+
 export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
   const getPkgPath = (pkg, fileName = '') =>
     new URL(`../../${pkg}/${fileName}`, import.meta.url).pathname;
-
-  const importSpec = spec =>
-    importMetaResolve(spec, import.meta.url).then(u => new URL(u).pathname);
 
   const runPackageScript = (
     outputDir: string,
@@ -177,12 +180,8 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
     cliArgs: string[] = [],
   ) => {
     console.info('running package script:', scriptPath);
-    const out = childProcess.execFileSync('yarn', ['bin', 'agoric'], {
-      cwd: outputDir,
-      env,
-    });
     return childProcess.execFileSync(
-      out.toString().trim(),
+      cliEntrypoint,
       ['run', scriptPath, ...cliArgs],
       {
         cwd: outputDir,
@@ -295,6 +294,8 @@ export const AckBehavior = {
   Queued: 'QUEUED',
   /** inbound messages are delivered immediately */
   Immediate: 'IMMEDIATE',
+  /** inbound responses never arrive (to simulate mis-configured connections etc.) */
+  Never: 'NEVER',
 } as const;
 type AckBehaviorType = (typeof AckBehavior)[keyof typeof AckBehavior];
 
@@ -510,6 +511,12 @@ export const makeSwingsetTestKit = async (
         switch (obj.method) {
           case 'startChannelOpenInit': {
             const message = icaMocks.channelOpenAck(obj, bech32Prefix);
+            if (
+              ackBehaviors?.[bridgeId]?.startChannelOpenInit ===
+              AckBehavior.Never
+            ) {
+              return undefined;
+            }
             const handle = shouldAckImmediately(
               bridgeId,
               'startChannelOpenInit',
@@ -587,6 +594,10 @@ export const makeSwingsetTestKit = async (
 
   console.timeLog('makeBaseSwingsetTestKit', 'buildSwingset');
 
+  // XXX This initial run() might not be necessary. Tests pass without it as of
+  // 2025-02, but we suspect that `makeSwingsetTestKit` just isn't being
+  // exercised in the right way.
+  await controller.run();
   const runUtils = makeBootstrapRunUtils(controller, harness);
 
   const buildProposal = makeProposalExtractor({

@@ -12,6 +12,7 @@ import type { ExecutionContext } from 'ava';
 import { makeDoOffer, type WalletDriver } from '../../tools/e2e-tools.js';
 import type { createWallet } from '../../tools/wallet.js';
 import type { commonSetup, SetupContextWithWallets } from '../support.js';
+import type { InvitationDetails } from '@agoric/zoe';
 
 const { fromEntries } = Object;
 
@@ -58,6 +59,7 @@ export const fastLPQ = (vsc: VStorageClient) =>
       vsc.queryData(`published.fastUsdc`) as Promise<{
         poolAccount: string;
         settlementAccount: string;
+        nobleICA?: string;
       }>,
   });
 
@@ -175,7 +177,10 @@ export const makeUserAgent = (
       t.log('got forwardingAddress', userForwardingAddr);
 
       const senderDigits = 'FAKE_SENDER_ADDR' as string & { length: 40 };
-      const tx: Omit<CctpTxEvidence, 'blockHash' | 'blockNumber'> = harden({
+      const tx: Omit<
+        CctpTxEvidence,
+        'blockHash' | 'blockNumber' | 'blockTimestamp'
+      > = harden({
         txHash: `0xFAKE_TX_HASH`,
         tx: {
           sender: `0x${senderDigits}`,

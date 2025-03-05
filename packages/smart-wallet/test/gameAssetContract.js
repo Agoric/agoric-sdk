@@ -48,10 +48,13 @@ export const start = async zcf => {
 
     // We use the deprecated stage/reallocate API
     // so that we can test this with the version of zoe on mainnet1B.
-    playerSeat.decrementBy(gameSeat.incrementBy(give));
     const tmp = mint.mintGains(want);
-    playerSeat.incrementBy(tmp.decrementBy(want));
-    zcf.reallocate(playerSeat, tmp, gameSeat);
+    zcf.atomicRearrange(
+      harden([
+        [playerSeat, gameSeat, give],
+        [tmp, playerSeat, want],
+      ]),
+    );
     playerSeat.exit(true);
     return 'welcome to the game';
   };

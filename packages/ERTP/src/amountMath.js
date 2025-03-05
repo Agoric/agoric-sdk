@@ -9,7 +9,7 @@ import { copyBagMathHelpers } from './mathHelpers/copyBagMathHelpers.js';
 
 /**
  * @import {CopyBag, CopySet} from '@endo/patterns';
- * @import {Amount, AssetValueForKind, Brand, CopyBagAmount, CopySetAmount, MathHelpers, NatAmount, NatValue, SetAmount, SetValue} from './types.js';
+ * @import {Amount, AmountValue, AssetValueForKind, Brand, CopyBagAmount, CopySetAmount, MathHelpers, NatAmount, NatValue, SetAmount, SetValue} from './types.js';
  */
 
 // NB: AssetKind is both a constant for enumerated values and a type for those values.
@@ -105,7 +105,7 @@ const assertValueGetAssetKind = value => {
  *
  * Made available only for testing, but it is harmless for other uses.
  *
- * @template V
+ * @template {AmountValue} V
  * @param {V} value
  * @returns {MathHelpers<V>}
  */
@@ -113,7 +113,9 @@ export const assertValueGetHelpers = value =>
   // @ts-expect-error cast
   helpers[assertValueGetAssetKind(value)];
 
-/** @type {(allegedBrand: Brand, brand?: Brand) => void} */
+/**
+ * @type {(allegedBrand: Brand<any>, brand?: Brand<any>) => void}
+ */
 const optionalBrandCheck = (allegedBrand, brand) => {
   if (brand !== undefined) {
     assertRemotable(brand, 'brand');

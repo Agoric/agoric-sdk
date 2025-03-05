@@ -67,6 +67,7 @@ import { AuctionPFShape } from '../auction/auctioneer.js';
 
 /**
  * @import {EReturn} from '@endo/far';
+ * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  */
 

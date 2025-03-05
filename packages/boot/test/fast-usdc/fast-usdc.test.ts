@@ -2,19 +2,22 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
+import { AmountMath } from '@agoric/ertp';
+import { Offers } from '@agoric/fast-usdc/src/clientSupport.js';
 import { configurations } from '@agoric/fast-usdc/src/utils/deploy-config.js';
 import { MockCctpTxEvidences } from '@agoric/fast-usdc/test/fixtures.js';
-import { Offers } from '@agoric/fast-usdc/src/clientSupport.js';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { BridgeId, NonNullish } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { defaultSerializer } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
+import type { EndoZipBase64Bundle } from '@agoric/swingset-vat';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Fail } from '@endo/errors';
 import { makeMarshal } from '@endo/marshal';
-import { AmountMath } from '@agoric/ertp';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { readFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import {
   AckBehavior,
   insistManagerType,
@@ -25,11 +28,18 @@ import {
   type WalletFactoryTestContext,
 } from '../bootstrapTests/walletFactory.js';
 
+const nodeRequire = createRequire(import.meta.url);
+
 const test: TestFn<
   WalletFactoryTestContext & {
     harness?: ReturnType<typeof makeSwingsetHarness>;
   }
 > = anyTest;
+
+// oracles, which were started with MAINNET config
+const theConfig = configurations.MAINNET;
+const { oracles: oracleRecord } = theConfig;
+const oracleAddrs = Object.values(oracleRecord);
 
 const {
   SLOGFILE: slogFile,
@@ -53,8 +63,85 @@ test.after.always(t => t.context.shutdown?.());
 
 test.serial('oracles provision before contract deployment', async t => {
   const { walletFactoryDriver: wfd } = t.context;
-  const watcherWallet = await wfd.provideSmartWallet('agoric1watcher1');
+  const [watcherWallet] = await Promise.all(
+    oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
+  );
   t.truthy(watcherWallet);
+});
+
+const downloadCoreEval = async (
+  { fetch = globalThis.fetch } = {},
+  config = {
+    repo: 'Agoric/agoric-sdk',
+    release: 'fast-usdc-beta-1',
+    name: 'start-fast-usdc',
+  },
+  artifacts = `https://github.com/${config.repo}/releases/download/${config.release}`,
+  planUrl = `${artifacts}/${config.name}-plan.json`,
+) => {
+  const plan = (await fetch(planUrl).then(r => r.json())) as {
+    name: string;
+    permit: string;
+    script: string;
+    bundles: Array<{
+      bundleID: string;
+      entrypoint: string;
+      fileName: string;
+    }>;
+  };
+  assert.equal(plan.name, config.name);
+  const script = await fetch(`${artifacts}/${plan.script}`).then(r => r.text());
+  const permit = await fetch(`${artifacts}/${plan.permit}`).then(r => r.text());
+  const bundles: EndoZipBase64Bundle[] = await Promise.all(
+    plan.bundles.map(b =>
+      fetch(`${artifacts}/${b.bundleID}.json`).then(r => r.json()),
+    ),
+  );
+  return { bundles, evals: [{ js_code: script, json_permits: permit }] };
+};
+
+/**
+ * Start with the Core Eval from proposal 87, the Fast USDC Beta release.
+ *
+ * UNTIL https://github.com/Agoric/agoric-sdk/issues/10079
+ *
+ * Usually, we do upgrade testing from mainnet state in a3p-integration, but that
+ * environment does not yet have a connection to Noble (nor any other chains).
+ */
+test.serial('prop 87: Beta', async t => {
+  const { evalProposal, bridgeUtils } = t.context;
+
+  const fetchFixture = async url => {
+    const basename = url.split('/').at(-1);
+    const cachePath = nodeRequire.resolve(`./bundles/${basename}`);
+    t.log('load', url, 'from', cachePath);
+    const txt = await readFile(cachePath, 'utf-8');
+    return {
+      text: async () => txt,
+      json: async () => JSON.parse(txt),
+    };
+  };
+  const materials = await downloadCoreEval({
+    fetch: fetchFixture as unknown as typeof fetch,
+  });
+
+  // Proposal 87 doesn't quite complete: noble ICA is mis-configured
+  bridgeUtils.setAckBehavior(
+    BridgeId.DIBC,
+    'startChannelOpenInit',
+    AckBehavior.Never,
+  );
+  try {
+    await evalProposal(materials);
+  } catch (err) {
+    t.log(err.message);
+    if (!err.message.startsWith('unsettled value')) throw err;
+  }
+
+  const { agoricNamesRemotes, refreshAgoricNamesRemotes } = t.context;
+  // update now that fastUsdc is instantiated
+  refreshAgoricNamesRemotes();
+  t.truthy(agoricNamesRemotes.instance.fastUsdc);
 });
 
 test.serial(
@@ -70,25 +157,25 @@ test.serial(
       walletFactoryDriver: wfd,
     } = t.context;
 
-    const { oracles } = configurations.MAINNET;
-    const [watcherWallet] = await Promise.all(
-      Object.values(oracles).map(addr => wfd.provideSmartWallet(addr)),
-    );
+    const watcherWallet = await wfd.provideSmartWallet(oracleAddrs[0]);
 
-    // inbound `startChannelOpenInit` responses immediately.
-    // needed since the Fusdc StartFn relies on an ICA being created
-    bridgeUtils.setAckBehavior(
-      BridgeId.DIBC,
-      'startChannelOpenInit',
-      AckBehavior.Immediate,
-    );
-    bridgeUtils.setBech32Prefix('noble');
+    const freshDeploy = false; // prop 87 done
+    if (freshDeploy) {
+      // inbound `startChannelOpenInit` responses immediately.
+      // needed since the Fusdc StartFn relies on an ICA being created
+      bridgeUtils.setAckBehavior(
+        BridgeId.DIBC,
+        'startChannelOpenInit',
+        AckBehavior.Immediate,
+      );
+      bridgeUtils.setBech32Prefix('noble');
 
-    const materials = buildProposal(
-      '@agoric/builders/scripts/fast-usdc/start-fast-usdc.build.js',
-      ['--net', 'MAINNET'],
-    );
-    await evalProposal(materials);
+      const materials = buildProposal(
+        '@agoric/builders/scripts/fast-usdc/start-fast-usdc.build.js',
+        ['--net', 'MAINNET'],
+      );
+      await evalProposal(materials);
+    }
 
     // update now that fastUsdc is instantiated
     refreshAgoricNamesRemotes();
@@ -154,43 +241,6 @@ test.serial(
   },
 );
 
-test.serial('writes feed policy to vstorage', async t => {
-  const { storage } = t.context;
-  const opts = {
-    node: 'fastUsdc.feedPolicy',
-    owner: 'the general and chain-specific policies for the Fast USDC feed',
-    showValue: defaultSerializer.parse,
-  };
-  await documentStorageSchema(t, storage, opts);
-});
-
-test.serial('writes fee config to vstorage', async t => {
-  const { storage } = t.context;
-  const doc = {
-    node: 'fastUsdc.feeConfig',
-    owner: 'the fee configuration for Fast USDC',
-    showValue: defaultSerializer.parse,
-  };
-  await documentStorageSchema(t, storage, doc);
-});
-
-test.serial('writes account addresses to vstorage', async t => {
-  const { storage } = t.context;
-  const doc = {
-    node: 'fastUsdc',
-    showValue: JSON.parse,
-    pattern: /published\.fastUsdc\.(feeConfig|feedPolicy|poolMetrics)/,
-    replacement: '',
-    note: `Under "published", the "fastUsdc" node is delegated to FastUSDC contract.
-    Note: published.fastUsdc.[settleAcctAddr], published.fastUsdc.[poolAcctAddr],
-    and published.fastUsdc.[intermediateAcctAddr] are published by @agoric/orchestration
-    via 'withOrchestration' and (local|cosmos)-orch-account-kit.js.
-    `,
-  };
-
-  await documentStorageSchema(t, storage, doc);
-});
-
 test.serial('LP deposits', async t => {
   const { walletFactoryDriver: wfd, agoricNamesRemotes } = t.context;
   const lp = await wfd.provideSmartWallet(
@@ -250,19 +300,11 @@ test.serial('LP deposits', async t => {
   );
 });
 
-test.serial('makes usdc advance', async t => {
-  const {
-    walletFactoryDriver: wfd,
-    storage,
-    agoricNamesRemotes,
-    harness,
-    runUtils: { EV },
-  } = t.context;
-  const oracles = await Promise.all([
-    wfd.provideSmartWallet('agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8'),
-    wfd.provideSmartWallet('agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr'),
-    wfd.provideSmartWallet('agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj'),
-  ]);
+test.serial('oracles accept invitations', async t => {
+  const { walletFactoryDriver: wfd, agoricNamesRemotes } = t.context;
+  const oracles = await Promise.all(
+    oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
+  );
   await Promise.all(
     oracles.map(wallet =>
       wallet.sendOffer({
@@ -275,6 +317,100 @@ test.serial('makes usdc advance', async t => {
         proposal: {},
       }),
     ),
+  );
+  t.log('TODO: check that invitations are used');
+  t.pass();
+});
+
+test.serial('upgrade; update noble ICA', async t => {
+  const { bridgeUtils, buildProposal, evalProposal } = t.context;
+
+  bridgeUtils.setAckBehavior(
+    BridgeId.DIBC,
+    'startChannelOpenInit',
+    AckBehavior.Immediate,
+  );
+  bridgeUtils.setBech32Prefix('noble');
+
+  const materials = await buildProposal(
+    '@agoric/builders/scripts/fast-usdc/fast-usdc-reconfigure.build.js',
+  );
+  await evalProposal(materials);
+
+  // XXX bridgeUtils.getOutboundMessages(BridgeId.DIBC) should
+  // show the updated connection id, but we struggled to confirm.
+  // We'll use multichain-testing to be sure.
+
+  const { storage } = t.context;
+  const doc = {
+    node: 'fastUsdc',
+    owner: 'Fast USDC',
+    pattern: /published\.fastUsdc\.(feeConfig|feedPolicy|poolMetrics)/,
+    replacement: '',
+    showValue: JSON.parse,
+  };
+  await documentStorageSchema(t, storage, doc);
+
+  await documentStorageSchema(t, storage, {
+    node: 'fastUsdc.feeConfig',
+    showValue: defaultSerializer.parse,
+    note: 'feeConfig: 0.01USDC flat, 0.1% variable, 20% contract cut',
+  });
+
+  const outboundDIBC = bridgeUtils.getOutboundMessages(BridgeId.DIBC);
+  const icaAccountReqs = outboundDIBC.filter(
+    x =>
+      x.method === 'startChannelOpenInit' &&
+      x.packet.destination_port === 'icahost',
+  );
+  t.deepEqual(
+    icaAccountReqs.map(r => JSON.parse(r.version).hostConnectionId),
+    ['connection-40', 'connection-38'],
+  );
+});
+
+test.serial('writes GTM feed policy to vstorage', async t => {
+  const { storage } = t.context;
+  const opts = {
+    node: 'fastUsdc.feedPolicy',
+    owner: 'the general and chain-specific policies for the Fast USDC feed',
+    showValue: defaultSerializer.parse,
+  };
+  await documentStorageSchema(t, storage, opts);
+});
+
+test.serial('writes GTM fee config to vstorage', async t => {
+  const { storage } = t.context;
+  const doc = {
+    node: 'fastUsdc.feeConfig',
+    owner: 'the fee configuration for Fast USDC',
+    showValue: defaultSerializer.parse,
+  };
+  await documentStorageSchema(t, storage, doc);
+});
+
+test.serial('writes GTM account addresses to vstorage', async t => {
+  const { storage } = t.context;
+  const doc = {
+    node: 'fastUsdc',
+    showValue: JSON.parse,
+    pattern: /published\.fastUsdc\.(feeConfig|feedPolicy|poolMetrics)/,
+    replacement: '',
+    note: 'Under "published", the "fastUsdc" node is delegated to FastUSDC contract.',
+  };
+
+  await documentStorageSchema(t, storage, doc);
+});
+
+test.serial('makes usdc advance', async t => {
+  const {
+    walletFactoryDriver: wfd,
+    storage,
+    harness,
+    runUtils: { EV },
+  } = t.context;
+  const oracles = await Promise.all(
+    oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
   );
 
   const EUD = 'dydx1anything';
@@ -323,7 +459,7 @@ test.serial('makes usdc advance', async t => {
   // Restart contract to make sure it doesn't break advance flow
   const kit = await EV.vat('bootstrap').consumeItem('fastUsdcKit');
   const actual = await EV(kit.adminFacet).restartContract(kit.privateArgs);
-  t.deepEqual(actual, { incarnationNumber: 1 });
+  t.deepEqual(actual, { incarnationNumber: 2 });
 
   const { runInbound } = t.context.bridgeUtils;
   await runInbound(
@@ -359,7 +495,7 @@ test.serial('makes usdc advance', async t => {
     { status: 'OBSERVED' },
     { status: 'ADVANCING' },
     { status: 'ADVANCED' },
-    { status: 'DISBURSED', split: { ContractFee: { value: 302000n } } },
+    { status: 'DISBURSED', split: { ContractFee: { value: 32_000n } } },
   ]);
 
   const doc = {
@@ -383,12 +519,12 @@ test.serial('writes pool metrics to vstorage', async t => {
 test.serial('distributes fees per BLD staker decision', async t => {
   const { walletFactoryDriver: wd, buildProposal, evalProposal } = t.context;
 
-  const ContractFee = 302000n; // see split above
-  t.is(((ContractFee - 250000n) * 5n) / 10n, 26000n);
+  const ContractFee = 32000n; // see split above
+  t.is(((ContractFee - 16_000n) * 5n) / 10n, 8_000n);
 
   const cases = [
-    { dest: 'agoric1a', args: ['--fixedFees', '0.25'], rxd: '250000' },
-    { dest: 'agoric1b', args: ['--feePortion', '0.5'], rxd: '26000' },
+    { dest: 'agoric1a', args: ['--fixedFees', '0.016'], rxd: '16000' },
+    { dest: 'agoric1b', args: ['--feePortion', '0.5'], rxd: '8000' },
   ];
   for (const { dest, args, rxd } of cases) {
     await wd.provideSmartWallet(dest);
@@ -409,11 +545,9 @@ test.serial('distributes fees per BLD staker decision', async t => {
 
 test.serial('skips usdc advance when risks identified', async t => {
   const { walletFactoryDriver: wfd, storage } = t.context;
-  const oracles = await Promise.all([
-    wfd.provideSmartWallet('agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8'),
-    wfd.provideSmartWallet('agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr'),
-    wfd.provideSmartWallet('agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj'),
-  ]);
+  const oracles = await Promise.all(
+    oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
+  );
 
   const EUD = 'dydx1riskyeud';
   const lastNodeValue = storage.getValues('published.fastUsdc').at(-1);
@@ -532,8 +666,8 @@ test.serial('restart contract', async t => {
 
   const actual = await EV(kit.adminFacet).restartContract(newArgs);
 
-  // Incarnation 2 because previous test already restarted it once.
-  t.deepEqual(actual, { incarnationNumber: 2 });
+  // Incarnation 3 because of upgrade, previous test
+  t.deepEqual(actual, { incarnationNumber: 3 });
   const { flat, variableRate, contractRate } = storage
     .getValues(`published.fastUsdc.feeConfig`)
     .map(defaultSerializer.parse)
@@ -574,16 +708,13 @@ test.serial('replace operators', async t => {
 
   // Remove old oracle operators (nested in block to isolate bindings)
   {
-    // old oracles, which were started with MAINNET config
-    const { oracles } = configurations.MAINNET;
-
-    for (const [name, address] of Object.entries(oracles)) {
+    for (const [name, address] of Object.entries(oracleRecord)) {
       t.log('Removing operator', name, 'at', address);
       await EV(creatorFacet).removeOperator(address);
     }
 
     const wallets = await Promise.all(
-      Object.values(oracles).map(addr => wfd.provideSmartWallet(addr)),
+      oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
     );
 
     await Promise.all(

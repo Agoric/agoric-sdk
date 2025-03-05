@@ -11,6 +11,10 @@ const { ownKeys } = Reflect;
 
 export const MAX_KEYWORD_LENGTH = 100;
 
+/**
+ * @import {ExitRule, Proposal} from '@agoric/zoe';
+ */
+
 const firstCapASCII = /^[A-Z][a-zA-Z0-9_$]*$/;
 
 // We adopt simple requirements on keywords so that they do not accidentally

@@ -11,6 +11,7 @@ import { multiplyBy } from './ratio.js';
 import { mintQuote } from './priceAuthorityTransform.js';
 
 /**
+ * @import {Amount, Brand, Mint} from '@agoric/ertp';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  */
 

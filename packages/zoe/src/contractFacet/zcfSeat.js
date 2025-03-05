@@ -5,7 +5,6 @@ import {
   prepareExoClass,
   prepareExoClassKit,
   provide,
-  provideDurableMapStore,
   provideDurableWeakMapStore,
 } from '@agoric/vat-data';
 import { AmountMath } from '@agoric/ertp';
@@ -13,8 +12,6 @@ import { initEmpty, M } from '@agoric/store';
 
 import { isOfferSafe } from './offerSafety.js';
 import { assertRightsConserved } from './rightsConservation.js';
-import { addToAllocation, subtractFromAllocation } from './allocationMath.js';
-import { coerceAmountKeywordRecord } from '../cleanProposal.js';
 import {
   AmountKeywordRecordShape,
   SeatDataShape,
@@ -26,6 +23,7 @@ import { TransferPartShape } from '../contractSupport/atomicTransfer.js';
 /**
  * @import {LegacyWeakMap, WeakMapStore} from '@agoric/store';
  * @import {MapStore} from '@agoric/swingset-liveslots';
+ * @import {ContractMeta, Invitation, OfferHandler, TransferPart, ZCF, ZCFSeat} from '@agoric/zoe';
  */
 
 /**
@@ -46,11 +44,11 @@ export const createSeatManager = (
 ) => {
   /** @type {WeakMapStore<ZCFSeat, Allocation>}  */
   let activeZCFSeats = provideDurableWeakMapStore(zcfBaggage, 'activeZCFSeats');
-  /** @type {MapStore<ZCFSeat, Allocation>} */
-  const zcfSeatToStagedAllocations = provideDurableMapStore(
-    zcfBaggage,
-    'zcfSeatToStagedAllocations',
-  );
+
+  // Removed.  See #6679
+  if (zcfBaggage.has('zcfSeatToStagedAllocations')) {
+    zcfBaggage.delete('zcfSeatToStagedAllocations');
+  }
 
   /** @type {WeakMapStore<ZCFSeat, SeatHandle>} */
   let zcfSeatToSeatHandle = provideDurableWeakMapStore(
@@ -89,64 +87,6 @@ export const createSeatManager = (
     return activeZCFSeats.get(zcfSeat);
   };
 
-  /**
-   * @param {ZCFSeat} zcfSeat
-   * @returns {void}
-   */
-  const commitStagedAllocation = zcfSeat => {
-    // By this point, we have checked that the zcfSeat is a key in
-    // activeZCFSeats and in zcfSeatToStagedAllocations.
-    activeZCFSeats.set(zcfSeat, zcfSeat.getStagedAllocation());
-    zcfSeatToStagedAllocations.delete(zcfSeat);
-  };
-
-  /**
-   * @param {ZCFSeat} zcfSeat
-   * @returns {Allocation}
-   */
-  const hasStagedAllocation = zcfSeatToStagedAllocations.has;
-
-  /**
-   * Get the stagedAllocation. If one does not exist, return the
-   * currentAllocation. We return the currentAllocation in this case
-   * so that downstream users do not have to check whether the
-   * stagedAllocation is defined before adding to it or subtracting
-   * from it. To check whether a stagedAllocation exists, use
-   * `hasStagedAllocation`
-   *
-   * @param {ZCFSeat} zcfSeat
-   * @returns {Allocation}
-   */
-  const getStagedAllocation = zcfSeat => {
-    if (zcfSeatToStagedAllocations.has(zcfSeat)) {
-      return zcfSeatToStagedAllocations.get(zcfSeat);
-    } else {
-      return activeZCFSeats.get(zcfSeat);
-    }
-  };
-
-  const assertStagedAllocation = zcfSeat => {
-    hasStagedAllocation(zcfSeat) ||
-      Fail`Reallocate failed because a seat had no staged allocation. Please add or subtract from the seat and then reallocate.`;
-  };
-
-  const setStagedAllocation = (zcfSeat, newStagedAllocation) => {
-    if (zcfSeatToStagedAllocations.has(zcfSeat)) {
-      zcfSeatToStagedAllocations.set(zcfSeat, newStagedAllocation);
-    } else {
-      zcfSeatToStagedAllocations.init(zcfSeat, newStagedAllocation);
-    }
-  };
-
-  /** @param {ZCFSeat} zcfSeat */
-  const assertNoStagedAllocation = zcfSeat => {
-    if (hasStagedAllocation(zcfSeat)) {
-      Fail`The seat could not be exited with a staged but uncommitted allocation: ${getStagedAllocation(
-        zcfSeat,
-      )}. Please reallocate over this seat or clear the staged allocation.`;
-    }
-  };
-
   const ZCFSeatI = M.interface('ZCFSeat', {}, { sloppy: true });
 
   const makeZCFSeatInternal = prepareExoClass(
@@ -168,7 +108,6 @@ export const createSeatManager = (
       exit(completion) {
         const { self } = this;
         assertActive(self);
-        assertNoStagedAllocation(self);
         doExitSeat(self);
         void E(zoeInstanceAdmin).exitSeat(
           zcfSeatToSeatHandle.get(self),
@@ -226,10 +165,6 @@ export const createSeatManager = (
         const { self } = this;
         return getCurrentAllocation(self);
       },
-      getStagedAllocation() {
-        const { self } = this;
-        return getStagedAllocation(self);
-      },
       isOfferSafe(newAllocation) {
         const { state, self } = this;
         assertActive(self);
@@ -240,53 +175,6 @@ export const createSeatManager = (
         });
 
         return isOfferSafe(state.proposal, reallocation);
-      },
-      /**
-       * @deprecated switch to zcf.atomicRearrange()
-       * @param {AmountKeywordRecord} amountKeywordRecord
-       */
-      incrementBy(amountKeywordRecord) {
-        const { self } = this;
-        assertActive(self);
-        amountKeywordRecord = coerceAmountKeywordRecord(
-          amountKeywordRecord,
-          getAssetKindByBrand,
-        );
-        setStagedAllocation(
-          self,
-          addToAllocation(getStagedAllocation(self), amountKeywordRecord),
-        );
-        return amountKeywordRecord;
-      },
-      /**
-       * @deprecated switch to zcf.atomicRearrange()
-       * @param {AmountKeywordRecord} amountKeywordRecord
-       */
-      decrementBy(amountKeywordRecord) {
-        const { self } = this;
-        assertActive(self);
-        amountKeywordRecord = coerceAmountKeywordRecord(
-          amountKeywordRecord,
-          getAssetKindByBrand,
-        );
-        setStagedAllocation(
-          self,
-          subtractFromAllocation(
-            getStagedAllocation(self),
-            amountKeywordRecord,
-          ),
-        );
-        return amountKeywordRecord;
-      },
-      clear() {
-        const { self } = this;
-        if (zcfSeatToStagedAllocations.has(self)) {
-          zcfSeatToStagedAllocations.delete(self);
-        }
-      },
-      hasStagedAllocation() {
-        const { self } = this;
-        return hasStagedAllocation(self);
       },
     },
   );
@@ -301,9 +189,6 @@ export const createSeatManager = (
     seatManager: M.interface('ZcfSeatManager', {
       makeZCFSeat: M.call(SeatDataShape).returns(M.remotable('zcfSeat')),
       atomicRearrange: M.call(M.arrayOf(TransferPartShape)).returns(),
-      reallocate: M.call(M.remotable('zcfSeat'), M.remotable('zcfSeat'))
-        .rest(M.arrayOf(M.remotable('zcfSeat')))
-        .returns(),
       dropAllReferences: M.call().returns(),
     }),
     zcfMintReallocator: M.interface('MintReallocator', {
@@ -355,8 +240,6 @@ export const createSeatManager = (
           // ////// All Seats are active /////////////////////////////////
           for (const [seat] of newAllocations) {
             assertActive(seat);
-            !seat.hasStagedAllocation() ||
-              Fail`Cannot mix atomicRearrange with seat stagings: ${seat}`;
             zcfSeatToSeatHandle.has(seat) ||
               Fail`The seat ${seat} was not recognized`;
           }
@@ -415,69 +298,6 @@ export const createSeatManager = (
             throw err;
           }
         },
-        reallocate(/** @type {ZCFSeat[]} */ ...seats) {
-          for (const seat of seats) {
-            assertActive(seat);
-            assertStagedAllocation(seat);
-          }
-
-          // Ensure that rights are conserved overall.
-          const flattenAllocations = allocations =>
-            allocations.flatMap(Object.values);
-          const previousAllocations = seats.map(seat =>
-            seat.getCurrentAllocation(),
-          );
-          const previousAmounts = flattenAllocations(previousAllocations);
-          const newAllocations = seats.map(seat => seat.getStagedAllocation());
-          const newAmounts = flattenAllocations(newAllocations);
-
-          assertRightsConserved(previousAmounts, newAmounts);
-
-          // Ensure that offer safety holds.
-          for (const seat of seats) {
-            isOfferSafe(seat.getProposal(), seat.getStagedAllocation()) ||
-              Fail`Offer safety was violated by the proposed allocation: ${seat.getStagedAllocation()}. Proposal was ${seat.getProposal()}`;
-          }
-
-          // Keep track of seats used so far in this call, to prevent aliasing.
-          const zcfSeatsSoFar = new Set();
-
-          for (const seat of seats) {
-            zcfSeatToSeatHandle.has(seat) ||
-              Fail`The seat ${seat} was not recognized`;
-            !zcfSeatsSoFar.has(seat) ||
-              Fail`Seat (${seat}) was already an argument to reallocate`;
-            zcfSeatsSoFar.add(seat);
-          }
-
-          try {
-            // No side effects above. All conditions checked which could have
-            // caused us to reject this reallocation.
-            // COMMIT POINT
-            // All the effects below must succeed "atomically". Scare quotes because
-            // the eventual send at the bottom is part of this "atomicity" even
-            // though its effects happen later. The send occurs in the order of
-            // updates from zcf to zoe, its effects must occur immediately in zoe
-            // on reception, and must not fail.
-            //
-            // Commit the staged allocations (currentAllocation is replaced
-            // for each of the seats) and inform Zoe of the
-            // newAllocation.
-
-            for (const seat of seats) {
-              commitStagedAllocation(seat);
-            }
-            const seatHandleAllocations = seats.map(seat => {
-              const seatHandle = zcfSeatToSeatHandle.get(seat);
-              return { seatHandle, allocation: seat.getCurrentAllocation() };
-            });
-
-            E(zoeInstanceAdmin).replaceAllocations(seatHandleAllocations);
-          } catch (err) {
-            shutdownWithFailure(err);
-            throw err;
-          }
-        },
         dropAllReferences() {
           activeZCFSeats = replaceDurableWeakMapStore(
             zcfBaggage,
@@ -490,9 +310,9 @@ export const createSeatManager = (
         },
       },
       zcfMintReallocator: {
-        // Unlike the zcf.reallocate method, this one does not check
+        // Unlike the zcf.atomicRearrange method, this one does not check
         // conservation, and so can be used internally for reallocations that
-        // violate conservation.
+        // violate conservation, like minting and burning.
         reallocate(zcfSeat, newAllocation) {
           try {
             // COMMIT POINT

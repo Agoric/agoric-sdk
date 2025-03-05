@@ -22,6 +22,7 @@ import {
 } from './virtual-purse.js';
 
 /**
+ * @import {Amount, DisplayInfo, Issuer, IssuerKit, Payment} from '@agoric/ertp';
  * @import {Guarded} from '@endo/exo';
  * @import {RemotableObject} from '@endo/pass-style';
  * @import {BridgeMessage, BridgeBigInt} from '@agoric/cosmic-swingset/src/types.js';

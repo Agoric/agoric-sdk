@@ -70,7 +70,12 @@ const startContract = async (
     commonPrivateArgs,
   } = common;
 
-  const { zoe, bundleAndInstall } = await setUpZoeForTest();
+  let contractBaggage;
+  const setJig = ({ baggage }) => {
+    contractBaggage = baggage;
+  };
+
+  const { zoe, bundleAndInstall } = await setUpZoeForTest({ setJig });
   const installation: Installation<FastUsdcSF> =
     await bundleAndInstall(contractFile);
 
@@ -92,11 +97,18 @@ const startContract = async (
       E(startKit.creatorFacet).makeOperatorInvitation(`operator-${opIx}`),
     ),
   );
-  await E(startKit.creatorFacet).connectToNoble();
+  const { agoric, noble } = commonPrivateArgs.chainInfo;
+  const agoricToNoble = agoric.connections![noble.chainId];
+  await E(startKit.creatorFacet).connectToNoble(
+    agoric.chainId,
+    noble.chainId,
+    agoricToNoble,
+  );
   await E(startKit.creatorFacet).publishAddresses();
 
   return {
     ...startKit,
+    contractBaggage,
     terms,
     zoe,
     metricsSub,
@@ -175,7 +187,8 @@ type FucContext = EReturn<typeof makeTestContext>;
 const test = anyTest as TestFn<FucContext>;
 test.before(async t => (t.context = await makeTestContext(t)));
 
-test('baggage', async t => {
+// baggage after a simple startInstance, without any other startup logic
+test('initial baggage', async t => {
   const {
     brands: { usdc },
     commonPrivateArgs,
@@ -198,6 +211,13 @@ test('baggage', async t => {
   );
 
   const tree = inspectMapStore(contractBaggage);
+  t.snapshot(tree, 'contract baggage after start');
+});
+
+test('used baggage', async t => {
+  const { startKit } = t.context;
+
+  const tree = inspectMapStore(startKit.contractBaggage);
   t.snapshot(tree, 'contract baggage after start');
 });
 

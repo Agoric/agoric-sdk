@@ -5,6 +5,10 @@ import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined } from '@agoric/internal';
 import { parseRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 
+/**
+ * @import {Proposal} from '@agoric/zoe';
+ */
+
 // XXX support other decimal places
 const COSMOS_UNIT = 1_000_000n;
 const scaleDecimals = num => BigInt(num * Number(COSMOS_UNIT));

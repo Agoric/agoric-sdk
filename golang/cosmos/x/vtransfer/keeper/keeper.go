@@ -10,7 +10,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+
+	sdkioerrors "cosmossdk.io/errors"
+	sdktypeserrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
@@ -249,7 +251,7 @@ func (k Keeper) InterceptOnRecvPacket(ctx sdk.Context, ibcModule porttypes.IBCMo
 	capName := host.ChannelCapabilityPath(portID, channelID)
 	chanCap, ok := k.vibcKeeper.GetCapability(ctx, capName)
 	if !ok {
-		err := sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
+		err := sdkioerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 		return channeltypes.NewErrorAcknowledgement(err)
 	}
 
@@ -440,7 +442,7 @@ func (k Keeper) Receive(cctx context.Context, jsonRequest string) (jsonReply str
 	case "BRIDGE_TARGET_UNREGISTER":
 		prefixStore.Delete([]byte(msg.Target))
 	default:
-		return "", sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unknown action type: %s", msg.Type)
+		return "", sdkioerrors.Wrapf(sdktypeserrors.ErrUnknownRequest, "unknown action type: %s", msg.Type)
 	}
 	return "true", nil
 }

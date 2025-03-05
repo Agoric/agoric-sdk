@@ -3,6 +3,10 @@ import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { M, mustMatch } from '@agoric/store';
 import { E, getInterfaceOf } from '@endo/far';
 
+/**
+ * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
+ */
+
 const trace = makeTracer('RV');
 
 const HR = '----------------';

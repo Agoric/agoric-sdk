@@ -25,7 +25,7 @@ import type { OrchestrationFacade } from '../src/facade.js';
 import type {
   AmountArg,
   Chain,
-  ChainAddress,
+  CosmosChainAddress,
   ChainInfo,
   CosmosChainInfo,
   CosmosValidatorAddress,
@@ -52,7 +52,7 @@ const chainAddr = {
   value: 'agoric1pleab',
   encoding: 'bech32',
 } as const;
-expectType<ChainAddress>(chainAddr);
+expectType<CosmosChainAddress>(chainAddr);
 expectNotType<CosmosValidatorAddress>(chainAddr);
 
 {

@@ -36,7 +36,7 @@ export type EUnwrap<T> =
  * forward/backward compatibility.  Create a new object and bump its version
  * number instead.
  */
-export type VowV0<T = any> = {
+export type VowPayloadV0<T = any> = {
   /**
    * Attempt to unwrap all vows in this
    * promise chain, returning a promise for the final value.  A rejection may
@@ -47,7 +47,7 @@ export type VowV0<T = any> = {
 };
 
 export type VowPayload<T = any> = {
-  vowV0: RemotableObject & Remote<VowV0<T>>;
+  vowV0: RemotableObject & Remote<VowPayloadV0<T>>;
 };
 
 /**

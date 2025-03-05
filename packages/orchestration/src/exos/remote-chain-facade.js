@@ -6,7 +6,7 @@ import { M } from '@endo/patterns';
 import { pickFacet } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
 import {
-  ChainAddressShape,
+  CosmosChainAddressShape,
   chainFacadeMethods,
   ICQMsgShape,
 } from '../typeGuards.js';
@@ -22,7 +22,7 @@ import {
  * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  * @import {CosmosInterchainService} from './exo-interfaces.js';
  * @import {prepareCosmosOrchestrationAccount} from './cosmos-orchestration-account.js';
- * @import {CosmosChainInfo, IBCConnectionInfo, ChainAddress, IcaAccount, Chain, ICQConnection} from '../types.js';
+ * @import {CosmosChainInfo, IBCConnectionInfo, CosmosChainAddress, IcaAccount, Chain, ICQConnection} from '../types.js';
  */
 
 const trace = makeTracer('RemoteChainFacade');
@@ -33,7 +33,7 @@ const trace = makeTracer('RemoteChainFacade');
  *     typeof prepareCosmosOrchestrationAccount
  *   >;
  *   orchestration: Remote<CosmosInterchainService>;
- *   storageNode: Remote<StorageNode>;
+ *   storageNode: Remote<StorageNode> | undefined;
  *   timer: Remote<TimerService>;
  *   vowTools: VowTools;
  * }} RemoteChainFacadePowers
@@ -89,14 +89,14 @@ const prepareRemoteChainFacadeKit = (
       ),
       getAddressesWatcher: M.interface('getAddressWatcher', {
         onFulfilled: M.call(
-          [ChainAddressShape, M.string(), M.string()],
+          [CosmosChainAddressShape, M.string(), M.string()],
           M.remotable(),
         ).returns(VowShape),
       }),
       makeChildNodeWatcher: M.interface('makeChildNodeWatcher', {
-        onFulfilled: M.call(M.remotable(), {
+        onFulfilled: M.call(M.or(M.remotable(), M.undefined()), {
           account: M.remotable(),
-          chainAddress: ChainAddressShape,
+          chainAddress: CosmosChainAddressShape,
           localAddress: M.string(),
           remoteAddress: M.string(),
         }).returns(M.remotable()),
@@ -206,23 +206,27 @@ const prepareRemoteChainFacadeKit = (
       },
       getAddressesWatcher: {
         /**
-         * @param {[ChainAddress, LocalIbcAddress, RemoteIbcAddress]} chainAddresses
+         * @param {[CosmosChainAddress, LocalIbcAddress, RemoteIbcAddress]} chainAddresses
          * @param {IcaAccount} account
          */
         onFulfilled([chainAddress, localAddress, remoteAddress], account) {
-          return watch(
-            E(storageNode).makeChildNode(chainAddress.value),
-            this.facets.makeChildNodeWatcher,
-            { account, chainAddress, localAddress, remoteAddress },
-          );
+          const optionalStorageNode = storageNode
+            ? E(storageNode).makeChildNode(chainAddress.value)
+            : undefined;
+          return watch(optionalStorageNode, this.facets.makeChildNodeWatcher, {
+            account,
+            chainAddress,
+            localAddress,
+            remoteAddress,
+          });
         },
       },
       makeChildNodeWatcher: {
         /**
-         * @param {Remote<StorageNode>} childNode
+         * @param {Remote<StorageNode> | undefined} childNode
          * @param {{
          *   account: IcaAccount;
-         *   chainAddress: ChainAddress;
+         *   chainAddress: CosmosChainAddress;
          *   localAddress: LocalIbcAddress;
          *   remoteAddress: RemoteIbcAddress;
          * }} ctx

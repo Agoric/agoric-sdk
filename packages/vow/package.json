@@ -13,6 +13,7 @@
     "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
     "test": "ava",
     "test:xs": "exit 0",
+    "test:xs:ci": "npm run test:xs",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
     "lint:eslint": "eslint .",
@@ -55,6 +56,6 @@
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 91.62
+    "atLeast": 91.75
   }
 }

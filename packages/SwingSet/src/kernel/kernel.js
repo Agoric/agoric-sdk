@@ -9,7 +9,7 @@ import { makeUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 import { kser, kslot, makeError } from '@agoric/kmarshal';
 import { assertKnownOptions } from '../lib/assertOptions.js';
 import { foreverPolicy } from '../lib/runPolicies.js';
-import { makeVatManagerFactory } from './vat-loader/manager-factory.js';
+import { makeVatManagerMaker } from './vat-loader/manager-factory.js';
 import { makeVatWarehouse } from './vat-warehouse.js';
 import makeDeviceManager from './deviceManager.js';
 import makeKernelKeeper, {
@@ -110,11 +110,10 @@ export default function buildKernel(
     warehousePolicy,
     overrideVatManagerOptions = {},
   } = kernelRuntimeOptions;
-  const logStartup = verbose ? console.debug : () => 0;
+  const logStartup = verbose ? console.debug : () => {};
 
   const vatAdminRootKref = kernelStorage.kvStore.get('vatAdminRootKref');
 
-  /** @type { KernelSlog } */
   const kernelSlog = writeSlogObject
     ? makeSlogger(slogCallbacks, writeSlogObject)
     : makeDummySlogger(slogCallbacks, makeConsole('disabled slogger'));
@@ -167,10 +166,9 @@ export default function buildKernel(
   harden(testLog);
 
   function makeSourcedConsole(vatID) {
-    const origConsole = makeConsole(args => {
-      const source = args.shift();
-      return `${debugPrefix}SwingSet:${source}:${vatID}`;
-    });
+    const origConsole = makeConsole(
+      source => `${debugPrefix}SwingSet:${source}:${vatID}`,
+    );
     return kernelSlog.vatConsole(vatID, origConsole);
   }
 
@@ -1557,7 +1555,7 @@ export default function buildKernel(
     gcAndFinalize,
     meterControl: makeDummyMeterControl(),
   });
-  const vatManagerFactory = makeVatManagerFactory({
+  const makeVatManager = makeVatManagerMaker({
     allVatPowers,
     kernelKeeper,
     vatEndowments,
@@ -1652,7 +1650,7 @@ export default function buildKernel(
   }
 
   const vatLoader = makeVatLoader({
-    vatManagerFactory,
+    makeVatManager,
     kernelSlog,
     makeSourcedConsole,
     kernelKeeper,

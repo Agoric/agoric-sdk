@@ -117,7 +117,7 @@ export default [
         },
 
         tsconfigRootDir: __dirname,
-        extraFileExtensions: ['.cjs'],
+        extraFileExtensions: ['.cjs', '.mjs'],
       },
     },
 
@@ -182,6 +182,7 @@ export default [
     files: [
       'packages/*/src/**/*.js',
       'packages/*/tools/**/*.js',
+      'packages/*/tools/**/*.mjs',
       'packages/*/*.js',
       'packages/wallet/api/src/**/*.js',
     ],

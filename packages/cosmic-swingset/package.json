@@ -47,12 +47,14 @@
     "@opentelemetry/sdk-metrics": "~1.30.1",
     "anylogger": "^0.21.0",
     "deterministic-json": "^1.0.5",
-    "import-meta-resolve": "^2.2.1",
+    "import-meta-resolve": "^4.1.0",
     "ses": "^1.11.0",
     "tmp": "^0.2.1"
   },
   "devDependencies": {
+    "@agoric/kmarshal": "^0.1.0",
     "ava": "^5.3.0",
+    "better-sqlite3": "^9.1.1",
     "c8": "^10.1.2"
   },
   "publishConfig": {
@@ -71,6 +73,6 @@
     "timeout": "20m"
   },
   "typeCoverage": {
-    "atLeast": 83.4
+    "atLeast": 84.13
   }
 }

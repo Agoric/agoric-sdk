@@ -47,7 +47,7 @@ import {
   makeReadCachingStorage,
 } from './helpers/bufferedStorage.js';
 import stringify from './helpers/json-stable-stringify.js';
-import { launch } from './launch-chain.js';
+import { launch, launchAndShareInternals } from './launch-chain.js';
 import { makeProcessValue } from './helpers/process-value.js';
 import {
   spawnSwingStoreExport,
@@ -228,7 +228,11 @@ export const makeQueueStorage = (call, queuePath) => {
  *   slogSender?: ERef<EReturn<typeof makeSlogSender>>,
  *   swingStore?: import('@agoric/swing-store').SwingStore,
  *   vatconfig?: Parameters<typeof launch>[0]['vatconfig'],
- * }} [options.testingOverrides]
+ *   withInternals?: boolean,
+ * }} [options.testingOverrides] Exposed only for testing purposes.
+ *   `debugName`/`slogSender`/`swingStore`/`vatConfig` are pure overrides, while
+ *   `withInternals` expands the return value to expose internal objects
+ *   `controller`/`bridgeInbound`/`timer`.
  */
 export const makeLaunchChain = (
   agcc,
@@ -424,7 +428,7 @@ export const makeLaunchChain = (
       bootMsg: makeInitMsg(initAction),
     };
     const getVatConfig = async () => {
-      const href = await importMetaResolve(
+      const href = importMetaResolve(
         env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
           argv.bootMsg.params.bootstrap_vat_config,
         import.meta.url,
@@ -439,7 +443,8 @@ export const makeLaunchChain = (
       serviceName: TELEMETRY_SERVICE_NAME,
     });
 
-    const slogSender = await (testingOverrides.slogSender ||
+    const providedSlogSender = await testingOverrides.slogSender;
+    const slogSender = await (providedSlogSender ||
       makeSlogSender({
         stateDir: stateDBDir,
         env,
@@ -523,7 +528,10 @@ export const makeLaunchChain = (
       ? makeArchiveTranscript(vatTranscriptArchiveDir, fsPowers)
       : undefined;
 
-    const s = await launch({
+    const launcher = testingOverrides.withInternals
+      ? launchAndShareInternals
+      : launch;
+    const s = await launcher({
       actionQueueStorage,
       highPriorityQueueStorage,
       swingStore: testingOverrides.swingStore,
@@ -552,7 +560,12 @@ export const makeLaunchChain = (
       swingsetConfig,
     });
     savedChainSends = s.savedChainSends;
-    return s;
+    const shutdown = async () => {
+      await s.shutdown?.();
+      if (providedSlogSender) return;
+      await slogSender?.shutdown?.();
+    };
+    return { ...s, shutdown };
   };
 
   return launchChain;

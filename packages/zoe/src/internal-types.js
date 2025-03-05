@@ -2,6 +2,11 @@
 /// <reference types="@agoric/ertp/exported" />
 
 /**
+ * @import {Completion, ContractStartFn, PaymentPKeywordRecord, UserSeat} from '@agoric/zoe';
+ * @import {Pattern} from '@endo/patterns';
+ */
+
+/**
  * @typedef {object} SeatData
  * @property {ProposalRecord} proposal
  * @property {Allocation} initialAllocation
@@ -276,7 +281,6 @@
 /**
  * @typedef {object} ZcfSeatManager
  * @property {MakeZCFSeat} makeZCFSeat
- * @property {Reallocate} reallocate
  * @property {DropAllReferences} dropAllReferences
  */
 

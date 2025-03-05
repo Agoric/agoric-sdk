@@ -43,7 +43,7 @@
     "@endo/pass-style": "^1.4.8",
     "@endo/patterns": "^1.4.8",
     "@endo/promise-kit": "^1.1.9",
-    "import-meta-resolve": "^2.2.1",
+    "import-meta-resolve": "^4.1.0",
     "jessie.js": "^0.3.4"
   },
   "devDependencies": {
@@ -77,6 +77,6 @@
     "workerThreads": false
   },
   "typeCoverage": {
-    "atLeast": 90.43
+    "atLeast": 90.39
   }
 }

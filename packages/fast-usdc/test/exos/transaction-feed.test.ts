@@ -3,6 +3,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { makeHeapZone } from '@agoric/zone';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
   prepareTransactionFeedKit,
   stateShape,
@@ -160,9 +161,14 @@ test('disagreement', async t => {
   assert(e1.txHash === e1bad.txHash);
   op1.operator.submitEvidence(e1);
 
+  // conflicting between operators
   t.throws(() => op2.operator.submitEvidence(e1bad), {
-    message:
-      'conflicting evidence for "0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761702"',
+    message: /conflicting evidence/,
+  });
+
+  // self conflicting
+  t.throws(() => op1.operator.submitEvidence(e1bad), {
+    message: /conflicting evidence/,
   });
 });
 
@@ -180,31 +186,48 @@ test('disagreement after publishing', async t => {
     updateCount: 1n,
   });
 
-  // it's simply ignored
-  t.notThrows(() => op3.operator.submitEvidence(e1bad));
+  t.throws(() => op3.operator.submitEvidence(e1bad), {
+    message: /conflicting evidence/,
+  });
   t.like(await evidenceSubscriber.getUpdateSince(0), {
     updateCount: 1n,
   });
 
-  // now another op repeats the bad evidence, so it's published to the stream.
-  // It's the responsibility of the Advancer to fail because it has already processed that tx hash.
-  op1.operator.submitEvidence(e1bad);
+  // Disagreement is still detected after publishing
+  t.throws(() => op1.operator.submitEvidence(e1bad), {
+    message: /conflicting evidence/,
+  });
   t.like(await evidenceSubscriber.getUpdateSince(0), {
-    updateCount: 2n,
+    updateCount: 1n,
   });
 });
 
 test('remove operator', async t => {
   const feedKit = makeFeedKit();
-  const { op1 } = await makeOperators(feedKit);
+  const evidenceSubscriber = feedKit.public.getEvidenceSubscriber();
+  const { op1, op2 } = await makeOperators(feedKit);
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+
+  let published;
+  void evidenceSubscriber
+    .getUpdateSince(0)
+    .then(accepted => (published = accepted.value.evidence));
 
   // works before disabling
   op1.operator.submitEvidence(evidence);
+  await eventLoopIteration();
+  t.falsy(published);
 
-  await feedKit.creator.removeOperator('op1');
-
+  // remove op1 and their in-flight evidence
+  feedKit.creator.removeOperator('op1');
   t.throws(() => op1.operator.submitEvidence(evidence), {
     message: 'submitEvidence for disabled operator',
   });
+
+  // one attestation is now sufficient (half of two) but the only evidence was just removed
+  await eventLoopIteration();
+  t.falsy(published);
+  op2.operator.submitEvidence(evidence);
+  await eventLoopIteration();
+  t.deepEqual(published, evidence);
 });

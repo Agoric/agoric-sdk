@@ -4,7 +4,7 @@ import {
   CosmosChainInfoShape,
   DenomDetailShape,
   DenomShape,
-} from '@agoric/orchestration';
+} from '@agoric/orchestration/src/typeGuards.js';
 import { PendingTxStatus } from './constants.js';
 
 /**
@@ -76,6 +76,7 @@ export const CctpTxEvidenceShape = {
   },
   blockHash: EvmHashShape,
   blockNumber: M.nat(),
+  blockTimestamp: M.nat(),
   chainId: M.number(),
   tx: {
     amount: M.nat(),
@@ -149,8 +150,7 @@ harden(ChainPolicyShape);
 /**
  * @type {TypedPattern<FeedPolicy>}
  *
- * Should be JSON serializable so CLI can specify policy. E.g. no bigint,
- * undefined, remotable, etc.
+ * must be CopyData; no Brands or other Remotables
  */
 export const FeedPolicyShape = M.splitRecord(
   {
