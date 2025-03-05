@@ -82,7 +82,7 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
     kinds,
     'Transaction Feed',
   );
-  /** @type {PublishKit<EvidenceWithRisk>} */
+  /** @type {import('@agoric/notifier').PublishKit<EvidenceWithRisk>} */
   const { publisher, subscriber } = makeDurablePublishKit();
 
   const makeInertInvitation = defineInertInvitation(zcf, 'submitting evidence');
