@@ -1,5 +1,4 @@
 // @jessie-check
-// @ts-check
 
 import {
   handleParamGovernance,

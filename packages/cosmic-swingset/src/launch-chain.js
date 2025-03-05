@@ -1,4 +1,3 @@
-// @ts-check
 /* eslint-env node */
 
 // XXX the JSON configs specify that launching the chain requires @agoric/builders,
