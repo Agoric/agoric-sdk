@@ -1,10 +1,10 @@
+import { addOperatorCommands } from '@agoric/fast-usdc/src/cli/operator-commands.js';
+import { MockCctpTxEvidences } from '@agoric/fast-usdc/src/fixtures.js';
 import { makeMarshal } from '@endo/marshal';
 import test from 'ava';
 import { Command } from 'commander';
-import { addOperatorCommands } from '@agoric/fast-usdc/src/cli/operator-commands.js';
 import { flags } from '../../tools/cli-tools.js';
 import { mockStream } from '../../tools/mock-io.js';
-import { MockCctpTxEvidences } from '@agoric/fast-usdc/src/fixtures.js';
 
 const marshalData = makeMarshal(_v => assert.fail('data only'));
 

@@ -1,15 +1,15 @@
 // Must be first to set up globals
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { MockCctpTxEvidences } from '@agoric/fast-usdc/src/fixtures.js';
 import { deeplyFulfilledObject } from '@agoric/internal';
-import { makeHeapZone } from '@agoric/zone';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { makeHeapZone } from '@agoric/zone';
 import {
   prepareTransactionFeedKit,
   stateShape,
   type TransactionFeedKit,
 } from '../../src/exos/transaction-feed.js';
-import { MockCctpTxEvidences } from '@agoric/fast-usdc/src/fixtures.js';
 
 const nullZcf = null as any;
 

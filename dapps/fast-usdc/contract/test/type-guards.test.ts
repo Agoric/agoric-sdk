@@ -1,15 +1,14 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { M, mustMatch } from '@endo/patterns';
-import { TxStatus, PendingTxStatus } from '../src/constants.js';
+import { mustMatch } from '@endo/patterns';
+import { MockCctpTxEvidences } from '@agoric/fast-usdc/src/fixtures.js';
+import { PendingTxStatus, TxStatus } from '../src/constants.js';
 import {
   CctpTxEvidenceShape,
   ChainPolicyShape,
   PendingTxShape,
 } from '../src/type-guards.js';
 import type { CctpTxEvidence, ChainPolicy } from '../src/types.js';
-
-import { MockCctpTxEvidences } from '@agoric/fast-usdc/src/fixtures.js';
 
 test('CctpTxEvidenceShape', t => {
   const specimen: CctpTxEvidence = harden(

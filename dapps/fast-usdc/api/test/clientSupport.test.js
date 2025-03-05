@@ -16,7 +16,7 @@ const agoricNames = {
   // Other required AgoricNames properties...
 };
 
-test('makeDepositOffer', async t => {
+test('makeDepositOffer', t => {
   const offer = Offers.fastUsdc.Deposit(agoricNames, {
     offerId: 'deposit1',
     fastLPAmount: BigInt(3 * 10 ** 6),
@@ -47,7 +47,7 @@ test('makeDepositOffer', async t => {
   });
 });
 
-test('makeWithdrawOffer', async t => {
+test('makeWithdrawOffer', t => {
   const offer = Offers.fastUsdc.Withdraw(agoricNames, {
     offerId: 'withdraw1',
     fastLPAmount: BigInt(5 * 10 ** 6),

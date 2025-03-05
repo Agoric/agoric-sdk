@@ -29,6 +29,7 @@
     "@agoric/orchestration": "dev",
     "@agoric/store": "dev",
     "@agoric/vat-data": "dev",
+    "@agoric/vats": "dev",
     "@agoric/vow": "dev",
     "@agoric/zoe": "dev",
     "@cosmjs/proto-signing": "^0.33.0",

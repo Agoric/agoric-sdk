@@ -5,6 +5,11 @@ import {
   encodeAddressHook,
 } from '@agoric/cosmic-proto/address-hooks.js';
 import type { NatAmount } from '@agoric/ertp';
+import {
+  intermediateRecipient,
+  MockCctpTxEvidences,
+  settlementAddress,
+} from '@agoric/fast-usdc/src/fixtures.js';
 import { makeTracer } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { CosmosChainAddressShape, denomHash } from '@agoric/orchestration';
@@ -25,11 +30,6 @@ import { prepareStatusManager } from '../../src/exos/status-manager.js';
 import { CctpTxEvidenceShape } from '../../src/type-guards.js';
 import type { LiquidityPoolKit } from '../../src/types.js';
 import { makeFeeTools } from '../../src/utils/fees.js';
-import {
-  intermediateRecipient,
-  MockCctpTxEvidences,
-  settlementAddress,
-} from '@agoric/fast-usdc/src/fixtures.js';
 import {
   makeTestFeeConfig,
   makeTestLogger,
