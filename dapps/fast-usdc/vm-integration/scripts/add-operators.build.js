@@ -1,16 +1,16 @@
 // @ts-check
 import { makeHelpers } from '@agoric/deploy-script-support';
+import { Far } from '@endo/far';
+import { parseArgs } from 'node:util';
 import { getManifestForAddOperators } from '../src/add-operators.core.js';
 import { toExternalConfig } from '../src/utils/config-marshal.js';
 import { configurations } from '../src/utils/deploy-config.js';
-import { Far } from '@endo/far';
-import { parseArgs } from 'node:util';
 
 /**
  * @import {CoreEvalBuilder, DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {ParseArgsConfig} from 'node:util';
  * @import {Brand} from '@agoric/ertp';
- * @import {FastUSDCConfig, FeedPolicy} from '@agoric/fast-usdc';
+ * @import {FastUSDCConfig, FeedPolicy} from '@agoric/fast-usdc-worker';
  * @import {FastUSDCOpts} from './start-fast-usdc.build.js';
  */
 

@@ -142,7 +142,7 @@ export const startFastUSDC = async (
       assetInfo: net.assetInfo,
     }),
   );
-
+  /** @type {FastUSDCKit} */
   const kit = await E(startUpgradable)({
     label: contractName,
     installation: fastUsdc,

@@ -1,10 +1,10 @@
 // @ts-check
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { AmountMath } from '@agoric/ertp';
-import { getManifestForFastUSDC } from '@agoric/fast-usdc/src/start-fast-usdc.core.js';
-import { FastUSDCConfigShape } from '@agoric/fast-usdc/src/type-guards.js';
-import { toExternalConfig } from '@agoric/fast-usdc/src/utils/config-marshal.js';
-import { configurations } from '@agoric/fast-usdc/src/utils/deploy-config.js';
+import { getManifestForFastUSDC } from '@agoric/fast-usdc-vm/src/start-fast-usdc.core.js';
+import { FastUSDCConfigShape } from '@agoric/fast-usdc-worker/src/type-guards.js';
+import { toExternalConfig } from '@agoric/fast-usdc-vm/src/utils/config-marshal.js';
+import { configurations } from '@agoric/fast-usdc-vm/src/utils/deploy-config.js';
 import {
   multiplyBy,
   parseRatio,
@@ -16,7 +16,7 @@ import { parseArgs } from 'node:util';
  * @import {CoreEvalBuilder, DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js'
  * @import {Brand} from '@agoric/ertp';
  * @import {ParseArgsConfig} from 'node:util'
- * @import {FastUSDCConfig, FeedPolicy} from '@agoric/fast-usdc';
+ * @import {FastUSDCConfig, FeedPolicy} from '@agoric/fast-usdc-worker';
  */
 
 const { keys } = Object;
