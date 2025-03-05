@@ -2,6 +2,10 @@ import { AmountMath } from '@agoric/ertp';
 import { E, Far } from '@endo/far';
 
 /**
+ * @import {ContractMeta, ContractOf, FeeMintAccess, Invitation, OfferHandler, TransferPart, ZCF, ZCFMint, ZCFSeat} from '@agoric/zoe';
+ */
+
+/**
  * The sole purpose of this contract is to mint the initial supply of the
  * central currency, RUN.
  *

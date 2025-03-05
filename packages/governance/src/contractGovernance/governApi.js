@@ -11,6 +11,7 @@ import {
 } from '../question.js';
 
 /**
+ * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
  * @import {Passable, RemotableObject} from '@endo/pass-style';
  * @import {Position, ApiGovernor, ApiInvocationIssue, PoserFacet, VoteOnApiInvocation, GovernedApis} from '../types.js';
  */

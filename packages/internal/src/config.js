@@ -31,10 +31,12 @@ export const BridgeId = /** @type {const} */ ({
 });
 harden(BridgeId);
 
+/** @satisfies {Record<string, BridgeId>} */
 export const CosmosInitKeyToBridgeId = {
-  vbankPort: BridgeId.BANK,
-  vibcPort: BridgeId.DIBC,
+  vbankPort: 'bank',
+  vibcPort: 'dibc',
 };
+harden(CosmosInitKeyToBridgeId);
 
 export const WalletName = /** @type {const} */ ({
   depositFacet: 'depositFacet',

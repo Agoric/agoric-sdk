@@ -4,7 +4,10 @@ import { E } from '@endo/far';
 // Avoid pulling in too many dependencies like notifiers
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 
-/** @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js' */
+/**
+ * @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {InvitationDetails, Proposal} from '@agoric/zoe';
+ */
 
 /**
  * @typedef {object} OfferHelperConfig

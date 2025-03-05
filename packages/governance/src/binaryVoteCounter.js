@@ -19,6 +19,7 @@ import { makeQuorumCounter } from './quorumCounter.js';
 
 /**
  * @import {MapStore} from '@agoric/swingset-liveslots';
+ * @import {ZCF} from '@agoric/zoe';
  * @import {BuildVoteCounter, OutcomeRecord, Position, QuestionSpec, VoteStatistics} from './types.js';
  */
 

@@ -4,6 +4,7 @@ import { M, mustMatch } from '@endo/patterns';
 
 /**
  * @import {GuestInterface, GuestOf} from '@agoric/async-flow';
+ * @import {Invitation, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {Vow} from '@agoric/vow';
  * @import {LocalOrchestrationAccountKit} from '../exos/local-orchestration-account.js';
  * @import {ZoeTools} from '../utils/zoe-tools.js';

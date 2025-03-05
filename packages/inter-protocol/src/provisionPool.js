@@ -18,7 +18,10 @@ import {
   prepareProvisionPoolKit,
 } from './provisionPoolKit.js';
 
-/** @import {Marshal} from '@endo/marshal'; */
+/**
+ * @import {Marshal} from '@endo/marshal';
+ * @import {ContractMeta, Invitation, ZCF} from '@agoric/zoe';
+ */
 
 /** @type {ContractMeta} */
 export const meta = {

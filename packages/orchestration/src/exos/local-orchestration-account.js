@@ -29,6 +29,7 @@ import { TransferRouteShape } from './chain-hub.js';
  * @import {HostOf} from '@agoric/async-flow';
  * @import {LocalChain, LocalChainAccount} from '@agoric/vats/src/localchain.js';
  * @import {AmountArg, CosmosChainAddress, DenomAmount, IBCMsgTransferOptions, IBCConnectionInfo, OrchestrationAccountCommon, LocalAccountMethods, TransferRoute, AccountId, AccountIdArg} from '@agoric/orchestration';
+ * @import {ContractMeta, Invitation, OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Zone} from '@agoric/zone';
  * @import {Remote} from '@agoric/internal';

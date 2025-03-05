@@ -13,6 +13,10 @@ import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 
 /**
+ * @import {ZoeService} from '@agoric/zoe';
+ */
+
+/**
  * @typedef {object} TestContext
  * @property {ZoeService} zoe
  * @property {(t: ExecutionContext) => Promise<OracleKit>} makePingOracle

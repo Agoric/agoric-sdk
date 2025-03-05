@@ -8,7 +8,7 @@ import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import centralSupplyBundle from '../bundles/bundle-centralSupply.js';
 import { feeIssuerConfig } from '../src/core/utils.js';
 
-/** @import {Installation} from '@agoric/zoe/src/zoeService/utils.js' */
+/** @import {FeeMintAccess, Installation} from '@agoric/zoe' */
 /**
  * @typedef {import('ava').ExecutionContext<{
  *   zoe: ZoeService;

@@ -7,6 +7,11 @@ import { buildRootObject as buildBankVatRoot } from '../src/vat-bank.js';
 import { FAUCET_ADDRESS, makeFakeBankBridge } from './fake-bridge.js';
 
 /**
+ * @import {Amount, Brand, Issuer, IssuerKit, Payment} from '@agoric/ertp';
+ * @import {SubscriptionRecord} from '@agoric/notifier';
+ */
+
+/**
  * @deprecated use makeFakeBankManagerKit
  * @param {Pick<IssuerKit<'nat'>, 'brand' | 'issuer'>[]} issuerKits
  */

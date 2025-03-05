@@ -2,6 +2,10 @@ import { assert, Fail } from '@endo/errors';
 import { insistCapData } from './capdata.js';
 
 /**
+ * @import {VatDeliveryResult} from './types.js';
+ */
+
+/**
  * @typedef {{
  * methargs: import('./types.js').SwingSetCapData, // of [method, args]
  * result: string | undefined | null,

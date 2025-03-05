@@ -2,6 +2,10 @@
 import { E } from '@endo/far';
 
 /**
+ * @import {InvitationDetails} from '@agoric/zoe';
+ */
+
+/**
  * @param {ERef<Purse>} zoeInvitationPurse
  */
 export const makeDepositInvitation = zoeInvitationPurse => {
