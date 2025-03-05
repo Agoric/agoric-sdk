@@ -47,6 +47,7 @@ export const makeInstanceRecordStorage = baggage => {
     baggage,
     'InstanceRecord',
     InstanceRecordI,
+    /** @type {(ir: InstanceRecord) => {instanceRecord: InstanceRecord}} */
     record => harden({ instanceRecord: record }),
     {
       addIssuer(keyword, issuerRecord) {
