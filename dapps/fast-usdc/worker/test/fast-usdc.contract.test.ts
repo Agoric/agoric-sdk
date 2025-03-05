@@ -33,13 +33,13 @@ import { E, type EReturn } from '@endo/far';
 import { matches } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
 import path from 'path';
+import { MockCctpTxEvidences } from '@agoric/fast-usdc/src/fixtures.js';
 import type { OperatorOfferResult } from '../src/exos/transaction-feed.js';
 import type { FastUsdcSF } from '../src/fast-usdc.contract.js';
 import type { USDCProposalShapes } from '../src/pool-share-math.js';
 import { PoolMetricsShape } from '../src/type-guards.js';
 import type { CctpTxEvidence, FeeConfig, PoolMetrics } from '../src/types.js';
 import { makeFeeTools } from '../src/utils/fees.js';
-import { MockCctpTxEvidences } from '@agoric/fast-usdc/src/fixtures.js';
 import { commonSetup, uusdcOnAgoric } from './supports.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
