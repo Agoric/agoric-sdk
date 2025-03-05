@@ -12,18 +12,18 @@ import { makeWalletFactoryDriver } from '@agoric/boot/tools/drivers.js';
  * This function sets up a complete SwingSet kernel with mocked bridges and
  * utilities for time manipulation, proposal evaluation, and more.
  *
- * @param log - Logging function
+ * @param t - Ava test context
  * @param configSpecifier - Path to the base config file
- * @param options - Configuration options
- * @param options.label - Optional label for the test environment
- * @param options.storage - Storage kit to use (defaults to fake storage)
- * @param options.verbose - Whether to enable verbose logging
- * @param options.slogFile - Path to write slog output
- * @param options.profileVats - Array of vat names to profile
- * @param options.debugVats - Array of vat names to debug
- * @param options.defaultManagerType - SwingSet manager type to use
- * @param options.harness - Optional run harness
- * @param options.resolveBase - Base URL or path for resolving module paths
+ * @param opts - Configuration options
+ * @param opts.label - Optional label for the test environment
+ * @param opts.storage - Storage kit to use (defaults to fake storage)
+ * @param opts.verbose - Whether to enable verbose logging
+ * @param opts.slogFile - Path to write slog output
+ * @param opts.profileVats - Array of vat names to profile
+ * @param opts.debugVats - Array of vat names to debug
+ * @param opts.defaultManagerType - SwingSet manager type to use
+ * @param opts.harness - Optional run harness
+ * @param opts.resolveBase - Base URL or path for resolving module paths
  * @returns A test kit with various utilities for interacting with the SwingSet
  */
 export const makeWalletFactoryContext = async (

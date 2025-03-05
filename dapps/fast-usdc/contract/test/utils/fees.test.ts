@@ -1,12 +1,12 @@
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { makeIssuerKit, AmountMath, type Amount } from '@agoric/ertp';
+import { AmountMath, makeIssuerKit, type Amount } from '@agoric/ertp';
+import { MockCctpTxEvidences } from '@agoric/fast-usdc/src/fixtures.js';
 import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { q } from '@endo/errors';
-import { makeFeeTools } from '../../src/utils/fees.js';
 import type { FeeConfig } from '../../src/types.js';
+import { makeFeeTools } from '../../src/utils/fees.js';
 import { makeTestFeeConfig } from '../mocks.js';
-import { MockCctpTxEvidences } from '@agoric/fast-usdc/src/fixtures.js';
 
 const { add, isEqual } = AmountMath;
 

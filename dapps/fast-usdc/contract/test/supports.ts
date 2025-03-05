@@ -18,7 +18,6 @@ import {
 } from '@agoric/orchestration/src/exos/chain-hub.js';
 import { prepareCosmosInterchainService } from '@agoric/orchestration/src/exos/cosmos-interchain-service.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
-import { setupFakeNetwork } from './network-fakes.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
@@ -42,6 +41,7 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
 import { makeTestFeeConfig } from './mocks.js';
+import { setupFakeNetwork } from './network-fakes.js';
 
 export {
   makeFakeLocalchainBridge,

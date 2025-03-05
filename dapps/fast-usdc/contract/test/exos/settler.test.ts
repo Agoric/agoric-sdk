@@ -5,13 +5,18 @@ import {
   decodeAddressHook,
   encodeAddressHook,
 } from '@agoric/cosmic-proto/address-hooks.js';
+import {
+  MockCctpTxEvidences,
+  MockVTransferEvents,
+  intermediateRecipient,
+} from '@agoric/fast-usdc/src/fixtures.js';
 import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
+import type { ZcfSeatKit } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
 import type { EReturn } from '@endo/far';
-import type { ZcfSeatKit } from '@agoric/zoe';
 import { PendingTxStatus, TxStatus } from '../../src/constants.js';
 import {
   prepareSettler,
@@ -21,11 +26,6 @@ import {
 import { prepareStatusManager } from '../../src/exos/status-manager.js';
 import type { CctpTxEvidence } from '../../src/types.js';
 import { makeFeeTools } from '../../src/utils/fees.js';
-import {
-  MockCctpTxEvidences,
-  MockVTransferEvents,
-  intermediateRecipient,
-} from '@agoric/fast-usdc/src/fixtures.js';
 import { makeTestLogger, prepareMockOrchAccounts } from '../mocks.js';
 import { commonSetup } from '../supports.js';
 
