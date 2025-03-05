@@ -4,6 +4,10 @@ import type { Primitive } from '@endo/pass-style';
 import type { Pattern } from '@endo/patterns';
 import type { Callable } from './ses-utils.js';
 
+export type OnlyStringKeys<O> = {
+  [K in keyof O]: K extends string ? O[K] : never;
+};
+
 /**
  * A map corresponding with a total function such that `get(key)` is assumed to
  * always succeed.
