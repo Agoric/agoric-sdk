@@ -292,11 +292,7 @@ jobs:
 
       - id: build-cosmic-swingset
         name: Build cosmic-swingset dependencies
-        run: |
-          set -o errexit
-
-          yarn install
-          make --directory packages/cosmic-swingset all
+        run: make --directory packages/cosmic-swingset install
         working-directory: agoric-sdk
 
       - name: verify SDK image didn't change
