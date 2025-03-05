@@ -1,6 +1,3 @@
-import type { Passable } from '@endo/pass-style';
-import type { ERef } from '@endo/far';
-import type { Key, Pattern } from '@endo/patterns';
 import type {
   AdditionalDisplayInfo,
   Amount,
@@ -12,6 +9,9 @@ import type {
   Payment,
 } from '@agoric/ertp';
 import type { Subscriber } from '@agoric/notifier';
+import type { ERef } from '@endo/far';
+import type { Passable } from '@endo/pass-style';
+import type { Key, Pattern } from '@endo/patterns';
 import type {
   AmountKeywordRecord,
   ExitRule,
@@ -24,6 +24,7 @@ import type {
   UserSeat,
   ZoeService,
 } from '../types-index.js';
+import type { ContractStartFunction } from '../zoeService/utils.js';
 
 /**
  * Any passable non-thenable. Often an explanatory string.
@@ -201,7 +202,7 @@ export type OfferHandler<OR = unknown, OA = never> =
     };
 export type ContractMeta<
   SF extends // import inline to maintain ambient mode
-    import('../zoeService/utils').ContractStartFunction = import('../zoeService/utils').ContractStartFunction,
+    ContractStartFunction = ContractStartFunction,
 > = {
   customTermsShape?: Record<
     Parameters<SF>[0] extends ZCF<infer CT> ? keyof CT : never,

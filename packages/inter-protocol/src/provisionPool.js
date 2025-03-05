@@ -20,7 +20,9 @@ import {
 
 /**
  * @import {Marshal} from '@endo/marshal';
+ * @import {Amount, Brand, Payment, Purse} from '@agoric/ertp';
  * @import {ContractMeta, Invitation, StandardTerms, ZCF} from '@agoric/zoe';
+ * @import {GovernanceTerms} from '@agoric/governance/src/types.js';
  */
 
 /** @type {ContractMeta} */

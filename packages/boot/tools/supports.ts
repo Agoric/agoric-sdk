@@ -27,6 +27,12 @@ import { TimeMath, type Timestamp } from '@agoric/time';
 import { fakeLocalChainBridgeTxMsgHandler } from '@agoric/vats/tools/fake-bridge.js';
 import { Fail } from '@endo/errors';
 
+import type { Amount, Brand } from '@agoric/ertp';
+import type {
+  EndoZipBase64Bundle,
+  ManagerType,
+  SwingSetConfig,
+} from '@agoric/swingset-vat';
 import {
   makeRunUtils,
   type RunHarness,

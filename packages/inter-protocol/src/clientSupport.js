@@ -6,6 +6,7 @@ import { assertAllDefined } from '@agoric/internal';
 import { parseRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 
 /**
+ * @import {Amount, Brand, Payment, Purse} from '@agoric/ertp';
  * @import {Proposal} from '@agoric/zoe';
  */
 

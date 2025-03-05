@@ -16,6 +16,7 @@ const { Vow$ } = NetworkShape;
  * @import {EReturn} from '@endo/far';
  * @import {Key, Pattern} from '@endo/patterns';
  * @import {TypedJson, ResponseTo, JsonSafe} from '@agoric/cosmic-proto';
+ * @import {Amount, Brand, Payment} from '@agoric/ertp';
  * @import {PromiseVow, VowTools} from '@agoric/vow';
  * @import {TargetApp, TargetRegistration} from './bridge-target.js';
  * @import {BankManager, Bank} from './vat-bank.js';

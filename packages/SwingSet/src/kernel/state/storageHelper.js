@@ -3,6 +3,10 @@
 import { Fail } from '@endo/errors';
 
 /**
+ * @import {KVStore} from '@agoric/swing-store';
+ */
+
+/**
  * Iterate over keys with a given prefix, in lexicographic order,
  * excluding an exact match of the prefix.
  *

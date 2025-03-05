@@ -50,9 +50,12 @@ import { exportStorage } from './export-storage.js';
 import { parseLocatedJson } from './helpers/json.js';
 import { computronCounter } from './computron-counter.js';
 
-/** @import { BlockInfo } from '@agoric/internal/src/chain-utils.js' */
-/** @import { Mailbox, RunPolicy, SwingSetConfig } from '@agoric/swingset-vat' */
-/** @import { KVStore, BufferedKVStore } from './helpers/bufferedStorage.js' */
+/**
+ * @import {BlockInfo} from '@agoric/internal/src/chain-utils.js';
+ * @import {SwingStoreKernelStorage} from '@agoric/swing-store';
+ * @import {Mailbox, RunPolicy, SwingSetConfig} from '@agoric/swingset-vat';
+ * @import {KVStore, BufferedKVStore} from './helpers/bufferedStorage.js';
+ */
 
 /** @typedef {ReturnType<typeof makeQueue<{context: any, action: any}>>} InboundQueue */
 
