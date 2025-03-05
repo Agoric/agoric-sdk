@@ -15,7 +15,6 @@ import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Fail } from '@endo/errors';
 import { makeMarshal } from '@endo/marshal';
-import NodeFetchCache, { FileSystemCache } from 'node-fetch-cache';
 import {
   AckBehavior,
   fetchCoreEvalRelease,
@@ -26,13 +25,6 @@ import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
 } from '../bootstrapTests/walletFactory.js';
-
-// Releases are immutable, so we can cache them.
-// Doesn't help in CI but speeds up local development.
-// CI is on Github Actions, so fetching is reliable.
-const fetchCached = NodeFetchCache.create({
-  cache: new FileSystemCache(),
-}) as unknown as typeof globalThis.fetch;
 
 const test: TestFn<
   WalletFactoryTestContext & {
@@ -84,16 +76,11 @@ test.serial('oracles provision before contract deployment', async t => {
 test.serial('prop 87: Beta', async t => {
   const { evalProposal, bridgeUtils } = t.context;
 
-  const materials = await fetchCoreEvalRelease(
-    {
-      fetch: fetchCached,
-    },
-    {
-      repo: 'Agoric/agoric-sdk',
-      release: 'fast-usdc-beta-1',
-      name: 'start-fast-usdc',
-    },
-  );
+  const materials = await fetchCoreEvalRelease({
+    repo: 'Agoric/agoric-sdk',
+    release: 'fast-usdc-beta-1',
+    name: 'start-fast-usdc',
+  });
 
   // Proposal 87 doesn't quite complete: noble ICA is mis-configured
   bridgeUtils.setAckBehavior(

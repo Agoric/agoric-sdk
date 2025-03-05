@@ -52,9 +52,18 @@ import type { BridgeHandler, IBCDowncallMethod, IBCMethod } from '@agoric/vats';
 import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
 import type { EProxy } from '@endo/eventual-send';
 import { tmpdir } from 'node:os';
+import { FileSystemCache, NodeFetchCache } from 'node-fetch-cache';
 import { icaMocks, protoMsgMockMap, protoMsgMocks } from './ibc/mocks.js';
 
 const trace = makeTracer('BSTSupport', false);
+
+// Releases are immutable, so we can cache them.
+// Doesn't help in CI but speeds up local development.
+// CI is on Github Actions, so fetching is reliable.
+// Files appear in a .cache directory.
+export const fetchCached = NodeFetchCache.create({
+  cache: new FileSystemCache(),
+}) as unknown as typeof globalThis.fetch;
 
 type ConsumeBootrapItem = <N extends string>(
   name: N,
@@ -885,13 +894,15 @@ export function insistManagerType(mt) {
 // and having the test import it statically instead of fetching lazily
 /**
  * Fetch a core-eval from a Github Release.
+ *
+ * NB: has ambient authority to fetch and cache to disk. Allowable as a testing utility.
  */
 export const fetchCoreEvalRelease = async (
-  { fetch }: { fetch: typeof global.fetch },
   config: { repo: string; release: string; name: string },
   artifacts = `https://github.com/${config.repo}/releases/download/${config.release}`,
   planUrl = `${artifacts}/${config.name}-plan.json`,
 ) => {
+  const fetch = fetchCached;
   const plan = (await fetch(planUrl).then(r => r.json())) as {
     name: string;
     permit: string;
