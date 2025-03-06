@@ -56,13 +56,13 @@ function set_helm_args() {
   if [[ $DRY_RUN ]]; then
     args="$args --dry-run --debug"
   fi
-  num_chains=$(yq -r ".chains | length - 1" ${CONFIGFILE})
+  num_chains=$(yq eval ".chains | length - 1" ${CONFIGFILE})
   if [[ $num_chains -lt 0 ]]; then
     echo "No chains to parse: num: $num_chains"
     return 0
   fi
   for i in $(seq 0 $num_chains); do
-    scripts=$(yq -r ".chains[$i].scripts" ${CONFIGFILE})
+    scripts=$(yq eval ".chains[$i].scripts" ${CONFIGFILE})
     if [[ "$scripts" == "null" ]]; then
       return 0
     fi
@@ -70,8 +70,8 @@ function set_helm_args() {
       cd "$(dirname -- "${CONFIGFILE}")" > /dev/null
       pwd -P
     )"
-    for script in $(yq -r ".chains[$i].scripts | keys | .[]" ${CONFIGFILE}); do
-      args="$args --set-file chains[$i].scripts.$script.data=$datadir/$(yq -r ".chains[$i].scripts.$script.file" ${CONFIGFILE})"
+    for script in $(yq eval ".chains[$i].scripts | keys | .[]" ${CONFIGFILE}); do
+      args="$args --set-file chains[$i].scripts.$script.data=$datadir/$(yq eval ".chains[$i].scripts.$script.file" ${CONFIGFILE})"
     done
   done
 }
