@@ -224,87 +224,182 @@ const walletProvisioning = test.macro({
 
 test.serial(walletProvisioning, 'wallet provisioning');
 
-const makeMetricsVerifier = (url, metricNames) => {
-  /** @type {Promise<void>} */
-  let finished;
-  let metricStartValues;
+const prometheusUrl = 'http://localhost:26660/metrics';
+const metricsToVerify = [
+  'store_size_decrease{storeKey="vstorage"}',
+  'store_size_increase{storeKey="vstorage"}',
+];
+const metricNameSet = new Set(metricsToVerify);
 
-  const getMetricValues = async () => {
-    const metricValues = {};
-    const metricsResponse = await fetch(url);
-    if (!metricsResponse.ok) {
-      throw new Error(`Failed to fetch metrics: ${metricsResponse.statusText}`);
+const getMetrics = async (url, metricNames) => {
+  const metricsResponse = await fetch(url);
+  if (!metricsResponse.ok) {
+    throw new Error(`Failed to fetch metrics: ${metricsResponse.statusText}`);
+  }
+
+  const metricsText = await metricsResponse.text();
+
+  // https://prometheus.io/docs/instrumenting/exposition_formats/#text-based-format
+  // metric_name [
+  //   "{" label_name "=" `"` label_value `"` { "," label_name "=" `"` label_value `"` } [ "," ] "}"
+  // ] value [ timestamp ]
+  const metricNamePatt = '[a-zA-Z_:][a-zA-Z0-9_:]*';
+  const labelNamePatt = '[a-zA-Z_][a-zA-Z0-9_]*';
+  const labelPatt = String.raw`${labelNamePatt}="(?:[^\\"\n]|\\(?:\\|"|n))*"`;
+  const samplePatt = RegExp(
+    String.raw`^(${metricNamePatt}(?:[{]${labelPatt}(?:,${labelPatt})*,?[}])?) +(\S+)( +-?[0-9]+)?$`,
+    'u',
+  );
+  /** @type {Iterable<any, any>} */
+  const allMetricsEntries = metricsText
+    .split('\n')
+    .map(line => {
+      const [_, metricName, value] = line.match(samplePatt) || [];
+      if (!metricName) return;
+      // https://pkg.go.dev/strconv#ParseFloat
+      if (value.match(/^NaN$/i)) return [metricName, NaN];
+      if (value.match(/^[+]?Inf(inity)$/i)) return [metricName, Infinity];
+      if (value.match(/^-Inf(inity)$/i)) return [metricName, -Infinity];
+      const valueNum = parseFloat(value);
+      if (Number.isNaN(valueNum)) {
+        throw Error(`${value} is not a decimal value`);
+      }
+      return [metricName, valueNum];
+    })
+    .filter(entry => !!entry);
+  const allMetrics = new Map(allMetricsEntries);
+  const metricsEntries = metricNames.map(metricName => {
+    const value = allMetrics.get(metricName);
+    // Prometheus does not publish counter values that are zero.
+    return [metricName, value ?? 0];
+  });
+  return Object.fromEntries(metricsEntries);
+};
+
+/**
+ * Helper function to compare two sets
+ * @param {*} setA
+ * @param {*} setB
+ * @returns {boolean}
+ */
+const areSetsEqual = (setA, setB) =>
+  setA.size === setB.size && [...setA].every(value => setB.has(value));
+
+// Start metrics and their names
+/** @type Record<string, number> */
+let startMetrics;
+
+/** @type Set<string> */
+let startMetricNameSet;
+
+/**
+ * Verifies Counter metrics and their values at the start of the test:
+ * - the names of the metrics must match metricNames defined above;
+ * - the values of the metrics must be greater than zero;
+ * - saves the start metrics and their values in startMetrics for comparison
+ *   at the end of the test.
+ *
+ * @param {*} t         test context
+ * @returns {Promise<void>}
+ */
+const startCounterMetricVerifier = async t => {
+  startMetrics = await getMetrics(prometheusUrl, metricsToVerify);
+  startMetricNameSet = new Set(Object.keys(startMetrics));
+  t.log('metric start values:', startMetrics);
+
+  if (!areSetsEqual(startMetricNameSet, metricNameSet)) {
+    t.fail(
+      `start metric name set must be the same as the verification metric name set. start set: ${startMetricNameSet}, expected set: ${metricNameSet}`,
+    );
+    return;
+  }
+  for (const metricName of startMetricNameSet) {
+    if (startMetrics[metricName] <= 0) {
+      t.fail(
+        `${metricName} must be greater than zero, actual value: ${startMetrics[metricName]}`,
+      );
     }
+  }
+};
 
-    const metricsText = await metricsResponse.text();
+/**
+ * Verifies Counter metrics and their values at the end of the test:
+ * the names of the metrics must match metricNames defined above;
+ * the values of the metrics must be greater than at the start of the test.
+ *
+ * @param {*} t         test context
+ * @returns {Promise<void>}
+ */
+const stopCounterMetricVerifier = async t => {
+  const metrics = await getMetrics(prometheusUrl, metricsToVerify);
+  const stopMetricNameSet = new Set(Object.keys(metrics));
+  t.log('metric stop values:', metrics);
 
-    for (const metricName of metricNames) {
-      const regex = new RegExp(`${metricName}\\{storeKey="vstorage"\\} (\\d+)`);
-      const match = metricsText.match(regex);
-      if (!match) {
-        // Prometheus does not publish counter values that are zero.
-        metricValues[metricName] = 0;
-        continue;
-      }
+  if (!areSetsEqual(startMetricNameSet, stopMetricNameSet)) {
+    t.fail(
+      `start and stop metric name sets must be the same. start set: ${startMetricNameSet}, stop set: ${stopMetricNameSet}`,
+    );
+    return;
+  }
 
-      const value = parseInt(match[1], 10);
-      if (String(value) !== match[1]) {
-        throw new Error(`${metricName} ${match[1]} is not a base-10 number`);
-      }
-
-      if (Number.isNaN(value)) {
-        throw new Error(`${metricName} ${match[1]} is not a valid number`);
-      }
-
-      if (!(value > 0)) {
-        throw new Error(
-          `${metricName} ${match[1]} should be greater than zero`,
-        );
-      }
-
-      metricValues[metricName] = value;
+  for (const metricName of startMetricNameSet) {
+    if (startMetrics[metricName] >= metrics[metricName]) {
+      t.fail(
+        `${metricName} end value ${metrics[metricName]} should be greater than start value ${startMetrics[metricName]}`,
+      );
     }
-    return metricValues;
-  };
+  }
+};
+
+/**
+ * makeVerifier() creates a verifier (a {start(t), stop(t)} record)
+ * intended to be passed as an argument to a walletProvisioning template
+ * to create additional tests which require additional verification
+ * before/after the wallet provisioning.
+ *
+ * start() is invoked by the template before the wallet provisioning.
+ * stop() is invoked by the template after the wallet provisioning.
+ *
+ * @param {*} startVerifier function to verify start conditions
+ * @param {*} stopVerifier function to verify stop conditions
+ * @returns {{start: () => Promise<void>, stop: () => Promise<void>}}
+ */
+const makeVerifier = (startVerifier, stopVerifier) => {
+  let started = false;
+  let stopped = false;
 
   const start = async t => {
+    if (started) {
+      throw Error('metrics verifier start() must only be called once');
+    }
+    started = true;
+
     try {
-      metricStartValues = await getMetricValues();
-      t.log('metric start values:', metricStartValues);
+      await startVerifier(t);
     } catch (error) {
       t.fail(error.message);
       return;
     }
 
-    finished = new Promise((resolve, reject) => {
-      t.teardown(() =>
-        reject(
-          new Error('test finished without calling stop() on metrics verifier'),
-        ),
-      );
-      resolve();
+    t.teardown(() => {
+      if (stopped) return;
+      throw Error('metrics verifier stop() must be called before test end');
     });
   };
 
   const stop = async t => {
-    let metricEndValues;
+    if (!started) {
+      throw Error('metrics verifier start() must only be called before stop()');
+    }
+    if (stopped) {
+      throw Error('metrics verifier stop() must only be called once');
+    }
+    stopped = true;
     try {
-      metricEndValues = await getMetricValues();
-      t.log('metric end values:', metricEndValues);
+      await stopVerifier(t);
     } catch (error) {
       t.fail(error.message);
-      return;
     }
-    for (const metricName of metricNames) {
-      const startValue = metricStartValues[metricName];
-      const endValue = metricEndValues[metricName];
-      if (endValue <= startValue) {
-        t.fail(
-          `${metricName} end value ${endValue} should be greater than start value ${startValue}`,
-        );
-      }
-    }
-    return finished;
   };
 
   return { start, stop };
@@ -313,8 +408,5 @@ const makeMetricsVerifier = (url, metricNames) => {
 test.serial(
   walletProvisioning,
   'vstorage metrics',
-  makeMetricsVerifier('http://localhost:26660/metrics', [
-    'store_size_decrease',
-    'store_size_increase',
-  ]),
+  makeVerifier(startCounterMetricVerifier, stopCounterMetricVerifier),
 );
