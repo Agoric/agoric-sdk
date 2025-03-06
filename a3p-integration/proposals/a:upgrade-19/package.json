@@ -34,11 +34,13 @@
               "entrypoint": "defaultProposalBuilder",
               "args": [
                 {
-                  "params": {
-                    "collectionInterval": 30,
-                    "keywordShares": {
-                      "RewardDistributor": 0,
-                      "Reserve": 1
+                  "config": {
+                    "params": {
+                      "collectionInterval": 30,
+                      "keywordShares": {
+                        "RewardDistributor": 0,
+                        "Reserve": 1
+                      }
                     }
                   }
                 }
