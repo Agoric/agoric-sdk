@@ -21,6 +21,7 @@ jobs:
     runs-on: 'depot-ubuntu-24.04-16'
 
     steps:
+      - uses: depot/setup-action@v1
       - uses: actions/checkout@v4
         with:
           path: ./agoric-sdk
@@ -83,7 +84,11 @@ jobs:
       - name: docker build (sdk)
         # Produces local ghcr.io/agoric/agoric-sdk:dev used in Kind.
         run: |
-          make docker-build-sdk TAG=dev
+          # --provenance=false: Depot generates attestation manifests that
+          # kind's `ctr images import --all-platforms` cannot resolve, causing
+          # "content digest: not found" errors. Provenance is unnecessary for
+          # this local-only image that is loaded directly into kind.
+          DOCKER_BUILD='depot build --load --provenance=false' make docker-build-sdk TAG=dev
         working-directory: ./agoric-sdk/packages/deployment
 
       - name: Setup kind cluster
