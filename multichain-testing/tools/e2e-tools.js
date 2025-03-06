@@ -164,6 +164,18 @@ export const provisionSmartWallet = async (
   },
 ) => {
   trace('provisionSmartWallet', address);
+  /**
+   * @returns {Promise<{
+   *   balances: Coins;
+   *   pagination: unknown;
+   * }>}
+   *
+   * @typedef {{ denom: string; amount: string }[]} Coins
+   */
+  const getCosmosBalances = () =>
+    lcd.getJSON(`/cosmos/bank/v1beta1/balances/${address}`);
+  progress('before whale', await getCosmosBalances());
+
   // TODO: skip this query if balances is {}
   const vbankEntries = await q.queryData('published.agoricNames.vbankAsset');
   const byName = Object.fromEntries(
@@ -206,6 +218,7 @@ export const provisionSmartWallet = async (
     const value = Nat(Number(qty) * 10 ** decimalPlaces);
     await sendFromWhale(denom, value);
   }
+  progress('after whale', await getCosmosBalances());
 
   progress({ provisioning: address });
   await agd.tx(
@@ -280,16 +293,6 @@ export const provisionSmartWallet = async (
   });
 
   const { stringify: lit } = JSON;
-  /**
-   * @returns {Promise<{
-   *   balances: Coins;
-   *   pagination: unknown;
-   * }>}
-   *
-   * @typedef {{ denom: string; amount: string }[]} Coins
-   */
-  const getCosmosBalances = () =>
-    lcd.getJSON(`/cosmos/bank/v1beta1/balances/${address}`);
   const cosmosBalanceUpdates = () =>
     dedup(poll(getCosmosBalances, { delay }), (a, b) => lit(a) === lit(b));
 
