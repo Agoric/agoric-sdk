@@ -21,6 +21,7 @@ jobs:
     runs-on: 'depot-ubuntu-24.04-16'
 
     steps:
+      - uses: depot/setup-action@v1
       - uses: actions/checkout@v4
         with:
           submodules: 'true'
@@ -84,7 +85,7 @@ jobs:
       - name: docker build (sdk)
         # Produces local ghcr.io/agoric/agoric-sdk:dev used in Kind.
         run: |
-          make docker-build-sdk TAG=dev
+          DOCKER_BUILD='depot build --load' make docker-build-sdk TAG=dev
         working-directory: ./agoric-sdk/packages/deployment
 
       - name: Setup kind cluster
