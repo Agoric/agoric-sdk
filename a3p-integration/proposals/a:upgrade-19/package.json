@@ -28,6 +28,21 @@
                   }
                 }
               ]
+            },
+            {
+              "module": "@agoric/builders/scripts/inter-protocol/replace-feeDistributor-combo.js",
+              "entrypoint": "defaultProposalBuilder",
+              "args": [
+                {
+                  "params": {
+                    "collectionInterval": 30,
+                    "keywordShares": {
+                      "RewardDistributor": 0,
+                      "Reserve": 1
+                    }
+                  }
+                }
+              ]
             }
           ]
         ]
