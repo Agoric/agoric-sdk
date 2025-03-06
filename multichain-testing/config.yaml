@@ -32,31 +32,6 @@ chains:
     resources:
       cpu: 1
       memory: 4Gi
-  - id: cosmoshublocal
-    name: cosmoshub
-    numValidators: 1
-    faucet:
-      enabled: true
-      type: starship
-    ports:
-      rest: 1314
-      rpc: 26654
-      grpc: 9092
-      faucet: 8083
-  - id: stridelocal
-    name: stride
-    numValidators: 1
-    ics:
-      enabled: true
-      provider: cosmoshublocal 
-    faucet:
-      enabled: true
-      type: starship
-    ports:
-      rest: 1313
-      rpc: 26653
-      grpc: 9099
-      faucet: 8089
   - id: elyslocal
     name: custom
     image: adarsh00/elys-network:latest
@@ -104,6 +79,31 @@ chains:
     resources:
       cpu: 1
       memory: 1Gi
+  - id: cosmoshublocal
+    name: cosmoshub
+    numValidators: 1
+    faucet:
+      enabled: true
+      type: starship
+    ports:
+      rest: 1314
+      rpc: 26654
+      grpc: 9092
+      faucet: 8083
+  - id: stridelocal
+    name: stride
+    numValidators: 1
+    ics:
+      enabled: true
+      provider: cosmoshublocal 
+    faucet:
+      enabled: true
+      type: starship
+    ports:
+      rest: 1313
+      rpc: 26653
+      grpc: 9099
+      faucet: 8089
 
 relayers:
   - name: stride-cosmoshub
