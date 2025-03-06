@@ -24,6 +24,7 @@ import { InstanceHandleShape } from '@agoric/zoe/src/typeGuards.js';
 import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 
 /**
+ * @import {EReturn} from '@endo/far';
  * @import {BridgeMessage} from '@agoric/cosmic-swingset/src/types.js';
  * @import {ZCF} from '@agoric/zoe';
  */
@@ -45,6 +46,7 @@ const FIRST_LOWER_NEAR_KEYWORD = /^[a-z][a-zA-Z0-9_$]*$/;
  * @typedef {{
  *   machine: any;
  *   helper: any;
+ *   forHandler: any;
  *   public: any;
  * }} ProvisionPoolKit
  */
@@ -86,6 +88,16 @@ export const prepareBridgeProvisionTool = zone =>
     M.interface('ProvisionBridgeHandlerMaker', {
       fromBridge: M.callWhen(M.record()).returns(),
     }),
+    /**
+     * @param {ERef<BankManager>} bankManager
+     * @param {ERef<
+     *   EReturn<
+     *     import('@agoric/smart-wallet/src/walletFactory.js').start
+     *   >['creatorFacet']
+     * >} walletFactory
+     * @param {ERef<import('@agoric/vats').NameAdmin>} namesByAddressAdmin
+     * @param {ProvisionPoolKit['forHandler']} forHandler
+     */
     (bankManager, walletFactory, namesByAddressAdmin, forHandler) => ({
       bankManager,
       walletFactory,
