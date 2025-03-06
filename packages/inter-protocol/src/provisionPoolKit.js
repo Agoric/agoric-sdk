@@ -498,6 +498,7 @@ export const prepareProvisionPoolKit = (
           const perAccountInitialAmount = /** @type {Amount<'nat'>} */ (
             params.getPerAccountInitialAmount()
           );
+          trace('sendInitialPayment withdrawing', perAccountInitialAmount);
           const initialPmt = await E(fundPurse).withdraw(
             perAccountInitialAmount,
           );
