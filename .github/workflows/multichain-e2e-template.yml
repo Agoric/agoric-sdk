@@ -86,7 +86,7 @@ jobs:
           values: ./agoric-sdk/multichain-testing/${{ inputs.config }}
           port-forward: true
           version: 0.2.20
-          timeout: 30m
+          timeout: 20m # Usually 13min
           # Load the locally-built dev Docker image for the chain into kind.
           load-docker-images: ghcr.io/agoric/agoric-sdk:dev
           namespace: ${{ env.NAMESPACE }}
