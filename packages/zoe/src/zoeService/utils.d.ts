@@ -63,6 +63,8 @@ type ZcfOf<SF extends ContractStartFunction> = Parameters<SF>[0] extends ZCF
   : ZCF<any>;
 
 /**
+ * @deprecated use the SF to pass the type
+ *
  * Convenience record for contract start function, merging its result with params.
  */
 export type ContractOf<S extends (...args: any) => any> = StartParams<S> &
