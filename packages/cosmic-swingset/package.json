@@ -1,6 +1,6 @@
 {
   "name": "@agoric/cosmic-swingset",
-  "version": "0.42.0-u19.1",
+  "version": "0.42.0-u19.2",
   "description": "Agoric's Cosmos blockchain integration",
   "type": "module",
   "bin": {
@@ -22,7 +22,7 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/builders": "^0.2.0-u19.1",
+    "@agoric/builders": "^0.2.0-u19.2",
     "@agoric/cosmos": "^0.35.0-u19.1",
     "@agoric/deploy-script-support": "^0.10.4-u19.1",
     "@agoric/internal": "^0.4.0-u19.1",

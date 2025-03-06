@@ -1,6 +1,6 @@
 {
   "name": "@agoric/boot",
-  "version": "0.2.0-u19.1",
+  "version": "0.2.0-u19.2",
   "private": true,
   "description": "Config and utilities to bootstrap an Agoric chain",
   "type": "module",
@@ -20,10 +20,10 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/builders": "^0.2.0-u19.1",
+    "@agoric/builders": "^0.2.0-u19.2",
     "@agoric/client-utils": "^0.2.0-u19.1",
     "@agoric/cosmic-proto": "^0.5.0-u19.1",
-    "@agoric/cosmic-swingset": "^0.42.0-u19.1",
+    "@agoric/cosmic-swingset": "^0.42.0-u19.2",
     "@agoric/ertp": "^0.16.3-u19.1",
     "@agoric/fast-usdc": "^0.2.0-u19.1",
     "@agoric/governance": "^0.10.4-u19.1",

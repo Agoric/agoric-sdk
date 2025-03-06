@@ -1,6 +1,6 @@
 {
   "name": "agoric",
-  "version": "0.22.0-u19.1",
+  "version": "0.22.0-u19.2",
   "description": "Manage the Agoric Javascript smart contract platform",
   "type": "module",
   "main": "src/main.js",
@@ -30,7 +30,7 @@
     "lint:eslint": "eslint ."
   },
   "devDependencies": {
-    "@agoric/cosmic-swingset": "^0.42.0-u19.1",
+    "@agoric/cosmic-swingset": "^0.42.0-u19.2",
     "@agoric/deploy-script-support": "^0.10.4-u19.1",
     "ava": "^5.3.0",
     "c8": "^10.1.2"
