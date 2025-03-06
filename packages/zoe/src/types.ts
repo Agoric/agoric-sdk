@@ -12,7 +12,13 @@ import type { Key } from '@endo/patterns';
  * Alias for RemotableObject
  */
 export type Handle<H extends string> = RemotableObject<H>;
+
+// Typing this as Capitalize<string> would be more accurate but requires
+// frequent casting. Revisit once .ts syntax is more common. Even then,
+// may not be worth the effort since Zoe 2 probably will not have keywords.
+/** Must start with a capital letter. */
 export type Keyword = string;
+
 /**
  * - an opaque handle for an invitation
  */
