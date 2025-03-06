@@ -128,7 +128,7 @@ const MetricLabelStoreKey = "storeKey"
 
 // reportStoreSizeMetrics exports store size increase/decrease metrics
 // when Cosmos telemetry is enabled.
-func (k Keeper) reportStoreSizeMetrics(increase int, decrease int) {
+func (k Keeper) reportStoreSizeMetrics(increase uint, decrease uint) {
 	metricsLabel := []metrics.Label{
 		telemetry.NewLabel(MetricLabelStoreKey, k.storeKey.Name()),
 	}
