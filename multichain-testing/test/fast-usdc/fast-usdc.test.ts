@@ -300,13 +300,11 @@ test.serial('oracles accept', async t => {
   await Promise.all(txOracles.map(op => op.acceptInvitation()));
 
   for (const op of txOracles) {
-    await t.notThrowsAsync(() =>
-      retryUntilCondition(
-        () => op.checkInvitation(),
-        ({ usedInvitation }) => !!usedInvitation,
-        `${op.getName()} invitation used`,
-        { log },
-      ),
+    await retryUntilCondition(
+      () => op.checkInvitation(),
+      ({ usedInvitation }) => !!usedInvitation,
+      `${op.getName()} invitation used`,
+      { log },
     );
   }
 });
@@ -339,14 +337,12 @@ test.serial('lp deposits', async t => {
     proposal,
   });
 
-  await t.notThrowsAsync(() =>
-    retryUntilCondition(
-      () => fastLPQ(vstorageClient).metrics(),
-      ({ shareWorth }) =>
-        !isGTE(metricsPre.shareWorth.numerator, shareWorth.numerator),
-      'share worth numerator increases from deposit',
-      { log },
-    ),
+  await retryUntilCondition(
+    () => fastLPQ(vstorageClient).metrics(),
+    ({ shareWorth }) =>
+      !isGTE(metricsPre.shareWorth.numerator, shareWorth.numerator),
+    'share worth numerator increases from deposit',
+    { log },
   );
 
   const { useChain } = t.context;
@@ -354,14 +350,13 @@ test.serial('lp deposits', async t => {
     await useChain('agoric').getRestEndpoint(),
   );
 
-  await t.notThrowsAsync(() =>
-    retryUntilCondition(
-      () => queryClient.queryBalance(wallets['lp'], 'ufastlp'),
-      ({ balance }) => isGTE(toAmt(FastLP, balance), want.PoolShare),
-      'lp has pool shares',
-      { log },
-    ),
+  await retryUntilCondition(
+    () => queryClient.queryBalance(wallets['lp'], 'ufastlp'),
+    ({ balance }) => isGTE(toAmt(FastLP, balance), want.PoolShare),
+    'lp has pool shares',
+    { log },
   );
+  t.pass();
 });
 
 test.serial('reconfigure: fix noble ICA', async t => {
@@ -385,13 +380,12 @@ test.serial('reconfigure: fix noble ICA', async t => {
 
   const { vstorageClient, retryUntilCondition } = t.context;
 
-  await t.notThrowsAsync(() =>
-    retryUntilCondition(
-      () => fastLPQ(vstorageClient).info(),
-      info => 'nobleICA' in info,
-      `${contractName} nobleICA is available`,
-    ),
+  await retryUntilCondition(
+    () => fastLPQ(vstorageClient).info(),
+    info => 'nobleICA' in info,
+    `${contractName} nobleICA is available`,
   );
+  t.pass();
 });
 
 const advanceAndSettleScenario = test.macro({
@@ -515,13 +509,11 @@ const advanceAndSettleScenario = test.macro({
     log('Advance completed, waiting for mint...');
 
     nobleTools.mockCctpMint(mintAmt, userForwardingAddr);
-    await t.notThrowsAsync(() =>
-      retryUntilCondition(
-        () => fastLPQ(vstorageClient).metrics(),
-        ({ encumberedBalance }) =>
-          encumberedBalance && isEmpty(encumberedBalance),
-        'encumberedBalance returns to 0',
-      ),
+    await retryUntilCondition(
+      () => fastLPQ(vstorageClient).metrics(),
+      ({ encumberedBalance }) =>
+        encumberedBalance && isEmpty(encumberedBalance),
+      'encumberedBalance returns to 0',
     );
 
     await assertTxStatus(evidence.txHash, 'DISBURSED');
@@ -632,28 +624,27 @@ test.serial('lp withdraws', async t => {
     proposal,
   });
 
-  await t.notThrowsAsync(() =>
-    retryUntilCondition(
-      () => queryClient.queryBalance(wallets['lp'], 'ufastlp'),
-      ({ balance }) => isEmpty(toAmt(FastLP, balance)),
-      'lp no longer has pool shares',
-      { log },
-    ),
+  await retryUntilCondition(
+    () => queryClient.queryBalance(wallets['lp'], 'ufastlp'),
+    ({ balance }) => isEmpty(toAmt(FastLP, balance)),
+    'lp no longer has pool shares',
+    { log },
   );
 
   const USDC = want.USDC.brand;
-  await t.notThrowsAsync(() =>
-    retryUntilCondition(
-      () => queryClient.queryBalance(wallets['lp'], usdcDenom),
-      ({ balance }) =>
-        !isGTE(
-          make(USDC, LP_DEPOSIT_AMOUNT),
-          subtract(toAmt(USDC, balance), toAmt(USDC, usdcCoinsPre)),
-        ),
-      "lp's USDC balance increases",
-      { log },
-    ),
+  await retryUntilCondition(
+    () => queryClient.queryBalance(wallets['lp'], usdcDenom),
+    // TODO refactor this retry until balance changes, then separately assert it's correct
+    ({ balance }) =>
+      !isGTE(
+        make(USDC, LP_DEPOSIT_AMOUNT),
+        subtract(toAmt(USDC, balance), toAmt(USDC, usdcCoinsPre)),
+      ),
+    "lp's USDC balance increases",
+    { log },
   );
+
+  t.pass();
 });
 
 test.serial('distribute FastUSDC contract fees', async t => {
