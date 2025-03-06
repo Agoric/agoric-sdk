@@ -1,5 +1,6 @@
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 
+import { sleep } from '@agoric/client-utils';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import type { QueryBalanceResponseSDKType } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import { AmountMath } from '@agoric/ertp';
@@ -10,23 +11,22 @@ import type {
   NobleAddress,
 } from '@agoric/fast-usdc/src/types.js';
 import { makeTracer } from '@agoric/internal';
-import { divideBy, multiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
-import type { ExecutionContext, TestFn } from 'ava';
-import { makeDenomTools } from '../../tools/asset-info.js';
-import { makeBlocksIterable } from '../../tools/block-iter.js';
-import { makeDoOffer } from '../../tools/e2e-tools.js';
-import { makeQueryClient } from '../../tools/query.js';
-import { createWallet } from '../../tools/wallet.js';
-import { commonSetup } from '../support.js';
-import { makeFeedPolicyPartial, oracleMnemonics } from './config.js';
-import { agoricNamesQ, fastLPQ, makeTxOracle } from './fu-actors.js';
-import { sleep } from '@agoric/client-utils';
 import type {
   CosmosChainInfo,
   Denom,
   DenomDetail,
 } from '@agoric/orchestration';
 import type { IBCConnectionID } from '@agoric/vats';
+import { divideBy, multiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
+import type { ExecutionContext, TestFn } from 'ava';
+import { makeDenomTools } from '../../tools/asset-info.js';
+import { makeBlocksIterable } from '../../tools/block-iter.js';
+import { makeDoOffer } from '../../tools/e2e-tools.js';
+import { makeQueryClient, type BlockJson } from '../../tools/query.js';
+import { createWallet } from '../../tools/wallet.js';
+import { commonSetup } from '../support.js';
+import { makeFeedPolicyPartial, oracleMnemonics } from './config.js';
+import { agoricNamesQ, fastLPQ, makeTxOracle } from './fu-actors.js';
 
 const { RELAYER_TYPE } = process.env;
 
@@ -469,8 +469,8 @@ const advanceAndSettleScenario = test.macro({
       await useChain(eudChain).getRestEndpoint(),
     );
 
-    let finalBlock;
-    await t.notThrowsAsync(async () => {
+    let finalBlock: BlockJson;
+    {
       const q = await retryUntilCondition(
         () => queryClient.queryBalance(EUD, getUsdcDenom(eudChain)),
         ({ balance }) => {
@@ -495,7 +495,7 @@ const advanceAndSettleScenario = test.macro({
         finalBlock.header.height,
         finalBlock.header.time,
       );
-    });
+    }
     console.timeEnd(`UX->${eudChain}`);
     const blockDur =
       Number(finalBlock.header.height) - Number(initialBlock.header.height);
