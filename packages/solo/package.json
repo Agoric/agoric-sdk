@@ -1,6 +1,6 @@
 {
   "name": "@agoric/solo",
-  "version": "0.11.0-u19.1",
+  "version": "0.11.0-u19.2",
   "description": "Agoric's Solo vat runner",
   "type": "module",
   "bin": {
@@ -24,7 +24,7 @@
   "dependencies": {
     "@agoric/access-token": "^0.4.22-u19.0",
     "@agoric/cache": "^0.3.3-u19.1",
-    "@agoric/cosmic-swingset": "^0.42.0-u19.1",
+    "@agoric/cosmic-swingset": "^0.42.0-u19.2",
     "@agoric/internal": "^0.4.0-u19.1",
     "@agoric/notifier": "^0.7.0-u19.1",
     "@agoric/spawner": "^0.6.9-u19.1",
