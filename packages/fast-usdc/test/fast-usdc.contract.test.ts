@@ -15,6 +15,7 @@ import {
   makePublishKit,
   observeIteration,
   subscribeEach,
+  type Publisher,
   type Subscriber,
 } from '@agoric/notifier';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
