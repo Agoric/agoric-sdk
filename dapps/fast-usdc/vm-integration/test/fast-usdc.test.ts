@@ -1,4 +1,8 @@
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import anyTest from 'ava';
+
+// XXX should not be managed per test
+import '@endo/init/debug.js';
+
 import type { TestFn } from 'ava';
 
 import {
