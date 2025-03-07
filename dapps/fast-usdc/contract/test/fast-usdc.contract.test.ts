@@ -1,4 +1,9 @@
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import anyTest from 'ava';
+
+// XXX should not be managed per test
+// XXX makeIssuerKit requires VatData
+import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
+
 import type { ExecutionContext, TestFn } from 'ava';
 
 import {

@@ -1,7 +1,11 @@
+import test from 'ava';
+
+// XXX should not be managed per test
+import '@endo/init/debug.js';
+
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import transfer from '@agoric/fast-usdc/src/cli/transfer.js';
 import { settlementAddress } from '@agoric/fast-usdc/src/fixtures.js';
-import test from 'ava';
 import {
   makeFetchMock,
   makeMockSigner,

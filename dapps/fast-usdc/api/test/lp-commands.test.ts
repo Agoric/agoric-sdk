@@ -1,7 +1,12 @@
+import anyTest from 'ava';
+
+// XXX should not be managed per test
+import '@endo/init/debug.js';
+
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import type { EReturn } from '@endo/far';
 import { Far, makeMarshal } from '@endo/marshal';
-import anyTest, { type TestFn } from 'ava';
+import { type TestFn } from 'ava';
 import { Command } from 'commander';
 import { addLPCommands } from '@agoric/fast-usdc/src/cli/lp-commands.js';
 import { flags } from '../../tools/cli-tools.js';
