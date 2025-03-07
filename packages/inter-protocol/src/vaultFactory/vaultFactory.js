@@ -30,7 +30,8 @@ import { SHORTFALL_INVITATION_KEY, vaultDirectorParamTypes } from './params.js';
 import { provideDirector } from './vaultDirector.js';
 
 /**
- * @import {ContractMeta, ContractOf, FeeMintAccess, HandleOffer, Invitation, OfferHandler, TransferPart, ZCF, ZCFMint, ZCFSeat} from '@agoric/zoe';
+ * @import {ContractMeta, FeeMintAccess, HandleOffer, Invitation, OfferHandler, TransferPart, ZCF, ZCFMint, ZCFSeat} from '@agoric/zoe';
+ * @import {ContractOf} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  */
 

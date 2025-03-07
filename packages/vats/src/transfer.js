@@ -195,13 +195,13 @@ const prepareTransferMiddlewareKit = (zone, makeTransferInterceptor) =>
       transferMiddleware: TransferMiddlewareI,
     },
     () => ({
-      /** @type {import('./bridge-target').TargetRegistry | undefined} */
+      /** @type {import('./bridge-target.js').TargetRegistry | undefined} */
       targetRegistry: undefined,
     }),
     {
       finisher: {
         /**
-         * @param {import('./bridge-target').TargetRegistry} registry
+         * @param {import('./bridge-target.js').TargetRegistry} registry
          */
         useRegistry(registry) {
           this.state.targetRegistry = registry;

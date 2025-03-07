@@ -2,7 +2,8 @@
 /// <reference types="@agoric/zoe/exported" />
 
 /**
- * @import {FeeMintAccess, GetBrands, GetBundleIDFromInstallation, GetIssuers, InstallBundle, InstallBundleID} from './types.js';
+ * @import {FeeMintAccess, GetBrands, GetBundleIDFromInstallation, GetIssuers, InstallBundle, InstallBundleID, SourceBundle} from './types.js';
+ * @import {InstanceRecord} from './utils.js';
  */
 
 /**

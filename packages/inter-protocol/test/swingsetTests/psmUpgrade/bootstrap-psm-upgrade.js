@@ -19,6 +19,10 @@ import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 import { scale6, withAmountUtils } from '../../supports.js';
 
+/**
+ * @import {FeeMintAccess} from '@agoric/zoe';
+ */
+
 const trace = makeTracer('BootPSMUpg');
 
 export const psmV1BundleName = 'psmV1';

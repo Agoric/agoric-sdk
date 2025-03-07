@@ -2,6 +2,10 @@
 import { Fail } from '@endo/errors';
 
 /**
+ * @import {IssuerRecord} from '@agoric/ertp';
+ */
+
+/**
  * Put together information about the issuer in a standard format that
  * is synchronously accessible.
  *
@@ -9,7 +13,7 @@ import { Fail } from '@endo/errors';
  * @param {Brand<K>} brand
  * @param {Issuer<K>} issuer
  * @param {DisplayInfo<K>} displayInfo
- * @returns {IssuerRecord<K>}
+ * @returns {ZoeIssuerRecord<K>}
  */
 export const makeIssuerRecord = (brand, issuer, displayInfo) =>
   harden({
@@ -20,7 +24,7 @@ export const makeIssuerRecord = (brand, issuer, displayInfo) =>
   });
 
 /**
- * @param {IssuerRecord} issuerRecord
+ * @param {IssuerRecord<any>} issuerRecord
  * @returns {asserts issuerRecord is Required<IssuerRecord>}
  */
 export const assertFullIssuerRecord = issuerRecord => {

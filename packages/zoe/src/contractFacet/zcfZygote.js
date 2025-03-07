@@ -104,7 +104,7 @@ export const makeZCFZygote = async (
 
   /**
    * @param {string} keyword
-   * @param {IssuerRecord} issuerRecord
+   * @param {ZoeIssuerRecord} issuerRecord
    */
   const recordIssuer = (keyword, issuerRecord) => {
     getInstanceRecHolder().addIssuer(keyword, issuerRecord);

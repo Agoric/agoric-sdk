@@ -4,7 +4,7 @@ import type { Baggage } from '@agoric/swingset-liveslots';
 import type { VatUpgradeResults } from '@agoric/swingset-vat';
 import type { RemotableObject } from '@endo/marshal';
 import type { FarRef } from '@endo/far';
-import type { ZCF } from '../types-index.js';
+import type { AnyTerms, Handle, Keyword, ZCF } from '../types-index.js';
 
 // XXX https://github.com/Agoric/agoric-sdk/issues/4565
 type SourceBundle = Record<string, any>;
@@ -63,6 +63,8 @@ type ZcfOf<SF extends ContractStartFunction> = Parameters<SF>[0] extends ZCF
   : ZCF<any>;
 
 /**
+ * @deprecated use the SF to pass the type
+ *
  * Convenience record for contract start function, merging its result with params.
  */
 export type ContractOf<S extends (...args: any) => any> = StartParams<S> &
@@ -122,3 +124,12 @@ export type GetTerms = <SF>(instance: Instance<SF>) => Promise<
     : // XXX returning `any` in this case
       any
 >;
+
+export type InstanceRecord = {
+  installation: Installation<any>;
+  instance: Instance<any>;
+  /**
+   * - contract parameters
+   */
+  terms: AnyTerms;
+};
