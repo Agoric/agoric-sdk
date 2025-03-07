@@ -2,7 +2,7 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { AmountMath } from '@agoric/ertp';
 import { getManifestForFastUSDC } from '@agoric/fast-usdc-vm/src/start-fast-usdc.core.js';
-import { FastUSDCConfigShape } from '@agoric/fast-usdc-worker/src/type-guards.js';
+import { FastUSDCConfigShape } from '@agoric/fast-usdc-contract/src/type-guards.js';
 import { toExternalConfig } from '@agoric/fast-usdc-vm/src/utils/config-marshal.js';
 import { configurations } from '@agoric/fast-usdc-vm/src/utils/deploy-config.js';
 import {
@@ -16,7 +16,7 @@ import { parseArgs } from 'node:util';
  * @import {CoreEvalBuilder, DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js'
  * @import {Brand} from '@agoric/ertp';
  * @import {ParseArgsConfig} from 'node:util'
- * @import {FastUSDCConfig, FeedPolicy} from '@agoric/fast-usdc-worker';
+ * @import {FastUSDCConfig, FeedPolicy} from '@agoric/fast-usdc-contract';
  */
 
 const { keys } = Object;
@@ -87,7 +87,7 @@ export const defaultProposalBuilder = async (
         options: toExternalConfig(config, crossVatContext, FastUSDCConfigShape),
         installKeys: {
           fastUsdc: publishRef(
-            install('@agoric/fast-usdc-worker/src/fast-usdc.contract.js'),
+            install('@agoric/fast-usdc-contract/src/fast-usdc.contract.js'),
           ),
         },
       },

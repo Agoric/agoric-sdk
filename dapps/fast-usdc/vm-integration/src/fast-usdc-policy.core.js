@@ -1,7 +1,7 @@
 /** @file core-eval to publish update to Fast USDC feedPolicy */
 
 import { E } from '@endo/far';
-import { FeedPolicyShape } from '@agoric/fast-usdc-worker/src/type-guards.js';
+import { FeedPolicyShape } from '@agoric/fast-usdc-contract/src/type-guards.js';
 import { fromExternalConfig } from './utils/config-marshal.js';
 import { publishFeedPolicy } from './utils/core-eval.js';
 
@@ -10,7 +10,7 @@ import { publishFeedPolicy } from './utils/core-eval.js';
  * @import {Passable} from '@endo/pass-style';
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js';
  * @import {LegibleCapData} from './utils/config-marshal.js';
- * @import {FeedPolicy} from '@agoric/fast-usdc-worker/src/types.js';
+ * @import {FeedPolicy} from '@agoric/fast-usdc-contract/src/types.js';
  */
 
 const contractName = 'fastUsdc';
