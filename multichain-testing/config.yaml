@@ -16,7 +16,7 @@ chains:
             unbonding_time: '2m'
         swingset:
           params:
-            bootstrap_vat_config: '@agoric/vm-config/decentral-itest-orchestration-config.json'
+            bootstrap_vat_config: '@agoric/vm-config/decentral-itest-orchestration-chains-config.json'
     scripts:
       updateConfig:
         file: scripts/update-config.sh

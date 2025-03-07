@@ -1,5 +1,5 @@
 {
-    "$comment": "This SwingSet config file (see loadSwingsetConfigFile) is designed to bring up vats to test Fast USDC. Compared to decentral-itest-orchestration-config.json, it lacks write-chain-info.",
+    "$comment": "This SwingSet config file (see loadSwingsetConfigFile) is designed to bring up vats to test Fast USDC. Compared to decentral-itest-orchestration-chains-config.json, it lacks write-chain-info.",
     "bootstrap": "bootstrap",
     "defaultReapInterval": 1000,
     "coreProposals": [
