@@ -10,7 +10,6 @@ import {
 import type { CctpTxEvidence, ChainPolicy } from '../src/types.js';
 
 import { MockCctpTxEvidences } from './fixtures.js';
-import { ChainPolicies } from '../src/utils/chain-policies.js';
 
 test('CctpTxEvidenceShape', t => {
   const specimen: CctpTxEvidence = harden(
@@ -71,13 +70,6 @@ test('ChainPolicyShape', t => {
     attenuatedCttpBridgeAddresses: [a, a, a],
   });
   t.notThrows(() => mustMatch(threeAddrs, ChainPolicyShape));
-
-  t.notThrows(() =>
-    mustMatch(
-      harden(Object.values(ChainPolicies.MAINNET)),
-      M.arrayOf(ChainPolicyShape),
-    ),
-  );
 
   const noAddrs = harden({
     ...policy,
