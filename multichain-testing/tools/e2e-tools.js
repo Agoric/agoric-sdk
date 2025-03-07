@@ -25,6 +25,7 @@ const trace = makeTracer('E2ET');
 // The default of 6 retries was failing.
 // XXX also tried 15, 30. There's probably something deeper to fix.
 const SMART_WALLET_PROVISION_RETRIES = 100;
+const PROVISIONING_POOL_ADDR = 'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346';
 
 const BLD = '000000ubld';
 
@@ -165,6 +166,7 @@ export const provisionSmartWallet = async (
 ) => {
   trace('provisionSmartWallet', address);
   /**
+   * @param {string} [addr]
    * @returns {Promise<{
    *   balances: Coins;
    *   pagination: unknown;
@@ -172,8 +174,8 @@ export const provisionSmartWallet = async (
    *
    * @typedef {{ denom: string; amount: string }[]} Coins
    */
-  const getCosmosBalances = () =>
-    lcd.getJSON(`/cosmos/bank/v1beta1/balances/${address}`);
+  const getCosmosBalances = (addr = address) =>
+    lcd.getJSON(`/cosmos/bank/v1beta1/balances/${addr}`);
   progress('before whale', await getCosmosBalances());
 
   // TODO: skip this query if balances is {}
@@ -234,19 +236,32 @@ export const provisionSmartWallet = async (
   );
 
   trace('waiting for wallet to appear in vstorage', address);
-  const info = await retryUntilCondition(
-    () => q.queryData(`published.wallet.${address}.current`),
-    result => !!result,
-    `wallet in vstorage ${address}`,
-    {
-      maxRetries: SMART_WALLET_PROVISION_RETRIES,
-    },
-  );
-  progress({
-    provisioned: address,
-    purses: info.purses.length,
-    used: info.offerToUsedInvitation.length,
-  });
+  try {
+    const info = await retryUntilCondition(
+      () => q.queryData(`published.wallet.${address}.current`),
+      result => !!result,
+      `wallet in vstorage ${address}`,
+      {
+        maxRetries: SMART_WALLET_PROVISION_RETRIES,
+      },
+    );
+    progress({
+      provisioned: address,
+      purses: info.purses.length,
+      used: info.offerToUsedInvitation.length,
+    });
+  } catch (err) {
+    trace('wallet balances', await getCosmosBalances());
+    trace(
+      'provisioning pool balances',
+      await getCosmosBalances(PROVISIONING_POOL_ADDR),
+    );
+    trace(
+      'whale balances',
+      await getCosmosBalances(agd.keys.showAddress(whale)),
+    );
+    throw err;
+  }
 
   /** @param {import('@agoric/smart-wallet/src/smartWallet.js').BridgeAction} bridgeAction */
   const sendAction = async bridgeAction => {
