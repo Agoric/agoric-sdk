@@ -108,7 +108,7 @@ const main = async () => {
     vstorageClient,
   } = await commonSetup(runT, { config: '../config.fusdc.yaml' });
 
-  const assertProvisioned = async address => {
+  const assertProvisioned = async (address: string) => {
     try {
       await vstorageClient.queryData(`published.wallet.${address}.current`);
     } catch {
