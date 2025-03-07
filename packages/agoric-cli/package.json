@@ -53,7 +53,6 @@
     "@agoric/vats": "^0.15.1",
     "@agoric/zoe": "^0.26.2",
     "@agoric/zone": "^0.2.2",
-    "@confio/relayer": "^0.11.3",
     "@cosmjs/crypto": "^0.33.0",
     "@cosmjs/encoding": "^0.33.0",
     "@cosmjs/math": "^0.33.0",
