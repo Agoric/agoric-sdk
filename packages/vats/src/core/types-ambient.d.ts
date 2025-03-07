@@ -286,12 +286,12 @@ type StartGovernedUpgradableOpts<SF extends GovernableStartFn> = {
   issuerKeywordRecord?: IssuerKeywordRecord;
   governedParams: Record<string, unknown>;
   terms: Omit<
-    import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['terms'],
+    import('@agoric/zoe/src/zoeService/utils.js').StartParams<SF>['terms'],
     'brands' | 'issuers' | 'governedParams' | 'electionManager'
   >;
   privateArgs: Omit<
     // @ts-expect-error XXX
-    import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['privateArgs'],
+    import('@agoric/zoe/src/zoeService/utils.js').StartParams<SF>['privateArgs'],
     'initialPoserInvitation'
   >;
   label: string;
@@ -302,12 +302,13 @@ type StartGovernedUpgradable = <SF extends GovernableStartFn>(
 ) => Promise<GovernanceFacetKit<SF>>;
 
 type StartUpgradableOpts<
-  SF extends import('@agoric/zoe/src/zoeService/utils').ContractStartFunction,
+  SF extends
+    import('@agoric/zoe/src/zoeService/utils.js').ContractStartFunction,
 > = {
   installation: ERef<Installation<SF>>;
   issuerKeywordRecord?: IssuerKeywordRecord;
   terms?: Omit<
-    import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['terms'],
+    import('@agoric/zoe/src/zoeService/utils.js').StartParams<SF>['terms'],
     'brands' | 'issuers'
   >;
   privateArgs?: Parameters<SF>[1];
@@ -315,23 +316,24 @@ type StartUpgradableOpts<
 };
 
 type StartUpgradable = <
-  SF extends import('@agoric/zoe/src/zoeService/utils').ContractStartFunction,
+  SF extends
+    import('@agoric/zoe/src/zoeService/utils.js').ContractStartFunction,
 >(
   opts: StartUpgradableOpts<SF>,
 ) => Promise<
-  import('@agoric/zoe/src/zoeService/utils').StartedInstanceKit<SF> & {
+  import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<SF> & {
     label: string;
   }
 >;
 
 type StartedInstanceKit<
-  T extends import('@agoric/zoe/src/zoeService/utils').ContractStartFunction,
-> = import('@agoric/zoe/src/zoeService/utils').StartedInstanceKit<T>;
+  T extends import('@agoric/zoe/src/zoeService/utils.js').ContractStartFunction,
+> = import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<T>;
 
 type StartedInstanceKitWithLabel = {
   label: string;
 } & StartedInstanceKit<
-  import('@agoric/zoe/src/zoeService/utils').ContractStartFunction
+  import('@agoric/zoe/src/zoeService/utils.js').ContractStartFunction
 >;
 
 type ChainBootstrapSpaceT = {
