@@ -229,7 +229,7 @@ export async function makeSwingsetController(
       require: harden(
         what => Fail`kernelRequire unprepared to satisfy require(${what})`,
       ),
-      URL: globalThis.Base64, // Unavailable only on XSnap
+      URL: globalThis.URL, // Unavailable only on XSnap
       Base64: globalThis.Base64, // Available only on XSnap
     },
   });
