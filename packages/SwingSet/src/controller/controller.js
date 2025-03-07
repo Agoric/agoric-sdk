@@ -89,7 +89,7 @@ function makeConsole(prefixer) {
  * @param {unknown} e
  * @param {Promise} pr
  */
-function unhandledRejectionHandler(e, pr) {
+function onUnhandledRejection(e, pr) {
   // Don't trigger sensitive hosts (like AVA).
   pr.catch(() => {});
   console.error('🤞 UnhandledPromiseRejection:', e);
@@ -123,11 +123,9 @@ export async function makeSwingsetController(
   const kvStore = kernelStorage.kvStore;
   insistStorageAPI(kvStore);
 
-  // Use ambient process.env only if caller did not specify.
-  const { env = process.env } = runtimeOptions;
-
-  // build console early so we can add console.log to diagnose early problems
   const {
+    // Use ambient process.env only if caller did not specify.
+    env = process.env,
     verbose,
     debugPrefix = '',
     slogCallbacks,
@@ -138,8 +136,7 @@ export async function makeSwingsetController(
     xsnapBundleData = makeXsnapBundleData(),
     profileVats = [],
     debugVats = [],
-  } = runtimeOptions;
-  const {
+
     bundleHandler = makeWorkerBundleHandler(
       kernelStorage.bundleStore,
       xsnapBundleData,
@@ -168,10 +165,7 @@ export async function makeSwingsetController(
   );
 
   function writeSlogObject(obj) {
-    if (!slogSender) {
-      // Fast path; nothing to do.
-      return;
-    }
+    if (!slogSender) return;
 
     // microtime gives POSIX gettimeofday() with microsecond resolution
     const time = microtime.nowDouble();
@@ -179,18 +173,8 @@ export async function makeSwingsetController(
     const monotime = performance.now() / 1000;
 
     // rearrange the fields a bit to make it more legible to humans
-    const timedObj = { type: undefined, ...obj, time, monotime };
-
-    // Allow the SwingSet host to do anything they want with slog messages.
-    slogSender(timedObj);
+    slogSender({ type: undefined, ...obj, time, monotime });
   }
-
-  const console = makeConsole(`${debugPrefix}SwingSet:controller`);
-  // We can harden this 'console' because it's new, but if we were using the
-  // original 'console' object (which has a unique prototype), we'd have to
-  // harden(Object.getPrototypeOf(console));
-  // see https://github.com/Agoric/SES-shim/issues/292 for details
-  harden(console);
 
   writeSlogObject({ type: 'kernel-init-start' });
 
@@ -200,16 +184,9 @@ export async function makeSwingsetController(
   writeSlogObject({ type: 'bundle-kernel-finish' });
 
   // FIXME: Put this somewhere better.
-  const handlers = process.listeners('unhandledRejection');
-  let haveUnhandledRejectionHandler = false;
-  for (const handler of handlers) {
-    if (handler === unhandledRejectionHandler) {
-      haveUnhandledRejectionHandler = true;
-      break;
-    }
-  }
-  if (!haveUnhandledRejectionHandler) {
-    process.on('unhandledRejection', unhandledRejectionHandler);
+  const rejectionHandlers = process.listeners('unhandledRejection');
+  if (!rejectionHandlers.includes(onUnhandledRejection)) {
+    process.on('unhandledRejection', onUnhandledRejection);
   }
 
   const kernelConsole = makeConsole(`${debugPrefix}SwingSet:kernel`);
@@ -236,14 +213,12 @@ export async function makeSwingsetController(
   const buildKernel = kernelNS.default;
   writeSlogObject({ type: 'import-kernel-finish' });
 
-  // all vats get these in their global scope, plus a vat-specific 'console'
-  const vatEndowments = harden({});
-
   const kernelEndowments = {
     waitUntilQuiescent,
     kernelStorage,
     debugPrefix,
-    vatEndowments,
+    // all vats get these in their global scope, plus a vat-specific 'console'
+    vatEndowments: harden({}),
     makeConsole,
     startSubprocessWorkerNode,
     startXSnap,
@@ -254,22 +229,18 @@ export async function makeSwingsetController(
     gcAndFinalize: makeGcAndFinalize(engineGC),
     bundleHandler,
   };
-
   const kernelRuntimeOptions = {
     verbose,
     warehousePolicy,
     overrideVatManagerOptions,
   };
+
   /** @type { ReturnType<typeof import('../kernel/kernel.js').default> } */
   const kernel = buildKernel(
     kernelEndowments,
     deviceEndowments,
     kernelRuntimeOptions,
   );
-
-  if (runtimeOptions.verbose) {
-    kernel.kdebugEnable(true);
-  }
 
   await kernel.start();
 
