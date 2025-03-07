@@ -264,9 +264,6 @@ jobs:
         run: cd packages/client-utils && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (create-dapp)
         run: cd packages/create-dapp && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (fast-usdc)
-        if: (success() || failure())
-        run: cd packages/fast-usdc && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (internal)
         if: (success() || failure())
         run: cd packages/internal && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT

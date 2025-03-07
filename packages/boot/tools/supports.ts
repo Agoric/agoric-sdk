@@ -51,7 +51,6 @@ import {
   defaultBeansPerVatCreation,
   defaultBeansPerXsnapComputron,
 } from '@agoric/cosmic-swingset/src/sim-params.js';
-import type { FastUSDCCorePowers } from '@agoric/fast-usdc/src/start-fast-usdc.core.js';
 import type { EconomyBootstrapPowers } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
 import type { BridgeHandler, IBCDowncallMethod, IBCMethod } from '@agoric/vats';
@@ -73,11 +72,9 @@ export const fetchCached = NodeFetchCache.create({
 
 type ConsumeBootrapItem = <N extends string>(
   name: N,
-) => N extends keyof FastUSDCCorePowers['consume']
-  ? FastUSDCCorePowers['consume'][N]
-  : N extends keyof EconomyBootstrapPowers['consume']
-    ? EconomyBootstrapPowers['consume'][N]
-    : unknown;
+) => N extends keyof EconomyBootstrapPowers['consume']
+  ? EconomyBootstrapPowers['consume'][N]
+  : unknown;
 
 // XXX should satisfy EVProxy from run-utils.js but that's failing to import
 /**
