@@ -111,6 +111,7 @@ export default function buildKernel(
     overrideVatManagerOptions = {},
   } = kernelRuntimeOptions;
   const logStartup = verbose ? console.debug : () => {};
+  if (verbose) kdebugEnable(true);
 
   const vatAdminRootKref = kernelStorage.kvStore.get('vatAdminRootKref');
 
