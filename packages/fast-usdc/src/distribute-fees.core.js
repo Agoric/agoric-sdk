@@ -6,7 +6,7 @@ import { makeTracer } from '@agoric/internal';
 import { fromExternalConfig } from './utils/config-marshal.js';
 
 /**
- * @import {DepositFacet} from '@agoric/ertp';
+ * @import {Amount, Brand, DepositFacet, Ratio} from '@agoric/ertp';
  * @import {FastUSDCCorePowers} from '@agoric/fast-usdc/src/start-fast-usdc.core.js';
  * @import {CopyRecord} from '@endo/pass-style'
  * @import {BootstrapManifestPermit} from '@agoric/vats/src/core/lib-boot.js'
