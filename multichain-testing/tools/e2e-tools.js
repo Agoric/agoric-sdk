@@ -149,7 +149,7 @@ const installBundle = async (fullPath, opts) => {
  *   q?: import('./queryKit.js').QueryTool;
  * }} opts
  */
-export const provisionSmartWallet = async (
+const provisionSmartWalletAndMakeDriver = async (
   address,
   balances,
   {
@@ -360,7 +360,7 @@ export const provisionSmartWallet = async (
   return { offers, deposit, peek, query: q };
 };
 
-/** @typedef {Awaited<ReturnType<typeof provisionSmartWallet>>} WalletDriver */
+/** @typedef {Awaited<ReturnType<typeof provisionSmartWalletAndMakeDriver>>} WalletDriver */
 
 /**
  * @param {{
@@ -609,7 +609,7 @@ export const makeE2ETools = async (
      * @param {Record<string, bigint>} amount - should include BLD to pay for provisioning
      */
     provisionSmartWallet: (address, amount) =>
-      provisionSmartWallet(address, amount, {
+      provisionSmartWalletAndMakeDriver(address, amount, {
         agd,
         blockTool,
         lcd,
@@ -672,7 +672,7 @@ export const seatLike = updates => {
   });
 };
 
-/** @param {Awaited<ReturnType<typeof provisionSmartWallet>>} wallet */
+/** @param {Awaited<ReturnType<typeof provisionSmartWalletAndMakeDriver>>} wallet */
 export const makeDoOffer = wallet => {
   /** @type {(offer: OfferSpec) => Promise<void>} */
   const doOffer = async offer => {
