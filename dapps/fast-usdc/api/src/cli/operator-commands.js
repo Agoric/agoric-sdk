@@ -3,7 +3,7 @@
  * @import {Command} from 'commander';
  * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
  * @import {ExecuteOfferAction} from '@agoric/smart-wallet/src/smartWallet.js';
- * @import {OperatorKit} from '@agoric/fast-usdc-worker/src/exos/operator-kit.js';
+ * @import {OperatorKit} from '@agoric/fast-usdc-contract/src/exos/operator-kit.js';
  */
 
 import {
@@ -13,8 +13,8 @@ import {
 import { mustMatch } from '@agoric/internal';
 import { Nat } from '@endo/nat';
 import { InvalidArgumentError } from 'commander';
-import { INVITATION_MAKERS_DESC } from '@agoric/fast-usdc-worker/src/exos/transaction-feed.js';
-import { CctpTxEvidenceShape } from '@agoric/fast-usdc-worker/src/type-guards.js';
+import { INVITATION_MAKERS_DESC } from '@agoric/fast-usdc-contract/src/exos/transaction-feed.js';
+import { CctpTxEvidenceShape } from '@agoric/fast-usdc-contract/src/type-guards.js';
 import { outputActionAndHint } from './bridge-action.js';
 
 export const delay = ms => new Promise(resolve => setTimeout(resolve, ms));

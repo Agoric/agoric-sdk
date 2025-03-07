@@ -10,7 +10,7 @@ import { configurations } from '../src/utils/deploy-config.js';
  * @import {CoreEvalBuilder, DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {ParseArgsConfig} from 'node:util';
  * @import {Brand} from '@agoric/ertp';
- * @import {FastUSDCConfig, FeedPolicy} from '@agoric/fast-usdc-worker';
+ * @import {FastUSDCConfig, FeedPolicy} from '@agoric/fast-usdc-contract';
  * @import {FastUSDCOpts} from './start-fast-usdc.build.js';
  */
 

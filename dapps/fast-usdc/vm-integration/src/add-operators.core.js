@@ -5,7 +5,7 @@ import { inviteOracles } from './utils/core-eval.js';
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js'
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
  * @import {LegibleCapData} from './utils/config-marshal.js'
- * @import {FastUSDCConfig} from '@agoric/fast-usdc-worker';
+ * @import {FastUSDCConfig} from '@agoric/fast-usdc-contract';
  * @import {FastUSDCCorePowers, FastUSDCKit} from './start-fast-usdc.core.js';
  */
 

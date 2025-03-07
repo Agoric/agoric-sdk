@@ -2,7 +2,7 @@
 import { assertAllDefined } from '@agoric/internal';
 
 /**
- * @import {USDCProposalShapes} from '@agoric/fast-usdc-worker/src/pool-share-math.js';
+ * @import {USDCProposalShapes} from '@agoric/fast-usdc-contract/src/pool-share-math.js';
  */
 
 /**
