@@ -225,12 +225,20 @@ const walletProvisioning = test.macro({
 test.serial(walletProvisioning, 'wallet provisioning');
 
 const prometheusUrl = 'http://localhost:26660/metrics';
-const metricsToVerify = [
+const testMetricNames = [
   'store_size_decrease{storeKey="vstorage"}',
   'store_size_increase{storeKey="vstorage"}',
 ];
-const metricNameSet = new Set(metricsToVerify);
+const testMetricNamesSet = new Set(testMetricNames);
 
+/**
+ * getMetrics fetches the metrics from the Prometheus URL and returns the metrics
+ * as an object with metric names as keys and their values as values.
+ *
+ * @param {*} url             Prometheus URL
+ * @param {*} metricNames     Array of metric names to fetch
+ * @returns {Promise<Record<string, any>>}
+ */
 const getMetrics = async (url, metricNames) => {
   const metricsResponse = await fetch(url);
   if (!metricsResponse.ok) {
@@ -303,13 +311,13 @@ let startMetricNameSet;
  * @returns {Promise<void>}
  */
 const startCounterMetricVerifier = async t => {
-  startMetrics = await getMetrics(prometheusUrl, metricsToVerify);
+  startMetrics = await getMetrics(prometheusUrl, testMetricNames);
   startMetricNameSet = new Set(Object.keys(startMetrics));
   t.log('metric start values:', startMetrics);
 
-  if (!areSetsEqual(startMetricNameSet, metricNameSet)) {
+  if (!areSetsEqual(startMetricNameSet, testMetricNamesSet)) {
     t.fail(
-      `start metric name set must be the same as the verification metric name set. start set: ${startMetricNameSet}, expected set: ${metricNameSet}`,
+      `start metric name set must be the same as the verification metric name set. start set: ${startMetricNameSet}, expected set: ${testMetricNamesSet}`,
     );
     return;
   }
@@ -331,7 +339,7 @@ const startCounterMetricVerifier = async t => {
  * @returns {Promise<void>}
  */
 const stopCounterMetricVerifier = async t => {
-  const metrics = await getMetrics(prometheusUrl, metricsToVerify);
+  const metrics = await getMetrics(prometheusUrl, testMetricNames);
   const stopMetricNameSet = new Set(Object.keys(metrics));
   t.log('metric stop values:', metrics);
 
