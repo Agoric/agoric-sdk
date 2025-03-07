@@ -3,7 +3,7 @@ import { Far } from '@endo/pass-style';
 import { mustMatch } from '@endo/patterns';
 import { AmountMath } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { FeeConfigShape } from '@agoric/fast-usdc-worker/src/type-guards.js';
+import { FeeConfigShape } from '@agoric/fast-usdc-contract/src/type-guards.js';
 import {
   fromLegible,
   makeMarshalFromRecord,

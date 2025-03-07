@@ -6,7 +6,7 @@ import type { VTransferIBCEvent } from '@agoric/vats';
 import type {
   CctpTxEvidence,
   EvmAddress,
-} from '@agoric/fast-usdc-worker/src/types.js';
+} from '@agoric/fast-usdc-contract/src/types.js';
 
 const mockScenarios = [
   'AGORIC_PLUS_OSMO',

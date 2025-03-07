@@ -31,7 +31,7 @@ export const proposalBuilder = async ({ publishRef, install }, options) => {
         options,
         installKeys: {
           fastUsdc: publishRef(
-            install('@agoric/fast-usdc-worker/src/fast-usdc.contract.js'),
+            install('@agoric/fast-usdc-contract/src/fast-usdc.contract.js'),
           ),
         },
       },

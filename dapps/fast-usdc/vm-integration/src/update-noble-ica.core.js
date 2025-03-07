@@ -26,7 +26,7 @@ const makeRatio = (numerator, numeratorBrand, denominator = 100n) =>
  * @import {BundleID} from '@agoric/swingset-vat';
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js';
  * @import {FastUSDCCorePowers} from './start-fast-usdc.core.js';
- * @import {ContractRecord, FeeConfig, FeedPolicy} from '@agoric/fast-usdc-worker';
+ * @import {ContractRecord, FeeConfig, FeedPolicy} from '@agoric/fast-usdc-contract';
  */
 
 /**

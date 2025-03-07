@@ -4,7 +4,7 @@
   "type": "module",
   "workspaces": [
     "api",
-    "worker",
+    "contract",
     "vm-integration"
   ],
   "scripts": {

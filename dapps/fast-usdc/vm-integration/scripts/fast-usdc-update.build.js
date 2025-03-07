@@ -1,13 +1,13 @@
 import { parseArgs } from 'node:util';
 import { getManifestForUpdateFastUsdcPolicy } from '@agoric/fast-usdc-vm/src/fast-usdc-policy.core.js';
 import { toExternalConfig } from '@agoric/fast-usdc-vm/src/utils/config-marshal.js';
-import { FeedPolicyShape } from '@agoric/fast-usdc-worker/src/type-guards.js';
+import { FeedPolicyShape } from '@agoric/fast-usdc-contract/src/type-guards.js';
 import { makeHelpers } from '@agoric/deploy-script-support';
 
 /**
  * @import {CoreEvalBuilder, DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js'
  * @import {ParseArgsConfig} from 'node:util'
- * @import {FastUSDCConfig} from '@agoric/fast-usdc-worker';
+ * @import {FastUSDCConfig} from '@agoric/fast-usdc-contract';
  */
 
 /** @type {ParseArgsConfig['options']} */

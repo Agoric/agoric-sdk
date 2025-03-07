@@ -1,4 +1,4 @@
-/** @import {ChainPolicy} from '@agoric/fast-usdc-worker'; */
+/** @import {ChainPolicy} from '@agoric/fast-usdc-contract'; */
 
 /** ABI for DepositForBurn event in TokenMessenger contract */
 export const DepositForBurnEvent =

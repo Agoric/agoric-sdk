@@ -3,7 +3,7 @@ import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { ChainPolicies, DepositForBurnEvent } from './chain-policies.js';
 
 /**
- * @import {FastUSDCConfig} from '@agoric/fast-usdc-worker';
+ * @import {FastUSDCConfig} from '@agoric/fast-usdc-contract';
  * @import {Passable} from '@endo/marshal';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  */
