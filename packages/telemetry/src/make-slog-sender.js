@@ -1,6 +1,6 @@
 import path from 'path';
 import tmp from 'tmp';
-import { PromiseAllOrErrors } from '@agoric/internal';
+import { PromiseAllOrErrors, unprefixedProperties } from '@agoric/internal';
 import { serializeSlogObj } from './serialize-slog-obj.js';
 
 export const DEFAULT_SLOGSENDER_MODULE =
@@ -31,11 +31,7 @@ export const makeSlogSender = async (opts = {}) => {
 
   const agentEnv = {
     ...otherEnv,
-    ...Object.fromEntries(
-      Object.entries(otherEnv)
-        .filter(([k]) => k.match(/^(?:SLOGSENDER_AGENT_)+/)) // narrow to SLOGSENDER_AGENT_ prefixes.
-        .map(([k, v]) => [k.replace(/^(?:SLOGSENDER_AGENT_)+/, ''), v]), // Rewrite SLOGSENDER_AGENT_ to un-prefixed version.
-    ),
+    ...unprefixedProperties(otherEnv, 'SLOGSENDER_AGENT_'),
   };
 
   const slogSenderModules = [

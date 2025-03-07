@@ -193,3 +193,23 @@ export const makeMeasureSeconds = currentTimeMillisec => {
   };
   return measureSeconds;
 };
+
+/**
+ * Find all of an object's properties whose name starts with a prefix, and
+ * return a new object consisting of those properties without that prefix.
+ * Useful for filtering environment variables relevant to a particular purpose.
+ *
+ * @template {string} P
+ * @template {string} K
+ * @template V
+ * @param {Record<`${P}${K}`, V>} obj
+ * @param {P} prefix
+ */
+export const unprefixedProperties = (obj, prefix) =>
+  /** @type {Record<K, V>} */ (
+    fromTypedEntries(
+      typedEntries(obj)
+        .filter(([key]) => key.startsWith(prefix))
+        .map(([key, value]) => [key.slice(prefix.length), value]),
+    )
+  );
