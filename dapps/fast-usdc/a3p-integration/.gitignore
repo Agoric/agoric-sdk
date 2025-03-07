@@ -1,0 +1,22 @@
+# build in CI
+Dockerfile
+docker-bake.*
+upgrade-test-scripts
+*submission/
+
+# Yarn (https://yarnpkg.com/getting-started/qa#which-files-should-be-gitignored)
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+# same for each proposal, an independent project
+proposals/*/.pnp.*
+proposals/*/.yarn/*
+!proposals/*/.yarn/patches
+!proposals/*/.yarn/plugins
+!proposals/*/.yarn/releases
+!proposals/*/.yarn/sdks
+!proposals/*/.yarn/versions
