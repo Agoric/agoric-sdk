@@ -1,7 +1,9 @@
+import test from 'ava';
+import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
+
 import { AmountMath, makeIssuerKit, type Amount } from '@agoric/ertp';
 import { MockCctpTxEvidences } from '@agoric/fast-usdc/src/fixtures.js';
 import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { q } from '@endo/errors';
 import type { FeeConfig } from '../../src/types.js';

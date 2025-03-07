@@ -1,5 +1,6 @@
 // Must be first to set up globals
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import test from 'ava';
+import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
 
 import { MockCctpTxEvidences } from '@agoric/fast-usdc/src/fixtures.js';
 import { deeplyFulfilledObject } from '@agoric/internal';

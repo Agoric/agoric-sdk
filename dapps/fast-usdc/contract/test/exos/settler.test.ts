@@ -1,4 +1,7 @@
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import anyTest from 'ava';
+
+import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
+
 import type { TestFn } from 'ava';
 
 import {

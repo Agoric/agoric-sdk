@@ -1,4 +1,8 @@
 import test from 'ava';
+
+// XXX should not be managed per test
+import '@endo/init/debug.js';
+
 import { execa } from 'execa';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';

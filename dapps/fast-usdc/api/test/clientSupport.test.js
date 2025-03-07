@@ -1,4 +1,8 @@
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import test from 'ava';
+
+// XXX makeIssuerKit requires VatData
+import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
+
 import { makeIssuerKit } from '@agoric/ertp';
 import { Offers } from '../src/clientSupport.js';
 

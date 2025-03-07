@@ -1,4 +1,8 @@
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import test from 'ava';
+
+// XXX should not be managed per test
+import '@endo/init/debug.js';
+
 import { Far } from '@endo/pass-style';
 import { mustMatch } from '@endo/patterns';
 import { AmountMath } from '@agoric/ertp';

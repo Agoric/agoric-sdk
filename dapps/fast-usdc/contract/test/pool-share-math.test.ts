@@ -1,4 +1,6 @@
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import test from 'ava';
+import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
+
 import { testProp, fc } from '@fast-check/ava';
 import { AmountMath, makeIssuerKit, type Amount } from '@agoric/ertp';
 import {
