@@ -14,6 +14,8 @@ import { makeCollectionManager } from './collectionManager.js';
 import { makeWatchedPromiseManager } from './watchedPromises.js';
 import { makeBOYDKit } from './boyd-gc.js';
 
+/** @import {LimitedConsole} from '@agoric/internal/src/js-utils.js'; */
+
 const SYSCALL_CAPDATA_BODY_SIZE_LIMIT = 10_000_000;
 const SYSCALL_CAPDATA_SLOTS_LENGTH_LIMIT = 10_000;
 
@@ -32,7 +34,7 @@ const SYSCALL_CAPDATA_SLOTS_LENGTH_LIMIT = 10_000;
  * @param {import('./types.js').LiveSlotsOptions} liveSlotsOptions
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent, gcAndFinalize,
  *                      meterControl }
- * @param {Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>} console
+ * @param {LimitedConsole} console
  * @param {*} buildVatNamespace
  *
  * @returns {*} { dispatch }
@@ -1496,7 +1498,7 @@ function build(
  * @param {*} vatPowers
  * @param {import('./types.js').LiveSlotsOptions} liveSlotsOptions
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
- * @param {Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>} [liveSlotsConsole]
+ * @param {LimitedConsole} [liveSlotsConsole]
  * @param {*} [buildVatNamespace]
  *
  * @returns {*} { dispatch }

@@ -1,0 +1,52 @@
+/* global E */
+
+/// <reference types="@agoric/vats/src/core/core-eval-env"/>
+/// <reference types="@agoric/vats/src/core/types-ambient"/>
+
+/**
+ * The primary purpose of this script is to mint a payment of a certain
+ * bankAsset and deposit in an user wallet.
+ *
+ * The receiverAddress and label placeholders should be replaced with
+ * the desired address and asset name during the execution of each test case.
+ *
+ * See z:acceptance/mintHolder.test.js
+ *
+ * @param {BootstrapPowers} powers
+ */
+const sendBankAsset = async powers => {
+  const {
+    consume: { namesByAddress, contractKits: contractKitsP },
+  } = powers;
+
+  const receiverAddress = '{{ADDRESS}}';
+  const label = '{{LABEL}}';
+  const valueStr = '{{VALUE}}';
+  const value = BigInt(valueStr)
+
+  const contractKits = await contractKitsP;
+  const mintHolderKit = Array.from(contractKits.values()).filter(
+    kit => kit.label && kit.label === label,
+  );
+
+  const { creatorFacet: mint, publicFacet: issuer } = mintHolderKit[0];
+
+  /*
+   * Ensure that publicFacet holds an issuer by verifying that has
+   * the makeEmptyPurse method.
+   */
+  await E(issuer).makeEmptyPurse()
+
+  const brand = await E(issuer).getBrand();
+  const amount = harden({ value, brand });
+  const payment = await E(mint).mintPayment(amount);
+
+  const receiverDepositFacet = E(namesByAddress).lookup(
+    receiverAddress,
+    'depositFacet',
+  );
+
+  await E(receiverDepositFacet).receive(payment);
+};
+
+sendBankAsset;

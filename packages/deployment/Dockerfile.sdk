@@ -2,7 +2,7 @@
 
 ###########################
 # The golang build container
-FROM golang:1.20-bullseye as cosmos-go
+FROM golang:1.22-bullseye as cosmos-go
 
 WORKDIR /usr/src/agoric-sdk/golang/cosmos
 COPY golang/cosmos/go.mod golang/cosmos/go.sum ./

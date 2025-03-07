@@ -13,6 +13,10 @@ import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
 import { makeManualPriceAuthority } from '../../../tools/manualPriceAuthority.js';
 
+/**
+ * @import {FeeIssuerConfig, ZoeService} from '@agoric/zoe';
+ */
+
 // This contract still uses 'prepare', so this test covers that case.
 /**
  * @typedef {object} TestContext

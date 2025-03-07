@@ -113,10 +113,7 @@ func (k Keeper) ReceiveChanOpenInit(ctx sdk.Context, order channeltypes.Order, c
 func (k Keeper) ReceiveSendPacket(ctx sdk.Context, packet ibcexported.PacketI) (uint64, error) {
 	sourcePort := packet.GetSourcePort()
 	sourceChannel := packet.GetSourceChannel()
-	timeoutHeight := packet.GetTimeoutHeight()
-	timeoutRevisionNumber := timeoutHeight.GetRevisionNumber()
-	timeoutRevisionHeight := timeoutHeight.GetRevisionHeight()
-	clientTimeoutHeight := clienttypes.NewHeight(timeoutRevisionNumber, timeoutRevisionHeight)
+	timeoutHeight := clienttypes.MustParseHeight(packet.GetTimeoutHeight().String())
 	timeoutTimestamp := packet.GetTimeoutTimestamp()
 	data := packet.GetData()
 
@@ -125,7 +122,7 @@ func (k Keeper) ReceiveSendPacket(ctx sdk.Context, packet ibcexported.PacketI) (
 	if !ok {
 		return 0, sdkioerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 	}
-	return k.SendPacket(ctx, chanCap, sourcePort, sourceChannel, clientTimeoutHeight, timeoutTimestamp, data)
+	return k.SendPacket(ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
 }
 
 // SendPacket defines a wrapper function for the channel Keeper's function

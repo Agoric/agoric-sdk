@@ -16,6 +16,7 @@ import { initSwingStore } from '@agoric/swing-store';
 import { mustMatch, M } from '@endo/patterns';
 import { checkBundle } from '@endo/check-bundle/lite.js';
 import { deepCopyJsonable } from '@agoric/internal/src/js-utils.js';
+import { makeLimitedConsole } from '@agoric/internal/src/ses-utils.js';
 import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
 import { startSubprocessWorker } from '@agoric/internal/src/lib-nodejs/spawnSubprocessWorker.js';
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
@@ -36,6 +37,10 @@ import { makeStartXSnap } from './startXSnap.js';
 import { makeStartSubprocessWorkerNode } from './startNodeSubprocess.js';
 
 /**
+ * @import {EReturn} from '@endo/far';
+ */
+
+/**
  * @typedef { import('../types-internal.js').VatID } VatID
  */
 
@@ -52,34 +57,32 @@ export function computeSha512(bytes) {
   return hash.digest().toString('hex');
 }
 
-/** @param {string | ((args: unknown[]) => string)} tagOrTagCreator */
-function makeConsole(tagOrTagCreator) {
-  /** @type {(level: string) => (args: unknown[]) => void} */
-  let makeLoggerForLevel;
-  if (typeof tagOrTagCreator === 'function') {
-    const tagToLogger = new Map();
-    makeLoggerForLevel =
-      level =>
-      (...args) => {
-        // Retrieve the logger from cache.
-        const tag = tagOrTagCreator(args);
-        let logger = tagToLogger.get(tag);
-        if (!logger) {
-          logger = anylogger(tag);
-          tagToLogger.set(tag, logger);
-        }
-        // Actually log the message.
-        return logger[level](...args);
-      };
-  } else {
-    const logger = anylogger(tagOrTagCreator);
-    makeLoggerForLevel = level => logger[level];
+/**
+ * Make logger functions from either a prefix string or a function that receives
+ * the first argument of a log-method invocation and returns a replacement that
+ * provides more detail for source identification.
+ *
+ * @param {string | ((originalSource: unknown) => string)} prefixer
+ */
+function makeConsole(prefixer) {
+  if (typeof prefixer !== 'function') {
+    const logger = anylogger(prefixer);
+    return makeLimitedConsole(level => logger[level]);
   }
-  const cons = {};
-  for (const level of ['debug', 'log', 'info', 'warn', 'error']) {
-    cons[level] = makeLoggerForLevel(level);
-  }
-  return harden(cons);
+
+  const prefixToLogger = new Map();
+  return makeLimitedConsole(level => {
+    return (source, ...args) => {
+      const prefix = prefixer(source);
+      let logger = prefixToLogger.get(prefix);
+      if (!logger) {
+        logger = anylogger(prefix);
+        prefixToLogger.set(prefix, logger);
+      }
+
+      return logger[level](...args);
+    };
+  });
 }
 
 /**
@@ -209,17 +212,23 @@ export async function makeSwingsetController(
     process.on('unhandledRejection', unhandledRejectionHandler);
   }
 
-  function kernelRequire(what) {
-    Fail`kernelRequire unprepared to satisfy require(${what})`;
-  }
+  const kernelConsole = makeConsole(`${debugPrefix}SwingSet:kernel`);
+  const sloggingKernelConsole = makeLimitedConsole(level => {
+    return (...args) => {
+      kernelConsole[level](...args);
+      writeSlogObject({ type: 'console', source: 'kernel', level, args });
+    };
+  });
   writeSlogObject({ type: 'import-kernel-start' });
   const kernelNS = await importBundle(kernelBundle, {
     filePrefix: 'kernel/...',
     endowments: {
-      console: makeConsole(`${debugPrefix}SwingSet:kernel`),
+      console: sloggingKernelConsole,
       // See https://github.com/Agoric/agoric-sdk/issues/9515
       assert: globalThis.assert,
-      require: kernelRequire,
+      require: harden(
+        what => Fail`kernelRequire unprepared to satisfy require(${what})`,
+      ),
       URL: globalThis.Base64, // Unavailable only on XSnap
       Base64: globalThis.Base64, // Available only on XSnap
     },
@@ -477,7 +486,7 @@ export async function makeSwingsetController(
      *
      * The first `controller.run()` after this call will delete all
      * the old vat's state at once, unless you use a
-     * [`runPolicy`](../docs/run-policy.md) to rate-limit cleanups.
+     * [`runPolicy`](../../docs/run-policy.md) to rate-limit cleanups.
      *
      * @param {VatID} vatID
      * @param {SwingSetCapData} reasonCD
@@ -494,7 +503,7 @@ export async function makeSwingsetController(
 
   return controller;
 }
-/** @typedef {Awaited<ReturnType<typeof makeSwingsetController>>} SwingsetController */
+/** @typedef {EReturn<typeof makeSwingsetController>} SwingsetController */
 
 /**
  * NB: To be used only in tests. An app with this may not survive a reboot.

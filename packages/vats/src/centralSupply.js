@@ -2,6 +2,11 @@ import { AmountMath } from '@agoric/ertp';
 import { E, Far } from '@endo/far';
 
 /**
+ * @import {FeeMintAccess, Invitation, OfferHandler, TransferPart, ZCF, ZCFMint, ZCFSeat} from '@agoric/zoe';
+ * @import {ContractOf} from '@agoric/zoe/src/zoeService/utils.js';
+ */
+
+/**
  * The sole purpose of this contract is to mint the initial supply of the
  * central currency, RUN.
  *

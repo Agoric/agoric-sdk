@@ -12,11 +12,8 @@ import (
 )
 
 func reifyPacket(packet ibcexported.PacketI) channeltypes.Packet {
-	height := packet.GetTimeoutHeight()
-	ctHeight := clienttypes.Height{
-		RevisionHeight: height.GetRevisionHeight(),
-		RevisionNumber: height.GetRevisionNumber(),
-	}
+
+	timeoutHeight := clienttypes.MustParseHeight(packet.GetTimeoutHeight().String())
 	return channeltypes.Packet{
 		Sequence:           packet.GetSequence(),
 		SourcePort:         packet.GetSourcePort(),
@@ -24,7 +21,7 @@ func reifyPacket(packet ibcexported.PacketI) channeltypes.Packet {
 		DestinationPort:    packet.GetDestPort(),
 		DestinationChannel: packet.GetDestChannel(),
 		Data:               packet.GetData(),
-		TimeoutHeight:      ctHeight,
+		TimeoutHeight:      timeoutHeight,
 		TimeoutTimestamp:   packet.GetTimeoutTimestamp(),
 	}
 }

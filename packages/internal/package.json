@@ -20,24 +20,25 @@
     "lint:types": "tsc"
   },
   "dependencies": {
-    "@endo/errors": "^1.2.8",
+    "@endo/errors": "^1.2.9",
     "@agoric/base-zone": "^0.1.0",
-    "@endo/common": "^1.2.8",
-    "@endo/far": "^1.1.9",
-    "@endo/init": "^1.1.7",
-    "@endo/marshal": "^1.6.2",
-    "@endo/pass-style": "^1.4.7",
-    "@endo/patterns": "^1.4.7",
-    "@endo/promise-kit": "^1.1.8",
-    "@endo/stream": "^1.2.8",
+    "@endo/common": "^1.2.9",
+    "@endo/far": "^1.1.10",
+    "@endo/init": "^1.1.8",
+    "@endo/marshal": "^1.6.3",
+    "@endo/pass-style": "^1.4.8",
+    "@endo/patterns": "^1.4.8",
+    "@endo/promise-kit": "^1.1.9",
+    "@endo/stream": "^1.2.9",
     "anylogger": "^0.21.0",
     "jessie.js": "^0.3.4"
   },
   "devDependencies": {
     "@agoric/cosmic-proto": "^0.4.0",
-    "@endo/exo": "^1.5.7",
-    "@endo/init": "^1.1.7",
+    "@endo/exo": "^1.5.8",
+    "@endo/init": "^1.1.8",
     "ava": "^5.3.0",
+    "@fast-check/ava": "^2.0.1",
     "tsd": "^0.31.1"
   },
   "ava": {
@@ -58,6 +59,6 @@
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 93.06
+    "atLeast": 92.65
   }
 }

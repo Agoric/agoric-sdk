@@ -11,9 +11,13 @@ import {
   UnwrappedInstallationShape,
 } from '../typeGuards.js';
 
-/** @typedef { import('@agoric/swingset-vat').BundleCap} BundleCap */
-/** @typedef { import('@agoric/swingset-vat').BundleID} BundleID */
-/** @import {Baggage} from '@agoric/vat-data' */
+/**
+ * @import {Baggage} from '@agoric/swingset-liveslots';
+ * @import {LegacyWeakMap, WeakMapStore} from '@agoric/store';
+ * @import {MapStore} from '@agoric/swingset-liveslots';
+ * @import {BundleID, BundleCap} from '@agoric/swingset-vat';
+ * @import {SourceBundle} from '@agoric/zoe';
+ */
 
 /**
  * @param {GetBundleCapForID} getBundleCapForID

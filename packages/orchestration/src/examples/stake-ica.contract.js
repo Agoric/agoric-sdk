@@ -17,6 +17,7 @@ const trace = makeTracer('StakeIca');
 /**
  * @import {Baggage} from '@agoric/vat-data';
  * @import {Remote} from '@agoric/internal';
+ * @import {ContractMeta, Invitation, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {IBCConnectionID, NameHub} from '@agoric/vats';
  * @import {TimerService} from '@agoric/time';
  * @import {ResolvedContinuingOfferResult} from '../utils/zoe-tools.js';

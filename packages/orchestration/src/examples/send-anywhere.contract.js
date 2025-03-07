@@ -9,7 +9,7 @@ import * as flows from './send-anywhere.flows.js';
 import * as sharedFlows from './shared.flows.js';
 
 /**
- * @import {Vow} from '@agoric/vow';
+ * @import {Remote, Vow} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
@@ -28,9 +28,10 @@ harden(SingleNatAmountRecord);
  *
  * @param {ZCF} zcf
  * @param {OrchestrationPowers & {
- *   marshaller: Marshaller;
- *   chainInfo?: Record<string, CosmosChainInfo>;
  *   assetInfo?: [Denom, DenomDetail & { brandKey?: string }][];
+ *   chainInfo?: Record<string, CosmosChainInfo>;
+ *   marshaller: Marshaller;
+ *   storageNode: Remote<StorageNode>;
  * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
@@ -97,5 +98,5 @@ export const contract = async (
 };
 harden(contract);
 
-export const start = withOrchestration(contract);
+export const start = withOrchestration(contract, { publishAccountInfo: true });
 harden(start);

@@ -1,5 +1,7 @@
 /** @file Rollup of all type definitions in the package, for local import and external export */
 
+import type { ZCF } from '@agoric/zoe';
+
 export type * from './chain-info.js';
 export type * from './cosmos-api.js';
 export type * from './ethereum-api.js';

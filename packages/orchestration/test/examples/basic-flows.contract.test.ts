@@ -2,7 +2,7 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
-import { E, getInterfaceOf } from '@endo/far';
+import { E, getInterfaceOf, type EReturn } from '@endo/far';
 import path from 'path';
 import { makeIssuerKit } from '@agoric/ertp';
 import {
@@ -18,10 +18,10 @@ const contractFile = `${dirname}/../../src/examples/${contractName}.contract.js`
 type StartFn =
   typeof import('../../src/examples/basic-flows.contract.js').start;
 
-type TestContext = Awaited<ReturnType<typeof commonSetup>> & {
+type TestContext = EReturn<typeof commonSetup> & {
   zoe: ZoeService;
   instance: Instance<StartFn>;
-  brands: Awaited<ReturnType<typeof commonSetup>>['brands'] & {
+  brands: EReturn<typeof commonSetup>['brands'] & {
     moolah: AmountUtils;
   };
 };

@@ -1,13 +1,5 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import type { TestFn } from 'ava';
-import { heapVowE as E } from '@agoric/vow/vat.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import type { IBCMethod } from '@agoric/vats';
-import {
-  MsgTransfer,
-  MsgTransferResponse,
-} from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
-import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
+
 import {
   QueryAllBalancesRequest,
   QueryAllBalancesResponse,
@@ -20,38 +12,49 @@ import {
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
 import { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
 import {
-  QueryDelegationRequest,
-  QueryDelegatorDelegationsRequest,
-  QueryUnbondingDelegationRequest,
-  QueryDelegatorUnbondingDelegationsRequest,
-  QueryRedelegationsRequest,
-  QueryDelegationResponse,
-  QueryDelegatorDelegationsResponse,
-  QueryUnbondingDelegationResponse,
-  QueryDelegatorUnbondingDelegationsResponse,
-  QueryRedelegationsResponse,
-} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
-import {
   QueryDelegationRewardsRequest,
-  QueryDelegationTotalRewardsRequest,
   QueryDelegationRewardsResponse,
+  QueryDelegationTotalRewardsRequest,
   QueryDelegationTotalRewardsResponse,
 } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/query.js';
-import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
+import {
+  QueryDelegationRequest,
+  QueryDelegationResponse,
+  QueryDelegatorDelegationsRequest,
+  QueryDelegatorDelegationsResponse,
+  QueryDelegatorUnbondingDelegationsRequest,
+  QueryDelegatorUnbondingDelegationsResponse,
+  QueryRedelegationsRequest,
+  QueryRedelegationsResponse,
+  QueryUnbondingDelegationRequest,
+  QueryUnbondingDelegationResponse,
+} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
 import {
   MsgDelegate,
   MsgDelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
-import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
+import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
+import {
+  MsgTransfer,
+  MsgTransferResponse,
+} from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import { makeIssuerKit } from '@agoric/ertp';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import type { IBCMethod } from '@agoric/vats';
+import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
+import { heapVowE as E } from '@agoric/vow/vat.js';
+import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { decodeBase64 } from '@endo/base64';
-import { commonSetup } from '../supports.js';
+import type { EReturn } from '@endo/far';
+import type { TestFn } from 'ava';
+import type { CosmosValidatorAddress } from '../../src/cosmos-api.js';
+import fetchedChainInfo from '../../src/fetched-chain-info.js';
 import type {
   AmountArg,
-  ChainAddress,
+  CosmosChainAddress,
   Denom,
 } from '../../src/orchestration-api.js';
-import { prepareMakeTestCOAKit } from './make-test-coa-kit.js';
+import { assetOn } from '../../src/utils/asset.js';
 import {
   buildMsgResponseString,
   buildQueryPacketString,
@@ -59,12 +62,11 @@ import {
   buildTxPacketString,
   parseOutgoingTxPacket,
 } from '../../tools/ibc-mocks.js';
-import type { CosmosValidatorAddress } from '../../src/cosmos-api.js';
 import { protoMsgMocks } from '../ibc-mocks.js';
-import fetchedChainInfo from '../../src/fetched-chain-info.js';
-import { assetOn } from '../../src/utils/asset.js';
+import { commonSetup } from '../supports.js';
+import { prepareMakeTestCOAKit } from './make-test-coa-kit.js';
 
-type TestContext = Awaited<ReturnType<typeof commonSetup>>;
+type TestContext = EReturn<typeof commonSetup>;
 
 const test = anyTest as TestFn<TestContext>;
 
@@ -91,7 +93,7 @@ test('send (to addr on same chain)', async t => {
   const account = await makeTestCOAKit();
   t.assert(account, 'account is returned');
 
-  const toAddress: ChainAddress = {
+  const toAddress: CosmosChainAddress = {
     value: 'cosmos99test',
     chainId: 'cosmoshub-4',
     encoding: 'bech32',
@@ -280,7 +282,7 @@ test('transfer', async t => {
   const account = await makeTestCOAKit();
 
   t.log('Send tokens from cosmoshub to noble');
-  const mockDestination: ChainAddress = {
+  const mockDestination: CosmosChainAddress = {
     value: 'noble1test',
     chainId: 'noble-1',
     encoding: 'bech32',
@@ -427,7 +429,7 @@ test('getBalance and getBalances', async t => {
 
   const buildMocks = () => {
     const makeBalanceReq = (
-      address: ChainAddress['value'] = 'osmo1test',
+      address: CosmosChainAddress['value'] = 'osmo1test',
       denom: Denom = 'uosmo',
     ) =>
       buildQueryPacketString([
@@ -436,7 +438,9 @@ test('getBalance and getBalances', async t => {
           denom,
         }),
       ]);
-    const makeAllBalanceReq = (address: ChainAddress['value'] = 'osmo1test') =>
+    const makeAllBalanceReq = (
+      address: CosmosChainAddress['value'] = 'osmo1test',
+    ) =>
       buildQueryPacketString([
         QueryAllBalancesRequest.toProtoMsg({
           address,

@@ -1,7 +1,7 @@
 import type { IBCChannelID } from '@agoric/vats';
 import type { ExecSync } from './agd-lib.js';
-import type { ChainAddress } from '@agoric/orchestration';
-import type { NobleAddress } from '@agoric/fast-usdc/src/types.js';
+import type { CosmosChainAddress } from '@agoric/orchestration';
+import type { NobleAddress } from '@agoric/fast-usdc';
 
 const kubectlBinary = 'kubectl';
 const noblePod = 'noblelocal-genesis-0';
@@ -26,7 +26,8 @@ export const makeNobleTools = (
   }: {
     execFileSync: ExecSync;
   },
-  log: (...args: unknown[]) => void = console.log,
+  log: (...args: unknown[]) => void = (...args) =>
+    console.log('NobleTools', ...args),
 ) => {
   const exec = (
     args: string[],
@@ -35,7 +36,7 @@ export const makeNobleTools = (
 
   const registerForwardingAcct = (
     channelId: IBCChannelID,
-    address: ChainAddress['value'],
+    address: CosmosChainAddress['value'],
   ): { txhash: string; code: number; data: string; height: string } => {
     log('creating forwarding address', address, channelId);
     return JSON.parse(
@@ -53,7 +54,10 @@ export const makeNobleTools = (
     );
   };
 
-  const mockCctpMint = (amount: bigint, destination: ChainAddress['value']) => {
+  const mockCctpMint = (
+    amount: bigint,
+    destination: CosmosChainAddress['value'],
+  ) => {
     const denomAmount = `${Number(amount)}uusdc`;
     log('mock cctp mint', destination, denomAmount);
     return JSON.parse(
@@ -74,7 +78,7 @@ export const makeNobleTools = (
 
   const queryForwardingAddress = (
     channelId: IBCChannelID,
-    address: ChainAddress['value'],
+    address: CosmosChainAddress['value'],
   ): { address: NobleAddress; exists: boolean } => {
     log('querying forwarding address', address, channelId);
     return JSON.parse(

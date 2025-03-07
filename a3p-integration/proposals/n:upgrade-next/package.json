@@ -6,18 +6,25 @@
     "upgradeInfo": {
       "coreProposals": []
     },
+    "type": "Software Upgrade Proposal",
     "sdk-generate": [
-      "testing/test-upgraded-board.js testUpgradedBoard"
-    ],
-    "type": "Software Upgrade Proposal"
+      "testing/add-USD-LEMONS.js test/generated/addUsdLemons",
+      "testing/add-USD-OLIVES.js test/generated/agoricNamesCoreEvals/addUsdOlives",
+      "testing/publish-test-info.js test/generated/agoricNamesCoreEvals/publishTestInfo"
+    ]
   },
   "type": "module",
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/client-utils": "dev",
-    "@agoric/synthetic-chain": "^0.4.3",
-    "@endo/init": "^1.1.6",
-    "@endo/marshal": "^1.6.1",
+    "@agoric/ertp": "dev",
+    "@agoric/internal": "dev",
+    "@agoric/synthetic-chain": "^0.5.2",
+    "@agoric/zoe": "dev",
+    "@endo/errors": "^1.2.9",
+    "@endo/init": "^1.1.8",
+    "@endo/marshal": "^1.6.3",
+    "agoric": "dev",
     "ava": "^5.3.1",
     "better-sqlite3": "^9.6.0",
     "execa": "9.1.0"
@@ -32,14 +39,14 @@
   "scripts": {
     "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops"
   },
-  "packageManager": "yarn@4.5.3",
+  "packageManager": "yarn@4.6.0",
   "devDependencies": {
     "eslint": "^8.57.0",
     "npm-run-all": "^4.1.5",
     "typescript": "^5.6.3"
   },
   "resolutions": {
-    "axios@npm:^1.6.0": "patch:axios@npm%3A1.7.7#~/.yarn/patches/axios-npm-1.7.7-cfbedc233d.patch",
-    "protobufjs@npm:^6.8.8": "patch:protobufjs@npm%3A6.11.4#~/.yarn/patches/protobufjs-npm-6.11.4-af11968b80.patch"
+    "protobufjs@npm:^6.8.8": "patch:protobufjs@npm%3A6.11.4#~/.yarn/patches/protobufjs-npm-6.11.4-af11968b80.patch",
+    "axios@npm:^1.6.0": "patch:axios@npm%3A1.7.7#~/.yarn/patches/axios-npm-1.7.7-cfbedc233d.patch"
   }
 }

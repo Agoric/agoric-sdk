@@ -19,6 +19,7 @@ packages/stat-logger
 **/__pycache__
 **/*.egg-info
 **/swingset-kernel-state
+**/.cache
 **/_agstate
 .vagrant
 endo-sha.txt

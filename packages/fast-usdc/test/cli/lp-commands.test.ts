@@ -1,10 +1,11 @@
+import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import type { EReturn } from '@endo/far';
 import { Far, makeMarshal } from '@endo/marshal';
 import anyTest, { type TestFn } from 'ava';
 import { Command } from 'commander';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { addLPCommands } from '../../src/cli/lp-commands.js';
 import { flags } from '../../tools/cli-tools.js';
 import { mockStream } from '../../tools/mock-io.js';
-import { addLPCommands } from '../../src/cli/lp-commands.js';
 
 const makeTestContext = () => {
   const program = new Command();
@@ -54,7 +55,7 @@ const makeTestContext = () => {
   return { program, marshaller, out, err, USDC, FastLP, now };
 };
 
-const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
+const test = anyTest as TestFn<EReturn<typeof makeTestContext>>;
 test.beforeEach(async t => (t.context = await makeTestContext()));
 
 test('fast-usdc deposit command', async t => {
@@ -72,7 +73,7 @@ test('fast-usdc deposit command', async t => {
       invitationSpec: {
         source: 'agoricContract',
         instancePath: ['fastUsdc'],
-        callPipe: [['makeDepositInvitation', []]],
+        callPipe: [['makeDepositInvitation']],
       },
       proposal: {
         give: {
@@ -106,7 +107,7 @@ test('fast-usdc withdraw command', async t => {
       invitationSpec: {
         source: 'agoricContract',
         instancePath: ['fastUsdc'],
-        callPipe: [['makeWithdrawInvitation', []]],
+        callPipe: [['makeWithdrawInvitation']],
       },
       proposal: {
         give: {

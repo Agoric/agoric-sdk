@@ -4,6 +4,7 @@ import { TimeMath } from '@agoric/time';
 /**
  * @import {RelativeTimeRecord, TimerBrand, TimerService} from '@agoric/time';
  * @import {Remote} from '@agoric/internal';
+ * @import {EReturn} from '@endo/far';
  */
 
 export const SECONDS_PER_MINUTE = 60n;
@@ -45,4 +46,4 @@ export function makeTimestampHelper(timer) {
   });
 }
 
-/** @typedef {Awaited<ReturnType<typeof makeTimestampHelper>>} TimestampHelper */
+/** @typedef {EReturn<typeof makeTimestampHelper>} TimestampHelper */

@@ -19,10 +19,11 @@ import {
   InstanceAdminShape,
 } from '../typeGuards.js';
 
-// import '../internal-types.js';
-
-/** @import {Baggage} from '@agoric/vat-data' */
-/** @typedef { import('@agoric/swingset-vat').BundleCap} BundleCap */
+/**
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {LegacyWeakMap, WeakMapStore} from '@agoric/store';
+ * @import {BundleCap, EndoZipBase64Bundle} from '@agoric/swingset-vat';
+ */
 
 /**
  * @param {Pick<ZoeStorageManager, 'makeZoeInstanceStorageManager' | 'unwrapInstallation'>} startInstanceAccess

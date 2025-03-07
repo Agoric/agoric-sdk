@@ -2,6 +2,11 @@
 /// <reference types="@agoric/ertp/exported" />
 
 /**
+ * @import {Allocation, AnyTerms, BrandKeywordRecord, Completion, ContractStartFn, InvitationHandle, PaymentPKeywordRecord, UserSeat, ZoeIssuerRecord} from '@agoric/zoe';
+ * @import {Pattern} from '@endo/patterns';
+ */
+
+/**
  * @typedef {object} SeatData
  * @property {ProposalRecord} proposal
  * @property {Allocation} initialAllocation
@@ -128,7 +133,7 @@
  * @property {ZoeInstanceAdminMakeInvitation} makeInvitation
  * @property {<I extends Issuer>(issuerP: ERef<I>,
  *             keyword: Keyword
- *            ) => Promise<I extends Issuer<infer K, infer M> ? IssuerRecord<K, M> : never>} saveIssuer
+ *            ) => Promise<I extends Issuer<infer K, infer M> ? ZoeIssuerRecord<K, M> : never>} saveIssuer
  * @property {MakeZoeMint} makeZoeMint
  * @property {RegisterFeeMint} registerFeeMint
  * @property {MakeNoEscrowSeat} makeNoEscrowSeat
@@ -191,7 +196,7 @@
 /**
  * @template {AssetKind} [K=AssetKind]
  * @typedef {object} ZoeMint
- * @property {() => IssuerRecord<K>} getIssuerRecord
+ * @property {() => import('@agoric/ertp').IssuerRecord<K>} getIssuerRecord
  * @property {(totalToMint: Amount<K>) => void} mintAndEscrow
  * @property {(totalToBurn: Amount<K>) => void} withdrawAndBurn
  * Note that the burning is asynchronous, and so may not have happened by
@@ -256,7 +261,7 @@
  */
 
 /**
- * @typedef {Array<IssuerRecord>} IssuerRecords
+ * @typedef {Array<ZoeIssuerRecord>} IssuerRecords
  */
 
 /**
@@ -276,7 +281,6 @@
 /**
  * @typedef {object} ZcfSeatManager
  * @property {MakeZCFSeat} makeZCFSeat
- * @property {Reallocate} reallocate
  * @property {DropAllReferences} dropAllReferences
  */
 
@@ -292,7 +296,7 @@
  * contract instance
  *
  * @param {Keyword} keyword
- * @param {IssuerRecord} issuerRecord
+ * @param {ZoeIssuerRecord} issuerRecord
  * @returns {void}
  */
 

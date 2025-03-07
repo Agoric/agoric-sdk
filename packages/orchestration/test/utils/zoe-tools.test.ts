@@ -9,7 +9,7 @@ import {
   withAmountUtils,
 } from '@agoric/zoe/tools/test-utils.js';
 import type { Issuer } from '@agoric/ertp/src/types.js';
-import { E } from '@endo/far';
+import { E, type EReturn } from '@endo/far';
 import {
   LOCALCHAIN_DEFAULT_ADDRESS,
   SIMULATED_ERRORS,
@@ -22,8 +22,8 @@ const contractName = 'zoeTools';
 const contractFile = `${dirname}/../../test/fixtures/zoe-tools.contract.js`;
 type StartFn = typeof import('../../test/fixtures/zoe-tools.contract.js').start;
 
-type TestContext = Awaited<ReturnType<typeof commonSetup>> & {
-  brands: Awaited<ReturnType<typeof commonSetup>>['brands'] & {
+type TestContext = EReturn<typeof commonSetup> & {
+  brands: EReturn<typeof commonSetup>['brands'] & {
     moolah: AmountUtils;
   };
   zoe: ZoeService;

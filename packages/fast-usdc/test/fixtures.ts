@@ -1,7 +1,7 @@
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
-import type { ChainAddress } from '@agoric/orchestration';
+import type { CosmosChainAddress } from '@agoric/orchestration';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { CctpTxEvidence, EvmAddress } from '../src/types.js';
 
@@ -19,6 +19,8 @@ export const Senders = {
   default: '0xDefaultFakeEthereumAddress',
 } as unknown as Record<string, EvmAddress>;
 
+const blockTimestamp = 1632340000n;
+
 export const MockCctpTxEvidences: Record<
   MockScenario,
   (receiverAddress?: string) => CctpTxEvidence
@@ -27,6 +29,7 @@ export const MockCctpTxEvidences: Record<
     blockHash:
       '0x90d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee665',
     blockNumber: 21037663n,
+    blockTimestamp,
     txHash:
       '0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761702',
     tx: {
@@ -48,6 +51,7 @@ export const MockCctpTxEvidences: Record<
     blockHash:
       '0x80d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee699',
     blockNumber: 21037669n,
+    blockTimestamp,
     txHash:
       '0xd81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761799',
     tx: {
@@ -69,6 +73,7 @@ export const MockCctpTxEvidences: Record<
     blockHash:
       '0x80d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee6z9',
     blockNumber: 21037600n,
+    blockTimestamp,
     txHash:
       '0xd81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff3875527617z9',
     tx: {
@@ -90,6 +95,7 @@ export const MockCctpTxEvidences: Record<
     blockHash:
       '0x70d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee699',
     blockNumber: 21037669n,
+    blockTimestamp,
     txHash:
       '0xa81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761799',
     tx: {
@@ -107,6 +113,7 @@ export const MockCctpTxEvidences: Record<
     blockHash:
       '0x70d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee699',
     blockNumber: 21037669n,
+    blockTimestamp,
     txHash:
       '0xa81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761799',
     tx: {
@@ -187,13 +194,13 @@ export const MockVTransferEvents: Record<
     }),
 };
 
-export const intermediateRecipient: ChainAddress = harden({
+export const intermediateRecipient: CosmosChainAddress = harden({
   chainId: 'noble-1',
   value: 'noble1test',
   encoding: 'bech32',
 });
 
-export const settlementAddress: ChainAddress = harden({
+export const settlementAddress: CosmosChainAddress = harden({
   chainId: 'agoric-3',
   encoding: 'bech32' as const,
   // Random value, copied from tests of address hooks

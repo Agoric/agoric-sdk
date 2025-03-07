@@ -34,12 +34,12 @@
     "@agoric/vats": "^0.15.1",
     "@cosmjs/stargate": "^0.32.3",
     "@cosmjs/tendermint-rpc": "^0.32.3",
-    "@endo/common": "^1.2.8",
-    "@endo/errors": "^1.2.8",
-    "@endo/marshal": "^1.6.2",
-    "@endo/pass-style": "^1.4.7",
-    "@endo/patterns": "^1.4.7",
-    "@endo/promise-kit": "^1.1.8"
+    "@endo/common": "^1.2.9",
+    "@endo/errors": "^1.2.9",
+    "@endo/marshal": "^1.6.3",
+    "@endo/pass-style": "^1.4.8",
+    "@endo/patterns": "^1.4.8",
+    "@endo/promise-kit": "^1.1.9"
   },
   "ava": {
     "extensions": {

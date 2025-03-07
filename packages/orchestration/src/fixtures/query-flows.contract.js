@@ -7,6 +7,7 @@ import { withOrchestration } from '../utils/start-helper.js';
 import * as flows from './query-flows.flows.js';
 
 /**
+ * @import {ZCF} from '@agoric/zoe';
  * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationPowers} from '..//utils/start-helper.js';
  * @import {OrchestrationTools} from '../utils/start-helper.js';
@@ -64,7 +65,7 @@ const contract = async (zcf, _privateArgs, zone, { orchestrateAll }) => {
   return { publicFacet };
 };
 
-export const start = withOrchestration(contract);
+export const start = withOrchestration(contract, { publishAccountInfo: true });
 harden(start);
 
 /** @typedef {typeof start} QueryFlowsSF */

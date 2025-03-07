@@ -229,11 +229,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       timer,
       localchain,
       cosmosInterchainService,
-      // TODO remove; bootstrap doesn't have a zone
-      rootZone: rootZone.subZone('contract'),
       storage,
-      // TODO remove; bootstrap doesn't have vowTools
-      vowTools,
     },
     brands: {
       usdc: usdcSansMint,
@@ -263,11 +259,13 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       timerService: timer,
     },
     utils: {
+      contractZone: rootZone.subZone('contract'),
       pourPayment,
       inspectLocalBridge: () => harden([...localBridgeMessages]),
       inspectDibcBridge: () => E(ibcBridge).inspectDibcBridge(),
       inspectBankBridge: () => harden([...bankBridgeMessages]),
       transmitTransferAck,
+      vowTools,
     },
   };
 };

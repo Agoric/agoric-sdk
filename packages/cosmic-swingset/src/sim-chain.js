@@ -9,14 +9,13 @@ import {
 
 import anylogger from 'anylogger';
 
-import { makeSlogSender } from '@agoric/telemetry';
+import { getTelemetryProviders, makeSlogSender } from '@agoric/telemetry';
 
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import { makeBatchedDeliver } from '@agoric/internal/src/batched-deliver.js';
 import stringify from './helpers/json-stable-stringify.js';
 import { launch } from './launch-chain.js';
-import { getTelemetryProviders } from './kernel-stats.js';
 import { DEFAULT_SIM_SWINGSET_PARAMS, QueueInbound } from './sim-params.js';
 import { parseQueueSizes } from './params.js';
 import { makeKVStoreFromMap } from './helpers/bufferedStorage.js';
@@ -84,7 +83,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   };
 
   const getVatConfig = async () => {
-    const href = await importMetaResolve(
+    const href = importMetaResolve(
       env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
         argv.bootMsg.params.bootstrap_vat_config,
       import.meta.url,

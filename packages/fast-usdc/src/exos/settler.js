@@ -1,11 +1,12 @@
 import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
-import { ChainAddressShape } from '@agoric/orchestration';
+import { CosmosChainAddressShape } from '@agoric/orchestration';
 import { atob } from '@endo/base64';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
+import { fromOnly } from '@agoric/zoe/src/contractSupport/index.js';
 import { PendingTxStatus } from '../constants.js';
 import { makeFeeTools } from '../utils/fees.js';
 import {
@@ -13,19 +14,67 @@ import {
   EvmHashShape,
   makeNatAmountShape,
 } from '../type-guards.js';
+import { asMultiset } from '../utils/store.js';
 
 /**
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
  * @import {Amount, Brand, NatValue, Payment} from '@agoric/ertp';
- * @import {Denom, OrchestrationAccount, ChainHub, ChainAddress} from '@agoric/orchestration';
+ * @import {AccountId, Denom, OrchestrationAccount, ChainHub, CosmosChainAddress} from '@agoric/orchestration';
  * @import {WithdrawToSeat} from '@agoric/orchestration/src/utils/zoe-tools'
- * @import {IBCChannelID, VTransferIBCEvent} from '@agoric/vats';
+ * @import {IBCChannelID, IBCPacket, VTransferIBCEvent} from '@agoric/vats';
  * @import {Zone} from '@agoric/zone';
  * @import {HostOf, HostInterface} from '@agoric/async-flow';
  * @import {TargetRegistration} from '@agoric/vats/src/bridge-target.js';
  * @import {NobleAddress, LiquidityPoolKit, FeeConfig, EvmHash, LogFn, CctpTxEvidence} from '../types.js';
  * @import {StatusManager} from './status-manager.js';
  */
+
+/**
+ * @param {IBCPacket} data
+ * @param {string} remoteDenom
+ * @returns {{ nfa: NobleAddress, amount: bigint, EUD: string } | {error: object[]}}
+ */
+const decodeEventPacket = ({ data }, remoteDenom) => {
+  // NB: may not be a FungibleTokenPacketData or even JSON
+  /** @type {FungibleTokenPacketData} */
+  let tx;
+  try {
+    tx = JSON.parse(atob(data));
+  } catch (e) {
+    return { error: ['could not parse packet data', data] };
+  }
+
+  // given the sourceChannel check, we can be certain of this cast
+  const nfa = /** @type {NobleAddress} */ (tx.sender);
+
+  if (tx.denom !== remoteDenom) {
+    const { denom: actual } = tx;
+    return { error: ['unexpected denom', { actual, expected: remoteDenom }] };
+  }
+
+  let EUD;
+  try {
+    ({ EUD } = decodeAddressHook(tx.receiver).query);
+    if (!EUD) {
+      return { error: ['no EUD parameter', tx.receiver] };
+    }
+    if (typeof EUD !== 'string') {
+      return { error: ['EUD is not a string', EUD] };
+    }
+  } catch (e) {
+    return { error: ['no query params', tx.receiver] };
+  }
+
+  let amount;
+  try {
+    amount = BigInt(tx.amount);
+  } catch (e) {
+    return { error: ['invalid amount', tx.amount] };
+  }
+
+  return { nfa, amount, EUD };
+};
+harden(decodeEventPacket);
 
 /**
  * NOTE: not meant to be parsable.
@@ -39,11 +88,21 @@ const makeMintedEarlyKey = (addr, amount) =>
 /** @param {Brand<'nat'>} USDC */
 export const makeAdvanceDetailsShape = USDC =>
   harden({
-    destination: ChainAddressShape,
+    destination: CosmosChainAddressShape,
     forwardingAddress: M.string(),
     fullAmount: makeNatAmountShape(USDC),
     txHash: EvmHashShape,
   });
+
+export const stateShape = harden({
+  repayer: M.remotable('Repayer'),
+  settlementAccount: M.remotable('Account'),
+  registration: M.or(M.undefined(), M.remotable('Registration')),
+  sourceChannel: M.string(),
+  remoteDenom: M.string(),
+  mintedEarly: M.remotable('mintedEarly'),
+  intermediateRecipient: M.opt(CosmosChainAddressShape),
+});
 
 /**
  * @param {Zone} zone
@@ -76,22 +135,23 @@ export const prepareSettler = (
     {
       creator: M.interface('SettlerCreatorI', {
         monitorMintingDeposits: M.callWhen().returns(M.any()),
-        setIntermediateRecipient: M.call(ChainAddressShape).returns(),
+        setIntermediateRecipient: M.call(CosmosChainAddressShape).returns(),
       }),
       tap: M.interface('SettlerTapI', {
         receiveUpcall: M.call(M.record()).returns(M.promise()),
       }),
-      notify: M.interface('SettlerNotifyI', {
+      notifier: M.interface('SettlerNotifyI', {
         notifyAdvancingResult: M.call(
           makeAdvanceDetailsShape(USDC),
           M.boolean(),
         ).returns(),
         checkMintedEarly: M.call(
           CctpTxEvidenceShape,
-          ChainAddressShape,
+          CosmosChainAddressShape,
         ).returns(M.boolean()),
       }),
       self: M.interface('SettlerSelfI', {
+        addMintedEarly: M.call(M.string(), M.nat()).returns(),
         disburse: M.call(EvmHashShape, M.nat()).returns(M.promise()),
         forward: M.call(EvmHashShape, M.nat(), M.string()).returns(),
       }),
@@ -106,7 +166,7 @@ export const prepareSettler = (
      *   remoteDenom: Denom;
      *   repayer: LiquidityPoolKit['repayer'];
      *   settlementAccount: HostInterface<OrchestrationAccount<{ chainId: 'agoric' }>>
-     *   intermediateRecipient?: ChainAddress;
+     *   intermediateRecipient?: CosmosChainAddress;
      * }} config
      */
     config => {
@@ -117,8 +177,8 @@ export const prepareSettler = (
         intermediateRecipient: config.intermediateRecipient,
         /** @type {HostInterface<TargetRegistration>|undefined} */
         registration: undefined,
-        /** @type {SetStore<ReturnType<typeof makeMintedEarlyKey>>} */
-        mintedEarly: zone.detached().setStore('mintedEarly'),
+        /** @type {MapStore<ReturnType<typeof makeMintedEarlyKey>, number>} */
+        mintedEarly: zone.detached().mapStore('mintedEarly'),
       };
     },
     {
@@ -131,7 +191,7 @@ export const prepareSettler = (
           assert.typeof(registration, 'object');
           this.state.registration = registration;
         },
-        /** @param {ChainAddress} intermediateRecipient */
+        /** @param {CosmosChainAddress} intermediateRecipient */
         setIntermediateRecipient(intermediateRecipient) {
           this.state.intermediateRecipient = intermediateRecipient;
         },
@@ -148,38 +208,13 @@ export const prepareSettler = (
             return;
           }
 
-          // TODO: why is it safe to cast this without a runtime check?
-          const tx = /** @type {FungibleTokenPacketData} */ (
-            JSON.parse(atob(packet.data))
-          );
-
-          // given the sourceChannel check, we can be certain of this cast
-          const nfa = /** @type {NobleAddress} */ (tx.sender);
-
-          if (tx.denom !== remoteDenom) {
-            const { denom: actual } = tx;
-            log('unexpected denom', { actual, expected: remoteDenom });
+          const decoded = decodeEventPacket(event.packet, remoteDenom);
+          if ('error' in decoded) {
+            log('invalid event packet', decoded.error);
             return;
           }
 
-          let EUD;
-          try {
-            ({ EUD } = decodeAddressHook(tx.receiver).query);
-            if (!EUD) {
-              log('no EUD parameter', tx.receiver);
-              return;
-            }
-            if (typeof EUD !== 'string') {
-              log('EUD is not a string', EUD);
-              return;
-            }
-          } catch (e) {
-            log('no query params', tx.receiver);
-            return;
-          }
-
-          const amount = BigInt(tx.amount); // TODO: what if this throws?
-
+          const { nfa, amount, EUD } = decoded;
           const { self } = this.facets;
           const found = statusManager.dequeueStatus(nfa, amount);
           log('dequeued', found, 'for', nfa, amount);
@@ -189,7 +224,7 @@ export const prepareSettler = (
 
             case PendingTxStatus.Advancing:
               log('⚠️ tap: minted while advancing', nfa, amount);
-              this.state.mintedEarly.add(makeMintedEarlyKey(nfa, amount));
+              self.addMintedEarly(nfa, amount);
               return;
 
             case PendingTxStatus.Observed:
@@ -202,17 +237,17 @@ export const prepareSettler = (
               log('⚠️ tap: minted before observed', nfa, amount);
               // XXX consider capturing in vstorage
               // we would need a new key, as this does not have a txHash
-              this.state.mintedEarly.add(makeMintedEarlyKey(nfa, amount));
+              self.addMintedEarly(nfa, amount);
           }
         },
       },
-      notify: {
+      notifier: {
         /**
          * @param {object} ctx
          * @param {EvmHash} ctx.txHash
          * @param {NobleAddress} ctx.forwardingAddress
          * @param {Amount<'nat'>} ctx.fullAmount
-         * @param {ChainAddress} ctx.destination
+         * @param {CosmosChainAddress} ctx.destination
          * @param {boolean} success
          * @returns {void}
          */
@@ -224,7 +259,7 @@ export const prepareSettler = (
           const { value: fullValue } = fullAmount;
           const key = makeMintedEarlyKey(forwardingAddress, fullValue);
           if (mintedEarly.has(key)) {
-            mintedEarly.delete(key);
+            asMultiset(mintedEarly).remove(key);
             statusManager.advanceOutcomeForMintedEarly(txHash, success);
             if (success) {
               void this.facets.self.disburse(txHash, fullValue);
@@ -241,7 +276,7 @@ export const prepareSettler = (
         },
         /**
          * @param {CctpTxEvidence} evidence
-         * @param {ChainAddress} destination
+         * @param {CosmosChainAddress} destination
          * @returns {boolean}
          * @throws {Error} if minted early, so advancer doesn't advance
          */
@@ -258,7 +293,7 @@ export const prepareSettler = (
               forwardingAddress,
               amount,
             );
-            mintedEarly.delete(key);
+            asMultiset(mintedEarly).remove(key);
             statusManager.advanceOutcomeForUnknownMint(evidence);
             void this.facets.self.forward(txHash, amount, destination.value);
             return true;
@@ -267,6 +302,16 @@ export const prepareSettler = (
         },
       },
       self: {
+        /**
+         * Helper function to track a minted-early transaction by incrementing or initializing its counter
+         * @param {NobleAddress} address
+         * @param {NatValue} amount
+         */
+        addMintedEarly(address, amount) {
+          const key = makeMintedEarlyKey(address, amount);
+          const { mintedEarly } = this.state;
+          asMultiset(mintedEarly).add(key);
+        },
         /**
          * @param {EvmHash} txHash
          * @param {NatValue} fullValue
@@ -291,10 +336,9 @@ export const prepareSettler = (
               harden({ In: received }),
             ),
           );
-          zcf.atomicRearrange(
-            harden([[settlingSeat, settlingSeat, { In: received }, split]]),
-          );
-          repayer.repay(settlingSeat, split);
+          const transferPart = fromOnly(settlingSeat, { In: received });
+          repayer.repay(transferPart, split);
+          settlingSeat.exit();
 
           // update status manager, marking tx `DISBURSED`
           statusManager.disbursed(txHash, split);
@@ -306,7 +350,19 @@ export const prepareSettler = (
          */
         forward(txHash, fullValue, EUD) {
           const { settlementAccount, intermediateRecipient } = this.state;
-          const dest = chainHub.makeChainAddress(EUD);
+
+          /** @type {AccountId | null} */
+          const dest = (() => {
+            try {
+              return chainHub.resolveAccountId(EUD);
+            } catch (e) {
+              log('⚠️ forward transfer failed!', e, txHash);
+              statusManager.forwarded(txHash, false);
+              return null;
+            }
+          })();
+          if (!dest) return;
+
           const txfrV = E(settlementAccount).transfer(
             dest,
             AmountMath.make(USDC, fullValue),
@@ -329,7 +385,9 @@ export const prepareSettler = (
          * @param {EvmHash} txHash
          */
         onRejected(reason, txHash) {
-          log('⚠️ forward transfer rejected!', reason, txHash);
+          // funds remain in `settlementAccount` and must be recovered via a
+          // contract upgrade
+          log('🚨 forward transfer rejected!', reason, txHash);
           // update status manager, flagging a terminal state that needs to be
           // manual intervention or a code update to remediate
           statusManager.forwarded(txHash, false);
@@ -337,21 +395,11 @@ export const prepareSettler = (
       },
     },
     {
-      stateShape: harden({
-        repayer: M.remotable('Repayer'),
-        settlementAccount: M.remotable('Account'),
-        registration: M.or(M.undefined(), M.remotable('Registration')),
-        sourceChannel: M.string(),
-        remoteDenom: M.string(),
-        mintedEarly: M.remotable('mintedEarly'),
-        intermediateRecipient: M.opt(ChainAddressShape),
-      }),
+      stateShape,
     },
   );
 };
 harden(prepareSettler);
 
-/**
- * XXX consider using pickFacet (do we have pickFacets?)
- * @typedef {ReturnType<ReturnType<typeof prepareSettler>>} SettlerKit
- */
+// Expose the whole kit because the contract needs `creatorFacet` and the Advancer needs `notifier`
+/** @typedef {ReturnType<ReturnType<typeof prepareSettler>>} SettlerKit */

@@ -19,7 +19,7 @@ import { chainFacadeMethods, TypedJsonShape } from '../typeGuards.js';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {CosmosInterchainService} from './exo-interfaces.js';
  * @import {LocalOrchestrationAccountKit, MakeLocalOrchestrationAccountKit} from './local-orchestration-account.js';
- * @import {Chain, ChainAddress, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount} from '../types.js';
+ * @import {Chain, CosmosChainAddress, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount} from '../types.js';
  */
 
 /**
@@ -36,7 +36,7 @@ import { chainFacadeMethods, TypedJsonShape } from '../typeGuards.js';
  * @typedef {{
  *   makeLocalOrchestrationAccountKit: MakeLocalOrchestrationAccountKit;
  *   orchestration: Remote<CosmosInterchainService>;
- *   storageNode: Remote<StorageNode>;
+ *   storageNode: Remote<StorageNode> | undefined;
  *   agoricNames: Remote<NameHub>;
  *   timer: Remote<TimerService>;
  *   localchain: Remote<LocalChain>;
@@ -79,7 +79,7 @@ const prepareLocalChainFacadeKit = (
           .returns(VowShape),
       }),
       makeChildNodeWatcher: M.interface('makeChildNodeWatcher', {
-        onFulfilled: M.call(M.remotable())
+        onFulfilled: M.call(M.or(M.remotable(), M.undefined()))
           .optional({ account: M.remotable(), address: M.string() }) // empty context
           .returns(M.remotable()),
       }),
@@ -142,14 +142,16 @@ const prepareLocalChainFacadeKit = (
       },
       makeAccountWatcher: {
         /**
-         * @param {[LocalChainAccount, ChainAddress['value']]} results
+         * @param {[LocalChainAccount, CosmosChainAddress['value']]} results
          */
         onFulfilled([account, address]) {
-          return watch(
-            E(storageNode).makeChildNode(address),
-            this.facets.makeChildNodeWatcher,
-            { account, address },
-          );
+          const optionalStorageNode = storageNode
+            ? E(storageNode).makeChildNode(address)
+            : undefined;
+          return watch(optionalStorageNode, this.facets.makeChildNodeWatcher, {
+            account,
+            address,
+          });
         },
       },
       makeChildNodeWatcher: {
@@ -157,7 +159,7 @@ const prepareLocalChainFacadeKit = (
          * @param {Remote<StorageNode>} childNode
          * @param {{
          *   account: LocalChainAccount;
-         *   address: ChainAddress['value'];
+         *   address: CosmosChainAddress['value'];
          * }} ctx
          */
         onFulfilled(childNode, { account, address }) {

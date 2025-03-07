@@ -7,9 +7,7 @@
   "type": "module",
   "main": "./src/index.js",
   "scripts": {
-    "build:bundle-rollup": "rollup --config rollup.config.js",
-    "build:bundle-source": "node scripts/build-bundle.js",
-    "build": "yarn build:bundle-rollup && yarn build:bundle-source",
+    "build": "node scripts/build-bundle.js",
     "clean": "rm -rf dist",
     "lint": "run-s --continue-on-error lint:*",
     "lint:js": "eslint 'src/**/*.js' 'lib/**/*.js' 'scripts/**/*.js' 'test/**/*.js'",
@@ -20,12 +18,10 @@
     "test:xs": "exit 0"
   },
   "devDependencies": {
-    "@endo/bundle-source": "^3.5.0",
-    "@endo/init": "^1.1.7",
+    "@endo/bundle-source": "^3.5.1",
+    "@endo/init": "^1.1.8",
     "ava": "^5.3.0",
     "c8": "^10.1.2",
-    "rollup": "^4.24.0",
-    "rollup-plugin-string": "^3.0.0",
     "source-map": "^0.7.4"
   },
   "files": [
@@ -48,6 +44,6 @@
     "workerThreads": false
   },
   "typeCoverage": {
-    "atLeast": 73.6
+    "atLeast": 73.54
   }
 }

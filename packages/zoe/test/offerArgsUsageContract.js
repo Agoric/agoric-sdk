@@ -1,3 +1,7 @@
+/**
+ * @import {ContractMeta, ContractStartFn, Invitation, OfferHandler, TransferPart, ZCF, ZCFSeat} from '@agoric/zoe';
+ */
+
 /** @param {ZCF} zcf */
 const start = zcf => {
   /** @type {OfferHandler} */

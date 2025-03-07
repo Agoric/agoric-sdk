@@ -30,7 +30,7 @@ const generateBundlesP = Promise.all(
     } else {
       ({ bundleName, contractPath } = settings);
     }
-    const sourceUrl = await importMetaResolve(
+    const sourceUrl = importMetaResolve(
       `@agoric/zoe/src/contracts/${contractPath}.js`,
       import.meta.url,
     );

@@ -171,8 +171,7 @@ func TestExtractBaseAddressFromPacket(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			ftPacketData := transfertypes.NewFungibleTokenPacketData("denom", "100", tc.addrs[types.RoleSender].addr, tc.addrs[types.RoleReceiver].addr, "my-favourite-memo")
-			packetBz, err := cdc.MarshalJSON(&ftPacketData)
-			require.NoError(t, err)
+			packetBz := ftPacketData.GetBytes()
 			packet := channeltypes.NewPacket(packetBz, 1234, "my-port", "my-channel", "their-port", "their-channel", clienttypes.NewHeight(133, 445), 10999)
 
 			for role, addrs := range tc.addrs {
@@ -184,9 +183,13 @@ func TestExtractBaseAddressFromPacket(t *testing.T) {
 					require.NoError(t, err)
 					require.Equal(t, addrs.baseAddr, baseAddr)
 
-					packetBaseAddr, err := types.ExtractBaseAddressFromPacket(cdc, packet, role, nil)
+					packetBaseAddr0, err := types.ExtractBaseAddressFromData(cdc, packet.GetData(), role, nil)
 					require.NoError(t, err)
-					require.Equal(t, addrs.baseAddr, packetBaseAddr)
+					require.Equal(t, addrs.baseAddr, packetBaseAddr0)
+
+					packetBaseAddr1, err := types.ExtractBaseAddressFromPacket(cdc, packet, role, nil)
+					require.NoError(t, err)
+					require.Equal(t, addrs.baseAddr, packetBaseAddr1)
 
 					var newPacket channeltypes.Packet
 					packetBaseAddr2, err := types.ExtractBaseAddressFromPacket(cdc, packet, role, &newPacket)

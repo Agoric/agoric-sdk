@@ -45,13 +45,14 @@ import {
 /**
  * @import {VaultFactoryContract as VFC} from '../../src/vaultFactory/vaultFactory.js';
  * @import {AmountUtils} from '@agoric/zoe/tools/test-utils.js';
+ * @import {EReturn} from '@endo/far';
  */
 
 /**
  * @typedef {Record<string, any> & {
  *   aeth: IssuerKit & AmountUtils;
  *   run: IssuerKit & AmountUtils;
- *   bundleCache: Awaited<ReturnType<typeof unsafeMakeBundleCache>>;
+ *   bundleCache: EReturn<typeof unsafeMakeBundleCache>;
  *   rates: VaultManagerParamValues;
  *   interestTiming: InterestTiming;
  *   zoe: ZoeService;

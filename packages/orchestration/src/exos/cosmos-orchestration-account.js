@@ -46,7 +46,7 @@ import { Fail, makeError, q } from '@endo/errors';
 import { E } from '@endo/far';
 import {
   AmountArgShape,
-  ChainAddressShape,
+  CosmosChainAddressShape,
   DelegationShape,
   DenomAmountShape,
   IBCTransferOptionsShape,
@@ -67,7 +67,8 @@ import { makeTimestampHelper } from '../utils/time.js';
 
 /**
  * @import {HostOf} from '@agoric/async-flow';
- * @import {AmountArg, IcaAccount, ChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, StakingAccountQueries, OrchestrationAccountCommon, CosmosRewardsResponse, IBCConnectionInfo, IBCMsgTransferOptions, ChainHub, CosmosDelegationResponse} from '../types.js';
+ * @import {AmountArg, IcaAccount, CosmosChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, StakingAccountQueries, OrchestrationAccountCommon, CosmosRewardsResponse, IBCConnectionInfo, IBCMsgTransferOptions, ChainHub, CosmosDelegationResponse} from '../types.js';
+ * @import {ContractMeta, Invitation, OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  * @import {Remote} from '@agoric/internal';
@@ -87,20 +88,20 @@ const trace = makeTracer('CosmosOrchAccount');
 const { Vow$ } = NetworkShape; // TODO #9611
 
 /**
- * @typedef {object} ComosOrchestrationAccountNotification
- * @property {ChainAddress} chainAddress
+ * @typedef {object} CosmosOrchestrationAccountNotification
+ * @property {CosmosChainAddress} chainAddress
  */
 
 /**
  * @private
  * @typedef {{
- *   topicKit: RecorderKit<ComosOrchestrationAccountNotification>;
  *   account: IcaAccount;
- *   chainAddress: ChainAddress;
+ *   chainAddress: CosmosChainAddress;
+ *   icqConnection: ICQConnection | undefined;
  *   localAddress: LocalIbcAddress;
  *   remoteAddress: RemoteIbcAddress;
- *   icqConnection: ICQConnection | undefined;
  *   timer: Remote<TimerService>;
+ *   topicKit: RecorderKit<CosmosOrchestrationAccountNotification> | undefined;
  * }} State
  *   Internal to the IcaAccountHolder exo
  */
@@ -114,14 +115,14 @@ const { Vow$ } = NetworkShape; // TODO #9611
 
 /** @see {StakingAccountActions} */
 const stakingAccountActionsMethods = {
-  delegate: M.call(ChainAddressShape, AmountArgShape).returns(VowShape),
+  delegate: M.call(CosmosChainAddressShape, AmountArgShape).returns(VowShape),
   redelegate: M.call(
-    ChainAddressShape,
-    ChainAddressShape,
+    CosmosChainAddressShape,
+    CosmosChainAddressShape,
     AmountArgShape,
   ).returns(VowShape),
   undelegate: M.call(M.arrayOf(DelegationShape)).returns(VowShape),
-  withdrawReward: M.call(ChainAddressShape).returns(
+  withdrawReward: M.call(CosmosChainAddressShape).returns(
     Vow$(M.arrayOf(DenomAmountShape)),
   ),
   withdrawRewards: M.call().returns(Vow$(M.arrayOf(DenomAmountShape))),
@@ -129,12 +130,12 @@ const stakingAccountActionsMethods = {
 
 /** @see {StakingAccountQueries} */
 const stakingAccountQueriesMethods = {
-  getDelegation: M.call(ChainAddressShape).returns(VowShape),
+  getDelegation: M.call(CosmosChainAddressShape).returns(VowShape),
   getDelegations: M.call().returns(VowShape),
-  getUnbondingDelegation: M.call(ChainAddressShape).returns(VowShape),
+  getUnbondingDelegation: M.call(CosmosChainAddressShape).returns(VowShape),
   getUnbondingDelegations: M.call().returns(VowShape),
   getRedelegations: M.call().returns(VowShape),
-  getReward: M.call(ChainAddressShape).returns(VowShape),
+  getReward: M.call(CosmosChainAddressShape).returns(VowShape),
   getRewards: M.call().returns(VowShape),
 };
 
@@ -158,13 +159,15 @@ const PUBLIC_TOPICS = {
 export const CosmosOrchestrationInvitationMakersI = M.interface(
   'invitationMakers',
   {
-    Delegate: M.call(ChainAddressShape, AmountArgShape).returns(M.promise()),
+    Delegate: M.call(CosmosChainAddressShape, AmountArgShape).returns(
+      M.promise(),
+    ),
     Redelegate: M.call(
-      ChainAddressShape,
-      ChainAddressShape,
+      CosmosChainAddressShape,
+      CosmosChainAddressShape,
       AmountArgShape,
     ).returns(M.promise()),
-    WithdrawReward: M.call(ChainAddressShape).returns(M.promise()),
+    WithdrawReward: M.call(CosmosChainAddressShape).returns(M.promise()),
     Undelegate: M.call(M.arrayOf(DelegationShape)).returns(M.promise()),
     DeactivateAccount: M.call().returns(M.promise()),
     ReactivateAccount: M.call().returns(M.promise()),
@@ -232,7 +235,7 @@ export const prepareCosmosOrchestrationAccountKit = (
       transferWatcher: M.interface('transferWatcher', {
         onFulfilled: M.call([M.record(), M.nat()])
           .optional({
-            destination: ChainAddressShape,
+            destination: CosmosChainAddressShape,
             opts: M.or(M.undefined(), IBCTransferOptionsShape),
             token: {
               denom: M.string(),
@@ -286,31 +289,39 @@ export const prepareCosmosOrchestrationAccountKit = (
     },
     /**
      * @param {object} info
-     * @param {ChainAddress} info.chainAddress
+     * @param {CosmosChainAddress} info.chainAddress
      * @param {LocalIbcAddress} info.localAddress
      * @param {RemoteIbcAddress} info.remoteAddress
      * @param {object} io
      * @param {IcaAccount} io.account
-     * @param {Remote<StorageNode>} io.storageNode
-     * @param {ICQConnection | undefined} io.icqConnection
+     * @param {Remote<StorageNode>} [io.storageNode]
+     * @param {ICQConnection} [io.icqConnection]
      * @param {Remote<TimerService>} io.timer
      * @returns {State}
      */
     ({ chainAddress, localAddress, remoteAddress }, io) => {
+      trace('cosmos orch acct init', {
+        chainAddress,
+        localAddress,
+        remoteAddress,
+      });
       const { storageNode } = io;
       // must be the fully synchronous maker because the kit is held in durable state
-      const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1]);
+      const topicKit = storageNode
+        ? makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1])
+        : undefined;
       // TODO determine what goes in vstorage https://github.com/Agoric/agoric-sdk/issues/9066
       // XXX consider parsing local/remoteAddr to portId, channelId, counterpartyPortId, counterpartyChannelId, connectionId, counterpartyConnectionId
       // FIXME these values will not update if IcaAccount gets new values after reopening.
       // consider having IcaAccount responsible for the owning the writer. It might choose to share it with COA.
-      void E(topicKit.recorder).write(
-        /** @type {CosmosOrchestrationAccountStorageState} */ ({
-          localAddress,
-          remoteAddress,
-        }),
-      );
-
+      if (topicKit) {
+        void E(topicKit.recorder).write(
+          /** @type {CosmosOrchestrationAccountStorageState} */ ({
+            localAddress,
+            remoteAddress,
+          }),
+        );
+      }
       const { account, icqConnection, timer } = io;
       return {
         account,
@@ -333,6 +344,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           return account;
         },
         getUpdater() {
+          if (!this.state.topicKit) throw Fail`no topicKit`;
           return this.state.topicKit.recorder;
         },
         /**
@@ -557,7 +569,7 @@ export const prepareCosmosOrchestrationAccountKit = (
          *   bigint,
          * ]} results
          * @param {{
-         *   destination: ChainAddress;
+         *   destination: CosmosChainAddress;
          *   opts?: IBCMsgTransferOptions;
          *   token: Coin;
          * }} ctx
@@ -651,7 +663,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           /**
            * @type {OfferHandler<
            *   Vow<void>,
-           *   { toAccount: ChainAddress; amount: AmountArg }
+           *   { toAccount: CosmosChainAddress; amount: AmountArg }
            * >}
            */
           const offerHandler = (seat, { toAccount, amount }) => {
@@ -664,7 +676,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           /**
            * @type {OfferHandler<
            *   Vow<void>,
-           *   { toAccount: ChainAddress; amounts: AmountArg[] }
+           *   { toAccount: CosmosChainAddress; amounts: AmountArg[] }
            * >}
            */
           const offerHandler = (seat, { toAccount, amounts }) => {
@@ -687,7 +699,7 @@ export const prepareCosmosOrchestrationAccountKit = (
            *   Vow<void>,
            *   {
            *     amount: AmountArg;
-           *     destination: ChainAddress;
+           *     destination: CosmosChainAddress;
            *     opts?: IBCMsgTransferOptions;
            *   }
            * >}
@@ -731,6 +743,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           return asVow(async () => {
             await null;
             const { topicKit } = this.state;
+            if (!topicKit) throw Fail`No topicKit; storageNode not provided`;
             return harden({
               account: {
                 description: PUBLIC_TOPICS.account[0],
@@ -891,6 +904,15 @@ export const prepareCosmosOrchestrationAccountKit = (
         transfer(destination, amount, opts) {
           trace('transfer', destination, amount, opts);
           return asVow(() => {
+            // `destination` arg can be non-Cosmos per the common `.transfer` method signature
+            // but this implementation only supports transferring to another Cosmos chain.
+            // It relies on `makeChainAddress` to throw if `destination` has another namespace.
+            destination =
+              typeof destination === 'string'
+                ? // If `destination` is not actually CAIP-10 then this will throw
+                  chainHub.makeChainAddress(destination)
+                : destination;
+
             const { helper } = this.facets;
             const token = helper.amountToCoin(amount);
 

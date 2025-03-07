@@ -1,5 +1,7 @@
 import type {
-  ChainAddress,
+  AccountId,
+  CosmosChainAddress,
+  Bech32Address,
   CosmosChainInfo,
   Denom,
   DenomDetail,
@@ -11,7 +13,15 @@ import type { PendingTxStatus, TxStatus } from './constants.js';
 import type { FastUsdcTerms } from './fast-usdc.contract.js';
 import type { RepayAmountKWR } from './exos/liquidity-pool.js';
 
+/**
+ * Block hash is calculated using the keccak256 algorithm that always results
+ * in 32 bytes (64 hex characters prepended by 0x) no matter the input length.
+ */
 export type EvmHash = `0x${string}`;
+/**
+ * An address is always the last 20 bytes (40 hex charaters prepended by 0x) of
+ * the public key hash.
+ */
 export type EvmAddress = `0x${string & { length: 40 }}`;
 export type NobleAddress = `noble1${string}`;
 export type EvmChainID = number;
@@ -25,10 +35,23 @@ export interface CctpTxEvidence {
   /** from Noble RPC */
   aux: {
     forwardingChannel: IBCChannelID;
-    recipientAddress: ChainAddress['value'];
+    recipientAddress: CosmosChainAddress['value'];
   };
+  /** on the source chain (e.g. L1 Ethereum and L2s Arbitrum, Base) */
   blockHash: EvmHash;
+  /** height of blockHash on the source chain */
   blockNumber: bigint;
+  /**
+   * Seconds since Unix epoch. Not all CCTP source chains update time the same
+   * way but they all use Unix epoch and thus are approximately equal. (Within
+   * minutes apart.)
+   */
+  blockTimestamp: bigint;
+  //
+  /**
+   * [Domain of values](https://chainid.network/) per [EIP-155](https://eips.ethereum.org/EIPS/eip-155)
+   * (We don't have [CCTP `domain`](https://developers.circle.com/stablecoins/supported-domains) )
+   */
   chainId: number;
   /** data covered by signature (aka txHash) */
   tx: {
@@ -53,6 +76,12 @@ export interface TransactionRecord extends CopyRecord {
   split?: RepayAmountKWR;
   risksIdentified?: string[];
   status: TxStatus;
+}
+
+/** the record in vstorage at the path of the contract's node */
+export interface ContractRecord extends CopyRecord {
+  poolAccount: CosmosChainAddress['value'];
+  settlementAccount: CosmosChainAddress['value'];
 }
 
 export type LogFn = (...args: unknown[]) => void;
@@ -123,7 +152,7 @@ export type AddressHook = {
   baseAddress: string;
   query: {
     /** end user destination address */
-    EUD: string;
+    EUD: Bech32Address;
   };
 };
 

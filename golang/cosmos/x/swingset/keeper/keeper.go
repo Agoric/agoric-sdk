@@ -380,17 +380,13 @@ func makeFeeMenu(powerFlagFees []types.PowerFlagFee) map[string]sdk.Coins {
 
 var privilegedProvisioningCoins sdk.Coins = sdk.NewCoins(sdk.NewInt64Coin("provisionpass", 1))
 
-func calculateFees(balances sdk.Coins, submitter, addr sdk.AccAddress, powerFlags []string, powerFlagFees []types.PowerFlagFee) (sdk.Coins, error) {
+func calculateFees(balances sdk.Coins, powerFlags []string, powerFlagFees []types.PowerFlagFee) (sdk.Coins, error) {
 	fees := sdk.NewCoins()
 
 	// See if we have the balance needed for privileged provisioning.
 	if balances.IsAllGTE(privilegedProvisioningCoins) {
 		// We do, and notably we don't deduct anything from the submitter.
 		return fees, nil
-	}
-
-	if !submitter.Equals(addr) {
-		return nil, fmt.Errorf("submitter is not the same as target address for fee-based provisioning")
 	}
 
 	if len(powerFlags) == 0 {
@@ -412,9 +408,9 @@ func calculateFees(balances sdk.Coins, submitter, addr sdk.AccAddress, powerFlag
 	return fees, nil
 }
 
-func (k Keeper) ChargeForProvisioning(ctx sdk.Context, submitter, addr sdk.AccAddress, powerFlags []string) error {
+func (k Keeper) ChargeForProvisioning(ctx sdk.Context, submitter sdk.AccAddress, powerFlags []string) error {
 	balances := k.bankKeeper.GetAllBalances(ctx, submitter)
-	fees, err := calculateFees(balances, submitter, addr, powerFlags, k.GetParams(ctx).PowerFlagFees)
+	fees, err := calculateFees(balances, powerFlags, k.GetParams(ctx).PowerFlagFees)
 	if err != nil {
 		return err
 	}

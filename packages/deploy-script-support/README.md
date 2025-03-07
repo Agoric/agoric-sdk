@@ -71,9 +71,10 @@ are theirselves (recursive) permits. See `BootstrapManifiest` in
 [lib-boot.js](../vats/src/core/lib-boot.js).
 
 The manifest object returned from a "getManifestCall" invocation may also
-include "installations" to register in `agoricNames` and/or "options" to be
-provided as the "options" property of the second argument for each call of the
-manifest's functions:
+include "installations" (they'll be registered with `agoricNames` and in the
+bootstrap promise space) and/or "options" (they'll be provided as the "options"
+property of the second argument for each call of the manifest's functions):
+
 ```js
 /** @type {import('@agoric/vats/src/core/lib-boot').BootstrapManifest} */
 const gameManifest = harden({

@@ -2,6 +2,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { testProp, fc } from '@fast-check/ava';
 import { AmountMath, makeIssuerKit, type Amount } from '@agoric/ertp';
 import {
+  makeRatioFromAmounts,
   multiplyBy,
   parseRatio,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
@@ -26,7 +27,7 @@ const brands = harden({
   PoolShares: issuerKits.PoolShare.brand,
   USDC: issuerKits.USDC.brand,
 });
-const parity = makeParity(make(brands.USDC, 1n), brands.PoolShares);
+const parity = makeParity(brands.USDC, brands.PoolShares);
 const shapes = makeProposalShapes(brands);
 
 test('initial deposit to pool', t => {
@@ -40,7 +41,10 @@ test('initial deposit to pool', t => {
   const actual = depositCalc(parity, proposal);
   t.deepEqual(actual, {
     payouts: { PoolShare: make(PoolShares, 100n) },
-    shareWorth: makeParity(actual.shareWorth.numerator, PoolShares),
+    shareWorth: makeRatioFromAmounts(
+      actual.shareWorth.numerator,
+      make(PoolShares, actual.shareWorth.numerator.value),
+    ),
   });
 });
 
@@ -50,14 +54,14 @@ test('initial withdrawal fails', t => {
     give: { PoolShare: make(PoolShares, 100n) },
     want: { USDC: make(USDC, 100n) },
   });
-  t.throws(() => withdrawCalc(parity, proposal), {
+  t.throws(() => withdrawCalc(parity, proposal, harden({})), {
     message: /cannot withdraw/,
   });
 });
 
 test('withdrawal after deposit OK', t => {
   const { PoolShares, USDC } = brands;
-  const state0 = makeParity(make(USDC, 1n), PoolShares);
+  const state0 = makeParity(USDC, PoolShares);
   const emptyShares = makeEmpty(PoolShares);
 
   const pDep = {
@@ -72,7 +76,7 @@ test('withdrawal after deposit OK', t => {
   });
   mustMatch(proposal, shapes.withdraw);
 
-  const actual = withdrawCalc(state1, proposal);
+  const actual = withdrawCalc(state1, proposal, pDep.give);
 
   t.deepEqual(actual, {
     payouts: { USDC: make(USDC, 50n) },
@@ -107,7 +111,7 @@ test('deposit offer underestimates value of share', t => {
 
 test('deposit offer overestimates value of share', t => {
   const { PoolShares, USDC } = brands;
-  const state0 = makeParity(make(USDC, 1n), PoolShares);
+  const state0 = makeParity(USDC, PoolShares);
 
   const proposal = harden({
     give: { USDC: make(USDC, 10n) },
@@ -128,7 +132,7 @@ test('deposit offer overestimates value of share', t => {
 test('withdrawal offer underestimates value of share', t => {
   const { PoolShares, USDC } = brands;
   const emptyShares = makeEmpty(PoolShares);
-  const state0 = makeParity(make(USDC, 1n), PoolShares);
+  const state0 = makeParity(USDC, PoolShares);
 
   const proposal1 = harden({
     give: { USDC: make(USDC, 100n) },
@@ -142,7 +146,7 @@ test('withdrawal offer underestimates value of share', t => {
   });
   mustMatch(proposal, shapes.withdraw);
 
-  const actual = withdrawCalc(state1, proposal);
+  const actual = withdrawCalc(state1, proposal, proposal1.give);
 
   t.deepEqual(actual, {
     payouts: { USDC: make(USDC, 60n) },
@@ -156,7 +160,7 @@ test('withdrawal offer underestimates value of share', t => {
 test('withdrawal offer overestimates value of share', t => {
   const { PoolShares, USDC } = brands;
   const emptyShares = makeEmpty(PoolShares);
-  const state0 = makeParity(make(USDC, 1n), PoolShares);
+  const state0 = makeParity(USDC, PoolShares);
 
   const d100 = {
     give: { USDC: make(USDC, 100n) },
@@ -170,8 +174,32 @@ test('withdrawal offer overestimates value of share', t => {
   });
   mustMatch(proposal, shapes.withdraw);
 
-  t.throws(() => withdrawCalc(state1, proposal), {
+  t.throws(() => withdrawCalc(state1, proposal, d100.give), {
     message: /cannot withdraw/,
+  });
+});
+
+test('withdrawal during advance can fail', t => {
+  const { PoolShares, USDC } = brands;
+  const state0 = makeParity(USDC, PoolShares);
+  const emptyShares = makeEmpty(PoolShares);
+
+  const pDep = {
+    give: { USDC: make(USDC, 100n) },
+    want: { PoolShare: make(PoolShares, 10n) },
+  };
+  const { shareWorth: state1 } = depositCalc(state0, pDep);
+
+  const proposal = harden({
+    give: { PoolShare: make(PoolShares, 70n) },
+    want: { USDC: make(USDC, 70n) },
+  });
+  mustMatch(proposal, shapes.withdraw);
+
+  const encumbered = make(USDC, 40n);
+  const alloc = harden({ USDC: subtract(pDep.give.USDC, encumbered) });
+  t.throws(() => withdrawCalc(state1, proposal, alloc, encumbered), {
+    message: /cannot withdraw .* stand by/,
   });
 });
 
@@ -181,9 +209,8 @@ const scaleAmount = (frac: number, amount: Amount<'nat'>) => {
 };
 
 // ack: https://stackoverflow.com/a/2901298/7963
-function numberWithCommas(x) {
-  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-}
+const numberWithCommas = x =>
+  x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
 const logAmt = amt => [
   Number(amt.value),
@@ -249,7 +276,7 @@ testProp(
     const { PoolShares, USDC } = brands;
     const emptyShares = makeEmpty(PoolShares);
     const emptyUSDC = makeEmpty(USDC);
-    let shareWorth = makeParity(make(USDC, 1n), PoolShares);
+    let shareWorth = makeParity(USDC, PoolShares);
     const myDeposits: Record<number, Amount<'nat'>> = {};
     const myShares: Record<number, Amount<'nat'>> = {};
 
@@ -280,10 +307,11 @@ testProp(
         const toGive = scaleAmount(action.Part, myShares[party]);
         if (isEmpty(toGive)) continue;
         const toGet = scaleAmount(action.Slip, multiplyBy(toGive, shareWorth));
-        const s = withdrawCalc(shareWorth, {
-          give: { PoolShare: toGive },
-          want: { USDC: toGet },
-        });
+        const s = withdrawCalc(
+          shareWorth,
+          { give: { PoolShare: toGive }, want: { USDC: toGet } },
+          harden({ USDC: subtract(shareWorth.numerator, make(USDC, 1n)) }),
+        );
         myShares[party] = subtract(myShares[party], toGive);
         myDeposits[party] = subtract(myDeposits[party], s.payouts.USDC);
         const { numerator: poolAmount, denominator: sharesOutstanding } =
@@ -388,7 +416,7 @@ test('borrow fails when requested exceeds or equals pool seat allocation', t => 
 
 test('basic repay calculation', t => {
   const { USDC } = brands;
-  const shareWorth = makeParity(make(USDC, 1n), brands.PoolShares);
+  const shareWorth = makeParity(USDC, brands.PoolShares);
   const amounts = {
     Principal: make(USDC, 100n),
     PoolFee: make(USDC, 10n),
@@ -396,15 +424,8 @@ test('basic repay calculation', t => {
   };
   const encumberedBalance = make(USDC, 200n);
   const poolStats = makeInitialPoolStats();
-  const fromSeatAllocation = amounts;
 
-  const result = repayCalc(
-    shareWorth,
-    fromSeatAllocation,
-    amounts,
-    encumberedBalance,
-    poolStats,
-  );
+  const result = repayCalc(shareWorth, amounts, encumberedBalance, poolStats);
 
   t.deepEqual(
     result.encumberedBalance,
@@ -446,7 +467,7 @@ test('basic repay calculation', t => {
 test('repay fails when principal exceeds encumbered balance', t => {
   const { USDC } = brands;
 
-  const shareWorth = makeParity(make(USDC, 1n), brands.PoolShares);
+  const shareWorth = makeParity(USDC, brands.PoolShares);
   const amounts = {
     Principal: make(USDC, 200n),
     PoolFee: make(USDC, 10n),
@@ -460,23 +481,13 @@ test('repay fails when principal exceeds encumbered balance', t => {
 
   const fromSeatAllocation = amounts;
 
-  t.throws(
-    () =>
-      repayCalc(
-        shareWorth,
-        fromSeatAllocation,
-        amounts,
-        encumberedBalance,
-        poolStats,
-      ),
-    {
-      message: /Cannot repay. Principal .* exceeds encumberedBalance/,
-    },
-  );
+  t.throws(() => repayCalc(shareWorth, amounts, encumberedBalance, poolStats), {
+    message: /Cannot repay. Principal .* exceeds encumberedBalance/,
+  });
 
   t.notThrows(
     () =>
-      repayCalc(shareWorth, fromSeatAllocation, amounts, make(USDC, 200n), {
+      repayCalc(shareWorth, amounts, make(USDC, 200n), {
         ...makeInitialPoolStats(),
         totalBorrows: make(USDC, 200n),
       }),
@@ -487,7 +498,7 @@ test('repay fails when principal exceeds encumbered balance', t => {
 test('repay fails when seat allocation does not equal amounts', t => {
   const { USDC } = brands;
 
-  const shareWorth = makeParity(make(USDC, 1n), brands.PoolShares);
+  const shareWorth = makeParity(USDC, brands.PoolShares);
   const amounts = {
     Principal: make(USDC, 200n),
     PoolFee: make(USDC, 10n),
@@ -499,30 +510,15 @@ test('repay fails when seat allocation does not equal amounts', t => {
     totalBorrows: make(USDC, 100n),
   };
 
-  const fromSeatAllocation = {
-    ...amounts,
-    ContractFee: make(USDC, 1n),
-  };
-
-  t.throws(
-    () =>
-      repayCalc(
-        shareWorth,
-        fromSeatAllocation,
-        amounts,
-        encumberedBalance,
-        poolStats,
-      ),
-    {
-      message: /Cannot repay. From seat allocation .* does not equal amounts/,
-    },
-  );
+  t.throws(() => repayCalc(shareWorth, amounts, encumberedBalance, poolStats), {
+    message: /Cannot repay. Principal .* exceeds encumberedBalance/,
+  });
 });
 
 test('repay succeeds with no Pool or Contract Fee', t => {
   const { USDC } = brands;
   const encumberedBalance = make(USDC, 100n);
-  const shareWorth = makeParity(make(USDC, 1n), brands.PoolShares);
+  const shareWorth = makeParity(USDC, brands.PoolShares);
 
   const amounts = {
     Principal: make(USDC, 25n),
@@ -534,13 +530,7 @@ test('repay succeeds with no Pool or Contract Fee', t => {
     totalBorrows: make(USDC, 100n),
   };
   const fromSeatAllocation = amounts;
-  const actual = repayCalc(
-    shareWorth,
-    fromSeatAllocation,
-    amounts,
-    encumberedBalance,
-    poolStats,
-  );
+  const actual = repayCalc(shareWorth, amounts, encumberedBalance, poolStats);
   t.like(actual, {
     shareWorth,
     encumberedBalance: {

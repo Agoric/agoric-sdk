@@ -9,13 +9,14 @@ import type { agoric } from '@agoric/cosmic-proto/agoric/bundle.js';
 import type { AgoricNamesRemotes } from '@agoric/vats/tools/board-utils.js';
 import type { PublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Payment } from '@agoric/ertp';
+import type { InvitationDetails } from '@agoric/zoe';
 import type { OfferSpec } from './offers.js';
 
 declare const CapDataShape: unique symbol;
 
 // Match the type in Zoe, which can't be imported because it's ambient.
 // This omits the parameters that aren't used in this module.
-type Invitation = Payment<'set'>;
+type Invitation = Payment<'set', InvitationDetails>;
 
 /**
  * A petname can either be a plain string or a path for which the first element

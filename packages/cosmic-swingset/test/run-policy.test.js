@@ -47,13 +47,13 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
   // Make a test kit.
   const fakeStorageKit = makeFakeStorageKit('');
   const { toStorage: handleVstorage } = fakeStorageKit;
-  const receiveBridgeSend = (destPort, msg) => {
-    switch (destPort) {
+  const receiveBridgeSend = (destPortName, msg) => {
+    switch (destPortName) {
       case BridgeId.STORAGE: {
         return handleVstorage(msg);
       }
       default:
-        Fail`port ${q(destPort)} not implemented for message ${msg}`;
+        Fail`port ${q(destPortName)} not implemented for message ${msg}`;
     }
   };
   const options = {

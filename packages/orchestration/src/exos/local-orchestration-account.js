@@ -28,7 +28,8 @@ import { TransferRouteShape } from './chain-hub.js';
 /**
  * @import {HostOf} from '@agoric/async-flow';
  * @import {LocalChain, LocalChainAccount} from '@agoric/vats/src/localchain.js';
- * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, IBCConnectionInfo, OrchestrationAccountCommon, LocalAccountMethods, TransferRoute} from '@agoric/orchestration';
+ * @import {AmountArg, CosmosChainAddress, DenomAmount, IBCMsgTransferOptions, IBCConnectionInfo, OrchestrationAccountCommon, LocalAccountMethods, TransferRoute, AccountId, AccountIdArg} from '@agoric/orchestration';
+ * @import {ContractMeta, Invitation, OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Zone} from '@agoric/zone';
  * @import {Remote} from '@agoric/internal';
@@ -57,10 +58,10 @@ const EVow$ = shape => M.or(Vow$(shape), M.promise(/* shape */));
 /**
  * @private
  * @typedef {{
- *   topicKit: RecorderKit<LocalChainAccountNotification>;
+ *   topicKit: RecorderKit<LocalChainAccountNotification> | undefined;
  *   packetTools: PacketTools;
  *   account: LocalChainAccount;
- *   address: ChainAddress;
+ *   address: CosmosChainAddress;
  * }} State
  *   Internal to the LocalOrchestrationAccount exo
  */
@@ -180,18 +181,23 @@ export const prepareLocalOrchestrationAccountKit = (
     /**
      * @param {object} initState
      * @param {LocalChainAccount} initState.account
-     * @param {ChainAddress} initState.address
-     * @param {Remote<StorageNode>} initState.storageNode
+     * @param {CosmosChainAddress} initState.address
+     * @param {Remote<StorageNode>} [initState.storageNode]
      * @returns {State}
      */
     ({ account, address, storageNode }) => {
       // must be the fully synchronous maker because the kit is held in durable state
-      const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1]);
+      const topicKit = storageNode
+        ? makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1])
+        : undefined;
       // TODO determine what goes in vstorage https://github.com/Agoric/agoric-sdk/issues/9066
-      void E(topicKit.recorder).write('');
+      if (topicKit) {
+        void E(topicKit.recorder).write('');
+      }
+
       const packetTools = makePacketTools(account);
 
-      return { account, address, topicKit, packetTools };
+      return { account, address, packetTools, topicKit };
     },
     {
       helper: {
@@ -260,7 +266,7 @@ export const prepareLocalOrchestrationAccountKit = (
           /**
            * @type {OfferHandler<
            *   Vow<void>,
-           *   { toAccount: ChainAddress; amount: AmountArg }
+           *   { toAccount: CosmosChainAddress; amount: AmountArg }
            * >}
            */
           const offerHandler = (seat, { toAccount, amount }) => {
@@ -273,7 +279,7 @@ export const prepareLocalOrchestrationAccountKit = (
           /**
            * @type {OfferHandler<
            *   Vow<void>,
-           *   { toAccount: ChainAddress; amounts: AmountArg[] }
+           *   { toAccount: CosmosChainAddress; amounts: AmountArg[] }
            * >}
            */
           const offerHandler = (seat, { toAccount, amounts }) => {
@@ -288,7 +294,7 @@ export const prepareLocalOrchestrationAccountKit = (
            *   Vow<void>,
            *   {
            *     amount: AmountArg;
-           *     destination: ChainAddress;
+           *     destination: CosmosChainAddress;
            *     opts?: IBCMsgTransferOptions;
            *   }
            * >}
@@ -548,6 +554,7 @@ export const prepareLocalOrchestrationAccountKit = (
           return asVow(async () => {
             await null;
             const { topicKit } = this.state;
+            if (!topicKit) throw Fail`No topicKit; storageNode not provided`;
             return harden({
               account: {
                 description: PUBLIC_TOPICS.account[0],
@@ -665,7 +672,7 @@ export const prepareLocalOrchestrationAccountKit = (
           });
         },
         /**
-         * @param {ChainAddress} destination
+         * @param {AccountIdArg} destination
          * @param {AmountArg} amount an ERTP {@link Amount} or a
          *   {@link DenomAmount}
          * @param {IBCMsgTransferOptions} [opts] if either timeoutHeight or
@@ -679,6 +686,7 @@ export const prepareLocalOrchestrationAccountKit = (
         transfer(destination, amount, opts) {
           return asVow(() => {
             trace('Transferring funds over IBC');
+
             const denomAmount = coerceDenomAmount(chainHub, amount);
 
             const { forwardOpts, ...rest } = opts ?? {};

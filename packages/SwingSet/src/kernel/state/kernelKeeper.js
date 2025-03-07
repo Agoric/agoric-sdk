@@ -1,5 +1,7 @@
 import { Nat, isNat } from '@endo/nat';
 import { assert, Fail } from '@endo/errors';
+import { naturalCompare } from '@agoric/internal/src/natural-sort.js';
+import { makeDummySlogger, noopConsole } from '../slogger.js';
 import {
   initializeVatState,
   makeVatKeeper,
@@ -329,7 +331,7 @@ export const DEFAULT_GC_KREFS_PER_BOYD = 20;
 /**
  * @param {SwingStoreKernelStorage} kernelStorage
  * @param {number | 'uninitialized'} expectedVersion
- * @param {KernelSlog} [kernelSlog]
+ * @param {KernelSlog} [kernelSlog] optional only for expectedVersion 'uninitialized'
  */
 export default function makeKernelKeeper(
   kernelStorage,
@@ -355,10 +357,13 @@ export default function makeKernelKeeper(
     if (versionString) {
       throw Error(`kernel DB already initialized (v${versionString})`);
     }
+    kernelSlog ||= makeDummySlogger({}, noopConsole);
   } else if (expectedVersion !== version) {
     throw Error(
       `kernel DB is too old: has version v${version}, but expected v${expectedVersion}`,
     );
+  } else if (!kernelSlog) {
+    throw Error('kernelSlog is required for an already-initialized kernel DB');
   } else {
     // DB is up-to-date, so populate any caches we use
     terminatedVats = JSON.parse(getRequired('vats.terminated'));
@@ -1886,39 +1891,12 @@ export default function makeKernelKeeper(
       }
     }
 
-    function compareNumbers(a, b) {
-      return Number(a - b);
-    }
-
-    function compareStrings(a, b) {
-      // natural-sort strings having a shared prefix followed by digits
-      // (e.g., 'ko42' and 'ko100')
-      const [_a, aPrefix, aDigits] = /^(\D+)(\d+)$/.exec(a) || [];
-      if (aPrefix) {
-        const [_b, bPrefix, bDigits] = /^(\D+)(\d+)$/.exec(b) || [];
-        if (bPrefix === aPrefix) {
-          return compareNumbers(aDigits, bDigits);
-        }
-      }
-
-      // otherwise use the default string ordering
-      if (a > b) {
-        return 1;
-      }
-      if (a < b) {
-        return -1;
-      }
-      return 0;
-    }
-
+    // Perform an element-by-element natural sort.
     kernelTable.sort(
       (a, b) =>
-        compareStrings(a[0], b[0]) ||
-        compareStrings(a[1], b[1]) ||
-        compareNumbers(a[2], b[2]) ||
-        compareStrings(a[3], b[3]) ||
-        compareNumbers(a[4], b[4]) ||
-        compareNumbers(a[5], b[5]) ||
+        naturalCompare(a[0], b[0]) ||
+        naturalCompare(a[1], b[1]) ||
+        naturalCompare(a[2], b[2]) ||
         0,
     );
 
@@ -1931,7 +1909,7 @@ export default function makeKernelKeeper(
         promises.push({ id: kpid, ...getKernelPromise(kpid) });
       }
     }
-    promises.sort((a, b) => compareStrings(a.id, b.id));
+    promises.sort((a, b) => naturalCompare(a.id, b.id));
 
     const objects = [];
     const nextObjectID = Nat(BigInt(getRequired('ko.nextID')));

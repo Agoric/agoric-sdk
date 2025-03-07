@@ -2,15 +2,14 @@
 import { assertAllDefined, deepMapObject } from '@agoric/internal';
 
 /**
- * @import {AsyncFlowTools, GuestInterface, HostArgs, HostOf} from '@agoric/async-flow';
+ * @import {AsyncFlowTools, GuestInterface, HostArgs} from '@agoric/async-flow';
  * @import {Zone} from '@agoric/zone';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {TimerService} from '@agoric/time';
- * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {HostOrchestrator} from './exos/orchestrator.js';
  * @import {Remote} from '@agoric/internal';
  * @import {CosmosInterchainService} from './exos/exo-interfaces.js';
- * @import {Chain, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, OrchestrationFlow, Orchestrator} from './types.js';
+ * @import {OrchestrationFlow, Orchestrator} from './types.js';
  */
 
 /**
@@ -31,9 +30,7 @@ import { assertAllDefined, deepMapObject } from '@agoric/internal';
  *   zone: Zone;
  *   timerService: Remote<TimerService>;
  *   zcf: ZCF;
- *   storageNode: Remote<StorageNode>;
  *   orchestrationService: Remote<CosmosInterchainService>;
- *   makeRecorderKit: MakeRecorderKit;
  *   makeOrchestrator: () => HostOrchestrator;
  *   vowTools: VowTools;
  *   asyncFlowTools: AsyncFlowTools;
@@ -43,9 +40,7 @@ export const makeOrchestrationFacade = ({
   zone,
   timerService,
   zcf,
-  storageNode,
   orchestrationService,
-  makeRecorderKit,
   makeOrchestrator,
   vowTools,
   asyncFlowTools,
@@ -54,9 +49,7 @@ export const makeOrchestrationFacade = ({
     zone,
     timerService,
     zcf,
-    storageNode,
     orchestrationService,
-    makeRecorderKit,
     makeOrchestrator,
     vowTools,
     asyncFlowTools,
@@ -125,7 +118,7 @@ export const makeOrchestrationFacade = ({
 
     const mappedContext = deepMapObject(
       hostCtx,
-      val => mappedFlows.get(val) || val,
+      val => mappedFlows.get(/** @type {any} */ (val)) || val,
     );
 
     const orcFns = /** @type {{ [N in keyof GFM]: HostForGuest<GFM[N]> }} */ (

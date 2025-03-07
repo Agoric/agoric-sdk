@@ -71,14 +71,24 @@ jobs:
         run: yarn lint
         working-directory: ./agoric-sdk/multichain-testing
 
+      - name: docker build (sdk)
+        # Produces local ghcr.io/agoric/agoric-sdk:dev used in the following test.
+        run: |
+          make docker-build-sdk TAG=dev
+        working-directory: ./agoric-sdk/packages/deployment
+
       - name: Setup Starship Infrastructure
         id: starship-infra
-        uses: cosmology-tech/starship-action@0.3.0
+        # in lieu of cosmology-tech/starship-action@0.3.0
+        # (see local .github/actions/starship-action/README.md)
+        uses: ./agoric-sdk/.github/actions/starship-action
         with:
           values: ./agoric-sdk/multichain-testing/${{ inputs.config }}
           port-forward: true
           version: 0.2.20
-          timeout: 30m
+          timeout: 20m # Usually 13min
+          # Load the locally-built dev Docker image for the chain into kind.
+          load-docker-images: ghcr.io/agoric/agoric-sdk:dev
           namespace: ${{ env.NAMESPACE }}
           repo: https://hyperweb-io.github.io/starship
 

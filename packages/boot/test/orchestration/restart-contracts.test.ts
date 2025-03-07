@@ -9,12 +9,12 @@ import {
 } from '@agoric/orchestration';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import type { UpdateRecord } from '@agoric/smart-wallet/src/smartWallet.js';
-import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
 } from '../bootstrapTests/walletFactory.js';
+import { minimalChainInfos } from '../tools/chainInfo.js';
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
 test.before(async t => {
@@ -39,7 +39,7 @@ test.serial('send-anywhere', async t => {
   await evalProposal(
     buildProposal('@agoric/builders/scripts/testing/init-send-anywhere.js', [
       '--chainInfo',
-      JSON.stringify(withChainCapabilities(fetchedChainInfo)),
+      JSON.stringify(withChainCapabilities(minimalChainInfos)),
       '--assetInfo',
       JSON.stringify([
         [

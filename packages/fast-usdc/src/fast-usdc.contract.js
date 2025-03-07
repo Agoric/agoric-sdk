@@ -31,13 +31,13 @@ const ADDRESSES_BAGGAGE_KEY = 'addresses';
 
 /**
  * @import {HostInterface} from '@agoric/async-flow';
- * @import {ChainAddress, CosmosChainInfo, Denom, DenomDetail, OrchestrationAccount} from '@agoric/orchestration';
+ * @import {CosmosChainInfo, Denom, DenomDetail, OrchestrationAccount, IBCConnectionInfo} from '@agoric/orchestration';
  * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration/src/utils/start-helper.js';
  * @import {Remote} from '@agoric/internal';
  * @import {Marshaller, StorageNode} from '@agoric/internal/src/lib-chainStorage.js'
  * @import {Zone} from '@agoric/zone';
  * @import {OperatorOfferResult} from './exos/transaction-feed.js';
- * @import {CctpTxEvidence, FeeConfig, RiskAssessment} from './types.js';
+ * @import {ContractRecord, FeeConfig} from './types.js';
  */
 
 /**
@@ -67,18 +67,16 @@ harden(meta);
  * @param {ERef<Marshaller>} marshaller
  * @param {FeeConfig} feeConfig
  */
-const publishFeeConfig = async (node, marshaller, feeConfig) => {
+const publishFeeConfig = (node, marshaller, feeConfig) => {
   const feeNode = E(node).makeChildNode(FEE_NODE);
-  const value = await E(marshaller).toCapData(feeConfig);
-  return E(feeNode).setValue(JSON.stringify(value));
+  void E.when(E(marshaller).toCapData(feeConfig), value =>
+    E(feeNode).setValue(JSON.stringify(value)),
+  );
 };
 
 /**
  * @param {Remote<StorageNode>} contractNode
- * @param {{
- *  poolAccount: ChainAddress['value'];
- *  settlementAccount: ChainAddress['value'];
- * }} addresses
+ * @param {ContractRecord} addresses
  */
 const publishAddresses = (contractNode, addresses) => {
   return E(contractNode).setValue(JSON.stringify(addresses));
@@ -92,6 +90,7 @@ const publishAddresses = (contractNode, addresses) => {
  *   feeConfig: FeeConfig;
  *   marshaller: Marshaller;
  *   poolMetricsNode: Remote<StorageNode>;
+ *   storageNode: Remote<StorageNode>;
  * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
@@ -127,11 +126,10 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     chainHub,
   });
 
-  const { localTransfer } = makeZoeTools(zcf, vowTools);
+  const zoeTools = makeZoeTools(zcf, vowTools);
   const makeAdvancer = prepareAdvancer(zone, {
     chainHub,
     feeConfig,
-    localTransfer,
     usdc: harden({
       brand: terms.brands.USDC,
       denom: terms.usdcDenom,
@@ -139,6 +137,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     statusManager,
     vowTools,
     zcf,
+    zoeTools,
   });
 
   const makeFeedKit = prepareTransactionFeedKit(zone, zcf);
@@ -168,7 +167,22 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     async makeWithdrawFeesInvitation() {
       return poolKit.feeRecipient.makeWithdrawFeesInvitation();
     },
-    async connectToNoble() {
+    /**
+     * @param {string} agoricChainId
+     * @param {string} nobleChainId
+     * @param {IBCConnectionInfo} agoricToNoble
+     */
+    async connectToNoble(agoricChainId, nobleChainId, agoricToNoble) {
+      trace('connectToNoble', agoricChainId, nobleChainId, agoricToNoble);
+      chainHub.updateConnection(agoricChainId, nobleChainId, agoricToNoble);
+      // v1 has `NobleAccount` which we don't expect to ever settle.
+      // Including the connection_id in the zone key lets us use
+      // this before and after null-upgrade in multichain-testing.
+      const nobleAccountV = zone.makeOnce(
+        `NobleICA-${agoricToNoble.counterparty.connection_id}`,
+        () => makeNobleAccount(),
+      );
+
       return vowTools.when(nobleAccountV, nobleAccount => {
         trace('nobleAccount', nobleAccount);
         return vowTools.when(
@@ -195,6 +209,9 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
       await publishAddresses(storageNode, addresses);
       return addresses;
     },
+    deleteCompletedTxs() {
+      return statusManager.deleteCompletedTxs();
+    },
   });
 
   const publicFacet = zone.exo('Fast USDC Public', undefined, {
@@ -210,8 +227,10 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     getStaticInfo() {
       baggage.has(ADDRESSES_BAGGAGE_KEY) ||
         Fail`no addresses. creator must 'publishAddresses' first`;
+      /** @type {ContractRecord} */
+      const addresses = baggage.get(ADDRESSES_BAGGAGE_KEY);
       return harden({
-        [ADDRESSES_BAGGAGE_KEY]: baggage.get(ADDRESSES_BAGGAGE_KEY),
+        [ADDRESSES_BAGGAGE_KEY]: addresses,
       });
     },
   });
@@ -229,7 +248,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   // So we use zone.exoClassKit above to define the liquidity pool kind
   // and pass the shareMint into the maker / init function.
 
-  void publishFeeConfig(storageNode, marshaller, feeConfig);
+  publishFeeConfig(storageNode, marshaller, feeConfig);
 
   const shareMint = await provideSingleton(
     zone.mapStore('mint'),
@@ -256,8 +275,6 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     );
   }
 
-  const nobleAccountV = zone.makeOnce('NobleAccount', () => makeNobleAccount());
-
   const feedKit = zone.makeOnce('Feed Kit', () => makeFeedKit());
 
   const poolAccountV = zone.makeOnce('PoolAccount', () => makeLocalAccount());
@@ -277,17 +294,19 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   const [_agoric, _noble, agToNoble] = await vowTools.when(
     chainHub.getChainsAndConnection('agoric', 'noble'),
   );
-  const settlerKit = makeSettler({
-    repayer: poolKit.repayer,
-    sourceChannel: agToNoble.transferChannel.counterPartyChannelId,
-    remoteDenom: 'uusdc',
-    settlementAccount,
-  });
+  const settlerKit = zone.makeOnce('settlerKit', () =>
+    makeSettler({
+      repayer: poolKit.repayer,
+      sourceChannel: agToNoble.transferChannel.counterPartyChannelId,
+      remoteDenom: 'uusdc',
+      settlementAccount,
+    }),
+  );
 
   const advancer = zone.makeOnce('Advancer', () =>
     makeAdvancer({
-      borrowerFacet: poolKit.borrower,
-      notifyFacet: settlerKit.notify,
+      borrower: poolKit.borrower,
+      notifier: settlerKit.notifier,
       poolAccount,
       settlementAddress,
     }),

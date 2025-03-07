@@ -7,8 +7,9 @@ import { E } from '@endo/eventual-send';
  * Burn the invitation, assert that only one invitation was burned,
  * and extract and return the instanceHandle and invitationHandle
  *
- * @param {Issuer} invitationIssuer
- * @param {ERef<Payment>} invitation
+ * @template {AssetKind} K
+ * @param {Issuer<K>} invitationIssuer
+ * @param {ERef<Payment<K>>} invitation
  * @returns {Promise<{
  *   instanceHandle: Instance,
  *   invitationHandle: InvitationHandle,

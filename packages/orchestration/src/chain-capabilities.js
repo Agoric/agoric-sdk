@@ -1,5 +1,7 @@
 /**
  * @file Contains ChainInfo that not available from a well-known chain registry.
+ *
+ *   Info last verified Jan. 21 2025
  */
 
 import { objectMap } from '@endo/patterns';
@@ -38,11 +40,29 @@ const PfmEnabled = /** @type {const} */ ({
 });
 harden(PfmEnabled);
 
+const IcaEnabled = /** @type {const} */ ({
+  agoric: true,
+  celestia: true,
+  cosmoshub: true,
+  dydx: true,
+  juno: true,
+  neutron: true,
+  noble: true,
+  omniflixhub: true,
+  osmosis: true,
+  secretnetwork: true,
+  stargaze: true,
+  stride: true,
+  umee: true,
+});
+harden(IcaEnabled);
+
 /**
  * @param {Record<string, CosmosChainInfo>} chainInfo
  * @param {{
  *   PfmEnabled: Record<string, boolean>;
  *   IcqEnabled: Record<string, boolean>;
+ *   IcaEnabled: Record<string, boolean>;
  * }} [opts]
  */
 export const withChainCapabilities = (
@@ -50,11 +70,13 @@ export const withChainCapabilities = (
   opts = {
     PfmEnabled,
     IcqEnabled,
+    IcaEnabled,
   },
 ) => {
   return objectMap(chainInfo, (info, name) => ({
     ...info,
     pfmEnabled: !!opts.PfmEnabled[name],
     icqEnabled: !!opts.IcqEnabled[name],
+    icaEnabled: !!opts.IcqEnabled[name],
   }));
 };

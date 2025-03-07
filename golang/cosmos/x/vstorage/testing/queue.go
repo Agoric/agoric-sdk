@@ -26,3 +26,9 @@ func GetQueueItems(ctx sdk.Context, vstorageKeeper keeper.Keeper, queuePath stri
 	}
 	return values, nil
 }
+
+func ResetQueue(ctx sdk.Context, vstorageKeeper keeper.Keeper, queuePath string) error {
+	unlimitedCtx := ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
+	vstorageKeeper.RemoveEntriesWithPrefix(unlimitedCtx, queuePath)
+	return nil
+}

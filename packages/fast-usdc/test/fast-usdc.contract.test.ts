@@ -28,7 +28,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E } from '@endo/far';
+import { E, type EReturn } from '@endo/far';
 import { matches } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
 import path from 'path';
@@ -61,7 +61,7 @@ const getInvitationProperties = async (
 // Spec for Mainnet. Other values are covered in unit tests of TransactionFeed.
 const operatorQty = 3;
 
-type CommonSetup = Awaited<ReturnType<typeof commonSetup>>;
+type CommonSetup = EReturn<typeof commonSetup>;
 const startContract = async (
   common: Pick<CommonSetup, 'brands' | 'commonPrivateArgs' | 'utils'>,
 ) => {
@@ -70,7 +70,12 @@ const startContract = async (
     commonPrivateArgs,
   } = common;
 
-  const { zoe, bundleAndInstall } = await setUpZoeForTest();
+  let contractBaggage;
+  const setJig = ({ baggage }) => {
+    contractBaggage = baggage;
+  };
+
+  const { zoe, bundleAndInstall } = await setUpZoeForTest({ setJig });
   const installation: Installation<FastUsdcSF> =
     await bundleAndInstall(contractFile);
 
@@ -92,11 +97,18 @@ const startContract = async (
       E(startKit.creatorFacet).makeOperatorInvitation(`operator-${opIx}`),
     ),
   );
-  await E(startKit.creatorFacet).connectToNoble();
+  const { agoric, noble } = commonPrivateArgs.chainInfo;
+  const agoricToNoble = agoric.connections![noble.chainId];
+  await E(startKit.creatorFacet).connectToNoble(
+    agoric.chainId,
+    noble.chainId,
+    agoricToNoble,
+  );
   await E(startKit.creatorFacet).publishAddresses();
 
   return {
     ...startKit,
+    contractBaggage,
     terms,
     zoe,
     metricsSub,
@@ -124,7 +136,7 @@ const makeTestContext = async (t: ExecutionContext) => {
   });
 
   const sync = {
-    ocw: makePromiseKit<Awaited<ReturnType<typeof makeOracleOperator>>[]>(),
+    ocw: makePromiseKit<EReturn<typeof makeOracleOperator>[]>(),
     lp: makePromiseKit<Record<string, ReturnType<typeof makeLP>>>(),
   };
 
@@ -171,11 +183,12 @@ const makeTestContext = async (t: ExecutionContext) => {
   };
 };
 
-type FucContext = Awaited<ReturnType<typeof makeTestContext>>;
+type FucContext = EReturn<typeof makeTestContext>;
 const test = anyTest as TestFn<FucContext>;
 test.before(async t => (t.context = await makeTestContext(t)));
 
-test('baggage', async t => {
+// baggage after a simple startInstance, without any other startup logic
+test('initial baggage', async t => {
   const {
     brands: { usdc },
     commonPrivateArgs,
@@ -198,6 +211,13 @@ test('baggage', async t => {
   );
 
   const tree = inspectMapStore(contractBaggage);
+  t.snapshot(tree, 'contract baggage after start');
+});
+
+test('used baggage', async t => {
+  const { startKit } = t.context;
+
+  const tree = inspectMapStore(startKit.contractBaggage);
   t.snapshot(tree, 'contract baggage after start');
 });
 
@@ -347,7 +367,12 @@ const makeLP = async (
       const usdcPmt = await E(sharePurse)
         .withdraw(proposal.give.PoolShare)
         .then(pmt => E(zoe).offer(toWithdraw, proposal, { PoolShare: pmt }))
-        .then(seat => E(seat).getPayout('USDC'));
+        .then(async seat => {
+          // be sure to collect refund
+          void E(sharePurse).deposit(await E(seat).getPayout('PoolShare'));
+          t.log(await E(seat).getOfferResult());
+          return E(seat).getPayout('USDC');
+        });
       const amt = await E(usdcPurse).deposit(usdcPmt);
       t.log(name, 'withdraw payout', ...logAmt(amt));
       t.true(isGTE(amt, proposal.want.USDC));
@@ -778,6 +803,52 @@ test.serial('STORY05(cont): LPs withdraw all liquidity', async t => {
   t.log({ a, b, sum: add(a, b) });
   t.truthy(a);
   t.truthy(b);
+});
+
+test.serial('withdraw all liquidity while ADVANCING', async t => {
+  const {
+    bridges: { snapshot, since },
+    common: {
+      commonPrivateArgs: { feeConfig },
+      utils,
+      brands: { usdc },
+      bootstrap: { storage },
+    },
+    evm: { cctp, txPub },
+    mint,
+    startKit: { zoe, instance, metricsSub },
+  } = t.context;
+
+  const usdcPurse = purseOf(usdc.issuer, utils);
+  // 1. Alice deposits 10 USDC for 10 FastLP
+  const alice = makeLP('Alice', usdcPurse(10_000_000n), zoe, instance);
+  await E(alice).deposit(t, 10_000_000n);
+
+  // 2. Bob initiates an advance of 6, reducing the pool to 4
+  const bob = makeCustomer('Bob', cctp, txPub.publisher, feeConfig);
+  const bridgePos = snapshot();
+  const sent = await bob.sendFast(t, 6_000_000n, 'osmo123bob5');
+  await eventLoopIteration();
+  bob.checkSent(t, since(bridgePos));
+
+  // 3. Alice proposes to withdraw 7 USDC
+  await t.throwsAsync(E(alice).withdraw(t, 0.7), {
+    message:
+      'cannot withdraw {"brand":"[Alleged: USDC brand]","value":"[7000000n]"}; {"brand":"[Alleged: USDC brand]","value":"[5879999n]"} is in use; stand by for pool to return to {"brand":"[Alleged: USDC brand]","value":"[10000001n]"}',
+  });
+
+  // 4. Bob's advance is settled
+  await mint(sent);
+  await utils.transmitTransferAck();
+  t.like(storage.getDeserialized(`fun.txns.${sent.txHash}`), [
+    { evidence: sent, status: 'OBSERVED' },
+    { status: 'ADVANCING' },
+    { status: 'ADVANCED' },
+    { status: 'DISBURSED' },
+  ]);
+
+  // Now Alice can withdraw all her liquidity.
+  await E(alice).withdraw(t, 1);
 });
 
 test.serial('withdraw fees using creatorFacet', async t => {

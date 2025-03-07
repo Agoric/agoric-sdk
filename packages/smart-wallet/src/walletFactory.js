@@ -17,7 +17,10 @@ import { E } from '@endo/far';
 import { prepareSmartWallet } from './smartWallet.js';
 import { shape } from './typeGuards.js';
 
-/** @import {NameHub} from '@agoric/vats'; */
+/**
+ * @import {MapStore} from '@agoric/swingset-liveslots';
+ * @import {NameHub} from '@agoric/vats';
+ */
 
 const trace = makeTracer('WltFct');
 

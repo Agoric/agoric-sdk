@@ -14,7 +14,9 @@ import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 const trace = makeTracer('ReserveKit', true);
 
 /**
+ * @import {EReturn} from '@endo/far';
  * @import {TypedPattern} from '@agoric/internal';
+ * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
  */
 
 /**
@@ -288,4 +290,4 @@ export const prepareAssetReserveKit = async (
   return makeAssetReserveKit;
 };
 harden(prepareAssetReserveKit);
-/** @typedef {ReturnType<Awaited<ReturnType<typeof prepareAssetReserveKit>>>} AssetReserveKit */
+/** @typedef {EReturn<EReturn<typeof prepareAssetReserveKit>>} AssetReserveKit */

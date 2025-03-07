@@ -14,8 +14,9 @@ import { parseArgs } from 'node:util';
 
 /**
  * @import {CoreEvalBuilder, DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js'
+ * @import {Brand} from '@agoric/ertp';
  * @import {ParseArgsConfig} from 'node:util'
- * @import {FastUSDCConfig, FeedPolicy} from '@agoric/fast-usdc/src/types.js'
+ * @import {FastUSDCConfig, FeedPolicy} from '@agoric/fast-usdc';
  */
 
 const { keys } = Object;

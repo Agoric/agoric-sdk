@@ -6,6 +6,10 @@ import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 
 /**
+ * @import {Key, Pattern} from '@endo/patterns';
+ */
+
+/**
  * @typedef {{
  *   topicKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<VaultNotification>;
  *   vault: Vault | null;

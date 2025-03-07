@@ -14,6 +14,10 @@ import {
 import { Fail, q } from '@endo/errors';
 import { FeeMintAccessShape } from '../typeGuards.js';
 
+/**
+ * @import {FeeIssuerConfig, ZoeService} from '@agoric/zoe';
+ */
+
 /** @deprecated Redundant. Just omit it. */
 const FEE_MINT_KIT = 'FeeMintKit';
 

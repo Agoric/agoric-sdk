@@ -5,7 +5,7 @@
   "scripts": {
     "build": "exit 0",
     "lint": "yarn tsc && yarn eslint .",
-    "lint-fix": "yarn lint:eslint --fix",
+    "lint-fix": "yarn eslint . --fix",
     "test": "echo 'Run specific test suites:\nyarn test:main (needs `make start`)\nyarn test:fast-usdc (needs `make start FILE=config.fusdc.yaml`)'",
     "test:main": "ava --config ava.main.config.js",
     "test:fast-usdc": "ava --config ava.fusdc.config.js",
@@ -15,31 +15,31 @@
     "starship:stop": "make stop",
     "postinstall": "patch-package"
   },
-  "packageManager": "yarn@4.5.3",
+  "packageManager": "yarn@4.6.0",
   "devDependencies": {
     "@agoric/cosmic-proto": "dev",
     "@agoric/fast-usdc": "dev",
     "@cosmjs/crypto": "^0.32.4",
     "@cosmjs/proto-signing": "^0.32.4",
     "@cosmjs/stargate": "^0.32.4",
-    "@endo/errors": "^1.2.8",
-    "@endo/far": "^1.1.9",
-    "@endo/nat": "^5.0.13",
-    "@endo/ses-ava": "^1.2.8",
+    "@endo/errors": "^1.2.9",
+    "@endo/far": "^1.1.10",
+    "@endo/nat": "^5.0.14",
+    "@endo/ses-ava": "^1.2.9",
     "@types/eslint": "^8",
     "@types/fs-extra": "^11",
     "@types/node": "^22.0.0",
     "@typescript-eslint/eslint-plugin": "^8.17.0",
     "@typescript-eslint/parser": "^8.17.0",
     "ava": "^6.2.0",
-    "eslint": "^8.56.0",
+    "eslint": "^9.0.0",
     "eslint-config-prettier": "^9.1.0",
-    "execa": "9.1.0",
+    "execa": "^9.5.2",
     "fs-extra": "^11.2.0",
     "patch-package": "^8.0.0",
     "starshipjs": "2.4.1",
     "ts-blank-space": "^0.4.4",
-    "typescript": "~5.7.2"
+    "typescript": "~5.8.2"
   },
   "resolutions": {
     "axios": "1.6.7",
@@ -90,30 +90,6 @@
     "@agoric/xsnap-lockdown": "portal:../packages/xsnap-lockdown",
     "@agoric/zoe": "portal:../packages/zoe",
     "@agoric/zone": "portal:../packages/zone"
-  },
-  "eslintConfig": {
-    "root": true,
-    "env": {
-      "node": true
-    },
-    "parser": "@typescript-eslint/parser",
-    "plugins": [
-      "@typescript-eslint"
-    ],
-    "extends": [
-      "eslint:recommended",
-      "plugin:@typescript-eslint/recommended",
-      "prettier"
-    ],
-    "rules": {
-      "@typescript-eslint/no-unused-vars": [
-        "error",
-        {
-          "argsIgnorePattern": "^_",
-          "varsIgnorePattern": "^_"
-        }
-      ]
-    }
   },
   "license": "Apache-2.0"
 }

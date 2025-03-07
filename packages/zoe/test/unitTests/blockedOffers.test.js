@@ -15,6 +15,10 @@ import {
 import { assertPayoutAmount } from '../zoeTestHelpers.js';
 import { makeOffer } from './makeOffer.js';
 
+/**
+ * @import {ContractMeta, Invitation, OfferHandler, TransferPart, ZCF, ZCFSeat} from '@agoric/zoe';
+ */
+
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const contractRoot = `${dirname}/zcf/zcfTesterContract.js`;

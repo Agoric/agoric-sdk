@@ -13,7 +13,6 @@ import type { start as startStakeIca } from '@agoric/orchestration/src/examples/
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
 import type { TestFn } from 'ava';
 import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
-import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { BridgeId } from '@agoric/internal';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
@@ -25,6 +24,7 @@ import {
   insistManagerType,
   makeSwingsetHarness,
 } from '../../tools/supports.js';
+import { minimalChainInfos } from '../tools/chainInfo.js';
 
 const test: TestFn<
   WalletFactoryTestContext & {
@@ -331,7 +331,7 @@ test.serial('basic-flows', async t => {
       '@agoric/builders/scripts/orchestration/init-basic-flows.js',
       [
         '--chainInfo',
-        JSON.stringify(withChainCapabilities(fetchedChainInfo)),
+        JSON.stringify(withChainCapabilities(minimalChainInfos)),
         '--assetInfo',
         JSON.stringify([
           [
@@ -432,7 +432,7 @@ test.serial('basic-flows', async t => {
       destination: {
         chainId: 'noble-1',
         value: 'noble1test',
-        encoding: 'bech32,',
+        encoding: 'bech32',
       },
     },
   });
@@ -456,7 +456,7 @@ test.serial('basic-flows', async t => {
       destination: {
         chainId: 'noble-1',
         value: 'noble1test',
-        encoding: 'bech32,',
+        encoding: 'bech32',
       },
     },
   });
@@ -481,7 +481,7 @@ test.serial('basic-flows', async t => {
       destination: {
         chainId: 'noble-1',
         value: 'noble1test',
-        encoding: 'bech32,',
+        encoding: 'bech32',
       },
     },
   });
@@ -525,7 +525,7 @@ test.serial('basic-flows', async t => {
         destination: {
           chainId: 'noble-1',
           value: 'noble1test',
-          encoding: 'bech32,',
+          encoding: 'bech32',
         },
       },
     }),
@@ -556,7 +556,7 @@ test.serial('basic-flows - portfolio holder', async t => {
       '@agoric/builders/scripts/orchestration/init-basic-flows.js',
       [
         '--chainInfo',
-        JSON.stringify(withChainCapabilities(fetchedChainInfo)),
+        JSON.stringify(withChainCapabilities(minimalChainInfos)),
         '--assetInfo',
         JSON.stringify([
           [

@@ -1,7 +1,10 @@
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
-import { AnyNatAmountShape, ChainAddressShape } from '@agoric/orchestration';
+import {
+  AnyNatAmountShape,
+  CosmosChainAddressShape,
+} from '@agoric/orchestration';
 import { pickFacet } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
 import { E } from '@endo/far';
@@ -19,7 +22,7 @@ import { makeFeeTools } from '../utils/fees.js';
  * @import {Amount, Brand} from '@agoric/ertp';
  * @import {TypedPattern} from '@agoric/internal'
  * @import {NatAmount} from '@agoric/ertp';
- * @import {ChainAddress, ChainHub, Denom, OrchestrationAccount} from '@agoric/orchestration';
+ * @import {CosmosChainAddress, ChainHub, Denom, OrchestrationAccount} from '@agoric/orchestration';
  * @import {ZoeTools} from '@agoric/orchestration/src/utils/zoe-tools.js';
  * @import {VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
@@ -32,12 +35,12 @@ import { makeFeeTools } from '../utils/fees.js';
  * @typedef {{
  *  chainHub: ChainHub;
  *  feeConfig: FeeConfig;
- *  localTransfer: ZoeTools['localTransfer'];
  *  log?: LogFn;
  *  statusManager: StatusManager;
  *  usdc: { brand: Brand<'nat'>; denom: Denom; };
  *  vowTools: VowTools;
  *  zcf: ZCF;
+ *  zoeTools: ZoeTools;
  * }} AdvancerKitPowers
  */
 
@@ -46,7 +49,7 @@ const AdvancerVowCtxShape = M.splitRecord(
   {
     fullAmount: AnyNatAmountShape,
     advanceAmount: AnyNatAmountShape,
-    destination: ChainAddressShape,
+    destination: CosmosChainAddressShape,
     forwardingAddress: M.string(),
     txHash: EvmHashShape,
   },
@@ -57,7 +60,7 @@ const AdvancerVowCtxShape = M.splitRecord(
 const AdvancerKitI = harden({
   advancer: M.interface('AdvancerI', {
     handleTransactionEvent: M.callWhen(EvidenceWithRiskShape).returns(),
-    setIntermediateRecipient: M.call(ChainAddressShape).returns(),
+    setIntermediateRecipient: M.call(CosmosChainAddressShape).returns(),
   }),
   depositHandler: M.interface('DepositHandlerI', {
     onFulfilled: M.call(M.undefined(), AdvancerVowCtxShape).returns(VowShape),
@@ -69,17 +72,35 @@ const AdvancerKitI = harden({
     ),
     onRejected: M.call(M.error(), AdvancerVowCtxShape).returns(M.undefined()),
   }),
+  withdrawHandler: M.interface('WithdrawHandlerI', {
+    onFulfilled: M.call(M.undefined(), {
+      advanceAmount: AnyNatAmountShape,
+      tmpReturnSeat: M.remotable(),
+    }).returns(M.undefined()),
+    onRejected: M.call(M.error(), {
+      advanceAmount: AnyNatAmountShape,
+      tmpReturnSeat: M.remotable(),
+    }).returns(M.undefined()),
+  }),
 });
 
 /**
  * @typedef {{
  *  fullAmount: NatAmount;
  *  advanceAmount: NatAmount;
- *  destination: ChainAddress;
+ *  destination: CosmosChainAddress;
  *  forwardingAddress: NobleAddress;
  *  txHash: EvmHash;
  * }} AdvancerVowCtx
  */
+
+export const stateShape = harden({
+  notifier: M.remotable(),
+  borrower: M.remotable(),
+  poolAccount: M.remotable(),
+  intermediateRecipient: M.opt(CosmosChainAddressShape),
+  settlementAddress: M.opt(CosmosChainAddressShape),
+});
 
 /**
  * @param {Zone} zone
@@ -90,12 +111,12 @@ export const prepareAdvancerKit = (
   {
     chainHub,
     feeConfig,
-    localTransfer,
     log = makeTracer('Advancer', true),
     statusManager,
     usdc,
     vowTools: { watch, when },
     zcf,
+    zoeTools: { localTransfer, withdrawToSeat },
   },
 ) => {
   assertAllDefined({
@@ -114,11 +135,11 @@ export const prepareAdvancerKit = (
     AdvancerKitI,
     /**
      * @param {{
-     *   notifyFacet: import('./settler.js').SettlerKit['notify'];
-     *   borrowerFacet: LiquidityPoolKit['borrower'];
+     *   notifier: import('./settler.js').SettlerKit['notifier'];
+     *   borrower: LiquidityPoolKit['borrower'];
      *   poolAccount: HostInterface<OrchestrationAccount<{chainId: 'agoric'}>>;
-     *   settlementAddress: ChainAddress;
-     *   intermediateRecipient?: ChainAddress;
+     *   settlementAddress: CosmosChainAddress;
+     *   intermediateRecipient?: CosmosChainAddress;
      * }} config
      */
     config =>
@@ -159,15 +180,16 @@ export const prepareAdvancerKit = (
             if (decoded.baseAddress !== settlementAddress.value) {
               throw Fail`⚠️ baseAddress of address hook ${q(decoded.baseAddress)} does not match the expected address ${q(settlementAddress.value)}`;
             }
-            const { EUD } = /** @type {AddressHook['query']} */ (decoded.query);
+            const { EUD } = decoded.query;
             log(`decoded EUD: ${EUD}`);
+            assert.typeof(EUD, 'string');
             // throws if the bech32 prefix is not found
             const destination = chainHub.makeChainAddress(EUD);
 
             const fullAmount = toAmount(evidence.tx.amount);
-            const { borrowerFacet, notifyFacet, poolAccount } = this.state;
+            const { borrower, notifier, poolAccount } = this.state;
             // do not advance if we've already received a mint/settlement
-            const mintedEarly = notifyFacet.checkMintedEarly(
+            const mintedEarly = notifier.checkMintedEarly(
               evidence,
               destination,
             );
@@ -178,7 +200,7 @@ export const prepareAdvancerKit = (
 
             const { zcfSeat: tmpSeat } = zcf.makeEmptySeatKit();
             // throws if the pool has insufficient funds
-            borrowerFacet.borrow(tmpSeat, advanceAmount);
+            borrower.borrow(tmpSeat, advanceAmount);
 
             // this cannot throw since `.isSeen()` is called in the same turn
             statusManager.advance(evidence);
@@ -189,6 +211,8 @@ export const prepareAdvancerKit = (
               poolAccount,
               harden({ USDC: advanceAmount }),
             );
+            // WARNING: this must never reject, see handler @throws {never} below
+            // void not enforced by linter until #10627 no-floating-vows
             void watch(depositV, this.facets.depositHandler, {
               advanceAmount,
               destination,
@@ -199,10 +223,10 @@ export const prepareAdvancerKit = (
             });
           } catch (error) {
             log('Advancer error:', error);
-            statusManager.observe(evidence);
+            statusManager.skipAdvance(evidence, [error.message]);
           }
         },
-        /** @param {ChainAddress} intermediateRecipient */
+        /** @param {CosmosChainAddress} intermediateRecipient */
         setIntermediateRecipient(intermediateRecipient) {
           this.state.intermediateRecipient = intermediateRecipient;
         },
@@ -211,11 +235,13 @@ export const prepareAdvancerKit = (
         /**
          * @param {undefined} result
          * @param {AdvancerVowCtx & { tmpSeat: ZCFSeat }} ctx
+         * @throws {never} WARNING: this function must not throw, because user funds are at risk
          */
         onFulfilled(result, ctx) {
           const { poolAccount, intermediateRecipient, settlementAddress } =
             this.state;
-          const { destination, advanceAmount, tmpSeat: _, ...detail } = ctx;
+          const { destination, advanceAmount, tmpSeat, ...detail } = ctx;
+          tmpSeat.exit();
           const amount = harden({
             denom: usdc.denom,
             value: advanceAmount.value,
@@ -242,6 +268,7 @@ export const prepareAdvancerKit = (
          *
          * @param {Error} error
          * @param {AdvancerVowCtx & { tmpSeat: ZCFSeat }} ctx
+         * @throws {never} WARNING: this function must not throw, because user funds are at risk
          */
         onRejected(error, { tmpSeat, advanceAmount, ...restCtx }) {
           log(
@@ -249,9 +276,10 @@ export const prepareAdvancerKit = (
             error,
           );
           try {
-            const { borrowerFacet, notifyFacet } = this.state;
-            notifyFacet.notifyAdvancingResult(restCtx, false);
-            borrowerFacet.returnToPool(tmpSeat, advanceAmount);
+            const { borrower, notifier } = this.state;
+            notifier.notifyAdvancingResult(restCtx, false);
+            borrower.returnToPool(tmpSeat, advanceAmount);
+            tmpSeat.exit();
           } catch (e) {
             log('🚨 deposit to localOrchAccount failure recovery failed', e);
           }
@@ -261,39 +289,76 @@ export const prepareAdvancerKit = (
         /**
          * @param {undefined} result
          * @param {AdvancerVowCtx} ctx
+         * @throws {never} WARNING: this function must not throw, because user funds are at risk
          */
         onFulfilled(result, ctx) {
-          const { notifyFacet } = this.state;
+          const { notifier } = this.state;
           const { advanceAmount, destination, ...detail } = ctx;
           log('Advance succeeded', { advanceAmount, destination });
-          // During development, due to a bug, this call threw.
-          // The failure was silent (no diagnostics) due to:
-          //  - #10576 Vows do not report unhandled rejections
-          // For now, the advancer kit relies on consistency between
-          // notifyFacet, statusManager, and callers of handleTransactionEvent().
-          // TODO: revisit #10576 during #10510
-          notifyFacet.notifyAdvancingResult({ destination, ...detail }, true);
+          notifier.notifyAdvancingResult({ destination, ...detail }, true);
         },
         /**
          * @param {Error} error
          * @param {AdvancerVowCtx} ctx
          */
         onRejected(error, ctx) {
-          const { notifyFacet } = this.state;
+          const { notifier, poolAccount } = this.state;
           log('Advance failed', error);
-          const { advanceAmount: _, ...restCtx } = ctx;
-          notifyFacet.notifyAdvancingResult(restCtx, false);
+          const { advanceAmount, ...restCtx } = ctx;
+          notifier.notifyAdvancingResult(restCtx, false);
+          const { zcfSeat: tmpReturnSeat } = zcf.makeEmptySeatKit();
+          const withdrawV = withdrawToSeat(
+            // @ts-expect-error LocalAccountMethods vs OrchestrationAccount
+            poolAccount,
+            tmpReturnSeat,
+            harden({ USDC: advanceAmount }),
+          );
+          // WARNING: this must never reject, see handler @throws {never} below
+          // void not enforced by linter until #10627 no-floating-vows
+          void watch(withdrawV, this.facets.withdrawHandler, {
+            advanceAmount,
+            tmpReturnSeat,
+          });
+        },
+      },
+      withdrawHandler: {
+        /**
+         *
+         * @param {undefined} result
+         * @param {{ advanceAmount: Amount<'nat'>; tmpReturnSeat: ZCFSeat; }} ctx
+         * @throws {never} WARNING: this function must not throw, because user funds are at risk
+         */
+        onFulfilled(result, { advanceAmount, tmpReturnSeat }) {
+          const { borrower } = this.state;
+          try {
+            borrower.returnToPool(tmpReturnSeat, advanceAmount);
+          } catch (e) {
+            // If we reach here, the unused advance funds will remain in `tmpReturnSeat`
+            // and must be retrieved from recovery sets.
+            log(
+              `🚨 return ${q(advanceAmount)} to pool failed. funds remain on "tmpReturnSeat"`,
+              e,
+            );
+          }
+        },
+        /**
+         * @param {Error} error
+         * @param {{ advanceAmount: Amount<'nat'>; tmpReturnSeat: ZCFSeat; }} ctx
+         * @throws {never} WARNING: this function must not throw, because user funds are at risk
+         */
+        onRejected(error, { advanceAmount, tmpReturnSeat }) {
+          log(
+            `🚨 withdraw ${q(advanceAmount)} from "poolAccount" to return to pool failed`,
+            error,
+          );
+          // If we reach here, the unused advance funds will remain in the `poolAccount`.
+          // A contract update will be required to return them to the LiquidityPool.
+          tmpReturnSeat.exit();
         },
       },
     },
     {
-      stateShape: harden({
-        notifyFacet: M.remotable(),
-        borrowerFacet: M.remotable(),
-        poolAccount: M.remotable(),
-        intermediateRecipient: M.opt(ChainAddressShape),
-        settlementAddress: M.opt(ChainAddressShape),
-      }),
+      stateShape,
     },
   );
 };
