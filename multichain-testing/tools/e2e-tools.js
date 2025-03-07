@@ -208,7 +208,8 @@ export const provisionSmartWallet = async (
     await blockTool.waitForBlock(1, { address, step: 'bank send' });
   };
 
-  for await (const [name, qty] of Object.entries(balances)) {
+  const balanceEntries = Object.entries(balances);
+  for await (const [name, qty] of balanceEntries) {
     const info = byName[name];
     if (!info) {
       throw Error(`${name} not found in vbank assets`);
@@ -218,7 +219,13 @@ export const provisionSmartWallet = async (
     const value = Nat(Number(qty) * 10 ** decimalPlaces);
     await sendFromWhale(denom, value);
   }
-  progress('after whale', await getCosmosBalances());
+
+  const afterWhale = await retryUntilCondition(
+    () => getCosmosBalances(),
+    ({ balances }) => balances.length === balanceEntries.length,
+    `${address} received tokens from whale`,
+  );
+  progress('after whale', afterWhale);
 
   progress({ provisioning: address });
   await agd.tx(
