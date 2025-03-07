@@ -21,8 +21,6 @@ import { prepareInvitationKit } from './makeInvitation.js';
 import { makeInstanceAdminStorage } from './instanceAdminStorage.js';
 import { makeInstallationStorage } from './installationStorage.js';
 
-// /// <reference path="./types.js" />
-// import './internal-types.js';
 import {
   InstanceStorageManagerIKit,
   ZoeMintI,
