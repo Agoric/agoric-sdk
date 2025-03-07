@@ -75,7 +75,7 @@ chains:
       rest: 1310
       rpc: 26650
       grpc: 9098
-      faucet: 8089
+      faucet: 8090
     resources:
       cpu: 1
       memory: 1Gi
