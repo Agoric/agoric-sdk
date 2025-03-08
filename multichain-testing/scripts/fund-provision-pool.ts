@@ -111,12 +111,20 @@ Options:
     process.exit(0);
   }
 
-  const success = await fundProvisionPool({
-    address: values.address,
-    amount: values.amount,
-    pod: values.pod,
-    container: values.container,
-  });
+  const attempt = () =>
+    fundProvisionPool({
+      address: values.address,
+      amount: values.amount,
+      pod: values.pod,
+      container: values.container,
+    });
+
+  let success = await attempt();
+
+  if (!success) {
+    console.log('Trying again...');
+    success = await attempt();
+  }
 
   process.exit(success ? 0 : 1);
 }
