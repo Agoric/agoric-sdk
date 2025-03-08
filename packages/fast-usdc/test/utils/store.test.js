@@ -67,10 +67,16 @@ test('add with invalid count', t => {
 
   // Should throw when adding with count <= 0
   t.throws(() => multiset.add('apple', 0), {
-    message: /Cannot add a non-positive count/,
+    message: /Cannot add a non-positive integer count/,
   });
   t.throws(() => multiset.add('apple', -1), {
-    message: /Cannot add a non-positive count/,
+    message: /Cannot add a non-positive integer count/,
+  });
+  t.throws(() => multiset.add('apple', 1.1), {
+    message: /Cannot add a non-positive integer count/,
+  });
+  t.throws(() => multiset.add('apple', NaN), {
+    message: /Cannot add a non-positive integer count/,
   });
 });
 
@@ -101,16 +107,35 @@ test('remove', t => {
   t.is(multiset.remove('apple'), false);
 });
 
-test('remove with excessive count should throw', t => {
+test('remove with invalid count', t => {
+  const mapStore = makeScalarMapStore();
+  const multiset = asMultiset(mapStore);
+
+  multiset.add('apple');
+
+  // Should throw when adding with count <= 0
+  t.throws(() => multiset.remove('apple', 0), {
+    message: /Cannot remove a non-positive integer count/,
+  });
+  t.throws(() => multiset.remove('apple', -1), {
+    message: /Cannot remove a non-positive integer count/,
+  });
+  t.throws(() => multiset.remove('apple', 0.5), {
+    message: /Cannot remove a non-positive integer count/,
+  });
+  t.throws(() => multiset.remove('apple', NaN), {
+    message: /Cannot remove a non-positive integer count/,
+  });
+});
+
+test('remove with excessive count should return false', t => {
   const mapStore = makeScalarMapStore();
   const multiset = asMultiset(mapStore);
 
   multiset.add('apple', 3);
   t.is(multiset.count('apple'), 3);
 
-  t.throws(() => multiset.remove('apple', 5), {
-    message: /Cannot remove 5 of "apple" from bag; only 3 exist/,
-  });
+  t.false(multiset.remove('apple', 5));
 
   t.is(multiset.count('apple'), 3, 'original count remains unchanged');
 
