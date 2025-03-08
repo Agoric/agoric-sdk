@@ -19,8 +19,6 @@ import {
   InstanceAdminShape,
 } from '../typeGuards.js';
 
-// import '../internal-types.js';
-
 /**
  * @import {Baggage} from '@agoric/vat-data';
  * @import {LegacyWeakMap, WeakMapStore} from '@agoric/store';

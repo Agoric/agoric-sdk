@@ -6,6 +6,10 @@ import { isNat } from '@endo/nat';
 
 import { natSafeMath } from './safeMath.js';
 
+/**
+ * @import {Amount, Brand, Issuer, Payment, Purse} from '@agoric/ertp';
+ */
+
 const { multiply, floorDivide, ceilDivide, bankersDivide, add, subtract } =
   natSafeMath;
 

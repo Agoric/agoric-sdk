@@ -68,13 +68,18 @@ clean-kind:
 ###                          Agoric Setup                                   ###
 ###############################################################################
 PROVISION_POOL_ADDR=agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346
+# Fund the vbank/provision module account so it can provision smart wallets.
+# Each wallet gets 0.25 IST when provisioned, so this make allows 399 accounts.
+# (400 would be more round and make the number less apparent in logs.)
+PROVISION_POOL_COIN=999750000uist
 
 # add address
 add-address:
 	kubectl exec -i agoriclocal-genesis-0 -c validator -- agd keys add user1
 
 fund-provision-pool:
-	kubectl exec -i agoriclocal-genesis-0 -c validator -- agd tx bank send faucet $(PROVISION_POOL_ADDR) 1000000000uist -y -b block
+	kubectl exec -i agoriclocal-genesis-0 -c validator -- agd tx bank send faucet $(PROVISION_POOL_ADDR) $(PROVISION_POOL_COIN) -y -b block
+	kubectl exec -i agoriclocal-genesis-0 -c validator -- agd query bank balances $(PROVISION_POOL_ADDR)
 
 override-chain-registry:
 	scripts/fetch-starship-chain-info.ts && \

@@ -47,8 +47,10 @@ export const makeInstanceRecordStorage = baggage => {
     baggage,
     'InstanceRecord',
     InstanceRecordI,
-    record => harden({ instanceRecord: record }),
+    /** @type {(ir: InstanceRecord) => {instanceRecord: InstanceRecord}} */
+    ir => harden({ instanceRecord: ir }),
     {
+      /** @type {(keyword: Keyword, issuerRecord: ZoeIssuerRecord) => void} */
       addIssuer(keyword, issuerRecord) {
         const { state } = this;
         !ownKeys(issuerRecord).includes(keyword) ||

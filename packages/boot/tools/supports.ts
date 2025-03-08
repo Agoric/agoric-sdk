@@ -3,13 +3,12 @@
 
 import childProcessAmbient from 'child_process';
 import { promises as fsAmbientPromises } from 'fs';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
+import { createRequire } from 'node:module';
 import { basename, join } from 'path';
 import { inspect } from 'util';
 
-import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
-import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
 import type { TypedPublished } from '@agoric/client-utils';
+import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
 import {
   BridgeId,
   makeTracer,
@@ -20,20 +19,24 @@ import {
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { krefOf } from '@agoric/kmarshal';
+import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { initSwingStore } from '@agoric/swing-store';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { makeSlogSender } from '@agoric/telemetry';
 import { TimeMath, type Timestamp } from '@agoric/time';
-import {
-  fakeLocalChainBridgeTxMsgHandler,
-  LOCALCHAIN_DEFAULT_ADDRESS,
-} from '@agoric/vats/tools/fake-bridge.js';
+import { fakeLocalChainBridgeTxMsgHandler } from '@agoric/vats/tools/fake-bridge.js';
 import { Fail } from '@endo/errors';
 
+import type { Amount, Brand } from '@agoric/ertp';
+import type {
+  EndoZipBase64Bundle,
+  ManagerType,
+  SwingSetConfig,
+} from '@agoric/swingset-vat';
 import {
   makeRunUtils,
-  type RunUtils,
   type RunHarness,
+  type RunUtils,
 } from '@agoric/swingset-vat/tools/run-utils.js';
 import {
   boardSlottingMarshaller,
@@ -43,24 +46,30 @@ import {
 import type { ExecutionContext as AvaT } from 'ava';
 
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
+import { computronCounter } from '@agoric/cosmic-swingset/src/computron-counter.js';
+import {
+  defaultBeansPerVatCreation,
+  defaultBeansPerXsnapComputron,
+} from '@agoric/cosmic-swingset/src/sim-params.js';
+import type { FastUSDCCorePowers } from '@agoric/fast-usdc/src/start-fast-usdc.core.js';
 import type { EconomyBootstrapPowers } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
 import type { BridgeHandler, IBCDowncallMethod, IBCMethod } from '@agoric/vats';
 import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
 import type { EProxy } from '@endo/eventual-send';
-import type { FastUSDCCorePowers } from '@agoric/fast-usdc/src/start-fast-usdc.core.js';
-import {
-  defaultBeansPerVatCreation,
-  defaultBeansPerXsnapComputron,
-} from '@agoric/cosmic-swingset/src/sim-params.js';
-import { computronCounter } from '@agoric/cosmic-swingset/src/computron-counter.js';
+import { tmpdir } from 'node:os';
+import { FileSystemCache, NodeFetchCache } from 'node-fetch-cache';
 import { icaMocks, protoMsgMockMap, protoMsgMocks } from './ibc/mocks.js';
 
 const trace = makeTracer('BSTSupport', false);
 
-const cliEntrypoint = new URL(
-  importMetaResolve('agoric/src/entrypoint.js', import.meta.url),
-).pathname;
+// Releases are immutable, so we can cache them.
+// Doesn't help in CI but speeds up local development.
+// CI is on Github Actions, so fetching is reliable.
+// Files appear in a .cache directory.
+export const fetchCached = NodeFetchCache.create({
+  cache: new FileSystemCache(),
+}) as unknown as typeof globalThis.fetch;
 
 type ConsumeBootrapItem = <N extends string>(
   name: N,
@@ -102,6 +111,16 @@ const keysToObject = <K extends PropertyKey, V>(
  * AVA's default t.deepEqual() is nearly unreadable for sorted arrays of
  * strings.
  */
+/**
+ * Compare two arrays of property keys for equality in a way that's more readable
+ * in AVA test output than the default t.deepEqual().
+ *
+ * @param t - AVA test context
+ * @param a - First array of property keys to compare
+ * @param b - Second array of property keys to compare
+ * @param message - Optional message to display on failure
+ * @returns The result of t.deepEqual() on objects created from the arrays
+ */
 export const keyArrayEqual = (
   t: AvaT,
   a: PropertyKey[],
@@ -113,16 +132,24 @@ export const keyArrayEqual = (
   return t.deepEqual(aobj, bobj, message);
 };
 
+/**
+ * Prepares a SwingSet configuration for testing vaults.
+ *
+ * @param options - Configuration options
+ * @param options.bundleDir - Directory to store bundle cache files
+ * @param options.configPath - Path to the base config file
+ * @param options.defaultManagerType - SwingSet manager type to use
+ * @param options.discriminator - Optional string to include in the config filename
+ * @returns Path to the generated config file
+ */
 export const getNodeTestVaultsConfig = async ({
-  bundleDir = 'bundles',
-  specifier = '@agoric/vm-config/decentral-itest-vaults-config.json',
+  bundleDir,
+  configPath,
   defaultManagerType = 'local' as ManagerType,
   discriminator = '',
 }) => {
-  const fullPath = new URL(importMetaResolve(specifier, import.meta.url))
-    .pathname;
   const config: SwingSetConfig & { coreProposals?: any[] } = NonNullish(
-    await loadSwingsetConfigFile(fullPath),
+    await loadSwingsetConfigFile(configPath),
   );
 
   // Manager types:
@@ -150,7 +177,7 @@ export const getNodeTestVaultsConfig = async ({
     discriminator,
     new Date().toISOString().replaceAll(/[^0-9TZ]/g, ''),
     `${Math.random()}`.replace(/.*[.]/, '').padEnd(8, '0').slice(0, 8),
-    basename(specifier),
+    basename(configPath),
   ].filter(s => !!s);
   const testConfigPath = `${bundleDir}/${configFilenameParts.join('.')}`;
   await fsAmbientPromises.writeFile(
@@ -166,13 +193,19 @@ interface Powers {
   fs: typeof import('node:fs/promises');
 }
 
-const importSpec = async spec =>
-  new URL(importMetaResolve(spec, import.meta.url)).pathname;
-
-export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
-  const getPkgPath = (pkg, fileName = '') =>
-    new URL(`../../${pkg}/${fileName}`, import.meta.url).pathname;
-
+/**
+ * Creates a function that can build and extract proposal data from package scripts.
+ *
+ * @param powers - Object containing required capabilities
+ * @param powers.childProcess - Node child_process module for executing commands
+ * @param powers.fs - Node fs/promises module for file operations
+ * @returns A function that builds and extracts proposal data
+ */
+export const makeProposalExtractor = (
+  { childProcess, fs }: Powers,
+  resolveBase = import.meta.url,
+) => {
+  const importSpec = createRequire(resolveBase).resolve;
   const runPackageScript = (
     outputDir: string,
     scriptPath: string,
@@ -181,7 +214,7 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
   ) => {
     console.info('running package script:', scriptPath);
     return childProcess.execFileSync(
-      cliEntrypoint,
+      importSpec('agoric/src/entrypoint.js'),
       ['run', scriptPath, ...cliArgs],
       {
         cwd: outputDir,
@@ -214,14 +247,15 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
   };
 
   const buildAndExtract = async (builderPath: string, args: string[] = []) => {
+    // XXX rebuilds every time
     const tmpDir = await fsAmbientPromises.mkdtemp(
-      join(getPkgPath('builders'), 'proposal-'),
+      join(tmpdir(), 'agoric-proposal-'),
     );
 
     const built = parseProposalParts(
       runPackageScript(
         tmpDir,
-        await importSpec(builderPath),
+        importSpec(builderPath),
         process.env,
         args,
       ).toString(),
@@ -258,6 +292,15 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
 };
 harden(makeProposalExtractor);
 
+/**
+ * Compares two references for equality using krefOf.
+ *
+ * @param t - AVA test context
+ * @param ref1 - First reference to compare
+ * @param ref2 - Second reference to compare
+ * @param message - Optional message to display on failure
+ * @returns The result of t.is() on the kref values
+ */
 export const matchRef = (
   t: AvaT,
   ref1: unknown,
@@ -265,6 +308,15 @@ export const matchRef = (
   message?: string,
 ) => t.is(krefOf(ref1), krefOf(ref2), message);
 
+/**
+ * Compares an amount object with expected brand and value.
+ *
+ * @param t - AVA test context
+ * @param amount - Amount object to test
+ * @param refBrand - Expected brand reference
+ * @param refValue - Expected value
+ * @param message - Optional message to display on failure
+ */
 export const matchAmount = (
   t: AvaT,
   amount: Amount,
@@ -276,6 +328,14 @@ export const matchAmount = (
   t.is(amount.value, refValue, message);
 };
 
+/**
+ * Compares a value object with a reference value object.
+ * Checks brand, denom, issuer, issuerName, and proposedName.
+ *
+ * @param t - AVA test context
+ * @param value - Value object to test
+ * @param ref - Reference value object to compare against
+ */
 export const matchValue = (t: AvaT, value, ref) => {
   matchRef(t, value.brand, ref.brand);
   t.is(value.denom, ref.denom);
@@ -284,11 +344,21 @@ export const matchValue = (t: AvaT, value, ref) => {
   t.is(value.proposedName, ref.proposedName);
 };
 
+/**
+ * Checks that an iterator is not done and its current value matches the reference.
+ *
+ * @param t - AVA test context
+ * @param iter - Iterator to test
+ * @param valueRef - Reference value to compare against the iterator's current value
+ */
 export const matchIter = (t: AvaT, iter, valueRef) => {
   t.is(iter.done, false);
   matchValue(t, iter.value, valueRef);
 };
 
+/**
+ * Enumeration of acknowledgment behaviors for IBC bridge messages.
+ */
 export const AckBehavior = {
   /** inbound responses are queued. use `flushInboundQueue()` to simulate the remote response */
   Queued: 'QUEUED',
@@ -327,11 +397,32 @@ type AckBehaviorType = (typeof AckBehavior)[keyof typeof AckBehavior];
  * @param [options.defaultManagerType]
  * @param [options.harness]
  */
+/**
+ * Creates a SwingSet test environment with various utilities for testing.
+ *
+ * This function sets up a complete SwingSet kernel with mocked bridges and
+ * utilities for time manipulation, proposal evaluation, and more.
+ *
+ * @param log - Logging function
+ * @param bundleDir - Directory to store bundle cache files
+ * @param options - Configuration options
+ * @param options.configSpecifier - Path to the base config file
+ * @param options.label - Optional label for the test environment
+ * @param options.storage - Storage kit to use (defaults to fake storage)
+ * @param options.verbose - Whether to enable verbose logging
+ * @param options.slogFile - Path to write slog output
+ * @param options.profileVats - Array of vat names to profile
+ * @param options.debugVats - Array of vat names to debug
+ * @param options.defaultManagerType - SwingSet manager type to use
+ * @param options.harness - Optional run harness
+ * @param options.resolveBase - Base URL or path for resolving module paths
+ * @returns A test kit with various utilities for interacting with the SwingSet
+ */
 export const makeSwingsetTestKit = async (
   log: (..._: any[]) => void,
   bundleDir = 'bundles',
   {
-    configSpecifier = undefined as string | undefined,
+    configSpecifier = '@agoric/vm-config/decentral-itest-vaults-config.json',
     label = undefined as string | undefined,
     storage = makeFakeStorageKit('bootstrapTests'),
     verbose = false,
@@ -340,12 +431,14 @@ export const makeSwingsetTestKit = async (
     debugVats = [] as string[],
     defaultManagerType = 'local' as ManagerType,
     harness = undefined as RunHarness | undefined,
+    resolveBase = import.meta.url,
   } = {},
 ) => {
+  const importSpec = createRequire(resolveBase).resolve;
   console.time('makeBaseSwingsetTestKit');
   const configPath = await getNodeTestVaultsConfig({
     bundleDir,
-    specifier: configSpecifier,
+    configPath: importSpec(configSpecifier),
     discriminator: label,
     defaultManagerType,
   });
@@ -747,6 +840,14 @@ export type SwingsetTestKit = Awaited<ReturnType<typeof makeSwingsetTestKit>>;
  * counting run policy (and queried for the count of computrons recorded since
  * the last reset).
  */
+/**
+ * Creates a harness for measuring computron usage in SwingSet tests.
+ *
+ * The harness can be dynamically configured to provide a computron-counting
+ * run policy and queried for the count of computrons recorded since the last reset.
+ *
+ * @returns A harness object with methods to control and query computron counting
+ */
 export const makeSwingsetHarness = () => {
   const c2b = defaultBeansPerXsnapComputron;
   const beansPerUnit = {
@@ -785,6 +886,46 @@ export const makeSwingsetHarness = () => {
  * @param {string} mt
  * @returns {asserts mt is ManagerType}
  */
+/**
+ * Validates that a string is a valid SwingSet manager type.
+ *
+ * @param mt - The manager type string to validate
+ * @throws If the string is not a valid manager type
+ */
 export function insistManagerType(mt) {
   assert(['local', 'node-subprocess', 'xsnap', 'xs-worker'].includes(mt));
 }
+
+// TODO explore doing this as part of a post-install script
+// and having the test import it statically instead of fetching lazily
+/**
+ * Fetch a core-eval from a Github Release.
+ *
+ * NB: has ambient authority to fetch and cache to disk. Allowable as a testing utility.
+ */
+export const fetchCoreEvalRelease = async (
+  config: { repo: string; release: string; name: string },
+  artifacts = `https://github.com/${config.repo}/releases/download/${config.release}`,
+  planUrl = `${artifacts}/${config.name}-plan.json`,
+) => {
+  const fetch = fetchCached;
+  const plan = (await fetch(planUrl).then(r => r.json())) as {
+    name: string;
+    permit: string;
+    script: string;
+    bundles: Array<{
+      bundleID: string;
+      entrypoint: string;
+      fileName: string;
+    }>;
+  };
+  assert.equal(plan.name, config.name);
+  const script = await fetch(`${artifacts}/${plan.script}`).then(r => r.text());
+  const permit = await fetch(`${artifacts}/${plan.permit}`).then(r => r.text());
+  const bundles: EndoZipBase64Bundle[] = await Promise.all(
+    plan.bundles.map(b =>
+      fetch(`${artifacts}/${b.bundleID}.json`).then(r => r.json()),
+    ),
+  );
+  return { bundles, evals: [{ js_code: script, json_permits: permit }] };
+};

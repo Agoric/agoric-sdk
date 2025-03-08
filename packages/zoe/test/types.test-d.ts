@@ -14,6 +14,7 @@ import type { prepare as scaledPriceAuthorityStart } from '../src/contracts/scal
 import type { Instance } from '../src/zoeService/utils.js';
 import type {
   ContractMeta,
+  Installation,
   Invitation,
   ZCF,
   ZCFSeat,

@@ -1,5 +1,3 @@
-// @ts-check
-
 import { assert, Fail } from '@endo/errors';
 
 // XXX Do these "StorageAPI" functions belong in their own package?
@@ -297,7 +295,7 @@ export function makeBufferedStorage(kvStore, listeners = {}) {
 }
 
 /**
- * @template {unknown} [T=unknown]
+ * @template [T=unknown]
  * @param {KVStore<T>} kvStore
  * @returns {BufferedKVStore<T>}
  */

@@ -15,7 +15,7 @@ import { TimestampShape } from '@agoric/time';
 
 /**
  * @import {TypedPattern} from '@agoric/internal';
- * @import {AfterDeadlineExitRule} from '@agoric/zoe';
+ * @import {AfterDeadlineExitRule, ZoeIssuerRecord} from '@agoric/zoe';
  */
 
 // keywords have an initial cap
@@ -46,6 +46,7 @@ export const IssuerPKeywordRecordShape = M.recordOf(
 );
 export const BrandKeywordRecordShape = M.recordOf(KeywordShape, BrandShape);
 
+/** @type {TypedPattern<ZoeIssuerRecord>} */
 export const IssuerRecordShape = M.splitRecord(
   {
     brand: BrandShape,
