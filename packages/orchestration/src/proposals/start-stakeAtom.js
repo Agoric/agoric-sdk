@@ -66,6 +66,7 @@ export const startStakeAtom = async ({
       chainId: cosmoshub.chainId,
       hostConnectionId: connectionInfo.counterparty.connection_id,
       controllerConnectionId: connectionInfo.id,
+      // @ts-expect-error cosmoshub is /** @type {CosmosChainInfo} */
       icqEnabled: cosmoshub.icqEnabled,
     },
     privateArgs: await deeplyFulfilledObject(
