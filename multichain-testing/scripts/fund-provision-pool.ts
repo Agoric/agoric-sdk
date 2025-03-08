@@ -47,8 +47,9 @@ async function fundProvisionPool(args: {
       address,
       amount,
       '-y',
-      '-b',
-      'block',
+      // default to `sync` https://github.com/cosmos/cosmos-sdk/issues/4186#issuecomment-486664720
+      // '--broadcast-mode',
+      // 'block',
     ]);
     const resultData = JSON.parse(txResult);
     if (resultData.code !== 0) {
