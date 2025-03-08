@@ -1106,9 +1106,14 @@ export async function launchAndShareInternals({
     }
   };
 
-  // Handle block related actions
-  // Some actions that are integration specific may be handled by the caller
-  // For example SWING_STORE_EXPORT is handled in chain-main.js
+  // Handle actions related to ABCI block methods: BeginBlock, EndBlock, Commit
+  // https://docs.cometbft.com/v0.34/spec/abci/abci#block-execution
+  // We also have a once-per-process-lifetime AG_COSMOS_INIT message, and split
+  // Commit into two phases (see `Commit` at
+  // {@link ../../../golang/cosmos/app/app.go}).
+  //
+  // Note that other actions relating to integration (e.g., SWING_STORE_EXPORT)
+  // may be handled higher up in chain-main.js.
   async function doBlockingSend(action) {
     await null;
     // blockManagerConsole.warn(
@@ -1167,89 +1172,6 @@ export async function launchAndShareInternals({
           await doCoreProposals(action, coreProposals);
         }
         return true;
-      }
-
-      case ActionType.COMMIT_BLOCK: {
-        const { blockHeight, blockTime } = action;
-        verboseBlocks &&
-          blockManagerConsole.info('block', blockHeight, 'commit');
-        if (blockHeight !== savedHeight) {
-          throw Error(
-            `Committed height ${blockHeight} does not match saved height ${savedHeight}`,
-          );
-        }
-
-        runThisBlock.size() === 0 ||
-          Fail`We didn't process all "run this block" actions`;
-
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-commit-block-start',
-          blockHeight,
-          blockTime,
-        });
-
-        // Save the kernel's computed state just before the chain commits.
-        const start = now();
-        await saveOutsideState(savedHeight);
-        swingsetCommitDuration = now() - start;
-
-        blockParams = undefined;
-
-        blockManagerConsole.debug(
-          `wrote SwingSet checkpoint [run=${runDuration}ms, chainSave=${chainSaveDuration}ms, kernelSave=${swingsetCommitDuration}ms]`,
-        );
-
-        times.commitBlockDone = now();
-
-        return undefined;
-      }
-
-      case ActionType.AFTER_COMMIT_BLOCK: {
-        const { blockHeight, blockTime } = action;
-
-        const afterCommitStart = now();
-        // Time spent since the end of COMMIT_BLOCK (which itself is dominated
-        // by swingsetCommitDuration).
-        const cosmosCommitDuration = afterCommitStart - times.commitBlockDone;
-        // Time spent since the end of END_BLOCK (inclusive of COMMIT_BLOCK).
-        const fullCommitDuration = afterCommitStart - times.endBlockDone;
-
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-commit-block-finish',
-          blockHeight,
-          blockTime,
-          runSeconds: runDuration / 1000,
-          // TODO: After preparing all known consumers, rename
-          // {chain,save,fullSave}Time to
-          // {chainSave,swingsetCommit,cosmosCommit}Seconds
-          chainTime: chainSaveDuration / 1000,
-          saveTime: swingsetCommitDuration / 1000,
-          cosmosCommitSeconds: cosmosCommitDuration / 1000,
-          fullSaveTime: fullCommitDuration / 1000,
-        });
-
-        blockMetrics.swingsetRunSeconds.record(runDuration / 1000);
-        blockMetrics.swingsetChainSaveSeconds.record(chainSaveDuration / 1000);
-        blockMetrics.swingsetCommitSeconds.record(
-          swingsetCommitDuration / 1000,
-        );
-        blockMetrics.cosmosCommitSeconds.record(cosmosCommitDuration / 1000);
-        blockMetrics.fullCommitSeconds.record(fullCommitDuration / 1000);
-
-        afterCommitWorkDone = afterCommit(blockHeight, blockTime);
-
-        // In the expected case where afterCommit work finishes before the next
-        // block starts, don't incorrectly attribute `await` time to it.
-        const latestAfterCommitP = afterCommitWorkDone;
-        void afterCommitWorkDone.then(() => {
-          afterCommitWorkDone === latestAfterCommitP ||
-            Fail`Unexpected afterCommit overlap`;
-          afterCommitWorkDone = undefined;
-        });
-
-        times.afterCommitBlockDone = now();
-
-        return undefined;
       }
 
       case ActionType.BEGIN_BLOCK: {
@@ -1377,6 +1299,89 @@ export async function launchAndShareInternals({
         });
 
         times.endBlockDone = now();
+
+        return undefined;
+      }
+
+      case ActionType.COMMIT_BLOCK: {
+        const { blockHeight, blockTime } = action;
+        verboseBlocks &&
+          blockManagerConsole.info('block', blockHeight, 'commit');
+        if (blockHeight !== savedHeight) {
+          throw Error(
+            `Committed height ${blockHeight} does not match saved height ${savedHeight}`,
+          );
+        }
+
+        runThisBlock.size() === 0 ||
+          Fail`We didn't process all "run this block" actions`;
+
+        controller.writeSlogObject({
+          type: 'cosmic-swingset-commit-block-start',
+          blockHeight,
+          blockTime,
+        });
+
+        // Save the kernel's computed state just before the chain commits.
+        const start = now();
+        await saveOutsideState(savedHeight);
+        swingsetCommitDuration = now() - start;
+
+        blockParams = undefined;
+
+        blockManagerConsole.debug(
+          `wrote SwingSet checkpoint [run=${runDuration}ms, chainSave=${chainSaveDuration}ms, kernelSave=${swingsetCommitDuration}ms]`,
+        );
+
+        times.commitBlockDone = now();
+
+        return undefined;
+      }
+
+      case ActionType.AFTER_COMMIT_BLOCK: {
+        const { blockHeight, blockTime } = action;
+
+        const afterCommitStart = now();
+        // Time spent since the end of COMMIT_BLOCK (which itself is dominated
+        // by swingsetCommitDuration).
+        const cosmosCommitDuration = afterCommitStart - times.commitBlockDone;
+        // Time spent since the end of END_BLOCK (inclusive of COMMIT_BLOCK).
+        const fullCommitDuration = afterCommitStart - times.endBlockDone;
+
+        controller.writeSlogObject({
+          type: 'cosmic-swingset-commit-block-finish',
+          blockHeight,
+          blockTime,
+          runSeconds: runDuration / 1000,
+          // TODO: After preparing all known consumers, rename
+          // {chain,save,fullSave}Time to
+          // {chainSave,swingsetCommit,cosmosCommit}Seconds
+          chainTime: chainSaveDuration / 1000,
+          saveTime: swingsetCommitDuration / 1000,
+          cosmosCommitSeconds: cosmosCommitDuration / 1000,
+          fullSaveTime: fullCommitDuration / 1000,
+        });
+
+        blockMetrics.swingsetRunSeconds.record(runDuration / 1000);
+        blockMetrics.swingsetChainSaveSeconds.record(chainSaveDuration / 1000);
+        blockMetrics.swingsetCommitSeconds.record(
+          swingsetCommitDuration / 1000,
+        );
+        blockMetrics.cosmosCommitSeconds.record(cosmosCommitDuration / 1000);
+        blockMetrics.fullCommitSeconds.record(fullCommitDuration / 1000);
+
+        afterCommitWorkDone = afterCommit(blockHeight, blockTime);
+
+        // In the expected case where afterCommit work finishes before the next
+        // block starts, don't incorrectly attribute `await` time to it.
+        const latestAfterCommitP = afterCommitWorkDone;
+        void afterCommitWorkDone.then(() => {
+          afterCommitWorkDone === latestAfterCommitP ||
+            Fail`Unexpected afterCommit overlap`;
+          afterCommitWorkDone = undefined;
+        });
+
+        times.afterCommitBlockDone = now();
 
         return undefined;
       }
