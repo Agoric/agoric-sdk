@@ -42,7 +42,7 @@ function makeNetstringReader({ fd, encoding }) {
 
   const readMore = () => {
     assert(!decoded.length);
-    // we could be smarter about read lengths (parse the the netstring
+    // we could be smarter about read lengths (parse the netstring
     // header and do a blocking read of the entire payload), but the
     // efficiency gain is not huge
     const bytesRead = fs.readSync(fd, input); // blocking read
