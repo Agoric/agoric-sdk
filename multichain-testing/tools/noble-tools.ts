@@ -48,7 +48,8 @@ export const makeNobleTools = (
         address,
         '--from=genesis',
         '-y',
-        '-b',
+        // FIXME removed in cosmos-sdk https://github.com/Agoric/agoric-sdk/issues/9016
+        '--broadcast-mode',
         'block',
       ]),
     );
@@ -70,7 +71,8 @@ export const makeNobleTools = (
         denomAmount,
         '--from=faucet',
         '-y',
-        '-b',
+        // FIXME removed in cosmos-sdk https://github.com/Agoric/agoric-sdk/issues/9016
+        '--broadcast-mode',
         'block',
       ]),
     );
