@@ -132,6 +132,7 @@ export const makeAgd = ({ execFileSync }) => {
           ...keyringArgs,
           ...flags({ 'chain-id': chainId, from }),
           ...flags({
+            // FIXME removed in cosmos-sdk https://github.com/cosmos/cosmos-sdk/pull/12659
             'broadcast-mode': 'block',
             gas: 'auto',
             'gas-adjustment': '1.4',
