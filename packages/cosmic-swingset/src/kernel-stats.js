@@ -224,6 +224,8 @@ export function makeSlogCallbacks({ metricMeter, attributes = {} }) {
     startup(_method, [vatID], finisher) {
       return wrapDeltaMS(finisher, deltaMS => {
         const group = getVatGroup(vatID);
+        // DEPRECATED: This should be equivalent to the "seconds" data of
+        // "vat-startup-finish" slog entries.
         getGroupedRecorder('swingset_vat_startup', group).record(deltaMS);
       });
     },
@@ -232,10 +234,15 @@ export function makeSlogCallbacks({ metricMeter, attributes = {} }) {
         finisher,
         (deltaMS, [[_status, _problem, meterUsage]]) => {
           const group = getVatGroup(vatID);
+          // DEPRECATED: This should be equivalent to the "seconds" data of
+          // "deliver-result" slog entries.
           getGroupedRecorder('swingset_vat_delivery', group).record(deltaMS);
           const { meterType, ...measurements } = meterUsage || {};
           for (const [key, value] of Object.entries(measurements)) {
             if (typeof value === 'object') continue;
+            // DEPRECATED: This should be equivalent to the data of
+            // "deliver-result" slog entries as the third element of the "dr"
+            // array.
             // TODO: Each measurement key should have its own histogram; there's
             // no reason to mix e.g. allocate/compute/currentHeapCount.
             // cf. https://prometheus.io/docs/practices/naming/#metric-names
@@ -528,6 +535,12 @@ export function exportKernelStats({
   ].map(name => createHistogram(metricMeter, name));
 
   /**
+   * @deprecated Histogram measurements produced by this function should be
+   *   equivalent to the "seconds" data of slog entries
+   *   (schedulerCrankTimeHistogram via "crank-finish" entries;
+   *   schedulerBlockTimeHistogram via "cosmic-swingset-run-finish" entries--and
+   *   note that the latter name is inaccurate anyway because its measurements
+   *   are produced once per `controller.run()` rather than once per block).
    * @param {any} policy
    * @param {() => number} clock
    */
