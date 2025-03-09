@@ -9,7 +9,7 @@ import { tmpName } from 'tmp';
 import anylogger from 'anylogger';
 import microtime from 'microtime';
 
-import { assert, Fail } from '@endo/errors';
+import { assert, q, Fail } from '@endo/errors';
 import { importBundle } from '@endo/import-bundle';
 import { initSwingStore } from '@agoric/swing-store';
 
@@ -38,11 +38,15 @@ import { makeStartSubprocessWorkerNode } from './startNodeSubprocess.js';
 
 /**
  * @import {EReturn} from '@endo/far';
+ * @import {VatID} from '../types-internal.js';
  */
 
 /**
- * @typedef { import('../types-internal.js').VatID } VatID
+ * @typedef {Record<string, unknown> & {type: string, time?: never, monotime?: never}} SlogProps
+ * @typedef {Omit<SlogProps, 'type'> & {type?: never, seconds?: never}} SlogDurationProps
  */
+
+const { hasOwn } = Object;
 
 const endoZipBase64Sha512Shape = harden({
   moduleFormat: 'endoZipBase64',
@@ -164,313 +168,404 @@ export async function makeSwingsetController(
     debugVats,
   );
 
+  /** @type {(obj: SlogProps) => void} */
   function writeSlogObject(obj) {
     if (!slogSender) return;
 
-    // microtime gives POSIX gettimeofday() with microsecond resolution
-    const time = microtime.nowDouble();
-    // this is CLOCK_MONOTONIC, seconds since process start
-    const monotime = performance.now() / 1000;
+    const { type, seconds, ...props } = obj;
+    const timings = {
+      // microtime gives POSIX gettimeofday() with microsecond resolution
+      time: microtime.nowDouble(),
+      // this is CLOCK_MONOTONIC, seconds since process start
+      monotime: performance.now() / 1000,
+      ...(seconds === undefined ? undefined : { seconds }),
+    };
 
     // rearrange the fields a bit to make it more legible to humans
-    slogSender({ type: undefined, ...obj, time, monotime });
+    slogSender({ type, ...props, ...timings });
   }
-
-  writeSlogObject({ type: 'kernel-init-start' });
-
-  writeSlogObject({ type: 'bundle-kernel-start' });
-  await null;
-  const { kernelBundle = await buildKernelBundle() } = runtimeOptions;
-  writeSlogObject({ type: 'bundle-kernel-finish' });
-
-  // FIXME: Put this somewhere better.
-  const rejectionHandlers = process.listeners('unhandledRejection');
-  if (!rejectionHandlers.includes(onUnhandledRejection)) {
-    process.on('unhandledRejection', onUnhandledRejection);
-  }
-
-  const kernelConsole = makeConsole(`${debugPrefix}SwingSet:kernel`);
-  const sloggingKernelConsole = makeLimitedConsole(level => {
-    return (...args) => {
-      kernelConsole[level](...args);
-      writeSlogObject({ type: 'console', source: 'kernel', level, args });
-    };
-  });
-  writeSlogObject({ type: 'import-kernel-start' });
-  const kernelNS = await importBundle(kernelBundle, {
-    filePrefix: 'kernel/...',
-    endowments: {
-      console: sloggingKernelConsole,
-      // See https://github.com/Agoric/agoric-sdk/issues/9515
-      assert: globalThis.assert,
-      require: harden(
-        what => Fail`kernelRequire unprepared to satisfy require(${what})`,
-      ),
-      URL: globalThis.Base64, // Unavailable only on XSnap
-      Base64: globalThis.Base64, // Available only on XSnap
-    },
-  });
-  const buildKernel = kernelNS.default;
-  writeSlogObject({ type: 'import-kernel-finish' });
-
-  const kernelEndowments = {
-    waitUntilQuiescent,
-    kernelStorage,
-    debugPrefix,
-    // all vats get these in their global scope, plus a vat-specific 'console'
-    vatEndowments: harden({}),
-    makeConsole,
-    startSubprocessWorkerNode,
-    startXSnap,
-    slogCallbacks,
-    writeSlogObject,
-    WeakRef,
-    FinalizationRegistry,
-    gcAndFinalize: makeGcAndFinalize(engineGC),
-    bundleHandler,
-  };
-  const kernelRuntimeOptions = {
-    verbose,
-    warehousePolicy,
-    overrideVatManagerOptions,
-  };
-
-  /** @type { ReturnType<typeof import('../kernel/kernel.js').default> } */
-  const kernel = buildKernel(
-    kernelEndowments,
-    deviceEndowments,
-    kernelRuntimeOptions,
-  );
-
-  await kernel.start();
-
   /**
-   * Validate and install a code bundle.
+   * Capture an extended process in the slog, writing an entry with `type`
+   * $startLabel and then later (if the function returns successfully or calls
+   * the finish callback provided to it) another entry with `type` $endLabel and
+   * a `seconds` property valued with the total elapsed duration in seconds.
+   * Finish is implied by settlement of the function's awaited return value, so
+   * any explicit use of the finish callback MUST NOT follow that settlement.
    *
-   * @param {EndoZipBase64Bundle} bundle
-   * @param {BundleID} [allegedBundleID]
-   * @returns {Promise<BundleID>}
+   * @template T
+   * @template {unknown[]} A
+   * @param {readonly [startLabel: string, endLabel: string]} labels
+   * @param {SlogDurationProps} startProps for both slog entries
+   * @param {(finish: (extraProps?: SlogDurationProps) => void, ...args: A) => (T | Promise<T>)} fn
+   * @param {unknown[] & A} args
+   * @returns {Promise<T>}
    */
-  async function validateAndInstallBundle(bundle, allegedBundleID = undefined) {
-    // TODO The following assertion may be removed when checkBundle subsumes
-    // the responsibility to verify the permanence of a bundle's properties.
-    // https://github.com/endojs/endo/issues/1106
-    mustMatch(bundle, endoZipBase64Sha512Shape);
-    await checkBundle(bundle, computeSha512, allegedBundleID);
-    const { endoZipBase64Sha512 } = bundle;
-    assert.typeof(endoZipBase64Sha512, 'string');
-    const bundleID = `b1-${endoZipBase64Sha512}`;
-    if (allegedBundleID !== undefined) {
-      bundleID === allegedBundleID ||
-        Fail`alleged bundleID ${allegedBundleID} does not match actual ${bundleID}`;
+  const slogDuration = async (labels, startProps, fn, ...args) => {
+    const [startLabel, endLabel] = labels;
+    const props = { ...startProps };
+    if (hasOwn(props, 'type') || hasOwn(props, 'seconds')) {
+      console.error('startProps must not include "type" or "seconds"');
+      delete props.type;
+      delete props.seconds;
     }
-    await kernel.installBundle(bundleID, bundle);
-    return bundleID;
-  }
+    let finished = false;
+    /** @type {(extraProps?: SlogDurationProps) => void} */
+    const finish = extraProps => {
+      const seconds = (performance.now() - t0) / 1000;
+      if (finished) {
+        // `finish` should only be called once.
+        // Log a stack-bearing error instance, but throw something more opaque.
+        const msg = `slog event ${startLabel} ${q(startProps || {})} already finished; ignoring props ${q(extraProps || {})}`;
+        const err = Error(msg);
+        console.error(err);
+        Fail`slog event ${startLabel} already finished`;
+      }
+      finished = true;
+      if (extraProps) {
+        // Preserve extraProps as an atomic unit by deleting prior occurrences.
+        for (const name of Object.keys(extraProps)) delete props[name];
+        if (hasOwn(extraProps, 'type') || hasOwn(extraProps, 'seconds')) {
+          console.error(
+            `extraProps ${q(extraProps)} must not include "type" or "seconds"`,
+          );
+          const {
+            type: _ignoredType,
+            seconds: _ignoredSeconds,
+            ...validProps
+          } = extraProps;
+          extraProps = validProps;
+        }
+      }
+      writeSlogObject({ type: endLabel, ...props, ...extraProps, seconds });
+    };
 
-  // the kernel won't leak our objects into the Vats, we must do
-  // the same in this wrapper
-  const controller = harden({
-    log(str) {
-      kernel.log(str);
-    },
-
-    writeSlogObject,
-
-    dump() {
-      return deepCopyJsonable(kernel.dump());
-    },
-
-    verboseDebugMode(flag) {
-      kernel.kdebugEnable(flag);
-    },
-
-    validateAndInstallBundle,
-
-    /**
-     * Run the kernel until the policy says to stop, or the queue is empty.
-     *
-     * @param {RunPolicy} [policy] - a RunPolicy to limit the work being done
-     * @returns {Promise<number>} The number of cranks that were executed.
-     */
-    async run(policy) {
-      return kernel.run(policy);
-    },
-
-    async step() {
-      return kernel.step();
-    },
-
-    async shutdown() {
-      return kernel.shutdown();
-    },
-
-    reapAllVats() {
-      kernel.reapAllVats();
-    },
-
-    changeKernelOptions(options) {
-      kernel.changeKernelOptions(options);
-    },
-
-    getStats() {
-      return deepCopyJsonable(kernel.getStats());
-    },
-
-    getStatus() {
-      return deepCopyJsonable(kernel.getStatus());
-    },
-
-    getActivityhash() {
-      return kernelStorage.getActivityhash();
-    },
-
-    // everything beyond here is for tests, and everything should be migrated
-    // to be on this 'debug' object to make that clear
-
-    debug: {
-      addDeviceHook: kernel.addDeviceHook,
-    },
-
-    pinVatRoot(vatName) {
-      const vatID = kernel.vatNameToID(vatName);
-      const kref = kernel.getRootObject(vatID);
-      kernel.pinObject(kref);
-      kernelStorage.emitCrankHashes();
-      return kref;
-    },
-
-    kpRegisterInterest(kpid) {
-      return kernel.kpRegisterInterest(kpid);
-    },
-
-    kpStatus(kpid) {
-      return kernel.kpStatus(kpid);
-    },
-
-    kpResolution(kpid, options) {
-      const result = kernel.kpResolution(kpid, options);
-      // kpResolution does DB write (changes refcounts) so we need emitCrankHashes here
-      kernelStorage.emitCrankHashes();
+    writeSlogObject({ type: startLabel, ...props });
+    const t0 = performance.now();
+    try {
+      // We need to synchronously provide the finish function.
+      // eslint-disable-next-line @jessie.js/safe-await-separator
+      const result = await fn(finish, ...args);
+      if (!finished) finish();
       return result;
-    },
+    } catch (cause) {
+      if (!finished) {
+        const msg = `unfinished slog event ${startLabel} ${q(startProps || {})}`;
+        const err = Error(msg, { cause });
+        console.error(err);
+      }
+      throw cause;
+    }
+  };
 
-    vatNameToID(vatName) {
-      return kernel.vatNameToID(vatName);
-    },
-    deviceNameToID(deviceName) {
-      return kernel.deviceNameToID(deviceName);
-    },
+  const kernelInitLabels = /** @type {const} */ ([
+    'kernel-init-start',
+    'kernel-init-finish',
+  ]);
+  const controller = await slogDuration(kernelInitLabels, {}, async () => {
+    const kernelBundle = await slogDuration(
+      ['bundle-kernel-start', 'bundle-kernel-finish'],
+      {},
+      async () => runtimeOptions.kernelBundle ?? buildKernelBundle(),
+    );
 
-    injectQueuedUpgradeEvents: () => kernel.injectQueuedUpgradeEvents(),
+    // FIXME: Put this somewhere better.
+    const rejectionHandlers = process.listeners('unhandledRejection');
+    if (!rejectionHandlers.includes(onUnhandledRejection)) {
+      process.on('unhandledRejection', onUnhandledRejection);
+    }
+
+    const kernelConsole = makeConsole(`${debugPrefix}SwingSet:kernel`);
+    const sloggingKernelConsole = makeLimitedConsole(level => {
+      return (...args) => {
+        kernelConsole[level](...args);
+        writeSlogObject({ type: 'console', source: 'kernel', level, args });
+      };
+    });
+    const buildKernel = await slogDuration(
+      ['import-kernel-start', 'import-kernel-finish'],
+      {},
+      async () => {
+        const kernelNS = await importBundle(kernelBundle, {
+          filePrefix: 'kernel/...',
+          endowments: {
+            console: sloggingKernelConsole,
+            // See https://github.com/Agoric/agoric-sdk/issues/9515
+            assert: globalThis.assert,
+            require: harden(
+              what =>
+                Fail`kernelRequire unprepared to satisfy require(${what})`,
+            ),
+            URL: globalThis.Base64, // Unavailable only on XSnap
+            Base64: globalThis.Base64, // Available only on XSnap
+          },
+        });
+        return kernelNS.default;
+      },
+    );
+
+    const kernelEndowments = {
+      waitUntilQuiescent,
+      kernelStorage,
+      debugPrefix,
+      // all vats get these in their global scope, plus a vat-specific 'console'
+      vatEndowments: harden({}),
+      makeConsole,
+      startSubprocessWorkerNode,
+      startXSnap,
+      slogCallbacks,
+      writeSlogObject,
+      slogDuration,
+      WeakRef,
+      FinalizationRegistry,
+      gcAndFinalize: makeGcAndFinalize(engineGC),
+      bundleHandler,
+    };
+    const kernelRuntimeOptions = {
+      verbose,
+      warehousePolicy,
+      overrideVatManagerOptions,
+    };
+
+    /** @type { ReturnType<typeof import('../kernel/kernel.js').default> } */
+    const kernel = buildKernel(
+      kernelEndowments,
+      deviceEndowments,
+      kernelRuntimeOptions,
+    );
+
+    await kernel.start();
 
     /**
-     * Queue a method call into the named vat
+     * Validate and install a code bundle.
      *
-     * @param {string} vatName
-     * @param {string|symbol} method
-     * @param {unknown[]} args
-     * @param {ResolutionPolicy} resultPolicy
+     * @param {EndoZipBase64Bundle} bundle
+     * @param {BundleID} [allegedBundleID]
+     * @returns {Promise<BundleID>}
      */
-    queueToVatRoot(vatName, method, args = [], resultPolicy = 'ignore') {
-      const vatID = kernel.vatNameToID(vatName);
-      if (typeof method !== 'symbol') {
-        assert.typeof(method, 'string');
+    async function validateAndInstallBundle(
+      bundle,
+      allegedBundleID = undefined,
+    ) {
+      // TODO The following assertion may be removed when checkBundle subsumes
+      // the responsibility to verify the permanence of a bundle's properties.
+      // https://github.com/endojs/endo/issues/1106
+      mustMatch(bundle, endoZipBase64Sha512Shape);
+      await checkBundle(bundle, computeSha512, allegedBundleID);
+      const { endoZipBase64Sha512 } = bundle;
+      assert.typeof(endoZipBase64Sha512, 'string');
+      const bundleID = `b1-${endoZipBase64Sha512}`;
+      if (allegedBundleID !== undefined) {
+        bundleID === allegedBundleID ||
+          Fail`alleged bundleID ${allegedBundleID} does not match actual ${bundleID}`;
       }
-      const kref = kernel.getRootObject(vatID);
-      const kpid = kernel.queueToKref(kref, method, args, resultPolicy);
-      if (kpid) {
-        kernel.kpRegisterInterest(kpid);
-      }
-      kernelStorage.emitCrankHashes();
-      return kpid;
-    },
+      await kernel.installBundle(bundleID, bundle);
+      return bundleID;
+    }
 
-    /**
-     * Queue a method call to an object represented by a kmarshal token
-     *
-     * @param {any} target
-     * @param {string|symbol} method
-     * @param {unknown[]} args
-     * @param {ResolutionPolicy} resultPolicy
-     */
-    queueToVatObject(target, method, args = [], resultPolicy = 'ignore') {
-      const targetKref = krefOf(target);
-      assert.typeof(targetKref, 'string');
-      if (typeof method !== 'symbol') {
-        assert.typeof(method, 'string');
-      }
-      const kpid = kernel.queueToKref(targetKref, method, args, resultPolicy);
-      if (kpid) {
-        kernel.kpRegisterInterest(kpid);
-      }
-      kernelStorage.emitCrankHashes();
-      return kpid;
-    },
+    // the kernel won't leak our objects into the Vats, we must do
+    // the same in this wrapper
+    return harden({
+      log(str) {
+        kernel.log(str);
+      },
 
-    upgradeStaticVat(vatName, shouldPauseFirst, bundleID, options = {}) {
-      const vatID = kernel.vatNameToID(vatName);
-      let pauseTarget = null;
-      if (shouldPauseFirst) {
-        pauseTarget = kslot(kernel.getRootObject(vatID));
-      }
-      if (!options.upgradeMessage) {
-        options.upgradeMessage = `vat ${vatName} upgraded`;
-      }
-      const result = controller.queueToVatRoot(
-        'vatAdmin',
-        'upgradeStaticVat',
-        [vatID, pauseTarget, bundleID, options],
-        'ignore',
-      );
-      // no emitCrankHashes here because queueToVatRoot did that
-      return result;
-    },
+      writeSlogObject,
 
-    /**
-     * terminate a vat by ID
-     *
-     * This allows the host app to terminate any vat. The effect is
-     * equivalent to the holder of the vat's `adminNode` calling
-     * `E(adminNode).terminateWithFailure(reason)`, or the vat itself
-     * calling `vatPowers.exitVatWithFailure(reason)`. It accepts a
-     * reason capdata structure (use 'kser()' to build one), which
-     * will be included in rejection data for the promise available to
-     * `E(adminNode).done()`, just like the internal termination APIs.
-     * Note that no slots/krefs are allowed in 'reason' when
-     * terminating the vat externally.
-     *
-     * This is a superpower available only from the host app, not from
-     * within vats, since `vatID` is merely a string and can be forged
-     * trivially. The host app is responsible for supplying the right
-     * vatID to kill, by looking at the database or logs (note that
-     * vats do not know their own vatID, and `controller.vatNameToID`
-     * only works for static vats, not dynamic).
-     *
-     * This will cause state changes in the swing-store (specifically
-     * marking the vat as terminated, and rejection all its
-     * outstanding promises), which must be committed before they will
-     * be durable. Either call `hostStorage.commit()` immediately
-     * after calling this, or call `controller.run()` and *then*
-     * `hostStorage.commit()` as you would normally do in response to
-     * other I/O or timer activity.
-     *
-     * The first `controller.run()` after this call will delete all
-     * the old vat's state at once, unless you use a
-     * [`runPolicy`](../../docs/run-policy.md) to rate-limit cleanups.
-     *
-     * @param {VatID} vatID
-     * @param {SwingSetCapData} reasonCD
-     */
+      slogDuration,
 
-    terminateVat(vatID, reasonCD) {
-      insistCapData(reasonCD);
-      assert(reasonCD.slots.length === 0, 'no slots allowed in reason');
-      kernel.terminateVatExternally(vatID, reasonCD);
-    },
+      dump() {
+        return deepCopyJsonable(kernel.dump());
+      },
+
+      verboseDebugMode(flag) {
+        kernel.kdebugEnable(flag);
+      },
+
+      validateAndInstallBundle,
+
+      /**
+       * Run the kernel until the policy says to stop, or the queue is empty.
+       *
+       * @param {RunPolicy} [policy] - a RunPolicy to limit the work being done
+       * @returns {Promise<number>} The number of cranks that were executed.
+       */
+      async run(policy) {
+        return kernel.run(policy);
+      },
+
+      async step() {
+        return kernel.step();
+      },
+
+      async shutdown() {
+        return kernel.shutdown();
+      },
+
+      reapAllVats() {
+        kernel.reapAllVats();
+      },
+
+      changeKernelOptions(options) {
+        kernel.changeKernelOptions(options);
+      },
+
+      getStats() {
+        return deepCopyJsonable(kernel.getStats());
+      },
+
+      getStatus() {
+        return deepCopyJsonable(kernel.getStatus());
+      },
+
+      getActivityhash() {
+        return kernelStorage.getActivityhash();
+      },
+
+      // everything beyond here is for tests, and everything should be migrated
+      // to be on this 'debug' object to make that clear
+
+      debug: {
+        addDeviceHook: kernel.addDeviceHook,
+      },
+
+      pinVatRoot(vatName) {
+        const vatID = kernel.vatNameToID(vatName);
+        const kref = kernel.getRootObject(vatID);
+        kernel.pinObject(kref);
+        kernelStorage.emitCrankHashes();
+        return kref;
+      },
+
+      kpRegisterInterest(kpid) {
+        return kernel.kpRegisterInterest(kpid);
+      },
+
+      kpStatus(kpid) {
+        return kernel.kpStatus(kpid);
+      },
+
+      kpResolution(kpid, options) {
+        const result = kernel.kpResolution(kpid, options);
+        // kpResolution does DB write (changes refcounts) so we need emitCrankHashes here
+        kernelStorage.emitCrankHashes();
+        return result;
+      },
+
+      vatNameToID(vatName) {
+        return kernel.vatNameToID(vatName);
+      },
+      deviceNameToID(deviceName) {
+        return kernel.deviceNameToID(deviceName);
+      },
+
+      injectQueuedUpgradeEvents: () => kernel.injectQueuedUpgradeEvents(),
+
+      /**
+       * Queue a method call into the named vat
+       *
+       * @param {string} vatName
+       * @param {string|symbol} method
+       * @param {unknown[]} args
+       * @param {ResolutionPolicy} resultPolicy
+       */
+      queueToVatRoot(vatName, method, args = [], resultPolicy = 'ignore') {
+        const vatID = kernel.vatNameToID(vatName);
+        if (typeof method !== 'symbol') {
+          assert.typeof(method, 'string');
+        }
+        const kref = kernel.getRootObject(vatID);
+        const kpid = kernel.queueToKref(kref, method, args, resultPolicy);
+        if (kpid) {
+          kernel.kpRegisterInterest(kpid);
+        }
+        kernelStorage.emitCrankHashes();
+        return kpid;
+      },
+
+      /**
+       * Queue a method call to an object represented by a kmarshal token
+       *
+       * @param {any} target
+       * @param {string|symbol} method
+       * @param {unknown[]} args
+       * @param {ResolutionPolicy} resultPolicy
+       */
+      queueToVatObject(target, method, args = [], resultPolicy = 'ignore') {
+        const targetKref = krefOf(target);
+        assert.typeof(targetKref, 'string');
+        if (typeof method !== 'symbol') {
+          assert.typeof(method, 'string');
+        }
+        const kpid = kernel.queueToKref(targetKref, method, args, resultPolicy);
+        if (kpid) {
+          kernel.kpRegisterInterest(kpid);
+        }
+        kernelStorage.emitCrankHashes();
+        return kpid;
+      },
+
+      upgradeStaticVat(vatName, shouldPauseFirst, bundleID, options = {}) {
+        const vatID = kernel.vatNameToID(vatName);
+        let pauseTarget = null;
+        if (shouldPauseFirst) {
+          pauseTarget = kslot(kernel.getRootObject(vatID));
+        }
+        if (!options.upgradeMessage) {
+          options.upgradeMessage = `vat ${vatName} upgraded`;
+        }
+        const result = controller.queueToVatRoot(
+          'vatAdmin',
+          'upgradeStaticVat',
+          [vatID, pauseTarget, bundleID, options],
+          'ignore',
+        );
+        // no emitCrankHashes here because queueToVatRoot did that
+        return result;
+      },
+
+      /**
+       * terminate a vat by ID
+       *
+       * This allows the host app to terminate any vat. The effect is
+       * equivalent to the holder of the vat's `adminNode` calling
+       * `E(adminNode).terminateWithFailure(reason)`, or the vat itself
+       * calling `vatPowers.exitVatWithFailure(reason)`. It accepts a
+       * reason capdata structure (use 'kser()' to build one), which
+       * will be included in rejection data for the promise available to
+       * `E(adminNode).done()`, just like the internal termination APIs.
+       * Note that no slots/krefs are allowed in 'reason' when
+       * terminating the vat externally.
+       *
+       * This is a superpower available only from the host app, not from
+       * within vats, since `vatID` is merely a string and can be forged
+       * trivially. The host app is responsible for supplying the right
+       * vatID to kill, by looking at the database or logs (note that
+       * vats do not know their own vatID, and `controller.vatNameToID`
+       * only works for static vats, not dynamic).
+       *
+       * This will cause state changes in the swing-store (specifically
+       * marking the vat as terminated, and rejection all its
+       * outstanding promises), which must be committed before they will
+       * be durable. Either call `hostStorage.commit()` immediately
+       * after calling this, or call `controller.run()` and *then*
+       * `hostStorage.commit()` as you would normally do in response to
+       * other I/O or timer activity.
+       *
+       * The first `controller.run()` after this call will delete all
+       * the old vat's state at once, unless you use a
+       * [`runPolicy`](../../docs/run-policy.md) to rate-limit cleanups.
+       *
+       * @param {VatID} vatID
+       * @param {SwingSetCapData} reasonCD
+       */
+
+      terminateVat(vatID, reasonCD) {
+        insistCapData(reasonCD);
+        assert(reasonCD.slots.length === 0, 'no slots allowed in reason');
+        kernel.terminateVatExternally(vatID, reasonCD);
+      },
+    });
   });
-
-  writeSlogObject({ type: 'kernel-init-finish' });
 
   return controller;
 }

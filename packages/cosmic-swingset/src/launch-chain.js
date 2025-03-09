@@ -6,9 +6,10 @@ import '@agoric/builders';
 
 import anylogger from 'anylogger';
 
+import bundleSource from '@endo/bundle-source';
 import { assert, Fail } from '@endo/errors';
 import { E } from '@endo/far';
-import bundleSource from '@endo/bundle-source';
+import { makePromiseKit } from '@endo/promise-kit';
 
 import {
   buildMailbox,
@@ -587,33 +588,32 @@ export async function launchAndShareInternals({
         if (!allowCleanup) return false;
       }
       const startBeans = runPolicy.totalBeans();
-      controller.writeSlogObject({
-        type: 'cosmic-swingset-run-start',
-        blockHeight,
-        runNum,
-        phase,
-        startBeans,
-        remainingBeans: runPolicy.remainingBeans(),
-      });
-      // TODO: crankScheduler does a schedulerBlockTimeHistogram thing
-      // that needs to be revisited, it used to be called once per
-      // block, now it's once per processed inbound queue item
-      await crankScheduler(runPolicy);
-      const finishBeans = runPolicy.totalBeans();
-      controller.writeSlogObject({
-        type: 'kernel-stats',
-        stats: controller.getStats(),
-      });
-      controller.writeSlogObject({
-        type: 'cosmic-swingset-run-finish',
-        blockHeight,
-        runNum,
-        phase,
-        startBeans,
-        finishBeans,
-        usedBeans: finishBeans - startBeans,
-        remainingBeans: runPolicy.remainingBeans(),
-      });
+      await controller.slogDuration(
+        ['cosmic-swingset-run-start', 'cosmic-swingset-run-finish'],
+        {
+          blockHeight,
+          runNum,
+          phase,
+          startBeans,
+          remainingBeans: runPolicy.remainingBeans(),
+        },
+        async finish => {
+          // TODO: crankScheduler does a schedulerBlockTimeHistogram thing
+          // that needs to be revisited, it used to be called once per
+          // block, now it's once per processed inbound queue item
+          await crankScheduler(runPolicy);
+          const finishBeans = runPolicy.totalBeans();
+          controller.writeSlogObject({
+            type: 'kernel-stats',
+            stats: controller.getStats(),
+          });
+          finish({
+            finishBeans,
+            usedBeans: finishBeans - startBeans,
+            remainingBeans: runPolicy.remainingBeans(),
+          });
+        },
+      );
       runNum += 1;
       return runPolicy.shouldRun();
     }
@@ -746,6 +746,8 @@ export async function launchAndShareInternals({
   let swingsetCommitDuration = NaN;
   let blockParams;
   let decohered;
+  /** @type {undefined | import('@endo/promise-kit').PromiseKit<Record<string, unknown>>} */
+  let pendingCommitKit;
   /** @type {undefined | Promise<void>} */
   let afterCommitWorkDone;
   /** Timestamps that are relevant across block lifecycle events. */
@@ -1010,100 +1012,97 @@ export async function launchAndShareInternals({
 
   const doBootstrap = async action => {
     const { blockTime, blockHeight, params } = action;
-    controller.writeSlogObject({
-      type: 'cosmic-swingset-bootstrap-block-start',
-      blockTime,
-    });
+    await controller.slogDuration(
+      [
+        'cosmic-swingset-bootstrap-block-start',
+        'cosmic-swingset-bootstrap-block-finish',
+      ],
+      { blockTime },
+      async finish => {
+        await null;
+        try {
+          verboseBlocks && blockManagerConsole.info('block bootstrap');
+          (savedHeight === 0 && savedBeginHeight === 0) ||
+            Fail`Cannot run a bootstrap block at height ${savedHeight}`;
+          const bootstrapBlockParams = parseParams(params);
 
-    await null;
-    try {
-      verboseBlocks && blockManagerConsole.info('block bootstrap');
-      (savedHeight === 0 && savedBeginHeight === 0) ||
-        Fail`Cannot run a bootstrap block at height ${savedHeight}`;
-      const bootstrapBlockParams = parseParams(params);
-
-      // Start a block transaction, but without changing state
-      // for the upcoming begin block check
-      saveBeginHeight(savedBeginHeight);
-      const start = now();
-      await withErrorLogging(
-        action.type,
-        () => bootstrapBlock(blockHeight, blockTime, bootstrapBlockParams),
-        () => {
-          runDuration += now() - start;
-        },
-      );
-    } finally {
-      controller.writeSlogObject({
-        type: 'cosmic-swingset-bootstrap-block-finish',
-        blockTime,
-      });
-    }
+          // Start a block transaction, but without changing state
+          // for the upcoming begin block check
+          saveBeginHeight(savedBeginHeight);
+          const start = now();
+          await withErrorLogging(
+            action.type,
+            () => bootstrapBlock(blockHeight, blockTime, bootstrapBlockParams),
+            () => {
+              runDuration += now() - start;
+            },
+          );
+        } finally {
+          finish();
+        }
+      },
+    );
   };
 
   const doCoreProposals = async ({ blockHeight, blockTime }, coreProposals) => {
-    controller.writeSlogObject({
-      type: 'cosmic-swingset-upgrade-start',
-      blockHeight,
-      blockTime,
-      coreProposals,
-    });
-
-    await null;
-    try {
-      // Start a block transaction, but without changing state
-      // for the upcoming begin block check
-      saveBeginHeight(savedBeginHeight);
-
-      // Find scripts relative to our location.
-      const myFilename = fileURLToPath(import.meta.url);
-      const { bundles, codeSteps: coreEvalCodeSteps } =
-        await extractCoreProposalBundles(coreProposals, myFilename, {
-          handleToBundleSpec: async (handle, source, _sequence, _piece) => {
-            const bundle = await bundleSource(source);
-            const { endoZipBase64Sha512: hash } = bundle;
-            const bundleID = `b1-${hash}`;
-            handle.bundleID = bundleID;
-            harden(handle);
-            return harden([`${bundleID}: ${source}`, bundle]);
-          },
-        });
-
-      for (const [meta, bundle] of Object.entries(bundles)) {
-        await controller
-          .validateAndInstallBundle(bundle)
-          .catch(e => Fail`Cannot validate and install ${meta}: ${e}`);
-      }
-
-      // Now queue each step's code for evaluation.
-      for (const [key, coreEvalCode] of Object.entries(coreEvalCodeSteps)) {
-        const coreEvalAction = {
-          type: ActionType.CORE_EVAL,
-          blockHeight,
-          blockTime,
-          evals: [
-            {
-              json_permits: 'true',
-              js_code: coreEvalCode,
-            },
-          ],
-        };
-        runThisBlock.push({
-          context: {
-            blockHeight,
-            txHash: 'x/upgrade',
-            msgIdx: key,
-          },
-          action: coreEvalAction,
-        });
-      }
-    } finally {
-      controller.writeSlogObject({
-        type: 'cosmic-swingset-upgrade-finish',
+    await controller.slogDuration(
+      ['cosmic-swingset-upgrade-start', 'cosmic-swingset-upgrade-finish'],
+      {
         blockHeight,
         blockTime,
-      });
-    }
+        coreProposals,
+      },
+      async finish => {
+        await null;
+        try {
+          // Start a block transaction, but without changing state
+          // for the upcoming begin block check
+          saveBeginHeight(savedBeginHeight);
+
+          // Find scripts relative to our location.
+          const myFilename = fileURLToPath(import.meta.url);
+          const { bundles, codeSteps: coreEvalCodeSteps } =
+            await extractCoreProposalBundles(coreProposals, myFilename, {
+              handleToBundleSpec: async (handle, source, _sequence, _piece) => {
+                const bundle = await bundleSource(source);
+                const { endoZipBase64Sha512: hash } = bundle;
+                const bundleID = `b1-${hash}`;
+                handle.bundleID = bundleID;
+                harden(handle);
+                return harden([`${bundleID}: ${source}`, bundle]);
+              },
+            });
+
+          for (const [meta, bundle] of Object.entries(bundles)) {
+            await controller
+              .validateAndInstallBundle(bundle)
+              .catch(e => Fail`Cannot validate and install ${meta}: ${e}`);
+          }
+
+          // Now queue each step's code for evaluation.
+          for (const [key, coreEvalCode] of Object.entries(coreEvalCodeSteps)) {
+            const coreEval = {
+              json_permits: 'true',
+              js_code: coreEvalCode,
+            };
+            const coreEvalAction = {
+              type: ActionType.CORE_EVAL,
+              blockHeight,
+              blockTime,
+              evals: [coreEval],
+            };
+            const context = {
+              blockHeight,
+              txHash: 'x/upgrade',
+              msgIdx: key,
+            };
+            runThisBlock.push({ context, action: coreEvalAction });
+          }
+        } finally {
+          finish({ coreProposals: undefined });
+        }
+      },
+    );
   };
 
   // Handle actions related to ABCI block methods: BeginBlock, EndBlock, Commit
@@ -1234,71 +1233,70 @@ export async function launchAndShareInternals({
 
       case ActionType.END_BLOCK: {
         const { blockHeight, blockTime } = action;
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-end-block-start',
-          blockHeight,
-          blockTime,
-        });
+        await controller.slogDuration(
+          [
+            'cosmic-swingset-end-block-start',
+            'cosmic-swingset-end-block-finish',
+          ],
+          { blockHeight, blockTime },
+          async finish => {
+            blockParams || Fail`blockParams missing`;
 
-        blockParams || Fail`blockParams missing`;
+            await null;
+            if (!blockNeedsExecution(blockHeight)) {
+              // We are reevaluating, so do not do any work, and send exactly the
+              // same downcalls to the chain.
+              //
+              // This is necessary only after a restart when Tendermint is reevaluating the
+              // block that was interrupted and not committed.
+              //
+              // We assert that the return values are identical, which allows us to silently
+              // clear the queue.
+              try {
+                replayChainSends();
+              } catch (e) {
+                // Very bad!
+                decohered = e;
+                throw e;
+              }
+            } else {
+              if (blockHeight !== savedBeginHeight) {
+                decohered = Error(
+                  `Inconsistent committed state. Trying to end block ${blockHeight}, expected began block ${savedBeginHeight}`,
+                );
+                throw decohered;
+              }
 
-        if (!blockNeedsExecution(blockHeight)) {
-          // We are reevaluating, so do not do any work, and send exactly the
-          // same downcalls to the chain.
-          //
-          // This is necessary only after a restart when Tendermint is reevaluating the
-          // block that was interrupted and not committed.
-          //
-          // We assert that the return values are identical, which allows us to silently
-          // clear the queue.
-          try {
-            replayChainSends();
-          } catch (e) {
-            // Very bad!
-            decohered = e;
-            throw e;
-          }
-        } else {
-          if (blockHeight !== savedBeginHeight) {
-            decohered = Error(
-              `Inconsistent committed state. Trying to end block ${blockHeight}, expected began block ${savedBeginHeight}`,
-            );
-            throw decohered;
-          }
+              // And now we actually process the queued actions down here, during
+              // END_BLOCK, but still reentrancy-protected.
 
-          // And now we actually process the queued actions down here, during
-          // END_BLOCK, but still reentrancy-protected.
+              provideInstallationPublisher();
 
-          provideInstallationPublisher();
+              const start = now();
+              await withErrorLogging(
+                action.type,
+                () => endBlock(blockHeight, blockTime, blockParams),
+                () => {
+                  runDuration += now() - start;
+                },
+              );
 
-          const start = now();
-          await withErrorLogging(
-            action.type,
-            () => endBlock(blockHeight, blockTime, blockParams),
-            () => {
-              runDuration += now() - start;
-            },
-          );
+              // We write out our on-chain state as a number of chainSends.
+              const start2 = now();
+              await saveChainState();
+              // Not strictly necessary for correctness (the caller ensures this is
+              // done before returning), but account for time taken to flush.
+              await pendingSwingStoreExport;
+              chainSaveDuration = now() - start2;
 
-          // We write out our on-chain state as a number of chainSends.
-          const start2 = now();
-          await saveChainState();
-          // Not strictly necessary for correctness (the caller ensures this is
-          // done before returning), but account for time taken to flush.
-          await pendingSwingStoreExport;
-          chainSaveDuration = now() - start2;
+              // Advance our saved state variables.
+              savedHeight = blockHeight;
+            }
+            finish({ inboundQueueStats: inboundQueueMetrics.getStats() });
 
-          // Advance our saved state variables.
-          savedHeight = blockHeight;
-        }
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-end-block-finish',
-          blockHeight,
-          blockTime,
-          inboundQueueStats: inboundQueueMetrics.getStats(),
-        });
-
-        times.endBlockDone = now();
+            times.endBlockDone = now();
+          },
+        );
 
         return undefined;
       }
@@ -1316,24 +1314,45 @@ export async function launchAndShareInternals({
         runThisBlock.size() === 0 ||
           Fail`We didn't process all "run this block" actions`;
 
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-commit-block-start',
-          blockHeight,
-          blockTime,
-        });
+        // Commit spans two actions.
+        pendingCommitKit = makePromiseKit();
+        const doneKit = makePromiseKit();
+        void controller.slogDuration(
+          [
+            'cosmic-swingset-commit-block-start',
+            'cosmic-swingset-commit-block-finish',
+          ],
+          { blockHeight, blockTime },
+          async finish => {
+            await null;
+            try {
+              // Save the kernel's computed state just before the chain commits.
+              const start = now();
+              await saveOutsideState(savedHeight);
+              swingsetCommitDuration = now() - start;
 
-        // Save the kernel's computed state just before the chain commits.
-        const start = now();
-        await saveOutsideState(savedHeight);
-        swingsetCommitDuration = now() - start;
+              blockParams = undefined;
 
-        blockParams = undefined;
+              blockManagerConsole.debug(
+                `wrote SwingSet checkpoint [run=${runDuration}ms, chainSave=${chainSaveDuration}ms, kernelSave=${swingsetCommitDuration}ms]`,
+              );
 
-        blockManagerConsole.debug(
-          `wrote SwingSet checkpoint [run=${runDuration}ms, chainSave=${chainSaveDuration}ms, kernelSave=${swingsetCommitDuration}ms]`,
+              // We're done with COMMIT_BLOCK, but can't write a
+              // cosmic-swingset-commit-block-finish slog entry until
+              // AFTER_COMMIT_BLOCK.
+              times.commitBlockDone = now();
+              doneKit.resolve(undefined);
+
+              // @ts-expect-error pendingCommitKit is not undefined here
+              finish(await pendingCommitKit.promise);
+            } catch (err) {
+              doneKit.reject(err);
+            } finally {
+              pendingCommitKit = undefined;
+            }
+          },
         );
-
-        times.commitBlockDone = now();
+        await doneKit.promise;
 
         return undefined;
       }
@@ -1348,8 +1367,10 @@ export async function launchAndShareInternals({
         // Time spent since the end of END_BLOCK (inclusive of COMMIT_BLOCK).
         const fullCommitDuration = afterCommitStart - times.endBlockDone;
 
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-commit-block-finish',
+        // Close the "cosmic-swingset-commit-block" span and assert its
+        // completion as observed by `pendingCommitKit` being cleared.
+        if (!pendingCommitKit) throw Fail`no pendingCommitKit`;
+        pendingCommitKit.resolve({
           blockHeight,
           blockTime,
           runSeconds: runDuration / 1000,
@@ -1361,6 +1382,8 @@ export async function launchAndShareInternals({
           cosmosCommitSeconds: cosmosCommitDuration / 1000,
           fullSaveTime: fullCommitDuration / 1000,
         });
+        await pendingCommitKit.promise;
+        !pendingCommitKit || Fail`pendingCommitKit was not cleared!`;
 
         blockMetrics.swingsetRunSeconds.record(runDuration / 1000);
         blockMetrics.swingsetChainSaveSeconds.record(chainSaveDuration / 1000);
