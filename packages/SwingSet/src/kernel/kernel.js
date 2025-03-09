@@ -99,6 +99,7 @@ export default function buildKernel(
     startSubprocessWorkerNode,
     startXSnap,
     writeSlogObject,
+    slogDuration,
     WeakRef,
     FinalizationRegistry,
     gcAndFinalize,
@@ -116,7 +117,7 @@ export default function buildKernel(
   const vatAdminRootKref = kernelStorage.kvStore.get('vatAdminRootKref');
 
   const kernelSlog = writeSlogObject
-    ? makeSlogger(slogCallbacks, writeSlogObject)
+    ? makeSlogger(slogCallbacks, writeSlogObject, slogDuration)
     : makeDummySlogger(slogCallbacks, makeConsole('disabled slogger'));
 
   const kernelKeeper = makeKernelKeeper(
@@ -1347,8 +1348,7 @@ export default function buildKernel(
     // prettier-ignore
     kdebug(`processQ crank ${kernelKeeper.getCrankNumber()} ${JSON.stringify(message)}`);
     kdebug(legibilizeMessage(message));
-    kernelSlog.write({
-      type: 'crank-start',
+    const finish = kernelSlog.startDuration(['crank-start', 'crank-finish'], {
       crankType: 'delivery',
       crankNum: kernelKeeper.getCrankNumber(),
       message,
@@ -1452,12 +1452,8 @@ export default function buildKernel(
     const crankNum = kernelKeeper.getCrankNumber();
     kernelKeeper.incrementCrankNumber();
     const { crankhash, activityhash } = kernelKeeper.emitCrankHashes();
-    // kernelSlog.write({
-    //   type: 'kernel-stats',
-    //   stats: kernelKeeper.getStats(),
-    // });
-    kernelSlog.write({
-      type: 'crank-finish',
+    finish({
+      message: undefined,
       crankNum,
       crankhash,
       activityhash,
@@ -1499,8 +1495,7 @@ export default function buildKernel(
     // prettier-ignore
     kdebug(`processAcceptanceQ crank ${kernelKeeper.getCrankNumber()} ${message.type}`);
     // kdebug(legibilizeMessage(message));
-    kernelSlog.write({
-      type: 'crank-start',
+    const finish = kernelSlog.startDuration(['crank-start', 'crank-finish'], {
       crankType: 'routing',
       crankNum: kernelKeeper.getCrankNumber(),
       message,
@@ -1539,8 +1534,8 @@ export default function buildKernel(
     const crankNum = kernelKeeper.getCrankNumber();
     kernelKeeper.incrementCrankNumber();
     const { crankhash, activityhash } = kernelKeeper.emitCrankHashes();
-    kernelSlog.write({
-      type: 'crank-finish',
+    finish({
+      message: undefined,
       crankNum,
       crankhash,
       activityhash,

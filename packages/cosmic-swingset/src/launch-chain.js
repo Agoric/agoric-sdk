@@ -598,9 +598,13 @@ export async function launchAndShareInternals({
           remainingBeans: runPolicy.remainingBeans(),
         },
         async finish => {
-          // TODO: crankScheduler does a schedulerBlockTimeHistogram thing
-          // that needs to be revisited, it used to be called once per
-          // block, now it's once per processed inbound queue item
+          // DEPRECATED: swingset_block_processing_seconds measurements produced
+          // by `crankScheduler` should be equivalent to the "seconds" data of
+          // "cosmic-swingset-run-finish" slog entries (and note that the former
+          // name is inaccurate because each measurement is per action rather
+          // than per block). swingset_crank_processing_time measurements
+          // produced by its `crankComplete` callback should be equivalent to
+          // the "seconds" data of "crank-finish" slog entries.
           await crankScheduler(runPolicy);
           const finishBeans = runPolicy.totalBeans();
           controller.writeSlogObject({
