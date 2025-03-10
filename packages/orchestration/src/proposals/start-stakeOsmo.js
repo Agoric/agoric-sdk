@@ -71,6 +71,7 @@ export const startStakeOsmo = async ({
       chainId: osmosis.chainId,
       hostConnectionId: connectionInfo.counterparty.connection_id,
       controllerConnectionId: connectionInfo.id,
+      // @ts-expect-error osmosis is /** @type {CosmosChainInfo} */
       icqEnabled: osmosis.icqEnabled,
     },
     privateArgs: await deeplyFulfilledObject(
