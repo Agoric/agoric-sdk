@@ -21,16 +21,14 @@ import {
   buildVTransferEvent,
   parseOutgoingTxPacket,
 } from '../../tools/ibc-mocks.js';
+import * as contractExports from '../../src/examples/staking-combinations.contract.js';
 
-const dirname = path.dirname(new URL(import.meta.url).pathname);
 const expectUnhandled = makeExpectUnhandledRejection({
   test,
   importMetaUrl: import.meta.url,
 });
 
-const contractFile = `${dirname}/../../src/examples/staking-combinations.contract.js`;
-type StartFn =
-  typeof import('@agoric/orchestration/src/examples/staking-combinations.contract.js').start;
+type StartFn = typeof contractExports.start;
 
 // TODO(#11026): This use of expectUnhandled should not be necessary.
 test(expectUnhandled(1), 'start', async t => {
@@ -49,7 +47,7 @@ test(expectUnhandled(1), 'start', async t => {
     },
   });
   const installation: Installation<StartFn> =
-    await bundleAndInstall(contractFile);
+    await bundleAndInstall(contractExports);
 
   const { publicFacet, creatorFacet } = await E(zoe).startInstance(
     installation,

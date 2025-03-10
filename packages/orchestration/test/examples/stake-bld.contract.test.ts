@@ -5,14 +5,10 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
 import { heapVowE as E } from '@agoric/vow/vat.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import path from 'path';
+import * as contractExports from '../../src/examples/stake-bld.contract.js';
 import { commonSetup } from '../supports.js';
 
-const dirname = path.dirname(new URL(import.meta.url).pathname);
-
-const contractFile = `${dirname}/../../src/examples/stake-bld.contract.js`;
-type StartFn =
-  typeof import('@agoric/orchestration/src/examples/stake-bld.contract.js').start;
+type StartFn = typeof contractExports.start;
 
 const startContract = async ({
   agoricNames,
@@ -24,7 +20,7 @@ const startContract = async ({
 }) => {
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
   const installation: Installation<StartFn> =
-    await bundleAndInstall(contractFile);
+    await bundleAndInstall(contractExports);
 
   const { publicFacet } = await E(zoe).startInstance(
     installation,
