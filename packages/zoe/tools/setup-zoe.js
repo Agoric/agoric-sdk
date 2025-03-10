@@ -61,12 +61,31 @@ export const setUpZoeForTest = async ({
   );
 
   /**
-   * @param {string} path
+   * @param {object} pathOrExports
    * @returns {Promise<Installation>}
    */
-  const bundleAndInstall = async path => {
-    const bundle = await bundleSource(path);
-    const id = `b1-${path}`;
+  const bundleAndInstall = async pathOrExports => {
+    await null;
+    let id;
+    let bundle;
+    if (typeof pathOrExports === 'string') {
+      const path = pathOrExports;
+      bundle = await bundleSource(path);
+      id = `b1-${path}`;
+    }
+    {
+      assert.equal(
+        Object.prototype.toString.call(pathOrExports),
+        '[object Module]',
+      );
+      // Copy all the properties so this object can be hardened.
+      const exports = { ...pathOrExports };
+      bundle = harden({
+        moduleFormat: 'test',
+        [Symbol.for('exports')]: exports,
+      });
+      id = `b1-test-exports-${Math.random()}`;
+    }
     assert(vatAdminState, 'installBundle called before vatAdminState defined');
     vatAdminState.installBundle(id, bundle);
     return E(zoeService).installBundleID(id);
