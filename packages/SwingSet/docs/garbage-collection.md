@@ -593,7 +593,7 @@ The algorithm for comms is mostly simpler than the kernel because:
 However it's slightly more complex because of the need to distinguish between informed and ignorant inbound messages, and the possibility that we choose to log or kill-connection when a `retireImport`/`retireExport` arrives after we know the race window has closed.
 
 
-(TODO): describe the code which tracks REACHABLE/RECOGNIZABLE for all objects the the comms object table, the "reachable" flag in each c-list entry, the code that computes the overall reachability state, and the creation and processing of remote-side `dropImports`/etc messages.
+(TODO): describe the code which tracks REACHABLE/RECOGNIZABLE for all objects the comms object table, the "reachable" flag in each c-list entry, the code that computes the overall reachability state, and the creation and processing of remote-side `dropImports`/etc messages.
 
 ## Races over the wire
 
