@@ -224,13 +224,6 @@ const walletProvisioning = test.macro({
 
 test.serial(walletProvisioning, 'wallet provisioning');
 
-const prometheusUrl = 'http://localhost:26660/metrics';
-const testMetricNames = [
-  'store_size_decrease{storeKey="vstorage"}',
-  'store_size_increase{storeKey="vstorage"}',
-];
-const testMetricNamesSet = new Set(testMetricNames);
-
 /**
  * getMetrics reads data from the Prometheus URL and returns the selected
  * metrics as an object.
@@ -283,136 +276,8 @@ const getMetrics = async (url, metricNames) => {
   return Object.fromEntries(metricsEntries);
 };
 
-/**
- * Helper function to compare two sets
- * @param {*} setA
- * @param {*} setB
- * @returns {boolean}
- */
-const areSetsEqual = (setA, setB) =>
-  setA.size === setB.size && [...setA].every(value => setB.has(value));
-
-// Start metrics and their names
-/** @type Record<string, number> */
-let startMetrics;
-
-/** @type Set<string> */
-let startMetricNameSet;
-
-/**
- * Verifies Counter metrics and their values at the start of the test:
- * - the names of the metrics must match metricNames defined above;
- * - the values of the metrics must be greater than zero;
- * - saves the start metrics and their values in startMetrics for comparison
- *   at the end of the test.
- *
- * @param {*} t         test context
- * @returns {Promise<void>}
- */
-const startCounterMetricVerifier = async t => {
-  startMetrics = await getMetrics(prometheusUrl, testMetricNames);
-  startMetricNameSet = new Set(Object.keys(startMetrics));
-  t.log('metric start values:', startMetrics);
-
-  if (!areSetsEqual(startMetricNameSet, testMetricNamesSet)) {
-    t.fail(
-      `start metric name set must be the same as the verification metric name set. start set: ${startMetricNameSet}, expected set: ${testMetricNamesSet}`,
-    );
-    return;
-  }
-  for (const metricName of startMetricNameSet) {
-    if (startMetrics[metricName] <= 0) {
-      t.fail(
-        `${metricName} must be greater than zero, actual value: ${startMetrics[metricName]}`,
-      );
-    }
-  }
-};
-
-/**
- * Verifies Counter metrics and their values at the end of the test:
- * the names of the metrics must match metricNames defined above;
- * the values of the metrics must be greater than at the start of the test.
- *
- * @param {*} t         test context
- * @returns {Promise<void>}
- */
-const stopCounterMetricVerifier = async t => {
-  const metrics = await getMetrics(prometheusUrl, testMetricNames);
-  const stopMetricNameSet = new Set(Object.keys(metrics));
-  t.log('metric stop values:', metrics);
-
-  if (!areSetsEqual(startMetricNameSet, stopMetricNameSet)) {
-    t.fail(
-      `start and stop metric name sets must be the same. start set: ${startMetricNameSet}, stop set: ${stopMetricNameSet}`,
-    );
-    return;
-  }
-
-  for (const metricName of startMetricNameSet) {
-    if (startMetrics[metricName] >= metrics[metricName]) {
-      t.fail(
-        `${metricName} end value ${metrics[metricName]} should be greater than start value ${startMetrics[metricName]}`,
-      );
-    }
-  }
-};
-
-/**
- * makeVerifier() creates a verifier (a {start(t), stop(t)} record)
- * intended to be passed as an argument to a walletProvisioning template
- * to create additional tests which require additional verification
- * before/after the wallet provisioning.
- *
- * start() is invoked by the template before the wallet provisioning.
- * stop() is invoked by the template after the wallet provisioning.
- *
- * @param {*} startVerifier function to verify start conditions
- * @param {*} stopVerifier function to verify stop conditions
- * @returns {{start: () => Promise<void>, stop: () => Promise<void>}}
- */
-const makeVerifier = (startVerifier, stopVerifier) => {
-  let started = false;
-  let stopped = false;
-
-  const start = async t => {
-    if (started) {
-      throw Error('metrics verifier start() must only be called once');
-    }
-    started = true;
-
-    try {
-      await startVerifier(t);
-    } catch (error) {
-      t.fail(error.message);
-      return;
-    }
-
-    t.teardown(() => {
-      if (stopped) return;
-      throw Error('metrics verifier stop() must be called before test end');
-    });
-  };
-
-  const stop = async t => {
-    if (!started) {
-      throw Error('metrics verifier start() must only be called before stop()');
-    }
-    if (stopped) {
-      throw Error('metrics verifier stop() must only be called once');
-    }
-    stopped = true;
-    try {
-      await stopVerifier(t);
-    } catch (error) {
-      t.fail(error.message);
-    }
-  };
-
-  return { start, stop };
-};
-
 {
+  const prometheusUrl = 'http://localhost:26660/metrics';
   const testMetricNames = [
     'store_size_decrease{storeKey="vstorage"}',
     'store_size_increase{storeKey="vstorage"}',
@@ -448,5 +313,5 @@ const makeVerifier = (startVerifier, stopVerifier) => {
 
       startMetrics = undefined;
     },
-  );
+  });
 }
