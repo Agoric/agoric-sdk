@@ -125,7 +125,7 @@ func newAgoricChainSpec(chainUniqueName string, chainID string, chainImage ibc.D
 	}
 }
 
-// getChainImage will build a docker image from the environment variable value
+// getChainImageAgoric will build a docker image from the environment variable value
 // E2ETEST_CHAINIMAGE_AGORIC. The value of this env var
 // must be in the form "repo/image:version"
 func getChainImageAgoric(t *testing.T) ibc.DockerImage {
