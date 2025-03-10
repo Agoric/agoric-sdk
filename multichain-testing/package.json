@@ -5,17 +5,12 @@
   "scripts": {
     "build": "exit 0",
     "lint": "yarn tsc && yarn eslint .",
-    "lint-fix": "yarn eslint . --fix",
     "test": "echo 'Run specific test suites:\nyarn test:main (needs `make start`)\nyarn test:fast-usdc (needs `make start FILE=config.fusdc.yaml`)'",
     "test:main": "ava --config ava.main.config.js",
     "test:fast-usdc": "ava --config ava.fusdc.config.js",
-    "starship:setup": "make setup-deps setup-kind",
-    "starship:install": "make install",
-    "starship:port-forward": "make port-forward",
-    "starship:stop": "make stop",
     "postinstall": "patch-package"
   },
-  "packageManager": "yarn@4.6.0",
+  "packageManager": "yarn@4.7.0",
   "devDependencies": {
     "@agoric/cosmic-proto": "dev",
     "@agoric/fast-usdc": "dev",
