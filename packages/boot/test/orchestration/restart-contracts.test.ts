@@ -20,7 +20,7 @@ const test: TestFn<WalletFactoryTestContext> = anyTest;
 test.before(async t => {
   t.context = await makeWalletFactoryContext(
     t,
-    '@agoric/vm-config/decentral-itest-orchestration-config.json',
+    '@agoric/vm-config/decentral-itest-orchestration-chains-config.json',
   );
 });
 test.after.always(t => t.context.shutdown?.());
