@@ -3,13 +3,13 @@ import anyTest from '@endo/ses-ava/prepare-endo.js';
 import { sleep } from '@agoric/client-utils';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import type { QueryBalanceResponseSDKType } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
-import { AmountMath } from '@agoric/ertp';
-import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.js';
+import { AmountMath, type Brand } from '@agoric/ertp';
+import type { USDCProposalShapes } from '@agoric/fast-usdc-contract/src/pool-share-math.js';
 import type {
   CctpTxEvidence,
   EvmAddress,
   NobleAddress,
-} from '@agoric/fast-usdc/src/types.js';
+} from '@agoric/fast-usdc-contract';
 import { makeTracer } from '@agoric/internal';
 import type {
   CosmosChainInfo,

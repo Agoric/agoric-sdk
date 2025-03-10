@@ -1,0 +1,10 @@
+.yarn/*
+!.yarn/patches/*
+# fetched chain info from running starship
+starship-chain-info.js
+# builder prefix for contract starters
+start*
+# builder prefix for core evals
+eval-*
+# ci logs for archive upload
+logs/

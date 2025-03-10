@@ -18,6 +18,7 @@ import { generateMnemonic } from '../tools/wallet.js';
 import { makeRetryUntilCondition } from '../tools/sleep.js';
 import { makeDeployBuilder } from '../tools/deploy.js';
 import { makeRelayer } from '../tools/relayer-tools.js';
+import { makeNobleTools } from '../tools/noble-tools.js';
 import { makeAssetInfo } from '../tools/asset-info.js';
 import starshipChainInfo from '../starship-chain-info.js';
 import { makeFaucetTools } from '../tools/faucet-tools.js';
@@ -95,6 +96,7 @@ export const commonSetup = async (
     setTimeout: globalThis.setTimeout,
   });
   const relayer = makeRelayer(childProcess);
+  const nobleTools = makeNobleTools(childProcess);
   const assetInfo = makeAssetInfo(starshipChainInfo);
 
   const unreachableChain: CosmosChainInfo = {
@@ -176,6 +178,7 @@ export const commonSetup = async (
     retryUntilCondition,
     deployBuilder,
     relayer,
+    nobleTools,
     startContract,
     assetInfo,
     chainInfo,

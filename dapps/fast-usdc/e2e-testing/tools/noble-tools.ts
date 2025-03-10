@@ -1,7 +1,7 @@
 import type { IBCChannelID } from '@agoric/vats';
 import type { ExecSync } from './agd-lib.js';
 import type { CosmosChainAddress } from '@agoric/orchestration';
-import type { NobleAddress } from '@agoric/fast-usdc';
+import type { NobleAddress } from '@agoric/fast-usdc-contract';
 
 const kubectlBinary = 'kubectl';
 const noblePod = 'noblelocal-genesis-0';

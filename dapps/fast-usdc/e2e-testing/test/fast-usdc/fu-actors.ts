@@ -2,7 +2,7 @@ import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import type {
   CctpTxEvidence,
   PoolMetrics,
-} from '@agoric/fast-usdc/src/types.js';
+} from '@agoric/fast-usdc-contract/src/types.js';
 import type {
   CurrentWalletRecord,
   UpdateRecord,
@@ -13,6 +13,7 @@ import { makeDoOffer, type WalletDriver } from '../../tools/e2e-tools.js';
 import type { createWallet } from '../../tools/wallet.js';
 import type { commonSetup, SetupContextWithWallets } from '../support.js';
 import type { InvitationDetails } from '@agoric/zoe';
+import type { AssetKind, Brand, Amount } from '@agoric/ertp';
 
 const { fromEntries } = Object;
 

@@ -9,7 +9,7 @@ on:
       test_command:
         required: true
         type: string
-        description: 'Test command to run (e.g., "test:main" or "test:fast-usdc")'
+        description: 'Test command to run'
 
 jobs:
   multichain-e2e:

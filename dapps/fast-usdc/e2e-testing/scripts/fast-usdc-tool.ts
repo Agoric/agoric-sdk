@@ -7,7 +7,7 @@ import { parseArgs } from 'node:util';
 import type { ExecutionContext } from 'ava';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { AmountMath, type Brand } from '@agoric/ertp';
-import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.js';
+import type { USDCProposalShapes } from '@agoric/fast-usdc-contract/src/pool-share-math.js';
 import { divideBy } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makeDenomTools } from '../tools/asset-info.js';
 import { makeDoOffer } from '../tools/e2e-tools.js';

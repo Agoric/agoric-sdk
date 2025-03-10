@@ -13,7 +13,7 @@
     "test:c8": "c8 --all $C8_OPTIONS ava",
     "lint": "yarn lint:types && yarn lint:eslint",
     "lint:types": "tsc",
-    "lint:eslint": "eslint ."
+    "lint:eslint": "eslint . --ignore-pattern e2e-testing"
   },
   "devDependencies": {
     "@agoric/deploy-script-support": "dev",
