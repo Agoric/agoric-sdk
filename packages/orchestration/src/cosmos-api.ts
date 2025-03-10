@@ -104,7 +104,6 @@ export interface CosmosAssetInfo extends Record<string, unknown> {
 export type CosmosChainInfo = Readonly<{
   /** can be used to lookup chainInfo (chainId) from an address value */
   bech32Prefix?: string;
-  cctpDestinationDomain?: number;
   chainId: string;
 
   connections?: Record<string, IBCConnectionInfo>; // chainId or wellKnownName

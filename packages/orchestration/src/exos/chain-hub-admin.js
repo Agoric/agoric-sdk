@@ -6,7 +6,7 @@ import { CosmosChainInfoShape, DenomDetailShape } from '../typeGuards.js';
 
 /**
  * @import {Zone} from '@agoric/zone';
- * @import {CosmosChainInfo, Denom, IBCConnectionInfo} from '@agoric/orchestration';
+ * @import {CosmosChainInfo, ChainInfo, Denom, IBCConnectionInfo} from '@agoric/orchestration';
  * @import {ChainHub, DenomDetail} from './chain-hub.js';
  */
 
@@ -44,7 +44,7 @@ export const prepareChainHubAdmin = (zone, chainHub) => {
        * Register information for a chain
        *
        * @param {string} chainName - must not exist in chainHub
-       * @param {CosmosChainInfo} chainInfo
+       * @param {ChainInfo} chainInfo
        * @param {IBCConnectionInfo} [connectionInfo] - from Agoric chain
        */
       async registerChain(chainName, chainInfo, connectionInfo) {

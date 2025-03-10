@@ -73,6 +73,7 @@ import { leftPadEthAddressTo32Bytes } from '../utils/address.js';
  * @import {ContractMeta, Invitation, OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
+ * @import {EthChainInfo} from '../ethereum-api.js';
  * @import {Remote} from '@agoric/internal';
  * @import {DelegationResponse} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
  * @import {InvitationMakers} from '@agoric/smart-wallet/src/types.js';
@@ -1146,9 +1147,14 @@ export const prepareCosmosOrchestrationAccountKit = (
             const { helper } = this.facets;
             const { chainAddress } = this.state;
 
-            const { cctpDestinationDomain } = chainHub.getChainInfoByChainId(
+            /** @type {EthChainInfo} */
+            // @ts-expect-error cast
+            const chainInfo = chainHub.getChainInfoByChainId(
               destination.chainId,
             );
+            typeof chainInfo.cctpDestinationDomain === 'number' ||
+              Fail`Must be reachable by CCTP`;
+            const { cctpDestinationDomain } = chainInfo;
 
             if (typeof cctpDestinationDomain !== 'number') {
               throw Fail`${q(destination.chainId)} does not have "cctpDestinationDomain" set in ChainInfo`;
