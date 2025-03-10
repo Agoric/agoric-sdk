@@ -5,9 +5,11 @@ import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
 import { AnyNatAmountShape } from '../typeGuards.js';
 import { withOrchestration } from '../utils/start-helper.js';
 import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
+import {
+  makeNobleAccount as makeNobleAccountFlow,
+  sendIt,
+} from './send-anywhere.flows.js';
 import * as sharedFlows from './shared.flows.js';
-
-import * as cctpFlows from './send-cctp.flows.js';
 
 /**
  * @import {Remote, Vow} from '@agoric/vow';
@@ -50,12 +52,12 @@ export const contract = async (
   /** @type {(msg: string) => Vow<void>} */
   const log = msg => vowTools.watch(E(logNode).setValue(msg));
 
-  // XXX why can't we do both at once?
+  // XXX why can't we do all at once?
   const makeLocalAccount = orchestrate('f1', {}, sharedFlows.makeLocalAccount);
-  const makeNobleAccount = orchestrate('f2', {}, cctpFlows.makeNobleAccount);
+  const makeNobleAccount = orchestrate('f2', {}, makeNobleAccountFlow);
 
   /**
-   * Setup a shared local account for use in async-flow functions. Typically,
+   * Set up a shared local account for use in async-flow functions. Typically,
    * exo initState functions need to resolve synchronously, but `makeOnce`
    * allows us to provide a Promise. When using this inside a flow, we must
    * await it to ensure the account is available for use.
@@ -66,9 +68,11 @@ export const contract = async (
   const sharedLocalAccountP = zone.makeOnce('localAccount', () =>
     makeLocalAccount(),
   );
+  // same as above.
+  /** @type {any} nobleAccountP */
   const nobleAccountP = zone.makeOnce('nobleAccount', () => makeNobleAccount());
   // orchestrate uses the names on orchestrationFns to do a "prepare" of the associated behavior
-  const sendByCCTP = orchestrate(
+  const sendAnywhere = orchestrate(
     'sendByCCTP',
     {
       log,
@@ -76,8 +80,7 @@ export const contract = async (
       nobleAccountP,
       zoeTools,
     },
-    // @ts-expect-error deprecated, but alternative is TBD.
-    cctpFlows.sendByCCTP,
+    sendIt,
   );
 
   const publicFacet = zone.exo(
@@ -88,7 +91,7 @@ export const contract = async (
     {
       makeSendInvitation() {
         return zcf.makeInvitation(
-          sendByCCTP,
+          sendAnywhere,
           'send',
           undefined,
           M.splitRecord({ give: SingleNatAmountRecord }),
