@@ -87,19 +87,6 @@ const main = async (progname, rawArgs, powers) => {
       return subMain(cosmosMain, ['cosmos', ...command], opts);
     });
 
-  const ibcSetup = path.join(
-    dirname,
-    '..',
-    'node_modules',
-    '.bin',
-    'ibc-setup',
-  );
-  program.command(
-    'ibc-setup <command...>',
-    'set up Inter Blockchain Communication',
-    { executableFile: ibcSetup },
-  );
-
   baseCmd('open')
     .description('launch the Agoric UI')
     .option(
@@ -183,21 +170,6 @@ const main = async (progname, rawArgs, powers) => {
       const opts = { ...program.opts(), ...cmd.opts(), ...cmdOpts };
       return subMain(setDefaultsMain, ['set-defaults', prog, configDir], opts);
     });
-
-  const ibcRelayer = path.join(
-    dirname,
-    '..',
-    'node_modules',
-    '.bin',
-    'ibc-relayer',
-  );
-  program.command(
-    'ibc-relayer',
-    'run an Inter Blockchain Communications relayer',
-    {
-      executableFile: ibcRelayer,
-    },
-  );
 
   baseCmd('install [force-sdk-version]')
     .description('install Dapp dependencies')
