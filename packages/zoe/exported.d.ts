@@ -4,7 +4,6 @@
 /// <reference types="@endo/pass-style" />
 
 import './src/contractSupport/types-ambient.js';
-import './src/types-ambient.js';
 
 import {
   AdminFacet as _AdminFacet,
