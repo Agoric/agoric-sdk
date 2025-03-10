@@ -232,12 +232,12 @@ const testMetricNames = [
 const testMetricNamesSet = new Set(testMetricNames);
 
 /**
- * getMetrics fetches the metrics from the Prometheus URL and returns the metrics
- * as an object with metric names as keys and their values as values.
+ * getMetrics reads data from the Prometheus URL and returns the selected
+ * metrics as an object.
  *
- * @param {*} url             Prometheus URL
- * @param {*} metricNames     Array of metric names to fetch
- * @returns {Promise<Record<string, any>>}
+ * @param {string} url            Prometheus URL
+ * @param {string[]} metricNames  Selected metric names
+ * @returns {Promise<Record<string, number>>}
  */
 const getMetrics = async (url, metricNames) => {
   const metricsResponse = await fetch(url);
