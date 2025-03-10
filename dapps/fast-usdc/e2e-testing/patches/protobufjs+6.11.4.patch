@@ -1,0 +1,56 @@
+diff --git a/node_modules/protobufjs/src/util/minimal.js b/node_modules/protobufjs/src/util/minimal.js
+index 7f62daa..8d60657 100644
+--- a/node_modules/protobufjs/src/util/minimal.js
++++ b/node_modules/protobufjs/src/util/minimal.js
+@@ -259,14 +259,9 @@ util.newError = newError;
+  * @returns {Constructor<Error>} Custom error constructor
+  */
+ function newError(name) {
+-
+     function CustomError(message, properties) {
+-
+         if (!(this instanceof CustomError))
+             return new CustomError(message, properties);
+-
+-        // Error.call(this, message);
+-        // ^ just returns a new error instance because the ctor can be called as a function
+ 
+         Object.defineProperty(this, "message", { get: function() { return message; } });
+ 
+@@ -280,13 +275,31 @@ function newError(name) {
+             merge(this, properties);
+     }
+ 
+-    (CustomError.prototype = Object.create(Error.prototype)).constructor = CustomError;
++    // Create a new object with Error.prototype as its prototype
++    const proto = Object.create(Error.prototype);
+ 
+-    Object.defineProperty(CustomError.prototype, "name", { get: function() { return name; } });
++    // Define properties on the prototype
++    Object.defineProperties(proto, {
++        constructor: {
++            value: CustomError,
++            writable: true,
++            configurable: true
++        },
++        name: {
++            get: function() { return name; },
++            configurable: true
++        },
++        toString: {
++            value: function toString() {
++                return this.name + ": " + this.message;
++            },
++            writable: true,
++            configurable: true
++        }
++    });
+ 
+-    CustomError.prototype.toString = function toString() {
+-        return this.name + ": " + this.message;
+-    };
++    // Set the prototype of CustomError
++    CustomError.prototype = proto;
+ 
+     return CustomError;
+ }
