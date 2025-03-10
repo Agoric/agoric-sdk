@@ -19,17 +19,15 @@ import type {
 import { commonSetup } from '../supports.js';
 import { SingleNatAmountRecord } from '../../src/examples/send-anywhere.contract.js';
 import { registerChain } from '../../src/chain-info.js';
+import * as contractExports from '../../src/examples/send-anywhere.contract.js';
 
-const dirname = path.dirname(new URL(import.meta.url).pathname);
 const expectUnhandled = makeExpectUnhandledRejection({
   test,
   importMetaUrl: import.meta.url,
 });
 
 const contractName = 'sendAnywhere';
-const contractFile = `${dirname}/../../src/examples/send-anywhere.contract.js`;
-type StartFn =
-  typeof import('../../src/examples/send-anywhere.contract.js').start;
+type StartFn = typeof contractExports.start;
 
 const chainInfoDefaults = {
   connections: {},
@@ -80,7 +78,7 @@ const bootstrapOrchestration = async t => {
   t.log('contract coreEval', contractName);
 
   const installation: Installation<StartFn> =
-    await bundleAndInstall(contractFile);
+    await bundleAndInstall(contractExports);
 
   const storageNode = await E(bootstrap.storage.rootNode).makeChildNode(
     contractName,
@@ -280,7 +278,7 @@ test('baggage', async t => {
   });
 
   await E(zoe).startInstance(
-    await bundleAndInstall(contractFile),
+    await bundleAndInstall(contractExports),
     { Stable: ist.issuer },
     {},
     commonPrivateArgs,
@@ -306,7 +304,7 @@ test(expectUnhandled(1), 'failed ibc transfer returns give', async t => {
   t.log('contract coreEval', contractName);
 
   const installation: Installation<StartFn> =
-    await bundleAndInstall(contractFile);
+    await bundleAndInstall(contractExports);
 
   const storageNode = await E(bootstrap.storage.rootNode).makeChildNode(
     contractName,
@@ -399,7 +397,7 @@ test('non-vbank asset presented is returned', async t => {
   const moolah = withAmountUtils(makeIssuerKit('MOO'));
 
   const installation: Installation<StartFn> =
-    await bundleAndInstall(contractFile);
+    await bundleAndInstall(contractExports);
   const storageNode = await E(bootstrap.storage.rootNode).makeChildNode(
     contractName,
   );
@@ -446,7 +444,7 @@ test('rejects multi-asset send', async t => {
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
 
   const installation: Installation<StartFn> =
-    await bundleAndInstall(contractFile);
+    await bundleAndInstall(contractExports);
   const storageNode = await E(bootstrap.storage.rootNode).makeChildNode(
     contractName,
   );
