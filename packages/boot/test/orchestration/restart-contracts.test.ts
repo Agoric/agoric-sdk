@@ -175,15 +175,16 @@ test.serial('stakeAtom', async t => {
     proposal: {},
   });
 
+  // The path changes depending on whether `send-anywhere` test runs previously.
+  const accountPath = 'published.stakeAtom.accounts.cosmos1test';
+  const accountPath2 = 'published.stakeAtom.accounts.cosmos1test1';
+
   t.throws(() => readLatest(accountPath));
   t.throws(() => readLatest(accountPath2));
 
   t.is(getInboundQueueLength(), 1);
   await flushInboundQueue(1);
 
-  // The path changes depending on whether `send-anywhere` test runs previously.
-  const accountPath = 'published.stakeAtom.accounts.cosmos1test';
-  const accountPath2 = 'published.stakeAtom.accounts.cosmos1test1';
   try {
     const latest = readLatest(accountPath);
     t.deepEqual(latest, {
@@ -273,6 +274,7 @@ test.serial('basicFlows', async t => {
       result: undefined, // no property
     },
   });
+  // 1x ICQ Channel Open
   t.is(getInboundQueueLength(), 1);
   t.log('flush and verify results');
   const beforeFlush = wallet.getLatestUpdateRecord();
@@ -313,7 +315,7 @@ test.serial('basicFlows', async t => {
       result: undefined, // no property
     },
   });
-  // 3x ICA Channel Opens, 1x ICQ Channel Open
+  // 3x ICA Channel Opens
   t.is(getInboundQueueLength(), 3);
 
   t.log('restart basicFlows');

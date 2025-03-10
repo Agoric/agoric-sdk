@@ -1,8 +1,11 @@
-/* we expect promises to resolved promptly,  */
+/* we expect promises to resolve promptly,  */
 /* eslint-disable no-restricted-syntax */
 import { heapVowE } from '@agoric/vow/vat.js';
+import { makeTracer } from '@agoric/internal';
 import { M } from '@endo/patterns';
 import { CosmosChainInfoShape, DenomDetailShape } from '../typeGuards.js';
+
+const trace = makeTracer('ChainHubAdmin');
 
 /**
  * @import {Zone} from '@agoric/zone';
@@ -55,7 +58,7 @@ export const prepareChainHubAdmin = (zone, chainHub) => {
         );
         chainHub.registerChain(chainName, chainInfo);
         if (!connectionInfo) {
-          console.log('no connection info for', chainName, 'assuming CCTP');
+          trace(chainName, 'registered without connection info');
           return;
         }
         chainHub.registerConnection(

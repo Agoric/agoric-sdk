@@ -143,7 +143,17 @@ export const protoMsgMocks = {
     ack: buildMsgResponseString(MsgDepositForBurnResponse, {}),
   },
   depositForBurnForBase: {
-    msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ2w4S0lTOWphWEpqYkdVdVkyTjBjQzUyTVM1TmMyZEVaWEJ2YzJsMFJtOXlRblZ5YmhJNkNndGpiM050YjNNeGRHVnpkQklDTVRBaUlBQUFBQUFBQUFBQUFBQUFBT0RVTVRYcjBsazVCL2oxYkNXdHdiK1UvUG1US2dWMWRYTmtZdz09IiwibWVtbyI6IiJ9',
+    msg: buildTxPacketString([
+      MsgDepositForBurn.toProtoMsg({
+        amount: '10',
+        burnToken: 'uusdc',
+        from: 'cosmos1test',
+        destinationDomain: 0,
+        mintRecipient: leftPadEthAddressTo32Bytes(
+          '0xe0d43135EBd2593907F8f56c25ADC1Bf94FCf993',
+        ),
+      }),
+    ]),
     // 'depositForBurn via Noble to Base' in cosmos-orchestration-account.test.ts
     ack: buildMsgResponseString(MsgDepositForBurnResponse, {}),
   },
