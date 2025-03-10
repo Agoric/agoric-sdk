@@ -264,10 +264,9 @@ const getMetrics = async (url, metricNames) => {
     .map(line => {
       const [_, metricName, value] = line.match(samplePatt) || [];
       if (!metricName) return;
-      // https://pkg.go.dev/strconv#ParseFloat
-      if (value.match(/^NaN$/i)) return [metricName, NaN];
-      if (value.match(/^[+]?Inf(inity)$/i)) return [metricName, Infinity];
-      if (value.match(/^-Inf(inity)$/i)) return [metricName, -Infinity];
+      if (value === 'NaN') return [metricName, NaN];
+      if (value === '+Inf') return [metricName, Infinity];
+      if (value === '-Inf') return [metricName, -Infinity];
       const valueNum = parseFloat(value);
       if (Number.isNaN(valueNum)) {
         throw Error(`${value} is not a decimal value`);
@@ -413,8 +412,41 @@ const makeVerifier = (startVerifier, stopVerifier) => {
   return { start, stop };
 };
 
-test.serial(
-  walletProvisioning,
-  'vstorage metrics',
-  makeVerifier(startCounterMetricVerifier, stopCounterMetricVerifier),
-);
+{
+  const testMetricNames = [
+    'store_size_decrease{storeKey="vstorage"}',
+    'store_size_increase{storeKey="vstorage"}',
+  ];
+  let startMetrics;
+  test.serial(walletProvisioning, 'vstorage metrics', {
+    start: async t => {
+      // Assert that all values in an initial metrics snapshot are positive.
+      startMetrics = await getMetrics(prometheusUrl, testMetricNames);
+      t.log('metric start values:', startMetrics);
+      t.deepEqual(Object.keys(startMetrics), testMetricNames);
+      for (const [metricName, value] of Object.entries(startMetrics)) {
+        t.true(value > 0, `${metricName} must be positive, not ${value}`);
+      }
+      // Require a corresponding stop() call to clear the initial snapshot.
+      t.teardown(() => {
+        if (!startMetrics) return;
+        throw Error('metrics verifier stop() must be called before test end');
+      });
+    },
+    stop: async t => {
+      // Assert that all values have increased.
+      const metrics = await getMetrics(prometheusUrl, testMetricNames);
+      t.log('metric stop values:', metrics);
+      t.deepEqual(Object.keys(metrics), testMetricNames);
+      for (const [metricName, value] of Object.entries(metrics)) {
+        const startValue = startMetrics[metricName];
+        t.true(
+          value > startValue,
+          `${metricName} ${value} failed to increase from ${startValue}`,
+        );
+      }
+
+      startMetrics = undefined;
+    },
+  );
+}
