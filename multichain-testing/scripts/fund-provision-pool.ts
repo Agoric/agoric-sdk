@@ -4,12 +4,6 @@ import { execa } from 'execa';
 import assert from 'node:assert/strict';
 import { parseArgs } from 'node:util';
 
-// XXX hack to appropriately wait for the block to be committed
-// @see https://github.com/Agoric/agoric-sdk/issues/9016
-const BLOCK_MS = 6 * 1000;
-const nextBlock = () =>
-  new Promise(resolve => setTimeout(() => resolve(undefined), BLOCK_MS));
-
 // Default values from Makefile
 const DEFAULT_PROVISION_POOL_ADDR =
   'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346';
@@ -54,16 +48,13 @@ async function fundProvisionPool(args: {
       address,
       amount,
       '-y',
-      // default to `sync` https://github.com/cosmos/cosmos-sdk/issues/4186#issuecomment-486664720
-      // '--broadcast-mode',
-      // 'block',
+      '--broadcast-mode',
+      'block',
     ]);
     const resultData = JSON.parse(txResult);
     if (resultData.code !== 0) {
       throw new Error(`Transaction failed: ${resultData['raw_log']}`);
     }
-
-    await nextBlock();
 
     // Query the balance to confirm
     const { stdout: balanceResult } = await execa('kubectl', [
@@ -128,6 +119,7 @@ Options:
       container: values.container,
     });
 
+  // This sometime fails because a previous transaction was not awaited.
   let success = await attempt();
 
   if (!success) {
