@@ -37,8 +37,8 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
   let exitWithFailure;
   /** @type {MapStore<BundleID, BundleCap>} */
   const idToBundleCap = makeScalarMapStore('idToBundleCap');
-  /** @type {MapStore<BundleCap, EndoZipBase64Bundle>} */
-  const bundleCapToBundle = makeScalarMapStore('bundleCapToBundle');
+  /** @type {Map<BundleCap, EndoZipBase64Bundle | {moduleFormat: 'test'}>} */
+  const bundleCapToBundle = new Map();
   /** @type {MapStore<string, BundleID>} */
   const nameToBundleID = makeScalarMapStore('nameToBundleID');
   const fakeVatPowers = {
@@ -149,7 +149,7 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
       }
       const bundleCap = fakeBundleCap();
       idToBundleCap.init(id, bundleCap);
-      bundleCapToBundle.init(bundleCap, bundle);
+      bundleCapToBundle.set(bundleCap, bundle);
       return bundleCap;
     },
     installNamedBundle: (name, id, bundle) => {
