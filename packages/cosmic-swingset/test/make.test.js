@@ -86,7 +86,7 @@ test.serial('integration test: rosetta CI', async t => {
 
   // Run the chain until error or rosetta-cli exits.
   const chain = scenario2.spawnMake(['scenario2-run-chain'], {
-    stdio: ['ignore', 'ignore', 'ignore'],
+    stdio: fdList,
   });
   const rosetta = scenario2.spawnMake(['scenario2-run-rosetta-ci'], {
     stdio: fdList,
@@ -120,7 +120,7 @@ const walletProvisioning = test.macro({
 
     // Run the chain until error or this test exits.
     const chain = scenario2.spawnMake(['scenario2-run-chain'], {
-      stdio: ['ignore', 'inherit', 'inherit'],
+      stdio: fdList,
     });
     t.teardown(async () => {
       chain.kill();
@@ -218,9 +218,101 @@ const walletProvisioning = test.macro({
       retryCount < retryCountMax,
       `wallet is provisioned within ${retryCount} retries out of ${retryCountMax}`,
     );
-
     await verifier?.stop(t);
   },
 });
 
 test.serial(walletProvisioning, 'wallet provisioning');
+
+/**
+ * getMetrics reads data from the Prometheus URL and returns the selected
+ * metrics as an object.
+ *
+ * @param {string} url            Prometheus URL
+ * @param {string[]} metricNames  Selected metric names
+ * @returns {Promise<Record<string, number>>}
+ */
+const getMetrics = async (url, metricNames) => {
+  const metricsResponse = await fetch(url);
+  if (!metricsResponse.ok) {
+    throw new Error(`Failed to fetch metrics: ${metricsResponse.statusText}`);
+  }
+
+  const metricsText = await metricsResponse.text();
+
+  // https://prometheus.io/docs/instrumenting/exposition_formats/#text-based-format
+  // metric_name [
+  //   "{" label_name "=" `"` label_value `"` { "," label_name "=" `"` label_value `"` } [ "," ] "}"
+  // ] value [ timestamp ]
+  const metricNamePatt = '[a-zA-Z_:][a-zA-Z0-9_:]*';
+  const labelNamePatt = '[a-zA-Z_][a-zA-Z0-9_]*';
+  const labelPatt = String.raw`${labelNamePatt}="(?:[^\\"\n]|\\(?:\\|"|n))*"`;
+  const samplePatt = RegExp(
+    String.raw`^(${metricNamePatt}(?:[{]${labelPatt}(?:,${labelPatt})*,?[}])?) +(\S+)( +-?[0-9]+)?$`,
+    'u',
+  );
+  const allMetricsEntries = /** @type {Array<[string, number]>} */ (
+    metricsText
+      .split('\n')
+      .map(line => {
+        const [_, metricName, value] = line.match(samplePatt) || [];
+        if (!metricName) return undefined;
+        if (value === 'NaN') return [metricName, NaN];
+        if (value === '+Inf') return [metricName, Infinity];
+        if (value === '-Inf') return [metricName, -Infinity];
+        const valueNum = parseFloat(value);
+        if (Number.isNaN(valueNum)) {
+          throw Error(`${value} is not a decimal value`);
+        }
+        return [metricName, valueNum];
+      })
+      .filter(entry => !!entry)
+  );
+  const allMetrics = new Map(allMetricsEntries);
+  const metricsEntries = metricNames.map(metricName => {
+    const value = allMetrics.get(metricName);
+    // Prometheus does not publish counter values that are zero.
+    return [metricName, value ?? 0];
+  });
+  return Object.fromEntries(metricsEntries);
+};
+
+{
+  const prometheusUrl = 'http://localhost:26660/metrics';
+  const testMetricNames = [
+    'store_size_decrease{storeKey="vstorage"}',
+    'store_size_increase{storeKey="vstorage"}',
+  ];
+  let startMetrics;
+  test.serial(walletProvisioning, 'vstorage metrics', {
+    start: async t => {
+      // Assert that all values in an initial metrics snapshot are positive.
+      startMetrics = await getMetrics(prometheusUrl, testMetricNames);
+      t.log('metric start values:', startMetrics);
+      t.deepEqual(Object.keys(startMetrics), testMetricNames);
+      for (const [metricName, value] of Object.entries(startMetrics)) {
+        t.true(value > 0, `${metricName} must be positive, not ${value}`);
+      }
+      // Require a corresponding stop() call to clear the initial snapshot.
+      t.teardown(() => {
+        if (!startMetrics) return;
+        throw Error('metrics verifier stop() must be called before test end');
+      });
+    },
+    stop: async t => {
+      // Assert that all values have increased.
+      const metrics = await getMetrics(prometheusUrl, testMetricNames);
+      t.log('metric stop values:', metrics);
+      t.deepEqual(Object.keys(metrics), testMetricNames);
+      for (const [metricName, value] of Object.entries(metrics)) {
+        const startValue = startMetrics[metricName];
+        t.true(
+          value > startValue,
+          `${metricName} ${value} failed to increase from ${startValue}`,
+        );
+      }
+
+      startMetrics = undefined;
+    },
+  });
+}
