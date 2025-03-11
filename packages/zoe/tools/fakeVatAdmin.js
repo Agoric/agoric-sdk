@@ -144,8 +144,9 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
      * @param {EndoZipBase64Bundle | TestBundle} bundle
      */
     installBundle: (id, bundle) => {
-      const extant = bundleCapToBundle.get(idToBundleCap.get(id));
-      if (extant) {
+      if (idToBundleCap.has(id)) {
+        const extant = bundleCapToBundle.get(idToBundleCap.get(id));
+        assert(extant);
         assert.equal(bundle.moduleFormat, extant.moduleFormat);
         if (
           // TS doesn't infer that the equal above implies one of these is redundant
