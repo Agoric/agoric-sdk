@@ -251,22 +251,23 @@ const getMetrics = async (url, metricNames) => {
     String.raw`^(${metricNamePatt}(?:[{]${labelPatt}(?:,${labelPatt})*,?[}])?) +(\S+)( +-?[0-9]+)?$`,
     'u',
   );
-  /** @type {Iterable<any, any>} */
-  const allMetricsEntries = metricsText
-    .split('\n')
-    .map(line => {
-      const [_, metricName, value] = line.match(samplePatt) || [];
-      if (!metricName) return;
-      if (value === 'NaN') return [metricName, NaN];
-      if (value === '+Inf') return [metricName, Infinity];
-      if (value === '-Inf') return [metricName, -Infinity];
-      const valueNum = parseFloat(value);
-      if (Number.isNaN(valueNum)) {
-        throw Error(`${value} is not a decimal value`);
-      }
-      return [metricName, valueNum];
-    })
-    .filter(entry => !!entry);
+  const allMetricsEntries = /** @type {Array<[string, number]>} */ (
+    metricsText
+      .split("\n")
+      .map((line) => {
+        const [_, metricName, value] = line.match(samplePatt) || [];
+        if (!metricName) return undefined;
+        if (value === "NaN") return [metricName, NaN];
+        if (value === "+Inf") return [metricName, Infinity];
+        if (value === "-Inf") return [metricName, -Infinity];
+        const valueNum = parseFloat(value);
+        if (Number.isNaN(valueNum)) {
+          throw Error(`${value} is not a decimal value`);
+        }
+        return [metricName, valueNum];
+      })
+      .filter((entry) => !!entry)
+  );
   const allMetrics = new Map(allMetricsEntries);
   const metricsEntries = metricNames.map(metricName => {
     const value = allMetrics.get(metricName);
