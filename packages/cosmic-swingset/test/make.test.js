@@ -253,20 +253,20 @@ const getMetrics = async (url, metricNames) => {
   );
   const allMetricsEntries = /** @type {Array<[string, number]>} */ (
     metricsText
-      .split("\n")
-      .map((line) => {
+      .split('\n')
+      .map(line => {
         const [_, metricName, value] = line.match(samplePatt) || [];
         if (!metricName) return undefined;
-        if (value === "NaN") return [metricName, NaN];
-        if (value === "+Inf") return [metricName, Infinity];
-        if (value === "-Inf") return [metricName, -Infinity];
+        if (value === 'NaN') return [metricName, NaN];
+        if (value === '+Inf') return [metricName, Infinity];
+        if (value === '-Inf') return [metricName, -Infinity];
         const valueNum = parseFloat(value);
         if (Number.isNaN(valueNum)) {
           throw Error(`${value} is not a decimal value`);
         }
         return [metricName, valueNum];
       })
-      .filter((entry) => !!entry)
+      .filter(entry => !!entry)
   );
   const allMetrics = new Map(allMetricsEntries);
   const metricsEntries = metricNames.map(metricName => {
