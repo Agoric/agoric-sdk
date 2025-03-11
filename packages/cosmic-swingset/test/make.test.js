@@ -268,7 +268,6 @@ const getMetrics = async (url, metricNames) => {
       })
       .filter((entry) => !!entry)
   );
-  );
   const allMetrics = new Map(allMetricsEntries);
   const metricsEntries = metricNames.map(metricName => {
     const value = allMetrics.get(metricName);
