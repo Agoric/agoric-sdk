@@ -1,4 +1,5 @@
-// @jessie-check
+// no jessie-check because this code runs only in Node for testing
+/* eslint-env node */
 
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
@@ -13,9 +14,8 @@ import { makeHandle } from '../src/makeHandle.js';
 import zcfBundle from '../bundles/bundle-contractFacet.js';
 
 /**
- * @import {LegacyWeakMap, WeakMapStore} from '@agoric/store';
  * @import {MapStore} from '@agoric/swingset-liveslots';
- * @import {BundleID, EndoZipBase64Bundle} from '@agoric/swingset-vat';
+ * @import {BundleID, EndoZipBase64Bundle, TestBundle} from '@agoric/swingset-vat';
  */
 
 // this simulates a bundlecap, which is normally a swingset "device node"
@@ -139,12 +139,21 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
     getExitMessage: () => exitMessage,
     getHasExited: () => hasExited,
     getExitWithFailure: () => exitWithFailure,
+    /**
+     * @param {string} id
+     * @param {EndoZipBase64Bundle | TestBundle} bundle
+     */
     installBundle: (id, bundle) => {
-      if (idToBundleCap.has(id)) {
-        assert.equal(
-          bundle.endoZipBase64,
-          bundleCapToBundle.get(idToBundleCap.get(id)).endoZipBase64,
-        );
+      const extant = bundleCapToBundle.get(idToBundleCap.get(id));
+      if (extant) {
+        assert.equal(bundle.moduleFormat, extant.moduleFormat);
+        if (
+          // TS doesn't infer that the equal above implies one of these is redundant
+          extant.moduleFormat === 'endoZipBase64' &&
+          bundle.moduleFormat === 'endoZipBase64'
+        ) {
+          assert.equal(bundle.endoZipBase64, extant.endoZipBase64);
+        }
         return idToBundleCap.get(id);
       }
       const bundleCap = fakeBundleCap();
