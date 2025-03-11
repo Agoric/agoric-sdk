@@ -1,3 +1,12 @@
+diff --git a/node_modules/@endo/import-bundle/src/index.d.ts b/node_modules/@endo/import-bundle/src/index.d.ts
+index 5955eb9..f550222 100644
+--- a/node_modules/@endo/import-bundle/src/index.d.ts
++++ b/node_modules/@endo/import-bundle/src/index.d.ts
+@@ -1,2 +1,4 @@
++export function bundleTestExports(exports: Record<PropertyKey, unknown>): Promise<any>;
++
+ export function importBundle(bundle: any, options?: {}, powers?: {}): Promise<any>;
+ //# sourceMappingURL=index.d.ts.map
 diff --git a/node_modules/@endo/import-bundle/src/index.js b/node_modules/@endo/import-bundle/src/index.js
 index f8b374b..9ddba4d 100644
 --- a/node_modules/@endo/import-bundle/src/index.js
