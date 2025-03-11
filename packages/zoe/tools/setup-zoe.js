@@ -2,6 +2,7 @@ import { E, makeLoopback } from '@endo/captp';
 
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import bundleSource from '@endo/bundle-source';
+import { bundleTestExports } from '@endo/import-bundle';
 import { makeDurableZoeKit } from '../src/zoeService/zoe.js';
 import fakeVatAdmin, { makeFakeVatAdmin } from './fakeVatAdmin.js';
 
@@ -62,31 +63,39 @@ export const setUpZoeForTest = async ({
 
   /**
    * @param {object} pathOrExports
-   * @returns {Promise<Installation>}
+   * @returns {Promise<Bundle>}
    */
-  const bundleAndInstall = async pathOrExports => {
-    await null;
-    let id;
-    let bundle;
+  const bundleModule = async pathOrExports => {
     if (typeof pathOrExports === 'string') {
       const path = pathOrExports;
-      bundle = await bundleSource(path);
-      id = `b1-${path}`;
-    }
-    {
+      return bundleSource(path);
+    } else {
       assert.equal(
-        Object.prototype.toString.call(pathOrExports),
-        '[object Module]',
+        Object.getOwnPropertyDescriptor(pathOrExports, Symbol.toStringTag)
+          ?.value,
+        'Module',
       );
       // Copy all the properties so this object can be hardened.
       const exports = { ...pathOrExports };
-      bundle = harden({
-        moduleFormat: 'test',
-        [Symbol.for('exports')]: exports,
-      });
-      id = `b1-test-exports-${Math.random()}`;
+      return bundleTestExports(exports);
     }
-    assert(vatAdminState, 'installBundle called before vatAdminState defined');
+  };
+
+  /**
+   * Bundle the source module (either as file system path or a Module object)
+   * and return an Installation. The bundleID is random and should not be relied
+   * upon in tests of this variety.
+   *
+   * @param {object} pathOrExports
+   * @returns {Promise<Installation>}
+   */
+  const bundleAndInstall = async pathOrExports => {
+    const bundle = await bundleModule(pathOrExports);
+    assert(
+      vatAdminState,
+      'bundleAndInstall called before vatAdminState defined',
+    );
+    const id = `b1-zoe-test-${Math.random()}`;
     vatAdminState.installBundle(id, bundle);
     return E(zoeService).installBundleID(id);
   };
