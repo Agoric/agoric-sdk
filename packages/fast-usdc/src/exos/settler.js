@@ -20,7 +20,7 @@ import { asMultiset } from '../utils/store.js';
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
  * @import {Amount, Brand, NatValue, Payment} from '@agoric/ertp';
  * @import {AccountId, Denom, OrchestrationAccount, ChainHub, CosmosChainAddress} from '@agoric/orchestration';
- * @import {WithdrawToSeat} from '@agoric/orchestration/src/utils/zoe-tools'
+ * @import {WithdrawToSeat} from '@agoric/orchestration/src/utils/zoe-tools.js'
  * @import {IBCChannelID, IBCPacket, VTransferIBCEvent} from '@agoric/vats';
  * @import {Zone} from '@agoric/zone';
  * @import {HostOf, HostInterface} from '@agoric/async-flow';

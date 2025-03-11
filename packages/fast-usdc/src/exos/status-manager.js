@@ -12,6 +12,7 @@ import {
 } from '../type-guards.js';
 
 /**
+ * @import {NatValue} from '@agoric/ertp';
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {Zone} from '@agoric/zone';
  * @import {CctpTxEvidence, NobleAddress, PendingTx, EvmHash, LogFn, TransactionRecord, EvidenceWithRisk, RiskAssessment} from '../types.js';

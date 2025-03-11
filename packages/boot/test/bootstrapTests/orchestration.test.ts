@@ -51,7 +51,7 @@ test.before(async t => {
     defaultManagerType === 'xsnap' ? makeSwingsetHarness() : undefined;
   const ctx = await makeWalletFactoryContext(
     t,
-    '@agoric/vm-config/decentral-itest-orchestration-config.json',
+    '@agoric/vm-config/decentral-itest-orchestration-chains-config.json',
     { slogFile, defaultManagerType, harness },
   );
   t.context = { ...ctx, harness };

@@ -10,7 +10,7 @@ import {
 
 /**
  * @import {Brand, Issuer} from '@agoric/ertp';
- * @import {Instance, StartParams} from '@agoric/zoe/src/zoeService/utils'
+ * @import {Instance, StartParams} from '@agoric/zoe/src/zoeService/utils.js'
  * @import {Board} from '@agoric/vats'
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js'
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'

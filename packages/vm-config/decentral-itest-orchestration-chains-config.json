@@ -1,5 +1,5 @@
 {
-    "$comment": "This SwingSet config file (see loadSwingsetConfigFile) is designed to bring up vats to test Fast USDC. Compared to decentral-itest-orchestration-config.json, it lacks write-chain-info.",
+    "$comment": "This SwingSet config file (see loadSwingsetConfigFile) is designed to bring up vats to test Orchestration. To itest-orchestration it adds write-chain-info.",
     "bootstrap": "bootstrap",
     "defaultReapInterval": 1000,
     "coreProposals": [
@@ -8,6 +8,7 @@
         "@agoric/builders/scripts/vats/init-localchain.js",
         "@agoric/builders/scripts/vats/init-transfer.js",
         "@agoric/builders/scripts/vats/init-orchestration.js",
+        "@agoric/builders/scripts/orchestration/write-chain-info.js",
         {
             "module": "@agoric/builders/scripts/inter-protocol/init-core.js",
             "entrypoint": "defaultProposalBuilder",
