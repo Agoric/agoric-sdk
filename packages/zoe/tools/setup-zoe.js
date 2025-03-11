@@ -7,6 +7,7 @@ import { makeDurableZoeKit } from '../src/zoeService/zoe.js';
 import fakeVatAdmin, { makeFakeVatAdmin } from './fakeVatAdmin.js';
 
 /**
+ * @import {EndoZipBase64Bundle, TestBundle} from '@agoric/swingset-vat';
  * @import {FeeIssuerConfig, Installation} from '../src/types-index.js';
  */
 
@@ -63,7 +64,7 @@ export const setUpZoeForTest = async ({
 
   /**
    * @param {object} pathOrExports
-   * @returns {Promise<Bundle>}
+   * @returns {Promise<EndoZipBase64Bundle | TestBundle>}
    */
   const bundleModule = async pathOrExports => {
     if (typeof pathOrExports === 'string') {
