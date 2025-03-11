@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@agoric/synthetic-chain": "^0.5.3",
-    "@types/better-sqlite3": "^7.6.11"
+    "@types/better-sqlite3": "^7.6.12"
   },
   "devDependencies": {
     "eslint": "^8.57.1",
