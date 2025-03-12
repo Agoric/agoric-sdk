@@ -35,11 +35,15 @@ import { makePromiseKit } from '@endo/promise-kit';
 import path from 'path';
 import type { OperatorOfferResult } from '../src/exos/transaction-feed.js';
 import type { FastUsdcSF } from '../src/fast-usdc.contract.js';
-import type { USDCProposalShapes } from '../src/pool-share-math.js';
-import { PoolMetricsShape } from '../src/type-guards.js';
-import type { CctpTxEvidence, FeeConfig, PoolMetrics } from '../src/types.js';
-import { makeFeeTools } from '../src/utils/fees.js';
-import { MockCctpTxEvidences } from './fixtures.js';
+import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.js';
+import { PoolMetricsShape } from '@agoric/fast-usdc/src/type-guards.js';
+import type {
+  CctpTxEvidence,
+  FeeConfig,
+  PoolMetrics,
+} from '@agoric/fast-usdc/src/types.js';
+import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
+import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
 import { commonSetup, uusdcOnAgoric } from './supports.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);

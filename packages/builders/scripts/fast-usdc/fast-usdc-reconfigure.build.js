@@ -5,7 +5,7 @@
  * channel info defaults to mainnet configuration (see update-noble-ica.core.js)
  */
 import { makeHelpers } from '@agoric/deploy-script-support';
-import { getManifestForUpdateNobleICA } from '@agoric/fast-usdc/src/update-noble-ica.core.js';
+import { getManifestForUpdateNobleICA } from '@agoric/fu-contract/src/update-noble-ica.core.js';
 import { IBCConnectionInfoShape } from '@agoric/orchestration';
 import { mustMatch } from '@endo/patterns';
 import { parseArgs } from 'node:util';
@@ -23,7 +23,7 @@ import { parseArgs } from 'node:util';
  */
 export const proposalBuilder = async ({ publishRef, install }, options) => {
   return harden({
-    sourceSpec: '@agoric/fast-usdc/src/update-noble-ica.core.js',
+    sourceSpec: '@agoric/fu-contract/src/update-noble-ica.core.js',
     /** @type {[string, Parameters<typeof getManifestForUpdateNobleICA>[1]]} */
     getManifestCall: [
       getManifestForUpdateNobleICA.name,
@@ -31,7 +31,7 @@ export const proposalBuilder = async ({ publishRef, install }, options) => {
         options,
         installKeys: {
           fastUsdc: publishRef(
-            install('@agoric/fast-usdc/src/fast-usdc.contract.js'),
+            install('@agoric/fu-contract/src/fast-usdc.contract.js'),
           ),
         },
       },

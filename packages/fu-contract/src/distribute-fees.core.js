@@ -7,7 +7,7 @@ import { fromExternalConfig } from './utils/config-marshal.js';
 
 /**
  * @import {Amount, Brand, DepositFacet, Ratio} from '@agoric/ertp';
- * @import {FastUSDCCorePowers} from '@agoric/fast-usdc/src/start-fast-usdc.core.js';
+ * @import {FastUSDCCorePowers} from './start-fast-usdc.core.js';
  * @import {CopyRecord} from '@endo/pass-style'
  * @import {BootstrapManifestPermit} from '@agoric/vats/src/core/lib-boot.js'
  * @import {LegibleCapData} from './utils/config-marshal.js'

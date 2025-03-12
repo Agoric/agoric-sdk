@@ -14,7 +14,7 @@ const { add, isEmpty, isEqual, isGTE, make, makeEmpty, subtract } = AmountMath;
  * @import {Amount, Brand, DepositFacet, NatValue, Payment, Ratio} from '@agoric/ertp';
  * @import {Allocation} from '@agoric/zoe';
  * @import {PoolStats} from './types.js';
- * @import {RepayAmountKWR} from './exos/liquidity-pool.js';
+ * @import {RepayAmountKWR} from './utils/fees.js';
  */
 
 /**

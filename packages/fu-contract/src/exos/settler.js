@@ -7,13 +7,13 @@ import { M } from '@endo/patterns';
 
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { fromOnly } from '@agoric/zoe/src/contractSupport/index.js';
-import { PendingTxStatus } from '../constants.js';
-import { makeFeeTools } from '../utils/fees.js';
+import { PendingTxStatus } from '@agoric/fast-usdc/src/constants.js';
+import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
 import {
   CctpTxEvidenceShape,
   EvmHashShape,
   makeNatAmountShape,
-} from '../type-guards.js';
+} from '@agoric/fast-usdc/src/type-guards.js';
 import { asMultiset } from '../utils/store.js';
 
 /**
@@ -25,8 +25,9 @@ import { asMultiset } from '../utils/store.js';
  * @import {Zone} from '@agoric/zone';
  * @import {HostOf, HostInterface} from '@agoric/async-flow';
  * @import {TargetRegistration} from '@agoric/vats/src/bridge-target.js';
- * @import {NobleAddress, LiquidityPoolKit, FeeConfig, EvmHash, LogFn, CctpTxEvidence} from '../types.js';
+ * @import {NobleAddress, FeeConfig, EvmHash, LogFn, CctpTxEvidence} from '@agoric/fast-usdc/src/types.js';
  * @import {StatusManager} from './status-manager.js';
+ * @import {LiquidityPoolKit} from './liquidity-pool.js';
  */
 
 /**

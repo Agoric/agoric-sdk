@@ -14,8 +14,8 @@ import {
   AddressHookShape,
   EvmHashShape,
   EvidenceWithRiskShape,
-} from '../type-guards.js';
-import { makeFeeTools } from '../utils/fees.js';
+} from '@agoric/fast-usdc/src/type-guards.js';
+import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
 
 /**
  * @import {HostInterface} from '@agoric/async-flow';
@@ -26,7 +26,7 @@ import { makeFeeTools } from '../utils/fees.js';
  * @import {ZoeTools} from '@agoric/orchestration/src/utils/zoe-tools.js';
  * @import {VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
- * @import {AddressHook, EvmHash, FeeConfig, LogFn, NobleAddress, EvidenceWithRisk} from '../types.js';
+ * @import {AddressHook, EvmHash, FeeConfig, LogFn, NobleAddress, EvidenceWithRisk} from '@agoric/fast-usdc/src/types.js';
  * @import {StatusManager} from './status-manager.js';
  * @import {LiquidityPoolKit} from './liquidity-pool.js';
  */

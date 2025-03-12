@@ -1,6 +1,6 @@
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
-import { FastUSDCConfigShape } from './type-guards.js';
+import { FastUSDCConfigShape } from '@agoric/fast-usdc/src/type-guards.js';
 import { fromExternalConfig } from './utils/config-marshal.js';
 import {
   inviteOracles,
@@ -16,7 +16,7 @@ import {
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
  * @import {LegibleCapData} from './utils/config-marshal.js'
  * @import {FastUsdcSF} from './fast-usdc.contract.js'
- * @import {FastUSDCConfig} from './types.js'
+ * @import {FastUSDCConfig} from '@agoric/fast-usdc/src/types.js'
  */
 
 const ShareAssetInfo = /** @type {const} */ harden({

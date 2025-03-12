@@ -9,7 +9,7 @@ import {
 } from '../src/type-guards.js';
 import type { CctpTxEvidence, ChainPolicy } from '../src/types.js';
 
-import { MockCctpTxEvidences } from './fixtures.js';
+import { MockCctpTxEvidences } from '../tools/mock-evidence.js';
 
 test('CctpTxEvidenceShape', t => {
   const specimen: CctpTxEvidence = harden(

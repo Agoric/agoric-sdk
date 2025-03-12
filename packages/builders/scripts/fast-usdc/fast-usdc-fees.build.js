@@ -1,7 +1,7 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { AmountMath } from '@agoric/ertp';
-import { getManifestForDistributeFees } from '@agoric/fast-usdc/src/distribute-fees.core.js';
-import { toExternalConfig } from '@agoric/fast-usdc/src/utils/config-marshal.js';
+import { getManifestForDistributeFees } from '@agoric/fu-contract/src/distribute-fees.core.js';
+import { toExternalConfig } from '@agoric/fu-contract/src/utils/config-marshal.js';
 import {
   multiplyBy,
   parseRatio,
@@ -11,7 +11,7 @@ import { parseArgs } from 'node:util';
 
 /**
  * @import {CoreEvalBuilder, DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js'
- * @import {FeeDistributionTerms} from '@agoric/fast-usdc/src/distribute-fees.core.js'
+ * @import {FeeDistributionTerms} from '@agoric/fu-contract/src/distribute-fees.core.js'
  */
 
 const usage =

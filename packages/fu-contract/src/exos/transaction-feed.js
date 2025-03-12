@@ -3,15 +3,19 @@ import { makeTracer } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import { Fail, quote } from '@endo/errors';
 import { keyEQ, M } from '@endo/patterns';
-import { CctpTxEvidenceShape, RiskAssessmentShape } from '../type-guards.js';
+import {
+  CctpTxEvidenceShape,
+  RiskAssessmentShape,
+} from '@agoric/fast-usdc/src//type-guards.js';
 import { defineInertInvitation } from '../utils/zoe.js';
 import { prepareOperatorKit } from './operator-kit.js';
+import { INVITATION_MAKERS_DESC } from '@agoric/fast-usdc/src/operator-kit-interface.js';
 
 /**
  * @import {Zone} from '@agoric/zone';
  * @import {MapStore} from '@agoric/store';
  * @import {OperatorKit} from './operator-kit.js';
- * @import {CctpTxEvidence, EvidenceWithRisk, RiskAssessment} from '../types.js';
+ * @import {CctpTxEvidence, EvidenceWithRisk, RiskAssessment} from '@agoric/fast-usdc/src/types.js';
  */
 
 const trace = makeTracer('TxFeed', true);
@@ -19,9 +23,6 @@ const trace = makeTracer('TxFeed', true);
 /**
  * @typedef {Pick<OperatorKit, 'invitationMakers' | 'operator'>} OperatorOfferResult
  */
-
-/** Name in the invitation purse (keyed also by this contract instance) */
-export const INVITATION_MAKERS_DESC = 'oracle operator invitation';
 
 const TransactionFeedKitI = harden({
   operatorPowers: M.interface('Transaction Feed Admin', {

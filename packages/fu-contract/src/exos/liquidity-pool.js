@@ -17,12 +17,12 @@ import {
   makeParity,
   repayCalc,
   withdrawCalc,
-} from '../pool-share-math.js';
+} from '@agoric/fast-usdc/src/pool-share-math.js';
 import {
   makeNatAmountShape,
   makeProposalShapes,
   PoolMetricsShape,
-} from '../type-guards.js';
+} from '@agoric/fast-usdc/src/type-guards.js';
 
 /**
  * @import {Amount, Brand, Payment} from '@agoric/ertp';
@@ -30,27 +30,11 @@ import {
  * @import {Remote} from '@agoric/internal'
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js'
  * @import {MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'
- * @import {USDCProposalShapes, ShareWorth} from '../pool-share-math.js'
- * @import {PoolStats} from '../types.js';
+ * @import {USDCProposalShapes} from '@agoric/fast-usdc/src/pool-share-math.js'
+ * @import {PoolStats} from '@agoric/fast-usdc/src/types.js';
  */
 
 const { add, isGTE, makeEmpty } = AmountMath;
-
-/**
- * @typedef {{
- *  Principal: Amount<'nat'>;
- *  PoolFee: Amount<'nat'>;
- *  ContractFee: Amount<'nat'>;
- * }} RepayAmountKWR
- */
-
-/**
- * @typedef {{
- *  Principal: Payment<'nat'>;
- *  PoolFee: Payment<'nat'>;
- *  ContractFee: Payment<'nat'>;
- * }} RepayPaymentKWR
- */
 
 export const stateShape = harden({
   encumberedBalance: AmountShape,
@@ -199,7 +183,7 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
       repayer: {
         /**
          * @param {TransferPart} sourceTransfer
-         * @param {RepayAmountKWR} split
+         * @param {import('@agoric/fast-usdc/src/utils/fees.js').RepayAmountKWR} split
          */
         repay(sourceTransfer, split) {
           const {

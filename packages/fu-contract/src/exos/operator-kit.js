@@ -1,13 +1,12 @@
 import { makeTracer } from '@agoric/internal';
 import { Fail } from '@endo/errors';
-import { M } from '@endo/patterns';
-import { CctpTxEvidenceShape, RiskAssessmentShape } from '../type-guards.js';
+import { OperatorKitI } from '@agoric/fast-usdc/src/operator-kit-interface.js';
 
 const trace = makeTracer('TxOperator');
 
 /**
  * @import {Zone} from '@agoric/zone';
- * @import {CctpTxEvidence, RiskAssessment} from '../types.js';
+ * @import {CctpTxEvidence, RiskAssessment} from '@agoric/fast-usdc/src/types.js';
  */
 
 /**
@@ -24,25 +23,6 @@ const trace = makeTracer('TxOperator');
 /**
  * @typedef {Readonly<{ operatorId: string, powers: OperatorPowers }> & {disabled: boolean}} State
  */
-
-const OperatorKitI = {
-  admin: M.interface('Admin', {
-    disable: M.call().returns(),
-  }),
-
-  invitationMakers: M.interface('InvitationMakers', {
-    SubmitEvidence: M.call(CctpTxEvidenceShape)
-      .optional(RiskAssessmentShape)
-      .returns(M.promise()),
-  }),
-
-  operator: M.interface('Operator', {
-    submitEvidence: M.call(CctpTxEvidenceShape)
-      .optional(RiskAssessmentShape)
-      .returns(),
-    getStatus: M.call().returns(M.record()),
-  }),
-};
 
 /**
  * @param {Zone} zone

@@ -3,12 +3,12 @@ import { Far } from '@endo/pass-style';
 import { mustMatch } from '@endo/patterns';
 import { AmountMath } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { FeeConfigShape } from '../src/type-guards.js';
+import { FeeConfigShape } from '@agoric/fast-usdc/src/type-guards.js';
 import {
   fromLegible,
   makeMarshalFromRecord,
   toLegible,
-} from '../src/utils/config-marshal.js';
+} from '../../src/utils/config-marshal.js';
 
 /**
  * @import {Amount, Brand, DepositFacet, NatValue, Payment} from '@agoric/ertp';

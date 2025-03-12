@@ -9,7 +9,7 @@ import {
   stateShape,
   type TransactionFeedKit,
 } from '../../src/exos/transaction-feed.js';
-import { MockCctpTxEvidences } from '../fixtures.js';
+import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
 
 const nullZcf = null as any;
 
