@@ -12,18 +12,19 @@ export {};
  * with, like VatAdminService. */
 
 /**
- * @typedef {'getExport' | 'nestedEvaluate' | 'endoZipBase64'} BundleFormat
- */
-
-/**
  * @typedef {import('@endo/marshal').CapData<string>} SwingSetCapData
  */
 
+// TODO move Bundle types into Endo
 /**
+ * @typedef {'getExport' | 'nestedEvaluate' | 'endoZipBase64' | 'test'} BundleFormat
  * @typedef { { moduleFormat: 'getExport', source: string, sourceMap?: string } } GetExportBundle
  * @typedef { { moduleFormat: 'nestedEvaluate', source: string, sourceMap?: string } } NestedEvaluateBundle
- * @typedef { EndoZipBase64Bundle | GetExportBundle | NestedEvaluateBundle } Bundle
- *
+ * @typedef { { moduleFormat: 'test' } } TestBundle
+ * @typedef { EndoZipBase64Bundle | GetExportBundle | NestedEvaluateBundle | TestBundle} Bundle
+ */
+
+/**
  * @typedef { 'local' | 'node-subprocess' | 'xsnap' | 'xs-worker' } ManagerType
  */
 

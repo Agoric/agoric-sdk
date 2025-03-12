@@ -32,7 +32,6 @@ import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, type EReturn } from '@endo/far';
 import { matches } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
-import path from 'path';
 import type { OperatorOfferResult } from '../src/exos/transaction-feed.js';
 import type { FastUsdcSF } from '../src/fast-usdc.contract.js';
 import type { USDCProposalShapes } from '../src/pool-share-math.js';
@@ -42,9 +41,7 @@ import { makeFeeTools } from '../src/utils/fees.js';
 import { MockCctpTxEvidences } from './fixtures.js';
 import { commonSetup, uusdcOnAgoric } from './supports.js';
 
-const dirname = path.dirname(new URL(import.meta.url).pathname);
-
-const contractFile = `${dirname}/../src/fast-usdc.contract.js`;
+import * as contractExports from '../src/fast-usdc.contract.js';
 
 const agToNoble = fetchedChainInfo.agoric.connections['noble-1'];
 
@@ -78,7 +75,7 @@ const startContract = async (
 
   const { zoe, bundleAndInstall } = await setUpZoeForTest({ setJig });
   const installation: Installation<FastUsdcSF> =
-    await bundleAndInstall(contractFile);
+    await bundleAndInstall(contractExports);
 
   const startKit = await E(zoe).startInstance(
     installation,
@@ -202,7 +199,7 @@ test('initial baggage', async t => {
 
   const { zoe, bundleAndInstall } = await setUpZoeForTest({ setJig });
   const installation: Installation<FastUsdcSF> =
-    await bundleAndInstall(contractFile);
+    await bundleAndInstall(contractExports);
 
   await E(zoe).startInstance(
     installation,

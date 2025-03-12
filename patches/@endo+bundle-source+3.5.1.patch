@@ -1,0 +1,23 @@
+diff --git a/node_modules/@endo/bundle-source/src/types.d.ts b/node_modules/@endo/bundle-source/src/types.d.ts
+index 4d297c7..3ef430d 100644
+--- a/node_modules/@endo/bundle-source/src/types.d.ts
++++ b/node_modules/@endo/bundle-source/src/types.d.ts
+@@ -1,4 +1,4 @@
+-export type ModuleFormat = "endoZipBase64" | "endoScript" | "nestedEvaluate" | "getExport";
++export type ModuleFormat = "endoZipBase64" | "endoScript" | "nestedEvaluate" | "getExport" | "test";
+ export type BundleSource = BundleSourceSimple & BundleSourceWithFormat & BundleSourceWithOptions & BundleSourceGeneral;
+ export type BundleSourceResult<T extends ModuleFormat> = T extends "endoZipBase64" ? {
+     moduleFormat: "endoZipBase64";
+diff --git a/node_modules/@endo/bundle-source/src/types.js b/node_modules/@endo/bundle-source/src/types.js
+index 617c17f..f2d8766 100644
+--- a/node_modules/@endo/bundle-source/src/types.js
++++ b/node_modules/@endo/bundle-source/src/types.js
+@@ -2,7 +2,7 @@
+ export {};
+ 
+ /**
+- * @typedef {'endoZipBase64' | 'endoScript' | 'nestedEvaluate' | 'getExport'} ModuleFormat
++ * @typedef {'endoZipBase64' | 'endoScript' | 'nestedEvaluate' | 'getExport' | 'test'} ModuleFormat
+  */
+ 
+ // The order of these intersections matters, insofar as Typescript treats the
