@@ -167,22 +167,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     async makeWithdrawFeesInvitation() {
       return poolKit.feeRecipient.makeWithdrawFeesInvitation();
     },
-    /**
-     * @param {string} agoricChainId
-     * @param {string} nobleChainId
-     * @param {IBCConnectionInfo} agoricToNoble
-     */
-    async connectToNoble(agoricChainId, nobleChainId, agoricToNoble) {
-      trace('connectToNoble', agoricChainId, nobleChainId, agoricToNoble);
-      chainHub.updateConnection(agoricChainId, nobleChainId, agoricToNoble);
-      // v1 has `NobleAccount` which we don't expect to ever settle.
-      // Including the connection_id in the zone key lets us use
-      // this before and after null-upgrade in multichain-testing.
-      const nobleAccountV = zone.makeOnce(
-        `NobleICA-${agoricToNoble.counterparty.connection_id}`,
-        () => makeNobleAccount(),
-      );
-
+    async setIntermediateRecipient() {
       return vowTools.when(nobleAccountV, nobleAccount => {
         trace('nobleAccount', nobleAccount);
         return vowTools.when(
@@ -190,6 +175,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
           intermediateRecipient => {
             trace('intermediateRecipient', intermediateRecipient);
             advancer.setIntermediateRecipient(intermediateRecipient);
+            // superfluous for v3, but harmless to leave for consistency
             settlerKit.creator.setIntermediateRecipient(intermediateRecipient);
             return intermediateRecipient;
           },
@@ -303,14 +289,22 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     }),
   );
 
-  const advancer = zone.makeOnce('Advancer', () =>
-    makeAdvancer({
-      borrower: poolKit.borrower,
-      notifier: settlerKit.notifier,
-      poolAccount,
-      settlementAddress,
-    }),
+  // v1 has `NobleAccount` which we don't expect to ever settle.
+  // v2 has a settled OrchestrationAccount labeled `NobleAccount-connection-38`
+  const nobleAccountV = zone.makeOnce(
+    `NobleICA-${agToNoble.counterparty.connection_id}`,
+    () => makeNobleAccount(),
   );
+
+  // we create a new Advancer on every upgrade. It does not contain precious state, but on each
+  // upgrade we must remember to call `advancer.setIntermediateRecipient()`
+  const advancer = makeAdvancer({
+    borrower: poolKit.borrower,
+    notifier: settlerKit.notifier,
+    poolAccount,
+    settlementAddress,
+  });
+
   // Connect evidence stream to advancer
   void observeIteration(subscribeEach(feedKit.public.getEvidenceSubscriber()), {
     updateState(evidenceWithRisk) {
