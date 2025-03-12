@@ -514,7 +514,7 @@ export async function launchAndShareInternals({
   );
 
   /** @type {(actionType: ActionType.QueuedActionType) => void} */
-  const countInboundAction = actionType => {
+  const incrementInboundActionCounter = actionType => {
     if (!knownActionTypes.has(actionType)) {
       console.warn(`unknown inbound action type ${JSON.stringify(actionType)}`);
     }
@@ -844,14 +844,19 @@ export async function launchAndShareInternals({
    *
    * @param {InboundQueue} inboundQueue
    * @param {Cranker} runSwingset
+   * @param {(action: {type: string}, phase: InboundQueueName) => void} countInboundAction
    * @param {InboundQueueName} phase
    */
-  async function processActions(inboundQueue, runSwingset, phase) {
+  async function processActions(
+    inboundQueue,
+    runSwingset,
+    countInboundAction,
+    phase,
+  ) {
     let keepGoing = true;
     for await (const { action, context } of inboundQueue.consumeAll()) {
       const inboundNum = `${context.blockHeight}-${context.txHash}-${context.msgIdx}`;
-      inboundQueueMetrics.decStat(phase);
-      countInboundAction(action.type);
+      countInboundAction(action, phase);
       await performAction(action, inboundNum);
       keepGoing = await runSwingset(phase);
       if (!keepGoing) {
@@ -872,24 +877,46 @@ export async function launchAndShareInternals({
    * @param {BlockInfo['blockTime']} blockTime
    */
   async function processBlockActions(runSwingset, blockHeight, blockTime) {
+    /** @type {Array<{count: number, phase: InboundQueueName, type: string}>} */
+    const processedActionCounts = [];
+    const countInboundAction = (action, phase) => {
+      const { type } = action;
+      inboundQueueMetrics.decStat(phase);
+      incrementInboundActionCounter(type);
+      const isMatch = r => r.phase === phase && r.type === type;
+      const countRecord = processedActionCounts.findLast(isMatch);
+      if (countRecord) {
+        countRecord.count += 1;
+        return;
+      }
+      const newCountRecord = { count: 1, phase, type };
+      processedActionCounts.push(newCountRecord);
+    };
+
     // First, complete leftover work, if any
     let keepGoing = await runSwingset(CrankerPhase.Leftover);
-    if (!keepGoing) return;
+    if (!keepGoing) return harden(processedActionCounts);
 
     // Then, if we have anything in the special runThisBlock queue, process
     // it and do no further work.
     if (runThisBlock.size()) {
-      await processActions(runThisBlock, runSwingset, CrankerPhase.Forced);
-      return;
+      await processActions(
+        runThisBlock,
+        runSwingset,
+        countInboundAction,
+        CrankerPhase.Forced,
+      );
+      return harden(processedActionCounts);
     }
 
     // Then, process as much as we can from the priorityQueue.
     keepGoing = await processActions(
       highPriorityQueue,
       runSwingset,
+      countInboundAction,
       CrankerPhase.Priority,
     );
-    if (!keepGoing) return;
+    if (!keepGoing) return harden(processedActionCounts);
 
     // Then, update the timer device with the new external time, which might
     // push work onto the kernel run-queue (if any timers were ready to wake).
@@ -908,13 +935,20 @@ export async function launchAndShareInternals({
     // only notes state exports and updates consistency hashes when attempting
     // to perform a crank.
     keepGoing = await runSwingset(CrankerPhase.Timer);
-    if (!keepGoing) return;
+    if (!keepGoing) return harden(processedActionCounts);
 
     // Finally, process as much as we can from the actionQueue.
-    await processActions(actionQueue, runSwingset, CrankerPhase.Inbound);
+    await processActions(
+      actionQueue,
+      runSwingset,
+      countInboundAction,
+      CrankerPhase.Inbound,
+    );
 
     // Cleanup after terminated vats as allowed.
     await runSwingset(CrankerPhase.Cleanup);
+
+    return harden(processedActionCounts);
   }
 
   async function endBlock(blockHeight, blockTime, params) {
@@ -924,12 +958,13 @@ export async function launchAndShareInternals({
 
     // First, record new actions (bridge/mailbox/etc events that cosmos
     // added up for delivery to swingset) into our inboundQueue metrics
-    const newLengths = /** @type {Record<InboundQueueName, number>} */ ({
-      [InboundQueueName.Forced]: runThisBlock.size(),
-      [InboundQueueName.Priority]: highPriorityQueue.size(),
-      [InboundQueueName.Inbound]: actionQueue.size(),
-    });
-    inboundQueueMetrics.updateLengths(newLengths);
+    const inboundQueueStartLengths =
+      /** @type {Record<InboundQueueName, number>} */ harden({
+        [InboundQueueName.Forced]: runThisBlock.size(),
+        [InboundQueueName.Priority]: highPriorityQueue.size(),
+        [InboundQueueName.Inbound]: actionQueue.size(),
+      });
+    inboundQueueMetrics.updateLengths(inboundQueueStartLengths);
 
     // If we have work to complete this block, it needs to run to completion.
     // It will also run to completion any work that swingset still had pending.
@@ -939,13 +974,19 @@ export async function launchAndShareInternals({
     // run policy.
     const runPolicy = computronCounter(params, neverStop);
     const runSwingset = makeRunSwingset(blockHeight, runPolicy);
-    await processBlockActions(runSwingset, blockHeight, blockTime);
+    const processedActionCounts = await processBlockActions(
+      runSwingset,
+      blockHeight,
+      blockTime,
+    );
 
     if (END_BLOCK_SPIN_MS) {
       // Introduce a busy-wait to artificially put load on the chain.
       const startTime = now();
       while (now() - startTime < END_BLOCK_SPIN_MS);
     }
+
+    return harden({ inboundQueueStartLengths, processedActionCounts });
   }
 
   /**
@@ -1247,6 +1288,7 @@ export async function launchAndShareInternals({
             blockParams || Fail`blockParams missing`;
 
             await null;
+            let slogProps;
             if (!blockNeedsExecution(blockHeight)) {
               // We are reevaluating, so do not do any work, and send exactly the
               // same downcalls to the chain.
@@ -1277,7 +1319,7 @@ export async function launchAndShareInternals({
               provideInstallationPublisher();
 
               const start = now();
-              await withErrorLogging(
+              slogProps = await withErrorLogging(
                 action.type,
                 () => endBlock(blockHeight, blockTime, blockParams),
                 () => {
@@ -1296,7 +1338,13 @@ export async function launchAndShareInternals({
               // Advance our saved state variables.
               savedHeight = blockHeight;
             }
-            finish({ inboundQueueStats: inboundQueueMetrics.getStats() });
+            finish({
+              ...slogProps,
+              // TODO: Remove inboundQueueMetrics once all slog consumers have
+              // been updated to use inboundQueueStartLengths and/or
+              // processedActionCounts.
+              inboundQueueStats: inboundQueueMetrics.getStats(),
+            });
 
             times.endBlockDone = now();
           },
