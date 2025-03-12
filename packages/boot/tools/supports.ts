@@ -909,23 +909,89 @@ export const fetchCoreEvalRelease = async (
   planUrl = `${artifacts}/${config.name}-plan.json`,
 ) => {
   const fetch = fetchCached;
-  const plan = (await fetch(planUrl).then(r => r.json())) as {
-    name: string;
-    permit: string;
-    script: string;
-    bundles: Array<{
-      bundleID: string;
-      entrypoint: string;
-      fileName: string;
-    }>;
-  };
-  assert.equal(plan.name, config.name);
-  const script = await fetch(`${artifacts}/${plan.script}`).then(r => r.text());
-  const permit = await fetch(`${artifacts}/${plan.permit}`).then(r => r.text());
-  const bundles: EndoZipBase64Bundle[] = await Promise.all(
-    plan.bundles.map(b =>
-      fetch(`${artifacts}/${b.bundleID}.json`).then(r => r.json()),
-    ),
-  );
-  return { bundles, evals: [{ js_code: script, json_permits: permit }] };
+
+  try {
+    const planResponse = await fetch(planUrl);
+    if (planResponse.ok) {
+      const plan = (await planResponse.json()) as {
+        name: string;
+        permit: string;
+        script: string;
+        bundles: Array<{
+          bundleID: string;
+          entrypoint: string;
+          fileName: string;
+        }>;
+      };
+
+      assert.equal(plan.name, config.name);
+      const script = await fetch(`${artifacts}/${plan.script}`).then(r =>
+        r.text(),
+      );
+      const permit = await fetch(`${artifacts}/${plan.permit}`).then(r =>
+        r.text(),
+      );
+      const bundles: EndoZipBase64Bundle[] = await Promise.all(
+        plan.bundles.map(b =>
+          fetch(`${artifacts}/${b.bundleID}.json`).then(r => r.json()),
+        ),
+      );
+
+      return { bundles, evals: [{ js_code: script, json_permits: permit }] };
+    }
+  } catch (error) {
+    console.warn(
+      `Plan file not found at ${planUrl}. Falling back to direct artifact detection.`,
+    );
+  }
+
+  try {
+    // Assume standard naming conventions for script and permit
+    const scriptName = `${config.name}.js`;
+    const permitName = `${config.name}-permit.json`;
+
+    // Fetch script and permit directly
+    const scriptResponse = await fetch(`${artifacts}/${scriptName}`);
+    if (!scriptResponse.ok) {
+      throw new Error(`Script not found at ${artifacts}/${scriptName}`);
+    }
+    const script = await scriptResponse.text();
+
+    const permitResponse = await fetch(`${artifacts}/${permitName}`);
+    if (!permitResponse.ok) {
+      throw new Error(`Permit not found at ${artifacts}/${permitName}`);
+    }
+    const permit = await permitResponse.text();
+
+    // Parse script to detect bundle references
+    const bundlePattern = /"(b1-[a-f0-9]+)"/g;
+    const bundleMatches: string[] = [];
+
+    let match = bundlePattern.exec(script);
+    while (match !== null) {
+      if (match[1]) {
+        bundleMatches.push(match[1]);
+      }
+      match = bundlePattern.exec(script);
+    }
+
+    const uniqueBundleIds = [...new Set(bundleMatches)];
+    if (uniqueBundleIds.length === 0) {
+      throw new Error(
+        'No bundle IDs found in script. Cannot proceed without bundle information.',
+      );
+    }
+    const bundles: EndoZipBase64Bundle[] = await Promise.all(
+      uniqueBundleIds.map(bundleId =>
+        fetch(`${artifacts}/${bundleId}.json`).then(r => r.json()),
+      ),
+    );
+
+    return { bundles, evals: [{ js_code: script, json_permits: permit }] };
+  } catch (error) {
+    console.error('Fallback approach failed:', error);
+    throw new Error(
+      `Failed to fetch release artifacts for ${config.name}: ${error.message}`,
+    );
+  }
 };

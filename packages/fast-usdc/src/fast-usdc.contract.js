@@ -168,19 +168,22 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
       return poolKit.feeRecipient.makeWithdrawFeesInvitation();
     },
     /**
-     * @param {string} agoricChainId
-     * @param {string} nobleChainId
-     * @param {IBCConnectionInfo} agoricToNoble
+     * @param {string} [agoricChainId]
+     * @param {string} [nobleChainId]
+     * @param {IBCConnectionInfo} [agoricToNoble]
      */
     async connectToNoble(agoricChainId, nobleChainId, agoricToNoble) {
-      trace('connectToNoble', agoricChainId, nobleChainId, agoricToNoble);
-      chainHub.updateConnection(agoricChainId, nobleChainId, agoricToNoble);
+      const shouldUpdate = agoricChainId && nobleChainId && agoricToNoble;
+      if (shouldUpdate) {
+        trace('connectToNoble', agoricChainId, nobleChainId, agoricToNoble);
+        chainHub.updateConnection(agoricChainId, nobleChainId, agoricToNoble);
+      }
+      const nobleICALabel = `NobleICA-${(shouldUpdate ? agoricToNoble : agToNoble).counterparty.connection_id}`;
+      trace('NobleICA', nobleICALabel);
       // v1 has `NobleAccount` which we don't expect to ever settle.
-      // Including the connection_id in the zone key lets us use
-      // this before and after null-upgrade in multichain-testing.
-      const nobleAccountV = zone.makeOnce(
-        `NobleICA-${agoricToNoble.counterparty.connection_id}`,
-        () => makeNobleAccount(),
+      // v2 has `NobleICA-connection-38` which will be settled/cached when v3 starts
+      const nobleAccountV = zone.makeOnce(nobleICALabel, () =>
+        makeNobleAccount(),
       );
 
       return vowTools.when(nobleAccountV, nobleAccount => {
@@ -303,14 +306,16 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     }),
   );
 
-  const advancer = zone.makeOnce('Advancer', () =>
-    makeAdvancer({
-      borrower: poolKit.borrower,
-      notifier: settlerKit.notifier,
-      poolAccount,
-      settlementAddress,
-    }),
-  );
+  // we create a new Advancer on every upgrade. It does not contain precious state, but on each
+  // upgrade we must remember to call `advancer.setIntermediateRecipient()`
+  // XXX delete `Advancer` that still may remain in zone after `update-settler-reference.core.js`
+  const advancer = makeAdvancer({
+    borrower: poolKit.borrower,
+    notifier: settlerKit.notifier,
+    poolAccount,
+    settlementAddress,
+  });
+
   // Connect evidence stream to advancer
   void observeIteration(subscribeEach(feedKit.public.getEvidenceSubscriber()), {
     updateState(evidenceWithRisk) {

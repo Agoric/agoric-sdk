@@ -3,7 +3,10 @@ import {
   type AgoricNamesRemotes,
   makeAgoricNamesRemotesFromFakeStorage,
 } from '@agoric/vats/tools/board-utils.js';
-import { makeSwingsetTestKit } from '../../tools/supports.js';
+import {
+  fetchCoreEvalRelease,
+  makeSwingsetTestKit,
+} from '../../tools/supports.js';
 import { makeWalletFactoryDriver } from '../../tools/drivers.js';
 
 export const makeWalletFactoryContext = async (
@@ -36,6 +39,19 @@ export const makeWalletFactoryContext = async (
   agoricNamesRemotes.brand.ATOM || Fail`ATOM missing from agoricNames`;
   console.timeLog('DefaultTestContext', 'agoricNamesRemotes');
 
+  const evalReleasedProposal = async (release: string, name: string) => {
+    const materials = await fetchCoreEvalRelease({
+      repo: 'Agoric/agoric-sdk',
+      release,
+      name,
+    });
+    try {
+      await swingsetTestKit.evalProposal(materials);
+    } finally {
+      refreshAgoricNamesRemotes();
+    }
+  };
+
   const walletFactoryDriver = await makeWalletFactoryDriver(
     runUtils,
     storage,
@@ -45,6 +61,7 @@ export const makeWalletFactoryContext = async (
     ...swingsetTestKit,
     swingsetTestKit,
     agoricNamesRemotes,
+    evalReleasedProposal,
     refreshAgoricNamesRemotes,
     walletFactoryDriver,
   };

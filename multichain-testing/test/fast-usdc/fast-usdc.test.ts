@@ -39,6 +39,7 @@ const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
 
 const accounts = [...keys(oracleMnemonics), 'lp', 'feeDest'];
 const contractName = 'fastUsdc';
+// TODO: use actual beta-1 artifact
 const contractBuilder =
   '../packages/builders/scripts/fast-usdc/start-fast-usdc.build.js';
 const LP_DEPOSIT_AMOUNT = 8_000n * 10n ** 6n;
@@ -361,6 +362,7 @@ test.serial('lp deposits', async t => {
 
 test.serial('reconfigure: fix noble ICA', async t => {
   const { startContract, commonBuilderOpts } = t.context;
+  // TODO: use actual rc-1 artifact
   const builder =
     '../packages/builders/scripts/fast-usdc/fast-usdc-reconfigure.build.js';
 
@@ -878,3 +880,4 @@ test.serial('insufficient LP funds and forward failed', async t => {
 });
 
 test.todo('mint while Advancing; still Disbursed');
+test.todo('test with rc2, settler-reference proposal');

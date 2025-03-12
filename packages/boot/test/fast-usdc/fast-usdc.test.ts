@@ -15,6 +15,7 @@ import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Fail } from '@endo/errors';
 import { makeMarshal } from '@endo/marshal';
+import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import {
   AckBehavior,
   fetchCoreEvalRelease,
@@ -41,6 +42,11 @@ const {
   SLOGFILE: slogFile,
   SWINGSET_WORKER_TYPE: defaultManagerType = 'local',
 } = process.env;
+
+const {
+  channelId: agoricToNobleChannel,
+  counterPartyChannelId: nobleToAgoricChannel,
+} = fetchedChainInfo.agoric.connections['noble-1'].transferChannel;
 
 test.before('bootstrap', async t => {
   const config = '@agoric/vm-config/decentral-itest-orchestration-config.json';
@@ -74,13 +80,7 @@ test.serial('oracles provision before contract deployment', async t => {
  * environment does not yet have a connection to Noble (nor any other chains).
  */
 test.serial('prop 87: Beta', async t => {
-  const { evalProposal, bridgeUtils } = t.context;
-
-  const materials = await fetchCoreEvalRelease({
-    repo: 'Agoric/agoric-sdk',
-    release: 'fast-usdc-beta-1',
-    name: 'start-fast-usdc',
-  });
+  const { agoricNamesRemotes, evalReleasedProposal, bridgeUtils } = t.context;
 
   // Proposal 87 doesn't quite complete: noble ICA is mis-configured
   bridgeUtils.setAckBehavior(
@@ -88,16 +88,15 @@ test.serial('prop 87: Beta', async t => {
     'startChannelOpenInit',
     AckBehavior.Never,
   );
-  try {
-    await evalProposal(materials);
-  } catch (err) {
-    t.log(err.message);
-    if (!err.message.startsWith('unsettled value')) throw err;
-  }
+  await evalReleasedProposal('fast-usdc-beta-1', 'start-fast-usdc').catch(err =>
+    // the deployment succeeds so allow the particular known problem
+    assert.equal(
+      err.message,
+      'unsettled value for "kp1205"',
+      'unexpected error message',
+    ),
+  );
 
-  const { agoricNamesRemotes, refreshAgoricNamesRemotes } = t.context;
-  // update now that fastUsdc is instantiated
-  refreshAgoricNamesRemotes();
   t.truthy(agoricNamesRemotes.instance.fastUsdc);
 });
 
@@ -279,8 +278,8 @@ test.serial('oracles accept invitations', async t => {
   t.pass();
 });
 
-test.serial('upgrade; update noble ICA', async t => {
-  const { bridgeUtils, buildProposal, evalProposal } = t.context;
+test.serial('prop 88: RC1; update noble ICA', async t => {
+  const { bridgeUtils, evalReleasedProposal } = t.context;
 
   bridgeUtils.setAckBehavior(
     BridgeId.DIBC,
@@ -289,10 +288,7 @@ test.serial('upgrade; update noble ICA', async t => {
   );
   bridgeUtils.setBech32Prefix('noble');
 
-  const materials = await buildProposal(
-    '@agoric/builders/scripts/fast-usdc/fast-usdc-reconfigure.build.js',
-  );
-  await evalProposal(materials);
+  await evalReleasedProposal('fast-usdc-rc1', 'eval-fast-usdc-reconfigure');
 
   // XXX bridgeUtils.getOutboundMessages(BridgeId.DIBC) should
   // show the updated connection id, but we struggled to confirm.
@@ -359,6 +355,25 @@ test.serial('writes GTM account addresses to vstorage', async t => {
   await documentStorageSchema(t, storage, doc);
 });
 
+test.serial('writes pool metrics to vstorage', async t => {
+  const { storage } = t.context;
+  const doc = {
+    node: 'fastUsdc.poolMetrics',
+    owner: 'FastUSC LiquidityPool exo',
+    showValue: defaultSerializer.parse,
+  };
+  await documentStorageSchema(t, storage, doc);
+});
+
+test.serial('deploy HEAD; update Settler reference', async t => {
+  const { buildProposal, evalProposal } = t.context;
+  const materials = await buildProposal(
+    '@agoric/builders/scripts/fast-usdc/fast-usdc-settler-ref.build.js',
+  );
+  await evalProposal(materials);
+  t.pass();
+});
+
 test.serial('makes usdc advance', async t => {
   const {
     walletFactoryDriver: wfd,
@@ -416,7 +431,7 @@ test.serial('makes usdc advance', async t => {
   // Restart contract to make sure it doesn't break advance flow
   const kit = await EV.vat('bootstrap').consumeItem('fastUsdcKit');
   const actual = await EV(kit.adminFacet).restartContract(kit.privateArgs);
-  t.deepEqual(actual, { incarnationNumber: 2 });
+  t.deepEqual(actual, { incarnationNumber: 3 });
 
   const { runInbound } = t.context.bridgeUtils;
   await runInbound(
@@ -424,7 +439,7 @@ test.serial('makes usdc advance', async t => {
     buildVTransferEvent({
       sender: poolAccount,
       target: poolAccount,
-      sourceChannel: 'channel-62',
+      sourceChannel: agoricToNobleChannel,
       sequence: '1',
     }),
   );
@@ -432,7 +447,6 @@ test.serial('makes usdc advance', async t => {
   // in due course, minted USDC arrives
   await runInbound(
     BridgeId.VTRANSFER,
-
     buildVTransferEvent({
       sequence: '1', // arbitrary; not used
       amount: evidence.tx.amount,
@@ -440,10 +454,8 @@ test.serial('makes usdc advance', async t => {
       sender: evidence.tx.forwardingAddress,
       target: settlementAccount,
       receiver: encodeAddressHook(settlementAccount, { EUD }),
-      sourceChannel: evidence.aux.forwardingChannel,
-      destinationChannel: 'channel-62', // fetchedChainInfo
-      // destinationChannel: evidence.aux.forwardingChannel,
-      // sourceChannel: 'channel-62', // fetchedChainInfo
+      sourceChannel: nobleToAgoricChannel,
+      destinationChannel: agoricToNobleChannel,
     }),
   );
 
@@ -456,18 +468,109 @@ test.serial('makes usdc advance', async t => {
   ]);
 
   const doc = {
-    node: `fastUsdc.txns`,
-    owner: `the Ethereum transactions upon which Fast USDC is acting`,
+    node: 'fastUsdc.txns',
+    owner: 'the Ethereum transactions upon which Fast USDC is acting',
     showValue: defaultSerializer.parse,
   };
   await documentStorageSchema(t, storage, doc);
 });
 
-test.serial('writes pool metrics to vstorage', async t => {
-  const { storage } = t.context;
+test.serial('minted before observed; forward path', async t => {
+  const { bridgeUtils, storage } = t.context;
+
+  // Mock user data
+  const EUD = 'agoric1usermintedbeforeobserved';
+  const lastNodeValue = storage.getValues('published.fastUsdc').at(-1);
+  const { settlementAccount, nobleICA } = JSON.parse(NonNullish(lastNodeValue));
+
+  // Create mock evidence
+  const mintAmt = 500_000n; // 0.5 USDC
+  const recipientAddress = encodeAddressHook(settlementAccount, { EUD });
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_AGORIC(recipientAddress);
+  evidence.tx.amount = mintAmt;
+  t.log('USDC minted before evidence is observed');
+
+  // Simulate USDC being minted and received BEFORE evidence is submitted
+  await bridgeUtils.runInbound(
+    BridgeId.VTRANSFER,
+    buildVTransferEvent({
+      sequence: '1',
+      amount: evidence.tx.amount,
+      denom: 'uusdc',
+      sender: evidence.tx.forwardingAddress,
+      target: settlementAccount,
+      receiver: recipientAddress,
+      sourceChannel: nobleToAgoricChannel,
+      destinationChannel: agoricToNobleChannel,
+    }),
+  );
+
+  await eventLoopIteration();
+  t.log('USDC funds received in settlement account before evidence submission');
+
+  // Now submit evidence from oracles (after funds already received)
+  const { walletFactoryDriver: wfd } = t.context;
+  const oracles = await Promise.all(
+    oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
+  );
+  await Promise.all(
+    oracles.map(wallet =>
+      wallet.sendOffer({
+        id: 'submit-evidence-after-mint',
+        invitationSpec: {
+          source: 'continuing',
+          previousOffer: 'claim-oracle-invitation',
+          invitationMakerName: 'SubmitEvidence',
+          invitationArgs: [evidence],
+        },
+        proposal: {},
+      }),
+    ),
+  );
+
+  await eventLoopIteration();
+  // simulate acknowledgement of outgoing forward transfer
+  await bridgeUtils.runInbound(
+    BridgeId.VTRANSFER,
+    buildVTransferEvent({
+      sender: settlementAccount,
+      target: settlementAccount,
+      receiver: nobleICA,
+      sourceChannel: agoricToNobleChannel,
+      destinationChannel: nobleToAgoricChannel,
+      sequence: '2',
+      amount: evidence.tx.amount,
+      memo: JSON.stringify(
+        /** @type {ForwardInfo} */
+        {
+          forward: {
+            receiver: recipientAddress,
+            port: 'transfer',
+            channel:
+              fetchedChainInfo.noble.connections['agoric-3'].transferChannel
+                .channelId,
+          },
+        },
+      ),
+    }),
+  );
+  await eventLoopIteration();
+
+  const getTxStatus = txHash =>
+    storage
+      .getValues(`published.fastUsdc.txns.${txHash}`)
+      .map(defaultSerializer.parse);
+
+  // Verify the transaction status was set to FORWARDED
+  t.deepEqual(
+    getTxStatus(evidence.txHash),
+    [{ evidence, status: 'OBSERVED' }, { status: 'FORWARDED' }],
+    'Transaction status should be FORWARDED when funds arrive before evidence',
+  );
+
   const doc = {
-    node: 'fastUsdc.poolMetrics',
-    owner: 'FastUSC LiquidityPool exo',
+    node: `fastUsdc.txns`,
+    owner: `the Ethereum transactions upon which Fast USDC is acting`,
     showValue: defaultSerializer.parse,
   };
   await documentStorageSchema(t, storage, doc);
@@ -623,8 +726,8 @@ test.serial('restart contract', async t => {
 
   const actual = await EV(kit.adminFacet).restartContract(newArgs);
 
-  // Incarnation 3 because of upgrade, previous test
-  t.deepEqual(actual, { incarnationNumber: 3 });
+  // Incarnation 4 because of upgrade, previous test
+  t.deepEqual(actual, { incarnationNumber: 4 });
   const { flat, variableRate, contractRate } = storage
     .getValues(`published.fastUsdc.feeConfig`)
     .map(defaultSerializer.parse)
