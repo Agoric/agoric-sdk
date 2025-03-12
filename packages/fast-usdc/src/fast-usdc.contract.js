@@ -303,14 +303,16 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     }),
   );
 
-  const advancer = zone.makeOnce('Advancer', () =>
-    makeAdvancer({
-      borrower: poolKit.borrower,
-      notifier: settlerKit.notifier,
-      poolAccount,
-      settlementAddress,
-    }),
-  );
+  // we create a new Advancer on every upgrade. It does not contain precious state, but on each
+  // upgrade we must remember to call `advancer.setIntermediateRecipient()`
+  // XXX delete `Advancer` that still may remain in zone after `update-settler-reference.core.js`
+  const advancer = makeAdvancer({
+    borrower: poolKit.borrower,
+    notifier: settlerKit.notifier,
+    poolAccount,
+    settlementAddress,
+  });
+
   // Connect evidence stream to advancer
   void observeIteration(subscribeEach(feedKit.public.getEvidenceSubscriber()), {
     updateState(evidenceWithRisk) {
