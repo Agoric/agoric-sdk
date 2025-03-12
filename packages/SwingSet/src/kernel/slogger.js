@@ -209,14 +209,14 @@ export function makeSlogger(slogCallbacks, writeSlogObject, slogDuration) {
 
     function startup() {
       // provide a context for console calls during startup
-      checkOldState(IDLE, 'did startup get called twice?');
+      checkOldState(IDLE, 'vat-startup called twice?');
       state = STARTUP;
       const finish = startDuration(
         ['vat-startup-start', 'vat-startup-finish'],
         { vatID },
       );
       return harden(() => {
-        checkOldState(STARTUP, 'startup-finish called twice?');
+        checkOldState(STARTUP, 'vat-startup-finish called twice?');
         state = IDLE;
         finish();
       });
@@ -234,7 +234,7 @@ export function makeSlogger(slogCallbacks, writeSlogObject, slogDuration) {
       const finish = startDuration(['deliver', 'deliver-result'], startProps);
       // dr: deliveryResult
       return harden(dr => {
-        checkOldState(DELIVERY, 'delivery-finish called twice?');
+        checkOldState(DELIVERY, 'deliver-result called twice?');
         state = IDLE;
         finish({ kd: undefined, vd: undefined, dr });
       });
