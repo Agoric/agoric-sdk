@@ -48,6 +48,8 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
 
   const bld = withAmountUtils(makeIssuerKit('BLD'));
   const ist = withAmountUtils(makeIssuerKit('IST'));
+  const flix = withAmountUtils(makeIssuerKit('FLIX'));
+  const osmo = withAmountUtils(makeIssuerKit('OSMO'));
   const bankBridgeMessages = [] as any[];
   const { bankManager, pourPayment } = await makeFakeBankManagerKit({
     onToBridge: obj => bankBridgeMessages.push(obj),
@@ -59,10 +61,14 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     'Inter Stable Token',
     ist.issuerKit,
   );
+  await E(bankManager).addAsset('uflix', 'FLIX', 'Omniflix Token', flix.issuerKit);
+  await E(bankManager).addAsset('uosmo', 'OSMO', 'Osmosis Token', osmo.issuerKit);
   // These mints no longer stay in sync with bankManager.
   // Use pourPayment() for IST.
   const { mint: _b, ...bldSansMint } = bld;
   const { mint: _i, ...istSansMint } = ist;
+  const { mint: _f, ...flixSansMint } = flix;
+  const { mint: _o, ...osmoSansMint } = osmo;
   // XXX real bankManager does this. fake should too?
   // TODO https://github.com/Agoric/agoric-sdk/issues/9966
   await makeWellKnownSpaces(agoricNamesAdmin, t.log, ['vbankAsset']);
@@ -88,7 +94,28 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       displayInfo: { IOU: true },
     }),
   );
-
+  await E(E(agoricNamesAdmin).lookupAdmin('vbankAsset')).update(
+    'uflix',
+    /** @type {AssetInfo} */ harden({
+      brand: flix.brand,
+      issuer: flix.issuer,
+      issuerName: 'FLIX',
+      denom: 'uflix',
+      proposedName: 'FLIX',
+      displayInfo: { IOU: true },
+    }),
+  );
+  await E(E(agoricNamesAdmin).lookupAdmin('vbankAsset')).update(
+    'uosmo',
+    /** @type {AssetInfo} */ harden({
+      brand: osmo.brand,
+      issuer: osmo.issuer,
+      issuerName: 'OSMO',
+      denom: 'uosmo',
+      proposedName: 'OSMO',
+      displayInfo: { IOU: true },
+    }),
+  );
   const vowTools = prepareSwingsetVowTools(rootZone.subZone('vows'));
 
   const transferBridge = makeFakeTransferBridge(rootZone);
@@ -182,6 +209,16 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     assetOn('uusdc', 'noble', undefined, 'agoric', chainInfoWithCaps),
     assetOn('uatom', 'cosmoshub', undefined, 'agoric', chainInfoWithCaps),
     assetOn('uusdc', 'noble', undefined, 'dydx', chainInfoWithCaps),
+    assetOn('uflix', 'omniflixlocal', flixSansMint.brand),
+    assetOn('uosmo', 'osmosislocal', osmoSansMint.brand),
+    // assetOn('uosmo', 'agoric', undefined, 'cosmoshub', chainInfoWithCaps),
+    // assetOn('uosmo', 'agoric', undefined, 'dydx', chainInfoWithCaps),
+    // assetOn('uosmo', 'agoric', undefined, 'uflix', chainInfoWithCaps),
+    // assetOn('uosmo', 'agoric', undefined, 'uist', chainInfoWithCaps),
+    // assetOn('uflix', 'agoric', undefined, 'uosmo', chainInfoWithCaps),
+    // assetOn('uflix', 'agoric', undefined, 'uist', chainInfoWithCaps),
+    // assetOn('uist', 'agoric', undefined, 'uosmo', chainInfoWithCaps),
+    // assetOn('uist', 'agoric', undefined, 'uflix', chainInfoWithCaps),
   ]);
 
   /**
@@ -216,6 +253,8 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     brands: {
       bld: bldSansMint,
       ist: istSansMint,
+      flix: flixSansMint,
+      osmo: osmoSansMint,
     },
     mocks: {
       ibcBridge,
@@ -237,6 +276,19 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       localchain,
       orchestrationService: cosmosInterchainService,
       timerService: timer,
+    },
+    customTerms: {
+      chainDetails: harden({
+        omniflixlocal: {
+          chainId: 'omniflixlocal',
+        },
+        osmosislocal: {
+          chainId: 'osmosislocal',
+        },
+        agoric: {
+          chainId: 'agoric',
+        },
+      }),
     },
     utils: {
       pourPayment,
