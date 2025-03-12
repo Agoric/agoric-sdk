@@ -13,14 +13,14 @@ import type { Zone } from '@agoric/zone';
 import type { EReturn } from '@endo/far';
 import type { ZcfSeatKit } from '@agoric/zoe';
 import { PendingTxStatus, TxStatus } from '@agoric/fast-usdc/src/constants.js';
+import type { CctpTxEvidence } from '@agoric/fast-usdc/src/types.js';
+import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
 import {
   prepareSettler,
   stateShape,
   type SettlerKit,
 } from '../../src/exos/settler.js';
 import { prepareStatusManager } from '../../src/exos/status-manager.js';
-import type { CctpTxEvidence } from '@agoric/fast-usdc/src/types.js';
-import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
 import {
   MockCctpTxEvidences,
   MockVTransferEvents,

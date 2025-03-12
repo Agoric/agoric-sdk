@@ -15,16 +15,16 @@ import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/record
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+import {
+  FastUSDCTermsShape,
+  FeeConfigShape,
+} from '@agoric/fast-usdc/src/type-guards.js';
 import { prepareAdvancer } from './exos/advancer.js';
 import { prepareLiquidityPoolKit } from './exos/liquidity-pool.js';
 import { prepareSettler } from './exos/settler.js';
 import { prepareStatusManager } from './exos/status-manager.js';
 import { prepareTransactionFeedKit } from './exos/transaction-feed.js';
 import * as flows from './fast-usdc.flows.js';
-import {
-  FastUSDCTermsShape,
-  FeeConfigShape,
-} from '@agoric/fast-usdc/src/type-guards.js';
 
 const trace = makeTracer('FastUsdc');
 

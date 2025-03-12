@@ -16,19 +16,19 @@ import { Far } from '@endo/pass-style';
 import { M, mustMatch } from '@endo/patterns';
 import type { TestFn } from 'ava';
 import { PendingTxStatus } from '@agoric/fast-usdc/src/constants.js';
+import { CctpTxEvidenceShape } from '@agoric/fast-usdc/src/type-guards.js';
+import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
+import {
+  MockCctpTxEvidences,
+  settlementAddress,
+} from '@agoric/fast-usdc/tools/mock-evidence.js';
 import { prepareAdvancer, stateShape } from '../../src/exos/advancer.js';
 import {
   makeAdvanceDetailsShape,
   type SettlerKit,
 } from '../../src/exos/settler.js';
 import { prepareStatusManager } from '../../src/exos/status-manager.js';
-import { CctpTxEvidenceShape } from '@agoric/fast-usdc/src/type-guards.js';
 import type { LiquidityPoolKit } from '../../src/exos/liquidity-pool.js';
-import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
-import {
-  MockCctpTxEvidences,
-  settlementAddress,
-} from '@agoric/fast-usdc/tools/mock-evidence.js';
 import {
   makeTestFeeConfig,
   makeTestLogger,

@@ -33,8 +33,6 @@ import { E, type EReturn } from '@endo/far';
 import { matches } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
 import path from 'path';
-import type { OperatorOfferResult } from '../src/exos/transaction-feed.js';
-import type { FastUsdcSF } from '../src/fast-usdc.contract.js';
 import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.js';
 import { PoolMetricsShape } from '@agoric/fast-usdc/src/type-guards.js';
 import type {
@@ -44,6 +42,8 @@ import type {
 } from '@agoric/fast-usdc/src/types.js';
 import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
 import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
+import type { FastUsdcSF } from '../src/fast-usdc.contract.js';
+import type { OperatorOfferResult } from '../src/exos/transaction-feed.js';
 import { commonSetup, uusdcOnAgoric } from './supports.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);

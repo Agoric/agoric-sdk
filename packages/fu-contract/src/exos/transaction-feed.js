@@ -6,10 +6,10 @@ import { keyEQ, M } from '@endo/patterns';
 import {
   CctpTxEvidenceShape,
   RiskAssessmentShape,
-} from '@agoric/fast-usdc/src//type-guards.js';
+} from '@agoric/fast-usdc/src/type-guards.js';
+import { INVITATION_MAKERS_DESC } from '@agoric/fast-usdc/src/operator-kit-interface.js';
 import { defineInertInvitation } from '../utils/zoe.js';
 import { prepareOperatorKit } from './operator-kit.js';
-import { INVITATION_MAKERS_DESC } from '@agoric/fast-usdc/src/operator-kit-interface.js';
 
 /**
  * @import {Zone} from '@agoric/zone';

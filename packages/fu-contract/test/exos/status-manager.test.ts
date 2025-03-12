@@ -5,13 +5,13 @@ import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { EReturn } from '@endo/far';
 import { PendingTxStatus } from '@agoric/fast-usdc/src/constants.js';
+import type { CctpTxEvidence } from '@agoric/fast-usdc/src/types.js';
+import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
 import {
   prepareStatusManager,
   stateShape,
   type StatusManager,
 } from '../../src/exos/status-manager.js';
-import type { CctpTxEvidence } from '@agoric/fast-usdc/src/types.js';
-import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
 import { commonSetup, provideDurableZone } from '../supports.js';
 
 type Common = EReturn<typeof commonSetup>;
