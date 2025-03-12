@@ -3,23 +3,22 @@ import type { TestFn } from 'ava';
 
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { AmountMath } from '@agoric/ertp';
+import type { FeeConfig } from '@agoric/fast-usdc';
 import { Offers } from '@agoric/fast-usdc/src/clientSupport.js';
-import { configurations } from '@agoric/fast-usdc/src/utils/deploy-config.js';
-import { MockCctpTxEvidences } from '@agoric/fast-usdc/test/fixtures.js';
+import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { BridgeId, NonNullish } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { defaultSerializer } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Fail } from '@endo/errors';
 import { makeMarshal } from '@endo/marshal';
-import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
-import type { FeeConfig } from '@agoric/fast-usdc';
+import { configurations } from '@aglocal/fast-usdc-deploy/src/utils/deploy-config.js';
 import {
   AckBehavior,
-  fetchCoreEvalRelease,
   insistManagerType,
   makeSwingsetHarness,
 } from '../../tools/supports.js';
@@ -128,7 +127,7 @@ test.serial(
       bridgeUtils.setBech32Prefix('noble');
 
       const materials = buildProposal(
-        '@agoric/builders/scripts/fast-usdc/start-fast-usdc.build.js',
+        'fast-usdc-deploy/src/start-fast-usdc.build.js',
         ['--net', 'MAINNET'],
       );
       await evalProposal(materials);
@@ -369,7 +368,7 @@ test.serial('writes pool metrics to vstorage', async t => {
 test.serial('deploy HEAD; update Settler reference', async t => {
   const { buildProposal, evalProposal } = t.context;
   const materials = await buildProposal(
-    '@agoric/builders/scripts/fast-usdc/fast-usdc-settler-ref.build.js',
+    '@aglocal/fast-usdc-deploy/src/fast-usdc-settler-ref.build.js',
   );
   await evalProposal(materials);
   t.pass();
@@ -590,7 +589,7 @@ test.serial('distributes fees per BLD staker decision', async t => {
   for (const { dest, args, rxd } of cases) {
     await wd.provideSmartWallet(dest);
     const materials = buildProposal(
-      '@agoric/builders/scripts/fast-usdc/fast-usdc-fees.build.js',
+      '@aglocal/fast-usdc-deploy/src/fast-usdc-fees.build.js',
       ['--destinationAddress', dest, ...args],
     );
     await evalProposal(materials);
@@ -810,7 +809,7 @@ test.serial('replace operators', async t => {
   const wallet = await wfd.provideSmartWallet(address);
 
   const addOperators = buildProposal(
-    '@agoric/builders/scripts/fast-usdc/add-operators.build.js',
+    '@aglocal/fast-usdc-deploy/src/add-operators.build.js',
     ['--oracle', `gov1a3p:${address}`],
   );
   await evalProposal(addOperators);
@@ -863,7 +862,7 @@ test.serial('update fee config', async t => {
    * `evalReleasedProposal` yet
    */
   const updateFlatFee = buildProposal(
-    '@agoric/builders/scripts/fast-usdc/fast-usdc-fee-config.build.js',
+    '@aglocal/fast-usdc-deploy/src/fast-usdc-fee-config.build.js',
   );
   await evalProposal(updateFlatFee);
 
