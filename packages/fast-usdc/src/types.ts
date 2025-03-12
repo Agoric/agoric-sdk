@@ -10,8 +10,7 @@ import type { IBCChannelID } from '@agoric/vats';
 import type { Amount } from '@agoric/ertp';
 import type { CopyRecord, Passable } from '@endo/pass-style';
 import type { PendingTxStatus, TxStatus } from './constants.js';
-import type { FastUsdcTerms } from './fast-usdc.contract.js';
-import type { RepayAmountKWR } from './exos/liquidity-pool.js';
+import type { RepayAmountKWR } from './utils/fees.js';
 
 /**
  * Block hash is calculated using the keccak256 algorithm that always results
@@ -137,6 +136,10 @@ export type FeedPolicy = {
   eventFilter?: string;
 } & CopyRecord;
 
+export type FastUsdcTerms = {
+  usdcDenom: Denom;
+};
+
 export type FastUSDCConfig = {
   terms: FastUsdcTerms;
   oracles: Record<string, string>;
@@ -157,4 +160,3 @@ export type AddressHook = {
 };
 
 export type * from './constants.js';
-export type { LiquidityPoolKit } from './exos/liquidity-pool.js';
