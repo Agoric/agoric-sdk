@@ -464,19 +464,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@agoric/synthetic-chain@npm:0.5.1":
-  version: 0.5.1
-  resolution: "@agoric/synthetic-chain@npm:0.5.1"
+"@agoric/synthetic-chain@npm:0.5.5":
+  version: 0.5.5
+  resolution: "@agoric/synthetic-chain@npm:0.5.5"
   dependencies:
-    "@endo/zip": "npm:^1.0.7"
-    better-sqlite3: "npm:^11.8.0"
+    "@endo/zip": "npm:^1.0.9"
+    better-sqlite3: "npm:^11.8.1"
     chalk: "npm:^5.4.1"
     cosmjs-types: "npm:^0.9.0"
     execa: "npm:^9.5.2"
-    glob: "npm:^11.0.0"
+    glob: "npm:^11.0.1"
+    tmp: "npm:0.2.3"
   bin:
     synthetic-chain: dist/cli/cli.js
-  checksum: 10c0/38d796556a0940d124b750bcf82cbbbd9caee64031feeca4086350c4d05d68256e5b188d418354b511eeb1da0f95160205cc2701ae397bd86c304fc29850bc85
+  checksum: 10c0/596ba94234ab2cb798ee8f20b11482e4ee80371df25c9b45a443e91fbca82ad3d894ae9dd265f59f2469c0d9eda2451e1bc9ac43086d2cd51668e2523488ff1a
   languageName: node
   linkType: hard
 
@@ -1264,7 +1265,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/zip@npm:^1.0.7, @endo/zip@npm:^1.0.9":
+"@endo/zip@npm:^1.0.9":
   version: 1.0.9
   resolution: "@endo/zip@npm:1.0.9"
   checksum: 10c0/3fccea31bd5dad938a3b5f531454d3c49513892d6d5aba1f0af1034ff0ae54c3e28a346a9df08bd9e5201354acccd631e45c9c0e68fa2848a876a3919f3830dc
@@ -1993,7 +1994,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"better-sqlite3@npm:^11.8.0":
+"better-sqlite3@npm:^11.8.1":
   version: 11.8.1
   resolution: "better-sqlite3@npm:11.8.1"
   dependencies:
@@ -3151,7 +3152,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"glob@npm:^11.0.0":
+"glob@npm:^11.0.1":
   version: 11.0.1
   resolution: "glob@npm:11.0.1"
   dependencies:
@@ -4796,7 +4797,7 @@ __metadata:
   dependencies:
     "@agoric/client-utils": "npm:dev"
     "@agoric/fast-usdc": "npm:dev"
-    "@agoric/synthetic-chain": "npm:0.5.1"
+    "@agoric/synthetic-chain": "npm:0.5.5"
     "@endo/init": "npm:^1.1.8"
     agoric: "npm:dev"
     ava: "npm:^5.3.1"
@@ -5266,19 +5267,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"tmp@npm:0.2.3, tmp@npm:^0.2.1":
+  version: 0.2.3
+  resolution: "tmp@npm:0.2.3"
+  checksum: 10c0/3e809d9c2f46817475b452725c2aaa5d11985cf18d32a7a970ff25b568438e2c076c2e8609224feef3b7923fa9749b74428e3e634f6b8e520c534eef2fd24125
+  languageName: node
+  linkType: hard
+
 "tmp@npm:^0.0.33":
   version: 0.0.33
   resolution: "tmp@npm:0.0.33"
   dependencies:
     os-tmpdir: "npm:~1.0.2"
   checksum: 10c0/69863947b8c29cabad43fe0ce65cec5bb4b481d15d4b4b21e036b060b3edbf3bc7a5541de1bacb437bb3f7c4538f669752627fdf9b4aaf034cebd172ba373408
-  languageName: node
-  linkType: hard
-
-"tmp@npm:^0.2.1":
-  version: 0.2.3
-  resolution: "tmp@npm:0.2.3"
-  checksum: 10c0/3e809d9c2f46817475b452725c2aaa5d11985cf18d32a7a970ff25b568438e2c076c2e8609224feef3b7923fa9749b74428e3e634f6b8e520c534eef2fd24125
   languageName: node
   linkType: hard
 

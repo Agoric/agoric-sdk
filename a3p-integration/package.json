@@ -1,7 +1,7 @@
 {
   "private": true,
   "agoricSyntheticChain": {
-    "fromTag": "use-fast-usdc-beta"
+    "fromTag": "use-fast-usdc-rc1"
   },
   "scripts": {
     "build": "yarn run build:sdk && yarn run build:submissions && yarn run build:synthetic-chain",
