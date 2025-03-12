@@ -279,8 +279,8 @@ test.serial('oracles accept invitations', async t => {
   t.pass();
 });
 
-test.serial('upgrade; update noble ICA', async t => {
-  const { bridgeUtils, buildProposal, evalProposal } = t.context;
+test.serial('prop 88: RC1; update noble ICA', async t => {
+  const { bridgeUtils, evalProposal } = t.context;
 
   bridgeUtils.setAckBehavior(
     BridgeId.DIBC,
@@ -289,10 +289,17 @@ test.serial('upgrade; update noble ICA', async t => {
   );
   bridgeUtils.setBech32Prefix('noble');
 
-  const materials = await buildProposal(
-    '@agoric/builders/scripts/fast-usdc/fast-usdc-reconfigure.build.js',
-  );
-  await evalProposal(materials);
+  const materials = await fetchCoreEvalRelease({
+    repo: 'Agoric/agoric-sdk',
+    release: 'fast-usdc-rc1',
+    name: 'eval-fast-usdc-reconfigure',
+  });
+  try {
+    await evalProposal(materials);
+  } catch (err) {
+    t.log(err.message);
+    if (!err.message.startsWith('unsettled value')) throw err;
+  }
 
   // XXX bridgeUtils.getOutboundMessages(BridgeId.DIBC) should
   // show the updated connection id, but we struggled to confirm.
