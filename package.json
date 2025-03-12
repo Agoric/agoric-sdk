@@ -68,7 +68,8 @@
     "build": "yarn workspaces run build && scripts/agd-builder.sh stamp yarn-built",
     "postinstall": "patch-package && scripts/agd-builder.sh stamp yarn-installed",
     "build-ts": "tsc --build tsconfig.build.json",
-    "build-xs-worker": "cd packages/xs-vat-worker && yarn build:xs-lin"
+    "build-xs-worker": "cd packages/xs-vat-worker && yarn build:xs-lin",
+    "test:examples": "yarn lerna run --no-bail test:examples"
   },
   "ava": {
     "files": [
