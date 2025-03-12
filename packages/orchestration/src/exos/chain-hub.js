@@ -203,7 +203,7 @@ export const TransferRouteShape = M.splitRecord(
 );
 
 const ChainHubI = M.interface('ChainHub', {
-  // TODO: support more than `CosmosChainInfoShape`
+  // TODO: https://github.com/Agoric/agoric-private/issues/250: support more than `CosmosChainInfoShape`
   registerChain: M.call(M.string(), CosmosChainInfoShape).returns(),
   updateChain: M.call(M.string(), CosmosChainInfoShape).returns(),
   getChainInfo: M.call(M.string()).returns(VowShape),

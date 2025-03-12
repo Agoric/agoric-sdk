@@ -64,13 +64,13 @@ export const contract = async (
    * allows us to provide a Promise. When using this inside a flow, we must
    * await it to ensure the account is available for use.
    *
-   * @type {any} sharedLocalAccountP expects a Promise but this is a vow
+   * @type {any} sharedLocalAccountP expects a Promise but this is a vow UNTIL
    *   https://github.com/Agoric/agoric-sdk/issues/9822
    */
   const sharedLocalAccountP = zone.makeOnce('localAccount', () =>
     makeLocalAccount(),
   );
-  // same as above.
+  // UNTIL https://github.com/Agoric/agoric-sdk/issues/9822.
   /** @type {any} nobleAccountP */
   const nobleAccountP = zone.makeOnce('nobleAccount', () => makeNobleAccount());
   // orchestrate uses the names on orchestrationFns to do a "prepare" of the associated behavior

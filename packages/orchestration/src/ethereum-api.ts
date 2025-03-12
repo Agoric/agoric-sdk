@@ -1,8 +1,6 @@
-/**
- * Info for an Ethereum-based chain.
- */
+/** Info for an Ethereum-based chain. */
 export type EthChainInfo = Readonly<{
-  // XXX consider ~BaseChainInfo type, with `cctpDestinationDomain` + `chainId`
+  // TODO https://github.com/Agoric/agoric-private/issues/250
   cctpDestinationDomain?: number;
   chainId: string;
   allegedName: string;
