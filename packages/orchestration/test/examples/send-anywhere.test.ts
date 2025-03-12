@@ -195,10 +195,11 @@ test('send using arbitrary chain info', async t => {
     }),
   );
 
+  const usdcKit = withAmountUtils(makeIssuerKit('USDC'));
   t.log('another contract uses the now well-known hot chain');
   const orchKit = await E(zoe).startInstance(
     installation,
-    { Stable: ist.issuer },
+    { Stable: ist.issuer, USDC: usdcKit.issuer },
     {},
     { ...commonPrivateArgs, storageNode },
   );

@@ -5,6 +5,7 @@ import { M, mustMatch } from '@endo/patterns';
 /**
  * @import {GuestInterface, GuestOf} from '@agoric/async-flow';
  * @import {Invitation, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {Brand} from '@agoric/ERTP';
  * @import {Vow} from '@agoric/vow';
  * @import {LocalOrchestrationAccountKit} from '../exos/local-orchestration-account.js';
  * @import {ZoeTools} from '../utils/zoe-tools.js';
@@ -39,6 +40,7 @@ harden(makeNobleAccount);
  * >} ctx.nobleAccountP
  * @param {GuestInterface<ZoeTools>} ctx.zoeTools
  * @param {GuestOf<(msg: string) => Vow<void>>} ctx.log
+ * @param {Brand} ctx.USDC
  * @param {ZCFSeat} seat
  * @param {{ chainName: string; destAddr: string }} offerArgs
  */
@@ -47,6 +49,7 @@ export const sendIt = async (
   {
     sharedLocalAccountP,
     nobleAccountP,
+    USDC,
     log,
     zoeTools: { localTransfer, withdrawToSeat },
   },
@@ -102,9 +105,7 @@ export const sendIt = async (
       throw makeError(errorMsg);
     }
   } else {
-    // XXX is there a cleaner way to determine that this is USDC?
-    assets.some(a => a.brand === amt.brand && a.issuerName === 'USDC') ||
-      Fail`CCTP must use USDC`;
+    amt.brand === USDC || Fail`Only USDC is transferable to ${chainId}`;
 
     const nobleAccount = await nobleAccountP;
     const nobleAddr = await nobleAccount.getAddress();

@@ -56,6 +56,8 @@ export const contract = async (
   const makeLocalAccount = orchestrate('f1', {}, sharedFlows.makeLocalAccount);
   const makeNobleAccount = orchestrate('f2', {}, makeNobleAccountFlow);
 
+  const { brands } = zcf.getTerms();
+
   /**
    * Set up a shared local account for use in async-flow functions. Typically,
    * exo initState functions need to resolve synchronously, but `makeOnce`
@@ -78,6 +80,7 @@ export const contract = async (
       log,
       sharedLocalAccountP,
       nobleAccountP,
+      USDC: brands.USDC,
       zoeTools,
     },
     sendIt,
