@@ -326,6 +326,111 @@ test.serial('upgrade; update noble ICA', async t => {
   );
 });
 
+// FIXME this repros #11102
+// TODO include test for what went to Mainnet as prop 88
+// then fix the bug in HEAD, then add a step that performs
+// an upgrade to what's in HEAD
+test.serial('minted before observed; forward path', async t => {
+  const { bridgeUtils, storage } = t.context;
+
+  // Configure bridge behaviors for this test
+  bridgeUtils.setAckBehavior(
+    BridgeId.DIBC,
+    'startChannelOpenInit',
+    AckBehavior.Immediate,
+  );
+  bridgeUtils.setBech32Prefix('noble');
+
+  // Mock user data
+  const EUD = 'dydx1usermintedbeforeobserved';
+  const lastNodeValue = storage.getValues('published.fastUsdc').at(-1);
+  const { settlementAccount, poolAccount } = JSON.parse(
+    NonNullish(lastNodeValue),
+  );
+
+  // Create mock evidence
+  const mintAmt = 500_000n; // 0.5 USDC
+  const recipientAddress = encodeAddressHook(settlementAccount, { EUD });
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_DYDX(recipientAddress);
+  evidence.tx.amount = mintAmt;
+  t.log('USDC minted before evidence is observed');
+
+  // Simulate USDC being minted and received BEFORE evidence is submitted
+  await bridgeUtils.runInbound(
+    BridgeId.VTRANSFER,
+    buildVTransferEvent({
+      sequence: '1',
+      amount: evidence.tx.amount,
+      denom: 'uusdc',
+      sender: evidence.tx.forwardingAddress,
+      target: settlementAccount,
+      receiver: recipientAddress,
+      sourceChannel: evidence.aux.forwardingChannel,
+      destinationChannel: 'channel-62',
+    }),
+  );
+
+  await eventLoopIteration();
+  t.log('USDC funds received in settlement account before evidence submission');
+
+  // Now submit evidence from oracles (after funds already received)
+  const { walletFactoryDriver: wfd } = t.context;
+  const oracles = await Promise.all(
+    oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
+  );
+  await Promise.all(
+    oracles.map(wallet =>
+      wallet.sendOffer({
+        id: 'submit-evidence-after-mint',
+        invitationSpec: {
+          source: 'continuing',
+          previousOffer: 'claim-oracle-invitation',
+          invitationMakerName: 'SubmitEvidence',
+          invitationArgs: [evidence],
+        },
+        proposal: {},
+      }),
+    ),
+  );
+
+  await eventLoopIteration();
+
+  // Verify the transaction status was set to FORWARDED
+  const getTxStatus = txHash =>
+    storage
+      .getValues(`published.fastUsdc.txns.${txHash}`)
+      .map(defaultSerializer.parse);
+
+  t.deepEqual(
+    getTxStatus(evidence.txHash),
+    [{ evidence, status: 'OBSERVED' }, { status: 'FORWARDED' }],
+    'Transaction status should be FORWARDED when funds arrive before evidence',
+  );
+
+  // Verify the funds were forwarded to the user
+  const outboundVTransferMessages = bridgeUtils
+    .getOutboundMessages(BridgeId.VTRANSFER)
+    .filter(msg => msg.receiver === EUD && msg.denom === 'uusdc');
+
+  t.truthy(
+    outboundVTransferMessages.length > 0,
+    'Should have outbound transfer to the user',
+  );
+
+  t.is(
+    outboundVTransferMessages[0].amount,
+    mintAmt.toString(),
+    'Forwarded amount should match the original mint amount',
+  );
+
+  const doc = {
+    node: `fastUsdc.txns`,
+    owner: `the Ethereum transactions upon which Fast USDC is acting`,
+    showValue: defaultSerializer.parse,
+  };
+  await documentStorageSchema(t, storage, doc);
+});
+
 test.serial('writes GTM feed policy to vstorage', async t => {
   const { storage } = t.context;
   const opts = {
