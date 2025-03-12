@@ -294,170 +294,7 @@ async function makeBundles() {
  * }} WorkerData
  */
 
-/**
- * @param {string} xsID 
- * @param {string} snapPath
- * //param {SnapStoreInfo} snapStoreInfo
- * //param {SnapStoreInfo | null} parentSSI
- * @param {SnapStore} fallbackSnapStore
- */
-function makeFakeSnapStore(xsID, snapPath, /*snapStoreInfo, parentSSI, */fallbackSnapStore) {
-  /** @type {SnapshotInfo} */
-  let lastSavedSnapInfo;
-  /**
-   * (c) ChatGPT
-   * Saves a snapshot stream to a file and calculates its SHA-256 hash and size.
-   *
-   * @param {string} vatID
-   * @param {number} snapPos
-   * @param {AsyncIterable<Uint8Array>} snapshotStream
-   * @returns {Promise<SnapshotResult>}
-   */
-  async function saveSnapshotFunc(vatID, snapPos, snapshotStream) {
-    const tmpFileName = path.join(snapPath, `snapshot_${vatID}_${snapPos}_${Date.now()}.tmp`);
-    const writeStream = fs.createWriteStream(tmpFileName);
-    const hash = createHash('sha256');
 
-    let uncompressedSize = 0;
-
-    async function* processStream() {
-      for await (const chunk of snapshotStream) {
-        uncompressedSize += chunk.length;
-        hash.update(chunk);
-        yield chunk;
-      }
-    }
-
-    try {
-      await pipe(processStream(), writeStream);
-    } finally {
-      writeStream.end(); // Ensure the write stream is properly closed
-    }
-
-    const digest = hash.digest('hex');
-    const filePath = path.join(snapPath, `${digest}.xss`);
-    await fs.promises.rename(tmpFileName, filePath);
-
-    /** @type {SnapshotInfo} */
-    const snapshotInfo = {
-      snapPos: snapPos,
-      hash: digest,
-      uncompressedSize: uncompressedSize,
-      compressedSize: uncompressedSize,
-    };
-
-    lastSavedSnapInfo = snapshotInfo;
-    /*
-    // new snapshot
-    snapStoreInfo.lastSavedSnap = {
-      xsID: xsID,
-      vatID: vatID,
-      fileName: filePath,
-      parent: snapStoreInfo?.lastLoadedSnap,
-      info: snapshotInfo,
-    };
-    */
-
-    return harden({
-      hash: digest,
-      uncompressedSize,
-      compressSeconds: 0,
-      dbSaveSeconds: 0,
-      archiveWriteSeconds: 0,
-      compressedSize: uncompressedSize,
-    });
-  } // saveSnapshotFunc()
-
-  /**
-   * Loads the most recent snapshot for a given vat.
-   *
-   * @param {string} vatID
-   * @returns {AsyncGenerator<Uint8Array, void, undefined>}
-   */
-  async function* loadSnapshotFunc(vatID) {
-    // always load the last snapshot saved
-    const fileName = null;/*snapStoreInfo.lastSavedSnap?.fileName;*/
-
-    if (!fileName) {
-      if (fallbackSnapStore) {
-        const snapInfo = fallbackSnapStore.getSnapshotInfo(vatID);
-        console.log(`Loading snapshot for vatID '${vatID}' from fallback snap store: ` + JSON.stringify(snapInfo) + '\n');
-        // new snapshot loaded
-        /*
-        snapStoreInfo.lastLoadedSnap = {
-          xsID: xsID,
-          vatID: vatID,
-          fileName: null,
-          parent: null,
-          info: snapInfo,
-        };
-        */
-        for await (const chunk of fallbackSnapStore.loadSnapshot(vatID)) {
-          yield chunk;
-        }
-        return;
-      } else {
-        throw new Error(`No previously saved snapshots for vatID '${vatID}'.`);
-      }
-    }
-
-    if (!fs.existsSync(fileName)) {
-      throw new Error(`Snapshot file for vatID '${vatID}' does not exist.`);
-    }
-
-    const readStream = fs.createReadStream(fileName);
-
-    //snapStoreInfo.lastLoadedSnap = makeSnapInfo(snapStoreInfo.lastSavedSnap);
-
-    for await (const chunk of readStream) {
-      yield chunk;
-    }
-  }
-  harden(loadSnapshotFunc);
-
-  /**
-   * @param {string} vatID 
-   * @returns SnapshotInfo
-   */
-  function getSnapshotInfo(vatID) {
-    return lastSavedSnapInfo ? lastSavedSnapInfo : fallbackSnapStore.getSnapshotInfo(vatID);//snapStoreInfo.lastSavedSnap?.info;
-  }
-
-  /*
-  snapStoreInfo.lastLoadedSnap = makeSnapInfo(parentSSI?.lastLoadedSnap);
-  snapStoreInfo.lastSavedSnap = makeSnapInfo(parentSSI?.lastSavedSnap);
-  */
-
-  // only custom snap store is supported
-  return /** @type {SnapStore} */ ({
-    saveSnapshot: saveSnapshotFunc,
-    loadSnapshot: loadSnapshotFunc,
-    deleteAllUnusedSnapshots: () => { },
-    deleteVatSnapshots: (_vatID, _budget) => { return { done: true, cleanups: 0 }; },
-    stopUsingLastSnapshot: (_vatID) => { },
-    getSnapshotInfo: getSnapshotInfo,
-  });
-} // makeFakeSnapStore()
-
-/**
- * 
- * @param {SnapStore} snapStore 
- * @returns KernelKeeper
- */
-function makeFakeKernelKeeper(snapStore) {
-  const fakeKernelKeeper =
-  /** @type {KernelKeeper} */ ({
-      provideVatKeeper: vatID =>
-      /** @type {import('../src/types-external.js').VatKeeper} */(
-        /** @type {Partial<import('../src/types-external.js').VatKeeper>} */ ({
-          addToTranscript: () => { },
-          getSnapshotInfo: () => snapStore.getSnapshotInfo(vatID),
-        })
-      ),
-      getRelaxDurabilityRules: () => false,
-    });
-  return fakeKernelKeeper;
-}
 
 // relative timings:
 // 3.8s v8-false, 27.5s v8-gc
@@ -470,6 +307,7 @@ async function replay(transcriptStore, bundleStore, snapStoreR, vatID, startPos)
   /** @type {import('../src/types-internal.js').VatManagerFactory} */
   let factory;
 
+  let suppressFallbackSnapStore = false;
   let loadSnapshotID = null;
   let saveSnapshotID = null;
   let lastTranscriptNum = startPos;
@@ -481,25 +319,190 @@ async function replay(transcriptStore, bundleStore, snapStoreR, vatID, startPos)
   /* SL
   const fakeKernelKeeper =
     /** @type {import('../src/types-external.js').KernelKeeper} *//* ({
-      provideVatKeeper: _vatID =>
-        /** @type {import('../src/types-external.js').VatKeeper} *//* (
-/** @type {Partial<import('../src/types-external.js').VatKeeper>} *//* ({
-            addToTranscript: () => {},
-            getLastSnapshot: () =>
-              loadSnapshotID && { snapshotID: loadSnapshotID },
-          })
-        ),
-      getRelaxDurabilityRules: () => false,
-    });
-*/
+provideVatKeeper: _vatID =>
+/** @type {import('../src/types-external.js').VatKeeper} *//* (
+        /** @type {Partial<import('../src/types-external.js').VatKeeper>} *//* ({
+                addToTranscript: () => {},
+                getLastSnapshot: () =>
+                  loadSnapshotID && { snapshotID: loadSnapshotID },
+              })
+            ),
+          getRelaxDurabilityRules: () => false,
+        });
+    */
   const kernelSlog =
     /** @type {import('../src/types-external.js').KernelSlog} */ (
       /** @type {Partial<import('../src/types-external.js').KernelSlog>} */ ({
-        write() {},
+        write() { },
         delivery: () => () => undefined,
         syscall: () => () => undefined,
       })
     );
+  /**
+   * @param {string} xsID 
+   * @param {string} snapPath
+   * //param {SnapStoreInfo} snapStoreInfo
+   * //param {SnapStoreInfo | null} parentSSI
+   * @param {SnapStore} fallbackSnapStore
+   */
+  function makeFakeSnapStore(xsID, snapPath, /*snapStoreInfo, parentSSI, */fallbackSnapStore) {
+    /** @type {SnapshotInfo} */
+    let lastSavedSnapInfo;
+    /**
+     * (c) ChatGPT
+     * Saves a snapshot stream to a file and calculates its SHA-256 hash and size.
+     *
+     * @param {string} vatID
+     * @param {number} snapPos
+     * @param {AsyncIterable<Uint8Array>} snapshotStream
+     * @returns {Promise<SnapshotResult>}
+     */
+    async function saveSnapshotFunc(vatID, snapPos, snapshotStream) {
+      const tmpFileName = path.join(snapPath, `snapshot_${vatID}_${snapPos}_${Date.now()}.tmp`);
+      const writeStream = fs.createWriteStream(tmpFileName);
+      const hash = createHash('sha256');
+
+      let uncompressedSize = 0;
+
+      async function* processStream() {
+        for await (const chunk of snapshotStream) {
+          uncompressedSize += chunk.length;
+          hash.update(chunk);
+          yield chunk;
+        }
+      }
+
+      try {
+        await pipe(processStream(), writeStream);
+      } finally {
+        writeStream.end(); // Ensure the write stream is properly closed
+      }
+
+      const digest = hash.digest('hex');
+      const filePath = path.join(snapPath, `${digest}.xss`);
+      await fs.promises.rename(tmpFileName, filePath);
+
+      /** @type {SnapshotInfo} */
+      const snapshotInfo = {
+        snapPos: snapPos,
+        hash: digest,
+        uncompressedSize: uncompressedSize,
+        compressedSize: uncompressedSize,
+      };
+
+      lastSavedSnapInfo = snapshotInfo;
+      /*
+      // new snapshot
+      snapStoreInfo.lastSavedSnap = {
+        xsID: xsID,
+        vatID: vatID,
+        fileName: filePath,
+        parent: snapStoreInfo?.lastLoadedSnap,
+        info: snapshotInfo,
+      };
+      */
+
+      return harden({
+        hash: digest,
+        uncompressedSize,
+        compressSeconds: 0,
+        dbSaveSeconds: 0,
+        archiveWriteSeconds: 0,
+        compressedSize: uncompressedSize,
+      });
+    } // saveSnapshotFunc()
+
+    /**
+     * Loads the most recent snapshot for a given vat.
+     *
+     * @param {string} vatID
+     * @returns {AsyncGenerator<Uint8Array, void, undefined>}
+     */
+    async function* loadSnapshotFunc(vatID) {
+      // always load the last snapshot saved
+      const fileName = null;/*snapStoreInfo.lastSavedSnap?.fileName;*/
+
+      if (!fileName) {
+        if (!suppressFallbackSnapStore && fallbackSnapStore) {
+          const snapInfo = fallbackSnapStore.getSnapshotInfo(vatID);
+          console.log(`Loading snapshot for vatID '${vatID}' from fallback snap store: ` + JSON.stringify(snapInfo) + '\n');
+          // new snapshot loaded
+          /*
+          snapStoreInfo.lastLoadedSnap = {
+            xsID: xsID,
+            vatID: vatID,
+            fileName: null,
+            parent: null,
+            info: snapInfo,
+          };
+          */
+          for await (const chunk of fallbackSnapStore.loadSnapshot(vatID)) {
+            yield chunk;
+          }
+          return;
+        } else {
+          throw new Error(`No previously saved snapshots for vatID '${vatID}'.`);
+        }
+      }
+
+      if (!fs.existsSync(fileName)) {
+        throw new Error(`Snapshot file for vatID '${vatID}' does not exist.`);
+      }
+
+      const readStream = fs.createReadStream(fileName);
+
+      //snapStoreInfo.lastLoadedSnap = makeSnapInfo(snapStoreInfo.lastSavedSnap);
+
+      for await (const chunk of readStream) {
+        yield chunk;
+      }
+    }
+    harden(loadSnapshotFunc);
+
+    /**
+     * @param {string} vatID 
+     * @returns SnapshotInfo
+     */
+    function getSnapshotInfo(vatID) {
+      return lastSavedSnapInfo ? lastSavedSnapInfo : suppressFallbackSnapStore ? undefined : fallbackSnapStore?.getSnapshotInfo(vatID);
+      //fallbackSnapStore?.getSnapshotInfo(vatID);//snapStoreInfo.lastSavedSnap?.info;
+    }
+
+    /*
+    snapStoreInfo.lastLoadedSnap = makeSnapInfo(parentSSI?.lastLoadedSnap);
+    snapStoreInfo.lastSavedSnap = makeSnapInfo(parentSSI?.lastSavedSnap);
+    */
+
+    // only custom snap store is supported
+    return /** @type {SnapStore} */ ({
+      saveSnapshot: saveSnapshotFunc,
+      loadSnapshot: loadSnapshotFunc,
+      deleteAllUnusedSnapshots: () => { },
+      deleteVatSnapshots: (_vatID, _budget) => { return { done: true, cleanups: 0 }; },
+      stopUsingLastSnapshot: (_vatID) => { },
+      getSnapshotInfo: getSnapshotInfo,
+    });
+  } // makeFakeSnapStore()
+
+  /**
+   * 
+   * @param {SnapStore} snapStore 
+   * @returns KernelKeeper
+   */
+  function makeFakeKernelKeeper(snapStore) {
+    const fakeKernelKeeper =
+    /** @type {KernelKeeper} */ ({
+        provideVatKeeper: vatID =>
+        /** @type {import('../src/types-external.js').VatKeeper} */(
+          /** @type {Partial<import('../src/types-external.js').VatKeeper>} */ ({
+            addToTranscript: () => { },
+            getSnapshotInfo: () => snapStore.getSnapshotInfo(vatID),
+          })
+        ),
+        getRelaxDurabilityRules: () => false,
+      });
+    return fakeKernelKeeper;
+  }
 
   const fakeSnapStore = makeFakeSnapStore('xs', argv.snapSaveDir, snapStoreR);
   const fakeKernelKeeper = makeFakeKernelKeeper(fakeSnapStore);
@@ -914,7 +917,7 @@ async function replay(transcriptStore, bundleStore, snapStoreR, vatID, startPos)
   };
 */
   let vatParameters;
-  let workerOptions;
+  let workerOptions = { type: 'xsnap', bundleIDs: [] };
   let source;
 
   /** @param {boolean} keep */
@@ -951,7 +954,7 @@ async function replay(transcriptStore, bundleStore, snapStoreR, vatID, startPos)
       /** @type {import('../src/types-internal.js').ManagerOptions} */ (
         /** @type {Partial<import('../src/types-internal.js').ManagerOptions>} */ ({
           sourcedConsole: console,
-          workerOptions: { type: 'xsnap', bundleIDs: [] },
+          workerOptions,
           // SL vatParameters,
           // compareSyscalls: makeCompareSyscalls(workerData),
           useTranscript: true,
@@ -1089,13 +1092,14 @@ async function replay(transcriptStore, bundleStore, snapStoreR, vatID, startPos)
       */
       transcriptNum += 1;
       const transcriptEntry = JSON.parse(line);
-      console.log(`${transcriptNum}: ${line}\n`);
+      //console.log(`${transcriptNum}: ${line}\n`);
       const { d: delivery, r: result, sc: sysCalls } = transcriptEntry;
       const deliveryType = delivery?.[0];
-      console.log(` (transcript item ${transcriptNum}: ${deliveryType})\n`);
+      console.log(`>>> ${transcriptNum}: ${deliveryType}\n`);
 
       if (deliveryType === 'load-snapshot') {
         if (worker === 'xs-worker') {
+          console.log(`loading snapshot: ${delivery?.[1]?.snapshotID})\n`);
           await loadSnapshot(delivery?.[1], argv.keepWorkerExplicitLoad);
         } else if (!workers.length) {
           throw Error(
@@ -1109,7 +1113,7 @@ async function replay(transcriptStore, bundleStore, snapStoreR, vatID, startPos)
           );
         }
         ({ source, workerOptions } = delivery?.[1]);
-        console.log(`source: ${JSON.stringify(source)}`);
+        suppressFallbackSnapStore = true;
         const { xsnapPID } = await createManager(argv.keepWorkerExplicitLoad);
         console.log(
           `manager created from bundle source, worker PID: ${xsnapPID}`,
@@ -1222,11 +1226,14 @@ async function replay(transcriptStore, bundleStore, snapStoreR, vatID, startPos)
           startTranscriptNum = transcriptNum - 1;
         }*/
 
+        /* SL disble forced snapshots for now
         const makeSnapshot =
           argv.forcedSnapshotInterval &&
           (transcriptNum - argv.forcedSnapshotInitial) %
             argv.forcedSnapshotInterval ===
             0;
+        */
+
         // syscalls = [{ d, response }, ..]
         // console.log(`replaying:`);
         // console.log(
@@ -1297,6 +1304,7 @@ async function replay(transcriptStore, bundleStore, snapStoreR, vatID, startPos)
 
         const divergent = uniqueSnapshotIDs.length !== 1;
 
+        /* SL
         if (makeSnapshot && divergent) {
           const errorMessage = `Snapshot hashes do not match each other: ${uniqueSnapshotIDs.join(
             ', ',
@@ -1307,6 +1315,7 @@ async function replay(transcriptStore, bundleStore, snapStoreR, vatID, startPos)
             throw new Error(errorMessage);
           }
         }
+         */
 
         if (argv.forcedReloadFromSnapshot) {
           /** @type Set<String | undefined> */
