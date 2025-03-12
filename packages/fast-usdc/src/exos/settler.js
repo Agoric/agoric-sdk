@@ -350,7 +350,7 @@ export const prepareSettler = (
          */
         forward(txHash, fullValue, EUD) {
           const { settlementAccount, intermediateRecipient } = this.state;
-
+          log('forwarding', fullValue, 'to', EUD, 'for', txHash);
           /** @type {AccountId | null} */
           const dest = (() => {
             try {

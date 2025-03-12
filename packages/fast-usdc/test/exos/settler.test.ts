@@ -509,11 +509,19 @@ test('Settlement for unknown transaction (minted early)', async t => {
 
   t.log('Oracle operators eventually report...');
   const evidence = simulate.observeLate();
-  t.deepEqual(inspectLogs().slice(tapLogs.length - 1), [
+  t.deepEqual(inspectLogs().slice(4), [
     [
       'matched minted early key, initiating forward',
       'noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd',
       150000000n,
+    ],
+    [
+      'forwarding',
+      150000000n,
+      'to',
+      'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
+      'for',
+      '0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761702',
     ],
   ]);
   await eventLoopIteration();
