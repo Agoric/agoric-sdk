@@ -165,6 +165,7 @@ type BuildVTransferEventParams = {
   sourceChannel?: IBCChannelID;
   /* support bigint and string, to facilitate bootstrap testing */
   sequence?: PacketSDKType['sequence'] | JsonSafe<PacketSDKType['sequence']>;
+  memo?: string;
 };
 
 /**
@@ -202,6 +203,7 @@ export const buildVTransferEvent = ({
   destinationChannel = 'channel-0' as IBCChannelID,
   sourceChannel = 'channel-405' as IBCChannelID,
   sequence = 0n,
+  memo = '',
 }: BuildVTransferEventParams = {}): VTransferIBCEvent => ({
   type: VTRANSFER_IBC_EVENT,
   blockHeight: 0,
@@ -218,6 +220,7 @@ export const buildVTransferEvent = ({
           denom,
           sender,
           receiver,
+          memo,
         }),
       ),
     ),
