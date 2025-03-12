@@ -1,16 +1,13 @@
 {
-  "name": "@agoric/fast-usdc",
+  "name": "@aglocal/fast-usdc-contract",
+  "private": true,
   "version": "0.1.0",
-  "description": "CLI and library for Fast USDC product",
+  "description": "Smart contract component of the Fast USDC product",
   "type": "module",
   "files": [
     "src",
     "tools"
   ],
-  "main": "src/main.js",
-  "bin": {
-    "fast-usdc": "./src/cli/bin.js"
-  },
   "scripts": {
     "build": "exit 0",
     "test": "ava",
@@ -35,6 +32,7 @@
     "@agoric/client-utils": "^0.1.0",
     "@agoric/cosmic-proto": "^0.4.0",
     "@agoric/ertp": "^0.16.2",
+    "@agoric/fast-usdc": "^0.1.0",
     "@agoric/internal": "^0.3.2",
     "@agoric/notifier": "^0.6.2",
     "@agoric/orchestration": "^0.1.0",
@@ -76,9 +74,5 @@
       "@endo/init/debug.js"
     ],
     "timeout": "20m"
-  },
-  "license": "Apache-2.0",
-  "publishConfig": {
-    "access": "public"
   }
 }

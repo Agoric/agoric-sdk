@@ -1,16 +1,13 @@
 {
-  "name": "@agoric/fast-usdc",
+  "name": "@aglocal/fast-usdc-deploy",
+  "private": true,
   "version": "0.1.0",
-  "description": "CLI and library for Fast USDC product",
+  "description": "Deployment facilities of the Fast USDC product",
   "type": "module",
   "files": [
     "src",
     "tools"
   ],
-  "main": "src/main.js",
-  "bin": {
-    "fast-usdc": "./src/cli/bin.js"
-  },
   "scripts": {
     "build": "exit 0",
     "test": "ava",
@@ -22,10 +19,6 @@
     "lint:eslint": "eslint ."
   },
   "devDependencies": {
-    "@agoric/swingset-liveslots": "^0.10.2",
-    "@agoric/vats": "^0.15.1",
-    "@agoric/zone": "^0.2.2",
-    "@fast-check/ava": "^2.0.1",
     "ava": "^5.3.0",
     "c8": "^10.1.2",
     "execa": "9.1.0",
@@ -35,6 +28,7 @@
     "@agoric/client-utils": "^0.1.0",
     "@agoric/cosmic-proto": "^0.4.0",
     "@agoric/ertp": "^0.16.2",
+    "@agoric/fast-usdc": "^0.1.0",
     "@agoric/internal": "^0.3.2",
     "@agoric/notifier": "^0.6.2",
     "@agoric/orchestration": "^0.1.0",
@@ -42,21 +36,13 @@
     "@agoric/vat-data": "^0.5.2",
     "@agoric/vow": "^0.1.0",
     "@agoric/zoe": "^0.26.2",
-    "@cosmjs/proto-signing": "^0.33.0",
-    "@cosmjs/stargate": "^0.33.0",
-    "@endo/base64": "^1.0.9",
-    "@endo/common": "^1.2.9",
     "@endo/errors": "^1.2.9",
     "@endo/eventual-send": "^1.3.0",
     "@endo/far": "^1.1.10",
     "@endo/init": "^1.1.8",
     "@endo/marshal": "^1.6.3",
-    "@endo/nat": "^5.0.14",
     "@endo/pass-style": "^1.4.8",
     "@endo/patterns": "^1.4.8",
-    "@endo/promise-kit": "^1.1.9",
-    "@nick134-bit/noblejs": "0.0.2",
-    "bech32": "^2.0.0",
     "commander": "^12.1.0",
     "ethers": "^6.13.4"
   },
@@ -76,9 +62,5 @@
       "@endo/init/debug.js"
     ],
     "timeout": "20m"
-  },
-  "license": "Apache-2.0",
-  "publishConfig": {
-    "access": "public"
   }
 }
