@@ -4,9 +4,13 @@
 /* eslint-disable no-constant-condition */
 import fs from 'fs';
 // import '@endo/init';
-import '../tools/install-ses-debug.js';
-import zlib from 'zlib';
-import readline from 'readline';
+import '@agoric/internal/src/install-ses-debug.js';
+import { withDeferredCleanup } from '@agoric/internal';
+import { createGzip, createGunzip } from 'zlib';
+import { Fail, q } from '@endo/errors';
+import { buffer } from '../../swing-store/src/util.js'
+// SL import readline from 'readline';
+import sqlite3 from 'better-sqlite3';
 import process from 'process';
 import { spawn } from 'child_process';
 import path from 'path';
@@ -21,17 +25,26 @@ import { file as tmpFile, tmpName } from 'tmp';
 import yargsParser from 'yargs-parser';
 import bundleSource from '@endo/bundle-source';
 import { makeMeasureSeconds } from '@agoric/internal';
-import { makeSnapStore } from '@agoric/swing-store';
-import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
-import { makeStartXSnap } from '../src/controller/controller.js';
+import { makeSnapStore } from '../../swing-store/src/snapStore.js';
+import { makeSnapStoreIO } from '../../swing-store/src/snapStoreIO.js';
+import { makeTranscriptStore } from '../../swing-store/src/transcriptStore.js';
+import { makeBundleStore } from '../../swing-store/src/bundleStore.js';
+import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
+import { makeStartXSnap } from '../src/controller/startXSnap.js';
+import {
+  makeWorkerBundleHandler,
+  makeXsnapBundleData,
+} from '../src/controller/bundle-handler.js';
 import { makeXsSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-xsnap.js';
 import { makeLocalVatManagerFactory } from '../src/kernel/vat-loader/manager-local.js';
 import { makeNodeSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-node.js';
-import { startSubprocessWorker } from '../src/lib-nodejs/spawnSubprocessWorker.js';
-import { requireIdentical } from '../src/kernel/vat-loader/transcript.js';
+import { startSubprocessWorker } from '@agoric/internal/src/lib-nodejs/spawnSubprocessWorker.js';
+// import { requireIdentical } from '../src/kernel/vat-loader/transcript.js';
 import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
-import { makeGcAndFinalize } from '../src/lib-nodejs/gc-and-finalize.js';
-import engineGC from '../src/lib-nodejs/engine-gc.js';
+import { makeGcAndFinalize } from '@agoric/internal/src/lib-nodejs/gc-and-finalize.js';
+import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
+import { makeSyscallSimulator } from '../src/kernel/vat-warehouse.js';
+import { workerData } from 'worker_threads';
 
 const pipe = promisify(pipeline);
 
@@ -168,6 +181,12 @@ const argv = yargsParser(process.argv.slice(2), {
     useCustomSnapStore: false,
     recordXsnapTrace: false,
     useXsnapDebug: false,
+    // SL
+    swingStoreDb: null,
+    transcriptStoreDb: null,
+    bundleStoreDb: null,
+    snapStoreRDb: null,
+    snapshotDir: '',
   },
   config: {
     config: true,
@@ -215,6 +234,7 @@ async function fileHash(filename) {
   return hash.digest('hex');
 }
 
+/*
 function makeSnapStoreIO() {
   return {
     createReadStream: fs.createReadStream,
@@ -230,7 +250,8 @@ function makeSnapStoreIO() {
     unlink: fs.promises.unlink,
   };
 }
-
+*/
+/*
 async function makeBundles() {
   const controllerUrl = new URL(
     `${
@@ -252,6 +273,191 @@ async function makeBundles() {
   fs.writeFileSync('supervisor-bundle', JSON.stringify(supervisor));
   console.log(`xs bundles written`);
 }
+*/
+
+/** @typedef {import('../src/types-external.js').KernelKeeper} KernelKeeper */
+/** @typedef {import('@agoric/swing-store').SnapStore} SnapStore */
+/** @typedef {import('@agoric/swing-store').SnapshotInfo} SnapshotInfo */
+/**
+ * @typedef {{
+ *  manager: import('../src/types-internal.js').VatManager;
+ *  xsnapPID: number | undefined;
+ *  explicitWorkerPath: string | undefined;
+ *  deliveryTimeTotal: number;
+ *  deliveryTimeSinceLastSnapshot: number;
+ *  loadSnapshotID: string | undefined;
+ *  timeOfLastCommand: number;
+ *  keep: boolean;
+ *  firstTranscriptNum: number | null;
+ *  completeStep: () => void;
+ *  stepCompleted: Promise<void>
+ * }} WorkerData
+ */
+
+/**
+ * @param {string} xsID 
+ * @param {string} snapPath
+ * //param {SnapStoreInfo} snapStoreInfo
+ * //param {SnapStoreInfo | null} parentSSI
+ * @param {SnapStore} fallbackSnapStore
+ */
+function makeFakeSnapStore(xsID, snapPath, /*snapStoreInfo, parentSSI, */fallbackSnapStore) {
+  /** @type {SnapshotInfo} */
+  let lastSavedSnapInfo;
+  /**
+   * (c) ChatGPT
+   * Saves a snapshot stream to a file and calculates its SHA-256 hash and size.
+   *
+   * @param {string} vatID
+   * @param {number} snapPos
+   * @param {AsyncIterable<Uint8Array>} snapshotStream
+   * @returns {Promise<SnapshotResult>}
+   */
+  async function saveSnapshotFunc(vatID, snapPos, snapshotStream) {
+    const tmpFileName = path.join(snapPath, `snapshot_${vatID}_${snapPos}_${Date.now()}.tmp`);
+    const writeStream = fs.createWriteStream(tmpFileName);
+    const hash = createHash('sha256');
+
+    let uncompressedSize = 0;
+
+    async function* processStream() {
+      for await (const chunk of snapshotStream) {
+        uncompressedSize += chunk.length;
+        hash.update(chunk);
+        yield chunk;
+      }
+    }
+
+    try {
+      await pipe(processStream(), writeStream);
+    } finally {
+      writeStream.end(); // Ensure the write stream is properly closed
+    }
+
+    const digest = hash.digest('hex');
+    const filePath = path.join(snapPath, `${digest}.xss`);
+    await fs.promises.rename(tmpFileName, filePath);
+
+    /** @type {SnapshotInfo} */
+    const snapshotInfo = {
+      snapPos: snapPos,
+      hash: digest,
+      uncompressedSize: uncompressedSize,
+      compressedSize: uncompressedSize,
+    };
+
+    lastSavedSnapInfo = snapshotInfo;
+    /*
+    // new snapshot
+    snapStoreInfo.lastSavedSnap = {
+      xsID: xsID,
+      vatID: vatID,
+      fileName: filePath,
+      parent: snapStoreInfo?.lastLoadedSnap,
+      info: snapshotInfo,
+    };
+    */
+
+    return harden({
+      hash: digest,
+      uncompressedSize,
+      compressSeconds: 0,
+      dbSaveSeconds: 0,
+      archiveWriteSeconds: 0,
+      compressedSize: uncompressedSize,
+    });
+  } // saveSnapshotFunc()
+
+  /**
+   * Loads the most recent snapshot for a given vat.
+   *
+   * @param {string} vatID
+   * @returns {AsyncGenerator<Uint8Array, void, undefined>}
+   */
+  async function* loadSnapshotFunc(vatID) {
+    // always load the last snapshot saved
+    const fileName = null;/*snapStoreInfo.lastSavedSnap?.fileName;*/
+
+    if (!fileName) {
+      if (fallbackSnapStore) {
+        const snapInfo = fallbackSnapStore.getSnapshotInfo(vatID);
+        console.log(`Loading snapshot for vatID '${vatID}' from fallback snap store: ` + JSON.stringify(snapInfo) + '\n');
+        // new snapshot loaded
+        /*
+        snapStoreInfo.lastLoadedSnap = {
+          xsID: xsID,
+          vatID: vatID,
+          fileName: null,
+          parent: null,
+          info: snapInfo,
+        };
+        */
+        for await (const chunk of fallbackSnapStore.loadSnapshot(vatID)) {
+          yield chunk;
+        }
+        return;
+      } else {
+        throw new Error(`No previously saved snapshots for vatID '${vatID}'.`);
+      }
+    }
+
+    if (!fs.existsSync(fileName)) {
+      throw new Error(`Snapshot file for vatID '${vatID}' does not exist.`);
+    }
+
+    const readStream = fs.createReadStream(fileName);
+
+    //snapStoreInfo.lastLoadedSnap = makeSnapInfo(snapStoreInfo.lastSavedSnap);
+
+    for await (const chunk of readStream) {
+      yield chunk;
+    }
+  }
+  harden(loadSnapshotFunc);
+
+  /**
+   * @param {string} vatID 
+   * @returns SnapshotInfo
+   */
+  function getSnapshotInfo(vatID) {
+    return lastSavedSnapInfo ? lastSavedSnapInfo : fallbackSnapStore.getSnapshotInfo(vatID);//snapStoreInfo.lastSavedSnap?.info;
+  }
+
+  /*
+  snapStoreInfo.lastLoadedSnap = makeSnapInfo(parentSSI?.lastLoadedSnap);
+  snapStoreInfo.lastSavedSnap = makeSnapInfo(parentSSI?.lastSavedSnap);
+  */
+
+  // only custom snap store is supported
+  return /** @type {SnapStore} */ ({
+    saveSnapshot: saveSnapshotFunc,
+    loadSnapshot: loadSnapshotFunc,
+    deleteAllUnusedSnapshots: () => { },
+    deleteVatSnapshots: (_vatID, _budget) => { return { done: true, cleanups: 0 }; },
+    stopUsingLastSnapshot: (_vatID) => { },
+    getSnapshotInfo: getSnapshotInfo,
+  });
+} // makeFakeSnapStore()
+
+/**
+ * 
+ * @param {SnapStore} snapStore 
+ * @returns KernelKeeper
+ */
+function makeFakeKernelKeeper(snapStore) {
+  const fakeKernelKeeper =
+  /** @type {KernelKeeper} */ ({
+      provideVatKeeper: vatID =>
+      /** @type {import('../src/types-external.js').VatKeeper} */(
+        /** @type {Partial<import('../src/types-external.js').VatKeeper>} */ ({
+          addToTranscript: () => { },
+          getSnapshotInfo: () => snapStore.getSnapshotInfo(vatID),
+        })
+      ),
+      getRelaxDurabilityRules: () => false,
+    });
+  return fakeKernelKeeper;
+}
 
 // relative timings:
 // 3.8s v8-false, 27.5s v8-gc
@@ -259,24 +465,25 @@ async function makeBundles() {
 /** @type {import('../src/types-external.js').ManagerType} */
 const worker = 'xs-worker';
 
-async function replay(transcriptFile) {
-  let vatID; // we learn this from the first line of the transcript
-  /** @type {import('../src/types-external.js').VatManagerFactory} */
+async function replay(transcriptStore, bundleStore, snapStoreR, vatID, startPos) {
+  // SL let vatID; // we learn this from the first line of the transcript
+  /** @type {import('../src/types-internal.js').VatManagerFactory} */
   let factory;
 
   let loadSnapshotID = null;
   let saveSnapshotID = null;
-  let lastTranscriptNum;
-  let startTranscriptNum;
+  let lastTranscriptNum = startPos;
+  let startTranscriptNum = startPos;
   const snapshotOverrideMap = new Map();
 
   const snapshotActivityFd = fs.openSync('snapshot-activity.jsonl', 'a');
 
+  /* SL
   const fakeKernelKeeper =
-    /** @type {import('../src/types-external.js').KernelKeeper} */ ({
+    /** @type {import('../src/types-external.js').KernelKeeper} *//* ({
       provideVatKeeper: _vatID =>
-        /** @type {import('../src/types-external.js').VatKeeper} */ (
-          /** @type {Partial<import('../src/types-external.js').VatKeeper>} */ ({
+        /** @type {import('../src/types-external.js').VatKeeper} *//* (
+/** @type {Partial<import('../src/types-external.js').VatKeeper>} *//* ({
             addToTranscript: () => {},
             getLastSnapshot: () =>
               loadSnapshotID && { snapshotID: loadSnapshotID },
@@ -284,7 +491,7 @@ async function replay(transcriptFile) {
         ),
       getRelaxDurabilityRules: () => false,
     });
-
+*/
   const kernelSlog =
     /** @type {import('../src/types-external.js').KernelSlog} */ (
       /** @type {Partial<import('../src/types-external.js').KernelSlog>} */ ({
@@ -294,22 +501,8 @@ async function replay(transcriptFile) {
       })
     );
 
-  const snapStore = argv.useCustomSnapStore
-    ? /** @type {SnapStore} */ ({
-        async save(saveRaw) {
-          const snapFile = `${saveSnapshotID || 'unknown'}.xss`;
-          await saveRaw(snapFile);
-          const hash = await fileHash(snapFile);
-          const filePath = `${hash}.xss`;
-          await fs.promises.rename(snapFile, filePath);
-          return { hash, filePath };
-        },
-        async load(hash, loadRaw) {
-          const snapFile = `${hash}.xss`;
-          return loadRaw(snapFile);
-        },
-      })
-    : makeSnapStore(process.cwd(), makeSnapStoreIO());
+  const fakeSnapStore = makeFakeSnapStore('xs', argv.snapSaveDir, snapStoreR);
+  const fakeKernelKeeper = makeFakeKernelKeeper(fakeSnapStore);
   const testLog = () => {};
   const meterControl = makeDummyMeterControl();
   const gcTools = harden({
@@ -325,25 +518,12 @@ async function replay(transcriptFile) {
         testLog,
       })
     );
-  /**
-   * @typedef {{
-   *  manager: import('../src/types-external.js').VatManager;
-   *  xsnapPID: number | undefined;
-   *  explicitWorkerPath: string | undefined;
-   *  deliveryTimeTotal: number;
-   *  deliveryTimeSinceLastSnapshot: number;
-   *  loadSnapshotID: string | undefined;
-   *  timeOfLastCommand: number;
-   *  keep: boolean;
-   *  firstTranscriptNum: number | null;
-   *  completeStep: () => void;
-   *  stepCompleted: Promise<void>
-   * }} WorkerData
-   */
+
   /** @type {WorkerData[]} */
   const workers = [];
 
   if (worker === 'xs-worker') {
+    /* SL
     // eslint-disable-next-line no-constant-condition
     if (argv.rebuildBundles) {
       console.log(`creating xsnap helper bundles`);
@@ -354,7 +534,9 @@ async function replay(transcriptFile) {
       JSON.parse(fs.readFileSync('lockdown-bundle', 'utf-8')),
       JSON.parse(fs.readFileSync('supervisor-bundle', 'utf-8')),
     ];
+    */
     const env = /** @type {Record<string, string>} */ ({});
+
     if (argv.recordXsnapTrace) {
       env.XSNAP_TEST_RECORD = process.cwd();
     }
@@ -375,6 +557,26 @@ async function replay(transcriptFile) {
         return child;
       }
     );
+
+    const bundleData = makeXsnapBundleData();
+    const bundleHandler = makeWorkerBundleHandler(bundleStore, bundleData);
+
+    const startXSnap = makeStartXSnap({
+      spawn: capturePIDSpawn,
+      fs,
+      tmpName,
+      bundleHandler,
+      snapStore: fakeSnapStore,
+    });
+
+    factory = makeXsSubprocessFactory({
+      kernelKeeper: fakeKernelKeeper,
+      kernelSlog,
+      startXSnap,
+      testLog,
+    });
+
+    /* SL
     const startXSnap = makeStartXSnap(bundles, {
       snapStore,
       env,
@@ -387,15 +589,19 @@ async function replay(transcriptFile) {
       startXSnap,
       testLog,
     });
+    */
   } else if (worker === 'local') {
-    factory = makeLocalVatManagerFactory({
+    throw new Error(`worker === 'local' is not implemented.`);
+    /* SL factory = makeLocalVatManagerFactory({
       allVatPowers,
       kernelKeeper: fakeKernelKeeper,
       vatEndowments: {},
       gcTools,
       kernelSlog,
-    });
+    }); */
   } else if (worker === 'node-subprocess') {
+    throw new Error(`worker === 'node-subprocess' is not implemented.`);
+    /* SL
     // this worker type cannot do blocking syscalls like vatstoreGet, so it's
     // kind of useless for vats that use virtual objects
     function startSubprocessWorkerNode() {
@@ -410,11 +616,12 @@ async function replay(transcriptFile) {
       kernelKeeper: fakeKernelKeeper,
       kernelSlog,
       testLog,
-    });
+    }); */
   } else {
     throw Error(`unhandled worker type ${worker}`);
   }
 
+  /* SL
   const [
     bestRequireIdentical,
     extraSyscall,
@@ -490,8 +697,8 @@ async function replay(transcriptFile) {
       'Transcript replay does not support relaxed replay. Cannot simulate or skip syscalls',
     );
   }
-
-  /** @type {Partial<Record<ReturnType<typeof getResultKind>, Map<string, number[]>>>} */
+  
+  /** @type {Partial<Record<ReturnType<typeof getResultKind>, Map<string, number[]>>>} *//*SL
   let syscallResults = {};
 
   const getResultKind = result => {
@@ -517,7 +724,7 @@ async function replay(transcriptFile) {
     const resultKind = getResultKind(result);
     let kindSummary = syscallResults[resultKind];
     if (!kindSummary) {
-      /** @type {Map<string, number[]>} */
+      /** @type {Map<string, number[]>} *//* SL
       kindSummary = new Map();
       syscallResults[resultKind] = kindSummary;
     }
@@ -531,7 +738,8 @@ async function replay(transcriptFile) {
     }
     workerList.push(xsnapPID);
   };
-
+*/
+  /* SL
   const analyzeSyscallResults = () => {
     const numWorkers = workers.length;
     let divergent = false;
@@ -552,7 +760,7 @@ async function replay(transcriptFile) {
       throw new Error('Divergent execution between workers');
     }
   };
-
+*/
   let workersSynced = Promise.resolve();
 
   const updateWorkersSynced = () => {
@@ -564,7 +772,7 @@ async function replay(transcriptFile) {
         ? () => {
             if (workersSynced === newWorkersSynced) {
               updateWorkersSynced();
-              analyzeSyscallResults();
+              // SL analyzeSyscallResults();
             }
           }
         : () => {},
@@ -587,12 +795,18 @@ async function replay(transcriptFile) {
     workerData.deliveryTimeSinceLastSnapshot += deliveryTime;
   };
 
+  /**
+   * @import {VatSyscallObject} from '@agoric/swingset-liveslots'
+   * @import {VatSyscallResult} from '@agoric/swingset-liveslots'
+   * @import {VatSyscallResultOk} from '@agoric/swingset-liveslots'
+   */
   /** @type {Map<string, VatSyscallResult | undefined>} */
   const knownVCSyscalls = new Map();
 
+  /* SL
   /**
    * @param {import('../src/types-external.js').VatSyscallObject} vso
-   */
+   *//*SL
   const vatSyscallHandler = vso => {
     if (vso[0] === 'vatstoreGet') {
       const response = knownVCSyscalls.get(vso[1]);
@@ -610,7 +824,7 @@ async function replay(transcriptFile) {
   /**
    * @param {WorkerData} workerData
    * @returns {import('../src/kernel/vat-loader/transcript.js').CompareSyscalls<boolean>}
-   */
+   *//*SL
   const makeCompareSyscalls = workerData => {
     const doCompare = (
       _vatID,
@@ -698,9 +912,10 @@ async function replay(transcriptFile) {
     };
     return compareSyscalls;
   };
-
+*/
   let vatParameters;
-  let vatSourceBundle;
+  let workerOptions;
+  let source;
 
   /** @param {boolean} keep */
   const createManager = async keep => {
@@ -733,20 +948,20 @@ async function replay(transcriptFile) {
     workers.push(workerData);
     updateWorkersSynced();
     const managerOptions =
-      /** @type {import('../src/types-external.js').ManagerOptions} */ (
-        /** @type {Partial<import('../src/types-external.js').ManagerOptions>} */ ({
+      /** @type {import('../src/types-internal.js').ManagerOptions} */ (
+        /** @type {Partial<import('../src/types-internal.js').ManagerOptions>} */ ({
           sourcedConsole: console,
-          vatParameters,
-          compareSyscalls: makeCompareSyscalls(workerData),
+          workerOptions: { type: 'xsnap', bundleIDs: [] },
+          // SL vatParameters,
+          // compareSyscalls: makeCompareSyscalls(workerData),
           useTranscript: true,
         })
       );
     workerData.manager = await factory.createFromBundle(
       vatID,
-      vatSourceBundle,
+      source?.bundleID ? bundleStore.getBundle(source.bundleID) : null,
       managerOptions,
-      {},
-      vatSyscallHandler,
+      {}
     );
     return workerData;
   };
@@ -834,7 +1049,7 @@ async function replay(transcriptFile) {
       fs.writeSync(
         snapshotActivityFd,
         `${JSON.stringify({
-          transcriptFile,
+          // SL transcriptFile,
           type: 'load',
           xsnapPID,
           vatID,
@@ -848,53 +1063,74 @@ async function replay(transcriptFile) {
     }
   };
 
-  /** @type {import('stream').Readable} */
+  /*SL @type {import('stream').Readable} */
+  /* SL
   let transcriptF = fs.createReadStream(transcriptFile);
   if (transcriptFile.endsWith('.gz')) {
     transcriptF = transcriptF.pipe(zlib.createGunzip());
   }
   const lines = readline.createInterface({ input: transcriptF });
   let lineNumber = 1;
+  */
+  if (startPos === null || startPos === undefined) {
+    ({ startPos: startPos } = transcriptStore.getCurrentSpanBounds(vatID));
+  }
+  const trSpanIterator = transcriptStore.readSpan(vatID, startPos);
+
+  let transcriptNum = startPos - 1;
   try {
-    for await (const line of lines) {
+    for await (const line of trSpanIterator) {
+      /* SL
       if (lineNumber % 1000 === 0) {
         console.log(` (slog line ${lineNumber})`);
       }
       lineNumber += 1;
       const data = JSON.parse(line);
-      if (data.type === 'heap-snapshot-load') {
+      */
+      transcriptNum += 1;
+      const transcriptEntry = JSON.parse(line);
+      console.log(`${transcriptNum}: ${line}\n`);
+      const { d: delivery, r: result, sc: sysCalls } = transcriptEntry;
+      const deliveryType = delivery?.[0];
+      console.log(` (transcript item ${transcriptNum}: ${deliveryType})\n`);
+
+      if (deliveryType === 'load-snapshot') {
         if (worker === 'xs-worker') {
-          await loadSnapshot(data, argv.keepWorkerExplicitLoad);
+          await loadSnapshot(delivery?.[1], argv.keepWorkerExplicitLoad);
         } else if (!workers.length) {
           throw Error(
             `Cannot replay transcript in ${worker} starting with a heap snapshot load.`,
           );
         }
       } else if (!workers.length) {
-        if (data.type !== 'create-vat') {
+        if (deliveryType !== 'initialize-worker') {
           throw Error(
             `first line of transcript was not a create-vat or heap-snapshot-load`,
           );
         }
-        ({ vatParameters, vatSourceBundle } = data);
-        vatID = data.vatID;
+        ({ source, workerOptions } = delivery?.[1]);
+        console.log(`source: ${JSON.stringify(source)}`);
         const { xsnapPID } = await createManager(argv.keepWorkerExplicitLoad);
         console.log(
           `manager created from bundle source, worker PID: ${xsnapPID}`,
+          `\n\tsource: ${JSON.stringify(source)}`,
+          `\n\tworkerOptions: ${JSON.stringify(workerOptions)}`
         );
         fs.writeSync(
           snapshotActivityFd,
           `${JSON.stringify({
-            transcriptFile,
+            // SL transcriptFile,
             type: 'create',
             xsnapPID,
             vatID,
           })}\n`,
         );
-      } else if (data.type === 'heap-snapshot-save') {
+      } else if (deliveryType === 'save-snapshot') {
+        throw new Error('save-snapshot is not implemented!');
+        /* SL
         saveSnapshotID = data.snapshotID;
 
-        /** @param {WorkerData} workerData */
+        /** @param {WorkerData} workerData *//*
         const doWorkerSnapshot = async workerData => {
           const { manager, xsnapPID, firstTranscriptNum } = workerData;
           if (!manager?.makeSnapshot) return null;
@@ -904,7 +1140,7 @@ async function replay(transcriptFile) {
           fs.writeSync(
             snapshotActivityFd,
             `${JSON.stringify({
-              transcriptFile,
+              //transcriptFile,
               type: 'save',
               xsnapPID,
               vatID,
@@ -940,7 +1176,7 @@ async function replay(transcriptFile) {
                 ...(await hashes),
                 await doWorkerSnapshot(workerData),
               ],
-              Promise.resolve(/** @type {string[]} */ ([])),
+              Promise.resolve(/** @type {string[]} *//* ([])),
             )
           : Promise.all(workers.map(doWorkerSnapshot)));
         saveSnapshotID = null;
@@ -954,7 +1190,7 @@ async function replay(transcriptFile) {
           divergent = true;
           snapshotOverrideMap.set(
             data.snapshotID,
-            /** @type {string} */ (savedSnapshots[0]),
+            /** @type {string} *//* (savedSnapshots[0]),
           );
         }
         if (argv.forcedReloadFromSnapshot) {
@@ -977,13 +1213,15 @@ async function replay(transcriptFile) {
             }
           }
           await snapStore.commitDeletes(true);
-        }
+        } */
       } else {
-        const { transcriptNum, d: delivery, syscalls } = data;
+        //SL const { transcriptNum, d: delivery, syscalls } = data;
         lastTranscriptNum = transcriptNum;
+        /* SL
         if (startTranscriptNum == null) {
           startTranscriptNum = transcriptNum - 1;
-        }
+        }*/
+
         const makeSnapshot =
           argv.forcedSnapshotInterval &&
           (transcriptNum - argv.forcedSnapshotInitial) %
@@ -1004,11 +1242,14 @@ async function replay(transcriptFile) {
         //     JSON.stringify(s.response[1]).slice(0, 200),
         //   );
         // }
+        /** @type {({snapshotID: string; workerData: WorkerData;} | null)[]} */
         const snapshotData = await Promise.all(
           workers.map(async workerData => {
             const { manager, xsnapPID } = workerData;
             workerData.timeOfLastCommand = performance.now();
-            await manager.replayOneDelivery(delivery, syscalls, transcriptNum);
+            const { syscallHandler, finishSimulation } = makeSyscallSimulator(kernelSlog, vatID, transcriptNum, transcriptEntry);
+            await manager.deliver(delivery, syscallHandler);
+            finishSimulation();
             updateDeliveryTime(workerData);
             workerData.firstTranscriptNum ??= transcriptNum - 1;
             completeWorkerStep(workerData);
@@ -1017,13 +1258,14 @@ async function replay(transcriptFile) {
             // console.log(`dr`, dr);
 
             // enable this to write periodic snapshots, for #5975 leak
+            /* SL
             if (makeSnapshot && manager.makeSnapshot) {
               const { hash: snapshotID, rawSaveSeconds } =
                 await manager.makeSnapshot(snapStore);
               fs.writeSync(
                 snapshotActivityFd,
                 `${JSON.stringify({
-                  transcriptFile,
+                  //transcriptFile,
                   type: 'save',
                   xsnapPID,
                   vatID,
@@ -1044,7 +1286,7 @@ async function replay(transcriptFile) {
               );
               workerData.deliveryTimeSinceLastSnapshot = 0;
               return { snapshotID, workerData };
-            } else {
+            } else */ {
               return null;
             }
           }),
@@ -1067,6 +1309,7 @@ async function replay(transcriptFile) {
         }
 
         if (argv.forcedReloadFromSnapshot) {
+          /** @type Set<String | undefined> */
           let reloadSnapshotIDs = new Set(uniqueSnapshotIDs);
           if (
             !argv.keepWorkerHashDifference &&
@@ -1111,7 +1354,7 @@ async function replay(transcriptFile) {
           );
         }
 
-        if (
+        /* if (
           !argv.useCustomSnapStore &&
           (argv.keepNoSnapshots || (!divergent && !argv.keepAllSnapshots))
         ) {
@@ -1121,11 +1364,11 @@ async function replay(transcriptFile) {
             }
           }
           await snapStore.commitDeletes(true);
-        }
+        }*/
       }
     }
   } finally {
-    lines.close();
+    // SL lines.close();
     fs.closeSync(snapshotActivityFd);
     await Promise.all(
       workers.map(
@@ -1152,6 +1395,64 @@ async function replay(transcriptFile) {
   }
 }
 
+/*
+ * Based on argv content, open appropriate swing/transcript/bundle/snap-Store[s],
+ * respecting the overrides, as necessary.
+ */
+function openStores() {
+  const noop = () => { };
+
+  // single master database
+  const db = argv.swingStoreDb ? sqlite3(argv.swingStoreDb) : null;
+
+  // apply overrides, if any
+  const tsDb = argv.transcriptStoreDb ? sqlite3(argv.transcriptStoreDb, { fileMustExist: true, readonly: false }) : db;
+  const bsDb = argv.bundleStoreDb ? sqlite3(argv.bundleStoreDb, { fileMustExist: true, readonly: true }) : db;
+  const ssRDb = argv.snapStoreRDb ? sqlite3(argv.snapStoreRDb, { fileMustExist: true, readonly: true }) : db;
+  //const ssWDb = argv.snapStoreWDb ? sqlite3(argv.snapStoreWDb, { fileMustExist: false, readonly: false }) : db;
+
+  const transcriptStore = tsDb ? makeTranscriptStore(tsDb, noop) : null;
+  const bundleStore = bsDb ? makeBundleStore(bsDb, noop) : null;
+  const snapStoreR = ssRDb
+    ? makeSnapStore(ssRDb, noop, { measureSeconds: makeMeasureSeconds(performance.now) }, noop, { keepSnapshots: false, },)
+    : null;
+
+  //const snapStoreW = makeSnapStore(ssWDb, noop, {measureSeconds: makeMeasureSeconds(performance.now)}, noop, { keepSnapshots: true, },);
+
+  return harden({
+    transcriptStore,
+    bundleStore,
+    snapStoreR,
+    //snapStoreW,
+  });
+}
+
+function findStartPos(snapStore, vatID) {
+  const { snapPos } = snapStore.getSnapshotInfo(vatID);
+
+  if (snapPos === null || snapPos === undefined)
+    throw new Error("Did not find any inUse snapshots in snapStore!");
+
+  console.log(`No startPos provided, derived startPos = ${snapPos}`);
+  return harden(snapPos);
+}
+
+async function run() {
+  console.dir(argv, { depth: null });
+
+  const { transcriptStore, bundleStore, snapStoreR } = openStores();
+  // const vatID = argv.vatID ? argv.vatID : findVatID(transcriptStore);
+  const vatID = argv.vatID;
+
+  if (!vatID)
+    throw new Error("vatID is required!");
+
+  const startPos = argv.startPos !== null ? argv.startPos : findStartPos(snapStoreR, vatID);
+
+  await replay(transcriptStore, bundleStore, snapStoreR, vatID, startPos);
+}
+
+/*
 async function run() {
   console.dir(argv, { depth: null });
   if (argv._.length < 1) {
@@ -1162,6 +1463,7 @@ async function run() {
   console.log(`using transcript ${transcriptFile}`);
   await replay(transcriptFile);
 }
+*/
 
 run().catch(err => {
   console.log('RUN ERR', err);
