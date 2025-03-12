@@ -186,7 +186,7 @@ const argv = yargsParser(process.argv.slice(2), {
     transcriptStoreDb: null,
     bundleStoreDb: null,
     snapStoreRDb: null,
-    snapshotDir: '',
+    snapSaveDir: null,
   },
   config: {
     config: true,
@@ -348,6 +348,9 @@ provideVatKeeper: _vatID =>
   function makeFakeSnapStore(xsID, snapPath, /*snapStoreInfo, parentSSI, */fallbackSnapStore) {
     /** @type {SnapshotInfo} */
     let lastSavedSnapInfo;
+    let lastSavedFileName;
+    let lastLoadedSnapInfo;
+    let lastLoadedFileName;
     /**
      * (c) ChatGPT
      * Saves a snapshot stream to a file and calculates its SHA-256 hash and size.
@@ -381,6 +384,7 @@ provideVatKeeper: _vatID =>
       const digest = hash.digest('hex');
       const filePath = path.join(snapPath, `${digest}.xss`);
       await fs.promises.rename(tmpFileName, filePath);
+      lastSavedFileName = filePath;
 
       /** @type {SnapshotInfo} */
       const snapshotInfo = {
@@ -420,11 +424,13 @@ provideVatKeeper: _vatID =>
      */
     async function* loadSnapshotFunc(vatID) {
       // always load the last snapshot saved
-      const fileName = null;/*snapStoreInfo.lastSavedSnap?.fileName;*/
+      const fileName = lastSavedFileName;
 
       if (!fileName) {
         if (!suppressFallbackSnapStore && fallbackSnapStore) {
           const snapInfo = fallbackSnapStore.getSnapshotInfo(vatID);
+          lastLoadedSnapInfo = snapInfo;
+          lastLoadedFileName = `FALLBACK:${snapInfo.hash}`;
           console.log(`Loading snapshot for vatID '${vatID}' from fallback snap store: ` + JSON.stringify(snapInfo) + '\n');
           // new snapshot loaded
           /*
@@ -444,7 +450,7 @@ provideVatKeeper: _vatID =>
           throw new Error(`No previously saved snapshots for vatID '${vatID}'.`);
         }
       }
-
+      console.log(`Loading snapshot for vatID '${vatID}' from file: ${fileName}\n`);
       if (!fs.existsSync(fileName)) {
         throw new Error(`Snapshot file for vatID '${vatID}' does not exist.`);
       }
@@ -504,7 +510,7 @@ provideVatKeeper: _vatID =>
     return fakeKernelKeeper;
   }
 
-  const fakeSnapStore = makeFakeSnapStore('xs', argv.snapSaveDir, snapStoreR);
+  const fakeSnapStore = makeFakeSnapStore('xs', argv.snapSaveDir || process.env.PWD, snapStoreR);
   const fakeKernelKeeper = makeFakeKernelKeeper(fakeSnapStore);
   const testLog = () => {};
   const meterControl = makeDummyMeterControl();
@@ -1130,16 +1136,18 @@ provideVatKeeper: _vatID =>
           })}\n`,
         );
       } else if (deliveryType === 'save-snapshot') {
-        throw new Error('save-snapshot is not implemented!');
-        /* SL
-        saveSnapshotID = data.snapshotID;
+        // throw new Error('save-snapshot is not implemented!');
+        saveSnapshotID = result?.snapshotID;
+        console.log(`save-snapshot expecting hash: ${saveSnapshotID}`);
 
-        /** @param {WorkerData} workerData *//*
+        /** @param {WorkerData} workerData */
         const doWorkerSnapshot = async workerData => {
           const { manager, xsnapPID, firstTranscriptNum } = workerData;
           if (!manager?.makeSnapshot) return null;
-          const { hash, rawSaveSeconds } = await manager.makeSnapshot(
-            snapStore,
+          const { hash, dbSaveSeconds, } = await manager.makeSnapshot(
+            firstTranscriptNum,
+            fakeSnapStore,
+            false
           );
           fs.writeSync(
             snapshotActivityFd,
@@ -1163,7 +1171,7 @@ provideVatKeeper: _vatID =>
           } else {
             console.log(
               `made snapshot ${hash} of worker PID ${xsnapPID} (start delivery ${firstTranscriptNum}).\n    Save time = ${
-                Math.round(rawSaveSeconds * 1000) / 1000
+              Math.round(dbSaveSeconds * 1000) / 1000
               }s. Delivery time since last snapshot ${
                 Math.round(workerData.deliveryTimeSinceLastSnapshot) / 1000
               }s. Up ${
@@ -1180,7 +1188,7 @@ provideVatKeeper: _vatID =>
                 ...(await hashes),
                 await doWorkerSnapshot(workerData),
               ],
-              Promise.resolve(/** @type {string[]} *//* ([])),
+            Promise.resolve(/** @type {string[]} */([])),
             )
           : Promise.all(workers.map(doWorkerSnapshot)));
         saveSnapshotID = null;
@@ -1188,20 +1196,20 @@ provideVatKeeper: _vatID =>
         const uniqueSnapshotIDs = new Set(savedSnapshots);
         let divergent = uniqueSnapshotIDs.size > 1;
         if (
-          !uniqueSnapshotIDs.has(data.snapshotID) &&
+          !uniqueSnapshotIDs.has(result?.snapshotID) &&
           (divergent || savedSnapshots[0] !== null)
         ) {
           divergent = true;
           snapshotOverrideMap.set(
-            data.snapshotID,
-            /** @type {string} *//* (savedSnapshots[0]),
+            result?.snapshotID.snapshotID,
+            /** @type {string} */(savedSnapshots[0]),
           );
         }
         if (argv.forcedReloadFromSnapshot) {
           for (const snapshotID of uniqueSnapshotIDs) {
             // eslint-disable-next-line no-await-in-loop
             await loadSnapshot(
-              { ...data, snapshotID },
+              { snapshotID, vatID },
               argv.keepWorkerHashDifference && divergent,
             );
           }
@@ -1211,13 +1219,15 @@ provideVatKeeper: _vatID =>
           !argv.useCustomSnapStore &&
           (argv.keepNoSnapshots || (!divergent && !argv.keepAllSnapshots))
         ) {
+          /* SL
           for (const snapshotID of uniqueSnapshotIDs) {
             if (snapshotID) {
               snapStore.prepareToDelete(snapshotID);
             }
           }
           await snapStore.commitDeletes(true);
-        } */
+          */
+        }
       } else {
         //SL const { transcriptNum, d: delivery, syscalls } = data;
         lastTranscriptNum = transcriptNum;
