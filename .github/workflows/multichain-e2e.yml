@@ -9,9 +9,7 @@ on:
         required: true
         options:
           - orchestration-api-hermes
-          - fast-usdc-hermes
           - orchestration-api-go-relayer
-          - fast-usdc-go-relayer
   workflow_call:
 
 jobs:
@@ -24,18 +22,7 @@ jobs:
     uses: ./.github/workflows/multichain-e2e-template.yml
     with:
       config: config.yaml
-      test_command: yarn test:main
-
-  fast-usdc-hermes:
-    name: Multichain E2E (Fast USDC - Hermes)
-    if: |
-      github.event_name == 'workflow_call' ||
-      github.event_name == 'pull_request' ||
-      (github.event_name == 'workflow_dispatch' && inputs.test_type == 'fast-usdc-hermes')
-    uses: ./.github/workflows/multichain-e2e-template.yml
-    with:
-      config: config.fusdc.yaml
-      test_command: yarn test:fast-usdc
+      test_command: yarn test
 
   orchestration-api-go-relayer:
     name: Multichain E2E (Orchestration API - Go Relayer)
@@ -44,13 +31,4 @@ jobs:
     uses: ./.github/workflows/multichain-e2e-template.yml
     with:
       config: config.go-relayer.yaml
-      test_command: RELAYER_TYPE=go-relayer yarn test:main
-
-  fast-usdc-go-relayer:
-    name: Multichain E2E (Fast USDC - Go Relayer)
-    # run on dispatch only
-    if: github.event_name == 'workflow_dispatch' && inputs.test_type == 'fast-usdc-go-relayer'
-    uses: ./.github/workflows/multichain-e2e-template.yml
-    with:
-      config: config.fusdc.go-relayer.yaml
-      test_command: RELAYER_TYPE=go-relayer yarn test:fast-usdc
+      test_command: RELAYER_TYPE=go-relayer yarn test

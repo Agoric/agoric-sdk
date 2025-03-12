@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "NodeNext",
+    "moduleResolution": "nodenext",
+    // This prevents checking of .d.ts files. We would like to check the ones we write
+    // but we leave this off because of the errors in deps we don't control.
+    "skipLibCheck": true,
+    "allowJs": true,
+    "checkJs": false,
+    // "allowSyntheticDefaultImports": true,
+    "strict": false,
+    "downlevelIteration": true,
+    "strictNullChecks": true,
+    "noImplicitThis": true,
+    "noUncheckedSideEffectImports": true,
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true,
+    // .ts and rewriting relative paths allow us to include in bundles
+    // files that are JS executable (with TS chars blanked) but end in .ts
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "noEmit": true
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+  ],
+  "include": [
+    "*/scripts",
+    "*/src",
+    "*/test",
+  ],
+}

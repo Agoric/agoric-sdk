@@ -5,15 +5,12 @@
   "scripts": {
     "build": "exit 0",
     "lint": "yarn tsc && yarn eslint .",
-    "test": "echo 'Run specific test suites:\nyarn test:main (needs `make start`)\nyarn test:fast-usdc (needs `make start FILE=config.fusdc.yaml`)'",
-    "test:main": "ava --config ava.main.config.js",
-    "test:fast-usdc": "ava --config ava.fusdc.config.js",
+    "test": "ava --config ava.main.config.js",
     "postinstall": "patch-package"
   },
   "packageManager": "yarn@4.7.0",
   "devDependencies": {
     "@agoric/cosmic-proto": "dev",
-    "@agoric/fast-usdc": "dev",
     "@cosmjs/crypto": "^0.33.0",
     "@cosmjs/proto-signing": "^0.33.0",
     "@cosmjs/stargate": "^0.33.0",
@@ -54,7 +51,6 @@
     "@agoric/create-dapp": "portal:../packages/create-dapp",
     "@agoric/deploy-script-support": "portal:../packages/deploy-script-support",
     "@agoric/eslint-config": "portal:../packages/eslint-config",
-    "@agoric/fast-usdc": "portal:../packages/fast-usdc",
     "@agoric/governance": "portal:../packages/governance",
     "@agoric/import-manager": "portal:../packages/import-manager",
     "@agoric/inter-protocol": "portal:../packages/inter-protocol",
