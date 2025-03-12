@@ -1084,11 +1084,26 @@ provideVatKeeper: _vatID =>
   if (startPos === null || startPos === undefined) {
     ({ startPos: startPos } = transcriptStore.getCurrentSpanBounds(vatID));
   }
-  const trSpanIterator = transcriptStore.readSpan(vatID, startPos);
+  // const trSpanIterator = transcriptStore.readSpan(vatID, startPos);
 
-  let transcriptNum = startPos - 1;
+  let transcriptNum = startPos;
+
+  const spanReader = (spanVatID, spanStartPos) => {
+    let spanIterator;
+    try {
+      spanIterator = transcriptStore.readSpan(spanVatID, spanStartPos)
+    } catch (e) {
+      console.log(`Error reading span: ${e}`);
+    } finally {
+      return spanIterator;
+    }
+  };
+
   try {
-    for await (const line of trSpanIterator) {
+    let trSpanIterator;
+    while (trSpanIterator = spanReader(vatID, transcriptNum)) {
+      console.log(`>>> span start @ ${startPos} <<<`);
+      for await (const line of trSpanIterator) {
       /* SL
       if (lineNumber % 1000 === 0) {
         console.log(` (slog line ${lineNumber})`);
@@ -1096,296 +1111,296 @@ provideVatKeeper: _vatID =>
       lineNumber += 1;
       const data = JSON.parse(line);
       */
-      transcriptNum += 1;
-      const transcriptEntry = JSON.parse(line);
-      //console.log(`${transcriptNum}: ${line}\n`);
-      const { d: delivery, r: result, sc: sysCalls } = transcriptEntry;
-      const deliveryType = delivery?.[0];
-      console.log(`>>> ${transcriptNum}: ${deliveryType}\n`);
+        // transcriptNum += 1;
+        const transcriptEntry = JSON.parse(line);
+        //console.log(`${transcriptNum}: ${line}\n`);
+        const { d: delivery, r: result, sc: sysCalls } = transcriptEntry;
+        const deliveryType = delivery?.[0];
+        console.log(`>>> ${transcriptNum}: ${deliveryType}\n`);
 
-      if (deliveryType === 'load-snapshot') {
-        if (worker === 'xs-worker') {
-          console.log(`loading snapshot: ${delivery?.[1]?.snapshotID})\n`);
-          await loadSnapshot(delivery?.[1], argv.keepWorkerExplicitLoad);
+        if (deliveryType === 'load-snapshot') {
+          if (worker === 'xs-worker') {
+            console.log(`loading snapshot: ${delivery?.[1]?.snapshotID})\n`);
+            await loadSnapshot(delivery?.[1], argv.keepWorkerExplicitLoad);
+          } else if (!workers.length) {
+            throw Error(
+              `Cannot replay transcript in ${worker} starting with a heap snapshot load.`,
+            );
+          }
         } else if (!workers.length) {
-          throw Error(
-            `Cannot replay transcript in ${worker} starting with a heap snapshot load.`,
-          );
-        }
-      } else if (!workers.length) {
-        if (deliveryType !== 'initialize-worker') {
-          throw Error(
-            `first line of transcript was not a create-vat or heap-snapshot-load`,
-          );
-        }
-        ({ source, workerOptions } = delivery?.[1]);
-        suppressFallbackSnapStore = true;
-        const { xsnapPID } = await createManager(argv.keepWorkerExplicitLoad);
-        console.log(
-          `manager created from bundle source, worker PID: ${xsnapPID}`,
-          `\n\tsource: ${JSON.stringify(source)}`,
-          `\n\tworkerOptions: ${JSON.stringify(workerOptions)}`
-        );
-        fs.writeSync(
-          snapshotActivityFd,
-          `${JSON.stringify({
-            // SL transcriptFile,
-            type: 'create',
-            xsnapPID,
-            vatID,
-          })}\n`,
-        );
-      } else if (deliveryType === 'save-snapshot') {
-        // throw new Error('save-snapshot is not implemented!');
-        saveSnapshotID = result?.snapshotID;
-        console.log(`save-snapshot expecting hash: ${saveSnapshotID}`);
-
-        /** @param {WorkerData} workerData */
-        const doWorkerSnapshot = async workerData => {
-          const { manager, xsnapPID, firstTranscriptNum } = workerData;
-          if (!manager?.makeSnapshot) return null;
-          const { hash, dbSaveSeconds, } = await manager.makeSnapshot(
-            firstTranscriptNum,
-            fakeSnapStore,
-            false
+          if (deliveryType !== 'initialize-worker') {
+            throw Error(
+              `first line of transcript was not a create-vat or heap-snapshot-load`,
+            );
+          }
+          ({ source, workerOptions } = delivery?.[1]);
+          suppressFallbackSnapStore = true;
+          const { xsnapPID } = await createManager(argv.keepWorkerExplicitLoad);
+          console.log(
+            `manager created from bundle source, worker PID: ${xsnapPID}`,
+            `\n\tsource: ${JSON.stringify(source)}`,
+            `\n\tworkerOptions: ${JSON.stringify(workerOptions)}`
           );
           fs.writeSync(
             snapshotActivityFd,
             `${JSON.stringify({
-              //transcriptFile,
-              type: 'save',
+              // SL transcriptFile,
+              type: 'create',
               xsnapPID,
               vatID,
-              transcriptNum: lastTranscriptNum,
-              snapshotID: hash,
-              saveSnapshotID,
             })}\n`,
           );
-          if (hash !== saveSnapshotID) {
-            const errorMessage = `Snapshot hash does not match. ${hash} !== ${saveSnapshotID} for worker PID ${xsnapPID} (start delivery ${firstTranscriptNum})`;
+        } else if (deliveryType === 'save-snapshot') {
+          // throw new Error('save-snapshot is not implemented!');
+          saveSnapshotID = result?.snapshotID;
+          console.log(`save-snapshot expecting hash: ${saveSnapshotID}`);
+
+          /** @param {WorkerData} workerData */
+          const doWorkerSnapshot = async workerData => {
+            const { manager, xsnapPID, firstTranscriptNum } = workerData;
+            if (!manager?.makeSnapshot) return null;
+            const { hash, dbSaveSeconds, } = await manager.makeSnapshot(
+              firstTranscriptNum,
+              fakeSnapStore,
+              false // SL alsways restart
+            );
+            fs.writeSync(
+              snapshotActivityFd,
+              `${JSON.stringify({
+                //transcriptFile,
+                type: 'save',
+                xsnapPID,
+                vatID,
+                transcriptNum: lastTranscriptNum,
+                snapshotID: hash,
+                saveSnapshotID,
+              })}\n`,
+            );
+            if (hash !== saveSnapshotID) {
+              const errorMessage = `Snapshot hash does not match. ${hash} !== ${saveSnapshotID} for worker PID ${xsnapPID} (start delivery ${firstTranscriptNum})`;
+              if (argv.ignoreSnapshotHashDifference) {
+                console.warn(errorMessage);
+              } else {
+                throw new Error(errorMessage);
+              }
+            } else {
+              console.log(
+                `made snapshot ${hash} of worker PID ${xsnapPID} (start delivery ${firstTranscriptNum}).\n    Save time = ${Math.round(dbSaveSeconds * 1000) / 1000
+                }s. Delivery time since last snapshot ${Math.round(workerData.deliveryTimeSinceLastSnapshot) / 1000
+                }s. Up ${lastTranscriptNum - (workerData.firstTranscriptNum ?? NaN)
+                } deliveries.`,
+              );
+            }
+            workerData.deliveryTimeSinceLastSnapshot = 0;
+            return hash;
+          };
+          const savedSnapshots = await (argv.useCustomSnapStore
+            ? workers.reduce(
+              async (hashes, workerData) => [
+                ...(await hashes),
+                await doWorkerSnapshot(workerData),
+              ],
+              Promise.resolve(/** @type {string[]} */([])),
+            )
+            : Promise.all(workers.map(doWorkerSnapshot)));
+          saveSnapshotID = null;
+
+          const uniqueSnapshotIDs = new Set(savedSnapshots);
+          let divergent = uniqueSnapshotIDs.size > 1;
+          if (
+            !uniqueSnapshotIDs.has(result?.snapshotID) &&
+            (divergent || savedSnapshots[0] !== null)
+          ) {
+            divergent = true;
+            snapshotOverrideMap.set(
+              result?.snapshotID.snapshotID,
+              /** @type {string} */(savedSnapshots[0]),
+            );
+          }
+          if (argv.forcedReloadFromSnapshot) {
+            for (const snapshotID of uniqueSnapshotIDs) {
+              // eslint-disable-next-line no-await-in-loop
+              await loadSnapshot(
+                { snapshotID, vatID },
+                argv.keepWorkerHashDifference && divergent,
+              );
+            }
+          }
+
+          if (
+            !argv.useCustomSnapStore &&
+            (argv.keepNoSnapshots || (!divergent && !argv.keepAllSnapshots))
+          ) {
+            /* SL
+            for (const snapshotID of uniqueSnapshotIDs) {
+              if (snapshotID) {
+                snapStore.prepareToDelete(snapshotID);
+              }
+            }
+            await snapStore.commitDeletes(true);
+            */
+          }
+        } else {
+          //SL const { transcriptNum, d: delivery, syscalls } = data;
+          lastTranscriptNum = transcriptNum;
+          /* SL
+          if (startTranscriptNum == null) {
+            startTranscriptNum = transcriptNum - 1;
+          }*/
+
+          /* SL disble forced snapshots for now
+          const makeSnapshot =
+            argv.forcedSnapshotInterval &&
+            (transcriptNum - argv.forcedSnapshotInitial) %
+              argv.forcedSnapshotInterval ===
+              0;
+          */
+
+          // syscalls = [{ d, response }, ..]
+          // console.log(`replaying:`);
+          // console.log(
+          //   `delivery ${transcriptNum} (L ${lineNumber}):`,
+          //   JSON.stringify(delivery).slice(0, 200),
+          // );
+          // for (const s of syscalls) {
+          //   // s.response = 'nope';
+          //   console.log(
+          //     ` syscall:`,
+          //     s.response[0],
+          //     JSON.stringify(s.d).slice(0, 200),
+          //     JSON.stringify(s.response[1]).slice(0, 200),
+          //   );
+          // }
+          /** @type {({snapshotID: string; workerData: WorkerData;} | null)[]} */
+          const snapshotData = await Promise.all(
+            workers.map(async workerData => {
+              const { manager, xsnapPID } = workerData;
+              workerData.timeOfLastCommand = performance.now();
+              const { syscallHandler, finishSimulation } = makeSyscallSimulator(kernelSlog, vatID, transcriptNum, transcriptEntry);
+              await manager.deliver(delivery, syscallHandler);
+              finishSimulation();
+              updateDeliveryTime(workerData);
+              workerData.firstTranscriptNum ??= transcriptNum - 1;
+              completeWorkerStep(workerData);
+              await workersSynced;
+
+              // console.log(`dr`, dr);
+
+              // enable this to write periodic snapshots, for #5975 leak
+              /* SL
+              if (makeSnapshot && manager.makeSnapshot) {
+                const { hash: snapshotID, rawSaveSeconds } =
+                  await manager.makeSnapshot(snapStore);
+                fs.writeSync(
+                  snapshotActivityFd,
+                  `${JSON.stringify({
+                    //transcriptFile,
+                    type: 'save',
+                    xsnapPID,
+                    vatID,
+                    transcriptNum,
+                    snapshotID,
+                  })}\n`,
+                );
+                console.log(
+                  `made snapshot ${snapshotID} after delivery ${transcriptNum} to worker PID ${xsnapPID} (start delivery ${
+                    workerData.firstTranscriptNum
+                  }).\n    Save time = ${
+                    Math.round(rawSaveSeconds * 1000) / 1000
+                  }s. Delivery time since last snapshot ${
+                    Math.round(workerData.deliveryTimeSinceLastSnapshot) / 1000
+                  }s. Up ${
+                    transcriptNum - workerData.firstTranscriptNum
+                  } deliveries.`,
+                );
+                workerData.deliveryTimeSinceLastSnapshot = 0;
+                return { snapshotID, workerData };
+              } else */ {
+                return null;
+              }
+            }),
+          );
+          const uniqueSnapshotIDs = [
+            ...new Set(snapshotData.map(data => data?.snapshotID)),
+          ].filter(snapshotID => snapshotID != null);
+
+          const divergent = uniqueSnapshotIDs.length !== 1;
+
+          /* SL
+          if (makeSnapshot && divergent) {
+            const errorMessage = `Snapshot hashes do not match each other: ${uniqueSnapshotIDs.join(
+              ', ',
+            )}`;
             if (argv.ignoreSnapshotHashDifference) {
               console.warn(errorMessage);
             } else {
               throw new Error(errorMessage);
             }
-          } else {
-            console.log(
-              `made snapshot ${hash} of worker PID ${xsnapPID} (start delivery ${firstTranscriptNum}).\n    Save time = ${
-              Math.round(dbSaveSeconds * 1000) / 1000
-              }s. Delivery time since last snapshot ${
-                Math.round(workerData.deliveryTimeSinceLastSnapshot) / 1000
-              }s. Up ${
-                lastTranscriptNum - (workerData.firstTranscriptNum ?? NaN)
-              } deliveries.`,
-            );
           }
-          workerData.deliveryTimeSinceLastSnapshot = 0;
-          return hash;
-        };
-        const savedSnapshots = await (argv.useCustomSnapStore
-          ? workers.reduce(
-              async (hashes, workerData) => [
-                ...(await hashes),
-                await doWorkerSnapshot(workerData),
-              ],
-            Promise.resolve(/** @type {string[]} */([])),
-            )
-          : Promise.all(workers.map(doWorkerSnapshot)));
-        saveSnapshotID = null;
-
-        const uniqueSnapshotIDs = new Set(savedSnapshots);
-        let divergent = uniqueSnapshotIDs.size > 1;
-        if (
-          !uniqueSnapshotIDs.has(result?.snapshotID) &&
-          (divergent || savedSnapshots[0] !== null)
-        ) {
-          divergent = true;
-          snapshotOverrideMap.set(
-            result?.snapshotID.snapshotID,
-            /** @type {string} */(savedSnapshots[0]),
-          );
-        }
-        if (argv.forcedReloadFromSnapshot) {
-          for (const snapshotID of uniqueSnapshotIDs) {
-            // eslint-disable-next-line no-await-in-loop
-            await loadSnapshot(
-              { snapshotID, vatID },
-              argv.keepWorkerHashDifference && divergent,
-            );
-          }
-        }
-
-        if (
-          !argv.useCustomSnapStore &&
-          (argv.keepNoSnapshots || (!divergent && !argv.keepAllSnapshots))
-        ) {
-          /* SL
-          for (const snapshotID of uniqueSnapshotIDs) {
-            if (snapshotID) {
-              snapStore.prepareToDelete(snapshotID);
-            }
-          }
-          await snapStore.commitDeletes(true);
           */
-        }
-      } else {
-        //SL const { transcriptNum, d: delivery, syscalls } = data;
-        lastTranscriptNum = transcriptNum;
-        /* SL
-        if (startTranscriptNum == null) {
-          startTranscriptNum = transcriptNum - 1;
-        }*/
 
-        /* SL disble forced snapshots for now
-        const makeSnapshot =
-          argv.forcedSnapshotInterval &&
-          (transcriptNum - argv.forcedSnapshotInitial) %
-            argv.forcedSnapshotInterval ===
-            0;
-        */
-
-        // syscalls = [{ d, response }, ..]
-        // console.log(`replaying:`);
-        // console.log(
-        //   `delivery ${transcriptNum} (L ${lineNumber}):`,
-        //   JSON.stringify(delivery).slice(0, 200),
-        // );
-        // for (const s of syscalls) {
-        //   // s.response = 'nope';
-        //   console.log(
-        //     ` syscall:`,
-        //     s.response[0],
-        //     JSON.stringify(s.d).slice(0, 200),
-        //     JSON.stringify(s.response[1]).slice(0, 200),
-        //   );
-        // }
-        /** @type {({snapshotID: string; workerData: WorkerData;} | null)[]} */
-        const snapshotData = await Promise.all(
-          workers.map(async workerData => {
-            const { manager, xsnapPID } = workerData;
-            workerData.timeOfLastCommand = performance.now();
-            const { syscallHandler, finishSimulation } = makeSyscallSimulator(kernelSlog, vatID, transcriptNum, transcriptEntry);
-            await manager.deliver(delivery, syscallHandler);
-            finishSimulation();
-            updateDeliveryTime(workerData);
-            workerData.firstTranscriptNum ??= transcriptNum - 1;
-            completeWorkerStep(workerData);
-            await workersSynced;
-
-            // console.log(`dr`, dr);
-
-            // enable this to write periodic snapshots, for #5975 leak
-            /* SL
-            if (makeSnapshot && manager.makeSnapshot) {
-              const { hash: snapshotID, rawSaveSeconds } =
-                await manager.makeSnapshot(snapStore);
-              fs.writeSync(
-                snapshotActivityFd,
-                `${JSON.stringify({
-                  //transcriptFile,
-                  type: 'save',
-                  xsnapPID,
-                  vatID,
-                  transcriptNum,
+          if (argv.forcedReloadFromSnapshot) {
+            /** @type Set<String | undefined> */
+            let reloadSnapshotIDs = new Set(uniqueSnapshotIDs);
+            if (
+              !argv.keepWorkerHashDifference &&
+              uniqueSnapshotIDs.length > argv.keepWorkerRecent
+            ) {
+              reloadSnapshotIDs = new Set(
+                snapshotData
+                  .filter(data => data && data.workerData.keep)
+                  .map(data => data?.snapshotID),
+              );
+              for (const data of snapshotData.reverse()) {
+                if (reloadSnapshotIDs.size >= argv.keepWorkerRecent) break;
+                reloadSnapshotIDs.add(data?.snapshotID);
+              }
+            }
+            for (const snapshotID of reloadSnapshotIDs) {
+              // eslint-disable-next-line no-await-in-loop
+              await loadSnapshot(
+                {
                   snapshotID,
-                })}\n`,
+                  vatID,
+                },
+                argv.keepWorkerHashDifference && divergent,
               );
-              console.log(
-                `made snapshot ${snapshotID} after delivery ${transcriptNum} to worker PID ${xsnapPID} (start delivery ${
-                  workerData.firstTranscriptNum
-                }).\n    Save time = ${
-                  Math.round(rawSaveSeconds * 1000) / 1000
-                }s. Delivery time since last snapshot ${
-                  Math.round(workerData.deliveryTimeSinceLastSnapshot) / 1000
-                }s. Up ${
-                  transcriptNum - workerData.firstTranscriptNum
-                } deliveries.`,
-              );
-              workerData.deliveryTimeSinceLastSnapshot = 0;
-              return { snapshotID, workerData };
-            } else */ {
-              return null;
-            }
-          }),
-        );
-        const uniqueSnapshotIDs = [
-          ...new Set(snapshotData.map(data => data?.snapshotID)),
-        ].filter(snapshotID => snapshotID != null);
-
-        const divergent = uniqueSnapshotIDs.length !== 1;
-
-        /* SL
-        if (makeSnapshot && divergent) {
-          const errorMessage = `Snapshot hashes do not match each other: ${uniqueSnapshotIDs.join(
-            ', ',
-          )}`;
-          if (argv.ignoreSnapshotHashDifference) {
-            console.warn(errorMessage);
-          } else {
-            throw new Error(errorMessage);
-          }
-        }
-         */
-
-        if (argv.forcedReloadFromSnapshot) {
-          /** @type Set<String | undefined> */
-          let reloadSnapshotIDs = new Set(uniqueSnapshotIDs);
-          if (
-            !argv.keepWorkerHashDifference &&
-            uniqueSnapshotIDs.length > argv.keepWorkerRecent
-          ) {
-            reloadSnapshotIDs = new Set(
-              snapshotData
-                .filter(data => data && data.workerData.keep)
-                .map(data => data?.snapshotID),
-            );
-            for (const data of snapshotData.reverse()) {
-              if (reloadSnapshotIDs.size >= argv.keepWorkerRecent) break;
-              reloadSnapshotIDs.add(data?.snapshotID);
             }
           }
-          for (const snapshotID of reloadSnapshotIDs) {
+
+          const loadSnapshots = [].concat(
+            argv.loadSnapshots?.[transcriptNum] || [],
+          );
+          for (const snapshotID of loadSnapshots) {
             // eslint-disable-next-line no-await-in-loop
             await loadSnapshot(
               {
                 snapshotID,
                 vatID,
               },
-              argv.keepWorkerHashDifference && divergent,
-            );
-          }
-        }
-
-        const loadSnapshots = [].concat(
-          argv.loadSnapshots?.[transcriptNum] || [],
-        );
-        for (const snapshotID of loadSnapshots) {
-          // eslint-disable-next-line no-await-in-loop
-          await loadSnapshot(
-            {
-              snapshotID,
-              vatID,
-            },
-            argv.keepWorkerExplicitLoad ||
+              argv.keepWorkerExplicitLoad ||
               (argv.keepWorkerHashDifference &&
                 (loadSnapshots.length > 1 ||
                   !uniqueSnapshotIDs.includes(snapshotID))),
-          );
+            );
+          }
+
+          /* if (
+            !argv.useCustomSnapStore &&
+            (argv.keepNoSnapshots || (!divergent && !argv.keepAllSnapshots))
+          ) {
+            for (const snapshotID of uniqueSnapshotIDs) {
+              if (snapshotID) {
+                snapStore.prepareToDelete(snapshotID);
+              }
+            }
+            await snapStore.commitDeletes(true);
+          }*/
         }
 
-        /* if (
-          !argv.useCustomSnapStore &&
-          (argv.keepNoSnapshots || (!divergent && !argv.keepAllSnapshots))
-        ) {
-          for (const snapshotID of uniqueSnapshotIDs) {
-            if (snapshotID) {
-              snapStore.prepareToDelete(snapshotID);
-            }
-          }
-          await snapStore.commitDeletes(true);
-        }*/
-      }
-    }
+        transcriptNum += 1;
+      } // for await (const line of trSpanIterator)
+    } // while (trSpanIterator = transcriptStore.readSpan(vatID, startPos))
   } finally {
     // SL lines.close();
     fs.closeSync(snapshotActivityFd);
