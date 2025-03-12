@@ -80,13 +80,7 @@ test.serial('oracles provision before contract deployment', async t => {
  * environment does not yet have a connection to Noble (nor any other chains).
  */
 test.serial('prop 87: Beta', async t => {
-  const { evalProposal, bridgeUtils } = t.context;
-
-  const materials = await fetchCoreEvalRelease({
-    repo: 'Agoric/agoric-sdk',
-    release: 'fast-usdc-beta-1',
-    name: 'start-fast-usdc',
-  });
+  const { agoricNamesRemotes, evalReleasedProposal, bridgeUtils } = t.context;
 
   // Proposal 87 doesn't quite complete: noble ICA is mis-configured
   bridgeUtils.setAckBehavior(
@@ -94,16 +88,15 @@ test.serial('prop 87: Beta', async t => {
     'startChannelOpenInit',
     AckBehavior.Never,
   );
-  try {
-    await evalProposal(materials);
-  } catch (err) {
-    t.log(err.message);
-    if (!err.message.startsWith('unsettled value')) throw err;
-  }
+  await evalReleasedProposal('fast-usdc-beta-1', 'start-fast-usdc').catch(err =>
+    // the deployment succeeds so allow the particular known problem
+    assert.equal(
+      err.message,
+      'unsettled value for "kp1205"',
+      'unexpected error message',
+    ),
+  );
 
-  const { agoricNamesRemotes, refreshAgoricNamesRemotes } = t.context;
-  // update now that fastUsdc is instantiated
-  refreshAgoricNamesRemotes();
   t.truthy(agoricNamesRemotes.instance.fastUsdc);
 });
 
@@ -286,7 +279,7 @@ test.serial('oracles accept invitations', async t => {
 });
 
 test.serial('prop 88: RC1; update noble ICA', async t => {
-  const { bridgeUtils, evalProposal } = t.context;
+  const { bridgeUtils, evalReleasedProposal } = t.context;
 
   bridgeUtils.setAckBehavior(
     BridgeId.DIBC,
@@ -295,17 +288,7 @@ test.serial('prop 88: RC1; update noble ICA', async t => {
   );
   bridgeUtils.setBech32Prefix('noble');
 
-  const materials = await fetchCoreEvalRelease({
-    repo: 'Agoric/agoric-sdk',
-    release: 'fast-usdc-rc1',
-    name: 'eval-fast-usdc-reconfigure',
-  });
-  try {
-    await evalProposal(materials);
-  } catch (err) {
-    t.log(err.message);
-    if (!err.message.startsWith('unsettled value')) throw err;
-  }
+  await evalReleasedProposal('fast-usdc-rc1', 'eval-fast-usdc-reconfigure');
 
   // XXX bridgeUtils.getOutboundMessages(BridgeId.DIBC) should
   // show the updated connection id, but we struggled to confirm.
