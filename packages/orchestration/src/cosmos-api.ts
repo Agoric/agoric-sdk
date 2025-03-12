@@ -309,6 +309,18 @@ export interface LiquidStakingMethods {
   liquidStake: (amount: AmountArg) => Promise<void>;
 }
 
+/**
+ * Noble is the gateway to transferring USDC among Cosmos chains. We can
+ * transfer funds from any cosmos account using depositForBurn().
+ */
+export interface NobleMethods {
+  /** burn USDC on Noble and mint on a destination chain via CCTP */
+  depositForBurn: (
+    mintRecipient: CosmosChainAddress,
+    amount: AmountArg,
+  ) => Promise<void>;
+}
+
 // TODO support StakingAccountQueries
 /** Methods supported only on Agoric chain accounts */
 export interface LocalAccountMethods extends StakingAccountActions {

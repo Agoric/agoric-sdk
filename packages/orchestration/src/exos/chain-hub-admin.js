@@ -1,12 +1,15 @@
-/* we expect promises to resolved promptly,  */
+/* we expect promises to resolve promptly,  */
 /* eslint-disable no-restricted-syntax */
 import { heapVowE } from '@agoric/vow/vat.js';
+import { makeTracer } from '@agoric/internal';
 import { M } from '@endo/patterns';
 import { CosmosChainInfoShape, DenomDetailShape } from '../typeGuards.js';
 
+const trace = makeTracer('ChainHubAdmin');
+
 /**
  * @import {Zone} from '@agoric/zone';
- * @import {CosmosChainInfo, Denom, IBCConnectionInfo} from '@agoric/orchestration';
+ * @import {CosmosChainInfo, ChainInfo, Denom, IBCConnectionInfo} from '@agoric/orchestration';
  * @import {ChainHub, DenomDetail} from './chain-hub.js';
  */
 
@@ -34,11 +37,9 @@ export const prepareChainHubAdmin = (zone, chainHub) => {
   const makeCreatorFacet = zone.exo(
     'ChainHub Admin',
     M.interface('ChainHub Admin', {
-      registerChain: M.callWhen(
-        M.string(),
-        CosmosChainInfoShape,
-        ConnectionInfoShape,
-      ).returns(M.undefined()),
+      registerChain: M.callWhen(M.string(), CosmosChainInfoShape)
+        .optional(ConnectionInfoShape)
+        .returns(M.undefined()),
       registerAsset: M.call(M.string(), DenomDetailShape).returns(M.promise()),
     }),
     {
@@ -46,8 +47,8 @@ export const prepareChainHubAdmin = (zone, chainHub) => {
        * Register information for a chain
        *
        * @param {string} chainName - must not exist in chainHub
-       * @param {CosmosChainInfo} chainInfo
-       * @param {IBCConnectionInfo} connectionInfo - from Agoric chain
+       * @param {ChainInfo} chainInfo
+       * @param {IBCConnectionInfo} [connectionInfo] - from Agoric chain
        */
       async registerChain(chainName, chainInfo, connectionInfo) {
         // when() because chainHub methods return vows. If this were inside
@@ -56,6 +57,10 @@ export const prepareChainHubAdmin = (zone, chainHub) => {
           chainHub.getChainInfo('agoric'),
         );
         chainHub.registerChain(chainName, chainInfo);
+        if (!connectionInfo) {
+          trace(chainName, 'registered without connection info');
+          return;
+        }
         chainHub.registerConnection(
           agoricChainInfo.chainId,
           chainInfo.chainId,
