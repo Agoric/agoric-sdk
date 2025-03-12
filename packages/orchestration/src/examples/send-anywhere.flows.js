@@ -83,7 +83,10 @@ export const sendIt = async (
   const sharedLocalAccount = await sharedLocalAccountP;
   await localTransfer(seat, sharedLocalAccount, give);
 
-  if (typeof info.cctpDestinationDomain !== 'number') {
+  // XXX this can be incorrect (1) if Noble is the destination and IBC would
+  // suffice, or (2) the destination is a non-cosmos chain without CCTP, when we
+  // can't send via IBC. This code should probably call makeTransferRoute().
+  if (!('cctpDestinationDomain' in info)) {
     // within the inter-chain; no CCTP needed
     void log(`completed transfer to localAccount`);
 
