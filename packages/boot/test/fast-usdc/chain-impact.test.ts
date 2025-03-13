@@ -647,36 +647,44 @@ test.serial('iterate simulation several times', async t => {
   harness.resetRunPolicy(); // never mind computrons from bootstrap
   const snapStore = swingStore.internal.snapStore as unknown as SnapStoreDebug;
 
+  async function doCleanupAndSnapshot(id) {
+    await doCoreEval('@agoric/fast-usdc/scripts/delete-completed-txs.js');
+    controller.reapAllVats();
+    await controller.run();
+    const { kernelTable } = controller.dump();
+
+    const observation = {
+      id: `post-prune-${id}`,
+      time: Date.now(),
+      kernelTable,
+      ...getResourceUsageStats(controller, storage.data),
+    };
+    observations.push(observation);
+  }
+
   for (const ix of range(9)) {
+    // force GC and prune vstorage at regular intervals
+    if (ix % 4 === 0) {
+      await doCleanupAndSnapshot(ix);
+    }
+
     updateNewCellBlockHeight(); // look at only the latest value written
     await sim.iteration(t, ix);
 
     const computrons = harness.totalComputronCount();
     const snapshots = [...snapStore.listAllSnapshots()];
-    observations.push({
+    const observation = {
       id: `iter-${ix}`,
       time: Date.now(),
       computrons,
       snapshots,
       ...getResourceUsageStats(controller, storage.data),
-    });
+    };
+    observations.push(observation);
     harness.resetRunPolicy(); // stay under block budget
-
-    // force GC and prune vstorage at regular intervals
-    if (ix % 4 === 0) {
-      await doCoreEval('@agoric/fast-usdc/scripts/delete-completed-txs.js');
-      controller.reapAllVats();
-      await controller.run();
-      const { kernelTable } = controller.dump();
-
-      observations.push({
-        id: `post-prune-${ix}`,
-        time: Date.now(),
-        kernelTable,
-        ...getResourceUsageStats(controller, storage.data),
-      });
-    }
   }
+
+  await doCleanupAndSnapshot('final');
 
   await writeFile('kernel-1.json', JSON.stringify(controller.dump(), null, 2));
 });
