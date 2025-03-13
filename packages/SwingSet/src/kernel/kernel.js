@@ -1950,10 +1950,31 @@ export default function buildKernel(
     }
   }
 
-  function reapAllVats() {
+  function* getAllVatPosEntries() {
     for (const vatID of getAllVatIds()) {
-      kernelKeeper.scheduleReap(vatID);
+      const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+      yield /** @type {const} */ ([
+        vatID,
+        vatKeeper.getTranscriptEndPosition(),
+      ]);
     }
+  }
+
+  function reapAllVats(previousVatPos = {}) {
+    /** @type {Record<string, number>} */
+    const currentVatPos = {};
+
+    for (const [vatID, endPos] of getAllVatPosEntries()) {
+      if (previousVatPos[vatID] !== endPos) {
+        kernelKeeper.scheduleReap(vatID);
+        // We just added one delivery
+        currentVatPos[vatID] = endPos + 1;
+      } else {
+        currentVatPos[vatID] = endPos;
+      }
+    }
+
+    return harden(currentVatPos);
   }
 
   async function step() {
