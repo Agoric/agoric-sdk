@@ -1946,11 +1946,18 @@ export default function buildKernel(
     }
   }
 
-  function reapAllVats() {
+  /** @returns {Generator<VatID>} */
+  function* getAllVatIds() {
     for (const [_, vatID] of kernelKeeper.getStaticVats()) {
-      kernelKeeper.scheduleReap(vatID);
+      yield vatID;
     }
     for (const vatID of kernelKeeper.getDynamicVats()) {
+      yield vatID;
+    }
+  }
+
+  function reapAllVats() {
+    for (const vatID of getAllVatIds()) {
       kernelKeeper.scheduleReap(vatID);
     }
   }
