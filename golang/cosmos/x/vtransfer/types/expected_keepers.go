@@ -3,9 +3,9 @@ package types
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
-	connection "github.com/cosmos/ibc-go/v6/modules/core/03-connection/types"
-	channel "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
-	ibcexported "github.com/cosmos/ibc-go/v6/modules/core/exported"
+	connection "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
+	channel "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 )
 
 // ChannelKeeper defines the expected IBC channel keeper
