@@ -2,10 +2,53 @@
   "agoricProposal": {
     "releaseNotes": false,
     "sdkImageTag": "unreleased",
-    "planName": "agoric-upgrade-19-a3p",
+    "planName": "agoric-upgrade-19-basic",
     "upgradeInfo": {
-      "coreProposals": [],
-      "releaseNotes": false
+      "coreProposals": {
+        "steps": [
+          [
+            {
+              "module": "@agoric/builders/scripts/vats/upgrade-mintHolder.js",
+              "entrypoint": "defaultProposalBuilder",
+              "args": [
+                {
+                  "config": {
+                    "labelList": [
+                      "USDC_axl",
+                      "USDT_grv",
+                      "DAI_axl",
+                      "DAI_grv",
+                      "stATOM",
+                      "USDC_grv",
+                      "ATOM",
+                      "USDT_axl",
+                      "USDC",
+                      "BLD"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "module": "@agoric/builders/scripts/inter-protocol/replace-feeDistributor-combo.js",
+              "entrypoint": "defaultProposalBuilder",
+              "args": [
+                {
+                  "config": {
+                    "params": {
+                      "collectionInterval": 30,
+                      "keywordShares": {
+                        "RewardDistributor": 0,
+                        "Reserve": 1
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        ]
+      }
     },
     "type": "Software Upgrade Proposal",
     "sdk-generate": [
