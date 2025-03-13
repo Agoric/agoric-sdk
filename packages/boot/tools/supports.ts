@@ -21,7 +21,10 @@ import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { krefOf } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
-import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
+import {
+  loadSwingsetConfigFile,
+  type SwingSetConfig,
+} from '@agoric/swingset-vat';
 import { makeSlogSender } from '@agoric/telemetry';
 import { TimeMath, type Timestamp } from '@agoric/time';
 import {
@@ -54,8 +57,8 @@ import {
   defaultBeansPerXsnapComputron,
 } from '@agoric/cosmic-swingset/src/sim-params.js';
 import { computronCounter } from '@agoric/cosmic-swingset/src/computron-counter.js';
-import { icaMocks, protoMsgMockMap, protoMsgMocks } from './ibc/mocks.js';
 import type { makeArchiveSnapshot } from '@agoric/swing-store';
+import { icaMocks, protoMsgMockMap, protoMsgMocks } from './ibc/mocks.js';
 
 const trace = makeTracer('BSTSupport', false);
 
@@ -115,6 +118,7 @@ export const getNodeTestVaultsConfig = async ({
   specifier = '@agoric/vm-config/decentral-itest-vaults-config.json',
   defaultManagerType = 'local' as ManagerType,
   discriminator = '',
+  configOverrides = {},
 }) => {
   const fullPath = await importMetaResolve(specifier, import.meta.url).then(
     u => new URL(u).pathname,
@@ -141,6 +145,8 @@ export const getNodeTestVaultsConfig = async ({
       v => v !== '@agoric/pegasus/scripts/init-core.js',
     );
   }
+
+  Object.assign(config, configOverrides);
 
   // make an almost-certainly-unique file name with a fixed-length prefix
   const configFilenameParts = [
@@ -344,6 +350,7 @@ export const makeSwingsetTestKit = async (
     archiveSnapshot = undefined as
       | ReturnType<typeof makeArchiveSnapshot>
       | undefined,
+    configOverrides = {} as Partial<SwingSetConfig>,
   } = {},
 ) => {
   console.time('makeBaseSwingsetTestKit');
@@ -352,6 +359,7 @@ export const makeSwingsetTestKit = async (
     specifier: configSpecifier,
     discriminator: label,
     defaultManagerType,
+    configOverrides,
   });
   const swingStore = initSwingStore(undefined, { archiveSnapshot });
   const { kernelStorage, hostStorage } = swingStore;
