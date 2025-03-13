@@ -13,7 +13,6 @@ const (
 
 var (
 	NewKeeper            = keeper.NewKeeper
-	NewQuerier           = keeper.NewQuerier
 	NewMsgDeliverInbound = types.NewMsgDeliverInbound
 	NewMsgProvision      = types.NewMsgProvision
 	NewMailbox           = types.NewMailbox
