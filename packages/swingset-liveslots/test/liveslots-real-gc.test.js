@@ -288,7 +288,7 @@ test.serial('GC dispatch.dropExports', async t => {
   t.deepEqual(log.shift(), {
     type: 'vatstoreSet',
     key: 'idCounters',
-    value: '{"exportID":11,"collectionID":5,"promiseID":5}',
+    value: '{"exportID":11,"collectionID":4,"promiseID":5}',
   });
   t.deepEqual(log, []);
 
@@ -367,7 +367,7 @@ test.serial(
     t.deepEqual(log.shift(), {
       type: 'vatstoreSet',
       key: 'idCounters',
-      value: '{"exportID":11,"collectionID":5,"promiseID":5}',
+      value: '{"exportID":11,"collectionID":4,"promiseID":5}',
     });
     t.deepEqual(log, []);
 
