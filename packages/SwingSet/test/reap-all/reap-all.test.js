@@ -2,7 +2,7 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 import { initSwingStore } from '@agoric/swing-store';
-import { kunser } from '@agoric/kmarshal';
+import { kslot, kunser } from '@agoric/kmarshal';
 
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 
@@ -65,8 +65,13 @@ test('reap all vats', async t => {
 
   const { activeVats } = c.getStatus();
   t.log(activeVats.map(({ id, options }) => `${id}: ${options.name}`));
-  const reapable = activeVats.map(({ id }) => id);
+  // As noted in kernel.js, the comms vat is not reapable.
+  const reapable = activeVats.flatMap(({ id, options }) =>
+    options.name === 'comms' ? [] : [id],
+  );
   t.true(reapable.length >= 7); // bootstrap, staticDumbo{1,2,3}, dyn{1,2,3}
+  // We care about the dynamic vats.
+  const [dyn1, dyn2, dyn3] = reapable.slice(-3);
 
   /**
    * @param {{ reap?: string[], acceptanceLength?: number, runLength?: number }} [expectations]
@@ -87,4 +92,76 @@ test('reap all vats', async t => {
 
   await c.run();
   checkQueues();
+
+  // Create a chain of references
+
+  /** @type {string[]} */
+  const exportedPromises = [];
+  exportedPromises.push(
+    /** @type {string} */ (c.queueToVatRoot('bootstrap', 'getExport')),
+  );
+
+  for (let i = 0; i < 3; i += 1) {
+    const lastExported = /** @type {string} */ (exportedPromises.at(-1));
+    exportedPromises.push(
+      /** @type {string} */ (
+        c.queueToVatObject(dynamicRoots[i], 'makeHolder', [kslot(lastExported)])
+      ),
+    );
+  }
+  await c.run();
+
+  // Drop our interest in the intermediary promises without gaining an interest
+  // in their settlement
+  for (const p of exportedPromises.splice(0, exportedPromises.length - 1)) {
+    c.kpResolution(p, { incref: false });
+  }
+
+  // Workaround to trigger processRefcounts
+  c.queueToVatObject(dynamicRoots.at(-1), 'doSomething', ['ping'], 'none');
+
+  await c.run();
+  checkQueues();
+
+  const postMessagesReapPos = c.reapAllVats();
+  checkQueues({ reap: reapable });
+
+  await c.run();
+  checkQueues();
+
+  const postReapReapPos = c.reapAllVats(postMessagesReapPos);
+  // Verify that if there is nothing to do, vat positions don't change through reapAll
+  t.deepEqual(postReapReapPos, postMessagesReapPos);
+  checkQueues();
+
+  // Drop our interest in the last promise of the chain without gaining an
+  // interest in its settlement
+  c.kpResolution(exportedPromises.shift(), { incref: false });
+  // Workaround to trigger processRefcounts, making sure we only add activity to the vat retiring an export
+  c.queueToVatObject(dynamicRoots.at(-1), 'doSomething', ['ping'], 'none');
+  await c.run();
+  checkQueues();
+
+  // Continuously trigger reapAllVats for vats that have seen deliveries,
+  // asserting that for each round, the expected vat is reporting a reap.
+  // Because of our chained references, our GC shakes lose an object for
+  // each reap round.
+  let prevReapPos = postMessagesReapPos;
+  for (const vatID of [dyn3, dyn2, dyn1, c.vatNameToID('bootstrap')]) {
+    const { [vatID]: prevVatPos, ...prevOtherPos } = prevReapPos;
+    const newReapPos = c.reapAllVats(prevReapPos);
+    checkQueues({ reap: [vatID] });
+    const { [vatID]: newVatPos, ...newOtherPos } = newReapPos;
+    t.log(`vat ${vatID} reap pos prev ${prevVatPos}, new ${newVatPos}`);
+    t.deepEqual(newOtherPos, prevOtherPos);
+    prevReapPos = newReapPos;
+    await c.run();
+    checkQueues();
+  }
+
+  // Once the root of the chain of reference is collected, doing more reaping
+  // will not trigger any more activity.
+  const finalReapPos = c.reapAllVats(prevReapPos);
+  checkQueues();
+  t.deepEqual(finalReapPos, prevReapPos);
 });
