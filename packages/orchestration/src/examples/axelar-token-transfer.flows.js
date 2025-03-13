@@ -4,9 +4,9 @@ import { makeError, q } from '@endo/errors';
 /**
  * @import {GuestInterface, GuestOf} from '@agoric/async-flow';
  * @import {Vow} from '@agoric/vow';
- * @import {LocalOrchestrationAccountKit} from '../exos/local-orchestration-account.js';
- * @import {ZoeTools} from '../utils/zoe-tools.js';
- * @import {Orchestrator, OrchestrationFlow, LocalAccountMethods} from '../types.js';
+ * @import {LocalOrchestrationAccountKit} from '@agoric/orchestration/src/exos/local-orchestration-account.js';
+ * @import {ZoeTools} from '@agoric/orchestration/src/utils/zoe-tools.js';
+ * @import {Orchestrator, OrchestrationFlow} from '@agoric/orchestration/src/types.js';
  */
 
 const { entries } = Object;
@@ -33,45 +33,50 @@ const channels = {
  * @param {GuestOf<(msg: string) => Vow<void>>} ctx.log
  * @param {ZCFSeat} seat
  * @param {{
- *   destAddr: string;
+ *   destinationAddress: string;
  *   type: number;
  *   destinationEVMChain: string;
  *   gasAmount: number;
  *   contractInvocationPayload: number[];
  * }} offerArgs
  */
-export const sendIt = async (
+export const sendTokensToEVM = async (
   orch,
-  { sharedLocalAccountP, log, zoeTools: { localTransfer, withdrawToSeat } },
+  { sharedLocalAccountP, zoeTools: { localTransfer, withdrawToSeat } },
   seat,
   offerArgs,
 ) => {
-  const {
-    destAddr,
-    type,
-    destinationEVMChain,
-    gasAmount,
-    contractInvocationPayload,
-  } = offerArgs;
-
-  void log(`initiating sendIt`);
+  const { destinationAddress, destinationEVMChain } = offerArgs;
+  console.log('Inside sendTokensToEVM');
+  console.log(
+    'Offer Args',
+    JSON.stringify({
+      destinationAddress,
+      destinationEVMChain,
+    }),
+  );
 
   const { give } = seat.getProposal();
   const [[_kw, amt]] = entries(give);
+  console.log('_kw, amt', _kw, amt);
 
   const agoric = await orch.getChain('agoric');
+  console.log('Agoric Chain ID:', (await agoric.getChainInfo()).chainId);
+
   const assets = await agoric.getVBankAssetInfo();
-  void log(`got info for denoms: ${assets.map(a => a.denom).join(', ')}`);
+  console.log(`Denoms: ${assets.map(a => a.denom).join(', ')}`);
+
   const { denom } = NonNullish(
     assets.find(a => a.brand === amt.brand),
     `${amt.brand} not registered in vbank`,
   );
 
   const osmosisChain = await orch.getChain('osmosis');
+  console.log('Osmosis Chain ID:', (await osmosisChain.getChainInfo()).chainId);
+
   const info = await osmosisChain.getChainInfo();
   const { chainId } = info;
   assert(typeof chainId === 'string', 'bad chainId');
-  void log(`got info for chain: ${chainId}`);
 
   /**
    * @type {any} XXX methods returning vows
@@ -79,26 +84,14 @@ export const sendIt = async (
    */
   const sharedLocalAccount = await sharedLocalAccountP;
   await localTransfer(seat, sharedLocalAccount, give);
-
-  void log(`completed transfer to localAccount`);
-
-  const payload = type === 1 || type === 2 ? contractInvocationPayload : null;
-
-  void log(`payload received`);
+  console.log('After local transfer');
 
   const memoToAxelar = {
     destination_chain: destinationEVMChain,
-    destination_address: destAddr,
-    payload,
-    type,
+    destination_address: destinationAddress,
+    payload: null,
+    type: 3,
   };
-
-  if (type === 1 || type === 2) {
-    memoToAxelar.fee = {
-      amount: gasAmount,
-      recipient: addresses.AXELAR_GAS,
-    };
-  }
 
   const memo = {
     forward: {
@@ -112,25 +105,31 @@ export const sendIt = async (
   };
 
   try {
+    console.log(`Initiating IBC Transfer...`);
+    console.log(`DENOM of token:${denom}`);
+
     await sharedLocalAccount.transfer(
       {
+        // TODO: dont use a hardcoded OSMOSIS address
         value: addresses.OSMOSIS_RECEIVER,
         encoding: 'bech32',
         chainId,
       },
-      { denom, value: amt.value },
+      {
+        denom,
+        value: amt.value,
+      },
       { memo: JSON.stringify(memo) },
     );
-    void log(`completed transfer to ${destAddr}`);
+
+    console.log(`Completed transfer to ${destinationAddress}`);
   } catch (e) {
     await withdrawToSeat(sharedLocalAccount, seat, give);
     const errorMsg = `IBC Transfer failed ${q(e)}`;
-    void log(`ERROR: ${errorMsg}`);
     seat.exit(errorMsg);
     throw makeError(errorMsg);
   }
 
   seat.exit();
-  void log(`transfer complete, seat exited`);
 };
-harden(sendIt);
+harden(sendTokensToEVM);
