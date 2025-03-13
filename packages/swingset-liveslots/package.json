@@ -1,6 +1,6 @@
 {
   "name": "@agoric/swingset-liveslots",
-  "version": "0.10.3-u19.1",
+  "version": "0.10.3-u19.2",
   "description": "SwingSet ocap support layer",
   "type": "module",
   "main": "src/index.js",
@@ -19,7 +19,7 @@
     "postpack": "git clean -f ':!src/types-index.d.ts' '*.d.ts*' '*.tsbuildinfo'"
   },
   "dependencies": {
-    "@agoric/internal": "^0.4.0-u19.1",
+    "@agoric/internal": "^0.4.0-u19.2",
     "@agoric/store": "^0.9.3-u19.0",
     "@endo/env-options": "^1.1.8",
     "@endo/errors": "^1.2.9",

@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.35.0-u19.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.35.0-u19.1...@agoric/cosmos@0.35.0-u19.2) (2025-03-13)
+
+**Note:** Version bump only for package @agoric/cosmos
+
+
+
+
+
 ## [0.35.0-u19.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.35.0-u19.0...@agoric/cosmos@0.35.0-u19.1) (2025-03-03)
 
 **Note:** Version bump only for package @agoric/cosmos

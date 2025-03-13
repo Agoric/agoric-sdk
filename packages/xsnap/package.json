@@ -1,6 +1,6 @@
 {
   "name": "@agoric/xsnap",
-  "version": "0.14.3-u19.1",
+  "version": "0.14.3-u19.2",
   "description": "Snapshotting VM worker based on Moddable's XS Javascript engine",
   "author": "Agoric",
   "license": "Apache-2.0",
@@ -28,7 +28,7 @@
     "test:xs": "exit 0"
   },
   "dependencies": {
-    "@agoric/internal": "^0.4.0-u19.1",
+    "@agoric/internal": "^0.4.0-u19.2",
     "@agoric/xsnap-lockdown": "^0.14.1-u19.0",
     "@endo/bundle-source": "^3.5.1",
     "@endo/errors": "^1.2.9",

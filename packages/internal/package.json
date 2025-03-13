@@ -1,6 +1,6 @@
 {
   "name": "@agoric/internal",
-  "version": "0.4.0-u19.1",
+  "version": "0.4.0-u19.2",
   "description": "Externally unsupported utilities internal to agoric-sdk",
   "type": "module",
   "main": "src/index.js",
@@ -34,7 +34,7 @@
     "jessie.js": "^0.3.4"
   },
   "devDependencies": {
-    "@agoric/cosmic-proto": "^0.5.0-u19.1",
+    "@agoric/cosmic-proto": "^0.5.0-u19.2",
     "@endo/exo": "^1.5.8",
     "@endo/init": "^1.1.8",
     "ava": "^5.3.0",

@@ -1,6 +1,6 @@
 {
   "name": "@agoric/swing-store",
-  "version": "0.10.0-u19.1",
+  "version": "0.10.0-u19.2",
   "description": "Persistent storage for SwingSet",
   "type": "module",
   "main": "./src/index.js",
@@ -21,7 +21,7 @@
     "lint:eslint": "eslint ."
   },
   "dependencies": {
-    "@agoric/internal": "^0.4.0-u19.1",
+    "@agoric/internal": "^0.4.0-u19.2",
     "@endo/base64": "^1.0.9",
     "@endo/bundle-source": "^3.5.1",
     "@endo/check-bundle": "^1.0.13",
