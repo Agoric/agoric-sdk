@@ -9,6 +9,7 @@ require (
 	cosmossdk.io/math v1.4.0
 	cosmossdk.io/simapp v0.0.0-00010101000000-000000000000
 	github.com/armon/go-metrics v0.4.1
+	github.com/cometbft/cometbft v0.37.5
 	github.com/cosmos/cosmos-sdk v0.47.15
 	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7 v7.2.0
 	github.com/cosmos/ibc-go/v7 v7.10.0
@@ -24,8 +25,8 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.10.0
-	github.com/tendermint/tendermint v0.34.35
-	github.com/tendermint/tm-db v0.6.7
+	github.com/tendermint/tendermint v0.34.20
+	github.com/tendermint/tm-db v0.6.6
 	google.golang.org/genproto/googleapis/api v0.0.0-20240903143218-8af14fe29dc1
 	google.golang.org/grpc v1.68.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -60,7 +61,6 @@ require (
 	github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b // indirect
 	github.com/cockroachdb/redact v1.1.5 // indirect
 	github.com/coinbase/rosetta-sdk-go v0.7.9 // indirect
-	github.com/cometbft/cometbft v0.37.5 // indirect
 	github.com/cometbft/cometbft-db v0.9.5 // indirect
 	github.com/confio/ics23/go v0.9.1 // indirect
 	github.com/cosmos/btcutil v1.0.5 // indirect
@@ -68,7 +68,6 @@ require (
 	github.com/cosmos/go-bip39 v1.0.0 // indirect
 	github.com/cosmos/gogogateway v1.2.0 // indirect
 	github.com/cosmos/gogoproto v1.7.0 // indirect
-	github.com/cosmos/gorocksdb v1.2.0 // indirect
 	github.com/cosmos/iavl v0.20.1 // indirect
 	github.com/cosmos/ics23/go v0.10.0 // indirect
 	github.com/cosmos/ledger-cosmos-go v0.12.4 // indirect
@@ -159,6 +158,7 @@ require (
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d // indirect
+	github.com/tecbot/gorocksdb v0.0.0-20191217155057-f0fad39f321c // indirect
 	github.com/tendermint/go-amino v0.16.0 // indirect
 	github.com/tidwall/btree v1.6.0 // indirect
 	github.com/ulikunitz/xz v0.5.11 // indirect
@@ -219,9 +219,6 @@ replace (
 	cosmossdk.io/simapp => github.com/agoric-labs/cosmos-sdk/simapp v0.0.0-20250312202453-86e44a02f6bf
 	// We need a fork of cosmos-sdk until all of the differences are merged.
 	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.46.16-alpha.agoric.2.5.0.20250312202453-86e44a02f6bf
-
-	// Pick up an IAVL race fix.
-	github.com/cosmos/iavl => github.com/cosmos/iavl v0.19.7
 
 	// Use a version of ibc-go that is compatible with the above forks.
 	// github.com/cosmos/ibc-go/v7 => github.com/agoric-labs/ibc-go/v7 v6.3.1-alpha.agoric.3
