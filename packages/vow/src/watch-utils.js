@@ -191,10 +191,16 @@ export const prepareWatchUtils = (
             // Resolution of the returned vow happened already.
             return;
           }
+          const idToNonStorableResults = provideLazyMap(
+            utilsToNonStorableResults,
+            this.facets.utils,
+            () => new Map(),
+          );
           const { remaining, resultsMap, resolver } = idToVowState.get(id);
           if (!isAllSettled && status === 'rejected') {
             // For 'all', we reject immediately on the first rejection
             idToVowState.delete(id);
+            idToNonStorableResults.delete(id);
             resolver.reject(result);
             return;
           }
@@ -206,11 +212,6 @@ export const prepareWatchUtils = (
               })
             : result;
 
-          const idToNonStorableResults = provideLazyMap(
-            utilsToNonStorableResults,
-            this.facets.utils,
-            () => new Map(),
-          );
           const nonStorableResults = provideLazyMap(
             idToNonStorableResults,
             id,
@@ -235,6 +236,7 @@ export const prepareWatchUtils = (
           }
           // We're done!  Extract the array.
           idToVowState.delete(id);
+          idToNonStorableResults.delete(id);
           const results = new Array(numResults);
           let numLost = 0;
           for (let i = 0; i < numResults; i += 1) {
