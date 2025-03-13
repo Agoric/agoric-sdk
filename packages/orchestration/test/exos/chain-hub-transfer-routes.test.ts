@@ -220,17 +220,28 @@ test('takes forwardOpts', t => {
     chainId: 'noble-1',
   });
 
-  t.like(
+  t.deepEqual(
     chainHub.makeTransferRoute(dest, amt, 'osmosis', {
       timeout: '99m',
       intermediateRecipient: nobleAddr,
     }),
     {
       receiver: nobleAddr.value,
+      sourceChannel: 'channel-750',
+      sourcePort: 'transfer',
       forwardInfo: {
         forward: {
+          channel: 'channel-21',
           timeout: '99m' as const,
+          port: 'transfer',
+          receiver: 'agoric1234',
+          retries: 3,
         },
+      },
+      token: {
+        amount: '100',
+        denom:
+          'ibc/498A0751C798A0D9A389AA3691123DADA57DAA4FE165D5C75894505B876BA6E4',
       },
     },
     'each field is optional',
