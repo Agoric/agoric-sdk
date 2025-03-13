@@ -2157,6 +2157,11 @@ export default function buildKernel(
       ephemeral.log.push(`${str}`);
     },
 
+    /**
+     * Return a fresh stats snapshot.
+     *
+     * @returns {Record<string, number>}
+     */
     getStats() {
       return kernelKeeper.getStats();
     },

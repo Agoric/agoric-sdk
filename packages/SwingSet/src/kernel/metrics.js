@@ -1,5 +1,20 @@
 // All the kernel metrics we are prepared for.
-export const KERNEL_STATS_SUM_METRICS = /** @type {const} */ ([
+/** @enum {(typeof MetricType)[keyof typeof MetricType]} MetricType */
+const MetricType = /** @type {const} */ ({
+  Counter: 'counter',
+  Gauge: 'gauge',
+});
+/**
+ * @typedef KernelMetricMeta
+ * @property {string} key
+ * @property {string} name
+ * @property {{ dimension: string, value: string }} [sub]
+ * @property {string} description
+ * @property {boolean} [consensus]
+ * @property {MetricType} metricType
+ */
+/** @type {Array<Omit<KernelMetricMeta, 'metricType'>>} */
+export const KERNEL_STATS_SUM_METRICS = [
   {
     key: 'syscalls',
     name: 'swingset_all_syscall_total',
@@ -80,9 +95,10 @@ export const KERNEL_STATS_SUM_METRICS = /** @type {const} */ ([
     name: 'swingset_dispatch_notify_total',
     description: 'Total number of SwingSet vat promise notifications',
   },
-]);
+];
 
-export const KERNEL_STATS_UPDOWN_METRICS = /** @type {const} */ ([
+/** @type {Array<Omit<KernelMetricMeta, 'metricType'>>} */
+export const KERNEL_STATS_UPDOWN_METRICS = [
   {
     key: 'kernelObjects',
     name: 'swingset_kernel_objects',
@@ -141,12 +157,11 @@ export const KERNEL_STATS_UPDOWN_METRICS = /** @type {const} */ ([
     name: 'swingset_vats',
     description: 'Number of active vats',
   },
-]);
+];
 
-const COUNTER = /** @type {const} */ ('counter');
-const GAUGE = /** @type {const} */ ('gauge');
-
+const { Counter, Gauge } = MetricType;
+/** @type {KernelMetricMeta[]} */
 export const KERNEL_STATS_METRICS = harden([
-  ...KERNEL_STATS_SUM_METRICS.map(m => ({ ...m, metricType: COUNTER })),
-  ...KERNEL_STATS_UPDOWN_METRICS.map(m => ({ ...m, metricType: GAUGE })),
+  ...KERNEL_STATS_SUM_METRICS.map(m => ({ ...m, metricType: Counter })),
+  ...KERNEL_STATS_UPDOWN_METRICS.map(m => ({ ...m, metricType: Gauge })),
 ]);
