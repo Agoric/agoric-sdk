@@ -25,6 +25,7 @@ import { makeArchiveSnapshot } from '@agoric/swing-store';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
 import type { BridgeHandler, IBCChannelID } from '@agoric/vats';
 import { makePromiseKit } from '@endo/promise-kit';
+import { keyEQ } from '@endo/patterns';
 import { readFile, writeFile } from 'fs/promises';
 import { createRequire } from 'module';
 import fs from 'node:fs';
@@ -77,6 +78,10 @@ test.before(async t => {
     slogFile,
     defaultManagerType,
     harness,
+    configOverrides: {
+      defaultReapInterval: 'never',
+      defaultReapGCKrefs: 'never',
+    },
     ...(snapshotDir
       ? { archiveSnapshot: makeArchiveSnapshot(snapshotDir, fsPowers) }
       : {}),
@@ -647,11 +652,20 @@ test.serial('iterate simulation several times', async t => {
   harness.resetRunPolicy(); // never mind computrons from bootstrap
   const snapStore = swingStore.internal.snapStore as unknown as SnapStoreDebug;
 
+  /** @type {Record<string, number>} */
+  let previousReapPos = harden({});
+
   async function doCleanupAndSnapshot(id) {
     slogSender?.({ type: 'cleanup-begin', id });
     await doCoreEval('@agoric/fast-usdc/scripts/delete-completed-txs.js');
-    controller.reapAllVats();
-    await controller.run();
+    while (true) {
+      const beforeReapPos = previousReapPos;
+      previousReapPos = controller.reapAllVats(beforeReapPos);
+      await controller.run(); // clear any reactions
+      if (keyEQ(beforeReapPos, previousReapPos)) {
+        break;
+      }
+    }
     const { kernelTable } = controller.dump();
 
     const observation = {
