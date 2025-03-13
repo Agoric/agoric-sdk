@@ -68,6 +68,8 @@ export const startAxelarGmp = async (
 
   const marshaller = await E(board).getReadonlyMarshaller();
 
+  trace('Setting privateArgs');
+
   const privateArgs = await deeplyFulfilledObject(
     harden({
       agoricNames,
@@ -89,21 +91,23 @@ export const startAxelarGmp = async (
       () => undefined,
     );
 
-  const atomIssuer = await safeFulfill(() =>
-    E(agoricNames).lookup('issuer', 'ATOM'),
+  const ausdcIssuer = await safeFulfill(() =>
+    E(agoricNames).lookup('issuer', 'AUSDC'),
   );
-  const osmoIssuer = await safeFulfill(() =>
-    E(agoricNames).lookup('issuer', 'OSMO'),
+
+  const wavaxIssuer = await safeFulfill(() =>
+    E(agoricNames).lookup('issuer', 'WAVAX'),
   );
 
   const issuerKeywordRecord = harden({
     BLD: await BLD,
     IST: await IST,
-    ...(atomIssuer && { ATOM: atomIssuer }),
-    ...(osmoIssuer && { OSMO: osmoIssuer }),
+    ...(ausdcIssuer && { AUSDC: ausdcIssuer }),
+    ...(wavaxIssuer && { WAVAX: wavaxIssuer }),
   });
   trace('issuerKeywordRecord', issuerKeywordRecord);
 
+  trace('Starting contract instance');
   const { instance } = await E(startUpgradable)({
     label: 'axelarGmp',
     installation: axelarGmp,
