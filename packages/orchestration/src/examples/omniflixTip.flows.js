@@ -24,16 +24,16 @@ export const tipOnOmniflix = async (
 ) => {
   trace('Starting tipOnOmniflix', { chainId, tokenDenom, recipientAddress });
 
-  mustMatch({ chainId, tokenDenom, recipientAddress, slippage }, {
+  mustMatch( harden({ chainId, tokenDenom, recipientAddress, slippage }), harden({
     chainId: M.string(),
     tokenDenom: M.string(),
     recipientAddress: M.string(),
     slippage: M.number(),
-  });
+  }));
 
   const { give } = seat.getProposal();
   const [[_kw, amount]] = Object.entries(give);
-
+  
   // Create accounts on Agoric and Osmosis
   const [agoric, osmosis] = await Promise.all([
     orch.getChain('agoric'),
@@ -43,11 +43,15 @@ export const tipOnOmniflix = async (
   const localAccount = await agoric.makeAccount();
   const osmosisAccount = await osmosis.makeAccount();
 
+
   const osmosisAddress = osmosisAccount.getAddress();
 
+  const blnc3 = await localAccount.getBalances();
   // Transfer input token from user to local Agoric account
-  await localTransfer(seat, localAccount, give);
-
+  const result = await localTransfer(seat, localAccount, give);
+  debugger
+  const blnc4=await localAccount.getBalances();
+  debugger
   // Swap input token to uflix on Osmosis and send to recipient
   const transferMsg = orcUtils.makeOsmosisSwap({
     destChain: 'omniflixhub',
@@ -58,17 +62,18 @@ export const tipOnOmniflix = async (
     inputDenom: tokenDenom,
     inputChainId: chainId,
   });
-
+  // const blnc = await localAccount.getBalances();
+  // const blnc2 = await osmosisAccount.getBalances();
+  debugger
   try {
     trace('Executing swap and transfer...');
-    await localAccount.transferSteps(amount, transferMsg);
+    await   localAccount.transferSteps(amount, transferMsg);
+    debugger;
     seat.exit();
   } catch (e) {
     trace('Error during swap/transfer:', e);
-    await localTransfer(localAccount, seat, give); // Refund on failure
+    await localTransfer(seat, localAccount, give); // Refund on failure
     throw new Error(`Tipping failed: ${e.message}`);
-  } finally {
-    await Promise.all([localAccount.close(), osmosisAccount.close()]);
   }
 };
 harden(tipOnOmniflix);

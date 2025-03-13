@@ -1,4 +1,5 @@
 import { AmountShape } from '@agoric/ertp';
+import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { makeTracer } from '@agoric/internal';
 import { withOrchestration } from '@agoric/orchestration/src/utils/start-helper.js';
 import { ChainInfoShape } from '@agoric/orchestration/src/typeGuards.js';
@@ -58,7 +59,7 @@ const contract = async (
   const publicFacet = zone.exo(
     'OmniflixTip Public Facet',
     M.interface('OmniflixTip PF', {
-      makeTipInvitation: M.callWhen().returns(M.promise()),
+      makeTipInvitation: M.callWhen().returns(InvitationShape),
     }),
     {
       makeTipInvitation() {
@@ -70,12 +71,6 @@ const contract = async (
             give: SingleAmountRecord,
             want: {},
             exit: M.any(),
-            args: {
-              chainId: M.string(),
-              tokenDenom: M.string(),
-              recipientAddress: M.string(),
-              slippage: M.number(),
-            },
           }),
         );
       },
