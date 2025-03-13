@@ -3,10 +3,10 @@ package types
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
-	clienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
-	connection "github.com/cosmos/ibc-go/v6/modules/core/03-connection/types"
-	channel "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
-	ibcexported "github.com/cosmos/ibc-go/v6/modules/core/exported"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	connection "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
+	channel "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 )
 
 type BankKeeper interface {
