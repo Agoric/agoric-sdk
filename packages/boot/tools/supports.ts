@@ -146,6 +146,9 @@ export const keyArrayEqual = (
  * @param options.configPath - Path to the base config file
  * @param options.defaultManagerType - SwingSet manager type to use
  * @param options.discriminator - Optional string to include in the config filename
+ * @param options.configOverrides - Other SwingSet options to set in the config
+   (may be overridden by more specific options such as `bundleDir` and
+   `defaultManagerType`)
  * @returns Path to the generated config file
  */
 export const getNodeTestVaultsConfig = async ({
@@ -153,29 +156,32 @@ export const getNodeTestVaultsConfig = async ({
   configPath,
   defaultManagerType = 'local' as ManagerType,
   discriminator = '',
+  configOverrides = {},
 }) => {
-  const config: SwingSetConfig & { coreProposals?: any[] } = NonNullish(
+  const configFromFile: SwingSetConfig & { coreProposals?: any[] } = NonNullish(
     await loadSwingsetConfigFile(configPath),
   );
 
-  // Manager types:
-  //   'local':
-  //     - much faster (~3x speedup)
-  //     - much easier to use debugger
-  //     - exhibits inconsistent GC behavior from run to run
-  //   'xs-worker'
-  //     - timing results more accurately reflect production
-  config.defaultManagerType = defaultManagerType;
-  // speed up build (60s down to 10s in testing)
-  config.bundleCachePath = bundleDir;
+  const config: SwingSetConfig & { coreProposals?: any[] } = {
+    ...configFromFile,
+    // exclude Pegasus from core proposals because it relies on IBC to Golang
+    // that isn't running
+    coreProposals: configFromFile.coreProposals?.filter(
+      spec => spec !== '@agoric/pegasus/scripts/init-core.js',
+    ),
+    ...configOverrides,
+    // Manager types:
+    //   'local':
+    //     - much faster (~3x speedup)
+    //     - much easier to use debugger
+    //     - exhibits inconsistent GC behavior from run to run
+    //   'xs-worker'
+    //     - timing results more accurately reflect production
+    defaultManagerType,
+    // speed up build (60s down to 10s in testing)
+    bundleCachePath: bundleDir,
+  };
   await fsAmbientPromises.mkdir(bundleDir, { recursive: true });
-
-  if (config.coreProposals) {
-    // remove Pegasus because it relies on IBC to Golang that isn't running
-    config.coreProposals = config.coreProposals.filter(
-      v => v !== '@agoric/pegasus/scripts/init-core.js',
-    );
-  }
 
   // make an almost-certainly-unique file name with a fixed-length prefix
   const configFilenameParts = [
@@ -413,6 +419,9 @@ type AckBehaviorType = (typeof AckBehavior)[keyof typeof AckBehavior];
  * @param options.defaultManagerType - SwingSet manager type to use
  * @param options.harness - Optional run harness
  * @param options.resolveBase - Base URL or path for resolving module paths
+ * @param options.configOverrides - Other SwingSet options to set in the config
+   (may be overridden by more specific options such as `bundleDir` and
+   `defaultManagerType`)
  * @returns A test kit with various utilities for interacting with the SwingSet
  */
 export const makeSwingsetTestKit = async (
@@ -429,6 +438,7 @@ export const makeSwingsetTestKit = async (
     defaultManagerType = 'local' as ManagerType,
     harness = undefined as RunHarness | undefined,
     resolveBase = import.meta.url,
+    configOverrides = {} as Partial<SwingSetConfig>,
   } = {},
 ) => {
   const importSpec = createRequire(resolveBase).resolve;
@@ -438,6 +448,7 @@ export const makeSwingsetTestKit = async (
     configPath: importSpec(configSpecifier),
     discriminator: label,
     defaultManagerType,
+    configOverrides,
   });
   const swingStore = initSwingStore();
   const { kernelStorage, hostStorage } = swingStore;
