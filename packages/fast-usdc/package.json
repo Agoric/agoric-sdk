@@ -1,6 +1,6 @@
 {
   "name": "@agoric/fast-usdc",
-  "version": "0.2.0-u19.1",
+  "version": "0.2.0-u19.2",
   "description": "CLI and library for Fast USDC product",
   "type": "module",
   "files": [
@@ -23,9 +23,9 @@
     "lint:eslint": "eslint ."
   },
   "devDependencies": {
-    "@agoric/swingset-liveslots": "^0.10.3-u19.1",
-    "@agoric/vats": "^0.16.0-u19.1",
-    "@agoric/zone": "^0.3.0-u19.1",
+    "@agoric/swingset-liveslots": "^0.10.3-u19.2",
+    "@agoric/vats": "^0.16.0-u19.2",
+    "@agoric/zone": "^0.3.0-u19.2",
     "@fast-check/ava": "^2.0.1",
     "ava": "^5.3.0",
     "c8": "^10.1.2",
@@ -33,16 +33,16 @@
     "ts-blank-space": "^0.4.4"
   },
   "dependencies": {
-    "@agoric/client-utils": "^0.2.0-u19.1",
-    "@agoric/cosmic-proto": "^0.5.0-u19.1",
-    "@agoric/ertp": "^0.16.3-u19.1",
-    "@agoric/internal": "^0.4.0-u19.1",
-    "@agoric/notifier": "^0.7.0-u19.1",
-    "@agoric/orchestration": "^0.2.0-u19.1",
+    "@agoric/client-utils": "^0.2.0-u19.2",
+    "@agoric/cosmic-proto": "^0.5.0-u19.2",
+    "@agoric/ertp": "^0.16.3-u19.2",
+    "@agoric/internal": "^0.4.0-u19.2",
+    "@agoric/notifier": "^0.7.0-u19.2",
+    "@agoric/orchestration": "^0.2.0-u19.2",
     "@agoric/store": "^0.9.3-u19.0",
-    "@agoric/vat-data": "^0.5.3-u19.1",
-    "@agoric/vow": "^0.2.0-u19.1",
-    "@agoric/zoe": "^0.27.0-u19.1",
+    "@agoric/vat-data": "^0.5.3-u19.2",
+    "@agoric/vow": "^0.2.0-u19.2",
+    "@agoric/zoe": "^0.27.0-u19.2",
     "@cosmjs/proto-signing": "^0.32.4",
     "@cosmjs/stargate": "^0.32.4",
     "@endo/base64": "^1.0.9",

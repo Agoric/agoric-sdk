@@ -1,6 +1,6 @@
 {
   "name": "@agoric/pegasus",
-  "version": "0.8.0-u19.1",
+  "version": "0.8.0-u19.2",
   "description": "Peg-as-us contract",
   "type": "module",
   "main": "./src/pegasus.js",
@@ -28,16 +28,16 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/ertp": "^0.16.3-u19.1",
-    "@agoric/internal": "^0.4.0-u19.1",
-    "@agoric/network": "^0.2.0-u19.1",
-    "@agoric/notifier": "^0.7.0-u19.1",
+    "@agoric/ertp": "^0.16.3-u19.2",
+    "@agoric/internal": "^0.4.0-u19.2",
+    "@agoric/network": "^0.2.0-u19.2",
+    "@agoric/notifier": "^0.7.0-u19.2",
     "@agoric/store": "^0.9.3-u19.0",
-    "@agoric/swingset-vat": "^0.33.0-u19.1",
-    "@agoric/vats": "^0.16.0-u19.1",
-    "@agoric/vow": "^0.2.0-u19.1",
-    "@agoric/zoe": "^0.27.0-u19.1",
-    "@agoric/zone": "^0.3.0-u19.1",
+    "@agoric/swingset-vat": "^0.33.0-u19.2",
+    "@agoric/vats": "^0.16.0-u19.2",
+    "@agoric/vow": "^0.2.0-u19.2",
+    "@agoric/zoe": "^0.27.0-u19.2",
+    "@agoric/zone": "^0.3.0-u19.2",
     "@endo/bundle-source": "^3.5.1",
     "@endo/captp": "^4.4.4",
     "@endo/errors": "^1.2.9",
@@ -47,7 +47,7 @@
     "@endo/promise-kit": "^1.1.9"
   },
   "devDependencies": {
-    "@agoric/vat-data": "^0.5.3-u19.1",
+    "@agoric/vat-data": "^0.5.3-u19.2",
     "ava": "^5.3.0",
     "c8": "^10.1.2",
     "import-meta-resolve": "^4.1.0"

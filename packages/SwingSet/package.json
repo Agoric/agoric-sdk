@@ -1,6 +1,6 @@
 {
   "name": "@agoric/swingset-vat",
-  "version": "0.33.0-u19.1",
+  "version": "0.33.0-u19.2",
   "description": "Vat/Container Launcher",
   "type": "module",
   "main": "src/index.js",
@@ -27,14 +27,14 @@
     "@types/yargs-parser": "^21.0.0"
   },
   "dependencies": {
-    "@agoric/internal": "^0.4.0-u19.1",
+    "@agoric/internal": "^0.4.0-u19.2",
     "@agoric/kmarshal": "^0.1.1-u19.0",
     "@agoric/store": "^0.9.3-u19.0",
-    "@agoric/swing-store": "^0.10.0-u19.1",
-    "@agoric/swingset-liveslots": "^0.10.3-u19.1",
+    "@agoric/swing-store": "^0.10.0-u19.2",
+    "@agoric/swingset-liveslots": "^0.10.3-u19.2",
     "@agoric/swingset-xsnap-supervisor": "^0.10.3-u19.0",
     "@agoric/time": "^0.3.3-u19.0",
-    "@agoric/vat-data": "^0.5.3-u19.1",
+    "@agoric/vat-data": "^0.5.3-u19.2",
     "@agoric/xsnap-lockdown": "^0.14.1-u19.0",
     "@endo/base64": "^1.0.9",
     "@endo/bundle-source": "^3.5.1",
