@@ -9,8 +9,8 @@ import { parseVatSlot } from '../src/parseVatSlots.js';
 let aWeakMapStore;
 let aWeakSetStore;
 
-export const mainHolderIdx = 5;
-export const mainHeldIdx = 6;
+export const mainHolderIdx = 4;
+export const mainHeldIdx = 5;
 
 export function buildRootObject(vatPowers) {
   const { VatData } = vatPowers;
