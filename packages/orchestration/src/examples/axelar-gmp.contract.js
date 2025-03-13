@@ -1,18 +1,21 @@
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
-import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
-import { AnyNatAmountShape } from '../typeGuards.js';
-import { withOrchestration } from '../utils/start-helper.js';
-import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
-import * as flows from './axelar.flows.js';
+import { prepareChainHubAdmin } from '@agoric/orchestration/src/exos/chain-hub-admin.js';
+import { AnyNatAmountShape } from '@agoric/orchestration/src/typeGuards.js';
+import { withOrchestration } from '@agoric/orchestration/src/utils/start-helper.js';
+import { registerChainsAndAssets } from '@agoric/orchestration/src/utils/chain-hub-helper.js';
+import * as gmpflows from './axelar-gmp.flows.js';
+import * as tokenTransferflows from './axelar-token-transfer.flows.js';
 import * as sharedFlows from './shared.flows.js';
+import * as evmFlows from './axelar-evm.flows.js';
+import { prepareEvmTap } from './evm-tap-kit.js';
+import { EmptyProposalShape } from '@agoric/zoe/src/typeGuards';
 
 /**
- * @import {Vow} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
- * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
+ * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration/src/utils/start-helper.js';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 export const SingleNatAmountRecord = M.and(
@@ -29,7 +32,7 @@ harden(SingleNatAmountRecord);
  * @param {ZCF} zcf
  * @param {OrchestrationPowers & {
  *   marshaller: Marshaller;
- *   chainInfo?: Record<string, CosmosChainInfo>;
+ *   chainInfo: Record<string, CosmosChainInfo>;
  *   assetInfo?: [Denom, DenomDetail & { brandKey?: string }][];
  * }} privateArgs
  * @param {Zone} zone
@@ -41,12 +44,25 @@ export const contract = async (
   zone,
   { chainHub, orchestrateAll, vowTools, zoeTools },
 ) => {
-  const creatorFacet = prepareChainHubAdmin(zone, chainHub);
+  console.log('Inside Contract');
 
-  // UNTIL https://github.com/Agoric/agoric-sdk/issues/9066
-  const logNode = E(privateArgs.storageNode).makeChildNode('log');
-  /** @type {(msg: string) => Vow<void>} */
-  const log = msg => vowTools.watch(E(logNode).setValue(msg));
+  console.log('Channel Info Agoric:');
+
+  console.log(privateArgs.chainInfo['agoric'].connections);
+  console.log('Channel Info Osmosis:');
+  console.log(privateArgs.chainInfo['osmosis'].connections);
+
+  console.log('Registering Chain and Assets....');
+  registerChainsAndAssets(
+    chainHub,
+    zcf.getTerms().brands,
+    privateArgs.chainInfo,
+    privateArgs.assetInfo,
+  );
+
+  const makeEvmTap = prepareEvmTap(zone.subZone('evmTap'), vowTools);
+
+  const creatorFacet = prepareChainHubAdmin(zone, chainHub);
 
   const { makeLocalAccount } = orchestrateAll(sharedFlows, {});
   /**
@@ -62,35 +78,55 @@ export const contract = async (
     makeLocalAccount(),
   );
 
-  // orchestrate uses the names on orchestrationFns to do a "prepare" of the associated behavior
-  const orchFns = orchestrateAll(flows, {
-    log,
+  const { makeEVMContractCall } = orchestrateAll(gmpflows, {
     sharedLocalAccountP,
     zoeTools,
+  });
+
+  const { sendTokensToEVM } = orchestrateAll(tokenTransferflows, {
+    sharedLocalAccountP,
+    zoeTools,
+  });
+
+  const { createAndMonitorLCA } = orchestrateAll(evmFlows, {
+    makeEvmTap,
+    chainHub,
   });
 
   const publicFacet = zone.exo(
     'Send PF',
     M.interface('Send PF', {
-      makeSendInvitation: M.callWhen().returns(InvitationShape),
+      contractCallInvitation: M.callWhen().returns(InvitationShape),
+      sendTokensInvitation: M.callWhen().returns(InvitationShape),
+      createAndMonitorAccount: M.callWhen().returns(M.any()),
     }),
     {
-      makeSendInvitation() {
+      contractCallInvitation() {
         return zcf.makeInvitation(
-          orchFns.sendIt,
-          'send',
+          makeEVMContractCall,
+          'makeEVMContractCall',
           undefined,
           M.splitRecord({ give: SingleNatAmountRecord }),
         );
       },
+      sendTokensInvitation() {
+        return zcf.makeInvitation(
+          sendTokensToEVM,
+          'sendTokensToEVM',
+          undefined,
+          M.splitRecord({ give: SingleNatAmountRecord }),
+        );
+      },
+      createAndMonitorAccount() {
+        return zcf.makeInvitation(
+          createAndMonitorLCA,
+          'send',
+          undefined,
+          // TODO: temporarily use EmptyProposalShape
+          EmptyProposalShape,
+        );
+      },
     },
-  );
-
-  registerChainsAndAssets(
-    chainHub,
-    zcf.getTerms().brands,
-    privateArgs.chainInfo,
-    privateArgs.assetInfo,
   );
 
   return { publicFacet, creatorFacet };
