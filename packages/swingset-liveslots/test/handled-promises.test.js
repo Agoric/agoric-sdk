@@ -637,8 +637,7 @@ test.failing('watched imported promises should not leak slotToVal entries', asyn
   t.is(slotToVal.size, initial); // reexported promise did not leak
 });
 
-// prettier-ignore
-test.failing('known imported promises in resolutions should not leak slotToVal entries', async t => {
+test('known imported promises in resolutions should not leak slotToVal entries', async t => {
   const S = 'settlement';
   // cf. src/liveslots.js:initialIDCounters
   const firstPExport = 5;
@@ -719,8 +718,7 @@ test.failing('known imported promises in resolutions should not leak slotToVal e
   t.is(slotToVal.size, initial); // did not leak reexportedP3
 });
 
-// prettier-ignore
-test.failing('known exported promises in resolutions should not leak slotToVal entries', async t => {
+test('known exported promises in resolutions should not leak slotToVal entries', async t => {
   const S = 'settlement';
   // cf. src/liveslots.js:initialIDCounters
   const firstPExport = 5;
@@ -790,8 +788,7 @@ test.failing('known exported promises in resolutions should not leak slotToVal e
   t.is(slotToVal.size, initial); // did not leak reexportedP2
 });
 
-// prettier-ignore
-test.failing('known promises in message sends should not leak slotToVal entries', async t => {
+test('known promises in message sends should not leak slotToVal entries', async t => {
   const S = 'settlement';
   // cf. src/liveslots.js:initialIDCounters
   const firstPExport = 5;
