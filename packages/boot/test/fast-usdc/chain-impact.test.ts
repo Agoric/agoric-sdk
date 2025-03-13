@@ -637,7 +637,7 @@ test.skip('prune vstorage (independent of iterations)', async t => {
 
 test.serial('iterate simulation several times', async t => {
   const { controller, observations, oracles, storage, toNoble } = t.context;
-  const { doCoreEval, harness, swingStore } = t.context;
+  const { doCoreEval, harness, swingStore, slogSender } = t.context;
   const { updateNewCellBlockHeight } = storage;
   const sim = await makeSimulation(t.context, toNoble, oracles);
 
@@ -648,6 +648,7 @@ test.serial('iterate simulation several times', async t => {
   const snapStore = swingStore.internal.snapStore as unknown as SnapStoreDebug;
 
   async function doCleanupAndSnapshot(id) {
+    slogSender?.({ type: 'cleanup-begin', id });
     await doCoreEval('@agoric/fast-usdc/scripts/delete-completed-txs.js');
     controller.reapAllVats();
     await controller.run();
@@ -660,6 +661,8 @@ test.serial('iterate simulation several times', async t => {
       ...getResourceUsageStats(controller, storage.data),
     };
     observations.push(observation);
+    slogSender?.({ type: 'cleanup-finish', id, observation });
+    await slogSender?.forceFlush?.();
   }
 
   for (const ix of range(9)) {
@@ -667,6 +670,8 @@ test.serial('iterate simulation several times', async t => {
     if (ix % 4 === 0) {
       await doCleanupAndSnapshot(ix);
     }
+
+    slogSender?.({ type: 'iteration-begin', ix });
 
     updateNewCellBlockHeight(); // look at only the latest value written
     await sim.iteration(t, ix);
@@ -681,6 +686,8 @@ test.serial('iterate simulation several times', async t => {
       ...getResourceUsageStats(controller, storage.data),
     };
     observations.push(observation);
+    slogSender?.({ type: 'iteration-finish', ix, observation });
+
     harness.resetRunPolicy(); // stay under block budget
   }
 
