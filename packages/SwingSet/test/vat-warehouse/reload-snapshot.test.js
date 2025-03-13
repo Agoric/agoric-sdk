@@ -138,6 +138,25 @@ const vatReload = async (t, restartWorkerOnSnapshot, vatConfig) => {
   await c2.run();
   t.deepEqual(c2.dump().log, expected2);
   checkPositions();
+  // Manually snapshot should create a snapshot
+  const expectedSnapshotResult = isSnapshotting ? [vatID] : [];
+  t.deepEqual(await c2.snapshotAllVats(), expectedSnapshotResult);
+  assumeSnapshot();
+  await c2.run();
+  checkPositions();
+  // Snapshotting again should not create a snapshot
+  t.deepEqual(await c2.snapshotAllVats(), []);
+  await c2.run();
+  checkPositions();
+  // A single delivery should enable a snapshot again
+  c2.queueToVatRoot('target', 'count', []);
+  expected2.push(getNextCountLog());
+  await c2.run();
+  t.deepEqual(await c2.snapshotAllVats(), expectedSnapshotResult);
+  assumeSnapshot();
+  await c2.run();
+  checkPositions();
+
   await c2.shutdown();
 };
 
