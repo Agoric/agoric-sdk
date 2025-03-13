@@ -81,6 +81,7 @@ test.before(async t => {
     configOverrides: {
       defaultReapInterval: 'never',
       defaultReapGCKrefs: 'never',
+      snapshotInterval: 100000,
     },
     ...(snapshotDir
       ? { archiveSnapshot: makeArchiveSnapshot(snapshotDir, fsPowers) }
@@ -666,12 +667,18 @@ test.serial('iterate simulation several times', async t => {
         break;
       }
     }
+    const snapshotted = new Set(await controller.snapshotAllVats());
+    await controller.run(); // clear any reactions
     const { kernelTable } = controller.dump();
+    const snapshots = [...snapStore.listAllSnapshots()].filter(
+      s => s.inUse && snapshotted.has(s.vatID),
+    );
 
     const observation = {
       id: `post-prune-${id}`,
       time: Date.now(),
       kernelTable,
+      snapshots,
       ...getResourceUsageStats(controller, storage.data),
     };
     observations.push(observation);
@@ -691,12 +698,12 @@ test.serial('iterate simulation several times', async t => {
     await sim.iteration(t, ix);
 
     const computrons = harness.totalComputronCount();
-    const snapshots = [...snapStore.listAllSnapshots()];
+    // const snapshots = [...snapStore.listAllSnapshots()];
     const observation = {
       id: `iter-${ix}`,
       time: Date.now(),
       computrons,
-      snapshots,
+      // snapshots,
       ...getResourceUsageStats(controller, storage.data),
     };
     observations.push(observation);
