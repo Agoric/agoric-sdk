@@ -566,15 +566,17 @@ export function makeVatWarehouse({
    * is satisified
    *
    * @param {VatID} vatID
+   * @param {number} [forceThreshold]
    */
-  async function maybeSaveSnapshot(vatID) {
-    const recreate = true; // PANIC in the failure case
-    const { manager } = await ensureVatOnline(vatID, recreate);
-    if (!manager.makeSnapshot) {
-      return false; // worker cannot make snapshots
+  async function maybeSaveSnapshot(vatID, forceThreshold = 0) {
+    kernelKeeper.vatIsAlive(vatID) || Fail`${q(vatID)}: not alive`;
+    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+    const vatOptions = vatKeeper.getOptions();
+
+    if (!vatOptions.useTranscript) {
+      return false;
     }
 
-    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     let reason;
 
     const hasSnapshot = !!vatKeeper.getSnapshotInfo();
@@ -586,10 +588,18 @@ export function makeVatWarehouse({
     } else if (deliveriesInSpan >= snapshotInterval) {
       // begin snapshot after 'snapshotInterval' deliveries in a span
       reason = { snapshotInterval };
+    } else if (forceThreshold > 0 && deliveriesInSpan > forceThreshold) {
+      reason = { forceThreshold };
     }
     // console.log('maybeSaveSnapshot: reason:', reason);
     if (!reason) {
       return false; // not time to make a snapshot
+    }
+
+    const recreate = true; // PANIC in the failure case
+    const { manager } = await ensureVatOnline(vatID, recreate);
+    if (!manager.makeSnapshot) {
+      return false; // worker cannot make snapshots
     }
 
     // always do a bringOutYourDead just before a snapshot, to shake
