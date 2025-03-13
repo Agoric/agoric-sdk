@@ -655,17 +655,17 @@ export const makeSwingsetTestKit = async (
     }
   };
 
-  let slogSender;
-  if (slogFile) {
-    slogSender = await makeSlogSender({
-      stateDir: '.',
-      env: {
-        ...process.env,
-        SLOGFILE: slogFile,
-        SLOGSENDER: '',
-      },
-    });
-  }
+  const slogSender = slogFile
+    ? await makeSlogSender({
+        stateDir: '.',
+        env: {
+          ...process.env,
+          SLOGFILE: slogFile,
+          SLOGSENDER: '',
+        },
+      })
+    : undefined;
+
   const mailboxStorage = new Map();
   const { controller, timer, bridgeInbound } = await buildSwingset(
     // @ts-expect-error missing method 'getNextKey'
@@ -831,6 +831,7 @@ export const makeSwingsetTestKit = async (
     storage,
     swingStore,
     timer,
+    slogSender,
   };
 };
 export type SwingsetTestKit = Awaited<ReturnType<typeof makeSwingsetTestKit>>;
