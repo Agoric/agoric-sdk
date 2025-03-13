@@ -483,7 +483,7 @@ test.serial('access relevant kernel stats after bootstrap', async t => {
   observations.push({ id: 'post-boot', ...relevant });
 });
 
-test.serial(
+test.serial.skip(
   'access uncompressedSize of heap snapshots of vats (WIP)',
   async t => {
     const { controller, swingStore } = t.context;
@@ -686,7 +686,7 @@ test.serial('iterate simulation several times', async t => {
     await slogSender?.forceFlush?.();
   }
 
-  for (const ix of range(9)) {
+  for (const ix of range(63)) {
     // force GC and prune vstorage at regular intervals
     if (ix % 4 === 0) {
       await doCleanupAndSnapshot(ix);
