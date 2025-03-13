@@ -1977,6 +1977,16 @@ export default function buildKernel(
     return harden(currentVatPos);
   }
 
+  async function snapshotAllVats() {
+    const snapshottedVats = [];
+    await null;
+    for (const vatID of getAllVatIds()) {
+      const snapshotted = await vatWarehouse.maybeSaveSnapshot(vatID, 2);
+      if (snapshotted) snapshottedVats.push(vatID);
+    }
+    return harden(snapshottedVats);
+  }
+
   async function step() {
     if (kernelPanic) {
       throw kernelPanic;
@@ -2181,6 +2191,7 @@ export default function buildKernel(
     run,
     shutdown,
     reapAllVats,
+    snapshotAllVats,
     changeKernelOptions,
 
     // the rest are for testing and debugging
