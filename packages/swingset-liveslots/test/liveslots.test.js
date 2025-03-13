@@ -713,7 +713,7 @@ test('capdata size limit on syscalls', async t => {
     const label = 'test';
     t.deepEqual(log.shift(), {
       type: 'vatstoreGet',
-      key: 'vc.5.|schemata',
+      key: 'vc.4.|schemata',
       result: JSON.stringify(kser({ label, keyShape: M.scalar() })),
     });
   };
@@ -723,7 +723,7 @@ test('capdata size limit on syscalls', async t => {
   gotSchema();
   t.deepEqual(log.shift(), {
     type: 'vatstoreGet',
-    key: 'vc.5.skey',
+    key: 'vc.4.skey',
     result: undefined,
   });
   expectFail();
@@ -735,7 +735,7 @@ test('capdata size limit on syscalls', async t => {
   gotSchema();
   t.deepEqual(log.shift(), {
     type: 'vatstoreGet',
-    key: 'vc.5.skey',
+    key: 'vc.4.skey',
     result: undefined,
   });
   expectFail();
