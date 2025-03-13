@@ -13,6 +13,7 @@ import (
 	"time"
 
 	sdkioerrors "cosmossdk.io/errors"
+	"cosmossdk.io/simapp"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
@@ -22,7 +23,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	"github.com/cosmos/cosmos-sdk/simapp"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -45,7 +45,8 @@ import (
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	distr "github.com/cosmos/cosmos-sdk/x/distribution"
-	distrclient "github.com/cosmos/cosmos-sdk/x/distribution/client"
+
+	// distrclient "github.com/cosmos/cosmos-sdk/x/distribution/client"
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/cosmos/cosmos-sdk/x/evidence"
@@ -80,22 +81,22 @@ import (
 	upgradeclient "github.com/cosmos/cosmos-sdk/x/upgrade/client"
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	ica "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts"
+	ica "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts"
 
-	icahost "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/host"
-	icahostkeeper "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/host/keeper"
-	icahosttypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/host/types"
-	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
-	ibctransfer "github.com/cosmos/ibc-go/v6/modules/apps/transfer"
-	ibctransferkeeper "github.com/cosmos/ibc-go/v6/modules/apps/transfer/keeper"
-	ibctransfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
-	ibc "github.com/cosmos/ibc-go/v6/modules/core"
-	ibcclient "github.com/cosmos/ibc-go/v6/modules/core/02-client"
-	ibcclientclient "github.com/cosmos/ibc-go/v6/modules/core/02-client/client"
-	ibcclienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
-	ibcporttypes "github.com/cosmos/ibc-go/v6/modules/core/05-port/types"
-	ibchost "github.com/cosmos/ibc-go/v6/modules/core/24-host"
-	ibckeeper "github.com/cosmos/ibc-go/v6/modules/core/keeper"
+	icahost "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/host"
+	icahostkeeper "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/host/keeper"
+	icahosttypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/host/types"
+	icatypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/types"
+	ibctransfer "github.com/cosmos/ibc-go/v7/modules/apps/transfer"
+	ibctransferkeeper "github.com/cosmos/ibc-go/v7/modules/apps/transfer/keeper"
+	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	ibc "github.com/cosmos/ibc-go/v7/modules/core"
+	ibcclient "github.com/cosmos/ibc-go/v7/modules/core/02-client"
+	ibcclientclient "github.com/cosmos/ibc-go/v7/modules/core/02-client/client"
+	ibcclienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	ibcporttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
+	ibchost "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
@@ -124,12 +125,12 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vtransfer"
 	vtransferkeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/vtransfer/keeper"
-	testtypes "github.com/cosmos/ibc-go/v6/testing/types"
+	testtypes "github.com/cosmos/ibc-go/v7/testing/types"
 
 	// Import the packet forward middleware
-	packetforward "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v6/packetforward"
-	packetforwardkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v6/packetforward/keeper"
-	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v6/packetforward/types"
+	packetforward "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7/packetforward"
+	packetforwardkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7/packetforward/keeper"
+	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7/packetforward/types"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
@@ -171,7 +172,7 @@ var (
 		distr.AppModuleBasic{},
 		gov.NewAppModuleBasic([]govclient.ProposalHandler{
 			paramsclient.ProposalHandler,
-			distrclient.ProposalHandler,
+			govclient.NewProposalHandler(distr.GetCmdSubmitProposal), // Distribution proposal handler
 			upgradeclient.LegacyProposalHandler,
 			upgradeclient.LegacyCancelProposalHandler,
 			ibcclientclient.UpdateClientProposalHandler,

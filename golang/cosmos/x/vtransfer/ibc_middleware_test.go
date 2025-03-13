@@ -30,12 +30,12 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v6/packetforward/types"
-	ibctransfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
-	ibcexported "github.com/cosmos/ibc-go/v6/modules/core/exported"
-	ibctesting "github.com/cosmos/ibc-go/v6/testing"
-	"github.com/cosmos/ibc-go/v6/testing/simapp"
+	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7/packetforward/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
+	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	"github.com/cosmos/ibc-go/v7/testing/simapp"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 

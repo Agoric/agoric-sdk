@@ -19,7 +19,7 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
+	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	"github.com/tendermint/tendermint/libs/log"
 
 	"github.com/gogo/protobuf/jsonpb"
