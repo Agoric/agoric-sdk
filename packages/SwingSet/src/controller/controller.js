@@ -410,7 +410,7 @@ export async function makeSwingsetController(
       },
 
       getStats() {
-        return deepCopyJsonable(kernel.getStats());
+        return kernel.getStats();
       },
 
       getStatus() {

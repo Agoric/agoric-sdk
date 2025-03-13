@@ -5,16 +5,14 @@ import { Fail } from '@endo/errors';
 import { isNat } from '@endo/nat';
 
 import { makeLegacyMap } from '@agoric/store';
+import { defineName } from '@agoric/internal/src/js-utils.js';
 
-import {
-  KERNEL_STATS_SUM_METRICS,
-  KERNEL_STATS_UPDOWN_METRICS,
-} from '@agoric/swingset-vat/src/kernel/metrics.js';
+import { KERNEL_STATS_METRICS } from '@agoric/swingset-vat/src/kernel/metrics.js';
 
 import v8 from 'node:v8';
 import process from 'node:process';
 
-/** @import {Histogram, Meter as OTelMeter, MetricAttributes} from '@opentelemetry/api' */
+/** @import {Histogram, Meter as OTelMeter, MetricAttributes, ObservableCounter, ObservableUpDownCounter} from '@opentelemetry/api' */
 
 /** @import {TotalMap} from '@agoric/internal' */
 
@@ -108,6 +106,21 @@ const QUEUE_METRICS = harden({
   // https://opentelemetry.io/docs/specs/otel/metrics/api/#instrument-advisory-parameter-attributes
   ...makeQueueMetrics('cosmic_swingset_inbound_queue', 'inbound queue'),
 });
+
+const maxAgeCache = (fn, maxAge, clock = Date.now) => {
+  // An initial invocation verifies that the function doesn't [always] throw.
+  let cached = fn();
+  let lastTime = -Infinity;
+  const get = defineName(`caching ${fn.name}`, () => {
+    const time = clock();
+    if (time - lastTime < maxAge) return cached;
+
+    lastTime = time;
+    cached = fn();
+    return cached;
+  });
+  return { get, firstResult: cached };
+};
 
 const wrapDeltaMS = (finisher, useDeltaMS) => {
   const startMS = Date.now();
@@ -402,37 +415,27 @@ export function exportKernelStats({
   attributes = {},
   initialQueueLengths = /** @type {any} */ ({}),
 }) {
-  const kernelStatsMetrics = new Set();
-  const kernelStatsCounters = new Map();
+  /** @type {Set<string>} */
   const expectedKernelStats = new Set();
+  /** @type {Map<string, ObservableCounter | ObservableUpDownCounter>} */
+  const kernelStatsCounters = new Map();
 
-  function warnUnexpectedKernelStat(key) {
-    if (!expectedKernelStats.has(key)) {
-      log.warn(`Unexpected SwingSet kernel statistic`, key);
-      expectedKernelStats.add(key);
-    }
-  }
-
-  let kernelStatsLast = 0;
-  let kernelStatsCache = {};
-  const getKernelStats = () => {
-    const now = Date.now();
-    if (now - kernelStatsLast < 800) {
-      return kernelStatsCache;
-    }
-    kernelStatsLast = now;
-    kernelStatsCache = controller.getStats();
-    for (const key of Object.keys(kernelStatsCache)) {
-      warnUnexpectedKernelStat(key);
-    }
-    return kernelStatsCache;
-  };
-
-  for (const { key, name, sub, ...options } of KERNEL_STATS_SUM_METRICS) {
+  for (const meta of KERNEL_STATS_METRICS) {
+    const { key, name, sub, metricType, ...options } = meta;
     expectedKernelStats.add(key);
+    if (metricType === 'gauge') {
+      expectedKernelStats.add(`${key}Up`);
+      expectedKernelStats.add(`${key}Down`);
+      expectedKernelStats.add(`${key}Max`);
+    } else if (metricType !== 'counter') {
+      Fail`Unknown metric type ${metricType}`;
+    }
     let counter = kernelStatsCounters.get(name);
     if (!counter) {
-      counter = metricMeter.createObservableCounter(name, options);
+      counter =
+        metricType === 'counter'
+          ? metricMeter.createObservableCounter(name, options)
+          : metricMeter.createObservableUpDownCounter(name, options);
       kernelStatsCounters.set(name, counter);
     }
     const reportedAttributes = { ...attributes };
@@ -442,30 +445,27 @@ export function exportKernelStats({
     counter.addCallback(observableResult => {
       observableResult.observe(getKernelStats()[key], reportedAttributes);
     });
-    kernelStatsMetrics.add(key);
   }
 
-  for (const { key, name, sub, ...options } of KERNEL_STATS_UPDOWN_METRICS) {
-    expectedKernelStats.add(key);
-    expectedKernelStats.add(`${key}Up`);
-    expectedKernelStats.add(`${key}Down`);
-    expectedKernelStats.add(`${key}Max`);
-    let counter = kernelStatsCounters.get(name);
-    if (!counter) {
-      counter = metricMeter.createObservableUpDownCounter(name, options);
-      kernelStatsCounters.set(name, counter);
-    }
-    const reportedAttributes = { ...attributes };
-    if (sub) {
-      reportedAttributes[sub.dimension] = sub.value;
-    }
-    counter.addCallback(observableResult => {
-      observableResult.observe(getKernelStats()[key], reportedAttributes);
-    });
-    kernelStatsMetrics.add(key);
-  }
+  const getKernelStats = maxAgeCache(() => {
+    const stats = controller.getStats();
 
-  // These are not kernelStatsMetrics, they're outside the kernel.
+    const notYetFoundKernelStats = new Set(expectedKernelStats.keys());
+    for (const key of Object.keys(stats)) {
+      notYetFoundKernelStats.delete(key);
+      if (!expectedKernelStats.has(key)) {
+        log.warn('Unexpected SwingSet kernel statistic', key);
+        expectedKernelStats.add(key);
+      }
+    }
+    for (const key of notYetFoundKernelStats) {
+      log.warn('Expected SwingSet kernel statistic not found', key);
+    }
+
+    return stats;
+  }, 800).get;
+
+  // These are not kernel stats, they're outside the kernel.
   const inboundQueueMetrics = makeInboundQueueMetrics(
     metricMeter,
     initialQueueLengths,
@@ -475,18 +475,9 @@ export function exportKernelStats({
   // TODO: We probably shouldn't roll our own Node.js process metrics, but a
   // cursory search for "opentelemetry node.js VM instrumentation" didn't reveal
   // anything useful.
-  let heapStatsLast = 0;
-  let heapStatsCache = v8.getHeapStatistics();
-  const getHeapStats = () => {
-    const now = Date.now();
-    if (now - heapStatsLast >= 800) {
-      heapStatsLast = now;
-      heapStatsCache = v8.getHeapStatistics();
-    }
-    return heapStatsCache;
-  };
-
-  for (const key of Object.keys(heapStatsCache)) {
+  const cachingHeapStats = maxAgeCache(() => v8.getHeapStatistics(), 800);
+  const getHeapStats = cachingHeapStats.get;
+  for (const key of Object.keys(cachingHeapStats.firstResult)) {
     const name = `heapStats_${key}`;
     const options = { description: 'v8 kernel heap statistic' };
     const counter = metricMeter.createObservableUpDownCounter(name, options);
@@ -495,18 +486,9 @@ export function exportKernelStats({
     });
   }
 
-  let memoryUsageLast = 0;
-  let memoryUsageCache = process.memoryUsage();
-  const getMemoryUsage = () => {
-    const now = Date.now();
-    if (now - memoryUsageLast >= 800) {
-      memoryUsageLast = now;
-      memoryUsageCache = process.memoryUsage();
-    }
-    return memoryUsageCache;
-  };
-
-  for (const key of Object.keys(memoryUsageCache)) {
+  const cachingMemUsage = maxAgeCache(() => process.memoryUsage(), 800);
+  const getMemoryUsage = cachingMemUsage.get;
+  for (const key of Object.keys(cachingMemUsage.firstResult)) {
     const name = `memoryUsage_${key}`;
     const options = { description: 'kernel process memory statistic' };
     const counter = metricMeter.createObservableUpDownCounter(name, options);
@@ -514,20 +496,6 @@ export function exportKernelStats({
       observableResult.observe(getMemoryUsage()[key], attributes);
     });
   }
-
-  function checkKernelStats(stats) {
-    const notYetFoundKernelStats = new Set(kernelStatsMetrics.keys());
-    for (const key of Object.keys(stats)) {
-      notYetFoundKernelStats.delete(key);
-      warnUnexpectedKernelStat(key);
-    }
-    for (const key of notYetFoundKernelStats) {
-      log.warn(`Expected SwingSet kernel statistic`, key, `not found`);
-    }
-  }
-
-  // We check everything on initialization.  Other checks happen when scraping.
-  checkKernelStats(controller.getStats());
 
   const [schedulerCrankTimeHistogram, schedulerBlockTimeHistogram] = [
     'swingset_crank_processing_time',
@@ -542,10 +510,10 @@ export function exportKernelStats({
    *   note that the latter name is inaccurate anyway because its measurements
    *   are produced once per `controller.run()` rather than once per block).
    * @param {any} policy
-   * @param {() => number} clock
+   * @param {() => number} msClock
    */
-  async function crankScheduler(policy, clock = () => Date.now()) {
-    let now = clock();
+  async function crankScheduler(policy, msClock = () => Date.now()) {
+    let now = msClock();
     let crankStart = now;
     const blockStart = now;
 
@@ -555,20 +523,20 @@ export function exportKernelStats({
         const go = policy.crankComplete(details);
         schedulerCrankTimeHistogram.record(now - crankStart, attributes);
         crankStart = now;
-        now = clock();
+        now = msClock();
         return go;
       },
     });
     await controller.run(instrumentedPolicy);
 
-    now = Date.now();
+    now = msClock();
     schedulerBlockTimeHistogram.record((now - blockStart) / 1000, attributes);
   }
 
   return {
     crankScheduler,
-    inboundQueueMetrics,
     schedulerCrankTimeHistogram,
     schedulerBlockTimeHistogram,
+    inboundQueueMetrics,
   };
 }

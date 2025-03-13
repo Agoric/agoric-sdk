@@ -46,6 +46,9 @@ test('Prometheus metric definitions', async t => {
   pushCoreEval(`${() => {}}`);
   await runNextBlock();
 
+  // Ensure expiration of any cached metrics.
+  await new Promise(resolve => setTimeout(resolve, 1000));
+
   const response = await fetch(
     `http://localhost:${OTEL_EXPORTER_PROMETHEUS_PORT}/metrics`,
   );
