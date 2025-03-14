@@ -32,7 +32,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
   const rimraf = file => pspawn('rm', ['-rf', file]);
 
   async function getWorktreePackagePaths(cwd = '.', map = new Map()) {
-    for (const { name, location } of listWorkspaces({ execFileSync })) {
+    for (const { name, location } of listWorkspaces({ execFileSync }, cwd)) {
       map.set(name, path.resolve(cwd, location));
     }
     return map;
