@@ -235,23 +235,6 @@ async function fileHash(filename) {
 }
 
 /*
-function makeSnapStoreIO() {
-  return {
-    createReadStream: fs.createReadStream,
-    createWriteStream: fs.createWriteStream,
-    fsync: fs.fsync,
-    measureSeconds: makeMeasureSeconds(performance.now),
-    open: fs.promises.open,
-    rename: fs.promises.rename,
-    resolve: path.resolve,
-    stat: fs.promises.stat,
-    tmpFile,
-    tmpName,
-    unlink: fs.promises.unlink,
-  };
-}
-*/
-/*
 async function makeBundles() {
   const controllerUrl = new URL(
     `${
@@ -585,20 +568,6 @@ provideVatKeeper: _vatID =>
       testLog,
     });
 
-    /* SL
-    const startXSnap = makeStartXSnap(bundles, {
-      snapStore,
-      env,
-      spawn: capturePIDSpawn,
-    });
-    factory = makeXsSubprocessFactory({
-      allVatPowers,
-      kernelKeeper: fakeKernelKeeper,
-      kernelSlog,
-      startXSnap,
-      testLog,
-    });
-    */
   } else if (worker === 'local') {
     throw new Error(`worker === 'local' is not implemented.`);
     /* SL factory = makeLocalVatManagerFactory({
@@ -812,116 +781,6 @@ provideVatKeeper: _vatID =>
   /** @type {Map<string, VatSyscallResult | undefined>} */
   const knownVCSyscalls = new Map();
 
-  /* SL
-  /**
-   * @param {import('../src/types-external.js').VatSyscallObject} vso
-   *//*SL
-  const vatSyscallHandler = vso => {
-    if (vso[0] === 'vatstoreGet') {
-      const response = knownVCSyscalls.get(vso[1]);
-
-      if (!response) {
-        throw new Error(`Unknown vc vatstore entry ${vso[1]}`);
-      }
-
-      return response;
-    }
-
-    throw new Error(`Unexpected syscall ${vso[0]}(${vso.slice(1).join(', ')})`);
-  };
-
-  /**
-   * @param {WorkerData} workerData
-   * @returns {import('../src/kernel/vat-loader/transcript.js').CompareSyscalls<boolean>}
-   *//*SL
-  const makeCompareSyscalls = workerData => {
-    const doCompare = (
-      _vatID,
-      originalSyscall,
-      newSyscall,
-      originalResponse,
-    ) => {
-      const error = bestRequireIdentical(vatID, originalSyscall, newSyscall);
-      if (
-        error &&
-        JSON.stringify(originalSyscall).indexOf('error:liveSlots') !== -1
-      ) {
-        return undefined; // Errors are serialized differently, sometimes
-      }
-
-      if (error) {
-        console.error(
-          `during transcript num= ${lastTranscriptNum} for worker PID ${workerData.xsnapPID} (start delivery ${workerData.firstTranscriptNum})`,
-        );
-
-        if (error === extraSyscall && !argv.skipExtraVcSyscalls) {
-          return new Error('Extra syscall disallowed');
-        }
-      }
-
-      const newSyscallKind = newSyscall[0];
-
-      if (error === missingSyscall && !argv.simulateVcSyscalls) {
-        return new Error('Missing syscall disallowed');
-      }
-
-      if (
-        argv.simulateVcSyscalls &&
-        supportsRelaxedSyscalls &&
-        !error &&
-        (newSyscallKind === 'vatstoreGet' ||
-          newSyscallKind === 'vatstoreSet') &&
-        vcSyscallRE.test(newSyscall[1])
-      ) {
-        if (newSyscallKind === 'vatstoreGet') {
-          if (originalResponse !== undefined) {
-            knownVCSyscalls.set(newSyscall[1], originalResponse);
-          } else if (!knownVCSyscalls.has(newSyscall[1])) {
-            console.warn(
-              `Cannot store vc syscall result for vatstoreGet(${newSyscall[1]})`,
-            );
-            knownVCSyscalls.set(newSyscall[1], undefined);
-          }
-        } else if (newSyscallKind === 'vatstoreSet') {
-          knownVCSyscalls.set(newSyscall[1], ['ok', newSyscall[2]]);
-        }
-      }
-
-      return error;
-    };
-    const compareSyscalls = (
-      _vatID,
-      originalSyscall,
-      newSyscall,
-      originalResponse,
-    ) => {
-      updateDeliveryTime(workerData);
-      const result = doCompare(
-        _vatID,
-        originalSyscall,
-        newSyscall,
-        originalResponse,
-      );
-      reportWorkerResult({
-        xsnapPID: workerData.xsnapPID,
-        result,
-        originalSyscall,
-        newSyscall,
-      });
-      const finish = () => {
-        workerData.timeOfLastCommand = performance.now();
-        return result;
-      };
-      if (argv.synchronizeSyscalls && result !== missingSyscall) {
-        completeWorkerStep(workerData);
-        return workersSynced.then(finish);
-      } else {
-        return finish();
-      }
-    };
-    return compareSyscalls;
-  };
-*/
   let vatParameters;
   let workerOptions = { type: 'xsnap', bundleIDs: [] };
   let source;
@@ -961,8 +820,6 @@ provideVatKeeper: _vatID =>
         /** @type {Partial<import('../src/types-internal.js').ManagerOptions>} */ ({
           sourcedConsole: console,
           workerOptions,
-          // SL vatParameters,
-          // compareSyscalls: makeCompareSyscalls(workerData),
           useTranscript: true,
         })
       );
@@ -1058,7 +915,6 @@ provideVatKeeper: _vatID =>
       fs.writeSync(
         snapshotActivityFd,
         `${JSON.stringify({
-          // SL transcriptFile,
           type: 'load',
           xsnapPID,
           vatID,
@@ -1072,19 +928,9 @@ provideVatKeeper: _vatID =>
     }
   };
 
-  /*SL @type {import('stream').Readable} */
-  /* SL
-  let transcriptF = fs.createReadStream(transcriptFile);
-  if (transcriptFile.endsWith('.gz')) {
-    transcriptF = transcriptF.pipe(zlib.createGunzip());
-  }
-  const lines = readline.createInterface({ input: transcriptF });
-  let lineNumber = 1;
-  */
   if (startPos === null || startPos === undefined) {
     ({ startPos: startPos } = transcriptStore.getCurrentSpanBounds(vatID));
   }
-  // const trSpanIterator = transcriptStore.readSpan(vatID, startPos);
 
   let transcriptNum = startPos;
 
@@ -1102,7 +948,7 @@ provideVatKeeper: _vatID =>
   try {
     let trSpanIterator;
     while (trSpanIterator = spanReader(vatID, transcriptNum)) {
-      console.log(`>>> span start @ ${startPos} <<<`);
+      console.log(`>>> span start @ ${transcriptNum} <<<`);
       for await (const line of trSpanIterator) {
       /* SL
       if (lineNumber % 1000 === 0) {
@@ -1111,12 +957,10 @@ provideVatKeeper: _vatID =>
       lineNumber += 1;
       const data = JSON.parse(line);
       */
-        // transcriptNum += 1;
         const transcriptEntry = JSON.parse(line);
-        //console.log(`${transcriptNum}: ${line}\n`);
-        const { d: delivery, r: result, sc: sysCalls } = transcriptEntry;
+        const { d: delivery, r: expectedResult, sc: sysCalls } = transcriptEntry;
         const deliveryType = delivery?.[0];
-        console.log(`>>> ${transcriptNum}: ${deliveryType}\n`);
+        console.log(`>>> ${transcriptNum}: ${deliveryType}`);
 
         if (deliveryType === 'load-snapshot') {
           if (worker === 'xs-worker') {
@@ -1144,7 +988,6 @@ provideVatKeeper: _vatID =>
           fs.writeSync(
             snapshotActivityFd,
             `${JSON.stringify({
-              // SL transcriptFile,
               type: 'create',
               xsnapPID,
               vatID,
@@ -1152,7 +995,7 @@ provideVatKeeper: _vatID =>
           );
         } else if (deliveryType === 'save-snapshot') {
           // throw new Error('save-snapshot is not implemented!');
-          saveSnapshotID = result?.snapshotID;
+          saveSnapshotID = expectedResult?.snapshotID;
           console.log(`save-snapshot expecting hash: ${saveSnapshotID}`);
 
           /** @param {WorkerData} workerData */
@@ -1160,14 +1003,13 @@ provideVatKeeper: _vatID =>
             const { manager, xsnapPID, firstTranscriptNum } = workerData;
             if (!manager?.makeSnapshot) return null;
             const { hash, dbSaveSeconds, } = await manager.makeSnapshot(
-              firstTranscriptNum,
+              transcriptNum,
               fakeSnapStore,
-              false // SL alsways restart
+              false // SL never restart
             );
             fs.writeSync(
               snapshotActivityFd,
               `${JSON.stringify({
-                //transcriptFile,
                 type: 'save',
                 xsnapPID,
                 vatID,
@@ -1208,12 +1050,12 @@ provideVatKeeper: _vatID =>
           const uniqueSnapshotIDs = new Set(savedSnapshots);
           let divergent = uniqueSnapshotIDs.size > 1;
           if (
-            !uniqueSnapshotIDs.has(result?.snapshotID) &&
+            !uniqueSnapshotIDs.has(expectedResult?.snapshotID) &&
             (divergent || savedSnapshots[0] !== null)
           ) {
             divergent = true;
             snapshotOverrideMap.set(
-              result?.snapshotID.snapshotID,
+              expectedResult?.snapshotID.snapshotID,
               /** @type {string} */(savedSnapshots[0]),
             );
           }
@@ -1241,20 +1083,13 @@ provideVatKeeper: _vatID =>
             */
           }
         } else {
-          //SL const { transcriptNum, d: delivery, syscalls } = data;
           lastTranscriptNum = transcriptNum;
-          /* SL
-          if (startTranscriptNum == null) {
-            startTranscriptNum = transcriptNum - 1;
-          }*/
 
-          /* SL disble forced snapshots for now
           const makeSnapshot =
             argv.forcedSnapshotInterval &&
             (transcriptNum - argv.forcedSnapshotInitial) %
               argv.forcedSnapshotInterval ===
-              0;
-          */
+            0;
 
           // syscalls = [{ d, response }, ..]
           // console.log(`replaying:`);
@@ -1277,7 +1112,11 @@ provideVatKeeper: _vatID =>
               const { manager, xsnapPID } = workerData;
               workerData.timeOfLastCommand = performance.now();
               const { syscallHandler, finishSimulation } = makeSyscallSimulator(kernelSlog, vatID, transcriptNum, transcriptEntry);
-              await manager.deliver(delivery, syscallHandler);
+              const deliveryResult = await manager.deliver(delivery, syscallHandler);
+              Array.isArray(deliveryResult) || Fail`Delivery result is not an Array`;
+              deliveryResult[0] === expectedResult?.status ||
+                Fail`Delivery result mismatch. Expected: ${q(expectedResult?.status)} Received: ${q(deliveryResult[0])}`
+
               finishSimulation();
               updateDeliveryTime(workerData);
               workerData.firstTranscriptNum ??= transcriptNum - 1;
@@ -1287,26 +1126,27 @@ provideVatKeeper: _vatID =>
               // console.log(`dr`, dr);
 
               // enable this to write periodic snapshots, for #5975 leak
-              /* SL
               if (makeSnapshot && manager.makeSnapshot) {
-                const { hash: snapshotID, rawSaveSeconds } =
-                  await manager.makeSnapshot(snapStore);
+                const { hash, dbSaveSeconds, } = await manager.makeSnapshot(
+                  transcriptNum,
+                  fakeSnapStore,
+                  false // SL do not restart
+                );
                 fs.writeSync(
                   snapshotActivityFd,
                   `${JSON.stringify({
-                    //transcriptFile,
                     type: 'save',
                     xsnapPID,
                     vatID,
                     transcriptNum,
-                    snapshotID,
+                    hash,
                   })}\n`,
                 );
                 console.log(
-                  `made snapshot ${snapshotID} after delivery ${transcriptNum} to worker PID ${xsnapPID} (start delivery ${
+                  `made snapshot ${hash} after delivery ${transcriptNum} to worker PID ${xsnapPID} (start delivery ${
                     workerData.firstTranscriptNum
                   }).\n    Save time = ${
-                    Math.round(rawSaveSeconds * 1000) / 1000
+                  Math.round(dbSaveSeconds * 1000) / 1000
                   }s. Delivery time since last snapshot ${
                     Math.round(workerData.deliveryTimeSinceLastSnapshot) / 1000
                   }s. Up ${
@@ -1314,8 +1154,8 @@ provideVatKeeper: _vatID =>
                   } deliveries.`,
                 );
                 workerData.deliveryTimeSinceLastSnapshot = 0;
-                return { snapshotID, workerData };
-              } else */ {
+                return { snapshotID: hash, workerData };
+              } else {
                 return null;
               }
             }),
@@ -1326,7 +1166,6 @@ provideVatKeeper: _vatID =>
 
           const divergent = uniqueSnapshotIDs.length !== 1;
 
-          /* SL
           if (makeSnapshot && divergent) {
             const errorMessage = `Snapshot hashes do not match each other: ${uniqueSnapshotIDs.join(
               ', ',
@@ -1337,7 +1176,6 @@ provideVatKeeper: _vatID =>
               throw new Error(errorMessage);
             }
           }
-          */
 
           if (argv.forcedReloadFromSnapshot) {
             /** @type Set<String | undefined> */
@@ -1385,7 +1223,7 @@ provideVatKeeper: _vatID =>
             );
           }
 
-          /* if (
+          /* SL if (
             !argv.useCustomSnapStore &&
             (argv.keepNoSnapshots || (!divergent && !argv.keepAllSnapshots))
           ) {
@@ -1402,7 +1240,6 @@ provideVatKeeper: _vatID =>
       } // for await (const line of trSpanIterator)
     } // while (trSpanIterator = transcriptStore.readSpan(vatID, startPos))
   } finally {
-    // SL lines.close();
     fs.closeSync(snapshotActivityFd);
     await Promise.all(
       workers.map(
@@ -1443,7 +1280,6 @@ function openStores() {
   const tsDb = argv.transcriptStoreDb ? sqlite3(argv.transcriptStoreDb, { fileMustExist: true, readonly: false }) : db;
   const bsDb = argv.bundleStoreDb ? sqlite3(argv.bundleStoreDb, { fileMustExist: true, readonly: true }) : db;
   const ssRDb = argv.snapStoreRDb ? sqlite3(argv.snapStoreRDb, { fileMustExist: true, readonly: true }) : db;
-  //const ssWDb = argv.snapStoreWDb ? sqlite3(argv.snapStoreWDb, { fileMustExist: false, readonly: false }) : db;
 
   const transcriptStore = tsDb ? makeTranscriptStore(tsDb, noop) : null;
   const bundleStore = bsDb ? makeBundleStore(bsDb, noop) : null;
@@ -1451,13 +1287,10 @@ function openStores() {
     ? makeSnapStore(ssRDb, noop, { measureSeconds: makeMeasureSeconds(performance.now) }, noop, { keepSnapshots: false, },)
     : null;
 
-  //const snapStoreW = makeSnapStore(ssWDb, noop, {measureSeconds: makeMeasureSeconds(performance.now)}, noop, { keepSnapshots: true, },);
-
   return harden({
     transcriptStore,
     bundleStore,
     snapStoreR,
-    //snapStoreW,
   });
 }
 
@@ -1475,7 +1308,6 @@ async function run() {
   console.dir(argv, { depth: null });
 
   const { transcriptStore, bundleStore, snapStoreR } = openStores();
-  // const vatID = argv.vatID ? argv.vatID : findVatID(transcriptStore);
   const vatID = argv.vatID;
 
   if (!vatID)
@@ -1485,19 +1317,6 @@ async function run() {
 
   await replay(transcriptStore, bundleStore, snapStoreR, vatID, startPos);
 }
-
-/*
-async function run() {
-  console.dir(argv, { depth: null });
-  if (argv._.length < 1) {
-    console.log(`replay-transcript.js transcript.sst`);
-    return;
-  }
-  const [transcriptFile] = argv._;
-  console.log(`using transcript ${transcriptFile}`);
-  await replay(transcriptFile);
-}
-*/
 
 run().catch(err => {
   console.log('RUN ERR', err);
