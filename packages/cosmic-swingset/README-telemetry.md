@@ -22,13 +22,16 @@ SwingSet is responsible for the chain's Javascript execution.  It is
 instrumented with the [OpenTelemetry](https://opentelemetry.io/) (*OTEL*)
 system.
 
-To enable the Prometheus exporter, set the desired listening TCP port number in
-the `$OTEL_EXPORTER_PROMETHEUS_PORT` environment variable before running the
-node.  To listen on http://0.0.0.0:9464/metrics use:
+To enable the Prometheus exporter, set environment variable
+[`OTEL_EXPORTER_PROMETHEUS_PORT`](https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/#prometheus-exporter)
+to the desired listening TCP port number when running the node.
+To listen on http://0.0.0.0:9464/metrics (the OTEL default), use:
 
 ```sh
 OTEL_EXPORTER_PROMETHEUS_PORT=9464 ag-chain-cosmos start ...
 ```
+
+See also [env.md](../../docs/env.md#otel_exporter_prometheus_port).
 
 ## Cosmos SDK metrics
 
