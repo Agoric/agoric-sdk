@@ -52,6 +52,7 @@ test('resume', async t => {
           'uist',
           {
             baseDenom: 'uist',
+            brandKey: 'IST',
             baseName: 'agoric',
             chainName: 'agoric',
           },
@@ -86,7 +87,7 @@ test('resume', async t => {
   // This log shows the flow started, but didn't get past the IBC Transfer settlement
   t.deepEqual(getLogged(), [
     'sending {0} from cosmoshub to cosmos1whatever',
-    'got info for denoms: ibc/FE98AAD68F02F03565E9FA39A5E627946699B2B07115889ED812D8BA639576A9, ibc/toyatom, ibc/toyusdc, ubld, uist',
+    'got denom uist for [object Alleged: IST brand guest wrapper]',
     'got info for chain: cosmoshub cosmoshub-4',
     'completed transfer to localAccount',
   ]);
@@ -110,7 +111,7 @@ test('resume', async t => {
 
   t.deepEqual(getLogged(), [
     'sending {0} from cosmoshub to cosmos1whatever',
-    'got info for denoms: ibc/FE98AAD68F02F03565E9FA39A5E627946699B2B07115889ED812D8BA639576A9, ibc/toyatom, ibc/toyusdc, ubld, uist',
+    'got denom uist for [object Alleged: IST brand guest wrapper]',
     'got info for chain: cosmoshub cosmoshub-4',
     'completed transfer to localAccount',
     'completed transfer to cosmos1whatever',

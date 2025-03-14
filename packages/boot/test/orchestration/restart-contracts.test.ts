@@ -46,6 +46,7 @@ test.serial('send-anywhere', async t => {
           'uist',
           {
             baseDenom: 'uist',
+            brandKey: 'IST',
             baseName: 'agoric',
             chainName: 'agoric',
           },
