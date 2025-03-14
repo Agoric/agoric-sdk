@@ -244,7 +244,7 @@ test(expectUnhandled(1), 'transfer', async t => {
     return promise;
   };
 
-  const lastestTxMsg = () => {
+  const latestTxMsg = () => {
     const tx = inspectLocalBridge().at(-1);
     if (tx.type !== 'VLOCALCHAIN_EXECUTE_TX') {
       throw new Error('last message was not VLOCALCHAIN_EXECUTE_TX');
@@ -258,7 +258,7 @@ test(expectUnhandled(1), 'transfer', async t => {
     }),
     'can create transfer msg with memo',
   );
-  t.like(lastestTxMsg(), {
+  t.like(latestTxMsg(), {
     memo: 'hello',
   });
 
@@ -304,12 +304,23 @@ test(expectUnhandled(1), 'transfer', async t => {
     ),
   );
 
-  t.like(lastestTxMsg(), {
-    receiver: PFM_RECEIVER,
-    memo: '{"forward":{"receiver":"dydx1test","port":"transfer","channel":"channel-33","retries":3,"timeout":"10m"}}',
+  t.is(latestTxMsg().receiver, PFM_RECEIVER, 'defaults to "pfm" receiver');
+  t.deepEqual(JSON.parse(latestTxMsg().memo), {
+    forward: {
+      receiver: 'dydx1test',
+      port: 'transfer',
+      channel: 'channel-33',
+      retries: 3,
+      timeout: '10m',
+    },
   });
 
   t.log('accepts pfm `forwardOpts`');
+  const intermediateRecipient: CosmosChainAddress = {
+    chainId: 'noble-1',
+    value: 'noble1testintermediaterecipient',
+    encoding: 'bech32',
+  };
   await t.notThrowsAsync(
     doTransfer(
       aDenomAmount,
@@ -317,15 +328,21 @@ test(expectUnhandled(1), 'transfer', async t => {
       {
         forwardOpts: {
           timeout: '999m',
+          intermediateRecipient,
         },
       },
       fetchedChainInfo.agoric.connections['noble-1'].transferChannel.channelId,
     ),
   );
 
-  t.like(JSON.parse(lastestTxMsg().memo), {
+  t.is(latestTxMsg().receiver, intermediateRecipient.value);
+  t.deepEqual(JSON.parse(latestTxMsg().memo), {
     forward: {
       timeout: '999m',
+      channel: 'channel-33',
+      port: 'transfer',
+      receiver: 'dydx1test',
+      retries: 3,
     },
   });
 });
