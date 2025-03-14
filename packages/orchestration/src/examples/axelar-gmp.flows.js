@@ -4,9 +4,9 @@ import { makeError, q } from '@endo/errors';
 /**
  * @import {GuestInterface, GuestOf} from '@agoric/async-flow';
  * @import {Vow} from '@agoric/vow';
- * @import {LocalOrchestrationAccountKit} from '@agoric/orchestration/src/exos/local-orchestration-account.js';
+ * @import {LocalOrchestrationAccountKit} from '../../src/exos/local-orchestration-account.js';
  * @import {ZoeTools} from '@agoric/orchestration/src/utils/zoe-tools.js';
- * @import {Orchestrator, OrchestrationFlow} from '@agoric/orchestration/src/types.js';
+ * @import {Orchestrator, OrchestrationFlow} from '../../src/types.js';
  */
 
 const { entries } = Object;
@@ -37,17 +37,22 @@ const channels = {
  *   type: number;
  *   destinationEVMChain: string;
  *   gasAmount: number;
- *   payload: number[];
+ *   contractInvocationPayload: number[];
  * }} offerArgs
  */
-export const makeEVMContractCall = async (
+export const sendGmp = async (
   orch,
   { sharedLocalAccountP, zoeTools: { localTransfer, withdrawToSeat } },
   seat,
   offerArgs,
 ) => {
-  const { destinationAddress, type, destinationEVMChain, gasAmount, payload } =
-    offerArgs;
+  const {
+    destinationAddress,
+    type,
+    destinationEVMChain,
+    gasAmount,
+    contractInvocationPayload,
+  } = offerArgs;
   console.log('Inside sendIt');
   console.log(
     'Offer Args',
@@ -56,7 +61,7 @@ export const makeEVMContractCall = async (
       type,
       destinationEVMChain,
       gasAmount,
-      payload,
+      contractInvocationPayload,
     }),
   );
 
@@ -91,16 +96,21 @@ export const makeEVMContractCall = async (
   await localTransfer(seat, sharedLocalAccount, give);
   console.log('After local transfer');
 
+  const payload = type === 1 || type === 2 ? contractInvocationPayload : null;
+
   const memoToAxelar = {
     destination_chain: destinationEVMChain,
     destination_address: destinationAddress,
     payload,
     type,
-    fee: {
+  };
+
+  if (type === 1 || type === 2) {
+    memoToAxelar.fee = {
       amount: String(gasAmount),
       recipient: addresses.AXELAR_GAS,
-    },
-  };
+    };
+  }
 
   const memo = {
     forward: {
@@ -119,7 +129,6 @@ export const makeEVMContractCall = async (
 
     await sharedLocalAccount.transfer(
       {
-        // TODO: dont use a hardcoded OSMOSIS address
         value: addresses.OSMOSIS_RECEIVER,
         encoding: 'bech32',
         chainId,
@@ -141,4 +150,4 @@ export const makeEVMContractCall = async (
 
   seat.exit();
 };
-harden(makeEVMContractCall);
+harden(sendGmp);

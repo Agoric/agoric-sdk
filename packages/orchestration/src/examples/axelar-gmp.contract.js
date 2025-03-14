@@ -1,19 +1,18 @@
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { M } from '@endo/patterns';
-import { prepareChainHubAdmin } from '@agoric/orchestration/src/exos/chain-hub-admin.js';
-import { AnyNatAmountShape } from '@agoric/orchestration/src/typeGuards.js';
-import { withOrchestration } from '@agoric/orchestration/src/utils/start-helper.js';
-import { registerChainsAndAssets } from '@agoric/orchestration/src/utils/chain-hub-helper.js';
-import * as gmpflows from './axelar-gmp.flows.js';
-import * as tokenTransferflows from './axelar-token-transfer.flows.js';
+import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
+import { AnyNatAmountShape } from '../typeGuards.js';
+import { withOrchestration } from '../utils/start-helper.js';
+import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
+import * as flows from './axelar-gmp.flows.js';
 import * as sharedFlows from './shared.flows.js';
-import * as evmFlows from './axelar-evm.flows.js';
+import * as evmFlows from './lca-evm.flows.js';
 import { prepareEvmTap } from './evm-tap-kit.js';
 import { EmptyProposalShape } from '@agoric/zoe/src/typeGuards';
 
 /**
  * @import {Zone} from '@agoric/zone';
- * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration/src/utils/start-helper.js';
+ * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  */
@@ -47,10 +46,10 @@ export const contract = async (
   console.log('Inside Contract');
 
   console.log('Channel Info Agoric:');
+  console.log(privateArgs.chainInfo.agoric.connections);
 
-  console.log(privateArgs.chainInfo['agoric'].connections);
   console.log('Channel Info Osmosis:');
-  console.log(privateArgs.chainInfo['osmosis'].connections);
+  console.log(privateArgs.chainInfo.osmosis.connections);
 
   console.log('Registering Chain and Assets....');
   registerChainsAndAssets(
@@ -78,12 +77,8 @@ export const contract = async (
     makeLocalAccount(),
   );
 
-  const { makeEVMContractCall } = orchestrateAll(gmpflows, {
-    sharedLocalAccountP,
-    zoeTools,
-  });
-
-  const { sendTokensToEVM } = orchestrateAll(tokenTransferflows, {
+  // orchestrate uses the names on orchestrationFns to do a "prepare" of the associated behavior
+  const { sendGmp } = orchestrateAll(flows, {
     sharedLocalAccountP,
     zoeTools,
   });
@@ -96,33 +91,23 @@ export const contract = async (
   const publicFacet = zone.exo(
     'Send PF',
     M.interface('Send PF', {
-      contractCallInvitation: M.callWhen().returns(InvitationShape),
-      sendTokensInvitation: M.callWhen().returns(InvitationShape),
-      createAndMonitorAccount: M.callWhen().returns(M.any()),
+      gmpInvitation: M.callWhen().returns(InvitationShape),
+      createAndMonitorLCA: M.callWhen().returns(M.any()),
     }),
     {
-      contractCallInvitation() {
+      gmpInvitation() {
         return zcf.makeInvitation(
-          makeEVMContractCall,
-          'makeEVMContractCall',
+          sendGmp,
+          'send',
           undefined,
           M.splitRecord({ give: SingleNatAmountRecord }),
         );
       },
-      sendTokensInvitation() {
-        return zcf.makeInvitation(
-          sendTokensToEVM,
-          'sendTokensToEVM',
-          undefined,
-          M.splitRecord({ give: SingleNatAmountRecord }),
-        );
-      },
-      createAndMonitorAccount() {
+      createAndMonitorLCA() {
         return zcf.makeInvitation(
           createAndMonitorLCA,
           'send',
           undefined,
-          // TODO: temporarily use EmptyProposalShape
           EmptyProposalShape,
         );
       },
