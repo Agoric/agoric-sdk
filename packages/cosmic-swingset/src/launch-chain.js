@@ -558,18 +558,19 @@ export async function launchAndShareInternals({
     ? parseInt(env.END_BLOCK_SPIN_MS, 10)
     : 0;
 
-  const initialQueueLengths = /** @type {Record<InboundQueueName, number>} */ ({
-    [InboundQueueName.Forced]: runThisBlock.size(),
-    [InboundQueueName.Priority]: highPriorityQueue.size(),
-    [InboundQueueName.Inbound]: actionQueue.size(),
-  });
+  const inboundQueueInitialLengths =
+    /** @type {Record<InboundQueueName, number>} */ ({
+      [InboundQueueName.Forced]: runThisBlock.size(),
+      [InboundQueueName.Priority]: highPriorityQueue.size(),
+      [InboundQueueName.Inbound]: actionQueue.size(),
+    });
   const { crankScheduler, getHeapStats, getMemoryUsage, inboundQueueMetrics } =
     exportKernelStats({
       controller,
       metricMeter,
       // @ts-expect-error Type 'Logger<BaseLevels>' is not assignable to type 'Console'.
       log: console,
-      initialQueueLengths,
+      initialQueueLengths: inboundQueueInitialLengths,
     });
 
   const blockMetrics = objectMapMutable(BLOCK_HISTOGRAM_METRICS, (desc, name) =>
@@ -1161,21 +1162,27 @@ export async function launchAndShareInternals({
   // may be handled higher up in chain-main.js.
   async function doBlockingSend(action) {
     await null;
-    // blockManagerConsole.warn(
-    //   'FIGME: blockHeight',
-    //   action.blockHeight,
-    //   'received',
-    //   action.type,
-    // );
     switch (action.type) {
       case ActionType.AG_COSMOS_INIT: {
         allowExportCallback = true; // cleared by saveOutsideState in COMMIT_BLOCK
-        const { blockHeight, isBootstrap, upgradeDetails } = action;
-        // TODO: parseParams(action.params), for validation?
+        const { blockHeight, isBootstrap, params, upgradeDetails } = action;
+        const needsExecution = blockNeedsExecution(blockHeight);
 
-        if (!blockNeedsExecution(blockHeight)) {
-          return true;
-        }
+        controller.writeSlogObject({
+          type: 'cosmic-swingset-init',
+          blockHeight,
+          isBootstrap,
+          needsExecution,
+          params,
+          upgradeDetails,
+          savedHeight,
+          savedBeginHeight,
+          inboundQueueInitialLengths,
+        });
+
+        // TODO: parseParams(params), for validation?
+
+        if (!needsExecution) return true;
 
         const softwareUpgradeCoreProposals = upgradeDetails?.coreProposals;
 
