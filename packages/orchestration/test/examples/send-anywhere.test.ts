@@ -391,7 +391,7 @@ test('non-vbank asset presented is returned', async t => {
 
   await t.throwsAsync(vt.when(E(userSeat).getOfferResult()), {
     message:
-      '[object Alleged: MOO brand guest wrapper] not registered in vbank',
+      '[object Alleged: MOO brand guest wrapper] not registered in ChainHub',
   });
 
   await E(userSeat).tryExit();
