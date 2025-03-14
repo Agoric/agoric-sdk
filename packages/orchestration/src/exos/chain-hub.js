@@ -720,6 +720,7 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
         connectionInfos.get(issuerToDestKey),
       );
 
+      const { intermediateRecipient, ...rest } = forwardOpts ?? {};
       /** @type {ForwardInfo} */
       const forwardInfo = harden({
         forward: {
@@ -727,7 +728,7 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
           port: issuerToDest.transferChannel.portId,
           channel: issuerToDest.transferChannel.channelId,
           ...DefaultPfmTimeoutOpts,
-          ...forwardOpts,
+          .../** @type {ForwardInfo} */ (rest), // timeout and retries
         },
       });
       return harden({
@@ -741,7 +742,7 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
          * purposely using invalid bech32
          * {@link https://github.com/cosmos/ibc-apps/blob/26f3ad8f58e4ffc7769c6766cb42b954181dc100/middleware/packet-forward-middleware/README.md#minimal-example---chain-forward-a-b-c}
          */
-        receiver: forwardOpts?.intermediateRecipient?.value || PFM_RECEIVER,
+        receiver: intermediateRecipient?.value || PFM_RECEIVER,
         forwardInfo,
       });
     },
