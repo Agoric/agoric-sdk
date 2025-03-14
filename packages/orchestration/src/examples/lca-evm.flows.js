@@ -1,12 +1,12 @@
 import { Fail } from '@endo/errors';
-import { denomHash } from '@agoric/orchestration/src/utils/denomHash.js';
+import { denomHash } from '../utils/denomHash.js';
 
 /**
  * @import {GuestInterface} from '@agoric/async-flow';
  * @import {Orchestrator, OrchestrationFlow} from '@agoric/orchestration';
- * @import {MakeEvmTap} from './evm-tap-kit.js';
- * @import {MakePortfolioHolder} from '@agoric/orchestration/src/exos/portfolio-holder-kit.js';
- * @import {ChainHub} from '@agoric/orchestration/src/exos/chain-hub.js';
+ * @import {MakeEvmTap} from './evm-tap-kit';
+ * @import {MakePortfolioHolder} from '../../src/exos/portfolio-holder-kit.js';
+ * @import {ChainHub} from '../../src/exos/chain-hub.js';
  */
 
 /**
@@ -28,7 +28,7 @@ export const createAndMonitorLCA = async (
   seat,
   { chainName },
 ) => {
-  seat.exit();
+  seat.exit(); // no funds exchanged
   const [agoric, remoteChain] = await Promise.all([
     orch.getChain('agoric'),
     orch.getChain(chainName),
@@ -54,6 +54,7 @@ export const createAndMonitorLCA = async (
     channelId: transferChannel.channelId,
   })}`;
 
+  // Every time the `localAccount` receives `remoteDenom` over IBC, delegate it.
   const tap = makeEvmTap({
     localAccount,
     localChainAddress,
