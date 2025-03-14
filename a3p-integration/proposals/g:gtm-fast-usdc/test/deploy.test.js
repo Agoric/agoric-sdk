@@ -24,10 +24,9 @@ test('accounts', async t => {
   t.true(settlementAccount.startsWith('agoric1'));
 });
 
-test(`fastUsdc incarnation reflects Noble ICA upgrade`, async t => {
-  const history = { beta: 0, nobleICA: 1 };
-  // XXX getIncarnation doesn't support IO injection
-  t.is(await getIncarnation('fastUsdc'), history.nobleICA);
+test(`fastUsdc incarnation reflects rc2`, async t => {
+  const history = { beta: 0, rc1: 1, rc2: 2 };
+  t.is(await getIncarnation('fastUsdc'), history.rc2);
 });
 
 test('feedPolicy updated for GTM', async t => {
