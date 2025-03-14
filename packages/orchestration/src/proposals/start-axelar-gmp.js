@@ -1,8 +1,4 @@
-import {
-  deeplyFulfilledObject,
-  makeTracer,
-  NonNullish,
-} from '@agoric/internal';
+import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
 
 /// <reference types="@agoric/vats/src/core/types-ambient"/>
@@ -46,7 +42,6 @@ export const startAxelarGmp = async (
     consume: {
       agoricNames,
       board,
-      chainStorage,
       chainTimerService,
       cosmosInterchainService,
       localchain,
@@ -76,7 +71,6 @@ export const startAxelarGmp = async (
       localchain,
       marshaller,
       orchestrationService: cosmosInterchainService,
-      storageNode: E(NonNullish(await chainStorage)).makeChildNode('axelarGmp'),
       timerService: chainTimerService,
       chainInfo,
       assetInfo,
@@ -126,7 +120,6 @@ export const getManifest = ({ restoreRef }, { installationRef, options }) => {
         consume: {
           agoricNames: true,
           board: true,
-          chainStorage: true,
           chainTimerService: true,
           cosmosInterchainService: true,
           localchain: true,

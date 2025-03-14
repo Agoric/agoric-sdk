@@ -85,7 +85,6 @@ const prepareEvmTapKit = (zone, { watch }) => {
           trace('onFulfilled _result:', JSON.stringify(_result));
           trace('onFulfilled value:', JSON.stringify(value));
           trace('onFulfilled state:', JSON.stringify(this.state));
-          return;
         },
       },
     },
