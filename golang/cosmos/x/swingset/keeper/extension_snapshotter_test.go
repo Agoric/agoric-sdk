@@ -4,7 +4,7 @@ import (
 	"io"
 	"testing"
 
-	"cosmossdk.io/log"
+	"github.com/cometbft/cometbft/libs/log"
 )
 
 func newTestExtensionSnapshotter() *ExtensionSnapshotter {

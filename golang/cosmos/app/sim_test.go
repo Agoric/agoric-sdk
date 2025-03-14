@@ -8,8 +8,8 @@ import (
 
 	gaia "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 
-	"cosmossdk.io/log"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/app/helpers"
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/rand"
 	"github.com/stretchr/testify/require"
 	dbm "github.com/tendermint/tm-db"

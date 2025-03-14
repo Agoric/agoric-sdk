@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"cosmossdk.io/log"
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/spf13/cast"
 
 	gaia "github.com/Agoric/agoric-sdk/golang/cosmos/app"

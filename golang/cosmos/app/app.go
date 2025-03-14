@@ -264,7 +264,7 @@ type GaiaApp struct { // nolint: golint
 	MintKeeper           mintkeeper.Keeper
 	DistrKeeper          distrkeeper.Keeper
 	GovKeeper            govkeeper.Keeper
-	UpgradeKeeper        upgradekeeper.Keeper
+	UpgradeKeeper        *upgradekeeper.Keeper
 	ParamsKeeper         paramskeeper.Keeper
 	ConsensusParamKeeper consensusparamkeeper.Keeper
 	// IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
@@ -667,7 +667,7 @@ func NewAgoricApp(
 	ics20TransferIBCModule = packetforward.NewIBCMiddleware(
 		ics20TransferIBCModule,
 		app.PacketForwardKeeper,
-		0,                                                                // retries on timeout
+		0, // retries on timeout
 		packetforwardkeeper.DefaultForwardTransferPacketTimeoutTimestamp, // forward timeout
 		packetforwardkeeper.DefaultRefundTransferPacketTimeoutTimestamp,  // refund timeout
 	)

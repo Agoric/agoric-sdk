@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/exec"
 
-	"cosmossdk.io/log"
+	"github.com/cometbft/cometbft/libs/log"
 )
 
 // NewVMCommand creates a new OS command to run the Agoric VM.  It sets up the
