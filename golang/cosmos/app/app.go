@@ -438,6 +438,8 @@ func NewAgoricApp(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
+	app.StakingKeeper = *stakingKeeper
+
 	app.MintKeeper = mintkeeper.NewKeeper(
 		appCodec,
 		keys[minttypes.StoreKey],
@@ -591,16 +593,21 @@ func NewAgoricApp(
 		AddRoute(swingsettypes.RouterKey, swingset.NewSwingSetProposalHandler(app.SwingSetKeeper))
 	govConfig := govtypes.DefaultConfig()
 
-	app.GovKeeper = govkeeper.NewKeeper(
+	govKeeper := govkeeper.NewKeeper(
 		appCodec,
 		keys[govtypes.StoreKey],
-		app.GetSubspace(govtypes.ModuleName),
 		app.AccountKeeper,
 		app.BankKeeper,
-		&stakingKeeper,
-		govRouter,
-		app.BaseApp.MsgServiceRouter(),
+		app.StakingKeeper,
+		app.MsgServiceRouter(),
 		govConfig,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+	)
+
+	app.GovKeeper = *govKeeper.SetHooks(
+		govtypes.NewMultiGovHooks(
+			// register the governance hooks
+		),
 	)
 
 	// Initialize the packet forward middleware Keeper
@@ -608,13 +615,12 @@ func NewAgoricApp(
 	app.PacketForwardKeeper = packetforwardkeeper.NewKeeper(
 		appCodec,
 		keys[packetforwardtypes.StoreKey],
-		app.GetSubspace(packetforwardtypes.ModuleName),
 		app.TransferKeeper, // will be zero-value here, reference is set later on with SetTransferKeeper.
 		app.IBCKeeper.ChannelKeeper,
-		app.DistrKeeper,
 		app.BankKeeper,
 		// Make vtransfer the middleware wrapper for the IBCKeeper.
 		app.VtransferKeeper.GetICS4Wrapper(),
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
@@ -665,7 +671,7 @@ func NewAgoricApp(
 	ics20TransferIBCModule = packetforward.NewIBCMiddleware(
 		ics20TransferIBCModule,
 		app.PacketForwardKeeper,
-		0, // retries on timeout
+		0,                                                                // retries on timeout
 		packetforwardkeeper.DefaultForwardTransferPacketTimeoutTimestamp, // forward timeout
 		packetforwardkeeper.DefaultRefundTransferPacketTimeoutTimestamp,  // refund timeout
 	)
@@ -711,15 +717,15 @@ func NewAgoricApp(
 			app.BaseApp.DeliverTx,
 			encodingConfig.TxConfig,
 		),
-		auth.NewAppModule(appCodec, app.AccountKeeper, nil),
+		auth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts, app.GetSubspace(authtypes.ModuleName)),
 		vesting.NewAppModule(app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
-		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper),
-		capability.NewAppModule(appCodec, *app.CapabilityKeeper),
-		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper),
-		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper, nil),
-		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
-		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
-		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
+		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
+		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
+		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
+		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper, nil, app.GetSubspace(minttypes.ModuleName)),
+		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(slashingtypes.ModuleName)),
+		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(distrtypes.ModuleName)),
+		staking.NewAppModule(appCodec, &app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
 		upgrade.NewAppModule(app.UpgradeKeeper),
 		evidence.NewAppModule(app.EvidenceKeeper),
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
@@ -728,7 +734,7 @@ func NewAgoricApp(
 		params.NewAppModule(app.ParamsKeeper),
 		ics20TransferModule,
 		icaModule,
-		packetforward.NewAppModule(app.PacketForwardKeeper),
+		packetforward.NewAppModule(app.PacketForwardKeeper, app.GetSubspace(packetforwardtypes.ModuleName)),
 		vstorage.NewAppModule(app.VstorageKeeper),
 		swingset.NewAppModule(
 			app.SwingSetKeeper,
@@ -852,7 +858,7 @@ func NewAgoricApp(
 	app.mm.SetOrderInitGenesis(moduleOrderForGenesisAndUpgrade...)
 	app.mm.SetOrderMigrations(moduleOrderForGenesisAndUpgrade...)
 
-	app.mm.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
+	//app.mm.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
 
 	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
 	app.mm.RegisterServices(app.configurator)
@@ -861,22 +867,11 @@ func NewAgoricApp(
 	//
 	// NOTE: this is not required apps that don't use the simulator for fuzz testing
 	// transactions
-	app.sm = module.NewSimulationManager(
-		auth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts),
-		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper),
-		capability.NewAppModule(appCodec, *app.CapabilityKeeper),
-		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
-		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
-		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper),
-		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper, nil),
-		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
-		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
-		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
-		params.NewAppModule(app.ParamsKeeper),
-		evidence.NewAppModule(app.EvidenceKeeper),
-		ibc.NewAppModule(app.IBCKeeper),
-		ics20TransferModule,
-	)
+	overrideModules := map[string]module.AppModuleSimulation{
+		authtypes.ModuleName: auth.NewAppModule(app.appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts, app.GetSubspace(authtypes.ModuleName)),
+	}
+
+	app.sm = module.NewSimulationManagerFromAppModules(app.mm.Modules, overrideModules)
 
 	app.sm.RegisterStoreDecoders()
 
@@ -1298,7 +1293,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(slashingtypes.ModuleName)
 	paramsKeeper.Subspace(govtypes.ModuleName).WithKeyTable(govtypesv1.ParamKeyTable())
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
-	paramsKeeper.Subspace(packetforwardtypes.ModuleName).WithKeyTable(packetforwardtypes.ParamKeyTable())
+	paramsKeeper.Subspace(packetforwardtypes.ModuleName)
 	paramsKeeper.Subspace(ibchost.ModuleName)
 	paramsKeeper.Subspace(icahosttypes.SubModuleName)
 	paramsKeeper.Subspace(swingset.ModuleName)
