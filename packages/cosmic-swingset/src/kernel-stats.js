@@ -477,6 +477,8 @@ export function exportKernelStats({
   // anything useful.
   const cachingHeapStats = maxAgeCache(() => v8.getHeapStatistics(), 800);
   const getHeapStats = cachingHeapStats.get;
+  // DEPRECATED: This should be equivalent to the "heapStats" data of
+  // "cosmic-swingset-end-block-finish" slog entries.
   for (const key of Object.keys(cachingHeapStats.firstResult)) {
     const name = `heapStats_${key}`;
     const options = { description: 'v8 kernel heap statistic' };
@@ -488,6 +490,8 @@ export function exportKernelStats({
 
   const cachingMemUsage = maxAgeCache(() => process.memoryUsage(), 800);
   const getMemoryUsage = cachingMemUsage.get;
+  // DEPRECATED: This should be equivalent to the "memStats" data of
+  // "cosmic-swingset-end-block-finish" slog entries.
   for (const key of Object.keys(cachingMemUsage.firstResult)) {
     const name = `memoryUsage_${key}`;
     const options = { description: 'kernel process memory statistic' };
@@ -535,8 +539,8 @@ export function exportKernelStats({
 
   return {
     crankScheduler,
-    schedulerCrankTimeHistogram,
-    schedulerBlockTimeHistogram,
+    getHeapStats,
+    getMemoryUsage,
     inboundQueueMetrics,
   };
 }

@@ -563,13 +563,14 @@ export async function launchAndShareInternals({
     [InboundQueueName.Priority]: highPriorityQueue.size(),
     [InboundQueueName.Inbound]: actionQueue.size(),
   });
-  const { crankScheduler, inboundQueueMetrics } = exportKernelStats({
-    controller,
-    metricMeter,
-    // @ts-expect-error Type 'Logger<BaseLevels>' is not assignable to type 'Console'.
-    log: console,
-    initialQueueLengths,
-  });
+  const { crankScheduler, getHeapStats, getMemoryUsage, inboundQueueMetrics } =
+    exportKernelStats({
+      controller,
+      metricMeter,
+      // @ts-expect-error Type 'Logger<BaseLevels>' is not assignable to type 'Console'.
+      log: console,
+      initialQueueLengths,
+    });
 
   const blockMetrics = objectMapMutable(BLOCK_HISTOGRAM_METRICS, (desc, name) =>
     metricMeter.createHistogram(name, desc),
@@ -1344,6 +1345,8 @@ export async function launchAndShareInternals({
               // been updated to use inboundQueueStartLengths and/or
               // processedActionCounts.
               inboundQueueStats: inboundQueueMetrics.getStats(),
+              memStats: getMemoryUsage(),
+              heapStats: getHeapStats(),
             });
 
             times.endBlockDone = now();
