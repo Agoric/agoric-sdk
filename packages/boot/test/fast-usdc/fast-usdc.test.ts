@@ -16,6 +16,7 @@ import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Fail } from '@endo/errors';
 import { makeMarshal } from '@endo/marshal';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
+import type { FeeConfig } from '@agoric/fast-usdc';
 import {
   AckBehavior,
   fetchCoreEvalRelease,
@@ -842,4 +843,36 @@ test.serial('replace operators', async t => {
       result: 'inert; nothing should be expected from this offer',
     },
   });
+});
+
+test.serial('update fee config', async t => {
+  const { buildProposal, evalProposal, storage } = t.context;
+
+  const readFeeConfig = (): FeeConfig => {
+    const latest = storage.getValues(`published.fastUsdc.feeConfig`).at(-1);
+    if (!latest) throw Error('feeConfig not found');
+    return defaultSerializer.parse(latest) as FeeConfig;
+  };
+
+  // see `const newFlat = AmountMath.make(usdc, 9_999n);` above
+  t.is(readFeeConfig().flat.value, 9_999n);
+
+  /**
+   * Note: there are no contract changes between this proposal and prop 89,
+   * so we don't need to update "deploy HEAD; update Settler reference" to use
+   * `evalReleasedProposal` yet
+   */
+  const updateFlatFee = buildProposal(
+    '@agoric/builders/scripts/fast-usdc/fast-usdc-fee-config.build.js',
+  );
+  await evalProposal(updateFlatFee);
+
+  t.is(readFeeConfig().flat.value, 0n);
+
+  const doc = {
+    node: 'fastUsdc.feeConfig',
+    owner: 'the fee configuration for Fast USDC',
+    showValue: defaultSerializer.parse,
+  };
+  await documentStorageSchema(t, storage, doc);
 });
