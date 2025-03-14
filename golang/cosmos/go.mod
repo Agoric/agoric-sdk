@@ -218,7 +218,7 @@ replace (
 replace (
 	cosmossdk.io/simapp => github.com/agoric-labs/cosmos-sdk/simapp v0.0.0-20250312202453-86e44a02f6bf
 	// We need a fork of cosmos-sdk until all of the differences are merged.
-	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.46.16-alpha.agoric.2.5.0.20250312202453-86e44a02f6bf
+	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.46.16-alpha.agoric.2.5.0.20250314183212-332e88a7b675
 
 	// Use a version of ibc-go that is compatible with the above forks.
 	// github.com/cosmos/ibc-go/v7 => github.com/agoric-labs/ibc-go/v7 v6.3.1-alpha.agoric.3
