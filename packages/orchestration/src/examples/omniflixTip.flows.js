@@ -53,21 +53,18 @@ export const tipOnOmniflix = async (
   const blnc4=await localAccount.getBalances();
   debugger
   // Swap input token to uflix on Osmosis and send to recipient
-  const transferMsg = orcUtils.makeOsmosisSwap({
-    destChain: 'omniflixhub',
-    destAddress: recipientAddress,
-    amountIn: amount,
-    brandOut: 'uflix',
-    slippage: slippage || 0.03, // Default 3%
-    inputDenom: tokenDenom,
-    inputChainId: chainId,
-  });
   // const blnc = await localAccount.getBalances();
   // const blnc2 = await osmosisAccount.getBalances();
   debugger
   try {
     trace('Executing swap and transfer...');
-    await   localAccount.transferSteps(amount, transferMsg);
+    await localAccount.transfer({
+      chainId: 'omniflixhub',
+      value: recipientAddress,
+      encoding: 'bech32',
+    }, amount, {
+      memo: 'tip',
+    })
     debugger;
     seat.exit();
   } catch (e) {

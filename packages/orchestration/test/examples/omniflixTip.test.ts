@@ -1,7 +1,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { E } from '@endo/far';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { makeIssuerKit } from '@agoric/ertp';
+import { makeIssuerKit, type AnyAmount } from '@agoric/ertp';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { commonSetup } from '../supports.js';
 import type {
@@ -27,8 +27,9 @@ test('successful tip on Omniflix', async t => {
     facadeServices: { chainHub },
     bootstrap,
     commonPrivateArgs,
-    brands: { flix, osmo, bld },
+    brands: { flix, osmo, bld, ist },
     customTerms,
+    utils: { pourPayment },
   } = await commonSetup(t);
   const vt = bootstrap.vowTools;
 
@@ -83,7 +84,7 @@ const chainDetails = harden({
 
   const tipKit = await E(zoe).startInstance(
     installation,
-    { FLIX: flix.issuer, OSMO: osmo.issuer, BLD: bld.issuer },
+    { FLIX: flix.issuer, OSMO: osmo.issuer, BLD: bld.issuer, IST: ist.issuer },
     { chainDetails },
     { ...commonPrivateArgs, storageNode },
   );
@@ -138,11 +139,22 @@ const chainDetails = harden({
   chainHub.registerChain(chainNameFlix, flixChainInfo);
   chainHub.registerConnection(chainName, chainNameFlix, osmoToFlixConnection);
 
+  // const flixBank = await E(bootstrap.bankManager).getBankForAddress(
+  //   'omniflix1destAddr',
+  // );
+  // const flixPurse = await E(flixBank).getPurse(flix.brand);
+  // t.log('balance', await E(flixPurse).getCurrentAmount());
+  // const mintedFlix = flix.issuerKit.mint.mintPayment(flix.units(10));
+  // await E(flixPurse).deposit(mintedFlix);
+  // t.log('balance', await E(flixPurse).getCurrentAmount());
+
   const publicFacet = await E(zoe).getPublicFacet(tipKit.instance);
   const inv = await E(publicFacet).makeTipInvitation();
+  const amt = await E(zoe).getInvitationDetails(inv);
+  t.log('amt', amt);
 
-  const TipAmt = flix.make(10n);
-  const Flix = flix.issuerKit.mint.mintPayment(TipAmt);
+  const TipAmt = osmo.units(0.5);
+  const Tip = await pourPayment(TipAmt);
   const offerArgs = harden({
     chainId: 'osmosis',
     tokenDenom: 'uosmo',
@@ -151,14 +163,12 @@ const chainDetails = harden({
   });
   const userSeat = await E(zoe).offer(
     inv,
-    {
-      give: { TipAmt },
-      want: {},
-      exit: { onDemand: null },
-    },
-    { TipAmt: Flix },
+    { give: { Tip } },
+    { Tip },
     offerArgs,
   );
+  t.log('userSeat', userSeat);
+  t.log('userSeat.getOfferResult()', await E(userSeat).getOfferResult());
 
   await t.notThrowsAsync(E(userSeat).getOfferResult());
   const payouts = await E(userSeat).getPayouts();

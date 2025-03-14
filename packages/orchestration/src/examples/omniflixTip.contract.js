@@ -4,12 +4,13 @@ import { makeTracer } from '@agoric/internal';
 import { withOrchestration } from '@agoric/orchestration/src/utils/start-helper.js';
 import { ChainInfoShape } from '@agoric/orchestration/src/typeGuards.js';
 import { M } from '@endo/patterns';
+import { AnyNatAmountShape } from '../typeGuards.js';
 import * as flows from './omniflixTip.flows.js';
 
 const trace = makeTracer('OmniflixTip');
 
 const SingleAmountRecord = M.and(
-  M.recordOf(M.string(), AmountShape, { numPropertiesLimit: 1 }),
+  M.recordOf(M.string(), AnyNatAmountShape, { numPropertiesLimit: 1 }),
   M.not(harden({})),
 );
 
@@ -67,11 +68,7 @@ const contract = async (
           tipOnOmniflix,
           'Tip FLIX on Omniflix',
           undefined,
-          harden({
-            give: SingleAmountRecord,
-            want: {},
-            exit: M.any(),
-          }),
+          M.splitRecord({ give: SingleAmountRecord }),
         );
       },
     },
