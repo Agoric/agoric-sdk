@@ -97,14 +97,11 @@ harden(AmountShape);
  */
 export const AmountPatternShape = M.pattern();
 
-/** @see {AmountValueHasBound} */
-export const AmountValueHasBoundShape = M.tagged(
-  'match:has',
-  M.splitArray([M.pattern(), M.nat()], [M.record()]),
-);
+/** @see {HasBound} */
+export const HasBoundShape = M.tagged('match:has');
 
 /** @see {AmountValueBound} */
-const AmountValueBoundShape = M.or(AmountValueShape, AmountValueHasBoundShape);
+const AmountValueBoundShape = M.or(AmountValueShape, HasBoundShape);
 
 /** @see {AmountBound} */
 export const AmountBoundShape = {

@@ -98,7 +98,7 @@ export type AssetKindForValue<V extends AmountValue> = V extends NatValue
         ? 'copyBag'
         : never;
 
-export type AmountValueHasBound = CopyTagged<
+export type HasBound = CopyTagged<
   'match:has',
   [elementPatt: Pattern, countPatt: bigint, limits?: Limits]
 >;
@@ -106,7 +106,7 @@ export type AmountValueHasBound = CopyTagged<
 export type AmountValueBound<
   K extends AssetKind = AssetKind,
   M extends Key = Key,
-> = AssetValueForKind<K, M> | AmountValueHasBound;
+> = AssetValueForKind<K, M> | HasBound;
 
 export type AmountBound<
   K extends AssetKind = AssetKind,
@@ -453,7 +453,7 @@ export type MathHelpers<
   K extends AssetKind = AssetKind,
   M extends Key = Key,
   V extends AssetValueForKind<K, M> = AssetValueForKind<K, M>,
-  VBound extends AmountValueHasBound = AmountValueHasBound,
+  VBound extends AmountValueBound<K, M> = AmountValueBound<K, M>,
 > = {
   /**
    * Check the kind of this value and

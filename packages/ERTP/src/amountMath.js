@@ -6,11 +6,7 @@ import { natMathHelpers } from './mathHelpers/natMathHelpers.js';
 import { setMathHelpers } from './mathHelpers/setMathHelpers.js';
 import { copySetMathHelpers } from './mathHelpers/copySetMathHelpers.js';
 import { copyBagMathHelpers } from './mathHelpers/copyBagMathHelpers.js';
-import {
-  AmountBoundShape,
-  AmountShape,
-  AmountValueHasBoundShape,
-} from './typeGuards.js';
+import { AmountBoundShape, AmountShape } from './typeGuards.js';
 
 /**
  * @import {Passable} from '@endo/pass-style'
@@ -219,9 +215,6 @@ const isGTE = (leftAmount, rightAmountBound, brand = undefined) => {
       rightBrand,
     )} should match but do not`;
   const leftKind = assertValueGetAssetKind(leftValue);
-  // If it were anything else, it would have been a Key and so taken care of
-  // in the first case above.
-  mustMatch(rightValueHasBound, AmountValueHasBoundShape, 'right value bound');
   const h = helpers[leftKind];
   // @ts-expect-error cast?
   return h.doIsGTE(h.doCoerce(leftValue), rightValueHasBound);
@@ -411,13 +404,6 @@ export const AmountMath = {
         rightBrand,
       )} should match but do not`;
     const leftKind = assertValueGetAssetKind(leftValue);
-    // If it were anything else, it would have been a Key and so taken care of
-    // in the first case above.
-    mustMatch(
-      rightValueHasBound,
-      AmountValueHasBoundShape,
-      'right value bound',
-    );
     const h = helpers[leftKind];
     // @ts-expect-error cast?
     const value = h.doSubtract(h.doCoerce(leftValue), rightValueHasBound);
