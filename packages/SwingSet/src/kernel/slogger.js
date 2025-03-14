@@ -230,8 +230,16 @@ export function makeSlogger(slogCallbacks, writeSlogObject, slogDuration) {
       deliveryNum = newDeliveryNum;
       replay = inReplay;
       syscallNum = 0;
-      const startProps = { crankNum, vatID, deliveryNum, replay, kd, vd };
-      const finish = startDuration(['deliver', 'deliver-result'], startProps);
+      const dispatch = vd?.[0]; // using vd because kd is undefined in replay
+      const finish = startDuration(['deliver', 'deliver-result'], {
+        crankNum,
+        vatID,
+        deliveryNum,
+        replay,
+        dispatch,
+        kd,
+        vd,
+      });
       // dr: deliveryResult
       return harden(dr => {
         checkOldState(DELIVERY, 'deliver-result called twice?');
@@ -249,6 +257,7 @@ export function makeSlogger(slogCallbacks, writeSlogObject, slogDuration) {
         deliveryNum,
         syscallNum,
         replay,
+        syscall: vsc?.[0],
         ksc,
         vsc,
       });

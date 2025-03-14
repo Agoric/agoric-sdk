@@ -561,6 +561,10 @@ export default function buildKernel(
    */
   async function processSend(vatID, target, msg) {
     insistMessage(msg);
+    // DEPRECATED: These counts are available as "crank-start"/"crank-finish"
+    // slog entries with crankType "delivery" (the latter count filtered on
+    // messageType "send") and "deliver"/"deliver-result" slog entries (the
+    // latter count filtered on dispatch "message").
     kernelKeeper.incStat('dispatches');
     kernelKeeper.incStat('dispatchDeliver');
 
@@ -591,6 +595,8 @@ export default function buildKernel(
     const { vatID, kpid } = message;
     insistVatID(vatID);
     insistKernelType('promise', kpid);
+    // DEPRECATED: This count is available as "crank-start"/"crank-finish"
+    // slog entries with crankType "delivery".
     kernelKeeper.incStat('dispatches');
     const vatInfo = vatWarehouse.lookup(vatID);
     if (!vatInfo) {
@@ -600,6 +606,8 @@ export default function buildKernel(
     const { meterID } = vatInfo;
 
     const p = kernelKeeper.getKernelPromise(kpid);
+    // DEPRECATED: This count is available as "deliver"/"deliver-result" slog
+    // entries with dispatch "notify".
     kernelKeeper.incStat('dispatchNotify');
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     if (p.state === 'unresolved') {
@@ -1344,6 +1352,7 @@ export default function buildKernel(
    * @returns {Promise<PolicyInput>}
    */
   async function processDeliveryMessage(message) {
+    const messageType = message.type;
     kdebug('');
     // prettier-ignore
     kdebug(`processQ crank ${kernelKeeper.getCrankNumber()} ${JSON.stringify(message)}`);
@@ -1351,6 +1360,7 @@ export default function buildKernel(
     const finish = kernelSlog.startDuration(['crank-start', 'crank-finish'], {
       crankType: 'delivery',
       crankNum: kernelKeeper.getCrankNumber(),
+      messageType,
       message,
     });
     /** @type { PolicyInput } */
@@ -1491,13 +1501,15 @@ export default function buildKernel(
    * @returns {Promise<PolicyInput>}
    */
   async function processAcceptanceMessage(message) {
+    const messageType = message.type;
     kdebug('');
     // prettier-ignore
-    kdebug(`processAcceptanceQ crank ${kernelKeeper.getCrankNumber()} ${message.type}`);
+    kdebug(`processAcceptanceQ crank ${kernelKeeper.getCrankNumber()} ${messageType}`);
     // kdebug(legibilizeMessage(message));
     const finish = kernelSlog.startDuration(['crank-start', 'crank-finish'], {
       crankType: 'routing',
       crankNum: kernelKeeper.getCrankNumber(),
+      messageType,
       message,
     });
     /** @type { PolicyInput } */
