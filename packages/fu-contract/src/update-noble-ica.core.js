@@ -2,8 +2,8 @@
 
 import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
-import { publishFeedPolicy } from './utils/core-eval.js';
 import { feedPolicies } from './utils/chain-policies.js';
+import { publishFeedPolicy } from './utils/core-eval.js';
 
 const trace = makeTracer('FUSD-2', true);
 
@@ -26,7 +26,7 @@ const makeRatio = (numerator, numeratorBrand, denominator = 100n) =>
  * @import {BundleID} from '@agoric/swingset-vat';
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js';
  * @import {FastUSDCCorePowers} from './start-fast-usdc.core.js';
- * @import {ContractRecord, FeeConfig, FeedPolicy} from './types.js';
+ * @import {ContractRecord, FeeConfig, FeedPolicy} from '@agoric/fast-usdc/src/types.js';
  */
 
 /**

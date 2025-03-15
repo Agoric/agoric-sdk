@@ -13,7 +13,7 @@ const mockScenarios = [
   'AGORIC_UNKNOWN_EUD',
 ] as const;
 
-type MockScenario = (typeof mockScenarios)[number];
+export type MockScenario = (typeof mockScenarios)[number];
 
 export const Senders = {
   default: '0xDefaultFakeEthereumAddress',
@@ -132,73 +132,6 @@ export const MockCctpTxEvidences: Record<
     chainId: 1,
   }),
 };
-
-const nobleDefaultVTransferParams = {
-  // (XXX confirm) FungibleTokenPacketData is from the perspective of the counterparty
-  denom: 'uusdc',
-  sourceChannel:
-    fetchedChainInfo.agoric.connections['noble-1'].transferChannel
-      .counterPartyChannelId,
-  destinationChannel:
-    fetchedChainInfo.agoric.connections['noble-1'].transferChannel.channelId,
-};
-
-export const MockVTransferEvents: Record<
-  MockScenario,
-  (receiverAddress?: string) => VTransferIBCEvent
-> = {
-  AGORIC_PLUS_OSMO: (recieverAddress?: string) =>
-    buildVTransferEvent({
-      ...nobleDefaultVTransferParams,
-      amount: MockCctpTxEvidences.AGORIC_PLUS_OSMO().tx.amount,
-      sender: MockCctpTxEvidences.AGORIC_PLUS_OSMO().tx.forwardingAddress,
-      receiver:
-        recieverAddress ||
-        MockCctpTxEvidences.AGORIC_PLUS_OSMO().aux.recipientAddress,
-    }),
-  AGORIC_PLUS_DYDX: (recieverAddress?: string) =>
-    buildVTransferEvent({
-      ...nobleDefaultVTransferParams,
-      amount: MockCctpTxEvidences.AGORIC_PLUS_DYDX().tx.amount,
-      sender: MockCctpTxEvidences.AGORIC_PLUS_DYDX().tx.forwardingAddress,
-      receiver:
-        recieverAddress ||
-        MockCctpTxEvidences.AGORIC_PLUS_DYDX().aux.recipientAddress,
-    }),
-  AGORIC_PLUS_AGORIC: (recieverAddress?: string) =>
-    buildVTransferEvent({
-      ...nobleDefaultVTransferParams,
-      amount: MockCctpTxEvidences.AGORIC_PLUS_AGORIC().tx.amount,
-      sender: MockCctpTxEvidences.AGORIC_PLUS_AGORIC().tx.forwardingAddress,
-      receiver:
-        recieverAddress ||
-        MockCctpTxEvidences.AGORIC_PLUS_AGORIC().aux.recipientAddress,
-    }),
-  AGORIC_NO_PARAMS: (recieverAddress?: string) =>
-    buildVTransferEvent({
-      ...nobleDefaultVTransferParams,
-      amount: MockCctpTxEvidences.AGORIC_NO_PARAMS().tx.amount,
-      sender: MockCctpTxEvidences.AGORIC_NO_PARAMS().tx.forwardingAddress,
-      receiver:
-        recieverAddress ||
-        MockCctpTxEvidences.AGORIC_NO_PARAMS().aux.recipientAddress,
-    }),
-  AGORIC_UNKNOWN_EUD: (recieverAddress?: string) =>
-    buildVTransferEvent({
-      ...nobleDefaultVTransferParams,
-      amount: MockCctpTxEvidences.AGORIC_UNKNOWN_EUD().tx.amount,
-      sender: MockCctpTxEvidences.AGORIC_UNKNOWN_EUD().tx.forwardingAddress,
-      receiver:
-        recieverAddress ||
-        MockCctpTxEvidences.AGORIC_UNKNOWN_EUD().aux.recipientAddress,
-    }),
-};
-
-export const intermediateRecipient: CosmosChainAddress = harden({
-  chainId: 'noble-1',
-  value: 'noble1test',
-  encoding: 'bech32',
-});
 
 export const settlementAddress: CosmosChainAddress = harden({
   chainId: 'agoric-3',

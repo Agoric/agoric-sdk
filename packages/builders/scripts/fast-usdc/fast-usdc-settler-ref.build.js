@@ -5,7 +5,7 @@
  * (see update-settler-reference.core.js)
  */
 import { makeHelpers } from '@agoric/deploy-script-support';
-import { getManifestForUpdateSettlerReference } from '@agoric/fast-usdc/src/update-settler-reference.core.js';
+import { getManifestForUpdateSettlerReference } from '@agoric/fu-contract/src/update-settler-reference.core.js';
 
 /**
  * @import {CoreEvalBuilder, DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
@@ -21,7 +21,7 @@ export const proposalBuilder = async (
   options = {},
 ) => {
   return harden({
-    sourceSpec: '@agoric/fast-usdc/src/update-settler-reference.core.js',
+    sourceSpec: '@agoric/fu-contract/src/update-settler-reference.core.js',
     /** @type {[string, Parameters<typeof getManifestForUpdateSettlerReference>[1]]} */
     getManifestCall: [
       getManifestForUpdateSettlerReference.name,

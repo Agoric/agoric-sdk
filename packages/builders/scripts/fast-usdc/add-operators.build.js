@@ -1,8 +1,8 @@
 // @ts-check
 import { makeHelpers } from '@agoric/deploy-script-support';
-import { getManifestForAddOperators } from '@agoric/fast-usdc/src/add-operators.core.js';
-import { toExternalConfig } from '@agoric/fast-usdc/src/utils/config-marshal.js';
-import { configurations } from '@agoric/fast-usdc/src/utils/deploy-config.js';
+import { getManifestForAddOperators } from '@agoric/fu-contract/src/add-operators.core.js';
+import { toExternalConfig } from '@agoric/fu-contract/src/utils/config-marshal.js';
+import { configurations } from '@agoric/fu-contract/src/utils/deploy-config.js';
 import { Far } from '@endo/far';
 import { parseArgs } from 'node:util';
 
@@ -34,7 +34,7 @@ export const defaultProposalBuilder = async (
   /** @type {FastUSDCConfig} */ config,
 ) => {
   return harden({
-    sourceSpec: '@agoric/fast-usdc/src/add-operators.core.js',
+    sourceSpec: '@agoric/fu-contract/src/add-operators.core.js',
     /** @type {[string, Parameters<typeof getManifestForAddOperators>[1]]} */
     getManifestCall: [
       getManifestForAddOperators.name,

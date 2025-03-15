@@ -9,7 +9,7 @@ import type { VowTools } from '@agoric/vow';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import type { AmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import type { Zone } from '@agoric/zone';
-import type { FeeConfig, LogFn } from '../src/types.js';
+import type { FeeConfig, LogFn } from '@agoric/fast-usdc/src/types.js';
 
 export const prepareMockOrchAccounts = (
   zone: Zone,
@@ -82,7 +82,6 @@ export const makeTestLogger = (logger: LogFn) => {
     typeof index === 'number' ? logs[index] : logs;
   return { log, inspectLogs };
 };
-
 export type TestLogger = ReturnType<typeof makeTestLogger>;
 
 export const makeTestFeeConfig = (usdc: Omit<AmountUtils, 'mint'>): FeeConfig =>

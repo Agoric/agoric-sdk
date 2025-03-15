@@ -1,9 +1,9 @@
 /** @file test that chain policies match data from a requirements-gathering spreadsheet */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { M, mustMatch } from '@endo/patterns';
-import { type ChainPolicy } from '../../src/types.js';
+import { type ChainPolicy } from '@agoric/fast-usdc/src/types.js';
+import { ChainPolicyShape } from '@agoric/fast-usdc/src/type-guards.js';
 import { ChainPolicies } from '../../src/utils/chain-policies.js';
-import { ChainPolicyShape } from '../../src/type-guards.js';
 
 /** Spreadsheet header becomes a tuple type with column names used as tags */
 type PolicyRow = [

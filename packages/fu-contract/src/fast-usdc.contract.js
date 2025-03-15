@@ -15,13 +15,16 @@ import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/record
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+import {
+  FastUSDCTermsShape,
+  FeeConfigShape,
+} from '@agoric/fast-usdc/src/type-guards.js';
 import { prepareAdvancer } from './exos/advancer.js';
 import { prepareLiquidityPoolKit } from './exos/liquidity-pool.js';
 import { prepareSettler } from './exos/settler.js';
 import { prepareStatusManager } from './exos/status-manager.js';
 import { prepareTransactionFeedKit } from './exos/transaction-feed.js';
 import * as flows from './fast-usdc.flows.js';
-import { FastUSDCTermsShape, FeeConfigShape } from './type-guards.js';
 
 const trace = makeTracer('FastUsdc');
 
@@ -37,13 +40,7 @@ const ADDRESSES_BAGGAGE_KEY = 'addresses';
  * @import {Marshaller, StorageNode} from '@agoric/internal/src/lib-chainStorage.js'
  * @import {Zone} from '@agoric/zone';
  * @import {OperatorOfferResult} from './exos/transaction-feed.js';
- * @import {ContractRecord, FeeConfig} from './types.js';
- */
-
-/**
- * @typedef {{
- *   usdcDenom: Denom;
- * }} FastUsdcTerms
+ * @import {ContractRecord, FastUsdcTerms, FeeConfig} from '@agoric/fast-usdc/src/types.js';
  */
 
 /** @type {ContractMeta<typeof start>} */

@@ -4,18 +4,22 @@ import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
 import { Fail, makeError, q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { M } from '@endo/patterns';
-import { PendingTxStatus, TerminalTxStatus, TxStatus } from '../constants.js';
+import {
+  PendingTxStatus,
+  TerminalTxStatus,
+  TxStatus,
+} from '@agoric/fast-usdc/src/constants.js';
 import {
   CctpTxEvidenceShape,
   EvmHashShape,
   PendingTxShape,
-} from '../type-guards.js';
+} from '@agoric/fast-usdc/src/type-guards.js';
 
 /**
  * @import {NatValue} from '@agoric/ertp';
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {Zone} from '@agoric/zone';
- * @import {CctpTxEvidence, NobleAddress, PendingTx, EvmHash, LogFn, TransactionRecord, EvidenceWithRisk, RiskAssessment} from '../types.js';
+ * @import {CctpTxEvidence, NobleAddress, PendingTx, EvmHash, LogFn, TransactionRecord, EvidenceWithRisk, RiskAssessment} from '@agoric/fast-usdc/src/types.js';
  */
 
 /**
@@ -376,7 +380,7 @@ export const prepareStatusManager = (
        * Mark a transaction as `DISBURSED`
        *
        * @param {EvmHash} txHash
-       * @param {import('./liquidity-pool.js').RepayAmountKWR} split
+       * @param {import('@agoric/fast-usdc/src/utils/fees.js').RepayAmountKWR} split
        */
       disbursed(txHash, split) {
         publishTxnRecord(txHash, harden({ split, status: TxStatus.Disbursed }));

@@ -4,12 +4,12 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { makeHeapZone } from '@agoric/zone';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
 import {
   prepareTransactionFeedKit,
   stateShape,
   type TransactionFeedKit,
 } from '../../src/exos/transaction-feed.js';
-import { MockCctpTxEvidences } from '../fixtures.js';
 
 const nullZcf = null as any;
 

@@ -15,27 +15,27 @@ import type { EReturn } from '@endo/far';
 import { Far } from '@endo/pass-style';
 import { M, mustMatch } from '@endo/patterns';
 import type { TestFn } from 'ava';
-import { PendingTxStatus } from '../../src/constants.js';
+import { PendingTxStatus } from '@agoric/fast-usdc/src/constants.js';
+import { CctpTxEvidenceShape } from '@agoric/fast-usdc/src/type-guards.js';
+import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
+import {
+  MockCctpTxEvidences,
+  settlementAddress,
+} from '@agoric/fast-usdc/tools/mock-evidence.js';
 import { prepareAdvancer, stateShape } from '../../src/exos/advancer.js';
 import {
   makeAdvanceDetailsShape,
   type SettlerKit,
 } from '../../src/exos/settler.js';
 import { prepareStatusManager } from '../../src/exos/status-manager.js';
-import { CctpTxEvidenceShape } from '../../src/type-guards.js';
-import type { LiquidityPoolKit } from '../../src/types.js';
-import { makeFeeTools } from '../../src/utils/fees.js';
-import {
-  intermediateRecipient,
-  MockCctpTxEvidences,
-  settlementAddress,
-} from '../fixtures.js';
+import type { LiquidityPoolKit } from '../../src/exos/liquidity-pool.js';
 import {
   makeTestFeeConfig,
   makeTestLogger,
   prepareMockOrchAccounts,
 } from '../mocks.js';
 import { commonSetup } from '../supports.js';
+import { intermediateRecipient } from '../fixtures.js';
 
 const trace = makeTracer('AdvancerTest', false);
 
