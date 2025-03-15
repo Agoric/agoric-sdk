@@ -11,10 +11,9 @@ import { M, type Key } from '@endo/patterns';
 // 'prepare' is deprecated but still supported
 import type { Brand } from '@agoric/ertp';
 import type { prepare as scaledPriceAuthorityStart } from '../src/contracts/scaledPriceAuthority.js';
-import type { Instance } from '../src/zoeService/utils.js';
+import type { Instance, Installation } from '../src/zoeService/utils.js';
 import type {
   ContractMeta,
-  Installation,
   Invitation,
   ZCF,
   ZCFSeat,

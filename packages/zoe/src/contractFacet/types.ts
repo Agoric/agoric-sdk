@@ -16,7 +16,6 @@ import type {
   AmountKeywordRecord,
   ExitRule,
   FeeMintAccess,
-  Instance,
   InvitationDetails,
   Keyword,
   ProposalRecord,
@@ -24,7 +23,7 @@ import type {
   UserSeat,
   ZoeService,
 } from '../types-index.js';
-import type { ContractStartFunction } from '../zoeService/utils.js';
+import type { ContractStartFunction, Instance } from '../zoeService/utils.js';
 
 /**
  * Any passable non-thenable. Often an explanatory string.
