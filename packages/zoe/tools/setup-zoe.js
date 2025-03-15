@@ -6,7 +6,8 @@ import { makeDurableZoeKit } from '../src/zoeService/zoe.js';
 import fakeVatAdmin, { makeFakeVatAdmin } from './fakeVatAdmin.js';
 
 /**
- * @import {FeeIssuerConfig, Installation} from '../src/types-index.js';
+ * @import {Installation} from '../src/zoeService/utils.js';
+ * @import {FeeIssuerConfig} from '../src/types-index.js';
  */
 
 /**

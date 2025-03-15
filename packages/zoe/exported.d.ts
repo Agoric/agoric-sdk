@@ -10,8 +10,6 @@ import {
   AmountKeywordRecord as _AmountKeywordRecord,
   ContractMeta as _ContractMeta,
   Handle as _Handle,
-  Installation as _Installation,
-  Instance as _Instance,
   Invitation as _Invitation,
   InvitationAmount as _InvitationAmount,
   IssuerKeywordRecord as _IssuerKeywordRecord,
@@ -26,6 +24,11 @@ import {
   ZoeService as _ZoeService,
 } from './src/types-index.js';
 
+import {
+  Installation as _Installation,
+  Instance as _Instance,
+} from './src/zoeService/utils.js';
+
 declare global {
   // @ts-ignore TS2666: Exports and export assignments are not permitted in module augmentations.
   export {
@@ -35,7 +38,7 @@ declare global {
     _FeeIssuerConfig as FeeIssuerConfig,
     _Handle as Handle,
     _Installation as Installation,
-    _Instance as Instance,
+    // _Instance as Instance,
     _Invitation as Invitation,
     _InvitationAmount as InvitationAmount,
     _IssuerKeywordRecord as IssuerKeywordRecord,

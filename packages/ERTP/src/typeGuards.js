@@ -2,7 +2,7 @@
 
 import { M, matches, getInterfaceGuardPayload } from '@endo/patterns';
 /**
- * @import {AmountValue, Ratio} from './types.js'
+ * @import {AmountValue, Amount, AmountValueHasBound, AmountValueBound, AmountBound, Ratio, NatValue} from './types.js'
  * @import {TypedPattern} from '@agoric/internal'
  * @import {CopyBag, CopySet, Pattern} from '@endo/patterns';
  */
@@ -69,6 +69,10 @@ const SetValueShape = M.arrayOf(M.key());
  */
 const CopyBagValueShape = M.bag();
 
+/**
+ * @see {AmountValue}
+ * @see {AssetValueForKind}
+ */
 const AmountValueShape = M.or(
   NatValueShape,
   CopySetValueShape,
@@ -76,6 +80,7 @@ const AmountValueShape = M.or(
   CopyBagValueShape,
 );
 
+/** @see {Amount} */
 export const AmountShape = { brand: BrandShape, value: AmountValueShape };
 harden(AmountShape);
 
@@ -92,6 +97,19 @@ harden(AmountShape);
  */
 export const AmountPatternShape = M.pattern();
 
+/** @see {HasBound} */
+export const HasBoundShape = M.tagged('match:has');
+
+/** @see {AmountValueBound} */
+const AmountValueBoundShape = M.or(AmountValueShape, HasBoundShape);
+
+/** @see {AmountBound} */
+export const AmountBoundShape = {
+  brand: BrandShape,
+  value: AmountValueBoundShape,
+};
+harden(AmountBoundShape);
+
 /** @type {TypedPattern<Ratio>} */
 export const RatioShape = { numerator: AmountShape, denominator: AmountShape };
 harden(RatioShape);
@@ -99,8 +117,8 @@ harden(RatioShape);
 /**
  * Returns true if value is a Nat bigint.
  *
- * @param {AmountValue} value
- * @returns {value is import('./types.js').NatValue}
+ * @param {AmountValueBound} value
+ * @returns {value is NatValue}
  */
 export const isNatValue = value => matches(value, NatValueShape);
 harden(isNatValue);
