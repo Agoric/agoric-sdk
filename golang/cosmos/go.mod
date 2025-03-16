@@ -5,17 +5,20 @@ go 1.23
 toolchain go1.23.4
 
 require (
+	cosmossdk.io/api v0.3.1
 	cosmossdk.io/errors v1.0.1
-	cosmossdk.io/log v1.4.1
 	cosmossdk.io/math v1.4.0
 	cosmossdk.io/simapp v0.0.0-00010101000000-000000000000
+	cosmossdk.io/tools/rosetta v0.2.1
 	github.com/armon/go-metrics v0.4.1
 	github.com/cometbft/cometbft v0.37.5
 	github.com/cometbft/cometbft-db v0.9.5
 	github.com/cosmos/cosmos-sdk v0.47.15
-	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7 v7.2.0
+	github.com/cosmos/gogoproto v1.7.0
+	// We'd like to move to v7.3. ASAP, but first we need to migrate to v7.1.
+	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7 v7.1.3
+	// github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7 v7.3.0
 	github.com/cosmos/ibc-go/v7 v7.10.0
-	github.com/gogo/protobuf v1.3.3
 	github.com/golang/protobuf v1.5.4
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
@@ -27,7 +30,6 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.10.0
-	github.com/tendermint/tm-db v0.6.6
 	google.golang.org/genproto/googleapis/api v0.0.0-20240903143218-8af14fe29dc1
 	google.golang.org/grpc v1.68.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -38,23 +40,20 @@ require (
 	cloud.google.com/go/compute/metadata v0.5.0 // indirect
 	cloud.google.com/go/iam v1.1.6 // indirect
 	cloud.google.com/go/storage v1.38.0 // indirect
-	cosmossdk.io/api v0.3.1 // indirect
 	cosmossdk.io/core v0.5.1 // indirect
 	cosmossdk.io/depinject v1.0.0-alpha.4 // indirect
-	cosmossdk.io/tools/rosetta v0.2.1 // indirect
+	cosmossdk.io/log v1.4.1 // indirect
 	filippo.io/edwards25519 v1.0.0 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/99designs/keyring v1.2.1 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/ChainSafe/go-schnorrkel v1.1.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/adlio/schema v1.3.6 // indirect
 	github.com/aws/aws-sdk-go v1.44.203 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
 	github.com/bgentry/speakeasy v0.1.1-0.20220910012023-760eaf8b6816 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.4 // indirect
-	github.com/btcsuite/btcd/btcutil v1.1.6 // indirect
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0 // indirect
 	github.com/bufbuild/protocompile v0.14.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
@@ -72,7 +71,6 @@ require (
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5 // indirect
 	github.com/cosmos/go-bip39 v1.0.0 // indirect
 	github.com/cosmos/gogogateway v1.2.0 // indirect
-	github.com/cosmos/gogoproto v1.7.0 // indirect
 	github.com/cosmos/iavl v0.20.1 // indirect
 	github.com/cosmos/ics23/go v0.10.0 // indirect
 	github.com/cosmos/ledger-cosmos-go v0.12.4 // indirect
@@ -99,6 +97,7 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v1.2.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/mock v1.6.0 // indirect
@@ -122,6 +121,7 @@ require (
 	github.com/hashicorp/go-safetemp v1.0.0 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hdevalence/ed25519consensus v0.1.0 // indirect
 	github.com/huandu/skiplist v1.2.0 // indirect
@@ -133,7 +133,6 @@ require (
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/lib/pq v1.10.9 // indirect
-	github.com/libp2p/go-buffer-pool v0.1.0 // indirect
 	github.com/linxGnu/grocksdb v1.9.3 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/manifoldco/promptui v0.9.0 // indirect
@@ -166,7 +165,6 @@ require (
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d // indirect
-	github.com/tecbot/gorocksdb v0.0.0-20191217155057-f0fad39f321c // indirect
 	github.com/tendermint/go-amino v0.16.0 // indirect
 	github.com/tidwall/btree v1.6.0 // indirect
 	github.com/ulikunitz/xz v0.5.11 // indirect
@@ -205,15 +203,11 @@ replace (
 
 	github.com/btcsuite/btcd/btcec/v2 => github.com/btcsuite/btcd/btcec/v2 v2.3.2
 
-	github.com/confio/ics23/go => github.com/agoric-labs/cosmos-sdk/ics23/go v0.8.0-alpha.agoric.1
-
 	// https://pkg.go.dev/vuln/GO-2023-2409
 	github.com/dvsekhvalnov/jose2go => github.com/dvsekhvalnov/jose2go v1.5.1-0.20231206184617-48ba0b76bc88
 
 	// Fix upstream GHSA-3vp4-m3rf-835h vulnerability.
 	github.com/gin-gonic/gin => github.com/gin-gonic/gin v1.9.0
-
-	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 
 	// https://pkg.go.dev/vuln/GO-2023-1578
 	github.com/hashicorp/go-getter => github.com/hashicorp/go-getter v1.7.0
@@ -224,17 +218,24 @@ replace (
 
 // Agoric-specific replacements:
 replace (
-	cosmossdk.io/simapp => github.com/agoric-labs/cosmos-sdk/simapp v0.0.0-20250312202453-86e44a02f6bf
-	// We need a fork of cosmos-sdk until all of the differences are merged.
-	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.46.16-alpha.agoric.2.5.0.20250314202337-bc543115295e
-
-	// Use a version of ibc-go that is compatible with the above forks.
-	github.com/cosmos/ibc-go/v6 => github.com/agoric-labs/ibc-go/v6 v6.3.1-alpha.agoric.4
+	cosmossdk.io/api => github.com/agoric-labs/cosmos-sdk/api v0.0.0-20250317184328-a23d822f892c
+	cosmossdk.io/core => github.com/agoric-labs/cosmos-sdk/core v0.0.0-20250317184328-a23d822f892c
+	cosmossdk.io/depinject => github.com/agoric-labs/cosmos-sdk/depinject v0.0.0-20250317184328-a23d822f892c
+	cosmossdk.io/errors => github.com/agoric-labs/cosmos-sdk/errors v0.0.0-20250317184328-a23d822f892c
+	cosmossdk.io/math => github.com/agoric-labs/cosmos-sdk/math v0.0.0-20250317184328-a23d822f892c
+	cosmossdk.io/simapp => github.com/agoric-labs/cosmos-sdk/simapp v0.0.0-20250317184328-a23d822f892c
+	cosmossdk.io/tools/rosetta => github.com/agoric-labs/cosmos-sdk/tools/rosetta v0.0.0-20250317184328-a23d822f892c
 
 	// use cometbft
 	// Use our fork at least until post-v0.34.14 is released with
-	// https://github.com/tendermint/tendermint/issue/6899 resolved.
-	github.com/tendermint/tendermint => github.com/agoric-labs/cometbft v0.34.35-alpha.agoric.3
+	// https://github.com/cometbft/cometbft/issue/6899 resolved.
+	github.com/cometbft/cometbft => github.com/agoric-labs/cometbft v0.37.15-alpha.agoric.1
+
+	// We need a fork of cosmos-sdk until all of the differences are merged.
+	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.47.15-alpha.agoric.2
+
+	// Use a version of ibc-go that is compatible with the above forks.
+	github.com/cosmos/ibc-go/v7 => github.com/agoric-labs/ibc-go/v7 v7.10.0-alpha.agoric.1
 
 // Ensure specific packages use your fork
 // cosmossdk.io/store =>  github.com/agoric-labs/cosmos-sdk/store 86e44a02f6bff69aa20977a70f088abaaaa0bf9f
