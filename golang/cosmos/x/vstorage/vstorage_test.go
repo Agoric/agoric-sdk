@@ -15,9 +15,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	agorictypes "github.com/Agoric/agoric-sdk/golang/cosmos/types"
+	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/libs/log"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	dbm "github.com/tendermint/tm-db"
 )
 
 var (

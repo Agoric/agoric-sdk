@@ -9,10 +9,10 @@ import (
 	gaia "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/app/helpers"
+	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/rand"
 	"github.com/stretchr/testify/require"
-	dbm "github.com/tendermint/tm-db"
 
 	"cosmossdk.io/simapp"
 	"github.com/cosmos/cosmos-sdk/baseapp"
