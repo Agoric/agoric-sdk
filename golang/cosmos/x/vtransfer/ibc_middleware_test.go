@@ -12,13 +12,13 @@ import (
 
 	app "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
+	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	"github.com/iancoleman/orderedmap"
 	"github.com/stretchr/testify/suite"
-	dbm "github.com/tendermint/tm-db"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	swingsettesting "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/testing"
