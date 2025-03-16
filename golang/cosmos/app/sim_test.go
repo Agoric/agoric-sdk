@@ -19,10 +19,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/store"
 	simulation2 "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
+	simcli "github.com/cosmos/cosmos-sdk/x/simulation/client/cli"
 )
 
 func init() {
-	simapp.GetSimulatorFlags()
+	//simapp.GetSimulatorFlags()
+	simcli.GetSimulatorFlags()
 }
 
 // Profile with:
