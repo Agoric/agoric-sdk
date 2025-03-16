@@ -101,11 +101,13 @@ proto-check-breaking: proto-tools
 
 GOGO_PROTO_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/gogo/protobuf)
 # GOOGLE_API_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/googleapis/googleapis)/google/api
-IBC_PROTO_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/ibc-go/v6)/proto/ibc/core
+IBC_PROTO_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/ibc-go/v7)/proto/ibc/core
 COSMOS_PROTO_PROTO_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/cosmos-proto)/proto/cosmos_proto
 COSMOS_SDK_PROTO_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/cosmos-sdk)/proto/cosmos
+COSMOS_SDK_AMINO_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/cosmos-sdk)/proto/amino
 
 COSMOS_PROTO_TYPES = third_party/proto/cosmos_proto
+COSMOS_SDK_AMINO_TYPES = third_party/proto/amino
 GOGO_PROTO_TYPES  = third_party/proto/gogoproto
 GOOGLE_API_TYPES = third_party/proto/google/api
 GOOGLE_PROTO_TYPES = third_party/proto/google/protobuf
@@ -148,6 +150,10 @@ proto-update-deps:
 	curl -sSL $$url/base/query/v1beta1/pagination.proto > $(SDK_QUERY_TYPES)/pagination.proto && \
 	mkdir -p $(SDK_UPGRADE_TYPES) && \
 	curl -sSL $$url/upgrade/v1beta1/upgrade.proto > $(SDK_UPGRADE_TYPES)/upgrade.proto
+
+	url="$(COSMOS_SDK_AMINO_URL)"; \
+	mkdir -p $(COSMOS_SDK_AMINO_TYPES) && \
+	curl -sSL $$url/amino.proto > $(COSMOS_SDK_AMINO_TYPES)/amino.proto
 
 UNAME_S ?= $(shell uname -s)
 UNAME_M ?= $(shell uname -m)
