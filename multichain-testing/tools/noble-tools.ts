@@ -1,7 +1,7 @@
 import type { IBCChannelID } from '@agoric/vats';
-import type { ExecSync } from './agd-lib.js';
 import type { CosmosChainAddress } from '@agoric/orchestration';
 import type { NobleAddress } from '@agoric/fast-usdc';
+import type { ExecSyncOptions } from 'node:child_process';
 
 const kubectlBinary = 'kubectl';
 const noblePod = 'noblelocal-genesis-0';
@@ -24,15 +24,19 @@ export const makeNobleTools = (
   {
     execFileSync,
   }: {
-    execFileSync: ExecSync;
+    execFileSync: (typeof import('node:child_process'))['execFileSync'];
   },
   log: (...args: unknown[]) => void = (...args) =>
     console.log('NobleTools', ...args),
 ) => {
   const exec = (
     args: string[],
-    opts = { encoding: 'utf-8' as const, stdio: ['ignore', 'pipe', 'ignore'] },
-  ) => execFileSync(kubectlBinary, [...makeKubeArgs(), ...args], opts);
+    opts: ExecSyncOptions = {
+      encoding: 'utf-8' as const,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    },
+  ) =>
+    execFileSync(kubectlBinary, [...makeKubeArgs(), ...args], opts) as string;
 
   const registerForwardingAcct = (
     channelId: IBCChannelID,

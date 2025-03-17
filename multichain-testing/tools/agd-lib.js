@@ -45,7 +45,7 @@ export const flags = record => {
  */
 
 /**
- * @param {{ execFileSync: ExecSync }} io
+ * @param {{ execFileSync: typeof import('node:child_process')['execFileSync'] }} io
  */
 export const makeAgd = ({ execFileSync }) => {
   /**
