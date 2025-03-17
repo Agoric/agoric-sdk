@@ -159,13 +159,21 @@ func initRootCmd(sender vm.Sender, rootCmd *cobra.Command, encodingConfig params
 		agdServer: vm.NewAgdServer(),
 	}
 
+	genesisCmd := genutilcli.GenesisCoreCommand(
+		encodingConfig.TxConfig,
+		gaia.ModuleBasics,
+		gaia.DefaultNodeHome,
+	)
+
 	rootCmd.AddCommand(
 		genutilcli.InitCmd(gaia.ModuleBasics, gaia.DefaultNodeHome),
-		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, gaia.DefaultNodeHome, nil),
-		genutilcli.MigrateGenesisCmd(),
-		genutilcli.GenTxCmd(gaia.ModuleBasics, encodingConfig.TxConfig, banktypes.GenesisBalancesIterator{}, gaia.DefaultNodeHome),
-		genutilcli.ValidateGenesisCmd(gaia.ModuleBasics),
-		AddGenesisAccountCmd(encodingConfig.Marshaler, gaia.DefaultNodeHome),
+		genesisCmd,
+	)
+	// Alias all the genesis commands to the top level as well.
+	rootCmd.AddCommand(
+		genesisCmd.Commands()...,
+	)
+	rootCmd.AddCommand(
 		tmcli.NewCompletionCmd(rootCmd, true),
 		testnetCmd(gaia.ModuleBasics, banktypes.GenesisBalancesIterator{}),
 		debug.Cmd(),
