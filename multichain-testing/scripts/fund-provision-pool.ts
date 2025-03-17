@@ -1,8 +1,11 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
 /* eslint-env node */
+import '@endo/init';
 import { execa } from 'execa';
 import assert from 'node:assert/strict';
 import { parseArgs } from 'node:util';
+import { makeBlockTool } from '../tools/e2e-tools.js';
+import { makeHttpClient } from '../tools/makeHttpClient.js';
 
 // Default values from Makefile
 const DEFAULT_PROVISION_POOL_ADDR =
@@ -21,17 +24,37 @@ async function fundProvisionPool(args: {
   amount?: string;
   pod?: string;
   container?: string;
+  rpcUrl?: string;
 }) {
   const {
     address = DEFAULT_PROVISION_POOL_ADDR,
     amount = DEFAULT_PROVISION_POOL_COIN,
     pod = 'agoriclocal-genesis-0',
     container = 'validator',
+    rpcUrl = 'http://localhost:26657',
   } = args;
 
   console.log(`Funding provision pool at ${address} with ${amount}...`);
 
+  // TODO: `@agoric/client-utils` should publish `waitForBlock`
+  const { waitForBlock } = (() => {
+    const delay = (ms: number): Promise<void> =>
+      new Promise(resolve => setTimeout(resolve, ms));
+    const explainDelay = (ms, info) => {
+      if (typeof info === 'object' && Object.keys(info).length > 0) {
+        console.log('delay', { ...info, delay: ms / 1000 }, '...');
+      }
+      return delay(ms);
+    };
+    const rpc = makeHttpClient(rpcUrl, fetch);
+    return makeBlockTool({
+      rpc,
+      delay: explainDelay,
+    });
+  })();
+
   try {
+    await waitForBlock(1);
     // Execute the bank send transaction
     const { stdout: txResult } = await execa('kubectl', [
       'exec',
