@@ -134,7 +134,7 @@ scenario2-setup:
 	NODE_OPTIONS= ../agoric-cli/bin/agoric set-defaults --enable-cors --export-metrics ag-chain-cosmos t1/n0/config
 	# Set the chain address in all the ag-solos.
 	jq --arg gen $(GENESIS_TIME) --arg init $(INITIAL_HEIGHT) --arg votepd $(VOTING_PERIOD) \
-		'. * { genesis_time: $$gen, initial_height: $$init, app_state: { gov: { voting_params: { voting_period: $$votepd }}}}' \
+		'. * { genesis_time: $$gen, initial_height: $$init, app_state: { gov: { (if .app_state.gov | has("params") then "params" else "voting_params" end): { voting_period: $$votepd }}}}' \
 		t1/n0/config/genesis.json > t1/n0/config/genesis2.json
 	mv t1/n0/config/genesis2.json t1/n0/config/genesis.json
 	$(MAKE) set-local-gci-ingress
