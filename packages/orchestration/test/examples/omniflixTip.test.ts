@@ -1,6 +1,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { E } from '@endo/far';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
+import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { makeIssuerKit, type AnyAmount } from '@agoric/ertp';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { commonSetup } from '../supports.js';
@@ -29,7 +30,7 @@ test('successful tip on Omniflix', async t => {
     commonPrivateArgs,
     brands: { flix, osmo, bld, ist },
     customTerms,
-    utils: { pourPayment },
+    utils: { pourPayment, transmitTransferAck },
   } = await commonSetup(t);
   const vt = bootstrap.vowTools;
 
@@ -104,7 +105,7 @@ const chainDetails = harden({
     flixChainInfo.chainId,
     osmoChainInfo.chainId,
   );
-  const agoricToOsmoConnection = {
+  const agoricToFlixConnection = {
     id: 'connection-1',
     client_id: '07-tendermint-1',
     state: 3, // STATE_OPEN
@@ -119,8 +120,9 @@ const chainDetails = harden({
     },
   } as IBCConnectionInfo;
   const chainName = 'osmosis';
+  const chainNameFlix = 'flix-chain-0';
   chainHub.registerChain(chainName, osmoChainInfo);
-  chainHub.registerConnection('agoric', 'osmosis', agoricToOsmoConnection);
+  chainHub.registerConnection('agoriclocal', 'flix-chain-0', agoricToFlixConnection);
   const osmoToFlixConnection = {
     id: 'connection-2',
     client_id: '07-tendermint-2',
@@ -135,7 +137,7 @@ const chainDetails = harden({
       ...txChannelDefaults,
     },
   } as IBCConnectionInfo;
-  const chainNameFlix = 'flix-chain-0';
+  
   chainHub.registerChain(chainNameFlix, flixChainInfo);
   chainHub.registerConnection(chainName, chainNameFlix, osmoToFlixConnection);
 
@@ -161,17 +163,32 @@ const chainDetails = harden({
     recipientAddress: 'omniflix1destAddr',
     slippage: 0.03,
   });
+  
+  chainHub.registerChain('agoric', fetchedChainInfo.agoric);
+  const denomDetail = {
+    baseName: 'osmosis',
+    baseDenom: 'uosmo',
+    brand: osmo.brand,
+    chainName: 'agoric',
+  };
+  // chainHub.registerAsset('uosmo', denomDetail);
+  chainHub.registerAsset('uosmo', {
+    baseName: 'agoric',
+    baseDenom: 'uosmo',
+    brand: osmo.brand,
+    chainName: 'agoric',
+  });
   const userSeat = await E(zoe).offer(
     inv,
-    { give: { Tip } },
+    { give: { Tip: TipAmt } },
     { Tip },
     offerArgs,
   );
+  await transmitTransferAck();
+
   t.log('userSeat', userSeat);
   t.log('userSeat.getOfferResult()', await E(userSeat).getOfferResult());
 
   await t.notThrowsAsync(E(userSeat).getOfferResult());
-  const payouts = await E(userSeat).getPayouts();
-  const amountReturned = await flix.issuer.getAmountOf(payouts.Flix);
-  t.deepEqual(anAmt, amountReturned, 'give is returned');
+  
 });

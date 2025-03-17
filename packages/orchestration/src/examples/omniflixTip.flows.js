@@ -1,6 +1,8 @@
 import { M, mustMatch } from '@endo/patterns';
 import { makeTracer } from '@agoric/internal';
+import { NonNullish } from '@agoric/internal';
 import { orcUtils } from '@agoric/orchestration/src/utils/orc.js';
+import { makeLocalAccount } from './shared.flows';
 
 const trace = makeTracer('OmniflixTipFlows');
 
@@ -8,7 +10,6 @@ const trace = makeTracer('OmniflixTipFlows');
  * Swaps an input token to FLIX on Osmosis and tips a recipient on Omniflix.
  * @param {import('@agoric/orchestration').Orchestrator} orch
  * @param {Object} ctx
- * @param {import('../utils/zoe-tools.js').LocalTransfer} ctx.localTransfer
  * @param {ZCFSeat} seat
  * @param {Object} offerArgs
  * @param {string} offerArgs.chainId - Source chain ID
@@ -18,7 +19,7 @@ const trace = makeTracer('OmniflixTipFlows');
  */
 export const tipOnOmniflix = async (
   orch,
-  { localTransfer },
+  { localAccountP, localTransfer, withdrawToSeat },
   seat,
   { chainId, tokenDenom, recipientAddress, slippage },
 ) => {
@@ -40,36 +41,41 @@ export const tipOnOmniflix = async (
     orch.getChain('osmosis'),
   ]);
 
-  const localAccount = await agoric.makeAccount();
   const osmosisAccount = await osmosis.makeAccount();
 
 
   const osmosisAddress = osmosisAccount.getAddress();
 
-  const blnc3 = await localAccount.getBalances();
   // Transfer input token from user to local Agoric account
-  const result = await localTransfer(seat, localAccount, give);
-  debugger
-  const blnc4=await localAccount.getBalances();
-  debugger
+  const assets = await agoric.getVBankAssetInfo();
+  trace(`got info for denoms: ${assets.map(a => a.denom).join(', ')}`);
+  
+  const { denom } = NonNullish(
+    assets.find(a => a.brand === amount.brand),
+    `${amount.brand} not registered in vbank`,
+  );
+  
+  // const localAccount = await localAccountP;
+  const localAccount = await agoric.makeAccount();
+  await localTransfer(seat, localAccount, give);
+  
   // Swap input token to uflix on Osmosis and send to recipient
-  // const blnc = await localAccount.getBalances();
-  // const blnc2 = await osmosisAccount.getBalances();
-  debugger
+  
   try {
     trace('Executing swap and transfer...');
-    await localAccount.transfer({
-      chainId: 'omniflixhub',
-      value: recipientAddress,
-      encoding: 'bech32',
-    }, amount, {
-      memo: 'tip',
-    })
-    debugger;
+    await localAccount.transfer(
+      {
+        value: recipientAddress,
+        encoding: 'bech32',
+        chainId: 'flix-chain-0',
+      },
+      { denom, value: amount.value },
+    );
+    
     seat.exit();
   } catch (e) {
     trace('Error during swap/transfer:', e);
-    await localTransfer(seat, localAccount, give); // Refund on failure
+    await withdrawToSeat(localAccount, seat, give);
     throw new Error(`Tipping failed: ${e.message}`);
   }
 };

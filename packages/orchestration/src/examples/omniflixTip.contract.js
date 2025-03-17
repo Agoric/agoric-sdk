@@ -6,6 +6,8 @@ import { ChainInfoShape } from '@agoric/orchestration/src/typeGuards.js';
 import { M } from '@endo/patterns';
 import { AnyNatAmountShape } from '../typeGuards.js';
 import * as flows from './omniflixTip.flows.js';
+import { SingleNatAmountRecord } from './send-anywhere.contract.js';
+import * as sharedFlows from './shared.flows.js';
 
 const trace = makeTracer('OmniflixTip');
 
@@ -53,8 +55,48 @@ const contract = async (
     }
   }
 
+  chainHub.registerAsset('uosmo', {
+    baseName: 'agoric',
+    baseDenom: 'uosmo',
+    chainName: 'agoric',
+  });
+
+  const txChannelDefaults = {
+    counterPartyPortId: 'transfer',
+    version: 'ics20-1',
+    portId: 'transfer',
+    ordering: 1, // ORDER_UNORDERED
+    state: 3, // STATE_OPEN
+  };
+  const agoricToFlixConnection = {
+    id: 'connection-1',
+    client_id: '07-tendermint-1',
+    state: 3, // STATE_OPEN
+    counterparty: {
+      client_id: '07-tendermint-2109',
+      connection_id: 'connection-1649',
+    },
+    transferChannel: {
+      counterPartyChannelId: 'channel-1',
+      channelId: 'channel-0',
+      ...txChannelDefaults,
+    },
+  };
+  chainHub.registerConnection(
+    'agoriclocal',
+    'flix-chain-0',
+    agoricToFlixConnection,
+  );
+
+  const { makeLocalAccount } = orchestrateAll(sharedFlows, {});
+  const localAccountP = zone.makeOnce('localAccount2', () =>
+    makeLocalAccount(),
+  );
+
   const { tipOnOmniflix } = orchestrateAll(flows, {
+    localAccountP: localAccountP,
     localTransfer: zoeTools.localTransfer,
+    withdrawToSeat: zoeTools.withdrawToSeat,
   });
 
   const publicFacet = zone.exo(
@@ -68,7 +110,11 @@ const contract = async (
           tipOnOmniflix,
           'Tip FLIX on Omniflix',
           undefined,
-          M.splitRecord({ give: SingleAmountRecord }),
+          {
+            give: SingleNatAmountRecord,
+            want: {},
+            exit: { onDemand: null },
+          },
         );
       },
     },
