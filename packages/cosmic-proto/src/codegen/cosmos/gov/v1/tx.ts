@@ -5,10 +5,34 @@ import {
   VoteOption,
   WeightedVoteOption,
   type WeightedVoteOptionSDKType,
+  Params,
+  type ParamsSDKType,
   voteOptionFromJSON,
   voteOptionToJSON,
 } from './gov.js';
+import {
+  CommunityPoolSpendProposal,
+  type CommunityPoolSpendProposalSDKType,
+  CommunityPoolSpendProposalWithDeposit,
+  type CommunityPoolSpendProposalWithDepositSDKType,
+} from '../../distribution/v1beta1/distribution.js';
 import { TextProposal, type TextProposalSDKType } from '../v1beta1/gov.js';
+import {
+  ParameterChangeProposal,
+  type ParameterChangeProposalSDKType,
+} from '../../params/v1beta1/params.js';
+import {
+  SoftwareUpgradeProposal,
+  type SoftwareUpgradeProposalSDKType,
+  CancelSoftwareUpgradeProposal,
+  type CancelSoftwareUpgradeProposalSDKType,
+} from '../../upgrade/v1beta1/upgrade.js';
+import {
+  ClientUpdateProposal,
+  type ClientUpdateProposalSDKType,
+  UpgradeProposal,
+  type UpgradeProposalSDKType,
+} from '../../../ibc/core/client/v1/client.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
@@ -17,11 +41,26 @@ import { type JsonSafe } from '../../../json-safe.js';
  * proposal Content.
  */
 export interface MsgSubmitProposal {
+  /** messages are the arbitrary messages to be executed if proposal passes. */
   messages: Any[];
+  /** initial_deposit is the deposit value that must be paid at proposal submission. */
   initialDeposit: Coin[];
+  /** proposer is the account address of the proposer. */
   proposer: string;
   /** metadata is any arbitrary metadata attached to the proposal. */
   metadata: string;
+  /**
+   * title is the title of the proposal.
+   *
+   * Since: cosmos-sdk 0.47
+   */
+  title: string;
+  /**
+   * summary is the summary of the proposal
+   *
+   * Since: cosmos-sdk 0.47
+   */
+  summary: string;
 }
 export interface MsgSubmitProposalProtoMsg {
   typeUrl: '/cosmos.gov.v1.MsgSubmitProposal';
@@ -36,9 +75,12 @@ export interface MsgSubmitProposalSDKType {
   initial_deposit: CoinSDKType[];
   proposer: string;
   metadata: string;
+  title: string;
+  summary: string;
 }
 /** MsgSubmitProposalResponse defines the Msg/SubmitProposal response type. */
 export interface MsgSubmitProposalResponse {
+  /** proposal_id defines the unique id of the proposal. */
   proposalId: bigint;
 }
 export interface MsgSubmitProposalResponseProtoMsg {
@@ -55,7 +97,17 @@ export interface MsgSubmitProposalResponseSDKType {
  */
 export interface MsgExecLegacyContent {
   /** content is the proposal's content. */
-  content?: (TextProposal & Any) | undefined;
+  content?:
+    | (CommunityPoolSpendProposal &
+        CommunityPoolSpendProposalWithDeposit &
+        TextProposal &
+        ParameterChangeProposal &
+        SoftwareUpgradeProposal &
+        CancelSoftwareUpgradeProposal &
+        ClientUpdateProposal &
+        UpgradeProposal &
+        Any)
+    | undefined;
   /** authority must be the gov module address. */
   authority: string;
 }
@@ -68,7 +120,17 @@ export interface MsgExecLegacyContentProtoMsg {
  * This ensures backwards compatibility with v1beta1.MsgSubmitProposal.
  */
 export interface MsgExecLegacyContentSDKType {
-  content?: TextProposalSDKType | AnySDKType | undefined;
+  content?:
+    | CommunityPoolSpendProposalSDKType
+    | CommunityPoolSpendProposalWithDepositSDKType
+    | TextProposalSDKType
+    | ParameterChangeProposalSDKType
+    | SoftwareUpgradeProposalSDKType
+    | CancelSoftwareUpgradeProposalSDKType
+    | ClientUpdateProposalSDKType
+    | UpgradeProposalSDKType
+    | AnySDKType
+    | undefined;
   authority: string;
 }
 /** MsgExecLegacyContentResponse defines the Msg/ExecLegacyContent response type. */
@@ -81,9 +143,13 @@ export interface MsgExecLegacyContentResponseProtoMsg {
 export interface MsgExecLegacyContentResponseSDKType {}
 /** MsgVote defines a message to cast a vote. */
 export interface MsgVote {
+  /** proposal_id defines the unique id of the proposal. */
   proposalId: bigint;
+  /** voter is the voter address for the proposal. */
   voter: string;
+  /** option defines the vote option. */
   option: VoteOption;
+  /** metadata is any arbitrary metadata attached to the Vote. */
   metadata: string;
 }
 export interface MsgVoteProtoMsg {
@@ -107,9 +173,13 @@ export interface MsgVoteResponseProtoMsg {
 export interface MsgVoteResponseSDKType {}
 /** MsgVoteWeighted defines a message to cast a vote. */
 export interface MsgVoteWeighted {
+  /** proposal_id defines the unique id of the proposal. */
   proposalId: bigint;
+  /** voter is the voter address for the proposal. */
   voter: string;
+  /** options defines the weighted vote options. */
   options: WeightedVoteOption[];
+  /** metadata is any arbitrary metadata attached to the VoteWeighted. */
   metadata: string;
 }
 export interface MsgVoteWeightedProtoMsg {
@@ -133,8 +203,11 @@ export interface MsgVoteWeightedResponseProtoMsg {
 export interface MsgVoteWeightedResponseSDKType {}
 /** MsgDeposit defines a message to submit a deposit to an existing proposal. */
 export interface MsgDeposit {
+  /** proposal_id defines the unique id of the proposal. */
   proposalId: bigint;
+  /** depositor defines the deposit addresses from the proposals. */
   depositor: string;
+  /** amount to be deposited by depositor. */
   amount: Coin[];
 }
 export interface MsgDepositProtoMsg {
@@ -155,12 +228,60 @@ export interface MsgDepositResponseProtoMsg {
 }
 /** MsgDepositResponse defines the Msg/Deposit response type. */
 export interface MsgDepositResponseSDKType {}
+/**
+ * MsgUpdateParams is the Msg/UpdateParams request type.
+ *
+ * Since: cosmos-sdk 0.47
+ */
+export interface MsgUpdateParams {
+  /** authority is the address that controls the module (defaults to x/gov unless overwritten). */
+  authority: string;
+  /**
+   * params defines the x/gov parameters to update.
+   *
+   * NOTE: All parameters must be supplied.
+   */
+  params: Params;
+}
+export interface MsgUpdateParamsProtoMsg {
+  typeUrl: '/cosmos.gov.v1.MsgUpdateParams';
+  value: Uint8Array;
+}
+/**
+ * MsgUpdateParams is the Msg/UpdateParams request type.
+ *
+ * Since: cosmos-sdk 0.47
+ */
+export interface MsgUpdateParamsSDKType {
+  authority: string;
+  params: ParamsSDKType;
+}
+/**
+ * MsgUpdateParamsResponse defines the response structure for executing a
+ * MsgUpdateParams message.
+ *
+ * Since: cosmos-sdk 0.47
+ */
+export interface MsgUpdateParamsResponse {}
+export interface MsgUpdateParamsResponseProtoMsg {
+  typeUrl: '/cosmos.gov.v1.MsgUpdateParamsResponse';
+  value: Uint8Array;
+}
+/**
+ * MsgUpdateParamsResponse defines the response structure for executing a
+ * MsgUpdateParams message.
+ *
+ * Since: cosmos-sdk 0.47
+ */
+export interface MsgUpdateParamsResponseSDKType {}
 function createBaseMsgSubmitProposal(): MsgSubmitProposal {
   return {
     messages: [],
     initialDeposit: [],
     proposer: '',
     metadata: '',
+    title: '',
+    summary: '',
   };
 }
 export const MsgSubmitProposal = {
@@ -180,6 +301,12 @@ export const MsgSubmitProposal = {
     }
     if (message.metadata !== '') {
       writer.uint32(34).string(message.metadata);
+    }
+    if (message.title !== '') {
+      writer.uint32(42).string(message.title);
+    }
+    if (message.summary !== '') {
+      writer.uint32(50).string(message.summary);
     }
     return writer;
   },
@@ -203,6 +330,12 @@ export const MsgSubmitProposal = {
         case 4:
           message.metadata = reader.string();
           break;
+        case 5:
+          message.title = reader.string();
+          break;
+        case 6:
+          message.summary = reader.string();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -220,6 +353,8 @@ export const MsgSubmitProposal = {
         : [],
       proposer: isSet(object.proposer) ? String(object.proposer) : '',
       metadata: isSet(object.metadata) ? String(object.metadata) : '',
+      title: isSet(object.title) ? String(object.title) : '',
+      summary: isSet(object.summary) ? String(object.summary) : '',
     };
   },
   toJSON(message: MsgSubmitProposal): JsonSafe<MsgSubmitProposal> {
@@ -238,6 +373,8 @@ export const MsgSubmitProposal = {
     }
     message.proposer !== undefined && (obj.proposer = message.proposer);
     message.metadata !== undefined && (obj.metadata = message.metadata);
+    message.title !== undefined && (obj.title = message.title);
+    message.summary !== undefined && (obj.summary = message.summary);
     return obj;
   },
   fromPartial(object: Partial<MsgSubmitProposal>): MsgSubmitProposal {
@@ -247,6 +384,8 @@ export const MsgSubmitProposal = {
       object.initialDeposit?.map(e => Coin.fromPartial(e)) || [];
     message.proposer = object.proposer ?? '';
     message.metadata = object.metadata ?? '';
+    message.title = object.title ?? '';
+    message.summary = object.summary ?? '';
     return message;
   },
   fromProtoMsg(message: MsgSubmitProposalProtoMsg): MsgSubmitProposal {
@@ -373,7 +512,9 @@ export const MsgExecLegacyContent = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.content = Content_InterfaceDecoder(reader) as Any;
+          message.content = Cosmos_govv1beta1Content_InterfaceDecoder(
+            reader,
+          ) as Any;
           break;
         case 2:
           message.authority = reader.string();
@@ -943,15 +1084,171 @@ export const MsgDepositResponse = {
     };
   },
 };
-export const Content_InterfaceDecoder = (
+function createBaseMsgUpdateParams(): MsgUpdateParams {
+  return {
+    authority: '',
+    params: Params.fromPartial({}),
+  };
+}
+export const MsgUpdateParams = {
+  typeUrl: '/cosmos.gov.v1.MsgUpdateParams',
+  encode(
+    message: MsgUpdateParams,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.authority !== '') {
+      writer.uint32(10).string(message.authority);
+    }
+    if (message.params !== undefined) {
+      Params.encode(message.params, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgUpdateParams {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMsgUpdateParams();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.authority = reader.string();
+          break;
+        case 2:
+          message.params = Params.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): MsgUpdateParams {
+    return {
+      authority: isSet(object.authority) ? String(object.authority) : '',
+      params: isSet(object.params) ? Params.fromJSON(object.params) : undefined,
+    };
+  },
+  toJSON(message: MsgUpdateParams): JsonSafe<MsgUpdateParams> {
+    const obj: any = {};
+    message.authority !== undefined && (obj.authority = message.authority);
+    message.params !== undefined &&
+      (obj.params = message.params ? Params.toJSON(message.params) : undefined);
+    return obj;
+  },
+  fromPartial(object: Partial<MsgUpdateParams>): MsgUpdateParams {
+    const message = createBaseMsgUpdateParams();
+    message.authority = object.authority ?? '';
+    message.params =
+      object.params !== undefined && object.params !== null
+        ? Params.fromPartial(object.params)
+        : undefined;
+    return message;
+  },
+  fromProtoMsg(message: MsgUpdateParamsProtoMsg): MsgUpdateParams {
+    return MsgUpdateParams.decode(message.value);
+  },
+  toProto(message: MsgUpdateParams): Uint8Array {
+    return MsgUpdateParams.encode(message).finish();
+  },
+  toProtoMsg(message: MsgUpdateParams): MsgUpdateParamsProtoMsg {
+    return {
+      typeUrl: '/cosmos.gov.v1.MsgUpdateParams',
+      value: MsgUpdateParams.encode(message).finish(),
+    };
+  },
+};
+function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
+  return {};
+}
+export const MsgUpdateParamsResponse = {
+  typeUrl: '/cosmos.gov.v1.MsgUpdateParamsResponse',
+  encode(
+    _: MsgUpdateParamsResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): MsgUpdateParamsResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMsgUpdateParamsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(_: any): MsgUpdateParamsResponse {
+    return {};
+  },
+  toJSON(_: MsgUpdateParamsResponse): JsonSafe<MsgUpdateParamsResponse> {
+    const obj: any = {};
+    return obj;
+  },
+  fromPartial(_: Partial<MsgUpdateParamsResponse>): MsgUpdateParamsResponse {
+    const message = createBaseMsgUpdateParamsResponse();
+    return message;
+  },
+  fromProtoMsg(
+    message: MsgUpdateParamsResponseProtoMsg,
+  ): MsgUpdateParamsResponse {
+    return MsgUpdateParamsResponse.decode(message.value);
+  },
+  toProto(message: MsgUpdateParamsResponse): Uint8Array {
+    return MsgUpdateParamsResponse.encode(message).finish();
+  },
+  toProtoMsg(
+    message: MsgUpdateParamsResponse,
+  ): MsgUpdateParamsResponseProtoMsg {
+    return {
+      typeUrl: '/cosmos.gov.v1.MsgUpdateParamsResponse',
+      value: MsgUpdateParamsResponse.encode(message).finish(),
+    };
+  },
+};
+export const Cosmos_govv1beta1Content_InterfaceDecoder = (
   input: BinaryReader | Uint8Array,
-): TextProposal | Any => {
+):
+  | CommunityPoolSpendProposal
+  | CommunityPoolSpendProposalWithDeposit
+  | TextProposal
+  | ParameterChangeProposal
+  | SoftwareUpgradeProposal
+  | CancelSoftwareUpgradeProposal
+  | ClientUpdateProposal
+  | UpgradeProposal
+  | Any => {
   const reader =
     input instanceof BinaryReader ? input : new BinaryReader(input);
   const data = Any.decode(reader, reader.uint32());
   switch (data.typeUrl) {
+    case '/cosmos.distribution.v1beta1.CommunityPoolSpendProposal':
+      return CommunityPoolSpendProposal.decode(data.value);
+    case '/cosmos.distribution.v1beta1.CommunityPoolSpendProposalWithDeposit':
+      return CommunityPoolSpendProposalWithDeposit.decode(data.value);
     case '/cosmos.gov.v1beta1.TextProposal':
       return TextProposal.decode(data.value);
+    case '/cosmos.params.v1beta1.ParameterChangeProposal':
+      return ParameterChangeProposal.decode(data.value);
+    case '/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal':
+      return SoftwareUpgradeProposal.decode(data.value);
+    case '/cosmos.upgrade.v1beta1.CancelSoftwareUpgradeProposal':
+      return CancelSoftwareUpgradeProposal.decode(data.value);
+    case '/ibc.core.client.v1.ClientUpdateProposal':
+      return ClientUpdateProposal.decode(data.value);
+    case '/ibc.core.client.v1.UpgradeProposal':
+      return UpgradeProposal.decode(data.value);
     default:
       return data;
   }
