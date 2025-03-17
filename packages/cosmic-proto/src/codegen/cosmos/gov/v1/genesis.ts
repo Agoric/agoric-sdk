@@ -12,6 +12,8 @@ import {
   type VotingParamsSDKType,
   TallyParams,
   type TallyParamsSDKType,
+  Params,
+  type ParamsSDKType,
 } from './gov.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
@@ -26,12 +28,30 @@ export interface GenesisState {
   votes: Vote[];
   /** proposals defines all the proposals present at genesis. */
   proposals: Proposal[];
-  /** params defines all the paramaters of related to deposit. */
+  /**
+   * Deprecated: Prefer to use `params` instead.
+   * deposit_params defines all the paramaters of related to deposit.
+   */
+  /** @deprecated */
   depositParams?: DepositParams;
-  /** params defines all the paramaters of related to voting. */
+  /**
+   * Deprecated: Prefer to use `params` instead.
+   * voting_params defines all the paramaters of related to voting.
+   */
+  /** @deprecated */
   votingParams?: VotingParams;
-  /** params defines all the paramaters of related to tally. */
+  /**
+   * Deprecated: Prefer to use `params` instead.
+   * tally_params defines all the paramaters of related to tally.
+   */
+  /** @deprecated */
   tallyParams?: TallyParams;
+  /**
+   * params defines all the paramaters of x/gov module.
+   *
+   * Since: cosmos-sdk 0.47
+   */
+  params?: Params;
 }
 export interface GenesisStateProtoMsg {
   typeUrl: '/cosmos.gov.v1.GenesisState';
@@ -43,9 +63,13 @@ export interface GenesisStateSDKType {
   deposits: DepositSDKType[];
   votes: VoteSDKType[];
   proposals: ProposalSDKType[];
+  /** @deprecated */
   deposit_params?: DepositParamsSDKType;
+  /** @deprecated */
   voting_params?: VotingParamsSDKType;
+  /** @deprecated */
   tally_params?: TallyParamsSDKType;
+  params?: ParamsSDKType;
 }
 function createBaseGenesisState(): GenesisState {
   return {
@@ -56,6 +80,7 @@ function createBaseGenesisState(): GenesisState {
     depositParams: undefined,
     votingParams: undefined,
     tallyParams: undefined,
+    params: undefined,
   };
 }
 export const GenesisState = {
@@ -94,6 +119,9 @@ export const GenesisState = {
         writer.uint32(58).fork(),
       ).ldelim();
     }
+    if (message.params !== undefined) {
+      Params.encode(message.params, writer.uint32(66).fork()).ldelim();
+    }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): GenesisState {
@@ -125,6 +153,9 @@ export const GenesisState = {
         case 7:
           message.tallyParams = TallyParams.decode(reader, reader.uint32());
           break;
+        case 8:
+          message.params = Params.decode(reader, reader.uint32());
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -155,6 +186,7 @@ export const GenesisState = {
       tallyParams: isSet(object.tallyParams)
         ? TallyParams.fromJSON(object.tallyParams)
         : undefined,
+      params: isSet(object.params) ? Params.fromJSON(object.params) : undefined,
     };
   },
   toJSON(message: GenesisState): JsonSafe<GenesisState> {
@@ -194,6 +226,8 @@ export const GenesisState = {
       (obj.tallyParams = message.tallyParams
         ? TallyParams.toJSON(message.tallyParams)
         : undefined);
+    message.params !== undefined &&
+      (obj.params = message.params ? Params.toJSON(message.params) : undefined);
     return obj;
   },
   fromPartial(object: Partial<GenesisState>): GenesisState {
@@ -218,6 +252,10 @@ export const GenesisState = {
     message.tallyParams =
       object.tallyParams !== undefined && object.tallyParams !== null
         ? TallyParams.fromPartial(object.tallyParams)
+        : undefined;
+    message.params =
+      object.params !== undefined && object.params !== null
+        ? Params.fromPartial(object.params)
         : undefined;
     return message;
   },
