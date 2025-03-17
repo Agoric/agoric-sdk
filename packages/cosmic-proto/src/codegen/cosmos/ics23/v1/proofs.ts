@@ -1,19 +1,22 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from './binary.js';
-import { isSet } from './helpers.js';
+import { BinaryReader, BinaryWriter } from '../../../binary.js';
+import { isSet } from '../../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
-import { type JsonSafe } from './json-safe.js';
+import { type JsonSafe } from '../../../json-safe.js';
 export enum HashOp {
   /** NO_HASH - NO_HASH is the default if no data passed. Note this is an illegal argument some places. */
   NO_HASH = 0,
   SHA256 = 1,
   SHA512 = 2,
-  KECCAK = 3,
+  KECCAK256 = 3,
   RIPEMD160 = 4,
   /** BITCOIN - ripemd160(sha256(x)) */
   BITCOIN = 5,
   SHA512_256 = 6,
+  BLAKE2B_512 = 7,
+  BLAKE2S_256 = 8,
+  BLAKE3 = 9,
   UNRECOGNIZED = -1,
 }
 export const HashOpSDKType = HashOp;
@@ -29,8 +32,8 @@ export function hashOpFromJSON(object: any): HashOp {
     case 'SHA512':
       return HashOp.SHA512;
     case 3:
-    case 'KECCAK':
-      return HashOp.KECCAK;
+    case 'KECCAK256':
+      return HashOp.KECCAK256;
     case 4:
     case 'RIPEMD160':
       return HashOp.RIPEMD160;
@@ -40,6 +43,15 @@ export function hashOpFromJSON(object: any): HashOp {
     case 6:
     case 'SHA512_256':
       return HashOp.SHA512_256;
+    case 7:
+    case 'BLAKE2B_512':
+      return HashOp.BLAKE2B_512;
+    case 8:
+    case 'BLAKE2S_256':
+      return HashOp.BLAKE2S_256;
+    case 9:
+    case 'BLAKE3':
+      return HashOp.BLAKE3;
     case -1:
     case 'UNRECOGNIZED':
     default:
@@ -54,14 +66,20 @@ export function hashOpToJSON(object: HashOp): string {
       return 'SHA256';
     case HashOp.SHA512:
       return 'SHA512';
-    case HashOp.KECCAK:
-      return 'KECCAK';
+    case HashOp.KECCAK256:
+      return 'KECCAK256';
     case HashOp.RIPEMD160:
       return 'RIPEMD160';
     case HashOp.BITCOIN:
       return 'BITCOIN';
     case HashOp.SHA512_256:
       return 'SHA512_256';
+    case HashOp.BLAKE2B_512:
+      return 'BLAKE2B_512';
+    case HashOp.BLAKE2S_256:
+      return 'BLAKE2S_256';
+    case HashOp.BLAKE3:
+      return 'BLAKE3';
     case HashOp.UNRECOGNIZED:
     default:
       return 'UNRECOGNIZED';
@@ -183,7 +201,7 @@ export interface ExistenceProof {
   path: InnerOp[];
 }
 export interface ExistenceProofProtoMsg {
-  typeUrl: '/ics23.ExistenceProof';
+  typeUrl: '/cosmos.ics23.v1.ExistenceProof';
   value: Uint8Array;
 }
 /**
@@ -225,7 +243,7 @@ export interface NonExistenceProof {
   right?: ExistenceProof;
 }
 export interface NonExistenceProofProtoMsg {
-  typeUrl: '/ics23.NonExistenceProof';
+  typeUrl: '/cosmos.ics23.v1.NonExistenceProof';
   value: Uint8Array;
 }
 /**
@@ -246,7 +264,7 @@ export interface CommitmentProof {
   compressed?: CompressedBatchProof;
 }
 export interface CommitmentProofProtoMsg {
-  typeUrl: '/ics23.CommitmentProof';
+  typeUrl: '/cosmos.ics23.v1.CommitmentProof';
   value: Uint8Array;
 }
 /** CommitmentProof is either an ExistenceProof or a NonExistenceProof, or a Batch of such messages */
@@ -284,7 +302,7 @@ export interface LeafOp {
   prefix: Uint8Array;
 }
 export interface LeafOpProtoMsg {
-  typeUrl: '/ics23.LeafOp';
+  typeUrl: '/cosmos.ics23.v1.LeafOp';
   value: Uint8Array;
 }
 /**
@@ -333,7 +351,7 @@ export interface InnerOp {
   suffix: Uint8Array;
 }
 export interface InnerOpProtoMsg {
-  typeUrl: '/ics23.InnerOp';
+  typeUrl: '/cosmos.ics23.v1.InnerOp';
   value: Uint8Array;
 }
 /**
@@ -377,13 +395,22 @@ export interface ProofSpec {
    */
   leafSpec?: LeafOp;
   innerSpec?: InnerSpec;
-  /** max_depth (if > 0) is the maximum number of InnerOps allowed (mainly for fixed-depth tries) */
+  /**
+   * max_depth (if > 0) is the maximum number of InnerOps allowed (mainly for fixed-depth tries)
+   * the max_depth is interpreted as 128 if set to 0
+   */
   maxDepth: number;
   /** min_depth (if > 0) is the minimum number of InnerOps allowed (mainly for fixed-depth tries) */
   minDepth: number;
+  /**
+   * prehash_key_before_comparison is a flag that indicates whether to use the
+   * prehash_key specified by LeafOp to compare lexical ordering of keys for
+   * non-existence proofs.
+   */
+  prehashKeyBeforeComparison: boolean;
 }
 export interface ProofSpecProtoMsg {
-  typeUrl: '/ics23.ProofSpec';
+  typeUrl: '/cosmos.ics23.v1.ProofSpec';
   value: Uint8Array;
 }
 /**
@@ -403,6 +430,7 @@ export interface ProofSpecSDKType {
   inner_spec?: InnerSpecSDKType;
   max_depth: number;
   min_depth: number;
+  prehash_key_before_comparison: boolean;
 }
 /**
  * InnerSpec contains all store-specific structure info to determine if two proofs from a
@@ -423,6 +451,7 @@ export interface InnerSpec {
   childOrder: number[];
   childSize: number;
   minPrefixLength: number;
+  /** the max prefix length must be less than the minimum prefix length + child size */
   maxPrefixLength: number;
   /** empty child is the prehash image that is used when one child is nil (eg. 20 bytes of 0) */
   emptyChild: Uint8Array;
@@ -430,7 +459,7 @@ export interface InnerSpec {
   hash: HashOp;
 }
 export interface InnerSpecProtoMsg {
-  typeUrl: '/ics23.InnerSpec';
+  typeUrl: '/cosmos.ics23.v1.InnerSpec';
   value: Uint8Array;
 }
 /**
@@ -456,7 +485,7 @@ export interface BatchProof {
   entries: BatchEntry[];
 }
 export interface BatchProofProtoMsg {
-  typeUrl: '/ics23.BatchProof';
+  typeUrl: '/cosmos.ics23.v1.BatchProof';
   value: Uint8Array;
 }
 /** BatchProof is a group of multiple proof types than can be compressed */
@@ -469,7 +498,7 @@ export interface BatchEntry {
   nonexist?: NonExistenceProof;
 }
 export interface BatchEntryProtoMsg {
-  typeUrl: '/ics23.BatchEntry';
+  typeUrl: '/cosmos.ics23.v1.BatchEntry';
   value: Uint8Array;
 }
 /** Use BatchEntry not CommitmentProof, to avoid recursion */
@@ -482,7 +511,7 @@ export interface CompressedBatchProof {
   lookupInners: InnerOp[];
 }
 export interface CompressedBatchProofProtoMsg {
-  typeUrl: '/ics23.CompressedBatchProof';
+  typeUrl: '/cosmos.ics23.v1.CompressedBatchProof';
   value: Uint8Array;
 }
 export interface CompressedBatchProofSDKType {
@@ -495,7 +524,7 @@ export interface CompressedBatchEntry {
   nonexist?: CompressedNonExistenceProof;
 }
 export interface CompressedBatchEntryProtoMsg {
-  typeUrl: '/ics23.CompressedBatchEntry';
+  typeUrl: '/cosmos.ics23.v1.CompressedBatchEntry';
   value: Uint8Array;
 }
 /** Use BatchEntry not CommitmentProof, to avoid recursion */
@@ -511,7 +540,7 @@ export interface CompressedExistenceProof {
   path: number[];
 }
 export interface CompressedExistenceProofProtoMsg {
-  typeUrl: '/ics23.CompressedExistenceProof';
+  typeUrl: '/cosmos.ics23.v1.CompressedExistenceProof';
   value: Uint8Array;
 }
 export interface CompressedExistenceProofSDKType {
@@ -527,7 +556,7 @@ export interface CompressedNonExistenceProof {
   right?: CompressedExistenceProof;
 }
 export interface CompressedNonExistenceProofProtoMsg {
-  typeUrl: '/ics23.CompressedNonExistenceProof';
+  typeUrl: '/cosmos.ics23.v1.CompressedNonExistenceProof';
   value: Uint8Array;
 }
 export interface CompressedNonExistenceProofSDKType {
@@ -544,7 +573,7 @@ function createBaseExistenceProof(): ExistenceProof {
   };
 }
 export const ExistenceProof = {
-  typeUrl: '/ics23.ExistenceProof',
+  typeUrl: '/cosmos.ics23.v1.ExistenceProof',
   encode(
     message: ExistenceProof,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -640,7 +669,7 @@ export const ExistenceProof = {
   },
   toProtoMsg(message: ExistenceProof): ExistenceProofProtoMsg {
     return {
-      typeUrl: '/ics23.ExistenceProof',
+      typeUrl: '/cosmos.ics23.v1.ExistenceProof',
       value: ExistenceProof.encode(message).finish(),
     };
   },
@@ -653,7 +682,7 @@ function createBaseNonExistenceProof(): NonExistenceProof {
   };
 }
 export const NonExistenceProof = {
-  typeUrl: '/ics23.NonExistenceProof',
+  typeUrl: '/cosmos.ics23.v1.NonExistenceProof',
   encode(
     message: NonExistenceProof,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -741,7 +770,7 @@ export const NonExistenceProof = {
   },
   toProtoMsg(message: NonExistenceProof): NonExistenceProofProtoMsg {
     return {
-      typeUrl: '/ics23.NonExistenceProof',
+      typeUrl: '/cosmos.ics23.v1.NonExistenceProof',
       value: NonExistenceProof.encode(message).finish(),
     };
   },
@@ -755,7 +784,7 @@ function createBaseCommitmentProof(): CommitmentProof {
   };
 }
 export const CommitmentProof = {
-  typeUrl: '/ics23.CommitmentProof',
+  typeUrl: '/cosmos.ics23.v1.CommitmentProof',
   encode(
     message: CommitmentProof,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -874,7 +903,7 @@ export const CommitmentProof = {
   },
   toProtoMsg(message: CommitmentProof): CommitmentProofProtoMsg {
     return {
-      typeUrl: '/ics23.CommitmentProof',
+      typeUrl: '/cosmos.ics23.v1.CommitmentProof',
       value: CommitmentProof.encode(message).finish(),
     };
   },
@@ -889,7 +918,7 @@ function createBaseLeafOp(): LeafOp {
   };
 }
 export const LeafOp = {
-  typeUrl: '/ics23.LeafOp',
+  typeUrl: '/cosmos.ics23.v1.LeafOp',
   encode(
     message: LeafOp,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -988,7 +1017,7 @@ export const LeafOp = {
   },
   toProtoMsg(message: LeafOp): LeafOpProtoMsg {
     return {
-      typeUrl: '/ics23.LeafOp',
+      typeUrl: '/cosmos.ics23.v1.LeafOp',
       value: LeafOp.encode(message).finish(),
     };
   },
@@ -1001,7 +1030,7 @@ function createBaseInnerOp(): InnerOp {
   };
 }
 export const InnerOp = {
-  typeUrl: '/ics23.InnerOp',
+  typeUrl: '/cosmos.ics23.v1.InnerOp',
   encode(
     message: InnerOp,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1080,7 +1109,7 @@ export const InnerOp = {
   },
   toProtoMsg(message: InnerOp): InnerOpProtoMsg {
     return {
-      typeUrl: '/ics23.InnerOp',
+      typeUrl: '/cosmos.ics23.v1.InnerOp',
       value: InnerOp.encode(message).finish(),
     };
   },
@@ -1091,10 +1120,11 @@ function createBaseProofSpec(): ProofSpec {
     innerSpec: undefined,
     maxDepth: 0,
     minDepth: 0,
+    prehashKeyBeforeComparison: false,
   };
 }
 export const ProofSpec = {
-  typeUrl: '/ics23.ProofSpec',
+  typeUrl: '/cosmos.ics23.v1.ProofSpec',
   encode(
     message: ProofSpec,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1110,6 +1140,9 @@ export const ProofSpec = {
     }
     if (message.minDepth !== 0) {
       writer.uint32(32).int32(message.minDepth);
+    }
+    if (message.prehashKeyBeforeComparison === true) {
+      writer.uint32(40).bool(message.prehashKeyBeforeComparison);
     }
     return writer;
   },
@@ -1133,6 +1166,9 @@ export const ProofSpec = {
         case 4:
           message.minDepth = reader.int32();
           break;
+        case 5:
+          message.prehashKeyBeforeComparison = reader.bool();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -1150,6 +1186,9 @@ export const ProofSpec = {
         : undefined,
       maxDepth: isSet(object.maxDepth) ? Number(object.maxDepth) : 0,
       minDepth: isSet(object.minDepth) ? Number(object.minDepth) : 0,
+      prehashKeyBeforeComparison: isSet(object.prehashKeyBeforeComparison)
+        ? Boolean(object.prehashKeyBeforeComparison)
+        : false,
     };
   },
   toJSON(message: ProofSpec): JsonSafe<ProofSpec> {
@@ -1166,6 +1205,8 @@ export const ProofSpec = {
       (obj.maxDepth = Math.round(message.maxDepth));
     message.minDepth !== undefined &&
       (obj.minDepth = Math.round(message.minDepth));
+    message.prehashKeyBeforeComparison !== undefined &&
+      (obj.prehashKeyBeforeComparison = message.prehashKeyBeforeComparison);
     return obj;
   },
   fromPartial(object: Partial<ProofSpec>): ProofSpec {
@@ -1180,6 +1221,8 @@ export const ProofSpec = {
         : undefined;
     message.maxDepth = object.maxDepth ?? 0;
     message.minDepth = object.minDepth ?? 0;
+    message.prehashKeyBeforeComparison =
+      object.prehashKeyBeforeComparison ?? false;
     return message;
   },
   fromProtoMsg(message: ProofSpecProtoMsg): ProofSpec {
@@ -1190,7 +1233,7 @@ export const ProofSpec = {
   },
   toProtoMsg(message: ProofSpec): ProofSpecProtoMsg {
     return {
-      typeUrl: '/ics23.ProofSpec',
+      typeUrl: '/cosmos.ics23.v1.ProofSpec',
       value: ProofSpec.encode(message).finish(),
     };
   },
@@ -1206,7 +1249,7 @@ function createBaseInnerSpec(): InnerSpec {
   };
 }
 export const InnerSpec = {
-  typeUrl: '/ics23.InnerSpec',
+  typeUrl: '/cosmos.ics23.v1.InnerSpec',
   encode(
     message: InnerSpec,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1331,7 +1374,7 @@ export const InnerSpec = {
   },
   toProtoMsg(message: InnerSpec): InnerSpecProtoMsg {
     return {
-      typeUrl: '/ics23.InnerSpec',
+      typeUrl: '/cosmos.ics23.v1.InnerSpec',
       value: InnerSpec.encode(message).finish(),
     };
   },
@@ -1342,7 +1385,7 @@ function createBaseBatchProof(): BatchProof {
   };
 }
 export const BatchProof = {
-  typeUrl: '/ics23.BatchProof',
+  typeUrl: '/cosmos.ics23.v1.BatchProof',
   encode(
     message: BatchProof,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1401,7 +1444,7 @@ export const BatchProof = {
   },
   toProtoMsg(message: BatchProof): BatchProofProtoMsg {
     return {
-      typeUrl: '/ics23.BatchProof',
+      typeUrl: '/cosmos.ics23.v1.BatchProof',
       value: BatchProof.encode(message).finish(),
     };
   },
@@ -1413,7 +1456,7 @@ function createBaseBatchEntry(): BatchEntry {
   };
 }
 export const BatchEntry = {
-  typeUrl: '/ics23.BatchEntry',
+  typeUrl: '/cosmos.ics23.v1.BatchEntry',
   encode(
     message: BatchEntry,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1492,7 +1535,7 @@ export const BatchEntry = {
   },
   toProtoMsg(message: BatchEntry): BatchEntryProtoMsg {
     return {
-      typeUrl: '/ics23.BatchEntry',
+      typeUrl: '/cosmos.ics23.v1.BatchEntry',
       value: BatchEntry.encode(message).finish(),
     };
   },
@@ -1504,7 +1547,7 @@ function createBaseCompressedBatchProof(): CompressedBatchProof {
   };
 }
 export const CompressedBatchProof = {
-  typeUrl: '/ics23.CompressedBatchProof',
+  typeUrl: '/cosmos.ics23.v1.CompressedBatchProof',
   encode(
     message: CompressedBatchProof,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1587,7 +1630,7 @@ export const CompressedBatchProof = {
   },
   toProtoMsg(message: CompressedBatchProof): CompressedBatchProofProtoMsg {
     return {
-      typeUrl: '/ics23.CompressedBatchProof',
+      typeUrl: '/cosmos.ics23.v1.CompressedBatchProof',
       value: CompressedBatchProof.encode(message).finish(),
     };
   },
@@ -1599,7 +1642,7 @@ function createBaseCompressedBatchEntry(): CompressedBatchEntry {
   };
 }
 export const CompressedBatchEntry = {
-  typeUrl: '/ics23.CompressedBatchEntry',
+  typeUrl: '/cosmos.ics23.v1.CompressedBatchEntry',
   encode(
     message: CompressedBatchEntry,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1690,7 +1733,7 @@ export const CompressedBatchEntry = {
   },
   toProtoMsg(message: CompressedBatchEntry): CompressedBatchEntryProtoMsg {
     return {
-      typeUrl: '/ics23.CompressedBatchEntry',
+      typeUrl: '/cosmos.ics23.v1.CompressedBatchEntry',
       value: CompressedBatchEntry.encode(message).finish(),
     };
   },
@@ -1704,7 +1747,7 @@ function createBaseCompressedExistenceProof(): CompressedExistenceProof {
   };
 }
 export const CompressedExistenceProof = {
-  typeUrl: '/ics23.CompressedExistenceProof',
+  typeUrl: '/cosmos.ics23.v1.CompressedExistenceProof',
   encode(
     message: CompressedExistenceProof,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1820,7 +1863,7 @@ export const CompressedExistenceProof = {
     message: CompressedExistenceProof,
   ): CompressedExistenceProofProtoMsg {
     return {
-      typeUrl: '/ics23.CompressedExistenceProof',
+      typeUrl: '/cosmos.ics23.v1.CompressedExistenceProof',
       value: CompressedExistenceProof.encode(message).finish(),
     };
   },
@@ -1833,7 +1876,7 @@ function createBaseCompressedNonExistenceProof(): CompressedNonExistenceProof {
   };
 }
 export const CompressedNonExistenceProof = {
-  typeUrl: '/ics23.CompressedNonExistenceProof',
+  typeUrl: '/cosmos.ics23.v1.CompressedNonExistenceProof',
   encode(
     message: CompressedNonExistenceProof,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1944,7 +1987,7 @@ export const CompressedNonExistenceProof = {
     message: CompressedNonExistenceProof,
   ): CompressedNonExistenceProofProtoMsg {
     return {
-      typeUrl: '/ics23.CompressedNonExistenceProof',
+      typeUrl: '/cosmos.ics23.v1.CompressedNonExistenceProof',
       value: CompressedNonExistenceProof.encode(message).finish(),
     };
   },
