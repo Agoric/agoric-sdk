@@ -657,6 +657,8 @@ test('StakingAccountQueries', async t => {
             validatorAddress: mockValidator.value,
             entries: [
               {
+                unbondingId: 1n,
+                unbondingOnHoldRefCount: 0n,
                 creationHeight: 100n,
                 completionTime: { seconds: 1672531200n, nanos: 0 },
                 initialBalance: '2000000',
@@ -675,6 +677,8 @@ test('StakingAccountQueries', async t => {
               validatorAddress: mockValidator.value,
               entries: [
                 {
+                  unbondingId: 2n,
+                  unbondingOnHoldRefCount: 0n,
                   creationHeight: 100n,
                   completionTime: { seconds: 1672531200n, nanos: 0 },
                   initialBalance: '2000000',
@@ -696,6 +700,8 @@ test('StakingAccountQueries', async t => {
                 validatorDstAddress: 'cosmosvaloper1abc',
                 entries: [
                   {
+                    unbondingId: 5n,
+                    unbondingOnHoldRefCount: 0n,
                     creationHeight: 200n,
                     completionTime: { seconds: 1675209600n, nanos: 0 },
                     initialBalance: '3000000',
@@ -706,6 +712,8 @@ test('StakingAccountQueries', async t => {
               entries: [
                 {
                   redelegationEntry: {
+                    unbondingId: 6n,
+                    unbondingOnHoldRefCount: 0n,
                     creationHeight: 200n,
                     completionTime: { seconds: 1675209600n, nanos: 0 },
                     initialBalance: '3000000',
@@ -729,6 +737,8 @@ test('StakingAccountQueries', async t => {
                 validatorDstAddress: '',
                 entries: [
                   {
+                    unbondingId: 5n,
+                    unbondingOnHoldRefCount: 0n,
                     creationHeight: 200n,
                     completionTime: { seconds: 1675209600n, nanos: 0 },
                     initialBalance: '3000000',
@@ -739,6 +749,8 @@ test('StakingAccountQueries', async t => {
               entries: [
                 {
                   redelegationEntry: {
+                    unbondingId: 6n,
+                    unbondingOnHoldRefCount: 0n,
                     creationHeight: 200n,
                     completionTime: { seconds: 1675209600n, nanos: 0 },
                     initialBalance: '3000000',
@@ -840,6 +852,8 @@ test('StakingAccountQueries', async t => {
         completionTime: { seconds: 1672531200n, nanos: 0 },
         initialBalance: '2000000',
         balance: '1900000',
+        unbondingId: 1n,
+        unbondingOnHoldRefCount: 0n,
       },
     ],
   });
@@ -856,6 +870,8 @@ test('StakingAccountQueries', async t => {
           completionTime: { seconds: 1672531200n, nanos: 0 },
           initialBalance: '2000000',
           balance: '1900000',
+          unbondingId: 2n,
+          unbondingOnHoldRefCount: 0n,
         },
       ],
     },
@@ -875,6 +891,8 @@ test('StakingAccountQueries', async t => {
             completionTime: { seconds: 1675209600n, nanos: 0 },
             initialBalance: '3000000',
             sharesDst: '2900000',
+            unbondingId: 5n,
+            unbondingOnHoldRefCount: 0n,
           },
         ],
       },
@@ -885,6 +903,8 @@ test('StakingAccountQueries', async t => {
             completionTime: { seconds: 1675209600n, nanos: 0 },
             initialBalance: '3000000',
             sharesDst: '2900000',
+            unbondingId: 6n,
+            unbondingOnHoldRefCount: 0n,
           },
           balance: '2900000',
         },
