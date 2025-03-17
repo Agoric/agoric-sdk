@@ -146,7 +146,9 @@ export function proposalStatusToJSON(object: ProposalStatus): string {
 }
 /** WeightedVoteOption defines a unit of vote for vote split. */
 export interface WeightedVoteOption {
+  /** option defines the valid vote options, it must not contain duplicate vote options. */
   option: VoteOption;
+  /** weight is the vote weight associated with the vote option. */
   weight: string;
 }
 export interface WeightedVoteOptionProtoMsg {
@@ -163,8 +165,11 @@ export interface WeightedVoteOptionSDKType {
  * proposal.
  */
 export interface Deposit {
+  /** proposal_id defines the unique id of the proposal. */
   proposalId: bigint;
+  /** depositor defines the deposit addresses from the proposals. */
   depositor: string;
+  /** amount to be deposited by depositor. */
   amount: Coin[];
 }
 export interface DepositProtoMsg {
@@ -182,8 +187,11 @@ export interface DepositSDKType {
 }
 /** Proposal defines the core field members of a governance proposal. */
 export interface Proposal {
+  /** id defines the unique id of the proposal. */
   id: bigint;
+  /** messages are the arbitrary messages to be executed if the proposal passes. */
   messages: Any[];
+  /** status defines the proposal status. */
   status: ProposalStatus;
   /**
    * final_tally_result is the final tally result of the proposal. When
@@ -191,13 +199,36 @@ export interface Proposal {
    * proposal's voting period has ended.
    */
   finalTallyResult?: TallyResult;
+  /** submit_time is the time of proposal submission. */
   submitTime?: Timestamp;
+  /** deposit_end_time is the end time for deposition. */
   depositEndTime?: Timestamp;
+  /** total_deposit is the total deposit on the proposal. */
   totalDeposit: Coin[];
+  /** voting_start_time is the starting time to vote on a proposal. */
   votingStartTime?: Timestamp;
+  /** voting_end_time is the end time of voting on a proposal. */
   votingEndTime?: Timestamp;
   /** metadata is any arbitrary metadata attached to the proposal. */
   metadata: string;
+  /**
+   * title is the title of the proposal
+   *
+   * Since: cosmos-sdk 0.47
+   */
+  title: string;
+  /**
+   * summary is a short summary of the proposal
+   *
+   * Since: cosmos-sdk 0.47
+   */
+  summary: string;
+  /**
+   * Proposer is the address of the proposal sumbitter
+   *
+   * Since: cosmos-sdk 0.47
+   */
+  proposer: string;
 }
 export interface ProposalProtoMsg {
   typeUrl: '/cosmos.gov.v1.Proposal';
@@ -215,12 +246,19 @@ export interface ProposalSDKType {
   voting_start_time?: TimestampSDKType;
   voting_end_time?: TimestampSDKType;
   metadata: string;
+  title: string;
+  summary: string;
+  proposer: string;
 }
 /** TallyResult defines a standard tally for a governance proposal. */
 export interface TallyResult {
+  /** yes_count is the number of yes votes on a proposal. */
   yesCount: string;
+  /** abstain_count is the number of abstain votes on a proposal. */
   abstainCount: string;
+  /** no_count is the number of no votes on a proposal. */
   noCount: string;
+  /** no_with_veto_count is the number of no with veto votes on a proposal. */
   noWithVetoCount: string;
 }
 export interface TallyResultProtoMsg {
@@ -239,8 +277,11 @@ export interface TallyResultSDKType {
  * A Vote consists of a proposal ID, the voter, and the vote option.
  */
 export interface Vote {
+  /** proposal_id defines the unique id of the proposal. */
   proposalId: bigint;
+  /** voter is the voter address of the proposal. */
   voter: string;
+  /** options is the weighted vote options. */
   options: WeightedVoteOption[];
   /** metadata is any  arbitrary metadata to attached to the vote. */
   metadata: string;
@@ -265,7 +306,7 @@ export interface DepositParams {
   minDeposit: Coin[];
   /**
    * Maximum period for Atom holders to deposit on a proposal. Initial value: 2
-   *  months.
+   * months.
    */
   maxDepositPeriod?: Duration;
 }
@@ -280,7 +321,7 @@ export interface DepositParamsSDKType {
 }
 /** VotingParams defines the params for voting on governance proposals. */
 export interface VotingParams {
-  /** Length of the voting period. */
+  /** Duration of the voting period. */
   votingPeriod?: Duration;
 }
 export interface VotingParamsProtoMsg {
@@ -295,14 +336,14 @@ export interface VotingParamsSDKType {
 export interface TallyParams {
   /**
    * Minimum percentage of total stake needed to vote for a result to be
-   *  considered valid.
+   * considered valid.
    */
   quorum: string;
   /** Minimum proportion of Yes votes for proposal to pass. Default value: 0.5. */
   threshold: string;
   /**
    * Minimum value of Veto votes to Total votes ratio for proposal to be
-   *  vetoed. Default value: 1/3.
+   * vetoed. Default value: 1/3.
    */
   vetoThreshold: string;
 }
@@ -315,6 +356,63 @@ export interface TallyParamsSDKType {
   quorum: string;
   threshold: string;
   veto_threshold: string;
+}
+/**
+ * Params defines the parameters for the x/gov module.
+ *
+ * Since: cosmos-sdk 0.47
+ */
+export interface Params {
+  /** Minimum deposit for a proposal to enter voting period. */
+  minDeposit: Coin[];
+  /**
+   * Maximum period for Atom holders to deposit on a proposal. Initial value: 2
+   * months.
+   */
+  maxDepositPeriod?: Duration;
+  /** Duration of the voting period. */
+  votingPeriod?: Duration;
+  /**
+   * Minimum percentage of total stake needed to vote for a result to be
+   *  considered valid.
+   */
+  quorum: string;
+  /** Minimum proportion of Yes votes for proposal to pass. Default value: 0.5. */
+  threshold: string;
+  /**
+   * Minimum value of Veto votes to Total votes ratio for proposal to be
+   *  vetoed. Default value: 1/3.
+   */
+  vetoThreshold: string;
+  /** The ratio representing the proportion of the deposit value that must be paid at proposal submission. */
+  minInitialDepositRatio: string;
+  /** burn deposits if a proposal does not meet quorum */
+  burnVoteQuorum: boolean;
+  /** burn deposits if the proposal does not enter voting period */
+  burnProposalDepositPrevote: boolean;
+  /** burn deposits if quorum with vote type no_veto is met */
+  burnVoteVeto: boolean;
+}
+export interface ParamsProtoMsg {
+  typeUrl: '/cosmos.gov.v1.Params';
+  value: Uint8Array;
+}
+/**
+ * Params defines the parameters for the x/gov module.
+ *
+ * Since: cosmos-sdk 0.47
+ */
+export interface ParamsSDKType {
+  min_deposit: CoinSDKType[];
+  max_deposit_period?: DurationSDKType;
+  voting_period?: DurationSDKType;
+  quorum: string;
+  threshold: string;
+  veto_threshold: string;
+  min_initial_deposit_ratio: string;
+  burn_vote_quorum: boolean;
+  burn_proposal_deposit_prevote: boolean;
+  burn_vote_veto: boolean;
 }
 function createBaseWeightedVoteOption(): WeightedVoteOption {
   return {
@@ -498,6 +596,9 @@ function createBaseProposal(): Proposal {
     votingStartTime: undefined,
     votingEndTime: undefined,
     metadata: '',
+    title: '',
+    summary: '',
+    proposer: '',
   };
 }
 export const Proposal = {
@@ -548,6 +649,15 @@ export const Proposal = {
     if (message.metadata !== '') {
       writer.uint32(82).string(message.metadata);
     }
+    if (message.title !== '') {
+      writer.uint32(90).string(message.title);
+    }
+    if (message.summary !== '') {
+      writer.uint32(98).string(message.summary);
+    }
+    if (message.proposer !== '') {
+      writer.uint32(106).string(message.proposer);
+    }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Proposal {
@@ -591,6 +701,15 @@ export const Proposal = {
         case 10:
           message.metadata = reader.string();
           break;
+        case 11:
+          message.title = reader.string();
+          break;
+        case 12:
+          message.summary = reader.string();
+          break;
+        case 13:
+          message.proposer = reader.string();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -624,6 +743,9 @@ export const Proposal = {
         ? fromJsonTimestamp(object.votingEndTime)
         : undefined,
       metadata: isSet(object.metadata) ? String(object.metadata) : '',
+      title: isSet(object.title) ? String(object.title) : '',
+      summary: isSet(object.summary) ? String(object.summary) : '',
+      proposer: isSet(object.proposer) ? String(object.proposer) : '',
     };
   },
   toJSON(message: Proposal): JsonSafe<Proposal> {
@@ -660,6 +782,9 @@ export const Proposal = {
     message.votingEndTime !== undefined &&
       (obj.votingEndTime = fromTimestamp(message.votingEndTime).toISOString());
     message.metadata !== undefined && (obj.metadata = message.metadata);
+    message.title !== undefined && (obj.title = message.title);
+    message.summary !== undefined && (obj.summary = message.summary);
+    message.proposer !== undefined && (obj.proposer = message.proposer);
     return obj;
   },
   fromPartial(object: Partial<Proposal>): Proposal {
@@ -693,6 +818,9 @@ export const Proposal = {
         ? Timestamp.fromPartial(object.votingEndTime)
         : undefined;
     message.metadata = object.metadata ?? '';
+    message.title = object.title ?? '';
+    message.summary = object.summary ?? '';
+    message.proposer = object.proposer ?? '';
     return message;
   },
   fromProtoMsg(message: ProposalProtoMsg): Proposal {
@@ -1158,6 +1286,201 @@ export const TallyParams = {
     return {
       typeUrl: '/cosmos.gov.v1.TallyParams',
       value: TallyParams.encode(message).finish(),
+    };
+  },
+};
+function createBaseParams(): Params {
+  return {
+    minDeposit: [],
+    maxDepositPeriod: undefined,
+    votingPeriod: undefined,
+    quorum: '',
+    threshold: '',
+    vetoThreshold: '',
+    minInitialDepositRatio: '',
+    burnVoteQuorum: false,
+    burnProposalDepositPrevote: false,
+    burnVoteVeto: false,
+  };
+}
+export const Params = {
+  typeUrl: '/cosmos.gov.v1.Params',
+  encode(
+    message: Params,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    for (const v of message.minDeposit) {
+      Coin.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.maxDepositPeriod !== undefined) {
+      Duration.encode(
+        message.maxDepositPeriod,
+        writer.uint32(18).fork(),
+      ).ldelim();
+    }
+    if (message.votingPeriod !== undefined) {
+      Duration.encode(message.votingPeriod, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.quorum !== '') {
+      writer.uint32(34).string(message.quorum);
+    }
+    if (message.threshold !== '') {
+      writer.uint32(42).string(message.threshold);
+    }
+    if (message.vetoThreshold !== '') {
+      writer.uint32(50).string(message.vetoThreshold);
+    }
+    if (message.minInitialDepositRatio !== '') {
+      writer.uint32(58).string(message.minInitialDepositRatio);
+    }
+    if (message.burnVoteQuorum === true) {
+      writer.uint32(104).bool(message.burnVoteQuorum);
+    }
+    if (message.burnProposalDepositPrevote === true) {
+      writer.uint32(112).bool(message.burnProposalDepositPrevote);
+    }
+    if (message.burnVoteVeto === true) {
+      writer.uint32(120).bool(message.burnVoteVeto);
+    }
+    return writer;
+  },
+  decode(input: BinaryReader | Uint8Array, length?: number): Params {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseParams();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.minDeposit.push(Coin.decode(reader, reader.uint32()));
+          break;
+        case 2:
+          message.maxDepositPeriod = Duration.decode(reader, reader.uint32());
+          break;
+        case 3:
+          message.votingPeriod = Duration.decode(reader, reader.uint32());
+          break;
+        case 4:
+          message.quorum = reader.string();
+          break;
+        case 5:
+          message.threshold = reader.string();
+          break;
+        case 6:
+          message.vetoThreshold = reader.string();
+          break;
+        case 7:
+          message.minInitialDepositRatio = reader.string();
+          break;
+        case 13:
+          message.burnVoteQuorum = reader.bool();
+          break;
+        case 14:
+          message.burnProposalDepositPrevote = reader.bool();
+          break;
+        case 15:
+          message.burnVoteVeto = reader.bool();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): Params {
+    return {
+      minDeposit: Array.isArray(object?.minDeposit)
+        ? object.minDeposit.map((e: any) => Coin.fromJSON(e))
+        : [],
+      maxDepositPeriod: isSet(object.maxDepositPeriod)
+        ? Duration.fromJSON(object.maxDepositPeriod)
+        : undefined,
+      votingPeriod: isSet(object.votingPeriod)
+        ? Duration.fromJSON(object.votingPeriod)
+        : undefined,
+      quorum: isSet(object.quorum) ? String(object.quorum) : '',
+      threshold: isSet(object.threshold) ? String(object.threshold) : '',
+      vetoThreshold: isSet(object.vetoThreshold)
+        ? String(object.vetoThreshold)
+        : '',
+      minInitialDepositRatio: isSet(object.minInitialDepositRatio)
+        ? String(object.minInitialDepositRatio)
+        : '',
+      burnVoteQuorum: isSet(object.burnVoteQuorum)
+        ? Boolean(object.burnVoteQuorum)
+        : false,
+      burnProposalDepositPrevote: isSet(object.burnProposalDepositPrevote)
+        ? Boolean(object.burnProposalDepositPrevote)
+        : false,
+      burnVoteVeto: isSet(object.burnVoteVeto)
+        ? Boolean(object.burnVoteVeto)
+        : false,
+    };
+  },
+  toJSON(message: Params): JsonSafe<Params> {
+    const obj: any = {};
+    if (message.minDeposit) {
+      obj.minDeposit = message.minDeposit.map(e =>
+        e ? Coin.toJSON(e) : undefined,
+      );
+    } else {
+      obj.minDeposit = [];
+    }
+    message.maxDepositPeriod !== undefined &&
+      (obj.maxDepositPeriod = message.maxDepositPeriod
+        ? Duration.toJSON(message.maxDepositPeriod)
+        : undefined);
+    message.votingPeriod !== undefined &&
+      (obj.votingPeriod = message.votingPeriod
+        ? Duration.toJSON(message.votingPeriod)
+        : undefined);
+    message.quorum !== undefined && (obj.quorum = message.quorum);
+    message.threshold !== undefined && (obj.threshold = message.threshold);
+    message.vetoThreshold !== undefined &&
+      (obj.vetoThreshold = message.vetoThreshold);
+    message.minInitialDepositRatio !== undefined &&
+      (obj.minInitialDepositRatio = message.minInitialDepositRatio);
+    message.burnVoteQuorum !== undefined &&
+      (obj.burnVoteQuorum = message.burnVoteQuorum);
+    message.burnProposalDepositPrevote !== undefined &&
+      (obj.burnProposalDepositPrevote = message.burnProposalDepositPrevote);
+    message.burnVoteVeto !== undefined &&
+      (obj.burnVoteVeto = message.burnVoteVeto);
+    return obj;
+  },
+  fromPartial(object: Partial<Params>): Params {
+    const message = createBaseParams();
+    message.minDeposit = object.minDeposit?.map(e => Coin.fromPartial(e)) || [];
+    message.maxDepositPeriod =
+      object.maxDepositPeriod !== undefined && object.maxDepositPeriod !== null
+        ? Duration.fromPartial(object.maxDepositPeriod)
+        : undefined;
+    message.votingPeriod =
+      object.votingPeriod !== undefined && object.votingPeriod !== null
+        ? Duration.fromPartial(object.votingPeriod)
+        : undefined;
+    message.quorum = object.quorum ?? '';
+    message.threshold = object.threshold ?? '';
+    message.vetoThreshold = object.vetoThreshold ?? '';
+    message.minInitialDepositRatio = object.minInitialDepositRatio ?? '';
+    message.burnVoteQuorum = object.burnVoteQuorum ?? false;
+    message.burnProposalDepositPrevote =
+      object.burnProposalDepositPrevote ?? false;
+    message.burnVoteVeto = object.burnVoteVeto ?? false;
+    return message;
+  },
+  fromProtoMsg(message: ParamsProtoMsg): Params {
+    return Params.decode(message.value);
+  },
+  toProto(message: Params): Uint8Array {
+    return Params.encode(message).finish();
+  },
+  toProtoMsg(message: Params): ParamsProtoMsg {
+    return {
+      typeUrl: '/cosmos.gov.v1.Params',
+      value: Params.encode(message).finish(),
     };
   },
 };

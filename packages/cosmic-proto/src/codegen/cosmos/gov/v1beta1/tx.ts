@@ -10,6 +10,28 @@ import {
   voteOptionFromJSON,
   voteOptionToJSON,
 } from './gov.js';
+import {
+  CommunityPoolSpendProposal,
+  type CommunityPoolSpendProposalSDKType,
+  CommunityPoolSpendProposalWithDeposit,
+  type CommunityPoolSpendProposalWithDepositSDKType,
+} from '../../distribution/v1beta1/distribution.js';
+import {
+  ParameterChangeProposal,
+  type ParameterChangeProposalSDKType,
+} from '../../params/v1beta1/params.js';
+import {
+  SoftwareUpgradeProposal,
+  type SoftwareUpgradeProposalSDKType,
+  CancelSoftwareUpgradeProposal,
+  type CancelSoftwareUpgradeProposalSDKType,
+} from '../../upgrade/v1beta1/upgrade.js';
+import {
+  ClientUpdateProposal,
+  type ClientUpdateProposalSDKType,
+  UpgradeProposal,
+  type UpgradeProposalSDKType,
+} from '../../../ibc/core/client/v1/client.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
@@ -18,8 +40,21 @@ import { type JsonSafe } from '../../../json-safe.js';
  * proposal Content.
  */
 export interface MsgSubmitProposal {
-  content?: (TextProposal & Any) | undefined;
+  /** content is the proposal's content. */
+  content?:
+    | (CommunityPoolSpendProposal &
+        CommunityPoolSpendProposalWithDeposit &
+        TextProposal &
+        ParameterChangeProposal &
+        SoftwareUpgradeProposal &
+        CancelSoftwareUpgradeProposal &
+        ClientUpdateProposal &
+        UpgradeProposal &
+        Any)
+    | undefined;
+  /** initial_deposit is the deposit value that must be paid at proposal submission. */
   initialDeposit: Coin[];
+  /** proposer is the account address of the proposer. */
   proposer: string;
 }
 export interface MsgSubmitProposalProtoMsg {
@@ -31,12 +66,23 @@ export interface MsgSubmitProposalProtoMsg {
  * proposal Content.
  */
 export interface MsgSubmitProposalSDKType {
-  content?: TextProposalSDKType | AnySDKType | undefined;
+  content?:
+    | CommunityPoolSpendProposalSDKType
+    | CommunityPoolSpendProposalWithDepositSDKType
+    | TextProposalSDKType
+    | ParameterChangeProposalSDKType
+    | SoftwareUpgradeProposalSDKType
+    | CancelSoftwareUpgradeProposalSDKType
+    | ClientUpdateProposalSDKType
+    | UpgradeProposalSDKType
+    | AnySDKType
+    | undefined;
   initial_deposit: CoinSDKType[];
   proposer: string;
 }
 /** MsgSubmitProposalResponse defines the Msg/SubmitProposal response type. */
 export interface MsgSubmitProposalResponse {
+  /** proposal_id defines the unique id of the proposal. */
   proposalId: bigint;
 }
 export interface MsgSubmitProposalResponseProtoMsg {
@@ -49,8 +95,11 @@ export interface MsgSubmitProposalResponseSDKType {
 }
 /** MsgVote defines a message to cast a vote. */
 export interface MsgVote {
+  /** proposal_id defines the unique id of the proposal. */
   proposalId: bigint;
+  /** voter is the voter address for the proposal. */
   voter: string;
+  /** option defines the vote option. */
   option: VoteOption;
 }
 export interface MsgVoteProtoMsg {
@@ -77,8 +126,11 @@ export interface MsgVoteResponseSDKType {}
  * Since: cosmos-sdk 0.43
  */
 export interface MsgVoteWeighted {
+  /** proposal_id defines the unique id of the proposal. */
   proposalId: bigint;
+  /** voter is the voter address for the proposal. */
   voter: string;
+  /** options defines the weighted vote options. */
   options: WeightedVoteOption[];
 }
 export interface MsgVoteWeightedProtoMsg {
@@ -113,8 +165,11 @@ export interface MsgVoteWeightedResponseProtoMsg {
 export interface MsgVoteWeightedResponseSDKType {}
 /** MsgDeposit defines a message to submit a deposit to an existing proposal. */
 export interface MsgDeposit {
+  /** proposal_id defines the unique id of the proposal. */
   proposalId: bigint;
+  /** depositor defines the deposit addresses from the proposals. */
   depositor: string;
+  /** amount to be deposited by depositor. */
   amount: Coin[];
 }
 export interface MsgDepositProtoMsg {
@@ -168,7 +223,9 @@ export const MsgSubmitProposal = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.content = Content_InterfaceDecoder(reader) as Any;
+          message.content = Cosmos_govv1beta1Content_InterfaceDecoder(
+            reader,
+          ) as Any;
           break;
         case 2:
           message.initialDeposit.push(Coin.decode(reader, reader.uint32()));
@@ -751,15 +808,38 @@ export const MsgDepositResponse = {
     };
   },
 };
-export const Content_InterfaceDecoder = (
+export const Cosmos_govv1beta1Content_InterfaceDecoder = (
   input: BinaryReader | Uint8Array,
-): TextProposal | Any => {
+):
+  | CommunityPoolSpendProposal
+  | CommunityPoolSpendProposalWithDeposit
+  | TextProposal
+  | ParameterChangeProposal
+  | SoftwareUpgradeProposal
+  | CancelSoftwareUpgradeProposal
+  | ClientUpdateProposal
+  | UpgradeProposal
+  | Any => {
   const reader =
     input instanceof BinaryReader ? input : new BinaryReader(input);
   const data = Any.decode(reader, reader.uint32());
   switch (data.typeUrl) {
+    case '/cosmos.distribution.v1beta1.CommunityPoolSpendProposal':
+      return CommunityPoolSpendProposal.decode(data.value);
+    case '/cosmos.distribution.v1beta1.CommunityPoolSpendProposalWithDeposit':
+      return CommunityPoolSpendProposalWithDeposit.decode(data.value);
     case '/cosmos.gov.v1beta1.TextProposal':
       return TextProposal.decode(data.value);
+    case '/cosmos.params.v1beta1.ParameterChangeProposal':
+      return ParameterChangeProposal.decode(data.value);
+    case '/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal':
+      return SoftwareUpgradeProposal.decode(data.value);
+    case '/cosmos.upgrade.v1beta1.CancelSoftwareUpgradeProposal':
+      return CancelSoftwareUpgradeProposal.decode(data.value);
+    case '/ibc.core.client.v1.ClientUpdateProposal':
+      return ClientUpdateProposal.decode(data.value);
+    case '/ibc.core.client.v1.UpgradeProposal':
+      return UpgradeProposal.decode(data.value);
     default:
       return data;
   }
