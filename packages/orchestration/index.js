@@ -8,6 +8,8 @@ export * from './src/exos/cosmos-interchain-service.js';
 export * from './src/exos/chain-hub-admin.js';
 export * from './src/typeGuards.js';
 export * from './src/utils/denomHash.js';
+export * from './src/utils/gmp.js';
+export * from './src/utils/contract-abis.js';
 
 export { withOrchestration } from './src/utils/start-helper.js';
 export { withChainCapabilities } from './src/chain-capabilities.js';
