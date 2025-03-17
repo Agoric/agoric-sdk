@@ -33,7 +33,7 @@ export const makeNobleTools = (
     args: string[],
     opts: ExecSyncOptions = {
       encoding: 'utf-8' as const,
-      stdio: ['ignore', 'pipe', 'ignore'],
+      stdio: ['ignore', 'pipe', 'pipe'],
     },
   ) =>
     execFileSync(kubectlBinary, [...makeKubeArgs(), ...args], opts) as string;

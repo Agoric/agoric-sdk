@@ -58,7 +58,7 @@ export const makeRelayer = ({
     args: string[],
     opts: ExecSyncOptions = {
       encoding: 'utf-8' as const,
-      stdio: ['ignore', 'pipe', 'ignore'] as const,
+      stdio: ['ignore', 'pipe', 'pipe'] as const,
     },
   ) =>
     execFileSync(
