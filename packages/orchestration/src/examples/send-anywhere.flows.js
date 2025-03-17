@@ -8,7 +8,7 @@ import { M, mustMatch } from '@endo/patterns';
  * @import {Vow} from '@agoric/vow';
  * @import {LocalOrchestrationAccountKit} from '../exos/local-orchestration-account.js';
  * @import {ZoeTools} from '../utils/zoe-tools.js';
- * @import {Orchestrator, OrchestrationFlow, LocalAccountMethods} from '../types.js';
+ * @import {Orchestrator, OrchestrationFlow, LocalAccountMethods, ChainHub} from '../types.js';
  */
 
 const { entries } = Object;
@@ -20,6 +20,7 @@ const { entries } = Object;
  * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {object} ctx
+ * @param {GuestInterface<ChainHub>} ctx.chainHub
  * @param {Promise<GuestInterface<LocalOrchestrationAccountKit['holder']>>} ctx.sharedLocalAccountP
  * @param {GuestInterface<ZoeTools>} ctx.zoeTools
  * @param {GuestOf<(msg: string) => Vow<void>>} ctx.log
@@ -28,7 +29,12 @@ const { entries } = Object;
  */
 export const sendIt = async (
   orch,
-  { sharedLocalAccountP, log, zoeTools: { localTransfer, withdrawToSeat } },
+  {
+    chainHub,
+    sharedLocalAccountP,
+    log,
+    zoeTools: { localTransfer, withdrawToSeat },
+  },
   seat,
   offerArgs,
 ) => {
@@ -38,14 +44,11 @@ export const sendIt = async (
   const { give } = seat.getProposal();
   const [[_kw, amt]] = entries(give);
   void log(`sending {${amt.value}} from ${chainName} to ${destAddr}`);
-  const agoric = await orch.getChain('agoric');
-  const assets = await agoric.getVBankAssetInfo();
-  void log(`got info for denoms: ${assets.map(a => a.denom).join(', ')}`);
-  const { denom } = NonNullish(
-    assets.find(a => a.brand === amt.brand),
-    `${amt.brand} not registered in vbank`,
+  const denom = NonNullish(
+    chainHub.getDenom(amt.brand),
+    `${amt.brand} not registered in ChainHub`,
   );
-
+  void log(`got denom ${denom} for ${amt.brand}`);
   const chain = await orch.getChain(chainName);
   const info = await chain.getChainInfo();
   const { chainId } = info;
