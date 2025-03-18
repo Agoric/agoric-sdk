@@ -11,7 +11,7 @@ import * as evmFlows from './lca-evm.flows.js';
 import { prepareEvmTap } from './evm-tap-kit.js';
 import { EmptyProposalShape } from '@agoric/zoe/src/typeGuards';
 import { E } from '@endo/far';
-// import { buildGMPPayload } from '../utils/gmp.js';
+import { buildGMPPayload } from '../utils/gmp.js';
 
 /**
  * @import {Remote, Vow} from '@agoric/vow';
@@ -55,6 +55,19 @@ export const contract = async (
 
   console.log('Channel Info Osmosis:');
   console.log(privateArgs.chainInfo.osmosis.connections);
+
+  // const dummyParams = {
+  //   type: 3,
+  //   evmContractAddress: '0x1234567890abcdef1234567890abcdef12345678',
+  //   functionSelector: '0xa9059cbb', // Example 4-byte function selector
+  //   encodedArgs:
+  //     '0x0000000000000000000000000000000000000000000000000000000000000001', // Example ABI encoded arguments
+  //   deadline: 3600, // 1 hour from now
+  //   nonce: 42,
+  // };
+
+  // const result = buildGMPPayload(dummyParams);
+  // console.log(result);
 
   console.log('Registering Chain and Assets....');
   registerChainsAndAssets(
