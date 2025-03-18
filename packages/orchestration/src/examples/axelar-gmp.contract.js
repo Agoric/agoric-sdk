@@ -11,6 +11,7 @@ import * as evmFlows from './lca-evm.flows.js';
 import { prepareEvmTap } from './evm-tap-kit.js';
 import { EmptyProposalShape } from '@agoric/zoe/src/typeGuards';
 import { E } from '@endo/far';
+// import { buildGMPPayload } from '../utils/gmp.js';
 
 /**
  * @import {Remote, Vow} from '@agoric/vow';
