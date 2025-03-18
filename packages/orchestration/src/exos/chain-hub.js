@@ -234,10 +234,10 @@ const ChainHubI = M.interface('ChainHub', {
 /**
  * Make a new ChainHub in the zone.
  *
- * The resulting object is an Exo singleton. It has no precious state. It's only
+ * The resulting object is an Exo singleton. It has no precious state. Its only
  * state is a cache of queries to agoricNames and whatever info was provided in
  * registration calls. When you need a newer version you can simply make a hub
- * hub and repeat the registrations.
+ * and repeat the registrations.
  *
  * @param {Zone} zone
  * @param {Remote<NameHub>} agoricNames
