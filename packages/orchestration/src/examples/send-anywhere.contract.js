@@ -5,7 +5,7 @@ import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
 import { AnyNatAmountShape } from '../typeGuards.js';
 import { withOrchestration } from '../utils/start-helper.js';
 import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
-import * as flows from './send-axelar.flows.js';
+import * as flows from './send-anywhere.flows.js';
 import * as sharedFlows from './shared.flows.js';
 
 /**

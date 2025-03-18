@@ -1,12 +1,11 @@
+// @ts-check
 /** @file Bootstrap test of restarting contracts using orchestration */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
-import { withChainCapabilities } from '@agoric/orchestration';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
 } from '../bootstrapTests/walletFactory.js';
-import { minimalChainInfos } from '../tools/chainInfo.js';
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
 test.before(async t => {
@@ -34,21 +33,7 @@ test('start axelarGmp and send an offer', async t => {
 
   t.log('start axelarGmp');
   await evalProposal(
-    buildProposal('@agoric/builders/scripts/testing/init-axelar-gmp.js', [
-      '--chainInfo',
-      JSON.stringify(withChainCapabilities(minimalChainInfos)),
-      '--assetInfo',
-      JSON.stringify([
-        [
-          'uist',
-          {
-            baseDenom: 'uist',
-            baseName: 'agoric',
-            chainName: 'agoric',
-          },
-        ],
-      ]),
-    ]),
+    buildProposal('@agoric/builders/scripts/testing/init-axelar-gmp.js'),
   );
 
   t.log('making offer');
@@ -61,7 +46,7 @@ test('start axelarGmp and send an offer', async t => {
     invitationSpec: {
       source: 'agoricContract',
       instancePath: ['axelarGmp'],
-      callPipe: [['makeSendInvitation']],
+      callPipe: [['gmpInvitation']],
     },
     proposal: {
       // @ts-expect-error XXX BoardRemote
@@ -81,10 +66,9 @@ test('start axelarGmp and send an offer', async t => {
 
   // This log shows the flow started, but didn't get past the IBC Transfer settlement
   t.deepEqual(getLogged(), [
-    'initiating sendIt',
-    'got info for denoms: ibc/FE98AAD68F02F03565E9FA39A5E627946699B2B07115889ED812D8BA639576A9, ibc/toyatom, ibc/toyusdc, ubld, uist',
-    'got info for chain: osmosis-1',
-    'completed transfer to localAccount',
-    'payload received',
+    'Inside sendIt',
+    'After local transfer',
+    'Initiating IBC Transfer...',
+    'DENOM of token:uist',
   ]);
 });
