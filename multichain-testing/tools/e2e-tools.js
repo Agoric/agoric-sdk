@@ -40,7 +40,7 @@ export const txAbbr = tx => {
  * @param {import('@cosmjs/tendermint-rpc').RpcClient} io.rpc
  * @param {(ms: number, info?: unknown) => Promise<void>} io.delay
  */
-const makeBlockTool = ({ rpc, delay }) => {
+export const makeBlockTool = ({ rpc, delay }) => {
   let id = 1;
   const waitForBootstrap = async (period = 2000, info = {}) => {
     await null;
