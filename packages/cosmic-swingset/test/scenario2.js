@@ -199,7 +199,9 @@ export const makeWalletTool = ({ runMake, pspawnAgd, delay, log }) => {
     }
     for (;;) {
       try {
-        const info = await query(['block']);
+        const info = await query(['block'], {
+          stdio: ['ignore', 'pipe', 'ignore'],
+        });
         consensusHeight = BigInt(info?.block?.last_commit?.height);
         if (!consensusHeight) {
           throw Error('no consensus block yet');
