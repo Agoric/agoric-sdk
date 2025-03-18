@@ -86,10 +86,6 @@ func (AppModule) Name() string {
 
 func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {}
 
-func (am AppModule) QuerierRoute() string {
-	return ModuleName
-}
-
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 }
 
