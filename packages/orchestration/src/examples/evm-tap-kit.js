@@ -3,7 +3,7 @@ import { M, mustMatch } from '@endo/patterns';
 import { VowShape } from '@agoric/vow';
 import { makeTracer } from '@agoric/internal';
 import { atob } from '@endo/base64';
-import { CosmosChainAddressShape } from '@agoric/orchestration';
+import { CosmosChainAddressShape } from '../typeGuards.js';
 
 const trace = makeTracer('EvmTap');
 
