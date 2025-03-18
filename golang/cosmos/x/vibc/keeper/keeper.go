@@ -31,6 +31,7 @@ type Keeper struct {
 
 	channelKeeper types.ChannelKeeper
 	portKeeper    types.PortKeeper
+	clientKeeper  types.ClientKeeper
 
 	// Filled out by `WithScope`
 	scopedKeeper types.ScopedKeeper
@@ -43,12 +44,14 @@ func NewKeeper(
 	cdc codec.Codec,
 	channelKeeper types.ChannelKeeper,
 	portKeeper types.PortKeeper,
+	clientKeeper types.ClientKeeper,
 ) Keeper {
 
 	return Keeper{
 		cdc:           cdc,
 		channelKeeper: channelKeeper,
 		portKeeper:    portKeeper,
+		clientKeeper:  clientKeeper,
 	}
 }
 

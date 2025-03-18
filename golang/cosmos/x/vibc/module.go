@@ -6,6 +6,7 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/keeper"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/types"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -83,7 +84,7 @@ func (AppModule) Name() string {
 	return ModuleName
 }
 
-func (AppModule) ConsensusVersion() uint64 { return 1 }
+func (AppModule) ConsensusVersion() uint64 { return 2 }
 
 // BeginBlock implements the AppModule interface
 func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
@@ -99,15 +100,16 @@ func (AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
 	// TODO
 }
 
-// QuerierRoute implements the AppModule interface
-func (AppModule) QuerierRoute() string {
-	return ModuleName
-}
-
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	tx := &types.UnimplementedMsgServer{}
 	types.RegisterMsgServer(cfg.MsgServer(), tx)
+
+	m := keeper.NewMigrator(am.keeper)
+	err := cfg.RegisterMigration(types.ModuleName, 1, m.Migrate1to2)
+	if err != nil {
+		panic(err)
+	}
 }
 
 // InitGenesis performs genesis initialization for the ibc-transfer module. It returns
