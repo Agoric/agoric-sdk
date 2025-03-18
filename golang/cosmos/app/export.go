@@ -29,7 +29,7 @@ func (app *GaiaApp) ExportAppStateAndValidators(
 		return servertypes.ExportedApp{}, fmt.Errorf("forZeroHeight not supported")
 	}
 
-	genState := app.mm.ExportGenesisForModules(ctx, app.appCodec, modulesToExport)
+	genState := app.ModuleManager.ExportGenesisForModules(ctx, app.appCodec, modulesToExport)
 	appState, err := json.MarshalIndent(genState, "", "  ")
 	if err != nil {
 		return servertypes.ExportedApp{}, err
