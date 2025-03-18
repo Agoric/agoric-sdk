@@ -11,10 +11,18 @@ assignees: ''
 
 ## Description of the Design
 
-## Security Considerations
+<!-- Remember to discuss these aspects when relevant:
 
-## Scaling Considerations
+### Security
 
-## Test Plan
+### Scaling
 
-## Upgrade Considerations
+### Testing
+
+### Upgrade
+-->
+
+<!-- To capture any important details for planning and prioritization:
+
+## Priortization
+-->
