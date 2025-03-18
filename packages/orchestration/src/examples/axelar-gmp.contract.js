@@ -9,8 +9,6 @@ import * as sharedFlows from './shared.flows.js';
 import * as evmFlows from './lca-evm.flows.js';
 import { prepareEvmTap } from './evm-tap-kit.js';
 import { EmptyProposalShape } from '@agoric/zoe/src/typeGuards';
-import { hexlify } from '@ethersproject/bytes';
-import { arrayify } from '@ethersproject/bytes';
 
 /**
  * @import {Zone} from '@agoric/zone';
@@ -18,28 +16,6 @@ import { arrayify } from '@ethersproject/bytes';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  */
-
-let counter = 1;
-
-const getRandomBytes = (length = 4) => {
-  const randomBytes = new Uint8Array(length);
-  for (let i = 0; i < length; i++) {
-    randomBytes[i] = (counter * (i + 1)) % 256;
-  }
-  counter++;
-  return randomBytes;
-};
-
-const randomFunction = () => {
-  const randomBytes = getRandomBytes();
-  const useHexlify = randomBytes[0] % 2 === 0;
-
-  if (useHexlify) {
-    console.log('Using hexlify:', hexlify(randomBytes));
-  } else {
-    console.log('Using arrayify:', arrayify(hexlify(randomBytes)));
-  }
-};
 
 export const SingleNatAmountRecord = M.and(
   M.recordOf(M.string(), AnyNatAmountShape, {
@@ -68,7 +44,6 @@ export const contract = async (
   { chainHub, orchestrateAll, vowTools, zoeTools },
 ) => {
   console.log('Inside Contract');
-  [...Array(5)].forEach(() => randomFunction());
 
   console.log('Channel Info Agoric:');
   console.log(privateArgs.chainInfo.agoric.connections);
