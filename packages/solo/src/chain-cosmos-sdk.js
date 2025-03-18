@@ -11,6 +11,11 @@ import anylogger from 'anylogger';
 import { Fail, makeError } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
 
+import {
+  QueryDataRequest,
+  QueryDataResponse,
+} from '@agoric/cosmic-proto/vstorage/query.js';
+
 import { makeNotifierKit } from '@agoric/notifier';
 import {
   DEFAULT_BATCH_TIMEOUT_MS,
@@ -353,7 +358,10 @@ export async function connectToChain(
         const blockSubscriptionId = sendRPC('subscribe', { query: blockQuery });
         const txSubscriptionId = sendRPC('subscribe', { query: txQuery });
         const queryId = sendRPC('abci_query', {
-          path: `/custom/swingset/storage/${storagePath}`,
+          path: `/agoric.vstorage.Query/Data`,
+          data: Buffer.from(
+            QueryDataRequest.toProto({ path: storagePath }),
+          ).toString('hex'),
         });
 
         const cleanup = () => {
@@ -380,10 +388,8 @@ export async function connectToChain(
             // Decode the layers up to the actual storage value.
             const { value: b64JsonStorage, height: heightString } =
               obj.result.response;
-            const jsonStorage = Buffer.from(b64JsonStorage, 'base64').toString(
-              'utf8',
-            );
-            const { value: storageValue } = JSON.parse(jsonStorage);
+            const buf = Buffer.from(b64JsonStorage, 'base64');
+            const { value: storageValue } = QueryDataResponse.decode(buf);
             guardedCb(BigInt(heightString), storageValue);
           } else if (
             obj.result &&
