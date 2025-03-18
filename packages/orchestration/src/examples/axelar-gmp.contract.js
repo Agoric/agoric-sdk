@@ -9,8 +9,10 @@ import * as sharedFlows from './shared.flows.js';
 import * as evmFlows from './lca-evm.flows.js';
 import { prepareEvmTap } from './evm-tap-kit.js';
 import { EmptyProposalShape } from '@agoric/zoe/src/typeGuards';
+import { E } from '@endo/far';
 
 /**
+ * @import {Remote, Vow} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
@@ -33,6 +35,7 @@ harden(SingleNatAmountRecord);
  *   marshaller: Marshaller;
  *   chainInfo: Record<string, CosmosChainInfo>;
  *   assetInfo?: [Denom, DenomDetail & { brandKey?: string }][];
+ *   storageNode: Remote<StorageNode>;
  * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
@@ -63,6 +66,11 @@ export const contract = async (
 
   const creatorFacet = prepareChainHubAdmin(zone, chainHub);
 
+  // UNTIL https://github.com/Agoric/agoric-sdk/issues/9066
+  const logNode = E(privateArgs.storageNode).makeChildNode('log');
+  /** @type {(msg: string) => Vow<void>} */
+  const log = msg => vowTools.watch(E(logNode).setValue(msg));
+
   const { makeLocalAccount } = orchestrateAll(sharedFlows, {});
   /**
    * Setup a shared local account for use in async-flow functions. Typically,
@@ -80,6 +88,7 @@ export const contract = async (
   // orchestrate uses the names on orchestrationFns to do a "prepare" of the associated behavior
   const { sendGmp } = orchestrateAll(flows, {
     sharedLocalAccountP,
+    log,
     zoeTools,
   });
 

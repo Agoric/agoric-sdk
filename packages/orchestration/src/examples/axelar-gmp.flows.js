@@ -42,7 +42,7 @@ const channels = {
  */
 export const sendGmp = async (
   orch,
-  { sharedLocalAccountP, zoeTools: { localTransfer, withdrawToSeat } },
+  { log, sharedLocalAccountP, zoeTools: { localTransfer, withdrawToSeat } },
   seat,
   offerArgs,
 ) => {
@@ -53,7 +53,7 @@ export const sendGmp = async (
     gasAmount,
     contractInvocationPayload,
   } = offerArgs;
-  console.log('Inside sendIt');
+  log('Inside sendIt');
   console.log(
     'Offer Args',
     JSON.stringify({
@@ -94,7 +94,7 @@ export const sendGmp = async (
   const sharedLocalAccount = await sharedLocalAccountP;
 
   await localTransfer(seat, sharedLocalAccount, give);
-  console.log('After local transfer');
+  log('After local transfer');
 
   const payload = type === 1 || type === 2 ? contractInvocationPayload : null;
 
@@ -124,8 +124,8 @@ export const sendGmp = async (
   };
 
   try {
-    console.log(`Initiating IBC Transfer...`);
-    console.log(`DENOM of token:${denom}`);
+    log(`Initiating IBC Transfer...`);
+    log(`DENOM of token:${denom}`);
 
     await sharedLocalAccount.transfer(
       {
@@ -140,6 +140,7 @@ export const sendGmp = async (
       { memo: JSON.stringify(memo) },
     );
 
+    log('Transfer complete');
     console.log(`Completed transfer to ${destinationAddress}`);
   } catch (e) {
     await withdrawToSeat(sharedLocalAccount, seat, give);
