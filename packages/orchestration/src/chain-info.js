@@ -11,12 +11,33 @@ import { M, mustMatch } from '@endo/patterns';
 import { HubName, normalizeConnectionInfo } from './exos/chain-hub.js';
 import fetchedChainInfo from './fetched-chain-info.js'; // Refresh with scripts/refresh-chain-info.ts
 import { CosmosAssetInfoShape, CosmosChainInfoShape } from './typeGuards.js';
+import cctpChainInfo from './cctp-chain-info.js';
 
 /**
  * @import {CosmosAssetInfo, CosmosChainInfo} from './types.js';
  * @import {NameAdmin} from '@agoric/vats';
  * @import {ChainInfo} from './orchestration-api.ts';
  */
+
+/**
+ * @param {Record<string, ChainInfo>} base
+ * @param {Record<string, ChainInfo>} overrides
+ * @returns {Record<string, ChainInfo>}
+ */
+const mergeChainInfos = (base, overrides) => {
+  const merged = { ...base };
+  for (const [k, v] of Object.entries(overrides)) {
+    if (merged[k]) {
+      merged[k] = {
+        ...merged[k],
+        ...v,
+      };
+    } else {
+      merged[k] = v;
+    }
+  }
+  return merged;
+};
 
 /**
  * @enum {(typeof CAIP2Namespace)[keyof typeof CAIP2Namespace]}
@@ -30,7 +51,7 @@ export const CAIP2Namespace = /** @type {const} */ ({
 harden(CAIP2Namespace);
 
 const knownChains = /** @satisfies {Record<string, ChainInfo>} */ (
-  harden(fetchedChainInfo)
+  harden(mergeChainInfos(fetchedChainInfo, cctpChainInfo))
 );
 
 /**
@@ -60,7 +81,7 @@ export const registerChainAssets = async (agoricNamesAdmin, name, assets) => {
  *
  * @param {ERef<NameAdmin>} agoricNamesAdmin
  * @param {string} name
- * @param {CosmosChainInfo} chainInfo
+ * @param {ChainInfo} chainInfo
  * @param {(...messages: string[]) => void} [log]
  * @param {Set<string>} [handledConnections] connection keys that need not be
  *   updated
@@ -78,7 +99,11 @@ export const registerChain = async (
   );
 
   mustMatch(chainInfo, CosmosChainInfoShape);
-  const { connections = {}, ...vertex } = chainInfo;
+  const {
+    // @ts-expect-error connections not available on `ChainInfo`, only `CosmosChainInfo`
+    connections = {},
+    ...vertex
+  } = chainInfo;
 
   const promises = [
     E(nameAdmin)
