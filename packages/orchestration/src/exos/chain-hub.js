@@ -402,7 +402,7 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
      * contract `start` the call will happen again naturally.
      *
      * @param {string} name
-     * @param {ChainInfo & { chainId: string }} chainInfo
+     * @param {ChainInfo} chainInfo
      */
     registerChain(name, chainInfo) {
       chainInfos.init(name, chainInfo);
