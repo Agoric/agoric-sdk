@@ -4,10 +4,14 @@ import { MeterProvider } from '@opentelemetry/sdk-metrics';
 import { Fail } from '@endo/errors';
 import { isNat } from '@endo/nat';
 
-import { makeLegacyMap } from '@agoric/store';
 import { defineName } from '@agoric/internal/src/js-utils.js';
-
-import { KERNEL_STATS_METRICS } from '@agoric/swingset-vat/src/kernel/metrics.js';
+import {
+  HISTOGRAM_METRICS,
+  KERNEL_STATS_METRICS,
+  makeQueueMetricsMeta,
+  QueueMetricAspect,
+} from '@agoric/internal/src/metrics.js';
+import { makeLegacyMap } from '@agoric/store';
 
 import v8 from 'node:v8';
 import process from 'node:process';
@@ -27,85 +31,9 @@ import process from 'node:process';
  */
 const VAT_ID_IS_TOO_HIGH_CARDINALITY = true;
 
-export const HISTOGRAM_MS_LATENCY_BOUNDARIES = [
-  5,
-  10,
-  25,
-  50,
-  100,
-  250,
-  500,
-  1000,
-  2500,
-  5000,
-  10000,
-  Infinity,
-];
-export const HISTOGRAM_SECONDS_LATENCY_BOUNDARIES =
-  HISTOGRAM_MS_LATENCY_BOUNDARIES.map(ms => ms / 1000);
-
-// TODO: Validate these boundaries. We're not going to have 5ms blocks, but
-// we probably care about the difference between 10 vs. 30 seconds.
-const HISTOGRAM_METRICS = /** @type {const} */ ({
-  swingset_crank_processing_time: {
-    description: 'Processing time per crank (ms)',
-    boundaries: [1, 11, 21, 31, 41, 51, 61, 71, 81, 91, Infinity],
-  },
-  swingset_block_processing_seconds: {
-    description: 'Processing time per block',
-    boundaries: HISTOGRAM_SECONDS_LATENCY_BOUNDARIES,
-  },
-  swingset_vat_startup: {
-    description: 'Vat startup time (ms)',
-    boundaries: HISTOGRAM_MS_LATENCY_BOUNDARIES,
-  },
-  swingset_vat_delivery: {
-    description: 'Vat delivery time (ms)',
-    boundaries: HISTOGRAM_MS_LATENCY_BOUNDARIES,
-  },
-  swingset_meter_usage: {
-    description: 'Vat meter usage',
-    boundaries: HISTOGRAM_MS_LATENCY_BOUNDARIES,
-  },
-});
-
-/** @enum {(typeof QueueMetricAspect)[keyof typeof QueueMetricAspect]} */
-const QueueMetricAspect = /** @type {const} */ ({
-  Length: 'length',
-  IncrementCount: 'increments',
-  DecrementCount: 'decrements',
-});
-
-/**
- * Queue metrics come in {length,add,remove} triples sharing a common prefix.
- *
- * @param {string} namePrefix
- * @param {string} descPrefix
- * @returns {Record<string, {aspect: QueueMetricAspect, description: string}>}
- */
-const makeQueueMetrics = (namePrefix, descPrefix) => {
-  /** @type {Array<[QueueMetricAspect, string, string]>} */
-  const metricsMeta = [
-    [QueueMetricAspect.Length, 'length', 'length'],
-    [QueueMetricAspect.IncrementCount, 'add', 'increments'],
-    [QueueMetricAspect.DecrementCount, 'remove', 'decrements'],
-  ];
-  const entries = metricsMeta.map(([aspect, nameSuffix, descSuffix]) => {
-    const name = `${namePrefix}_${nameSuffix}`;
-    const description = `${descPrefix} ${descSuffix}`;
-    return [name, { aspect, description }];
-  });
-  return Object.fromEntries(entries);
-};
-
-const QUEUE_METRICS = harden({
-  // "cosmic_swingset_inbound_queue_{length,add,remove}" measurements carry a
-  // "queue" attribute.
-  // Future OpenTelemetry SDKs should support expressing that in Instrument
-  // creation:
-  // https://opentelemetry.io/docs/specs/otel/metrics/api/#instrument-advisory-parameter-attributes
-  ...makeQueueMetrics('cosmic_swingset_inbound_queue', 'inbound queue'),
-});
+const inboundQueueMeta = harden(
+  makeQueueMetricsMeta('cosmic_swingset_inbound_queue', 'inbound queue'),
+);
 
 const maxAgeCache = (fn, maxAge, clock = Date.now) => {
   // An initial invocation verifies that the function doesn't [always] throw.
@@ -148,9 +76,9 @@ export function makeDefaultMeterProvider() {
  * @param {string} name
  */
 function createHistogram(metricMeter, name) {
-  const { description, boundaries } = HISTOGRAM_METRICS[name] || {};
+  const { boundaries, ...options } = HISTOGRAM_METRICS[name] || {};
   const advice = boundaries && { explicitBucketBoundaries: boundaries };
-  return metricMeter.createHistogram(name, { description, advice });
+  return metricMeter.createHistogram(name, { ...options, advice });
 }
 
 /**
@@ -342,12 +270,11 @@ function makeInboundQueueMetrics(metricMeter, initialLengths, logger) {
   // [monotonic] Counters.
   // But note that the Prometheus representation of the former will be a Gauge:
   // https://prometheus.io/docs/concepts/metric_types/
-  for (const [name, { aspect, description }] of Object.entries(QUEUE_METRICS)) {
+  for (const [aspect, { name, options }] of Object.entries(inboundQueueMeta)) {
     const isMonotonic = aspect !== QueueMetricAspect.Length;
-    const instrumentOptions = { description };
     const asyncInstrument = isMonotonic
-      ? metricMeter.createObservableCounter(name, instrumentOptions)
-      : metricMeter.createObservableUpDownCounter(name, instrumentOptions);
+      ? metricMeter.createObservableCounter(name, options)
+      : metricMeter.createObservableUpDownCounter(name, options);
     asyncInstrument.addCallback(observer => {
       for (const [queueName, value] of counterData[aspect].entries()) {
         observer.observe(value, { queue: queueName });
@@ -386,7 +313,7 @@ function makeInboundQueueMetrics(metricMeter, initialLengths, logger) {
       // (the latter is necessary for backwards compatibility until all old
       // consumers of e.g. slog entries have been updated).
       const entries = [];
-      for (const [name, { aspect }] of Object.entries(QUEUE_METRICS)) {
+      for (const [aspect, { name }] of Object.entries(inboundQueueMeta)) {
         let sum = 0;
         for (const [queueName, value] of counterData[aspect].entries()) {
           sum += value;
