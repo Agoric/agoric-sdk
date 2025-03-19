@@ -15,6 +15,7 @@ import {
   IBCConnectionInfoShape,
   AccountArgShape,
   ChainInfoShape,
+  CosmosChainInfoShape,
 } from '../typeGuards.js';
 import { getBech32Prefix, parseAccountId } from '../utils/address.js';
 
@@ -244,9 +245,14 @@ const ChainHubI = M.interface('ChainHub', {
  * @param {VowTools} vowTools
  */
 export const makeChainHub = (zone, agoricNames, vowTools) => {
+  // eslint-disable-next-line no-unused-vars
+  const v1ChainInfos = zone.mapStore('chainInfos', {
+    keyShape: M.string(),
+    valueShape: CosmosChainInfoShape,
+  });
   // TODO: handle breaking change for FUSDC (valueShape)
   /** @type {MapStore<string, ChainInfo>} */
-  const chainInfos = zone.mapStore('chainInfos', {
+  const chainInfos = zone.mapStore('caipChainInfos', {
     keyShape: M.string(),
     valueShape: ChainInfoShape,
   });
