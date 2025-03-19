@@ -32,7 +32,7 @@ function writeSlogObject(o) {
     }
     return arg;
   }
-  0 && console.log(JSON.stringify(o, bigintReplacer));
+  console.log(JSON.stringify(o, bigintReplacer));
 }
 
 function makeEndowments() {
@@ -41,7 +41,7 @@ function makeEndowments() {
     kernelStorage: initSwingStore().kernelStorage,
     runEndOfCrank: () => {},
     makeConsole,
-    writeSlogObject,
+    // writeSlogObject,
     WeakRef,
     FinalizationRegistry,
   };
