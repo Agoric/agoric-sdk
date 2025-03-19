@@ -3,7 +3,7 @@ import { TimerServiceShape } from '@agoric/time';
 import { M } from '@endo/patterns';
 import { withOrchestration } from '../utils/start-helper.js';
 import * as flows from './swap.flows.js';
-import { CosmosChainInfoShape, DenomDetailShape } from '../typeGuards.js';
+import { ChainInfoShape, DenomDetailShape } from '../typeGuards.js';
 
 /**
  * @import {TimerService} from '@agoric/time';
@@ -25,7 +25,7 @@ export const meta = {
     storageNode: StorageNodeShape,
     marshaller: M.remotable('marshaller'),
     timerService: M.or(TimerServiceShape, null),
-    chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
+    chainInfo: M.recordOf(M.string(), ChainInfoShape),
     assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
   },
   upgradability: 'canUpgrade',
