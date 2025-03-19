@@ -46,7 +46,7 @@ export const prepareChainHubAdmin = (zone, chainHub) => {
        * Register information for a chain
        *
        * @param {string} chainName - must not exist in chainHub
-       * @param {ChainInfo & { chainId: string }} chainInfo
+       * @param {ChainInfo} chainInfo
        * @param {IBCConnectionInfo} [connectionInfo] - from Agoric chain
        */
       async registerChain(chainName, chainInfo, connectionInfo) {
