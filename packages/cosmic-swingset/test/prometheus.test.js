@@ -125,7 +125,7 @@ test('Prometheus metric definitions', async t => {
     new Map([
       // Directly-produced "swingset_crank_processing_time" includes kvStore
       // lookups in `getNextMessageAndProcessor` for dequeueing messages.
-      ['swingset_crank_processing_time_sum', [1000, 'ms']],
+      ['swingset_crank_processing_time_sum', [50, '%']],
     ])
   );
   for (const directEntry of directMetrics.comparableData.entries()) {
@@ -158,7 +158,13 @@ test('Prometheus metric definitions', async t => {
       t.is(slogValue, directValue, msg);
     } else {
       const msg = `${q(nameAndLabels)} values must be within ${fuzziness} ${unit} - direct ${directValue} vs. slog ${slogValue}`;
-      t.true(Math.abs(slogValue - directValue) <= fuzziness, msg);
+      if (unit === '%') {
+        const smaller = Math.min(slogValue, directValue);
+        const bigger = Math.max(slogValue, directValue);
+        t.true((1 - smaller / bigger) * 100 <= fuzziness, msg);
+      } else {
+        t.true(Math.abs(slogValue - directValue) <= fuzziness, msg);
+      }
     }
   }
   t.truthy(comparisonCount);
