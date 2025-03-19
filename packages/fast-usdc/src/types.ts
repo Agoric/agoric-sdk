@@ -5,10 +5,12 @@ import type {
   CosmosChainInfo,
   Denom,
   DenomDetail,
+  OrchestrationAccount,
 } from '@agoric/orchestration';
 import type { IBCChannelID } from '@agoric/vats';
 import type { Amount } from '@agoric/ertp';
 import type { CopyRecord, Passable } from '@endo/pass-style';
+import type { HostInterface } from '@agoric/async-flow';
 import type { PendingTxStatus, TxStatus } from './constants.js';
 import type { FastUsdcTerms } from './fast-usdc.contract.js';
 import type { RepayAmountKWR } from './exos/liquidity-pool.js';
@@ -155,6 +157,14 @@ export type AddressHook = {
     EUD: Bech32Address;
   };
 };
+
+export type LocalOrchAccount = HostInterface<
+  OrchestrationAccount<{
+    chainId: 'agoric-3';
+    namespace: 'cosmos';
+    reference: 'agoric-3';
+  }>
+>;
 
 export type * from './constants.js';
 export type { LiquidityPoolKit } from './exos/liquidity-pool.js';

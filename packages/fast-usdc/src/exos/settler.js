@@ -25,7 +25,7 @@ import { asMultiset } from '../utils/store.js';
  * @import {Zone} from '@agoric/zone';
  * @import {HostOf, HostInterface} from '@agoric/async-flow';
  * @import {TargetRegistration} from '@agoric/vats/src/bridge-target.js';
- * @import {NobleAddress, LiquidityPoolKit, FeeConfig, EvmHash, LogFn, CctpTxEvidence} from '../types.js';
+ * @import {NobleAddress, LiquidityPoolKit, FeeConfig, EvmHash, LogFn, CctpTxEvidence, LocalOrchAccount} from '../types.js';
  * @import {StatusManager} from './status-manager.js';
  */
 
@@ -165,7 +165,7 @@ export const prepareSettler = (
      *   sourceChannel: IBCChannelID;
      *   remoteDenom: Denom;
      *   repayer: LiquidityPoolKit['repayer'];
-     *   settlementAccount: HostInterface<OrchestrationAccount<{ chainId: 'agoric' }>>
+     *   settlementAccount: LocalOrchAccount;
      *   intermediateRecipient?: CosmosChainAddress;
      * }} config
      */

@@ -37,7 +37,7 @@ const ADDRESSES_BAGGAGE_KEY = 'addresses';
  * @import {Marshaller, StorageNode} from '@agoric/internal/src/lib-chainStorage.js'
  * @import {Zone} from '@agoric/zone';
  * @import {OperatorOfferResult} from './exos/transaction-feed.js';
- * @import {ContractRecord, FeeConfig} from './types.js';
+ * @import {ContractRecord, FeeConfig, LocalOrchAccount} from './types.js';
  */
 
 /**
@@ -285,7 +285,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     makeLocalAccount(),
   );
   // when() is OK here since this clearly resolves promptly.
-  /** @type {[HostInterface<OrchestrationAccount<{chainId: 'agoric-3';}>>, HostInterface<OrchestrationAccount<{chainId: 'agoric-3';}>>]} */
+  /** @type {[LocalOrchAccount, LocalOrchAccount]} */
   const [poolAccount, settlementAccount] = await vowTools.when(
     vowTools.all([poolAccountV, settleAccountV]),
   );
