@@ -9,7 +9,7 @@ import { addToAllocation, subtractFromAllocation } from './allocationMath.js';
 import { ZcfMintI } from './typeGuards.js';
 
 /**
- * @import {ContractMeta, ContractStartFn, Invitation, OfferHandler, TransferPart, ZCF, ZCFMint, ZCFSeat} from '@agoric/zoe';
+ * @import {ZCFMint, ZCFSeat} from '@agoric/zoe';
  */
 
 /**
