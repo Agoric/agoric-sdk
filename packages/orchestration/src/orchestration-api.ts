@@ -104,7 +104,12 @@ export interface BaseChainInfo<N extends KnownNamespace = KnownNamespace> {
   cctpDestinationDomain?: number;
 }
 
-export type ChainInfo = Readonly<BaseChainInfo | CosmosChainInfo>;
+/**
+ * Shape that `ChainHub` is expecting
+ */
+export type ChainInfo = Readonly<
+  (BaseChainInfo & { chainId: string }) | CosmosChainInfo
+>;
 
 /**
  * A value that can be converted mechanically to an AccountId.
