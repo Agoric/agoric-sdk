@@ -221,7 +221,7 @@ export const makeMeasureSeconds = currentTimeMillisec => {
  * return a new object consisting of those properties without that prefix.
  * Useful for filtering environment variables relevant to a particular purpose.
  *
- * @template {PropertyKey} K
+ * @template {string} K
  * @template V
  * @param {Record<K, V>} obj
  * @param {string} prefix
