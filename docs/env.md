@@ -164,7 +164,7 @@ format](https://prometheus.io/docs/instrumenting/exposition_formats/#text-based-
 via HTTP on this port (or the default port 9464 when the value is not a number)
 for the host specified by `OTEL_EXPORTER_PROMETHEUS_HOST` (or default host
 0.0.0.0) at default path "/metrics". See also
-[README-telemetry.md#agoric-vm-swingset-metrics](../packages/cosmic-swingset/README-telemetry.md).
+[README-telemetry.md](../packages/cosmic-swingset/README-telemetry.md#agoric-vm-swingset-metrics).
 
 Lifetime: until we decide not to support Prometheus for metrics export
 
