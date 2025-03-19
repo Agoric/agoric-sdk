@@ -189,7 +189,10 @@ Description: when nonempty, use the value as a list of module specifiers
 separated by commas `,`.  `@agoric/telemetry/src/make-slog-sender.js` export
 `makeSlogSender` loads each module via dynamic `import` and calls its exported
 `makeSlogSender` function to construct a slogSender that will be called with
-each new slog entry (fanning such objects out to each module).
+each new slog entry (fanning such objects out to each module). Prefixing a
+module specifier with `-` causes it to be excluded, and can be used to suppress
+otherwise automatic use of modules for e.g. writing slogfiles and exporting
+Prometheus metrics.
 
 The default is `'@agoric/telemetry/src/flight-recorder.js'`, which writes to an
 mmap'ed circular buffer.
