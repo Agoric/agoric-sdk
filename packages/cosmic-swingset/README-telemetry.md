@@ -20,7 +20,7 @@ TCP connections from your Prometheus host's IP address.
 
 SwingSet is responsible for the chain's Javascript execution.  It is
 instrumented with the [OpenTelemetry](https://opentelemetry.io/) (*OTEL*)
-system.
+system in a [slog sender module](../../docs/env.md#slogsender).
 
 To enable the Prometheus exporter, set environment variable
 [`OTEL_EXPORTER_PROMETHEUS_PORT`](https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/#prometheus-exporter)

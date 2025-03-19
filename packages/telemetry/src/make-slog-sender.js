@@ -7,6 +7,7 @@ export const DEFAULT_SLOGSENDER_AGENT = 'self';
 export const DEFAULT_SLOGSENDER_MODULE =
   '@agoric/telemetry/src/flight-recorder.js';
 export const SLOGFILE_SENDER_MODULE = '@agoric/telemetry/src/slog-file.js';
+export const PROMETHEUS_SENDER_MODULE = '@agoric/telemetry/src/prometheus.js';
 
 /** @import {SlogSender} from './index.js' */
 
@@ -42,6 +43,11 @@ export const makeSlogSender = async (opts = {}) => {
   const {
     SLOGSENDER = DEFAULT_SLOGSENDER_MODULE,
     SLOGSENDER_AGENT = DEFAULT_SLOGSENDER_AGENT,
+    // While cosmic-swingset/kernel code includes its own Prometheus metrics
+    // export, that trumps a slog sender module doing so.
+    // This extraction can be removed when that changes, but in the meantime,
+    // opt-in is only by SLOGSENDER_AGENT_OTEL_EXPORTER_PROMETHEUS_PORT.
+    OTEL_EXPORTER_PROMETHEUS_PORT: _prometheusExportPort,
     ...otherEnv
   } = env;
 
@@ -50,15 +56,24 @@ export const makeSlogSender = async (opts = {}) => {
     ...unprefixedProperties(otherEnv, 'SLOGSENDER_AGENT_'),
   };
 
-  const slogSenderModules = new Set([
-    ...(agentEnv.SLOGFILE ? [SLOGFILE_SENDER_MODULE] : []),
-    ...filterTruthy(SLOGSENDER.split(',')).map(modulePath =>
-      modulePath.startsWith('.')
-        ? // Resolve relative to the current working directory.
-          path.resolve(modulePath)
-        : modulePath,
-    ),
-  ]);
+  const slogSenderModules = new Set();
+  if (agentEnv.OTEL_EXPORTER_PROMETHEUS_PORT) {
+    slogSenderModules.add(PROMETHEUS_SENDER_MODULE);
+  }
+  if (agentEnv.SLOGFILE) {
+    slogSenderModules.add(SLOGFILE_SENDER_MODULE);
+  }
+  for (const moduleIdentifier of filterTruthy(SLOGSENDER.split(','))) {
+    if (moduleIdentifier.startsWith('-')) {
+      // Opt out of an automatically-included sender.
+      slogSenderModules.delete(moduleIdentifier.slice(1));
+    } else if (moduleIdentifier.startsWith('.')) {
+      // Resolve relative to the current working directory.
+      slogSenderModules.add(path.resolve(moduleIdentifier));
+    } else {
+      slogSenderModules.add(moduleIdentifier);
+    }
+  }
 
   if (!slogSenderModules.size) {
     return undefined;

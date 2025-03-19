@@ -173,6 +173,28 @@ export const objectMapMutable = (obj, mapper) => {
 };
 
 /**
+ * Return the value from `map` associated with `key`. If there is not yet such a
+ * value, get one from `makeValue(key)` and update `map` before returning the
+ * new value.
+ *
+ * @template K
+ * @template V
+ * @param {K extends WeakKey ? WeakMap<K, V> : Map<K, V>} map
+ * @param {K} key
+ * @param {(key: K) => V} makeValue
+ * @returns {V}
+ */
+export const provideLazyMap = (map, key, makeValue) => {
+  const found = map.get(key);
+  if (found !== undefined || map.has(key)) {
+    return /** @type {V} */ (found);
+  }
+  const value = makeValue(key);
+  map.set(key, value);
+  return value;
+};
+
+/**
  * Returns a function that uses a millisecond-based current-time capability
  * (such as `performance.now`) to measure execution duration of an async
  * function and report the result in seconds to match our telemetry standard.
