@@ -136,7 +136,7 @@ export interface Chain<CI extends ChainInfo> {
 
   // "makeAccount" suggests an operation within a vat
   /**
-   * TODO: scope to `icaEnabled: true`;
+   * TODO: scope to `icaEnabled: true` and chainId `agoric${string}`;
    * Creates a new Orchestration Account on the current Chain.
    * @returns an object that controls the account
    */
