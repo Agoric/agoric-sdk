@@ -1,5 +1,6 @@
 import { Nat, isNat } from '@endo/nat';
 import { assert, Fail } from '@endo/errors';
+import { KERNEL_STATS_METRICS } from '@agoric/internal/src/metrics.js';
 import { naturalCompare } from '@agoric/internal/src/natural-sort.js';
 import { makeDummySlogger, noopConsole } from '../slogger.js';
 import {
@@ -25,7 +26,6 @@ import {
   makeUpgradeID,
 } from '../../lib/id.js';
 import { kdebug } from '../../lib/kdebug.js';
-import { KERNEL_STATS_METRICS } from '../metrics.js';
 import { makeKernelStats } from './stats.js';
 import {
   enumeratePrefixedKeys,

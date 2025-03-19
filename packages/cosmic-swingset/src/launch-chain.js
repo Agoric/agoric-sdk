@@ -24,19 +24,19 @@ import {
   normalizeConfig,
   upgradeSwingset,
 } from '@agoric/swingset-vat';
-import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 import { openSwingStore } from '@agoric/swing-store';
 import { attenuate, BridgeId as BRIDGE_ID } from '@agoric/internal';
-import { objectMapMutable, TRUE } from '@agoric/internal/src/js-utils.js';
-import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import * as ActionType from '@agoric/internal/src/action-types.js';
+import { objectMapMutable, TRUE } from '@agoric/internal/src/js-utils.js';
+import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
+import { BLOCK_HISTOGRAM_METRICS } from '@agoric/internal/src/metrics.js';
+import { makeWithQueue } from '@agoric/internal/src/queue.js';
 
 import {
   extractCoreProposalBundles,
   mergeCoreProposals,
 } from '@agoric/deploy-script-support/src/extract-proposal.js';
 import { fileURLToPath } from 'url';
-import { ValueType } from '@opentelemetry/api';
 
 import {
   makeDefaultMeterProvider,
@@ -76,61 +76,6 @@ const toPosix = nowMilliseconds => {
 
 const console = anylogger('launch-chain');
 const blockManagerConsole = anylogger('block-manager');
-
-const blockHistogramMetricDesc = {
-  valueType: ValueType.DOUBLE,
-  unit: 's',
-  advice: {
-    explicitBucketBoundaries: [
-      0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 6, 7, 10, 15, 30,
-    ],
-  },
-};
-const BLOCK_HISTOGRAM_METRICS = /** @type {const} */ ({
-  swingsetRunSeconds: {
-    description: 'Per-block time spent executing SwingSet',
-    ...blockHistogramMetricDesc,
-  },
-  swingsetChainSaveSeconds: {
-    description: 'Per-block time spent propagating SwingSet state into cosmos',
-    ...blockHistogramMetricDesc,
-  },
-  swingsetCommitSeconds: {
-    description:
-      'Per-block time spent committing SwingSet state to host storage',
-    ...blockHistogramMetricDesc,
-  },
-  cosmosCommitSeconds: {
-    description: 'Per-block time spent committing cosmos state',
-    ...blockHistogramMetricDesc,
-  },
-  fullCommitSeconds: {
-    description:
-      'Per-block time spent committing state, inclusive of COMMIT_BLOCK processing plus time spent [outside of cosmic-swingset] before and after it',
-    ...blockHistogramMetricDesc,
-  },
-  interBlockSeconds: {
-    description: 'Time spent idle between blocks',
-    ...blockHistogramMetricDesc,
-  },
-  afterCommitHangoverSeconds: {
-    description:
-      'Per-block time spent waiting for previous-block afterCommit work',
-    ...blockHistogramMetricDesc,
-  },
-  blockLagSeconds: {
-    description: 'The delay of each block from its expected begin time',
-    ...blockHistogramMetricDesc,
-    // Add buckets for excessively long delays.
-    advice: {
-      ...blockHistogramMetricDesc.advice,
-      explicitBucketBoundaries: /** @type {number[]} */ ([
-        ...blockHistogramMetricDesc.advice.explicitBucketBoundaries,
-        ...[60, 120, 180, 240, 300, 600, 3600],
-      ]),
-    },
-  },
-});
 
 /**
  * @param {{ info: string } | null | undefined} upgradePlan
