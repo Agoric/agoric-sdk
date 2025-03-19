@@ -14,7 +14,7 @@ import {
 } from '../contractSupport/index.js';
 
 /**
- * @import {ContractMeta, ContractStartFn, Invitation, OfferHandler, TransferPart, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {OfferHandler, ZCF} from '@agoric/zoe';
  */
 
 /**
