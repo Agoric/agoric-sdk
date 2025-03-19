@@ -77,6 +77,6 @@ export const withChainCapabilities = (
     ...info,
     pfmEnabled: !!opts.PfmEnabled[name],
     icqEnabled: !!opts.IcqEnabled[name],
-    icaEnabled: !!opts.IcqEnabled[name],
+    icaEnabled: !!opts.IcaEnabled[name],
   }));
 };
