@@ -221,14 +221,17 @@ export const makeMeasureSeconds = currentTimeMillisec => {
  * return a new object consisting of those properties without that prefix.
  * Useful for filtering environment variables relevant to a particular purpose.
  *
+ * @template {string} P
  * @template {string} K
  * @template V
- * @param {Record<K, V>} obj
- * @param {string} prefix
+ * @param {Record<`${P}${K}`, V>} obj
+ * @param {P} prefix
  */
 export const unprefixedProperties = (obj, prefix) =>
-  fromTypedEntries(
-    typedEntries(obj)
-      .filter(([key]) => key.startsWith(prefix))
-      .map(([key, value]) => [key.slice(prefix.length), value]),
+  /** @type {Record<K, V>} */ (
+    fromTypedEntries(
+      typedEntries(obj)
+        .filter(([key]) => key.startsWith(prefix))
+        .map(([key, value]) => [key.slice(prefix.length), value]),
+    )
   );
