@@ -4,7 +4,7 @@ import { M } from '@endo/patterns';
 
 /**
  * @import {TypedPattern} from '@agoric/internal';
- * @import {CosmosAssetInfo, ChainInfo, CosmosChainInfo, DenomAmount, DenomInfo, AmountArg, CosmosValidatorAddress, OrchestrationPowers, ForwardInfo, IBCMsgTransferOptions, AccountIdArg} from './types.js';
+ * @import {CosmosAssetInfo, CosmosChainInfo, DenomAmount, DenomInfo, AmountArg, CosmosValidatorAddress, OrchestrationPowers, ForwardInfo, IBCMsgTransferOptions, AccountIdArg, BaseChainInfo, ChainInfo} from './types.js';
  * @import {Any as Proto3Msg} from '@agoric/cosmic-proto/google/protobuf/any.js';
  * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
@@ -90,7 +90,10 @@ export const CosmosAssetInfoShape = M.splitRecord({
   ),
 });
 
-/** @type {TypedPattern<CosmosChainInfo>} */
+/**
+ * @deprecated please use {@link ChainInfoShape} instead
+ * @type {TypedPattern<CosmosChainInfo>}
+ */
 export const CosmosChainInfoShape = M.splitRecord(
   {
     chainId: M.string(),
@@ -105,10 +108,27 @@ export const CosmosChainInfoShape = M.splitRecord(
   },
 );
 
+export const CosmosChainInfoOptionals = {
+  bech32Prefix: M.string(),
+  connections: M.record(),
+  stakingTokens: M.arrayOf({ denom: M.string() }),
+  // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
+  icqEnabled: M.boolean(),
+  pfmEnabled: M.boolean(),
+};
+
 /** @type {TypedPattern<ChainInfo>} */
-export const ChainInfoShape = M.splitRecord({
-  chainId: M.string(),
-});
+export const ChainInfoShape = M.splitRecord(
+  {
+    chainId: M.string(),
+    namespace: M.string(),
+    reference: M.string(),
+  },
+  {
+    cctpDestinationDomain: M.number(),
+    ...CosmosChainInfoOptionals,
+  },
+);
 export const DenomShape = M.string();
 
 /** @type {TypedPattern<Coin>} */

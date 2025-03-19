@@ -7,7 +7,6 @@ import { VowShape } from '@agoric/vow';
 import {
   CosmosChainAddressShape,
   CoinShape,
-  CosmosChainInfoShape,
   DenomAmountShape,
   DenomDetailShape,
   ForwardInfoShape,
@@ -15,6 +14,7 @@ import {
   IBCChannelIDShape,
   IBCConnectionInfoShape,
   AccountArgShape,
+  ChainInfoShape,
 } from '../typeGuards.js';
 import { getBech32Prefix, parseAccountId } from '../utils/address.js';
 
@@ -203,8 +203,8 @@ export const TransferRouteShape = M.splitRecord(
 );
 
 const ChainHubI = M.interface('ChainHub', {
-  registerChain: M.call(M.string(), CosmosChainInfoShape).returns(),
-  updateChain: M.call(M.string(), CosmosChainInfoShape).returns(),
+  registerChain: M.call(M.string(), ChainInfoShape).returns(),
+  updateChain: M.call(M.string(), ChainInfoShape).returns(),
   getChainInfo: M.call(M.string()).returns(VowShape),
   registerConnection: M.call(
     M.string(),
@@ -244,10 +244,11 @@ const ChainHubI = M.interface('ChainHub', {
  * @param {VowTools} vowTools
  */
 export const makeChainHub = (zone, agoricNames, vowTools) => {
-  /** @type {MapStore<string, CosmosChainInfo>} */
+  // TODO: handle breaking change for FUSDC (valueShape)
+  /** @type {MapStore<string, ChainInfo>} */
   const chainInfos = zone.mapStore('chainInfos', {
     keyShape: M.string(),
-    valueShape: CosmosChainInfoShape,
+    valueShape: ChainInfoShape,
   });
   /** @type {MapStore<string, IBCConnectionInfo>} */
   const connectionInfos = zone.mapStore('connectionInfos', {
@@ -356,7 +357,11 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
      * @param {C1} primaryName
      * @param {C2} counterName
      * @returns {Promise<
-     *   [ActualChainInfo<C1>, ActualChainInfo<C2>, IBCConnectionInfo]
+     *   [
+     *     ActualChainInfo<C1>,
+     *     ActualChainInfo<C2>,
+     *     IBCConnectionInfo | undefined,
+     *   ]
      * >}
      */
     // eslint-disable-next-line no-restricted-syntax -- TODO more exact rules for vow best practices
@@ -367,14 +372,22 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
           chainHub.getChainInfo(counterName),
         ]),
       );
-      const connectionInfo = await vowTools.asPromise(
-        chainHub.getConnectionInfo(primary, counter),
+
+      const connectionInfo =
+        primary.namespace === 'cosmos' && counter.namespace === 'cosmos'
+          ? await vowTools.asPromise(
+              chainHub.getConnectionInfo(primary, counter),
+            )
+          : undefined;
+      return (
+        /**
+         * @type {[
+         *   ActualChainInfo<C1>,
+         *   ActualChainInfo<C2>,
+         *   IBCConnectionInfo | undefined,
+         * ]}
+         */ ([primary, counter, connectionInfo])
       );
-      return /** @type {[ActualChainInfo<C1>, ActualChainInfo<C2>, IBCConnectionInfo]} */ ([
-        primary,
-        counter,
-        connectionInfo,
-      ]);
     },
   );
 
@@ -389,19 +402,22 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
      * contract `start` the call will happen again naturally.
      *
      * @param {string} name
-     * @param {CosmosChainInfo} chainInfo
+     * @param {ChainInfo & { chainId: string }} chainInfo
      */
     registerChain(name, chainInfo) {
       chainInfos.init(name, chainInfo);
-      if (chainInfo.bech32Prefix) {
-        bech32PrefixToChainName.init(chainInfo.bech32Prefix, name);
+      if (/** @type {CosmosChainInfo} */ (chainInfo).bech32Prefix) {
+        bech32PrefixToChainName.init(
+          /** @type {CosmosChainInfo} */ (chainInfo).bech32Prefix,
+          name,
+        );
       }
     },
     /**
      * Update chain info by completely replacing existing entry
      *
      * @param {string} chainName - Name of the chain to update
-     * @param {CosmosChainInfo} chainInfo - New chain info
+     * @param {ChainInfo} chainInfo - New chain info
      * @throws {Error} If chain not registered
      */
     updateChain(chainName, chainInfo) {
@@ -409,12 +425,17 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
         throw makeError(`Chain ${q(chainName)} not registered`);
       }
       const oldInfo = chainInfos.get(chainName);
-      if (oldInfo.bech32Prefix) {
-        bech32PrefixToChainName.delete(oldInfo.bech32Prefix);
+      if (/** @type {CosmosChainInfo} */ (oldInfo).bech32Prefix) {
+        bech32PrefixToChainName.delete(
+          /** @type {CosmosChainInfo} */ (oldInfo).bech32Prefix,
+        );
       }
       chainInfos.set(chainName, chainInfo);
-      if (chainInfo.bech32Prefix) {
-        bech32PrefixToChainName.init(chainInfo.bech32Prefix, chainName);
+      if (/** @type {CosmosChainInfo} */ (chainInfo).bech32Prefix) {
+        bech32PrefixToChainName.init(
+          /** @type {CosmosChainInfo} */ (chainInfo).bech32Prefix,
+          chainName,
+        );
       }
     },
     /**
@@ -632,7 +653,7 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
     // TODO document whether this is limited to IBC
     // Not urgent because it's vat-local
     /**
-     * Determine the transfer route for a destination and amount given the
+     * Determine the IBC transfer route for a destination and amount given the
      * current holding chain.
      *
      * Does not account for routes with more than 1 intermediary hop - that is,
@@ -665,7 +686,8 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
       chainInfos.has(baseName) ||
         Fail`chain info not found for issuing chain: ${q(baseName)}`;
 
-      const { chainId: baseChainId, pfmEnabled } = chainInfos.get(baseName);
+      const { chainId: baseChainId, pfmEnabled } =
+        /** @type {CosmosChainInfo} */ (chainInfos.get(baseName));
 
       const holdingChainId = chainInfos.get(srcChainName).chainId;
 
