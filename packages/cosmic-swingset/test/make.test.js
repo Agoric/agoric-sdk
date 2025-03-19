@@ -5,6 +5,10 @@ import anyTest from 'ava';
 import { spawn as ambientSpawn } from 'child_process';
 import * as ambientPath from 'path';
 
+import {
+  prometheusSampleRegExp,
+  prometheusNumberValue,
+} from '../tools/prometheus.js';
 import { makeScenario2, makeWalletTool, pspawn } from './scenario2.js';
 
 /**
@@ -240,33 +244,13 @@ const getMetrics = async (url, metricNames) => {
 
   const metricsText = await metricsResponse.text();
 
-  // https://prometheus.io/docs/instrumenting/exposition_formats/#text-based-format
-  // metric_name [
-  //   "{" label_name "=" `"` label_value `"` { "," label_name "=" `"` label_value `"` } [ "," ] "}"
-  // ] value [ timestamp ]
-  const metricNamePatt = '[a-zA-Z_:][a-zA-Z0-9_:]*';
-  const labelNamePatt = '[a-zA-Z_][a-zA-Z0-9_]*';
-  const labelPatt = String.raw`${labelNamePatt}="(?:[^\\"\n]|\\(?:\\|"|n))*"`;
-  const samplePatt = RegExp(
-    String.raw`^(${metricNamePatt}(?:[{]${labelPatt}(?:,${labelPatt})*,?[}])?) +(\S+)( +-?[0-9]+)?$`,
-    'u',
-  );
   const allMetricsEntries = /** @type {Array<[string, number]>} */ (
-    metricsText
-      .split('\n')
-      .map(line => {
-        const [_, metricName, value] = line.match(samplePatt) || [];
-        if (!metricName) return undefined;
-        if (value === 'NaN') return [metricName, NaN];
-        if (value === '+Inf') return [metricName, Infinity];
-        if (value === '-Inf') return [metricName, -Infinity];
-        const valueNum = parseFloat(value);
-        if (Number.isNaN(valueNum)) {
-          throw Error(`${value} is not a decimal value`);
-        }
-        return [metricName, valueNum];
-      })
-      .filter(entry => !!entry)
+    [...metricsText.matchAll(prometheusSampleRegExp)].map(
+      ([_substring, nameAndLabels, _name, value]) => [
+        nameAndLabels,
+        prometheusNumberValue(value),
+      ],
+    )
   );
   const allMetrics = new Map(allMetricsEntries);
   const metricsEntries = metricNames.map(metricName => {
