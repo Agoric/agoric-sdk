@@ -25,6 +25,7 @@ import {
   makeRetireImports,
 } from './util.js';
 
+// eslint-disable-next-line no-unused-vars
 function writeSlogObject(o) {
   function bigintReplacer(_, arg) {
     if (typeof arg === 'bigint') {
