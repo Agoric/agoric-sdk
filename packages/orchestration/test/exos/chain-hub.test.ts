@@ -18,6 +18,7 @@ import { makeChainHub, registerAssets } from '../../src/exos/chain-hub.js';
 import knownChains from '../../src/fetched-chain-info.js';
 import { assets as assetFixture } from '../assets.fixture.js';
 import { provideFreshRootZone } from '../durability.js';
+import cctpChainInfo from '../../src/cctp-chain-info.js';
 
 // fresh state for each test
 const setup = () => {
@@ -496,4 +497,47 @@ test('updateAsset errors appropriately', t => {
       'error does not cause state change',
     );
   }
+});
+
+test('cctp, non-cosmos chains', async t => {
+  const {
+    chainHub,
+    vt: { when },
+  } = setup();
+
+  chainHub.registerChain('agoric', {
+    chainId: 'agoric-3',
+    bech32Prefix: 'agoric',
+    namespace: 'cosmos',
+    reference: 'agoric-3',
+  });
+
+  for (const [chainName, info] of Object.entries(cctpChainInfo)) {
+    // can register non-cosmos (cctp) chains
+    chainHub.registerChain(chainName, info);
+
+    // can retrieve non-cosmos (cctp) chains
+    t.deepEqual(await when(chainHub.getChainInfo(chainName)), info);
+
+    // mimic call that occurs in the Orchestrator during `orch.getChain()`
+    const getChainsAndConnectionP = when(
+      chainHub.getChainsAndConnection(chainName, 'agoric'),
+    );
+    if (chainName === 'noble') {
+      // expected; provide connections to avoid this error
+      await t.throwsAsync(getChainsAndConnectionP, {
+        message: 'connection not found: noble-1<->agoric-3',
+      });
+    } else {
+      await t.notThrowsAsync(getChainsAndConnectionP);
+    }
+  }
+
+  // document full chain info
+  t.deepEqual(await when(chainHub.getChainInfo('ethereum')), {
+    chainId: 'eip155:1',
+    namespace: 'eip155',
+    reference: '1',
+    cctpDestinationDomain: 0,
+  });
 });
