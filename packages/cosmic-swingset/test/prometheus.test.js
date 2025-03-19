@@ -16,6 +16,7 @@ import {
 } from '../tools/prometheus.js';
 import { makeCosmicSwingsetTestKit } from '../tools/test-kit.js';
 
+/** @import {TotalMap} from '@agoric/internal'; */
 
 test('Prometheus metric definitions', async t => {
   // Enable both direct and slog-based Prometheus export.
@@ -120,6 +121,13 @@ test('Prometheus metric definitions', async t => {
   t.log(`compared ${slogMetrics.keys.length} keys`);
 
   let comparisonCount = 0;
+  const fuzzinessOverrides = /** @type {TotalMap<string, [number, string]>} */ (
+    new Map([
+      // Directly-produced "swingset_crank_processing_time" includes kvStore
+      // lookups in `getNextMessageAndProcessor` for dequeueing messages.
+      ['swingset_crank_processing_time_sum', [50, '%']],
+    ])
+  );
   for (const directEntry of directMetrics.comparableData.entries()) {
     const [nameAndLabels, directValue] = directEntry;
     const [name] = nameAndLabels.match(leadingPrometheusNameRegExp) || [];
@@ -130,22 +138,33 @@ test('Prometheus metric definitions', async t => {
       undefined,
       `slog metrics must include ${q(nameAndLabels)}`,
     );
-    // Allow 100 milliseconds of wiggle room for timing data.
-    let fuzziness = 0;
-    const meta = HISTOGRAM_METRICS[name] || BLOCK_HISTOGRAM_METRICS[name];
-    const unit = meta?.unit;
-    if (unit === 'ms') {
-      fuzziness = 100;
-    } else if (unit === 's') {
-      fuzziness = 0.1;
-    }
     comparisonCount += 1;
+    const [fuzziness, unit] = (() => {
+      if (fuzzinessOverrides.has(name)) return fuzzinessOverrides.get(name);
+
+      // Default to 100 milliseconds of wiggle room for timing data.
+      const baseName = name.replace(/_sum$/, '');
+      const meta =
+        HISTOGRAM_METRICS[baseName] || BLOCK_HISTOGRAM_METRICS[baseName];
+      // eslint-disable-next-line no-shadow
+      const unit = meta?.unit;
+      if (unit === 'ms') return [100, unit];
+      if (unit === 's') return [0.1, unit];
+
+      return [0];
+    })();
     if (!fuzziness) {
       const msg = `${q(nameAndLabels)} values must match - direct ${directValue} vs. slog ${slogValue}`;
       t.is(slogValue, directValue, msg);
     } else {
       const msg = `${q(nameAndLabels)} values must be within ${fuzziness} ${unit} - direct ${directValue} vs. slog ${slogValue}`;
-      t.true(Math.abs(slogValue - directValue) <= fuzziness, msg);
+      if (unit === '%') {
+        const smaller = Math.min(slogValue, directValue);
+        const bigger = Math.max(slogValue, directValue);
+        t.true((1 - smaller / bigger) * 100 <= fuzziness, msg);
+      } else {
+        t.true(Math.abs(slogValue - directValue) <= fuzziness, msg);
+      }
     }
   }
   t.truthy(comparisonCount);
