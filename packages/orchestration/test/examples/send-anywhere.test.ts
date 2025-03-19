@@ -94,6 +94,8 @@ test('send using arbitrary chain info', async t => {
 
   const hotChainInfo = harden({
     chainId: 'hot-new-chain-0',
+    namespace: 'cosmos',
+    reference: 'hot-new-chain-0',
     stakingTokens: [{ denom: 'uhot' }],
     ...chainInfoDefaults,
   }) as CosmosChainInfo;

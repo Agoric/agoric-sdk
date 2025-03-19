@@ -199,7 +199,11 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
 
 // Test LocalChain.query()
 {
-  type ChainFacade = Chain<{ chainId: 'agoriclocal' }>;
+  type ChainFacade = Chain<{
+    chainId: 'agoriclocal';
+    namespace: 'cosmos';
+    reference: 'agoriclocal';
+  }>;
   const localChain: ChainFacade = null as any;
   const results = localChain.query([
     typedJson('/cosmos.bank.v1beta1.QueryBalanceRequest', {
