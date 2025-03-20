@@ -53,6 +53,7 @@
     "@endo/patterns": "^1.4.8",
     "@ethersproject/abi": "^5.8.0",
     "@ethersproject/bytes": "^5.8.0",
+    "@metamask/abi-utils": "^3.0.0",
     "@noble/hashes": "^1.5.0",
     "ethers": "^5.7.0"
   },

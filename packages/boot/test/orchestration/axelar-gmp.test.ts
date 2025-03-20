@@ -6,6 +6,9 @@ import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
 } from '../bootstrapTests/walletFactory.js';
+// import * as abiUtils from '@metamask/abi-utils';
+// console.log('www.........................',abiUtils);
+
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
 test.before(async t => {
