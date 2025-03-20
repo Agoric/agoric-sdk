@@ -9,6 +9,7 @@ import {
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { BridgeId } from '@agoric/internal';
+import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
 test.before(async t => {
@@ -19,11 +20,7 @@ test.before(async t => {
 });
 test.after.always(t => t.context.shutdown?.());
 
-/**
- * This test core-evals an installation of the axelarGmp contract that
- * initiates an IBC Transfer.
- */
-test('start axelarGmp and send an offer', async t => {
+test('start axelarGmp and perform a successful token transfer', async t => {
   const {
     walletFactoryDriver,
     bridgeUtils: { runInbound },
@@ -32,18 +29,34 @@ test('start axelarGmp and send an offer', async t => {
     storage,
   } = t.context;
 
-  const { IST } = t.context.agoricNamesRemotes.brand;
+  const { BLD } = t.context.agoricNamesRemotes.brand;
 
   t.log('start axelarGmp');
+
   await evalProposal(
-    buildProposal('@agoric/builders/scripts/testing/init-axelar-gmp.js'),
+    buildProposal('@agoric/builders/scripts/testing/init-axelar-gmp.js', [
+      '--chainInfo',
+      JSON.stringify({
+        agoric: fetchedChainInfo.agoric,
+        axelar: fetchedChainInfo.axelar,
+      }),
+      '--assetInfo',
+      JSON.stringify([
+        [
+          'ubld',
+          {
+            baseDenom: 'ubld',
+            brandKey: 'BLD',
+            baseName: 'agoric',
+            chainName: 'agoric',
+          },
+        ],
+      ]),
+    ]),
   );
 
   t.log('making offer');
   const wallet = await walletFactoryDriver.provideSmartWallet('agoric1test');
-  // no money in wallet to actually send
-  const zero = { brand: IST, value: 0n };
-  // send because it won't resolve
   await wallet.sendOffer({
     id: 'invokeEVMContract',
     invitationSpec: {
@@ -53,14 +66,12 @@ test('start axelarGmp and send an offer', async t => {
     },
     proposal: {
       // @ts-expect-error XXX BoardRemote
-      give: { Send: zero },
+      give: { BLD: { brand: BLD, value: 1n } },
     },
     offerArgs: {
       destAddr: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
-      type: 1,
-      destinationEVMChain: 'ethereum',
-      gasAmount: 33,
-      contractInvocationPayload: [1, 0, 0, 1, 1],
+      type: 3,
+      destinationEVMChain: 'Ethereum',
     },
   });
 
@@ -69,10 +80,11 @@ test('start axelarGmp and send an offer', async t => {
 
   // Flow started but IBC Transfer promise not resolved
   t.deepEqual(getLogged(), [
-    'Inside sendIt',
-    'After local transfer',
+    'Inside sendGmp',
+    'Local transfer successful',
+    'Payload: null',
     'Initiating IBC Transfer...',
-    'DENOM of token:uist',
+    'DENOM of token:ubld',
   ]);
 
   // Simulate resolving IBC Transfer promise
@@ -88,10 +100,11 @@ test('start axelarGmp and send an offer', async t => {
 
   // Logs when IBC transfer promise is resolved
   t.deepEqual(getLogged(), [
-    'Inside sendIt',
-    'After local transfer',
+    'Inside sendGmp',
+    'Local transfer successful',
+    'Payload: null',
     'Initiating IBC Transfer...',
-    'DENOM of token:uist',
-    'Transfer complete',
+    'DENOM of token:ubld',
+    'Offer successful',
   ]);
 });
