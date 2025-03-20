@@ -8,10 +8,11 @@ import zlib from 'node:zlib';
 import sqlite3 from 'better-sqlite3';
 import tmp from 'tmp';
 
-import { makeMeasureSeconds } from '@agoric/internal';
+import { makeMeasureSeconds, makeTempDirFactory } from '@agoric/internal';
 import { makeSnapStore } from '../src/snapStore.js';
 import { makeArchiveSnapshot } from '../src/archiver.js';
-import { tmpDir } from './util.js';
+
+const tmpDir = makeTempDirFactory(tmp);
 
 function makeExportLog() {
   const exportLog = [];

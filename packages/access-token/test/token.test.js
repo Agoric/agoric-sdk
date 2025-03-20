@@ -1,7 +1,9 @@
 import test from 'ava';
-import { tmpDir } from './tmp.js';
-
+import tmp from 'tmp';
+import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 import { getAccessToken } from '../src/access-token.js';
+
+const tmpDir = makeTempDirFactory(tmp);
 
 test('access tokens', async t => {
   const [sharedStateDir, removeCallback] = tmpDir('access-token-test');

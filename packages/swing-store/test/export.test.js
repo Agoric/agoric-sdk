@@ -1,9 +1,14 @@
 import test from 'ava';
+import tmp from 'tmp';
+
+import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 
 import { buffer } from '../src/util.js';
 import { initSwingStore, makeSwingStoreExporter } from '../src/index.js';
 
-import { tmpDir, getSnapshotStream, makeB0ID } from './util.js';
+import { getSnapshotStream, makeB0ID } from './util.js';
+
+const tmpDir = makeTempDirFactory(tmp);
 
 const rank = {
   operational: 1,

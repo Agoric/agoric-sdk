@@ -1,12 +1,15 @@
 // @ts-check
 import test from 'ava';
 import { Buffer } from 'buffer';
+import tmp from 'tmp';
+import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 import { createSHA256 } from '../src/hasher.js';
 import { initSwingStore } from '../src/swingStore.js';
 import { makeSwingStoreExporter } from '../src/exporter.js';
 import { importSwingStore } from '../src/importer.js';
 import { buffer } from '../src/util.js';
-import { tmpDir } from './util.js';
+
+const tmpDir = makeTempDirFactory(tmp);
 
 function makeB0ID(bundle) {
   return `b0-${createSHA256(JSON.stringify(bundle)).finish()}`;

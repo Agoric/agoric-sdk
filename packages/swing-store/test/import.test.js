@@ -7,12 +7,14 @@ import { Buffer } from 'buffer';
 
 import sqlite3 from 'better-sqlite3';
 import test from 'ava';
+import tmp from 'tmp';
 import { decodeBase64 } from '@endo/base64';
+
+import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 
 import { buffer } from '../src/util.js';
 import { importSwingStore, makeSwingStoreExporter } from '../src/index.js';
 
-import { tmpDir } from './util.js';
 import {
   buildData,
   bundle0,
@@ -28,6 +30,8 @@ const rank = {
   archival: 3,
   debug: 4,
 };
+
+const tmpDir = makeTempDirFactory(tmp);
 
 function convert(orig) {
   const bundles = Object.fromEntries(

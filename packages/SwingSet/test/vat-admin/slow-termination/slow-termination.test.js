@@ -6,20 +6,14 @@ import tmp from 'tmp';
 import sqlite3 from 'better-sqlite3';
 import path from 'path';
 
+import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 import { kser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 
 import { buildVatController, buildKernelBundles } from '../../../src/index.js';
 import { enumeratePrefixedKeys } from '../../../src/kernel/state/storageHelper.js';
 
-/**
- * @param {string} [prefix]
- * @returns {[string, () => void]}
- */
-const tmpDir = prefix => {
-  const { name, removeCallback } = tmp.dirSync({ prefix, unsafeCleanup: true });
-  return [name, removeCallback];
-};
+const tmpDir = makeTempDirFactory(tmp);
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();

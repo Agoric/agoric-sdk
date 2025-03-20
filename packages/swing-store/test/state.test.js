@@ -1,8 +1,11 @@
 // @ts-check
 
 import test from 'ava';
+import tmp from 'tmp';
 
 import bundleSource from '@endo/bundle-source';
+
+import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 
 import {
   initSwingStore,
@@ -10,7 +13,7 @@ import {
   isSwingStore,
 } from '../src/swingStore.js';
 
-import { tmpDir } from './util.js';
+const tmpDir = makeTempDirFactory(tmp);
 
 async function embundle(filename) {
   const bundleFile = new URL(filename, import.meta.url).pathname;

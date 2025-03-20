@@ -2,6 +2,7 @@
 import test from 'ava';
 
 import tmp from 'tmp';
+import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 import { kunser } from '@agoric/kmarshal';
 import {
   initSwingStore,
@@ -12,14 +13,7 @@ import {
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import { buildKernelBundle } from '../../src/controller/initializeSwingset.js';
 
-/**
- * @param {string} [prefix]
- * @returns {[string, () => void]}
- */
-const tmpDir = prefix => {
-  const { name, removeCallback } = tmp.dirSync({ prefix, unsafeCleanup: true });
-  return [name, removeCallback];
-};
+const tmpDir = makeTempDirFactory(tmp);
 
 const bfile = name => new URL(name, import.meta.url).pathname;
 
