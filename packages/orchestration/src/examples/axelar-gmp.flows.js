@@ -62,6 +62,10 @@ export const sendGmp = async (
 
   const isContractInvocation = [1, 2].includes(type);
   if (isContractInvocation) {
+    contractInvocationData != null ||
+      Fail`contractInvocationData is not defined`;
+    gasAmount != null || Fail`gasAmount must be defined`;
+
     ['functionSelector', 'encodedArgs', 'deadline', 'nonce'].every(
       field => contractInvocationData[field] != null,
     ) ||
