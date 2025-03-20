@@ -47,6 +47,7 @@ import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { decodeBase64 } from '@endo/base64';
 import type { EReturn } from '@endo/far';
 import type { TestFn } from 'ava';
+import { MsgDepositForBurn } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
 import type { CosmosValidatorAddress } from '../../src/cosmos-api.js';
 import fetchedChainInfo from '../../src/fetched-chain-info.js';
 import type {
@@ -65,6 +66,7 @@ import {
 import { protoMsgMocks } from '../ibc-mocks.js';
 import { commonSetup } from '../supports.js';
 import { prepareMakeTestCOAKit } from './make-test-coa-kit.js';
+import { leftPadEthAddressTo32Bytes } from '../../src/utils/address.js';
 
 type TestContext = EReturn<typeof commonSetup>;
 
@@ -182,7 +184,6 @@ test('send (to addr on same chain)', async t => {
 
 test('transfer', async t => {
   const {
-    brands: { ist },
     facadeServices: { chainHub },
     utils: { inspectDibcBridge, populateChainHub },
     mocks: { ibcBridge },
@@ -938,5 +939,96 @@ test('executeEncodedTx', async t => {
     }),
     'Ei0KKy9jb3Ntb3Muc3Rha2luZy52MWJldGExLk1zZ0RlbGVnYXRlUmVzcG9uc2U=', // cosmos.staking.v1beta1.MsgDelegateResponse
     'delegateMsgSuccess',
+  );
+});
+
+test(`depositForBurn via Noble to Base`, async t => {
+  t.context.utils.populateChainHub();
+  const { chainHub } = t.context.facadeServices;
+  chainHub.registerChain('base', {
+    namespace: 'eip155',
+    reference: 'base',
+    chainId: 'E8453',
+    cctpDestinationDomain: 0,
+  });
+  const makeTestCOAKit = prepareMakeTestCOAKit(t, t.context, { noble: true });
+  const nobleAccount = await makeTestCOAKit();
+  const amount = {
+    denom: 'uusdc',
+    value: 10n,
+  };
+
+  const actual = await E(nobleAccount).depositForBurn(
+    {
+      value: '0xe0d43135EBd2593907F8f56c25ADC1Bf94FCf993',
+      chainId: 'E8453',
+      // allegedName: 'base',
+      encoding: 'ethereum',
+    },
+    amount,
+  );
+
+  t.log('check the bridge');
+  t.deepEqual(actual, undefined);
+
+  const getAndDecodeLatestPacket = async () => {
+    await eventLoopIteration();
+    const { bridgeDowncalls } = await t.context.utils.inspectDibcBridge();
+    const latest = bridgeDowncalls[
+      bridgeDowncalls.length - 1
+    ] as IBCMethod<'sendPacket'>;
+    const { messages } = parseOutgoingTxPacket(latest.packet.data);
+    return MsgDepositForBurn.decode(messages[0].value);
+  };
+
+  const packet = await getAndDecodeLatestPacket();
+  t.log({ packet });
+  t.like(
+    packet,
+    {
+      amount: '10',
+      burnToken: 'uusdc',
+      destinationDomain: 0,
+      from: 'cosmos1test',
+    },
+    'it worked',
+  );
+
+  const paddedAddr = leftPadEthAddressTo32Bytes(
+    '0xe0d43135EBd2593907F8f56c25ADC1Bf94FCf993',
+  );
+  t.deepEqual(packet.mintRecipient, paddedAddr);
+});
+
+test(`depositForBurn via Noble to Solana (not yet)`, async t => {
+  t.context.utils.populateChainHub();
+  const { chainHub } = t.context.facadeServices;
+  chainHub.registerChain('solana', {
+    namespace: 'solana',
+    reference: 'solana',
+    chainId: 'E8453',
+    cctpDestinationDomain: 0,
+  });
+  const makeTestCOAKit = prepareMakeTestCOAKit(t, t.context, { noble: true });
+  const nobleAccount = await makeTestCOAKit();
+  const amount = {
+    denom: 'uusdc',
+    value: 10n,
+  };
+
+  await t.throwsAsync(
+    () =>
+      E(nobleAccount).depositForBurn(
+        {
+          value: '0xe0d43135EBd2593907F8f56c25ADC1Bf94FCf993',
+          chainId: 'E8453',
+          // allegedName: 'solana',
+          encoding: 'ethereum',
+        },
+        amount,
+      ),
+    {
+      message: 'Only Ethereum supported currently',
+    },
   );
 });

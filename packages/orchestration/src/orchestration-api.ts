@@ -17,6 +17,7 @@ import type {
   KnownChains,
   LocalAccountMethods,
   ICQQueryFunction,
+  NobleMethods,
   EIP155ChainInfo,
   CAIP2Namespace,
 } from './types.js';
@@ -122,7 +123,9 @@ export type OrchestrationAccount<CI extends ChainInfo> =
     (CI extends CosmosChainInfo
       ? CI['chainId'] extends `agoric${string}`
         ? LocalAccountMethods
-        : CosmosChainAccountMethods<CI>
+        : CI['chainId'] extends `noble${string}`
+          ? CosmosChainAccountMethods<CI> & NobleMethods
+          : CosmosChainAccountMethods<CI>
       : object);
 
 /**
