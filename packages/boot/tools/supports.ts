@@ -1,4 +1,4 @@
-/* eslint-disable jsdoc/require-param, @jessie.js/safe-await-separator */
+/* eslint-disable jsdoc/require-param, jsdoc/require-returns-type, @jessie.js/safe-await-separator */
 /* eslint-env node */
 
 import childProcessAmbient from 'child_process';
@@ -119,6 +119,7 @@ const keysToObject = <K extends PropertyKey, V>(
  * @param a - First array of property keys to compare
  * @param b - Second array of property keys to compare
  * @param message - Optional message to display on failure
+ * @returns The result of t.deepEqual() on objects created from the arrays
  */
 export const keyArrayEqual = (
   t: AvaT,
@@ -139,7 +140,7 @@ export const keyArrayEqual = (
  * @param options.configPath - Path to the base config file
  * @param options.defaultManagerType - SwingSet manager type to use
  * @param options.discriminator - Optional string to include in the config filename
- * @returns {string} path to the generated config file
+ * @returns Path to the generated config file
  */
 export const getNodeTestVaultsConfig = async ({
   bundleDir,
@@ -198,7 +199,7 @@ interface Powers {
  * @param powers - Object containing required capabilities
  * @param powers.childProcess - Node child_process module for executing commands
  * @param powers.fs - Node fs/promises module for file operations
- * @returns {(builderPath: string, args?: string[]) => Promise<{evals: CoreEvalSDKType[], bundles: EndoZipBase64Bundle[]}>}
+ * @returns A function that builds and extracts proposal data
  */
 export const makeProposalExtractor = (
   { childProcess, fs }: Powers,
@@ -298,6 +299,7 @@ harden(makeProposalExtractor);
  * @param ref1 - First reference to compare
  * @param ref2 - Second reference to compare
  * @param message - Optional message to display on failure
+ * @returns The result of t.is() on the kref values
  */
 export const matchRef = (
   t: AvaT,
@@ -414,6 +416,7 @@ type AckBehaviorType = (typeof AckBehavior)[keyof typeof AckBehavior];
  * @param options.defaultManagerType - SwingSet manager type to use
  * @param options.harness - Optional run harness
  * @param options.resolveBase - Base URL or path for resolving module paths
+ * @returns A test kit with various utilities for interacting with the SwingSet
  */
 export const makeSwingsetTestKit = async (
   log: (..._: any[]) => void,
@@ -836,8 +839,14 @@ export type SwingsetTestKit = Awaited<ReturnType<typeof makeSwingsetTestKit>>;
  * Return a harness that can be dynamically configured to provide a computron-
  * counting run policy (and queried for the count of computrons recorded since
  * the last reset).
+ */
+/**
+ * Creates a harness for measuring computron usage in SwingSet tests.
  *
- * @returns {RunHarness & {useRunPolicy: (forceEnabled: boolean) => void, totalComputronCount: () => bigint, resetRunPolicy: () => void}}
+ * The harness can be dynamically configured to provide a computron-counting
+ * run policy and queried for the count of computrons recorded since the last reset.
+ *
+ * @returns A harness object with methods to control and query computron counting
  */
 export const makeSwingsetHarness = () => {
   const c2b = defaultBeansPerXsnapComputron;
