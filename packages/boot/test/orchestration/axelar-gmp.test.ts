@@ -6,6 +6,9 @@ import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
 } from '../bootstrapTests/walletFactory.js';
+import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
+import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
+import { BridgeId } from '@agoric/internal';
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
 test.before(async t => {
@@ -64,11 +67,31 @@ test('start axelarGmp and send an offer', async t => {
   const getLogged = () =>
     JSON.parse(storage.data.get('published.axelarGmp.log')!).values;
 
-  // This log shows the flow started, but didn't get past the IBC Transfer settlement
+  // Flow started but IBC Transfer promise not resolved
   t.deepEqual(getLogged(), [
     'Inside sendIt',
     'After local transfer',
     'Initiating IBC Transfer...',
     'DENOM of token:uist',
+  ]);
+
+  // Simulate resolving IBC Transfer promise
+  await runInbound(
+    BridgeId.VTRANSFER,
+    buildVTransferEvent({
+      sender: makeTestAddress(),
+      target: makeTestAddress(),
+      sourceChannel: 'channel-0',
+      sequence: '1',
+    }),
+  );
+
+  // Logs when IBC transfer promise is resolved
+  t.deepEqual(getLogged(), [
+    'Inside sendIt',
+    'After local transfer',
+    'Initiating IBC Transfer...',
+    'DENOM of token:uist',
+    'Transfer complete',
   ]);
 });
