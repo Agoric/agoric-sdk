@@ -93,6 +93,7 @@ jobs:
 
       - name: lint repo format
         run: yarn lint:format
+      - run: yarn lint:package-names
       # eslint and tsc
       - run: yarn lint:packages
 
