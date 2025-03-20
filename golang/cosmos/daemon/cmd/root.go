@@ -8,6 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
+	"github.com/prometheus/client_golang/prometheus"
+
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 
 	rosettaCmd "cosmossdk.io/tools/rosetta/cmd"
@@ -329,6 +332,11 @@ func (ac appCreator) newApp(
 	baseappOptions := server.DefaultBaseappOptions(appOpts)
 	homePath := cast.ToString(appOpts.Get(flags.FlagHome))
 
+	var wasmOpts []wasmkeeper.Option
+	if cast.ToBool(appOpts.Get("telemetry.enabled")) {
+		wasmOpts = append(wasmOpts, wasmkeeper.WithVMCacheMetrics(prometheus.DefaultRegisterer))
+	}
+
 	// Set a default value for FlagSwingStoreExportDir based on homePath
 	// in case we need to InitGenesis with swing-store data
 	viper, ok := appOpts.(*viper.Viper)
@@ -341,6 +349,7 @@ func (ac appCreator) newApp(
 		ac.sender, ac.agdServer,
 		logger, db, traceStore, true,
 		appOpts,
+		wasmOpts,
 		baseappOptions...,
 	)
 }
@@ -358,11 +367,13 @@ func (ac appCreator) newSnapshotsApp(
 	}
 
 	baseappOptions := server.DefaultBaseappOptions(appOpts)
+	var emptyWasmOpts []wasmkeeper.Option
 
 	return gaia.NewAgoricApp(
 		ac.sender, ac.agdServer,
 		logger, db, traceStore, true,
 		appOpts,
+		emptyWasmOpts,
 		baseappOptions...,
 	)
 }
@@ -494,6 +505,7 @@ func (ac appCreator) appExport(
 	if !ok || homePath == "" {
 		return servertypes.ExportedApp{}, errors.New("application home is not set")
 	}
+	var emptyWasmOpts []wasmkeeper.Option
 
 	loadLatest := height == -1
 
@@ -504,6 +516,7 @@ func (ac appCreator) appExport(
 		traceStore,
 		loadLatest,
 		appOpts,
+		emptyWasmOpts,
 	)
 
 	if height != -1 {
