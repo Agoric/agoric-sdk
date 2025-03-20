@@ -69,7 +69,7 @@ test('send tokens via axelarGmp', async t => {
       give: { BLD: { brand: BLD, value: 1n } },
     },
     offerArgs: {
-      destAddr: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
+      destinationAddress: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
       type: 3,
       destinationEVMChain: 'Ethereum',
     },
@@ -122,7 +122,7 @@ test('send tokens via axelarGmp', async t => {
       give: { BLD: { brand: BLD, value: 0n } },
     },
     offerArgs: {
-      destAddr: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
+      destinationAddress: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
       type: 3,
       destinationEVMChain: 'Ethereum',
     },
@@ -148,7 +148,7 @@ test('send tokens via axelarGmp', async t => {
       give: { BLD: { brand: ATOM, value: 1n } },
     },
     offerArgs: {
-      destAddr: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
+      destinationAddress: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
       type: 3,
       destinationEVMChain: 'Ethereum',
     },
