@@ -37,6 +37,7 @@ import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 import { makeInitMsg } from '@agoric/internal/src/chain-utils.js';
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import * as ActionType from '@agoric/internal/src/action-types.js';
+import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 import { BridgeId, CosmosInitKeyToBridgeId } from '@agoric/internal';
 import {
   makeArchiveSnapshot,
@@ -63,6 +64,8 @@ import {
  */
 
 const ignore = () => {};
+
+const tmpDir = makeTempDirFactory(tmp);
 
 // eslint-disable-next-line no-unused-vars
 let whenHellFreezesOver = null;
@@ -700,10 +703,7 @@ export default async function main(
           });
         stateSyncExport = exportData;
 
-        const { name: exportDir, removeCallback: cleanup } = tmp.dirSync({
-          prefix: `agd-state-sync-${blockHeight}-`,
-          unsafeCleanup: true,
-        });
+        const [exportDir, cleanup] = tmpDir(`agd-state-sync-${blockHeight}-`);
         exportData.exportDir = exportDir;
         /** @type {Promise<void> | undefined} */
         let cleanupResult;
