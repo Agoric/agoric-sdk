@@ -20,7 +20,7 @@ test.before(async t => {
 });
 test.after.always(t => t.context.shutdown?.());
 
-test('send tokens via axelarGmp flows', async t => {
+test('send tokens via axelarGmp', async t => {
   const {
     walletFactoryDriver,
     bridgeUtils: { runInbound },
@@ -81,8 +81,8 @@ test('send tokens via axelarGmp flows', async t => {
   // Flow started but IBC Transfer promise not resolved
   t.deepEqual(getLogged(), [
     'Inside sendGmp',
-    'Local transfer successful',
     'Payload: null',
+    'Local transfer successful',
     'Initiating IBC Transfer...',
     'DENOM of token:ubld',
   ]);
@@ -101,8 +101,8 @@ test('send tokens via axelarGmp flows', async t => {
   // Logs when IBC transfer promise is resolved
   t.deepEqual(getLogged(), [
     'Inside sendGmp',
-    'Local transfer successful',
     'Payload: null',
+    'Local transfer successful',
     'Initiating IBC Transfer...',
     'DENOM of token:ubld',
     'Offer successful',
