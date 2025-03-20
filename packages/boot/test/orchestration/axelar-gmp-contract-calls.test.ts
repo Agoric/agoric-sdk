@@ -123,4 +123,63 @@ test('make contract calls via axelarGmp', async t => {
     'DENOM of token:ubld',
     'Offer successful',
   ]);
+
+  t.log('make offer without contractInvocationData');
+  await wallet.sendOffer({
+    id: 'axelarGmpContractCallII',
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: ['axelarGmp'],
+      callPipe: [['gmpInvitation']],
+    },
+    proposal: {
+      // @ts-expect-error XXX BoardRemote
+      give: { BLD: { brand: BLD, value: 1n } },
+    },
+    offerArgs: {
+      destinationAddress: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
+      type: 1,
+      gasAmount: 20000,
+      destinationEVMChain: 'Ethereum',
+    },
+  });
+
+  t.like(wallet.getLatestUpdateRecord(), {
+    status: {
+      id: 'axelarGmpContractCallII',
+      error: 'Error: contractInvocationData is not defined',
+    },
+  });
+
+  t.log('make offer without passing gas amount');
+  await wallet.sendOffer({
+    id: 'axelarGmpContractCallIII',
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: ['axelarGmp'],
+      callPipe: [['gmpInvitation']],
+    },
+    proposal: {
+      // @ts-expect-error XXX BoardRemote
+      give: { BLD: { brand: BLD, value: 1n } },
+    },
+    offerArgs: {
+      destinationAddress: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
+      type: 1,
+      destinationEVMChain: 'Ethereum',
+      contractInvocationData: {
+        functionSelector: utils.id('setCount(uint256)').slice(0, 10),
+        deadline: 5000,
+        nonce: 7,
+        encodedArgs,
+      },
+    },
+  });
+
+  t.like(wallet.getLatestUpdateRecord(), {
+    status: {
+      id: 'axelarGmpContractCallIII',
+      error: 'Error: gasAmount must be defined',
+    },
+  });
 });
