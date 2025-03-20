@@ -2,6 +2,12 @@ import { assert, Fail } from '@endo/errors';
 import { insistCapData } from './capdata.js';
 
 /**
+ * @typedef { import('@agoric/swingset-liveslots').VatSyscallObject } VatSyscallObject
+ * @typedef { import('@agoric/swingset-liveslots').VatSyscallResult } VatSyscallResult
+ * @typedef { import('@agoric/swingset-liveslots').VatDeliveryResult } VatDeliveryResult
+ */
+
+/**
  * Assert function to ensure that something expected to be a message object
  * actually is.  A message object should have a .method property that's a
  * string, a .args property that's a capdata object, and optionally a .result

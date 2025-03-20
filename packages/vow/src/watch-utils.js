@@ -1,5 +1,6 @@
 // @ts-check
 
+import { provideLazyMap } from '@agoric/internal/src/js-utils.js';
 import { M } from '@endo/patterns';
 import { PromiseWatcherI } from '@agoric/base-zone';
 
@@ -19,20 +20,6 @@ const VowShape = M.tagged(
     vowV0: M.remotable('VowV0'),
   }),
 );
-
-/**
- * Like `provideLazy`, but accepts non-Passable values.
- *
- * @param {WeakMap} map
- * @param {any} key
- * @param {(key: any) => any} makeValue
- */
-const provideLazyMap = (map, key, makeValue) => {
-  if (!map.has(key)) {
-    map.set(key, makeValue(key));
-  }
-  return map.get(key);
-};
 
 /**
  * @param {Zone} zone

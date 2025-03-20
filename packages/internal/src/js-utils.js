@@ -173,6 +173,28 @@ export const objectMapMutable = (obj, mapper) => {
 };
 
 /**
+ * Return the value from `map` associated with `key`. If there is not yet such a
+ * value, get one from `makeValue(key)` and update `map` before returning the
+ * new value.
+ *
+ * @template K
+ * @template V
+ * @param {K extends WeakKey ? WeakMap<K, V> : Map<K, V>} map
+ * @param {K} key
+ * @param {(key: K) => V} makeValue
+ * @returns {V}
+ */
+export const provideLazyMap = (map, key, makeValue) => {
+  const found = map.get(key);
+  if (found !== undefined || map.has(key)) {
+    return /** @type {V} */ (found);
+  }
+  const value = makeValue(key);
+  map.set(key, value);
+  return value;
+};
+
+/**
  * Returns a function that uses a millisecond-based current-time capability
  * (such as `performance.now`) to measure execution duration of an async
  * function and report the result in seconds to match our telemetry standard.
@@ -193,3 +215,23 @@ export const makeMeasureSeconds = currentTimeMillisec => {
   };
   return measureSeconds;
 };
+
+/**
+ * Find all of an object's properties whose name starts with a prefix, and
+ * return a new object consisting of those properties without that prefix.
+ * Useful for filtering environment variables relevant to a particular purpose.
+ *
+ * @template {string} P
+ * @template {string} K
+ * @template V
+ * @param {Record<`${P}${K}`, V>} obj
+ * @param {P} prefix
+ */
+export const unprefixedProperties = (obj, prefix) =>
+  /** @type {Record<K, V>} */ (
+    fromTypedEntries(
+      typedEntries(obj)
+        .filter(([key]) => key.startsWith(prefix))
+        .map(([key, value]) => [key.slice(prefix.length), value]),
+    )
+  );
