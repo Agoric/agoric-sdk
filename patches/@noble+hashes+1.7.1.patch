@@ -1,11 +1,12 @@
-diff --git a/node_modules/@noble/hashes/_u64.js b/node_modules/@noble/hashes/_u64.js
-index 31f1213..bf91ee8 100644
---- a/node_modules/@noble/hashes/_u64.js
-+++ b/node_modules/@noble/hashes/_u64.js
-@@ -87,3 +87,5 @@ const u64 = {
- };
- exports.default = u64;
- //# sourceMappingURL=_u64.js.map
-+
-+export {};
-\ No newline at end of file
+diff --git a/node_modules/@noble/hashes/package.json b/node_modules/@noble/hashes/package.json
+index a57f2a2..f17ac9c 100644
+--- a/node_modules/@noble/hashes/package.json
++++ b/node_modules/@noble/hashes/package.json
+@@ -1,6 +1,7 @@
+ {
+   "name": "@noble/hashes",
+   "version": "1.7.1",
++  "type": "module",
+   "description": "Audited & minimal 0-dependency JS implementation of SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF & Scrypt",
+   "files": [
+     "/*.js",

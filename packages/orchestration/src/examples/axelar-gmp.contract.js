@@ -12,11 +12,7 @@ import { prepareEvmTap } from './evm-tap-kit.js';
 import { EmptyProposalShape } from '@agoric/zoe/src/typeGuards';
 import { E } from '@endo/far';
 // import { buildGMPPayload } from '../utils/gmp.js';
-// import { encode } from '@metamask/abi-utils';
-
-import * as abiUtils from '@metamask/abi-utils';
-console.log('www.........................',abiUtils);
-
+import { encode } from '@metamask/abi-utils';
 
 /**
  * @import {Remote, Vow} from '@agoric/vow';
@@ -55,8 +51,8 @@ export const contract = async (
 ) => {
   console.log('Inside Contract');
 
-// const encoded = encode(['uint256', 'string'], [42, 'Hello, world!']);
-// console.log('WW.....',(encoded));
+  // const encoded = encode(['uint256', 'string'], [42, 'Hello, world!']);
+  // console.log('WW.....',(encoded));
 
   console.log('Channel Info Agoric:');
   console.log(privateArgs.chainInfo.agoric.connections);
