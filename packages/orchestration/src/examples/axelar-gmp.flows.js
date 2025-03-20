@@ -81,10 +81,10 @@ export const sendGmp = async (
     `${amt.brand} not registered in vbank`,
   );
 
-  const osmosisChain = await orch.getChain('osmosis');
-  console.log('Osmosis Chain ID:', (await osmosisChain.getChainInfo()).chainId);
+  const axelarChain = await orch.getChain('axelar');
+  console.log('Axelar Chain ID:', (await axelarChain.getChainInfo()).chainId);
 
-  const info = await osmosisChain.getChainInfo();
+  const info = await axelarChain.getChainInfo();
   const { chainId } = info;
   assert(typeof chainId === 'string', 'bad chainId');
 
@@ -95,11 +95,12 @@ export const sendGmp = async (
   const sharedLocalAccount = await sharedLocalAccountP;
 
   await localTransfer(seat, sharedLocalAccount, give);
-  log('After local transfer');
+  log('Local transfer successful');
 
   const payload = type === 1 || type === 2 ? contractInvocationPayload : null;
+  log(`Payload: ${JSON.stringify(payload)}`);
 
-  const memoToAxelar = {
+  const memo = {
     destination_chain: destinationEVMChain,
     destination_address: destinationAddress,
     payload,
@@ -107,22 +108,12 @@ export const sendGmp = async (
   };
 
   if (type === 1 || type === 2) {
-    memoToAxelar.fee = {
+    memo.fee = {
       amount: String(gasAmount),
       recipient: addresses.AXELAR_GAS,
     };
+    log(`Fee object ${JSON.stringify(memo.fee)}`);
   }
-
-  const memo = {
-    forward: {
-      receiver: addresses.AXELAR_GMP,
-      port: 'transfer',
-      channel: channels.OSMOSIS_TO_AXELAR,
-      timeout: '10m',
-      retries: 2,
-      next: JSON.stringify(memoToAxelar),
-    },
-  };
 
   try {
     log(`Initiating IBC Transfer...`);
@@ -130,7 +121,7 @@ export const sendGmp = async (
 
     await sharedLocalAccount.transfer(
       {
-        value: addresses.OSMOSIS_RECEIVER,
+        value: addresses.AXELAR_GMP,
         encoding: 'bech32',
         chainId,
       },
@@ -141,7 +132,7 @@ export const sendGmp = async (
       { memo: JSON.stringify(memo) },
     );
 
-    log('Transfer complete');
+    log('Offer successful');
     console.log(`Completed transfer to ${destinationAddress}`);
   } catch (e) {
     await withdrawToSeat(sharedLocalAccount, seat, give);
