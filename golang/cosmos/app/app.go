@@ -218,6 +218,7 @@ var (
 		vibc.AppModuleBasic{},
 		vbank.AppModuleBasic{},
 		vtransfer.AppModuleBasic{},
+		wasm.AppModuleBasic{},
 	)
 	// module account permissions
 	maccPerms = map[string][]string{
