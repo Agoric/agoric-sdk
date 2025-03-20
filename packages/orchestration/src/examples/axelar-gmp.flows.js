@@ -1,6 +1,6 @@
 // @ts-check
 import { NonNullish } from '@agoric/internal';
-import { makeError, q } from '@endo/errors';
+import { Fail, makeError, q } from '@endo/errors';
 
 /**
  * @import {GuestInterface, GuestOf} from '@agoric/async-flow';
@@ -68,6 +68,9 @@ export const sendGmp = async (
 
   const { give } = seat.getProposal();
   const [[_kw, amt]] = entries(give);
+
+  amt.value > 0n || Fail`IBC transfer amount must be greater than zero`;
+
   console.log('_kw, amt', _kw, amt);
 
   const agoric = await orch.getChain('agoric');
