@@ -13,6 +13,7 @@ export function buildRootObject(vatPowers) {
     assert(bcap === bcap2, 'bundlecaps do not match'); // should be consistent
     const bundle = D(bcap).getBundle();
     assert.typeof(bundle, 'object');
+    assert(bundle !== null);
     const endowments = harden({ big: 'big' });
     const ns = await importBundle(bundle, { endowments });
     const out = ns.runTheCheck('world');
