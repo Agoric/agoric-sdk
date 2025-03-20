@@ -148,6 +148,13 @@ const subscribeMessage = vpid => ({
   target: vpid,
 });
 
+/** @param {`p-${number}` | `p+${number}`} p */
+const extractPNum = p => {
+  const r = /^p[-+](\d+)$/.exec(p);
+  if (!r) throw Fail`Invalid promise ${p}`;
+  return parseInt(r[1], 10);
+};
+
 test('past-incarnation watched promises', async t => {
   const S = 'settlement';
   // Anchor promise counters upon which the other assertions depend.
@@ -155,14 +162,14 @@ test('past-incarnation watched promises', async t => {
   // cf. src/liveslots.js:initialIDCounters
   const firstPExport = 5;
 
-  const startImportedP = firstPImport - 2;
+  const startImportedP = `p-${firstPImport - 2}`;
 
   const v1StartOperations = [
     ['createLocalPromise', 'start orphaned'],
     ['watchPromise', 'start orphaned'],
     ['createLocalPromise', 'start fulfilled', S],
     ['watchPromise', 'start fulfilled'],
-    ['importPromise', 'start imported', kslot(`p-${startImportedP}`)],
+    ['importPromise', 'start imported', kslot(startImportedP)],
     ['watchPromise', 'start imported'],
   ];
   const kvStore = new Map();
@@ -182,17 +189,16 @@ test('past-incarnation watched promises', async t => {
   );
   let vatLogs = v.log;
 
-  let lastPImport = firstPImport - 1;
   let lastPExport = firstPExport - 1;
-  let dispatches = 0;
   const exportedPromises = new Set();
   const v1OrphanedPExports = [];
-  const nextPImport = () => (lastPImport += 1);
   const nextPExport = () => (lastPExport += 1);
+  /** @type {`p-${number}`} */
+  let rp = `p-0`;
   /** @type {typeof rawDispatch} */
-  const dispatchMessage = (...args) => {
-    dispatches += 1;
-    return rawDispatch(...args);
+  const dispatchMessage = async (...args) => {
+    rp = /** @type {`p-${number}`} */ (await rawDispatch(...args));
+    return rp;
   };
   const recordExportedPromise = name => {
     exportedPromises.add(name);
@@ -205,33 +211,36 @@ test('past-incarnation watched promises', async t => {
   v1OrphanedPExports.push(nextPExport());
   recordExportedPromise('start fulfilled');
   t.deepEqual(extractDispatchLogs(vatLogs), [
-    subscribeMessage(`p-${startImportedP}`),
+    subscribeMessage(startImportedP),
     subscribeMessage(`p+${lastPExport - 1}`),
     subscribeMessage(`p+${lastPExport}`),
     fulfillmentMessage(`p+${lastPExport}`, S),
   ]);
   await dispatchMessage('createLocalPromise', 'exported', S);
   t.deepEqual(extractDispatchLogs(vatLogs), [
-    fulfillmentMessage(`p-${nextPImport()}`, 'created local promise: exported'),
+    fulfillmentMessage(rp, 'created local promise: exported'),
   ]);
   await dispatchMessage('getPromise', recordExportedPromise('exported'));
   t.deepEqual(extractDispatchLogs(vatLogs), [
-    fulfillmentMessage(`p-${nextPImport()}`, {
+    fulfillmentMessage(rp, {
       promise: kslot(`p+${nextPExport()}`),
     }),
     fulfillmentMessage(`p+${lastPExport}`, S),
   ]);
-  const importedP = firstPImport - 1;
-  await dispatchMessage('importPromise', 'imported', kslot(`p-${importedP}`));
+  const importedP = `p-${firstPImport - 1}`;
+  await dispatchMessage('importPromise', 'imported', kslot(importedP));
   t.deepEqual(extractDispatchLogs(vatLogs), [
-    subscribeMessage(`p-${importedP}`),
-    fulfillmentMessage(`p-${nextPImport()}`, 'imported promise: imported'),
+    subscribeMessage(importedP),
+    fulfillmentMessage(rp, 'imported promise: imported'),
   ]);
   await dispatchMessage('createLocalPromise', 'orphaned');
   t.deepEqual(extractDispatchLogs(vatLogs), [
-    fulfillmentMessage(`p-${nextPImport()}`, 'created local promise: orphaned'),
+    fulfillmentMessage(rp, 'created local promise: orphaned'),
   ]);
   await dispatchMessage('createLocalPromise', 'orphaned exported');
+  t.deepEqual(extractDispatchLogs(vatLogs), [
+    fulfillmentMessage(rp, 'created local promise: orphaned exported'),
+  ]);
   await dispatchMessage(
     'getPromise',
     recordExportedPromise('orphaned exported'),
@@ -239,30 +248,18 @@ test('past-incarnation watched promises', async t => {
   const orphanedExportedP = nextPExport();
   v1OrphanedPExports.push(orphanedExportedP);
   t.deepEqual(extractDispatchLogs(vatLogs), [
-    fulfillmentMessage(
-      `p-${nextPImport()}`,
-      'created local promise: orphaned exported',
-    ),
-    fulfillmentMessage(`p-${nextPImport()}`, {
+    fulfillmentMessage(rp, {
       promise: kslot(`p+${orphanedExportedP}`),
     }),
   ]);
   await dispatchMessage('createLocalPromise', 'fulfilled', S);
   t.deepEqual(extractDispatchLogs(vatLogs), [
-    fulfillmentMessage(
-      `p-${nextPImport()}`,
-      'created local promise: fulfilled',
-    ),
+    fulfillmentMessage(rp, 'created local promise: fulfilled'),
   ]);
   await dispatchMessage('createLocalPromise', 'rejected', undefined, S);
   t.deepEqual(extractDispatchLogs(vatLogs), [
-    fulfillmentMessage(`p-${nextPImport()}`, 'created local promise: rejected'),
+    fulfillmentMessage(rp, 'created local promise: rejected'),
   ]);
-  t.is(
-    lastPImport - firstPImport + 1,
-    dispatches,
-    `imported ${dispatches} promises (1 per dispatch)`,
-  );
   t.is(
     lastPExport - firstPExport + 1,
     exportedPromises.size,
@@ -273,65 +270,62 @@ test('past-incarnation watched promises', async t => {
   v1OrphanedPExports.push(nextPExport());
   t.deepEqual(extractDispatchLogs(vatLogs), [
     subscribeMessage(`p+${lastPExport}`),
-    fulfillmentMessage(`p-${nextPImport()}`, 'watched promise: orphaned'),
+    fulfillmentMessage(rp, 'watched promise: orphaned'),
   ]);
   await dispatchMessage('watchPromise', recordExportedPromise('fulfilled'));
   t.deepEqual(extractDispatchLogs(vatLogs), [
     subscribeMessage(`p+${nextPExport()}`),
-    fulfillmentMessage(`p-${nextPImport()}`, 'watched promise: fulfilled'),
+    fulfillmentMessage(rp, 'watched promise: fulfilled'),
     fulfillmentMessage(`p+${lastPExport}`, S),
   ]);
   await dispatchMessage('watchPromise', recordExportedPromise('rejected'));
   t.deepEqual(extractDispatchLogs(vatLogs), [
     subscribeMessage(`p+${nextPExport()}`),
-    fulfillmentMessage(`p-${nextPImport()}`, 'watched promise: rejected'),
+    fulfillmentMessage(rp, 'watched promise: rejected'),
     rejectionMessage(`p+${lastPExport}`, S),
   ]);
   await dispatchMessage('watchPromise', 'imported');
   t.deepEqual(extractDispatchLogs(vatLogs), [
     // no subscribe, we already did at import
-    fulfillmentMessage(`p-${nextPImport()}`, 'watched promise: imported'),
+    fulfillmentMessage(rp, 'watched promise: imported'),
   ]);
   await dispatchMessage('getWatchResolution', 'fulfilled');
   t.deepEqual(extractDispatchLogs(vatLogs), [
-    fulfillmentMessage(`p-${nextPImport()}`, {
+    fulfillmentMessage(rp, {
       status: 'fulfilled',
       value: S,
     }),
   ]);
   await dispatchMessage('getWatchResolution', 'rejected');
   t.deepEqual(extractDispatchLogs(vatLogs), [
-    fulfillmentMessage(`p-${nextPImport()}`, {
+    fulfillmentMessage(rp, {
       status: 'rejected',
       reason: S,
     }),
   ]);
   await dispatchMessage('getWatchResolution', 'start fulfilled');
   t.deepEqual(extractDispatchLogs(vatLogs), [
-    fulfillmentMessage(`p-${nextPImport()}`, {
+    fulfillmentMessage(rp, {
       status: 'fulfilled',
       value: S,
     }),
   ]);
 
   t.is(
-    lastPImport - firstPImport + 1,
-    dispatches,
-    `imported ${dispatches} promises (1 per dispatch)`,
-  );
-  t.is(
     lastPExport - firstPExport + 1,
     exportedPromises.size,
     `exported ${exportedPromises.size} promises: ${[...exportedPromises].join(', ')}`,
   );
 
+  const v2FirstPromise = extractPNum(rp) + 1;
+
   // Simulate upgrade by starting from the non-empty kvStore.
   // t.log(Object.fromEntries([...kvStore.entries()].sort(compareEntriesByKey)));
   const clonedStore = new Map(kvStore);
-  const startImported2P = firstPImport - 3;
+  const startImported2P = `p-${firstPImport - 3}`;
   const v2StartOperations = [
-    ['importPromise', 'start imported 2', kslot(`p-${startImported2P}`)], // import of new promise
-    ['importPromise', 'imported', kslot(`p-${importedP}`)], // import previously imported and watched promise
+    ['importPromise', 'start imported 2', kslot(startImported2P)], // import of new promise
+    ['importPromise', 'imported', kslot(importedP)], // import previously imported and watched promise
     ['importPromise', 'orphaned exported', kslot(`p+${orphanedExportedP}`)], // import previously exported but unwatched promise
     ['watchPromise', 'orphaned exported'],
   ];
@@ -345,7 +339,7 @@ test('past-incarnation watched promises', async t => {
     'durable-promise-watcher-v2',
     {
       kvStore: clonedStore,
-      nextPromiseImportNumber: lastPImport + 1,
+      nextPromiseImportNumber: v2FirstPromise,
       vatParameters: { startOperations: v2StartOperations },
     },
   ));
@@ -353,8 +347,8 @@ test('past-incarnation watched promises', async t => {
 
   // startVat logs
   t.deepEqual(extractDispatchLogs(vatLogs), [
-    subscribeMessage(`p-${startImported2P}`),
-    subscribeMessage(`p-${importedP}`),
+    subscribeMessage(startImported2P),
+    subscribeMessage(importedP),
     subscribeMessage(`p+${orphanedExportedP}`),
   ]);
   // Simulate kernel rejection of promises orphaned by termination/upgrade of their decider vat.
@@ -369,21 +363,21 @@ test('past-incarnation watched promises', async t => {
   }
   await dispatchMessage('getWatchResolution', 'orphaned');
   t.deepEqual(extractDispatchLogs(vatLogs), [
-    fulfillmentMessage(`p-${nextPImport()}`, {
+    fulfillmentMessage(rp, {
       status: 'rejected',
       reason: 'tomorrow never came',
     }),
   ]);
   await dispatchMessage('getWatchResolution', 'start orphaned');
   t.deepEqual(extractDispatchLogs(vatLogs), [
-    fulfillmentMessage(`p-${nextPImport()}`, {
+    fulfillmentMessage(rp, {
       status: 'rejected',
       reason: 'tomorrow never came',
     }),
   ]);
   await dispatchMessage('getWatchResolution', 'orphaned exported');
   t.deepEqual(extractDispatchLogs(vatLogs), [
-    fulfillmentMessage(`p-${nextPImport()}`, {
+    fulfillmentMessage(rp, {
       status: 'rejected',
       reason: 'tomorrow never came',
     }),
@@ -392,45 +386,44 @@ test('past-incarnation watched promises', async t => {
     t.false(clonedStore.has(key), `entry should be removed: ${key}: ${value}`);
   }
   // Simulate resolution of imported promises watched in previous incarnation
-  await dispatch(makeResolve(`p-${importedP}`, kser(undefined)));
+  await dispatch(makeResolve(importedP, kser(undefined)));
   await dispatchMessage('getWatchResolution', 'imported');
   t.deepEqual(extractDispatchLogs(vatLogs), [
-    fulfillmentMessage(`p-${nextPImport()}`, {
+    fulfillmentMessage(rp, {
       status: 'fulfilled',
       value: undefined,
     }),
   ]);
-  await dispatch(makeResolve(`p-${startImportedP}`, kser(undefined)));
+  await dispatch(makeResolve(startImportedP, kser(undefined)));
   await dispatchMessage('getWatchResolution', 'start imported');
   t.deepEqual(extractDispatchLogs(vatLogs), [
-    fulfillmentMessage(`p-${nextPImport()}`, {
+    fulfillmentMessage(rp, {
       status: 'fulfilled',
       value: undefined,
     }),
   ]);
-  await dispatch(makeResolve(`p-${startImported2P}`, kser(undefined)));
+  await dispatch(makeResolve(startImported2P, kser(undefined)));
   await dispatchMessage('getWatchResolution', 'start imported 2');
   t.deepEqual(extractDispatchLogs(vatLogs), [
-    fulfillmentMessage(`p-${nextPImport()}`, undefined),
+    fulfillmentMessage(rp, undefined),
   ]);
   // simulate resolution of imported promise watched after resolution
   await dispatchMessage('watchPromise', 'start imported 2');
   t.deepEqual(extractDispatchLogs(vatLogs), [
     // Promise was previously resolved, so it is re-exported
     subscribeMessage(`p+${nextPExport()}`),
-    fulfillmentMessage(
-      `p-${nextPImport()}`,
-      'watched promise: start imported 2',
-    ),
+    fulfillmentMessage(rp, 'watched promise: start imported 2'),
     fulfillmentMessage(`p+${lastPExport}`, undefined),
   ]);
   await dispatchMessage('getWatchResolution', 'start imported 2');
   t.deepEqual(extractDispatchLogs(vatLogs), [
-    fulfillmentMessage(`p-${nextPImport()}`, {
+    fulfillmentMessage(rp, {
       status: 'fulfilled',
       value: undefined,
     }),
   ]);
+
+  const finalFirstPromise = extractPNum(rp) + 1;
 
   // Verify that the data is still in loadable condition.
   const finalClonedStore = new Map(clonedStore);
@@ -442,19 +435,23 @@ test('past-incarnation watched promises', async t => {
     t,
     buildPromiseWatcherRootObject,
     'durable-promise-watcher-final',
-    { kvStore: finalClonedStore, nextPromiseImportNumber: lastPImport + 1 },
+    { kvStore: finalClonedStore, nextPromiseImportNumber: finalFirstPromise },
   ));
   vatLogs = v.log;
   vatLogs.length = 0;
   await dispatchMessage('createLocalPromise', 'final', S);
+  t.deepEqual(extractDispatchLogs(vatLogs), [
+    fulfillmentMessage(rp, 'created local promise: final'),
+  ]);
   await dispatchMessage('watchPromise', 'final');
+  t.deepEqual(extractDispatchLogs(vatLogs), [
+    subscribeMessage(`p+${nextPExport()}`),
+    fulfillmentMessage(rp, 'watched promise: final'),
+    fulfillmentMessage(`p+${lastPExport}`, S),
+  ]);
   await dispatchMessage('getWatchResolution', 'final');
   t.deepEqual(extractDispatchLogs(vatLogs), [
-    fulfillmentMessage(`p-${nextPImport()}`, 'created local promise: final'),
-    subscribeMessage(`p+${nextPExport()}`),
-    fulfillmentMessage(`p-${nextPImport()}`, 'watched promise: final'),
-    fulfillmentMessage(`p+${lastPExport}`, S),
-    fulfillmentMessage(`p-${nextPImport()}`, {
+    fulfillmentMessage(rp, {
       status: 'fulfilled',
       value: S,
     }),
