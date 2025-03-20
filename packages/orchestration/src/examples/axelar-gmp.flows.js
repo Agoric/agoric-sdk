@@ -1,6 +1,7 @@
 // @ts-check
 import { NonNullish } from '@agoric/internal';
 import { Fail, makeError, q } from '@endo/errors';
+import { buildGMPPayload } from '../utils/gmp.js';
 
 /**
  * @import {GuestInterface, GuestOf} from '@agoric/async-flow';
@@ -16,14 +17,15 @@ const addresses = {
   AXELAR_GMP:
     'axelar1dv4u5k73pzqrxlzujxg3qp8kvc3pje7jtdvu72npnt5zhq05ejcsn5qme5',
   AXELAR_GAS: 'axelar1zl3rxpp70lmte2xr6c4lgske2fyuj3hupcsvcd',
-  OSMOSIS_RECEIVER: 'osmo1yh3ra8eage5xtr9a3m5utg6mx0pmqreytudaqj',
 };
 
-const channels = {
-  AGORIC_XNET_TO_OSMOSIS: 'channel-6',
-  AGORIC_DEVNET_TO_OSMOSIS: 'channel-61',
-  OSMOSIS_TO_AXELAR: 'channel-4118',
-};
+/**
+ * @typedef {Object} ContractInvocationData
+ * @property {string} functionSelector - Function selector (4 bytes)
+ * @property {string} encodedArgs - ABI encoded arguments
+ * @property {number} deadline
+ * @property {number} nonce
+ */
 
 /**
  * @satisfies {OrchestrationFlow}
@@ -38,7 +40,7 @@ const channels = {
  *   type: number;
  *   destinationEVMChain: string;
  *   gasAmount: number;
- *   contractInvocationPayload: number[];
+ *   contractInvocationData: ContractInvocationData;
  * }} offerArgs
  */
 export const sendGmp = async (
@@ -52,26 +54,31 @@ export const sendGmp = async (
     type,
     destinationEVMChain,
     gasAmount,
-    contractInvocationPayload,
+    contractInvocationData,
   } = offerArgs;
   log('Inside sendGmp');
-  console.log(
-    'Offer Args',
-    JSON.stringify({
-      destinationAddress,
-      type,
-      destinationEVMChain,
-      gasAmount,
-      contractInvocationPayload,
-    }),
-  );
+
+  const isContractInvocation = [1, 2].includes(type);
+  if (isContractInvocation) {
+    ['functionSelector', 'encodedArgs', 'deadline', 'nonce'].every(
+      field => contractInvocationData[field] != null,
+    ) ||
+      Fail`Contract invocation payload is invalid or missing required fields`;
+  }
 
   const { give } = seat.getProposal();
   const [[_kw, amt]] = entries(give);
-
   amt.value > 0n || Fail`IBC transfer amount must be greater than zero`;
-
   console.log('_kw, amt', _kw, amt);
+
+  const payload = isContractInvocation
+    ? buildGMPPayload({
+        type,
+        evmContractAddress: destinationAddress,
+        ...contractInvocationData,
+      })
+    : null;
+  log(`Payload: ${JSON.stringify(payload)}`);
 
   const agoric = await orch.getChain('agoric');
   console.log('Agoric Chain ID:', (await agoric.getChainInfo()).chainId);
@@ -99,9 +106,6 @@ export const sendGmp = async (
 
   await localTransfer(seat, sharedLocalAccount, give);
   log('Local transfer successful');
-
-  const payload = type === 1 || type === 2 ? contractInvocationPayload : null;
-  log(`Payload: ${JSON.stringify(payload)}`);
 
   const memo = {
     destination_chain: destinationEVMChain,
