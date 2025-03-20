@@ -110,7 +110,15 @@ const prepareLocalChainFacadeKit = (
             this.facets.makeAccountWatcher,
           );
         },
-        /** @type {HostOf<Chain<{ chainId: 'agoriclocal' }>['query']>} */
+        /**
+         * @type {HostOf<
+         *   Chain<{
+         *     chainId: 'agoriclocal';
+         *     namespace: 'cosmos';
+         *     reference: 'agoriclocal';
+         *   }>['query']
+         * >}
+         */
         query(requests) {
           return watch(E(localchain).queryMany(requests));
         },

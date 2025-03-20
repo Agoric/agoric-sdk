@@ -368,12 +368,17 @@ test.serial('writes pool metrics to vstorage', async t => {
 
 test.serial('deploy HEAD; update Settler reference', async t => {
   const { buildProposal, evalProposal } = t.context;
+  // TODO use `evalReleasedProposal`
   const materials = await buildProposal(
     '@agoric/builders/scripts/fast-usdc/fast-usdc-settler-ref.build.js',
   );
   await evalProposal(materials);
   t.pass();
 });
+
+// TODO repair ChainHub (call it `fusdc-evm-solana.core.js`)
+// 1) iterate over existing chainInfos, and call chainHub.updateChain
+// 2) iterate over new chainInfos, and call chainHub.registerChain
 
 test.serial('makes usdc advance', async t => {
   const {

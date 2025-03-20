@@ -26,7 +26,7 @@ import { makeFeeTools } from '../utils/fees.js';
  * @import {ZoeTools} from '@agoric/orchestration/src/utils/zoe-tools.js';
  * @import {VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
- * @import {AddressHook, EvmHash, FeeConfig, LogFn, NobleAddress, EvidenceWithRisk} from '../types.js';
+ * @import {AddressHook, EvmHash, FeeConfig, LogFn, NobleAddress, EvidenceWithRisk, LocalOrchAccount} from '../types.js';
  * @import {StatusManager} from './status-manager.js';
  * @import {LiquidityPoolKit} from './liquidity-pool.js';
  */
@@ -137,7 +137,7 @@ export const prepareAdvancerKit = (
      * @param {{
      *   notifier: import('./settler.js').SettlerKit['notifier'];
      *   borrower: LiquidityPoolKit['borrower'];
-     *   poolAccount: HostInterface<OrchestrationAccount<{chainId: 'agoric'}>>;
+     *   poolAccount: LocalOrchAccount;
      *   settlementAddress: CosmosChainAddress;
      *   intermediateRecipient?: CosmosChainAddress;
      * }} config

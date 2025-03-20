@@ -11,13 +11,14 @@ import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics
 import type { Passable } from '@endo/marshal';
 import type {
   AgoricChainMethods,
-  ChainInfo,
   CosmosChainAccountMethods,
   CosmosChainInfo,
   IBCMsgTransferOptions,
   KnownChains,
   LocalAccountMethods,
   ICQQueryFunction,
+  EIP155ChainInfo,
+  CAIP2Namespace,
 } from './types.js';
 import type { ResolvedContinuingOfferResult } from './utils/zoe-tools.js';
 
@@ -89,6 +90,23 @@ export type CosmosChainAddress = {
 };
 
 /**
+ * Info used to build a {@link Chain} object - channel, connection, and denom
+ * info.
+ */
+export interface BaseChainInfo {
+  /** CAIP-2 namespace, e.g. 'cosmos', 'eip155' */
+  readonly namespace: CAIP2Namespace;
+  /** CAIP-2 reference, `e.g. `1`, `agoric-3` */
+  readonly reference: string;
+  /** @see {@link https://developers.circle.com/stablecoins/supported-domains} */
+  readonly cctpDestinationDomain?: number;
+  /** `${namespace}:${reference}`. If namespace is omitted, it's assumed to be 'cosmos' */
+  readonly chainId: string;
+}
+
+export type ChainInfo = BaseChainInfo | CosmosChainInfo | EIP155ChainInfo;
+
+/**
  * A value that can be converted mechanically to an AccountId.
  * @see {@link ChainHub.resolveAccountId}
  */
@@ -118,10 +136,13 @@ export interface Chain<CI extends ChainInfo> {
 
   // "makeAccount" suggests an operation within a vat
   /**
+   * TODO: scope to `icaEnabled: true` and chainId `agoric${string}`;
    * Creates a new Orchestration Account on the current Chain.
    * @returns an object that controls the account
    */
-  makeAccount: () => Promise<OrchestrationAccount<CI>>;
+  makeAccount: CI extends { namespace: 'cosmos' }
+    ? () => Promise<OrchestrationAccount<CI>>
+    : never;
   // FUTURE supply optional port object; also fetch port object
 
   query: CI extends { icqEnabled: true }

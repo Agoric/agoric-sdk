@@ -35,6 +35,7 @@ import type {
 import { PFM_RECEIVER } from './exos/chain-hub.js';
 import type {
   AmountArg,
+  BaseChainInfo,
   CosmosChainAddress,
   Denom,
   DenomAmount,
@@ -101,25 +102,28 @@ export interface CosmosAssetInfo extends Record<string, unknown> {
 /**
  * Info for a Cosmos-based chain.
  */
-export type CosmosChainInfo = Readonly<{
+export interface CosmosChainInfo extends BaseChainInfo {
   /** can be used to lookup chainInfo (chainId) from an address value */
-  bech32Prefix?: string;
-  chainId: string;
-
-  connections?: Record<string, IBCConnectionInfo>; // chainId or wellKnownName
+  readonly bech32Prefix?: string;
+  /** plain reference (gaia-1) or CAIP-2 (cosmos:gaia-1) supported */
+  readonly chainId: string | `cosmos:${string}`;
+  /**  IBC connections between this chain and other chains, keyed by their chainId */
+  readonly connections?: Record<string, IBCConnectionInfo>;
   // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
-  icqEnabled?: boolean;
+  readonly icqEnabled?: boolean;
+  readonly namespace: 'cosmos';
   /**
    * Note: developers must provide this value themselves for `.transfer` to work
    * as expected. Please see examples for details.
    */
-  pfmEnabled?: boolean;
+  readonly pfmEnabled?: boolean;
   /**
    * cf https://github.com/cosmos/chain-registry/blob/master/chain.schema.json#L117
    */
-  stakingTokens?: Readonly<Array<{ denom: string }>>;
-  icaEnabled?: boolean;
-}>;
+  readonly stakingTokens?: Readonly<Array<{ denom: string }>>;
+  /** indicates the host chain supports Interchain Accounts (ICS-27) */
+  readonly icaEnabled?: boolean;
+}
 
 // #region Orchestration views on Cosmos response types
 // Naming scheme: Cosmos for the chain system, Rewards b/c getRewards function,

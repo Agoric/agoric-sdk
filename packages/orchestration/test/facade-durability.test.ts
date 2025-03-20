@@ -14,6 +14,8 @@ const test = anyTest;
 
 const mockChainInfo: CosmosChainInfo = harden({
   chainId: 'mock-1',
+  namespace: 'cosmos',
+  reference: 'mock-1',
   icaEnabled: false,
   icqEnabled: false,
   pfmEnabled: false,
