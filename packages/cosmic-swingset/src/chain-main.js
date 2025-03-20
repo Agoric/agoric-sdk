@@ -700,38 +700,27 @@ export default async function main(
           });
         stateSyncExport = exportData;
 
-        await new Promise((resolve, reject) => {
-          tmp.dir(
-            {
-              prefix: `agd-state-sync-${blockHeight}-`,
-              unsafeCleanup: true,
-            },
-            (err, exportDir, cleanup) => {
-              if (err) {
-                reject(err);
-                return;
-              }
-              exportData.exportDir = exportDir;
-              /** @type {Promise<void> | undefined} */
-              let cleanupResult;
-              exportData.cleanup = async () => {
-                cleanupResult ||= new Promise(cleanupDone => {
-                  // If the exporter is still the same, then the retriever
-                  // is in charge of cleanups
-                  if (stateSyncExport !== exportData) {
-                    // @ts-expect-error wrong type definitions
-                    cleanup(cleanupDone);
-                  } else {
-                    console.warn('unexpected call of state-sync cleanup');
-                    cleanupDone();
-                  }
-                });
-                await cleanupResult;
-              };
-              resolve(null);
-            },
-          );
+        const { name: exportDir, removeCallback: cleanup } = tmp.dirSync({
+          prefix: `agd-state-sync-${blockHeight}-`,
+          unsafeCleanup: true,
         });
+        exportData.exportDir = exportDir;
+        /** @type {Promise<void> | undefined} */
+        let cleanupResult;
+        exportData.cleanup = async () => {
+          cleanupResult ||= new Promise(cleanupDone => {
+            // If the exporter is still the same, then the retriever
+            // is in charge of cleanups
+            if (stateSyncExport !== exportData) {
+              // @ts-expect-error wrong type definitions
+              cleanup(cleanupDone);
+            } else {
+              console.warn('unexpected call of state-sync cleanup');
+              cleanupDone();
+            }
+          });
+          await cleanupResult;
+        };
 
         console.warn(
           'Initiating SwingSet state snapshot at block height',
