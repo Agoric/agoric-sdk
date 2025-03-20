@@ -20,7 +20,7 @@ test.before(async t => {
 });
 test.after.always(t => t.context.shutdown?.());
 
-test('start axelarGmp and perform a successful token transfer', async t => {
+test('send tokens via axelarGmp flows', async t => {
   const {
     walletFactoryDriver,
     bridgeUtils: { runInbound },
@@ -29,7 +29,7 @@ test('start axelarGmp and perform a successful token transfer', async t => {
     storage,
   } = t.context;
 
-  const { BLD } = t.context.agoricNamesRemotes.brand;
+  const { BLD, ATOM } = t.context.agoricNamesRemotes.brand;
 
   t.log('start axelarGmp');
 
@@ -58,7 +58,7 @@ test('start axelarGmp and perform a successful token transfer', async t => {
   t.log('making offer');
   const wallet = await walletFactoryDriver.provideSmartWallet('agoric1test');
   await wallet.sendOffer({
-    id: 'invokeEVMContract',
+    id: 'axelarGmp1',
     invitationSpec: {
       source: 'agoricContract',
       instancePath: ['axelarGmp'],
@@ -107,4 +107,58 @@ test('start axelarGmp and perform a successful token transfer', async t => {
     'DENOM of token:ubld',
     'Offer successful',
   ]);
+
+  t.log('make offer with 0 amount');
+
+  await wallet.sendOffer({
+    id: 'axelarGmp2',
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: ['axelarGmp'],
+      callPipe: [['gmpInvitation']],
+    },
+    proposal: {
+      // @ts-expect-error XXX BoardRemote
+      give: { BLD: { brand: BLD, value: 0n } },
+    },
+    offerArgs: {
+      destAddr: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
+      type: 3,
+      destinationEVMChain: 'Ethereum',
+    },
+  });
+
+  t.like(wallet.getLatestUpdateRecord(), {
+    status: {
+      id: 'axelarGmp2',
+      error: 'Error: IBC transfer amount must be greater than zero',
+    },
+  });
+
+  t.log('make offer with unregistered vbank asset');
+  await wallet.sendOffer({
+    id: 'axelarGmp3',
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: ['axelarGmp'],
+      callPipe: [['gmpInvitation']],
+    },
+    proposal: {
+      // @ts-expect-error XXX BoardRemote
+      give: { BLD: { brand: ATOM, value: 1n } },
+    },
+    offerArgs: {
+      destAddr: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
+      type: 3,
+      destinationEVMChain: 'Ethereum',
+    },
+  });
+
+  t.like(wallet.getLatestUpdateRecord(), {
+    status: {
+      id: 'axelarGmp3',
+      error:
+        'Error: IBC Transfer failed "[Error: no denom detail for: \\"ibc/toyatom\\" on \\"agoric\\". ensure it is registered in chainHub.]"',
+    },
+  });
 });
