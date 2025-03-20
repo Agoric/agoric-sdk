@@ -59,12 +59,13 @@ export const sendGmp = async (
   log('Inside sendGmp');
 
   destinationAddress != null || Fail`Destination address must be defined`;
+  destinationEVMChain != null || Fail`Destination evm address must be defined`;
 
   const isContractInvocation = [1, 2].includes(type);
   if (isContractInvocation) {
+    gasAmount != null || Fail`gasAmount must be defined`;
     contractInvocationData != null ||
       Fail`contractInvocationData is not defined`;
-    gasAmount != null || Fail`gasAmount must be defined`;
 
     ['functionSelector', 'encodedArgs', 'deadline', 'nonce'].every(
       field => contractInvocationData[field] != null,
