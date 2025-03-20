@@ -1,0 +1,11 @@
+diff --git a/node_modules/@noble/hashes/_u64.js b/node_modules/@noble/hashes/_u64.js
+index 31f1213..bf91ee8 100644
+--- a/node_modules/@noble/hashes/_u64.js
++++ b/node_modules/@noble/hashes/_u64.js
+@@ -87,3 +87,5 @@ const u64 = {
+ };
+ exports.default = u64;
+ //# sourceMappingURL=_u64.js.map
++
++export {};
+\ No newline at end of file
