@@ -10,7 +10,7 @@ import { makeExporter, buildData } from './exports.js';
 import { tmpDir } from './util.js';
 
 test('repair metadata', async t => {
-  const [dbDir, cleanup] = await tmpDir('testdb');
+  const [dbDir, cleanup] = tmpDir('testdb');
   t.teardown(cleanup);
 
   const { exportData, artifacts } = buildData();
@@ -74,7 +74,7 @@ test('repair metadata', async t => {
 });
 
 test('repair metadata ignores kvStore entries', async t => {
-  const [dbDir, cleanup] = await tmpDir('testdb');
+  const [dbDir, cleanup] = tmpDir('testdb');
   t.teardown(cleanup);
 
   const { exportData, artifacts } = buildData();
@@ -97,7 +97,7 @@ test('repair metadata ignores kvStore entries', async t => {
 });
 
 test('repair metadata rejects mismatched snapshot entries', async t => {
-  const [dbDir, cleanup] = await tmpDir('testdb');
+  const [dbDir, cleanup] = tmpDir('testdb');
   t.teardown(cleanup);
 
   const { exportData, artifacts } = buildData();
@@ -120,7 +120,7 @@ test('repair metadata rejects mismatched snapshot entries', async t => {
 });
 
 test('repair metadata rejects mismatched transcript span', async t => {
-  const [dbDir, cleanup] = await tmpDir('testdb');
+  const [dbDir, cleanup] = tmpDir('testdb');
   t.teardown(cleanup);
 
   const { exportData, artifacts } = buildData();

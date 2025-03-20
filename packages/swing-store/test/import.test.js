@@ -42,7 +42,7 @@ function convert(orig) {
 }
 
 test('import empty', async t => {
-  const [dbDir, cleanup] = await tmpDir('testdb');
+  const [dbDir, cleanup] = tmpDir('testdb');
   t.teardown(cleanup);
   const exporter = makeExporter(new Map(), new Map());
   const ss = await importSwingStore(exporter, dbDir);
@@ -61,7 +61,7 @@ const importTest = test.macro(async (t, mode) => {
   /** @import {ArtifactMode} from '../src/internal.js' */
   const artifactMode = /** @type {ArtifactMode} */ (mode);
 
-  const [dbDir, cleanup] = await tmpDir('testdb');
+  const [dbDir, cleanup] = tmpDir('testdb');
   t.teardown(cleanup);
 
   const { exportData, artifacts, t0hash, t2hash, t5hash, t8hash } = buildData();
@@ -211,7 +211,7 @@ test('import archival', importTest, 'archival');
 test('import debug', importTest, 'debug');
 
 test('import is missing bundle', async t => {
-  const [dbDir, cleanup] = await tmpDir('testdb');
+  const [dbDir, cleanup] = tmpDir('testdb');
   t.teardown(cleanup);
 
   const exportData = new Map();
@@ -224,7 +224,7 @@ test('import is missing bundle', async t => {
 });
 
 test('import is missing snapshot', async t => {
-  const [dbDir, cleanup] = await tmpDir('testdb');
+  const [dbDir, cleanup] = tmpDir('testdb');
   t.teardown(cleanup);
 
   const exportData = new Map();
@@ -240,7 +240,7 @@ test('import is missing snapshot', async t => {
 });
 
 test('import is missing transcript span', async t => {
-  const [dbDir, cleanup] = await tmpDir('testdb');
+  const [dbDir, cleanup] = tmpDir('testdb');
   t.teardown(cleanup);
 
   const exportData = new Map();
@@ -265,7 +265,7 @@ test('import is missing transcript span', async t => {
 });
 
 test('import has mismatched transcript span', async t => {
-  const [dbDir, cleanup] = await tmpDir('testdb');
+  const [dbDir, cleanup] = tmpDir('testdb');
   t.teardown(cleanup);
 
   const exportData = new Map();
@@ -289,7 +289,7 @@ test('import has mismatched transcript span', async t => {
 });
 
 test('import has incomplete transcript span', async t => {
-  const [dbDir, cleanup] = await tmpDir('testdb');
+  const [dbDir, cleanup] = tmpDir('testdb');
   t.teardown(cleanup);
 
   const exportData = new Map();
@@ -320,7 +320,7 @@ test('import has incomplete transcript span', async t => {
 });
 
 test('import has corrupt transcript span', async t => {
-  const [dbDir, cleanup] = await tmpDir('testdb');
+  const [dbDir, cleanup] = tmpDir('testdb');
   t.teardown(cleanup);
 
   const exportData = new Map();
@@ -350,7 +350,7 @@ test('import has corrupt transcript span', async t => {
 });
 
 test('import has corrupt snapshot', async t => {
-  const [dbDir, cleanup] = await tmpDir('testdb');
+  const [dbDir, cleanup] = tmpDir('testdb');
   t.teardown(cleanup);
 
   const exportData = new Map();
@@ -373,7 +373,7 @@ test('import has corrupt snapshot', async t => {
 });
 
 test('import has corrupt bundle', async t => {
-  const [dbDir, cleanup] = await tmpDir('testdb');
+  const [dbDir, cleanup] = tmpDir('testdb');
   t.teardown(cleanup);
 
   const exportData = new Map();
@@ -389,7 +389,7 @@ test('import has corrupt bundle', async t => {
 });
 
 test('import has unknown metadata tag', async t => {
-  const [dbDir, cleanup] = await tmpDir('testdb');
+  const [dbDir, cleanup] = tmpDir('testdb');
   t.teardown(cleanup);
 
   const exportData = new Map();
@@ -401,7 +401,7 @@ test('import has unknown metadata tag', async t => {
 });
 
 test('import has unknown artifact tag', async t => {
-  const [dbDir, cleanup] = await tmpDir('testdb');
+  const [dbDir, cleanup] = tmpDir('testdb');
   t.teardown(cleanup);
 
   const artifacts = new Map();

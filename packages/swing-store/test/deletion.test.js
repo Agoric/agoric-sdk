@@ -139,7 +139,7 @@ const getExport = async (dbDir, artifactMode) => {
 };
 
 const reImport = async (t, dbDir, artifactMode) => {
-  const [dbDir2, cleanup] = await tmpDir('testdb2');
+  const [dbDir2, cleanup] = tmpDir('testdb2');
   t.teardown(cleanup);
   const exporter = makeSwingStoreExporter(dbDir, { artifactMode });
   const ss2 = await importSwingStore(exporter, dbDir2, { artifactMode });
@@ -170,9 +170,9 @@ const setupTranscript = async (t, keepTranscripts) => {
     }
     mergeExportDeltas(currentExportData, exports);
   };
-  const [dbDir, cleanup] = await tmpDir('testdb');
+  const [dbDir, cleanup] = tmpDir('testdb');
   t.teardown(cleanup);
-  const [archiveDir, cleanupArchives] = await tmpDir('archives');
+  const [archiveDir, cleanupArchives] = tmpDir('archives');
   t.teardown(cleanupArchives);
   const fsPowers = { fs, path, tmp };
   const archiveSnapshot = makeArchiveSnapshot(archiveDir, fsPowers);
@@ -531,7 +531,7 @@ const setupSnapshots = async t => {
     }
     mergeExportDeltas(currentExportData, exports);
   };
-  const [dbDir, cleanup] = await tmpDir('testdb');
+  const [dbDir, cleanup] = tmpDir('testdb');
   t.teardown(cleanup);
   const store = initSwingStore(dbDir, { exportCallback });
   const { kernelStorage, hostStorage } = store;

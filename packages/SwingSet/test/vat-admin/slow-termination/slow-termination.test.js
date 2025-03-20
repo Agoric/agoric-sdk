@@ -14,18 +14,12 @@ import { enumeratePrefixedKeys } from '../../../src/kernel/state/storageHelper.j
 
 /**
  * @param {string} [prefix]
- * @returns {Promise<[string, () => void]>}
+ * @returns {[string, () => void]}
  */
-export const tmpDir = prefix =>
-  new Promise((resolve, reject) => {
-    tmp.dir({ unsafeCleanup: true, prefix }, (err, name, removeCallback) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve([name, removeCallback]);
-      }
-    });
-  });
+const tmpDir = prefix => {
+  const { name, removeCallback } = tmp.dirSync({ prefix, unsafeCleanup: true });
+  return [name, removeCallback];
+};
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
@@ -90,7 +84,7 @@ async function doSlowTerminate(t, mode) {
     },
   };
 
-  const [dbDir, cleanup] = await tmpDir('testdb');
+  const [dbDir, cleanup] = tmpDir('testdb');
   t.teardown(cleanup);
 
   const ss = initSwingStore(dbDir);

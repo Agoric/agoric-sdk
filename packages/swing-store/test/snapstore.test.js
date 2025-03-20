@@ -36,7 +36,7 @@ harden(getSnapshotStream);
 test('compress to cache file; closes snapshot stream', async t => {
   const db = sqlite3(':memory:');
   const exportLog = makeExportLog();
-  const [archiveDir, cleanupArchives] = await tmpDir('archives');
+  const [archiveDir, cleanupArchives] = tmpDir('archives');
   t.teardown(cleanupArchives);
   const fsPowers = { fs, path, tmp };
   const archiveSnapshot = makeArchiveSnapshot(archiveDir, fsPowers);
@@ -127,7 +127,7 @@ test('snapStore prepare / commit delete is robust', async t => {
     measureSeconds: makeMeasureSeconds(() => 0),
   };
   const db = sqlite3(':memory:');
-  const [archiveDir, cleanupArchives] = await tmpDir('archives');
+  const [archiveDir, cleanupArchives] = tmpDir('archives');
   t.teardown(cleanupArchives);
   const fsPowers = { fs, path, tmp };
   const archiveSnapshot = makeArchiveSnapshot(archiveDir, fsPowers);

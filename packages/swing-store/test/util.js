@@ -4,18 +4,12 @@ import { createSHA256 } from '../src/hasher.js';
 
 /**
  * @param {string} [prefix]
- * @returns {Promise<[string, () => void]>}
+ * @returns {[string, () => void]}
  */
-export const tmpDir = prefix =>
-  new Promise((resolve, reject) => {
-    tmp.dir({ unsafeCleanup: true, prefix }, (err, name, removeCallback) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve([name, removeCallback]);
-      }
-    });
-  });
+export const tmpDir = prefix => {
+  const { name, removeCallback } = tmp.dirSync({ prefix, unsafeCleanup: true });
+  return [name, removeCallback];
+};
 
 export async function* getSnapshotStream(contents) {
   yield Buffer.from(contents);

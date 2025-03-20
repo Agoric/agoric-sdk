@@ -14,18 +14,12 @@ import { buildKernelBundle } from '../../src/controller/initializeSwingset.js';
 
 /**
  * @param {string} [prefix]
- * @returns {Promise<[string, () => void]>}
+ * @returns {[string, () => void]}
  */
-const tmpDir = prefix =>
-  new Promise((resolve, reject) => {
-    tmp.dir({ unsafeCleanup: true, prefix }, (err, name, removeCallback) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve([name, removeCallback]);
-      }
-    });
-  });
+const tmpDir = prefix => {
+  const { name, removeCallback } = tmp.dirSync({ prefix, unsafeCleanup: true });
+  return [name, removeCallback];
+};
 
 const bfile = name => new URL(name, import.meta.url).pathname;
 
@@ -35,8 +29,8 @@ test.before(async t => {
 });
 
 test('state-sync reload', async t => {
-  const [dbDir, cleanup] = await tmpDir('testdb');
-  const [importDbDir, cleanupImport] = await tmpDir('importtestdb');
+  const [dbDir, cleanup] = tmpDir('testdb');
+  const [importDbDir, cleanupImport] = tmpDir('importtestdb');
   t.teardown(cleanup);
   t.teardown(cleanupImport);
 

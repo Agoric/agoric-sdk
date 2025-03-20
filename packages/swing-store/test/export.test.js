@@ -23,7 +23,7 @@ const bundle0 = { moduleFormat: 'nestedEvaluate', source: '1+1' };
 const bundle0ID = makeB0ID(bundle0);
 
 const exportTest = test.macro(async (t, mode) => {
-  const [dbDir, cleanup] = await tmpDir('testdb');
+  const [dbDir, cleanup] = tmpDir('testdb');
   t.teardown(cleanup);
   // const dbDir = 't-db';
 
@@ -234,7 +234,7 @@ test('export debug', exportTest, 'debug');
 test('export debug-on-pruned', exportTest, 'debug-on-pruned');
 
 test('export omits pruned span artifacts', async t => {
-  const [dbDir, cleanup] = await tmpDir('testdb');
+  const [dbDir, cleanup] = tmpDir('testdb');
   t.teardown(cleanup);
   // const dbDir = 't-db';
 
