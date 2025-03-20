@@ -1,5 +1,5 @@
 diff --git a/node_modules/@ethersproject/random/lib.esm/random.js b/node_modules/@ethersproject/random/lib.esm/random.js
-index 8d7cb8f..373c7ff 100644
+index 8d7cb8f..c0825e9 100644
 --- a/node_modules/@ethersproject/random/lib.esm/random.js
 +++ b/node_modules/@ethersproject/random/lib.esm/random.js
 @@ -7,6 +7,9 @@ const logger = new Logger(version);
