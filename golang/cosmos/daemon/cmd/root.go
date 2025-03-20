@@ -52,6 +52,7 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	swingset "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
 	swingsetkeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	rosetta "github.com/cosmos/rosetta"
 )
 
@@ -98,6 +99,7 @@ func NewRootCmd(sender vm.Sender) (*cobra.Command, params.EncodingConfig) {
 		nil,
 		false, // we don't want to run the app, just get the encoding config
 		appOpts,
+		[]wasmkeeper.Option{},
 	)
 
 	encodingConfig := params.EncodingConfig{
@@ -410,6 +412,7 @@ func (ac appCreator) newApp(
 		ac.sender, ac.agdServer,
 		logger, db, traceStore, true,
 		appOpts,
+		[]wasmkeeper.Option{},
 		baseappOptions...,
 	)
 }
@@ -432,6 +435,7 @@ func (ac appCreator) newSnapshotsApp(
 		ac.sender, ac.agdServer,
 		logger, db, traceStore, true,
 		appOpts,
+		[]wasmkeeper.Option{},
 		baseappOptions...,
 	)
 }
@@ -573,6 +577,7 @@ func (ac appCreator) appExport(
 		traceStore,
 		loadLatest,
 		appOpts,
+		[]wasmkeeper.Option{},
 	)
 
 	if !loadLatest {
