@@ -54,7 +54,7 @@ export const sendGmp = async (
     gasAmount,
     contractInvocationPayload,
   } = offerArgs;
-  log('Inside sendIt');
+  log('Inside sendGmp');
   console.log(
     'Offer Args',
     JSON.stringify({
