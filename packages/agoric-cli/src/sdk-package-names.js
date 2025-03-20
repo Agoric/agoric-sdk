@@ -3,6 +3,7 @@
 export default [
   "@aglocal/benchmark",
   "@aglocal/boot",
+  "@aglocal/deployment",
   "@agoric/access-token",
   "@agoric/async-flow",
   "@agoric/base-zone",
@@ -15,7 +16,6 @@ export default [
   "@agoric/cosmos",
   "@agoric/create-dapp",
   "@agoric/deploy-script-support",
-  "@agoric/deployment",
   "@agoric/ertp",
   "@agoric/eslint-config",
   "@agoric/fast-usdc",
