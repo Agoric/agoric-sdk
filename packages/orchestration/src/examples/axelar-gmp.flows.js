@@ -58,6 +58,8 @@ export const sendGmp = async (
   } = offerArgs;
   log('Inside sendGmp');
 
+  destinationAddress != null || Fail`Destination address must be defined`;
+
   const isContractInvocation = [1, 2].includes(type);
   if (isContractInvocation) {
     ['functionSelector', 'encodedArgs', 'deadline', 'nonce'].every(
@@ -71,13 +73,11 @@ export const sendGmp = async (
   amt.value > 0n || Fail`IBC transfer amount must be greater than zero`;
   console.log('_kw, amt', _kw, amt);
 
-  const payload = isContractInvocation
-    ? buildGMPPayload({
-        type,
-        evmContractAddress: destinationAddress,
-        ...contractInvocationData,
-      })
-    : null;
+  const payload = buildGMPPayload({
+    type,
+    evmContractAddress: destinationAddress,
+    ...contractInvocationData,
+  });
   log(`Payload: ${JSON.stringify(payload)}`);
 
   const agoric = await orch.getChain('agoric');
