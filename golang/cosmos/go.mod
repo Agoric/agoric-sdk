@@ -47,6 +47,8 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 )
 
+require github.com/prometheus/client_golang v1.20.5
+
 require (
 	cloud.google.com/go v0.115.0 // indirect
 	cloud.google.com/go/auth v0.6.0 // indirect
