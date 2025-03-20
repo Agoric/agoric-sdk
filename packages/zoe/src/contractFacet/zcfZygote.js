@@ -250,7 +250,7 @@ export const makeZCFZygote = async (
     } else {
       bundle = contractBundleCap;
     }
-    return evalContractBundle(bundle);
+    return /** @type {any} */ (evalContractBundle(bundle));
   };
   // evaluate the contract (either the first version, or an upgrade)
   const bundleResult = await evaluateContract();
