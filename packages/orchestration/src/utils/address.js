@@ -3,6 +3,7 @@ import { Fail, q } from '@endo/errors';
 /**
  * @import {IBCConnectionID} from '@agoric/vats';
  * @import {CosmosChainAddress, ScopedChainId} from '../types.js';
+ * @import {AccountId} from '../orchestration-api.js';
  * @import {RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  */
 
@@ -141,3 +142,42 @@ export const parseAccountId = partialId => {
   throw Fail`Invalid accountId: ${q(partialId)}`;
 };
 harden(parseAccountId);
+
+/**
+ * Extracts the namespace from a fully-qualified CAIP-10 address.
+ *
+ * @param {AccountId} address - The CAIP-10 address.
+ * @returns {string} - The namespace.
+ */
+export const getNamespace = address => {
+  assert(typeof address === 'string', `${address} must be a string`);
+  const split = address.split(':');
+  assert(split.length === 3, `${address} must have three parts`);
+  return split[0];
+};
+
+/**
+ * Extracts the chain reference from a fully-qualified CAIP-10 address.
+ *
+ * @param {AccountId} address - The CAIP-10 address.
+ * @returns {string} - The namespace portion.
+ */
+export const getReference = address => {
+  assert(typeof address === 'string', `${address} must be a string`);
+  const split = address.split(':');
+  assert(split.length === 3, `${address} must have three parts`);
+  return split[1];
+};
+
+/**
+ * Extracts the address from a fully-qualified CAIP-10 address.
+ *
+ * @param {AccountId} address - The CAIP-10 address.
+ * @returns {string} - The address portion.
+ */
+export const getAddress = address => {
+  assert(typeof address === 'string', `${address} must be a string`);
+  const split = address.split(':');
+  assert(split.length === 3, `${address} must have three parts`);
+  return split[2];
+};
