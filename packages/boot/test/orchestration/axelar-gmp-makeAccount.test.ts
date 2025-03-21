@@ -7,6 +7,9 @@ import {
   type WalletFactoryTestContext,
 } from '../bootstrapTests/walletFactory.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
+import type { ScopedBridgeManager } from '@agoric/vats';
+import { BridgeId } from '@agoric/internal';
+import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
 test.before(async t => {
@@ -20,13 +23,12 @@ test.after.always(t => t.context.shutdown?.());
 test('makeAccount via axelarGmp', async t => {
   const {
     walletFactoryDriver,
-    bridgeUtils: { runInbound },
+    bridgeUtils: { getOutboundMessages },
     buildProposal,
     evalProposal,
     storage,
+    runUtils,
   } = t.context;
-
-  const { BLD } = t.context.agoricNamesRemotes.brand;
 
   t.log('start axelarGmp');
 
@@ -75,4 +77,40 @@ test('makeAccount via axelarGmp', async t => {
     'tap created successfully',
     'Monitoring transfers setup successfully',
   ]);
+
+  // t.log('monitor transfers');
+
+  // // @ts-ignore
+  // const { status } = wallet.getLatestUpdateRecord();
+
+  // const { EV } = runUtils;
+  // const vtransferBridgeManager = (await EV.vat('bootstrap').consumeItem(
+  //   'vtransferBridgeManager',
+  // )) as ScopedBridgeManager<'vtransfer'>;
+  // t.truthy(vtransferBridgeManager);
+
+  // const target = status.result;
+  // const packet = 'helloFromRabi';
+  // const expectedAckData = {
+  //   event: 'writeAcknowledgement',
+  //   packet: 'helloFromRabi',
+  //   target,
+  //   type: VTRANSFER_IBC_EVENT,
+  // };
+
+  // await EV(vtransferBridgeManager).fromBridge(expectedAckData);
+
+  // const messages = getOutboundMessages(BridgeId.VTRANSFER);
+  // t.deepEqual(messages, [
+  //   {
+  //     target,
+  //     type: 'BRIDGE_TARGET_REGISTER',
+  //   },
+  //   {
+  //     ack: btoa(JSON.stringify(expectedAckData)),
+  //     method: 'receiveExecuted',
+  //     packet,
+  //     type: 'IBC_METHOD',
+  //   },
+  // ]);
 });
