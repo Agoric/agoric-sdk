@@ -236,6 +236,36 @@ test('resolveAccountId', async t => {
     },
     'throws on invalid address format',
   );
+
+  /** @type {CosmosChainAddress} */
+  const COSMOS_CHAIN_ADDR = {
+    chainId: 'base',
+    value: MOCK_ICA_ADDRESS,
+    encoding: 'bech32',
+  };
+
+  t.is(
+    // @ts-expect-error The types match
+    chainHub.resolveAccountId(COSMOS_CHAIN_ADDR),
+    `cosmos:base:${MOCK_ICA_ADDRESS}`,
+  );
+
+  const ETH_ADDR = 'eip155:1:0xab16a96D359eC26a11e2C2b3d8f8B8942d5Bfcdb';
+  t.is(chainHub.resolveAccountId(ETH_ADDR), ETH_ADDR);
+
+  const BTC_ADDR =
+    'bip122:000000000019d6689c085ae165831e93:128Lkh3S7CkDTBZ8W7BbpsN3YYizJMp8p6';
+  t.is(chainHub.resolveAccountId(BTC_ADDR), BTC_ADDR);
+
+  // should throw for CAIP-2
+  const CAIP2_ID = 'cosmos:osmosis-1';
+  t.throws(
+    () => chainHub.resolveAccountId(CAIP2_ID),
+    {
+      message: 'Invalid accountId: "cosmos:osmosis-1"',
+    },
+    'throws on invalid address format',
+  );
 });
 
 test('updateChain updates existing chain info and mappings', t => {
