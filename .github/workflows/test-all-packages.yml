@@ -14,6 +14,7 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
 env:
   ACTIVE_LTS_VERSION: '22.x'
   ACTIVE_LTS_VERSION_NAME: 'node-lts'
@@ -36,11 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version:
-          [
-            '${{ env.ACTIVE_LTS_VERSION_NAME }}',
-            '${{ env.PREVIOUS_LTS_VERSION_NAME }}',
-          ]
+        node-version: ['node-lts', 'node-prev'] # unfortunately `env` can't be used here
     steps:
       - name: set vars
         id: vars
