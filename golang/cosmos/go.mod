@@ -11,12 +11,15 @@ require (
 	cosmossdk.io/simapp v0.0.0-00010101000000-000000000000
 	cosmossdk.io/tools/rosetta v0.2.1
 	github.com/CosmWasm/wasmd v0.45.0
+	github.com/CosmWasm/wasmvm v1.5.6
 	github.com/armon/go-metrics v0.4.1
 	github.com/cometbft/cometbft v0.37.5
 	github.com/cometbft/cometbft-db v0.9.5
 	github.com/cosmos/cosmos-sdk v0.47.15
 	github.com/cosmos/gogoproto v1.7.0
 	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7 v7.3.0
+	// .../08-wasm v0.4.0+ibc-go-v7.4-wasmvm-v1.5
+	github.com/cosmos/ibc-go/modules/light-clients/08-wasm v0.4.1-0.20241220161524-8392c480c551
 	github.com/cosmos/ibc-go/v7 v7.10.0
 	github.com/golang/protobuf v1.5.4
 	github.com/gorilla/mux v1.8.0
@@ -37,11 +40,6 @@ require (
 require github.com/prometheus/client_golang v1.20.5
 
 require (
-	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/prometheus/client_golang v1.20.5 // indirect
-)
-
-require (
 	cloud.google.com/go v0.112.1 // indirect
 	cloud.google.com/go/compute/metadata v0.5.0 // indirect
 	cloud.google.com/go/iam v1.1.6 // indirect
@@ -54,7 +52,6 @@ require (
 	github.com/99designs/keyring v1.2.1 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/ChainSafe/go-schnorrkel v1.1.0 // indirect
-	github.com/CosmWasm/wasmvm v1.5.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/aws/aws-sdk-go v1.44.203 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -105,6 +102,7 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v1.2.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/mock v1.6.0 // indirect
@@ -235,8 +233,8 @@ replace (
 	cosmossdk.io/simapp => github.com/agoric-labs/cosmos-sdk/simapp v0.0.0-20250326031203-e68e6747bede
 	cosmossdk.io/tools/rosetta => github.com/agoric-labs/cosmos-sdk/tools/rosetta v0.0.0-20250326031203-e68e6747bede
 
-  // CosmWasm
-  github.com/CosmWasm/wasmvm => github.com/CosmWasm/wasmvm v1.5.9
+	// CosmWasm
+	github.com/CosmWasm/wasmvm => github.com/CosmWasm/wasmvm v1.5.9
 
 	// use cometbft
 	// Use our fork at least until post-v0.34.14 is released with
