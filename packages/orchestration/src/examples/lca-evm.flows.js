@@ -19,25 +19,20 @@ import { denomHash } from '../utils/denomHash.js';
  *   chainHub: GuestInterface<ChainHub>;
  * }} ctx
  * @param {ZCFSeat} seat
- * @param {{
- *   chainName: string;
- * }} offerArgs
  */
 export const createAndMonitorLCA = async (
   orch,
   { makeEvmTap, chainHub },
   seat,
-  { chainName },
 ) => {
   seat.exit(); // no funds exchanged
   const [agoric, remoteChain] = await Promise.all([
     orch.getChain('agoric'),
-    orch.getChain(chainName),
+    orch.getChain('axelar'),
   ]);
   const { chainId, stakingTokens } = await remoteChain.getChainInfo();
   const remoteDenom = stakingTokens[0].denom;
-  remoteDenom ||
-    Fail`${chainId || chainName} does not have stakingTokens in config`;
+  remoteDenom || Fail`${chainId} does not have stakingTokens in config`;
 
   const localAccount = await agoric.makeAccount();
   const localChainAddress = await localAccount.getAddress();
