@@ -29,13 +29,13 @@
     "@jridgewell/gen-mapping" "^0.3.0"
     "@jridgewell/trace-mapping" "^0.3.9"
 
-"@ava/typescript@^4.1.0":
-  version "4.1.0"
-  resolved "https://registry.yarnpkg.com/@ava/typescript/-/typescript-4.1.0.tgz#0dde7b3bbcfe59c1424fb20eb289b4a2b3694418"
-  integrity sha512-1iWZQ/nr9iflhLK9VN8H+1oDZqe93qxNnyYUz+jTzkYPAHc5fdZXBrqmNIgIfFhWYXK5OaQ5YtC7OmLeTNhVEg==
+"@ava/typescript@^5.0.0":
+  version "5.0.0"
+  resolved "https://registry.yarnpkg.com/@ava/typescript/-/typescript-5.0.0.tgz#1772294379ee3f93ee2843310504efba1695b0e7"
+  integrity sha512-2twsQz2fUd95QK1MtKuEnjkiN47SKHZfi/vWj040EN6Eo2ZW3SNcAwncJqXXoMTYZTWtBRXYp3Fg8z+JkFI9aQ==
   dependencies:
     escape-string-regexp "^5.0.0"
-    execa "^7.1.1"
+    execa "^8.0.1"
 
 "@babel/code-frame@^7.0.0", "@babel/code-frame@^7.18.6", "@babel/code-frame@^7.23.5":
   version "7.23.5"
@@ -6279,7 +6279,7 @@ execa@^5.0.0:
     signal-exit "^3.0.3"
     strip-final-newline "^2.0.0"
 
-execa@^7.1.1, execa@^7.2.0:
+execa@^7.2.0:
   version "7.2.0"
   resolved "https://registry.yarnpkg.com/execa/-/execa-7.2.0.tgz#657e75ba984f42a70f38928cedc87d6f2d4fe4e9"
   integrity sha512-UduyVP7TLB5IcAQl+OzLyLcS/l32W/GLg+AhHJ+ow40FOk2U3SAllPwR44v4vmdFwIWqpdwxxpQbF1n5ta9seA==
@@ -6292,6 +6292,21 @@ execa@^7.1.1, execa@^7.2.0:
     npm-run-path "^5.1.0"
     onetime "^6.0.0"
     signal-exit "^3.0.7"
+    strip-final-newline "^3.0.0"
+
+execa@^8.0.1:
+  version "8.0.1"
+  resolved "https://registry.yarnpkg.com/execa/-/execa-8.0.1.tgz#51f6a5943b580f963c3ca9c6321796db8cc39b8c"
+  integrity sha512-VyhnebXciFV2DESc+p6B+y0LjSm0krU4OgJN44qFAhBY0TJ+1V61tYD2+wHusZ6F9n5K+vl8k0sTy7PEfV4qpg==
+  dependencies:
+    cross-spawn "^7.0.3"
+    get-stream "^8.0.1"
+    human-signals "^5.0.0"
+    is-stream "^3.0.0"
+    merge-stream "^2.0.0"
+    npm-run-path "^5.1.0"
+    onetime "^6.0.0"
+    signal-exit "^4.1.0"
     strip-final-newline "^3.0.0"
 
 expand-template@^2.0.3:
@@ -6800,6 +6815,11 @@ get-stream@^6.0.0, get-stream@^6.0.1:
   resolved "https://registry.yarnpkg.com/get-stream/-/get-stream-6.0.1.tgz#a262d8eef67aced57c2852ad6167526a43cbf7b7"
   integrity sha512-ts6Wi+2j3jQjqi70w5AlN8DFnkSwC+MqmxEzdEALB2qXZYV3X/b1CTfgPLGJNMeAWxdPfU8FO1ms3NUfaHCPYg==
 
+get-stream@^8.0.1:
+  version "8.0.1"
+  resolved "https://registry.yarnpkg.com/get-stream/-/get-stream-8.0.1.tgz#def9dfd71742cd7754a7761ed43749a27d02eca2"
+  integrity sha512-VaUJspBffn/LMCJVoMvSAdmscJyS1auj5Zulnn5UoYcY531UWmdwhRWkcGKnGU93m5HSXP9LP2usOryrBtQowA==
+
 get-stream@^9.0.0:
   version "9.0.1"
   resolved "https://registry.yarnpkg.com/get-stream/-/get-stream-9.0.1.tgz#95157d21df8eb90d1647102b63039b1df60ebd27"
@@ -7244,6 +7264,11 @@ human-signals@^4.3.0:
   version "4.3.1"
   resolved "https://registry.yarnpkg.com/human-signals/-/human-signals-4.3.1.tgz#ab7f811e851fca97ffbd2c1fe9a958964de321b2"
   integrity sha512-nZXjEF2nbo7lIw3mgYjItAfgQXog3OjJogSbKa2CQIIvSGWcKgeJnQlNXip6NglNzYH45nSRiEVimMvYL8DDqQ==
+
+human-signals@^5.0.0:
+  version "5.0.0"
+  resolved "https://registry.yarnpkg.com/human-signals/-/human-signals-5.0.0.tgz#42665a284f9ae0dade3ba41ebc37eb4b852f3a28"
+  integrity sha512-AXcZb6vzzrFAUE61HnN4mpLqd/cSIwNQjtNWR0euPm6y0iqx3G4gOXaIDdtdDwZmhwe82LA6+zinmW4UBWVePQ==
 
 human-signals@^7.0.0:
   version "7.0.0"
