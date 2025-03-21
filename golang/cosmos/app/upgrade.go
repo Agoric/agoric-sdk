@@ -281,6 +281,11 @@ func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) upgradetyp
 			return mvm, err
 		}
 
+		wparams := DropWasmPrivilegeParams(app.WasmKeeper.GetParams(ctx))
+		if err := app.WasmKeeper.SetParams(ctx, wparams); err != nil {
+			return nil, err
+		}
+
 		return mvm, nil
 	}
 }
