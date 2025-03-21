@@ -2,7 +2,7 @@
   "agoricProposal": {
     "source": "subdir",
     "sdk-generate": [
-      "fast-usdc/fast-usdc-settler-ref.build.js submission"
+      "../../fast-usdc-deploy/src/fast-usdc-settler-ref.build.js submission"
     ],
     "type": "/agoric.swingset.CoreEvalProposal"
   },

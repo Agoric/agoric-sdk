@@ -1,14 +1,26 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { makeIssuerKit, AmountMath, type Amount } from '@agoric/ertp';
-import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
+import {
+  makeRatio,
+  makeRatioFromAmounts,
+} from '@agoric/zoe/src/contractSupport/ratio.js';
+import {
+  withAmountUtils,
+  type AmountUtils,
+} from '@agoric/zoe/tools/test-utils.js';
 import { q } from '@endo/errors';
+import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
 import { makeFeeTools } from '../../src/utils/fees.js';
 import type { FeeConfig } from '../../src/types.js';
-import { makeTestFeeConfig } from '../mocks.js';
-import { MockCctpTxEvidences } from '../fixtures.js';
 
 const { add, isEqual } = AmountMath;
+
+const makeTestFeeConfig = (usdc: Omit<AmountUtils, 'mint'>): FeeConfig =>
+  harden({
+    flat: usdc.make(1n),
+    variableRate: makeRatio(2n, usdc.brand),
+    contractRate: makeRatio(20n, usdc.brand),
+  });
 
 const issuerKits = {
   USDC: makeIssuerKit<'nat'>('USDC'),

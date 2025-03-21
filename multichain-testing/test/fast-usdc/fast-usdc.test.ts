@@ -41,7 +41,7 @@ const accounts = [...keys(oracleMnemonics), 'lp', 'feeDest'];
 const contractName = 'fastUsdc';
 // TODO: use actual beta-1 artifact
 const contractBuilder =
-  '../packages/builders/scripts/fast-usdc/start-fast-usdc.build.js';
+  '../packages/fast-usdc-deploy/src/start-fast-usdc.build.js';
 const LP_DEPOSIT_AMOUNT = 8_000n * 10n ** 6n;
 
 type QueryClient = ReturnType<typeof makeQueryClient>;
@@ -364,7 +364,7 @@ test.serial('reconfigure: fix noble ICA', async t => {
   const { startContract, commonBuilderOpts } = t.context;
   // TODO: use actual rc-1 artifact
   const builder =
-    '../packages/builders/scripts/fast-usdc/fast-usdc-reconfigure.build.js';
+    '../packages/fast-usdc-deploy/src/fast-usdc-reconfigure.build.js';
 
   const chainInfo = JSON.parse(commonBuilderOpts.chainInfo) as Record<
     string,
@@ -654,8 +654,7 @@ test.serial('distribute FastUSDC contract fees', async t => {
   const queryClient = makeQueryClient(
     await io.useChain('agoric').getRestEndpoint(),
   );
-  const builder =
-    '../packages/builders/scripts/fast-usdc/fast-usdc-fees.build.js';
+  const builder = '../packages/fast-usdc-deploy/src/fast-usdc-fees.build.js';
 
   const opts = {
     destinationAddress: io.wallets['feeDest'],
