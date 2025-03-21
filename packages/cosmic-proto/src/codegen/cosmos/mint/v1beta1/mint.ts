@@ -18,7 +18,7 @@ export interface MinterSDKType {
   inflation: string;
   annual_provisions: string;
 }
-/** Params holds parameters for the mint module. */
+/** Params defines the parameters for the x/mint module. */
 export interface Params {
   /** type of coin to mint */
   mintDenom: string;
@@ -37,7 +37,7 @@ export interface ParamsProtoMsg {
   typeUrl: '/cosmos.mint.v1beta1.Params';
   value: Uint8Array;
 }
-/** Params holds parameters for the mint module. */
+/** Params defines the parameters for the x/mint module. */
 export interface ParamsSDKType {
   mint_denom: string;
   inflation_rate_change: string;

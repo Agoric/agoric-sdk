@@ -11,6 +11,13 @@ import { type JsonSafe } from '../../../json-safe.js';
 export interface SendAuthorization {
   $typeUrl?: '/cosmos.bank.v1beta1.SendAuthorization';
   spendLimit: Coin[];
+  /**
+   * allow_list specifies an optional list of addresses to whom the grantee can send tokens on behalf of the
+   * granter. If omitted, any recipient is allowed.
+   *
+   * Since: cosmos-sdk 0.47
+   */
+  allowList: string[];
 }
 export interface SendAuthorizationProtoMsg {
   typeUrl: '/cosmos.bank.v1beta1.SendAuthorization';
@@ -25,11 +32,13 @@ export interface SendAuthorizationProtoMsg {
 export interface SendAuthorizationSDKType {
   $typeUrl?: '/cosmos.bank.v1beta1.SendAuthorization';
   spend_limit: CoinSDKType[];
+  allow_list: string[];
 }
 function createBaseSendAuthorization(): SendAuthorization {
   return {
     $typeUrl: '/cosmos.bank.v1beta1.SendAuthorization',
     spendLimit: [],
+    allowList: [],
   };
 }
 export const SendAuthorization = {
@@ -40,6 +49,9 @@ export const SendAuthorization = {
   ): BinaryWriter {
     for (const v of message.spendLimit) {
       Coin.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    for (const v of message.allowList) {
+      writer.uint32(18).string(v!);
     }
     return writer;
   },
@@ -54,6 +66,9 @@ export const SendAuthorization = {
         case 1:
           message.spendLimit.push(Coin.decode(reader, reader.uint32()));
           break;
+        case 2:
+          message.allowList.push(reader.string());
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -66,6 +81,9 @@ export const SendAuthorization = {
       spendLimit: Array.isArray(object?.spendLimit)
         ? object.spendLimit.map((e: any) => Coin.fromJSON(e))
         : [],
+      allowList: Array.isArray(object?.allowList)
+        ? object.allowList.map((e: any) => String(e))
+        : [],
     };
   },
   toJSON(message: SendAuthorization): JsonSafe<SendAuthorization> {
@@ -77,11 +95,17 @@ export const SendAuthorization = {
     } else {
       obj.spendLimit = [];
     }
+    if (message.allowList) {
+      obj.allowList = message.allowList.map(e => e);
+    } else {
+      obj.allowList = [];
+    }
     return obj;
   },
   fromPartial(object: Partial<SendAuthorization>): SendAuthorization {
     const message = createBaseSendAuthorization();
     message.spendLimit = object.spendLimit?.map(e => Coin.fromPartial(e)) || [];
+    message.allowList = object.allowList?.map(e => e) || [];
     return message;
   },
   fromProtoMsg(message: SendAuthorizationProtoMsg): SendAuthorization {

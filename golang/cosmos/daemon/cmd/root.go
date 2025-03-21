@@ -10,6 +10,12 @@ import (
 
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 
+	rosettaCmd "cosmossdk.io/tools/rosetta/cmd"
+
+	dbm "github.com/cometbft/cometbft-db"
+	tmcfg "github.com/cometbft/cometbft/config"
+	tmcli "github.com/cometbft/cometbft/libs/cli"
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/debug"
@@ -29,10 +35,6 @@ import (
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	tmcfg "github.com/tendermint/tendermint/config"
-	tmcli "github.com/tendermint/tendermint/libs/cli"
-	"github.com/tendermint/tendermint/libs/log"
-	dbm "github.com/tendermint/tm-db"
 
 	gaia "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
@@ -157,13 +159,21 @@ func initRootCmd(sender vm.Sender, rootCmd *cobra.Command, encodingConfig params
 		agdServer: vm.NewAgdServer(),
 	}
 
+	genesisCmd := genutilcli.GenesisCoreCommand(
+		encodingConfig.TxConfig,
+		gaia.ModuleBasics,
+		gaia.DefaultNodeHome,
+	)
+
 	rootCmd.AddCommand(
 		genutilcli.InitCmd(gaia.ModuleBasics, gaia.DefaultNodeHome),
-		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, gaia.DefaultNodeHome),
-		genutilcli.MigrateGenesisCmd(),
-		genutilcli.GenTxCmd(gaia.ModuleBasics, encodingConfig.TxConfig, banktypes.GenesisBalancesIterator{}, gaia.DefaultNodeHome),
-		genutilcli.ValidateGenesisCmd(gaia.ModuleBasics),
-		AddGenesisAccountCmd(encodingConfig.Marshaler, gaia.DefaultNodeHome),
+		genesisCmd,
+	)
+	// Alias all the genesis commands to the top level as well.
+	rootCmd.AddCommand(
+		genesisCmd.Commands()...,
+	)
+	rootCmd.AddCommand(
 		tmcli.NewCompletionCmd(rootCmd, true),
 		testnetCmd(gaia.ModuleBasics, banktypes.GenesisBalancesIterator{}),
 		debug.Cmd(),
@@ -217,7 +227,7 @@ func initRootCmd(sender vm.Sender, rootCmd *cobra.Command, encodingConfig params
 		keys.Commands(gaia.DefaultNodeHome),
 	)
 	// add rosetta
-	rootCmd.AddCommand(server.RosettaCommand(encodingConfig.InterfaceRegistry, encodingConfig.Marshaler))
+	rootCmd.AddCommand(rosettaCmd.RosettaCommand(encodingConfig.InterfaceRegistry, encodingConfig.Marshaler))
 }
 
 const (
@@ -479,6 +489,7 @@ func (ac appCreator) appExport(
 	forZeroHeight bool,
 	jailAllowedAddrs []string,
 	appOpts servertypes.AppOptions,
+	modulesToExport []string,
 ) (servertypes.ExportedApp, error) {
 	swingStoreExportMode, ok := appOpts.Get(gaia.FlagSwingStoreExportMode).(string)
 	if !(ok && allowedSwingSetExportModes[swingStoreExportMode]) {
@@ -521,7 +532,7 @@ func (ac appCreator) appExport(
 		}
 	}
 
-	return gaiaApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs)
+	return gaiaApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs, modulesToExport)
 }
 
 // replaceCosmosSnapshotExportCommand monkey-patches the "snapshots export" command
