@@ -231,6 +231,7 @@ replace (
 	cosmossdk.io/math => github.com/agoric-labs/cosmos-sdk/math v0.0.0-20250317184328-a23d822f892c
 	cosmossdk.io/simapp => github.com/agoric-labs/cosmos-sdk/simapp v0.0.0-20250317184328-a23d822f892c
 	cosmossdk.io/tools/rosetta => github.com/agoric-labs/cosmos-sdk/tools/rosetta v0.0.0-20250317184328-a23d822f892c
+	github.com/CosmWasm/wasmvm => github.com/CosmWasm/wasmvm v1.5.9
 
 	// use cometbft
 	// Use our fork at least until post-v0.34.14 is released with
