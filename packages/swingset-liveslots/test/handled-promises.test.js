@@ -45,29 +45,40 @@ const buildPromiseWatcherRootObject = (vatPowers, vatParameters, baggage) => {
 
   const root = Far('root', {
     getPromise: name => {
-      const promise = knownPromises.get(name);
-      promise || Fail`promise doesn't exists: ${name}`;
+      knownPromises.has(name) || Fail`promise not found: ${name}`;
+      const { promise } = knownPromises.get(name);
       return { promise };
     },
     importPromise: (name, promise) => {
       !knownPromises.has(name) || Fail`promise already exists: ${name}`;
-      knownPromises.set(name, promise);
+      knownPromises.set(name, { promise });
       return `imported promise: ${name}`;
     },
     createLocalPromise: (name, fulfillment, rejection) => {
       !knownPromises.has(name) || Fail`promise already exists: ${name}`;
       const { promise, resolve, reject } = makePromiseKit();
+      let resolvers = {};
       if (fulfillment !== undefined) {
         resolve(fulfillment);
       } else if (rejection !== undefined) {
         reject(rejection);
+      } else {
+        resolvers = { resolve, reject };
       }
-      knownPromises.set(name, promise);
+      knownPromises.set(name, { promise, ...resolvers });
       return `created local promise: ${name}`;
+    },
+    resolveLocalPromise: (name, rejection, value) => {
+      knownPromises.has(name) || Fail`promise not found: ${name}`;
+      const { resolve, reject, promise } = knownPromises.get(name);
+      (resolve && reject) || Fail`promise not resolvable: ${name}`;
+      (rejection ? reject : resolve)(value);
+      knownPromises.set(name, { promise });
+      return `resolved promise: ${name}`;
     },
     watchPromise: name => {
       knownPromises.has(name) || Fail`promise not found: ${name}`;
-      watchPromise(knownPromises.get(name), watcher, name);
+      watchPromise(knownPromises.get(name).promise, watcher, name);
       return `watched promise: ${name}`;
     },
     getWatchResolution: name => {
@@ -496,4 +507,74 @@ test('past-incarnation watched promises from original-format kvStore', async t =
   for (const key of kvStoreDataV1KeysToKeep) {
     t.false(finalClonedStore.has(key), `key should be removed: ${key}`);
   }
+});
+
+test('watched local promises should not leak slotToVal entries', async t => {
+  const S = 'settlement';
+  // cf. src/liveslots.js:initialIDCounters
+  const firstPExport = 5;
+
+  const {
+    v: { log: vatLogs },
+    dispatchMessage,
+    testHooks,
+  } = await setupTestLiveslots(t, buildPromiseWatcherRootObject, 'vatA');
+  const { slotToVal } = testHooks;
+  const initial = slotToVal.size;
+
+  let lastPExport = firstPExport - 1;
+  const nextPExport = () => `p+${(lastPExport += 1)}`;
+
+  let rp;
+
+  // Watch already resolved promise
+  rp = await dispatchMessage('createLocalPromise', 'p1', S);
+  t.deepEqual(extractDispatchLogs(vatLogs), [
+    fulfillmentMessage(rp, 'created local promise: p1'),
+  ]);
+  rp = await dispatchMessage('watchPromise', 'p1');
+  const p1 = nextPExport();
+  t.deepEqual(extractDispatchLogs(vatLogs), [
+    subscribeMessage(p1),
+    fulfillmentMessage(rp, 'watched promise: p1'),
+    fulfillmentMessage(p1, S),
+  ]);
+  t.is(slotToVal.size, initial); // exported promise did not leak
+  rp = await dispatchMessage('getWatchResolution', 'p1');
+  t.deepEqual(extractDispatchLogs(vatLogs), [
+    fulfillmentMessage(rp, {
+      status: 'fulfilled',
+      value: S,
+    }),
+  ]);
+
+  // Watch subsequently resolved promise
+  rp = await dispatchMessage('createLocalPromise', 'p2');
+  t.deepEqual(extractDispatchLogs(vatLogs), [
+    fulfillmentMessage(rp, 'created local promise: p2'),
+  ]);
+  t.is(slotToVal.size, initial);
+
+  rp = await dispatchMessage('watchPromise', 'p2');
+  const p2 = nextPExport();
+  t.deepEqual(extractDispatchLogs(vatLogs), [
+    subscribeMessage(p2),
+    fulfillmentMessage(rp, 'watched promise: p2'),
+  ]);
+  t.is(slotToVal.size, initial + 1); // exported promise
+
+  rp = await dispatchMessage('resolveLocalPromise', 'p2', false, S);
+  t.deepEqual(extractDispatchLogs(vatLogs), [
+    fulfillmentMessage(p2, S),
+    fulfillmentMessage(rp, 'resolved promise: p2'),
+  ]);
+  t.is(slotToVal.size, initial); // exported promise did not leak
+
+  rp = await dispatchMessage('getWatchResolution', 'p2');
+  t.deepEqual(extractDispatchLogs(vatLogs), [
+    fulfillmentMessage(rp, {
+      status: 'fulfilled',
+      value: S,
+    }),
+  ]);
 });
