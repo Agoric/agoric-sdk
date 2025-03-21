@@ -19,7 +19,9 @@ import type {
 } from '../types.js';
 import type { Allocation } from '../types-index.js';
 
-/** @see {@link https://github.com/sindresorhus/type-fest/blob/main/source/is-any.d.ts} */
+/**
+ * @see {@link https://github.com/sindresorhus/type-fest/blob/main/source/is-any.d.ts}
+ */
 type IsAny<T> = 0 extends 1 & NoInfer<T> ? true : false;
 
 /**

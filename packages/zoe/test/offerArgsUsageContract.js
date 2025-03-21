@@ -1,5 +1,5 @@
 /**
- * @import {ContractMeta, ContractStartFn, Invitation, OfferHandler, TransferPart, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {OfferHandler, ZCF} from '@agoric/zoe';
  */
 
 /** @param {ZCF} zcf */
