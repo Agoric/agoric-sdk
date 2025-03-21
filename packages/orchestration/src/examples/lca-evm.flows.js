@@ -1,6 +1,7 @@
 // @ts-check
 import { Fail } from '@endo/errors';
 import { denomHash } from '../utils/denomHash.js';
+import { Far } from '@endo/far';
 
 /**
  * @import {GuestInterface, GuestOf} from '@agoric/async-flow';
@@ -27,7 +28,6 @@ export const createAndMonitorLCA = async (
   { log, makeEvmTap, chainHub },
   seat,
 ) => {
-  seat.exit();
   log('Inside createAndMonitorLCA');
   const [agoric, remoteChain] = await Promise.all([
     orch.getChain('agoric'),
@@ -68,6 +68,7 @@ export const createAndMonitorLCA = async (
   await localAccount.monitorTransfers(tap);
   log('Monitoring transfers setup successfully');
 
-  return localChainAddress.value;
+  seat.exit();
+  return localAccount.asContinuingOffer();
 };
 harden(createAndMonitorLCA);
