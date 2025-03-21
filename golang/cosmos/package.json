@@ -7,7 +7,7 @@
   },
   "main": "index.cjs",
   "engines": {
-    "node": "^18.12 || ^20.9"
+    "node": "^18.12 || ^20.9 || ^22.11"
   },
   "scripts": {
     "test": "exit 0",
