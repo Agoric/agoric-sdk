@@ -201,6 +201,7 @@ var (
 		vesting.AppModuleBasic{},
 		ica.AppModuleBasic{},
 		packetforward.AppModuleBasic{},
+		wasm.AppModuleBasic{},
 		swingset.AppModuleBasic{},
 		vstorage.AppModuleBasic{},
 		vibc.AppModuleBasic{},
@@ -628,10 +629,10 @@ func NewAgoricApp(
 	)
 	app.GovKeeper.SetLegacyRouter(govRouter)
 
+	governanceHooks := []govtypes.GovHooks{}
 	app.GovKeeper = app.GovKeeper.SetHooks(
-		govtypes.NewMultiGovHooks(
 		// register the governance hooks
-		),
+		govtypes.NewMultiGovHooks(governanceHooks...),
 	)
 
 	// Initialize the packet forward middleware Keeper
@@ -694,10 +695,11 @@ func NewAgoricApp(
 	// Cosmos functionality with middleware (from the inside out, Cosmos
 	// packet-forwarding and then our own "vtransfer").
 	var ics20TransferIBCModule ibcporttypes.IBCModule = ibctransfer.NewIBCModule(app.TransferKeeper)
+	var packetForwardMiddlewareDefaultNumbeOfRetriesOnTimeout uint8 = 0
 	ics20TransferIBCModule = packetforward.NewIBCMiddleware(
 		ics20TransferIBCModule,
 		app.PacketForwardKeeper,
-		0, // retries on timeout
+		packetForwardMiddlewareDefaultNumbeOfRetriesOnTimeout,            // retries on timeout
 		packetforwardkeeper.DefaultForwardTransferPacketTimeoutTimestamp, // forward timeout
 		packetforwardkeeper.DefaultRefundTransferPacketTimeoutTimestamp,  // refund timeout
 	)
@@ -710,8 +712,6 @@ func NewAgoricApp(
 	if err != nil {
 		panic(fmt.Sprintf("error while reading wasm config: %s", err))
 	}
-
-	// grant capabilities for wasm modules
 
 	// The last arguments can contain custom message handlers, and custom query handlers,
 	// if we want to allow any custom callbacks
