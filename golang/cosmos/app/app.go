@@ -765,6 +765,7 @@ func NewAgoricApp(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		wasmOpts...,
 	)
+
 	// Create fee enabled wasm ibc Stack
 	var wasmStack ibcporttypes.IBCModule
 	wasmStack = wasm.NewIBCHandler(app.WasmKeeper, app.IBCKeeper.ChannelKeeper, app.PacketForwardKeeper)
@@ -1078,6 +1079,17 @@ func NewAgoricApp(
 	return app
 }
 
+// dropWasmPrivileges force the WasmKeeper to use governance (authority)-only mode.
+func dropWasmPrivilegeParams(wparams wasmtypes.Params) wasmtypes.Params {
+	if wparams.CodeUploadAccess.Permission == wasmtypes.AccessTypeEverybody {
+		wparams.CodeUploadAccess.Permission = wasmtypes.AccessTypeNobody
+	}
+	if wparams.InstantiateDefaultPermission == wasmtypes.AccessTypeEverybody {
+		wparams.InstantiateDefaultPermission = wasmtypes.AccessTypeNobody
+	}
+	return wparams
+}
+
 // normalizeModuleAccount ensures that the given account is a module account,
 // initializing or updating it if necessary. The account name must be listed in maccPerms.
 func normalizeModuleAccount(ctx sdk.Context, ak authkeeper.AccountKeeper, name string) {
@@ -1220,6 +1232,13 @@ func (app *GaiaApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci
 	// as a default account upon receiving a transfer. See BlockedAddrs().
 	normalizeModuleAccount(ctx, app.AccountKeeper, vbanktypes.ProvisionPoolName)
 	normalizeModuleAccount(ctx, app.AccountKeeper, vbanktypes.ReservePoolName)
+
+	// Agoric: drop "everbody" x/wasm privileges to "nobody".
+	// Governance still works.
+	wparams := dropWasmPrivilegeParams(app.WasmKeeper.GetParams(ctx))
+	if err := app.WasmKeeper.SetParams(ctx, wparams); err != nil {
+		panic(err)
+	}
 
 	// Init early (before first BeginBlock) to run the potentially lengthy bootstrap
 	if app.bootstrapNeeded {

@@ -249,6 +249,13 @@ func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string, baseAppLeg
 				return module.VersionMap{}, fmt.Errorf("cannot run %s as first upgrade", plan.Name)
 			}
 
+			// Drop "everbody" x/wasm privileges to "nobody".
+			// Governance still works.
+			wparams := dropWasmPrivilegeParams(app.WasmKeeper.GetParams(ctx))
+			if err := app.WasmKeeper.SetParams(ctx, wparams); err != nil {
+				return nil, err
+			}
+
 			// Each CoreProposalStep runs sequentially, and can be constructed from
 			// one or more modules executing in parallel within the step.
 			CoreProposalSteps = append(CoreProposalSteps,
