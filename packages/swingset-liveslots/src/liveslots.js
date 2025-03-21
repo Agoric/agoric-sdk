@@ -797,6 +797,7 @@ function build(
       for (const resolution of resolutions) {
         const [xvpid] = resolution;
         maybeNewVPIDs.delete(xvpid);
+        unregisterUnreferencedVPID(xvpid);
       }
     }
     for (const newVPID of Array.from(maybeNewVPIDs).sort()) {
@@ -1012,14 +1013,13 @@ function build(
       for (const resolution of resolutions) {
         const [xvpid] = resolution;
         maybeNewVPIDs.delete(xvpid);
+        unregisterUnreferencedVPID(xvpid);
       }
       // track everything that's left
       for (const newVPID of Array.from(maybeNewVPIDs).sort()) {
         maybeExportPromise(newVPID);
       }
 
-      // only the primary can possibly be newly resolved
-      unregisterUnreferencedVPID(vpid);
       exportedVPIDs.delete(vpid);
     }
 
