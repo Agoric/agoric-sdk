@@ -45,7 +45,7 @@
     "@endo/eslint-plugin/typescript-eslint": "^8.26.0"
   },
   "engines": {
-    "node": "^18.12 || ^20.9"
+    "node": "^18.12 || ^20.9 || ^22.14"
   },
   "scripts": {
     "clean": "yarn lerna run --no-bail clean",
