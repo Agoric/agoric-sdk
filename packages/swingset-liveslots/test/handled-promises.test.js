@@ -578,3 +578,56 @@ test('watched local promises should not leak slotToVal entries', async t => {
     }),
   ]);
 });
+
+// Remaining case for https://github.com/Agoric/agoric-sdk/issues/10756
+// The workaround doesn't handle this case because it learns about the
+// settlement before the virtual object system
+// See https://github.com/Agoric/agoric-sdk/issues/10757
+// prettier-ignore
+test.failing('watched imported promises should not leak slotToVal entries', async t => {
+  const S = 'settlement';
+  // cf. src/liveslots.js:initialIDCounters
+  const firstPExport = 5;
+
+  const {
+    v: { log: vatLogs },
+    dispatch,
+    dispatchMessage,
+    nextPImport,
+    testHooks,
+  } = await setupTestLiveslots(t, buildPromiseWatcherRootObject, 'vatA');
+  const { slotToVal } = testHooks;
+  const initial = slotToVal.size;
+
+  let lastPExport = firstPExport - 1;
+  const nextPExport = () => `p+${(lastPExport += 1)}`;
+
+  let rp;
+
+  // Watch already imported promise
+  const importedP = nextPImport();
+  rp = await dispatchMessage('importPromise', 'importedP', kslot(importedP));
+  t.deepEqual(extractDispatchLogs(vatLogs), [
+    subscribeMessage(importedP),
+    fulfillmentMessage(rp, 'imported promise: importedP'),
+  ]);
+  t.is(slotToVal.size, initial + 1); // imported promise
+
+  rp = await dispatchMessage('watchPromise', 'importedP');
+  t.deepEqual(extractDispatchLogs(vatLogs), [
+    fulfillmentMessage(rp, 'watched promise: importedP'),
+  ]);
+  t.is(slotToVal.size, initial + 1); // imported promise
+
+  await dispatch(makeResolve(importedP, kser(S)));
+  t.deepEqual(extractDispatchLogs(vatLogs), []);
+  t.is(slotToVal.size, initial); // should not leak
+
+  rp = await dispatchMessage('getPromise', 'importedP');
+  const reexportedP = nextPExport(); // Should allocate a new exported promise
+  t.deepEqual(extractDispatchLogs(vatLogs), [
+    fulfillmentMessage(rp, { promise: kslot(reexportedP) }),
+    fulfillmentMessage(reexportedP, S),
+  ]);
+  t.is(slotToVal.size, initial); // reexported promise did not leak
+});
