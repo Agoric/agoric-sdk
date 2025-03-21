@@ -235,6 +235,9 @@ replace (
 	cosmossdk.io/simapp => github.com/agoric-labs/cosmos-sdk/simapp v0.0.0-20250326031203-e68e6747bede
 	cosmossdk.io/tools/rosetta => github.com/agoric-labs/cosmos-sdk/tools/rosetta v0.0.0-20250326031203-e68e6747bede
 
+  // CosmWasm
+  github.com/CosmWasm/wasmvm => github.com/CosmWasm/wasmvm v1.5.9
+
 	// use cometbft
 	// Use our fork at least until post-v0.34.14 is released with
 	// https://github.com/tendermint/tendermint/issues/6899 resolved.
