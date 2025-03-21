@@ -84,6 +84,11 @@ const buildPromiseWatcherRootObject = (vatPowers, vatParameters, baggage) => {
     getWatchResolution: name => {
       return watchResolutions.get(name);
     },
+    sendToPromise: (name, method, ...args) => {
+      knownPromises.has(name) || Fail`promise not found: ${name}`;
+      const { promise } = knownPromises.get(name);
+      return HandledPromise.applyMethod(promise, method, args);
+    },
   });
 
   const startOperations = vatParameters?.startOperations || [];
@@ -630,4 +635,242 @@ test.failing('watched imported promises should not leak slotToVal entries', asyn
     fulfillmentMessage(reexportedP, S),
   ]);
   t.is(slotToVal.size, initial); // reexported promise did not leak
+});
+
+// prettier-ignore
+test.failing('known imported promises in resolutions should not leak slotToVal entries', async t => {
+  const S = 'settlement';
+  // cf. src/liveslots.js:initialIDCounters
+  const firstPExport = 5;
+
+  const {
+    v: { log: vatLogs },
+    dispatch,
+    dispatchMessage,
+    nextPImport,
+    testHooks,
+  } = await setupTestLiveslots(t, buildPromiseWatcherRootObject, 'vatA');
+  const { slotToVal } = testHooks;
+  const initial = slotToVal.size;
+
+  let lastPExport = firstPExport - 1;
+  const nextPExport = () => `p+${(lastPExport += 1)}`;
+
+  let rp;
+
+  const importedP = nextPImport();
+  rp = await dispatchMessage('importPromise', 'importedP', kslot(importedP));
+  t.deepEqual(extractDispatchLogs(vatLogs), [
+    subscribeMessage(importedP),
+    fulfillmentMessage(rp, 'imported promise: importedP'),
+  ]);
+  t.is(slotToVal.size, initial + 1); // imported promise
+
+  rp = await dispatchMessage('getPromise', 'importedP');
+  t.deepEqual(extractDispatchLogs(vatLogs), [
+    fulfillmentMessage(rp, { promise: kslot(importedP) }),
+  ]);
+  t.is(slotToVal.size, initial + 1); // imported promise
+
+  await dispatch(makeResolve(importedP, kser(S)));
+  t.deepEqual(extractDispatchLogs(vatLogs), []);
+  t.is(slotToVal.size, initial); // promise no longer imported
+
+  // The first getPromise causes liveslots to learn about the resolution value
+  // of importedP since liveslots currently only tracks known promise
+  // resolutions on export.
+  rp = await dispatchMessage('getPromise', 'importedP');
+  const reexportedP = nextPExport();
+  t.deepEqual(extractDispatchLogs(vatLogs), [
+    fulfillmentMessage(rp, { promise: kslot(reexportedP) }),
+    fulfillmentMessage(reexportedP, S), // liveslots learns about the resolution
+  ]);
+  t.is(slotToVal.size, initial);
+
+  // The second getPromise verifies that liveslots does not leak when notifying
+  // a known resolved promise. It allocates a new exported promise because the
+  // resolution was previously notified
+  rp = await dispatchMessage('getPromise', 'importedP');
+  const reexportedP2 = nextPExport(); // allocates a new export promise
+  t.deepEqual(extractDispatchLogs(vatLogs), [
+    {
+      type: 'resolve',
+      resolutions: [
+        [rp, false, kser({ promise: kslot(reexportedP2) })],
+        [reexportedP2, false, kser(S)], // one shot resolution notification
+      ],
+    },
+  ]);
+  t.is(slotToVal.size, initial); // did not leak reexportedP2
+
+  // The 3rd getPromise ensures that the 2nd fully cleaned up, and that liveslots
+  // doesn't attempt to re-use a the previously exported promise
+  rp = await dispatchMessage('getPromise', 'importedP');
+  const reexportedP3 = nextPExport(); // allocates a new export promise
+  t.deepEqual(extractDispatchLogs(vatLogs), [
+    {
+      type: 'resolve',
+      resolutions: [
+        [rp, false, kser({ promise: kslot(reexportedP3) })],
+        [reexportedP3, false, kser(S)], // still one shot resolution
+      ],
+    },
+  ]);
+  t.is(slotToVal.size, initial); // did not leak reexportedP3
+});
+
+// prettier-ignore
+test.failing('known exported promises in resolutions should not leak slotToVal entries', async t => {
+  const S = 'settlement';
+  // cf. src/liveslots.js:initialIDCounters
+  const firstPExport = 5;
+
+  const {
+    v: { log: vatLogs },
+    dispatchMessage,
+    testHooks,
+  } = await setupTestLiveslots(t, buildPromiseWatcherRootObject, 'vatA');
+  const { slotToVal } = testHooks;
+  const initial = slotToVal.size;
+
+  let lastPExport = firstPExport - 1;
+  const nextPExport = () => `p+${(lastPExport += 1)}`;
+
+  let rp;
+
+  rp = await dispatchMessage('createLocalPromise', 'localP');
+  t.deepEqual(extractDispatchLogs(vatLogs), [
+    fulfillmentMessage(rp, 'created local promise: localP'),
+  ]);
+  t.is(slotToVal.size, initial);
+
+  rp = await dispatchMessage('getPromise', 'localP');
+  const localP = nextPExport();
+  t.deepEqual(extractDispatchLogs(vatLogs), [
+    fulfillmentMessage(rp, { promise: kslot(localP) }),
+  ]);
+  t.is(slotToVal.size, initial + 1); // exported promise
+
+  rp = await dispatchMessage('resolveLocalPromise', 'localP', false, S);
+  t.deepEqual(extractDispatchLogs(vatLogs), [
+    fulfillmentMessage(localP, S),
+    fulfillmentMessage(rp, 'resolved promise: localP'),
+  ]);
+  t.is(slotToVal.size, initial); // promise no longer exported
+
+  // The first getPromise verifies that liveslots does not leak when notifying
+  // a known resolved promise. It allocates a new exported promise because the
+  // resolution was previously notified
+  rp = await dispatchMessage('getPromise', 'localP');
+  const reexportedP = nextPExport();
+  t.deepEqual(extractDispatchLogs(vatLogs), [
+    {
+      type: 'resolve',
+      resolutions: [
+        [rp, false, kser({ promise: kslot(reexportedP) })],
+        [reexportedP, false, kser(S)], // one shot resolution notification
+      ],
+    },
+  ]);
+  t.is(slotToVal.size, initial);
+
+  // The second getPromise ensures that previous fully cleaned up, and that
+  // liveslots doesn't attempt to re-use a the previously exported promise
+  rp = await dispatchMessage('getPromise', 'localP');
+  const reexportedP2 = nextPExport(); // allocates a new export promise
+  t.deepEqual(extractDispatchLogs(vatLogs), [
+    {
+      type: 'resolve',
+      resolutions: [
+        [rp, false, kser({ promise: kslot(reexportedP2) })],
+        [reexportedP2, false, kser(S)], // still one shot resolution
+      ],
+    },
+  ]);
+  t.is(slotToVal.size, initial); // did not leak reexportedP2
+});
+
+// prettier-ignore
+test.failing('known promises in message sends should not leak slotToVal entries', async t => {
+  const S = 'settlement';
+  // cf. src/liveslots.js:initialIDCounters
+  const firstPExport = 5;
+
+  const targetO = `o-1`;
+
+  const {
+    v: { log: vatLogs },
+    dispatch,
+    dispatchMessage,
+    testHooks,
+  } = await setupTestLiveslots(t, buildPromiseWatcherRootObject, 'vatA', {
+    vatParameters: {
+      startOperations: [['createLocalPromise', 'target', kslot(targetO)]],
+    },
+  });
+  const { slotToVal } = testHooks;
+  const initial = slotToVal.size;
+
+  let lastPExport = firstPExport - 1;
+  const nextPExport = () => `p+${(lastPExport += 1)}`;
+
+  let rp;
+
+  rp = await dispatchMessage('createLocalPromise', 'targetP');
+  t.deepEqual(extractDispatchLogs(vatLogs), [
+    fulfillmentMessage(rp, 'created local promise: targetP'),
+  ]);
+  t.is(slotToVal.size, initial);
+
+  rp = await dispatchMessage('createLocalPromise', 'localP');
+  t.deepEqual(extractDispatchLogs(vatLogs), [
+    fulfillmentMessage(rp, 'created local promise: localP'),
+  ]);
+  t.is(slotToVal.size, initial);
+
+  rp = await dispatchMessage('getPromise', 'localP');
+  const localP = nextPExport();
+  t.deepEqual(extractDispatchLogs(vatLogs), [
+    fulfillmentMessage(rp, { promise: kslot(localP) }),
+  ]);
+  t.is(slotToVal.size, initial + 1); // localP promise
+
+  rp = await dispatchMessage('sendToPromise', 'targetP', 'foo', kslot(localP));
+  const sendToPromiseResultP = rp;
+  t.deepEqual(extractDispatchLogs(vatLogs), []);
+  t.is(slotToVal.size, initial + 2); // localP and sendToPromiseResultP promises
+
+  rp = await dispatchMessage('resolveLocalPromise', 'localP', false, S);
+  t.deepEqual(extractDispatchLogs(vatLogs), [
+    fulfillmentMessage(localP, S),
+    fulfillmentMessage(rp, 'resolved promise: localP'),
+  ]);
+  t.is(slotToVal.size, initial + 1); // sendToPromiseResultP promise
+
+  rp = await dispatchMessage(
+    'resolveLocalPromise',
+    'targetP',
+    false,
+    kslot(targetO),
+  );
+  const reexportedP = nextPExport(); // Allocate a new promise for importedP
+  const sendResultP = nextPExport();
+  t.deepEqual(extractDispatchLogs(vatLogs), [
+    fulfillmentMessage(rp, 'resolved promise: targetP'), // no await so first syscall
+    {
+      type: 'send',
+      targetSlot: targetO,
+      methargs: kser(['foo', [kslot(reexportedP)]]),
+      resultSlot: sendResultP,
+    },
+    fulfillmentMessage(reexportedP, S), // known resolutions comes before subscribe of send result
+    subscribeMessage(sendResultP),
+  ]);
+  t.is(slotToVal.size, initial + 2); // sendToPromiseResultP and sendResultP promises
+
+  await dispatch(makeResolve(sendResultP, kser(S)));
+  t.deepEqual(extractDispatchLogs(vatLogs), [
+    fulfillmentMessage(sendToPromiseResultP, S),
+  ]);
+  t.is(slotToVal.size, initial);
 });
