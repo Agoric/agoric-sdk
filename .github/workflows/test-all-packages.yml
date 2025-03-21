@@ -15,9 +15,14 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 env:
+  ACTIVE_LTS_VERSION: '22.x'
+  ACTIVE_LTS_VERSION_NAME: 'node-lts'
   AGORIC_AVA_USE_TAP: true
-  TEST_COLLECT: 'tee -a _testoutput.txt'
   NODE_V8_COVERAGE: coverage
+  PREVIOUS_LTS_VERSION: '20.x'
+  PREVIOUS_LTS_VERSION_NAME: 'node-prev'
+  TEST_COLLECT: 'tee -a _testoutput.txt'
+
 # this is required, since explicitly setting bash as shell enables pipefail, which is not
 # on by default.  This is required to fail correctly when teeing output to a file to collect
 # test instrumentation
@@ -31,14 +36,22 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ['18.x', '20.x']
+        node-version:
+          [
+            '${{ env.ACTIVE_LTS_VERSION_NAME }}',
+            '${{ env.PREVIOUS_LTS_VERSION_NAME }}',
+          ]
     steps:
+      - name: set vars
+        id: vars
+        run: echo "node-version=${{ matrix.node-version == env.ACTIVE_LTS_VERSION_NAME && env.ACTIVE_LTS_VERSION || env.PREVIOUS_LTS_VERSION }}" >> $GITHUB_OUTPUT
+
       - uses: actions/checkout@v4
         with:
           submodules: 'true'
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: ${{ steps.vars.outputs.node-version }}
 
   dependency-graph:
     needs: build
