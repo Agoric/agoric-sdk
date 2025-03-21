@@ -7,9 +7,6 @@ import {
   type WalletFactoryTestContext,
 } from '../bootstrapTests/walletFactory.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
-import type { ScopedBridgeManager } from '@agoric/vats';
-import { BridgeId } from '@agoric/internal';
-import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
 test.before(async t => {
@@ -21,14 +18,8 @@ test.before(async t => {
 test.after.always(t => t.context.shutdown?.());
 
 test('makeAccount via axelarGmp', async t => {
-  const {
-    walletFactoryDriver,
-    bridgeUtils: { getOutboundMessages },
-    buildProposal,
-    evalProposal,
-    storage,
-    runUtils,
-  } = t.context;
+  const { walletFactoryDriver, buildProposal, evalProposal, storage } =
+    t.context;
 
   t.log('start axelarGmp');
 
@@ -78,39 +69,30 @@ test('makeAccount via axelarGmp', async t => {
     'Monitoring transfers setup successfully',
   ]);
 
-  // t.log('monitor transfers');
+  t.log('Execute offers via the LCA');
 
-  // // @ts-ignore
-  // const { status } = wallet.getLatestUpdateRecord();
+  const previousOfferId =
+    wallet.getCurrentWalletRecord().offerToUsedInvitation[0][0];
 
-  // const { EV } = runUtils;
-  // const vtransferBridgeManager = (await EV.vat('bootstrap').consumeItem(
-  //   'vtransferBridgeManager',
-  // )) as ScopedBridgeManager<'vtransfer'>;
-  // t.truthy(vtransferBridgeManager);
+  await wallet.executeOffer({
+    id: 'makeAccountCall',
+    invitationSpec: {
+      invitationMakerName: 'Send',
+      previousOffer: previousOfferId,
+      source: 'continuing',
+    },
+    offerArgs: {
+      toAccount: {
+        value: 'agoric1EOAAccAddress',
+        chainId: 'agoriclocal',
+        encoding: 'bech32',
+      },
+      amount: { denom: 'ibc/1234', value: 10n },
+    },
+    proposal: {},
+  });
 
-  // const target = status.result;
-  // const packet = 'helloFromRabi';
-  // const expectedAckData = {
-  //   event: 'writeAcknowledgement',
-  //   packet: 'helloFromRabi',
-  //   target,
-  //   type: VTRANSFER_IBC_EVENT,
-  // };
-
-  // await EV(vtransferBridgeManager).fromBridge(expectedAckData);
-
-  // const messages = getOutboundMessages(BridgeId.VTRANSFER);
-  // t.deepEqual(messages, [
-  //   {
-  //     target,
-  //     type: 'BRIDGE_TARGET_REGISTER',
-  //   },
-  //   {
-  //     ack: btoa(JSON.stringify(expectedAckData)),
-  //     method: 'receiveExecuted',
-  //     packet,
-  //     type: 'IBC_METHOD',
-  //   },
-  // ]);
+  t.like(wallet.getLatestUpdateRecord(), {
+    status: { id: 'makeAccountCall', numWantsSatisfied: 1 },
+  });
 });
