@@ -265,8 +265,10 @@ const provisionSmartWalletAndMakeDriver = async (
 
   /** @param {import('@agoric/smart-wallet/src/smartWallet.js').BridgeAction} bridgeAction */
   const sendAction = async bridgeAction => {
-    // eslint-disable-next-line no-undef
+    /* eslint-disable no-undef */
+    // @ts-expect-error AmountKeywordRecord is not recognized to be Passable, sometimes.
     const capData = q.toCapData(harden(bridgeAction));
+    /* eslint-enable no-undef */
     const offerBody = JSON.stringify(capData);
     const txInfo = await agd.tx(
       ['swingset', 'wallet-action', offerBody, '--allow-spend'],
