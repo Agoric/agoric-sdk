@@ -1,6 +1,7 @@
 // @ts-check
 import { NonNullish } from '@agoric/internal';
-import { makeError, q } from '@endo/errors';
+import { Fail, makeError, q } from '@endo/errors';
+import { buildGMPPayload } from '../utils/gmp.js';
 
 /**
  * @import {GuestInterface, GuestOf} from '@agoric/async-flow';
@@ -16,14 +17,15 @@ const addresses = {
   AXELAR_GMP:
     'axelar1dv4u5k73pzqrxlzujxg3qp8kvc3pje7jtdvu72npnt5zhq05ejcsn5qme5',
   AXELAR_GAS: 'axelar1zl3rxpp70lmte2xr6c4lgske2fyuj3hupcsvcd',
-  OSMOSIS_RECEIVER: 'osmo1yh3ra8eage5xtr9a3m5utg6mx0pmqreytudaqj',
 };
 
-const channels = {
-  AGORIC_XNET_TO_OSMOSIS: 'channel-6',
-  AGORIC_DEVNET_TO_OSMOSIS: 'channel-61',
-  OSMOSIS_TO_AXELAR: 'channel-4118',
-};
+/**
+ * @typedef {Object} ContractInvocationData
+ * @property {string} functionSelector - Function selector (4 bytes)
+ * @property {string} encodedArgs - ABI encoded arguments
+ * @property {number} deadline
+ * @property {number} nonce
+ */
 
 /**
  * @satisfies {OrchestrationFlow}
@@ -38,7 +40,7 @@ const channels = {
  *   type: number;
  *   destinationEVMChain: string;
  *   gasAmount: number;
- *   contractInvocationPayload: number[];
+ *   contractInvocationData: ContractInvocationData;
  * }} offerArgs
  */
 export const sendGmp = async (
@@ -52,23 +54,36 @@ export const sendGmp = async (
     type,
     destinationEVMChain,
     gasAmount,
-    contractInvocationPayload,
+    contractInvocationData,
   } = offerArgs;
-  log('Inside sendIt');
-  console.log(
-    'Offer Args',
-    JSON.stringify({
-      destinationAddress,
-      type,
-      destinationEVMChain,
-      gasAmount,
-      contractInvocationPayload,
-    }),
-  );
+  log('Inside sendGmp');
+
+  destinationAddress != null || Fail`Destination address must be defined`;
+  destinationEVMChain != null || Fail`Destination evm address must be defined`;
+
+  const isContractInvocation = [1, 2].includes(type);
+  if (isContractInvocation) {
+    gasAmount != null || Fail`gasAmount must be defined`;
+    contractInvocationData != null ||
+      Fail`contractInvocationData is not defined`;
+
+    ['functionSelector', 'encodedArgs', 'deadline', 'nonce'].every(
+      field => contractInvocationData[field] != null,
+    ) ||
+      Fail`Contract invocation payload is invalid or missing required fields`;
+  }
 
   const { give } = seat.getProposal();
   const [[_kw, amt]] = entries(give);
+  amt.value > 0n || Fail`IBC transfer amount must be greater than zero`;
   console.log('_kw, amt', _kw, amt);
+
+  const payload = buildGMPPayload({
+    type,
+    evmContractAddress: destinationAddress,
+    ...contractInvocationData,
+  });
+  log(`Payload: ${JSON.stringify(payload)}`);
 
   const agoric = await orch.getChain('agoric');
   console.log('Agoric Chain ID:', (await agoric.getChainInfo()).chainId);
@@ -81,10 +96,10 @@ export const sendGmp = async (
     `${amt.brand} not registered in vbank`,
   );
 
-  const osmosisChain = await orch.getChain('osmosis');
-  console.log('Osmosis Chain ID:', (await osmosisChain.getChainInfo()).chainId);
+  const axelarChain = await orch.getChain('axelar');
+  console.log('Axelar Chain ID:', (await axelarChain.getChainInfo()).chainId);
 
-  const info = await osmosisChain.getChainInfo();
+  const info = await axelarChain.getChainInfo();
   const { chainId } = info;
   assert(typeof chainId === 'string', 'bad chainId');
 
@@ -95,11 +110,9 @@ export const sendGmp = async (
   const sharedLocalAccount = await sharedLocalAccountP;
 
   await localTransfer(seat, sharedLocalAccount, give);
-  log('After local transfer');
+  log('Local transfer successful');
 
-  const payload = type === 1 || type === 2 ? contractInvocationPayload : null;
-
-  const memoToAxelar = {
+  const memo = {
     destination_chain: destinationEVMChain,
     destination_address: destinationAddress,
     payload,
@@ -107,22 +120,12 @@ export const sendGmp = async (
   };
 
   if (type === 1 || type === 2) {
-    memoToAxelar.fee = {
+    memo.fee = {
       amount: String(gasAmount),
       recipient: addresses.AXELAR_GAS,
     };
+    log(`Fee object ${JSON.stringify(memo.fee)}`);
   }
-
-  const memo = {
-    forward: {
-      receiver: addresses.AXELAR_GMP,
-      port: 'transfer',
-      channel: channels.OSMOSIS_TO_AXELAR,
-      timeout: '10m',
-      retries: 2,
-      next: JSON.stringify(memoToAxelar),
-    },
-  };
 
   try {
     log(`Initiating IBC Transfer...`);
@@ -130,7 +133,7 @@ export const sendGmp = async (
 
     await sharedLocalAccount.transfer(
       {
-        value: addresses.OSMOSIS_RECEIVER,
+        value: addresses.AXELAR_GMP,
         encoding: 'bech32',
         chainId,
       },
@@ -141,7 +144,7 @@ export const sendGmp = async (
       { memo: JSON.stringify(memo) },
     );
 
-    log('Transfer complete');
+    log('Offer successful');
     console.log(`Completed transfer to ${destinationAddress}`);
   } catch (e) {
     await withdrawToSeat(sharedLocalAccount, seat, give);
