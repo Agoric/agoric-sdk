@@ -5,6 +5,9 @@ import {
   makeICQChannelAddress,
   findAddressField,
   getBech32Prefix,
+  getAddress,
+  getReference,
+  getNamespace,
 } from '../../src/utils/address.js';
 
 test('makeICAChannelAddress', t => {
@@ -138,3 +141,17 @@ test(
   null,
   'Missing prefix for "1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4"',
 );
+
+test('address accessors', t => {
+  const COSMOS_ADDRESS =
+    'osmo1ht7u569vpuryp6utadsydcne9ckeh2v8dkd38v5hptjl3u2ewppqc6kzgd';
+  const COSMOS_ACCOUNT_ID = `cosmos:osmosis-1:${COSMOS_ADDRESS}`;
+  t.is(getAddress(COSMOS_ACCOUNT_ID), COSMOS_ADDRESS);
+  t.is(getNamespace(COSMOS_ACCOUNT_ID), 'cosmos');
+  t.is(getReference(COSMOS_ACCOUNT_ID), 'osmosis-1');
+
+  // @ts-expect-error illegal input
+  t.throws(() => getAddress('cosmos:osmosis-1'), {
+    message: 'cosmos:osmosis-1 must have three parts',
+  });
+});
