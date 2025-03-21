@@ -225,7 +225,9 @@ const ChainHubI = M.interface('ChainHub', {
   ),
   getDenom: M.call(BrandShape).returns(M.or(M.string(), M.undefined())),
   makeChainAddress: M.call(M.string()).returns(CosmosChainAddressShape),
-  resolveAccountId: M.call(M.string()).returns(M.string()),
+  resolveAccountId: M.call(M.or(M.string(), CosmosChainAddressShape)).returns(
+    M.string(),
+  ),
   makeTransferRoute: M.call(AccountArgShape, DenomAmountShape, M.string())
     .optional(ForwardOptsShape)
     .returns(M.or(M.undefined(), TransferRouteShape)),
@@ -591,19 +593,23 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
       return undefined;
     },
     /**
-     * @param {string} partialId CAIP-10 account ID or a Cosmos bech32 address
+     * @param {AccountIdArg | string} account CAIP-10 account ID or a
+     *   CosmosChainAddress or bech32
      * @returns {AccountId}
      * @throws {Error} if chain info not found for bech32Prefix
      */
-    resolveAccountId(partialId) {
-      const parsed = parseAccountId(partialId);
-      if ('namespace' in parsed) {
-        // It is already fully qualified
-        return /** @type {AccountId} */ (partialId);
+    resolveAccountId(account) {
+      if (typeof account !== 'string') {
+        return `cosmos:${account.chainId}:${account.value}`;
       }
 
-      const reference = resolveCosmosChainId(partialId);
-      return `cosmos:${reference}:${partialId}`;
+      const parsed = parseAccountId(account);
+      if ('namespace' in parsed) {
+        // It is already fully qualified
+        return /** @type {AccountId} */ (account);
+      }
+      const reference = resolveCosmosChainId(account);
+      return `cosmos:${reference}:${account}`;
     },
     /**
      * @param {string} partialId CAIP-10 account ID or a Cosmos bech32 address
