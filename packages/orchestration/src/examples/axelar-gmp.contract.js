@@ -95,6 +95,7 @@ export const contract = async (
 
   const { createAndMonitorLCA } = orchestrateAll(evmFlows, {
     makeEvmTap,
+    log,
     chainHub,
   });
 
