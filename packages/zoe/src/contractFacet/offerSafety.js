@@ -1,6 +1,10 @@
 import { AmountMath } from '@agoric/ertp';
 
 /**
+ * @import { AmountKeywordRecord, AmountBoundKeywordRecord } from '../zoeService/types.js'
+ */
+
+/**
  * Helper to perform satisfiesWant and satisfiesGive. Is
  * allocationAmount greater than or equal to requiredAmount for every
  * keyword of giveOrWant?
@@ -9,19 +13,19 @@ import { AmountMath } from '@agoric/ertp';
  * isOfferSafe will still be boolean. When we have Multiples, satisfiesWant and
  * satisfiesGive will tell how many times the offer was matched.
  *
- * @param {AmountKeywordRecord} giveOrWant
+ * @param {AmountBoundKeywordRecord} giveOrWant
  * @param {AmountKeywordRecord} allocation
  * @returns {0|1}
  */
 const satisfiesInternal = (giveOrWant = {}, allocation) => {
-  const isGTEByKeyword = ([keyword, requiredAmount]) => {
+  const isGTEByKeyword = ([keyword, requiredAmountBound]) => {
     // If there is no allocation for a keyword, we know the giveOrWant
     // is not satisfied without checking further.
     if (allocation[keyword] === undefined) {
       return 0;
     }
     const allocationAmount = allocation[keyword];
-    return AmountMath.isGTE(allocationAmount, requiredAmount) ? 1 : 0;
+    return AmountMath.isGTE(allocationAmount, requiredAmountBound) ? 1 : 0;
   };
   return Object.entries(giveOrWant).every(isGTEByKeyword) ? 1 : 0;
 };

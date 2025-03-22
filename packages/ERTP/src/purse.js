@@ -1,5 +1,5 @@
 import { Fail } from '@endo/errors';
-import { M, makeCopySet } from '@agoric/store';
+import { kindOf, M, makeCopySet } from '@endo/patterns';
 import { AmountMath } from './amountMath.js';
 import { makeTransientNotifierKit } from './transientNotifier.js';
 import { makeAmountStore } from './amountStore.js';
@@ -108,13 +108,19 @@ export const preparePurseKind = (
           updateBalance(purse, balanceStore.getAmount());
           return srcPaymentBalance;
         },
-        withdraw(amount) {
+        withdraw(amountBound) {
           const { state } = this;
           const { purse } = this.facets;
 
           const optRecoverySet = maybeRecoverySet(state);
           const balanceStore = makeAmountStore(state, 'currentBalance');
-          // Note COMMIT POINT within withdraw.
+          let amount;
+          if (kindOf(amountBound) === 'match:containerHas') {
+            throw Fail`TODO handle match:containerHas`;
+          } else {
+            amount = amountBound;
+          }
+          // Note COMMIT POINT within withdrawInternal.
           const payment = withdrawInternal(
             balanceStore,
             amount,
