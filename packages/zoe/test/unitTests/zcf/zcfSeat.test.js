@@ -10,7 +10,7 @@ import { setup } from '../setupBasicMints.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 
 /**
- * @import {ContractMeta, ContractStartFn, Invitation, OfferHandler, TransferPart, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {ZCF} from '@agoric/zoe';
  */
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
