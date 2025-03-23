@@ -271,6 +271,7 @@ export default [
     files: ['**/*.ts'],
 
     rules: {
+      'jsdoc/require-param': 'off',
       'jsdoc/require-param-type': 'off',
       'no-undef': 'off',
     },
