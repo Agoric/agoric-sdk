@@ -154,6 +154,7 @@ scenario2-run-chain-economy: t1/decentral-economy-config.json
 scenario2-run-chain: ../vm-config/decentral-devnet-config.json
 	CHAIN_BOOTSTRAP_VAT_CONFIG="$${CHAIN_BOOTSTRAP_VAT_CONFIG-$$PWD/../vm-config/decentral-devnet-config.json}" \
 		OTEL_EXPORTER_PROMETHEUS_PORT=$(OTEL_EXPORTER_PROMETHEUS_PORT) \
+		GENESIS_HASH=$$(shasum -a 256 t1/n0/config/genesis.json | cut -d' ' -f1) \
 		$(AGC) --home=t1/n0 start --log_level=warn $(AGC_START_ARGS)
 
 # Run a chain with an explicit halt.
