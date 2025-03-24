@@ -11,13 +11,13 @@ import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics
 import type { Passable } from '@endo/marshal';
 import type {
   AgoricChainMethods,
-  ChainInfo,
   CosmosChainAccountMethods,
   CosmosChainInfo,
   IBCMsgTransferOptions,
   KnownChains,
   LocalAccountMethods,
   ICQQueryFunction,
+  KnownNamespace,
 } from './types.js';
 import type { ResolvedContinuingOfferResult } from './utils/zoe-tools.js';
 
@@ -89,6 +89,24 @@ export type CosmosChainAddress = {
 };
 
 /**
+ * Info used to identify blockchains across ecosystems
+ * @see {@link https://chainagnostic.org/CAIPs/caip-2}
+ */
+export interface BaseChainInfo<N extends KnownNamespace = KnownNamespace> {
+  /** CAIP-2 namespace, e.g. 'cosmos', 'eip155' */
+  namespace: N;
+  /** CAIP-2 reference, `e.g. `1`, `agoric-3` */
+  reference: N extends 'eip155' ? `${number}` : string;
+  /**
+   * Circle CCTP Destination Domain
+   * @see {@link https://developers.circle.com/stablecoins/supported-domains}
+   */
+  cctpDestinationDomain?: number;
+}
+
+export type ChainInfo = Readonly<BaseChainInfo | CosmosChainInfo>;
+
+/**
  * A value that can be converted mechanically to an AccountId.
  * @see {@link ChainHub.resolveAccountId}
  */
@@ -101,7 +119,7 @@ export type AccountIdArg = AccountId | CosmosChainAddress;
  */
 export type OrchestrationAccount<CI extends ChainInfo> =
   OrchestrationAccountCommon &
-    (CI extends CosmosChainInfo
+    (CI extends { chainId: string }
       ? CI['chainId'] extends `agoric${string}`
         ? LocalAccountMethods
         : CosmosChainAccountMethods<CI>

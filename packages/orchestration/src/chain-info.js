@@ -1,18 +1,34 @@
+/**
+ * @file Info used to build a {@link ChainHub} and return chainInfo from the
+ *   {@link Orchestrator} via the {@link Chain} object.
+ *
+ *   Includes {@link BaseChainInfo} and {@link CosmosChainInfo}
+ */
+
 import { E } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
 import { HubName, normalizeConnectionInfo } from './exos/chain-hub.js';
 import fetchedChainInfo from './fetched-chain-info.js'; // Refresh with scripts/refresh-chain-info.ts
 import { CosmosAssetInfoShape, CosmosChainInfoShape } from './typeGuards.js';
 
-/** @import {Chain, CosmosAssetInfo, CosmosChainInfo, EthChainInfo, IBCConnectionInfo} from './types.js'; */
-/** @import {NameAdmin} from '@agoric/vats'; */
+/**
+ * @import {CosmosAssetInfo, CosmosChainInfo} from './types.js';
+ * @import {NameAdmin} from '@agoric/vats';
+ * @import {ChainInfo} from './orchestration-api.ts';
+ */
 
 /**
- * Info used to build a {@link Chain} object - channel, connection, and denom
- * info.
+ * Well-known namespaces supported by the Orchestration SDK
  *
- * @typedef {CosmosChainInfo | EthChainInfo} ChainInfo
+ * @enum {(typeof KnownNamespace)[keyof typeof KnownNamespace]}
+ * @see {@link https://github.com/ChainAgnostic/CAIPs/blob/c599f7601d0ce83e6dd9f350c6c21d158d56fd6d/CAIPs/caip-2.md}
  */
+export const KnownNamespace = /** @type {const} */ ({
+  cosmos: 'cosmos',
+  eip155: 'eip155',
+  solana: 'solana',
+});
+harden(KnownNamespace);
 
 const knownChains = /** @satisfies {Record<string, ChainInfo>} */ (
   harden(fetchedChainInfo)
