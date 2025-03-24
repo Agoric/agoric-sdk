@@ -342,7 +342,9 @@ export const contract = async (
 };
 harden(contract);
 
-export const start = withOrchestration(contract);
+export const start = withOrchestration(contract, {
+  chainInfoValueShape: CosmosChainInfoShape,
+});
 harden(start);
 
 export type FastUsdcSF = typeof start;

@@ -26,6 +26,7 @@ import { getBech32Prefix, parseAccountId } from '../utils/address.js';
  * @import {KnownChains} from '../chain-info.js';
  * @import {AccountId, CosmosChainAddress, ChainInfo, ScopedChainId, Denom, DenomAmount, AccountIdArg} from '../orchestration-api.js';
  * @import {Remote, TypedPattern} from '@agoric/internal';
+ * @import {Pattern} from '@endo/patterns';
  */
 
 /** receiver address value for ibc transfers that involve PFM */
@@ -242,12 +243,21 @@ const ChainHubI = M.interface('ChainHub', {
  * @param {Zone} zone
  * @param {Remote<NameHub>} agoricNames
  * @param {VowTools} vowTools
+ * @param {object} [opts]
+ * @param {Pattern} [opts.chainInfoValueShape] legacy support for contracts
+ *   deployed with `valueShape: CosmosChainInfoShape`. If nothing is supplied,
+ *   defaults to {@link ChainInfoShape}
  */
-export const makeChainHub = (zone, agoricNames, vowTools) => {
+export const makeChainHub = (
+  zone,
+  agoricNames,
+  vowTools,
+  { chainInfoValueShape = /** @type {Pattern} */ (ChainInfoShape) } = {},
+) => {
   /** @type {MapStore<string, ChainInfo>} */
   const chainInfos = zone.mapStore('chainInfos', {
     keyShape: M.string(),
-    valueShape: ChainInfoShape,
+    valueShape: chainInfoValueShape,
   });
   /** @type {MapStore<string, IBCConnectionInfo>} */
   const connectionInfos = zone.mapStore('connectionInfos', {
