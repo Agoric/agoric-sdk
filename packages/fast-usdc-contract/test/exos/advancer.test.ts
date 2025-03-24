@@ -161,7 +161,8 @@ const createTestExtensions = (t, common: CommonSetup) => {
     borrower: mockBorrowerF,
     notifier: mockNotifyF,
     poolAccount: mockAccounts.mockPoolAccount.account,
-    intermediateRecipient,
+    intermediateRecipientAddress: intermediateRecipient,
+    intermediateRecipientAccount: undefined,
     settlementAddress,
   });
 
@@ -301,7 +302,8 @@ test('updates status to ADVANCE_SKIPPED on insufficient pool funds', async t => 
     borrower: mockBorrowerFacet,
     notifier: mockNotifyF,
     poolAccount: mockPoolAccount.account,
-    intermediateRecipient,
+    intermediateRecipientAddress: intermediateRecipient,
+    intermediateRecipientAccount: undefined,
     settlementAddress,
   });
 
@@ -510,7 +512,8 @@ test('logs error if returnToPool fails during AdvanceFailed recovery', async t =
     borrower: mockBorrowerFacet,
     notifier: mockNotifyF,
     poolAccount: mockPoolAccount.account,
-    intermediateRecipient,
+    intermediateRecipientAddress: intermediateRecipient,
+    intermediateRecipientAccount: undefined,
     settlementAddress,
   });
 
@@ -770,7 +773,8 @@ test('alerts if `returnToPool` fallback fails', async t => {
     borrower: mockBorrowerFacet,
     notifier: mockNotifyF,
     poolAccount: mockPoolAccount.account,
-    intermediateRecipient,
+    intermediateRecipientAddress: intermediateRecipient,
+    intermediateRecipientAccount: undefined,
     settlementAddress,
   });
 
@@ -862,7 +866,8 @@ test('no status update if `checkMintedEarly` returns true', async t => {
     borrower: mockBorrowerF,
     notifier: mockNotifyF,
     poolAccount: mockPoolAccount.account,
-    intermediateRecipient,
+    intermediateRecipientAddress: intermediateRecipient,
+    intermediateRecipientAccount: undefined,
     settlementAddress,
   });
 
