@@ -39,6 +39,8 @@ harden(CosmosChainAddressShape);
 /** @deprecated use CosmosChainAddressShape */
 export const ChainAddressShape = CosmosChainAddressShape;
 
+export const AccountIdArgShape = M.or(M.string(), CosmosChainAddressShape);
+
 /**
  * NB: For the AccountId case does not fully verify it is CAIP-10 (only string)
  *

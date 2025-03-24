@@ -504,7 +504,11 @@ test('Settlement for unknown transaction (minted early)', async t => {
       'forwarding',
       150000000n,
       'to',
-      'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
+      {
+        chainId: 'osmosis-1',
+        encoding: 'bech32',
+        value: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
+      },
       'for',
       '0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761702',
     ],

@@ -232,8 +232,8 @@ const ChainHubI = M.interface('ChainHub', {
     M.or(DenomDetailShape, M.undefined()),
   ),
   getDenom: M.call(BrandShape).returns(M.or(M.string(), M.undefined())),
-  makeChainAddress: M.call(AccountArgShape).returns(CosmosChainAddressShape),
-  resolveAccountId: M.call(AccountArgShape).returns(M.string()),
+  makeChainAddress: M.call(M.string()).returns(CosmosChainAddressShape),
+  resolveAccountId: M.call(M.string()).returns(M.string()),
   makeTransferRoute: M.call(AccountArgShape, DenomAmountShape, M.string())
     .optional(ForwardOptsShape)
     .returns(M.or(M.undefined(), TransferRouteShape)),
