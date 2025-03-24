@@ -2,6 +2,7 @@
 import { Fail } from '@endo/errors';
 import { denomHash } from '../utils/denomHash.js';
 import { Far } from '@endo/far';
+import { prepareEVMTransactionKit } from './evm-transaction-kit.js';
 
 /**
  * @import {GuestInterface, GuestOf} from '@agoric/async-flow';
@@ -68,7 +69,6 @@ export const createAndMonitorLCA = async (
   await localAccount.monitorTransfers(tap);
   log('Monitoring transfers setup successfully');
 
-  seat.exit();
-  return localAccount.asContinuingOffer();
+  return localAccount;
 };
 harden(createAndMonitorLCA);
