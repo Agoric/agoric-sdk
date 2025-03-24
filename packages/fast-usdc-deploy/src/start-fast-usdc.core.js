@@ -15,7 +15,7 @@ import {
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js'
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
  * @import {LegibleCapData} from './utils/config-marshal.js'
- * @import {FastUsdcSF} from '@aglocal/fast-usdc-contract/src/fast-usdc.contract.js'
+ * @import {FastUsdcSF} from '@aglocal/fast-usdc-contract/src/fast-usdc.contract.ts'
  * @import {FastUSDCConfig} from '@agoric/fast-usdc/src/types.js'
  */
 
@@ -160,7 +160,7 @@ export const startFastUSDC = async (
     brands: { PoolShares: shareBrand },
   } = await E(zoe).getTerms(instance);
   /** @type {{ PoolShares: Issuer<'nat'> }} */
-  // @ts-expect-error see zcf.makeZCFMint(...) in fast-usdc.contract.js
+  // @ts-expect-error see zcf.makeZCFMint(...) in fast-usdc.contract.ts
   const { PoolShares: shareIssuer } = fastUsdcIssuers;
   produceShareIssuer.resolve(shareIssuer);
   produceShareBrand.resolve(shareBrand);

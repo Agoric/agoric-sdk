@@ -42,13 +42,13 @@ import type {
 } from '@agoric/fast-usdc/src/types.js';
 import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
 import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
-import type { FastUsdcSF } from '../src/fast-usdc.contract.js';
+import type { FastUsdcSF } from '../src/fast-usdc.contract.ts';
 import type { OperatorOfferResult } from '../src/exos/transaction-feed.js';
 import { commonSetup, uusdcOnAgoric } from './supports.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
-const contractFile = `${dirname}/../src/fast-usdc.contract.js`;
+const contractFile = `${dirname}/../src/fast-usdc.contract.ts`;
 
 const agToNoble = fetchedChainInfo.agoric.connections['noble-1'];
 

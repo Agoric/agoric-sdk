@@ -1,28 +1,49 @@
 import { AssetKind } from '@agoric/ertp';
+import {
+  FastUSDCTermsShape,
+  FeeConfigShape,
+} from '@agoric/fast-usdc/src/type-guards.js';
 import { makeTracer } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import {
   CosmosChainInfoShape,
   DenomDetailShape,
   DenomShape,
+  type IBCConnectionInfo,
   OrchestrationPowersShape,
   registerChainsAndAssets,
   withOrchestration,
+  type OrchestrationAccount,
+  type OrchestrationPowers,
+  type OrchestrationTools,
+  type CosmosChainInfo,
+  type Denom,
+  type DenomDetail,
 } from '@agoric/orchestration';
 import { makeZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { Fail } from '@endo/errors';
-import { E } from '@endo/far';
+import { E, type ERef } from '@endo/far';
 import { M } from '@endo/patterns';
-import {
-  FastUSDCTermsShape,
-  FeeConfigShape,
-} from '@agoric/fast-usdc/src/type-guards.js';
+
+import type { HostInterface } from '@agoric/async-flow';
+import type {
+  ContractRecord,
+  FastUsdcTerms,
+  FeeConfig,
+} from '@agoric/fast-usdc/src/types.js';
+import type { Remote } from '@agoric/internal';
+import type {
+  Marshaller,
+  StorageNode,
+} from '@agoric/internal/src/lib-chainStorage.js';
+import type { Zone } from '@agoric/zone';
 import { prepareAdvancer } from './exos/advancer.js';
 import { prepareLiquidityPoolKit } from './exos/liquidity-pool.js';
 import { prepareSettler } from './exos/settler.js';
 import { prepareStatusManager } from './exos/status-manager.js';
+import type { OperatorOfferResult } from './exos/transaction-feed.js';
 import { prepareTransactionFeedKit } from './exos/transaction-feed.js';
 import * as flows from './fast-usdc.flows.js';
 
@@ -32,20 +53,7 @@ const TXNS_NODE = 'txns';
 const FEE_NODE = 'feeConfig';
 const ADDRESSES_BAGGAGE_KEY = 'addresses';
 
-/**
- * @import {HostInterface} from '@agoric/async-flow';
- * @import {CosmosChainInfo, Denom, DenomDetail, OrchestrationAccount, IBCConnectionInfo} from '@agoric/orchestration';
- * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration/src/utils/start-helper.js';
- * @import {Remote} from '@agoric/internal';
- * @import {Marshaller, StorageNode} from '@agoric/internal/src/lib-chainStorage.js'
- * @import {Zone} from '@agoric/zone';
- * @import {OperatorOfferResult} from './exos/transaction-feed.js';
- * @import {ContractRecord, FastUsdcTerms, FeeConfig} from '@agoric/fast-usdc/src/types.js';
- */
-
-/** @type {ContractMeta<typeof start>} */
 export const meta = {
-  // @ts-expect-error TypedPattern not recognized as record
   customTermsShape: FastUSDCTermsShape,
   privateArgsShape: {
     // @ts-expect-error TypedPattern not recognized as record
@@ -56,43 +64,40 @@ export const meta = {
     marshaller: M.remotable(),
     poolMetricsNode: M.remotable(),
   },
-};
+} as ContractMeta<typeof start>;
 harden(meta);
 
-/**
- * @param {Remote<StorageNode>} node
- * @param {ERef<Marshaller>} marshaller
- * @param {FeeConfig} feeConfig
- */
-const publishFeeConfig = (node, marshaller, feeConfig) => {
+const publishFeeConfig = (
+  node: Remote<StorageNode>,
+  marshaller: ERef<Marshaller>,
+  feeConfig: FeeConfig,
+) => {
   const feeNode = E(node).makeChildNode(FEE_NODE);
   void E.when(E(marshaller).toCapData(feeConfig), value =>
     E(feeNode).setValue(JSON.stringify(value)),
   );
 };
 
-/**
- * @param {Remote<StorageNode>} contractNode
- * @param {ContractRecord} addresses
- */
-const publishAddresses = (contractNode, addresses) => {
+const publishAddresses = (
+  contractNode: Remote<StorageNode>,
+  addresses: ContractRecord,
+) => {
   return E(contractNode).setValue(JSON.stringify(addresses));
 };
 
-/**
- * @param {ZCF<FastUsdcTerms>} zcf
- * @param {OrchestrationPowers & {
- *   assetInfo: [Denom, DenomDetail & { brandKey?: string}][];
- *   chainInfo: Record<string, CosmosChainInfo>;
- *   feeConfig: FeeConfig;
- *   marshaller: Marshaller;
- *   poolMetricsNode: Remote<StorageNode>;
- *   storageNode: Remote<StorageNode>;
- * }} privateArgs
- * @param {Zone} zone
- * @param {OrchestrationTools} tools
- */
-export const contract = async (zcf, privateArgs, zone, tools) => {
+export const contract = async (
+  zcf: ZCF<FastUsdcTerms>,
+  privateArgs: OrchestrationPowers & {
+    assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
+    chainInfo: Record<string, CosmosChainInfo>;
+    feeConfig: FeeConfig;
+    marshaller: Marshaller;
+    storageNode: StorageNode;
+    poolMetricsNode: Remote<StorageNode>;
+  },
+  zone: Zone,
+  tools: OrchestrationTools,
+) => {
   assert(tools, 'no tools');
   const terms = zcf.getTerms();
   assert('USDC' in terms.brands, 'no USDC brand');
@@ -149,27 +154,25 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   const { makeLocalAccount, makeNobleAccount } = orchestrateAll(flows, {});
 
   const creatorFacet = zone.exo('Fast USDC Creator', undefined, {
-    /** @type {(operatorId: string) => Promise<Invitation<OperatorOfferResult>>} */
-    async makeOperatorInvitation(operatorId) {
+    async makeOperatorInvitation(
+      operatorId: string,
+    ): Promise<Invitation<OperatorOfferResult>> {
       return feedKit.creator.makeOperatorInvitation(operatorId);
     },
-    /** @type {(operatorId: string) => void} */
-    removeOperator(operatorId) {
+    removeOperator(operatorId: string): void {
       return feedKit.creator.removeOperator(operatorId);
     },
     async getContractFeeBalance() {
       return poolKit.feeRecipient.getContractFeeBalance();
     },
-    /** @type {() => Promise<Invitation<unknown>>} */
-    async makeWithdrawFeesInvitation() {
+    async makeWithdrawFeesInvitation(): Promise<Invitation<unknown>> {
       return poolKit.feeRecipient.makeWithdrawFeesInvitation();
     },
-    /**
-     * @param {string} [agoricChainId]
-     * @param {string} [nobleChainId]
-     * @param {IBCConnectionInfo} [agoricToNoble]
-     */
-    async connectToNoble(agoricChainId, nobleChainId, agoricToNoble) {
+    async connectToNoble(
+      agoricChainId?: string,
+      nobleChainId?: string,
+      agoricToNoble?: IBCConnectionInfo,
+    ) {
       const shouldUpdate = agoricChainId && nobleChainId && agoricToNoble;
       if (shouldUpdate) {
         trace('connectToNoble', agoricChainId, nobleChainId, agoricToNoble);
@@ -227,8 +230,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     getStaticInfo() {
       baggage.has(ADDRESSES_BAGGAGE_KEY) ||
         Fail`no addresses. creator must 'publishAddresses' first`;
-      /** @type {ContractRecord} */
-      const addresses = baggage.get(ADDRESSES_BAGGAGE_KEY);
+      const addresses: ContractRecord = baggage.get(ADDRESSES_BAGGAGE_KEY);
       return harden({
         [ADDRESSES_BAGGAGE_KEY]: addresses,
       });
@@ -282,10 +284,12 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     makeLocalAccount(),
   );
   // when() is OK here since this clearly resolves promptly.
-  /** @type {[HostInterface<OrchestrationAccount<{chainId: 'agoric-3';}>>, HostInterface<OrchestrationAccount<{chainId: 'agoric-3';}>>]} */
-  const [poolAccount, settlementAccount] = await vowTools.when(
+  const [poolAccount, settlementAccount] = (await vowTools.when(
     vowTools.all([poolAccountV, settleAccountV]),
-  );
+  )) as [
+    HostInterface<OrchestrationAccount<{ chainId: 'agoric-3' }>>,
+    HostInterface<OrchestrationAccount<{ chainId: 'agoric-3' }>>,
+  ];
   trace('settlementAccount', settlementAccount);
   trace('poolAccount', poolAccount);
   const settlementAddress = await E(settlementAccount).getAddress();
@@ -332,4 +336,5 @@ harden(contract);
 
 export const start = withOrchestration(contract);
 harden(start);
-/** @typedef {typeof start} FastUsdcSF */
+
+export type FastUsdcSF = typeof start;
