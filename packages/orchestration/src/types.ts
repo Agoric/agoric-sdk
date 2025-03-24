@@ -4,7 +4,6 @@ import type { ZCF } from '@agoric/zoe';
 
 export type * from './chain-info.js';
 export type * from './cosmos-api.js';
-export type * from './ethereum-api.js';
 export type * from './exos/chain-hub.js';
 export type * from './exos/combine-invitation-makers.js';
 export type * from './exos/cosmos-interchain-service.js';
