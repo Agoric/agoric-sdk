@@ -22,7 +22,7 @@ export const SingleNatAmountRecord = M.and(
   M.recordOf(M.string(), AnyNatAmountShape, {
     numPropertiesLimit: 1,
   }),
-  M.not(harden({})),
+  M.not(harden({}))
 );
 harden(SingleNatAmountRecord);
 
@@ -42,7 +42,7 @@ export const contract = async (
   zcf,
   privateArgs,
   zone,
-  { chainHub, orchestrateAll, vowTools, zoeTools, zcfTools, baggage },
+  { chainHub, orchestrateAll, vowTools, zoeTools, zcfTools, baggage }
 ) => {
   console.log('Inside Contract');
 
@@ -57,7 +57,7 @@ export const contract = async (
     chainHub,
     zcf.getTerms().brands,
     privateArgs.chainInfo,
-    privateArgs.assetInfo,
+    privateArgs.assetInfo
   );
 
   const makeEvmTap = prepareEvmTap(zone.subZone('evmTap'), vowTools);
@@ -89,15 +89,6 @@ export const contract = async (
   //   chainHub,
   // });
 
-  const prepareEvmAccountZone1 = () =>
-    zone.exoClass('Update Address', undefined, newAddress => ({ newAddress }), {
-      updateAddress(newAddress) {
-        this.state.newAddress = newAddress;
-      },
-    });
-  const prepareEvmAccountZone = zone.makeOnce('1', () => prepareEvmAccountZone1());
-
-
   const { makeAccountAndSendGMP } = orchestrateAll(makeAccountFlows, {
     makeEvmTap,
     chainHub,
@@ -105,7 +96,6 @@ export const contract = async (
     baggage,
     zcfTools,
     zone,
-    prepareEvmAccountZone,
   });
 
   const publicFacet = zone.exo(
@@ -137,15 +127,15 @@ export const contract = async (
           makeAccountAndSendGMP,
           'send',
           undefined,
-          M.splitRecord({ give: SingleNatAmountRecord }),
+          M.splitRecord({ give: SingleNatAmountRecord })
         );
       },
-    },
+    }
   );
 
   return { publicFacet, creatorFacet };
 };
 harden(contract);
 
-export const start = withOrchestration(contract, { publishAccountInfo: true });
+export const start = withOrchestration(contract, {publishAccountInfo: true});
 harden(start);
