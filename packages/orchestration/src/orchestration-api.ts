@@ -122,7 +122,7 @@ export type AccountIdArg = AccountId | CosmosChainAddress;
  *
  * The methods available depend on the chain and its capabilities.
  */
-export type OrchestrationAccount<CI extends ChainInfo> =
+export type OrchestrationAccount<CI extends Partial<ChainInfo>> =
   OrchestrationAccountCommon &
     (CI extends CosmosChainInfo
       ? CI['chainId'] extends `agoric${string}`
@@ -136,7 +136,7 @@ export type OrchestrationAccount<CI extends ChainInfo> =
  * Note that "remote" can mean the local chain; it's just that
  * accounts are treated as remote/arms length for consistency.
  */
-export interface Chain<CI extends ChainInfo> {
+export interface Chain<CI extends Partial<ChainInfo>> {
   getChainInfo: () => Promise<CI>;
 
   // "makeAccount" suggests an operation within a vat
