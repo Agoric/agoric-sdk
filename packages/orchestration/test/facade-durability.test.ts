@@ -14,10 +14,13 @@ const test = anyTest;
 
 const mockChainInfo: CosmosChainInfo = harden({
   chainId: 'mock-1',
+  /** note: not specified in `CosmosChainInfo` */
+  ibcHooksEnabled: false,
   icaEnabled: false,
   icqEnabled: false,
+  namespace: 'cosmos',
+  reference: 'mock-1',
   pfmEnabled: false,
-  ibcHooksEnabled: false,
   stakingTokens: [{ denom: 'umock' }],
 });
 const mockChainConnection: IBCConnectionInfo = {
