@@ -215,6 +215,14 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     deleteCompletedTxs() {
       return statusManager.deleteCompletedTxs();
     },
+    /** @type {typeof chainHub.updateChain} */
+    updateChain(chainName, chainInfo) {
+      return chainHub.updateChain(chainName, chainInfo);
+    },
+    /** @type {typeof chainHub.registerChain} */
+    registerChain(chainName, chainInfo) {
+      return chainHub.registerChain(chainName, chainInfo);
+    },
   });
 
   const publicFacet = zone.exo('Fast USDC Public', undefined, {
@@ -237,6 +245,12 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
       });
     },
   });
+
+  // to support ChainHub migration
+  // zone.subZone('chainHub').mapStore('chainInfos', {
+  //   keyShape: M.string(),
+  //   valueShape: CosmosChainInfoShape,
+  // });
 
   // ^^^ Define all kinds above this line. Keep remote calls below. vvv
 

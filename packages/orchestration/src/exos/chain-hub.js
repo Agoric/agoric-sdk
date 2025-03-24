@@ -244,7 +244,6 @@ const ChainHubI = M.interface('ChainHub', {
  * @param {VowTools} vowTools
  */
 export const makeChainHub = (zone, agoricNames, vowTools) => {
-  // TODO: handle breaking change for FUSDC (valueShape)
   /** @type {MapStore<string, ChainInfo>} */
   const chainInfos = zone.mapStore('chainInfos', {
     keyShape: M.string(),
