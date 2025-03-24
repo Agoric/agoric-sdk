@@ -65,11 +65,11 @@ test('make contract calls via axelarGmp', async t => {
 
   const wallet = await walletFactoryDriver.provideSmartWallet('agoric1test');
   await wallet.sendOffer({
-    id: 'axelarGmpContractCall',
+    id: 'makeAccountAndSendGMP',
     invitationSpec: {
       source: 'agoricContract',
       instancePath: ['axelarGmp'],
-      callPipe: [['gmpInvitation']],
+      callPipe: [['makeAccountAndSendGMP']],
     },
     proposal: {
       // @ts-expect-error XXX BoardRemote
@@ -80,6 +80,7 @@ test('make contract calls via axelarGmp', async t => {
       type: 1,
       gasAmount: 20000,
       destinationEVMChain: 'Ethereum',
+      chainName: 'axelar',
       contractInvocationData: {
         functionSelector: utils.id('setCount(uint256)').slice(0, 10),
         deadline: 5000,

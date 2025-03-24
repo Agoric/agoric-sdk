@@ -1,9 +1,9 @@
-// @ts-check
 import { M, mustMatch } from '@endo/patterns';
 import { VowShape } from '@agoric/vow';
 import { makeTracer } from '@agoric/internal';
-import { atob } from '@endo/base64';
-import { CosmosChainAddressShape } from '../typeGuards.js';
+import { atob, decodeBase64 } from '@endo/base64';
+import { ChainAddressShape } from '@agoric/orchestration';
+import { decode } from '@findeth/abi';
 
 const trace = makeTracer('EvmTap');
 
@@ -12,7 +12,7 @@ const trace = makeTracer('EvmTap');
  * @import {VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
  * @import {TargetApp} from '@agoric/vats/src/bridge-target.js';
- * @import {CosmosChainAddress, Denom, OrchestrationAccount} from '@agoric/orchestration';
+ * @import {ChainAddress, Denom, OrchestrationAccount} from '@agoric/orchestration';
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
  * @import {TypedPattern} from '@agoric/internal';
  */
@@ -20,20 +20,22 @@ const trace = makeTracer('EvmTap');
 /**
  * @typedef {{
  *   localAccount: ERef<OrchestrationAccount<{ chainId: 'agoric' }>>;
- *   localChainAddress: CosmosChainAddress;
+ *   localChainAddress: ChainAddress;
  *   sourceChannel: IBCChannelID;
  *   remoteDenom: Denom;
  *   localDenom: Denom;
+ *   updateAddress: Function;
  * }} EvmTapState
  */
 
 /** @type {TypedPattern<EvmTapState>} */
 const EvmTapStateShape = {
   localAccount: M.remotable('LocalOrchestrationAccount'),
-  localChainAddress: CosmosChainAddressShape,
+  localChainAddress: ChainAddressShape,
   sourceChannel: M.string(),
   remoteDenom: M.string(),
   localDenom: M.string(),
+  updateAddress: M.call(M.string()).returns(M.undefined()),
 };
 harden(EvmTapStateShape);
 
@@ -73,6 +75,13 @@ const prepareEvmTapKit = (zone, { watch }) => {
             JSON.parse(atob(event.packet.data))
           );
           trace('receiveUpcall packet data', tx);
+          const memo = JSON.parse(tx.memo);
+          if (memo.source_chain === 'Ethereum') {
+            const payload = decodeBase64(memo.payload);
+            const decodedPayload = decode(['address'], payload);
+            console.log('decoded:', decodedPayload);
+            this.state.updateAddress(decodedPayload[0]);
+          }
 
           trace('receiveUpcall completed');
         },

@@ -1,22 +1,19 @@
-// @ts-check
-import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
+// import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { M } from '@endo/patterns';
 import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
-import { AnyNatAmountShape } from '../typeGuards.js';
+import { AnyNatAmountShape } from '@agoric/orchestration/src/typeGuards.js';
 import { withOrchestration } from '../utils/start-helper.js';
 import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
-import * as flows from './axelar-gmp.flows.js';
-import * as sharedFlows from './shared.flows.js';
-import * as evmFlows from './lca-evm.flows.js';
+// import * as flows from './axelar-gmp.flows.js';
+// import * as sharedFlows from './shared.flows.js';
+// import * as evmFlows from './lca-evm.flows.js';
+import * as makeAccountFlows from './make-account.flows.js';
 import { prepareEvmTap } from './evm-tap-kit.js';
-import { EmptyProposalShape } from '@agoric/zoe/src/typeGuards';
-import { E } from '@endo/far';
-import { prepareEVMTransactionKit } from './evm-transaction-kit.js';
+// import { EmptyProposalShape } from '@agoric/zoe/src/typeGuards';
 
 /**
- * @import {Remote, Vow} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
- * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
+ * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration/src/utils/start-helper.js';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  */
@@ -37,7 +34,6 @@ harden(SingleNatAmountRecord);
  *   marshaller: Marshaller;
  *   chainInfo: Record<string, CosmosChainInfo>;
  *   assetInfo?: [Denom, DenomDetail & { brandKey?: string }][];
- *   storageNode: Remote<StorageNode>;
  * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
@@ -46,14 +42,14 @@ export const contract = async (
   zcf,
   privateArgs,
   zone,
-  { baggage, chainHub, orchestrateAll, vowTools, zoeTools },
+  { chainHub, orchestrateAll, vowTools, zoeTools, zcfTools, baggage },
 ) => {
   console.log('Inside Contract');
 
   console.log('Channel Info Agoric:');
   console.log(privateArgs.chainInfo.agoric.connections);
 
-  console.log('Channel Info Axelar:');
+  console.log('Channel Info Osmosis:');
   console.log(privateArgs.chainInfo.axelar.connections);
 
   console.log('Registering Chain and Assets....');
@@ -68,12 +64,7 @@ export const contract = async (
 
   const creatorFacet = prepareChainHubAdmin(zone, chainHub);
 
-  // UNTIL https://github.com/Agoric/agoric-sdk/issues/9066
-  const logNode = E(privateArgs.storageNode).makeChildNode('log');
-  /** @type {(msg: string) => Vow<void>} */
-  const log = msg => vowTools.watch(E(logNode).setValue(msg));
-
-  const { makeLocalAccount } = orchestrateAll(sharedFlows, {});
+  // const { makeLocalAccount } = orchestrateAll(sharedFlows, {});
   /**
    * Setup a shared local account for use in async-flow functions. Typically,
    * exo initState functions need to resolve synchronously, but `makeOnce`
@@ -83,55 +74,70 @@ export const contract = async (
    * @type {any} sharedLocalAccountP expects a Promise but this is a vow
    *   https://github.com/Agoric/agoric-sdk/issues/9822
    */
-  const sharedLocalAccountP = zone.makeOnce('localAccount', () =>
-    makeLocalAccount(),
-  );
+  // const sharedLocalAccountP = zone.makeOnce('localAccount', () =>
+  //   makeLocalAccount()
+  // );
 
-  // orchestrate uses the names on orchestrationFns to do a "prepare" of the associated behavior
-  const { sendGmp } = orchestrateAll(flows, {
-    sharedLocalAccountP,
-    log,
-    zoeTools,
-  });
+  // // orchestrate uses the names on orchestrationFns to do a "prepare" of the associated behavior
+  // const { sendGmp } = orchestrateAll(flows, {
+  //   sharedLocalAccountP,
+  //   zoeTools,
+  // });
 
-  const { createAndMonitorLCA } = orchestrateAll(evmFlows, {
+  // const { createAndMonitorLCA } = orchestrateAll(evmFlows, {
+  //   makeEvmTap,
+  //   chainHub,
+  // });
+
+  const prepareEvmAccountZone1 = () =>
+    zone.exoClass('Update Address', undefined, newAddress => ({ newAddress }), {
+      updateAddress(newAddress) {
+        this.state.newAddress = newAddress;
+      },
+    });
+  const prepareEvmAccountZone = zone.makeOnce('1', () => prepareEvmAccountZone1());
+
+
+  const { makeAccountAndSendGMP } = orchestrateAll(makeAccountFlows, {
     makeEvmTap,
-    log,
     chainHub,
+    zoeTools,
     baggage,
+    zcfTools,
+    zone,
+    prepareEvmAccountZone,
   });
 
   const publicFacet = zone.exo(
     'Send PF',
     M.interface('Send PF', {
-      gmpInvitation: M.callWhen().returns(InvitationShape),
-      createAndMonitorLCA: M.callWhen().returns(M.any()),
+      // gmpInvitation: M.callWhen().returns(InvitationShape),
+      // createAndMonitorLCA: M.callWhen().returns(M.any()),
+      makeAccountAndSendGMP: M.callWhen().returns(M.any()),
     }),
     {
-      gmpInvitation() {
+      // gmpInvitation() {
+      //   return zcf.makeInvitation(
+      //     sendGmp,
+      //     'send',
+      //     undefined,
+      //     M.splitRecord({ give: SingleNatAmountRecord })
+      //   );
+      // },
+      // createAndMonitorLCA() {
+      //   return zcf.makeInvitation(
+      //     createAndMonitorLCA,
+      //     'send',
+      //     undefined,
+      //     EmptyProposalShape
+      //   );
+      // },
+      makeAccountAndSendGMP() {
         return zcf.makeInvitation(
-          sendGmp,
+          makeAccountAndSendGMP,
           'send',
           undefined,
           M.splitRecord({ give: SingleNatAmountRecord }),
-        );
-      },
-      createAndMonitorLCA() {
-        return zcf.makeInvitation(
-          async seat => {
-            const localAccount = await createAndMonitorLCA(seat);
-            const makeEVMTransactionKit = prepareEVMTransactionKit(
-              baggage,
-              { zcf },
-              localAccount,
-            );
-
-            seat.exit();
-            return makeEVMTransactionKit();
-          },
-          `send`,
-          undefined,
-          EmptyProposalShape,
         );
       },
     },

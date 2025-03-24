@@ -4,6 +4,7 @@ import {
   NonNullish,
 } from '@agoric/internal';
 import { E } from '@endo/far';
+import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 
 /// <reference types="@agoric/vats/src/core/types-ambient"/>
 
@@ -68,6 +69,8 @@ export const startAxelarGmp = async (
 
   const marshaller = await E(board).getReadonlyMarshaller();
 
+  const storageNode = await makeStorageNodeChild(chainStorage, 'axelarGmp');
+
   trace('Setting privateArgs');
 
   const privateArgs = await deeplyFulfilledObject(
@@ -76,33 +79,33 @@ export const startAxelarGmp = async (
       localchain,
       marshaller,
       orchestrationService: cosmosInterchainService,
-      storageNode: E(NonNullish(await chainStorage)).makeChildNode('axelarGmp'),
       timerService: chainTimerService,
+      storageNode,
       chainInfo,
       assetInfo,
     }),
   );
 
-  // /** @param {() => Promise<Issuer>} p */
-  // const safeFulfill = async p =>
-  //   E.when(
-  //     p(),
-  //     i => i,
-  //     () => undefined,
-  //   );
+  /** @param {() => Promise<Issuer>} p */
+  const safeFulfill = async (p) =>
+    E.when(
+      p(),
+      (i) => i,
+      () => undefined
+    );
 
-  // const ausdcIssuer = await safeFulfill(() =>
-  //   E(agoricNames).lookup('issuer', 'AUSDC'),
-  // );
+  const axlIssuer = await safeFulfill(() =>
+    E(agoricNames).lookup('issuer', 'AXL')
+  );
 
   // const wavaxIssuer = await safeFulfill(() =>
-  //   E(agoricNames).lookup('issuer', 'WAVAX'),
+  //   E(agoricNames).lookup('issuer', 'WAVAX')
   // );
 
   const issuerKeywordRecord = harden({
     BLD: await BLD,
     IST: await IST,
-    // ...(ausdcIssuer && { AUSDC: ausdcIssuer }),
+    ...(axlIssuer && { AXL: axlIssuer }),
     // ...(wavaxIssuer && { WAVAX: wavaxIssuer }),
   });
   trace('issuerKeywordRecord', issuerKeywordRecord);

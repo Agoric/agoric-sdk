@@ -1,16 +1,12 @@
-// @ts-check
 import { Fail } from '@endo/errors';
-import { denomHash } from '../utils/denomHash.js';
-import { Far } from '@endo/far';
-import { prepareEVMTransactionKit } from './evm-transaction-kit.js';
+import { denomHash } from '@agoric/orchestration/src/utils/denomHash.js';
 
 /**
- * @import {GuestInterface, GuestOf} from '@agoric/async-flow';
+ * @import {GuestInterface} from '@agoric/async-flow';
  * @import {Orchestrator, OrchestrationFlow} from '@agoric/orchestration';
- * @import {MakeEvmTap} from './evm-tap-kit';
- * @import {MakePortfolioHolder} from '../../src/exos/portfolio-holder-kit.js';
- * @import {ChainHub} from '../../src/exos/chain-hub.js';
- * @import {Vow} from '@agoric/vow';
+ * @import {MakeEvmTap} from './evm-tap-kit.js';
+ * @import {MakePortfolioHolder} from '@agoric/orchestration/src/exos/portfolio-holder-kit.js';
+ * @import {ChainHub} from '@agoric/orchestration/src/exos/chain-hub.js';
  */
 
 /**
@@ -20,28 +16,29 @@ import { prepareEVMTransactionKit } from './evm-transaction-kit.js';
  *   makeEvmTap: MakeEvmTap;
  *   makePortfolioHolder: MakePortfolioHolder;
  *   chainHub: GuestInterface<ChainHub>;
- *   log: GuestOf<(msg: string) => Vow<void>>;
- *   baggage: import('@agoric/vat-data').Baggage;
- *   zcf: { ZCF };
  * }} ctx
  * @param {ZCFSeat} seat
+ * @param {{
+ *   chainName: string;
+ * }} offerArgs
  */
 export const createAndMonitorLCA = async (
   orch,
-  { log, makeEvmTap, chainHub, baggage, zcf },
+  { makeEvmTap, chainHub },
   seat,
+  { chainName },
 ) => {
-  log('Inside createAndMonitorLCA');
+  seat.exit(); // no funds exchanged
   const [agoric, remoteChain] = await Promise.all([
     orch.getChain('agoric'),
-    orch.getChain('axelar'),
+    orch.getChain(chainName),
   ]);
   const { chainId, stakingTokens } = await remoteChain.getChainInfo();
   const remoteDenom = stakingTokens[0].denom;
-  remoteDenom || Fail`${chainId} does not have stakingTokens in config`;
+  remoteDenom ||
+    Fail`${chainId || chainName} does not have stakingTokens in config`;
 
   const localAccount = await agoric.makeAccount();
-  log('localAccount created successfully');
   const localChainAddress = await localAccount.getAddress();
   console.log('Local Chain Address:', localChainAddress);
 
@@ -65,12 +62,10 @@ export const createAndMonitorLCA = async (
     remoteDenom,
     localDenom,
   });
-  log('tap created successfully');
   // XXX consider storing appRegistration, so we can .revoke() or .updateTargetApp()
   // @ts-expect-error tap.receiveUpcall: 'Vow<void> | undefined' not assignable to 'Promise<any>'
   await localAccount.monitorTransfers(tap);
-  log('Monitoring transfers setup successfully');
 
-  return localAccount;
+  return localChainAddress.value;
 };
 harden(createAndMonitorLCA);
