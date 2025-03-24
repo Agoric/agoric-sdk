@@ -124,7 +124,7 @@ export type AccountIdArg = AccountId | CosmosChainAddress;
  */
 export type OrchestrationAccount<CI extends Partial<ChainInfo>> =
   OrchestrationAccountCommon &
-    (CI extends CosmosChainInfo
+    (CI extends { chainId: string }
       ? CI['chainId'] extends `agoric${string}`
         ? LocalAccountMethods
         : CosmosChainAccountMethods<CI>

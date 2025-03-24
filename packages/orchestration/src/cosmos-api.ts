@@ -364,7 +364,7 @@ export interface IBCMsgTransferOptions {
  *
  * @see {OrchestrationAccountI}
  */
-export type CosmosChainAccountMethods<CCI extends CosmosChainInfo> =
+export type CosmosChainAccountMethods<CCI extends { chainId: string }> =
   IcaAccountMethods &
     (CCI extends {
       stakingTokens: object;
