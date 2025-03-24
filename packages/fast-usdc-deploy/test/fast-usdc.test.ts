@@ -367,13 +367,21 @@ test.serial('writes pool metrics to vstorage', async t => {
   await documentStorageSchema(t, storage, doc);
 });
 
-test.serial('deploy HEAD; update Settler reference', async t => {
+test.serial('deploy RC2; update Settler reference', async t => {
+  const { evalReleasedProposal } = t.context;
+  const evalP = evalReleasedProposal(
+    'fast-usdc-rc2',
+    'eval-fast-usdc-settler-ref',
+  );
+  await t.notThrowsAsync(evalP);
+});
+
+test.serial('deploy HEAD; update ChainHub for EVM/Solana', async t => {
   const { buildProposal, evalProposal } = t.context;
   const materials = await buildProposal(
-    '@aglocal/fast-usdc-deploy/src/fast-usdc-settler-ref.build.js',
+    '@aglocal/fast-usdc-deploy/src/fast-usdc-evm-solana.build.js',
   );
-  await evalProposal(materials);
-  t.pass();
+  await t.notThrowsAsync(evalProposal(materials));
 });
 
 test.serial('makes usdc advance', async t => {
@@ -433,7 +441,7 @@ test.serial('makes usdc advance', async t => {
   // Restart contract to make sure it doesn't break advance flow
   const kit = await EV.vat('bootstrap').consumeItem('fastUsdcKit');
   const actual = await EV(kit.adminFacet).restartContract(kit.privateArgs);
-  t.deepEqual(actual, { incarnationNumber: 3 });
+  t.deepEqual(actual, { incarnationNumber: 4 });
 
   const { runInbound } = t.context.bridgeUtils;
   await runInbound(
@@ -728,8 +736,8 @@ test.serial('restart contract', async t => {
 
   const actual = await EV(kit.adminFacet).restartContract(newArgs);
 
-  // Incarnation 4 because of upgrade, previous test
-  t.deepEqual(actual, { incarnationNumber: 4 });
+  // Incarnation 5 because of upgrade, previous test
+  t.deepEqual(actual, { incarnationNumber: 5 });
   const { flat, variableRate, contractRate } = storage
     .getValues(`published.fastUsdc.feeConfig`)
     .map(defaultSerializer.parse)

@@ -215,6 +215,14 @@ export const contract = async (
     deleteCompletedTxs() {
       return statusManager.deleteCompletedTxs();
     },
+    /** @type {typeof chainHub.updateChain} */
+    updateChain(chainName, chainInfo) {
+      return chainHub.updateChain(chainName, chainInfo);
+    },
+    /** @type {typeof chainHub.registerChain} */
+    registerChain(chainName, chainInfo) {
+      return chainHub.registerChain(chainName, chainInfo);
+    },
   });
 
   const publicFacet = zone.exo('Fast USDC Public', undefined, {
