@@ -9,7 +9,7 @@
     "build": "exit 0",
     "clean": "rm -rf bundles/config.*",
     "test": "ava",
-    "test:xs": "SWINGSET_WORKER_TYPE=xs-worker ava test/bootstrapTests test/upgrading",
+    "test:xs": "SWINGSET_WORKER_TYPE=xs-worker ava test",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
     "lint:types": "tsc",
