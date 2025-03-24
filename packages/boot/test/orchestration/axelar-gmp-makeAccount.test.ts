@@ -77,22 +77,7 @@ test('makeAccount via axelarGmp', async t => {
   await wallet.executeOffer({
     id: 'makeAccountCall',
     invitationSpec: {
-      invitationMakerName: 'makeEvmTransactionInvitation',
-      previousOffer: previousOfferId,
-      source: 'continuing',
-      invitationArgs: harden(['printName', []]),
-    },
-    proposal: {},
-  });
-
-  t.like(wallet.getLatestUpdateRecord(), {
-    status: { id: 'makeAccountCall', numWantsSatisfied: 1 },
-  });
-
-  await wallet.executeOffer({
-    id: 'makeAccountCall',
-    invitationSpec: {
-      invitationMakerName: 'makeEvmTransactionInvitation',
+      invitationMakerName: 'makeEVMTransactionInvitation',
       previousOffer: previousOfferId,
       source: 'continuing',
       invitationArgs: harden(['localAccount', []]),
