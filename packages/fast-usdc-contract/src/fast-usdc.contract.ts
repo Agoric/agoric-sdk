@@ -45,7 +45,7 @@ import { prepareSettler } from './exos/settler.js';
 import { prepareStatusManager } from './exos/status-manager.js';
 import type { OperatorOfferResult } from './exos/transaction-feed.ts';
 import { prepareTransactionFeedKit } from './exos/transaction-feed.ts';
-import * as flows from './fast-usdc.flows.js';
+import * as flows from './fast-usdc.flows.ts';
 
 const trace = makeTracer('FastUsdc');
 
