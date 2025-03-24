@@ -119,7 +119,10 @@ export const contract = async (
       createAndMonitorLCA() {
         return zcf.makeInvitation(
           async seat => {
-            const localAccount = await createAndMonitorLCA(seat);
+            const res = await createAndMonitorLCA(seat);
+            // @ts-ignore
+            const localAccount = await res.payload.vowV0.shorten();
+
             const makeEVMTransactionKit = prepareEVMTransactionKit(
               baggage,
               { zcf },

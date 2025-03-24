@@ -80,7 +80,7 @@ test('makeAccount via axelarGmp', async t => {
       invitationMakerName: 'makeEvmTransactionInvitation',
       previousOffer: previousOfferId,
       source: 'continuing',
-      invitationArgs: harden(['Rabi', 'Siddique']),
+      invitationArgs: harden(['printName', []]),
     },
     proposal: {},
   });
@@ -95,7 +95,7 @@ test('makeAccount via axelarGmp', async t => {
       invitationMakerName: 'makeEvmTransactionInvitation',
       previousOffer: previousOfferId,
       source: 'continuing',
-      invitationArgs: harden(['Fraz', 'Arshad']),
+      invitationArgs: harden(['localAccount', []]),
     },
     proposal: {},
   });
