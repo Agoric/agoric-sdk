@@ -121,13 +121,11 @@ export const contract = async (
             const res = await createAndMonitorLCA(seat);
             // @ts-ignore
             const localAccount = await res.payload.vowV0.shorten();
-
             const makeEVMTransactionKit = prepareEVMTransactionKit(
               baggage,
               { zcf },
               localAccount,
             );
-
             seat.exit();
             return makeEVMTransactionKit();
           },
@@ -143,5 +141,5 @@ export const contract = async (
 };
 harden(contract);
 
-export const start = withOrchestration(contract, { publishAccountInfo: true });
+export const start = withOrchestration(contract);
 harden(start);

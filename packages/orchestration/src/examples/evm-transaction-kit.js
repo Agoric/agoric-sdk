@@ -2,11 +2,11 @@ import { M, prepareExoClassKit } from '@agoric/vat-data';
 import { defineDurableHandle } from '@agoric/zoe/src/makeHandle.js';
 
 const EVMI = M.interface('evmTransaction', {
-  printName: M.call(M.any(), M.any()).returns(M.any()),
+  getAddress: M.call().returns(M.any()),
 });
 
 const InvitationMakerI = M.interface('invitationMaker', {
-  makeEvmTransactionInvitation: M.call(M.string(), M.array()).returns(M.any()),
+  makeEVMTransactionInvitation: M.call(M.string(), M.array()).returns(M.any()),
 });
 
 /**
@@ -21,7 +21,7 @@ export const prepareEVMTransactionKit = (baggage, { zcf }, localAccount) => {
     baggage,
     'EVMTransaction',
   );
-  const makeEvmTransactionKit = prepareExoClassKit(
+  const makeEVMTransactionKit = prepareExoClassKit(
     baggage,
     'EVMTransactionKit',
     { evm: EVMI, invitationMakers: InvitationMakerI },
@@ -29,25 +29,21 @@ export const prepareEVMTransactionKit = (baggage, { zcf }, localAccount) => {
       const evmTransactionHandle = makeEVMTransactionHandle();
       return { id, evmTransactionHandle };
     },
+
     {
       evm: {
-        printName: (firstName, lastName) => {
-          console.log(`Hi ${firstName} ${lastName}`);
-          return `Hi ${firstName} ${lastName} ${JSON.stringify(localAccount)}`;
+        async getAddress() {
+          const localChainAddress = await localAccount.getAddress();
+          return localChainAddress.value;
         },
       },
       invitationMakers: {
-        makeEvmTransactionInvitation(method, args) {
-          const { evm } = this.facets;
-          const continuingEVMTransactionHandler = async cSeat => {
-            cSeat.exit();
-            if (method === 'printName') {
-              return evm.printName('Rabi', 'Siddique');
-            }
-            if (method === 'localAccount') {
-              const localChainAddress = await localAccount.getAddress();
-              return localChainAddress.value;
-            }
+        // "method" and "args" can be used to invoke methods of localAccount obj
+        makeEVMTransactionInvitation(method, args) {
+          const continuingEVMTransactionHandler = async seat => {
+            const { evm } = this.facets;
+            seat.exit();
+            return evm.getAddress();
           };
 
           return zcf.makeInvitation(
@@ -58,6 +54,6 @@ export const prepareEVMTransactionKit = (baggage, { zcf }, localAccount) => {
       },
     },
   );
-  return makeEvmTransactionKit;
+  return makeEVMTransactionKit;
 };
 harden(prepareEVMTransactionKit);
