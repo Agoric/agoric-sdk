@@ -26,7 +26,7 @@ import { asMultiset } from '../utils/store.js';
  * @import {HostOf, HostInterface} from '@agoric/async-flow';
  * @import {TargetRegistration} from '@agoric/vats/src/bridge-target.js';
  * @import {NobleAddress, FeeConfig, EvmHash, LogFn, CctpTxEvidence} from '@agoric/fast-usdc/src/types.js';
- * @import {StatusManager} from './status-manager.js';
+ * @import {StatusManager} from './status-manager.ts';
  * @import {LiquidityPoolKit} from './liquidity-pool.js';
  */
 

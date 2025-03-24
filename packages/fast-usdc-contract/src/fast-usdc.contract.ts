@@ -42,7 +42,7 @@ import type { Zone } from '@agoric/zone';
 import { prepareAdvancer } from './exos/advancer.js';
 import { prepareLiquidityPoolKit } from './exos/liquidity-pool.js';
 import { prepareSettler } from './exos/settler.js';
-import { prepareStatusManager } from './exos/status-manager.js';
+import { prepareStatusManager } from './exos/status-manager.ts';
 import type { OperatorOfferResult } from './exos/transaction-feed.ts';
 import { prepareTransactionFeedKit } from './exos/transaction-feed.ts';
 import * as flows from './fast-usdc.flows.ts';

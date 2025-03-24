@@ -11,7 +11,7 @@ import {
   prepareStatusManager,
   stateShape,
   type StatusManager,
-} from '../../src/exos/status-manager.js';
+} from '../../src/exos/status-manager.ts';
 import { commonSetup, provideDurableZone } from '../supports.js';
 
 type Common = EReturn<typeof commonSetup>;

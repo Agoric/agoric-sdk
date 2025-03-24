@@ -27,7 +27,7 @@ import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
  * @import {VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
  * @import {AddressHook, EvmHash, FeeConfig, LogFn, NobleAddress, EvidenceWithRisk} from '@agoric/fast-usdc/src/types.js';
- * @import {StatusManager} from './status-manager.js';
+ * @import {StatusManager} from './status-manager.ts';
  * @import {LiquidityPoolKit} from './liquidity-pool.js';
  */
 
