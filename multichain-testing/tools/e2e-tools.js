@@ -26,6 +26,8 @@ const PROVISIONING_POOL_ADDR = 'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346';
 
 const BLD = '000000ubld';
 
+const rpcUrl = 'http://localhost:26657';
+
 export const txAbbr = tx => {
   const { txhash, code, height, gas_used } = tx;
 
@@ -103,20 +105,34 @@ export const makeBlockTool = ({ rpc, delay }) => {
  * @param {string} [opts.bundleId]
  */
 const installBundle = async (fullPath, opts) => {
-  const { id, agd, progress = console.log } = opts;
+  const { id, agd, delay, progress = console.log } = opts;
   const { chainId = 'agoriclocal', installer = 'faucet' } = opts;
-  const from = await agd.lookup(installer);
+  const from = agd.lookup(installer);
   // const explainDelay = (ms, info) => {
   //   progress('follow', { ...info, delay: ms / 1000 }, '...');
   //   return delay(ms);
   // };
   // const updates = follow('bundles', { delay: explainDelay });
   // await updates.next();
-  const tx = await agd.tx(['swingset', 'install-bundle', `@${fullPath}`], {
-    from,
-    chainId,
-    yes: true,
-  });
+  const installBundle = () =>
+    agd.tx(['swingset', 'install-bundle', `@${fullPath}`], {
+      from,
+      chainId,
+      yes: true,
+    });
+  let tx;
+  try {
+    tx = await installBundle();
+  } catch (err) {
+    console.warn('WARN: retrying failed install-bundle', err);
+    // TODO make available from client-utils
+    const { waitForBlock } = makeBlockTool({
+      rpc: makeHttpClient(rpcUrl, global.fetch),
+      delay,
+    });
+    await waitForBlock(1);
+    tx = await installBundle();
+  }
   assert(tx);
 
   progress({ id, installTx: tx.txhash, height: tx.height });
@@ -128,7 +144,7 @@ const installBundle = async (fullPath, opts) => {
   //   assert.equal(`b1-${confirm.endoZipBase64Sha512}`, opts.bundleId);
   // }
   // TODO: return block height at which confirm went into vstorage
-  return { tx, confirm: true };
+  return { tx, confirm: { installed: true } };
 };
 
 /**
@@ -543,7 +559,6 @@ export const makeE2ETools = async (
         // name,
         id: fullPath,
         installHeight: tx.height,
-        // @ts-expect-error confirm is a boolean?
         installed: confirm.installed,
       });
     }
