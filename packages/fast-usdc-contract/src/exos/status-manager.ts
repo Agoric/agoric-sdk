@@ -80,11 +80,7 @@ export const stateShape = harden({
 export const prepareStatusManager = (
   zone: Zone,
   txnsNode: ERef<StorageNode>,
-  {
-    marshaller,
-
-    log = makeTracer('StatusManager', true),
-  }: StatusManagerPowers,
+  { marshaller, log = makeTracer('StatusManager', true) }: StatusManagerPowers,
 ) => {
   /**
    * Keyed by a tuple of the Noble Forwarding Account and amount.

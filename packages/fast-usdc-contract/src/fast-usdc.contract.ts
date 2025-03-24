@@ -287,8 +287,8 @@ export const contract = async (
   const [poolAccount, settlementAccount] = (await vowTools.when(
     vowTools.all([poolAccountV, settleAccountV]),
   )) as [
-    HostInterface<OrchestrationAccount<{ chainId: 'agoric-3' }>>,
-    HostInterface<OrchestrationAccount<{ chainId: 'agoric-3' }>>,
+    HostInterface<OrchestrationAccount<{ chainId: 'agoric-any' }>>,
+    HostInterface<OrchestrationAccount<{ chainId: 'agoric-any' }>>,
   ];
   trace('settlementAccount', settlementAccount);
   trace('poolAccount', poolAccount);
