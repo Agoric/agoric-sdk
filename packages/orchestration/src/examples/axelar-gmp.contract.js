@@ -98,7 +98,6 @@ export const contract = async (
     makeEvmTap,
     log,
     chainHub,
-    baggage,
   });
 
   const publicFacet = zone.exo(
