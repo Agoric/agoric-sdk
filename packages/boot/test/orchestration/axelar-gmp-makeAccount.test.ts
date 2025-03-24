@@ -58,18 +58,18 @@ test('makeAccount via axelarGmp', async t => {
     proposal: {},
   });
 
-  // const getLogged = () =>
-  //   JSON.parse(storage.data.get('published.axelarGmp.log')!).values;
+  const getLogged = () =>
+    JSON.parse(storage.data.get('published.axelarGmp.log')!).values;
 
   // Flow started but IBC Transfer promise not resolved
-  // t.deepEqual(getLogged(), [
-  //   'Inside createAndMonitorLCA',
-  //   'localAccount created successfully',
-  //   'tap created successfully',
-  //   'Monitoring transfers setup successfully',
-  // ]);
+  t.deepEqual(getLogged(), [
+    'Inside createAndMonitorLCA',
+    'localAccount created successfully',
+    'tap created successfully',
+    'Monitoring transfers setup successfully',
+  ]);
 
-  // t.log('Execute offers via the LCA');
+  t.log('Execute offers via the LCA');
 
   const previousOfferId =
     wallet.getCurrentWalletRecord().offerToUsedInvitation[0][0];

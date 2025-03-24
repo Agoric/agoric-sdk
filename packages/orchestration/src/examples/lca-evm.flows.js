@@ -2,6 +2,7 @@
 import { Fail } from '@endo/errors';
 import { denomHash } from '../utils/denomHash.js';
 import { Far } from '@endo/far';
+import { prepareEVMTransactionKit } from './evm-transaction-kit.js';
 
 /**
  * @import {GuestInterface, GuestOf} from '@agoric/async-flow';
@@ -20,12 +21,14 @@ import { Far } from '@endo/far';
  *   makePortfolioHolder: MakePortfolioHolder;
  *   chainHub: GuestInterface<ChainHub>;
  *   log: GuestOf<(msg: string) => Vow<void>>;
+ *   baggage: import('@agoric/vat-data').Baggage;
+ *   zcf: { ZCF };
  * }} ctx
  * @param {ZCFSeat} seat
  */
 export const createAndMonitorLCA = async (
   orch,
-  { log, makeEvmTap, chainHub },
+  { log, makeEvmTap, chainHub, baggage, zcf },
   seat,
 ) => {
   log('Inside createAndMonitorLCA');
@@ -68,7 +71,13 @@ export const createAndMonitorLCA = async (
   await localAccount.monitorTransfers(tap);
   log('Monitoring transfers setup successfully');
 
+  const makeEVMTransactionKit = prepareEVMTransactionKit(
+    baggage,
+    { zcf },
+    { city: 'PAK' },
+  );
+
   seat.exit();
-  return localAccount.asContinuingOffer();
+  return makeEVMTransactionKit();
 };
 harden(createAndMonitorLCA);
