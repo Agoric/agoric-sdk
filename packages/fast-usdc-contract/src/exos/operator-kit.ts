@@ -75,9 +75,7 @@ export const prepareOperatorKit = (
         ): Promise<Invitation> {
           const { operator } = this.facets;
           operator.submitEvidence(evidence, riskAssessment);
-          return staticPowers.makeInertInvitation(
-            'evidence was pushed in the invitation maker call',
-          );
+          return staticPowers.makeInertInvitation();
         },
       },
       operator: {
