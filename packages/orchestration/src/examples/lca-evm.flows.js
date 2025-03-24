@@ -71,13 +71,6 @@ export const createAndMonitorLCA = async (
   await localAccount.monitorTransfers(tap);
   log('Monitoring transfers setup successfully');
 
-  const makeEVMTransactionKit = prepareEVMTransactionKit(
-    baggage,
-    { zcf },
-    { city: 'PAK' },
-  );
-
-  seat.exit();
-  return makeEVMTransactionKit();
+  return localAccount;
 };
 harden(createAndMonitorLCA);
