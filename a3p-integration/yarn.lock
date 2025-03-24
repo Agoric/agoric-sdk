@@ -5,9 +5,9 @@ __metadata:
   version: 8
   cacheKey: 10c0
 
-"@agoric/synthetic-chain@npm:^0.5.3":
-  version: 0.5.3
-  resolution: "@agoric/synthetic-chain@npm:0.5.3"
+"@agoric/synthetic-chain@npm:^0.5.5":
+  version: 0.5.5
+  resolution: "@agoric/synthetic-chain@npm:0.5.5"
   dependencies:
     "@endo/zip": "npm:^1.0.9"
     better-sqlite3: "npm:^11.8.1"
@@ -18,7 +18,7 @@ __metadata:
     tmp: "npm:0.2.3"
   bin:
     synthetic-chain: dist/cli/cli.js
-  checksum: 10c0/47e984c05a64fd520c1c7063b3f0a63d231f0da431bd169e0dece1cba5535696c3c582d32afc7771d869ecb6aa9f2945991c47e1ae015ba321d43a465e37573b
+  checksum: 10c0/596ba94234ab2cb798ee8f20b11482e4ee80371df25c9b45a443e91fbca82ad3d894ae9dd265f59f2469c0d9eda2451e1bc9ac43086d2cd51668e2523488ff1a
   languageName: node
   linkType: hard
 
@@ -180,12 +180,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/better-sqlite3@npm:^7.6.11":
-  version: 7.6.11
-  resolution: "@types/better-sqlite3@npm:7.6.11"
+"@types/better-sqlite3@npm:^7.6.12":
+  version: 7.6.12
+  resolution: "@types/better-sqlite3@npm:7.6.12"
   dependencies:
     "@types/node": "npm:*"
-  checksum: 10c0/6a7b8e5765f872404242ff9626edf4b4dd7974047144ba7254a59f4f1c196d05f8001323d0b526e8bbb3842bf541e341d74ca0164e50bd38fceaf3ef5d2a673d
+  checksum: 10c0/5367de7492e2c697aa20cc4024ba26210971d15f60c01ef691eddfbbfd39ccf9f80d5129fd7fd6c76c98804739325e23d2b156b0eac8f5a7665ba374a08ac1e7
   languageName: node
   linkType: hard
 
@@ -2672,8 +2672,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
-    "@agoric/synthetic-chain": "npm:^0.5.3"
-    "@types/better-sqlite3": "npm:^7.6.11"
+    "@agoric/synthetic-chain": "npm:^0.5.5"
+    "@types/better-sqlite3": "npm:^7.6.12"
     eslint: "npm:^8.57.1"
     npm-run-all: "npm:^4.1.5"
   languageName: unknown
