@@ -4,6 +4,8 @@ export default [
   "@aglocal/benchmark",
   "@aglocal/boot",
   "@aglocal/deployment",
+  "@aglocal/fast-usdc-contract",
+  "@aglocal/fast-usdc-deploy",
   "@aglocal/swingset-runner",
   "@agoric/access-token",
   "@agoric/async-flow",

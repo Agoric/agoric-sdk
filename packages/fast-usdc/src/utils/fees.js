@@ -9,7 +9,22 @@ const { add, isGTE, subtract } = AmountMath;
 /**
  * @import {Amount} from '@agoric/ertp';
  * @import {FeeConfig} from '../types.js';
- * @import {RepayAmountKWR} from '../exos/liquidity-pool.js';
+ */
+
+/**
+ * @typedef {{
+ *  Principal: Amount<'nat'>;
+ *  PoolFee: Amount<'nat'>;
+ *  ContractFee: Amount<'nat'>;
+ * }} RepayAmountKWR
+ */
+
+/**
+ * @typedef {{
+ *  Principal: Payment<'nat'>;
+ *  PoolFee: Payment<'nat'>;
+ *  ContractFee: Payment<'nat'>;
+ * }} RepayPaymentKWR
  */
 
 /** @param {FeeConfig} feeConfig */
