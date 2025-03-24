@@ -3,6 +3,7 @@ import { defineDurableHandle } from '@agoric/zoe/src/makeHandle.js';
 
 const EVMI = M.interface('evmTransaction', {
   getAddress: M.call().returns(M.any()),
+  send: M.call(M.any(), M.any()).returns(M.any()),
 });
 
 const InvitationMakerI = M.interface('invitationMaker', {
@@ -14,7 +15,9 @@ const InvitationMakerI = M.interface('invitationMaker', {
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {object} powers
- * @param {object} localAccount
+ * @param {import('../orchestration-api').OrchestrationAccount<{
+ *   chainId: 'agoric-3';
+ * }>} localAccount
  */
 export const prepareEVMTransactionKit = (baggage, { zcf }, localAccount) => {
   const makeEVMTransactionHandle = defineDurableHandle(
@@ -36,6 +39,19 @@ export const prepareEVMTransactionKit = (baggage, { zcf }, localAccount) => {
           const localChainAddress = await localAccount.getAddress();
           return localChainAddress.value;
         },
+
+        /**
+         * Sends tokens from the local account to a specified Cosmos chain
+         * address.
+         *
+         * @param {import('@agoric/orchestration').CosmosChainAddress} toAccount
+         * @param {import('@agoric/orchestration').AmountArg} amount
+         * @returns {Promise<string>} A success message upon completion.
+         */
+        async send(toAccount, amount) {
+          await localAccount.send(toAccount, amount);
+          return 'transfer success';
+        },
       },
       invitationMakers: {
         // "method" and "args" can be used to invoke methods of localAccount obj
@@ -43,6 +59,12 @@ export const prepareEVMTransactionKit = (baggage, { zcf }, localAccount) => {
           const continuingEVMTransactionHandler = async seat => {
             const { evm } = this.facets;
             seat.exit();
+            switch (method) {
+              case 'getAddress':
+                return evm.getAddress();
+              case 'send':
+                return evm.send(args[0], args[1]);
+            }
             return evm.getAddress();
           };
 
