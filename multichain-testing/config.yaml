@@ -2,36 +2,47 @@ name: starship-localnet
 version: 1.3.0
 
 chains:
-  - id: agoriclocal
-    name: agoric
-    image: ghcr.io/agoric/agoric-sdk:dev
+  # - id: agoriclocal
+  #   name: agoric
+  #   image: ghcr.io/agoric/agoric-sdk:dev
+  #   numValidators: 1
+  #   env:
+  #     - name: DEBUG
+  #       value: SwingSet:vat,SwingSet:ls
+  #   genesis:
+  #     app_state:
+  #       staking:
+  #         params:
+  #           unbonding_time: '2m'
+  #       swingset:
+  #         params:
+  #           bootstrap_vat_config: '@agoric/vm-config/decentral-itest-orchestration-config.json'
+  #   scripts:
+  #     updateConfig:
+  #       file: scripts/update-config.sh
+  #   faucet:
+  #     enabled: true
+  #     type: starship
+  #   ports:
+  #     rest: 1317
+  #     rpc: 26657
+  #     exposer: 38087
+  #     grpc: 9090
+  #     faucet: 8082
+  #   resources:
+  #     cpu: 1
+  #     memory: 4Gi
+  - id: cosmoshublocal
+    name: cosmoshub
     numValidators: 1
-    env:
-      - name: DEBUG
-        value: SwingSet:vat,SwingSet:ls
-    genesis:
-      app_state:
-        staking:
-          params:
-            unbonding_time: '2m'
-        swingset:
-          params:
-            bootstrap_vat_config: '@agoric/vm-config/decentral-itest-orchestration-config.json'
-    scripts:
-      updateConfig:
-        file: scripts/update-config.sh
     faucet:
       enabled: true
       type: starship
     ports:
-      rest: 1317
-      rpc: 26657
-      exposer: 38087
-      grpc: 9090
-      faucet: 8082
-    resources:
-      cpu: 1
-      memory: 4Gi
+      rest: 1314
+      rpc: 26654
+      grpc: 9092
+      faucet: 8083
   - id: elyslocal
     name: custom
     image: adarsh00/elys-network:latest
@@ -68,9 +79,9 @@ chains:
     ics:
       enabled: true
       provider: cosmoshublocal 
-    faucet:
-      enabled: true
-      type: starship
+    # faucet:
+    #   enabled: false
+    #   type: starship
     ports:
       rest: 1310
       rpc: 26650
@@ -79,43 +90,32 @@ chains:
     resources:
       cpu: 1
       memory: 1Gi
-  - id: cosmoshublocal
-    name: cosmoshub
-    numValidators: 1
-    faucet:
-      enabled: true
-      type: starship
-    ports:
-      rest: 1314
-      rpc: 26654
-      grpc: 9092
-      faucet: 8083
-  - id: stridelocal
-    name: stride
-    numValidators: 1
-    ics:
-      enabled: true
-      provider: cosmoshublocal 
-    faucet:
-      enabled: true
-      type: starship
-    ports:
-      rest: 1313
-      rpc: 26653
-      grpc: 9099
-      faucet: 8089
+  # - id: stridelocal
+  #   name: stride
+  #   numValidators: 1
+  #   ics:
+  #     enabled: true
+  #     provider: cosmoshublocal 
+  #   faucet:
+  #     enabled: true
+  #     type: starship
+  #   ports:
+  #     rest: 1313
+  #     rpc: 26653
+  #     grpc: 9099
+  #     faucet: 8089
 
 relayers:
-  - name: stride-cosmoshub
-    type: go-relayer
-    replicas: 1
-    chains:
-      - cosmoshublocal
-      - stridelocal
-    ics:
-      enabled: true
-      consumer: stridelocal
-      provider: cosmoshublocal
+  # - name: stride-cosmoshub
+  #   type: go-relayer
+  #   replicas: 1
+  #   chains:
+  #     - cosmoshublocal
+  #     - stridelocal
+  #   ics:
+  #     enabled: true
+  #     consumer: stridelocal
+  #     provider: cosmoshublocal
   - name: elys-cosmoshub
     type: go-relayer
     replicas: 1
@@ -126,12 +126,12 @@ relayers:
       enabled: true
       consumer: elyslocal
       provider: cosmoshublocal
-  - name: agoric-cosmoshub
-    type: hermes
-    replicas: 1
-    chains:
-      - agoriclocal
-      - cosmoshublocal
+  # - name: agoric-cosmoshub
+  #   type: hermes
+  #   replicas: 1
+  #   chains:
+  #     - agoriclocal
+  #     - cosmoshublocal
 
 explorer:
   enabled: false
