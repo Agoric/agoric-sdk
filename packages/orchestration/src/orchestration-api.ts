@@ -140,11 +140,14 @@ export interface Chain<CI extends Partial<ChainInfo>> {
   getChainInfo: () => Promise<CI>;
 
   // "makeAccount" suggests an operation within a vat
+  // TODO: scope to { icaEnabled: true }. Currently, only scoped to `namespace: 'cosmos'` chains
   /**
    * Creates a new Orchestration Account on the current Chain.
    * @returns an object that controls the account
    */
-  makeAccount: () => Promise<OrchestrationAccount<CI>>;
+  makeAccount: () => CI extends { chainId: string }
+    ? Promise<OrchestrationAccount<CI>>
+    : never;
   // FUTURE supply optional port object; also fetch port object
 
   query: CI extends { icqEnabled: true }
