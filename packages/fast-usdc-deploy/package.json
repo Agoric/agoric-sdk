@@ -12,6 +12,7 @@
     "build": "exit 0",
     "test": "ava",
     "test:c8": "c8 --all $C8_OPTIONS ava",
+    "$scripts-note": "fast-usdc skipped in test:xs pending #10847",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
@@ -19,6 +20,7 @@
     "lint:eslint": "eslint ."
   },
   "devDependencies": {
+    "@agoric/vats": "^0.15.1",
     "ava": "^5.3.0",
     "c8": "^10.1.2",
     "execa": "9.1.0",

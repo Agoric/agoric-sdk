@@ -6,4 +6,5 @@
     "src",
     "test"
   ],
+  "exclude": ["test/bundles/"],
 }

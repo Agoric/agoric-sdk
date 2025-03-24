@@ -6,26 +6,28 @@ import { AmountMath } from '@agoric/ertp';
 import type { FeeConfig } from '@agoric/fast-usdc';
 import { Offers } from '@agoric/fast-usdc/src/clientSupport.js';
 import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
-import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { BridgeId, NonNullish } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
-import { defaultSerializer } from '@agoric/internal/src/storage-test-utils.js';
+import {
+  defaultSerializer,
+  documentStorageSchema,
+} from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Fail } from '@endo/errors';
 import { makeMarshal } from '@endo/marshal';
-import { configurations } from '@aglocal/fast-usdc-deploy/src/utils/deploy-config.js';
 import {
   AckBehavior,
   insistManagerType,
   makeSwingsetHarness,
-} from '../../tools/supports.js';
+} from '@aglocal/boot/tools/supports.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
-} from '../bootstrapTests/walletFactory.js';
+} from './walletFactory.js';
+import { configurations } from '../src/utils/deploy-config.js';
 
 const test: TestFn<
   WalletFactoryTestContext & {
@@ -127,7 +129,7 @@ test.serial(
       bridgeUtils.setBech32Prefix('noble');
 
       const materials = buildProposal(
-        'fast-usdc-deploy/src/start-fast-usdc.build.js',
+        '@aglocal/fast-usdc-deploy/src/start-fast-usdc.build.js',
         ['--net', 'MAINNET'],
       );
       await evalProposal(materials);
