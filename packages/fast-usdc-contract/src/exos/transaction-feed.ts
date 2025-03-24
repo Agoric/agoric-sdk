@@ -8,21 +8,24 @@ import {
   RiskAssessmentShape,
 } from '@agoric/fast-usdc/src/type-guards.js';
 import { INVITATION_MAKERS_DESC } from '@agoric/fast-usdc/src/operator-kit-interface.js';
+import type { Zone } from '@agoric/zone';
+import type { MapStore } from '@agoric/store';
+import type {
+  CctpTxEvidence,
+  EvidenceWithRisk,
+  RiskAssessment,
+} from '@agoric/fast-usdc/src/types.js';
 import { defineInertInvitation } from '../utils/zoe.js';
 import { prepareOperatorKit } from './operator-kit.js';
 
-/**
- * @import {Zone} from '@agoric/zone';
- * @import {MapStore} from '@agoric/store';
- * @import {OperatorKit} from './operator-kit.js';
- * @import {CctpTxEvidence, EvidenceWithRisk, RiskAssessment} from '@agoric/fast-usdc/src/types.js';
- */
+import type { OperatorKit } from './operator-kit.js';
 
 const trace = makeTracer('TxFeed', true);
 
-/**
- * @typedef {Pick<OperatorKit, 'invitationMakers' | 'operator'>} OperatorOfferResult
- */
+export type OperatorOfferResult = Pick<
+  OperatorKit,
+  'invitationMakers' | 'operator'
+>;
 
 const TransactionFeedKitI = harden({
   operatorPowers: M.interface('Transaction Feed Admin', {
@@ -45,13 +48,11 @@ const TransactionFeedKitI = harden({
   }),
 });
 
-/**
- * @param {MapStore<string, RiskAssessment>[]} riskStores
- * @param {string} txHash
- */
-const allRisksIdentified = (riskStores, txHash) => {
-  /**  @type {Set<string>} */
-  const setOfRisks = new Set();
+const allRisksIdentified = (
+  riskStores: MapStore<string, RiskAssessment>[],
+  txHash: string,
+) => {
+  const setOfRisks = new Set() as Set<string>;
   for (const store of riskStores) {
     const next = store.get(txHash);
     for (const risk of next.risksIdentified ?? []) {
@@ -74,17 +75,16 @@ harden(stateShape);
  * It receives attestations, records their evidence, and when enough oracles
  * agree, publishes the results for the advancer to act on.
  *
- * @param {Zone} zone
- * @param {ZCF} zcf
+ * @param zone
+ * @param zcf
  */
-export const prepareTransactionFeedKit = (zone, zcf) => {
-  const kinds = zone.mapStore('Kinds');
+export const prepareTransactionFeedKit = (zone: Zone, zcf: ZCF) => {
+  const kinds = zone.mapStore<string, unknown>('Kinds');
   const makeDurablePublishKit = prepareDurablePublishKit(
     kinds,
     'Transaction Feed',
   );
-  /** @type {PublishKit<EvidenceWithRisk>} */
-  const { publisher, subscriber } = makeDurablePublishKit();
+  const { publisher, subscriber } = makeDurablePublishKit<EvidenceWithRisk>();
 
   const makeInertInvitation = defineInertInvitation(zcf, 'submitting evidence');
 
@@ -96,12 +96,13 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
     'Fast USDC Feed',
     TransactionFeedKitI,
     () => {
-      /** @type {MapStore<string, OperatorKit>} */
-      const operators = zone.mapStore('operators');
-      /** @type {MapStore<string, MapStore<string, CctpTxEvidence>>} */
-      const pending = zone.mapStore('pending');
-      /** @type {MapStore<string, MapStore<string, RiskAssessment>>} */
-      const risks = zone.mapStore('risks');
+      const operators = zone.mapStore<string, OperatorKit>('operators');
+      const pending = zone.mapStore<string, MapStore<string, CctpTxEvidence>>(
+        'pending',
+      );
+      const risks = zone.mapStore<string, MapStore<string, RiskAssessment>>(
+        'risks',
+      );
       return { operators, pending, risks };
     },
     {
@@ -111,27 +112,20 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
          * oracle network, with the able to submit data to submit evidence of
          * CCTP transactions.
          *
-         * @param {string} operatorId unique per contract instance
-         * @returns {Promise<Invitation<OperatorOfferResult>>}
+         * @param operatorId unique per contract instance
          */
-        makeOperatorInvitation(operatorId) {
+        makeOperatorInvitation(
+          operatorId: string,
+        ): Promise<Invitation<OperatorOfferResult>> {
           const { creator } = this.facets;
           trace('makeOperatorInvitation', operatorId);
 
-          return zcf.makeInvitation(
-            /** @type {OfferHandler<OperatorOfferResult>} */
-            seat => {
-              seat.exit();
-              return creator.initOperator(operatorId);
-            },
-            INVITATION_MAKERS_DESC,
-          );
+          return zcf.makeInvitation(seat => {
+            seat.exit();
+            return creator.initOperator(operatorId);
+          }, INVITATION_MAKERS_DESC);
         },
-        /**
-         * @param {string} operatorId
-         * @returns {OperatorOfferResult}
-         */
-        initOperator(operatorId) {
+        initOperator(operatorId: string): OperatorOfferResult {
           const { operators, pending, risks } = this.state;
           trace('initOperator', operatorId);
 
@@ -154,8 +148,7 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
           };
         },
 
-        /** @param {string} operatorId */
-        removeOperator(operatorId) {
+        removeOperator(operatorId: string) {
           const { operators, pending, risks } = this.state;
           trace('removeOperator', operatorId);
           const operatorKit = operators.get(operatorId);
@@ -171,11 +164,15 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
          *
          * NB: the operatorKit is responsible for revoking access.
          *
-         * @param {CctpTxEvidence} evidence
-         * @param {RiskAssessment} riskAssessment
-         * @param {string} operatorId
+         * @param evidence
+         * @param riskAssessment
+         * @param operatorId
          */
-        attest(evidence, riskAssessment, operatorId) {
+        attest(
+          evidence: CctpTxEvidence,
+          riskAssessment: RiskAssessment,
+          operatorId: string,
+        ) {
           const { operators, pending, risks } = this.state;
           trace('attest', operatorId, evidence);
 
@@ -273,4 +270,6 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
 };
 harden(prepareTransactionFeedKit);
 
-/** @typedef {ReturnType<ReturnType<typeof prepareTransactionFeedKit>>} TransactionFeedKit */
+export type TransactionFeedKit = ReturnType<
+  ReturnType<typeof prepareTransactionFeedKit>
+>;

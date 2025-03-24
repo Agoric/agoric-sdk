@@ -43,7 +43,7 @@ import type {
 import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
 import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
 import type { FastUsdcSF } from '../src/fast-usdc.contract.ts';
-import type { OperatorOfferResult } from '../src/exos/transaction-feed.js';
+import type { OperatorOfferResult } from '../src/exos/transaction-feed.ts';
 import { commonSetup, uusdcOnAgoric } from './supports.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);

@@ -43,8 +43,8 @@ import { prepareAdvancer } from './exos/advancer.js';
 import { prepareLiquidityPoolKit } from './exos/liquidity-pool.js';
 import { prepareSettler } from './exos/settler.js';
 import { prepareStatusManager } from './exos/status-manager.js';
-import type { OperatorOfferResult } from './exos/transaction-feed.js';
-import { prepareTransactionFeedKit } from './exos/transaction-feed.js';
+import type { OperatorOfferResult } from './exos/transaction-feed.ts';
+import { prepareTransactionFeedKit } from './exos/transaction-feed.ts';
 import * as flows from './fast-usdc.flows.js';
 
 const trace = makeTracer('FastUsdc');
