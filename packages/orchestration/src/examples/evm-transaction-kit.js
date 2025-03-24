@@ -6,7 +6,7 @@ const EVMI = M.interface('evmTransaction', {
 });
 
 const InvitationMakerI = M.interface('invitationMaker', {
-  makeEvmTransactionInvitation: M.call(M.any(), M.any()).returns(M.any()),
+  makeEvmTransactionInvitation: M.call(M.string(), M.array()).returns(M.any()),
 });
 
 /**
@@ -37,11 +37,17 @@ export const prepareEVMTransactionKit = (baggage, { zcf }, localAccount) => {
         },
       },
       invitationMakers: {
-        makeEvmTransactionInvitation(firstName, lastName) {
+        makeEvmTransactionInvitation(method, args) {
           const { evm } = this.facets;
-          const continuingEVMTransactionHandler = cSeat => {
+          const continuingEVMTransactionHandler = async cSeat => {
             cSeat.exit();
-            return evm.printName(firstName, lastName);
+            if (method === 'printName') {
+              return evm.printName('Rabi', 'Siddique');
+            }
+            if (method === 'localAccount') {
+              const localChainAddress = await localAccount.getAddress();
+              return localChainAddress.value;
+            }
           };
 
           return zcf.makeInvitation(
