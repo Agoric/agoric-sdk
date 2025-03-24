@@ -14,8 +14,9 @@ const InvitationMakerI = M.interface('invitationMaker', {
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {object} powers
+ * @param {object} localAccount
  */
-export const prepareEVMTransactionKit = (baggage, { zcf }) => {
+export const prepareEVMTransactionKit = (baggage, { zcf }, localAccount) => {
   const makeEVMTransactionHandle = defineDurableHandle(
     baggage,
     'EVMTransaction',
@@ -32,7 +33,7 @@ export const prepareEVMTransactionKit = (baggage, { zcf }) => {
       evm: {
         printName: (firstName, lastName) => {
           console.log(`Hi ${firstName} ${lastName}`);
-          return `Hi ${firstName} ${lastName}`;
+          return `Hi ${firstName} ${lastName} ${JSON.stringify(localAccount)}`;
         },
       },
       invitationMakers: {
