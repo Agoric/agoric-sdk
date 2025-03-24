@@ -81,6 +81,8 @@ test('denom info support via getAsset and getDenom', async t => {
   const info1: CosmosChainInfo = {
     bech32Prefix: 'chain',
     chainId: 'agoric-any',
+    namespace: 'cosmos',
+    reference: 'agoric-any',
     stakingTokens: [{ denom }],
   };
   const tok1 = withAmountUtils(makeIssuerKit('Tok1'));
@@ -128,7 +130,12 @@ test('toward asset info in agoricNames (#9572)', async t => {
   await vt.when(chainHub.getChainInfo('cosmoshub'));
 
   for (const name of ['kava', 'fxcore']) {
-    chainHub.registerChain(name, { chainId: name, bech32Prefix: name });
+    chainHub.registerChain(name, {
+      chainId: name,
+      namespace: 'cosmos',
+      reference: name,
+      bech32Prefix: name,
+    });
   }
 
   await registerChainAssets(nameAdmin, 'cosmoshub', assetFixture.cosmoshub);
@@ -243,6 +250,8 @@ test('updateChain updates existing chain info and mappings', t => {
 
   const initialInfo = {
     chainId: 'chain-1',
+    namespace: 'cosmos' as const,
+    reference: 'chain-1',
     bech32Prefix: 'chain',
   };
   const updatedInfo = {
@@ -274,9 +283,17 @@ test('updateChain updates existing chain info and mappings', t => {
 test('updateChain errors on non-existent chain', t => {
   const { chainHub } = setup();
 
-  t.throws(() => chainHub.updateChain('nonexistent', { chainId: 'test' }), {
-    message: 'Chain "nonexistent" not registered',
-  });
+  t.throws(
+    () =>
+      chainHub.updateChain('nonexistent', {
+        chainId: 'test',
+        namespace: 'cosmos',
+        reference: 'test',
+      }),
+    {
+      message: 'Chain "nonexistent" not registered',
+    },
+  );
 });
 
 test('updateConnection updates existing connection info', async t => {
@@ -354,11 +371,23 @@ test('updateAsset updates existing asset and brand mappings', t => {
   const { chainHub } = setup();
 
   // Register chains
-  chainHub.registerChain('chain1', { chainId: 'chain-1', bech32Prefix: 'a' });
-  chainHub.registerChain('chain2', { chainId: 'chain-2', bech32Prefix: 'b' });
+  chainHub.registerChain('chain1', {
+    chainId: 'chain-1',
+    namespace: 'cosmos',
+    reference: 'chain-1',
+    bech32Prefix: 'a',
+  });
+  chainHub.registerChain('chain2', {
+    chainId: 'chain-2',
+    namespace: 'cosmos',
+    reference: 'chain-2',
+    bech32Prefix: 'b',
+  });
   chainHub.registerChain('agoric', {
     chainId: 'agoric-3',
     bech32Prefix: 'agoric',
+    namespace: 'cosmos',
+    reference: 'agoric-3',
   });
 
   // Create initial asset with brand
@@ -399,8 +428,15 @@ test('updateAsset errors appropriately', t => {
   chainHub.registerChain('agoric', {
     chainId: 'agoric-3',
     bech32Prefix: 'agoric',
+    namespace: 'cosmos',
+    reference: 'agoric-3',
   });
-  chainHub.registerChain('chain1', { chainId: 'chain-1', bech32Prefix: 'c1' });
+  chainHub.registerChain('chain1', {
+    chainId: 'chain-1',
+    namespace: 'cosmos',
+    reference: 'chain-1',
+    bech32Prefix: 'c1',
+  });
 
   const detail = {
     chainName: 'agoric',
