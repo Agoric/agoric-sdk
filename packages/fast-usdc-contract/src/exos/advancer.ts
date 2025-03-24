@@ -74,7 +74,10 @@ const AdvancerVowCtxShape: TypedPattern<AdvancerVowCtx> = M.splitRecord(
 const AdvancerKitI = harden({
   advancer: M.interface('AdvancerI', {
     handleTransactionEvent: M.callWhen(EvidenceWithRiskShape).returns(),
-    setIntermediateRecipient: M.call(CosmosChainAddressShape).returns(),
+    setIntermediateRecipient: M.call(
+      M.remotable('NobleAccount'),
+      CosmosChainAddressShape,
+    ).returns(),
   }),
   depositHandler: M.interface('DepositHandlerI', {
     onFulfilled: M.call(M.undefined(), AdvancerVowCtxShape).returns(VowShape),
@@ -99,10 +102,11 @@ const AdvancerKitI = harden({
 });
 
 export const stateShape = harden({
-  notifier: M.remotable(),
-  borrower: M.remotable(),
-  poolAccount: M.remotable(),
-  intermediateRecipient: M.opt(CosmosChainAddressShape),
+  notifier: M.remotable('notifier'),
+  borrower: M.remotable('borrower'),
+  poolAccount: M.remotable('poolAccount'),
+  intermediateRecipientAccount: M.opt(M.remotable('nobleAccount')),
+  intermediateRecipientAddress: M.opt(CosmosChainAddressShape),
   settlementAddress: M.opt(CosmosChainAddressShape),
 });
 
@@ -139,12 +143,16 @@ export const prepareAdvancerKit = (
         OrchestrationAccount<{ chainId: 'agoric-any' }>
       >;
       settlementAddress: CosmosChainAddress;
-      intermediateRecipient?: CosmosChainAddress;
+      intermediateRecipientAddress?: CosmosChainAddress;
+      intermediateRecipientAccount?: HostInterface<
+        OrchestrationAccount<{ chainId: 'agoric-any' }>
+      >;
     }) =>
       harden({
         ...config,
-        // make sure the state record has this property, perhaps with an undefined value
-        intermediateRecipient: config.intermediateRecipient,
+        // make sure the state record has these properties, perhaps with an undefined value
+        intermediateRecipientAccount: config.intermediateRecipientAccount,
+        intermediateRecipientAddress: config.intermediateRecipientAddress,
       }),
     {
       advancer: {
@@ -224,11 +232,21 @@ export const prepareAdvancerKit = (
             statusManager.skipAdvance(evidence, [(error as Error).message]);
           }
         },
-        /** @param {CosmosChainAddress} intermediateRecipient */
-        setIntermediateRecipient(intermediateRecipient: CosmosChainAddress) {
-          this.state.intermediateRecipient = intermediateRecipient;
+        setIntermediateRecipient(
+          intermediateRecipientAccount: HostInterface<
+            OrchestrationAccount<{
+              chainId: 'agoric-any';
+            }>
+          >,
+          intermediateRecipientAddress: CosmosChainAddress,
+        ) {
+          this.state.intermediateRecipientAccount =
+            intermediateRecipientAccount;
+          this.state.intermediateRecipientAddress =
+            intermediateRecipientAddress;
         },
       },
+
       depositHandler: {
         /**
          * @param result
@@ -239,8 +257,11 @@ export const prepareAdvancerKit = (
           result: undefined,
           ctx: AdvancerVowCtx & { tmpSeat: ZCFSeat },
         ) {
-          const { poolAccount, intermediateRecipient, settlementAddress } =
-            this.state;
+          const {
+            poolAccount,
+            intermediateRecipientAddress,
+            settlementAddress,
+          } = this.state;
           const { destination, advanceAmount, tmpSeat, ...detail } = ctx;
           tmpSeat.exit();
           const amount = harden({
@@ -251,7 +272,9 @@ export const prepareAdvancerKit = (
             destination.chainId === settlementAddress.chainId
               ? E(poolAccount).send(destination, amount)
               : E(poolAccount).transfer(destination, amount, {
-                  forwardOpts: { intermediateRecipient },
+                  forwardOpts: {
+                    intermediateRecipient: intermediateRecipientAddress,
+                  },
                 });
           return watch(transferOrSendV, this.facets.transferHandler, {
             destination,
