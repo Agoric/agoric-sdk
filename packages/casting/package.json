@@ -29,16 +29,16 @@
     "@cosmjs/proto-signing": "^0.33.0",
     "@cosmjs/stargate": "^0.33.0",
     "@cosmjs/tendermint-rpc": "^0.33.0",
-    "@endo/errors": "^1.2.9",
-    "@endo/far": "^1.1.10",
-    "@endo/init": "^1.1.8",
-    "@endo/lockdown": "^1.0.14",
-    "@endo/marshal": "^1.6.3",
-    "@endo/promise-kit": "^1.1.9"
+    "@endo/errors": "^1.2.10",
+    "@endo/far": "^1.1.11",
+    "@endo/init": "^1.1.9",
+    "@endo/lockdown": "^1.0.15",
+    "@endo/marshal": "^1.6.4",
+    "@endo/promise-kit": "^1.1.10"
   },
   "devDependencies": {
     "@agoric/cosmic-proto": "^0.4.0",
-    "@endo/ses-ava": "^1.2.9",
+    "@endo/ses-ava": "^1.2.10",
     "ava": "^5.3.0",
     "c8": "^10.1.2",
     "express": "^5.0.1",
