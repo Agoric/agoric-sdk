@@ -11,6 +11,7 @@ import * as evmFlows from './lca-evm.flows.js';
 import { prepareEvmTap } from './evm-tap-kit.js';
 import { EmptyProposalShape } from '@agoric/zoe/src/typeGuards';
 import { E } from '@endo/far';
+import { prepareEVMTransactionKit } from './evm-transaction-kit.js';
 
 /**
  * @import {Remote, Vow} from '@agoric/vow';
@@ -117,7 +118,17 @@ export const contract = async (
       },
       createAndMonitorLCA() {
         return zcf.makeInvitation(
-          createAndMonitorLCA,
+          async seat => {
+            const localAccount = await createAndMonitorLCA(seat);
+            const makeEVMTransactionKit = prepareEVMTransactionKit(
+              baggage,
+              { zcf },
+              localAccount,
+            );
+
+            seat.exit();
+            return makeEVMTransactionKit();
+          },
           `send`,
           undefined,
           EmptyProposalShape,
