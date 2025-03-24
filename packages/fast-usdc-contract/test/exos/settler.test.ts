@@ -20,7 +20,7 @@ import {
   stateShape,
   type SettlerKit,
 } from '../../src/exos/settler.js';
-import { prepareStatusManager } from '../../src/exos/status-manager.js';
+import { prepareStatusManager } from '../../src/exos/status-manager.ts';
 import {
   MockCctpTxEvidences,
   MockVTransferEvents,

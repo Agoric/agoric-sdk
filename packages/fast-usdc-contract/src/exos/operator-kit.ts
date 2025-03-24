@@ -1,43 +1,45 @@
-import { makeTracer } from '@agoric/internal';
-import { Fail } from '@endo/errors';
 import { OperatorKitI } from '@agoric/fast-usdc/src/operator-kit-interface.js';
+import { makeTracer } from '@agoric/internal';
+import type { Zone } from '@agoric/zone';
+import { Fail } from '@endo/errors';
+import type {
+  CctpTxEvidence,
+  RiskAssessment,
+} from '@agoric/fast-usdc/src/types.js';
 
-const trace = makeTracer('TxOperator');
+const trace: (...args: unknown[]) => void = makeTracer('TxOperator');
 
-/**
- * @import {Zone} from '@agoric/zone';
- * @import {CctpTxEvidence, RiskAssessment} from '@agoric/fast-usdc/src/types.js';
- */
+interface OperatorPowers {
+  attest: (
+    evidence: CctpTxEvidence,
+    riskAssessment: RiskAssessment,
+    operatorId: string,
+  ) => void;
+}
 
-/**
- * @typedef {object} OperatorPowers
- * @property {(evidence: CctpTxEvidence, riskAssessment: RiskAssessment, operatorId: string) => void} attest
- */
+interface OperatorStatus {
+  disabled?: boolean;
+  operatorId: string;
+}
 
-/**
- * @typedef {object} OperatorStatus
- * @property {boolean} [disabled]
- * @property {string} operatorId
- */
+interface State {
+  operatorId: string;
+  powers: OperatorPowers;
+  disabled: boolean;
+}
 
-/**
- * @typedef {Readonly<{ operatorId: string, powers: OperatorPowers }> & {disabled: boolean}} State
- */
-
-/**
- * @param {Zone} zone
- * @param {{ makeInertInvitation: Function }} staticPowers
- */
-export const prepareOperatorKit = (zone, staticPowers) =>
+export const prepareOperatorKit = (
+  zone: Zone,
+  staticPowers: { makeInertInvitation: () => Promise<Invitation> },
+) =>
   zone.exoClassKit(
     'Operator Kit',
     OperatorKitI,
     /**
-     * @param {string} operatorId
-     * @param {OperatorPowers} powers facet of the durable transaction feed
-     * @returns {State}
+     * @param operatorId
+     * @param powers facet of the durable transaction feed
      */
-    (operatorId, powers) => {
+    (operatorId: string, powers: OperatorPowers): State => {
       return {
         operatorId,
         powers,
@@ -64,33 +66,34 @@ export const prepareOperatorKit = (zone, staticPowers) =>
          * place, rather than as a means of performing it as in the
          * fluxAggregator contract used for price oracles.
          *
-         * @param {CctpTxEvidence} evidence
-         * @param {RiskAssessment} [riskAssessment]
-         * @returns {Promise<Invitation>}
+         * @param evidence
+         * @param riskAssessment
          */
-        async SubmitEvidence(evidence, riskAssessment) {
+        async SubmitEvidence(
+          evidence: CctpTxEvidence,
+          riskAssessment: RiskAssessment,
+        ): Promise<Invitation> {
           const { operator } = this.facets;
           operator.submitEvidence(evidence, riskAssessment);
-          return staticPowers.makeInertInvitation(
-            'evidence was pushed in the invitation maker call',
-          );
+          return staticPowers.makeInertInvitation();
         },
       },
       operator: {
         /**
          * submit evidence from this operator
          *
-         * @param {CctpTxEvidence} evidence
-         * @param {RiskAssessment} [riskAssessment]
-         * @returns {void}
+         * @param evidence
+         * @param riskAssessment
          */
-        submitEvidence(evidence, riskAssessment = {}) {
+        submitEvidence(
+          evidence: CctpTxEvidence,
+          riskAssessment: RiskAssessment = {},
+        ): void {
           const { state } = this;
           !state.disabled || Fail`submitEvidence for disabled operator`;
           state.powers.attest(evidence, riskAssessment, state.operatorId);
         },
-        /** @returns {OperatorStatus} */
-        getStatus() {
+        getStatus(): OperatorStatus {
           const { state } = this;
           return {
             operatorId: state.operatorId,
@@ -101,4 +104,4 @@ export const prepareOperatorKit = (zone, staticPowers) =>
     },
   );
 
-/** @typedef {ReturnType<ReturnType<typeof prepareOperatorKit>>} OperatorKit */
+export type OperatorKit = ReturnType<ReturnType<typeof prepareOperatorKit>>;

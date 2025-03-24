@@ -9,7 +9,7 @@ import {
   prepareTransactionFeedKit,
   stateShape,
   type TransactionFeedKit,
-} from '../../src/exos/transaction-feed.js';
+} from '../../src/exos/transaction-feed.ts';
 
 const nullZcf = null as any;
 
