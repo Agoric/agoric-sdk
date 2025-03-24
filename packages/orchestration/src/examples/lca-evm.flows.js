@@ -21,14 +21,12 @@ import { prepareEVMTransactionKit } from './evm-transaction-kit.js';
  *   makePortfolioHolder: MakePortfolioHolder;
  *   chainHub: GuestInterface<ChainHub>;
  *   log: GuestOf<(msg: string) => Vow<void>>;
- *   baggage: import('@agoric/vat-data').Baggage;
- *   zcf: { ZCF };
  * }} ctx
  * @param {ZCFSeat} seat
  */
 export const createAndMonitorLCA = async (
   orch,
-  { log, makeEvmTap, chainHub, baggage, zcf },
+  { log, makeEvmTap, chainHub },
   seat,
 ) => {
   log('Inside createAndMonitorLCA');
