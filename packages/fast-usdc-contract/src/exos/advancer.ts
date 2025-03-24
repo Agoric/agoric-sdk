@@ -138,7 +138,7 @@ export const prepareAdvancerKit = (
     log = makeTracer('Advancer', true),
     statusManager,
     usdc,
-    vowTools: { watch, when },
+    vowTools: { watch, when, asVow },
     zcf,
     zoeTools: { localTransfer, withdrawToSeat },
   }: AdvancerKitPowers,
@@ -277,29 +277,73 @@ export const prepareAdvancerKit = (
           result: undefined,
           ctx: AdvancerVowCtx & { tmpSeat: ZCFSeat },
         ) {
-          const {
-            poolAccount,
-            intermediateRecipientAddress,
-            settlementAddress,
-          } = this.state;
-          const { destination, advanceAmount, tmpSeat, ...detail } = ctx;
-          tmpSeat.exit();
-          const amount = harden({
-            denom: usdc.denom,
-            value: advanceAmount.value,
-          });
-          const transferOrSendV =
-            destination.chainId === settlementAddress.chainId
-              ? E(poolAccount).send(destination, amount)
-              : E(poolAccount).transfer(destination, amount, {
-                  forwardOpts: {
-                    intermediateRecipient: intermediateRecipientAddress,
-                  },
-                });
-          return watch(transferOrSendV, this.facets.transferHandler, {
-            destination,
-            advanceAmount,
-            ...detail,
+          return asVow(async () => {
+            const {
+              poolAccount,
+              intermediateRecipientAccount,
+              intermediateRecipientAddress,
+              settlementAddress,
+            } = this.state;
+            const { destination, advanceAmount, tmpSeat, ...detail } = ctx;
+            tmpSeat.exit();
+            const amount = harden({
+              denom: usdc.denom,
+              value: advanceAmount.value,
+            });
+
+            /** @type {AccountId} */
+            const accountId = chainHub.resolveAccountId(destination);
+            const chainId = getReference(accountId);
+            const info = await when(chainHub.getChainInfoByChainId(chainId));
+
+            let transferOrSendV;
+            if (chainId === settlementAddress.chainId) {
+              // send to recipient on Agoric
+
+              /** @type {CosmosChainAddress} */
+              const cosmosAddress = makeCosmosAccountId(
+                chainId,
+                'bech32',
+                getAddress(accountId),
+              );
+              transferOrSendV = E(poolAccount).send(cosmosAddress, amount);
+            } else if (info.namespace === 'cosmos') {
+              // send via IBC
+
+              transferOrSendV = E(poolAccount).transfer(destination, amount, {
+                forwardOpts: {
+                  intermediateRecipient: intermediateRecipientAddress,
+                },
+              });
+            } else if (info.cctpDestinationDomain) {
+              // send USDC via CCTP
+              assert(
+                intermediateRecipientAccount,
+                'intermediateRecipientAccount must be set',
+              );
+
+              // assets are on noble, transfer to dest.
+
+              const encoding = 'ethereum'; // XXX could be solana?
+              /** @type {AccountIdArg} */
+              const mintRecipient = makeCosmosAccountId(
+                info.chainId,
+                encoding,
+                getAddress(accountId),
+              );
+              transferOrSendV = intermediateRecipientAccount.depositForBurn(
+                mintRecipient,
+                amount,
+              );
+            } else {
+              Fail`can only transfer to Agoric addresses, via IBC, or via CCTP`;
+            }
+
+            return watch(transferOrSendV, this.facets.transferHandler, {
+              destination,
+              advanceAmount,
+              ...detail,
+            });
           });
         },
         /**
