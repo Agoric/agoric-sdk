@@ -110,6 +110,18 @@ export const stateShape = harden({
   settlementAddress: M.opt(CosmosChainAddressShape),
 });
 
+const makeCosmosAccountId = (
+  chainId: string,
+  encoding: 'bech32' | 'ethereum',
+  value: string,
+) => {
+  return {
+    chainId,
+    encoding,
+    value,
+  };
+};
+
 export const prepareAdvancerKit = (
   zone: Zone,
   {
@@ -326,7 +338,16 @@ export const prepareAdvancerKit = (
           const { notifier } = this.state;
           const { advanceAmount, destination, ...detail } = ctx;
           log('Advance succeeded', { advanceAmount, destination });
-          notifier.notifyAdvancingResult({ destination, ...detail }, true);
+          const resolved = chainHub.resolveAccountId(destination);
+          const cosmosAddress = makeCosmosAccountId(
+            getReference(resolved),
+            'bech32',
+            getAddress(resolved),
+          );
+          notifier.notifyAdvancingResult(
+            { destination: cosmosAddress, ...detail },
+            true,
+          );
         },
         onRejected(error: Error, ctx: AdvancerVowCtx) {
           const { notifier, poolAccount } = this.state;
