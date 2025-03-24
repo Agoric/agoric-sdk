@@ -11,6 +11,7 @@ import * as evmFlows from './lca-evm.flows.js';
 import { prepareEvmTap } from './evm-tap-kit.js';
 import { EmptyProposalShape } from '@agoric/zoe/src/typeGuards';
 import { E } from '@endo/far';
+import { prepareEVMTransactionKit } from './evm-transaction-kit.js';
 
 /**
  * @import {Remote, Vow} from '@agoric/vow';
@@ -45,7 +46,7 @@ export const contract = async (
   zcf,
   privateArgs,
   zone,
-  { chainHub, orchestrateAll, vowTools, zoeTools },
+  { baggage, chainHub, orchestrateAll, vowTools, zoeTools },
 ) => {
   console.log('Inside Contract');
 
@@ -72,6 +73,8 @@ export const contract = async (
   /** @type {(msg: string) => Vow<void>} */
   const log = msg => vowTools.watch(E(logNode).setValue(msg));
 
+  const makeEVMTransactionKit = prepareEVMTransactionKit(baggage, { zcf });
+
   const { makeLocalAccount } = orchestrateAll(sharedFlows, {});
   /**
    * Setup a shared local account for use in async-flow functions. Typically,
@@ -93,11 +96,11 @@ export const contract = async (
     zoeTools,
   });
 
-  const { createAndMonitorLCA } = orchestrateAll(evmFlows, {
-    makeEvmTap,
-    log,
-    chainHub,
-  });
+  // const { createAndMonitorLCA } = orchestrateAll(evmFlows, {
+  //   makeEvmTap,
+  //   log,
+  //   chainHub,
+  // });
 
   const publicFacet = zone.exo(
     'Send PF',
@@ -116,8 +119,11 @@ export const contract = async (
       },
       createAndMonitorLCA() {
         return zcf.makeInvitation(
-          createAndMonitorLCA,
-          'send',
+          seat => {
+            seat.exit();
+            return makeEVMTransactionKit();
+          },
+          `send`,
           undefined,
           EmptyProposalShape,
         );
