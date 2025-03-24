@@ -16,9 +16,9 @@ import type {
   RiskAssessment,
 } from '@agoric/fast-usdc/src/types.js';
 import { defineInertInvitation } from '../utils/zoe.js';
-import { prepareOperatorKit } from './operator-kit.js';
+import { prepareOperatorKit } from './operator-kit.ts';
 
-import type { OperatorKit } from './operator-kit.js';
+import type { OperatorKit } from './operator-kit.ts';
 
 const trace = makeTracer('TxFeed', true);
 
