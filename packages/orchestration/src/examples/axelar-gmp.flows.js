@@ -56,7 +56,7 @@ export const sendGmp = async (
     gasAmount,
     contractInvocationData,
   } = offerArgs;
-  log('Inside sendGmp');
+  void log('Inside sendGmp');
 
   destinationAddress != null || Fail`Destination address must be defined`;
   destinationEVMChain != null || Fail`Destination evm address must be defined`;
@@ -83,7 +83,7 @@ export const sendGmp = async (
     evmContractAddress: destinationAddress,
     ...contractInvocationData,
   });
-  log(`Payload: ${JSON.stringify(payload)}`);
+  void log(`Payload: ${JSON.stringify(payload)}`);
 
   const agoric = await orch.getChain('agoric');
   console.log('Agoric Chain ID:', (await agoric.getChainInfo()).chainId);
@@ -110,7 +110,7 @@ export const sendGmp = async (
   const sharedLocalAccount = await sharedLocalAccountP;
 
   await localTransfer(seat, sharedLocalAccount, give);
-  log('Local transfer successful');
+  void log('Local transfer successful');
 
   const memo = {
     destination_chain: destinationEVMChain,
@@ -124,12 +124,12 @@ export const sendGmp = async (
       amount: String(gasAmount),
       recipient: addresses.AXELAR_GAS,
     };
-    log(`Fee object ${JSON.stringify(memo.fee)}`);
+    void log(`Fee object ${JSON.stringify(memo.fee)}`);
   }
 
   try {
-    log(`Initiating IBC Transfer...`);
-    log(`DENOM of token:${denom}`);
+    void log(`Initiating IBC Transfer...`);
+    void log(`DENOM of token:${denom}`);
 
     await sharedLocalAccount.transfer(
       {
@@ -144,7 +144,7 @@ export const sendGmp = async (
       { memo: JSON.stringify(memo) },
     );
 
-    log('Offer successful');
+    void log('Offer successful');
     console.log(`Completed transfer to ${destinationAddress}`);
   } catch (e) {
     await withdrawToSeat(sharedLocalAccount, seat, give);

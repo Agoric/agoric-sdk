@@ -19,6 +19,7 @@ test('chain-info', async t => {
     'archway',
     'avalanche',
     'base',
+    'axelar',
     'beezee',
     'carbon',
     'celestia',
