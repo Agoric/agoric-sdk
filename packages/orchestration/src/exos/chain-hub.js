@@ -298,7 +298,9 @@ export const makeChainHub = (
       throw makeError(`Chain info not found for bech32Prefix ${q(prefix)}`);
     }
     const chainName = bech32PrefixToChainName.get(prefix);
-    const { chainId } = chainInfos.get(chainName);
+    const { chainId } = /** @type {CosmosChainInfo} */ (
+      chainInfos.get(chainName)
+    );
     return chainId;
   };
 
@@ -696,7 +698,9 @@ export const makeChainHub = (
       const { chainId: baseChainId, pfmEnabled } =
         /** @type {CosmosChainInfo} */ (chainInfos.get(baseName));
 
-      const holdingChainId = chainInfos.get(srcChainName).chainId;
+      const holdingChainId = /** @type {CosmosChainInfo} */ (
+        chainInfos.get(srcChainName)
+      ).chainId;
 
       destination =
         typeof destination === 'string'

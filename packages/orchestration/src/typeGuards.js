@@ -90,45 +90,44 @@ export const CosmosAssetInfoShape = M.splitRecord({
   ),
 });
 
-/**
- * @deprecated please use {@link ChainInfoShape} instead
- * @type {TypedPattern<CosmosChainInfo>}
- */
+const ChainInfoRequiredShape = {
+  namespace: M.string(),
+  reference: M.string(),
+};
+
+const ChainInfoOptionalShape = {
+  cctpDestinationDomain: M.number(),
+};
+
+/** @type {TypedPattern<BaseChainInfo>} */
+export const BaseChainInfoShape = M.splitRecord(
+  ChainInfoRequiredShape,
+  ChainInfoOptionalShape,
+);
+harden(BaseChainInfoShape);
+
+/** @type {TypedPattern<CosmosChainInfo>} */
 export const CosmosChainInfoShape = M.splitRecord(
   {
     chainId: M.string(),
+    bech32Prefix: M.string(),
+    ...ChainInfoRequiredShape,
   },
   {
-    bech32Prefix: M.string(),
     connections: M.record(),
-    stakingTokens: M.arrayOf({ denom: M.string() }),
     // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
     icqEnabled: M.boolean(),
     pfmEnabled: M.boolean(),
+    stakingTokens: M.arrayOf({ denom: M.string() }),
+    ...ChainInfoOptionalShape,
   },
 );
-
-export const CosmosChainInfoOptionals = {
-  bech32Prefix: M.string(),
-  connections: M.record(),
-  stakingTokens: M.arrayOf({ denom: M.string() }),
-  // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
-  icqEnabled: M.boolean(),
-  pfmEnabled: M.boolean(),
-};
+harden(CosmosChainInfoShape);
 
 /** @type {TypedPattern<ChainInfo>} */
-export const ChainInfoShape = M.splitRecord(
-  {
-    chainId: M.string(),
-    namespace: M.string(),
-    reference: M.string(),
-  },
-  {
-    cctpDestinationDomain: M.number(),
-    ...CosmosChainInfoOptionals,
-  },
-);
+export const ChainInfoShape = M.or(CosmosChainInfoShape, BaseChainInfoShape);
+harden(ChainInfoShape);
+
 export const DenomShape = M.string();
 
 /** @type {TypedPattern<Coin>} */

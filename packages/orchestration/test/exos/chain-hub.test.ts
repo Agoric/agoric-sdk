@@ -514,12 +514,7 @@ test('cctp, non-cosmos chains', async t => {
   });
 
   const withChainId = (info: BaseChainInfo) =>
-    info.namespace === 'cosmos'
-      ? { ...info, chainId: info.reference }
-      : {
-          ...info,
-          chainId: `${info.namespace}:${info.reference}`,
-        };
+    info.namespace === 'cosmos' ? { ...info, chainId: info.reference } : info;
 
   for (const [chainName, info] of Object.entries(cctpChainInfo)) {
     // can register non-cosmos (cctp) chains
@@ -547,7 +542,6 @@ test('cctp, non-cosmos chains', async t => {
 
   // document full chain info
   t.deepEqual(await when(chainHub.getChainInfo('ethereum')), {
-    chainId: 'eip155:1',
     namespace: 'eip155',
     reference: '1',
     cctpDestinationDomain: 0,

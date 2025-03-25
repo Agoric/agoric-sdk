@@ -13,6 +13,7 @@ import { provideDurableZone, provideFreshRootZone } from './durability.js';
 const test = anyTest;
 
 const mockChainInfo: CosmosChainInfo = harden({
+  bech32Prefix: 'mock',
   chainId: 'mock-1',
   /** note: not specified in `CosmosChainInfo` */
   ibcHooksEnabled: false,
@@ -247,7 +248,10 @@ test('asset / denom info', async t => {
 
   await vt.when(handle());
 
-  chainHub.registerChain('anotherChain', mockChainInfo);
+  chainHub.registerChain('anotherChain', {
+    ...mockChainInfo,
+    bech32Prefix: 'another',
+  });
   chainHub.registerConnection('agoric-3', 'anotherChain', mockChainConnection);
   chainHub.registerAsset('utoken2', {
     chainName: 'anotherChain',

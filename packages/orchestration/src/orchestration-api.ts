@@ -107,9 +107,7 @@ export interface BaseChainInfo<N extends KnownNamespace = KnownNamespace> {
 /**
  * Shape that `ChainHub` is expecting
  */
-export type ChainInfo = Readonly<
-  (BaseChainInfo & { chainId: string }) | CosmosChainInfo
->;
+export type ChainInfo = Readonly<BaseChainInfo | CosmosChainInfo>;
 
 /**
  * A value that can be converted mechanically to an AccountId.
@@ -152,8 +150,10 @@ export interface Chain<CI extends Partial<ChainInfo>> {
 
   query: CI extends { icqEnabled: true }
     ? ICQQueryFunction
-    : CI['chainId'] extends `agoric${string}`
-      ? QueryManyFn
+    : CI extends { chainId: string }
+      ? CI['chainId'] extends `agoric${string}`
+        ? QueryManyFn
+        : never
       : never;
 
   // TODO provide a way to get the local denom/brand/whatever for this chain

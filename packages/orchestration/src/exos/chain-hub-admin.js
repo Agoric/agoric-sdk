@@ -59,7 +59,7 @@ export const prepareChainHubAdmin = (zone, chainHub) => {
         if (ibcConnectionInfo) {
           chainHub.registerConnection(
             agoricChainInfo.chainId,
-            chainInfo.chainId,
+            /** @type {CosmosChainInfo} */ (chainInfo).chainId,
             ibcConnectionInfo,
           );
         }

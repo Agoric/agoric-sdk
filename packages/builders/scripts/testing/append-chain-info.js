@@ -4,6 +4,7 @@ import { makeHelpers } from '@agoric/deploy-script-support';
 /** @type {Record<string, import('@agoric/orchestration').ChainInfo>} */
 const chainInfo = {
   hot: {
+    bech32Prefix: 'cosmos',
     chainId: 'hot-1',
     connections: {
       'cosmoshub-4': {

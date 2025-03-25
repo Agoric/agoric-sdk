@@ -306,6 +306,7 @@ test.serial('revise chain info', async t => {
 
   const hotchain = await EV(agoricNames).lookup('chain', 'hot');
   t.deepEqual(hotchain, {
+    bech32Prefix: 'cosmos',
     chainId: 'hot-1',
     namespace: 'cosmos',
     reference: 'hot-1',

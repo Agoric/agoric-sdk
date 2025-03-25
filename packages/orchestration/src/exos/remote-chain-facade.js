@@ -140,7 +140,7 @@ const prepareRemoteChainFacadeKit = (
                 : undefined;
 
             const makeAccountV = E(orchestration).makeAccount(
-              remoteChainInfo.chainId,
+              /** @type {CosmosChainInfo} */ (remoteChainInfo).chainId,
               connectionInfo.counterparty.connection_id,
               connectionInfo.id,
             );
@@ -159,13 +159,15 @@ const prepareRemoteChainFacadeKit = (
         query(msgs) {
           return asVow(() => {
             const {
-              remoteChainInfo: {
-                // @ts-expect-error ChainInfo not narrowed to CosmosChainInfo
-                icqEnabled,
-                chainId,
-              },
+              remoteChainInfo: { icqEnabled, chainId },
               connectionInfo,
-            } = this.state;
+            } = /**
+             * @type {{
+             *   remoteChainInfo: CosmosChainInfo;
+             *   connectionInfo?: IBCConnectionInfo;
+             * }}
+             */ (this.state);
+
             if (!icqEnabled) {
               throw Fail`Queries not available for chain ${q(chainId)}`;
             }

@@ -93,6 +93,7 @@ test('send using arbitrary chain info', async t => {
   );
 
   const hotChainInfo = harden({
+    bech32Prefix: 'hot',
     chainId: 'hot-new-chain-0',
     namespace: 'cosmos',
     reference: 'hot-new-chain-0',

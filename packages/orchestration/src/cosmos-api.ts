@@ -104,8 +104,8 @@ export interface CosmosAssetInfo extends Record<string, unknown> {
  */
 export interface CosmosChainInfo extends BaseChainInfo {
   /** can be used to lookup chainInfo (chainId) from an address value */
-  bech32Prefix?: string;
-  /** plain reference (gaia-1) or CAIP-2 (cosmos:gaia-1) supported */
+  bech32Prefix: string;
+  /** Cosmos chain ID. The CAIP-2 fields (namespace, reference) are on {@link BaseChainInfo}. */
   chainId: string;
   /**  IBC connections between this chain and others, keyed by chainId */
   connections?: Record<string, IBCConnectionInfo>;
