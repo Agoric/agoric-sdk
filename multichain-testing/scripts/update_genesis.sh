@@ -1,17 +1,17 @@
 #!/bin/bash
+set -e
 
-# Set the genesis file path
-GENESIS_FILE="$HOME/.elys/config/genesis.json"
+CHAIN_HOME="$HOME/.elys"
+GENESIS_FILE="$CHAIN_HOME/config/genesis.json"
 
-# Add the faucet account to genesis
-#!/bin/bash
-# Set the genesis file path
-GENESIS_FILE="$HOME/.elys/config/genesis.json"
+echo "Updating genesis: $GENESIS_FILE"
 
+# Validate genesis before changes
+jq '.' "$GENESIS_FILE" > /dev/null || { echo "Invalid genesis before update"; exit 1; }
 
-# Update price expiry time and lifetime in blocks
-jq '.app_state.oracle.params.price_expiry_time = "86400000000"' $GENESIS_FILE > temp.json && mv temp.json $GENESIS_FILE
-jq '.app_state.oracle.params.life_time_in_blocks = "1000000000"' $GENESIS_FILE > temp.json && mv temp.json $GENESIS_FILE
+# Set oracle params
+jq '.app_state.oracle.params.price_expiry_time = "86400000000"' "$GENESIS_FILE" > tmp && mv tmp "$GENESIS_FILE"
+jq '.app_state.oracle.params.life_time_in_blocks = "1000000000"' "$GENESIS_FILE" > tmp && mv tmp "$GENESIS_FILE"
 
 # Add asset profiles
 jq '.app_state.assetprofile.entry_list = [
@@ -95,15 +95,9 @@ jq '.app_state.assetprofile.entry_list = [
 
 # Add price feeders
 jq '.app_state.oracle.price_feeders = [
-  {
-    "feeder": "elys1g3qnq7apxv964cqj0hza0pnwsw3q920lcc5lyg",
-    "is_active": true
-  },
-  {
-    "feeder": "elys1ufelja7snayw39d0c2hepx0epcuwrmw6z5yg98",
-    "is_active": true
-  }
-]' $GENESIS_FILE > temp.json && mv temp.json $GENESIS_FILE
+  { "feeder": "elys1g3qnq7apxv964cqj0hza0pnwsw3q920lcc5lyg", "is_active": true },
+  { "feeder": "elys1ufelja7snayw39d0c2hepx0epcuwrmw6z5yg98", "is_active": true }
+]' "$GENESIS_FILE" > tmp && mv tmp "$GENESIS_FILE"
 
 # Add asset infos
 jq '.app_state.oracle.asset_infos = [
@@ -160,54 +154,22 @@ jq '.app_state.oracle.asset_infos = [
 
 # Get current timestamp
 CURRENT_TIMESTAMP=$(date +%s)
-
-# Add prices
 jq --arg timestamp "$CURRENT_TIMESTAMP" '.app_state.oracle.prices = [
-  {
-    "asset": "USDT",
-    "price": "1.0",
-    "provider": "elys1ufelja7snayw39d0c2hepx0epcuwrmw6z5yg98",
-    "source": "elys",
-    "timestamp": $timestamp
-  },
-  {
-    "asset": "USDC",
-    "price": "1.0",
-    "provider": "elys1ufelja7snayw39d0c2hepx0epcuwrmw6z5yg98",
-    "source": "elys",
-    "timestamp": $timestamp
-  },
-  {
-    "asset": "ELYS",
-    "price": "3",
-    "provider": "elys1ufelja7snayw39d0c2hepx0epcuwrmw6z5yg98",
-    "source": "elys",
-    "timestamp": $timestamp
-  },
-  {
-    "asset": "EDEN",
-    "price": "2",
-    "provider": "elys1ufelja7snayw39d0c2hepx0epcuwrmw6z5yg98",
-    "source": "elys",
-    "timestamp": $timestamp
-  },
-  {
-    "asset": "EDENB",
-    "price": "2",
-    "provider": "elys1ufelja7snayw39d0c2hepx0epcuwrmw6z5yg98",
-    "source": "elys",
-    "timestamp": $timestamp
-  }
-]' $GENESIS_FILE > temp.json && mv temp.json $GENESIS_FILE
+  { "asset": "USDT",  "price": "1.0", "provider": "elys1ufelja7snayw39d0c2hepx0epcuwrmw6z5yg98", "source": "elys", "timestamp": $timestamp },
+  { "asset": "USDC",  "price": "1.0", "provider": "elys1ufelja7snayw39d0c2hepx0epcuwrmw6z5yg98", "source": "elys", "timestamp": $timestamp },
+  { "asset": "ELYS",  "price": "3",   "provider": "elys1ufelja7snayw39d0c2hepx0epcuwrmw6z5yg98", "source": "elys", "timestamp": $timestamp },
+  { "asset": "EDEN",  "price": "2",   "provider": "elys1ufelja7snayw39d0c2hepx0epcuwrmw6z5yg98", "source": "elys", "timestamp": $timestamp },
+  { "asset": "EDENB", "price": "2",   "provider": "elys1ufelja7snayw39d0c2hepx0epcuwrmw6z5yg98", "source": "elys", "timestamp": $timestamp }
+]' "$GENESIS_FILE" > tmp && mv tmp "$GENESIS_FILE"
 
 # Replace "stake" with "uelys"
-sed -i 's/"stake"/"uelys"/g' $GENESIS_FILE
-jq '.' $GENESIS_FILE > /dev/null || { echo "Genesis file invalid after sed"; exit 1; }
-echo "Staking denom updated."
+sed -i 's/"stake"/"uelys"/g' "$GENESIS_FILE"
 
-jq '.app_state.gov.params.max_deposit_period = "60s"' $GENESIS_FILE > temp.json && mv temp.json $GENESIS_FILE
-jq '.app_state.gov.params.voting_period = "60s"' $GENESIS_FILE > temp.json && mv temp.json $GENESIS_FILE
-jq '.app_state.gov.params.expedited_voting_period = "20s"' $GENESIS_FILE > temp.json && mv temp.json $GENESIS_FILE
+# Update governance timings
+jq '.app_state.gov.params.max_deposit_period = "60s"' "$GENESIS_FILE" > tmp && mv tmp "$GENESIS_FILE"
+jq '.app_state.gov.params.voting_period = "60s"' "$GENESIS_FILE" > tmp && mv tmp "$GENESIS_FILE"
+jq '.app_state.gov.params.expedited_voting_period = "20s"' "$GENESIS_FILE" > tmp && mv tmp "$GENESIS_FILE"
 
-jq '.' $GENESIS_FILE > /dev/null || { echo "Genesis file invalid after update_genesis.sh"; exit 1; }
-echo "Custom genesis updates applied."
+# Final validation
+jq '.' "$GENESIS_FILE" > /dev/null || { echo "Genesis file invalid after update"; exit 1; }
+echo "✅ Genesis updated successfully."

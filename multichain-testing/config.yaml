@@ -31,7 +31,7 @@ chains:
       faucet: 8082
     resources:
       cpu: 1
-      memory: 4Gi
+      memory: 3Gi
   - id: cosmoshublocal
     name: cosmoshub
     numValidators: 1
