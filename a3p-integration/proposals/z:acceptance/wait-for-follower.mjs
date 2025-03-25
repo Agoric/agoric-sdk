@@ -21,18 +21,28 @@ const checkFileContent = async (filePath, message) => {
 const watchSharedFile = async filePath => {
   const [, , message] = process.argv;
 
-  let possibleContent = await checkFileContent(filePath, message);
-  if (possibleContent) return possibleContent;
-
-  for await (const { eventType } of watch(filePath)) {
+  for await (const { eventType } of wrappedWatch(filePath)) {
     if (eventType === 'change') {
-      possibleContent = await checkFileContent(filePath, message);
+      const possibleContent = await checkFileContent(filePath, message);
       if (possibleContent) return possibleContent;
     }
   }
 
   return undefined;
 };
+
+/**
+ * @param {string} filePath
+ */
+async function* wrappedWatch(filePath) {
+  const watchIter = watch(filePath);
+
+  yield /** @type {import('node:fs/promises').FileChangeInfo<string>} */ ({
+    eventType: 'change',
+    filename: filePath,
+  });
+  yield* watchIter;
+}
 
 FILE_PATH &&
   watchSharedFile(FILE_PATH).then(
