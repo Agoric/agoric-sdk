@@ -1,6 +1,8 @@
 // @ts-check
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { M } from '@endo/patterns';
+import { EmptyProposalShape } from '@agoric/zoe/src/typeGuards';
+import { E } from '@endo/far';
 import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
 import { AnyNatAmountShape } from '../typeGuards.js';
 import { withOrchestration } from '../utils/start-helper.js';
@@ -9,8 +11,6 @@ import * as flows from './axelar-gmp.flows.js';
 import * as sharedFlows from './shared.flows.js';
 import * as evmFlows from './lca-evm.flows.js';
 import { prepareEvmTap } from './evm-tap-kit.js';
-import { EmptyProposalShape } from '@agoric/zoe/src/typeGuards';
-import { E } from '@endo/far';
 import { prepareEVMTransactionKit } from './evm-transaction-kit.js';
 
 /**
