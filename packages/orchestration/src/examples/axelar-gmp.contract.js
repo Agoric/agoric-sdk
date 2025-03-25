@@ -123,13 +123,16 @@ export const contract = async (
             const res = await createAndMonitorLCA();
             // @ts-expect-error
             const localAccount = await res.payload.vowV0.shorten();
-            const makeEVMTransactionKit = prepareEVMTransactionKit(
-              baggage,
-              { zcf },
-              localAccount,
-            );
+            const makeEVMTransactionKit = prepareEVMTransactionKit(zone, {
+              zcf,
+            });
             seat.exit();
-            return makeEVMTransactionKit();
+            return makeEVMTransactionKit(
+              harden({
+                localAccount,
+                evmWalletAddress: undefined,
+              }),
+            );
           },
           `send`,
           undefined,
