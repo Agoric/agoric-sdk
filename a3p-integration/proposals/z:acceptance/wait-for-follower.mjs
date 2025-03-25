@@ -35,12 +35,12 @@ const watchSharedFile = async filePath => {
  * @param {string} filePath
  */
 async function* wrappedWatch(filePath) {
-  const watchIter = watch(filePath);
-
   yield /** @type {import('node:fs/promises').FileChangeInfo<string>} */ ({
     eventType: 'change',
     filename: filePath,
   });
+
+  const watchIter = watch(filePath);
   yield* watchIter;
 }
 
