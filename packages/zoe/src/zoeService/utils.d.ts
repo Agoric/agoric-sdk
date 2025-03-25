@@ -26,7 +26,7 @@ export type InstallationStart<I> =
   I extends Installation<infer SF> ? SF : never;
 
 export type ContractStartFunction = (
-  zcf?: ZCF,
+  zcf?: ZCF<any>,
   privateArgs?: object,
   baggage?: Baggage,
 ) => ERef<{ creatorFacet?: object; publicFacet?: object }>;

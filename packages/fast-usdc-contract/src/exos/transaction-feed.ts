@@ -15,7 +15,7 @@ import type {
   EvidenceWithRisk,
   RiskAssessment,
 } from '@agoric/fast-usdc/src/types.js';
-import { defineInertInvitation } from '../utils/zoe.js';
+import { defineInertInvitation } from '../utils/zoe.ts';
 import { prepareOperatorKit } from './operator-kit.ts';
 
 import type { OperatorKit } from './operator-kit.ts';

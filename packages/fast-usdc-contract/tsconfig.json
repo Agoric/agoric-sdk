@@ -1,6 +1,8 @@
 {
   "extends": "../../tsconfig.json",
-  "compilerOptions": {},
+  "compilerOptions": {
+    "checkJs": false, // This package has only .ts source files so avoid checking imported .js files
+  },
   "include": [
     "scripts",
     "src",

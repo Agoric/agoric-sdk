@@ -1,15 +1,6 @@
+import type { Amount, Brand } from '@agoric/ertp';
 import { AmountMath, AmountShape, RatioShape } from '@agoric/ertp';
-import {
-  fromOnly,
-  toOnly,
-  makeRecorderTopic,
-  RecorderKitShape,
-  TopicsRecordShape,
-} from '@agoric/zoe/src/contractSupport/index.js';
-import { SeatShape } from '@agoric/zoe/src/typeGuards.js';
-import { M } from '@endo/patterns';
-import { Fail, q } from '@endo/errors';
-import { TransferPartShape } from '@agoric/zoe/src/contractSupport/atomicTransfer.js';
+import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.js';
 import {
   borrowCalc,
   checkPoolBalance,
@@ -23,17 +14,24 @@ import {
   makeProposalShapes,
   PoolMetricsShape,
 } from '@agoric/fast-usdc/src/type-guards.js';
-
-/**
- * @import {Amount, Brand, Payment} from '@agoric/ertp';
- * @import {Zone} from '@agoric/zone';
- * @import {Remote} from '@agoric/internal'
- * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js'
- * @import {MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'
- * @import {USDCProposalShapes} from '@agoric/fast-usdc/src/pool-share-math.js'
- * @import {PoolStats} from '@agoric/fast-usdc/src/types.js';
- * @import {RepayAmountKWR} from '@agoric/fast-usdc/src/utils/fees.js';
- */
+import type { PoolStats } from '@agoric/fast-usdc/src/types.js';
+import type { RepayAmountKWR } from '@agoric/fast-usdc/src/utils/fees.js';
+import type { Remote } from '@agoric/internal';
+import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
+import { TransferPartShape } from '@agoric/zoe/src/contractSupport/atomicTransfer.js';
+import {
+  fromOnly,
+  makeRecorderTopic,
+  RecorderKitShape,
+  toOnly,
+  TopicsRecordShape,
+} from '@agoric/zoe/src/contractSupport/index.js';
+import type { MakeRecorderKit } from '@agoric/zoe/src/contractSupport/recorder.js';
+import { SeatShape } from '@agoric/zoe/src/typeGuards.js';
+import type { ZCF, ZCFMint, ZCFSeat } from '@agoric/zoe/src/zoeService/zoe.js';
+import type { Zone } from '@agoric/zone';
+import { Fail, q } from '@endo/errors';
+import { M } from '@endo/patterns';
 
 const { add, isGTE, makeEmpty } = AmountMath;
 
@@ -60,8 +58,16 @@ export const stateShape = harden({
  * @param {{
  *   makeRecorderKit: MakeRecorderKit;
  * }} tools
+ * @param tools.makeRecorderKit
  */
-export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
+export const prepareLiquidityPoolKit = (
+  zone: Zone,
+  zcf: ZCF,
+  USDC: Brand<'nat'>,
+  tools: {
+    makeRecorderKit: MakeRecorderKit;
+  },
+) => {
   return zone.exoClassKit(
     'Liquidity Pool',
     {
@@ -101,11 +107,7 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
         makeWithdrawFeesInvitation: M.call().returns(M.promise()),
       }),
     },
-    /**
-     * @param {ZCFMint<'nat'>} shareMint
-     * @param {Remote<StorageNode>} node
-     */
-    (shareMint, node) => {
+    (shareMint: ZCFMint<'nat'>, node: Remote<StorageNode>) => {
       const { brand: PoolShares } = shareMint.getIssuerRecord();
       const proposalShapes = makeProposalShapes({ USDC, PoolShares });
       const shareWorth = makeParity(USDC, PoolShares);
@@ -116,8 +118,7 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
         PoolMetricsShape,
       );
       const encumberedBalance = makeEmpty(USDC);
-      /** @type {PoolStats} */
-      const poolStats = harden({
+      const poolStats: PoolStats = harden({
         totalBorrows: makeEmpty(USDC),
         totalContractFees: makeEmpty(USDC),
         totalPoolFees: makeEmpty(USDC),
@@ -138,11 +139,7 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
     },
     {
       borrower: {
-        /**
-         * @param {ZCFSeat} toSeat
-         * @param {Amount<'nat'>} amount
-         */
-        borrow(toSeat, amount) {
+        borrow(toSeat: ZCFSeat, amount: Amount<'nat'>) {
           const { encumberedBalance, poolSeat, poolStats } = this.state;
 
           // Validate amount is available in pool
@@ -163,10 +160,10 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
         /**
          * If something fails during advance, return funds to the pool.
          *
-         * @param {ZCFSeat} borrowSeat
-         * @param {Amount<'nat'>} amount
+         * @param borrowSeat
+         * @param amount
          */
-        returnToPool(borrowSeat, amount) {
+        returnToPool(borrowSeat: ZCFSeat, amount: Amount<'nat'>) {
           const returnAmounts = harden({
             Principal: amount,
             PoolFee: makeEmpty(USDC),
@@ -182,11 +179,7 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
         },
       },
       repayer: {
-        /**
-         * @param {TransferPart} sourceTransfer
-         * @param {RepayAmountKWR} split
-         */
-        repay(sourceTransfer, split) {
+        repay(sourceTransfer: any, split: RepayAmountKWR) {
           const {
             encumberedBalance,
             feeSeat,
@@ -237,15 +230,13 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
       },
 
       depositHandler: {
-        /** @param {ZCFSeat} lp */
-        async handle(lp) {
+        async handle(lp: ZCFSeat) {
           const { shareWorth, shareMint, poolSeat, encumberedBalance } =
             this.state;
           const { external } = this.facets;
 
-          /** @type {USDCProposalShapes['deposit']} */
           // @ts-expect-error ensured by proposalShape
-          const proposal = lp.getProposal();
+          const proposal = lp.getProposal() as USDCProposalShapes['deposit'];
           checkPoolBalance(
             poolSeat.getCurrentAllocation(),
             shareWorth,
@@ -277,14 +268,13 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
       },
       withdrawHandler: {
         /** @param {ZCFSeat} lp */
-        async handle(lp) {
+        async handle(lp: ZCFSeat) {
           const { shareWorth, shareMint, poolSeat, encumberedBalance } =
             this.state;
           const { external } = this.facets;
 
-          /** @type {USDCProposalShapes['withdraw']} */
           // @ts-expect-error ensured by proposalShape
-          const proposal = lp.getProposal();
+          const proposal = lp.getProposal() as USDCProposalShapes['withdraw'];
           const { zcfSeat: burn } = zcf.makeEmptySeatKit();
           const post = withdrawCalc(
             shareWorth,
@@ -316,8 +306,7 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
         },
       },
       withdrawFeesHandler: {
-        /** @param {ZCFSeat} seat */
-        async handle(seat) {
+        async handle(seat: ZCFSeat) {
           const { feeSeat } = this.state;
 
           const { want } = seat.getProposal();
@@ -358,11 +347,9 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
         },
       },
       feeRecipient: {
-        getContractFeeBalance() {
+        getContractFeeBalance(): Amount<'nat'> {
           const { feeSeat } = this.state;
-          /** @type {Amount<'nat'>} */
-          const balance = feeSeat.getCurrentAllocation().USDC;
-          return balance;
+          return feeSeat.getCurrentAllocation().USDC as Amount<'nat'>;
         },
         makeWithdrawFeesInvitation() {
           return zcf.makeInvitation(
@@ -384,6 +371,6 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
 };
 harden(prepareLiquidityPoolKit);
 
-/**
- * @typedef {ReturnType<ReturnType<typeof prepareLiquidityPoolKit>>} LiquidityPoolKit
- */
+export type LiquidityPoolKit = ReturnType<
+  ReturnType<typeof prepareLiquidityPoolKit>
+>;

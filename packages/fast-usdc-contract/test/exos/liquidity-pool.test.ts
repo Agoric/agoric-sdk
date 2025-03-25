@@ -1,6 +1,6 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { stateShape } from '../../src/exos/liquidity-pool.js';
+import { stateShape } from '../../src/exos/liquidity-pool.ts';
 
 // NB: We don't test more than this because the Exo has so many runtime dependencies
 // for which we don't have viable mocks.

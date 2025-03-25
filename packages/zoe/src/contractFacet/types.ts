@@ -183,7 +183,7 @@ export type ZCFSeat = import('@endo/pass-style').RemotableObject & {
    * @param brand used for filling in an empty amount if the `keyword`
    * is not present in the allocation
    */
-  getAmountAllocated: <B extends Brand>(
+  getAmountAllocated: <B extends Brand<any>>(
     keyword: Keyword,
     brand?: B,
   ) => B extends Brand<infer K> ? Amount<K> : Amount;
