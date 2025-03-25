@@ -1,14 +1,14 @@
 // import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { M } from '@endo/patterns';
-import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
 import { AnyNatAmountShape } from '@agoric/orchestration/src/typeGuards.js';
+import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
 import { withOrchestration } from '../utils/start-helper.js';
 import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
 // import * as flows from './axelar-gmp.flows.js';
 // import * as sharedFlows from './shared.flows.js';
 // import * as evmFlows from './lca-evm.flows.js';
 import * as makeAccountFlows from './make-account.flows.js';
-import { prepareEvmTap } from './evm-tap-kit.js';
+import { prepareEvmAccountKit } from './evm-tap-kit.js';
 // import { EmptyProposalShape } from '@agoric/zoe/src/typeGuards';
 
 /**
@@ -22,9 +22,28 @@ export const SingleNatAmountRecord = M.and(
   M.recordOf(M.string(), AnyNatAmountShape, {
     numPropertiesLimit: 1,
   }),
-  M.not(harden({}))
+  M.not(harden({})),
 );
 harden(SingleNatAmountRecord);
+
+/**
+ * Not currently used, but this is the convention for defining it.
+ *
+ * @param {Zone} zone
+ */
+const prepareMakeUpdateAddress = zone =>
+  zone.exoClass(
+    'Update Address',
+    undefined,
+    /** @param {string} [address] */
+    address => ({ address }),
+    {
+      updateAddress(newAddress) {
+        this.state.address = newAddress;
+      },
+    },
+  );
+/** @typedef {ReturnType<typeof prepareMakeUpdateAddress>} MakeUpdateAddress */
 
 /**
  * Orchestration contract to be wrapped by withOrchestration for Zoe
@@ -42,7 +61,7 @@ export const contract = async (
   zcf,
   privateArgs,
   zone,
-  { chainHub, orchestrateAll, vowTools, zoeTools, zcfTools, baggage }
+  { chainHub, orchestrateAll, vowTools, zoeTools, zcfTools, baggage },
 ) => {
   console.log('Inside Contract');
 
@@ -57,10 +76,14 @@ export const contract = async (
     chainHub,
     zcf.getTerms().brands,
     privateArgs.chainInfo,
-    privateArgs.assetInfo
+    privateArgs.assetInfo,
   );
 
-  const makeEvmTap = prepareEvmTap(zone.subZone('evmTap'), vowTools);
+  const makeEvmAccountKit = prepareEvmAccountKit(zone.subZone('evmTap'), {
+    vowTools,
+    zcf,
+  });
+  // const makeUpdateAddress = prepareMakeUpdateAddress(zone);
 
   const creatorFacet = prepareChainHubAdmin(zone, chainHub);
 
@@ -90,7 +113,8 @@ export const contract = async (
   // });
 
   const { makeAccountAndSendGMP } = orchestrateAll(makeAccountFlows, {
-    makeEvmTap,
+    makeEvmAccountKit,
+    // makeUpdateAddress,
     chainHub,
     zoeTools,
     baggage,
@@ -127,15 +151,15 @@ export const contract = async (
           makeAccountAndSendGMP,
           'send',
           undefined,
-          M.splitRecord({ give: SingleNatAmountRecord })
+          M.splitRecord({ give: SingleNatAmountRecord }),
         );
       },
-    }
+    },
   );
 
   return { publicFacet, creatorFacet };
 };
 harden(contract);
 
-export const start = withOrchestration(contract, {publishAccountInfo: true});
+export const start = withOrchestration(contract, { publishAccountInfo: true });
 harden(start);

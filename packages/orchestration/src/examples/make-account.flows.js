@@ -1,7 +1,6 @@
 // @ts-check
 import { NonNullish } from '@agoric/internal';
-import { makeError, q } from '@endo/errors';
-import { Fail } from '@endo/errors';
+import { makeError, q, Fail } from '@endo/errors';
 import { denomHash } from '@agoric/orchestration/src/utils/denomHash.js';
 import { prepareExo, provideDurableMapStore } from '@agoric/vat-data';
 
@@ -23,26 +22,28 @@ const addresses = {
 /**
  * Creates a Local Chain Account (LCA)
  *
- * @param {Object} params - The parameters object.
+ * @param {object} params - The parameters object.
  * @param {Chain<{ chainId: 'agoric' }>} params.agoricChain - Agoric chain
  *   object.
  * @param {Chain<any>} params.remoteChain - Remote chain object.
  * @param {GuestInterface<ChainHub>} params.chainHub - The ChainHub interface
  *   for retrieving connection info.
  * @param {string} params.chainName - The name of the remote chain.
- * @param {any} params.updateAddress - Function that updates the chain address
- * @param {import('./evm-tap-kit').MakeEvmTap} params.makeEvmTap - Function to
- *   create an EVM tap.
- * @returns {Promise<OrchestrationAccount<{ chainId: 'agoric' }>>} A promise
- *   that resolves to the created OrchestrationAccount.
+ * @param {import('./evm-tap-kit').MakeEvmAccountKit} params.makeEvmAccountKit
+ *   - Function to create an EVM tap.
+ *
+ * @returns {Promise<{
+ *   evmAccountKit: import('./evm-tap-kit').EvmAccountKit;
+ *   localAccount: OrchestrationAccount<{ chainId: 'agoric' }>;
+ * }>}
+ *   A promise that resolves to the created OrchestrationAccount.
  */
 const createLCA = async ({
   agoricChain: agoric,
   remoteChain,
   chainHub,
   chainName,
-  makeEvmTap,
-  updateAddress,
+  makeEvmAccountKit,
 }) => {
   const { chainId, stakingTokens } = await remoteChain.getChainInfo();
   const remoteDenom = stakingTokens[0].denom;
@@ -66,27 +67,27 @@ const createLCA = async ({
     channelId: transferChannel.channelId,
   })}`;
 
-  const tap = makeEvmTap({
+  const evmAccountKit = makeEvmAccountKit({
     localAccount,
     localChainAddress,
     sourceChannel: transferChannel.counterPartyChannelId,
     remoteDenom,
     localDenom,
-    updateAddress,
   });
 
   // XXX consider storing appRegistration, so we can .revoke() or .updateTargetApp()
   // @ts-expect-error tap.receiveUpcall: 'Vow<void> | undefined' not assignable to 'Promise<any>'
-  await localAccount.monitorTransfers(tap);
+  await localAccount.monitorTransfers(evmAccountKit.tap);
 
-  return localAccount;
+  return harden({ evmAccountKit, localAccount });
 };
 /**
  * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {{
  *   zoeTools: GuestInterface<ZoeTools>;
- *   makeEvmTap: import('./evm-tap-kit').MakeEvmTap;
+ *   makeEvmAccountKit: import('./evm-tap-kit').MakeEvmAccountKit;
+ *   makeUpdateAddress: import('./axelar-gmp.contract').MakeUpdateAddress;
  *   chainHub: GuestInterface<ChainHub>;
  *   baggage: import('@agoric/vat-data').Baggage;
  *   zcf: ZcfTools;
@@ -107,7 +108,7 @@ export const makeAccountAndSendGMP = async (
   {
     zcf,
     baggage,
-    makeEvmTap,
+    makeEvmAccountKit,
     chainHub,
     zoeTools: { localTransfer, withdrawToSeat },
     zone,
@@ -160,25 +161,13 @@ export const makeAccountAndSendGMP = async (
   const { chainId } = info;
   assert(typeof chainId === 'string', 'bad chainId');
 
-  let address;
-
-  const updateAddres1s = () =>
-    zone.exoClass('Update Address', undefined, newAddress => ({ newAddress }), {
-      updateAddress(newAddress) {
-        address = newAddress;
-      },
-    });
-
-  const updateAddress = zone.makeOnce('hOrch7', () => updateAddres1s());
-
-  const localAccount = await createLCA({
+  const { localAccount, evmAccountKit } = await createLCA({
     // @ts-ignore
     agoricChain: agoric,
     remoteChain,
     chainHub,
     chainName,
-    makeEvmTap,
-    updateAddress,
+    makeEvmAccountKit,
   });
 
   await localTransfer(seat, localAccount, give);
@@ -222,6 +211,7 @@ export const makeAccountAndSendGMP = async (
     throw makeError(errorMsg);
   }
 
+  // TODO: move logic to evm-(tap|account)-kit
   const makeParamInvitation = (...args1) => {
     console.log('fraz', args1);
     /**
@@ -273,16 +263,16 @@ export const makeAccountAndSendGMP = async (
   };
 
   seat.exit();
-  const invitationMakers = prepareExo(
-    baggage,
-    'Charter Invitation Makers',
-    undefined,
-    {
-      getAddress: () => address,
-      VoteOnParamChange: makeParamInvitation,
-    },
-  );
+  // const invitationMakers = prepareExo(
+  //   baggage,
+  //   'Charter Invitation Makers',
+  //   undefined,
+  //   {
+  //     getAddress: () => address,
+  //     VoteOnParamChange: makeParamInvitation,
+  //   },
+  // );
 
-  return harden({ invitationMakers });
+  return harden({ invitationMakers: evmAccountKit.invitationMakers });
 };
 harden(makeAccountAndSendGMP);
