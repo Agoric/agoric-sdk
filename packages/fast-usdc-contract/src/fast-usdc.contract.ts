@@ -39,9 +39,9 @@ import type {
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
 import type { Zone } from '@agoric/zone';
-import { prepareAdvancer } from './exos/advancer.js';
-import { prepareLiquidityPoolKit } from './exos/liquidity-pool.js';
-import { prepareSettler } from './exos/settler.js';
+import { prepareAdvancer } from './exos/advancer.ts';
+import { prepareLiquidityPoolKit } from './exos/liquidity-pool.ts';
+import { prepareSettler } from './exos/settler.ts';
 import { prepareStatusManager } from './exos/status-manager.ts';
 import type { OperatorOfferResult } from './exos/transaction-feed.ts';
 import { prepareTransactionFeedKit } from './exos/transaction-feed.ts';
@@ -162,7 +162,7 @@ export const contract = async (
     removeOperator(operatorId: string): void {
       return feedKit.creator.removeOperator(operatorId);
     },
-    async getContractFeeBalance() {
+    async getContractFeeBalance(): Promise<Amount<'nat'>> {
       return poolKit.feeRecipient.getContractFeeBalance();
     },
     async makeWithdrawFeesInvitation(): Promise<Invitation<unknown>> {

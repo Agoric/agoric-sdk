@@ -1,51 +1,65 @@
+import type { HostInterface } from '@agoric/async-flow';
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
+import type { Amount, Brand, NatAmount } from '@agoric/ertp';
 import { AmountMath } from '@agoric/ertp';
+import {
+  AddressHookShape,
+  EvidenceWithRiskShape,
+  EvmHashShape,
+} from '@agoric/fast-usdc/src/type-guards.js';
+import type {
+  EvidenceWithRisk,
+  EvmHash,
+  FeeConfig,
+  LogFn,
+  NobleAddress,
+} from '@agoric/fast-usdc/src/types.js';
+import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
+import type { TypedPattern } from '@agoric/internal';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
+import type {
+  ChainHub,
+  CosmosChainAddress,
+  Denom,
+  OrchestrationAccount,
+} from '@agoric/orchestration';
 import {
   AnyNatAmountShape,
   CosmosChainAddressShape,
 } from '@agoric/orchestration';
+import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { pickFacet } from '@agoric/vat-data';
+import type { VowTools } from '@agoric/vow';
 import { VowShape } from '@agoric/vow';
+import type { ZCF, ZCFSeat } from '@agoric/zoe/src/zoeService/zoe.js';
+import type { Zone } from '@agoric/zone';
+import { Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
-import { Fail, q } from '@endo/errors';
-import {
-  AddressHookShape,
-  EvmHashShape,
-  EvidenceWithRiskShape,
-} from '@agoric/fast-usdc/src/type-guards.js';
-import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
+import type { LiquidityPoolKit } from './liquidity-pool.js';
+import type { StatusManager } from './status-manager.js';
+import type { SettlerKit } from './settler.js';
 
-/**
- * @import {HostInterface} from '@agoric/async-flow';
- * @import {Amount, Brand} from '@agoric/ertp';
- * @import {TypedPattern} from '@agoric/internal'
- * @import {NatAmount} from '@agoric/ertp';
- * @import {CosmosChainAddress, ChainHub, Denom, OrchestrationAccount} from '@agoric/orchestration';
- * @import {ZoeTools} from '@agoric/orchestration/src/utils/zoe-tools.js';
- * @import {VowTools} from '@agoric/vow';
- * @import {Zone} from '@agoric/zone';
- * @import {AddressHook, EvmHash, FeeConfig, LogFn, NobleAddress, EvidenceWithRisk} from '@agoric/fast-usdc/src/types.js';
- * @import {StatusManager} from './status-manager.ts';
- * @import {LiquidityPoolKit} from './liquidity-pool.js';
- */
+interface AdvancerKitPowers {
+  chainHub: ChainHub;
+  feeConfig: FeeConfig;
+  log?: LogFn;
+  statusManager: StatusManager;
+  usdc: { brand: Brand<'nat'>; denom: Denom };
+  vowTools: VowTools;
+  zcf: ZCF;
+  zoeTools: ZoeTools;
+}
 
-/**
- * @typedef {{
- *  chainHub: ChainHub;
- *  feeConfig: FeeConfig;
- *  log?: LogFn;
- *  statusManager: StatusManager;
- *  usdc: { brand: Brand<'nat'>; denom: Denom; };
- *  vowTools: VowTools;
- *  zcf: ZCF;
- *  zoeTools: ZoeTools;
- * }} AdvancerKitPowers
- */
+interface AdvancerVowCtx {
+  fullAmount: NatAmount;
+  advanceAmount: NatAmount;
+  destination: CosmosChainAddress;
+  forwardingAddress: NobleAddress;
+  txHash: EvmHash;
+}
 
-/** @type {TypedPattern<AdvancerVowCtx>} */
-const AdvancerVowCtxShape = M.splitRecord(
+const AdvancerVowCtxShape: TypedPattern<AdvancerVowCtx> = M.splitRecord(
   {
     fullAmount: AnyNatAmountShape,
     advanceAmount: AnyNatAmountShape,
@@ -84,16 +98,6 @@ const AdvancerKitI = harden({
   }),
 });
 
-/**
- * @typedef {{
- *  fullAmount: NatAmount;
- *  advanceAmount: NatAmount;
- *  destination: CosmosChainAddress;
- *  forwardingAddress: NobleAddress;
- *  txHash: EvmHash;
- * }} AdvancerVowCtx
- */
-
 export const stateShape = harden({
   notifier: M.remotable(),
   borrower: M.remotable(),
@@ -102,12 +106,8 @@ export const stateShape = harden({
   settlementAddress: M.opt(CosmosChainAddressShape),
 });
 
-/**
- * @param {Zone} zone
- * @param {AdvancerKitPowers} caps
- */
 export const prepareAdvancerKit = (
-  zone,
+  zone: Zone,
   {
     chainHub,
     feeConfig,
@@ -117,7 +117,7 @@ export const prepareAdvancerKit = (
     vowTools: { watch, when },
     zcf,
     zoeTools: { localTransfer, withdrawToSeat },
-  },
+  }: AdvancerKitPowers,
 ) => {
   assertAllDefined({
     chainHub,
@@ -127,22 +127,18 @@ export const prepareAdvancerKit = (
     when,
   });
   const feeTools = makeFeeTools(feeConfig);
-  /** @param {bigint} value */
-  const toAmount = value => AmountMath.make(usdc.brand, value);
+  const toAmount = (value: bigint) => AmountMath.make(usdc.brand, value);
 
   return zone.exoClassKit(
     'Fast USDC Advancer',
     AdvancerKitI,
-    /**
-     * @param {{
-     *   notifier: import('./settler.js').SettlerKit['notifier'];
-     *   borrower: LiquidityPoolKit['borrower'];
-     *   poolAccount: HostInterface<OrchestrationAccount<{chainId: 'agoric'}>>;
-     *   settlementAddress: CosmosChainAddress;
-     *   intermediateRecipient?: CosmosChainAddress;
-     * }} config
-     */
-    config =>
+    (config: {
+      notifier: SettlerKit['notifier'];
+      borrower: LiquidityPoolKit['borrower'];
+      poolAccount: HostInterface<OrchestrationAccount<{ chainId: 'agoric' }>>;
+      settlementAddress: CosmosChainAddress;
+      intermediateRecipient?: CosmosChainAddress;
+    }) =>
       harden({
         ...config,
         // make sure the state record has this property, perhaps with an undefined value
@@ -160,7 +156,7 @@ export const prepareAdvancerKit = (
          *
          * @param {EvidenceWithRisk} evidenceWithRisk
          */
-        async handleTransactionEvent({ evidence, risk }) {
+        async handleTransactionEvent({ evidence, risk }: EvidenceWithRisk) {
           await null;
           try {
             if (statusManager.hasBeenObserved(evidence)) {
@@ -223,21 +219,24 @@ export const prepareAdvancerKit = (
             });
           } catch (error) {
             log('Advancer error:', error);
-            statusManager.skipAdvance(evidence, [error.message]);
+            statusManager.skipAdvance(evidence, [(error as Error).message]);
           }
         },
         /** @param {CosmosChainAddress} intermediateRecipient */
-        setIntermediateRecipient(intermediateRecipient) {
+        setIntermediateRecipient(intermediateRecipient: CosmosChainAddress) {
           this.state.intermediateRecipient = intermediateRecipient;
         },
       },
       depositHandler: {
         /**
-         * @param {undefined} result
-         * @param {AdvancerVowCtx & { tmpSeat: ZCFSeat }} ctx
+         * @param result
+         * @param ctx
          * @throws {never} WARNING: this function must not throw, because user funds are at risk
          */
-        onFulfilled(result, ctx) {
+        onFulfilled(
+          result: undefined,
+          ctx: AdvancerVowCtx & { tmpSeat: ZCFSeat },
+        ) {
           const { poolAccount, intermediateRecipient, settlementAddress } =
             this.state;
           const { destination, advanceAmount, tmpSeat, ...detail } = ctx;
@@ -270,7 +269,14 @@ export const prepareAdvancerKit = (
          * @param {AdvancerVowCtx & { tmpSeat: ZCFSeat }} ctx
          * @throws {never} WARNING: this function must not throw, because user funds are at risk
          */
-        onRejected(error, { tmpSeat, advanceAmount, ...restCtx }) {
+        onRejected(
+          error: Error,
+          {
+            tmpSeat,
+            advanceAmount,
+            ...restCtx
+          }: AdvancerVowCtx & { tmpSeat: ZCFSeat },
+        ) {
           log(
             '⚠️ deposit to localOrchAccount failed, attempting to return payment to LP',
             error,
@@ -291,17 +297,13 @@ export const prepareAdvancerKit = (
          * @param {AdvancerVowCtx} ctx
          * @throws {never} WARNING: this function must not throw, because user funds are at risk
          */
-        onFulfilled(result, ctx) {
+        onFulfilled(result: undefined, ctx: AdvancerVowCtx) {
           const { notifier } = this.state;
           const { advanceAmount, destination, ...detail } = ctx;
           log('Advance succeeded', { advanceAmount, destination });
           notifier.notifyAdvancingResult({ destination, ...detail }, true);
         },
-        /**
-         * @param {Error} error
-         * @param {AdvancerVowCtx} ctx
-         */
-        onRejected(error, ctx) {
+        onRejected(error: Error, ctx: AdvancerVowCtx) {
           const { notifier, poolAccount } = this.state;
           log('Advance failed', error);
           const { advanceAmount, ...restCtx } = ctx;
@@ -325,10 +327,18 @@ export const prepareAdvancerKit = (
         /**
          *
          * @param {undefined} result
-         * @param {{ advanceAmount: Amount<'nat'>; tmpReturnSeat: ZCFSeat; }} ctx
+         * @param ctx
+         * @param ctx.advanceAmount
+         * @param ctx.tmpReturnSeat
          * @throws {never} WARNING: this function must not throw, because user funds are at risk
          */
-        onFulfilled(result, { advanceAmount, tmpReturnSeat }) {
+        onFulfilled(
+          result: undefined,
+          {
+            advanceAmount,
+            tmpReturnSeat,
+          }: { advanceAmount: Amount<'nat'>; tmpReturnSeat: ZCFSeat },
+        ) {
           const { borrower } = this.state;
           try {
             borrower.returnToPool(tmpReturnSeat, advanceAmount);
@@ -343,10 +353,18 @@ export const prepareAdvancerKit = (
         },
         /**
          * @param {Error} error
-         * @param {{ advanceAmount: Amount<'nat'>; tmpReturnSeat: ZCFSeat; }} ctx
+         * @param ctx
+         * @param ctx.advanceAmount
+         * @param ctx.tmpReturnSeat
          * @throws {never} WARNING: this function must not throw, because user funds are at risk
          */
-        onRejected(error, { advanceAmount, tmpReturnSeat }) {
+        onRejected(
+          error: Error,
+          {
+            advanceAmount,
+            tmpReturnSeat,
+          }: { advanceAmount: Amount<'nat'>; tmpReturnSeat: ZCFSeat },
+        ) {
           log(
             `🚨 withdraw ${q(advanceAmount)} from "poolAccount" to return to pool failed`,
             error,
@@ -364,11 +382,7 @@ export const prepareAdvancerKit = (
 };
 harden(prepareAdvancerKit);
 
-/**
- * @param {Zone} zone
- * @param {AdvancerKitPowers} caps
- */
-export const prepareAdvancer = (zone, caps) => {
+export const prepareAdvancer = (zone: Zone, caps: AdvancerKitPowers) => {
   const makeAdvancerKit = prepareAdvancerKit(zone, caps);
   return pickFacet(makeAdvancerKit, 'advancer');
 };

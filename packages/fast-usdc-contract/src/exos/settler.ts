@@ -14,31 +14,44 @@ import {
   EvmHashShape,
   makeNatAmountShape,
 } from '@agoric/fast-usdc/src/type-guards.js';
-import { asMultiset } from '../utils/store.js';
 
-/**
- * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
- * @import {Amount, Brand, NatValue, Payment} from '@agoric/ertp';
- * @import {AccountId, Denom, OrchestrationAccount, ChainHub, CosmosChainAddress} from '@agoric/orchestration';
- * @import {WithdrawToSeat} from '@agoric/orchestration/src/utils/zoe-tools.js'
- * @import {IBCChannelID, IBCPacket, VTransferIBCEvent} from '@agoric/vats';
- * @import {Zone} from '@agoric/zone';
- * @import {HostOf, HostInterface} from '@agoric/async-flow';
- * @import {TargetRegistration} from '@agoric/vats/src/bridge-target.js';
- * @import {NobleAddress, FeeConfig, EvmHash, LogFn, CctpTxEvidence} from '@agoric/fast-usdc/src/types.js';
- * @import {StatusManager} from './status-manager.ts';
- * @import {LiquidityPoolKit} from './liquidity-pool.js';
- */
+import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
+import type { Amount, Brand, NatValue, Payment } from '@agoric/ertp';
+import type {
+  AccountId,
+  Denom,
+  OrchestrationAccount,
+  ChainHub,
+  CosmosChainAddress,
+} from '@agoric/orchestration';
+import type { WithdrawToSeat } from '@agoric/orchestration/src/utils/zoe-tools.js';
+import type { IBCChannelID, IBCPacket, VTransferIBCEvent } from '@agoric/vats';
+import type { Zone } from '@agoric/zone';
+import type { HostOf, HostInterface } from '@agoric/async-flow';
+import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
+import type {
+  NobleAddress,
+  FeeConfig,
+  EvmHash,
+  LogFn,
+  CctpTxEvidence,
+} from '@agoric/fast-usdc/src/types.js';
+import type { ZCF, ZCFSeat } from '@agoric/zoe/src/zoeService/zoe.js';
+import type { MapStore } from '@agoric/store';
+import type { VowTools } from '@agoric/vow';
+import type { RepayAmountKWR } from '@agoric/fast-usdc/src/utils/fees.js';
+import type { LiquidityPoolKit } from './liquidity-pool.js';
+import type { StatusManager } from './status-manager.js';
+import { asMultiset } from '../utils/store.ts';
 
-/**
- * @param {IBCPacket} data
- * @param {string} remoteDenom
- * @returns {{ nfa: NobleAddress, amount: bigint, EUD: string } | {error: object[]}}
- */
-const decodeEventPacket = ({ data }, remoteDenom) => {
+const decodeEventPacket = (
+  { data }: IBCPacket,
+  remoteDenom: string,
+):
+  | { nfa: NobleAddress; amount: bigint; EUD: string }
+  | { error: unknown[] } => {
   // NB: may not be a FungibleTokenPacketData or even JSON
-  /** @type {FungibleTokenPacketData} */
-  let tx;
+  let tx: FungibleTokenPacketData;
   try {
     tx = JSON.parse(atob(data));
   } catch (e) {
@@ -46,7 +59,7 @@ const decodeEventPacket = ({ data }, remoteDenom) => {
   }
 
   // given the sourceChannel check, we can be certain of this cast
-  const nfa = /** @type {NobleAddress} */ (tx.sender);
+  const nfa = tx.sender as NobleAddress;
 
   if (tx.denom !== remoteDenom) {
     const { denom: actual } = tx;
@@ -66,7 +79,7 @@ const decodeEventPacket = ({ data }, remoteDenom) => {
     return { error: ['no query params', tx.receiver] };
   }
 
-  let amount;
+  let amount: bigint;
   try {
     amount = BigInt(tx.amount);
   } catch (e) {
@@ -83,11 +96,11 @@ harden(decodeEventPacket);
  * @param {NobleAddress} addr
  * @param {bigint} amount
  */
-const makeMintedEarlyKey = (addr, amount) =>
+const makeMintedEarlyKey = (addr: NobleAddress, amount: bigint): string =>
   `pendingTx:${JSON.stringify([addr, String(amount)])}`;
 
 /** @param {Brand<'nat'>} USDC */
-export const makeAdvanceDetailsShape = USDC =>
+export const makeAdvanceDetailsShape = (USDC: Brand<'nat'>) =>
   harden({
     destination: CosmosChainAddressShape,
     forwardingAddress: M.string(),
@@ -105,20 +118,8 @@ export const stateShape = harden({
   intermediateRecipient: M.opt(CosmosChainAddressShape),
 });
 
-/**
- * @param {Zone} zone
- * @param {object} caps
- * @param {StatusManager} caps.statusManager
- * @param {Brand<'nat'>} caps.USDC
- * @param {Pick<ZCF, 'makeEmptySeatKit' | 'atomicRearrange'>} caps.zcf
- * @param {FeeConfig} caps.feeConfig
- * @param {HostOf<WithdrawToSeat>} caps.withdrawToSeat
- * @param {import('@agoric/vow').VowTools} caps.vowTools
- * @param {ChainHub} caps.chainHub
- * @param {LogFn} [caps.log]
- */
 export const prepareSettler = (
-  zone,
+  zone: Zone,
   {
     chainHub,
     feeConfig,
@@ -128,6 +129,15 @@ export const prepareSettler = (
     vowTools,
     withdrawToSeat,
     zcf,
+  }: {
+    chainHub: ChainHub;
+    feeConfig: FeeConfig;
+    log?: LogFn;
+    statusManager: StatusManager;
+    USDC: Brand<'nat'>;
+    vowTools: VowTools;
+    withdrawToSeat: HostOf<WithdrawToSeat>;
+    zcf: Pick<ZCF, 'makeEmptySeatKit' | 'atomicRearrange'>;
   },
 ) => {
   assertAllDefined({ statusManager });
@@ -161,25 +171,28 @@ export const prepareSettler = (
         onRejected: M.call(M.error(), M.string()).returns(),
       }),
     },
-    /**
-     * @param {{
-     *   sourceChannel: IBCChannelID;
-     *   remoteDenom: Denom;
-     *   repayer: LiquidityPoolKit['repayer'];
-     *   settlementAccount: HostInterface<OrchestrationAccount<{ chainId: 'agoric' }>>
-     *   intermediateRecipient?: CosmosChainAddress;
-     * }} config
-     */
-    config => {
+
+    (config: {
+      sourceChannel: IBCChannelID;
+      remoteDenom: Denom;
+      repayer: LiquidityPoolKit['repayer'];
+      settlementAccount: HostInterface<
+        OrchestrationAccount<{ chainId: 'agoric' }>
+      >;
+      intermediateRecipient?: CosmosChainAddress;
+    }) => {
       log('config', config);
       return {
         ...config,
         // make sure the state record has this property, perhaps with an undefined value
         intermediateRecipient: config.intermediateRecipient,
-        /** @type {HostInterface<TargetRegistration>|undefined} */
-        registration: undefined,
-        /** @type {MapStore<ReturnType<typeof makeMintedEarlyKey>, number>} */
-        mintedEarly: zone.detached().mapStore('mintedEarly'),
+        registration: undefined as
+          | HostInterface<TargetRegistration>
+          | undefined,
+        mintedEarly: zone.detached().mapStore('mintedEarly') as MapStore<
+          ReturnType<typeof makeMintedEarlyKey>,
+          number
+        >,
       };
     },
     {
@@ -192,14 +205,12 @@ export const prepareSettler = (
           assert.typeof(registration, 'object');
           this.state.registration = registration;
         },
-        /** @param {CosmosChainAddress} intermediateRecipient */
-        setIntermediateRecipient(intermediateRecipient) {
+        setIntermediateRecipient(intermediateRecipient: CosmosChainAddress) {
           this.state.intermediateRecipient = intermediateRecipient;
         },
       },
       tap: {
-        /** @param {VTransferIBCEvent} event */
-        async receiveUpcall(event) {
+        async receiveUpcall(event: VTransferIBCEvent) {
           log('upcall event', event.packet.sequence, event.blockTime);
           const { sourceChannel, remoteDenom } = this.state;
           const { packet } = event;
@@ -243,19 +254,20 @@ export const prepareSettler = (
         },
       },
       notifier: {
-        /**
-         * @param {object} ctx
-         * @param {EvmHash} ctx.txHash
-         * @param {NobleAddress} ctx.forwardingAddress
-         * @param {Amount<'nat'>} ctx.fullAmount
-         * @param {CosmosChainAddress} ctx.destination
-         * @param {boolean} success
-         * @returns {void}
-         */
         notifyAdvancingResult(
-          { txHash, forwardingAddress, fullAmount, destination },
-          success,
-        ) {
+          {
+            txHash,
+            forwardingAddress,
+            fullAmount,
+            destination,
+          }: {
+            txHash: EvmHash;
+            forwardingAddress: NobleAddress;
+            fullAmount: Amount<'nat'>;
+            destination: CosmosChainAddress;
+          },
+          success: boolean,
+        ): void {
           const { mintedEarly } = this.state;
           const { value: fullValue } = fullAmount;
           const key = makeMintedEarlyKey(forwardingAddress, fullValue);
@@ -276,12 +288,14 @@ export const prepareSettler = (
           }
         },
         /**
-         * @param {CctpTxEvidence} evidence
-         * @param {CosmosChainAddress} destination
-         * @returns {boolean}
+         * @param evidence
+         * @param destination
          * @throws {Error} if minted early, so advancer doesn't advance
          */
-        checkMintedEarly(evidence, destination) {
+        checkMintedEarly(
+          evidence: CctpTxEvidence,
+          destination: CosmosChainAddress,
+        ): boolean {
           const {
             tx: { forwardingAddress, amount },
             txHash,
@@ -305,19 +319,15 @@ export const prepareSettler = (
       self: {
         /**
          * Helper function to track a minted-early transaction by incrementing or initializing its counter
-         * @param {NobleAddress} address
-         * @param {NatValue} amount
+         * @param address
+         * @param amount
          */
-        addMintedEarly(address, amount) {
+        addMintedEarly(address: NobleAddress, amount: NatValue) {
           const key = makeMintedEarlyKey(address, amount);
           const { mintedEarly } = this.state;
           asMultiset(mintedEarly).add(key);
         },
-        /**
-         * @param {EvmHash} txHash
-         * @param {NatValue} fullValue
-         */
-        async disburse(txHash, fullValue) {
+        async disburse(txHash: EvmHash, fullValue: NatValue) {
           const { repayer, settlementAccount } = this.state;
           const received = AmountMath.make(USDC, fullValue);
           const { zcfSeat: settlingSeat } = zcf.makeEmptySeatKit();
@@ -344,16 +354,10 @@ export const prepareSettler = (
           // update status manager, marking tx `DISBURSED`
           statusManager.disbursed(txHash, split);
         },
-        /**
-         * @param {EvmHash} txHash
-         * @param {NatValue} fullValue
-         * @param {string} EUD
-         */
-        forward(txHash, fullValue, EUD) {
+        forward(txHash: EvmHash, fullValue: NatValue, EUD: string) {
           const { settlementAccount, intermediateRecipient } = this.state;
           log('forwarding', fullValue, 'to', EUD, 'for', txHash);
-          /** @type {AccountId | null} */
-          const dest = (() => {
+          const dest: AccountId | null = (() => {
             try {
               return chainHub.resolveAccountId(EUD);
             } catch (e) {
@@ -373,19 +377,11 @@ export const prepareSettler = (
         },
       },
       transferHandler: {
-        /**
-         * @param {unknown} _result
-         * @param {EvmHash} txHash
-         */
-        onFulfilled(_result, txHash) {
+        onFulfilled(_result: unknown, txHash: EvmHash) {
           // update status manager, marking tx `FORWARDED` without fee split
           statusManager.forwarded(txHash, true);
         },
-        /**
-         * @param {unknown} reason
-         * @param {EvmHash} txHash
-         */
-        onRejected(reason, txHash) {
+        onRejected(reason: unknown, txHash: EvmHash) {
           // funds remain in `settlementAccount` and must be recovered via a
           // contract upgrade
           log('🚨 forward transfer rejected!', reason, txHash);
@@ -403,4 +399,4 @@ export const prepareSettler = (
 harden(prepareSettler);
 
 // Expose the whole kit because the contract needs `creatorFacet` and the Advancer needs `notifier`
-/** @typedef {ReturnType<ReturnType<typeof prepareSettler>>} SettlerKit */
+export type SettlerKit = ReturnType<ReturnType<typeof prepareSettler>>;
