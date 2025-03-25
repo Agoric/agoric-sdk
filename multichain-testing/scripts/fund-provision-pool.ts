@@ -37,21 +37,10 @@ async function fundProvisionPool(args: {
   console.log(`Funding provision pool at ${address} with ${amount}...`);
 
   // TODO: `@agoric/client-utils` should publish `waitForBlock`
-  const { waitForBlock } = (() => {
-    const delay = (ms: number): Promise<void> =>
-      new Promise(resolve => setTimeout(resolve, ms));
-    const explainDelay = (ms, info) => {
-      if (typeof info === 'object' && Object.keys(info).length > 0) {
-        console.log('delay', { ...info, delay: ms / 1000 }, '...');
-      }
-      return delay(ms);
-    };
-    const rpc = makeHttpClient(rpcUrl, fetch);
-    return makeBlockTool({
-      rpc,
-      delay: explainDelay,
-    });
-  })();
+  const { waitForBlock } = makeBlockTool({
+    rpc: makeHttpClient(rpcUrl, fetch),
+    delay: ms => new Promise(resolve => setTimeout(resolve, ms)),
+  });
 
   try {
     await waitForBlock(1);

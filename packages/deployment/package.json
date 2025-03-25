@@ -1,5 +1,5 @@
 {
-  "name": "@agoric/deployment",
+  "name": "@aglocal/deployment",
   "version": "3.0.0",
   "description": "Set up Agoric public chain nodes",
   "type": "module",
@@ -28,9 +28,6 @@
     "inquirer": "^8.2.2",
     "minimist": "^1.2.0",
     "temp": "^0.9.0"
-  },
-  "publishConfig": {
-    "access": "public"
   },
   "devDependencies": {
     "readline-transform": "^1.0.0"

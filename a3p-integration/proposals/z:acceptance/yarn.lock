@@ -9,6 +9,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/access-token@portal:../../agoric-sdk/packages/access-token::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
+    "@agoric/internal": "npm:^0.3.2"
     n-readlines: "npm:^1.0.0"
     proper-lockfile: "npm:^4.1.2"
     tmp: "npm:^0.2.1"

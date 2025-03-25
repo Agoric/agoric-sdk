@@ -158,7 +158,7 @@ const checkLRAndGetHelpers = (leftAmount, rightAmount, brand = undefined) => {
  * @param {MathHelpers<AssetValueForKind<K>>} h
  * @param {Amount<K>} leftAmount
  * @param {Amount<K>} rightAmount
- * @returns {[K, K]}
+ * @returns {[AssetValueForKind<K>, AssetValueForKind<K>]}
  */
 const coerceLR = (h, leftAmount, rightAmount) => {
   // @ts-expect-error could be arbitrary subtype
