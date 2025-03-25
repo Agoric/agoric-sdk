@@ -12,8 +12,7 @@ import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
 import * as flows from './axelar-gmp.flows.js';
 import * as sharedFlows from './shared.flows.js';
 import * as evmFlows from './lca-evm.flows.js';
-import { prepareEvmTap } from './evm-tap-kit.js';
-import { prepareEVMTransactionKit } from './evm-transaction-kit.js';
+import { prepareEvmAccountKit } from './evm-account-kit.js';
 
 /**
  * @import {Remote, Vow} from '@agoric/vow';
@@ -48,7 +47,7 @@ export const contract = async (
   zcf,
   privateArgs,
   zone,
-  { baggage, chainHub, orchestrateAll, vowTools, zoeTools },
+  { chainHub, orchestrateAll, vowTools, zoeTools },
 ) => {
   console.log('Inside Contract');
 
@@ -66,7 +65,10 @@ export const contract = async (
     privateArgs.assetInfo,
   );
 
-  const makeEvmTap = prepareEvmTap(zone.subZone('evmTap'), vowTools);
+  const makeEvmAccountKit = prepareEvmAccountKit(zone.subZone('evmTap'), {
+    vowTools,
+    zcf,
+  });
 
   const creatorFacet = prepareChainHubAdmin(zone, chainHub);
 
@@ -97,7 +99,7 @@ export const contract = async (
   });
 
   const { createAndMonitorLCA } = orchestrateAll(evmFlows, {
-    makeEvmTap,
+    makeEvmAccountKit,
     log,
     chainHub,
   });
@@ -119,22 +121,8 @@ export const contract = async (
       },
       createAndMonitorLCA() {
         return zcf.makeInvitation(
-          async seat => {
-            const res = await createAndMonitorLCA();
-            // @ts-expect-error
-            const localAccount = await res.payload.vowV0.shorten();
-            const makeEVMTransactionKit = prepareEVMTransactionKit(zone, {
-              zcf,
-            });
-            seat.exit();
-            return makeEVMTransactionKit(
-              harden({
-                localAccount,
-                evmWalletAddress: undefined,
-              }),
-            );
-          },
-          `send`,
+          createAndMonitorLCA,
+          'makeAccount',
           undefined,
           EmptyProposalShape,
         );
