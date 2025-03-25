@@ -16,7 +16,7 @@ import { PendingTxStatus } from './constants.js';
  */
 
 /**
- * @param {Brand} brand must be a 'nat' brand, not checked
+ * @param {Brand<'nat'>} brand must be a 'nat' brand, not checked
  * @param {NatValue} [min]
  */
 export const makeNatAmountShape = (brand, min) =>

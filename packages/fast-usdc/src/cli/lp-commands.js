@@ -38,7 +38,7 @@ const parseDecimal = arg => {
 
 /**
  * @param {string} amountString
- * @param {Brand} usdc
+ * @param {Brand<'nat'>} usdc
  */
 const parseUSDCAmount = (amountString, usdc) => {
   const USDC_DECIMALS = 6;

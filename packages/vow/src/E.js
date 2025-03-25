@@ -19,6 +19,10 @@ import { X, q, Fail, makeError } from '@endo/errors';
 import { trackTurns } from './track-turns.js';
 import { makeMessageBreakpointTester } from './message-breakpoints.js';
 
+/**
+ * @import {ERef} from '@endo/far';
+ */
+
 const { assign, create } = Object;
 
 const onSend = makeMessageBreakpointTester('ENDO_SEND_BREAKPOINTS');
@@ -314,12 +318,6 @@ export default makeE;
  *
  * @template T The type to be filtered.
  * @typedef {Omit<T, FilteredKeys<T, Callable>>} DataOnly
- */
-
-/**
- * @see {@link https://github.com/microsoft/TypeScript/issues/31394}
- * @template T
- * @typedef {PromiseLike<T> | T} ERef
  */
 
 /**
