@@ -19,6 +19,9 @@
     // .ts and rewriting relative paths allow us to include in bundles
     // files that are JS executable (with TS chars blanked) but end in .ts
     "allowImportingTsExtensions": true,
+    // This isn't relevant until `tsconfig.build.json` is used (for
+    // noEmit:false) but it's better to have it here next to
+    // allowImportingTsExtensions to show what will happen upon build.
     "rewriteRelativeImportExtensions": true,
     "noEmit": true
   },

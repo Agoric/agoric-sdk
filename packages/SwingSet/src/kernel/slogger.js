@@ -1,6 +1,6 @@
 import { q } from '@endo/errors';
 import { objectMap } from '@agoric/internal';
-import { makeLimitedConsole } from '@agoric/internal/src/ses-utils.js';
+import { makeLimitedConsole } from '@agoric/internal/src/ses-utils.ts';
 
 /** @import {Callable} from '@agoric/internal'; */
 /** @import {LimitedConsole} from '@agoric/internal/src/js-utils.js'; */

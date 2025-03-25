@@ -1,13 +1,13 @@
 import { expectNotType, expectType } from 'tsd';
 import { E, type ERef } from '@endo/far';
-import { attenuate } from '../src/ses-utils.js';
+import { attenuate } from '../src/ses-utils.ts';
 import type { Permit, Remote } from '../src/types.js';
 import type { StorageNode } from '../src/lib-chainStorage.js';
 
 {
   const obj = {
-    m1: () => {},
-    m2: () => {},
+    m1: () => { },
+    m2: () => { },
     data: {
       log: ['string'],
       counter: 0,
