@@ -15,7 +15,7 @@ chains:
       faucet: 8088
   - id: elyslocal
     name: custom
-    image: adarsh00/elys-network:latest
+    image: mudassirshabbir/elys:latest
     home: /root/.elys
     binary: elysd
     prefix: elys
