@@ -2,7 +2,7 @@
 set -e  # Exit on error
 
 DENOM="${DENOM:=uelys}"
-COINS="${COINS:=2000000000000uelys}"
+COINS="${COINS:=4000000000000uelys}"
 CHAIN_ID="${CHAIN_ID:=elyslocal}"
 CHAIN_BIN="${CHAIN_BIN:=elysd}"
 CHAIN_DIR="${CHAIN_DIR:=$HOME/.elys}"

@@ -8,19 +8,14 @@ GENESIS_FILE="$HOME/.elys/config/genesis.json"
 # Set the genesis file path
 GENESIS_FILE="$HOME/.elys/config/genesis.json"
 
+FAUCET_ADDRESS="elys1vhdew4wqu3tp8l2d55aqcc73aqvr0rr9ykv6za"
+jq --arg addr "$FAUCET_ADDRESS" '.app_state.bank.balances += [{"address": $addr, "coins": [{"denom": "uelys", "amount": "4000000000000"}]}]' \
+  $GENESIS_FILE > /tmp/genesis.json.tmp
+mv /tmp/genesis.json.tmp $GENESIS_FILE
+
 # Add the faucet account to genesis with a reasonable amount
-FAUCET_ADDRESS="elys1vhdew4wqu3tp8l2d55aqcc73aqvr0rr9ykv6za"
-jq --arg addr "$FAUCET_ADDRESS" '.app_state.bank.balances += [{"address": $addr, "coins": [{"denom": "uelys", "amount": "2000000000000"}]}]' \
-  $GENESIS_FILE > /tmp/genesis.json.tmp
-mv /tmp/genesis.json.tmp $GENESIS_FILE
-
 FAUCET_ADDRESS="elys1ezm7znxcdetyj8sadhzmhgma6sn09wnrtcy3dd"
-jq --arg addr "$FAUCET_ADDRESS" '.app_state.bank.balances += [{"address": $addr, "coins": [{"denom": "uelys", "amount": "2000000000000"}]}]' \
-  $GENESIS_FILE > /tmp/genesis.json.tmp
-mv /tmp/genesis.json.tmp $GENESIS_FILE
-
-FAUCET_ADDRESS="elys1vhdew4wqu3tp8l2d55aqcc73aqvr0rr9ykv6za"
-jq --arg addr "$FAUCET_ADDRESS" '.app_state.bank.balances += [{"address": $addr, "coins": [{"denom": "uelys", "amount": "2000000000000"}]}]' \
+jq --arg addr "$FAUCET_ADDRESS" '.app_state.bank.balances += [{"address": $addr, "coins": [{"denom": "uelys", "amount": "4000000000000"}]}]' \
   $GENESIS_FILE > /tmp/genesis.json.tmp
 mv /tmp/genesis.json.tmp $GENESIS_FILE
 
