@@ -79,12 +79,11 @@ jobs:
 
       - name: Setup Starship Infrastructure
         id: starship-infra
-        # in lieu of cosmology-tech/starship-action@0.3.0
+        # in lieu of upstream Starship action
         # (see local .github/actions/starship-action/README.md)
         uses: ./agoric-sdk/.github/actions/starship-action
         with:
-          values: ./agoric-sdk/multichain-testing/${{ inputs.config }}
-          port-forward: true
+          config: ./agoric-sdk/multichain-testing/${{ inputs.config }}
           version: 0.2.20
           timeout: 20m # Usually 13min
           # Load the locally-built dev Docker image for the chain into kind.
