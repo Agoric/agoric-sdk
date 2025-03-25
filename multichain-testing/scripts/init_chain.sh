@@ -25,10 +25,6 @@ elysd keys add validator --keyring-backend test --home /root/.elys
 VALIDATOR_ADDRESS=$(elysd keys show validator --keyring-backend test --home /root/.elys -a)
 echo "Validator address: $VALIDATOR_ADDRESS"
 
-# Fund validator
-echo "Funding validator..."
-elysd add-genesis-account "$VALIDATOR_ADDRESS" 2000000000000uelys --home /root/.elys --keyring-backend test
-
 
 if [[ $FAUCET_ENABLED == "false" && $NUM_RELAYERS -gt "-1" ]];
 then

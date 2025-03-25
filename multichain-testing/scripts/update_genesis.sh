@@ -3,11 +3,33 @@
 # Set the genesis file path
 GENESIS_FILE="$HOME/.elys/config/genesis.json"
 
+# Add the faucet account to genesis
+#!/bin/bash
+# Set the genesis file path
+GENESIS_FILE="$HOME/.elys/config/genesis.json"
+
+# Add the faucet account to genesis with a reasonable amount
+FAUCET_ADDRESS="elys1vhdew4wqu3tp8l2d55aqcc73aqvr0rr9ykv6za"
+jq --arg addr "$FAUCET_ADDRESS" '.app_state.bank.balances += [{"address": $addr, "coins": [{"denom": "uelys", "amount": "2000000000000"}]}]' \
+  $GENESIS_FILE > /tmp/genesis.json.tmp
+mv /tmp/genesis.json.tmp $GENESIS_FILE
+
+FAUCET_ADDRESS="elys1ezm7znxcdetyj8sadhzmhgma6sn09wnrtcy3dd"
+jq --arg addr "$FAUCET_ADDRESS" '.app_state.bank.balances += [{"address": $addr, "coins": [{"denom": "uelys", "amount": "2000000000000"}]}]' \
+  $GENESIS_FILE > /tmp/genesis.json.tmp
+mv /tmp/genesis.json.tmp $GENESIS_FILE
+
+FAUCET_ADDRESS="elys1vhdew4wqu3tp8l2d55aqcc73aqvr0rr9ykv6za"
+jq --arg addr "$FAUCET_ADDRESS" '.app_state.bank.balances += [{"address": $addr, "coins": [{"denom": "uelys", "amount": "2000000000000"}]}]' \
+  $GENESIS_FILE > /tmp/genesis.json.tmp
+mv /tmp/genesis.json.tmp $GENESIS_FILE
+
+
+
 # Update price expiry time and lifetime in blocks
 jq '.app_state.oracle.params.price_expiry_time = "86400000000"' $GENESIS_FILE > temp.json && mv temp.json $GENESIS_FILE
 jq '.app_state.oracle.params.life_time_in_blocks = "1000000000"' $GENESIS_FILE > temp.json && mv temp.json $GENESIS_FILE
 
-# ...existing code...
 # Add asset profiles
 jq '.app_state.assetprofile.entry_list = [
   {
