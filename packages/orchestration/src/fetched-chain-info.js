@@ -407,7 +407,10 @@ export default /** @type {const} } */ ({
     },
   },
   axelar: {
+    bech32Prefix: 'axelar',
     chainId: 'axelar',
+    namespace: 'cosmos',
+    reference: 'axelar',
     stakingTokens: [
       {
         denom: 'uaxl',

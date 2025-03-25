@@ -5,7 +5,7 @@ import { denomHash } from '../utils/denomHash.js';
 /**
  * @import {GuestInterface, GuestOf} from '@agoric/async-flow';
  * @import {Orchestrator, OrchestrationFlow} from '@agoric/orchestration';
- * @import {MakeEvmTap} from './evm-tap-kit';
+ * @import {MakeEvmAccountKit} from './evm-account-kit.js';
  * @import {MakePortfolioHolder} from '../../src/exos/portfolio-holder-kit.js';
  * @import {ChainHub} from '../../src/exos/chain-hub.js';
  * @import {Vow} from '@agoric/vow';
@@ -15,15 +15,17 @@ import { denomHash } from '../utils/denomHash.js';
  * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {{
- *   makeEvmTap: MakeEvmTap;
+ *   makeEvmAccountKit: MakeEvmAccountKit;
  *   makePortfolioHolder: MakePortfolioHolder;
  *   chainHub: GuestInterface<ChainHub>;
  *   log: GuestOf<(msg: string) => Vow<void>>;
  * }} ctx
+ * @param {ZCFSeat} seat
  */
 export const createAndMonitorLCA = async (
   orch,
-  { log, makeEvmTap, chainHub },
+  { log, makeEvmAccountKit, chainHub },
+  seat,
 ) => {
   void log('Inside createAndMonitorLCA');
   const [agoric, remoteChain] = await Promise.all([
@@ -52,7 +54,7 @@ export const createAndMonitorLCA = async (
   })}`;
 
   // Every time the `localAccount` receives `remoteDenom` over IBC, delegate it.
-  const tap = makeEvmTap({
+  const evmAccountKit = makeEvmAccountKit({
     localAccount,
     localChainAddress,
     sourceChannel: transferChannel.counterPartyChannelId,
@@ -62,9 +64,10 @@ export const createAndMonitorLCA = async (
   void log('tap created successfully');
   // XXX consider storing appRegistration, so we can .revoke() or .updateTargetApp()
   // @ts-expect-error tap.receiveUpcall: 'Vow<void> | undefined' not assignable to 'Promise<any>'
-  await localAccount.monitorTransfers(tap);
+  await localAccount.monitorTransfers(evmAccountKit.tap);
   void log('Monitoring transfers setup successfully');
 
-  return localAccount;
+  seat.exit();
+  return harden({ invitationMakers: evmAccountKit.invitationMakers });
 };
 harden(createAndMonitorLCA);
