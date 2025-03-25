@@ -16,7 +16,7 @@ import {
   IBCConnectionInfoShape,
   AccountArgShape,
 } from '../typeGuards.js';
-import { getBech32Prefix, parseAccountId } from '../utils/address.js';
+import { getBech32Prefix, parseAccountIdArg } from '../utils/address.js';
 
 /**
  * @import {NameHub} from '@agoric/vats';
@@ -603,7 +603,7 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
         return `cosmos:${account.chainId}:${account.value}`;
       }
 
-      const parsed = parseAccountId(account);
+      const parsed = parseAccountIdArg(account);
       if ('namespace' in parsed) {
         // It is already fully qualified
         return /** @type {AccountId} */ (account);
@@ -617,7 +617,7 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
      * @throws {Error} if chain info not found for bech32Prefix
      */
     makeChainAddress(partialId) {
-      const parsed = parseAccountId(partialId);
+      const parsed = parseAccountIdArg(partialId);
 
       if ('namespace' in parsed) {
         assert.equal(parsed.namespace, 'cosmos');

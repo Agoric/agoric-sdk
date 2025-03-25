@@ -3,6 +3,7 @@ import { Fail, q } from '@endo/errors';
 /**
  * @import {IBCConnectionID} from '@agoric/vats';
  * @import {CosmosChainAddress, ScopedChainId} from '../types.js';
+ * @import {AccountId} from '../orchestration-api.js';
  * @import {RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  */
 
@@ -117,7 +118,7 @@ export const getBech32Prefix = address => {
  *     }}
  *   - The parsed account details.
  */
-export const parseAccountId = partialId => {
+export const parseAccountIdArg = partialId => {
   if (typeof partialId !== 'string' || !partialId.length) {
     Fail`Empty accountId: ${q(partialId)}`;
   }
@@ -139,5 +140,37 @@ export const parseAccountId = partialId => {
   }
 
   throw Fail`Invalid accountId: ${q(partialId)}`;
+};
+harden(parseAccountIdArg);
+
+/**
+ * Parses an account ID into a structured format following CAIP-10 standards.
+ *
+ * @param {AccountId} accountId CAIP-10 account ID
+ * @returns {{
+ *   namespace: string;
+ *   reference: string;
+ *   accountAddress: string;
+ * }}
+ *   - The parsed account details.
+ */
+export const parseAccountId = accountId => {
+  if (typeof accountId !== 'string' || accountId.length !== 3) {
+    Fail`malformed CAIP-10 accountId: ${q(accountId)}`;
+  }
+
+  const parts = accountId.split(':');
+
+  if (parts.length === 3) {
+    // Full CAIP-10
+    const [namespace, reference, accountAddress] = parts;
+    return {
+      namespace,
+      reference,
+      accountAddress,
+    };
+  }
+
+  throw Fail`malformed CAIP-10 accountId: ${q(accountId)}`;
 };
 harden(parseAccountId);
