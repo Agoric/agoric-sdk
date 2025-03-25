@@ -122,10 +122,7 @@ func (ia inboundAnte) allowedInbound(ctx sdk.Context) (int32, error) {
 		return 0, nil
 	}
 	allowed -= actions
-	if allowed > maxInboundPerTx {
-		return maxInboundPerTx, nil
-	}
-	return allowed, nil
+	return min(allowed, maxInboundPerTx), nil
 }
 
 // inboundMessages returns the nunber of inbound queue messages in msg.
