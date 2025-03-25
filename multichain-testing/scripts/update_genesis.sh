@@ -13,6 +13,17 @@ jq --arg addr "$FAUCET_ADDRESS" '.app_state.bank.balances += [{"address": $addr,
   $GENESIS_FILE > /tmp/genesis.json.tmp
 mv /tmp/genesis.json.tmp $GENESIS_FILE
 
+FAUCET_ACCOUNT_JSON=$(jq -n --arg addr "$FAUCET_ADDRESS" '{
+  "@type": "/cosmos.auth.v1beta1.BaseAccount",
+  "address": $addr,
+  "pub_key": null,
+  "account_number": "0",
+  "sequence": "0"
+}')
+
+tmp=$(mktemp)
+jq --argjson acct "$FAUCET_ACCOUNT_JSON" '.app_state.auth.accounts += [$acct]' $GENESIS_FILE > "$tmp" && mv "$tmp" $GENESIS_FILE
+
 # Add the faucet account to genesis with a reasonable amount
 FAUCET_ADDRESS="elys1ezm7znxcdetyj8sadhzmhgma6sn09wnrtcy3dd"
 jq --arg addr "$FAUCET_ADDRESS" '.app_state.bank.balances += [{"address": $addr, "coins": [{"denom": "uelys", "amount": "4000000000000"}]}]' \
