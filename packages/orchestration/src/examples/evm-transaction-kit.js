@@ -1,5 +1,5 @@
-import { M, prepareExoClassKit } from '@agoric/vat-data';
-import { defineDurableHandle } from '@agoric/zoe/src/makeHandle.js';
+import { M } from '@agoric/vat-data';
+import { mustMatch } from '@endo/patterns';
 
 const EVMI = M.interface('evmTransaction', {
   getAddress: M.call().returns(M.any()),
@@ -11,33 +11,34 @@ const InvitationMakerI = M.interface('invitationMaker', {
 });
 
 /**
+ * @import {Zone} from '@agoric/zone';
+ */
+
+const EvmAccountShape = {
+  localAccount: M.remotable('OrchestrationAccount<{chainId:"agoric-3"}>'),
+  evmWalletAddress: M.any(),
+};
+harden(EvmAccountShape);
+
+/**
  * Make a kit suitable for returning to a EVM Transaction Kit.
  *
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Zone} zone
  * @param {object} powers
  * @param powers.zcf
- * @param {import('../orchestration-api').OrchestrationAccount<{
- *   chainId: 'agoric-3';
- * }>} localAccount
  */
-export const prepareEVMTransactionKit = (baggage, { zcf }, localAccount) => {
-  const makeEVMTransactionHandle = defineDurableHandle(
-    baggage,
-    'EVMTransaction',
-  );
-  const makeEVMTransactionKit = prepareExoClassKit(
-    baggage,
+export const prepareEVMTransactionKit = (zone, { zcf }) => {
+  const makeEVMTransactionKit = zone.exoClassKit(
     'EVMTransactionKit',
     { evm: EVMI, invitationMakers: InvitationMakerI },
-    id => {
-      const evmTransactionHandle = makeEVMTransactionHandle();
-      return { id, evmTransactionHandle };
+    initialState => {
+      mustMatch(initialState, EvmAccountShape);
+      return harden({ evmWalletAddress: undefined, ...initialState });
     },
-
     {
       evm: {
         async getAddress() {
-          const localChainAddress = await localAccount.getAddress();
+          const localChainAddress = await this.state.localAccount.getAddress();
           return localChainAddress.value;
         },
 
@@ -50,7 +51,7 @@ export const prepareEVMTransactionKit = (baggage, { zcf }, localAccount) => {
          * @returns {Promise<string>} A success message upon completion.
          */
         async send(toAccount, amount) {
-          await localAccount.send(toAccount, amount);
+          await this.state.localAccount.send(toAccount, amount);
           return 'transfer success';
         },
       },
