@@ -29,7 +29,7 @@ import {
 
 /**
  * @import {Baggage} from '@agoric/vat-data';
- * @import {ContractMeta, ContractStartFn, InvitationAmount, OfferHandler, TransferPart, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {InvitationAmount} from '@agoric/zoe';
  */
 
 const { ownKeys } = Reflect;

@@ -4,7 +4,7 @@ import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 
 /**
- * @import {ContractMeta, ContractStartFn, Invitation, OfferHandler, TransferPart, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {ContractStartFn, Invitation, ZCF, ZCFSeat} from '@agoric/zoe';
  */
 
 /**
