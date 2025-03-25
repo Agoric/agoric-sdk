@@ -593,8 +593,8 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
       return undefined;
     },
     /**
-     * @param {AccountIdArg | string} account CAIP-10 account ID or a
-     *   CosmosChainAddress or bech32
+     * @param {AccountIdArg} account CAIP-10 account ID or a CosmosChainAddress
+     *   or bech32
      * @returns {AccountId}
      * @throws {Error} if chain info not found for bech32Prefix
      */
