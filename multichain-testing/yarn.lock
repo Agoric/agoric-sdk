@@ -5034,7 +5034,7 @@ __metadata:
     execa: "npm:^9.5.2"
     fs-extra: "npm:^11.2.0"
     patch-package: "npm:^8.0.0"
-    starshipjs: "npm:2.4.1"
+    starshipjs: "npm:^3.3.0"
     ts-blank-space: "npm:^0.4.4"
     typescript: "npm:~5.8.2"
   languageName: unknown
@@ -5292,15 +5292,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"starshipjs@npm:2.4.1":
-  version: 2.4.1
-  resolution: "starshipjs@npm:2.4.1"
+"starshipjs@npm:^3.3.0":
+  version: 3.3.0
+  resolution: "starshipjs@npm:3.3.0"
   dependencies:
     "@chain-registry/client": "npm:1.18.1"
     bip39: "npm:^3.1.0"
     js-yaml: "npm:^4.1.0"
     node-fetch: "npm:^2.6.9"
-  checksum: 10c0/24b572fa399de90f40f90e466f471f3b284a21e92c51ff36c18267f7cc450918e50b70cd8af3fe36c930273199cd483f0010eb6afa7e4023a27810ae9898f70a
+  checksum: 10c0/30cc828e37074a265ad46d636232c2d6c2c2f1c2b0836f47d6365570ec03b498bea515b2663b816a60f338a87dc1f5e1f5ad9d521fddbb2e66f559ff746a022c
   languageName: node
   linkType: hard
 
