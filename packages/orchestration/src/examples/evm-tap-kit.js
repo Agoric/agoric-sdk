@@ -41,7 +41,8 @@ harden(EvmTapStateShape);
  * @param {Zone} zone
  * @param {VowTools} vowTools
  */
-const prepareEvmTapKit = (zone, { watch }) => {
+const prepareEvmTapKit = (zone, vowTools) => {
+  console.log(vowTools);
   return zone.exoClassKit(
     'EvmTapKit',
     {

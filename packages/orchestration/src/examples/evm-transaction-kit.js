@@ -65,8 +65,9 @@ export const prepareEVMTransactionKit = (baggage, { zcf }, localAccount) => {
                 return evm.getAddress();
               case 'send':
                 return evm.send(args[0], args[1]);
+              default:
+                return 'Invalid method';
             }
-            return evm.getAddress();
           };
 
           return zcf.makeInvitation(
