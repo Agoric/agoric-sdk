@@ -19,21 +19,8 @@ test.before(async t => {
     t,
     '@agoric/vm-config/decentral-itest-orchestration-config.json',
   );
-});
-test.after.always(t => t.context.shutdown?.());
 
-test('make contract calls via axelarGmp', async t => {
-  const {
-    walletFactoryDriver,
-    bridgeUtils: { runInbound },
-    buildProposal,
-    evalProposal,
-    storage,
-  } = t.context;
-
-  const { BLD } = t.context.agoricNamesRemotes.brand;
-
-  t.log('start axelarGmp');
+  const { evalProposal, buildProposal } = t.context;
 
   await evalProposal(
     buildProposal('@agoric/builders/scripts/testing/init-axelar-gmp.js', [
@@ -56,6 +43,140 @@ test('make contract calls via axelarGmp', async t => {
       ]),
     ]),
   );
+});
+
+test.beforeEach(t => {
+  t.context.storage.data.delete('published.axelarGmp.log');
+});
+
+test.serial('send tokens via axelarGmp', async t => {
+  const {
+    walletFactoryDriver,
+    bridgeUtils: { runInbound },
+
+    storage,
+  } = t.context;
+
+  const { BLD, ATOM } = t.context.agoricNamesRemotes.brand;
+
+  t.log('making offer');
+  const wallet =
+    await walletFactoryDriver.provideSmartWallet('agoric1SendTokens');
+  await wallet.sendOffer({
+    id: 'axelarGmp1',
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: ['axelarGmp'],
+      callPipe: [['gmpInvitation']],
+    },
+    proposal: {
+      // @ts-expect-error XXX BoardRemote
+      give: { BLD: { brand: BLD, value: 1n } },
+    },
+    offerArgs: {
+      destinationAddress: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
+      type: 3,
+      destinationEVMChain: 'Ethereum',
+    },
+  });
+
+  const getLogged = () =>
+    JSON.parse(storage.data.get('published.axelarGmp.log')!).values;
+
+  // Flow started but IBC Transfer promise not resolved
+  t.deepEqual(getLogged(), [
+    'Inside sendGmp',
+    'Payload: null',
+    'Local transfer successful',
+    'Initiating IBC Transfer...',
+    'DENOM of token:ubld',
+  ]);
+
+  // Simulate resolving IBC Transfer promise
+  await runInbound(
+    BridgeId.VTRANSFER,
+    buildVTransferEvent({
+      sender: makeTestAddress(),
+      target: makeTestAddress(),
+      sourceChannel: 'channel-0',
+      sequence: '1',
+    }),
+  );
+
+  // Logs when IBC transfer promise is resolved
+  t.deepEqual(getLogged(), [
+    'Inside sendGmp',
+    'Payload: null',
+    'Local transfer successful',
+    'Initiating IBC Transfer...',
+    'DENOM of token:ubld',
+    'Offer successful',
+  ]);
+
+  t.log('make offer with 0 amount');
+
+  await wallet.sendOffer({
+    id: 'axelarGmp2',
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: ['axelarGmp'],
+      callPipe: [['gmpInvitation']],
+    },
+    proposal: {
+      // @ts-expect-error XXX BoardRemote
+      give: { BLD: { brand: BLD, value: 0n } },
+    },
+    offerArgs: {
+      destinationAddress: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
+      type: 3,
+      destinationEVMChain: 'Ethereum',
+    },
+  });
+
+  t.like(wallet.getLatestUpdateRecord(), {
+    status: {
+      id: 'axelarGmp2',
+      error: 'Error: IBC transfer amount must be greater than zero',
+    },
+  });
+
+  t.log('make offer with unregistered vbank asset');
+  await wallet.sendOffer({
+    id: 'axelarGmp3',
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: ['axelarGmp'],
+      callPipe: [['gmpInvitation']],
+    },
+    proposal: {
+      // @ts-expect-error XXX BoardRemote
+      give: { BLD: { brand: ATOM, value: 1n } },
+    },
+    offerArgs: {
+      destinationAddress: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
+      type: 3,
+      destinationEVMChain: 'Ethereum',
+    },
+  });
+
+  t.like(wallet.getLatestUpdateRecord(), {
+    status: {
+      id: 'axelarGmp3',
+      error:
+        'Error: IBC Transfer failed "[Error: no denom detail for: \\"ibc/toyatom\\" on \\"agoric\\". ensure it is registered in chainHub.]"',
+    },
+  });
+});
+
+test.serial('make contract calls via axelarGmp', async t => {
+  const {
+    walletFactoryDriver,
+    bridgeUtils: { runInbound },
+
+    storage,
+  } = t.context;
+
+  const { BLD } = t.context.agoricNamesRemotes.brand;
 
   t.log('making offer');
 
@@ -63,7 +184,9 @@ test('make contract calls via axelarGmp', async t => {
   const newCountValue = 234;
   const encodedArgs = abiCoder.encode(['uint256'], [newCountValue]);
 
-  const wallet = await walletFactoryDriver.provideSmartWallet('agoric1test');
+  const wallet = await walletFactoryDriver.provideSmartWallet(
+    'agoric1ContractCalls',
+  );
   await wallet.sendOffer({
     id: 'axelarGmpContractCall',
     invitationSpec: {
@@ -109,7 +232,7 @@ test('make contract calls via axelarGmp', async t => {
       sender: makeTestAddress(),
       target: makeTestAddress(),
       sourceChannel: 'channel-0',
-      sequence: '1',
+      sequence: '2',
     }),
   );
 
@@ -181,5 +304,79 @@ test('make contract calls via axelarGmp', async t => {
       id: 'axelarGmpContractCallIII',
       error: 'Error: gasAmount must be defined',
     },
+  });
+});
+
+test.serial('makeAccount via axelarGmp', async t => {
+  const { walletFactoryDriver, storage } = t.context;
+
+  t.log('making offer');
+
+  const wallet =
+    await walletFactoryDriver.provideSmartWallet('agoric1makeAccount');
+  await wallet.sendOffer({
+    id: 'axelarMakeAccountCall',
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: ['axelarGmp'],
+      callPipe: [['createAndMonitorLCA']],
+    },
+    proposal: {},
+  });
+
+  const getLogged = () =>
+    JSON.parse(storage.data.get('published.axelarGmp.log')!).values;
+
+  // Flow started but IBC Transfer promise not resolved
+  t.deepEqual(getLogged(), [
+    'Inside createAndMonitorLCA',
+    'localAccount created successfully',
+    'tap created successfully',
+    'Monitoring transfers setup successfully',
+  ]);
+
+  t.log('Execute offers via the LCA');
+
+  const previousOfferId =
+    wallet.getCurrentWalletRecord().offerToUsedInvitation[0][0];
+
+  await wallet.executeOffer({
+    id: 'makeAccountCall',
+    invitationSpec: {
+      invitationMakerName: 'makeEVMTransactionInvitation',
+      previousOffer: previousOfferId,
+      source: 'continuing',
+      invitationArgs: harden(['getAddress', []]),
+    },
+    proposal: {},
+  });
+
+  t.like(wallet.getLatestUpdateRecord(), {
+    status: { id: 'makeAccountCall', numWantsSatisfied: 1 },
+  });
+
+  await wallet.executeOffer({
+    id: 'makeAccountCall',
+    invitationSpec: {
+      invitationMakerName: 'makeEVMTransactionInvitation',
+      previousOffer: previousOfferId,
+      source: 'continuing',
+      invitationArgs: harden([
+        'send',
+        [
+          {
+            value: 'agoric1EOAAccAddress',
+            chainId: 'agoriclocal',
+            encoding: 'bech32',
+          },
+          { denom: 'ibc/1234', value: 10n },
+        ],
+      ]),
+    },
+    proposal: {},
+  });
+
+  t.like(wallet.getLatestUpdateRecord(), {
+    status: { id: 'makeAccountCall', numWantsSatisfied: 1 },
   });
 });
