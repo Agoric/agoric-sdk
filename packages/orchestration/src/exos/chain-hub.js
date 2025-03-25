@@ -16,7 +16,11 @@ import {
   IBCConnectionInfoShape,
   AccountArgShape,
 } from '../typeGuards.js';
-import { getBech32Prefix, parseAccountIdArg } from '../utils/address.js';
+import {
+  getBech32Prefix,
+  parseAccountId,
+  parseAccountIdArg,
+} from '../utils/address.js';
 
 /**
  * @import {NameHub} from '@agoric/vats';
@@ -612,13 +616,17 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
       return `cosmos:${reference}:${account}`;
     },
     /**
-     * @param {string} partialId CAIP-10 account ID or a Cosmos bech32 address
+     * @param {AccountIdArg} partialId CAIP-10 account ID or a Cosmos bech32
+     *   address
      * @returns {CosmosChainAddress}
      * @throws {Error} if chain info not found for bech32Prefix
      */
     makeChainAddress(partialId) {
-      const parsed = parseAccountIdArg(partialId);
+      if (typeof partialId !== 'string') {
+        return partialId;
+      }
 
+      const parsed = parseAccountIdArg(partialId);
       if ('namespace' in parsed) {
         assert.equal(parsed.namespace, 'cosmos');
         return harden({
@@ -627,7 +635,6 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
           value: parsed.accountAddress,
         });
       }
-
       const chainId = resolveCosmosChainId(parsed.accountAddress);
       return harden({
         chainId,
