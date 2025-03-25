@@ -1,7 +1,9 @@
 // @ts-check
-import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { M } from '@endo/patterns';
-import { EmptyProposalShape } from '@agoric/zoe/src/typeGuards';
+import {
+  EmptyProposalShape,
+  InvitationShape,
+} from '@agoric/zoe/src/typeGuards';
 import { E } from '@endo/far';
 import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
 import { AnyNatAmountShape } from '../typeGuards.js';
@@ -118,8 +120,8 @@ export const contract = async (
       createAndMonitorLCA() {
         return zcf.makeInvitation(
           async seat => {
-            const res = await createAndMonitorLCA(seat);
-            // @ts-ignore
+            const res = await createAndMonitorLCA();
+            // @ts-expect-error
             const localAccount = await res.payload.vowV0.shorten();
             const makeEVMTransactionKit = prepareEVMTransactionKit(
               baggage,

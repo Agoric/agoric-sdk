@@ -20,14 +20,12 @@ import { denomHash } from '../utils/denomHash.js';
  *   chainHub: GuestInterface<ChainHub>;
  *   log: GuestOf<(msg: string) => Vow<void>>;
  * }} ctx
- * @param {ZCFSeat} seat
  */
 export const createAndMonitorLCA = async (
   orch,
   { log, makeEvmTap, chainHub },
-  seat,
 ) => {
-  log('Inside createAndMonitorLCA');
+  void log('Inside createAndMonitorLCA');
   const [agoric, remoteChain] = await Promise.all([
     orch.getChain('agoric'),
     orch.getChain('axelar'),
@@ -37,7 +35,7 @@ export const createAndMonitorLCA = async (
   remoteDenom || Fail`${chainId} does not have stakingTokens in config`;
 
   const localAccount = await agoric.makeAccount();
-  log('localAccount created successfully');
+  void log('localAccount created successfully');
   const localChainAddress = await localAccount.getAddress();
   console.log('Local Chain Address:', localChainAddress);
 
@@ -61,11 +59,11 @@ export const createAndMonitorLCA = async (
     remoteDenom,
     localDenom,
   });
-  log('tap created successfully');
+  void log('tap created successfully');
   // XXX consider storing appRegistration, so we can .revoke() or .updateTargetApp()
   // @ts-expect-error tap.receiveUpcall: 'Vow<void> | undefined' not assignable to 'Promise<any>'
   await localAccount.monitorTransfers(tap);
-  log('Monitoring transfers setup successfully');
+  void log('Monitoring transfers setup successfully');
 
   return localAccount;
 };
