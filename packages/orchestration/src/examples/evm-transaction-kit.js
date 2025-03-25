@@ -15,6 +15,7 @@ const InvitationMakerI = M.interface('invitationMaker', {
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {object} powers
+ * @param powers.zcf
  * @param {import('../orchestration-api').OrchestrationAccount<{
  *   chainId: 'agoric-3';
  * }>} localAccount

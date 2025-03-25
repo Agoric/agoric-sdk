@@ -2,16 +2,16 @@
 /** @file Bootstrap test of restarting contracts using orchestration */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
-import {
-  makeWalletFactoryContext,
-  type WalletFactoryTestContext,
-} from '../bootstrapTests/walletFactory.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { BridgeId } from '@agoric/internal';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { AbiCoder } from '@ethersproject/abi';
 import { utils } from 'ethers';
+import {
+  makeWalletFactoryContext,
+  type WalletFactoryTestContext,
+} from '../bootstrapTests/walletFactory.js';
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
 test.before(async t => {

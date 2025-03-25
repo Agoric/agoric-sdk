@@ -20,7 +20,7 @@ const addresses = {
 };
 
 /**
- * @typedef {Object} ContractInvocationData
+ * @typedef {object} ContractInvocationData
  * @property {string} functionSelector - Function selector (4 bytes)
  * @property {string} encodedArgs - ABI encoded arguments
  * @property {number} deadline

@@ -2,11 +2,11 @@
 /** @file Bootstrap test of restarting contracts using orchestration */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
+import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
 } from '../bootstrapTests/walletFactory.js';
-import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
 test.before(async t => {
