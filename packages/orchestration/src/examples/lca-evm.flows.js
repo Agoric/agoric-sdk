@@ -1,8 +1,6 @@
 // @ts-check
 import { Fail } from '@endo/errors';
 import { denomHash } from '../utils/denomHash.js';
-import { Far } from '@endo/far';
-import { prepareEVMTransactionKit } from './evm-transaction-kit.js';
 
 /**
  * @import {GuestInterface, GuestOf} from '@agoric/async-flow';
