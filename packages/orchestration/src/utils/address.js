@@ -155,7 +155,7 @@ harden(parseAccountIdArg);
  *   - The parsed account details.
  */
 export const parseAccountId = accountId => {
-  if (typeof accountId !== 'string' || accountId.length !== 3) {
+  if (typeof accountId !== 'string') {
     Fail`malformed CAIP-10 accountId: ${q(accountId)}`;
   }
 
