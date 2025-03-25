@@ -45,7 +45,7 @@ export const prepareMockOrchAccounts = (
   });
 
   const poolAccount = mockedPoolAccount as unknown as HostInterface<
-    OrchestrationAccount<{ chainId: 'agoric' }>
+    OrchestrationAccount<{ chainId: 'agoric-any' }>
   >;
 
   const settlementCallLog = [] as any[];
@@ -56,7 +56,7 @@ export const prepareMockOrchAccounts = (
     },
   });
   const settlementAccount = settlementAccountMock as unknown as HostInterface<
-    OrchestrationAccount<{ chainId: 'agoric' }>
+    OrchestrationAccount<{ chainId: 'agoric-any' }>
   >;
   return {
     mockPoolAccount: {

@@ -177,7 +177,7 @@ export const prepareSettler = (
       remoteDenom: Denom;
       repayer: LiquidityPoolKit['repayer'];
       settlementAccount: HostInterface<
-        OrchestrationAccount<{ chainId: 'agoric' }>
+        OrchestrationAccount<{ chainId: 'agoric-any' }>
       >;
       intermediateRecipient?: CosmosChainAddress;
     }) => {

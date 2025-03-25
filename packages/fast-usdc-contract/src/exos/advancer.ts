@@ -135,7 +135,9 @@ export const prepareAdvancerKit = (
     (config: {
       notifier: SettlerKit['notifier'];
       borrower: LiquidityPoolKit['borrower'];
-      poolAccount: HostInterface<OrchestrationAccount<{ chainId: 'agoric' }>>;
+      poolAccount: HostInterface<
+        OrchestrationAccount<{ chainId: 'agoric-any' }>
+      >;
       settlementAddress: CosmosChainAddress;
       intermediateRecipient?: CosmosChainAddress;
     }) =>

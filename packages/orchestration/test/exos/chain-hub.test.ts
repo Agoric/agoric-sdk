@@ -80,7 +80,7 @@ test('denom info support via getAsset and getDenom', async t => {
   const denom = 'utok1';
   const info1: CosmosChainInfo = {
     bech32Prefix: 'chain',
-    chainId: 'agoric',
+    chainId: 'agoric-any',
     stakingTokens: [{ denom }],
   };
   const tok1 = withAmountUtils(makeIssuerKit('Tok1'));
