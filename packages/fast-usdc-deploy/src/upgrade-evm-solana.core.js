@@ -2,6 +2,7 @@
 
 import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
+import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
 
 const trace = makeTracer('FUSD-EVM-SOL', true);
 
@@ -69,6 +70,9 @@ export const upgradeEvmSolana = async (
   );
   trace('fastUsdc upgraded', upgraded);
 
+  /**
+   * update existing registered chains to include CAIP-2 `namespace` and `reference`
+   */
   for (const [chainName, info] of Object.entries(fuKit.privateArgs.chainInfo)) {
     // note: connections in privateArgs is stale, but we're not using them here
     const { connections: _, ...chainInfo } = info;
@@ -76,15 +80,28 @@ export const upgradeEvmSolana = async (
       ...chainInfo,
       namespace: 'cosmos',
       reference: chainInfo.chainId,
+      // does not affect runtime logic, but best to include for consistency
+      ...(chainName === 'noble' && {
+        cctpDestinationDomain: cctpChainInfo.noble.cctpDestinationDomain,
+      }),
     });
   }
   // XXX consider updating fuKit with new privateArgs.chainInfo
   trace('chainHub repaired');
 
-  // TODO #11149 register new EVM/Solana chains
+  /**
+   * register new destination chains reachable via CCTP
+   */
+  for (const [chainName, info] of Object.entries(cctpChainInfo)) {
+    if (chainName === 'noble') continue;
+    await E(creatorFacet).registerChain(chainName, {
+      ...info,
+      // for backwards compatibility with `CosmosChainInfoShapeV1` which expects a `chainId`
+      chainId: `${info.namespace}:${info.reference}`,
+    });
+  }
 
   const { agoric, noble } = fuKit.privateArgs.chainInfo;
-
   /**
    * It's necessary to supply parameters, as `lookupChainsAndConnection` now performs
    * a namespace === 'cosmos' check. In the initial upgrade, connectionInfo will be undefined

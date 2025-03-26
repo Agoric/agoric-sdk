@@ -41,6 +41,8 @@ import { makeHeapZone, type Zone } from '@agoric/zone';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
+import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
+import { objectMap } from '@endo/patterns';
 import { makeTestFeeConfig } from './mocks.js';
 
 export {
@@ -212,7 +214,12 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
 
   const chainInfo = harden(() => {
     const { agoric, osmosis, noble } = withChainCapabilities(fetchedChainInfo);
-    return { agoric, osmosis, noble };
+    const { ethereum, solana } = objectMap(cctpChainInfo, v => ({
+      ...v,
+      // for backwards compatibility with `CosmosChainInfoShapeV1` which expects a `chainId`
+      chainId: `${v.namespace}:${v.reference}`,
+    }));
+    return { agoric, osmosis, noble, ethereum, solana };
   })();
 
   const assetInfo: [Denom, DenomDetail & { brandKey?: string }][] = harden([
