@@ -3,7 +3,7 @@ import { M, mustMatch } from '@endo/patterns';
 import { VowShape } from '@agoric/vow';
 import { makeTracer } from '@agoric/internal';
 import { atob, decodeBase64 } from '@endo/base64';
-import { defaultAbiCoder } from '@ethersproject/abi';
+import { decode } from '@findeth/abi';
 import { CosmosChainAddressShape } from '../typeGuards.js';
 
 const trace = makeTracer('EvmTap');
@@ -69,7 +69,10 @@ export const prepareEvmAccountKit = (zone, { zcf }) => {
     /** @param {EvmTapState} initialState */
     initialState => {
       mustMatch(initialState, EvmKitStateShape);
-      return harden({ evmAccountAddress: undefined, ...initialState });
+      return harden({
+        evmAccountAddress: /** @type {string | undefined} */ (undefined),
+        ...initialState,
+      });
     },
     {
       tap: {
@@ -88,10 +91,8 @@ export const prepareEvmAccountKit = (zone, { zcf }) => {
 
           if (memo.source_chain === 'Ethereum') {
             const payloadBytes = decodeBase64(memo.payload);
-            const payload = Array.from(payloadBytes);
-            const decoded = defaultAbiCoder.decode(['address'], payload);
+            const decoded = decode(['address'], payloadBytes);
             trace(decoded);
-
             this.state.evmAccountAddress = decoded[0];
           }
 
