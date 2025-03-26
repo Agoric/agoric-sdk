@@ -171,3 +171,21 @@ export const FastUSDCConfigShape = M.splitRecord({
   chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
   assetInfo: M.arrayOf([DenomShape, DenomDetailShape]),
 });
+
+/**
+ * The version of CosmosChainInfoShape that matches the `valueShape` used in FUSDC's ChainHub's `chainInfos` mapStore.
+ * @type {TypedPattern<CosmosChainInfo>}
+ */
+export const CosmosChainInfoShapeV1 = M.splitRecord(
+  {
+    chainId: M.string(),
+  },
+  {
+    bech32Prefix: M.string(),
+    connections: M.record(),
+    stakingTokens: M.arrayOf({ denom: M.string() }),
+    // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
+    icqEnabled: M.boolean(),
+    pfmEnabled: M.boolean(),
+  },
+);

@@ -2,11 +2,11 @@
 /* eslint-disable no-restricted-syntax */
 import { heapVowE } from '@agoric/vow/vat.js';
 import { M } from '@endo/patterns';
-import { CosmosChainInfoShape, DenomDetailShape } from '../typeGuards.js';
+import { ChainInfoShape, DenomDetailShape } from '../typeGuards.js';
 
 /**
  * @import {Zone} from '@agoric/zone';
- * @import {CosmosChainInfo, Denom, IBCConnectionInfo} from '@agoric/orchestration';
+ * @import {CosmosChainInfo, ChainInfo, Denom, IBCConnectionInfo} from '@agoric/orchestration';
  * @import {ChainHub, DenomDetail} from './chain-hub.js';
  */
 
@@ -36,7 +36,7 @@ export const prepareChainHubAdmin = (zone, chainHub) => {
     M.interface('ChainHub Admin', {
       registerChain: M.callWhen(
         M.string(),
-        CosmosChainInfoShape,
+        ChainInfoShape,
         ConnectionInfoShape,
       ).returns(M.undefined()),
       registerAsset: M.call(M.string(), DenomDetailShape).returns(M.promise()),
@@ -46,21 +46,23 @@ export const prepareChainHubAdmin = (zone, chainHub) => {
        * Register information for a chain
        *
        * @param {string} chainName - must not exist in chainHub
-       * @param {CosmosChainInfo} chainInfo
-       * @param {IBCConnectionInfo} connectionInfo - from Agoric chain
+       * @param {ChainInfo} chainInfo
+       * @param {IBCConnectionInfo} [ibcConnectionInfo] - from Agoric chain
        */
-      async registerChain(chainName, chainInfo, connectionInfo) {
+      async registerChain(chainName, chainInfo, ibcConnectionInfo) {
         // when() because chainHub methods return vows. If this were inside
         // orchestrate() the membrane would wrap/unwrap automatically.
         const agoricChainInfo = await heapVowE.when(
           chainHub.getChainInfo('agoric'),
         );
         chainHub.registerChain(chainName, chainInfo);
-        chainHub.registerConnection(
-          agoricChainInfo.chainId,
-          chainInfo.chainId,
-          connectionInfo,
-        );
+        if (ibcConnectionInfo) {
+          chainHub.registerConnection(
+            agoricChainInfo.chainId,
+            /** @type {CosmosChainInfo} */ (chainInfo).chainId,
+            ibcConnectionInfo,
+          );
+        }
       },
       /**
        * Register an asset that may be held on a chain other than the issuing

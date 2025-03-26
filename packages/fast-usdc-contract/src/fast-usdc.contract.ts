@@ -2,11 +2,11 @@ import { AssetKind } from '@agoric/ertp';
 import {
   FastUSDCTermsShape,
   FeeConfigShape,
+  CosmosChainInfoShapeV1,
 } from '@agoric/fast-usdc/src/type-guards.js';
 import { makeTracer } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import {
-  CosmosChainInfoShape,
   DenomDetailShape,
   DenomShape,
   type IBCConnectionInfo,
@@ -59,7 +59,7 @@ export const meta = {
     // @ts-expect-error TypedPattern not recognized as record
     ...OrchestrationPowersShape,
     assetInfo: M.arrayOf([DenomShape, DenomDetailShape]),
-    chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
+    chainInfo: M.recordOf(M.string(), CosmosChainInfoShapeV1),
     feeConfig: FeeConfigShape,
     marshaller: M.remotable(),
     poolMetricsNode: M.remotable(),
@@ -215,6 +215,14 @@ export const contract = async (
     deleteCompletedTxs() {
       return statusManager.deleteCompletedTxs();
     },
+    /** @type {typeof chainHub.updateChain} */
+    updateChain(chainName, chainInfo) {
+      return chainHub.updateChain(chainName, chainInfo);
+    },
+    /** @type {typeof chainHub.registerChain} */
+    registerChain(chainName, chainInfo) {
+      return chainHub.registerChain(chainName, chainInfo);
+    },
   });
 
   const publicFacet = zone.exo('Fast USDC Public', undefined, {
@@ -334,7 +342,9 @@ export const contract = async (
 };
 harden(contract);
 
-export const start = withOrchestration(contract);
+export const start = withOrchestration(contract, {
+  chainInfoValueShape: CosmosChainInfoShapeV1,
+});
 harden(start);
 
 export type FastUsdcSF = typeof start;
