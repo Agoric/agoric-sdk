@@ -28,6 +28,7 @@ const trace = makeTracer('EvmTap');
 
 const EVMI = M.interface('evmTransaction', {
   getAddress: M.call().returns(M.any()),
+  getEVMSmartWalletAddress: M.call().returns(M.any()),
   send: M.call(M.any(), M.any()).returns(M.any()),
 });
 
@@ -114,6 +115,9 @@ export const prepareEvmAccountKit = (zone, { zcf }) => {
           const localChainAddress = await this.state.localAccount.getAddress();
           return localChainAddress.value;
         },
+        async getEVMSmartWalletAddress() {
+          return this.state.evmAccountAddress;
+        },
 
         /**
          * Sends tokens from the local account to a specified Cosmos chain
@@ -138,6 +142,8 @@ export const prepareEvmAccountKit = (zone, { zcf }) => {
             switch (method) {
               case 'getAddress':
                 return evm.getAddress();
+              case 'getEVMSmartWalletAddress':
+                return evm.getEVMSmartWalletAddress();
               case 'send':
                 return evm.send(args[0], args[1]);
               default:
