@@ -797,7 +797,7 @@ test('slow path, and forward fails (terminal state)', async t => {
   await eventLoopIteration();
   t.deepEqual(penultimateLog, [
     [
-      '⚠️ tap: minted before observed',
+      'matched minted early key, initiating forward',
       'noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd',
       150000000n,
     ],
