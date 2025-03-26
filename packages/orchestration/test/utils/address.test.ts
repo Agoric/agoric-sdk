@@ -5,6 +5,7 @@ import {
   makeICQChannelAddress,
   findAddressField,
   getBech32Prefix,
+  parseAccountId,
 } from '../../src/utils/address.js';
 
 test('makeICAChannelAddress', t => {
@@ -138,3 +139,60 @@ test(
   null,
   'Missing prefix for "1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4"',
 );
+
+test('parseAccountId - valid CAIP-10', t => {
+  const accountId = 'cosmos:cosmoshub-4:cosmos1234';
+  const expected = {
+    namespace: 'cosmos',
+    reference: 'cosmoshub-4',
+    accountAddress: 'cosmos1234',
+  };
+  t.deepEqual(parseAccountId(accountId), expected);
+});
+
+test('parseAccountId - valid unscoped address', t => {
+  const accountId = 'agoric1234';
+  const expected = {
+    accountAddress: 'agoric1234',
+  };
+  t.deepEqual(parseAccountId(accountId), expected);
+});
+
+test('parseAccountId - invalid format - too many parts', t => {
+  const accountId = 'cosmos:cosmoshub-4:cosmos1234:extra';
+  t.throws(() => parseAccountId(accountId), {
+    message: /Invalid accountId: "cosmos:cosmoshub-4:cosmos1234:extra"/,
+  });
+});
+
+test('parseAccountId - invalid format - two parts', t => {
+  const accountId = 'cosmos:cosmos1234';
+  t.throws(() => parseAccountId(accountId), {
+    message: /Invalid accountId: "cosmos:cosmos1234"/,
+  });
+});
+
+test('parseAccountId - invalid format - empty string', t => {
+  const accountId = '';
+  t.throws(() => parseAccountId(accountId), {
+    message: /Empty accountId: ""/,
+  });
+});
+
+test('parseAccountId - invalid format - non-string', t => {
+  const accountId = 123;
+  // @ts-expect-error intentional invalid input
+  t.throws(() => parseAccountId(accountId), {
+    message: 'Empty accountId: 123',
+  });
+  const accountId2 = null;
+  // @ts-expect-error intentional invalid input
+  t.throws(() => parseAccountId(accountId2), {
+    message: 'Empty accountId: null',
+  });
+  const accountId3 = undefined;
+  // @ts-expect-error intentional invalid input
+  t.throws(() => parseAccountId(accountId3), {
+    message: 'Empty accountId: "[undefined]"',
+  });
+});
