@@ -2,7 +2,8 @@
 import anyTest from 'ava';
 
 // Use ambient authority only in test.before()
-import { spawn as ambientSpawn } from 'child_process';
+import type { TestFn, Macro, ExecutionContext } from 'ava';
+import { spawn as ambientSpawn, type StdioOptions } from 'child_process';
 import * as ambientPath from 'path';
 
 import {
@@ -11,23 +12,15 @@ import {
 } from '../tools/prometheus.js';
 import { makeScenario2, makeWalletTool, pspawn } from './scenario2.js';
 
-/**
- * @import {TestFn} from 'ava';
- * @import {StdioOptions} from 'child_process';
- */
+type TestContext = Awaited<ReturnType<typeof makeTestContext>>;
 
-/** @typedef {Awaited<ReturnType<typeof makeTestContext>>} TestContext */
+const test = anyTest as TestFn<TestContext>;
 
-/** @type {TestFn<TestContext>} */
-const test = anyTest;
+const defaultFDs: StdioOptions = ['ignore', 'ignore', 'ignore'];
+const debugFDs: StdioOptions = ['ignore', 'inherit', 'inherit'];
+const fdList: StdioOptions = process.env.DEBUG ? debugFDs : defaultFDs;
 
-/** @type {StdioOptions} */
-const defaultFDs = ['ignore', 'ignore', 'ignore'];
-/** @type {StdioOptions} */
-const debugFDs = ['ignore', 'inherit', 'inherit'];
-const fdList = process.env.DEBUG ? debugFDs : defaultFDs;
-
-const makeTestContext = async t => {
+const makeTestContext = async (t: ExecutionContext<unknown>) => {
   const filename = new URL(import.meta.url).pathname;
   const dirname = ambientPath.dirname(filename);
   const makefileDir = ambientPath.join(dirname, '..');
@@ -39,9 +32,10 @@ const makeTestContext = async t => {
     pspawnMake,
     pspawnAgd,
     log: t.log,
-    stdio: process.env.DEBUG ? fdList : undefined,
+    stdio: process.env.DEBUG ? fdList : undefined, // propagate stdout and stderr for DEBUG
   });
-  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+  const delay = (ms: number) =>
+    new Promise<void>(resolve => setTimeout(resolve, ms));
   const walletTool = makeWalletTool({
     pspawnAgd,
     runMake: scenario2.runMake,
@@ -82,6 +76,7 @@ test.serial('make and exec', async t => {
   t.log('export');
   const exportExitCode = await scenario2.export();
   t.log('export exit code:', exportExitCode);
+  // TODO: check exit code? It varies.
 });
 
 test.serial('integration test: rosetta CI', async t => {
@@ -89,9 +84,7 @@ test.serial('integration test: rosetta CI', async t => {
   const { scenario2 } = t.context;
 
   // Run the chain until error or rosetta-cli exits.
-  const chain = scenario2.spawnMake(['scenario2-run-chain'], {
-    stdio: fdList,
-  });
+  const chain = scenario2.spawnMake(['scenario2-run-chain'], { stdio: fdList });
   const rosetta = scenario2.spawnMake(['scenario2-run-rosetta-ci'], {
     stdio: fdList,
   });
@@ -111,11 +104,16 @@ test.serial('integration test: rosetta CI', async t => {
   t.is(code, 0, 'make scenario2-run-rosetta-ci is successful');
 });
 
-/** @type {import('ava').Macro<[title: string, verifier?: any], TestContext>} */
-const walletProvisioning = test.macro({
-  title(_, title, _verifier) {
-    return title;
-  },
+interface Verifier {
+  start: (t: ExecutionContext<TestContext>) => Promise<void>;
+  stop: (t: ExecutionContext<TestContext>) => Promise<void>;
+}
+
+const walletProvisioning: Macro<
+  [title: string, verifier?: Verifier],
+  TestContext
+> = test.macro({
+  title: (_provided, title, _verifier) => title,
   async exec(t, _title, verifier) {
     const retryCountMax = 5;
     // Resume the chain...
@@ -135,22 +133,22 @@ const walletProvisioning = test.macro({
 
     // Create a new account under the fresh key's name.  Effectively
     // anonymous, but still accessible if we later need it.
-    const { address: freshAddr } = await agd([
+    const { address: freshAddr } = (await agd([
       'keys',
       'add',
       'doNotStore',
       '--dry-run',
       '--output=json',
-    ]);
+    ])) as { address: string };
 
-    const checkWalletExists = async address => {
+    const checkWalletExists = async (address: string) => {
       try {
-        const { value } = await query([
+        const { value } = (await query([
           '--output=json',
           'vstorage',
           'path',
           `published.wallet.${address}`,
-        ]);
+        ])) as { value: string };
         t.log(
           `query vstorage path published.wallet.${address} exits successfully`,
         );
@@ -232,11 +230,13 @@ test.serial(walletProvisioning, 'wallet provisioning');
  * getMetrics reads data from the Prometheus URL and returns the selected
  * metrics as an object.
  *
- * @param {string} url            Prometheus URL
- * @param {string[]} metricNames  Selected metric names
- * @returns {Promise<Record<string, number>>}
+ * @param url          Prometheus URL
+ * @param metricNames  Selected metric names
  */
-const getMetrics = async (url, metricNames) => {
+const getMetrics = async (
+  url: string,
+  metricNames: string[],
+): Promise<Record<string, number>> => {
   const metricsResponse = await fetch(url);
   if (!metricsResponse.ok) {
     throw new Error(`Failed to fetch metrics: ${metricsResponse.statusText}`);
@@ -244,14 +244,12 @@ const getMetrics = async (url, metricNames) => {
 
   const metricsText = await metricsResponse.text();
 
-  const allMetricsEntries = /** @type {Array<[string, number]>} */ (
-    [...metricsText.matchAll(prometheusSampleRegExp)].map(
-      ([_substring, nameAndLabels, _name, value]) => [
-        nameAndLabels,
-        prometheusNumberValue(value),
-      ],
-    )
-  );
+  const allMetricsEntries: Array<[string, number]> = [
+    ...metricsText.matchAll(prometheusSampleRegExp),
+  ].map(([_substring, nameAndLabels, _name, value]) => [
+    nameAndLabels,
+    prometheusNumberValue(value),
+  ]);
   const allMetrics = new Map(allMetricsEntries);
   const metricsEntries = metricNames.map(metricName => {
     const value = allMetrics.get(metricName);
@@ -267,7 +265,7 @@ const getMetrics = async (url, metricNames) => {
     'store_size_decrease{storeKey="vstorage"}',
     'store_size_increase{storeKey="vstorage"}',
   ];
-  let startMetrics;
+  let startMetrics: Record<string, number> | undefined;
   test.serial(walletProvisioning, 'vstorage metrics', {
     start: async t => {
       // Assert that all values in an initial metrics snapshot are positive.
@@ -284,6 +282,9 @@ const getMetrics = async (url, metricNames) => {
       });
     },
     stop: async t => {
+      if (!startMetrics) {
+        throw Error('metrics verifier start() must be called before stop()');
+      }
       // Assert that all values have increased.
       const metrics = await getMetrics(prometheusUrl, testMetricNames);
       t.log('metric stop values:', metrics);
