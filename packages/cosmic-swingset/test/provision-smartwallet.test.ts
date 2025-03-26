@@ -1,13 +1,23 @@
-/* global setTimeout */
-import test from 'ava';
+import type { TestFn } from 'ava';
+import anyTest from 'ava';
 
 // Use ambient authority only in test.before()
-import { spawn as ambientSpawn } from 'child_process';
+import { spawn as ambientSpawn, type ChildProcess } from 'child_process';
 import * as ambientPath from 'path';
 import * as ambientFs from 'fs';
 
 import { VBankAccount } from '@agoric/internal';
 import { makeScenario2, makeWalletTool, pspawn } from './scenario2.js';
+
+const test = anyTest as TestFn<TestContext>;
+
+interface TestContext {
+  scenario2: ReturnType<typeof makeScenario2>;
+  walletTool: ReturnType<typeof makeWalletTool>;
+  pspawnAgd: ReturnType<typeof pspawn>;
+  bootstrapAddr: string;
+  soloAddr: string;
+}
 
 // module account address for 'vbank/provision'; aka "megz"
 //
@@ -28,14 +38,15 @@ import { makeScenario2, makeWalletTool, pspawn } from './scenario2.js';
 // at issue:
 // ModuleAccount addresses don't follow ADR-028
 // https://github.com/cosmos/cosmos-sdk/issues/13782 Nov 2022
-const provisionPoolModuleAccount = VBankAccount.provision.address;
+const provisionPoolModuleAccount: string = VBankAccount.provision.address;
 
 test.before(async t => {
   const filename = new URL(import.meta.url).pathname;
   const dirname = ambientPath.dirname(filename);
   const makefileDir = ambientPath.join(dirname, '..');
 
-  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+  const delay = (ms: number) =>
+    new Promise<void>(resolve => setTimeout(resolve, ms));
 
   const io = { spawn: ambientSpawn, cwd: makefileDir };
   const pspawnMake = pspawn('make', io);
@@ -50,7 +61,8 @@ test.before(async t => {
   await scenario2.setup();
 
   const { readFile } = ambientFs.promises;
-  const readItem = f => readFile(f, 'utf-8').then(line => line.trim());
+  const readItem = (f: string) =>
+    readFile(f, 'utf-8').then(line => line.trim());
   const soloAddr = await readItem('./t1/8000/ag-cosmos-helper-address');
   const bootstrapAddr = await readItem('./t1/bootstrap-address');
   // console.debug('scenario2 addresses', { soloAddr, bootstrapAddr });
@@ -65,7 +77,6 @@ test.before(async t => {
 // if run with the test above.
 // TODO: https://github.com/Agoric/agoric-sdk/issues/6766
 test.skip('integration test: smart wallet provision', async t => {
-  // @ts-expect-error context has unknown type
   const { scenario2, walletTool, soloAddr } = t.context;
 
   const enoughBlocksToProvision = 7;
