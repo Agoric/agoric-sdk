@@ -122,6 +122,8 @@ export const commonSetup = async (
         },
       },
     },
+    namespace: 'cosmos',
+    reference: 'unreachable-chain',
   };
 
   const chainInfo = {

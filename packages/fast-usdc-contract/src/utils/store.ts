@@ -1,8 +1,6 @@
 import { Fail } from '@endo/errors';
-
-/**
- * @import {Key} from '@endo/patterns';
- */
+import type { Key } from '@endo/patterns';
+import type { MapStore } from '@agoric/store';
 
 // TODO provide something like this in a more common place, perhaps as a BagStore
 /**
@@ -11,7 +9,7 @@ import { Fail } from '@endo/errors';
  * @template {Key} K
  * @param {MapStore<K, number>} mapStore
  */
-export const asMultiset = mapStore =>
+export const asMultiset = <K extends Key>(mapStore: MapStore<K, number>) =>
   harden({
     /**
      * Add an item to the bag, incrementing its count.
@@ -19,7 +17,7 @@ export const asMultiset = mapStore =>
      * @param {K} item The item to add
      * @param {number} [count] How many to add (defaults to 1)
      */
-    add: (item, count = 1) => {
+    add: (item: K, count = 1) => {
       (count > 0 && Number.isInteger(count)) ||
         Fail`Cannot add a non-positive integer count ${count} to bag`;
 
@@ -40,7 +38,7 @@ export const asMultiset = mapStore =>
      * @returns {boolean} Whether the removal was successful
      * @throws {Error} If trying to remove more items than exist
      */
-    remove: (item, count = 1) => {
+    remove: (item: K, count = 1): boolean => {
       (count > 0 && Number.isInteger(count)) ||
         Fail`Cannot remove a non-positive integer count ${count} from bag`;
 
@@ -67,7 +65,7 @@ export const asMultiset = mapStore =>
      * @param {K} item The item to check
      * @returns {number} The count (0 if not present)
      */
-    count: item => {
+    count: (item: K): number => {
       return mapStore.has(item) ? mapStore.get(item) : 0;
     },
 
@@ -77,7 +75,7 @@ export const asMultiset = mapStore =>
      * @param {K} item The item to check
      * @returns {boolean} Whether the item is in the bag
      */
-    has: item => {
+    has: (item: K): boolean => {
       return mapStore.has(item);
     },
 
@@ -86,7 +84,7 @@ export const asMultiset = mapStore =>
      *
      * @returns {Iterable<K>} Iterable of unique items
      */
-    keys: () => {
+    keys: (): Iterable<K> => {
       return mapStore.keys();
     },
 
@@ -95,7 +93,7 @@ export const asMultiset = mapStore =>
      *
      * @returns {Iterable<[K, number]>} Iterable of [item, count] pairs
      */
-    entries: () => {
+    entries: (): Iterable<[K, number]> => {
       return mapStore.entries();
     },
 
@@ -104,7 +102,7 @@ export const asMultiset = mapStore =>
      *
      * @returns {number} Number of unique items
      */
-    size: () => {
+    size: (): number => {
       return mapStore.getSize();
     },
 

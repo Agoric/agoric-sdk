@@ -3,12 +3,14 @@ export default /** @type {const} } */ ({
   agoric: {
     bech32Prefix: 'agoric',
     chainId: 'agoric-3',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'agoric-3',
     stakingTokens: [
       {
         denom: 'ubld',
       },
     ],
-    icqEnabled: false,
     connections: {
       'core-1': {
         id: 'connection-91',
@@ -141,7 +143,7 @@ export default /** @type {const} } */ ({
         client_id: '07-tendermint-77',
         counterparty: {
           client_id: '07-tendermint-32',
-          connection_id: 'connection-40',
+          connection_id: 'connection-38',
         },
         state: 3,
         transferChannel: {
@@ -184,6 +186,24 @@ export default /** @type {const} } */ ({
           channelId: 'channel-1',
           portId: 'transfer',
           counterPartyChannelId: 'channel-320',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+      'quicksilver-2': {
+        id: 'connection-85',
+        client_id: '07-tendermint-85',
+        counterparty: {
+          client_id: '07-tendermint-84',
+          connection_id: 'connection-60',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-68',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-125',
           counterPartyPortId: 'transfer',
           ordering: 0,
           state: 3,
@@ -249,12 +269,14 @@ export default /** @type {const} } */ ({
   archway: {
     bech32Prefix: 'archway',
     chainId: 'archway-1',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'archway-1',
     stakingTokens: [
       {
         denom: 'aarch',
       },
     ],
-    icqEnabled: false,
     connections: {
       'dymension_1100-1': {
         id: 'connection-89',
@@ -328,6 +350,24 @@ export default /** @type {const} } */ ({
           version: 'ics20-1',
         },
       },
+      'quicksilver-2': {
+        id: 'connection-39',
+        client_id: '07-tendermint-36',
+        counterparty: {
+          client_id: '07-tendermint-83',
+          connection_id: 'connection-58',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-34',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-116',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
       'vota-ash': {
         id: 'connection-106',
         client_id: '07-tendermint-113',
@@ -351,12 +391,14 @@ export default /** @type {const} } */ ({
   beezee: {
     bech32Prefix: 'bze',
     chainId: 'beezee-1',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'beezee-1',
     stakingTokens: [
       {
         denom: 'ubze',
       },
     ],
-    icqEnabled: false,
     connections: {
       'noble-1': {
         id: 'connection-3',
@@ -417,12 +459,14 @@ export default /** @type {const} } */ ({
   carbon: {
     bech32Prefix: 'swth',
     chainId: 'carbon-1',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'carbon-1',
     stakingTokens: [
       {
         denom: 'swth',
       },
     ],
-    icqEnabled: false,
     connections: {
       'cosmoshub-4': {
         id: 'connection-5',
@@ -555,12 +599,14 @@ export default /** @type {const} } */ ({
   celestia: {
     bech32Prefix: 'celestia',
     chainId: 'celestia',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'celestia',
     stakingTokens: [
       {
         denom: 'utia',
       },
     ],
-    icqEnabled: false,
     connections: {
       'dymension_1100-1': {
         id: 'connection-52',
@@ -706,6 +752,24 @@ export default /** @type {const} } */ ({
           version: 'ics20-1',
         },
       },
+      'quicksilver-2': {
+        id: 'connection-60',
+        client_id: '07-tendermint-92',
+        counterparty: {
+          client_id: '07-tendermint-97',
+          connection_id: 'connection-65',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-36',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-207',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
       'secret-4': {
         id: 'connection-15',
         client_id: '07-tendermint-52',
@@ -765,12 +829,14 @@ export default /** @type {const} } */ ({
   coreum: {
     bech32Prefix: 'core',
     chainId: 'coreum-mainnet-1',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'coreum-mainnet-1',
     stakingTokens: [
       {
         denom: 'ucore',
       },
     ],
-    icqEnabled: false,
     connections: {
       'cosmoshub-4': {
         id: 'connection-11',
@@ -939,12 +1005,14 @@ export default /** @type {const} } */ ({
   cosmoshub: {
     bech32Prefix: 'cosmos',
     chainId: 'cosmoshub-4',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'cosmoshub-4',
     stakingTokens: [
       {
         denom: 'uatom',
       },
     ],
-    icqEnabled: false,
     connections: {
       'agoric-3': {
         id: 'connection-649',
@@ -1324,6 +1392,24 @@ export default /** @type {const} } */ ({
           version: 'ics20-1',
         },
       },
+      'quicksilver-2': {
+        id: 'connection-709',
+        client_id: '07-tendermint-1018',
+        counterparty: {
+          client_id: '07-tendermint-2',
+          connection_id: 'connection-1',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-467',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-1',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
       'secret-4': {
         id: 'connection-401',
         client_id: '07-tendermint-492',
@@ -1401,12 +1487,14 @@ export default /** @type {const} } */ ({
   crescent: {
     bech32Prefix: 'cre',
     chainId: 'crescent-1',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'crescent-1',
     stakingTokens: [
       {
         denom: 'ucre',
       },
     ],
-    icqEnabled: false,
     connections: {
       'agoric-3': {
         id: 'connection-14',
@@ -1665,12 +1753,14 @@ export default /** @type {const} } */ ({
   doravota: {
     bech32Prefix: 'dora',
     chainId: 'vota-ash',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'vota-ash',
     stakingTokens: [
       {
         denom: 'peaka',
       },
     ],
-    icqEnabled: false,
     connections: {
       'archway-1': {
         id: 'connection-28',
@@ -1857,12 +1947,14 @@ export default /** @type {const} } */ ({
   dydx: {
     bech32Prefix: 'dydx',
     chainId: 'dydx-mainnet-1',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'dydx-mainnet-1',
     stakingTokens: [
       {
         denom: 'adydx',
       },
     ],
-    icqEnabled: false,
     connections: {
       'core-1': {
         id: 'connection-8',
@@ -2044,6 +2136,24 @@ export default /** @type {const} } */ ({
           version: 'ics20-1',
         },
       },
+      'quicksilver-2': {
+        id: 'connection-25',
+        client_id: '07-tendermint-20',
+        counterparty: {
+          client_id: '07-tendermint-90',
+          connection_id: 'connection-62',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-32',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-164',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
       'stride-1': {
         id: 'connection-1',
         client_id: '07-tendermint-1',
@@ -2103,12 +2213,14 @@ export default /** @type {const} } */ ({
   dymension: {
     bech32Prefix: 'dym',
     chainId: 'dymension_1100-1',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'dymension_1100-1',
     stakingTokens: [
       {
         denom: 'adym',
       },
     ],
-    icqEnabled: false,
     connections: {
       'archway-1': {
         id: 'connection-30',
@@ -2313,12 +2425,14 @@ export default /** @type {const} } */ ({
   empowerchain: {
     bech32Prefix: 'empower',
     chainId: 'empowerchain-1',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'empowerchain-1',
     stakingTokens: [
       {
         denom: 'umpwr',
       },
     ],
-    icqEnabled: false,
     connections: {
       'cosmoshub-4': {
         id: 'connection-0',
@@ -2361,12 +2475,14 @@ export default /** @type {const} } */ ({
   evmos: {
     bech32Prefix: 'evmos',
     chainId: 'evmos_9001-2',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'evmos_9001-2',
     stakingTokens: [
       {
         denom: 'aevmos',
       },
     ],
-    icqEnabled: false,
     connections: {
       'agoric-3': {
         id: 'connection-70',
@@ -2679,12 +2795,14 @@ export default /** @type {const} } */ ({
   haqq: {
     bech32Prefix: 'haqq',
     chainId: 'haqq_11235-1',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'haqq_11235-1',
     stakingTokens: [
       {
         denom: 'aISLM',
       },
     ],
-    icqEnabled: false,
     connections: {
       'cosmoshub-4': {
         id: 'connection-3',
@@ -2781,12 +2899,14 @@ export default /** @type {const} } */ ({
   injective: {
     bech32Prefix: 'inj',
     chainId: 'injective-1',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'injective-1',
     stakingTokens: [
       {
         denom: 'inj',
       },
     ],
-    icqEnabled: false,
     connections: {
       celestia: {
         id: 'connection-210',
@@ -3022,6 +3142,24 @@ export default /** @type {const} } */ ({
           version: 'ics20-1',
         },
       },
+      'quicksilver-2': {
+        id: 'connection-286',
+        client_id: '07-tendermint-282',
+        counterparty: {
+          client_id: '07-tendermint-105',
+          connection_id: 'connection-68',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-394',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-234',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
       'secret-4': {
         id: 'connection-101',
         client_id: '07-tendermint-126',
@@ -3099,12 +3237,14 @@ export default /** @type {const} } */ ({
   juno: {
     bech32Prefix: 'juno',
     chainId: 'juno-1',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'juno-1',
     stakingTokens: [
       {
         denom: 'ujuno',
       },
     ],
-    icqEnabled: false,
     connections: {
       'core-1': {
         id: 'connection-51',
@@ -3268,6 +3408,24 @@ export default /** @type {const} } */ ({
           version: 'ics20-1',
         },
       },
+      'quicksilver-2': {
+        id: 'connection-309',
+        client_id: '07-tendermint-318',
+        counterparty: {
+          client_id: '07-tendermint-17',
+          connection_id: 'connection-10',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-215',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-22',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
       'secret-4': {
         id: 'connection-68',
         client_id: '07-tendermint-108',
@@ -3327,12 +3485,14 @@ export default /** @type {const} } */ ({
   kava: {
     bech32Prefix: 'kava',
     chainId: 'kava_2222-10',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'kava_2222-10',
     stakingTokens: [
       {
         denom: 'ukava',
       },
     ],
-    icqEnabled: false,
     connections: {
       'agoric-3': {
         id: 'connection-182',
@@ -3645,12 +3805,14 @@ export default /** @type {const} } */ ({
   kujira: {
     bech32Prefix: 'kujira',
     chainId: 'kaiyo-1',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'kaiyo-1',
     stakingTokens: [
       {
         denom: 'ukuji',
       },
     ],
-    icqEnabled: false,
     connections: {
       'agoric-3': {
         id: 'connection-64',
@@ -4035,12 +4197,14 @@ export default /** @type {const} } */ ({
   lava: {
     bech32Prefix: 'lava@',
     chainId: 'lava-mainnet-1',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'lava-mainnet-1',
     stakingTokens: [
       {
         denom: 'ulava',
       },
     ],
-    icqEnabled: false,
     connections: {
       'cosmoshub-4': {
         id: 'connection-12',
@@ -4137,12 +4301,14 @@ export default /** @type {const} } */ ({
   migaloo: {
     bech32Prefix: 'migaloo',
     chainId: 'migaloo-1',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'migaloo-1',
     stakingTokens: [
       {
         denom: 'uwhale',
       },
     ],
-    icqEnabled: false,
     connections: {
       'archway-1': {
         id: 'connection-108',
@@ -4365,12 +4531,14 @@ export default /** @type {const} } */ ({
   neutron: {
     bech32Prefix: 'neutron',
     chainId: 'neutron-1',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'neutron-1',
     stakingTokens: [
       {
         denom: 'untrn',
       },
     ],
-    icqEnabled: false,
     connections: {
       'agoric-3': {
         id: 'connection-108',
@@ -4737,21 +4905,25 @@ export default /** @type {const} } */ ({
   nibiru: {
     bech32Prefix: 'nibi',
     chainId: 'cataclysm-1',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'cataclysm-1',
     stakingTokens: [
       {
         denom: 'unibi',
       },
     ],
-    icqEnabled: false,
     connections: {},
   },
   noble: {
     bech32Prefix: 'noble',
     chainId: 'noble-1',
     icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'noble-1',
     connections: {
       'agoric-3': {
-        id: 'connection-40',
+        id: 'connection-38',
         client_id: '07-tendermint-32',
         counterparty: {
           client_id: '07-tendermint-77',
@@ -5295,12 +5467,14 @@ export default /** @type {const} } */ ({
   nolus: {
     bech32Prefix: 'nolus',
     chainId: 'pirin-1',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'pirin-1',
     stakingTokens: [
       {
         denom: 'unls',
       },
     ],
-    icqEnabled: false,
     connections: {
       'neutron-1': {
         id: 'connection-11',
@@ -5379,12 +5553,14 @@ export default /** @type {const} } */ ({
   omniflixhub: {
     bech32Prefix: 'omniflix',
     chainId: 'omniflixhub-1',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'omniflixhub-1',
     stakingTokens: [
       {
         denom: 'uflix',
       },
     ],
-    icqEnabled: false,
     connections: {
       'agoric-3': {
         id: 'connection-40',
@@ -5476,6 +5652,24 @@ export default /** @type {const} } */ ({
           version: 'ics20-1',
         },
       },
+      'quicksilver-2': {
+        id: 'connection-57',
+        client_id: '07-tendermint-76',
+        counterparty: {
+          client_id: '07-tendermint-101',
+          connection_id: 'connection-66',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-51',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-228',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
       'stargaze-1': {
         id: 'connection-54',
         client_id: '07-tendermint-74',
@@ -5499,12 +5693,14 @@ export default /** @type {const} } */ ({
   osmosis: {
     bech32Prefix: 'osmo',
     chainId: 'osmosis-1',
+    icqEnabled: true,
+    namespace: 'cosmos',
+    reference: 'osmosis-1',
     stakingTokens: [
       {
         denom: 'uosmo',
       },
     ],
-    icqEnabled: true,
     connections: {
       'agoric-3': {
         id: 'connection-1649',
@@ -6159,12 +6355,14 @@ export default /** @type {const} } */ ({
   persistence: {
     bech32Prefix: 'persistence',
     chainId: 'core-1',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'core-1',
     stakingTokens: [
       {
         denom: 'uxprt',
       },
     ],
-    icqEnabled: false,
     connections: {
       'agoric-3': {
         id: 'connection-210',
@@ -6387,12 +6585,14 @@ export default /** @type {const} } */ ({
   planq: {
     bech32Prefix: 'plq',
     chainId: 'planq_7070-2',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'planq_7070-2',
     stakingTokens: [
       {
         denom: 'aplanq',
       },
     ],
-    icqEnabled: false,
     connections: {
       'archway-1': {
         id: 'connection-486',
@@ -6507,12 +6707,14 @@ export default /** @type {const} } */ ({
   provenance: {
     bech32Prefix: 'pb',
     chainId: 'pio-mainnet-1',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'pio-mainnet-1',
     stakingTokens: [
       {
         denom: 'nhash',
       },
     ],
-    icqEnabled: false,
     connections: {
       'noble-1': {
         id: 'connection-13',
@@ -6555,12 +6757,14 @@ export default /** @type {const} } */ ({
   pryzm: {
     bech32Prefix: 'pryzm',
     chainId: 'pryzm-1',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'pryzm-1',
     stakingTokens: [
       {
         denom: 'upryzm',
       },
     ],
-    icqEnabled: false,
     connections: {
       celestia: {
         id: 'connection-3',
@@ -6729,13 +6933,159 @@ export default /** @type {const} } */ ({
   quicksilver: {
     bech32Prefix: 'quick',
     chainId: 'quicksilver-2',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'quicksilver-2',
     stakingTokens: [
       {
         denom: 'uqck',
       },
     ],
-    icqEnabled: false,
     connections: {
+      'agoric-3': {
+        id: 'connection-60',
+        client_id: '07-tendermint-84',
+        counterparty: {
+          client_id: '07-tendermint-85',
+          connection_id: 'connection-85',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-125',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-68',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+      'archway-1': {
+        id: 'connection-58',
+        client_id: '07-tendermint-83',
+        counterparty: {
+          client_id: '07-tendermint-36',
+          connection_id: 'connection-39',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-116',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-34',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+      celestia: {
+        id: 'connection-65',
+        client_id: '07-tendermint-97',
+        counterparty: {
+          client_id: '07-tendermint-92',
+          connection_id: 'connection-60',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-207',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-36',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+      'cosmoshub-4': {
+        id: 'connection-1',
+        client_id: '07-tendermint-2',
+        counterparty: {
+          client_id: '07-tendermint-1018',
+          connection_id: 'connection-709',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-1',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-467',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+      'dydx-mainnet-1': {
+        id: 'connection-62',
+        client_id: '07-tendermint-90',
+        counterparty: {
+          client_id: '07-tendermint-20',
+          connection_id: 'connection-25',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-164',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-32',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+      'injective-1': {
+        id: 'connection-68',
+        client_id: '07-tendermint-105',
+        counterparty: {
+          client_id: '07-tendermint-282',
+          connection_id: 'connection-286',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-234',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-394',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+      'juno-1': {
+        id: 'connection-10',
+        client_id: '07-tendermint-17',
+        counterparty: {
+          client_id: '07-tendermint-318',
+          connection_id: 'connection-309',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-22',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-215',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+      'omniflixhub-1': {
+        id: 'connection-66',
+        client_id: '07-tendermint-101',
+        counterparty: {
+          client_id: '07-tendermint-76',
+          connection_id: 'connection-57',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-228',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-51',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
       'osmosis-1': {
         id: 'connection-2',
         client_id: '07-tendermint-6',
@@ -6754,17 +7104,91 @@ export default /** @type {const} } */ ({
           version: 'ics20-1',
         },
       },
+      'phoenix-1': {
+        id: 'connection-69',
+        client_id: '07-tendermint-108',
+        counterparty: {
+          client_id: '07-tendermint-430',
+          connection_id: 'connection-442',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-244',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-604',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+      'secret-4': {
+        id: 'connection-14',
+        client_id: '07-tendermint-28',
+        counterparty: {
+          client_id: '07-tendermint-138',
+          connection_id: 'connection-99',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-52',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-65',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+      'stargaze-1': {
+        id: 'connection-0',
+        client_id: '07-tendermint-0',
+        counterparty: {
+          client_id: '07-tendermint-225',
+          connection_id: 'connection-159',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-0',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-124',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+      'umee-1': {
+        id: 'connection-13',
+        client_id: '07-tendermint-27',
+        counterparty: {
+          client_id: '07-tendermint-183',
+          connection_id: 'connection-122',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-49',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-53',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
     },
   },
   secretnetwork: {
     bech32Prefix: 'secret',
     chainId: 'secret-4',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'secret-4',
     stakingTokens: [
       {
         denom: 'uscrt',
       },
     ],
-    icqEnabled: false,
     connections: {
       'agoric-3': {
         id: 'connection-80',
@@ -7054,6 +7478,24 @@ export default /** @type {const} } */ ({
           version: 'ics20-1',
         },
       },
+      'quicksilver-2': {
+        id: 'connection-99',
+        client_id: '07-tendermint-138',
+        counterparty: {
+          client_id: '07-tendermint-28',
+          connection_id: 'connection-14',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-65',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-52',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
       'sifchain-1': {
         id: 'connection-19',
         client_id: '07-tendermint-37',
@@ -7131,12 +7573,14 @@ export default /** @type {const} } */ ({
   sei: {
     bech32Prefix: 'sei',
     chainId: 'pacific-1',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'pacific-1',
     stakingTokens: [
       {
         denom: 'usei',
       },
     ],
-    icqEnabled: false,
     connections: {
       'cosmoshub-4': {
         id: 'connection-1',
@@ -7305,12 +7749,14 @@ export default /** @type {const} } */ ({
   shido: {
     bech32Prefix: 'shido',
     chainId: 'shido_9008-1',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'shido_9008-1',
     stakingTokens: [
       {
         denom: 'shido',
       },
     ],
-    icqEnabled: false,
     connections: {
       'noble-1': {
         id: 'connection-11',
@@ -7353,12 +7799,14 @@ export default /** @type {const} } */ ({
   sifchain: {
     bech32Prefix: 'sif',
     chainId: 'sifchain-1',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'sifchain-1',
     stakingTokens: [
       {
         denom: 'rowan',
       },
     ],
-    icqEnabled: false,
     connections: {
       'osmosis-1': {
         id: 'connection-20',
@@ -7401,12 +7849,14 @@ export default /** @type {const} } */ ({
   stargaze: {
     bech32Prefix: 'stars',
     chainId: 'stargaze-1',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'stargaze-1',
     stakingTokens: [
       {
         denom: 'ustars',
       },
     ],
-    icqEnabled: false,
     connections: {
       'carbon-1': {
         id: 'connection-158',
@@ -7678,6 +8128,24 @@ export default /** @type {const} } */ ({
           version: 'ics20-1',
         },
       },
+      'quicksilver-2': {
+        id: 'connection-159',
+        client_id: '07-tendermint-225',
+        counterparty: {
+          client_id: '07-tendermint-0',
+          connection_id: 'connection-0',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-124',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-0',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
       'secret-4': {
         id: 'connection-110',
         client_id: '07-tendermint-177',
@@ -7737,12 +8205,14 @@ export default /** @type {const} } */ ({
   stride: {
     bech32Prefix: 'stride',
     chainId: 'stride-1',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'stride-1',
     stakingTokens: [
       {
         denom: 'ustrd',
       },
     ],
-    icqEnabled: false,
     connections: {
       'agoric-3': {
         id: 'connection-118',
@@ -8109,12 +8579,14 @@ export default /** @type {const} } */ ({
   terra2: {
     bech32Prefix: 'terra',
     chainId: 'phoenix-1',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'phoenix-1',
     stakingTokens: [
       {
         denom: 'uluna',
       },
     ],
-    icqEnabled: false,
     connections: {
       'carbon-1': {
         id: 'connection-54',
@@ -8368,6 +8840,24 @@ export default /** @type {const} } */ ({
           version: 'ics20-1',
         },
       },
+      'quicksilver-2': {
+        id: 'connection-442',
+        client_id: '07-tendermint-430',
+        counterparty: {
+          client_id: '07-tendermint-108',
+          connection_id: 'connection-69',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-604',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-244',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
       'secret-4': {
         id: 'connection-7',
         client_id: '07-tendermint-4',
@@ -8427,12 +8917,14 @@ export default /** @type {const} } */ ({
   titan: {
     bech32Prefix: 'titan',
     chainId: 'titan_18888-1',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'titan_18888-1',
     stakingTokens: [
       {
         denom: 'atkx',
       },
     ],
-    icqEnabled: false,
     connections: {
       'noble-1': {
         id: 'connection-0',
@@ -8457,12 +8949,14 @@ export default /** @type {const} } */ ({
   umee: {
     bech32Prefix: 'umee',
     chainId: 'umee-1',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'umee-1',
     stakingTokens: [
       {
         denom: 'uumee',
       },
     ],
-    icqEnabled: false,
     connections: {
       'agoric-3': {
         id: 'connection-101',
@@ -8602,6 +9096,24 @@ export default /** @type {const} } */ ({
           channelId: 'channel-0',
           portId: 'transfer',
           counterPartyChannelId: 'channel-184',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+      'quicksilver-2': {
+        id: 'connection-122',
+        client_id: '07-tendermint-183',
+        counterparty: {
+          client_id: '07-tendermint-27',
+          connection_id: 'connection-13',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-53',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-49',
           counterPartyPortId: 'transfer',
           ordering: 0,
           state: 3,

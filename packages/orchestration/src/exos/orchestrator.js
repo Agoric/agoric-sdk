@@ -5,12 +5,7 @@ import { makeTracer } from '@agoric/internal';
 import { Shape as NetworkShape } from '@agoric/network';
 import { Fail, q } from '@endo/errors';
 import { M } from '@endo/patterns';
-import {
-  DenomInfoShape,
-  ChainInfoShape,
-  DenomAmountShape,
-  DenomShape,
-} from '../typeGuards.js';
+import { DenomInfoShape, DenomAmountShape, DenomShape } from '../typeGuards.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone';
@@ -33,7 +28,7 @@ const trace = makeTracer('Orchestrator');
 
 /** @see {Orchestrator} */
 export const OrchestratorI = M.interface('Orchestrator', {
-  getChain: M.call(M.string()).returns(Vow$(ChainInfoShape)),
+  getChain: M.call(M.string()).returns(Vow$(M.remotable('ChainFacade'))),
   getDenomInfo: M.call(DenomShape, M.string()).returns(DenomInfoShape),
   asAmount: M.call(DenomAmountShape).returns(AmountShape),
 });

@@ -1,4 +1,5 @@
 import { makeTracer } from '@agoric/internal';
+import type { Invitation, ZCF } from '@agoric/zoe/src/zoeService/zoe.js';
 
 const trace = makeTracer('ZoeUtils');
 
@@ -18,7 +19,7 @@ const trace = makeTracer('ZoeUtils');
  * @param {string} description @see {@link ZCF.makeInvitation}
  * @returns {() => Promise<Invitation>} an arg-less invitation maker
  */
-export const defineInertInvitation = (zcf, description) => {
+export const defineInertInvitation = (zcf: ZCF, description: string) => {
   return () =>
     zcf.makeInvitation(seat => {
       trace(`ℹ️ An offer was made on an inert invitation for ${description}`);
