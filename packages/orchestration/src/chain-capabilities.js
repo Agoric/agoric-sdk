@@ -41,7 +41,6 @@ const PfmEnabled = /** @type {const} */ ({
 harden(PfmEnabled);
 
 const IcaEnabled = /** @type {const} */ ({
-  agoric: true,
   celestia: true,
   cosmoshub: true,
   dydx: true,
