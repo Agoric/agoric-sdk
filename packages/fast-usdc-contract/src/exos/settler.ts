@@ -136,16 +136,16 @@ export const stateShape = harden({
  * `monitorMintingDeposits()`, with a call to
  * `settlementAccount.monitorTransfers()`.
  *
- * @param {Zone} zone
- * @param {object} caps
- * @param {StatusManager} caps.statusManager
- * @param {Brand<'nat'>} caps.USDC
- * @param {Pick<ZCF, 'makeEmptySeatKit' | 'atomicRearrange'>} caps.zcf
- * @param {FeeConfig} caps.feeConfig
- * @param {HostOf<WithdrawToSeat>} caps.withdrawToSeat
- * @param {import('@agoric/vow').VowTools} caps.vowTools
- * @param {ChainHub} caps.chainHub
- * @param {LogFn} [caps.log]
+ * @param zone
+ * @param root0
+ * @param root0.chainHub
+ * @param root0.feeConfig
+ * @param root0.log
+ * @param root0.statusManager
+ * @param root0.USDC
+ * @param root0.vowTools
+ * @param root0.withdrawToSeat
+ * @param root0.zcf
  */
 export const prepareSettler = (
   zone: Zone,
