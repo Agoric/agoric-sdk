@@ -1,4 +1,4 @@
-# Snapshot report for `test/bootstrapTests/orchestration.test.ts`
+# Snapshot report for `test/orchestration/orchestration.test.ts`
 
 The actual snapshot is saved in `orchestration.test.ts.snap`.
 
