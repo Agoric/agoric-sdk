@@ -5,8 +5,8 @@ import { BrandShape } from '@agoric/ertp/src/typeGuards.js';
 
 import { VowShape } from '@agoric/vow';
 import {
-  CosmosChainAddressShape,
   CoinShape,
+  CosmosChainAddressShape,
   DenomAmountShape,
   DenomDetailShape,
   ForwardInfoShape,
@@ -16,7 +16,7 @@ import {
   AccountArgShape,
   ChainInfoShape,
 } from '../typeGuards.js';
-import { getBech32Prefix, parseAccountId } from '../utils/address.js';
+import { getBech32Prefix } from '../utils/address.js';
 
 /**
  * @import {NameHub} from '@agoric/vats';
@@ -225,8 +225,8 @@ const ChainHubI = M.interface('ChainHub', {
     M.or(DenomDetailShape, M.undefined()),
   ),
   getDenom: M.call(BrandShape).returns(M.or(M.string(), M.undefined())),
-  makeChainAddress: M.call(M.string()).returns(CosmosChainAddressShape),
-  resolveAccountId: M.call(M.string()).returns(M.string()),
+  makeChainAddress: M.call(AccountArgShape).returns(CosmosChainAddressShape),
+  resolveAccountId: M.call(AccountArgShape).returns(M.string()),
   makeTransferRoute: M.call(AccountArgShape, DenomAmountShape, M.string())
     .optional(ForwardOptsShape)
     .returns(M.or(M.undefined(), TransferRouteShape)),
@@ -622,45 +622,46 @@ export const makeChainHub = (
       }
       return undefined;
     },
+
     /**
      * @param {string} partialId CAIP-10 account ID or a Cosmos bech32 address
      * @returns {AccountId}
      * @throws {Error} if chain info not found for bech32Prefix
      */
     resolveAccountId(partialId) {
-      const parsed = parseAccountId(partialId);
-      if ('namespace' in parsed) {
-        // It is already fully qualified
+      if (partialId.split(':').length === 3) {
+        // if it's already a CAIP-10, return it.
         return /** @type {AccountId} */ (partialId);
       }
 
       const reference = resolveCosmosChainId(partialId);
       return `cosmos:${reference}:${partialId}`;
     },
+
     /**
      * @param {string} partialId CAIP-10 account ID or a Cosmos bech32 address
      * @returns {CosmosChainAddress}
      * @throws {Error} if chain info not found for bech32Prefix
      */
     makeChainAddress(partialId) {
-      const parsed = parseAccountId(partialId);
-
-      if ('namespace' in parsed) {
-        assert.equal(parsed.namespace, 'cosmos');
+      const parts = partialId.split(':');
+      if (parts.length === 3) {
+        assert.equal(parts[0], 'cosmos');
         return harden({
-          chainId: parsed.reference,
+          chainId: parts[1],
           encoding: 'bech32',
-          value: parsed.accountAddress,
+          value: parts[2],
         });
       }
 
-      const chainId = resolveCosmosChainId(parsed.accountAddress);
+      const chainId = resolveCosmosChainId(partialId);
       return harden({
         chainId,
-        value: parsed.accountAddress,
+        value: partialId,
         encoding: /** @type {const} */ ('bech32'),
       });
     },
+
     /**
      * Determine the IBC transfer route for a destination and amount given the
      * current holding chain.
@@ -670,7 +671,7 @@ export const makeChainHub = (
      *
      * XXX consider accepting AmountArg #10449
      *
-     * @param {AccountIdArg} destination
+     * @param {AccountIdArg | Bech32Address} destination
      * @param {DenomAmount} denomAmount
      * @param {string} srcChainName
      * @param {IBCMsgTransferOptions['forwardOpts']} [forwardOpts]
