@@ -9,11 +9,12 @@ import { E } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
 import { HubName, normalizeConnectionInfo } from './exos/chain-hub.js';
 import fetchedChainInfo from './fetched-chain-info.js'; // Refresh with scripts/refresh-chain-info.ts
-import { CosmosAssetInfoShape, CosmosChainInfoShape } from './typeGuards.js';
+import { ChainInfoShape, CosmosAssetInfoShape } from './typeGuards.js';
+import cctpChainInfo from './cctp-chain-info.js';
 import { withChainCapabilities } from './chain-capabilities.js';
 
 /**
- * @import {CosmosAssetInfo, CosmosChainInfo} from './types.js';
+ * @import {CosmosAssetInfo, CosmosChainInfo, IBCConnectionInfo} from './types.js';
  * @import {NameAdmin} from '@agoric/vats';
  * @import {ChainInfo} from './orchestration-api.ts';
  */
@@ -31,8 +32,9 @@ export const KnownNamespace = /** @type {const} */ ({
 });
 harden(KnownNamespace);
 
+// XXX does not include `withChainCapabilities` - consider a `derived-chain-info.js` codegen for TS recognition
 const knownChains = /** @satisfies {Record<string, ChainInfo>} */ (
-  harden(fetchedChainInfo)
+  harden({ ...cctpChainInfo, ...fetchedChainInfo })
 );
 
 /**
@@ -62,7 +64,7 @@ export const registerChainAssets = async (agoricNamesAdmin, name, assets) => {
  *
  * @param {ERef<NameAdmin>} agoricNamesAdmin
  * @param {string} name
- * @param {CosmosChainInfo} chainInfo
+ * @param {ChainInfo} chainInfo
  * @param {(...messages: string[]) => void} [log]
  * @param {Set<string>} [handledConnections] connection keys that need not be
  *   updated
@@ -79,8 +81,11 @@ export const registerChain = async (
     HubName.ChainConnection,
   );
 
-  mustMatch(chainInfo, CosmosChainInfoShape);
-  const { connections = {}, ...vertex } = chainInfo;
+  mustMatch(chainInfo, ChainInfoShape);
+
+  /** @type {Record<string, IBCConnectionInfo>} */
+  const connections = /** @type {any} */ (chainInfo).connections || {};
+  const { connections: _, ...vertex } = /** @type {any} */ (chainInfo);
 
   const promises = [
     E(nameAdmin)
@@ -88,7 +93,9 @@ export const registerChain = async (
       .then(() => log(`registered agoricNames chain.${name}`)),
   ];
 
-  const { chainId } = chainInfo;
+  const { chainId } = /** @type {import('./types').CosmosChainInfo} */ (
+    chainInfo
+  );
   for (const [counterChainId, connInfo] of Object.entries(connections)) {
     const [key, connectionInfo] = normalizeConnectionInfo(
       chainId,
