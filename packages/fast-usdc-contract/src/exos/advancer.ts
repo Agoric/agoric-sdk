@@ -309,25 +309,26 @@ export const prepareAdvancerKit = (
                 },
               });
             } else if (info.cctpDestinationDomain) {
-              // send USDC via CCTP
-              assert(
-                intermediateRecipientAccount,
-                'intermediateRecipientAccount must be set',
-              );
-
-              // assets are on noble, transfer to dest.
-
-              const encoding = 'ethereum'; // XXX could be solana?
-              /** @type {AccountIdArg} */
-              const mintRecipient = makeCosmosAccountId(
-                info.chainId,
-                encoding,
-                getAddress(accountId),
-              );
-              transferOrSendV = intermediateRecipientAccount.depositForBurn(
-                mintRecipient,
-                amount,
-              );
+              Fail`unimplemented: relies on depositForBurn in OrchestrationAccount`;
+              // // send USDC via CCTP
+              // assert(
+              //   intermediateRecipientAccount,
+              //   'intermediateRecipientAccount must be set',
+              // );
+              //
+              // // assets are on noble, transfer to dest.
+              //
+              // const encoding = 'ethereum'; // XXX could be solana?
+              // /** @type {AccountIdArg} */
+              // const mintRecipient = makeCosmosAccountId(
+              //   chainId,
+              //   encoding,
+              //   accountId.accountAddress,
+              // );
+              // // transferOrSendV = intermediateRecipientAccount.depositForBurn(
+              // //   mintRecipient,
+              // //   amount,
+              // // );
             } else {
               Fail`can only transfer to Agoric addresses, via IBC, or via CCTP`;
             }
