@@ -256,6 +256,7 @@ export const makeWalletTool = ({ runMake, pspawnAgd, delay, log }) => {
       await waitForBlock(`${a4}'s funds to appear`, 2, true);
       return queryBalance(ACCT_ADDR);
     },
+    /** @param {string} ACCT_ADDR */
     provisionMine: ACCT_ADDR =>
       waitMyTurn('provision', ACCT_ADDR).then(() =>
         runMake([...bind({ ACCT_ADDR }), 'provision-my-acct']),
