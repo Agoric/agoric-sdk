@@ -1,5 +1,7 @@
 /* eslint-env node */
-import test from 'ava';
+import type { TestFn } from 'ava';
+import anyTest from 'ava';
+import type { BlockInfo } from '@agoric/internal/src/chain-utils.js';
 import { assert, q, Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { BridgeId, deepCopyJsonable, objectMap } from '@agoric/internal';
@@ -15,8 +17,7 @@ import {
   makeVatCleanupBudgetFromKeywords,
 } from '../src/sim-params.js';
 
-/** @import { ManagerType, SwingSetConfig } from '@agoric/swingset-vat' */
-/** @import { KVStore } from '../src/helpers/bufferedStorage.js' */
+const test = anyTest as TestFn;
 
 /**
  * Converts a Record<name, specifierString> into Record<name, { sourceSpec }>
@@ -60,12 +61,11 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
     bundles: makeSourceDescriptors({
       puppet: '@agoric/swingset-vat/tools/vat-puppet.js',
     }),
-    /** @type {Partial<SwingSetConfig>} */
     configOverrides: {
       // Aggressive GC.
       defaultReapInterval: 1,
       // Ensure multiple spans and snapshots.
-      defaultManagerType: 'xsnap',
+      defaultManagerType: 'xsnap' as const,
       snapshotInitial: 2,
       snapshotInterval: 4,
     },
@@ -81,7 +81,7 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
 
   // Define helper functions for interacting with its swing store.
   const mapStore = provideEnhancedKVStore(
-    /** @type {KVStore<string>} */ (swingStore.kernelStorage.kvStore),
+    /** @type {KVStore<string>} */ swingStore.kernelStorage.kvStore,
   );
   /** @type {(key: string) => string} */
   const mustGet = key => {
