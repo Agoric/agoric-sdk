@@ -2,7 +2,8 @@
 import { M, mustMatch } from '@endo/patterns';
 import { VowShape } from '@agoric/vow';
 import { makeTracer } from '@agoric/internal';
-import { atob } from '@endo/base64';
+import { atob, decodeBase64 } from '@endo/base64';
+import { defaultAbiCoder } from '@ethersproject/abi';
 import { CosmosChainAddressShape } from '../typeGuards.js';
 
 const trace = makeTracer('EvmTap');
@@ -25,8 +26,9 @@ const trace = makeTracer('EvmTap');
  * }} EvmTapState
  */
 
-const EVMI = M.interface('evmTransaction', {
+const EVMI = M.interface('holder', {
   getAddress: M.call().returns(M.any()),
+  getEVMSmartWalletAddress: M.call().returns(M.any()),
   send: M.call(M.any(), M.any()).returns(M.any()),
 });
 
@@ -61,7 +63,7 @@ export const prepareEvmAccountKit = (zone, { zcf }) => {
           .optional(M.bigint())
           .returns(VowShape),
       }),
-      evm: EVMI,
+      holder: EVMI,
       invitationMakers: InvitationMakerI,
     },
     /** @param {EvmTapState} initialState */
@@ -80,7 +82,18 @@ export const prepareEvmAccountKit = (zone, { zcf }) => {
           const tx = /** @type {FungibleTokenPacketData} */ (
             JSON.parse(atob(event.packet.data))
           );
+
           trace('receiveUpcall packet data', tx);
+          const memo = JSON.parse(tx.memo);
+
+          if (memo.source_chain === 'Ethereum') {
+            const payloadBytes = decodeBase64(memo.payload);
+            const payload = Array.from(payloadBytes);
+            const decoded = defaultAbiCoder.decode(['address'], payload);
+            trace(decoded);
+
+            this.state.evmAccountAddress = decoded[0];
+          }
 
           trace('receiveUpcall completed');
         },
@@ -96,11 +109,14 @@ export const prepareEvmAccountKit = (zone, { zcf }) => {
           trace('onFulfilled state:', JSON.stringify(this.state));
         },
       },
-      evm: {
+      holder: {
         async getAddress() {
           // @ts-expect-error
           const localChainAddress = await this.state.localAccount.getAddress();
           return localChainAddress.value;
+        },
+        async getEVMSmartWalletAddress() {
+          return this.state.evmAccountAddress;
         },
 
         /**
@@ -121,13 +137,15 @@ export const prepareEvmAccountKit = (zone, { zcf }) => {
         // "method" and "args" can be used to invoke methods of localAccount obj
         makeEVMTransactionInvitation(method, args) {
           const continuingEVMTransactionHandler = async seat => {
-            const { evm } = this.facets;
+            const { holder } = this.facets;
             seat.exit();
             switch (method) {
               case 'getAddress':
-                return evm.getAddress();
+                return holder.getAddress();
+              case 'getEVMSmartWalletAddress':
+                return holder.getEVMSmartWalletAddress();
               case 'send':
-                return evm.send(args[0], args[1]);
+                return holder.send(args[0], args[1]);
               default:
                 return 'Invalid method';
             }

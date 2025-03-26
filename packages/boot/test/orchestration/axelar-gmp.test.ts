@@ -6,7 +6,7 @@ import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { BridgeId } from '@agoric/internal';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
-import { AbiCoder } from '@ethersproject/abi';
+import { defaultAbiCoder } from '@ethersproject/abi';
 import { utils } from 'ethers';
 import {
   makeWalletFactoryContext,
@@ -180,9 +180,8 @@ test.serial('make contract calls via axelarGmp', async t => {
 
   t.log('making offer');
 
-  const abiCoder = new AbiCoder();
   const newCountValue = 234;
-  const encodedArgs = abiCoder.encode(['uint256'], [newCountValue]);
+  const encodedArgs = defaultAbiCoder.encode(['uint256'], [newCountValue]);
 
   const wallet = await walletFactoryDriver.provideSmartWallet(
     'agoric1ContractCalls',
@@ -308,7 +307,11 @@ test.serial('make contract calls via axelarGmp', async t => {
 });
 
 test.serial('makeAccount via axelarGmp', async t => {
-  const { walletFactoryDriver, storage } = t.context;
+  const {
+    walletFactoryDriver,
+    storage,
+    bridgeUtils: { runInbound },
+  } = t.context;
 
   t.log('making offer');
 
@@ -351,8 +354,15 @@ test.serial('makeAccount via axelarGmp', async t => {
     proposal: {},
   });
 
+  // @ts-expect-error
+  const lcaAddress = wallet.getLatestUpdateRecord().status.result;
+  t.truthy(lcaAddress);
   t.like(wallet.getLatestUpdateRecord(), {
-    status: { id: 'makeAccountCall', numWantsSatisfied: 1 },
+    status: {
+      id: 'makeAccountCall',
+      numWantsSatisfied: 1,
+      result: lcaAddress,
+    },
   });
 
   await wallet.executeOffer({
@@ -376,7 +386,78 @@ test.serial('makeAccount via axelarGmp', async t => {
     proposal: {},
   });
 
+  await runInbound(
+    BridgeId.VTRANSFER,
+    buildVTransferEvent({
+      sender: makeTestAddress(),
+      target: makeTestAddress(),
+      sourceChannel: 'channel-0',
+      sequence: '1',
+    }),
+  );
+
   t.like(wallet.getLatestUpdateRecord(), {
-    status: { id: 'makeAccountCall', numWantsSatisfied: 1 },
+    status: {
+      id: 'makeAccountCall',
+      numWantsSatisfied: 1,
+      result: 'transfer success',
+    },
+  });
+
+  t.log('receiveUpcall test');
+
+  const {
+    channelId: agoricToAxelarChannel,
+    counterPartyChannelId: axelarToAgoricChannel,
+  } = fetchedChainInfo.agoric.connections.axelar.transferChannel;
+
+  const payload = defaultAbiCoder.encode(
+    ['address'],
+    ['0x20E68F6c276AC6E297aC46c84Ab260928276691D'],
+  );
+
+  const base64Payload = Buffer.from(payload.slice(2), 'hex').toString('base64');
+
+  await runInbound(
+    BridgeId.VTRANSFER,
+    buildVTransferEvent({
+      sequence: '1',
+      amount: 1n,
+      denom: 'uaxl',
+      sender: makeTestAddress(),
+      target: lcaAddress,
+      receiver: lcaAddress,
+      sourceChannel: axelarToAgoricChannel,
+      destinationChannel: agoricToAxelarChannel,
+      memo: JSON.stringify({
+        source_chain: 'Ethereum',
+        source_address: '0x19e71e7eE5c2b13eF6bd52b9E3b437bdCc7d43c8',
+        destination_chain: 'agoric',
+        destination_address: lcaAddress,
+        payload: base64Payload,
+      }),
+    }),
+  );
+
+  await wallet.executeOffer({
+    id: 'makeAccountCall',
+    invitationSpec: {
+      invitationMakerName: 'makeEVMTransactionInvitation',
+      previousOffer: previousOfferId,
+      source: 'continuing',
+      invitationArgs: harden(['getEVMSmartWalletAddress', []]),
+    },
+    proposal: {},
+  });
+
+  // @ts-expect-error
+  const evmSmartWalletAddress = wallet.getLatestUpdateRecord().status.result;
+  t.truthy(evmSmartWalletAddress);
+  t.like(wallet.getLatestUpdateRecord(), {
+    status: {
+      id: 'makeAccountCall',
+      numWantsSatisfied: 1,
+      result: evmSmartWalletAddress,
+    },
   });
 });
