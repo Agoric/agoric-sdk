@@ -64,8 +64,16 @@
     "node": "^18.12 || ^20.9"
   },
   "ava": {
+    "extensions": {
+      "js": true,
+      "ts": "module"
+    },
     "files": [
       "test/**/*.test.*"
+    ],
+    "nodeArguments": [
+      "--import=ts-blank-space/register",
+      "--no-warnings"
     ],
     "require": [
       "@endo/init/debug.js"
