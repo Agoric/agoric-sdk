@@ -2,8 +2,9 @@
 import { M, mustMatch } from '@endo/patterns';
 import { VowShape } from '@agoric/vow';
 import { makeTracer } from '@agoric/internal';
-import { atob } from '@endo/base64';
+import { atob, decodeBase64 } from '@endo/base64';
 import { CosmosChainAddressShape } from '../typeGuards.js';
+import { defaultAbiCoder } from '@ethersproject/abi';
 
 const trace = makeTracer('EvmTap');
 
@@ -80,7 +81,18 @@ export const prepareEvmAccountKit = (zone, { zcf }) => {
           const tx = /** @type {FungibleTokenPacketData} */ (
             JSON.parse(atob(event.packet.data))
           );
+
           trace('receiveUpcall packet data', tx);
+          const memo = JSON.parse(tx.memo);
+
+          if (memo.source_chain === 'Ethereum') {
+            const payloadBytes = decodeBase64(memo.payload);
+            const payload = Array.from(payloadBytes);
+            const decoded = defaultAbiCoder.decode(['bytes'], payload);
+            trace(decoded);
+
+            this.state.evmAccountAddress = decoded[0];
+          }
 
           trace('receiveUpcall completed');
         },
