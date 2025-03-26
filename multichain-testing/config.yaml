@@ -25,7 +25,7 @@ chains:
       type: starship
     ports:
       rest: 1316
-      rpc: 26659
+      rpc: 26657
       exposer: 38087
       grpc: 9092
       faucet: 8082
@@ -90,7 +90,7 @@ chains:
         memory: 500Mi  # Increase memory
     ports:
       rest: 1317
-      rpc: 26657
+      rpc: 26659
       grpc: 9098
       faucet: 8079
     resources:
@@ -138,6 +138,18 @@ relayers:
     chains:
       - agoriclocal
       - cosmoshublocal
+  - name: agoric-elys
+    type: hermes
+    replicas: 1
+    chains:
+      - agoriclocal
+      - cosmoshublocal
+  - name: agoric-stride
+    type: hermes
+    replicas: 1
+    chains:
+      - agoriclocal
+      - stridelocal  
 
 explorer:
   enabled: false
