@@ -1,7 +1,8 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
 
 import { MsgDepositForBurn } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
-import { fromHex } from '@cosmjs/encoding';
+import { keccak256 } from '@cosmjs/crypto';
+import { fromHex, fromBase64, toHex } from '@cosmjs/encoding';
 import {
   DirectSecp256k1HdWallet,
   Registry,
@@ -34,13 +35,20 @@ const domains = {
 
 const configs = {
   test: {
+    circle: {
+      iris: 'https://iris-api-sandbox.circle.com',
+    },
     noble: {
       explorer: 'https://mintscan.io/noble-testnet',
       rpc: 'https://noble-testnet-rpc.polkachu.com:443',
+      api: 'https://noble-testnet-api.polkachu.com:443',
     },
     eth: { explorer: 'https://sepolia.etherscan.io' },
   },
   main: {
+    circle: {
+      iris: 'https://iris-api.circle.com',
+    },
     noble: {
       explorer: 'https://mintscan.io/noble',
       rpc: 'https://noble-rpc.polkachu.com:443',
@@ -90,9 +98,39 @@ const go = async (
   return result.transactionHash;
 };
 
+/**
+ * @see {@link https://docs.noble.xyz/cctp/manual_relaying#fetching-attestation-from-circle}
+ *
+ * @param tx DepositForBurn transaction (from API)
+ * @returns
+ */
+const attestationKey = tx => {
+  const { events } = tx.tx_response;
+  const sent = events.find(e => e.type === 'circle.cctp.v1.MessageSent');
+  const message64: string = JSON.parse(
+    sent.attributes.find(a => a.key === 'message').value,
+  );
+  const message = fromBase64(message64);
+  const hash = keccak256(message);
+  return `0x${toHex(hash)}`;
+};
+
+const makePoll = (setTimeout: typeof globalThis.setTimeout, period = 2_000) => {
+  async function* poll<T>(thunk: () => Promise<{ done: boolean; value: T }>) {
+    for (;;) {
+      const step = await thunk();
+      yield step.value;
+      if (step.done) break;
+      await new Promise(resolve => setTimeout(resolve, period));
+    }
+  }
+  return poll;
+};
+
 const main = async () => {
   const mnemonic = process.env.MNEMONIC ? process.env.MNEMONIC : '';
   const dest = process.env.ETH_DEST!;
+  console.log('minting on Eth:', `${config.eth.explorer}/address/${dest}`);
 
   const wallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, {
     prefix: 'noble',
@@ -108,10 +146,38 @@ const main = async () => {
 
   const transactionHash = await go(client, account.address, dest);
 
+  const fetchJSON = async url => {
+    const res = await fetch(url);
+    if (!res.ok) throw Error(res.statusText);
+    return res.json();
+  };
+
+  const api = async (path: string) => fetchJSON(`${config.noble.api}${path}`);
+  const tx = await api(`/cosmos/tx/v1beta1/txs/${transactionHash}`);
   console.log(
     `Burned on Noble: ${config.noble.explorer}/tx/${transactionHash}`,
   );
-  console.log('minting on Eth:', `${config.eth.explorer}/address/${dest}`);
+
+  const key = attestationKey(tx);
+  console.log(
+    'attestation key',
+    key,
+    `${config.circle.iris}/attestations/${key}`,
+  );
+  const iris = (path: string) => fetchJSON(`${config.circle.iris}${path}`);
+
+  const poll = makePoll(globalThis.setTimeout);
+  for await (const x of poll(async () => {
+    try {
+      const current = await iris(`/attestations/${key}`);
+      return { done: current.status === 'complete', value: current };
+    } catch (e) {
+      return { done: false, value: e };
+    }
+  })) {
+    if (x instanceof Error && x.message === 'Not Found') continue;
+    console.log('attestation?', x);
+  }
 };
 
 main().catch(err => console.error(err));
