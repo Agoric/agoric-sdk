@@ -1,4 +1,4 @@
-/* eslint-disable jsdoc/require-param, jsdoc/require-returns-type, @jessie.js/safe-await-separator */
+/* eslint-disable jsdoc/require-returns-type, @jessie.js/safe-await-separator */
 /* eslint-env node */
 
 import childProcessAmbient from 'child_process';

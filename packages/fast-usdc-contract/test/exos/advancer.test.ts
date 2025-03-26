@@ -22,6 +22,7 @@ import {
   MockCctpTxEvidences,
   settlementAddress,
 } from '@agoric/fast-usdc/tools/mock-evidence.js';
+import type { ZCFSeat } from '@agoric/zoe';
 import { prepareAdvancer, stateShape } from '../../src/exos/advancer.ts';
 import {
   makeAdvanceDetailsShape,

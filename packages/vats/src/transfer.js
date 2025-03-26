@@ -7,6 +7,7 @@ import { coerceToByteSource, byteSourceToBase64 } from '@agoric/network';
 import { TargetAppI, AppTransformerI } from './bridge-target.js';
 
 /**
+ * @import {ERef} from '@endo/far';
  * @import {TargetApp, TargetHost} from './bridge-target.js'
  * @import {VTransferIBCEvent} from './types.js';
  */

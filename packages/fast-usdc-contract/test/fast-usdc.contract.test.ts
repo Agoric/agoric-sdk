@@ -27,9 +27,12 @@ import {
   multiplyBy,
   parseRatio,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
-import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
+import type {
+  Installation,
+  Instance,
+} from '@agoric/zoe/src/zoeService/utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E, type EReturn } from '@endo/far';
+import { E, type ERef, type EReturn } from '@endo/far';
 import { matches } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
 import path from 'path';
@@ -42,6 +45,7 @@ import type {
 } from '@agoric/fast-usdc/src/types.js';
 import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
 import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
+import type { ZoeService, Invitation } from '@agoric/zoe';
 import type { FastUsdcSF } from '../src/fast-usdc.contract.ts';
 import type { OperatorOfferResult } from '../src/exos/transaction-feed.ts';
 import { commonSetup, uusdcOnAgoric } from './supports.js';

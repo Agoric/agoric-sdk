@@ -13,7 +13,7 @@ import { Shape as NetworkShape } from '@agoric/network';
 const { Vow$ } = NetworkShape;
 
 /**
- * @import {EReturn} from '@endo/far';
+ * @import {ERef, EReturn} from '@endo/far';
  * @import {Key, Pattern} from '@endo/patterns';
  * @import {TypedJson, ResponseTo, JsonSafe} from '@agoric/cosmic-proto';
  * @import {Amount, Brand, Payment} from '@agoric/ertp';
