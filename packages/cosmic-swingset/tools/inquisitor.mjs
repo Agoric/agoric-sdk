@@ -318,6 +318,7 @@ export const makeHelpers = ({ db, EV }) => {
     stable: { db, getRefs, kvGet, kvGetJSON, kvGlob, vatsByID, vatsByName },
   });
 };
+/** @typedef {ReturnType<typeof makeHelpers>} Helpers */
 
 /**
  * Wrap a swing-store sub-store (kvStore/transcriptStore/etc.) with a

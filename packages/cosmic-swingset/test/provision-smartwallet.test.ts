@@ -91,7 +91,7 @@ test.skip('integration test: smart wallet provision', async t => {
     t.log('Fund user account with some BLD');
     await walletTool.fundAccount(soloAddr, `${123e6}ubld`);
     t.log('Provision smart wallet');
-    await walletTool.provisionMine(soloAddr, soloAddr);
+    await walletTool.provisionMine(soloAddr);
 
     await walletTool.waitForBlock(
       'provision to finish',
