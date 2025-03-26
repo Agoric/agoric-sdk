@@ -218,13 +218,13 @@ replace (
 
 // Agoric-specific replacements:
 replace (
-	cosmossdk.io/api => github.com/agoric-labs/cosmos-sdk/api v0.0.0-20250317184328-a23d822f892c
-	cosmossdk.io/core => github.com/agoric-labs/cosmos-sdk/core v0.0.0-20250317184328-a23d822f892c
-	cosmossdk.io/depinject => github.com/agoric-labs/cosmos-sdk/depinject v0.0.0-20250317184328-a23d822f892c
-	cosmossdk.io/errors => github.com/agoric-labs/cosmos-sdk/errors v0.0.0-20250317184328-a23d822f892c
-	cosmossdk.io/math => github.com/agoric-labs/cosmos-sdk/math v0.0.0-20250317184328-a23d822f892c
-	cosmossdk.io/simapp => github.com/agoric-labs/cosmos-sdk/simapp v0.0.0-20250317184328-a23d822f892c
-	cosmossdk.io/tools/rosetta => github.com/agoric-labs/cosmos-sdk/tools/rosetta v0.0.0-20250317184328-a23d822f892c
+	cosmossdk.io/api => github.com/agoric-labs/cosmos-sdk/api v0.0.0-20250326031203-e68e6747bede
+	cosmossdk.io/core => github.com/agoric-labs/cosmos-sdk/core v0.0.0-20250326031203-e68e6747bede
+	cosmossdk.io/depinject => github.com/agoric-labs/cosmos-sdk/depinject v0.0.0-20250326031203-e68e6747bede
+	cosmossdk.io/errors => github.com/agoric-labs/cosmos-sdk/errors v0.0.0-20250326031203-e68e6747bede
+	cosmossdk.io/math => github.com/agoric-labs/cosmos-sdk/math v0.0.0-20250326031203-e68e6747bede
+	cosmossdk.io/simapp => github.com/agoric-labs/cosmos-sdk/simapp v0.0.0-20250326031203-e68e6747bede
+	cosmossdk.io/tools/rosetta => github.com/agoric-labs/cosmos-sdk/tools/rosetta v0.0.0-20250326031203-e68e6747bede
 
 	// use cometbft
 	// Use our fork at least until post-v0.34.14 is released with
@@ -232,10 +232,10 @@ replace (
 	github.com/cometbft/cometbft => github.com/agoric-labs/cometbft v0.37.15-alpha.agoric.1
 
 	// We need a fork of cosmos-sdk until all of the differences are merged.
-	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.47.15-alpha.agoric.2
+	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.47.17-alpha.agoric.1
 
 	// Use a version of ibc-go that is compatible with the above forks.
-	github.com/cosmos/ibc-go/v7 => github.com/agoric-labs/ibc-go/v7 v7.10.0-alpha.agoric.1
+	github.com/cosmos/ibc-go/v7 => github.com/agoric-labs/ibc-go/v7 v7.10.0-alpha.agoric.2
 
 // Ensure specific packages use your fork
 // cosmossdk.io/store =>  github.com/agoric-labs/cosmos-sdk/store 86e44a02f6bff69aa20977a70f088abaaaa0bf9f
