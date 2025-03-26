@@ -6,7 +6,7 @@ import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { BridgeId } from '@agoric/internal';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
-import { AbiCoder } from '@ethersproject/abi';
+import { defaultAbiCoder } from '@ethersproject/abi';
 import { utils } from 'ethers';
 import {
   makeWalletFactoryContext,
@@ -180,9 +180,8 @@ test.serial('make contract calls via axelarGmp', async t => {
 
   t.log('making offer');
 
-  const abiCoder = new AbiCoder();
   const newCountValue = 234;
-  const encodedArgs = abiCoder.encode(['uint256'], [newCountValue]);
+  const encodedArgs = defaultAbiCoder.encode(['uint256'], [newCountValue]);
 
   const wallet = await walletFactoryDriver.provideSmartWallet(
     'agoric1ContractCalls',
@@ -355,8 +354,9 @@ test.serial('makeAccount via axelarGmp', async t => {
     proposal: {},
   });
 
-  // @ts-ignore
+  // @ts-expect-error
   const lcaAddress = wallet.getLatestUpdateRecord().status.result;
+  t.truthy(lcaAddress);
   t.like(wallet.getLatestUpdateRecord(), {
     status: {
       id: 'makeAccountCall',
@@ -409,14 +409,21 @@ test.serial('makeAccount via axelarGmp', async t => {
   const {
     channelId: agoricToAxelarChannel,
     counterPartyChannelId: axelarToAgoricChannel,
-  } = fetchedChainInfo.agoric.connections['axelar'].transferChannel;
+  } = fetchedChainInfo.agoric.connections.axelar.transferChannel;
+
+  const payload = defaultAbiCoder.encode(
+    ['address'],
+    ['0x20E68F6c276AC6E297aC46c84Ab260928276691D'],
+  );
+
+  const base64Payload = Buffer.from(payload.slice(2), 'hex').toString('base64');
 
   await runInbound(
     BridgeId.VTRANSFER,
     buildVTransferEvent({
       sequence: '1',
       amount: 1n,
-      denom: 'uusdc',
+      denom: 'uaxl',
       sender: makeTestAddress(),
       target: lcaAddress,
       receiver: lcaAddress,
@@ -427,8 +434,7 @@ test.serial('makeAccount via axelarGmp', async t => {
         source_address: '0x19e71e7eE5c2b13eF6bd52b9E3b437bdCc7d43c8',
         destination_chain: 'agoric',
         destination_address: lcaAddress,
-        payload:
-          'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE3JlY2VpdmVfbWVzc2FnZV9ldm0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADHNvdXJjZV9jaGFpbgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA5zb3VyY2VfYWRkcmVzcwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHcGF5bG9hZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGc3RyaW5nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABnN0cmluZwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVieXRlcwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAhFdGhlcmV1bQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAqMHgwODMwYzlkOGYwNUQxZGNBRTM0MDYxMDI0MjBDMjliQmIyODdDMTk5AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABGZyYXoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        payload: base64Payload,
       }),
     }),
   );
@@ -444,8 +450,9 @@ test.serial('makeAccount via axelarGmp', async t => {
     proposal: {},
   });
 
-  // @ts-ignore
+  // @ts-expect-error
   const evmSmartWalletAddress = wallet.getLatestUpdateRecord().status.result;
+  t.truthy(evmSmartWalletAddress);
   t.like(wallet.getLatestUpdateRecord(), {
     status: {
       id: 'makeAccountCall',

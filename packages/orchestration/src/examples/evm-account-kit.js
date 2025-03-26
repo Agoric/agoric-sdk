@@ -89,7 +89,7 @@ export const prepareEvmAccountKit = (zone, { zcf }) => {
           if (memo.source_chain === 'Ethereum') {
             const payloadBytes = decodeBase64(memo.payload);
             const payload = Array.from(payloadBytes);
-            const decoded = defaultAbiCoder.decode(['bytes'], payload);
+            const decoded = defaultAbiCoder.decode(['address'], payload);
             trace(decoded);
 
             this.state.evmAccountAddress = decoded[0];
