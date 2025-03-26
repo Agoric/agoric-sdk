@@ -8,8 +8,11 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
   denomHash,
   withChainCapabilities,
+  type BaseChainInfo,
+  type ChainInfo,
   type CosmosChainInfo,
   type Denom,
+  type KnownChains,
 } from '@agoric/orchestration';
 import { registerKnownChains } from '@agoric/orchestration/src/chain-info.js';
 import {
@@ -43,6 +46,7 @@ import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
 import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
 import { objectMap } from '@endo/patterns';
+import type { ChainHubChainInfo } from '@agoric/fast-usdc/src/types.js';
 import { makeTestFeeConfig } from './mocks.js';
 
 export {
@@ -219,7 +223,13 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       // for backwards compatibility with `CosmosChainInfoShapeV1` which expects a `chainId`
       chainId: `${v.namespace}:${v.reference}`,
     }));
-    return { agoric, osmosis, noble, ethereum, solana };
+    return {
+      agoric,
+      osmosis,
+      noble,
+      ethereum,
+      solana,
+    } as Record<string, ChainHubChainInfo>;
   })();
 
   const assetInfo: [Denom, DenomDetail & { brandKey?: string }][] = harden([

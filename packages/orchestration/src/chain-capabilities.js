@@ -7,12 +7,14 @@
 import { objectMap } from '@endo/patterns';
 import cctpChainInfo from './cctp-chain-info.js';
 
-/** @import {Chain, ChainInfo, KnownChains} from '@agoric/orchestration'; */
+/**
+ * @import {CosmosChainInfo} from '@agoric/orchestration';
+ */
 
 /**
  * Chains with the async-icq (icq-1) module available.
  *
- * @satisfies {Partial<Record<keyof KnownChains, boolean>>}
+ * @satisfies {Record<string, boolean>}
  */
 const IcqEnabled = /** @type {const} */ ({
   omniflixhub: true,
@@ -23,7 +25,7 @@ harden(IcqEnabled);
 /**
  * Chains with the packet-forward-middleware module available.
  *
- * @satisfies {Partial<Record<keyof KnownChains, boolean>>}
+ * @satisfies {Record<string, boolean>}
  */
 const PfmEnabled = /** @type {const} */ ({
   agoric: true,
@@ -41,6 +43,11 @@ const PfmEnabled = /** @type {const} */ ({
 });
 harden(PfmEnabled);
 
+/**
+ * Chains with the interchain-accounts (ICS-27) module enabled as a host.
+ *
+ * @satisfies {Record<string, boolean>}
+ */
 const IcaEnabled = /** @type {const} */ ({
   celestia: true,
   cosmoshub: true,
@@ -58,31 +65,43 @@ const IcaEnabled = /** @type {const} */ ({
 harden(IcaEnabled);
 
 /**
- * @param {Record<string, ChainInfo>} chainInfo
+ * Adds chain capabilities to cosmos chains that are not currently indexed in
+ * `@cosmos/chain-registry` but are necessary for `@agoric/orchestration`.
+ *
+ * @template {Record<string, CosmosChainInfo>} T
+ * @param {T} chainInfo
  * @param {{
- *   PfmEnabled: Record<string, boolean>;
- *   IcqEnabled: Record<string, boolean>;
- *   IcaEnabled: Record<string, boolean>;
+ *   PfmEnabled?: Record<string, boolean>;
+ *   IcqEnabled?: Record<string, boolean>;
+ *   IcaEnabled?: Record<string, boolean>;
  * }} [opts]
+ * @returns {{
+ *   [K in keyof T]: T[K] & {
+ *     pfmEnabled: boolean;
+ *     icqEnabled: boolean;
+ *     icaEnabled: boolean;
+ *     cctpDestinationDomain?: number;
+ *   };
+ * }}
  */
 export const withChainCapabilities = (
   chainInfo,
-  opts = {
-    PfmEnabled,
-    IcqEnabled,
-    IcaEnabled,
-  },
-) => {
-  return objectMap(chainInfo, (info, name) => ({
-    ...info,
-    ...(info.namespace === 'cosmos' && {
-      pfmEnabled: !!opts.PfmEnabled[name],
-      icqEnabled: !!opts.IcqEnabled[name],
-      icaEnabled: !!opts.IcaEnabled[name],
-      // effectively, merges fetched-chain-info.js and cctp-chain-info.js for `noble`
-      ...(cctpChainInfo[name]?.cctpDestinationDomain && {
-        cctpDestinationDomain: cctpChainInfo[name].cctpDestinationDomain,
-      }),
-    }),
-  }));
-};
+  {
+    PfmEnabled: pfmOpts = PfmEnabled,
+    IcqEnabled: icqOpts = IcqEnabled,
+    IcaEnabled: icaOpts = IcaEnabled,
+  } = {},
+) =>
+  objectMap(chainInfo, (info, name) => {
+    const chainName = /** @type {string} */ (name);
+    const cctpDestinationDomain =
+      cctpChainInfo?.[chainName]?.cctpDestinationDomain;
+
+    return {
+      ...info,
+      pfmEnabled: !!pfmOpts[chainName],
+      icqEnabled: !!icqOpts[chainName],
+      icaEnabled: !!icaOpts[chainName],
+      ...(cctpDestinationDomain && { cctpDestinationDomain }),
+    };
+  });

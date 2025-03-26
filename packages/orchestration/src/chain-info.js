@@ -32,9 +32,9 @@ export const KnownNamespace = /** @type {const} */ ({
 });
 harden(KnownNamespace);
 
-// XXX does not include `withChainCapabilities` - consider a `derived-chain-info.js` codegen for TS recognition
+const { noble: _n, ...restCctpChainInfo } = cctpChainInfo;
 const knownChains = /** @satisfies {Record<string, ChainInfo>} */ (
-  harden({ ...cctpChainInfo, ...fetchedChainInfo })
+  harden({ ...withChainCapabilities(fetchedChainInfo), ...restCctpChainInfo })
 );
 
 /**
@@ -128,9 +128,7 @@ export const registerChain = async (
  */
 export const registerKnownChains = async (agoricNamesAdmin, log) => {
   const handledConnections = new Set();
-  for await (const [name, info] of Object.entries(
-    withChainCapabilities(knownChains),
-  )) {
+  for await (const [name, info] of Object.entries(knownChains)) {
     await registerChain(agoricNamesAdmin, name, info, log, handledConnections);
   }
 };

@@ -9,7 +9,7 @@ const trace = makeTracer('FUSD-EVM-SOL', true);
 /**
  * @import {CopyRecord} from '@endo/pass-style';
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js';
- * @import {IBCConnectionInfo} from '@agoric/orchestration';
+ * @import {CosmosChainInfo, IBCConnectionInfo} from '@agoric/orchestration';
  * @import {BundleID} from '@agoric/swingset-vat';
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js';
  * @import {FastUSDCCorePowers} from './start-fast-usdc.core.js';
@@ -75,7 +75,8 @@ export const upgradeEvmSolana = async (
    */
   for (const [chainName, info] of Object.entries(fuKit.privateArgs.chainInfo)) {
     // note: connections in privateArgs is stale, but we're not using them here
-    const { connections: _, ...chainInfo } = info;
+    const { connections: _, ...chainInfo } =
+      /** @type {Omit<CosmosChainInfo, 'reference' | 'namespace'>} */ (info);
     await E(creatorFacet).updateChain(chainName, {
       ...chainInfo,
       namespace: 'cosmos',
