@@ -5,8 +5,9 @@
  */
 
 import { objectMap } from '@endo/patterns';
+import cctpChainInfo from './cctp-chain-info.js';
 
-/** @import {CosmosChainInfo, KnownChains} from '@agoric/orchestration'; */
+/** @import {Chain, ChainInfo, KnownChains} from '@agoric/orchestration'; */
 
 /**
  * Chains with the async-icq (icq-1) module available.
@@ -57,7 +58,7 @@ const IcaEnabled = /** @type {const} */ ({
 harden(IcaEnabled);
 
 /**
- * @param {Record<string, CosmosChainInfo>} chainInfo
+ * @param {Record<string, ChainInfo>} chainInfo
  * @param {{
  *   PfmEnabled: Record<string, boolean>;
  *   IcqEnabled: Record<string, boolean>;
@@ -74,8 +75,14 @@ export const withChainCapabilities = (
 ) => {
   return objectMap(chainInfo, (info, name) => ({
     ...info,
-    pfmEnabled: !!opts.PfmEnabled[name],
-    icqEnabled: !!opts.IcqEnabled[name],
-    icaEnabled: !!opts.IcaEnabled[name],
+    ...(info.namespace === 'cosmos' && {
+      pfmEnabled: !!opts.PfmEnabled[name],
+      icqEnabled: !!opts.IcqEnabled[name],
+      icaEnabled: !!opts.IcaEnabled[name],
+      // effectively, merges fetched-chain-info.js and cctp-chain-info.js for `noble`
+      ...(cctpChainInfo[name]?.cctpDestinationDomain && {
+        cctpDestinationDomain: cctpChainInfo[name].cctpDestinationDomain,
+      }),
+    }),
   }));
 };
