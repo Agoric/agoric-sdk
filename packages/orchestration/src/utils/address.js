@@ -3,6 +3,7 @@ import { Fail, q } from '@endo/errors';
 /**
  * @import {IBCConnectionID} from '@agoric/vats';
  * @import {CosmosChainAddress, ScopedChainId} from '../types.js';
+ * @import {AccountId, AccountIdArg, Caip10Record} from '../orchestration-api.js';
  * @import {RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  */
 
@@ -104,40 +105,42 @@ export const getBech32Prefix = address => {
 };
 
 /**
- * Parses an account ID into a structured format following CAIP-10 standards.
+ * Parse an account ID into a structured format following CAIP-10 standards.
  *
- * @param {string} partialId CAIP-10 account ID or an unscoped on-chain address
- * @returns {{
- *       namespace: string;
- *       reference: string;
- *       accountAddress: string;
- *     }
- *   | {
- *       accountAddress: string;
- *     }}
- *   - The parsed account details.
+ * @param {AccountIdArg} idArg CAIP-10 account ID or an unscoped on-chain
+ *   address
+ * @returns {Caip10Record} - The parsed account details.
  */
-export const parseAccountId = partialId => {
-  if (typeof partialId !== 'string' || !partialId.length) {
-    Fail`Empty accountId: ${q(partialId)}`;
+export const parseAccountIdArg = idArg => {
+  if (typeof idArg === 'string') {
+    return parseAccountId(idArg);
   }
 
-  const parts = partialId.split(':');
+  // it's a CosmosChainAddress
+  return {
+    namespace: 'cosmos',
+    reference: idArg.chainId,
+    accountAddress: idArg.value,
+  };
+};
+harden(parseAccountIdArg);
 
-  if (parts.length === 3) {
-    // Full CAIP-10
-    const [namespace, reference, accountAddress] = parts;
-    return {
-      namespace,
-      reference,
-      accountAddress,
-    };
-  } else if (parts.length === 1) {
-    return {
-      accountAddress: partialId,
-    };
-  }
+/**
+ * Parse an account ID into a structured format following CAIP-10 standards.
+ *
+ * @param {AccountId} accountId CAIP-10 account ID
+ * @returns {Caip10Record} - The parsed account details.
+ */
+export const parseAccountId = accountId => {
+  const parts = accountId.split(':');
+  parts.length === 3 || Fail`malformed CAIP-10 accountId: ${q(accountId)}`;
 
-  throw Fail`Invalid accountId: ${q(partialId)}`;
+  // Full CAIP-10
+  const [namespace, reference, accountAddress] = parts;
+  return {
+    namespace,
+    reference,
+    accountAddress,
+  };
 };
 harden(parseAccountId);
