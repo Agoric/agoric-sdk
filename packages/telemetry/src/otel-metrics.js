@@ -102,97 +102,119 @@ export const makeSlogSender = async (opts = /** @type {any} */ ({})) => {
   };
 
   const slogSender = ({ type: slogType, ...slogObj }) => {
-    // Consume cosmic-swingset block lifecycle slog entries.
-    if (slogType === 'cosmic-swingset-init') {
-      const { inboundQueueInitialLengths: lengths } = slogObj;
-      inboundQueueMetrics.initLengths(lengths);
-    }
-    if (slogType === 'cosmic-swingset-begin-block') {
-      const { interBlockSeconds, afterCommitHangoverSeconds, blockLagSeconds } =
-        slogObj;
+    switch (slogType) {
+      // Consume cosmic-swingset block lifecycle slog entries.
+      case 'cosmic-swingset-init': {
+        const { inboundQueueInitialLengths: lengths } = slogObj;
+        inboundQueueMetrics.initLengths(lengths);
+        break;
+      }
+      case 'cosmic-swingset-begin-block': {
+        const {
+          interBlockSeconds,
+          afterCommitHangoverSeconds,
+          blockLagSeconds,
+        } = slogObj;
 
-      Number.isFinite(interBlockSeconds) &&
-        histograms.interBlockSeconds.record(interBlockSeconds);
-      histograms.afterCommitHangoverSeconds.record(afterCommitHangoverSeconds);
-      Number.isFinite(blockLagSeconds) &&
-        histograms.blockLagSeconds.record(blockLagSeconds);
-    }
-    if (slogType === 'cosmic-swingset-run-finish') {
-      histograms.swingset_block_processing_seconds.record(slogObj.seconds);
-    }
-    if (slogType === 'cosmic-swingset-end-block-finish') {
-      const { inboundQueueStartLengths, processedActionCounts } = slogObj;
-      inboundQueueMetrics.updateLengths(inboundQueueStartLengths);
-      for (const { count, phase, type: actionType } of processedActionCounts) {
-        if (!knownActionTypes.has(actionType)) {
-          console.warn('Unknown inbound action type', actionType);
-        }
-        processedInboundActionCounter.add(count, { actionType });
-        inboundQueueMetrics.decLength(phase);
+        Number.isFinite(interBlockSeconds) &&
+          histograms.interBlockSeconds.record(interBlockSeconds);
+        histograms.afterCommitHangoverSeconds.record(
+          afterCommitHangoverSeconds,
+        );
+        Number.isFinite(blockLagSeconds) &&
+          histograms.blockLagSeconds.record(blockLagSeconds);
+        break;
       }
-    }
-    if (slogType === 'cosmic-swingset-commit-block-finish') {
-      const {
-        runSeconds,
-        chainTime,
-        saveTime,
-        cosmosCommitSeconds,
-        fullSaveTime,
-      } = slogObj;
-      histograms.swingsetRunSeconds.record(runSeconds);
-      histograms.swingsetChainSaveSeconds.record(chainTime);
-      histograms.swingsetCommitSeconds.record(saveTime);
-      histograms.cosmosCommitSeconds.record(cosmosCommitSeconds);
-      histograms.fullCommitSeconds.record(fullSaveTime);
-    }
+      case 'cosmic-swingset-run-finish': {
+        histograms.swingset_block_processing_seconds.record(slogObj.seconds);
+        break;
+      }
+      case 'cosmic-swingset-end-block-finish': {
+        const { inboundQueueStartLengths, processedActionCounts } = slogObj;
+        inboundQueueMetrics.updateLengths(inboundQueueStartLengths);
+        for (const processedActionRecord of processedActionCounts) {
+          const { count, phase, type: actionType } = processedActionRecord;
+          if (!knownActionTypes.has(actionType)) {
+            console.warn('Unknown inbound action type', actionType);
+          }
+          processedInboundActionCounter.add(count, { actionType });
+          inboundQueueMetrics.decLength(phase);
+        }
+        break;
+      }
+      case 'cosmic-swingset-commit-block-finish': {
+        const {
+          runSeconds,
+          chainTime,
+          saveTime,
+          cosmosCommitSeconds,
+          fullSaveTime,
+        } = slogObj;
+        histograms.swingsetRunSeconds.record(runSeconds);
+        histograms.swingsetChainSaveSeconds.record(chainTime);
+        histograms.swingsetCommitSeconds.record(saveTime);
+        histograms.cosmosCommitSeconds.record(cosmosCommitSeconds);
+        histograms.fullCommitSeconds.record(fullSaveTime);
+        break;
+      }
 
-    // Consume Swingset kernel slog entries.
-    if (slogType === 'vat-startup-finish') {
-      histograms.swingset_vat_startup.record(slogObj.seconds * 1000);
-    }
-    if (slogType === 'crank-finish') {
-      const { crankType, messageType, seconds } = slogObj;
-      // TODO: Reflect crankType/messageType as proper dimensional attributes.
-      // For now, we're going for parity with direct metrics.
-      if (crankType !== 'routing' && messageType !== 'create-vat') {
-        histograms.swingset_crank_processing_time.record(seconds * 1000);
+      // Consume Swingset kernel slog entries.
+      case 'vat-startup-finish': {
+        histograms.swingset_vat_startup.record(slogObj.seconds * 1000);
+        break;
       }
-    }
+      case 'crank-finish': {
+        const { crankType, messageType, seconds } = slogObj;
+        // TODO: Reflect crankType/messageType as proper dimensional attributes.
+        // For now, we're going for parity with direct metrics.
+        if (crankType !== 'routing' && messageType !== 'create-vat') {
+          histograms.swingset_crank_processing_time.record(seconds * 1000);
+        }
+        break;
+      }
 
-    // Consume miscellaneous slog entries.
-    if (slogType === 'kernel-stats') {
-      const { stats } = slogObj;
-      const notYetFoundKernelStats = new Set(expectedKernelStats);
-      for (const [key, value] of Object.entries(stats)) {
-        notYetFoundKernelStats.delete(key);
-        if (!kernelStats.has(key)) {
-          console.warn('Unexpected SwingSet kernel statistic', key);
+      // Consume miscellaneous slog entries.
+      case 'kernel-stats': {
+        const { stats } = slogObj;
+        const notYetFoundKernelStats = new Set(expectedKernelStats);
+        for (const [key, value] of Object.entries(stats)) {
+          notYetFoundKernelStats.delete(key);
+          if (!kernelStats.has(key)) {
+            console.warn('Unexpected SwingSet kernel statistic', key);
+          }
+          kernelStats.set(key, value);
         }
-        kernelStats.set(key, value);
-      }
-      if (notYetFoundKernelStats.size) {
-        console.warn('Expected SwingSet kernel statistics not found', [
-          ...notYetFoundKernelStats,
-        ]);
-      }
-    }
-    if (slogType === 'cosmic-swingset-after-commit-stats') {
-      const dynamicCounterEntries = Object.entries(
-        dynamicAfterCommitStatsCounters,
-      );
-      for (const [slogKey, meta] of dynamicCounterEntries) {
-        const { namePrefix, options, keys } = meta;
-        meta.data = slogObj[slogKey] || {};
-        const newKeys = Object.keys(meta.data).filter(key => !keys.has(key));
-        for (const key of newKeys) {
-          keys.add(key);
-          const name = `${namePrefix}${key}`;
-          const gauge = otelMeter.createObservableUpDownCounter(name, options);
-          gauge.addCallback(observer => {
-            observer.observe(meta.data[key]);
-          });
+        if (notYetFoundKernelStats.size) {
+          console.warn('Expected SwingSet kernel statistics not found', [
+            ...notYetFoundKernelStats,
+          ]);
         }
+        break;
       }
+      case 'cosmic-swingset-after-commit-stats': {
+        const dynamicCounterEntries = Object.entries(
+          dynamicAfterCommitStatsCounters,
+        );
+        for (const [slogKey, meta] of dynamicCounterEntries) {
+          const { namePrefix, options, keys } = meta;
+          meta.data = slogObj[slogKey] || {};
+          const newKeys = Object.keys(meta.data).filter(key => !keys.has(key));
+          for (const key of newKeys) {
+            keys.add(key);
+            const name = `${namePrefix}${key}`;
+            const gauge = otelMeter.createObservableUpDownCounter(
+              name,
+              options,
+            );
+            gauge.addCallback(observer => {
+              observer.observe(meta.data[key]);
+            });
+          }
+        }
+        break;
+      }
+      default:
+        break;
     }
   };
   return Object.assign(slogSender, {
