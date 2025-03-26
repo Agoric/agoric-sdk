@@ -10,6 +10,7 @@ import { M, mustMatch } from '@endo/patterns';
 import { HubName, normalizeConnectionInfo } from './exos/chain-hub.js';
 import fetchedChainInfo from './fetched-chain-info.js'; // Refresh with scripts/refresh-chain-info.ts
 import { CosmosAssetInfoShape, CosmosChainInfoShape } from './typeGuards.js';
+import { withChainCapabilities } from './chain-capabilities.js';
 
 /**
  * @import {CosmosAssetInfo, CosmosChainInfo} from './types.js';
@@ -111,14 +112,18 @@ export const registerChain = async (
 };
 
 /**
- * Register all the chains that are known statically.
+ * Register all the chains that are known statically in `agoricNames`.
+ *
+ * Not active on or planned for mainnet.
  *
  * @param {ERef<import('@agoric/vats').NameHubKit['nameAdmin']>} agoricNamesAdmin
  * @param {(...messages: string[]) => void} [log]
  */
 export const registerKnownChains = async (agoricNamesAdmin, log) => {
   const handledConnections = new Set();
-  for await (const [name, info] of Object.entries(knownChains)) {
+  for await (const [name, info] of Object.entries(
+    withChainCapabilities(knownChains),
+  )) {
     await registerChain(agoricNamesAdmin, name, info, log, handledConnections);
   }
 };
