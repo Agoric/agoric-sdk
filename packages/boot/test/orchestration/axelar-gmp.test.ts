@@ -308,7 +308,11 @@ test.serial('make contract calls via axelarGmp', async t => {
 });
 
 test.serial('makeAccount via axelarGmp', async t => {
-  const { walletFactoryDriver, storage } = t.context;
+  const {
+    walletFactoryDriver,
+    storage,
+    bridgeUtils: { runInbound },
+  } = t.context;
 
   t.log('making offer');
 
@@ -351,8 +355,14 @@ test.serial('makeAccount via axelarGmp', async t => {
     proposal: {},
   });
 
+  // @ts-ignore
+  const lcaAddress = wallet.getLatestUpdateRecord().status.result;
   t.like(wallet.getLatestUpdateRecord(), {
-    status: { id: 'makeAccountCall', numWantsSatisfied: 1 },
+    status: {
+      id: 'makeAccountCall',
+      numWantsSatisfied: 1,
+      result: lcaAddress,
+    },
   });
 
   await wallet.executeOffer({
@@ -376,7 +386,21 @@ test.serial('makeAccount via axelarGmp', async t => {
     proposal: {},
   });
 
+  await runInbound(
+    BridgeId.VTRANSFER,
+    buildVTransferEvent({
+      sender: makeTestAddress(),
+      target: makeTestAddress(),
+      sourceChannel: 'channel-0',
+      sequence: '1',
+    }),
+  );
+
   t.like(wallet.getLatestUpdateRecord(), {
-    status: { id: 'makeAccountCall', numWantsSatisfied: 1 },
+    status: {
+      id: 'makeAccountCall',
+      numWantsSatisfied: 1,
+      result: 'transfer success',
+    },
   });
 });
