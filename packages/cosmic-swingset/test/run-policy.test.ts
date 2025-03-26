@@ -1,41 +1,42 @@
 /* eslint-env node */
+import type { ParamsSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
+import { BridgeId, deepCopyJsonable, objectMap } from '@agoric/internal';
+import type { BlockInfo } from '@agoric/internal/src/chain-utils.js';
+import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import type { SwingSetConfigDescriptor } from '@agoric/swingset-vat';
+import { assert, Fail, q } from '@endo/errors';
+import { E } from '@endo/far';
 import type { TestFn } from 'ava';
 import anyTest from 'ava';
-import type { BlockInfo } from '@agoric/internal/src/chain-utils.js';
-import { assert, q, Fail } from '@endo/errors';
-import { E } from '@endo/far';
-import { BridgeId, deepCopyJsonable, objectMap } from '@agoric/internal';
-import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import type { KVStore } from '../src/helpers/bufferedStorage.js';
+import { provideEnhancedKVStore } from '../src/helpers/bufferedStorage.js';
+import {
+  DEFAULT_SIM_SWINGSET_PARAMS,
+  makeVatCleanupBudgetFromKeywords,
+  type VatCleanupKeywordsRecord,
+} from '../src/sim-params.js';
 import {
   defaultBootstrapMessage,
   defaultInitMessage,
   makeCosmicSwingsetTestKit,
 } from '../tools/test-kit.js';
-import { provideEnhancedKVStore } from '../src/helpers/bufferedStorage.js';
-import {
-  DEFAULT_SIM_SWINGSET_PARAMS,
-  makeVatCleanupBudgetFromKeywords,
-} from '../src/sim-params.js';
 
 const test = anyTest as TestFn;
 
 /**
  * Converts a Record<name, specifierString> into Record<name, { sourceSpec }>
  * for defining e.g. a `bundles` group.
- *
- * @param {Record<string, string>} src
- * @returns {import('@agoric/swingset-vat').SwingSetConfigDescriptor}
  */
-const makeSourceDescriptors = src => {
+const makeSourceDescriptors = (
+  src: Record<string, string>,
+): SwingSetConfigDescriptor => {
   const hardened = objectMap(src, sourceSpec => ({ sourceSpec }));
   return deepCopyJsonable(hardened);
 };
 
-/**
- * @param {import('../src/sim-params.js').VatCleanupKeywordsRecord} budget
- * @returns {import('@agoric/cosmic-proto/swingset/swingset.js').ParamsSDKType}
- */
-const makeCleanupBudgetParams = budget => {
+const makeCleanupBudgetParams = (
+  budget: VatCleanupKeywordsRecord,
+): ParamsSDKType => {
   return {
     ...DEFAULT_SIM_SWINGSET_PARAMS,
     vat_cleanup_budget: makeVatCleanupBudgetFromKeywords(budget),
@@ -43,12 +44,12 @@ const makeCleanupBudgetParams = budget => {
 };
 
 test('cleanup work must be limited by vat_cleanup_budget', async t => {
-  let finish;
+  let finish: (() => Promise<void>) | undefined;
   t.teardown(() => finish?.());
   // Make a test kit.
   const fakeStorageKit = makeFakeStorageKit('');
   const { toStorage: handleVstorage } = fakeStorageKit;
-  const receiveBridgeSend = (destPortName, msg) => {
+  const receiveBridgeSend = (destPortName: string, msg: any) => {
     switch (destPortName) {
       case BridgeId.STORAGE: {
         return handleVstorage(msg);
@@ -81,10 +82,9 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
 
   // Define helper functions for interacting with its swing store.
   const mapStore = provideEnhancedKVStore(
-    /** @type {KVStore<string>} */ swingStore.kernelStorage.kvStore,
+    swingStore.kernelStorage.kvStore as KVStore<string>,
   );
-  /** @type {(key: string) => string} */
-  const mustGet = key => {
+  const mustGet = (key: string): string => {
     const value = mapStore.get(key);
     assert(value !== undefined, `kvStore entry for ${key} must exist`);
     return value;
@@ -98,7 +98,7 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
     }}`,
   );
   await runNextBlock();
-  const vatIDs = JSON.parse(mustGet('vat.dynamicIDs'));
+  const vatIDs: string[] = JSON.parse(mustGet('vat.dynamicIDs'));
   const vatID = vatIDs.at(-1);
   t.is(
     vatID,
@@ -115,8 +115,8 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
   t.true(mapStore.has(sentinelKey));
 
   // Define helper functions for interacting the vat's kvStore.
-  const getKV = () =>
-    [...mapStore].filter(([key]) => key.startsWith(`${vatID}.`));
+  const getKV = (): [string, string][] =>
+    [...mapStore.entries()].filter(([key]) => key.startsWith(`${vatID}.`));
   const initialEntries = new Map(getKV());
   t.not(initialEntries.size, 0, 'initial kvStore entries must exist');
 
@@ -126,7 +126,10 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
       const { bootstrap } = powers.vats;
       const doomed = await E(bootstrap).getVatRoot('doomed');
 
-      const makeArray = (length, makeElem) => Array.from({ length }, makeElem);
+      const makeArray = <T>(
+        length: number,
+        makeElem: (v: unknown, i: number) => T,
+      ) => Array.from({ length }, makeElem);
 
       // import 20 remotables and 10 promises
       const doomedRemotableImports = await Promise.all(
@@ -214,7 +217,7 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
     params: makeCleanupBudgetParams({ Default: 2 ** 32, Kv: 3 }),
   });
   t.is(getKV().length, onlyKV.length - 3, 'initial kvStore deletion');
-  let lastBlockInfo = await runNextBlock();
+  let lastBlockInfo: BlockInfo | undefined = await runNextBlock();
   t.is(getKV().length, onlyKV.length - 6, 'further kvStore deletion');
 
   // Wait for the sentinel key to be removed, then re-instantiate the swingset
@@ -223,7 +226,7 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
     lastBlockInfo = await runNextBlock();
   }
   await shutdown({ kernelOnly: true });
-  finish = null;
+  finish = undefined;
   {
     // Pick up where we left off with the same data and block,
     // but with a new budget.
@@ -236,14 +239,12 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
         params: makeCleanupBudgetParams({ Default: 2 ** 32 }),
       }),
     };
-    // eslint-disable-next-line no-shadow
-    const { runNextBlock, shutdown } = await makeCosmicSwingsetTestKit(
-      receiveBridgeSend,
-      newOptions,
-    );
-    finish = shutdown;
 
-    await runNextBlock();
+    const { runNextBlock: runNextBlock2, shutdown: shutdown2 } =
+      await makeCosmicSwingsetTestKit(receiveBridgeSend, newOptions);
+    finish = shutdown2;
+
+    await runNextBlock2();
     t.is(getKV().length, 0, 'cleanup complete');
   }
 });
