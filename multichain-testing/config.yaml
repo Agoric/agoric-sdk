@@ -1,5 +1,5 @@
-name: agoric-multichain-testing
-version: 0.2.20
+name: starship-localnet
+version: 1.3.0
 
 chains:
   - id: agoriclocal
@@ -16,7 +16,7 @@ chains:
             unbonding_time: '2m'
         swingset:
           params:
-            bootstrap_vat_config: '@agoric/vm-config/decentral-itest-orchestration-config.json'
+            bootstrap_vat_config: '@agoric/vm-config/decentral-itest-orchestration-chains-config.json'
     scripts:
       updateConfig:
         file: scripts/update-config.sh
@@ -24,89 +24,132 @@ chains:
       enabled: true
       type: starship
     ports:
-      rest: 1317
+      rest: 1316
       rpc: 26657
       exposer: 38087
-      grpc: 9090
+      grpc: 9092
       faucet: 8082
     resources:
       cpu: 1
-      memory: 4Gi
-  - id: osmosislocal
-    name: osmosis
+      memory: 3Gi
+  - id: cosmoshublocal
+    name: cosmoshub
     numValidators: 1
-    genesis:
-      app_state:
-        staking:
-          params:
-            unbonding_time: '2m'
-        interchain_accounts:
-          host_genesis_state:
-            params:
-              host_enabled: true
-              allow_messages: ['*']
-        interchainquery:
-          host_port: 'icqhost'
-          params:
-            host_enabled: true
-            allow_queries:
-              - /cosmos.bank.v1beta1.Query/Balance
-              - /cosmos.bank.v1beta1.Query/AllBalances
     faucet:
       enabled: true
       type: starship
     ports:
       rest: 1315
-      rpc: 26655
-      grpc: 9093
-      faucet: 8084
+      rpc: 26654
+      grpc: 9000
+      faucet: 8088
+  - id: elyslocal
+    name: custom
+    image: mudassirshabbir/elys:latest
+    home: /root/.elys
+    binary: elysd
+    prefix: elys
+    denom: uelys
+    prettyName: Elys
+    coins: 200000000000000uelys
+    hdPath: m/44'/118'/0'/0/0
+    coinType: 118
+    repo: https://github.com/elys-network/elys
+    env:
+    - name: PATH
+      value: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    scripts:
+      createGenesis:
+        file: scripts/init_chain.sh
+      updateGenesis:
+        file: scripts/update_genesis.sh
+    assets:
+      - base: uelys
+        description: "The native token of Elys Network."
+        name: Elys
+        display: elys
+        symbol: ELYS
+        logo_URIs:
+          png: "https://raw.githubusercontent.com/cosmos/chain-registry/master/elys/images/elys.png"
+        denom_units:
+          - denom: uelys
+            exponent: 0
+          - denom: elys
+            exponent: 6
+        coingecko_id: elys-network
+        keywords: [ "elys-network" ]
+    numValidators: 1
+    ics:
+      enabled: true
+      provider: cosmoshublocal 
+    faucet:
+      enabled: true
+      type: starship
+      resources:
+        cpu: 200m
+        memory: 500Mi  # Increase memory
+    ports:
+      rest: 1317
+      rpc: 26659
+      grpc: 9098
+      faucet: 8079
     resources:
       cpu: 1
-      memory: 1Gi
-  - id: cosmoshublocal
-    name: cosmoshub
+      memory: 2Gi
+  - id: stridelocal
+    name: stride
     numValidators: 1
-    genesis:
-      app_state:
-        staking:
-          params:
-            unbonding_time: '2m'
-        interchain_accounts:
-          host_genesis_state:
-            params:
-              host_enabled: true
-              allow_messages: ['*']
+    ics:
+      enabled: true
+      provider: cosmoshublocal 
     faucet:
       enabled: true
       type: starship
     ports:
-      rest: 1314
-      rpc: 26654
-      grpc: 9092
-      faucet: 8083
-    resources:
-      cpu: 1
-      memory: 1Gi
+      rest: 1313
+      rpc: 26653
+      grpc: 9099
+      faucet: 8089
 
 relayers:
-  - name: osmosis-cosmoshub
-    type: hermes
+  - name: stride-cosmoshub
+    type: go-relayer
     replicas: 1
     chains:
-      - osmosislocal
       - cosmoshublocal
-  - name: agoric-osmosis
-    type: hermes
+      - stridelocal
+    ics:
+      enabled: true
+      consumer: stridelocal
+      provider: cosmoshublocal
+  - name: elys-cosmoshub
+    type: go-relayer
     replicas: 1
     chains:
-      - agoriclocal
-      - osmosislocal
+      - cosmoshublocal
+      - elyslocal
+    ics:
+      enabled: true
+      consumer: elyslocal
+      provider: cosmoshublocal
   - name: agoric-cosmoshub
     type: hermes
     replicas: 1
     chains:
       - agoriclocal
       - cosmoshublocal
+  - name: agoric-elys
+    type: hermes
+    replicas: 1
+    chains:
+      - agoriclocal
+      - cosmoshublocal
+  - name: agoric-stride
+    type: hermes
+    replicas: 1
+    chains:
+      - agoriclocal
+      - stridelocal  
 
 explorer:
   enabled: false

@@ -56,22 +56,26 @@ function set_helm_args() {
   if [[ $DRY_RUN ]]; then
     args="$args --dry-run --debug"
   fi
-  num_chains=$(yq -r ".chains | length - 1" ${CONFIGFILE})
+  num_chains=$(yq eval ".chains | length - 1" ${CONFIGFILE})
+  echo "num_chains: $num_chains"
   if [[ $num_chains -lt 0 ]]; then
     echo "No chains to parse: num: $num_chains"
     return 0
   fi
   for i in $(seq 0 $num_chains); do
-    scripts=$(yq -r ".chains[$i].scripts" ${CONFIGFILE})
+    scripts=$(yq eval ".chains[$i].scripts" ${CONFIGFILE})
     if [[ "$scripts" == "null" ]]; then
-      return 0
+      continue
     fi
     datadir="$(
       cd "$(dirname -- "${CONFIGFILE}")" > /dev/null
       pwd -P
     )"
-    for script in $(yq -r ".chains[$i].scripts | keys | .[]" ${CONFIGFILE}); do
-      args="$args --set-file chains[$i].scripts.$script.data=$datadir/$(yq -r ".chains[$i].scripts.$script.file" ${CONFIGFILE})"
+    echo "datadir: $datadir"
+    echo "configfile: $CONFIGFILE"
+    for script in $(yq eval ".chains[$i].scripts | keys | .[]" ${CONFIGFILE}); do
+      echo "script: $script, [i]: $i"
+      args="$args --set-file chains[$i].scripts.$script.data=$datadir/$(yq eval ".chains[$i].scripts.$script.file" ${CONFIGFILE})"
     done
   done
 }
@@ -123,5 +127,8 @@ while [ $# -gt 0 ]; do
 done
 
 check_helm
+echo "CHeck Helm completed"
 setup_helm
+echo "Setup Helm completed"
 install_chart
+echo "Install chart completed"
