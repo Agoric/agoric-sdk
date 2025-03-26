@@ -26,6 +26,64 @@ Over time we can update our tooling to decouple this more from the `packages` di
    `dapps` directory. `multichain-testing` does this now but not organized per contract.
 4. Move this package out of agoric-sdk
 
+# Funds flow
+
+```mermaid
+sequenceDiagram
+  actor User as User
+  participant NEA as User Wallet<br>[Browser]
+  participant ETH as CCTP Contract<br>[Ethereum]
+  participant NFA as Noble Forwarding Account<br/>[Noble]
+  participant NC as Noble Chain<br/>[Noble]
+  participant NAR as Noble-Agoric<br/>[IBC Relayer]
+  participant SA as Settlement Account<br/>[Agoric]
+  participant CFA as Contract Fee Account<br/>[Agoric]
+  participant DAR as Destination-Agoric<br/>[IBC Relayer]
+  participant EUD as End User Destination<br/>[Dest Chain]
+
+  autonumber
+  rect rgb(240, 248, 255)
+    User ->> NEA: Sign transaction<br/>(MintAmount, to NFA)
+    NEA ->> ETH: Submit USDC Burn Txn via CCTP
+  end
+  rect rgb(200, 255, 230)
+    FUC ->> P: Initiate PFM transfer(AdvanceAmount, EUD) from pool<br/>of Noble-Agoric tokens to EUD Chain
+    P ->> NC: PFM transfer(AdvanceAmount of Agoric USDC denom) to EUD
+    NC ->> EUD: deliver AdvanceAmount as final USDC denom
+  end
+  Note over User, EUD: User got their AdvanceAmountof IBC USDC<br/>UX COMPLETE
+  rect rgb(255, 200, 200)
+    Note over ETH, SA: Minting Process
+    Note over ETH: ~12 minutes for Ethereum finality
+    Note over NC: 1-6 minutes for CCTP<br/>to Mint on Noble
+    NC ->> NFA: Noble CCTP contract mints USDC<br/> into Noble Forwarding Address
+    NFA ->> NAR: Broadcast Forward MintAmount (as Agoric USDC Denom) to FU Account
+    NAR ->> SA: Relay    
+  end
+  rect rgb(255, 245, 230)
+    Note over FUC, CFA: Settlement Process
+    alt Advance was started:
+      FUC ->> SA: Initiate transfers out of settlement
+      SA ->> P: Deposit the AdvanceAmount + PoolFee (= MintAmount - ContractFee)
+      SA ->> CFA: Deposit ContractFee
+    else Advance for matched transaction that has not yet started:
+      P ->> NC: PFM transfer(MintAmount of Agoric USDC denom) to EUD
+      NC ->> EUD: deliver MintAmount as final USDC denom
+    else Settlement for unknown transaction:
+      Note over SA: Leave funds in SettlementAccount.
+      Note over SA: Wait for observation from watcher
+    end
+  end
+```
+
+Not pictured:
+- Circle Attestation Service
+- CCTP Relayer
+
+"Noble Forwarding Account" is also owned by the CCTP Relayer as they actually register it
+CCTP Relayer can be many parties, but only one when caller is specified
+
+
 # Transaction flow
 
 ```mermaid
@@ -49,11 +107,13 @@ sequenceDiagram
     participant ETH as CCTP Contract<br/>[Ethereum]
     participant NFA as Noble Forwarding Account<br/>[Noble]
     participant NC as Noble Chain<br/>[Noble]
+    participant NAR as Noble-Agoric<br/>[Relayer]
     participant OCW as Eth Watcher<br/>[Off-chain]
     participant FUC as Fast USDC Contract<br/>[Agoric]
     participant P as Pool<br/>[Agoric]
     participant SA as Settlement Account<br/>[Agoric]
     participant CFA as Contract Fee Account<br/>[Agoric]
+    participant DAR as Destination-Agoric<br/>[Relayer]
     participant EUD as End User Destination<br/>[User]
 
     %% Notation: --> for async, ->> for sync
