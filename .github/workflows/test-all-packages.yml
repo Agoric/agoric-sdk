@@ -367,6 +367,11 @@ jobs:
         # test:xs is noop in governance/package.json
         engine: ['node-lts', 'node-lts-prev']
     steps:
+      - name: set vars
+        id: vars
+        run: |
+          echo "test=${{ matrix.engine == env.ACTIVE_XS_VERSION_NAME && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
+          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
@@ -374,7 +379,7 @@ jobs:
       # END-TEST-BOILERPLATE
       - name: yarn test (governance)
         if: (success() || failure())
-        run: cd packages/governance && yarn test | $TEST_COLLECT
+        run: cd packages/governance && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
         uses: ./.github/actions/notify-status
@@ -401,6 +406,11 @@ jobs:
         # test:xs is noop in solo/package.json
         engine: ['node-lts', 'node-lts-prev']
     steps:
+      - name: set vars
+        id: vars
+        run: |
+          echo "test=${{ matrix.engine == env.ACTIVE_XS_VERSION_NAME && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
+          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
@@ -408,7 +418,7 @@ jobs:
       # END-TEST-BOILERPLATE
       - name: yarn test (solo)
         if: (success() || failure())
-        run: cd packages/solo && yarn test | $TEST_COLLECT
+        run: cd packages/solo && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
         uses: ./.github/actions/notify-status
@@ -478,6 +488,11 @@ jobs:
         # test:xs is noop in inter-protocol/package.json
         engine: ['node-lts', 'node-lts-prev']
     steps:
+      - name: set vars
+        id: vars
+        run: |
+          echo "test=${{ matrix.engine == env.ACTIVE_XS_VERSION_NAME && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
+          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
@@ -485,7 +500,7 @@ jobs:
       # END-TEST-BOILERPLATE
       - name: yarn test (inter-protocol)
         if: (success() || failure())
-        run: cd packages/inter-protocol && yarn test | $TEST_COLLECT
+        run: cd packages/inter-protocol && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
         uses: ./.github/actions/notify-status
