@@ -27,24 +27,33 @@ const watchSharedFile = filePath => {
        * @type {import('fs').FSWatcher}
        */
       let watcher;
+      /**
+       * @type {Error}
+       */
+      let error;
 
       /**
        * @param {import('fs').WatchEventType} eventType
        */
       const listener = eventType => {
-        if (eventType === 'change') {
-          const possibleContent = checkFileContent(filePath, message);
-          if (possibleContent) {
-            watcher.close();
-            resolve(possibleContent);
+        try {
+          if (eventType === 'change') {
+            const possibleContent = checkFileContent(filePath, message);
+            if (possibleContent) {
+              watcher.close();
+              resolve(possibleContent);
+            }
           }
+        } catch (err) {
+          watcher.close();
+          error = err;
         }
       };
 
       watcher = watch(filePath, FILE_ENCODING, listener);
 
-      watcher.on('close', () => reject(Error('Watcher closed')));
-      watcher.on('error', error => reject(error));
+      watcher.on('close', () => reject(error ?? Error('Watcher closed')));
+      watcher.on('error', err => reject(err));
 
       listener('change');
     })
