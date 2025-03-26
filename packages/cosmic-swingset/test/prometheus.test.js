@@ -126,6 +126,22 @@ test('Prometheus metric definitions', async t => {
       // Directly-produced "swingset_crank_processing_time" includes kvStore
       // lookups in `getNextMessageAndProcessor` for dequeueing messages.
       ['swingset_crank_processing_time_sum', [50, '%']],
+
+      // Memory measurements vary based on when they are captured.
+      ['heapStats_external_memory', [20, '%']],
+      ['heapStats_malloced_memory', [20, '%']],
+      ['heapStats_peak_malloced_memory', [20, '%']],
+      ['heapStats_total_available_size', [20, '%']],
+      ['heapStats_total_heap_size', [20, '%']],
+      ['heapStats_total_heap_size_executable', [20, '%']],
+      ['heapStats_total_physical_size', [20, '%']],
+      ['heapStats_used_global_handles_size', [20, '%']],
+      ['heapStats_used_heap_size', [20, '%']],
+      ['memoryUsage_arrayBuffers', [20, '%']],
+      ['memoryUsage_external', [20, '%']],
+      ['memoryUsage_heapTotal', [20, '%']],
+      ['memoryUsage_heapUsed', [20, '%']],
+      ['memoryUsage_rss', [20, '%']],
     ])
   );
   for (const directEntry of directMetrics.comparableData.entries()) {

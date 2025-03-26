@@ -93,8 +93,11 @@ export const makeSlogSender = async (opts = /** @type {any} */ ({})) => {
   const makeLazyStats = (namePrefix, description) => {
     return { namePrefix, options: { description }, keys: new Set(), data: {} };
   };
-  const dynamicEndBlockCounters = {
-    memStats: makeLazyStats('memoryUsage_', 'kernel process memory statistic'),
+  const dynamicAfterCommitStatsCounters = {
+    memoryUsage: makeLazyStats(
+      'memoryUsage_',
+      'kernel process memory statistic',
+    ),
     heapStats: makeLazyStats('heapStats_', 'v8 kernel heap statistic'),
   };
 
@@ -126,19 +129,6 @@ export const makeSlogSender = async (opts = /** @type {any} */ ({})) => {
         }
         processedInboundActionCounter.add(count, { actionType });
         inboundQueueMetrics.decLength(phase);
-      }
-      for (const [slogKey, meta] of Object.entries(dynamicEndBlockCounters)) {
-        const { namePrefix, options, keys } = meta;
-        meta.data = slogObj[slogKey] || {};
-        const newKeys = Object.keys(meta.data).filter(key => !keys.has(key));
-        for (const key of newKeys) {
-          keys.add(key);
-          const name = `${namePrefix}${key}`;
-          const gauge = otelMeter.createObservableUpDownCounter(name, options);
-          gauge.addCallback(observer => {
-            observer.observe(meta.data[key]);
-          });
-        }
       }
     }
     if (slogType === 'cosmic-swingset-commit-block-finish') {
@@ -184,6 +174,24 @@ export const makeSlogSender = async (opts = /** @type {any} */ ({})) => {
         console.warn('Expected SwingSet kernel statistics not found', [
           ...notYetFoundKernelStats,
         ]);
+      }
+    }
+    if (slogType === 'cosmic-swingset-after-commit-stats') {
+      const dynamicCounterEntries = Object.entries(
+        dynamicAfterCommitStatsCounters,
+      );
+      for (const [slogKey, meta] of dynamicCounterEntries) {
+        const { namePrefix, options, keys } = meta;
+        meta.data = slogObj[slogKey] || {};
+        const newKeys = Object.keys(meta.data).filter(key => !keys.has(key));
+        for (const key of newKeys) {
+          keys.add(key);
+          const name = `${namePrefix}${key}`;
+          const gauge = otelMeter.createObservableUpDownCounter(name, options);
+          gauge.addCallback(observer => {
+            observer.observe(meta.data[key]);
+          });
+        }
       }
     }
   };
