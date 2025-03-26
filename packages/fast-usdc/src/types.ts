@@ -12,6 +12,12 @@ import type { CopyRecord, Passable } from '@endo/pass-style';
 import type { PendingTxStatus, TxStatus } from './constants.js';
 import type { RepayAmountKWR } from './utils/fees.js';
 
+// XXX duped with Zoe contractSupport ambient types
+type Ratio = {
+  numerator: Amount<'nat'>;
+  denominator: Amount<'nat'>;
+};
+
 /**
  * Block hash is calculated using the keccak256 algorithm that always results
  * in 32 bytes (64 hex characters prepended by 0x) no matter the input length.
