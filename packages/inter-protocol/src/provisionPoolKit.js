@@ -27,6 +27,7 @@ import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
  * @import {EReturn} from '@endo/far';
  * @import {BridgeMessage} from '@agoric/cosmic-swingset/src/types.js';
  * @import {Amount, Brand, Payment, Purse} from '@agoric/ertp';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {ZCF} from '@agoric/zoe';
  * @import {ERef} from '@endo/far'
  * @import {Bank, BankManager} from '@agoric/vats/src/vat-bank.js'

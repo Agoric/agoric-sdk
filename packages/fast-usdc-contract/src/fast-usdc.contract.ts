@@ -1,4 +1,4 @@
-import { AssetKind } from '@agoric/ertp';
+import { AssetKind, type Amount } from '@agoric/ertp';
 import {
   FastUSDCTermsShape,
   FeeConfigShape,
@@ -39,6 +39,7 @@ import type {
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
 import type { Zone } from '@agoric/zone';
+import type { ContractMeta, Invitation, ZCF } from '@agoric/zoe';
 import { prepareAdvancer } from './exos/advancer.ts';
 import { prepareLiquidityPoolKit } from './exos/liquidity-pool.ts';
 import { prepareSettler } from './exos/settler.ts';
