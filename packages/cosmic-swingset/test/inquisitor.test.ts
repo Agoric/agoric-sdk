@@ -50,8 +50,7 @@ test('smoke test', async t => {
   const { stable: helpers } = makeHelpers({ db });
   t.truthy(helpers.kvGet('vat.names'));
   t.true(Array.isArray(helpers.kvGetJSON('vat.dynamicIDs')));
-  /** @type {any} */
-  const vatAdmin = helpers.vatsByName.get('vatAdmin');
+  const vatAdmin: any = helpers.vatsByName.get('vatAdmin');
   t.like(vatAdmin, { name: 'vatAdmin', isStatic: true }, 'vatAdmin');
   {
     const { vatID } = vatAdmin;
@@ -65,8 +64,7 @@ test('smoke test', async t => {
     const rootRefsByKref = helpers.getRefs(rootKref);
     t.deepEqual(rootRefsByKref, rootRefs, 'vatAdmin root object kref');
 
-    /** @type {any} */
-    const clist = helpers.kvGlob(`${vatID}.c.*`);
+    const clist: any = helpers.kvGlob(`${vatID}.c.*`);
     t.true(clist.length > 0);
     const rootRow = clist.find(row => row.value === rootKref);
     t.like(
