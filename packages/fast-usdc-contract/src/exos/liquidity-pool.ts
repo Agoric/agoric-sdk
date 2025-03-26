@@ -230,14 +230,14 @@ export const prepareLiquidityPoolKit = (
       },
 
       depositHandler: {
-        async handle(lpSeat: ZCFSeat) {
+        async handle(lp: ZCFSeat) {
           const { shareWorth, shareMint, poolSeat, encumberedBalance } =
             this.state;
           const { external } = this.facets;
 
           const proposal =
             // @ts-expect-error ensured by proposalShape
-            lpSeat.getProposal() as USDCProposalShapes['deposit'];
+            lp.getProposal() as USDCProposalShapes['deposit'];
           checkPoolBalance(
             poolSeat.getCurrentAllocation(),
             shareWorth,
@@ -252,16 +252,16 @@ export const prepareLiquidityPoolKit = (
             zcf.atomicRearrange(
               harden([
                 // zoe guarantees lp has proposal.give allocated
-                [lpSeat, poolSeat, proposal.give],
+                [lp, poolSeat, proposal.give],
                 // mintGains() above establishes that sharePayout has post.payouts
-                [sharePayout, lpSeat, post.payouts],
+                [sharePayout, lp, post.payouts],
               ]),
             );
           } catch (cause) {
             // UNTIL #10684: ability to terminate an incarnation w/o terminating the contract
             throw new Error('🚨 cannot commit deposit', { cause });
           } finally {
-            lpSeat.exit();
+            lp.exit();
             sharePayout.exit();
           }
           external.publishPoolMetrics();
