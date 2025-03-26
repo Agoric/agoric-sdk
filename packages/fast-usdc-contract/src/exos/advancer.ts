@@ -36,6 +36,7 @@ import type { Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
+import { parseAccountIdArg } from '@agoric/orchestration/src/utils/address.js';
 import type { LiquidityPoolKit } from './liquidity-pool.js';
 import type { StatusManager } from './status-manager.js';
 import type { SettlerKit } from './settler.js';
@@ -284,8 +285,8 @@ export const prepareAdvancerKit = (
             });
 
             /** @type {AccountId} */
-            const accountId = chainHub.resolveAccountId(destination);
-            const chainId = getReference(accountId);
+            const accountId = parseAccountIdArg(destination);
+            const chainId = accountId.reference;
             const info = await when(chainHub.getChainInfoByChainId(chainId));
 
             let transferOrSendV;
@@ -296,7 +297,7 @@ export const prepareAdvancerKit = (
               const cosmosAddress = makeCosmosAccountId(
                 chainId,
                 'bech32',
-                getAddress(accountId),
+                accountId.accountAddress,
               );
               transferOrSendV = E(poolAccount).send(cosmosAddress, amount);
             } else if (info.namespace === 'cosmos') {
@@ -382,11 +383,11 @@ export const prepareAdvancerKit = (
           const { notifier } = this.state;
           const { advanceAmount, destination, ...detail } = ctx;
           log('Advance succeeded', { advanceAmount, destination });
-          const resolved = chainHub.resolveAccountId(destination);
+          const caip10Dest = parseAccountIdArg(destination);
           const cosmosAddress = makeCosmosAccountId(
-            getReference(resolved),
+            caip10Dest.reference,
             'bech32',
-            getAddress(resolved),
+            caip10Dest.accountAddress,
           );
           notifier.notifyAdvancingResult(
             { destination: cosmosAddress, ...detail },

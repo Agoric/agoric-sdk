@@ -280,7 +280,11 @@ export const prepareSettler = (
             if (success) {
               void this.facets.self.disburse(txHash, fullValue);
             } else {
-              void this.facets.self.forward(txHash, fullValue, destination);
+              void this.facets.self.forward(
+                txHash,
+                fullValue,
+                destination.value,
+              );
             }
           } else {
             statusManager.advanceOutcome(forwardingAddress, fullValue, success);
@@ -309,7 +313,7 @@ export const prepareSettler = (
             );
             asMultiset(mintedEarly).remove(key);
             statusManager.advanceOutcomeForUnknownMint(evidence);
-            void this.facets.self.forward(txHash, amount, destination);
+            void this.facets.self.forward(txHash, amount, destination.value);
             return true;
           }
           return false;
