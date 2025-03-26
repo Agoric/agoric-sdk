@@ -3,6 +3,7 @@ import { Fail, q } from '@endo/errors';
 /**
  * @import {IBCConnectionID} from '@agoric/vats';
  * @import {CosmosChainAddress, ScopedChainId} from '../types.js';
+ * @import {AccountIdArg} from '../orchestration-api.ts';
  * @import {RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  */
 
@@ -141,3 +142,34 @@ export const parseAccountId = partialId => {
   throw Fail`Invalid accountId: ${q(partialId)}`;
 };
 harden(parseAccountId);
+
+/**
+ * Parses an AccountIdArg into a structured format. Handles both CAIP-10 strings
+ * and CosmosChainAddress objects.
+ *
+ * @param {AccountIdArg} accountIdArg CAIP-10 account ID string or CosmosChainAddress object
+ * @returns {{
+ *       namespace?: string;
+ *       reference?: string;
+ *       accountAddress: string;
+ *     }}
+ *   - The parsed account details. Namespace and reference are optional for unscoped addresses.
+ */
+export const parseAccountIdArg = accountIdArg => {
+  if (typeof accountIdArg === 'string') {
+    return parseAccountId(accountIdArg);
+  } else if (typeof accountIdArg === 'object' && accountIdArg !== null) {
+    const { chainId, value } = accountIdArg;
+    // Assume 'cosmos' namespace for CosmosChainAddress if not explicitly provided via CAIP-10 format
+    // TODO: How to determine namespace reliably? For now, assume cosmos.
+    if (chainId && value) {
+      return {
+        namespace: 'cosmos', // Assumption
+        reference: chainId,
+        accountAddress: value,
+      };
+    }
+  }
+  throw Fail`Invalid AccountIdArg: ${q(accountIdArg)}`;
+};
+harden(parseAccountIdArg);

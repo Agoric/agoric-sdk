@@ -6,6 +6,7 @@ import {
   findAddressField,
   getBech32Prefix,
   parseAccountId,
+  parseAccountIdArg,
 } from '../../src/utils/address.js';
 
 test('makeICAChannelAddress', t => {
@@ -194,5 +195,86 @@ test('parseAccountId - invalid format - non-string', t => {
   // @ts-expect-error intentional invalid input
   t.throws(() => parseAccountId(accountId3), {
     message: 'Empty accountId: "[undefined]"',
+  });
+});
+
+// Tests for parseAccountIdArg
+test('parseAccountIdArg - valid CAIP-10 string', t => {
+  const accountIdArg = 'cosmos:cosmoshub-4:cosmos1234';
+  const expected = {
+    namespace: 'cosmos',
+    reference: 'cosmoshub-4',
+    accountAddress: 'cosmos1234',
+  };
+  t.deepEqual(parseAccountIdArg(accountIdArg), expected);
+});
+
+test('parseAccountIdArg - valid unscoped address string', t => {
+  const accountIdArg = 'agoric1234';
+  const expected = {
+    accountAddress: 'agoric1234',
+  };
+  t.deepEqual(parseAccountIdArg(accountIdArg), expected);
+});
+
+test('parseAccountIdArg - valid CosmosChainAddress object', t => {
+  const accountIdArg = {
+    chainId: 'cosmoshub-4',
+    value: 'cosmos1234',
+    encoding: 'bech32', // Encoding is part of the type but not used in parsing logic here
+  };
+  const expected = {
+    namespace: 'cosmos', // Assumed namespace
+    reference: 'cosmoshub-4',
+    accountAddress: 'cosmos1234',
+  };
+  t.deepEqual(parseAccountIdArg(accountIdArg), expected);
+});
+
+test('parseAccountIdArg - invalid string format', t => {
+  const accountIdArg = 'cosmos:cosmos1234';
+  t.throws(() => parseAccountIdArg(accountIdArg), {
+    message: /Invalid accountId: "cosmos:cosmos1234"/,
+  });
+});
+
+test('parseAccountIdArg - invalid object format - missing chainId', t => {
+  const accountIdArg = {
+    // chainId: 'cosmoshub-4',
+    value: 'cosmos1234',
+    encoding: 'bech32',
+  };
+  // @ts-expect-error intentional invalid input
+  t.throws(() => parseAccountIdArg(accountIdArg), {
+    message: /Invalid AccountIdArg: {"encoding":"bech32","value":"cosmos1234"}/,
+  });
+});
+
+test('parseAccountIdArg - invalid object format - missing value', t => {
+  const accountIdArg = {
+    chainId: 'cosmoshub-4',
+    // value: 'cosmos1234',
+    encoding: 'bech32',
+  };
+  // @ts-expect-error intentional invalid input
+  t.throws(() => parseAccountIdArg(accountIdArg), {
+    message:
+      /Invalid AccountIdArg: {"chainId":"cosmoshub-4","encoding":"bech32"}/,
+  });
+});
+
+test('parseAccountIdArg - invalid type - null', t => {
+  const accountIdArg = null;
+  // @ts-expect-error intentional invalid input
+  t.throws(() => parseAccountIdArg(accountIdArg), {
+    message: /Invalid AccountIdArg: null/,
+  });
+});
+
+test('parseAccountIdArg - invalid type - number', t => {
+  const accountIdArg = 123;
+  // @ts-expect-error intentional invalid input
+  t.throws(() => parseAccountIdArg(accountIdArg), {
+    message: /Invalid AccountIdArg: 123/,
   });
 });
