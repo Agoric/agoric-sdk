@@ -10,7 +10,11 @@ import {
 import { SigningStargateClient } from '@cosmjs/stargate';
 
 export const cctpTypes: ReadonlyArray<[string, GeneratedType]> = [
-  ['/circle.cctp.v1.MsgDepositForBurn', MsgDepositForBurn],
+  [
+    '/circle.cctp.v1.MsgDepositForBurn',
+    // @ts-expect-error type of encode doesn't match. not sure why
+    MsgDepositForBurn,
+  ],
 ];
 
 function createDefaultRegistry(): Registry {
@@ -27,6 +31,24 @@ const domains = {
   eth: 0,
   solana: 5,
 };
+
+const configs = {
+  test: {
+    noble: {
+      explorer: 'https://mintscan.io/noble-testnet',
+      rpc: 'https://noble-testnet-rpc.polkachu.com:443',
+    },
+    eth: { explorer: 'https://sepolia.etherscan.io' },
+  },
+  main: {
+    noble: {
+      explorer: 'https://mintscan.io/noble',
+      rpc: 'https://noble-rpc.polkachu.com:443',
+    },
+    eth: { explorer: 'https://etherscan.io' },
+  },
+};
+const config = configs.test;
 
 // https://github.com/Agoric/agoric-sdk/pull/11037/files#diff-ab8e7785ae43086c39c85476d30212af7ed31ef5d5f19bb56e06f25999d9b11aR153
 /**
@@ -65,15 +87,7 @@ const go = async (
 
   const result = await client.signAndBroadcast(from, [msg], exampleFee);
 
-  console.log(
-    // `Burned on Noble: https://mintscan.io/noble/tx/${result.transactionHash}`,
-    `Burned on Noble: https://mintscan.io/noble-testnet/tx/${result.transactionHash}`,
-  );
-  console.log(
-    'minted on Eth:',
-    // `https://etherscan.io/address/${destEthAddr}`,
-    `https://sepolia.etherscan.io/address/${destEthAddr}`,
-  );
+  return result.transactionHash;
 };
 
 const main = async () => {
@@ -87,13 +101,17 @@ const main = async () => {
   console.log('source addr:', account.address);
 
   const client = await SigningStargateClient.connectWithSigner(
-    'https://noble-testnet-rpc.polkachu.com:443',
-    // 'https://noble-rpc.polkachu.com:443',
+    config.noble.rpc,
     wallet,
     { registry: createDefaultRegistry() },
   );
 
-  await go(client, account.address, dest);
+  const transactionHash = await go(client, account.address, dest);
+
+  console.log(
+    `Burned on Noble: ${config.noble.explorer}/tx/${transactionHash}`,
+  );
+  console.log('minting on Eth:', `${config.eth.explorer}/address/${dest}`);
 };
 
 main().catch(err => console.error(err));
