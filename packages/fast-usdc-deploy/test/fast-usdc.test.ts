@@ -368,20 +368,20 @@ test.serial('writes pool metrics to vstorage', async t => {
 });
 
 test.serial('deploy RC2; update Settler reference', async t => {
-  const { evalReleasedProposal } = t.context;
-  const evalP = evalReleasedProposal(
-    'fast-usdc-rc2',
-    'eval-fast-usdc-settler-ref',
-  );
-  await t.notThrowsAsync(evalP);
+  const { evalReleasedProposal, getVatDetailsByName } = t.context;
+  await evalReleasedProposal('fast-usdc-rc2', 'eval-fast-usdc-settler-ref');
+  const [vatDetails] = await getVatDetailsByName('fastUsdc');
+  t.is(vatDetails.incarnation, 2);
 });
 
 test.serial('deploy HEAD; update ChainHub for EVM/Solana', async t => {
-  const { buildProposal, evalProposal } = t.context;
+  const { buildProposal, evalProposal, getVatDetailsByName } = t.context;
   const materials = await buildProposal(
     '@aglocal/fast-usdc-deploy/src/fast-usdc-evm-solana.build.js',
   );
-  await t.notThrowsAsync(evalProposal(materials));
+  await evalProposal(materials);
+  const [vatDetails] = await getVatDetailsByName('fastUsdc');
+  t.is(vatDetails.incarnation, 3);
 });
 
 test.serial('makes usdc advance', async t => {
