@@ -1,13 +1,22 @@
-import test from 'ava';
+import type { TestFn, ThrowsExpectation } from 'ava';
+import anyTest from 'ava';
 import {
   defangEvaluableCode,
   compartmentEvaluate,
 } from '../scripts/clean-core-eval.js';
 
+const test = anyTest as TestFn;
+
+type EvaluationExpectation = ThrowsExpectation<Error>;
+type Sample = [
+  code: string,
+  transformed?: string,
+  originalExpected?: EvaluationExpectation,
+  defangedExpected?: EvaluationExpectation,
+];
+
 test('defangEvaluableCode is working', t => {
-  /** @typedef {import('ava').ThrowsExpectation<Error>} EvaluationExpectation */
-  /** @type {Array<[string, string?, EvaluationExpectation?, EvaluationExpectation?]>} */
-  const samples = [
+  const samples: Sample[] = [
     [''],
     [
       `\n// <!-- foo\n\n`,
