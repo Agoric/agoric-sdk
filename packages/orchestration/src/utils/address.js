@@ -2,7 +2,7 @@ import { Fail, q } from '@endo/errors';
 
 /**
  * @import {IBCConnectionID} from '@agoric/vats';
- * @import {CosmosChainAddress, ScopedChainId} from '../types.js';
+ * @import {Bech32Address, CosmosChainAddress, ScopedChainId} from '../types.js';
  * @import {AccountId, AccountIdArg, Caip10Record} from '../orchestration-api.js';
  * @import {RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  */
@@ -93,7 +93,7 @@ harden(findAddressField);
  * [bech32.js](https://github.com/bitcoinjs/bech32/blob/5ceb0e3d4625561a459c85643ca6947739b2d83c/src/index.ts#L146)
  * for the reference implementation.
  *
- * @param {string} address - The full Bech32-encoded address.
+ * @param {Bech32Address} address - The full Bech32-encoded address.
  * @returns {string} - The extracted HRP (prefix).
  */
 export const getBech32Prefix = address => {

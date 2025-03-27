@@ -288,7 +288,7 @@ export const makeChainHub = (
   const makeDenomKey = (denom, srcChainName) => `${srcChainName}:${denom}`;
 
   /**
-   * @param {string} address
+   * @param {Bech32Address} address
    * @returns {string}
    */
   const resolveCosmosChainId = address => {
@@ -624,7 +624,8 @@ export const makeChainHub = (
     },
 
     /**
-     * @param {string} partialId CAIP-10 account ID or a Cosmos bech32 address
+     * @param {AccountId | Bech32Address} partialId CAIP-10 account ID or a
+     *   Cosmos bech32 address
      * @returns {AccountId}
      * @throws {Error} if chain info not found for bech32Prefix
      */
@@ -634,8 +635,10 @@ export const makeChainHub = (
         return /** @type {AccountId} */ (partialId);
       }
 
-      const reference = resolveCosmosChainId(partialId);
-      return `cosmos:${reference}:${partialId}`;
+      const cosmosChainId = resolveCosmosChainId(
+        /** @type {Bech32Address} */ (partialId),
+      );
+      return `cosmos:${cosmosChainId}:${partialId}`;
     },
 
     /**
@@ -654,9 +657,11 @@ export const makeChainHub = (
         });
       }
 
-      const chainId = resolveCosmosChainId(partialId);
+      const cosmosChainId = resolveCosmosChainId(
+        /** @type {Bech32Address} */ (partialId),
+      );
       return harden({
-        chainId,
+        chainId: cosmosChainId,
         value: partialId,
         encoding: /** @type {const} */ ('bech32'),
       });
