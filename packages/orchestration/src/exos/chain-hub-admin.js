@@ -43,7 +43,7 @@ export const prepareChainHubAdmin = (zone, chainHub) => {
     }),
     {
       /**
-       * Register information for a chain
+       * Register information for a Cosmos chain
        *
        * @param {string} chainName - must not exist in chainHub
        * @param {ChainInfo} chainInfo

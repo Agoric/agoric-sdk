@@ -465,6 +465,8 @@ export const makeChainHub = (
       return lookupChainInfo(chainName);
     },
     /**
+     * Register information for a Cosmos chain
+     *
      * @param {string} primaryChainId
      * @param {string} counterpartyChainId
      * @param {IBCConnectionInfo} connectionInfo from primary to counterparty
@@ -480,8 +482,9 @@ export const makeChainHub = (
     /**
      * Update connection info by completely replacing existing entry
      *
-     * @param {string} primaryChainId - ID of primary chain
-     * @param {string} counterpartyChainId - ID of counterparty chain
+     * @param {string} primaryChainId - Cosmos chainId of primary chain
+     * @param {string} counterpartyChainId - Cosmos chainId of counterparty
+     *   chain
      * @param {IBCConnectionInfo} connectionInfo - New connection info
      * @throws {Error} If connection not registered
      */
