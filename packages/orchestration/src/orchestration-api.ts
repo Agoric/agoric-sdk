@@ -63,7 +63,7 @@ export type AmountArg = DenomAmount | Amount<'nat'>;
  *
  * @see {@link https://chainagnostic.org/CAIPs/caip-2}
  */
-export type ScopedChainId = `${string}:${string}`;
+export type CaipChainId = `${string}:${string}`;
 
 /**
  * à la CAIP-10
@@ -74,7 +74,7 @@ export type ScopedChainId = `${string}:${string}`;
  *
  * @see {@link https://chainagnostic.org/CAIPs/caip-10}
  */
-export type AccountId = `${ScopedChainId}:${string}`;
+export type AccountId = `${CaipChainId}:${string}`;
 
 /**
  * Specific to Cosmos chains
