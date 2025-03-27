@@ -46,6 +46,7 @@ import type {
 import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
 import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
 import type { ZoeService, Invitation } from '@agoric/zoe';
+import type { CosmosChainInfo } from '@agoric/orchestration';
 import type { FastUsdcSF } from '../src/fast-usdc.contract.ts';
 import type { OperatorOfferResult } from '../src/exos/transaction-feed.ts';
 import { commonSetup, uusdcOnAgoric } from './supports.js';
@@ -107,7 +108,7 @@ const startContract = async (
     ),
   );
   const { agoric, noble } = commonPrivateArgs.chainInfo;
-  const agoricToNoble = agoric.connections![noble.chainId];
+  const agoricToNoble = (agoric as CosmosChainInfo).connections![noble.chainId];
   await E(startKit.creatorFacet).connectToNoble(
     agoric.chainId,
     noble.chainId,

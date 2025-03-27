@@ -5,6 +5,8 @@ import type {
   CosmosChainInfo,
   Denom,
   DenomDetail,
+  BaseChainInfo,
+  KnownNamespace,
 } from '@agoric/orchestration';
 import type { IBCChannelID } from '@agoric/vats';
 import type { Amount } from '@agoric/ertp';
@@ -152,7 +154,7 @@ export type FastUSDCConfig = {
   feeConfig: FeeConfig;
   feedPolicy: FeedPolicy;
   noNoble: boolean; // support a3p-integration, which has no noble chain
-  chainInfo: Record<string, CosmosChainInfo & Passable>;
+  chainInfo: Record<string, ChainHubChainInfo & Passable>;
   assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
 } & CopyRecord;
 
@@ -164,5 +166,19 @@ export type AddressHook = {
     EUD: Bech32Address;
   };
 };
+
+/**
+ * The shape of ChainInfo ChainHub is expecting for FUSDC.
+ *
+ * Note: this diverges from `CosmosChainInfo` and `BaseChainInfo` in that:
+ * - BaseChainInfo includes chainId for backwards compatibility with `CosmosChainInfoShapeV1`
+ */
+export type ChainHubChainInfo<N extends KnownNamespace = KnownNamespace> =
+  N extends 'cosmos' ? CosmosChainInfo : BaseChainInfoWithChainId<N>;
+
+interface BaseChainInfoWithChainId<N extends KnownNamespace = KnownNamespace>
+  extends BaseChainInfo<N> {
+  chainId: string;
+}
 
 export type * from './constants.js';

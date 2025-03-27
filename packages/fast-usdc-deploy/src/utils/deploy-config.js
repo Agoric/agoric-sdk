@@ -1,11 +1,13 @@
 import { denomHash, withChainCapabilities } from '@agoric/orchestration';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
+import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
+import { objectMap } from '@endo/patterns';
 import { ChainPolicies, DepositForBurnEvent } from './chain-policies.js';
 
 /**
- * @import {FastUSDCConfig} from '@agoric/fast-usdc';
+ * @import {ChainHubChainInfo, FastUSDCConfig} from '@agoric/fast-usdc';
  * @import {Passable} from '@endo/marshal';
- * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
+ * @import {ChainInfo, CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  */
 
 /** @type {[Denom, DenomDetail & { brandKey?: string}]} */
@@ -25,6 +27,19 @@ export const transferAssetInfo = [
   usdcOnAgoric,
 ];
 harden(transferAssetInfo);
+
+const { noble: _n, ...restCctpChainInfo } = cctpChainInfo;
+
+/**
+ * Sets a chainId if none is present. For backwards compatibility with `CosmosChainInfoShapeV1` (`ChainHub`) which expects a `chainId`
+ *
+ * @template {Record<string, import('@agoric/orchestration').BaseChainInfo>} CI
+ * @param {CI} ci
+ */
+const withChainId = ci =>
+  /** @type {{[K in keyof CI]: CI[K] & { chainId: string }}} */ (
+    objectMap(ci, v => ({ chainId: `${v.namespace}:${v.reference}`, ...v }))
+  );
 
 /**
  * @type {Record<string, Pick<FastUSDCConfig, 'oracles' | 'feedPolicy' | 'chainInfo' | 'assetInfo' >>}
@@ -49,11 +64,17 @@ export const configurations = {
       chainPolicies: ChainPolicies.TESTNET,
       eventFilter: DepositForBurnEvent,
     },
-    chainInfo: /** @type {Record<string, CosmosChainInfo & Passable>} */ (
-      withChainCapabilities({
-        agoric: fetchedChainInfo.agoric,
-        // registering USDC-on-agoric requires registering the noble chain
-        noble: fetchedChainInfo.noble,
+    chainInfo: /** @type {Record<string, ChainHubChainInfo & Passable>} */ (
+      /** @type {Record<string, ChainHubChainInfo>} */ ({
+        ...withChainId({
+          ethereum: cctpChainInfo.ethereum,
+          solana: cctpChainInfo.solana,
+        }),
+        ...withChainCapabilities({
+          agoric: fetchedChainInfo.agoric,
+          // registering USDC-on-agoric requires registering the noble chain
+          noble: fetchedChainInfo.noble,
+        }),
       })
     ),
     assetInfo: [usdcOnAgoric],
@@ -71,8 +92,11 @@ export const configurations = {
       chainPolicies: ChainPolicies.MAINNET,
       eventFilter: DepositForBurnEvent,
     },
-    chainInfo: /** @type {Record<string, CosmosChainInfo & Passable>} */ (
-      withChainCapabilities(fetchedChainInfo)
+    chainInfo: /** @type {Record<string, ChainHubChainInfo & Passable>} */ (
+      /** @type {Record<string, ChainHubChainInfo>} */ ({
+        ...withChainId(restCctpChainInfo),
+        ...withChainCapabilities(fetchedChainInfo),
+      })
     ),
     assetInfo: transferAssetInfo,
   },
@@ -90,9 +114,12 @@ export const configurations = {
       chainPolicies: ChainPolicies.TESTNET,
       eventFilter: DepositForBurnEvent,
     },
-    chainInfo: /** @type {Record<string, CosmosChainInfo & Passable>} */ (
-      withChainCapabilities(fetchedChainInfo) // TODO: use devnet values
-    ),
+    chainInfo: /** @type {Record<string, ChainHubChainInfo & Passable>} */ (
+      /** @type {Record<string, ChainHubChainInfo>} */ ({
+        ...withChainId(restCctpChainInfo),
+        ...withChainCapabilities(fetchedChainInfo),
+      })
+    ), // TODO: use devnet values
     assetInfo: transferAssetInfo,
   },
   EMERYNET: {
@@ -106,9 +133,12 @@ export const configurations = {
       chainPolicies: ChainPolicies.TESTNET,
       eventFilter: DepositForBurnEvent,
     },
-    chainInfo: /** @type {Record<string, CosmosChainInfo & Passable>} */ (
-      withChainCapabilities(fetchedChainInfo) // TODO: use emerynet values
-    ),
+    chainInfo: /** @type {Record<string, ChainHubChainInfo & Passable>} */ (
+      /** @type {Record<string, ChainHubChainInfo>} */ ({
+        ...withChainId(restCctpChainInfo),
+        ...withChainCapabilities(fetchedChainInfo),
+      })
+    ), // TODO: use emerynet values
     assetInfo: transferAssetInfo,
   },
 };
