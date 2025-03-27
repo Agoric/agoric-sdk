@@ -76,6 +76,8 @@ export const ASSETS_KEY = HubName.ChainAssets;
  */
 const CHAIN_ID_SEPARATOR = '_';
 
+/** @typedef {`${string}${CHAIN_ID_SEPARATOR}${string}`} IbcConnectionKey */
+
 /**
  * Vstorage keys can be only alphanumerics, dash, or underscore, which are all
  * valid characters in chain IDs. So, double each occurence of
@@ -98,12 +100,15 @@ export const encodeChainId = chainId =>
  *
  * @param {string} chainId1
  * @param {string} chainId2
+ * @returns {IbcConnectionKey}
  */
 export const connectionKey = (chainId1, chainId2) => {
   const chainId1Sanitized = encodeChainId(chainId1);
   const chainId2Sanitized = encodeChainId(chainId2);
 
-  return [chainId1Sanitized, chainId2Sanitized].sort().join(CHAIN_ID_SEPARATOR);
+  return /** @type {IbcConnectionKey} */ (
+    [chainId1Sanitized, chainId2Sanitized].sort().join(CHAIN_ID_SEPARATOR)
+  );
 };
 
 /**
@@ -138,7 +143,7 @@ const reverseConnInfo = connInfo => {
  * @param {string} primaryChainId
  * @param {string} counterChainId
  * @param {IBCConnectionInfo} directed
- * @returns {[string, IBCConnectionInfo]}
+ * @returns {[IbcConnectionKey, IBCConnectionInfo]}
  */
 export const normalizeConnectionInfo = (
   primaryChainId,
@@ -267,7 +272,7 @@ export const makeChainHub = (
   /**
    * IBC connection paths, keyed by a function of each chain's Cosmos chainId
    *
-   * @type {MapStore<string, IBCConnectionInfo>}
+   * @type {MapStore<IbcConnectionKey, IBCConnectionInfo>}
    */
   const connectionInfos = zone.mapStore('connectionInfos', {
     keyShape: M.string(),
