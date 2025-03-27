@@ -16,13 +16,11 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  ACTIVE_NODE_LTS_VERSION: '20.x'
-  ACTIVE_NODE_LTS_VERSION_NAME: 'node-lts'
+  NEW_NODE_LTS_VERSION: '20.x'
   ACTIVE_XS_VERSION_NAME: 'xs'
   AGORIC_AVA_USE_TAP: true
   NODE_V8_COVERAGE: coverage
-  PREVIOUS_NODE_LTS_VERSION: '18.x'
-  PREVIOUS_NODE_LTS_VERSION_NAME: 'node-lts-prev'
+  OLD_NODE_LTS_VERSION: '18.x'
   TEST_COLLECT: 'tee -a _testoutput.txt'
 
 # this is required, since explicitly setting bash as shell enables pipefail, which is not
@@ -38,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ['node-lts', 'node-lts-prev'] # unfortunately `env` can't be used here
+        node-version: ['${{ vars.NEW_NODE_LTS_VERSION_NAME }}', '${{ vars.OLD_NODE_LTS_VERSION_NAME }}']
     steps:
       - uses: actions/checkout@v4
         with:
@@ -96,7 +94,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: '${{ env.PREVIOUS_NODE_LTS_VERSION_NAME }}'
+          node-version: '${{ vars.OLD_NODE_LTS_VERSION_NAME }}'
 
       - name: lint repo format
         run: yarn lint:format
@@ -111,7 +109,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: '${{ env.PREVIOUS_NODE_LTS_VERSION_NAME }}'
+          node-version: '${{ vars.OLD_NODE_LTS_VERSION_NAME }}'
 
       # Check some of a3p-integration in this job that runs on PRs instead of
       # waiting for the slow integration test that by default only runs in the
@@ -139,7 +137,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['node-lts', 'node-lts-prev', 'xs']
+        engine: ['${{ vars.NEW_NODE_LTS_VERSION_NAME }}', '${{ vars.OLD_NODE_LTS_VERSION_NAME }}', 'xs']
     steps:
       - name: set vars
         id: vars
@@ -232,7 +230,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['node-lts', 'node-lts-prev', 'xs']
+        engine: ['${{ vars.NEW_NODE_LTS_VERSION_NAME }}', '${{ vars.OLD_NODE_LTS_VERSION_NAME }}', 'xs']
     steps:
       - name: set vars
         id: vars
@@ -365,7 +363,7 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in governance/package.json
-        engine: ['node-lts', 'node-lts-prev']
+        engine: ['${{ vars.NEW_NODE_LTS_VERSION_NAME }}', '${{ vars.OLD_NODE_LTS_VERSION_NAME }}']
     steps:
       - name: set vars
         id: vars
@@ -404,7 +402,7 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in solo/package.json
-        engine: ['node-lts', 'node-lts-prev']
+        engine: ['${{ vars.NEW_NODE_LTS_VERSION_NAME }}', '${{ vars.OLD_NODE_LTS_VERSION_NAME }}']
     steps:
       - name: set vars
         id: vars
@@ -443,7 +441,7 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in cosmic-swingset/package.json
-        engine: ['node-lts', 'node-lts-prev', 'xs']
+        engine: ['${{ vars.NEW_NODE_LTS_VERSION_NAME }}', '${{ vars.OLD_NODE_LTS_VERSION_NAME }}', 'xs']
     steps:
       - name: set vars
         id: vars
@@ -486,7 +484,7 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in inter-protocol/package.json
-        engine: ['node-lts', 'node-lts-prev']
+        engine: ['${{ vars.NEW_NODE_LTS_VERSION_NAME }}', '${{ vars.OLD_NODE_LTS_VERSION_NAME }}']
     steps:
       - name: set vars
         id: vars
@@ -524,7 +522,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['node-lts', 'node-lts-prev', 'xs']
+        engine: ['${{ vars.NEW_NODE_LTS_VERSION_NAME }}', '${{ vars.OLD_NODE_LTS_VERSION_NAME }}', 'xs']
         # Run parallel testing jobs, each executing a subset.
         node_index: [0, 1, 2, 3]
         total_nodes: [4] # the total number of nodes
@@ -568,7 +566,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['node-lts', 'node-lts-prev', 'xs']
+        engine: ['${{ vars.NEW_NODE_LTS_VERSION_NAME }}', '${{ vars.OLD_NODE_LTS_VERSION_NAME }}', 'xs']
         # Run parallel testing jobs, each executing a subset.
         node_index: [0, 1, 2, 3, 4]
         total_nodes: [5] # the total number of nodes
@@ -618,7 +616,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['node-lts', 'node-lts-prev', 'xs']
+        engine: ['${{ vars.NEW_NODE_LTS_VERSION_NAME }}', '${{ vars.OLD_NODE_LTS_VERSION_NAME }}', 'xs']
     steps:
       - name: set vars
         id: vars
@@ -660,7 +658,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['node-lts', 'node-lts-prev', 'xs']
+        engine: ['${{ vars.NEW_NODE_LTS_VERSION_NAME }}', '${{ vars.OLD_NODE_LTS_VERSION_NAME }}', 'xs']
     steps:
       - name: set vars
         id: vars
