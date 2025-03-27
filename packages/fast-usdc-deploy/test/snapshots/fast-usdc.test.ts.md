@@ -1,4 +1,4 @@
-# Snapshot report for `test/fast-usdc/fast-usdc.test.ts`
+# Snapshot report for `test/fast-usdc.test.ts`
 
 The actual snapshot is saved in `fast-usdc.test.ts.snap`.
 

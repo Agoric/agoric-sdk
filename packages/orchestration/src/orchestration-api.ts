@@ -107,7 +107,8 @@ export interface BaseChainInfo<N extends KnownNamespace = KnownNamespace> {
 /**
  * Shape that `ChainHub` is expecting
  */
-export type ChainInfo = Readonly<BaseChainInfo | CosmosChainInfo>;
+export type ChainInfo<N extends KnownNamespace = KnownNamespace> =
+  N extends 'cosmos' ? CosmosChainInfo : BaseChainInfo<N>;
 
 /**
  * A value that can be converted mechanically to an AccountId.

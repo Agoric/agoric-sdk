@@ -417,11 +417,8 @@ export const makeChainHub = (
      */
     registerChain(name, chainInfo) {
       chainInfos.init(name, chainInfo);
-      if (/** @type {CosmosChainInfo} */ (chainInfo).bech32Prefix) {
-        bech32PrefixToChainName.init(
-          /** @type {CosmosChainInfo} */ (chainInfo).bech32Prefix,
-          name,
-        );
+      if (chainInfo.namespace === 'cosmos' && chainInfo.bech32Prefix) {
+        bech32PrefixToChainName.init(chainInfo.bech32Prefix, name);
       }
     },
     /**
@@ -458,7 +455,10 @@ export const makeChainHub = (
       // Either from registerChain or memoized remote lookup()
       if (chainInfos.has(chainName)) {
         return /** @type {Vow<ActualChainInfo<K>>} */ (
-          vowTools.asVow(() => chainInfos.get(chainName))
+          vowTools.asVow(() =>
+            // @ts-expect-error Type 'ChainInfo' is not assignable to type 'CosmosChainInfo | Vow<CosmosChainInfo> | PromiseVow<CosmosChainInfo>'.
+            chainInfos.get(chainName),
+          )
         );
       }
 
@@ -696,12 +696,16 @@ export const makeChainHub = (
       chainInfos.has(baseName) ||
         Fail`chain info not found for issuing chain: ${q(baseName)}`;
 
-      const { chainId: baseChainId, pfmEnabled } =
-        /** @type {CosmosChainInfo} */ (chainInfos.get(baseName));
+      const baseChainInfo = chainInfos.get(baseName);
+      if (baseChainInfo.namespace !== 'cosmos')
+        throw Fail`Only cosmos supported; got ${q(baseChainInfo.namespace)}`;
+      const { chainId: baseChainId, pfmEnabled } = baseChainInfo;
 
-      const holdingChainId = /** @type {CosmosChainInfo} */ (
-        chainInfos.get(srcChainName)
-      ).chainId;
+      const holdingChainInfo = chainInfos.get(srcChainName);
+      if (holdingChainInfo.namespace !== 'cosmos') {
+        throw Fail`Only cosmos supported; got ${q(holdingChainInfo.namespace)}`;
+      }
+      const { chainId: holdingChainId } = holdingChainInfo;
 
       destination =
         typeof destination === 'string'

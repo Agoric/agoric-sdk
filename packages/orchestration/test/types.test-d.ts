@@ -33,8 +33,12 @@ import type {
   OrchestrationAccount,
   Orchestrator,
   StakingAccountActions,
+  KnownChains,
 } from '../src/types.js';
 import type { ResolvedContinuingOfferResult } from '../src/utils/zoe-tools.js';
+import { withChainCapabilities } from '../src/chain-capabilities.js';
+import fetchedChainInfo from '../src/fetched-chain-info.js';
+import cctpChainInfo from '../src/cctp-chain-info.js';
 
 const anyVal = null as any;
 
@@ -319,4 +323,32 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   expectType<
     (validator: CosmosValidatorAddress, amount: AmountArg) => Promise<void>
   >(account.delegate);
+}
+
+// KnownChains - Agoric
+{
+  const fetchedAgoricInfo = fetchedChainInfo.agoric;
+
+  // ensure capabilities added to KnownChains
+  const agoricChainInfo = withChainCapabilities(fetchedChainInfo).agoric;
+  expectType<KnownChains['agoric']>(agoricChainInfo);
+  expectType<boolean>(agoricChainInfo.pfmEnabled);
+  expectType<boolean>(agoricChainInfo.icqEnabled);
+  expectType<boolean>(agoricChainInfo.icaEnabled);
+  // fetched info is preserved
+  expectType<'agoric-3'>(fetchedAgoricInfo.chainId);
+  expectType<'agoric'>(fetchedAgoricInfo.bech32Prefix);
+  expectType<'cosmos'>(fetchedAgoricInfo.namespace);
+  expectType<'agoric-3'>(fetchedAgoricInfo.reference);
+  expectType<string>(fetchedAgoricInfo.stakingTokens[0].denom);
+}
+
+// KnownChains - Ethereum
+{
+  const ethChainInfo = cctpChainInfo.ethereum;
+  expectType<KnownChains['ethereum']>(ethChainInfo);
+
+  expectType<'eip155'>(ethChainInfo.namespace);
+  expectType<'1'>(ethChainInfo.reference);
+  expectType<number>(ethChainInfo.cctpDestinationDomain);
 }

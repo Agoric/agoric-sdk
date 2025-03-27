@@ -16,9 +16,9 @@ import {
   type OrchestrationAccount,
   type OrchestrationPowers,
   type OrchestrationTools,
-  type CosmosChainInfo,
   type Denom,
   type DenomDetail,
+  type ChainInfo,
 } from '@agoric/orchestration';
 import { makeZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
@@ -29,6 +29,7 @@ import { M } from '@endo/patterns';
 
 import type { HostInterface } from '@agoric/async-flow';
 import type {
+  ChainHubChainInfo,
   ContractRecord,
   FastUsdcTerms,
   FeeConfig,
@@ -90,7 +91,7 @@ export const contract = async (
   zcf: ZCF<FastUsdcTerms>,
   privateArgs: OrchestrationPowers & {
     assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
-    chainInfo: Record<string, CosmosChainInfo>;
+    chainInfo: Record<string, ChainHubChainInfo>;
     feeConfig: FeeConfig;
     marshaller: Marshaller;
     storageNode: StorageNode;

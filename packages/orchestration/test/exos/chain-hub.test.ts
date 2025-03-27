@@ -305,6 +305,7 @@ test('updateChain errors on non-existent chain', t => {
   t.throws(
     () =>
       chainHub.updateChain('nonexistent', {
+        bech32Prefix: 'test',
         chainId: 'test',
         namespace: 'cosmos',
         reference: 'test',
@@ -530,31 +531,19 @@ test('cctp, non-cosmos chains', async t => {
     reference: 'agoric-3',
   });
 
-  const withChainId = (info: BaseChainInfo) =>
-    info.namespace === 'cosmos' ? { ...info, chainId: info.reference } : info;
-
-  for (const [chainName, info] of Object.entries(cctpChainInfo)) {
+  const { noble: _, ...cctpDestChains } = cctpChainInfo;
+  for (const [chainName, info] of Object.entries(cctpDestChains)) {
     // can register non-cosmos (cctp) chains
-    chainHub.registerChain(chainName, withChainId(info));
+    chainHub.registerChain(chainName, info);
 
     // can retrieve non-cosmos (cctp) chains
-    t.deepEqual(
-      await when(chainHub.getChainInfo(chainName)),
-      withChainId(info),
-    );
+    t.deepEqual(await when(chainHub.getChainInfo(chainName)), info);
 
     // mimic call that occurs in the Orchestrator during `orch.getChain()`
     const getChainsAndConnectionP = when(
       chainHub.getChainsAndConnection(chainName, 'agoric'),
     );
-    if (chainName === 'noble') {
-      // expected; provide connections to avoid this error
-      await t.throwsAsync(getChainsAndConnectionP, {
-        message: 'connection not found: noble-1<->agoric-3',
-      });
-    } else {
-      await t.notThrowsAsync(getChainsAndConnectionP);
-    }
+    await t.notThrowsAsync(getChainsAndConnectionP);
   }
 
   // document full chain info
