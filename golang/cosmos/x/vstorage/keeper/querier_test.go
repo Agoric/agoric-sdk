@@ -2,22 +2,57 @@ package keeper
 
 import (
 	"bytes"
+	"encoding/json"
 	"testing"
 
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
-
-	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 
 	sdkioerrors "cosmossdk.io/errors"
-	"github.com/cosmos/cosmos-sdk/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
+
+func runRpc(ctx sdk.Context, querier Querier, rpc string, args []string) (res []byte, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = sdkerrors.ErrInvalidRequest
+		}
+	}()
+	switch rpc {
+	case "children":
+		if len(args) != 1 {
+			return nil, sdkerrors.ErrInvalidRequest
+		}
+		req := &types.QueryChildrenRequest{Path: args[0]}
+		r, err := querier.Children(sdk.WrapSDKContext(ctx), req)
+		if err != nil {
+			return nil, err
+		}
+		return json.MarshalIndent(r, "", "  ")
+
+	case "data":
+		if len(args) != 1 {
+			return nil, sdkerrors.ErrInvalidRequest
+		}
+		req := &types.QueryDataRequest{Path: args[0]}
+		r, err := querier.Data(sdk.WrapSDKContext(ctx), req)
+		if r != nil && r.Value == "" {
+			return nil, sdkerrors.ErrNotFound
+		}
+		if err != nil {
+			return nil, err
+		}
+		return json.MarshalIndent(r, "", "  ")
+	default:
+		return nil, sdkerrors.ErrUnknownRequest
+	}
+}
 
 func TestQuerier(t *testing.T) {
 	testKit := makeTestKit()
 	ctx, keeper := testKit.ctx, testKit.vstorageKeeper
-	legacyQuerierCdc := codec.NewAminoCodec(codec.NewLegacyAmino())
-	querier := NewQuerier(keeper, legacyQuerierCdc.LegacyAmino)
+	querier := Querier{keeper}
 
 	// Populate mock data
 	keeper.SetStorage(ctx, agoric.NewKVEntry("foo.bar", "42"))
@@ -99,7 +134,7 @@ func TestQuerier(t *testing.T) {
 	}...)
 
 	for _, desc := range testCases {
-		res, err := querier(ctx, desc.path, abci.RequestQuery{})
+		res, err := runRpc(ctx, querier, desc.path[0], desc.path[1:])
 		if desc.err != nil {
 			if err == nil {
 				t.Errorf("%s: got no error, want error %q", desc.label, *desc.err)
