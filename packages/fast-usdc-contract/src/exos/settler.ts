@@ -1,6 +1,9 @@
 import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
-import { CosmosChainAddressShape } from '@agoric/orchestration';
+import {
+  CosmosChainAddressShape,
+  AccountIdArgShape,
+} from '@agoric/orchestration';
 import { atob } from '@endo/base64';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
@@ -164,7 +167,7 @@ export const prepareSettler = (
       self: M.interface('SettlerSelfI', {
         addMintedEarly: M.call(M.string(), M.nat()).returns(),
         disburse: M.call(EvmHashShape, M.nat()).returns(M.promise()),
-        forward: M.call(EvmHashShape, M.nat(), M.string()).returns(),
+        forward: M.call(EvmHashShape, M.nat(), AccountIdArgShape).returns(),
       }),
       transferHandler: M.interface('SettlerTransferI', {
         onFulfilled: M.call(M.undefined(), M.string()).returns(),

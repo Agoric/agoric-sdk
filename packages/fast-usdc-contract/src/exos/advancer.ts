@@ -36,6 +36,7 @@ import type { Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
+import { parseAccountIdArg } from '@agoric/orchestration/src/utils/address.js';
 import type { LiquidityPoolKit } from './liquidity-pool.js';
 import type { StatusManager } from './status-manager.js';
 import type { SettlerKit } from './settler.js';
@@ -74,7 +75,10 @@ const AdvancerVowCtxShape: TypedPattern<AdvancerVowCtx> = M.splitRecord(
 const AdvancerKitI = harden({
   advancer: M.interface('AdvancerI', {
     handleTransactionEvent: M.callWhen(EvidenceWithRiskShape).returns(),
-    setIntermediateRecipient: M.call(CosmosChainAddressShape).returns(),
+    setIntermediateRecipient: M.call(
+      M.remotable('NobleAccount'),
+      CosmosChainAddressShape,
+    ).returns(),
   }),
   depositHandler: M.interface('DepositHandlerI', {
     onFulfilled: M.call(M.undefined(), AdvancerVowCtxShape).returns(VowShape),
@@ -99,12 +103,25 @@ const AdvancerKitI = harden({
 });
 
 export const stateShape = harden({
-  notifier: M.remotable(),
-  borrower: M.remotable(),
-  poolAccount: M.remotable(),
-  intermediateRecipient: M.opt(CosmosChainAddressShape),
+  notifier: M.remotable('notifier'),
+  borrower: M.remotable('borrower'),
+  poolAccount: M.remotable('poolAccount'),
+  intermediateRecipientAccount: M.opt(M.remotable('nobleAccount')),
+  intermediateRecipientAddress: M.opt(CosmosChainAddressShape),
   settlementAddress: M.opt(CosmosChainAddressShape),
 });
+
+const makeCosmosAccountId = (
+  chainId: string,
+  encoding: 'bech32' | 'ethereum',
+  value: string,
+) => {
+  return {
+    chainId,
+    encoding,
+    value,
+  };
+};
 
 export const prepareAdvancerKit = (
   zone: Zone,
@@ -114,7 +131,7 @@ export const prepareAdvancerKit = (
     log = makeTracer('Advancer', true),
     statusManager,
     usdc,
-    vowTools: { watch, when },
+    vowTools: { watch, when, asVow },
     zcf,
     zoeTools: { localTransfer, withdrawToSeat },
   }: AdvancerKitPowers,
@@ -139,12 +156,16 @@ export const prepareAdvancerKit = (
         OrchestrationAccount<{ chainId: 'agoric-any' }>
       >;
       settlementAddress: CosmosChainAddress;
-      intermediateRecipient?: CosmosChainAddress;
+      intermediateRecipientAddress?: CosmosChainAddress;
+      intermediateRecipientAccount?: HostInterface<
+        OrchestrationAccount<{ chainId: 'agoric-any' }>
+      >;
     }) =>
       harden({
         ...config,
-        // make sure the state record has this property, perhaps with an undefined value
-        intermediateRecipient: config.intermediateRecipient,
+        // make sure the state record has these properties, perhaps with an undefined value
+        intermediateRecipientAccount: config.intermediateRecipientAccount,
+        intermediateRecipientAddress: config.intermediateRecipientAddress,
       }),
     {
       advancer: {
@@ -224,11 +245,21 @@ export const prepareAdvancerKit = (
             statusManager.skipAdvance(evidence, [(error as Error).message]);
           }
         },
-        /** @param {CosmosChainAddress} intermediateRecipient */
-        setIntermediateRecipient(intermediateRecipient: CosmosChainAddress) {
-          this.state.intermediateRecipient = intermediateRecipient;
+        setIntermediateRecipient(
+          intermediateRecipientAccount: HostInterface<
+            OrchestrationAccount<{
+              chainId: 'agoric-any';
+            }>
+          >,
+          intermediateRecipientAddress: CosmosChainAddress,
+        ) {
+          this.state.intermediateRecipientAccount =
+            intermediateRecipientAccount;
+          this.state.intermediateRecipientAddress =
+            intermediateRecipientAddress;
         },
       },
+
       depositHandler: {
         /**
          * @param result
@@ -239,24 +270,74 @@ export const prepareAdvancerKit = (
           result: undefined,
           ctx: AdvancerVowCtx & { tmpSeat: ZCFSeat },
         ) {
-          const { poolAccount, intermediateRecipient, settlementAddress } =
-            this.state;
-          const { destination, advanceAmount, tmpSeat, ...detail } = ctx;
-          tmpSeat.exit();
-          const amount = harden({
-            denom: usdc.denom,
-            value: advanceAmount.value,
-          });
-          const transferOrSendV =
-            destination.chainId === settlementAddress.chainId
-              ? E(poolAccount).send(destination, amount)
-              : E(poolAccount).transfer(destination, amount, {
-                  forwardOpts: { intermediateRecipient },
-                });
-          return watch(transferOrSendV, this.facets.transferHandler, {
-            destination,
-            advanceAmount,
-            ...detail,
+          return asVow(async () => {
+            const {
+              poolAccount,
+              intermediateRecipientAccount,
+              intermediateRecipientAddress,
+              settlementAddress,
+            } = this.state;
+            const { destination, advanceAmount, tmpSeat, ...detail } = ctx;
+            tmpSeat.exit();
+            const amount = harden({
+              denom: usdc.denom,
+              value: advanceAmount.value,
+            });
+
+            /** @type {AccountId} */
+            const accountId = parseAccountIdArg(destination);
+            const chainId = accountId.reference;
+            const info = await when(chainHub.getChainInfoByChainId(chainId));
+
+            let transferOrSendV;
+            if (chainId === settlementAddress.chainId) {
+              // send to recipient on Agoric
+
+              /** @type {CosmosChainAddress} */
+              const cosmosAddress = makeCosmosAccountId(
+                chainId,
+                'bech32',
+                accountId.accountAddress,
+              );
+              transferOrSendV = E(poolAccount).send(cosmosAddress, amount);
+            } else if (info.namespace === 'cosmos') {
+              // send via IBC
+
+              transferOrSendV = E(poolAccount).transfer(destination, amount, {
+                forwardOpts: {
+                  intermediateRecipient: intermediateRecipientAddress,
+                },
+              });
+            } else if (info.cctpDestinationDomain) {
+              Fail`unimplemented: relies on depositForBurn in OrchestrationAccount`;
+              // // send USDC via CCTP
+              // assert(
+              //   intermediateRecipientAccount,
+              //   'intermediateRecipientAccount must be set',
+              // );
+              //
+              // // assets are on noble, transfer to dest.
+              //
+              // const encoding = 'ethereum'; // XXX could be solana?
+              // /** @type {AccountIdArg} */
+              // const mintRecipient = makeCosmosAccountId(
+              //   chainId,
+              //   encoding,
+              //   accountId.accountAddress,
+              // );
+              // // transferOrSendV = intermediateRecipientAccount.depositForBurn(
+              // //   mintRecipient,
+              // //   amount,
+              // // );
+            } else {
+              Fail`can only transfer to Agoric addresses, via IBC, or via CCTP`;
+            }
+
+            return watch(transferOrSendV, this.facets.transferHandler, {
+              destination,
+              advanceAmount,
+              ...detail,
+            });
           });
         },
         /**
@@ -303,7 +384,16 @@ export const prepareAdvancerKit = (
           const { notifier } = this.state;
           const { advanceAmount, destination, ...detail } = ctx;
           log('Advance succeeded', { advanceAmount, destination });
-          notifier.notifyAdvancingResult({ destination, ...detail }, true);
+          const caip10Dest = parseAccountIdArg(destination);
+          const cosmosAddress = makeCosmosAccountId(
+            caip10Dest.reference,
+            'bech32',
+            caip10Dest.accountAddress,
+          );
+          notifier.notifyAdvancingResult(
+            { destination: cosmosAddress, ...detail },
+            true,
+          );
         },
         onRejected(error: Error, ctx: AdvancerVowCtx) {
           const { notifier, poolAccount } = this.state;

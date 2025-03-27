@@ -116,6 +116,12 @@ export type ChainInfo = Readonly<BaseChainInfo | CosmosChainInfo>;
  */
 export type AccountIdArg = AccountId | CosmosChainAddress;
 
+export type Caip10Record = {
+  namespace: string;
+  reference: string;
+  accountAddress: string;
+};
+
 /**
  * Object that controls an account on a particular chain.
  *

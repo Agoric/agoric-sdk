@@ -193,7 +193,10 @@ export const contract = async (
           E(nobleAccount).getAddress(),
           intermediateRecipient => {
             trace('intermediateRecipient', intermediateRecipient);
-            advancer.setIntermediateRecipient(intermediateRecipient);
+            advancer.setIntermediateRecipient(
+              nobleAccount,
+              intermediateRecipient,
+            );
             settlerKit.creator.setIntermediateRecipient(intermediateRecipient);
             return intermediateRecipient;
           },
