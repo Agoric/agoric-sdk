@@ -16,6 +16,7 @@ test('chain-info', async t => {
   t.deepEqual([...chainNames.keys()].sort(), [
     'agoric',
     'archway',
+    'axelar',
     'beezee',
     'carbon',
     'celestia',
