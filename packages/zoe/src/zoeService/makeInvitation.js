@@ -15,9 +15,12 @@ const ZOE_INVITATION_KIT = 'ZoeInvitationKit';
 
 /**
  * @param {import('@agoric/vat-data').Baggage} baggage
- * @param {import('@agoric/swingset-vat').ShutdownWithFailure | undefined} shutdownZoeVat
+ * @param {import('@agoric/swingset-vat').ShutdownWithFailure} [optShutdownZoeVat]
  */
-export const prepareInvitationKit = (baggage, shutdownZoeVat = undefined) => {
+export const prepareInvitationKit = (
+  baggage,
+  optShutdownZoeVat = undefined,
+) => {
   const invitationKitBaggage = provideDurableMapStore(
     baggage,
     ZOE_INVITATION_KIT,
@@ -38,7 +41,7 @@ export const prepareInvitationKit = (baggage, shutdownZoeVat = undefined) => {
     'Zoe Invitation',
     AssetKind.SET,
     undefined,
-    shutdownZoeVat,
+    optShutdownZoeVat,
     { elementShape: InvitationElementShape },
   );
 

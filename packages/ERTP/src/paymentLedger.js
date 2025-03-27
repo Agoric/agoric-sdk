@@ -19,6 +19,20 @@ import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
  */
 
 /**
+ * First attempt to shim the `panic` we expect to propose as a new standard
+ * intrinsic.
+ *
+ * @param {Error} [err]
+ * @returns {never}
+ */
+const panic = (err = RangeError('Panic')) => {
+  console.error('Panic', err);
+  for (;;) {
+    // See https://github.com/Agoric/agoric-sdk/issues/8955#issuecomment-2753093949
+  }
+};
+
+/**
  * @template {AssetKind} K
  * @param {Brand} brand
  * @param {K} assetKind
@@ -91,7 +105,7 @@ export const preparePaymentLedger = (
   displayInfo,
   elementShape,
   recoverySetsState,
-  optShutdownWithFailure = undefined,
+  optShutdownWithFailure = panic,
 ) => {
   /** @type {Brand<K>} */
   // @ts-expect-error XXX callWhen
@@ -128,17 +142,11 @@ export const preparePaymentLedger = (
 
   /** @type {ShutdownWithFailure} */
   const shutdownLedgerWithFailure = reason => {
-    // TODO This should also destroy ledger state.
-    // See https://github.com/Agoric/agoric-sdk/issues/3434
-    if (optShutdownWithFailure !== undefined) {
-      try {
-        optShutdownWithFailure(reason);
-      } catch (errInShutdown) {
-        annotateError(errInShutdown, X`Caused by: ${reason}`);
-        throw errInShutdown;
-      }
+    try {
+      optShutdownWithFailure(reason);
+    } finally {
+      panic(reason);
     }
-    throw reason;
   };
 
   /** @type {WeakMapStore<Payment, Amount>} */

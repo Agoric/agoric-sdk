@@ -32,9 +32,13 @@ export const defaultFeeIssuerConfig = harden(
 /**
  * @param {import('@agoric/vat-data').Baggage} zoeBaggage
  * @param {FeeIssuerConfig} feeIssuerConfig
- * @param {import('@agoric/swingset-vat').ShutdownWithFailure} shutdownZoeVat
+ * @param {import('@agoric/swingset-vat').ShutdownWithFailure} [optShutdownZoeVat]
  */
-const prepareFeeMint = (zoeBaggage, feeIssuerConfig, shutdownZoeVat) => {
+const prepareFeeMint = (
+  zoeBaggage,
+  feeIssuerConfig,
+  optShutdownZoeVat = undefined,
+) => {
   const mintBaggage = provideDurableMapStore(zoeBaggage, 'mintBaggage');
   if (mintBaggage.has(FEE_MINT_KIT)) {
     hasIssuer(mintBaggage) ||
@@ -51,7 +55,7 @@ const prepareFeeMint = (zoeBaggage, feeIssuerConfig, shutdownZoeVat) => {
       feeIssuerConfig.name,
       feeIssuerConfig.assetKind,
       feeIssuerConfig.displayInfo,
-      shutdownZoeVat,
+      optShutdownZoeVat,
     )
   );
 

@@ -42,16 +42,18 @@ import { ZoeServiceI } from '../typeGuards.js';
  * @param {Promise<VatAdminSvc> | VatAdminSvc} [options.vatAdminSvc] - The vatAdmin Service, which carries the
  * power to create a new vat. If it's not available when makeZoe() is called, it
  * must be provided later using setVatAdminService().
- * @param {import('@agoric/swingset-vat').ShutdownWithFailure} [options.shutdownZoeVat] - a function to
- * shutdown the Zoe Vat. This function needs to use the vatPowers
- * available to a vat.
+ * @param {import('@agoric/swingset-vat').ShutdownWithFailure} [options.shutdownZoeVat]
+ *   - a function to shutdown the Zoe Vat. If omitted, it defaults to `undefined`
+ *     and therefore to IssuerKit's default for `optShutdownWithFailure`,
+ *     which does safely and immediately shut down the vat (currently with
+ *     an infinite loop).
  * @param {FeeIssuerConfig} [options.feeIssuerConfig]
  * @param {ZCFSpec} [options.zcfSpec] - Pointer to the contract facet bundle.
  */
 const makeDurableZoeKit = ({
   zoeBaggage,
   vatAdminSvc,
-  shutdownZoeVat = () => {},
+  shutdownZoeVat: optShutdownZoeVat = undefined,
   feeIssuerConfig = defaultFeeIssuerConfig,
   zcfSpec = { name: 'zcf' },
 }) => {
@@ -91,7 +93,7 @@ const makeDurableZoeKit = ({
   const feeMintKit = prepareFeeMint(
     zoeBaggage,
     feeIssuerConfig,
-    shutdownZoeVat,
+    optShutdownZoeVat,
   );
 
   // guarantee that vatAdminSvcP has been defined.
@@ -146,7 +148,7 @@ const makeDurableZoeKit = ({
   } = makeZoeStorageManager(
     createZCFVat,
     getBundleCapForID,
-    shutdownZoeVat,
+    optShutdownZoeVat,
     feeMintKit.feeMint,
     zoeBaggage,
   );
@@ -272,16 +274,21 @@ const makeDurableZoeKit = ({
  * @param {Promise<VatAdminSvc> | VatAdminSvc} [vatAdminSvc] - The vatAdmin Service, which carries the
  * power to create a new vat. If it's not available when makeZoe() is called, it
  * must be provided later using setVatAdminService().
- * @param {import('@agoric/swingset-vat').ShutdownWithFailure} [shutdownZoeVat] - a function to
+ * @param {import('@agoric/swingset-vat').ShutdownWithFailure} [optShutdownZoeVat] - a function to
  * shutdown the Zoe Vat. This function needs to use the vatPowers
  * available to a vat.
  * @param {FeeIssuerConfig} [feeIssuerConfig]
  * @param {ZCFSpec} [zcfSpec] - Pointer to the contract facet bundle.
  */
-const makeZoeKit = (vatAdminSvc, shutdownZoeVat, feeIssuerConfig, zcfSpec) =>
+const makeZoeKit = (
+  vatAdminSvc,
+  optShutdownZoeVat = undefined,
+  feeIssuerConfig = undefined,
+  zcfSpec = undefined,
+) =>
   makeDurableZoeKit({
     vatAdminSvc,
-    shutdownZoeVat,
+    shutdownZoeVat: optShutdownZoeVat,
     feeIssuerConfig,
     zcfSpec,
     zoeBaggage: makeScalarBigMapStore('fake zoe baggage', { durable: true }),
