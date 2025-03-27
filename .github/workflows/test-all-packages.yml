@@ -42,7 +42,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ['${{ vars.NEW_NODE_LTS_VERSION_NAME }}', '${{ vars.OLD_NODE_LTS_VERSION_NAME }}']
+        node-version:
+          [
+            '${{ vars.NEW_NODE_LTS_VERSION_NAME }}',
+            '${{ vars.OLD_NODE_LTS_VERSION_NAME }}',
+          ]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -143,7 +147,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['${{ vars.NEW_NODE_LTS_VERSION_NAME }}', '${{ vars.OLD_NODE_LTS_VERSION_NAME }}', 'xs']
+        engine:
+          [
+            '${{ vars.NEW_NODE_LTS_VERSION_NAME }}',
+            '${{ vars.OLD_NODE_LTS_VERSION_NAME }}',
+            'xs',
+          ]
     steps:
       - name: set vars
         id: vars
@@ -236,7 +245,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['${{ vars.NEW_NODE_LTS_VERSION_NAME }}', '${{ vars.OLD_NODE_LTS_VERSION_NAME }}', 'xs']
+        engine:
+          [
+            '${{ vars.NEW_NODE_LTS_VERSION_NAME }}',
+            '${{ vars.OLD_NODE_LTS_VERSION_NAME }}',
+            'xs',
+          ]
     steps:
       - name: set vars
         id: vars
@@ -369,7 +383,11 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in governance/package.json
-        engine: ['${{ vars.NEW_NODE_LTS_VERSION_NAME }}', '${{ vars.OLD_NODE_LTS_VERSION_NAME }}']
+        engine:
+          [
+            '${{ vars.NEW_NODE_LTS_VERSION_NAME }}',
+            '${{ vars.OLD_NODE_LTS_VERSION_NAME }}',
+          ]
     steps:
       - name: set vars
         id: vars
@@ -408,7 +426,11 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in solo/package.json
-        engine: ['${{ vars.NEW_NODE_LTS_VERSION_NAME }}', '${{ vars.OLD_NODE_LTS_VERSION_NAME }}']
+        engine:
+          [
+            '${{ vars.NEW_NODE_LTS_VERSION_NAME }}',
+            '${{ vars.OLD_NODE_LTS_VERSION_NAME }}',
+          ]
     steps:
       - name: set vars
         id: vars
@@ -447,7 +469,12 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in cosmic-swingset/package.json
-        engine: ['${{ vars.NEW_NODE_LTS_VERSION_NAME }}', '${{ vars.OLD_NODE_LTS_VERSION_NAME }}', 'xs']
+        engine:
+          [
+            '${{ vars.NEW_NODE_LTS_VERSION_NAME }}',
+            '${{ vars.OLD_NODE_LTS_VERSION_NAME }}',
+            'xs',
+          ]
     steps:
       - name: set vars
         id: vars
@@ -490,7 +517,11 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in inter-protocol/package.json
-        engine: ['${{ vars.NEW_NODE_LTS_VERSION_NAME }}', '${{ vars.OLD_NODE_LTS_VERSION_NAME }}']
+        engine:
+          [
+            '${{ vars.NEW_NODE_LTS_VERSION_NAME }}',
+            '${{ vars.OLD_NODE_LTS_VERSION_NAME }}',
+          ]
     steps:
       - name: set vars
         id: vars
@@ -528,7 +559,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['${{ vars.NEW_NODE_LTS_VERSION_NAME }}', '${{ vars.OLD_NODE_LTS_VERSION_NAME }}', 'xs']
+        engine:
+          [
+            '${{ vars.NEW_NODE_LTS_VERSION_NAME }}',
+            '${{ vars.OLD_NODE_LTS_VERSION_NAME }}',
+            'xs',
+          ]
         # Run parallel testing jobs, each executing a subset.
         node_index: [0, 1, 2, 3]
         total_nodes: [4] # the total number of nodes
@@ -572,7 +608,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['${{ vars.NEW_NODE_LTS_VERSION_NAME }}', '${{ vars.OLD_NODE_LTS_VERSION_NAME }}', 'xs']
+        engine:
+          [
+            '${{ vars.NEW_NODE_LTS_VERSION_NAME }}',
+            '${{ vars.OLD_NODE_LTS_VERSION_NAME }}',
+            'xs',
+          ]
         # Run parallel testing jobs, each executing a subset.
         node_index: [0, 1, 2, 3, 4]
         total_nodes: [5] # the total number of nodes
@@ -622,7 +663,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['${{ vars.NEW_NODE_LTS_VERSION_NAME }}', '${{ vars.OLD_NODE_LTS_VERSION_NAME }}', 'xs']
+        engine:
+          [
+            '${{ vars.NEW_NODE_LTS_VERSION_NAME }}',
+            '${{ vars.OLD_NODE_LTS_VERSION_NAME }}',
+            'xs',
+          ]
     steps:
       - name: set vars
         id: vars
@@ -664,7 +710,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['${{ vars.NEW_NODE_LTS_VERSION_NAME }}', '${{ vars.OLD_NODE_LTS_VERSION_NAME }}', 'xs']
+        engine:
+          [
+            '${{ vars.NEW_NODE_LTS_VERSION_NAME }}',
+            '${{ vars.OLD_NODE_LTS_VERSION_NAME }}',
+            'xs',
+          ]
     steps:
       - name: set vars
         id: vars
