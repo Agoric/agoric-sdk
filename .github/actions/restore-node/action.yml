@@ -43,11 +43,11 @@ runs:
         INPUT_NODE_VERSION="${{ inputs.node-version }}"
         OUTPUT_NODE_VERSION="$INPUT_NODE_VERSION"
 
-        if test "$INPUT_NODE_VERSION" == "${{ vars.NEW_NODE_LTS_VERSION_NAME }}"
+        if test "$INPUT_NODE_VERSION" == "${{ env.NEW_NODE_LTS_VERSION_NAME }}"
         then
           OUTPUT_NODE_VERSION="${{ env.NEW_NODE_LTS_VERSION }}"
         else
-          if test "$INPUT_NODE_VERSION" == "${{ vars.OLD_NODE_LTS_VERSION_NAME }}" || test "$INPUT_NODE_VERSION" == "${{ env.ACTIVE_XS_VERSION_NAME }}"
+          if test "$INPUT_NODE_VERSION" == "${{ env.OLD_NODE_LTS_VERSION_NAME }}" || test "$INPUT_NODE_VERSION" == "${{ env.ACTIVE_XS_VERSION_NAME }}"
           then
             OUTPUT_NODE_VERSION="${{ env.OLD_NODE_LTS_VERSION }}"
           fi

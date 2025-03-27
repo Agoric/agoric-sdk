@@ -23,6 +23,12 @@ env:
   OLD_NODE_LTS_VERSION: '18.x'
   TEST_COLLECT: 'tee -a _testoutput.txt'
 
+  # These are only added to make them available to GH Action
+  # as repo/org vars/secrets are not accessible to them. See:
+  # https://github.com/orgs/community/discussions/49689
+  NEW_NODE_LTS_VERSION_NAME: '${{ vars.NEW_NODE_LTS_VERSION_NAME }}'
+  OLD_NODE_LTS_VERSION_NAME: '${{ vars.OLD_NODE_LTS_VERSION_NAME }}'
+
 # this is required, since explicitly setting bash as shell enables pipefail, which is not
 # on by default.  This is required to fail correctly when teeing output to a file to collect
 # test instrumentation
