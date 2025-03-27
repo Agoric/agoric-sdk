@@ -254,12 +254,21 @@ export const makeChainHub = (
   vowTools,
   { chainInfoValueShape = /** @type {Pattern} */ (ChainInfoShape) } = {},
 ) => {
-  /** @type {MapStore<string, ChainInfo>} */
+  /**
+   * Handle mapping of a chain's common name (e.g. 'ethereum' or "doravota") to
+   * its info (e.g. specififying CAIP-2 eip155:1 or Cosmos chainId 'votash')
+   *
+   * @type {MapStore<string, ChainInfo>}
+   */
   const chainInfos = zone.mapStore('chainInfos', {
     keyShape: M.string(),
     valueShape: chainInfoValueShape,
   });
-  /** @type {MapStore<string, IBCConnectionInfo>} */
+  /**
+   * IBC connection paths, keyed by a function of each chain's Cosmos chainId
+   *
+   * @type {MapStore<string, IBCConnectionInfo>}
+   */
   const connectionInfos = zone.mapStore('connectionInfos', {
     keyShape: M.string(),
     valueShape: IBCConnectionInfoShape,
@@ -275,7 +284,12 @@ export const makeChainHub = (
     keyShape: BrandShape,
     valueShape: M.string(),
   });
-  /** @type {MapStore<string, string>} */
+  /**
+   * Handle mapping of, for example, "osmosis" chain that has bech32 prefix
+   * "osmo" and chainId "osmosis-1".
+   *
+   * @type {MapStore<string, string>}
+   */
   const bech32PrefixToChainName = zone.mapStore('bech32PrefixToChainName', {
     keyShape: M.string(),
     valueShape: M.string(),
