@@ -1,8 +1,8 @@
 import { assert, q, Fail } from '@endo/errors';
+import { assertRecord } from '@endo/marshal';
+import { assertKey, M, mustMatch, isKey } from '@endo/patterns';
 import { AmountMath, getAssetKind } from '@agoric/ertp';
 import { objectMap } from '@agoric/internal';
-import { assertRecord } from '@endo/marshal';
-import { assertKey, assertPattern, mustMatch, isKey } from '@agoric/store';
 import { FullProposalShape } from './typeGuards.js';
 
 const { ownKeys } = Reflect;
@@ -56,25 +56,26 @@ export const cleanKeywords = uncleanKeywordRecord => {
   return /** @type {string[]} */ (keywords);
 };
 
-export const coerceAmountPatternKeywordRecord = (
-  allegedAmountKeywordRecord,
+export const coerceAmountBoundKeywordRecord = (
+  allegedAmountBoundKeywordRecord,
   getAssetKindByBrand,
 ) => {
-  cleanKeywords(allegedAmountKeywordRecord);
+  cleanKeywords(allegedAmountBoundKeywordRecord);
   // FIXME objectMap should constrain the mapping function by the record's type
-  return objectMap(allegedAmountKeywordRecord, amount => {
+  return objectMap(allegedAmountBoundKeywordRecord, amount => {
+    const { brand, value } = amount;
     // Check that each value can be coerced using the AmountMath
     // indicated by brand. `AmountMath.coerce` throws if coercion fails.
     if (isKey(amount)) {
-      const brandAssetKind = getAssetKindByBrand(amount.brand);
+      const brandAssetKind = getAssetKindByBrand(brand);
       const assetKind = getAssetKind(amount);
       // TODO: replace this assertion with a check of the assetKind
       // property on the brand, when that exists.
       assetKind === brandAssetKind ||
         Fail`The amount ${amount} did not have the assetKind of the brand ${brandAssetKind}`;
-      return AmountMath.coerce(amount.brand, amount);
+      return AmountMath.coerce(brand, amount);
     } else {
-      assertPattern(amount);
+      mustMatch(value, M.kind('match:containerHas'));
       return amount;
     }
   });
@@ -90,7 +91,7 @@ export const coerceAmountKeywordRecord = (
   allegedAmountKeywordRecord,
   getAssetKindByBrand,
 ) => {
-  const result = coerceAmountPatternKeywordRecord(
+  const result = coerceAmountBoundKeywordRecord(
     allegedAmountKeywordRecord,
     getAssetKindByBrand,
   );
@@ -153,10 +154,7 @@ export const cleanProposal = (proposal, getAssetKindByBrand) => {
   ownKeys(rest).length === 0 ||
     Fail`${proposal} - Must only have want:, give:, exit: properties: ${rest}`;
 
-  const cleanedWant = coerceAmountPatternKeywordRecord(
-    want,
-    getAssetKindByBrand,
-  );
+  const cleanedWant = coerceAmountBoundKeywordRecord(want, getAssetKindByBrand);
   const cleanedGive = coerceAmountKeywordRecord(give, getAssetKindByBrand);
 
   const cleanedProposal = harden({
