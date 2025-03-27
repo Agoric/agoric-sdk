@@ -16,7 +16,11 @@ import {
   AccountArgShape,
   ChainInfoShape,
 } from '../typeGuards.js';
-import { getBech32Prefix, parseAccountId } from '../utils/address.js';
+import {
+  getBech32Prefix,
+  parseAccountId,
+  parseAccountIdArg,
+} from '../utils/address.js';
 
 /**
  * @import {NameHub} from '@agoric/vats';
@@ -226,7 +230,9 @@ const ChainHubI = M.interface('ChainHub', {
   ),
   getDenom: M.call(BrandShape).returns(M.or(M.string(), M.undefined())),
   makeChainAddress: M.call(M.string()).returns(CosmosChainAddressShape),
-  resolveAccountId: M.call(M.string()).returns(M.string()),
+  resolveAccountId: M.call(M.or(M.string(), CosmosChainAddressShape)).returns(
+    M.string(),
+  ),
   makeTransferRoute: M.call(AccountArgShape, DenomAmountShape, M.string())
     .optional(ForwardOptsShape)
     .returns(M.or(M.undefined(), TransferRouteShape)),
@@ -623,28 +629,36 @@ export const makeChainHub = (
       return undefined;
     },
     /**
-     * @param {string} partialId CAIP-10 account ID or a Cosmos bech32 address
+     * @param {AccountIdArg} account CAIP-10 account ID or a CosmosChainAddress
+     *   or bech32
      * @returns {AccountId}
      * @throws {Error} if chain info not found for bech32Prefix
      */
-    resolveAccountId(partialId) {
-      const parsed = parseAccountId(partialId);
-      if ('namespace' in parsed) {
-        // It is already fully qualified
-        return /** @type {AccountId} */ (partialId);
+    resolveAccountId(account) {
+      if (typeof account !== 'string') {
+        return `cosmos:${account.chainId}:${account.value}`;
       }
 
-      const reference = resolveCosmosChainId(partialId);
-      return `cosmos:${reference}:${partialId}`;
+      const parsed = parseAccountIdArg(account);
+      if ('namespace' in parsed) {
+        // It is already fully qualified
+        return /** @type {AccountId} */ (account);
+      }
+      const reference = resolveCosmosChainId(account);
+      return `cosmos:${reference}:${account}`;
     },
     /**
-     * @param {string} partialId CAIP-10 account ID or a Cosmos bech32 address
+     * @param {AccountIdArg} partialId CAIP-10 account ID or a Cosmos bech32
+     *   address
      * @returns {CosmosChainAddress}
      * @throws {Error} if chain info not found for bech32Prefix
      */
     makeChainAddress(partialId) {
-      const parsed = parseAccountId(partialId);
+      if (typeof partialId !== 'string') {
+        return partialId;
+      }
 
+      const parsed = parseAccountIdArg(partialId);
       if ('namespace' in parsed) {
         assert.equal(parsed.namespace, 'cosmos');
         return harden({
@@ -653,7 +667,6 @@ export const makeChainHub = (
           value: parsed.accountAddress,
         });
       }
-
       const chainId = resolveCosmosChainId(parsed.accountAddress);
       return harden({
         chainId,
