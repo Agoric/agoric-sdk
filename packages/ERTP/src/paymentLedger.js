@@ -2,8 +2,9 @@
 
 /// <reference types="@agoric/store/exported.js" />
 
-import { X, q, Fail, annotateError } from '@endo/errors';
+import { q, Fail } from '@endo/errors';
 import { isPromise } from '@endo/promise-kit';
+import { panic } from '@agoric/internal';
 import { mustMatch, M, keyEQ } from '@agoric/store';
 import { AmountMath } from './amountMath.js';
 import { preparePaymentKind } from './payment.js';
@@ -17,20 +18,6 @@ import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
  * @import {ShutdownWithFailure} from '@agoric/swingset-vat'
  * @import {TypedPattern} from '@agoric/internal';
  */
-
-/**
- * First attempt to shim the `panic` we expect to propose as a new standard
- * intrinsic.
- *
- * @param {Error} [err]
- * @returns {never}
- */
-const panic = (err = RangeError('Panic')) => {
-  console.error('Panic', err);
-  for (;;) {
-    // See https://github.com/Agoric/agoric-sdk/issues/8955#issuecomment-2753093949
-  }
-};
 
 /**
  * @template {AssetKind} K

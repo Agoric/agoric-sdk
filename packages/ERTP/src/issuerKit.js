@@ -13,7 +13,7 @@ import { preparePaymentLedger } from './paymentLedger.js';
  * @import {AdditionalDisplayInfo, RecoverySetsOption, IssuerKit, PaymentLedger} from './types.js';
  * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
  * @import {TypedPattern} from '@agoric/internal';
- * @import {CopyTaggedInterface, Key, RemotableObject} from '@endo/patterns';
+ * @import {Key} from '@endo/patterns';
  * @import {Pattern} from '@endo/patterns';
  */
 

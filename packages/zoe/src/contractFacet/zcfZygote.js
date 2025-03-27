@@ -13,7 +13,7 @@ import {
   prepareExoClass,
   provideDurableMapStore,
 } from '@agoric/vat-data';
-import { objectMap } from '@agoric/internal';
+import { objectMap, panic } from '@agoric/internal';
 
 import { cleanProposal } from '../cleanProposal.js';
 import { handlePKitWarning } from '../handleWarning.js';
@@ -94,6 +94,7 @@ export const makeZCFZygote = async (
     seatManager.dropAllReferences();
     // https://github.com/Agoric/agoric-sdk/issues/3239
     powers.exitVatWithFailure(reason);
+    panic(reason);
   };
 
   const { storeOfferHandler, takeOfferHandler } =

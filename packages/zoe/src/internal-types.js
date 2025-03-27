@@ -62,7 +62,7 @@
  * @typedef ZoeSeatAdminMethods
  * @property {(allocation: Allocation) => void} replaceAllocation
  * @property {ZoeSeatAdminExit} exit
- * @property {import('@agoric/swingset-vat').ShutdownWithFailure} fail called with the reason
+ * @property {(reason: Error) => void} fail called with the reason
  * for calling fail on this seat, where reason is normally an instanceof Error.
  * @property {() => Subscriber<AmountKeywordRecord>} getExitSubscriber
  */
@@ -101,7 +101,7 @@
  * @property {() => string[]} getOfferFilter
  * @property {() => Installation} getInstallation
  * @property {(completion: Completion) => void} exitAllSeats
- * @property {import('@agoric/swingset-vat').ShutdownWithFailure} failAllSeats
+ * @property {(reason: Error) => void} failAllSeats
  * @property {() => void} stopAcceptingOffers
  * @property {(string: string) => boolean} isBlocked
  * @property {(handleOfferObj: HandleOfferObj, publicFacet: unknown) => void} initDelayedState
