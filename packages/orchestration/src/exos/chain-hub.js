@@ -17,6 +17,7 @@ import {
   ChainInfoShape,
 } from '../typeGuards.js';
 import { getBech32Prefix } from '../utils/address.js';
+import { chainInfoCaipId } from '../utils/chain-info.js';
 
 /**
  * @import {NameHub} from '@agoric/vats';
@@ -212,6 +213,7 @@ const ChainHubI = M.interface('ChainHub', {
   registerChain: M.call(M.string(), ChainInfoShape).returns(),
   updateChain: M.call(M.string(), ChainInfoShape).returns(),
   getChainInfo: M.call(M.string()).returns(VowShape),
+  getChainInfoByChainId: M.call(M.string()).returns(ChainInfoShape),
   registerConnection: M.call(
     M.string(),
     M.string(),
@@ -299,6 +301,16 @@ export const makeChainHub = (
     keyShape: M.string(),
     valueShape: M.string(),
   });
+  /**
+   * CaipChainId is implied by the ChainInfo. The value in this store is a key
+   * into `chainInfos`.
+   *
+   * @type {MapStore<CaipChainId, string>}
+   */
+  const chainIdToChainName = zone.mapStore('chainIdToChainName', {
+    keyShape: M.string(),
+    valueShape: M.string(),
+  });
 
   /**
    * @param {Denom} denom - from perspective of the src/holding chain
@@ -336,6 +348,7 @@ export const makeChainHub = (
         // TODO consider makeAtomicProvider for vows
         if (!chainInfos.has(chainName)) {
           chainInfos.init(chainName, chainInfo);
+          chainIdToChainName.init(chainInfoCaipId(chainInfo), chainName);
           if (chainInfo.bech32Prefix) {
             bech32PrefixToChainName.init(chainInfo.bech32Prefix, chainName);
           }
@@ -436,6 +449,7 @@ export const makeChainHub = (
      */
     registerChain(name, chainInfo) {
       chainInfos.init(name, chainInfo);
+      chainIdToChainName.init(chainInfoCaipId(chainInfo), name);
       if (chainInfo.namespace === 'cosmos' && chainInfo.bech32Prefix) {
         bech32PrefixToChainName.init(chainInfo.bech32Prefix, name);
       }
@@ -452,12 +466,17 @@ export const makeChainHub = (
         throw makeError(`Chain ${q(chainName)} not registered`);
       }
       const oldInfo = chainInfos.get(chainName);
+      // defensively check, for older versions which may not have `chainIdToChainName`
+      if (chainIdToChainName.has(chainInfoCaipId(oldInfo))) {
+        chainIdToChainName.delete(chainInfoCaipId(oldInfo));
+      }
       if (/** @type {CosmosChainInfo} */ (oldInfo).bech32Prefix) {
         bech32PrefixToChainName.delete(
           /** @type {CosmosChainInfo} */ (oldInfo).bech32Prefix,
         );
       }
       chainInfos.set(chainName, chainInfo);
+      chainIdToChainName.init(chainInfoCaipId(chainInfo), chainName);
       if (/** @type {CosmosChainInfo} */ (chainInfo).bech32Prefix) {
         bech32PrefixToChainName.init(
           /** @type {CosmosChainInfo} */ (chainInfo).bech32Prefix,
@@ -482,6 +501,17 @@ export const makeChainHub = (
       }
 
       return lookupChainInfo(chainName);
+    },
+    /**
+     * @param {CaipChainId} chainId
+     * @returns {ChainInfo | null}
+     */
+    getChainInfoByChainId(chainId) {
+      if (chainIdToChainName.has(chainId)) {
+        const name = chainIdToChainName.get(chainId);
+        return chainInfos.get(name);
+      }
+      return null;
     },
     /**
      * Register information for a Cosmos chain
