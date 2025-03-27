@@ -296,6 +296,7 @@ export const createSeatManager = (
             // Zoe, but *all subsequent updates come from ZCF to Zoe*.
             void E(zoeInstanceAdmin).replaceAllocations(seatHandleAllocations);
           } catch (err) {
+            // TODO Should this panic instead?
             shutdownWithFailure(err);
             throw err;
           }
@@ -338,6 +339,7 @@ export const createSeatManager = (
 
             E(zoeInstanceAdmin).replaceAllocations(seatHandleAllocations);
           } catch (err) {
+            // TODO Should this panic instead?
             shutdownWithFailure(err);
             throw err;
           }
