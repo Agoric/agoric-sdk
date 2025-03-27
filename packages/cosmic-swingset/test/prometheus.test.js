@@ -132,6 +132,7 @@ test('Prometheus metric definitions', async t => {
       ['heapStats_malloced_memory', [20, '%']],
       ['heapStats_peak_malloced_memory', [20, '%']],
       ['heapStats_total_available_size', [20, '%']],
+      ['heapStats_total_global_handles_size', [20, '%']],
       ['heapStats_total_heap_size', [20, '%']],
       ['heapStats_total_heap_size_executable', [20, '%']],
       ['heapStats_total_physical_size', [20, '%']],
