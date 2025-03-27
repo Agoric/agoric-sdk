@@ -1,6 +1,10 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
 
+import '@endo/init';
+
 import { MsgDepositForBurn } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
+import type { NobleAddress } from '@agoric/fast-usdc';
+import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { keccak256 } from '@cosmjs/crypto';
 import { fromHex, fromBase64, toHex } from '@cosmjs/encoding';
 import {
@@ -18,19 +22,36 @@ export const cctpTypes: ReadonlyArray<[string, GeneratedType]> = [
   ],
 ];
 
-function createDefaultRegistry(): Registry {
-  return new Registry(cctpTypes);
-}
-
-const exampleFee = {
-  amount: [{ denom: 'uusdc', amount: '0' }],
-  gas: '200000',
+// https://github.com/Agoric/agoric-sdk/pull/11037/files#diff-ab8e7785ae43086c39c85476d30212af7ed31ef5d5f19bb56e06f25999d9b11aR153
+/**
+ * Left pad the mint recipient address with 0's to 32 bytes. standard ETH
+ * addresses are 20 bytes, but for ABI data structures and other reasons, 32
+ * bytes are used.
+ *
+ * @param {string} rawAddress
+ */
+export const leftPadEthAddressTo32Bytes = (rawAddress: string) => {
+  const cleanedAddress = rawAddress.replace(/^0x/, '');
+  const zeroesNeeded = 64 - cleanedAddress.length;
+  const paddedAddress = '0'.repeat(zeroesNeeded) + cleanedAddress;
+  return fromHex(paddedAddress);
 };
 
-// IOU docs ref
-const domains = {
-  eth: 0,
-  solana: 5,
+const mintRecipientParser = {
+  eip155: leftPadEthAddressTo32Bytes,
+  solana: () => {
+    throw Error('TODO');
+  },
+};
+
+const asMintRecipient = (destId: string) => {
+  const dest = parseAccountId(destId);
+  if (!('namespace' in dest)) throw Error(`missing namespace: ${dest}`);
+  const parse = mintRecipientParser[dest.namespace];
+  if (!parse) throw Error(`not supported: ${dest.namespace}`);
+  const mintRecipient: Uint8Array = parse(dest.accountAddress);
+
+  return { dest, mintRecipient };
 };
 
 const configs = {
@@ -43,7 +64,17 @@ const configs = {
       rpc: 'https://noble-testnet-rpc.polkachu.com:443',
       api: 'https://noble-testnet-api.polkachu.com:443',
     },
-    eth: { explorer: 'https://sepolia.etherscan.io' },
+    dest: {
+      eth: {
+        explorer: 'https://sepolia.etherscan.io',
+        chainRef: 'eip155:58008',
+        domain: 0,
+      },
+      solana: {
+        chainRef: 'solana:8E9rvCKLFQia2Y35HXjjpWzj8weVo44K',
+        domain: 5,
+      },
+    },
   },
   main: {
     circle: {
@@ -53,49 +84,42 @@ const configs = {
       explorer: 'https://mintscan.io/noble',
       rpc: 'https://noble-rpc.polkachu.com:443',
     },
-    eth: { explorer: 'https://etherscan.io' },
+    dest: {
+      eth: {
+        explorer: 'https://etherscan.io',
+        chainRef: 'eip155:1',
+        domain: 0,
+      },
+    },
   },
 };
 const config = configs.test;
 
-// https://github.com/Agoric/agoric-sdk/pull/11037/files#diff-ab8e7785ae43086c39c85476d30212af7ed31ef5d5f19bb56e06f25999d9b11aR153
-/**
- * Left pad the mint recipient address with 0's to 32 bytes. standard ETH
- * addresses are 20 bytes, but for ABI data structures and other reasons, 32
- * bytes are used.
- *
- * @param {string} rawAddress
- */
-export const leftPadEthAddressTo32Bytes = rawAddress => {
-  const cleanedAddress = rawAddress.replace(/^0x/, '');
-  const zeroesNeeded = 64 - cleanedAddress.length;
-  const paddedAddress = '0'.repeat(zeroesNeeded) + cleanedAddress;
-  return fromHex(paddedAddress);
+const fee1 = {
+  amount: [{ denom: 'uusdc', amount: '0' }],
+  gas: '200000',
 };
 
-const go = async (
-  client: SigningStargateClient,
-  from: string,
-  destEthAddr: string,
-) => {
-  const mintRecipientBytes = leftPadEthAddressTo32Bytes(destEthAddr);
+const makeBurnMsg = (from: NobleAddress, destId: string, amount = 1n) => {
+  const { dest, mintRecipient } = asMintRecipient(destId);
+  const destInfo = Object.values(config.dest).find(
+    info => info.chainRef === `${dest.namespace}:${dest.reference}`,
+  );
+  if (!destInfo)
+    throw Error(`unsupported: ${dest.namespace}:${dest.reference}`);
   const msg = {
     typeUrl: '/circle.cctp.v1.MsgDepositForBurn',
     value: {
       from,
-      amount: '1',
-      destinationDomain: domains.eth,
-      mintRecipient: mintRecipientBytes,
-      burnToken: 'uusdc',
+      amount: `${amount}` as `${number}`,
+      destinationDomain: destInfo.domain,
+      mintRecipient,
+      burnToken: 'uusdc' as const,
       // If using DepositForBurnWithCaller, add destinationCaller here
     },
   };
 
-  console.log('protoMsg', MsgDepositForBurn.toProtoMsg(msg.value));
-
-  const result = await client.signAndBroadcast(from, [msg], exampleFee);
-
-  return result.transactionHash;
+  return msg;
 };
 
 /**
@@ -127,54 +151,61 @@ const makePoll = (setTimeout: typeof globalThis.setTimeout, period = 2_000) => {
   return poll;
 };
 
-const main = async () => {
-  const mnemonic = process.env.MNEMONIC ? process.env.MNEMONIC : '';
-  const dest = process.env.ETH_DEST!;
-  console.log('minting on Eth:', `${config.eth.explorer}/address/${dest}`);
-
-  const wallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, {
-    prefix: 'noble',
-  });
-  const [account] = await wallet.getAccounts();
-  console.log('source addr:', account.address);
-
-  const client = await SigningStargateClient.connectWithSigner(
-    config.noble.rpc,
-    wallet,
-    { registry: createDefaultRegistry() },
-  );
-
-  const transactionHash = await go(client, account.address, dest);
-
-  const fetchJSON = async url => {
+const main = async ({
+  connectWithSigner = SigningStargateClient.connectWithSigner,
+  env = process.env,
+  fetch = globalThis.fetch,
+  setTimeout = globalThis.setTimeout,
+} = {}) => {
+  const fetchJSON = async (url: string) => {
     const res = await fetch(url);
     if (!res.ok) throw Error(res.statusText);
     return res.json();
   };
 
-  const api = async (path: string) => fetchJSON(`${config.noble.api}${path}`);
-  const tx = await api(`/cosmos/tx/v1beta1/txs/${transactionHash}`);
+  const makeNobleClient = async (mnemonic: string) => {
+    const wallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, {
+      prefix: 'noble',
+    });
+    const [{ address }] = await wallet.getAccounts();
+    console.log('source addr:', address);
+    assert(address.startsWith('noble1'));
+    const clientOpts = { registry: new Registry(cctpTypes) };
+    const client = await connectWithSigner(
+      config.noble.rpc,
+      wallet,
+      clientOpts,
+    );
+    const api = async (path: string) => fetchJSON(`${config.noble.api}${path}`);
+    return { address: address as NobleAddress, client, api };
+  };
+
+  const { client, address, api } = await makeNobleClient(env.MNEMONIC!);
+
+  const dest = env.CCTP_DEST!;
+  console.log('minting on:', dest);
+
+  const burn = makeBurnMsg(address, dest);
+  console.log('broadcasting', burn, MsgDepositForBurn.toProtoMsg(burn.value));
+  const txResp = await client.signAndBroadcast(address, [burn], fee1);
   console.log(
-    `Burned on Noble: ${config.noble.explorer}/tx/${transactionHash}`,
+    `Burned on Noble: ${config.noble.explorer}/tx/${txResp.transactionHash}`,
   );
+
+  const tx = await api(`/cosmos/tx/v1beta1/txs/${txResp.transactionHash}`);
 
   const key = attestationKey(tx);
-  console.log(
-    'attestation key',
-    key,
-    `${config.circle.iris}/attestations/${key}`,
-  );
+  console.log('GET attestation', `${config.circle.iris}/attestations/${key}`);
   const iris = (path: string) => fetchJSON(`${config.circle.iris}${path}`);
-
-  const poll = makePoll(globalThis.setTimeout);
-  for await (const x of poll(async () => {
+  const tryGetAttestation = async () => {
     try {
       const current = await iris(`/attestations/${key}`);
       return { done: current.status === 'complete', value: current };
     } catch (e) {
       return { done: false, value: e };
     }
-  })) {
+  };
+  for await (const x of makePoll(setTimeout)(tryGetAttestation)) {
     if (x instanceof Error && x.message === 'Not Found') continue;
     console.log('attestation?', x);
   }
