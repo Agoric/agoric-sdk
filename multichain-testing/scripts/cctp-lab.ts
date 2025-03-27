@@ -4,15 +4,15 @@ import '@endo/init';
 
 import { MsgDepositForBurn } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
 import type { NobleAddress } from '@agoric/fast-usdc';
-import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { keccak256 } from '@cosmjs/crypto';
-import { fromHex, fromBase64, toHex } from '@cosmjs/encoding';
+import { fromBase64, toHex } from '@cosmjs/encoding';
 import {
   DirectSecp256k1HdWallet,
   Registry,
   type GeneratedType,
 } from '@cosmjs/proto-signing';
 import { SigningStargateClient } from '@cosmjs/stargate';
+import { asMintRecipient } from '../tools/address.ts';
 
 export const cctpTypes: ReadonlyArray<[string, GeneratedType]> = [
   [
@@ -21,38 +21,6 @@ export const cctpTypes: ReadonlyArray<[string, GeneratedType]> = [
     MsgDepositForBurn,
   ],
 ];
-
-// https://github.com/Agoric/agoric-sdk/pull/11037/files#diff-ab8e7785ae43086c39c85476d30212af7ed31ef5d5f19bb56e06f25999d9b11aR153
-/**
- * Left pad the mint recipient address with 0's to 32 bytes. standard ETH
- * addresses are 20 bytes, but for ABI data structures and other reasons, 32
- * bytes are used.
- *
- * @param {string} rawAddress
- */
-export const leftPadEthAddressTo32Bytes = (rawAddress: string) => {
-  const cleanedAddress = rawAddress.replace(/^0x/, '');
-  const zeroesNeeded = 64 - cleanedAddress.length;
-  const paddedAddress = '0'.repeat(zeroesNeeded) + cleanedAddress;
-  return fromHex(paddedAddress);
-};
-
-const mintRecipientParser = {
-  eip155: leftPadEthAddressTo32Bytes,
-  solana: () => {
-    throw Error('TODO');
-  },
-};
-
-const asMintRecipient = (destId: string) => {
-  const dest = parseAccountId(destId);
-  if (!('namespace' in dest)) throw Error(`missing namespace: ${dest}`);
-  const parse = mintRecipientParser[dest.namespace];
-  if (!parse) throw Error(`not supported: ${dest.namespace}`);
-  const mintRecipient: Uint8Array = parse(dest.accountAddress);
-
-  return { dest, mintRecipient };
-};
 
 const configs = {
   test: {
