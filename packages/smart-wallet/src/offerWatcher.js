@@ -196,7 +196,6 @@ export const prepareOfferWatcher = (baggage, vowTools) => {
             case 'null':
             case 'number':
             case 'string':
-            case 'symbol':
             case 'undefined':
               facets.helper.updateStatus({ result });
               break;
