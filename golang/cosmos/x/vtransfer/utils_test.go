@@ -36,8 +36,8 @@ func ParseAckFromFilteredEvents(events sdk.Events, filteredType string) ([]byte,
 	for _, ev := range events {
 		if ev.Type == filteredType {
 			for _, attr := range ev.Attributes {
-				if string(attr.Key) == channeltypes.AttributeKeyAck { //nolint:staticcheck // DEPRECATED
-					return attr.Value, nil
+				if attr.Key == channeltypes.AttributeKeyAck { //nolint:staticcheck // DEPRECATED
+					return []byte(attr.Value), nil
 				}
 			}
 		}
@@ -59,12 +59,12 @@ func ParsePacketFromFilteredEvents(events sdk.Events, filteredType string) (chan
 		if ev.Type == filteredType {
 			packet := channeltypes.Packet{}
 			for _, attr := range ev.Attributes {
-				switch string(attr.Key) {
+				switch attr.Key {
 				case channeltypes.AttributeKeyData: //nolint:staticcheck // DEPRECATED
-					packet.Data = attr.Value
+					packet.Data = []byte(attr.Value)
 
 				case channeltypes.AttributeKeySequence:
-					seq, err := strconv.ParseUint(string(attr.Value), 10, 64)
+					seq, err := strconv.ParseUint(attr.Value, 10, 64)
 					if err != nil {
 						return channeltypes.Packet{}, err
 					}
@@ -72,19 +72,19 @@ func ParsePacketFromFilteredEvents(events sdk.Events, filteredType string) (chan
 					packet.Sequence = seq
 
 				case channeltypes.AttributeKeySrcPort:
-					packet.SourcePort = string(attr.Value)
+					packet.SourcePort = attr.Value
 
 				case channeltypes.AttributeKeySrcChannel:
-					packet.SourceChannel = string(attr.Value)
+					packet.SourceChannel = attr.Value
 
 				case channeltypes.AttributeKeyDstPort:
-					packet.DestinationPort = string(attr.Value)
+					packet.DestinationPort = attr.Value
 
 				case channeltypes.AttributeKeyDstChannel:
-					packet.DestinationChannel = string(attr.Value)
+					packet.DestinationChannel = attr.Value
 
 				case channeltypes.AttributeKeyTimeoutHeight:
-					height, err := clienttypes.ParseHeight(string(attr.Value))
+					height, err := clienttypes.ParseHeight(attr.Value)
 					if err != nil {
 						return channeltypes.Packet{}, err
 					}
@@ -92,7 +92,7 @@ func ParsePacketFromFilteredEvents(events sdk.Events, filteredType string) (chan
 					packet.TimeoutHeight = height
 
 				case channeltypes.AttributeKeyTimeoutTimestamp:
-					timestamp, err := strconv.ParseUint(string(attr.Value), 10, 64)
+					timestamp, err := strconv.ParseUint(attr.Value, 10, 64)
 					if err != nil {
 						return channeltypes.Packet{}, err
 					}
