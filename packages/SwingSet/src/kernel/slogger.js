@@ -1,9 +1,12 @@
-import { q } from '@endo/errors';
+import { q, Fail } from '@endo/errors';
+import { makePromiseKit } from '@endo/promise-kit';
 import { objectMap } from '@agoric/internal';
+import { defineName } from '@agoric/internal/src/js-utils.js';
 import { makeLimitedConsole } from '@agoric/internal/src/ses-utils.js';
 
 /** @import {Callable} from '@agoric/internal'; */
 /** @import {LimitedConsole} from '@agoric/internal/src/js-utils.js'; */
+/** @import {SlogProps, SlogDurationProps, SwingsetController} from '../controller/controller.js'; */
 
 const IDLE = 'idle';
 const STARTUP = 'startup';
@@ -12,7 +15,7 @@ const DELIVERY = 'delivery';
 const noopFinisher = harden(() => {});
 
 /** @typedef {(...finishArgs: unknown[]) => unknown} AnyFinisher */
-/** @typedef {Partial<Record<Exclude<keyof KernelSlog, 'write'>, (methodName: string, args: unknown[], finisher: AnyFinisher) => unknown>>} SlogWrappers */
+/** @typedef {Partial<Record<Exclude<keyof KernelSlog, 'write' | 'startDuration'>, (methodName: string, args: unknown[], finisher: AnyFinisher) => unknown>>} SlogWrappers */
 
 /**
  * Support asynchronous slog callbacks that are invoked at the start
@@ -96,24 +99,81 @@ export function makeDummySlogger(slogCallbacks, dummyConsole = badConsole) {
     changeCList: () => noopFinisher,
     terminateVat: () => noopFinisher,
   });
-  return harden({ ...wrappedMethods, write: noopFinisher });
+  return harden({
+    ...wrappedMethods,
+    write: noopFinisher,
+    startDuration: () => noopFinisher,
+  });
 }
 
 /**
+ * @callback StartDuration
+ * Capture an extended process, writing an entry with `type` $startLabel and
+ * then later (when the returned finish function is called) another entry with
+ * `type` $endLabel and `seconds` reporting the intervening duration.
+ *
+ * @param {readonly [startLabel: string, endLabel: string]} labels
+ * @param {SlogDurationProps} startProps
+ * @returns {import('../types-external').FinishSlogDuration}
+ */
+
+/**
  * @param {SlogWrappers} slogCallbacks
- * @param {(obj: object) => void} [writeObj]
+ * @param {SwingsetController['writeSlogObject']} [writeSlogObject]
+ * @param {SwingsetController['slogDuration']} [slogDuration] required when writeSlogObject is provided
  * @returns {KernelSlog}
  */
-export function makeSlogger(slogCallbacks, writeObj) {
-  const safeWrite = writeObj
-    ? obj => {
-        try {
-          writeObj(obj);
-        } catch (err) {
-          console.error('WARNING: slogger write error', err);
-        }
+export function makeSlogger(slogCallbacks, writeSlogObject, slogDuration) {
+  if (writeSlogObject && !slogDuration) {
+    throw Fail`slogDuration is required with writeSlogObject`;
+  }
+  const { safeWrite, startDuration } = (() => {
+    if (!writeSlogObject) {
+      const dummySafeWrite = () => {};
+      /** @type {StartDuration} */
+      const dummyStartDuration = () => defineName('dummyFinish', () => {});
+      return { safeWrite: dummySafeWrite, startDuration: dummyStartDuration };
+    }
+    /** @type {(obj: SlogProps) => void} */
+    // eslint-disable-next-line no-shadow
+    const safeWrite = obj => {
+      try {
+        writeSlogObject(obj);
+      } catch (err) {
+        console.error('WARNING: slogger write error', err);
       }
-    : () => {};
+    };
+    /** @type {StartDuration} */
+    // eslint-disable-next-line no-shadow
+    const startDuration = (labels, startProps) => {
+      try {
+        /** @type {(extraProps?: SlogDurationProps) => void} */
+        let closeSpan;
+        // @ts-expect-error TS2722 slogDuration is not undefined here
+        void slogDuration(labels, startProps, async finish => {
+          const doneKit = makePromiseKit();
+          closeSpan = props => {
+            try {
+              finish(props);
+            } finally {
+              doneKit.resolve(undefined);
+            }
+          };
+          // Hold the span open until `finish` is called.
+          await doneKit.promise;
+        });
+        // @ts-expect-error TS2454 closeSpan must have been assigned above
+        if (typeof closeSpan !== 'function') {
+          throw Fail`slogDuration did not synchronously provide a finisher`;
+        }
+        return closeSpan;
+      } catch (err) {
+        console.error('WARNING: slogger write error', err);
+        return defineName('dummyFinish', () => {});
+      }
+    };
+    return { safeWrite, startDuration };
+  })();
 
   const vatSlogs = new Map(); // vatID -> vatSlog
 
@@ -149,15 +209,17 @@ export function makeSlogger(slogCallbacks, writeObj) {
 
     function startup() {
       // provide a context for console calls during startup
-      checkOldState(IDLE, 'did startup get called twice?');
+      checkOldState(IDLE, 'vat-startup called twice?');
       state = STARTUP;
-      safeWrite({ type: 'vat-startup-start', vatID });
-      function finish() {
-        checkOldState(STARTUP, 'startup-finish called twice?');
+      const finish = startDuration(
+        ['vat-startup-start', 'vat-startup-finish'],
+        { vatID },
+      );
+      return harden(() => {
+        checkOldState(STARTUP, 'vat-startup-finish called twice?');
         state = IDLE;
-        safeWrite({ type: 'vat-startup-finish', vatID });
-      }
-      return harden(finish);
+        finish();
+      });
     }
 
     // kd: kernelDelivery, vd: vatDelivery
@@ -167,32 +229,44 @@ export function makeSlogger(slogCallbacks, writeObj) {
       crankNum = newCrankNum;
       deliveryNum = newDeliveryNum;
       replay = inReplay;
-      const when = { crankNum, vatID, deliveryNum, replay };
-      safeWrite({ type: 'deliver', ...when, kd, vd });
       syscallNum = 0;
-
+      const dispatch = vd?.[0]; // using vd because kd is undefined in replay
+      const finish = startDuration(['deliver', 'deliver-result'], {
+        crankNum,
+        vatID,
+        deliveryNum,
+        replay,
+        dispatch,
+        kd,
+        vd,
+      });
       // dr: deliveryResult
-      function finish(dr) {
-        checkOldState(DELIVERY, 'delivery-finish called twice?');
-        safeWrite({ type: 'deliver-result', ...when, dr });
+      return harden(dr => {
+        checkOldState(DELIVERY, 'deliver-result called twice?');
         state = IDLE;
-      }
-      return harden(finish);
+        finish({ kd: undefined, vd: undefined, dr });
+      });
     }
 
     // ksc: kernelSyscallObject, vsc: vatSyscallObject
     function syscall(ksc, vsc) {
       checkOldState(DELIVERY, 'syscall invoked outside of delivery');
-      const when = { crankNum, vatID, deliveryNum, syscallNum, replay };
-      safeWrite({ type: 'syscall', ...when, ksc, vsc });
+      const finish = startDuration(['syscall', 'syscall-result'], {
+        crankNum,
+        vatID,
+        deliveryNum,
+        syscallNum,
+        replay,
+        syscall: vsc?.[0],
+        ksc,
+        vsc,
+      });
       syscallNum += 1;
-
       // ksr: kernelSyscallResult, vsr: vatSyscallResult
-      function finish(ksr, vsr) {
+      return harden((ksr, vsr) => {
         checkOldState(DELIVERY, 'syscall finished after delivery?');
-        safeWrite({ type: 'syscall-result', ...when, ksr, vsr });
-      }
-      return harden(finish);
+        finish({ ksc: undefined, vsc: undefined, ksr, vsr });
+      });
     }
 
     // mode: 'import' | 'export' | 'drop'
@@ -258,5 +332,5 @@ export function makeSlogger(slogCallbacks, writeObj) {
     terminateVat: (vatID, ...args) =>
       provideVatSlogger(vatID).vatSlog.terminateVat(...args),
   });
-  return harden({ ...wrappedMethods, write: safeWrite });
+  return harden({ ...wrappedMethods, write: safeWrite, startDuration });
 }

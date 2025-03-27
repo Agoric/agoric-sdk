@@ -190,6 +190,7 @@ __metadata:
     "@endo/far": "npm:^1.1.10"
     "@endo/init": "npm:^1.1.8"
     "@endo/marshal": "npm:^1.6.3"
+    "@endo/nat": "npm:^5.0.14"
     "@endo/pass-style": "npm:^1.4.8"
     "@endo/patterns": "npm:^1.4.8"
     "@endo/promise-kit": "npm:^1.1.9"

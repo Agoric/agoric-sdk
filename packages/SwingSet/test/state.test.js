@@ -4,6 +4,7 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 import { createHash } from 'crypto';
+import { KERNEL_STATS_METRICS } from '@agoric/internal/src/metrics.js';
 import { kser, kslot } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import { makeDummySlogger } from '../src/kernel/slogger.js';
@@ -12,7 +13,6 @@ import makeKernelKeeper, {
 } from '../src/kernel/state/kernelKeeper.js';
 import { upgradeSwingset } from '../src/controller/upgradeSwingset.js';
 import { makeKernelStats } from '../src/kernel/state/stats.js';
-import { KERNEL_STATS_METRICS } from '../src/kernel/metrics.js';
 import {
   enumeratePrefixedKeys,
   getPrefixedValues,
