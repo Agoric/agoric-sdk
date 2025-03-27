@@ -4,55 +4,67 @@ import { exportStorage } from '../src/export-storage.js';
 
 const test = anyTest as TestFn;
 
+// Export this binding when used by other modules.
+const TestDataKey = Symbol('TestDataKey');
+
+// Create a local alias, then
+//  - regex replace '\._\b' with '[_]'
+//  - regex replace '\b_:' with '[_]:'
+const _ = TestDataKey;
 type PublishedNode = {
-  _?: unknown;
-  [key: string]: PublishedNode | unknown;
+  [k: string]: PublishedNode;
+  [_]?: unknown;
 };
 
-type BatchChainStorage = (
-  method: string,
-  args: any[],
-) => string | string[] | [string, string][] | null | void;
+type BatchChainStorageAPI = {
+  get: (path: string) => string | null;
+  entries: (path: string) => Array<[key: string, value?: string]>;
+  children: (path: string) => string[];
+  setWithoutNotify: (...entries: Array<[path: string, value?: string]>) => void;
+};
+type BatchChainStorage<
+  M extends keyof BatchChainStorageAPI = keyof BatchChainStorageAPI,
+> = (
+  method: M,
+  args: Parameters<BatchChainStorageAPI[M]>,
+) => ReturnType<BatchChainStorageAPI[M]>;
 
 const makeBatchChainStorage = (published: PublishedNode) => {
   const deleted: string[] = [];
-  // @ts-expect-error XXX return type
+  const lookup = (path: string): PublishedNode | null => {
+    let node = published;
+    if (path === 'published') return node;
+    for (const key of path.replace(/^published\./, '').split('.')) {
+      if (typeof node !== 'object' || node === null) return null;
+      node = node[key];
+      if (!node) return null;
+    }
+    return node;
+  };
+
+  const entries = (path: string): [key: string, value?: string][] => {
+    const node = lookup(path);
+    if (!node) return [];
+    const out: [string, string?][] = [];
+    const childData = Object.entries(node) as Array<[string, PublishedNode]>;
+    for (const [key, child] of childData) {
+      if (child[_] !== undefined) {
+        out.push([key, `${child[_]}`]);
+      } else {
+        out.push([key]);
+      }
+    }
+    return out;
+  };
+
   const batchChainStorage: BatchChainStorage = (method, args) => {
-    const lookup = (path: string): PublishedNode | null => {
-      let node: PublishedNode | unknown = published;
-      if (path === 'published') return node as PublishedNode;
-      for (const key of path.replace(/^published\./, '').split('.')) {
-        if (key === '_') throw Error('_ is reserved for testing');
-        if (typeof node !== 'object' || node === null) return null;
-        node = (node as Record<string, unknown>)[key];
-        if (!node) return null;
-      }
-      return node as PublishedNode;
-    };
-
-    const entries = (path: string): [string, string?][] => {
-      const node = lookup(path);
-      if (!node) return [];
-      const out: [string, string?][] = [];
-      for (const key of Object.keys(node)) {
-        if (key === '_') continue;
-        const child = node[key] as PublishedNode;
-        if (child._ !== undefined) {
-          out.push([key, `${child._}`]);
-        } else {
-          out.push([key]);
-        }
-      }
-      return out;
-    };
-
     switch (method) {
       case 'get': {
         const [path] = args as [string];
         const node = lookup(path);
         if (node === null) return null;
-        if (node._ === undefined) return null;
-        return `${node._}`;
+        if (node[_] === undefined) return null;
+        return `${node[_]}`;
       }
       case 'entries': {
         const [path] = args as [string];
@@ -87,11 +99,11 @@ test('exportStorage example', t => {
   const { batchChainStorage } = makeBatchChainStorage({
     c: {
       o: {
-        _: 'top',
+        [_]: 'top',
         i: {
-          n: { _: 42 },
+          n: { [_]: 42 },
         },
-        w: { _: 'moo' },
+        w: { [_]: 'moo' },
       },
     },
   });
@@ -114,20 +126,20 @@ test('exportStorage clears crufty ToyUSD PSM', t => {
 
   const publishedMain: PublishedNode = {
     agoricNames: {
-      brand: { _: [['IST', { boardID: 'board01234' }]] },
+      brand: { [_]: [['IST', { boardID: 'board01234' }]] },
     },
     psm: {
       IST: {
         ToyUSD: {
-          metrics: { _: { shoeSize: 3 } },
+          metrics: { [_]: { shoeSize: 3 } },
         },
       },
     },
     wallet: {
-      agoric123: { _: '$$$' },
+      agoric123: { [_]: '$$$' },
     },
     provisionPool: {
-      metrics: { _: { totalMintedConverted: 20 } },
+      metrics: { [_]: { totalMintedConverted: 20 } },
     },
   };
 
