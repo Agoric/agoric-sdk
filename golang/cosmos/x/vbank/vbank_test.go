@@ -560,32 +560,32 @@ func Test_EndBlock_Events(t *testing.T) {
 		{
 			Type: "coin_received",
 			Attributes: []abci.EventAttribute{
-				{Key: []byte("receiver"), Value: []byte(addr1)},
-				{Key: []byte("amount"), Value: []byte("500ubld,600urun,700ushmoo")},
+				{Key: "receiver", Value: addr1},
+				{Key: "amount", Value: "500ubld,600urun,700ushmoo"},
 			},
 		},
 		{
 			Type: "coin_spent",
 			Attributes: []abci.EventAttribute{
-				{Key: []byte("spender"), Value: []byte(addr2)},
-				{Key: []byte("amount"), Value: []byte("500ubld,600urun,700ushmoo")},
-				{Key: []byte("other"), Value: []byte(addr3)},
+				{Key: "spender", Value: addr2},
+				{Key: "amount", Value: "500ubld,600urun,700ushmoo"},
+				{Key: "other", Value: addr3},
 			},
 		},
 		{
 			Type: "something_else",
 			Attributes: []abci.EventAttribute{
-				{Key: []byte("receiver"), Value: []byte(addr4)},
-				{Key: []byte("spender"), Value: []byte(addr4)},
-				{Key: []byte("amount"), Value: []byte("500ubld,600urun,700ushmoo")},
+				{Key: "receiver", Value: addr4},
+				{Key: "spender", Value: addr4},
+				{Key: "amount", Value: "500ubld,600urun,700ushmoo"},
 			},
 		},
 		{
 			Type: "non_modaccount",
 			Attributes: []abci.EventAttribute{
-				{Key: []byte("receiver"), Value: []byte(addr3)},
-				{Key: []byte("spender"), Value: []byte(addr4)},
-				{Key: []byte("amount"), Value: []byte("100ubld")},
+				{Key: "receiver", Value: addr3},
+				{Key: "spender", Value: addr4},
+				{Key: "amount", Value: "100ubld"},
 			},
 		},
 	}

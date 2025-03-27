@@ -227,51 +227,51 @@ func TestStorageNotify(t *testing.T) {
 		{
 			Type: "storage",
 			Attributes: []abci.EventAttribute{
-				{Key: []byte("path"), Value: []byte("notify.legacy")},
-				{Key: []byte("value"), Value: []byte("legacyValue")},
+				{Key: "path", Value: "notify.legacy"},
+				{Key: "value", Value: "legacyValue"},
 			},
 		},
 		{
 			Type: "state_change",
 			Attributes: []abci.EventAttribute{
-				{Key: []byte("store"), Value: []byte("vstorage")},
-				{Key: []byte("key"), Value: []byte("2\x00notify\x00legacy")},
-				{Key: []byte("anckey"), Value: []byte("\x012\x00notify\x00legacy\x01")},
-				{Key: []byte("value"), Value: []byte("legacyValue")},
+				{Key: "store", Value: "vstorage"},
+				{Key: "key", Value: "2\x00notify\x00legacy"},
+				{Key: "anckey", Value: "\x012\x00notify\x00legacy\x01"},
+				{Key: "value", Value: "legacyValue"},
 			},
 		},
 		{
 			Type: "storage",
 			Attributes: []abci.EventAttribute{
-				{Key: []byte("path"), Value: []byte("notify.legacy2")},
-				{Key: []byte("value"), Value: []byte("legacyValue2b")},
+				{Key: "path", Value: "notify.legacy2"},
+				{Key: "value", Value: "legacyValue2b"},
 			},
 		},
 		{
 			Type: "state_change",
 			Attributes: []abci.EventAttribute{
-				{Key: []byte("store"), Value: []byte("vstorage")},
-				{Key: []byte("key"), Value: []byte("2\x00notify\x00legacy2")},
-				{Key: []byte("anckey"), Value: []byte("\x012\x00notify\x00legacy2\x01")},
-				{Key: []byte("value"), Value: []byte("legacyValue2b")},
+				{Key: "store", Value: "vstorage"},
+				{Key: "key", Value: "2\x00notify\x00legacy2"},
+				{Key: "anckey", Value: "\x012\x00notify\x00legacy2\x01"},
+				{Key: "value", Value: "legacyValue2b"},
 			},
 		},
 		{
 			Type: "state_change",
 			Attributes: []abci.EventAttribute{
-				{Key: []byte("store"), Value: []byte("vstorage")},
-				{Key: []byte("key"), Value: []byte("2\x00notify\x00noLegacy")},
-				{Key: []byte("anckey"), Value: []byte("\x012\x00notify\x00noLegacy\x01")},
-				{Key: []byte("value"), Value: []byte("noLegacyValue")},
+				{Key: "store", Value: "vstorage"},
+				{Key: "key", Value: "2\x00notify\x00noLegacy"},
+				{Key: "anckey", Value: "\x012\x00notify\x00noLegacy\x01"},
+				{Key: "value", Value: "noLegacyValue"},
 			},
 		},
 		{
 			Type: "state_change",
 			Attributes: []abci.EventAttribute{
-				{Key: []byte("store"), Value: []byte("vstorage")},
-				{Key: []byte("key"), Value: []byte("2\x00notify\x00noLegacy2")},
-				{Key: []byte("anckey"), Value: []byte("\x012\x00notify\x00noLegacy2\x01")},
-				{Key: []byte("value"), Value: []byte("noLegacyValue2b")},
+				{Key: "store", Value: "vstorage"},
+				{Key: "key", Value: "2\x00notify\x00noLegacy2"},
+				{Key: "anckey", Value: "\x012\x00notify\x00noLegacy2\x01"},
+				{Key: "value", Value: "noLegacyValue2b"},
 			},
 		},
 	}
