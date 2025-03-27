@@ -16,6 +16,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store"
+	"github.com/cosmos/cosmos-sdk/testutil/sims"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	"github.com/iancoleman/orderedmap"
 	"github.com/stretchr/testify/suite"
@@ -35,7 +36,6 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibctesting "github.com/cosmos/ibc-go/v7/testing"
-	"github.com/cosmos/ibc-go/v7/testing/simapp"
 )
 
 const (
@@ -109,7 +109,6 @@ func (s *IntegrationTestSuite) nextChannelOffset(instance int) int {
 func SetupAgoricTestingApp(instance int) TestingAppMaker {
 	return func() (ibctesting.TestingApp, map[string]json.RawMessage) {
 		db := dbm.NewMemDB()
-		encCdc := app.MakeEncodingConfig()
 		mockController := func(ctx context.Context, needReply bool, jsonRequest string) (jsonReply string, err error) {
 			// fmt.Printf("controller %d got: %s\n", instance, jsonRequest)
 
@@ -124,7 +123,7 @@ func SetupAgoricTestingApp(instance int) TestingAppMaker {
 			return jsonReply, nil
 		}
 		appd := app.NewAgoricApp(mockController, vm.NewAgdServer(), log.TestingLogger(), db, nil,
-			true, map[int64]bool{}, app.DefaultNodeHome, simapp.FlagPeriodValue, encCdc, simapp.EmptyAppOptions{}, interBlockCacheOpt())
+			true, sims.EmptyAppOptions{}, interBlockCacheOpt())
 		genesisState := app.NewDefaultGenesisState()
 
 		t := template.Must(template.New("").Parse(`
