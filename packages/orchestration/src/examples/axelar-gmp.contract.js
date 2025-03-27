@@ -1,9 +1,5 @@
 // @ts-check
 import { M } from '@endo/patterns';
-import {
-  EmptyProposalShape,
-  InvitationShape,
-} from '@agoric/zoe/src/typeGuards';
 import { E } from '@endo/far';
 import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
 import { AnyNatAmountShape } from '../typeGuards.js';
@@ -107,7 +103,7 @@ export const contract = async (
   const publicFacet = zone.exo(
     'Send PF',
     M.interface('Send PF', {
-      gmpInvitation: M.callWhen().returns(InvitationShape),
+      gmpInvitation: M.callWhen().returns(M.any()),
       createAndMonitorLCA: M.callWhen().returns(M.any()),
     }),
     {
@@ -124,7 +120,6 @@ export const contract = async (
           createAndMonitorLCA,
           'makeAccount',
           undefined,
-          EmptyProposalShape,
         );
       },
     },
