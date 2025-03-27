@@ -37,6 +37,9 @@ export function buildRootObject() {
      * @param {any} issuerNameSingular For example, 'moola', or 'simolean'
      * @param {[AssetKind?, DisplayInfo?]} issuerArgs
      */
+    // TODO There appear to be no callers of this `makeMintAndIssuer` method.
+    // If that's correct, then we should delete this method. If there are
+    // callers, then we should inspect their `optShutdownWithFailue` argument.
     makeMintAndIssuer: (issuerNameSingular, ...issuerArgs) => {
       notForProductionUse();
       // makeIssuerKit fails upgrade, this contract is for demo only
@@ -47,6 +50,9 @@ export function buildRootObject() {
       mintsAndBrands.init(issuerNameSingular, { mint, brand });
       return issuer;
     },
+    // TODO There appear to be no callers of this `provideIssuerKit` method.
+    // If that's correct, then we should delete this method. If there are
+    // callers, then we should inspect their `optShutdownWithFailue` argument.
     provideIssuerKit: (issuerName, ...issuerArgs) => {
       notForProductionUse();
       if (mintsAndBrands.has(issuerName)) {

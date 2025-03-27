@@ -382,7 +382,9 @@ export {};
  *
  * @typedef { { vatParameters?: object, upgradeMessage?: string } } VatUpgradeOptions
  * @typedef { { incarnationNumber: number } } VatUpgradeResults
- *
+ */
+
+/**
  * @callback ShutdownWithFailure
  * Called to shut something down because something went wrong, where the reason
  * is supposed to be an Error that describes what went wrong. Some valid
@@ -393,7 +395,9 @@ export {};
  *
  * @param {Error} reason
  * @returns {void}
- *
+ */
+
+/**
  * @typedef {object} VatAdminFacet
  * A powerful object corresponding with a vat
  * that can be used to upgrade it with new code or parameters,
@@ -411,8 +415,9 @@ export {};
  * in which the JS memory space is abandoned. The new image is launched with access to 'baggage'
  * and any durable storage reachable from it, and must fulfill all the obligations of the previous
  * incarnation.
- *
- *
+ */
+
+/**
  * @typedef {{ adminNode: Guarded<VatAdminFacet>, root: object }} CreateVatResults
  *
  * @typedef {object} VatAdminSvc
@@ -421,5 +426,4 @@ export {};
  * @property {(name: string) => ERef<BundleCap>} getNamedBundleCap
  * @property {(name: string) => ERef<BundleID>} getBundleIDByName
  * @property {(bundleCap: BundleCap, options?: DynamicVatOptions) => ERef<CreateVatResults>} createVat
- *
  */

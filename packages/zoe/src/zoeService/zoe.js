@@ -16,8 +16,11 @@
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { M } from '@endo/patterns';
+// `panic` actually is used in a `typeof`
+// eslint-disable-next-line no-unused-vars
+import { panic } from '@agoric/internal';
 import { makeScalarBigMapStore, prepareExo } from '@agoric/vat-data';
-import { M } from '@agoric/store';
 
 import { Fail } from '@endo/errors';
 import { makeZoeStorageManager } from './zoeStorageManager.js';
@@ -29,6 +32,7 @@ import { defaultFeeIssuerConfig, prepareFeeMint } from './feeMint.js';
 import { ZoeServiceI } from '../typeGuards.js';
 
 /**
+ * @typedef {typeof panic} Panic
  * @import {VatAdminSvc} from '@agoric/swingset-vat';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {FeeIssuerConfig, FeeMintAccess, ZCFSpec, ZoeService} from './types.js';
@@ -42,16 +46,18 @@ import { ZoeServiceI } from '../typeGuards.js';
  * @param {Promise<VatAdminSvc> | VatAdminSvc} [options.vatAdminSvc] - The vatAdmin Service, which carries the
  * power to create a new vat. If it's not available when makeZoe() is called, it
  * must be provided later using setVatAdminService().
- * @param {import('@agoric/swingset-vat').ShutdownWithFailure} [options.shutdownZoeVat] - a function to
- * shutdown the Zoe Vat. This function needs to use the vatPowers
- * available to a vat.
+ * @param {Panic} [options.shutdownZoeVat]
+ *   - a function to shutdown the Zoe Vat. If omitted, it defaults to `undefined`
+ *     and therefore to IssuerKit's default for `optShutdownWithFailure`,
+ *     which does safely and immediately shut down the vat (currently with
+ *     an infinite loop).
  * @param {FeeIssuerConfig} [options.feeIssuerConfig]
  * @param {ZCFSpec} [options.zcfSpec] - Pointer to the contract facet bundle.
  */
 const makeDurableZoeKit = ({
   zoeBaggage,
   vatAdminSvc,
-  shutdownZoeVat = () => {},
+  shutdownZoeVat: optShutdownZoeVat = undefined,
   feeIssuerConfig = defaultFeeIssuerConfig,
   zcfSpec = { name: 'zcf' },
 }) => {
@@ -91,7 +97,7 @@ const makeDurableZoeKit = ({
   const feeMintKit = prepareFeeMint(
     zoeBaggage,
     feeIssuerConfig,
-    shutdownZoeVat,
+    optShutdownZoeVat,
   );
 
   // guarantee that vatAdminSvcP has been defined.
@@ -146,7 +152,7 @@ const makeDurableZoeKit = ({
   } = makeZoeStorageManager(
     createZCFVat,
     getBundleCapForID,
-    shutdownZoeVat,
+    optShutdownZoeVat,
     feeMintKit.feeMint,
     zoeBaggage,
   );
@@ -272,16 +278,21 @@ const makeDurableZoeKit = ({
  * @param {Promise<VatAdminSvc> | VatAdminSvc} [vatAdminSvc] - The vatAdmin Service, which carries the
  * power to create a new vat. If it's not available when makeZoe() is called, it
  * must be provided later using setVatAdminService().
- * @param {import('@agoric/swingset-vat').ShutdownWithFailure} [shutdownZoeVat] - a function to
+ * @param {Panic} [optShutdownZoeVat] - a function to
  * shutdown the Zoe Vat. This function needs to use the vatPowers
  * available to a vat.
  * @param {FeeIssuerConfig} [feeIssuerConfig]
  * @param {ZCFSpec} [zcfSpec] - Pointer to the contract facet bundle.
  */
-const makeZoeKit = (vatAdminSvc, shutdownZoeVat, feeIssuerConfig, zcfSpec) =>
+const makeZoeKit = (
+  vatAdminSvc,
+  optShutdownZoeVat = undefined,
+  feeIssuerConfig = undefined,
+  zcfSpec = undefined,
+) =>
   makeDurableZoeKit({
     vatAdminSvc,
-    shutdownZoeVat,
+    shutdownZoeVat: optShutdownZoeVat,
     feeIssuerConfig,
     zcfSpec,
     zoeBaggage: makeScalarBigMapStore('fake zoe baggage', { durable: true }),

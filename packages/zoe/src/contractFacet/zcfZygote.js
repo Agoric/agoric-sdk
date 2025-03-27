@@ -13,7 +13,7 @@ import {
   prepareExoClass,
   provideDurableMapStore,
 } from '@agoric/vat-data';
-import { objectMap } from '@agoric/internal';
+import { objectMap, panic } from '@agoric/internal';
 
 import { cleanProposal } from '../cleanProposal.js';
 import { handlePKitWarning } from '../handleWarning.js';
@@ -33,6 +33,7 @@ import { ZcfI } from './typeGuards.js';
 
 /**
  * @import {IssuerOptionsRecord} from '@agoric/ertp';
+ * @import { Panic } from '@agoric/internal';
  * @import {ContractMeta, ContractStartFn, SetTestJig, ZCF, ZCFMint, ZCFRegisterFeeMint, ZoeService} from '@agoric/zoe';
  */
 
@@ -88,12 +89,13 @@ export const makeZCFZygote = async (
     instantiate: instantiateIssuerStorage,
   } = provideIssuerStorage(zcfBaggage);
 
-  /** @type {import('@agoric/swingset-vat').ShutdownWithFailure} */
+  /** @type {Panic} */
   const shutdownWithFailure = reason => {
     void E(zoeInstanceAdmin).failAllSeats(reason);
     seatManager.dropAllReferences();
     // https://github.com/Agoric/agoric-sdk/issues/3239
     powers.exitVatWithFailure(reason);
+    panic(reason);
   };
 
   const { storeOfferHandler, takeOfferHandler } =

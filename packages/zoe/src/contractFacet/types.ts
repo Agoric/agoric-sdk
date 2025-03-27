@@ -12,6 +12,7 @@ import type { Subscriber } from '@agoric/notifier';
 import type { ERef } from '@endo/far';
 import type { Passable } from '@endo/pass-style';
 import type { Key, Pattern } from '@endo/patterns';
+import type { panic } from '@agoric/internal';
 import type {
   AmountKeywordRecord,
   ExitRule,
@@ -25,6 +26,8 @@ import type {
   ZoeService,
 } from '../types-index.js';
 import type { ContractStartFunction } from '../zoeService/utils.js';
+
+type Panic = typeof panic;
 
 /**
  * Any passable non-thenable. Often an explanatory string.
@@ -96,7 +99,7 @@ export type ZCF<CT = Record<string, unknown>> = {
     proposalShape?: Pattern,
   ) => Promise<Invitation<R, A>>;
   shutdown: (completion: Completion) => void;
-  shutdownWithFailure: import('@agoric/swingset-vat').ShutdownWithFailure;
+  shutdownWithFailure: Panic;
   getZoeService: () => ERef<ZoeService>;
   getInvitationIssuer: () => Issuer<'set'>;
   getTerms: () => StandardTerms & CT;
