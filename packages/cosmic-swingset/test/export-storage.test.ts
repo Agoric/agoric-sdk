@@ -4,10 +4,9 @@ import { exportStorage } from '../src/export-storage.js';
 
 const test = anyTest as TestFn;
 
-type PublishedNode = {
-  _?: unknown;
-  [key: string]: PublishedNode | unknown;
-};
+const TestDataKey = '_';
+type SubNodes = { [key: string]: PublishedNode | unknown };
+type PublishedNode = { [TestDataKey]?: unknown } & SubNodes;
 
 type BatchChainStorage = (
   method: string,
@@ -22,7 +21,8 @@ const makeBatchChainStorage = (published: PublishedNode) => {
       let node: PublishedNode | unknown = published;
       if (path === 'published') return node as PublishedNode;
       for (const key of path.replace(/^published\./, '').split('.')) {
-        if (key === '_') throw Error('_ is reserved for testing');
+        if (key === TestDataKey)
+          throw Error(`${TestDataKey} is reserved for testing`);
         if (typeof node !== 'object' || node === null) return null;
         node = (node as Record<string, unknown>)[key];
         if (!node) return null;
@@ -35,7 +35,7 @@ const makeBatchChainStorage = (published: PublishedNode) => {
       if (!node) return [];
       const out: [string, string?][] = [];
       for (const key of Object.keys(node)) {
-        if (key === '_') continue;
+        if (key === TestDataKey) continue;
         const child = node[key] as PublishedNode;
         if (child._ !== undefined) {
           out.push([key, `${child._}`]);
