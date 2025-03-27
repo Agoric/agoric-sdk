@@ -2,9 +2,10 @@
 
 /// <reference types="@agoric/store/exported.js" />
 
-import { q, Fail, annotateError, X } from '@endo/errors';
+import { q, Fail } from '@endo/errors';
 import { isPromise } from '@endo/promise-kit';
 import { mustMatch, M, keyEQ } from '@endo/patterns';
+import { panic } from '@agoric/internal';
 import { AmountMath } from './amountMath.js';
 import { preparePaymentKind } from './payment.js';
 import { preparePurseKind } from './purse.js';
@@ -13,8 +14,7 @@ import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
 /**
  * @import {Key, Pattern} from '@endo/patterns';
  * @import {Zone} from '@agoric/base-zone';
- * @import {TypedPattern} from '@agoric/internal';
- * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
+ * @import {TypedPattern, Panic} from '@agoric/internal';
  * @import {AmountStore} from './amountStore.js';
  * @import {Amount, AssetKind, DisplayInfo, PaymentLedger, Payment, Brand, RecoverySetsOption, Purse, Issuer, Mint} from './types.js';
  */
@@ -82,7 +82,7 @@ const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
  * @param {DisplayInfo<K>} displayInfo
  * @param {Pattern} elementShape
  * @param {RecoverySetsOption} recoverySetsState
- * @param {ShutdownWithFailure} [optShutdownWithFailure]
+ * @param {Panic} [optShutdownWithFailure]
  * @returns {PaymentLedger<K>}
  */
 export const preparePaymentLedger = (
@@ -92,7 +92,7 @@ export const preparePaymentLedger = (
   displayInfo,
   elementShape,
   recoverySetsState,
-  optShutdownWithFailure = undefined,
+  optShutdownWithFailure = panic,
 ) => {
   /** @type {Brand<K>} */
   // @ts-expect-error XXX callWhen
@@ -127,19 +127,13 @@ export const preparePaymentLedger = (
 
   const makePayment = preparePaymentKind(issuerZone, name, brand, PaymentI);
 
-  /** @type {ShutdownWithFailure} */
+  /** @type {Panic} */
   const shutdownLedgerWithFailure = reason => {
-    // TODO This should also destroy ledger state.
-    // See https://github.com/Agoric/agoric-sdk/issues/3434
-    if (optShutdownWithFailure !== undefined) {
-      try {
-        optShutdownWithFailure(reason);
-      } catch (errInShutdown) {
-        annotateError(errInShutdown, X`Caused by: ${reason}`);
-        throw errInShutdown;
-      }
+    try {
+      optShutdownWithFailure(reason);
+    } finally {
+      panic(reason);
     }
-    throw reason;
   };
 
   /** @type {WeakMapStore<Payment, Amount>} */

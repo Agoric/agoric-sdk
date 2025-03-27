@@ -15,8 +15,8 @@ import { Fail, q } from '@endo/errors';
 import { FeeMintAccessShape } from '../typeGuards.js';
 
 /**
+ * @import {Panic} from '@agoric/internal';
  * @import {Baggage} from '@agoric/vat-data';
- * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
  * @import {FeeIssuerConfig} from './types.js';
  */
 
@@ -34,9 +34,13 @@ export const defaultFeeIssuerConfig = harden(
 /**
  * @param {Baggage} zoeBaggage
  * @param {FeeIssuerConfig} feeIssuerConfig
- * @param {ShutdownWithFailure} shutdownZoeVat
+ * @param {Panic} [optShutdownZoeVat]
  */
-const prepareFeeMint = (zoeBaggage, feeIssuerConfig, shutdownZoeVat) => {
+const prepareFeeMint = (
+  zoeBaggage,
+  feeIssuerConfig,
+  optShutdownZoeVat = undefined,
+) => {
   const mintBaggage = provideDurableMapStore(zoeBaggage, 'mintBaggage');
   if (mintBaggage.has(FEE_MINT_KIT)) {
     hasIssuer(mintBaggage) ||
@@ -53,7 +57,7 @@ const prepareFeeMint = (zoeBaggage, feeIssuerConfig, shutdownZoeVat) => {
       feeIssuerConfig.name,
       feeIssuerConfig.assetKind,
       feeIssuerConfig.displayInfo,
-      shutdownZoeVat,
+      optShutdownZoeVat,
     )
   );
 

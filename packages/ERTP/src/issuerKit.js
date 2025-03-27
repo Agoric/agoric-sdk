@@ -11,6 +11,7 @@ import { preparePaymentLedger } from './paymentLedger.js';
 
 /**
  * @import {Key, Pattern} from '@endo/patterns';
+ * @import {Panic} from '@agoric/internal';
  * @import {Zone} from '@agoric/base-zone';
  * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
  * @import {TypedPattern} from '@agoric/internal';
@@ -35,13 +36,12 @@ import { preparePaymentLedger } from './paymentLedger.js';
  * @param {Zone} issuerZone
  * @param {RecoverySetsOption} recoverySetsState Omitted from issuerRecord
  *   because it was added in an upgrade.
- * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails in
- *   the middle of an atomic action (which btw should never happen), it
- *   potentially leaves its ledger in a corrupted state. If this function was
- *   provided, then the failed atomic action will call it, so that some larger
- *   unit of computation, like the enclosing vat, can be shutdown before
- *   anything else is corrupted by that corrupted state. See
- *   https://github.com/Agoric/agoric-sdk/issues/3434
+ * @param {Panic} [optShutdownWithFailure] If this issuer fails in the middle of
+ *   an atomic action (which btw should never happen), it potentially leaves its
+ *   ledger in a corrupted state. If this function was provided, then the failed
+ *   atomic action will call it, so that some larger unit of computation, like
+ *   the enclosing vat, can be shutdown before anything else is corrupted by
+ *   that corrupted state. See https://github.com/Agoric/agoric-sdk/issues/3434
  * @returns {IssuerKit<K>}
  */
 const setupIssuerKit = (
@@ -101,13 +101,12 @@ const RECOVERY_SETS_STATE = 'recoverySetsState';
  *
  * @template {AssetKind} K
  * @param {Baggage} issuerBaggage
- * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails in
- *   the middle of an atomic action (which btw should never happen), it
- *   potentially leaves its ledger in a corrupted state. If this function was
- *   provided, then the failed atomic action will call it, so that some larger
- *   unit of computation, like the enclosing vat, can be shutdown before
- *   anything else is corrupted by that corrupted state. See
- *   https://github.com/Agoric/agoric-sdk/issues/3434
+ * @param {Panic} [optShutdownWithFailure] If this issuer fails in the middle of
+ *   an atomic action (which btw should never happen), it potentially leaves its
+ *   ledger in a corrupted state. If this function was provided, then the failed
+ *   atomic action will call it, so that some larger unit of computation, like
+ *   the enclosing vat, can be shutdown before anything else is corrupted by
+ *   that corrupted state. See https://github.com/Agoric/agoric-sdk/issues/3434
  * @param {RecoverySetsOption} [recoverySetsOption] Added in upgrade, so last
  *   and optional. See `RecoverySetsOption` for defaulting behavior.
  * @returns {IssuerKit<K>}
@@ -188,13 +187,12 @@ export const hasIssuer = baggage => baggage.has(INSTANCE_KEY);
  * @param {string} name
  * @param {K} [assetKind]
  * @param {AdditionalDisplayInfo} [displayInfo]
- * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails in
- *   the middle of an atomic action (which btw should never happen), it
- *   potentially leaves its ledger in a corrupted state. If this function was
- *   provided, then the failed atomic action will call it, so that some larger
- *   unit of computation, like the enclosing vat, can be shutdown before
- *   anything else is corrupted by that corrupted state. See
- *   https://github.com/Agoric/agoric-sdk/issues/3434
+ * @param {Panic} [optShutdownWithFailure] If this issuer fails in the middle of
+ *   an atomic action (which btw should never happen), it potentially leaves its
+ *   ledger in a corrupted state. If this function was provided, then the failed
+ *   atomic action will call it, so that some larger unit of computation, like
+ *   the enclosing vat, can be shutdown before anything else is corrupted by
+ *   that corrupted state. See https://github.com/Agoric/agoric-sdk/issues/3434
  * @param {IssuerOptionsRecord} [options]
  * @returns {IssuerKit<K>}
  */
@@ -247,13 +245,12 @@ harden(makeDurableIssuerKit);
  * @param {string} name
  * @param {K} [assetKind]
  * @param {AdditionalDisplayInfo} [displayInfo]
- * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails in
- *   the middle of an atomic action (which btw should never happen), it
- *   potentially leaves its ledger in a corrupted state. If this function was
- *   provided, then the failed atomic action will call it, so that some larger
- *   unit of computation, like the enclosing vat, can be shutdown before
- *   anything else is corrupted by that corrupted state. See
- *   https://github.com/Agoric/agoric-sdk/issues/3434
+ * @param {Panic} [optShutdownWithFailure] If this issuer fails in the middle of
+ *   an atomic action (which btw should never happen), it potentially leaves its
+ *   ledger in a corrupted state. If this function was provided, then the failed
+ *   atomic action will call it, so that some larger unit of computation, like
+ *   the enclosing vat, can be shutdown before anything else is corrupted by
+ *   that corrupted state. See https://github.com/Agoric/agoric-sdk/issues/3434
  * @param {O} [options]
  * @returns {O['elementShape'] extends TypedPattern<infer T extends Key>
  *     ? IssuerKit<K, T>
@@ -323,13 +320,12 @@ harden(prepareIssuerKit);
  *   default, is used for basic fungible tokens.
  * @param {AdditionalDisplayInfo} [displayInfo] `displayInfo` gives information
  *   to the UI on how to display the amount.
- * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails in
- *   the middle of an atomic action (which btw should never happen), it
- *   potentially leaves its ledger in a corrupted state. If this function was
- *   provided, then the failed atomic action will call it, so that some larger
- *   unit of computation, like the enclosing vat, can be shutdown before
- *   anything else is corrupted by that corrupted state. See
- *   https://github.com/Agoric/agoric-sdk/issues/3434
+ * @param {Panic} [optShutdownWithFailure] If this issuer fails in the middle of
+ *   an atomic action (which btw should never happen), it potentially leaves its
+ *   ledger in a corrupted state. If this function was provided, then the failed
+ *   atomic action will call it, so that some larger unit of computation, like
+ *   the enclosing vat, can be shutdown before anything else is corrupted by
+ *   that corrupted state. See https://github.com/Agoric/agoric-sdk/issues/3434
  * @param {O} [options]
  * @returns {O['elementShape'] extends TypedPattern<infer T extends Key>
  *     ? IssuerKit<K, T>

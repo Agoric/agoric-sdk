@@ -13,7 +13,7 @@ import {
   prepareExoClass,
   provideDurableMapStore,
 } from '@agoric/vat-data';
-import { objectMap } from '@agoric/internal';
+import { objectMap, panic } from '@agoric/internal';
 
 import { cleanProposal } from '../cleanProposal.js';
 import { handlePKitWarning } from '../handleWarning.js';
@@ -30,9 +30,11 @@ import { prepareZcMint } from './zcfMint.js';
 import { ZcfI } from './typeGuards.js';
 import '../internal-types.js';
 
+/// <reference path="../internal-types.js" />
+
 /**
- * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {Panic} from '@agoric/internal';
  * @import {IssuerOptionsRecord} from '@agoric/ertp';
  * @import {ZoeIssuerRecord, ZCFRegisterFeeMint, ContractStartFn, SetTestJig} from './types.js';
  */
@@ -89,12 +91,15 @@ export const makeZCFZygote = async (
     instantiate: instantiateIssuerStorage,
   } = provideIssuerStorage(zcfBaggage);
 
-  /** @type {ShutdownWithFailure} */
-  const shutdownWithFailure = reason => {
+  /** @type {Panic} */
+  const shutdownWithFailure = (
+    reason = TypeError('Shutdown without implicit failure'),
+  ) => {
     void E(zoeInstanceAdmin).failAllSeats(reason);
     seatManager.dropAllReferences();
     // https://github.com/Agoric/agoric-sdk/issues/3239
     powers.exitVatWithFailure(reason);
+    panic(reason);
   };
 
   const { storeOfferHandler, takeOfferHandler } =
