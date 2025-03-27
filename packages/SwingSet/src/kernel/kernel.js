@@ -1938,13 +1938,51 @@ export default function buildKernel(
     }
   }
 
-  function reapAllVats() {
+  /** @returns {Generator<VatID>} */
+  function* getAllVatIds() {
     for (const [_, vatID] of kernelKeeper.getStaticVats()) {
-      kernelKeeper.scheduleReap(vatID);
+      yield vatID;
     }
     for (const vatID of kernelKeeper.getDynamicVats()) {
-      kernelKeeper.scheduleReap(vatID);
+      yield vatID;
     }
+  }
+
+  function* getAllVatPosEntries() {
+    for (const vatID of getAllVatIds()) {
+      const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+      yield /** @type {const} */ ([
+        vatID,
+        vatKeeper.getTranscriptEndPosition(),
+      ]);
+    }
+  }
+
+  function reapAllVats(previousVatPos = {}) {
+    /** @type {Record<string, number>} */
+    const currentVatPos = {};
+
+    for (const [vatID, endPos] of getAllVatPosEntries()) {
+      if (previousVatPos[vatID] !== endPos) {
+        kernelKeeper.scheduleReap(vatID);
+        // We just added one delivery
+        currentVatPos[vatID] = endPos + 1;
+      } else {
+        currentVatPos[vatID] = endPos;
+      }
+    }
+
+    return harden(currentVatPos);
+  }
+
+  async function snapshotAllVats() {
+    const snapshottedVats = [];
+    await null;
+    for (const vatID of getAllVatIds()) {
+      const snapshotted = await vatWarehouse.maybeSaveSnapshot(vatID, 2);
+      if (snapshotted) snapshottedVats.push(vatID);
+    }
+    return harden(snapshottedVats);
   }
 
   async function step() {
@@ -2151,6 +2189,7 @@ export default function buildKernel(
     run,
     shutdown,
     reapAllVats,
+    snapshotAllVats,
     changeKernelOptions,
 
     // the rest are for testing and debugging
