@@ -2,7 +2,7 @@
  * @file utils/gmp.js GMP payload construction utilities
  */
 import { hexlify, arrayify, concat } from '@ethersproject/bytes';
-import { AbiCoder } from '@ethersproject/abi';
+import { encode } from '@findeth/abi';
 
 export const GMPMessageType = {
   MESSAGE_ONLY: 1,
@@ -37,9 +37,8 @@ export const buildGMPPayload = ({
   }
 
   const LOGIC_CALL_MSG_ID = 0;
-  const abiCoder = new AbiCoder();
 
-  const payload = abiCoder.encode(
+  const payload = encode(
     ['uint256', 'address', 'uint256', 'uint256', 'bytes'],
     [
       LOGIC_CALL_MSG_ID,
