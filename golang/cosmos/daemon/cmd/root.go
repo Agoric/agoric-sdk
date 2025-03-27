@@ -154,7 +154,6 @@ func initRootCmd(sender vm.Sender, rootCmd *cobra.Command, encodingConfig params
 	cfg.Seal()
 
 	ac := appCreator{
-		encCfg:    encodingConfig,
 		sender:    sender,
 		agdServer: vm.NewAgdServer(),
 	}
@@ -311,7 +310,6 @@ func txCommand() *cobra.Command {
 }
 
 type appCreator struct {
-	encCfg    params.EncodingConfig
 	sender    vm.Sender
 	agdServer *vm.AgdServer
 }
@@ -329,12 +327,6 @@ func (ac appCreator) newApp(
 	}
 
 	baseappOptions := server.DefaultBaseappOptions(appOpts)
-
-	skipUpgradeHeights := make(map[int64]bool)
-	for _, h := range cast.ToIntSlice(appOpts.Get(server.FlagUnsafeSkipUpgrades)) {
-		skipUpgradeHeights[int64(h)] = true
-	}
-
 	homePath := cast.ToString(appOpts.Get(flags.FlagHome))
 
 	// Set a default value for FlagSwingStoreExportDir based on homePath
@@ -347,10 +339,7 @@ func (ac appCreator) newApp(
 
 	return gaia.NewAgoricApp(
 		ac.sender, ac.agdServer,
-		logger, db, traceStore, true, skipUpgradeHeights,
-		homePath,
-		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
-		ac.encCfg,
+		logger, db, traceStore, true,
 		appOpts,
 		baseappOptions...,
 	)
@@ -370,14 +359,9 @@ func (ac appCreator) newSnapshotsApp(
 
 	baseappOptions := server.DefaultBaseappOptions(appOpts)
 
-	homePath := cast.ToString(appOpts.Get(flags.FlagHome))
-
 	return gaia.NewAgoricApp(
 		ac.sender, ac.agdServer,
-		logger, db, traceStore, true, map[int64]bool{},
-		homePath,
-		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
-		ac.encCfg,
+		logger, db, traceStore, true,
 		appOpts,
 		baseappOptions...,
 	)
@@ -519,10 +503,6 @@ func (ac appCreator) appExport(
 		db,
 		traceStore,
 		loadLatest,
-		map[int64]bool{},
-		homePath,
-		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
-		ac.encCfg,
 		appOpts,
 	)
 
