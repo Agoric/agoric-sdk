@@ -2,7 +2,7 @@ import { Fail, q } from '@endo/errors';
 
 /**
  * @import {IBCConnectionID} from '@agoric/vats';
- * @import {Bech32Address, CosmosChainAddress, ScopedChainId} from '../types.js';
+ * @import {Bech32Address, CosmosChainAddress, CaipChainId} from '../types.js';
  * @import {AccountId, AccountIdArg, Caip10Record} from '../orchestration-api.js';
  * @import {RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  */

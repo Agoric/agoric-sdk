@@ -24,7 +24,7 @@ import { getBech32Prefix } from '../utils/address.js';
  * @import {Zone} from '@agoric/zone';
  * @import {CosmosAssetInfo, CosmosChainInfo, ForwardInfo, IBCConnectionInfo, IBCMsgTransferOptions, TransferRoute, GoDuration, Bech32Address} from '../cosmos-api.js';
  * @import {KnownChains} from '../chain-info.js';
- * @import {AccountId, CosmosChainAddress, ChainInfo, ScopedChainId, Denom, DenomAmount, AccountIdArg} from '../orchestration-api.js';
+ * @import {AccountId, CosmosChainAddress, ChainInfo, CaipChainId, Denom, DenomAmount, AccountIdArg} from '../orchestration-api.js';
  * @import {Remote, TypedPattern} from '@agoric/internal';
  * @import {Pattern} from '@endo/patterns';
  */
