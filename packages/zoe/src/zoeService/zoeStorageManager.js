@@ -1,4 +1,7 @@
 import { E } from '@endo/far';
+// `panic` actually is used in a `typeof`
+// eslint-disable-next-line no-unused-vars
+import { panic } from '@agoric/internal';
 import {
   AssetKind,
   makeDurableIssuerKit,
@@ -28,6 +31,7 @@ import {
 } from '../typeGuards.js';
 
 /**
+ * @typedef {typeof panic} Panic
  * @import {Baggage} from '@agoric/vat-data';
  * @import {InvitationAmount} from '@agoric/zoe';
  */
@@ -47,7 +51,7 @@ const { ownKeys } = Reflect;
  * @param {CreateZCFVat} createZCFVat - the ability to create a new
  * ZCF Vat
  * @param {GetBundleCapForID} getBundleCapForID
- * @param {import('@agoric/swingset-vat').ShutdownWithFailure | undefined} optShutdownZoeVat
+ * @param {Panic | undefined} optShutdownZoeVat
  * @param {{
  *    getFeeIssuerKit: GetFeeIssuerKit,
  *    getFeeIssuer: () => Issuer,

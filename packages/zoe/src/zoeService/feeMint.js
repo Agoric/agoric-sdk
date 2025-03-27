@@ -12,10 +12,14 @@ import {
   prepareExoClassKit,
 } from '@agoric/vat-data';
 import { Fail, q } from '@endo/errors';
+// `panic` actually is used in a `typeof`
+// eslint-disable-next-line no-unused-vars
+import { panic } from '@agoric/internal';
 import { FeeMintAccessShape } from '../typeGuards.js';
 
 /**
- * @import {FeeIssuerConfig, ZoeService} from '@agoric/zoe';
+ * @import {FeeIssuerConfig} from '@agoric/zoe';
+ * @typedef {typeof panic} Panic
  */
 
 /** @deprecated Redundant. Just omit it. */
@@ -32,7 +36,7 @@ export const defaultFeeIssuerConfig = harden(
 /**
  * @param {import('@agoric/vat-data').Baggage} zoeBaggage
  * @param {FeeIssuerConfig} feeIssuerConfig
- * @param {import('@agoric/swingset-vat').ShutdownWithFailure} [optShutdownZoeVat]
+ * @param {Panic} [optShutdownZoeVat]
  */
 const prepareFeeMint = (
   zoeBaggage,

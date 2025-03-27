@@ -15,8 +15,11 @@ import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
 /**
  * @import {Key, Pattern} from '@endo/patterns';
  * @import {Amount, AssetKind, DisplayInfo, PaymentLedger, Payment, Brand, RecoverySetsOption, Purse, Issuer, Mint} from './types.js'
- * @import {ShutdownWithFailure} from '@agoric/swingset-vat'
  * @import {TypedPattern} from '@agoric/internal';
+ */
+
+/**
+ * @typedef {typeof panic} Panic
  */
 
 /**
@@ -82,7 +85,7 @@ const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
  * @param {DisplayInfo<K>} displayInfo
  * @param {Pattern} elementShape
  * @param {RecoverySetsOption} recoverySetsState
- * @param {ShutdownWithFailure} [optShutdownWithFailure]
+ * @param {Panic} [optShutdownWithFailure]
  * @returns {PaymentLedger<K>}
  */
 export const preparePaymentLedger = (
@@ -127,7 +130,7 @@ export const preparePaymentLedger = (
 
   const makePayment = preparePaymentKind(issuerZone, name, brand, PaymentI);
 
-  /** @type {ShutdownWithFailure} */
+  /** @type {Panic} */
   const shutdownLedgerWithFailure = reason => {
     try {
       optShutdownWithFailure(reason);

@@ -1,9 +1,16 @@
 // @jessie-check
 /// <reference types="@agoric/ertp/exported" />
 
+// `panic` actually is used in a `typeof`
+// eslint-disable-next-line no-unused-vars
+import { panic } from '@agoric/internal';
+
 /**
- * @import {Allocation, AnyTerms, BrandKeywordRecord, Completion, ContractStartFn, InvitationHandle, PaymentPKeywordRecord, UserSeat, ZoeIssuerRecord} from '@agoric/zoe';
+ * // `Pattern` is used below. TODO what is the problem?
  * @import {Pattern} from '@endo/patterns';
+ * @typedef {typeof panic} Panic
+ * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
+ * @import {Allocation, AnyTerms, BrandKeywordRecord, Completion, InvitationHandle, PaymentPKeywordRecord, UserSeat, ZoeIssuerRecord} from '@agoric/zoe';
  */
 
 /**
@@ -62,7 +69,7 @@
  * @typedef ZoeSeatAdminMethods
  * @property {(allocation: Allocation) => void} replaceAllocation
  * @property {ZoeSeatAdminExit} exit
- * @property {(reason: Error) => void} fail called with the reason
+ * @property {ShutdownWithFailure} fail called with the reason
  * for calling fail on this seat, where reason is normally an instanceof Error.
  * @property {() => Subscriber<AmountKeywordRecord>} getExitSubscriber
  */
@@ -101,7 +108,7 @@
  * @property {() => string[]} getOfferFilter
  * @property {() => Installation} getInstallation
  * @property {(completion: Completion) => void} exitAllSeats
- * @property {(reason: Error) => void} failAllSeats
+ * @property {ShutdownWithFailure} failAllSeats
  * @property {() => void} stopAcceptingOffers
  * @property {(string: string) => boolean} isBlocked
  * @property {(handleOfferObj: HandleOfferObj, publicFacet: unknown) => void} initDelayedState
@@ -139,7 +146,7 @@
  * @property {MakeNoEscrowSeat} makeNoEscrowSeat
  * @property {ReplaceAllocations} replaceAllocations
  * @property {(completion: Completion) => void} exitAllSeats
- * @property {import('@agoric/swingset-vat').ShutdownWithFailure} failAllSeats
+ * @property {ShutdownWithFailure} failAllSeats
  * @property {(seatHandle: SeatHandle, completion: Completion) => void} exitSeat
  * @property {(seatHandle: SeatHandle, reason: Error) => void} failSeat
  * @property {() => void} stopAcceptingOffers

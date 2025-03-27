@@ -1,11 +1,15 @@
 // @jessie-check
 
 import { Fail, q } from '@endo/errors';
+// `panic` is used in a `typeof`
+// eslint-disable-next-line no-unused-vars
+import { panic } from '@agoric/internal';
 import { provideDurableMapStore } from '@agoric/vat-data';
 import { AssetKind, hasIssuer, prepareIssuerKit } from '@agoric/ertp';
 import { InvitationElementShape } from '../typeGuards.js';
 /**
- * @import {FeeIssuerConfig, InvitationDetails} from '@agoric/zoe';
+ * @typedef {typeof panic} Panic;
+ * @import {InvitationDetails} from '@agoric/zoe';
  */
 
 /**
@@ -15,7 +19,7 @@ const ZOE_INVITATION_KIT = 'ZoeInvitationKit';
 
 /**
  * @param {import('@agoric/vat-data').Baggage} baggage
- * @param {import('@agoric/swingset-vat').ShutdownWithFailure} [optShutdownZoeVat]
+ * @param {Panic} [optShutdownZoeVat]
  */
 export const prepareInvitationKit = (
   baggage,
