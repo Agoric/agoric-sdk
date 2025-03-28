@@ -60,6 +60,7 @@ export const createAndMonitorLCA = async (
     sourceChannel: transferChannel.counterPartyChannelId,
     remoteDenom,
     localDenom,
+    orchrestator: orch,
   });
   void log('tap created successfully');
   // XXX consider storing appRegistration, so we can .revoke() or .updateTargetApp()

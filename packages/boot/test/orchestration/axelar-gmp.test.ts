@@ -344,7 +344,7 @@ test.serial('makeAccount via axelarGmp', async t => {
     wallet.getCurrentWalletRecord().offerToUsedInvitation[0][0];
 
   await wallet.executeOffer({
-    id: 'makeAccountCall',
+    id: 'makeAccountCallII',
     invitationSpec: {
       invitationMakerName: 'makeEVMTransactionInvitation',
       previousOffer: previousOfferId,
@@ -359,14 +359,14 @@ test.serial('makeAccount via axelarGmp', async t => {
   t.truthy(lcaAddress);
   t.like(wallet.getLatestUpdateRecord(), {
     status: {
-      id: 'makeAccountCall',
+      id: 'makeAccountCallII',
       numWantsSatisfied: 1,
       result: lcaAddress,
     },
   });
 
   await wallet.executeOffer({
-    id: 'makeAccountCall',
+    id: 'makeAccountCallIII',
     invitationSpec: {
       invitationMakerName: 'makeEVMTransactionInvitation',
       previousOffer: previousOfferId,
@@ -398,7 +398,7 @@ test.serial('makeAccount via axelarGmp', async t => {
 
   t.like(wallet.getLatestUpdateRecord(), {
     status: {
-      id: 'makeAccountCall',
+      id: 'makeAccountCallIII',
       numWantsSatisfied: 1,
       result: 'transfer success',
     },
@@ -440,7 +440,7 @@ test.serial('makeAccount via axelarGmp', async t => {
   );
 
   await wallet.executeOffer({
-    id: 'makeAccountCall',
+    id: 'makeAccountCallIII',
     invitationSpec: {
       invitationMakerName: 'makeEVMTransactionInvitation',
       previousOffer: previousOfferId,
@@ -455,9 +455,41 @@ test.serial('makeAccount via axelarGmp', async t => {
   t.truthy(evmSmartWalletAddress);
   t.like(wallet.getLatestUpdateRecord(), {
     status: {
-      id: 'makeAccountCall',
+      id: 'makeAccountCallIII',
       numWantsSatisfied: 1,
       result: evmSmartWalletAddress,
+    },
+  });
+
+  t.log('sendGmp via LCA');
+
+  const offerArgs = {
+    destinationAddress: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
+    type: 3,
+    destinationEVMChain: 'Ethereum',
+  };
+
+  const { ATOM } = t.context.agoricNamesRemotes.brand;
+
+  await wallet.executeOffer({
+    id: 'makeAccountCallIV',
+    invitationSpec: {
+      invitationMakerName: 'makeEVMTransactionInvitation',
+      previousOffer: previousOfferId,
+      source: 'continuing',
+      invitationArgs: harden(['sendGmp', [offerArgs]]),
+    },
+    proposal: {
+      // @ts-expect-error XXX BoardRemote
+      give: { BLD: { brand: ATOM, value: 1n } },
+    },
+  });
+
+  t.like(wallet.getLatestUpdateRecord(), {
+    status: {
+      id: 'makeAccountCallIV',
+      error:
+        'Error: IBC Transfer failed "[Error: no denom detail for: \\"ibc/toyatom\\" on \\"agoric\\". ensure it is registered in chainHub.]"',
     },
   });
 });
