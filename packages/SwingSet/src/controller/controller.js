@@ -38,6 +38,7 @@ import { makeStartSubprocessWorkerNode } from './startNodeSubprocess.js';
 
 /**
  * @import {EReturn} from '@endo/far';
+ * @import {LimitedConsole} from '@agoric/internal';
  * @import {VatID} from '../types-internal.js';
  */
 
@@ -90,13 +91,28 @@ function makeConsole(prefixer) {
 }
 
 /**
+ * A console-like object for logging. It starts as the global console but is
+ * immediately replaced with an anylogger instance dedicated to this file, and
+ * upon creation of a controller is replaced again with an anylogger dedicated
+ * to that controller (and which also emits slog entries).
+ *
+ * @type {LimitedConsole}
+ */
+let sloggingConsole = console;
+/** @type {(newConsole: LimitedConsole) => void} */
+const setSloggingConsole = newConsole => {
+  sloggingConsole = newConsole;
+};
+setSloggingConsole(makeConsole('SwingSet:controller'));
+
+/**
  * @param {unknown} e
  * @param {Promise} pr
  */
 function onUnhandledRejection(e, pr) {
   // Don't trigger sensitive hosts (like AVA).
   pr.catch(() => {});
-  console.error('🤞 UnhandledPromiseRejection:', e);
+  sloggingConsole.error('🤞 UnhandledPromiseRejection:', e);
 }
 
 /**
@@ -151,23 +167,6 @@ export async function makeSwingsetController(
     throw Error('SES must be installed before calling makeSwingsetController');
   }
 
-  const startXSnap = makeStartXSnap({
-    bundleHandler,
-    snapStore: kernelStorage.snapStore,
-    spawn,
-    fs,
-    tmpName,
-    debug: !!env.XSNAP_DEBUG,
-    workerTraceRootPath: env.XSNAP_TEST_RECORD,
-    profileVats,
-    debugVats,
-  });
-  const startSubprocessWorkerNode = makeStartSubprocessWorkerNode(
-    startSubprocessWorker,
-    profileVats,
-    debugVats,
-  );
-
   /** @type {(obj: SlogProps) => void} */
   function writeSlogObject(obj) {
     if (!slogSender) return;
@@ -184,6 +183,7 @@ export async function makeSwingsetController(
     // rearrange the fields a bit to make it more legible to humans
     slogSender(harden({ type, ...props, ...timings }));
   }
+
   /**
    * Capture an extended process in the slog, writing an entry with `type`
    * $startLabel and then later (if the function returns successfully or calls
@@ -204,7 +204,8 @@ export async function makeSwingsetController(
     const [startLabel, endLabel] = labels;
     const props = { ...startProps };
     if (hasOwn(props, 'type') || hasOwn(props, 'seconds')) {
-      console.error('startProps must not include "type" or "seconds"');
+      const msg = 'startProps must not include "type" or "seconds"';
+      sloggingConsole.error(Error(msg));
       delete props.type;
       delete props.seconds;
     }
@@ -216,8 +217,7 @@ export async function makeSwingsetController(
         // `finish` should only be called once.
         // Log a stack-bearing error instance, but throw something more opaque.
         const msg = `slog event ${startLabel} ${q(startProps || {})} already finished; ignoring props ${q(extraProps || {})}`;
-        const err = Error(msg);
-        console.error(err);
+        sloggingConsole.error(Error(msg));
         Fail`slog event ${startLabel} already finished`;
       }
       finished = true;
@@ -225,9 +225,8 @@ export async function makeSwingsetController(
         // Preserve extraProps as an atomic unit by deleting prior occurrences.
         for (const name of Object.keys(extraProps)) delete props[name];
         if (hasOwn(extraProps, 'type') || hasOwn(extraProps, 'seconds')) {
-          console.error(
-            `extraProps ${q(extraProps)} must not include "type" or "seconds"`,
-          );
+          const msg = `extraProps ${q(extraProps)} must not include "type" or "seconds"`;
+          sloggingConsole.error(Error(msg));
           const {
             type: _ignoredType,
             seconds: _ignoredSeconds,
@@ -250,12 +249,37 @@ export async function makeSwingsetController(
     } catch (cause) {
       if (!finished) {
         const msg = `unfinished slog event ${startLabel} ${q(startProps || {})}`;
-        const err = Error(msg, { cause });
-        console.error(err);
+        sloggingConsole.error(Error(msg, { cause }));
       }
       throw cause;
     }
   };
+
+  const controllerConsole = makeConsole(`${debugPrefix}SwingSet:controller`);
+  const controllerSloggingConsole = makeLimitedConsole(level => {
+    return (...args) => {
+      controllerConsole[level](...args);
+      writeSlogObject({ type: 'console', source: 'controller', level, args });
+    };
+  });
+  setSloggingConsole(controllerSloggingConsole);
+
+  const startXSnap = makeStartXSnap({
+    bundleHandler,
+    snapStore: kernelStorage.snapStore,
+    spawn,
+    fs,
+    tmpName,
+    debug: !!env.XSNAP_DEBUG,
+    workerTraceRootPath: env.XSNAP_TEST_RECORD,
+    profileVats,
+    debugVats,
+  });
+  const startSubprocessWorkerNode = makeStartSubprocessWorkerNode(
+    startSubprocessWorker,
+    profileVats,
+    debugVats,
+  );
 
   const kernelInitLabels = /** @type {const} */ ([
     'kernel-init-start',
