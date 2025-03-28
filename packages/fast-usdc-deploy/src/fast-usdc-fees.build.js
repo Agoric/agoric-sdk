@@ -1,9 +1,6 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { AmountMath } from '@agoric/ertp';
-import {
-  multiplyBy,
-  parseRatio,
-} from '@agoric/zoe/src/contractSupport/ratio.js';
+import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import { Far } from '@endo/far';
 import { parseArgs } from 'node:util';
 import { toExternalConfig } from './utils/config-marshal.js';

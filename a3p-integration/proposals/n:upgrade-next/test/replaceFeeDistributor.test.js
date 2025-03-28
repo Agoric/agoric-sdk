@@ -26,7 +26,7 @@ import {
   USER1ADDR,
 } from '@agoric/synthetic-chain';
 import { AmountMath } from '@agoric/ertp';
-import { floorMultiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { floorMultiplyBy } from '@agoric/ertp/src/ratio.js';
 
 // TODO @import {Ratio} from '@agoric/zoe'
 /** @typedef {any} Ratio */

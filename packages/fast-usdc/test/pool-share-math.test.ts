@@ -5,7 +5,7 @@ import {
   makeRatioFromAmounts,
   multiplyBy,
   parseRatio,
-} from '@agoric/zoe/src/contractSupport/ratio.js';
+} from '@agoric/ertp/src/ratio.js';
 import { mustMatch } from '@endo/patterns';
 import {
   borrowCalc,
