@@ -8,7 +8,7 @@ export {
   calcSecondaryRequired,
 } from './bondingCurves.js';
 
-export { natSafeMath } from './safeMath.js';
+export { natSafeMath } from '@agoric/ertp/src/safeMath.js';
 
 export { makeStateMachine } from './stateMachine.js';
 

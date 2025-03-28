@@ -1,13 +1,13 @@
 import { Nat } from '@endo/nat';
 
-/** @typedef {(x: number | bigint, y: number | bigint) => NatValue} NatOp */
+/** @typedef {(x: number | bigint, y: number | bigint) => bigint} NatOp */
 
 /**
- * These operations should be used for calculations with the values of
- * basic fungible tokens.
+ * These operations should be used for calculations with the values of basic
+ * fungible tokens.
  *
- * natSafeMath is designed to be used directly, and so it needs to
- * validate the inputs, as well as the outputs when necessary.
+ * natSafeMath is designed to be used directly, and so it needs to validate the
+ * inputs, as well as the outputs when necessary.
  */
 export const natSafeMath = harden({
   /** @type {NatOp} */
@@ -25,7 +25,8 @@ export const natSafeMath = harden({
     return Nat(Nat(x) + y - 1n) / y;
   },
   /**
-   * Divide using half-to-even (aka Banker's Rounding) as in IEEE 774 default rounding
+   * Divide using half-to-even (aka Banker's Rounding) as in IEEE 774 default
+   * rounding
    *
    * @type {NatOp}
    */
