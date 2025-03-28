@@ -4,16 +4,20 @@ import {
   getEnvironmentOption,
 } from '@endo/env-options';
 import anylogger from 'anylogger';
+import { defineName } from '@agoric/internal/src/js-utils.js';
 
+/** @import {BaseLevels} from 'anylogger'; */
+/** @typedef {keyof BaseLevels} LogLevel; */
 
-const DEBUG_LIST = getEnvironmentOptionsList('DEBUG');
-
-const isVatLogNameColon = nameColon =>
-  ['SwingSet:ls:', 'SwingSet:vat:'].some(sel => nameColon.startsWith(sel));
+const VAT_LOGGER_PREFIXES = Object.freeze([
+  'SwingSet:vat',
+  'SwingSet:ls', // "ls" for "liveslots"
+]);
 
 // As documented in ../../../docs/env.md, the log level defaults to "log" when
 // environment variable DEBUG is non-empty or unset, and to the quieter "info"
 // when it is set to an empty string.
+const DEBUG_LIST = getEnvironmentOptionsList('DEBUG');
 /** @type {string | undefined} */
 let maxActiveLevel =
   DEBUG_LIST.length > 0 || getEnvironmentOption('DEBUG', 'unset') === 'unset'
@@ -36,38 +40,30 @@ const maxActiveLevelCode = /** @type {number} */ (
 const oldExt = anylogger.ext;
 anylogger.ext = logger => {
   logger = oldExt(logger);
-  logger.enabledFor = lvl => maxActiveLevelCode >= anylogger.levels[lvl];
 
-  const prefix = logger.name.replace(/:/g, ': ');
+  /** @type {(level: LogLevel) => boolean} */
+  const enabledFor = level => anylogger.levels[level] <= maxActiveLevelCode;
+  logger.enabledFor = enabledFor;
 
   const nameColon = `${logger.name}:`;
-  const logBelongsToVat = isVatLogNameColon(nameColon);
+  const label = logger.name.replaceAll(':', ': ');
 
-  // If this is a vat log, then it is enabled by a selector in DEBUG_LIST.
-  const logMatchesSelector =
-    !logBelongsToVat ||
-    DEBUG_LIST.some(selector => {
-      const selectorColon = `${selector}:`;
-      return nameColon.startsWith(selectorColon);
-    });
+  // Vat logs are suppressed unless matched by a prefix in DEBUG_LIST.
+  const suppressed =
+    VAT_LOGGER_PREFIXES.some(prefix => nameColon.startsWith(`${prefix}:`)) &&
+    !DEBUG_LIST.some(prefix => nameColon.startsWith(`${prefix}:`));
 
-  for (const [level, code] of Object.entries(anylogger.levels)) {
-    if (logMatchesSelector && maxActiveLevelCode >= code) {
-      // Enable the printing with a prefix.
-      const doLog = logger[level];
-      if (doLog) {
-        logger[level] = (...args) => {
-          // Add a timestamp.
-          const now = new Date().toISOString();
-          doLog(`${now} ${prefix}:`, ...args);
-        };
-      } else {
-        logger[level] = () => {};
-      }
-    } else {
-      // Disable printing.
-      logger[level] = () => {};
-    }
+  const levels = /** @type {LogLevel[]} */ (Object.keys(anylogger.levels));
+  for (const level of levels) {
+    const impl = logger[level];
+    const disabled = !impl || suppressed || !enabledFor(level);
+    logger[level] = disabled
+      ? defineName(`dummy ${level}`, () => {})
+      : defineName(level, (...args) => {
+          // Prepend a timestamp and label.
+          const timestamp = new Date().toISOString();
+          impl(`${timestamp} ${label}:`, ...args);
+        });
   }
   return logger;
 };
