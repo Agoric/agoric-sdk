@@ -29,7 +29,6 @@
 
 /* eslint-disable no-bitwise */
 import { bech32 } from 'bech32';
-import queryString from 'query-string';
 
 /* global globalThis */
 /** @type {<T>(x: T) => T} */
@@ -106,6 +105,10 @@ export const encodeBech32 = (
 };
 harden(encodeBech32);
 
+const parseQuery = query => Object.fromEntries(new URLSearchParams(query));
+
+const stringifyQuery = obj => new URLSearchParams(obj).toString();
+
 /**
  * Join raw base address bytes and hook data into a bech32-encoded hooked
  * address. The bech32-payload is:
@@ -180,7 +183,7 @@ harden(joinHookedAddress);
  * @param {number} [charLimit]
  */
 export const encodeAddressHook = (baseAddress, query, charLimit) => {
-  const queryStr = queryString.stringify(query);
+  const queryStr = stringifyQuery(query);
 
   const te = new TextEncoder();
   const hookData = te.encode(`?${queryStr}`);
@@ -201,7 +204,7 @@ export const decodeAddressHook = (addressHook, charLimit) => {
     throw Error(`Hook data does not start with '?': ${hookStr}`);
   }
 
-  const parsedQuery = queryString.parse(hookStr);
+  const parsedQuery = parseQuery(hookStr);
 
   /**
    * @type {HookQuery}

@@ -178,8 +178,7 @@
   "dependencies": {
     "@endo/base64": "^1.0.9",
     "@endo/init": "^1.1.8",
-    "bech32": "^2.0.0",
-    "query-string": "^9.1.1"
+    "bech32": "^2.0.0"
   },
   "resolutions": {
     "**/axios": "^1.6.7",
