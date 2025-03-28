@@ -159,3 +159,18 @@ export const leftPadEthAddressTo32Bytes = rawAddress => {
   const paddedAddress = '0'.repeat(zeroesNeeded) + cleanedAddress;
   return fromHex(paddedAddress);
 };
+
+/**
+ * @param {AccountId} accountId
+ * @returns {Uint8Array}
+ * @throws {Error} if namespace not supported
+ */
+export const accountIdTo32Bytes = accountId => {
+  const { namespace, accountAddress } = parseAccountId(accountId);
+  switch (namespace) {
+    case 'eip155':
+      return leftPadEthAddressTo32Bytes(accountAddress);
+    default:
+      throw new Error(`namespace ${namespace} not supported`);
+  }
+};
