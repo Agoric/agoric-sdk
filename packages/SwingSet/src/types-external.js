@@ -5,11 +5,16 @@ export {};
  * @import {ERef} from '@endo/far';
  * @import {Passable, RemotableObject} from '@endo/pass-style';
  * @import {LimitedConsole} from '@agoric/internal/src/js-utils.js';
+ * @import {SlogProps, SlogDurationProps} from './controller/controller.js';
  */
 
 /* This file defines types that part of the external API of swingset. That
  * includes standard services which user-provided vat code might interact
  * with, like VatAdminService. */
+
+/**
+ * @typedef {(extraProps?: SlogDurationProps) => void} FinishSlogDuration
+ */
 
 /**
  * @typedef {'getExport' | 'nestedEvaluate' | 'endoZipBase64'} BundleFormat
@@ -128,7 +133,9 @@ export {};
  * @typedef { Awaited<ReturnType<typeof import('@agoric/xsnap').xsnap>> } XSnap
  * @typedef { (dr: VatDeliveryResult) => void } SlogFinishDelivery
  * @typedef { (ksr: KernelSyscallResult, vsr: VatSyscallResult) => void } SlogFinishSyscall
- * @typedef { { write: ({}) => void,
+ * @typedef { { write: (obj: SlogProps) => void,
+ *              startDuration:     (labels: readonly [startLabel: string, endLabel: string],
+ *                                  startProps: SlogDurationProps) => FinishSlogDuration,
  *              provideVatSlogger: (vatID: string,
  *                                  dynamic?: boolean,
  *                                  description?: string,

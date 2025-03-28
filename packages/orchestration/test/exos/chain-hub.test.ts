@@ -245,6 +245,23 @@ test('resolveAccountId', async t => {
     },
     'throws on invalid address format',
   );
+
+  const ETH_ADDR = 'eip155:1:0xab16a96D359eC26a11e2C2b3d8f8B8942d5Bfcdb';
+  t.is(chainHub.resolveAccountId(ETH_ADDR), ETH_ADDR);
+
+  const BTC_ADDR =
+    'bip122:000000000019d6689c085ae165831e93:128Lkh3S7CkDTBZ8W7BbpsN3YYizJMp8p6';
+  t.is(chainHub.resolveAccountId(BTC_ADDR), BTC_ADDR);
+
+  // should throw for CAIP-2
+  const CAIP2_ID = 'cosmos:osmosis-1';
+  t.throws(
+    () => chainHub.resolveAccountId(CAIP2_ID),
+    {
+      message: 'Chain info not found for bech32Prefix "cosmos:osmosis-"',
+    },
+    'throws on invalid address format',
+  );
 });
 
 test('updateChain updates existing chain info and mappings', t => {
@@ -288,6 +305,7 @@ test('updateChain errors on non-existent chain', t => {
   t.throws(
     () =>
       chainHub.updateChain('nonexistent', {
+        bech32Prefix: 'test',
         chainId: 'test',
         namespace: 'cosmos',
         reference: 'test',
@@ -513,31 +531,19 @@ test('cctp, non-cosmos chains', async t => {
     reference: 'agoric-3',
   });
 
-  const withChainId = (info: BaseChainInfo) =>
-    info.namespace === 'cosmos' ? { ...info, chainId: info.reference } : info;
-
-  for (const [chainName, info] of Object.entries(cctpChainInfo)) {
+  const { noble: _, ...cctpDestChains } = cctpChainInfo;
+  for (const [chainName, info] of Object.entries(cctpDestChains)) {
     // can register non-cosmos (cctp) chains
-    chainHub.registerChain(chainName, withChainId(info));
+    chainHub.registerChain(chainName, info);
 
     // can retrieve non-cosmos (cctp) chains
-    t.deepEqual(
-      await when(chainHub.getChainInfo(chainName)),
-      withChainId(info),
-    );
+    t.deepEqual(await when(chainHub.getChainInfo(chainName)), info);
 
     // mimic call that occurs in the Orchestrator during `orch.getChain()`
     const getChainsAndConnectionP = when(
       chainHub.getChainsAndConnection(chainName, 'agoric'),
     );
-    if (chainName === 'noble') {
-      // expected; provide connections to avoid this error
-      await t.throwsAsync(getChainsAndConnectionP, {
-        message: 'connection not found: noble-1<->agoric-3',
-      });
-    } else {
-      await t.notThrowsAsync(getChainsAndConnectionP);
-    }
+    await t.notThrowsAsync(getChainsAndConnectionP);
   }
 
   // document full chain info

@@ -19,7 +19,7 @@ import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.j
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
-} from './walletFactory.js';
+} from '../bootstrapTests/walletFactory.js';
 import {
   insistManagerType,
   makeSwingsetHarness,
