@@ -5017,6 +5017,7 @@ __metadata:
   dependencies:
     "@agoric/cosmic-proto": "npm:dev"
     "@agoric/fast-usdc": "npm:dev"
+    "@cosmjs/amino": "npm:^0.32.4"
     "@cosmjs/crypto": "npm:^0.33.0"
     "@cosmjs/proto-signing": "npm:^0.33.0"
     "@cosmjs/stargate": "npm:^0.33.0"
