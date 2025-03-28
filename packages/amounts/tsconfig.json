@@ -1,0 +1,14 @@
+// This file can contain .js-specific Typescript compiler config.
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {},
+  "include": [
+    // omit exported.js because 1) it need not be included in the typecheck of
+    // this package because it's only consumed by other packages and 2)
+    // including it causes the empty exported.js to overwrite the manual
+    // exported.d.ts (which doesn't need any building)
+    "src/**/*.js",
+    "src/**/*.ts",
+    "test"
+  ]
+}
