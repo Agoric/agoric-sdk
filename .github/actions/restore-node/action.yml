@@ -47,7 +47,7 @@ runs:
         then
           OUTPUT_NODE_VERSION="${{ env.NEW_NODE_LTS_VERSION }}"
         else
-          if test "$INPUT_NODE_VERSION" == "${{ env.OLD_NODE_LTS_VERSION_NAME }}" || test "$INPUT_NODE_VERSION" == "${{ env.ACTIVE_XS_VERSION_NAME }}"
+          if test "$INPUT_NODE_VERSION" == "${{ env.OLD_NODE_LTS_VERSION_NAME }}" || test "$INPUT_NODE_VERSION" == "xs"
           then
             OUTPUT_NODE_VERSION="${{ env.OLD_NODE_LTS_VERSION }}"
           fi

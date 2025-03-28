@@ -17,7 +17,6 @@ concurrency:
 
 env:
   NEW_NODE_LTS_VERSION: '20.x'
-  ACTIVE_XS_VERSION_NAME: 'xs'
   AGORIC_AVA_USE_TAP: true
   NODE_V8_COVERAGE: coverage
   OLD_NODE_LTS_VERSION: '18.x'
@@ -157,7 +156,7 @@ jobs:
       - name: set vars
         id: vars
         run: |
-          echo "test=${{ matrix.engine == env.ACTIVE_XS_VERSION_NAME && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
+          echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
 
       - uses: actions/checkout@v4
@@ -255,7 +254,7 @@ jobs:
       - name: set vars
         id: vars
         run: |
-          echo "test=${{ matrix.engine == env.ACTIVE_XS_VERSION_NAME && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
+          echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
@@ -392,7 +391,7 @@ jobs:
       - name: set vars
         id: vars
         run: |
-          echo "test=${{ matrix.engine == env.ACTIVE_XS_VERSION_NAME && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
+          echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
@@ -435,7 +434,7 @@ jobs:
       - name: set vars
         id: vars
         run: |
-          echo "test=${{ matrix.engine == env.ACTIVE_XS_VERSION_NAME && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
+          echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
@@ -479,7 +478,7 @@ jobs:
       - name: set vars
         id: vars
         run: |
-          echo "test=${{ matrix.engine == env.ACTIVE_XS_VERSION_NAME && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
+          echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
 
       - uses: actions/checkout@v4
@@ -526,7 +525,7 @@ jobs:
       - name: set vars
         id: vars
         run: |
-          echo "test=${{ matrix.engine == env.ACTIVE_XS_VERSION_NAME && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
+          echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
@@ -572,7 +571,7 @@ jobs:
       - name: set vars
         id: vars
         run: |
-          echo "test=${{ matrix.engine == env.ACTIVE_XS_VERSION_NAME && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
+          echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
           echo "CI_NODE_INDEX=${{ matrix.node_index }}" >> $GITHUB_ENV
           echo "CI_NODE_TOTAL=${{ matrix.total_nodes }}" >> $GITHUB_ENV
@@ -621,7 +620,7 @@ jobs:
       - name: set vars
         id: vars
         run: |
-          echo "test=${{ matrix.engine == env.ACTIVE_XS_VERSION_NAME && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
+          echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
           echo "CI_NODE_INDEX=${{ matrix.node_index }}" >> $GITHUB_ENV
           echo "CI_NODE_TOTAL=${{ matrix.total_nodes }}" >> $GITHUB_ENV
@@ -638,7 +637,7 @@ jobs:
         run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       # explicitly test the XS worker, for visibility
       - name: yarn test (SwingSet XS Worker)
-        if: (success() || failure()) && matrix.engine != env.ACTIVE_XS_VERSION_NAME
+        if: (success() || failure()) && matrix.engine != 'xs'
         run: cd packages/SwingSet && yarn test:xs-worker | $TEST_COLLECT
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
@@ -675,7 +674,7 @@ jobs:
         # END-TEST-BOILERPLATE
         # XXX test:xs-unit is deprecated branch protection still expects it
         run: |
-          echo "test=${{ matrix.engine == env.ACTIVE_XS_VERSION_NAME && 'test:xs-unit' || 'test:unit' }}" >> $GITHUB_OUTPUT
+          echo "test=${{ matrix.engine == 'xs' && 'test:xs-unit' || 'test:unit' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
         # BEGIN-TEST-BOILERPLATE
       - uses: actions/checkout@v4
@@ -721,7 +720,7 @@ jobs:
         id: vars
         # END-TEST-BOILERPLATE
         run: |
-          echo "test=${{ matrix.engine == env.ACTIVE_XS_VERSION_NAME && 'test:xs-worker' || 'test:swingset' }}" >> $GITHUB_OUTPUT
+          echo "test=${{ matrix.engine == 'xs' && 'test:xs-worker' || 'test:swingset' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
         # BEGIN-TEST-BOILERPLATE
       - uses: actions/checkout@v4
