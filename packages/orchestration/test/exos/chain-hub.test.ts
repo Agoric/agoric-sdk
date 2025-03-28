@@ -239,7 +239,6 @@ test('resolveAccountId', async t => {
 
   // Should throw for invalid address format
   t.throws(
-    // @ts-expect-error intentionally invalid address
     () => chainHub.resolveAccountId('notbech32'),
     {
       message: 'No separator character for "notbech32"',

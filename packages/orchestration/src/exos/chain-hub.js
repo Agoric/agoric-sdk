@@ -319,7 +319,7 @@ export const makeChainHub = (
   const makeDenomKey = (denom, srcChainName) => `${srcChainName}:${denom}`;
 
   /**
-   * @param {Bech32Address} address
+   * @param {Bech32Address | string} address
    * @returns {string}
    */
   const resolveCosmosChainId = address => {
@@ -677,8 +677,8 @@ export const makeChainHub = (
     },
 
     /**
-     * @param {AccountId | Bech32Address} partialId CAIP-10 account ID or a
-     *   Cosmos bech32 address
+     * @param {AccountId | Bech32Address | string} partialId CAIP-10 account ID
+     *   or a Cosmos bech32 address
      * @returns {AccountId}
      * @throws {Error} if chain info not found for bech32Prefix
      */
