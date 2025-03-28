@@ -1,6 +1,9 @@
 /** @file Use-object for the owner of a staking account */
 import { toRequestQueryJson } from '@agoric/cosmic-proto';
-import { MsgDepositForBurn } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
+import {
+  MsgDepositForBurn,
+  MsgDepositForBurnWithCaller,
+} from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
 import {
   QueryAllBalancesRequest,
   QueryAllBalancesResponse,
@@ -65,10 +68,7 @@ import {
 } from '../utils/cosmos.js';
 import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
 import { makeTimestampHelper } from '../utils/time.js';
-import {
-  leftPadEthAddressTo32Bytes,
-  parseAccountId,
-} from '../utils/address.js';
+import { accountIdTo32Bytes, parseAccountId } from '../utils/address.js';
 
 /**
  * @import {HostOf} from '@agoric/async-flow';
@@ -146,7 +146,9 @@ const stakingAccountQueriesMethods = {
 
 /** @see {NobleMethods} */
 const nobleMethods = {
-  depositForBurn: M.call(M.string(), AmountArgShape).returns(VowShape),
+  depositForBurn: M.call(M.string(), AmountArgShape)
+    .optional(M.string())
+    .returns(VowShape),
 };
 
 /** @see {OrchestrationAccountCommon} */
@@ -1141,46 +1143,52 @@ export const prepareCosmosOrchestrationAccountKit = (
         },
         /**
          * @type {HostOf<NobleMethods['depositForBurn']>}
-         *
-         *   TODO: support MsgDepositForBurnWithCaller
-         *   (https://github.com/Agoric/agoric-private/issues/288)
-         *   (Functionally, only destinationCaller can call MsgReceive on the
-         *   destination chain to mint)
          */
-        depositForBurn(destination, amount) {
+        depositForBurn(destination, amount, caller) {
           return asVow(() => {
             trace('depositForBurn', { destination, amount });
             const { helper } = this.facets;
             const { chainAddress } = this.state;
 
-            const parts = parseAccountId(destination);
+            const destParts = parseAccountId(destination);
             /** @type {CaipChainId} */
-            const chainId = `${parts.namespace}:${parts.reference}`;
-            const mintRecipient = leftPadEthAddressTo32Bytes(
-              parts.accountAddress,
-            );
+            const chainId = `${destParts.namespace}:${destParts.reference}`;
 
-            const chainInfo = chainHub.getChainInfoByChainId(chainId);
-            typeof chainInfo.cctpDestinationDomain === 'number' ||
-              Fail`${q(chainId)} does not have "cctpDestinationDomain" set in ChainInfo`;
-            const { cctpDestinationDomain } = chainInfo;
+            const { cctpDestinationDomain } =
+              chainHub.getChainInfoByChainId(chainId);
+            if (typeof cctpDestinationDomain !== 'number') {
+              throw Fail`${q(chainId)} does not have "cctpDestinationDomain" set in ChainInfo`;
+            }
 
-            // see https://github.com/circlefin/noble-cctp/blob/master/examples/depositForBurn.ts#L52-L70
-            chainInfo.namespace === 'eip155' ||
-              Fail`Only Ethereum supported currently`;
-
-            const msg = MsgDepositForBurn.toProtoMsg({
+            /** @satisfies {MsgDepositForBurn} */
+            const depositForBurn = {
               amount: helper.amountToCoin(amount)?.amount,
               from: chainAddress.value,
-              // @ts-expect-error Verified it's a number just above
               destinationDomain: cctpDestinationDomain,
-              mintRecipient,
+              mintRecipient: accountIdTo32Bytes(destination),
               // safe to hardcode since `uusdc` is the only asset supported by CCTP
               burnToken: 'uusdc',
-            });
+            };
+
+            const destinationCaller = (() => {
+              if (!caller) return undefined;
+              const callerParts = parseAccountId(caller);
+              callerParts.namespace === destParts.namespace ||
+                Fail`caller ${q(caller)} must be in same namespace as destination ${q(destination)}`;
+              return accountIdTo32Bytes(caller);
+            })();
 
             return watch(
-              E(helper.owned()).executeEncodedTx([Any.toJSON(msg)]),
+              E(helper.owned()).executeEncodedTx([
+                Any.toJSON(
+                  destinationCaller
+                    ? MsgDepositForBurnWithCaller.toProtoMsg({
+                        ...depositForBurn,
+                        destinationCaller,
+                      })
+                    : MsgDepositForBurn.toProtoMsg(depositForBurn),
+                ),
+              ]),
               this.facets.returnVoidWatcher,
             );
           });

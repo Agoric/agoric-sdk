@@ -327,6 +327,8 @@ export interface NobleMethods {
   depositForBurn: (
     mintRecipient: AccountId,
     amount: AmountArg,
+    /** if specified, only this account can call MsgReceive on the destination chain */
+    caller?: AccountId,
   ) => Promise<void>;
 }
 
