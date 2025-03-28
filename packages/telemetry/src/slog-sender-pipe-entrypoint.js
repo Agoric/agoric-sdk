@@ -110,7 +110,7 @@ const main = async () => {
           logger.warn('Received send with no sender available');
         } else {
           try {
-            slogSender(msg.obj);
+            slogSender(harden(msg.obj));
           } catch (e) {
             sendErrors.push(e);
           }
