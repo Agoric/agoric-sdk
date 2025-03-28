@@ -5,36 +5,38 @@ import {
 } from '@endo/env-options';
 import anylogger from 'anylogger';
 
-// Turn on debugging output with DEBUG=agoric
 
 const DEBUG_LIST = getEnvironmentOptionsList('DEBUG');
 
 const isVatLogNameColon = nameColon =>
   ['SwingSet:ls:', 'SwingSet:vat:'].some(sel => nameColon.startsWith(sel));
 
-// Turn on debugging output with DEBUG=agoric or DEBUG=agoric:${level}
-let selectedLevel =
-  DEBUG_LIST.length || getEnvironmentOption('DEBUG', 'unset') === 'unset'
+// As documented in ../../../docs/env.md, the log level defaults to "log" when
+// environment variable DEBUG is non-empty or unset, and to the quieter "info"
+// when it is set to an empty string.
+/** @type {string | undefined} */
+let maxActiveLevel =
+  DEBUG_LIST.length > 0 || getEnvironmentOption('DEBUG', 'unset') === 'unset'
     ? 'log'
     : 'info';
+// ...but is overridden if DEBUG is a comma-separated list that contains
+// "agoric:none" or "agoric:${level}" or "agoric" (the last an alias for
+// "agoric:debug").
 for (const selector of DEBUG_LIST) {
-  const parts = selector.split(':');
-  if (parts[0] !== 'agoric') {
-    continue;
-  }
-  if (parts.length > 1) {
-    selectedLevel = parts[1];
-  } else {
-    selectedLevel = 'debug';
+  const fullSelector = selector === 'agoric' ? 'agoric:debug' : selector;
+  const [_, detail] = fullSelector.match(/^agoric:(.*)/gs) || [];
+  if (detail) {
+    maxActiveLevel = detail === 'none' ? undefined : detail;
   }
 }
-const selectedCode = anylogger.levels[selectedLevel];
-const globalCode = selectedCode === undefined ? -Infinity : selectedCode;
+const maxActiveLevelCode = /** @type {number} */ (
+  (maxActiveLevel && anylogger.levels[maxActiveLevel]) ?? -Infinity
+);
 
 const oldExt = anylogger.ext;
 anylogger.ext = logger => {
   const l = oldExt(logger);
-  l.enabledFor = lvl => globalCode >= anylogger.levels[lvl];
+  l.enabledFor = lvl => maxActiveLevelCode >= anylogger.levels[lvl];
 
   const prefix = l.name.replace(/:/g, ': ');
 
@@ -50,7 +52,7 @@ anylogger.ext = logger => {
     });
 
   for (const [level, code] of Object.entries(anylogger.levels)) {
-    if (logMatchesSelector && globalCode >= code) {
+    if (logMatchesSelector && maxActiveLevelCode >= code) {
       // Enable the printing with a prefix.
       const doLog = l[level];
       if (doLog) {
