@@ -62,7 +62,7 @@ export const contract = async (
   );
 
   const makeEvmAccountKit = prepareEvmAccountKit(zone.subZone('evmTap'), {
-    vowTools,
+    zoeTools,
     zcf,
   });
 

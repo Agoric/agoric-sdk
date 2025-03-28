@@ -1,19 +1,27 @@
 // @ts-check
 import { M, mustMatch } from '@endo/patterns';
 import { VowShape } from '@agoric/vow';
-import { makeTracer } from '@agoric/internal';
+import { makeTracer, NonNullish } from '@agoric/internal';
 import { atob, decodeBase64 } from '@endo/base64';
 import { CosmosChainAddressShape } from '../typeGuards.js';
-import { defaultAbiCoder } from '@ethersproject/abi';
+import { Fail, makeError, q } from '@endo/errors';
+import { buildGMPPayload } from '../utils/gmp.js';
 
 const trace = makeTracer('EvmTap');
+const { entries } = Object;
+
+const addresses = {
+  AXELAR_GMP:
+    'axelar1dv4u5k73pzqrxlzujxg3qp8kvc3pje7jtdvu72npnt5zhq05ejcsn5qme5',
+  AXELAR_GAS: 'axelar1zl3rxpp70lmte2xr6c4lgske2fyuj3hupcsvcd',
+};
 
 /**
  * @import {IBCChannelID, VTransferIBCEvent} from '@agoric/vats';
- * @import {VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
- * @import {CosmosChainAddress, Denom, OrchestrationAccount} from '@agoric/orchestration';
+ * @import {CosmosChainAddress, Denom, OrchestrationAccount, Orchestrator} from '@agoric/orchestration';
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
+ * @import {ZoeTools} from '@agoric/orchestration/src/utils/zoe-tools.js';
  */
 
 /**
@@ -23,13 +31,23 @@ const trace = makeTracer('EvmTap');
  *   sourceChannel: IBCChannelID;
  *   remoteDenom: Denom;
  *   localDenom: Denom;
+ *   orchrestator: Orchestrator;
  * }} EvmTapState
  */
 
-const EVMI = M.interface('evmTransaction', {
+/**
+ * @typedef {object} ContractInvocationData
+ * @property {string} functionSelector - Function selector (4 bytes)
+ * @property {string} encodedArgs - ABI encoded arguments
+ * @property {number} deadline
+ * @property {number} nonce
+ */
+
+const EVMI = M.interface('holder', {
   getAddress: M.call().returns(M.any()),
   getEVMSmartWalletAddress: M.call().returns(M.any()),
   send: M.call(M.any(), M.any()).returns(M.any()),
+  sendGmp: M.call(M.any(), M.any()).returns(M.any()),
 });
 
 const InvitationMakerI = M.interface('invitationMaker', {
@@ -47,9 +65,15 @@ harden(EvmKitStateShape);
 
 /**
  * @param {Zone} zone
- * @param {{ vowTools: VowTools; zcf: ZCF }} powers
+ * @param {{
+ *   zcf: ZCF;
+ *   zoeTools: ZoeTools;
+ * }} powers
  */
-export const prepareEvmAccountKit = (zone, { zcf }) => {
+export const prepareEvmAccountKit = (
+  zone,
+  { zcf, zoeTools: { withdrawToSeat } },
+) => {
   return zone.exoClassKit(
     'EvmTapKit',
     {
@@ -132,20 +156,128 @@ export const prepareEvmAccountKit = (zone, { zcf }) => {
           await this.state.localAccount.send(toAccount, amount);
           return 'transfer success';
         },
+
+        /**
+         * @param {ZCFSeat} seat
+         * @param {{
+         *   destinationAddress: string;
+         *   type: number;
+         *   destinationEVMChain: string;
+         *   gasAmount: number;
+         *   contractInvocationData: ContractInvocationData;
+         * }} offerArgs
+         */
+        async sendGmp(seat, offerArgs) {
+          const {
+            destinationAddress,
+            type,
+            destinationEVMChain,
+            gasAmount,
+            contractInvocationData,
+          } = offerArgs;
+
+          destinationAddress != null ||
+            Fail`Destination address must be defined`;
+          destinationEVMChain != null ||
+            Fail`Destination evm address must be defined`;
+
+          const isContractInvocation = [1, 2].includes(type);
+          if (isContractInvocation) {
+            gasAmount != null || Fail`gasAmount must be defined`;
+            contractInvocationData != null ||
+              Fail`contractInvocationData is not defined`;
+
+            ['functionSelector', 'encodedArgs', 'deadline', 'nonce'].every(
+              field => contractInvocationData[field] != null,
+            ) ||
+              Fail`Contract invocation payload is invalid or missing required fields`;
+          }
+
+          const { give } = seat.getProposal();
+          const [[_kw, amt]] = entries(give);
+          amt.value > 0n || Fail`IBC transfer amount must be greater than zero`;
+          console.log('_kw, amt', _kw, amt);
+
+          const payload = buildGMPPayload({
+            type,
+            evmContractAddress: destinationAddress,
+            ...contractInvocationData,
+          });
+
+          const agoric = await this.state.orchrestator.getChain('agoric');
+          const assets = await agoric.getVBankAssetInfo();
+
+          const { denom } = NonNullish(
+            assets.find(a => a.brand === amt.brand),
+            `${amt.brand} not registered in vbank`,
+          );
+
+          const axelarChain = await this.state.orchrestator.getChain('axelar');
+          const info = await axelarChain.getChainInfo();
+          const { chainId } = info;
+
+          const memo = {
+            destination_chain: destinationEVMChain,
+            destination_address: destinationAddress,
+            payload,
+            type,
+          };
+
+          if (type === 1 || type === 2) {
+            memo.fee = {
+              amount: String(gasAmount),
+              recipient: addresses.AXELAR_GAS,
+            };
+          }
+
+          try {
+            // @ts-expect-error
+            await this.state.localAccount.transfer(
+              {
+                value: addresses.AXELAR_GMP,
+                encoding: 'bech32',
+                chainId,
+              },
+              {
+                denom,
+                value: amt.value,
+              },
+              { memo: JSON.stringify(memo) },
+            );
+
+            console.log(`Completed transfer to ${destinationAddress}`);
+          } catch (e) {
+            // @ts-expect-error
+            await withdrawToSeat(this.state.localAccount, seat, give);
+            const errorMsg = `IBC Transfer failed ${q(e)}`;
+            seat.exit(errorMsg);
+            throw makeError(errorMsg);
+          }
+
+          seat.exit();
+        },
       },
       invitationMakers: {
         // "method" and "args" can be used to invoke methods of localAccount obj
         makeEVMTransactionInvitation(method, args) {
           const continuingEVMTransactionHandler = async seat => {
-            const { evm } = this.facets;
-            seat.exit();
+            const { holder } = this.facets;
+
             switch (method) {
               case 'getAddress':
-                return evm.getAddress();
-              case 'getEVMSmartWalletAddress':
-                return evm.getEVMSmartWalletAddress();
-              case 'send':
-                return evm.send(args[0], args[1]);
+                return holder.sendGmp(seat, args);
+              case 'getAddress': {
+                seat.exit();
+                return holder.getAddress();
+              }
+              case 'getEVMSmartWalletAddress': {
+                seat.exit();
+                return holder.getEVMSmartWalletAddress();
+              }
+              case 'send': {
+                seat.exit();
+                return holder.send(args[0], args[1]);
+              }
               default:
                 return 'Invalid method';
             }
