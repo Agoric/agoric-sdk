@@ -16,10 +16,10 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NEW_NODE_LTS_VERSION: '20.x'
+  NEW_NODE_LTS_VERSION: '20'
   AGORIC_AVA_USE_TAP: true
   NODE_V8_COVERAGE: coverage
-  OLD_NODE_LTS_VERSION: '18.x'
+  OLD_NODE_LTS_VERSION: '18'
   TEST_COLLECT: 'tee -a _testoutput.txt'
 
   # These are only added to make them available to GH Action
