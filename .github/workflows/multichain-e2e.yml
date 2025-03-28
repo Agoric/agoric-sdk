@@ -8,10 +8,12 @@ on:
         type: choice
         required: true
         options:
-          - orchestration-api-hermes
+          - fast-usdc-go-relayer
           - fast-usdc-hermes
           - orchestration-api-go-relayer
-          - fast-usdc-go-relayer
+          - orchestration-api-hermes
+          - orchestration-staking-go-relayer
+          - orchestration-staking-hermes
   workflow_call:
 
 jobs:
@@ -54,3 +56,23 @@ jobs:
     with:
       config: config.fusdc.go-relayer.yaml
       test_command: RELAYER_TYPE=go-relayer yarn test:fast-usdc
+
+  orchestration-staking-go-relayer:
+    name: Multichain E2E (Orchestration Staking - Go Relayer)
+    # run on dispatch only
+    if: github.event_name == 'workflow_dispatch' && inputs.test_type == 'orchestration-staking-go-relayer'
+    uses: ./.github/workflows/multichain-e2e-template.yml
+    with:
+      config: config.go-relayer.yaml
+      test_command: RELAYER_TYPE=go-relayer yarn test:staking
+
+  orchestration-staking-hermes:
+    name: Multichain E2E (Orchestration Staking - Hermes)
+    if: |
+      github.event_name == 'workflow_call' ||
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'workflow_dispatch' && inputs.test_type == 'orchestration-staking-hermes')
+    uses: ./.github/workflows/multichain-e2e-template.yml
+    with:
+      config: config.yaml
+      test_command: yarn test:staking
