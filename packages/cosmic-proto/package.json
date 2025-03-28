@@ -148,7 +148,7 @@
     "!CHANGELOG.md"
   ],
   "scripts": {
-    "build": "tsc --project tsconfig.build.json",
+    "build": "tsc --project tsconfig.build.json && node scripts/minify.cjs",
     "clean": "rimraf dist",
     "codegen": "./update-protos.sh && node scripts/codegen.cjs",
     "prepare": "npm run build",
@@ -171,7 +171,9 @@
     "@endo/import-bundle": "^1.4.0",
     "@endo/ses-ava": "^1.2.10",
     "ava": "^5.3.1",
+    "glob": "^4.5.3",
     "rimraf": "^5.0.0",
+    "terser": "^5.39.0",
     "tsd": "^0.31.1",
     "typescript": "~5.8.2"
   },
