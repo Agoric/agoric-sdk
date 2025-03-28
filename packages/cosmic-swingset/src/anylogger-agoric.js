@@ -14,18 +14,21 @@ const VAT_LOGGER_PREFIXES = Object.freeze([
   'SwingSet:ls', // "ls" for "liveslots"
 ]);
 
-// As documented in ../../../docs/env.md, the log level defaults to "log" when
-// environment variable DEBUG is non-empty or unset, and to the quieter "info"
-// when it is set to an empty string.
 const DEBUG_LIST = getEnvironmentOptionsList('DEBUG');
-/** @type {string | undefined} */
+
+/**
+ * As documented in ../../../docs/env.md, the log level defaults to "log" when
+ * environment variable DEBUG is non-empty or unset, and to the quieter "info"
+ * when it is set to an empty string, but in either case is overridden if DEBUG
+ * is a comma-separated list that contains "agoric:none" or "agoric:${level}" or
+ * "agoric" (the last an alias for "agoric:debug").
+ *
+ * @type {string | undefined}
+ */
 let maxActiveLevel =
   DEBUG_LIST.length > 0 || getEnvironmentOption('DEBUG', 'unset') === 'unset'
     ? 'log'
     : 'info';
-// ...but is overridden if DEBUG is a comma-separated list that contains
-// "agoric:none" or "agoric:${level}" or "agoric" (the last an alias for
-// "agoric:debug").
 for (const selector of DEBUG_LIST) {
   const fullSelector = selector === 'agoric' ? 'agoric:debug' : selector;
   const [_, detail] = fullSelector.match(/^agoric:(.*)/gs) || [];
