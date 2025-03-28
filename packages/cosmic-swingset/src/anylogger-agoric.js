@@ -35,12 +35,12 @@ const maxActiveLevelCode = /** @type {number} */ (
 
 const oldExt = anylogger.ext;
 anylogger.ext = logger => {
-  const l = oldExt(logger);
-  l.enabledFor = lvl => maxActiveLevelCode >= anylogger.levels[lvl];
+  logger = oldExt(logger);
+  logger.enabledFor = lvl => maxActiveLevelCode >= anylogger.levels[lvl];
 
-  const prefix = l.name.replace(/:/g, ': ');
+  const prefix = logger.name.replace(/:/g, ': ');
 
-  const nameColon = `${l.name}:`;
+  const nameColon = `${logger.name}:`;
   const logBelongsToVat = isVatLogNameColon(nameColon);
 
   // If this is a vat log, then it is enabled by a selector in DEBUG_LIST.
@@ -54,20 +54,20 @@ anylogger.ext = logger => {
   for (const [level, code] of Object.entries(anylogger.levels)) {
     if (logMatchesSelector && maxActiveLevelCode >= code) {
       // Enable the printing with a prefix.
-      const doLog = l[level];
+      const doLog = logger[level];
       if (doLog) {
-        l[level] = (...args) => {
+        logger[level] = (...args) => {
           // Add a timestamp.
           const now = new Date().toISOString();
           doLog(`${now} ${prefix}:`, ...args);
         };
       } else {
-        l[level] = () => {};
+        logger[level] = () => {};
       }
     } else {
       // Disable printing.
-      l[level] = () => {};
+      logger[level] = () => {};
     }
   }
-  return l;
+  return logger;
 };
