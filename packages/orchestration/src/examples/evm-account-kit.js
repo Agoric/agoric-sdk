@@ -61,6 +61,7 @@ const EvmKitStateShape = {
   remoteDenom: M.string(),
   localDenom: M.string(),
   localAccount: M.remotable('OrchestrationAccount<{chainId:"agoric-3"}>'),
+  orchrestator: M.any(),
 };
 harden(EvmKitStateShape);
 
@@ -204,17 +205,28 @@ export const prepareEvmAccountKit = (
             evmContractAddress: destinationAddress,
             ...contractInvocationData,
           });
+          console.log(
+            'rabi......................................',
+            this.state.orchrestator,
+          );
+          const agoricVow = await this.state.orchrestator.getChain('agoric');
 
-          const agoric = await this.state.orchrestator.getChain('agoric');
-          const assets = await agoric.getVBankAssetInfo();
+          // @ts-expect-error
+          const agoric = await agoricVow.payload.vowV0.shorten();
+          const assetsVow = await agoric.getVBankAssetInfo();
+          const assets = await assetsVow.payload.vowV0.shorten();
 
           const { denom } = NonNullish(
             assets.find(a => a.brand === amt.brand),
             `${amt.brand} not registered in vbank`,
           );
 
-          const axelarChain = await this.state.orchrestator.getChain('axelar');
-          const info = await axelarChain.getChainInfo();
+          const axelarChainVow =
+            await this.state.orchrestator.getChain('axelar');
+          // @ts-expect-error
+          const axelarChain = await axelarChainVow.payload.vowV0.shorten();
+          const infoVow = await axelarChain.getChainInfo();
+          const info = await infoVow.payload.vowV0.shorten();
           const { chainId } = info;
 
           const memo = {
@@ -265,8 +277,8 @@ export const prepareEvmAccountKit = (
             const { holder } = this.facets;
 
             switch (method) {
-              case 'getAddress':
-                return holder.sendGmp(seat, args);
+              case 'sendGmp':
+                return holder.sendGmp(seat, args[0]);
               case 'getAddress': {
                 seat.exit();
                 return holder.getAddress();
