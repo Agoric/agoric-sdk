@@ -63,11 +63,13 @@ const withMutex = operation => {
 
 /** @param {import('.').MakeSlogSenderOptions} options */
 export const makeSlogSender = async options => {
+  const { env = {} } = options;
   const { registerShutdown } = makeShutdown();
 
   const cp = fork(path.join(dirname, 'slog-sender-pipe-entrypoint.js'), [], {
     stdio: ['ignore', 'inherit', 'inherit', 'ipc'],
     serialization: 'advanced',
+    env,
   });
   // logger.log('done fork');
   /** @type {(msg: Record<string, unknown> & {type: string}) => Promise<void>} */
