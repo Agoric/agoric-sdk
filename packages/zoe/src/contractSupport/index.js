@@ -34,24 +34,7 @@ export {
   offerTo,
 } from './zoeHelpers.js';
 
-export {
-  makeRatio,
-  makeRatioFromAmounts,
-  floorMultiplyBy,
-  floorDivideBy,
-  ceilMultiplyBy,
-  ceilDivideBy,
-  assertIsRatio,
-  invertRatio,
-  oneMinus,
-  addRatios,
-  multiplyRatios,
-  ratiosSame,
-  quantize,
-  ratioGTE,
-  subtractRatios,
-  ratioToNumber,
-} from './ratio.js';
+export * from '@agoric/ertp/src/ratio.js';
 
 export * from './durability.js';
 export * from './prepare-ownable.js';
