@@ -1,12 +1,12 @@
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
-import starshipChainInfo from '../starship-chain-info.js';
-import { makeDoOffer } from '../tools/e2e-tools.js';
-import { makeFundAndTransfer } from '../tools/ibc-transfer.js';
-import { makeQueryClient } from '../tools/query.js';
-import type { SetupContextWithWallets } from './support.js';
-import { chainConfig, commonSetup } from './support.js';
-import { AUTO_STAKE_IT_DELEGATIONS_TIMEOUT } from './config.js';
+import starshipChainInfo from '../../starship-chain-info.js';
+import { makeDoOffer } from '../../tools/e2e-tools.js';
+import { makeFundAndTransfer } from '../../tools/ibc-transfer.js';
+import { makeQueryClient } from '../../tools/query.js';
+import type { SetupContextWithWallets } from '../support.js';
+import { chainConfig, commonSetup } from '../support.js';
+import { AUTO_STAKE_IT_DELEGATIONS_TIMEOUT } from '../config.js';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
