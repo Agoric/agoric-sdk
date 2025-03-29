@@ -16,9 +16,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NEW_NODE_LTS_VERSION: '20'
   AGORIC_AVA_USE_TAP: true
   NODE_V8_COVERAGE: coverage
+  NEW_NODE_LTS_VERSION: '20'
   OLD_NODE_LTS_VERSION: '18'
   TEST_COLLECT: 'tee -a _testoutput.txt'
 
@@ -42,7 +42,7 @@ jobs:
           submodules: 'true'
       - uses: ./.github/actions/restore-node
         with:
-          version-identifier: ${{ matrix.node-version }}
+          node-version: ${{ matrix.node-version }}
 
   dependency-graph:
     needs: build
@@ -60,7 +60,7 @@ jobs:
       # install node_modules
       - uses: ./.github/actions/restore-node
         with:
-          version-identifier: 'node-old'
+          node-version: 'node-old'
 
       # Releasing SDK builds all packages in this order during `lerna publish`.
       # Due to ambient types, certain build orders (from the dependency graph)
@@ -95,7 +95,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          version-identifier: 'node-old'
+          node-version: 'node-old'
 
       - name: lint repo format
         run: yarn lint:format
@@ -110,7 +110,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          version-identifier: 'node-old'
+          node-version: 'node-old'
 
       # Check some of a3p-integration in this job that runs on PRs instead of
       # waiting for the slow integration test that by default only runs in the
@@ -149,7 +149,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          version-identifier: ${{ matrix.engine }}
+          node-version: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
 
       # We run separate steps for each package, to make it easier to drill down
@@ -241,7 +241,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          version-identifier: ${{ matrix.engine }}
+          node-version: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
       - name: yarn test (agoric-cli)
         if: (success() || failure())
@@ -374,7 +374,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          version-identifier: ${{ matrix.engine }}
+          node-version: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
       - name: yarn test (governance)
         if: (success() || failure())
@@ -413,7 +413,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          version-identifier: ${{ matrix.engine }}
+          node-version: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
       - name: yarn test (solo)
         if: (success() || failure())
@@ -453,7 +453,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          version-identifier: ${{ matrix.engine }}
+          node-version: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
       - uses: ./.github/actions/restore-golang
         with:
@@ -495,7 +495,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          version-identifier: ${{ matrix.engine }}
+          node-version: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
       - name: yarn test (inter-protocol)
         if: (success() || failure())
@@ -539,7 +539,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          version-identifier: ${{ matrix.engine }}
+          node-version: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
       - name: yarn test (boot)
         if: (success() || failure())
@@ -583,7 +583,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          version-identifier: ${{ matrix.engine }}
+          node-version: ${{ matrix.engine }}
         id: restore-node
       - run: echo "ENDO_BRANCH=${{ steps.restore-node.outputs.endo-branch }}" >> $GITHUB_ENV
       # END-TEST-BOILERPLATE
@@ -630,7 +630,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          version-identifier: ${{ matrix.engine }}
+          node-version: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
       - name: yarn test (zoe)
         if: (success() || failure())
@@ -671,7 +671,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          version-identifier: ${{ matrix.engine }}
+          node-version: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
       - name: yarn test (zoe)
         if: (success() || failure())

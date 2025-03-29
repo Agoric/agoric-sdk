@@ -16,14 +16,14 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ['18.x', '20.x']
+        node-version: ['node-new', 'node-old']
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: 'true'
       - uses: ./.github/actions/restore-node
         with:
-          version-identifier: ${{ matrix.node-version}}
+          node-version: ${{ matrix.node-version}}
       - name: notify on failure
         if: failure()
         uses: ./.github/actions/notify-status
@@ -39,12 +39,12 @@ jobs:
     strategy:
       matrix:
         # note: only use one node-version
-        node-version: ['18.x']
+        node-version: ['node-old']
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          version-identifier: ${{ matrix.node-version }}
+          node-version: ${{ matrix.node-version }}
 
       # Adapted from https://johnny.sh/notes/publish-canary-lerna-cicd/
       - name: configure NPM token
@@ -97,13 +97,13 @@ jobs:
     strategy:
       matrix:
         # note: only use one node-version
-        node-version: ['18.x']
+        node-version: ['node-old']
     if: ${{github.event_name == 'push' }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          version-identifier: ${{ matrix.node-version }}
+          node-version: ${{ matrix.node-version }}
 
       - name: generate test coverage report
         run: ./scripts/ci/generate-test-coverage-report.sh
@@ -139,13 +139,13 @@ jobs:
     strategy:
       matrix:
         # note: only use one node-version
-        node-version: ['18.x']
+        node-version: ['node-old']
     if: ${{github.event_name == 'push'}}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          version-identifier: ${{ matrix.node-version }}
+          node-version: ${{ matrix.node-version }}
 
       - name: benchmark changes
         env:
