@@ -63,6 +63,11 @@ jobs:
         run: corepack enable
         working-directory: ./agoric-sdk/multichain-testing
 
+      # Before multichain-testing deps because that project portals into SDK
+      # but only the SDK postinstall script will runs its package patching.
+      - name: Install SDK deps
+        run: yarn install
+
       - name: Install @agoric/multichain-testing deps
         run: yarn install
         working-directory: ./agoric-sdk/multichain-testing
