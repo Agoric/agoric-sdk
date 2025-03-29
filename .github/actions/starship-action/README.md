@@ -1,11 +1,6 @@
 # Starship Devnet Action (Agoric fork)
 
-This `starship-action` was extracted from https://github.com/hyperweb-io/starship-action/tree/0.3.0
-
-We took:
-- action.yaml
-- install.sh
-- port-forward.sh
+This `starship-action` was extracted from https://github.com/hyperweb-io/starship-action/tree/0.5.9
 
 Agoric added the `load-docker-images` input parameter to be able to import locally-built Docker images into Starship's Kubernetes cluster.
 

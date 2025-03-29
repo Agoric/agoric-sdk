@@ -1,5 +1,6 @@
-# https://github.com/hyperweb-io/starship-action/blob/0.3.0/action.yaml
+# https://github.com/hyperweb-io/starship-action/blob/0.5.9/action.yaml
 # Agoric: added load-docker-images, then prettified.
+
 name: 'Starship Devnet'
 description: 'Run mini cosmos ecosystem via devnet'
 branding:
@@ -7,33 +8,31 @@ branding:
   icon: anchor
 
 inputs:
-  values:
-    description: 'Values yaml raw data of filename for helm that define the topology for the devnet'
+  config:
+    description: 'Path to the config file'
     required: true
-  port-forward:
-    description: 'Flag weather to perform port forwarding as defined in the values file to local ports (default: true)'
+  cli-version:
+    description: 'Version of @starship-ci/cli to use: default: 2.14.0'
     required: false
-    default: 'true'
+    default: '3.3.0'
   kubeconfig:
     description: 'Kubeconfig file for remote cluster, if set, will be used instead of creating kind cluster'
     required: false
     default: ''
+  #region Agoric addition
   load-docker-images:
     description: 'Space-separated local docker images to load into cluster'
     required: false
     default: ''
-  version:
-    description: 'Version of devnet chart (default: 0.1.45)'
-    required: false
-    default: '0.2.3'
+  #endregion
   chart:
     description: 'Name of  the help chart to use. Recommended: use default (default: starship/devnet)'
     required: false
     default: 'starship/devnet'
   repo:
-    description: 'Helm repo to fetch the chart from (default: https://cosmology-tech.github.io/starship)'
+    description: 'Helm repo to fetch the chart from (default: https://hyperweb-io.github.io/starship)'
     required: false
-    default: 'https://cosmology-tech.github.io/starship'
+    default: 'https://hyperweb-io.github.io/starship'
   name:
     description: 'Helm chart release name for installing helm chart (default: starship-devnet)'
     required: false
@@ -58,12 +57,25 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Install dependencies
+    - name: Create yarn.lock and package.json file if not exists
+      if: inputs.cli-version != '0.0.0' # Skip if cli-version is 0.0.0, expected to be used for local testing
       run: |
-        sudo apt-get install -y make sed wget tar jq
-        sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
-        sudo chmod +x /usr/bin/yq
+        if [ ! -f $GITHUB_WORKSPACE/yarn.lock ]; then
+          echo 'Creating temporary yarn.lock file'
+          echo '' > $GITHUB_WORKSPACE/yarn.lock
+        fi
+        if [ ! -f $GITHUB_WORKSPACE/package.json ]; then
+          echo 'Creating temporary package.json file'
+          echo '{}' > $GITHUB_WORKSPACE/package.json
+        fi
       shell: bash
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      if: inputs.cli-version != '0.0.0' # Skip if cli-version is 0.0.0, expected to be used for local testing
+      with:
+        node-version: '20.x'
+        cache: 'yarn'
 
     - name: Setup helm
       uses: azure/setup-helm@v3
@@ -81,6 +93,7 @@ runs:
       with:
         cluster_name: kind-starship
 
+    #region Agoric addition
     - name: Load docker images into the kind-starship cluster
       if: ${{ inputs.load-docker-images != '' && inputs.kubeconfig == '' }}
       run: |
@@ -98,23 +111,13 @@ runs:
       env:
         LOAD_DOCKER_IMAGES: ${{ inputs.load-docker-images }}
       shell: bash
+      #endregion
 
     - name: Create kubeconfig file
       if: ${{ inputs.kubeconfig != '' }}
       run: |
         mkdir -p ~/.kube
         echo -e "${{ inputs.kubeconfig }}" > ~/.kube/config
-      shell: bash
-
-    - name: Create values.yaml
-      run: |
-        if [[ "${{ inputs.values }}" == *.yaml || "${{ inputs.values }}" == *.yml ]]
-        then
-          cp ${{ inputs.values }} ${{ inputs.name }}-values.yaml
-        else
-          echo -e "${{ inputs.values }}" > ${{ inputs.name }}-values.yaml
-        fi
-        cat ${{ inputs.name }}-values.yaml
       shell: bash
 
     - name: Set namespace
@@ -135,12 +138,29 @@ runs:
       env:
         INPUT_NAMESPACE: ${{ inputs.namespace }}
 
+    - name: Create namespace if nonexistent
+      run: |
+        kubectl create namespace ${{ steps.set-namespace.outputs.namespace }} || true
+      shell: bash
+
+    - name: Setup starshipjs client
+      if: inputs.cli-version != '0.0.0' # Skip if cli-version is 0.0.0, expected to be used for local testing
+      run: |
+        yarn global add @starship-ci/cli@${{ inputs.cli-version }}
+      shell: bash
+
+    - name: Verify starship cli
+      run: |
+        starship --version
+      shell: bash
+
     - name: Setup starship helm repo
       run: |
-        helm version
-        helm repo add starship ${{ inputs.repo }}
-        helm repo update
-        helm search repo starship/devnet
+        starship setup \
+          --config ${{ inputs.config }} \
+          --name ${{ inputs.name }} \
+          --namespace ${{ steps.set-namespace.outputs.namespace }} \
+          --chart ${{ inputs.chart }}
       shell: bash
 
     - name: Helm install
@@ -149,7 +169,12 @@ runs:
       run: |
         helm delete ${{ inputs.name }} --debug --namespace ${{ steps.set-namespace.outputs.namespace }} --wait || true
         sleep 5
-        ${{ github.action_path }}/install.sh --config ${{ inputs.values }} --name ${{ inputs.name }} --chart ${{ inputs.chart }} --version ${{ inputs.version }} --namespace ${{ steps.set-namespace.outputs.namespace }} --timeout ${{ inputs.timeout }}
+        starship start \
+          --config ${{ inputs.config }} \
+          --name ${{ inputs.name }} \
+          --namespace ${{ steps.set-namespace.outputs.namespace }} \
+          --chart ${{ inputs.chart }} \
+          --timeout ${{ inputs.timeout }}
       shell: bash
 
     - name: Logs
@@ -164,26 +189,37 @@ runs:
           echo "==================================================="
         done
       env:
-        VALUES_FILE: ${{ inputs.name }}-values.yaml
+        VALUES_FILE: ${{ inputs.config }}
         NAMESPACE: ${{ steps.set-namespace.outputs.namespace }}
       shell: bash
 
     - name: Helm install again
       id: helm-install-2
       if: steps.helm-install-1.outcome == 'failure'
+      continue-on-error: true
       run: |
         helm delete ${{ inputs.name }} --debug --namespace ${{ steps.set-namespace.outputs.namespace }} --wait || true
         sleep 5
         kubectl get pods --namespace ${{ steps.set-namespace.outputs.namespace }}
-        ${{ github.action_path }}/install.sh --config ${{ inputs.name }}-values.yaml --name ${{ inputs.name }} --chart ${{ inputs.chart }} --version ${{ inputs.version }} --namespace ${{ steps.set-namespace.outputs.namespace }} --timeout ${{ inputs.timeout }}
+        starship start \
+          --config ${{ inputs.config }} \
+          --name ${{ inputs.name }} \
+          --namespace ${{ steps.set-namespace.outputs.namespace }} \
+          --chart ${{ inputs.chart }} \
+          --timeout ${{ inputs.timeout }}
       shell: bash
 
-    - name: Port forward
-      if: ${{ inputs.port-forward == 'true' }}
+    - name: Helm install again, 3rd time is the charm
+      id: helm-install-3
+      if: steps.helm-install-2.outcome == 'failure'
       run: |
-        kubectl version
-        ${{ github.action_path }}/port-forward.sh --config=$VALUES_FILE --namespace=$NAMESPACE
+        helm delete ${{ inputs.name }} --debug --namespace ${{ steps.set-namespace.outputs.namespace }} --wait || true
+        sleep 5
+        kubectl get pods --namespace ${{ steps.set-namespace.outputs.namespace }}
+        starship start \
+          --config ${{ inputs.config }} \
+          --name ${{ inputs.name }} \
+          --namespace ${{ steps.set-namespace.outputs.namespace }} \
+          --chart ${{ inputs.chart }} \
+          --timeout ${{ inputs.timeout }}
       shell: bash
-      env:
-        VALUES_FILE: ${{ inputs.name }}-values.yaml
-        NAMESPACE: ${{ steps.set-namespace.outputs.namespace }}

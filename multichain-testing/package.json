@@ -32,7 +32,7 @@
     "execa": "^9.5.2",
     "fs-extra": "^11.2.0",
     "patch-package": "^8.0.0",
-    "starshipjs": "2.4.1",
+    "starshipjs": "^3.3.0",
     "ts-blank-space": "^0.4.4",
     "typescript": "~5.8.2"
   },
