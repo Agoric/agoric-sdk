@@ -18,6 +18,7 @@ import type {
   LocalAccountMethods,
   ICQQueryFunction,
   KnownNamespace,
+  NobleMethods,
 } from './types.js';
 import type { ResolvedContinuingOfferResult } from './utils/zoe-tools.js';
 
@@ -63,7 +64,7 @@ export type AmountArg = DenomAmount | Amount<'nat'>;
  *
  * @see {@link https://chainagnostic.org/CAIPs/caip-2}
  */
-export type ScopedChainId = `${string}:${string}`;
+export type CaipChainId = `${string}:${string}`;
 
 /**
  * à la CAIP-10
@@ -74,7 +75,7 @@ export type ScopedChainId = `${string}:${string}`;
  *
  * @see {@link https://chainagnostic.org/CAIPs/caip-10}
  */
-export type AccountId = `${ScopedChainId}:${string}`;
+export type AccountId = `${CaipChainId}:${string}`;
 
 /**
  * Specific to Cosmos chains
@@ -132,7 +133,9 @@ export type OrchestrationAccount<CI extends Partial<ChainInfo>> =
     (CI extends { chainId: string }
       ? CI['chainId'] extends `agoric${string}`
         ? LocalAccountMethods
-        : CosmosChainAccountMethods<CI>
+        : CI['chainId'] extends `noble${string}`
+          ? CosmosChainAccountMethods<CI> & NobleMethods
+          : CosmosChainAccountMethods<CI>
       : object);
 
 /**

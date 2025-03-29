@@ -9,6 +9,7 @@ import {
   parseAccountIdArg,
 } from '../../src/utils/address.js';
 import type { CosmosChainAddress } from '../../src/orchestration-api.ts';
+import type { Bech32Address } from '../../src/cosmos-api.ts';
 
 test('makeICAChannelAddress', t => {
   // @ts-expect-error intentional
@@ -113,11 +114,11 @@ test('makeICQChannelAddress', t => {
 });
 
 const bech32 = test.macro({
-  title: (_, input: string, expected: string | null) =>
+  title: (_, input: Bech32Address, expected: string | null) =>
     expected !== null
       ? `can extract ${expected} prefix from ${input}`
       : `throws error for invalid address ${input}`,
-  exec: (t, input: string, expected: string | null, error?: string) => {
+  exec: (t, input: Bech32Address, expected: string | null, error?: string) => {
     if (expected !== null) {
       t.is(getBech32Prefix(input), expected);
     } else {
@@ -129,6 +130,7 @@ const bech32 = test.macro({
 test(bech32, 'bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4', 'bc');
 test(bech32, 'cosmos1n4f2eqt2gm5mh6gevf8aw2wrf75q25yru09yvn', 'cosmos');
 test(bech32, '111qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4', '11');
+// @ts-expect-error intentionally invalid address
 test(
   bech32,
   'qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4',
