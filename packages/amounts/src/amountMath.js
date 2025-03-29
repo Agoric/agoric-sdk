@@ -254,13 +254,9 @@ export const AmountMath = {
    * Return the amount representing an empty amount. This is the identity
    * element for MathHelpers.add and MatHelpers.subtract.
    *
-   * @template {AssetKind} [K='nat']
-   * @type {{
-   *   (brand: Brand): Amount<'nat'>;
-   *   <K extends AssetKind>(brand: Brand<K>, assetKind: K): Amount<K>;
-   * }}
-   * @param {Brand} brand
-   * @param {K} assetKind
+   * @template {Brand} [B=Brand<'nat'>]
+   * @param {B} brand
+   * @param {B} assetKind
    */
   makeEmpty: (brand, assetKind = /** @type {const} */ ('nat')) => {
     assertRemotable(brand, 'brand');
