@@ -18,8 +18,6 @@ concurrency:
 env:
   AGORIC_AVA_USE_TAP: true
   NODE_V8_COVERAGE: coverage
-  NEW_NODE_LTS_VERSION: '20'
-  OLD_NODE_LTS_VERSION: '18'
   TEST_COLLECT: 'tee -a _testoutput.txt'
 
 # this is required, since explicitly setting bash as shell enables pipefail, which is not
