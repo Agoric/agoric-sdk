@@ -588,8 +588,7 @@ test('watched local promises should not leak slotToVal entries', async t => {
 // The workaround doesn't handle this case because it learns about the
 // settlement before the virtual object system
 // See https://github.com/Agoric/agoric-sdk/issues/10757
-// prettier-ignore
-test.failing('watched imported promises should not leak slotToVal entries', async t => {
+test('watched imported promises should not leak slotToVal entries', async t => {
   const S = 'settlement';
   // cf. src/liveslots.js:initialIDCounters
   const firstPExport = 5;
