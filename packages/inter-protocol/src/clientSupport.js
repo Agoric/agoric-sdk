@@ -3,7 +3,7 @@
 import { Fail } from '@endo/errors';
 import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined } from '@agoric/internal';
-import { parseRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { parseRatio } from '@agoric/ertp/src/ratio.js';
 
 /**
  * @import {Amount, Brand, Payment, Purse} from '@agoric/ertp';

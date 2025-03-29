@@ -18,7 +18,7 @@ import {
   floorDivideBy,
   multiplyBy,
   parseRatio,
-} from '@agoric/zoe/src/contractSupport/ratio.js';
+} from '@agoric/ertp/src/ratio.js';
 import { InvalidArgumentError } from 'commander';
 import { outputActionAndHint } from './bridge-action.js';
 import { Offers } from '../clientSupport.js';

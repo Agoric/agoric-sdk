@@ -51,7 +51,7 @@ import {
   TopicsRecordShape,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { PriceQuoteShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
-import { multiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { multiplyBy } from '@agoric/ertp/src/ratio.js';
 import {
   checkDebtLimit,
   makeNatAmountShape,

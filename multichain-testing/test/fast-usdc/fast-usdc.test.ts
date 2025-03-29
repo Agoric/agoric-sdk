@@ -17,7 +17,7 @@ import type {
   DenomDetail,
 } from '@agoric/orchestration';
 import type { IBCConnectionID } from '@agoric/vats';
-import { divideBy, multiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { divideBy, multiplyBy } from '@agoric/ertp/src/ratio.js';
 import type { ExecutionContext, TestFn } from 'ava';
 import { makeDenomTools } from '../../tools/asset-info.js';
 import { makeBlocksIterable } from '../../tools/block-iter.js';

@@ -1,9 +1,8 @@
-/// <reference path="./types-ambient.js" />
 import { q, Fail } from '@endo/errors';
-import { AmountMath } from '@agoric/ertp';
 import { assertRecord } from '@endo/marshal';
 import { isNat } from '@endo/nat';
 
+import { AmountMath } from './amountMath.js';
 import { natSafeMath } from './safeMath.js';
 
 /**
@@ -12,6 +11,19 @@ import { natSafeMath } from './safeMath.js';
 
 const { multiply, floorDivide, ceilDivide, bankersDivide, add, subtract } =
   natSafeMath;
+
+/**
+ * @typedef {object} Ratio
+ * @property {Amount<'nat'>} numerator
+ * @property {Amount<'nat'>} denominator
+ */
+
+/**
+ * @callback ScaleAmount
+ * @param {Amount<'nat'>} amount
+ * @param {Ratio} ratio
+ * @returns {Amount<'nat'>}
+ */
 
 // make a Ratio, which represents a fraction. It is a pass-by-copy record.
 //
@@ -100,7 +112,7 @@ export const makeRatioFromAmounts = (numeratorAmount, denominatorAmount) => {
 /**
  * @param {Amount<'nat'>} amount
  * @param {Ratio} ratio
- * @param {*} divideOp
+ * @param {any} divideOp
  * @returns {Amount<'nat'>}
  */
 const multiplyHelper = (amount, ratio, divideOp) => {
@@ -140,7 +152,7 @@ export const multiplyBy = (amount, ratio) => {
 /**
  * @param {Amount<'nat'>} amount
  * @param {Ratio} ratio
- * @param {*} divideOp
+ * @param {any} divideOp
  * @returns {Amount<'nat'>}
  */
 const divideHelper = (amount, ratio, divideOp) => {
@@ -164,6 +176,7 @@ const divideHelper = (amount, ratio, divideOp) => {
 
 /**
  * Divide the amount by the ratio, truncating the remainder.
+ *
  * @type {ScaleAmount}
  */
 export const floorDivideBy = (amount, ratio) => {
@@ -172,6 +185,7 @@ export const floorDivideBy = (amount, ratio) => {
 
 /**
  * Divide the amount by the ratio, rounding up the remainder.
+ *
  * @type {ScaleAmount}
  */
 export const ceilDivideBy = (amount, ratio) => {
@@ -179,7 +193,9 @@ export const ceilDivideBy = (amount, ratio) => {
 };
 
 /**
- * Divide the amount by the ratio, rounding to nearest with ties to even (aka Banker's Rounding) as in IEEE 754 default rounding.
+ * Divide the amount by the ratio, rounding to nearest with ties to even (aka
+ * Banker's Rounding) as in IEEE 754 default rounding.
+ *
  * @type {ScaleAmount}
  */
 export const divideBy = (amount, ratio) => {
@@ -194,9 +210,9 @@ export const invertRatio = ratio => {
   assertIsRatio(ratio);
 
   return makeRatio(
-    /** @type {NatValue} */ (ratio.denominator.value),
+    ratio.denominator.value,
     ratio.denominator.brand,
-    /** @type {NatValue} */ (ratio.numerator.value),
+    ratio.numerator.value,
     ratio.numerator.brand,
   );
 };
@@ -333,7 +349,8 @@ export const ratioGTE = (left, right) => {
 };
 
 /**
- * True iff the ratios are the same values (equal or equivalant may return false)
+ * True iff the ratios are the same values (equal or equivalant may return
+ * false)
  *
  * @param {Ratio} left
  * @param {Ratio} right
@@ -348,7 +365,8 @@ export const ratiosSame = (left, right) => {
 
 /**
  * Make a new ratio with a smaller denominator that approximates the ratio. If
- * the proposed denominator is larger than the current one, return the original.
+ * the proposed denominator is larger than the current one, return the
+ * original.
  *
  * @param {Ratio} ratio
  * @param {bigint} newDen

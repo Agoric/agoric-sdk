@@ -11,7 +11,7 @@ const trace = makeTracer('FUSD-2', true);
 /** @type {typeof import('@agoric/ertp').AmountMath.make} */
 // @ts-expect-error AssetKind conditionals aren't captured
 const make = (brand, value) => harden({ brand, value });
-/** @type {typeof import('@agoric/zoe/src/contractSupport/ratio.js').makeRatio} */
+/** @type {typeof import('@agoric/ertp/src/ratio.js').makeRatio} */
 const makeRatio = (numerator, numeratorBrand, denominator = 100n) =>
   harden({
     numerator: make(numeratorBrand, numerator),

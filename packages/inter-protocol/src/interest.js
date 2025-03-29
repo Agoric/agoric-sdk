@@ -3,11 +3,7 @@
 import { Fail } from '@endo/errors';
 import { AmountMath } from '@agoric/ertp';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
-import {
-  makeRatio,
-  multiplyRatios,
-  quantize,
-} from '@agoric/zoe/src/contractSupport/ratio.js';
+import { makeRatio, multiplyRatios, quantize } from '@agoric/ertp/src/ratio.js';
 import { TimeMath } from '@agoric/time';
 
 /**
