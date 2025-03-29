@@ -22,12 +22,6 @@ env:
   OLD_NODE_LTS_VERSION: '18'
   TEST_COLLECT: 'tee -a _testoutput.txt'
 
-  # These are only added to make them available to GH Action
-  # as repo/org vars/secrets are not accessible to them. See:
-  # https://github.com/orgs/community/discussions/49689
-  NEW_NODE_LTS_VERSION_NAME: '${{ vars.NEW_NODE_LTS_VERSION_NAME }}'
-  OLD_NODE_LTS_VERSION_NAME: '${{ vars.OLD_NODE_LTS_VERSION_NAME }}'
-
 # this is required, since explicitly setting bash as shell enables pipefail, which is not
 # on by default.  This is required to fail correctly when teeing output to a file to collect
 # test instrumentation
@@ -41,18 +35,14 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version:
-          [
-            '${{ vars.NEW_NODE_LTS_VERSION_NAME }}',
-            '${{ vars.OLD_NODE_LTS_VERSION_NAME }}',
-          ]
+        node-version: ['node-new', 'node-old']
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: 'true'
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.node-version }}
+          version-identifier: ${{ matrix.node-version }}
 
   dependency-graph:
     needs: build
@@ -69,6 +59,8 @@ jobs:
 
       # install node_modules
       - uses: ./.github/actions/restore-node
+        with:
+          version-identifier: 'node-old'
 
       # Releasing SDK builds all packages in this order during `lerna publish`.
       # Due to ambient types, certain build orders (from the dependency graph)
@@ -103,7 +95,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: '${{ vars.OLD_NODE_LTS_VERSION_NAME }}'
+          version-identifier: 'node-old'
 
       - name: lint repo format
         run: yarn lint:format
@@ -118,7 +110,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: '${{ vars.OLD_NODE_LTS_VERSION_NAME }}'
+          version-identifier: 'node-old'
 
       # Check some of a3p-integration in this job that runs on PRs instead of
       # waiting for the slow integration test that by default only runs in the
@@ -146,12 +138,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine:
-          [
-            '${{ vars.NEW_NODE_LTS_VERSION_NAME }}',
-            '${{ vars.OLD_NODE_LTS_VERSION_NAME }}',
-            'xs',
-          ]
+        engine: ['node-new', 'node-old', 'xs']
     steps:
       - name: set vars
         id: vars
@@ -162,7 +149,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.engine }}
+          version-identifier: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
 
       # We run separate steps for each package, to make it easier to drill down
@@ -244,12 +231,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine:
-          [
-            '${{ vars.NEW_NODE_LTS_VERSION_NAME }}',
-            '${{ vars.OLD_NODE_LTS_VERSION_NAME }}',
-            'xs',
-          ]
+        engine: ['node-new', 'node-old', 'xs']
     steps:
       - name: set vars
         id: vars
@@ -259,7 +241,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.engine }}
+          version-identifier: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
       - name: yarn test (agoric-cli)
         if: (success() || failure())
@@ -382,11 +364,7 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in governance/package.json
-        engine:
-          [
-            '${{ vars.NEW_NODE_LTS_VERSION_NAME }}',
-            '${{ vars.OLD_NODE_LTS_VERSION_NAME }}',
-          ]
+        engine: ['node-new', 'node-old']
     steps:
       - name: set vars
         id: vars
@@ -396,7 +374,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.engine }}
+          version-identifier: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
       - name: yarn test (governance)
         if: (success() || failure())
@@ -425,11 +403,7 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in solo/package.json
-        engine:
-          [
-            '${{ vars.NEW_NODE_LTS_VERSION_NAME }}',
-            '${{ vars.OLD_NODE_LTS_VERSION_NAME }}',
-          ]
+        engine: ['node-new', 'node-old']
     steps:
       - name: set vars
         id: vars
@@ -439,7 +413,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.engine }}
+          version-identifier: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
       - name: yarn test (solo)
         if: (success() || failure())
@@ -468,12 +442,7 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in cosmic-swingset/package.json
-        engine:
-          [
-            '${{ vars.NEW_NODE_LTS_VERSION_NAME }}',
-            '${{ vars.OLD_NODE_LTS_VERSION_NAME }}',
-            'xs',
-          ]
+        engine: ['node-new', 'node-old', 'xs']
     steps:
       - name: set vars
         id: vars
@@ -484,7 +453,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.engine }}
+          version-identifier: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
       - uses: ./.github/actions/restore-golang
         with:
@@ -516,11 +485,7 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in inter-protocol/package.json
-        engine:
-          [
-            '${{ vars.NEW_NODE_LTS_VERSION_NAME }}',
-            '${{ vars.OLD_NODE_LTS_VERSION_NAME }}',
-          ]
+        engine: ['node-new', 'node-old']
     steps:
       - name: set vars
         id: vars
@@ -530,7 +495,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.engine }}
+          version-identifier: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
       - name: yarn test (inter-protocol)
         if: (success() || failure())
@@ -558,12 +523,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine:
-          [
-            '${{ vars.NEW_NODE_LTS_VERSION_NAME }}',
-            '${{ vars.OLD_NODE_LTS_VERSION_NAME }}',
-            'xs',
-          ]
+        engine: ['node-new', 'node-old', 'xs']
         # Run parallel testing jobs, each executing a subset.
         node_index: [0, 1, 2, 3]
         total_nodes: [4] # the total number of nodes
@@ -579,7 +539,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.engine }}
+          version-identifier: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
       - name: yarn test (boot)
         if: (success() || failure())
@@ -607,12 +567,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine:
-          [
-            '${{ vars.NEW_NODE_LTS_VERSION_NAME }}',
-            '${{ vars.OLD_NODE_LTS_VERSION_NAME }}',
-            'xs',
-          ]
+        engine: ['node-new', 'node-old', 'xs']
         # Run parallel testing jobs, each executing a subset.
         node_index: [0, 1, 2, 3, 4]
         total_nodes: [5] # the total number of nodes
@@ -628,7 +583,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.engine }}
+          version-identifier: ${{ matrix.engine }}
         id: restore-node
       - run: echo "ENDO_BRANCH=${{ steps.restore-node.outputs.endo-branch }}" >> $GITHUB_ENV
       # END-TEST-BOILERPLATE
@@ -662,12 +617,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine:
-          [
-            '${{ vars.NEW_NODE_LTS_VERSION_NAME }}',
-            '${{ vars.OLD_NODE_LTS_VERSION_NAME }}',
-            'xs',
-          ]
+        engine: ['node-new', 'node-old', 'xs']
     steps:
       - name: set vars
         id: vars
@@ -680,7 +630,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.engine }}
+          version-identifier: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
       - name: yarn test (zoe)
         if: (success() || failure())
@@ -709,12 +659,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine:
-          [
-            '${{ vars.NEW_NODE_LTS_VERSION_NAME }}',
-            '${{ vars.OLD_NODE_LTS_VERSION_NAME }}',
-            'xs',
-          ]
+        engine: ['node-new', 'node-old', 'xs']
     steps:
       - name: set vars
         id: vars
@@ -726,7 +671,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.engine }}
+          version-identifier: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
       - name: yarn test (zoe)
         if: (success() || failure())

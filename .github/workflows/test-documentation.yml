@@ -23,7 +23,7 @@ jobs:
           path: ./agoric-sdk
       - uses: ./agoric-sdk/.github/actions/restore-node
         with:
-          node-version: ${{ matrix.node-version }}
+          version-identifier: ${{ matrix.node-version }}
           path: ./agoric-sdk
 
       # Select a branch of the

@@ -2,8 +2,8 @@ name: Agoric SDK restore Node.js build
 description: 'Set up Node.js environment and restore cached built files'
 
 inputs:
-  node-version:
-    description: 'The version of Node.js to use'
+  version-identifier:
+    description: 'The version or semantic name of Node.js to use'
     required: true
   path:
     description: 'The relative path to the agoric-sdk directory'
@@ -40,14 +40,14 @@ runs:
       run: |
         set -o xtrace
 
-        INPUT_NODE_VERSION="${{ inputs.node-version }}"
-        OUTPUT_NODE_VERSION="$INPUT_NODE_VERSION"
+        VERSION_IDENTIFIER="${{ inputs.version-identifier }}"
+        OUTPUT_NODE_VERSION="$VERSION_IDENTIFIER"
 
-        if test "$INPUT_NODE_VERSION" == "${{ env.NEW_NODE_LTS_VERSION_NAME }}"
+        if test "$VERSION_IDENTIFIER" == "node-new"
         then
           OUTPUT_NODE_VERSION="${{ env.NEW_NODE_LTS_VERSION }}"
         else
-          if test "$INPUT_NODE_VERSION" == "${{ env.OLD_NODE_LTS_VERSION_NAME }}" || test "$INPUT_NODE_VERSION" == "xs"
+          if test "$VERSION_IDENTIFIER" == "node-old" || test "$VERSION_IDENTIFIER" == "xs"
           then
             OUTPUT_NODE_VERSION="${{ env.OLD_NODE_LTS_VERSION }}"
           fi
