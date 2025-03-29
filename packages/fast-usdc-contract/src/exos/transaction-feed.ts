@@ -1,4 +1,10 @@
-/** @file Exo for @see {prepareTransactionFeedKit} */
+/**
+ * @file Exo for @see {prepareTransactionFeedKit}. transaction-feed receives
+ * attestations from Oracles, records their evidence, and when enough oracles
+ * agree, (if no risks are identified) publishes the results for the advancer
+ * to act on.
+ */
+
 import { makeTracer } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import { Fail, quote } from '@endo/errors';
@@ -18,7 +24,6 @@ import type {
 import type { ZCF, Invitation } from '@agoric/zoe';
 import { defineInertInvitation } from '../utils/zoe.ts';
 import { prepareOperatorKit } from './operator-kit.ts';
-
 import type { OperatorKit } from './operator-kit.ts';
 
 const trace = makeTracer('TxFeed', true);

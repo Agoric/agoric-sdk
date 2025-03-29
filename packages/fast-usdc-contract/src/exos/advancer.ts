@@ -1,3 +1,11 @@
+/**
+ * @file Advancer subscribes (handleTransactionEvent) to events published by the
+ * transaction feed. When notified of an appropriate opportunity, it is
+ * responsible for advancing funds to fastUSDC payees.
+ *
+ * main export: @see {prepareAdvancerKit}
+ */
+
 import type { HostInterface } from '@agoric/async-flow';
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import type { Amount, Brand, NatAmount } from '@agoric/ertp';
@@ -106,6 +114,14 @@ export const stateShape = harden({
   settlementAddress: M.opt(CosmosChainAddressShape),
 });
 
+/**
+ * Advancer subscribes (using handleTransactionEvent) to events published by the
+ * {@link TransactionFeedKit}. When notified of an appropriate opportunity, it
+ * is responsible for advancing funds to EUD.
+ *
+ * @param {Zone} zone
+ * @param {AdvancerKitPowers} caps
+ */
 export const prepareAdvancerKit = (
   zone: Zone,
   {
