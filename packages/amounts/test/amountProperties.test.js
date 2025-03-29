@@ -1,8 +1,8 @@
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import { makeCopyBag } from '@agoric/store';
+import test from 'ava';
+import { makeCopyBag } from '@endo/patterns';
 import { fc } from '@fast-check/ava';
 
-import { AmountMath as m, AssetKind } from '../../src/index.js';
+import { AmountMath as m, AssetKind } from '../src/index.js';
 import { mockCopyBagBrand as mockBrand } from './mathHelpers/mockBrand.js';
 
 // Perhaps makeCopyBag should coalesce duplicate labels, but for now, it does

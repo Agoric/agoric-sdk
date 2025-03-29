@@ -25,6 +25,7 @@ import type {
 
 {
   const brand: Brand<'set'> = Far('setbrand');
+  AmountMath.makeEmpty(brand, 'set');
   expectType<Amount<'set'>>(AmountMath.makeEmpty(brand, 'set'));
   expectType<Amount<'set'>>(AmountMath.make(brand, []));
 

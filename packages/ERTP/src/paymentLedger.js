@@ -5,7 +5,7 @@
 import { X, q, Fail, annotateError } from '@endo/errors';
 import { isPromise } from '@endo/promise-kit';
 import { mustMatch, M, keyEQ } from '@agoric/store';
-import { AmountMath } from './amountMath.js';
+import { AmountMath } from '@agoric/amounts';
 import { preparePaymentKind } from './payment.js';
 import { preparePurseKind } from './purse.js';
 

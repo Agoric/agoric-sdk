@@ -3,7 +3,7 @@
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { mustMatch } from '@agoric/store';
-import { AmountMath } from './amountMath.js';
+import { AmountMath } from '@agoric/amounts';
 
 /**
  * @import {ERef} from '@endo/far';

@@ -8,7 +8,7 @@ import {
   elementsDisjointSubtract,
   coerceToElements,
   elementsCompare,
-} from '@agoric/store';
+} from '@endo/patterns';
 
 /** @import {MathHelpers, SetValue} from '../types.js' */
 

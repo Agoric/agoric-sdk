@@ -1,106 +1,16 @@
+import type { AssetKind, Amount, AmountValue } from '@agoric/amounts';
+import type { TypeTag } from '@agoric/internal/src/tagged.js';
 import type { LatestTopic } from '@agoric/notifier';
 import type { ERef } from '@endo/far';
 import type { RemotableObject } from '@endo/pass-style';
-import type { CopyBag, CopySet, Key, Pattern } from '@endo/patterns';
-import type { TypeTag } from '@agoric/internal/src/tagged.js';
-import type { AssetKind } from './amountMath.js';
+import type { CopySet, Key, Pattern } from '@endo/patterns';
 
-export type { AssetKind } from './amountMath.js';
-
-export type NatAmount = {
-  brand: Brand<'nat'>;
-  value: bigint;
-};
-export type SetAmount<K extends Key> = {
-  brand: Brand<'set'>;
-  value: K[];
-};
-export type CopySetAmount<K extends Key> = {
-  brand: Brand<'copySet'>;
-  value: CopySet<K>;
-};
-export type CopyBagAmount<K extends Key> = {
-  brand: Brand<'copyBag'>;
-  value: CopyBag<K>;
-};
-export type AnyAmount = {
-  brand: Brand<any>;
-  value: any;
-};
-/**
- * Amounts are descriptions of digital assets, answering the questions "how
- * much" and "of what kind". Amounts are values labeled with a brand.
- * AmountMath executes the logic of how amounts are changed when digital
- * assets are merged, separated, or otherwise manipulated. For example, a
- * deposit of 2 bucks into a purse that already has 3 bucks gives a new purse
- * balance of 5 bucks. An empty purse has 0 bucks. AmountMath relies heavily
- * on polymorphic MathHelpers, which manipulate the unbranded portion.
- */
-export type Amount<
-  K extends AssetKind = AssetKind,
-  M extends Key = Key,
-> = K extends 'nat'
-  ? NatAmount
-  : K extends 'set'
-    ? SetAmount<M>
-    : K extends 'copySet'
-      ? CopySetAmount<M>
-      : K extends 'copyBag'
-        ? CopyBagAmount<M>
-        : AnyAmount;
-/**
- * An `AmountValue` describes a set or quantity of assets that can be owned or
- * shared.
- *
- * A fungible `AmountValue` uses a non-negative bigint to represent a quantity
- * of that many assets.
- *
- * A non-fungible `AmountValue` uses an array or CopySet of `Key`s to represent
- * a set of whatever asset each key represents. A `Key` is a passable value
- * that can be used as an element in a set (SetStore or CopySet) or as the key
- * in a map (MapStore or CopyMap).
- *
- * `SetValue` is for the deprecated set representation, using an array directly
- * to represent the array of its elements. `CopySet` is the proper
- * representation using a CopySet.
- *
- * A semi-fungible `CopyBag` is represented as a `CopyBag` of `Key` objects.
- * "Bag" is synonymous with MultiSet, where an element of a bag can be present
- * once or more times, i.e., some positive bigint number of times,
- * representing that quantity of the asset represented by that key.
- */
-export type AmountValue =
-  | NatValue
-  | SetValue
-  | CopySet
-  | import('@endo/patterns').CopyBag;
-/**
- * See doc-comment
- *   for `AmountValue`.
- */
-export type AssetValueForKind<
-  K extends AssetKind,
-  M extends Key = Key,
-> = K extends 'nat'
-  ? NatValue
-  : K extends 'set'
-    ? SetValue<M>
-    : K extends 'copySet'
-      ? CopySet<M>
-      : K extends 'copyBag'
-        ? CopyBag<M>
-        : never;
-export type AssetKindForValue<V extends AmountValue> = V extends NatValue
-  ? 'nat'
-  : V extends SetValue
-    ? 'set'
-    : V extends CopySet
-      ? 'copySet'
-      : V extends import('@endo/patterns').CopyBag
-        ? 'copyBag'
-        : never;
-
-export type Ratio = { numerator: Amount<'nat'>; denominator: Amount<'nat'> };
+export type {
+  Amount,
+  AssetKind,
+  AssetValueForKind,
+  NatAmount,
+} from '@agoric/amounts';
 
 /** @deprecated */
 export type DisplayInfo<K extends AssetKind = AssetKind> = {

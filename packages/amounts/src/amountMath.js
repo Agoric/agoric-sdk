@@ -1,7 +1,7 @@
 import { q, Fail } from '@endo/errors';
 import { passStyleOf, assertRemotable, assertRecord } from '@endo/marshal';
 
-import { M, matches } from '@agoric/store';
+import { M, matches } from '@endo/patterns';
 import { natMathHelpers } from './mathHelpers/natMathHelpers.js';
 import { setMathHelpers } from './mathHelpers/setMathHelpers.js';
 import { copySetMathHelpers } from './mathHelpers/copySetMathHelpers.js';
@@ -254,16 +254,18 @@ export const AmountMath = {
    * Return the amount representing an empty amount. This is the identity
    * element for MathHelpers.add and MatHelpers.subtract.
    *
+   * @template {AssetKind} [K='nat']
    * @type {{
    *   (brand: Brand): Amount<'nat'>;
    *   <K extends AssetKind>(brand: Brand<K>, assetKind: K): Amount<K>;
    * }}
+   * @param {Brand} brand
+   * @param {K} assetKind
    */
   makeEmpty: (brand, assetKind = /** @type {const} */ ('nat')) => {
     assertRemotable(brand, 'brand');
     assertAssetKind(assetKind);
     const value = helpers[assetKind].doMakeEmpty();
-    // @ts-expect-error XXX narrowing from function overload
     return harden({ brand, value });
   },
   /**

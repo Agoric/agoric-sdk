@@ -1,6 +1,6 @@
-import { AmountMath } from './amountMath.js';
+import { AmountMath } from '@agoric/amounts';
 
-/** @import {Amount, AssetKind} from './types.js' */
+/** @import {Amount, AssetKind} from '@agoric/amounts'; */
 
 /**
  * @template {AssetKind} [K=AssetKind]

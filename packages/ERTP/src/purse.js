@@ -1,6 +1,6 @@
 import { Fail } from '@endo/errors';
 import { M, makeCopySet } from '@agoric/store';
-import { AmountMath } from './amountMath.js';
+import { AmountMath } from '@agoric/amounts';
 import { makeTransientNotifierKit } from './transientNotifier.js';
 import { makeAmountStore } from './amountStore.js';
 

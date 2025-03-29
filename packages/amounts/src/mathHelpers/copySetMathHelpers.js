@@ -9,7 +9,7 @@ import {
   setIsSuperset,
   setDisjointUnion,
   setDisjointSubtract,
-} from '@agoric/store';
+} from '@endo/patterns';
 
 /**
  * @import {MathHelpers} from '../types.js'

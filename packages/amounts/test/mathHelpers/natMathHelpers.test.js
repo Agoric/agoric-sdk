@@ -1,8 +1,8 @@
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import { M } from '@agoric/store';
+import test from 'ava';
+import { M } from '@endo/patterns';
 
 import { Far } from '@endo/marshal';
-import { AmountMath as m, AssetKind } from '../../../src/index.js';
+import { AmountMath as m, AssetKind } from '../../src/index.js';
 import { mockNatBrand as mockBrand } from './mockBrand.js';
 
 // The "unit tests" for MathHelpers actually make the calls through

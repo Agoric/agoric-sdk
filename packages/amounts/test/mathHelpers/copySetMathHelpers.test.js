@@ -1,8 +1,8 @@
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import { getCopySetKeys, makeCopySet } from '@agoric/store';
+import test from 'ava';
+import { getCopySetKeys, makeCopySet } from '@endo/patterns';
 
 import { Far } from '@endo/far';
-import { AmountMath as m, AssetKind } from '../../../src/index.js';
+import { AmountMath as m, AssetKind } from '../../src/index.js';
 import { mockCopySetBrand as mockBrand } from './mockBrand.js';
 
 /** @import {CopySet} from '@endo/patterns' */

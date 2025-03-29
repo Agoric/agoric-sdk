@@ -9,7 +9,7 @@ import {
   bagIsSuperbag,
   bagUnion,
   bagDisjointSubtract,
-} from '@agoric/store';
+} from '@endo/patterns';
 
 /** @import {MathHelpers} from '../types.js' */
 
