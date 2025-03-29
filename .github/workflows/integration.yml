@@ -280,7 +280,7 @@ jobs:
           # and since we can't build core eval submissions from the SDK using a newer endo,
           # simply ignore any endo branch integration (this means we don't have full coverage)
           ignore-endo-branch: 'true'
-          node-version: '18.x'
+          node-version: 'node-old'
           path: ./agoric-sdk
           # Forces xsnap to initialize all memory to random data, which increases
           # the chances the content of snapshots may deviate between validators
