@@ -218,6 +218,6 @@ test('Attempt to withdraw more than available balance', async t => {
   );
   t.is(
     offerResult.status.error,
-    'Error: One or more withdrawals failed ["[Error: cannot grab 200uist coins: 0uist is smaller than 200uist: insufficient funds]"]',
+    'Error: One or more withdrawals failed ["[Error: cannot grab 200uist coins: spendable balance  is smaller than 200uist: insufficient funds]"]',
   );
 });

@@ -4,6 +4,10 @@ import {
   type MemberRequestSDKType,
   VoteOption,
   ProposalExecutorResult,
+  ThresholdDecisionPolicy,
+  type ThresholdDecisionPolicySDKType,
+  PercentageDecisionPolicy,
+  type PercentageDecisionPolicySDKType,
   voteOptionFromJSON,
   voteOptionToJSON,
   proposalExecutorResultFromJSON,
@@ -180,7 +184,9 @@ export interface MsgCreateGroupPolicy {
   /** metadata is any arbitrary metadata attached to the group policy. */
   metadata: string;
   /** decision_policy specifies the group policy's decision policy. */
-  decisionPolicy?: Any | undefined;
+  decisionPolicy?:
+    | (ThresholdDecisionPolicy & PercentageDecisionPolicy & Any)
+    | undefined;
 }
 export interface MsgCreateGroupPolicyProtoMsg {
   typeUrl: '/cosmos.group.v1.MsgCreateGroupPolicy';
@@ -191,7 +197,11 @@ export interface MsgCreateGroupPolicySDKType {
   admin: string;
   group_id: bigint;
   metadata: string;
-  decision_policy?: AnySDKType | undefined;
+  decision_policy?:
+    | ThresholdDecisionPolicySDKType
+    | PercentageDecisionPolicySDKType
+    | AnySDKType
+    | undefined;
 }
 /** MsgCreateGroupPolicyResponse is the Msg/CreateGroupPolicy response type. */
 export interface MsgCreateGroupPolicyResponse {
@@ -225,6 +235,14 @@ export interface MsgUpdateGroupPolicyAdminSDKType {
   group_policy_address: string;
   new_admin: string;
 }
+/** MsgUpdateGroupPolicyAdminResponse is the Msg/UpdateGroupPolicyAdmin response type. */
+export interface MsgUpdateGroupPolicyAdminResponse {}
+export interface MsgUpdateGroupPolicyAdminResponseProtoMsg {
+  typeUrl: '/cosmos.group.v1.MsgUpdateGroupPolicyAdminResponse';
+  value: Uint8Array;
+}
+/** MsgUpdateGroupPolicyAdminResponse is the Msg/UpdateGroupPolicyAdmin response type. */
+export interface MsgUpdateGroupPolicyAdminResponseSDKType {}
 /** MsgCreateGroupWithPolicy is the Msg/CreateGroupWithPolicy request type. */
 export interface MsgCreateGroupWithPolicy {
   /** admin is the account address of the group and group policy admin. */
@@ -241,7 +259,9 @@ export interface MsgCreateGroupWithPolicy {
    */
   groupPolicyAsAdmin: boolean;
   /** decision_policy specifies the group policy's decision policy. */
-  decisionPolicy?: Any | undefined;
+  decisionPolicy?:
+    | (ThresholdDecisionPolicy & PercentageDecisionPolicy & Any)
+    | undefined;
 }
 export interface MsgCreateGroupWithPolicyProtoMsg {
   typeUrl: '/cosmos.group.v1.MsgCreateGroupWithPolicy';
@@ -254,7 +274,11 @@ export interface MsgCreateGroupWithPolicySDKType {
   group_metadata: string;
   group_policy_metadata: string;
   group_policy_as_admin: boolean;
-  decision_policy?: AnySDKType | undefined;
+  decision_policy?:
+    | ThresholdDecisionPolicySDKType
+    | PercentageDecisionPolicySDKType
+    | AnySDKType
+    | undefined;
 }
 /** MsgCreateGroupWithPolicyResponse is the Msg/CreateGroupWithPolicy response type. */
 export interface MsgCreateGroupWithPolicyResponse {
@@ -272,14 +296,6 @@ export interface MsgCreateGroupWithPolicyResponseSDKType {
   group_id: bigint;
   group_policy_address: string;
 }
-/** MsgUpdateGroupPolicyAdminResponse is the Msg/UpdateGroupPolicyAdmin response type. */
-export interface MsgUpdateGroupPolicyAdminResponse {}
-export interface MsgUpdateGroupPolicyAdminResponseProtoMsg {
-  typeUrl: '/cosmos.group.v1.MsgUpdateGroupPolicyAdminResponse';
-  value: Uint8Array;
-}
-/** MsgUpdateGroupPolicyAdminResponse is the Msg/UpdateGroupPolicyAdmin response type. */
-export interface MsgUpdateGroupPolicyAdminResponseSDKType {}
 /** MsgUpdateGroupPolicyDecisionPolicy is the Msg/UpdateGroupPolicyDecisionPolicy request type. */
 export interface MsgUpdateGroupPolicyDecisionPolicy {
   /** admin is the account address of the group admin. */
@@ -287,7 +303,9 @@ export interface MsgUpdateGroupPolicyDecisionPolicy {
   /** group_policy_address is the account address of group policy. */
   groupPolicyAddress: string;
   /** decision_policy is the updated group policy's decision policy. */
-  decisionPolicy?: Any | undefined;
+  decisionPolicy?:
+    | (ThresholdDecisionPolicy & PercentageDecisionPolicy & Any)
+    | undefined;
 }
 export interface MsgUpdateGroupPolicyDecisionPolicyProtoMsg {
   typeUrl: '/cosmos.group.v1.MsgUpdateGroupPolicyDecisionPolicy';
@@ -297,7 +315,11 @@ export interface MsgUpdateGroupPolicyDecisionPolicyProtoMsg {
 export interface MsgUpdateGroupPolicyDecisionPolicySDKType {
   admin: string;
   group_policy_address: string;
-  decision_policy?: AnySDKType | undefined;
+  decision_policy?:
+    | ThresholdDecisionPolicySDKType
+    | PercentageDecisionPolicySDKType
+    | AnySDKType
+    | undefined;
 }
 /** MsgUpdateGroupPolicyDecisionPolicyResponse is the Msg/UpdateGroupPolicyDecisionPolicy response type. */
 export interface MsgUpdateGroupPolicyDecisionPolicyResponse {}
@@ -313,7 +335,7 @@ export interface MsgUpdateGroupPolicyMetadata {
   admin: string;
   /** group_policy_address is the account address of group policy. */
   groupPolicyAddress: string;
-  /** metadata is the updated group policy metadata. */
+  /** metadata is the group policy metadata to be updated. */
   metadata: string;
 }
 export interface MsgUpdateGroupPolicyMetadataProtoMsg {
@@ -343,7 +365,7 @@ export interface MsgSubmitProposal {
    * Proposers signatures will be counted as yes votes.
    */
   proposers: string[];
-  /** metadata is any arbitrary metadata to attached to the proposal. */
+  /** metadata is any arbitrary metadata attached to the proposal. */
   metadata: string;
   /** messages is a list of `sdk.Msg`s that will be executed if the proposal passes. */
   messages: Any[];
@@ -353,6 +375,18 @@ export interface MsgSubmitProposal {
    * If so, proposers signatures are considered as Yes votes.
    */
   exec: Exec;
+  /**
+   * title is the title of the proposal.
+   *
+   * Since: cosmos-sdk 0.47
+   */
+  title: string;
+  /**
+   * summary is the summary of the proposal.
+   *
+   * Since: cosmos-sdk 0.47
+   */
+  summary: string;
 }
 export interface MsgSubmitProposalProtoMsg {
   typeUrl: '/cosmos.group.v1.MsgSubmitProposal';
@@ -365,6 +399,8 @@ export interface MsgSubmitProposalSDKType {
   metadata: string;
   messages: AnySDKType[];
   exec: Exec;
+  title: string;
+  summary: string;
 }
 /** MsgSubmitProposalResponse is the Msg/SubmitProposal response type. */
 export interface MsgSubmitProposalResponse {
@@ -411,7 +447,7 @@ export interface MsgVote {
   voter: string;
   /** option is the voter's choice on the proposal. */
   option: VoteOption;
-  /** metadata is any arbitrary metadata to attached to the vote. */
+  /** metadata is any arbitrary metadata attached to the vote. */
   metadata: string;
   /**
    * exec defines whether the proposal should be executed
@@ -1407,6 +1443,67 @@ export const MsgUpdateGroupPolicyAdmin = {
     };
   },
 };
+function createBaseMsgUpdateGroupPolicyAdminResponse(): MsgUpdateGroupPolicyAdminResponse {
+  return {};
+}
+export const MsgUpdateGroupPolicyAdminResponse = {
+  typeUrl: '/cosmos.group.v1.MsgUpdateGroupPolicyAdminResponse',
+  encode(
+    _: MsgUpdateGroupPolicyAdminResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): MsgUpdateGroupPolicyAdminResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMsgUpdateGroupPolicyAdminResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(_: any): MsgUpdateGroupPolicyAdminResponse {
+    return {};
+  },
+  toJSON(
+    _: MsgUpdateGroupPolicyAdminResponse,
+  ): JsonSafe<MsgUpdateGroupPolicyAdminResponse> {
+    const obj: any = {};
+    return obj;
+  },
+  fromPartial(
+    _: Partial<MsgUpdateGroupPolicyAdminResponse>,
+  ): MsgUpdateGroupPolicyAdminResponse {
+    const message = createBaseMsgUpdateGroupPolicyAdminResponse();
+    return message;
+  },
+  fromProtoMsg(
+    message: MsgUpdateGroupPolicyAdminResponseProtoMsg,
+  ): MsgUpdateGroupPolicyAdminResponse {
+    return MsgUpdateGroupPolicyAdminResponse.decode(message.value);
+  },
+  toProto(message: MsgUpdateGroupPolicyAdminResponse): Uint8Array {
+    return MsgUpdateGroupPolicyAdminResponse.encode(message).finish();
+  },
+  toProtoMsg(
+    message: MsgUpdateGroupPolicyAdminResponse,
+  ): MsgUpdateGroupPolicyAdminResponseProtoMsg {
+    return {
+      typeUrl: '/cosmos.group.v1.MsgUpdateGroupPolicyAdminResponse',
+      value: MsgUpdateGroupPolicyAdminResponse.encode(message).finish(),
+    };
+  },
+};
 function createBaseMsgCreateGroupWithPolicy(): MsgCreateGroupWithPolicy {
   return {
     admin: '',
@@ -1649,67 +1746,6 @@ export const MsgCreateGroupWithPolicyResponse = {
     return {
       typeUrl: '/cosmos.group.v1.MsgCreateGroupWithPolicyResponse',
       value: MsgCreateGroupWithPolicyResponse.encode(message).finish(),
-    };
-  },
-};
-function createBaseMsgUpdateGroupPolicyAdminResponse(): MsgUpdateGroupPolicyAdminResponse {
-  return {};
-}
-export const MsgUpdateGroupPolicyAdminResponse = {
-  typeUrl: '/cosmos.group.v1.MsgUpdateGroupPolicyAdminResponse',
-  encode(
-    _: MsgUpdateGroupPolicyAdminResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    return writer;
-  },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgUpdateGroupPolicyAdminResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseMsgUpdateGroupPolicyAdminResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-  fromJSON(_: any): MsgUpdateGroupPolicyAdminResponse {
-    return {};
-  },
-  toJSON(
-    _: MsgUpdateGroupPolicyAdminResponse,
-  ): JsonSafe<MsgUpdateGroupPolicyAdminResponse> {
-    const obj: any = {};
-    return obj;
-  },
-  fromPartial(
-    _: Partial<MsgUpdateGroupPolicyAdminResponse>,
-  ): MsgUpdateGroupPolicyAdminResponse {
-    const message = createBaseMsgUpdateGroupPolicyAdminResponse();
-    return message;
-  },
-  fromProtoMsg(
-    message: MsgUpdateGroupPolicyAdminResponseProtoMsg,
-  ): MsgUpdateGroupPolicyAdminResponse {
-    return MsgUpdateGroupPolicyAdminResponse.decode(message.value);
-  },
-  toProto(message: MsgUpdateGroupPolicyAdminResponse): Uint8Array {
-    return MsgUpdateGroupPolicyAdminResponse.encode(message).finish();
-  },
-  toProtoMsg(
-    message: MsgUpdateGroupPolicyAdminResponse,
-  ): MsgUpdateGroupPolicyAdminResponseProtoMsg {
-    return {
-      typeUrl: '/cosmos.group.v1.MsgUpdateGroupPolicyAdminResponse',
-      value: MsgUpdateGroupPolicyAdminResponse.encode(message).finish(),
     };
   },
 };
@@ -2047,6 +2083,8 @@ function createBaseMsgSubmitProposal(): MsgSubmitProposal {
     metadata: '',
     messages: [],
     exec: 0,
+    title: '',
+    summary: '',
   };
 }
 export const MsgSubmitProposal = {
@@ -2069,6 +2107,12 @@ export const MsgSubmitProposal = {
     }
     if (message.exec !== 0) {
       writer.uint32(40).int32(message.exec);
+    }
+    if (message.title !== '') {
+      writer.uint32(50).string(message.title);
+    }
+    if (message.summary !== '') {
+      writer.uint32(58).string(message.summary);
     }
     return writer;
   },
@@ -2095,6 +2139,12 @@ export const MsgSubmitProposal = {
         case 5:
           message.exec = reader.int32() as any;
           break;
+        case 6:
+          message.title = reader.string();
+          break;
+        case 7:
+          message.summary = reader.string();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -2115,6 +2165,8 @@ export const MsgSubmitProposal = {
         ? object.messages.map((e: any) => Any.fromJSON(e))
         : [],
       exec: isSet(object.exec) ? execFromJSON(object.exec) : -1,
+      title: isSet(object.title) ? String(object.title) : '',
+      summary: isSet(object.summary) ? String(object.summary) : '',
     };
   },
   toJSON(message: MsgSubmitProposal): JsonSafe<MsgSubmitProposal> {
@@ -2133,6 +2185,8 @@ export const MsgSubmitProposal = {
       obj.messages = [];
     }
     message.exec !== undefined && (obj.exec = execToJSON(message.exec));
+    message.title !== undefined && (obj.title = message.title);
+    message.summary !== undefined && (obj.summary = message.summary);
     return obj;
   },
   fromPartial(object: Partial<MsgSubmitProposal>): MsgSubmitProposal {
@@ -2142,6 +2196,8 @@ export const MsgSubmitProposal = {
     message.metadata = object.metadata ?? '';
     message.messages = object.messages?.map(e => Any.fromPartial(e)) || [];
     message.exec = object.exec ?? 0;
+    message.title = object.title ?? '';
+    message.summary = object.summary ?? '';
     return message;
   },
   fromProtoMsg(message: MsgSubmitProposalProtoMsg): MsgSubmitProposal {
@@ -2813,11 +2869,15 @@ export const MsgLeaveGroupResponse = {
 };
 export const Cosmos_groupv1DecisionPolicy_InterfaceDecoder = (
   input: BinaryReader | Uint8Array,
-): Any => {
+): ThresholdDecisionPolicy | PercentageDecisionPolicy | Any => {
   const reader =
     input instanceof BinaryReader ? input : new BinaryReader(input);
   const data = Any.decode(reader, reader.uint32());
   switch (data.typeUrl) {
+    case '/cosmos.group.v1.ThresholdDecisionPolicy':
+      return ThresholdDecisionPolicy.decode(data.value);
+    case '/cosmos.group.v1.PercentageDecisionPolicy':
+      return PercentageDecisionPolicy.decode(data.value);
     default:
       return data;
   }
