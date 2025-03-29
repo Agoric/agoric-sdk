@@ -1,10 +1,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
-import {
-  ceilMultiplyBy,
-  makeRatio,
-} from '@agoric/zoe/src/contractSupport/ratio.js';
+import { ceilMultiplyBy, makeRatio } from '@agoric/ertp/src/ratio.js';
 import { Far } from '@endo/marshal';
 import { makeIssuerRecord } from '@agoric/zoe/src/issuerRecord.js';
 import {

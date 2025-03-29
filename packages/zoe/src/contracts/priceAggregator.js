@@ -13,22 +13,20 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
 import {
-  calculateMedian,
-  makeOnewayPriceAuthorityKit,
-  makePriceQuoteIssuer,
-} from '../contractSupport/index.js';
-import {
   addRatios,
   assertParsableNumber,
+  calculateMedian,
   ceilDivideBy,
   floorMultiplyBy,
+  makeOnewayPriceAuthorityKit,
+  makePriceQuoteIssuer,
   makeRatio,
   makeRatioFromAmounts,
   multiplyRatios,
   parseRatio,
   ratioGTE,
   ratiosSame,
-} from '../contractSupport/ratio.js';
+} from '../contractSupport/index.js';
 
 /**
  * @import {LegacyMap} from '@agoric/store'

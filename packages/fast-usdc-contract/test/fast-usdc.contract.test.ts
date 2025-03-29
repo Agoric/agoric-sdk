@@ -22,11 +22,7 @@ import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { heapVowE as VE } from '@agoric/vow/vat.js';
-import {
-  divideBy,
-  multiplyBy,
-  parseRatio,
-} from '@agoric/zoe/src/contractSupport/ratio.js';
+import { divideBy, multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import type {
   Installation,
   Instance,
