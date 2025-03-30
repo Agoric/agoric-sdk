@@ -182,7 +182,7 @@ export async function makeSwingsetController(
     };
 
     // rearrange the fields a bit to make it more legible to humans
-    slogSender({ type, ...props, ...timings });
+    slogSender(harden({ type, ...props, ...timings }));
   }
   /**
    * Capture an extended process in the slog, writing an entry with `type`
