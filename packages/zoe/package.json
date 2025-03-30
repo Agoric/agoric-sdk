@@ -5,7 +5,7 @@
   "type": "module",
   "main": "./src/zoeService/zoe.js",
   "engines": {
-    "node": "^18.12 || ^20.9"
+    "node": "^18.12 || ^20.9 || ^22.14"
   },
   "scripts": {
     "build": "yarn build:bundles",

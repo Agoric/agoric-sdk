@@ -22,7 +22,7 @@
     "@endo/errors": "^1.2.9",
     "@endo/init": "^1.1.8",
     "@endo/marshal": "^1.6.3",
-    "better-sqlite3": "^9.1.1",
+    "better-sqlite3": "^10.0.0",
     "chalk": "^5.2.0",
     "deterministic-json": "^1.0.5",
     "inquirer": "^8.2.2",
