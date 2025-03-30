@@ -6,7 +6,7 @@
     "build": "exit 0",
     "lint": "yarn tsc && yarn eslint .",
     "test": "echo 'Run specific test suites:\nyarn test:main (needs `make start`)\nyarn test:fast-usdc (needs `make start FILE=config.fusdc.yaml`)'",
-    "test:main": "ava --config ava.main.config.js",
+    "test:main": "ava --config ava.rest.config.js",
     "test:fast-usdc": "ava --config ava.fusdc.config.js"
   },
   "packageManager": "yarn@4.8.1",
