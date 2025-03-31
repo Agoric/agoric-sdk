@@ -31,8 +31,18 @@ const bufferTests = test.macro(
       circularBufferSize: BUFFER_SIZE,
       circularBufferFilename: tmpFile,
     });
-    const slogSender = makeSlogSenderFromBuffer({ fileHandle, writeCircBuf });
-    t.teardown(slogSender.shutdown);
+    const realSlogSender = makeSlogSenderFromBuffer({
+      fileHandle,
+      writeCircBuf,
+    });
+    t.teardown(realSlogSender.shutdown);
+    // To verify lack of attempted mutation by the consumer, send only hardened
+    // entries.
+    /** @type {typeof realSlogSender} */
+    const slogSender = Object.assign(
+      (obj, serialized) => realSlogSender(harden(obj), serialized),
+      realSlogSender,
+    );
     slogSender({ type: 'start' });
     await slogSender.forceFlush();
     t.is(fs.readFileSync(tmpFile, { encoding: 'utf8' }).length, BUFFER_SIZE);
