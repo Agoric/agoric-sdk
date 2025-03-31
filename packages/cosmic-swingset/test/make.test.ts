@@ -109,12 +109,8 @@ interface Verifier {
   stop: (t: ExecutionContext<TestContext>) => Promise<void>;
 }
 
-const walletProvisioning: Macro<
-  [title: string, verifier?: Verifier],
-  TestContext
-> = test.macro({
-  title: (_provided, title, _verifier) => title,
-  async exec(t, _title, verifier) {
+const walletProvisioning: Macro<[verifier?: Verifier], TestContext> =
+  test.macro(async (t, verifier) => {
     const retryCountMax = 5;
     // Resume the chain...
     const { scenario2, walletTool } = t.context;
@@ -221,10 +217,9 @@ const walletProvisioning: Macro<
       `wallet is provisioned within ${retryCount} retries out of ${retryCountMax}`,
     );
     await verifier?.stop(t);
-  },
-});
+  });
 
-test.serial(walletProvisioning, 'wallet provisioning');
+test.serial('wallet provisioning', walletProvisioning);
 
 /**
  * getMetrics reads data from the Prometheus URL and returns the selected
@@ -266,7 +261,7 @@ const getMetrics = async (
     'store_size_increase{storeKey="vstorage"}',
   ];
   let startMetrics: Record<string, number> | undefined;
-  test.serial(walletProvisioning, 'vstorage metrics', {
+  test.serial('vstorage metrics', walletProvisioning, {
     start: async t => {
       // Assert that all values in an initial metrics snapshot are positive.
       startMetrics = await getMetrics(prometheusUrl, testMetricNames);
