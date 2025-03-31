@@ -28,6 +28,7 @@ import {
   CosmosChainAddressShape,
 } from '@agoric/orchestration';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
+import type { NobleMethods } from '@agoric/orchestration/src/cosmos-api.js';
 import { pickFacet } from '@agoric/vat-data';
 import type { VowTools } from '@agoric/vow';
 import { VowShape } from '@agoric/vow';
@@ -36,6 +37,8 @@ import type { Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
+import { parseAccountIdArg } from '@agoric/orchestration/src/utils/address.js';
+import { chainInfoCaipId } from '@agoric/orchestration/src/utils/chain-info.js';
 import type { LiquidityPoolKit } from './liquidity-pool.js';
 import type { StatusManager } from './status-manager.js';
 import type { SettlerKit } from './settler.js';
@@ -165,7 +168,7 @@ export const prepareAdvancerKit = (
       settlementAddress: CosmosChainAddress;
       intermediateRecipientAddress?: CosmosChainAddress;
       intermediateRecipientAccount?: HostInterface<
-        OrchestrationAccount<{ chainId: 'agoric-any' }>
+        OrchestrationAccount<{ chainId: 'agoric-any' }> & NobleMethods
       >;
     }) =>
       harden({
@@ -254,9 +257,10 @@ export const prepareAdvancerKit = (
         },
         setIntermediateRecipient(
           intermediateRecipientAccount: HostInterface<
-            OrchestrationAccount<{
-              chainId: 'agoric-any';
-            }>
+            NobleMethods &
+              OrchestrationAccount<{
+                chainId: 'agoric-any';
+              }>
           >,
           intermediateRecipientAddress: CosmosChainAddress,
         ) {
@@ -292,9 +296,9 @@ export const prepareAdvancerKit = (
             });
 
             /** @type {AccountId} */
-            const accountId = chainHub.resolveAccountId(destination);
-            const chainId = getReference(accountId);
-            const info = await when(chainHub.getChainInfoByChainId(chainId));
+            const accountId = parseAccountIdArg(destination);
+            const chainId = accountId.reference;
+            const info = await when(chainHub.getChainInfo(chainId));
 
             let transferOrSendV;
             if (chainId === settlementAddress.chainId) {
@@ -304,7 +308,7 @@ export const prepareAdvancerKit = (
               const cosmosAddress = makeCosmosAccountId(
                 chainId,
                 'bech32',
-                getAddress(accountId),
+                accountId.accountAddress,
               );
               transferOrSendV = E(poolAccount).send(cosmosAddress, amount);
             } else if (info.namespace === 'cosmos') {
@@ -325,14 +329,8 @@ export const prepareAdvancerKit = (
               // assets are on noble, transfer to dest.
 
               const encoding = 'ethereum'; // XXX could be solana?
-              /** @type {AccountIdArg} */
-              const mintRecipient = makeCosmosAccountId(
-                info.chainId,
-                encoding,
-                getAddress(accountId),
-              );
               transferOrSendV = intermediateRecipientAccount.depositForBurn(
-                mintRecipient,
+                `${chainInfoCaipId(info)}:${accountId.accountAddress}`,
                 amount,
               );
             } else {
@@ -390,7 +388,16 @@ export const prepareAdvancerKit = (
           const { notifier } = this.state;
           const { advanceAmount, destination, ...detail } = ctx;
           log('Advance succeeded', { advanceAmount, destination });
-          notifier.notifyAdvancingResult({ destination, ...detail }, true);
+          const caip10Dest = parseAccountIdArg(destination);
+          const cosmosAddress = makeCosmosAccountId(
+            caip10Dest.reference,
+            'bech32',
+            caip10Dest.accountAddress,
+          );
+          notifier.notifyAdvancingResult(
+            { destination: cosmosAddress, ...detail },
+            true,
+          );
         },
         onRejected(error: Error, ctx: AdvancerVowCtx) {
           const { notifier, poolAccount } = this.state;
