@@ -1,12 +1,7 @@
-import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import type { CosmosChainAddress } from '@agoric/orchestration';
 import type { VTransferIBCEvent } from '@agoric/vats';
-import type {
-  CctpTxEvidence,
-  EvmAddress,
-} from '@agoric/fast-usdc/src/types.js';
 import {
   MockCctpTxEvidences,
   type MockScenario,
@@ -28,50 +23,60 @@ export const MockVTransferEvents: Record<
   MockScenario,
   (receiverAddress?: string) => VTransferIBCEvent
 > = {
-  AGORIC_PLUS_OSMO: (recieverAddress?: string) =>
+  AGORIC_PLUS_OSMO: (receiverAddress?: string) =>
     buildVTransferEvent({
       ...nobleDefaultVTransferParams,
       amount: MockCctpTxEvidences.AGORIC_PLUS_OSMO().tx.amount,
       sender: MockCctpTxEvidences.AGORIC_PLUS_OSMO().tx.forwardingAddress,
       receiver:
-        recieverAddress ||
+        receiverAddress ||
         MockCctpTxEvidences.AGORIC_PLUS_OSMO().aux.recipientAddress,
     }),
-  AGORIC_PLUS_DYDX: (recieverAddress?: string) =>
+  AGORIC_PLUS_DYDX: (receiverAddress?: string) =>
     buildVTransferEvent({
       ...nobleDefaultVTransferParams,
       amount: MockCctpTxEvidences.AGORIC_PLUS_DYDX().tx.amount,
       sender: MockCctpTxEvidences.AGORIC_PLUS_DYDX().tx.forwardingAddress,
       receiver:
-        recieverAddress ||
+        receiverAddress ||
         MockCctpTxEvidences.AGORIC_PLUS_DYDX().aux.recipientAddress,
     }),
-  AGORIC_PLUS_AGORIC: (recieverAddress?: string) =>
+  AGORIC_PLUS_AGORIC: (receiverAddress?: string) =>
     buildVTransferEvent({
       ...nobleDefaultVTransferParams,
       amount: MockCctpTxEvidences.AGORIC_PLUS_AGORIC().tx.amount,
       sender: MockCctpTxEvidences.AGORIC_PLUS_AGORIC().tx.forwardingAddress,
       receiver:
-        recieverAddress ||
+        receiverAddress ||
         MockCctpTxEvidences.AGORIC_PLUS_AGORIC().aux.recipientAddress,
     }),
-  AGORIC_NO_PARAMS: (recieverAddress?: string) =>
+  AGORIC_NO_PARAMS: (receiverAddress?: string) =>
     buildVTransferEvent({
       ...nobleDefaultVTransferParams,
       amount: MockCctpTxEvidences.AGORIC_NO_PARAMS().tx.amount,
       sender: MockCctpTxEvidences.AGORIC_NO_PARAMS().tx.forwardingAddress,
       receiver:
-        recieverAddress ||
+        receiverAddress ||
         MockCctpTxEvidences.AGORIC_NO_PARAMS().aux.recipientAddress,
     }),
-  AGORIC_UNKNOWN_EUD: (recieverAddress?: string) =>
+  AGORIC_UNKNOWN_EUD: (receiverAddress?: string) =>
     buildVTransferEvent({
       ...nobleDefaultVTransferParams,
       amount: MockCctpTxEvidences.AGORIC_UNKNOWN_EUD().tx.amount,
       sender: MockCctpTxEvidences.AGORIC_UNKNOWN_EUD().tx.forwardingAddress,
       receiver:
-        recieverAddress ||
+        receiverAddress ||
         MockCctpTxEvidences.AGORIC_UNKNOWN_EUD().aux.recipientAddress,
+    }),
+
+  AGORIC_PLUS_ETHEREUM: (receiverAddress?: string) =>
+    buildVTransferEvent({
+      ...nobleDefaultVTransferParams,
+      amount: MockCctpTxEvidences.AGORIC_PLUS_ETHEREUM().tx.amount,
+      sender: MockCctpTxEvidences.AGORIC_PLUS_ETHEREUM().tx.forwardingAddress,
+      receiver:
+        receiverAddress ||
+        MockCctpTxEvidences.AGORIC_PLUS_ETHEREUM().aux.recipientAddress,
     }),
 };
 
