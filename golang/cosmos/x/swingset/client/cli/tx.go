@@ -158,7 +158,7 @@ https://github.com/endojs/endo/tree/master/packages/bundle-source`,
 	return cmd
 }
 
-// GetCmdProvision is the CLI command for sending a Provision transaction
+// GetCmdProvisionOne is the CLI command for sending a Provision transaction
 func GetCmdProvisionOne() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "provision-one <nickname> <address> [<power-flag>[,...]]",
