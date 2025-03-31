@@ -47,6 +47,7 @@ import type { ExecutionContext } from 'ava';
 import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
 import { objectMap } from '@endo/patterns';
 import type { ChainHubChainInfo } from '@agoric/fast-usdc/src/types.js';
+import { CosmosChainInfoShapeV1 } from '@agoric/fast-usdc/src/type-guards.js';
 import { makeTestFeeConfig } from './mocks.js';
 
 export {
@@ -214,6 +215,9 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     rootZone.subZone('chainHub'),
     agoricNames,
     vowTools,
+    {
+      chainInfoValueShape: CosmosChainInfoShapeV1,
+    },
   );
 
   const chainInfo = harden(() => {
