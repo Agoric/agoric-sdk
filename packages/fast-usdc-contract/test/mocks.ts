@@ -28,6 +28,8 @@ export const prepareMockOrchAccounts = (
   const poolAccountTransferVK = makeVowKit<undefined>();
   const settleAccountTransferVK = makeVowKit<undefined>();
   const settleAccountSendVK = makeVowKit<undefined>();
+  const intermediateAccountTransferVK = makeVowKit<undefined>();
+  const intermediateAccountDepositForBurnVK = makeVowKit<undefined>();
 
   const mockedPoolAccount = zone.exo('Mock Pool LocalOrchAccount', undefined, {
     transfer(destination: CosmosChainAddress, amount: DenomAmount) {
@@ -63,6 +65,21 @@ export const prepareMockOrchAccounts = (
   const settlementAccount = settlementAccountMock as unknown as HostInterface<
     OrchestrationAccount<{ chainId: 'agoric-any' }>
   >;
+  const intermediateCallLog = [] as any[];
+  const intermediateAccountMock = zone.exo('Mock Noble ICA', undefined, {
+    transfer(...args) {
+      intermediateCallLog.push(harden(['transfer', ...args]));
+      return intermediateAccountTransferVK.vow;
+    },
+    depositForBurn(...args) {
+      intermediateCallLog.push(harden(['depositForBurn', ...args]));
+      return intermediateAccountDepositForBurnVK.vow;
+    },
+  });
+  const intermediateAccount =
+    intermediateAccountMock as unknown as HostInterface<
+      OrchestrationAccount<{ chainId: 'noble-any' }>
+    >;
   return {
     mockPoolAccount: {
       account: poolAccount,
@@ -74,6 +91,12 @@ export const prepareMockOrchAccounts = (
       callLog: settlementCallLog,
       transferVResolver: settleAccountTransferVK.resolver,
       sendVResolver: settleAccountSendVK.resolver,
+    },
+    intermediate: {
+      account: intermediateAccount,
+      callLog: intermediateCallLog,
+      transferVResolver: intermediateAccountTransferVK.resolver,
+      depositForBurnVResolver: intermediateAccountDepositForBurnVK.resolver,
     },
   };
 };
