@@ -13,6 +13,7 @@ on:
 
 jobs:
   multichain-e2e:
+    name: Multichain E2E { inputs.test_command }
     runs-on: ubuntu-latest-16core
 
     steps:
@@ -63,12 +64,18 @@ jobs:
         run: corepack enable
         working-directory: ./agoric-sdk/multichain-testing
 
+      # Before multichain-testing deps because that project portals into SDK
+      # but only the SDK postinstall script will runs its package patching.
+      - name: Install SDK deps
+        run: yarn install
+
       - name: Install @agoric/multichain-testing deps
         run: yarn install
         working-directory: ./agoric-sdk/multichain-testing
 
       - name: Lint @agoric/multichain-testing
-        run: yarn lint
+        # include testing imports to check package patches
+        run: yarn lint && yarn ava test/imports.test.ts
         working-directory: ./agoric-sdk/multichain-testing
 
       - name: docker build (sdk)

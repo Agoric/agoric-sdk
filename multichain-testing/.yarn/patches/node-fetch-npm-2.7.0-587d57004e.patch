@@ -1,13 +1,8 @@
-diff --git a/node_modules/node-fetch/lib/index.js b/node_modules/node-fetch/lib/index.js
-index 087f2a0..6778549 100644
---- a/node_modules/node-fetch/lib/index.js
-+++ b/node_modules/node-fetch/lib/index.js
-@@ -1,3 +1,4 @@
-+// @ts-nocheck
- 'use strict';
- 
- Object.defineProperty(exports, '__esModule', { value: true });
-@@ -154,9 +155,23 @@ function FetchError(message, type, systemError) {
+diff --git a/lib/index.js b/lib/index.js
+index 567ff5da58e83683bec0ea9e86221041ddf9435f..5b55cb449f29d78fb8b1c17f741e1b69fc3bb8ae 100644
+--- a/lib/index.js
++++ b/lib/index.js
+@@ -154,9 +154,23 @@ function FetchError(message, type, systemError) {
    Error.captureStackTrace(this, this.constructor);
  }
  
@@ -34,11 +29,10 @@ index 087f2a0..6778549 100644
  
  let convert;
  try {
-@@ -1400,10 +1415,7 @@ function AbortError(message) {
-   // hide custom error implementation details from end-users
+@@ -1397,9 +1411,7 @@ function AbortError(message) {
    Error.captureStackTrace(this, this.constructor);
  }
--
+ 
 -AbortError.prototype = Object.create(Error.prototype);
 -AbortError.prototype.constructor = AbortError;
 -AbortError.prototype.name = 'AbortError';
@@ -46,3 +40,15 @@ index 087f2a0..6778549 100644
  
  const URL$1 = Url.URL || whatwgUrl.URL;
  
+diff --git a/package.json b/package.json
+index e0be17689a436a7734b168e8d12f5e97e054f0a5..c5bc2eca89651852674461d87fdaec13bc9420f3 100644
+--- a/package.json
++++ b/package.json
+@@ -85,5 +85,6 @@
+                 "prerelease": true
+             }
+         ]
+-    }
++    },
++    "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+ }
