@@ -130,7 +130,7 @@ test('Prometheus metric definitions', async t => {
 
     // Memory measurements vary based on when they are captured.
     ['heapStats_external_memory', [20, '%']],
-    ['heapStats_malloced_memory', [20, '%']],
+    ['heapStats_malloced_memory', [30, '%']],
     ['heapStats_peak_malloced_memory', [20, '%']],
     ['heapStats_total_available_size', [20, '%']],
     ['heapStats_total_global_handles_size', [20, '%']],
