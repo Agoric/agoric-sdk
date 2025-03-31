@@ -527,7 +527,9 @@ export const makeChainHub = (
         counterpartyChainId,
         connectionInfo,
       );
-      connectionInfos.init(key, normalized);
+      if (!connectionInfos.has(key)) {
+        connectionInfos.init(key, normalized);
+      }
     },
     /**
      * Update connection info by completely replacing existing entry
