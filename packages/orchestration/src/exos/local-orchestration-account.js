@@ -266,7 +266,7 @@ export const prepareLocalOrchestrationAccountKit = (
           /**
            * @type {OfferHandler<
            *   Vow<void>,
-           *   { toAccount: CosmosChainAddress; amount: AmountArg }
+           *   { toAccount: AccountIdArg; amount: AmountArg }
            * >}
            */
           const offerHandler = (seat, { toAccount, amount }) => {
@@ -294,7 +294,7 @@ export const prepareLocalOrchestrationAccountKit = (
            *   Vow<void>,
            *   {
            *     amount: AmountArg;
-           *     destination: CosmosChainAddress;
+           *     destination: AccountIdArg;
            *     opts?: IBCMsgTransferOptions;
            *   }
            * >}
@@ -637,6 +637,12 @@ export const prepareLocalOrchestrationAccountKit = (
         send(toAccount, amount) {
           return asVow(() => {
             trace('send', toAccount, amount);
+            toAccount =
+              typeof toAccount === 'string'
+                ? chainHub.makeChainAddress(toAccount)
+                : toAccount;
+            toAccount.chainId === this.state.address.chainId ||
+              Fail`bank/send cannot send to a different chain ${q(toAccount.chainId)}`;
             const { helper } = this.facets;
             return watch(
               E(this.state.account).executeTx([

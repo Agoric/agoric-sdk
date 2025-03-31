@@ -72,7 +72,7 @@ import { accountIdTo32Bytes, parseAccountId } from '../utils/address.js';
 
 /**
  * @import {HostOf} from '@agoric/async-flow';
- * @import {AmountArg, IcaAccount, CosmosChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, StakingAccountQueries, NobleMethods, OrchestrationAccountCommon, CosmosRewardsResponse, IBCConnectionInfo, IBCMsgTransferOptions, ChainHub, CosmosDelegationResponse, CaipChainId} from '../types.js';
+ * @import {AmountArg, IcaAccount, CosmosChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, StakingAccountQueries, NobleMethods, OrchestrationAccountCommon, CosmosRewardsResponse, IBCConnectionInfo, IBCMsgTransferOptions, ChainHub, CosmosDelegationResponse, CaipChainId, AccountIdArg} from '../types.js';
  * @import {ContractMeta, Invitation, OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
@@ -676,7 +676,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           /**
            * @type {OfferHandler<
            *   Vow<void>,
-           *   { toAccount: CosmosChainAddress; amount: AmountArg }
+           *   { toAccount: AccountIdArg; amount: AmountArg }
            * >}
            */
           const offerHandler = (seat, { toAccount, amount }) => {
@@ -712,7 +712,7 @@ export const prepareCosmosOrchestrationAccountKit = (
            *   Vow<void>,
            *   {
            *     amount: AmountArg;
-           *     destination: CosmosChainAddress;
+           *     destination: AccountIdArg;
            *     opts?: IBCMsgTransferOptions;
            *   }
            * >}
@@ -875,8 +875,14 @@ export const prepareCosmosOrchestrationAccountKit = (
         send(toAccount, amount) {
           return asVow(() => {
             trace('send', toAccount, amount);
-            const { helper } = this.facets;
+            toAccount =
+              typeof toAccount === 'string'
+                ? chainHub.makeChainAddress(toAccount)
+                : toAccount;
             const { chainAddress } = this.state;
+            toAccount.chainId === chainAddress.chainId ||
+              Fail`bank/send cannot send to a different chain ${q(toAccount.chainId)}`;
+            const { helper } = this.facets;
             return watch(
               E(helper.owned()).executeEncodedTx([
                 Any.toJSON(
