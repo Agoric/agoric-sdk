@@ -257,6 +257,7 @@ __metadata:
     "@agoric/vow": "npm:^0.1.0"
     "@agoric/zoe": "npm:^0.26.2"
     "@agoric/zone": "npm:^0.2.2"
+    "@cosmjs/encoding": "npm:^0.32.4"
     "@endo/base64": "npm:^1.0.9"
     "@endo/errors": "npm:^1.2.9"
     "@endo/far": "npm:^1.1.10"

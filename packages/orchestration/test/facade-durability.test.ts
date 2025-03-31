@@ -250,6 +250,8 @@ test('asset / denom info', async t => {
 
   chainHub.registerChain('anotherChain', {
     ...mockChainInfo,
+    chainId: 'anotherChain-1',
+    reference: 'anotherChain-1',
     bech32Prefix: 'another',
   });
   chainHub.registerConnection('agoric-3', 'anotherChain', mockChainConnection);

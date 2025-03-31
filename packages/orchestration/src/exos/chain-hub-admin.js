@@ -1,4 +1,4 @@
-/* we expect promises to resolved promptly,  */
+/* we expect promises to resolve promptly,  */
 /* eslint-disable no-restricted-syntax */
 import { heapVowE } from '@agoric/vow/vat.js';
 import { M } from '@endo/patterns';
@@ -34,16 +34,14 @@ export const prepareChainHubAdmin = (zone, chainHub) => {
   const makeCreatorFacet = zone.exo(
     'ChainHub Admin',
     M.interface('ChainHub Admin', {
-      registerChain: M.callWhen(
-        M.string(),
-        ChainInfoShape,
-        ConnectionInfoShape,
-      ).returns(M.undefined()),
+      registerChain: M.callWhen(M.string(), ChainInfoShape)
+        .optional(ConnectionInfoShape)
+        .returns(M.undefined()),
       registerAsset: M.call(M.string(), DenomDetailShape).returns(M.promise()),
     }),
     {
       /**
-       * Register information for a chain
+       * Register information for a Cosmos chain
        *
        * @param {string} chainName - must not exist in chainHub
        * @param {ChainInfo} chainInfo
