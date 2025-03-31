@@ -65,6 +65,8 @@ chains:
       memory: 1Gi
   - id: noblelocal
     name: noble
+    # override v7.0 default https://github.com/hyperweb-io/starship/blob/6f18fc42238cfa79132d0cd26c0c7de085a9bacd/starship/charts/devnet/defaults.yaml#L750
+    image: ghcr.io/cosmology-tech/starship/noble:v8.0.3
     numValidators: 1
     genesis:
       app_state:
