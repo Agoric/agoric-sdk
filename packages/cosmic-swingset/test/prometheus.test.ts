@@ -1,8 +1,9 @@
-import test from 'ava';
+import type { TestFn } from 'ava';
+import anyTest from 'ava';
 
 import { q, Fail } from '@endo/errors';
 
-import { BridgeId, VBankAccount } from '@agoric/internal';
+import { BridgeId, VBankAccount, type TotalMap } from '@agoric/internal';
 import {
   HISTOGRAM_METRICS,
   BLOCK_HISTOGRAM_METRICS,
@@ -16,7 +17,7 @@ import {
 } from '../tools/prometheus.js';
 import { makeCosmicSwingsetTestKit } from '../tools/test-kit.js';
 
-/** @import {TotalMap} from '@agoric/internal'; */
+const test = anyTest as TestFn;
 
 test('Prometheus metric definitions', async t => {
   // Enable both direct and slog-based Prometheus export.
@@ -25,17 +26,18 @@ test('Prometheus metric definitions', async t => {
 
   const fakeStorageKit = makeFakeStorageKit('');
   const { toStorage: handleVstorage } = fakeStorageKit;
-  const receiveBridgeSend = (destPortName, msg) => {
+  const receiveBridgeSend = (destPortName: string, msg: any) => {
     switch (destPortName) {
       case BridgeId.STORAGE: {
         return handleVstorage(msg);
       }
       case BridgeId.BANK: {
         if (msg.type === 'VBANK_GET_MODULE_ACCOUNT_ADDRESS') {
-          const matchesRequest = desc => desc.module === msg.moduleName;
+          const matchesRequest = (desc: { module: string }) =>
+            desc.module === msg.moduleName;
           const found = Object.values(VBankAccount).find(matchesRequest);
           if (found) return found.address;
-          return { error: `module account ${msg.moduleName} not found` };
+          return { error: `module account ${q(msg.moduleName)} not found` };
         }
         break;
       }
@@ -73,7 +75,7 @@ test('Prometheus metric definitions', async t => {
       const url = `http://localhost:${port}/metrics`;
       const text = await fetch(url).then(resp => resp.text());
       const metaLines = text.match(/^#.*/gm) || [];
-      const keys = [];
+      const keys = [] as string[];
       const comparableData = new Map();
       // Normalized text has static placeholders for timestamps, values, and
       // source-identifying metric label values.
@@ -121,30 +123,28 @@ test('Prometheus metric definitions', async t => {
   t.log(`compared ${slogMetrics.keys.length} keys`);
 
   let comparisonCount = 0;
-  const fuzzinessOverrides = /** @type {TotalMap<string, [number, string]>} */ (
-    new Map([
-      // Directly-produced "swingset_crank_processing_time" includes kvStore
-      // lookups in `getNextMessageAndProcessor` for dequeueing messages.
-      ['swingset_crank_processing_time_sum', [50, '%']],
+  const fuzzinessOverrides = new Map([
+    // Directly-produced "swingset_crank_processing_time" includes kvStore
+    // lookups in `getNextMessageAndProcessor` for dequeueing messages.
+    ['swingset_crank_processing_time_sum', [50, '%']],
 
-      // Memory measurements vary based on when they are captured.
-      ['heapStats_external_memory', [20, '%']],
-      ['heapStats_malloced_memory', [20, '%']],
-      ['heapStats_peak_malloced_memory', [20, '%']],
-      ['heapStats_total_available_size', [20, '%']],
-      ['heapStats_total_global_handles_size', [20, '%']],
-      ['heapStats_total_heap_size', [20, '%']],
-      ['heapStats_total_heap_size_executable', [20, '%']],
-      ['heapStats_total_physical_size', [20, '%']],
-      ['heapStats_used_global_handles_size', [20, '%']],
-      ['heapStats_used_heap_size', [20, '%']],
-      ['memoryUsage_arrayBuffers', [20, '%']],
-      ['memoryUsage_external', [20, '%']],
-      ['memoryUsage_heapTotal', [20, '%']],
-      ['memoryUsage_heapUsed', [20, '%']],
-      ['memoryUsage_rss', [20, '%']],
-    ])
-  );
+    // Memory measurements vary based on when they are captured.
+    ['heapStats_external_memory', [20, '%']],
+    ['heapStats_malloced_memory', [20, '%']],
+    ['heapStats_peak_malloced_memory', [20, '%']],
+    ['heapStats_total_available_size', [20, '%']],
+    ['heapStats_total_global_handles_size', [20, '%']],
+    ['heapStats_total_heap_size', [20, '%']],
+    ['heapStats_total_heap_size_executable', [20, '%']],
+    ['heapStats_total_physical_size', [20, '%']],
+    ['heapStats_used_global_handles_size', [20, '%']],
+    ['heapStats_used_heap_size', [20, '%']],
+    ['memoryUsage_arrayBuffers', [20, '%']],
+    ['memoryUsage_external', [20, '%']],
+    ['memoryUsage_heapTotal', [20, '%']],
+    ['memoryUsage_heapUsed', [20, '%']],
+    ['memoryUsage_rss', [20, '%']],
+  ]) as TotalMap<string, [number, string]>;
   for (const directEntry of directMetrics.comparableData.entries()) {
     const [nameAndLabels, directValue] = directEntry;
     const [name] = nameAndLabels.match(leadingPrometheusNameRegExp) || [];
