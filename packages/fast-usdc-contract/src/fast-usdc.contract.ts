@@ -56,6 +56,8 @@ const FEE_NODE = 'feeConfig';
 const ADDRESSES_BAGGAGE_KEY = 'addresses';
 /** expected value: `agoric-3` */
 export const CURR_CHAIN_REFERENCE = 'currChainReference';
+/** expected value: `OrchestrationAccount<{chainId: 'noble-1}>` Remotable */
+export const NOBLE_ICA_BAGGAGE_KEY = 'nobleICA';
 
 export const meta = {
   customTermsShape: FastUSDCTermsShape,
@@ -193,6 +195,11 @@ export const contract = async (
 
       return vowTools.when(nobleAccountV, nobleAccount => {
         trace('nobleAccount', nobleAccount);
+        if (baggage.has(NOBLE_ICA_BAGGAGE_KEY)) {
+          baggage.set(NOBLE_ICA_BAGGAGE_KEY, nobleAccount);
+        } else {
+          baggage.init(NOBLE_ICA_BAGGAGE_KEY, nobleAccount);
+        }
         return vowTools.when(
           E(nobleAccount).getAddress(),
           intermediateRecipient => {
