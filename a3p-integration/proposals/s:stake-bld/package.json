@@ -17,7 +17,7 @@
     "@endo/errors": "^1.2.2",
     "@endo/far": "^1.0.4",
     "@endo/init": "^1.0.4",
-    "agoric": "dev",
+    "agoric": "0.1.0",
     "ava": "^5.3.1",
     "execa": "^8.0.1"
   },
