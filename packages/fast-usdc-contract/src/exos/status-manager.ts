@@ -212,7 +212,6 @@ export const prepareStatusManager = (
       skipAdvance: M.call(CctpTxEvidenceShape, M.arrayOf(M.string())).returns(),
       advanceOutcomeForMintedEarly: M.call(EvmHashShape, M.boolean()).returns(),
       advanceOutcomeForUnknownMint: M.call(CctpTxEvidenceShape).returns(),
-      observe: M.call(CctpTxEvidenceShape).returns(),
       hasBeenObserved: M.call(CctpTxEvidenceShape).returns(M.boolean()),
       deleteCompletedTxs: M.call().returns(M.undefined()),
       dequeueStatus: M.call(M.string(), M.bigint()).returns(
@@ -315,14 +314,6 @@ export const prepareStatusManager = (
       },
 
       /**
-       * Add a new transaction with OBSERVED status
-       * @param evidence
-       */
-      observe(evidence: CctpTxEvidence): void {
-        initPendingTx(evidence, PendingTxStatus.Observed);
-      },
-
-      /**
        * Note: ADVANCING state implies tx has been OBSERVED
        * @param evidence
        */
@@ -348,9 +339,9 @@ export const prepareStatusManager = (
        * forwarding account and amount. Since multiple pending transactions may exist with
        * identical (account, amount) pairs, we process them in FIFO order.
        *
-       * @param nfa
-       * @param amount
-       * @returns undefined if no pending transactions exist for this address and amount combination.
+       * @param {bigint} nfa
+       * @param {NobleAddress} amount
+       * @returns {undefined} if no pending transactions exist for this address and amount combination.
        */
       dequeueStatus(
         nfa: NobleAddress,

@@ -97,32 +97,6 @@ test('ADVANCE_SKIPPED transactions are published to vstorage', async t => {
   ]);
 });
 
-test('observe creates new entry with OBSERVED status', t => {
-  const { statusManager } = t.context;
-  const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
-  statusManager.observe(evidence);
-
-  const entries = statusManager.lookupPending(
-    evidence.tx.forwardingAddress,
-    evidence.tx.amount,
-  );
-
-  t.is(entries[0]?.status, PendingTxStatus.Observed);
-});
-
-test('OBSERVED transactions are published to vstorage', async t => {
-  const { statusManager } = t.context;
-
-  const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
-  statusManager.observe(evidence);
-  await eventLoopIteration();
-
-  const { storage } = t.context;
-  t.deepEqual(storage.getDeserialized(`fun.txns.${evidence.txHash}`), [
-    { evidence, status: 'OBSERVED' },
-  ]);
-});
-
 test('cannot process same tx twice', t => {
   const { statusManager } = t.context;
 
@@ -130,11 +104,6 @@ test('cannot process same tx twice', t => {
   statusManager.advance(evidence);
 
   t.throws(() => statusManager.advance(evidence), {
-    message:
-      'Transaction already seen: "0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761702"',
-  });
-
-  t.throws(() => statusManager.observe(evidence), {
     message:
       'Transaction already seen: "0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761702"',
   });
@@ -153,7 +122,7 @@ test('isSeen checks if a tx has been processed', t => {
 
   const e2 = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
   t.false(statusManager.hasBeenObserved(e2));
-  statusManager.observe(e2);
+  statusManager.skipAdvance(e2, []);
   t.true(statusManager.hasBeenObserved(e2));
 });
 
@@ -166,7 +135,7 @@ test('dequeueStatus removes entries from PendingTxs', t => {
   statusManager.advanceOutcome(e1.tx.forwardingAddress, e1.tx.amount, true);
   statusManager.advance(e2);
   statusManager.advanceOutcome(e2.tx.forwardingAddress, e2.tx.amount, false);
-  statusManager.observe({ ...e1, txHash: '0xtest1' });
+  statusManager.skipAdvance({ ...e1, txHash: '0xtest1' }, []);
 
   t.deepEqual(
     statusManager.dequeueStatus(e1.tx.forwardingAddress, e1.tx.amount),
@@ -188,7 +157,7 @@ test('dequeueStatus removes entries from PendingTxs', t => {
     statusManager.dequeueStatus(e1.tx.forwardingAddress, e1.tx.amount),
     {
       txHash: '0xtest1',
-      status: PendingTxStatus.Observed,
+      status: PendingTxStatus.AdvanceSkipped,
     },
   );
 
@@ -217,7 +186,7 @@ test('cannot advanceOutcome without ADVANCING entry', t => {
     message: expectedErrMsg,
   });
 
-  statusManager.observe(e1);
+  statusManager.skipAdvance(e1, []);
   t.throws(advanceOutcomeFn, {
     message: expectedErrMsg,
   });
@@ -299,9 +268,6 @@ test('dequeueStatus returns first (earliest) matched entry', async t => {
     true,
   );
 
-  // can dequeue OBSERVED statuses
-  statusManager.observe({ ...evidence, txHash: '0xtest3' });
-
   // dequeue will return the first match
   t.like(
     statusManager.dequeueStatus(
@@ -316,23 +282,8 @@ test('dequeueStatus returns first (earliest) matched entry', async t => {
     evidence.tx.forwardingAddress,
     evidence.tx.amount,
   );
-  t.is(entries0.length, 1);
-  t.deepEqual(
-    entries0?.[0].status,
-    PendingTxStatus.Observed,
-    'order of remaining entries preserved',
-  );
+  t.is(entries0.length, 0);
 
-  // dequeue again wih same ags to settle remaining observe
-  t.like(
-    statusManager.dequeueStatus(
-      evidence.tx.forwardingAddress,
-      evidence.tx.amount,
-    ),
-    {
-      status: 'OBSERVED',
-    },
-  );
   const entries1 = statusManager.lookupPending(
     evidence.tx.forwardingAddress,
     evidence.tx.amount,

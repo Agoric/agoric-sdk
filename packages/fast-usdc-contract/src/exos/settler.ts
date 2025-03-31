@@ -1,3 +1,12 @@
+/**
+ * @file Settler is responsible for monitoring (receiveUpcall) deposits to the
+ * settlementAccount. It either "disburses" funds to the Pool (if funds were
+ * "advance"d to the payee), or "forwards" funds to the payee (if pool funds
+ * were not advanced).
+ *
+ * main export: @see {prepareSettler}
+ */
+
 import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
 import { CosmosChainAddressShape } from '@agoric/orchestration';
@@ -16,7 +25,7 @@ import {
 } from '@agoric/fast-usdc/src/type-guards.js';
 
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
-import type { Amount, Brand, NatValue, Payment } from '@agoric/ertp';
+import type { Amount, Brand, NatValue } from '@agoric/ertp';
 import type {
   AccountId,
   Denom,
@@ -39,7 +48,6 @@ import type {
 import type { ZCF, ZCFSeat } from '@agoric/zoe/src/zoeService/zoe.js';
 import type { MapStore } from '@agoric/store';
 import type { VowTools } from '@agoric/vow';
-import type { RepayAmountKWR } from '@agoric/fast-usdc/src/utils/fees.js';
 import type { LiquidityPoolKit } from './liquidity-pool.js';
 import type { StatusManager } from './status-manager.js';
 import { asMultiset } from '../utils/store.ts';
@@ -118,6 +126,16 @@ export const stateShape = harden({
   intermediateRecipient: M.opt(CosmosChainAddressShape),
 });
 
+/**
+ * The Settler is responsible for monitoring (using receiveUpcall) deposits to
+ * the settlementAccount. It either "disburses" funds to the Pool (if funds were
+ * "advance"d to the payee), or "forwards" funds to the payee (if pool funds
+ * were not advanced).
+ *
+ * `receiveUpcall` is configured to receive notifications in
+ * `monitorMintingDeposits()`, with a call to
+ * `settlementAccount.monitorTransfers()`.
+ */
 export const prepareSettler = (
   zone: Zone,
   {
@@ -239,7 +257,6 @@ export const prepareSettler = (
               self.addMintedEarly(nfa, amount);
               return;
 
-            case PendingTxStatus.Observed:
             case PendingTxStatus.AdvanceSkipped:
             case PendingTxStatus.AdvanceFailed:
               return self.forward(found.txHash, amount, EUD);
@@ -288,9 +305,12 @@ export const prepareSettler = (
           }
         },
         /**
-         * @param evidence
-         * @param destination
-         * @throws {Error} if minted early, so advancer doesn't advance
+         * If the EUD received minted funds without an advance, forward the
+         * funds to the pool.
+         *
+         * @param {CctpTxEvidence} evidence
+         * @param {CosmosChainAddress} destination
+         * @returns {boolean} whether the EUD received funds without an advance
          */
         checkMintedEarly(
           evidence: CctpTxEvidence,
@@ -327,6 +347,13 @@ export const prepareSettler = (
           const { mintedEarly } = this.state;
           asMultiset(mintedEarly).add(key);
         },
+        /**
+         * The intended payee received an advance from the pool. When the funds
+         * are minted, disburse them to the pool and fee seats.
+         *
+         * @param {EvmHash} txHash
+         * @param {NatValue} fullValue
+         */
         async disburse(txHash: EvmHash, fullValue: NatValue) {
           const { repayer, settlementAccount } = this.state;
           const received = AmountMath.make(USDC, fullValue);
@@ -354,6 +381,13 @@ export const prepareSettler = (
           // update status manager, marking tx `DISBURSED`
           statusManager.disbursed(txHash, split);
         },
+        /**
+         * Funds were not advanced. Forward proceeds to the payee directly.
+         *
+         * @param {EvmHash} txHash
+         * @param {NatValue} fullValue
+         * @param {string} EUD
+         */
         forward(txHash: EvmHash, fullValue: NatValue, EUD: string) {
           const { settlementAccount, intermediateRecipient } = this.state;
           log('forwarding', fullValue, 'to', EUD, 'for', txHash);

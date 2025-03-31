@@ -235,8 +235,9 @@ export const prepareLiquidityPoolKit = (
             this.state;
           const { external } = this.facets;
 
-          // @ts-expect-error ensured by proposalShape
-          const proposal = lp.getProposal() as USDCProposalShapes['deposit'];
+          const proposal =
+            // @ts-expect-error ensured by proposalShape
+            lp.getProposal() as USDCProposalShapes['deposit'];
           checkPoolBalance(
             poolSeat.getCurrentAllocation(),
             shareWorth,
@@ -245,15 +246,15 @@ export const prepareLiquidityPoolKit = (
           const post = depositCalc(shareWorth, proposal);
 
           // COMMIT POINT
-          const mint = shareMint.mintGains(post.payouts);
+          const sharePayout = shareMint.mintGains(post.payouts);
           try {
             this.state.shareWorth = post.shareWorth;
             zcf.atomicRearrange(
               harden([
                 // zoe guarantees lp has proposal.give allocated
                 [lp, poolSeat, proposal.give],
-                // mintGains() above establishes that mint has post.payouts
-                [mint, lp, post.payouts],
+                // mintGains() above establishes that sharePayout has post.payouts
+                [sharePayout, lp, post.payouts],
               ]),
             );
           } catch (cause) {
@@ -261,7 +262,7 @@ export const prepareLiquidityPoolKit = (
             throw new Error('🚨 cannot commit deposit', { cause });
           } finally {
             lp.exit();
-            mint.exit();
+            sharePayout.exit();
           }
           external.publishPoolMetrics();
         },
