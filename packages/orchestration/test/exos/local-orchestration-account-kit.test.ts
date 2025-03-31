@@ -451,6 +451,40 @@ test('send', async t => {
     4,
     'sent 2 successful txs and 1 failed. 1 rejected before sending',
   );
+
+  const toAccountId = `cosmos:${toAddress.chainId}:${toAddress.value}` as const;
+  t.log(`send 10 bld to ${toAccountId}`);
+  await VE(account).send(toAccountId, stake.units(10));
+
+  t.deepEqual(inspectLocalBridge().slice(messages.length), [
+    {
+      address: 'agoric1fakeLCAAddress',
+      messages: [
+        {
+          '@type': '/cosmos.bank.v1beta1.MsgSend',
+          amount: [
+            {
+              amount: '10000000',
+              denom: 'ubld',
+            },
+          ],
+          fromAddress: 'agoric1fakeLCAAddress',
+          toAddress: 'agoric1EOAAccAddress',
+        },
+      ],
+      type: 'VLOCALCHAIN_EXECUTE_TX',
+    },
+  ]);
+
+  await t.throwsAsync(
+    VE(account).send(
+      { ...toAddress, chainId: 'some-other-chain' },
+      stake.units(101),
+    ),
+    {
+      message: 'bank/send cannot send to a different chain "some-other-chain"',
+    },
+  );
 });
 
 test('getBalance', async t => {

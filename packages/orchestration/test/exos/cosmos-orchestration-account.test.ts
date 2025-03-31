@@ -137,6 +137,15 @@ test('send (to addr on same chain)', async t => {
     'send accepts Amount',
   );
 
+  t.is(
+    await E(account).send(`cosmos:${toAddress.chainId}:${toAddress.value}`, {
+      denom: uistOnCosmos,
+      value: 10n,
+    } as AmountArg),
+    undefined,
+    'send accepts AccountId',
+  );
+
   await t.throwsAsync(
     () => E(account).send(toAddress, ist.make(10n) as AmountArg),
     {
@@ -177,8 +186,18 @@ test('send (to addr on same chain)', async t => {
   const { bridgeDowncalls } = await inspectDibcBridge();
   t.is(
     bridgeDowncalls.filter(d => d.method === 'sendPacket').length,
-    4,
-    'sent 3 successful txs and 1 failed. 1 rejected before sending',
+    5,
+    'sent 4 successful txs and 1 failed. 1 rejected before sending',
+  );
+
+  await t.throwsAsync(
+    E(account).send(
+      { ...toAddress, chainId: 'not-cosmos-1' },
+      moolah.make(10n) as AmountArg,
+    ),
+    {
+      message: 'bank/send cannot send to a different chain "not-cosmos-1"',
+    },
   );
 });
 
