@@ -28,6 +28,7 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -124,9 +125,9 @@ func SetupAgoricTestingApp(t *testing.T, instance int) TestingAppMaker {
 			jsonReply = `true`
 			return jsonReply, nil
 		}
-		appd := app.NewAgoricApp(mockController, vm.NewAgdServer(), log.NewTestLogger(t), db, nil,
-			true, sims.EmptyAppOptions{}, interBlockCacheOpt())
-		genesisState := app.NewDefaultGenesisState(appd.AppCodec(), appd.BasicModuleManager)
+		appd := app.NewAgoricApp(mockController, vm.NewAgdServer(), log.TestingLogger(), db, nil,
+			true, sims.EmptyAppOptions{}, []wasmkeeper.Option{}, interBlockCacheOpt())
+		genesisState := app.NewDefaultGenesisState()
 
 		t := template.Must(template.New("").Parse(`
 		{
