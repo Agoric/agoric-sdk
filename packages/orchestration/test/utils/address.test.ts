@@ -5,7 +5,11 @@ import {
   makeICQChannelAddress,
   findAddressField,
   getBech32Prefix,
+  parseAccountId,
+  parseAccountIdArg,
 } from '../../src/utils/address.js';
+import type { CosmosChainAddress } from '../../src/orchestration-api.ts';
+import type { Bech32Address } from '../../src/cosmos-api.ts';
 
 test('makeICAChannelAddress', t => {
   // @ts-expect-error intentional
@@ -110,11 +114,11 @@ test('makeICQChannelAddress', t => {
 });
 
 const bech32 = test.macro({
-  title: (_, input: string, expected: string | null) =>
+  title: (_, input: Bech32Address, expected: string | null) =>
     expected !== null
       ? `can extract ${expected} prefix from ${input}`
       : `throws error for invalid address ${input}`,
-  exec: (t, input: string, expected: string | null, error?: string) => {
+  exec: (t, input: Bech32Address, expected: string | null, error?: string) => {
     if (expected !== null) {
       t.is(getBech32Prefix(input), expected);
     } else {
@@ -126,6 +130,7 @@ const bech32 = test.macro({
 test(bech32, 'bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4', 'bc');
 test(bech32, 'cosmos1n4f2eqt2gm5mh6gevf8aw2wrf75q25yru09yvn', 'cosmos');
 test(bech32, '111qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4', '11');
+// @ts-expect-error intentionally invalid address
 test(
   bech32,
   'qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4',
@@ -138,3 +143,65 @@ test(
   null,
   'Missing prefix for "1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4"',
 );
+
+const CAIP10_ETH = 'eip155:1:0xab16a96D359eC26a11e2C2b3d8f8B8942d5Bfcdb';
+const CAIP10_COSMOS =
+  'cosmos:cosmoshub-3:cosmos1t2uflqwqe0fsj0shcfkrvpukewcw40yjj6hdc0';
+const COSMOS_NOBLE_RECORD: CosmosChainAddress = {
+  chainId: 'noble-1',
+  value: 'noble1test',
+  encoding: 'bech32',
+};
+const COSMOS_AG_RECORD: CosmosChainAddress = {
+  chainId: 'agoric-3',
+  encoding: 'bech32',
+  value: 'agoric13rj0cc0hm5ac2nt0sdup2l7gvkx4v9tyvgq3h2',
+};
+
+test(`parse CAIP-10`, async t => {
+  t.deepEqual(parseAccountId(CAIP10_ETH), {
+    namespace: 'eip155',
+    reference: '1',
+    accountAddress: `0xab16a96D359eC26a11e2C2b3d8f8B8942d5Bfcdb`,
+  });
+  t.deepEqual(parseAccountId(CAIP10_COSMOS), {
+    namespace: 'cosmos',
+    reference: 'cosmoshub-3',
+    accountAddress: `cosmos1t2uflqwqe0fsj0shcfkrvpukewcw40yjj6hdc0`,
+  });
+});
+
+test(`parse COSMOS`, async t => {
+  t.deepEqual(parseAccountIdArg(COSMOS_NOBLE_RECORD), {
+    namespace: 'cosmos',
+    reference: 'noble-1',
+    accountAddress: COSMOS_NOBLE_RECORD.value,
+  });
+  t.deepEqual(parseAccountIdArg(COSMOS_AG_RECORD), {
+    namespace: 'cosmos',
+    reference: 'agoric-3',
+    accountAddress: COSMOS_AG_RECORD.value,
+  });
+});
+
+test(`parse BECH32 (fail)`, async t => {
+  const BECH32_ADDRESS =
+    'osmo1ht7u569vpuryp6utadsydcne9ckeh2v8dkd38v5hptjl3u2ewppqc6kzgd';
+
+  t.throws(
+    () =>
+      // @ts-expect-error illegal type
+      parseAccountIdArg(BECH32_ADDRESS),
+    {
+      message: `malformed CAIP-10 accountId: "${BECH32_ADDRESS}"`,
+    },
+  );
+  t.throws(
+    () =>
+      // @ts-expect-error illegal type
+      parseAccountId(BECH32_ADDRESS),
+    {
+      message: `malformed CAIP-10 accountId: "${BECH32_ADDRESS}"`,
+    },
+  );
+});

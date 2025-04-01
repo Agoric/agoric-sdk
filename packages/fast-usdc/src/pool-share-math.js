@@ -4,7 +4,7 @@ import {
   makeRatio,
   makeRatioFromAmounts,
   multiplyBy,
-} from '@agoric/zoe/src/contractSupport/ratio.js';
+} from '@agoric/ertp/src/ratio.js';
 import { Fail, q } from '@endo/errors';
 
 const { keys } = Object;

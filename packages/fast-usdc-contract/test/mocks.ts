@@ -6,7 +6,7 @@ import type {
   OrchestrationAccount,
 } from '@agoric/orchestration';
 import type { VowTools } from '@agoric/vow';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import type { AmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import type { Zone } from '@agoric/zone';
 import type { FeeConfig, LogFn } from '@agoric/fast-usdc/src/types.js';
@@ -45,7 +45,7 @@ export const prepareMockOrchAccounts = (
   });
 
   const poolAccount = mockedPoolAccount as unknown as HostInterface<
-    OrchestrationAccount<{ chainId: 'agoric' }>
+    OrchestrationAccount<{ chainId: 'agoric-any' }>
   >;
 
   const settlementCallLog = [] as any[];
@@ -56,7 +56,7 @@ export const prepareMockOrchAccounts = (
     },
   });
   const settlementAccount = settlementAccountMock as unknown as HostInterface<
-    OrchestrationAccount<{ chainId: 'agoric' }>
+    OrchestrationAccount<{ chainId: 'agoric-any' }>
   >;
   return {
     mockPoolAccount: {

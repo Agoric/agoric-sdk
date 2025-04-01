@@ -11,13 +11,14 @@ import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics
 import type { Passable } from '@endo/marshal';
 import type {
   AgoricChainMethods,
-  ChainInfo,
   CosmosChainAccountMethods,
   CosmosChainInfo,
   IBCMsgTransferOptions,
   KnownChains,
   LocalAccountMethods,
   ICQQueryFunction,
+  KnownNamespace,
+  NobleMethods,
 } from './types.js';
 import type { ResolvedContinuingOfferResult } from './utils/zoe-tools.js';
 
@@ -63,7 +64,7 @@ export type AmountArg = DenomAmount | Amount<'nat'>;
  *
  * @see {@link https://chainagnostic.org/CAIPs/caip-2}
  */
-export type ScopedChainId = `${string}:${string}`;
+export type CaipChainId = `${string}:${string}`;
 
 /**
  * à la CAIP-10
@@ -74,7 +75,7 @@ export type ScopedChainId = `${string}:${string}`;
  *
  * @see {@link https://chainagnostic.org/CAIPs/caip-10}
  */
-export type AccountId = `${ScopedChainId}:${string}`;
+export type AccountId = `${CaipChainId}:${string}`;
 
 /**
  * Specific to Cosmos chains
@@ -89,22 +90,52 @@ export type CosmosChainAddress = {
 };
 
 /**
+ * Info used to identify blockchains across ecosystems
+ * @see {@link https://chainagnostic.org/CAIPs/caip-2}
+ */
+export interface BaseChainInfo<N extends KnownNamespace = KnownNamespace> {
+  /** CAIP-2 namespace, e.g. 'cosmos', 'eip155' */
+  namespace: N;
+  /** CAIP-2 reference, `e.g. `1`, `agoric-3` */
+  reference: N extends 'eip155' ? `${number}` : string;
+  /**
+   * Circle CCTP Destination Domain
+   * @see {@link https://developers.circle.com/stablecoins/supported-domains}
+   */
+  cctpDestinationDomain?: number;
+}
+
+/**
+ * Shape that `ChainHub` is expecting
+ */
+export type ChainInfo<N extends KnownNamespace = KnownNamespace> =
+  N extends 'cosmos' ? CosmosChainInfo : BaseChainInfo<N>;
+
+/**
  * A value that can be converted mechanically to an AccountId.
  * @see {@link ChainHub.resolveAccountId}
  */
 export type AccountIdArg = AccountId | CosmosChainAddress;
+
+export type Caip10Record = {
+  namespace: string;
+  reference: string;
+  accountAddress: string;
+};
 
 /**
  * Object that controls an account on a particular chain.
  *
  * The methods available depend on the chain and its capabilities.
  */
-export type OrchestrationAccount<CI extends ChainInfo> =
+export type OrchestrationAccount<CI extends Partial<ChainInfo>> =
   OrchestrationAccountCommon &
-    (CI extends CosmosChainInfo
+    (CI extends { chainId: string }
       ? CI['chainId'] extends `agoric${string}`
         ? LocalAccountMethods
-        : CosmosChainAccountMethods<CI>
+        : CI['chainId'] extends `noble${string}`
+          ? CosmosChainAccountMethods<CI> & NobleMethods
+          : CosmosChainAccountMethods<CI>
       : object);
 
 /**
@@ -113,21 +144,26 @@ export type OrchestrationAccount<CI extends ChainInfo> =
  * Note that "remote" can mean the local chain; it's just that
  * accounts are treated as remote/arms length for consistency.
  */
-export interface Chain<CI extends ChainInfo> {
+export interface Chain<CI extends Partial<ChainInfo>> {
   getChainInfo: () => Promise<CI>;
 
   // "makeAccount" suggests an operation within a vat
+  // TODO: scope to { icaEnabled: true }. Currently, only scoped to `namespace: 'cosmos'` chains
   /**
    * Creates a new Orchestration Account on the current Chain.
    * @returns an object that controls the account
    */
-  makeAccount: () => Promise<OrchestrationAccount<CI>>;
+  makeAccount: () => CI extends { chainId: string }
+    ? Promise<OrchestrationAccount<CI>>
+    : never;
   // FUTURE supply optional port object; also fetch port object
 
   query: CI extends { icqEnabled: true }
     ? ICQQueryFunction
-    : CI['chainId'] extends `agoric${string}`
-      ? QueryManyFn
+    : CI extends { chainId: string }
+      ? CI['chainId'] extends `agoric${string}`
+        ? QueryManyFn
+        : never
       : never;
 
   // TODO provide a way to get the local denom/brand/whatever for this chain

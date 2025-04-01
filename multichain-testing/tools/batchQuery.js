@@ -2,9 +2,12 @@
 import { assert } from '@endo/errors';
 import { E } from '@endo/far';
 
+/**
+ * @import {ERef} from '@endo/far';
+ * @import {FromCapData} from '@endo/marshal';
+ */
+
 /** @typedef {'children' | 'data'} AgoricChainStoragePathKind */
-/** @template T @typedef {import('@endo/marshal').FromCapData<T>} FromCapData<T> */
-/** @template T @typedef {import('@endo/eventual-send').ERef<T>} ERef<T> */
 
 /**
  * @param {[kind: AgoricChainStoragePathKind, item: string]} path

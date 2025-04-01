@@ -22,13 +22,14 @@ import {
   MockCctpTxEvidences,
   settlementAddress,
 } from '@agoric/fast-usdc/tools/mock-evidence.js';
-import { prepareAdvancer, stateShape } from '../../src/exos/advancer.js';
+import type { ZCFSeat } from '@agoric/zoe';
+import { prepareAdvancer, stateShape } from '../../src/exos/advancer.ts';
 import {
   makeAdvanceDetailsShape,
   type SettlerKit,
-} from '../../src/exos/settler.js';
+} from '../../src/exos/settler.ts';
 import { prepareStatusManager } from '../../src/exos/status-manager.ts';
-import type { LiquidityPoolKit } from '../../src/exos/liquidity-pool.js';
+import type { LiquidityPoolKit } from '../../src/exos/liquidity-pool.ts';
 import {
   makeTestFeeConfig,
   makeTestLogger,

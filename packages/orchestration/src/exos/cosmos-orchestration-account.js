@@ -1,6 +1,10 @@
 /** @file Use-object for the owner of a staking account */
 import { toRequestQueryJson } from '@agoric/cosmic-proto';
 import {
+  MsgDepositForBurn,
+  MsgDepositForBurnWithCaller,
+} from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
+import {
   QueryAllBalancesRequest,
   QueryAllBalancesResponse,
   QueryBalanceRequest,
@@ -64,10 +68,11 @@ import {
 } from '../utils/cosmos.js';
 import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
 import { makeTimestampHelper } from '../utils/time.js';
+import { accountIdTo32Bytes, parseAccountId } from '../utils/address.js';
 
 /**
  * @import {HostOf} from '@agoric/async-flow';
- * @import {AmountArg, IcaAccount, CosmosChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, StakingAccountQueries, OrchestrationAccountCommon, CosmosRewardsResponse, IBCConnectionInfo, IBCMsgTransferOptions, ChainHub, CosmosDelegationResponse} from '../types.js';
+ * @import {AmountArg, IcaAccount, CosmosChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, StakingAccountQueries, NobleMethods, OrchestrationAccountCommon, CosmosRewardsResponse, IBCConnectionInfo, IBCMsgTransferOptions, ChainHub, CosmosDelegationResponse, CaipChainId} from '../types.js';
  * @import {ContractMeta, Invitation, OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
@@ -139,8 +144,16 @@ const stakingAccountQueriesMethods = {
   getRewards: M.call().returns(VowShape),
 };
 
+/** @see {NobleMethods} */
+const nobleMethods = {
+  depositForBurn: M.call(M.string(), AmountArgShape)
+    .optional(M.string())
+    .returns(VowShape),
+};
+
 /** @see {OrchestrationAccountCommon} */
 export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
+  ...nobleMethods,
   ...orchestrationAccountMethods,
   ...stakingAccountActionsMethods,
   ...stakingAccountQueriesMethods,
@@ -208,7 +221,7 @@ export const prepareCosmosOrchestrationAccountKit = (
         amountToCoin: M.call(AmountArgShape).returns(M.record()),
       }),
       returnVoidWatcher: M.interface('returnVoidWatcher', {
-        onFulfilled: M.call(M.or(M.string(), M.record()))
+        onFulfilled: M.call(M.any())
           .optional(M.arrayOf(M.undefined()))
           .returns(M.undefined()),
       }),
@@ -1127,6 +1140,58 @@ export const prepareCosmosOrchestrationAccountKit = (
           return asVow(() =>
             watch(E(this.facets.helper.owned()).executeEncodedTx(msgs, opts)),
           );
+        },
+        /**
+         * @type {HostOf<NobleMethods['depositForBurn']>}
+         */
+        depositForBurn(destination, amount, caller) {
+          return asVow(() => {
+            trace('depositForBurn', { destination, amount });
+            const { helper } = this.facets;
+            const { chainAddress } = this.state;
+
+            const destParts = parseAccountId(destination);
+            /** @type {CaipChainId} */
+            const chainId = `${destParts.namespace}:${destParts.reference}`;
+
+            const { cctpDestinationDomain } =
+              chainHub.getChainInfoByChainId(chainId);
+            if (typeof cctpDestinationDomain !== 'number') {
+              throw Fail`${q(chainId)} does not have "cctpDestinationDomain" set in ChainInfo`;
+            }
+
+            /** @satisfies {MsgDepositForBurn} */
+            const depositForBurn = {
+              amount: helper.amountToCoin(amount)?.amount,
+              from: chainAddress.value,
+              destinationDomain: cctpDestinationDomain,
+              mintRecipient: accountIdTo32Bytes(destination),
+              // safe to hardcode since `uusdc` is the only asset supported by CCTP
+              burnToken: 'uusdc',
+            };
+
+            const destinationCaller = (() => {
+              if (!caller) return undefined;
+              const callerParts = parseAccountId(caller);
+              callerParts.namespace === destParts.namespace ||
+                Fail`caller ${q(caller)} must be in same namespace as destination ${q(destination)}`;
+              return accountIdTo32Bytes(caller);
+            })();
+
+            return watch(
+              E(helper.owned()).executeEncodedTx([
+                Any.toJSON(
+                  destinationCaller
+                    ? MsgDepositForBurnWithCaller.toProtoMsg({
+                        ...depositForBurn,
+                        destinationCaller,
+                      })
+                    : MsgDepositForBurn.toProtoMsg(depositForBurn),
+                ),
+              ]),
+              this.facets.returnVoidWatcher,
+            );
+          });
         },
       },
     },

@@ -62,8 +62,11 @@ import {
 } from '../src/sim-params.js';
 import { makeCosmicSwingsetTestKit } from './test-kit.js';
 
-/** @import { ManagerType, SwingSetConfig } from '@agoric/swingset-vat' */
-/** @import { KVStore } from '../src/helpers/bufferedStorage.js' */
+/**
+ * @import {Database} from 'better-sqlite3';
+ * @import {ManagerType, SwingSetConfig} from '@agoric/swingset-vat';
+ * @import {KVStore} from '../src/helpers/bufferedStorage.js';
+ */
 
 const useColors = process.stdout?.hasColors?.();
 const inspectDepth = 6;
@@ -76,13 +79,28 @@ const parseNumber = input => (input.match(/[0-9]/) ? Number(input) : NaN);
 // cf. packages/swing-store/src/exporter.js
 const storeExportAPI = ['getExportRecords', 'getArtifactNames'];
 
+/**
+ * Partial definition based on log output.
+ * @typedef VatInfo
+ * @property {`v${string}`} vatID
+ * @property {string} name
+ * @property {boolean} isStatic
+ * @property {{bundleID: string}} source
+ * @property {{name: string, critical: boolean}} options
+ */
+
 // TODO: getVatAdminNode('v112') # scan the vatAdmin vom v2.vs.vom.* vrefs for value matching /\b${vatID}\b/
+/**
+ * @param {object} opt
+ * @param {Database} opt.db
+ * @param {any} opt.EV
+ */
 export const makeHelpers = ({ db, EV }) => {
   const sqlKVGet = db
     .prepare('SELECT value FROM kvStore WHERE key = ?')
     .pluck();
   const kvGet = key => sqlKVGet.get(key);
-  const kvGetJSON = key => JSON.parse(kvGet(key));
+  const kvGetJSON = key => JSON.parse(/** @type {string} */ (kvGet(key)));
 
   const sqlKVByRange = db.prepare(
     `SELECT key, value FROM kvStore WHERE key >= :a AND key < :b AND ${[
@@ -122,7 +140,15 @@ export const makeHelpers = ({ db, EV }) => {
     return lazy ? sql.iterate(args) : sql.all(args);
   };
 
+  /**
+   * NB: snapshot never refreshed
+   * @type {Map<`v${string}`, VatInfo>}
+   */
   let vatsByID = new Map();
+  /**
+   * NB: snapshot never refreshed
+   * @type {Map<string, VatInfo | VatInfo[]>}
+   */
   let vatsByName = new Map();
   try {
     // @see {@link ../../SwingSet/src/kernel/state/kernelKeeper.js}
@@ -155,6 +181,7 @@ export const makeHelpers = ({ db, EV }) => {
       ORDER BY vat.rank, vat.idx
     `);
     for (const dbRecord of vatQuery.iterate()) {
+      // @ts-expect-error extract from unknown
       const { vatID, rank, sourceText, optionsText } = dbRecord;
       const isStatic = rank === 1;
       const source = sourceText ? JSON.parse(sourceText) : undefined;
@@ -193,6 +220,7 @@ export const makeHelpers = ({ db, EV }) => {
     const kindMetaJSON =
       kvGet(`${vatID}.vs.vom.dkind.${kindID}.descriptor`) ||
       kvGet(`${vatID}.vs.vom.vkind.${kindID}.descriptor`);
+    assert.typeof(kindMetaJSON, 'string');
     return JSON.parse(kindMetaJSON);
   };
 
@@ -236,6 +264,7 @@ export const makeHelpers = ({ db, EV }) => {
         const value = kvGet(`${vatID}.c.${kref}`);
         if (!value) continue;
         const [_value, _reachabilityFlag, vref] =
+          // @ts-expect-error may not be string
           value.match(krefToVrefValuePatt) ||
           Fail`unexpected c-list value ${value}`;
         const result = { vatID, kref, vref };
@@ -289,6 +318,7 @@ export const makeHelpers = ({ db, EV }) => {
     stable: { db, getRefs, kvGet, kvGetJSON, kvGlob, vatsByID, vatsByName },
   });
 };
+/** @typedef {ReturnType<typeof makeHelpers>} Helpers */
 
 /**
  * Wrap a swing-store sub-store (kvStore/transcriptStore/etc.) with a

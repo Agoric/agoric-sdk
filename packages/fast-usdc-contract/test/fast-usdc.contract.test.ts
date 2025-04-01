@@ -22,14 +22,13 @@ import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { heapVowE as VE } from '@agoric/vow/vat.js';
-import {
-  divideBy,
-  multiplyBy,
-  parseRatio,
-} from '@agoric/zoe/src/contractSupport/ratio.js';
-import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
+import { divideBy, multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
+import type {
+  Installation,
+  Instance,
+} from '@agoric/zoe/src/zoeService/utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E, type EReturn } from '@endo/far';
+import { E, type ERef, type EReturn } from '@endo/far';
 import { matches } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
 import path from 'path';
@@ -42,6 +41,8 @@ import type {
 } from '@agoric/fast-usdc/src/types.js';
 import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
 import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
+import type { ZoeService, Invitation } from '@agoric/zoe';
+import type { CosmosChainInfo } from '@agoric/orchestration';
 import type { FastUsdcSF } from '../src/fast-usdc.contract.ts';
 import type { OperatorOfferResult } from '../src/exos/transaction-feed.ts';
 import { commonSetup, uusdcOnAgoric } from './supports.js';
@@ -103,7 +104,7 @@ const startContract = async (
     ),
   );
   const { agoric, noble } = commonPrivateArgs.chainInfo;
-  const agoricToNoble = agoric.connections![noble.chainId];
+  const agoricToNoble = (agoric as CosmosChainInfo).connections![noble.chainId];
   await E(startKit.creatorFacet).connectToNoble(
     agoric.chainId,
     noble.chainId,

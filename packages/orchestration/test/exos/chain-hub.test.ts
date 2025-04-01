@@ -18,6 +18,8 @@ import { makeChainHub, registerAssets } from '../../src/exos/chain-hub.js';
 import knownChains from '../../src/fetched-chain-info.js';
 import { assets as assetFixture } from '../assets.fixture.js';
 import { provideFreshRootZone } from '../durability.js';
+import cctpChainInfo from '../../src/cctp-chain-info.js';
+import type { BaseChainInfo } from '../../src/orchestration-api.js';
 
 // fresh state for each test
 const setup = () => {
@@ -80,7 +82,9 @@ test('denom info support via getAsset and getDenom', async t => {
   const denom = 'utok1';
   const info1: CosmosChainInfo = {
     bech32Prefix: 'chain',
-    chainId: 'agoric',
+    chainId: 'agoric-any',
+    namespace: 'cosmos',
+    reference: 'agoric-any',
     stakingTokens: [{ denom }],
   };
   const tok1 = withAmountUtils(makeIssuerKit('Tok1'));
@@ -128,7 +132,12 @@ test('toward asset info in agoricNames (#9572)', async t => {
   await vt.when(chainHub.getChainInfo('cosmoshub'));
 
   for (const name of ['kava', 'fxcore']) {
-    chainHub.registerChain(name, { chainId: name, bech32Prefix: name });
+    chainHub.registerChain(name, {
+      chainId: name,
+      namespace: 'cosmos',
+      reference: name,
+      bech32Prefix: name,
+    });
   }
 
   await registerChainAssets(nameAdmin, 'cosmoshub', assetFixture.cosmoshub);
@@ -236,6 +245,23 @@ test('resolveAccountId', async t => {
     },
     'throws on invalid address format',
   );
+
+  const ETH_ADDR = 'eip155:1:0xab16a96D359eC26a11e2C2b3d8f8B8942d5Bfcdb';
+  t.is(chainHub.resolveAccountId(ETH_ADDR), ETH_ADDR);
+
+  const BTC_ADDR =
+    'bip122:000000000019d6689c085ae165831e93:128Lkh3S7CkDTBZ8W7BbpsN3YYizJMp8p6';
+  t.is(chainHub.resolveAccountId(BTC_ADDR), BTC_ADDR);
+
+  // should throw for CAIP-2
+  const CAIP2_ID = 'cosmos:osmosis-1';
+  t.throws(
+    () => chainHub.resolveAccountId(CAIP2_ID),
+    {
+      message: 'Chain info not found for bech32Prefix "cosmos:osmosis-"',
+    },
+    'throws on invalid address format',
+  );
 });
 
 test('updateChain updates existing chain info and mappings', t => {
@@ -243,6 +269,8 @@ test('updateChain updates existing chain info and mappings', t => {
 
   const initialInfo = {
     chainId: 'chain-1',
+    namespace: 'cosmos' as const,
+    reference: 'chain-1',
     bech32Prefix: 'chain',
   };
   const updatedInfo = {
@@ -274,9 +302,18 @@ test('updateChain updates existing chain info and mappings', t => {
 test('updateChain errors on non-existent chain', t => {
   const { chainHub } = setup();
 
-  t.throws(() => chainHub.updateChain('nonexistent', { chainId: 'test' }), {
-    message: 'Chain "nonexistent" not registered',
-  });
+  t.throws(
+    () =>
+      chainHub.updateChain('nonexistent', {
+        bech32Prefix: 'test',
+        chainId: 'test',
+        namespace: 'cosmos',
+        reference: 'test',
+      }),
+    {
+      message: 'Chain "nonexistent" not registered',
+    },
+  );
 });
 
 test('updateConnection updates existing connection info', async t => {
@@ -354,11 +391,23 @@ test('updateAsset updates existing asset and brand mappings', t => {
   const { chainHub } = setup();
 
   // Register chains
-  chainHub.registerChain('chain1', { chainId: 'chain-1', bech32Prefix: 'a' });
-  chainHub.registerChain('chain2', { chainId: 'chain-2', bech32Prefix: 'b' });
+  chainHub.registerChain('chain1', {
+    chainId: 'chain-1',
+    namespace: 'cosmos',
+    reference: 'chain-1',
+    bech32Prefix: 'a',
+  });
+  chainHub.registerChain('chain2', {
+    chainId: 'chain-2',
+    namespace: 'cosmos',
+    reference: 'chain-2',
+    bech32Prefix: 'b',
+  });
   chainHub.registerChain('agoric', {
     chainId: 'agoric-3',
     bech32Prefix: 'agoric',
+    namespace: 'cosmos',
+    reference: 'agoric-3',
   });
 
   // Create initial asset with brand
@@ -399,8 +448,15 @@ test('updateAsset errors appropriately', t => {
   chainHub.registerChain('agoric', {
     chainId: 'agoric-3',
     bech32Prefix: 'agoric',
+    namespace: 'cosmos',
+    reference: 'agoric-3',
   });
-  chainHub.registerChain('chain1', { chainId: 'chain-1', bech32Prefix: 'c1' });
+  chainHub.registerChain('chain1', {
+    chainId: 'chain-1',
+    namespace: 'cosmos',
+    reference: 'chain-1',
+    bech32Prefix: 'c1',
+  });
 
   const detail = {
     chainName: 'agoric',
@@ -460,4 +516,40 @@ test('updateAsset errors appropriately', t => {
       'error does not cause state change',
     );
   }
+});
+
+test('cctp, non-cosmos chains', async t => {
+  const {
+    chainHub,
+    vt: { when },
+  } = setup();
+
+  chainHub.registerChain('agoric', {
+    chainId: 'agoric-3',
+    bech32Prefix: 'agoric',
+    namespace: 'cosmos',
+    reference: 'agoric-3',
+  });
+
+  const { noble: _, ...cctpDestChains } = cctpChainInfo;
+  for (const [chainName, info] of Object.entries(cctpDestChains)) {
+    // can register non-cosmos (cctp) chains
+    chainHub.registerChain(chainName, info);
+
+    // can retrieve non-cosmos (cctp) chains
+    t.deepEqual(await when(chainHub.getChainInfo(chainName)), info);
+
+    // mimic call that occurs in the Orchestrator during `orch.getChain()`
+    const getChainsAndConnectionP = when(
+      chainHub.getChainsAndConnection(chainName, 'agoric'),
+    );
+    await t.notThrowsAsync(getChainsAndConnectionP);
+  }
+
+  // document full chain info
+  t.deepEqual(await when(chainHub.getChainInfo('ethereum')), {
+    namespace: 'eip155',
+    reference: '1',
+    cctpDestinationDomain: 0,
+  });
 });

@@ -452,6 +452,7 @@ export const makeLaunchChain = (
         stateDir: stateDBDir,
         env,
         serviceName: TELEMETRY_SERVICE_NAME,
+        otelMeterName: 'ag-chain-cosmos',
       }));
 
     const swingStoreTraceFile = processValue.getPath({

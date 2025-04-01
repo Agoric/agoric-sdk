@@ -16,7 +16,7 @@ import {
   makeFakeBankManagerKit,
 } from '@agoric/vats/tools/bank-utils.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import { E, Far } from '@endo/far';
 import path from 'path';
 import { makeHeapZone } from '@agoric/zone';

@@ -299,7 +299,10 @@ export function makeVatWarehouse({
    */
   async function replayTranscript(vatID, vatKeeper, manager) {
     const total = vatKeeper.transcriptSize();
-    kernelSlog.write({ type: 'start-replay', vatID, deliveries: total });
+    const finish = kernelSlog.startDuration(['start-replay', 'finish-replay'], {
+      vatID,
+      deliveries: total,
+    });
     let first = true;
     for await (const [deliveryNum, te] of vatKeeper.getTranscript()) {
       // if (deliveryNum % 100 === 0) {
@@ -326,7 +329,7 @@ export function makeVatWarehouse({
       finishSlog(status);
       sim.finishSimulation(); // will throw if syscalls did not match
     }
-    kernelSlog.write({ type: 'finish-replay', vatID });
+    finish({ deliveries: undefined });
   }
 
   /**

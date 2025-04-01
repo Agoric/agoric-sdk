@@ -1,8 +1,10 @@
 import { Fail, q } from '@endo/errors';
+import { fromHex } from '@cosmjs/encoding';
 
 /**
  * @import {IBCConnectionID} from '@agoric/vats';
- * @import {CosmosChainAddress, ScopedChainId} from '../types.js';
+ * @import {Bech32Address, CosmosChainAddress, CaipChainId} from '../types.js';
+ * @import {AccountId, AccountIdArg, Caip10Record} from '../orchestration-api.js';
  * @import {RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  */
 
@@ -92,7 +94,7 @@ harden(findAddressField);
  * [bech32.js](https://github.com/bitcoinjs/bech32/blob/5ceb0e3d4625561a459c85643ca6947739b2d83c/src/index.ts#L146)
  * for the reference implementation.
  *
- * @param {string} address - The full Bech32-encoded address.
+ * @param {Bech32Address | string} address - The full Bech32-encoded address.
  * @returns {string} - The extracted HRP (prefix).
  */
 export const getBech32Prefix = address => {
@@ -104,40 +106,71 @@ export const getBech32Prefix = address => {
 };
 
 /**
- * Parses an account ID into a structured format following CAIP-10 standards.
+ * Parse an account ID into a structured format following CAIP-10 standards.
  *
- * @param {string} partialId CAIP-10 account ID or an unscoped on-chain address
- * @returns {{
- *       namespace: string;
- *       reference: string;
- *       accountAddress: string;
- *     }
- *   | {
- *       accountAddress: string;
- *     }}
- *   - The parsed account details.
+ * @param {AccountIdArg} idArg CAIP-10 account ID or an unscoped on-chain
+ *   address
+ * @returns {Caip10Record} - The parsed account details.
  */
-export const parseAccountId = partialId => {
-  if (typeof partialId !== 'string' || !partialId.length) {
-    Fail`Empty accountId: ${q(partialId)}`;
+export const parseAccountIdArg = idArg => {
+  if (typeof idArg === 'string') {
+    return parseAccountId(idArg);
   }
 
-  const parts = partialId.split(':');
+  // it's a CosmosChainAddress
+  return {
+    namespace: 'cosmos',
+    reference: idArg.chainId,
+    accountAddress: idArg.value,
+  };
+};
+harden(parseAccountIdArg);
 
-  if (parts.length === 3) {
-    // Full CAIP-10
-    const [namespace, reference, accountAddress] = parts;
-    return {
-      namespace,
-      reference,
-      accountAddress,
-    };
-  } else if (parts.length === 1) {
-    return {
-      accountAddress: partialId,
-    };
-  }
+/**
+ * Parse an account ID into a structured format following CAIP-10 standards.
+ *
+ * @param {AccountId} accountId CAIP-10 account ID
+ * @returns {Caip10Record} - The parsed account details.
+ */
+export const parseAccountId = accountId => {
+  const parts = accountId.split(':');
+  parts.length === 3 || Fail`malformed CAIP-10 accountId: ${q(accountId)}`;
 
-  throw Fail`Invalid accountId: ${q(partialId)}`;
+  // Full CAIP-10
+  const [namespace, reference, accountAddress] = parts;
+  return {
+    namespace,
+    reference,
+    accountAddress,
+  };
 };
 harden(parseAccountId);
+
+/**
+ * Left pad the mint recipient address with 0's to 32 bytes. standard ETH
+ * addresses are 20 bytes, but for ABI data structures and other reasons, 32
+ * bytes are used.
+ *
+ * @param {string} rawAddress
+ */
+export const leftPadEthAddressTo32Bytes = rawAddress => {
+  const cleanedAddress = rawAddress.replace(/^0x/, '');
+  const zeroesNeeded = 64 - cleanedAddress.length;
+  const paddedAddress = '0'.repeat(zeroesNeeded) + cleanedAddress;
+  return fromHex(paddedAddress);
+};
+
+/**
+ * @param {AccountId} accountId
+ * @returns {Uint8Array}
+ * @throws {Error} if namespace not supported
+ */
+export const accountIdTo32Bytes = accountId => {
+  const { namespace, accountAddress } = parseAccountId(accountId);
+  switch (namespace) {
+    case 'eip155':
+      return leftPadEthAddressTo32Bytes(accountAddress);
+    default:
+      throw new Error(`namespace ${namespace} not supported`);
+  }
+};

@@ -1,5 +1,5 @@
 import { AmountMath } from '@agoric/ertp';
-import { multiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { multiplyBy } from '@agoric/ertp/src/ratio.js';
 import { Fail } from '@endo/errors';
 import { mustMatch } from '@endo/patterns';
 import { FeeConfigShape } from '../type-guards.js';

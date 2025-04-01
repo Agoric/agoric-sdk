@@ -1,4 +1,4 @@
-/* eslint-disable jsdoc/require-param, jsdoc/require-returns-type, @jessie.js/safe-await-separator */
+/* eslint-disable jsdoc/require-returns-type, @jessie.js/safe-await-separator */
 /* eslint-env node */
 
 import childProcessAmbient from 'child_process';
@@ -9,6 +9,7 @@ import { inspect } from 'util';
 
 import type { TypedPublished } from '@agoric/client-utils';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
+import { makeHelpers } from '@agoric/cosmic-swingset/tools/inquisitor.mjs';
 import {
   BridgeId,
   makeTracer,
@@ -45,20 +46,20 @@ import {
 
 import type { ExecutionContext as AvaT } from 'ava';
 
+import type { FastUSDCCorePowers } from '@aglocal/fast-usdc-deploy/src/start-fast-usdc.core.js';
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
 import { computronCounter } from '@agoric/cosmic-swingset/src/computron-counter.js';
 import {
   defaultBeansPerVatCreation,
   defaultBeansPerXsnapComputron,
 } from '@agoric/cosmic-swingset/src/sim-params.js';
-import type { FastUSDCCorePowers } from '@aglocal/fast-usdc-deploy/src/start-fast-usdc.core.js';
 import type { EconomyBootstrapPowers } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
 import type { BridgeHandler, IBCDowncallMethod, IBCMethod } from '@agoric/vats';
 import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
 import type { EProxy } from '@endo/eventual-send';
-import { tmpdir } from 'node:os';
 import { FileSystemCache, NodeFetchCache } from 'node-fetch-cache';
+import { tmpdir } from 'node:os';
 import { icaMocks, protoMsgMockMap, protoMsgMocks } from './ibc/mocks.js';
 
 const trace = makeTracer('BSTSupport', false);
@@ -822,6 +823,25 @@ export const makeSwingsetTestKit = async (
     },
   };
 
+  const getVatDetailsByName = async (nameSubstr: string) => {
+    // XXX make every time because vatsByName is a snapshot during makeHelpers()
+    const { stable } = makeHelpers({
+      db: swingStore.internal.db,
+      EV: runUtils.EV,
+    });
+    // array-ify so we can flatten the array when names collide
+    const allVats = [...stable.vatsByName.values()].flat(1);
+    const matches = allVats.filter(v => v.name.includes(nameSubstr));
+
+    return matches.map(vat => {
+      const stmt = stable.db.prepare(
+        'SELECT incarnation FROM transcriptSpans WHERE isCurrent = 1 AND vatID = ?',
+      );
+      const { incarnation } = stmt.get(vat.vatID) as any;
+      return { ...vat, incarnation };
+    });
+  };
+
   return {
     advanceTimeBy,
     advanceTimeTo,
@@ -830,6 +850,7 @@ export const makeSwingsetTestKit = async (
     controller,
     evalProposal,
     getCrankNumber,
+    getVatDetailsByName,
     jumpTimeTo,
     readLatest,
     readPublished,

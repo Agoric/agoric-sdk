@@ -1,12 +1,12 @@
-import { AssetKind } from '@agoric/ertp';
+import { AssetKind, type Amount } from '@agoric/ertp';
 import {
   FastUSDCTermsShape,
   FeeConfigShape,
+  CosmosChainInfoShapeV1,
 } from '@agoric/fast-usdc/src/type-guards.js';
 import { makeTracer } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import {
-  CosmosChainInfoShape,
   DenomDetailShape,
   DenomShape,
   type IBCConnectionInfo,
@@ -16,9 +16,9 @@ import {
   type OrchestrationAccount,
   type OrchestrationPowers,
   type OrchestrationTools,
-  type CosmosChainInfo,
   type Denom,
   type DenomDetail,
+  type ChainInfo,
 } from '@agoric/orchestration';
 import { makeZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
@@ -29,6 +29,7 @@ import { M } from '@endo/patterns';
 
 import type { HostInterface } from '@agoric/async-flow';
 import type {
+  ChainHubChainInfo,
   ContractRecord,
   FastUsdcTerms,
   FeeConfig,
@@ -39,9 +40,10 @@ import type {
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
 import type { Zone } from '@agoric/zone';
-import { prepareAdvancer } from './exos/advancer.js';
-import { prepareLiquidityPoolKit } from './exos/liquidity-pool.js';
-import { prepareSettler } from './exos/settler.js';
+import type { ContractMeta, Invitation, ZCF } from '@agoric/zoe';
+import { prepareAdvancer } from './exos/advancer.ts';
+import { prepareLiquidityPoolKit } from './exos/liquidity-pool.ts';
+import { prepareSettler } from './exos/settler.ts';
 import { prepareStatusManager } from './exos/status-manager.ts';
 import type { OperatorOfferResult } from './exos/transaction-feed.ts';
 import { prepareTransactionFeedKit } from './exos/transaction-feed.ts';
@@ -59,7 +61,7 @@ export const meta = {
     // @ts-expect-error TypedPattern not recognized as record
     ...OrchestrationPowersShape,
     assetInfo: M.arrayOf([DenomShape, DenomDetailShape]),
-    chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
+    chainInfo: M.recordOf(M.string(), CosmosChainInfoShapeV1),
     feeConfig: FeeConfigShape,
     marshaller: M.remotable(),
     poolMetricsNode: M.remotable(),
@@ -89,7 +91,7 @@ export const contract = async (
   zcf: ZCF<FastUsdcTerms>,
   privateArgs: OrchestrationPowers & {
     assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
-    chainInfo: Record<string, CosmosChainInfo>;
+    chainInfo: Record<string, ChainHubChainInfo>;
     feeConfig: FeeConfig;
     marshaller: Marshaller;
     storageNode: StorageNode;
@@ -162,7 +164,7 @@ export const contract = async (
     removeOperator(operatorId: string): void {
       return feedKit.creator.removeOperator(operatorId);
     },
-    async getContractFeeBalance() {
+    async getContractFeeBalance(): Promise<Amount<'nat'>> {
       return poolKit.feeRecipient.getContractFeeBalance();
     },
     async makeWithdrawFeesInvitation(): Promise<Invitation<unknown>> {
@@ -214,6 +216,14 @@ export const contract = async (
     },
     deleteCompletedTxs() {
       return statusManager.deleteCompletedTxs();
+    },
+    /** @type {typeof chainHub.updateChain} */
+    updateChain(chainName, chainInfo) {
+      return chainHub.updateChain(chainName, chainInfo);
+    },
+    /** @type {typeof chainHub.registerChain} */
+    registerChain(chainName, chainInfo) {
+      return chainHub.registerChain(chainName, chainInfo);
     },
   });
 
@@ -334,7 +344,9 @@ export const contract = async (
 };
 harden(contract);
 
-export const start = withOrchestration(contract);
+export const start = withOrchestration(contract, {
+  chainInfoValueShape: CosmosChainInfoShapeV1,
+});
 harden(start);
 
 export type FastUsdcSF = typeof start;
