@@ -5,6 +5,7 @@ import { TimeMath } from '@agoric/time';
  * @import {TimerService} from '@agoric/time';
  * @import {Remote} from '@agoric/internal';
  * @import {EReturn} from '@endo/far';
+ * @import {IBCMsgTransferOptions} from '../cosmos-api';
  * @import {MsgTransfer} from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
  */
 
@@ -19,7 +20,7 @@ export const NANOSECONDS_PER_SECOND = 1_000_000_000n;
  * @param {Remote<TimerService>} timer
  */
 export function makeTimestampHelper(timer) {
-  return harden({
+  const self = harden({
     /**
      * XXX do this need to be resumable / use Vows?
      *
@@ -42,7 +43,18 @@ export function makeTimestampHelper(timer) {
         NANOSECONDS_PER_SECOND
       );
     },
+    /** @param {IBCMsgTransferOptions} [opts] */
+    vowOrValueFromOpts(opts) {
+      if (opts && 'timeoutTimestamp' in opts) return opts.timeoutTimestamp;
+      if (opts && 'timeoutHeight' in opts) return 0n;
+      return self.getTimeoutTimestampNS(
+        opts && 'timeoutRelativeSeconds' in opts
+          ? opts.timeoutRelativeSeconds
+          : undefined,
+      );
+    },
   });
+  return self;
 }
 
 /** @typedef {EReturn<typeof makeTimestampHelper>} TimestampHelper */
