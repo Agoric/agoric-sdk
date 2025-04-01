@@ -242,6 +242,8 @@ const makeCctp = (
 ) => {
   const { runInbound } = ctx.bridgeUtils;
 
+  const modern = new Date('2020-01-01');
+
   return harden({
     depositForBurn(
       amount: bigint,
@@ -254,6 +256,7 @@ const makeCctp = (
       const txInfo: Omit<CctpTxEvidence, 'aux'> = harden({
         blockHash: `0x${hex2.repeat(64 / hex2.length)}`,
         blockNumber: 21037663n + BigInt(nonce),
+        blockTimestamp: BigInt(modern.getTime() + nonce * 1000),
         txHash: `0x${hex1.repeat(64 / hex1.length)}`,
         tx: { amount, forwardingAddress, sender },
         chainId: 42161,
