@@ -1963,7 +1963,17 @@ export default function buildKernel(
     const currentVatPos = {};
 
     for (const [vatID, endPos] of getAllVatPosEntries()) {
-      if (previousVatPos[vatID] !== endPos) {
+      const vatUsesTranscript = endPos !== 0;
+      if (!vatUsesTranscript) {
+        // The comms vat is a little special. It doesn't use a transcript,
+        // doesn't implement BOYD, and is created with a never reap threshold.
+        //
+        // Here we conflate a vat that doesn't use a transcript with a vat
+        // that cannot reap. We do not bother checking the vat options because
+        // in tests we would actually like to force reap normal vats that may
+        // have been configured with a never threshold.
+        continue;
+      } else if ((previousVatPos[vatID] ?? 0) < endPos) {
         kernelKeeper.scheduleReap(vatID);
         // We just added one delivery
         currentVatPos[vatID] = endPos + 1;
