@@ -21,7 +21,7 @@ echo "check rosetta-cli is installed"
 if [ ! -x ./bin/rosetta-cli ]; then
   # Installs rosetta-cli into the local ./bin directory
   # https://github.com/coinbase/rosetta-cli#installation
-  curl -sSfL https://raw.githubusercontent.com/coinbase/rosetta-cli/v0.10.3/scripts/install.sh | sh -s
+  curl -sSfL https://raw.githubusercontent.com/coinbase/mesh-cli/v0.10.3/scripts/install.sh | sh -s
 fi
 
 echo "checking data API"
