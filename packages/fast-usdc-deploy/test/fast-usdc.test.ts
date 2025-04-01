@@ -489,7 +489,7 @@ test.serial('minted before observed; forward path', async t => {
   const { bridgeUtils, storage } = t.context;
 
   // Mock user data
-  const EUD = 'agoric1usermintedbeforeobserved';
+  const EUD = 'cosmos1usermintedbeforeobserved';
   const lastNodeValue = storage.getValues('published.fastUsdc').at(-1);
   const { settlementAccount, nobleICA } = JSON.parse(NonNullish(lastNodeValue));
 

@@ -48,6 +48,7 @@ import type {
 import type { ZCF, ZCFSeat } from '@agoric/zoe/src/zoeService/zoe.js';
 import type { MapStore } from '@agoric/store';
 import type { VowTools } from '@agoric/vow';
+import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { LiquidityPoolKit } from './liquidity-pool.js';
 import type { StatusManager } from './status-manager.js';
 import { asMultiset } from '../utils/store.ts';
@@ -139,6 +140,7 @@ export const stateShape = harden({
 export const prepareSettler = (
   zone: Zone,
   {
+    currentChainReference,
     chainHub,
     feeConfig,
     log = makeTracer('Settler', true),
@@ -148,6 +150,8 @@ export const prepareSettler = (
     withdrawToSeat,
     zcf,
   }: {
+    /** e.g., `agoric-3` */
+    currentChainReference: string;
     chainHub: ChainHub;
     feeConfig: FeeConfig;
     log?: LogFn;
@@ -402,12 +406,19 @@ export const prepareSettler = (
           })();
           if (!dest) return;
 
-          const txfrV = E(settlementAccount).transfer(
-            dest,
-            AmountMath.make(USDC, fullValue),
-            { forwardOpts: { intermediateRecipient } },
+          const { reference } = parseAccountId(dest);
+          const amt = AmountMath.make(USDC, fullValue);
+          const transferOrSendV =
+            reference === currentChainReference
+              ? E(settlementAccount).send(dest, amt)
+              : E(settlementAccount).transfer(dest, amt, {
+                  forwardOpts: { intermediateRecipient },
+                });
+          void vowTools.watch(
+            transferOrSendV,
+            this.facets.transferHandler,
+            txHash,
           );
-          void vowTools.watch(txfrV, this.facets.transferHandler, txHash);
         },
       },
       transferHandler: {

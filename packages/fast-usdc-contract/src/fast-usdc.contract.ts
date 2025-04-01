@@ -128,6 +128,7 @@ export const contract = async (
     vowTools: tools.vowTools,
     zcf,
     chainHub,
+    currentChainReference: privateArgs.chainInfo.agoric.chainId,
   });
 
   const zoeTools = makeZoeTools(zcf, vowTools);

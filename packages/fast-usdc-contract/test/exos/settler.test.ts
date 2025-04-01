@@ -19,6 +19,7 @@ import type {
 import { PendingTxStatus, TxStatus } from '@agoric/fast-usdc/src/constants.js';
 import type { CctpTxEvidence } from '@agoric/fast-usdc/src/types.js';
 import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
+import type { Baggage } from '@agoric/vat-data';
 import {
   prepareSettler,
   stateShape,
@@ -92,6 +93,8 @@ const makeTestContext = async t => {
   const { chainHub } = common.facadeServices;
   chainHub.registerChain('dydx', fetchedChainInfo.dydx);
   chainHub.registerChain('osmosis', fetchedChainInfo.osmosis);
+  chainHub.registerChain('agoric', fetchedChainInfo.agoric);
+
   const makeSettler = prepareSettler(zone.subZone('settler'), {
     statusManager,
     USDC: usdc.brand,
@@ -100,6 +103,7 @@ const makeTestContext = async t => {
     feeConfig: common.commonPrivateArgs.feeConfig,
     vowTools: common.utils.vowTools,
     chainHub,
+    currentChainReference: 'agoric-3',
     log,
   });
 
@@ -904,4 +908,70 @@ test('bad packet data', async t => {
     'invalid event packet',
     ['could not parse packet data', 'not json'],
   ]);
+});
+
+test('forward to agoric EUD', async t => {
+  const {
+    common,
+    makeSettler,
+    statusManager,
+    defaultSettlerParams,
+    repayer,
+    makeSimulate,
+    accounts,
+    peekCalls,
+  } = t.context;
+  const { usdc } = common.brands;
+
+  const settler = makeSettler({
+    repayer,
+    settlementAccount: accounts.settlement.account,
+    ...defaultSettlerParams,
+  });
+
+  const simulate = makeSimulate(settler.notifier);
+  const cctpTxEvidence = simulate.skipAdvance(
+    ['TOO_LARGE_AMOUNT'],
+    MockCctpTxEvidences.AGORIC_PLUS_AGORIC(),
+  );
+
+  t.log('Simulate incoming IBC settlement');
+  void settler.tap.receiveUpcall(MockVTransferEvents.AGORIC_PLUS_AGORIC());
+  await eventLoopIteration();
+
+  t.log('funds are forwarded; no interaction with LP');
+  t.deepEqual(peekCalls(), []);
+  t.deepEqual(
+    accounts.settlement.callLog,
+    [
+      [
+        'send',
+        'cosmos:agoric-3:agoric13rj0cc0hm5ac2nt0sdup2l7gvkx4v9tyvgq3h2',
+        usdc.make(250000000n),
+      ],
+    ],
+    'bank/send used, not ibc/transfer',
+  );
+
+  t.deepEqual(
+    statusManager.lookupPending(
+      cctpTxEvidence.tx.forwardingAddress,
+      cctpTxEvidence.tx.amount,
+    ),
+    [],
+    'dequeueStatus entry removed from StatusManger',
+  );
+  const { storage } = t.context;
+  accounts.settlement.sendVResolver.resolve(undefined);
+  await eventLoopIteration();
+  t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
+    { evidence: cctpTxEvidence, status: 'OBSERVED' },
+    { risksIdentified: ['TOO_LARGE_AMOUNT'], status: 'ADVANCE_SKIPPED' },
+    { status: 'FORWARDED' },
+  ]);
+
+  // Check deletion of FORWARDED transactions
+  statusManager.deleteCompletedTxs();
+  await eventLoopIteration();
+  t.is(storage.data.get(`fun.txns.${cctpTxEvidence.txHash}`), undefined);
 });
