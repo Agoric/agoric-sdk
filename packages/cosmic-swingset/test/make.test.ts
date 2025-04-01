@@ -79,7 +79,9 @@ test.serial('make and exec', async t => {
   // TODO: check exit code? It varies.
 });
 
-test.serial('integration test: rosetta CI', async t => {
+// rosetta was renamed to mesh, which broke their install script.
+// disabled until there is a resolution to https://github.com/coinbase/mesh-cli/issues/422
+test.serial.failing('integration test: rosetta CI', async t => {
   // Resume the chain... and concurrently, start a faucet AND run the rosetta-cli tests
   const { scenario2 } = t.context;
 
