@@ -75,6 +75,9 @@ var (
 
 	DefaultBootstrapVatConfig = "@agoric/vm-config/decentral-core-config.json"
 
+	DefaultInstallationDeadlineBlocks  int64 = -1           // unlimited
+	DefaultInstallationDeadlineSeconds int64 = 24 * 60 * 60 // 24 hours
+
 	DefaultPowerFlagFees = []PowerFlagFee{
 		NewPowerFlagFee(PowerFlagSmartWallet, sdk.NewCoins(sdk.NewInt64Coin("ubld", 10_000_000))),
 	}
@@ -100,6 +103,11 @@ var (
 		// UintMapEntry{VatCleanupSnapshots, DefaultVatCleanupSnapshots},
 		// UintMapEntry{VatCleanupTranscripts, DefaultVatCleanupTranscripts},
 	}
+
+	// DefaultBundleUncompressedSizeLimitBytes is the (exclusive) limit on uncompressed bundle size.
+	// We must ensure there is an exclusive int64 limit in order to detect an underflow.
+	DefaultBundleUncompressedSizeLimitBytes int64 = 10 * 1024 * 1024 // 10MB
+	DefaultChunkSizeLimitBytes              int64 = 512 * 1024       // 512KB
 )
 
 // move DefaultBeansPerUnit to a function to allow for boot overriding of the Default params

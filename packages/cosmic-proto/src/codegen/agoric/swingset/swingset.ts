@@ -5,6 +5,54 @@ import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
+/** Current state of this chunk. */
+export enum ChunkState {
+  /** CHUNK_STATE_UNSPECIFIED - Unknown state. */
+  CHUNK_STATE_UNSPECIFIED = 0,
+  /** CHUNK_STATE_IN_FLIGHT - The chunk is still in-flight. */
+  CHUNK_STATE_IN_FLIGHT = 1,
+  /** CHUNK_STATE_RECEIVED - The chunk has been received. */
+  CHUNK_STATE_RECEIVED = 2,
+  /** CHUNK_STATE_PROCESSED - The chunk has been processed. */
+  CHUNK_STATE_PROCESSED = 3,
+  UNRECOGNIZED = -1,
+}
+export const ChunkStateSDKType = ChunkState;
+export function chunkStateFromJSON(object: any): ChunkState {
+  switch (object) {
+    case 0:
+    case 'CHUNK_STATE_UNSPECIFIED':
+      return ChunkState.CHUNK_STATE_UNSPECIFIED;
+    case 1:
+    case 'CHUNK_STATE_IN_FLIGHT':
+      return ChunkState.CHUNK_STATE_IN_FLIGHT;
+    case 2:
+    case 'CHUNK_STATE_RECEIVED':
+      return ChunkState.CHUNK_STATE_RECEIVED;
+    case 3:
+    case 'CHUNK_STATE_PROCESSED':
+      return ChunkState.CHUNK_STATE_PROCESSED;
+    case -1:
+    case 'UNRECOGNIZED':
+    default:
+      return ChunkState.UNRECOGNIZED;
+  }
+}
+export function chunkStateToJSON(object: ChunkState): string {
+  switch (object) {
+    case ChunkState.CHUNK_STATE_UNSPECIFIED:
+      return 'CHUNK_STATE_UNSPECIFIED';
+    case ChunkState.CHUNK_STATE_IN_FLIGHT:
+      return 'CHUNK_STATE_IN_FLIGHT';
+    case ChunkState.CHUNK_STATE_RECEIVED:
+      return 'CHUNK_STATE_RECEIVED';
+    case ChunkState.CHUNK_STATE_PROCESSED:
+      return 'CHUNK_STATE_PROCESSED';
+    case ChunkState.UNRECOGNIZED:
+    default:
+      return 'UNRECOGNIZED';
+  }
+}
 /**
  * CoreEvalProposal is a gov Content type for evaluating code in the SwingSet
  * core.
@@ -118,6 +166,20 @@ export interface Params {
    * permuting it.
    */
   vatCleanupBudget: UintMapEntry[];
+  /**
+   * The maximum number of blocks that an async installation can use.  -1 is
+   * unlimited.
+   */
+  installationDeadlineBlocks: bigint;
+  /**
+   * The maximum number of seconds that an async installation can use.  -1 is
+   * unlimited.
+   */
+  installationDeadlineSeconds: bigint;
+  /** The maximum size of of a bundle (0 implies default 10MB) */
+  bundleUncompressedSizeLimitBytes: bigint;
+  /** The maximum size of a bundle or artifact chunk (0 implies default 512KB) */
+  chunkSizeLimitBytes: bigint;
 }
 export interface ParamsProtoMsg {
   typeUrl: '/agoric.swingset.Params';
@@ -131,6 +193,10 @@ export interface ParamsSDKType {
   power_flag_fees: PowerFlagFeeSDKType[];
   queue_max: QueueSizeSDKType[];
   vat_cleanup_budget: UintMapEntrySDKType[];
+  installation_deadline_blocks: bigint;
+  installation_deadline_seconds: bigint;
+  bundle_uncompressed_size_limit_bytes: bigint;
+  chunk_size_limit_bytes: bigint;
 }
 /** The current state of the module. */
 export interface State {
@@ -139,6 +205,10 @@ export interface State {
    * Transactions which attempt to enqueue more should be rejected.
    */
   queueAllowed: QueueSize[];
+  /** Doubly-linked list in order of start block and time. */
+  firstChunkedArtifactId: bigint;
+  /** The last chunked artifact id that has not expired or completed. */
+  lastChunkedArtifactId: bigint;
 }
 export interface StateProtoMsg {
   typeUrl: '/agoric.swingset.State';
@@ -147,6 +217,8 @@ export interface StateProtoMsg {
 /** The current state of the module. */
 export interface StateSDKType {
   queue_allowed: QueueSizeSDKType[];
+  first_chunked_artifact_id: bigint;
+  last_chunked_artifact_id: bigint;
 }
 /** Map element of a string key to a Nat bean count. */
 export interface StringBeans {
@@ -262,6 +334,87 @@ export interface SwingStoreArtifactProtoMsg {
 export interface SwingStoreArtifactSDKType {
   name: string;
   data: Uint8Array;
+}
+/**
+ * ChunkedArtifact is the manifest for an artifact that is submitted across
+ * multiple transactions, in chunks, as when using InstallBundle to submit
+ * chunks.
+ */
+export interface ChunkedArtifact {
+  /** The SHA-512 hash of the compartment-map.json file inside the bundle. */
+  sha512: string;
+  /** The size of the final bundle artifact in bytes. */
+  sizeBytes: bigint;
+  /**
+   * Information about the chunks that will be concatenated to form this
+   * bundle.
+   */
+  chunks: ChunkInfo[];
+}
+export interface ChunkedArtifactProtoMsg {
+  typeUrl: '/agoric.swingset.ChunkedArtifact';
+  value: Uint8Array;
+}
+/**
+ * ChunkedArtifact is the manifest for an artifact that is submitted across
+ * multiple transactions, in chunks, as when using InstallBundle to submit
+ * chunks.
+ */
+export interface ChunkedArtifactSDKType {
+  sha512: string;
+  size_bytes: bigint;
+  chunks: ChunkInfoSDKType[];
+}
+/** Information about a chunk of a bundle. */
+export interface ChunkInfo {
+  /** The SHA-512 hash of the chunk contents. */
+  sha512: string;
+  /** The chunk size in bytes. */
+  sizeBytes: bigint;
+  /** The current state of the chunk. */
+  state: ChunkState;
+}
+export interface ChunkInfoProtoMsg {
+  typeUrl: '/agoric.swingset.ChunkInfo';
+  value: Uint8Array;
+}
+/** Information about a chunk of a bundle. */
+export interface ChunkInfoSDKType {
+  sha512: string;
+  size_bytes: bigint;
+  state: ChunkState;
+}
+/**
+ * A node in a doubly-linked-list of chunks of a chunked artifact, as used for
+ * chunked bundle installation, in order of ascending block time.
+ * The keeper uses this to expediently expire stale chunks.
+ */
+export interface ChunkedArtifactNode {
+  /** The id of the pending bundle installation. */
+  chunkedArtifactId: bigint;
+  /** Doubly-linked list. */
+  nextId: bigint;
+  prevId: bigint;
+  /** The time at which the pending installation began, in UNIX epoch seconds. */
+  startTimeUnix: bigint;
+  /** The block at which the pending installation began. */
+  startBlockHeight: bigint;
+}
+export interface ChunkedArtifactNodeProtoMsg {
+  typeUrl: '/agoric.swingset.ChunkedArtifactNode';
+  value: Uint8Array;
+}
+/**
+ * A node in a doubly-linked-list of chunks of a chunked artifact, as used for
+ * chunked bundle installation, in order of ascending block time.
+ * The keeper uses this to expediently expire stale chunks.
+ */
+export interface ChunkedArtifactNodeSDKType {
+  chunked_artifact_id: bigint;
+  next_id: bigint;
+  prev_id: bigint;
+  start_time_unix: bigint;
+  start_block_height: bigint;
 }
 function createBaseCoreEvalProposal(): CoreEvalProposal {
   return {
@@ -434,6 +587,10 @@ function createBaseParams(): Params {
     powerFlagFees: [],
     queueMax: [],
     vatCleanupBudget: [],
+    installationDeadlineBlocks: BigInt(0),
+    installationDeadlineSeconds: BigInt(0),
+    bundleUncompressedSizeLimitBytes: BigInt(0),
+    chunkSizeLimitBytes: BigInt(0),
   };
 }
 export const Params = {
@@ -459,6 +616,18 @@ export const Params = {
     }
     for (const v of message.vatCleanupBudget) {
       UintMapEntry.encode(v!, writer.uint32(50).fork()).ldelim();
+    }
+    if (message.installationDeadlineBlocks !== BigInt(0)) {
+      writer.uint32(56).int64(message.installationDeadlineBlocks);
+    }
+    if (message.installationDeadlineSeconds !== BigInt(0)) {
+      writer.uint32(64).int64(message.installationDeadlineSeconds);
+    }
+    if (message.bundleUncompressedSizeLimitBytes !== BigInt(0)) {
+      writer.uint32(72).int64(message.bundleUncompressedSizeLimitBytes);
+    }
+    if (message.chunkSizeLimitBytes !== BigInt(0)) {
+      writer.uint32(80).int64(message.chunkSizeLimitBytes);
     }
     return writer;
   },
@@ -494,6 +663,18 @@ export const Params = {
             UintMapEntry.decode(reader, reader.uint32()),
           );
           break;
+        case 7:
+          message.installationDeadlineBlocks = reader.int64();
+          break;
+        case 8:
+          message.installationDeadlineSeconds = reader.int64();
+          break;
+        case 9:
+          message.bundleUncompressedSizeLimitBytes = reader.int64();
+          break;
+        case 10:
+          message.chunkSizeLimitBytes = reader.int64();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -521,6 +702,20 @@ export const Params = {
       vatCleanupBudget: Array.isArray(object?.vatCleanupBudget)
         ? object.vatCleanupBudget.map((e: any) => UintMapEntry.fromJSON(e))
         : [],
+      installationDeadlineBlocks: isSet(object.installationDeadlineBlocks)
+        ? BigInt(object.installationDeadlineBlocks.toString())
+        : BigInt(0),
+      installationDeadlineSeconds: isSet(object.installationDeadlineSeconds)
+        ? BigInt(object.installationDeadlineSeconds.toString())
+        : BigInt(0),
+      bundleUncompressedSizeLimitBytes: isSet(
+        object.bundleUncompressedSizeLimitBytes,
+      )
+        ? BigInt(object.bundleUncompressedSizeLimitBytes.toString())
+        : BigInt(0),
+      chunkSizeLimitBytes: isSet(object.chunkSizeLimitBytes)
+        ? BigInt(object.chunkSizeLimitBytes.toString())
+        : BigInt(0),
     };
   },
   toJSON(message: Params): JsonSafe<Params> {
@@ -562,6 +757,22 @@ export const Params = {
     } else {
       obj.vatCleanupBudget = [];
     }
+    message.installationDeadlineBlocks !== undefined &&
+      (obj.installationDeadlineBlocks = (
+        message.installationDeadlineBlocks || BigInt(0)
+      ).toString());
+    message.installationDeadlineSeconds !== undefined &&
+      (obj.installationDeadlineSeconds = (
+        message.installationDeadlineSeconds || BigInt(0)
+      ).toString());
+    message.bundleUncompressedSizeLimitBytes !== undefined &&
+      (obj.bundleUncompressedSizeLimitBytes = (
+        message.bundleUncompressedSizeLimitBytes || BigInt(0)
+      ).toString());
+    message.chunkSizeLimitBytes !== undefined &&
+      (obj.chunkSizeLimitBytes = (
+        message.chunkSizeLimitBytes || BigInt(0)
+      ).toString());
     return obj;
   },
   fromPartial(object: Partial<Params>): Params {
@@ -577,6 +788,26 @@ export const Params = {
       object.queueMax?.map(e => QueueSize.fromPartial(e)) || [];
     message.vatCleanupBudget =
       object.vatCleanupBudget?.map(e => UintMapEntry.fromPartial(e)) || [];
+    message.installationDeadlineBlocks =
+      object.installationDeadlineBlocks !== undefined &&
+      object.installationDeadlineBlocks !== null
+        ? BigInt(object.installationDeadlineBlocks.toString())
+        : BigInt(0);
+    message.installationDeadlineSeconds =
+      object.installationDeadlineSeconds !== undefined &&
+      object.installationDeadlineSeconds !== null
+        ? BigInt(object.installationDeadlineSeconds.toString())
+        : BigInt(0);
+    message.bundleUncompressedSizeLimitBytes =
+      object.bundleUncompressedSizeLimitBytes !== undefined &&
+      object.bundleUncompressedSizeLimitBytes !== null
+        ? BigInt(object.bundleUncompressedSizeLimitBytes.toString())
+        : BigInt(0);
+    message.chunkSizeLimitBytes =
+      object.chunkSizeLimitBytes !== undefined &&
+      object.chunkSizeLimitBytes !== null
+        ? BigInt(object.chunkSizeLimitBytes.toString())
+        : BigInt(0);
     return message;
   },
   fromProtoMsg(message: ParamsProtoMsg): Params {
@@ -595,6 +826,8 @@ export const Params = {
 function createBaseState(): State {
   return {
     queueAllowed: [],
+    firstChunkedArtifactId: BigInt(0),
+    lastChunkedArtifactId: BigInt(0),
   };
 }
 export const State = {
@@ -605,6 +838,12 @@ export const State = {
   ): BinaryWriter {
     for (const v of message.queueAllowed) {
       QueueSize.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.firstChunkedArtifactId !== BigInt(0)) {
+      writer.uint32(16).uint64(message.firstChunkedArtifactId);
+    }
+    if (message.lastChunkedArtifactId !== BigInt(0)) {
+      writer.uint32(24).uint64(message.lastChunkedArtifactId);
     }
     return writer;
   },
@@ -619,6 +858,12 @@ export const State = {
         case 1:
           message.queueAllowed.push(QueueSize.decode(reader, reader.uint32()));
           break;
+        case 2:
+          message.firstChunkedArtifactId = reader.uint64();
+          break;
+        case 3:
+          message.lastChunkedArtifactId = reader.uint64();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -631,6 +876,12 @@ export const State = {
       queueAllowed: Array.isArray(object?.queueAllowed)
         ? object.queueAllowed.map((e: any) => QueueSize.fromJSON(e))
         : [],
+      firstChunkedArtifactId: isSet(object.firstChunkedArtifactId)
+        ? BigInt(object.firstChunkedArtifactId.toString())
+        : BigInt(0),
+      lastChunkedArtifactId: isSet(object.lastChunkedArtifactId)
+        ? BigInt(object.lastChunkedArtifactId.toString())
+        : BigInt(0),
     };
   },
   toJSON(message: State): JsonSafe<State> {
@@ -642,12 +893,30 @@ export const State = {
     } else {
       obj.queueAllowed = [];
     }
+    message.firstChunkedArtifactId !== undefined &&
+      (obj.firstChunkedArtifactId = (
+        message.firstChunkedArtifactId || BigInt(0)
+      ).toString());
+    message.lastChunkedArtifactId !== undefined &&
+      (obj.lastChunkedArtifactId = (
+        message.lastChunkedArtifactId || BigInt(0)
+      ).toString());
     return obj;
   },
   fromPartial(object: Partial<State>): State {
     const message = createBaseState();
     message.queueAllowed =
       object.queueAllowed?.map(e => QueueSize.fromPartial(e)) || [];
+    message.firstChunkedArtifactId =
+      object.firstChunkedArtifactId !== undefined &&
+      object.firstChunkedArtifactId !== null
+        ? BigInt(object.firstChunkedArtifactId.toString())
+        : BigInt(0);
+    message.lastChunkedArtifactId =
+      object.lastChunkedArtifactId !== undefined &&
+      object.lastChunkedArtifactId !== null
+        ? BigInt(object.lastChunkedArtifactId.toString())
+        : BigInt(0);
     return message;
   },
   fromProtoMsg(message: StateProtoMsg): State {
@@ -1127,6 +1396,331 @@ export const SwingStoreArtifact = {
     return {
       typeUrl: '/agoric.swingset.SwingStoreArtifact',
       value: SwingStoreArtifact.encode(message).finish(),
+    };
+  },
+};
+function createBaseChunkedArtifact(): ChunkedArtifact {
+  return {
+    sha512: '',
+    sizeBytes: BigInt(0),
+    chunks: [],
+  };
+}
+export const ChunkedArtifact = {
+  typeUrl: '/agoric.swingset.ChunkedArtifact' as const,
+  encode(
+    message: ChunkedArtifact,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.sha512 !== '') {
+      writer.uint32(10).string(message.sha512);
+    }
+    if (message.sizeBytes !== BigInt(0)) {
+      writer.uint32(16).uint64(message.sizeBytes);
+    }
+    for (const v of message.chunks) {
+      ChunkInfo.encode(v!, writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+  decode(input: BinaryReader | Uint8Array, length?: number): ChunkedArtifact {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseChunkedArtifact();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.sha512 = reader.string();
+          break;
+        case 2:
+          message.sizeBytes = reader.uint64();
+          break;
+        case 3:
+          message.chunks.push(ChunkInfo.decode(reader, reader.uint32()));
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): ChunkedArtifact {
+    return {
+      sha512: isSet(object.sha512) ? String(object.sha512) : '',
+      sizeBytes: isSet(object.sizeBytes)
+        ? BigInt(object.sizeBytes.toString())
+        : BigInt(0),
+      chunks: Array.isArray(object?.chunks)
+        ? object.chunks.map((e: any) => ChunkInfo.fromJSON(e))
+        : [],
+    };
+  },
+  toJSON(message: ChunkedArtifact): JsonSafe<ChunkedArtifact> {
+    const obj: any = {};
+    message.sha512 !== undefined && (obj.sha512 = message.sha512);
+    message.sizeBytes !== undefined &&
+      (obj.sizeBytes = (message.sizeBytes || BigInt(0)).toString());
+    if (message.chunks) {
+      obj.chunks = message.chunks.map(e =>
+        e ? ChunkInfo.toJSON(e) : undefined,
+      );
+    } else {
+      obj.chunks = [];
+    }
+    return obj;
+  },
+  fromPartial(object: Partial<ChunkedArtifact>): ChunkedArtifact {
+    const message = createBaseChunkedArtifact();
+    message.sha512 = object.sha512 ?? '';
+    message.sizeBytes =
+      object.sizeBytes !== undefined && object.sizeBytes !== null
+        ? BigInt(object.sizeBytes.toString())
+        : BigInt(0);
+    message.chunks = object.chunks?.map(e => ChunkInfo.fromPartial(e)) || [];
+    return message;
+  },
+  fromProtoMsg(message: ChunkedArtifactProtoMsg): ChunkedArtifact {
+    return ChunkedArtifact.decode(message.value);
+  },
+  toProto(message: ChunkedArtifact): Uint8Array {
+    return ChunkedArtifact.encode(message).finish();
+  },
+  toProtoMsg(message: ChunkedArtifact): ChunkedArtifactProtoMsg {
+    return {
+      typeUrl: '/agoric.swingset.ChunkedArtifact',
+      value: ChunkedArtifact.encode(message).finish(),
+    };
+  },
+};
+function createBaseChunkInfo(): ChunkInfo {
+  return {
+    sha512: '',
+    sizeBytes: BigInt(0),
+    state: 0,
+  };
+}
+export const ChunkInfo = {
+  typeUrl: '/agoric.swingset.ChunkInfo' as const,
+  encode(
+    message: ChunkInfo,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.sha512 !== '') {
+      writer.uint32(10).string(message.sha512);
+    }
+    if (message.sizeBytes !== BigInt(0)) {
+      writer.uint32(16).uint64(message.sizeBytes);
+    }
+    if (message.state !== 0) {
+      writer.uint32(24).int32(message.state);
+    }
+    return writer;
+  },
+  decode(input: BinaryReader | Uint8Array, length?: number): ChunkInfo {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseChunkInfo();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.sha512 = reader.string();
+          break;
+        case 2:
+          message.sizeBytes = reader.uint64();
+          break;
+        case 3:
+          message.state = reader.int32() as any;
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): ChunkInfo {
+    return {
+      sha512: isSet(object.sha512) ? String(object.sha512) : '',
+      sizeBytes: isSet(object.sizeBytes)
+        ? BigInt(object.sizeBytes.toString())
+        : BigInt(0),
+      state: isSet(object.state) ? chunkStateFromJSON(object.state) : -1,
+    };
+  },
+  toJSON(message: ChunkInfo): JsonSafe<ChunkInfo> {
+    const obj: any = {};
+    message.sha512 !== undefined && (obj.sha512 = message.sha512);
+    message.sizeBytes !== undefined &&
+      (obj.sizeBytes = (message.sizeBytes || BigInt(0)).toString());
+    message.state !== undefined &&
+      (obj.state = chunkStateToJSON(message.state));
+    return obj;
+  },
+  fromPartial(object: Partial<ChunkInfo>): ChunkInfo {
+    const message = createBaseChunkInfo();
+    message.sha512 = object.sha512 ?? '';
+    message.sizeBytes =
+      object.sizeBytes !== undefined && object.sizeBytes !== null
+        ? BigInt(object.sizeBytes.toString())
+        : BigInt(0);
+    message.state = object.state ?? 0;
+    return message;
+  },
+  fromProtoMsg(message: ChunkInfoProtoMsg): ChunkInfo {
+    return ChunkInfo.decode(message.value);
+  },
+  toProto(message: ChunkInfo): Uint8Array {
+    return ChunkInfo.encode(message).finish();
+  },
+  toProtoMsg(message: ChunkInfo): ChunkInfoProtoMsg {
+    return {
+      typeUrl: '/agoric.swingset.ChunkInfo',
+      value: ChunkInfo.encode(message).finish(),
+    };
+  },
+};
+function createBaseChunkedArtifactNode(): ChunkedArtifactNode {
+  return {
+    chunkedArtifactId: BigInt(0),
+    nextId: BigInt(0),
+    prevId: BigInt(0),
+    startTimeUnix: BigInt(0),
+    startBlockHeight: BigInt(0),
+  };
+}
+export const ChunkedArtifactNode = {
+  typeUrl: '/agoric.swingset.ChunkedArtifactNode' as const,
+  encode(
+    message: ChunkedArtifactNode,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.chunkedArtifactId !== BigInt(0)) {
+      writer.uint32(8).uint64(message.chunkedArtifactId);
+    }
+    if (message.nextId !== BigInt(0)) {
+      writer.uint32(16).uint64(message.nextId);
+    }
+    if (message.prevId !== BigInt(0)) {
+      writer.uint32(24).uint64(message.prevId);
+    }
+    if (message.startTimeUnix !== BigInt(0)) {
+      writer.uint32(32).int64(message.startTimeUnix);
+    }
+    if (message.startBlockHeight !== BigInt(0)) {
+      writer.uint32(40).int64(message.startBlockHeight);
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): ChunkedArtifactNode {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseChunkedArtifactNode();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.chunkedArtifactId = reader.uint64();
+          break;
+        case 2:
+          message.nextId = reader.uint64();
+          break;
+        case 3:
+          message.prevId = reader.uint64();
+          break;
+        case 4:
+          message.startTimeUnix = reader.int64();
+          break;
+        case 5:
+          message.startBlockHeight = reader.int64();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): ChunkedArtifactNode {
+    return {
+      chunkedArtifactId: isSet(object.chunkedArtifactId)
+        ? BigInt(object.chunkedArtifactId.toString())
+        : BigInt(0),
+      nextId: isSet(object.nextId)
+        ? BigInt(object.nextId.toString())
+        : BigInt(0),
+      prevId: isSet(object.prevId)
+        ? BigInt(object.prevId.toString())
+        : BigInt(0),
+      startTimeUnix: isSet(object.startTimeUnix)
+        ? BigInt(object.startTimeUnix.toString())
+        : BigInt(0),
+      startBlockHeight: isSet(object.startBlockHeight)
+        ? BigInt(object.startBlockHeight.toString())
+        : BigInt(0),
+    };
+  },
+  toJSON(message: ChunkedArtifactNode): JsonSafe<ChunkedArtifactNode> {
+    const obj: any = {};
+    message.chunkedArtifactId !== undefined &&
+      (obj.chunkedArtifactId = (
+        message.chunkedArtifactId || BigInt(0)
+      ).toString());
+    message.nextId !== undefined &&
+      (obj.nextId = (message.nextId || BigInt(0)).toString());
+    message.prevId !== undefined &&
+      (obj.prevId = (message.prevId || BigInt(0)).toString());
+    message.startTimeUnix !== undefined &&
+      (obj.startTimeUnix = (message.startTimeUnix || BigInt(0)).toString());
+    message.startBlockHeight !== undefined &&
+      (obj.startBlockHeight = (
+        message.startBlockHeight || BigInt(0)
+      ).toString());
+    return obj;
+  },
+  fromPartial(object: Partial<ChunkedArtifactNode>): ChunkedArtifactNode {
+    const message = createBaseChunkedArtifactNode();
+    message.chunkedArtifactId =
+      object.chunkedArtifactId !== undefined &&
+      object.chunkedArtifactId !== null
+        ? BigInt(object.chunkedArtifactId.toString())
+        : BigInt(0);
+    message.nextId =
+      object.nextId !== undefined && object.nextId !== null
+        ? BigInt(object.nextId.toString())
+        : BigInt(0);
+    message.prevId =
+      object.prevId !== undefined && object.prevId !== null
+        ? BigInt(object.prevId.toString())
+        : BigInt(0);
+    message.startTimeUnix =
+      object.startTimeUnix !== undefined && object.startTimeUnix !== null
+        ? BigInt(object.startTimeUnix.toString())
+        : BigInt(0);
+    message.startBlockHeight =
+      object.startBlockHeight !== undefined && object.startBlockHeight !== null
+        ? BigInt(object.startBlockHeight.toString())
+        : BigInt(0);
+    return message;
+  },
+  fromProtoMsg(message: ChunkedArtifactNodeProtoMsg): ChunkedArtifactNode {
+    return ChunkedArtifactNode.decode(message.value);
+  },
+  toProto(message: ChunkedArtifactNode): Uint8Array {
+    return ChunkedArtifactNode.encode(message).finish();
+  },
+  toProtoMsg(message: ChunkedArtifactNode): ChunkedArtifactNodeProtoMsg {
+    return {
+      typeUrl: '/agoric.swingset.ChunkedArtifactNode',
+      value: ChunkedArtifactNode.encode(message).finish(),
     };
   },
 };

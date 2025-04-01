@@ -151,7 +151,7 @@ func TestInstallBundle_ValidateBasic(t *testing.T) {
 			msg: &MsgInstallBundle{
 				Submitter:        addr,
 				CompressedBundle: []byte{1, 2, 3},
-				UncompressedSize: bundleUncompressedSizeLimit - 1,
+				UncompressedSize: int64(DefaultBundleUncompressedSizeLimit - 1),
 			},
 		},
 
@@ -160,7 +160,7 @@ func TestInstallBundle_ValidateBasic(t *testing.T) {
 			msg: &MsgInstallBundle{
 				Submitter:        addr,
 				CompressedBundle: []byte{1, 2, 3},
-				UncompressedSize: bundleUncompressedSizeLimit,
+				UncompressedSize: int64(DefaultBundleUncompressedSizeLimit),
 			},
 			shouldErr: true,
 		},
