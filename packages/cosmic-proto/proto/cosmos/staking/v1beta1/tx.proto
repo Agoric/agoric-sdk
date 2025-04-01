@@ -15,12 +15,13 @@ option go_package = "github.com/cosmos/cosmos-sdk/x/staking/types";
 
 // Msg defines the staking Msg service.
 service Msg {
+/*
   // CreateValidator defines a method for creating a new validator.
   rpc CreateValidator(MsgCreateValidator) returns (MsgCreateValidatorResponse);
 
   // EditValidator defines a method for editing an existing validator.
   rpc EditValidator(MsgEditValidator) returns (MsgEditValidatorResponse);
-
+*/
   // Delegate defines a method for performing a delegation of coins
   // from a delegator to a validator.
   rpc Delegate(MsgDelegate) returns (MsgDelegateResponse);
@@ -40,6 +41,7 @@ service Msg {
   rpc CancelUnbondingDelegation(MsgCancelUnbondingDelegation) returns (MsgCancelUnbondingDelegationResponse);
 }
 
+/*
 // MsgCreateValidator defines a SDK message for creating a new validator.
 message MsgCreateValidator {
   // NOTE(fdymylja): this is a particular case in which
@@ -89,6 +91,7 @@ message MsgEditValidator {
 
 // MsgEditValidatorResponse defines the Msg/EditValidator response type.
 message MsgEditValidatorResponse {}
+*/
 
 // MsgDelegate defines a SDK message for performing a delegation of coins
 // from a delegator to a validator.

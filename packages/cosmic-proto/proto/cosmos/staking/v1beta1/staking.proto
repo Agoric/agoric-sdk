@@ -140,6 +140,8 @@ enum BondStatus {
   BOND_STATUS_BONDED = 3 [(gogoproto.enumvalue_customname) = "Bonded"];
 }
 
+/*
+
 // ValAddresses defines a repeated set of validator addresses.
 message ValAddresses {
   option (gogoproto.goproto_stringer) = false;
@@ -183,6 +185,7 @@ message DVVTriplet {
 message DVVTriplets {
   repeated DVVTriplet triplets = 1 [(gogoproto.nullable) = false];
 }
+*/
 
 // Delegation represents the bond with tokens held by an account. It is
 // owned by one delegator, and is associated with the voting power of one
