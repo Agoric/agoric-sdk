@@ -2,6 +2,10 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { ExecutionContext, TestFn } from 'ava';
 
 import {
+  AckBehavior,
+  makeSwingsetHarness,
+} from '@aglocal/boot/tools/supports.js';
+import {
   encodeAddressHook,
   encodeBech32,
 } from '@agoric/cosmic-proto/address-hooks.js';
@@ -14,7 +18,6 @@ import type {
   PoolMetrics,
 } from '@agoric/fast-usdc';
 import { Offers } from '@agoric/fast-usdc/src/clientSupport.js';
-import { configurations } from '@agoric/fast-usdc/src/utils/deploy-config.js';
 import { BridgeId } from '@agoric/internal';
 import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
@@ -24,18 +27,18 @@ import type { SnapStoreDebug } from '@agoric/swing-store';
 import { makeArchiveSnapshot } from '@agoric/swing-store';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
 import type { BridgeHandler, IBCChannelID } from '@agoric/vats';
-import { makePromiseKit } from '@endo/promise-kit';
 import { keyEQ } from '@endo/patterns';
+import { makePromiseKit } from '@endo/promise-kit';
 import { readFile, writeFile } from 'fs/promises';
 import { createRequire } from 'module';
 import fs from 'node:fs';
 import path from 'node:path';
 import tmp from 'tmp';
-import { AckBehavior, makeSwingsetHarness } from '../../tools/supports.js';
+import { configurations } from '../src/utils/deploy-config.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
-} from '../bootstrapTests/walletFactory.js';
+} from './walletFactory.js';
 
 const nodeRequire = createRequire(import.meta.url);
 
