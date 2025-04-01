@@ -43,41 +43,45 @@ test('reap all vats', async t => {
   const dynamicRoots = kunser(c.kpResolution(kpid));
   for (let i = 0; i < 3; i += 1) {
     for (let j = 0; j < i + 1; j += 1) {
-      c.queueToVatRoot(`staticDumbo${i + 1}`, 'doSomething', [
-        `staticDumbo${i + 1} #${j + 1}`,
-      ]);
+      c.queueToVatRoot(
+        `staticDumbo${i + 1}`,
+        'doSomething',
+        [`staticDumbo${i + 1} #${j + 1}`],
+        'none',
+      );
     }
   }
   for (let i = 0; i < 3; i += 1) {
     for (let j = 0; j < i + 1; j += 1) {
-      c.queueToVatObject(dynamicRoots[i], 'doSomething', [
-        `dynamicDumbo${i + 1} #${j + 1}`,
-      ]);
+      c.queueToVatObject(
+        dynamicRoots[i],
+        'doSomething',
+        [`dynamicDumbo${i + 1} #${j + 1}`],
+        'none',
+      );
     }
   }
   // Note: no call to c.run() here, so all the above messages are still enqueued
 
-  const dumpBefore = c.dump();
-  t.is(dumpBefore.acceptanceQueue.length, 12);
-  t.is(dumpBefore.reapQueue.length, 0);
-  t.is(dumpBefore.runQueue.length, 0);
+  // prettier-ignore
+  const allVats =
+    harden(['v1', 'v3', 'v6', 'v7', 'v8', 'v5', 'v2', 'v4', 'v9', 'v10', 'v11']);
+
+  const checkQueues = (reapQueue, acceptanceLength = 0, runLength = 0) => {
+    const expectedReapQueueSet = new Set(reapQueue);
+    const dump = c.dump();
+    t.is(dump.acceptanceQueue.length, acceptanceLength);
+    t.is(dump.runQueue.length, runLength);
+    t.is(dump.reapQueue.length, expectedReapQueueSet.size);
+    const reapQueueActual = new Set(dump.reapQueue);
+    t.deepEqual(reapQueueActual, expectedReapQueueSet);
+  };
+
+  checkQueues([], 12);
 
   c.reapAllVats();
-  const dumpPreReap = c.dump();
-  t.is(dumpPreReap.acceptanceQueue.length, 12);
-  t.is(dumpPreReap.reapQueue.length, 11);
-  t.is(dumpBefore.runQueue.length, 0);
-  // prettier-ignore
-  const reapQueueReference =
-    new Set(['v1', 'v3', 'v6', 'v7', 'v8', 'v5', 'v2', 'v4', 'v9', 'v10', 'v11'])
-  const reapQueueActual = new Set(dumpPreReap.reapQueue);
-  t.deepEqual(reapQueueActual, reapQueueReference);
+  checkQueues(allVats, 12);
 
   await c.run();
-  const dumpPostReap = c.dump();
-  t.is(dumpPostReap.acceptanceQueue.length, 0);
-  t.is(dumpPostReap.reapQueue.length, 0);
-  t.is(dumpBefore.runQueue.length, 0);
-
-  t.pass();
+  checkQueues([]);
 });
