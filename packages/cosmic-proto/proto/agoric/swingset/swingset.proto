@@ -89,6 +89,20 @@ message Params {
   // nodes must all serialize and deserialize the existing order without
   // permuting it.
   repeated UintMapEntry vat_cleanup_budget = 6 [(gogoproto.nullable) = false];
+
+  // The maximum number of blocks that an async installation can use.  -1 is
+  // unlimited.
+  int64 installation_deadline_blocks = 7;
+
+  // The maximum number of seconds that an async installation can use.  -1 is
+  // unlimited.
+  int64 installation_deadline_seconds = 8;
+
+  // The maximum size of of a bundle (0 implies default 10MB)
+  int64 bundle_uncompressed_size_limit_bytes = 9;
+
+  // The maximum size of a bundle or artifact chunk (0 implies default 512KB)
+  int64 chunk_size_limit_bytes = 10;
 }
 
 // The current state of the module.
@@ -96,6 +110,14 @@ message State {
   // The allowed number of items to add to queues, as determined by SwingSet.
   // Transactions which attempt to enqueue more should be rejected.
   repeated QueueSize queue_allowed = 1 [(gogoproto.nullable) = false];
+
+  // Doubly-linked list in order of start block and time.
+  uint64 first_chunked_artifact_id = 2
+      [(gogoproto.jsontag) = "first_chunked_artifact_id", (gogoproto.moretags) = "yaml:\"first_chunked_artifact_id\""];
+
+  // The last chunked artifact id that has not expired or completed.
+  uint64 last_chunked_artifact_id = 3
+      [(gogoproto.jsontag) = "lastChunkedArtifactId", (gogoproto.moretags) = "yaml:\"lastChunkedArtifactId\""];
 }
 
 // Map element of a string key to a Nat bean count.
@@ -166,4 +188,67 @@ message SwingStoreArtifact {
   string name              = 1 [(gogoproto.jsontag) = "name", (gogoproto.moretags) = "yaml:\"name\""];
 
   bytes data = 2 [(gogoproto.jsontag) = "data", (gogoproto.moretags) = "yaml:\"data\""];
+}
+
+// ChunkedArtifact is the manifest for an artifact that is submitted across
+// multiple transactions, in chunks, as when using InstallBundle to submit
+// chunks.
+message ChunkedArtifact {
+  // The SHA-512 hash of the compartment-map.json file inside the bundle.
+  string sha512 = 1 [(gogoproto.jsontag) = "sha512", (gogoproto.moretags) = "yaml:\"sha512\""];
+
+  // The size of the final bundle artifact in bytes.
+  uint64 size_bytes = 2 [(gogoproto.jsontag) = "size_bytes", (gogoproto.moretags) = "yaml:\"size_bytes\""];
+
+  // Information about the chunks that will be concatenated to form this
+  // bundle.
+  repeated ChunkInfo chunks = 3 [(gogoproto.jsontag) = "chunks", (gogoproto.moretags) = "yaml:\"chunks\""];
+}
+
+// Current state of this chunk.
+enum ChunkState {
+  // Unknown state.
+  CHUNK_STATE_UNSPECIFIED = 0;
+
+  // The chunk is still in-flight.
+  CHUNK_STATE_IN_FLIGHT = 1;
+
+  // The chunk has been received.
+  CHUNK_STATE_RECEIVED = 2;
+
+  // The chunk has been processed.
+  CHUNK_STATE_PROCESSED = 3;
+};
+
+// Information about a chunk of a bundle.
+message ChunkInfo {
+  // The SHA-512 hash of the chunk contents.
+  string sha512 = 1 [(gogoproto.jsontag) = "sha512", (gogoproto.moretags) = "yaml:\"sha512\""];
+
+  // The chunk size in bytes.
+  uint64 size_bytes = 2 [(gogoproto.jsontag) = "size_bytes", (gogoproto.moretags) = "yaml:\"size_bytes\""];
+
+  // The current state of the chunk.
+  ChunkState state = 3 [(gogoproto.jsontag) = "state", (gogoproto.moretags) = "yaml:\"state\""];
+}
+
+// A node in a doubly-linked-list of chunks of a chunked artifact, as used for
+// chunked bundle installation, in order of ascending block time.
+// The keeper uses this to expediently expire stale chunks.
+message ChunkedArtifactNode {
+  // The id of the pending bundle installation.
+  uint64 chunked_artifact_id = 1
+      [(gogoproto.jsontag) = "chunkedArtifactId", (gogoproto.moretags) = "yaml:\"chunkedArtifactId\""];
+
+  // Doubly-linked list.
+  uint64 next_id = 2 [(gogoproto.jsontag) = "nextId", (gogoproto.moretags) = "yaml:\"nextId\""];
+
+  uint64 prev_id = 3 [(gogoproto.jsontag) = "prevId", (gogoproto.moretags) = "yaml:\"prevId\""];
+
+  // The time at which the pending installation began, in UNIX epoch seconds.
+  int64 start_time_unix = 4 [(gogoproto.jsontag) = "startTimeUnix", (gogoproto.moretags) = "yaml:\"startTimeUnix\""];
+
+  // The block at which the pending installation began.
+  int64 start_block_height = 5
+      [(gogoproto.jsontag) = "startBlockHeight", (gogoproto.moretags) = "yaml:\"startBlockHeight\""];
 }
