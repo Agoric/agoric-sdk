@@ -59,7 +59,7 @@ type SmartWallet = Awaited<
   >
 >;
 
-const config = '@agoric/vm-config/decentral-itest-fast-usdc-config.json';
+const config = '@agoric/vm-config/decentral-itest-orchestration-config.json';
 const nobleAgoricChannelId = 'channel-21';
 
 const range = (n: Number) => Array.from(Array(n).keys());
