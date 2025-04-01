@@ -5,6 +5,7 @@ import "amino/amino.proto";
 import "cosmos/msg/v1/msg.proto";
 import "cosmos_proto/cosmos.proto";
 import "gogoproto/gogo.proto";
+import "agoric/swingset/swingset.proto";
 
 option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types";
 
@@ -12,6 +13,8 @@ option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types
 service Msg {
   // Install a JavaScript sources bundle on the chain's SwingSet controller.
   rpc InstallBundle(MsgInstallBundle) returns (MsgInstallBundleResponse);
+  // Send a chunk of a bundle to tolerate RPC message size limits.
+  rpc SendChunk(MsgSendChunk) returns (MsgSendChunkResponse);
   // Send inbound messages.
   rpc DeliverInbound(MsgDeliverInbound) returns (MsgDeliverInboundResponse);
   // Perform a low-privilege wallet action.
@@ -127,6 +130,10 @@ message MsgProvision {
 message MsgProvisionResponse {}
 
 // MsgInstallBundle carries a signed bundle to SwingSet.
+// Of the fields bundle, compressed_bundle, and chunked_artifact, exactly one
+// must be present: bundle if complete and uncompressed, compressed_bundle if
+// complete and compressed, or chunked_artifact for a manifest of chunks to be
+// submitted in subsequent messages.
 message MsgInstallBundle {
   // Until agoric-upgrade-22 this message didn't have an amino name
   // but no clients actually used amino encoding
@@ -140,7 +147,6 @@ message MsgInstallBundle {
     (gogoproto.jsontag)  = "submitter",
     (gogoproto.moretags) = "yaml:\"submitter\""
   ];
-  // Either bundle or compressed_bundle will be set.
   // Default compression algorithm is gzip.
   bytes compressed_bundle = 3 [
     (amino.dont_omitempty) = true,
@@ -148,17 +154,20 @@ message MsgInstallBundle {
     (gogoproto.jsontag)    = "compressedBundle",
     (gogoproto.moretags)   = "yaml:\"compressedBundle\""
   ];
-  // Size in bytes of uncompression of compressed_bundle.
+  // Total size in bytes of the bundle artifact, before compression and after
+  // decompression.
   int64 uncompressed_size = 4 [
     (amino.dont_omitempty) = true,
     (amino.field_name)     = "uncompressedSize",
     (gogoproto.jsontag)    = "uncompressedSize"
   ];
+  // Declaration of a chunked bundle.
+  ChunkedArtifact chunked_artifact = 5 [
+    (amino.field_name)   = "chunkedArtifact",
+    (gogoproto.jsontag)  = "chunkedArtifact",
+    (gogoproto.moretags) = "yaml:\"chunkedArtifact\""
+  ];
 }
-
-// MsgInstallBundleResponse is an empty acknowledgement that an install bundle
-// message has been queued for the SwingSet kernel's consideration.
-message MsgInstallBundleResponse {}
 
 // MsgCoreEval defines an SDK message for a core eval.
 message MsgCoreEval {
@@ -180,4 +189,62 @@ message MsgCoreEval {
 message MsgCoreEvalResponse {
   // The result of the core eval.
   string result = 1 [(gogoproto.moretags) = "yaml:\"result\""];
+}
+
+// MsgInstallBundleResponse is either an empty acknowledgement that a bundle
+// installation message has been queued for the SwingSet kernel's
+// consideration, or for MsgInstallBundle requests that have a chunked artifact
+// manifest instead of a compressed or uncompressed bundle: the identifier
+// assigned for the chunked artifact for reference in subsequent MsgSendChunk
+// messages.
+message MsgInstallBundleResponse {
+  // The assigned identifier for a chunked artifact, if the caller is expected
+  // to call back with MsgSendChunk messages.
+  uint64 chunked_artifact_id = 1 [
+    (amino.field_name)   = "chunkedArtifactId",
+    (gogoproto.jsontag)  = "chunkedArtifactId",
+    (gogoproto.moretags) = "yaml:\"chunkedArtifactId\""
+  ];
+}
+
+// MsgSendChunk carries a chunk of an artifact through RPC to the chain.
+// Individual chunks are addressed by the chunked artifact identifier and
+// the zero-based index of the chunk among all chunks as mentioned in the
+// manifest provided to MsgInstallBundle.
+message MsgSendChunk {
+  uint64 chunked_artifact_id = 1 [
+    (amino.field_name)   = "chunkedArtifactId",
+    (gogoproto.jsontag)  = "chunkedArtifactId",
+    (gogoproto.moretags) = "yaml:\"chunkedArtifactId\""
+  ];
+  bytes submitter = 2 [
+    (amino.encoding)     = "legacy_address",
+    (amino.field_name)   = "submitter",
+    (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+    (gogoproto.jsontag)  = "submitter",
+    (gogoproto.moretags) = "yaml:\"submitter\""
+  ];
+  uint64 chunk_index = 3 [
+    (amino.field_name)   = "chunkIndex",
+    (gogoproto.jsontag)  = "chunkIndex",
+    (gogoproto.moretags) = "yaml:\"chunkIndex\""
+  ];
+  bytes chunk_data = 4 [
+    (amino.field_name)   = "chunkIndex",
+    (gogoproto.jsontag)  = "chunkData",
+    (gogoproto.moretags) = "yaml:\"chunkData\""
+  ];
+}
+
+// MsgSendChunkResponse is an acknowledgement that a chunk has been received by
+// the chain.
+message MsgSendChunkResponse {
+  uint64 chunked_artifact_id = 1 [
+    (amino.field_name)   = "chunkedArtifactId",
+    (gogoproto.jsontag)  = "chunkedArtifactId",
+    (gogoproto.moretags) = "yaml:\"chunkedArtifactId\""
+  ];
+  // The current state of the chunk.
+  ChunkInfo chunk = 2
+      [(amino.field_name) = "chunk", (gogoproto.jsontag) = "chunk", (gogoproto.moretags) = "yaml:\"chunk\""];
 }

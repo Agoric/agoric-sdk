@@ -61,3 +61,27 @@ func (k Querier) Mailbox(c context.Context, req *types.QueryMailboxRequest) (*ty
 		Value: value,
 	}, nil
 }
+
+func (k Querier) ChunkedArtifactStatus(c context.Context, req *types.QueryChunkedArtifactStatusRequest) (*types.QueryChunkedArtifactStatusResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+	ctx := sdk.UnwrapSDKContext(c)
+
+	msg := k.GetPendingBundleInstall(ctx, req.ChunkedArtifactId)
+	if msg == nil {
+		return nil, status.Error(codes.NotFound, "pending chunked artifact not found")
+	}
+
+	can := k.GetChunkedArtifactNode(ctx, req.ChunkedArtifactId)
+	if can == nil {
+		return nil, status.Error(codes.NotFound, "pending chunked artifact node not found")
+	}
+
+	return &types.QueryChunkedArtifactStatusResponse{
+		ChunkedArtifactId: req.ChunkedArtifactId,
+		ChunkedArtifact:   msg.ChunkedArtifact,
+		StartTimeUnix:     can.StartTimeUnix,
+		StartBlockHeight:  can.StartBlockHeight,
+	}, nil
+}

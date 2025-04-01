@@ -215,6 +215,14 @@ func UpdateParams(params Params) (Params, error) {
 	params.PowerFlagFees = newPff
 	params.QueueMax = newQm
 	params.VatCleanupBudget = newVcb
+
+	if params.InstallationDeadlineBlocks == 0 {
+		params.InstallationDeadlineBlocks = DefaultInstallationDeadlineBlocks
+	}
+	if params.InstallationDeadlineSeconds == 0 {
+		params.InstallationDeadlineSeconds = DefaultInstallationDeadlineSeconds
+	}
+
 	return params, nil
 }
 
