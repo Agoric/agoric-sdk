@@ -123,6 +123,7 @@ export const contract = async (
   const { withdrawToSeat } = tools.zoeTools;
   const { baggage, chainHub, orchestrateAll, vowTools } = tools;
   const makeSettler = prepareSettler(zone, {
+    baggage,
     statusManager,
     USDC,
     withdrawToSeat,

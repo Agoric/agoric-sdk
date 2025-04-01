@@ -25,7 +25,7 @@ import {
 } from '@agoric/fast-usdc/src/type-guards.js';
 
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
-import type { Amount, Brand, NatValue } from '@agoric/ertp';
+import type { Amount, Brand, NatAmount, NatValue } from '@agoric/ertp';
 import type {
   AccountId,
   Denom,
@@ -49,9 +49,13 @@ import type { ZCF, ZCFSeat } from '@agoric/zoe/src/zoeService/zoe.js';
 import type { MapStore } from '@agoric/store';
 import type { VowTools } from '@agoric/vow';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
+import type { Baggage } from '@agoric/vat-data';
+import { Fail } from '@endo/errors';
 import type { LiquidityPoolKit } from './liquidity-pool.js';
 import type { StatusManager } from './status-manager.js';
 import { asMultiset } from '../utils/store.ts';
+import { NOBLE_ICA_BAGGAGE_KEY } from '../fast-usdc.contract.ts';
+import { makeSupportsCctp } from '../utils/cctp.ts';
 
 const decodeEventPacket = (
   { data }: IBCPacket,
@@ -140,6 +144,7 @@ export const stateShape = harden({
 export const prepareSettler = (
   zone: Zone,
   {
+    baggage,
     currentChainReference,
     chainHub,
     feeConfig,
@@ -150,6 +155,7 @@ export const prepareSettler = (
     withdrawToSeat,
     zcf,
   }: {
+    baggage: Baggage;
     /** e.g., `agoric-3` */
     currentChainReference: string;
     chainHub: ChainHub;
@@ -163,6 +169,17 @@ export const prepareSettler = (
   },
 ) => {
   assertAllDefined({ statusManager });
+
+  const supportsCctp = makeSupportsCctp(chainHub);
+
+  /**
+   * aka `IntermediateRecipientAccount`. A contract-controlled ICA on Noble that can send `MsgDepositForBurn`.
+   * retrieve from baggage, until:
+   * [Allow state shape with new optional fields #10200](https://github.com/Agoric/agoric-sdk/issues/10200)
+   */
+  const getNobleICA = (): OrchestrationAccount<{ chainId: 'noble-1' }> =>
+    baggage.get(NOBLE_ICA_BAGGAGE_KEY);
+
   return zone.exoClassKit(
     'Fast USDC Settler',
     {
@@ -189,6 +206,14 @@ export const prepareSettler = (
         forward: M.call(EvmHashShape, M.nat(), M.string()).returns(),
       }),
       transferHandler: M.interface('SettlerTransferI', {
+        onFulfilled: M.call(M.undefined(), M.string()).returns(),
+        onRejected: M.call(M.error(), M.string()).returns(),
+      }),
+      intermediateTransferHandler: M.interface('SettlerIntermediateTransferI', {
+        onFulfilled: M.call(M.undefined(), M.record()).returns(),
+        onRejected: M.call(M.error(), M.record()).returns(),
+      }),
+      depositForBurnHandler: M.interface('SettlerDepositForBurnI', {
         onFulfilled: M.call(M.undefined(), M.string()).returns(),
         onRejected: M.call(M.error(), M.string()).returns(),
       }),
@@ -395,6 +420,8 @@ export const prepareSettler = (
         forward(txHash: EvmHash, fullValue: NatValue, EUD: string) {
           const { settlementAccount, intermediateRecipient } = this.state;
           log('forwarding', fullValue, 'to', EUD, 'for', txHash);
+          if (!intermediateRecipient) throw Fail`No intermediate recipient`;
+
           const dest: AccountId | null = (() => {
             try {
               return chainHub.resolveAccountId(EUD);
@@ -406,19 +433,37 @@ export const prepareSettler = (
           })();
           if (!dest) return;
 
-          const { reference } = parseAccountId(dest);
+          const { namespace, reference } = parseAccountId(dest);
           const amt = AmountMath.make(USDC, fullValue);
-          const transferOrSendV =
-            reference === currentChainReference
-              ? E(settlementAccount).send(dest, amt)
-              : E(settlementAccount).transfer(dest, amt, {
-                  forwardOpts: { intermediateRecipient },
-                });
-          void vowTools.watch(
-            transferOrSendV,
-            this.facets.transferHandler,
-            txHash,
-          );
+
+          if (namespace === 'cosmos') {
+            const transferOrSendV =
+              reference === currentChainReference
+                ? E(settlementAccount).send(dest, amt)
+                : E(settlementAccount).transfer(dest, amt, {
+                    forwardOpts: { intermediateRecipient },
+                  });
+            void vowTools.watch(
+              transferOrSendV,
+              this.facets.transferHandler,
+              txHash,
+            );
+          } else if (supportsCctp(dest)) {
+            // send to Noble then call `.depositForBurn(dest, amt)`
+            void vowTools.watch(
+              E(settlementAccount).transfer(intermediateRecipient, amt),
+              this.facets.intermediateTransferHandler,
+              { amt, dest, txHash },
+            );
+          } else {
+            log(
+              '🚨 forward not attempted!',
+              'unsupported destination',
+              txHash,
+              dest,
+            );
+            statusManager.forwarded(txHash, false);
+          }
         },
       },
       transferHandler: {
@@ -432,6 +477,48 @@ export const prepareSettler = (
           log('🚨 forward transfer rejected!', reason, txHash);
           // update status manager, flagging a terminal state that needs to be
           // manual intervention or a code update to remediate
+          statusManager.forwarded(txHash, false);
+        },
+      },
+      intermediateTransferHandler: {
+        onFulfilled(
+          _result: unknown,
+          {
+            amt,
+            dest,
+            txHash,
+          }: { amt: NatAmount; dest: AccountId; txHash: EvmHash },
+        ) {
+          const nobleIca = getNobleICA();
+          void vowTools.watch(
+            E(nobleIca).depositForBurn(dest, amt),
+            this.facets.depositForBurnHandler,
+            txHash,
+          );
+        },
+        onRejected(
+          reason: unknown,
+          { txHash }: { amt: NatAmount; dest: AccountId; txHash: EvmHash },
+        ) {
+          // funds remain in `settlementAccount` and must be recovered via a
+          // contract upgrade
+          log('🚨 forward intermediate transfer rejected!', reason, txHash);
+          // update status manager, flagging a terminal state that needs manual
+          // intervention or a code update to remediate
+          statusManager.forwarded(txHash, false);
+        },
+      },
+      depositForBurnHandler: {
+        onFulfilled(_result: unknown, txHash: EvmHash) {
+          // update status manager, marking tx `FORWARDED` without fee split
+          statusManager.forwarded(txHash, true);
+        },
+        onRejected(reason: unknown, txHash: EvmHash) {
+          // funds remain in `nobleAccount` and must be recovered via a
+          // contract upgrade
+          log('🚨 forward depositForBurn rejected!', reason, txHash);
+          // update status manager, flagging a terminal state that needs manual
+          // intervention or a code update to remediate
           statusManager.forwarded(txHash, false);
         },
       },
