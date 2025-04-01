@@ -148,9 +148,9 @@
     "!CHANGELOG.md"
   ],
   "scripts": {
-    "build": "tsc --project tsconfig.build.json && node scripts/minify.cjs",
+    "build": "tsc --project tsconfig.build.json && scripts/minify.cjs",
     "clean": "rimraf dist",
-    "codegen": "./update-protos.sh && node scripts/codegen.cjs",
+    "codegen": "./update-protos.sh && scripts/codegen.cjs",
     "prepare": "npm run build",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
