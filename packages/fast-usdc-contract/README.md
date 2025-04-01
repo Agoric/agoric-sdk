@@ -62,6 +62,8 @@ settlementAccount. It either `disburse`s funds to the Pool (if funds were
 `advance`d to the payee), or `forwards` funds to the payee (if pool funds
 were not `advance`d).
 
+For `namespace:cosmos` destinations, the `Advanced` state signifies an IBC Acknowledgement has been received from the destination chain and the end user has received their funds. For non-Cosmos destinations that leverage CCTP through Noble, `Advanced` signifies `MsgDepositForBurn` was accepted by the Noble chain. There is additional latency until the user gets their funds - namely, `MsgReceive` must be submitted on the destination chain. The contract is unable to track that flow so `Advanced` represents a best effort in these cases. For the `Forwarded` state, the same distinction applies.
+
 ```mermaid
 stateDiagram-v2
   state Forwarding <<choice>>
