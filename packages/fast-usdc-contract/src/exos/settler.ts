@@ -48,9 +48,13 @@ import type {
 import type { ZCF, ZCFSeat } from '@agoric/zoe/src/zoeService/zoe.js';
 import type { MapStore } from '@agoric/store';
 import type { VowTools } from '@agoric/vow';
+import { Fail } from '@endo/errors';
+import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
+import type { Baggage } from '@agoric/vat-data';
 import type { LiquidityPoolKit } from './liquidity-pool.js';
 import type { StatusManager } from './status-manager.js';
 import { asMultiset } from '../utils/store.ts';
+import { CURR_CHAIN_REFERENCE } from '../fast-usdc.contract.ts';
 
 const decodeEventPacket = (
   { data }: IBCPacket,
@@ -139,6 +143,7 @@ export const stateShape = harden({
 export const prepareSettler = (
   zone: Zone,
   {
+    baggage,
     chainHub,
     feeConfig,
     log = makeTracer('Settler', true),
@@ -148,6 +153,7 @@ export const prepareSettler = (
     withdrawToSeat,
     zcf,
   }: {
+    baggage: Baggage;
     chainHub: ChainHub;
     feeConfig: FeeConfig;
     log?: LogFn;
@@ -159,6 +165,14 @@ export const prepareSettler = (
   },
 ) => {
   assertAllDefined({ statusManager });
+
+  /**
+   * retrieve from baggage, until:
+   * [Allow state shape with new optional fields #10200](https://github.com/Agoric/agoric-sdk/issues/10200)
+   */
+  const getCurrentChainRef = (): 'agoric-3' =>
+    baggage.get(CURR_CHAIN_REFERENCE);
+
   return zone.exoClassKit(
     'Fast USDC Settler',
     {
@@ -391,6 +405,7 @@ export const prepareSettler = (
         forward(txHash: EvmHash, fullValue: NatValue, EUD: string) {
           const { settlementAccount, intermediateRecipient } = this.state;
           log('forwarding', fullValue, 'to', EUD, 'for', txHash);
+
           const dest: AccountId | null = (() => {
             try {
               return chainHub.resolveAccountId(EUD);
@@ -402,12 +417,19 @@ export const prepareSettler = (
           })();
           if (!dest) return;
 
-          const txfrV = E(settlementAccount).transfer(
-            dest,
-            AmountMath.make(USDC, fullValue),
-            { forwardOpts: { intermediateRecipient } },
+          const { reference } = parseAccountId(dest);
+          const amt = AmountMath.make(USDC, fullValue);
+          const transferOrSendV =
+            reference === getCurrentChainRef()
+              ? E(settlementAccount).send(dest, amt)
+              : E(settlementAccount).transfer(dest, amt, {
+                  forwardOpts: { intermediateRecipient },
+                });
+          void vowTools.watch(
+            transferOrSendV,
+            this.facets.transferHandler,
+            txHash,
           );
-          void vowTools.watch(txfrV, this.facets.transferHandler, txHash);
         },
       },
       transferHandler: {

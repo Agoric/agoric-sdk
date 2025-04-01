@@ -27,6 +27,7 @@ export const prepareMockOrchAccounts = (
   const poolAccountSendVK = makeVowKit<undefined>();
   const poolAccountTransferVK = makeVowKit<undefined>();
   const settleAccountTransferVK = makeVowKit<undefined>();
+  const settleAccountSendVK = makeVowKit<undefined>();
 
   const mockedPoolAccount = zone.exo('Mock Pool LocalOrchAccount', undefined, {
     transfer(destination: CosmosChainAddress, amount: DenomAmount) {
@@ -54,6 +55,10 @@ export const prepareMockOrchAccounts = (
       settlementCallLog.push(harden(['transfer', ...args]));
       return settleAccountTransferVK.vow;
     },
+    send(...args) {
+      settlementCallLog.push(harden(['send', ...args]));
+      return settleAccountSendVK.vow;
+    },
   });
   const settlementAccount = settlementAccountMock as unknown as HostInterface<
     OrchestrationAccount<{ chainId: 'agoric-any' }>
@@ -68,6 +73,7 @@ export const prepareMockOrchAccounts = (
       account: settlementAccount,
       callLog: settlementCallLog,
       transferVResolver: settleAccountTransferVK.resolver,
+      sendVResolver: settleAccountSendVK.resolver,
     },
   };
 };

@@ -54,6 +54,8 @@ const trace = makeTracer('FastUsdc');
 const TXNS_NODE = 'txns';
 const FEE_NODE = 'feeConfig';
 const ADDRESSES_BAGGAGE_KEY = 'addresses';
+/** expected value: `agoric-3` */
+export const CURR_CHAIN_REFERENCE = 'currChainReference';
 
 export const meta = {
   customTermsShape: FastUSDCTermsShape,
@@ -121,6 +123,7 @@ export const contract = async (
   const { withdrawToSeat } = tools.zoeTools;
   const { baggage, chainHub, orchestrateAll, vowTools } = tools;
   const makeSettler = prepareSettler(zone, {
+    baggage,
     statusManager,
     USDC,
     withdrawToSeat,
@@ -304,6 +307,9 @@ export const contract = async (
   trace('poolAccount', poolAccount);
   const settlementAddress = await E(settlementAccount).getAddress();
   trace('settlementAddress', settlementAddress);
+  if (!baggage.has(CURR_CHAIN_REFERENCE)) {
+    baggage.init(CURR_CHAIN_REFERENCE, settlementAddress.chainId);
+  }
 
   const [_agoric, _noble, agToNoble] = await vowTools.when(
     chainHub.getChainsAndConnection('agoric', 'noble'),
