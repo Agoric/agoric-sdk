@@ -81,7 +81,8 @@ test.serial('make and exec', async t => {
 
 // rosetta was renamed to mesh, which broke their install script.
 // disabled until there is a resolution to https://github.com/coinbase/mesh-cli/issues/422
-test.serial.failing('integration test: rosetta CI', async t => {
+// See: https://github.com/Agoric/agoric-sdk/issues/11201
+test.serial.skip('integration test: rosetta CI', async t => {
   // Resume the chain... and concurrently, start a faucet AND run the rosetta-cli tests
   const { scenario2 } = t.context;
 
