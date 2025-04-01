@@ -708,11 +708,23 @@ export const prepareLocalOrchestrationAccountKit = (
 
             // set a `timeoutTimestamp` if caller does not supply either `timeoutHeight` or `timeoutTimestamp`
             // TODO #9324 what's a reasonable default? currently 5 minutes
-            const timeoutTimestampVowOrValue =
-              opts?.timeoutTimestamp ??
-              (opts?.timeoutHeight
-                ? 0n
-                : asVow(() => E(timestampHelper).getTimeoutTimestampNS()));
+            let timeoutTimestampVowOrValue;
+            switch (opts) {
+              case opts &&
+                'timeoutHeight' in opts &&
+                'timeoutTimestamp' in opts:
+                throw Fail`Cannot set both timeoutHeight and timeoutTimestamp`;
+              case opts && 'timeoutHeight' in opts:
+                timeoutTimestampVowOrValue = undefined;
+                break;
+              case opts && 'timeoutTimestamp' in opts:
+                timeoutTimestampVowOrValue = opts.timeoutTimestamp;
+                break;
+              default:
+                timeoutTimestampVowOrValue = asVow(() =>
+                  E(timestampHelper).getTimeoutTimestampNS(),
+                );
+            }
 
             // don't resolve the vow until the transfer is confirmed on remote
             // and reject vow if the transfer fails for any reason

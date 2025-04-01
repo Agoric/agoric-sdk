@@ -284,15 +284,32 @@ export const ForwardOptsShape = M.splitRecord(
  * @type {TypedPattern<IBCMsgTransferOptions>}
  * @internal
  */
-export const IBCTransferOptionsShape = M.splitRecord(
-  {},
-  {
-    timeoutTimestamp: M.bigint(),
-    timeoutHeight: {
-      revisionHeight: M.bigint(),
-      revisionNumber: M.bigint(),
+export const IBCTransferOptionsShape = M.or(
+  M.splitRecord(
+    {},
+    {
+      timeoutTimestamp: M.bigint(),
+      memo: M.string(),
+      forwardOpts: ForwardOptsShape,
     },
-    memo: M.string(),
-    forwardOpts: ForwardOptsShape,
-  },
+  ),
+  M.splitRecord(
+    {},
+    {
+      timeoutHeight: {
+        revisionHeight: M.bigint(),
+        revisionNumber: M.bigint(),
+      },
+      memo: M.string(),
+      forwardOpts: ForwardOptsShape,
+    },
+  ),
+  M.splitRecord(
+    {},
+    {
+      timeoutRelativeSeconds: M.bigint(),
+      memo: M.string(),
+      forwardOpts: ForwardOptsShape,
+    },
+  ),
 );

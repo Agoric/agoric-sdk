@@ -18,6 +18,7 @@ import type {
 } from '@agoric/cosmic-proto/tendermint/abci/types.js';
 import type { Amount, Payment } from '@agoric/ertp/src/types.js';
 import type { Port } from '@agoric/network';
+import type { TimerService } from '@agoric/time';
 import type {
   IBCChannelID,
   IBCConnectionID,
@@ -360,11 +361,11 @@ export interface LocalAccountMethods extends StakingAccountActions {
 /**
  * Options for {@link OrchestrationAccountI} `transfer` method.
  *
+ * If specifying a custom timeout, use one of `timeoutHeight`, `timeoutTimestamp`, or `timeoutRelativeSeconds`.
+ *
  * @see {@link https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#data-structures ICS 20 Data Structures}
  */
-export interface IBCMsgTransferOptions {
-  timeoutHeight?: MsgTransfer['timeoutHeight'];
-  timeoutTimestamp?: MsgTransfer['timeoutTimestamp'];
+export type IBCMsgTransferOptions = {
   memo?: string;
   forwardOpts?: {
     /** The recipient address for the intermediate transfer. Defaults to 'pfm' unless specified */
@@ -372,7 +373,14 @@ export interface IBCMsgTransferOptions {
     timeout?: ForwardInfo['forward']['timeout'];
     retries?: ForwardInfo['forward']['retries'];
   };
-}
+} & (
+  | { timeoutHeight?: MsgTransfer['timeoutHeight'] }
+  | { timeoutTimestamp?: MsgTransfer['timeoutTimestamp'] }
+  | {
+      /** if specified, will be converted to a `timeoutTimestamp` in the future using {@link TimerService} */
+      timeoutRelativeSeconds?: bigint;
+    }
+);
 
 /**
  * Cosmos-specific methods to extend `OrchestrationAccountI`, parameterized
