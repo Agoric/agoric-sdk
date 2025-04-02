@@ -59,12 +59,12 @@ type InboundQueueRecord struct {
 }
 
 const (
-	// bundleUncompressedSizeLimit is the (exclusive) limit on uncompressed bundle size.
+	// BundleUncompressedSizeLimit is the (exclusive) limit on uncompressed bundle size.
 	// We must ensure there is an exclusive int64 limit in order to detect an underflow.
-	bundleUncompressedSizeLimit uint64 = 10 * 1024 * 1024 // 10MB
-	chunkSizeLimit              uint64 = 512 * 1024       // 512KB
-	chunkIndexLimit             uint64 = (bundleUncompressedSizeLimit + chunkSizeLimit - 1) / chunkSizeLimit
-	hashLimit                   int    = 128
+	BundleUncompressedSizeLimit uint64 = 10 * 1024 * 1024 // 10MB
+	ChunkSizeLimit              uint64 = 512 * 1024       // 512KB
+	ChunkIndexLimit             uint64 = (BundleUncompressedSizeLimit + ChunkSizeLimit - 1) / ChunkSizeLimit
+	HashSize                    int    = 256 / 8 * 2
 )
 
 // Charge an account address for the beans associated with given messages and storage.
@@ -441,7 +441,7 @@ func (msg MsgInstallBundle) ValidateBasic() error {
 		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Uncompressed size must be set with a compressed bundle")
 	case msg.UncompressedSize != 0 && hasBundle:
 		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Uncompressed size cannot be set with a legacy bundle")
-	case uint64(msg.UncompressedSize) >= bundleUncompressedSizeLimit:
+	case uint64(msg.UncompressedSize) >= BundleUncompressedSizeLimit:
 		// must enforce a limit to avoid overflow when computing its successor in Uncompress()
 		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Uncompressed size out of range")
 	}
@@ -523,26 +523,26 @@ func (bc BundleChunks) ValidateBasic() error {
 	if len(bc.Chunks) == 0 {
 		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Bundle chunks cannot be empty")
 	}
-	if uint64(len(bc.Chunks)) >= chunkIndexLimit {
-		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Number of bundle chunks must be less than %d", chunkIndexLimit)
+	if uint64(len(bc.Chunks)) >= ChunkIndexLimit {
+		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Number of bundle chunks must be less than %d", ChunkIndexLimit)
 	}
-	if len(bc.BundleHash) > hashLimit {
-		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Bundle hash must not exceed %d characters", hashLimit)
+	if len(bc.BundleHash) != HashSize {
+		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Bundle hash must be %d characters", HashSize)
 	}
 	if !IsHexBytes(bc.BundleHash) {
 		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Bundle hash must be a hex byte string")
 	}
-	if bc.BundleSize <= 0 || bc.BundleSize >= bundleUncompressedSizeLimit {
+	if bc.BundleSize <= 0 || bc.BundleSize >= BundleUncompressedSizeLimit {
 		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Bundle size out of range")
 	}
 	totalChunkSize := uint64(0)
 	for i, chunk := range bc.Chunks {
-		if chunk.ChunkSize <= 0 || chunk.ChunkSize >= chunkSizeLimit {
+		if chunk.ChunkSize <= 0 || chunk.ChunkSize >= ChunkSizeLimit {
 			return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Chunk %d size out of range", i)
 		}
 		totalChunkSize += chunk.ChunkSize
-		if len(chunk.Hash) > hashLimit {
-			return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Chunk %d hash must not exceed %d characters", i, hashLimit)
+		if len(chunk.Hash) != HashSize {
+			return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Chunk %d hash must be %d characters", i, HashSize)
 		}
 		if !IsHexBytes(chunk.Hash) {
 			return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Chunk %d hash must be a hex byte string", i)
@@ -610,11 +610,11 @@ func (msg MsgSendChunk) ValidateBasic() error {
 	if len(msg.ChunkData) == 0 {
 		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Chunk data cannot be empty")
 	}
-	if uint64(len(msg.ChunkData)) >= chunkSizeLimit {
-		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Chunk size must be less than than %d", chunkSizeLimit)
+	if uint64(len(msg.ChunkData)) >= ChunkSizeLimit {
+		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Chunk size must be less than than %d", ChunkSizeLimit)
 	}
-	if msg.ChunkIndex >= chunkIndexLimit {
-		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Chunk index must be less than %d", chunkIndexLimit)
+	if msg.ChunkIndex >= ChunkIndexLimit {
+		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Chunk index must be less than %d", ChunkIndexLimit)
 	}
 	return nil
 }

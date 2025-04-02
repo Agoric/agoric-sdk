@@ -35,8 +35,6 @@ type afterCommitBlockAction struct {
 func BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock, keeper Keeper) error {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyBeginBlocker)
 
-	keeper.PruneExpiredBundleInstalls(ctx)
-
 	action := beginBlockAction{
 		ChainID: ctx.ChainID(),
 		Params:  keeper.GetParams(ctx),
@@ -67,6 +65,9 @@ func EndBlock(ctx sdk.Context, req abci.RequestEndBlock, keeper Keeper) ([]abci.
 		// Panic here, in the hopes that a replay from scratch will fix the problem.
 		panic(err)
 	}
+
+	// Remove expired bundle installs.
+	keeper.PruneExpiredBundleInstalls(ctx)
 
 	// Save our EndBlock status.
 	endBlockHeight = ctx.BlockHeight()

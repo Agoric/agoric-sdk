@@ -187,6 +187,7 @@ message MsgSendChunkResponse {
     (gogoproto.jsontag)    = "chunk",
     (gogoproto.moretags)   = "yaml:\"chunk\""
   ];
+  // If this chunk completed the installation, this is the response from the chain.
   MsgInstallBundleResponse install_response = 3 [
     (gogoproto.jsontag)    = "install_response",
     (gogoproto.moretags)   = "yaml:\"install_response\""

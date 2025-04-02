@@ -218,23 +218,18 @@ message SwingStoreArtifact {
     ];
 }
 
+// FIXME: mhofman: ChunkedArtifact?
 // BundleChunks is the manifest for a chunked InstallBundle.
 message BundleChunks {
-    // The hash of the complete bundle.
-    string bundle_hash = 1 [
-        (gogoproto.jsontag)    = "bundle_hash",
-        (gogoproto.moretags)   = "yaml:\"bundle_hash\""
-    ];
-
-    // The size of the final bundle artifact in bytes.
-    uint64 bundle_size = 2 [
-        (gogoproto.jsontag)    = "bundle_size",
-        (gogoproto.moretags)   = "yaml:\"bundle_size\""
+    // The size of the final artifact in bytes.
+    uint64 total_size = 1 [
+        (gogoproto.jsontag)    = "total_size",
+        (gogoproto.moretags)   = "yaml:\"total_size\""
     ];
 
     // Information about the chunks that will be concatenated to form this
     // bundle.
-    repeated ChunkInfo chunks = 3 [
+    repeated ChunkInfo chunks = 2 [
         (gogoproto.jsontag)    = "chunks",
         (gogoproto.moretags)   = "yaml:\"chunks\""
     ];
