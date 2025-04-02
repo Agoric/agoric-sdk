@@ -100,12 +100,14 @@ func TestUpdateParamsFromEmpty(t *testing.T) {
 		VatCleanupBudget:   nil,
 	}
 	want := Params{
-		BeansPerUnit:       DefaultBeansPerUnit(),
-		BootstrapVatConfig: "",
-		FeeUnitPrice:       sdk.NewCoins(sdk.NewInt64Coin("denom", 789)),
-		PowerFlagFees:      DefaultPowerFlagFees,
-		QueueMax:           DefaultQueueMax,
-		VatCleanupBudget:   DefaultVatCleanupBudget,
+		BeansPerUnit:                       DefaultBeansPerUnit(),
+		BootstrapVatConfig:                 "",
+		FeeUnitPrice:                       sdk.NewCoins(sdk.NewInt64Coin("denom", 789)),
+		PowerFlagFees:                      DefaultPowerFlagFees,
+		QueueMax:                           DefaultQueueMax,
+		VatCleanupBudget:                   DefaultVatCleanupBudget,
+		PendingInstallationDeadlineBlocks:  -1,
+		PendingInstallationDeadlineSeconds: 24 * 60 * 60,
 	}
 	got, err := UpdateParams(in)
 	if err != nil {
@@ -123,20 +125,24 @@ func TestUpdateParamsFromExisting(t *testing.T) {
 	customQueueSize := NewQueueSize("qux", int32(3))
 	customVatCleanup := UintMapEntry{"corge", sdk.NewUint(4)}
 	in := Params{
-		BeansPerUnit:       append([]StringBeans{customBeansPerUnit}, defaultBeansPerUnit[2:4]...),
-		BootstrapVatConfig: "",
-		FeeUnitPrice:       sdk.NewCoins(sdk.NewInt64Coin("denom", 789)),
-		PowerFlagFees:      []PowerFlagFee{customPowerFlagFee},
-		QueueMax:           []QueueSize{NewQueueSize(QueueInbound, int32(10)), customQueueSize},
-		VatCleanupBudget:   []UintMapEntry{customVatCleanup, UintMapEntry{VatCleanupDefault, sdk.NewUint(10)}},
+		BeansPerUnit:                       append([]StringBeans{customBeansPerUnit}, defaultBeansPerUnit[2:4]...),
+		BootstrapVatConfig:                 "",
+		FeeUnitPrice:                       sdk.NewCoins(sdk.NewInt64Coin("denom", 789)),
+		PowerFlagFees:                      []PowerFlagFee{customPowerFlagFee},
+		QueueMax:                           []QueueSize{NewQueueSize(QueueInbound, int32(10)), customQueueSize},
+		VatCleanupBudget:                   []UintMapEntry{customVatCleanup, UintMapEntry{VatCleanupDefault, sdk.NewUint(10)}},
+		PendingInstallationDeadlineBlocks:  300,
+		PendingInstallationDeadlineSeconds: -1,
 	}
 	want := Params{
-		BeansPerUnit:       append(append(in.BeansPerUnit, defaultBeansPerUnit[0:2]...), defaultBeansPerUnit[4:]...),
-		BootstrapVatConfig: in.BootstrapVatConfig,
-		FeeUnitPrice:       in.FeeUnitPrice,
-		PowerFlagFees:      append(in.PowerFlagFees, DefaultPowerFlagFees...),
-		QueueMax:           in.QueueMax,
-		VatCleanupBudget:   append(in.VatCleanupBudget, DefaultVatCleanupBudget[1:]...),
+		BeansPerUnit:                       append(append(in.BeansPerUnit, defaultBeansPerUnit[0:2]...), defaultBeansPerUnit[4:]...),
+		BootstrapVatConfig:                 in.BootstrapVatConfig,
+		FeeUnitPrice:                       in.FeeUnitPrice,
+		PowerFlagFees:                      append(in.PowerFlagFees, DefaultPowerFlagFees...),
+		QueueMax:                           in.QueueMax,
+		VatCleanupBudget:                   append(in.VatCleanupBudget, DefaultVatCleanupBudget[1:]...),
+		PendingInstallationDeadlineBlocks:  in.PendingInstallationDeadlineBlocks,
+		PendingInstallationDeadlineSeconds: in.PendingInstallationDeadlineSeconds,
 	}
 	got, err := UpdateParams(in)
 	if err != nil {

@@ -1,7 +1,11 @@
 package keeper
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
@@ -190,6 +194,26 @@ type installBundleAction struct {
 
 func (keeper msgServer) InstallBundle(goCtx context.Context, msg *types.MsgInstallBundle) (*types.MsgInstallBundleResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
+	if msg.BundleChunks == nil || len(msg.BundleChunks.Chunks) == 0 {
+		return keeper.InstallFinishedBundle(goCtx, msg)
+	}
+
+	// Mark all the chunks as in-flight.
+	bc := *msg.BundleChunks
+	bc.Chunks = make([]*types.ChunkInfo, len(bc.Chunks))
+	for i, chunk := range bc.Chunks {
+		ci := *chunk
+		ci.State = types.ChunkState_CHUNK_STATE_IN_FLIGHT
+		bc.Chunks[i] = &ci
+	}
+	msg.BundleChunks = &bc
+
+	pendingId := keeper.AddPendingBundleInstall(ctx, msg)
+	return &types.MsgInstallBundleResponse{PendingId: pendingId}, nil
+}
+
+func (keeper msgServer) InstallFinishedBundle(goCtx context.Context, msg *types.MsgInstallBundle) (*types.MsgInstallBundleResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	err := msg.Uncompress()
 	if err != nil {
@@ -206,4 +230,103 @@ func (keeper msgServer) InstallBundle(goCtx context.Context, msg *types.MsgInsta
 	}
 
 	return &types.MsgInstallBundleResponse{}, nil
+}
+
+func (keeper msgServer) SendChunk(goCtx context.Context, msg *types.MsgSendChunk) (*types.MsgSendChunkResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	inst := keeper.GetPendingBundleInstall(ctx, msg.PendingId)
+	if inst == nil {
+		return nil, fmt.Errorf("no upload in progress for pending Id %d", msg.PendingId)
+	}
+
+	bc := inst.BundleChunks
+
+	if msg.ChunkIndex < 0 || msg.ChunkIndex >= uint64(len(bc.Chunks)) {
+		return nil, fmt.Errorf("chunk index %d out of range for pending Id %d", msg.ChunkIndex, msg.PendingId)
+	}
+
+	if bc.Chunks[msg.ChunkIndex].State != types.ChunkState_CHUNK_STATE_IN_FLIGHT {
+		return nil, fmt.Errorf("chunk %d is not in flight for pending Id %d", msg.ChunkIndex, msg.PendingId)
+	}
+
+	// Verify the chunk data.
+	ci := bc.Chunks[msg.ChunkIndex]
+	if ci.ChunkSize != uint64(len(msg.ChunkData)) {
+		return nil, fmt.Errorf("chunk %d size mismatch for pending Id %d", msg.ChunkIndex, msg.PendingId)
+	}
+
+	sha256Hash, err := hex.DecodeString(ci.Hash)
+	if err != nil {
+		return nil, fmt.Errorf("chunk %d cannot decode hash %s: %s", msg.ChunkIndex, ci.Hash, err)
+	}
+
+	hasher := sha256.New()
+	sum := hasher.Sum(msg.ChunkData)
+	if !bytes.Equal(sum, sha256Hash) {
+		return nil, fmt.Errorf("chunk %d hash mismatch; expected %x, got %x", msg.ChunkIndex, sha256Hash, sum)
+	}
+
+	// Data is valid, so store it.
+	keeper.SetPendingChunkData(ctx, msg.PendingId, msg.ChunkIndex, msg.ChunkData)
+
+	// Mark the chunk as received, and store the pending installation.
+	ci.State = types.ChunkState_CHUNK_STATE_RECEIVED
+	keeper.SetPendingBundleInstall(ctx, msg.PendingId, inst)
+
+	res, err := keeper.MaybeFinalizeBundle(ctx, msg.PendingId)
+
+	return &types.MsgSendChunkResponse{
+		PendingId:       msg.PendingId,
+		Chunk:           ci,
+		InstallResponse: res,
+	}, err
+}
+
+func (keeper msgServer) MaybeFinalizeBundle(ctx sdk.Context, pendingId uint64) (*types.MsgInstallBundleResponse, error) {
+	msg := keeper.GetPendingBundleInstall(ctx, pendingId)
+	if msg == nil {
+		return nil, nil
+	}
+
+	// If any chunks are not received, then bail (without error).
+	bc := msg.BundleChunks
+	totalChunkSize := uint64(0)
+	for _, chunk := range bc.Chunks {
+		if chunk.State != types.ChunkState_CHUNK_STATE_RECEIVED {
+			return nil, nil
+		}
+		totalChunkSize += chunk.ChunkSize
+	}
+
+	chunkData := make([]byte, 0, totalChunkSize)
+	for i := range bc.Chunks {
+		bz := keeper.GetPendingChunkData(ctx, pendingId, uint64(i))
+		chunkData = append(chunkData, bz...)
+	}
+
+	// Verify the hash of the concatenated chunks.
+	hasher := sha256.New()
+	sum := hasher.Sum(chunkData)
+	sha256Hash, err := hex.DecodeString(bc.BundleHash)
+	if err != nil {
+		return nil, fmt.Errorf("cannot decode hash %s: %s", bc.BundleHash, err)
+	}
+	if !bytes.Equal(sum, sha256Hash) {
+		return nil, fmt.Errorf("bundle hash mismatch; expected %x, got %x", sha256Hash, sum)
+	}
+
+	// Is it compressed or not?
+	if msg.UncompressedSize > 0 {
+		msg.CompressedBundle = chunkData
+	} else {
+		msg.Bundle = string(chunkData)
+	}
+
+	// Clean up the pending installation state.
+	msg.BundleChunks = nil
+	keeper.SetPendingBundleInstall(ctx, pendingId, nil)
+
+	// Install the bundle now that all the chunks are processed.
+	return keeper.InstallFinishedBundle(ctx, msg)
 }
