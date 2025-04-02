@@ -47,8 +47,11 @@ const (
 )
 
 const (
-	stateKey            = "state"
-	swingStoreKeyPrefix = "swingStore."
+	stateKey                      = "state"
+	pendingChunkDataKeyPrefix     = "pendingChunkData."
+	pendingBundleInstallKeyPrefix = "pendingBundleInstall."
+	pendingNodeKeyPrefix          = "pending."
+	swingStoreKeyPrefix           = "swingStore."
 )
 
 // Keeper maintains the link to data vstorage and exposes getter/setter methods for the various parts of the state machine
@@ -483,6 +486,162 @@ func (k Keeper) SetMailbox(ctx sdk.Context, peer string, mailbox string) {
 	path := StoragePathMailbox + "." + peer
 	// FIXME: We should use just SetStorageAndNotify here, but solo needs legacy for now.
 	k.vstorageKeeper.LegacySetStorageAndNotify(ctx, agoric.NewKVEntry(path, mailbox))
+}
+
+func (k Keeper) GetPendingChunkData(ctx sdk.Context, pendingId uint64, chunkIndex uint64) []byte {
+	store := ctx.KVStore(k.storeKey)
+	pendingChunkData := prefix.NewStore(store, []byte(pendingChunkDataKeyPrefix))
+
+	key := append(sdk.Uint64ToBigEndian(pendingId), sdk.Uint64ToBigEndian(chunkIndex)...)
+	if !pendingChunkData.Has(key) {
+		return nil
+	}
+	return pendingChunkData.Get(key)
+}
+
+func (k Keeper) SetPendingChunkData(ctx sdk.Context, pendingId uint64, chunkIndex uint64, data []byte) {
+	store := ctx.KVStore(k.storeKey)
+	pendingChunkData := prefix.NewStore(store, []byte(pendingChunkDataKeyPrefix))
+
+	key := append(sdk.Uint64ToBigEndian(pendingId), sdk.Uint64ToBigEndian(chunkIndex)...)
+	if len(data) == 0 {
+		pendingChunkData.Delete(key)
+		return
+	}
+	pendingChunkData.Set(key, data)
+}
+
+func (k Keeper) GetPendingBundleInstall(ctx sdk.Context, pendingId uint64) *types.MsgInstallBundle {
+	store := ctx.KVStore(k.storeKey)
+	pendingStore := prefix.NewStore(store, []byte(pendingBundleInstallKeyPrefix))
+	key := sdk.Uint64ToBigEndian(pendingId)
+	if !pendingStore.Has(key) {
+		return nil
+	}
+	bz := pendingStore.Get(key)
+	msg := &types.MsgInstallBundle{}
+	k.cdc.MustUnmarshal(bz, msg)
+	return msg
+}
+
+func (k Keeper) AddPendingBundleInstall(ctx sdk.Context, msg *types.MsgInstallBundle) uint64 {
+	state := k.GetState(ctx)
+	state.LastPendingId++
+	k.SetState(ctx, state)
+
+	pendingId := state.LastPendingId
+	k.SetPendingBundleInstall(ctx, pendingId, msg)
+
+	// Attach the pending install node to the linked list.
+	node := &types.PendingInstallNode{
+		PendingId:  pendingId,
+		StartTime:  ctx.BlockTime().Unix(),
+		StartBlock: ctx.BlockHeight(),
+	}
+	store := ctx.KVStore(k.storeKey)
+	key := sdk.Uint64ToBigEndian(pendingId)
+	startStore := prefix.NewStore(store, []byte(pendingNodeKeyPrefix))
+	bz := k.cdc.MustMarshal(node)
+	startStore.Set(key, bz)
+
+	return pendingId
+}
+
+// PruneExpiredBundleInstalls removes pending bundle installs that have passed
+// their deadline, as set by the keeper parameters.
+func (k Keeper) PruneExpiredBundleInstalls(ctx sdk.Context) {
+	params := k.GetParams(ctx)
+	currentSeconds := ctx.BlockTime().Unix()
+	currentBlocks := ctx.BlockHeight()
+	deadlineSeconds := params.InstallationDeadlineSeconds
+	deadlineBlocks := params.InstallationDeadlineBlocks
+
+	store := ctx.KVStore(k.storeKey)
+	startStore := prefix.NewStore(store, []byte(pendingNodeKeyPrefix))
+
+	state := k.GetState(ctx)
+	for state.FirstPendingId != 0 {
+		pendingId := state.FirstPendingId
+		key := sdk.Uint64ToBigEndian(pendingId)
+		bz := startStore.Get(key)
+		node := &types.PendingInstallNode{}
+		k.cdc.MustUnmarshal(bz, node)
+
+		if deadlineSeconds < 0 || currentSeconds-node.StartTime < deadlineSeconds {
+			if deadlineBlocks < 0 || currentBlocks-node.StartBlock < deadlineBlocks {
+				// Still alive.  Stop the search.
+				break
+			}
+		}
+
+		// This pending bundle install is dead.  Remove it.
+		k.SetPendingBundleInstall(ctx, pendingId, nil)
+
+		// Advance to the next node.
+		state.FirstPendingId = node.NextId
+	}
+
+	k.SetState(ctx, state)
+}
+
+func (k Keeper) makeListTools(ctx sdk.Context) *types.ListTools {
+	store := ctx.KVStore(k.storeKey)
+	listStore := prefix.NewStore(store, []byte(pendingNodeKeyPrefix))
+	return types.NewListTools(ctx, listStore, k.cdc)
+}
+
+func (k Keeper) SetPendingBundleInstall(ctx sdk.Context, pendingId uint64, newMsg *types.MsgInstallBundle) {
+	store := ctx.KVStore(k.storeKey)
+	pendingStore := prefix.NewStore(store, []byte(pendingBundleInstallKeyPrefix))
+
+	key := sdk.Uint64ToBigEndian(pendingId)
+	if newMsg != nil {
+		bz := k.cdc.MustMarshal(newMsg)
+		pendingStore.Set(key, bz)
+		return
+	}
+
+	var msg types.MsgInstallBundle
+	k.cdc.MustUnmarshal(pendingStore.Get(key), &msg)
+	if msg.BundleChunks != nil && len(msg.BundleChunks.Chunks) > 0 {
+		// Remove the chunks.
+		for i := range msg.BundleChunks.Chunks {
+			k.SetPendingChunkData(ctx, pendingId, uint64(i), nil)
+		}
+	}
+	pendingStore.Delete(key)
+
+	// Remove auxilliary data structure entries.
+	k.RemovePendingInstallNode(ctx, pendingId)
+}
+
+// RemovePendingInstallNode removes this pending install from the keeper's
+// ordered linked list structures, and deletes it from the store.
+func (k Keeper) RemovePendingInstallNode(ctx sdk.Context, pendingId uint64) {
+	lt := k.makeListTools(ctx)
+
+	victimKey := lt.Key(pendingId)
+	victimNode := lt.Fetch(victimKey)
+
+	// Remove the victim from the linked list, keeping the structure intact.
+	lt.Unlink(victimNode, func(firstp, lastp *uint64) {
+		state := k.GetState(ctx)
+		if firstp != nil {
+			state.FirstPendingId = *firstp
+		}
+		if lastp != nil {
+			state.LastPendingId = *lastp
+		}
+		k.SetState(ctx, state)
+	})
+
+	// Finally, delete the victim node's storage.
+	lt.Delete(victimKey)
+}
+
+func (k Keeper) GetPendingInstallNode(ctx sdk.Context, pendingId uint64) *types.PendingInstallNode {
+	lt := k.makeListTools(ctx)
+	return lt.Fetch(lt.Key(pendingId))
 }
 
 func (k Keeper) GetSwingStore(ctx sdk.Context) sdk.KVStore {
