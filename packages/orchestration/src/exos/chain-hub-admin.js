@@ -67,16 +67,16 @@ export const prepareChainHubAdmin = (zone, chainHub) => {
 
         if (!ibcConnectionInfo) {
           trace(chainName, 'registered without connection info');
-          return;
+          // return;
         }
 
-        const chainId =
-          'chainId' in chainInfo ? chainInfo.chainId : chainInfo.reference;
-        chainHub.registerConnection(
-          agoricChainInfo.chainId,
-          chainId,
-          ibcConnectionInfo,
-        );
+        // const chainId =
+        //   'chainId' in chainInfo ? chainInfo.chainId : chainInfo.reference;
+        // chainHub.registerConnection(
+        //   agoricChainInfo.chainId,
+        //   chainId,
+        //   ibcConnectionInfo,
+        // );
       },
       /**
        * Register an asset that may be held on a chain other than the issuing

@@ -41,7 +41,11 @@ import { E } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
 import { parseAccountIdArg } from '@agoric/orchestration/src/utils/address.js';
 import { chainInfoCaipId } from '@agoric/orchestration/src/utils/chain-info.js';
-import type { Caip10Record } from '@agoric/orchestration/src/orchestration-api.js';
+import type {
+  Caip10Record,
+  CaipChainId,
+  Chain,
+} from '@agoric/orchestration/src/orchestration-api.js';
 import type { Baggage } from '@agoric/swingset-liveslots/src/vatDataTypes.js';
 import type { LiquidityPoolKit } from './liquidity-pool.js';
 import type { StatusManager } from './status-manager.js';
@@ -231,19 +235,22 @@ export const prepareAdvancerKit = (
             // throws if the bech32 prefix is not found
             const destination = chainHub.makeChainAddress(EUD);
 
-            /** @type {AccountId} */
             const accountId = parseAccountIdArg(destination);
-            const chainId = accountId.reference;
-            const info = await when(chainHub.getChainInfo(chainId));
+            const caipChainId =
+              `${accountId.namespace}:${accountId.reference}` as CaipChainId;
+            console.log('DEBUG getting info by chainId', caipChainId);
+            const info = await when(
+              chainHub.getChainInfoByChainId(caipChainId),
+            );
 
             // These are the cases that are currently supported
             if (
-              chainId !== settlementAddress.chainId &&
+              caipChainId !== settlementAddress.chainId &&
               info.namespace !== 'cosmos' &&
               !info.cctpDestinationDomain
             ) {
               statusManager.skipAdvance(evidence, [
-                `Transfer to ${chainId} not supported.`,
+                `Transfer to ${caipChainId} not supported.`,
               ]);
             }
 

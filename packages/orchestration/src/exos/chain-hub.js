@@ -454,6 +454,7 @@ export const makeChainHub = (
      * @param {ChainInfo} chainInfo
      */
     registerChain(name, chainInfo) {
+      console.debug('registerChain', name, chainInfo);
       chainInfos.init(name, chainInfo);
       chainIdToChainName.init(chainInfoCaipId(chainInfo), name);
       if (chainInfo.namespace === 'cosmos' && chainInfo.bech32Prefix) {
@@ -496,6 +497,7 @@ export const makeChainHub = (
      * @returns {Vow<ActualChainInfo<K>>}
      */
     getChainInfo(chainName) {
+      // TODO validate that chainName has no colons (with a comment that getChainInfoByChainId is what they probably want)
       // Either from registerChain or memoized remote lookup()
       if (chainInfos.has(chainName)) {
         return /** @type {Vow<ActualChainInfo<K>>} */ (
@@ -513,6 +515,7 @@ export const makeChainHub = (
      * @returns {ChainInfo}
      */
     getChainInfoByChainId(chainId) {
+      debugger;
       // Either from registerChain or memoized remote lookup()
       chainIdToChainName.has(chainId) ||
         Fail`Chain name not found for ${q(chainId)}`;
@@ -533,9 +536,7 @@ export const makeChainHub = (
         counterpartyChainId,
         connectionInfo,
       );
-      if (!connectionInfos.has(key)) {
-        connectionInfos.init(key, normalized);
-      }
+      connectionInfos.init(key, normalized);
     },
     /**
      * Update connection info by completely replacing existing entry
