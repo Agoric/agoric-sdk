@@ -126,8 +126,8 @@ test('durable stateShape refcounts', async t => {
       const { makeKindHandle, defineDurableKind } = VatData;
 
       return Far('root', {
-        accept: _ref => {}, // assigns a vref
-        create: valueShape => {
+        acceptRef: _ref => {}, // assigns a vref
+        defineDurableKind: valueShape => {
           const kh = makeKindHandle('shaped');
           baggage.init('kh', kh);
           defineHolder(defineDurableKind, kh, valueShape);
@@ -137,17 +137,17 @@ test('durable stateShape refcounts', async t => {
     return { buildRootObject };
   });
   await ls1.dispatch(makeStartVat());
-  const rootA = 'o+0';
+  const root = 'o+0';
 
-  const standard1Vref = 'o-1';
-  await ls1.dispatch(makeMessage(rootA, 'accept', []));
-  t.falsy(ls1.testHooks.getReachableRefCount(standard1Vref));
+  const vref1 = 'o-1';
+  await ls1.dispatch(makeMessage(root, 'acceptRef', []));
+  t.is(ls1.testHooks.getReachableRefCount(vref1), 0);
 
-  await ls1.dispatch(makeMessage(rootA, 'create', [kslot(standard1Vref)]));
+  await ls1.dispatch(makeMessage(root, 'defineDurableKind', [kslot(vref1)]));
 
-  // using our 'standard1' object in stateShape causes its refcount to
+  // using our 'vref1' object in stateShape causes its refcount to
   // be incremented
-  t.is(ls1.testHooks.getReachableRefCount(standard1Vref), 1);
+  t.is(ls1.testHooks.getReachableRefCount(vref1), 1);
 
   // ------
 
@@ -172,17 +172,14 @@ test('durable stateShape refcounts', async t => {
     return { buildRootObject };
   });
 
-  const standard2Vref = 'o-2';
-  const vp = { valueShape: kslot(standard2Vref) };
-  const startVat2 = makeStartVat(kser(vp));
-  await ls2.dispatch(startVat2);
-
-  // redefining the durable kind, with a different 'standard' object,
-  // will decrement the standard1 refcount, and increment that of
-  // standard2
-
-  t.falsy(ls2.testHooks.getReachableRefCount(standard1Vref));
-  t.is(ls2.testHooks.getReachableRefCount(standard2Vref), 1);
+  // redefining the durable kind's stateShape to replace its vref1 reference
+  // with a vref2 reference will decrement the former refcount and increment the
+  // latter
+  const vref2 = 'o-2';
+  const vatParameters = { valueShape: kslot(vref2) };
+  await ls2.dispatch(makeStartVat(kser(vatParameters)));
+  t.is(ls2.testHooks.getReachableRefCount(vref1), 0);
+  t.is(ls2.testHooks.getReachableRefCount(vref2), 1);
 });
 
 test('durable stateShape must match', async t => {
@@ -196,10 +193,10 @@ test('durable stateShape must match', async t => {
       const { makeKindHandle, defineDurableKind } = VatData;
 
       return Far('root', {
-        create: (obj1, obj2) => {
+        defineDurableKind: (x, y) => {
           const kh = makeKindHandle('shaped');
           baggage.init('kh', kh);
-          const stateShape = { x: obj1, y: obj2 };
+          const stateShape = { x, y };
           defineDurableKind(kh, initHolder, holderMethods, { stateShape });
         },
       });
@@ -207,15 +204,15 @@ test('durable stateShape must match', async t => {
     return { buildRootObject };
   });
   await ls1.dispatch(makeStartVat());
-  const rootA = 'o+0';
+  const root = 'o+0';
 
   const vref1 = 'o-1';
   const vref2 = 'o-2';
   await ls1.dispatch(
-    makeMessage(rootA, 'create', [kslot(vref1), kslot(vref2)]),
+    makeMessage(root, 'defineDurableKind', [kslot(vref1), kslot(vref2)]),
   );
 
-  // the first version's state is { x: vref1, y: vref2 }
+  // the first version's stateShape is { x: vref1, y: vref2 }
 
   // ------
 
@@ -230,17 +227,17 @@ test('durable stateShape must match', async t => {
     const buildRootObject = (vatPowers, vatParameters, baggage) => {
       const { VatData } = vatPowers;
       const { defineDurableKind } = VatData;
-      const { obj1, obj2 } = vatParameters;
+      const { x, y } = vatParameters;
       const kh = baggage.get('kh');
       const redefineDurableKind = stateShape => {
         defineDurableKind(kh, initHolder, holderMethods, { stateShape });
       };
       // several shapes that are not compatible
-      const shape1 = { x: obj1, y: M.any() };
-      const shape2 = { x: obj1 };
-      const shape3 = { x: obj1, y: obj2, z: M.string() };
-      const shape4 = { x: M.or(obj1, M.string()), y: obj2 };
-      const shape5 = { x: obj2, y: obj1 }; // wrong slots
+      const shape1 = { x, y: M.any() };
+      const shape2 = { x };
+      const shape3 = { x, y, z: M.string() };
+      const shape4 = { x: M.or(x, M.string()), y };
+      const shape5 = { x: y, y: x }; // wrong slots
       const trial = shape => {
         t.throws(() => redefineDurableKind(shape), {
           message: /durable Kind stateShape mismatch/,
@@ -251,16 +248,14 @@ test('durable stateShape must match', async t => {
       trial(shape3);
       trial(shape4);
       trial(shape5);
-      const stateShape = { x: obj1, y: obj2 }; // the correct shape
-      redefineDurableKind(stateShape);
-      t.pass();
+      // the correct shape
+      redefineDurableKind({ x, y });
 
       return Far('root', {});
     };
     return { buildRootObject };
   });
 
-  const vp = { obj1: kslot(vref1), obj2: kslot(vref2) };
-  const startVat2 = makeStartVat(kser(vp));
-  await ls2.dispatch(startVat2);
+  const vatParameters = { x: kslot(vref1), y: kslot(vref2) };
+  await ls2.dispatch(makeStartVat(kser(vatParameters)));
 });
