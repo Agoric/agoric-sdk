@@ -35,6 +35,8 @@ import {
   AnyNatAmountShape,
   CosmosChainAddressShape,
 } from '@agoric/orchestration';
+import type { AccountId } from '@agoric/orchestration/src/orchestration-api.js';
+import { parseAccountIdArg } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { pickFacet } from '@agoric/vat-data';
 import type { VowTools } from '@agoric/vow';
@@ -63,7 +65,7 @@ interface AdvancerKitPowers {
 interface AdvancerVowCtx {
   fullAmount: NatAmount;
   advanceAmount: NatAmount;
-  destination: CosmosChainAddress;
+  destination: AccountId;
   forwardingAddress: NobleAddress;
   txHash: EvmHash;
 }
@@ -72,7 +74,7 @@ const AdvancerVowCtxShape: TypedPattern<AdvancerVowCtx> = M.splitRecord(
   {
     fullAmount: AnyNatAmountShape,
     advanceAmount: AnyNatAmountShape,
-    destination: CosmosChainAddressShape,
+    destination: M.string(), // AccountId
     forwardingAddress: M.string(),
     txHash: EvmHashShape,
   },
@@ -200,7 +202,7 @@ export const prepareAdvancerKit = (
             log(`decoded EUD: ${EUD}`);
             assert.typeof(EUD, 'string');
             // throws if the bech32 prefix is not found
-            const destination = chainHub.makeChainAddress(EUD);
+            const destination = chainHub.resolveAccountId(EUD);
 
             const fullAmount = toAmount(evidence.tx.amount);
             const { borrower, notifier, poolAccount } = this.state;
@@ -262,8 +264,12 @@ export const prepareAdvancerKit = (
             value: advanceAmount.value,
           });
           const intermediateRecipient = getNobleICA().getAddress();
+          const accountId = parseAccountIdArg(destination);
+
+          assert.equal(accountId.namespace, 'cosmos');
+
           const transferOrSendV =
-            destination.chainId === settlementAddress.chainId
+            accountId.reference === settlementAddress.chainId
               ? E(poolAccount).send(destination, amount)
               : E(poolAccount).transfer(destination, amount, {
                   forwardOpts: { intermediateRecipient },

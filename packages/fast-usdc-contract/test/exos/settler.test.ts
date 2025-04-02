@@ -23,14 +23,14 @@ import type { Baggage } from '@agoric/vat-data';
 import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
 import {
   prepareSettler,
-  stateShape,
   type SettlerKit,
+  stateShape,
 } from '../../src/exos/settler.ts';
 import { prepareStatusManager } from '../../src/exos/status-manager.ts';
 import {
+  intermediateRecipient,
   MockCctpTxEvidences,
   MockVTransferEvents,
-  intermediateRecipient,
 } from '../fixtures.js';
 import { makeTestLogger, prepareMockOrchAccounts } from '../mocks.js';
 import { commonSetup } from '../supports.js';
@@ -137,12 +137,11 @@ const makeTestContext = async t => {
       if (typeof EUD !== 'string') {
         throw Error(`EUD not found in ${recipientAddress}`);
       }
-      const destination = chainHub.makeChainAddress(EUD);
       return harden({
         txHash,
         forwardingAddress,
         fullAmount: usdc.make(amount),
-        destination,
+        destination: chainHub.resolveAccountId(EUD),
       });
     };
 
@@ -515,7 +514,7 @@ test('Settlement for unknown transaction (minted early)', async t => {
       'forwarding',
       150000000n,
       'to',
-      'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
+      'cosmos:osmosis-1:osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
       'for',
       '0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761702',
     ],

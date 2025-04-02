@@ -139,7 +139,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
     // assume this never returns true for most tests
     checkMintedEarly: (evidence, destination) => {
       mustMatch(harden(evidence), CctpTxEvidenceShape);
-      mustMatch(destination, CosmosChainAddressShape);
+      mustMatch(destination, M.string());
       return false;
     },
   });
@@ -251,11 +251,8 @@ test('updates status to ADVANCING in happy path', async t => {
           brand: usdc.brand,
           value: 146999999n,
         },
-        destination: {
-          chainId: 'osmosis-1',
-          encoding: 'bech32',
-          value: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
-        },
+        destination:
+          'cosmos:osmosis-1:osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
       },
     ],
   ]);
@@ -268,9 +265,7 @@ test('updates status to ADVANCING in happy path', async t => {
         txHash: evidence.txHash,
         forwardingAddress: evidence.tx.forwardingAddress,
         fullAmount: usdc.make(evidence.tx.amount),
-        destination: {
-          value: decodeAddressHook(evidence.aux.recipientAddress).query.EUD,
-        },
+        destination: `cosmos:osmosis-1:${decodeAddressHook(evidence.aux.recipientAddress).query.EUD}`,
       },
       true, // indicates transfer succeeded
     ],
@@ -412,9 +407,7 @@ test('recovery behavior if Advance Fails (ADVANCE_FAILED)', async t => {
         txHash: evidence.txHash,
         forwardingAddress: evidence.tx.forwardingAddress,
         fullAmount: usdc.make(evidence.tx.amount),
-        destination: {
-          value: decodeAddressHook(evidence.aux.recipientAddress).query.EUD,
-        },
+        destination: `cosmos:dydx-mainnet-1:${decodeAddressHook(evidence.aux.recipientAddress).query.EUD}`,
       },
       false, // this indicates transfer failed
     ],
@@ -660,11 +653,8 @@ test('will not advance same txHash:chainId evidence twice', async t => {
       'Advance succeeded',
       {
         advanceAmount: { brand: usdc.brand, value: 146999999n },
-        destination: {
-          chainId: 'osmosis-1',
-          encoding: 'bech32',
-          value: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
-        },
+        destination:
+          'cosmos:osmosis-1:osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
       },
     ],
   ]);
@@ -913,11 +903,8 @@ test('uses bank send for agoric1 EUD', async t => {
           brand: usdc.brand,
           value: 244999999n,
         },
-        destination: {
-          chainId: 'agoric-3',
-          encoding: 'bech32',
-          value: 'agoric13rj0cc0hm5ac2nt0sdup2l7gvkx4v9tyvgq3h2',
-        },
+        destination:
+          'cosmos:agoric-3:agoric13rj0cc0hm5ac2nt0sdup2l7gvkx4v9tyvgq3h2',
       },
     ],
   ]);
@@ -929,9 +916,7 @@ test('uses bank send for agoric1 EUD', async t => {
         txHash: evidence.txHash,
         forwardingAddress: evidence.tx.forwardingAddress,
         fullAmount: usdc.make(evidence.tx.amount),
-        destination: {
-          value: decodeAddressHook(evidence.aux.recipientAddress).query.EUD,
-        },
+        destination: `cosmos:agoric-3:${decodeAddressHook(evidence.aux.recipientAddress).query.EUD}`,
       },
       true, // indicates send succeeded
     ],
@@ -970,9 +955,7 @@ test('notifies of advance failure if bank send fails', async t => {
         txHash: evidence.txHash,
         forwardingAddress: evidence.tx.forwardingAddress,
         fullAmount: usdc.make(evidence.tx.amount),
-        destination: {
-          value: decodeAddressHook(evidence.aux.recipientAddress).query.EUD,
-        },
+        destination: `cosmos:agoric-3:${decodeAddressHook(evidence.aux.recipientAddress).query.EUD}`,
       },
       false, // indicates send failed
     ],

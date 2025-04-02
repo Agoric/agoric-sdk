@@ -37,7 +37,6 @@ import type {
 import type {
   AccountId,
   ChainHub,
-  CosmosChainAddress,
   Denom,
   OrchestrationAccount,
 } from '@agoric/orchestration';
@@ -112,7 +111,7 @@ const makeMintedEarlyKey = (addr: NobleAddress, amount: bigint): string =>
 /** @param {Brand<'nat'>} USDC */
 export const makeAdvanceDetailsShape = (USDC: Brand<'nat'>) =>
   harden({
-    destination: CosmosChainAddressShape,
+    destination: M.string(),
     forwardingAddress: M.string(),
     fullAmount: makeNatAmountShape(USDC),
     txHash: EvmHashShape,
@@ -184,10 +183,9 @@ export const prepareSettler = (
           makeAdvanceDetailsShape(USDC),
           M.boolean(),
         ).returns(),
-        checkMintedEarly: M.call(
-          CctpTxEvidenceShape,
-          CosmosChainAddressShape,
-        ).returns(M.boolean()),
+        checkMintedEarly: M.call(CctpTxEvidenceShape, M.string()).returns(
+          M.boolean(),
+        ),
       }),
       self: M.interface('SettlerSelfI', {
         addMintedEarly: M.call(M.string(), M.nat()).returns(),
@@ -295,24 +293,21 @@ export const prepareSettler = (
             txHash: EvmHash;
             forwardingAddress: NobleAddress;
             fullAmount: Amount<'nat'>;
-            destination: CosmosChainAddress;
+            destination: AccountId;
           },
           success: boolean,
         ): void {
           const { mintedEarly } = this.state;
           const { value: fullValue } = fullAmount;
           const key = makeMintedEarlyKey(forwardingAddress, fullValue);
+
           if (mintedEarly.has(key)) {
             asMultiset(mintedEarly).remove(key);
             statusManager.advanceOutcomeForMintedEarly(txHash, success);
             if (success) {
               void this.facets.self.disburse(txHash, fullValue);
             } else {
-              void this.facets.self.forward(
-                txHash,
-                fullValue,
-                destination.value,
-              );
+              void this.facets.self.forward(txHash, fullValue, destination);
             }
           } else {
             statusManager.advanceOutcome(forwardingAddress, fullValue, success);
@@ -323,12 +318,12 @@ export const prepareSettler = (
          * funds to the pool.
          *
          * @param {CctpTxEvidence} evidence
-         * @param {CosmosChainAddress} destination
+         * @param {AccountId} destination
          * @returns {boolean} whether the EUD received funds without an advance
          */
         checkMintedEarly(
           evidence: CctpTxEvidence,
-          destination: CosmosChainAddress,
+          destination: AccountId,
         ): boolean {
           const {
             tx: { forwardingAddress, amount },
@@ -344,7 +339,7 @@ export const prepareSettler = (
             );
             asMultiset(mintedEarly).remove(key);
             statusManager.advanceOutcomeForUnknownMint(evidence);
-            void this.facets.self.forward(txHash, amount, destination.value);
+            void this.facets.self.forward(txHash, amount, destination);
             return true;
           }
           return false;
