@@ -26,67 +26,46 @@ const behavior = {
 };
 
 // virtual/durable Kinds can specify a 'stateShape', which should be
-// enforced, both during initialization and subsequent state changes
-
-test('constrain state shape', t => {
+// enforced at both initialization and subsequent state changes
+const testStateShape = test.macro((t, valueShape, config) => {
+  const { goodValues, badValues, throwsExpectation } = config;
   const { vom } = makeFakeVirtualStuff();
   const { defineKind } = vom;
-  const any = { value: M.any() };
-  const number = { value: M.number() };
-  const string = { value: M.string() };
-  const remotable = { value: M.remotable() };
-  const eph = { value: eph1 };
-
-  // M.any() allows anything
-  const makeA = defineKind('kindA', init, behavior, { stateShape: any });
-  makeA(eph1);
-  makeA(1);
-  makeA('string');
-  const a = makeA(1);
-  a.set(eph1);
-  a.set(2);
-  a.set('other string');
-
-  // M.number() requires a number
-  const numberFail = { message: /Must be a number/ };
-  const makeB = defineKind('kindB', init, behavior, { stateShape: number });
-  t.throws(() => makeB(eph1), numberFail);
-  const b = makeB(1);
-  t.throws(() => makeB('string'), numberFail);
-  t.throws(() => b.set(eph1), numberFail);
-  t.throws(() => b.set('string'), numberFail);
-
-  // M.string() requires a string
-  const stringFail = { message: /Must be a string/ };
-  const makeC = defineKind('kindC', init, behavior, { stateShape: string });
-  t.throws(() => makeC(eph1), stringFail);
-  const c = makeC('string');
-  t.throws(() => makeC(1), stringFail);
-  t.throws(() => c.set(eph1), stringFail);
-  t.throws(() => c.set(2), stringFail);
-
-  // M.remotable() requires any Remotable
-  const remotableFail = { message: /Must be a remotable/ };
-  const makeD = defineKind('kindD', init, behavior, { stateShape: remotable });
-  const d = makeD(eph1);
-  makeD(eph2);
-  t.throws(() => makeD(1), remotableFail);
-  t.throws(() => makeD('string'), remotableFail);
-  d.set(eph2);
-  t.throws(() => d.set(2), remotableFail);
-  t.throws(() => d.set('string'), remotableFail);
-
-  // using a specific Remotable object requires that exact object
-  const eph1Fail = { message: /Must be:.*Alleged: ephemeral1/ };
-  const makeE = defineKind('kindE', init, behavior, { stateShape: eph });
-  const e = makeE(eph1);
-  t.throws(() => makeE(eph2), eph1Fail);
-  t.throws(() => makeE(1), eph1Fail);
-  t.throws(() => makeE('string'), eph1Fail);
-  e.set(eph1);
-  t.throws(() => e.set(eph2), eph1Fail);
-  t.throws(() => e.set(2), eph1Fail);
-  t.throws(() => e.set('string'), eph1Fail);
+  const makeHolder = defineKind('kindTag', init, behavior, {
+    stateShape: { value: valueShape },
+  });
+  const instance = goodValues.map(value => makeHolder(value)).at(-1);
+  for (const value of goodValues) {
+    instance.set(value);
+  }
+  for (const value of badValues || []) {
+    t.throws(() => makeHolder(value), throwsExpectation);
+    t.throws(() => instance.set(value), throwsExpectation);
+  }
+  t.pass();
+});
+test('constrain state shape - M.any()', testStateShape, M.any(), {
+  goodValues: [eph1, eph2, 1, 2, 'string'],
+});
+test('constrain state shape - M.number()', testStateShape, M.number(), {
+  goodValues: [1],
+  badValues: [eph1, 'string'],
+  throwsExpectation: { message: /Must be a number/ },
+});
+test('constrain state shape - M.string()', testStateShape, M.string(), {
+  goodValues: ['string'],
+  badValues: [eph1, 1, 2],
+  throwsExpectation: { message: /Must be a string/ },
+});
+test('constrain state shape - M.remotable()', testStateShape, M.remotable(), {
+  goodValues: [eph1, eph2],
+  badValues: ['string', 1, 2],
+  throwsExpectation: { message: /Must be a remotable/ },
+});
+test('constrain state shape - specific remotable', testStateShape, eph1, {
+  goodValues: [eph1],
+  badValues: ['string', 1, 2],
+  throwsExpectation: { message: /Must be:.*Alleged: ephemeral1/ },
 });
 
 // durable Kinds serialize and store their stateShape, which must
