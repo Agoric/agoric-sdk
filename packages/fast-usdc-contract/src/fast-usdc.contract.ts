@@ -54,6 +54,8 @@ const trace = makeTracer('FastUsdc');
 const TXNS_NODE = 'txns';
 const FEE_NODE = 'feeConfig';
 const ADDRESSES_BAGGAGE_KEY = 'addresses';
+/** expected value: `OrchestrationAccount<{chainId: 'noble-1}>` Remotable */
+export const NOBLE_ICA_BAGGAGE_KEY = 'nobleICA';
 
 export const meta = {
   customTermsShape: FastUSDCTermsShape,
@@ -121,6 +123,7 @@ export const contract = async (
   const { withdrawToSeat } = tools.zoeTools;
   const { baggage, chainHub, orchestrateAll, vowTools } = tools;
   const makeSettler = prepareSettler(zone, {
+    baggage,
     statusManager,
     USDC,
     withdrawToSeat,
@@ -128,6 +131,7 @@ export const contract = async (
     vowTools: tools.vowTools,
     zcf,
     chainHub,
+    currentChainReference: privateArgs.chainInfo.agoric.chainId,
   });
 
   const zoeTools = makeZoeTools(zcf, vowTools);
@@ -190,6 +194,12 @@ export const contract = async (
 
       return vowTools.when(nobleAccountV, nobleAccount => {
         trace('nobleAccount', nobleAccount);
+        // baggage until exo state migrations: https://github.com/Agoric/agoric-sdk/issues/10200
+        if (baggage.has(NOBLE_ICA_BAGGAGE_KEY)) {
+          baggage.set(NOBLE_ICA_BAGGAGE_KEY, nobleAccount);
+        } else {
+          baggage.init(NOBLE_ICA_BAGGAGE_KEY, nobleAccount);
+        }
         return vowTools.when(
           E(nobleAccount).getAddress(),
           intermediateRecipient => {

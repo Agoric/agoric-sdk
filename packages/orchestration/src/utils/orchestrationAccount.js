@@ -22,7 +22,7 @@ export const orchestrationAccountMethods = {
     Vow$(DenomAmountShape),
   ),
   getBalances: M.call().returns(Vow$(M.arrayOf(DenomAmountShape))),
-  send: M.call(CosmosChainAddressShape, AmountArgShape).returns(VowShape),
+  send: M.call(AccountArgShape, AmountArgShape).returns(VowShape),
   sendAll: M.call(CosmosChainAddressShape, M.arrayOf(AmountArgShape)).returns(
     VowShape,
   ),

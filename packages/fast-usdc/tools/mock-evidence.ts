@@ -1,8 +1,5 @@
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
-import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
-import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import type { CosmosChainAddress } from '@agoric/orchestration';
-import type { VTransferIBCEvent } from '@agoric/vats';
 import type { CctpTxEvidence, EvmAddress } from '../src/types.js';
 
 const mockScenarios = [
@@ -11,6 +8,7 @@ const mockScenarios = [
   'AGORIC_PLUS_AGORIC',
   'AGORIC_NO_PARAMS',
   'AGORIC_UNKNOWN_EUD',
+  'AGORIC_PLUS_ETHEREUM',
 ] as const;
 
 export type MockScenario = (typeof mockScenarios)[number];
@@ -130,6 +128,28 @@ export const MockCctpTxEvidences: Record<
         }),
     },
     chainId: 1,
+  }),
+  AGORIC_PLUS_ETHEREUM: (receiverAddress?: string) => ({
+    blockHash:
+      '0x80d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee6z9',
+    blockNumber: 21037600n,
+    blockTimestamp,
+    txHash:
+      '0xe81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff3875527617z9',
+    tx: {
+      amount: 950000000n,
+      forwardingAddress: 'noble17ww3rfusv895d92c0ncgj0fl9trntn70jz7ee5',
+      sender: Senders.default,
+    },
+    aux: {
+      forwardingChannel: 'channel-21',
+      recipientAddress:
+        receiverAddress ||
+        encodeAddressHook(settlementAddress.value, {
+          EUD: 'eip155:1:0x1234567890123456789012345678901234567890',
+        }),
+    },
+    chainId: 8453,
   }),
 };
 
