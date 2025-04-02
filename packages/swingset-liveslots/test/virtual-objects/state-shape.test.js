@@ -139,14 +139,13 @@ test('durable stateShape refcounts', async t => {
   await ls1.dispatch(makeStartVat());
   const root = 'o+0';
 
+  // accepting a ref but doing nothing with it does not increment its refcount
   const vref1 = 'o-1';
-  await ls1.dispatch(makeMessage(root, 'acceptRef', []));
+  await ls1.dispatch(makeMessage(root, 'acceptRef', [kslot(vref1)]));
   t.is(ls1.testHooks.getReachableRefCount(vref1), 0);
 
+  // ...but using it in stateShape does
   await ls1.dispatch(makeMessage(root, 'defineDurableKind', [kslot(vref1)]));
-
-  // using our 'vref1' object in stateShape causes its refcount to
-  // be incremented
   t.is(ls1.testHooks.getReachableRefCount(vref1), 1);
 
   // ------
