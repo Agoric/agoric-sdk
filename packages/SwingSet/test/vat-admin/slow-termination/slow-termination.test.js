@@ -140,9 +140,9 @@ async function doSlowTerminate(t, mode) {
       .get(vatID);
 
   // 20*2 for imports, 21*2 for exports, 20*2 for promises, 20*1 for
-  // vatstore = 142.  Plus 21 for the usual liveslots stuff, and 7 for
+  // vatstore = 142.  Plus 18 for the usual liveslots stuff, and 7 for
   // kernel stuff like vNN.source/options
-  const initialKVCount = 170;
+  const initialKVCount = 167;
 
   t.is(remainingKV().length, initialKVCount);
   t.false(JSON.parse(kvStore.get('vats.terminated')).includes(vatID));
@@ -241,38 +241,37 @@ async function doSlowTerminate(t, mode) {
   await cleanKV(10, 5); // 5 c-list promises
 
   // that finishes the promises, so the next clean will delete the
-  // first five of our 48 other kv entries (20 vatstore plus 28
+  // first five of our 45 other kv entries (20 vatstore plus 25
   // overhead)
 
   await cleanKV(5, 5); // 5 other kv
   // now there are 43 other kv entries left
-  t.is(remainingKV().length, 43);
+  t.is(remainingKV().length, 40);
 
   await cleanKV(5, 5); // 5 other kv
-  t.is(remainingKV().length, 38);
+  t.is(remainingKV().length, 35);
   await cleanKV(5, 5); // 5 other kv
-  t.is(remainingKV().length, 33);
+  t.is(remainingKV().length, 30);
   await cleanKV(5, 5); // 5 other kv
-  t.is(remainingKV().length, 28);
+  t.is(remainingKV().length, 25);
   await cleanKV(5, 5); // 5 other kv
-  t.is(remainingKV().length, 23);
+  t.is(remainingKV().length, 20);
   await cleanKV(5, 5); // 5 other kv
-  t.is(remainingKV().length, 18);
+  t.is(remainingKV().length, 15);
   checkTS();
   await cleanKV(5, 5); // 5 other kv
-  t.is(remainingKV().length, 13);
+  t.is(remainingKV().length, 10);
   await cleanKV(5, 5); // 5 other kv
-  t.is(remainingKV().length, 8);
+  t.is(remainingKV().length, 5);
   await cleanKV(5, 5); // 5 other kv
-  t.is(remainingKV().length, 3);
+  t.is(remainingKV().length, 0);
 
   checkTS();
-
-  // there are three kv left, so this clean will delete those, then 5
-  // of the 7 snapshots
-  await cleanKV(3, 8); // 3 final kv, and 5 snapshots
   t.deepEqual(remainingKV(), []);
   t.is(kernelStorage.kvStore.get(`${vatID}.options`), undefined);
+
+  // there are no kv left, so this clean will delete 5 of the 7 snapshots
+  await cleanKV(0, 5); // 5 snapshots
   expectedRemainingSnapshots -= 5;
   checkTS();
 
