@@ -149,6 +149,7 @@ export const contract = async (
   const makeAdvancer = prepareAdvancer(zone, {
     chainHub,
     feeConfig,
+    getNobleICA,
     usdc: harden({
       brand: terms.brands.USDC,
       denom: terms.usdcDenom,
@@ -215,9 +216,7 @@ export const contract = async (
         } else {
           baggage.init(NOBLE_ICA_BAGGAGE_KEY, nobleAccount);
         }
-        const intermediateRecipient = nobleAccount.getAddress();
-        advancer.setIntermediateRecipient(intermediateRecipient);
-        return intermediateRecipient;
+        return nobleAccount.getAddress();
       });
     },
     async publishAddresses() {
@@ -336,8 +335,8 @@ export const contract = async (
     }),
   );
 
-  // we create a new Advancer on every upgrade. It does not contain precious state, but on each
-  // upgrade we must remember to call `advancer.setIntermediateRecipient()`
+  // we create a new Advancer on every upgrade. It does not contain precious state and its Noble ICA
+  // access comes through the prepare scope. It all could since it's a singleton.
   // XXX delete `Advancer` that still may remain in zone after `update-settler-reference.core.js`
   const advancer = makeAdvancer({
     borrower: poolKit.borrower,

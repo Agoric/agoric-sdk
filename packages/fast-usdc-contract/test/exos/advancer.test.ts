@@ -113,6 +113,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
   const makeAdvancer = prepareAdvancer(contractZone.subZone('advancer'), {
     chainHub,
     feeConfig,
+    getNobleICA: () => mockAccounts.intermediate.account as any,
     log,
     statusManager,
     usdc: harden({
