@@ -9,7 +9,7 @@
     "tools"
   ],
   "scripts": {
-    "build": "exit 0",
+    "build": "esbuild ../fast-usdc-contract/src/fast-usdc.contract.ts --bundle --outfile=dist/fast-usdc.contract.bundle.js",
     "test": "ava",
     "test:c8": "c8 --all $C8_OPTIONS ava",
     "$scripts-note": "fast-usdc skipped in test:xs pending #10847",
@@ -23,13 +23,14 @@
     "@agoric/vats": "^0.15.1",
     "ava": "^5.3.0",
     "c8": "^10.1.2",
+    "esbuild": "^0.25.2",
     "execa": "9.1.0",
     "ts-blank-space": "^0.4.4"
   },
   "dependencies": {
     "@agoric/client-utils": "^0.1.0",
-    "@agoric/deploy-script-support": "^0.10.3",
     "@agoric/cosmic-proto": "^0.4.0",
+    "@agoric/deploy-script-support": "^0.10.3",
     "@agoric/ertp": "^0.16.2",
     "@agoric/fast-usdc": "^0.1.0",
     "@agoric/internal": "^0.3.2",
