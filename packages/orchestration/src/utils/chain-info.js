@@ -1,11 +1,11 @@
 /**
- * @import {CaipChainId, ChainHub, ChainInfo, CosmosChainInfo, Denom, DenomDetail} from '../types.js';
+ * @import {CaipChainId, ChainHub, ChainInfo, CosmosChainInfo, Denom, DenomDetail, Caip10Record} from '../types.js';
  */
 
 /**
- * @param {ChainInfo} info
+ * @param {ChainInfo | Caip10Record} info
  * @returns {CaipChainId}
  */
-export const chainInfoCaipId = info => {
+export const caipIdFromInfo = info => {
   return `${info.namespace}:${info.reference}`;
 };

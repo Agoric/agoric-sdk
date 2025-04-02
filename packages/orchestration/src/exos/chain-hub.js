@@ -17,7 +17,7 @@ import {
   IBCConnectionInfoShape,
 } from '../typeGuards.js';
 import { getBech32Prefix } from '../utils/address.js';
-import { chainInfoCaipId } from '../utils/chain-info.js';
+import { caipIdFromInfo } from '../utils/chain-info.js';
 
 /**
  * @import {NameHub} from '@agoric/vats';
@@ -348,7 +348,7 @@ export const makeChainHub = (
         // TODO consider makeAtomicProvider for vows
         if (!chainInfos.has(chainName)) {
           chainInfos.init(chainName, chainInfo);
-          chainIdToChainName.init(chainInfoCaipId(chainInfo), chainName);
+          chainIdToChainName.init(caipIdFromInfo(chainInfo), chainName);
           if (chainInfo.bech32Prefix) {
             bech32PrefixToChainName.init(chainInfo.bech32Prefix, chainName);
           }
@@ -449,7 +449,7 @@ export const makeChainHub = (
      */
     registerChain(name, chainInfo) {
       chainInfos.init(name, chainInfo);
-      chainIdToChainName.init(chainInfoCaipId(chainInfo), name);
+      chainIdToChainName.init(caipIdFromInfo(chainInfo), name);
       if (chainInfo.namespace === 'cosmos' && chainInfo.bech32Prefix) {
         bech32PrefixToChainName.init(chainInfo.bech32Prefix, name);
       }
@@ -467,8 +467,8 @@ export const makeChainHub = (
       }
       const oldInfo = chainInfos.get(chainName);
       // defensively check, for older versions which may not have `chainIdToChainName`
-      if (chainIdToChainName.has(chainInfoCaipId(oldInfo))) {
-        chainIdToChainName.delete(chainInfoCaipId(oldInfo));
+      if (chainIdToChainName.has(caipIdFromInfo(oldInfo))) {
+        chainIdToChainName.delete(caipIdFromInfo(oldInfo));
       }
       if (/** @type {CosmosChainInfo} */ (oldInfo).bech32Prefix) {
         bech32PrefixToChainName.delete(
@@ -476,7 +476,7 @@ export const makeChainHub = (
         );
       }
       chainInfos.set(chainName, chainInfo);
-      chainIdToChainName.init(chainInfoCaipId(chainInfo), chainName);
+      chainIdToChainName.init(caipIdFromInfo(chainInfo), chainName);
       if (/** @type {CosmosChainInfo} */ (chainInfo).bech32Prefix) {
         bech32PrefixToChainName.init(
           /** @type {CosmosChainInfo} */ (chainInfo).bech32Prefix,
@@ -490,6 +490,8 @@ export const makeChainHub = (
      * @returns {Vow<ActualChainInfo<K>>}
      */
     getChainInfo(chainName) {
+      chainName.includes(':') &&
+        Fail`${chainName} must be a bare chain name. Maybe try getChainInfoByChainId()`;
       // Either from registerChain or memoized remote lookup()
       if (chainInfos.has(chainName)) {
         return /** @type {Vow<ActualChainInfo<K>>} */ (
