@@ -146,7 +146,13 @@ message MsgSendChunk {
 message MsgSendChunkResponse {
   uint64 pending_id = 1 [(gogoproto.jsontag) = "pending_id", (gogoproto.moretags) = "yaml:\"pending_id\""];
   // The current state of the chunk.
-  ChunkInfo                chunk = 2 [(gogoproto.jsontag) = "chunk", (gogoproto.moretags) = "yaml:\"chunk\""];
-  MsgInstallBundleResponse install_response = 3
-      [(gogoproto.jsontag) = "install_response", (gogoproto.moretags) = "yaml:\"install_response\""];
+  ChunkInfo chunk = 2 [
+    (gogoproto.jsontag)    = "chunk",
+    (gogoproto.moretags)   = "yaml:\"chunk\""
+  ];
+  // If this chunk completed the installation, this is the response from the chain.
+  MsgInstallBundleResponse install_response = 3 [
+    (gogoproto.jsontag)    = "install_response",
+    (gogoproto.moretags)   = "yaml:\"install_response\""
+  ];
 }
