@@ -690,6 +690,7 @@ func (m *SwingStoreArtifact) GetData() []byte {
 	return nil
 }
 
+// FIXME: mhofman: ChunkedArtifact?
 // BundleChunks is the manifest for a chunked InstallBundle.
 type BundleChunks struct {
 	// The hash of the complete bundle.

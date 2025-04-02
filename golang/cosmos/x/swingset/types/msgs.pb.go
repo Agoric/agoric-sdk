@@ -631,7 +631,8 @@ func (m *MsgSendChunk) GetChunkData() []byte {
 type MsgSendChunkResponse struct {
 	PendingId uint64 `protobuf:"varint,1,opt,name=pending_id,json=pendingId,proto3" json:"pending_id" yaml:"pending_id"`
 	// The current state of the chunk.
-	Chunk           *ChunkInfo                `protobuf:"bytes,2,opt,name=chunk,proto3" json:"chunk" yaml:"chunk"`
+	Chunk *ChunkInfo `protobuf:"bytes,2,opt,name=chunk,proto3" json:"chunk" yaml:"chunk"`
+	// If this chunk completed the installation, this is the response from the chain.
 	InstallResponse *MsgInstallBundleResponse `protobuf:"bytes,3,opt,name=install_response,json=installResponse,proto3" json:"install_response" yaml:"install_response"`
 }
 
