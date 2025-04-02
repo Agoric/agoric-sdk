@@ -120,24 +120,23 @@ test('durable stateShape refcounts', async t => {
   const { syscall: sc1 } = buildSyscall({ kvStore });
   const gcTools = makeMockGC();
 
-  function build1(vatPowers, _vp, baggage) {
-    const { VatData } = vatPowers;
-    const { makeKindHandle, defineDurableKind } = VatData;
+  const ls1 = makeLiveSlots(sc1, 'vatA', {}, {}, gcTools, undefined, () => {
+    const buildRootObject = (vatPowers, _vatParameters, baggage) => {
+      const { VatData } = vatPowers;
+      const { makeKindHandle, defineDurableKind } = VatData;
 
-    return Far('root', {
-      accept: _ref => {}, // assigns a vref
-      create: valueShape => {
-        const kh = makeKindHandle('shaped');
-        baggage.init('kh', kh);
-        defineHolder(defineDurableKind, kh, valueShape);
-      },
-    });
-  }
-
-  const makeNS1 = () => ({ buildRootObject: build1 });
-  const ls1 = makeLiveSlots(sc1, 'vatA', {}, {}, gcTools, undefined, makeNS1);
-  const startVat1 = makeStartVat(kser());
-  await ls1.dispatch(startVat1);
+      return Far('root', {
+        accept: _ref => {}, // assigns a vref
+        create: valueShape => {
+          const kh = makeKindHandle('shaped');
+          baggage.init('kh', kh);
+          defineHolder(defineDurableKind, kh, valueShape);
+        },
+      });
+    };
+    return { buildRootObject };
+  });
+  await ls1.dispatch(makeStartVat());
   const rootA = 'o+0';
 
   const standard1Vref = 'o-1';
@@ -156,30 +155,22 @@ test('durable stateShape refcounts', async t => {
   const clonedStore = new Map(kvStore);
   const { syscall: sc2 } = buildSyscall({ kvStore: clonedStore });
 
-  function build2(vatPowers, vatParameters, baggage) {
-    const { VatData } = vatPowers;
-    const { defineDurableKind } = VatData;
-    const { valueShape } = vatParameters;
-    const kh = baggage.get('kh');
-    defineHolder(defineDurableKind, kh, valueShape);
-
-    return Far('root', {});
-  }
-
   // to test refcount increment/decrement, we need to override the
   // usual rule that the new version must exactly match the original
   // stateShape
-  const options = { allowStateShapeChanges: true };
-  const makeNS2 = () => ({ buildRootObject: build2 });
-  const ls2 = makeLiveSlots(
-    sc2,
-    'vatA',
-    {},
-    options,
-    gcTools,
-    undefined,
-    makeNS2,
-  );
+  const opts = { allowStateShapeChanges: true };
+  const ls2 = makeLiveSlots(sc2, 'vatA', {}, opts, gcTools, undefined, () => {
+    const buildRootObject = (vatPowers, vatParameters, baggage) => {
+      const { VatData } = vatPowers;
+      const { defineDurableKind } = VatData;
+      const { valueShape } = vatParameters;
+      const kh = baggage.get('kh');
+      defineHolder(defineDurableKind, kh, valueShape);
+
+      return Far('root', {});
+    };
+    return { buildRootObject };
+  });
 
   const standard2Vref = 'o-2';
   const vp = { valueShape: kslot(standard2Vref) };
@@ -199,24 +190,23 @@ test('durable stateShape must match', async t => {
   const { syscall: sc1 } = buildSyscall({ kvStore });
   const gcTools = makeMockGC();
 
-  function build1(vatPowers, _vp, baggage) {
-    const { VatData } = vatPowers;
-    const { makeKindHandle, defineDurableKind } = VatData;
+  const ls1 = makeLiveSlots(sc1, 'vatA', {}, {}, gcTools, undefined, () => {
+    const buildRootObject = (vatPowers, _vatParameters, baggage) => {
+      const { VatData } = vatPowers;
+      const { makeKindHandle, defineDurableKind } = VatData;
 
-    return Far('root', {
-      create: (obj1, obj2) => {
-        const kh = makeKindHandle('shaped');
-        baggage.init('kh', kh);
-        const stateShape = { x: obj1, y: obj2 };
-        defineDurableKind(kh, initHolder, holderMethods, { stateShape });
-      },
-    });
-  }
-
-  const makeNS1 = () => ({ buildRootObject: build1 });
-  const ls1 = makeLiveSlots(sc1, 'vatA', {}, {}, gcTools, undefined, makeNS1);
-  const startVat1 = makeStartVat(kser());
-  await ls1.dispatch(startVat1);
+      return Far('root', {
+        create: (obj1, obj2) => {
+          const kh = makeKindHandle('shaped');
+          baggage.init('kh', kh);
+          const stateShape = { x: obj1, y: obj2 };
+          defineDurableKind(kh, initHolder, holderMethods, { stateShape });
+        },
+      });
+    };
+    return { buildRootObject };
+  });
+  await ls1.dispatch(makeStartVat());
   const rootA = 'o+0';
 
   const vref1 = 'o-1';
@@ -233,50 +223,42 @@ test('durable stateShape must match', async t => {
   const clonedStore = new Map(kvStore);
   const { syscall: sc2 } = buildSyscall({ kvStore: clonedStore });
 
-  function build2(vatPowers, vatParameters, baggage) {
-    const { VatData } = vatPowers;
-    const { defineDurableKind } = VatData;
-    const { obj1, obj2 } = vatParameters;
-    const kh = baggage.get('kh');
-    const redefineDurableKind = stateShape => {
-      defineDurableKind(kh, initHolder, holderMethods, { stateShape });
-    };
-    // several shapes that are not compatible
-    const shape1 = { x: obj1, y: M.any() };
-    const shape2 = { x: obj1 };
-    const shape3 = { x: obj1, y: obj2, z: M.string() };
-    const shape4 = { x: M.or(obj1, M.string()), y: obj2 };
-    const shape5 = { x: obj2, y: obj1 }; // wrong slots
-    const trial = shape => {
-      t.throws(() => redefineDurableKind(shape), {
-        message: /durable Kind stateShape mismatch/,
-      });
-    };
-    trial(shape1);
-    trial(shape2);
-    trial(shape3);
-    trial(shape4);
-    trial(shape5);
-    const stateShape = { x: obj1, y: obj2 }; // the correct shape
-    redefineDurableKind(stateShape);
-    t.pass();
-
-    return Far('root', {});
-  }
-
   // we do *not* override allowStateShapeChanges
-  // const options = { allowStateShapeChanges: true };
-  const options = undefined;
-  const makeNS2 = () => ({ buildRootObject: build2 });
-  const ls2 = makeLiveSlots(
-    sc2,
-    'vatA',
-    {},
-    options,
-    gcTools,
-    undefined,
-    makeNS2,
-  );
+  // const opts = { allowStateShapeChanges: true };
+  const opts = undefined;
+  const ls2 = makeLiveSlots(sc2, 'vatA', {}, opts, gcTools, undefined, () => {
+    const buildRootObject = (vatPowers, vatParameters, baggage) => {
+      const { VatData } = vatPowers;
+      const { defineDurableKind } = VatData;
+      const { obj1, obj2 } = vatParameters;
+      const kh = baggage.get('kh');
+      const redefineDurableKind = stateShape => {
+        defineDurableKind(kh, initHolder, holderMethods, { stateShape });
+      };
+      // several shapes that are not compatible
+      const shape1 = { x: obj1, y: M.any() };
+      const shape2 = { x: obj1 };
+      const shape3 = { x: obj1, y: obj2, z: M.string() };
+      const shape4 = { x: M.or(obj1, M.string()), y: obj2 };
+      const shape5 = { x: obj2, y: obj1 }; // wrong slots
+      const trial = shape => {
+        t.throws(() => redefineDurableKind(shape), {
+          message: /durable Kind stateShape mismatch/,
+        });
+      };
+      trial(shape1);
+      trial(shape2);
+      trial(shape3);
+      trial(shape4);
+      trial(shape5);
+      const stateShape = { x: obj1, y: obj2 }; // the correct shape
+      redefineDurableKind(stateShape);
+      t.pass();
+
+      return Far('root', {});
+    };
+    return { buildRootObject };
+  });
 
   const vp = { obj1: kslot(vref1), obj2: kslot(vref2) };
   const startVat2 = makeStartVat(kser(vp));
