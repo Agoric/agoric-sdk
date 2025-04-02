@@ -22,4 +22,7 @@ cp /root/.agoric/config/priv_validator_key.json "$FORK_TEST_DIR/config"
 agd --home "$FORK_TEST_DIR" tendermint unsafe-reset-all
 
 export_genesis "$FORK_TEST_DIR/config"
+# Delete the earlier one that's no longer needed.
+# Without this we have started to run out of disk space.
+rm -rf /root/.agoric
 startAgd --home "$FORK_TEST_DIR"
