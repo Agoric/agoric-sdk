@@ -22,6 +22,8 @@ import type {
   CosmosChainAddress,
   Denom,
   OrchestrationAccount,
+  AccountId,
+  ChainInfo,
 } from '@agoric/orchestration';
 import {
   AnyNatAmountShape,
@@ -39,11 +41,14 @@ import { E } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
 import { parseAccountIdArg } from '@agoric/orchestration/src/utils/address.js';
 import { chainInfoCaipId } from '@agoric/orchestration/src/utils/chain-info.js';
+import type { Caip10Record } from '@agoric/orchestration/src/orchestration-api.js';
+import type { Baggage } from '@agoric/swingset-liveslots/src/vatDataTypes.js';
 import type { LiquidityPoolKit } from './liquidity-pool.js';
 import type { StatusManager } from './status-manager.js';
 import type { SettlerKit } from './settler.js';
 
 interface AdvancerKitPowers {
+  baggage: Baggage;
   chainHub: ChainHub;
   feeConfig: FeeConfig;
   log?: LogFn;
@@ -60,6 +65,8 @@ interface AdvancerVowCtx {
   destination: CosmosChainAddress;
   forwardingAddress: NobleAddress;
   txHash: EvmHash;
+  destAccountId: Caip10Record;
+  destChainInfo: ChainInfo;
 }
 
 const AdvancerVowCtxShape: TypedPattern<AdvancerVowCtx> = M.splitRecord(
@@ -73,11 +80,13 @@ const AdvancerVowCtxShape: TypedPattern<AdvancerVowCtx> = M.splitRecord(
   { tmpSeat: M.remotable() },
 );
 
+const INTERMEDIARY_ACCOUNT = 'IntermediaryAccount';
+
 /** type guards internal to the AdvancerKit */
 const AdvancerKitI = harden({
   advancer: M.interface('AdvancerI', {
     handleTransactionEvent: M.callWhen(EvidenceWithRiskShape).returns(),
-    setIntermediateRecipient: M.call(
+    setIntermediateAccount: M.call(
       M.remotable('NobleAccount'),
       CosmosChainAddressShape,
     ).returns(),
@@ -105,11 +114,10 @@ const AdvancerKitI = harden({
 });
 
 export const stateShape = harden({
-  notifier: M.remotable('notifier'),
-  borrower: M.remotable('borrower'),
-  poolAccount: M.remotable('poolAccount'),
-  intermediateRecipientAccount: M.opt(M.remotable('nobleAccount')),
-  intermediateRecipientAddress: M.opt(CosmosChainAddressShape),
+  notifier: M.remotable(),
+  borrower: M.remotable(),
+  poolAccount: M.remotable(),
+  intermediateRecipient: M.opt(CosmosChainAddressShape),
   settlementAddress: M.opt(CosmosChainAddressShape),
 });
 
@@ -136,6 +144,8 @@ const makeCosmosAccountId = (
 export const prepareAdvancerKit = (
   zone: Zone,
   {
+    // baggage until exo state migrations: https://github.com/Agoric/agoric-sdk/issues/10200
+    baggage,
     chainHub,
     feeConfig,
     log = makeTracer('Advancer', true),
@@ -156,6 +166,12 @@ export const prepareAdvancerKit = (
   const feeTools = makeFeeTools(feeConfig);
   const toAmount = (value: bigint) => AmountMath.make(usdc.brand, value);
 
+  const getIntermediaryAccount = () => {
+    const intermediaryAccount = baggage.get(INTERMEDIARY_ACCOUNT);
+    assert(intermediaryAccount);
+    return intermediaryAccount;
+  };
+
   return zone.exoClassKit(
     'Fast USDC Advancer',
     AdvancerKitI,
@@ -166,16 +182,12 @@ export const prepareAdvancerKit = (
         OrchestrationAccount<{ chainId: 'agoric-any' }>
       >;
       settlementAddress: CosmosChainAddress;
-      intermediateRecipientAddress?: CosmosChainAddress;
-      intermediateRecipientAccount?: HostInterface<
-        OrchestrationAccount<{ chainId: 'agoric-any' }> & NobleMethods
-      >;
+      intermediateRecipient?: CosmosChainAddress;
     }) =>
       harden({
         ...config,
-        // make sure the state record has these properties, perhaps with an undefined value
-        intermediateRecipientAccount: config.intermediateRecipientAccount,
-        intermediateRecipientAddress: config.intermediateRecipientAddress,
+        // make sure the state record has this property, perhaps with an undefined value
+        intermediateRecipient: config.intermediateRecipient,
       }),
     {
       advancer: {
@@ -197,6 +209,8 @@ export const prepareAdvancerKit = (
               return;
             }
 
+            debugger;
+
             if (risk.risksIdentified?.length) {
               log('risks identified, skipping advance');
               statusManager.skipAdvance(evidence, risk.risksIdentified);
@@ -207,13 +221,31 @@ export const prepareAdvancerKit = (
             const decoded = decodeAddressHook(recipientAddress);
             mustMatch(decoded, AddressHookShape);
             if (decoded.baseAddress !== settlementAddress.value) {
-              throw Fail`⚠️ baseAddress of address hook ${q(decoded.baseAddress)} does not match the expected address ${q(settlementAddress.value)}`;
+              const errorMessage = `decoded address ${decoded.baseAddress} must match settlement address ${settlementAddress.value}`;
+              log(errorMessage);
+              statusManager.skipAdvance(evidence, [errorMessage]);
             }
             const { EUD } = decoded.query;
             log(`decoded EUD: ${EUD}`);
             assert.typeof(EUD, 'string');
             // throws if the bech32 prefix is not found
             const destination = chainHub.makeChainAddress(EUD);
+
+            /** @type {AccountId} */
+            const accountId = parseAccountIdArg(destination);
+            const chainId = accountId.reference;
+            const info = await when(chainHub.getChainInfo(chainId));
+
+            // These are the cases that are currently supported
+            if (
+              chainId !== settlementAddress.chainId &&
+              info.namespace !== 'cosmos' &&
+              !info.cctpDestinationDomain
+            ) {
+              statusManager.skipAdvance(evidence, [
+                `Transfer to ${chainId} not supported.`,
+              ]);
+            }
 
             const fullAmount = toAmount(evidence.tx.amount);
             const { borrower, notifier, poolAccount } = this.state;
@@ -242,20 +274,23 @@ export const prepareAdvancerKit = (
             );
             // WARNING: this must never reject, see handler @throws {never} below
             // void not enforced by linter until #10627 no-floating-vows
-            void watch(depositV, this.facets.depositHandler, {
+            const advancerCtx = {
               advanceAmount,
               destination,
               forwardingAddress: evidence.tx.forwardingAddress,
               fullAmount,
               tmpSeat,
               txHash: evidence.txHash,
-            });
+              destAccountId: accountId,
+              destChainInfo: info,
+            };
+            void watch(depositV, this.facets.depositHandler, advancerCtx);
           } catch (error) {
             log('Advancer error:', error);
             statusManager.skipAdvance(evidence, [(error as Error).message]);
           }
         },
-        setIntermediateRecipient(
+        setIntermediateAccount(
           intermediateRecipientAccount: HostInterface<
             NobleMethods &
               OrchestrationAccount<{
@@ -264,10 +299,12 @@ export const prepareAdvancerKit = (
           >,
           intermediateRecipientAddress: CosmosChainAddress,
         ) {
-          this.state.intermediateRecipientAccount =
-            intermediateRecipientAccount;
-          this.state.intermediateRecipientAddress =
-            intermediateRecipientAddress;
+          this.state.intermediateRecipient = intermediateRecipientAddress;
+          if (baggage.has(INTERMEDIARY_ACCOUNT)) {
+            baggage.set(INTERMEDIARY_ACCOUNT, intermediateRecipientAddress);
+          } else {
+            baggage.init(INTERMEDIARY_ACCOUNT, intermediateRecipientAddress);
+          }
         },
       },
 
@@ -282,23 +319,22 @@ export const prepareAdvancerKit = (
           ctx: AdvancerVowCtx & { tmpSeat: ZCFSeat },
         ) {
           return asVow(async () => {
+            const { poolAccount, intermediateRecipient, settlementAddress } =
+              this.state;
+            const { tmpSeat, ...vowContext } = ctx;
             const {
-              poolAccount,
-              intermediateRecipientAccount,
-              intermediateRecipientAddress,
-              settlementAddress,
-            } = this.state;
-            const { destination, advanceAmount, tmpSeat, ...detail } = ctx;
+              destination,
+              advanceAmount,
+              destChainInfo: info,
+              destAccountId: accountId,
+              ...detail
+            } = vowContext;
             tmpSeat.exit();
             const amount = harden({
               denom: usdc.denom,
               value: advanceAmount.value,
             });
-
-            /** @type {AccountId} */
-            const accountId = parseAccountIdArg(destination);
             const chainId = accountId.reference;
-            const info = await when(chainHub.getChainInfo(chainId));
 
             let transferOrSendV;
             if (chainId === settlementAddress.chainId) {
@@ -316,32 +352,29 @@ export const prepareAdvancerKit = (
 
               transferOrSendV = E(poolAccount).transfer(destination, amount, {
                 forwardOpts: {
-                  intermediateRecipient: intermediateRecipientAddress,
+                  intermediateRecipient,
                 },
               });
             } else if (info.cctpDestinationDomain) {
               // send USDC via CCTP
-              assert(
-                intermediateRecipientAccount,
-                'intermediateRecipientAccount must be set',
-              );
 
               // assets are on noble, transfer to dest.
-
               const encoding = 'ethereum'; // XXX could be solana?
-              transferOrSendV = intermediateRecipientAccount.depositForBurn(
+              const intermediaryAccount = getIntermediaryAccount();
+              transferOrSendV = intermediaryAccount.depositForBurn(
                 `${chainInfoCaipId(info)}:${accountId.accountAddress}`,
                 amount,
               );
             } else {
+              // This was supposed to be caught in handleTransactionEvent()
               Fail`can only transfer to Agoric addresses, via IBC, or via CCTP`;
             }
 
-            return watch(transferOrSendV, this.facets.transferHandler, {
-              destination,
-              advanceAmount,
-              ...detail,
-            });
+            return watch(
+              transferOrSendV,
+              this.facets.transferHandler,
+              vowContext,
+            );
           });
         },
         /**

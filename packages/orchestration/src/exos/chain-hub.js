@@ -342,8 +342,13 @@ export const makeChainHub = (
     // eslint-disable-next-line no-restricted-syntax -- TODO more exact rules for vow best practices
     async chainName => {
       await null;
+      console.log('CH lookup', { chainName });
+      debugger;
+
       try {
+        debugger;
         const chainInfo = await E(agoricNames).lookup(HubName.Chain, chainName);
+        debugger;
         // It may have been set by another concurrent call
         // TODO consider makeAtomicProvider for vows
         if (!chainInfos.has(chainName)) {
@@ -355,6 +360,7 @@ export const makeChainHub = (
         }
         return chainInfo;
       } catch (e) {
+        debugger;
         console.error('lookupChainInfo', chainName, 'error', e);
         throw makeError(`chain not found:${chainName}`);
       }

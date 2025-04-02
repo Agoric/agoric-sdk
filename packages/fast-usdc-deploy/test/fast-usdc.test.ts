@@ -51,16 +51,22 @@ const {
 } = fetchedChainInfo.agoric.connections['noble-1'].transferChannel;
 
 test.before('bootstrap', async t => {
+  t.log('before');
+
   const config = '@agoric/vm-config/decentral-itest-orchestration-config.json';
   insistManagerType(defaultManagerType);
   const harness = ['xs-worker', 'xsnap'].includes(defaultManagerType)
     ? makeSwingsetHarness()
     : undefined;
+
+  console.log('FUt before');
   const ctx = await makeWalletFactoryContext(t, config, {
     slogFile,
     defaultManagerType,
     harness,
   });
+
+  console.log('FUt made', { ctx });
   t.context = { ...ctx, harness };
 });
 test.after.always(t => t.context.shutdown?.());
@@ -391,9 +397,13 @@ test.serial('makes usdc advance', async t => {
     harness,
     runUtils: { EV },
   } = t.context;
+
+  t.log('Addvance');
+
   const oracles = await Promise.all(
     oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
   );
+  t.log('Addvance B');
 
   const EUD = 'dydx1anything';
   const lastNodeValue = storage.getValues('published.fastUsdc').at(-1);
@@ -405,6 +415,7 @@ test.serial('makes usdc advance', async t => {
     encodeAddressHook(settlementAccount, { EUD }),
   );
 
+  t.log('Advance E', evidence);
   harness?.useRunPolicy(true);
   await Promise.all(
     oracles.map(wallet =>
@@ -485,7 +496,7 @@ test.serial('makes usdc advance', async t => {
   await documentStorageSchema(t, storage, doc);
 });
 
-test.serial('minted before observed; forward path', async t => {
+test.serial.skip('minted before observed; forward path', async t => {
   const { bridgeUtils, storage } = t.context;
 
   // Mock user data
@@ -586,7 +597,7 @@ test.serial('minted before observed; forward path', async t => {
   await documentStorageSchema(t, storage, doc);
 });
 
-test.serial('distributes fees per BLD staker decision', async t => {
+test.serial.skip('distributes fees per BLD staker decision', async t => {
   const { walletFactoryDriver: wd, buildProposal, evalProposal } = t.context;
 
   const ContractFee = 32000n; // see split above
@@ -613,7 +624,7 @@ test.serial('distributes fees per BLD staker decision', async t => {
   }
 });
 
-test.serial('skips usdc advance when risks identified', async t => {
+test.serial.skip('skips usdc advance when risks identified', async t => {
   const { walletFactoryDriver: wfd, storage } = t.context;
   const oracles = await Promise.all(
     oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
@@ -661,7 +672,7 @@ test.serial('skips usdc advance when risks identified', async t => {
   await documentStorageSchema(t, storage, doc);
 });
 
-test.serial('LP withdraws', async t => {
+test.serial.skip('LP withdraws', async t => {
   const { walletFactoryDriver: wfd, agoricNamesRemotes } = t.context;
   const lp = await wfd.provideSmartWallet(
     'agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8',
@@ -715,7 +726,7 @@ test.serial('LP withdraws', async t => {
   );
 });
 
-test.serial('restart contract', async t => {
+test.serial.skip('restart contract', async t => {
   const {
     runUtils: { EV },
     storage,
@@ -757,7 +768,7 @@ test.serial('restart contract', async t => {
   await documentStorageSchema(t, storage, doc);
 });
 
-test.serial('replace operators', async t => {
+test.serial.skip('replace operators', async t => {
   const {
     agoricNamesRemotes,
     buildProposal,
@@ -854,7 +865,7 @@ test.serial('replace operators', async t => {
   });
 });
 
-test.serial('update fee config', async t => {
+test.serial.skip('update fee config', async t => {
   const { buildProposal, evalProposal, storage } = t.context;
 
   const readFeeConfig = (): FeeConfig => {

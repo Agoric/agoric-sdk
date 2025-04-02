@@ -18,7 +18,9 @@ import {
   type OrchestrationTools,
   type Denom,
   type DenomDetail,
-  type ChainInfo,
+  type NobleMethods,
+  type OrchestrationAccountCommon,
+  type LocalAccountMethods,
 } from '@agoric/orchestration';
 import { makeZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
@@ -50,6 +52,8 @@ import { prepareTransactionFeedKit } from './exos/transaction-feed.ts';
 import * as flows from './fast-usdc.flows.ts';
 
 const trace = makeTracer('FastUsdc');
+
+trace('starting');
 
 const TXNS_NODE = 'txns';
 const FEE_NODE = 'feeConfig';
@@ -100,6 +104,9 @@ export const contract = async (
   zone: Zone,
   tools: OrchestrationTools,
 ) => {
+  trace('contract');
+  console.log('FAST USDC contract start');
+
   assert(tools, 'no tools');
   const terms = zcf.getTerms();
   assert('USDC' in terms.brands, 'no USDC brand');
@@ -132,6 +139,7 @@ export const contract = async (
 
   const zoeTools = makeZoeTools(zcf, vowTools);
   const makeAdvancer = prepareAdvancer(zone, {
+    baggage,
     chainHub,
     feeConfig,
     usdc: harden({
@@ -188,21 +196,30 @@ export const contract = async (
         makeNobleAccount(),
       );
 
-      return vowTools.when(nobleAccountV, nobleAccount => {
-        trace('nobleAccount', nobleAccount);
-        return vowTools.when(
-          E(nobleAccount).getAddress(),
-          intermediateRecipient => {
-            trace('intermediateRecipient', intermediateRecipient);
-            advancer.setIntermediateRecipient(
-              nobleAccount,
-              intermediateRecipient,
-            );
-            settlerKit.creator.setIntermediateRecipient(intermediateRecipient);
-            return intermediateRecipient;
-          },
-        );
-      });
+      type NobleOrchestrationAccount = HostInterface<
+        NobleMethods & OrchestrationAccountCommon & LocalAccountMethods
+      >;
+      return vowTools.when(
+        nobleAccountV,
+        // @ts-expect-error Vow type confusion
+        (nobleAccount: NobleOrchestrationAccount) => {
+          trace('nobleAccount', nobleAccount);
+          return vowTools.when(
+            E(nobleAccount).getAddress(),
+            intermediateRecipient => {
+              trace('intermediateRecipient', intermediateRecipient);
+              advancer.setIntermediateAccount(
+                nobleAccount,
+                intermediateRecipient,
+              );
+              settlerKit.creator.setIntermediateRecipient(
+                intermediateRecipient,
+              );
+              return intermediateRecipient;
+            },
+          );
+        },
+      );
     },
     async publishAddresses() {
       !baggage.has(ADDRESSES_BAGGAGE_KEY) || Fail`Addresses already published`;
@@ -321,7 +338,7 @@ export const contract = async (
   );
 
   // we create a new Advancer on every upgrade. It does not contain precious state, but on each
-  // upgrade we must remember to call `advancer.setIntermediateRecipient()`
+  // upgrade we must remember to call `advancer.setIntermediateAccount()`
   // XXX delete `Advancer` that still may remain in zone after `update-settler-reference.core.js`
   const advancer = makeAdvancer({
     borrower: poolKit.borrower,
