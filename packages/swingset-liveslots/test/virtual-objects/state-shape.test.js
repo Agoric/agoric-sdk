@@ -196,8 +196,7 @@ test('durable stateShape must match', async t => {
         defineDurableKind: (x, y) => {
           const kh = makeKindHandle('shaped');
           baggage.init('kh', kh);
-          const stateShape = { x, y };
-          defineDurableKind(kh, initHolder, holderMethods, { stateShape });
+          defineHolder(defineDurableKind, kh, { x, y });
         },
       });
     };
@@ -229,25 +228,21 @@ test('durable stateShape must match', async t => {
       const { defineDurableKind } = VatData;
       const { x, y } = vatParameters;
       const kh = baggage.get('kh');
-      const redefineDurableKind = stateShape => {
-        defineDurableKind(kh, initHolder, holderMethods, { stateShape });
+      const redefineDurableKind = valueShape => {
+        defineHolder(defineDurableKind, kh, valueShape);
       };
       // several shapes that are not compatible
-      const shape1 = { x, y: M.any() };
-      const shape2 = { x };
-      const shape3 = { x, y, z: M.string() };
-      const shape4 = { x: M.or(x, M.string()), y };
-      const shape5 = { x: y, y: x }; // wrong slots
-      const trial = shape => {
-        t.throws(() => redefineDurableKind(shape), {
-          message: /durable Kind stateShape mismatch/,
-        });
-      };
-      trial(shape1);
-      trial(shape2);
-      trial(shape3);
-      trial(shape4);
-      trial(shape5);
+      const badShapes = [
+        { x, y: M.any() },
+        { x },
+        { x, y, z: M.string() },
+        { x: M.or(x, M.string()), y },
+        { x: y, y: x }, // wrong slots
+      ];
+      const expectation = { message: /durable Kind stateShape mismatch/ };
+      for (const valueShape of badShapes) {
+        t.throws(() => redefineDurableKind(valueShape), expectation);
+      }
       // the correct shape
       redefineDurableKind({ x, y });
 
