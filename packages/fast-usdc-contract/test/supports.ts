@@ -8,11 +8,8 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
   denomHash,
   withChainCapabilities,
-  type BaseChainInfo,
-  type ChainInfo,
   type CosmosChainInfo,
   type Denom,
-  type KnownChains,
 } from '@agoric/orchestration';
 import { registerKnownChains } from '@agoric/orchestration/src/chain-info.js';
 import {
