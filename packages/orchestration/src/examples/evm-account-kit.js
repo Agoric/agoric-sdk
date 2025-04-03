@@ -19,7 +19,7 @@ const addresses = {
 /**
  * @import {IBCChannelID, VTransferIBCEvent} from '@agoric/vats';
  * @import {Zone} from '@agoric/zone';
- * @import {CosmosChainAddress, Denom, OrchestrationAccount, Orchestrator} from '@agoric/orchestration';
+ * @import {CosmosChainAddress, Denom, OrchestrationAccount} from '@agoric/orchestration';
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
  * @import {ZoeTools} from '@agoric/orchestration/src/utils/zoe-tools.js';
  */
@@ -31,7 +31,8 @@ const addresses = {
  *   sourceChannel: IBCChannelID;
  *   remoteDenom: Denom;
  *   localDenom: Denom;
- *   orchrestator: Orchestrator;
+ *   assets: any;
+ *   remoteChainInfo: any;
  * }} EvmTapState
  */
 
@@ -60,7 +61,8 @@ const EvmKitStateShape = {
   remoteDenom: M.string(),
   localDenom: M.string(),
   localAccount: M.remotable('OrchestrationAccount<{chainId:"agoric-3"}>'),
-  orchrestator: M.any(),
+  assets: M.any(),
+  remoteChainInfo: M.any(),
 };
 harden(EvmKitStateShape);
 
@@ -195,6 +197,7 @@ export const prepareEvmAccountKit = (
           }
 
           const { give } = seat.getProposal();
+
           const [[_kw, amt]] = entries(give);
           amt.value > 0n || Fail`IBC transfer amount must be greater than zero`;
           console.log('_kw, amt', _kw, amt);
@@ -204,45 +207,31 @@ export const prepareEvmAccountKit = (
             evmContractAddress: destinationAddress,
             ...contractInvocationData,
           });
-          console.log(
-            'rabi......................................',
-            this.state.orchrestator,
-          );
-          const agoricVow = await this.state.orchrestator.getChain('agoric');
-
-          // @ts-expect-error
-          const agoric = await agoricVow.payload.vowV0.shorten();
-          const assetsVow = await agoric.getVBankAssetInfo();
-          const assets = await assetsVow.payload.vowV0.shorten();
-
-          const { denom } = NonNullish(
-            assets.find(a => a.brand === amt.brand),
-            `${amt.brand} not registered in vbank`,
-          );
-
-          const axelarChainVow =
-            await this.state.orchrestator.getChain('axelar');
-          // @ts-expect-error
-          const axelarChain = await axelarChainVow.payload.vowV0.shorten();
-          const infoVow = await axelarChain.getChainInfo();
-          const info = await infoVow.payload.vowV0.shorten();
-          const { chainId } = info;
-
-          const memo = {
-            destination_chain: destinationEVMChain,
-            destination_address: destinationAddress,
-            payload,
-            type,
-          };
-
-          if (type === 1 || type === 2) {
-            memo.fee = {
-              amount: String(gasAmount),
-              recipient: addresses.AXELAR_GAS,
-            };
-          }
 
           try {
+            const { denom } = NonNullish(
+              this.state.assets.find(a => a.brand === amt.brand),
+              `${amt.brand} not registered in vbank`,
+            );
+
+            console.log('amt and brand', amt.brand);
+
+            const { chainId } = this.state.remoteChainInfo;
+
+            const memo = {
+              destination_chain: destinationEVMChain,
+              destination_address: destinationAddress,
+              payload,
+              type,
+            };
+
+            if (type === 1 || type === 2) {
+              memo.fee = {
+                amount: String(gasAmount),
+                recipient: addresses.AXELAR_GAS,
+              };
+            }
+
             // @ts-expect-error
             await this.state.localAccount.transfer(
               {
@@ -265,8 +254,6 @@ export const prepareEvmAccountKit = (
             seat.exit(errorMsg);
             throw makeError(errorMsg);
           }
-
-          seat.exit();
         },
       },
       invitationMakers: {

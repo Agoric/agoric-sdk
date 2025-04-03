@@ -54,13 +54,16 @@ export const createAndMonitorLCA = async (
   })}`;
 
   // Every time the `localAccount` receives `remoteDenom` over IBC, delegate it.
+  const assets = await agoric.getVBankAssetInfo();
+  const info = await remoteChain.getChainInfo();
   const evmAccountKit = makeEvmAccountKit({
     localAccount,
     localChainAddress,
     sourceChannel: transferChannel.counterPartyChannelId,
     remoteDenom,
     localDenom,
-    orchrestator: orch,
+    assets,
+    remoteChainInfo: info,
   });
   void log('tap created successfully');
   // XXX consider storing appRegistration, so we can .revoke() or .updateTargetApp()

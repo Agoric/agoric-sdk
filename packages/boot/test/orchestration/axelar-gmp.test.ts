@@ -12,8 +12,56 @@ import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
 } from '../bootstrapTests/walletFactory.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { waitUntilOfferExited } from '@agoric/client-utils';
+
+let makeAccountCounter = 0;
+
+/**
+ * @typedef {Object} MakeEVMTransactionParams
+ * @property {import('@agoric/smart-wallet/src/smartWallet.js').SmartWallet} wallet - The smart wallet instance.
+ * @property {string} previousOffer - The ID of the previous offer to continue from.
+ * @property {string} methodName - The method name to call in the contract.
+ * @property {any} offerArgs - The arguments required for the EVM transaction.
+ * @property {any} proposal - The proposal describing what the user wants to give, receive, and the exit conditions.
+ */
+
+/**
+ * Initiates an EVM transaction offer through the smart wallet.
+ *
+ * @param {MakeEVMTransactionParams} params - Parameters for the transaction.
+ * @returns {Promise<string>} The ID of the newly created offer.
+ */
+const makeEVMTransaction = async ({
+  wallet,
+  previousOffer,
+  methodName,
+  offerArgs,
+  proposal,
+}) => {
+  const id = `makeAccount${makeAccountCounter}`;
+
+  /** @type {import('@agoric/smart-wallet/src/invitations.js').ContinuingInvitationSpec} */
+  const proposeInvitationSpec = {
+    source: 'continuing',
+    previousOffer,
+    invitationMakerName: 'makeEVMTransactionInvitation',
+    invitationArgs: harden([methodName, offerArgs]),
+  };
+
+  makeAccountCounter += 1;
+
+  await wallet.executeOffer({
+    id,
+    invitationSpec: proposeInvitationSpec,
+    proposal,
+  });
+  await eventLoopIteration();
+  return id;
+};
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
+
 test.before(async t => {
   t.context = await makeWalletFactoryContext(
     t,
@@ -343,14 +391,11 @@ test.serial('makeAccount via axelarGmp', async t => {
   const previousOfferId =
     wallet.getCurrentWalletRecord().offerToUsedInvitation[0][0];
 
-  await wallet.executeOffer({
-    id: 'makeAccountCallII',
-    invitationSpec: {
-      invitationMakerName: 'makeEVMTransactionInvitation',
-      previousOffer: previousOfferId,
-      source: 'continuing',
-      invitationArgs: harden(['getAddress', []]),
-    },
+  await makeEVMTransaction({
+    wallet,
+    previousOffer: previousOfferId,
+    methodName: 'getAddress',
+    offerArgs: [],
     proposal: {},
   });
 
@@ -359,30 +404,24 @@ test.serial('makeAccount via axelarGmp', async t => {
   t.truthy(lcaAddress);
   t.like(wallet.getLatestUpdateRecord(), {
     status: {
-      id: 'makeAccountCallII',
+      id: `makeAccount${makeAccountCounter - 1}`,
       numWantsSatisfied: 1,
       result: lcaAddress,
     },
   });
 
-  await wallet.executeOffer({
-    id: 'makeAccountCallIII',
-    invitationSpec: {
-      invitationMakerName: 'makeEVMTransactionInvitation',
-      previousOffer: previousOfferId,
-      source: 'continuing',
-      invitationArgs: harden([
-        'send',
-        [
-          {
-            value: 'agoric1EOAAccAddress',
-            chainId: 'agoriclocal',
-            encoding: 'bech32',
-          },
-          { denom: 'ibc/1234', value: 10n },
-        ],
-      ]),
-    },
+  await makeEVMTransaction({
+    wallet,
+    previousOffer: previousOfferId,
+    methodName: 'send',
+    offerArgs: [
+      {
+        value: 'agoric1EOAAccAddress',
+        chainId: 'agoriclocal',
+        encoding: 'bech32',
+      },
+      { denom: 'ibc/1234', value: 10n },
+    ],
     proposal: {},
   });
 
@@ -398,7 +437,7 @@ test.serial('makeAccount via axelarGmp', async t => {
 
   t.like(wallet.getLatestUpdateRecord(), {
     status: {
-      id: 'makeAccountCallIII',
+      id: `makeAccount${makeAccountCounter - 1}`,
       numWantsSatisfied: 1,
       result: 'transfer success',
     },
@@ -439,23 +478,21 @@ test.serial('makeAccount via axelarGmp', async t => {
     }),
   );
 
-  await wallet.executeOffer({
-    id: 'makeAccountCallIII',
-    invitationSpec: {
-      invitationMakerName: 'makeEVMTransactionInvitation',
-      previousOffer: previousOfferId,
-      source: 'continuing',
-      invitationArgs: harden(['getEVMSmartWalletAddress', []]),
-    },
+  await makeEVMTransaction({
+    wallet,
+    previousOffer: previousOfferId,
+    methodName: 'getEVMSmartWalletAddress',
+    offerArgs: [],
     proposal: {},
   });
 
   // @ts-expect-error
   const evmSmartWalletAddress = wallet.getLatestUpdateRecord().status.result;
   t.truthy(evmSmartWalletAddress);
+
   t.like(wallet.getLatestUpdateRecord(), {
     status: {
-      id: 'makeAccountCallIII',
+      id: `makeAccount${makeAccountCounter - 1}`,
       numWantsSatisfied: 1,
       result: evmSmartWalletAddress,
     },
@@ -463,33 +500,45 @@ test.serial('makeAccount via axelarGmp', async t => {
 
   t.log('sendGmp via LCA');
 
-  const offerArgs = {
-    destinationAddress: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
-    type: 3,
-    destinationEVMChain: 'Ethereum',
-  };
+  const offerArgs = [
+    {
+      destinationAddress: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
+      type: 3,
+      destinationEVMChain: 'Ethereum',
+    },
+  ];
 
   const { ATOM } = t.context.agoricNamesRemotes.brand;
 
-  await wallet.executeOffer({
-    id: 'makeAccountCallIV',
-    invitationSpec: {
-      invitationMakerName: 'makeEVMTransactionInvitation',
-      previousOffer: previousOfferId,
-      source: 'continuing',
-      invitationArgs: harden(['sendGmp', [offerArgs]]),
-    },
-    proposal: {
-      // @ts-expect-error XXX BoardRemote
-      give: { BLD: { brand: ATOM, value: 1n } },
-    },
-  });
+  const retryIntervalMs = 10;
+  let value;
+  const follow = () => Promise.resolve(value);
 
-  t.like(wallet.getLatestUpdateRecord(), {
-    status: {
-      id: 'makeAccountCallIV',
-      error:
+  const waitP = waitUntilOfferExited(
+    lcaAddress,
+    'makeAccount${makeAccountCounter - 1}',
+    { follow, log: t.log, setTimeout },
+    {
+      maxRetries: 5,
+      retryIntervalMs,
+      errorMessage: 'Offer not exited',
+    },
+  );
+
+  await t.throwsAsync(
+    () =>
+      makeEVMTransaction({
+        wallet,
+        previousOffer: previousOfferId,
+        methodName: 'sendGmp',
+        offerArgs,
+        proposal: {
+          give: { ATOM: { brand: ATOM, value: 1n } },
+        },
+      }),
+    {
+      message:
         'Error: IBC Transfer failed "[Error: no denom detail for: \\"ibc/toyatom\\" on \\"agoric\\". ensure it is registered in chainHub.]"',
     },
-  });
+  );
 });
