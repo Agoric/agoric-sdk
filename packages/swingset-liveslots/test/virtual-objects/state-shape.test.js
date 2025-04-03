@@ -1,8 +1,9 @@
 // @ts-nocheck
 import test from 'ava';
 
+import { Fail } from '@endo/errors';
 import { Far } from '@endo/marshal';
-import { kser, kslot } from '@agoric/kmarshal';
+import { kser, kslot, kunser } from '@agoric/kmarshal';
 import { M } from '@agoric/store';
 import { makeLiveSlots } from '../../src/liveslots.js';
 import { buildSyscall } from '../liveslots-helpers.js';
@@ -10,7 +11,35 @@ import { makeStartVat, makeMessage } from '../util.js';
 import { makeMockGC } from '../mock-gc.js';
 import { makeFakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
 
+/** @import {VatOneResolution} from '../../src/types.js'; */
 /** @import {VatData} from '../../src/vatDataTypes.js'; */
+
+let lastPnum = 100;
+/**
+ * Send a "message" syscall into a liveslots instance and return the
+ * unserialized result, or an error if the result is unsettled or rejected.
+ *
+ * @param {ReturnType<typeof makeLiveSlots>} ls
+ * @param {ReturnType<typeof buildSyscall>['log']} syscallLog
+ * @param {[target: unknown, method: string | symbol, args?: unknown[]]} message
+ */
+const dispatchForResult = async (ls, syscallLog, message) => {
+  const oldSyscallCount = syscallLog.length;
+  lastPnum += 1;
+  const resultVpid = `p-${lastPnum}`;
+  const vdo = makeMessage(...message.concat(undefined).slice(0, 3), resultVpid);
+  await ls.dispatch(vdo);
+  const newSyscalls = syscallLog.slice(oldSyscallCount);
+  /** @type {VatOneResolution[]} */
+  const newResolutions = newSyscalls.flatMap(vso =>
+    vso.type === 'resolve' ? vso.resolutions : [],
+  );
+  const [_vpid, isRejection, capdata] =
+    newResolutions.find(resolution => resolution[0] === resultVpid) ||
+    Fail`unsettled by syscalls ${syscallLog.slice(oldSyscallCount)}`;
+  if (isRejection) throw Error('rejected', { cause: kunser(capdata) });
+  return kunser(capdata);
+};
 
 const eph1 = Far('ephemeral1');
 const eph2 = Far('ephemeral2');
@@ -183,7 +212,7 @@ test('durable stateShape refcounts', async t => {
 
 test('durable stateShape must match', async t => {
   const kvStore = new Map();
-  const { syscall: sc1 } = buildSyscall({ kvStore });
+  const { syscall: sc1, log: log1 } = buildSyscall({ kvStore });
   const gcTools = makeMockGC();
 
   const ls1 = makeLiveSlots(sc1, 'vatA', {}, {}, gcTools, undefined, () => {
@@ -192,10 +221,11 @@ test('durable stateShape must match', async t => {
       const { makeKindHandle, defineDurableKind } = VatData;
 
       return Far('root', {
-        defineDurableKind: (x, y) => {
+        makeShapedDurable: (x, y) => {
           const kh = makeKindHandle('shaped');
           baggage.init('kh', kh);
-          defineHolder(defineDurableKind, kh, { x, y });
+          const makeInstance = defineHolder(defineDurableKind, kh, { x, y });
+          return makeInstance(harden({ x, y }));
         },
       });
     };
@@ -206,17 +236,20 @@ test('durable stateShape must match', async t => {
 
   const vref1 = 'o-1';
   const vref2 = 'o-2';
-  await ls1.dispatch(
-    makeMessage(root, 'defineDurableKind', [kslot(vref1), kslot(vref2)]),
-  );
-
-  // the first version's stateShape is { x: vref1, y: vref2 }
+  const instance1 = await dispatchForResult(ls1, log1, [
+    root,
+    'makeShapedDurable',
+    [kslot(vref1), kslot(vref2)],
+  ]);
+  const instance1Ref = instance1.getKref();
+  const state1 = await dispatchForResult(ls1, log1, [instance1Ref, 'get']);
+  t.deepEqual(kser(state1), kser({ x: kslot(vref1), y: kslot(vref2) }));
 
   // ------
 
   // Simulate upgrade by starting from the non-empty kvStore.
   const clonedStore = new Map(kvStore);
-  const { syscall: sc2 } = buildSyscall({ kvStore: clonedStore });
+  const { syscall: sc2, log: log2 } = buildSyscall({ kvStore: clonedStore });
 
   // we do *not* override allowStateShapeChanges
   // const opts = { allowStateShapeChanges: true };
@@ -252,4 +285,7 @@ test('durable stateShape must match', async t => {
 
   const vatParameters = { x: kslot(vref1), y: kslot(vref2) };
   await ls2.dispatch(makeStartVat(kser(vatParameters)));
+
+  const state2 = await dispatchForResult(ls2, log2, [instance1Ref, 'get']);
+  t.deepEqual(kser(state2), kser(state1));
 });
