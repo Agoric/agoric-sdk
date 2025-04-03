@@ -33,6 +33,7 @@ type ChannelKeeper interface {
 		connectionHops []string, counterparty channel.Counterparty, version string)
 	WriteOpenTryChannel(ctx sdk.Context, portID, channelID string, order channel.Order,
 		connectionHops []string, counterparty channel.Counterparty, version string)
+	WriteOpenAckChannel(ctx sdk.Context, portID, channelID, counterpartyVersion, counterpartyChannelID string)
 	ChanCloseInit(ctx sdk.Context, portID, channelID string, chanCap *capability.Capability) error
 	TimeoutExecuted(ctx sdk.Context, channelCap *capability.Capability, packet ibcexported.PacketI) error
 }

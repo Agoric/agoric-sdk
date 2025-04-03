@@ -120,13 +120,7 @@ func (i4 *ics4Wrapper) WriteAcknowledgement(
 	packet ibcexported.PacketI,
 	ack ibcexported.Acknowledgement,
 ) error {
-	origPacket := channeltypes.NewPacket(
-		packet.GetData(), packet.GetSequence(),
-		packet.GetSourcePort(), packet.GetSourceChannel(),
-		packet.GetDestPort(), packet.GetDestChannel(),
-		clienttypes.MustParseHeight(packet.GetTimeoutHeight().String()),
-		packet.GetTimeoutTimestamp(),
-	)
+	origPacket := types.CopyToIBCPacket(packet)
 	packetStore, packetKey := i4.k.PacketStoreFromOrigin(ctx, types.PacketDst, packet)
 	if packetStore.Has(packetKey) {
 		origPacket.Data = packetStore.Get(packetKey)
@@ -285,7 +279,7 @@ func (k Keeper) InterceptOnAcknowledgementPacket(
 		return err
 	}
 
-	origPacket := packet
+	origPacket := types.CopyToIBCPacket(packet)
 	packetStore, packetKey := k.PacketStoreFromOrigin(ctx, types.PacketSrc, packet)
 	if packetStore.Has(packetKey) {
 		origPacket.Data = packetStore.Get(packetKey)
@@ -322,7 +316,7 @@ func (k Keeper) InterceptOnTimeoutPacket(
 		return err
 	}
 
-	origPacket := packet
+	origPacket := types.CopyToIBCPacket(packet)
 	packetStore, packetKey := k.PacketStoreFromOrigin(ctx, types.PacketSrc, packet)
 	if packetStore.Has(packetKey) {
 		origPacket.Data = packetStore.Get(packetKey)
@@ -353,13 +347,7 @@ func (k Keeper) InterceptWriteAcknowledgement(ctx sdk.Context, chanCap *capabili
 	// Get the base receiver from the packet, without computing a stripped packet.
 	baseReceiver, err := types.ExtractBaseAddressFromPacket(k.cdc, packet, types.RoleReceiver, nil)
 
-	origPacket := channeltypes.NewPacket(
-		packet.GetData(), packet.GetSequence(),
-		packet.GetSourcePort(), packet.GetSourceChannel(),
-		packet.GetDestPort(), packet.GetDestChannel(),
-		clienttypes.MustParseHeight(packet.GetTimeoutHeight().String()),
-		packet.GetTimeoutTimestamp(),
-	)
+	origPacket := types.CopyToIBCPacket(packet)
 	packetStore, packetKey := k.PacketStoreFromOrigin(ctx, types.PacketDst, packet)
 	if packetStore.Has(packetKey) {
 		origPacket.Data = packetStore.Get(packetKey)
