@@ -510,21 +510,6 @@ test.serial('makeAccount via axelarGmp', async t => {
 
   const { ATOM } = t.context.agoricNamesRemotes.brand;
 
-  const retryIntervalMs = 10;
-  let value;
-  const follow = () => Promise.resolve(value);
-
-  const waitP = waitUntilOfferExited(
-    lcaAddress,
-    'makeAccount${makeAccountCounter - 1}',
-    { follow, log: t.log, setTimeout },
-    {
-      maxRetries: 5,
-      retryIntervalMs,
-      errorMessage: 'Offer not exited',
-    },
-  );
-
   await t.throwsAsync(
     () =>
       makeEVMTransaction({
@@ -538,7 +523,7 @@ test.serial('makeAccount via axelarGmp', async t => {
       }),
     {
       message:
-        'Error: IBC Transfer failed "[Error: no denom detail for: \\"ibc/toyatom\\" on \\"agoric\\". ensure it is registered in chainHub.]"',
+        'no denom detail for: "ibc/toyatom" on "agoric". ensure it is registered in chainHub.',
     },
   );
 });

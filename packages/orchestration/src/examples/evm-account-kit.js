@@ -18,6 +18,7 @@ const addresses = {
 
 /**
  * @import {IBCChannelID, VTransferIBCEvent} from '@agoric/vats';
+ * @import {VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
  * @import {CosmosChainAddress, Denom, OrchestrationAccount} from '@agoric/orchestration';
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
@@ -71,11 +72,12 @@ harden(EvmKitStateShape);
  * @param {{
  *   zcf: ZCF;
  *   zoeTools: ZoeTools;
+ *   vowTools: VowTools;
  * }} powers
  */
 export const prepareEvmAccountKit = (
   zone,
-  { zcf, zoeTools: { withdrawToSeat } },
+  { zcf, zoeTools: { withdrawToSeat }, vowTools },
 ) => {
   return zone.exoClassKit(
     'EvmTapKit',
@@ -208,52 +210,42 @@ export const prepareEvmAccountKit = (
             ...contractInvocationData,
           });
 
-          try {
-            const { denom } = NonNullish(
-              this.state.assets.find(a => a.brand === amt.brand),
-              `${amt.brand} not registered in vbank`,
-            );
+          const { denom } = NonNullish(
+            this.state.assets.find(a => a.brand === amt.brand),
+            `${amt.brand} not registered in vbank`,
+          );
 
-            console.log('amt and brand', amt.brand);
+          console.log('amt and brand', amt.brand);
 
-            const { chainId } = this.state.remoteChainInfo;
+          const { chainId } = this.state.remoteChainInfo;
 
-            const memo = {
-              destination_chain: destinationEVMChain,
-              destination_address: destinationAddress,
-              payload,
-              type,
+          const memo = {
+            destination_chain: destinationEVMChain,
+            destination_address: destinationAddress,
+            payload,
+            type,
+          };
+
+          if (type === 1 || type === 2) {
+            memo.fee = {
+              amount: String(gasAmount),
+              recipient: addresses.AXELAR_GAS,
             };
-
-            if (type === 1 || type === 2) {
-              memo.fee = {
-                amount: String(gasAmount),
-                recipient: addresses.AXELAR_GAS,
-              };
-            }
-
-            // @ts-expect-error
-            await this.state.localAccount.transfer(
-              {
-                value: addresses.AXELAR_GMP,
-                encoding: 'bech32',
-                chainId,
-              },
-              {
-                denom,
-                value: amt.value,
-              },
-              { memo: JSON.stringify(memo) },
-            );
-
-            console.log(`Completed transfer to ${destinationAddress}`);
-          } catch (e) {
-            // @ts-expect-error
-            await withdrawToSeat(this.state.localAccount, seat, give);
-            const errorMsg = `IBC Transfer failed ${q(e)}`;
-            seat.exit(errorMsg);
-            throw makeError(errorMsg);
           }
+
+          // @ts-expect-error
+          return this.state.localAccount.transfer(
+            {
+              value: addresses.AXELAR_GMP,
+              encoding: 'bech32',
+              chainId,
+            },
+            {
+              denom,
+              value: amt.value,
+            },
+            { memo: JSON.stringify(memo) },
+          );
         },
       },
       invitationMakers: {
@@ -261,21 +253,33 @@ export const prepareEvmAccountKit = (
         makeEVMTransactionInvitation(method, args) {
           const continuingEVMTransactionHandler = async seat => {
             const { holder } = this.facets;
-
             switch (method) {
               case 'sendGmp':
-                return holder.sendGmp(seat, args[0]);
+                const vow = holder.sendGmp(seat, args[0]);
+                return vowTools.when(vow, res => {
+                  seat.exit();
+                  return res;
+                });
               case 'getAddress': {
-                seat.exit();
-                return holder.getAddress();
+                const vow = holder.getAddress();
+                return vowTools.when(vow, res => {
+                  seat.exit();
+                  return res;
+                });
               }
               case 'getEVMSmartWalletAddress': {
-                seat.exit();
-                return holder.getEVMSmartWalletAddress();
+                const vow = holder.getEVMSmartWalletAddress();
+                return vowTools.when(vow, res => {
+                  seat.exit();
+                  return res;
+                });
               }
               case 'send': {
-                seat.exit();
-                return holder.send(args[0], args[1]);
+                const vow = holder.send(args[0], args[1]);
+                return vowTools.when(vow, res => {
+                  seat.exit();
+                  return res;
+                });
               }
               default:
                 return 'Invalid method';
