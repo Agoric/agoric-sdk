@@ -36,8 +36,13 @@ import {
   CosmosChainAddressShape,
 } from '@agoric/orchestration';
 import type { AccountId } from '@agoric/orchestration/src/orchestration-api.js';
-import { parseAccountIdArg } from '@agoric/orchestration/src/utils/address.js';
+import {
+  chainOfAccount,
+  parseAccountId,
+  parseAccountIdArg,
+} from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
+import { M, mustMatch } from '@agoric/store';
 import { pickFacet } from '@agoric/vat-data';
 import type { VowTools } from '@agoric/vow';
 import { VowShape } from '@agoric/vow';
@@ -45,7 +50,7 @@ import type { ZCF, ZCFSeat } from '@agoric/zoe/src/zoeService/zoe.js';
 import type { Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
-import { M, mustMatch } from '@agoric/store';
+import { makeSupportsCctp } from '../utils/cctp.ts';
 import type { LiquidityPoolKit } from './liquidity-pool.js';
 import type { SettlerKit } from './settler.js';
 import type { StatusManager } from './status-manager.js';
@@ -134,7 +139,7 @@ export const prepareAdvancerKit = (
     log = makeTracer('Advancer', true),
     statusManager,
     usdc,
-    vowTools: { watch, when },
+    vowTools: { asVow, watch, when },
     zcf,
     zoeTools: { localTransfer, withdrawToSeat },
   }: AdvancerKitPowers,
@@ -148,6 +153,8 @@ export const prepareAdvancerKit = (
   });
   const feeTools = makeFeeTools(feeConfig);
   const toAmount = (value: bigint) => AmountMath.make(usdc.brand, value);
+
+  const supportsCctp = makeSupportsCctp(chainHub);
 
   return zone.exoClassKit(
     'Fast USDC Advancer',
@@ -178,8 +185,7 @@ export const prepareAdvancerKit = (
          *
          * @param {EvidenceWithRisk} evidenceWithRisk
          */
-        async handleTransactionEvent({ evidence, risk }: EvidenceWithRisk) {
-          await null;
+        handleTransactionEvent({ evidence, risk }: EvidenceWithRisk) {
           try {
             if (statusManager.hasBeenObserved(evidence)) {
               log('txHash already seen:', evidence.txHash);
@@ -200,8 +206,23 @@ export const prepareAdvancerKit = (
             }
             const { EUD } = decoded.query;
             log(`decoded EUD: ${EUD}`);
-            // throws if the bech32 prefix is not found
+
+            // throws if it's neither CAIP-10 nor bare bech32.
             const destination = chainHub.resolveAccountId(EUD);
+            const accountId = parseAccountId(destination);
+            const destChain = chainOfAccount(destination);
+            const info = chainHub.getChainInfoByChainId(destChain);
+
+            // These are the cases that are currently supported
+            if (
+              accountId.reference !== settlementAddress.chainId &&
+              info.namespace !== 'cosmos' &&
+              !supportsCctp(destination)
+            ) {
+              statusManager.skipAdvance(evidence, [
+                `Transfer to ${destChain} not supported.`,
+              ]);
+            }
 
             const fullAmount = toAmount(evidence.tx.amount);
             const { borrower, notifier, poolAccount } = this.state;
@@ -258,28 +279,56 @@ export const prepareAdvancerKit = (
           result: undefined,
           ctx: AdvancerVowCtx & { tmpSeat: ZCFSeat },
         ) {
-          const { poolAccount, settlementAddress } = this.state;
-          const { destination, advanceAmount, tmpSeat, ...detail } = ctx;
-          tmpSeat.exit();
-          const amount = harden({
-            denom: usdc.denom,
-            value: advanceAmount.value,
-          });
-          const intermediateRecipient = getNobleICA().getAddress();
-          const accountId = parseAccountIdArg(destination);
+          return asVow(async () => {
+            const { poolAccount, settlementAddress } = this.state;
+            const { tmpSeat, ...vowContext } = ctx;
+            const { destination, advanceAmount, ...detail } = vowContext;
+            tmpSeat.exit();
+            const amount = harden({
+              denom: usdc.denom,
+              value: advanceAmount.value,
+            });
+            const accountId = parseAccountIdArg(destination);
+            await null;
 
-          assert.equal(accountId.namespace, 'cosmos');
+            const intermediateRecipient = getNobleICA().getAddress();
 
-          const transferOrSendV =
-            accountId.reference === settlementAddress.chainId
-              ? E(poolAccount).send(destination, amount)
-              : E(poolAccount).transfer(destination, amount, {
-                  forwardOpts: { intermediateRecipient },
-                });
-          return watch(transferOrSendV, this.facets.transferHandler, {
-            destination,
-            advanceAmount,
-            ...detail,
+            let transferOrSendV;
+            if (
+              accountId.namespace === 'cosmos' &&
+              accountId.reference === settlementAddress.chainId
+            ) {
+              // send to recipient on Agoric
+              transferOrSendV = E(poolAccount).send(destination, amount);
+            } else if (accountId.namespace === 'cosmos') {
+              // send via IBC
+
+              transferOrSendV = E(poolAccount).transfer(destination, amount, {
+                forwardOpts: {
+                  intermediateRecipient,
+                },
+              });
+            } else if (supportsCctp(destination)) {
+              // send USDC via CCTP
+
+              await E(poolAccount).transfer(intermediateRecipient, amount);
+              // assets are on noble, transfer to dest.
+
+              const intermediaryAccount = getNobleICA();
+              transferOrSendV = intermediaryAccount.depositForBurn(
+                destination,
+                amount,
+              );
+            } else {
+              // This is supposed to be caught in handleTransactionEvent()
+              Fail`can only transfer to Agoric addresses, via IBC, or via CCTP`;
+            }
+
+            return watch(
+              transferOrSendV,
+              this.facets.transferHandler,
+              vowContext,
+            );
           });
         },
         /**
