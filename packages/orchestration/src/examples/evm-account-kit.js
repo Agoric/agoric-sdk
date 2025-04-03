@@ -4,7 +4,7 @@ import { VowShape } from '@agoric/vow';
 import { makeTracer, NonNullish } from '@agoric/internal';
 import { atob, decodeBase64 } from '@endo/base64';
 import { CosmosChainAddressShape } from '../typeGuards.js';
-import { Fail, makeError, q } from '@endo/errors';
+import { Fail } from '@endo/errors';
 import { buildGMPPayload } from '../utils/gmp.js';
 
 const trace = makeTracer('EvmTap');
@@ -18,11 +18,10 @@ const addresses = {
 
 /**
  * @import {IBCChannelID, VTransferIBCEvent} from '@agoric/vats';
- * @import {VowTools} from '@agoric/vow';
+ * @import {Vow, VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
  * @import {CosmosChainAddress, Denom, OrchestrationAccount} from '@agoric/orchestration';
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
- * @import {ZoeTools} from '@agoric/orchestration/src/utils/zoe-tools.js';
  */
 
 /**
@@ -71,14 +70,11 @@ harden(EvmKitStateShape);
  * @param {Zone} zone
  * @param {{
  *   zcf: ZCF;
- *   zoeTools: ZoeTools;
  *   vowTools: VowTools;
+ *   log: (msg: string) => Vow<void>;
  * }} powers
  */
-export const prepareEvmAccountKit = (
-  zone,
-  { zcf, zoeTools: { withdrawToSeat }, vowTools },
-) => {
+export const prepareEvmAccountKit = (zone, { zcf, vowTools, log }) => {
   return zone.exoClassKit(
     'EvmTapKit',
     {
@@ -173,6 +169,7 @@ export const prepareEvmAccountKit = (
          * }} offerArgs
          */
         async sendGmp(seat, offerArgs) {
+          void log('Inside sendGmp');
           const {
             destinationAddress,
             type,
@@ -209,6 +206,7 @@ export const prepareEvmAccountKit = (
             evmContractAddress: destinationAddress,
             ...contractInvocationData,
           });
+          void log(`Payload: ${JSON.stringify(payload)}`);
 
           const { denom } = NonNullish(
             this.state.assets.find(a => a.brand === amt.brand),
@@ -231,8 +229,11 @@ export const prepareEvmAccountKit = (
               amount: String(gasAmount),
               recipient: addresses.AXELAR_GAS,
             };
+            void log(`Fee object ${JSON.stringify(memo.fee)}`);
           }
 
+          void log(`Initiating IBC Transfer...`);
+          void log(`DENOM of token:${denom}`);
           // @ts-expect-error
           return this.state.localAccount.transfer(
             {
