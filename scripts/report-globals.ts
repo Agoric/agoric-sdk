@@ -10,7 +10,7 @@
  */
 
 // When this was run on 2023-12-30, the output was:
-import execa from 'execa';
+import { execaSync } from 'execa';
 import fs from 'node:fs';
 
 const lastRun = {
@@ -42,7 +42,7 @@ const SHEBANG = '#!';
  */
 const disableLintDirective = (str: 'global' | 'eslint-env') => {
   const cmd = `git grep --extended-regexp --files-with-matches  '\\/\\* ${str} ' packages | xargs grep -L '${SHEBANG}' |xargs sed -i '' "s/\\/\\* ${str} /\\/\\* ~${str} /"`;
-  execa.sync(cmd, { shell: true });
+  execaSync(cmd, { shell: true });
 };
 
 const runEslint = () => {
@@ -50,7 +50,7 @@ const runEslint = () => {
   disableLintDirective('global');
   disableLintDirective('eslint-env');
 
-  execa.sync(
+  execaSync(
     // true to succeed despite eslint failures
     'npm run --silent lint:eslint --if-present --workspaces > eslintOutput.txt || true',
     { shell: true },
