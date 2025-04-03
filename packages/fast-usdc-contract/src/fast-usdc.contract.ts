@@ -1,24 +1,24 @@
 import { AssetKind, type Amount } from '@agoric/ertp';
 import {
+  CosmosChainInfoShapeV1,
   FastUSDCTermsShape,
   FeeConfigShape,
-  CosmosChainInfoShapeV1,
 } from '@agoric/fast-usdc/src/type-guards.js';
 import { makeTracer } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import {
   DenomDetailShape,
   DenomShape,
-  type IBCConnectionInfo,
   OrchestrationPowersShape,
   registerChainsAndAssets,
   withOrchestration,
+  type CosmosChainAddress,
+  type Denom,
+  type DenomDetail,
+  type IBCConnectionInfo,
   type OrchestrationAccount,
   type OrchestrationPowers,
   type OrchestrationTools,
-  type Denom,
-  type DenomDetail,
-  type ChainInfo,
 } from '@agoric/orchestration';
 import { makeZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
@@ -39,8 +39,8 @@ import type {
   Marshaller,
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
-import type { Zone } from '@agoric/zone';
 import type { ContractMeta, Invitation, ZCF } from '@agoric/zoe';
+import type { Zone } from '@agoric/zone';
 import { prepareAdvancer } from './exos/advancer.ts';
 import { prepareLiquidityPoolKit } from './exos/liquidity-pool.ts';
 import { prepareSettler } from './exos/settler.ts';
@@ -55,7 +55,7 @@ const TXNS_NODE = 'txns';
 const FEE_NODE = 'feeConfig';
 const ADDRESSES_BAGGAGE_KEY = 'addresses';
 /** expected value: `OrchestrationAccount<{chainId: 'noble-1}>` Remotable */
-export const NOBLE_ICA_BAGGAGE_KEY = 'nobleICA';
+const NOBLE_ICA_BAGGAGE_KEY = 'nobleICA';
 
 export const meta = {
   customTermsShape: FastUSDCTermsShape,
@@ -122,12 +122,23 @@ export const contract = async (
   const { USDC } = terms.brands;
   const { withdrawToSeat } = tools.zoeTools;
   const { baggage, chainHub, orchestrateAll, vowTools } = tools;
+
+  /**
+   * aka `IntermediateRecipientAccount`. A contract-controlled ICA on Noble that can send `MsgDepositForBurn`.
+   * retrieve from baggage, until:
+   * [Allow state shape with new optional fields #10200](https://github.com/Agoric/agoric-sdk/issues/10200)
+   *
+   * @throws {Error} if the Noble ICA is not set in baggage
+   */
+  const getNobleICA = (): OrchestrationAccount<{ chainId: 'noble-1' }> =>
+    baggage.get(NOBLE_ICA_BAGGAGE_KEY);
+
   const makeSettler = prepareSettler(zone, {
-    baggage,
     statusManager,
     USDC,
     withdrawToSeat,
     feeConfig,
+    getNobleICA,
     vowTools: tools.vowTools,
     zcf,
     chainHub,
@@ -178,7 +189,7 @@ export const contract = async (
       agoricChainId?: string,
       nobleChainId?: string,
       agoricToNoble?: IBCConnectionInfo,
-    ) {
+    ): Promise<CosmosChainAddress> {
       const shouldUpdate = agoricChainId && nobleChainId && agoricToNoble;
       if (shouldUpdate) {
         trace('connectToNoble', agoricChainId, nobleChainId, agoricToNoble);
@@ -194,21 +205,19 @@ export const contract = async (
 
       return vowTools.when(nobleAccountV, nobleAccount => {
         trace('nobleAccount', nobleAccount);
-        // baggage until exo state migrations: https://github.com/Agoric/agoric-sdk/issues/10200
+        // store in the contract zone
         if (baggage.has(NOBLE_ICA_BAGGAGE_KEY)) {
+          trace(
+            'Noble ICA already set in baggage. Equal?',
+            baggage.get(NOBLE_ICA_BAGGAGE_KEY) === nobleAccount,
+          );
           baggage.set(NOBLE_ICA_BAGGAGE_KEY, nobleAccount);
         } else {
           baggage.init(NOBLE_ICA_BAGGAGE_KEY, nobleAccount);
         }
-        return vowTools.when(
-          E(nobleAccount).getAddress(),
-          intermediateRecipient => {
-            trace('intermediateRecipient', intermediateRecipient);
-            advancer.setIntermediateRecipient(intermediateRecipient);
-            settlerKit.creator.setIntermediateRecipient(intermediateRecipient);
-            return intermediateRecipient;
-          },
-        );
+        const intermediateRecipient = nobleAccount.getAddress();
+        advancer.setIntermediateRecipient(intermediateRecipient);
+        return intermediateRecipient;
       });
     },
     async publishAddresses() {

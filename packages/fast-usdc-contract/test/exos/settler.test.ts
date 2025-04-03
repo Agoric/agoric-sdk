@@ -34,7 +34,6 @@ import {
 } from '../fixtures.js';
 import { makeTestLogger, prepareMockOrchAccounts } from '../mocks.js';
 import { commonSetup } from '../supports.js';
-import { NOBLE_ICA_BAGGAGE_KEY } from '../../src/fast-usdc.contract.ts';
 
 const mockZcf = (zone: Zone) => {
   const callLog = [] as any[];
@@ -102,16 +101,13 @@ const makeTestContext = async t => {
     chainId: `${cctpChainInfo.ethereum.namespace}:${cctpChainInfo.ethereum.reference}`,
   });
 
-  const fakeBaggage = common.utils.rootZone.mapStore('FakeBaggage') as Baggage;
-  fakeBaggage.init(NOBLE_ICA_BAGGAGE_KEY, mockAccounts.intermediate.account);
-
   const makeSettler = prepareSettler(zone.subZone('settler'), {
-    baggage: fakeBaggage,
     statusManager,
     USDC: usdc.brand,
     zcf,
     withdrawToSeat: mockWithdrawToSeat,
     feeConfig: common.commonPrivateArgs.feeConfig,
+    getNobleICA: () => mockAccounts.intermediate.account as any,
     vowTools: common.utils.vowTools,
     chainHub,
     currentChainReference: 'agoric-3',

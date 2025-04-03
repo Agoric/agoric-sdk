@@ -15,47 +15,44 @@ import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
-import { fromOnly } from '@agoric/zoe/src/contractSupport/index.js';
 import { PendingTxStatus } from '@agoric/fast-usdc/src/constants.js';
-import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
 import {
   CctpTxEvidenceShape,
   EvmHashShape,
   makeNatAmountShape,
 } from '@agoric/fast-usdc/src/type-guards.js';
+import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
+import { fromOnly } from '@agoric/zoe/src/contractSupport/index.js';
 
+import type { HostInterface, HostOf } from '@agoric/async-flow';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import type { Amount, Brand, NatAmount, NatValue } from '@agoric/ertp';
 import type {
+  CctpTxEvidence,
+  EvmHash,
+  FeeConfig,
+  LogFn,
+  NobleAddress,
+} from '@agoric/fast-usdc/src/types.js';
+import type {
   AccountId,
-  Denom,
-  OrchestrationAccount,
   ChainHub,
   CosmosChainAddress,
+  Denom,
+  OrchestrationAccount,
 } from '@agoric/orchestration';
-import type { WithdrawToSeat } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import type { IBCChannelID, IBCPacket, VTransferIBCEvent } from '@agoric/vats';
-import type { Zone } from '@agoric/zone';
-import type { HostOf, HostInterface } from '@agoric/async-flow';
-import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
-import type {
-  NobleAddress,
-  FeeConfig,
-  EvmHash,
-  LogFn,
-  CctpTxEvidence,
-} from '@agoric/fast-usdc/src/types.js';
-import type { ZCF, ZCFSeat } from '@agoric/zoe/src/zoeService/zoe.js';
-import type { MapStore } from '@agoric/store';
-import type { VowTools } from '@agoric/vow';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
-import type { Baggage } from '@agoric/vat-data';
-import { Fail } from '@endo/errors';
+import type { WithdrawToSeat } from '@agoric/orchestration/src/utils/zoe-tools.js';
+import type { MapStore } from '@agoric/store';
+import type { IBCChannelID, IBCPacket, VTransferIBCEvent } from '@agoric/vats';
+import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
+import type { VowTools } from '@agoric/vow';
+import type { ZCF } from '@agoric/zoe/src/zoeService/zoe.js';
+import type { Zone } from '@agoric/zone';
+import { makeSupportsCctp } from '../utils/cctp.ts';
+import { asMultiset } from '../utils/store.ts';
 import type { LiquidityPoolKit } from './liquidity-pool.js';
 import type { StatusManager } from './status-manager.js';
-import { asMultiset } from '../utils/store.ts';
-import { NOBLE_ICA_BAGGAGE_KEY } from '../fast-usdc.contract.ts';
-import { makeSupportsCctp } from '../utils/cctp.ts';
 
 const decodeEventPacket = (
   { data }: IBCPacket,
@@ -128,6 +125,7 @@ export const stateShape = harden({
   sourceChannel: M.string(),
   remoteDenom: M.string(),
   mintedEarly: M.remotable('mintedEarly'),
+  /** @deprecated */
   intermediateRecipient: M.opt(CosmosChainAddressShape),
 });
 
@@ -144,10 +142,10 @@ export const stateShape = harden({
 export const prepareSettler = (
   zone: Zone,
   {
-    baggage,
     currentChainReference,
     chainHub,
     feeConfig,
+    getNobleICA,
     log = makeTracer('Settler', true),
     statusManager,
     USDC,
@@ -155,11 +153,11 @@ export const prepareSettler = (
     withdrawToSeat,
     zcf,
   }: {
-    baggage: Baggage;
     /** e.g., `agoric-3` */
     currentChainReference: string;
     chainHub: ChainHub;
     feeConfig: FeeConfig;
+    getNobleICA: () => OrchestrationAccount<{ chainId: 'noble-1' }>;
     log?: LogFn;
     statusManager: StatusManager;
     USDC: Brand<'nat'>;
@@ -172,20 +170,11 @@ export const prepareSettler = (
 
   const supportsCctp = makeSupportsCctp(chainHub);
 
-  /**
-   * aka `IntermediateRecipientAccount`. A contract-controlled ICA on Noble that can send `MsgDepositForBurn`.
-   * retrieve from baggage, until:
-   * [Allow state shape with new optional fields #10200](https://github.com/Agoric/agoric-sdk/issues/10200)
-   */
-  const getNobleICA = (): OrchestrationAccount<{ chainId: 'noble-1' }> =>
-    baggage.get(NOBLE_ICA_BAGGAGE_KEY);
-
   return zone.exoClassKit(
     'Fast USDC Settler',
     {
       creator: M.interface('SettlerCreatorI', {
         monitorMintingDeposits: M.callWhen().returns(M.any()),
-        setIntermediateRecipient: M.call(CosmosChainAddressShape).returns(),
       }),
       tap: M.interface('SettlerTapI', {
         receiveUpcall: M.call(M.record()).returns(M.promise()),
@@ -226,13 +215,12 @@ export const prepareSettler = (
       settlementAccount: HostInterface<
         OrchestrationAccount<{ chainId: 'agoric-any' }>
       >;
-      intermediateRecipient?: CosmosChainAddress;
     }) => {
       log('config', config);
       return {
         ...config,
-        // make sure the state record has this property, perhaps with an undefined value
-        intermediateRecipient: config.intermediateRecipient,
+        // This comes from a power now but the schema requires this key to be set
+        intermediateRecipient: undefined,
         registration: undefined as
           | HostInterface<TargetRegistration>
           | undefined,
@@ -251,9 +239,6 @@ export const prepareSettler = (
           );
           assert.typeof(registration, 'object');
           this.state.registration = registration;
-        },
-        setIntermediateRecipient(intermediateRecipient: CosmosChainAddress) {
-          this.state.intermediateRecipient = intermediateRecipient;
         },
       },
       tap: {
@@ -418,9 +403,8 @@ export const prepareSettler = (
          * @param {string} EUD
          */
         forward(txHash: EvmHash, fullValue: NatValue, EUD: string) {
-          const { settlementAccount, intermediateRecipient } = this.state;
+          const { settlementAccount } = this.state;
           log('forwarding', fullValue, 'to', EUD, 'for', txHash);
-          if (!intermediateRecipient) throw Fail`No intermediate recipient`;
 
           const dest: AccountId | null = (() => {
             try {
@@ -435,6 +419,8 @@ export const prepareSettler = (
 
           const { namespace, reference } = parseAccountId(dest);
           const amt = AmountMath.make(USDC, fullValue);
+
+          const intermediateRecipient = getNobleICA().getAddress();
 
           if (namespace === 'cosmos') {
             const transferOrSendV =
