@@ -541,7 +541,7 @@ test.serial('start-fast-usdc', async t => {
   bridgeUtils.setBech32Prefix('noble');
 
   const materials = buildProposal(
-    '@agoric/builders/scripts/fast-usdc/start-fast-usdc.build.js',
+    '@aglocal/fast-usdc-deploy/src/start-fast-usdc.build.js',
     ['--net', 'MAINNET'],
   );
   await evalProposal(materials);
@@ -638,7 +638,7 @@ test.skip('makes usdc advance, mint (independent of iterations)', async t => {
 
 test.skip('prune vstorage (independent of iterations)', async t => {
   const { doCoreEval, observations, controller, storage } = t.context;
-  await doCoreEval('@agoric/fast-usdc/scripts/delete-completed-txs.js');
+  await doCoreEval('@aglocal/fast-usdc-deploy/scripts/delete-completed-txs.js');
   observations.push({
     id: `post-prune`,
     ...getResourceUsageStats(controller, storage.data),
@@ -663,7 +663,9 @@ test.serial('iterate simulation several times', async t => {
 
   async function doCleanupAndSnapshot(id) {
     slogSender?.({ type: 'cleanup-begin', id });
-    await doCoreEval('@agoric/fast-usdc/scripts/delete-completed-txs.js');
+    await doCoreEval(
+      '@aglocal/fast-usdc-deploy/scripts/delete-completed-txs.js',
+    );
     while (true) {
       const beforeReapPos = previousReapPos;
       previousReapPos = controller.reapAllVats(beforeReapPos);
