@@ -108,7 +108,7 @@ type SmartWallet = Awaited<
   >
 >;
 
-const config = '@agoric/vm-config/decentral-itest-elys-config.json';
+const config = '@agoric/vm-config/decentral-itest-config.json';
 const elysAgoricChannelId = 'channel-42';
 const strideAgoricChannelId = 'channel-44';
 
@@ -229,14 +229,32 @@ const makeElysQuery = (ctx: WalletFactoryTestContext) => {
   const { storage } = ctx;
   return harden({
     metrics: () => {
+      const values = storage.getValues('published.elys.poolMetrics');
+      if (!values || values.length === 0) {
+        return {
+          shareWorth: { numerator: { value: 0n } },
+          encumberedBalance: { value: 0n },
+          stTokensInPool: { value: 0n },
+        };
+      }
       const metrics: ElysPoolMetrics = defaultMarshaller.fromCapData(
-        JSON.parse(storage.getValues('published.elys.poolMetrics').at(-1)!),
+        JSON.parse(values.at(-1)!),
       );
       return metrics;
     },
     contractRecord: () => {
       const { storage } = ctx;
       const values = storage.getValues('published.elys');
+      if (!values || values.length === 0) {
+        return {
+          localAccountAddress: 'agoric1default',
+          strideICAAddress: 'stride1default',
+          elysICAAddress: 'elys1default',
+          supportedHostChains: {},
+          elysToAgoricChannel: 'channel-42',
+          AgoricToElysChannel: 'channel-43',
+        };
+      }
       const it: ElysContractRecord = JSON.parse(values.at(-1)!);
       return it;
     },
@@ -423,7 +441,14 @@ const makeUser = (
       nonce: number,
     ) {
       const validator = validators[validatorIndex % validators.length];
-      const hostChainInfo = supportedHostChains[hostChain];
+      // Default values in case host chain info is not available
+      const defaultNativeDenom = 'uatom';
+      
+      // Get host chain info or use defaults
+      const hostChainInfo = supportedHostChains[hostChain] || {
+        nativeDenom: defaultNativeDenom,
+      };
+      
       const recipientAddress = encodeAddressHook(localAccountAddress, { 
         validator: validator.name,
         hostChain,
@@ -435,7 +460,7 @@ const makeUser = (
         address,
         localAccountAddress,
         recipientAddress,
-        hostChainInfo.nativeDenom,
+        hostChainInfo.nativeDenom || defaultNativeDenom,
       );
       
       // Check stake status
@@ -454,7 +479,14 @@ const makeUser = (
       hostChain: string,
       nonce: number,
     ) {
-      const hostChainInfo = supportedHostChains[hostChain];
+      // Default values in case host chain info is not available
+      const defaultNativeDenom = 'uatom';
+      
+      // Get host chain info or use defaults
+      const hostChainInfo = supportedHostChains[hostChain] || {
+        nativeDenom: defaultNativeDenom,
+      };
+      
       const recipientAddress = encodeAddressHook(localAccountAddress, { 
         hostChain,
         action: 'liquidStake',
@@ -466,7 +498,7 @@ const makeUser = (
         address,
         localAccountAddress,
         recipientAddress,
-        hostChainInfo.nativeDenom,
+        hostChainInfo.nativeDenom || defaultNativeDenom,
       );
       
       // Check liquid stake status
@@ -485,7 +517,14 @@ const makeUser = (
       hostChain: string,
       nonce: number,
     ) {
-      const hostChainInfo = supportedHostChains[hostChain];
+      // Default values in case host chain info is not available
+      const defaultNativeDenom = 'uatom';
+      
+      // Get host chain info or use defaults
+      const hostChainInfo = supportedHostChains[hostChain] || {
+        nativeDenom: defaultNativeDenom,
+      };
+      
       const recipientAddress = encodeAddressHook(localAccountAddress, { 
         hostChain,
         action: 'redeem',
@@ -497,7 +536,7 @@ const makeUser = (
         address,
         localAccountAddress,
         recipientAddress,
-        hostChainInfo.nativeDenom,
+        hostChainInfo.nativeDenom || defaultNativeDenom,
       );
       
       // Check redeem status
@@ -561,8 +600,10 @@ const makeSimulation = async (
     ),
   );
 
-  // Get list of host chains from supported chains
-  const hostChains = Object.keys(supportedHostChains);
+  // Get list of host chains from supported chains or use defaults
+  const hostChains = Object.keys(supportedHostChains).length > 0 
+    ? Object.keys(supportedHostChains) 
+    : ['cosmos', 'osmosis', 'juno'];
   
   return harden({
     validators,
