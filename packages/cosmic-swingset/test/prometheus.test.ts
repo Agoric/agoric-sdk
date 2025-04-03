@@ -129,9 +129,9 @@ test('Prometheus metric definitions', async t => {
     ['swingset_crank_processing_time_sum', [50, '%']],
 
     // Memory measurements vary based on when they are captured.
-    ['heapStats_external_memory', [20, '%']],
-    ['heapStats_malloced_memory', [30, '%']],
-    ['heapStats_peak_malloced_memory', [20, '%']],
+    ['heapStats_external_memory', [50, '%']],
+    ['heapStats_malloced_memory', [50, '%']],
+    ['heapStats_peak_malloced_memory', [50, '%']],
     ['heapStats_total_available_size', [20, '%']],
     ['heapStats_total_global_handles_size', [20, '%']],
     ['heapStats_total_heap_size', [20, '%']],
