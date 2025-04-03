@@ -84,7 +84,9 @@ export const defaultProposalBuilder = async (
         options: toExternalConfig(config, crossVatContext, FastUSDCConfigShape),
         installKeys: {
           fastUsdc: publishRef(
-            install('@aglocal/fast-usdc-contract/src/fast-usdc.contract.ts'),
+            install(
+              '@aglocal/fast-usdc-deploy/dist/fast-usdc.contract.bundle.js',
+            ),
           ),
         },
       },

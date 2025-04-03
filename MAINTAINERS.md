@@ -449,6 +449,19 @@ git commit -m 'chore(swingset-vat): Update xsnap store test snapshots'
 cd ../..
 ```
 
+Sync other dependency solution locks.
+
+```sh
+git ls-tree -r HEAD |
+  cut -d$'\t' -f2 |
+  grep '.yarn.lock$' |
+while read lock; do \
+  dir=$(dirname $lock); \
+  echo $dir; \
+  (cd $dir; ~/endo/scripts/sync-versions.sh ~/endo; yarn); \
+done
+```
+
 Push this branch and create a pull request.
 
 ```sh

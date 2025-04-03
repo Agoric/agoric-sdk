@@ -12,7 +12,7 @@
     "@agoric/client-utils": "dev",
     "@agoric/fast-usdc": "dev",
     "@agoric/synthetic-chain": "0.5.5",
-    "@endo/init": "^1.1.8",
+    "@endo/init": "^1.1.9",
     "agoric": "dev",
     "ava": "^5.3.1"
   },
