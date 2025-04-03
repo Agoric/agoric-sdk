@@ -64,6 +64,7 @@ export const contract = async (
   const makeEvmAccountKit = prepareEvmAccountKit(zone.subZone('evmTap'), {
     zoeTools,
     zcf,
+    vowTools,
   });
 
   const creatorFacet = prepareChainHubAdmin(zone, chainHub);
