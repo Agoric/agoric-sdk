@@ -1,36 +1,60 @@
 // @ts-check
-/** @file Bootstrap test of restarting contracts using orchestration */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import type { TestFn } from 'ava';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { BridgeId } from '@agoric/internal';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { defaultAbiCoder } from '@ethersproject/abi';
 import { utils } from 'ethers';
-import {
-  makeWalletFactoryContext,
-  type WalletFactoryTestContext,
-} from '../bootstrapTests/walletFactory.js';
+import { makeWalletFactoryContext } from '../bootstrapTests/walletFactory.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { waitUntilOfferExited } from '@agoric/client-utils';
+import type { ExecutionContext, TestFn } from 'ava';
+
+type WalletFactoryContext = Awaited<
+  ReturnType<typeof makeWalletFactoryContext>
+>;
+
+export type TestContext = WalletFactoryContext & {
+  wallet: any;
+  previousOfferId: string | null;
+};
+
+const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
+
+const makeTestContext = async (t: ExecutionContext) => {
+  const ctx = await makeWalletFactoryContext(
+    t,
+    '@agoric/vm-config/decentral-itest-orchestration-config.json',
+  );
+
+  const wallet =
+    await ctx.walletFactoryDriver.provideSmartWallet('agoric1makeAccount');
+
+  const fullCtx = {
+    ...ctx,
+    wallet,
+    previousOfferId: null,
+  };
+
+  return fullCtx;
+};
 
 let evmTransactionCounter = 0;
 
 /**
  * @typedef {Object} MakeEVMTransactionParams
- * @property {import('@agoric/smart-wallet/src/smartWallet.js').SmartWallet} wallet - The smart wallet instance.
- * @property {string} previousOffer - The ID of the previous offer to continue from.
- * @property {string} methodName - The method name to call in the contract.
- * @property {any} offerArgs - The arguments required for the EVM transaction.
- * @property {any} proposal - The proposal describing what the user wants to give, receive, and the exit conditions.
+ * @property {import('@agoric/smart-wallet/src/smartWallet.js').SmartWallet} wallet
+ * @property {string} previousOffer
+ * @property {string} methodName
+ * @property {any} offerArgs
+ * @property {any} proposal
  */
 
 /**
  * Initiates an EVM transaction offer through the smart wallet.
  *
- * @param {MakeEVMTransactionParams} params - Parameters for the transaction.
- * @returns {Promise<string>} The ID of the newly created offer.
+ * @param {MakeEVMTransactionParams} params
+ * @returns {Promise<string>}
  */
 const makeEVMTransaction = async ({
   wallet,
@@ -60,13 +84,8 @@ const makeEVMTransaction = async ({
   return id;
 };
 
-const test: TestFn<WalletFactoryTestContext> = anyTest;
-
 test.before(async t => {
-  t.context = await makeWalletFactoryContext(
-    t,
-    '@agoric/vm-config/decentral-itest-orchestration-config.json',
-  );
+  t.context = await makeTestContext(t);
 
   const { evalProposal, buildProposal } = t.context;
 
@@ -356,15 +375,13 @@ test.beforeEach(t => {
 
 test.serial('makeAccount via axelarGmp', async t => {
   const {
-    walletFactoryDriver,
     storage,
+    wallet,
     bridgeUtils: { runInbound },
   } = t.context;
 
   t.log('making offer');
 
-  const wallet =
-    await walletFactoryDriver.provideSmartWallet('agoric1makeAccount');
   await wallet.sendOffer({
     id: 'axelarMakeAccountCall',
     invitationSpec: {
