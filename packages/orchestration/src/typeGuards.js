@@ -53,7 +53,7 @@ export const ChainAddressShape = CosmosChainAddressShape;
  *
  * @type {TypedPattern<AccountIdArg>}
  */
-export const AccountArgShape = M.or(M.string(), CosmosChainAddressShape);
+export const AccountIdArgShape = M.or(M.string(), CosmosChainAddressShape);
 
 /** @type {TypedPattern<Proto3Msg>} */
 export const Proto3Shape = { typeUrl: M.string(), value: M.string() };

@@ -5,7 +5,7 @@ import { M } from '@endo/patterns';
 
 import { VowShape } from '@agoric/vow';
 import {
-  AccountArgShape,
+  AccountIdArgShape,
   ChainInfoShape,
   CoinShape,
   CosmosChainAddressShape,
@@ -232,9 +232,9 @@ const ChainHubI = M.interface('ChainHub', {
     M.or(DenomDetailShape, M.undefined()),
   ),
   getDenom: M.call(BrandShape).returns(M.or(M.string(), M.undefined())),
-  makeChainAddress: M.call(AccountArgShape).returns(CosmosChainAddressShape),
-  resolveAccountId: M.call(AccountArgShape).returns(M.string()),
-  makeTransferRoute: M.call(AccountArgShape, DenomAmountShape, M.string())
+  makeChainAddress: M.call(AccountIdArgShape).returns(CosmosChainAddressShape),
+  resolveAccountId: M.call(AccountIdArgShape).returns(M.string()),
+  makeTransferRoute: M.call(AccountIdArgShape, DenomAmountShape, M.string())
     .optional(ForwardOptsShape)
     .returns(M.or(M.undefined(), TransferRouteShape)),
 });
