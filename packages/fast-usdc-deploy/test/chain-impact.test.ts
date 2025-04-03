@@ -41,17 +41,17 @@ import {
 
 const nodeRequire = createRequire(import.meta.url);
 
-const test: TestFn<
-  WalletFactoryTestContext & {
-    harness: ReturnType<typeof makeSwingsetHarness>;
-    oracles: TxOracle[];
-    toNoble: MockChannel;
-    fromNoble: IBCChannelID;
-    observations: Array<{ id: unknown } & Record<string, unknown>>;
-    writeStats?: (txt: string) => Promise<void>;
-    doCoreEval: (specifier: string) => Promise<void>;
-  }
-> = anyTest;
+type TestContext = WalletFactoryTestContext & {
+  harness: ReturnType<typeof makeSwingsetHarness>;
+  oracles: TxOracle[];
+  toNoble: MockChannel;
+  fromNoble: IBCChannelID;
+  observations: Array<{ id: unknown } & Record<string, unknown>>;
+  writeStats?: (txt: string) => Promise<void>;
+  doCoreEval: (specifier: string) => Promise<void>;
+};
+
+const test: TestFn<TestContext> = anyTest;
 
 type SmartWallet = Awaited<
   ReturnType<
@@ -62,8 +62,8 @@ type SmartWallet = Awaited<
 const config = '@agoric/vm-config/decentral-itest-orchestration-config.json';
 const nobleAgoricChannelId = 'channel-21';
 
-const range = (n: Number) => Array.from(Array(n).keys());
-const prefixedRange = (n: Number, pfx: string) =>
+const range = (n: number) => Array.from(Array(n).keys());
+const prefixedRange = (n: number, pfx: string) =>
   range(n).map(ix => `${pfx}${ix}`);
 
 test.before(async t => {
@@ -96,8 +96,8 @@ test.before(async t => {
   const writeStats = STATS_FILE
     ? (txt: string) => writeFile(STATS_FILE, txt)
     : undefined;
-  const toNoble = makeIBCChannel(ctx.bridgeUtils, 'channel-62');
   const fromNoble = 'channel-21';
+  const toNoble = makeIBCChannel(ctx.bridgeUtils, 'channel-62', fromNoble);
 
   const { log } = console;
   const doCoreEval = async (specifier: string) => {
@@ -151,7 +151,7 @@ const makeTxOracle = (
         proposal: {},
       });
     },
-    async submit(evidence: CctpTxEvidence, nonce: Number) {
+    async submit(evidence: CctpTxEvidence, nonce: number) {
       const wallet = await walletSync.promise;
       const it: OfferSpec = {
         id: `submit-evidence-${nonce}`,
@@ -236,11 +236,12 @@ const makeLP = (ctx: WalletFactoryTestContext, addr: string) => {
 };
 
 const makeCctp = (
-  ctx: WalletFactoryTestContext,
+  ctx: TestContext,
   forwardingChannel: IBCChannelID,
   destinationChannel: IBCChannelID,
 ) => {
   const { runInbound } = ctx.bridgeUtils;
+  const { toNoble } = ctx;
 
   const modern = new Date('2020-01-01');
 
@@ -274,7 +275,7 @@ const makeCctp = (
         BridgeId.VTRANSFER,
 
         buildVTransferEvent({
-          sequence: '1', // arbitrary; not used
+          sequence: toNoble.useSequence(),
           amount,
           denom: 'uusdc',
           sender,
@@ -353,9 +354,10 @@ const makeUA = (
 const makeIBCChannel = (
   bridgeUtils: WalletFactoryTestContext['bridgeUtils'],
   sourceChannel: IBCChannelID,
+  destinationChannel: IBCChannelID,
 ) => {
   const { runInbound } = bridgeUtils;
-  let sequence = 0;
+  let sequence = 0n;
   return harden({
     async ack(sender: string) {
       await runInbound(
@@ -364,16 +366,20 @@ const makeIBCChannel = (
           sender,
           target: sender,
           sourceChannel,
-          sequence: `${(sequence += 1)}`,
+          destinationChannel,
+          sequence: `${Number((sequence += 1n))}`,
         }),
       );
+    },
+    useSequence() {
+      return (sequence += 1n);
     },
   });
 };
 type MockChannel = ReturnType<typeof makeIBCChannel>;
 
 const makeSimulation = async (
-  ctx: WalletFactoryTestContext,
+  ctx: TestContext,
   toNoble: MockChannel,
   oracles: TxOracle[],
 ) => {
@@ -420,6 +426,11 @@ const makeSimulation = async (
       await toNoble.ack(poolAccount);
       await eventLoopIteration();
 
+      t.like(fastQ.txStatus(evidence.txHash), [
+        { status: 'OBSERVED' },
+        { status: 'ADVANCING' },
+        { status: 'ADVANCED' },
+      ]);
       // in due course, minted USDC arrives
       await cctp.mint(
         amount,
@@ -730,7 +741,7 @@ test.serial('analyze observations', async t => {
   const { observations, writeStats } = t.context;
   if (writeStats) {
     const lines = observations.map(
-      (o, ix) => JSON.stringify({ ix, ...o }, stringifyBigint) + '\n',
+      (o, ix) => `${JSON.stringify({ ix, ...o }, stringifyBigint)}\n`,
     );
     await writeStats(lines.join(''));
   }
