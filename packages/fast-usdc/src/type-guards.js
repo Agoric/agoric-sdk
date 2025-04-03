@@ -1,7 +1,6 @@
 import { AmountShape, BrandShape, RatioShape } from '@agoric/ertp';
 import { M } from '@endo/patterns';
 import {
-  CosmosChainInfoShape,
   DenomDetailShape,
   DenomShape,
 } from '@agoric/orchestration/src/typeGuards.js';
@@ -179,16 +178,6 @@ export const FeedPolicyShape = M.splitRecord(
 );
 harden(FeedPolicyShape);
 
-/** @type {TypedPattern<FastUSDCConfig>} */
-export const FastUSDCConfigShape = M.splitRecord({
-  terms: FastUSDCTermsShape,
-  oracles: M.recordOf(M.string(), M.string()),
-  feeConfig: FeeConfigShape,
-  feedPolicy: FeedPolicyShape,
-  chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
-  assetInfo: M.arrayOf([DenomShape, DenomDetailShape]),
-});
-
 /**
  * The version of CosmosChainInfoShape that matches the `valueShape` used in FUSDC's ChainHub's `chainInfos` mapStore.
  * @type {TypedPattern<CosmosChainInfo>}
@@ -206,3 +195,13 @@ export const CosmosChainInfoShapeV1 = M.splitRecord(
     pfmEnabled: M.boolean(),
   },
 );
+
+/** @type {TypedPattern<FastUSDCConfig>} */
+export const FastUSDCConfigShape = M.splitRecord({
+  terms: FastUSDCTermsShape,
+  oracles: M.recordOf(M.string(), M.string()),
+  feeConfig: FeeConfigShape,
+  feedPolicy: FeedPolicyShape,
+  chainInfo: M.recordOf(M.string(), CosmosChainInfoShapeV1),
+  assetInfo: M.arrayOf([DenomShape, DenomDetailShape]),
+});
