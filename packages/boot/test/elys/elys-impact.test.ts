@@ -30,11 +30,27 @@ import {
 
 const nodeRequire = createRequire(import.meta.url);
 
-// Define types for Elys contract
+// Define types for Elys contract based on actual implementation
 interface ElysContractRecord {
-  settlementAccount: string;
-  poolAccount: string;
-  // Add other Elys-specific fields
+  localAccountAddress: string;
+  strideICAAddress: string;
+  elysICAAddress: string;
+  supportedHostChains: Record<string, SupportedHostChainShape>;
+  elysToAgoricChannel: string;
+  AgoricToElysChannel: string;
+}
+
+interface SupportedHostChainShape {
+  hostToAgoricChannel: string;
+  nativeDenom: string;
+  ibcDenomOnAgoric: string;
+  ibcDenomOnStride: string;
+  hostICAAccountAddress: {
+    chainId: string;
+    encoding: string;
+    value: string;
+  };
+  bech32Prefix: string;
 }
 
 interface ElysPoolMetrics {
@@ -42,7 +58,7 @@ interface ElysPoolMetrics {
     numerator: { value: bigint };
   };
   encumberedBalance: { value: bigint };
-  // Add other Elys-specific metrics
+  stTokensInPool: { value: bigint };
 }
 
 interface ElysStakeInfo {
@@ -50,6 +66,7 @@ interface ElysStakeInfo {
   validator: string;
   delegator: string;
   status: string;
+  hostChain: string;
 }
 
 interface ElysTransactionInfo {
@@ -58,6 +75,19 @@ interface ElysTransactionInfo {
   amount: bigint;
   sender: string;
   recipient: string;
+  denom: string;
+}
+
+interface FeeConfigShape {
+  feeCollector: string;
+  onBoardRate: {
+    nominator: bigint;
+    denominator: bigint;
+  };
+  offBoardRate: {
+    nominator: bigint;
+    denominator: bigint;
+  };
 }
 
 const test: TestFn<
@@ -80,6 +110,7 @@ type SmartWallet = Awaited<
 
 const config = '@agoric/vm-config/decentral-itest-elys-config.json';
 const elysAgoricChannelId = 'channel-42';
+const strideAgoricChannelId = 'channel-44';
 
 const range = (n: Number) => Array.from(Array(n).keys());
 const prefixedRange = (n: Number, pfx: string) =>
@@ -151,11 +182,14 @@ const makeElysValidator = (
   ctx: WalletFactoryTestContext,
   name: string,
   addr: string,
+  hostChain: string = 'cosmos',
 ) => {
   const { agoricNamesRemotes, walletFactoryDriver: wfd } = ctx;
   const walletSync = makePromiseKit<SmartWallet>();
 
   return harden({
+    name,
+    hostChain,
     async provision() {
       walletSync.resolve(wfd.provideSmartWallet(addr));
       return walletSync.promise;
@@ -180,7 +214,7 @@ const makeElysValidator = (
           source: 'continuing',
           previousOffer: 'claim-validator-invitation',
           invitationMakerName: 'UpdateStatus',
-          invitationArgs: [status],
+          invitationArgs: [status, this.hostChain],
         },
         proposal: {},
       };
@@ -206,10 +240,20 @@ const makeElysQuery = (ctx: WalletFactoryTestContext) => {
       const it: ElysContractRecord = JSON.parse(values.at(-1)!);
       return it;
     },
-    stakeStatus: (txHash: string) =>
+    stakeStatus: (txHash: string, hostChain: string) =>
       storage
-        .getValues(`published.elys.stakes.${txHash}`)
+        .getValues(`published.elys.stakes.${hostChain}.${txHash}`)
         .map(txt => defaultMarshaller.fromCapData(JSON.parse(txt))),
+    feeConfig: () => {
+      const config: FeeConfigShape = defaultMarshaller.fromCapData(
+        JSON.parse(storage.getValues('published.elys.feeConfig').at(-1)!),
+      );
+      return config;
+    },
+    supportedHostChains: () => {
+      const record = storage.getValues('published.elys.supportedHostChains');
+      return record.map(txt => defaultMarshaller.fromCapData(JSON.parse(txt)));
+    }
   });
 };
 
@@ -229,7 +273,7 @@ const makeStaker = (ctx: WalletFactoryTestContext, addr: string) => {
   };
 
   return harden({
-    async stake(value: bigint, validator: string, nonce: number) {
+    async stake(value: bigint, validator: string, hostChain: string, nonce: number) {
       const offerId = `staker-stake-${nonce}`;
       const offerSpec = {
         id: offerId,
@@ -240,7 +284,7 @@ const makeStaker = (ctx: WalletFactoryTestContext, addr: string) => {
         },
         proposal: {
           give: { Tokens: { value } },
-          want: { Receipt: { validator } },
+          want: { Receipt: { validator, hostChain } },
         },
       };
       const staker = await stakerP;
@@ -248,7 +292,7 @@ const makeStaker = (ctx: WalletFactoryTestContext, addr: string) => {
       await pollOffer(staker, offerId);
       return offerSpec;
     },
-    async unstake(value: bigint, validator: string, nonce: number) {
+    async unstake(value: bigint, validator: string, hostChain: string, nonce: number) {
       const offerId = `staker-unstake-${nonce}`;
       const offerSpec = {
         id: offerId,
@@ -258,7 +302,45 @@ const makeStaker = (ctx: WalletFactoryTestContext, addr: string) => {
           description: 'unstake tokens',
         },
         proposal: {
-          give: { Receipt: { validator, value } },
+          give: { Receipt: { validator, hostChain, value } },
+          want: { Tokens: { value } },
+        },
+      };
+      const staker = await stakerP;
+      await staker.sendOffer(offerSpec);
+      await pollOffer(staker, offerId);
+      return offerSpec;
+    },
+    async liquidStake(value: bigint, hostChain: string, nonce: number) {
+      const offerId = `staker-liquid-stake-${nonce}`;
+      const offerSpec = {
+        id: offerId,
+        invitationSpec: {
+          source: 'purse',
+          instance: agoricNamesRemotes.instance.elys,
+          description: 'liquid stake tokens',
+        },
+        proposal: {
+          give: { Tokens: { value } },
+          want: { StTokens: { hostChain } },
+        },
+      };
+      const staker = await stakerP;
+      await staker.sendOffer(offerSpec);
+      await pollOffer(staker, offerId);
+      return offerSpec;
+    },
+    async redeemStake(value: bigint, hostChain: string, nonce: number) {
+      const offerId = `staker-redeem-stake-${nonce}`;
+      const offerSpec = {
+        id: offerId,
+        invitationSpec: {
+          source: 'purse',
+          instance: agoricNamesRemotes.instance.elys,
+          description: 'redeem stake tokens',
+        },
+        proposal: {
+          give: { StTokens: { hostChain, value } },
           want: { Tokens: { value } },
         },
       };
@@ -283,13 +365,35 @@ const makeElysIBC = (
       sender: string,
       target: string,
       receiver: string,
+      denom: string = 'uelys',
     ) {
       await runInbound(
         BridgeId.VTRANSFER,
         buildVTransferEvent({
           sequence: '1', // arbitrary; not used
           amount,
-          denom: 'uelys',
+          denom,
+          sender,
+          target,
+          receiver,
+          sourceChannel: forwardingChannel,
+          destinationChannel,
+        }),
+      );
+    },
+    async transferStTokens(
+      amount: bigint,
+      sender: string,
+      target: string,
+      receiver: string,
+      hostChain: string,
+    ) {
+      await runInbound(
+        BridgeId.VTRANSFER,
+        buildVTransferEvent({
+          sequence: '1', // arbitrary; not used
+          amount,
+          denom: `st${hostChain}`,
           sender,
           target,
           receiver,
@@ -303,35 +407,104 @@ const makeElysIBC = (
 
 const makeUser = (
   address: string,
-  settlementAccount: string,
+  localAccountAddress: string,
   elysAgoricChannelId: IBCChannelID,
   elysQ: ReturnType<typeof makeElysQuery>,
   elysIBC: ReturnType<typeof makeElysIBC>,
   validators: ElysValidator[],
+  supportedHostChains: Record<string, SupportedHostChainShape>,
 ) => {
   return harden({
     async stakeTokens(
       t: ExecutionContext,
       amount: bigint,
       validatorIndex: number,
+      hostChain: string,
       nonce: number,
     ) {
       const validator = validators[validatorIndex % validators.length];
-      const recipientAddress = encodeAddressHook(settlementAccount, { validator: validator.name });
+      const hostChainInfo = supportedHostChains[hostChain];
+      const recipientAddress = encodeAddressHook(localAccountAddress, { 
+        validator: validator.name,
+        hostChain,
+      });
       
       // Simulate IBC transfer of tokens to be staked
       await elysIBC.transferTokens(
         amount,
         address,
-        settlementAccount,
+        localAccountAddress,
         recipientAddress,
+        hostChainInfo.nativeDenom,
       );
       
       // Check stake status
       const txHash = `tx-${nonce}-${address}`;
-      t.like(elysQ.stakeStatus(txHash), [
+      t.like(elysQ.stakeStatus(txHash, hostChain), [
         { status: 'PENDING' },
         { status: 'STAKED' },
+      ]);
+
+      return { recipientAddress, txHash };
+    },
+    
+    async liquidStakeTokens(
+      t: ExecutionContext,
+      amount: bigint,
+      hostChain: string,
+      nonce: number,
+    ) {
+      const hostChainInfo = supportedHostChains[hostChain];
+      const recipientAddress = encodeAddressHook(localAccountAddress, { 
+        hostChain,
+        action: 'liquidStake',
+      });
+      
+      // Simulate IBC transfer of tokens to be liquid staked
+      await elysIBC.transferTokens(
+        amount,
+        address,
+        localAccountAddress,
+        recipientAddress,
+        hostChainInfo.nativeDenom,
+      );
+      
+      // Check liquid stake status
+      const txHash = `liquid-${nonce}-${address}`;
+      t.like(elysQ.stakeStatus(txHash, hostChain), [
+        { status: 'PENDING' },
+        { status: 'LIQUID_STAKED' },
+      ]);
+
+      return { recipientAddress, txHash };
+    },
+    
+    async redeemStTokens(
+      t: ExecutionContext,
+      amount: bigint,
+      hostChain: string,
+      nonce: number,
+    ) {
+      const hostChainInfo = supportedHostChains[hostChain];
+      const recipientAddress = encodeAddressHook(localAccountAddress, { 
+        hostChain,
+        action: 'redeem',
+      });
+      
+      // Simulate IBC transfer of stTokens to be redeemed
+      await elysIBC.transferStTokens(
+        amount,
+        address,
+        localAccountAddress,
+        recipientAddress,
+        hostChainInfo.nativeDenom,
+      );
+      
+      // Check redeem status
+      const txHash = `redeem-${nonce}-${address}`;
+      t.like(elysQ.stakeStatus(txHash, hostChain), [
+        { status: 'PENDING' },
+        { status: 'REDEEMED' },
       ]);
 
       return { recipientAddress, txHash };
@@ -367,28 +540,40 @@ const makeSimulation = async (
   validators: ElysValidator[],
 ) => {
   const elysIBC = makeElysIBC(ctx, elysAgoricChannelId, 'channel-43');
-
   const elysQ = makeElysQuery(ctx);
+  
+  const contractRecord = elysQ.contractRecord();
+  const supportedHostChains = elysQ.supportedHostChains().at(-1) || {};
+  
   const stakers = range(5).map(ix =>
     makeStaker(ctx, encodeBech32('agoric', [100, ix])),
   );
-  const { settlementAccount, poolAccount } = elysQ.contractRecord();
+  
   const users = prefixedRange(10, `user-`).map(addr =>
     makeUser(
       addr,
-      settlementAccount,
+      contractRecord.localAccountAddress,
       elysAgoricChannelId,
       elysQ,
       elysIBC,
       validators,
+      supportedHostChains,
     ),
   );
 
+  // Get list of host chains from supported chains
+  const hostChains = Object.keys(supportedHostChains);
+  
   return harden({
     validators,
     stakers,
     users,
+    hostChains,
     async iteration(t: ExecutionContext, iter: number) {
+      // Select host chain for this iteration
+      const hostChainIx = iter % hostChains.length;
+      const hostChain = hostChains[hostChainIx];
+      
       // Stake tokens
       const stakerIx = iter % stakers.length;
       const staker = stakers[stakerIx];
@@ -397,8 +582,7 @@ const makeSimulation = async (
       
       // Stake amount increases with each iteration to simulate growing network
       const stakeAmount = BigInt((stakerIx + 1) * 1000) * 1_000_000n * BigInt(iter + 1);
-      await staker.stake(stakeAmount, validator.name, iter);
-
+      
       // Update validator status periodically
       if (iter % 3 === 0) {
         await validator.updateStatus('active', iter);
@@ -414,21 +598,56 @@ const makeSimulation = async (
       const user = users[who];
       const amount = BigInt(Math.round(part * (1 - who * 0.05)));
 
-      // User stakes tokens
-      const { txHash } = await user.stakeTokens(
-        t, 
-        amount, 
-        validatorIx,
-        iter * users.length + who
-      );
+      // Alternate between different operations based on iteration
+      if (iter % 3 === 0) {
+        // Regular staking
+        await staker.stake(stakeAmount, validator.name, hostChain, iter);
+        
+        // User stakes tokens
+        await user.stakeTokens(
+          t, 
+          amount, 
+          validatorIx,
+          hostChain,
+          iter * users.length + who
+        );
+      } else if (iter % 3 === 1) {
+        // Liquid staking
+        await staker.liquidStake(stakeAmount, hostChain, iter);
+        
+        // User liquid stakes tokens
+        await user.liquidStakeTokens(
+          t,
+          amount,
+          hostChain,
+          iter * users.length + who
+        );
+      } else {
+        // Redeeming stTokens (if we're past the first few iterations)
+        if (iter > 5) {
+          const redeemAmount = BigInt(Math.round(Number(stakeAmount) * 0.3));
+          await staker.redeemStake(redeemAmount, hostChain, iter);
+          
+          // User redeems stTokens
+          await user.redeemStTokens(
+            t,
+            BigInt(Math.round(Number(amount) * 0.3)),
+            hostChain,
+            iter * users.length + who
+          );
+        } else {
+          // Fall back to regular staking for early iterations
+          await staker.stake(stakeAmount, validator.name, hostChain, iter);
+        }
+      }
 
-      await toElys.ack(poolAccount);
+      await toElys.ack(contractRecord.localAccountAddress);
       await eventLoopIteration();
 
       // Periodically unstake tokens to test that flow
       if (iter > 5 && iter % 4 === 0) {
         const unstakeAmount = BigInt(Math.round(Number(stakeAmount) * 0.3));
-        await staker.unstake(unstakeAmount, validator.name, iter);
+        await staker.unstake(unstakeAmount, validator.name, hostChain, iter);
       }
 
       await eventLoopIteration();
@@ -508,9 +727,25 @@ test.serial('start-elys', async t => {
   );
   bridgeUtils.setBech32Prefix('elys');
 
+  // Set up fee config for the contract
+  const feeConfig = {
+    feeCollector: 'elys1feecollector',
+    onBoardRate: {
+      nominator: 5n,
+      denominator: 1000n,
+    },
+    offBoardRate: {
+      nominator: 3n,
+      denominator: 1000n,
+    },
+  };
+
+  // Set up allowed chains
+  const allowedChains = ['cosmos', 'osmosis', 'juno'];
+
   const materials = buildProposal(
     '@agoric/orchestration/scripts/elys/start-elys.build.js',
-    ['--net', 'MAINNET'],
+    ['--net', 'MAINNET', '--fee-config', JSON.stringify(feeConfig), '--allowed-chains', allowedChains.join(',')],
   );
   await evalProposal(materials);
   refreshAgoricNamesRemotes();
@@ -552,6 +787,7 @@ test.serial('iterate simulation several times', async t => {
   async function doCleanupAndSnapshot(id) {
     slogSender?.({ type: 'cleanup-begin', id });
     await doCoreEval('@agoric/orchestration/scripts/elys/delete-completed-stakes.js');
+    await doCoreEval('@agoric/orchestration/scripts/elys/cleanup-expired-transactions.js');
     while (true) {
       const beforeReapPos = previousReapPos;
       previousReapPos = controller.reapAllVats(beforeReapPos);
