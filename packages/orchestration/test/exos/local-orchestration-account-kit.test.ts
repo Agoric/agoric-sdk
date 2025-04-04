@@ -413,8 +413,8 @@ test('send', async t => {
   const toAddress = {
     value: 'agoric1EOAAccAddress',
     chainId: 'agoric-3',
-    encoding: 'bech32' as const,
-  };
+    encoding: 'bech32',
+  } as const;
 
   t.log(`send 10 bld to ${toAddress.value}`);
   await VE(account).send(toAddress, stake.units(10));

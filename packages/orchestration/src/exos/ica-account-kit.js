@@ -51,7 +51,9 @@ export const IcaAccountI = M.interface('IcaAccount', {
  *   localAddress: LocalIbcAddress | undefined;
  *   requestedRemoteAddress: string;
  *   remoteAddress: RemoteIbcAddress | undefined;
- *   chainAddress: CosmosChainAddress | undefined;
+ *   chainAddress:
+ *     | (CosmosChainAddress | { value: typeof UNPARSABLE_CHAIN_ADDRESS })
+ *     | undefined;
  *   isInitiatingClose: boolean;
  * }} State
  *   Internal to the IcaAccountKit exo
@@ -103,6 +105,7 @@ export const prepareIcaAccountKit = (zone, { watch, asVow }) =>
       account: {
         /** @returns {CosmosChainAddress} */
         getAddress() {
+          // @ts-expect-error value may be UNPARSABLE_CHAIN_ADDRESS
           return NonNullish(
             this.state.chainAddress,
             'ICA channel creation acknowledgement not yet received.',

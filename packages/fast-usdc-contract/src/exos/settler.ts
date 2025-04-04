@@ -37,6 +37,8 @@ import type {
 } from '@agoric/fast-usdc/src/types.js';
 import type {
   AccountId,
+  AccountIdArg,
+  Bech32Address,
   ChainHub,
   CosmosChainAddress,
   Denom,
@@ -59,7 +61,7 @@ const decodeEventPacket = (
   { data }: IBCPacket,
   remoteDenom: string,
 ):
-  | { nfa: NobleAddress; amount: bigint; EUD: string }
+  | { nfa: NobleAddress; amount: bigint; EUD: AccountId | Bech32Address }
   | { error: unknown[] } => {
   // NB: may not be a FungibleTokenPacketData or even JSON
   let tx: FungibleTokenPacketData;
@@ -360,15 +362,11 @@ export const prepareSettler = (
         /**
          * The intended payee received an advance from the pool. When the funds
          * are minted, disburse them to the pool and fee seats.
-         *
-         * @param {EvmHash} txHash
-         * @param {NatValue} fullValue
-         * @param {AccountId | CosmosChainAddress['value']} EUD
          */
         async disburse(
           txHash: EvmHash,
           fullValue: NatValue,
-          EUD: AccountId | CosmosChainAddress['value'],
+          EUD: AccountId | Bech32Address,
         ) {
           const { repayer, settlementAccount } = this.state;
           const received = AmountMath.make(USDC, fullValue);
@@ -405,7 +403,11 @@ export const prepareSettler = (
          * @param {NatValue} fullValue
          * @param {string} EUD
          */
-        forward(txHash: EvmHash, fullValue: NatValue, EUD: string) {
+        forward(
+          txHash: EvmHash,
+          fullValue: NatValue,
+          EUD: AccountId | Bech32Address,
+        ) {
           const { settlementAccount } = this.state;
           log('forwarding', fullValue, 'to', EUD, 'for', txHash);
 
