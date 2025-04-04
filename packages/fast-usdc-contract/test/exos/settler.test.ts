@@ -5,12 +5,14 @@ import {
   decodeAddressHook,
   encodeAddressHook,
 } from '@agoric/cosmic-proto/address-hooks.js';
+import { AddressHookShape } from '@agoric/fast-usdc/src/type-guards.js';
 import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import type { Zone } from '@agoric/zone';
 import type { EReturn } from '@endo/far';
+import { mustMatch } from '@agoric/store';
 import type {
   AmountKeywordRecord,
   TransferPart,
@@ -133,10 +135,9 @@ const makeTestContext = async t => {
       const { txHash } = evidence;
       const { forwardingAddress, amount } = evidence.tx;
       const { recipientAddress } = evidence.aux;
-      const { EUD } = decodeAddressHook(recipientAddress).query;
-      if (typeof EUD !== 'string') {
-        throw Error(`EUD not found in ${recipientAddress}`);
-      }
+      const decoded = decodeAddressHook(recipientAddress);
+      mustMatch(decoded, AddressHookShape);
+      const { EUD } = decoded.query;
       return harden({
         txHash,
         forwardingAddress,
@@ -875,7 +876,7 @@ test('bad packet data', async t => {
   t.deepEqual(inspectLogs().at(-1), [
     'invalid event packet',
     [
-      'no EUD parameter',
+      'no query params',
       'agoric10rchps2sfet5lleu7xhs6ztgeehkm5lz5rpkz0cqzs95zdge',
     ],
   ]);
