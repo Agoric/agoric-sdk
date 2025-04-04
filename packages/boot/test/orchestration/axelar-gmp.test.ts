@@ -380,7 +380,8 @@ test.serial('makeAccount via axelarGmp', async t => {
     bridgeUtils: { runInbound },
   } = t.context;
 
-  t.log('making offer');
+  t.log('create an LCA');
+  const { ATOM, BLD } = t.context.agoricNamesRemotes.brand;
 
   await wallet.sendOffer({
     id: 'axelarMakeAccountCall',
@@ -515,32 +516,29 @@ test.serial('makeAccount via axelarGmp', async t => {
     },
   });
 
-  t.log('sendGmp via LCA');
+  t.log('make offer with unregistered vbank asset');
 
-  const offerArgs = [
-    {
-      destinationAddress: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
-      type: 3,
-      destinationEVMChain: 'Ethereum',
+  await makeEVMTransaction({
+    wallet,
+    previousOffer: previousOfferId,
+    methodName: 'sendGmp',
+    offerArgs: [
+      {
+        destinationAddress: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
+        type: 3,
+        destinationEVMChain: 'Ethereum',
+      },
+    ],
+    proposal: {
+      give: { ATOM: { brand: ATOM, value: 1n } },
     },
-  ];
-
-  const { ATOM } = t.context.agoricNamesRemotes.brand;
-
-  await t.throwsAsync(
-    () =>
-      makeEVMTransaction({
-        wallet,
-        previousOffer: previousOfferId,
-        methodName: 'sendGmp',
-        offerArgs,
-        proposal: {
-          give: { ATOM: { brand: ATOM, value: 1n } },
-        },
-      }),
-    {
-      message:
-        'no denom detail for: "ibc/toyatom" on "agoric". ensure it is registered in chainHub.',
-    },
-  );
+  }).catch(_err => {
+    t.like(wallet.getLatestUpdateRecord(), {
+      status: {
+        id: `evmTransaction${evmTransactionCounter - 1}`,
+        error:
+          'Error: no denom detail for: "ibc/toyatom" on "agoric". ensure it is registered in chainHub.',
+      },
+    });
+  });
 });
