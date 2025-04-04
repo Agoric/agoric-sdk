@@ -76,18 +76,18 @@ func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
 }
 
 // buildProposalStepWithArgs returns a CoreProposal representing invocation of
-// the specified module-specific entry point with arbitrary JSONable arguments
+// the specified module-specific entry point with arbitrary Jsonable arguments
 // provided after core-eval powers.
-func buildProposalStepWithArgs(moduleName string, entrypoint string, args ...any) (vm.CoreProposalStep, error) {
+func buildProposalStepWithArgs(moduleName string, entrypoint string, args ...vm.Jsonable) (vm.CoreProposalStep, error) {
 	argsBz, err := json.Marshal(args)
 	if err != nil {
 		return nil, err
 	}
 
 	mea := struct {
-		Module     string
-		Entrypoint string
-		Args       json.RawMessage
+		Module     string          `json:"module"`
+		Entrypoint string          `json:"entrypoint"`
+		Args       json.RawMessage `json:"args"`
 	}{
 		Module:     moduleName,
 		Entrypoint: entrypoint,
@@ -139,8 +139,11 @@ func buildProposalStepFromScript(targetUpgrade string, builderScript string) (vm
 	return buildProposalStepWithArgs(
 		builderScript,
 		"defaultProposalBuilder",
-		map[string]any{
-			"variant": variant,
+		// Map iteration is randomised; use an anonymous struct instead.
+		struct {
+			Variant string `json:"variant"`
+		}{
+			Variant: variant,
 		},
 	)
 }
@@ -164,8 +167,8 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 
 			upgradeIbcVatStep, err :=
 				buildProposalStepWithArgs(
-					"@agoric/builders/scripts/vats/generic.js",
-					"genericProposalBuilder",
+					"@agoric/builders/scripts/vats/upgrade-vats.js",
+					"upgradeVatsProposalBuilder",
 					// Map iteration is randomised; use an anonymous struct instead.
 					struct {
 						Ibc string
