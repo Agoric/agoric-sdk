@@ -110,12 +110,29 @@ export const AddressHookShape = {
 harden(AddressHookShape);
 
 const NatAmountShape = { brand: BrandShape, value: M.nat() };
+
 /** @type {TypedPattern<FeeConfig>} */
-export const FeeConfigShape = {
-  flat: NatAmountShape,
-  variableRate: RatioShape,
-  contractRate: RatioShape,
-};
+export const FeeConfigShape = M.splitRecord(
+  {
+    flat: NatAmountShape,
+    variableRate: RatioShape,
+    contractRate: RatioShape,
+  },
+  {
+    destinationOverrides: M.recordOf(
+      M.string(),
+      M.splitRecord(
+        {},
+        {
+          flat: NatAmountShape,
+          variableRate: RatioShape,
+          contractRate: RatioShape,
+        },
+      ),
+    ),
+  },
+  {},
+);
 harden(FeeConfigShape);
 
 /** @type {TypedPattern<PoolMetrics>} */

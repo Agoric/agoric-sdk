@@ -7,6 +7,7 @@ import type {
   DenomDetail,
   BaseChainInfo,
   KnownNamespace,
+  CaipChainId,
 } from '@agoric/orchestration';
 import type { IBCChannelID } from '@agoric/vats';
 import type { Amount } from '@agoric/ertp';
@@ -104,6 +105,11 @@ export type FeeConfig = {
   variableRate: Ratio;
   /** proportion of fees that goes to the contract (remaining goes to LPs) */
   contractRate: Ratio;
+  /** Optional destination-specific overrides */
+  destinationOverrides?: Record<
+    CaipChainId,
+    Partial<Omit<FeeConfig, 'destinationOverrides'>>
+  >;
 };
 
 export interface PoolStats {
