@@ -140,8 +140,10 @@ jobs:
           path: ./agoric-sdk
       - uses: ./agoric-sdk/.github/actions/restore-node
         with:
-          # XXX loadgen not compatible with 18.19 https://github.com/Agoric/agoric-sdk/pull/8365#issuecomment-1848003597
-          node-version: 18.18
+          # NB the Dockerfile.sdk based images must match this node version
+          # The node version inside ansible deployment (prepare-machine.yml)
+          # should also match this node version
+          node-version: 20
           path: ./agoric-sdk
       - name: Build cosmic-swingset dependencies
         working-directory: ./agoric-sdk
