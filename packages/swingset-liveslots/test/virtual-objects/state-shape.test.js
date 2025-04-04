@@ -215,7 +215,7 @@ test('durable stateShape refcounts', async t => {
   t.is(ls2.testHooks.getReachableRefCount(vref2), 1);
 });
 
-test.failing('durable stateShape must match or extend', async t => {
+test('durable stateShape must match or extend', async t => {
   const store1 = new Map();
   const { syscall: sc1, log: log1 } = buildSyscall({ kvStore: store1 });
   const gcTools = makeMockGC();
