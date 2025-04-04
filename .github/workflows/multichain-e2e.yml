@@ -25,6 +25,7 @@ jobs:
     with:
       config: config.yaml
       test_command: yarn test:main
+      osmosis_pool: true
 
   fast-usdc-hermes:
     name: Fast USDC - Hermes

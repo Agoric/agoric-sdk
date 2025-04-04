@@ -10,6 +10,11 @@ on:
         required: true
         type: string
         description: 'Test command to run (e.g., "test:main" or "test:fast-usdc")'
+      osmosis_pool:
+        description: 'Condition to open liquidity pool on osmosis'
+        default: false
+        required: false
+        type: boolean
 
 jobs:
   multichain-e2e:
@@ -112,6 +117,11 @@ jobs:
 
       - name: Register Interchain Bank Assets
         run: make register-bank-assets
+        working-directory: ./agoric-sdk/multichain-testing
+
+      - name: Open Osmosis Liquidity Pool
+        run: make open-liquidity-pool
+        if: ${{ inputs.osmosis_pool == true }}
         working-directory: ./agoric-sdk/multichain-testing
 
       - name: Run @agoric/multichain-testing E2E Tests
