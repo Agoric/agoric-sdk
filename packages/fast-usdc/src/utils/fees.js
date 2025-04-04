@@ -33,13 +33,12 @@ const { add, isGTE, subtract } = AmountMath;
  * @template {keyof Omit<FeeConfig, 'destinationOverrides'>} K
  * @param {FeeConfig} feeConfig
  * @param {K} key
- * @param {AccountId} [destination]
+ * @param {AccountId} destination
  * @returns {FeeConfig[K]}
  */
 const getConfigValue = (feeConfig, key, destination) => {
-  const chainId = destination ? chainOfAccount(destination) : undefined;
+  const chainId = chainOfAccount(destination);
   if (
-    chainId &&
     feeConfig.destinationOverrides?.[chainId] &&
     feeConfig.destinationOverrides[chainId][key] !== undefined
   ) {
@@ -59,7 +58,7 @@ export const makeFeeTools = feeConfig => {
      * Calculate the net amount to advance after withholding fees.
      *
      * @param {Amount<'nat'>} requested
-     * @param {AccountId} [destination]
+     * @param {AccountId} destination
      * @throws {Error} if requested does not exceed fees
      */
     calculateAdvance(requested, destination) {
@@ -70,7 +69,7 @@ export const makeFeeTools = feeConfig => {
      * Calculate the total fee to charge for the advance.
      *
      * @param {Amount<'nat'>} requested
-     * @param {AccountId} [destination]
+     * @param {AccountId} destination
      * @throws {Error} if requested does not exceed fees
      */
     calculateAdvanceFee(requested, destination) {
@@ -88,7 +87,7 @@ export const makeFeeTools = feeConfig => {
      * Calculate the split of fees between pool and contract.
      *
      * @param {Amount<'nat'>} requested
-     * @param {AccountId} [destination]
+     * @param {AccountId} destination
      * @returns {RepayAmountKWR} an {@link AmountKeywordRecord}
      * @throws {Error} if requested does not exceed fees
      */

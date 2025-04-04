@@ -37,6 +37,7 @@ import type {
 import type {
   AccountId,
   ChainHub,
+  CosmosChainAddress,
   Denom,
   OrchestrationAccount,
 } from '@agoric/orchestration';
@@ -189,7 +190,9 @@ export const prepareSettler = (
       }),
       self: M.interface('SettlerSelfI', {
         addMintedEarly: M.call(M.string(), M.nat()).returns(),
-        disburse: M.call(EvmHashShape, M.nat()).returns(M.promise()),
+        disburse: M.call(EvmHashShape, M.nat(), M.string()).returns(
+          M.promise(),
+        ),
         forward: M.call(EvmHashShape, M.nat(), M.string()).returns(),
       }),
       transferHandler: M.interface('SettlerTransferI', {
@@ -262,7 +265,7 @@ export const prepareSettler = (
           log('dequeued', found, 'for', nfa, amount);
           switch (found?.status) {
             case PendingTxStatus.Advanced:
-              return self.disburse(found.txHash, amount);
+              return self.disburse(found.txHash, amount, EUD);
 
             case PendingTxStatus.Advancing:
               log('⚠️ tap: minted while advancing', nfa, amount);
@@ -305,7 +308,7 @@ export const prepareSettler = (
             asMultiset(mintedEarly).remove(key);
             statusManager.advanceOutcomeForMintedEarly(txHash, success);
             if (success) {
-              void this.facets.self.disburse(txHash, fullValue);
+              void this.facets.self.disburse(txHash, fullValue, destination);
             } else {
               void this.facets.self.forward(txHash, fullValue, destination);
             }
@@ -362,13 +365,20 @@ export const prepareSettler = (
          *
          * @param {EvmHash} txHash
          * @param {NatValue} fullValue
+         * @param {AccountId | CosmosChainAddress['value']} EUD
          */
-        async disburse(txHash: EvmHash, fullValue: NatValue) {
+        async disburse(
+          txHash: EvmHash,
+          fullValue: NatValue,
+          EUD: AccountId | CosmosChainAddress['value'],
+        ) {
           const { repayer, settlementAccount } = this.state;
           const received = AmountMath.make(USDC, fullValue);
           const { zcfSeat: settlingSeat } = zcf.makeEmptySeatKit();
           const { calculateSplit } = makeFeeTools(feeConfig);
-          const split = calculateSplit(received);
+          // theoretically can throw, but shouldn't since Advancer already validated
+          const accountId = chainHub.resolveAccountId(EUD);
+          const split = calculateSplit(received, accountId);
           log('disbursing', split);
 
           // If this throws, which arguably can't occur since we don't ever

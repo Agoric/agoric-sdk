@@ -40,7 +40,7 @@ type FeelToolsScenario = {
   name: string;
   config?: FeeConfig;
   requested: Amount<'nat'>;
-  destination?: AccountId;
+  destination: AccountId;
   expected: {
     totalFee: Amount<'nat'>;
     advance: Amount<'nat'>;
@@ -58,7 +58,7 @@ const feeToolsScenario = test.macro({
     {
       config = aFeeConfig,
       requested,
-      destination = undefined,
+      destination,
       expected,
     }: FeelToolsScenario,
   ) => {
@@ -87,6 +87,7 @@ const feeToolsScenario = test.macro({
 test(feeToolsScenario, {
   name: 'zero variable fee',
   requested: USDC(1000n),
+  destination: 'cosmos:noble-1:noble1testbech32',
   config: {
     ...aFeeConfig,
     variableRate: USDCRatio(0n),
@@ -104,6 +105,7 @@ test(feeToolsScenario, {
 test(feeToolsScenario, {
   name: 'zero flat fee',
   requested: USDC(1000n),
+  destination: 'cosmos:noble-1:noble1testbech32',
   config: {
     ...aFeeConfig,
     flat: USDC(0n),
@@ -121,6 +123,7 @@ test(feeToolsScenario, {
 test(feeToolsScenario, {
   name: 'zero fees (free)',
   requested: USDC(100n),
+  destination: 'cosmos:noble-1:noble1testbech32',
   config: {
     ...aFeeConfig,
     flat: USDC(0n),
@@ -140,6 +143,7 @@ test(feeToolsScenario, {
   name: 'AGORIC_PLUS_OSMO with commonPrivateArgs.feeConfig',
   // 150_000_000n
   requested: USDC(MockCctpTxEvidences.AGORIC_PLUS_OSMO().tx.amount),
+  destination: 'cosmos:osmosis-1:osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
   // same as commonPrivateArgs.feeConfig from `CommonSetup`
   config: makeTestFeeConfig(withAmountUtils(issuerKits.USDC)),
   expected: {
@@ -156,6 +160,8 @@ test(feeToolsScenario, {
   name: 'AGORIC_PLUS_DYDX with commonPrivateArgs.feeConfig',
   // 300_000_000n
   requested: USDC(MockCctpTxEvidences.AGORIC_PLUS_DYDX().tx.amount),
+  destination:
+    'cosmos:dydx-mainnet-1:dydx183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
   // same as commonPrivateArgs.feeConfig from `CommonSetup`
   config: makeTestFeeConfig(withAmountUtils(issuerKits.USDC)),
   expected: {
@@ -172,6 +178,7 @@ test(feeToolsScenario, {
   name: 'AGORIC_PLUS_ETHEREUM with commonPrivateArgs.feeConfig',
   // 950_000_000n
   requested: USDC(MockCctpTxEvidences.AGORIC_PLUS_ETHEREUM().tx.amount),
+  destination: 'eip155:1:0x1234567890123456789012345678901234567890',
   config: makeTestFeeConfig(withAmountUtils(issuerKits.USDC)),
   expected: {
     totalFee: USDC(19000001n), // 1n + 2% of 950USDC
@@ -209,12 +216,16 @@ test('request must exceed fees', t => {
   const feeTools = makeFeeTools(aFeeConfig);
 
   const expectedError = { message: 'Request must exceed fees.' };
+  const dest = 'cosmos:noble-1:noble1testbech32';
 
   for (const requested of [0n, 2n, 10n].map(USDC)) {
-    t.throws(() => feeTools.calculateAdvanceFee(requested), expectedError);
-    t.throws(() => feeTools.calculateAdvance(requested), expectedError);
-    t.throws(() => feeTools.calculateSplit(requested), expectedError);
+    t.throws(
+      () => feeTools.calculateAdvanceFee(requested, dest),
+      expectedError,
+    );
+    t.throws(() => feeTools.calculateAdvance(requested, dest), expectedError);
+    t.throws(() => feeTools.calculateSplit(requested, dest), expectedError);
   }
   // advance can be smaller than fee
-  t.is(feeTools.calculateAdvanceFee(USDC(11n)).value, 10n);
+  t.is(feeTools.calculateAdvanceFee(USDC(11n), dest).value, 10n);
 });
