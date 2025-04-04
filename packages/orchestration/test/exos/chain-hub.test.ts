@@ -2,7 +2,7 @@ import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
 import test from '@endo/ses-ava/prepare-endo.js';
 
 import { makeIssuerKit } from '@agoric/ertp';
-import { makeNameHubKit, type IBCChannelID } from '@agoric/vats';
+import { type IBCChannelID, makeNameHubKit } from '@agoric/vats';
 import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { E } from '@endo/far';
@@ -19,7 +19,6 @@ import knownChains from '../../src/fetched-chain-info.js';
 import { assets as assetFixture } from '../assets.fixture.js';
 import { provideFreshRootZone } from '../durability.js';
 import cctpChainInfo from '../../src/cctp-chain-info.js';
-import type { BaseChainInfo } from '../../src/orchestration-api.js';
 
 // fresh state for each test
 const setup = () => {
@@ -169,6 +168,7 @@ test('toward asset info in agoricNames (#9572)', async t => {
   }
 });
 
+const MockBech32Address = `osmo1ht7u569vpuryp6utadsydcne9ckeh2v8dkd38v5hptjl3u2ewppqc6kzgd`;
 test('makeChainAddress', async t => {
   const { chainHub, nameAdmin, vt } = setup();
   // use fetched chain info
@@ -180,6 +180,12 @@ test('makeChainAddress', async t => {
   const MOCK_ICA_ADDRESS =
     'osmo1ht7u569vpuryp6utadsydcne9ckeh2v8dkd38v5hptjl3u2ewppqc6kzgd' as const;
   t.deepEqual(chainHub.makeChainAddress(MOCK_ICA_ADDRESS), {
+    chainId: 'osmosis-1',
+    value: MOCK_ICA_ADDRESS,
+    encoding: 'bech32',
+  });
+
+  t.deepEqual(chainHub.makeChainAddress(MockBech32Address), {
     chainId: 'osmosis-1',
     value: MOCK_ICA_ADDRESS,
     encoding: 'bech32',
@@ -262,6 +268,16 @@ test('resolveAccountId', async t => {
     },
     'throws on invalid address format',
   );
+
+  t.deepEqual(
+    chainHub.resolveAccountId(MockBech32Address),
+
+    `cosmos:osmosis-1:osmo1ht7u569vpuryp6utadsydcne9ckeh2v8dkd38v5hptjl3u2ewppqc6kzgd`,
+  );
+
+  t.throws(() => chainHub.resolveAccountId('1notbech32'), {
+    message: 'Missing prefix for "1notbech32"',
+  });
 });
 
 test('updateChain updates existing chain info and mappings', t => {
