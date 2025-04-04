@@ -67,6 +67,13 @@ export const prepareMockOrchAccounts = (
   >;
   const intermediateCallLog = [] as any[];
   const intermediateAccountMock = zone.exo('Mock Noble ICA', undefined, {
+    getAddress(): CosmosChainAddress {
+      return {
+        chainId: 'noble-1',
+        encoding: 'bech32',
+        value: 'noble1test',
+      };
+    },
     transfer(...args) {
       intermediateCallLog.push(harden(['transfer', ...args]));
       return intermediateAccountTransferVK.vow;

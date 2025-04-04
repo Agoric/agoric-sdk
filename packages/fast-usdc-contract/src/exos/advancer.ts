@@ -35,6 +35,8 @@ import {
   AnyNatAmountShape,
   CosmosChainAddressShape,
 } from '@agoric/orchestration';
+import type { AccountId } from '@agoric/orchestration/src/orchestration-api.js';
+import { parseAccountIdArg } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { pickFacet } from '@agoric/vat-data';
 import type { VowTools } from '@agoric/vow';
@@ -45,12 +47,13 @@ import { Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
 import type { LiquidityPoolKit } from './liquidity-pool.js';
-import type { StatusManager } from './status-manager.js';
 import type { SettlerKit } from './settler.js';
+import type { StatusManager } from './status-manager.js';
 
 interface AdvancerKitPowers {
   chainHub: ChainHub;
   feeConfig: FeeConfig;
+  getNobleICA: () => OrchestrationAccount<{ chainId: 'noble-1' }>;
   log?: LogFn;
   statusManager: StatusManager;
   usdc: { brand: Brand<'nat'>; denom: Denom };
@@ -62,7 +65,7 @@ interface AdvancerKitPowers {
 interface AdvancerVowCtx {
   fullAmount: NatAmount;
   advanceAmount: NatAmount;
-  destination: CosmosChainAddress;
+  destination: AccountId;
   forwardingAddress: NobleAddress;
   txHash: EvmHash;
 }
@@ -71,7 +74,7 @@ const AdvancerVowCtxShape: TypedPattern<AdvancerVowCtx> = M.splitRecord(
   {
     fullAmount: AnyNatAmountShape,
     advanceAmount: AnyNatAmountShape,
-    destination: CosmosChainAddressShape,
+    destination: M.string(), // AccountId
     forwardingAddress: M.string(),
     txHash: EvmHashShape,
   },
@@ -82,7 +85,6 @@ const AdvancerVowCtxShape: TypedPattern<AdvancerVowCtx> = M.splitRecord(
 const AdvancerKitI = harden({
   advancer: M.interface('AdvancerI', {
     handleTransactionEvent: M.callWhen(EvidenceWithRiskShape).returns(),
-    setIntermediateRecipient: M.call(CosmosChainAddressShape).returns(),
   }),
   depositHandler: M.interface('DepositHandlerI', {
     onFulfilled: M.call(M.undefined(), AdvancerVowCtxShape).returns(VowShape),
@@ -110,6 +112,7 @@ export const stateShape = harden({
   notifier: M.remotable(),
   borrower: M.remotable(),
   poolAccount: M.remotable(),
+  /** @deprecated */
   intermediateRecipient: M.opt(CosmosChainAddressShape),
   settlementAddress: M.opt(CosmosChainAddressShape),
 });
@@ -127,6 +130,7 @@ export const prepareAdvancerKit = (
   {
     chainHub,
     feeConfig,
+    getNobleICA,
     log = makeTracer('Advancer', true),
     statusManager,
     usdc,
@@ -159,8 +163,8 @@ export const prepareAdvancerKit = (
     }) =>
       harden({
         ...config,
-        // make sure the state record has this property, perhaps with an undefined value
-        intermediateRecipient: config.intermediateRecipient,
+        // deprecated, set key for schema compatibility
+        intermediateRecipient: undefined,
       }),
     {
       advancer: {
@@ -198,7 +202,7 @@ export const prepareAdvancerKit = (
             log(`decoded EUD: ${EUD}`);
             assert.typeof(EUD, 'string');
             // throws if the bech32 prefix is not found
-            const destination = chainHub.makeChainAddress(EUD);
+            const destination = chainHub.resolveAccountId(EUD);
 
             const fullAmount = toAmount(evidence.tx.amount);
             const { borrower, notifier, poolAccount } = this.state;
@@ -240,11 +244,8 @@ export const prepareAdvancerKit = (
             statusManager.skipAdvance(evidence, [(error as Error).message]);
           }
         },
-        /** @param {CosmosChainAddress} intermediateRecipient */
-        setIntermediateRecipient(intermediateRecipient: CosmosChainAddress) {
-          this.state.intermediateRecipient = intermediateRecipient;
-        },
       },
+
       depositHandler: {
         /**
          * @param result
@@ -255,16 +256,20 @@ export const prepareAdvancerKit = (
           result: undefined,
           ctx: AdvancerVowCtx & { tmpSeat: ZCFSeat },
         ) {
-          const { poolAccount, intermediateRecipient, settlementAddress } =
-            this.state;
+          const { poolAccount, settlementAddress } = this.state;
           const { destination, advanceAmount, tmpSeat, ...detail } = ctx;
           tmpSeat.exit();
           const amount = harden({
             denom: usdc.denom,
             value: advanceAmount.value,
           });
+          const intermediateRecipient = getNobleICA().getAddress();
+          const accountId = parseAccountIdArg(destination);
+
+          assert.equal(accountId.namespace, 'cosmos');
+
           const transferOrSendV =
-            destination.chainId === settlementAddress.chainId
+            accountId.reference === settlementAddress.chainId
               ? E(poolAccount).send(destination, amount)
               : E(poolAccount).transfer(destination, amount, {
                   forwardOpts: { intermediateRecipient },

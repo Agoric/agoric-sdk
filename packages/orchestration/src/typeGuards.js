@@ -4,7 +4,7 @@ import { M } from '@endo/patterns';
 
 /**
  * @import {TypedPattern} from '@agoric/internal';
- * @import {CosmosAssetInfo, CosmosChainInfo, DenomAmount, DenomInfo, AmountArg, CosmosValidatorAddress, OrchestrationPowers, ForwardInfo, IBCMsgTransferOptions, AccountIdArg, BaseChainInfo, ChainInfo} from './types.js';
+ * @import {CosmosAssetInfo, CosmosChainInfo, DenomAmount, DenomInfo, AmountArg, CosmosValidatorAddress, OrchestrationPowers, ForwardInfo, IBCMsgTransferOptions, AccountIdArg, BaseChainInfo, ChainInfo,Caip10Record} from './types.js';
  * @import {Any as Proto3Msg} from '@agoric/cosmic-proto/google/protobuf/any.js';
  * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
@@ -36,6 +36,15 @@ export const CosmosChainAddressShape = {
   value: M.string(),
 };
 harden(CosmosChainAddressShape);
+
+/** @type {TypedPattern<Caip10Record>} */
+export const Caip10RecordShape = {
+  namespace: M.string(),
+  reference: M.string(),
+  accountAddress: M.string(),
+};
+harden(Caip10RecordShape);
+
 /** @deprecated use CosmosChainAddressShape */
 export const ChainAddressShape = CosmosChainAddressShape;
 
@@ -44,7 +53,7 @@ export const ChainAddressShape = CosmosChainAddressShape;
  *
  * @type {TypedPattern<AccountIdArg>}
  */
-export const AccountArgShape = M.or(M.string(), CosmosChainAddressShape);
+export const AccountIdArgShape = M.or(M.string(), CosmosChainAddressShape);
 
 /** @type {TypedPattern<Proto3Msg>} */
 export const Proto3Shape = { typeUrl: M.string(), value: M.string() };

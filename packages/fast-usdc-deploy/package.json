@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "build": "esbuild ../fast-usdc-contract/src/fast-usdc.contract.ts --platform=node --format=esm --bundle --outfile=dist/fast-usdc.contract.bundle.js",
-    "test": "ava",
+    "test": "yarn build && ava",
     "test:c8": "c8 --all $C8_OPTIONS ava",
     "$scripts-note": "fast-usdc skipped in test:xs pending #10847",
     "test:xs": "exit 0",

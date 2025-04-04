@@ -15,47 +15,43 @@ import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
-import { fromOnly } from '@agoric/zoe/src/contractSupport/index.js';
 import { PendingTxStatus } from '@agoric/fast-usdc/src/constants.js';
-import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
 import {
   CctpTxEvidenceShape,
   EvmHashShape,
   makeNatAmountShape,
 } from '@agoric/fast-usdc/src/type-guards.js';
+import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
+import { fromOnly } from '@agoric/zoe/src/contractSupport/index.js';
 
+import type { HostInterface, HostOf } from '@agoric/async-flow';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import type { Amount, Brand, NatAmount, NatValue } from '@agoric/ertp';
 import type {
+  CctpTxEvidence,
+  EvmHash,
+  FeeConfig,
+  LogFn,
+  NobleAddress,
+} from '@agoric/fast-usdc/src/types.js';
+import type {
   AccountId,
+  ChainHub,
   Denom,
   OrchestrationAccount,
-  ChainHub,
-  CosmosChainAddress,
 } from '@agoric/orchestration';
-import type { WithdrawToSeat } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import type { IBCChannelID, IBCPacket, VTransferIBCEvent } from '@agoric/vats';
-import type { Zone } from '@agoric/zone';
-import type { HostOf, HostInterface } from '@agoric/async-flow';
-import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
-import type {
-  NobleAddress,
-  FeeConfig,
-  EvmHash,
-  LogFn,
-  CctpTxEvidence,
-} from '@agoric/fast-usdc/src/types.js';
-import type { ZCF, ZCFSeat } from '@agoric/zoe/src/zoeService/zoe.js';
-import type { MapStore } from '@agoric/store';
-import type { VowTools } from '@agoric/vow';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
-import type { Baggage } from '@agoric/vat-data';
-import { Fail } from '@endo/errors';
+import type { WithdrawToSeat } from '@agoric/orchestration/src/utils/zoe-tools.js';
+import type { MapStore } from '@agoric/store';
+import type { IBCChannelID, IBCPacket, VTransferIBCEvent } from '@agoric/vats';
+import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
+import type { VowTools } from '@agoric/vow';
+import type { ZCF } from '@agoric/zoe/src/zoeService/zoe.js';
+import type { Zone } from '@agoric/zone';
+import { makeSupportsCctp } from '../utils/cctp.ts';
+import { asMultiset } from '../utils/store.ts';
 import type { LiquidityPoolKit } from './liquidity-pool.js';
 import type { StatusManager } from './status-manager.js';
-import { asMultiset } from '../utils/store.ts';
-import { NOBLE_ICA_BAGGAGE_KEY } from '../fast-usdc.contract.ts';
-import { makeSupportsCctp } from '../utils/cctp.ts';
 
 const decodeEventPacket = (
   { data }: IBCPacket,
@@ -115,7 +111,7 @@ const makeMintedEarlyKey = (addr: NobleAddress, amount: bigint): string =>
 /** @param {Brand<'nat'>} USDC */
 export const makeAdvanceDetailsShape = (USDC: Brand<'nat'>) =>
   harden({
-    destination: CosmosChainAddressShape,
+    destination: M.string(),
     forwardingAddress: M.string(),
     fullAmount: makeNatAmountShape(USDC),
     txHash: EvmHashShape,
@@ -128,6 +124,7 @@ export const stateShape = harden({
   sourceChannel: M.string(),
   remoteDenom: M.string(),
   mintedEarly: M.remotable('mintedEarly'),
+  /** @deprecated */
   intermediateRecipient: M.opt(CosmosChainAddressShape),
 });
 
@@ -144,10 +141,10 @@ export const stateShape = harden({
 export const prepareSettler = (
   zone: Zone,
   {
-    baggage,
     currentChainReference,
     chainHub,
     feeConfig,
+    getNobleICA,
     log = makeTracer('Settler', true),
     statusManager,
     USDC,
@@ -155,11 +152,11 @@ export const prepareSettler = (
     withdrawToSeat,
     zcf,
   }: {
-    baggage: Baggage;
     /** e.g., `agoric-3` */
     currentChainReference: string;
     chainHub: ChainHub;
     feeConfig: FeeConfig;
+    getNobleICA: () => OrchestrationAccount<{ chainId: 'noble-1' }>;
     log?: LogFn;
     statusManager: StatusManager;
     USDC: Brand<'nat'>;
@@ -172,20 +169,11 @@ export const prepareSettler = (
 
   const supportsCctp = makeSupportsCctp(chainHub);
 
-  /**
-   * aka `IntermediateRecipientAccount`. A contract-controlled ICA on Noble that can send `MsgDepositForBurn`.
-   * retrieve from baggage, until:
-   * [Allow state shape with new optional fields #10200](https://github.com/Agoric/agoric-sdk/issues/10200)
-   */
-  const getNobleICA = (): OrchestrationAccount<{ chainId: 'noble-1' }> =>
-    baggage.get(NOBLE_ICA_BAGGAGE_KEY);
-
   return zone.exoClassKit(
     'Fast USDC Settler',
     {
       creator: M.interface('SettlerCreatorI', {
         monitorMintingDeposits: M.callWhen().returns(M.any()),
-        setIntermediateRecipient: M.call(CosmosChainAddressShape).returns(),
       }),
       tap: M.interface('SettlerTapI', {
         receiveUpcall: M.call(M.record()).returns(M.promise()),
@@ -195,10 +183,9 @@ export const prepareSettler = (
           makeAdvanceDetailsShape(USDC),
           M.boolean(),
         ).returns(),
-        checkMintedEarly: M.call(
-          CctpTxEvidenceShape,
-          CosmosChainAddressShape,
-        ).returns(M.boolean()),
+        checkMintedEarly: M.call(CctpTxEvidenceShape, M.string()).returns(
+          M.boolean(),
+        ),
       }),
       self: M.interface('SettlerSelfI', {
         addMintedEarly: M.call(M.string(), M.nat()).returns(),
@@ -226,13 +213,12 @@ export const prepareSettler = (
       settlementAccount: HostInterface<
         OrchestrationAccount<{ chainId: 'agoric-any' }>
       >;
-      intermediateRecipient?: CosmosChainAddress;
     }) => {
       log('config', config);
       return {
         ...config,
-        // make sure the state record has this property, perhaps with an undefined value
-        intermediateRecipient: config.intermediateRecipient,
+        // This comes from a power now but the schema requires this key to be set
+        intermediateRecipient: undefined,
         registration: undefined as
           | HostInterface<TargetRegistration>
           | undefined,
@@ -251,9 +237,6 @@ export const prepareSettler = (
           );
           assert.typeof(registration, 'object');
           this.state.registration = registration;
-        },
-        setIntermediateRecipient(intermediateRecipient: CosmosChainAddress) {
-          this.state.intermediateRecipient = intermediateRecipient;
         },
       },
       tap: {
@@ -310,24 +293,21 @@ export const prepareSettler = (
             txHash: EvmHash;
             forwardingAddress: NobleAddress;
             fullAmount: Amount<'nat'>;
-            destination: CosmosChainAddress;
+            destination: AccountId;
           },
           success: boolean,
         ): void {
           const { mintedEarly } = this.state;
           const { value: fullValue } = fullAmount;
           const key = makeMintedEarlyKey(forwardingAddress, fullValue);
+
           if (mintedEarly.has(key)) {
             asMultiset(mintedEarly).remove(key);
             statusManager.advanceOutcomeForMintedEarly(txHash, success);
             if (success) {
               void this.facets.self.disburse(txHash, fullValue);
             } else {
-              void this.facets.self.forward(
-                txHash,
-                fullValue,
-                destination.value,
-              );
+              void this.facets.self.forward(txHash, fullValue, destination);
             }
           } else {
             statusManager.advanceOutcome(forwardingAddress, fullValue, success);
@@ -338,12 +318,12 @@ export const prepareSettler = (
          * funds to the pool.
          *
          * @param {CctpTxEvidence} evidence
-         * @param {CosmosChainAddress} destination
+         * @param {AccountId} destination
          * @returns {boolean} whether the EUD received funds without an advance
          */
         checkMintedEarly(
           evidence: CctpTxEvidence,
-          destination: CosmosChainAddress,
+          destination: AccountId,
         ): boolean {
           const {
             tx: { forwardingAddress, amount },
@@ -359,7 +339,7 @@ export const prepareSettler = (
             );
             asMultiset(mintedEarly).remove(key);
             statusManager.advanceOutcomeForUnknownMint(evidence);
-            void this.facets.self.forward(txHash, amount, destination.value);
+            void this.facets.self.forward(txHash, amount, destination);
             return true;
           }
           return false;
@@ -418,9 +398,8 @@ export const prepareSettler = (
          * @param {string} EUD
          */
         forward(txHash: EvmHash, fullValue: NatValue, EUD: string) {
-          const { settlementAccount, intermediateRecipient } = this.state;
+          const { settlementAccount } = this.state;
           log('forwarding', fullValue, 'to', EUD, 'for', txHash);
-          if (!intermediateRecipient) throw Fail`No intermediate recipient`;
 
           const dest: AccountId | null = (() => {
             try {
@@ -435,6 +414,8 @@ export const prepareSettler = (
 
           const { namespace, reference } = parseAccountId(dest);
           const amt = AmountMath.make(USDC, fullValue);
+
+          const intermediateRecipient = getNobleICA().getAddress();
 
           if (namespace === 'cosmos') {
             const transferOrSendV =

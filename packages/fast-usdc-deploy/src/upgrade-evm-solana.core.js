@@ -116,7 +116,7 @@ export const upgradeEvmSolana = async (
     noble.chainId,
     agoricToNoble,
   );
-  trace('setIntermediateRecipient done');
+  trace('updateEvmSolana done');
 };
 
 /**
