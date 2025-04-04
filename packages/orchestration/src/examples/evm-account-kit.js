@@ -4,8 +4,8 @@ import { VowShape } from '@agoric/vow';
 import { makeTracer, NonNullish } from '@agoric/internal';
 import { atob, decodeBase64 } from '@endo/base64';
 import { defaultAbiCoder } from '@ethersproject/abi';
-import { Fail } from '@endo/errors';
 import { CosmosChainAddressShape } from '../typeGuards.js';
+import { Fail, makeError, q } from '@endo/errors';
 import { buildGMPPayload } from '../utils/gmp.js';
 
 const trace = makeTracer('EvmTap');
@@ -23,6 +23,7 @@ const addresses = {
  * @import {Zone} from '@agoric/zone';
  * @import {CosmosChainAddress, Denom, OrchestrationAccount} from '@agoric/orchestration';
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
+ * @import {ZoeTools} from '@agoric/orchestration/src/utils/zoe-tools.js';
  */
 
 /**
@@ -73,9 +74,13 @@ harden(EvmKitStateShape);
  *   zcf: ZCF;
  *   vowTools: VowTools;
  *   log: (msg: string) => Vow<void>;
+ *   zoeTools: ZoeTools;
  * }} powers
  */
-export const prepareEvmAccountKit = (zone, { zcf, vowTools, log }) => {
+export const prepareEvmAccountKit = (
+  zone,
+  { zcf, vowTools, log, zoeTools: { withdrawToSeat } },
+) => {
   return zone.exoClassKit(
     'EvmTapKit',
     {
@@ -235,22 +240,32 @@ export const prepareEvmAccountKit = (zone, { zcf, vowTools, log }) => {
 
           void log(`Initiating IBC Transfer...`);
           void log(`DENOM of token:${denom}`);
-          // @ts-expect-error
-          await this.state.localAccount.transfer(
-            {
-              value: addresses.AXELAR_GMP,
-              encoding: 'bech32',
-              chainId,
-            },
-            {
-              denom,
-              value: amt.value,
-            },
-            { memo: JSON.stringify(memo) },
-          );
 
-          void log('sendGmp successful');
-          return 'sendGmp successful';
+          try {
+            // @ts-expect-error
+            await this.state.localAccount.transfer(
+              {
+                value: addresses.AXELAR_GMP,
+                encoding: 'bech32',
+                chainId,
+              },
+              {
+                denom,
+                value: amt.value,
+              },
+              { memo: JSON.stringify(memo) },
+            );
+
+            seat.exit();
+            void log('sendGmp successful');
+            return 'sendGmp successful';
+          } catch (err) {
+            // @ts-expect-error
+            await withdrawToSeat(this.state.localAccount, seat, give);
+            const errorMsg = `${q(err)}`;
+            seat.exit(errorMsg);
+            throw makeError(errorMsg);
+          }
         },
       },
       invitationMakers: {
@@ -260,7 +275,6 @@ export const prepareEvmAccountKit = (zone, { zcf, vowTools, log }) => {
             const { holder } = this.facets;
             switch (method) {
               case 'sendGmp': {
-                seat.exit();
                 return holder.sendGmp(seat, args[0]);
               }
               case 'getAddress': {
