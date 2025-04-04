@@ -7,7 +7,11 @@ import {
 import type { NatAmount } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { CosmosChainAddressShape, denomHash } from '@agoric/orchestration';
+import {
+  AccountIdArgShape,
+  CosmosChainAddressShape,
+  denomHash,
+} from '@agoric/orchestration';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { type ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { q } from '@endo/errors';
@@ -23,6 +27,7 @@ import {
   settlementAddress,
 } from '@agoric/fast-usdc/tools/mock-evidence.js';
 import type { ZCFSeat } from '@agoric/zoe';
+import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
 import { prepareAdvancer, stateShape } from '../../src/exos/advancer.ts';
 import {
   makeAdvanceDetailsShape,
@@ -63,7 +68,11 @@ const createTestExtensions = (t, common: CommonSetup) => {
   chainHub.registerChain('agoric', fetchedChainInfo.agoric);
   chainHub.registerChain('dydx', fetchedChainInfo.dydx);
   chainHub.registerChain('osmosis', fetchedChainInfo.osmosis);
-
+  chainHub.registerChain('ethereum', {
+    ...cctpChainInfo.ethereum, // to satisfy `CosmosChainInfoShapeV1`
+    // @ts-expect-error `chainId` not on `BaseChainInfo`
+    chainId: `${cctpChainInfo.ethereum.namespace}:${cctpChainInfo.ethereum.reference}`,
+  });
   const statusManager = prepareStatusManager(
     contractZone.subZone('status-manager'),
     storageNode.makeChildNode('txns'),
@@ -974,4 +983,70 @@ test('notifies of advance failure if bank send fails', async t => {
     ],
     'same amount borrowed is returned to LP',
   );
+});
+
+test('uses CCTP for ETH', async t => {
+  const {
+    extensions: {
+      services: { advancer },
+      helpers: { inspectLogs, inspectNotifyCalls },
+      mocks: {
+        mockPoolAccount,
+        resolveLocalTransferV,
+        resolveWithdrawToSeatV,
+        intermediate,
+      },
+    },
+    brands: { usdc },
+    bootstrap: { storage },
+  } = t.context;
+
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_ETHEREUM();
+  void advancer.handleTransactionEvent({ evidence, risk: {} });
+
+  // pretend borrow succeeded and funds were depositing to the LCA
+  resolveLocalTransferV();
+  // pretend depositForBurn was called.
+  intermediate.depositForBurnVResolver.resolve();
+  // wait for handleTransactionEvent to do work
+  await eventLoopIteration();
+
+  t.deepEqual(inspectLogs(), [
+    ['decoded EUD: eip155:1:0x1234567890123456789012345678901234567890'],
+    [
+      'Advance succeeded',
+      {
+        advanceAmount: {
+          brand: usdc.brand,
+          value: 930999999n,
+        },
+        destination: 'eip155:1:0x1234567890123456789012345678901234567890',
+      },
+    ],
+  ]);
+
+  t.deepEqual(intermediate.callLog, [
+    [
+      'depositForBurn',
+      'eip155:1:0x1234567890123456789012345678901234567890',
+      {
+        denom:
+          'ibc/FE98AAD68F02F03565E9FA39A5E627946699B2B07115889ED812D8BA639576A9',
+        value: 930999999n,
+      },
+    ],
+  ]);
+
+  // ensure Settler is notified of successful advance
+  t.like(inspectNotifyCalls(), [
+    [
+      {
+        txHash: evidence.txHash,
+        forwardingAddress: evidence.tx.forwardingAddress,
+        fullAmount: usdc.make(evidence.tx.amount),
+        destination: 'eip155:1:0x1234567890123456789012345678901234567890',
+      },
+      true, // indicates send succeeded
+    ],
+  ]);
 });
