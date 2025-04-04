@@ -241,6 +241,7 @@ test('happy path: disburse to LPs; StatusManager removes tx', async t => {
   } = t.context;
   const { usdc } = common.brands;
   const { feeConfig } = common.commonPrivateArgs;
+  const { chainHub } = common.facadeServices;
 
   const settler = makeSettler({
     repayer,
@@ -280,11 +281,15 @@ test('happy path: disburse to LPs; StatusManager removes tx', async t => {
 
   // see also AGORIC_PLUS_OSMO in fees.test.ts
   const In = usdc.units(150);
-  const expectedSplit = makeFeeTools(feeConfig).calculateSplit(In);
+  const expectedSplit = makeFeeTools(feeConfig).calculateSplit(
+    In,
+    chainHub.resolveAccountId(cctpTxEvidence.aux.recipientAddress),
+  );
   t.deepEqual(expectedSplit, {
     ContractFee: usdc.make(600000n),
     PoolFee: usdc.make(2400001n),
     Principal: usdc.make(146999999n),
+    RelayFee: usdc.make(0n),
   });
 
   t.like(
@@ -667,6 +672,7 @@ test('Settlement for Advancing transaction (advance succeeds)', async t => {
     common: {
       brands: { usdc },
       commonPrivateArgs: { feeConfig },
+      facadeServices: { chainHub },
     },
     storage,
   } = t.context;
@@ -698,7 +704,10 @@ test('Settlement for Advancing transaction (advance succeeds)', async t => {
   ]);
 
   const In = usdc.make(MockCctpTxEvidences.AGORIC_PLUS_OSMO().tx.amount);
-  const expectedSplit = makeFeeTools(feeConfig).calculateSplit(In);
+  const expectedSplit = makeFeeTools(feeConfig).calculateSplit(
+    In,
+    chainHub.resolveAccountId(cctpTxEvidence.aux.recipientAddress),
+  );
 
   t.log('Simulate advance success');
   simulate.finishAdvance(cctpTxEvidence, true);

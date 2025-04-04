@@ -218,7 +218,10 @@ export const repayCalc = (shareWorth, split, encumberedBalance, poolStats) => {
       ...poolStats,
       totalRepays: add(poolStats.totalRepays, split.Principal),
       totalPoolFees: add(poolStats.totalPoolFees, split.PoolFee),
-      totalContractFees: add(poolStats.totalContractFees, split.ContractFee),
+      totalContractFees: add(
+        add(poolStats.totalContractFees, split.ContractFee),
+        split.RelayFee,
+      ),
     },
   });
 };

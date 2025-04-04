@@ -1,7 +1,6 @@
 import { AmountShape, BrandShape, RatioShape } from '@agoric/ertp';
 import { M } from '@endo/patterns';
 import {
-  CosmosChainInfoShape,
   DenomDetailShape,
   DenomShape,
 } from '@agoric/orchestration/src/typeGuards.js';
@@ -10,7 +9,7 @@ import { PendingTxStatus } from './constants.js';
 /**
  * @import {Amount, Brand, NatValue, Payment} from '@agoric/ertp';
  * @import {TypedPattern} from '@agoric/internal';
- * @import {CosmosChainInfo, Denom, DenomDetail, OrchestrationAccount, IBCConnectionInfo} from '@agoric/orchestration';
+ * @import {CosmosChainInfo, Denom, DenomDetail, OrchestrationAccount, IBCConnectionInfo, CaipChainId} from '@agoric/orchestration';
  * @import {USDCProposalShapes} from './pool-share-math.js';
  * @import {CctpTxEvidence, FastUSDCConfig, FastUsdcTerms, FeeConfig, PendingTx, PoolMetrics, ChainPolicy, FeedPolicy, AddressHook, EvmAddress, EvmHash, RiskAssessment, EvidenceWithRisk} from './types.js';
  */
@@ -110,13 +109,33 @@ export const AddressHookShape = {
 harden(AddressHookShape);
 
 const NatAmountShape = { brand: BrandShape, value: M.nat() };
+
+export const DestinationOverridesShape = M.recordOf(
+  M.string(),
+  M.splitRecord(
+    {},
+    {
+      flat: NatAmountShape,
+      variableRate: RatioShape,
+      contractRate: RatioShape,
+      relay: NatAmountShape,
+    },
+  ),
+);
+
 /** @type {TypedPattern<FeeConfig>} */
-export const FeeConfigShape = {
-  flat: NatAmountShape,
-  variableRate: RatioShape,
-  contractRate: RatioShape,
-};
-harden(FeeConfigShape);
+export const FeeConfigShape = M.splitRecord(
+  {
+    flat: NatAmountShape,
+    variableRate: RatioShape,
+    contractRate: RatioShape,
+  },
+  {
+    relay: NatAmountShape,
+    destinationOverrides: DestinationOverridesShape,
+  },
+  {},
+);
 
 /** @type {TypedPattern<PoolMetrics>} */
 export const PoolMetricsShape = {
@@ -162,16 +181,6 @@ export const FeedPolicyShape = M.splitRecord(
 );
 harden(FeedPolicyShape);
 
-/** @type {TypedPattern<FastUSDCConfig>} */
-export const FastUSDCConfigShape = M.splitRecord({
-  terms: FastUSDCTermsShape,
-  oracles: M.recordOf(M.string(), M.string()),
-  feeConfig: FeeConfigShape,
-  feedPolicy: FeedPolicyShape,
-  chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
-  assetInfo: M.arrayOf([DenomShape, DenomDetailShape]),
-});
-
 /**
  * The version of CosmosChainInfoShape that matches the `valueShape` used in FUSDC's ChainHub's `chainInfos` mapStore.
  * @type {TypedPattern<CosmosChainInfo>}
@@ -189,3 +198,13 @@ export const CosmosChainInfoShapeV1 = M.splitRecord(
     pfmEnabled: M.boolean(),
   },
 );
+
+/** @type {TypedPattern<FastUSDCConfig>} */
+export const FastUSDCConfigShape = M.splitRecord({
+  terms: FastUSDCTermsShape,
+  oracles: M.recordOf(M.string(), M.string()),
+  feeConfig: FeeConfigShape,
+  feedPolicy: FeedPolicyShape,
+  chainInfo: M.recordOf(M.string(), CosmosChainInfoShapeV1),
+  assetInfo: M.arrayOf([DenomShape, DenomDetailShape]),
+});

@@ -214,7 +214,10 @@ export const prepareAdvancerKit = (
             if (mintedEarly) return;
 
             // throws if requested does not exceed fees
-            const advanceAmount = feeTools.calculateAdvance(fullAmount);
+            const advanceAmount = feeTools.calculateAdvance(
+              fullAmount,
+              destination,
+            );
 
             const { zcfSeat: tmpSeat } = zcf.makeEmptySeatKit();
             // throws if the pool has insufficient funds

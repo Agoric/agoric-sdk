@@ -1,10 +1,17 @@
-/** @file core-eval that includes changes necessary to support FastUSDC to Solana and EVM Chains */
+/** @file core-eval that includes changes necessary to support FastUSDC to EVM destinations */
 
 import { makeTracer } from '@agoric/internal';
-import { E } from '@endo/far';
+import { E, Far } from '@endo/far';
 import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
+import { AmountMath } from '@agoric/ertp';
+import { DestinationOverridesShape } from '@agoric/fast-usdc/src/type-guards.js';
+import {
+  fromExternalConfig,
+  toExternalConfig,
+} from './utils/config-marshal.js';
 
-const trace = makeTracer('FUSD-EVM-SOL', true);
+const trace = makeTracer('FUSD-EVM', true);
+const { make } = AmountMath;
 
 /**
  * @import {CopyRecord} from '@endo/pass-style';
@@ -13,9 +20,22 @@ const trace = makeTracer('FUSD-EVM-SOL', true);
  * @import {BundleID} from '@agoric/swingset-vat';
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js';
  * @import {FastUSDCCorePowers} from './start-fast-usdc.core.js';
+ * @import {LegibleCapData} from './utils/config-marshal.js'
+ * @import {FeeConfig} from '@agoric/fast-usdc';
  */
 
 const { keys } = Object;
+
+const externalConfigContext = /** @type {const} */ ({
+  /** @type {Brand<'nat'>} */
+  USDC: Far('USDC Brand'),
+});
+
+/**
+ * @param {bigint} value
+ * @returns {Amount<'nat'>}
+ */
+const USDC = value => make(externalConfigContext.USDC, value);
 
 const config = /** @type {const} */ ({
   MAINNET: {
@@ -37,14 +57,52 @@ const config = /** @type {const} */ ({
         version: 'ics20-1',
       },
     },
+    /** FIXME #11149 use real values */
+    legibleDestinationOverrides: toExternalConfig(
+      harden({
+        'eip155:1': {
+          relay: USDC(1_000_000n),
+        },
+        'eip155:43114': {
+          relay: USDC(500_000n),
+        },
+        'eip155:10': {
+          relay: USDC(500_000n),
+        },
+        'eip155:42161': {
+          relay: USDC(500_000n),
+        },
+        'eip155:8453': {
+          relay: USDC(500_000n),
+        },
+        'eip155:137': {
+          relay: USDC(500_000n),
+        },
+      }),
+      externalConfigContext,
+      DestinationOverridesShape,
+    ),
   },
 });
 harden(config);
+
+assert(
+  Object.values(cctpChainInfo)
+    .filter(c => c.namespace === 'eip155')
+    .every(
+      ci =>
+        `${ci.namespace}:${ci.reference}` in
+        // @ts-expect-error Type instantiation is excessively deep and possibly infinite.ts(2589)
+        config.MAINNET.legibleDestinationOverrides.structure,
+    ),
+  'all "eip155" chains captured in destinationRelayOverrides',
+);
 
 /**
  * @typedef {object} UpdateOpts
  * @property {IBCConnectionInfo} [agoricToNoble]
  * @property {{bundleID: BundleID}} [fastUsdcCode]
+ * @property {LegibleCapData<FeeConfig['destinationOverrides']>} [legibleDestinationOverrides]
  */
 
 /**
@@ -52,22 +110,35 @@ harden(config);
  * @param {object} [config]
  * @param {UpdateOpts} [config.options]
  */
-export const upgradeEvmSolana = async (
+export const upgradeEvmDests = async (
   { consume: { fastUsdcKit } },
   { options = {} } = {},
 ) => {
   trace('options', options);
   const {
     agoricToNoble = config.MAINNET.agoricToNoble,
+    // @ts-expect-error Type instantiation is excessively deep and possibly infinite.
+    legibleDestinationOverrides = config.MAINNET.legibleDestinationOverrides,
     fastUsdcCode = assert.fail('missing bundleID'),
   } = options;
   const fuKit = await fastUsdcKit;
   trace('fastUsdcKit.privateArgs keys:', keys(fuKit.privateArgs));
+  const { brand: usdcBrand } = fuKit.privateArgs.feeConfig.flat;
   const { adminFacet, creatorFacet } = fuKit;
-  const upgraded = await E(adminFacet).upgradeContract(
-    fastUsdcCode.bundleID,
-    fuKit.privateArgs,
+
+  const destinationOverrides = fromExternalConfig(
+    legibleDestinationOverrides,
+    { USDC: usdcBrand },
+    DestinationOverridesShape,
   );
+
+  const upgraded = await E(adminFacet).upgradeContract(fastUsdcCode.bundleID, {
+    ...fuKit.privateArgs,
+    feeConfig: {
+      ...fuKit.privateArgs.feeConfig,
+      destinationOverrides,
+    },
+  });
   trace('fastUsdc upgraded', upgraded);
 
   /**
@@ -94,7 +165,7 @@ export const upgradeEvmSolana = async (
    * register new destination chains reachable via CCTP
    */
   for (const [chainName, info] of Object.entries(cctpChainInfo)) {
-    if (chainName === 'noble') continue;
+    if (info.namespace !== 'eip155') continue; // exclude solana, noble
     await E(creatorFacet).registerChain(chainName, {
       ...info,
       // for backwards compatibility with `CosmosChainInfoShapeV1` which expects a `chainId`
@@ -116,7 +187,7 @@ export const upgradeEvmSolana = async (
     noble.chainId,
     agoricToNoble,
   );
-  trace('updateEvmSolana done');
+  trace('upgradeEvmDests done');
 };
 
 /**
@@ -126,14 +197,14 @@ export const upgradeEvmSolana = async (
  *   options: Omit<UpdateOpts, 'fastUsdcCode'> & CopyRecord;
  * }} opts
  */
-export const getManifestForUpgradeEvmSolana = (
+export const getManifestForUpgradeEvmDests = (
   _utils,
   { installKeys, options },
 ) => {
   return {
     /** @type {BootstrapManifest} */
     manifest: {
-      [upgradeEvmSolana.name]: {
+      [upgradeEvmDests.name]: {
         consume: { fastUsdcKit: true },
       },
     },
