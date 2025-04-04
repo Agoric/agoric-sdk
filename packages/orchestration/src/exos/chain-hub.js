@@ -777,21 +777,18 @@ export const makeChainHub = (
       }
       const { chainId: holdingChainId } = holdingChainInfo;
 
-      destination =
-        typeof destination === 'string'
-          ? chainHub.coerceCosmosAddress(destination)
-          : destination;
+      const cosmosDest = chainHub.coerceCosmosAddress(destination);
 
       // asset is transferring to or from the issuing chain, return direct route
-      if (baseChainId === destination.chainId || baseName === srcChainName) {
+      if (baseChainId === cosmosDest.chainId || baseName === srcChainName) {
         // TODO use getConnectionInfo once its sync
-        const connKey = connectionKey(holdingChainId, destination.chainId);
+        const connKey = connectionKey(holdingChainId, cosmosDest.chainId);
         connectionInfos.has(connKey) ||
-          Fail`no connection info found for ${holdingChainId}<->${destination.chainId}`;
+          Fail`no connection info found for ${holdingChainId}<->${cosmosDest.chainId}`;
 
         const { transferChannel } = denormalizeConnectionInfo(
           holdingChainId, // from chain (primary)
-          destination.chainId, // to chain (counterparty)
+          cosmosDest.chainId, // to chain (counterparty)
           connectionInfos.get(connKey),
         );
         return harden({
@@ -801,7 +798,7 @@ export const makeChainHub = (
             amount: String(denomAmount.value),
             denom: denomAmount.denom,
           },
-          receiver: destination.value,
+          receiver: cosmosDest.value,
         });
       }
 

@@ -11,6 +11,7 @@ import {
   registerKnownChains,
 } from '../../src/chain-info.js';
 import type {
+  Bech32Address,
   CosmosChainInfo,
   IBCConnectionInfo,
 } from '../../src/cosmos-api.js';
@@ -187,12 +188,14 @@ test('coerceCosmosAddress', async t => {
 
   t.throws(
     () =>
+      // @ts-expect-error intentionally invalid
       chainHub.coerceCosmosAddress(MOCK_ICA_ADDRESS.replace('osmo1', 'foo1')),
     {
       message: 'Chain info not found for bech32Prefix "foo"',
     },
   );
 
+  // @ts-expect-error intentionally invalid
   t.throws(() => chainHub.coerceCosmosAddress('notbech32'), {
     message: 'No separator character for "notbech32"',
   });
@@ -240,6 +243,7 @@ test('resolveAccountId', async t => {
 
   // Should throw for invalid address format
   t.throws(
+    // @ts-expect-error intentionally invalid
     () => chainHub.resolveAccountId('notbech32'),
     {
       message: 'No separator character for "notbech32"',
@@ -286,7 +290,7 @@ test('updateChain updates existing chain info and mappings', t => {
   chainHub.updateChain('testchain', updatedInfo);
 
   // Verify chain address works with new prefix
-  const address = `${updatedInfo.bech32Prefix}1abc`;
+  const address: Bech32Address = `${updatedInfo.bech32Prefix}1abc`;
   const chainAddress = chainHub.coerceCosmosAddress(address);
   t.deepEqual(chainAddress, {
     chainId: 'chain-1',
