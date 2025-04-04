@@ -255,12 +255,10 @@ export const prepareEvmAccountKit = (zone, { zcf, vowTools, log }) => {
           const continuingEVMTransactionHandler = async seat => {
             const { holder } = this.facets;
             switch (method) {
-              case 'sendGmp':
-                const vow = holder.sendGmp(seat, args[0]);
-                return vowTools.when(vow, res => {
-                  seat.exit();
-                  return res;
-                });
+              case 'sendGmp': {
+                seat.exit();
+                return holder.sendGmp(seat, args[0]);
+              }
               case 'getAddress': {
                 const vow = holder.getAddress();
                 return vowTools.when(vow, res => {
