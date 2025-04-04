@@ -56,6 +56,7 @@ export const createAndMonitorLCA = async (
   // Every time the `localAccount` receives `remoteDenom` over IBC, delegate it.
   const assets = await agoric.getVBankAssetInfo();
   const info = await remoteChain.getChainInfo();
+  // localAccount.
   const evmAccountKit = makeEvmAccountKit({
     localAccount,
     localChainAddress,
