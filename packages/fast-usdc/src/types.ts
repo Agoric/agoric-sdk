@@ -43,7 +43,7 @@ export interface CctpTxEvidence {
   /** from Noble RPC */
   aux: {
     forwardingChannel: IBCChannelID;
-    recipientAddress: CosmosChainAddress['value'];
+    recipientAddress: CosmosChainAddress['value'] | AccountId;
   };
   /** on the source chain (e.g. L1 Ethereum and L2s Arbitrum, Base) */
   blockHash: EvmHash;
