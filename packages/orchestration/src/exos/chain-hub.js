@@ -232,7 +232,9 @@ const ChainHubI = M.interface('ChainHub', {
     M.or(DenomDetailShape, M.undefined()),
   ),
   getDenom: M.call(BrandShape).returns(M.or(M.string(), M.undefined())),
-  makeChainAddress: M.call(M.string()).returns(CosmosChainAddressShape),
+  coerceCosmosAddress: M.call(AccountIdArgShape).returns(
+    CosmosChainAddressShape,
+  ),
   resolveAccountId: M.call(M.string()).returns(M.string()),
   makeTransferRoute: M.call(AccountIdArgShape, DenomAmountShape, M.string())
     .optional(ForwardOptsShape)
@@ -697,11 +699,18 @@ export const makeChainHub = (
     },
 
     /**
-     * @param {string} partialId CAIP-10 account ID or a Cosmos bech32 address
+     * Like {@see resolveAccountId} but always returns a CosmosChainAddress.
+     *
+     * @param {AccountIdArg | Bech32Address} partialId CAIP-10 account ID or a
+     *   Cosmos bech32 address
      * @returns {CosmosChainAddress}
      * @throws {Error} if chain info not found for bech32Prefix
      */
-    makeChainAddress(partialId) {
+    coerceCosmosAddress(partialId) {
+      if (typeof partialId !== 'string') {
+        // already a CosmosChainAddress
+        return partialId;
+      }
       const parts = partialId.split(':');
       if (parts.length === 3) {
         assert.equal(parts[0], 'cosmos');
@@ -712,6 +721,7 @@ export const makeChainHub = (
         });
       }
 
+      assert.equal(parts.length, 1); // no colons
       const cosmosChainId = resolveCosmosChainId(
         /** @type {Bech32Address} */ (partialId),
       );
@@ -769,7 +779,7 @@ export const makeChainHub = (
 
       destination =
         typeof destination === 'string'
-          ? chainHub.makeChainAddress(destination)
+          ? chainHub.coerceCosmosAddress(destination)
           : destination;
 
       // asset is transferring to or from the issuing chain, return direct route
@@ -803,9 +813,9 @@ export const makeChainHub = (
       connectionInfos.has(currToIssuerKey) ||
         Fail`no connection info found for ${holdingChainId}<->${baseChainId}`;
 
-      const issuerToDestKey = connectionKey(baseChainId, destination.chainId);
+      const issuerToDestKey = connectionKey(baseChainId, cosmosDest.chainId);
       connectionInfos.has(issuerToDestKey) ||
-        Fail`no connection info found for ${baseChainId}<->${destination.chainId}`;
+        Fail`no connection info found for ${baseChainId}<->${cosmosDest.chainId}`;
 
       const currToIssuer = denormalizeConnectionInfo(
         holdingChainId,
@@ -814,7 +824,7 @@ export const makeChainHub = (
       );
       const issuerToDest = denormalizeConnectionInfo(
         baseChainId,
-        destination.chainId,
+        cosmosDest.chainId,
         connectionInfos.get(issuerToDestKey),
       );
 
@@ -822,7 +832,7 @@ export const makeChainHub = (
       /** @type {ForwardInfo} */
       const forwardInfo = harden({
         forward: {
-          receiver: destination.value,
+          receiver: cosmosDest.value,
           port: issuerToDest.transferChannel.portId,
           channel: issuerToDest.transferChannel.channelId,
           ...DefaultPfmTimeoutOpts,

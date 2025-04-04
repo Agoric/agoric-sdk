@@ -639,7 +639,7 @@ export const prepareLocalOrchestrationAccountKit = (
             trace('send', toAccount, amount);
             toAccount =
               typeof toAccount === 'string'
-                ? chainHub.makeChainAddress(toAccount)
+                ? chainHub.coerceCosmosAddress(toAccount)
                 : toAccount;
             toAccount.chainId === this.state.address.chainId ||
               Fail`bank/send cannot send to a different chain ${q(toAccount.chainId)}`;
