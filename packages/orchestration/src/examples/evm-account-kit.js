@@ -51,6 +51,7 @@ const EVMI = M.interface('holder', {
   getEVMSmartWalletAddress: M.call().returns(M.any()),
   send: M.call(M.any(), M.any()).returns(M.any()),
   sendGmp: M.call(M.any(), M.any()).returns(M.any()),
+  fundLCA: M.call(M.any(), M.any()).returns(VowShape),
 });
 
 const InvitationMakerI = M.interface('invitationMaker', {
@@ -74,9 +75,13 @@ harden(EvmKitStateShape);
  *   zcf: ZCF;
  *   vowTools: VowTools;
  *   log: (msg: string) => Vow<void>;
+ *   zoeTools: ZoeTools;
  * }} powers
  */
-export const prepareEvmAccountKit = (zone, { zcf, vowTools, log }) => {
+export const prepareEvmAccountKit = (
+  zone,
+  { zcf, vowTools, log, zoeTools },
+) => {
   return zone.exoClassKit(
     'EvmTapKit',
     {
@@ -255,6 +260,15 @@ export const prepareEvmAccountKit = (zone, { zcf, vowTools, log }) => {
           void log('sendGmp successful');
           return 'sendGmp successful';
         },
+        /**
+         * @param {ZCFSeat} seat
+         * @param {any} give
+         */
+        fundLCA(seat, give) {
+          seat.hasExited() && Fail`The seat cannot be exited.`;
+          // @ts-expect-error
+          return zoeTools.localTransfer(seat, this.state.localAccount, give);
+        },
       },
       invitationMakers: {
         // "method" and "args" can be used to invoke methods of localAccount obj
@@ -281,6 +295,14 @@ export const prepareEvmAccountKit = (zone, { zcf, vowTools, log }) => {
               }
               case 'send': {
                 const vow = holder.send(args[0], args[1]);
+                return vowTools.when(vow, res => {
+                  seat.exit();
+                  return res;
+                });
+              }
+              case 'fundLCA': {
+                const { give } = seat.getProposal();
+                const vow = holder.fundLCA(seat, give);
                 return vowTools.when(vow, res => {
                   seat.exit();
                   return res;

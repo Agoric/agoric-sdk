@@ -41,7 +41,7 @@ export const contract = async (
   zcf,
   privateArgs,
   zone,
-  { chainHub, orchestrateAll, vowTools },
+  { chainHub, orchestrateAll, vowTools, zoeTools },
 ) => {
   console.log('Inside Contract');
 
@@ -70,6 +70,7 @@ export const contract = async (
     zcf,
     vowTools,
     log,
+    zoeTools,
   });
 
   const { createAndMonitorLCA } = orchestrateAll(evmFlows, {
