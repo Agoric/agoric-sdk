@@ -1,11 +1,11 @@
 /**
  * Usage:
- * agoric run fast-usdc-evm-solana.build.js
+ * agoric run fast-usdc-evm-dests.build.js
  *
- * (see upgrade-evm-solana.core.js)
+ * (see upgrade-evm-dests.core.js)
  */
 import { makeHelpers } from '@agoric/deploy-script-support';
-import { getManifestForUpgradeEvmSolana } from './upgrade-evm-solana.core.js';
+import { getManifestForUpgradeEvmDests } from './upgrade-evm-dests.core.js';
 
 /**
  * @import {CoreEvalBuilder, DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
@@ -21,10 +21,10 @@ export const proposalBuilder = async (
   options = {},
 ) => {
   return harden({
-    sourceSpec: './upgrade-evm-solana.core.js',
-    /** @type {[string, Parameters<typeof getManifestForUpgradeEvmSolana>[1]]} */
+    sourceSpec: './upgrade-evm-dests.core.js',
+    /** @type {[string, Parameters<typeof getManifestForUpgradeEvmDests>[1]]} */
     getManifestCall: [
-      getManifestForUpgradeEvmSolana.name,
+      getManifestForUpgradeEvmDests.name,
       {
         options,
         installKeys: {
@@ -43,7 +43,7 @@ export const proposalBuilder = async (
 export default async (homeP, endowments) => {
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
 
-  await writeCoreEval('eval-fast-usdc-evm-solana', utils =>
+  await writeCoreEval('eval-fast-usdc-evm-dests', utils =>
     proposalBuilder(utils),
   );
 };

@@ -211,6 +211,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     await eventLoopIteration();
   };
 
+  /** A chainHub for Exo tests, distinct from the one a contract makes within `withOrchestration` */
   const chainHub = makeChainHub(
     rootZone.subZone('chainHub'),
     agoricNames,

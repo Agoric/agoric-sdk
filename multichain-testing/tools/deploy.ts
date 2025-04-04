@@ -23,7 +23,9 @@ export const makeDeployBuilder = (
     if (builderOpts) {
       args.push(...flags(builderOpts));
     }
-    const { stdout } = await execa('agoric', args);
+    const npx = (file: string, args: string[]) =>
+      execa('npx', ['--no-install', file, ...args]);
+    const { stdout } = await npx('agoric', args);
     const match = stdout.match(/ (?<name>[-\w]+)-permit.json/);
     if (!(match && match.groups)) {
       throw Error('no permit found');

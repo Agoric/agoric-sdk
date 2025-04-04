@@ -17,13 +17,10 @@ import { denomHash } from '../../src/utils/denomHash.js';
 import type { DenomDetail } from '../../src/types.js';
 import fetchedChainInfo from '../../src/fetched-chain-info.js';
 import { parseOutgoingTxPacket } from '../../tools/ibc-mocks.js';
-
-const dirname = path.dirname(new URL(import.meta.url).pathname);
+import * as contractExports from '../../src/examples/send-anywhere.contract.js';
 
 const contractName = 'sendAnywhere';
-const contractFile = `${dirname}/../../src/examples/send-anywhere.contract.js`;
-type StartFn =
-  typeof import('../../src/examples/send-anywhere.contract.js').start;
+type StartFn = typeof contractExports.start;
 
 const txChannelDefaults = {
   counterPartyPortId: 'transfer',
@@ -149,7 +146,7 @@ test('send to base via noble CCTP', async t => {
   t.log('contract coreEval', contractName);
 
   const installation: Installation<StartFn> =
-    await bundleAndInstall(contractFile);
+    await bundleAndInstall(contractExports);
 
   const { bankManager, agoricNamesAdmin } = bootstrap;
   const usdcKit = await registerUSDC({

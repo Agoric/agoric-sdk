@@ -7,6 +7,7 @@ import {
   getBech32Prefix,
   parseAccountId,
   parseAccountIdArg,
+  chainOfAccount,
 } from '../../src/utils/address.js';
 import type { CosmosChainAddress } from '../../src/orchestration-api.ts';
 import type { Bech32Address } from '../../src/cosmos-api.ts';
@@ -202,6 +203,23 @@ test(`parse BECH32 (fail)`, async t => {
       parseAccountId(BECH32_ADDRESS),
     {
       message: `malformed CAIP-10 accountId: "${BECH32_ADDRESS}"`,
+    },
+  );
+});
+
+test('extract CaipChainId from AccountIdArg', t => {
+  t.is(chainOfAccount(CAIP10_ETH), 'eip155:1');
+  t.is(chainOfAccount(CAIP10_COSMOS), 'cosmos:cosmoshub-3');
+  t.is(chainOfAccount(COSMOS_AG_RECORD), 'cosmos:agoric-3');
+
+  t.throws(
+    () =>
+      chainOfAccount(
+        // @ts-expect-error illegal type
+        COSMOS_AG_RECORD.value,
+      ),
+    {
+      message: `malformed CAIP-10 accountId: "${COSMOS_AG_RECORD.value}"`,
     },
   );
 });

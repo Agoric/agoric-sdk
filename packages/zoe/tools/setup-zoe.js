@@ -2,10 +2,12 @@ import { E, makeLoopback } from '@endo/captp';
 
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import bundleSource from '@endo/bundle-source';
+import { bundleTestExports } from '@endo/import-bundle';
 import { makeDurableZoeKit } from '../src/zoeService/zoe.js';
 import fakeVatAdmin, { makeFakeVatAdmin } from './fakeVatAdmin.js';
 
 /**
+ * @import {EndoZipBase64Bundle, TestBundle} from '@agoric/swingset-vat';
  * @import {FeeIssuerConfig, Installation} from '../src/types-index.js';
  */
 
@@ -61,13 +63,40 @@ export const setUpZoeForTest = async ({
   );
 
   /**
-   * @param {string} path
+   * @param {object} pathOrExports
+   * @returns {Promise<EndoZipBase64Bundle | TestBundle>}
+   */
+  const bundleModule = async pathOrExports => {
+    if (typeof pathOrExports === 'string') {
+      const path = pathOrExports;
+      return bundleSource(path);
+    } else {
+      assert.equal(
+        Object.getOwnPropertyDescriptor(pathOrExports, Symbol.toStringTag)
+          ?.value,
+        'Module',
+      );
+      // Copy all the properties so this object can be hardened.
+      const exports = { ...pathOrExports };
+      return bundleTestExports(exports);
+    }
+  };
+
+  /**
+   * Bundle the source module (either as file system path or a Module object)
+   * and return an Installation. The bundleID is random and should not be relied
+   * upon in tests of this variety.
+   *
+   * @param {object} pathOrExports
    * @returns {Promise<Installation>}
    */
-  const bundleAndInstall = async path => {
-    const bundle = await bundleSource(path);
-    const id = `b1-${path}`;
-    assert(vatAdminState, 'installBundle called before vatAdminState defined');
+  const bundleAndInstall = async pathOrExports => {
+    const bundle = await bundleModule(pathOrExports);
+    assert(
+      vatAdminState,
+      'bundleAndInstall called before vatAdminState defined',
+    );
+    const id = `b1-zoe-test-${Math.random()}`;
     vatAdminState.installBundle(id, bundle);
     return E(zoeService).installBundleID(id);
   };

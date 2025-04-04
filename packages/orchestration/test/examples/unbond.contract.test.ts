@@ -13,12 +13,9 @@ import {
   buildMsgResponseString,
   buildQueryResponseString,
 } from '../../tools/ibc-mocks.js';
+import * as contractExports from '../../src/examples/unbond.contract.js';
 
-const dirname = path.dirname(new URL(import.meta.url).pathname);
-
-const contractFile = `${dirname}/../../src/examples/unbond.contract.js`;
-type StartFn =
-  typeof import('@agoric/orchestration/src/examples/unbond.contract.js').start;
+type StartFn = typeof contractExports.start;
 
 test('start', async t => {
   const {
@@ -70,7 +67,7 @@ test('start', async t => {
     },
   });
   const installation: Installation<StartFn> =
-    await bundleAndInstall(contractFile);
+    await bundleAndInstall(contractExports);
 
   const { publicFacet } = await E(zoe).startInstance(
     installation,

@@ -72,7 +72,7 @@ export const updateFeeConfig = async (
 
   // ensure Advancer has intermediateRecipient
   await E(creatorFacet).connectToNoble();
-  trace('setIntermediateRecipient done');
+  trace('updateFeeConfig done');
 };
 
 /**

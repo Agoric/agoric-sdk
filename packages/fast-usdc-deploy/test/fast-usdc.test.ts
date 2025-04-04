@@ -374,14 +374,21 @@ test.serial('deploy RC2; update Settler reference', async t => {
   t.is(vatDetails.incarnation, 2);
 });
 
-test.serial('deploy HEAD; update ChainHub for EVM/Solana', async t => {
+test.serial('deploy HEAD; upgrade to support EVM destinations', async t => {
   const { buildProposal, evalProposal, getVatDetailsByName } = t.context;
   const materials = await buildProposal(
-    '@aglocal/fast-usdc-deploy/src/fast-usdc-evm-solana.build.js',
+    '@aglocal/fast-usdc-deploy/src/fast-usdc-evm-dests.build.js',
   );
   await evalProposal(materials);
   const [vatDetails] = await getVatDetailsByName('fastUsdc');
   t.is(vatDetails.incarnation, 3);
+
+  const doc = {
+    node: 'fastUsdc.feeConfig',
+    owner: 'the fee configuration for Fast USDC with `destinationOverrides`',
+    showValue: defaultSerializer.parse,
+  };
+  await documentStorageSchema(t, t.context.storage, doc);
 });
 
 test.serial('makes usdc advance', async t => {
