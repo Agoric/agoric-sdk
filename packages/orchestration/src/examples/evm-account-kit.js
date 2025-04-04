@@ -3,8 +3,9 @@ import { M, mustMatch } from '@endo/patterns';
 import { VowShape } from '@agoric/vow';
 import { makeTracer, NonNullish } from '@agoric/internal';
 import { atob, decodeBase64 } from '@endo/base64';
-import { CosmosChainAddressShape } from '../typeGuards.js';
+import { defaultAbiCoder } from '@ethersproject/abi';
 import { Fail } from '@endo/errors';
+import { CosmosChainAddressShape } from '../typeGuards.js';
 import { buildGMPPayload } from '../utils/gmp.js';
 
 const trace = makeTracer('EvmTap');
@@ -22,6 +23,7 @@ const addresses = {
  * @import {Zone} from '@agoric/zone';
  * @import {CosmosChainAddress, Denom, OrchestrationAccount} from '@agoric/orchestration';
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
+ * @import {ZoeTools} from '@agoric/orchestration/src/utils/zoe-tools.js';
  */
 
 /**
@@ -88,7 +90,7 @@ export const prepareEvmAccountKit = (zone, { zcf, vowTools, log }) => {
           .optional(M.bigint())
           .returns(VowShape),
       }),
-      evm: EVMI,
+      holder: EVMI,
       invitationMakers: InvitationMakerI,
     },
     /** @param {EvmTapState} initialState */
@@ -134,7 +136,7 @@ export const prepareEvmAccountKit = (zone, { zcf, vowTools, log }) => {
           trace('onFulfilled state:', JSON.stringify(this.state));
         },
       },
-      evm: {
+      holder: {
         async getAddress() {
           // @ts-expect-error
           const localChainAddress = await this.state.localAccount.getAddress();
@@ -234,6 +236,7 @@ export const prepareEvmAccountKit = (zone, { zcf, vowTools, log }) => {
 
           void log(`Initiating IBC Transfer...`);
           void log(`DENOM of token:${denom}`);
+
           // @ts-expect-error
           await this.state.localAccount.transfer(
             {
@@ -248,6 +251,7 @@ export const prepareEvmAccountKit = (zone, { zcf, vowTools, log }) => {
             { memo: JSON.stringify(memo) },
           );
 
+          seat.exit();
           void log('sendGmp successful');
           return 'sendGmp successful';
         },
@@ -259,7 +263,6 @@ export const prepareEvmAccountKit = (zone, { zcf, vowTools, log }) => {
             const { holder } = this.facets;
             switch (method) {
               case 'sendGmp': {
-                seat.exit();
                 return holder.sendGmp(seat, args[0]);
               }
               case 'getAddress': {
