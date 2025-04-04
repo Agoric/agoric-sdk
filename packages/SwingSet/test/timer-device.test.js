@@ -230,3 +230,160 @@ test('Timer schedule multiple repeaters', t => {
   ];
   t.deepEqual(schedule.cloneSchedule(), [{ time: 17n, handlers: h }]);
 });
+
+test('multiMap initialize with state', t => {
+  const handlerA = makeHandler();
+  const handlerB = makeHandler();
+  const initialState = [
+    { time: 3n, handlers: [{ handler: handlerA }] },
+    { time: 5n, handlers: [{ handler: handlerB }, { handler: handlerA }] },
+  ];
+  const mm = makeTimerMap(initialState);
+
+  // Verify initial state is loaded correctly
+  const events = mm.removeEventsThrough(10n);
+  t.is(events.length, 2);
+  t.deepEqual(events[0], { time: 3n, handlers: [{ handler: handlerA }] });
+  t.deepEqual(events[1], {
+    time: 5n,
+    handlers: [{ handler: handlerB }, { handler: handlerA }],
+  });
+
+  // Ensure the initial state wasn't mutated by makeTimerMap or removeEventsThrough
+  t.deepEqual(initialState, [
+    { time: 3n, handlers: [{ handler: handlerA }] },
+    { time: 5n, handlers: [{ handler: handlerB }, { handler: handlerA }] },
+  ]);
+});
+
+test.failing('multiMap remove edge cases', t => {
+  const mm = makeTimerMap();
+  const handlerA = makeHandler();
+  const handlerB = makeHandler();
+  const handlerC = makeHandler();
+
+  // Remove from empty map
+  t.deepEqual(mm.remove(handlerA), []);
+
+  // Add multiple handlers for the same time
+  mm.add(5n, handlerA);
+  mm.add(5n, handlerB);
+  mm.add(7n, handlerC);
+
+  // Remove one handler when multiple exist for that time
+  t.deepEqual(mm.remove(handlerA), [5n]);
+  let events = mm.removeEventsThrough(6n);
+  t.is(events.length, 1);
+  t.deepEqual(events[0], { time: 5n, handlers: [{ handler: handlerB }] });
+
+  // Add the same handler multiple times for the same time
+  mm.add(8n, handlerC);
+  mm.add(8n, handlerC); // Add C again at time 8, right after the other C
+  mm.add(8n, handlerB); // Cause a gap between 2 occurences of C
+  mm.add(8n, handlerC);
+
+  t.deepEqual(mm.cloneSchedule(), [
+    {
+      time: 7n,
+      handlers: [{ handler: handlerC }],
+    },
+    {
+      time: 8n,
+      handlers: [
+        { handler: handlerC },
+        { handler: handlerC },
+        { handler: handlerB },
+        { handler: handlerC },
+      ],
+    },
+  ]);
+
+  // Remove should remove all instances of the handler for that time
+  t.deepEqual(mm.remove(handlerC), [7n, 8n, 8n, 8n]);
+  events = mm.removeEventsThrough(10n);
+  t.is(events.length, 1);
+  // The only handlerC at time 7n was removed.
+  // All handlerCs at time 8n were removed.
+  t.deepEqual(events[0], { time: 8n, handlers: [{ handler: handlerB }] });
+  t.deepEqual(mm.cloneSchedule(), []);
+});
+
+test('multiMap removeEventsThrough edge cases', t => {
+  const mm = makeTimerMap();
+  const handlerA = makeHandler();
+  const handlerB = makeHandler();
+  const handlerC = makeHandler();
+
+  // Remove from empty map
+  t.deepEqual(mm.removeEventsThrough(10n), []);
+
+  mm.add(5n, handlerA);
+  mm.add(10n, handlerB);
+  mm.add(15n, handlerC);
+
+  // Remove up to time before any events
+  t.deepEqual(mm.removeEventsThrough(4n), []);
+  t.deepEqual(mm.cloneSchedule(), [
+    { time: 5n, handlers: [{ handler: handlerA }] },
+    { time: 10n, handlers: [{ handler: handlerB }] },
+    { time: 15n, handlers: [{ handler: handlerC }] },
+  ]);
+
+  // Remove up to time exactly matching first event
+  let events = mm.removeEventsThrough(5n);
+  t.is(events.length, 1);
+  t.deepEqual(events[0], { time: 5n, handlers: [{ handler: handlerA }] });
+  t.deepEqual(mm.cloneSchedule(), [
+    { time: 10n, handlers: [{ handler: handlerB }] },
+    { time: 15n, handlers: [{ handler: handlerC }] },
+  ]);
+
+  // Remove multiple events at once
+  events = mm.removeEventsThrough(15n);
+  t.is(events.length, 2);
+  t.deepEqual(events[0], { time: 10n, handlers: [{ handler: handlerB }] });
+  t.deepEqual(events[1], { time: 15n, handlers: [{ handler: handlerC }] });
+  t.deepEqual(mm.cloneSchedule(), []);
+});
+
+test('multiMap cloneSchedule', t => {
+  const mm = makeTimerMap();
+  const handlerA = makeHandler();
+  const handlerB = makeHandler();
+
+  // Clone empty schedule
+  const clone1 = mm.cloneSchedule();
+  t.deepEqual(clone1, []);
+  mm.add(5n, handlerA); // Modify original
+  t.deepEqual(clone1, []); // Clone should be unaffected
+
+  // Clone schedule with items
+  mm.add(10n, handlerB);
+  const clone2 = mm.cloneSchedule();
+  t.deepEqual(clone2, [
+    { time: 5n, handlers: [{ handler: handlerA }] },
+    { time: 10n, handlers: [{ handler: handlerB }] },
+  ]);
+
+  // Modify original schedule
+  mm.removeEventsThrough(7n);
+  mm.add(12n, handlerA);
+
+  // Verify clone2 is unaffected (deep copy of arrays)
+  t.deepEqual(clone2, [
+    { time: 5n, handlers: [{ handler: handlerA }] },
+    { time: 10n, handlers: [{ handler: handlerB }] },
+  ]);
+
+  // Verify handlers themselves are not cloned (shallow copy of contents)
+  t.is(clone2[0].handlers[0].handler, handlerA);
+  t.is(clone2[1].handlers[0].handler, handlerB);
+
+  // Modify a handler array within the clone
+  clone2[0].handlers.push({ handler: handlerB });
+  // Verify original schedule is unaffected
+  t.deepEqual(mm.cloneSchedule(), [
+    { time: 10n, handlers: [{ handler: handlerB }] },
+    { time: 12n, handlers: [{ handler: handlerA }] },
+  ]);
+});
