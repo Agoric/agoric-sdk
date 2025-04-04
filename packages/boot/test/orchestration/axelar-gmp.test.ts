@@ -9,6 +9,8 @@ import { utils } from 'ethers';
 import { makeWalletFactoryContext } from '../bootstrapTests/walletFactory.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { ExecutionContext, TestFn } from 'ava';
+import { commonSetup } from '../../../orchestration/test/supports.js';
+import { E } from '@endo/eventual-send';
 
 type WalletFactoryContext = Awaited<
   ReturnType<typeof makeWalletFactoryContext>
@@ -110,10 +112,6 @@ test.before(async t => {
       ]),
     ]),
   );
-});
-
-test.beforeEach(t => {
-  t.context.storage.data.delete('published.axelarGmp.log');
 });
 
 // test.serial('send tokens via axelarGmp', async t => {
@@ -396,7 +394,6 @@ test.serial('makeAccount via axelarGmp', async t => {
   const getLogged = () =>
     JSON.parse(storage.data.get('published.axelarGmp.log')!).values;
 
-  // Flow started but IBC Transfer promise not resolved
   t.deepEqual(getLogged(), [
     'Inside createAndMonitorLCA',
     'localAccount created successfully',
@@ -513,6 +510,40 @@ test.serial('makeAccount via axelarGmp', async t => {
       id: `evmTransaction${evmTransactionCounter - 1}`,
       numWantsSatisfied: 1,
       result: evmSmartWalletAddress,
+    },
+  });
+
+  t.log('send tokens via LCA');
+  t.context.storage.data.delete('published.axelarGmp.log');
+
+  await makeEVMTransaction({
+    wallet,
+    previousOffer: previousOfferId,
+    methodName: 'sendGmp',
+    offerArgs: [
+      {
+        destinationAddress: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
+        type: 3,
+        destinationEVMChain: 'Ethereum',
+      },
+    ],
+    proposal: {
+      give: { BLD: { brand: BLD, value: 1n } },
+    },
+  });
+
+  t.deepEqual(getLogged(), [
+    'Inside sendGmp',
+    'Payload: null',
+    'Initiating IBC Transfer...',
+    'DENOM of token:ubld',
+    'sendGmp successful',
+  ]);
+
+  t.like(wallet.getLatestUpdateRecord(), {
+    status: {
+      id: `evmTransaction${evmTransactionCounter - 1}`,
+      result: 'sendGmp successful',
     },
   });
 
