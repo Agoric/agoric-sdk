@@ -8,3 +8,5 @@ start*
 eval-*
 # ci logs for archive upload
 logs/
+# osmosis pool configuration
+*-pool-config.json
