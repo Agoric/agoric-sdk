@@ -4,6 +4,7 @@ import { M, matches } from '@endo/patterns';
 import { E } from '@endo/far';
 import { pickFacet } from '@agoric/vat-data';
 import { makeTracer } from '@agoric/internal';
+import { q } from '@endo/errors';
 
 const trace = makeTracer('PacketTools');
 
@@ -55,6 +56,27 @@ const EVow$ = shape => M.or(Vow$(shape), M.promise(/* shape */));
 
 const sink = () => {};
 harden(sink);
+
+/**
+ * extra details for logging
+ *
+ * @param {import('@agoric/vats').VTransferIBCEvent} obj
+ */
+const extractEventDetails = obj => {
+  const {
+    acknowledgement,
+    event,
+    packet: { source_channel: sourceChannel, sequence },
+    target,
+  } = obj;
+  return {
+    event,
+    target,
+    sourceChannel,
+    sequence,
+    acknowledgement,
+  };
+};
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
@@ -206,13 +228,15 @@ export const preparePacketTools = (zone, vowTools) => {
         },
       },
       tap: {
+        /**
+         * @param {import('@agoric/vats').VTransferIBCEvent} obj
+         */
         // eslint-disable-next-line no-restricted-syntax
         async receiveUpcall(obj) {
           const { monitor, resolverToPattern, upcallQueue, pending } =
             this.state;
           trace(
-            `Trying ${resolverToPattern.getSize()} current patterns and ${pending} pending patterns against`,
-            just(obj),
+            `Trying ${resolverToPattern.getSize()} current patterns and ${pending} pending patterns against ${q(extractEventDetails(obj))}`,
           );
 
           if (monitor) {
@@ -222,7 +246,7 @@ export const preparePacketTools = (zone, vowTools) => {
           // Check all our fulfilled patterns for matches.
           for (const [resolver, pattern] of resolverToPattern.entries()) {
             if (matches(obj, pattern)) {
-              trace('Matched pattern:', just(pattern));
+              trace('Matched pattern');
               resolver.resolve(obj);
               resolverToPattern.delete(resolver);
               return;
@@ -279,7 +303,6 @@ export const preparePacketTools = (zone, vowTools) => {
         onFulfilled(pattern, { resolver }) {
           const { resolverToPattern, upcallQueue } = this.state;
 
-          trace('watchPacketPattern onFulfilled', just(pattern));
           if (!upcallQueue) {
             // Save the pattern for later.
             trace('No upcall queue yet.  Save the pattern for later.');

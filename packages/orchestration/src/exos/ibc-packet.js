@@ -1,7 +1,10 @@
-import { assertAllDefined } from '@agoric/internal';
+import { assertAllDefined, makeTracer } from '@agoric/internal';
 import { base64ToBytes, Shape as NetworkShape } from '@agoric/network';
 import { M } from '@endo/patterns';
 import { E } from '@endo/far';
+import { q } from '@endo/errors';
+
+const trace = makeTracer('Orch:IBCPacket');
 
 // As specified in ICS20, the success result is a base64-encoded '\0x1' byte.
 export const ICS20_TRANSFER_SUCCESS_RESULT = 'AQ==';
@@ -112,6 +115,7 @@ export const prepareIBCTransferSender = (zone, { watch, makeIBCReplyKit }) => {
           const { match } = ctx;
           const { transferMsg } = this.state;
 
+          trace(`got sequence: ${sequence} for ${q(transferMsg)}`);
           // Match the port/channel and sequence number.
           const replyPacketPattern = M.splitRecord({
             source_port: transferMsg.sourcePort,
