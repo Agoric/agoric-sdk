@@ -147,6 +147,18 @@ export const parseAccountId = accountId => {
 harden(parseAccountId);
 
 /**
+ * Extract a {@link CaipChainId} from an account ID or unscoped chain address.
+ *
+ * @param {AccountIdArg} accountIdArg CAIP-10 account ID or unscoped chain
+ *   address
+ * @returns {CaipChainId}
+ */
+export const chainOfAccount = accountIdArg => {
+  const { namespace, reference } = parseAccountIdArg(accountIdArg);
+  return `${namespace}:${reference}`;
+};
+
+/**
  * Left pad the mint recipient address with 0's to 32 bytes. standard ETH
  * addresses are 20 bytes, but for ABI data structures and other reasons, 32
  * bytes are used.
