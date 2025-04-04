@@ -236,7 +236,7 @@ export const prepareEvmAccountKit = (zone, { zcf, vowTools, log }) => {
           void log(`Initiating IBC Transfer...`);
           void log(`DENOM of token:${denom}`);
           // @ts-expect-error
-          return this.state.localAccount.transfer(
+          await this.state.localAccount.transfer(
             {
               value: addresses.AXELAR_GMP,
               encoding: 'bech32',
@@ -248,6 +248,9 @@ export const prepareEvmAccountKit = (zone, { zcf, vowTools, log }) => {
             },
             { memo: JSON.stringify(memo) },
           );
+
+          void log('sendGmp successful');
+          return 'sendGmp successful';
         },
       },
       invitationMakers: {
