@@ -96,7 +96,7 @@ test('send (to addr on same chain)', async t => {
   t.assert(account, 'account is returned');
 
   const toAddress: CosmosChainAddress = {
-    value: 'cosmos99test',
+    value: 'cosmos1testrecipient',
     chainId: 'cosmoshub-4',
     encoding: 'bech32',
   };
@@ -115,7 +115,7 @@ test('send (to addr on same chain)', async t => {
     buildTxPacketString([
       MsgSend.toProtoMsg({
         fromAddress: 'cosmos1test',
-        toAddress: 'cosmos99test',
+        toAddress: 'cosmos1testrecipient',
         amount: [
           {
             denom: uistOnCosmos,

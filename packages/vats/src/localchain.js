@@ -102,7 +102,7 @@ export const prepareLocalChainAccountKit = (zone, { watch }) =>
       }),
     },
     /**
-     * @param {string} address
+     * @param {import('@agoric/orchestration').Bech32Address} address
      * @param {AccountPowers} powers
      */
     (address, powers) => ({

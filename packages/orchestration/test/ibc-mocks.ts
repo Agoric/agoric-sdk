@@ -64,12 +64,12 @@ const redelegation = {
 };
 const bankSend = {
   fromAddress: 'cosmos1test',
-  toAddress: 'cosmos99test',
+  toAddress: 'cosmos1testrecipient',
   amount: [{ denom: 'uatom', amount: '10' }],
 };
 const bankSendMulti = {
   fromAddress: 'cosmos1test',
-  toAddress: 'cosmos99test',
+  toAddress: 'cosmos1testrecipient',
   amount: [
     { denom: 'uatom', amount: '10' },
     { denom: 'ibc/1234', amount: '10' },

@@ -216,9 +216,9 @@ test('takes forwardOpts', t => {
 
   const nobleAddr = harden({
     value: 'noble1234',
-    encoding: 'bech32' as const,
+    encoding: 'bech32',
     chainId: 'noble-1',
-  });
+  } as const);
 
   t.deepEqual(
     chainHub.makeTransferRoute(dest, amt, 'osmosis', {

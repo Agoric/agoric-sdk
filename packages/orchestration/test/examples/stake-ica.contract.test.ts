@@ -152,6 +152,7 @@ test('delegate, undelegate, redelegate, withdrawReward', async t => {
     validatorAddr,
     {
       ...validatorAddr,
+      // @ts-expect-error XXX invalid Bech32
       value: 'cosmosvaloper2test',
     },
     { denom: 'uatom', value: 10n },

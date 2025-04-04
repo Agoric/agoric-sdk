@@ -717,17 +717,16 @@ export const makeChainHub = (
         return harden({
           chainId: parts[1],
           encoding: 'bech32',
-          value: parts[2],
+          value: /** @type {Bech32Address} */ (parts[2]),
         });
       }
 
       assert.equal(parts.length, 1); // no colons
-      const cosmosChainId = resolveCosmosChainId(
-        /** @type {Bech32Address} */ (partialId),
-      );
+      const value = /** @type {Bech32Address} */ (partialId);
+      const cosmosChainId = resolveCosmosChainId(value);
       return harden({
         chainId: cosmosChainId,
-        value: partialId,
+        value,
         encoding: /** @type {const} */ ('bech32'),
       });
     },
