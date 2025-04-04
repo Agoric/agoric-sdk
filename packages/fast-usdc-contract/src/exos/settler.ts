@@ -17,6 +17,7 @@ import { M } from '@endo/patterns';
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { PendingTxStatus } from '@agoric/fast-usdc/src/constants.js';
 import {
+  AddressHookShape,
   CctpTxEvidenceShape,
   EvmHashShape,
   makeNatAmountShape,
@@ -43,7 +44,7 @@ import type {
 } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { WithdrawToSeat } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import type { MapStore } from '@agoric/store';
+import { mustMatch, type MapStore } from '@agoric/store';
 import type { IBCChannelID, IBCPacket, VTransferIBCEvent } from '@agoric/vats';
 import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
 import type { VowTools } from '@agoric/vow';
@@ -76,15 +77,12 @@ const decodeEventPacket = (
     return { error: ['unexpected denom', { actual, expected: remoteDenom }] };
   }
 
-  let EUD;
+  let EUD: Bech32Address;
   try {
-    ({ EUD } = decodeAddressHook(tx.receiver).query);
-    if (!EUD) {
-      return { error: ['no EUD parameter', tx.receiver] };
-    }
-    if (typeof EUD !== 'string') {
-      return { error: ['EUD is not a string', EUD] };
-    }
+    const decoded = decodeAddressHook(tx.receiver);
+    mustMatch(decoded, AddressHookShape);
+
+    ({ EUD } = decoded.query);
   } catch (e) {
     return { error: ['no query params', tx.receiver] };
   }
