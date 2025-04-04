@@ -41,7 +41,7 @@ export const contract = async (
   zcf,
   privateArgs,
   zone,
-  { chainHub, orchestrateAll, vowTools, zoeTools },
+  { chainHub, orchestrateAll, vowTools },
 ) => {
   console.log('Inside Contract');
 

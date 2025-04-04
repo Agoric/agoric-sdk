@@ -4,8 +4,8 @@ import { VowShape } from '@agoric/vow';
 import { makeTracer, NonNullish } from '@agoric/internal';
 import { atob, decodeBase64 } from '@endo/base64';
 import { defaultAbiCoder } from '@ethersproject/abi';
-import { CosmosChainAddressShape } from '../typeGuards.js';
 import { Fail } from '@endo/errors';
+import { CosmosChainAddressShape } from '../typeGuards.js';
 import { buildGMPPayload } from '../utils/gmp.js';
 
 const trace = makeTracer('EvmTap');
