@@ -1,10 +1,12 @@
-import { assertAllDefined } from '@agoric/internal';
+import { assertAllDefined, makeTracer } from '@agoric/internal';
 import { base64ToBytes, Shape as NetworkShape } from '@agoric/network';
 import { M } from '@endo/patterns';
 import { E } from '@endo/far';
 
 // As specified in ICS20, the success result is a base64-encoded '\0x1' byte.
 export const ICS20_TRANSFER_SUCCESS_RESULT = 'AQ==';
+
+const trace = makeTracer('IBCP');
 
 /**
  * @import {Key, Pattern} from '@endo/patterns';
@@ -16,6 +18,15 @@ export const ICS20_TRANSFER_SUCCESS_RESULT = 'AQ==';
 
 const { Fail, bare } = assert;
 const { Vow$ } = NetworkShape; // TODO #9611
+
+/** @param {string} specimen */
+const tryJSONParse = specimen => {
+  try {
+    return JSON.parse(specimen);
+  } catch (_e) {
+    return undefined;
+  }
+};
 
 /**
  * Create a pattern for alterative representations of a sequence number.
@@ -111,6 +122,19 @@ export const prepareIBCTransferSender = (zone, { watch, makeIBCReplyKit }) => {
         onFulfilled([{ sequence }], ctx) {
           const { match } = ctx;
           const { transferMsg } = this.state;
+
+          // sequence + sourceChannel uniquely identifies a transfer.
+          // trace with receiver etc. for forensics
+          const { receiver, sourceChannel } = transferMsg;
+          const { amount } = transferMsg.token;
+          const memoData = tryJSONParse(transferMsg.memo);
+          trace(sourceChannel, '#', sequence, 'to', {
+            receiver,
+            token: { amount },
+            ...(memoData && {
+              forward: { receiver: memoData?.forward?.receiver },
+            }),
+          });
 
           // Match the port/channel and sequence number.
           const replyPacketPattern = M.splitRecord({
