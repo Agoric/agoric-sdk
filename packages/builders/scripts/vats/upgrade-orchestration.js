@@ -1,5 +1,5 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
-import { genericProposalBuilder } from './generic.js';
+import { upgradeVatsProposalBuilder } from './upgrade-vats.js';
 
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
 export const defaultProposalBuilder = async powers => {
@@ -11,7 +11,7 @@ export const defaultProposalBuilder = async powers => {
     orchestration: '@agoric/orchestration/src/vat-orchestration.js',
   };
 
-  return genericProposalBuilder(powers, bundleRecord);
+  return upgradeVatsProposalBuilder(powers, bundleRecord);
 };
 
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */

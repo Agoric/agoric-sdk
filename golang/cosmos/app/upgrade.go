@@ -75,6 +75,9 @@ func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
 	return true
 }
 
+// buildProposalStepWithArgs returns a CoreProposal representing invocation of
+// the specified module-specific entry point with arbitrary JSONable arguments
+// provided after core-eval powers.
 func buildProposalStepWithArgs(moduleName string, entrypoint string, args ...any) (vm.CoreProposalStep, error) {
 	argsBz, err := json.Marshal(args)
 	if err != nil {
@@ -163,8 +166,11 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 				buildProposalStepWithArgs(
 					"@agoric/builders/scripts/vats/generic.js",
 					"genericProposalBuilder",
-					map[string]any{
-						"ibc": "@agoric/vats/src/vat-ibc.js",
+					// Map iteration is randomised; use an anonymous struct instead.
+					struct {
+						Ibc string
+					}{
+						Ibc: "@agoric/vats/src/vat-ibc.js",
 					},
 				)
 			if err != nil {

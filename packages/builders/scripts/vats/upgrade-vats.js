@@ -1,7 +1,5 @@
-const strcmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
-
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
-export const genericProposalBuilder = async (
+export const upgradeVatsProposalBuilder = async (
   { publishRef, install },
   bundleRecord,
 ) => {
@@ -14,12 +12,10 @@ export const genericProposalBuilder = async (
       'getManifestForUpgradingVats',
       {
         bundleRefs: Object.fromEntries(
-          Object.entries(bundleRecord)
-            .sort(([a], [b]) => strcmp(a, b))
-            .map(
-              ([name, entrypoint]) =>
-                /** @type {const} */ ([name, publishRef(install(entrypoint))]),
-            ),
+          Object.entries(bundleRecord).map(
+            ([name, entrypoint]) =>
+              /** @type {const} */ ([name, publishRef(install(entrypoint))]),
+          ),
         ),
       },
     ],
