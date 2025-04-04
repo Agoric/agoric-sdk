@@ -1,10 +1,10 @@
-/** @file core-eval that includes changes necessary to support FastUSDC to Solana and EVM Chains */
+/** @file core-eval that includes changes necessary to support FastUSDC to EVM destinations */
 
 import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
 import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
 
-const trace = makeTracer('FUSD-EVM-SOL', true);
+const trace = makeTracer('FUSD-EVM', true);
 
 /**
  * @import {CopyRecord} from '@endo/pass-style';
@@ -52,7 +52,7 @@ harden(config);
  * @param {object} [config]
  * @param {UpdateOpts} [config.options]
  */
-export const upgradeEvmSolana = async (
+export const upgradeEvmDests = async (
   { consume: { fastUsdcKit } },
   { options = {} } = {},
 ) => {
@@ -94,7 +94,7 @@ export const upgradeEvmSolana = async (
    * register new destination chains reachable via CCTP
    */
   for (const [chainName, info] of Object.entries(cctpChainInfo)) {
-    if (chainName === 'noble') continue;
+    if (info.namespace !== 'eip155') continue; // exclude solana, noble
     await E(creatorFacet).registerChain(chainName, {
       ...info,
       // for backwards compatibility with `CosmosChainInfoShapeV1` which expects a `chainId`
@@ -116,7 +116,7 @@ export const upgradeEvmSolana = async (
     noble.chainId,
     agoricToNoble,
   );
-  trace('updateEvmSolana done');
+  trace('upgradeEvmDests done');
 };
 
 /**
@@ -126,14 +126,14 @@ export const upgradeEvmSolana = async (
  *   options: Omit<UpdateOpts, 'fastUsdcCode'> & CopyRecord;
  * }} opts
  */
-export const getManifestForUpgradeEvmSolana = (
+export const getManifestForUpgradeEvmDests = (
   _utils,
   { installKeys, options },
 ) => {
   return {
     /** @type {BootstrapManifest} */
     manifest: {
-      [upgradeEvmSolana.name]: {
+      [upgradeEvmDests.name]: {
         consume: { fastUsdcKit: true },
       },
     },
