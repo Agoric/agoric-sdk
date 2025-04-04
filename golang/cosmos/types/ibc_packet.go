@@ -24,7 +24,7 @@ func (p *IBCPacket) UnmarshalJSON(bz []byte) error {
 	return packageCdc.UnmarshalJSON(bz, &p.Packet)
 }
 
-func NewIBCPacket(
+func MakeIBCPacket(
 	data []byte,
 	sequence uint64,
 	sourcePort string,
@@ -55,7 +55,7 @@ func CopyToChannelPacket(packet exported.PacketI) channeltypes.Packet {
 
 func CopyToIBCPacket(packet exported.PacketI) IBCPacket {
 	timeoutHeight := clienttypes.MustParseHeight(packet.GetTimeoutHeight().String())
-	return NewIBCPacket(
+	return MakeIBCPacket(
 		packet.GetData(), packet.GetSequence(),
 		packet.GetSourcePort(), packet.GetSourceChannel(),
 		packet.GetDestPort(), packet.GetDestChannel(),

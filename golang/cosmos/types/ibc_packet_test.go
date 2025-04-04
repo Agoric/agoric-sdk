@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Agoric/agoric-sdk/golang/cosmos/types"
+	agtypes "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -16,7 +16,7 @@ import (
 	ibcexported "github.com/cosmos/ibc-go/v6/modules/core/exported"
 )
 
-func NewChannelPacket() channeltypes.Packet {
+func CreateTestChannelPacket() channeltypes.Packet {
 	return channeltypes.NewPacket(
 		[]byte("data"),
 		987654321098765432,
@@ -33,18 +33,17 @@ func TestPacket(t *testing.T) {
 		packet ibcexported.PacketI
 	}{
 		{
-			name:   "channeltypes.Packet",
-			packet: NewChannelPacket(),
+			name:   "ibc-go channel Packet",
+			packet: CreateTestChannelPacket(),
 		},
 		{
-			name:   "types.Packet",
-			packet: types.CopyToIBCPacket(NewChannelPacket()),
+			name:   "agoric-sdk IBCPacket",
+			packet: agtypes.CopyToIBCPacket(CreateTestChannelPacket()),
 		},
 	}
 
 	// Check that the packets have the expected values
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			pi := tc.packet
 			assert.Equal(t, "port-src", pi.GetSourcePort())
@@ -66,19 +65,18 @@ func TestPacketJSON(t *testing.T) {
 		quoted bool
 	}{
 		{
-			name:   "channeltypes.Packet",
-			packet: NewChannelPacket(),
+			name:   "ibc-go channel Packet",
+			packet: CreateTestChannelPacket(),
 			quoted: false,
 		},
 		{
-			name:   "types.Packet",
-			packet: types.CopyToIBCPacket(NewChannelPacket()),
+			name:   "agoric-sdk IBCPacket",
+			packet: agtypes.CopyToIBCPacket(CreateTestChannelPacket()),
 			quoted: true,
 		},
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			bz, err := json.Marshal(tc.packet)
 			require.NoError(t, err)
@@ -102,8 +100,8 @@ func TestPacketJSON(t *testing.T) {
 				var p2 channeltypes.Packet
 				err = json.Unmarshal(bz, &p2)
 				packet2 = p2
-			case types.IBCPacket:
-				var p2 types.IBCPacket
+			case agtypes.IBCPacket:
+				var p2 agtypes.IBCPacket
 				err = json.Unmarshal(bz, &p2)
 				packet2 = p2
 			default:
