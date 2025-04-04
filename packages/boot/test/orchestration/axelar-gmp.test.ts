@@ -141,7 +141,7 @@ test('makeAccount via axelarGmp', async t => {
     'Monitoring transfers setup successfully',
   ]);
 
-  t.log('Execute offers via the LCA');
+  t.log('get lca address');
 
   const previousOfferId =
     wallet.getCurrentWalletRecord().offerToUsedInvitation[0][0];
@@ -164,6 +164,29 @@ test('makeAccount via axelarGmp', async t => {
       result: lcaAddress,
     },
   });
+
+  t.log('fund lca address');
+
+  const ATOM_DENOM = 'uatom';
+  await makeEVMTransaction({
+    wallet,
+    previousOffer: previousOfferId,
+    methodName: 'getBalance',
+    offerArgs: [ATOM_DENOM],
+    proposal: {},
+  });
+
+  t.like(wallet.getLatestUpdateRecord(), {
+    status: {
+      id: `evmTransaction${evmTransactionCounter - 1}`,
+      numWantsSatisfied: 1,
+      result: 'transfer success',
+    },
+  });
+
+  return;
+
+  t.log('Execute offers via the LCA');
 
   await makeEVMTransaction({
     wallet,

@@ -52,6 +52,7 @@ const EVMI = M.interface('holder', {
   send: M.call(M.any(), M.any()).returns(M.any()),
   sendGmp: M.call(M.any(), M.any()).returns(M.any()),
   fundLCA: M.call(M.any(), M.any()).returns(VowShape),
+  getBalance: M.call(M.any()).returns(M.any()),
 });
 
 const InvitationMakerI = M.interface('invitationMaker', {
@@ -142,6 +143,12 @@ export const prepareEvmAccountKit = (
         },
       },
       holder: {
+        async getBalance(denom) {
+          // @ts-expect-error
+          const res = await this.state.localAccount.getBalance(denom);
+          console.log('afterwards.............', res);
+          return res.value;
+        },
         async getAddress() {
           // @ts-expect-error
           const localChainAddress = await this.state.localAccount.getAddress();
@@ -303,6 +310,14 @@ export const prepareEvmAccountKit = (
               case 'fundLCA': {
                 const { give } = seat.getProposal();
                 const vow = holder.fundLCA(seat, give);
+                return vowTools.when(vow, res => {
+                  seat.exit();
+                  return res;
+                });
+              }
+              case 'getBalance': {
+                // @ts-expect-error
+                const vow = this.state.localAccount.getBalance(args[0]);
                 return vowTools.when(vow, res => {
                   seat.exit();
                   return res;
