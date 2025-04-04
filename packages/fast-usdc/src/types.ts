@@ -99,13 +99,18 @@ export interface PendingTx extends CctpTxEvidence {
 }
 
 export type FeeConfig = {
-  /** flat fee charged for every advance */
+  /** flat fee charged for every advance, eligible for LP disbursement */
   flat: Amount<'nat'>;
-  /** proportion of advance kept as a fee */
+  /** proportion of advance kept as a fee, eligible for LP disbursement */
   variableRate: Ratio;
-  /** proportion of fees that goes to the contract (remaining goes to LPs) */
+  /** proportion of `flat` and `variableRate` fees that goes to the contract (remaining goes to LPs) */
   contractRate: Ratio;
-  /** Optional destination-specific overrides */
+  /**
+   * if present, a fee required to relay (e.g. CCTP to EVM/Solana). Not
+   * considered for LP disbursement - goes to `contractSeat`.
+   */
+  relay?: Amount<'nat'>;
+  /** Optional destination-specific overrides. If present, must supersede base values. */
   destinationOverrides?: Record<
     CaipChainId,
     Partial<Omit<FeeConfig, 'destinationOverrides'>>

@@ -118,6 +118,7 @@ export const FeeConfigShape = M.splitRecord(
     contractRate: RatioShape,
   },
   {
+    relay: NatAmountShape,
     destinationOverrides: M.recordOf(
       M.string(),
       M.splitRecord(
@@ -126,6 +127,7 @@ export const FeeConfigShape = M.splitRecord(
           flat: NatAmountShape,
           variableRate: RatioShape,
           contractRate: RatioShape,
+          relay: NatAmountShape,
         },
       ),
     ),

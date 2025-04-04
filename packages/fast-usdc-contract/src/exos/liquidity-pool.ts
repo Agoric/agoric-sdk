@@ -28,7 +28,12 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import type { MakeRecorderKit } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { SeatShape } from '@agoric/zoe/src/typeGuards.js';
-import type { ZCF, ZCFMint, ZCFSeat } from '@agoric/zoe/src/zoeService/zoe.js';
+import type {
+  ZCF,
+  ZCFMint,
+  ZCFSeat,
+  TransferPart,
+} from '@agoric/zoe/src/zoeService/zoe.js';
 import type { Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
 import { M } from '@endo/patterns';
@@ -82,6 +87,7 @@ export const prepareLiquidityPoolKit = (
             Principal: makeNatAmountShape(USDC, 1n),
             PoolFee: makeNatAmountShape(USDC, 0n),
             ContractFee: makeNatAmountShape(USDC, 0n),
+            RelayFee: makeNatAmountShape(USDC, 0n),
           }),
         ).returns(),
       }),
@@ -168,6 +174,7 @@ export const prepareLiquidityPoolKit = (
             Principal: amount,
             PoolFee: makeEmpty(USDC),
             ContractFee: makeEmpty(USDC),
+            RelayFee: makeEmpty(USDC),
           });
           const borrowSeatAllocation = borrowSeat.getCurrentAllocation();
           isGTE(borrowSeatAllocation.USDC, amount) ||
@@ -179,7 +186,7 @@ export const prepareLiquidityPoolKit = (
         },
       },
       repayer: {
-        repay(sourceTransfer: any, split: RepayAmountKWR) {
+        repay(sourceTransfer: TransferPart, split: RepayAmountKWR) {
           const {
             encumberedBalance,
             feeSeat,
@@ -206,7 +213,7 @@ export const prepareLiquidityPoolKit = (
             harden([
               sourceTransfer,
               toOnly(poolSeat, { USDC: add(split.PoolFee, split.Principal) }),
-              toOnly(feeSeat, { USDC: split.ContractFee }),
+              toOnly(feeSeat, { USDC: add(split.ContractFee, split.RelayFee) }),
             ]),
           );
 

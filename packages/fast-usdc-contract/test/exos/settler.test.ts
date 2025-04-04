@@ -289,6 +289,7 @@ test('happy path: disburse to LPs; StatusManager removes tx', async t => {
     ContractFee: usdc.make(600000n),
     PoolFee: usdc.make(2400001n),
     Principal: usdc.make(146999999n),
+    RelayFee: usdc.make(0n),
   });
 
   t.like(
