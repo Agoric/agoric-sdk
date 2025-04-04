@@ -27,7 +27,7 @@
     "@endo/bundle-source": "^4.0.0",
     "@endo/check-bundle": "^1.0.14",
     "@endo/nat": "^5.1.0",
-    "better-sqlite3": "^9.1.1"
+    "better-sqlite3": "^11.9.1"
   },
   "devDependencies": {
     "@endo/init": "^1.1.9",
