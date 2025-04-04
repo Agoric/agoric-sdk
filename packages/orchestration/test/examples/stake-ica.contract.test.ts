@@ -13,11 +13,9 @@ import { maxClockSkew } from '../../src/utils/cosmos.js';
 import { UNBOND_PERIOD_SECONDS } from '../ibc-mocks.js';
 import { commonSetup } from '../supports.js';
 
-const dirname = path.dirname(new URL(import.meta.url).pathname);
+import * as contractExports from '../../src/examples/stake-ica.contract.js';
 
-const contractFile = `${dirname}/../../src/examples/stake-ica.contract.js`;
-type StartFn =
-  typeof import('@agoric/orchestration/src/examples/stake-ica.contract.js').start;
+type StartFn = typeof contractExports.start;
 
 const getChainTerms = (
   chainName: keyof typeof fetchedChainInfo,
@@ -48,7 +46,7 @@ const startContract = async ({
 }) => {
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
   const installation: Installation<StartFn> =
-    await bundleAndInstall(contractFile);
+    await bundleAndInstall(contractExports);
 
   const { publicFacet } = await E(zoe).startInstance(
     installation,

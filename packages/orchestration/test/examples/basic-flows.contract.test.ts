@@ -10,13 +10,10 @@ import {
   withAmountUtils,
 } from '@agoric/zoe/tools/test-utils.js';
 import { commonSetup } from '../supports.js';
-
-const dirname = path.dirname(new URL(import.meta.url).pathname);
+import * as contractExports from '../../src/examples/basic-flows.contract.js';
 
 const contractName = 'basic-flows';
-const contractFile = `${dirname}/../../src/examples/${contractName}.contract.js`;
-type StartFn =
-  typeof import('../../src/examples/basic-flows.contract.js').start;
+type StartFn = typeof contractExports.start;
 
 type TestContext = EReturn<typeof commonSetup> & {
   zoe: ZoeService;
@@ -41,7 +38,7 @@ test.beforeEach(async t => {
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
 
   t.log('contract coreEval', contractName);
-  const installation = await bundleAndInstall(contractFile);
+  const installation = await bundleAndInstall(contractExports);
 
   const storageNode = await E(storage.rootNode).makeChildNode(contractName);
   const { instance } = await E(zoe).startInstance(
