@@ -382,6 +382,13 @@ test.serial('deploy HEAD; upgrade to support EVM destinations', async t => {
   await evalProposal(materials);
   const [vatDetails] = await getVatDetailsByName('fastUsdc');
   t.is(vatDetails.incarnation, 3);
+
+  const doc = {
+    node: 'fastUsdc.feeConfig',
+    owner: 'the fee configuration for Fast USDC with `destinationOverrides`',
+    showValue: defaultSerializer.parse,
+  };
+  await documentStorageSchema(t, t.context.storage, doc);
 });
 
 test.serial('makes usdc advance', async t => {
