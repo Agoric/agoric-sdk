@@ -582,7 +582,7 @@ export const prepareIBCProtocol = (zone, powers) => {
               } = packet;
               if (sequence === undefined)
                 throw TypeError('acknowledgementPacket without sequence');
-              const resolver = util.extractAckKit(
+              const resolver = util.extractFromAckKit(
                 channelID,
                 portID,
                 BigInt(sequence),
@@ -602,7 +602,7 @@ export const prepareIBCProtocol = (zone, powers) => {
               if (sequence === undefined)
                 throw TypeError('timeoutPacket without sequence');
 
-              const resolver = util.extractAckKit(
+              const resolver = util.extractFromAckKit(
                 channelID,
                 portID,
                 BigInt(sequence),
@@ -682,7 +682,7 @@ export const prepareIBCProtocol = (zone, powers) => {
             source_port: portID,
           } = fullPacket;
 
-          const vow = util.extractAckKit(
+          const vow = util.extractFromAckKit(
             channelID,
             portID,
             BigInt(sequence),
@@ -692,6 +692,10 @@ export const prepareIBCProtocol = (zone, powers) => {
         },
 
         /**
+         * Find an acknowledgment kit for the specified\
+         * (channelID, portID, sequence), creating it if not found, and then
+         * extract the specified key and perform any necessary cleanup.
+         *
          * @template {'resolver' | 'vow'} K
          * @param {IBCChannelID} channelID
          * @param {IBCPortID} portID
@@ -699,7 +703,7 @@ export const prepareIBCProtocol = (zone, powers) => {
          * @param {K} key
          * @returns {VowKit<Bytes>[K] | undefined}
          */
-        extractAckKit(channelID, portID, sequence, key) {
+        extractFromAckKit(channelID, portID, sequence, key) {
           const { channelKeyToSeqAck } = this.state;
           const channelKey = `${channelID}:${portID}`;
           const seqToAck = channelKeyToSeqAck.get(channelKey);
