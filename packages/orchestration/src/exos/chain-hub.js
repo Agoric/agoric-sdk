@@ -232,8 +232,8 @@ const ChainHubI = M.interface('ChainHub', {
     M.or(DenomDetailShape, M.undefined()),
   ),
   getDenom: M.call(BrandShape).returns(M.or(M.string(), M.undefined())),
-  makeChainAddress: M.call(AccountIdArgShape).returns(CosmosChainAddressShape),
-  resolveAccountId: M.call(AccountIdArgShape).returns(M.string()),
+  makeChainAddress: M.call(M.string()).returns(CosmosChainAddressShape),
+  resolveAccountId: M.call(M.string()).returns(M.string()),
   makeTransferRoute: M.call(AccountIdArgShape, DenomAmountShape, M.string())
     .optional(ForwardOptsShape)
     .returns(M.or(M.undefined(), TransferRouteShape)),
@@ -679,8 +679,8 @@ export const makeChainHub = (
     },
 
     /**
-     * @param {AccountId | Bech32Address | string} partialId CAIP-10 account ID
-     *   or a Cosmos bech32 address
+     * @param {AccountId | Bech32Address} partialId CAIP-10 account ID or a
+     *   Cosmos bech32 address
      * @returns {AccountId}
      * @throws {Error} if chain info not found for bech32Prefix
      */
