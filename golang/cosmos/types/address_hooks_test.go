@@ -172,7 +172,7 @@ func TestExtractBaseAddressFromPacket(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ftPacketData := transfertypes.NewFungibleTokenPacketData("denom", "100", tc.addrs[types.RoleSender].addr, tc.addrs[types.RoleReceiver].addr, "my-favourite-memo")
 			packetBz := ftPacketData.GetBytes()
-			packet := channeltypes.NewPacket(packetBz, 1234, "my-port", "my-channel", "their-port", "their-channel", clienttypes.NewHeight(133, 445), 10999)
+			packet := types.MakeIBCPacket(packetBz, 1234, "my-port", "my-channel", "their-port", "their-channel", clienttypes.NewHeight(133, 445), 10999)
 
 			for role, addrs := range tc.addrs {
 				addrs := addrs

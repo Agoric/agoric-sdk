@@ -8,7 +8,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 
 	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
-	clienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
 	ibcexported "github.com/cosmos/ibc-go/v6/modules/core/exported"
 )
@@ -192,13 +191,8 @@ func ExtractBaseAddressFromPacket(cdc codec.Codec, packet ibcexported.PacketI, r
 	}
 
 	// Create a new packet with the new transfer packet data.
-	*newPacket = channeltypes.NewPacket(
-		*newDataP, packet.GetSequence(),
-		packet.GetSourcePort(), packet.GetSourceChannel(),
-		packet.GetDestPort(), packet.GetDestChannel(),
-		clienttypes.MustParseHeight(packet.GetTimeoutHeight().String()),
-		packet.GetTimeoutTimestamp(),
-	)
+	*newPacket = CopyToChannelPacket(packet)
+	newPacket.Data = *newDataP
 
 	return target, nil
 }
