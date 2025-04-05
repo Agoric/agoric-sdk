@@ -16,6 +16,8 @@ const DEFAULT_PROVISION_POOL_ADDR =
  */
 const DEFAULT_PROVISION_POOL_COIN = '999750000uist';
 
+const DEFAULT_PROVISION_POOL_WHALE = 'test1'; // Not as noisy as 'faucet'.
+
 /**
  * Fund the vbank/provision module account so it can provision smart wallets.
  */
@@ -25,10 +27,12 @@ async function fundProvisionPool(args: {
   pod?: string;
   container?: string;
   rpcUrl?: string;
+  whale?: string;
 }) {
   const {
     address = DEFAULT_PROVISION_POOL_ADDR,
     amount = DEFAULT_PROVISION_POOL_COIN,
+    whale = DEFAULT_PROVISION_POOL_WHALE,
     pod = 'agoriclocal-genesis-0',
     container = 'validator',
     rpcUrl = 'http://localhost:26657',
@@ -56,7 +60,7 @@ async function fundProvisionPool(args: {
       'tx',
       'bank',
       'send',
-      'faucet',
+      whale,
       address,
       amount,
       '-y',

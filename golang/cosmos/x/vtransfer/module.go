@@ -12,8 +12,8 @@ import (
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 // type check to ensure the interface is properly implemented
@@ -85,19 +85,6 @@ func (AppModule) Name() string {
 }
 
 func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {}
-
-func (am AppModule) Route() sdk.Route {
-	return sdk.NewRoute(types.RouterKey, NewHandler(am.keeper))
-}
-
-func (am AppModule) QuerierRoute() string {
-	return ModuleName
-}
-
-// LegacyQuerierHandler returns the sdk.Querier for module
-func (am AppModule) LegacyQuerierHandler(legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
-	return nil
-}
 
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 }

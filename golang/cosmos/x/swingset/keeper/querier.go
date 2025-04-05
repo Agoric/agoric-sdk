@@ -2,9 +2,8 @@ package keeper
 
 import (
 	"fmt"
-	"strings"
 
-	abci "github.com/tendermint/tendermint/abci/types"
+	abci "github.com/cometbft/cometbft/abci/types"
 
 	sdkioerrors "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -21,34 +20,6 @@ const (
 	LegacyQueryStorage = "storage"
 	LegacyQueryKeys    = "keys"
 )
-
-// NewQuerier is the module level router for state queries
-func NewQuerier(keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
-	return func(ctx sdk.Context, path []string, req abci.RequestQuery) (res []byte, err error) {
-		var queryType string
-		if len(path) > 0 {
-			queryType = path[0]
-		}
-		switch queryType {
-		case QueryEgress:
-			if len(path) < 2 || path[1] == "" {
-				return nil, sdkioerrors.Wrap(sdkerrors.ErrInvalidRequest, "missing egress address")
-			}
-			return queryEgress(ctx, path[1], req, keeper, legacyQuerierCdc)
-		case QueryMailbox:
-			if len(path) < 2 || path[1] == "" {
-				return nil, sdkioerrors.Wrap(sdkerrors.ErrInvalidRequest, "missing mailbox peer")
-			}
-			return queryMailbox(ctx, path[1], req, keeper, legacyQuerierCdc)
-		case LegacyQueryStorage:
-			return legacyQueryStorage(ctx, strings.Join(path[1:], "/"), req, keeper, legacyQuerierCdc)
-		case LegacyQueryKeys:
-			return legacyQueryKeys(ctx, strings.Join(path[1:], "/"), req, keeper, legacyQuerierCdc)
-		default:
-			return nil, sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "unknown swingset query path")
-		}
-	}
-}
 
 // nolint: unparam
 func queryEgress(ctx sdk.Context, bech32 string, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {

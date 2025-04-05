@@ -37,7 +37,7 @@ export interface QueryGroupInfoRequestSDKType {
 }
 /** QueryGroupInfoResponse is the Query/GroupInfo response type. */
 export interface QueryGroupInfoResponse {
-  /** info is the GroupInfo for the group. */
+  /** info is the GroupInfo of the group. */
   info?: GroupInfo;
 }
 export interface QueryGroupInfoResponseProtoMsg {
@@ -63,7 +63,7 @@ export interface QueryGroupPolicyInfoRequestSDKType {
 }
 /** QueryGroupPolicyInfoResponse is the Query/GroupPolicyInfo response type. */
 export interface QueryGroupPolicyInfoResponse {
-  /** info is the GroupPolicyInfo for the group policy. */
+  /** info is the GroupPolicyInfo of the group policy. */
   info?: GroupPolicyInfo;
 }
 export interface QueryGroupPolicyInfoResponseProtoMsg {

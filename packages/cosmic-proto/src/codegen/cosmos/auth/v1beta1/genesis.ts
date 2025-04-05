@@ -6,7 +6,7 @@ import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
 /** GenesisState defines the auth module's genesis state. */
 export interface GenesisState {
-  /** params defines all the paramaters of the module. */
+  /** params defines all the parameters of the module. */
   params: Params;
   /** accounts are the accounts present at genesis. */
   accounts: Any[];
