@@ -141,6 +141,7 @@ export const keyArrayEqual = (
  * @param options.configPath - Path to the base config file
  * @param options.defaultManagerType - SwingSet manager type to use
  * @param options.discriminator - Optional string to include in the config filename
+ * @param options.configOverrides - Other SwingSet options to set in the config
  * @returns Path to the generated config file
  */
 export const getNodeTestVaultsConfig = async ({
@@ -148,6 +149,7 @@ export const getNodeTestVaultsConfig = async ({
   configPath,
   defaultManagerType = 'local' as ManagerType,
   discriminator = '',
+  configOverrides = {},
 }) => {
   const config: SwingSetConfig & { coreProposals?: any[] } = NonNullish(
     await loadSwingsetConfigFile(configPath),
@@ -171,6 +173,8 @@ export const getNodeTestVaultsConfig = async ({
       v => v !== '@agoric/pegasus/scripts/init-core.js',
     );
   }
+
+  Object.assign(config, configOverrides);
 
   // make an almost-certainly-unique file name with a fixed-length prefix
   const configFilenameParts = [
@@ -417,6 +421,7 @@ type AckBehaviorType = (typeof AckBehavior)[keyof typeof AckBehavior];
  * @param options.defaultManagerType - SwingSet manager type to use
  * @param options.harness - Optional run harness
  * @param options.resolveBase - Base URL or path for resolving module paths
+ * @param options.configOverrides - Other SwingSet options to set in the config
  * @returns A test kit with various utilities for interacting with the SwingSet
  */
 export const makeSwingsetTestKit = async (
@@ -433,6 +438,7 @@ export const makeSwingsetTestKit = async (
     defaultManagerType = 'local' as ManagerType,
     harness = undefined as RunHarness | undefined,
     resolveBase = import.meta.url,
+    configOverrides = {} as Partial<SwingSetConfig>,
   } = {},
 ) => {
   const importSpec = createRequire(resolveBase).resolve;
@@ -442,6 +448,7 @@ export const makeSwingsetTestKit = async (
     configPath: importSpec(configSpecifier),
     discriminator: label,
     defaultManagerType,
+    configOverrides,
   });
   const swingStore = initSwingStore();
   const { kernelStorage, hostStorage } = swingStore;
@@ -656,17 +663,17 @@ export const makeSwingsetTestKit = async (
     }
   };
 
-  let slogSender;
-  if (slogFile) {
-    slogSender = await makeSlogSender({
-      stateDir: '.',
-      env: {
-        ...process.env,
-        SLOGFILE: slogFile,
-        SLOGSENDER: '',
-      },
-    });
-  }
+  const slogSender = slogFile
+    ? await makeSlogSender({
+        stateDir: '.',
+        env: {
+          ...process.env,
+          SLOGFILE: slogFile,
+          SLOGSENDER: '',
+        },
+      })
+    : undefined;
+
   const mailboxStorage = new Map();
   const { controller, timer, bridgeInbound } = await buildSwingset(
     // @ts-expect-error missing method 'getNextKey'
@@ -852,6 +859,7 @@ export const makeSwingsetTestKit = async (
     storage,
     swingStore,
     timer,
+    slogSender,
   };
 };
 export type SwingsetTestKit = Awaited<ReturnType<typeof makeSwingsetTestKit>>;

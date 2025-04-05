@@ -19,5 +19,9 @@ export function buildRootObject() {
       }
       return roots;
     },
+
+    async getExport() {
+      return Far('Bootstrap exported', {});
+    },
   });
 }
