@@ -1,5 +1,6 @@
-import { Fail, q } from '@endo/errors';
 import { fromHex } from '@cosmjs/encoding';
+import { Fail, q } from '@endo/errors';
+import bs58 from 'bs58';
 
 /**
  * @import {IBCConnectionID} from '@agoric/vats';
@@ -172,6 +173,10 @@ export const leftPadEthAddressTo32Bytes = rawAddress => {
   return fromHex(paddedAddress);
 };
 
+/** @param {string} solanaAddress */
+const solanaAddressToCctpRecipient = solanaAddress =>
+  bs58.decode(solanaAddress);
+
 /**
  * @param {AccountId} accountId
  * @returns {Uint8Array}
@@ -182,6 +187,8 @@ export const accountIdTo32Bytes = accountId => {
   switch (namespace) {
     case 'eip155':
       return leftPadEthAddressTo32Bytes(accountAddress);
+    case 'solana':
+      return solanaAddressToCctpRecipient(accountAddress);
     default:
       throw new Error(`namespace ${namespace} not supported`);
   }
