@@ -35,6 +35,8 @@ type afterCommitBlockAction struct {
 func BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock, keeper Keeper) error {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyBeginBlocker)
 
+	keeper.PruneExpiredBundleInstalls(ctx)
+
 	action := beginBlockAction{
 		ChainID: ctx.ChainID(),
 		Params:  keeper.GetParams(ctx),

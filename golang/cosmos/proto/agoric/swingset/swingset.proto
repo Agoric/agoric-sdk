@@ -94,6 +94,20 @@ message Params {
     repeated UintMapEntry vat_cleanup_budget = 6 [
       (gogoproto.nullable) = false
     ];
+
+    // The maximum number of blocks that an async installation can use.  -1 is
+    // unlimited.
+    int64 installation_deadline_blocks = 7 [
+      (gogoproto.jsontag)    = "installation_deadline_blocks",
+      (gogoproto.moretags)   = "yaml:\"installation_deadline_blocks\""
+    ];
+
+    // The maximum number of seconds that an async installation can use.  -1 is
+    // unlimited.
+    int64 installation_deadline_seconds = 8 [
+      (gogoproto.jsontag)    = "installation_deadline_seconds",
+      (gogoproto.moretags)   = "yaml:\"installation_deadline_seconds\""
+    ];
 }
 
 // The current state of the module.
@@ -102,6 +116,18 @@ message State {
   // Transactions which attempt to enqueue more should be rejected.
   repeated QueueSize queue_allowed = 1 [
     (gogoproto.nullable) = false
+  ];
+
+  // Doubly-linked list in order of start block and time.
+  uint64 first_pending_id = 2 [
+    (gogoproto.jsontag)    = "first_pending_id",
+    (gogoproto.moretags)   = "yaml:\"first_pending_id\""
+  ];
+
+  // The last pending id that has not expired or completed.
+  uint64 last_pending_id = 3 [
+    (gogoproto.jsontag)    = "last_pending_id",
+    (gogoproto.moretags)   = "yaml:\"last_pending_id\""
   ];
 }
 
@@ -189,5 +215,97 @@ message SwingStoreArtifact {
     bytes data = 2 [
         (gogoproto.jsontag)    = "data",
         (gogoproto.moretags)   = "yaml:\"data\""
+    ];
+}
+
+// BundleChunks is the manifest for a chunked InstallBundle.
+message BundleChunks {
+    // The hash of the complete bundle.
+    string bundle_hash = 1 [
+        (gogoproto.jsontag)    = "bundle_hash",
+        (gogoproto.moretags)   = "yaml:\"bundle_hash\""
+    ];
+
+    // The size of the final bundle artifact in bytes.
+    uint64 bundle_size = 2 [
+        (gogoproto.jsontag)    = "bundle_size",
+        (gogoproto.moretags)   = "yaml:\"bundle_size\""
+    ];
+
+    // Information about the chunks that will be concatenated to form this
+    // bundle.
+    repeated ChunkInfo chunks = 3 [
+        (gogoproto.jsontag)    = "chunks",
+        (gogoproto.moretags)   = "yaml:\"chunks\""
+    ];
+}
+
+// Current state of this chunk.
+enum ChunkState {
+  // Unknown state.
+  CHUNK_STATE_UNSPECIFIED = 0;
+
+  // The chunk is still in-flight.
+  CHUNK_STATE_IN_FLIGHT = 1;
+
+  // The chunk has been received.
+  CHUNK_STATE_RECEIVED = 2;
+
+  // The chunk has been processed.
+  CHUNK_STATE_PROCESSED = 3;
+};
+
+// Information about a chunk of a bundle.
+message ChunkInfo {
+    // The hash of the chunk contents.
+    string hash = 1 [
+        (gogoproto.jsontag)    = "hash",
+        (gogoproto.moretags)   = "yaml:\"hash\""
+    ];
+
+    // The chunk size in bytes.
+    uint64 chunk_size = 2 [
+        (gogoproto.jsontag)    = "chunk_size",
+        (gogoproto.moretags)   = "yaml:\"chunk_size\""
+    ];
+
+    // The current state of the chunk.
+    ChunkState state = 3 [
+        (gogoproto.jsontag)    = "state",
+        (gogoproto.moretags)   = "yaml:\"state\""
+    ];
+}
+
+// The pending installation node in the doubly-linked list of pending
+// installations in descending order of age.  This is used to track the state of
+// a pending installation and to expire them efficiently.
+message PendingInstallNode{
+    // The id of the pending bundle installation.
+    uint64 pending_id = 1 [
+        (gogoproto.jsontag)    = "pending_id",
+        (gogoproto.moretags)   = "yaml:\"pending_id\""
+    ];
+
+    // Doubly-linked list.
+    uint64 next_id = 2 [
+        (gogoproto.jsontag)    = "next_id",
+        (gogoproto.moretags)   = "yaml:\"next_id\""
+    ];
+
+    uint64 prior_id = 3 [
+        (gogoproto.jsontag)    = "prior_id",
+        (gogoproto.moretags)   = "yaml:\"prior_id\""
+    ];
+
+    // The time at which the pending installation began.
+    int64 start_time = 4 [
+        (gogoproto.jsontag)    = "start_time",
+        (gogoproto.moretags)   = "yaml:\"start_time\""
+    ];
+
+    // The block at which the pending installation began.
+    int64 start_block = 5 [
+        (gogoproto.jsontag)    = "start_block",
+        (gogoproto.moretags)   = "yaml:\"start_block\""
     ];
 }
