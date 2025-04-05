@@ -232,7 +232,7 @@ const ChainHubI = M.interface('ChainHub', {
     M.or(DenomDetailShape, M.undefined()),
   ),
   getDenom: M.call(BrandShape).returns(M.or(M.string(), M.undefined())),
-  makeChainAddress: M.call(AccountIdArgShape).returns(CosmosChainAddressShape),
+  makeChainAddress: M.call(M.string()).returns(CosmosChainAddressShape),
   resolveAccountId: M.call(AccountIdArgShape).returns(M.string()),
   makeTransferRoute: M.call(AccountIdArgShape, DenomAmountShape, M.string())
     .optional(ForwardOptsShape)
@@ -699,7 +699,7 @@ export const makeChainHub = (
     /**
      * @param {string} partialId CAIP-10 account ID or a Cosmos bech32 address
      * @returns {CosmosChainAddress}
-     * @throws {Error} if chain info not found for bech32Prefix
+     * @throws {Error} if chain info not found for partialId
      */
     makeChainAddress(partialId) {
       const parts = partialId.split(':');
