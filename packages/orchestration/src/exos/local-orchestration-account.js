@@ -637,18 +637,15 @@ export const prepareLocalOrchestrationAccountKit = (
         send(toAccount, amount) {
           return asVow(() => {
             trace('send', toAccount, amount);
-            toAccount =
-              typeof toAccount === 'string'
-                ? chainHub.makeChainAddress(toAccount)
-                : toAccount;
-            toAccount.chainId === this.state.address.chainId ||
-              Fail`bank/send cannot send to a different chain ${q(toAccount.chainId)}`;
+            const cosmosDest = chainHub.coerceCosmosAddress(toAccount);
+            cosmosDest.chainId === this.state.address.chainId ||
+              Fail`bank/send cannot send to a different chain ${q(cosmosDest.chainId)}`;
             const { helper } = this.facets;
             return watch(
               E(this.state.account).executeTx([
                 typedJson('/cosmos.bank.v1beta1.MsgSend', {
                   amount: [helper.amountToCoin(amount)],
-                  toAddress: toAccount.value,
+                  toAddress: cosmosDest.value,
                   fromAddress: this.state.address.value,
                 }),
               ]),

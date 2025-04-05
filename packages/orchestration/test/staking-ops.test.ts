@@ -28,6 +28,7 @@ import { makeNameHubKit } from '@agoric/vats';
 import type { Invitation, ZCF } from '@agoric/zoe';
 import { prepareCosmosOrchestrationAccountKit } from '../src/exos/cosmos-orchestration-account.js';
 import type {
+  Bech32Address,
   CosmosChainAddress,
   DenomAmount,
   IcaAccount,
@@ -111,7 +112,7 @@ const dateToTimestamp = (date: Date): Timestamp => ({
 
 const makeScenario = () => {
   const mockAccount = (
-    addr = 'agoric1234',
+    addr = 'agoric1234' as Bech32Address,
     delegations = {} as Record<string, Coin>,
   ) => {
     const calls = [] as Array<{ msgs: AnyJson[] }>;

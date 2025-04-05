@@ -28,7 +28,11 @@ import {
   type Publisher,
   type Subscriber,
 } from '@agoric/notifier';
-import type { ChainHub, CosmosChainInfo } from '@agoric/orchestration';
+import type {
+  Bech32Address,
+  ChainHub,
+  CosmosChainInfo,
+} from '@agoric/orchestration';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
@@ -399,7 +403,7 @@ const makeEVM = (template = MockCctpTxEvidences.AGORIC_PLUS_OSMO()) => {
 
   const makeTx = (
     amount: bigint,
-    recipientAddress: string,
+    recipientAddress: Bech32Address,
     nonceOverride?: number,
   ): CctpTxEvidence => {
     nonce += 1;

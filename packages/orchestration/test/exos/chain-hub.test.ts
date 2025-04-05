@@ -11,6 +11,7 @@ import {
   registerKnownChains,
 } from '../../src/chain-info.js';
 import type {
+  Bech32Address,
   CosmosChainInfo,
   IBCConnectionInfo,
 } from '../../src/cosmos-api.js';
@@ -169,7 +170,7 @@ test('toward asset info in agoricNames (#9572)', async t => {
   }
 });
 
-test('makeChainAddress', async t => {
+test('coerceCosmosAddress', async t => {
   const { chainHub, nameAdmin, vt } = setup();
   // use fetched chain info
   await registerKnownChains(nameAdmin);
@@ -179,24 +180,27 @@ test('makeChainAddress', async t => {
 
   const MOCK_ICA_ADDRESS =
     'osmo1ht7u569vpuryp6utadsydcne9ckeh2v8dkd38v5hptjl3u2ewppqc6kzgd' as const;
-  t.deepEqual(chainHub.makeChainAddress(MOCK_ICA_ADDRESS), {
+  t.deepEqual(chainHub.coerceCosmosAddress(MOCK_ICA_ADDRESS), {
     chainId: 'osmosis-1',
     value: MOCK_ICA_ADDRESS,
     encoding: 'bech32',
   });
 
   t.throws(
-    () => chainHub.makeChainAddress(MOCK_ICA_ADDRESS.replace('osmo1', 'foo1')),
+    () =>
+      // @ts-expect-error intentionally invalid
+      chainHub.coerceCosmosAddress(MOCK_ICA_ADDRESS.replace('osmo1', 'foo1')),
     {
       message: 'Chain info not found for bech32Prefix "foo"',
     },
   );
 
-  t.throws(() => chainHub.makeChainAddress('notbech32'), {
+  // @ts-expect-error intentionally invalid
+  t.throws(() => chainHub.coerceCosmosAddress('notbech32'), {
     message: 'No separator character for "notbech32"',
   });
 
-  t.throws(() => chainHub.makeChainAddress('1notbech32'), {
+  t.throws(() => chainHub.coerceCosmosAddress('1notbech32'), {
     message: 'Missing prefix for "1notbech32"',
   });
 });
@@ -239,6 +243,7 @@ test('resolveAccountId', async t => {
 
   // Should throw for invalid address format
   t.throws(
+    // @ts-expect-error intentionally invalid
     () => chainHub.resolveAccountId('notbech32'),
     {
       message: 'No separator character for "notbech32"',
@@ -285,8 +290,8 @@ test('updateChain updates existing chain info and mappings', t => {
   chainHub.updateChain('testchain', updatedInfo);
 
   // Verify chain address works with new prefix
-  const address = `${updatedInfo.bech32Prefix}1abc`;
-  const chainAddress = chainHub.makeChainAddress(address);
+  const address: Bech32Address = `${updatedInfo.bech32Prefix}1abc`;
+  const chainAddress = chainHub.coerceCosmosAddress(address);
   t.deepEqual(chainAddress, {
     chainId: 'chain-1',
     value: address,
@@ -294,9 +299,12 @@ test('updateChain updates existing chain info and mappings', t => {
   });
 
   // Old prefix should not work
-  t.throws(() => chainHub.makeChainAddress(`${initialInfo.bech32Prefix}1abc`), {
-    message: `Chain info not found for bech32Prefix "${initialInfo.bech32Prefix}"`,
-  });
+  t.throws(
+    () => chainHub.coerceCosmosAddress(`${initialInfo.bech32Prefix}1abc`),
+    {
+      message: `Chain info not found for bech32Prefix "${initialInfo.bech32Prefix}"`,
+    },
+  );
 });
 
 test('updateChain errors on non-existent chain', t => {
