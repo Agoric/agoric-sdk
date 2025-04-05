@@ -24,7 +24,7 @@ jobs:
 
       - uses: ./agoric-sdk/.github/actions/restore-node
         with:
-          node-version: 'node-old'
+          node-version: 'node-new'
           path: ./agoric-sdk
 
       # Extract chain and relayer information
