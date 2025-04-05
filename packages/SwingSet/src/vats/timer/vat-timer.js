@@ -18,6 +18,7 @@ import { TimeMath } from '@agoric/time';
  * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {Passable, RemotableObject} from '@endo/pass-style';
  * @import {Key} from '@endo/patterns';
+ * @import {TimerDevice} from '../../devices/timer/device-timer.js';
  */
 
 // This consumes O(N) RAM only for outstanding promises, via wakeAt(),
@@ -240,6 +241,7 @@ const measureInterval = (start, interval, now) => {
 export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
   const { D } = vatPowers;
 
+  /** @type {TimerDevice} */
   let timerDevice;
   const insistDevice = () => {
     assert(timerDevice, 'TimerService used before createTimerService()');
@@ -948,7 +950,7 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
    * device, but we don't prohibit it from being called again (to
    * replace the device), just in case that's useful someday
    *
-   * @param {unknown} timerNode
+   * @param {TimerDevice} timerNode
    * @returns {TimerService}
    */
   const createTimerService = timerNode => {
