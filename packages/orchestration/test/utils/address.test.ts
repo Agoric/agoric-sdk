@@ -1,16 +1,17 @@
-import test from '@endo/ses-ava/prepare-endo.js';
 import { validateRemoteIbcAddress } from '@agoric/vats/tools/ibc-utils.js';
+import test from '@endo/ses-ava/prepare-endo.js';
+import type { Bech32Address } from '../../src/cosmos-api.ts';
+import type { CosmosChainAddress } from '../../src/orchestration-api.ts';
 import {
-  makeICAChannelAddress,
-  makeICQChannelAddress,
+  accountIdTo32Bytes,
+  chainOfAccount,
   findAddressField,
   getBech32Prefix,
+  makeICAChannelAddress,
+  makeICQChannelAddress,
   parseAccountId,
   parseAccountIdArg,
-  chainOfAccount,
 } from '../../src/utils/address.js';
-import type { CosmosChainAddress } from '../../src/orchestration-api.ts';
-import type { Bech32Address } from '../../src/cosmos-api.ts';
 
 test('makeICAChannelAddress', t => {
   // @ts-expect-error intentional
@@ -223,3 +224,41 @@ test('extract CaipChainId from AccountIdArg', t => {
     },
   );
 });
+const cctpFixture = [
+  {
+    accountId: 'eip155:58008:0x3dA3050208a3F2e0d04b33674aAa7b1A9F9B313C',
+    mintRecipient: new Uint8Array([
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 61, 163, 5, 2, 8, 163, 242, 224, 208,
+      75, 51, 103, 74, 170, 123, 26, 159, 155, 49, 60,
+    ]),
+    // verified experimentally
+    burnTx:
+      'https://mintscan.io/noble-testnet/tx/EF34EA1B0620869DBA191D07F357828F86736E38BBF1A68871570C126BC3479A',
+    attestation:
+      'https://iris-api-sandbox.circle.com/attestations/0x7fdda79bd91072a047aec03131d35a77fd002b2bde65ed5906bd11a77023bc6c',
+  },
+  {
+    accountId:
+      'solana:8E9rvCKLFQia2Y35HXjjpWzj8weVo44K:DRsKHgyrdeySBA7vjoLd9myYSVeU7T2Dkeh6pTm8ycPW',
+    mintRecipient: new Uint8Array([
+      184, 171, 19, 0, 220, 48, 13, 27, 166, 63, 130, 223, 74, 14, 79, 50, 54,
+      171, 220, 245, 113, 108, 79, 231, 48, 127, 30, 138, 24, 49, 45, 181,
+    ]),
+    burnTx:
+      'https://mintscan.io/noble-testnet/tx/E18052508A5FE77C429BC4872A63EF5477E072BECD57EAA38BD12BF4E176C4B1',
+    attestation:
+      'https://iris-api-sandbox.circle.com/attestations/0xbc1d4e14884ab29b36dd46293de5ef83ed09a44ef699cadef9607f71f3fa9fe5',
+  },
+];
+
+const mintRecipientMacro = test.macro({
+  title(txt = '', { accountId, mintRecipient: _ }) {
+    return `CCTP mintRecipient: ${accountId.slice(0, 24)}...`;
+  },
+  exec(t, { accountId, mintRecipient }) {
+    const actual = accountIdTo32Bytes(accountId);
+    t.deepEqual(actual, mintRecipient);
+  },
+});
+
+cctpFixture.forEach(detail => test(mintRecipientMacro, detail));
