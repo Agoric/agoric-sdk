@@ -64,6 +64,7 @@
     "lint": "run-s --continue-on-error lint:*",
     "lint:packages": "yarn lerna run --no-bail lint",
     "lint:package-names": "./scripts/verify-package-names.js",
+    "lint:types": "tsc",
     "test": "yarn lerna run --no-bail test",
     "test:xs": "yarn workspaces run test:xs",
     "build": "yarn workspaces run build && scripts/agd-builder.sh stamp yarn-built",
