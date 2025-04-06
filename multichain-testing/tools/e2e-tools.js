@@ -49,16 +49,15 @@ export const makeBlockTool = ({ rpc, delay }) => {
         .execute({ jsonrpc: '2.0', id, method: 'status', params: [] })
         .catch(_err => {});
 
-      if (!data) throw Error('no data from status');
-
-      if (data.jsonrpc !== '2.0') {
+      if (data?.jsonrpc !== '2.0') {
         await delay(period, { ...info, method: 'status' });
         continue;
       }
 
       const lastHeight = data.result.sync_info.latest_block_height;
+      const earliestHeight = data.result.sync_info.earliest_block_height;
 
-      if (lastHeight !== '1') {
+      if (lastHeight !== earliestHeight) {
         return Number(lastHeight);
       }
 
