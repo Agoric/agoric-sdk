@@ -21,6 +21,7 @@ import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { krefOf } from '@agoric/kmarshal';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
+import { decodeProtobufBase64 } from '@agoric/orchestration/tools/protobuf-decoder.js';
 import { initSwingStore } from '@agoric/swing-store';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { makeSlogSender } from '@agoric/telemetry';
@@ -54,6 +55,7 @@ import {
   defaultBeansPerXsnapComputron,
 } from '@agoric/cosmic-swingset/src/sim-params.js';
 import type { EconomyBootstrapPowers } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+import { base64ToBytes } from '@agoric/network';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
 import type { BridgeHandler, IBCDowncallMethod, IBCMethod } from '@agoric/vats';
 import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
@@ -621,9 +623,26 @@ export const makeSwingsetTestKit = async (
             return undefined;
           }
           case 'sendPacket': {
-            if (protoMsgMockMap[obj.packet.data]) {
+            const mockAckMapHasData = obj.packet.data in protoMsgMockMap;
+            if (mockAckMapHasData) {
               return ackLater(obj, protoMsgMockMap[obj.packet.data]);
             }
+
+            console.warn(
+              `sendPacket acking err because no mock ack for b64 data key: '${obj.packet.data}'`,
+            );
+            try {
+              const decoded = decodeProtobufBase64(
+                JSON.parse(base64ToBytes(obj.packet.data)).data,
+              );
+              console.warn(
+                'Fix the source of this request or define a ack mapping for it:',
+                inspect(decoded, { depth: null }),
+              );
+            } catch (err) {
+              console.error('Could not decode packet data', err);
+            }
+
             // An error that would be triggered before reception on another chain
             return ackImmediately(obj, protoMsgMocks.error.ack);
           }
