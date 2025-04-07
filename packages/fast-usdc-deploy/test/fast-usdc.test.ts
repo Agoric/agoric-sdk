@@ -9,7 +9,7 @@ import {
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { AmountMath } from '@agoric/ertp';
 import { makeRatio } from '@agoric/ertp/src/ratio.js';
-import type { FeeConfig } from '@agoric/fast-usdc';
+import type { CctpTxEvidence, FeeConfig } from '@agoric/fast-usdc';
 import { Offers } from '@agoric/fast-usdc/src/clientSupport.js';
 import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
 import { BridgeId, NonNullish } from '@agoric/internal';
@@ -35,6 +35,11 @@ const LIQUIDITY_POOL_SIZE = 500n * DENOM_UNIT; // 500 USDC
 
 const test: TestFn<
   WalletFactoryTestContext & {
+    attest: (
+      evidence: CctpTxEvidence,
+      offerIdPrefix: string,
+      ...extraArgs: unknown[]
+    ) => Promise<void>;
     harness?: ReturnType<typeof makeSwingsetHarness>;
   }
 > = anyTest;
@@ -65,7 +70,41 @@ test.before('bootstrap', async t => {
     defaultManagerType,
     harness,
   });
-  t.context = { ...ctx, harness };
+
+  /**
+   * Helper to submit evidence from all configured oracles.
+   * @param evidence CCTP evidence
+   * @param offerIdPrefix Prefix for the offer ID
+   * @param extraArgs Additional arguments for SubmitEvidence invitation
+   */
+  const attest = async (
+    evidence: CctpTxEvidence,
+    offerIdPrefix: string,
+    ...extraArgs: unknown[]
+  ) => {
+    const { walletFactoryDriver: wfd } = t.context;
+    const oracles = await Promise.all(
+      oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
+    );
+
+    await Promise.all(
+      oracles.map((wallet, i) =>
+        wallet.sendOffer({
+          id: `${offerIdPrefix}-${i}`,
+          invitationSpec: {
+            source: 'continuing',
+            previousOffer: 'claim-oracle-invitation',
+            invitationMakerName: 'SubmitEvidence',
+            invitationArgs: [evidence, ...extraArgs],
+          },
+          proposal: {},
+        }),
+      ),
+    );
+    await eventLoopIteration();
+  };
+
+  t.context = { ...ctx, attest, harness };
 });
 test.after.always(t => t.context.shutdown?.());
 
@@ -417,21 +456,7 @@ test.serial('makes usdc advance', async t => {
   );
 
   harness?.useRunPolicy(true);
-  await Promise.all(
-    oracles.map(wallet =>
-      wallet.sendOffer({
-        id: 'submit-mock-evidence-osmo',
-        invitationSpec: {
-          source: 'continuing',
-          previousOffer: 'claim-oracle-invitation',
-          invitationMakerName: 'SubmitEvidence',
-          invitationArgs: [evidence],
-        },
-        proposal: {},
-      }),
-    ),
-  );
-  await eventLoopIteration();
+  await t.context.attest(evidence, 'submit-mock-evidence-osmo');
   harness &&
     t.log(
       `fusdc advance computrons (${oracles.length} oracles)`,
@@ -530,26 +555,8 @@ test.serial('minted before observed; forward path', async t => {
   t.log('USDC funds received in settlement account before evidence submission');
 
   // Now submit evidence from oracles (after funds already received)
-  const { walletFactoryDriver: wfd } = t.context;
-  const oracles = await Promise.all(
-    oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
-  );
-  await Promise.all(
-    oracles.map(wallet =>
-      wallet.sendOffer({
-        id: 'submit-evidence-after-mint',
-        invitationSpec: {
-          source: 'continuing',
-          previousOffer: 'claim-oracle-invitation',
-          invitationMakerName: 'SubmitEvidence',
-          invitationArgs: [evidence],
-        },
-        proposal: {},
-      }),
-    ),
-  );
+  await t.context.attest(evidence, 'submit-evidence-after-mint');
 
-  await eventLoopIteration();
   // simulate acknowledgement of outgoing forward transfer
   await bridgeUtils.runInbound(
     BridgeId.VTRANSFER,
@@ -638,21 +645,9 @@ test.serial('skips usdc advance when risks identified', async t => {
     encodeAddressHook(settlementAccount, { EUD }),
   );
 
-  await Promise.all(
-    oracles.map(wallet =>
-      wallet.sendOffer({
-        id: 'submit-mock-evidence-dydx-risky',
-        invitationSpec: {
-          source: 'continuing',
-          previousOffer: 'claim-oracle-invitation',
-          invitationMakerName: 'SubmitEvidence',
-          invitationArgs: [evidence, { risksIdentified: ['TOO_LARGE_AMOUNT'] }],
-        },
-        proposal: {},
-      }),
-    ),
-  );
-  await eventLoopIteration();
+  await t.context.attest(evidence, 'submit-mock-evidence-dydx-risky', {
+    risksIdentified: ['TOO_LARGE_AMOUNT'],
+  });
 
   t.deepEqual(
     storage
