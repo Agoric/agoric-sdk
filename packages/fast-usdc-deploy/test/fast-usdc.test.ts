@@ -29,6 +29,8 @@ import {
 } from './walletFactory.js';
 import { configurations } from '../src/utils/deploy-config.js';
 
+const DENOM_UNIT = 1n * 1_000_000n; // 1 million
+
 const test: TestFn<
   WalletFactoryTestContext & {
     harness?: ReturnType<typeof makeSwingsetHarness>;
@@ -220,10 +222,10 @@ test.serial('LP deposits', async t => {
     },
     proposal: {
       give: {
-        USDC: { brand: usdc, value: 98_000_000n },
+        USDC: { brand: usdc, value: 98n * DENOM_UNIT },
       },
       want: {
-        BADPROPOSAL: { brand: fastLP, value: 567_000_000n },
+        BADPROPOSAL: { brand: fastLP, value: 567n * DENOM_UNIT },
       },
     },
   });
@@ -231,8 +233,8 @@ test.serial('LP deposits', async t => {
   await lp.sendOffer(
     Offers.fastUsdc.Deposit(agoricNamesRemotes, {
       offerId: 'deposit-lp-1',
-      fastLPAmount: 150_000_000n,
-      usdcAmount: 150_000_000n,
+      fastLPAmount: 150n * DENOM_UNIT,
+      usdcAmount: 150n * DENOM_UNIT,
     }),
   );
   await eventLoopIteration();
@@ -246,7 +248,7 @@ test.serial('LP deposits', async t => {
   );
   t.log('LP vbank deposits', lpBankDeposit);
   t.true(
-    BigInt(lpBankDeposit.amount) === 150_000_000n,
+    BigInt(lpBankDeposit.amount) === 150n * DENOM_UNIT,
     'vbank GIVEs shares to LP',
   );
 
