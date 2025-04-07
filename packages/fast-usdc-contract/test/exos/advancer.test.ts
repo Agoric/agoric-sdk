@@ -330,7 +330,7 @@ test('updates status to ADVANCE_SKIPPED on insufficient pool funds', async t => 
   ]);
 });
 
-test('updates status to ADVANCE_SKIPPED if makeChainAddress fails', async t => {
+test('updates status to ADVANCE_SKIPPED if coerceCosmosAddress fails', async t => {
   const {
     bootstrap: { storage },
     extensions: {
@@ -352,7 +352,7 @@ test('updates status to ADVANCE_SKIPPED if makeChainAddress fails', async t => {
         status: 'ADVANCE_SKIPPED',
       },
     ],
-    'ADVANCE_SKIPPED status on makeChainAddress failure',
+    'ADVANCE_SKIPPED status on coerceCosmosAddress failure',
   );
 
   t.deepEqual(inspectLogs(), [

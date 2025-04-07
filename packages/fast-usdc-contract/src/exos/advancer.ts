@@ -45,7 +45,7 @@ import type { ZCF, ZCFSeat } from '@agoric/zoe/src/zoeService/zoe.js';
 import type { Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
-import { M, mustMatch } from '@endo/patterns';
+import { M, mustMatch } from '@agoric/store';
 import type { LiquidityPoolKit } from './liquidity-pool.js';
 import type { SettlerKit } from './settler.js';
 import type { StatusManager } from './status-manager.js';
@@ -200,7 +200,6 @@ export const prepareAdvancerKit = (
             }
             const { EUD } = decoded.query;
             log(`decoded EUD: ${EUD}`);
-            assert.typeof(EUD, 'string');
             // throws if the bech32 prefix is not found
             const destination = chainHub.resolveAccountId(EUD);
 

@@ -875,20 +875,17 @@ export const prepareCosmosOrchestrationAccountKit = (
         send(toAccount, amount) {
           return asVow(() => {
             trace('send', toAccount, amount);
-            toAccount =
-              typeof toAccount === 'string'
-                ? chainHub.makeChainAddress(toAccount)
-                : toAccount;
+            const cosmosDest = chainHub.coerceCosmosAddress(toAccount);
             const { chainAddress } = this.state;
-            toAccount.chainId === chainAddress.chainId ||
-              Fail`bank/send cannot send to a different chain ${q(toAccount.chainId)}`;
+            cosmosDest.chainId === chainAddress.chainId ||
+              Fail`bank/send cannot send to a different chain ${q(cosmosDest.chainId)}`;
             const { helper } = this.facets;
             return watch(
               E(helper.owned()).executeEncodedTx([
                 Any.toJSON(
                   MsgSend.toProtoMsg({
                     fromAddress: chainAddress.value,
-                    toAddress: toAccount.value,
+                    toAddress: cosmosDest.value,
                     amount: [helper.amountToCoin(amount)],
                   }),
                 ),
@@ -925,12 +922,9 @@ export const prepareCosmosOrchestrationAccountKit = (
           return asVow(() => {
             // `destination` arg can be non-Cosmos per the common `.transfer` method signature
             // but this implementation only supports transferring to another Cosmos chain.
-            // It relies on `makeChainAddress` to throw if `destination` has another namespace.
-            destination =
-              typeof destination === 'string'
-                ? // If `destination` is not actually CAIP-10 then this will throw
-                  chainHub.makeChainAddress(destination)
-                : destination;
+            // It relies on `coerceCosmosChainAddress` to throw if `destination` has another namespace.
+
+            const cosmosDest = chainHub.coerceCosmosAddress(destination);
 
             const { helper } = this.facets;
             const token = helper.amountToCoin(amount);
@@ -938,7 +932,7 @@ export const prepareCosmosOrchestrationAccountKit = (
             const connectionInfoV = watch(
               chainHub.getConnectionInfo(
                 this.state.chainAddress.chainId,
-                destination.chainId,
+                cosmosDest.chainId,
               ),
             );
 
@@ -957,7 +951,7 @@ export const prepareCosmosOrchestrationAccountKit = (
             return watch(
               allVows([connectionInfoV, timeoutTimestampVowOrValue]),
               this.facets.transferWatcher,
-              { opts, token, destination },
+              { opts, token, destination: cosmosDest },
             );
           });
         },
@@ -1011,6 +1005,7 @@ export const prepareCosmosOrchestrationAccountKit = (
         },
         /** @type {HostOf<StakingAccountQueries['getDelegation']>} */
         getDelegation(validator) {
+          // @ts-expect-error XXX string template with generics
           return asVow(() => {
             trace('getDelegation', validator);
             const { chainAddress, icqConnection } = this.state;
@@ -1030,6 +1025,7 @@ export const prepareCosmosOrchestrationAccountKit = (
         },
         /** @type {HostOf<StakingAccountQueries['getDelegations']>} */
         getDelegations() {
+          // @ts-expect-error XXX string template with generics
           return asVow(() => {
             trace('getDelegations');
             const { chainAddress, icqConnection } = this.state;
@@ -1125,6 +1121,7 @@ export const prepareCosmosOrchestrationAccountKit = (
         },
         /** @type {HostOf<StakingAccountQueries['getRewards']>} */
         getRewards() {
+          // @ts-expect-error XXX string template with generics
           return asVow(() => {
             trace('getRewards');
             const { chainAddress, icqConnection } = this.state;

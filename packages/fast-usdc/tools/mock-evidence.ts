@@ -1,5 +1,5 @@
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
-import type { CosmosChainAddress } from '@agoric/orchestration';
+import type { Bech32Address, CosmosChainAddress } from '@agoric/orchestration';
 import type { CctpTxEvidence, EvmAddress } from '../src/types.js';
 
 const mockScenarios = [
@@ -21,9 +21,9 @@ const blockTimestamp = 1632340000n;
 
 export const MockCctpTxEvidences: Record<
   MockScenario,
-  (receiverAddress?: string) => CctpTxEvidence
+  (receiverAddress?: Bech32Address) => CctpTxEvidence
 > = {
-  AGORIC_PLUS_OSMO: (receiverAddress?: string) => ({
+  AGORIC_PLUS_OSMO: (receiverAddress?: Bech32Address) => ({
     blockHash:
       '0x90d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee665',
     blockNumber: 21037663n,
@@ -45,7 +45,7 @@ export const MockCctpTxEvidences: Record<
     },
     chainId: 1,
   }),
-  AGORIC_PLUS_DYDX: (receiverAddress?: string) => ({
+  AGORIC_PLUS_DYDX: (receiverAddress?: Bech32Address) => ({
     blockHash:
       '0x80d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee699',
     blockNumber: 21037669n,
@@ -67,7 +67,7 @@ export const MockCctpTxEvidences: Record<
     },
     chainId: 1,
   }),
-  AGORIC_PLUS_AGORIC: (receiverAddress?: string) => ({
+  AGORIC_PLUS_AGORIC: (receiverAddress?: Bech32Address) => ({
     blockHash:
       '0x80d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee6z9',
     blockNumber: 21037600n,
@@ -89,7 +89,7 @@ export const MockCctpTxEvidences: Record<
     },
     chainId: 1,
   }),
-  AGORIC_NO_PARAMS: (receiverAddress?: string) => ({
+  AGORIC_NO_PARAMS: (receiverAddress?: Bech32Address) => ({
     blockHash:
       '0x70d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee699',
     blockNumber: 21037669n,
@@ -107,7 +107,7 @@ export const MockCctpTxEvidences: Record<
     },
     chainId: 1,
   }),
-  AGORIC_UNKNOWN_EUD: (receiverAddress?: string) => ({
+  AGORIC_UNKNOWN_EUD: (receiverAddress?: Bech32Address) => ({
     blockHash:
       '0x70d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee699',
     blockNumber: 21037669n,
@@ -129,7 +129,7 @@ export const MockCctpTxEvidences: Record<
     },
     chainId: 1,
   }),
-  AGORIC_PLUS_ETHEREUM: (receiverAddress?: string) => ({
+  AGORIC_PLUS_ETHEREUM: (receiverAddress?: Bech32Address) => ({
     blockHash:
       '0x80d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee6z9',
     blockNumber: 21037600n,

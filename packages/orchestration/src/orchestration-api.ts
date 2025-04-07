@@ -19,6 +19,7 @@ import type {
   ICQQueryFunction,
   KnownNamespace,
   NobleMethods,
+  Bech32Address,
 } from './types.js';
 import type { ResolvedContinuingOfferResult } from './utils/zoe-tools.js';
 
@@ -85,8 +86,8 @@ export type CosmosChainAddress = {
   /** Within the Cosmos ecosystem. e.g. `agoric-3' or 'cosmoshub-4' */
   chainId: string;
   /** The address value used on-chain */
-  value: string;
-  encoding: 'bech32' | 'ethereum';
+  value: Bech32Address;
+  encoding: 'bech32';
 };
 
 /**

@@ -17,6 +17,7 @@ import { M } from '@endo/patterns';
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { PendingTxStatus } from '@agoric/fast-usdc/src/constants.js';
 import {
+  AddressHookShape,
   CctpTxEvidenceShape,
   EvmHashShape,
   makeNatAmountShape,
@@ -36,6 +37,8 @@ import type {
 } from '@agoric/fast-usdc/src/types.js';
 import type {
   AccountId,
+  AccountIdArg,
+  Bech32Address,
   ChainHub,
   CosmosChainAddress,
   Denom,
@@ -43,7 +46,7 @@ import type {
 } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { WithdrawToSeat } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import type { MapStore } from '@agoric/store';
+import { mustMatch, type MapStore } from '@agoric/store';
 import type { IBCChannelID, IBCPacket, VTransferIBCEvent } from '@agoric/vats';
 import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
 import type { VowTools } from '@agoric/vow';
@@ -58,7 +61,7 @@ const decodeEventPacket = (
   { data }: IBCPacket,
   remoteDenom: string,
 ):
-  | { nfa: NobleAddress; amount: bigint; EUD: string }
+  | { nfa: NobleAddress; amount: bigint; EUD: AccountId | Bech32Address }
   | { error: unknown[] } => {
   // NB: may not be a FungibleTokenPacketData or even JSON
   let tx: FungibleTokenPacketData;
@@ -76,15 +79,12 @@ const decodeEventPacket = (
     return { error: ['unexpected denom', { actual, expected: remoteDenom }] };
   }
 
-  let EUD;
+  let EUD: Bech32Address;
   try {
-    ({ EUD } = decodeAddressHook(tx.receiver).query);
-    if (!EUD) {
-      return { error: ['no EUD parameter', tx.receiver] };
-    }
-    if (typeof EUD !== 'string') {
-      return { error: ['EUD is not a string', EUD] };
-    }
+    const decoded = decodeAddressHook(tx.receiver);
+    mustMatch(decoded, AddressHookShape);
+
+    ({ EUD } = decoded.query);
   } catch (e) {
     return { error: ['no query params', tx.receiver] };
   }
@@ -362,15 +362,11 @@ export const prepareSettler = (
         /**
          * The intended payee received an advance from the pool. When the funds
          * are minted, disburse them to the pool and fee seats.
-         *
-         * @param {EvmHash} txHash
-         * @param {NatValue} fullValue
-         * @param {AccountId | CosmosChainAddress['value']} EUD
          */
         async disburse(
           txHash: EvmHash,
           fullValue: NatValue,
-          EUD: AccountId | CosmosChainAddress['value'],
+          EUD: AccountId | Bech32Address,
         ) {
           const { repayer, settlementAccount } = this.state;
           const received = AmountMath.make(USDC, fullValue);
@@ -407,7 +403,11 @@ export const prepareSettler = (
          * @param {NatValue} fullValue
          * @param {string} EUD
          */
-        forward(txHash: EvmHash, fullValue: NatValue, EUD: string) {
+        forward(
+          txHash: EvmHash,
+          fullValue: NatValue,
+          EUD: AccountId | Bech32Address,
+        ) {
           const { settlementAccount } = this.state;
           log('forwarding', fullValue, 'to', EUD, 'for', txHash);
 

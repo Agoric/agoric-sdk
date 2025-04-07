@@ -1,6 +1,6 @@
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
-import type { CosmosChainAddress } from '@agoric/orchestration';
+import type { Bech32Address, CosmosChainAddress } from '@agoric/orchestration';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import {
   MockCctpTxEvidences,
@@ -21,9 +21,9 @@ const nobleDefaultVTransferParams = {
 
 export const MockVTransferEvents: Record<
   MockScenario,
-  (receiverAddress?: string) => VTransferIBCEvent
+  (receiverAddress?: Bech32Address) => VTransferIBCEvent
 > = {
-  AGORIC_PLUS_OSMO: (receiverAddress?: string) =>
+  AGORIC_PLUS_OSMO: (receiverAddress?: Bech32Address) =>
     buildVTransferEvent({
       ...nobleDefaultVTransferParams,
       amount: MockCctpTxEvidences.AGORIC_PLUS_OSMO().tx.amount,
@@ -32,7 +32,7 @@ export const MockVTransferEvents: Record<
         receiverAddress ||
         MockCctpTxEvidences.AGORIC_PLUS_OSMO().aux.recipientAddress,
     }),
-  AGORIC_PLUS_DYDX: (receiverAddress?: string) =>
+  AGORIC_PLUS_DYDX: (receiverAddress?: Bech32Address) =>
     buildVTransferEvent({
       ...nobleDefaultVTransferParams,
       amount: MockCctpTxEvidences.AGORIC_PLUS_DYDX().tx.amount,
@@ -41,7 +41,7 @@ export const MockVTransferEvents: Record<
         receiverAddress ||
         MockCctpTxEvidences.AGORIC_PLUS_DYDX().aux.recipientAddress,
     }),
-  AGORIC_PLUS_AGORIC: (receiverAddress?: string) =>
+  AGORIC_PLUS_AGORIC: (receiverAddress?: Bech32Address) =>
     buildVTransferEvent({
       ...nobleDefaultVTransferParams,
       amount: MockCctpTxEvidences.AGORIC_PLUS_AGORIC().tx.amount,
@@ -50,7 +50,7 @@ export const MockVTransferEvents: Record<
         receiverAddress ||
         MockCctpTxEvidences.AGORIC_PLUS_AGORIC().aux.recipientAddress,
     }),
-  AGORIC_NO_PARAMS: (receiverAddress?: string) =>
+  AGORIC_NO_PARAMS: (receiverAddress?: Bech32Address) =>
     buildVTransferEvent({
       ...nobleDefaultVTransferParams,
       amount: MockCctpTxEvidences.AGORIC_NO_PARAMS().tx.amount,
@@ -59,7 +59,7 @@ export const MockVTransferEvents: Record<
         receiverAddress ||
         MockCctpTxEvidences.AGORIC_NO_PARAMS().aux.recipientAddress,
     }),
-  AGORIC_UNKNOWN_EUD: (receiverAddress?: string) =>
+  AGORIC_UNKNOWN_EUD: (receiverAddress?: Bech32Address) =>
     buildVTransferEvent({
       ...nobleDefaultVTransferParams,
       amount: MockCctpTxEvidences.AGORIC_UNKNOWN_EUD().tx.amount,
@@ -69,7 +69,7 @@ export const MockVTransferEvents: Record<
         MockCctpTxEvidences.AGORIC_UNKNOWN_EUD().aux.recipientAddress,
     }),
 
-  AGORIC_PLUS_ETHEREUM: (receiverAddress?: string) =>
+  AGORIC_PLUS_ETHEREUM: (receiverAddress?: Bech32Address) =>
     buildVTransferEvent({
       ...nobleDefaultVTransferParams,
       amount: MockCctpTxEvidences.AGORIC_PLUS_ETHEREUM().tx.amount,

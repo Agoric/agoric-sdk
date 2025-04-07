@@ -1,4 +1,3 @@
-/* eslint-disable jsdoc/require-param */
 import { Fail } from '@endo/errors';
 import { type Amount } from '@agoric/ertp';
 import { NonNullish } from '@agoric/internal';
