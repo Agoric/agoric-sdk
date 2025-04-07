@@ -1,8 +1,14 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
+import {
+  AckBehavior,
+  insistManagerType,
+  makeSwingsetHarness,
+} from '@aglocal/boot/tools/supports.js';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { AmountMath } from '@agoric/ertp';
+import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import type { FeeConfig } from '@agoric/fast-usdc';
 import { Offers } from '@agoric/fast-usdc/src/clientSupport.js';
 import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
@@ -15,21 +21,17 @@ import {
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
-import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import { Fail } from '@endo/errors';
 import { makeMarshal } from '@endo/marshal';
-import {
-  AckBehavior,
-  insistManagerType,
-  makeSwingsetHarness,
-} from '@aglocal/boot/tools/supports.js';
+import { configurations } from '../src/utils/deploy-config.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
 } from './walletFactory.js';
-import { configurations } from '../src/utils/deploy-config.js';
 
 const DENOM_UNIT = 1n * 1_000_000n; // 1 million
+
+const LIQUIDITY_POOL_SIZE = 500n * DENOM_UNIT; // 500 USDC
 
 const test: TestFn<
   WalletFactoryTestContext & {
@@ -233,8 +235,8 @@ test.serial('LP deposits', async t => {
   await lp.sendOffer(
     Offers.fastUsdc.Deposit(agoricNamesRemotes, {
       offerId: 'deposit-lp-1',
-      fastLPAmount: 150n * DENOM_UNIT,
-      usdcAmount: 150n * DENOM_UNIT,
+      fastLPAmount: LIQUIDITY_POOL_SIZE,
+      usdcAmount: LIQUIDITY_POOL_SIZE,
     }),
   );
   await eventLoopIteration();
@@ -248,7 +250,7 @@ test.serial('LP deposits', async t => {
   );
   t.log('LP vbank deposits', lpBankDeposit);
   t.true(
-    BigInt(lpBankDeposit.amount) === 150n * DENOM_UNIT,
+    BigInt(lpBankDeposit.amount) === LIQUIDITY_POOL_SIZE,
     'vbank GIVEs shares to LP',
   );
 
