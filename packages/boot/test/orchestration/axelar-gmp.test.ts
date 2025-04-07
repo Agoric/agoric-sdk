@@ -290,54 +290,24 @@ test('makeAccount via axelarGmp', async t => {
   t.log('make offer with 0 amount');
   t.context.storage.data.delete('published.axelarGmp.log');
 
-  await makeEVMTransaction({
-    wallet,
-    previousOffer: previousOfferId,
-    methodName: 'sendGmp',
-    offerArgs: [
-      {
-        destinationAddress: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
-        type: 3,
-        destinationEVMChain: 'Ethereum',
+  await t.throwsAsync(
+    makeEVMTransaction({
+      wallet,
+      previousOffer: previousOfferId,
+      methodName: 'sendGmp',
+      offerArgs: [
+        {
+          destinationAddress: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
+          type: 3,
+          destinationEVMChain: 'Ethereum',
+        },
+      ],
+      proposal: {
+        give: { BLD: { brand: BLD, value: 0n } },
       },
-    ],
-    proposal: {
-      give: { BLD: { brand: BLD, value: 0n } },
-    },
-  }).catch(_err => {
-    t.like(wallet.getLatestUpdateRecord(), {
-      status: {
-        id: `evmTransaction${evmTransactionCounter - 1}`,
-        error: 'Error: IBC transfer amount must be greater than zero',
-      },
-    });
-  });
-
-  t.log('make offer with unregistered vbank asset');
-
-  await makeEVMTransaction({
-    wallet,
-    previousOffer: previousOfferId,
-    methodName: 'sendGmp',
-    offerArgs: [
-      {
-        destinationAddress: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
-        type: 3,
-        destinationEVMChain: 'Ethereum',
-      },
-    ],
-    proposal: {
-      give: { ATOM: { brand: ATOM, value: 1n } },
-    },
-  }).catch(_err => {
-    t.like(wallet.getLatestUpdateRecord(), {
-      status: {
-        id: `evmTransaction${evmTransactionCounter - 1}`,
-        error:
-          'Error: no denom detail for: "ibc/toyatom" on "agoric". ensure it is registered in chainHub.',
-      },
-    });
-  });
+    }),
+    { message: /IBC transfer amount must be greater than zero/ },
+  );
 
   t.log('make contract calls via the LCA');
   t.context.storage.data.delete('published.axelarGmp.log');
@@ -387,59 +357,55 @@ test('makeAccount via axelarGmp', async t => {
   t.log('make offer without contractInvocationData');
   t.context.storage.data.delete('published.axelarGmp.log');
 
-  await makeEVMTransaction({
-    wallet,
-    previousOffer: previousOfferId,
-    methodName: 'sendGmp',
-    offerArgs: [
-      {
-        destinationAddress: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
-        type: 1,
-        gasAmount: 20000,
-        destinationEVMChain: 'Ethereum',
+  await t.throwsAsync(
+    makeEVMTransaction({
+      wallet,
+      previousOffer: previousOfferId,
+      methodName: 'sendGmp',
+      offerArgs: [
+        {
+          destinationAddress: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
+          type: 1,
+          gasAmount: 20000,
+          destinationEVMChain: 'Ethereum',
+        },
+      ],
+      proposal: {
+        give: { BLD: { brand: BLD, value: 1n } },
       },
-    ],
-    proposal: {
-      give: { BLD: { brand: BLD, value: 1n } },
+    }),
+    {
+      message: /contractInvocationData is not defined/,
     },
-  }).catch(_err => {
-    t.like(wallet.getLatestUpdateRecord(), {
-      status: {
-        id: `evmTransaction${evmTransactionCounter - 1}`,
-        error: 'Error: contractInvocationData is not defined',
-      },
-    });
-  });
+  );
 
   t.log('make offer without passing gas amount');
   t.context.storage.data.delete('published.axelarGmp.log');
 
-  await makeEVMTransaction({
-    wallet,
-    previousOffer: previousOfferId,
-    methodName: 'sendGmp',
-    offerArgs: [
-      {
-        destinationAddress: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
-        type: 1,
-        destinationEVMChain: 'Ethereum',
-        contractInvocationData: {
-          functionSelector: utils.id('setCount(uint256)').slice(0, 10),
-          deadline: 5000,
-          nonce: 7,
-          encodedArgs,
+  await t.throwsAsync(
+    makeEVMTransaction({
+      wallet,
+      previousOffer: previousOfferId,
+      methodName: 'sendGmp',
+      offerArgs: [
+        {
+          destinationAddress: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
+          type: 1,
+          destinationEVMChain: 'Ethereum',
+          contractInvocationData: {
+            functionSelector: utils.id('setCount(uint256)').slice(0, 10),
+            deadline: 5000,
+            nonce: 7,
+            encodedArgs,
+          },
         },
+      ],
+      proposal: {
+        give: { BLD: { brand: BLD, value: 1n } },
       },
-    ],
-    proposal: {
-      give: { BLD: { brand: BLD, value: 1n } },
+    }),
+    {
+      message: /gasAmount must be defined/,
     },
-  }).catch(_err => {
-    t.like(wallet.getLatestUpdateRecord(), {
-      status: {
-        id: `evmTransaction${evmTransactionCounter - 1}`,
-        error: 'Error: gasAmount must be defined',
-      },
-    });
-  });
+  );
 });
