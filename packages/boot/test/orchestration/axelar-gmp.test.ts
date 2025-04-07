@@ -1,5 +1,6 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
+import type { AxelarGmpMemo } from '@agoric/orchestration';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { BridgeId } from '@agoric/internal';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
@@ -7,15 +8,16 @@ import { defaultAbiCoder } from '@ethersproject/abi';
 import { utils } from 'ethers';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { ExecutionContext, TestFn } from 'ava';
+import type { SmartWalletDriver } from '../../tools/drivers.js';
 import { makeWalletFactoryContext } from '../bootstrapTests/walletFactory.js';
+import type { ContinuingInvitationSpec } from '@agoric/smart-wallet/src/invitations.js';
 
-type WalletFactoryContext = Awaited<
-  ReturnType<typeof makeWalletFactoryContext>
->;
-
-export type TestContext = WalletFactoryContext & {
-  wallet: any;
-  previousOfferId: string | null;
+type MakeEVMTransactionParams = {
+  wallet: SmartWalletDriver;
+  previousOffer: string;
+  methodName: string;
+  offerArgs: any;
+  proposal: any;
 };
 
 const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
@@ -40,32 +42,16 @@ const makeTestContext = async (t: ExecutionContext) => {
 
 let evmTransactionCounter = 0;
 
-/**
- * @typedef {object} MakeEVMTransactionParams
- * @property {import('@agoric/smart-wallet/src/smartWallet.js').SmartWallet} wallet
- * @property {string} previousOffer
- * @property {string} methodName
- * @property {any} offerArgs
- * @property {any} proposal
- */
-
-/**
- * Initiates an EVM transaction offer through the smart wallet.
- *
- * @param {MakeEVMTransactionParams} params
- * @returns {Promise<string>}
- */
 const makeEVMTransaction = async ({
   wallet,
   previousOffer,
   methodName,
   offerArgs,
   proposal,
-}) => {
+}: MakeEVMTransactionParams) => {
   const id = `evmTransaction${evmTransactionCounter}`;
 
-  /** @type {import('@agoric/smart-wallet/src/invitations.js').ContinuingInvitationSpec} */
-  const proposeInvitationSpec = {
+  const proposeInvitationSpec: ContinuingInvitationSpec = {
     source: 'continuing',
     previousOffer,
     invitationMakerName: 'makeEVMTransactionInvitation',
@@ -149,7 +135,7 @@ test('makeAccount via axelarGmp', async t => {
   await makeEVMTransaction({
     wallet,
     previousOffer: previousOfferId,
-    methodName: 'getAddress',
+    methodName: 'getLocalAddress',
     offerArgs: [],
     proposal: {},
   });
@@ -226,17 +212,16 @@ test('makeAccount via axelarGmp', async t => {
       memo: JSON.stringify({
         source_chain: 'Ethereum',
         source_address: '0x19e71e7eE5c2b13eF6bd52b9E3b437bdCc7d43c8',
-        destination_chain: 'agoric',
-        destination_address: lcaAddress,
         payload: base64Payload,
-      }),
+        type: 1,
+      } satisfies AxelarGmpMemo),
     }),
   );
 
   await makeEVMTransaction({
     wallet,
     previousOffer: previousOfferId,
-    methodName: 'getEVMSmartWalletAddress',
+    methodName: 'getAddress',
     offerArgs: [],
     proposal: {},
   });
