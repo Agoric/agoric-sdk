@@ -78,6 +78,25 @@ export const MockVTransferEvents: Record<
         receiverAddress ||
         MockCctpTxEvidences.AGORIC_PLUS_ETHEREUM().aux.recipientAddress,
     }),
+  AGORIC_PLUS_NOBLE: (receiverAddress?: Bech32Address) =>
+    buildVTransferEvent({
+      ...nobleDefaultVTransferParams,
+      amount: MockCctpTxEvidences.AGORIC_PLUS_NOBLE().tx.amount,
+      sender: MockCctpTxEvidences.AGORIC_PLUS_NOBLE().tx.forwardingAddress,
+      receiver:
+        receiverAddress ||
+        MockCctpTxEvidences.AGORIC_PLUS_NOBLE().aux.recipientAddress,
+    }),
+  AGORIC_PLUS_NOBLE_B32EUD: (receiverAddress?: Bech32Address) =>
+    buildVTransferEvent({
+      ...nobleDefaultVTransferParams,
+      amount: MockCctpTxEvidences.AGORIC_PLUS_NOBLE_B32EUD().tx.amount,
+      sender:
+        MockCctpTxEvidences.AGORIC_PLUS_NOBLE_B32EUD().tx.forwardingAddress,
+      receiver:
+        receiverAddress ||
+        MockCctpTxEvidences.AGORIC_PLUS_NOBLE_B32EUD().aux.recipientAddress,
+    }),
 };
 
 export const intermediateRecipient: CosmosChainAddress = harden({

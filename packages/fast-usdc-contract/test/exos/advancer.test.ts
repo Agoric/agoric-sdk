@@ -68,6 +68,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
   chainHub.registerChain('agoric', fetchedChainInfo.agoric);
   chainHub.registerChain('dydx', fetchedChainInfo.dydx);
   chainHub.registerChain('osmosis', fetchedChainInfo.osmosis);
+  chainHub.registerChain('noble', fetchedChainInfo.noble);
   chainHub.registerChain('ethereum', {
     ...cctpChainInfo.ethereum, // to satisfy `CosmosChainInfoShapeV1`
     // @ts-expect-error `chainId` not on `BaseChainInfo`
@@ -1045,6 +1046,110 @@ test('uses CCTP for ETH', async t => {
         forwardingAddress: evidence.tx.forwardingAddress,
         fullAmount: usdc.make(evidence.tx.amount),
         destination: 'eip155:1:0x1234567890123456789012345678901234567890',
+      },
+      true, // indicates send succeeded
+    ],
+  ]);
+});
+
+test('uses transfer when dest is Noble', async t => {
+  const {
+    extensions: {
+      services: { advancer },
+      helpers: { inspectLogs, inspectNotifyCalls },
+      mocks: { mockPoolAccount, resolveLocalTransferV },
+    },
+    brands: { usdc },
+    bootstrap: { storage },
+  } = t.context;
+
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_NOBLE();
+  void advancer.handleTransactionEvent({ evidence, risk: {} });
+
+  // pretend borrow succeeded and funds were depositing to the LCA
+  resolveLocalTransferV();
+  // pretend the IBC Transfer settled
+  mockPoolAccount.transferVResolver.resolve();
+  // wait for handleTransactionEvent to do work
+  await eventLoopIteration();
+
+  t.deepEqual(inspectLogs(), [
+    [
+      'decoded EUD: cosmos:noble-1:noble1u2l9za2wa7wvffhtekgyuvyvum06lwhqxfyr5d',
+    ],
+    [
+      'Advance succeeded',
+      {
+        advanceAmount: {
+          brand: usdc.brand,
+          value: 930999999n,
+        },
+        destination:
+          'cosmos:noble-1:noble1u2l9za2wa7wvffhtekgyuvyvum06lwhqxfyr5d',
+      },
+    ],
+  ]);
+
+  // ensure Settler is notified of successful advance
+  t.like(inspectNotifyCalls(), [
+    [
+      {
+        txHash: evidence.txHash,
+        forwardingAddress: evidence.tx.forwardingAddress,
+        fullAmount: usdc.make(evidence.tx.amount),
+        destination:
+          'cosmos:noble-1:noble1u2l9za2wa7wvffhtekgyuvyvum06lwhqxfyr5d',
+      },
+      true, // indicates send succeeded
+    ],
+  ]);
+});
+
+test('uses transfer for Noble bech32', async t => {
+  const {
+    extensions: {
+      services: { advancer },
+      helpers: { inspectLogs, inspectNotifyCalls },
+      mocks: { mockPoolAccount, resolveLocalTransferV },
+    },
+    brands: { usdc },
+    bootstrap: { storage },
+  } = t.context;
+
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_NOBLE_B32EUD();
+  void advancer.handleTransactionEvent({ evidence, risk: {} });
+
+  // pretend borrow succeeded and funds were depositing to the LCA
+  resolveLocalTransferV();
+  // pretend the IBC Transfer settled
+  mockPoolAccount.transferVResolver.resolve();
+  // wait for handleTransactionEvent to do work
+  await eventLoopIteration();
+
+  t.deepEqual(inspectLogs(), [
+    ['decoded EUD: noble1u2l9za2wa7wvffhtekgyuvyvum06lwhqxfyr5d'],
+    [
+      'Advance succeeded',
+      {
+        advanceAmount: {
+          brand: usdc.brand,
+          value: 930999999n,
+        },
+        destination:
+          'cosmos:noble-1:noble1u2l9za2wa7wvffhtekgyuvyvum06lwhqxfyr5d',
+      },
+    ],
+  ]);
+
+  // ensure Settler is notified of successful advance
+  t.like(inspectNotifyCalls(), [
+    [
+      {
+        txHash: evidence.txHash,
+        forwardingAddress: evidence.tx.forwardingAddress,
+        fullAmount: usdc.make(evidence.tx.amount),
+        destination:
+          'cosmos:noble-1:noble1u2l9za2wa7wvffhtekgyuvyvum06lwhqxfyr5d',
       },
       true, // indicates send succeeded
     ],
