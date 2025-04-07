@@ -1155,3 +1155,73 @@ test('uses transfer for Noble bech32', async t => {
     ],
   ]);
 });
+
+test('Advance Fails on transfer to Noble', async t => {
+  const {
+    bootstrap: { storage },
+    extensions: {
+      services: { advancer, feeTools },
+      helpers: { inspectBorrowerFacetCalls, inspectLogs, inspectNotifyCalls },
+      mocks: { mockPoolAccount, resolveLocalTransferV, resolveWithdrawToSeatV },
+    },
+    brands: { usdc },
+  } = t.context;
+
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_NOBLE();
+  void advancer.handleTransactionEvent({ evidence, risk: {} });
+
+  // pretend borrow and deposit to LCA succeed
+  resolveLocalTransferV();
+  await eventLoopIteration();
+
+  t.deepEqual(
+    storage.getDeserialized(`fun.txns.${evidence.txHash}`),
+    [
+      { evidence, status: PendingTxStatus.Observed },
+      { status: PendingTxStatus.Advancing },
+    ],
+    'tx is Advancing',
+  );
+
+  mockPoolAccount.transferVResolver.reject(new Error('simulated error'));
+  await eventLoopIteration();
+
+  t.deepEqual(inspectLogs(), [
+    [
+      'decoded EUD: cosmos:noble-1:noble1u2l9za2wa7wvffhtekgyuvyvum06lwhqxfyr5d',
+    ],
+    ['Advance failed', Error('simulated error')],
+  ]);
+
+  // We expect to see an `AdvancedFailed` update, but that is now Settler's job.
+  // but we can ensure it's called
+  t.like(inspectNotifyCalls(), [
+    [
+      {
+        txHash: evidence.txHash,
+        forwardingAddress: evidence.tx.forwardingAddress,
+        fullAmount: usdc.make(evidence.tx.amount),
+        destination: `${decodeAddressHook(evidence.aux.recipientAddress).query.EUD}`,
+      },
+      false, // this indicates transfer failed
+    ],
+  ]);
+
+  // simulate withdrawing `advanceAmount` from PoolAccount to tmpReturnSeat
+  resolveWithdrawToSeatV();
+  await eventLoopIteration();
+  const { returnToPool } = inspectBorrowerFacetCalls();
+  t.is(
+    returnToPool.length,
+    1,
+    'returnToPool is called after ibc transfer fails',
+  );
+  t.deepEqual(
+    returnToPool[0],
+    [
+      Far('MockZCFSeat', { exit: theExit }),
+      usdc.make(930999999n), // 300000000n net of fees
+    ],
+    'same amount borrowed is returned to LP',
+  );
+});
