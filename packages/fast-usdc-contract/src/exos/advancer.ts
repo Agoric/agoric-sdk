@@ -210,15 +210,12 @@ export const prepareAdvancerKit = (
             // throws if it's neither CAIP-10 nor bare bech32.
             const destination = chainHub.resolveAccountId(EUD);
             const accountId = parseAccountId(destination);
-            const destChain = chainOfAccount(destination);
-            const info = chainHub.getChainInfoByChainId(destChain);
 
-            // These are the cases that are currently supported
+            // Dest must be a Cosmos account or support CCTP
             if (
-              accountId.reference !== settlementAddress.chainId &&
-              info.namespace !== 'cosmos' &&
-              !supportsCctp(destination)
+              !(accountId.namespace === 'cosmos' || supportsCctp(destination))
             ) {
+              const destChain = chainOfAccount(destination);
               statusManager.skipAdvance(evidence, [
                 `Transfer to ${destChain} not supported.`,
               ]);
