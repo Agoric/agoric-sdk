@@ -8,9 +8,9 @@ import { defaultAbiCoder } from '@ethersproject/abi';
 import { utils } from 'ethers';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { ExecutionContext, TestFn } from 'ava';
+import type { ContinuingInvitationSpec } from '@agoric/smart-wallet/src/invitations.js';
 import type { SmartWalletDriver } from '../../tools/drivers.js';
 import { makeWalletFactoryContext } from '../bootstrapTests/walletFactory.js';
-import type { ContinuingInvitationSpec } from '@agoric/smart-wallet/src/invitations.js';
 
 type MakeEVMTransactionParams = {
   wallet: SmartWalletDriver;
@@ -45,7 +45,6 @@ let lcaAddress = '';
 
 const makeEVMTransaction = async ({
   wallet,
-  previousOffer,
   methodName,
   offerArgs,
   proposal,
