@@ -6,6 +6,15 @@ import {
   encodeBech32,
 } from '@agoric/cosmic-proto/address-hooks.js';
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/agoric/swingset/swingset.js';
+import type {
+  CctpTxEvidence,
+  ContractRecord,
+  EvmAddress,
+  NobleAddress,
+  PoolMetrics,
+} from '@agoric/fast-usdc';
+import { Offers } from '@agoric/fast-usdc/src/clientSupport.js';
+import { configurations } from '@agoric/fast-usdc/src/utils/deploy-config.js';
 import { BridgeId } from '@agoric/internal';
 import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
@@ -30,72 +39,12 @@ import {
 
 const nodeRequire = createRequire(import.meta.url);
 
-// Define types for Elys contract based on actual implementation
-interface ElysContractRecord {
-  localAccountAddress: string;
-  strideICAAddress: string;
-  elysICAAddress: string;
-  supportedHostChains: Record<string, SupportedHostChainShape>;
-  elysToAgoricChannel: string;
-  AgoricToElysChannel: string;
-}
-
-interface SupportedHostChainShape {
-  hostToAgoricChannel: string;
-  nativeDenom: string;
-  ibcDenomOnAgoric: string;
-  ibcDenomOnStride: string;
-  hostICAAccountAddress: {
-    chainId: string;
-    encoding: string;
-    value: string;
-  };
-  bech32Prefix: string;
-}
-
-interface ElysPoolMetrics {
-  shareWorth: {
-    numerator: { value: bigint };
-  };
-  encumberedBalance: { value: bigint };
-  stTokensInPool: { value: bigint };
-}
-
-interface ElysStakeInfo {
-  amount: bigint;
-  validator: string;
-  delegator: string;
-  status: string;
-  hostChain: string;
-}
-
-interface ElysTransactionInfo {
-  txHash: string;
-  status: string;
-  amount: bigint;
-  sender: string;
-  recipient: string;
-  denom: string;
-}
-
-interface FeeConfigShape {
-  feeCollector: string;
-  onBoardRate: {
-    nominator: bigint;
-    denominator: bigint;
-  };
-  offBoardRate: {
-    nominator: bigint;
-    denominator: bigint;
-  };
-}
-
 const test: TestFn<
   WalletFactoryTestContext & {
     harness: ReturnType<typeof makeSwingsetHarness>;
-    validators: ElysValidator[];
-    toElys: MockChannel;
-    fromElys: IBCChannelID;
+    oracles: TxOracle[];
+    toNoble: MockChannel;
+    fromNoble: IBCChannelID;
     observations: Array<{ id: unknown } & Record<string, unknown>>;
     writeStats?: (txt: string) => Promise<void>;
     doCoreEval: (specifier: string) => Promise<void>;
@@ -108,9 +57,8 @@ type SmartWallet = Awaited<
   >
 >;
 
-const config = '@agoric/vm-config/decentral-itest-config.json';
-const elysAgoricChannelId = 'channel-42';
-const strideAgoricChannelId = 'channel-44';
+const config = '@agoric/vm-config/decentral-itest-fast-usdc-config.json';
+const nobleAgoricChannelId = 'channel-21';
 
 const range = (n: Number) => Array.from(Array(n).keys());
 const prefixedRange = (n: Number, pfx: string) =>
@@ -139,17 +87,15 @@ test.before(async t => {
       ? { archiveSnapshot: makeArchiveSnapshot(snapshotDir, fsPowers) }
       : {}),
   });
-  
-  // Create validators for Elys staking
-  const validators = range(5).map(ix => 
-    makeElysValidator(ctx, `validator-${ix}`, encodeBech32('elys', [100, ix]))
+  const oracles = Object.entries(configurations.MAINNET.oracles).map(
+    ([name, addr]) => makeTxOracle(ctx, name, addr),
   );
 
   const writeStats = STATS_FILE
     ? (txt: string) => writeFile(STATS_FILE, txt)
     : undefined;
-  const toElys = makeIBCChannel(ctx.bridgeUtils, 'channel-43');
-  const fromElys = 'channel-42';
+  const toNoble = makeIBCChannel(ctx.bridgeUtils, 'channel-62');
+  const fromNoble = 'channel-21';
 
   const { log } = console;
   const doCoreEval = async (specifier: string) => {
@@ -168,28 +114,25 @@ test.before(async t => {
   t.context = {
     ...ctx,
     harness,
-    validators,
+    oracles,
     observations: [],
     writeStats,
-    fromElys,
-    toElys,
+    fromNoble,
+    toNoble,
     doCoreEval,
   };
 });
 test.after.always(t => t.context.shutdown?.());
 
-const makeElysValidator = (
+const makeTxOracle = (
   ctx: WalletFactoryTestContext,
   name: string,
   addr: string,
-  hostChain: string = 'cosmos',
 ) => {
   const { agoricNamesRemotes, walletFactoryDriver: wfd } = ctx;
   const walletSync = makePromiseKit<SmartWallet>();
 
   return harden({
-    name,
-    hostChain,
     async provision() {
       walletSync.resolve(wfd.provideSmartWallet(addr));
       return walletSync.promise;
@@ -197,24 +140,24 @@ const makeElysValidator = (
     async claim() {
       const wallet = await walletSync.promise;
       await wallet.sendOffer({
-        id: 'claim-validator-invitation',
+        id: 'claim-oracle-invitation',
         invitationSpec: {
           source: 'purse',
-          instance: agoricNamesRemotes.instance.elys,
-          description: 'validator operator invitation',
+          instance: agoricNamesRemotes.instance.fastUsdc,
+          description: 'oracle operator invitation',
         },
         proposal: {},
       });
     },
-    async updateStatus(status: string, nonce: Number) {
+    async submit(evidence: CctpTxEvidence, nonce: Number) {
       const wallet = await walletSync.promise;
       const it: OfferSpec = {
-        id: `update-status-${nonce}`,
+        id: `submit-evidence-${nonce}`,
         invitationSpec: {
           source: 'continuing',
-          previousOffer: 'claim-validator-invitation',
-          invitationMakerName: 'UpdateStatus',
-          invitationArgs: [status, this.hostChain],
+          previousOffer: 'claim-oracle-invitation',
+          invitationMakerName: 'SubmitEvidence',
+          invitationArgs: [evidence],
         },
         proposal: {},
       };
@@ -223,65 +166,37 @@ const makeElysValidator = (
     },
   });
 };
-type ElysValidator = ReturnType<typeof makeElysValidator>;
+type TxOracle = ReturnType<typeof makeTxOracle>;
 
-const makeElysQuery = (ctx: WalletFactoryTestContext) => {
+const makeFastUsdcQuery = (ctx: WalletFactoryTestContext) => {
   const { storage } = ctx;
   return harden({
     metrics: () => {
-      const values = storage.getValues('published.elys.poolMetrics');
-      if (!values || values.length === 0) {
-        return {
-          shareWorth: { numerator: { value: 0n } },
-          encumberedBalance: { value: 0n },
-          stTokensInPool: { value: 0n },
-        };
-      }
-      const metrics: ElysPoolMetrics = defaultMarshaller.fromCapData(
-        JSON.parse(values.at(-1)!),
+      const metrics: PoolMetrics = defaultMarshaller.fromCapData(
+        JSON.parse(storage.getValues('published.fastUsdc.poolMetrics').at(-1)!),
       );
       return metrics;
     },
     contractRecord: () => {
       const { storage } = ctx;
-      const values = storage.getValues('published.elys');
-      if (!values || values.length === 0) {
-        return {
-          localAccountAddress: 'agoric1default',
-          strideICAAddress: 'stride1default',
-          elysICAAddress: 'elys1default',
-          supportedHostChains: {},
-          elysToAgoricChannel: 'channel-42',
-          AgoricToElysChannel: 'channel-43',
-        };
-      }
-      const it: ElysContractRecord = JSON.parse(values.at(-1)!);
+      const values = storage.getValues('published.fastUsdc');
+      const it: ContractRecord = JSON.parse(values.at(-1)!);
       return it;
     },
-    stakeStatus: (txHash: string, hostChain: string) =>
+    txStatus: (txHash: string) =>
       storage
-        .getValues(`published.elys.stakes.${hostChain}.${txHash}`)
+        .getValues(`published.fastUsdc.txns.${txHash}`)
         .map(txt => defaultMarshaller.fromCapData(JSON.parse(txt))),
-    feeConfig: () => {
-      const config: FeeConfigShape = defaultMarshaller.fromCapData(
-        JSON.parse(storage.getValues('published.elys.feeConfig').at(-1)!),
-      );
-      return config;
-    },
-    supportedHostChains: () => {
-      const record = storage.getValues('published.elys.supportedHostChains');
-      return record.map(txt => defaultMarshaller.fromCapData(JSON.parse(txt)));
-    }
   });
 };
 
-const makeStaker = (ctx: WalletFactoryTestContext, addr: string) => {
+const makeLP = (ctx: WalletFactoryTestContext, addr: string) => {
   const { agoricNamesRemotes, walletFactoryDriver: wfd } = ctx;
-  const stakerP = wfd.provideSmartWallet(addr);
+  const lpP = wfd.provideSmartWallet(addr);
 
-  const pollOffer = async (staker: SmartWallet, id: string) => {
+  const pollOffer = async (lp: SmartWallet, id: string) => {
     for (;;) {
-      const info = staker.getLatestUpdateRecord();
+      const info = lp.getLatestUpdateRecord();
       if (info.updated !== 'offerStatus') continue;
       if (info.status.id !== id) continue;
       if (info.status.error) throw Error(info.status.error);
@@ -291,86 +206,34 @@ const makeStaker = (ctx: WalletFactoryTestContext, addr: string) => {
   };
 
   return harden({
-    async stake(value: bigint, validator: string, hostChain: string, nonce: number) {
-      const offerId = `staker-stake-${nonce}`;
-      const offerSpec = {
-        id: offerId,
-        invitationSpec: {
-          source: 'purse',
-          instance: agoricNamesRemotes.instance.elys,
-          description: 'stake tokens',
-        },
-        proposal: {
-          give: { Tokens: { value } },
-          want: { Receipt: { validator, hostChain } },
-        },
-      };
-      const staker = await stakerP;
-      await staker.sendOffer(offerSpec);
-      await pollOffer(staker, offerId);
+    async deposit(value: bigint, nonce: number) {
+      const offerId = `lp-deposit-${nonce}`;
+      const offerSpec = Offers.fastUsdc.Deposit(agoricNamesRemotes, {
+        offerId,
+        fastLPAmount: BigInt(Math.round(Number(value) * 0.6)), // XXX use poolMetrics?,
+        usdcAmount: value,
+      });
+      const lp = await lpP;
+      await lp.sendOffer(offerSpec);
+      await pollOffer(lp, offerId);
       return offerSpec;
     },
-    async unstake(value: bigint, validator: string, hostChain: string, nonce: number) {
-      const offerId = `staker-unstake-${nonce}`;
-      const offerSpec = {
-        id: offerId,
-        invitationSpec: {
-          source: 'purse',
-          instance: agoricNamesRemotes.instance.elys,
-          description: 'unstake tokens',
-        },
-        proposal: {
-          give: { Receipt: { validator, hostChain, value } },
-          want: { Tokens: { value } },
-        },
-      };
-      const staker = await stakerP;
-      await staker.sendOffer(offerSpec);
-      await pollOffer(staker, offerId);
-      return offerSpec;
-    },
-    async liquidStake(value: bigint, hostChain: string, nonce: number) {
-      const offerId = `staker-liquid-stake-${nonce}`;
-      const offerSpec = {
-        id: offerId,
-        invitationSpec: {
-          source: 'purse',
-          instance: agoricNamesRemotes.instance.elys,
-          description: 'liquid stake tokens',
-        },
-        proposal: {
-          give: { Tokens: { value } },
-          want: { StTokens: { hostChain } },
-        },
-      };
-      const staker = await stakerP;
-      await staker.sendOffer(offerSpec);
-      await pollOffer(staker, offerId);
-      return offerSpec;
-    },
-    async redeemStake(value: bigint, hostChain: string, nonce: number) {
-      const offerId = `staker-redeem-stake-${nonce}`;
-      const offerSpec = {
-        id: offerId,
-        invitationSpec: {
-          source: 'purse',
-          instance: agoricNamesRemotes.instance.elys,
-          description: 'redeem stake tokens',
-        },
-        proposal: {
-          give: { StTokens: { hostChain, value } },
-          want: { Tokens: { value } },
-        },
-      };
-      const staker = await stakerP;
-      await staker.sendOffer(offerSpec);
-      await pollOffer(staker, offerId);
+    async withdraw(value: bigint, nonce: number) {
+      const offerId = `lp-withdraw-${nonce}`;
+      const offerSpec = Offers.fastUsdc.Withdraw(agoricNamesRemotes, {
+        offerId,
+        fastLPAmount: value,
+        usdcAmount: BigInt(Math.round(Number(value) * 0.9)), // XXX use poolMetrics?
+      });
+      const lp = await lpP;
+      await lp.sendOffer(offerSpec);
+      await pollOffer(lp, offerId);
       return offerSpec;
     },
   });
 };
 
-const makeElysIBC = (
+const makeCctp = (
   ctx: WalletFactoryTestContext,
   forwardingChannel: IBCChannelID,
   destinationChannel: IBCChannelID,
@@ -378,40 +241,37 @@ const makeElysIBC = (
   const { runInbound } = ctx.bridgeUtils;
 
   return harden({
-    async transferTokens(
+    depositForBurn(
       amount: bigint,
-      sender: string,
-      target: string,
-      receiver: string,
-      denom: string = 'uelys',
+      sender: EvmAddress,
+      forwardingAddress: NobleAddress,
+      nonce: number,
     ) {
-      await runInbound(
-        BridgeId.VTRANSFER,
-        buildVTransferEvent({
-          sequence: '1', // arbitrary; not used
-          amount,
-          denom,
-          sender,
-          target,
-          receiver,
-          sourceChannel: forwardingChannel,
-          destinationChannel,
-        }),
-      );
+      const hex1 = (nonce * 51).toString(16);
+      const hex2 = (nonce * 73).toString(16);
+      const txInfo: Omit<CctpTxEvidence, 'aux'> = harden({
+        blockHash: `0x${hex2.repeat(64 / hex2.length)}`,
+        blockNumber: 21037663n + BigInt(nonce),
+        txHash: `0x${hex1.repeat(64 / hex1.length)}`,
+        tx: { amount, forwardingAddress, sender },
+        chainId: 42161,
+      });
+      return txInfo;
     },
-    async transferStTokens(
+    async mint(
       amount: bigint,
       sender: string,
       target: string,
       receiver: string,
-      hostChain: string,
     ) {
+      // in due course, minted USDC arrives
       await runInbound(
         BridgeId.VTRANSFER,
+
         buildVTransferEvent({
           sequence: '1', // arbitrary; not used
           amount,
-          denom: `st${hostChain}`,
+          denom: 'uusdc',
           sender,
           target,
           receiver,
@@ -423,130 +283,64 @@ const makeElysIBC = (
   });
 };
 
-const makeUser = (
-  address: string,
-  localAccountAddress: string,
-  elysAgoricChannelId: IBCChannelID,
-  elysQ: ReturnType<typeof makeElysQuery>,
-  elysIBC: ReturnType<typeof makeElysIBC>,
-  validators: ElysValidator[],
-  supportedHostChains: Record<string, SupportedHostChainShape>,
+/**
+ * https://github.com/noble-assets/forwarding/blob/main/types/account.go#L19
+ *
+ * @param channel
+ * @param recipient
+ * @param fallback
+ */
+const deriveNobleForwardingAddress = (
+  channel: IBCChannelID,
+  recipient: string,
+  fallback: string,
+) => {
+  if (fallback) throw Error('not supported');
+  const out: NobleAddress = `noble1${channel}${recipient.slice(-30)}`;
+  return out;
+};
+
+const makeUA = (
+  address: EvmAddress,
+  settlementAccount: string,
+  nobleAgoricChannelId: IBCChannelID,
+  fastQ: ReturnType<typeof makeFastUsdcQuery>,
+  cctp: ReturnType<typeof makeCctp>,
+  oracles: TxOracle[],
 ) => {
   return harden({
-    async stakeTokens(
+    async advance(
       t: ExecutionContext,
       amount: bigint,
-      validatorIndex: number,
-      hostChain: string,
+      EUD: string,
       nonce: number,
     ) {
-      const validator = validators[validatorIndex % validators.length];
-      // Default values in case host chain info is not available
-      const defaultNativeDenom = 'uatom';
-      
-      // Get host chain info or use defaults
-      const hostChainInfo = supportedHostChains[hostChain] || {
-        nativeDenom: defaultNativeDenom,
-      };
-      
-      const recipientAddress = encodeAddressHook(localAccountAddress, { 
-        validator: validator.name,
-        hostChain,
-      });
-      
-      // Simulate IBC transfer of tokens to be staked
-      await elysIBC.transferTokens(
+      const recipientAddress = encodeAddressHook(settlementAccount, { EUD });
+      const forwardingAddress = deriveNobleForwardingAddress(
+        nobleAgoricChannelId,
+        recipientAddress,
+        '',
+      );
+      const txInfo = cctp.depositForBurn(
         amount,
         address,
-        localAccountAddress,
-        recipientAddress,
-        hostChainInfo.nativeDenom || defaultNativeDenom,
+        forwardingAddress,
+        nonce,
       );
-      
-      // Check stake status
-      const txHash = `tx-${nonce}-${address}`;
-      t.like(elysQ.stakeStatus(txHash, hostChain), [
-        { status: 'PENDING' },
-        { status: 'STAKED' },
-      ]);
-
-      return { recipientAddress, txHash };
-    },
-    
-    async liquidStakeTokens(
-      t: ExecutionContext,
-      amount: bigint,
-      hostChain: string,
-      nonce: number,
-    ) {
-      // Default values in case host chain info is not available
-      const defaultNativeDenom = 'uatom';
-      
-      // Get host chain info or use defaults
-      const hostChainInfo = supportedHostChains[hostChain] || {
-        nativeDenom: defaultNativeDenom,
+      const evidence: CctpTxEvidence = {
+        ...txInfo,
+        aux: { forwardingChannel: nobleAgoricChannelId, recipientAddress },
       };
-      
-      const recipientAddress = encodeAddressHook(localAccountAddress, { 
-        hostChain,
-        action: 'liquidStake',
-      });
-      
-      // Simulate IBC transfer of tokens to be liquid staked
-      await elysIBC.transferTokens(
-        amount,
-        address,
-        localAccountAddress,
-        recipientAddress,
-        hostChainInfo.nativeDenom || defaultNativeDenom,
-      );
-      
-      // Check liquid stake status
-      const txHash = `liquid-${nonce}-${address}`;
-      t.like(elysQ.stakeStatus(txHash, hostChain), [
-        { status: 'PENDING' },
-        { status: 'LIQUID_STAKED' },
+
+      // TODO: connect this to the CCTP contract?
+      await Promise.all(oracles.map(o => o.submit(evidence, nonce)));
+
+      t.like(fastQ.txStatus(evidence.txHash), [
+        { status: 'OBSERVED' },
+        { status: 'ADVANCING' },
       ]);
 
-      return { recipientAddress, txHash };
-    },
-    
-    async redeemStTokens(
-      t: ExecutionContext,
-      amount: bigint,
-      hostChain: string,
-      nonce: number,
-    ) {
-      // Default values in case host chain info is not available
-      const defaultNativeDenom = 'uatom';
-      
-      // Get host chain info or use defaults
-      const hostChainInfo = supportedHostChains[hostChain] || {
-        nativeDenom: defaultNativeDenom,
-      };
-      
-      const recipientAddress = encodeAddressHook(localAccountAddress, { 
-        hostChain,
-        action: 'redeem',
-      });
-      
-      // Simulate IBC transfer of stTokens to be redeemed
-      await elysIBC.transferStTokens(
-        amount,
-        address,
-        localAccountAddress,
-        recipientAddress,
-        hostChainInfo.nativeDenom || defaultNativeDenom,
-      );
-      
-      // Check redeem status
-      const txHash = `redeem-${nonce}-${address}`;
-      t.like(elysQ.stakeStatus(txHash, hostChain), [
-        { status: 'PENDING' },
-        { status: 'REDEEMED' },
-      ]);
-
-      return { recipientAddress, txHash };
+      return { recipientAddress, forwardingAddress, evidence };
     },
   });
 };
@@ -575,129 +369,138 @@ type MockChannel = ReturnType<typeof makeIBCChannel>;
 
 const makeSimulation = async (
   ctx: WalletFactoryTestContext,
-  toElys: MockChannel,
-  validators: ElysValidator[],
+  toNoble: MockChannel,
+  oracles: TxOracle[],
 ) => {
-  const elysIBC = makeElysIBC(ctx, elysAgoricChannelId, 'channel-43');
-  const elysQ = makeElysQuery(ctx);
   
-  const contractRecord = elysQ.contractRecord();
-  const supportedHostChains = elysQ.supportedHostChains().at(-1) || {};
+  const {
+    bootstrap: { storage },
+    commonPrivateArgs,
+    mocks: { transferBridge, ibcBridge },
+    utils: { inspectLocalBridge, inspectDibcBridge, transmitTransferAck },
+  } = await commonSetup(t);
+
+  const { zoe, bundleAndInstall } = await setUpZoeForTest();
+  const installation: Installation<StartFn> =
+    await bundleAndInstall(contractFile);
+  const storageNode = await E(storage.rootNode).makeChildNode(contractName);
+  const feeConfig = createFeeTestConfig('agoric1feeCollectorAddress');
+  const allowedChains = ['cosmoshub'];
   
-  const stakers = range(5).map(ix =>
-    makeStaker(ctx, encodeBech32('agoric', [100, ix])),
+  const myContract = await E(zoe).startInstance(
+    installation,
+    undefined, // issuers
+    {}, // terms
+    { ...commonPrivateArgs, storageNode, feeConfig, allowedChains },
   );
-  
-  const users = prefixedRange(10, `user-`).map(addr =>
-    makeUser(
-      addr,
-      contractRecord.localAccountAddress,
-      elysAgoricChannelId,
-      elysQ,
-      elysIBC,
-      validators,
-      supportedHostChains,
+
+  const agorichookAddress = await E(myContract.publicFacet).getLocalAddress();
+  deposit(
+    { amount: '10', denom: 'uatom' },
+    'channel-405',
+    'cosmos175c7xwly7nwycghwww87x83h56tdkjxzjfv55d',
+    agorichookAddress,
+    transferBridge,
+  );
+
+  const { messages, address: execAddr } = inspectLocalBridge().at(-1);
+    // Liquid stake response from stride
+  ibcBridge.addMockAck(
+    'eyJ0eXBlIjoxLCJkYXRhIjoiQ2pvS0h5OXpkSEpwWkdVdWMzUmhhMlZwWW1NdVRYTm5UR2x4ZFdsa1UzUmhhMlVTRndvTFkyOXpiVzl6TVhSbGMzUVNBVGdhQlhWaGRHOXQiLCJtZW1vIjoiIn0=',
+    buildMsgResponseString(MsgLiquidStakeResponse, {
+      stToken: { denom: 'statom', amount: '1800000' },
+    }),
+  );
+  // ack for transfer of atom from hub to stride
+  ibcBridge.addMockAck(
+    'eyJ0eXBlIjoxLCJkYXRhIjoiQ25RS0tTOXBZbU11WVhCd2JHbGpZWFJwYjI1ekxuUnlZVzV6Wm1WeUxuWXhMazF6WjFSeVlXNXpabVZ5RWtjS0NIUnlZVzV6Wm1WeUVndGphR0Z1Ym1Wc0xUTTVNUm9LQ2dWMVlYUnZiUklCT0NJTVkyOXpiVzl6TVhSbGMzUXlLZ3RqYjNOdGIzTXhkR1Z6ZERJQU9JRHdrc3ZkQ0E9PSIsIm1lbW8iOiIifQ==',
+    buildMsgResponseString(MsgTransferResponse, { sequence: 1n }),
+  );
+  // ack for transfer of statom from stride to elys
+  ibcBridge.addMockAck(
+    'eyJ0eXBlIjoxLCJkYXRhIjoiQ3BvQkNpa3ZhV0pqTG1Gd2NHeHBZMkYwYVc5dWN5NTBjbUZ1YzJabGNpNTJNUzVOYzJkVWNtRnVjMlpsY2hKdENnaDBjbUZ1YzJabGNoSUxZMmhoYm01bGJDMDVPVGthRVFvR2MzUmhkRzl0RWdjeE9EQXdNREF3SWd0amIzTnRiM014ZEdWemRDb3JaV3g1Y3pFM05XTTNlSGRzZVRkdWQzbGpaMmgzZDNjNE4zZzRNMmcxTm5Sa2EycDRlbXBtTkc1bE1ESUFPSUR3a3N2ZENBPT0iLCJtZW1vIjoiIn0=',
+    buildMsgResponseString(MsgTransferResponse, { sequence: 1n }),
+  );
+
+  // fee send move token to host chain ack
+  await transmitTransferAck();
+  await transmitTransferAck();
+
+  const acknowledgements = (await inspectDibcBridge()).bridgeEvents;
+
+
+
+
+  const cctp = makeCctp(ctx, nobleAgoricChannelId, 'channel-62');
+
+  const fastQ = makeFastUsdcQuery(ctx);
+  const lps = range(3).map(ix =>
+    makeLP(ctx, encodeBech32('agoric', [100, ix])),
+  );
+  const { settlementAccount, poolAccount } = fastQ.contractRecord();
+  const users = prefixedRange(5, `0xFEED`).map(addr =>
+    makeUA(
+      addr as EvmAddress,
+      settlementAccount,
+      nobleAgoricChannelId,
+      fastQ,
+      cctp,
+      oracles,
     ),
   );
 
-  // Get list of host chains from supported chains or use defaults
-  const hostChains = Object.keys(supportedHostChains).length > 0 
-    ? Object.keys(supportedHostChains) 
-    : ['cosmos', 'osmosis', 'juno'];
-  
   return harden({
-    validators,
-    stakers,
+    oracles,
+    lps,
     users,
-    hostChains,
     async iteration(t: ExecutionContext, iter: number) {
-      // Select host chain for this iteration
-      const hostChainIx = iter % hostChains.length;
-      const hostChain = hostChains[hostChainIx];
-      
-      // Stake tokens
-      const stakerIx = iter % stakers.length;
-      const staker = stakers[stakerIx];
-      const validatorIx = iter % validators.length;
-      const validator = validators[validatorIx];
-      
-      // Stake amount increases with each iteration to simulate growing network
-      const stakeAmount = BigInt((stakerIx + 1) * 1000) * 1_000_000n * BigInt(iter + 1);
-      
-      // Update validator status periodically
-      if (iter % 3 === 0) {
-        await validator.updateStatus('active', iter);
-      }
+      const lpIx = iter % lps.length;
+      const lp = lps[lpIx];
+      await lp.deposit(BigInt((lpIx + 1) * 2000) * 1_000_000n, iter);
 
-      // Simulate user interactions
       const {
-        shareWorth: { numerator: poolBeforeStake },
-      } = await elysQ.metrics();
-      const part = Number(poolBeforeStake.value) / users.length;
+        shareWorth: { numerator: poolBeforeAdvance },
+      } = await fastQ.metrics();
+      const part = Number(poolBeforeAdvance.value) / users.length;
 
       const who = iter % users.length;
-      const user = users[who];
-      const amount = BigInt(Math.round(part * (1 - who * 0.05)));
+      const webUI = users[who];
+      const destAddr = encodeBech32('dydx', [1, 2, 3, who, iter]);
+      const amount = BigInt(Math.round(part * (1 - who * 0.1)));
 
-      // Alternate between different operations based on iteration
-      if (iter % 3 === 0) {
-        // Regular staking
-        await staker.stake(stakeAmount, validator.name, hostChain, iter);
-        
-        // User stakes tokens
-        await user.stakeTokens(
-          t, 
-          amount, 
-          validatorIx,
-          hostChain,
-          iter * users.length + who
-        );
-      } else if (iter % 3 === 1) {
-        // Liquid staking
-        await staker.liquidStake(stakeAmount, hostChain, iter);
-        
-        // User liquid stakes tokens
-        await user.liquidStakeTokens(
-          t,
-          amount,
-          hostChain,
-          iter * users.length + who
-        );
-      } else {
-        // Redeeming stTokens (if we're past the first few iterations)
-        if (iter > 5) {
-          const redeemAmount = BigInt(Math.round(Number(stakeAmount) * 0.3));
-          await staker.redeemStake(redeemAmount, hostChain, iter);
-          
-          // User redeems stTokens
-          await user.redeemStTokens(
-            t,
-            BigInt(Math.round(Number(amount) * 0.3)),
-            hostChain,
-            iter * users.length + who
-          );
-        } else {
-          // Fall back to regular staking for early iterations
-          await staker.stake(stakeAmount, validator.name, hostChain, iter);
-        }
-      }
+      const { recipientAddress, forwardingAddress, evidence } =
+        await webUI.advance(t, amount, destAddr, iter * users.length + who);
 
-      await toElys.ack(contractRecord.localAccountAddress);
+      await toNoble.ack(poolAccount);
       await eventLoopIteration();
 
-      // Periodically unstake tokens to test that flow
-      if (iter > 5 && iter % 4 === 0) {
-        const unstakeAmount = BigInt(Math.round(Number(stakeAmount) * 0.3));
-        await staker.unstake(unstakeAmount, validator.name, hostChain, iter);
-      }
+      // in due course, minted USDC arrives
+      await cctp.mint(
+        amount,
+        forwardingAddress,
+        settlementAccount,
+        recipientAddress,
+      );
+      await eventLoopIteration();
+      t.like(fastQ.txStatus(evidence.txHash), [
+        { status: 'OBSERVED' },
+        { status: 'ADVANCING' },
+        { status: 'ADVANCED' },
+        { status: 'DISBURSED' },
+      ]);
 
       await eventLoopIteration();
 
-      // Verify no encumbered balance remains
-      const afterOperations = await elysQ.metrics();
-      if (afterOperations.encumberedBalance.value > 0n) {
-        throw t.fail(`still encumbered: ${afterOperations.encumberedBalance}`);
+      const beforeWithdraw = await fastQ.metrics();
+      if (beforeWithdraw.encumberedBalance.value > 0n) {
+        throw t.fail(`still encumbered: ${beforeWithdraw.encumberedBalance}`);
       }
+      const partWd =
+        Number(beforeWithdraw.shareWorth.numerator.value) / lps.length;
+      // 0.8 to avoid: Withdrawal of X failed because the purse only contained Y
+      const amountWd = BigInt(Math.round(partWd * (0.8 - lpIx * 0.1)));
+      // XXX simulate failed withrawals?
+      await lp.withdraw(amountWd, iter);
     },
   });
 };
@@ -712,7 +515,7 @@ const getResourceUsageStats = (
 
   const { size: vstorageEntries } = data;
   const { length: vstorageTotalSize } = JSON.stringify([...data.entries()]);
-  const { length: vstorageElysSize } = JSON.stringify(
+  const { length: vstorageFusdcSize } = JSON.stringify(
     [...data.entries()].filter(e => e[0].startsWith('published.elys')),
   );
   const { length: vstorageWalletSize } = JSON.stringify(
@@ -726,7 +529,7 @@ const getResourceUsageStats = (
     clistEntries,
     vstorageEntries,
     vstorageTotalSize,
-    vstorageElysSize,
+    vstorageFusdcSize,
     vstorageWalletSize,
   });
 };
@@ -739,82 +542,67 @@ test.serial('access relevant kernel stats after bootstrap', async t => {
   observations.push({ id: 'post-boot', ...relevant });
 });
 
-test.serial('validators provision before contract deployment', async t => {
-  const { validators } = t.context;
-  const [validator0] = await Promise.all(validators.map(v => v.provision()));
-  t.truthy(validator0);
+test.serial('oracles provision before contract deployment', async t => {
+  const { oracles } = t.context;
+  const [watcher0] = await Promise.all(oracles.map(o => o.provision()));
+  t.truthy(watcher0);
 
   const { controller, observations, storage } = t.context;
   observations.push({
-    id: 'post-validator-provision',
+    id: 'post-ocw-provision',
     ...getResourceUsageStats(controller, storage.data),
   });
 });
 
-test.serial('start-elys', async t => {
-  const {
-    agoricNamesRemotes,
-    bridgeUtils,
-    buildProposal,
-    evalProposal,
-    refreshAgoricNamesRemotes,
-  } = t.context;
+// test.serial('start-fast-usdc', async t => {
+//   const {
+//     agoricNamesRemotes,
+//     bridgeUtils,
+//     buildProposal,
+//     evalProposal,
+//     refreshAgoricNamesRemotes,
+//   } = t.context;
 
   // inbound `startChannelOpenInit` responses immediately.
-  bridgeUtils.setAckBehavior(
-    BridgeId.DIBC,
-    'startChannelOpenInit',
-    AckBehavior.Immediate,
-  );
-  bridgeUtils.setBech32Prefix('elys');
+  // needed since the Fusdc StartFn relies on an ICA being created
+//   bridgeUtils.setAckBehavior(
+//     BridgeId.DIBC,
+//     'startChannelOpenInit',
+//     AckBehavior.Immediate,
+//   );
+//   bridgeUtils.setBech32Prefix('noble');
 
-  // Set up fee config for the contract
-  const feeConfig = {
-    feeCollector: 'elys1feecollector',
-    onBoardRate: {
-      nominator: 5n,
-      denominator: 1000n,
-    },
-    offBoardRate: {
-      nominator: 3n,
-      denominator: 1000n,
-    },
-  };
+//   const materials = buildProposal(
+//     '@agoric/builders/scripts/fast-usdc/start-fast-usdc.build.js',
+//     ['--net', 'MAINNET'],
+//   );
+//   await evalProposal(materials);
+//   refreshAgoricNamesRemotes();
+//   t.truthy(agoricNamesRemotes.instance.fastUsdc);
 
-  // Set up allowed chains
-  const allowedChains = ['cosmos', 'osmosis', 'juno'];
+//   const { controller, observations, storage } = t.context;
+//   observations.push({
+//     id: 'post-start-fast-usdc',
+//     ...getResourceUsageStats(controller, storage.data),
+//   });
+// });
 
-  const materials = buildProposal(
-    '@agoric/orchestration/scripts/elys/start-elys.build.js',
-    ['--net', 'MAINNET', '--fee-config', JSON.stringify(feeConfig), '--allowed-chains', allowedChains.join(',')],
-  );
-  await evalProposal(materials);
-  refreshAgoricNamesRemotes();
-  t.truthy(agoricNamesRemotes.instance.elys);
+// test.serial('oracles accept invitations', async t => {
+//   const { oracles } = t.context;
+//   await t.notThrowsAsync(Promise.all(oracles.map(o => o.claim())));
 
-  const { controller, observations, storage } = t.context;
-  observations.push({
-    id: 'post-start-elys',
-    ...getResourceUsageStats(controller, storage.data),
-  });
-});
-
-test.serial('validators accept invitations', async t => {
-  const { validators } = t.context;
-  await t.notThrowsAsync(Promise.all(validators.map(v => v.claim())));
-
-  const { controller, observations, storage } = t.context;
-  observations.push({
-    id: 'post-validators-claim-invitations',
-    ...getResourceUsageStats(controller, storage.data),
-  });
-});
+//   const { controller, observations, storage } = t.context;
+//   observations.push({
+//     id: 'post-ocws-claim-invitations',
+//     ...getResourceUsageStats(controller, storage.data),
+//   });
+// });
 
 test.serial('iterate simulation several times', async t => {
-  const { controller, observations, validators, storage, toElys } = t.context;
+  const { controller, observations, oracles, storage, toNoble } = t.context;
   const { doCoreEval, harness, swingStore, slogSender } = t.context;
   const { updateNewCellBlockHeight } = storage;
-  const sim = await makeSimulation(t.context, toElys, validators);
+  const sim = await makeSimulation(t.context, toNoble, oracles);
 
   await writeFile('kernel-0.json', JSON.stringify(controller.dump(), null, 2));
 
@@ -827,8 +615,7 @@ test.serial('iterate simulation several times', async t => {
 
   async function doCleanupAndSnapshot(id) {
     slogSender?.({ type: 'cleanup-begin', id });
-    await doCoreEval('@agoric/orchestration/scripts/elys/delete-completed-stakes.js');
-    await doCoreEval('@agoric/orchestration/scripts/elys/cleanup-expired-transactions.js');
+    await doCoreEval('@agoric/fast-usdc/scripts/delete-completed-txs.js');
     while (true) {
       const beforeReapPos = previousReapPos;
       previousReapPos = controller.reapAllVats(beforeReapPos);
@@ -856,7 +643,7 @@ test.serial('iterate simulation several times', async t => {
     await slogSender?.forceFlush?.();
   }
 
-  for (const ix of range(50)) {
+  for (const ix of range(63)) {
     // force GC and prune vstorage at regular intervals
     if (ix % 4 === 0) {
       await doCleanupAndSnapshot(ix);
@@ -868,10 +655,12 @@ test.serial('iterate simulation several times', async t => {
     await sim.iteration(t, ix);
 
     const computrons = harness.totalComputronCount();
+    // const snapshots = [...snapStore.listAllSnapshots()];
     const observation = {
       id: `iter-${ix}`,
       time: Date.now(),
       computrons,
+      // snapshots,
       ...getResourceUsageStats(controller, storage.data),
     };
     observations.push(observation);

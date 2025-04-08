@@ -24,16 +24,41 @@ chains:
       enabled: true
       type: starship
     ports:
-      rest: 1317
-      rpc: 26657
+      rest: 1315
+      rpc: 26655
       exposer: 38087
-      grpc: 9090
+      grpc: 9093
       faucet: 8082
     resources:
       cpu: 1
       memory: 4Gi
-  - id: osmosislocal
-    name: osmosis
+  - id: elyslocal
+    name: custom
+    image: mudassirshabbir/elys:latest
+    home: /root/.elys
+    binary: elysd
+    prefix: elys
+    denom: uelys
+    prettyName: Elys
+    coins: 200000000000000uelys
+    hdPath: m/44'/118'/0'/0/0
+    coinType: 118
+    repo: https://github.com/elys-network/elys
+    assets:
+      - base: uelys
+        description: "The native token of Elys Network."
+        name: Elys
+        display: elys
+        symbol: ELYS
+        logo_URIs:
+          png: "https://raw.githubusercontent.com/cosmos/chain-registry/master/elys/images/elys.png"
+        denom_units:
+          - denom: uelys
+            exponent: 0
+          - denom: elys
+            exponent: 6
+        coingecko_id: elys-network
+        keywords: [ "elys-network" ]
     numValidators: 1
     genesis:
       app_state:
@@ -49,64 +74,22 @@ chains:
           host_port: 'icqhost'
           params:
             host_enabled: true
-            allow_queries:
-              - /cosmos.bank.v1beta1.Query/Balance
-              - /cosmos.bank.v1beta1.Query/AllBalances
-    faucet:
-      enabled: true
-      type: starship
+  
     ports:
-      rest: 1315
-      rpc: 26655
-      grpc: 9093
-      faucet: 8084
-    resources:
-      cpu: 1
-      memory: 1Gi
-  - id: cosmoshublocal
-    name: cosmoshub
-    numValidators: 1
-    genesis:
-      app_state:
-        staking:
-          params:
-            unbonding_time: '2m'
-        interchain_accounts:
-          host_genesis_state:
-            params:
-              host_enabled: true
-              allow_messages: ['*']
-    faucet:
-      enabled: true
-      type: starship
-    ports:
-      rest: 1314
-      rpc: 26654
-      grpc: 9092
-      faucet: 8083
+      rest: 1317
+      rpc: 26657
+      grpc: 9090
     resources:
       cpu: 1
       memory: 1Gi
 
 relayers:
-  - name: osmosis-cosmoshub
-    type: hermes
-    replicas: 1
-    chains:
-      - osmosislocal
-      - cosmoshublocal
-  - name: agoric-osmosis
+  - name: agoric-elys
     type: hermes
     replicas: 1
     chains:
       - agoriclocal
-      - osmosislocal
-  - name: agoric-cosmoshub
-    type: hermes
-    replicas: 1
-    chains:
-      - agoriclocal
-      - cosmoshublocal
+      - elyslocal
 
 explorer:
   enabled: false

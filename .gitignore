@@ -81,3 +81,10 @@ endo-sha.txt
 .aider*
 !.aiderignore
 
+snapshot*.gz
+packages/boot/slog.jsonl
+packages/boot/stats.jsonl
+packages/boot/snapshots.csv
+packages/boot/kernel-0.json
+packages/boot/kernel-1.json
+multichain-testing/revise-chain-info.js

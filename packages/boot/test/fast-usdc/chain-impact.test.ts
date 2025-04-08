@@ -483,28 +483,6 @@ test.serial('access relevant kernel stats after bootstrap', async t => {
   observations.push({ id: 'post-boot', ...relevant });
 });
 
-test.serial.skip(
-  'access uncompressedSize of heap snapshots of vats (WIP)',
-  async t => {
-    const { controller, swingStore } = t.context;
-
-    const snapStore = swingStore.internal
-      .snapStore as unknown as SnapStoreDebug;
-
-    await controller.reapAllVats(); // force GC
-    await controller.run(); // clear any reactions
-    const active: string[] = [];
-    for (const snapshot of snapStore.listAllSnapshots()) {
-      const { vatID, uncompressedSize } = snapshot;
-      t.log({ vatID, uncompressedSize });
-      t.log('TODO: filter by active', snapshot);
-      active.push(vatID);
-    }
-    t.log('active vats', active);
-    t.pass();
-  },
-);
-
 test.serial('oracles provision before contract deployment', async t => {
   const { oracles } = t.context;
   const [watcher0] = await Promise.all(oracles.map(o => o.provision()));
@@ -559,86 +537,6 @@ test.serial('oracles accept invitations', async t => {
     id: 'post-ocws-claim-invitations',
     ...getResourceUsageStats(controller, storage.data),
   });
-});
-
-test.skip('LP deposits (independent of iterations)', async t => {
-  const fastQ = makeFastUsdcQuery(t.context);
-  const lp = makeLP(t.context, 'agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8');
-  const { proposal, id } = await lp.deposit(150_000_000n, 123);
-
-  const {
-    shareWorth: { numerator: poolBalance },
-  } = fastQ.metrics();
-  t.true(poolBalance.value >= proposal.give.USDC.value);
-
-  const { controller, observations, storage } = t.context;
-  observations.push({
-    id,
-    kernel: getResourceUsageStats(controller, storage.data),
-  });
-});
-
-test.skip('makes usdc advance, mint (independent of iterations)', async t => {
-  const { oracles, toNoble } = t.context;
-  const fastQ = makeFastUsdcQuery(t.context);
-  const cctp = makeCctp(t.context, nobleAgoricChannelId, 'channel-62');
-
-  const { settlementAccount, poolAccount } = fastQ.contractRecord();
-  const webUI = makeUA(
-    '0xDEADBEEF' as EvmAddress,
-    settlementAccount,
-    nobleAgoricChannelId,
-    fastQ,
-    cctp,
-    oracles,
-  );
-
-  const destAddr = 'dydx1anything';
-  const { recipientAddress, forwardingAddress, evidence } = await webUI.advance(
-    t,
-    15_000_000n,
-    destAddr,
-    100,
-  );
-  const amount = 15_000_000n;
-
-  await toNoble.ack(poolAccount);
-  await eventLoopIteration();
-
-  const { controller, observations, storage } = t.context;
-  observations.push({
-    id: `post-advance`,
-    ...getResourceUsageStats(controller, storage.data),
-  });
-
-  // in due course, minted USDC arrives
-  await cctp.mint(
-    amount,
-    forwardingAddress,
-    settlementAccount,
-    recipientAddress,
-  );
-  await eventLoopIteration();
-  t.like(fastQ.txStatus(evidence.txHash), [
-    { status: 'OBSERVED' },
-    { status: 'ADVANCING' },
-    { status: 'ADVANCED' },
-    { status: 'DISBURSED' },
-  ]);
-  observations.push({
-    id: `post-mint`,
-    ...getResourceUsageStats(controller, storage.data),
-  });
-});
-
-test.skip('prune vstorage (independent of iterations)', async t => {
-  const { doCoreEval, observations, controller, storage } = t.context;
-  await doCoreEval('@agoric/fast-usdc/scripts/delete-completed-txs.js');
-  observations.push({
-    id: `post-prune`,
-    ...getResourceUsageStats(controller, storage.data),
-  });
-  t.pass();
 });
 
 test.serial('iterate simulation several times', async t => {
