@@ -8,7 +8,7 @@ import { divideBy, multiplyBy } from '@agoric/ertp/src/ratio.js';
 import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.js';
 import type { CctpTxEvidence } from '@agoric/fast-usdc/src/types.js';
 import { makeTracer } from '@agoric/internal';
-import type { Denom, DenomDetail } from '@agoric/orchestration';
+import type { AccountId, Denom, DenomDetail } from '@agoric/orchestration';
 import type { ExecutionContext, TestFn } from 'ava';
 import { makeDenomTools } from '../../tools/asset-info.js';
 import { makeBlocksIterable } from '../../tools/block-iter.js';
@@ -772,3 +772,92 @@ test.serial('insufficient LP funds and forward failed', async t => {
 
 test.todo('mint while Advancing; still Disbursed');
 test.todo('test with rc2, settler-reference proposal');
+
+test.serial('Ethereum destination', async t => {
+  console.log('\n\n\n\n\n====================');
+  console.log('Ethereum destination');
+  console.log('====================');
+  const mintAmt = LP_DEPOSIT_AMOUNT / 6n;
+  const {
+    assertTxStatus,
+    attest,
+    makeFakeEvidence,
+    nobleTools,
+    nobleAgoricChannelId,
+    retryUntilCondition,
+    vstorageClient,
+  } = t.context;
+  const eudChain = 'ethereum';
+  console.time(`UX->${eudChain}`);
+
+  // Ethereum EUD
+  const EUD: AccountId = 'eip155:1:0x1234567890123456789012345678901234567890';
+  t.log(`Ethereum EUD: ${EUD}`);
+
+  // parameterize agoric address
+  const { settlementAccount } = await vstorageClient.queryData(
+    `published.${contractName}`,
+  );
+  t.log('settlementAccount address', settlementAccount);
+
+  const recipientAddress = encodeAddressHook(settlementAccount, { EUD });
+  t.log('recipientAddress', recipientAddress);
+
+  // register forwarding address on noble
+  const txRes = nobleTools.registerForwardingAcct(
+    nobleAgoricChannelId,
+    recipientAddress,
+  );
+  t.is(txRes?.code, 0, 'registered forwarding account');
+
+  const { address: userForwardingAddr } = nobleTools.queryForwardingAddress(
+    nobleAgoricChannelId,
+    recipientAddress,
+  );
+  t.log('got forwardingAddress', userForwardingAddr);
+
+  const evidence = makeFakeEvidence(
+    mintAmt,
+    userForwardingAddr,
+    recipientAddress,
+  );
+
+  // HERE record the Noble ICA balance for before-burn
+
+  trace('User initiates EVM burn:', evidence.txHash);
+  await attest(evidence, eudChain);
+
+  await assertTxStatus(evidence.txHash, 'ADVANCED');
+  trace('Advance completed, waiting for mint...');
+
+  /**
+   * 1. Evidence is published to the transaction feed
+   * 2. Advancer observes the evidence
+   * 3. poolAccount borrows from liquidity pool and sends to `nobleICA`
+   * 4. When that settles, we get the IBC ACK
+   * 5. Call `MsgDepositForBurn` on `nobleICA`
+   * 6. CCTP relayer calls ReceiveMsg on EVM destination using attestation from Circle (looks for the burn in order to make the attestation)
+   *    (Read the self-relaying guid
+   */
+
+  // TODO check the balance on the Noble ICA account to make sure its amount
+  // decreases by the mint amount. The actual `MsgDepositForBurn` message is our
+  // interface with CCTP, which isn't being tested, so we should test that we're
+  // fulfilling that interface. Since that's laborious we use a proxy: that the
+  // balance goes up (presumably to due to the transfer) and back down
+  // (presumably due the burn message.) Our lower level tests are verifying that
+  // the messages are being sent.
+  // OR maybe we can find `Circle Ccctp V1 Message Sent` in the noble event logs, to mimic relaying to eth
+  // https://docs.noble.xyz/cctp/manual_relaying
+
+  // HERE read the Noble ICA balance to confirm its suffiiently lower than before-burn
+
+  // Verify disbursement succeeds
+  nobleTools.mockCctpMint(mintAmt, userForwardingAddr);
+  await retryUntilCondition(
+    () => fastLPQ(vstorageClient).metrics(),
+    ({ encumberedBalance }) => encumberedBalance && isEmpty(encumberedBalance),
+    'encumberedBalance returns to 0',
+  );
+  await assertTxStatus(evidence.txHash, 'DISBURSED');
+});
