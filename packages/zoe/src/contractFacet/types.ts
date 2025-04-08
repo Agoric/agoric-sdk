@@ -14,9 +14,9 @@ import type { Passable } from '@endo/pass-style';
 import type { Key, Pattern } from '@endo/patterns';
 import type {
   AmountKeywordRecord,
+  AmountBoundKeywordRecord,
   ExitRule,
   FeeMintAccess,
-  Instance,
   InvitationDetails,
   Keyword,
   ProposalRecord,
@@ -24,7 +24,7 @@ import type {
   UserSeat,
   ZoeService,
 } from '../types-index.js';
-import type { ContractStartFunction } from '../zoeService/utils.js';
+import type { ContractStartFunction, Instance } from '../zoeService/utils.js';
 
 /**
  * Any passable non-thenable. Often an explanatory string.
@@ -121,7 +121,7 @@ export type ZCF<CT = Record<string, unknown>> = {
 export type TransferPart = [
   fromSeat?: ZCFSeat,
   toSeat?: ZCFSeat,
-  fromAmounts?: AmountKeywordRecord,
+  fromAmounts?: AmountBoundKeywordRecord,
   toAmounts?: AmountKeywordRecord,
 ];
 

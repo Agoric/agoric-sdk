@@ -2,8 +2,9 @@
 /// <reference types="@agoric/ertp/exported" />
 
 /**
- * @import {Allocation, AnyTerms, BrandKeywordRecord, Completion, ContractStartFn, InvitationHandle, PaymentPKeywordRecord, UserSeat, ZoeIssuerRecord} from '@agoric/zoe';
  * @import {Pattern} from '@endo/patterns';
+ * @import {IssuerRecord} from '@agoric/ertp';
+ * @import {Allocation, AnyTerms, BrandKeywordRecord, Completion, ContractStartFn, InvitationHandle, PaymentPKeywordRecord, UserSeat, ZoeIssuerRecord} from '@agoric/zoe';
  */
 
 /**
@@ -196,7 +197,7 @@
 /**
  * @template {AssetKind} [K=AssetKind]
  * @typedef {object} ZoeMint
- * @property {() => import('@agoric/ertp').IssuerRecord<K>} getIssuerRecord
+ * @property {() => IssuerRecord<K>} getIssuerRecord
  * @property {(totalToMint: Amount<K>) => void} mintAndEscrow
  * @property {(totalToBurn: Amount<K>) => void} withdrawAndBurn
  * Note that the burning is asynchronous, and so may not have happened by

@@ -1,10 +1,11 @@
-import { makeIssuerKit, AmountMath } from '@agoric/ertp';
+import { makeIssuerKit } from '@agoric/ertp';
 import { makeScalarMapStore } from '@agoric/store';
 import { makeZoeForTest } from '../../tools/setup-zoe.js';
 import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
 
 /**
  * @import {MapStore} from '@agoric/swingset-liveslots';
+ * @import {AmountBound, AmountValueBound} from '@agoric/ertp';
  */
 
 export const setup = () => {
@@ -26,8 +27,13 @@ export const setup = () => {
   const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
   const zoe = makeZoeForTest(fakeVatAdmin);
 
-  /** @type {(brand: Brand<'nat'>) => (value: bigint) => Amount<'nat'>} */
-  const makeSimpleMake = brand => value => AmountMath.make(brand, value);
+  // The following more correct type causes an explosion of new lint errors
+  // /**
+  //  * @template {AssetKind} [AK='nat']
+  //  * @param {Brand<AK>} brand
+  //  * @returns {(value: AmountValueBound<AK>) => AmountBound<AK>}
+  //  */
+  const makeSimpleMake = brand => value => harden({ brand, value });
 
   const result = {
     moolaIssuer: moolaKit.issuer,
