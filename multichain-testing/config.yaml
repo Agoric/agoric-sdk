@@ -110,6 +110,37 @@ chains:
       rpc: 26653
       grpc: 9099
       faucet: 8089
+    assets:
+      - base: ustrd
+        description: "The native token of Stride Network."
+        name: Stride
+        display: strd
+        symbol: STRD
+        logo_URIs:
+          png: "https://raw.githubusercontent.com/cosmos/chain-registry/master/stride/images/strd.png"
+        denom_units:
+          - denom: ustrd
+            exponent: 0
+          - denom: strd
+            exponent: 6
+      - base: stuatom
+        description: "The LSD token of Atom on Stride Network."
+        name: "Stride Staked ATOM"
+        display: statom
+        symbol: stATOM
+        logo_URIs:
+          png: "https://raw.githubusercontent.com/cosmos/chain-registry/master/stride/images/statom.png"
+        denom_units:
+          - denom: stuatom
+            exponent: 0
+          - denom: statom
+            exponent: 6
+        traces:
+          - type: liquid-stake
+            counterparty:
+              chain_name: cosmoshublocal
+              base_denom: uatom
+            provider: Stride
 
 relayers:
   - name: stride-cosmoshub
