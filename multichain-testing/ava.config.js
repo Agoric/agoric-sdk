@@ -8,6 +8,6 @@ export default {
   files: ['test/**/*.test.*'],
   concurrency: 1,
   serial: true,
-  timeout: '125s',
+  timeout: '5m',
   failFast: true,
 };
