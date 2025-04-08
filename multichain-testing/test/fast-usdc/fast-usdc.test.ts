@@ -25,7 +25,7 @@ import { agoricNamesQ, fastLPQ, makeTxOracle } from './fu-actors.js';
 
 const { RELAYER_TYPE } = process.env;
 
-const log = makeTracer('MCFU');
+const trace = makeTracer('MCFU');
 
 const { keys, values } = Object;
 const { isGTE, isEmpty, make, subtract } = AmountMath;
@@ -145,7 +145,7 @@ const makeTestContext = async (t: ExecutionContext) => {
         () => op.checkInvitation(),
         ({ usedInvitation }) => !!usedInvitation,
         `${op.getName()} invitation used`,
-        { log },
+        { log: trace },
       );
     }
   };
@@ -177,7 +177,7 @@ const makeTestContext = async (t: ExecutionContext) => {
       ({ shareWorth }) =>
         !isGTE(metricsPre.shareWorth.numerator, shareWorth.numerator),
       'share worth numerator increases from deposit',
-      { log },
+      { log: trace },
     );
 
     const queryClient = makeQueryClient(
@@ -188,7 +188,7 @@ const makeTestContext = async (t: ExecutionContext) => {
       () => queryClient.queryBalance(wallets['lp'], 'ufastlp'),
       ({ balance }) => isGTE(toAmt(FastLP, balance), want.PoolShare),
       'lp has pool shares',
-      { log },
+      { log: trace },
     );
   };
   await provideLpFunds();
@@ -238,7 +238,7 @@ const makeTestContext = async (t: ExecutionContext) => {
       common.retryUntilCondition(
         () => queryTxRecord(txHash),
         record => {
-          log('tx record', record);
+          trace('tx record', record);
           return record.status === status;
         },
         `${txHash} status is ${status}`,
@@ -364,7 +364,7 @@ const advanceAndSettleScenario = test.macro({
       recipientAddress,
     );
 
-    log('User initiates EVM burn:', evidence.txHash);
+    trace('User initiates EVM burn:', evidence.txHash);
     const { block: initialBlock } = await api.queryBlock();
     console.time(`UX->${eudChain}`);
     console.timeLog(
@@ -424,7 +424,7 @@ const advanceAndSettleScenario = test.macro({
     t.true(mainWallClockEstimate * (1 + MARGIN_OF_ERROR) <= MAIN_MAX_DUR);
 
     await assertTxStatus(evidence.txHash, 'ADVANCED');
-    log('Advance completed, waiting for mint...');
+    trace('Advance completed, waiting for mint...');
 
     nobleTools.mockCctpMint(mintAmt, userForwardingAddr);
     await retryUntilCondition(
@@ -545,7 +545,7 @@ test.serial('lp withdraws', async t => {
     () => queryClient.queryBalance(wallets['lp'], 'ufastlp'),
     ({ balance }) => isEmpty(toAmt(FastLP, balance)),
     'lp no longer has pool shares',
-    { log },
+    { log: trace },
   );
 
   const USDC = want.USDC.brand;
@@ -558,7 +558,7 @@ test.serial('lp withdraws', async t => {
         subtract(toAmt(USDC, balance), toAmt(USDC, usdcCoinsPre)),
       ),
     "lp's USDC balance increases",
-    { log },
+    { log: trace },
   );
 
   t.pass();
