@@ -143,9 +143,15 @@ relayers:
     replicas: 1
     chains:
       - agoriclocal
-      - cosmoshublocal
-  - name: agoric-stride
+      - elyslocal
+  - name: stride-elys
     type: hermes
+    replicas: 1
+    chains:
+      - elyslocal
+      - stridelocal
+  - name: agoric-stride
+    type: go-relayer
     replicas: 1
     chains:
       - agoriclocal
