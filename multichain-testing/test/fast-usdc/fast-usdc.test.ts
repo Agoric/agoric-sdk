@@ -178,6 +178,28 @@ const makeTestContext = async (t: ExecutionContext) => {
     console.timeLog(`UX->${eudChain}`, 'submitted x', txOracles.length);
   };
 
+  const acceptInvitations = async () => {
+    // ensure we have an unused (or used) oracle invitation in each purse
+    for (const op of txOracles) {
+      const { detail, usedInvitation } = await op.checkInvitation();
+      t.log({ name: op.getName(), hasInvitation: !!detail, usedInvitation });
+      t.true(!!detail || usedInvitation, 'has or accepted invitation');
+    }
+
+    // accept oracle operator invitations
+    await Promise.all(txOracles.map(op => op.acceptInvitation()));
+
+    for (const op of txOracles) {
+      await common.retryUntilCondition(
+        () => op.checkInvitation(),
+        ({ usedInvitation }) => !!usedInvitation,
+        `${op.getName()} invitation used`,
+        { log },
+      );
+    }
+  };
+  await acceptInvitations();
+
   let callCount = 0;
   const makeFakeEvidence = (
     mintAmt: bigint,
@@ -279,7 +301,6 @@ const makeTestContext = async (t: ExecutionContext) => {
     makeFakeEvidence,
     nobleAgoricChannelId,
     oracleWds,
-    txOracles,
     usdcOnOsmosis,
     usdcDenom,
     wallets,
@@ -290,35 +311,6 @@ test.before(async t => (t.context = await makeTestContext(t)));
 test.after(async t => {
   const { deleteTestKeys } = t.context;
   deleteTestKeys(accounts);
-});
-
-test.serial('oracles accept', async t => {
-  const { txOracles, retryUntilCondition } = t.context;
-
-  // ensure we have an unused (or used) oracle invitation in each purse
-  let hasAccepted = false;
-  for (const op of txOracles) {
-    const { detail, usedInvitation } = await op.checkInvitation();
-    t.log({ name: op.getName(), hasInvitation: !!detail, usedInvitation });
-    t.true(!!detail || usedInvitation, 'has or accepted invitation');
-    if (usedInvitation) hasAccepted = true;
-  }
-  // if the oracles have already accepted, skip the rest of the test this is
-  // primarily to facilitate active development but could support testing on
-  // images where operator invs are already accepted
-  if (hasAccepted) return t.pass();
-
-  // accept oracle operator invitations
-  await Promise.all(txOracles.map(op => op.acceptInvitation()));
-
-  for (const op of txOracles) {
-    await retryUntilCondition(
-      () => op.checkInvitation(),
-      ({ usedInvitation }) => !!usedInvitation,
-      `${op.getName()} invitation used`,
-      { log },
-    );
-  }
 });
 
 const toAmt = (
