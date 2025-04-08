@@ -220,30 +220,28 @@ const makeTestContext = async (t: ExecutionContext) => {
       chainId: 42161,
     }) as CctpTxEvidence;
 
-  const queryTxStatus = async (txHash: string) => {
+  const queryTxRecord = async (txHash: string) => {
     const record = await common.smartWalletKit.readPublished(
       `fastUsdc.txns.${txHash}`,
     );
     if (!record) {
       throw new Error(`no record for ${txHash}`);
     }
-    // @ts-expect-error unknown may not have 'status'
     if (!record.status) {
       throw new Error(`no status for ${txHash}`);
     }
-    // @ts-expect-error still unknown?
-    return record.status;
+    return record;
   };
 
   const assertTxStatus = async (txHash: string, status: string) =>
     t.notThrowsAsync(() =>
       common.retryUntilCondition(
-        () => queryTxStatus(txHash),
-        txStatus => {
-          log('tx status', txStatus);
-          return txStatus === status;
+        () => queryTxRecord(txHash),
+        record => {
+          log('tx record', record);
+          return record.status === status;
         },
-        `${txHash} is ${status}`,
+        `${txHash} status is ${status}`,
       ),
     );
 
