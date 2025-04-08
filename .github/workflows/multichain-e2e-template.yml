@@ -19,6 +19,11 @@ on:
         default: false
         required: false
         type: boolean
+      osmosis_xcs:
+        description: 'Flag to enable Osmosis Crosschain Swaps'
+        default: false
+        required: false
+        type: boolean
 
 jobs:
   multichain-e2e:
@@ -117,6 +122,10 @@ jobs:
 
       - name: Register Interchain Bank Assets
         run: make register-bank-assets
+        working-directory: ./agoric-sdk/multichain-testing
+
+      - name: Setup Osmosis XCS Contracts
+        run: make osmosis-xcs-setup
         working-directory: ./agoric-sdk/multichain-testing
 
       - name: Create Osmosis Pool
