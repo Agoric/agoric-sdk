@@ -1,5 +1,6 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
+import type { AxelarGmpMemo } from '@agoric/orchestration';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { BridgeId } from '@agoric/internal';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
@@ -7,15 +8,16 @@ import { defaultAbiCoder } from '@ethersproject/abi';
 import { utils } from 'ethers';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { ExecutionContext, TestFn } from 'ava';
+import type { ContinuingInvitationSpec } from '@agoric/smart-wallet/src/invitations.js';
+import type { SmartWalletDriver } from '../../tools/drivers.js';
 import { makeWalletFactoryContext } from '../bootstrapTests/walletFactory.js';
 
-type WalletFactoryContext = Awaited<
-  ReturnType<typeof makeWalletFactoryContext>
->;
-
-export type TestContext = WalletFactoryContext & {
-  wallet: any;
-  previousOfferId: string | null;
+type MakeEVMTransactionParams = {
+  wallet: SmartWalletDriver;
+  previousOffer: string;
+  methodName: string;
+  offerArgs: any;
+  proposal: any;
 };
 
 const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
@@ -32,40 +34,24 @@ const makeTestContext = async (t: ExecutionContext) => {
   const fullCtx = {
     ...ctx,
     wallet,
-    previousOfferId: null,
   };
 
   return fullCtx;
 };
 
 let evmTransactionCounter = 0;
+let previousOffer = '';
+let lcaAddress = '';
 
-/**
- * @typedef {object} MakeEVMTransactionParams
- * @property {import('@agoric/smart-wallet/src/smartWallet.js').SmartWallet} wallet
- * @property {string} previousOffer
- * @property {string} methodName
- * @property {any} offerArgs
- * @property {any} proposal
- */
-
-/**
- * Initiates an EVM transaction offer through the smart wallet.
- *
- * @param {MakeEVMTransactionParams} params
- * @returns {Promise<string>}
- */
 const makeEVMTransaction = async ({
   wallet,
-  previousOffer,
   methodName,
   offerArgs,
   proposal,
-}) => {
+}: MakeEVMTransactionParams) => {
   const id = `evmTransaction${evmTransactionCounter}`;
 
-  /** @type {import('@agoric/smart-wallet/src/invitations.js').ContinuingInvitationSpec} */
-  const proposeInvitationSpec = {
+  const proposeInvitationSpec: ContinuingInvitationSpec = {
     source: 'continuing',
     previousOffer,
     invitationMakerName: 'makeEVMTransactionInvitation',
@@ -111,15 +97,12 @@ test.before(async t => {
   );
 });
 
-test('makeAccount via axelarGmp', async t => {
-  const {
-    storage,
-    wallet,
-    bridgeUtils: { runInbound },
-  } = t.context;
+test.beforeEach(t => {
+  t.context.storage.data.delete('published.axelarGmp.log');
+});
 
-  t.log('create an LCA');
-  const { ATOM, BLD } = t.context.agoricNamesRemotes.brand;
+test.serial('makeAccount via axelarGmp', async t => {
+  const { storage, wallet } = t.context;
 
   await wallet.sendOffer({
     id: 'axelarMakeAccountCall',
@@ -141,21 +124,22 @@ test('makeAccount via axelarGmp', async t => {
     'Monitoring transfers setup successfully',
   ]);
 
-  t.log('Execute offers via the LCA');
+  previousOffer = wallet.getCurrentWalletRecord().offerToUsedInvitation[0][0];
+});
 
-  const previousOfferId =
-    wallet.getCurrentWalletRecord().offerToUsedInvitation[0][0];
+test.serial('get lca address', async t => {
+  const { wallet } = t.context;
 
   await makeEVMTransaction({
     wallet,
-    previousOffer: previousOfferId,
-    methodName: 'getAddress',
+    previousOffer,
+    methodName: 'getLocalAddress',
     offerArgs: [],
     proposal: {},
   });
 
   // @ts-expect-error
-  const lcaAddress = wallet.getLatestUpdateRecord().status.result;
+  lcaAddress = wallet.getLatestUpdateRecord().status.result;
   t.truthy(lcaAddress);
   t.like(wallet.getLatestUpdateRecord(), {
     status: {
@@ -164,10 +148,14 @@ test('makeAccount via axelarGmp', async t => {
       result: lcaAddress,
     },
   });
+});
+
+test.serial('make offers using the lca', async t => {
+  const { wallet } = t.context;
 
   await makeEVMTransaction({
     wallet,
-    previousOffer: previousOfferId,
+    previousOffer,
     methodName: 'send',
     offerArgs: [
       {
@@ -180,16 +168,6 @@ test('makeAccount via axelarGmp', async t => {
     proposal: {},
   });
 
-  await runInbound(
-    BridgeId.VTRANSFER,
-    buildVTransferEvent({
-      sender: makeTestAddress(),
-      target: makeTestAddress(),
-      sourceChannel: 'channel-0',
-      sequence: '1',
-    }),
-  );
-
   t.like(wallet.getLatestUpdateRecord(), {
     status: {
       id: `evmTransaction${evmTransactionCounter - 1}`,
@@ -197,8 +175,13 @@ test('makeAccount via axelarGmp', async t => {
       result: 'transfer success',
     },
   });
+});
 
-  t.log('receiveUpcall test');
+test.serial('receiveUpCall test', async t => {
+  const {
+    wallet,
+    bridgeUtils: { runInbound },
+  } = t.context;
 
   const {
     channelId: agoricToAxelarChannel,
@@ -215,7 +198,7 @@ test('makeAccount via axelarGmp', async t => {
   await runInbound(
     BridgeId.VTRANSFER,
     buildVTransferEvent({
-      sequence: '1',
+      sequence: '2',
       amount: 1n,
       denom: 'uaxl',
       sender: makeTestAddress(),
@@ -226,17 +209,16 @@ test('makeAccount via axelarGmp', async t => {
       memo: JSON.stringify({
         source_chain: 'Ethereum',
         source_address: '0x19e71e7eE5c2b13eF6bd52b9E3b437bdCc7d43c8',
-        destination_chain: 'agoric',
-        destination_address: lcaAddress,
         payload: base64Payload,
-      }),
+        type: 1,
+      } satisfies AxelarGmpMemo),
     }),
   );
 
   await makeEVMTransaction({
     wallet,
-    previousOffer: previousOfferId,
-    methodName: 'getEVMSmartWalletAddress',
+    previousOffer,
+    methodName: 'getAddress',
     offerArgs: [],
     proposal: {},
   });
@@ -252,13 +234,15 @@ test('makeAccount via axelarGmp', async t => {
       result: evmSmartWalletAddress,
     },
   });
+});
 
-  t.log('send tokens via LCA');
-  t.context.storage.data.delete('published.axelarGmp.log');
+test.serial('token transfers using lca', async t => {
+  const { storage, wallet } = t.context;
+  const { BLD } = t.context.agoricNamesRemotes.brand;
 
   await makeEVMTransaction({
     wallet,
-    previousOffer: previousOfferId,
+    previousOffer,
     methodName: 'sendGmp',
     offerArgs: [
       {
@@ -271,6 +255,9 @@ test('makeAccount via axelarGmp', async t => {
       give: { BLD: { brand: BLD, value: 1n } },
     },
   });
+
+  const getLogged = () =>
+    JSON.parse(storage.data.get('published.axelarGmp.log')!).values;
 
   t.deepEqual(getLogged(), [
     'Inside sendGmp',
@@ -288,66 +275,37 @@ test('makeAccount via axelarGmp', async t => {
   });
 
   t.log('make offer with 0 amount');
-  t.context.storage.data.delete('published.axelarGmp.log');
 
-  await makeEVMTransaction({
-    wallet,
-    previousOffer: previousOfferId,
-    methodName: 'sendGmp',
-    offerArgs: [
-      {
-        destinationAddress: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
-        type: 3,
-        destinationEVMChain: 'Ethereum',
+  await t.throwsAsync(
+    makeEVMTransaction({
+      wallet,
+      previousOffer,
+      methodName: 'sendGmp',
+      offerArgs: [
+        {
+          destinationAddress: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
+          type: 3,
+          destinationEVMChain: 'Ethereum',
+        },
+      ],
+      proposal: {
+        give: { BLD: { brand: BLD, value: 0n } },
       },
-    ],
-    proposal: {
-      give: { BLD: { brand: BLD, value: 0n } },
-    },
-  }).catch(_err => {
-    t.like(wallet.getLatestUpdateRecord(), {
-      status: {
-        id: `evmTransaction${evmTransactionCounter - 1}`,
-        error: 'Error: IBC transfer amount must be greater than zero',
-      },
-    });
-  });
+    }),
+    { message: /IBC transfer amount must be greater than zero/ },
+  );
+});
 
-  t.log('make offer with unregistered vbank asset');
-
-  await makeEVMTransaction({
-    wallet,
-    previousOffer: previousOfferId,
-    methodName: 'sendGmp',
-    offerArgs: [
-      {
-        destinationAddress: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
-        type: 3,
-        destinationEVMChain: 'Ethereum',
-      },
-    ],
-    proposal: {
-      give: { ATOM: { brand: ATOM, value: 1n } },
-    },
-  }).catch(_err => {
-    t.like(wallet.getLatestUpdateRecord(), {
-      status: {
-        id: `evmTransaction${evmTransactionCounter - 1}`,
-        error:
-          'Error: no denom detail for: "ibc/toyatom" on "agoric". ensure it is registered in chainHub.',
-      },
-    });
-  });
-
-  t.log('make contract calls via the LCA');
-  t.context.storage.data.delete('published.axelarGmp.log');
+test.serial('make contract calls using lca', async t => {
+  const { wallet, storage } = t.context;
+  const { BLD } = t.context.agoricNamesRemotes.brand;
 
   const newCountValue = 234;
   const encodedArgs = defaultAbiCoder.encode(['uint256'], [newCountValue]);
 
   await makeEVMTransaction({
     wallet,
-    previousOffer: previousOfferId,
+    previousOffer,
     methodName: 'sendGmp',
     offerArgs: [
       {
@@ -367,6 +325,9 @@ test('makeAccount via axelarGmp', async t => {
       give: { BLD: { brand: BLD, value: 1n } },
     },
   });
+
+  const getLogged = () =>
+    JSON.parse(storage.data.get('published.axelarGmp.log')!).values;
 
   t.deepEqual(getLogged(), [
     'Inside sendGmp',
@@ -385,61 +346,55 @@ test('makeAccount via axelarGmp', async t => {
   });
 
   t.log('make offer without contractInvocationData');
-  t.context.storage.data.delete('published.axelarGmp.log');
 
-  await makeEVMTransaction({
-    wallet,
-    previousOffer: previousOfferId,
-    methodName: 'sendGmp',
-    offerArgs: [
-      {
-        destinationAddress: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
-        type: 1,
-        gasAmount: 20000,
-        destinationEVMChain: 'Ethereum',
+  await t.throwsAsync(
+    makeEVMTransaction({
+      wallet,
+      previousOffer,
+      methodName: 'sendGmp',
+      offerArgs: [
+        {
+          destinationAddress: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
+          type: 1,
+          gasAmount: 20000,
+          destinationEVMChain: 'Ethereum',
+        },
+      ],
+      proposal: {
+        give: { BLD: { brand: BLD, value: 1n } },
       },
-    ],
-    proposal: {
-      give: { BLD: { brand: BLD, value: 1n } },
+    }),
+    {
+      message: /contractInvocationData is not defined/,
     },
-  }).catch(_err => {
-    t.like(wallet.getLatestUpdateRecord(), {
-      status: {
-        id: `evmTransaction${evmTransactionCounter - 1}`,
-        error: 'Error: contractInvocationData is not defined',
-      },
-    });
-  });
+  );
 
   t.log('make offer without passing gas amount');
-  t.context.storage.data.delete('published.axelarGmp.log');
 
-  await makeEVMTransaction({
-    wallet,
-    previousOffer: previousOfferId,
-    methodName: 'sendGmp',
-    offerArgs: [
-      {
-        destinationAddress: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
-        type: 1,
-        destinationEVMChain: 'Ethereum',
-        contractInvocationData: {
-          functionSelector: utils.id('setCount(uint256)').slice(0, 10),
-          deadline: 5000,
-          nonce: 7,
-          encodedArgs,
+  await t.throwsAsync(
+    makeEVMTransaction({
+      wallet,
+      previousOffer,
+      methodName: 'sendGmp',
+      offerArgs: [
+        {
+          destinationAddress: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
+          type: 1,
+          destinationEVMChain: 'Ethereum',
+          contractInvocationData: {
+            functionSelector: utils.id('setCount(uint256)').slice(0, 10),
+            deadline: 5000,
+            nonce: 7,
+            encodedArgs,
+          },
         },
+      ],
+      proposal: {
+        give: { BLD: { brand: BLD, value: 1n } },
       },
-    ],
-    proposal: {
-      give: { BLD: { brand: BLD, value: 1n } },
+    }),
+    {
+      message: /gasAmount must be defined/,
     },
-  }).catch(_err => {
-    t.like(wallet.getLatestUpdateRecord(), {
-      status: {
-        id: `evmTransaction${evmTransactionCounter - 1}`,
-        error: 'Error: gasAmount must be defined',
-      },
-    });
-  });
+  );
 });

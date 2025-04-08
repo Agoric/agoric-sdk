@@ -353,3 +353,10 @@ export interface SwapMaxSlippage {
   brandOut: Brand;
   slippage: number;
 }
+
+export interface AxelarGmpMemo {
+  source_chain: string;
+  source_address: string;
+  payload: string;
+  type: 1 | 2 | 3;
+}

@@ -21,14 +21,14 @@ const addresses = {
  * @import {IBCChannelID, VTransferIBCEvent} from '@agoric/vats';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
- * @import {CosmosChainAddress, Denom, OrchestrationAccount} from '@agoric/orchestration';
+ * @import {AxelarGmpMemo, CosmosChainAddress, Denom, OrchestrationAccount} from '@agoric/orchestration';
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
  * @import {ZoeTools} from '@agoric/orchestration/src/utils/zoe-tools.js';
  */
 
 /**
  * @typedef {{
- *   localAccount: ERef<OrchestrationAccount<{ chainId: 'agoric' }>>;
+ *   localAccount: OrchestrationAccount<{ chainId: 'agoric' }>;
  *   localChainAddress: CosmosChainAddress;
  *   sourceChannel: IBCChannelID;
  *   remoteDenom: Denom;
@@ -47,8 +47,8 @@ const addresses = {
  */
 
 const EVMI = M.interface('holder', {
+  getLocalAddress: M.call().returns(M.any()),
   getAddress: M.call().returns(M.any()),
-  getEVMSmartWalletAddress: M.call().returns(M.any()),
   send: M.call(M.any(), M.any()).returns(M.any()),
   sendGmp: M.call(M.any(), M.any()).returns(M.any()),
   fundLCA: M.call(M.any(), M.any()).returns(VowShape),
@@ -98,7 +98,12 @@ export const prepareEvmAccountKit = (
       holder: EVMI,
       invitationMakers: InvitationMakerI,
     },
-    /** @param {EvmTapState} initialState */
+    /**
+     * @param {EvmTapState} initialState
+     * @returns {{
+     *   evmAccountAddress: string | undefined;
+     * } & EvmTapState}
+     */
     initialState => {
       mustMatch(initialState, EvmKitStateShape);
       return harden({ evmAccountAddress: undefined, ...initialState });
@@ -116,6 +121,7 @@ export const prepareEvmAccountKit = (
           );
 
           trace('receiveUpcall packet data', tx);
+          /** @type {AxelarGmpMemo} */
           const memo = JSON.parse(tx.memo);
 
           if (memo.source_chain === 'Ethereum') {
@@ -142,12 +148,10 @@ export const prepareEvmAccountKit = (
         },
       },
       holder: {
-        async getAddress() {
-          // @ts-expect-error
-          const localChainAddress = await this.state.localAccount.getAddress();
-          return localChainAddress.value;
+        getLocalAddress() {
+          return this.state.localAccount.getAddress().value;
         },
-        async getEVMSmartWalletAddress() {
+        async getAddress() {
           return this.state.evmAccountAddress;
         },
 
@@ -160,7 +164,6 @@ export const prepareEvmAccountKit = (
          * @returns {Promise<string>} A success message upon completion.
          */
         async send(toAccount, amount) {
-          // @ts-expect-error
           await this.state.localAccount.send(toAccount, amount);
           return 'transfer success';
         },
@@ -242,7 +245,6 @@ export const prepareEvmAccountKit = (
           void log(`Initiating IBC Transfer...`);
           void log(`DENOM of token:${denom}`);
 
-          // @ts-expect-error
           await this.state.localAccount.transfer(
             {
               value: addresses.AXELAR_GMP,
@@ -266,7 +268,6 @@ export const prepareEvmAccountKit = (
          */
         fundLCA(seat, give) {
           seat.hasExited() && Fail`The seat cannot be exited.`;
-          // @ts-expect-error
           return zoeTools.localTransfer(seat, this.state.localAccount, give);
         },
       },
@@ -279,15 +280,15 @@ export const prepareEvmAccountKit = (
               case 'sendGmp': {
                 return holder.sendGmp(seat, args[0]);
               }
-              case 'getAddress': {
-                const vow = holder.getAddress();
+              case 'getLocalAddress': {
+                const vow = holder.getLocalAddress();
                 return vowTools.when(vow, res => {
                   seat.exit();
                   return res;
                 });
               }
-              case 'getEVMSmartWalletAddress': {
-                const vow = holder.getEVMSmartWalletAddress();
+              case 'getAddress': {
+                const vow = holder.getAddress();
                 return vowTools.when(vow, res => {
                   seat.exit();
                   return res;
