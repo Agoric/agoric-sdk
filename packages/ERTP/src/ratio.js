@@ -116,7 +116,7 @@ export const makeRatioFromAmounts = (numeratorAmount, denominatorAmount) => {
  * @returns {Amount<'nat'>}
  */
 const multiplyHelper = (amount, ratio, divideOp) => {
-  AmountMath.coerce(amount.brand, amount);
+  amount = AmountMath.coerce(amount.brand, amount);
   assertIsRatio(ratio);
   amount.brand === ratio.denominator.brand ||
     Fail`amount's brand ${q(amount.brand)} must match ratio's denominator ${q(
