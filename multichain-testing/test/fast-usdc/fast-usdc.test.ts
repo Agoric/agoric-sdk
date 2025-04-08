@@ -168,6 +168,16 @@ const makeTestContext = async (t: ExecutionContext) => {
     makeTxOracle(oKeys[ix], { wd, vstorageClient, blockIter, now }),
   );
 
+  const attest = async (evidence: CctpTxEvidence, eudChain: string) => {
+    await Promise.all(
+      txOracles.map(async o => {
+        const { block } = await o.submit(evidence);
+        console.timeLog(`UX->${eudChain}`, o.getName(), block);
+      }),
+    );
+    console.timeLog(`UX->${eudChain}`, 'submitted x', txOracles.length);
+  };
+
   let callCount = 0;
   const makeFakeEvidence = (
     mintAmt: bigint,
@@ -262,6 +272,7 @@ const makeTestContext = async (t: ExecutionContext) => {
     api,
     assertAmtForwarded,
     assertTxStatus,
+    attest,
     feeUser,
     getUsdcDenom,
     lpUser,
@@ -397,12 +408,12 @@ const advanceAndSettleScenario = test.macro({
     const {
       api,
       assertTxStatus,
+      attest,
       getUsdcDenom,
       makeFakeEvidence,
       nobleTools,
       nobleAgoricChannelId,
       retryUntilCondition,
-      txOracles,
       useChain,
       vstorageClient,
     } = t.context;
@@ -453,13 +464,7 @@ const advanceAndSettleScenario = test.macro({
     );
 
     // submit evidences
-    await Promise.all(
-      txOracles.map(async o => {
-        const { block } = await o.submit(evidence);
-        console.timeLog(`UX->${eudChain}`, o.getName(), block);
-      }),
-    );
-    console.timeLog(`UX->${eudChain}`, 'submitted x', txOracles.length);
+    await attest(evidence, eudChain);
 
     const queryClient = makeQueryClient(
       await useChain(eudChain).getRestEndpoint(),
@@ -530,15 +535,16 @@ test.serial('advance failed', async t => {
   const mintAmt = LP_DEPOSIT_AMOUNT / 10n;
   const {
     assertTxStatus,
+    attest,
     makeFakeEvidence,
     nobleTools,
     nobleAgoricChannelId,
-    txOracles,
     vstorageClient,
   } = t.context;
+  const eudChain = 'unreachable';
 
   // EUD wallet on the specified chain
-  const eudWallet = await createWallet('unreachable');
+  const eudWallet = await createWallet(eudChain);
   const EUD = (await eudWallet.getAccounts())[0].address;
   t.log(`EUD wallet created: ${EUD}`);
 
@@ -571,9 +577,7 @@ test.serial('advance failed', async t => {
   );
 
   t.log('User initiates EVM burn:', evidence.txHash);
-  // submit evidences
-  await Promise.all(txOracles.map(async o => o.submit(evidence)));
-
+  await attest(evidence, eudChain);
   await assertTxStatus(evidence.txHash, 'ADVANCE_FAILED');
 
   nobleTools.mockCctpMint(mintAmt, userForwardingAddr);
@@ -681,10 +685,10 @@ test.serial('insufficient LP funds; forward path', async t => {
   const {
     assertAmtForwarded,
     assertTxStatus,
+    attest,
     makeFakeEvidence,
     nobleTools,
     nobleAgoricChannelId,
-    txOracles,
     useChain,
     vstorageClient,
   } = t.context;
@@ -724,7 +728,7 @@ test.serial('insufficient LP funds; forward path', async t => {
 
   t.log('User initiates EVM burn:', evidence.txHash);
   // submit evidences
-  await Promise.all(txOracles.map(async o => o.submit(evidence)));
+  await attest(evidence, eudChain);
 
   const queryClient = makeQueryClient(
     await useChain(eudChain).getRestEndpoint(),
@@ -744,10 +748,10 @@ test.serial('minted before observed; forward path', async t => {
   const {
     assertAmtForwarded,
     assertTxStatus,
+    attest,
     makeFakeEvidence,
     nobleTools,
     nobleAgoricChannelId,
-    txOracles,
     useChain,
     vstorageClient,
   } = t.context;
@@ -795,8 +799,7 @@ test.serial('minted before observed; forward path', async t => {
   await sleep(5000, { log: t.log, setTimeout });
 
   // submit evidences
-  await Promise.all(txOracles.map(o => o.submit(evidence)));
-  t.log(`UX->${eudChain}`, 'submitted x', txOracles.length);
+  await attest(evidence, 'invalid');
 
   await assertTxStatus(evidence.txHash, 'FORWARDED');
   await assertAmtForwarded(queryClient, EUD, eudChain, mintAmt);
@@ -807,11 +810,11 @@ test.serial('insufficient LP funds and forward failed', async t => {
   const {
     api,
     assertTxStatus,
+    attest,
     getUsdcDenom,
     makeFakeEvidence,
     nobleTools,
     nobleAgoricChannelId,
-    txOracles,
     vstorageClient,
   } = t.context;
 
@@ -858,7 +861,7 @@ test.serial('insufficient LP funds and forward failed', async t => {
   );
 
   // submit evidences
-  await Promise.all(txOracles.map(async o => o.submit(evidence)));
+  await attest(evidence, 'invalid');
 
   await assertTxStatus(evidence.txHash, 'ADVANCE_SKIPPED');
 
