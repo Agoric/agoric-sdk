@@ -133,19 +133,25 @@ relayers:
       consumer: elyslocal
       provider: cosmoshublocal
   - name: agoric-cosmoshub
-    type: hermes
+    type: go-relayer
     replicas: 1
     chains:
       - agoriclocal
       - cosmoshublocal
   - name: agoric-elys
-    type: hermes
+    type: go-relayer
     replicas: 1
     chains:
       - agoriclocal
-      - cosmoshublocal
+      - elyslocal
+  - name: stride-elys
+    type: go-relayer
+    replicas: 1
+    chains:
+      - elyslocal
+      - stridelocal
   - name: agoric-stride
-    type: hermes
+    type: go-relayer
     replicas: 1
     chains:
       - agoriclocal
