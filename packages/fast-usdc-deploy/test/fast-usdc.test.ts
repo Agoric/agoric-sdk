@@ -1,9 +1,20 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
+import { protoMsgMockMap } from '@aglocal/boot/tools/ibc/mocks.js';
+import {
+  AckBehavior,
+  insistManagerType,
+  makeSwingsetHarness,
+} from '@aglocal/boot/tools/supports.js';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
+import {
+  MsgDepositForBurn,
+  MsgDepositForBurnResponse,
+} from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
 import { AmountMath } from '@agoric/ertp';
-import type { FeeConfig } from '@agoric/fast-usdc';
+import { makeRatio } from '@agoric/ertp/src/ratio.js';
+import type { CctpTxEvidence, FeeConfig } from '@agoric/fast-usdc';
 import { Offers } from '@agoric/fast-usdc/src/clientSupport.js';
 import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
 import { BridgeId, NonNullish } from '@agoric/internal';
@@ -14,23 +25,31 @@ import {
 } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
-import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
-import { makeRatio } from '@agoric/ertp/src/ratio.js';
+import { accountIdTo32Bytes } from '@agoric/orchestration/src/utils/address.js';
+import {
+  buildMsgResponseString,
+  buildTxPacketString,
+  buildVTransferEvent,
+} from '@agoric/orchestration/tools/ibc-mocks.js';
 import { Fail } from '@endo/errors';
 import { makeMarshal } from '@endo/marshal';
-import {
-  AckBehavior,
-  insistManagerType,
-  makeSwingsetHarness,
-} from '@aglocal/boot/tools/supports.js';
+import { configurations } from '../src/utils/deploy-config.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
 } from './walletFactory.js';
-import { configurations } from '../src/utils/deploy-config.js';
+
+const DENOM_UNIT = 1n * 1_000_000n; // 1 million
+
+const LIQUIDITY_POOL_SIZE = 500n * DENOM_UNIT; // 500 USDC
 
 const test: TestFn<
   WalletFactoryTestContext & {
+    attest: (
+      evidence: CctpTxEvidence,
+      offerIdPrefix: string,
+      ...extraArgs: unknown[]
+    ) => Promise<void>;
     harness?: ReturnType<typeof makeSwingsetHarness>;
   }
 > = anyTest;
@@ -61,7 +80,41 @@ test.before('bootstrap', async t => {
     defaultManagerType,
     harness,
   });
-  t.context = { ...ctx, harness };
+
+  /**
+   * Helper to submit evidence from all configured oracles.
+   * @param evidence CCTP evidence
+   * @param offerIdPrefix Prefix for the offer ID
+   * @param extraArgs Additional arguments for SubmitEvidence invitation
+   */
+  const attest = async (
+    evidence: CctpTxEvidence,
+    offerIdPrefix: string,
+    ...extraArgs: unknown[]
+  ) => {
+    const { walletFactoryDriver: wfd } = t.context;
+    const oracles = await Promise.all(
+      oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
+    );
+
+    await Promise.all(
+      oracles.map((wallet, i) =>
+        wallet.sendOffer({
+          id: `${offerIdPrefix}-${i}`,
+          invitationSpec: {
+            source: 'continuing',
+            previousOffer: 'claim-oracle-invitation',
+            invitationMakerName: 'SubmitEvidence',
+            invitationArgs: [evidence, ...extraArgs],
+          },
+          proposal: {},
+        }),
+      ),
+    );
+    await eventLoopIteration();
+  };
+
+  t.context = { ...ctx, attest, harness };
 });
 test.after.always(t => t.context.shutdown?.());
 
@@ -220,10 +273,10 @@ test.serial('LP deposits', async t => {
     },
     proposal: {
       give: {
-        USDC: { brand: usdc, value: 98_000_000n },
+        USDC: { brand: usdc, value: 98n * DENOM_UNIT },
       },
       want: {
-        BADPROPOSAL: { brand: fastLP, value: 567_000_000n },
+        BADPROPOSAL: { brand: fastLP, value: 567n * DENOM_UNIT },
       },
     },
   });
@@ -231,8 +284,8 @@ test.serial('LP deposits', async t => {
   await lp.sendOffer(
     Offers.fastUsdc.Deposit(agoricNamesRemotes, {
       offerId: 'deposit-lp-1',
-      fastLPAmount: 150_000_000n,
-      usdcAmount: 150_000_000n,
+      fastLPAmount: LIQUIDITY_POOL_SIZE,
+      usdcAmount: LIQUIDITY_POOL_SIZE,
     }),
   );
   await eventLoopIteration();
@@ -246,7 +299,7 @@ test.serial('LP deposits', async t => {
   );
   t.log('LP vbank deposits', lpBankDeposit);
   t.true(
-    BigInt(lpBankDeposit.amount) === 150_000_000n,
+    BigInt(lpBankDeposit.amount) === LIQUIDITY_POOL_SIZE,
     'vbank GIVEs shares to LP',
   );
 
@@ -413,21 +466,7 @@ test.serial('makes usdc advance', async t => {
   );
 
   harness?.useRunPolicy(true);
-  await Promise.all(
-    oracles.map(wallet =>
-      wallet.sendOffer({
-        id: 'submit-mock-evidence-osmo',
-        invitationSpec: {
-          source: 'continuing',
-          previousOffer: 'claim-oracle-invitation',
-          invitationMakerName: 'SubmitEvidence',
-          invitationArgs: [evidence],
-        },
-        proposal: {},
-      }),
-    ),
-  );
-  await eventLoopIteration();
+  await t.context.attest(evidence, 'submit-mock-evidence-osmo');
   harness &&
     t.log(
       `fusdc advance computrons (${oracles.length} oracles)`,
@@ -526,26 +565,8 @@ test.serial('minted before observed; forward path', async t => {
   t.log('USDC funds received in settlement account before evidence submission');
 
   // Now submit evidence from oracles (after funds already received)
-  const { walletFactoryDriver: wfd } = t.context;
-  const oracles = await Promise.all(
-    oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
-  );
-  await Promise.all(
-    oracles.map(wallet =>
-      wallet.sendOffer({
-        id: 'submit-evidence-after-mint',
-        invitationSpec: {
-          source: 'continuing',
-          previousOffer: 'claim-oracle-invitation',
-          invitationMakerName: 'SubmitEvidence',
-          invitationArgs: [evidence],
-        },
-        proposal: {},
-      }),
-    ),
-  );
+  await t.context.attest(evidence, 'submit-evidence-after-mint');
 
-  await eventLoopIteration();
   // simulate acknowledgement of outgoing forward transfer
   await bridgeUtils.runInbound(
     BridgeId.VTRANSFER,
@@ -634,21 +655,9 @@ test.serial('skips usdc advance when risks identified', async t => {
     encodeAddressHook(settlementAccount, { EUD }),
   );
 
-  await Promise.all(
-    oracles.map(wallet =>
-      wallet.sendOffer({
-        id: 'submit-mock-evidence-dydx-risky',
-        invitationSpec: {
-          source: 'continuing',
-          previousOffer: 'claim-oracle-invitation',
-          invitationMakerName: 'SubmitEvidence',
-          invitationArgs: [evidence, { risksIdentified: ['TOO_LARGE_AMOUNT'] }],
-        },
-        proposal: {},
-      }),
-    ),
-  );
-  await eventLoopIteration();
+  await t.context.attest(evidence, 'submit-mock-evidence-dydx-risky', {
+    risksIdentified: ['TOO_LARGE_AMOUNT'],
+  });
 
   t.deepEqual(
     storage
@@ -666,6 +675,68 @@ test.serial('skips usdc advance when risks identified', async t => {
     showValue: defaultSerializer.parse,
   };
   await documentStorageSchema(t, storage, doc);
+});
+
+test.serial('Ethereum destination', async t => {
+  const { walletFactoryDriver: wfd, storage, bridgeUtils, harness } = t.context;
+  const oracles = await Promise.all(
+    oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
+  );
+
+  const lastNodeValue = storage.getValues('published.fastUsdc').at(-1);
+  const { settlementAccount } = JSON.parse(NonNullish(lastNodeValue));
+
+  const EUD = 'eip155:1:0x1234567890123456789012345678901234567890';
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_ETHEREUM(
+    // mock with the real settlementAccount address
+    encodeAddressHook(settlementAccount, {
+      EUD,
+    }),
+  );
+  evidence.tx.amount = 93n * DENOM_UNIT; // 93 USDC
+
+  // Register the ack so the inbound doesn't error immediately
+  // register handler for ist bank send
+  // XXX modify the module constant
+  const data = buildTxPacketString([
+    MsgDepositForBurn.toProtoMsg({
+      amount: '92897000', // 93 USDC minus fees
+      burnToken: 'uusdc',
+      destinationDomain: 0,
+      from: 'noble1test1', // nobleICA address in vstorage
+      mintRecipient: accountIdTo32Bytes(EUD),
+    }),
+  ]);
+  protoMsgMockMap[data] = buildMsgResponseString(MsgDepositForBurnResponse, {});
+
+  await t.context.attest(evidence, 'submit-mock-evidence-eth');
+
+  const getTxStatus = txHash =>
+    storage
+      .getValues(`published.fastUsdc.txns.${txHash}`)
+      .map(defaultSerializer.parse);
+
+  t.deepEqual(
+    getTxStatus(evidence.txHash),
+    [
+      { evidence, status: 'OBSERVED' }, // observation includes evidence observed
+      { status: 'ADVANCING' },
+    ],
+    'Tx status ADVANCING after evidence submission',
+  );
+
+  await t.context.bridgeUtils.flushInboundQueue();
+
+  t.like(
+    getTxStatus(evidence.txHash),
+    [
+      { status: 'OBSERVED' },
+      { status: 'ADVANCING' },
+      // New since last check
+      { status: 'ADVANCED' },
+    ],
+    'Tx status ADVANCED after inbound queued flushed',
+  );
 });
 
 test.serial('LP withdraws', async t => {
