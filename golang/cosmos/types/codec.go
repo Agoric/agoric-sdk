@@ -10,10 +10,11 @@ var (
 	// data structures that wouldn't otherwise survive round-tripping via a
 	// regular "encoding/json" Marshal->JSON.parse.
 	//
-	// The naïve json.Marshal output for an int64 (64-bit precision) is a JS
-	// number (only 53-bit precision), which is subject to rounding errors on the
-	// JS side.  The codec.ProtoCodec uses a custom JSON marshaller that converts
-	// int64s to and from strings with no loss of precision.
+	// The naïve json.Marshal output for an int64 (64-bit precision) is a JSON
+	// number, which is subject to rounding errors when parsed by JavaScript
+	// (whose numbers are IEEE 754 binary64 values with only 53-bit precision).
+	// The codec.ProtoCodec uses a custom JSON marshaller that converts each int64
+	// to and from a string with no loss of precision.
 	//
 	// The current package's IBCPacket was one such affected data structure, which
 	// now implements Marshaler and Unmarshaler interfaces for "encoding/json" to
