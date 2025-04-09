@@ -4,6 +4,7 @@ import { sleep } from '@agoric/client-utils';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import type { QueryBalanceResponseSDKType } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import { AmountMath } from '@agoric/ertp';
+import { divideBy, multiplyBy } from '@agoric/ertp/src/ratio.js';
 import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.js';
 import type {
   CctpTxEvidence,
@@ -11,13 +12,7 @@ import type {
   NobleAddress,
 } from '@agoric/fast-usdc/src/types.js';
 import { makeTracer } from '@agoric/internal';
-import type {
-  CosmosChainInfo,
-  Denom,
-  DenomDetail,
-} from '@agoric/orchestration';
-import type { IBCConnectionID } from '@agoric/vats';
-import { divideBy, multiplyBy } from '@agoric/ertp/src/ratio.js';
+import type { Bech32Address, Denom, DenomDetail } from '@agoric/orchestration';
 import type { ExecutionContext, TestFn } from 'ava';
 import { makeDenomTools } from '../../tools/asset-info.js';
 import { makeBlocksIterable } from '../../tools/block-iter.js';
@@ -30,7 +25,7 @@ import { agoricNamesQ, fastLPQ, makeTxOracle } from './fu-actors.js';
 
 const { RELAYER_TYPE } = process.env;
 
-const log = makeTracer('MCFU');
+const trace = makeTracer('MCFU');
 
 const { keys, values } = Object;
 const { isGTE, isEmpty, make, subtract } = AmountMath;
@@ -39,9 +34,6 @@ const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
 
 const accounts = [...keys(oracleMnemonics), 'lp', 'feeDest'];
 const contractName = 'fastUsdc';
-// TODO: use actual beta-1 artifact
-const contractBuilder =
-  '../packages/fast-usdc-deploy/src/start-fast-usdc.build.js';
 const LP_DEPOSIT_AMOUNT = 8_000n * 10n ** 6n;
 
 type QueryClient = ReturnType<typeof makeQueryClient>;
@@ -54,43 +46,6 @@ const fuAssetInfo = (assetInfo: string): string => {
   );
   if (!matchingPair) throw Error('no uusdc on agoric in common assetInfo');
   return JSON.stringify([matchingPair]);
-};
-
-const replaceConnectionId = (
-  info: Record<string, CosmosChainInfo>,
-  primary: string,
-  remote: string,
-  replacement: IBCConnectionID = 'connection-9999999',
-) => {
-  const fwd = info[primary].connections![info[remote].chainId];
-  const rev = info[remote].connections![info[primary].chainId];
-  const revised: Record<string, CosmosChainInfo> = {
-    ...info,
-    [primary]: {
-      ...info[primary],
-      connections: {
-        ...info[primary].connections,
-        [info.noble.chainId]: {
-          ...fwd,
-          counterparty: {
-            ...fwd.counterparty,
-            connection_id: replacement,
-          },
-        },
-      },
-    },
-    [remote]: {
-      ...info[remote],
-      connections: {
-        ...info[remote].connections,
-        [info[primary].chainId]: {
-          ...rev,
-          id: replacement,
-        },
-      },
-    },
-  };
-  return harden(revised);
 };
 
 const makeTestContext = async (t: ExecutionContext) => {
@@ -128,21 +83,17 @@ const makeTestContext = async (t: ExecutionContext) => {
   t.log('nobleAgoricChannelId', nobleAgoricChannelId);
   t.log('usdcDenom', usdcDenom);
 
-  await startContract(contractName, contractBuilder, {
-    oracle: keys(oracleMnemonics).map(n => `${n}:${wallets[n]}`),
-    usdcDenom,
-    feedPolicy: JSON.stringify(makeFeedPolicyPartial(nobleAgoricChannelId)),
-    // misconfigured a la https://github.com/Agoric/agoric-sdk/issues/11013
-    chainInfo: JSON.stringify(
-      replaceConnectionId(
-        JSON.parse(commonBuilderOpts.chainInfo),
-        'agoric',
-        'noble',
-        'connection-99999',
-      ),
-    ),
-    assetInfo: fuAssetInfo(commonBuilderOpts.assetInfo),
-  });
+  await startContract(
+    contractName,
+    '../packages/fast-usdc-deploy/src/start-fast-usdc.build.js',
+    {
+      oracle: keys(oracleMnemonics).map(n => `${n}:${wallets[n]}`),
+      usdcDenom,
+      feedPolicy: JSON.stringify(makeFeedPolicyPartial(nobleAgoricChannelId)),
+      chainInfo: commonBuilderOpts.chainInfo,
+      assetInfo: fuAssetInfo(commonBuilderOpts.assetInfo),
+    },
+  );
 
   // provide faucet funds for LPs
   await faucetTools.fundFaucet([['noble', 'uusdc']]);
@@ -168,17 +119,94 @@ const makeTestContext = async (t: ExecutionContext) => {
     makeTxOracle(oKeys[ix], { wd, vstorageClient, blockIter, now }),
   );
 
+  const attest = async (evidence: CctpTxEvidence, eudChain: string) => {
+    await Promise.all(
+      txOracles.map(async o => {
+        const { block } = await o.submit(evidence);
+        console.timeLog(`UX->${eudChain}`, o.getName(), block);
+      }),
+    );
+    console.timeLog(`UX->${eudChain}`, 'submitted x', txOracles.length);
+  };
+
+  const acceptInvitations = async () => {
+    // ensure we have an unused (or used) oracle invitation in each purse
+    for (const op of txOracles) {
+      const { detail, usedInvitation } = await op.checkInvitation();
+      t.log({ name: op.getName(), hasInvitation: !!detail, usedInvitation });
+      t.true(!!detail || usedInvitation, 'has or accepted invitation');
+    }
+
+    // accept oracle operator invitations
+    await Promise.all(txOracles.map(op => op.acceptInvitation()));
+
+    for (const op of txOracles) {
+      await common.retryUntilCondition(
+        () => op.checkInvitation(),
+        ({ usedInvitation }) => !!usedInvitation,
+        `${op.getName()} invitation used`,
+        { log: trace },
+      );
+    }
+  };
+  await acceptInvitations();
+
+  const provideLpFunds = async () => {
+    const lpDoOffer = makeDoOffer(lpUser);
+
+    const { USDC, FastLP } = await agoricNamesQ(vstorageClient).brands('nat');
+
+    const give = { USDC: make(USDC, LP_DEPOSIT_AMOUNT) };
+
+    const metricsPre = await fastLPQ(vstorageClient).metrics();
+    const want = { PoolShare: divideBy(give.USDC, metricsPre.shareWorth) };
+
+    const proposal: USDCProposalShapes['deposit'] = harden({ give, want });
+    await lpDoOffer({
+      id: `lp-deposit-${Date.now()}`,
+      invitationSpec: {
+        source: 'agoricContract',
+        instancePath: [contractName],
+        callPipe: [['makeDepositInvitation']],
+      },
+      proposal,
+    });
+
+    await common.retryUntilCondition(
+      () => fastLPQ(vstorageClient).metrics(),
+      ({ shareWorth }) =>
+        !isGTE(metricsPre.shareWorth.numerator, shareWorth.numerator),
+      'share worth numerator increases from deposit',
+      { log: trace },
+    );
+
+    const queryClient = makeQueryClient(
+      await useChain('agoric').getRestEndpoint(),
+    );
+
+    await common.retryUntilCondition(
+      () => queryClient.queryBalance(wallets['lp'], 'ufastlp'),
+      ({ balance }) => isGTE(toAmt(FastLP, balance), want.PoolShare),
+      'lp has pool shares',
+      { log: trace },
+    );
+  };
+  await provideLpFunds();
+
   let callCount = 0;
   const makeFakeEvidence = (
     mintAmt: bigint,
     userForwardingAddr: NobleAddress,
-    recipientAddress: string,
+    recipientAddress: Bech32Address,
   ) =>
     harden({
+      // NB these can never be the same between transactions but we don't want the test fixtures to be that dynamic
       blockHash:
         '0x90d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee665',
       blockNumber: 21037663n,
       blockTimestamp: 1632340000n,
+      // Standard prefix to make it easier to find this code from logs
+      // but add `callCount` so it is unique per test.
       txHash: `0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff3875527617${String(callCount++).padStart(2, '0')}`,
       tx: {
         amount: mintAmt,
@@ -192,30 +220,28 @@ const makeTestContext = async (t: ExecutionContext) => {
       chainId: 42161,
     }) as CctpTxEvidence;
 
-  const queryTxStatus = async (txHash: string) => {
+  const queryTxRecord = async (txHash: string) => {
     const record = await common.smartWalletKit.readPublished(
       `fastUsdc.txns.${txHash}`,
     );
     if (!record) {
       throw new Error(`no record for ${txHash}`);
     }
-    // @ts-expect-error unknown may not have 'status'
     if (!record.status) {
       throw new Error(`no status for ${txHash}`);
     }
-    // @ts-expect-error still unknown?
-    return record.status;
+    return record;
   };
 
   const assertTxStatus = async (txHash: string, status: string) =>
     t.notThrowsAsync(() =>
       common.retryUntilCondition(
-        () => queryTxStatus(txHash),
-        txStatus => {
-          log('tx status', txStatus);
-          return txStatus === status;
+        () => queryTxRecord(txHash),
+        record => {
+          trace('tx record', record);
+          return record.status === status;
         },
-        `${txHash} is ${status}`,
+        `${txHash} status is ${status}`,
       ),
     );
 
@@ -262,13 +288,13 @@ const makeTestContext = async (t: ExecutionContext) => {
     api,
     assertAmtForwarded,
     assertTxStatus,
+    attest,
     feeUser,
     getUsdcDenom,
     lpUser,
     makeFakeEvidence,
     nobleAgoricChannelId,
     oracleWds,
-    txOracles,
     usdcOnOsmosis,
     usdcDenom,
     wallets,
@@ -281,114 +307,10 @@ test.after(async t => {
   deleteTestKeys(accounts);
 });
 
-test.serial('oracles accept', async t => {
-  const { txOracles, retryUntilCondition } = t.context;
-
-  // ensure we have an unused (or used) oracle invitation in each purse
-  let hasAccepted = false;
-  for (const op of txOracles) {
-    const { detail, usedInvitation } = await op.checkInvitation();
-    t.log({ name: op.getName(), hasInvitation: !!detail, usedInvitation });
-    t.true(!!detail || usedInvitation, 'has or accepted invitation');
-    if (usedInvitation) hasAccepted = true;
-  }
-  // if the oracles have already accepted, skip the rest of the test this is
-  // primarily to facilitate active development but could support testing on
-  // images where operator invs are already accepted
-  if (hasAccepted) return t.pass();
-
-  // accept oracle operator invitations
-  await Promise.all(txOracles.map(op => op.acceptInvitation()));
-
-  for (const op of txOracles) {
-    await retryUntilCondition(
-      () => op.checkInvitation(),
-      ({ usedInvitation }) => !!usedInvitation,
-      `${op.getName()} invitation used`,
-      { log },
-    );
-  }
-});
-
 const toAmt = (
   brand: Brand<'nat'>,
   balance: QueryBalanceResponseSDKType['balance'],
 ) => make(brand, BigInt(balance?.amount || 0));
-
-test.serial('lp deposits', async t => {
-  const { lpUser, retryUntilCondition, vstorageClient, wallets } = t.context;
-
-  const lpDoOffer = makeDoOffer(lpUser);
-
-  const { USDC, FastLP } = await agoricNamesQ(vstorageClient).brands('nat');
-
-  const give = { USDC: make(USDC, LP_DEPOSIT_AMOUNT) };
-
-  const metricsPre = await fastLPQ(vstorageClient).metrics();
-  const want = { PoolShare: divideBy(give.USDC, metricsPre.shareWorth) };
-
-  const proposal: USDCProposalShapes['deposit'] = harden({ give, want });
-  await lpDoOffer({
-    id: `lp-deposit-${Date.now()}`,
-    invitationSpec: {
-      source: 'agoricContract',
-      instancePath: [contractName],
-      callPipe: [['makeDepositInvitation']],
-    },
-    proposal,
-  });
-
-  await retryUntilCondition(
-    () => fastLPQ(vstorageClient).metrics(),
-    ({ shareWorth }) =>
-      !isGTE(metricsPre.shareWorth.numerator, shareWorth.numerator),
-    'share worth numerator increases from deposit',
-    { log },
-  );
-
-  const { useChain } = t.context;
-  const queryClient = makeQueryClient(
-    await useChain('agoric').getRestEndpoint(),
-  );
-
-  await retryUntilCondition(
-    () => queryClient.queryBalance(wallets['lp'], 'ufastlp'),
-    ({ balance }) => isGTE(toAmt(FastLP, balance), want.PoolShare),
-    'lp has pool shares',
-    { log },
-  );
-  t.pass();
-});
-
-test.serial('reconfigure: fix noble ICA', async t => {
-  const { startContract, commonBuilderOpts } = t.context;
-  // TODO: use actual rc-1 artifact
-  const builder =
-    '../packages/fast-usdc-deploy/src/fast-usdc-reconfigure.build.js';
-
-  const chainInfo = JSON.parse(commonBuilderOpts.chainInfo) as Record<
-    string,
-    CosmosChainInfo
-  >;
-  const { chainId: nobleChainId } = chainInfo.noble;
-  const agoricToNoble = chainInfo.agoric.connections?.[nobleChainId];
-
-  await startContract(
-    contractName,
-    builder,
-    { agoricToNoble: JSON.stringify(agoricToNoble) },
-    { skipInstanceCheck: true },
-  );
-
-  const { vstorageClient, retryUntilCondition } = t.context;
-
-  await retryUntilCondition(
-    () => fastLPQ(vstorageClient).info(),
-    info => 'nobleICA' in info,
-    `${contractName} nobleICA is available`,
-  );
-  t.pass();
-});
 
 const advanceAndSettleScenario = test.macro({
   title: (_, mintAmt: bigint, eudChain: string) =>
@@ -397,12 +319,12 @@ const advanceAndSettleScenario = test.macro({
     const {
       api,
       assertTxStatus,
+      attest,
       getUsdcDenom,
       makeFakeEvidence,
       nobleTools,
       nobleAgoricChannelId,
       retryUntilCondition,
-      txOracles,
       useChain,
       vstorageClient,
     } = t.context;
@@ -442,7 +364,7 @@ const advanceAndSettleScenario = test.macro({
       recipientAddress,
     );
 
-    log('User initiates EVM burn:', evidence.txHash);
+    trace('User initiates EVM burn:', evidence.txHash);
     const { block: initialBlock } = await api.queryBlock();
     console.time(`UX->${eudChain}`);
     console.timeLog(
@@ -453,13 +375,7 @@ const advanceAndSettleScenario = test.macro({
     );
 
     // submit evidences
-    await Promise.all(
-      txOracles.map(async o => {
-        const { block } = await o.submit(evidence);
-        console.timeLog(`UX->${eudChain}`, o.getName(), block);
-      }),
-    );
-    console.timeLog(`UX->${eudChain}`, 'submitted x', txOracles.length);
+    await attest(evidence, eudChain);
 
     const queryClient = makeQueryClient(
       await useChain(eudChain).getRestEndpoint(),
@@ -508,7 +424,7 @@ const advanceAndSettleScenario = test.macro({
     t.true(mainWallClockEstimate * (1 + MARGIN_OF_ERROR) <= MAIN_MAX_DUR);
 
     await assertTxStatus(evidence.txHash, 'ADVANCED');
-    log('Advance completed, waiting for mint...');
+    trace('Advance completed, waiting for mint...');
 
     nobleTools.mockCctpMint(mintAmt, userForwardingAddr);
     await retryUntilCondition(
@@ -530,15 +446,16 @@ test.serial('advance failed', async t => {
   const mintAmt = LP_DEPOSIT_AMOUNT / 10n;
   const {
     assertTxStatus,
+    attest,
     makeFakeEvidence,
     nobleTools,
     nobleAgoricChannelId,
-    txOracles,
     vstorageClient,
   } = t.context;
+  const eudChain = 'unreachable';
 
   // EUD wallet on the specified chain
-  const eudWallet = await createWallet('unreachable');
+  const eudWallet = await createWallet(eudChain);
   const EUD = (await eudWallet.getAccounts())[0].address;
   t.log(`EUD wallet created: ${EUD}`);
 
@@ -571,9 +488,7 @@ test.serial('advance failed', async t => {
   );
 
   t.log('User initiates EVM burn:', evidence.txHash);
-  // submit evidences
-  await Promise.all(txOracles.map(async o => o.submit(evidence)));
-
+  await attest(evidence, eudChain);
   await assertTxStatus(evidence.txHash, 'ADVANCE_FAILED');
 
   nobleTools.mockCctpMint(mintAmt, userForwardingAddr);
@@ -630,7 +545,7 @@ test.serial('lp withdraws', async t => {
     () => queryClient.queryBalance(wallets['lp'], 'ufastlp'),
     ({ balance }) => isEmpty(toAmt(FastLP, balance)),
     'lp no longer has pool shares',
-    { log },
+    { log: trace },
   );
 
   const USDC = want.USDC.brand;
@@ -643,7 +558,7 @@ test.serial('lp withdraws', async t => {
         subtract(toAmt(USDC, balance), toAmt(USDC, usdcCoinsPre)),
       ),
     "lp's USDC balance increases",
-    { log },
+    { log: trace },
   );
 
   t.pass();
@@ -654,17 +569,19 @@ test.serial('distribute FastUSDC contract fees', async t => {
   const queryClient = makeQueryClient(
     await io.useChain('agoric').getRestEndpoint(),
   );
-  const builder = '../packages/fast-usdc-deploy/src/fast-usdc-fees.build.js';
 
   const opts = {
     destinationAddress: io.wallets['feeDest'],
     feePortion: 0.25,
   };
   t.log('build, run proposal to distribute fees', opts);
-  await io.deployBuilder(builder, {
-    ...opts,
-    feePortion: `${opts.feePortion}`,
-  });
+  await io.deployBuilder(
+    '../packages/fast-usdc-deploy/src/fast-usdc-fees.build.js',
+    {
+      ...opts,
+      feePortion: `${opts.feePortion}`,
+    },
+  );
 
   const { balance } = await io.retryUntilCondition(
     () => queryClient.queryBalance(opts.destinationAddress, io.usdcDenom),
@@ -681,10 +598,10 @@ test.serial('insufficient LP funds; forward path', async t => {
   const {
     assertAmtForwarded,
     assertTxStatus,
+    attest,
     makeFakeEvidence,
     nobleTools,
     nobleAgoricChannelId,
-    txOracles,
     useChain,
     vstorageClient,
   } = t.context;
@@ -724,7 +641,7 @@ test.serial('insufficient LP funds; forward path', async t => {
 
   t.log('User initiates EVM burn:', evidence.txHash);
   // submit evidences
-  await Promise.all(txOracles.map(async o => o.submit(evidence)));
+  await attest(evidence, eudChain);
 
   const queryClient = makeQueryClient(
     await useChain(eudChain).getRestEndpoint(),
@@ -744,10 +661,10 @@ test.serial('minted before observed; forward path', async t => {
   const {
     assertAmtForwarded,
     assertTxStatus,
+    attest,
     makeFakeEvidence,
     nobleTools,
     nobleAgoricChannelId,
-    txOracles,
     useChain,
     vstorageClient,
   } = t.context;
@@ -795,8 +712,7 @@ test.serial('minted before observed; forward path', async t => {
   await sleep(5000, { log: t.log, setTimeout });
 
   // submit evidences
-  await Promise.all(txOracles.map(o => o.submit(evidence)));
-  t.log(`UX->${eudChain}`, 'submitted x', txOracles.length);
+  await attest(evidence, 'invalid');
 
   await assertTxStatus(evidence.txHash, 'FORWARDED');
   await assertAmtForwarded(queryClient, EUD, eudChain, mintAmt);
@@ -807,11 +723,11 @@ test.serial('insufficient LP funds and forward failed', async t => {
   const {
     api,
     assertTxStatus,
+    attest,
     getUsdcDenom,
     makeFakeEvidence,
     nobleTools,
     nobleAgoricChannelId,
-    txOracles,
     vstorageClient,
   } = t.context;
 
@@ -858,7 +774,7 @@ test.serial('insufficient LP funds and forward failed', async t => {
   );
 
   // submit evidences
-  await Promise.all(txOracles.map(async o => o.submit(evidence)));
+  await attest(evidence, 'invalid');
 
   await assertTxStatus(evidence.txHash, 'ADVANCE_SKIPPED');
 

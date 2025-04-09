@@ -7,7 +7,7 @@ import { ChainPolicies, DepositForBurnEvent } from './chain-policies.js';
 /**
  * @import {ChainHubChainInfo, FastUSDCConfig} from '@agoric/fast-usdc';
  * @import {Passable} from '@endo/marshal';
- * @import {ChainInfo, CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
+ * @import {BaseChainInfo, ChainInfo, CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  */
 
 /** @type {[Denom, DenomDetail & { brandKey?: string}]} */
@@ -33,12 +33,15 @@ const { noble: _n, ...restCctpChainInfo } = cctpChainInfo;
 /**
  * Sets a chainId if none is present. For backwards compatibility with `CosmosChainInfoShapeV1` (`ChainHub`) which expects a `chainId`
  *
- * @template {Record<string, import('@agoric/orchestration').BaseChainInfo>} CI
+ * @template {Record<string, BaseChainInfo>} CI
  * @param {CI} ci
  */
-const withChainId = ci =>
+export const withCosmosChainId = ci =>
   /** @type {{[K in keyof CI]: CI[K] & { chainId: string }}} */ (
-    objectMap(ci, v => ({ chainId: `${v.namespace}:${v.reference}`, ...v }))
+    objectMap(ci, v => ({
+      chainId: `cosmosShapeCompat${v.namespace}${v.reference}`,
+      ...v,
+    }))
   );
 
 /**
@@ -64,9 +67,9 @@ export const configurations = {
       chainPolicies: ChainPolicies.TESTNET,
       eventFilter: DepositForBurnEvent,
     },
-    chainInfo: /** @type {Record<string, ChainHubChainInfo & Passable>} */ (
+    chainInfo: /** @type {Record<string, ChainHubChainInfo>} */ (
       /** @type {Record<string, ChainHubChainInfo>} */ ({
-        ...withChainId({
+        ...withCosmosChainId({
           ethereum: cctpChainInfo.ethereum,
           solana: cctpChainInfo.solana,
         }),
@@ -92,12 +95,10 @@ export const configurations = {
       chainPolicies: ChainPolicies.MAINNET,
       eventFilter: DepositForBurnEvent,
     },
-    chainInfo: /** @type {Record<string, ChainHubChainInfo & Passable>} */ (
-      /** @type {Record<string, ChainHubChainInfo>} */ ({
-        ...withChainId(restCctpChainInfo),
-        ...withChainCapabilities(fetchedChainInfo),
-      })
-    ),
+    chainInfo: {
+      ...withCosmosChainId(restCctpChainInfo),
+      ...withChainCapabilities(fetchedChainInfo),
+    },
     assetInfo: transferAssetInfo,
   },
   DEVNET: {
@@ -116,7 +117,7 @@ export const configurations = {
     },
     chainInfo: /** @type {Record<string, ChainHubChainInfo & Passable>} */ (
       /** @type {Record<string, ChainHubChainInfo>} */ ({
-        ...withChainId(restCctpChainInfo),
+        ...withCosmosChainId(restCctpChainInfo),
         ...withChainCapabilities(fetchedChainInfo),
       })
     ), // TODO: use devnet values
@@ -135,7 +136,7 @@ export const configurations = {
     },
     chainInfo: /** @type {Record<string, ChainHubChainInfo & Passable>} */ (
       /** @type {Record<string, ChainHubChainInfo>} */ ({
-        ...withChainId(restCctpChainInfo),
+        ...withCosmosChainId(restCctpChainInfo),
         ...withChainCapabilities(fetchedChainInfo),
       })
     ), // TODO: use emerynet values
