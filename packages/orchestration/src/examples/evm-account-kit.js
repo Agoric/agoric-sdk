@@ -6,16 +6,16 @@ import { atob, decodeBase64 } from '@endo/base64';
 import { defaultAbiCoder } from '@ethersproject/abi';
 import { Fail } from '@endo/errors';
 import { CosmosChainAddressShape } from '../typeGuards.js';
-import { buildGMPPayload } from '../utils/gmp.js';
+import {
+  buildGMPPayload,
+  gmpAddresses,
+  encodeCallData,
+  GMPMessageType,
+  hexToUint8Array,
+} from '../utils/gmp.js';
 
 const trace = makeTracer('EvmTap');
 const { entries } = Object;
-
-const addresses = {
-  AXELAR_GMP:
-    'axelar1dv4u5k73pzqrxlzujxg3qp8kvc3pje7jtdvu72npnt5zhq05ejcsn5qme5',
-  AXELAR_GAS: 'axelar1zl3rxpp70lmte2xr6c4lgske2fyuj3hupcsvcd',
-};
 
 /**
  * @import {IBCChannelID, VTransferIBCEvent} from '@agoric/vats';
@@ -52,6 +52,7 @@ const EVMI = M.interface('holder', {
   send: M.call(M.any(), M.any()).returns(M.any()),
   sendGmp: M.call(M.any(), M.any()).returns(M.any()),
   fundLCA: M.call(M.any(), M.any()).returns(VowShape),
+  callContractWithFunctionCalls: M.call().returns(VowShape),
 });
 
 const InvitationMakerI = M.interface('invitationMaker', {
@@ -234,7 +235,7 @@ export const prepareEvmAccountKit = (
           if (type === 1 || type === 2) {
             memo.fee = {
               amount: String(gasAmount),
-              recipient: addresses.AXELAR_GAS,
+              recipient: gmpAddresses.AXELAR_GAS,
             };
             void log(`Fee object ${JSON.stringify(memo.fee)}`);
           }
@@ -245,7 +246,7 @@ export const prepareEvmAccountKit = (
           // @ts-expect-error
           await this.state.localAccount.transfer(
             {
-              value: addresses.AXELAR_GMP,
+              value: gmpAddresses.AXELAR_GMP,
               encoding: 'bech32',
               chainId,
             },
@@ -268,6 +269,44 @@ export const prepareEvmAccountKit = (
           seat.hasExited() && Fail`The seat cannot be exited.`;
           // @ts-expect-error
           return zoeTools.localTransfer(seat, this.state.localAccount, give);
+        },
+        callContractWithFunctionCalls() {
+          const targets = ['0x5B34876FFB1656710fb963ecD199C6f173c29267'];
+          const data = [
+            encodeCallData(
+              'createVendor(string)',
+              ['string'],
+              ['ownerAddress'],
+            ),
+          ];
+          const payload = hexToUint8Array(
+            defaultAbiCoder.encode(['address[]', 'bytes[]'], [targets, data]),
+          );
+
+          // @ts-expect-error
+          return this.state.localAccount.transfer(
+            {
+              value: gmpAddresses.AXELAR_GMP,
+              encoding: 'bech32',
+              chainId: 'axelar',
+            },
+            {
+              denom: 'ubld',
+              value: BigInt(1000000),
+            },
+            {
+              memo: JSON.stringify({
+                destination_chain: 'Ethereum',
+                destination_address: this.state.evmAccountAddress,
+                payload,
+                type: GMPMessageType.MESSAGE_ONLY,
+                fee: {
+                  amount: '1',
+                  recipient: gmpAddresses.AXELAR_GAS,
+                },
+              }),
+            },
+          );
         },
       },
       invitationMakers: {
@@ -306,6 +345,14 @@ export const prepareEvmAccountKit = (
                 return vowTools.when(vow, res => {
                   seat.exit();
                   return res;
+                });
+              }
+              case 'callContract': {
+                const { give } = seat.getProposal();
+                const vow = holder.fundLCA(seat, give);
+                return vowTools.when(vow, async () => {
+                  seat.exit();
+                  return holder.callContractWithFunctionCalls();
                 });
               }
               default:

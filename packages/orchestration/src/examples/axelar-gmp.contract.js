@@ -77,6 +77,7 @@ export const contract = async (
     makeEvmAccountKit,
     log,
     chainHub,
+    zoeTools,
   });
 
   const publicFacet = zone.exo(
@@ -99,5 +100,5 @@ export const contract = async (
 };
 harden(contract);
 
-export const start = withOrchestration(contract);
+export const start = withOrchestration(contract, { publishAccountInfo: true });
 harden(start);

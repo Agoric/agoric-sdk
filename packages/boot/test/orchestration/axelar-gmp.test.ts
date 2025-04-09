@@ -111,7 +111,7 @@ test.before(async t => {
   );
 });
 
-test('makeAccount via axelarGmp', async t => {
+test.serial('makeAccount via axelarGmp', async t => {
   const {
     storage,
     wallet,
@@ -128,7 +128,9 @@ test('makeAccount via axelarGmp', async t => {
       instancePath: ['axelarGmp'],
       callPipe: [['createAndMonitorLCA']],
     },
-    proposal: {},
+    proposal: {
+      // give: { BLD: { brand: BLD, value: 1n } },
+    },
   });
 
   const getLogged = () =>
@@ -142,6 +144,53 @@ test('makeAccount via axelarGmp', async t => {
   ]);
 
   t.log('Execute offers via the LCA');
+
+  // await runInbound(
+  //   BridgeId.VTRANSFER,
+  //   buildVTransferEvent({
+  //     sender: makeTestAddress(),
+  //     target: makeTestAddress(),
+  //     sourceChannel: 'channel-0',
+  //     sequence: '1',
+  //   }),
+  // );
+  // // @ts-expect-error
+  // const lcaAddress = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht';
+  // console.log('fraz', wallet.getLatestUpdateRecord(), wallet.getCurrentWalletRecord());
+
+  // const {
+  //   channelId: agoricToAxelarChannel,
+  //   counterPartyChannelId: axelarToAgoricChannel,
+  // } = fetchedChainInfo.agoric.connections.axelar.transferChannel;
+
+  // const addressPayload = defaultAbiCoder.encode(
+  //   ['address'],
+  //   ['0x20E68F6c276AC6E297aC46c84Ab260928276691D'],
+  // );
+
+  // const base64AddressPayload = Buffer.from(addressPayload.slice(2), 'hex').toString('base64');
+
+  // // mock reply from ethereum
+  // await runInbound(
+  //   BridgeId.VTRANSFER,
+  //   buildVTransferEvent({
+  //     sequence: '1',
+  //     amount: 1n,
+  //     denom: 'uaxl',
+  //     sender: makeTestAddress(),
+  //     target: lcaAddress,
+  //     receiver: lcaAddress,
+  //     sourceChannel: axelarToAgoricChannel,
+  //     destinationChannel: agoricToAxelarChannel,
+  //     memo: JSON.stringify({
+  //       source_chain: 'Ethereum',
+  //       source_address: '0x19e71e7eE5c2b13eF6bd52b9E3b437bdCc7d43c8',
+  //       destination_chain: 'agoric',
+  //       destination_address: lcaAddress,
+  //       payload: base64AddressPayload,
+  //     }),
+  //   }),
+  // );
 
   const previousOfferId =
     wallet.getCurrentWalletRecord().offerToUsedInvitation[0][0];
@@ -442,4 +491,63 @@ test('makeAccount via axelarGmp', async t => {
       },
     });
   });
+});
+
+test.serial('execute an arbitrary contract on agoric', async t => {
+  const {
+    storage,
+    wallet,
+    bridgeUtils: { runInbound },
+  } = t.context;
+
+  const { ATOM, BLD } = t.context.agoricNamesRemotes.brand;
+  const previousOfferId =
+    wallet.getCurrentWalletRecord().offerToUsedInvitation[0][0];
+
+  await makeEVMTransaction({
+    wallet,
+    previousOffer: previousOfferId,
+    methodName: 'getAddress',
+    offerArgs: [],
+    proposal: {},
+  });
+
+  // @ts-expect-error
+  const lcaAddress = wallet.getLatestUpdateRecord().status.result;
+
+  await makeEVMTransaction({
+    wallet,
+    previousOffer: previousOfferId,
+    methodName: 'callContract',
+    offerArgs: [{ fraz: 1 }],
+    proposal: {
+      give: { BLD: { brand: BLD, value: 1n } },
+    },
+  });
+
+  const {
+    channelId: agoricToAxelarChannel,
+    counterPartyChannelId: axelarToAgoricChannel,
+  } = fetchedChainInfo.agoric.connections.axelar.transferChannel;
+
+  await runInbound(
+    BridgeId.VTRANSFER,
+    buildVTransferEvent({
+      sequence: '1',
+      amount: 1n,
+      denom: 'uaxl',
+      sender: makeTestAddress(),
+      target: lcaAddress,
+      receiver: lcaAddress,
+      sourceChannel: axelarToAgoricChannel,
+      destinationChannel: agoricToAxelarChannel,
+      memo: JSON.stringify({
+        source_chain: 'Ethereum',
+        source_address: '0x19e71e7eE5c2b13eF6bd52b9E3b437bdCc7d43c8',
+        destination_chain: 'agoric',
+        destination_address: lcaAddress,
+        payload: base64Payload,
+      }),
+    }),
+  );
 });
