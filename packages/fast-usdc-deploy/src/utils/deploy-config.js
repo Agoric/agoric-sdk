@@ -64,7 +64,7 @@ export const configurations = {
       chainPolicies: ChainPolicies.TESTNET,
       eventFilter: DepositForBurnEvent,
     },
-    chainInfo: /** @type {Record<string, ChainHubChainInfo & Passable>} */ (
+    chainInfo: /** @type {Record<string, ChainHubChainInfo>} */ (
       /** @type {Record<string, ChainHubChainInfo>} */ ({
         ...withChainId({
           ethereum: cctpChainInfo.ethereum,
@@ -92,12 +92,10 @@ export const configurations = {
       chainPolicies: ChainPolicies.MAINNET,
       eventFilter: DepositForBurnEvent,
     },
-    chainInfo: /** @type {Record<string, ChainHubChainInfo & Passable>} */ (
-      /** @type {Record<string, ChainHubChainInfo>} */ ({
-        ...withChainId(restCctpChainInfo),
-        ...withChainCapabilities(fetchedChainInfo),
-      })
-    ),
+    chainInfo: {
+      ...withChainId(restCctpChainInfo),
+      ...withChainCapabilities(fetchedChainInfo),
+    },
     assetInfo: transferAssetInfo,
   },
   DEVNET: {

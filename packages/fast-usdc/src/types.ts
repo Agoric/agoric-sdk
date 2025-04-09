@@ -165,7 +165,7 @@ export type FastUSDCConfig = {
   feeConfig: FeeConfig;
   feedPolicy: FeedPolicy;
   noNoble: boolean; // support a3p-integration, which has no noble chain
-  chainInfo: Record<string, ChainHubChainInfo & Passable>;
+  chainInfo: Record<string, ChainHubChainInfo>;
   assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
 } & CopyRecord;
 
