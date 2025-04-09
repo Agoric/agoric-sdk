@@ -6,7 +6,6 @@ import { E } from '@endo/far';
 const trace = makeTracer('FUSD-3', true);
 
 /**
- * @import {CopyRecord} from '@endo/pass-style';
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {BundleID} from '@agoric/swingset-vat';
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js';
@@ -17,17 +16,18 @@ const { keys } = Object;
 
 /**
  * @typedef {object} UpdateOpts
+ * @property {string} net
  * @property {{bundleID: BundleID}} [fastUsdcCode]
  */
 
 /**
  * @param {BootstrapPowers & FastUSDCCorePowers} powers
- * @param {object} [config]
- * @param {UpdateOpts} [config.options]
+ * @param {object} config
+ * @param {UpdateOpts} config.options
  */
 export const updateSettlerReference = async (
   { consume: { fastUsdcKit } },
-  { options = {} } = {},
+  { options },
 ) => {
   trace('options', options);
   const { fastUsdcCode = assert.fail('missing bundleID') } = options;
@@ -40,7 +40,13 @@ export const updateSettlerReference = async (
   );
   trace('fastUsdc upgraded', upgraded);
 
-  await E(creatorFacet).connectToNoble();
+  if (options.net === 'A3P-INTEGRATION') {
+    // A3P-INTEGRATION has no connection to Noble.
+    console.log('skipping connectToNoble for ', options.net);
+  } else {
+    await E(creatorFacet).connectToNoble();
+  }
+
   trace('updateSettlerReference done');
 };
 
@@ -48,7 +54,7 @@ export const updateSettlerReference = async (
  * @param {unknown} _utils
  * @param {{
  *   installKeys: { fastUsdc: ERef<ManifestBundleRef> };
- *   options: Omit<UpdateOpts, 'fastUsdcCode'> & CopyRecord;
+ *   options: { net: string };
  * }} opts
  */
 export const getManifestForUpdateSettlerReference = (
