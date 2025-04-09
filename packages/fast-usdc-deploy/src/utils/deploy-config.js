@@ -7,7 +7,7 @@ import { ChainPolicies, DepositForBurnEvent } from './chain-policies.js';
 /**
  * @import {ChainHubChainInfo, FastUSDCConfig} from '@agoric/fast-usdc';
  * @import {Passable} from '@endo/marshal';
- * @import {ChainInfo, CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
+ * @import {BaseChainInfo, ChainInfo, CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  */
 
 /** @type {[Denom, DenomDetail & { brandKey?: string}]} */
@@ -33,12 +33,15 @@ const { noble: _n, ...restCctpChainInfo } = cctpChainInfo;
 /**
  * Sets a chainId if none is present. For backwards compatibility with `CosmosChainInfoShapeV1` (`ChainHub`) which expects a `chainId`
  *
- * @template {Record<string, import('@agoric/orchestration').BaseChainInfo>} CI
+ * @template {Record<string, BaseChainInfo>} CI
  * @param {CI} ci
  */
 const withChainId = ci =>
   /** @type {{[K in keyof CI]: CI[K] & { chainId: string }}} */ (
-    objectMap(ci, v => ({ chainId: `${v.namespace}:${v.reference}`, ...v }))
+    objectMap(ci, v => ({
+      chainId: `cosmosShapeCompat${v.namespace}${v.reference}`,
+      ...v,
+    }))
   );
 
 /**
