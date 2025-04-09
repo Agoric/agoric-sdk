@@ -36,7 +36,7 @@ const { noble: _n, ...restCctpChainInfo } = cctpChainInfo;
  * @template {Record<string, BaseChainInfo>} CI
  * @param {CI} ci
  */
-const withChainId = ci =>
+export const withCosmosChainId = ci =>
   /** @type {{[K in keyof CI]: CI[K] & { chainId: string }}} */ (
     objectMap(ci, v => ({
       chainId: `cosmosShapeCompat${v.namespace}${v.reference}`,
@@ -69,7 +69,7 @@ export const configurations = {
     },
     chainInfo: /** @type {Record<string, ChainHubChainInfo>} */ (
       /** @type {Record<string, ChainHubChainInfo>} */ ({
-        ...withChainId({
+        ...withCosmosChainId({
           ethereum: cctpChainInfo.ethereum,
           solana: cctpChainInfo.solana,
         }),
@@ -96,7 +96,7 @@ export const configurations = {
       eventFilter: DepositForBurnEvent,
     },
     chainInfo: {
-      ...withChainId(restCctpChainInfo),
+      ...withCosmosChainId(restCctpChainInfo),
       ...withChainCapabilities(fetchedChainInfo),
     },
     assetInfo: transferAssetInfo,
@@ -117,7 +117,7 @@ export const configurations = {
     },
     chainInfo: /** @type {Record<string, ChainHubChainInfo & Passable>} */ (
       /** @type {Record<string, ChainHubChainInfo>} */ ({
-        ...withChainId(restCctpChainInfo),
+        ...withCosmosChainId(restCctpChainInfo),
         ...withChainCapabilities(fetchedChainInfo),
       })
     ), // TODO: use devnet values
@@ -136,7 +136,7 @@ export const configurations = {
     },
     chainInfo: /** @type {Record<string, ChainHubChainInfo & Passable>} */ (
       /** @type {Record<string, ChainHubChainInfo>} */ ({
-        ...withChainId(restCctpChainInfo),
+        ...withCosmosChainId(restCctpChainInfo),
         ...withChainCapabilities(fetchedChainInfo),
       })
     ), // TODO: use emerynet values
