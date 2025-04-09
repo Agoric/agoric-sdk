@@ -95,13 +95,13 @@ export const prepareLiquidityPoolKit = (
         publishPoolMetrics: M.call().returns(),
       }),
       depositHandler: M.interface('depositHandler', {
-        handle: M.call(SeatShape, M.any()).returns(M.promise()),
+        handle: M.call(SeatShape, M.any()).returns(),
       }),
       withdrawHandler: M.interface('withdrawHandler', {
-        handle: M.call(SeatShape, M.any()).returns(M.promise()),
+        handle: M.call(SeatShape, M.any()).returns(),
       }),
       withdrawFeesHandler: M.interface('withdrawFeesHandler', {
-        handle: M.call(SeatShape, M.any()).returns(M.promise()),
+        handle: M.call(SeatShape, M.any()).returns(),
       }),
       public: M.interface('public', {
         makeDepositInvitation: M.call().returns(M.promise()),
@@ -237,7 +237,7 @@ export const prepareLiquidityPoolKit = (
       },
 
       depositHandler: {
-        async handle(lp: ZCFSeat) {
+        handle(lp: ZCFSeat) {
           const { shareWorth, shareMint, poolSeat, encumberedBalance } =
             this.state;
           const { external } = this.facets;
@@ -276,7 +276,7 @@ export const prepareLiquidityPoolKit = (
       },
       withdrawHandler: {
         /** @param {ZCFSeat} lp */
-        async handle(lp: ZCFSeat) {
+        handle(lp: ZCFSeat) {
           const { shareWorth, shareMint, poolSeat, encumberedBalance } =
             this.state;
           const { external } = this.facets;
@@ -314,7 +314,7 @@ export const prepareLiquidityPoolKit = (
         },
       },
       withdrawFeesHandler: {
-        async handle(seat: ZCFSeat) {
+        handle(seat: ZCFSeat) {
           const { feeSeat } = this.state;
 
           const { want } = seat.getProposal();

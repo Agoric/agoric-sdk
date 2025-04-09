@@ -89,7 +89,7 @@ const AdvancerVowCtxShape: TypedPattern<AdvancerVowCtx> = M.splitRecord(
 /** type guards internal to the AdvancerKit */
 const AdvancerKitI = harden({
   advancer: M.interface('AdvancerI', {
-    handleTransactionEvent: M.callWhen(EvidenceWithRiskShape).returns(),
+    handleTransactionEvent: M.call(EvidenceWithRiskShape).returns(),
   }),
   depositHandler: M.interface('DepositHandlerI', {
     onFulfilled: M.call(M.undefined(), AdvancerVowCtxShape).returns(VowShape),
