@@ -670,7 +670,8 @@ test.serial('skips usdc advance when risks identified', async t => {
 test.serial('Ethereum destination', async t => {
   const { readPublished, storage, bridgeUtils } = t.context;
 
-  const { settlementAccount } = readPublished('fastUsdc');
+  const { nobleICA, poolAccount, settlementAccount } =
+    readPublished('fastUsdc');
 
   const EUD = 'eip155:1:0x1234567890123456789012345678901234567890';
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_ETHEREUM(
@@ -689,13 +690,36 @@ test.serial('Ethereum destination', async t => {
       amount: '92897000', // 93 USDC minus fees
       burnToken: 'uusdc',
       destinationDomain: 0,
-      from: 'noble1test1', // nobleICA address in vstorage
+      from: NonNullish(nobleICA),
       mintRecipient: accountIdTo32Bytes(EUD),
     }),
   ]);
   protoMsgMockMap[data] = buildMsgResponseString(MsgDepositForBurnResponse, {});
 
   await t.context.attest(evidence, 'submit-mock-evidence-eth');
+
+  /* simulate acknowledgement of outgoing forward transfer
+   *
+   * An outgoing .transfer() from an LCA will not settle until we get an IBC
+   * ack. See `sendThenWaitForAck`, which leverages ibc-packet.js and
+   * packet-tools.js. Every LocalOrchAccount has a receiveUpcall handler registered
+   * by packet-tools. receiveUpcall fires on both outgoing and incoming transfers.
+   * It's responsible for handling these acknowledgements + allowing the holder to
+   * register their own handler (like we do for SettlementAccount) that can run
+   * concurrently */
+  await bridgeUtils.runInbound(
+    BridgeId.VTRANSFER,
+    buildVTransferEvent({
+      sequence: '3',
+      amount: evidence.tx.amount,
+      denom: 'uusdc',
+      sender: evidence.tx.forwardingAddress,
+      target: poolAccount,
+      receiver: evidence.aux.recipientAddress,
+      sourceChannel: agoricToNobleChannel,
+      destinationChannel: nobleToAgoricChannel,
+    }),
+  );
 
   const getTxStatus = txHash =>
     storage
@@ -711,8 +735,8 @@ test.serial('Ethereum destination', async t => {
     'Tx status ADVANCING after evidence submission',
   );
 
+  // for the MsgDepositForBurn ack
   await t.context.bridgeUtils.flushInboundQueue();
-
 
   t.like(
     getTxStatus(evidence.txHash),

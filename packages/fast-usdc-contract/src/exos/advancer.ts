@@ -101,6 +101,10 @@ const AdvancerKitI = harden({
     ),
     onRejected: M.call(M.error(), AdvancerVowCtxShape).returns(M.undefined()),
   }),
+  transferCctpHandler: M.interface('TransferHandlerI', {
+    onFulfilled: M.call(M.undefined(), AdvancerVowCtxShape).returns(VowShape),
+    onRejected: M.call(M.error(), AdvancerVowCtxShape).returns(M.undefined()),
+  }),
   withdrawHandler: M.interface('WithdrawHandlerI', {
     onFulfilled: M.call(M.undefined(), {
       advanceAmount: AnyNatAmountShape,
@@ -276,7 +280,7 @@ export const prepareAdvancerKit = (
           result: undefined,
           ctx: AdvancerVowCtx & { tmpSeat: ZCFSeat },
         ) {
-          return asVow(async () => {
+          return asVow(() => {
             const { poolAccount, settlementAddress } = this.state;
             const { tmpSeat, ...vowContext } = ctx;
             const { destination, advanceAmount, ...detail } = vowContext;
@@ -285,47 +289,33 @@ export const prepareAdvancerKit = (
               denom: usdc.denom,
               value: advanceAmount.value,
             });
-            const accountId = parseAccountIdArg(destination);
-            await null;
 
-            const intermediaryAccount = getNobleICA();
-            const intermediaryAddress = intermediaryAccount.getAddress();
+            const intermediateRecipient = getNobleICA().getAddress();
 
-            let transferOrSendV;
-            if (
-              accountId.namespace === 'cosmos' &&
-              accountId.reference === settlementAddress.chainId
-            ) {
-              // send to recipient on Agoric
-              transferOrSendV = E(poolAccount).send(destination, amount);
-            } else if (accountId.namespace === 'cosmos') {
-              // send via IBC
-
-              transferOrSendV = E(poolAccount).transfer(destination, amount, {
-                forwardOpts: {
-                  intermediateRecipient: intermediaryAddress,
-                },
-              });
+            const destInfo = parseAccountIdArg(destination);
+            if (destInfo.namespace === 'cosmos') {
+              const vow =
+                destInfo.reference === settlementAddress.chainId
+                  ? // local
+                    E(poolAccount).send(destination, amount)
+                  : // via IBC
+                    E(poolAccount).transfer(destination, amount, {
+                      forwardOpts: {
+                        intermediateRecipient,
+                      },
+                    });
+              return watch(vow, this.facets.transferHandler, vowContext);
             } else if (supportsCctp(destination)) {
               // send USDC via CCTP
-
-              await E(poolAccount).transfer(intermediaryAddress, amount);
-              // assets are on noble, transfer to dest.
-
-              transferOrSendV = intermediaryAccount.depositForBurn(
-                destination,
-                amount,
+              return watch(
+                E(poolAccount).transfer(intermediateRecipient, amount),
+                this.facets.transferCctpHandler,
+                vowContext,
               );
             } else {
               // This is supposed to be caught in handleTransactionEvent()
               Fail`🚨 can only transfer to Agoric addresses, via IBC, or via CCTP`;
             }
-
-            return watch(
-              transferOrSendV,
-              this.facets.transferHandler,
-              vowContext,
-            );
           });
         },
         /**
@@ -392,6 +382,28 @@ export const prepareAdvancerKit = (
             advanceAmount,
             tmpReturnSeat,
           });
+        },
+      },
+      transferCctpHandler: {
+        /**
+         * @param {undefined} result
+         * @param {AdvancerVowCtx} ctx
+         * @throws {never} WARNING: this function must not throw, because user funds are at risk
+         */
+        onFulfilled(result: undefined, ctx: AdvancerVowCtx) {
+          const { advanceAmount, destination, ...detail } = ctx;
+          // assets are on noble, transfer to dest.
+          const intermediaryAccount = getNobleICA();
+          const amount = harden({
+            denom: usdc.denom,
+            value: advanceAmount.value,
+          });
+          const burn = intermediaryAccount.depositForBurn(destination, amount);
+          return watch(burn, this.facets.transferHandler, ctx);
+        },
+        onRejected(error: Error, ctx: AdvancerVowCtx) {
+          log('🚨 CCTP transfer failed', error);
+          // FIXME really handle, with tests
         },
       },
       withdrawHandler: {
