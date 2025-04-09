@@ -5,18 +5,26 @@ import {
   QueryDataResponse,
 } from '@agoric/cosmic-proto/agoric/vstorage/query.js';
 import { decodeBase64 } from '@endo/base64';
+import { encodeHex } from '@agoric/internal/src/hex.js';
 
 /**
  * @import {MinimalNetworkConfig} from './network-config.js';
  */
 
-/**
- * @typedef {typeof QueryChildrenResponse | typeof QueryDataResponse} ResponseCodec
- */
+const codecs = {
+  children: {
+    rpc: '/agoric.vstorage.Query/Children',
+    request: QueryChildrenRequest,
+    response: QueryChildrenResponse,
+  },
+  data: {
+    rpc: '/agoric.vstorage.Query/Data',
+    request: QueryDataRequest,
+    response: QueryDataResponse,
+  },
+};
 
-/**
- * @typedef {'children' | 'data'} VStorageOpKind
- */
+/** @typedef {(typeof codecs)[keyof typeof codecs]['response']} ResponseCodec */
 
 /**
  * @param {object} powers
@@ -24,18 +32,6 @@ import { decodeBase64 } from '@endo/base64';
  * @param {MinimalNetworkConfig} config
  */
 export const makeVStorage = ({ fetch }, config) => {
-  /**
-   * Convert an Uint8Array to a hex string, as per:
-   * https://stackoverflow.com/a/75259983
-   *
-   * @param {Uint8Array} buf
-   * @returns {string}
-   */
-  const toHex = buf =>
-    Array.from(buf)
-      .map(i => i.toString(16).padStart(2, '0'))
-      .join('');
-
   /**
    * @param {string} path
    */
@@ -45,46 +41,40 @@ export const makeVStorage = ({ fetch }, config) => {
     const res = await fetch(url, { keepalive: true });
     return res.json();
   };
+
   /**
+   * @template {keyof codecs} T
    * @param {string} [path]
    * @param {object} [opts]
-   * @param {VStorageOpKind} [opts.kind]
+   * @param {T} [opts.kind]
    * @param {number | bigint} [opts.height] 0 is the same as omitting height and implies the highest block
    */
-  const url = (path = 'published', { kind = 'children', height = 0 } = {}) => {
-    let buf;
-    let abciPath;
-    switch (kind) {
-      case 'children': {
-        abciPath = '/agoric.vstorage.Query/Children';
-        buf = QueryChildrenRequest.toProto({ path });
-        break;
-      }
-      case 'data': {
-        abciPath = '/agoric.vstorage.Query/Data';
-        buf = QueryDataRequest.toProto({ path });
-        break;
-      }
-      default: {
-        throw Error(`unknown kind: ${kind}`);
-      }
+  const url = (
+    path = 'published',
+    { kind = /** @type {T} */ ('children'), height = 0 } = {},
+  ) => {
+    const codec = codecs[kind];
+    if (!codec) {
+      throw Error(`unknown rpc kind: ${kind}`);
     }
 
-    const hexData = toHex(buf);
-    return `/abci_query?path=%22${abciPath}%22&data=0x${hexData}&height=${height}`;
+    const { rpc, request } = codec;
+    const buf = request.toProto({ path });
+
+    const hexData = encodeHex(buf);
+    return `/abci_query?path=%22${rpc}%22&data=0x${hexData}&height=${height}`;
   };
 
   /**
-   *
+   * @template {keyof codecs} T
    * @param {string} [path]
    * @param {object} [opts]
-   * @param {VStorageOpKind} [opts.kind]
+   * @param {T} [opts.kind]
    * @param {number | bigint} [opts.height] 0 is the same as omitting height and implies the highest block
-   * @returns
    */
   const readStorage = (
     path = 'published',
-    { kind = 'children', height = 0 } = {},
+    { kind = /** @type {T} */ ('children'), height = 0 } = {},
   ) =>
     getJSON(url(path, { kind, height }))
       .catch(err => {
@@ -103,24 +93,18 @@ export const makeVStorage = ({ fetch }, config) => {
           err.codespace = response?.codespace;
           throw err;
         }
-        switch (kind) {
-          case 'children': {
-            return { ...data, codec: QueryChildrenResponse };
-          }
-          case 'data': {
-            return { ...data, codec: QueryDataResponse };
-          }
-          default: {
-            throw Error(`unknown kind: ${kind}`);
-          }
+
+        const codec = codecs[kind];
+        if (!codec) {
+          throw Error(`unknown codec for kind: ${kind}`);
         }
+        return { ...data, codec: codec.response };
       });
 
   const vstorage = {
     url,
     /**
      * @param {{ result: { response: { value: string, code: number } }, codec?: ResponseCodec }} param0
-     * @returns
      */
     decode({ result: { response }, codec }) {
       const { code } = response;

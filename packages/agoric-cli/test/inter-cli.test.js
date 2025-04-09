@@ -4,6 +4,7 @@ import '@endo/init';
 import test from 'ava';
 import { CommanderError, createCommand } from 'commander';
 
+import { encodeBase64 } from '@endo/base64';
 import {
   QueryDataRequest,
   QueryDataResponse,
@@ -12,6 +13,7 @@ import { makeParseAmount } from '@agoric/inter-protocol/src/clientSupport.js';
 import { Far } from '@endo/far';
 import { boardSlottingMarshaller, makeFromBoard } from '@agoric/client-utils';
 
+import { decodeHex } from '@agoric/internal/src/hex.js';
 import { fmtBid, makeInterCommand } from '../src/commands/inter.js';
 
 const { entries } = Object;
@@ -82,7 +84,7 @@ const publishedNames = {
 
 const makeNet = published => {
   const encode = buf => {
-    const value = Buffer.from(buf).toString('base64');
+    const value = encodeBase64(buf);
     return { result: { response: { code: 0, value } } };
   };
   const ctx = makeFromBoard();
@@ -105,7 +107,7 @@ const makeNet = published => {
     if (!matched) throw Error(`fetch what?? ${url}`);
 
     const { reqHex } = matched.groups;
-    const reqBuf = Buffer.from(reqHex, 'hex');
+    const reqBuf = decodeHex(reqHex);
     const reqObj = QueryDataRequest.decode(reqBuf);
     const { path } = reqObj;
     if (!path) throw Error(`no path in ${reqHex}`);

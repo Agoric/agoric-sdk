@@ -1,19 +1,26 @@
 /* eslint-env node */
 import test from 'ava';
+import { encodeBase64 } from '@endo/base64';
 import { makeAgoricNames, makeVstorageKit } from '../src/vstorage-kit.js';
 
-const makeMockFetch = (responses = {}) => {
-  return async url => {
-    const response = responses[url] || {
-      result: {
-        response: {
-          code: 0,
-          value: Buffer.from(
-            JSON.stringify({ value: '{"blockHeight":1,"values":[]}' }),
-          ).toString('base64'),
-        },
+const makeDefaultMockResponse = () => {
+  const jsonString = JSON.stringify({ value: '{"blockHeight":1,"values":[]}' });
+  const buf = new TextEncoder().encode(jsonString);
+  const b64Value = encodeBase64(buf);
+  return {
+    result: {
+      response: {
+        code: 0,
+        value: b64Value,
       },
-    };
+    },
+  };
+};
+
+const makeMockFetch = (responses = {}) => {
+  const defaultMockResponse = makeDefaultMockResponse();
+  return async url => {
+    const response = responses[url] || defaultMockResponse;
     return { json: () => Promise.resolve(response) };
   };
 };

@@ -1,4 +1,4 @@
-/* global clearTimeout setTimeout Buffer */
+/* global clearTimeout setTimeout */
 import path from 'path';
 import fs from 'fs';
 import url from 'url';
@@ -8,6 +8,7 @@ import { open as tempOpen } from 'temp';
 import WebSocket from 'ws';
 
 import anylogger from 'anylogger';
+import { decodeBase64, encodeBase64 } from '@endo/base64';
 import { Fail, makeError } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
 
@@ -22,6 +23,7 @@ import {
   makeBatchedDeliver,
 } from '@agoric/internal/src/batched-deliver.js';
 import { forever, whileTrue } from '@agoric/internal';
+import { decodeHex, encodeHex } from '@agoric/internal/src/hex.js';
 
 const console = anylogger('chain-cosmos-sdk');
 
@@ -305,7 +307,8 @@ export async function connectToChain(
       const subscribeToTxHash = (txHash, cb) => {
         const txQuery = `tm.event = 'Tx' and tx.hash = '${txHash}'`;
 
-        const b64Hash = Buffer.from(txHash, 'hex').toString('base64');
+        const bufHash = decodeHex(txHash);
+        const b64Hash = encodeBase64(bufHash);
         const txSubscriptionId = sendRPC('subscribe', { query: txQuery });
         const queryId = sendRPC('tx', { hash: b64Hash });
         const cleanup = () => {
@@ -359,9 +362,7 @@ export async function connectToChain(
         const txSubscriptionId = sendRPC('subscribe', { query: txQuery });
         const queryId = sendRPC('abci_query', {
           path: `/agoric.vstorage.Query/Data`,
-          data: Buffer.from(
-            QueryDataRequest.toProto({ path: storagePath }),
-          ).toString('hex'),
+          data: encodeHex(QueryDataRequest.toProto({ path: storagePath })),
         });
 
         const cleanup = () => {
@@ -388,7 +389,7 @@ export async function connectToChain(
             // Decode the layers up to the actual storage value.
             const { value: b64JsonStorage, height: heightString } =
               obj.result.response;
-            const buf = Buffer.from(b64JsonStorage, 'base64');
+            const buf = decodeBase64(b64JsonStorage);
             const { value: storageValue } = QueryDataResponse.decode(buf);
             guardedCb(BigInt(heightString), storageValue);
           } else if (
