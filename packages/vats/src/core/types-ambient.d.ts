@@ -207,13 +207,19 @@ type WellKnownName = {
 };
 
 type ContractInstallationPromises<
-  StartFns extends Record<WellKnownName['installation'], ContractStartFn>,
+  StartFns extends Record<
+    WellKnownName['installation'],
+    import('@agoric/zoe').ContractStartFn
+  >,
 > = {
   [Property in keyof StartFns]: Promise<Installation<StartFns[Property]>>;
 };
 
 type ContractInstancePromises<
-  StartFns extends Record<WellKnownName['instance'], ContractStartFn>,
+  StartFns extends Record<
+    WellKnownName['instance'],
+    import('@agoric/zoe').ContractStartFn
+  >,
 > = {
   [Property in keyof StartFns]: Promise<
     import('@agoric/zoe/src/zoeService/utils.js').Instance<StartFns[Property]>

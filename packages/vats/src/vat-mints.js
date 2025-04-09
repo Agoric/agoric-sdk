@@ -1,5 +1,5 @@
 import { Far } from '@endo/far';
-import { makeIssuerKit, AmountMath } from '@agoric/ertp';
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 
 import { makeScalarMapStore } from '@agoric/store';
 import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
@@ -13,10 +13,12 @@ export function buildRootObject() {
 
   const api = Far('api', {
     getAllIssuerNames: () => [...mintsAndBrands.keys()],
+
     getIssuer: issuerName => {
       const { mint } = mintsAndBrands.get(issuerName);
       return mint.getIssuer();
     },
+
     /** @param {string[]} issuerNames */
     getIssuers: issuerNames => issuerNames.map(api.getIssuer),
 
@@ -31,22 +33,10 @@ export function buildRootObject() {
       notForProductionUse();
       return mintsAndBrands.get(name).mint;
     },
+
     /** @param {string[]} issuerNames */
     getMints: issuerNames => issuerNames.map(api.getMint),
-    /**
-     * @param {any} issuerNameSingular For example, 'moola', or 'simolean'
-     * @param {[AssetKind?, DisplayInfo?]} issuerArgs
-     */
-    makeMintAndIssuer: (issuerNameSingular, ...issuerArgs) => {
-      notForProductionUse();
-      // makeIssuerKit fails upgrade, this contract is for demo only
-      const { mint, issuer, brand } = makeIssuerKit(
-        issuerNameSingular,
-        ...issuerArgs,
-      );
-      mintsAndBrands.init(issuerNameSingular, { mint, brand });
-      return issuer;
-    },
+
     provideIssuerKit: (issuerName, ...issuerArgs) => {
       notForProductionUse();
       if (mintsAndBrands.has(issuerName)) {
@@ -63,6 +53,7 @@ export function buildRootObject() {
         return { mint, issuer, brand };
       }
     },
+
     /**
      * @param {string} issuerName
      * @param {bigint} value
@@ -75,6 +66,7 @@ export function buildRootObject() {
       const amount = AmountMath.make(brand, value);
       return mint.mintPayment(amount);
     },
+
     /**
      * @param {string[]} issuerNames
      * @param {bigint[]} values
