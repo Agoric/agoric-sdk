@@ -18,11 +18,13 @@ import {
   InstanceAdminI,
   InstanceAdminShape,
 } from '../typeGuards.js';
+import '../internal-types.js';
+import './internal-types.js';
 
 /**
  * @import {Baggage} from '@agoric/vat-data';
- * @import {LegacyWeakMap, WeakMapStore} from '@agoric/store';
- * @import {BundleCap, EndoZipBase64Bundle} from '@agoric/swingset-vat';
+ * @import {WeakMapStore} from '@agoric/store';
+ * @import {BundleCap} from '@agoric/swingset-vat';
  */
 
 /**
