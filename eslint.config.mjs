@@ -227,19 +227,21 @@ export default [
     },
   },
   {
-    files: ['packages/orchestration/src/exos/**'],
+    files: ['packages/*/src/exos/**'],
 
     rules: {
       'no-restricted-syntax': [
         'error',
         {
+          // Exclusions are for handlers that return prompt promises
           selector:
-            'FunctionExpression[async=true]:not(Property[key.name="connectionHandler"] > ObjectExpression > Property[key.name=/^(onOpen|onClose)$/] > FunctionExpression[async=true])',
+            'FunctionExpression[async=true]:not(Property[key.name=/^(connectionHandler|tap)$/] > ObjectExpression > Property[key.name=/^(onOpen|onClose|receiveUpcall)$/] > FunctionExpression[async=true])',
           message: 'Non-immediate functions must return vows, not promises',
         },
         {
           selector: 'ArrowFunctionExpression[async=true]',
-          message: 'Non-immediate functions must return vows, not promises',
+          message:
+            'Non-immediate arrow functions must return vows, not promises',
         },
         {
           selector: "Identifier[name='callWhen']",

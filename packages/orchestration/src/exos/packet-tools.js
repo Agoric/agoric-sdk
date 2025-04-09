@@ -20,6 +20,7 @@ const just = obj => {
  * @import {Pattern} from '@endo/patterns';
  * @import {EVow, Remote, Vow, VowResolver, VowTools} from '@agoric/vow';
  * @import {LocalChainAccount} from '@agoric/vats/src/localchain.js';
+ * @import {VTransferIBCEvent} from '@agoric/vats';
  * @import {TargetApp, TargetRegistration} from '@agoric/vats/src/bridge-target.js';
  */
 
@@ -206,7 +207,9 @@ export const preparePacketTools = (zone, vowTools) => {
         },
       },
       tap: {
-        // eslint-disable-next-line no-restricted-syntax
+        /**
+         * @param {VTransferIBCEvent} obj
+         */
         async receiveUpcall(obj) {
           const { monitor, resolverToPattern, upcallQueue, pending } =
             this.state;
