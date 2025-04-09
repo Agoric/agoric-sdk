@@ -135,12 +135,6 @@ chains:
             exponent: 0
           - denom: statom
             exponent: 6
-        traces:
-          - type: liquid-stake
-            counterparty:
-              chain_name: cosmoshublocal
-              base_denom: uatom
-            provider: Stride
 
 relayers:
   - name: stride-cosmoshub
