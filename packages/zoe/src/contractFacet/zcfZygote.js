@@ -13,7 +13,7 @@ import {
   prepareExoClass,
   provideDurableMapStore,
 } from '@agoric/vat-data';
-import { objectMap, panic } from '@agoric/internal';
+import { objectMap } from '@agoric/internal';
 
 import { cleanProposal } from '../cleanProposal.js';
 import { handlePKitWarning } from '../handleWarning.js';
@@ -34,8 +34,8 @@ import '../internal-types.js';
 
 /**
  * @import {Baggage} from '@agoric/vat-data';
- * @import {Panic} from '@agoric/internal';
  * @import {IssuerOptionsRecord} from '@agoric/ertp';
+ * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
  * @import {ZoeIssuerRecord, ZCFRegisterFeeMint, ContractStartFn, SetTestJig} from './types.js';
  */
 
@@ -90,17 +90,6 @@ export const makeZCFZygote = async (
     getIssuerForBrand,
     instantiate: instantiateIssuerStorage,
   } = provideIssuerStorage(zcfBaggage);
-
-  /** @type {Panic} */
-  const shutdownWithFailure = (
-    reason = TypeError('Shutdown without implicit failure'),
-  ) => {
-    void E(zoeInstanceAdmin).failAllSeats(reason);
-    seatManager.dropAllReferences();
-    // https://github.com/Agoric/agoric-sdk/issues/3239
-    powers.exitVatWithFailure(reason);
-    panic(reason);
-  };
 
   const { storeOfferHandler, takeOfferHandler } =
     makeOfferHandlerStorage(zcfBaggage);
@@ -343,7 +332,6 @@ export const makeZCFZygote = async (
       seatManager.dropAllReferences();
       powers.exitVat(completion);
     },
-    shutdownWithFailure,
     stopAcceptingOffers: () => E(zoeInstanceAdmin).stopAcceptingOffers(),
     makeZCFMint,
     registerFeeMint,
@@ -389,7 +377,6 @@ export const makeZCFZygote = async (
     ({ seatManager, zcfMintReallocator } = createSeatManager(
       zoeInstanceAdmin,
       getAssetKindByBrand,
-      shutdownWithFailure,
       zcfBaggage,
     ));
 

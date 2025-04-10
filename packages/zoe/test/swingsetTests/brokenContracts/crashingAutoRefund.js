@@ -1,4 +1,5 @@
 import { Far } from '@endo/marshal';
+import { panic } from '@agoric/internal';
 
 import {
   swap,
@@ -64,7 +65,7 @@ const start = zcf => {
 
   const zcfShutdown = completion => zcf.shutdown(completion);
   /** @type {ShutdownWithFailure} */
-  const zcfShutdownWithFailure = reason => zcf.shutdownWithFailure(reason);
+  const zcfShutdownWithFailure = reason => panic(reason);
 
   const makeSwapInvitation = () =>
     zcf.makeInvitation(makeMatchingInvitation, 'firstOffer');

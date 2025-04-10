@@ -6,7 +6,6 @@ import { AssetKind, hasIssuer, prepareIssuerKit } from '@agoric/ertp';
 import { InvitationElementShape } from '../typeGuards.js';
 
 /**
- * @import {Panic} from '@agoric/internal';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {InvitationDetails} from '../types-index.js';
  */
@@ -18,12 +17,8 @@ const ZOE_INVITATION_KIT = 'ZoeInvitationKit';
 
 /**
  * @param {Baggage} baggage
- * @param {Panic} [optShutdownZoeVat]
  */
-export const prepareInvitationKit = (
-  baggage,
-  optShutdownZoeVat = undefined,
-) => {
+export const prepareInvitationKit = baggage => {
   const invitationKitBaggage = provideDurableMapStore(
     baggage,
     ZOE_INVITATION_KIT,
@@ -44,7 +39,6 @@ export const prepareInvitationKit = (
     'Zoe Invitation',
     AssetKind.SET,
     undefined,
-    optShutdownZoeVat,
     { elementShape: InvitationElementShape },
   );
 

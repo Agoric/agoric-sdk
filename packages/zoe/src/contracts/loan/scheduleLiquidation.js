@@ -1,4 +1,5 @@
 import { E } from '@endo/eventual-send';
+import { panic } from '@agoric/internal';
 import { AmountMath } from '@agoric/ertp';
 
 import { liquidate } from './liquidate.js';
@@ -59,7 +60,6 @@ export const scheduleLiquidation = (zcf, configWithBorrower) => {
         Collateral: allCollateral,
       });
 
-      zcf.shutdownWithFailure(err);
-      throw err;
+      panic(err);
     });
 };

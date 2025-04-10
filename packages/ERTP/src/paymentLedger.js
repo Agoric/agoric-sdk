@@ -14,7 +14,7 @@ import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
 /**
  * @import {Key, Pattern} from '@endo/patterns';
  * @import {Zone} from '@agoric/base-zone';
- * @import {TypedPattern, Panic} from '@agoric/internal';
+ * @import {TypedPattern} from '@agoric/internal';
  * @import {AmountStore} from './amountStore.js';
  * @import {Amount, AssetKind, DisplayInfo, PaymentLedger, Payment, Brand, RecoverySetsOption, Purse, Issuer, Mint} from './types.js';
  */
@@ -82,7 +82,6 @@ const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
  * @param {DisplayInfo<K>} displayInfo
  * @param {Pattern} elementShape
  * @param {RecoverySetsOption} recoverySetsState
- * @param {Panic} [optShutdownWithFailure]
  * @returns {PaymentLedger<K>}
  */
 export const preparePaymentLedger = (
@@ -92,7 +91,6 @@ export const preparePaymentLedger = (
   displayInfo,
   elementShape,
   recoverySetsState,
-  optShutdownWithFailure = panic,
 ) => {
   /** @type {Brand<K>} */
   // @ts-expect-error XXX callWhen
@@ -126,15 +124,6 @@ export const preparePaymentLedger = (
   );
 
   const makePayment = preparePaymentKind(issuerZone, name, brand, PaymentI);
-
-  /** @type {Panic} */
-  const shutdownLedgerWithFailure = reason => {
-    try {
-      optShutdownWithFailure(reason);
-    } finally {
-      panic(reason);
-    }
-  };
 
   /** @type {WeakMapStore<Payment, Amount>} */
   const paymentLedger = issuerZone.weakMapStore('paymentLedger', {
@@ -260,8 +249,7 @@ export const preparePaymentLedger = (
       deletePayment(srcPayment);
       balanceStore.increment(srcPaymentBalance);
     } catch (err) {
-      shutdownLedgerWithFailure(err);
-      throw err;
+      panic(err);
     }
     return srcPaymentBalance;
   };
@@ -284,8 +272,7 @@ export const preparePaymentLedger = (
     try {
       initPayment(payment, amount, recoverySet);
     } catch (err) {
-      shutdownLedgerWithFailure(err);
-      throw err;
+      panic(err);
     }
     return payment;
   };
@@ -348,8 +335,7 @@ export const preparePaymentLedger = (
         // COMMIT POINT.
         deletePayment(payment);
       } catch (err) {
-        shutdownLedgerWithFailure(err);
-        throw err;
+        panic(err);
       }
       return paymentBalance;
     },
