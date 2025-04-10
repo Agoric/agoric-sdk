@@ -32,7 +32,8 @@ import { createSHA256 } from './hasher.js';
  *   populateTranscriptSpan: (name: string, makeChunkIterator: () => AnyIterableIterator<Uint8Array>, options: { artifactMode: ArtifactMode }) => Promise<void>,
  *   assertComplete: (checkMode: Omit<ArtifactMode, 'debug'>) => void,
  *   repairTranscriptSpanRecord: (key: string, value: string) => void,
- *   readFullVatTranscript: (vatID: string) => Iterable<{position: number, item: string}>
+ *   readFullVatTranscript: (vatID: string) => Iterable<{position: number, item: string}>,
+ *   readVatTranscriptRange: (vatID: string, startPos?: number, endPos?: number) => Iterable<{position: number, item: string}>,
  * }} TranscriptStoreInternal
  *
  * @typedef {{
@@ -160,12 +161,15 @@ export function makeTranscriptStore(
     return transcripts;
   }
 
-  function* readFullVatTranscript(vatID) {
-    for (const { startPos, endPos } of sqlDumpVatSpansQuery.iterate(vatID)) {
-      for (const row of sqlDumpItemsQuery.iterate(vatID, startPos, endPos)) {
-        yield row;
-      }
+  function* readVatTranscriptRange(vatID, startPos = 0, endPos = Number.MAX_SAFE_INTEGER) {
+    for (const row of sqlDumpItemsQuery.iterate(vatID, startPos, endPos)) {
+      yield row;
     }
+  }
+  harden(readVatTranscriptRange);
+
+  function* readFullVatTranscript(vatID) {
+    yield* readVatTranscriptRange(vatID);
   }
   harden(readFullVatTranscript);
 
@@ -927,5 +931,6 @@ export function makeTranscriptStore(
 
     dumpTranscripts,
     readFullVatTranscript,
+    readVatTranscriptRange,
   });
 }

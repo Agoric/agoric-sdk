@@ -5,10 +5,7 @@
 import fs from 'fs';
 // import '@endo/init';
 import '@agoric/internal/src/install-ses-debug.js';
-import { withDeferredCleanup } from '@agoric/internal';
-import { createGzip, createGunzip } from 'zlib';
 import { Fail, q } from '@endo/errors';
-import { buffer } from '../../swing-store/src/util.js'
 // SL import readline from 'readline';
 import sqlite3 from 'better-sqlite3';
 import process from 'process';
@@ -23,10 +20,8 @@ import { performance } from 'perf_hooks';
 import { file as tmpFile, tmpName } from 'tmp';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import yargsParser from 'yargs-parser';
-import bundleSource from '@endo/bundle-source';
 import { makeMeasureSeconds } from '@agoric/internal';
 import { makeSnapStore } from '../../swing-store/src/snapStore.js';
-import { makeSnapStoreIO } from '../../swing-store/src/snapStoreIO.js';
 import { makeTranscriptStore } from '../../swing-store/src/transcriptStore.js';
 import { makeBundleStore } from '../../swing-store/src/bundleStore.js';
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
@@ -36,17 +31,47 @@ import {
   makeXsnapBundleData,
 } from '../src/controller/bundle-handler.js';
 import { makeXsSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-xsnap.js';
-import { makeLocalVatManagerFactory } from '../src/kernel/vat-loader/manager-local.js';
-import { makeNodeSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-node.js';
-import { startSubprocessWorker } from '@agoric/internal/src/lib-nodejs/spawnSubprocessWorker.js';
 // import { requireIdentical } from '../src/kernel/vat-loader/transcript.js';
 import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
 import { makeGcAndFinalize } from '@agoric/internal/src/lib-nodejs/gc-and-finalize.js';
 import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
 import { makeSyscallSimulator } from '../src/kernel/vat-warehouse.js';
-import { workerData } from 'worker_threads';
 
 const pipe = promisify(pipeline);
+
+export const optionsDefault = {
+  absoluteSdkPath: '',
+  startXsnapWorkerPath: '',
+  loadXsnapWorkerPath: '',
+  rebuildBundles: false,
+  ignoreSnapshotHashDifference: true,
+  ignoreConcurrentWorkerDivergences: true,
+  forcedSnapshotInitial: null,
+  forcedSnapshotInterval: null,
+  forcedReloadFromSnapshot: true,
+  keepAllSnapshots: false,
+  keepNoSnapshots: false,
+  keepWorkerInitial: 0,
+  keepWorkerRecent: 10,
+  keepWorkerInterval: 10,
+  keepWorkerExplicitLoad: true,
+  keepWorkerHashDifference: true,
+  keepWorkerTransactionNums: [],
+  skipExtraVcSyscalls: true,
+  simulateVcSyscalls: true,
+  synchronizeSyscalls: false,
+  useCustomSnapStore: false,
+  recordXsnapTrace: false,
+  useXsnapDebug: false,
+  // SL
+  swingStoreDb: null,
+  transcriptStoreDb: null,
+  bundleStoreDb: null,
+  snapStoreRDb: null,
+  snapSaveDir: null,
+  startPos: null,
+  vatID: null,
+};
 
 // TODO: switch to full yargs for documenting output
 const argv = yargsParser(process.argv.slice(2), {
@@ -157,37 +182,7 @@ const argv = yargsParser(process.argv.slice(2), {
       number: true,
     },
   ],
-  default: {
-    absoluteSdkPath: '',
-    startXsnapWorkerPath: '',
-    loadXsnapWorkerPath: '',
-    rebuildBundles: false,
-    ignoreSnapshotHashDifference: true,
-    ignoreConcurrentWorkerDivergences: true,
-    forcedSnapshotInitial: 2,
-    forcedSnapshotInterval: 1000,
-    forcedReloadFromSnapshot: true,
-    keepAllSnapshots: false,
-    keepNoSnapshots: false,
-    keepWorkerInitial: 0,
-    keepWorkerRecent: 10,
-    keepWorkerInterval: 10,
-    keepWorkerExplicitLoad: true,
-    keepWorkerHashDifference: true,
-    keepWorkerTransactionNums: [],
-    skipExtraVcSyscalls: true,
-    simulateVcSyscalls: true,
-    synchronizeSyscalls: false,
-    useCustomSnapStore: false,
-    recordXsnapTrace: false,
-    useXsnapDebug: false,
-    // SL
-    swingStoreDb: null,
-    transcriptStoreDb: null,
-    bundleStoreDb: null,
-    snapStoreRDb: null,
-    snapSaveDir: null,
-  },
+  default: optionsDefault,
   config: {
     config: true,
   },
@@ -198,65 +193,51 @@ const argv = yargsParser(process.argv.slice(2), {
   },
 });
 
-if (argv.keepAllSnapshots && argv.keepNoSnapshots) {
-  throw new Error(
-    `Mutually exclusive options configured: 'keepAllSnapshots' and 'keepNoSnapshots'`,
-  );
-}
+function verifyFilterOptions(options) {
+  const filteredOptions = { ...optionsDefault };
+  const xsnapWorkerPathOpts = new Set([
+    'startXsnapWorkerPath',
+    'loadXsnapWorkerPath',
+  ]);
 
-for (const xsnapWorkerPathArg of [
-  'startXsnapWorkerPath',
-  'loadXsnapWorkerPath',
-]) {
-  const xsnapWorkerPath = argv[xsnapWorkerPathArg];
-  if (!xsnapWorkerPath) continue; // eslint-disable-line no-continue
-  const sdkRoot = new URL('../../../', import.meta.url);
-  const sdkRelativeWorkerPath = fileURLToPath(
-    new URL(xsnapWorkerPath, sdkRoot),
-  );
-  const cwdRelativeWorkerPath = path.resolve(xsnapWorkerPath);
-  if (fs.existsSync(sdkRelativeWorkerPath)) {
-    argv[xsnapWorkerPathArg] = sdkRelativeWorkerPath;
-  } else if (fs.existsSync(cwdRelativeWorkerPath)) {
-    argv[xsnapWorkerPathArg] = cwdRelativeWorkerPath;
-  } else {
+  if (!options.vatID)
+    throw new Error("vatID is required!");
+
+  if (!options.swingStoreDb && (!options.transcriptStoreDb || !options.bundleStoreDb || !options.snapStoreRDb))
+    throw new Error("swingStoreDb or {transcriptStoreDb, bundleStoreDb, snapStoreRDb} is required!");
+
+  if (options.keepAllSnapshots && options.keepNoSnapshots) {
     throw new Error(
-      `Couldn't resolve path "${xsnapWorkerPath}" for argument "${xsnapWorkerPathArg}"`,
+      `Mutually exclusive options configured: 'keepAllSnapshots' and 'keepNoSnapshots'`,
     );
   }
-}
 
-/** @type {(filename: string) => Promise<string>} */
-async function fileHash(filename) {
-  const hash = createHash('sha256');
-  const input = fs.createReadStream(filename);
-  await pipe(input, hash);
-  return hash.digest('hex');
-}
+  for (const [key, value] of Object.entries(options)) {
+    if (xsnapWorkerPathOpts.has(key)) {
+      const xsnapWorkerPathOptName = key;
+      const xsnapWorkerPath = value;
+      if (!xsnapWorkerPath) continue; // eslint-disable-line no-continue
+      const sdkRoot = new URL('../../../', import.meta.url);
+      const sdkRelativeWorkerPath = fileURLToPath(
+        new URL(xsnapWorkerPath, sdkRoot),
+      );
+      const cwdRelativeWorkerPath = path.resolve(xsnapWorkerPath);
+      if (fs.existsSync(sdkRelativeWorkerPath)) {
+        filteredOptions[xsnapWorkerPathOptName] = sdkRelativeWorkerPath;
+      } else if (fs.existsSync(cwdRelativeWorkerPath)) {
+        filteredOptions[xsnapWorkerPathOptName] = cwdRelativeWorkerPath;
+      } else {
+        throw new Error(
+          `Couldn't resolve path "${xsnapWorkerPath}" for option "${xsnapWorkerPathOptName}"`,
+        );
+      }
+    } else {
+      filteredOptions[key] = value;
+    }
+  }
 
-/*
-async function makeBundles() {
-  const controllerUrl = new URL(
-    `${
-      argv.absoluteSdkPath ? `${argv.absoluteSdkPath}/packages/SwingSet` : '..'
-    }/src/controller/initializeSwingset.js`,
-    import.meta.url,
-  );
-  const srcGE = async rel =>
-    bundleSource(new URL(rel, controllerUrl).pathname, {
-      format: 'nestedEvaluate',
-    });
-  const lockdown = await srcGE(
-    '../supervisors/subprocess-xsnap/lockdown-subprocess-xsnap.js',
-  );
-  const supervisor = await srcGE(
-    '../supervisors/subprocess-xsnap/supervisor-subprocess-xsnap.js',
-  );
-  fs.writeFileSync('lockdown-bundle', JSON.stringify(lockdown));
-  fs.writeFileSync('supervisor-bundle', JSON.stringify(supervisor));
-  console.log(`xs bundles written`);
+  return filteredOptions;
 }
-*/
 
 /** @typedef {import('../src/types-external.js').KernelKeeper} KernelKeeper */
 /** @typedef {import('@agoric/swing-store').SnapStore} SnapStore */
@@ -277,16 +258,13 @@ async function makeBundles() {
  * }} WorkerData
  */
 
-
-
 // relative timings:
 // 3.8s v8-false, 27.5s v8-gc
 // 10.8s xs-no-gc, 15s xs-gc
 /** @type {import('../src/types-external.js').ManagerType} */
 const worker = 'xs-worker';
 
-async function replay(transcriptStore, bundleStore, snapStoreR, vatID, startPos) {
-  // SL let vatID; // we learn this from the first line of the transcript
+export async function replay(transcriptStore, bundleStore, snapStoreR, vatID, startPos, options) {
   /** @type {import('../src/types-internal.js').VatManagerFactory} */
   let factory;
 
@@ -298,21 +276,6 @@ async function replay(transcriptStore, bundleStore, snapStoreR, vatID, startPos)
   const snapshotOverrideMap = new Map();
 
   const snapshotActivityFd = fs.openSync('snapshot-activity.jsonl', 'a');
-
-  /* SL
-  const fakeKernelKeeper =
-    /** @type {import('../src/types-external.js').KernelKeeper} *//* ({
-provideVatKeeper: _vatID =>
-/** @type {import('../src/types-external.js').VatKeeper} *//* (
-        /** @type {Partial<import('../src/types-external.js').VatKeeper>} *//* ({
-                addToTranscript: () => {},
-                getLastSnapshot: () =>
-                  loadSnapshotID && { snapshotID: loadSnapshotID },
-              })
-            ),
-          getRelaxDurabilityRules: () => false,
-        });
-    */
   const kernelSlog =
     /** @type {import('../src/types-external.js').KernelSlog} */ (
       /** @type {Partial<import('../src/types-external.js').KernelSlog>} */ ({
@@ -324,11 +287,9 @@ provideVatKeeper: _vatID =>
   /**
    * @param {string} xsID 
    * @param {string} snapPath
-   * //param {SnapStoreInfo} snapStoreInfo
-   * //param {SnapStoreInfo | null} parentSSI
    * @param {SnapStore} fallbackSnapStore
    */
-  function makeFakeSnapStore(xsID, snapPath, /*snapStoreInfo, parentSSI, */fallbackSnapStore) {
+  function makeFakeSnapStore(xsID, snapPath, fallbackSnapStore) {
     /** @type {SnapshotInfo} */
     let lastSavedSnapInfo;
     let lastSavedFileName;
@@ -378,16 +339,6 @@ provideVatKeeper: _vatID =>
       };
 
       lastSavedSnapInfo = snapshotInfo;
-      /*
-      // new snapshot
-      snapStoreInfo.lastSavedSnap = {
-        xsID: xsID,
-        vatID: vatID,
-        fileName: filePath,
-        parent: snapStoreInfo?.lastLoadedSnap,
-        info: snapshotInfo,
-      };
-      */
 
       return harden({
         hash: digest,
@@ -414,17 +365,7 @@ provideVatKeeper: _vatID =>
           const snapInfo = fallbackSnapStore.getSnapshotInfo(vatID);
           lastLoadedSnapInfo = snapInfo;
           lastLoadedFileName = `FALLBACK:${snapInfo.hash}`;
-          console.log(`Loading snapshot for vatID '${vatID}' from fallback snap store: ` + JSON.stringify(snapInfo) + '\n');
-          // new snapshot loaded
-          /*
-          snapStoreInfo.lastLoadedSnap = {
-            xsID: xsID,
-            vatID: vatID,
-            fileName: null,
-            parent: null,
-            info: snapInfo,
-          };
-          */
+          console.dir(`Loading snapshot for vatID '${vatID}' from fallback snap store: ` + JSON.stringify(snapInfo) + '\n');
           for await (const chunk of fallbackSnapStore.loadSnapshot(vatID)) {
             yield chunk;
           }
@@ -433,15 +374,12 @@ provideVatKeeper: _vatID =>
           throw new Error(`No previously saved snapshots for vatID '${vatID}'.`);
         }
       }
-      console.log(`Loading snapshot for vatID '${vatID}' from file: ${fileName}\n`);
+      console.dir(`Loading snapshot for vatID '${vatID}' from file: ${fileName}\n`);
       if (!fs.existsSync(fileName)) {
         throw new Error(`Snapshot file for vatID '${vatID}' does not exist.`);
       }
 
       const readStream = fs.createReadStream(fileName);
-
-      //snapStoreInfo.lastLoadedSnap = makeSnapInfo(snapStoreInfo.lastSavedSnap);
-
       for await (const chunk of readStream) {
         yield chunk;
       }
@@ -454,13 +392,7 @@ provideVatKeeper: _vatID =>
      */
     function getSnapshotInfo(vatID) {
       return lastSavedSnapInfo ? lastSavedSnapInfo : suppressFallbackSnapStore ? undefined : fallbackSnapStore?.getSnapshotInfo(vatID);
-      //fallbackSnapStore?.getSnapshotInfo(vatID);//snapStoreInfo.lastSavedSnap?.info;
     }
-
-    /*
-    snapStoreInfo.lastLoadedSnap = makeSnapInfo(parentSSI?.lastLoadedSnap);
-    snapStoreInfo.lastSavedSnap = makeSnapInfo(parentSSI?.lastSavedSnap);
-    */
 
     // only custom snap store is supported
     return /** @type {SnapStore} */ ({
@@ -493,7 +425,7 @@ provideVatKeeper: _vatID =>
     return fakeKernelKeeper;
   }
 
-  const fakeSnapStore = makeFakeSnapStore('xs', argv.snapSaveDir || process.env.PWD, snapStoreR);
+  const fakeSnapStore = makeFakeSnapStore('xs', options.snapSaveDir || process.env.PWD, snapStoreR);
   const fakeKernelKeeper = makeFakeKernelKeeper(fakeSnapStore);
   const testLog = () => {};
   const meterControl = makeDummyMeterControl();
@@ -514,231 +446,51 @@ provideVatKeeper: _vatID =>
   /** @type {WorkerData[]} */
   const workers = [];
 
-  if (worker === 'xs-worker') {
-    /* SL
-    // eslint-disable-next-line no-constant-condition
-    if (argv.rebuildBundles) {
-      console.log(`creating xsnap helper bundles`);
-      await makeBundles();
-      console.log(`xsnap helper bundles created`);
-    }
-    const bundles = [
-      JSON.parse(fs.readFileSync('lockdown-bundle', 'utf-8')),
-      JSON.parse(fs.readFileSync('supervisor-bundle', 'utf-8')),
-    ];
-    */
-    const env = /** @type {Record<string, string>} */ ({});
-
-    if (argv.recordXsnapTrace) {
-      env.XSNAP_TEST_RECORD = process.cwd();
-    }
-    if (argv.useXsnapDebug) {
-      env.XSNAP_DEBUG = 'true';
-    }
-
-    const capturePIDSpawn = /** @type {typeof spawn} */ (
-      /** @param  {Parameters<typeof spawn>} args */
-      (...args) => {
-        const [command, ...rest] = args;
-        const spawnedWorker = workers[workers.length - 1];
-        const child = spawn(
-          spawnedWorker.explicitWorkerPath || command,
-          ...rest,
-        );
-        spawnedWorker.xsnapPID = child.pid;
-        return child;
-      }
-    );
-
-    const bundleData = makeXsnapBundleData();
-    const bundleHandler = makeWorkerBundleHandler(bundleStore, bundleData);
-
-    const startXSnap = makeStartXSnap({
-      spawn: capturePIDSpawn,
-      fs,
-      tmpName,
-      bundleHandler,
-      snapStore: fakeSnapStore,
-    });
-
-    factory = makeXsSubprocessFactory({
-      kernelKeeper: fakeKernelKeeper,
-      kernelSlog,
-      startXSnap,
-      testLog,
-    });
-
-  } else if (worker === 'local') {
-    throw new Error(`worker === 'local' is not implemented.`);
-    /* SL factory = makeLocalVatManagerFactory({
-      allVatPowers,
-      kernelKeeper: fakeKernelKeeper,
-      vatEndowments: {},
-      gcTools,
-      kernelSlog,
-    }); */
-  } else if (worker === 'node-subprocess') {
-    throw new Error(`worker === 'node-subprocess' is not implemented.`);
-    /* SL
-    // this worker type cannot do blocking syscalls like vatstoreGet, so it's
-    // kind of useless for vats that use virtual objects
-    function startSubprocessWorkerNode() {
-      const supercode = new URL(
-        '../src/supervisors/subprocess-node/supervisor-subprocess-node.js',
-        import.meta.url,
-      ).pathname;
-      return startSubprocessWorker(process.execPath, ['-r', 'esm', supercode]);
-    }
-    factory = makeNodeSubprocessFactory({
-      startSubprocessWorker: startSubprocessWorkerNode,
-      kernelKeeper: fakeKernelKeeper,
-      kernelSlog,
-      testLog,
-    }); */
-  } else {
+  if (worker !== 'xs-worker') {
     throw Error(`unhandled worker type ${worker}`);
   }
 
-  /* SL
-  const [
-    bestRequireIdentical,
-    extraSyscall,
-    missingSyscall,
-    vcSyscallRE,
-    supportsRelaxedSyscalls,
-  ] = await (async () => {
-    const transcriptModule = await import(
-      '../src/kernel/vat-loader/transcript.js'
-    );
+  const env = /** @type {Record<string, string>} */ ({});
 
-    const syscallRE =
-      transcriptModule.vcSyscallRE || /^vc\.\d+\.\|(?:schemata|label)$/;
-
-    if (
-      typeof transcriptModule.requireIdenticalExceptStableVCSyscalls !==
-      'function'
-    ) {
-      return [
-        requireIdentical,
-        Symbol('never extra'),
-        Symbol('never missing'),
-        syscallRE,
-        false,
-      ];
-    }
-
-    const { requireIdenticalExceptStableVCSyscalls } = transcriptModule;
-
-    if (
-      typeof transcriptModule.extraSyscall === 'symbol' &&
-      typeof transcriptModule.missingSyscall === 'symbol'
-    ) {
-      return [
-        requireIdenticalExceptStableVCSyscalls,
-        transcriptModule.extraSyscall,
-        transcriptModule.missingSyscall,
-        syscallRE,
-        true,
-      ];
-    }
-
-    const dynamicExtraSyscall = requireIdenticalExceptStableVCSyscalls(
-      'vat0',
-      ['vatstoreGet', 'vc.0.|label'],
-      ['vatstoreGet', 'ignoreExtraSyscall'],
-    );
-    const dynamicMissingSyscall = requireIdenticalExceptStableVCSyscalls(
-      'vat0',
-      ['vatstoreGet', 'ignoreMissingSyscall'],
-      ['vatstoreGet', 'vc.0.|label'],
-    );
-
-    return [
-      requireIdenticalExceptStableVCSyscalls,
-      typeof dynamicExtraSyscall === 'symbol'
-        ? dynamicExtraSyscall
-        : Symbol('never extra'),
-      typeof dynamicMissingSyscall === 'symbol'
-        ? dynamicMissingSyscall
-        : Symbol('never missing'),
-      syscallRE,
-      typeof dynamicExtraSyscall === 'symbol' &&
-        typeof dynamicMissingSyscall === 'symbol',
-    ];
-  })();
-
-  if (
-    (argv.simulateVcSyscalls || argv.skipExtraVcSyscalls) &&
-    !supportsRelaxedSyscalls
-  ) {
-    console.warn(
-      'Transcript replay does not support relaxed replay. Cannot simulate or skip syscalls',
-    );
+  if (options.recordXsnapTrace) {
+    env.XSNAP_TEST_RECORD = process.cwd();
   }
-  
-  /** @type {Partial<Record<ReturnType<typeof getResultKind>, Map<string, number[]>>>} *//*SL
-  let syscallResults = {};
+  if (options.useXsnapDebug) {
+    env.XSNAP_DEBUG = 'true';
+  }
 
-  const getResultKind = result => {
-    if (result === extraSyscall) {
-      return 'extra';
-    } else if (result === missingSyscall) {
-      return 'missing';
-    } else if (result) {
-      return 'error';
-    } else {
-      return 'success';
+  const capturePIDSpawn = /** @type {typeof spawn} */ (
+    /** @param  {Parameters<typeof spawn>} args */
+    (...args) => {
+      const [command, ...rest] = args;
+      const spawnedWorker = workers[workers.length - 1];
+      const child = spawn(
+        spawnedWorker.explicitWorkerPath || command,
+        ...rest,
+      );
+      spawnedWorker.xsnapPID = child.pid;
+      return child;
     }
-  };
+  );
 
-  const reportWorkerResult = ({
-    xsnapPID,
-    result,
-    originalSyscall,
-    newSyscall,
-  }) => {
-    if (!result) return;
-    if (workers.length <= 1) return;
-    const resultKind = getResultKind(result);
-    let kindSummary = syscallResults[resultKind];
-    if (!kindSummary) {
-      /** @type {Map<string, number[]>} *//* SL
-      kindSummary = new Map();
-      syscallResults[resultKind] = kindSummary;
-    }
-    const syscallKey = JSON.stringify(
-      resultKind === 'extra' ? originalSyscall : newSyscall,
-    );
-    let workerList = kindSummary.get(syscallKey);
-    if (!workerList) {
-      workerList = [];
-      kindSummary.set(syscallKey, workerList);
-    }
-    workerList.push(xsnapPID);
-  };
-*/
-  /* SL
-  const analyzeSyscallResults = () => {
-    const numWorkers = workers.length;
-    let divergent = false;
-    for (const [kind, kindSummary] of Object.entries(syscallResults)) {
-      for (const [syscallKey, workerList] of kindSummary.entries()) {
-        if (workerList.length !== numWorkers) {
-          console.error(
-            `Divergent ${kind} syscall on deliveryNum= ${lastTranscriptNum}:\n  Worker PIDs ${workerList.join(
-              ', ',
-            )} recorded ${kind} ${syscallKey}`,
-          );
-          divergent = true;
-        }
-      }
-    }
-    syscallResults = {};
-    if (divergent && !argv.ignoreConcurrentWorkerDivergences) {
-      throw new Error('Divergent execution between workers');
-    }
-  };
-*/
+  const bundleData = makeXsnapBundleData();
+  const bundleHandler = makeWorkerBundleHandler(bundleStore, bundleData);
+
+  const startXSnap = makeStartXSnap({
+    spawn: capturePIDSpawn,
+    fs,
+    tmpName,
+    bundleHandler,
+    snapStore: fakeSnapStore,
+  });
+
+  factory = makeXsSubprocessFactory({
+    kernelKeeper: fakeKernelKeeper,
+    kernelSlog,
+    startXSnap,
+    testLog,
+  });
+
   let workersSynced = Promise.resolve();
 
   const updateWorkersSynced = () => {
@@ -774,9 +526,7 @@ provideVatKeeper: _vatID =>
   };
 
   /**
-   * @import {VatSyscallObject} from '@agoric/swingset-liveslots'
    * @import {VatSyscallResult} from '@agoric/swingset-liveslots'
-   * @import {VatSyscallResultOk} from '@agoric/swingset-liveslots'
    */
   /** @type {Map<string, VatSyscallResult | undefined>} */
   const knownVCSyscalls = new Map();
@@ -789,10 +539,10 @@ provideVatKeeper: _vatID =>
   const createManager = async keep => {
     let explicitWorkerPath;
     if (worker === 'xs-worker') {
-      if (loadSnapshotID && argv.loadXsnapWorkerPath) {
-        explicitWorkerPath = argv.loadXsnapWorkerPath;
-      } else if (!loadSnapshotID && argv.startXsnapWorkerPath) {
-        explicitWorkerPath = argv.startXsnapWorkerPath;
+      if (loadSnapshotID && options.loadXsnapWorkerPath) {
+        explicitWorkerPath = options.loadXsnapWorkerPath;
+      } else if (!loadSnapshotID && options.startXsnapWorkerPath) {
+        explicitWorkerPath = options.startXsnapWorkerPath;
       }
     }
 
@@ -846,16 +596,16 @@ provideVatKeeper: _vatID =>
             firstTranscriptNum != null &&
             !(
               keepRequested ||
-              (argv.keepWorkerInterval &&
+              (options.keepWorkerInterval &&
                 Math.floor(
                   (firstTranscriptNum - startTranscriptNum) /
-                    argv.forcedSnapshotInterval,
+                  options.forcedSnapshotInterval,
                 ) %
-                  argv.keepWorkerInterval ===
+              options.keepWorkerInterval ===
                   0) ||
-              idx < argv.keepWorkerInitial ||
-              idx >= workers.length - argv.keepWorkerRecent ||
-              argv.keepWorkerTransactionNums.includes(firstTranscriptNum)
+              idx < options.keepWorkerInitial ||
+              idx >= workers.length - options.keepWorkerRecent ||
+              options.keepWorkerTransactionNums.includes(firstTranscriptNum)
             ),
         )
         .map(async workerData => {
@@ -871,7 +621,7 @@ provideVatKeeper: _vatID =>
           } = workerData;
           // eslint-disable-next-line no-await-in-loop
           await manager?.shutdown();
-          console.log(
+          console.dir(
             `Shutdown worker PID ${xsnapPID} (start delivery ${firstTranscriptNum}).\n    Delivery time since last snapshot ${
               Math.round(deliveryTimeSinceLastSnapshot) / 1000
             }s. Delivery time total ${
@@ -900,7 +650,7 @@ provideVatKeeper: _vatID =>
       );
       if (existingWorkerData) {
         existingWorkerData.keep ||= !!keep;
-        console.log(
+        console.dir(
           `found an existing manager for snapshot ${loadSnapshotID}, skipping duplicate creation`,
         );
         return;
@@ -909,7 +659,7 @@ provideVatKeeper: _vatID =>
         vatID = data.vatID;
       }
       const { xsnapPID } = await createManager(keep);
-      console.log(
+      console.dir(
         `created manager from snapshot ${loadSnapshotID}, worker PID: ${xsnapPID}`,
       );
       fs.writeSync(
@@ -932,313 +682,273 @@ provideVatKeeper: _vatID =>
     ({ startPos: startPos } = transcriptStore.getCurrentSpanBounds(vatID));
   }
 
-  let transcriptNum = startPos;
-
-  const spanReader = (spanVatID, spanStartPos) => {
-    let spanIterator;
-    try {
-      spanIterator = transcriptStore.readSpan(spanVatID, spanStartPos)
-    } catch (e) {
-      console.log(`Error reading span: ${e}`);
-    } finally {
-      return spanIterator;
-    }
-  };
-
   try {
-    let trSpanIterator;
-    while (trSpanIterator = spanReader(vatID, transcriptNum)) {
-      console.log(`>>> span start @ ${transcriptNum} <<<`);
-      for await (const line of trSpanIterator) {
-      /* SL
-      if (lineNumber % 1000 === 0) {
-        console.log(` (slog line ${lineNumber})`);
-      }
-      lineNumber += 1;
-      const data = JSON.parse(line);
-      */
-        const transcriptEntry = JSON.parse(line);
-        const { d: delivery, r: expectedResult, sc: sysCalls } = transcriptEntry;
-        const deliveryType = delivery?.[0];
-        console.log(`>>> ${transcriptNum}: ${deliveryType}`);
+    let replayItemCount = 0;
+    for await (const { position: transcriptNum, item } of transcriptStore.readVatTranscriptRange(vatID, startPos)) {
+      replayItemCount += 1;
+      const transcriptEntry = JSON.parse(item);
+      const { d: delivery, r: expectedResult, sc: sysCalls } = transcriptEntry;
+      const deliveryType = delivery?.[0];
+      console.dir(`>>> ${transcriptNum}: ${deliveryType}`);
 
-        if (deliveryType === 'load-snapshot') {
-          if (worker === 'xs-worker') {
-            console.log(`loading snapshot: ${delivery?.[1]?.snapshotID})\n`);
-            await loadSnapshot(delivery?.[1], argv.keepWorkerExplicitLoad);
-          } else if (!workers.length) {
-            throw Error(
-              `Cannot replay transcript in ${worker} starting with a heap snapshot load.`,
-            );
-          }
+      if (deliveryType === 'load-snapshot') {
+        if (worker === 'xs-worker') {
+          console.dir(`loading snapshot: ${delivery?.[1]?.snapshotID})\n`);
+          await loadSnapshot(delivery?.[1], options.keepWorkerExplicitLoad);
         } else if (!workers.length) {
-          if (deliveryType !== 'initialize-worker') {
-            throw Error(
-              `first line of transcript was not a create-vat or heap-snapshot-load`,
-            );
-          }
-          ({ source, workerOptions } = delivery?.[1]);
-          suppressFallbackSnapStore = true;
-          const { xsnapPID } = await createManager(argv.keepWorkerExplicitLoad);
-          console.log(
-            `manager created from bundle source, worker PID: ${xsnapPID}`,
-            `\n\tsource: ${JSON.stringify(source)}`,
-            `\n\tworkerOptions: ${JSON.stringify(workerOptions)}`
+          throw Error(
+            `Cannot replay transcript in ${worker} starting with a heap snapshot load.`,
+          );
+        }
+      } else if (!workers.length) {
+        if (deliveryType !== 'initialize-worker') {
+          throw Error(
+            `first line of transcript was not a create-vat or heap-snapshot-load`,
+          );
+        }
+        ({ source, workerOptions } = delivery?.[1]);
+        suppressFallbackSnapStore = true;
+        const { xsnapPID } = await createManager(options.keepWorkerExplicitLoad);
+        console.dir(
+          `manager created from bundle source, worker PID: ${xsnapPID}`,
+          `\n\tsource: ${JSON.stringify(source)}`,
+          `\n\tworkerOptions: ${JSON.stringify(workerOptions)}`
+        );
+        fs.writeSync(
+          snapshotActivityFd,
+          `${JSON.stringify({
+            type: 'create',
+            xsnapPID,
+            vatID,
+          })}\n`,
+        );
+      } else if (deliveryType === 'save-snapshot') {
+        // throw new Error('save-snapshot is not implemented!');
+        saveSnapshotID = expectedResult?.snapshotID;
+        console.dir(`save-snapshot expecting hash: ${saveSnapshotID}`);
+
+        /** @param {WorkerData} workerData */
+        const doWorkerSnapshot = async workerData => {
+          const { manager, xsnapPID, firstTranscriptNum } = workerData;
+          if (!manager?.makeSnapshot) return null;
+          const { hash, dbSaveSeconds, } = await manager.makeSnapshot(
+            transcriptNum,
+            fakeSnapStore,
+            false // SL never restart
           );
           fs.writeSync(
             snapshotActivityFd,
             `${JSON.stringify({
-              type: 'create',
+              type: 'save',
               xsnapPID,
               vatID,
+              transcriptNum: lastTranscriptNum,
+              snapshotID: hash,
+              saveSnapshotID,
             })}\n`,
           );
-        } else if (deliveryType === 'save-snapshot') {
-          // throw new Error('save-snapshot is not implemented!');
-          saveSnapshotID = expectedResult?.snapshotID;
-          console.log(`save-snapshot expecting hash: ${saveSnapshotID}`);
-
-          /** @param {WorkerData} workerData */
-          const doWorkerSnapshot = async workerData => {
-            const { manager, xsnapPID, firstTranscriptNum } = workerData;
-            if (!manager?.makeSnapshot) return null;
-            const { hash, dbSaveSeconds, } = await manager.makeSnapshot(
-              transcriptNum,
-              fakeSnapStore,
-              false // SL never restart
-            );
-            fs.writeSync(
-              snapshotActivityFd,
-              `${JSON.stringify({
-                type: 'save',
-                xsnapPID,
-                vatID,
-                transcriptNum: lastTranscriptNum,
-                snapshotID: hash,
-                saveSnapshotID,
-              })}\n`,
-            );
-            if (hash !== saveSnapshotID) {
-              const errorMessage = `Snapshot hash does not match. ${hash} !== ${saveSnapshotID} for worker PID ${xsnapPID} (start delivery ${firstTranscriptNum})`;
-              if (argv.ignoreSnapshotHashDifference) {
-                console.warn(errorMessage);
-              } else {
-                throw new Error(errorMessage);
-              }
-            } else {
-              console.log(
-                `made snapshot ${hash} of worker PID ${xsnapPID} (start delivery ${firstTranscriptNum}).\n    Save time = ${Math.round(dbSaveSeconds * 1000) / 1000
-                }s. Delivery time since last snapshot ${Math.round(workerData.deliveryTimeSinceLastSnapshot) / 1000
-                }s. Up ${lastTranscriptNum - (workerData.firstTranscriptNum ?? NaN)
-                } deliveries.`,
-              );
-            }
-            workerData.deliveryTimeSinceLastSnapshot = 0;
-            return hash;
-          };
-          const savedSnapshots = await (argv.useCustomSnapStore
-            ? workers.reduce(
-              async (hashes, workerData) => [
-                ...(await hashes),
-                await doWorkerSnapshot(workerData),
-              ],
-              Promise.resolve(/** @type {string[]} */([])),
-            )
-            : Promise.all(workers.map(doWorkerSnapshot)));
-          saveSnapshotID = null;
-
-          const uniqueSnapshotIDs = new Set(savedSnapshots);
-          let divergent = uniqueSnapshotIDs.size > 1;
-          if (
-            !uniqueSnapshotIDs.has(expectedResult?.snapshotID) &&
-            (divergent || savedSnapshots[0] !== null)
-          ) {
-            divergent = true;
-            snapshotOverrideMap.set(
-              expectedResult?.snapshotID.snapshotID,
-              /** @type {string} */(savedSnapshots[0]),
-            );
-          }
-          if (argv.forcedReloadFromSnapshot) {
-            for (const snapshotID of uniqueSnapshotIDs) {
-              // eslint-disable-next-line no-await-in-loop
-              await loadSnapshot(
-                { snapshotID, vatID },
-                argv.keepWorkerHashDifference && divergent,
-              );
-            }
-          }
-
-          if (
-            !argv.useCustomSnapStore &&
-            (argv.keepNoSnapshots || (!divergent && !argv.keepAllSnapshots))
-          ) {
-            /* SL
-            for (const snapshotID of uniqueSnapshotIDs) {
-              if (snapshotID) {
-                snapStore.prepareToDelete(snapshotID);
-              }
-            }
-            await snapStore.commitDeletes(true);
-            */
-          }
-        } else {
-          lastTranscriptNum = transcriptNum;
-
-          const makeSnapshot =
-            argv.forcedSnapshotInterval &&
-            (transcriptNum - argv.forcedSnapshotInitial) %
-              argv.forcedSnapshotInterval ===
-            0;
-
-          // syscalls = [{ d, response }, ..]
-          // console.log(`replaying:`);
-          // console.log(
-          //   `delivery ${transcriptNum} (L ${lineNumber}):`,
-          //   JSON.stringify(delivery).slice(0, 200),
-          // );
-          // for (const s of syscalls) {
-          //   // s.response = 'nope';
-          //   console.log(
-          //     ` syscall:`,
-          //     s.response[0],
-          //     JSON.stringify(s.d).slice(0, 200),
-          //     JSON.stringify(s.response[1]).slice(0, 200),
-          //   );
-          // }
-          /** @type {({snapshotID: string; workerData: WorkerData;} | null)[]} */
-          const snapshotData = await Promise.all(
-            workers.map(async workerData => {
-              const { manager, xsnapPID } = workerData;
-              workerData.timeOfLastCommand = performance.now();
-              const { syscallHandler, finishSimulation } = makeSyscallSimulator(kernelSlog, vatID, transcriptNum, transcriptEntry);
-              const deliveryResult = await manager.deliver(delivery, syscallHandler);
-              Array.isArray(deliveryResult) || Fail`Delivery result is not an Array`;
-              deliveryResult[0] === expectedResult?.status ||
-                Fail`Delivery result mismatch. Expected: ${q(expectedResult?.status)} Received: ${q(deliveryResult[0])}`
-
-              finishSimulation();
-              updateDeliveryTime(workerData);
-              workerData.firstTranscriptNum ??= transcriptNum - 1;
-              completeWorkerStep(workerData);
-              await workersSynced;
-
-              // console.log(`dr`, dr);
-
-              // enable this to write periodic snapshots, for #5975 leak
-              if (makeSnapshot && manager.makeSnapshot) {
-                const { hash, dbSaveSeconds, } = await manager.makeSnapshot(
-                  transcriptNum,
-                  fakeSnapStore,
-                  false // SL do not restart
-                );
-                fs.writeSync(
-                  snapshotActivityFd,
-                  `${JSON.stringify({
-                    type: 'save',
-                    xsnapPID,
-                    vatID,
-                    transcriptNum,
-                    hash,
-                  })}\n`,
-                );
-                console.log(
-                  `made snapshot ${hash} after delivery ${transcriptNum} to worker PID ${xsnapPID} (start delivery ${
-                    workerData.firstTranscriptNum
-                  }).\n    Save time = ${
-                  Math.round(dbSaveSeconds * 1000) / 1000
-                  }s. Delivery time since last snapshot ${
-                    Math.round(workerData.deliveryTimeSinceLastSnapshot) / 1000
-                  }s. Up ${
-                    transcriptNum - workerData.firstTranscriptNum
-                  } deliveries.`,
-                );
-                workerData.deliveryTimeSinceLastSnapshot = 0;
-                return { snapshotID: hash, workerData };
-              } else {
-                return null;
-              }
-            }),
-          );
-          const uniqueSnapshotIDs = [
-            ...new Set(snapshotData.map(data => data?.snapshotID)),
-          ].filter(snapshotID => snapshotID != null);
-
-          const divergent = uniqueSnapshotIDs.length !== 1;
-
-          if (makeSnapshot && divergent) {
-            const errorMessage = `Snapshot hashes do not match each other: ${uniqueSnapshotIDs.join(
-              ', ',
-            )}`;
-            if (argv.ignoreSnapshotHashDifference) {
+          if (hash !== saveSnapshotID) {
+            const errorMessage = `Snapshot hash does not match. ${hash} !== ${saveSnapshotID} for worker PID ${xsnapPID} (start delivery ${firstTranscriptNum})`;
+            if (options.ignoreSnapshotHashDifference) {
               console.warn(errorMessage);
             } else {
               throw new Error(errorMessage);
             }
+          } else {
+            console.dir(
+              `made snapshot ${hash} of worker PID ${xsnapPID} (start delivery ${firstTranscriptNum}).\n    Save time = ${Math.round(dbSaveSeconds * 1000) / 1000
+              }s. Delivery time since last snapshot ${Math.round(workerData.deliveryTimeSinceLastSnapshot) / 1000
+              }s. Up ${lastTranscriptNum - (workerData.firstTranscriptNum ?? NaN)
+              } deliveries.`,
+            );
           }
+          workerData.deliveryTimeSinceLastSnapshot = 0;
+          return hash;
+        };
+        const savedSnapshots = await (options.useCustomSnapStore
+          ? workers.reduce(
+            async (hashes, workerData) => [
+              ...(await hashes),
+              await doWorkerSnapshot(workerData),
+            ],
+            Promise.resolve(/** @type {string[]} */([])),
+          )
+          : Promise.all(workers.map(doWorkerSnapshot)));
+        saveSnapshotID = null;
 
-          if (argv.forcedReloadFromSnapshot) {
-            /** @type Set<String | undefined> */
-            let reloadSnapshotIDs = new Set(uniqueSnapshotIDs);
-            if (
-              !argv.keepWorkerHashDifference &&
-              uniqueSnapshotIDs.length > argv.keepWorkerRecent
-            ) {
-              reloadSnapshotIDs = new Set(
-                snapshotData
-                  .filter(data => data && data.workerData.keep)
-                  .map(data => data?.snapshotID),
-              );
-              for (const data of snapshotData.reverse()) {
-                if (reloadSnapshotIDs.size >= argv.keepWorkerRecent) break;
-                reloadSnapshotIDs.add(data?.snapshotID);
-              }
-            }
-            for (const snapshotID of reloadSnapshotIDs) {
-              // eslint-disable-next-line no-await-in-loop
-              await loadSnapshot(
-                {
-                  snapshotID,
-                  vatID,
-                },
-                argv.keepWorkerHashDifference && divergent,
-              );
-            }
-          }
-
-          const loadSnapshots = [].concat(
-            argv.loadSnapshots?.[transcriptNum] || [],
+        const uniqueSnapshotIDs = new Set(savedSnapshots);
+        let divergent = uniqueSnapshotIDs.size > 1;
+        if (
+          !uniqueSnapshotIDs.has(expectedResult?.snapshotID) &&
+          (divergent || savedSnapshots[0] !== null)
+        ) {
+          divergent = true;
+          snapshotOverrideMap.set(
+            expectedResult?.snapshotID.snapshotID,
+            /** @type {string} */(savedSnapshots[0]),
           );
-          for (const snapshotID of loadSnapshots) {
+        }
+        if (options.forcedReloadFromSnapshot) {
+          for (const snapshotID of uniqueSnapshotIDs) {
+            // eslint-disable-next-line no-await-in-loop
+            await loadSnapshot(
+              { snapshotID, vatID },
+              options.keepWorkerHashDifference && divergent,
+            );
+          }
+        }
+
+        /* SL
+        if (
+          !options.useCustomSnapStore &&
+          (options.keepNoSnapshots || (!divergent && !options.keepAllSnapshots))
+        ) {
+          for (const snapshotID of uniqueSnapshotIDs) {
+            if (snapshotID) {
+              snapStore.prepareToDelete(snapshotID);
+            }
+          }
+          await snapStore.commitDeletes(true);
+        } */
+      } else {
+        lastTranscriptNum = transcriptNum;
+
+        const makeSnapshot =
+          options.forcedSnapshotInterval &&
+          (transcriptNum - options.forcedSnapshotInitial) %
+          options.forcedSnapshotInterval ===
+          0;
+
+        /** @type {({snapshotID: string; workerData: WorkerData;} | null)[]} */
+        const snapshotData = await Promise.all(
+          workers.map(async workerData => {
+            const { manager, xsnapPID } = workerData;
+            workerData.timeOfLastCommand = performance.now();
+            const { syscallHandler, finishSimulation } = makeSyscallSimulator(kernelSlog, vatID, transcriptNum, transcriptEntry);
+            const deliveryResult = await manager.deliver(delivery, syscallHandler);
+            Array.isArray(deliveryResult) || Fail`Delivery result is not an Array`;
+            deliveryResult[0] === expectedResult?.status ||
+              Fail`Delivery result mismatch. Expected: ${q(expectedResult?.status)} Received: ${q(deliveryResult[0])}`
+
+            finishSimulation();
+            updateDeliveryTime(workerData);
+            workerData.firstTranscriptNum ??= transcriptNum - 1;
+            completeWorkerStep(workerData);
+            await workersSynced;
+
+            // enable this to write periodic snapshots, for #5975 leak
+            if (makeSnapshot && manager.makeSnapshot) {
+              const { hash, dbSaveSeconds, } = await manager.makeSnapshot(
+                transcriptNum,
+                fakeSnapStore,
+                false // SL do not restart
+              );
+              fs.writeSync(
+                snapshotActivityFd,
+                `${JSON.stringify({
+                  type: 'save',
+                  xsnapPID,
+                  vatID,
+                  transcriptNum,
+                  hash,
+                })}\n`,
+              );
+              console.dir(
+                `made snapshot ${hash} after delivery ${transcriptNum} to worker PID ${xsnapPID} (start delivery ${workerData.firstTranscriptNum
+                }).\n    Save time = ${Math.round(dbSaveSeconds * 1000) / 1000
+                }s. Delivery time since last snapshot ${Math.round(workerData.deliveryTimeSinceLastSnapshot) / 1000
+                }s. Up ${transcriptNum - workerData.firstTranscriptNum
+                } deliveries.`,
+              );
+              workerData.deliveryTimeSinceLastSnapshot = 0;
+              return { snapshotID: hash, workerData };
+            } else {
+              return null;
+            }
+          }),
+        );
+        const uniqueSnapshotIDs = [
+          ...new Set(snapshotData.map(data => data?.snapshotID)),
+        ].filter(snapshotID => snapshotID != null);
+
+        const divergent = uniqueSnapshotIDs.length !== 1;
+
+        if (makeSnapshot && divergent) {
+          const errorMessage = `Snapshot hashes do not match each other: ${uniqueSnapshotIDs.join(
+            ', ',
+          )}`;
+          if (options.ignoreSnapshotHashDifference) {
+            console.warn(errorMessage);
+          } else {
+            throw new Error(errorMessage);
+          }
+        }
+
+        if (options.forcedReloadFromSnapshot) {
+          /** @type Set<String | undefined> */
+          let reloadSnapshotIDs = new Set(uniqueSnapshotIDs);
+          if (
+            !options.keepWorkerHashDifference &&
+            uniqueSnapshotIDs.length > options.keepWorkerRecent
+          ) {
+            reloadSnapshotIDs = new Set(
+              snapshotData
+                .filter(data => data && data.workerData.keep)
+                .map(data => data?.snapshotID),
+            );
+            for (const data of snapshotData.reverse()) {
+              if (reloadSnapshotIDs.size >= options.keepWorkerRecent) break;
+              reloadSnapshotIDs.add(data?.snapshotID);
+            }
+          }
+          for (const snapshotID of reloadSnapshotIDs) {
             // eslint-disable-next-line no-await-in-loop
             await loadSnapshot(
               {
                 snapshotID,
                 vatID,
               },
-              argv.keepWorkerExplicitLoad ||
-              (argv.keepWorkerHashDifference &&
-                (loadSnapshots.length > 1 ||
-                  !uniqueSnapshotIDs.includes(snapshotID))),
+              options.keepWorkerHashDifference && divergent,
             );
           }
-
-          /* SL if (
-            !argv.useCustomSnapStore &&
-            (argv.keepNoSnapshots || (!divergent && !argv.keepAllSnapshots))
-          ) {
-            for (const snapshotID of uniqueSnapshotIDs) {
-              if (snapshotID) {
-                snapStore.prepareToDelete(snapshotID);
-              }
-            }
-            await snapStore.commitDeletes(true);
-          }*/
         }
 
-        transcriptNum += 1;
-      } // for await (const line of trSpanIterator)
-    } // while (trSpanIterator = transcriptStore.readSpan(vatID, startPos))
+        const loadSnapshots = [].concat(
+          options.loadSnapshots?.[transcriptNum] || [],
+        );
+        for (const snapshotID of loadSnapshots) {
+          // eslint-disable-next-line no-await-in-loop
+          await loadSnapshot(
+            {
+              snapshotID,
+              vatID,
+            },
+            options.keepWorkerExplicitLoad ||
+            (options.keepWorkerHashDifference &&
+              (loadSnapshots.length > 1 ||
+                !uniqueSnapshotIDs.includes(snapshotID))),
+          );
+        }
+
+        /* SL if (
+          !options.useCustomSnapStore &&
+          (options.keepNoSnapshots || (!divergent && !options.keepAllSnapshots))
+        ) {
+          for (const snapshotID of uniqueSnapshotIDs) {
+            if (snapshotID) {
+              snapStore.prepareToDelete(snapshotID);
+            }
+          }
+          await snapStore.commitDeletes(true);
+        }*/
+      }
+    } // for await (const line of trSpanIterator)
+    if (replayItemCount === 0) {
+      throw new Error(`No items found in transcriptStore for vatID ${vatID}`);
+    }
+    console.dir(
+      `Replay finished for vatID ${vatID} (${replayItemCount} items).`,
+    );
   } finally {
     fs.closeSync(snapshotActivityFd);
     await Promise.all(
@@ -1251,7 +961,7 @@ provideVatKeeper: _vatID =>
           firstTranscriptNum,
         }) => {
           await manager?.shutdown();
-          console.log(
+          console.dir(
             `Shutdown worker PID ${xsnapPID} (start delivery ${firstTranscriptNum}).\n    Delivery time since last snapshot ${
               Math.round(deliveryTimeSinceLastSnapshot) / 1000
             }s. Delivery time total ${
@@ -1267,19 +977,24 @@ provideVatKeeper: _vatID =>
 }
 
 /*
- * Based on argv content, open appropriate swing/transcript/bundle/snap-Store[s],
+ * Based on options content, open appropriate swing/transcript/bundle/snap-Store[s],
  * respecting the overrides, as necessary.
  */
-function openStores() {
+export function openStores({ swingStoreDb, transcriptStoreDb, bundleStoreDb, snapStoreRDb }) {
   const noop = () => { };
 
   // single master database
-  const db = argv.swingStoreDb ? sqlite3(argv.swingStoreDb) : null;
+  const db = swingStoreDb ? sqlite3(swingStoreDb) : null;
 
   // apply overrides, if any
-  const tsDb = argv.transcriptStoreDb ? sqlite3(argv.transcriptStoreDb, { fileMustExist: true, readonly: false }) : db;
-  const bsDb = argv.bundleStoreDb ? sqlite3(argv.bundleStoreDb, { fileMustExist: true, readonly: true }) : db;
-  const ssRDb = argv.snapStoreRDb ? sqlite3(argv.snapStoreRDb, { fileMustExist: true, readonly: true }) : db;
+  const tsDb = transcriptStoreDb ? sqlite3(transcriptStoreDb, { fileMustExist: true, readonly: false }) : db;
+  const bsDb = bundleStoreDb ? sqlite3(bundleStoreDb, { fileMustExist: true, readonly: true }) : db;
+  const ssRDb = snapStoreRDb ? sqlite3(snapStoreRDb, { fileMustExist: true, readonly: true }) : db;
+
+  console.dir(`swingStore DB: ${db?.name}`);
+  console.dir(`transcriptStore DB: ${tsDb?.name}`);
+  console.dir(`bundleStore DB: ${bsDb?.name}`);
+  console.dir(`snapStore DB: ${ssRDb?.name}`);
 
   const transcriptStore = tsDb ? makeTranscriptStore(tsDb, noop) : null;
   const bundleStore = bsDb ? makeBundleStore(bsDb, noop) : null;
@@ -1294,31 +1009,34 @@ function openStores() {
   });
 }
 
-function findStartPos(snapStore, vatID) {
+export function findStartPos(snapStore, vatID) {
   const { snapPos } = snapStore.getSnapshotInfo(vatID);
 
   if (snapPos === null || snapPos === undefined)
     throw new Error("Did not find any inUse snapshots in snapStore!");
 
-  console.log(`No startPos provided, derived startPos = ${snapPos}`);
-  return harden(snapPos);
+  return snapPos + 1;
 }
 
-async function run() {
-  console.dir(argv, { depth: null });
+export async function run(runOptions) {
+  const options = verifyFilterOptions(runOptions);
+  console.dir(runOptions, { depth: null });
 
-  const { transcriptStore, bundleStore, snapStoreR } = openStores();
-  const vatID = argv.vatID;
+  const { transcriptStore, bundleStore, snapStoreR } = openStores(options);
 
-  if (!vatID)
-    throw new Error("vatID is required!");
+  let startPos = options.startPos;
+  if (options.startPos === null || options.startPos === undefined) {
+    startPos = findStartPos(snapStoreR, options.vatID);
+    console.dir(`No startPos provided, derived startPos = ${startPos}`);
+  }
 
-  const startPos = argv.startPos !== null ? argv.startPos : findStartPos(snapStoreR, vatID);
-
-  await replay(transcriptStore, bundleStore, snapStoreR, vatID, startPos);
+  await replay(transcriptStore, bundleStore, snapStoreR, options.vatID, startPos, options);
 }
 
-run().catch(err => {
-  console.log('RUN ERR', err);
-  process.exit(process.exitCode || 1);
-});
+// If the script is run directly, execute the main function.
+if (import.meta.url === `file://${process.argv[1]}`) {
+  run(argv).catch(err => {
+    console.dir('RUN ERR', err);
+    process.exit(process.exitCode || 1);
+  });
+}
