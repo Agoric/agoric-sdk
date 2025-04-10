@@ -10,6 +10,9 @@
     "test:fast-usdc": "ava --config ava.fusdc.config.js"
   },
   "packageManager": "yarn@4.8.1",
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  },
   "devDependencies": {
     "@agoric/cosmic-proto": "dev",
     "@agoric/fast-usdc": "dev",

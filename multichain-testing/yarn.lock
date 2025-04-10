@@ -4680,6 +4680,7 @@ __metadata:
     eslint-config-prettier: "npm:^10.1.1"
     execa: "npm:^9.5.2"
     fs-extra: "npm:^11.2.0"
+    js-yaml: "npm:^4.1.0"
     starshipjs: "npm:2.4.1"
     ts-blank-space: "npm:^0.4.4"
     typescript: "npm:~5.8.2"
