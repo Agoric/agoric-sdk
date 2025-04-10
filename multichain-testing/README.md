@@ -51,6 +51,7 @@ This command will:
 3. Set up port forwarding
 4. Fund the provision pool
 5. Override the chain registry
+6. Create a liquidity pool on Osmosis
 
 The process may take 7-12 minutes to complete. You'll see status updates as the pods come online.
 
