@@ -10,7 +10,7 @@ const test = anyTest as TestFn<SetupContextWithWallets>;
 
 const accounts = ['agoricAdmin', 'cosmoshub', 'elys', 'stride'];
 
-const contractName = 'elysContract';
+const contractName = 'ElysContract';
 const contractBuilder =
   '../packages/builders/scripts/testing/init-elys-contract.js';
 

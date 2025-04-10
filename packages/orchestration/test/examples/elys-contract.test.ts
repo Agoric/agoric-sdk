@@ -16,8 +16,9 @@ import {
   buildVTransferEvent,
   buildMsgResponseString,
 } from '../../tools/ibc-mocks.js';
-import type { ChainAddress } from '../../src/orchestration-api.js';
+import type { CosmosChainAddress } from '../../src/orchestration-api.js';
 import type { FeeConfigShape } from '../../src/examples/elys-contract-type-gaurd.js';
+import type { Bech32Address } from '@agoric/cosmic-proto/address-hooks.js';
 
 const nodeRequire = createRequire(import.meta.url);
 
@@ -28,8 +29,8 @@ type StartFn = typeof import('../../src/examples/elys.contract.js').start;
 const deposit = async (
   coins: CoinSDKType,
   sourceChannel: any,
-  sender: string,
-  receiver: ChainAddress,
+  sender: Bech32Address,
+  receiver: CosmosChainAddress,
   transferBridge,
 ) => {
   await E(transferBridge).fromBridge(

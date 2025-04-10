@@ -170,6 +170,10 @@ export const commonSetup = async (
       () => vstorageClient.queryData(`published.agoricNames.instance`),
       res => contractName in Object.fromEntries(res),
       `${contractName} instance is available`,
+      {
+        maxRetries: 20,
+        retryIntervalMs: 3500
+      }
     );
   };
 
