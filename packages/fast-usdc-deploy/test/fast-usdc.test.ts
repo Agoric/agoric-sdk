@@ -164,7 +164,7 @@ test.serial(
       buildProposal,
       evalProposal,
       refreshAgoricNamesRemotes,
-      storage,
+      readPublished,
       walletFactoryDriver: wfd,
     } = t.context;
 
@@ -207,14 +207,8 @@ test.serial(
     const getBoardAux = async name => {
       const brand = await EV(agoricNames).lookup('brand', name);
       const id = await EV(board).getId(brand);
-      t.is(id, lpId);
-      t.truthy(storage.data.get(`published.boardAux.${id}`));
-      return unmarshalFromVstorage(
-        storage.data,
-        `published.boardAux.${id}`,
-        makeMarshal().fromCapData,
-        -1,
-      );
+      assert.equal(id, lpId);
+      return readPublished(`boardAux.${id}`);
     };
     t.like(
       await getBoardAux('FastLP'),
@@ -447,6 +441,7 @@ test.serial('deploy HEAD; upgrade to support EVM destinations', async t => {
 test.serial('makes usdc advance', async t => {
   const {
     walletFactoryDriver: wfd,
+    readPublished,
     storage,
     harness,
     runUtils: { EV },
@@ -456,10 +451,7 @@ test.serial('makes usdc advance', async t => {
   );
 
   const EUD = 'dydx1anything';
-  const lastNodeValue = storage.getValues('published.fastUsdc').at(-1);
-  const { settlementAccount, poolAccount } = JSON.parse(
-    NonNullish(lastNodeValue),
-  );
+  const { settlementAccount, poolAccount } = readPublished('fastUsdc');
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO(
     // mock with the real settlementAccount address
     encodeAddressHook(settlementAccount, { EUD }),
@@ -532,12 +524,11 @@ test.serial('makes usdc advance', async t => {
 });
 
 test.serial('minted before observed; forward path', async t => {
-  const { bridgeUtils, storage } = t.context;
+  const { bridgeUtils, readPublished, storage } = t.context;
 
   // Mock user data
   const EUD = 'cosmos1usermintedbeforeobserved';
-  const lastNodeValue = storage.getValues('published.fastUsdc').at(-1);
-  const { settlementAccount, nobleICA } = JSON.parse(NonNullish(lastNodeValue));
+  const { settlementAccount, nobleICA } = readPublished('fastUsdc');
 
   // Create mock evidence
   const mintAmt = 500_000n; // 0.5 USDC
@@ -642,14 +633,13 @@ test.serial('distributes fees per BLD staker decision', async t => {
 });
 
 test.serial('skips usdc advance when risks identified', async t => {
-  const { walletFactoryDriver: wfd, storage } = t.context;
+  const { walletFactoryDriver: wfd, readPublished, storage } = t.context;
   const oracles = await Promise.all(
     oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
   );
 
   const EUD = 'dydx1riskyeud';
-  const lastNodeValue = storage.getValues('published.fastUsdc').at(-1);
-  const { settlementAccount } = JSON.parse(NonNullish(lastNodeValue));
+  const { settlementAccount } = readPublished('fastUsdc');
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_DYDX(
     // mock with the real settlementAccount address
     encodeAddressHook(settlementAccount, { EUD }),
@@ -678,13 +668,9 @@ test.serial('skips usdc advance when risks identified', async t => {
 });
 
 test.serial('Ethereum destination', async t => {
-  const { walletFactoryDriver: wfd, storage, bridgeUtils, harness } = t.context;
-  const oracles = await Promise.all(
-    oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
-  );
+  const { readPublished, storage, bridgeUtils } = t.context;
 
-  const lastNodeValue = storage.getValues('published.fastUsdc').at(-1);
-  const { settlementAccount } = JSON.parse(NonNullish(lastNodeValue));
+  const { settlementAccount } = readPublished('fastUsdc');
 
   const EUD = 'eip155:1:0x1234567890123456789012345678901234567890';
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_ETHEREUM(
@@ -726,6 +712,7 @@ test.serial('Ethereum destination', async t => {
   );
 
   await t.context.bridgeUtils.flushInboundQueue();
+
 
   t.like(
     getTxStatus(evidence.txHash),
@@ -840,15 +827,14 @@ test.serial('replace operators', async t => {
     agoricNamesRemotes,
     buildProposal,
     evalProposal,
-    storage,
+    readPublished,
     runUtils: { EV },
     walletFactoryDriver: wfd,
   } = t.context;
   const { creatorFacet } = await EV.vat('bootstrap').consumeItem('fastUsdcKit');
 
   const EUD = 'dydx1anything';
-  const lastNodeValue = storage.getValues('published.fastUsdc').at(-1);
-  const { settlementAccount } = JSON.parse(NonNullish(lastNodeValue));
+  const { settlementAccount } = readPublished('fastUsdc');
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO(
     // mock with the real settlementAccount address
     encodeAddressHook(settlementAccount, { EUD }),
@@ -933,16 +919,10 @@ test.serial('replace operators', async t => {
 });
 
 test.serial('update fee config', async t => {
-  const { buildProposal, evalProposal, storage } = t.context;
-
-  const readFeeConfig = (): FeeConfig => {
-    const latest = storage.getValues(`published.fastUsdc.feeConfig`).at(-1);
-    if (!latest) throw Error('feeConfig not found');
-    return defaultSerializer.parse(latest) as FeeConfig;
-  };
+  const { buildProposal, evalProposal, readPublished, storage } = t.context;
 
   // see `const newFlat = AmountMath.make(usdc, 9_999n);` above
-  t.is(readFeeConfig().flat.value, 9_999n);
+  t.is(readPublished(`fastUsdc.feeConfig`).flat.value, 9_999n);
 
   /**
    * Note: there are no contract changes between this proposal and prop 89,
@@ -954,7 +934,7 @@ test.serial('update fee config', async t => {
   );
   await evalProposal(updateFlatFee);
 
-  t.is(readFeeConfig().flat.value, 0n);
+  t.is(readPublished(`fastUsdc.feeConfig`).flat.value, 0n);
 
   const doc = {
     node: 'fastUsdc.feeConfig',
