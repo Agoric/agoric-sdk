@@ -10,11 +10,6 @@ on:
         required: true
         type: string
         description: 'Test command to run (e.g., "test:main" or "test:fast-usdc")'
-      osmosis_xcs:
-        description: 'Flag to enable Osmosis Crosschain Swaps'
-        default: false
-        required: false
-        type: boolean
 
 jobs:
   multichain-e2e:
