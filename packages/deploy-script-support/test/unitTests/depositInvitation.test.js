@@ -16,7 +16,6 @@ test('depositInvitation', async t => {
     'invitations',
     AssetKind.SET,
     undefined,
-    undefined,
     {
       elementShape: InvitationElementShape,
     },

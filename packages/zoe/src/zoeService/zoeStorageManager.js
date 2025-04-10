@@ -30,7 +30,6 @@ import '../internal-types.js';
 import './internal-types.js';
 
 /**
- * @import {Panic} from '@agoric/internal';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {InvitationAmount} from '@agoric/zoe';
  */
@@ -50,7 +49,6 @@ const { ownKeys } = Reflect;
  * @param {CreateZCFVat} createZCFVat - the ability to create a new
  * ZCF Vat
  * @param {GetBundleCapForID} getBundleCapForID
- * @param {Panic | undefined} optShutdownZoeVat
  * @param {{
  *    getFeeIssuerKit: GetFeeIssuerKit,
  *    getFeeIssuer: () => Issuer,
@@ -61,7 +59,6 @@ const { ownKeys } = Reflect;
 export const makeZoeStorageManager = (
   createZCFVat,
   getBundleCapForID,
-  optShutdownZoeVat,
   feeMint,
   zoeBaggage,
 ) => {
@@ -96,10 +93,7 @@ export const makeZoeStorageManager = (
   // In order to participate in a contract, users must have invitations, which
   // are ERTP payments made by Zoe. This invitationKit must be closely held and
   // used only by the makeInvitation() method.
-  const { invitationIssuer, invitationKit } = prepareInvitationKit(
-    zoeBaggage,
-    optShutdownZoeVat,
-  );
+  const { invitationIssuer, invitationKit } = prepareInvitationKit(zoeBaggage);
 
   // Every new instance of a contract creates a corresponding
   // "zoeInstanceAdmin" - an admin facet within the Zoe Service for
@@ -222,30 +216,6 @@ export const makeZoeStorageManager = (
             keyword,
             assetKind,
             displayInfo,
-            // TODO this terminates (or suspends) only the client zcf vat
-            // that made a ZCFMint that therefore asked the zoeService to
-            // `makeZoeMint`. Since the potential bad state is at that moment
-            // only in the zoeService vat, it is fine to terminate
-            // the zcf vat asynchronously, but before it receives and further
-            // messages from the zoeService vat.
-            //
-            // However, since this ZoeMint may still be
-            // available, we must also terminate/suspend this zoeService
-            // vat synchronously. Given that we do terminate the
-            // zoeServiceVat synchronously, any async message sent during this
-            // crank, like the `terminateWithFailure` below, will never get
-            // delivered or have any effect.
-            //
-            // Therefore, we comment out this attempted message send and instead
-            // just rely on the default `optShutdownWithFailure to synchronously
-            // terminate this zoeService vat. Because this vat is marked
-            // critical, this will suspend the chain at that point, when
-            // manual recovery should still be possible.
-            //
-            // See https://github.com/Agoric/agoric-sdk/issues/8955#issuecomment-2753093949
-            //
-            // reason => E(state.adminNode).terminateWithFailure(reason),
-            undefined,
             { elementShape },
           );
           zoeMintBaggageSet.add(issuerBaggage);

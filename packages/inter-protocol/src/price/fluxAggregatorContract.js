@@ -11,11 +11,13 @@ import { E } from '@endo/eventual-send';
 import { reserveThenDeposit } from '../proposals/utils.js';
 import { prepareFluxAggregatorKit } from './fluxAggregatorKit.js';
 
-const trace = makeTracer('FluxAgg', false);
 /**
+ * @import {PrioritySendersManager} from '@agoric/internal/src/priority-senders.js';
  * @import {Baggage} from '@agoric/vat-data'
  * @import {TimerService} from '@agoric/time'
  */
+
+const trace = makeTracer('FluxAgg', false);
 
 /** @type {ContractMeta} */
 export const meta = {
@@ -54,7 +56,7 @@ harden(meta);
  *   }
  * >} zcf
  * @param {{
- *   highPrioritySendersManager?: import('@agoric/internal/src/priority-senders.js').PrioritySendersManager;
+ *   highPrioritySendersManager?: PrioritySendersManager;
  *   initialPoserInvitation: Invitation;
  *   marshaller: ERef<Marshaller>;
  *   namesByAddressAdmin: ERef<import('@agoric/vats').NameAdmin>;
@@ -66,15 +68,10 @@ export const start = async (zcf, privateArgs, baggage) => {
   trace('prepare with baggage keys', [...baggage.keys()]);
 
   // xxx uses contract baggage as issuerBagage, assumes one issuer in this contract
-  /** @type {import('./roundsManager.js').QuoteKit} */
-  // @ts-expect-error cast
-  const quoteIssuerKit = prepareIssuerKit(
-    baggage,
-    'quote',
-    'set',
-    undefined,
-    undefined,
-    { recoverySetsOption: 'noRecoverySets' },
+  const quoteIssuerKit = /** @type {import('./roundsManager.js').QuoteKit} */ (
+    prepareIssuerKit(baggage, 'quote', 'set', undefined, {
+      recoverySetsOption: 'noRecoverySets',
+    })
   );
 
   const {

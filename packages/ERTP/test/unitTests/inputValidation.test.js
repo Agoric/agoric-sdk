@@ -125,18 +125,6 @@ test('makeIssuerKit malicious displayInfo', async t => {
   );
 });
 
-// Note: because optShutdownWithFailure should never be able to be
-// reached, we can't easily test that pathway.
-test('makeIssuerKit bad optShutdownWithFailure', async t => {
-  t.throws(
-    // @ts-expect-error Intentional wrong type for testing
-    () => makeIssuerKit('myTokens', AssetKind.NAT, undefined, 'not a function'),
-    {
-      message: '"not a function" must be a function',
-    },
-  );
-});
-
 test('brand.isMyIssuer bad issuer', async t => {
   const { brand } = makeIssuerKit('myTokens');
   // @ts-expect-error Intentional wrong type for testing
