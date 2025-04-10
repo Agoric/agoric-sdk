@@ -5,11 +5,13 @@ import { assertRecord } from '@endo/marshal';
 import { assertKey, assertPattern, mustMatch, isKey } from '@agoric/store';
 import { FullProposalShape } from './typeGuards.js';
 
-import './internal-types.js';
-
 const { ownKeys } = Reflect;
 
 export const MAX_KEYWORD_LENGTH = 100;
+
+/**
+ * @import {ExitRule, Proposal, ProposalRecord} from '@agoric/zoe';
+ */
 
 const firstCapASCII = /^[A-Z][a-zA-Z0-9_$]*$/;
 

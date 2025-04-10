@@ -1,3 +1,8 @@
+env:
+  GOLANG_VERSION: '1.22'
+  LOADGEN_REPO_NAME: 'testnet-load-generator'
+  ORG_NAME: 'Agoric'
+
 name: Integration tests
 
 on:
@@ -121,7 +126,7 @@ jobs:
     needs: pre_check
     if: needs.pre_check.outputs.should_run == 'true'
 
-    runs-on: ubuntu-22.04 # jammy (LTS)
+    runs-on: 'ubuntu-22.04-4core-150SSD-16RAM'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -131,7 +136,7 @@ jobs:
         working-directory: ./agoric-sdk
       - uses: ./agoric-sdk/.github/actions/restore-golang
         with:
-          go-version: '1.22'
+          go-version: '${{ env.GOLANG_VERSION }}'
           path: ./agoric-sdk
       - uses: ./agoric-sdk/.github/actions/restore-node
         with:
@@ -167,8 +172,8 @@ jobs:
       - name: Check out loadgen
         uses: actions/checkout@v4
         with:
-          repository: Agoric/testnet-load-generator
-          path: ./testnet-load-generator
+          repository: ${{ env.ORG_NAME }}/${{ env.LOADGEN_REPO_NAME }}
+          path: ./${{ env.LOADGEN_REPO_NAME }}
           ref: ${{steps.get-loadgen-branch.outputs.result}}
 
       - name: Build cosmic-swingset dependencies
@@ -226,7 +231,7 @@ jobs:
   test-docker-build:
     needs: pre_check
     if: needs.pre_check.outputs.should_run == 'true'
-    runs-on: ubuntu-latest
+    runs-on: 'ubuntu-22.04-4core-150SSD-16RAM'
     timeout-minutes: 60
     steps:
       - name: update job environment
@@ -250,24 +255,46 @@ jobs:
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
           echo "=== After cleanup:"
           df -h
+
       - uses: actions/checkout@v4
+        with:
+          path: ./agoric-sdk
+
       - name: docker build (sdk)
         # Produces ghcr.io/agoric/agoric-sdk:unreleased used in the following upgrade test.
         # run: cd packages/deployment && ./scripts/test-docker-build.sh | $TEST_COLLECT
         # XXX skip TAP test output and collection for now; it hides the output from the logs
         run: make docker-build-sdk
-        working-directory: packages/deployment
-      - uses: ./.github/actions/restore-node
+        working-directory: agoric-sdk/packages/deployment
+
+      - id: restore-golang
+        uses: ./agoric-sdk/.github/actions/restore-golang
         with:
-          node-version: '18.x'
+          go-version: '${{ env.GOLANG_VERSION }}'
+          path: ./agoric-sdk
+
+      - id: restore-node
+        uses: ./agoric-sdk/.github/actions/restore-node
+        with:
           # Rebuilding the SDK image with resolved endo packages is not currently supported
           # and since we can't build core eval submissions from the SDK using a newer endo,
           # simply ignore any endo branch integration (this means we don't have full coverage)
           ignore-endo-branch: 'true'
-        id: restore-node
+          node-version: 'node-old'
+          path: ./agoric-sdk
+          # Forces xsnap to initialize all memory to random data, which increases
+          # the chances the content of snapshots may deviate between validators
+          xsnap-random-init: '1'
+
       - name: setup a3p-integration
         run: yarn install
-        working-directory: a3p-integration
+        working-directory: agoric-sdk/a3p-integration
+
+      - id: build-cosmic-swingset
+        name: Build cosmic-swingset dependencies
+        run: make --directory packages/cosmic-swingset install
+        working-directory: agoric-sdk
+
       - name: verify SDK image didn't change
         # In the future when we can rebuild the SDK image with resolved endo packages, it would
         # be expected that the SDK image previously built has changed
@@ -280,35 +307,89 @@ jobs:
             echo "New SDK docker image ($new) changed after restore-node (original $original)" 1>&2
             exit 1
           fi
-        working-directory: a3p-integration
+        working-directory: agoric-sdk/a3p-integration
+
+      - id: get-loadgen-branch
+        name: Get the appropriate loadgen branch
+        uses: actions/github-script@v7
+        with:
+          result-encoding: string
+          script: |
+            let branch = 'main';
+            if (context.payload.pull_request) {
+              const { body } = context.payload.pull_request;
+              const regex = /^\#loadgen-branch:\s+(\S+)/m;
+              const result = regex.exec(body);
+              if (result) {
+                branch = result[1];
+              }
+            }
+            console.log('loadgen branch: ' + branch);
+            return branch;
+
+      - id: checkout-loadgen
+        name: Check out loadgen
+        uses: actions/checkout@v4
+        with:
+          path: ./${{ env.LOADGEN_REPO_NAME }}
+          ref: ${{ steps.get-loadgen-branch.outputs.result }}
+          repository: ${{ env.ORG_NAME }}/${{ env.LOADGEN_REPO_NAME }}
+
+      - id: install-loadgen-runner-dependencies
+        name: Install loadgen runner dependencies
+        run: |
+          set -o errexit
+
+          cd runner
+          yarn install
+        working-directory: ${{ env.LOADGEN_REPO_NAME }}
+
+      - id: add-loadgen-path-to-env
+        name: Add loadgen path to env
+        run: |
+          set -o errexit
+
+          echo "Adding $GITHUB_WORKSPACE/${{ env.LOADGEN_REPO_NAME }} as loadgen path to env"
+          echo "LOADGEN_PATH=$GITHUB_WORKSPACE/${{ env.LOADGEN_REPO_NAME }}" >> "$GITHUB_ENV"
+
       - name: build proposals tests
         run: yarn build
-        working-directory: a3p-integration
+        working-directory: agoric-sdk/a3p-integration
+
       - name: run proposals tests
         run: yarn test
-        working-directory: a3p-integration
+        working-directory: agoric-sdk/a3p-integration
+
       - name: copy a3p-integration
-        if: (success() || failure())
+        if: always()
         run: |
           dir='/tmp/export/a3p-integration'
           rm -rf "$dir"
           scripts/ci/export-a3p.sh a3p-integration "$dir"
+        working-directory: agoric-sdk
+
       # Artifacts can be found at the bottom of `Summary` page of
       # `Integration tests` workflow once the workflow is completed.
       # Ref: https://github.com/actions/upload-artifact?tab=readme-ov-file#where-does-the-upload-go
       - name: archive a3p-integration
-        if: (success() || failure())
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: a3p-integration
-          path: /tmp/export/a3p-integration
+          path: |
+            /tmp/before-test-run-hook-logs
+            /tmp/export/a3p-integration
+            /tmp/loadgen-follower-logs
+            /tmp/loadgen-output
+
       - name: archive slogfile
-        if: (success() || failure())
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: slogfile
           path: ${{ env.SLOGFILE }}
           retention-days: 10
+
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
         uses: ./.github/actions/notify-status
@@ -317,8 +398,9 @@ jobs:
           from: ${{ secrets.NOTIFY_EMAIL_FROM }}
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
-      - uses: ./.github/actions/post-test
-        if: (success() || failure())
+
+      - uses: ./agoric-sdk/.github/actions/post-test
+        if: always()
         continue-on-error: true
         timeout-minutes: 4
         with:

@@ -1,13 +1,13 @@
 import path from 'path';
 import tmp from 'tmp';
-import { PromiseAllOrErrors } from '@agoric/internal';
+import { PromiseAllOrErrors, unprefixedProperties } from '@agoric/internal';
 import { serializeSlogObj } from './serialize-slog-obj.js';
 
+export const DEFAULT_SLOGSENDER_AGENT = 'self';
 export const DEFAULT_SLOGSENDER_MODULE =
   '@agoric/telemetry/src/flight-recorder.js';
 export const SLOGFILE_SENDER_MODULE = '@agoric/telemetry/src/slog-file.js';
-
-export const DEFAULT_SLOGSENDER_AGENT = 'self';
+export const PROMETHEUS_SENDER_MODULE = '@agoric/telemetry/src/prometheus.js';
 
 /** @import {SlogSender} from './index.js' */
 
@@ -19,6 +19,23 @@ export const DEFAULT_SLOGSENDER_AGENT = 'self';
 const filterTruthy = arr => /** @type {any[]} */ (arr.filter(Boolean));
 
 /**
+ * Create an aggregate slog sender that fans out inbound slog entries to modules
+ * as indicated by variables in the supplied `env` option. The SLOGSENDER value
+ * (or a default DEFAULT_SLOGSENDER_MODULE defined above) is split on commas
+ * into a list of module identifiers and adjusted by automatic insertions (a
+ * non-empty SLOGFILE value inserts DEFAULT_SLOGSENDER_AGENT defined above), and
+ * then each identifier is dynamically `import`ed for its own `makeSlogSender`
+ * export, which is invoked with a non-empty `stateDir` option and a modified
+ * `env` in which SLOGSENDER_AGENT_* variables have overridden their unprefixed
+ * equivalents to produce a subordinate slog sender.
+ * Subordinate slog senders remain isolated from each other, and any errors from
+ * them are caught and held until the next `forceFlush()` without disrupting
+ * any remaining slog entry fanout.
+ * If SLOGSENDER_AGENT is 'process', 'slog-sender-pipe.js' is used to load the
+ * subordinates in a child process rather than the main process.
+ * When there are no subordinates, the return value will be `undefined` rather
+ * than a slog sender function.
+ *
  * @type {import('./index.js').MakeSlogSender}
  */
 export const makeSlogSender = async (opts = {}) => {
@@ -26,95 +43,95 @@ export const makeSlogSender = async (opts = {}) => {
   const {
     SLOGSENDER = DEFAULT_SLOGSENDER_MODULE,
     SLOGSENDER_AGENT = DEFAULT_SLOGSENDER_AGENT,
+    // While cosmic-swingset/kernel code includes its own Prometheus metrics
+    // export, that trumps a slog sender module doing so.
+    // This extraction can be removed when that changes, but in the meantime,
+    // opt-in is only by SLOGSENDER_AGENT_OTEL_EXPORTER_PROMETHEUS_PORT.
+    OTEL_EXPORTER_PROMETHEUS_PORT: _prometheusExportPort,
     ...otherEnv
   } = env;
 
   const agentEnv = {
     ...otherEnv,
-    ...Object.fromEntries(
-      Object.entries(otherEnv)
-        .filter(([k]) => k.match(/^(?:SLOGSENDER_AGENT_)+/)) // narrow to SLOGSENDER_AGENT_ prefixes.
-        .map(([k, v]) => [k.replace(/^(?:SLOGSENDER_AGENT_)+/, ''), v]), // Rewrite SLOGSENDER_AGENT_ to un-prefixed version.
-    ),
+    ...unprefixedProperties(otherEnv, 'SLOGSENDER_AGENT_'),
   };
 
-  const slogSenderModules = [
-    ...new Set([
-      ...(agentEnv.SLOGFILE ? [SLOGFILE_SENDER_MODULE] : []),
-      ...SLOGSENDER.split(',')
-        .filter(Boolean)
-        .map(modulePath =>
-          modulePath.startsWith('.')
-            ? // Resolve relative to the current working directory.
-              path.resolve(modulePath)
-            : modulePath,
-        ),
-    ]),
-  ];
+  const slogSenderModules = new Set();
+  if (agentEnv.OTEL_EXPORTER_PROMETHEUS_PORT) {
+    slogSenderModules.add(PROMETHEUS_SENDER_MODULE);
+  }
+  if (agentEnv.SLOGFILE) {
+    slogSenderModules.add(SLOGFILE_SENDER_MODULE);
+  }
+  for (const moduleIdentifier of filterTruthy(SLOGSENDER.split(','))) {
+    if (moduleIdentifier.startsWith('-')) {
+      // Opt out of an automatically-included sender.
+      slogSenderModules.delete(moduleIdentifier.slice(1));
+    } else if (moduleIdentifier.startsWith('.')) {
+      // Resolve relative to the current working directory.
+      slogSenderModules.add(path.resolve(moduleIdentifier));
+    } else {
+      slogSenderModules.add(moduleIdentifier);
+    }
+  }
 
-  if (!slogSenderModules.length) {
+  if (!slogSenderModules.size) {
     return undefined;
   }
 
-  switch (SLOGSENDER_AGENT) {
-    case '':
-    case 'self':
-      break;
-    case 'process': {
-      console.warn('Loading slog sender in subprocess');
-      return import('./slog-sender-pipe.js').then(
-        async ({ makeSlogSender: makeSogSenderPipe }) =>
-          makeSogSenderPipe({
-            env: {
-              ...agentEnv,
-              SLOGSENDER,
-              SLOGSENDER_AGENT: 'self',
-            },
-            stateDir: stateDirOption,
-            ...otherOpts,
-          }),
-      );
-    }
-    case 'worker':
-    default:
-      console.warn(`Unknown SLOGSENDER_AGENT=${SLOGSENDER_AGENT}`);
+  if (SLOGSENDER_AGENT === 'process') {
+    console.warn('Loading slog sender in subprocess');
+    return import('./slog-sender-pipe.js').then(async module =>
+      module.makeSlogSender({
+        env: {
+          ...agentEnv,
+          SLOGSENDER,
+          SLOGSENDER_AGENT: 'self',
+        },
+        stateDir: stateDirOption,
+        ...otherOpts,
+      }),
+    );
+  } else if (SLOGSENDER_AGENT && SLOGSENDER_AGENT !== 'self') {
+    console.warn(
+      `Unknown SLOGSENDER_AGENT=${SLOGSENDER_AGENT}; defaulting to 'self'`,
+    );
   }
 
   if (SLOGSENDER) {
     console.warn('Loading slog sender modules:', ...slogSenderModules);
   }
 
-  const makersInfo = await Promise.all(
-    slogSenderModules.map(async moduleIdentifier =>
-      import(moduleIdentifier)
-        .then(
-          /** @param {{makeSlogSender: import('./index.js').MakeSlogSender}} module */ ({
-            makeSlogSender: maker,
-          }) => {
-            if (typeof maker !== 'function') {
-              return Promise.reject(
-                Error(`No 'makeSlogSender' function exported by module`),
-              );
-            } else if (maker === makeSlogSender) {
-              return Promise.reject(
-                Error(`Cannot recursively load 'makeSlogSender' aggregator`),
-              );
-            }
-
-            return /** @type {const} */ ([maker, moduleIdentifier]);
-          },
-        )
-        .catch(err => {
+  /** @type {Map<import('./index.js').MakeSlogSender, string>} */
+  const makerMap = new Map();
+  await Promise.all(
+    [...slogSenderModules].map(async moduleIdentifier => {
+      await null;
+      try {
+        const module = await import(moduleIdentifier);
+        const { makeSlogSender: maker } = module;
+        if (typeof maker !== 'function') {
+          throw Error(`No 'makeSlogSender' function exported by module`);
+        } else if (maker === makeSlogSender) {
+          throw Error(`Cannot recursively load 'makeSlogSender' aggregator`);
+        }
+        const isReplacing = makerMap.get(maker);
+        if (isReplacing) {
           console.warn(
-            `Failed to load slog sender from ${moduleIdentifier}.`,
-            err,
+            `The slog sender from ${moduleIdentifier} matches the one from ${isReplacing}.`,
           );
-          return undefined;
-        }),
-    ),
-  ).then(makerEntries => [...new Map(filterTruthy(makerEntries)).entries()]);
+        }
+        makerMap.set(maker, moduleIdentifier);
+      } catch (err) {
+        console.warn(
+          `Failed to load slog sender from ${moduleIdentifier}.`,
+          err,
+        );
+      }
+    }),
+  );
 
-  if (!makersInfo.length) {
+  if (!makerMap.size) {
     return undefined;
   }
 
@@ -122,11 +139,11 @@ export const makeSlogSender = async (opts = {}) => {
 
   if (stateDir === undefined) {
     stateDir = tmp.dirSync().name;
-    console.warn(`Using ${stateDir} for stateDir`);
+    console.warn(`Using ${stateDir} for slog sender stateDir`);
   }
 
   const senders = await Promise.all(
-    makersInfo.map(async ([maker, moduleIdentifier]) =>
+    [...makerMap.entries()].map(async ([maker, moduleIdentifier]) =>
       maker({
         ...otherOpts,
         stateDir,
@@ -137,37 +154,37 @@ export const makeSlogSender = async (opts = {}) => {
 
   if (!senders.length) {
     return undefined;
-  } else {
-    // Optimize creating a JSON serialization only if needed
-    // by any of the sender modules
-    const hasSenderUsingJsonObj = senders.some(
-      ({ usesJsonObject = true }) => usesJsonObject,
-    );
-    const getJsonObj = hasSenderUsingJsonObj
-      ? serializeSlogObj
-      : () => undefined;
-    const sendErrors = [];
-    /** @type {SlogSender} */
-    const slogSender = (slogObj, jsonObj = getJsonObj(slogObj)) => {
-      for (const sender of senders) {
-        try {
-          sender(slogObj, jsonObj);
-        } catch (err) {
-          sendErrors.push(err);
-        }
-      }
-    };
-    return Object.assign(slogSender, {
-      forceFlush: async () =>
-        PromiseAllOrErrors([
-          ...senders.map(sender => sender.forceFlush?.()),
-          ...sendErrors.splice(0).map(err => Promise.reject(err)),
-        ]).then(() => {}),
-      shutdown: async () =>
-        PromiseAllOrErrors(senders.map(sender => sender.shutdown?.())).then(
-          () => {},
-        ),
-      usesJsonObject: hasSenderUsingJsonObj,
-    });
   }
+
+  // Optimize creating a JSON serialization only if needed
+  // by at least one of the senders.
+  const hasSenderUsingJsonObj = senders.some(
+    ({ usesJsonObject = true }) => usesJsonObject,
+  );
+  const getJsonObj = hasSenderUsingJsonObj ? serializeSlogObj : () => undefined;
+
+  const sendErrors = [];
+
+  /** @type {SlogSender} */
+  const slogSender = (slogObj, jsonObj = getJsonObj(slogObj)) => {
+    for (const sender of senders) {
+      try {
+        sender(slogObj, jsonObj);
+      } catch (err) {
+        sendErrors.push(err);
+      }
+    }
+  };
+  return Object.assign(slogSender, {
+    forceFlush: async () => {
+      await PromiseAllOrErrors([
+        ...senders.map(sender => sender.forceFlush?.()),
+        ...sendErrors.splice(0).map(err => Promise.reject(err)),
+      ]);
+    },
+    shutdown: async () => {
+      await PromiseAllOrErrors(senders.map(sender => sender.shutdown?.()));
+    },
+    usesJsonObject: hasSenderUsingJsonObj,
+  });
 };

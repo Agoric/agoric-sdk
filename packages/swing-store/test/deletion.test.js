@@ -7,12 +7,14 @@ import fs from 'node:fs';
 import zlib from 'node:zlib';
 import sqlite3 from 'better-sqlite3';
 import tmp from 'tmp';
+import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
-import { tmpDir } from './util.js';
 import { initSwingStore } from '../src/swingStore.js';
 import { makeArchiveSnapshot, makeArchiveTranscript } from '../src/archiver.js';
 import { makeSwingStoreExporter } from '../src/exporter.js';
 import { importSwingStore } from '../src/importer.js';
+
+const tmpDir = makeTempDirFactory(tmp);
 
 async function* getSnapshotStream() {
   yield Buffer.from('abc');
@@ -139,7 +141,7 @@ const getExport = async (dbDir, artifactMode) => {
 };
 
 const reImport = async (t, dbDir, artifactMode) => {
-  const [dbDir2, cleanup] = await tmpDir('testdb2');
+  const [dbDir2, cleanup] = tmpDir('testdb2');
   t.teardown(cleanup);
   const exporter = makeSwingStoreExporter(dbDir, { artifactMode });
   const ss2 = await importSwingStore(exporter, dbDir2, { artifactMode });
@@ -170,9 +172,9 @@ const setupTranscript = async (t, keepTranscripts) => {
     }
     mergeExportDeltas(currentExportData, exports);
   };
-  const [dbDir, cleanup] = await tmpDir('testdb');
+  const [dbDir, cleanup] = tmpDir('testdb');
   t.teardown(cleanup);
-  const [archiveDir, cleanupArchives] = await tmpDir('archives');
+  const [archiveDir, cleanupArchives] = tmpDir('archives');
   t.teardown(cleanupArchives);
   const fsPowers = { fs, path, tmp };
   const archiveSnapshot = makeArchiveSnapshot(archiveDir, fsPowers);
@@ -531,7 +533,7 @@ const setupSnapshots = async t => {
     }
     mergeExportDeltas(currentExportData, exports);
   };
-  const [dbDir, cleanup] = await tmpDir('testdb');
+  const [dbDir, cleanup] = tmpDir('testdb');
   t.teardown(cleanup);
   const store = initSwingStore(dbDir, { exportCallback });
   const { kernelStorage, hostStorage } = store;

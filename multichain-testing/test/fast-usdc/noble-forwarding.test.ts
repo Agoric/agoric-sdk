@@ -2,7 +2,7 @@ import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
 import { commonSetup, type SetupContext } from '../support.js';
 import { createWallet } from '../../tools/wallet.js';
-import type { IBCConnectionInfo } from '@agoric/orchestration';
+import type { Bech32Address, IBCConnectionInfo } from '@agoric/orchestration';
 import { makeQueryClient } from '../../tools/query.js';
 
 const test = anyTest as TestFn<SetupContext>;
@@ -12,7 +12,8 @@ test('noble forwarding', async t => {
     await commonSetup(t, { config: '../config.fusdc.yaml' });
 
   const agoricWallet = await createWallet('agoric');
-  const agoricAddr = (await agoricWallet.getAccounts())[0].address;
+  const agoricAddr = (await agoricWallet.getAccounts())[0]
+    .address as Bech32Address;
   t.log('Made agoric wallet:', agoricAddr);
 
   const agoricChainId = useChain('agoric').chain.chain_id;

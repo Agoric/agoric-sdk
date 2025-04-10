@@ -10,6 +10,7 @@ import { prepareAssetReserveKit } from './assetReserveKit.js';
 
 /**
  * @import {EReturn} from '@endo/far';
+ * @import {Allocation, ContractMeta, FeeMintAccess, Installation} from '@agoric/zoe';
  */
 
 const trace = makeTracer('AR', true);

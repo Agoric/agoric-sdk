@@ -1,5 +1,5 @@
 {
-    "$comment": "This SwingSet config file (see loadSwingsetConfigFile) is designed to bring up vats to test Orchestration. Comapre with decentral-itest-vaults-config.json.",
+    "$comment": "This SwingSet config file (see loadSwingsetConfigFile) is designed to bring up vats to test Fast USDC. Compare with decentral-itest-vaults-config.json.",
     "bootstrap": "bootstrap",
     "defaultReapInterval": 1000,
     "coreProposals": [
@@ -8,7 +8,6 @@
         "@agoric/builders/scripts/vats/init-localchain.js",
         "@agoric/builders/scripts/vats/init-transfer.js",
         "@agoric/builders/scripts/vats/init-orchestration.js",
-        "@agoric/builders/scripts/orchestration/write-chain-info.js",
         {
             "module": "@agoric/builders/scripts/inter-protocol/init-core.js",
             "entrypoint": "defaultProposalBuilder",

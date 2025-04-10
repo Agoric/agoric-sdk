@@ -22,11 +22,12 @@ export {};
  */
 
 /**
- * @typedef {{
- *   enableDisavow?: boolean,
- *   relaxDurabilityRules?: boolean,
- *   allowStateShapeChanges?: boolean,
- * }} LiveSlotsOptions
+ * @typedef {object} LiveSlotsOptions
+ * @property {boolean} [enableDisavow]
+ * @property {boolean} [relaxDurabilityRules]
+ * @property {boolean} [allowStateShapeChanges] somewhat misnamed; this actually
+ *   relates to *arbitrary* changes (per #10200, a non-true value still permits
+ *   backwards-compatible addition of new optional fields)
  *
  * @typedef {import('@endo/marshal').CapData<string>} SwingSetCapData
  *

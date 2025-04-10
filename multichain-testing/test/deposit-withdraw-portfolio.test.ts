@@ -143,7 +143,7 @@ const portfolioAccountScenario = test.macro({
         destination: {
           chainId: remoteChainId,
           value: remoteIcaAddress,
-          encoding: 'bech32,',
+          encoding: 'bech32',
         },
       },
       proposal: {},
@@ -183,7 +183,7 @@ const portfolioAccountScenario = test.macro({
         destination: {
           chainId: 'agoriclocal',
           value: agoricLcaAddress,
-          encoding: 'bech32,',
+          encoding: 'bech32',
         },
       },
       proposal: {},

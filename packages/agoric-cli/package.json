@@ -37,7 +37,7 @@
   },
   "dependencies": {
     "@agoric/access-token": "^0.4.21",
-    "@endo/errors": "^1.2.9",
+    "@endo/errors": "^1.2.10",
     "@agoric/cache": "^0.3.2",
     "@agoric/casting": "^0.4.2",
     "@agoric/client-utils": "^0.1.0",
@@ -53,22 +53,21 @@
     "@agoric/vats": "^0.15.1",
     "@agoric/zoe": "^0.26.2",
     "@agoric/zone": "^0.2.2",
-    "@confio/relayer": "^0.11.3",
-    "@cosmjs/crypto": "^0.32.3",
-    "@cosmjs/encoding": "^0.32.3",
-    "@cosmjs/math": "^0.32.3",
-    "@cosmjs/proto-signing": "^0.32.3",
-    "@cosmjs/stargate": "^0.32.3",
-    "@endo/bundle-source": "^3.5.1",
-    "@endo/captp": "^4.4.4",
-    "@endo/compartment-mapper": "^1.5.0",
+    "@cosmjs/crypto": "^0.33.0",
+    "@cosmjs/encoding": "^0.33.0",
+    "@cosmjs/math": "^0.33.0",
+    "@cosmjs/proto-signing": "^0.33.0",
+    "@cosmjs/stargate": "^0.33.0",
+    "@endo/bundle-source": "^4.0.0",
+    "@endo/captp": "^4.4.5",
+    "@endo/compartment-mapper": "^1.6.0",
     "@endo/env-options": "^1.1.8",
-    "@endo/far": "^1.1.10",
-    "@endo/init": "^1.1.8",
-    "@endo/marshal": "^1.6.3",
-    "@endo/nat": "^5.0.14",
-    "@endo/patterns": "^1.4.8",
-    "@endo/promise-kit": "^1.1.9",
+    "@endo/far": "^1.1.11",
+    "@endo/init": "^1.1.9",
+    "@endo/marshal": "^1.6.4",
+    "@endo/nat": "^5.1.0",
+    "@endo/patterns": "^1.5.0",
+    "@endo/promise-kit": "^1.1.10",
     "@endo/zip": "^1.0.9",
     "@iarna/toml": "^2.2.3",
     "anylogger": "^0.21.0",
@@ -100,6 +99,6 @@
     "workerThreads": false
   },
   "typeCoverage": {
-    "atLeast": 78.73
+    "atLeast": 78.96
   }
 }

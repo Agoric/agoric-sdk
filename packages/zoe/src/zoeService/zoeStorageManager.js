@@ -21,15 +21,16 @@ import { prepareInvitationKit } from './makeInvitation.js';
 import { makeInstanceAdminStorage } from './instanceAdminStorage.js';
 import { makeInstallationStorage } from './installationStorage.js';
 
-/// <reference path="./types.js" />
-import './internal-types.js';
 import {
   InstanceStorageManagerIKit,
   ZoeMintI,
   ZoeStorageManagerIKit,
 } from '../typeGuards.js';
 
-/** @import {Baggage} from '@agoric/vat-data' */
+/**
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {InvitationAmount} from '@agoric/zoe';
+ */
 
 const { ownKeys } = Reflect;
 

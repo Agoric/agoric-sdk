@@ -51,7 +51,7 @@ import {
   TopicsRecordShape,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { PriceQuoteShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
-import { multiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { multiplyBy } from '@agoric/ertp/src/ratio.js';
 import {
   checkDebtLimit,
   makeNatAmountShape,
@@ -67,6 +67,7 @@ import { AuctionPFShape } from '../auction/auctioneer.js';
 
 /**
  * @import {EReturn} from '@endo/far';
+ * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  */
 

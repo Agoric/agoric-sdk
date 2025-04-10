@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ['18.x', '20.x']
+        node-version: ['node-new', 'node-old']
     steps:
       - uses: actions/checkout@v4
         with:
@@ -39,7 +39,7 @@ jobs:
     strategy:
       matrix:
         # note: only use one node-version
-        node-version: ['18.x']
+        node-version: ['node-old']
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
@@ -97,7 +97,7 @@ jobs:
     strategy:
       matrix:
         # note: only use one node-version
-        node-version: ['18.x']
+        node-version: ['node-old']
     if: ${{github.event_name == 'push' }}
     steps:
       - uses: actions/checkout@v4
@@ -139,7 +139,7 @@ jobs:
     strategy:
       matrix:
         # note: only use one node-version
-        node-version: ['18.x']
+        node-version: ['node-old']
     if: ${{github.event_name == 'push'}}
     steps:
       - uses: actions/checkout@v4

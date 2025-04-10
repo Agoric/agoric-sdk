@@ -11,13 +11,17 @@ import {
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { mustMatch } from '@agoric/store';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import { PaymentPKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 import { scale6, withAmountUtils } from '../../supports.js';
+
+/**
+ * @import {FeeMintAccess} from '@agoric/zoe';
+ */
 
 const trace = makeTracer('BootPSMUpg');
 

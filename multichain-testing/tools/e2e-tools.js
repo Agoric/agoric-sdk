@@ -22,11 +22,11 @@ import { makeTracer } from '@agoric/internal';
 
 const trace = makeTracer('E2ET');
 
-// The default of 6 retries was failing.
-// XXX also tried 15, 30. There's probably something deeper to fix.
-const SMART_WALLET_PROVISION_RETRIES = 100;
+const PROVISIONING_POOL_ADDR = 'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346';
 
 const BLD = '000000ubld';
+
+const rpcUrl = 'http://localhost:26657';
 
 export const txAbbr = tx => {
   const { txhash, code, height, gas_used } = tx;
@@ -39,7 +39,7 @@ export const txAbbr = tx => {
  * @param {import('@cosmjs/tendermint-rpc').RpcClient} io.rpc
  * @param {(ms: number, info?: unknown) => Promise<void>} io.delay
  */
-const makeBlockTool = ({ rpc, delay }) => {
+export const makeBlockTool = ({ rpc, delay }) => {
   let id = 1;
   const waitForBootstrap = async (period = 2000, info = {}) => {
     await null;
@@ -49,16 +49,15 @@ const makeBlockTool = ({ rpc, delay }) => {
         .execute({ jsonrpc: '2.0', id, method: 'status', params: [] })
         .catch(_err => {});
 
-      if (!data) throw Error('no data from status');
-
-      if (data.jsonrpc !== '2.0') {
+      if (data?.jsonrpc !== '2.0') {
         await delay(period, { ...info, method: 'status' });
         continue;
       }
 
       const lastHeight = data.result.sync_info.latest_block_height;
+      const earliestHeight = data.result.sync_info.earliest_block_height;
 
-      if (lastHeight !== '1') {
+      if (lastHeight !== earliestHeight) {
         return Number(lastHeight);
       }
 
@@ -105,20 +104,34 @@ const makeBlockTool = ({ rpc, delay }) => {
  * @param {string} [opts.bundleId]
  */
 const installBundle = async (fullPath, opts) => {
-  const { id, agd, progress = console.log } = opts;
+  const { id, agd, delay, progress = console.log } = opts;
   const { chainId = 'agoriclocal', installer = 'faucet' } = opts;
-  const from = await agd.lookup(installer);
+  const from = agd.lookup(installer);
   // const explainDelay = (ms, info) => {
   //   progress('follow', { ...info, delay: ms / 1000 }, '...');
   //   return delay(ms);
   // };
   // const updates = follow('bundles', { delay: explainDelay });
   // await updates.next();
-  const tx = await agd.tx(['swingset', 'install-bundle', `@${fullPath}`], {
-    from,
-    chainId,
-    yes: true,
-  });
+  const installBundle = () =>
+    agd.tx(['swingset', 'install-bundle', `@${fullPath}`], {
+      from,
+      chainId,
+      yes: true,
+    });
+  let tx;
+  try {
+    tx = await installBundle();
+  } catch (err) {
+    console.warn('WARN: retrying failed install-bundle', err);
+    // TODO make available from client-utils
+    const { waitForBlock } = makeBlockTool({
+      rpc: makeHttpClient(rpcUrl, global.fetch),
+      delay,
+    });
+    await waitForBlock(1);
+    tx = await installBundle();
+  }
   assert(tx);
 
   progress({ id, installTx: tx.txhash, height: tx.height });
@@ -130,7 +143,7 @@ const installBundle = async (fullPath, opts) => {
   //   assert.equal(`b1-${confirm.endoZipBase64Sha512}`, opts.bundleId);
   // }
   // TODO: return block height at which confirm went into vstorage
-  return { tx, confirm: true };
+  return { tx, confirm: { installed: true } };
 };
 
 /**
@@ -148,7 +161,7 @@ const installBundle = async (fullPath, opts) => {
  *   q?: import('./queryKit.js').QueryTool;
  * }} opts
  */
-export const provisionSmartWallet = async (
+const provisionSmartWalletAndMakeDriver = async (
   address,
   balances,
   {
@@ -164,6 +177,19 @@ export const provisionSmartWallet = async (
   },
 ) => {
   trace('provisionSmartWallet', address);
+  /**
+   * @param {string} [addr]
+   * @returns {Promise<{
+   *   balances: Coins;
+   *   pagination: unknown;
+   * }>}
+   *
+   * @typedef {{ denom: string; amount: string }[]} Coins
+   */
+  const getCosmosBalances = (addr = address) =>
+    lcd.getJSON(`/cosmos/bank/v1beta1/balances/${addr}`);
+  progress(`${address} before whale`, await getCosmosBalances());
+
   // TODO: skip this query if balances is {}
   const vbankEntries = await q.queryData('published.agoricNames.vbankAsset');
   const byName = Object.fromEntries(
@@ -196,7 +222,8 @@ export const provisionSmartWallet = async (
     await blockTool.waitForBlock(1, { address, step: 'bank send' });
   };
 
-  for await (const [name, qty] of Object.entries(balances)) {
+  const balanceEntries = Object.entries(balances);
+  for await (const [name, qty] of balanceEntries) {
     const info = byName[name];
     if (!info) {
       throw Error(`${name} not found in vbank assets`);
@@ -207,6 +234,13 @@ export const provisionSmartWallet = async (
     await sendFromWhale(denom, value);
   }
 
+  const afterWhale = await retryUntilCondition(
+    () => getCosmosBalances(),
+    ({ balances }) => balances.length === balanceEntries.length,
+    `${address} received tokens from whale`,
+  );
+  progress(`${address} after whale`, afterWhale);
+
   progress({ provisioning: address });
   await agd.tx(
     ['swingset', 'provision-one', 'my-wallet', address, 'SMART_WALLET'],
@@ -214,19 +248,29 @@ export const provisionSmartWallet = async (
   );
 
   trace('waiting for wallet to appear in vstorage', address);
-  const info = await retryUntilCondition(
-    () => q.queryData(`published.wallet.${address}.current`),
-    result => !!result,
-    `wallet in vstorage ${address}`,
-    {
-      maxRetries: SMART_WALLET_PROVISION_RETRIES,
-    },
-  );
-  progress({
-    provisioned: address,
-    purses: info.purses.length,
-    used: info.offerToUsedInvitation.length,
-  });
+  try {
+    const info = await retryUntilCondition(
+      () => q.queryData(`published.wallet.${address}.current`),
+      result => !!result,
+      `wallet in vstorage ${address}`,
+    );
+    progress({
+      provisioned: address,
+      purses: info.purses.length,
+      used: info.offerToUsedInvitation.length,
+    });
+  } catch (err) {
+    trace('wallet balances', await getCosmosBalances());
+    trace(
+      'provisioning pool balances',
+      await getCosmosBalances(PROVISIONING_POOL_ADDR),
+    );
+    trace(
+      'whale balances',
+      await getCosmosBalances(agd.keys.showAddress(whale)),
+    );
+    throw err;
+  }
 
   /** @param {import('@agoric/smart-wallet/src/smartWallet.js').BridgeAction} bridgeAction */
   const sendAction = async bridgeAction => {
@@ -280,16 +324,6 @@ export const provisionSmartWallet = async (
   });
 
   const { stringify: lit } = JSON;
-  /**
-   * @returns {Promise<{
-   *   balances: Coins;
-   *   pagination: unknown;
-   * }>}
-   *
-   * @typedef {{ denom: string; amount: string }[]} Coins
-   */
-  const getCosmosBalances = () =>
-    lcd.getJSON(`/cosmos/bank/v1beta1/balances/${address}`);
   const cosmosBalanceUpdates = () =>
     dedup(poll(getCosmosBalances, { delay }), (a, b) => lit(a) === lit(b));
 
@@ -335,7 +369,7 @@ export const provisionSmartWallet = async (
   return { offers, deposit, peek, query: q };
 };
 
-/** @typedef {Awaited<ReturnType<typeof provisionSmartWallet>>} WalletDriver */
+/** @typedef {Awaited<ReturnType<typeof provisionSmartWalletAndMakeDriver>>} WalletDriver */
 
 /**
  * @param {{
@@ -524,7 +558,6 @@ export const makeE2ETools = async (
         // name,
         id: fullPath,
         installHeight: tx.height,
-        // @ts-expect-error confirm is a boolean?
         installed: confirm.installed,
       });
     }
@@ -584,7 +617,7 @@ export const makeE2ETools = async (
      * @param {Record<string, bigint>} amount - should include BLD to pay for provisioning
      */
     provisionSmartWallet: (address, amount) =>
-      provisionSmartWallet(address, amount, {
+      provisionSmartWalletAndMakeDriver(address, amount, {
         agd,
         blockTool,
         lcd,
@@ -647,7 +680,7 @@ export const seatLike = updates => {
   });
 };
 
-/** @param {Awaited<ReturnType<typeof provisionSmartWallet>>} wallet */
+/** @param {Awaited<ReturnType<typeof provisionSmartWalletAndMakeDriver>>} wallet */
 export const makeDoOffer = wallet => {
   /** @type {(offer: OfferSpec) => Promise<void>} */
   const doOffer = async offer => {

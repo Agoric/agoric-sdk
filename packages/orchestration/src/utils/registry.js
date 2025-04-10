@@ -79,7 +79,7 @@ function toConnectionEntry(ibcInfo, name, chainInfo) {
 }
 
 /**
- * Converts the given chain info to our local config format
+ * Converts the given cosmos chain info to our local config format
  *
  * @param {Pick<ChainRegistryClient, 'chains' | 'ibcData'>} registry
  */
@@ -92,9 +92,11 @@ export const convertChainInfo = async registry => {
     chainInfo[chain.chain_name] = {
       bech32Prefix: chain.bech32_prefix,
       chainId: chain.chain_id,
-      stakingTokens: chain.staking?.staking_tokens,
       // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
       icqEnabled: chain.chain_name === 'osmosis',
+      namespace: 'cosmos',
+      reference: chain.chain_id,
+      stakingTokens: chain.staking?.staking_tokens,
     };
   }
 

@@ -47,29 +47,30 @@
     "@agoric/vow": "^0.1.0",
     "@agoric/zoe": "^0.26.2",
     "@agoric/zone": "^0.2.2",
+    "@cosmjs/encoding": "^0.32.4",
     "@endo/base64": "^1.0.9",
-    "@endo/errors": "^1.2.9",
-    "@endo/far": "^1.1.10",
-    "@endo/marshal": "^1.6.3",
-    "@endo/nat": "^5.0.14",
-    "@endo/patterns": "^1.4.8",
+    "eslint-plugin-github": "^5.1.8",
+    "@endo/errors": "^1.2.10",
+    "@endo/far": "^1.1.11",
+    "@endo/marshal": "^1.6.4",
+    "@endo/patterns": "^1.5.0",
     "@noble/hashes": "^1.5.0",
-    "eslint-plugin-github": "^5.1.8"
+    "bs58": "^6.0.0"
   },
   "devDependencies": {
     "@agoric/eslint-config": "^0.4.1-dev-b962ad8.0",
     "@agoric/swingset-liveslots": "^0.10.2",
     "@chain-registry/client": "^1.47.4",
-    "@cosmjs/amino": "^0.32.3",
-    "@cosmjs/proto-signing": "^0.32.3",
-    "@endo/bundle-source": "^3.5.1",
     "@endo/eslint-plugin": "^2.3.0",
-    "@endo/import-bundle": "^1.3.3",
-    "@endo/ses-ava": "^1.2.9",
     "@eslint/js": "^9.20.0",
     "@jessie.js/eslint-plugin": "^0.4.2",
     "@typescript-eslint/eslint-plugin": "^8.24.1",
     "@typescript-eslint/parser": "^8.24.1",
+    "@cosmjs/amino": "^0.33.0",
+    "@cosmjs/proto-signing": "^0.33.0",
+    "@endo/bundle-source": "^4.0.0",
+    "@endo/import-bundle": "^1.4.0",
+    "@endo/ses-ava": "^1.2.10",
     "ava": "^5.3.1",
     "bech32": "^2.0.0",
     "c8": "^10.1.2",
@@ -112,44 +113,6 @@
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 97.77
-  },
-  "eslintConfig": {
-    "env": {
-      "node": true
-    },
-    "parser": "@typescript-eslint/parser",
-    "parserOptions": {
-      "project": "./tsconfig.json",
-      "sourceType": "module",
-      "ecmaVersion": 2020
-    },
-    "extends": [
-      "plugin:@typescript-eslint/recommended",
-      "@agoric"
-    ],
-    "plugins": [
-      "@typescript-eslint",
-      "prettier"
-    ],
-    "rules": {
-      "@typescript-eslint/no-floating-promises": "warn",
-      "no-void": [
-        "error",
-        {
-          "allowAsStatement": true
-        }
-      ],
-      "prettier/prettier": "warn",
-      "@typescript-eslint/no-unused-vars": [
-        "error",
-        {
-          "vars": "all",
-          "args": "all",
-          "argsIgnorePattern": "^_",
-          "varsIgnorePattern": "^_"
-        }
-      ]
-    }
+    "atLeast": 97.84
   }
 }

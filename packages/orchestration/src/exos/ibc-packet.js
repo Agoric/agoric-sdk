@@ -7,6 +7,7 @@ import { E } from '@endo/far';
 export const ICS20_TRANSFER_SUCCESS_RESULT = 'AQ==';
 
 /**
+ * @import {Key, Pattern} from '@endo/patterns';
  * @import {JsonSafe, TypedJson, ResponseTo} from '@agoric/cosmic-proto';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {LocalChainAccount} from '@agoric/vats/src/localchain.js';

@@ -2,7 +2,8 @@
 name: Bug report
 about: Create a report to help us improve
 title: ''
-labels: 'bug'
+# new native Issue Type https://github.com/orgs/community/discussions/148715
+type: 'bug'
 assignees: ''
 
 ---

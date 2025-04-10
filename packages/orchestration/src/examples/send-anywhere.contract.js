@@ -5,7 +5,10 @@ import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
 import { AnyNatAmountShape } from '../typeGuards.js';
 import { withOrchestration } from '../utils/start-helper.js';
 import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
-import * as flows from './send-anywhere.flows.js';
+import {
+  makeNobleAccount as makeNobleAccountFlow,
+  sendIt,
+} from './send-anywhere.flows.js';
 import * as sharedFlows from './shared.flows.js';
 
 /**
@@ -24,6 +27,10 @@ export const SingleNatAmountRecord = M.and(
 harden(SingleNatAmountRecord);
 
 /**
+ * Send assets currently in an ERTP purse to an account on another chain. This
+ * currently supports IBC and CCTP transfers. It could eventually support other
+ * protocols, like Axelar GMP or IBC Eureka.
+ *
  * Orchestration contract to be wrapped by withOrchestration for Zoe
  *
  * @param {ZCF} zcf
@@ -40,7 +47,7 @@ export const contract = async (
   zcf,
   privateArgs,
   zone,
-  { chainHub, orchestrateAll, vowTools, zoeTools },
+  { chainHub, orchestrate, vowTools, zoeTools },
 ) => {
   const creatorFacet = prepareChainHubAdmin(zone, chainHub);
 
@@ -49,26 +56,47 @@ export const contract = async (
   /** @type {(msg: string) => Vow<void>} */
   const log = msg => vowTools.watch(E(logNode).setValue(msg));
 
-  const { makeLocalAccount } = orchestrateAll(sharedFlows, {});
+  const makeLocalAccount = orchestrate(
+    'makeLocalAccount',
+    {},
+    sharedFlows.makeLocalAccount,
+  );
+  const makeNobleAccount = orchestrate(
+    'makeNobleAccountFlow',
+    {},
+    makeNobleAccountFlow,
+  );
+
+  const { brands } = zcf.getTerms();
+
   /**
-   * Setup a shared local account for use in async-flow functions. Typically,
+   * Set up a shared local account for use in async-flow functions. Typically,
    * exo initState functions need to resolve synchronously, but `makeOnce`
    * allows us to provide a Promise. When using this inside a flow, we must
    * await it to ensure the account is available for use.
    *
-   * @type {any} sharedLocalAccountP expects a Promise but this is a vow
+   * @type {any} sharedLocalAccountP expects a Promise but this is a vow UNTIL
    *   https://github.com/Agoric/agoric-sdk/issues/9822
    */
   const sharedLocalAccountP = zone.makeOnce('localAccount', () =>
     makeLocalAccount(),
   );
-
+  // UNTIL https://github.com/Agoric/agoric-sdk/issues/9822.
+  /** @type {any} nobleAccountP */
+  const nobleAccountP = zone.makeOnce('nobleAccount', () => makeNobleAccount());
   // orchestrate uses the names on orchestrationFns to do a "prepare" of the associated behavior
-  const orchFns = orchestrateAll(flows, {
-    log,
-    sharedLocalAccountP,
-    zoeTools,
-  });
+  const sendAnywhere = orchestrate(
+    'sendAnywhere',
+    {
+      log,
+      chainHub,
+      sharedLocalAccountP,
+      nobleAccountP,
+      USDC: brands.USDC,
+      zoeTools,
+    },
+    sendIt,
+  );
 
   const publicFacet = zone.exo(
     'Send PF',
@@ -78,7 +106,7 @@ export const contract = async (
     {
       makeSendInvitation() {
         return zcf.makeInvitation(
-          orchFns.sendIt,
+          sendAnywhere,
           'send',
           undefined,
           M.splitRecord({ give: SingleNatAmountRecord }),

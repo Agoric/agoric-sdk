@@ -30,9 +30,21 @@ import { prepareZcMint } from './zcfMint.js';
 import { ZcfI } from './typeGuards.js';
 
 /// <reference path="../internal-types.js" />
-/// <reference path="./internal-types.js" />
 
-/** @import {IssuerOptionsRecord} from '@agoric/ertp' */
+/**
+ * @import {IssuerOptionsRecord} from '@agoric/ertp';
+ * @import {ContractMeta, ContractStartFn, SetTestJig, ZCF, ZCFMint, ZCFRegisterFeeMint, ZoeService} from '@agoric/zoe';
+ */
+
+/**
+ * @typedef ZCFZygote
+ * @property {(instanceAdminFromZoe: ERef<ZoeInstanceAdmin>,
+ *     instanceRecordFromZoe: InstanceRecord,
+ *     issuerStorageFromZoe: IssuerRecords,
+ *     privateArgs?: object,
+ * ) => Promise<ExecuteContractResult>} startContract
+ * @property {(privateArgs?: object) => void} restartContract
+ */
 
 /**
  * Make the ZCF vat in zygote-usable form. First, a generic ZCF is
@@ -42,7 +54,7 @@ import { ZcfI } from './typeGuards.js';
  * @param {VatPowers} powers
  * @param {ERef<ZoeService>} zoeService
  * @param {Issuer<'set'>} invitationIssuer
- * @param {TestJigSetter} testJigSetter
+ * @param {( {zcf}: {zcf: ZCF} ) => void} testJigSetter
  * @param {BundleCap} contractBundleCap
  * @param {import('@agoric/vat-data').Baggage} zcfBaggage
  * @returns {Promise<ZCFZygote>}
@@ -92,7 +104,7 @@ export const makeZCFZygote = async (
 
   /**
    * @param {string} keyword
-   * @param {IssuerRecord} issuerRecord
+   * @param {ZoeIssuerRecord} issuerRecord
    */
   const recordIssuer = (keyword, issuerRecord) => {
     getInstanceRecHolder().addIssuer(keyword, issuerRecord);
@@ -238,7 +250,7 @@ export const makeZCFZygote = async (
     } else {
       bundle = contractBundleCap;
     }
-    return evalContractBundle(bundle);
+    return /** @type {any} */ (evalContractBundle(bundle));
   };
   // evaluate the contract (either the first version, or an upgrade)
   const bundleResult = await evaluateContract();

@@ -24,26 +24,25 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/ertp": "^0.16.2",
-    "@agoric/fast-usdc": "0.1.0",
     "@agoric/internal": "^0.3.2",
     "@agoric/notifier": "^0.6.2",
     "@agoric/smart-wallet": "^0.5.3",
     "@agoric/vat-data": "^0.5.2",
     "@agoric/vats": "^0.15.1",
     "@agoric/zoe": "^0.26.2",
-    "@endo/bundle-source": "^3.5.1",
-    "@endo/captp": "^4.4.4",
-    "@endo/eventual-send": "^1.3.0",
-    "@endo/far": "^1.1.10",
-    "@endo/init": "^1.1.8",
-    "@endo/marshal": "^1.6.3",
-    "@endo/patterns": "^1.4.8",
-    "@endo/promise-kit": "^1.1.9",
-    "@endo/stream": "^1.2.9",
+    "@endo/bundle-source": "^4.0.0",
+    "@endo/captp": "^4.4.5",
+    "@endo/eventual-send": "^1.3.1",
+    "@endo/far": "^1.1.11",
+    "@endo/init": "^1.1.9",
+    "@endo/marshal": "^1.6.4",
+    "@endo/patterns": "^1.5.0",
+    "@endo/promise-kit": "^1.1.10",
+    "@endo/stream": "^1.2.10",
     "import-meta-resolve": "^4.1.0"
   },
   "devDependencies": {
-    "@endo/errors": "^1.2.9",
+    "@endo/errors": "^1.2.10",
     "@agoric/deploy-script-support": "^0.10.3",
     "@agoric/governance": "^0.10.3",
     "@agoric/inter-protocol": "^0.16.1",
@@ -81,6 +80,6 @@
     "workerThreads": false
   },
   "typeCoverage": {
-    "atLeast": 91.57
+    "atLeast": 91.55
   }
 }

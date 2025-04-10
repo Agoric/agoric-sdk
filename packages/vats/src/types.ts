@@ -3,6 +3,7 @@ import type { BridgeId, Remote } from '@agoric/internal';
 import type { Bytes } from '@agoric/network';
 import type { Guarded } from '@endo/exo';
 import type { PacketSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
+import type { JsonSafe } from '@agoric/cosmic-proto';
 import type { LocalChainAccount } from './localchain.js';
 import type { TargetApp } from './bridge-target.js';
 
@@ -137,7 +138,7 @@ export type IBCChannelID = `channel-${number}`;
 export type IBCConnectionID = `connection-${number}`;
 export type IBCChannelOrdering = 'ORDERED' | 'UNORDERED';
 
-export type IBCPacket = {
+export type IBCPacket = JsonSafe<{
   data: Bytes;
   source_channel: IBCChannelID;
   source_port: IBCPortID;
@@ -146,7 +147,7 @@ export type IBCPacket = {
   sequence?: PacketSDKType['sequence'];
   timeout_height?: PacketSDKType['timeout_height'];
   timeout_timestamp?: PacketSDKType['timeout_timestamp'];
-};
+}>;
 
 export type IBCCounterParty = {
   port_id: IBCPortID;
@@ -233,8 +234,11 @@ type IBCMethodEvents = {
   timeoutExecuted: {
     packet: IBCPacket;
   };
-  // XXX why isn't this in receiver.go?
   initOpenExecuted: ChannelOpenAckDowncall;
+};
+
+type IBCMethodReturns = {
+  sendPacket: Required<IBCPacket>;
 };
 
 export type IBCMethod<M extends IBCDowncallMethod> = {
@@ -247,6 +251,9 @@ export type IBCMethod<M extends IBCDowncallMethod> = {
 export type IBCDowncall<M extends IBCDowncallMethod> = {
   [K in keyof IBCMethodEvents[M]]: IBCMethodEvents[M][K];
 };
+
+export type IBCDowncallReturn<M extends IBCDowncallMethod> =
+  M extends keyof IBCMethodReturns ? IBCMethodReturns[M] : void;
 
 export type IBCDowncallPacket<M extends IBCDowncallMethod> =
   IBCMethodEvents[M] extends { packet: infer P } ? P : never;

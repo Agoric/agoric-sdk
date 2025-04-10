@@ -18,6 +18,7 @@ import { ClosingRuleShape, ParamChangesSpecShape } from './typeGuards.js';
 
 /**
  * @import {EReturn} from '@endo/far';
+ * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
  * @import {ClosingRule, GovernableStartFn, LimitedCF, PoserFacet, VoteOnApiInvocation, VoteOnOfferFilter, VoteOnParamChanges} from './types.js';
  */
 

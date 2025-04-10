@@ -46,7 +46,9 @@ import { objectMapStoragePath } from './utils.js';
 import { prepareOfferWatcher, makeWatchOfferOutcomes } from './offerWatcher.js';
 
 /**
+ * @import {Amount, Brand, Issuer, Payment, Purse} from '@agoric/ertp';
  * @import {WeakMapStore, MapStore} from '@agoric/store'
+ * @import {InvitationDetails, PaymentPKeywordRecord, Proposal, UserSeat} from '@agoric/zoe';
  * @import {EReturn} from '@endo/far';
  * @import {OfferId, OfferStatus} from './offers.js';
  */

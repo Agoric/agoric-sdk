@@ -2,6 +2,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { makeExpectUnhandledRejection } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
 import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
 import {
   LOCALCHAIN_QUERY_ALL_BALANCES_RESPONSE,
@@ -11,7 +12,7 @@ import { heapVowE as VE } from '@agoric/vow/vat.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import type { IBCChannelID } from '@agoric/vats';
 import type {
-  ChainAddress,
+  CosmosChainAddress,
   AmountArg,
   DenomAmount,
 } from '../../src/orchestration-api.js';
@@ -25,6 +26,11 @@ import fetchedChainInfo from '../../src/fetched-chain-info.js';
 import type { IBCMsgTransferOptions } from '../../src/cosmos-api.js';
 import { PFM_RECEIVER } from '../../src/exos/chain-hub.js';
 import { assetOn } from '../../src/utils/asset.js';
+
+const expectUnhandled = makeExpectUnhandledRejection({
+  test,
+  importMetaUrl: import.meta.url,
+});
 
 test('deposit, withdraw', async t => {
   const common = await commonSetup(t);
@@ -109,7 +115,8 @@ test('delegate, undelegate', async t => {
   );
 });
 
-test('transfer', async t => {
+// TODO(#11026): This use of expectUnhandled should not be necessary.
+test(expectUnhandled(1), 'transfer', async t => {
   const common = await commonSetup(t);
   common.utils.populateChainHub();
   const makeTestLOAKit = prepareMakeTestLOAKit(t, common);
@@ -134,7 +141,7 @@ test('transfer', async t => {
     value: stake.units(100).value,
   });
 
-  const destination: ChainAddress = {
+  const destination: CosmosChainAddress = {
     chainId: 'cosmoshub-4',
     value: 'cosmos1pleab',
     encoding: 'bech32',
@@ -152,7 +159,7 @@ test('transfer', async t => {
    */
   const startTransfer = async (
     amount: AmountArg,
-    dest: ChainAddress,
+    dest: CosmosChainAddress,
     opts: IBCMsgTransferOptions = {},
   ) => {
     const transferP = VE(account).transfer(dest, amount, opts);
@@ -196,7 +203,7 @@ test('transfer', async t => {
     },
   );
 
-  const unknownDestination: ChainAddress = {
+  const unknownDestination: CosmosChainAddress = {
     chainId: 'fakenet',
     value: 'fakenet1pleab',
     encoding: 'bech32',
@@ -217,7 +224,7 @@ test('transfer', async t => {
    */
   const doTransfer = async (
     amount: AmountArg,
-    dest: ChainAddress,
+    dest: CosmosChainAddress,
     opts: IBCMsgTransferOptions = {},
     sourceChannel?: IBCChannelID,
   ) => {
@@ -237,7 +244,7 @@ test('transfer', async t => {
     return promise;
   };
 
-  const lastestTxMsg = () => {
+  const latestTxMsg = () => {
     const tx = inspectLocalBridge().at(-1);
     if (tx.type !== 'VLOCALCHAIN_EXECUTE_TX') {
       throw new Error('last message was not VLOCALCHAIN_EXECUTE_TX');
@@ -251,7 +258,7 @@ test('transfer', async t => {
     }),
     'can create transfer msg with memo',
   );
-  t.like(lastestTxMsg(), {
+  t.like(latestTxMsg(), {
     memo: 'hello',
   });
 
@@ -277,7 +284,7 @@ test('transfer', async t => {
     'agoric',
     fetchedChainInfo,
   );
-  const dydxDest: ChainAddress = {
+  const dydxDest: CosmosChainAddress = {
     chainId: 'dydx-mainnet-1',
     encoding: 'bech32',
     value: 'dydx1test',
@@ -297,12 +304,23 @@ test('transfer', async t => {
     ),
   );
 
-  t.like(lastestTxMsg(), {
-    receiver: PFM_RECEIVER,
-    memo: '{"forward":{"receiver":"dydx1test","port":"transfer","channel":"channel-33","retries":3,"timeout":"10m"}}',
+  t.is(latestTxMsg().receiver, PFM_RECEIVER, 'defaults to "pfm" receiver');
+  t.deepEqual(JSON.parse(latestTxMsg().memo), {
+    forward: {
+      receiver: 'dydx1test',
+      port: 'transfer',
+      channel: 'channel-33',
+      retries: 3,
+      timeout: '10m',
+    },
   });
 
   t.log('accepts pfm `forwardOpts`');
+  const intermediateRecipient: CosmosChainAddress = {
+    chainId: 'noble-1',
+    value: 'noble1testintermediaterecipient',
+    encoding: 'bech32',
+  };
   await t.notThrowsAsync(
     doTransfer(
       aDenomAmount,
@@ -310,15 +328,21 @@ test('transfer', async t => {
       {
         forwardOpts: {
           timeout: '999m',
+          intermediateRecipient,
         },
       },
       fetchedChainInfo.agoric.connections['noble-1'].transferChannel.channelId,
     ),
   );
 
-  t.like(JSON.parse(lastestTxMsg().memo), {
+  t.is(latestTxMsg().receiver, intermediateRecipient.value);
+  t.deepEqual(JSON.parse(latestTxMsg().memo), {
     forward: {
       timeout: '999m',
+      channel: 'channel-33',
+      port: 'transfer',
+      receiver: 'dydx1test',
+      retries: 3,
     },
   });
 });
@@ -389,8 +413,8 @@ test('send', async t => {
   const toAddress = {
     value: 'agoric1EOAAccAddress',
     chainId: 'agoric-3',
-    encoding: 'bech32' as const,
-  };
+    encoding: 'bech32',
+  } as const;
 
   t.log(`send 10 bld to ${toAddress.value}`);
   await VE(account).send(toAddress, stake.units(10));
@@ -426,6 +450,40 @@ test('send', async t => {
     executedBankSends.length,
     4,
     'sent 2 successful txs and 1 failed. 1 rejected before sending',
+  );
+
+  const toAccountId = `cosmos:${toAddress.chainId}:${toAddress.value}` as const;
+  t.log(`send 10 bld to ${toAccountId}`);
+  await VE(account).send(toAccountId, stake.units(10));
+
+  t.deepEqual(inspectLocalBridge().slice(messages.length), [
+    {
+      address: 'agoric1fakeLCAAddress',
+      messages: [
+        {
+          '@type': '/cosmos.bank.v1beta1.MsgSend',
+          amount: [
+            {
+              amount: '10000000',
+              denom: 'ubld',
+            },
+          ],
+          fromAddress: 'agoric1fakeLCAAddress',
+          toAddress: 'agoric1EOAAccAddress',
+        },
+      ],
+      type: 'VLOCALCHAIN_EXECUTE_TX',
+    },
+  ]);
+
+  await t.throwsAsync(
+    VE(account).send(
+      { ...toAddress, chainId: 'some-other-chain' },
+      stake.units(101),
+    ),
+    {
+      message: 'bank/send cannot send to a different chain "some-other-chain"',
+    },
   );
 });
 
