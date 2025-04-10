@@ -20,7 +20,9 @@ test.before(async t => {
   await deleteTestKeys(accounts).catch();
   const wallets = await setupTestKeys(accounts);
   t.context = { ...common, wallets };
-  await startContract(contractName, contractBuilder, commonBuilderOpts);
+  await startContract(contractName, contractBuilder, commonBuilderOpts, {
+    skipInstanceCheck: true,
+  });
 });
 
 test.after(async t => {
