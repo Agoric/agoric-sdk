@@ -4,9 +4,6 @@ import { makeDurableZoeKit } from '@agoric/zoe';
 const BUILD_PARAMS_KEY = 'buildZoeParams';
 
 export function buildRootObject(vatPowers, _vatParams, zoeBaggage) {
-  // TODO advise panic w another option
-  // const shutdownZoeVat = vatPowers.exitVatWithFailure;
-
   let zoeConfigFacet;
 
   if (zoeBaggage.has(BUILD_PARAMS_KEY)) {
