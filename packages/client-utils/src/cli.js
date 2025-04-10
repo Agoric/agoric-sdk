@@ -1,7 +1,7 @@
 import { LOCAL_CONFIG_KEY, fetchNetworkConfig } from './network-config.js';
 
 /**
- * @import {MinimalNetworkConfig} from './network-config.js';
+ * @import {NetworkConfig} from './types.js';
  */
 
 /**
@@ -10,7 +10,7 @@ import { LOCAL_CONFIG_KEY, fetchNetworkConfig } from './network-config.js';
  * If none is set or it's 'local', return a local chain config.
  *
  * @param {{ env: typeof process.env, fetch: typeof fetch }} io
- * @returns {Promise<MinimalNetworkConfig>}
+ * @returns {Promise<NetworkConfig>}
  */
 
 export const fetchEnvNetworkConfig = async ({ env, fetch }) => {

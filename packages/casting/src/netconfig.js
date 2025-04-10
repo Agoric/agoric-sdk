@@ -2,6 +2,10 @@
 
 import { mustMatch, M } from '@agoric/store';
 
+/**
+ * @import {TypedPattern} from '@agoric/internal';
+ */
+
 // NB: keep type and shape in sync manually until https://github.com/Agoric/agoric-sdk/issues/6160
 /**
  * @typedef {object} NetworkConfig
@@ -16,6 +20,8 @@ import { mustMatch, M } from '@agoric/store';
  * @property {string[]} [peers] - a list of nodes used to start the p2p gossip (stored in a per-node “address book”, which is a file stored in that node’s data directory)
  * @property {string[]} [seeds] - nodes which tell you about other peers but don't gossip actual data
  */
+
+/** @type {TypedPattern<NetworkConfig>} */
 export const NetworkConfigShape = M.splitRecord(
   harden({
     chainName: M.string(),

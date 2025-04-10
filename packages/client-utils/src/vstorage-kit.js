@@ -8,7 +8,7 @@ import { makeVStorage } from './vstorage.js';
 export { boardSlottingMarshaller };
 
 /**
- * @import {MinimalNetworkConfig} from './network-config.js';
+ * @import {NetworkConfig} from './types.js';
  * @import {TypedPublished} from './types.js';
  * @import {VStorage} from './vstorage.js';
  */
@@ -96,7 +96,7 @@ export const makeAgoricNames = async (ctx, vstorage) => {
 
 /**
  * @param {{ fetch: typeof window.fetch }} io
- * @param {MinimalNetworkConfig} config
+ * @param {NetworkConfig} config
  */
 export const makeVstorageKit = ({ fetch }, config) => {
   try {

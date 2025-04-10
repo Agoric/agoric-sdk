@@ -52,3 +52,12 @@ export type TypedPublished<T extends string> = T extends keyof PublishedTypeMap
                       : T extends `fastUsdc.txns.${string}`
                         ? TransactionRecord
                         : unknown;
+
+export { NetworkConfig } from '@agoric/casting/src/netconfig.js';
+
+export {
+  /**
+   * @deprecated use NetworkConfig instead.
+   */
+  NetworkConfig as MinimalNetworkConfig,
+} from '@agoric/casting/src/netconfig.js';

@@ -7,7 +7,7 @@ import { makeAgoricNames, makeVstorageKit } from './vstorage-kit.js';
  * @import {EReturn} from '@endo/far';
  * @import {Amount, Brand} from '@agoric/ertp/src/types.js'
  * @import {CurrentWalletRecord, UpdateRecord} from '@agoric/smart-wallet/src/smartWallet.js';
- * @import {MinimalNetworkConfig} from './network-config.js';
+ * @import {NetworkConfig} from './types.js';
  */
 
 /**
@@ -17,7 +17,7 @@ import { makeAgoricNames, makeVstorageKit } from './vstorage-kit.js';
  * @param {object} root0
  * @param {typeof globalThis.fetch} root0.fetch
  * @param {(ms: number) => Promise<void>} root0.delay
- * @param {MinimalNetworkConfig} networkConfig
+ * @param {NetworkConfig} networkConfig
  */
 export const makeSmartWalletKit = async ({ fetch, delay }, networkConfig) => {
   const vsk = makeVstorageKit({ fetch }, networkConfig);

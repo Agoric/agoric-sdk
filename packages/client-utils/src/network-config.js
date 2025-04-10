@@ -1,5 +1,5 @@
 /**
- * @typedef {{ rpcAddrs: string[], chainName: string }} MinimalNetworkConfig
+ * @import {NetworkConfig} from './types.js';
  */
 
 export const toNetworkConfigUrl = agoricNetSubdomain =>
@@ -8,7 +8,7 @@ export const toNetworkConfigUrl = agoricNetSubdomain =>
 export const toRpcUrl = agoricNetSubdomain =>
   `https://${agoricNetSubdomain}.rpc.agoric.net:443`;
 
-/** @satisfies {MinimalNetworkConfig} */
+/** @satisfies {NetworkConfig} */
 export const LOCAL_CONFIG = {
   rpcAddrs: ['http://0.0.0.0:26657'],
   chainName: 'agoriclocal',
@@ -21,7 +21,7 @@ export const LOCAL_CONFIG_KEY = 'local';
  *
  * @param {string} spec
  * @param {{ fetch: typeof fetch }} io
- * @returns {Promise<MinimalNetworkConfig>}
+ * @returns {Promise<NetworkConfig>}
  */
 export const fetchNetworkConfig = async (spec, { fetch }) => {
   const [netName, chainName] = spec.split(',');

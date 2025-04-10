@@ -10,7 +10,7 @@ import { execSwingsetTransaction, pollTx } from './chain.js';
 /**
  * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
- * @import {MinimalNetworkConfig, VstorageKit} from '@agoric/client-utils';
+ * @import {NetworkConfig, VstorageKit} from '@agoric/client-utils';
  */
 
 const marshaller = boardSlottingMarshaller();
@@ -144,7 +144,7 @@ export const coalesceWalletState = async (follower, invitationBrand) => {
  *
  * @throws { Error & { code: number } } if transaction fails
  * @param {import('@agoric/smart-wallet/src/smartWallet.js').BridgeAction} bridgeAction
- * @param {MinimalNetworkConfig & {
+ * @param {NetworkConfig & {
  *   from: string,
  *   fees?: string,
  *   verbose?: boolean,
