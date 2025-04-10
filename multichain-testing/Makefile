@@ -102,8 +102,8 @@ tail-slog:
 ###                          Osmosis Setup                                   ###
 ###############################################################################
 
-open-liquidity-pool:
-	$(CURDIR)/scripts/open-liquidity-pool.sh
+create-osmosis-pool:
+	$(CURDIR)/scripts/create-osmosis-pool.sh
 
 
 ###############################################################################
@@ -115,5 +115,5 @@ wait-for-pods:
 	scripts/pod-readiness.ts
 
 .PHONY: start
-start: install wait-for-pods port-forward fund-provision-pool override-chain-registry register-bank-assets
+start: install wait-for-pods port-forward fund-provision-pool override-chain-registry register-bank-assets create-osmosis-pool
 
