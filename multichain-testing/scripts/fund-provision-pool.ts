@@ -1,11 +1,15 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
 /* eslint-env node */
 import '@endo/init';
+
+import { cleanEnv, str } from 'envalid';
 import { execa } from 'execa';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 import { makeBlockTool } from '../tools/e2e-tools.js';
 import { makeHttpClient } from '../tools/makeHttpClient.js';
+import { extractNetworkConfig, readStarshipConfig } from '../tools/net.js';
 
 // Default values from Makefile
 const DEFAULT_PROVISION_POOL_ADDR =
@@ -18,24 +22,28 @@ const DEFAULT_PROVISION_POOL_COIN = '999750000uist';
 
 const DEFAULT_PROVISION_POOL_WHALE = 'test1'; // Not as noisy as 'faucet'.
 
+const env = cleanEnv(process.env, {
+  STARSHIP_CONFIG_FILE: str(),
+});
+
 /**
  * Fund the vbank/provision module account so it can provision smart wallets.
  */
 async function fundProvisionPool(args: {
+  rpcUrl: string;
   address?: string;
   amount?: string;
   pod?: string;
   container?: string;
-  rpcUrl?: string;
   whale?: string;
 }) {
   const {
+    rpcUrl,
     address = DEFAULT_PROVISION_POOL_ADDR,
     amount = DEFAULT_PROVISION_POOL_COIN,
     whale = DEFAULT_PROVISION_POOL_WHALE,
     pod = 'agoriclocal-genesis-0',
     container = 'validator',
-    rpcUrl = 'http://localhost:26657',
   } = args;
 
   console.log(`Funding provision pool at ${address} with ${amount}...`);
@@ -127,8 +135,14 @@ Options:
     process.exit(0);
   }
 
+  const networkConfig = extractNetworkConfig(
+    'agoriclocal',
+    readStarshipConfig(env.STARSHIP_CONFIG_FILE, { readFileSync }),
+  );
+
   const attempt = () =>
     fundProvisionPool({
+      rpcUrl: networkConfig.rpcAddrs[0],
       address: values.address,
       amount: values.amount,
       pod: values.pod,

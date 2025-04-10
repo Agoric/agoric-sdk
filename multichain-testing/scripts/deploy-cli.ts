@@ -1,12 +1,19 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
 import '@endo/init/debug.js';
 
+import { cleanEnv, str } from 'envalid';
 import { execa } from 'execa';
 import fse from 'fs-extra';
 import childProcess from 'node:child_process';
+import { readFileSync } from 'node:fs';
 
 import { makeAgdTools } from '../tools/agd-tools.js';
 import { makeDeployBuilder } from '../tools/deploy.js';
+import { extractNetworkConfig, readStarshipConfig } from '../tools/net.js';
+
+const env = cleanEnv(process.env, {
+  STARSHIP_CONFIG_FILE: str(),
+});
 
 async function main() {
   const [builder, ...rawArgs] = process.argv.slice(2);
@@ -28,7 +35,15 @@ async function main() {
   }
 
   try {
-    const agdTools = await makeAgdTools(console.log, childProcess);
+    const networkConfig = extractNetworkConfig(
+      'agoriclocal',
+      readStarshipConfig(env.STARSHIP_CONFIG_FILE, { readFileSync }),
+    );
+    const agdTools = await makeAgdTools(
+      networkConfig,
+      console.log,
+      childProcess,
+    );
     const deployBuilder = makeDeployBuilder(agdTools, fse.readJSON, execa);
     // XXX this has been flaky so try a second time
     // see https://github.com/Agoric/agoric-sdk/issues/9934

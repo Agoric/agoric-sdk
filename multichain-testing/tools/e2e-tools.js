@@ -1,6 +1,6 @@
 // @ts-check
 /** global harden */
-import { makeSmartWalletKit, LOCAL_CONFIG } from '@agoric/client-utils';
+import { makeSmartWalletKit } from '@agoric/client-utils';
 import { assert } from '@endo/errors';
 import { E, Far } from '@endo/far';
 import { Nat } from '@endo/nat';
@@ -25,8 +25,6 @@ const trace = makeTracer('E2ET');
 const PROVISIONING_POOL_ADDR = 'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346';
 
 const BLD = '000000ubld';
-
-const rpcUrl = 'http://localhost:26657';
 
 export const txAbbr = tx => {
   const { txhash, code, height, gas_used } = tx;
@@ -98,6 +96,7 @@ export const makeBlockTool = ({ rpc, delay }) => {
  * @param {import('./agd-lib.js').Agd} opts.agd
  * @param {import('./queryKit.js').QueryTool['follow']} opts.follow
  * @param {(ms: number) => Promise<void>} opts.delay
+ * @param {import('@agoric/client-utils').MinimalNetworkConfig} opts.networkConfig
  * @param {typeof console.log} [opts.progress]
  * @param {string} [opts.chainId]
  * @param {string} [opts.installer]
@@ -113,7 +112,7 @@ const installBundle = async (fullPath, opts) => {
   // };
   // const updates = follow('bundles', { delay: explainDelay });
   // await updates.next();
-  const installBundle = () =>
+  const tryInstall = () =>
     agd.tx(['swingset', 'install-bundle', `@${fullPath}`], {
       from,
       chainId,
@@ -121,16 +120,16 @@ const installBundle = async (fullPath, opts) => {
     });
   let tx;
   try {
-    tx = await installBundle();
+    tx = await tryInstall();
   } catch (err) {
     console.warn('WARN: retrying failed install-bundle', err);
     // TODO make available from client-utils
     const { waitForBlock } = makeBlockTool({
-      rpc: makeHttpClient(rpcUrl, global.fetch),
+      rpc: makeHttpClient(opts.networkConfig.rpcAddrs[0], global.fetch),
       delay,
     });
     await waitForBlock(1);
-    tx = await installBundle();
+    tx = await tryInstall();
   }
   assert(tx);
 
@@ -491,34 +490,30 @@ const runCoreEval = async (
 /**
  * @deprecated use `@agoric/client-utils` instead
  *
+ * @param {{chainName: string, rpcAddrs: string[], apiAddrs: string[]}} networkConfig
  * @param {typeof console.log} log
- * @param {import('@agoric/swingset-vat/tools/bundleTool.js').BundleCache} bundleCache
  * @param {object} io
  * @param {typeof import('child_process').execFileSync} io.execFileSync
  * @param {typeof import('child_process').execFile} io.execFile
  * @param {typeof window.fetch} io.fetch
  * @param {typeof window.setTimeout} io.setTimeout
  * @param {string} [io.bundleDir]
- * @param {string} [io.rpcAddress]
- * @param {string} [io.apiAddress]
  * @param {(...parts: string[]) => string} [io.join]
  * * @param {RetryUntilCondition} [io.retryUntilCondition]
  */
 export const makeE2ETools = async (
+  networkConfig,
   log,
-  bundleCache,
   {
     execFileSync,
     fetch,
     setTimeout,
-    rpcAddress = 'http://localhost:26657',
-    apiAddress = 'http://localhost:1317',
     retryUntilCondition = makeRetryUntilCondition({ log, setTimeout }),
   },
 ) => {
   const agd = makeAgd({ execFileSync }).withOpts({ keyringBackend: 'test' });
-  const rpc = makeHttpClient(rpcAddress, fetch);
-  const lcd = makeAPI(apiAddress, { fetch });
+  const rpc = makeHttpClient(networkConfig.rpcAddrs[0], fetch);
+  const lcd = makeAPI(networkConfig.apiAddrs[0], { fetch });
   const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
   const explainDelay = (ms, info) => {
@@ -551,6 +546,7 @@ export const makeE2ETools = async (
         follow: qt.query.follow,
         progress,
         delay,
+        networkConfig,
         // bundleId: getBundleId(bundle),
         bundleId: undefined,
       });
@@ -604,7 +600,7 @@ export const makeE2ETools = async (
       fetch,
       delay,
     },
-    LOCAL_CONFIG,
+    networkConfig,
   );
 
   return {
