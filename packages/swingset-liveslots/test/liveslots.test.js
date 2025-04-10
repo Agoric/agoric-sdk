@@ -7,6 +7,7 @@ import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 import { kslot, kser, kunser } from '@agoric/kmarshal';
 import { M } from '@agoric/store';
+import { panic } from '@agoric/internal';
 import { makeLiveSlots, makeMarshaller } from '../src/liveslots.js';
 import { buildSyscall, makeDispatch } from './liveslots-helpers.js';
 import { makeMessage, makeStartVat, makeResolve, makeReject } from './util.js';
@@ -518,7 +519,7 @@ test('capdata size limit on syscalls', async t => {
   const { log, syscall } = buildSyscall();
 
   function build(vatPowers) {
-    const { D, VatData, exitVat, exitVatWithFailure } = vatPowers;
+    const { D, VatData, exitVat } = vatPowers;
     const { makeScalarBigMapStore, defineKind } = VatData;
     const obj1 = Far('obj1', {});
     const obj2 = Far('obj2', {});
@@ -619,10 +620,10 @@ test('capdata size limit on syscalls', async t => {
         exitVat(longString);
       },
       exitVatFailTooManySlots() {
-        exitVatWithFailure([obj1, obj2]);
+        panic([obj1, obj2]);
       },
       exitVatFailBodyTooBig() {
-        exitVatWithFailure(longString);
+        panic(longString);
       },
     });
   }

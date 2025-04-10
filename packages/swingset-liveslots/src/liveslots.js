@@ -4,6 +4,7 @@ import { PassStyleOfEndowmentSymbol } from '@endo/pass-style/endow.js';
 import { Remotable, getInterfaceOf, makeMarshal } from '@endo/marshal';
 import { isPromise } from '@endo/promise-kit';
 import { E, HandledPromise } from '@endo/eventual-send';
+import { PanicEndowmentSymbol } from '@agoric/internal';
 import { insistVatType, makeVatSlot, parseVatSlot } from './parseVatSlots.js';
 import { insistCapData } from './capdata.js';
 import { extractMethod, legibilizeMethod } from './kdebug.js';
@@ -208,7 +209,7 @@ function build(
         // Support: o~.[prop](...args) remote method invocation
         lsdebug(`makeImportedPresence handler.applyMethod (${slot})`);
         if (disavowedPresences.has(o)) {
-          exitVatWithFailure(disavowalError);
+          panicVat(disavowalError);
           throw disavowalError;
         }
         return queueMessage(slot, prop, args, returnedP);
@@ -219,7 +220,7 @@ function build(
       get(o, prop) {
         lsdebug(`makeImportedPresence handler.get (${slot})`);
         if (disavowedPresences.has(o)) {
-          exitVatWithFailure(disavowalError);
+          panicVat(disavowalError);
           throw disavowalError;
         }
         // FIXME: Actually use remote property lookup
@@ -500,7 +501,7 @@ function build(
         slot = allocatePromiseID();
       } else {
         if (disavowedPresences.has(val)) {
-          exitVatWithFailure(disavowalError);
+          panicVat(disavowalError);
           throw disavowalError; // cannot reference a disavowed object
         }
         assert.equal(passStyleOf(val), 'remotable');
@@ -1145,7 +1146,7 @@ function build(
     }
   }
 
-  function exitVatWithFailure(reason) {
+  function panicVat(reason) {
     meterControl.assertIsMetered(); // else userspace getters could escape
     const args = m.serialize(harden(reason));
     if (isAcceptableSyscallCapdataSize([args])) {
@@ -1195,6 +1196,7 @@ function build(
     WeakMap: vom.VirtualObjectAwareWeakMap,
     WeakSet: vom.VirtualObjectAwareWeakSet,
     [PassStyleOfEndowmentSymbol]: passStyleOf,
+    [PanicEndowmentSymbol]: panicVat,
   });
 
   function getRetentionStats() {
@@ -1264,7 +1266,6 @@ function build(
     const vpow = {
       D,
       exitVat,
-      exitVatWithFailure,
       ...vatGlobals,
       ...inescapableGlobalProperties,
       ...vatPowers,

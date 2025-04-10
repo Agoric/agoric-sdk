@@ -42,6 +42,7 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
   /** @type {MapStore<string, BundleID>} */
   const nameToBundleID = makeScalarMapStore('nameToBundleID');
   const fakeVatPowers = {
+    // TODO How to hook this to `panic`?
     exitVatWithFailure: reason => {
       exitMessage = reason;
       hasExited = true;

@@ -58,7 +58,6 @@ export {};
  *
  * @typedef {{
  *   exitVat: (unknown) => void,
- *   exitVatWithFailure: (reason: Error) => void,
  * }} TerminationVatPowers
  */
 
