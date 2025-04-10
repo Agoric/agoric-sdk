@@ -1,5 +1,6 @@
 import { makePromiseKit } from '@endo/promise-kit';
 import { Far, E } from '@endo/far';
+import { panic } from '@agoric/internal';
 
 export function buildRootObject(vatPowers) {
   // we use testLog to attempt to deliver messages even after we're supposed
@@ -27,7 +28,7 @@ export function buildRootObject(vatPowers) {
     },
 
     dieSad(reason) {
-      vatPowers.exitVatWithFailure(reason);
+      panic(reason);
     },
 
     dieHappyButTalkToMeFirst(other, completion) {
@@ -36,8 +37,8 @@ export function buildRootObject(vatPowers) {
     },
 
     dieSadButTalkToMeFirst(other, reason) {
-      vatPowers.exitVatWithFailure(reason);
-      E(other).query('not dead quite yet (but soon)');
+      panic(reason);
+      E(other).query('Should be unobservable because happens after panic');
     },
 
     dieReturningAPresence(other) {

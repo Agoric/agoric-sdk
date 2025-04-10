@@ -1,5 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { panic } from '@agoric/internal';
 
 export function buildRootObject(vatPowers) {
   let count = 0;
@@ -20,7 +21,7 @@ export function buildRootObject(vatPowers) {
       vatPowers.exitVat(completion);
     },
     dieSad(reason) {
-      vatPowers.exitVatWithFailure(reason);
+      panic(reason);
     },
   });
 }

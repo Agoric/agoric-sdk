@@ -4,8 +4,6 @@ import { makeDurableZoeKit } from '@agoric/zoe';
 const BUILD_PARAMS_KEY = 'buildZoeParams';
 
 export function buildRootObject(vatPowers, _vatParams, zoeBaggage) {
-  const shutdownZoeVat = vatPowers.exitVatWithFailure;
-
   let zoeConfigFacet;
 
   if (zoeBaggage.has(BUILD_PARAMS_KEY)) {
@@ -15,7 +13,6 @@ export function buildRootObject(vatPowers, _vatParams, zoeBaggage) {
     // zoeConfigFacet was added after the first release of Zoe on-chain.
     ({ zoeConfigFacet } = makeDurableZoeKit({
       // For now Zoe will rewire vatAdminSvc on its own
-      shutdownZoeVat,
       feeIssuerConfig,
       zcfSpec,
       zoeBaggage,
@@ -38,7 +35,6 @@ export function buildRootObject(vatPowers, _vatParams, zoeBaggage) {
 
       const { zoeService, feeMintAccess } = makeDurableZoeKit({
         vatAdminSvc,
-        shutdownZoeVat,
         feeIssuerConfig,
         zcfSpec,
         zoeBaggage,

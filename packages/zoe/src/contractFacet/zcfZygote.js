@@ -30,10 +30,12 @@ import { prepareZcMint } from './zcfMint.js';
 import { ZcfI } from './typeGuards.js';
 import '../internal-types.js';
 
+/// <reference path="../internal-types.js" />
+
 /**
- * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {IssuerOptionsRecord} from '@agoric/ertp';
+ * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
  * @import {ZoeIssuerRecord, ZCFRegisterFeeMint, ContractStartFn, SetTestJig} from './types.js';
  */
 
@@ -88,14 +90,6 @@ export const makeZCFZygote = async (
     getIssuerForBrand,
     instantiate: instantiateIssuerStorage,
   } = provideIssuerStorage(zcfBaggage);
-
-  /** @type {ShutdownWithFailure} */
-  const shutdownWithFailure = reason => {
-    void E(zoeInstanceAdmin).failAllSeats(reason);
-    seatManager.dropAllReferences();
-    // https://github.com/Agoric/agoric-sdk/issues/3239
-    powers.exitVatWithFailure(reason);
-  };
 
   const { storeOfferHandler, takeOfferHandler } =
     makeOfferHandlerStorage(zcfBaggage);
@@ -338,7 +332,6 @@ export const makeZCFZygote = async (
       seatManager.dropAllReferences();
       powers.exitVat(completion);
     },
-    shutdownWithFailure,
     stopAcceptingOffers: () => E(zoeInstanceAdmin).stopAcceptingOffers(),
     makeZCFMint,
     registerFeeMint,
@@ -384,7 +377,6 @@ export const makeZCFZygote = async (
     ({ seatManager, zcfMintReallocator } = createSeatManager(
       zoeInstanceAdmin,
       getAssetKindByBrand,
-      shutdownWithFailure,
       zcfBaggage,
     ));
 

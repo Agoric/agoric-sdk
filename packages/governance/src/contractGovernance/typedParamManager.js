@@ -1,5 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { Fail, q } from '@endo/errors';
+import { panic } from '@agoric/internal';
 import { ParamTypes } from '../constants.js';
 import { CONTRACT_ELECTORATE } from './governParam.js';
 import { makeParamManagerBuilder } from './paramManager.js';
@@ -102,9 +103,7 @@ export const makeParamManager = (publisherKit, spec, zcf) => {
   // XXX kick off promises but don't block. This is a concession to contract reincarnation
   // which cannot block on a remote call.
   // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
-  void E.when(Promise.all(promises), undefined, reason =>
-    zcf.shutdownWithFailure(reason),
-  );
+  void E.when(Promise.all(promises), undefined, panic);
 
   // @ts-expect-error cast
   return builder.build();

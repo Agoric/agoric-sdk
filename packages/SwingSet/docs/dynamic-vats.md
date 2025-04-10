@@ -148,7 +148,11 @@ const {
 
 ### Waiting for Vat Termination
 
-To find out when the vat is terminated (either explicitly or due to a metering fault), you can wait for the `done()` Promise to fire. It will be resolved normally if the vat invokes `vatPowers.exitVat(reason)`. It will be rejected if the vat invokes `vatPowers.exitVatWithFailure(reason)`, if the adminNode holder uses `E(adminNode).terminateWithFailure(reason)`, if the vat suffers a metering fault, or if the vat is halted for any other reason (illegal syscall, etc).
+To find out when the vat is terminated (either explicitly or due to a metering fault), you can wait for the `done()` Promise to fire. It will be resolved normally if the vat invokes `vatPowers.exitVat(reason)`. It will be rejected
+- if the vat invokes `panic(reason)`,
+- if the adminNode holder uses `E(adminNode).terminateWithFailure(reason)`,
+- if the vat suffers a metering fault,
+- or if the vat is halted for any other reason (illegal syscall, etc).
 
 ```js
 E(adminNode).done()

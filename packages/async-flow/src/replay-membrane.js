@@ -1,10 +1,10 @@
-import { isVow } from '@agoric/vow/src/vow-utils.js';
-import { heapVowE } from '@agoric/vow/vat.js';
-import { throwLabeled } from '@endo/common/throw-labeled.js';
 import { Fail, X, b, makeError, q } from '@endo/errors';
+import { throwLabeled } from '@endo/common/throw-labeled.js';
 import { E } from '@endo/eventual-send';
 import { getMethodNames } from '@endo/eventual-send/utils.js';
 import { Far, Remotable, getInterfaceOf } from '@endo/pass-style';
+import { isVow } from '@agoric/vow/src/vow-utils.js';
+import { heapVowE } from '@agoric/vow/vat.js';
 import { makeConvertKit } from './convert.js';
 import { makeEquate } from './equate.js';
 

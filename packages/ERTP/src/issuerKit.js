@@ -12,7 +12,6 @@ import { preparePaymentLedger } from './paymentLedger.js';
 /**
  * @import {Key, Pattern} from '@endo/patterns';
  * @import {Zone} from '@agoric/base-zone';
- * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
  * @import {TypedPattern} from '@agoric/internal';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {AdditionalDisplayInfo, RecoverySetsOption, IssuerKit, PaymentLedger} from './types.js';
@@ -35,29 +34,18 @@ import { preparePaymentLedger } from './paymentLedger.js';
  * @param {Zone} issuerZone
  * @param {RecoverySetsOption} recoverySetsState Omitted from issuerRecord
  *   because it was added in an upgrade.
- * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails in
- *   the middle of an atomic action (which btw should never happen), it
- *   potentially leaves its ledger in a corrupted state. If this function was
- *   provided, then the failed atomic action will call it, so that some larger
- *   unit of computation, like the enclosing vat, can be shutdown before
- *   anything else is corrupted by that corrupted state. See
- *   https://github.com/Agoric/agoric-sdk/issues/3434
  * @returns {IssuerKit<K>}
  */
 const setupIssuerKit = (
   { name, assetKind, displayInfo, elementShape },
   issuerZone,
   recoverySetsState,
-  optShutdownWithFailure = undefined,
 ) => {
   assert.typeof(name, 'string');
   assertAssetKind(assetKind);
 
   // Add assetKind to displayInfo, or override if present
   const cleanDisplayInfo = coerceDisplayInfo(displayInfo, assetKind);
-  if (optShutdownWithFailure !== undefined) {
-    assert.typeof(optShutdownWithFailure, 'function');
-  }
 
   if (elementShape !== undefined) {
     assertPattern(elementShape);
@@ -73,7 +61,6 @@ const setupIssuerKit = (
     cleanDisplayInfo,
     elementShape,
     recoverySetsState,
-    optShutdownWithFailure,
   );
 
   return harden({
@@ -101,20 +88,12 @@ const RECOVERY_SETS_STATE = 'recoverySetsState';
  *
  * @template {AssetKind} K
  * @param {Baggage} issuerBaggage
- * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails in
- *   the middle of an atomic action (which btw should never happen), it
- *   potentially leaves its ledger in a corrupted state. If this function was
- *   provided, then the failed atomic action will call it, so that some larger
- *   unit of computation, like the enclosing vat, can be shutdown before
- *   anything else is corrupted by that corrupted state. See
- *   https://github.com/Agoric/agoric-sdk/issues/3434
  * @param {RecoverySetsOption} [recoverySetsOption] Added in upgrade, so last
  *   and optional. See `RecoverySetsOption` for defaulting behavior.
  * @returns {IssuerKit<K>}
  */
 export const upgradeIssuerKit = (
   issuerBaggage,
-  optShutdownWithFailure = undefined,
   recoverySetsOption = undefined,
 ) => {
   const issuerRecord = issuerBaggage.get(INSTANCE_KEY);
@@ -132,12 +111,7 @@ export const upgradeIssuerKit = (
   // 'noRecoverySets', they won't be used but extant ones will remain. Future
   // upgrades may make it possible to delete elements from them.
   const recoverySetsState = recoverySetsOption || oldRecoverySetsState;
-  return setupIssuerKit(
-    issuerRecord,
-    issuerZone,
-    recoverySetsState,
-    optShutdownWithFailure,
-  );
+  return setupIssuerKit(issuerRecord, issuerZone, recoverySetsState);
 };
 harden(upgradeIssuerKit);
 
@@ -188,13 +162,6 @@ export const hasIssuer = baggage => baggage.has(INSTANCE_KEY);
  * @param {string} name
  * @param {K} [assetKind]
  * @param {AdditionalDisplayInfo} [displayInfo]
- * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails in
- *   the middle of an atomic action (which btw should never happen), it
- *   potentially leaves its ledger in a corrupted state. If this function was
- *   provided, then the failed atomic action will call it, so that some larger
- *   unit of computation, like the enclosing vat, can be shutdown before
- *   anything else is corrupted by that corrupted state. See
- *   https://github.com/Agoric/agoric-sdk/issues/3434
  * @param {IssuerOptionsRecord} [options]
  * @returns {IssuerKit<K>}
  */
@@ -204,7 +171,6 @@ export const makeDurableIssuerKit = (
   // @ts-expect-error K could be instantiated with a different subtype of AssetKind
   assetKind = AssetKind.NAT,
   displayInfo = harden({}),
-  optShutdownWithFailure = undefined,
   { elementShape = undefined, recoverySetsOption = undefined } = {},
 ) => {
   const issuerData = harden({
@@ -217,12 +183,7 @@ export const makeDurableIssuerKit = (
   const issuerZone = makeDurableZone(issuerBaggage);
   const recoverySetsState = recoverySetsOption || 'hasRecoverySets';
   issuerBaggage.init(RECOVERY_SETS_STATE, recoverySetsState);
-  return setupIssuerKit(
-    issuerData,
-    issuerZone,
-    recoverySetsState,
-    optShutdownWithFailure,
-  );
+  return setupIssuerKit(issuerData, issuerZone, recoverySetsState);
 };
 harden(makeDurableIssuerKit);
 
@@ -247,13 +208,6 @@ harden(makeDurableIssuerKit);
  * @param {string} name
  * @param {K} [assetKind]
  * @param {AdditionalDisplayInfo} [displayInfo]
- * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails in
- *   the middle of an atomic action (which btw should never happen), it
- *   potentially leaves its ledger in a corrupted state. If this function was
- *   provided, then the failed atomic action will call it, so that some larger
- *   unit of computation, like the enclosing vat, can be shutdown before
- *   anything else is corrupted by that corrupted state. See
- *   https://github.com/Agoric/agoric-sdk/issues/3434
  * @param {O} [options]
  * @returns {O['elementShape'] extends TypedPattern<infer T extends Key>
  *     ? IssuerKit<K, T>
@@ -265,18 +219,13 @@ export const prepareIssuerKit = (
   // @ts-expect-error K could be instantiated with a different subtype of AssetKind
   assetKind = AssetKind.NAT,
   displayInfo = harden({}),
-  optShutdownWithFailure = undefined,
   // @ts-expect-error could have a different subtype of IssuerOptionsRecord
   options = {},
 ) => {
   if (hasIssuer(issuerBaggage)) {
     const { elementShape: _ = undefined, recoverySetsOption = undefined } =
       options;
-    const issuerKit = upgradeIssuerKit(
-      issuerBaggage,
-      optShutdownWithFailure,
-      recoverySetsOption,
-    );
+    const issuerKit = upgradeIssuerKit(issuerBaggage, recoverySetsOption);
 
     // TODO check consistency with name, assetKind, displayInfo, elementShape.
     // Consistency either means that these are the same, or that they differ
@@ -292,7 +241,6 @@ export const prepareIssuerKit = (
       name,
       assetKind,
       displayInfo,
-      optShutdownWithFailure,
       options,
     );
     // @ts-expect-error cast to the type parameter
@@ -323,13 +271,6 @@ harden(prepareIssuerKit);
  *   default, is used for basic fungible tokens.
  * @param {AdditionalDisplayInfo} [displayInfo] `displayInfo` gives information
  *   to the UI on how to display the amount.
- * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails in
- *   the middle of an atomic action (which btw should never happen), it
- *   potentially leaves its ledger in a corrupted state. If this function was
- *   provided, then the failed atomic action will call it, so that some larger
- *   unit of computation, like the enclosing vat, can be shutdown before
- *   anything else is corrupted by that corrupted state. See
- *   https://github.com/Agoric/agoric-sdk/issues/3434
  * @param {O} [options]
  * @returns {O['elementShape'] extends TypedPattern<infer T extends Key>
  *     ? IssuerKit<K, T>
@@ -340,7 +281,6 @@ export const makeIssuerKit = (
   // @ts-expect-error K could be instantiated with a different subtype of AssetKind
   assetKind = AssetKind.NAT,
   displayInfo = harden({}),
-  optShutdownWithFailure = undefined,
   // @ts-expect-error O could be instantiated with a different subtype
   { elementShape = undefined, recoverySetsOption = undefined } = {},
 ) =>
@@ -350,7 +290,6 @@ export const makeIssuerKit = (
     name,
     assetKind,
     displayInfo,
-    optShutdownWithFailure,
     { elementShape, recoverySetsOption },
   );
 harden(makeIssuerKit);

@@ -49,7 +49,6 @@ const { ownKeys } = Reflect;
  * @param {CreateZCFVat} createZCFVat - the ability to create a new
  * ZCF Vat
  * @param {GetBundleCapForID} getBundleCapForID
- * @param {ShutdownWithFailure} shutdownZoeVat
  * @param {{
  *    getFeeIssuerKit: GetFeeIssuerKit,
  *    getFeeIssuer: () => Issuer,
@@ -60,7 +59,6 @@ const { ownKeys } = Reflect;
 export const makeZoeStorageManager = (
   createZCFVat,
   getBundleCapForID,
-  shutdownZoeVat,
   feeMint,
   zoeBaggage,
 ) => {
@@ -95,10 +93,7 @@ export const makeZoeStorageManager = (
   // In order to participate in a contract, users must have invitations, which
   // are ERTP payments made by Zoe. This invitationKit must be closely held and
   // used only by the makeInvitation() method.
-  const { invitationIssuer, invitationKit } = prepareInvitationKit(
-    zoeBaggage,
-    shutdownZoeVat,
-  );
+  const { invitationIssuer, invitationKit } = prepareInvitationKit(zoeBaggage);
 
   // Every new instance of a contract creates a corresponding
   // "zoeInstanceAdmin" - an admin facet within the Zoe Service for
@@ -221,7 +216,6 @@ export const makeZoeStorageManager = (
             keyword,
             assetKind,
             displayInfo,
-            reason => E(state.adminNode).terminateWithFailure(reason),
             { elementShape },
           );
           zoeMintBaggageSet.add(issuerBaggage);

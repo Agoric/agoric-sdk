@@ -45,9 +45,8 @@ export function buildRootObject(vatPowers, vatParameters) {
     vatPowers.disavow(dropMe);
 
     const evt = typeof vatPowers.exitVat;
-    const evwft = typeof vatPowers.exitVatWithFailure;
     // syscall.fulfillToData:
-    return [precB.promise, precC.promise, pF, three, evt, evwft];
+    return [precB.promise, precC.promise, pF, three, evt];
   }
 
   // crank 2:

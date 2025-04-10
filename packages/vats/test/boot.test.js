@@ -60,10 +60,6 @@ const testBootstrap = (label, entryPoint, doCoreProposals) => {
     const vatPowers = {
       D: mockDProxy,
       logger: t.log,
-      exitVatWithFailure: err => {
-        console.error(err);
-        throw err;
-      },
     };
     const baggage = makeScalarBigMapStore('test-baggage', { durable: true });
     const root = entryPoint(vatPowers, vatParameters, baggage);

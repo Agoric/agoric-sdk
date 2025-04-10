@@ -6,7 +6,7 @@
 import { Fail, q } from '@endo/errors';
 import { Far, E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
-import { objectMap } from '@agoric/internal';
+import { objectMap, panic } from '@agoric/internal';
 
 /**
  * @callback Die
@@ -48,8 +48,13 @@ export const makeReflectionMethods = (vatPowers, baggage) => {
 
     /** @type {Die} */
     dieSad: (reason, finalSend) => {
-      vatPowers.exitVatWithFailure(/** @type {Error} */ (reason));
-      if (finalSend) send(...finalSend);
+      if (finalSend) {
+        // TODO this was happening after the `exitVatWithFailure` which
+        // became `panic`. Since `panic` must not return, it was unreachable.
+        // Is moving it here correct?
+        send(...finalSend);
+      }
+      panic(/** @type {Error} */ (reason));
     },
 
     holdInBaggage: (...values) => {

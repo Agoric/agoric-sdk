@@ -96,7 +96,6 @@ export type ZCF<CT = Record<string, unknown>> = {
     proposalShape?: Pattern,
   ) => Promise<Invitation<R, A>>;
   shutdown: (completion: Completion) => void;
-  shutdownWithFailure: import('@agoric/swingset-vat').ShutdownWithFailure;
   getZoeService: () => ERef<ZoeService>;
   getInvitationIssuer: () => Issuer<'set'>;
   getTerms: () => StandardTerms & CT;

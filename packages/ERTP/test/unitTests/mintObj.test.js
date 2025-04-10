@@ -36,7 +36,6 @@ test('mint.mintPayment set w strings AssetKind', async t => {
     'items',
     AssetKind.SET,
     undefined,
-    undefined,
     {
       elementShape: StringPattern,
     },

@@ -342,7 +342,7 @@ test.serial(
       ['done exception Error: sadTalkFirst (Error=true)'],
       // The following would be observed on the happy path but explicitly should
       // *not* be observed here
-      // ['GOT QUERY not dead quite yet'],
+      // ['GOT QUERY Should be unobservable because happens after panic'],
     );
   },
 );
@@ -358,7 +358,7 @@ test.serial(
       ['done exception Error: sadTalkFirst (Error=true)'],
       // The following would be observed on the happy path but explicitly should
       // *not* be observed here
-      // ['GOT QUERY not dead quite yet'],
+      // ['GOT QUERY Should be unobservable because happens after panic'],
     );
   },
 );

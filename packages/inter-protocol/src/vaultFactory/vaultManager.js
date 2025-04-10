@@ -20,6 +20,16 @@
 
 import { X, Fail, q, makeError } from '@endo/errors';
 import { E } from '@endo/eventual-send';
+import { M } from '@endo/patterns';
+import { makeTracer, panic } from '@agoric/internal';
+import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
+import {
+  makeScalarBigMapStore,
+  makeScalarBigSetStore,
+  prepareExoClassKit,
+  provide,
+} from '@agoric/vat-data';
+import { makeStoredNotifier, observeNotifier } from '@agoric/notifier';
 import {
   AmountMath,
   AmountShape,
@@ -27,16 +37,6 @@ import {
   NotifierShape,
   RatioShape,
 } from '@agoric/ertp';
-import { makeTracer } from '@agoric/internal';
-import { makeStoredNotifier, observeNotifier } from '@agoric/notifier';
-import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
-import {
-  M,
-  makeScalarBigMapStore,
-  makeScalarBigSetStore,
-  prepareExoClassKit,
-  provide,
-} from '@agoric/vat-data';
 import { TransferPartShape } from '@agoric/zoe/src/contractSupport/atomicTransfer.js';
 import {
   ceilMultiplyBy,
@@ -67,8 +67,8 @@ import { AuctionPFShape } from '../auction/auctioneer.js';
 
 /**
  * @import {EReturn} from '@endo/far';
- * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
- * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {ZCFMint} from '@agoric/zoe';
+ * @import {PriceQuote} from '@agoric/zoe/tools/types.js';
  */
 
 const trace = makeTracer('VM');
@@ -415,14 +415,12 @@ export const prepareVaultManagerKit = (
                   console.error('🚨 vaultManager failed to charge interest', e),
                 ),
             fail: reason => {
-              zcf.shutdownWithFailure(
+              panic(
                 makeError(X`Unable to continue without a timer: ${reason}`),
               );
             },
             finish: done => {
-              zcf.shutdownWithFailure(
-                makeError(X`Unable to continue without a timer: ${done}`),
-              );
+              panic(makeError(X`Unable to continue without a timer: ${done}`));
             },
           });
 
