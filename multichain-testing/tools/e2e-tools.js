@@ -512,7 +512,7 @@ export const makeE2ETools = async (
     fetch,
     setTimeout,
     rpcAddress = 'http://localhost:26657',
-    apiAddress = 'http://localhost:1317',
+    apiAddress = 'http://localhost:1316',
     retryUntilCondition = makeRetryUntilCondition({ log, setTimeout }),
   },
 ) => {

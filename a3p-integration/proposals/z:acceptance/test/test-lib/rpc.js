@@ -43,7 +43,7 @@ export const rpcUrl = agoricNetSubdomain =>
 const networkConfig = {
   rpcAddrs: ['http://0.0.0.0:26657'],
   chainName: 'agoriclocal',
-  apiAddress: 'http://localhost:1317',
+  apiAddress: 'http://localhost:1316',
 };
 export { networkConfig };
 // console.warn('networkConfig', networkConfig);
