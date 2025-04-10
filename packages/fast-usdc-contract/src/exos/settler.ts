@@ -250,7 +250,11 @@ export const prepareSettler = (
           const { packet } = event;
           if (packet.source_channel !== sourceChannel) {
             const { source_channel: actual } = packet;
-            log('unexpected channel', { actual, expected: sourceChannel });
+            // Mismatched source channel is normal when forwarding from SettlementAccount,
+            // but in that case the destination channel should match.
+            if (packet.destination_channel !== sourceChannel) {
+              log('⚠️ unexpected channel', { actual, expected: sourceChannel });
+            }
             return;
           }
 
