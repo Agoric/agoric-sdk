@@ -5,13 +5,15 @@ shopt -s expand_aliases
 
 alias agoric-exec="kubectl exec -i agoriclocal-genesis-0 -c validator -- agd"
 alias osmosis-exec="kubectl exec -i osmosislocal-genesis-0 -c validator -- osmosisd"
+alias hermes-exec="kubectl exec -i hermes-agoric-osmosis-0 -c relayer -- hermes"
 
 AGORIC_WALLET="test1"
 AGORIC_ADDRESS=$(agoric-exec keys show ${AGORIC_WALLET} -a)
 OSMOSIS_WALLET="test1"
 OSMOSIS_ADDRESS=$(osmosis-exec keys show ${OSMOSIS_WALLET} -a)
 
-AGORIC_OSMOSIS_CHANNEL="channel-1"
+AGORIC_OSMOSIS_CHANNEL=$(hermes-exec --json query channels --show-counterparty --chain agoriclocal \
+  | jq -r '[.][] | select(.result) | .result[] | select(.chain_id_b == "osmosislocal") | .channel_a')
 AGORIC_OSMOSIS_PORT="transfer"
 AGORIC_TOKEN_DENOM="ubld"
 AGORIC_TOKEN_AMOUNT="250000000000"
