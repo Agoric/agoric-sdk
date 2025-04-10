@@ -98,8 +98,8 @@ tail-slog:
 ###                          Osmosis Setup                                   ###
 ###############################################################################
 
-open-liquidity-pool:
-	$(CURDIR)/scripts/open-liquidity-pool.sh
+create-osmosis-pool:
+	$(CURDIR)/scripts/create-osmosis-pool.sh
 
 
 ###############################################################################
