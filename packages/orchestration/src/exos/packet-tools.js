@@ -292,8 +292,7 @@ export const preparePacketTools = (zone, vowTools) => {
 
           // Try matching the first in queue.
           const i = upcallQueue.findIndex(obj => matches(obj, pattern));
-          if (i < 0) {
-            // No match yet. Save the pattern for later.
+          if (i === -1) {
             trace('No match yet. Save the pattern for later.');
             resolverToPattern.init(resolver, pattern);
             return;
