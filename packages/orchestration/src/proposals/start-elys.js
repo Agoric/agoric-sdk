@@ -52,6 +52,7 @@ export const startElys = async (
   await null;
 
   const storageNode = await makeStorageNodeChild(chainStorage, contractName);
+  const localAccountStorageNode = await makeStorageNodeChild(chainStorage, "localAccount");
   const marshaller = await E(board).getPublishingMarshaller();
 
   const feeConfig = {
@@ -85,6 +86,7 @@ export const startElys = async (
         assetInfo,
         feeConfig,
         allowedChains,
+        localAccountStorageNode,
       }),
     ),
   };

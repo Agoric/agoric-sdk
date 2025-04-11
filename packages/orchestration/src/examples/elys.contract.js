@@ -105,6 +105,7 @@ harden(StakingTapStateShape);
  *   assetInfo?: [Denom, DenomDetail & { brandKey?: string }][];
  *   feeConfig: FeeConfigShape;
  *   allowedChains: string[];
+ *   localAccountStorageNode: ERef<StorageNode>;
  * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
@@ -119,6 +120,9 @@ const contract = async (
   if (!isValid) {
     throw Fail`Invalid fee config`;
   }
+
+  // Create storage node for local orchestration data
+  const localOrchestrationAccountDataRoot = await E(privateArgs.localAccountStorageNode).makeChildNode('localAgoricAccount');
 
   const { chainHub, orchestrateAll, vowTools } = tools;
 
@@ -206,12 +210,13 @@ const contract = async (
     }),
   );
 
+  // set local account address in storage node
   const { when } = vowTools;
+  const localAccount = await E(when(icaAndLocalAccount)).getAddress();
+  localOrchestrationAccountDataRoot.setValue(localAccount.value);
 
   return {
-    publicFacet: zone.exo('Public', interfaceTODO, {
-      getLocalAddress: () => E(when(icaAndLocalAccount)).getAddress(),
-    }),
+    publicFacet: {},
     creatorFacet,
   };
 };
