@@ -12,24 +12,29 @@ AGORIC_ADDRESS=$(agoric-exec keys show ${AGORIC_WALLET} -a)
 OSMOSIS_WALLET="test1"
 OSMOSIS_ADDRESS=$(osmosis-exec keys show ${OSMOSIS_WALLET} -a)
 
-AGORIC_OSMOSIS_CHANNEL=$(hermes-exec --json query channels --show-counterparty --chain agoriclocal \
-  | jq -r '[.][] | select(.result) | .result[] | select(.chain_id_b == "osmosislocal") | .channel_a')
+CHANNEL_INFO=$(hermes-exec --json query channels --show-counterparty --chain agoriclocal \
+  | jq '[.][] | select(.result) | .result[] | select(.chain_id_b == "osmosislocal")')
+AGORIC_OSMOSIS_CHANNEL=$(echo "$CHANNEL_INFO" | jq -r '.channel_a')
+OSMOSIS_AGORIC_CHANNEL=$(echo "$CHANNEL_INFO" | jq -r '.channel_b')
 AGORIC_OSMOSIS_PORT="transfer"
+
 AGORIC_TOKEN_DENOM="ubld"
 AGORIC_TOKEN_AMOUNT="250000000000"
 
-POOL_CONFIG_FILE="pool-config.json"
-POOL_CONFIG_DEST="/opt/pool-config.json"
+IBC_DENOM=$(echo -n "$AGORIC_OSMOSIS_PORT/$OSMOSIS_AGORIC_CHANNEL/$AGORIC_TOKEN_DENOM" | sha256sum | awk '{print toupper($1)}')
 
 POOL_ASSET_1_DENOM="uosmo"
 POOL_ASSET_1_AMOUNT="250000"
 POOL_ASSET_1_WEIGHT="1"
-POOL_ASSET_2_DENOM="ibc/E7827844CB818EE9C4DB2C159F1543FF62B26213B44CE8029D5CEFE52F0EE596"
+POOL_ASSET_2_DENOM="ibc/$IBC_DENOM"
 POOL_ASSET_2_AMOUNT="250000"
 POOL_ASSET_2_WEIGHT="1"
 SWAP_FEE="0.01"
 EXIT_FEE="0.00",
 FUTURE_GOVERNOR=""
+
+POOL_CONFIG_FILE="$POOL_ASSET_1_DENOM-$AGORIC_TOKEN_DENOM-pool-config.json"
+POOL_CONFIG_DEST="/opt/$POOL_CONFIG_FILE"
 
 MAX_RETRIES="5"
 DELAY="5"
