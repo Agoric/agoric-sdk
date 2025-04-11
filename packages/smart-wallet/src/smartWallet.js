@@ -97,10 +97,17 @@ const trace = makeTracer('SmrtWlt');
  * }} TryExitOfferAction
  */
 
+/**
+ * @typedef {{
+ *   method: 'evalExpr';
+ *   expr: string;
+ * }} EvalExprAction
+ */
+
 // Discriminated union. Possible future messages types:
 // maybe suggestIssuer for https://github.com/Agoric/agoric-sdk/issues/6132
 // setting petnames and adding brands for https://github.com/Agoric/agoric-sdk/issues/6126
-/** @typedef {ExecuteOfferAction | TryExitOfferAction} BridgeAction */
+/** @typedef {ExecuteOfferAction | TryExitOfferAction | EvalExprAction} BridgeAction */
 
 /**
  * Purses is an array to support a future requirement of multiple purses per
@@ -476,6 +483,9 @@ export const prepareSmartWallet = (baggage, shared) => {
     offers: M.interface('offers facet', {
       executeOffer: M.call(shape.OfferSpec).returns(M.promise()),
       tryExitOffer: M.call(M.scalar()).returns(M.promise()),
+    }),
+    invoke: M.interface('invoke', {
+      evalExpr: M.callWhen(M.string()).returns(M.undefined()),
     }),
     self: M.interface('selfFacetI', {
       handleBridgeAction: M.call(shape.StringCapData, M.boolean()).returns(
@@ -1035,6 +1045,24 @@ export const prepareSmartWallet = (baggage, shared) => {
         },
       },
 
+      invoke: {
+        /**
+         * @param {string} expr
+         */
+        async evalExpr(expr) {
+          trace(
+            'TODO: validate Justin syntax; see https://github.com/endojs/Jessie/pull/121#discussion_r1988126110',
+          );
+          trace('evalExpr', expr);
+          // XXX worth using a nameHub vs. a mapStore?
+          const { nameHub, nameAdmin } = this.state.my;
+          const endowments = { E, harden, assert, nameHub, nameAdmin };
+          const c = new Compartment(endowments);
+          const x = await c.evaluate(expr);
+          trace('eval result', x);
+        },
+      },
+
       self: {
         /**
          * Umarshals the actionCapData and delegates to the appropriate action
@@ -1074,6 +1102,9 @@ export const prepareSmartWallet = (baggage, shared) => {
                   case 'tryExitOffer': {
                     assert(canSpend, 'tryExitOffer requires spend authority');
                     return offers.tryExitOffer(action.offerId);
+                  }
+                  case 'evalExpr': {
+                    return facets.invoke.evalExpr(action.expr);
                   }
                   default: {
                     throw Fail`invalid handle bridge action ${q(action)}`;
