@@ -692,9 +692,9 @@ export const prepareIBCProtocol = (zone, powers) => {
         },
 
         /**
-         * Find an acknowledgment kit for the specified\
-         * (channelID, portID, sequence), creating it if not found, and then
-         * extract the specified key and perform any necessary cleanup.
+         * Find an acknowledgment kit for the specified (channelID, portID,
+         * sequence), creating it if not found, and then extract the specified
+         * key and perform any necessary cleanup.
          *
          * @template {'resolver' | 'vow'} K
          * @param {IBCChannelID} channelID
