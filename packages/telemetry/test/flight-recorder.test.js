@@ -35,7 +35,14 @@ const bufferTests = test.macro(
       fileHandle,
       writeCircBuf,
     });
-    t.teardown(realSlogSender.shutdown);
+    let wasShutdown = false;
+    const shutdown = () => {
+      if (wasShutdown) return;
+      wasShutdown = true;
+
+      return realSlogSender.shutdown();
+    };
+    t.teardown(shutdown);
     // To verify lack of attempted mutation by the consumer, send only hardened
     // entries.
     /** @type {typeof realSlogSender} */
@@ -93,6 +100,18 @@ const bufferTests = test.macro(
     slogSender(null, 'PRE-SERIALIZED');
     await slogSender.forceFlush();
     t.truthy(fs.readFileSync(tmpFile).includes('PRE-SERIALIZED'));
+
+    slogSender(null, 'PRE_SHUTDOWN');
+    const shutdownP = shutdown();
+    slogSender(null, 'POST_SHUTDOWN');
+    await shutdownP;
+    slogSender(null, 'SHUTDOWN_COMPLETED');
+
+    const finalContent = fs.readFileSync(tmpFile);
+
+    t.truthy(finalContent.includes('PRE_SHUTDOWN'));
+    t.falsy(finalContent.includes('POST_SHUTDOWN'));
+    t.falsy(finalContent.includes('SHUTDOWN_COMPLETED'));
   },
 );
 
