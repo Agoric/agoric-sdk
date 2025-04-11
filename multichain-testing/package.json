@@ -11,7 +11,7 @@
   },
   "packageManager": "yarn@4.8.1",
   "dependencies": {
-    "js-yaml": "^4.1.0"
+    "js-yaml": "patch:js-yaml@npm%3A4.1.0#~/.yarn/patches/js-yaml-npm-4.1.0-3606f32312.patch"
   },
   "devDependencies": {
     "@agoric/cosmic-proto": "dev",

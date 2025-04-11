@@ -3695,12 +3695,12 @@ __metadata:
 
 "js-yaml@patch:js-yaml@npm%3A4.1.0#~/.yarn/patches/js-yaml-npm-4.1.0-3606f32312.patch":
   version: 4.1.0
-  resolution: "js-yaml@patch:js-yaml@npm%3A4.1.0#~/.yarn/patches/js-yaml-npm-4.1.0-3606f32312.patch::version=4.1.0&hash=fbb668"
+  resolution: "js-yaml@patch:js-yaml@npm%3A4.1.0#~/.yarn/patches/js-yaml-npm-4.1.0-3606f32312.patch::version=4.1.0&hash=cf9ae3"
   dependencies:
     argparse: "npm:^2.0.1"
   bin:
     js-yaml: bin/js-yaml.js
-  checksum: 10c0/79bf182d155f4ee8b0bfca47ddd43b3b93b5cda11084a6f72634a467cd60810a9c9349a4add0f24d31762d432d0b213766ac6ccddbf54b32c6c9a58b1748a13f
+  checksum: 10c0/74580fb5358d0782dc1a37a9c18accc57b77df8ac2e7e5a0fb29e31a8b0b9ba4fc18489cc77a2a660bc2f01521e3fa8e8ef0e2b2176c10c2670005aa050c2d81
   languageName: node
   linkType: hard
 
@@ -4680,7 +4680,7 @@ __metadata:
     eslint-config-prettier: "npm:^10.1.1"
     execa: "npm:^9.5.2"
     fs-extra: "npm:^11.2.0"
-    js-yaml: "npm:^4.1.0"
+    js-yaml: "patch:js-yaml@npm%3A4.1.0#~/.yarn/patches/js-yaml-npm-4.1.0-3606f32312.patch"
     starshipjs: "npm:2.4.1"
     ts-blank-space: "npm:^0.4.4"
     typescript: "npm:~5.8.2"
