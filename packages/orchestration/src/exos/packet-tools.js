@@ -13,7 +13,7 @@ const { toCapData } = makeMarshal(undefined, undefined, {
 });
 const just = obj => {
   const { body } = toCapData(obj);
-  return decodeToJustin(JSON.parse(body), true);
+  return decodeToJustin(JSON.parse(body), false);
 };
 
 /**
