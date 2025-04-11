@@ -95,8 +95,7 @@
     "files": [
       "test/**/*.test.*"
     ],
-    "timeout": "2m",
-    "workerThreads": false
+    "timeout": "2m"
   },
   "typeCoverage": {
     "atLeast": 77.09
