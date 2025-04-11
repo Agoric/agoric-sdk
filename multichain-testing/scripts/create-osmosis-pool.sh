@@ -6,6 +6,7 @@ shopt -s expand_aliases
 alias agoric-exec="kubectl exec -i agoriclocal-genesis-0 -c validator -- agd"
 alias osmosis-exec="kubectl exec -i osmosislocal-genesis-0 -c validator -- osmosisd"
 alias hermes-exec="kubectl exec -i hermes-agoric-osmosis-0 -c relayer -- hermes"
+alias osmo-cli="kubectl exec -i osmosislocal-genesis-0 -c validator -- /bin/bash -c"
 
 AGORIC_WALLET="test1"
 AGORIC_ADDRESS=$(agoric-exec keys show ${AGORIC_WALLET} -a)
@@ -112,7 +113,7 @@ for ((i = 1; i <= MAX_RETRIES; i++)); do
   current_pool_count=$(jq -r '.num_pools' <<< "$current_pool_count_json")
 
   if [ "$current_pool_count" -gt "$pool_count" ]; then
-    osmosis-exec query gamm pool $current_pool_count
+    pool_info=$(osmosis-exec query gamm pool $current_pool_count)
     break
   fi
 
@@ -125,4 +126,67 @@ for ((i = 1; i <= MAX_RETRIES; i++)); do
   sleep $DELAY
 done
 
-echo "Liquidity Pool open successfully."
+SWAPROUTER_OWNER="genesis"
+SWAPROUTER_OWNER_ADDRESS=$(osmosis-exec keys show ${SWAPROUTER_OWNER} -a)
+SWAPROUTER_ADDRESS=$(osmo-cli "jq -r '.swaprouter.address' /contract-info.json")
+
+POOL_ID=$(jq -r '.pool | .id' <<< "$pool_info")
+POOL_OUTPUT_DENOM=$POOL_ASSET_1_DENOM
+POOL_INPUT_DENOM=$POOL_ASSET_2_DENOM
+
+SET_ROUTE_JSON=$(
+  cat << EOF
+{
+  "set_route": {
+    "input_denom": "$POOL_INPUT_DENOM",
+    "output_denom": "$POOL_OUTPUT_DENOM",
+    "pool_route": [
+      {
+        "pool_id": "$POOL_ID",
+        "token_out_denom": "$POOL_OUTPUT_DENOM"
+      }
+    ]
+  }
+}
+EOF
+)
+
+GET_ROUTE_JSON=$(
+  cat << EOF
+{
+  "get_route": {
+    "input_denom": "$POOL_INPUT_DENOM",
+    "output_denom": "$POOL_OUTPUT_DENOM"
+  }
+}
+EOF
+)
+
+echo "Storing pool on swaprouter contract ..."
+osmosis-exec tx wasm execute "$SWAPROUTER_ADDRESS" "$SET_ROUTE_JSON" --from "$SWAPROUTER_OWNER_ADDRESS" --chain-id osmosislocal --yes --fees 1000uosmo
+
+echo "Querying pool route ..."
+(
+  set +e # handle failure of "osmosis-exec query wasm contract-state smart"
+
+  for ((i = 1; i <= MAX_RETRIES; i++)); do
+    echo "Attempt $i of $MAX_RETRIES..."
+    pool_route_json=$(osmosis-exec query wasm contract-state smart "$SWAPROUTER_ADDRESS" "$GET_ROUTE_JSON" 2> /dev/null)
+
+    if [[ $? -eq 0 ]]; then
+      echo "Pool route found:"
+      echo "$pool_route_json"
+      break
+    fi
+
+    if [[ $i -eq MAX_RETRIES ]]; then
+      echo "Pool not stored after $MAX_RETRIES attempts."
+      exit 1
+    fi
+
+    echo "Query failed. Waiting $DELAY seconds before retrying..."
+    sleep "$DELAY"
+  done
+)
+
+echo "Liquidity Pool open and stored on swaprouter successfully."
