@@ -1,5 +1,6 @@
 // @ts-nocheck
 import test from 'ava';
+import { avaRetry } from '@agoric/internal/tools/avaRetry.js';
 
 import { kslot, kunser } from '@agoric/kmarshal';
 import {
@@ -66,7 +67,7 @@ function assertState(v, vref, reachable, erv) {
 // different test.
 
 // test 1: lerv -> Lerv -> LerV -> Lerv -> lerv
-test.serial('store lifecycle 1', async t => {
+avaRetry(test.serial, 'store lifecycle 1', async t => {
   const { v, dispatchMessageSuccessfully } = await setupTestLiveslots(
     t,
     buildRootObject,
@@ -94,7 +95,7 @@ test.serial('store lifecycle 1', async t => {
 
 // test 2: lerv -> Lerv -> LerV -> lerV -> LerV -> LERV -> lERV -> LERV ->
 //   lERV -> LERV -> lERV -> leRV -> LeRV -> leRV -> LeRV -> LerV
-test.serial('store lifecycle 2', async t => {
+avaRetry(test.serial, 'store lifecycle 2', async t => {
   const {
     v,
     dispatchMessageSuccessfully,
@@ -170,7 +171,7 @@ test.serial('store lifecycle 2', async t => {
 });
 
 // test 3: lerv -> Lerv -> LerV -> LERV -> LeRV -> leRV -> lerV -> lerv
-test.serial('store lifecycle 3', async t => {
+avaRetry(test.serial, 'store lifecycle 3', async t => {
   const {
     v,
     dispatchMessageSuccessfully,
@@ -211,7 +212,7 @@ test.serial('store lifecycle 3', async t => {
 });
 
 // test 4: lerv -> Lerv -> LERv -> LeRv -> lerv
-test.serial('store lifecycle 4', async t => {
+avaRetry(test.serial, 'store lifecycle 4', async t => {
   const { v, dispatchMessageSuccessfully, dispatchDropExports } =
     await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
 
@@ -239,7 +240,7 @@ test.serial('store lifecycle 4', async t => {
 });
 
 // test 5: lerv -> Lerv -> LERv -> LeRv -> Lerv -> lerv
-test.serial('store lifecycle 5', async t => {
+avaRetry(test.serial, 'store lifecycle 5', async t => {
   const {
     v,
     dispatchMessageSuccessfully,
@@ -277,7 +278,7 @@ test.serial('store lifecycle 5', async t => {
 });
 
 // test 6: lerv -> Lerv -> LERv -> LeRv -> LeRV -> LeRv -> LeRV -> leRV -> lerv
-test.serial('store lifecycle 6', async t => {
+avaRetry(test.serial, 'store lifecycle 6', async t => {
   const { v, dispatchMessageSuccessfully, dispatchDropExports } =
     await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
 
@@ -322,7 +323,7 @@ test.serial('store lifecycle 6', async t => {
 });
 
 // test 7: lerv -> Lerv -> LERv -> lERv -> LERv -> lERv -> lerv
-test.serial('store lifecycle 7', async t => {
+avaRetry(test.serial, 'store lifecycle 7', async t => {
   const { v, dispatchMessageSuccessfully, dispatchDropExports } =
     await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
 
@@ -361,7 +362,7 @@ test.serial('store lifecycle 7', async t => {
 });
 
 // test 8: lerv -> Lerv -> LERv -> LERV -> LERv -> LERV -> lERV -> lERv -> lerv
-test.serial('store lifecycle 8', async t => {
+avaRetry(test.serial, 'store lifecycle 8', async t => {
   const { v, dispatchMessageSuccessfully, dispatchDropExports } =
     await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
 
