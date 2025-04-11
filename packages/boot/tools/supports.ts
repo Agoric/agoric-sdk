@@ -450,7 +450,15 @@ export const makeSwingsetTestKit = async (
   const { fromCapData } = boardSlottingMarshaller(slotToBoardRemote);
 
   const readLatest = (path: string): any => {
-    const data = unmarshalFromVstorage(storage.data, path, fromCapData, -1);
+    let data;
+    try {
+      data = unmarshalFromVstorage(storage.data, path, fromCapData, -1);
+    } catch (e) {
+      // fall back to regular JSON
+      const raw = storage.getValues(path).at(-1);
+      assert(raw, `No data found for ${path}`);
+      data = JSON.parse(raw);
+    }
     trace('readLatest', path, 'returning', inspect(data, false, 20, true));
     return data;
   };

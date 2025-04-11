@@ -991,22 +991,19 @@ test('uses CCTP for ETH', async t => {
     extensions: {
       services: { advancer },
       helpers: { inspectLogs, inspectNotifyCalls },
-      mocks: {
-        mockPoolAccount,
-        resolveLocalTransferV,
-        resolveWithdrawToSeatV,
-        intermediate,
-      },
+      mocks: { resolveLocalTransferV, intermediate, mockPoolAccount },
     },
     brands: { usdc },
-    bootstrap: { storage },
   } = t.context;
 
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_ETHEREUM();
   void advancer.handleTransactionEvent({ evidence, risk: {} });
 
+  // The test is not sensitive to the ordering of these but this is the legitimate sequence:
   // pretend borrow succeeded and funds were depositing to the LCA
   resolveLocalTransferV();
+  // pretend that the transfer to the Noble intermediary account succeeded.
+  mockPoolAccount.transferVResolver.resolve();
   // pretend depositForBurn was called.
   intermediate.depositForBurnVResolver.resolve();
   // wait for handleTransactionEvent to do work

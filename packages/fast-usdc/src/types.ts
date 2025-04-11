@@ -88,6 +88,7 @@ export interface TransactionRecord extends CopyRecord {
 
 /** the record in vstorage at the path of the contract's node */
 export interface ContractRecord extends CopyRecord {
+  nobleICA?: CosmosChainAddress['value'];
   poolAccount: CosmosChainAddress['value'];
   settlementAccount: CosmosChainAddress['value'];
 }

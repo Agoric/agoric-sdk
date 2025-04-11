@@ -174,7 +174,7 @@ export const prepareSettler = (
     'Fast USDC Settler',
     {
       creator: M.interface('SettlerCreatorI', {
-        monitorMintingDeposits: M.callWhen().returns(M.any()),
+        monitorMintingDeposits: M.call().returns(M.any()),
       }),
       tap: M.interface('SettlerTapI', {
         receiveUpcall: M.call(M.record()).returns(M.promise()),
@@ -233,6 +233,7 @@ export const prepareSettler = (
     },
     {
       creator: {
+        // eslint-disable-next-line no-restricted-syntax -- will resolve before vat restart
         async monitorMintingDeposits() {
           const { settlementAccount } = this.state;
           const registration = await vowTools.when(
@@ -249,7 +250,11 @@ export const prepareSettler = (
           const { packet } = event;
           if (packet.source_channel !== sourceChannel) {
             const { source_channel: actual } = packet;
-            log('unexpected channel', { actual, expected: sourceChannel });
+            // Mismatched source channel is normal when forwarding from SettlementAccount,
+            // but in that case the destination channel should match.
+            if (packet.destination_channel !== sourceChannel) {
+              log('⚠️ unexpected channel', { actual, expected: sourceChannel });
+            }
             return;
           }
 
@@ -363,6 +368,7 @@ export const prepareSettler = (
          * The intended payee received an advance from the pool. When the funds
          * are minted, disburse them to the pool and fee seats.
          */
+        // eslint-disable-next-line no-restricted-syntax -- will resolve before vat restart
         async disburse(
           txHash: EvmHash,
           fullValue: NatValue,

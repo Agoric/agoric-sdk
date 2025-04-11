@@ -70,7 +70,7 @@ export const prepareOperatorKit = (
          * @param evidence
          * @param riskAssessment
          */
-        async SubmitEvidence(
+        SubmitEvidence(
           evidence: CctpTxEvidence,
           riskAssessment: RiskAssessment,
         ): Promise<Invitation> {

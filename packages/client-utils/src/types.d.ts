@@ -45,8 +45,10 @@ export type TypedPublished<T extends string> = T extends keyof PublishedTypeMap
                 ? Array<[string, Brand]>
                 : T extends 'fastUsdc'
                   ? ContractRecord
-                  : T extends 'fastUsdc.poolMetrics'
-                    ? PoolMetrics
-                    : T extends `fastUsdc.txns.${string}`
-                      ? TransactionRecord
-                      : unknown;
+                  : T extends 'fastUsdc.feeConfig'
+                    ? FeeConfig
+                    : T extends 'fastUsdc.poolMetrics'
+                      ? PoolMetrics
+                      : T extends `fastUsdc.txns.${string}`
+                        ? TransactionRecord
+                        : unknown;
