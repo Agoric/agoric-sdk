@@ -5,6 +5,8 @@ import { makeFundAndTransfer } from '../tools/ibc-transfer.js';
 import type { SetupContextWithWallets } from './support.js';
 import { commonSetup } from './support.js';
 import { E } from '@endo/far';
+import { makeDoOffer } from '../tools/e2e-tools.js';
+
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
@@ -57,15 +59,21 @@ const elysContractScenario = test.macro({
       IST: 100n,
     });
 
-    const contractInstance = await t.context.vstorageClient.queryData(
-        `published.agoricNames.instance.${contractName}`,
-    );
-    const publicFacet = await E(contractInstance).getPublicFacet();
-    const agoricLocalAddress = await E(publicFacet).getLocalAddress().value;
-    t.log(`Agoric Local Address: ${agoricLocalAddress}`);
+  const doOffer = makeDoOffer(wdUser);
+  t.log(`${chainName} makeAccount offer`);
+  const offerId = `${chainName}-makeAccountsInvitation-${Date.now()}`;
 
-    // TODO: Check the local address format
-    t.regex(agoricLocalAddress, /^agoric1/, 'Local Address is valid');
+  await doOffer({
+    id: offerId,
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: [contractName],
+      callPipe: [['getLocalAddress']],
+    },
+    offerArgs: {
+    },
+    proposal: {},
+  });
   },
 });
 

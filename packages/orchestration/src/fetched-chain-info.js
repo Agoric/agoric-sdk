@@ -1140,24 +1140,24 @@ export default /** @type {const} } */ ({
           version: 'ics20-1',
         },
       },
-      // 'elys-1': {
-      //   id: 'connection-1073',
-      //   client_id: '07-tendermint-1339',
-      //   counterparty: {
-      //     client_id: '07-tendermint-0',
-      //     connection_id: 'connection-1',
-      //   },
-      //   state: 3,
-      //   transferChannel: {
-      //     channelId: 'channel-1266',
-      //     portId: 'transfer',
-      //     counterPartyChannelId: 'channel-1',
-      //     counterPartyPortId: 'transfer',
-      //     ordering: 0,
-      //     state: 3,
-      //     version: 'ics20-1',
-      //   },
-      // },
+      'elys-1': {
+        id: 'connection-1073',
+        client_id: '07-tendermint-1339',
+        counterparty: {
+          client_id: '07-tendermint-0',
+          connection_id: 'connection-1',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-1266',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-1',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
       'empowerchain-1': {
         id: 'connection-872',
         client_id: '07-tendermint-1151',
@@ -2479,12 +2479,14 @@ export default /** @type {const} } */ ({
   elys: {
     bech32Prefix: 'elys',
     chainId: 'elys-1',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'elys-1',
     stakingTokens: [
       {
         denom: 'uelys',
       },
     ],
-    icqEnabled: false,
     connections: {
       celestia: {
         id: 'connection-4',
@@ -2504,8 +2506,8 @@ export default /** @type {const} } */ ({
           version: 'ics20-1',
         },
       },
-      'agoric-3': {
-        id: 'connection-1111',
+      'cosmoshub-4': {
+        id: 'connection-1',
         client_id: '07-tendermint-0',
         counterparty: {
           client_id: '07-tendermint-1339',
@@ -2513,45 +2515,27 @@ export default /** @type {const} } */ ({
         },
         state: 3,
         transferChannel: {
-          channelId: 'channel-19898',
+          channelId: 'channel-1',
           portId: 'transfer',
-          counterPartyChannelId: 'channel-12696',
+          counterPartyChannelId: 'channel-1266',
           counterPartyPortId: 'transfer',
           ordering: 0,
           state: 3,
           version: 'ics20-1',
         },
       },
-      // 'cosmoshub-4': {
-      //   id: 'connection-1',
-      //   client_id: '07-tendermint-0',
-      //   counterparty: {
-      //     client_id: '07-tendermint-1339',
-      //     connection_id: 'connection-1073',
-      //   },
-      //   state: 3,
-      //   transferChannel: {
-      //     channelId: 'channel-1',
-      //     portId: 'transfer',
-      //     counterPartyChannelId: 'channel-1266',
-      //     counterPartyPortId: 'transfer',
-      //     ordering: 0,
-      //     state: 3,
-      //     version: 'ics20-1',
-      //   },
-      // },
-      'stride-1': {
-        id: 'connection-998',
-        client_id: '07-tendermint-998',
+      'neutron-1': {
+        id: 'connection-19',
+        client_id: '07-tendermint-36',
         counterparty: {
-          client_id: '07-tendermint-999',
-          connection_id: 'connection-999',
+          client_id: '07-tendermint-152',
+          connection_id: 'connection-112',
         },
         state: 3,
         transferChannel: {
-          channelId: 'channel-998',
+          channelId: 'channel-16',
           portId: 'transfer',
-          counterPartyChannelId: 'channel-999',
+          counterPartyChannelId: 'channel-6476',
           counterPartyPortId: 'transfer',
           ordering: 0,
           state: 3,
@@ -4834,6 +4818,24 @@ export default /** @type {const} } */ ({
           channelId: 'channel-675',
           portId: 'transfer',
           counterPartyChannelId: 'channel-9',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+      'elys-1': {
+        id: 'connection-112',
+        client_id: '07-tendermint-152',
+        counterparty: {
+          client_id: '07-tendermint-36',
+          connection_id: 'connection-19',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-6476',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-16',
           counterPartyPortId: 'transfer',
           ordering: 0,
           state: 3,
