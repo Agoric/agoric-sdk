@@ -115,5 +115,5 @@ wait-for-pods:
 	scripts/pod-readiness.ts
 
 .PHONY: start
-start: install wait-for-pods port-forward fund-provision-pool override-chain-registry register-bank-assets create-osmosis-pool
+start: install wait-for-pods port-forward fund-provision-pool override-chain-registry register-bank-assets
 
