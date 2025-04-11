@@ -49,7 +49,6 @@ This command will:
 3. Set up port forwarding
 4. Fund the provision pool
 5. Override the chain registry
-6. Create a liquidity pool on Osmosis
 
 The process may take 7-12 minutes to complete. You'll see status updates as the pods come online.
 
@@ -67,9 +66,6 @@ make port-forward
 
 # set up Agoric testing environment
 make fund-provision-pool override-chain-registry register-bank-assets
-
-# create and fund a liquidity pool on Osmosis
-make create-osmosis-pool
 ```
 
 If you get an error like "connection refused", you need to wait longer, until all the pods are Running.
@@ -136,6 +132,13 @@ make provision-smart-wallet ADDR=$ADDR
 
 ```bash
 kubectl exec -i noblelocal-genesis-0 -c validator -- nobled query interchain-accounts host params | jq
+```
+
+## Optional Features
+
+```sh
+# create and fund a liquidity pool on Osmosis
+make create-osmosis-pool
 ```
 
 ## Chain Registry
