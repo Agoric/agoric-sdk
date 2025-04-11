@@ -22,3 +22,6 @@ SNAPSHOT_INTERVAL="$(($LATEST_BLOCK_HEIGHT + 1))"
 sed "s/^snapshot-interval\s*=.*/snapshot-interval = $SNAPSHOT_INTERVAL/" \
   "$AGORIC_HOME/config/app.toml" \
   --in-place
+
+# Nuke old snapshots to prevent them from interfering
+rm -rf "$AGORIC_HOME/data/snapshots/"
