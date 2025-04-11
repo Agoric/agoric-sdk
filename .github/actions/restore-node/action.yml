@@ -43,11 +43,11 @@ runs:
         VERSION_IDENTIFIER="${{ inputs.node-version }}"
         OUTPUT_NODE_VERSION="$VERSION_IDENTIFIER"
 
-        if test "$VERSION_IDENTIFIER" == "node-new"
+        if test "$VERSION_IDENTIFIER" == "node-new" || test "$VERSION_IDENTIFIER" == "xs"
         then
           OUTPUT_NODE_VERSION="20"
         else
-          if test "$VERSION_IDENTIFIER" == "node-old" || test "$VERSION_IDENTIFIER" == "xs"
+          if test "$VERSION_IDENTIFIER" == "node-old"
           then
             OUTPUT_NODE_VERSION="18"
           fi
