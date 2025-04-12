@@ -113,7 +113,7 @@ test('use offer result without zoe', async t => {
   t.deepEqual(actual, [100n]);
 });
 
-test('deposit Invitation offer result', async t => {
+test('use Invitation offer result in atomicSwap', async t => {
   const { walletFactoryDriver, agoricNamesRemotes } = t.context;
   const addr = { A: 'agoric1partyA', B: 'agoric1partyB' };
   const wd = {
@@ -159,11 +159,27 @@ test('deposit Invitation offer result', async t => {
       instance: atomicSwap,
     },
     proposal: { give: { Asset }, want: { Price } },
-    after: { deposit: true },
+    after: { saveAs: 'swapInv1' },
   });
 
   t.log(...showInvitationBalance(addr.A, wd.A.getCurrentWalletRecord()));
-  t.like(wd.A.getCurrentWalletRecord().purses[0].balance.value, [
+
+  const sendFn =
+    (
+      nameHub = null as unknown as NameHub,
+      namesByAddress = null as unknown as NameHub,
+      E = <T>(x: Awaited<T>) => x,
+    ) =>
+    () =>
+      E(E(namesByAddress).lookup('agoric1partyB', 'depositFacet')).receive(
+        nameHub.lookup('swapInv1'),
+      );
+  t.log('A sends firstOffer to B', arrowBody(sendFn));
+  await wd.A.evalExpr(arrowBody(sendFn));
+  t.log(...showInvitationBalance(addr.A, wd.A.getCurrentWalletRecord()));
+  t.log(...showInvitationBalance(addr.B, wd.B.getCurrentWalletRecord()));
+  t.log('TODO: Bob verifies installation, issuers');
+  t.like(wd.B.getCurrentWalletRecord().purses[0].balance.value, [
     {
       customDetails: {
         asset: { value: Asset.value },
@@ -172,4 +188,20 @@ test('deposit Invitation offer result', async t => {
       description: 'matchOffer',
     },
   ]);
+
+  await wd.B.executeOffer({
+    id: 'offerB',
+    invitationSpec: {
+      source: 'purse',
+      description: 'matchOffer',
+      instance: atomicSwap,
+    },
+    proposal: { want: { Asset }, give: { Price } },
+  });
+  t.log('A last update after swap', wd.A.getLatestUpdateRecord());
+  // @ts-expect-error TODO: .status type check
+  t.log('A payouts', wd.A.getLatestUpdateRecord().status.payouts);
+  t.log('B last update after swap', wd.B.getLatestUpdateRecord());
+  // @ts-expect-error TODO: .status type check
+  t.log('B payouts', wd.B.getLatestUpdateRecord().status.payouts);
 });
