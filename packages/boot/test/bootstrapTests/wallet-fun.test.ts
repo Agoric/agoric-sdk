@@ -1,9 +1,11 @@
 /** @file use capabilities in smart wallet without offers */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { AmountMath } from '@agoric/ertp';
 import type { CurrentWalletRecord } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { NameHub } from '@agoric/vats';
 import type { IssuerKeywordRecord } from '@agoric/zoe';
+import { start as startSwap } from '@agoric/zoe/src/contracts/atomicSwap.js';
 import type { Installation } from '@agoric/zoe/src/zoeService/utils';
 import bundleSource from '@endo/bundle-source';
 import type { ExecutionContext, TestFn } from 'ava';
@@ -109,4 +111,65 @@ test('use offer result without zoe', async t => {
   const actual = await EV(started.publicFacet).getPrices();
   t.log('prices after', actual);
   t.deepEqual(actual, [100n]);
+});
+
+test('deposit Invitation offer result', async t => {
+  const { walletFactoryDriver, agoricNamesRemotes } = t.context;
+  const addr = { A: 'agoric1partyA', B: 'agoric1partyB' };
+  const wd = {
+    A: await walletFactoryDriver.provideSmartWallet(addr.A),
+    B: await walletFactoryDriver.provideSmartWallet(addr.B),
+  };
+
+  {
+    // in kernel world...
+    const { EV } = t.context.runUtils;
+    const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
+    const issuerHub = await EV(agoricNames).lookup('issuer');
+    const issuers = {
+      Asset: await EV(issuerHub).lookup('ATOM'),
+      Price: await EV(issuerHub).lookup('BLD'),
+    };
+    const swap = await startContract(
+      t,
+      startSwap,
+      '@agoric/zoe/src/contracts/atomicSwap.js',
+      'atomicSwap',
+      issuers,
+    );
+    const namesByAddress =
+      await EV.vat('bootstrap').consumeItem('namesByAddress');
+    const depositA = await EV(namesByAddress).lookup(addr.A, 'depositFacet');
+    // @ts-expect-error atomicSwap provides creatorInvitation
+    await EV(depositA).receive(swap.creatorInvitation);
+    t.log(...showInvitationBalance(addr.A, wd.A.getCurrentWalletRecord()));
+  }
+
+  const { brand } = agoricNamesRemotes;
+  const Asset = AmountMath.make(brand.ATOM as unknown as Brand, 2n);
+  const Price = AmountMath.make(brand.BLD as unknown as Brand, 30n);
+  // client-side presence
+  const { atomicSwap } = agoricNamesRemotes.instance;
+  t.truthy(atomicSwap);
+  await wd.A.sendOffer({
+    id: 'offer1st',
+    invitationSpec: {
+      source: 'purse',
+      description: 'firstOffer',
+      instance: atomicSwap,
+    },
+    proposal: { give: { Asset }, want: { Price } },
+    after: { deposit: true },
+  });
+
+  t.log(...showInvitationBalance(addr.A, wd.A.getCurrentWalletRecord()));
+  t.like(wd.A.getCurrentWalletRecord().purses[0].balance.value, [
+    {
+      customDetails: {
+        asset: { value: Asset.value },
+        price: { value: Price.value },
+      },
+      description: 'matchOffer',
+    },
+  ]);
 });
