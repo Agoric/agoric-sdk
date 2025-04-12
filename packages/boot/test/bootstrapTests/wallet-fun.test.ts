@@ -4,7 +4,7 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath } from '@agoric/ertp';
 import type { CurrentWalletRecord } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { NameHub } from '@agoric/vats';
-import type { IssuerKeywordRecord } from '@agoric/zoe';
+import type { AmountKeywordRecord, IssuerKeywordRecord } from '@agoric/zoe';
 import { start as startSwap } from '@agoric/zoe/src/contracts/atomicSwap.js';
 import type { Installation } from '@agoric/zoe/src/zoeService/utils';
 import bundleSource from '@endo/bundle-source';
@@ -113,6 +113,89 @@ test('use offer result without zoe', async t => {
   t.deepEqual(actual, [100n]);
 });
 
+type WalletDriver = Awaited<
+  ReturnType<TC['walletFactoryDriver']['provideSmartWallet']>
+>;
+
+const makeTrader = (
+  addr: string,
+  wd: WalletDriver,
+  atomicSwap: Instance<typeof startSwap>,
+  // XXX should be able to getTerms()
+  { Asset, Price }: AmountKeywordRecord,
+) => {
+  return harden({
+    wd,
+    async startSale(t: ExecutionContext<TC>, counterpartyAddr: string) {
+      t.log(...showInvitationBalance(addr, wd.getCurrentWalletRecord()));
+      await wd.sendOffer({
+        id: 'initate',
+        invitationSpec: {
+          source: 'purse',
+          description: 'firstOffer',
+          instance: atomicSwap,
+        },
+        proposal: { give: { Asset }, want: { Price } },
+        after: { saveAs: 'swapInv1' },
+      });
+      t.log(...showInvitationBalance(addr, wd.getCurrentWalletRecord()));
+
+      const sendFn =
+        (
+          nameHub = null as unknown as NameHub,
+          namesByAddress = null as unknown as NameHub,
+          E = <T>(x: Awaited<T>) => x,
+        ) =>
+        () =>
+          E(E(namesByAddress).lookup('agoric1partyB', 'depositFacet')).receive(
+            nameHub.lookup('swapInv1'),
+          );
+      t.log(addr, 'sends firstOffer to', counterpartyAddr, arrowBody(sendFn));
+      await wd.evalExpr(arrowBody(sendFn));
+    },
+
+    async buy(t: ExecutionContext<TC>) {
+      t.log(...showInvitationBalance(addr, wd.getCurrentWalletRecord()));
+      t.log('TODO: Bob verifies installation, issuers');
+      t.like(wd.getCurrentWalletRecord().purses[0].balance.value, [
+        {
+          customDetails: {
+            asset: { value: Asset.value },
+            price: { value: Price.value },
+          },
+          description: 'matchOffer',
+        },
+      ]);
+
+      await wd.executeOffer({
+        id: 'buy',
+        invitationSpec: {
+          source: 'purse',
+          description: 'matchOffer',
+          instance: atomicSwap,
+        },
+        proposal: { want: { Asset }, give: { Price } },
+      });
+
+      const update = wd.getLatestUpdateRecord();
+      assert.equal(update.updated, 'offerStatus');
+      t.log('Buyer payouts', update.status.payouts);
+      t.like(update.status.payouts, {
+        Asset: { value: Asset.value },
+      });
+    },
+
+    async completeSale(t: ExecutionContext<TC>) {
+      const update = wd.getLatestUpdateRecord();
+      assert.equal(update.updated, 'offerStatus');
+      t.log('Seller payouts', update.status.payouts);
+      t.like(update.status.payouts, {
+        Price: { value: Price.value },
+      });
+    },
+  });
+};
+
 test('use Invitation offer result in atomicSwap', async t => {
   const { walletFactoryDriver, agoricNamesRemotes } = t.context;
   const addr = { A: 'agoric1partyA', B: 'agoric1partyB' };
@@ -130,6 +213,7 @@ test('use Invitation offer result in atomicSwap', async t => {
       Asset: await EV(issuerHub).lookup('ATOM'),
       Price: await EV(issuerHub).lookup('BLD'),
     };
+    // XXX seller should start contract
     const swap = await startContract(
       t,
       startSwap,
@@ -142,7 +226,6 @@ test('use Invitation offer result in atomicSwap', async t => {
     const depositA = await EV(namesByAddress).lookup(addr.A, 'depositFacet');
     // @ts-expect-error atomicSwap provides creatorInvitation
     await EV(depositA).receive(swap.creatorInvitation);
-    t.log(...showInvitationBalance(addr.A, wd.A.getCurrentWalletRecord()));
   }
 
   const { brand } = agoricNamesRemotes;
@@ -151,57 +234,12 @@ test('use Invitation offer result in atomicSwap', async t => {
   // client-side presence
   const { atomicSwap } = agoricNamesRemotes.instance;
   t.truthy(atomicSwap);
-  await wd.A.sendOffer({
-    id: 'offer1st',
-    invitationSpec: {
-      source: 'purse',
-      description: 'firstOffer',
-      instance: atomicSwap,
-    },
-    proposal: { give: { Asset }, want: { Price } },
-    after: { saveAs: 'swapInv1' },
-  });
+  const party = {
+    A: makeTrader(addr.A, wd.A, atomicSwap, { Asset, Price }),
+    B: makeTrader(addr.B, wd.B, atomicSwap, { Asset, Price }),
+  };
 
-  t.log(...showInvitationBalance(addr.A, wd.A.getCurrentWalletRecord()));
-
-  const sendFn =
-    (
-      nameHub = null as unknown as NameHub,
-      namesByAddress = null as unknown as NameHub,
-      E = <T>(x: Awaited<T>) => x,
-    ) =>
-    () =>
-      E(E(namesByAddress).lookup('agoric1partyB', 'depositFacet')).receive(
-        nameHub.lookup('swapInv1'),
-      );
-  t.log('A sends firstOffer to B', arrowBody(sendFn));
-  await wd.A.evalExpr(arrowBody(sendFn));
-  t.log(...showInvitationBalance(addr.A, wd.A.getCurrentWalletRecord()));
-  t.log(...showInvitationBalance(addr.B, wd.B.getCurrentWalletRecord()));
-  t.log('TODO: Bob verifies installation, issuers');
-  t.like(wd.B.getCurrentWalletRecord().purses[0].balance.value, [
-    {
-      customDetails: {
-        asset: { value: Asset.value },
-        price: { value: Price.value },
-      },
-      description: 'matchOffer',
-    },
-  ]);
-
-  await wd.B.executeOffer({
-    id: 'offerB',
-    invitationSpec: {
-      source: 'purse',
-      description: 'matchOffer',
-      instance: atomicSwap,
-    },
-    proposal: { want: { Asset }, give: { Price } },
-  });
-  t.log('A last update after swap', wd.A.getLatestUpdateRecord());
-  // @ts-expect-error TODO: .status type check
-  t.log('A payouts', wd.A.getLatestUpdateRecord().status.payouts);
-  t.log('B last update after swap', wd.B.getLatestUpdateRecord());
-  // @ts-expect-error TODO: .status type check
-  t.log('B payouts', wd.B.getLatestUpdateRecord().status.payouts);
+  await party.A.startSale(t, addr.B);
+  await party.B.buy(t);
+  await party.A.completeSale(t);
 });
