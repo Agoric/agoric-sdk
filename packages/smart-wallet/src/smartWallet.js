@@ -466,6 +466,7 @@ export const prepareSmartWallet = (baggage, shared) => {
       logWalletError: M.call().rest(M.arrayOf(M.any())).returns(),
       getLiveOfferPayments: M.call().returns(M.remotable('mapStore')),
       saveOfferResult: M.call(M.string(), M.any()).returns(),
+      receive: M.callWhen(M.await(M.eref(PaymentShape))).returns(AmountShape),
     }),
 
     deposit: M.interface('depositFacetI', {
@@ -769,6 +770,10 @@ export const prepareSmartWallet = (baggage, shared) => {
           const { my } = this.state;
           my.nameAdmin.update(name, result);
           trace('saved', name, '=', result);
+        },
+        /** @param {Payment} payment */
+        receive(payment) {
+          return this.facets.deposit.receive(payment);
         },
       },
       /**

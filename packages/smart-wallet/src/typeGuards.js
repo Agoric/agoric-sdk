@@ -58,6 +58,7 @@ export const shape = {
         {},
         {
           saveAs: M.string(),
+          deposit: M.boolean(),
         },
       ),
     },

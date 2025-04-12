@@ -277,6 +277,13 @@ export const prepareOfferWatcher = (baggage, vowTools) => {
           const { walletHelper } = this.state;
           const { after } = this.state.status;
           if (after) {
+            if (after.deposit) {
+              void E.when(
+                walletHelper.receive(result),
+                amt => console.log('TODO: report amt?', amt),
+                err => console.error('TODO: report error', err),
+              );
+            }
             if (after.saveAs) {
               walletHelper.saveOfferResult(after.saveAs, result);
             }

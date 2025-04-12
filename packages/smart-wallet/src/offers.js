@@ -14,6 +14,7 @@
  *   offerArgs?: any;
  *   after?: {
  *     saveAs?: string;
+ *     deposit?: boolean;
  *   };
  * }} OfferSpec
  */
