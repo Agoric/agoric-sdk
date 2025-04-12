@@ -12,6 +12,9 @@
  *   invitationSpec: import('./invitations.js').InvitationSpec;
  *   proposal: Proposal;
  *   offerArgs?: any;
+ *   after?: {
+ *     saveAs?: string;
+ *   };
  * }} OfferSpec
  */
 
