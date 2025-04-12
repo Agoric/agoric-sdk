@@ -57,7 +57,7 @@
   "devDependencies": {
     "@agoric/ertp": "^0.16.2",
     "@endo/bundle-source": "^4.0.0",
-    "ava": "^5.3.0",
+    "ava": "^6.2.0",
     "c8": "^10.1.2"
   },
   "publishConfig": {

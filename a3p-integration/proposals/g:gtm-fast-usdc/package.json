@@ -14,7 +14,7 @@
     "@agoric/synthetic-chain": "0.5.5",
     "@endo/init": "^1.1.9",
     "agoric": "dev",
-    "ava": "^5.3.1"
+    "ava": "^6.2.0"
   },
   "ava": {
     "concurrency": 1,
