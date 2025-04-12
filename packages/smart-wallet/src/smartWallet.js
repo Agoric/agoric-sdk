@@ -40,6 +40,7 @@ import {
 import { prepareVowTools } from '@agoric/vow';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
+import { prepareNameHubKit } from '@agoric/vats';
 import { makeInvitationsHelper } from './invitations.js';
 import { shape } from './typeGuards.js';
 import { objectMapStoragePath } from './utils.js';
@@ -211,6 +212,7 @@ const trace = makeTracer('SmrtWlt');
  *     liveOffers: MapStore<OfferId, OfferStatus>;
  *     liveOfferSeats: MapStore<OfferId, UserSeat<unknown>>;
  *     liveOfferPayments: MapStore<OfferId, MapStore<Brand, Payment>>;
+ *     my: import('@agoric/vats').NameHubKit;
  *   }
  * >} ImmutableState
  *
@@ -302,6 +304,7 @@ export const prepareSmartWallet = (baggage, shared) => {
 
   const makeOfferWatcher = prepareOfferWatcher(baggage, vowTools);
   const watchOfferOutcomes = makeWatchOfferOutcomes(vowTools);
+  const makeNameHubKit = prepareNameHubKit(zone.subZone('names'));
 
   const updateShape = {
     value: AmountShape,
@@ -400,6 +403,8 @@ export const prepareSmartWallet = (baggage, shared) => {
           durable: true,
         },
       ),
+      // TODO: state migration
+      my: makeNameHubKit(),
     };
 
     /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<UpdateRecord>} */
@@ -453,6 +458,7 @@ export const prepareSmartWallet = (baggage, shared) => {
       logWalletInfo: M.call().rest(M.arrayOf(M.any())).returns(),
       logWalletError: M.call().rest(M.arrayOf(M.any())).returns(),
       getLiveOfferPayments: M.call().returns(M.remotable('mapStore')),
+      saveOfferResult: M.call(M.string(), M.any()).returns(),
     }),
 
     deposit: M.interface('depositFacetI', {
@@ -745,6 +751,15 @@ export const prepareSmartWallet = (baggage, shared) => {
           }
           return baggage.get(state.address);
         },
+        /**
+         * @param {string} name
+         * @param {unknown} result
+         */
+        saveOfferResult(name, result) {
+          const { my } = this.state;
+          my.nameAdmin.update(name, result);
+          trace('saved', name, '=', result);
+        },
       },
       /**
        * Similar to {DepositFacet} but async because it has to look up the
@@ -1019,6 +1034,7 @@ export const prepareSmartWallet = (baggage, shared) => {
           await E(seatRef).tryExit();
         },
       },
+
       self: {
         /**
          * Umarshals the actionCapData and delegates to the appropriate action
