@@ -181,6 +181,10 @@ const trace = makeTracer('SmrtWlt');
  * }} UniqueParams
  *
  *
+ * @typedef {{
+ *   namesByAddress: import('@agoric/vats').NameHub;
+ * }} LateParams
+ *
  * @typedef {Pick<MapStore<Brand, BrandDescriptor>, 'has' | 'get' | 'values'>} BrandDescriptorRegistry
  *
  *
@@ -220,7 +224,7 @@ const trace = makeTracer('SmrtWlt');
  *     liveOfferSeats: MapStore<OfferId, UserSeat<unknown>>;
  *     liveOfferPayments: MapStore<OfferId, MapStore<Brand, Payment>>;
  *     my: import('@agoric/vats').NameHubKit;
- *   }
+ *   } & LateParams
  * >} ImmutableState
  *
  *
@@ -367,7 +371,7 @@ export const prepareSmartWallet = (baggage, shared) => {
   const makeAmountWatcher = prepareAmountWatcher();
 
   /**
-   * @param {UniqueParams} unique
+   * @param {UniqueParams & LateParams} unique
    * @returns {State}
    */
   const initState = unique => {
@@ -380,6 +384,7 @@ export const prepareSmartWallet = (baggage, shared) => {
         invitationPurse: PurseShape,
         currentStorageNode: M.eref(StorageNodeShape),
         walletStorageNode: M.eref(StorageNodeShape),
+        namesByAddress: M.remotable('namesByAddress'),
       }),
     );
 
@@ -1058,11 +1063,19 @@ export const prepareSmartWallet = (baggage, shared) => {
           trace(
             'TODO: validate Justin syntax; see https://github.com/endojs/Jessie/pull/121#discussion_r1988126110',
           );
-          trace('evalExpr', expr);
           // XXX worth using a nameHub vs. a mapStore?
+          const { namesByAddress } = this.state;
           const { nameHub, nameAdmin } = this.state.my;
-          const endowments = { E, harden, assert, nameHub, nameAdmin };
+          const endowments = {
+            E,
+            harden,
+            assert,
+            nameHub,
+            nameAdmin,
+            namesByAddress,
+          };
           const c = new Compartment(endowments);
+          trace('evalExpr', expr, 'with', Object.keys(endowments));
           const x = await c.evaluate(expr);
           trace('eval result', x);
         },
@@ -1175,9 +1188,10 @@ export const prepareSmartWallet = (baggage, shared) => {
    * @param {Omit<
    *   UniqueParams,
    *   'currentStorageNode' | 'walletStorageNode'
-   * > & {
-   *   walletStorageNode: ERef<StorageNode>;
-   * }} uniqueWithoutChildNodes
+   * > &
+   *   LateParams & {
+   *     walletStorageNode: ERef<StorageNode>;
+   *   }} uniqueWithoutChildNodes
    */
   const makeSmartWallet = async uniqueWithoutChildNodes => {
     const [walletStorageNode, currentStorageNode] = await Promise.all([
