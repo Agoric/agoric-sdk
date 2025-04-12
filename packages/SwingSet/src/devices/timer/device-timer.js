@@ -26,6 +26,10 @@ import { Nat } from '@endo/nat';
 import { assert, Fail } from '@endo/errors';
 import { Far } from '@endo/far';
 
+/**
+ * @import {Device} from '../../vats/plugin-manager.js';
+ */
+
 // Since we use harden when saving the state, we need to copy the arrays so they
 // will continue to be mutable. each record inside handlers is immutable, so we
 // can share those, but everything higher has to be copied. We copy on every
@@ -86,6 +90,7 @@ function makeTimerMap(state = undefined) {
     return copyState(schedule);
   }
 
+  /** @param {bigint} time */
   function eventsFor(time) {
     assert.typeof(time, 'bigint');
     for (let i = 0; i < schedule.length && schedule[i].time <= time; i += 1) {
@@ -101,8 +106,16 @@ function makeTimerMap(state = undefined) {
   // There's some question as to whether it's important to invoke the handlers
   // in the order of their deadlines. If so, we should probably ensure that the
   // recorded deadlines don't have finer granularity than the turns.
+  /**
+   *
+   * @param {bigint} time
+   * @param {Waker} handler
+   * @param {number} [repeater]
+   * @returns {bigint}
+   */
   function add(time, handler, repeater = undefined) {
     assert.typeof(time, 'bigint');
+    /** @type {IndexedHandler} */
     const handlerRecord =
       typeof repeater === 'number' ? { handler, index: repeater } : { handler };
     const { handlers: records } = eventsFor(time);
@@ -111,7 +124,11 @@ function makeTimerMap(state = undefined) {
     return time;
   }
 
-  // Remove and return all pairs indexed by numbers up to target
+  /**
+   * Remove and return all pairs indexed by numbers up to target
+   *
+   * @param {bigint} target
+   */
   function removeEventsThrough(target) {
     assert.typeof(target, 'bigint');
     const returnValues = [];
@@ -132,33 +149,28 @@ function makeTimerMap(state = undefined) {
   }
 
   // We don't expect this to be called often, so we don't optimize for it.
-  function remove(targetHandler) {
+  /**
+   *
+   * @param {Waker} target
+   * @returns {bigint[]}
+   */
+  function remove(target) {
+    /** @type {bigint[]} */
     const droppedTimes = [];
     let i = 0;
     while (i < schedule.length) {
       const { time, handlers } = schedule[i];
-      if (handlers.length === 1) {
-        if (handlers[0].handler === targetHandler) {
-          schedule.splice(i, 1);
+      // Nothing prevents a particular handler from appearing more than once
+      for (let j = handlers.length - 1; j >= 0; j -= 1) {
+        if (handlers[j].handler === target) {
+          handlers.splice(j, 1);
           droppedTimes.push(time);
-        } else {
-          i += 1;
         }
+      }
+      if (handlers.length === 0) {
+        schedule.splice(i, 1);
       } else {
-        // Nothing prevents a particular handler from appearing more than once
-        for (const { handler } of handlers) {
-          // @ts-expect-error xxx Waker vs IndexedHandler
-          if (handler === targetHandler && handlers.indexOf(handler) !== -1) {
-            // @ts-expect-error xxx Waker vs IndexedHandler
-            handlers.splice(handlers.indexOf(handler), 1);
-            droppedTimes.push(time);
-          }
-        }
-        if (handlers.length === 0) {
-          schedule.splice(i, 1);
-        } else {
-          i += 1;
-        }
+        i += 1;
       }
     }
     return droppedTimes;
@@ -276,6 +288,7 @@ export function buildRootDeviceNode(tools) {
       saveState();
       return baseTime;
     },
+    /** @param {Waker} handler */
     removeWakeup(handler) {
       const times = deadlines.remove(handler);
       saveState();
@@ -303,6 +316,10 @@ export function buildRootDeviceNode(tools) {
       saveState();
       return index;
     },
+    /**
+     * @param {number} index
+     * @param {Waker} handler
+     */
     schedule(index, handler) {
       const nextTime = nextScheduleTime(index, repeaters, lastPolled);
       deadlines.add(nextTime, handler, index);
@@ -311,6 +328,8 @@ export function buildRootDeviceNode(tools) {
     },
   });
 }
+
+/** @typedef {Device<ReturnType<typeof buildRootDeviceNode>>} TimerDevice */
 
 // exported for testing. Only buildRootDeviceNode is intended for production
 // use.
