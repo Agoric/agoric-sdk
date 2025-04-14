@@ -19,7 +19,7 @@
     "@agoric/internal": "dev",
     "@agoric/store": "dev",
     "@agoric/synthetic-chain": "^0.4.3",
-    "@agoric/zoe": "dev",
+    "@agoric/zoe": "0.1.0",
     "@endo/errors": "^1.2.7",
     "@endo/far": "^1.1.8",
     "@endo/init": "^1.1.6",
