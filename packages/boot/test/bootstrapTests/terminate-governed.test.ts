@@ -62,7 +62,7 @@ test(`Create a contract via core-eval and kill it via core-eval by boardID `, as
 
   // Terminate the pair via proposal.
   const terminatorProposal = buildProposal(
-    '@agoric/builders/scripts/vats/terminate-governed-instance.js',
+    '@agoric/vats/src/proposals/terminate-governed-instance.js',
     [`${boardID}:${TEST_CONTRACT_LABEL}`],
   );
   await evalProposal(terminatorProposal);

@@ -5,9 +5,6 @@
  *   script for such core-evals:
  *
  *       agoric run /path/to/$0 <$instanceHandleBoardID:$instanceKitLabel>...
- *
- *   TODO: Move out of builders/scripts/vats/, maybe to cosmic-swingset?
- *   https://github.com/Agoric/agoric-sdk/pull/10861#discussion_r1926208517
  */
 
 /// <reference types="@agoric/vats/src/core/types-ambient"/>
