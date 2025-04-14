@@ -105,6 +105,7 @@ harden(StakingTapStateShape);
  *   assetInfo?: [Denom, DenomDetail & { brandKey?: string }][];
  *   feeConfig: FeeConfigShape;
  *   allowedChains: string[];
+ * storageNode: StorageNode;
  * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
@@ -207,6 +208,10 @@ const contract = async (
   );
 
   const { when } = vowTools;
+  debugger
+  const storageNode = await E(privateArgs.storageNode).makeChildNode('address');
+  const address = await E(when(icaAndLocalAccount)).getAddress();
+  await E(storageNode).setValue( JSON.stringify(address) );
 
   return {
     publicFacet: zone.exo('Public', interfaceTODO, {
