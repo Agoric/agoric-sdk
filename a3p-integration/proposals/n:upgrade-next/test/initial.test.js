@@ -5,7 +5,7 @@ import { getVatDetails } from '@agoric/synthetic-chain';
 
 const vats = {
   network: { incarnation: 2 },
-  ibc: { incarnation: 2 },
+  ibc: { incarnation: 3 },
   localchain: { incarnation: 2 },
   orchestration: { incarnation: 1 },
   transfer: { incarnation: 2 },

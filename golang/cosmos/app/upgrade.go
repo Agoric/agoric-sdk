@@ -121,14 +121,6 @@ func getVariantFromUpgradeName(upgradeName string) string {
 	}
 }
 
-func upgradeMintHolderCoreProposal(targetUpgrade string) (vm.CoreProposalStep, error) {
-	return buildProposalStepFromScript(targetUpgrade, "@agoric/builders/scripts/vats/upgrade-mintHolder.js")
-}
-
-func restartFeeDistributorCoreProposal(targetUpgrade string) (vm.CoreProposalStep, error) {
-	return buildProposalStepFromScript(targetUpgrade, "@agoric/builders/scripts/inter-protocol/replace-feeDistributor-combo.js")
-}
-
 func buildProposalStepFromScript(targetUpgrade string, builderScript string) (vm.CoreProposalStep, error) {
 	variant := getVariantFromUpgradeName(targetUpgrade)
 
@@ -193,40 +185,6 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 				// the walletFactory on every software upgrade
 				vm.CoreProposalStepForModules(
 					"@agoric/builders/scripts/smart-wallet/build-wallet-factory2-upgrade.js",
-				),
-			)
-
-			upgradeMintHolderStep, err := upgradeMintHolderCoreProposal(targetUpgrade)
-			if err != nil {
-				return nil, err
-			} else if upgradeMintHolderStep != nil {
-				CoreProposalSteps = append(CoreProposalSteps, upgradeMintHolderStep)
-			}
-			restartFeeDistributorStep, err := restartFeeDistributorCoreProposal(targetUpgrade)
-			if err != nil {
-				return nil, err
-			} else if restartFeeDistributorStep != nil {
-				CoreProposalSteps = append(CoreProposalSteps, restartFeeDistributorStep)
-			}
-
-			CoreProposalSteps = append(CoreProposalSteps,
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/upgrade-paRegistry.js",
-				),
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/upgrade-provisionPool.js",
-				),
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/upgrade-bank.js",
-				),
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/upgrade-agoricNames.js",
-				),
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/upgrade-asset-reserve.js",
-				),
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/upgrade-psm.js",
 				),
 			)
 		}
