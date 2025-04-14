@@ -175,6 +175,22 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 					"@agoric/builders/scripts/smart-wallet/build-wallet-factory2-upgrade.js",
 				),
 			)
+
+			// When upgrading mainnet, terminate vat v194
+			// "zcf-b1-991f5f-stATOM-USD_price_feed" and its governor.
+			variant := getVariantFromUpgradeName(targetUpgrade)
+			if variant == "MAINNET" {
+				terminatePriceFeedStep, err :=
+					buildProposalStepWithArgs(
+						"@agoric/vats/src/proposals/terminate-governed-instance.js",
+						"upgradeVatsProposalBuilder",
+						"board023341:stATOM-USD_price_feed",
+					)
+				if err != nil {
+					return module.VersionMap{}, err
+				}
+				CoreProposalSteps = append(CoreProposalSteps, terminatePriceFeedStep)
+			}
 		}
 
 		app.upgradeDetails = &upgradeDetails{
