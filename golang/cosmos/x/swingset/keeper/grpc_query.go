@@ -61,3 +61,27 @@ func (k Querier) Mailbox(c context.Context, req *types.QueryMailboxRequest) (*ty
 		Value: value,
 	}, nil
 }
+
+func (k Querier) PendingInstall(c context.Context, req *types.QueryPendingInstallRequest) (*types.QueryPendingInstallResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+	ctx := sdk.UnwrapSDKContext(c)
+
+	msg := k.GetPendingBundleInstall(ctx, req.PendingId)
+	if msg == nil {
+		return nil, status.Error(codes.NotFound, "pending install not found")
+	}
+
+	pin := k.GetPendingInstallNode(ctx, req.PendingId)
+	if pin == nil {
+		return nil, status.Error(codes.NotFound, "pending install node not found")
+	}
+
+	return &types.QueryPendingInstallResponse{
+		PendingId:    req.PendingId,
+		BundleChunks: msg.BundleChunks,
+		StartTime:    pin.StartTime,
+		StartBlock:   pin.StartBlock,
+	}, nil
+}

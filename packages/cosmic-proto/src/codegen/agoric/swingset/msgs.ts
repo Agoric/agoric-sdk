@@ -1,4 +1,10 @@
 //@ts-nocheck
+import {
+  BundleChunks,
+  type BundleChunksSDKType,
+  ChunkInfo,
+  type ChunkInfoSDKType,
+} from './swingset.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet, bytesFromBase64, base64FromBytes } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
@@ -121,12 +127,14 @@ export interface MsgInstallBundle {
   bundle: string;
   submitter: Uint8Array;
   /**
-   * Either bundle or compressed_bundle will be set.
+   * Either bundle, compressed_bundle, or bundle_chunks will be set.
    * Default compression algorithm is gzip.
    */
   compressedBundle: Uint8Array;
-  /** Size in bytes of uncompression of compressed_bundle. */
+  /** Total size in bytes of the bundle artifact. */
   uncompressedSize: bigint;
+  /** Declaration of a chunked bundle. */
+  bundleChunks?: BundleChunks;
 }
 export interface MsgInstallBundleProtoMsg {
   typeUrl: '/agoric.swingset.MsgInstallBundle';
@@ -138,12 +146,16 @@ export interface MsgInstallBundleSDKType {
   submitter: Uint8Array;
   compressed_bundle: Uint8Array;
   uncompressed_size: bigint;
+  bundle_chunks?: BundleChunksSDKType;
 }
 /**
  * MsgInstallBundleResponse is an empty acknowledgement that an install bundle
  * message has been queued for the SwingSet kernel's consideration.
  */
-export interface MsgInstallBundleResponse {}
+export interface MsgInstallBundleResponse {
+  /** The assigned pending installation, if chunks were specified. */
+  pendingId: bigint;
+}
 export interface MsgInstallBundleResponseProtoMsg {
   typeUrl: '/agoric.swingset.MsgInstallBundleResponse';
   value: Uint8Array;
@@ -152,7 +164,58 @@ export interface MsgInstallBundleResponseProtoMsg {
  * MsgInstallBundleResponse is an empty acknowledgement that an install bundle
  * message has been queued for the SwingSet kernel's consideration.
  */
-export interface MsgInstallBundleResponseSDKType {}
+export interface MsgInstallBundleResponseSDKType {
+  pending_id: bigint;
+}
+/**
+ * MsgSendChunk carries a chunk of a bundle through RPC to the chain.  The chunk
+ * is identified by the pending_id of the bundle install message, and the
+ * chunk_index of MsgSendChunk.
+ */
+export interface MsgSendChunk {
+  pendingId: bigint;
+  submitter: Uint8Array;
+  chunkIndex: bigint;
+  chunkData: Uint8Array;
+}
+export interface MsgSendChunkProtoMsg {
+  typeUrl: '/agoric.swingset.MsgSendChunk';
+  value: Uint8Array;
+}
+/**
+ * MsgSendChunk carries a chunk of a bundle through RPC to the chain.  The chunk
+ * is identified by the pending_id of the bundle install message, and the
+ * chunk_index of MsgSendChunk.
+ */
+export interface MsgSendChunkSDKType {
+  pending_id: bigint;
+  submitter: Uint8Array;
+  chunk_index: bigint;
+  chunk_data: Uint8Array;
+}
+/**
+ * MsgSendChunkResponse is an acknowledgement that a chunk has been received by
+ * the chain.
+ */
+export interface MsgSendChunkResponse {
+  pendingId: bigint;
+  /** The current state of the chunk. */
+  chunk?: ChunkInfo;
+  installResponse?: MsgInstallBundleResponse;
+}
+export interface MsgSendChunkResponseProtoMsg {
+  typeUrl: '/agoric.swingset.MsgSendChunkResponse';
+  value: Uint8Array;
+}
+/**
+ * MsgSendChunkResponse is an acknowledgement that a chunk has been received by
+ * the chain.
+ */
+export interface MsgSendChunkResponseSDKType {
+  pending_id: bigint;
+  chunk?: ChunkInfoSDKType;
+  install_response?: MsgInstallBundleResponseSDKType;
+}
 function createBaseMsgDeliverInbound(): MsgDeliverInbound {
   return {
     messages: [],
@@ -777,6 +840,7 @@ function createBaseMsgInstallBundle(): MsgInstallBundle {
     submitter: new Uint8Array(),
     compressedBundle: new Uint8Array(),
     uncompressedSize: BigInt(0),
+    bundleChunks: undefined,
   };
 }
 export const MsgInstallBundle = {
@@ -796,6 +860,12 @@ export const MsgInstallBundle = {
     }
     if (message.uncompressedSize !== BigInt(0)) {
       writer.uint32(32).int64(message.uncompressedSize);
+    }
+    if (message.bundleChunks !== undefined) {
+      BundleChunks.encode(
+        message.bundleChunks,
+        writer.uint32(42).fork(),
+      ).ldelim();
     }
     return writer;
   },
@@ -819,6 +889,9 @@ export const MsgInstallBundle = {
         case 4:
           message.uncompressedSize = reader.int64();
           break;
+        case 5:
+          message.bundleChunks = BundleChunks.decode(reader, reader.uint32());
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -838,6 +911,9 @@ export const MsgInstallBundle = {
       uncompressedSize: isSet(object.uncompressedSize)
         ? BigInt(object.uncompressedSize.toString())
         : BigInt(0),
+      bundleChunks: isSet(object.bundleChunks)
+        ? BundleChunks.fromJSON(object.bundleChunks)
+        : undefined,
     };
   },
   toJSON(message: MsgInstallBundle): JsonSafe<MsgInstallBundle> {
@@ -857,6 +933,10 @@ export const MsgInstallBundle = {
       (obj.uncompressedSize = (
         message.uncompressedSize || BigInt(0)
       ).toString());
+    message.bundleChunks !== undefined &&
+      (obj.bundleChunks = message.bundleChunks
+        ? BundleChunks.toJSON(message.bundleChunks)
+        : undefined);
     return obj;
   },
   fromPartial(object: Partial<MsgInstallBundle>): MsgInstallBundle {
@@ -868,6 +948,10 @@ export const MsgInstallBundle = {
       object.uncompressedSize !== undefined && object.uncompressedSize !== null
         ? BigInt(object.uncompressedSize.toString())
         : BigInt(0);
+    message.bundleChunks =
+      object.bundleChunks !== undefined && object.bundleChunks !== null
+        ? BundleChunks.fromPartial(object.bundleChunks)
+        : undefined;
     return message;
   },
   fromProtoMsg(message: MsgInstallBundleProtoMsg): MsgInstallBundle {
@@ -884,14 +968,19 @@ export const MsgInstallBundle = {
   },
 };
 function createBaseMsgInstallBundleResponse(): MsgInstallBundleResponse {
-  return {};
+  return {
+    pendingId: BigInt(0),
+  };
 }
 export const MsgInstallBundleResponse = {
   typeUrl: '/agoric.swingset.MsgInstallBundleResponse',
   encode(
-    _: MsgInstallBundleResponse,
+    message: MsgInstallBundleResponse,
     writer: BinaryWriter = BinaryWriter.create(),
   ): BinaryWriter {
+    if (message.pendingId !== BigInt(0)) {
+      writer.uint32(8).uint64(message.pendingId);
+    }
     return writer;
   },
   decode(
@@ -905,6 +994,9 @@ export const MsgInstallBundleResponse = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 1:
+          message.pendingId = reader.uint64();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -912,15 +1004,29 @@ export const MsgInstallBundleResponse = {
     }
     return message;
   },
-  fromJSON(_: any): MsgInstallBundleResponse {
-    return {};
+  fromJSON(object: any): MsgInstallBundleResponse {
+    return {
+      pendingId: isSet(object.pendingId)
+        ? BigInt(object.pendingId.toString())
+        : BigInt(0),
+    };
   },
-  toJSON(_: MsgInstallBundleResponse): JsonSafe<MsgInstallBundleResponse> {
+  toJSON(
+    message: MsgInstallBundleResponse,
+  ): JsonSafe<MsgInstallBundleResponse> {
     const obj: any = {};
+    message.pendingId !== undefined &&
+      (obj.pendingId = (message.pendingId || BigInt(0)).toString());
     return obj;
   },
-  fromPartial(_: Partial<MsgInstallBundleResponse>): MsgInstallBundleResponse {
+  fromPartial(
+    object: Partial<MsgInstallBundleResponse>,
+  ): MsgInstallBundleResponse {
     const message = createBaseMsgInstallBundleResponse();
+    message.pendingId =
+      object.pendingId !== undefined && object.pendingId !== null
+        ? BigInt(object.pendingId.toString())
+        : BigInt(0);
     return message;
   },
   fromProtoMsg(
@@ -937,6 +1043,229 @@ export const MsgInstallBundleResponse = {
     return {
       typeUrl: '/agoric.swingset.MsgInstallBundleResponse',
       value: MsgInstallBundleResponse.encode(message).finish(),
+    };
+  },
+};
+function createBaseMsgSendChunk(): MsgSendChunk {
+  return {
+    pendingId: BigInt(0),
+    submitter: new Uint8Array(),
+    chunkIndex: BigInt(0),
+    chunkData: new Uint8Array(),
+  };
+}
+export const MsgSendChunk = {
+  typeUrl: '/agoric.swingset.MsgSendChunk',
+  encode(
+    message: MsgSendChunk,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.pendingId !== BigInt(0)) {
+      writer.uint32(8).uint64(message.pendingId);
+    }
+    if (message.submitter.length !== 0) {
+      writer.uint32(18).bytes(message.submitter);
+    }
+    if (message.chunkIndex !== BigInt(0)) {
+      writer.uint32(24).uint64(message.chunkIndex);
+    }
+    if (message.chunkData.length !== 0) {
+      writer.uint32(34).bytes(message.chunkData);
+    }
+    return writer;
+  },
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgSendChunk {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMsgSendChunk();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.pendingId = reader.uint64();
+          break;
+        case 2:
+          message.submitter = reader.bytes();
+          break;
+        case 3:
+          message.chunkIndex = reader.uint64();
+          break;
+        case 4:
+          message.chunkData = reader.bytes();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): MsgSendChunk {
+    return {
+      pendingId: isSet(object.pendingId)
+        ? BigInt(object.pendingId.toString())
+        : BigInt(0),
+      submitter: isSet(object.submitter)
+        ? bytesFromBase64(object.submitter)
+        : new Uint8Array(),
+      chunkIndex: isSet(object.chunkIndex)
+        ? BigInt(object.chunkIndex.toString())
+        : BigInt(0),
+      chunkData: isSet(object.chunkData)
+        ? bytesFromBase64(object.chunkData)
+        : new Uint8Array(),
+    };
+  },
+  toJSON(message: MsgSendChunk): JsonSafe<MsgSendChunk> {
+    const obj: any = {};
+    message.pendingId !== undefined &&
+      (obj.pendingId = (message.pendingId || BigInt(0)).toString());
+    message.submitter !== undefined &&
+      (obj.submitter = base64FromBytes(
+        message.submitter !== undefined ? message.submitter : new Uint8Array(),
+      ));
+    message.chunkIndex !== undefined &&
+      (obj.chunkIndex = (message.chunkIndex || BigInt(0)).toString());
+    message.chunkData !== undefined &&
+      (obj.chunkData = base64FromBytes(
+        message.chunkData !== undefined ? message.chunkData : new Uint8Array(),
+      ));
+    return obj;
+  },
+  fromPartial(object: Partial<MsgSendChunk>): MsgSendChunk {
+    const message = createBaseMsgSendChunk();
+    message.pendingId =
+      object.pendingId !== undefined && object.pendingId !== null
+        ? BigInt(object.pendingId.toString())
+        : BigInt(0);
+    message.submitter = object.submitter ?? new Uint8Array();
+    message.chunkIndex =
+      object.chunkIndex !== undefined && object.chunkIndex !== null
+        ? BigInt(object.chunkIndex.toString())
+        : BigInt(0);
+    message.chunkData = object.chunkData ?? new Uint8Array();
+    return message;
+  },
+  fromProtoMsg(message: MsgSendChunkProtoMsg): MsgSendChunk {
+    return MsgSendChunk.decode(message.value);
+  },
+  toProto(message: MsgSendChunk): Uint8Array {
+    return MsgSendChunk.encode(message).finish();
+  },
+  toProtoMsg(message: MsgSendChunk): MsgSendChunkProtoMsg {
+    return {
+      typeUrl: '/agoric.swingset.MsgSendChunk',
+      value: MsgSendChunk.encode(message).finish(),
+    };
+  },
+};
+function createBaseMsgSendChunkResponse(): MsgSendChunkResponse {
+  return {
+    pendingId: BigInt(0),
+    chunk: undefined,
+    installResponse: undefined,
+  };
+}
+export const MsgSendChunkResponse = {
+  typeUrl: '/agoric.swingset.MsgSendChunkResponse',
+  encode(
+    message: MsgSendChunkResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.pendingId !== BigInt(0)) {
+      writer.uint32(8).uint64(message.pendingId);
+    }
+    if (message.chunk !== undefined) {
+      ChunkInfo.encode(message.chunk, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.installResponse !== undefined) {
+      MsgInstallBundleResponse.encode(
+        message.installResponse,
+        writer.uint32(26).fork(),
+      ).ldelim();
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): MsgSendChunkResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMsgSendChunkResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.pendingId = reader.uint64();
+          break;
+        case 2:
+          message.chunk = ChunkInfo.decode(reader, reader.uint32());
+          break;
+        case 3:
+          message.installResponse = MsgInstallBundleResponse.decode(
+            reader,
+            reader.uint32(),
+          );
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): MsgSendChunkResponse {
+    return {
+      pendingId: isSet(object.pendingId)
+        ? BigInt(object.pendingId.toString())
+        : BigInt(0),
+      chunk: isSet(object.chunk) ? ChunkInfo.fromJSON(object.chunk) : undefined,
+      installResponse: isSet(object.installResponse)
+        ? MsgInstallBundleResponse.fromJSON(object.installResponse)
+        : undefined,
+    };
+  },
+  toJSON(message: MsgSendChunkResponse): JsonSafe<MsgSendChunkResponse> {
+    const obj: any = {};
+    message.pendingId !== undefined &&
+      (obj.pendingId = (message.pendingId || BigInt(0)).toString());
+    message.chunk !== undefined &&
+      (obj.chunk = message.chunk ? ChunkInfo.toJSON(message.chunk) : undefined);
+    message.installResponse !== undefined &&
+      (obj.installResponse = message.installResponse
+        ? MsgInstallBundleResponse.toJSON(message.installResponse)
+        : undefined);
+    return obj;
+  },
+  fromPartial(object: Partial<MsgSendChunkResponse>): MsgSendChunkResponse {
+    const message = createBaseMsgSendChunkResponse();
+    message.pendingId =
+      object.pendingId !== undefined && object.pendingId !== null
+        ? BigInt(object.pendingId.toString())
+        : BigInt(0);
+    message.chunk =
+      object.chunk !== undefined && object.chunk !== null
+        ? ChunkInfo.fromPartial(object.chunk)
+        : undefined;
+    message.installResponse =
+      object.installResponse !== undefined && object.installResponse !== null
+        ? MsgInstallBundleResponse.fromPartial(object.installResponse)
+        : undefined;
+    return message;
+  },
+  fromProtoMsg(message: MsgSendChunkResponseProtoMsg): MsgSendChunkResponse {
+    return MsgSendChunkResponse.decode(message.value);
+  },
+  toProto(message: MsgSendChunkResponse): Uint8Array {
+    return MsgSendChunkResponse.encode(message).finish();
+  },
+  toProtoMsg(message: MsgSendChunkResponse): MsgSendChunkResponseProtoMsg {
+    return {
+      typeUrl: '/agoric.swingset.MsgSendChunkResponse',
+      value: MsgSendChunkResponse.encode(message).finish(),
     };
   },
 };

@@ -23,6 +23,11 @@ service Query {
   rpc Mailbox(QueryMailboxRequest) returns (QueryMailboxResponse) {
     option (google.api.http).get = "/agoric/swingset/mailbox/{peer}";
   }
+
+  // Return the state of a pending installation.
+  rpc PendingInstall(QueryPendingInstallRequest) returns (QueryPendingInstallResponse) {
+    option (google.api.http).get = "/agoric/swingset/bundle/pending/{pending_id}";
+  }
 }
 
 // QueryParamsRequest is the request type for the Query/Params RPC method.
@@ -62,5 +67,36 @@ message QueryMailboxResponse {
   string value = 1 [
     (gogoproto.jsontag)    = "value",
     (gogoproto.moretags)   = "yaml:\"value\""
+  ];
+}
+
+// QueryPendingInstallRequest is the request type for the Query/PendingInstall RPC method.
+message QueryPendingInstallRequest {
+  uint64 pending_id = 1 [
+    (gogoproto.jsontag)    = "pending_id",
+    (gogoproto.moretags)   = "yaml:\"pending_id\""
+  ];
+}
+
+// QueryPendingInstalllResponse is the response type for the Query/PendingInstall RPC method.
+message QueryPendingInstallResponse {
+  uint64 pending_id = 1 [
+    (gogoproto.jsontag)    = "pending_id",
+    (gogoproto.moretags)   = "yaml:\"pending_id\""
+  ];
+
+  BundleChunks bundle_chunks = 2 [
+    (gogoproto.jsontag)    = "bundle_chunks",
+    (gogoproto.moretags)   = "yaml:\"bundle_chunks\""
+  ];
+
+  int64 start_time = 3 [
+    (gogoproto.jsontag)    = "start_time",
+    (gogoproto.moretags)   = "yaml:\"start_time\""
+  ];
+
+  int64 start_block = 4 [
+    (gogoproto.jsontag)    = "start_block",
+    (gogoproto.moretags)   = "yaml:\"start_block\""
   ];
 }

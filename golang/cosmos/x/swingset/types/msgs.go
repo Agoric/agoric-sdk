@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"io"
+	"regexp"
 	"strings"
 
 	sdkioerrors "cosmossdk.io/errors"
@@ -22,15 +23,21 @@ var (
 	_ sdk.Msg = &MsgDeliverInbound{}
 	_ sdk.Msg = &MsgProvision{}
 	_ sdk.Msg = &MsgInstallBundle{}
+	_ sdk.Msg = &MsgSendChunk{}
 	_ sdk.Msg = &MsgWalletAction{}
 	_ sdk.Msg = &MsgWalletSpendAction{}
 
 	_ vm.ControllerAdmissionMsg = &MsgDeliverInbound{}
 	_ vm.ControllerAdmissionMsg = &MsgInstallBundle{}
+	_ vm.ControllerAdmissionMsg = &MsgSendChunk{}
 	_ vm.ControllerAdmissionMsg = &MsgProvision{}
 	_ vm.ControllerAdmissionMsg = &MsgWalletAction{}
 	_ vm.ControllerAdmissionMsg = &MsgWalletSpendAction{}
 )
+
+// IsHexBytes defines a regular expression to check if the string represents
+// only hexadecimal bytes.
+var IsHexBytes = regexp.MustCompile(`^([0-9a-fA-F]{2})+$`).MatchString
 
 // Contextual information about the message source of an action on an inbound queue.
 // This context should be unique per inboundQueueRecord.
@@ -54,7 +61,10 @@ type InboundQueueRecord struct {
 const (
 	// bundleUncompressedSizeLimit is the (exclusive) limit on uncompressed bundle size.
 	// We must ensure there is an exclusive int64 limit in order to detect an underflow.
-	bundleUncompressedSizeLimit int64 = 10 * 1024 * 1024 // 10MB
+	bundleUncompressedSizeLimit uint64 = 10 * 1024 * 1024 // 10MB
+	chunkSizeLimit              uint64 = 512 * 1024       // 512KB
+	chunkIndexLimit             uint64 = (bundleUncompressedSizeLimit + chunkSizeLimit - 1) / chunkSizeLimit
+	hashLimit                   int    = 128
 )
 
 // Charge an account address for the beans associated with given messages and storage.
@@ -419,24 +429,29 @@ func (msg MsgInstallBundle) ValidateBasic() error {
 	if msg.Submitter.Empty() {
 		return sdkioerrors.Wrap(sdkerrors.ErrInvalidAddress, "Submitter address cannot be empty")
 	}
-	if len(msg.Bundle) == 0 && len(msg.CompressedBundle) == 0 {
+	hasBundle, hasCompressed, hasChunks := len(msg.Bundle) > 0, len(msg.CompressedBundle) > 0, msg.BundleChunks != nil && len(msg.BundleChunks.Chunks) > 0
+	switch {
+	case hasBundle && hasCompressed, hasBundle && hasChunks, hasCompressed && hasChunks:
+		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Cannot submit more than one of bundle, compressed bundle, or chunks")
+	case !hasBundle && !hasCompressed && !hasChunks:
 		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Bundle cannot be empty")
-	}
-	if len(msg.Bundle) != 0 && len(msg.CompressedBundle) != 0 {
-		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Cannot submit both a compressed and an uncompressed bundle at the same time")
-	}
-	if len(msg.Bundle) > 0 && msg.UncompressedSize != 0 {
-		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Uncompressed size cannot be set without a compressed bundle")
-	}
-	if len(msg.CompressedBundle) > 0 && !(msg.UncompressedSize > 0) {
-		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Uncompressed size must be positive")
-	}
-	if msg.UncompressedSize >= bundleUncompressedSizeLimit {
+	case msg.UncompressedSize < 0:
+		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Uncompressed size cannot be negative")
+	case msg.UncompressedSize == 0 && hasCompressed:
+		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Uncompressed size must be set with a compressed bundle")
+	case msg.UncompressedSize != 0 && hasBundle:
+		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Uncompressed size cannot be set with a legacy bundle")
+	case uint64(msg.UncompressedSize) >= bundleUncompressedSizeLimit:
 		// must enforce a limit to avoid overflow when computing its successor in Uncompress()
 		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Uncompressed size out of range")
 	}
-	// We don't check the accuracy of the uncompressed size here, since it could comsume significant CPU.
-	return nil
+	if !hasChunks {
+		// We don't check the accuracy of the uncompressed size here, since it could comsume significant CPU.
+		return nil
+	}
+
+	// Check that the chunks are valid.
+	return msg.BundleChunks.ValidateBasic()
 }
 
 // GetSigners defines whose signature is required
@@ -502,4 +517,109 @@ func (msg *MsgInstallBundle) Uncompress() error {
 	msg.CompressedBundle = []byte{}
 	msg.UncompressedSize = 0
 	return nil
+}
+
+func (bc BundleChunks) ValidateBasic() error {
+	if len(bc.Chunks) == 0 {
+		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Bundle chunks cannot be empty")
+	}
+	if uint64(len(bc.Chunks)) >= chunkIndexLimit {
+		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Number of bundle chunks must be less than %d", chunkIndexLimit)
+	}
+	if len(bc.BundleHash) > hashLimit {
+		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Bundle hash must not exceed %d characters", hashLimit)
+	}
+	if !IsHexBytes(bc.BundleHash) {
+		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Bundle hash must be a hex byte string")
+	}
+	if bc.BundleSize <= 0 || bc.BundleSize >= bundleUncompressedSizeLimit {
+		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Bundle size out of range")
+	}
+	totalChunkSize := uint64(0)
+	for i, chunk := range bc.Chunks {
+		if chunk.ChunkSize <= 0 || chunk.ChunkSize >= chunkSizeLimit {
+			return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Chunk %d size out of range", i)
+		}
+		totalChunkSize += chunk.ChunkSize
+		if len(chunk.Hash) > hashLimit {
+			return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Chunk %d hash must not exceed %d characters", i, hashLimit)
+		}
+		if !IsHexBytes(chunk.Hash) {
+			return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Chunk %d hash must be a hex byte string", i)
+		}
+		switch chunk.State {
+		case ChunkState_CHUNK_STATE_UNSPECIFIED,
+			ChunkState_CHUNK_STATE_IN_FLIGHT,
+			ChunkState_CHUNK_STATE_RECEIVED,
+			ChunkState_CHUNK_STATE_PROCESSED:
+			// valid states
+		default:
+			return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Chunk %d state %s is unrecognized", i, chunk.State.String())
+		}
+	}
+
+	if bc.BundleSize != totalChunkSize {
+		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "bundle size %d does not match total chunk sizes %d", bc.BundleSize, totalChunkSize)
+	}
+	return nil
+}
+
+func NewMsgSendChunk(pendingId uint64, submitter sdk.AccAddress, chunkIndex uint64, chunkData []byte) *MsgSendChunk {
+	return &MsgSendChunk{
+		PendingId:  pendingId,
+		Submitter:  submitter,
+		ChunkIndex: chunkIndex,
+		ChunkData:  chunkData,
+	}
+}
+
+// CheckAdmissibility implements the vm.ControllerAdmissionMsg interface.
+func (msg MsgSendChunk) CheckAdmissibility(ctx sdk.Context, data interface{}) error {
+	keeper, ok := data.(SwingSetKeeper)
+	if !ok {
+		return sdkioerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
+	}
+	beansPerUnit := keeper.GetBeansPerUnit(ctx)
+	return chargeAdmission(ctx, keeper, beansPerUnit, msg.Submitter, []string{string(msg.ChunkData)}, uint64(len(msg.ChunkData)))
+}
+
+// GetInboundMsgCount implements InboundMsgCarrier.
+func (msg MsgSendChunk) GetInboundMsgCount() int32 {
+	return 1
+}
+
+// IsHighPriority implements the vm.ControllerAdmissionMsg interface.
+func (msg MsgSendChunk) IsHighPriority(ctx sdk.Context, data interface{}) (bool, error) {
+	return false, nil
+}
+
+// Route should return the name of the module
+func (msg MsgSendChunk) Route() string { return RouterKey }
+
+// Type should return the action
+func (msg MsgSendChunk) Type() string { return "SendChunk" }
+
+// ValidateBasic runs stateless checks on the message
+func (msg MsgSendChunk) ValidateBasic() error {
+	if msg.PendingId <= 0 {
+		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Pending id must be positive")
+	}
+	if msg.Submitter.Empty() {
+		return sdkioerrors.Wrap(sdkerrors.ErrInvalidAddress, "Submitter address cannot be empty")
+	}
+	if len(msg.ChunkData) == 0 {
+		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Chunk data cannot be empty")
+	}
+	if uint64(len(msg.ChunkData)) >= chunkSizeLimit {
+		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Chunk size must be less than than %d", chunkSizeLimit)
+	}
+	if msg.ChunkIndex >= chunkIndexLimit {
+		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Chunk index must be less than %d", chunkIndexLimit)
+	}
+	return nil
+}
+
+// GetSigners defines whose signature is required
+func (msg MsgSendChunk) GetSigners() []sdk.AccAddress {
+	return []sdk.AccAddress{msg.Submitter}
 }

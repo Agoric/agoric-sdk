@@ -67,6 +67,9 @@ var (
 
 	DefaultBootstrapVatConfig = "@agoric/vm-config/decentral-core-config.json"
 
+	DefaultInstallationDeadlineBlocks  int64 = -1           // unlimited
+	DefaultInstallationDeadlineSeconds int64 = 24 * 60 * 60 // 24 hours
+
 	DefaultPowerFlagFees = []PowerFlagFee{
 		NewPowerFlagFee(PowerFlagSmartWallet, sdk.NewCoins(sdk.NewInt64Coin("ubld", 10_000_000))),
 	}

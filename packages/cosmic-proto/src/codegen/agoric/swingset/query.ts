@@ -4,6 +4,8 @@ import {
   type ParamsSDKType,
   Egress,
   type EgressSDKType,
+  BundleChunks,
+  type BundleChunksSDKType,
 } from './swingset.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { type JsonSafe } from '../../json-safe.js';
@@ -76,6 +78,36 @@ export interface QueryMailboxResponseProtoMsg {
 /** QueryMailboxResponse is the mailbox response. */
 export interface QueryMailboxResponseSDKType {
   value: string;
+}
+/** QueryPendingInstallRequest is the request type for the Query/PendingInstall RPC method. */
+export interface QueryPendingInstallRequest {
+  pendingId: bigint;
+}
+export interface QueryPendingInstallRequestProtoMsg {
+  typeUrl: '/agoric.swingset.QueryPendingInstallRequest';
+  value: Uint8Array;
+}
+/** QueryPendingInstallRequest is the request type for the Query/PendingInstall RPC method. */
+export interface QueryPendingInstallRequestSDKType {
+  pending_id: bigint;
+}
+/** QueryPendingInstalllResponse is the response type for the Query/PendingInstall RPC method. */
+export interface QueryPendingInstallResponse {
+  pendingId: bigint;
+  bundleChunks?: BundleChunks;
+  startTime: bigint;
+  startBlock: bigint;
+}
+export interface QueryPendingInstallResponseProtoMsg {
+  typeUrl: '/agoric.swingset.QueryPendingInstallResponse';
+  value: Uint8Array;
+}
+/** QueryPendingInstalllResponse is the response type for the Query/PendingInstall RPC method. */
+export interface QueryPendingInstallResponseSDKType {
+  pending_id: bigint;
+  bundle_chunks?: BundleChunksSDKType;
+  start_time: bigint;
+  start_block: bigint;
 }
 function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
@@ -470,6 +502,217 @@ export const QueryMailboxResponse = {
     return {
       typeUrl: '/agoric.swingset.QueryMailboxResponse',
       value: QueryMailboxResponse.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryPendingInstallRequest(): QueryPendingInstallRequest {
+  return {
+    pendingId: BigInt(0),
+  };
+}
+export const QueryPendingInstallRequest = {
+  typeUrl: '/agoric.swingset.QueryPendingInstallRequest',
+  encode(
+    message: QueryPendingInstallRequest,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.pendingId !== BigInt(0)) {
+      writer.uint32(8).uint64(message.pendingId);
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryPendingInstallRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryPendingInstallRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.pendingId = reader.uint64();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryPendingInstallRequest {
+    return {
+      pendingId: isSet(object.pendingId)
+        ? BigInt(object.pendingId.toString())
+        : BigInt(0),
+    };
+  },
+  toJSON(
+    message: QueryPendingInstallRequest,
+  ): JsonSafe<QueryPendingInstallRequest> {
+    const obj: any = {};
+    message.pendingId !== undefined &&
+      (obj.pendingId = (message.pendingId || BigInt(0)).toString());
+    return obj;
+  },
+  fromPartial(
+    object: Partial<QueryPendingInstallRequest>,
+  ): QueryPendingInstallRequest {
+    const message = createBaseQueryPendingInstallRequest();
+    message.pendingId =
+      object.pendingId !== undefined && object.pendingId !== null
+        ? BigInt(object.pendingId.toString())
+        : BigInt(0);
+    return message;
+  },
+  fromProtoMsg(
+    message: QueryPendingInstallRequestProtoMsg,
+  ): QueryPendingInstallRequest {
+    return QueryPendingInstallRequest.decode(message.value);
+  },
+  toProto(message: QueryPendingInstallRequest): Uint8Array {
+    return QueryPendingInstallRequest.encode(message).finish();
+  },
+  toProtoMsg(
+    message: QueryPendingInstallRequest,
+  ): QueryPendingInstallRequestProtoMsg {
+    return {
+      typeUrl: '/agoric.swingset.QueryPendingInstallRequest',
+      value: QueryPendingInstallRequest.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryPendingInstallResponse(): QueryPendingInstallResponse {
+  return {
+    pendingId: BigInt(0),
+    bundleChunks: undefined,
+    startTime: BigInt(0),
+    startBlock: BigInt(0),
+  };
+}
+export const QueryPendingInstallResponse = {
+  typeUrl: '/agoric.swingset.QueryPendingInstallResponse',
+  encode(
+    message: QueryPendingInstallResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.pendingId !== BigInt(0)) {
+      writer.uint32(8).uint64(message.pendingId);
+    }
+    if (message.bundleChunks !== undefined) {
+      BundleChunks.encode(
+        message.bundleChunks,
+        writer.uint32(18).fork(),
+      ).ldelim();
+    }
+    if (message.startTime !== BigInt(0)) {
+      writer.uint32(24).int64(message.startTime);
+    }
+    if (message.startBlock !== BigInt(0)) {
+      writer.uint32(32).int64(message.startBlock);
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryPendingInstallResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryPendingInstallResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.pendingId = reader.uint64();
+          break;
+        case 2:
+          message.bundleChunks = BundleChunks.decode(reader, reader.uint32());
+          break;
+        case 3:
+          message.startTime = reader.int64();
+          break;
+        case 4:
+          message.startBlock = reader.int64();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryPendingInstallResponse {
+    return {
+      pendingId: isSet(object.pendingId)
+        ? BigInt(object.pendingId.toString())
+        : BigInt(0),
+      bundleChunks: isSet(object.bundleChunks)
+        ? BundleChunks.fromJSON(object.bundleChunks)
+        : undefined,
+      startTime: isSet(object.startTime)
+        ? BigInt(object.startTime.toString())
+        : BigInt(0),
+      startBlock: isSet(object.startBlock)
+        ? BigInt(object.startBlock.toString())
+        : BigInt(0),
+    };
+  },
+  toJSON(
+    message: QueryPendingInstallResponse,
+  ): JsonSafe<QueryPendingInstallResponse> {
+    const obj: any = {};
+    message.pendingId !== undefined &&
+      (obj.pendingId = (message.pendingId || BigInt(0)).toString());
+    message.bundleChunks !== undefined &&
+      (obj.bundleChunks = message.bundleChunks
+        ? BundleChunks.toJSON(message.bundleChunks)
+        : undefined);
+    message.startTime !== undefined &&
+      (obj.startTime = (message.startTime || BigInt(0)).toString());
+    message.startBlock !== undefined &&
+      (obj.startBlock = (message.startBlock || BigInt(0)).toString());
+    return obj;
+  },
+  fromPartial(
+    object: Partial<QueryPendingInstallResponse>,
+  ): QueryPendingInstallResponse {
+    const message = createBaseQueryPendingInstallResponse();
+    message.pendingId =
+      object.pendingId !== undefined && object.pendingId !== null
+        ? BigInt(object.pendingId.toString())
+        : BigInt(0);
+    message.bundleChunks =
+      object.bundleChunks !== undefined && object.bundleChunks !== null
+        ? BundleChunks.fromPartial(object.bundleChunks)
+        : undefined;
+    message.startTime =
+      object.startTime !== undefined && object.startTime !== null
+        ? BigInt(object.startTime.toString())
+        : BigInt(0);
+    message.startBlock =
+      object.startBlock !== undefined && object.startBlock !== null
+        ? BigInt(object.startBlock.toString())
+        : BigInt(0);
+    return message;
+  },
+  fromProtoMsg(
+    message: QueryPendingInstallResponseProtoMsg,
+  ): QueryPendingInstallResponse {
+    return QueryPendingInstallResponse.decode(message.value);
+  },
+  toProto(message: QueryPendingInstallResponse): Uint8Array {
+    return QueryPendingInstallResponse.encode(message).finish();
+  },
+  toProtoMsg(
+    message: QueryPendingInstallResponse,
+  ): QueryPendingInstallResponseProtoMsg {
+    return {
+      typeUrl: '/agoric.swingset.QueryPendingInstallResponse',
+      value: QueryPendingInstallResponse.encode(message).finish(),
     };
   },
 };

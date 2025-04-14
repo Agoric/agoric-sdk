@@ -2,6 +2,7 @@ syntax = "proto3";
 package agoric.swingset;
 
 import "gogoproto/gogo.proto";
+import "agoric/swingset/swingset.proto";
 
 option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types";
 
@@ -9,6 +10,8 @@ option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types
 service Msg {
   // Install a JavaScript sources bundle on the chain's SwingSet controller.
   rpc InstallBundle(MsgInstallBundle) returns (MsgInstallBundleResponse);
+  // Send a chunk of a bundle to tolerate bandwidth constraints.
+  rpc SendChunk(MsgSendChunk) returns (MsgSendChunkResponse);
   // Send inbound messages.
   rpc DeliverInbound(MsgDeliverInbound) returns (MsgDeliverInboundResponse);
   // Perform a low-privilege wallet action.
@@ -122,18 +125,70 @@ message MsgInstallBundle {
         (gogoproto.jsontag)    = "submitter",
         (gogoproto.moretags)   = "yaml:\"submitter\""
     ];
-    // Either bundle or compressed_bundle will be set.
+    // Either bundle, compressed_bundle, or bundle_chunks will be set.
     // Default compression algorithm is gzip.
     bytes compressed_bundle = 3 [
         (gogoproto.jsontag)    = "compressedBundle",
         (gogoproto.moretags)   = "yaml:\"compressedBundle\""
     ];
-    // Size in bytes of uncompression of compressed_bundle.
+    // Total size in bytes of the bundle artifact.
     int64 uncompressed_size = 4 [
         (gogoproto.jsontag) = "uncompressedSize"
+    ];
+    // Declaration of a chunked bundle.
+    BundleChunks bundle_chunks = 5 [
+        (gogoproto.jsontag)    = "bundleChunks",
+        (gogoproto.moretags)   = "yaml:\"bundleChunks\""
     ];
 }
 
 // MsgInstallBundleResponse is an empty acknowledgement that an install bundle
 // message has been queued for the SwingSet kernel's consideration.
-message MsgInstallBundleResponse {}
+message MsgInstallBundleResponse {
+    // The assigned pending installation, if chunks were specified.
+    uint64 pending_id = 1 [
+        (gogoproto.jsontag)    = "pending_id",
+        (gogoproto.moretags)   = "yaml:\"pending_id\""
+    ];
+}
+
+// MsgSendChunk carries a chunk of a bundle through RPC to the chain.  The chunk
+// is identified by the pending_id of the bundle install message, and the
+// chunk_index of MsgSendChunk.
+message MsgSendChunk {
+  uint64 pending_id = 1 [
+    (gogoproto.jsontag)    = "pending_id",
+    (gogoproto.moretags)   = "yaml:\"pending_id\""
+  ];
+  bytes submitter = 2 [
+    (gogoproto.casttype)   = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+    (gogoproto.jsontag)    = "submitter",
+    (gogoproto.moretags)   = "yaml:\"submitter\""
+  ];
+  uint64 chunk_index = 3 [
+    (gogoproto.jsontag)    = "chunk_index",
+    (gogoproto.moretags)   = "yaml:\"chunk_index\""
+  ];
+  bytes chunk_data = 4 [
+    (gogoproto.jsontag)    = "chunk_data",
+    (gogoproto.moretags)   = "yaml:\"chunk_data\""
+  ];
+}
+
+// MsgSendChunkResponse is an acknowledgement that a chunk has been received by
+// the chain.
+message MsgSendChunkResponse {
+  uint64 pending_id = 1 [
+    (gogoproto.jsontag)    = "pending_id",
+    (gogoproto.moretags)   = "yaml:\"pending_id\""
+  ];
+  // The current state of the chunk.
+  ChunkInfo chunk = 2 [
+    (gogoproto.jsontag)    = "chunk",
+    (gogoproto.moretags)   = "yaml:\"chunk\""
+  ];
+  MsgInstallBundleResponse install_response = 3 [
+    (gogoproto.jsontag)    = "install_response",
+    (gogoproto.moretags)   = "yaml:\"install_response\""
+  ];
+}
