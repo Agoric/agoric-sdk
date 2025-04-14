@@ -15,6 +15,8 @@ sed -i -e 's#"tcp://127.0.0.1:26657"#"tcp://0.0.0.0:26657"#g' $CHAIN_DIR/config/
 sed -i -e 's/index_all_keys = false/index_all_keys = true/g' $CHAIN_DIR/config/config.toml
 sed -i -e 's/seeds = ".*"/seeds = ""/g' $CHAIN_DIR/config/config.toml
 sed -i -e 's#cors_allowed_origins = \[\]#cors_allowed_origins = \["*"\]#g' $CHAIN_DIR/config/config.toml
+grep log_level $CHAIN_DIR/config/config.toml
+sed -i -e 's/log_level = "info"/log_level = "trace"/g' $CHAIN_DIR/config/config.toml
 
 echo "Update client.toml file"
 sed -i -e 's#keyring-backend = "os"#keyring-backend = "test"#g' $CHAIN_DIR/config/client.toml
@@ -68,3 +70,6 @@ sed -i -e "s#timeout_commit = \".*\"#timeout_commit = \"$TIMEOUT_COMMIT\"#g" $CH
 if [ "$METRICS" == "true" ]; then
   sed -i -e "s/prometheus = false/prometheus = true/g" $CHAIN_DIR/config/config.toml
 fi
+
+echo "Updated config.toml to:"
+cat $CHAIN_DIR/config/config.toml
