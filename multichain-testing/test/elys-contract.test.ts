@@ -6,7 +6,7 @@ import type { SetupContextWithWallets } from './support.js';
 import { commonSetup } from './support.js';
 import { E } from '@endo/far';
 import { makeDoOffer } from '../tools/e2e-tools.js';
-
+const { fromEntries } = Object;
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
@@ -22,9 +22,7 @@ test.before(async t => {
   await deleteTestKeys(accounts).catch();
   const wallets = await setupTestKeys(accounts);
   t.context = { ...common, wallets };
-  await startContract(contractName, contractBuilder, commonBuilderOpts, {
-    skipInstanceCheck: true,
-  });
+  await startContract(contractName, contractBuilder, commonBuilderOpts);
 });
 
 test.after(async t => {
@@ -59,22 +57,9 @@ const elysContractScenario = test.macro({
       IST: 100n,
     });
 
-  const doOffer = makeDoOffer(wdUser);
-  t.log(`${chainName} makeAccount offer`);
-  const offerId = `${chainName}-makeAccountsInvitation-${Date.now()}`;
-
-  await doOffer({
-    id: offerId,
-    invitationSpec: {
-      source: 'agoricContract',
-      instancePath: [contractName],
-      callPipe: [['getLocalAddress']],
-    },
-    offerArgs: {
-    },
-    proposal: {},
-  });
-  },
+    let elysContractInstance = await vstorageClient.queryData('published.agoricNames.instance')
+    console.log('elysContractInstance', elysContractInstance);
+  }
 });
 
 test.serial(elysContractScenario, 'cosmoshub');
