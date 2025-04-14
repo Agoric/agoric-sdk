@@ -90,10 +90,12 @@ make tail-slog
 
 # agoric validator logs
 kubectl logs agoriclocal-genesis-0 --container=validator --follow
+kubectl logs noblelocal-genesis-0 --container=validator --follow
 
 # relayer logs
 kubectl logs hermes-agoric-cosmoshub-0 --container=relayer --follow
 kubectl logs hermes-osmosis-cosmoshub-0 --container=relayer --follow
+kubectl logs hermes-agoric-noble-0 --container=relayer --follow
 ```
 
 ## Running with Go Relayer

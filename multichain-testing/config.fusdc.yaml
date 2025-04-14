@@ -71,6 +71,9 @@ chains:
         staking:
           params:
             unbonding_time: '2m'
+    scripts:
+      updateConfig:
+        file: scripts/update-config.sh
     faucet:
       enabled: true
       type: starship
