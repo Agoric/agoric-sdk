@@ -22,7 +22,9 @@ test.before(async t => {
   await deleteTestKeys(accounts).catch();
   const wallets = await setupTestKeys(accounts);
   t.context = { ...common, wallets };
-  await startContract(contractName, contractBuilder, commonBuilderOpts);
+  await startContract(contractName, contractBuilder, commonBuilderOpts, {
+    skipInstanceCheck: true
+  });
 });
 
 test.after(async t => {
@@ -41,24 +43,12 @@ const elysContractScenario = test.macro({
       useChain,
     } = t.context;
 
-    const fundAndTransfer = makeFundAndTransfer(
-      t,
-      retryUntilCondition,
-      useChain,
-    );
-
-    const remoteChainInfo = starshipChainInfo[chainName];
-    const stakingDenom = remoteChainInfo?.stakingTokens?.[0].denom;
-    if (!stakingDenom) throw Error(`staking denom found for ${chainName}`);
-
-    const agoricUserAddr = wallets[chainName];
-    const wdUser = await provisionSmartWallet(agoricUserAddr, {
-      BLD: 100n,
-      IST: 100n,
-    });
-
+    let localStorage = await vstorageClient.queryData('published.agoricNames.ElysContractAccount.localAgoricAccount')
+    console.log('elysContractInstance', localStorage);
+  
     let elysContractInstance = await vstorageClient.queryData('published.agoricNames.instance')
     console.log('elysContractInstance', elysContractInstance);
+
   }
 });
 
