@@ -3,7 +3,7 @@ import { StargateClient } from '@cosmjs/stargate';
 import { Tendermint34Client } from '@cosmjs/tendermint-rpc';
 
 /**
- * @import {MinimalNetworkConfig} from './network-config.js';
+ * @import {NetworkConfig} from './types.js';
  */
 
 // TODO distribute load
@@ -20,7 +20,7 @@ export const makeTendermint34Client = (endpoint, { fetch }) => {
 };
 
 /**
- * @param {MinimalNetworkConfig} config
+ * @param {NetworkConfig} config
  * @param {{ fetch: typeof window.fetch }} io
  * @returns {Promise<StargateClient>}
  */

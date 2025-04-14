@@ -56,15 +56,48 @@ index 7f62daaef8bcdb8248da0fd65e7b2880a5c1cf92..4e85f6ac4164b932e738e5d21fdfe949
 +makeErrorish(YAMLException, "YAMLException");
  
  module.exports = YAMLException;
-diff --git a/package.json b/package.json
-index 17574da805a18032a9b7c584e2e39d685ec043c8..326d6cc5ccadf805023c59d7eb596a117df1e648 100644
---- a/package.json
-+++ b/package.json
-@@ -62,5 +62,6 @@
-     "rollup-plugin-node-polyfills": "^0.2.1",
-     "rollup-plugin-terser": "^7.0.2",
-     "shelljs": "^0.8.4"
--  }
-+  },
-+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
- }
+diff --git a/dist/js-yaml.mjs b/dist/js-yaml.mjs
+index be71cad18da90d26e66ce43d419880ad008d27e0..b1b98036703a401c170fc0bf2165560748815a83 100644
+--- a/dist/js-yaml.mjs
++++ b/dist/js-yaml.mjs
+@@ -109,14 +109,32 @@ function YAMLException$1(reason, mark) {
+ 
+ 
+ // Inherit from Error
+-YAMLException$1.prototype = Object.create(Error.prototype);
+-YAMLException$1.prototype.constructor = YAMLException$1;
+-
+-
+-YAMLException$1.prototype.toString = function toString(compact) {
+-  return this.name + ': ' + formatError(this, compact);
+-};
+-
++function makeErrorish(errorConstructor, name) {
++  errorConstructor.prototype = Object.create(Error.prototype, {
++    constructor: {
++      value: errorConstructor,
++      writable: true,
++      enumerable: true,
++      configurable: true,
++    },
++    name: {
++      value: name,
++      writable: true,
++      enumerable: true,
++      configurable: true,
++    },
++    toString: {
++      value: function toString(compact) {
++        return this.name + ": " + formatError(this, compact);
++      },
++      writable: true,
++      enumerable: true,
++      configurable: true,
++    },
++  });
++}
++makeErrorish(YAMLException$1, "YAMLException");
++  
+ 
+ var exception = YAMLException$1;
+ 

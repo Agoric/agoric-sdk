@@ -73,15 +73,15 @@ add-address:
 	kubectl exec -i agoriclocal-genesis-0 -c validator -- agd keys add user1
 
 fund-provision-pool:
-	scripts/fund-provision-pool.ts
+	STARSHIP_CONFIG_FILE=$(FILE) scripts/fund-provision-pool.ts
 
 override-chain-registry:
 	scripts/fetch-starship-chain-info.ts && \
-	scripts/deploy-cli.ts src/revise-chain-info.builder.js
+	STARSHIP_CONFIG_FILE=$(FILE) scripts/deploy-cli.ts src/revise-chain-info.builder.js
 
 register-bank-assets:
 	scripts/fetch-starship-chain-info.ts && \
-	scripts/deploy-cli.ts src/register-interchain-bank-assets.builder.js \
+	STARSHIP_CONFIG_FILE=$(FILE) scripts/deploy-cli.ts src/register-interchain-bank-assets.builder.js \
 		assets="$$(scripts/make-bank-asset-info.ts)"
 
 ADDR=agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce

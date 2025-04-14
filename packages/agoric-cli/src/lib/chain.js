@@ -4,7 +4,7 @@ import { normalizeBech32 } from '@cosmjs/encoding';
 import { execFileSync as execFileSyncAmbient } from 'child_process';
 
 /**
- * @import {MinimalNetworkConfig} from '@agoric/client-utils';
+ * @import {NetworkConfig} from '@agoric/client-utils';
  * @import {ParamsSDKType} from '@agoric/cosmic-proto/agoric/swingset/swingset.js';
  */
 
@@ -71,7 +71,7 @@ const makeGasOpts = limit => {
 
 /**
  * @param {ReadonlyArray<string>} swingsetArgs
- * @param {MinimalNetworkConfig & {
+ * @param {NetworkConfig & {
  *   from: string,
  *   fees?: string,
  *   gas?: GasLimit,
@@ -132,7 +132,7 @@ harden(execSwingsetTransaction);
 
 /**
  *
- * @param {MinimalNetworkConfig} net
+ * @param {NetworkConfig} net
  * @returns {ParamsSDKType}
  */
 // TODO fetch by HTTP instead of shelling out https://github.com/Agoric/agoric-sdk/issues/9200
@@ -153,7 +153,7 @@ export const fetchSwingsetParams = net => {
 harden(fetchSwingsetParams);
 
 /**
- * @param {MinimalNetworkConfig & {
+ * @param {NetworkConfig & {
  *   execFileSync: typeof import('child_process').execFileSync,
  *   delay: (ms: number) => Promise<void>,
  *   period?: number,
@@ -193,7 +193,7 @@ export const pollBlocks = opts => async lookup => {
 
 /**
  * @param {string} txhash
- * @param {MinimalNetworkConfig & {
+ * @param {NetworkConfig & {
  *   execFileSync: typeof import('child_process').execFileSync,
  *   delay: (ms: number) => Promise<void>,
  *   period?: number,

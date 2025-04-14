@@ -1,13 +1,13 @@
 /* global Buffer */
 
 /**
- * @import {MinimalNetworkConfig} from './network-config.js';
+ * @import {NetworkConfig} from './types.js';
  */
 
 /**
  * @param {object} powers
  * @param {typeof window.fetch} powers.fetch
- * @param {MinimalNetworkConfig} config
+ * @param {NetworkConfig} config
  */
 export const makeVStorage = ({ fetch }, config) => {
   /** @param {string} path */

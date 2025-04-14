@@ -22,6 +22,7 @@ import { makeNobleTools } from '../tools/noble-tools.js';
 import { makeAssetInfo } from '../tools/asset-info.js';
 import starshipChainInfo from '../starship-chain-info.js';
 import { makeFaucetTools } from '../tools/faucet-tools.js';
+import { extractNetworkConfig, readStarshipConfig } from '../tools/net.js';
 
 export const FAUCET_POUR = 10_000n * 1_000_000n;
 
@@ -88,7 +89,12 @@ export const commonSetup = async (
     console.error('setupRegistry failed', e);
     throw e;
   }
-  const tools = await makeAgdTools(t.log, childProcess);
+  const networkConfig = extractNetworkConfig(
+    'agoriclocal',
+    readStarshipConfig(config, { readFileSync: fse.readFileSync }),
+  );
+
+  const tools = await makeAgdTools(networkConfig, t.log, childProcess);
   const keyring = await makeKeyring(tools);
   const deployBuilder = makeDeployBuilder(tools, fse.readJSON, execa);
   const retryUntilCondition = makeRetryUntilCondition({
