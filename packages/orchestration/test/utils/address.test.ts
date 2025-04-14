@@ -261,4 +261,6 @@ const mintRecipientMacro = test.macro({
   },
 });
 
-cctpFixture.forEach(detail => test(mintRecipientMacro, detail));
+for (const detail of cctpFixture) {
+  test(mintRecipientMacro, detail);
+}
