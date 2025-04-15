@@ -1,7 +1,11 @@
 REPOSITORY = ghcr.io/agoric/cosmic-swingset
 REPOSITORY_SDK = ghcr.io/agoric/agoric-sdk
 SS := ../cosmic-swingset/
-DOCKER_BUILD ?= docker build
+ifdef CI
+	DOCKER_BUILD ?= depot build --load
+else
+	DOCKER_BUILD ?= docker build
+endif
 
 TAG := unreleased
 
