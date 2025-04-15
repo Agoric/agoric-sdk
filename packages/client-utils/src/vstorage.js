@@ -8,6 +8,8 @@ import { decodeBase64 } from '@endo/base64';
 import { encodeHex } from '@agoric/internal/src/hex.js';
 
 /**
+ * @import {AbciQueryResponse} from '@cosmjs/tendermint-rpc';
+ * @import {JsonSafe} from '@agoric/cosmic-proto';
  * @import {MinimalNetworkConfig} from './network-config.js';
  */
 
@@ -33,11 +35,19 @@ const codecs = {
  */
 export const makeVStorage = ({ fetch }, config) => {
   /**
-   * @param {string} path
+   * @template {keyof codecs} T
+   * @param {string} vstoragePath
+   * @param {object} [opts]
+   * @param {T} [opts.kind]
+   * @param {number | bigint} [opts.height] 0 is the same as omitting height and implies the highest block
+   * @returns {Promise<{result: {response: JsonSafe<AbciQueryResponse>}}>}
    */
-  const getJSON = async path => {
-    const url = config.rpcAddrs[0] + path;
-    // console.warn('fetching', url);
+  const getVstorageJson = async (
+    vstoragePath,
+    { kind = /** @type {T} */ ('children'), height = 0 } = {},
+  ) => {
+    const url =
+      config.rpcAddrs[0] + makeAbciQuery(vstoragePath, { kind, height });
     const res = await fetch(url, { keepalive: true });
     return res.json();
   };
@@ -48,8 +58,9 @@ export const makeVStorage = ({ fetch }, config) => {
    * @param {object} [opts]
    * @param {T} [opts.kind]
    * @param {number | bigint} [opts.height] 0 is the same as omitting height and implies the highest block
+   * @returns {`/abci_query?${string}`}
    */
-  const url = (
+  const makeAbciQuery = (
     path = 'published',
     { kind = /** @type {T} */ ('children'), height = 0 } = {},
   ) => {
@@ -76,7 +87,7 @@ export const makeVStorage = ({ fetch }, config) => {
     path = 'published',
     { kind = /** @type {T} */ ('children'), height = 0 } = {},
   ) =>
-    getJSON(url(path, { kind, height }))
+    getVstorageJson(path, { kind, height })
       .catch(err => {
         throw Error(`cannot read ${kind} of ${path}: ${err.message}`);
       })
@@ -102,9 +113,10 @@ export const makeVStorage = ({ fetch }, config) => {
       });
 
   const vstorage = {
-    url,
+    /** @deprecated use abstractions */
+    url: makeAbciQuery,
     /**
-     * @param {{ result: { response: { value: string, code: number } }, codec?: ResponseCodec }} param0
+     * @param {{ result: { response: JsonSafe<AbciQueryResponse>}, codec?: ResponseCodec }} param0
      */
     decode({ result: { response }, codec }) {
       const { code } = response;
