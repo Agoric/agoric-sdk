@@ -1,12 +1,8 @@
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
-import starshipChainInfo from '../starship-chain-info.js';
-import { makeFundAndTransfer } from '../tools/ibc-transfer.js';
 import type { SetupContextWithWallets } from './support.js';
 import { commonSetup } from './support.js';
-import { E } from '@endo/far';
-import { makeDoOffer } from '../tools/e2e-tools.js';
-const { fromEntries } = Object;
+
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
@@ -23,7 +19,7 @@ test.before(async t => {
   const wallets = await setupTestKeys(accounts);
   t.context = { ...common, wallets };
   await startContract(contractName, contractBuilder, commonBuilderOpts, {
-    skipInstanceCheck: true
+    skipInstanceCheck: true,
   });
 });
 
@@ -32,24 +28,46 @@ test.after(async t => {
   deleteTestKeys(accounts);
 });
 
-const elysContractScenario = test.macro({
-  title: (_, chainName: string) => `receive stride Staked STtokens on Elys`,
-  exec: async (t, chainName: string) => {
-    const {
-      wallets,
-      vstorageClient,
-      provisionSmartWallet,
-      retryUntilCondition,
-      useChain,
-    } = t.context;
-
-    let localStorage = await vstorageClient.queryData('published.agoricNames.ElysContractAccount.localAgoricAccount')
-    console.log('elysContractInstance', localStorage);
+test('Elys contract is successfully installed', async t => {
+  const { vstorageClient } = t.context;
   
-    let elysContractInstance = await vstorageClient.queryData('published.agoricNames.instance')
-    console.log('elysContractInstance', elysContractInstance);
-
-  }
+  // Check if the ElysContract instance is registered in agoricNames
+  const instances = Object.fromEntries(
+    await vstorageClient.queryData('published.agoricNames.instance')
+  );
+  
+  t.truthy(
+    instances[contractName], 
+    `${contractName} is registered in agoricNames instances`
+  );
 });
 
-test.serial(elysContractScenario, 'cosmoshub');
+test('Elys contract has a valid address in vstorage', async t => {
+  const { vstorageClient, retryUntilCondition } = t.context;
+  
+  // Check for the presence of the address in the ElysContract storage path
+  const addressData = await retryUntilCondition(
+    () => vstorageClient.queryData(`published.${contractName}.address`),
+    (result) => result !== undefined,
+    `${contractName} address is available in vstorage`,
+    { maxRetries: 20, retryIntervalMs: 3000 }
+  );
+  
+  t.log('Elys contract address data:', addressData);
+  
+  // No need to parse if it's already an object
+  const addressObj = typeof addressData === 'string' ? JSON.parse(addressData) : addressData;
+  t.truthy(addressObj, 'Address data is available');
+  
+  // Check that the address is a valid Agoric address (starts with agoric1)
+  t.regex(
+    addressObj.value,
+    /^agoric1/,
+    'Elys contract address is a valid Agoric address'
+  );
+  
+  // Additional validation for address fields
+  t.is(addressObj.encoding, 'bech32', 'Address has bech32 encoding');
+  t.truthy(addressObj.chainId, 'Address has a chainId');
+});
+
