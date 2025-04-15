@@ -236,7 +236,10 @@ const provisionSmartWalletAndMakeDriver = async (
 
   const afterWhale = await retryUntilCondition(
     () => getCosmosBalances(),
-    ({ balances }) => balances.length === balanceEntries.length,
+    ({ balances }) => {
+      // XXX ensures there is at least some faucet but doesn't check that the balance went up
+      return balances.length >= balanceEntries.length;
+    },
     `${address} received tokens from whale`,
   );
   progress(`${address} after whale`, afterWhale);

@@ -49,6 +49,7 @@ const makeTestContext = async (t: ExecutionContext) => {
   const { setupTestKeys, ...common } = await commonSetup(t, {
     config: `../config.fusdc${RELAYER_TYPE ? '.' + RELAYER_TYPE : ''}.yaml`,
   });
+
   const {
     chainInfo,
     commonBuilderOpts,
@@ -190,7 +191,10 @@ const makeTestContext = async (t: ExecutionContext) => {
   };
   await provideLpFunds();
 
-  const makeFakeEvidence = prepareCctpTxEvidence(nobleAgoricChannelId, 0);
+  const makeFakeEvidence = prepareCctpTxEvidence(
+    nobleAgoricChannelId,
+    (await vstorageClient.queryChildren('published.fastUsdc.txns')).length,
+  );
 
   const queryTxRecord = async (txHash: string) => {
     const record = await common.smartWalletKit.readPublished(
