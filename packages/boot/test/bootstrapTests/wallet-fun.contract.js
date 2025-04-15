@@ -12,6 +12,15 @@ const trace = makeTracer('WFun');
  */
 export const start = (zcf, _pa, baggage) => {
   const zone = makeDurableZone(baggage);
+  const incarnation = (() => {
+    if (!baggage.has('incarnation')) {
+      baggage.init('incarnation', 0n);
+      return 0n;
+    }
+    const post = /** @type {bigint} */ (baggage.get('incarnation')) + 1n;
+    baggage.set('incarnation', post);
+    return post;
+  })();
 
   /** @type {import('@agoric/store').SetStore<ReturnType<typeof makeAdmin>>} */
   const admins = zone.setStore('admins');
@@ -19,9 +28,13 @@ export const start = (zcf, _pa, baggage) => {
   const publicFacet = zone.exo(
     'pf',
     M.interface('pf', {
+      getIncarnation: M.call().returns(M.nat()),
       getPrices: M.call().returns(M.arrayOf(M.nat())),
     }),
     {
+      getIncarnation() {
+        return incarnation;
+      },
       getPrices() {
         return [...admins.values()].map(a => a.getPrice());
       },
@@ -56,7 +69,7 @@ export const start = (zcf, _pa, baggage) => {
       makeAdminInvitation() {
         return zcf.makeInvitation(
           seat => {
-            trace('admin invitation handler');
+            trace('admin invitation handler', { incarnation });
             const it = makeAdmin();
             admins.add(it);
             seat.exit();

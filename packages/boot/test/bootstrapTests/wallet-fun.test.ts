@@ -1,20 +1,34 @@
 /** @file use capabilities in smart wallet without offers */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { AmountMath } from '@agoric/ertp';
-import type { CurrentWalletRecord } from '@agoric/smart-wallet/src/smartWallet.js';
+import { AmountMath, type DepositFacet } from '@agoric/ertp';
+import {
+  after,
+  type CurrentWalletRecord,
+} from '@agoric/smart-wallet/src/smartWallet.js';
 import type { NameHub } from '@agoric/vats';
-import type { AmountKeywordRecord, IssuerKeywordRecord } from '@agoric/zoe';
+import type {
+  AmountKeywordRecord,
+  ContractStartFn,
+  IssuerKeywordRecord,
+} from '@agoric/zoe';
 import { start as startSwap } from '@agoric/zoe/src/contracts/atomicSwap.js';
-import type { Installation } from '@agoric/zoe/src/zoeService/utils';
+import type {
+  ContractStartFunction,
+  Installation,
+  StartParams,
+} from '@agoric/zoe/src/zoeService/utils';
 import bundleSource from '@endo/bundle-source';
+import { E, type EProxy } from '@endo/eventual-send';
 import type { ExecutionContext, TestFn } from 'ava';
 import { createRequire } from 'node:module';
+import { start as startCarrierContract } from './wallet-fun-carrier.contract.js';
 import { start as startPriceContract } from './wallet-fun.contract.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext as TC,
 } from './walletFactory.ts';
+import { slotToBoardRemote } from '@agoric/internal/src/marshal.js';
 
 const nodeRequire = createRequire(import.meta.url);
 
@@ -27,12 +41,16 @@ test.after.always(t => {
   return t.context.shutdown && t.context.shutdown();
 });
 
-const startContract = async <SF>(
+const startContract = async <SF extends ContractStartFunction>(
   t: ExecutionContext<TC>,
   _startFn: SF,
   specifier: string,
-  name?: string,
-  issuers?: IssuerKeywordRecord,
+  {
+    name = undefined as string | undefined,
+    issuers = {} as IssuerKeywordRecord,
+    terms = {} as StartParams<SF>['terms'],
+    privateArgs = {} as Parameters<SF>[1],
+  } = {},
 ) => {
   const { runUtils, refreshAgoricNamesRemotes } = t.context;
   const { EV } = runUtils;
@@ -40,7 +58,12 @@ const startContract = async <SF>(
   const bundle = await bundleSource(nodeRequire.resolve(specifier));
 
   const installation: Installation<SF> = await EV(zoe).install(bundle);
-  const started = await EV(zoe).startInstance(installation, issuers);
+  const started = await EV(zoe).startInstance(
+    installation,
+    issuers,
+    terms,
+    privateArgs,
+  );
   t.log('started', specifier, Object.keys(started));
 
   if (name) {
@@ -72,7 +95,7 @@ test('use offer result without zoe', async t => {
     t,
     startPriceContract,
     './wallet-fun.contract.js',
-    'walletFun',
+    { name: 'walletFun' },
   );
   const toSetPrices = await EV(started.creatorFacet).makeAdminInvitation();
 
@@ -103,9 +126,12 @@ test('use offer result without zoe', async t => {
   t.deepEqual(initialPrices, [0n]);
 
   const setPriceFn =
-    (nameHub = null as unknown as NameHub, E = <T>(x: Awaited<T>) => x) =>
+    (
+      my = {} as { priceSetter: { setPrice(p: bigint) } },
+      E = <T>(x: Awaited<T>) => x,
+    ) =>
     () =>
-      E(nameHub.lookup('priceSetter')).setPrice(100n);
+      E(my.priceSetter).setPrice(100n);
 
   await wd.evalExpr(arrowBody(setPriceFn));
   const actual = await EV(started.publicFacet).getPrices();
@@ -142,13 +168,13 @@ const makeTrader = (
 
       const sendFn =
         (
-          nameHub = null as unknown as NameHub,
+          my = {} as { swapInv1: Invitation },
           namesByAddress = null as unknown as NameHub,
           E = <T>(x: Awaited<T>) => x,
         ) =>
         () =>
           E(E(namesByAddress).lookup('agoric1partyB', 'depositFacet')).receive(
-            nameHub.lookup('swapInv1'),
+            my.swapInv1,
           );
       t.log(addr, 'sends firstOffer to', counterpartyAddr, arrowBody(sendFn));
       await wd.evalExpr(arrowBody(sendFn));
@@ -216,15 +242,13 @@ test('use Invitation offer result in atomicSwap', async t => {
     // XXX seller should start contract
     const swap = await startContract(
       t,
-      startSwap,
+      startSwap as ContractStartFn,
       '@agoric/zoe/src/contracts/atomicSwap.js',
-      'atomicSwap',
-      issuers,
+      { name: 'atomicSwap', issuers },
     );
     const namesByAddress =
       await EV.vat('bootstrap').consumeItem('namesByAddress');
     const depositA = await EV(namesByAddress).lookup(addr.A, 'depositFacet');
-    // @ts-expect-error atomicSwap provides creatorInvitation
     await EV(depositA).receive(swap.creatorInvitation);
   }
 
@@ -242,4 +266,102 @@ test('use Invitation offer result in atomicSwap', async t => {
   await party.A.startSale(t, addr.B);
   await party.B.buy(t);
   await party.A.completeSale(t);
+});
+
+const makeUpgradeAdmin = (
+  wd: WalletDriver,
+  carrier: Instance<typeof startCarrierContract>,
+) => {
+  return harden({
+    async redeem(t: ExecutionContext) {
+      await wd.executeOffer({
+        id: 'redeemInvitation',
+        invitationSpec: {
+          source: 'purse',
+          description: 'admin',
+          instance: carrier,
+        },
+        proposal: {},
+        after: { saveAs: 'kit' },
+      });
+      return wd.getLatestUpdateRecord();
+    },
+    async restart(t: ExecutionContext) {
+      const restartFn =
+        (
+          E = null as unknown as EProxy,
+          my = {} as { kit: StartedInstanceKit<typeof startPriceContract> },
+        ) =>
+        () =>
+          E(
+            after(my.kit.publicFacet, {
+              rx: my.kit.adminFacet as any, // XXX after() type
+              method: 'restartContract',
+              args: [my.kit.privateArgs],
+            }),
+          ).getIncarnation(); // use the public (TODO: creator) facet
+
+      await wd.evalExpr(arrowBody(restartFn));
+    },
+    // TODO: upgrade
+  });
+};
+
+// cf packages/fast-usdc-deploy/src/update-settler-reference.core.js
+test('upgrade a deployed contract', async t => {
+  const { walletFactoryDriver } = t.context;
+  const { EV } = t.context.runUtils;
+  const addr = 'agoric1admin';
+  const wd = await walletFactoryDriver.provideSmartWallet(addr);
+
+  const depositFacet = await (async () => {
+    const { EV } = t.context.runUtils;
+    const namesByAddress =
+      await EV.vat('bootstrap').consumeItem('namesByAddress');
+    const df: DepositFacet = await EV(namesByAddress).lookup(
+      addr,
+      'depositFacet',
+    );
+    return df;
+  })();
+
+  const subject = await startContract(
+    t,
+    startPriceContract,
+    './wallet-fun.contract.js',
+    { name: 'walletFun' },
+  );
+
+  const carrier = await startContract(
+    t,
+    startCarrierContract,
+    './wallet-fun-carrier.contract.js',
+    { privateArgs: { prize: subject } },
+  );
+
+  // client-side presence
+  const board = await EV.vat('bootstrap').consumeItem('board');
+  const carrierId = await EV(board).getId(carrier.instance);
+  const cinst = slotToBoardRemote(carrierId, 'Instance') as unknown as Instance<
+    typeof startCarrierContract
+  >;
+  const admin = makeUpgradeAdmin(wd, cinst);
+
+  {
+    const toGetPrize = await EV(carrier.creatorFacet).makeInvitation();
+    t.log('sending carrier invitation facets to', addr, toGetPrize);
+    await EV(depositFacet).receive(toGetPrize);
+  }
+
+  const update = await admin.redeem(t);
+  t.log('redeemInvitation last update', update);
+  t.like(update, {
+    status: { after: { saveAs: 'kit' }, result: 'copyRecord' },
+  });
+
+  await admin.restart(t);
+  t.is(await EV(subject.publicFacet).getIncarnation(), 1n);
+
+  await admin.restart(t);
+  t.is(await EV(subject.publicFacet).getIncarnation(), 2n);
 });
