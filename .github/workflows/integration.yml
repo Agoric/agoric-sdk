@@ -197,6 +197,9 @@ jobs:
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
 
   test-docker-build:
+    permissions:
+      contents: read
+      id-token: write
     needs: pre_check
     if: needs.pre_check.outputs.should_run == 'true'
     runs-on: 'depot-ubuntu-22.04-8'
@@ -224,6 +227,7 @@ jobs:
           echo "=== After cleanup:"
           df -h
 
+      - uses: depot/setup-action@v1
       - uses: actions/checkout@v4
         with:
           path: ./agoric-sdk
