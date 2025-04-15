@@ -112,23 +112,22 @@ export const makeVStorage = ({ fetch }, config) => {
         return { ...data, codec: codec.response };
       });
 
+  /**
+   * @param {{ result: { response: JsonSafe<AbciQueryResponse>}, codec: ResponseCodec }} param0
+   */
+  const decode = ({ result: { response }, codec }) => {
+    assert(codec, 'codec required');
+    const { code } = response;
+    if (code !== 0) {
+      throw response;
+    }
+    const { value: b64Value } = response;
+    return JSON.stringify(codec.decode(decodeBase64(b64Value)));
+  };
+
   const vstorage = {
     /** @deprecated use abstractions */
     url: makeAbciQuery,
-    /**
-     * @param {{ result: { response: JsonSafe<AbciQueryResponse>}, codec?: ResponseCodec }} param0
-     */
-    decode({ result: { response }, codec }) {
-      const { code } = response;
-      if (code !== 0) {
-        throw response;
-      }
-      const { value: b64Value } = response;
-      if (!codec) {
-        return atob(b64Value);
-      }
-      return JSON.stringify(codec.decode(decodeBase64(b64Value)));
-    },
     /**
      *
      * @param {string} path
@@ -136,11 +135,11 @@ export const makeVStorage = ({ fetch }, config) => {
      */
     async readLatest(path = 'published') {
       const raw = await readStorage(path, { kind: 'data' });
-      return vstorage.decode(raw);
+      return decode(raw);
     },
     async keys(path = 'published') {
       const raw = await readStorage(path, { kind: 'children' });
-      return JSON.parse(vstorage.decode(raw)).children;
+      return JSON.parse(decode(raw)).children;
     },
     /**
      * @param {string} path
@@ -149,7 +148,7 @@ export const makeVStorage = ({ fetch }, config) => {
      */
     async readAt(path, height = undefined) {
       const raw = await readStorage(path, { kind: 'data', height });
-      const txt = vstorage.decode(raw);
+      const txt = decode(raw);
       /** @type {{ value: string }} */
       const { value } = JSON.parse(txt);
       return JSON.parse(value);
