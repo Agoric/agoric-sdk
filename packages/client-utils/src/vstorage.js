@@ -1,8 +1,30 @@
-/* global Buffer */
+import {
+  QueryChildrenRequest,
+  QueryChildrenResponse,
+  QueryDataRequest,
+  QueryDataResponse,
+} from '@agoric/cosmic-proto/agoric/vstorage/query.js';
+import { decodeBase64 } from '@endo/base64';
+import { encodeHex } from '@agoric/internal/src/hex.js';
 
 /**
  * @import {MinimalNetworkConfig} from './network-config.js';
  */
+
+const codecs = {
+  children: {
+    rpc: '/agoric.vstorage.Query/Children',
+    request: QueryChildrenRequest,
+    response: QueryChildrenResponse,
+  },
+  data: {
+    rpc: '/agoric.vstorage.Query/Data',
+    request: QueryDataRequest,
+    response: QueryDataResponse,
+  },
+};
+
+/** @typedef {(typeof codecs)[keyof typeof codecs]['response']} ResponseCodec */
 
 /**
  * @param {object} powers
@@ -10,17 +32,50 @@
  * @param {MinimalNetworkConfig} config
  */
 export const makeVStorage = ({ fetch }, config) => {
-  /** @param {string} path */
-  const getJSON = path => {
+  /**
+   * @param {string} path
+   */
+  const getJSON = async path => {
     const url = config.rpcAddrs[0] + path;
     // console.warn('fetching', url);
-    return fetch(url, { keepalive: true }).then(res => res.json());
+    const res = await fetch(url, { keepalive: true });
+    return res.json();
   };
-  // height=0 is the same as omitting height and implies the highest block
-  const url = (path = 'published', { kind = 'children', height = 0 } = {}) =>
-    `/abci_query?path=%22/custom/vstorage/${kind}/${path}%22&height=${height}`;
 
-  const readStorage = (path = 'published', { kind = 'children', height = 0 }) =>
+  /**
+   * @template {keyof codecs} T
+   * @param {string} [path]
+   * @param {object} [opts]
+   * @param {T} [opts.kind]
+   * @param {number | bigint} [opts.height] 0 is the same as omitting height and implies the highest block
+   */
+  const url = (
+    path = 'published',
+    { kind = /** @type {T} */ ('children'), height = 0 } = {},
+  ) => {
+    const codec = codecs[kind];
+    if (!codec) {
+      throw Error(`unknown rpc kind: ${kind}`);
+    }
+
+    const { rpc, request } = codec;
+    const buf = request.toProto({ path });
+
+    const hexData = encodeHex(buf);
+    return `/abci_query?path=%22${rpc}%22&data=0x${hexData}&height=${height}`;
+  };
+
+  /**
+   * @template {keyof codecs} T
+   * @param {string} [path]
+   * @param {object} [opts]
+   * @param {T} [opts.kind]
+   * @param {number | bigint} [opts.height] 0 is the same as omitting height and implies the highest block
+   */
+  const readStorage = (
+    path = 'published',
+    { kind = /** @type {T} */ ('children'), height = 0 } = {},
+  ) =>
     getJSON(url(path, { kind, height }))
       .catch(err => {
         throw Error(`cannot read ${kind} of ${path}: ${err.message}`);
@@ -38,18 +93,29 @@ export const makeVStorage = ({ fetch }, config) => {
           err.codespace = response?.codespace;
           throw err;
         }
-        return data;
+
+        const codec = codecs[kind];
+        if (!codec) {
+          throw Error(`unknown codec for kind: ${kind}`);
+        }
+        return { ...data, codec: codec.response };
       });
 
   const vstorage = {
     url,
-    decode({ result: { response } }) {
+    /**
+     * @param {{ result: { response: { value: string, code: number } }, codec?: ResponseCodec }} param0
+     */
+    decode({ result: { response }, codec }) {
       const { code } = response;
       if (code !== 0) {
         throw response;
       }
-      const { value } = response;
-      return Buffer.from(value, 'base64').toString();
+      const { value: b64Value } = response;
+      if (!codec) {
+        return atob(b64Value);
+      }
+      return JSON.stringify(codec.decode(decodeBase64(b64Value)));
     },
     /**
      *

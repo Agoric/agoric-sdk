@@ -9,7 +9,7 @@
     "test:main": "ava --config ava.rest.config.js",
     "test:fast-usdc": "ava --config ava.fusdc.config.js"
   },
-  "packageManager": "yarn@4.8.1",
+  "packageManager": "yarn@4.9.1",
   "devDependencies": {
     "@agoric/cosmic-proto": "dev",
     "@agoric/fast-usdc": "dev",

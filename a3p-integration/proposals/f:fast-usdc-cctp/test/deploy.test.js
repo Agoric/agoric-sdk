@@ -24,9 +24,9 @@ test('accounts', async t => {
   t.true(settlementAccount.startsWith('agoric1'));
 });
 
-test(`fastUsdc incarnation reflects rc2`, async t => {
-  const history = { beta: 0, rc1: 1, rc2: 2 };
-  t.is(await getIncarnation('fastUsdc'), history.rc2);
+test(`fastUsdc incarnation reflects cctp`, async t => {
+  const history = { beta: 0, rc1: 1, gtm: 2, cctp: 3 };
+  t.is(await getIncarnation('fastUsdc'), history.cctp);
 });
 
 test('feedPolicy updated for GTM', async t => {

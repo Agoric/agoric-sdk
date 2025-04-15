@@ -157,26 +157,14 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 				return module.VersionMap{}, fmt.Errorf("cannot run %s as first upgrade", plan.Name)
 			}
 
-			upgradeIbcVatStep, err :=
-				buildProposalStepWithArgs(
-					"@agoric/builders/scripts/vats/upgrade-vats.js",
-					"upgradeVatsProposalBuilder",
-					// Map iteration is randomised; use an anonymous struct instead.
-					struct {
-						Ibc string `json:"ibc"`
-					}{
-						Ibc: "@agoric/vats/src/vat-ibc.js",
-					},
-				)
-			if err != nil {
-				return module.VersionMap{}, err
-			}
-
 			// Each CoreProposalStep runs sequentially, and can be constructed from
 			// one or more modules executing in parallel within the step.
 			CoreProposalSteps = append(CoreProposalSteps,
-				// Accommodate string sequence numbers.
-				upgradeIbcVatStep,
+				// Orchestration vats: Fix memory leak in vow tools
+				// vat-ibc (included in orchestration): Accommodate string sequence numbers.
+				vm.CoreProposalStepForModules(
+					"@agoric/builders/scripts/vats/upgrade-orchestration.js",
+				),
 				// Register a new ZCF to be used for all future contract instances and upgrades
 				vm.CoreProposalStepForModules(
 					"@agoric/builders/scripts/vats/upgrade-zcf.js",
