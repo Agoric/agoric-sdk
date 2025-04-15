@@ -6,13 +6,9 @@ import type { QueryBalanceResponseSDKType } from '@agoric/cosmic-proto/cosmos/ba
 import { AmountMath } from '@agoric/ertp';
 import { divideBy, multiplyBy } from '@agoric/ertp/src/ratio.js';
 import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.js';
-import type {
-  CctpTxEvidence,
-  EvmAddress,
-  NobleAddress,
-} from '@agoric/fast-usdc/src/types.js';
+import type { CctpTxEvidence } from '@agoric/fast-usdc/src/types.js';
 import { makeTracer } from '@agoric/internal';
-import type { Bech32Address, Denom, DenomDetail } from '@agoric/orchestration';
+import type { Denom, DenomDetail } from '@agoric/orchestration';
 import type { ExecutionContext, TestFn } from 'ava';
 import { makeDenomTools } from '../../tools/asset-info.js';
 import { makeBlocksIterable } from '../../tools/block-iter.js';
@@ -22,6 +18,7 @@ import { createWallet } from '../../tools/wallet.js';
 import { commonSetup } from '../support.js';
 import { makeFeedPolicyPartial, oracleMnemonics } from './config.js';
 import { agoricNamesQ, fastLPQ, makeTxOracle } from './fu-actors.js';
+import { prepareCctpTxEvidence } from './mocks.js';
 
 const { RELAYER_TYPE } = process.env;
 
@@ -52,6 +49,7 @@ const makeTestContext = async (t: ExecutionContext) => {
   const { setupTestKeys, ...common } = await commonSetup(t, {
     config: `../config.fusdc${RELAYER_TYPE ? '.' + RELAYER_TYPE : ''}.yaml`,
   });
+
   const {
     chainInfo,
     commonBuilderOpts,
@@ -193,32 +191,10 @@ const makeTestContext = async (t: ExecutionContext) => {
   };
   await provideLpFunds();
 
-  let callCount = 0;
-  const makeFakeEvidence = (
-    mintAmt: bigint,
-    userForwardingAddr: NobleAddress,
-    recipientAddress: Bech32Address,
-  ) =>
-    harden({
-      // NB these can never be the same between transactions but we don't want the test fixtures to be that dynamic
-      blockHash:
-        '0x90d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee665',
-      blockNumber: 21037663n,
-      blockTimestamp: 1632340000n,
-      // Standard prefix to make it easier to find this code from logs
-      // but add `callCount` so it is unique per test.
-      txHash: `0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff3875527617${String(callCount++).padStart(2, '0')}`,
-      tx: {
-        amount: mintAmt,
-        forwardingAddress: userForwardingAddr,
-        sender: '0x9a9eE9e9e9e9e9e9e9e9e9e9e9e9e9e9e9e9e9e9' as EvmAddress,
-      },
-      aux: {
-        forwardingChannel: nobleAgoricChannelId,
-        recipientAddress,
-      },
-      chainId: 42161,
-    }) as CctpTxEvidence;
+  const makeFakeEvidence = prepareCctpTxEvidence(
+    nobleAgoricChannelId,
+    (await vstorageClient.queryChildren('published.fastUsdc.txns')).length,
+  );
 
   const queryTxRecord = async (txHash: string) => {
     const record = await common.smartWalletKit.readPublished(
