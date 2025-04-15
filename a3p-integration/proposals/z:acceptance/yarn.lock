@@ -166,6 +166,7 @@ __metadata:
   dependencies:
     "@agoric/base-zone": "npm:^0.1.0"
     "@endo/common": "npm:^1.2.10"
+    "@endo/compartment-mapper": "npm:^1.6.0"
     "@endo/errors": "npm:^1.2.10"
     "@endo/far": "npm:^1.1.11"
     "@endo/init": "npm:^1.1.9"

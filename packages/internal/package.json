@@ -23,6 +23,7 @@
     "@endo/errors": "^1.2.10",
     "@agoric/base-zone": "^0.1.0",
     "@endo/common": "^1.2.10",
+    "@endo/compartment-mapper": "^1.6.0",
     "@endo/far": "^1.1.11",
     "@endo/init": "^1.1.9",
     "@endo/marshal": "^1.6.4",
