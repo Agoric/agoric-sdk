@@ -246,6 +246,7 @@ export const tokenMovementAndStrideLSDFlow = async (
       return;
     }
     let incomingTokenAmount;
+    const incomingTokenIBCDenom = hostChainInfo.ibcDenomOnAgoric;
     try {
       incomingTokenAmount = BigInt(tx.amount);
     } catch (error) {
@@ -260,7 +261,7 @@ export const tokenMovementAndStrideLSDFlow = async (
         localAccount,
         feeConfig,
         incomingTokenAmount,
-        tx.denom,
+        incomingTokenIBCDenom,
         true,
       );
       trace('amount after fee deduction', amountAfterFeeDeduction);
@@ -363,7 +364,9 @@ export const tokenMovementAndStrideLSDFlow = async (
       trace('Error converting tx.amount to BigInt', error);
       return;
     }
-
+    const ibcDenomOnAgoricFromElys = `ibc/${denomHash({ denom: `st${tx.denom}`, channelId: AgoricToElysChannel })}`;
+    trace(`LiquidStakeRedeem: Received ${tx.denom}`);
+    trace(`LiquidStakeRedeem: Moving ${ibcDenomOnAgoricFromElys} to elys ICA`);
     let amountAfterFeeDeduction;
     // deduct fees
     try {
@@ -371,7 +374,7 @@ export const tokenMovementAndStrideLSDFlow = async (
         localAccount,
         feeConfig,
         incomingStTokenAmount,
-        tx.denom,
+        ibcDenomOnAgoricFromElys,
         false,
       );
       trace('amount after fee deduction', amountAfterFeeDeduction);
@@ -380,9 +383,6 @@ export const tokenMovementAndStrideLSDFlow = async (
       return;
     }
 
-    const ibcDenomOnAgoricFromElys = `ibc/${denomHash({ denom: `st${tx.denom}`, channelId: AgoricToElysChannel })}`;
-    trace(`LiquidStakeRedeem: Received ${tx.denom}`);
-    trace(`LiquidStakeRedeem: Moving ${ibcDenomOnAgoricFromElys} to elys ICA`);
     // Transfer to elys ICA account
     try {
       await localAccount.transfer(elysICAAddress, {

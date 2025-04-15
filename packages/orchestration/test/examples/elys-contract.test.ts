@@ -78,7 +78,7 @@ test('Failing case: Wrong fee config', async t => {
   const storageNode = await E(storage.rootNode).makeChildNode(contractName);
   const allowedChains = ['cosmoshub'];
 
-  const feeConfig = createFeeTestConfig('agoric1feeCollectorAddress');
+  const feeConfig = createFeeTestConfig('agoric1euw2t0lxgeerlpj0tcy77f9syrmgx26ehdx3sq');
   feeConfig.onBoardRate.denominator = BigInt(123);
   feeConfig.onBoardRate.nominator = BigInt(124);
 
@@ -110,7 +110,7 @@ test('Failing case: IBC transfer from host to stride chain fails, user receives 
   t.is(passStyleOf(installation), 'remotable');
 
   const storageNode = await E(storage.rootNode).makeChildNode(contractName);
-  const feeConfig = createFeeTestConfig('agoric1feeCollectorAddress');
+  const feeConfig = createFeeTestConfig('agoric1euw2t0lxgeerlpj0tcy77f9syrmgx26ehdx3sq');
   const allowedChains = ['cosmoshub'];
   const myContract = await E(zoe).startInstance(
     installation,
@@ -213,7 +213,7 @@ test('Failing case: Liquid stake on stride fails, user receives token at stride 
   t.is(passStyleOf(installation), 'remotable');
 
   const storageNode = await E(storage.rootNode).makeChildNode(contractName);
-  const feeConfig = createFeeTestConfig('agoric1feeCollectorAddress');
+  const feeConfig = createFeeTestConfig('agoric1euw2t0lxgeerlpj0tcy77f9syrmgx26ehdx3sq');
   const allowedChains = ['cosmoshub'];
 
   const myContract = await E(zoe).startInstance(
@@ -342,7 +342,7 @@ test('Failing case: IBC transfer of statom from stride to elys chain fails, user
   t.is(passStyleOf(installation), 'remotable');
 
   const storageNode = await E(storage.rootNode).makeChildNode(contractName);
-  const feeConfig = createFeeTestConfig('agoric1feeCollectorAddress');
+  const feeConfig = createFeeTestConfig('agoric1euw2t0lxgeerlpj0tcy77f9syrmgx26ehdx3sq');
   const allowedChains = ['cosmoshub'];
 
   const myContract = await E(zoe).startInstance(
@@ -498,7 +498,7 @@ test('Happy Flow: input atom at agoric receives statom on elys', async t => {
   t.is(passStyleOf(installation), 'remotable');
 
   const storageNode = await E(storage.rootNode).makeChildNode(contractName);
-  const feeConfig = createFeeTestConfig('agoric1feeCollectorAddress');
+  const feeConfig = createFeeTestConfig('agoric1euw2t0lxgeerlpj0tcy77f9syrmgx26ehdx3sq');
   const allowedChains = ['cosmoshub'];
 
   const myContract = await E(zoe).startInstance(

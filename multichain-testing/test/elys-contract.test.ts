@@ -1,8 +1,13 @@
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
+import {
+  decodeBech32,
+  encodeBech32,
+} from '@agoric/cosmic-proto/address-hooks.js';
 import type { SetupContextWithWallets } from './support.js';
 import { commonSetup } from './support.js';
-
+import { makeFundAndTransfer } from '../tools/ibc-transfer.js';
+import { makeQueryClient } from '../tools/query.js';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
@@ -69,5 +74,39 @@ test('Elys contract has a valid address in vstorage', async t => {
   // Additional validation for address fields
   t.is(addressObj.encoding, 'bech32', 'Address has bech32 encoding');
   t.truthy(addressObj.chainId, 'Address has a chainId');
+});
+
+test('Transfer fund to localAgoric account and get stTokens', async t => {
+  const { vstorageClient,retryUntilCondition,useChain } = t.context;
+  const fundAndTransfer = makeFundAndTransfer(
+    t,
+    retryUntilCondition,
+    useChain,
+  );
+  const deriveAddress = (sender, hrp) => {
+    const { bytes } = decodeBech32(sender);
+    const derivedAddress = encodeBech32(hrp, bytes);
+    return derivedAddress;
+  };
+  const addressData =  await vstorageClient.queryData(`published.${contractName}.address`);
+  
+  t.log('Elys contract address data:', addressData);
+  
+  // No need to parse if it's already an object
+  const addressObj = typeof addressData === 'string' ? JSON.parse(addressData) : addressData;
+
+  const transferAmount = 1000000n;
+  const { address } = await fundAndTransfer("cosmoshub", addressData.value, transferAmount);
+
+  const remoteQueryClient = makeQueryClient(
+    await useChain("elyslocal").getRestEndpoint(),
+  );
+  const elysAddress = deriveAddress(address, "elys");
+  const { balances } = await remoteQueryClient.queryBalances(elysAddress);
+  t.log('Balances:', balances);
+  t.truthy(
+    balances.find(balance => balance.denom === 'sttoken'),
+    'Balances should include an entry with denom as sttoken'
+  );
 });
 
