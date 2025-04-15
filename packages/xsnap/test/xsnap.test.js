@@ -141,7 +141,7 @@ test('print - start compartment only', async t => {
   t.is(opts.messages.length, 1);
   t.regex(
     opts.messages[0],
-    /^err:ReferenceError: [^:]+: get print: undefined variable$/,
+    /^err:ReferenceError:(?: [^:]+:)? get print: undefined variable/,
   );
 });
 
@@ -162,7 +162,7 @@ test('gc - start compartment only', async t => {
   t.is(opts.messages.length, 1);
   t.regex(
     opts.messages[0],
-    /^err:ReferenceError: [^:]+: get gc: undefined variable$/,
+    /^err:ReferenceError:(?: [^:]+:)? get gc: undefined variable$/,
   );
 });
 

@@ -238,7 +238,7 @@ const buildXsnap = async (platform, force, { fs, make }) => {
 
   const configEnvs = [
     `XSNAP_VERSION=${pkg.version}`,
-    `CC=cc "-D__has_builtin(x)=1"`,
+    `CC=cc`,
   ];
 
   const configEnvFile = asset('../build.config.env');
