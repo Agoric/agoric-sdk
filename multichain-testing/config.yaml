@@ -31,7 +31,7 @@ chains:
       faucet: 8082
     resources:
       cpu: 1
-      memory: 3Gi
+      memory: 4Gi
   - id: cosmoshublocal
     name: cosmoshub
     numValidators: 1
@@ -86,8 +86,8 @@ chains:
       enabled: true
       type: starship
       resources:
-        cpu: 200m
-        memory: 500Mi  # Increase memory
+        cpu: 400m
+        memory: 800Mi  # Increase memory
     ports:
       rest: 1317
       rpc: 26659
@@ -95,7 +95,7 @@ chains:
       faucet: 8079
     resources:
       cpu: 1
-      memory: 2Gi
+      memory: 3Gi
   - id: stridelocal
     name: stride
     numValidators: 1
