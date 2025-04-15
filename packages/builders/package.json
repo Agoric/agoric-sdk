@@ -76,8 +76,7 @@
     "require": [
       "@endo/init/debug.js"
     ],
-    "timeout": "20m",
-    "workerThreads": false
+    "timeout": "20m"
   },
   "typeCoverage": {
     "atLeast": 91.55
