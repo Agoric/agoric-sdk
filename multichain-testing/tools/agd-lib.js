@@ -2,7 +2,7 @@
 import { makeTracer } from '@agoric/internal';
 import assert from 'node:assert';
 
-const trace = makeTracer('Agd');
+const trace = makeTracer('Agd', false);
 
 const { freeze } = Object;
 
