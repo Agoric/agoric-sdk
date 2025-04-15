@@ -389,6 +389,7 @@ const makeLP = async (
         });
       const amt = await E(usdcPurse).deposit(usdcPmt);
       t.log(name, 'withdraw payout', ...logAmt(amt));
+      // @ts-expect-error TODO Why is it specializing isGTE to NatAmount?
       t.true(isGTE(amt, proposal.want.USDC));
       // min() in case things changed between checking metrics and withdrawing
       investment = subtract(investment, min(amt, investment));
