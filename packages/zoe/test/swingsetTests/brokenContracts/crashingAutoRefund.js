@@ -7,6 +7,11 @@ import {
 } from '../../../src/contractSupport/index.js';
 
 /**
+ * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
+ * @import {ContractStartFn} from '../../../src/types-index.js';
+ */
+
+/**
  * This is an atomic swap contract to test Zoe handling contract failures.
  *
  * This contract throws exceptions in various
@@ -58,7 +63,7 @@ const start = zcf => {
   };
 
   const zcfShutdown = completion => zcf.shutdown(completion);
-  /** @type {import('@agoric/swingset-vat').ShutdownWithFailure} */
+  /** @type {ShutdownWithFailure} */
   const zcfShutdownWithFailure = reason => zcf.shutdownWithFailure(reason);
 
   const makeSwapInvitation = () =>
