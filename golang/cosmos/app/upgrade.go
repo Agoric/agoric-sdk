@@ -12,12 +12,7 @@ import (
 )
 
 var upgradeNamesOfThisVersion = []string{
-	"UNRELEASED_BASIC", // no-frills
-	"UNRELEASED_A3P_INTEGRATION",
-	"UNRELEASED_main",
-	"UNRELEASED_devnet",
-	"UNRELEASED_emerynet",
-	"UNRELEASED_REAPPLY",
+	"agoric-upgrade-20",
 }
 
 // isUpgradeNameOfThisVersion returns whether the provided plan name is a
@@ -51,14 +46,8 @@ func isPrimaryUpgradeName(name string) bool {
 		return false
 	}
 	switch name {
-	case validUpgradeName("UNRELEASED_BASIC"),
-		validUpgradeName("UNRELEASED_A3P_INTEGRATION"),
-		validUpgradeName("UNRELEASED_main"),
-		validUpgradeName("UNRELEASED_devnet"),
-		validUpgradeName("UNRELEASED_emerynet"):
+	case validUpgradeName("agoric-upgrade-20"):
 		return true
-	case validUpgradeName("UNRELEASED_REAPPLY"):
-		return false
 	default:
 		panic(fmt.Errorf("unexpected upgrade name %s", validUpgradeName(name)))
 	}
@@ -140,8 +129,8 @@ func buildProposalStepFromScript(targetUpgrade string, builderScript string) (vm
 	)
 }
 
-// unreleasedUpgradeHandler performs standard upgrade actions plus custom actions for the unreleased upgrade.
-func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
+// upgrade20Handler performs standard upgrade actions plus custom actions for upgrade-20.
+func upgrade20Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
 		app.CheckControllerInited(false)
 
