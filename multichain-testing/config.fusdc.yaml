@@ -40,7 +40,7 @@ chains:
         staking:
           params:
             unbonding_time: '2m'
-        interchain_accounts:
+        interchainaccounts:
           host_genesis_state:
             params:
               host_enabled: true
@@ -71,6 +71,11 @@ chains:
         staking:
           params:
             unbonding_time: '2m'
+        interchainaccounts:
+          host_genesis_state:
+            params:
+              host_enabled: true
+              allow_messages: ['*']
     scripts:
       updateConfig:
         file: scripts/update-config.sh

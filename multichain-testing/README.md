@@ -125,6 +125,12 @@ make fund-wallet COIN=20000000ubld ADDR=$ADDR
 make provision-smart-wallet ADDR=$ADDR
 ```
 
+### Debugging a relayer
+
+```bash
+kubectl exec -i noblelocal-genesis-0 -c validator -- nobled query interchain-accounts host params | jq
+```
+
 ## Chain Registry
 
 These only work if you've done `make port-forward`.
