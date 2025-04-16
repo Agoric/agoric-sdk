@@ -2,7 +2,13 @@
 import { Fail } from '@endo/errors';
 import { Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
+import { M } from '@endo/patterns';
 import { isStreamCell } from './lib-chainStorage.js';
+
+/**
+ * @import {CapData} from '@endo/marshal';
+ * @import {TypedPattern} from './types.js';
+ */
 
 /**
  * Should be a union with Remotable, but that's `any`, making this type
@@ -52,11 +58,18 @@ export const boardSlottingMarshaller = (slotToVal = undefined) => {
   });
 };
 
+// TODO move CapDataShape to Endo
+/**
+ * @type {TypedPattern<CapData<any>>}
+ */
+export const CapDataShape = { body: M.string(), slots: M.array() };
+harden(CapDataShape);
+
 // TODO: Consolidate with `insistCapData` functions from swingset-liveslots,
 // swingset-xsnap-supervisor, etc.
 /**
  * @param {unknown} data
- * @returns {asserts data is import('@endo/marshal').CapData<string>}
+ * @returns {asserts data is CapData<string>}
  */
 const assertCapData = data => {
   assert.typeof(data, 'object');
