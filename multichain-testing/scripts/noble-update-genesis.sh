@@ -34,6 +34,8 @@ TF_MINTER_CONTROLLER2_ADDR=$($CHAIN_BIN keys show -a tf_minter_controller2 --key
 TF_MINTER_ADDR=$($CHAIN_BIN keys show -a tf_minter --keyring-backend="test")
 TF_BLACKLISTER_ADDR=$($CHAIN_BIN keys show -a tf_blacklister --keyring-backend="test")
 TF_PAUSER_ADDR=$($CHAIN_BIN keys show -a tf_pauser --keyring-backend="test")
+# nobled query auth module-account cctp | jq '.account.base_account.address'
+CCTP_MODULE_ADDR=noble12l2w4ugfz4m6dd73yysz477jszqnfughxvkss5
 
 echo "Configure fiat-tokenfactory module..."
 jq --arg owner "$FIATTF_OWNER_ADDR" \
@@ -44,6 +46,7 @@ jq --arg owner "$FIATTF_OWNER_ADDR" \
   --arg blacklister "$FIATTF_BLACKLISTER_ADDR" \
   --arg pauser "$FIATTF_PAUSER_ADDR" \
   --arg denom "$DENOM" \
+  --arg cctp_module "$CCTP_MODULE_ADDR" \
   '.app_state."fiat-tokenfactory" = {
     "mintingDenom": {
         "denom": $denom
@@ -66,11 +69,26 @@ jq --arg owner "$FIATTF_OWNER_ADDR" \
         {
             "minter": $minter,
             "controller": $minter_controller2
+        },
+        {
+            "minter": $cctp_module,
+            "controller": $minter_controller
+        },
+        {
+            "minter": $cctp_module,
+            "controller": $minter_controller2
         }
     ],
     "mintersList": [
         {
             "address": $minter,
+            "allowance": {
+                "denom": $denom,
+                "amount": "100000000000000"
+            }
+        },
+        {
+            "address": $cctp_module,
             "allowance": {
                 "denom": $denom,
                 "amount": "100000000000000"
@@ -200,7 +218,7 @@ jq --arg addr "$GENESIS_ADDR" '.app_state.cctp = {
     "attester_list": [],
     "per_message_burn_limit_list": [
         {
-            "amount": "99999999",
+            "amount": "9999999999999",
             "denom": "uusdc"
         }
     ],
@@ -219,9 +237,32 @@ jq --arg addr "$GENESIS_ADDR" '.app_state.cctp = {
     "signature_threshold": {
         "amount": "2"
     },
-    "token_pair_list": [],
+    # `token_pair_list` maps remote tokens to local tokens with their respective domains.
+    # Currently only configured for Ethereum (domain 0) USDC.
+    # The `remote_token` and address fields use base64-encoded bytes of the original address.
+    # For a list of supported domains, see: https://developers.circle.com/stablecoins/supported-domains.
+    # To support other networks (Solana, Arbitrum, Base, etc.), additional entries must be added
+    # with the appropriate domain IDs and token addresses.
+    "token_pair_list": [
+        {
+            "remote_token": "AAAAAAAAAAAAAAAAALCK0ZHGIYs2wdGdSi6esONgbr9I",
+            "local_token": "uusdc",
+            "remote_domain": 0
+        }
+    ],
     "used_nonces_list": [],
-    "token_messenger_list": []
+    # `token_messenger_list` defines the messaging contracts on other domains
+    # that can send/receive CCTP messages to/from this chain.
+    # Currently only configured for Ethereum (domain 0) TokenMessenger contract.
+    # The address is base64-encoded bytes of the TokenMessenger contract address.
+    # To support other networks (Solana, Arbitrum, Base, etc.), additional entries must be added
+    # See https://developers.circle.com/stablecoins/supported-domains for domain IDs
+    "token_messenger_list": [
+        {
+            "domain_id": 0,
+            "address": "AAAAAAAAAAAAAAAAAb36gbaLqSqCE2A4slrexwZq8xU="
+        }
+    ]
 }' $CHAIN_DIR/config/genesis.json > /tmp/genesis.json && mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
 
 # Configure tariff module
