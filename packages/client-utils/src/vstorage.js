@@ -26,8 +26,6 @@ const codecs = {
   },
 };
 
-/** @typedef {(typeof codecs)[keyof typeof codecs]['response']} ResponseCodec */
-
 /**
  * @param {object} powers
  * @param {typeof window.fetch} powers.fetch
@@ -35,7 +33,7 @@ const codecs = {
  */
 export const makeVStorage = ({ fetch }, config) => {
   /**
-   * @template {keyof codecs} T
+   * @template {keyof typeof codecs} T
    * @param {string} vstoragePath
    * @param {object} [opts]
    * @param {T} [opts.kind]
@@ -53,7 +51,7 @@ export const makeVStorage = ({ fetch }, config) => {
   };
 
   /**
-   * @template {keyof codecs} T
+   * @template {keyof typeof codecs} T
    * @param {string} [path]
    * @param {object} [opts]
    * @param {T} [opts.kind]
@@ -77,52 +75,47 @@ export const makeVStorage = ({ fetch }, config) => {
   };
 
   /**
-   * @template {keyof codecs} T
+   * @template {'children' | 'data'} T
    * @param {string} [path]
    * @param {object} [opts]
    * @param {T} [opts.kind]
    * @param {number | bigint} [opts.height] 0 is the same as omitting height and implies the highest block
+   * @returns {Promise<T extends 'children' ? QueryChildrenResponse :QueryDataResponse >}
    */
-  const readStorage = (
+  const readStorage = async (
     path = 'published',
     { kind = /** @type {T} */ ('children'), height = 0 } = {},
-  ) =>
-    getVstorageJson(path, { kind, height })
-      .catch(err => {
-        throw Error(`cannot read ${kind} of ${path}: ${err.message}`);
-      })
-      .then(data => {
-        const {
-          result: { response },
-        } = data;
-        if (response?.code !== 0) {
-          /** @type {any} */
-          const err = Error(
-            `error code ${response?.code} reading ${kind} of ${path}: ${response.log}`,
-          );
-          err.code = response?.code;
-          err.codespace = response?.codespace;
-          throw err;
-        }
+  ) => {
+    await null;
 
-        const codec = codecs[kind];
-        if (!codec) {
-          throw Error(`unknown codec for kind: ${kind}`);
-        }
-        return { ...data, codec: codec.response };
-      });
-
-  /**
-   * @param {{ result: { response: JsonSafe<AbciQueryResponse>}, codec: ResponseCodec }} param0
-   */
-  const decode = ({ result: { response }, codec }) => {
-    assert(codec, 'codec required');
-    const { code } = response;
-    if (code !== 0) {
-      throw response;
+    const codec = codecs[kind];
+    if (!codec) {
+      throw Error(`unknown codec for kind: ${kind}`);
     }
+
+    let data;
+    try {
+      data = await getVstorageJson(path, { kind, height });
+    } catch (err) {
+      throw Error(`cannot read ${kind} of ${path}: ${err.message}`);
+    }
+
+    const {
+      result: { response },
+    } = data;
+    if (response?.code !== 0) {
+      /** @type {any} */
+      const err = Error(
+        `error code ${response?.code} reading ${kind} of ${path}: ${response.log}`,
+      );
+      err.code = response?.code;
+      err.codespace = response?.codespace;
+      throw err;
+    }
+
     const { value: b64Value } = response;
-    return JSON.stringify(codec.decode(decodeBase64(b64Value)));
+    // @ts-expect-error cast
+    return codec.response.decode(decodeBase64(b64Value));
   };
 
   const vstorage = {
@@ -135,11 +128,11 @@ export const makeVStorage = ({ fetch }, config) => {
      */
     async readLatest(path = 'published') {
       const raw = await readStorage(path, { kind: 'data' });
-      return decode(raw);
+      return JSON.stringify(raw);
     },
     async keys(path = 'published') {
       const raw = await readStorage(path, { kind: 'children' });
-      return JSON.parse(decode(raw)).children;
+      return raw.children;
     },
     /**
      * @param {string} path
@@ -148,9 +141,7 @@ export const makeVStorage = ({ fetch }, config) => {
      */
     async readAt(path, height = undefined) {
       const raw = await readStorage(path, { kind: 'data', height });
-      const txt = decode(raw);
-      /** @type {{ value: string }} */
-      const { value } = JSON.parse(txt);
+      const { value } = raw;
       return JSON.parse(value);
     },
     /**
