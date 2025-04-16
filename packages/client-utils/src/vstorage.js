@@ -6,10 +6,13 @@ import {
 } from '@agoric/cosmic-proto/agoric/vstorage/query.js';
 import { decodeBase64 } from '@endo/base64';
 import { encodeHex } from '@agoric/internal/src/hex.js';
+import { StreamCellShape } from '@agoric/internal/src/lib-chainStorage.js';
+import { mustMatch } from '@agoric/internal';
 
 /**
  * @import {AbciQueryResponse} from '@cosmjs/tendermint-rpc';
  * @import {JsonSafe} from '@agoric/cosmic-proto';
+ * @import {StreamCell} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {MinimalNetworkConfig} from './network-config.js';
  */
 
@@ -136,12 +139,14 @@ export const makeVStorage = ({ fetch }, config) => {
     /**
      * @param {string} path
      * @param {number} [height] default is highest
-     * @returns {Promise<{blockHeight: number, values: string[]}>}
+     * @returns {Promise<StreamCell<unknown>>}
      */
     async readAt(path, height = undefined) {
-      const raw = await readStorage(path, { kind: 'data', height });
-      const { value } = raw;
-      return JSON.parse(value);
+      const response = await readStorage(path, { kind: 'data', height });
+      /** @type {unknown} */
+      const cell = harden(JSON.parse(response.value));
+      mustMatch(cell, StreamCellShape);
+      return cell;
     },
     /**
      * Read values going back as far as available
@@ -153,6 +158,7 @@ export const makeVStorage = ({ fetch }, config) => {
     async readFully(path, minHeight = undefined) {
       const parts = [];
       // undefined the first iteration, to query at the highest
+      /** @type {string | undefined} */
       let blockHeight;
       await null;
       do {
@@ -161,7 +167,7 @@ export const makeVStorage = ({ fetch }, config) => {
         try {
           ({ blockHeight, values } = await vstorage.readAt(
             path,
-            blockHeight && Number(blockHeight) - 1,
+            blockHeight === undefined ? undefined : Number(blockHeight) - 1,
           ));
           // console.debug('readAt returned', { blockHeight });
         } catch (err) {
@@ -183,8 +189,8 @@ export const makeVStorage = ({ fetch }, config) => {
         // console.debug('PUSHED', values);
         // console.debug('NEW', { blockHeight, minHeight });
         if (minHeight && Number(blockHeight) <= Number(minHeight)) break;
-      } while (blockHeight > 0);
-      return parts.flat();
+      } while (Number(blockHeight) > 0);
+      return /** @type {string[]} */ (parts.flat());
     },
   };
   return vstorage;

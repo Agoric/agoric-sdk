@@ -92,7 +92,7 @@ const makeNet = published => {
   const fmt = obj => {
     const capData = m.toCapData(harden(obj));
     const values = [JSON.stringify(capData)];
-    const specimen = { blockHeight: undefined, values };
+    const specimen = { blockHeight: 'bogus', values };
     const value = JSON.stringify(specimen);
     const buf = QueryDataResponse.toProto({ value });
     return encode(buf);
