@@ -126,7 +126,7 @@ jobs:
     needs: pre_check
     if: needs.pre_check.outputs.should_run == 'true'
 
-    runs-on: 'ubuntu-22.04-4core-150SSD-16RAM'
+    runs-on: 'depot-ubuntu-22.04-4'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -199,7 +199,7 @@ jobs:
   test-docker-build:
     needs: pre_check
     if: needs.pre_check.outputs.should_run == 'true'
-    runs-on: 'ubuntu-22.04-4core-150SSD-16RAM'
+    runs-on: 'depot-ubuntu-22.04-8'
     timeout-minutes: 60
     steps:
       - name: update job environment
