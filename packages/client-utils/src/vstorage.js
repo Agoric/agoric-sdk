@@ -124,11 +124,10 @@ export const makeVStorage = ({ fetch }, config) => {
     /**
      *
      * @param {string} path
-     * @returns {Promise<string>} latest vstorage value at path
+     * @returns {Promise<QueryDataResponse>} latest vstorage value at path
      */
     async readLatest(path = 'published') {
-      const raw = await readStorage(path, { kind: 'data' });
-      return JSON.stringify(raw);
+      return readStorage(path, { kind: 'data' });
     },
     async keys(path = 'published') {
       const raw = await readStorage(path, { kind: 'children' });

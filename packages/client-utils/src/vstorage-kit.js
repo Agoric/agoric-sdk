@@ -30,11 +30,10 @@ export const makeFromBoard = () => {
 
 /** @deprecated */
 export const storageHelper = {
-  /** @param { string } txt */
+  /** @param { {value: string} | string } txt */
   parseCapData: txt => {
-    assert(typeof txt === 'string', typeof txt);
     /** @type {{ value: string }} */
-    const { value } = JSON.parse(txt);
+    const { value } = typeof txt === 'string' ? JSON.parse(txt) : txt;
     const specimen = JSON.parse(value);
     const { blockHeight, values } = specimen;
     assert(values, `empty values in specimen ${value}`);
@@ -42,7 +41,7 @@ export const storageHelper = {
     return { blockHeight, capDatas };
   },
   /**
-   * @param {string} txt
+   * @param { {value: string} | string } txt
    * @param {IdMap} ctx
    */
   unserializeTxt: (txt, ctx) => {
@@ -105,7 +104,7 @@ export const makeVstorageKit = ({ fetch }, config) => {
 
     const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);
 
-    /** @type {(txt: string) => unknown} */
+    /** @type {(txt: string | {value: string}) => unknown} */
     const unserializeHead = txt =>
       storageHelper.unserializeTxt(txt, fromBoard).at(-1);
 
