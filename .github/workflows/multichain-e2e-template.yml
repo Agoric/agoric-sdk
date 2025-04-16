@@ -20,33 +20,31 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: 'true'
-          path: ./agoric-sdk
 
-      - uses: ./agoric-sdk/.github/actions/restore-node
+      - uses: ./.github/actions/restore-node
         with:
           node-version: 'node-new'
-          path: ./agoric-sdk
 
       # Extract chain and relayer information
       - name: Extract config information
         id: extract-config
         run: |
           # Create logs directory with unique path per run/job
-          LOG_DIR="$GITHUB_WORKSPACE/agoric-sdk/multichain-testing/logs/$GITHUB_RUN_ID/$GITHUB_JOB"
+          LOG_DIR="$GITHUB_WORKSPACE/multichain-testing/logs/$GITHUB_RUN_ID/$GITHUB_JOB"
           mkdir -p "$LOG_DIR/validators"
           mkdir -p "$LOG_DIR/relayers"
-          echo "LOG_DIR=${LOG_DIR}" >> $GITHUB_ENV
+          echo "::set-output name=log_dir::${LOG_DIR}"
 
           # Extract namespace name
-          NAMESPACE=$(yq e '.name' ./agoric-sdk/multichain-testing/${{ inputs.config }})
-          echo "NAMESPACE=${NAMESPACE}" >> $GITHUB_ENV
+          NAMESPACE=$(yq e '.name' ./multichain-testing/${{ inputs.config }})
+          echo "::set-output name=namespace::${NAMESPACE}"
 
           # Build validator pod names (chainid-genesis-0)
-          VALIDATOR_PODS=$(yq e '.chains[] | .id + "-genesis-0"' ./agoric-sdk/multichain-testing/${{ inputs.config }} | tr '\n' ' ')
+          VALIDATOR_PODS=$(yq e '.chains[] | .id + "-genesis-0"' ./multichain-testing/${{ inputs.config }} | tr '\n' ' ')
           echo "VALIDATOR_PODS=${VALIDATOR_PODS}" >> $GITHUB_ENV
 
           # Build relayer pod names (type-name-0)
-          RELAYER_PODS=$(yq e '.relayers[] | .type + "-" + .name + "-0"' ./agoric-sdk/multichain-testing/${{ inputs.config }} | tr '\n' ' ')
+          RELAYER_PODS=$(yq e '.relayers[] | .type + "-" + .name + "-0"' ./multichain-testing/${{ inputs.config }} | tr '\n' ' ')
           echo "RELAYER_PODS=${RELAYER_PODS}" >> $GITHUB_ENV
 
           # For debugging
@@ -58,11 +56,10 @@ jobs:
         run: |
           yarn link-cli ~/bin/agoric
           echo "/home/runner/bin" >> $GITHUB_PATH
-        working-directory: ./agoric-sdk
 
       - name: Enable Corepack
         run: corepack enable
-        working-directory: ./agoric-sdk/multichain-testing
+        working-directory: ./multichain-testing
 
       # Before multichain-testing deps because that project portals into SDK
       # but only the SDK postinstall script will runs its package patching.
@@ -71,32 +68,32 @@ jobs:
 
       - name: Install @agoric/multichain-testing deps
         run: yarn install
-        working-directory: ./agoric-sdk/multichain-testing
+        working-directory: ./multichain-testing
 
       - name: Lint @agoric/multichain-testing
         # include testing imports to check package patches
         run: yarn lint && yarn ava test/imports.test.ts
-        working-directory: ./agoric-sdk/multichain-testing
+        working-directory: ./multichain-testing
 
       - name: docker build (sdk)
         # Produces local ghcr.io/agoric/agoric-sdk:dev used in the following test.
         run: |
           make docker-build-sdk TAG=dev
-        working-directory: ./agoric-sdk/packages/deployment
+        working-directory: ./packages/deployment
 
       - name: Setup Starship Infrastructure
         id: starship-infra
         # in lieu of cosmology-tech/starship-action@0.3.0
         # (see local .github/actions/starship-action/README.md)
-        uses: ./agoric-sdk/.github/actions/starship-action
+        uses: ./.github/actions/starship-action
         with:
-          values: ./agoric-sdk/multichain-testing/${{ inputs.config }}
+          values: ./multichain-testing/${{ inputs.config }}
           port-forward: true
           version: 0.2.20
           timeout: 20m # Usually 13min
           # Load the locally-built dev Docker image for the chain into kind.
           load-docker-images: ghcr.io/agoric/agoric-sdk:dev
-          namespace: ${{ env.NAMESPACE }}
+          namespace: ${{ steps.extract-config.outputs.namespace }}
           repo: https://hyperweb-io.github.io/starship
 
       - name: Fund Provision Pool
@@ -104,19 +101,19 @@ jobs:
           kubectl config set-context --current --namespace=${NAMESPACE}
           kubectl get pods
           make fund-provision-pool
-        working-directory: ./agoric-sdk/multichain-testing
+        working-directory: ./multichain-testing
 
       - name: Override Chain Registry
         run: make override-chain-registry
-        working-directory: ./agoric-sdk/multichain-testing
+        working-directory: ./multichain-testing
 
       - name: Register Interchain Bank Assets
         run: make register-bank-assets
-        working-directory: ./agoric-sdk/multichain-testing
+        working-directory: ./multichain-testing
 
       - name: Run @agoric/multichain-testing E2E Tests
         run: ${{ inputs.test_command }}
-        working-directory: ./agoric-sdk/multichain-testing
+        working-directory: ./multichain-testing
         env:
           FILE: ${{ inputs.config }}
 
@@ -149,5 +146,5 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: multichain-e2e-logs-${{ env.NAMESPACE }}-${{ github.run_id }}-${{ github.job }}
-          path: ${{ env.LOG_DIR }}
+          name: multichain-e2e-logs-${{ steps.extract-config.outputs.namespace }}-${{ github.run_id }}-${{ github.job }}
+          path: ${{ steps.extract-config.outputs.log_dir }}
