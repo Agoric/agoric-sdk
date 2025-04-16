@@ -33,7 +33,7 @@ jobs:
           LOG_DIR="$GITHUB_WORKSPACE/multichain-testing/logs/$GITHUB_RUN_ID/$GITHUB_JOB"
           mkdir -p "$LOG_DIR/validators"
           mkdir -p "$LOG_DIR/relayers"
-          echo "LOG_DIR=${LOG_DIR}" >> $GITHUB_ENV
+          echo "::set-output name=log_dir::${LOG_DIR}"
 
           # Extract namespace name
           NAMESPACE=$(yq e '.name' ./multichain-testing/${{ inputs.config }})
@@ -146,5 +146,5 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: multichain-e2e-logs-${{ env.NAMESPACE }}-${{ github.run_id }}-${{ github.job }}
-          path: ${{ env.LOG_DIR }}
+          name: multichain-e2e-logs-${{ steps.extract-config.outputs.namespace }}-${{ github.run_id }}-${{ github.job }}
+          path: ${{ steps.extract-config.outputs.log_dir }}
