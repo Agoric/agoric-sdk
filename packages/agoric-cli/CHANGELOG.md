@@ -3,6 +3,95 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.22.0-u20.0](https://github.com/Agoric/agoric-sdk/compare/agoric@0.21.1...agoric@0.22.0-u20.0) (2025-04-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove IBC relayer commands
+* drop support for verified queries
+* remove agoricNames from VstorageKit
+* restrict exports from 'agoric' package
+
+### Features
+
+* **agd:** try harder to find cosmic-swingset ([dd547f0](https://github.com/Agoric/agoric-sdk/commit/dd547f0a8057109a0bbe27a814fb3fc403ad3fd1))
+* **agops:** feedback on missing oracle admin ids ([1fcf43c](https://github.com/Agoric/agoric-sdk/commit/1fcf43c3bd5dd854fee02192dae85ef4389e4ccc))
+* **agops:** gov keyring option ([cc61e93](https://github.com/Agoric/agoric-sdk/commit/cc61e93a1249824c90f27961e076684f947a6a45))
+* **agops:** robust to no initial price feed ([a3c30d1](https://github.com/Agoric/agoric-sdk/commit/a3c30d1c8a9c2458328fcf05f2b08388af69a50a))
+* agoric run --verbose ([0405202](https://github.com/Agoric/agoric-sdk/commit/04052026422e2c6fbedd6ace40699aa60f4dfd1f))
+* **agoric-cli:** Add `agoric wallet send` gas limit options ([21a03f8](https://github.com/Agoric/agoric-sdk/commit/21a03f816e392a25c197b692905b2d0388632ee9))
+* **agoric-cli:** Block `agoric wallet send` on tx inclusion ([0389a21](https://github.com/Agoric/agoric-sdk/commit/0389a21b85c783f70f4a2af30d5ee96ccea5cb47))
+* **agoric:** pass through subcommand options when relevant ([f1a7df6](https://github.com/Agoric/agoric-sdk/commit/f1a7df67f3be9e23593f5bcf032027a8c4766a39))
+* **async-flow:** asyncFlow ([#9097](https://github.com/Agoric/agoric-sdk/issues/9097)) ([16095c5](https://github.com/Agoric/agoric-sdk/commit/16095c5076043133aff0f25721131be2ca1ef5af)), closes [#9302](https://github.com/Agoric/agoric-sdk/issues/9302) [#9125](https://github.com/Agoric/agoric-sdk/issues/9125) [#9126](https://github.com/Agoric/agoric-sdk/issues/9126) [#9153](https://github.com/Agoric/agoric-sdk/issues/9153) [#9154](https://github.com/Agoric/agoric-sdk/issues/9154) [#9280](https://github.com/Agoric/agoric-sdk/issues/9280) [#9126](https://github.com/Agoric/agoric-sdk/issues/9126)
+* **atops:** add proposePauseOffers ([46a12a2](https://github.com/Agoric/agoric-sdk/commit/46a12a2b120700040c7f0d2282bc392b42596111))
+* client-utils package ([50af71f](https://github.com/Agoric/agoric-sdk/commit/50af71f2b2c3a1eee9da62dbd87c9cda0521979b))
+* **cosmos:** un-wire x/crisis ([#8582](https://github.com/Agoric/agoric-sdk/issues/8582)) ([7153535](https://github.com/Agoric/agoric-sdk/commit/7153535c5c10fed309dc60f12f981c81841fdb93))
+* **create-dapp:** `npm create @agoric/dapp ...` uses `agoric init` ([4c7a6b2](https://github.com/Agoric/agoric-sdk/commit/4c7a6b24a9190e95d9e6706298b9ca8411f6c693))
+* elide comments in agoric run bundle source ([2abea2d](https://github.com/Agoric/agoric-sdk/commit/2abea2dd3caee14e3747bc5c3891e8335d648ea5))
+* export cli lib ([0d2d4aa](https://github.com/Agoric/agoric-sdk/commit/0d2d4aa7886cc424e64a121821fc1373912aff82))
+* fetchEnvNetworkConfig ([9bdba57](https://github.com/Agoric/agoric-sdk/commit/9bdba57d18672ef8d40b8a38cb54a082e1b89e50))
+* generalize ec cmd to gov any committee ([94e5beb](https://github.com/Agoric/agoric-sdk/commit/94e5beb4f7904efe3c684bba1db52605bf27d812))
+* **integration-test:** use dapp-offer-up as target for getting-started test ([e4f65ce](https://github.com/Agoric/agoric-sdk/commit/e4f65ceca8744a99c9002dae5580c80007079c94))
+* **inter:** --fees option for sending bid tx ([0267453](https://github.com/Agoric/agoric-sdk/commit/026745342677cc456441c12695f399223b7b9ce1))
+* **inter:** include raw_log in tx send error message ([f7dd7b1](https://github.com/Agoric/agoric-sdk/commit/f7dd7b125630b61ae3926d1223cdbcd7fc296d92))
+* list workspaces without yarn ([dd0f75d](https://github.com/Agoric/agoric-sdk/commit/dd0f75d4304d421a7c83617dea21e00f7a2beb85))
+* makeWalletUtils wo/spawn ([bc10509](https://github.com/Agoric/agoric-sdk/commit/bc105094afdafebed090313e849998b132b50172))
+* makeWalletUtils wo/spawn ([20083ae](https://github.com/Agoric/agoric-sdk/commit/20083ae6cf3b479ca68aa7b81415157aceca38fe))
+* new 'boot' package with bootstrap configs ([8e3173b](https://github.com/Agoric/agoric-sdk/commit/8e3173b0b86a3dc90b31164bc4272c54e46a6641))
+* new 'builders' package ([00c88ab](https://github.com/Agoric/agoric-sdk/commit/00c88ab1615ed55a3928ae52e332be05a173d1f6))
+* pipe stderr ([a3c8fb9](https://github.com/Agoric/agoric-sdk/commit/a3c8fb93b0ba82ea3e5e758efac835b7a18f0f03))
+* remove IBC relayer commands ([61a765f](https://github.com/Agoric/agoric-sdk/commit/61a765fd7c6610837e54c90acab2d250fd037963))
+* start fn upgradability by meta ([5ae46e4](https://github.com/Agoric/agoric-sdk/commit/5ae46e485b8f3b643cb57c45abdb75a94657d60c))
+* stat-bundle and stat-plan scripts ([bd0edcb](https://github.com/Agoric/agoric-sdk/commit/bd0edcb1441bdc7ce0a3db271746edaceed0133d))
+* **stat-bundle:** show CLI to explode the bundle ([22b43da](https://github.com/Agoric/agoric-sdk/commit/22b43da255379427f3bb866773eac87860be3d16))
+* **types:** ContractMeta ([9d02dfa](https://github.com/Agoric/agoric-sdk/commit/9d02dfab2cc2c24ed9b15a6aa8bc5fba7d6c9fe0))
+* **types:** InvitationAmount ([cdf1b7a](https://github.com/Agoric/agoric-sdk/commit/cdf1b7a6ee28293ba5d606705e24a9fee175effe))
+* **types:** no package imports for ambient types ([cc182de](https://github.com/Agoric/agoric-sdk/commit/cc182de9b8b02a81210768b2602085534aa38a75))
+* use HTTP to fetch SwingSet Params ([6598319](https://github.com/Agoric/agoric-sdk/commit/659831938918f445f220057f211e96df9f54c461))
+* vm-config package ([8b1ecad](https://github.com/Agoric/agoric-sdk/commit/8b1ecad8ab50db777bc11c3ee6fcdb37d6cb38b6))
+* VstorageKit ([71486d7](https://github.com/Agoric/agoric-sdk/commit/71486d714cfa8f0393fbec7731dca71d1a342a1c))
+* **whenable:** first cut ([793f028](https://github.com/Agoric/agoric-sdk/commit/793f028155702e613b1bdf8204af6837cfe5e8a3))
+
+
+### Bug Fixes
+
+* **agops:** fix continuing id lookup in oracle setPrice ([9bf2d72](https://github.com/Agoric/agoric-sdk/commit/9bf2d72939a377c09fbbcb1c17e617496f9e9f02))
+* agoric wallet extract-id ([e279442](https://github.com/Agoric/agoric-sdk/commit/e279442a5de16e844e19427fdda7b0195dd2be43))
+* **agoric-cli:** `open` should default to `localhost`, not numeric IPv4 ([3154baa](https://github.com/Agoric/agoric-sdk/commit/3154baa0159c7217d869f09c879cb898be9d1fb3))
+* **agoric-cli:** agops oracle pushPriceRound will fail with some prices ([#11009](https://github.com/Agoric/agoric-sdk/issues/11009)) ([c39bfd3](https://github.com/Agoric/agoric-sdk/commit/c39bfd3c248e3b2b3f5854fdfaee25999d1702d0)), closes [#10122](https://github.com/Agoric/agoric-sdk/issues/10122)
+* **agoric-cli:** fix broken `agoric open` ([db69972](https://github.com/Agoric/agoric-sdk/commit/db6997235a7f4c737057abb8e3ad640ffe203339))
+* **agoric-cli:** Fully generalize package name extractor from zip files ([e1120d3](https://github.com/Agoric/agoric-sdk/commit/e1120d38d8dc07859ec17f345ef4e5fe24c50726))
+* **agoric-cli:** handle another vstorage error variation ([30f8c38](https://github.com/Agoric/agoric-sdk/commit/30f8c385acb00d439454ddc3305611c3a1febaf7)), closes [Error#1](https://github.com/Agoric/Error/issues/1)
+* **agoric-cli:** Remove conflicting AggregateError declaration comment ([#8898](https://github.com/Agoric/agoric-sdk/issues/8898)) ([2044d22](https://github.com/Agoric/agoric-sdk/commit/2044d2208e7673fc86ceac3b01afe330c0f046cb))
+* **agoric-cli:** Specify active directory when querying workspaces ([#11122](https://github.com/Agoric/agoric-sdk/issues/11122)) ([f4feacb](https://github.com/Agoric/agoric-sdk/commit/f4feacb345d6a0475c83693450ef57d117c60f00)), closes [#11012](https://github.com/Agoric/agoric-sdk/issues/11012) [#11012](https://github.com/Agoric/agoric-sdk/issues/11012) [#123](https://github.com/Agoric/agoric-sdk/issues/123)
+* **agoric-cli:** use readPublished consistently in agops oracle ([e8f6de2](https://github.com/Agoric/agoric-sdk/commit/e8f6de2aaf1fa5457f4a31bcaa7a742e4634eeb8))
+* **agoric-sdk:** Include version twins in valid bundle compartment names ([861ecaf](https://github.com/Agoric/agoric-sdk/commit/861ecaff112399b2c02ce5f49bfce65dd41f18fd))
+* **agoric:** convey tx opts to `agoric wallet` and subcommands ([#9559](https://github.com/Agoric/agoric-sdk/issues/9559)) ([6073b2b](https://github.com/Agoric/agoric-sdk/commit/6073b2bd663ac7c2e541d534ffc8959f44470a06)), closes [#9554](https://github.com/Agoric/agoric-sdk/issues/9554)
+* **agoric:** print errors while following ([92a1928](https://github.com/Agoric/agoric-sdk/commit/92a19285c13f3baa08739cb771b4ab9c02cc22be))
+* **agoric:** relax override mistake using `@endo/init/legacy.js` ([7b684a6](https://github.com/Agoric/agoric-sdk/commit/7b684a6268c999b082a326fdb22f63e4575bac4f))
+* **casting:** dont crash on bad capdata ([8f4ba3a](https://github.com/Agoric/agoric-sdk/commit/8f4ba3a2f56174161d88f57280513ee5a0f5d4d9))
+* **cli:** handle not found error in vstorage requests ([8c57bce](https://github.com/Agoric/agoric-sdk/commit/8c57bce806839dc3f9d4b8574dbf63c919af5b32))
+* DEBUG harmony ([#8136](https://github.com/Agoric/agoric-sdk/issues/8136)) ([d2ea4b4](https://github.com/Agoric/agoric-sdk/commit/d2ea4b46b9efa61e97eec8711830d9fdd741ca55))
+* **getting-started:** replace useless 180ms delay with block polling ([135f214](https://github.com/Agoric/agoric-sdk/commit/135f214306ab4561e698284d0da78dbeface5b33))
+* **integration-test:** remove another test that's based on testDeploy ([5e5e348](https://github.com/Agoric/agoric-sdk/commit/5e5e348289073d3ddb81d2e73b3355f6a7fded61))
+* **integration-test:** update UI test case ([c66fdc6](https://github.com/Agoric/agoric-sdk/commit/c66fdc60e1e8fda9db7a4af9fe30f245f495b842))
+* proposeParamChange options ([202ba1e](https://github.com/Agoric/agoric-sdk/commit/202ba1e1924c30f65edefa7584b484f580ce5386))
+* **solo:** update `abci_query` from `custom/vstorage/data` ([60f4220](https://github.com/Agoric/agoric-sdk/commit/60f4220193110c631bd8d41151ea88fde4026478))
+* suppress sign-mode diagnostic when parsing bid tx results ([aae3179](https://github.com/Agoric/agoric-sdk/commit/aae3179c8a2e46ba6dc85cc3bf0923268646d60d))
+* update for `[@jessie](https://github.com/jessie).js/safe-await-separator` ([94c6b3c](https://github.com/Agoric/agoric-sdk/commit/94c6b3c83a5326594f1e2886ae01d6a703a7a68f))
+* use dapp-offer-up by default ([#8630](https://github.com/Agoric/agoric-sdk/issues/8630)) ([1108cfd](https://github.com/Agoric/agoric-sdk/commit/1108cfdbeccd0048e30cf34c236192e9ee2918ce))
+* **vow:** persistent resolution, settler->resolver ([4d9371c](https://github.com/Agoric/agoric-sdk/commit/4d9371cb7d450e25146787474760b4c00b11e405))
+
+
+### Miscellaneous Chores
+
+* drop support for verified queries ([72715c5](https://github.com/Agoric/agoric-sdk/commit/72715c5de745df1be86accbff7aa915a6c9abfaf))
+* remove agoricNames from VstorageKit ([1c69d39](https://github.com/Agoric/agoric-sdk/commit/1c69d39c6b5571e8501cd4be8d32e3d1bd9d3844))
+* restrict exports from 'agoric' package ([b6145e3](https://github.com/Agoric/agoric-sdk/commit/b6145e335e2d3b5c0c7e1dae2e1d2f9e45d280ad))
+
+
+
 ### [0.21.1](https://github.com/Agoric/agoric-sdk/compare/agoric@0.21.0...agoric@0.21.1) (2023-06-09)
 
 **Note:** Version bump only for package agoric

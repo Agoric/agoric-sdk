@@ -1,6 +1,6 @@
 {
   "name": "@agoric/vat-data",
-  "version": "0.5.2",
+  "version": "0.5.3-u20.0",
   "description": "Safe access to VatData global",
   "type": "module",
   "repository": "https://github.com/Agoric/agoric-sdk",
@@ -18,16 +18,16 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
+    "@agoric/base-zone": "^0.1.1-u20.0",
+    "@agoric/store": "^0.9.3-u20.0",
+    "@agoric/swingset-liveslots": "^0.10.3-u20.0",
     "@endo/errors": "^1.2.10",
-    "@agoric/base-zone": "^0.1.0",
-    "@agoric/store": "^0.9.2",
-    "@agoric/swingset-liveslots": "^0.10.2",
     "@endo/exo": "^1.5.9",
     "@endo/patterns": "^1.5.0"
   },
   "devDependencies": {
-    "@endo/init": "^1.1.9",
     "@endo/far": "^1.1.11",
+    "@endo/init": "^1.1.9",
     "@endo/ses-ava": "^1.2.10",
     "ava": "^5.3.0",
     "tsd": "^0.31.1"

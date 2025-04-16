@@ -1,6 +1,6 @@
 {
   "name": "@agoric/cosmic-proto",
-  "version": "0.4.0",
+  "version": "0.5.0-u20.0",
   "description": "Protobuf stubs for the Agoric cosmos-sdk module",
   "keywords": [],
   "author": "Agoric",
@@ -164,7 +164,7 @@
     "access": "public"
   },
   "devDependencies": {
-    "@agoric/cosmos": "^0.34.1",
+    "@agoric/cosmos": "^0.35.0-u20.0",
     "@ava/typescript": "^4.1.0",
     "@cosmology/telescope": "https://gitpkg.vercel.app/agoric-labs/telescope/packages/telescope?8d2c2f6ba637a5578eead09a7368dc41c262a9d0",
     "@endo/bundle-source": "^4.0.0",

@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.3.3-u20.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cache@0.3.2...@agoric/cache@0.3.3-u20.0) (2025-04-16)
+
+
+### Features
+
+* **types:** ambient exports from agoric/internal ([71d18c4](https://github.com/Agoric/agoric-sdk/commit/71d18c4221f63f1c0e7c45562b5a0a86a0b4b5c0))
+
+
+
 ### [0.3.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/cache@0.3.1...@agoric/cache@0.3.2) (2023-06-02)
 
 **Note:** Version bump only for package @agoric/cache

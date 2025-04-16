@@ -3,6 +3,51 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.5.4-u20.0](https://github.com/Agoric/agoric/compare/@agoric/smart-wallet@0.5.3...@agoric/smart-wallet@0.5.4-u20.0) (2025-04-16)
+
+
+### Features
+
+*  smartWallet verstion 2 with watchedPromises ([5ed5107](https://github.com/Agoric/agoric/commit/5ed51078d39e643d91b572d9c50fad4a276d7ded))
+* getBridgeId on ScopedBridgeManager ([aec4dea](https://github.com/Agoric/agoric/commit/aec4dea4f4d6baca3ea32c33551ba00658eab31b))
+* **smart-wallet:** accept `Vow` for offerResult ([933ab29](https://github.com/Agoric/agoric/commit/933ab299ee30c14530f92a9548fd79a35de3d0ff)), closes [#9308](https://github.com/Agoric/agoric/issues/9308)
+* **smart-wallet:** trading in non-vbank asset ([4c2bec7](https://github.com/Agoric/agoric/commit/4c2bec7dc72c5c92b90b1957cd0548d81897b0f0))
+* **smart-wallet:** tryExitOffer reclaims withdrawn payments ([f7bc1ea](https://github.com/Agoric/agoric/commit/f7bc1ead33cea3cd16bc1ccc70951d1d46678932))
+* **smart-wallet:** upgrade walletFactory for non-vbank assets ([a0c4ecf](https://github.com/Agoric/agoric/commit/a0c4ecf5d6f1e3874828f5b2fcf38f87cb0619ba))
+* **smart-wallet:** use durable zone for vows ([1126e9f](https://github.com/Agoric/agoric/commit/1126e9f873a5bc12809980dc955eded2821a1f60)), closes [#9308](https://github.com/Agoric/agoric/issues/9308)
+* **smart-wallet:** withdraw payments before getting invitation ([33f2859](https://github.com/Agoric/agoric/commit/33f2859d7ce2ba2f59e86e97f85e1bc34a503095)), closes [#7098](https://github.com/Agoric/agoric/issues/7098)
+* start fn upgradability by meta ([5ae46e4](https://github.com/Agoric/agoric/commit/5ae46e485b8f3b643cb57c45abdb75a94657d60c))
+* **types:** ContinuingOfferResult ([3af2b5c](https://github.com/Agoric/agoric/commit/3af2b5c8660d1fb7af217183bffc2f8de0e1cbc5))
+* **types:** explicit exports from notifier ([0bc72a8](https://github.com/Agoric/agoric/commit/0bc72a88c7d91ff1b2f00ee5cabeb58c6315598e))
+* **types:** export smart-wallet types at top level ([30a8cb2](https://github.com/Agoric/agoric/commit/30a8cb269d7e34e413adea93a92f39d818cd80f3))
+* **types:** InvitationAmount ([cdf1b7a](https://github.com/Agoric/agoric/commit/cdf1b7a6ee28293ba5d606705e24a9fee175effe))
+* **types:** loadVat WellKnownVats ([efdf39f](https://github.com/Agoric/agoric/commit/efdf39f9c839cb26fe6035c9ce433e2bfdb651a1))
+* **types:** Payment for set-like carries key type ([0765625](https://github.com/Agoric/agoric/commit/0765625bad5a377ce07049ec3b63df000de86762))
+
+
+### Bug Fixes
+
+* burn invitation made for repair ([c70ee01](https://github.com/Agoric/agoric/commit/c70ee0113cd7e6b0df5e33bd934d33a588ef0b3d))
+* DEBUG harmony ([#8136](https://github.com/Agoric/agoric/issues/8136)) ([d2ea4b4](https://github.com/Agoric/agoric/commit/d2ea4b46b9efa61e97eec8711830d9fdd741ca55))
+* handle promises in repairWalletForIncarnation2 ([3146886](https://github.com/Agoric/agoric/commit/3146886cbad75e773b0dd0520d0d88ef0f12540f))
+* in SmartWallet, if invitation is invalid, don't process offer ([559db01](https://github.com/Agoric/agoric/commit/559db01f90b7729598f8b94859322da7850bd076))
+* many typing improvements ([777eb21](https://github.com/Agoric/agoric/commit/777eb21a20fbff3da93d713dc1b95a01fe6ce472))
+* publish 'error' message for failure after upgrade ([5397e0c](https://github.com/Agoric/agoric/commit/5397e0cf76f29074e77227f61576e784e5016d08))
+* re-use invitation from offerToUsedInvitation ([71bb1c7](https://github.com/Agoric/agoric/commit/71bb1c76d47da15242e7eaf54899869f9d5976aa))
+* repair incorrect fix for repairWalletForIncarnation2 ([4d6a823](https://github.com/Agoric/agoric/commit/4d6a823417ca47cb674f632551767b13964aaf1a))
+* smartWallet watch ERTP purse balances across zoe upgrades ([3cfe392](https://github.com/Agoric/agoric/commit/3cfe39245d688509a697a645ae452b92e7136ac1))
+* **types:** agoricContract shape check ([20e1779](https://github.com/Agoric/agoric/commit/20e177940bd09f70759a2e2517b9e2b022314413))
+* **types:** board ([c73f4f9](https://github.com/Agoric/agoric/commit/c73f4f9686215a37e8c5f82ce8dbe4742886a02b))
+* **types:** board values ([4196da3](https://github.com/Agoric/agoric/commit/4196da375525fa67382a039a15973810db44ffea))
+* **types:** misc ([b70765c](https://github.com/Agoric/agoric/commit/b70765cbae25261be5944f5836d8b4b7ae58fca7))
+* **types:** problems hidden by skipLibCheck ([6a6e595](https://github.com/Agoric/agoric/commit/6a6e59549e7beeeef94bf90556ed16873c46d285))
+* **types:** PublicSubscribers ([91ef352](https://github.com/Agoric/agoric/commit/91ef3523109754c88fd051d3b9777e5cc71239e3))
+* **types:** template syntax ([279b903](https://github.com/Agoric/agoric/commit/279b903a559710511d69f1614badddeab801b90d))
+* upgrade for breaking changes in `@endo/bundle-source` ([e840bb2](https://github.com/Agoric/agoric/commit/e840bb2385ef38aa2a038b6f21f02cdcd2d7979b))
+* **walletFactory:** move upgrading check before baggage is populated ([#8322](https://github.com/Agoric/agoric/issues/8322)) ([97cb715](https://github.com/Agoric/agoric/commit/97cb7158f1176d14b9a8d775328aa826458282ea))
+
+
+
 ### [0.5.3](https://github.com/Agoric/agoric/compare/@agoric/smart-wallet@0.5.2...@agoric/smart-wallet@0.5.3) (2023-06-09)
 
 **Note:** Version bump only for package @agoric/smart-wallet

@@ -1,6 +1,6 @@
 {
   "name": "@agoric/swingset-xsnap-supervisor",
-  "version": "0.10.2",
+  "version": "0.10.3-u20.0",
   "description": "Supervisor/Liveslots bundle for swingset xsnap workers",
   "author": "Agoric",
   "license": "Apache-2.0",

@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.8.0-u20.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/pegasus@0.7.12...@agoric/pegasus@0.8.0-u20.0) (2025-04-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* make Network and IBC vats durable (#8721)
+
+### Features
+
+* add sender options ([#8506](https://github.com/Agoric/agoric-sdk/issues/8506)) ([00cd6ae](https://github.com/Agoric/agoric-sdk/commit/00cd6aec8f6a8c8baa1eb29ad929054b32491733))
+* make Network and IBC vats durable ([#8721](https://github.com/Agoric/agoric-sdk/issues/8721)) ([3d13c09](https://github.com/Agoric/agoric-sdk/commit/3d13c09363013e23726c2ac5fa299a8e5344fd8c))
+
+
+### Bug Fixes
+
+* ensure that we wrap pegasusConnectionsAdmin with E ([#8526](https://github.com/Agoric/agoric-sdk/issues/8526)) ([0f42fb6](https://github.com/Agoric/agoric-sdk/commit/0f42fb639a6b3619de097ec0f819499200c9f6b7))
+* misc runtime robustness found by typecheck ([a033f26](https://github.com/Agoric/agoric-sdk/commit/a033f2638f9f11e19d94d7931e4e0614773b1f60))
+* **types:** durable wrapping non-durable ([3eeffaa](https://github.com/Agoric/agoric-sdk/commit/3eeffaa241f18105bf71fc1559a8e006529d654e))
+
+
+
 ### [0.7.12](https://github.com/Agoric/agoric-sdk/compare/@agoric/pegasus@0.7.11...@agoric/pegasus@0.7.12) (2023-06-09)
 
 **Note:** Version bump only for package @agoric/pegasus
