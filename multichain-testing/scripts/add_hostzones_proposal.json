@@ -2,7 +2,7 @@
   "messages": [
     {
       "@type": "/stride.stakeibc.MsgRegisterHostZone",
-      "connection_id": "connection-1",
+      "connection_id": "connection-0",
       "bech32prefix": "cosmos",
       "host_denom": "uatom",
       "ibc_denom": "ibc/DDE40400D73526981E1E26296C9F0687E1BD9DEC10F28039A75C329123113BCB",
