@@ -48,6 +48,8 @@ chains:
     scripts:
       updateConfig:
         file: scripts/update-config.sh
+      updateGenesis:
+        file: scripts/noble-update-genesis.sh
     faucet:
       enabled: true
       type: starship
