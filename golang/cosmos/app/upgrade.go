@@ -187,6 +187,8 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 			case "MAINNET":
 				// v111 "zcf-b1-4522b-stkATOM-USD_price_feed"
 				terminationTargets = []vm.Jsonable{"board052184:stkATOM-USD_price_feed"}
+			case "A3P_INTEGRATION":
+				terminationTargets = []vm.Jsonable{"board04091:stATOM-USD_price_feed"}
 			}
 			if len(terminationTargets) > 0 {
 				terminationStep, err := buildProposalStepWithArgs(
