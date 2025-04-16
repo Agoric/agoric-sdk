@@ -84,21 +84,6 @@ export const isStreamCell = cell =>
   /^0$|^[1-9][0-9]*$/.test(cell.blockHeight);
 harden(isStreamCell);
 
-// TODO: Consolidate with `insistCapData` functions from swingset-liveslots,
-// swingset-xsnap-supervisor, etc.
-/**
- * @param {unknown} data
- * @returns {asserts data is import('@endo/marshal').CapData<string>}
- */
-export const assertCapData = data => {
-  assert.typeof(data, 'object');
-  assert(data);
-  assert.typeof(data.body, 'string');
-  assert(Array.isArray(data.slots));
-  // XXX check that the .slots array elements are actually strings
-};
-harden(assertCapData);
-
 /**
  * @typedef {object} StoredFacet
  * @property {() => Promise<string>} getPath the chain storage path at which the

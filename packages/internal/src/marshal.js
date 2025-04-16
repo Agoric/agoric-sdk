@@ -65,18 +65,17 @@ export const boardSlottingMarshaller = (slotToVal = undefined) => {
 export const CapDataShape = { body: M.string(), slots: M.array() };
 harden(CapDataShape);
 
-// TODO: Consolidate with `insistCapData` functions from swingset-liveslots,
-// swingset-xsnap-supervisor, etc.
 /**
+ * Assert that this is CapData
+ *
  * @param {unknown} data
- * @returns {asserts data is CapData<string>}
+ * @returns {asserts data is CapData<unknown>}
  */
-const assertCapData = data => {
+export const assertCapData = data => {
   assert.typeof(data, 'object');
   assert(data);
-  assert.typeof(data.body, 'string');
-  assert(Array.isArray(data.slots));
-  // XXX check that the .slots array elements are actually strings
+  typeof data.body === 'string' || Fail`data has non-string .body ${data.body}`;
+  Array.isArray(data.slots) || Fail`data has non-Array slots ${data.slots}`;
 };
 harden(assertCapData);
 

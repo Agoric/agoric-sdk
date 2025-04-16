@@ -1,10 +1,15 @@
 import { Fail } from '@endo/errors';
 
 /**
+ * @import {assertCapData} from '@agoric/internal/src/marshal.js';
+ */
+
+/**
  * Assert function to ensure that something expected to be a capdata object
  * actually is.  A capdata object should have a .body property that's a string
  * and a .slots property that's an array of strings.
  *
+ * @see {assertCapData} for the general case
  * @param {any} specimen  The object to be tested
  * @throws {Error} if, upon inspection, the parameter does not satisfy the above
  *   criteria.
