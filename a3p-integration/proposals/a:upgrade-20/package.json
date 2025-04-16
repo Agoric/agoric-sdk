@@ -2,9 +2,10 @@
   "agoricProposal": {
     "releaseNotes": false,
     "sdkImageTag": "unreleased",
-    "planName": "UNRELEASED_A3P_INTEGRATION",
+    "planName": "agoric-upgrade-20",
     "upgradeInfo": {
-      "coreProposals": []
+      "coreProposals": [],
+      "releaseNotes": false
     },
     "type": "Software Upgrade Proposal",
     "sdk-generate": [
