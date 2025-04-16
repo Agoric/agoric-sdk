@@ -71,6 +71,11 @@ chains:
         staking:
           params:
             unbonding_time: '2m'
+        interchainaccounts:
+          host_genesis_state:
+            params:
+              host_enabled: true
+              allow_messages: ['*']
     faucet:
       enabled: true
       type: starship
