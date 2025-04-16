@@ -16,6 +16,8 @@ import { mustMatch } from '@agoric/internal';
  * @import {MinimalNetworkConfig} from './network-config.js';
  */
 
+// TODO move to RPC layer, keyed by the RPC path
+// TODO move down to cosmic-proto, probably generated with Telescope
 const codecs = {
   children: {
     rpc: '/agoric.vstorage.Query/Children',
@@ -122,6 +124,7 @@ export const makeVStorage = ({ fetch }, config) => {
   };
 
   const vstorage = {
+    // TODO remove
     /** @deprecated use abstractions */
     url: makeAbciQuery,
     /**
