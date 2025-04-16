@@ -122,6 +122,7 @@ export const makeVStorage = ({ fetch }, config) => {
   };
 
   const vstorage = {
+    readStorage,
     /**
      *
      * @param {string} path
