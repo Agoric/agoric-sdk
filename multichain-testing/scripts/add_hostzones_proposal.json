@@ -1,0 +1,21 @@
+{
+    "messages": [
+     {
+      "@type": "/stride.stakeibc.MsgRegisterHostZone",
+      "connection_id": "connection-0",
+      "bech32prefix": "cosmos",
+      "host_denom": "uatom",
+      "ibc_denom": "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+      "creator": "stride10d07y265gmmuvt4z0w9aw880jnsr700jefnezl",
+      "transfer_channel_id": "channel-0",
+      "unbonding_frequency": "1000",
+      "min_redemption_rate": "0",
+      "max_redemption_rate": "50"
+     }
+    ],
+    "metadata": "ipfs://CID",
+   
+    "deposit": "100000000ustrd",
+    "title": "MsgUpdateParams",
+    "summary": "asdasd"
+}
