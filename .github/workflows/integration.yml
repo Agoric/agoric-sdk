@@ -40,6 +40,25 @@ jobs:
   pre_check:
     uses: ./.github/workflows/pre-check-integration.yml
 
+  build-docker-sdk:
+    permissions:
+      contents: read
+      id-token: write
+    needs: pre_check
+    if: needs.pre_check.outputs.should_run == 'true'
+    runs-on: 'depot-ubuntu-22.04-8'
+    steps:
+      - uses: depot/setup-action@v1
+      - uses: actions/checkout@v4
+        with:
+          path: ./agoric-sdk
+      - name: prelim docker build (sdk)
+        # Produces ghcr.io/agoric/agoric-sdk:unreleased used in the following upgrade test.
+        # run: cd packages/deployment && ./scripts/test-docker-build.sh | $TEST_COLLECT
+        # XXX skip TAP test output and collection for now; it hides the output from the logs
+        run: make docker-build-sdk
+        working-directory: agoric-sdk/packages/deployment
+
   # This job is meant to emulate what developers working with the Agoric
   # platform will experience.
   # It should be kept in sync with the "getting started" workflow at
@@ -200,7 +219,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    needs: pre_check
+    needs: [pre_check, build-docker-sdk]
     if: needs.pre_check.outputs.should_run == 'true'
     runs-on: 'depot-ubuntu-22.04-8'
     timeout-minutes: 60
@@ -379,7 +398,7 @@ jobs:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
 
   test-multichain-e2e:
-    needs: pre_check
+    needs: [pre_check, build-docker-sdk]
     if: needs.pre_check.outputs.should_run == 'true'
     uses: ./.github/workflows/multichain-e2e.yml
 
