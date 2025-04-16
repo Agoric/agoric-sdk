@@ -76,6 +76,9 @@ chains:
             params:
               host_enabled: true
               allow_messages: ['*']
+    scripts:
+      updateGenesis:
+        file: scripts/noble-update-genesis.sh
     faucet:
       enabled: true
       type: starship
