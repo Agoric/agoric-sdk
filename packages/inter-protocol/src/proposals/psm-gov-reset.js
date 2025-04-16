@@ -75,6 +75,10 @@ const resetPSMMintLimits = async (
     const [_psm, _ist, keyword] = kit.label.split('-');
     trace('PSM name(s)', kit.label, keyword);
     assert(keyword, kit.label);
+    if (!['USDC', 'USDT'].includes(keyword)) {
+      trace('out of scope:', keyword);
+      continue;
+    }
 
     const privateArgsPre = await shallowlyFulfilled(
       // @ts-expect-error instancePrivateArgs is a mixed bag
