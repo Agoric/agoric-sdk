@@ -16,9 +16,7 @@ require (
 	github.com/cometbft/cometbft-db v0.9.5
 	github.com/cosmos/cosmos-sdk v0.47.15
 	github.com/cosmos/gogoproto v1.7.0
-	// We'd like to move to v7.3. ASAP, but first we need to migrate to v7.1.
-	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7 v7.1.3
-	// github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7 v7.3.0
+	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7 v7.3.0
 	github.com/cosmos/ibc-go/modules/light-clients/08-wasm v0.4.1-0.20241220161524-8392c480c551
 	github.com/cosmos/ibc-go/v7 v7.10.0
 	github.com/golang/protobuf v1.5.4
@@ -194,7 +192,7 @@ require (
 	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	google.golang.org/api v0.171.0 // indirect
-	google.golang.org/genproto v0.0.0-20240213162025-012b6fc9bca9 // indirect
+	google.golang.org/genproto v0.0.0-20240227224415-6ceb2ff114de // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1 // indirect
 	google.golang.org/protobuf v1.36.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
@@ -242,6 +240,9 @@ replace (
 
 	// We need a fork of cosmos-sdk until all of the differences are merged.
 	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.47.17-alpha.agoric.1
+
+	// And a PFM compatible with the other Agoric forks.
+	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7 => github.com/agoric-labs/ibc-apps/middleware/packet-forward-middleware/v7 v7.3.1-0.20250416033824-b29b092fac15
 
 	// Use a version of ibc-go that is compatible with the above forks.
 	github.com/cosmos/ibc-go/v7 => github.com/agoric-labs/ibc-go/v7 v7.10.0-alpha.agoric.2
