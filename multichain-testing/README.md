@@ -123,6 +123,13 @@ make fund-wallet COIN=20000000ubld ADDR=$ADDR
 make provision-smart-wallet ADDR=$ADDR
 ```
 
+## Optional Features
+
+```sh
+# create and fund a liquidity pool on Osmosis
+make create-osmosis-pool
+```
+
 ## Chain Registry
 
 These only work if you've done `make port-forward`.
