@@ -1,6 +1,6 @@
 import test from 'ava';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
-import transfer from '../../src/cli/transfer.js';
+import * as transferLib from '../../src/cli/transfer.js';
 import {
   mockOut,
   mockFile,
@@ -16,7 +16,7 @@ test('Errors if config missing', async t => {
   const file = mockFile(path);
 
   // @ts-expect-error mocking partial Console
-  await t.throwsAsync(transfer.transfer(file, '1500000', 'noble1234', out));
+  await t.throwsAsync(transferLib.transfer(file, '1500000', 'noble1234', out));
 
   t.is(
     out.getErrOut(),
@@ -109,7 +109,7 @@ test('Transfer registers the noble forwarding account if it does not exist', asy
   const signerMock = makeMockSigner();
   const mockEthProvider = makeMockEthProvider();
 
-  await transfer.transfer(
+  await transferLib.transfer(
     file,
     amount,
     EUD,
@@ -185,7 +185,7 @@ test('Transfer signs and broadcasts the depositForBurn message on Ethereum', asy
   const signerMock = makeMockSigner();
   const mockEthProvider = makeMockEthProvider();
 
-  await transfer.transfer(
+  await transferLib.transfer(
     file,
     amount,
     EUD,
