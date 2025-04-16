@@ -1,13 +1,13 @@
+import { decodeBase64 } from '@endo/base64';
+import { encodeHex } from '@agoric/internal/src/hex.js';
+import { StreamCellShape } from '@agoric/internal/src/lib-chainStorage.js';
+import { mustMatch } from '@agoric/internal';
 import {
   QueryChildrenRequest,
   QueryChildrenResponse,
   QueryDataRequest,
   QueryDataResponse,
 } from '@agoric/cosmic-proto/agoric/vstorage/query.js';
-import { decodeBase64 } from '@endo/base64';
-import { encodeHex } from '@agoric/internal/src/hex.js';
-import { StreamCellShape } from '@agoric/internal/src/lib-chainStorage.js';
-import { mustMatch } from '@agoric/internal';
 
 /**
  * @import {AbciQueryResponse} from '@cosmjs/tendermint-rpc';
@@ -16,16 +16,20 @@ import { mustMatch } from '@agoric/internal';
  * @import {MinimalNetworkConfig} from './network-config.js';
  */
 
-// TODO move to RPC layer, keyed by the RPC path
+const kindToRpc = /** @type {const} */ ({
+  __proto__: null,
+  children: '/agoric.vstorage.Query/Children',
+  data: '/agoric.vstorage.Query/Data',
+});
+
 // TODO move down to cosmic-proto, probably generated with Telescope
 const codecs = {
-  children: {
-    rpc: '/agoric.vstorage.Query/Children',
+  __proto__: null,
+  '/agoric.vstorage.Query/Children': {
     request: QueryChildrenRequest,
     response: QueryChildrenResponse,
   },
-  data: {
-    rpc: '/agoric.vstorage.Query/Data',
+  '/agoric.vstorage.Query/Data': {
     request: QueryDataRequest,
     response: QueryDataResponse,
   },
@@ -43,11 +47,8 @@ export const makeAbciQuery = (
   path = 'published',
   { kind = /** @type {T} */ ('children'), height = 0 } = {},
 ) => {
-  const codec = codecs[kind];
-  if (!codec) {
-    throw Error(`unknown rpc kind: ${kind}`);
-  }
-  const { rpc, request } = codec;
+  const rpc = kindToRpc[kind];
+  const { request } = codecs[rpc];
   const buf = request.toProto({ path });
 
   const hexData = encodeHex(buf);
@@ -61,7 +62,7 @@ export const makeAbciQuery = (
  */
 export const makeVStorage = ({ fetch }, config) => {
   /**
-   * @template {keyof typeof codecs} T
+   * @template {'data' | 'children'} T
    * @param {string} vstoragePath
    * @param {object} [opts]
    * @param {T} [opts.kind]
@@ -92,10 +93,8 @@ export const makeVStorage = ({ fetch }, config) => {
   ) => {
     await null;
 
-    const codec = codecs[kind];
-    if (!codec) {
-      throw Error(`unknown codec for kind: ${kind}`);
-    }
+    const rpc = kindToRpc[kind];
+    const codec = codecs[rpc];
 
     let data;
     try {
