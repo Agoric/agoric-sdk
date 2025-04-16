@@ -620,7 +620,7 @@ export interface MsgSetCommunityPoolRebate {
   chainId: string;
   /** Rebate percentage represented as a decimal (e.g. 0.2 for 20%) */
   rebateRate: string;
-  /** Number of stTokens recieved by the community pool after liquid staking */
+  /** Number of stTokens received by the community pool after liquid staking */
   liquidStakedStTokenAmount: string;
 }
 export interface MsgSetCommunityPoolRebateProtoMsg {
