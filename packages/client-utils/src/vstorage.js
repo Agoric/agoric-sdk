@@ -32,6 +32,29 @@ const codecs = {
 };
 
 /**
+ * @template {'data' | 'children'} T
+ * @param {string} [path]
+ * @param {object} [opts]
+ * @param {T} [opts.kind]
+ * @param {number | bigint} [opts.height] 0 is the same as omitting height and implies the highest block
+ * @returns {`/abci_query?${string}`}
+ */
+export const makeAbciQuery = (
+  path = 'published',
+  { kind = /** @type {T} */ ('children'), height = 0 } = {},
+) => {
+  const codec = codecs[kind];
+  if (!codec) {
+    throw Error(`unknown rpc kind: ${kind}`);
+  }
+  const { rpc, request } = codec;
+  const buf = request.toProto({ path });
+
+  const hexData = encodeHex(buf);
+  return `/abci_query?path=%22${rpc}%22&data=0x${hexData}&height=${height}`;
+};
+
+/**
  * @param {object} powers
  * @param {typeof window.fetch} powers.fetch
  * @param {MinimalNetworkConfig} config
@@ -53,30 +76,6 @@ export const makeVStorage = ({ fetch }, config) => {
       config.rpcAddrs[0] + makeAbciQuery(vstoragePath, { kind, height });
     const res = await fetch(url, { keepalive: true });
     return res.json();
-  };
-
-  /**
-   * @template {keyof typeof codecs} T
-   * @param {string} [path]
-   * @param {object} [opts]
-   * @param {T} [opts.kind]
-   * @param {number | bigint} [opts.height] 0 is the same as omitting height and implies the highest block
-   * @returns {`/abci_query?${string}`}
-   */
-  const makeAbciQuery = (
-    path = 'published',
-    { kind = /** @type {T} */ ('children'), height = 0 } = {},
-  ) => {
-    const codec = codecs[kind];
-    if (!codec) {
-      throw Error(`unknown rpc kind: ${kind}`);
-    }
-
-    const { rpc, request } = codec;
-    const buf = request.toProto({ path });
-
-    const hexData = encodeHex(buf);
-    return `/abci_query?path=%22${rpc}%22&data=0x${hexData}&height=${height}`;
   };
 
   /**
@@ -124,9 +123,6 @@ export const makeVStorage = ({ fetch }, config) => {
   };
 
   const vstorage = {
-    // TODO remove
-    /** @deprecated use abstractions */
-    url: makeAbciQuery,
     /**
      *
      * @param {string} path
