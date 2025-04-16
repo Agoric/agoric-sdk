@@ -182,20 +182,21 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 			)
 
 			// terminationTargets is a slice of "$boardID:$instanceKitLabel" strings.
-			var terminationTargets []vm.Jsonable
+			var terminationTargets []string
 			switch getVariantFromUpgradeName(targetUpgrade) {
 			case "MAINNET":
 				// v111 "zcf-b1-4522b-stkATOM-USD_price_feed"
-				terminationTargets = []vm.Jsonable{"board052184:stkATOM-USD_price_feed"}
+				terminationTargets = []string{"board052184:stkATOM-USD_price_feed"}
 			case "A3P_INTEGRATION":
-				terminationTargets = []vm.Jsonable{"board04091:stATOM-USD_price_feed"}
+				terminationTargets = []string{"board04091:stATOM-USD_price_feed"}
 			}
 			if len(terminationTargets) > 0 {
+				args := []vm.Jsonable{terminationTargets}
 				terminationStep, err := buildProposalStepWithArgs(
 					"@agoric/vats/src/proposals/terminate-governed-instance.js",
 					// defaultProposalBuilder(powers, targets)
 					"defaultProposalBuilder",
-					terminationTargets...,
+					args...,
 				)
 				if err != nil {
 					return module.VersionMap{}, err
