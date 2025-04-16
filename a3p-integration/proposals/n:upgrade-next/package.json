@@ -6,7 +6,10 @@
     "upgradeInfo": {
       "coreProposals": []
     },
-    "type": "Software Upgrade Proposal"
+    "type": "Software Upgrade Proposal",
+    "sdk-generate": [
+      "testing/add-USD-LEMONS.js test/generated/addUsdLemons"
+    ]
   },
   "type": "module",
   "license": "Apache-2.0",
