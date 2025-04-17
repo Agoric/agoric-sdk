@@ -131,9 +131,15 @@ export const makeVStorage = ({ fetch }, config) => {
     async readLatest(path = 'published') {
       return readStorage(path, { kind: 'data' });
     },
+    /**
+     * Keys of children at the path
+     *
+     * @param {string} path
+     * @returns {Promise<string[]>}
+     */
     async keys(path = 'published') {
-      const raw = await readStorage(path, { kind: 'children' });
-      return raw.children;
+      const response = await readStorage(path, { kind: 'children' });
+      return response.children;
     },
     /**
      * @param {string} path
