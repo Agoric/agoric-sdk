@@ -1,16 +1,6 @@
 {
   "agoricProposal": {
-    "releaseNotes": false,
-    "sdkImageTag": "unreleased",
-    "planName": "UNRELEASED_A3P_INTEGRATION",
-    "upgradeInfo": {
-      "coreProposals": []
-    },
-    "type": "Software Upgrade Proposal",
-    "sdk-generate": [
-      "testing/add-USD-LEMONS.js test/generated/addUsdLemons",
-      "../../vats/src/proposals/terminate-governed-instance.js test/generated/terminate-price-feed board02963:ATOM-USD_price_feed"
-    ]
+    "type": "/agoric.swingset.CoreEvalProposal"
   },
   "type": "module",
   "license": "Apache-2.0",
@@ -43,9 +33,5 @@
     "eslint": "^8.57.0",
     "npm-run-all": "^4.1.5",
     "typescript": "^5.6.3"
-  },
-  "resolutions": {
-    "protobufjs@npm:^6.8.8": "patch:protobufjs@npm%3A6.11.4#~/.yarn/patches/protobufjs-npm-6.11.4-af11968b80.patch",
-    "axios@npm:^1.6.0": "patch:axios@npm%3A1.7.7#~/.yarn/patches/axios-npm-1.7.7-cfbedc233d.patch"
   }
 }

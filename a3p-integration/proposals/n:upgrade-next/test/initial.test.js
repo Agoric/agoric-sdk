@@ -26,10 +26,18 @@ test('post-upgrade vat details', async t => {
   arrayIsLike(
     t,
     await getGovernedVatDetails('-stATOM-USD_price_feed'),
-    [],
-    'stATOM-USD price feed terminated by upgrade',
+    [
+      // current generation
+      { nameSuffix: '-governor', incarnation: 0 },
+      { nameSuffix: '', incarnation: 0 },
+    ],
+    'old generation stATOM-USD price feed terminated by upgrade',
   );
   arrayIsLike(t, await getGovernedVatDetails('-ATOM-USD_price_feed'), [
+    // old generation
+    { nameSuffix: '-governor', incarnation: 0 },
+    { nameSuffix: '', incarnation: 0 },
+    // current generation
     { nameSuffix: '-governor', incarnation: 0 },
     { nameSuffix: '', incarnation: 0 },
   ]);
