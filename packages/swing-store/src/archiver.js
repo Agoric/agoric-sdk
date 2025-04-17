@@ -1,6 +1,7 @@
 import { finished as streamFinishedCallback, Readable } from 'node:stream';
 import { promisify } from 'node:util';
 import { createGzip } from 'node:zlib';
+import { makePromiseKit } from '@endo/promise-kit';
 import { withDeferredCleanup } from '@agoric/internal';
 
 const streamFinished = promisify(streamFinishedCallback);
@@ -67,13 +68,15 @@ export const makeArchiveTranscript = (dirPath, powers) => {
       });
       addCleanup(() => removeCallback());
       const writer = fs.createWriteStream('', { fd, flush: true });
+      const { promise: doneP, resolve, reject } = makePromiseKit();
+      writer.on('error', reject).on('finish', resolve).on('close', resolve);
       const gzip = createGzip();
       gzip.pipe(writer);
       const reader = Readable.from(entries);
       const destroyReader = promisify(reader.destroy.bind(reader));
       addCleanup(() => destroyReader(null));
       reader.pipe(gzip);
-      await streamFinished(gzip);
+      await doneP;
       fs.renameSync(tmpName, destPath);
     });
   };
