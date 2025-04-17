@@ -105,6 +105,57 @@ tail-slog:
 wait-for-pods:
 	scripts/pod-readiness.ts
 
-.PHONY: start
-start: install wait-for-pods port-forward fund-provision-pool override-chain-registry register-bank-assets
+stride-host-zone:
+	./scripts/transfer_fetch_denom.sh
+# Clean up old proposal file if present
+	-kubectl exec -i stridelocal-genesis-0 -- rm /tmp/add_hostzones_proposal.json
 
+# Copy proposal JSON into container
+	kubectl cp ./scripts/add_hostzones_proposal.json stridelocal-genesis-0:/tmp/add_hostzones_proposal.json
+
+# Submit the proposal
+	kubectl exec -i stridelocal-genesis-0 -- \
+		strided tx gov submit-proposal /tmp/add_hostzones_proposal.json \
+		--from genesis --chain-id stridelocal --keyring-backend test --gas auto -y
+
+# Extract latest proposal ID (raw, no quotes)
+	echo "🔍 Waiting for proposal to be created..."
+	kubectl exec -i stridelocal-genesis-0 -- \
+		strided q gov proposals --output json | jq -r '.proposals | map(.id | tonumber) | max' > /tmp/last_proposal_id.txt
+	echo "📌 Proposal ID: $$(cat /tmp/last_proposal_id.txt)"
+
+	# Wait until voting period has started, and print status on each check
+	export PROPOSAL_ID=$$(cat /tmp/last_proposal_id.txt) && \
+	echo "⏳ Waiting for proposal $$PROPOSAL_ID to enter voting period..." && \
+	while true; do \
+		STATUS=$$(kubectl exec -i stridelocal-genesis-0 -- \
+			strided q gov proposal $$PROPOSAL_ID --output json 2>/dev/null | jq -r '.status'); \
+		echo "  ⏱️  Current status: $$STATUS"; \
+		if [ "$$STATUS" = "PROPOSAL_STATUS_VOTING_PERIOD" ]; then \
+			echo "✅ Voting period started (status: $$STATUS)"; \
+			break; \
+		elif [ "$$STATUS" = "PROPOSAL_STATUS_REJECTED" ]; then \
+			echo "❌ Proposal $$PROPOSAL_ID was rejected before voting started."; \
+			exit 1; \
+		fi; \
+		sleep 1; \
+	done
+
+# Auto-vote YES from all local accounts
+	export PROPOSAL_ID=$$(cat /tmp/last_proposal_id.txt) && \
+	echo "🗳️ Voting YES on proposal $$PROPOSAL_ID..." && \
+	for key in $$(kubectl exec -i stridelocal-genesis-0 -- strided keys list --keyring-backend test --output json | jq -r '.[].name'); do \
+		echo "  ✔️ Voting with $$key..."; \
+		kubectl exec -i stridelocal-genesis-0 -- \
+			strided tx gov vote $$PROPOSAL_ID yes \
+			--from $$key --chain-id stridelocal --keyring-backend test --yes > /dev/null; \
+	done
+
+# Show final proposal info
+	echo "\n📜 Final Proposal Info:"
+	export PROPOSAL_ID=$$(cat /tmp/last_proposal_id.txt) && \
+	kubectl exec -i stridelocal-genesis-0 -- \
+		strided q gov proposal $$PROPOSAL_ID --output json | jq '.'
+
+.PHONY: start
+start: install wait-for-pods port-forward fund-provision-pool override-chain-registry register-bank-assets stride-host-zone
