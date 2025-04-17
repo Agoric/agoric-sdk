@@ -1,0 +1,15 @@
+{
+  "@type": "/cosmos.params.v1beta1.ParameterChangeProposal",
+  "title": "Update IBC Allowed Messages",
+  "description": "This proposal updates the ibc-go KeyAllowMessages parameter to support additional IBC message types.",
+  "changes": [
+      {
+        "subspace": "icahost",
+        "key": "AllowMessages",
+        "value": ["/cosmos.bank.v1beta1.MsgSend", "/stride.stakeibc.MsgLiquidStake", "/stride.stakeibc.MsgRedeemStake"]
+      }
+  ],
+  "proposer": "stride10d07y265gmmuvt4z0w9aw880jnsr700jefnezl",
+  "deposit": "100000000ustrd",
+  "summary": "asdasd"
+}

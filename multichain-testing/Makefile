@@ -106,7 +106,7 @@ wait-for-pods:
 	scripts/pod-readiness.ts
 
 stride-host-zone:
-	./scripts/transfer_fetch_denom.sh
+	./scripts/update_hostzone_proposal.sh
 # Clean up old proposal file if present
 	-kubectl exec -i stridelocal-genesis-0 -- rm /tmp/add_hostzones_proposal.json
 
