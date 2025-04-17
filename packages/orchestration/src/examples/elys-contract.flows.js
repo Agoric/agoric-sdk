@@ -73,7 +73,7 @@ export const makeICAHookAccounts = async (
   const strideICAAddress = strideICAAccount.getAddress();
 
   // Elys ICA account
-  const elys = await orch.getChain('elys');
+  const elys = await orch.getChain('elyslocal');
   const { chainId: elysChainId, bech32Prefix: elysBech32Prefix } =
     await elys.getChainInfo();
   const elysICAAccount = await elys.makeAccount();
