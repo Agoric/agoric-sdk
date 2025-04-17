@@ -114,6 +114,10 @@ jobs:
         run: make register-bank-assets
         working-directory: ./agoric-sdk/multichain-testing
 
+      - name: Create Osmosis Pool
+        run: make create-osmosis-pool
+        working-directory: ./agoric-sdk/multichain-testing
+
       - name: Run @agoric/multichain-testing E2E Tests
         run: ${{ inputs.test_command }}
         working-directory: ./agoric-sdk/multichain-testing
