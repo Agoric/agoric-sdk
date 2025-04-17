@@ -370,7 +370,7 @@ export const makeCosmjsFollower = (
     for (const data of streamCell.values) {
       yield followerElementFromStreamCellValue(
         data,
-        streamCell.blockHeight,
+        Number(streamCell.blockHeight),
         currentBlockHeight,
       );
     }
@@ -386,7 +386,7 @@ export const makeCosmjsFollower = (
     for (let i = streamCell.values.length - 1; i >= 0; i -= 1) {
       yield followerElementFromStreamCellValue(
         streamCell.values[i],
-        streamCell.blockHeight,
+        Number(streamCell.blockHeight),
         currentBlockHeight,
       );
     }
@@ -404,7 +404,7 @@ export const makeCosmjsFollower = (
       const last = values[values.length - 1];
       yield followerElementFromStreamCellValue(
         last,
-        streamCell.blockHeight,
+        Number(streamCell.blockHeight),
         currentBlockHeight,
       );
     }
