@@ -1,4 +1,5 @@
 export { VBankAccount } from '@agoric/internal/src/config.js';
+export * from './chain-storage-client.js';
 export * from './cli.js';
 export * from './clients.js';
 export * from './marshalTables.js';

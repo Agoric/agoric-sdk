@@ -155,6 +155,8 @@ export const makeVStorage = ({ fetch }, config) => {
       return response.children;
     },
     /**
+     * @deprecated use chainStorage.readCell
+     *
      * @param {string} path
      * @param {number} [height] default is highest
      * @returns {Promise<StreamCell<string>>}
