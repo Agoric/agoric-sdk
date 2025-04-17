@@ -48,6 +48,10 @@ import { prepareStatusManager } from './exos/status-manager.ts';
 import type { OperatorOfferResult } from './exos/transaction-feed.ts';
 import { prepareTransactionFeedKit } from './exos/transaction-feed.ts';
 import * as flows from './fast-usdc.flows.ts';
+import {
+  prepareForwardRetrierNotifier,
+  type ForwardRetrierNotifier,
+} from './exos/forward-retrier.ts';
 
 const trace = makeTracer('FastUsdc');
 
@@ -113,12 +117,6 @@ export const contract = async (
     marshaller,
   );
 
-  const statusManager = prepareStatusManager(
-    zone,
-    E(storageNode).makeChildNode(TXNS_NODE),
-    { marshaller },
-  );
-
   const { USDC } = terms.brands;
   const { withdrawToSeat } = tools.zoeTools;
   const { baggage, chainHub, orchestrateAll, vowTools } = tools;
@@ -130,8 +128,24 @@ export const contract = async (
    *
    * @throws {Error} if the Noble ICA is not set in baggage
    */
-  const getNobleICA = (): OrchestrationAccount<{ chainId: 'noble-1' }> =>
-    baggage.get(NOBLE_ICA_BAGGAGE_KEY);
+  const getNobleICA = (): HostInterface<
+    OrchestrationAccount<{ chainId: 'noble-1' }>
+  > => baggage.get(NOBLE_ICA_BAGGAGE_KEY);
+
+  const getSettlementAccount = (): HostInterface<
+    OrchestrationAccount<{
+      chainId: 'agoric-any';
+    }>
+  > => settlementAccount;
+
+  const getForwardRetrierNotifier = (): ForwardRetrierNotifier =>
+    forwardRetrierNotifier;
+
+  const statusManager = prepareStatusManager(
+    zone,
+    E(storageNode).makeChildNode(TXNS_NODE),
+    { marshaller, getForwardRetrierNotifier },
+  );
 
   const makeSettler = prepareSettler(zone, {
     statusManager,
@@ -169,7 +183,22 @@ export const contract = async (
     { makeRecorderKit },
   );
 
-  const { makeLocalAccount, makeNobleAccount } = orchestrateAll(flows, {});
+  const { makeLocalAccount, makeNobleAccount, retryForward } = orchestrateAll(
+    flows,
+    {
+      currentChainReference: privateArgs.chainInfo.agoric.chainId,
+      statusManager,
+      log: makeTracer('FUSDC:Flow'),
+    },
+  );
+
+  const makeForwardRetrierNotifier = prepareForwardRetrierNotifier(zone, {
+    getNobleICA,
+    getSettlementAccount,
+    retryForward,
+    statusManager,
+    vowTools,
+  });
 
   const creatorFacet = zone.exo('Fast USDC Creator', undefined, {
     async makeOperatorInvitation(
@@ -333,6 +362,10 @@ export const contract = async (
       remoteDenom: 'uusdc',
       settlementAccount,
     }),
+  );
+
+  const forwardRetrierNotifier = zone.makeOnce('ForwardRetrierNotifier', () =>
+    makeForwardRetrierNotifier(),
   );
 
   // we create a new Advancer on every upgrade. It does not contain precious state and its Noble ICA

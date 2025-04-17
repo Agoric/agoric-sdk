@@ -58,7 +58,9 @@ import type { StatusManager } from './status-manager.js';
 interface AdvancerKitPowers {
   chainHub: ChainHub;
   feeConfig: FeeConfig;
-  getNobleICA: () => OrchestrationAccount<{ chainId: 'noble-1' }>;
+  getNobleICA: () => HostInterface<
+    OrchestrationAccount<{ chainId: 'noble-1' }>
+  >;
   log?: LogFn;
   statusManager: StatusManager;
   usdc: { brand: Brand<'nat'>; denom: Denom };

@@ -10,7 +10,7 @@ import type {
   CaipChainId,
 } from '@agoric/orchestration';
 import type { IBCChannelID } from '@agoric/vats';
-import type { Amount } from '@agoric/ertp';
+import type { Amount, NatValue } from '@agoric/ertp';
 import type { CopyRecord, Passable } from '@endo/pass-style';
 import type { PendingTxStatus, TxStatus } from './constants.js';
 import type { RepayAmountKWR } from './utils/fees.js';
@@ -98,6 +98,28 @@ export type LogFn = (...args: unknown[]) => void;
 export interface PendingTx extends CctpTxEvidence {
   status: PendingTxStatus;
 }
+
+/**
+ * A transaction that did not succeed during Advance or Forward.
+ *
+ * Will be stored in the `ForwardFailedTxs: MapStore` to be retried
+ * in the future.
+ */
+export type ForwardFailedTx = {
+  /** EUD, potentially coerced to `AccountId` */
+  destination: AccountId;
+  /** the amount being forwarded to the EUD */
+  amount: Amount<'nat'>;
+  /** the unique identifier for the EUD transaction */
+  txHash: EvmHash;
+  /**
+   * If present, indicates a partial success to CCTP destinations where
+   * the IBC Transfer was successful but `MsgDepositForBurn` via the ICA was
+   * unsuccessful.
+   * When this transaction is retried, only `MsgDepositForBurn` should be attempted.
+   */
+  fundsInNobleIca?: boolean;
+};
 
 export type FeeConfig = {
   /** flat fee charged for every advance, eligible for LP disbursement */

@@ -12,6 +12,7 @@ import {
 import type {
   CctpTxEvidence,
   EvmHash,
+  ForwardFailedTx,
   LogFn,
   NobleAddress,
   PendingTx,
@@ -23,6 +24,7 @@ import type {
   Marshaller,
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
+import type { AccountId } from '@agoric/orchestration';
 import type { MapStore, SetStore } from '@agoric/store';
 import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
 import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
@@ -30,6 +32,7 @@ import type { Zone } from '@agoric/zone';
 import { Fail, makeError, q } from '@endo/errors';
 import { E, type ERef } from '@endo/far';
 import { M } from '@endo/patterns';
+import type { ForwardRetrierNotifier } from './forward-retrier.ts';
 
 /** The string template is for developer visibility but not meant to ever be parsed. */
 type PendingTxKey = `pendingTx:${bigint}:${NobleAddress}`;
@@ -37,6 +40,7 @@ type PendingTxKey = `pendingTx:${bigint}:${NobleAddress}`;
 interface StatusManagerPowers {
   log?: LogFn;
   marshaller: ERef<Marshaller>;
+  getForwardRetrierNotifier: () => ForwardRetrierNotifier;
 }
 
 /**
@@ -74,13 +78,18 @@ export const stateShape = harden({
  * @param zone
  * @param txnsNode
  * @param root0
+ * @param root0.getForwardRetrierNotifier
  * @param root0.marshaller
  * @param root0.log
  */
 export const prepareStatusManager = (
   zone: Zone,
   txnsNode: ERef<StorageNode>,
-  { marshaller, log = makeTracer('StatusManager', true) }: StatusManagerPowers,
+  {
+    getForwardRetrierNotifier,
+    marshaller,
+    log = makeTracer('StatusManager', true),
+  }: StatusManagerPowers,
 ) => {
   /**
    * Keyed by a tuple of the Noble Forwarding Account and amount.
@@ -208,9 +217,18 @@ export const prepareStatusManager = (
     M.interface('StatusManagerI', {
       // TODO: naming scheme for transition events
       advance: M.call(CctpTxEvidenceShape).returns(),
-      advanceOutcome: M.call(M.string(), M.nat(), M.boolean()).returns(),
+      advanceOutcome: M.call(
+        M.string(),
+        M.nat(),
+        M.string(),
+        M.boolean(),
+      ).returns(),
       skipAdvance: M.call(CctpTxEvidenceShape, M.arrayOf(M.string())).returns(),
-      advanceOutcomeForMintedEarly: M.call(EvmHashShape, M.boolean()).returns(),
+      advanceOutcomeForMintedEarly: M.call(
+        EvmHashShape,
+        M.string(),
+        M.boolean(),
+      ).returns(),
       advanceOutcomeForUnknownMint: M.call(CctpTxEvidenceShape).returns(),
       hasBeenObserved: M.call(CctpTxEvidenceShape).returns(M.boolean()),
       deleteCompletedTxs: M.call().returns(M.undefined()),
@@ -223,10 +241,20 @@ export const prepareStatusManager = (
           M.undefined(),
         ),
       ),
+      dequeuePendingStatus: M.call(M.string(), M.bigint()).returns(
+        M.or(
+          {
+            txHash: EvmHashShape,
+            status: M.or(...Object.values(PendingTxStatus)),
+          },
+          M.undefined(),
+        ),
+      ),
       disbursed: M.call(EvmHashShape, AmountKeywordRecordShape).returns(
         M.undefined(),
       ),
       forwarded: M.call(EvmHashShape, M.boolean()).returns(),
+      skipForward: M.call(EvmHashShape).returns(),
       lookupPending: M.call(M.string(), M.bigint()).returns(
         M.arrayOf(PendingTxShape),
       ),
@@ -264,18 +292,25 @@ export const prepareStatusManager = (
        *
        * @param nfa
        * @param amount
+       * @param destination
        * @param success
        * @throws {Error} if nothing to advance
        */
       advanceOutcome(
         nfa: NobleAddress,
         amount: bigint,
+        destination: AccountId,
         success: boolean,
       ): void {
         setPendingTxStatus(
           { nfa, amount },
           success ? PendingTxStatus.Advanced : PendingTxStatus.AdvanceFailed,
         );
+        if (success) {
+          getForwardRetrierNotifier().notifyDestinationHealthy(destination);
+        } else {
+          getForwardRetrierNotifier().notifyDestinationUnhealthy(destination);
+        }
       },
 
       /**
@@ -285,9 +320,14 @@ export const prepareStatusManager = (
        * Does not add or amend `pendingSettleTxs` as this has
        * already settled.
        * @param txHash
+       * @param destination
        * @param success
        */
-      advanceOutcomeForMintedEarly(txHash: EvmHash, success: boolean): void {
+      advanceOutcomeForMintedEarly(
+        txHash: EvmHash,
+        destination: AccountId,
+        success: boolean,
+      ): void {
         publishTxnRecord(
           txHash,
           harden({
@@ -296,6 +336,11 @@ export const prepareStatusManager = (
               : PendingTxStatus.AdvanceFailed,
           }),
         );
+        if (success) {
+          getForwardRetrierNotifier().notifyDestinationHealthy(destination);
+        } else {
+          getForwardRetrierNotifier().notifyDestinationUnhealthy(destination);
+        }
       },
 
       /**
@@ -335,6 +380,13 @@ export const prepareStatusManager = (
       },
 
       /**
+       * @deprecated use `dequeuePendingStatus`
+       */
+      dequeueStatus(nfa: NobleAddress, amount: bigint) {
+        return this.dequeuePendingStatus(nfa, amount);
+      },
+
+      /**
        * Remove and return the oldest pending settlement transaction that matches the given
        * forwarding account and amount. Since multiple pending transactions may exist with
        * identical (account, amount) pairs, we process them in FIFO order.
@@ -343,7 +395,7 @@ export const prepareStatusManager = (
        * @param {NobleAddress} amount
        * @returns {undefined} if no pending transactions exist for this address and amount combination.
        */
-      dequeueStatus(
+      dequeuePendingStatus(
         nfa: NobleAddress,
         amount: bigint,
       ): { txHash: EvmHash; status: PendingTxStatus } | undefined {
@@ -377,14 +429,41 @@ export const prepareStatusManager = (
 
       /**
        * Mark a transaction as `FORWARDED` or `FORWARD_FAILED`
-       * @param txHash
+       * @param tx
        * @param success
        */
-      forwarded(txHash: EvmHash, success: boolean): void {
+      forwarded(tx: ForwardFailedTx, success: boolean): void {
+        /**
+         * Forwarding has FAILED, and we are re-queuing the transaction
+         * to be tried again.
+         */
+        if (!success) {
+          getForwardRetrierNotifier().initForwardFailedTx(tx);
+          getForwardRetrierNotifier().notifyDestinationUnhealthy(
+            tx.destination,
+          );
+        } else {
+          getForwardRetrierNotifier().notifyDestinationHealthy(tx.destination);
+        }
+
+        publishTxnRecord(
+          tx.txHash,
+          harden({
+            status: success ? TxStatus.Forwarded : TxStatus.ForwardFailed,
+          }),
+        );
+      },
+
+      /**
+       * Mark a transaction as `FORWARD_SKIPPED` (not attempted). e.g., unable
+       * to determine route to destination EUD
+       * @param txHash
+       */
+      skipForward(txHash: EvmHash) {
         publishTxnRecord(
           txHash,
           harden({
-            status: success ? TxStatus.Forwarded : TxStatus.ForwardFailed,
+            status: TxStatus.ForwardSkipped,
           }),
         );
       },
@@ -404,7 +483,6 @@ export const prepareStatusManager = (
         return pendingSettleTxs.get(key);
       },
     },
-    { stateShape },
   );
 };
 harden(prepareStatusManager);

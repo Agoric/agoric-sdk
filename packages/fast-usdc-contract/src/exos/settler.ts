@@ -34,6 +34,7 @@ import type {
   FeeConfig,
   LogFn,
   NobleAddress,
+  ForwardFailedTx,
 } from '@agoric/fast-usdc/src/types.js';
 import type {
   AccountId,
@@ -157,7 +158,9 @@ export const prepareSettler = (
     currentChainReference: string;
     chainHub: ChainHub;
     feeConfig: FeeConfig;
-    getNobleICA: () => OrchestrationAccount<{ chainId: 'noble-1' }>;
+    getNobleICA: () => HostInterface<
+      OrchestrationAccount<{ chainId: 'noble-1' }>
+    >;
     log?: LogFn;
     statusManager: StatusManager;
     USDC: Brand<'nat'>;
@@ -193,19 +196,19 @@ export const prepareSettler = (
         disburse: M.call(EvmHashShape, M.nat(), M.string()).returns(
           M.promise(),
         ),
-        forward: M.call(EvmHashShape, M.nat(), M.string()).returns(),
+        forward: M.call(M.record(), M.nat(), M.string()).returns(),
       }),
       transferHandler: M.interface('SettlerTransferI', {
-        onFulfilled: M.call(M.undefined(), M.string()).returns(),
-        onRejected: M.call(M.error(), M.string()).returns(),
+        onFulfilled: M.call(M.undefined(), M.record()).returns(),
+        onRejected: M.call(M.error(), M.record()).returns(),
       }),
       intermediateTransferHandler: M.interface('SettlerIntermediateTransferI', {
         onFulfilled: M.call(M.undefined(), M.record()).returns(),
         onRejected: M.call(M.error(), M.record()).returns(),
       }),
       depositForBurnHandler: M.interface('SettlerDepositForBurnI', {
-        onFulfilled: M.call(M.undefined(), M.string()).returns(),
-        onRejected: M.call(M.error(), M.string()).returns(),
+        onFulfilled: M.call(M.undefined(), M.record()).returns(),
+        onRejected: M.call(M.error(), M.record()).returns(),
       }),
     },
 
@@ -311,15 +314,26 @@ export const prepareSettler = (
 
           if (mintedEarly.has(key)) {
             asMultiset(mintedEarly).remove(key);
-            statusManager.advanceOutcomeForMintedEarly(txHash, success);
+            statusManager.advanceOutcomeForMintedEarly(
+              txHash,
+              destination,
+              success,
+            );
             if (success) {
               void this.facets.self.disburse(txHash, fullValue, destination);
             } else {
               void this.facets.self.forward(txHash, fullValue, destination);
             }
           } else {
-            statusManager.advanceOutcome(forwardingAddress, fullValue, success);
+            statusManager.advanceOutcome(
+              forwardingAddress,
+              fullValue,
+              destination,
+              success,
+            );
           }
+
+          // TODO: if (success) check forwardFailedTxs for entries and retry
         },
         /**
          * If the EUD received minted funds without an advance, forward the
@@ -417,106 +431,98 @@ export const prepareSettler = (
           const { settlementAccount } = this.state;
           log('forwarding', fullValue, 'to', EUD, 'for', txHash);
 
-          const dest: AccountId | null = (() => {
+          const destination: AccountId | null = (() => {
             try {
               return chainHub.resolveAccountId(EUD);
             } catch (e) {
-              log('⚠️ forward transfer failed!', e, txHash);
-              statusManager.forwarded(txHash, false);
+              log('⚠️ forward transfer skipped!', e, txHash);
+              statusManager.skipForward(txHash);
               return null;
             }
           })();
-          if (!dest) return;
+          if (!destination) return;
 
-          const { namespace, reference } = parseAccountId(dest);
-          const amt = AmountMath.make(USDC, fullValue);
+          const { namespace, reference } = parseAccountId(destination);
+          const amount = AmountMath.make(USDC, fullValue);
 
           const intermediateRecipient = getNobleICA().getAddress();
 
           if (namespace === 'cosmos') {
             const transferOrSendV =
               reference === currentChainReference
-                ? E(settlementAccount).send(dest, amt)
-                : E(settlementAccount).transfer(dest, amt, {
+                ? E(settlementAccount).send(destination, amount)
+                : E(settlementAccount).transfer(destination, amount, {
                     forwardOpts: { intermediateRecipient },
                   });
-            void vowTools.watch(
-              transferOrSendV,
-              this.facets.transferHandler,
+            void vowTools.watch(transferOrSendV, this.facets.transferHandler, {
+              amount,
+              destination,
               txHash,
-            );
-          } else if (supportsCctp(dest)) {
+            });
+          } else if (supportsCctp(destination)) {
             // send to Noble then call `.depositForBurn(dest, amt)`
             void vowTools.watch(
-              E(settlementAccount).transfer(intermediateRecipient, amt),
+              E(settlementAccount).transfer(intermediateRecipient, amount),
               this.facets.intermediateTransferHandler,
-              { amt, dest, txHash },
+              { amount, destination, txHash },
             );
           } else {
             log(
               '🚨 forward not attempted!',
               'unsupported destination',
               txHash,
-              dest,
+              destination,
             );
-            statusManager.forwarded(txHash, false);
+            statusManager.skipForward(txHash);
           }
         },
       },
       transferHandler: {
-        onFulfilled(_result: unknown, txHash: EvmHash) {
+        onFulfilled(_result: unknown, tx: ForwardFailedTx) {
           // update status manager, marking tx `FORWARDED` without fee split
-          statusManager.forwarded(txHash, true);
+          statusManager.forwarded(tx, true);
         },
-        onRejected(reason: unknown, txHash: EvmHash) {
+        onRejected(reason: unknown, tx: ForwardFailedTx) {
           // funds remain in `settlementAccount` and must be recovered via a
           // contract upgrade
-          log('🚨 forward transfer rejected!', reason, txHash);
+          log('🚨 forward transfer rejected!', reason, tx.txHash);
           // update status manager, flagging a terminal state that needs to be
           // manual intervention or a code update to remediate
-          statusManager.forwarded(txHash, false);
+          statusManager.forwarded(tx, false);
         },
       },
       intermediateTransferHandler: {
-        onFulfilled(
-          _result: unknown,
-          {
-            amt,
-            dest,
-            txHash,
-          }: { amt: NatAmount; dest: AccountId; txHash: EvmHash },
-        ) {
+        onFulfilled(_result: unknown, tx: ForwardFailedTx) {
           const nobleIca = getNobleICA();
+          const { amount, destination } = tx;
           void vowTools.watch(
-            E(nobleIca).depositForBurn(dest, amt),
+            E(nobleIca).depositForBurn(destination, amount),
             this.facets.depositForBurnHandler,
-            txHash,
+            tx,
           );
         },
-        onRejected(
-          reason: unknown,
-          { txHash }: { amt: NatAmount; dest: AccountId; txHash: EvmHash },
-        ) {
+        onRejected(reason: unknown, tx: ForwardFailedTx) {
           // funds remain in `settlementAccount` and must be recovered via a
           // contract upgrade
-          log('🚨 forward intermediate transfer rejected!', reason, txHash);
+          log('🚨 forward intermediate transfer rejected!', reason, tx.txHash);
           // update status manager, flagging a terminal state that needs manual
           // intervention or a code update to remediate
-          statusManager.forwarded(txHash, false);
+          statusManager.forwarded(tx, false);
         },
       },
       depositForBurnHandler: {
-        onFulfilled(_result: unknown, txHash: EvmHash) {
+        onFulfilled(_result: unknown, tx: ForwardFailedTx) {
           // update status manager, marking tx `FORWARDED` without fee split
-          statusManager.forwarded(txHash, true);
+          // TODO: trigger retry of failed forwards
+          statusManager.forwarded(tx, true);
         },
-        onRejected(reason: unknown, txHash: EvmHash) {
+        onRejected(reason: unknown, tx: ForwardFailedTx) {
           // funds remain in `nobleAccount` and must be recovered via a
           // contract upgrade
-          log('🚨 forward depositForBurn rejected!', reason, txHash);
+          log('🚨 forward depositForBurn rejected!', reason, tx.txHash);
           // update status manager, flagging a terminal state that needs manual
           // intervention or a code update to remediate
-          statusManager.forwarded(txHash, false);
+          statusManager.forwarded(tx, false);
         },
       },
     },

@@ -20,6 +20,8 @@ export const TxStatus = /** @type {const} */ ({
   Forwarded: 'FORWARDED',
   /** failed to forward to EUD */
   ForwardFailed: 'FORWARD_FAILED',
+  /** forward not attempted (e.g., unable to find route to EUD) */
+  ForwardSkipped: 'FORWARD_SKIPPED',
 });
 harden(TxStatus);
 
