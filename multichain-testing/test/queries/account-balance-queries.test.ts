@@ -5,10 +5,10 @@ import {
   commonSetup,
   type SetupContextWithWallets,
   chainConfig,
-} from './support.js';
-import { makeDoOffer } from '../tools/e2e-tools.js';
-import chainInfo from '../starship-chain-info.js';
-import { MAKE_ACCOUNT_AND_QUERY_BALANCE_TIMEOUT } from './config.js';
+} from '../support.js';
+import { makeDoOffer } from '../../tools/e2e-tools.js';
+import chainInfo from '../../starship-chain-info.js';
+import { MAKE_ACCOUNT_AND_QUERY_BALANCE_TIMEOUT } from '../config.js';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 

@@ -13,10 +13,10 @@ import {
   type SetupContextWithWallets,
   chainConfig,
   FAUCET_POUR,
-} from './support.js';
-import { makeDoOffer } from '../tools/e2e-tools.js';
-import { createWallet } from '../tools/wallet.js';
-import { makeQueryClient } from '../tools/query.js';
+} from '../support.js';
+import { makeDoOffer } from '../../tools/e2e-tools.js';
+import { createWallet } from '../../tools/wallet.js';
+import { makeQueryClient } from '../../tools/query.js';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 

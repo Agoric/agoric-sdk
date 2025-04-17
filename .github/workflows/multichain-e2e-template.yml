@@ -10,6 +10,10 @@ on:
         required: true
         type: string
         description: 'Test command to run (e.g., "test:main" or "test:fast-usdc")'
+      test_suite_name:
+        required: true
+        type: string
+        description: 'Identifier for the test suite that will be used as part of the filename name for logs'
 
 jobs:
   multichain-e2e:
@@ -149,5 +153,5 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: multichain-e2e-logs-${{ env.NAMESPACE }}-${{ github.run_id }}-${{ github.job }}
+          name: multichain-e2e-logs-${{ env.NAMESPACE }}-${{ inputs.test_suite_name }}-${{ github.run_id }}-${{ github.job }}
           path: ${{ env.LOG_DIR }}
