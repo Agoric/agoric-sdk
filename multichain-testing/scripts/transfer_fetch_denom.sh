@@ -1,6 +1,19 @@
 #!/bin/bash
-
 set -euo pipefail
+
+
+# Check required commands
+check_command() {
+    local cmd=$1
+    local pkg=${2:-$1}
+    if ! type "$cmd" >/dev/null 2>&1; then
+        echo "Error: Required command '$cmd' not found."
+        echo "Please install it using one of the following methods:"
+        echo "  - macOS with Homebrew: brew install $pkg"
+        echo "  - macOS built-in: should be in /usr/bin"
+        exit 1
+    fi
+}
 
 # Define aliases for CLI access
 GAIA="kubectl exec -i cosmoshublocal-genesis-0 -- gaiad"
@@ -53,9 +66,9 @@ for i in $(seq 1 $ATTEMPTS); do
     echo "✅ Denom trace found!"
     echo "$TRACE_JSON" | jq '.denom_traces'
     BASE_DENOM=$(echo "$TRACE_JSON" | jq -r '.denom_traces[0].base_denom')
-    PATH=$(echo "$TRACE_JSON" | jq -r '.denom_traces[0].path')
+    IBC_PATH=$(echo "$TRACE_JSON" | jq -r '.denom_traces[0].path')
 
-    HASH=$(echo -n "$PATH/$BASE_DENOM" | shasum -a 256 | cut -d ' ' -f1 | tr a-z A-Z)
+    HASH=$(echo -n "$IBC_PATH/$BASE_DENOM" | { /usr/bin/shasum -a 256 2>/dev/null || sha256sum; } | /usr/bin/cut -d ' ' -f1 | /usr/bin/tr a-z A-Z)
     IBC_DENOM="ibc/$HASH"
     echo "💡 IBC denom on Stride: $IBC_DENOM"
     break

@@ -99,6 +99,13 @@ chains:
   - id: stridelocal
     name: stride
     numValidators: 1
+    genesis:
+      app_state:
+        interchain_accounts:
+          host_genesis_state:
+            params:
+              host_enabled: true
+              allow_messages: ['*']
     ics:
       enabled: true
       provider: cosmoshublocal 
