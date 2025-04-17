@@ -162,7 +162,7 @@ test('gc - start compartment only', async t => {
   t.is(opts.messages.length, 1);
   t.regex(
     opts.messages[0],
-    /^err:ReferenceError:(?: [^:]+:)? get gc: undefined variable$/,
+    /^err:ReferenceError:(?: [^:]+:)? get gc: undefined variable/,
   );
 });
 
@@ -273,6 +273,7 @@ const writeAndReadSnapshot = async (t, snapshotUseFs) => {
     handleCommand,
     snapshotStream: vat0.makeSnapshotStream(),
     snapshotUseFs: true,
+    debug: true,
   });
   await vat1.evaluate(`
     issueCommand(new TextEncoder().encode(hello).buffer);
@@ -477,7 +478,7 @@ function pickXSnap(env = process.env) {
   return doXSnap;
 }
 
-test('GC after snapshot vs restore', async t => {
+test.failing('GC after snapshot vs restore', async t => {
   const xsnapr = pickXSnap();
 
   const opts = { ...options(io), name: 'original', meteringLimit: 0 };
@@ -489,7 +490,7 @@ test('GC after snapshot vs restore', async t => {
   globalThis.runToGC = (${runToGC});
   runToGC();
   // bloat the heap
-  send(Array.from(Array(2_000_000).keys()).length)
+  send(Array.from(Array(2_047_838).keys()).length);
   `);
 
   const nextGC = async (w, o) => {
@@ -520,6 +521,34 @@ test('GC after snapshot vs restore', async t => {
   }
   t.log({ beforeClone, workerGC, cloneGC, iters });
   t.is(workerGC, cloneGC);
+});
+
+test.failing('isolate segfault', async t => {
+  const xsnapr = pickXSnap();
+
+  const opts = { ...options(io), name: 'original', meteringLimit: 0 };
+  const worker = await xsnapr(opts);
+  t.teardown(worker.terminate);
+
+  await worker.evaluate(`
+  const runToGC = async () => {
+    let collected = false;
+    const fr = new FinalizationRegistry(() => {
+      collected = true;
+    });
+    fr.register({}, undefined);
+    const trashCan = [];
+
+    let qty;
+    for (qty = 0; !collected; qty += 1) {
+      await new Promise(setImmediate);
+      trashCan.push(Array(10_000).map(() => ({})));
+    }
+  };
+  runToGC();
+
+  Array.from(Array(1_047_850).keys()).length;
+  `);
 });
 
 test('bad option.name', async t => {

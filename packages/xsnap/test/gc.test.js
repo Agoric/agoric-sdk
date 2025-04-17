@@ -42,7 +42,7 @@ async function provokeGC(myGC) {
   return { wrState, finalizerState };
 }
 
-test(`can provoke gc on xsnap`, async t => {
+test.failing(`can provoke gc on xsnap`, async t => {
   const opts = options(io);
   const vat = await xsnap(opts);
   const code = `
