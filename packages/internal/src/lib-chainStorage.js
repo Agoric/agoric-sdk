@@ -9,6 +9,7 @@ import * as cb from './callback.js';
 /**
  * @import {ERef} from '@endo/far';
  * @import {PassableCap} from '@endo/marshal';
+ * @import {TypedPattern} from './types.js';
  */
 
 /** @typedef {ReturnType<typeof import('@endo/marshal').makeMarshal>} Marshaller */
@@ -30,6 +31,12 @@ import * as cb from './callback.js';
  * @property {string} blockHeight decimal representation of a natural number
  * @property {T[]} values
  */
+
+/** @type {TypedPattern<StreamCell>} */
+export const StreamCellShape = harden({
+  blockHeight: M.string(),
+  values: M.array(),
+});
 
 /**
  * This represents a node in an IAVL tree.
@@ -76,21 +83,6 @@ export const isStreamCell = cell =>
   typeof cell.blockHeight === 'string' &&
   /^0$|^[1-9][0-9]*$/.test(cell.blockHeight);
 harden(isStreamCell);
-
-// TODO: Consolidate with `insistCapData` functions from swingset-liveslots,
-// swingset-xsnap-supervisor, etc.
-/**
- * @param {unknown} data
- * @returns {asserts data is import('@endo/marshal').CapData<string>}
- */
-export const assertCapData = data => {
-  assert.typeof(data, 'object');
-  assert(data);
-  assert.typeof(data.body, 'string');
-  assert(Array.isArray(data.slots));
-  // XXX check that the .slots array elements are actually strings
-};
-harden(assertCapData);
 
 /**
  * @typedef {object} StoredFacet
