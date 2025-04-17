@@ -57,6 +57,12 @@ import { asMultiset } from '../utils/store.ts';
 import type { LiquidityPoolKit } from './liquidity-pool.js';
 import type { StatusManager } from './status-manager.js';
 
+const FORWARD_TIMEOUT = {
+  sec: 10n * 60n,
+  p: '10m',
+} as const;
+harden(FORWARD_TIMEOUT);
+
 const decodeEventPacket = (
   { data }: IBCPacket,
   remoteDenom: string,
@@ -438,7 +444,11 @@ export const prepareSettler = (
               reference === currentChainReference
                 ? E(settlementAccount).send(dest, amt)
                 : E(settlementAccount).transfer(dest, amt, {
-                    forwardOpts: { intermediateRecipient },
+                    timeoutRelativeSeconds: FORWARD_TIMEOUT.sec,
+                    forwardOpts: {
+                      intermediateRecipient,
+                      timeout: FORWARD_TIMEOUT.p,
+                    },
                   });
             void vowTools.watch(
               transferOrSendV,
@@ -448,7 +458,9 @@ export const prepareSettler = (
           } else if (supportsCctp(dest)) {
             // send to Noble then call `.depositForBurn(dest, amt)`
             void vowTools.watch(
-              E(settlementAccount).transfer(intermediateRecipient, amt),
+              E(settlementAccount).transfer(intermediateRecipient, amt, {
+                timeoutRelativeSeconds: FORWARD_TIMEOUT.sec,
+              }),
               this.facets.intermediateTransferHandler,
               { amt, dest, txHash },
             );
