@@ -1,6 +1,6 @@
 {
   "name": "@agoric/internal",
-  "version": "0.3.2",
+  "version": "0.4.0-u20.0",
   "description": "Externally unsupported utilities internal to agoric-sdk",
   "type": "module",
   "main": "src/index.js",
@@ -20,10 +20,10 @@
     "lint:types": "tsc"
   },
   "dependencies": {
-    "@endo/errors": "^1.2.10",
-    "@agoric/base-zone": "^0.1.0",
+    "@agoric/base-zone": "^0.1.1-u20.0",
     "@endo/common": "^1.2.10",
     "@endo/compartment-mapper": "^1.6.0",
+    "@endo/errors": "^1.2.10",
     "@endo/far": "^1.1.11",
     "@endo/init": "^1.1.9",
     "@endo/marshal": "^1.6.4",
@@ -36,11 +36,11 @@
     "jessie.js": "^0.3.4"
   },
   "devDependencies": {
-    "@agoric/cosmic-proto": "^0.4.0",
+    "@agoric/cosmic-proto": "^0.5.0-u20.0",
     "@endo/exo": "^1.5.9",
     "@endo/init": "^1.1.9",
-    "ava": "^5.3.0",
     "@fast-check/ava": "^2.0.1",
+    "ava": "^5.3.0",
     "tsd": "^0.31.1"
   },
   "ava": {

@@ -1,6 +1,6 @@
 {
   "name": "@agoric/kmarshal",
-  "version": "0.1.0",
+  "version": "0.1.1-u20.0",
   "description": "Token-only marshaller for kernel and tests",
   "type": "module",
   "main": "./src/kmarshal.js",
@@ -21,9 +21,9 @@
     "lint:eslint": "eslint ."
   },
   "dependencies": {
+    "@endo/errors": "^1.2.10",
     "@endo/far": "^1.1.11",
-    "@endo/marshal": "^1.6.4",
-    "@endo/errors": "^1.2.10"
+    "@endo/marshal": "^1.6.4"
   },
   "devDependencies": {
     "ava": "^5.3.0"

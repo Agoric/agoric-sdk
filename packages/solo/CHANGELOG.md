@@ -3,6 +3,36 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.11.0-u20.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.10.3...@agoric/solo@0.11.0-u20.0) (2025-04-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* **solo:** remove `sim-chain` dependency
+
+### Features
+
+* **internal:** Add helper `unprefixedProperties` for environment variable consumption ([878fecf](https://github.com/Agoric/agoric-sdk/commit/878fecf4f5153fa80f48a27a8b79e67943b2d199))
+* **internal:** Introduce deepCopyJsonable ([f875bb0](https://github.com/Agoric/agoric-sdk/commit/f875bb0923323d019396c605ea9bb4d1382f7f79))
+
+
+### Bug Fixes
+
+* DEBUG harmony ([#8136](https://github.com/Agoric/agoric-sdk/issues/8136)) ([d2ea4b4](https://github.com/Agoric/agoric-sdk/commit/d2ea4b46b9efa61e97eec8711830d9fdd741ca55))
+* ensure script main rejections exit with error ([abdab87](https://github.com/Agoric/agoric-sdk/commit/abdab879014a5c3124ebd0e9246995ac6b1ce6e5))
+* misc runtime robustness found by typecheck ([a033f26](https://github.com/Agoric/agoric-sdk/commit/a033f2638f9f11e19d94d7931e4e0614773b1f60))
+* **solo:** correct lookup of wallet-ui ([c578851](https://github.com/Agoric/agoric-sdk/commit/c578851076ed54ac267a2dfe1367eedafcae4b55))
+* **solo:** let `init` tolerate existing `html` directory ([4d14a2f](https://github.com/Agoric/agoric-sdk/commit/4d14a2f6c42628bd40ffab2d94510a20088111bb))
+* **solo:** properly expose `/wallet/bridge.html` ([#8533](https://github.com/Agoric/agoric-sdk/issues/8533)) ([e26232e](https://github.com/Agoric/agoric-sdk/commit/e26232e68e2019db07078ae4962de47b3d0a6666))
+* **solo:** remove `sim-chain` dependency ([da75a03](https://github.com/Agoric/agoric-sdk/commit/da75a03f95828d773fa3f662d30f0e221030c2ca))
+* **solo:** update `abci_query` from `custom/vstorage/data` ([60f4220](https://github.com/Agoric/agoric-sdk/commit/60f4220193110c631bd8d41151ea88fde4026478))
+* **solo:** use alternative endo init ([584ec62](https://github.com/Agoric/agoric-sdk/commit/584ec624854ea0f4f755b189414bc9e0dabaa6e0))
+* update for `[@jessie](https://github.com/jessie).js/safe-await-separator` ([94c6b3c](https://github.com/Agoric/agoric-sdk/commit/94c6b3c83a5326594f1e2886ae01d6a703a7a68f))
+* update name of agd fee granter flag ([1aad20c](https://github.com/Agoric/agoric-sdk/commit/1aad20c49bf4374f6078bcbed87a6db9db3e6387))
+* update TS types ([7580805](https://github.com/Agoric/agoric-sdk/commit/75808055afc129c81b7978fb83c33cfed7a4ecbd))
+
+
+
 ### [0.10.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.10.2...@agoric/solo@0.10.3) (2023-06-09)
 
 **Note:** Version bump only for package @agoric/solo

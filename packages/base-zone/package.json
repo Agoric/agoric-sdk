@@ -1,6 +1,6 @@
 {
   "name": "@agoric/base-zone",
-  "version": "0.1.0",
+  "version": "0.1.1-u20.0",
   "description": "Allocation zone abstraction library and heap implementation",
   "type": "module",
   "repository": "https://github.com/Agoric/agoric-sdk",
@@ -27,7 +27,7 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/store": "^0.9.2",
+    "@agoric/store": "^0.9.3-u20.0",
     "@endo/common": "^1.2.10",
     "@endo/errors": "^1.2.10",
     "@endo/exo": "^1.5.9",

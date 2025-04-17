@@ -3,6 +3,31 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.7.0-u20.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/notifier@0.6.2...@agoric/notifier@0.7.0-u20.0) (2025-04-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* make Network and IBC vats durable (#8721)
+
+### Features
+
+* make Network and IBC vats durable ([#8721](https://github.com/Agoric/agoric-sdk/issues/8721)) ([3d13c09](https://github.com/Agoric/agoric-sdk/commit/3d13c09363013e23726c2ac5fa299a8e5344fd8c))
+* **types:** ambient exports from agoric/internal ([71d18c4](https://github.com/Agoric/agoric-sdk/commit/71d18c4221f63f1c0e7c45562b5a0a86a0b4b5c0))
+* **types:** explicit exports from notifier ([0bc72a8](https://github.com/Agoric/agoric-sdk/commit/0bc72a88c7d91ff1b2f00ee5cabeb58c6315598e))
+* **types:** generic makeDurablePublishKit ([b232f79](https://github.com/Agoric/agoric-sdk/commit/b232f7932476127e9d865099f17c3b64b7c3e32e))
+
+
+### Bug Fixes
+
+* eliminate the `passableEncoding` hack ([87dbbda](https://github.com/Agoric/agoric-sdk/commit/87dbbda8484c6fe3fe542eb847647fd1540c11e6)), closes [#8327](https://github.com/Agoric/agoric-sdk/issues/8327)
+* **types:** board ([c73f4f9](https://github.com/Agoric/agoric-sdk/commit/c73f4f9686215a37e8c5f82ce8dbe4742886a02b))
+* **types:** emit .d.ts again ([0ca5db3](https://github.com/Agoric/agoric-sdk/commit/0ca5db30c0567867fd634279c2c0b50b5101b0d4))
+* **types:** template syntax ([279b903](https://github.com/Agoric/agoric-sdk/commit/279b903a559710511d69f1614badddeab801b90d))
+* update for `[@jessie](https://github.com/jessie).js/safe-await-separator` ([94c6b3c](https://github.com/Agoric/agoric-sdk/commit/94c6b3c83a5326594f1e2886ae01d6a703a7a68f))
+
+
+
 ### [0.6.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/notifier@0.6.1...@agoric/notifier@0.6.2) (2023-06-02)
 
 **Note:** Version bump only for package @agoric/notifier

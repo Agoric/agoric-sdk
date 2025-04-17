@@ -1,1 +1,137 @@
 # Change Log
+
+All notable changes to this project will be documented in this file.
+See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
+
+## 0.2.0-u20.0 (2025-04-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* in order for the Orchestration API to automatically publish account info to vstorage, callers must specify `{ publicAccountInfo: true }` in the `withOrchestration` start helper
+* remove agoricNames from VstorageKit
+* `getAsset` and `getDenomInfo` require `srcChainName` param
+
+### Features
+
+* `Advancer` exo behaviors ([4cd2f3f](https://github.com/Agoric/agoric-sdk/commit/4cd2f3f140ce1c7ea1dcb11fc4fc3c6b31cf2410)), closes [#10390](https://github.com/Agoric/agoric-sdk/issues/10390)
+* `Advancer` uses `borrower` facet ([35eb7ad](https://github.com/Agoric/agoric-sdk/commit/35eb7ad48377f11dab8c717c442653f99587a816))
+* `CctpTxEvidenceShape`, `PendingTxShape` typeGuards ([5a7b3d2](https://github.com/Agoric/agoric-sdk/commit/5a7b3d25cb7853e9109f74a7b45feb29b8ff69fe))
+* `FeeConfig` incldues optional `destinationOverrides` ([14306c4](https://github.com/Agoric/agoric-sdk/commit/14306c491b75d00bb7bc85e9714a50c2c8573531))
+* `FeeConfig` optionally takes `relay: Amount<nat>` ([7162eb1](https://github.com/Agoric/agoric-sdk/commit/7162eb15fdc1312cfa32d1a3117291c0845e6b55))
+* `FUSDC` includes `FeeConfig.destinationOverrides` values ([ba71b36](https://github.com/Agoric/agoric-sdk/commit/ba71b36a13d09ef71e291fafde56c5d2aa67e350))
+* `getAsset` and `getDenomInfo` require `srcChainName` param ([fc802ad](https://github.com/Agoric/agoric-sdk/commit/fc802adc06082eb0618f4a2d58d91ac380512352))
+* `getQueryParams` takes shape parameter ([99707ef](https://github.com/Agoric/agoric-sdk/commit/99707ef60e1ca5f554f3622f7d7f9b1df89c54c7))
+* `publishAccountInfo` in `withOrchestration` opts ([531b13c](https://github.com/Agoric/agoric-sdk/commit/531b13c17ce87e1cffb2ec0f5d47b34ae617f926))
+* `StatusManager` scaffold ([980463f](https://github.com/Agoric/agoric-sdk/commit/980463f422a674676f0faf036c4bfae930824482))
+* `StatusManager` tracks `seenTxs` ([f3d1e36](https://github.com/Agoric/agoric-sdk/commit/f3d1e367ce2284338147866af586bed8ed9fc86b))
+* `TxStatus` const for `StatusManager` states ([1376020](https://github.com/Agoric/agoric-sdk/commit/1376020656a57ee341b5f76f9ce127e76fc657bd))
+* `update-fee-config` proposal ([5d8775c](https://github.com/Agoric/agoric-sdk/commit/5d8775c409896369a931e6d78ae1d7958ad9d901))
+* add CLI for fast-usdc package ([92bc5b1](https://github.com/Agoric/agoric-sdk/commit/92bc5b127e1cf1806da79589bd6e9d9e87cd5944))
+* add client support module for fast-usdc with offer makers and tests ([943402f](https://github.com/Agoric/agoric-sdk/commit/943402f5d1265af32047289b14dd062d1f96f6b3))
+* advancer with fees ([087f3a8](https://github.com/Agoric/agoric-sdk/commit/087f3a84a266fd0061f6d35c7b51f193de308f95))
+* asMultiset ([cb48d59](https://github.com/Agoric/agoric-sdk/commit/cb48d596f87a921d7bd61eace4763d3a729dd46f))
+* assetInfo as array of entries ([51e7a9c](https://github.com/Agoric/agoric-sdk/commit/51e7a9c3e3fb2cde44db2ffce817f353a17e76a3))
+* chain-agnostic transfer API ([016287b](https://github.com/Agoric/agoric-sdk/commit/016287b769bed654afed0165452f9b846787c517))
+* check conflicting evidence before quorum ([d3db6ef](https://github.com/Agoric/agoric-sdk/commit/d3db6ef2284f2b7a4cebc3261bc9ee784d8d1c97))
+* clean up upon last attest ([741be79](https://github.com/Agoric/agoric-sdk/commit/741be7943546b17d1a7bdebf2b7028b2ca366e05))
+* consistent publishTxnRecord (record) ([dbf3934](https://github.com/Agoric/agoric-sdk/commit/dbf39340c75d9e01af2ee9ceccac327660af94a6))
+* defineInertInvitation ([f756412](https://github.com/Agoric/agoric-sdk/commit/f7564122258e5bdc868d7b3550c4587807015d76))
+* deleteCompletedTxs ([f0078ee](https://github.com/Agoric/agoric-sdk/commit/f0078ee5668de2f1bba6f0544ea5629ccc8c9d28))
+* error handling for bad event packets ([450b953](https://github.com/Agoric/agoric-sdk/commit/450b953b1eb55585b291ea49e8f80601d5de4884))
+* error on conflicting evidence ([cd2a40c](https://github.com/Agoric/agoric-sdk/commit/cd2a40c0e4e5923510e7c77edc710b6c7ba8bc8c))
+* evidence after mint results in forward ([2d2dc7b](https://github.com/Agoric/agoric-sdk/commit/2d2dc7b3bcd7694935b62dcb25b0b8f8987394d6))
+* **fast-usdc:** .start.js core-eval w/oracle invitations ([7b6820a](https://github.com/Agoric/agoric-sdk/commit/7b6820a6585de3335e5ce2d4aa6d90f238d1fe9d))
+* **fast-usdc:** add cli config and args for deposit and withdraw ([#10487](https://github.com/Agoric/agoric-sdk/issues/10487)) ([fb2d05c](https://github.com/Agoric/agoric-sdk/commit/fb2d05c0d755e1ad68aed1ae1112ea4973aad92e))
+* **fast-usdc:** add FastLP/ufastlp to vbank ([ae1963e](https://github.com/Agoric/agoric-sdk/commit/ae1963e9f73f159be2fab93920fcceeb9ebc555d))
+* **fast-usdc:** cli for lp deposit and withdraw ([4c0c372](https://github.com/Agoric/agoric-sdk/commit/4c0c37234fc2ddd1e83c0d0f3693c33a05163f5b))
+* **fast-usdc:** core eval script to deleteCompletedTxs ([92e2a41](https://github.com/Agoric/agoric-sdk/commit/92e2a41aea5acf0781dfc1b25c9e29974438b076))
+* **fast-usdc:** core eval script to distribute fees ([57ff317](https://github.com/Agoric/agoric-sdk/commit/57ff31735708f25a3e0d748b948d63b9b4de9591))
+* **fast-usdc:** core eval to update chainInfo, noble ICA ([66343f0](https://github.com/Agoric/agoric-sdk/commit/66343f0475ac6be081608d4ec9b794f2ebc025d4))
+* **fast-usdc:** core-eval to update feed policy ([db283e1](https://github.com/Agoric/agoric-sdk/commit/db283e160159f78e15c6b92e7041d09b4e6add61))
+* **fast-usdc:** creatorFacet method to withdraw fees ([9809fe7](https://github.com/Agoric/agoric-sdk/commit/9809fe7503afc4d010ea27ce44d73cb8dafa2d01))
+* **fast-usdc:** deposit, withdraw liquidity in exchange for shares ([5ae543d](https://github.com/Agoric/agoric-sdk/commit/5ae543d0983e6f27956c189e8a86355180d8c724))
+* **fast-usdc:** detect transfer completion in cli ([2828444](https://github.com/Agoric/agoric-sdk/commit/28284443141f700d2214c42d8d7b983b40f569fc))
+* **fast-usdc:** expose deleteCompletedTx via creatorFacet ([551abd6](https://github.com/Agoric/agoric-sdk/commit/551abd6b549d00cfc4381c0a35e00690752c7d02))
+* **fast-usdc:** implement config cli command ([d121e1d](https://github.com/Agoric/agoric-sdk/commit/d121e1d453a877352b133aa149c2f41ad44baae9))
+* **fast-usdc:** implement transfer cli command ([504818f](https://github.com/Agoric/agoric-sdk/commit/504818fc5758c312371ae427b7899976f5158055))
+* **fast-usdc:** limited operation before connecting to noble ([eb82ae3](https://github.com/Agoric/agoric-sdk/commit/eb82ae37c9ec3327f38122c5c8f51d8f5942c9c6))
+* **fast-usdc:** operator attest cli command ([448aa3a](https://github.com/Agoric/agoric-sdk/commit/448aa3a194b55ebeb5423f0027c543f8c6807239))
+* **fast-usdc:** publish feeConfig to vstorage ([08b2e13](https://github.com/Agoric/agoric-sdk/commit/08b2e13921514258de566c52aeda737a28ed44c7))
+* **fast-usdc:** settler disburses or forwards funds ([17b0423](https://github.com/Agoric/agoric-sdk/commit/17b04238a73ff14a2617e73cf03c52d79d733ebc))
+* **fast-usdc:** skipAdvance when preconditions fail ([cfe0954](https://github.com/Agoric/agoric-sdk/commit/cfe0954f612a3b22ecc4a21265e2e6808bbf28d3))
+* **fast-usdc:** stub config cli command ([81e14b2](https://github.com/Agoric/agoric-sdk/commit/81e14b2f602237dc68b9f406672332c5c5d90d75))
+* **fast-usdc:** stub transfer cli command ([1b64d82](https://github.com/Agoric/agoric-sdk/commit/1b64d82e3db9d7a95461502ef6f7ee136a5eca19))
+* **fast-usdc:** support risk assessment arg ([ff6737a](https://github.com/Agoric/agoric-sdk/commit/ff6737a574e4a2efccda226780ed09e3fb4076b3))
+* **fast-usdc:** update FeedPolicy along with Noble ICA ([a30ac28](https://github.com/Agoric/agoric-sdk/commit/a30ac281875e9c3b865587f7fa020129af5b22e2))
+* **fast-usdc:** write chain policies to vstorage ([#10532](https://github.com/Agoric/agoric-sdk/issues/10532)) ([9d6cff1](https://github.com/Agoric/agoric-sdk/commit/9d6cff17bb95ce5557758da242ca4646a87ac5b0))
+* **fast-usdc:** write status updates to vstorage ([#10552](https://github.com/Agoric/agoric-sdk/issues/10552)) ([419df4e](https://github.com/Agoric/agoric-sdk/commit/419df4ee7ce03499f30e7327c74e95a338201023))
+* FastUSDC registers cctp chains ([6e269f4](https://github.com/Agoric/agoric-sdk/commit/6e269f4efd1ff2d53609346e375e3215d5392eac))
+* feed access controls ([8f4a66d](https://github.com/Agoric/agoric-sdk/commit/8f4a66d75dc4b79b698f7eee85b7d93de745045a))
+* include 'sender' in CctpTxEvidence ([f99e7b8](https://github.com/Agoric/agoric-sdk/commit/f99e7b8152fe686a100618b9cdfa4a8ced156dd2))
+* integrate `Advancer` with contract ([c5d67af](https://github.com/Agoric/agoric-sdk/commit/c5d67af2b04808e6928b4c8c1e9fdda79c8ac847))
+* liquidity pool borrower and repayer facets ([3117eef](https://github.com/Agoric/agoric-sdk/commit/3117eef0eb604e6e267074648382bca23377f2ea))
+* log txHash when conflicting evidence ([8c216af](https://github.com/Agoric/agoric-sdk/commit/8c216afbec45aa1c0fe99753c34b2366ed230a4a))
+* makeTestPushInvitation handles evidence ([7e99cfa](https://github.com/Agoric/agoric-sdk/commit/7e99cfa02cb067a7c3899259edda2f79bf9ba7dc))
+* minimal `addressTools` for query param parsing ([6f97e13](https://github.com/Agoric/agoric-sdk/commit/6f97e137ba466db06354c6023a502106559028ea))
+* operator accept cmd ([ae2cf1e](https://github.com/Agoric/agoric-sdk/commit/ae2cf1e461a63deb39dc01c35cea564cf1d5527b))
+* operator majority logic ([bc28201](https://github.com/Agoric/agoric-sdk/commit/bc28201f60978263d4c88375130da15128f8fd5c))
+* operators evidence flows through feed ([2161a6f](https://github.com/Agoric/agoric-sdk/commit/2161a6fd69c31f6f16ae8e8716e1a07e92db5d34))
+* **orchestration:** add more chain infos for fusdc ([bcc450c](https://github.com/Agoric/agoric-sdk/commit/bcc450cd9ced1c6f251d0f5d3256b386428238f6))
+* parameterize fusdc with chainInfo and assetInfo ([e5a8b64](https://github.com/Agoric/agoric-sdk/commit/e5a8b6489368f0bf3a099ce4c5ddf9607a6192c1))
+* publish CctpTxEvidence ([2916c8f](https://github.com/Agoric/agoric-sdk/commit/2916c8f43b23a6c4d38796dd7135e9d712d12f8c))
+* publish OBSERVED with first evidence ([7e62d8f](https://github.com/Agoric/agoric-sdk/commit/7e62d8f811e212f8160c36a3b954aee8c0e1fb90))
+* publish when all oracle operators agree ([d06ae2b](https://github.com/Agoric/agoric-sdk/commit/d06ae2b52db53ad45db1423cc3297954dd3a7e44))
+* record blockTimestamp in SeenTxs ([f9920a8](https://github.com/Agoric/agoric-sdk/commit/f9920a8c47485f6249d365042b7080a28a5f562a))
+* record fee split in transaction ([8846972](https://github.com/Agoric/agoric-sdk/commit/884697238ad5f8a112ed24616b10c3b3a94af737))
+* remove operator ([7cc7a5e](https://github.com/Agoric/agoric-sdk/commit/7cc7a5ed4e894180f1f6cd8933d76f3927d6d30a))
+* rename CosmosChainAddress ([b9e218f](https://github.com/Agoric/agoric-sdk/commit/b9e218f6d38ec14cf3ebdd584bcab7611677f1eb))
+* resolveChainId ([08fabe9](https://github.com/Agoric/agoric-sdk/commit/08fabe9f03a94a89e57c8a8fe446b1bdde21a4d3))
+* scaffold operator commands ([36375fd](https://github.com/Agoric/agoric-sdk/commit/36375fd2ecf41fc171133186969a29d872e8012b))
+* simplify seenTxs key ([fd05a7e](https://github.com/Agoric/agoric-sdk/commit/fd05a7ecd0fc2847380506d2a90fe79079511457))
+* TransactionFeedKit ([8eb7dee](https://github.com/Agoric/agoric-sdk/commit/8eb7dee8f70facf8fb0b36c36d630c4153f4c722))
+* **types:** CosmosAddress ([298a4df](https://github.com/Agoric/agoric-sdk/commit/298a4df401939f49f7c4d62a8d6f3a53f5b73efc))
+* **types:** fastUsdc.feeConfig ([6680e16](https://github.com/Agoric/agoric-sdk/commit/6680e168991bb46742743ce841c87e0e657aa9c1))
+* **types:** TransactionRecord ([ccb9e28](https://github.com/Agoric/agoric-sdk/commit/ccb9e28a92c17ce3362ac5898acb80128614edab))
+* uniform configuration with LegibleCapData ([968903a](https://github.com/Agoric/agoric-sdk/commit/968903a86897df5f8e2aa570e325a38c4077d850))
+* update settler reference proposal ([23e52dc](https://github.com/Agoric/agoric-sdk/commit/23e52dc7a074c3366a24bbd34a4df7a419fd992f))
+* vstorage status --> txns ([aebb4d7](https://github.com/Agoric/agoric-sdk/commit/aebb4d792317f6964a8150324548b69cec2eb505))
+
+
+### Bug Fixes
+
+* "seat has been exited" ([5597958](https://github.com/Agoric/agoric-sdk/commit/55979584e7e080cdf444f85a1228b1ce5f69074b))
+* `brandKey` not part of `DenomDetail` ([9a65478](https://github.com/Agoric/agoric-sdk/commit/9a654781d53576ae0b3d1fa37f7a96579bfda848))
+* `FastUSDCConfigShape` uses `CosmosChainInfoShapeV1` ([3167fc4](https://github.com/Agoric/agoric-sdk/commit/3167fc4edb8c10830cca94cc4ec4e721cb05bf56))
+* Advancing txs are dequeueable ([3c4278d](https://github.com/Agoric/agoric-sdk/commit/3c4278d119e1764942d1957b30a73677ccfdae62))
+* do not stringify logs ([d04c5ea](https://github.com/Agoric/agoric-sdk/commit/d04c5eac94e1954456cd23e9006e9f4daabb3759))
+* ensure `Advancer` has latest `Settler` reference ([6c361cc](https://github.com/Agoric/agoric-sdk/commit/6c361cc629751a1fb9d7102e5465a2143b113fe2))
+* **fast-usdc:** .exit() all internal temporary seats ([04a2843](https://github.com/Agoric/agoric-sdk/commit/04a2843d2081935fb8266819d83b84e2dfa0abc9))
+* **fast-usdc:** consider encumberedBalance in withdrawCalc ([daa6c38](https://github.com/Agoric/agoric-sdk/commit/daa6c38263b802ab97fa6fc65367ae0020cbaa73))
+* **fast-usdc:** disallow all non-positive integer counts in Multiset ([#11079](https://github.com/Agoric/agoric-sdk/issues/11079)) ([152d3cc](https://github.com/Agoric/agoric-sdk/commit/152d3ccd88d05edf90f3340dc3b9c03f85678499)), closes [#11066](https://github.com/Agoric/agoric-sdk/issues/11066)
+* **fast-usdc:** ensure cli non-zero exit code on failure ([6c0e77b](https://github.com/Agoric/agoric-sdk/commit/6c0e77b3272f3f00d9e2a8100b153f6e198664d6))
+* **fast-usdc:** fix url encoding ([d46cefd](https://github.com/Agoric/agoric-sdk/commit/d46cefdd869a09a2548257d6a05eddc55c6cf6ab))
+* **fast-usdc:** FORWARD_FAILED when EUD invalid ([cac5b62](https://github.com/Agoric/agoric-sdk/commit/cac5b626184ee7889d12dd1a90f2c6c4e8929491))
+* **fast-usdc:** prepare to repair Noble Account ([6949cae](https://github.com/Agoric/agoric-sdk/commit/6949cae4b17541c35fdd3447bb70c2642f8d6b15))
+* **fast-usdc:** recover from bad lp proposal ([21d19ba](https://github.com/Agoric/agoric-sdk/commit/21d19baa1cb46887646bfb406e18538ac198e921))
+* **fast-usdc:** use correct address format in cli ([d225974](https://github.com/Agoric/agoric-sdk/commit/d2259741a6b7a1fbca4938ceebc3acd773445e04))
+* minted early tracking ([bc7d042](https://github.com/Agoric/agoric-sdk/commit/bc7d042836dba9342fd94ba040afa90b099c4cd8))
+* omit 'admin' from operator offer result ([2fcb21f](https://github.com/Agoric/agoric-sdk/commit/2fcb21f1e7f15b0fae3e187979b09feab5c5886e))
+* **orchestration:** chainByName cache should not be durable ([672f3ee](https://github.com/Agoric/agoric-sdk/commit/672f3ee8f761dd2b52f2cb5c77fabaee019e42e6))
+* removeOperator interface ([b620c78](https://github.com/Agoric/agoric-sdk/commit/b620c78318f0ead9f91137f9b96047f37d3b4878))
+* **types:** discriminate `ChainInfo` union on `namespace` ([0f9f3fc](https://github.com/Agoric/agoric-sdk/commit/0f9f3fcbdd9da33b2eca1c02a2f7189c5405e8ff))
+* vstorage fastUsdc path ([1f47164](https://github.com/Agoric/agoric-sdk/commit/1f47164a792b64f5b4a27992156646d87670782c))
+
+
+### Reverts
+
+* Revert "chore: remove 'encoding' from ChainAddress" ([be9dee2](https://github.com/Agoric/agoric-sdk/commit/be9dee245a04714568a45ae8b328f54b20b43d8a))
+
+
+### Miscellaneous Chores
+
+* remove agoricNames from VstorageKit ([1c69d39](https://github.com/Agoric/agoric-sdk/commit/1c69d39c6b5571e8501cd4be8d32e3d1bd9d3844))
+
+
+
+# Change Log

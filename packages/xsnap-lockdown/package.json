@@ -1,6 +1,6 @@
 {
   "name": "@agoric/xsnap-lockdown",
-  "version": "0.14.0",
+  "version": "0.14.1-u20.0",
   "description": "Endo/lockdown initialization bundle for xsnap workers",
   "author": "Agoric",
   "license": "Apache-2.0",
