@@ -96,13 +96,18 @@ kubectl logs hermes-agoric-cosmoshub-0 --container=relayer --follow
 kubectl logs hermes-osmosis-cosmoshub-0 --container=relayer --follow
 ```
 
+## Test Suites
+
+To run test suites, see [./test//README.md](./test//README.md)
+
 ## Running with Go Relayer
 
 ```sh
-# run tests with go-relayer configuration
+# start containers with go-relayer configuration
 make start FILE=config.go-relayer.yaml
 
-RELAYER_TYPE=go-relayer yarn test
+# run tests with go-relayer configuration
+RELAYER_TYPE=go-relayer yarn test:main
 ```
 
 ## Agoric Smart Wallet
