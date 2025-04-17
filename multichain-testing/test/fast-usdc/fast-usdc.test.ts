@@ -321,18 +321,13 @@ const advanceAndSettleScenario = test.macro({
     const recipientAddress = encodeAddressHook(settlementAccount, { EUD });
     t.log('recipientAddress', recipientAddress);
 
-    // register forwarding address on noble
-    const txRes = nobleTools.registerForwardingAcct(
-      nobleAgoricChannelId,
-      recipientAddress,
-    );
-    t.is(txRes?.code, 0, 'registered forwarding account');
+    // provide forwarding address on noble
+    nobleTools.registerForwardingAcct(nobleAgoricChannelId, recipientAddress);
 
-    const { address: userForwardingAddr } = nobleTools.queryForwardingAddress(
-      nobleAgoricChannelId,
-      recipientAddress,
-    );
+    const { address: userForwardingAddr, exists } =
+      nobleTools.queryForwardingAddress(nobleAgoricChannelId, recipientAddress);
     t.log('got forwardingAddress', userForwardingAddr);
+    t.true(exists, 'registered forwarding account');
 
     const evidence = makeFakeEvidence(
       mintAmt,
