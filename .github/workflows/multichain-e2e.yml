@@ -14,6 +14,8 @@ on:
           - orchestration-api-hermes
           - orchestration-staking-go-relayer
           - orchestration-staking-hermes
+          - orchestration-queries-go-relayer
+          - orchestration-queries-hermes
   workflow_call:
 
 jobs:
@@ -82,3 +84,25 @@ jobs:
       config: config.yaml
       test_command: yarn test:staking
       test_suite_name: orchestration-staking-hermes
+
+  orchestration-queries-go-relayer:
+    name: Orchestration Queries - Go Relayer
+    # run on dispatch only
+    if: github.event_name == 'workflow_dispatch' && inputs.test_type == 'orchestration-queries-go-relayer'
+    uses: ./.github/workflows/multichain-e2e-template.yml
+    with:
+      config: config.go-relayer.yaml
+      test_command: RELAYER_TYPE=go-relayer yarn test:queries
+      test_suite_name: orchestration-queries-go-relayer
+
+  orchestration-queries-hermes:
+    name: Orchestration Queries - Hermes
+    if: |
+      github.event_name == 'workflow_call' ||
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'workflow_dispatch' && inputs.test_type == 'orchestration-queries-hermes')
+    uses: ./.github/workflows/multichain-e2e-template.yml
+    with:
+      config: config.yaml
+      test_command: yarn test:queries
+      test_suite_name: orchestration-queries-hermes

@@ -5,6 +5,7 @@ export default {
   files: [
     'test/**/*.test.*',
     '!test/fast-usdc/**/*.test.*',
+    '!test/queries/**/*.test.*',
     '!test/staking/**/*.test.*',
   ],
 };
