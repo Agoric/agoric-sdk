@@ -4,7 +4,7 @@ import '@endo/init/debug.js';
 
 import { retryUntilCondition } from '@agoric/client-utils';
 import { evalBundles } from '@agoric/synthetic-chain';
-import { arrayIsLike } from '../test-lib/ava-assertions.js';
+import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
 import { getGovernedVatDetails } from '../test-lib/vats.js';
 
 test('verify governed vat termination', async t => {

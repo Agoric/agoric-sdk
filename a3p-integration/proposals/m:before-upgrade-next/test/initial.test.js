@@ -2,7 +2,7 @@ import test from 'ava';
 import '@endo/init/debug.js';
 
 import { getVatDetails } from '@agoric/synthetic-chain';
-import { arrayIsLike } from '../test-lib/ava-assertions.js';
+import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
 import { getGovernedVatDetails } from '../test-lib/vats.js';
 
 const expectedVatDetails = {
