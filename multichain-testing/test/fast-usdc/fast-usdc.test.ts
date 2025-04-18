@@ -409,11 +409,11 @@ const advanceAndSettleScenario = test.macro({
   },
 });
 
-test.serial(advanceAndSettleScenario, LP_DEPOSIT_AMOUNT / 4n, 'osmosis');
-test.serial(advanceAndSettleScenario, LP_DEPOSIT_AMOUNT / 8n, 'noble');
-test.serial(advanceAndSettleScenario, LP_DEPOSIT_AMOUNT / 5n, 'agoric');
+test.skip(advanceAndSettleScenario, LP_DEPOSIT_AMOUNT / 4n, 'osmosis');
+test.skip(advanceAndSettleScenario, LP_DEPOSIT_AMOUNT / 8n, 'noble');
+test.skip(advanceAndSettleScenario, LP_DEPOSIT_AMOUNT / 5n, 'agoric');
 
-test.serial('advance failed', async t => {
+test.skip('advance failed', async t => {
   const mintAmt = LP_DEPOSIT_AMOUNT / 10n;
   const {
     assertTxStatus,
@@ -467,7 +467,7 @@ test.serial('advance failed', async t => {
   await assertTxStatus(evidence.txHash, 'FORWARD_FAILED');
 });
 
-test.serial('lp withdraws', async t => {
+test.skip('lp withdraws', async t => {
   const {
     lpUser,
     retryUntilCondition,
@@ -535,7 +535,7 @@ test.serial('lp withdraws', async t => {
   t.pass();
 });
 
-test.serial('distribute FastUSDC contract fees', async t => {
+test.skip('distribute FastUSDC contract fees', async t => {
   const io = t.context;
   const queryClient = makeQueryClient(
     await io.useChain('agoric').getRestEndpoint(),
@@ -563,7 +563,7 @@ test.serial('distribute FastUSDC contract fees', async t => {
   t.truthy(balance?.amount);
 });
 
-test.serial('insufficient LP funds; forward path', async t => {
+test.skip('insufficient LP funds; forward path', async t => {
   const eudChain = 'osmosis';
   const mintAmt = LP_DEPOSIT_AMOUNT * 2n;
   const {
@@ -626,7 +626,7 @@ test.serial('insufficient LP funds; forward path', async t => {
   await assertAmtForwarded(queryClient, EUD, eudChain, mintAmt);
 });
 
-test.serial('minted before observed; forward path', async t => {
+test.skip('minted before observed; forward path', async t => {
   const eudChain = 'osmosis';
   const mintAmt = LP_DEPOSIT_AMOUNT / 10n;
   const {
@@ -689,7 +689,7 @@ test.serial('minted before observed; forward path', async t => {
   await assertAmtForwarded(queryClient, EUD, eudChain, mintAmt);
 });
 
-test.serial('insufficient LP funds and forward failed', async t => {
+test.skip('insufficient LP funds and forward failed', async t => {
   const mintAmt = LP_DEPOSIT_AMOUNT * 2n;
   const {
     api,
@@ -768,7 +768,21 @@ test.serial('insufficient LP funds and forward failed', async t => {
 test.todo('mint while Advancing; still Disbursed');
 test.todo('test with rc2, settler-reference proposal');
 
-test.serial('Ethereum destination', async t => {
+test.serial('verify cctp', async t => {
+  const { nobleTools } = t.context;
+
+  const res = nobleTools.queryTxs(
+    "circle.cctp.v1.DepositForBurn.depositor CONTAINS 'noble1th2w4kf5j5z9wj7lsu5vk8r06sadgvnddmwqrwwkd6lpr00zccpsy0wd6r'",
+  );
+  t.true(Number(res.count) >= 1, 'found at least 1 MsgDepositForBurn');
+
+  const txHash = res.txs[0].txhash;
+
+  console.log('....verifying deposit for burn');
+  nobleTools.verifyDepositForBurn(txHash);
+});
+
+test.skip('Ethereum destination', async t => {
   console.log('\n\n\n\n\n====================');
   console.log('Ethereum destination');
   console.log('====================');

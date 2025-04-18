@@ -2,6 +2,7 @@ import type { IBCChannelID } from '@agoric/vats';
 import type { CosmosChainAddress } from '@agoric/orchestration';
 import type { NobleAddress } from '@agoric/fast-usdc';
 import type { ExecSyncOptions } from 'node:child_process';
+import { btoa } from '@endo/base64';
 
 const kubectlBinary = 'kubectl';
 const noblePod = 'noblelocal-genesis-0';
@@ -99,10 +100,134 @@ export const makeNobleTools = (
     );
   };
 
+  /**
+   * Query for transactions matching the given query string
+   * @param query The query string to search for transactions
+   * @param nodeUrl Optional node URL, defaults to local node
+   * @returns The response from the query including matching transactions
+   *
+   * @example
+   * ```js
+   * nobleTools.queryTxs("circle.cctp.v1.DepositForBurn.depositor CONTAINS 'noble1th2w4kf5j5z9wj7lsu5vk8r06sadgvnddmwqrwwkd6lpr00zccpsy0wd6r'");
+   * ```
+   */
+  const queryTxs = (
+    query: string,
+    nodeUrl: string = 'http://localhost:26654',
+  ) => {
+    log('querying transactions with filter', query);
+    return JSON.parse(
+      exec([
+        'query',
+        'txs',
+        '--query',
+        query,
+        '--node',
+        nodeUrl,
+        '--output=json',
+      ]),
+    ) as {
+      count: string;
+      limit: string;
+      page_number: string;
+      page_total: string;
+      total_count: string;
+      txs: {
+        code: number;
+        events: [];
+        logs: [];
+        raw_log: string;
+        txhash: string;
+      }[];
+    };
+  };
+
+  /**
+   * Verify that a transaction contains a valid CCTP DepositForBurn
+   * @param txHash The transaction hash to verify
+   * @param nodeUrl Optional node URL, defaults to local node
+   * @returns Object containing verification status and extracted CCTP message if successful
+   */
+  const verifyDepositForBurn = (
+    txHash: string,
+    nodeUrl: string = 'http://localhost:26654',
+  ) => {
+    log('verifying DepositForBurn transaction', txHash);
+    const txResponse = JSON.parse(
+      exec(['query', 'tx', txHash, '--node', nodeUrl, '--output=json']),
+    );
+
+    const events = txResponse.logs?.flatMap(log => log.events) || [];
+
+    // Check for all required events
+    const messageSentEvent = events.find(
+      evt => evt.type === 'circle.cctp.v1.MessageSent',
+    );
+    const burnEvent = events.find(
+      evt =>
+        evt.type === 'noble.fiattokenfactory.MsgBurn' ||
+        evt.type === 'circle.fiattokenfactory.v1.MsgBurn',
+    );
+    const depositForBurnEvent = events.find(
+      evt => evt.type === 'circle.cctp.v1.DepositForBurn',
+    );
+
+    const isValid = !!messageSentEvent && !!burnEvent && !!depositForBurnEvent;
+
+    let cctpMessage = '';
+    let burnAmount = '';
+    let mintRecipient = '';
+    let nonce = '';
+
+    if (isValid) {
+      cctpMessage =
+        messageSentEvent.attributes.find(
+          attr => attr.key === 'message' || attr.key === btoa('message'),
+        )?.value || '';
+
+      // Remove surrounding quotes if present
+      if (cctpMessage.startsWith('"') && cctpMessage.endsWith('"')) {
+        cctpMessage = cctpMessage.slice(1, -1);
+      }
+
+      burnAmount =
+        depositForBurnEvent.attributes.find(
+          attr => attr.key === 'amount' || attr.key === btoa('amount'),
+        )?.value || '';
+
+      mintRecipient =
+        depositForBurnEvent.attributes.find(
+          attr =>
+            attr.key === 'mint_recipient' ||
+            attr.key === btoa('mint_recipient'),
+        )?.value || '';
+
+      nonce =
+        depositForBurnEvent.attributes.find(
+          attr => attr.key === 'nonce' || attr.key === btoa('nonce'),
+        )?.value || '';
+    }
+    return {
+      isValid,
+      txResponse,
+      cctpMessage,
+      burnAmount,
+      mintRecipient,
+      nonce,
+      events: {
+        messageSentEvent,
+        burnEvent,
+        depositForBurnEvent,
+      },
+    };
+  };
+
   return {
     mockCctpMint,
     queryForwardingAddress,
     registerForwardingAcct,
+    queryTxs,
+    verifyDepositForBurn,
   };
 };
 
