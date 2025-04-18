@@ -62,3 +62,5 @@ export function buildRootDeviceNode(tools) {
     },
   });
 }
+
+/** @typedef {import('../../vats/plugin-manager.js').Device<ReturnType<typeof buildRootDeviceNode>>} BridgeDevice */
