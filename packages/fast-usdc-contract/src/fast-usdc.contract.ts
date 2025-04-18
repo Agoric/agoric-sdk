@@ -48,6 +48,7 @@ import { prepareStatusManager } from './exos/status-manager.ts';
 import type { OperatorOfferResult } from './exos/transaction-feed.ts';
 import { prepareTransactionFeedKit } from './exos/transaction-feed.ts';
 import * as flows from './fast-usdc.flows.ts';
+import { makeSupportsCctp } from './utils/cctp.ts';
 
 const trace = makeTracer('FastUsdc');
 
@@ -133,16 +134,36 @@ export const contract = async (
   const getNobleICA = (): OrchestrationAccount<{ chainId: 'noble-1' }> =>
     baggage.get(NOBLE_ICA_BAGGAGE_KEY);
 
+  let settlementAccount;
+  const getSettlementAccount = (): OrchestrationAccount<{
+    chainId: 'agoric-3';
+  }> => settlementAccount;
+
+  const supportsCctp = makeSupportsCctp(chainHub);
+
+  const { forwardFunds, makeLocalAccount, makeNobleAccount } = orchestrateAll(
+    flows,
+    {
+      currentChainReference: privateArgs.chainInfo.agoric.chainId,
+      getNobleICA,
+      getSettlementAccount,
+      supportsCctp,
+      statusManager,
+    },
+  );
+
   const makeSettler = prepareSettler(zone, {
     statusManager,
     USDC,
     withdrawToSeat,
     feeConfig,
+    forwardFunds,
     getNobleICA,
     vowTools: tools.vowTools,
     zcf,
     chainHub,
     currentChainReference: privateArgs.chainInfo.agoric.chainId,
+    supportsCctp,
   });
 
   const zoeTools = makeZoeTools(zcf, vowTools);
@@ -168,8 +189,6 @@ export const contract = async (
     terms.brands.USDC,
     { makeRecorderKit },
   );
-
-  const { makeLocalAccount, makeNobleAccount } = orchestrateAll(flows, {});
 
   const creatorFacet = zone.exo('Fast USDC Creator', undefined, {
     async makeOperatorInvitation(
@@ -312,12 +331,16 @@ export const contract = async (
     makeLocalAccount(),
   );
   // when() is OK here since this clearly resolves promptly.
-  const [poolAccount, settlementAccount] = (await vowTools.when(
+  const accounts = (await vowTools.when(
     vowTools.all([poolAccountV, settleAccountV]),
   )) as [
     HostInterface<OrchestrationAccount<{ chainId: 'agoric-any' }>>,
     HostInterface<OrchestrationAccount<{ chainId: 'agoric-any' }>>,
   ];
+  // XXX weird factoring so that settlementAccount can be used in the
+  // `makeSettler` call above.
+  const poolAccount = accounts[0];
+  settlementAccount = accounts[1];
   trace('settlementAccount', settlementAccount);
   trace('poolAccount', poolAccount);
   const settlementAddress = await E(settlementAccount).getAddress();

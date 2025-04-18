@@ -49,7 +49,7 @@ import type { WithdrawToSeat } from '@agoric/orchestration/src/utils/zoe-tools.j
 import { mustMatch, type MapStore } from '@agoric/store';
 import type { IBCChannelID, IBCPacket, VTransferIBCEvent } from '@agoric/vats';
 import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
-import type { VowTools } from '@agoric/vow';
+import type { Vow, VowTools } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe/src/zoeService/zoe.js';
 import type { Zone } from '@agoric/zone';
 import { makeSupportsCctp } from '../utils/cctp.ts';
@@ -143,8 +143,10 @@ export const prepareSettler = (
   zone: Zone,
   {
     currentChainReference,
-    chainHub,
+    chainHub, // TODO POLA
+    supportsCctp,
     feeConfig,
+    forwardFunds,
     getNobleICA,
     log = makeTracer('Settler', true),
     statusManager,
@@ -157,9 +159,16 @@ export const prepareSettler = (
     currentChainReference: string;
     chainHub: ChainHub;
     feeConfig: FeeConfig;
+    forwardFunds: (tx: {
+      txHash: EvmHash;
+      amount: NatAmount;
+      destination: AccountId;
+      fundsInNobleIca?: boolean;
+    }) => Vow<void>; // TODO: Flow
     getNobleICA: () => OrchestrationAccount<{ chainId: 'noble-1' }>;
     log?: LogFn;
     statusManager: StatusManager;
+    supportsCctp: (destination: AccountId) => boolean;
     USDC: Brand<'nat'>;
     vowTools: VowTools;
     withdrawToSeat: HostOf<WithdrawToSeat>;
@@ -169,8 +178,6 @@ export const prepareSettler = (
   assertAllDefined({ statusManager });
 
   const UsdcAmountShape = makeNatAmountShape(USDC);
-
-  const supportsCctp = makeSupportsCctp(chainHub);
 
   return zone.exoClassKit(
     'Fast USDC Settler',
@@ -440,38 +447,7 @@ export const prepareSettler = (
           })();
           if (!dest) return;
 
-          const { namespace, reference } = parseAccountId(dest);
-
-          const intermediateRecipient = getNobleICA().getAddress();
-
-          if (namespace === 'cosmos') {
-            const transferOrSendV =
-              reference === currentChainReference
-                ? E(settlementAccount).send(dest, fullValue)
-                : E(settlementAccount).transfer(dest, fullValue, {
-                    forwardOpts: { intermediateRecipient },
-                  });
-            void vowTools.watch(
-              transferOrSendV,
-              this.facets.transferHandler,
-              txHash,
-            );
-          } else if (supportsCctp(dest)) {
-            // send to Noble then call `.depositForBurn(dest, fullValue)`
-            void vowTools.watch(
-              E(settlementAccount).transfer(intermediateRecipient, fullValue),
-              this.facets.intermediateTransferHandler,
-              { amt: fullValue, dest, txHash },
-            );
-          } else {
-            log(
-              '🚨 forward not attempted!',
-              'unsupported destination',
-              txHash,
-              dest,
-            );
-            statusManager.forwardSkipped(txHash);
-          }
+          void forwardFunds({ txHash, amount: fullValue, destination: dest });
         },
       },
       transferHandler: {
