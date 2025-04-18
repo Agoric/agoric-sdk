@@ -421,8 +421,13 @@ export const prepareSettler = (
             try {
               return chainHub.resolveAccountId(EUD);
             } catch (e) {
-              log('⚠️ forward transfer failed!', e, txHash);
-              statusManager.forwardFailed(txHash);
+              log(
+                '🚨 forward not attempted!',
+                'unresolvable destination',
+                txHash,
+                EUD,
+              );
+              statusManager.forwardSkipped(txHash);
               return null;
             }
           })();
