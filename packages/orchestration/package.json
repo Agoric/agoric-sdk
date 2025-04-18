@@ -67,7 +67,7 @@
     "bech32": "^2.0.0",
     "c8": "^10.1.2",
     "prettier": "^3.5.3",
-    "ts-blank-space": "^0.4.4"
+    "ts-blank-space": "^0.6.1"
   },
   "ava": {
     "extensions": {

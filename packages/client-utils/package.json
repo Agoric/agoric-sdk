@@ -24,7 +24,7 @@
   "devDependencies": {
     "ava": "^5.3.0",
     "c8": "^10.1.2",
-    "ts-blank-space": "^0.4.4"
+    "ts-blank-space": "^0.6.1"
   },
   "dependencies": {
     "@agoric/casting": "^0.4.2",
