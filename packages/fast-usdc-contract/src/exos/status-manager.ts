@@ -226,7 +226,8 @@ export const prepareStatusManager = (
       disbursed: M.call(EvmHashShape, AmountKeywordRecordShape).returns(
         M.undefined(),
       ),
-      forwarded: M.call(EvmHashShape, M.boolean()).returns(),
+      forwarded: M.call(EvmHashShape).returns(),
+      forwardFailed: M.call(EvmHashShape).returns(),
       lookupPending: M.call(M.string(), M.bigint()).returns(
         M.arrayOf(PendingTxShape),
       ),
@@ -376,15 +377,27 @@ export const prepareStatusManager = (
       },
 
       /**
-       * Mark a transaction as `FORWARDED` or `FORWARD_FAILED`
+       * Mark a transaction as `FORWARDED`
        * @param txHash
-       * @param success
        */
-      forwarded(txHash: EvmHash, success: boolean): void {
+      forwarded(txHash: EvmHash): void {
         publishTxnRecord(
           txHash,
           harden({
-            status: success ? TxStatus.Forwarded : TxStatus.ForwardFailed,
+            status: TxStatus.Forwarded,
+          }),
+        );
+      },
+
+      /**
+       * Mark a transaction as `FORWARD_FAILED`
+       * @param txHash
+       */
+      forwardFailed(txHash: EvmHash): void {
+        publishTxnRecord(
+          txHash,
+          harden({
+            status: TxStatus.ForwardFailed,
           }),
         );
       },
