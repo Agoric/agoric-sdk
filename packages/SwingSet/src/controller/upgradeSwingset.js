@@ -288,7 +288,7 @@ export const upgradeSwingset = kernelStorage => {
       const prefix = `${vatID}.c.`;
       const len = prefix.length;
       const ckpPrefix = `${vatID}.c.kp`;
-      for (const key of enumeratePrefixedKeys(kvStore, ckpPrefix)) {
+      for (const { key } of enumeratePrefixedKeys(kvStore, ckpPrefix)) {
         const kpid = key.slice(len);
         if (isSettled(kpid)) {
           const n = notifies.get(kpid);

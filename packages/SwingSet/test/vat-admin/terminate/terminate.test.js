@@ -475,7 +475,7 @@ test.serial('dead vat state removed', async t => {
   // have refCount=2 (one for bootstrap, one for the dynamic vat)
   let decidedKPID;
   let subscribedKPID;
-  for (const key of enumeratePrefixedKeys(kvStore, 'v6.')) {
+  for (const { key } of enumeratePrefixedKeys(kvStore, 'v6.')) {
     if (key.startsWith('v6.c.kp')) {
       const kpid = key.slice('v6.c.'.length);
       const refCount = Number(kvStore.get(`${kpid}.refCount`));

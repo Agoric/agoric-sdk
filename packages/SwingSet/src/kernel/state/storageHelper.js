@@ -13,20 +13,22 @@ import { Fail } from '@endo/errors';
  * @param {KVStore} kvStore
  * @param {string} prefix
  * @param {string} [exclusiveEnd]
- * @yields {string} the next key with the prefix that is not >= exclusiveEnd
+ * @yields {{key: string; suffix: string}} the next `key` with the prefix that is not >= exclusiveEnd
+ * and the `suffix` which is obtained by stripping the supplied prefix from the key
  */
 export function* enumeratePrefixedKeys(kvStore, prefix, exclusiveEnd) {
   /** @type {string | undefined} */
   let key = prefix;
   for (;;) {
     key = kvStore.getNextKey(key);
-    if (!key || !key.startsWith(prefix)) {
+    if (
+      !key ||
+      !key.startsWith(prefix) ||
+      (exclusiveEnd && key >= exclusiveEnd)
+    ) {
       break;
     }
-    if (exclusiveEnd && key >= exclusiveEnd) {
-      break;
-    }
-    yield key;
+    yield { key, suffix: key.slice(prefix.length) };
   }
 }
 harden(enumeratePrefixedKeys);
