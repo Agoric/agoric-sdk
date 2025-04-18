@@ -1149,7 +1149,7 @@ test('forward not attempted; dest not supported', async t => {
   t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
     { evidence: cctpTxEvidence, status: 'OBSERVED' },
     { risksIdentified: ['TOO_LARGE_AMOUNT'], status: 'ADVANCE_SKIPPED' },
-    { status: 'FORWARD_FAILED' }, // Transaction should be marked as FORWARD_FAILED
+    { status: 'FORWARD_SKIPPED' }, // unsupported destination
   ]);
 });
 

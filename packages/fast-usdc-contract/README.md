@@ -87,6 +87,7 @@ stateDiagram-v2
   Observed --> Forwarding : No risks, Mint deposited before advance
 
   Forwarding --> Forwarded : settler.forward() succeeds
+  Forwarding --> ForwardSkipped : settler.forward() skipped
   Advancing --> AdvancingChoice
   AdvancingChoice --> Advanced : advancer's transferHandler detects success
   Advanced --> Disbursed : settler.disburse()
@@ -94,4 +95,5 @@ stateDiagram-v2
   AdvanceFailed --> Forwarding : Mint deposited
   AdvancingChoice --> AdvanceFailed : advancer's transferHandler detects failure
   Forwarding --> ForwardFailed : settler.forward() fails
- ```
+  ForwardFailed --> Forwarding : transfer to destination chain succeeds (retry)
+```
