@@ -1,5 +1,5 @@
 import { getDetailsMatchingVats } from '@agoric/synthetic-chain';
-import { naturalCompare } from '@agoric/internal/src/natural-sort.js';
+import { naturalCompare } from '@agoric/internal';
 
 export const getGovernedVatDetails = async (nameCommon, includeTerminated) => {
   const detailsArray = await getDetailsMatchingVats(nameCommon);
