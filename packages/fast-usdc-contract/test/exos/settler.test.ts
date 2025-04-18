@@ -1065,7 +1065,46 @@ test('forward to Ethereum EUD', async t => {
   t.is(storage.data.get(`fun.txns.${cctpTxEvidence.txHash}`), undefined);
 });
 
-test('forward not attempted; dest not supported', async t => {
+test('forward not attempted: unresolvable destination', async t => {
+  const {
+    common,
+    makeSettler,
+    defaultSettlerParams,
+    repayer,
+    accounts,
+    inspectLogs,
+    storage,
+  } = t.context;
+  const { usdc } = common.brands;
+
+  const settler = makeSettler({
+    repayer,
+    settlementAccount: accounts.settlement.account,
+    ...defaultSettlerParams,
+  });
+
+  const txHash =
+    '0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761702';
+  const badEud = 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp'; // missing destination
+  settler.self.forward(txHash, usdc.makeEmpty(), badEud);
+
+  // Verify the exact log message for "forward not attempted"
+  t.deepEqual(inspectLogs().at(-1), [
+    '⚠️ forward not attempted',
+    'unresolvable destination',
+    txHash,
+    badEud,
+  ]);
+
+  // Verify the transaction record in storage
+  await eventLoopIteration();
+  t.deepEqual(
+    storage.getDeserialized(`fun.txns.${txHash}`).at(-1),
+    { status: 'FORWARD_SKIPPED' }, // unresolvable destination
+  );
+});
+
+test('forward not attempted: unsupported destination', async t => {
   const {
     common,
     makeSettler,
@@ -1158,7 +1197,7 @@ test('forward not attempted; dest not supported', async t => {
   t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
     { evidence: cctpTxEvidence, status: 'OBSERVED' },
     { risksIdentified: ['TOO_LARGE_AMOUNT'], status: 'ADVANCE_SKIPPED' },
-    { status: 'FORWARD_FAILED' }, // Transaction should be marked as FORWARD_FAILED
+    { status: 'FORWARD_SKIPPED' }, // unsupported destination
   ]);
 });
 

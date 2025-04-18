@@ -228,6 +228,7 @@ export const prepareStatusManager = (
       ),
       forwarded: M.call(EvmHashShape).returns(),
       forwardFailed: M.call(EvmHashShape).returns(),
+      forwardSkipped: M.call(EvmHashShape).returns(),
       lookupPending: M.call(M.string(), M.bigint()).returns(
         M.arrayOf(PendingTxShape),
       ),
@@ -398,6 +399,19 @@ export const prepareStatusManager = (
           txHash,
           harden({
             status: TxStatus.ForwardFailed,
+          }),
+        );
+      },
+
+      /**
+       * Mark a transaction as `FORWARD_SKIPPED`
+       * @param txHash
+       */
+      forwardSkipped(txHash: EvmHash): void {
+        publishTxnRecord(
+          txHash,
+          harden({
+            status: 'FORWARD_SKIPPED',
           }),
         );
       },
