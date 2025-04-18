@@ -29,11 +29,8 @@ type PluginDevice = Device<
   >
 >;
 
-type TimerDevice = Device<
-  ReturnType<
-    typeof import('@agoric/swingset-vat/src/devices/timer/device-timer.js').buildRootDeviceNode
-  >
->;
+type TimerDevice =
+  import('@agoric/swingset-vat/src/devices/timer/device-timer.js').TimerDevice;
 
 type VatAdminDevice = Device<
   import('@agoric/swingset-vat/src/devices/vat-admin/device-vat-admin.js').VatAdminRootDeviceNode
@@ -83,14 +80,14 @@ type SoloDevices = {
   vatAdmin: VatAdminDevice;
   mailbox: MailboxDevice;
   command: CommandDevice;
-  timer: TimerDevice;
+  timer: import('@agoric/swingset-vat/src/devices/timer/device-timer.js').TimerDevice;
   plugin: PluginDevice;
 };
 
 type ChainDevices = {
   vatAdmin: VatAdminDevice;
   mailbox: MailboxDevice;
-  timer: TimerDevice;
+  timer: import('@agoric/swingset-vat/src/devices/timer/device-timer.js').TimerDevice;
   bridge?: import('@agoric/swingset-vat/src/devices/bridge/device-bridge.js').BridgeDevice;
 };
 
