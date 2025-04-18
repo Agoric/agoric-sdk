@@ -422,7 +422,7 @@ export const prepareSettler = (
               return chainHub.resolveAccountId(EUD);
             } catch (e) {
               log('⚠️ forward transfer failed!', e, txHash);
-              statusManager.forwarded(txHash, false);
+              statusManager.forwardFailed(txHash);
               return null;
             }
           })();
@@ -459,14 +459,14 @@ export const prepareSettler = (
               txHash,
               dest,
             );
-            statusManager.forwarded(txHash, false);
+            statusManager.forwardFailed(txHash);
           }
         },
       },
       transferHandler: {
         onFulfilled(_result: unknown, txHash: EvmHash) {
           // update status manager, marking tx `FORWARDED` without fee split
-          statusManager.forwarded(txHash, true);
+          statusManager.forwarded(txHash);
         },
         onRejected(reason: unknown, txHash: EvmHash) {
           // funds remain in `settlementAccount` and must be recovered via a
@@ -474,7 +474,7 @@ export const prepareSettler = (
           log('🚨 forward transfer rejected!', reason, txHash);
           // update status manager, flagging a terminal state that needs to be
           // manual intervention or a code update to remediate
-          statusManager.forwarded(txHash, false);
+          statusManager.forwardFailed(txHash);
         },
       },
       intermediateTransferHandler: {
@@ -502,13 +502,13 @@ export const prepareSettler = (
           log('🚨 forward intermediate transfer rejected!', reason, txHash);
           // update status manager, flagging a terminal state that needs manual
           // intervention or a code update to remediate
-          statusManager.forwarded(txHash, false);
+          statusManager.forwardFailed(txHash);
         },
       },
       depositForBurnHandler: {
         onFulfilled(_result: unknown, txHash: EvmHash) {
           // update status manager, marking tx `FORWARDED` without fee split
-          statusManager.forwarded(txHash, true);
+          statusManager.forwarded(txHash);
         },
         onRejected(reason: unknown, txHash: EvmHash) {
           // funds remain in `nobleAccount` and must be recovered via a
@@ -516,7 +516,7 @@ export const prepareSettler = (
           log('🚨 forward depositForBurn rejected!', reason, txHash);
           // update status manager, flagging a terminal state that needs manual
           // intervention or a code update to remediate
-          statusManager.forwarded(txHash, false);
+          statusManager.forwardFailed(txHash);
         },
       },
     },
