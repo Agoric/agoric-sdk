@@ -26,6 +26,11 @@ type PublishedTypeMap = {
   'auction.governance': { current: AuctionParamRecord };
   'auction.schedule': ScheduleNotification;
   'vaultFactory.metrics': VaultDirectorMetrics;
+  'agoricNames.instance': Array<[string, Instance]>;
+  'agoricNames.brand': Array<[string, Brand]>;
+  fastUsdc: ContractRecord;
+  'fastUsdc.feeConfig': FeeConfig;
+  'fastUsdc.poolMetrics': PoolMetrics;
 };
 
 /**
@@ -44,16 +49,7 @@ export type TypedPublished<T extends string> = T extends keyof PublishedTypeMap
           ? OutcomeRecord
           : T extends `vaultFactory.managers.manager${number}.metrics`
             ? VaultDirectorMetrics
-            : T extends 'agoricNames.instance'
-              ? Array<[string, Instance]>
-              : T extends 'agoricNames.brand'
-                ? Array<[string, Brand]>
-                : T extends 'fastUsdc'
-                  ? ContractRecord
-                  : T extends 'fastUsdc.feeConfig'
-                    ? FeeConfig
-                    : T extends 'fastUsdc.poolMetrics'
-                      ? PoolMetrics
-                      : T extends `fastUsdc.txns.${string}`
-                        ? TransactionRecord
-                        : unknown;
+            : T extends `fastUsdc.txns.${string}`
+              ? TransactionRecord
+              : unknown;
+// static string keys are defined in PublishedTypeMap
