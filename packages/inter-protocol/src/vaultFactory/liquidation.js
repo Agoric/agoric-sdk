@@ -13,7 +13,7 @@ import { makeCancelTokenMaker } from '../auction/util.js';
 const trace = makeTracer('LIQ');
 
 /**
- * @import {MapStore} from '@agoric/store';
+ * @import {MapStore, SetStore} from '@agoric/store';
  * @import {RelativeTimeRecord, TimerService, TimerWaker} from '@agoric/time';
  * @import {PriceQuote} from '@agoric/zoe/tools/types.js';
  */
