@@ -49,19 +49,13 @@ import type { WithdrawToSeat } from '@agoric/orchestration/src/utils/zoe-tools.j
 import { mustMatch, type MapStore } from '@agoric/store';
 import type { IBCChannelID, IBCPacket, VTransferIBCEvent } from '@agoric/vats';
 import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
-import type { VowTools } from '@agoric/vow';
+import type { Vow, VowTools } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe/src/zoeService/zoe.js';
 import type { Zone } from '@agoric/zone';
 import { makeSupportsCctp } from '../utils/cctp.ts';
 import { asMultiset } from '../utils/store.ts';
 import type { LiquidityPoolKit } from './liquidity-pool.js';
 import type { StatusManager } from './status-manager.js';
-
-const FORWARD_TIMEOUT = {
-  sec: 10n * 60n,
-  p: '10m',
-} as const;
-harden(FORWARD_TIMEOUT);
 
 const decodeEventPacket = (
   { data }: IBCPacket,
@@ -148,9 +142,9 @@ export const stateShape = harden({
 export const prepareSettler = (
   zone: Zone,
   {
-    currentChainReference,
     chainHub,
     feeConfig,
+    forwardFunds,
     getNobleICA,
     log = makeTracer('Settler', true),
     statusManager,
@@ -159,10 +153,14 @@ export const prepareSettler = (
     withdrawToSeat,
     zcf,
   }: {
-    /** e.g., `agoric-3` */
-    currentChainReference: string;
     chainHub: Pick<ChainHub, 'resolveAccountId'>;
     feeConfig: FeeConfig;
+    forwardFunds: (tx: {
+      txHash: EvmHash;
+      amount: NatAmount;
+      destination: AccountId;
+      fundsInNobleIca?: boolean;
+    }) => Vow<void>;
     getNobleICA: () => OrchestrationAccount<{ chainId: 'noble-1' }>;
     log?: LogFn;
     statusManager: StatusManager;
@@ -175,8 +173,6 @@ export const prepareSettler = (
   assertAllDefined({ statusManager });
 
   const UsdcAmountShape = makeNatAmountShape(USDC);
-
-  const supportsCctp = makeSupportsCctp(chainHub);
 
   return zone.exoClassKit(
     'Fast USDC Settler',
@@ -203,6 +199,10 @@ export const prepareSettler = (
         ),
         forward: M.call(EvmHashShape, UsdcAmountShape, M.string()).returns(),
       }),
+      // XXX the following handlers are from before refactoring to an async flow for `forwardFunds`.
+      // They must remain implemented for as long as any vow might settle and need their behavior.
+      // Once all possible such vows are settled, the methods could be removed but the handler
+      // facets must remain to satisfy the kind definition backward compatibility checker.
       transferHandler: M.interface('SettlerTransferI', {
         onFulfilled: M.call(M.undefined(), M.string()).returns(),
         onRejected: M.call(M.error(), M.string()).returns(),
@@ -427,7 +427,6 @@ export const prepareSettler = (
           fullValue: NatAmount,
           EUD: AccountId | Bech32Address,
         ) {
-          const { settlementAccount } = this.state;
           log('forwarding', fullValue.value, 'to', EUD, 'for', txHash);
 
           const dest: AccountId | null = (() => {
@@ -446,44 +445,8 @@ export const prepareSettler = (
           })();
           if (!dest) return;
 
-          const { namespace, reference } = parseAccountId(dest);
-
-          const intermediateRecipient = getNobleICA().getAddress();
-
-          if (namespace === 'cosmos') {
-            const transferOrSendV =
-              reference === currentChainReference
-                ? E(settlementAccount).send(dest, fullValue)
-                : E(settlementAccount).transfer(dest, fullValue, {
-                    timeoutRelativeSeconds: FORWARD_TIMEOUT.sec,
-                    forwardOpts: {
-                      intermediateRecipient,
-                      timeout: FORWARD_TIMEOUT.p,
-                    },
-                  });
-            void vowTools.watch(
-              transferOrSendV,
-              this.facets.transferHandler,
-              txHash,
-            );
-          } else if (supportsCctp(dest)) {
-            // send to Noble then call `.depositForBurn(dest, fullValue)`
-            void vowTools.watch(
-              E(settlementAccount).transfer(intermediateRecipient, fullValue, {
-                timeoutRelativeSeconds: FORWARD_TIMEOUT.sec,
-              }),
-              this.facets.intermediateTransferHandler,
-              { amt: fullValue, dest, txHash },
-            );
-          } else {
-            log(
-              '🚨 forward not attempted!',
-              'unsupported destination',
-              txHash,
-              dest,
-            );
-            statusManager.forwardSkipped(txHash);
-          }
+          // This synchronous function returns a Vow that does its own error handling.
+          void forwardFunds({ txHash, amount: fullValue, destination: dest });
         },
       },
       transferHandler: {

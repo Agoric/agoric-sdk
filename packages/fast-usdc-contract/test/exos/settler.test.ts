@@ -28,6 +28,8 @@ import {
   stateShape,
 } from '../../src/exos/settler.ts';
 import { prepareStatusManager } from '../../src/exos/status-manager.ts';
+import * as flows from '../../src/fast-usdc.flows.ts';
+import { makeSupportsCctp } from '../../src/utils/cctp.ts';
 import {
   intermediateRecipient,
   MockCctpTxEvidences,
@@ -102,17 +104,33 @@ const makeTestContext = async t => {
     chainId: `${cctpChainInfo.ethereum.namespace}:${cctpChainInfo.ethereum.reference}`,
   });
 
+  const forwardFunds = tx =>
+    flows.forwardFunds(
+      undefined as any,
+      {
+        log, // some tests check the log calls
+        currentChainReference: 'agoric-3',
+        supportsCctp: makeSupportsCctp(chainHub),
+        statusManager,
+        getNobleICA: () => mockAccounts.intermediate.account as any,
+        settlementAccount: Promise.resolve(
+          mockAccounts.settlement.account as any,
+        ),
+      },
+      tx,
+    );
+
   const makeSettler = prepareSettler(zone.subZone('settler'), {
     statusManager,
     USDC: usdc.brand,
     zcf,
     withdrawToSeat: mockWithdrawToSeat,
     feeConfig: common.commonPrivateArgs.feeConfig,
-    getNobleICA: () => mockAccounts.intermediate.account as any,
     vowTools: common.utils.vowTools,
     chainHub,
-    currentChainReference: 'agoric-3',
     log,
+    // @ts-expect-error faking the membrane
+    forwardFunds,
   });
 
   const defaultSettlerParams = harden({
@@ -1176,7 +1194,7 @@ test('forward not attempted: unsupported destination', async t => {
 
   // Verify the exact log message for "forward not attempted"
   t.deepEqual(inspectLogs().at(-1), [
-    '🚨 forward not attempted!',
+    '⚠️ forward not attempted',
     'unsupported destination',
     '0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761702',
     'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp:Gf4DKri6Kw5fHL3VkrX12BaFLWCJXhKShP5epvQWJtpf',
