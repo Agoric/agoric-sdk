@@ -476,19 +476,46 @@ export const makeSwingStoreOverlay = (dbPath, wrapStore = wrapSubstore) => {
         },
         readSpan: (vatID, startPos) => {
           const reader = function* reader() {
-            try {
-              // Read from the base store.
-              yield* transcriptStore.readSpan(vatID, startPos);
-            } catch (_err) {}
-            // Read from the overlay, assuming that any transcripts of vatID
-            // are for the current span.
+            // startPos defaults to the latest value, which will match the base
+            // store unless the overlay includes a rollover.
+            // So read from the base store if startPos is explicit *or* if there
+            // is no such rollover, and then read from the overlay.
             const pendingItems = pendingItemsByVat.get(vatID) || [];
-            for (const { item, startPos: itemStartPos } of pendingItems) {
-              if (startPos !== undefined && itemStartPos !== startPos) break;
-              yield item;
+            const baseOk =
+              startPos !== undefined ||
+              !pendingItems.find(item => item.hash === '<initial>');
+            if (baseOk) {
+              try {
+                yield* transcriptStore.readSpan(vatID, startPos);
+              } catch (_err) {}
+            }
+            if (startPos === undefined) {
+              startPos = pendingItems.at(-1)?.startPos;
+            }
+            for (const { item, startPos: itemStartPos, hash } of pendingItems) {
+              // Skip synthetic rollover markers.
+              if (hash === '<initial>') continue;
+              if (itemStartPos === startPos) yield item;
             }
           };
           return reader();
+        },
+        rolloverIncarnation: vatID => {
+          recordCall('transcriptStore', 'rolloverIncarnation', vatID);
+          if (wrapHelpers.isStale(vatID)) return;
+          const pendingItems = pendingItemsByVat.get(vatID) || [];
+          const { endPos, incarnation } =
+            pendingItems.at(-1) || transcriptStore.getCurrentSpanBounds(vatID);
+          // Indicate the rollover with a synthetic marker.
+          const rolloverMarker = {
+            startPos: endPos,
+            endPos,
+            hash: '<initial>',
+            incarnation: incarnation + 1,
+          };
+          pendingItems.push(rolloverMarker);
+          pendingItemsByVat.set(vatID, pendingItems);
+          return rolloverMarker.incarnation;
         },
       };
       return wrapStore('transcriptStore', transcriptStoreOverride, {
@@ -496,11 +523,15 @@ export const makeSwingStoreOverlay = (dbPath, wrapStore = wrapSubstore) => {
         logAndMark: [
           'initTranscript',
           'rolloverSpan',
-          'rolloverIncarnation',
           'stopUsingTranscript',
           ['deleteVatTranscripts', () => harden({ done: true, cleanups: 0 })],
         ],
-        warnIfStale: ['addItem', 'getCurrentSpanBounds', 'readSpan'],
+        warnIfStale: [
+          'addItem',
+          'getCurrentSpanBounds',
+          'readSpan',
+          'rolloverIncarnation',
+        ],
         allowIfClean: [
           ...storeExportAPI,
           'exportSpan',
@@ -517,34 +548,69 @@ export const makeSwingStoreOverlay = (dbPath, wrapStore = wrapSubstore) => {
     },
     wrapSnapStore: snapStore => {
       const wrapHelpers = makeWrapHelpers();
+      /**
+       * Keep overlay-only snapshots as {info, chunks} records and overlay-only
+       * snapshot abandonment as `null`s.
+       *
+       * @type {Map<string, {info: import('@agoric/swing-store').SnapshotInfo, chunks: Uint8Array[]} | null>}
+       */
+      const pendingSnapshotsByVat = new Map();
       /** @type {ReturnType<import('@agoric/swing-store').makeSnapStore>} */
       const snapStoreOverride = {
         ...snapStore,
         saveSnapshot: async (vatID, snapPos, dataStream) => {
           const entryPrefix = ['snapStore', 'saveSnapshot', vatID, snapPos];
-          wrapHelpers.markStale(vatID);
           await null;
-          let size = 0;
+          /** @type {Uint8Array[]} */
+          const chunks = [];
+          const getSize = () =>
+            chunks.reduce((sum, chunk) => sum + chunk.length, 0);
           try {
-            for await (const chunk of dataStream) size += chunk.length;
+            for await (const chunk of dataStream) chunks.push(chunk);
+            const size = getSize();
             recordCall(...entryPrefix, `<${size} bytes>`);
+            const result = harden({
+              hash: `<snapPos ${snapPos}>`,
+              uncompressedSize: size,
+              compressedSize: size,
+            });
+            const pending = harden({ info: { snapPos, ...result }, chunks });
+            pendingSnapshotsByVat.set(vatID, pending);
+            return /** @type {import('@agoric/swing-store').SnapshotResult} */ (
+              result
+            );
           } catch (err) {
-            recordCall(...entryPrefix, `<error after ${size} bytes>`);
+            recordCall(...entryPrefix, `<error after ${getSize()} bytes>`);
             throw err;
           }
-          return /** @type {import('@agoric/swing-store').SnapshotResult} */ (
-            harden({ uncompressedSize: size })
-          );
+        },
+        stopUsingLastSnapshot: vatID => {
+          recordCall('snapStore', 'stopUsingLastSnapshot', vatID);
+          pendingSnapshotsByVat.set(vatID, null);
+        },
+        getSnapshotInfo: vatID => {
+          const found = pendingSnapshotsByVat.get(vatID);
+          if (found) return found.info;
+          if (found === null) return /** @type {any} */ (undefined);
+          return snapStore.getSnapshotInfo(vatID);
+        },
+        async *loadSnapshot(vatID) {
+          const found = pendingSnapshotsByVat.get(vatID);
+          if (found) {
+            yield* found.chunks;
+            return;
+          }
+          found !== null || Fail`no current snapshot for vat ${q(vatID)}`;
+          yield* snapStore.loadSnapshot(vatID);
         },
       };
       return wrapStore('snapStore', snapStoreOverride, {
         ...wrapHelpers,
-        allow: ['saveSnapshot'],
+        allow: ['saveSnapshot', 'stopUsingLastSnapshot'],
         logAndMark: [
           ['deleteVatSnapshots', () => harden({ done: true, cleanups: 0 })],
-          'stopUsingLastSnapshot',
         ],
-        warnIfStale: ['loadSnapshot', 'getSnapshotInfo', 'hasHash'],
+        warnIfStale: ['getSnapshotInfo', 'hasHash', 'loadSnapshot'],
         allowIfClean: [
           ...storeExportAPI,
           'exportSnapshot',

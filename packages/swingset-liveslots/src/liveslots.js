@@ -1252,9 +1252,9 @@ function build(
   let baggage;
   async function startVat(vatParametersCapData) {
     insistCapData(vatParametersCapData);
-    assert(!didStartVat);
+    !didStartVat || Fail`already started`;
     didStartVat = true;
-    assert(!didStopVat);
+    !didStopVat || Fail`already stopped`;
 
     // Build the `vatPowers` provided to `buildRootObject`. We include
     // vatGlobals and inescapableGlobalProperties to make it easier to write
