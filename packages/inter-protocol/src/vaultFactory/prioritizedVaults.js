@@ -13,8 +13,11 @@ import {
   normalizedCollRatio,
 } from './storeUtils.js';
 
-/** @import {Vault} from './vault.js' */
-/** @import {NormalizedDebt} from './storeUtils.js' */
+/**
+ * @import {MapStore} from '@agoric/store';
+ * @import {Vault} from './vault.js';
+ * @import {NormalizedDebt} from './storeUtils.js';
+ */
 
 const trace = makeTracer('PVaults', true);
 
