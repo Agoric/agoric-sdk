@@ -27,7 +27,6 @@
     "@endo/check-bundle": "^1.0.14",
     "@endo/errors": "^1.2.10",
     "@endo/nat": "^5.1.0",
-    "@endo/promise-kit": "^1.1.10",
     "better-sqlite3": "^9.1.1"
   },
   "devDependencies": {
