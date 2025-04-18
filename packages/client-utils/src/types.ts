@@ -1,26 +1,31 @@
 // @file types for the client-utils package
 // NB: this doesn't follow best practices for TS in JS because this package will likely soon be written in TS
 
+import type { Brand } from '@agoric/ertp';
+import type {
+  ContractRecord,
+  FeeConfig,
+  PoolMetrics,
+  TransactionRecord,
+} from '@agoric/fast-usdc';
 import type {
   OutcomeRecord,
   QuestionDetails,
 } from '@agoric/governance/src/types.js';
-import type { MetricsNotification as VaultManagerMetrics } from '@agoric/inter-protocol/src/vaultFactory/vaultManager.js';
+import type { AuctionParamRecord } from '@agoric/inter-protocol/src/auction/params.js';
+import type { ScheduleNotification } from '@agoric/inter-protocol/src/auction/scheduler.js';
+import type { MetricsNotification as VaultDirectorMetrics } from '@agoric/inter-protocol/src/vaultFactory/vaultDirector.js';
 import type {
   CurrentWalletRecord,
   UpdateRecord,
 } from '@agoric/smart-wallet/src/smartWallet.js';
-import type {
-  ContractRecord,
-  PoolMetrics,
-  TransactionRecord,
-} from '@agoric/fast-usdc';
+import type { Instance } from '@agoric/zoe/src/zoeService/types.js';
 
 // For static string key types. String template matching has to be in the ternary below.
 type PublishedTypeMap = {
   'auction.governance': { current: AuctionParamRecord };
   'auction.schedule': ScheduleNotification;
-  'vaultFactory.metrics': { rewardPoolAllocation: RewardPoolAllocationRecord };
+  'vaultFactory.metrics': VaultDirectorMetrics;
 };
 
 /**
@@ -38,7 +43,7 @@ export type TypedPublished<T extends string> = T extends keyof PublishedTypeMap
         : T extends `committees.${string}.latestOutcome`
           ? OutcomeRecord
           : T extends `vaultFactory.managers.manager${number}.metrics`
-            ? VaultManagerMetrics
+            ? VaultDirectorMetrics
             : T extends 'agoricNames.instance'
               ? Array<[string, Instance]>
               : T extends 'agoricNames.brand'
