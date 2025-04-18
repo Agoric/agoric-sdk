@@ -459,7 +459,7 @@ export const prepareSettler = (
               txHash,
               dest,
             );
-            statusManager.forwardFailed(txHash);
+            statusManager.forwardSkipped(txHash);
           }
         },
       },
