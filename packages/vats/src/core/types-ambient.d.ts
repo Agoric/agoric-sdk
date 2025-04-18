@@ -1,10 +1,10 @@
 // Ambient type defs. Cannot use top-level import() because that would turn it into a module.
 
-/** This type conflicts with packages/SwingSet/src/vats/plugin-manager.js */
-type Device<T> = 'Device' & { __deviceType__: T };
+type Device<T> =
+  import('@agoric/swingset-vat/src/vats/plugin-manager.js').Device<T>;
 
 /** (approximately) */
-type DProxy<T = any> = (target: Device<T>) => T;
+type DProxy = import('@agoric/swingset-vat/src/vats/plugin-manager.js').DProxy;
 
 type BootDevices<T> = { vatPowers: { D: DProxy }; devices: T };
 
