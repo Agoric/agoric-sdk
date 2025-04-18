@@ -285,11 +285,9 @@ export const upgradeSwingset = kernelStorage => {
 
     const buggyKPIDs = []; // [kpid, vatID]
     for (const vatID of allVatIDs) {
-      const prefix = `${vatID}.c.`;
-      const len = prefix.length;
       const ckpPrefix = `${vatID}.c.kp`;
-      for (const { key } of enumeratePrefixedKeys(kvStore, ckpPrefix)) {
-        const kpid = key.slice(len);
+      for (const { suffix } of enumeratePrefixedKeys(kvStore, ckpPrefix)) {
+        const kpid = `kp${suffix}`;
         if (isSettled(kpid)) {
           const n = notifies.get(kpid);
           if (!n || !n.includes(vatID)) {
