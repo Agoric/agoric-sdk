@@ -18,8 +18,7 @@ import { bundles, devices } from './devices.js';
 
 export const noop = () => {};
 
-/** @type {DProxy} */
-export const mockDProxy = d => d;
+export const mockDProxy = /** @type {DProxy} */ (d => d);
 
 export const makeMock = log =>
   harden({
