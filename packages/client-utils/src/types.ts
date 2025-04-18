@@ -12,6 +12,7 @@ import type {
   OutcomeRecord,
   QuestionDetails,
 } from '@agoric/governance/src/types.js';
+import type { BookDataNotification } from '@agoric/inter-protocol/src/auction/auctionBook.js';
 import type { AuctionParamRecord } from '@agoric/inter-protocol/src/auction/params.js';
 import type { ScheduleNotification } from '@agoric/inter-protocol/src/auction/scheduler.js';
 import type { MetricsNotification as VaultDirectorMetrics } from '@agoric/inter-protocol/src/vaultFactory/vaultDirector.js';
@@ -51,5 +52,7 @@ export type TypedPublished<T extends string> = T extends keyof PublishedTypeMap
             ? VaultDirectorMetrics
             : T extends `fastUsdc.txns.${string}`
               ? TransactionRecord
-              : unknown;
+              : T extends `auction.book${number}`
+                ? BookDataNotification
+                : unknown;
 // static string keys are defined in PublishedTypeMap
