@@ -8,11 +8,8 @@ type DProxy<T = any> = (target: Device<T>) => T;
 
 type BootDevices<T> = { vatPowers: { D: DProxy }; devices: T };
 
-type BridgeDevice = Device<
-  ReturnType<
-    typeof import('@agoric/swingset-vat/src/devices/bridge/device-bridge.js').buildRootDeviceNode
-  >
->;
+type BridgeDevice =
+  import('@agoric/swingset-vat/src/devices/bridge/device-bridge.js').BridgeDevice;
 
 type CommandDevice = Device<
   ReturnType<
@@ -94,7 +91,7 @@ type ChainDevices = {
   vatAdmin: VatAdminDevice;
   mailbox: MailboxDevice;
   timer: TimerDevice;
-  bridge?: BridgeDevice;
+  bridge?: import('@agoric/swingset-vat/src/devices/bridge/device-bridge.js').BridgeDevice;
 };
 
 type ClientProvider = {
