@@ -1,0 +1,13 @@
+{
+    "consume": {
+        "economicCommitteeCreatorFacet": true,
+        "instancePrivateArgs": true,
+        "psmKit": true,
+        "zoe": true
+    },
+    "brand": {
+        "consume": {
+            "IST": true
+        }
+    }
+}

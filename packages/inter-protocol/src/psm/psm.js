@@ -121,6 +121,9 @@ harden(meta);
  *   initialPoserInvitation: Invitation;
  *   storageNode: StorageNode;
  *   marshaller: Marshaller;
+ *   paramUpdates?: {
+ *     MintLimit?: Amount;
+ *   };
  * }} privateArgs
  * @param {Baggage} baggage
  */
@@ -440,6 +443,16 @@ export const start = async (zcf, privateArgs, baggage) => {
     baggage,
     limitedCreatorFacet,
   );
+  const { paramUpdates } = privateArgs;
+  if (paramUpdates) {
+    const { MintLimit } = paramUpdates;
+    if (MintLimit) {
+      const paramMgr = governorFacet.getParamMgrRetriever().get();
+      void paramMgr
+        .updateParams({ MintLimit })
+        .then(() => console.log('updated', { MintLimit }, 'for', anchorBrand));
+    }
+  }
   return harden({
     creatorFacet: governorFacet,
     publicFacet,
