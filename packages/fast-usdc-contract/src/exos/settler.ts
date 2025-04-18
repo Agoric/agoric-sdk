@@ -174,6 +174,8 @@ export const prepareSettler = (
 ) => {
   assertAllDefined({ statusManager });
 
+  const UsdcAmountShape = makeNatAmountShape(USDC);
+
   const supportsCctp = makeSupportsCctp(chainHub);
 
   return zone.exoClassKit(
@@ -195,11 +197,11 @@ export const prepareSettler = (
         ),
       }),
       self: M.interface('SettlerSelfI', {
-        addMintedEarly: M.call(M.string(), M.nat()).returns(),
-        disburse: M.call(EvmHashShape, M.nat(), M.string()).returns(
+        addMintedEarly: M.call(M.string(), UsdcAmountShape).returns(),
+        disburse: M.call(EvmHashShape, UsdcAmountShape, M.string()).returns(
           M.promise(),
         ),
-        forward: M.call(EvmHashShape, M.nat(), M.string()).returns(),
+        forward: M.call(EvmHashShape, UsdcAmountShape, M.string()).returns(),
       }),
       transferHandler: M.interface('SettlerTransferI', {
         onFulfilled: M.call(M.undefined(), M.string()).returns(),
@@ -274,25 +276,27 @@ export const prepareSettler = (
           const { self } = this.facets;
           const found = statusManager.dequeueStatus(nfa, amount);
           log('dequeued', found, 'for', nfa, amount);
+          const fullValue = AmountMath.make(USDC, amount);
+
           switch (found?.status) {
             case PendingTxStatus.Advanced:
-              return self.disburse(found.txHash, amount, EUD);
+              return self.disburse(found.txHash, fullValue, EUD);
 
             case PendingTxStatus.Advancing:
               log('⚠️ tap: minted while advancing', nfa, amount);
-              self.addMintedEarly(nfa, amount);
+              self.addMintedEarly(nfa, fullValue);
               return;
 
             case PendingTxStatus.AdvanceSkipped:
             case PendingTxStatus.AdvanceFailed:
-              return self.forward(found.txHash, amount, EUD);
+              return self.forward(found.txHash, fullValue, EUD);
 
             case undefined:
             default:
               log('⚠️ tap: minted before observed', nfa, amount);
               // XXX consider capturing in vstorage
               // we would need a new key, as this does not have a txHash
-              self.addMintedEarly(nfa, amount);
+              self.addMintedEarly(nfa, fullValue);
           }
         },
       },
@@ -319,9 +323,9 @@ export const prepareSettler = (
             asMultiset(mintedEarly).remove(key);
             statusManager.advanceOutcomeForMintedEarly(txHash, success);
             if (success) {
-              void this.facets.self.disburse(txHash, fullValue, destination);
+              void this.facets.self.disburse(txHash, fullAmount, destination);
             } else {
-              void this.facets.self.forward(txHash, fullValue, destination);
+              void this.facets.self.forward(txHash, fullAmount, destination);
             }
           } else {
             statusManager.advanceOutcome(forwardingAddress, fullValue, success);
@@ -353,7 +357,11 @@ export const prepareSettler = (
             );
             asMultiset(mintedEarly).remove(key);
             statusManager.advanceOutcomeForUnknownMint(evidence);
-            void this.facets.self.forward(txHash, amount, destination);
+            void this.facets.self.forward(
+              txHash,
+              AmountMath.make(USDC, amount),
+              destination,
+            );
             return true;
           }
           return false;
@@ -365,8 +373,8 @@ export const prepareSettler = (
          * @param address
          * @param amount
          */
-        addMintedEarly(address: NobleAddress, amount: NatValue) {
-          const key = makeMintedEarlyKey(address, amount);
+        addMintedEarly(address: NobleAddress, amount: NatAmount) {
+          const key = makeMintedEarlyKey(address, amount.value);
           const { mintedEarly } = this.state;
           asMultiset(mintedEarly).add(key);
         },
@@ -377,11 +385,10 @@ export const prepareSettler = (
         // eslint-disable-next-line no-restricted-syntax -- will resolve before vat restart
         async disburse(
           txHash: EvmHash,
-          fullValue: NatValue,
+          received: NatAmount,
           EUD: AccountId | Bech32Address,
         ) {
           const { repayer, settlementAccount } = this.state;
-          const received = AmountMath.make(USDC, fullValue);
           const { zcfSeat: settlingSeat } = zcf.makeEmptySeatKit();
           const { calculateSplit } = makeFeeTools(feeConfig);
           // theoretically can throw, but shouldn't since Advancer already validated
@@ -412,16 +419,16 @@ export const prepareSettler = (
          * Funds were not advanced. Forward proceeds to the payee directly.
          *
          * @param {EvmHash} txHash
-         * @param {NatValue} fullValue
+         * @param {NatAmount} fullValue
          * @param {string} EUD
          */
         forward(
           txHash: EvmHash,
-          fullValue: NatValue,
+          fullValue: NatAmount,
           EUD: AccountId | Bech32Address,
         ) {
           const { settlementAccount } = this.state;
-          log('forwarding', fullValue, 'to', EUD, 'for', txHash);
+          log('forwarding', fullValue.value, 'to', EUD, 'for', txHash);
 
           const dest: AccountId | null = (() => {
             try {
@@ -435,15 +442,14 @@ export const prepareSettler = (
           if (!dest) return;
 
           const { namespace, reference } = parseAccountId(dest);
-          const amt = AmountMath.make(USDC, fullValue);
 
           const intermediateRecipient = getNobleICA().getAddress();
 
           if (namespace === 'cosmos') {
             const transferOrSendV =
               reference === currentChainReference
-                ? E(settlementAccount).send(dest, amt)
-                : E(settlementAccount).transfer(dest, amt, {
+                ? E(settlementAccount).send(dest, fullValue)
+                : E(settlementAccount).transfer(dest, fullValue, {
                     timeoutRelativeSeconds: FORWARD_TIMEOUT.sec,
                     forwardOpts: {
                       intermediateRecipient,
@@ -456,13 +462,13 @@ export const prepareSettler = (
               txHash,
             );
           } else if (supportsCctp(dest)) {
-            // send to Noble then call `.depositForBurn(dest, amt)`
+            // send to Noble then call `.depositForBurn(dest, fullValue)`
             void vowTools.watch(
-              E(settlementAccount).transfer(intermediateRecipient, amt, {
+              E(settlementAccount).transfer(intermediateRecipient, fullValue, {
                 timeoutRelativeSeconds: FORWARD_TIMEOUT.sec,
               }),
               this.facets.intermediateTransferHandler,
-              { amt, dest, txHash },
+              { amt: fullValue, dest, txHash },
             );
           } else {
             log(
