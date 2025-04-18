@@ -24,7 +24,7 @@
     "ava": "^5.3.0",
     "c8": "^10.1.2",
     "esbuild": "^0.25.2",
-    "execa": "9.1.0",
+    "execa": "^9.5.2",
     "ts-blank-space": "^0.6.1"
   },
   "dependencies": {
