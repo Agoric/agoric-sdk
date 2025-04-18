@@ -12,11 +12,11 @@ import { makeCancelTokenMaker } from '../auction/util.js';
 
 const trace = makeTracer('LIQ');
 
-/** @import {TimerService} from '@agoric/time' */
-/** @import {TimerWaker} from '@agoric/time' */
-/** @import {CancelToken} from '@agoric/time' */
-/** @import {RelativeTimeRecord} from '@agoric/time' */
-/** @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js'; */
+/**
+ * @import {MapStore} from '@agoric/store';
+ * @import {RelativeTimeRecord, TimerService, TimerWaker} from '@agoric/time';
+ * @import {PriceQuote} from '@agoric/zoe/tools/types.js';
+ */
 
 const makeCancelToken = makeCancelTokenMaker('liq');
 
