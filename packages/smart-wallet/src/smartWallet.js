@@ -293,10 +293,9 @@ const getBrandToPurses = (walletPurses, key) => {
  * @param {Parameters<T[M]>} msg.args
  * @returns {Promise<OBJ>}
  */
-export const after = async (obj, { rx, method, args }) => {
-  await E(rx)[method](...args);
-  return obj;
-};
+export const after = async (obj, { rx, method, args }) =>
+  // @ts-expect-error TODO: how to get the types right for this???
+  E.when(E(rx)[method](...args), () => obj);
 
 /**
  * @param {import('@agoric/vat-data').Baggage} baggage
