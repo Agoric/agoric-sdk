@@ -283,6 +283,22 @@ const getBrandToPurses = (walletPurses, key) => {
 };
 
 /**
+ * @template {{ [m: string]: (...args: any) => any }} T
+ * @template {keyof T} M
+ * @template OBJ
+ * @param {OBJ} obj
+ * @param {object} msg
+ * @param {ERef<T>} msg.rx
+ * @param {M} msg.method
+ * @param {Parameters<T[M]>} msg.args
+ * @returns {Promise<OBJ>}
+ */
+export const after = async (obj, { rx, method, args }) => {
+  await E(rx)[method](...args);
+  return obj;
+};
+
+/**
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {SharedParams} shared
  */
@@ -1070,6 +1086,7 @@ export const prepareSmartWallet = (baggage, shared) => {
           const endowments = {
             my: fromEntries(nameHub.entries()),
             E,
+            after,
             harden,
             assert,
             nameHub,
