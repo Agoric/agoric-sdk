@@ -106,7 +106,7 @@ test.before(async t => {
 });
 const stringifyBigint = (_p, v) => (typeof v === 'bigint' ? `${v}` : v);
 test.after.always(async t => {
-  t.context.shutdown?.();
+  await t.context.shutdown?.();
 
   const { observations, writeStats } = t.context;
   if (writeStats) {
