@@ -1,38 +1,47 @@
 //@ts-nocheck
 import {
+  Order,
+  orderFromJSON,
+  orderToJSON,
+} from '../../../../core/channel/v1/channel.js';
+import {
   InterchainAccountPacketData,
   type InterchainAccountPacketDataSDKType,
 } from '../../v1/packet.js';
 import { BinaryReader, BinaryWriter } from '../../../../../binary.js';
 import { isSet } from '../../../../../helpers.js';
 import { type JsonSafe } from '../../../../../json-safe.js';
-/** MsgRegisterInterchainAccount defines the payload for Msg/MsgRegisterInterchainAccount */
+/** MsgRegisterInterchainAccount defines the payload for Msg/RegisterAccount */
 export interface MsgRegisterInterchainAccount {
   owner: string;
   connectionId: string;
   version: string;
+  ordering: Order;
 }
 export interface MsgRegisterInterchainAccountProtoMsg {
   typeUrl: '/ibc.applications.interchain_accounts.controller.v1.MsgRegisterInterchainAccount';
   value: Uint8Array;
 }
-/** MsgRegisterInterchainAccount defines the payload for Msg/MsgRegisterInterchainAccount */
+/** MsgRegisterInterchainAccount defines the payload for Msg/RegisterAccount */
 export interface MsgRegisterInterchainAccountSDKType {
   owner: string;
   connection_id: string;
   version: string;
+  ordering: Order;
 }
-/** MsgRegisterInterchainAccountResponse defines the response for Msg/MsgRegisterInterchainAccountResponse */
+/** MsgRegisterInterchainAccountResponse defines the response for Msg/RegisterAccount */
 export interface MsgRegisterInterchainAccountResponse {
   channelId: string;
+  portId: string;
 }
 export interface MsgRegisterInterchainAccountResponseProtoMsg {
   typeUrl: '/ibc.applications.interchain_accounts.controller.v1.MsgRegisterInterchainAccountResponse';
   value: Uint8Array;
 }
-/** MsgRegisterInterchainAccountResponse defines the response for Msg/MsgRegisterInterchainAccountResponse */
+/** MsgRegisterInterchainAccountResponse defines the response for Msg/RegisterAccount */
 export interface MsgRegisterInterchainAccountResponseSDKType {
   channel_id: string;
+  port_id: string;
 }
 /** MsgSendTx defines the payload for Msg/SendTx */
 export interface MsgSendTx {
@@ -73,6 +82,7 @@ function createBaseMsgRegisterInterchainAccount(): MsgRegisterInterchainAccount 
     owner: '',
     connectionId: '',
     version: '',
+    ordering: 0,
   };
 }
 export const MsgRegisterInterchainAccount = {
@@ -90,6 +100,9 @@ export const MsgRegisterInterchainAccount = {
     }
     if (message.version !== '') {
       writer.uint32(26).string(message.version);
+    }
+    if (message.ordering !== 0) {
+      writer.uint32(32).int32(message.ordering);
     }
     return writer;
   },
@@ -113,6 +126,9 @@ export const MsgRegisterInterchainAccount = {
         case 3:
           message.version = reader.string();
           break;
+        case 4:
+          message.ordering = reader.int32() as any;
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -127,6 +143,7 @@ export const MsgRegisterInterchainAccount = {
         ? String(object.connectionId)
         : '',
       version: isSet(object.version) ? String(object.version) : '',
+      ordering: isSet(object.ordering) ? orderFromJSON(object.ordering) : -1,
     };
   },
   toJSON(
@@ -137,6 +154,8 @@ export const MsgRegisterInterchainAccount = {
     message.connectionId !== undefined &&
       (obj.connectionId = message.connectionId);
     message.version !== undefined && (obj.version = message.version);
+    message.ordering !== undefined &&
+      (obj.ordering = orderToJSON(message.ordering));
     return obj;
   },
   fromPartial(
@@ -146,6 +165,7 @@ export const MsgRegisterInterchainAccount = {
     message.owner = object.owner ?? '';
     message.connectionId = object.connectionId ?? '';
     message.version = object.version ?? '';
+    message.ordering = object.ordering ?? 0;
     return message;
   },
   fromProtoMsg(
@@ -169,6 +189,7 @@ export const MsgRegisterInterchainAccount = {
 function createBaseMsgRegisterInterchainAccountResponse(): MsgRegisterInterchainAccountResponse {
   return {
     channelId: '',
+    portId: '',
   };
 }
 export const MsgRegisterInterchainAccountResponse = {
@@ -180,6 +201,9 @@ export const MsgRegisterInterchainAccountResponse = {
   ): BinaryWriter {
     if (message.channelId !== '') {
       writer.uint32(10).string(message.channelId);
+    }
+    if (message.portId !== '') {
+      writer.uint32(18).string(message.portId);
     }
     return writer;
   },
@@ -197,6 +221,9 @@ export const MsgRegisterInterchainAccountResponse = {
         case 1:
           message.channelId = reader.string();
           break;
+        case 2:
+          message.portId = reader.string();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -207,6 +234,7 @@ export const MsgRegisterInterchainAccountResponse = {
   fromJSON(object: any): MsgRegisterInterchainAccountResponse {
     return {
       channelId: isSet(object.channelId) ? String(object.channelId) : '',
+      portId: isSet(object.portId) ? String(object.portId) : '',
     };
   },
   toJSON(
@@ -214,6 +242,7 @@ export const MsgRegisterInterchainAccountResponse = {
   ): JsonSafe<MsgRegisterInterchainAccountResponse> {
     const obj: any = {};
     message.channelId !== undefined && (obj.channelId = message.channelId);
+    message.portId !== undefined && (obj.portId = message.portId);
     return obj;
   },
   fromPartial(
@@ -221,6 +250,7 @@ export const MsgRegisterInterchainAccountResponse = {
   ): MsgRegisterInterchainAccountResponse {
     const message = createBaseMsgRegisterInterchainAccountResponse();
     message.channelId = object.channelId ?? '';
+    message.portId = object.portId ?? '';
     return message;
   },
   fromProtoMsg(

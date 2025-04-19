@@ -12,10 +12,10 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 	metrics "github.com/armon/go-metrics"
+	db "github.com/cometbft/cometbft-db"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	db "github.com/tendermint/tm-db"
 
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
@@ -124,6 +124,7 @@ func NewKeeper(storeKey storetypes.StoreKey) Keeper {
 // to/from the store due to the store's internal implementation.
 var MetricKeyStoreSizeIncrease = []string{"store", "size_increase"}
 var MetricKeyStoreSizeDecrease = []string{"store", "size_decrease"}
+
 const MetricLabelStoreKey = "storeKey"
 
 // reportStoreSizeMetrics exports store size increase/decrease metrics
@@ -239,7 +240,7 @@ func (k Keeper) RemoveEntriesWithPrefix(ctx sdk.Context, pathPrefix string) {
 
 	for _, key := range keys {
 		rawValue := store.Get(key)
-		k.reportStoreSizeMetrics(0, len(key) + len(rawValue))
+		k.reportStoreSizeMetrics(0, len(key)+len(rawValue))
 		store.Delete(key)
 	}
 
@@ -396,7 +397,7 @@ func (k Keeper) SetStorage(ctx sdk.Context, entry agoric.KVEntry) {
 	if !entry.HasValue() {
 		if !k.HasChildren(ctx, path) {
 			// We have no children, can delete.
-			k.reportStoreSizeMetrics(0, len(encodedKey) + len(oldRawValue))
+			k.reportStoreSizeMetrics(0, len(encodedKey)+len(oldRawValue))
 			store.Delete(encodedKey)
 		} else {
 			// We have children, mark as an empty placeholder without deleting.
@@ -421,7 +422,7 @@ func (k Keeper) SetStorage(ctx sdk.Context, entry agoric.KVEntry) {
 				break
 			}
 			encodedAncestor := types.PathToEncodedKey(ancestor)
-			k.reportStoreSizeMetrics(0, len(encodedAncestor) + len(types.EncodedNoDataValue))
+			k.reportStoreSizeMetrics(0, len(encodedAncestor)+len(types.EncodedNoDataValue))
 			store.Delete(encodedAncestor)
 		}
 	} else {
@@ -433,7 +434,7 @@ func (k Keeper) SetStorage(ctx sdk.Context, entry agoric.KVEntry) {
 				break
 			}
 			encodedAncestor := types.PathToEncodedKey(ancestor)
-			k.reportStoreSizeMetrics(len(encodedAncestor) + len(types.EncodedNoDataValue), 0)
+			k.reportStoreSizeMetrics(len(encodedAncestor)+len(types.EncodedNoDataValue), 0)
 			store.Set(encodedAncestor, types.EncodedNoDataValue)
 		}
 	}
