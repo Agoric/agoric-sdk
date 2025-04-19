@@ -206,10 +206,15 @@ const range = (n: number) => Array.from(Array(n).keys());
 
 test.serial('iterate simulation several times', async t => {
   const { controller, observations, storage, sim } = t.context;
-  const { harness, swingStore, slogSender } = t.context;
+  const { harness, swingStore, slogSender, writeStats } = t.context;
   const { updateNewCellBlockHeight } = storage;
 
-  await writeFile('kernel-0.json', JSON.stringify(controller.dump(), null, 2));
+  if (writeStats) {
+    await writeFile(
+      'kernel-0.json',
+      JSON.stringify(controller.dump(), null, 2),
+    );
+  }
 
   harness.useRunPolicy(true); // start tracking computrons
   harness.resetRunPolicy(); // never mind computrons from bootstrap
@@ -275,7 +280,12 @@ test.serial('iterate simulation several times', async t => {
 
   await doCleanupAndSnapshot('final');
 
-  await writeFile('kernel-1.json', JSON.stringify(controller.dump(), null, 2));
+  if (writeStats) {
+    await writeFile(
+      'kernel-1.json',
+      JSON.stringify(controller.dump(), null, 2),
+    );
+  }
 });
 
 // TODO: automate checking of observations
