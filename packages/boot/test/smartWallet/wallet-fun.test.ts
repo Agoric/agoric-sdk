@@ -29,6 +29,7 @@ import {
   type WalletFactoryTestContext as TC,
 } from '../bootstrapTests/walletFactory.ts';
 import { slotToBoardRemote } from '@agoric/internal/src/marshal.js';
+import type { StakingView } from '@agoric/smart-wallet/src/types.ts';
 
 const nodeRequire = createRequire(import.meta.url);
 
@@ -362,6 +363,15 @@ test('upgrade a deployed contract', async t => {
   t.is(await EV(subject.publicFacet).getIncarnation(), 2n);
 });
 
-test('require staked BLD for evalExpr', async t => {
-  t.fail('TODO');
+test('use stakingView to get BLD stake', async t => {
+  const { EV } = t.context.runUtils;
+  const stakingView = (await EV.vat('bootstrap').consumeItem(
+    'stakingView',
+  )) as StakingView;
+  const addr = 'agoric1stakerSteve40_000';
+  const bldQty = await EV(stakingView).get(addr);
+  t.log(addr, 'stake:', bldQty);
+  t.true(bldQty > 0n);
 });
+
+test.todo('require staked BLD for evalExpr');
