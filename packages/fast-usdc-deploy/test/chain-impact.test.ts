@@ -68,7 +68,7 @@ test.before(async t => {
       defaultReapInterval: 'never',
       defaultReapGCKrefs: 'never',
       // we control when to snapshot; set interval to "never"
-      snapshotInterval: 100000,
+      snapshotInterval: Number.MAX_SAFE_INTEGER,
     },
     ...(snapshotDir
       ? { archiveSnapshot: makeArchiveSnapshot(snapshotDir, fsPowers) }
