@@ -37,7 +37,7 @@ export const NameHubIKit = harden({
       .returns(M.any()),
     lookupAdmin: M.call().rest(M.arrayOf(KeyShape)).returns(M.promise()),
     delete: M.call(KeyShape).returns(M.any()),
-    readonly: M.call().returns(M.remotable()),
+    readonly: M.callWhen().returns(M.remotable()),
   }),
 });
 

@@ -51,7 +51,17 @@ export const shape = {
       invitationSpec: M.any(),
       proposal: ProposalShape,
     },
-    { offerArgs: M.any() },
+    {
+      offerArgs: M.any(),
+      // TODO: upgrade impact of typeGuard change?
+      after: M.splitRecord(
+        {},
+        {
+          saveAs: M.string(),
+          deposit: M.boolean(),
+        },
+      ),
+    },
   ),
 
   // walletFactory

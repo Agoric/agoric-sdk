@@ -290,8 +290,15 @@ export const prepare = async (zcf, privateArgs, baggage) => {
         const maker = async _address => {
           const invitationPurse = await E(invitationIssuer).makeEmptyPurse();
           const walletStorageNode = E(storageNode).makeChildNode(address);
+          const namesByAddress = await E(namesByAddressAdmin).readonly();
           const wallet = await makeSmartWallet(
-            harden({ address, walletStorageNode, bank, invitationPurse }),
+            harden({
+              address,
+              walletStorageNode,
+              bank,
+              invitationPurse,
+              namesByAddress,
+            }),
           );
 
           // An await here would deadlock with invitePSMCommitteeMembers

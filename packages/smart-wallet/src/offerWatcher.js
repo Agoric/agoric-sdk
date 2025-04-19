@@ -274,7 +274,23 @@ export const prepareOfferWatcher = (baggage, vowTools) => {
       resultWatcher: {
         onFulfilled(result) {
           const { facets } = this;
-          facets.helper.publishResult(result);
+          const { walletHelper } = this.state;
+          const { after } = this.state.status;
+          if (after) {
+            if (after.deposit) {
+              void E.when(
+                walletHelper.receive(result),
+                amt => console.log('TODO: report amt?', amt),
+                err => console.error('TODO: report error', err),
+              );
+            }
+            if (after.saveAs) {
+              walletHelper.saveOfferResult(after.saveAs, result);
+            }
+            facets.helper.publishResult(passStyleOf(result));
+          } else {
+            facets.helper.publishResult(result);
+          }
         },
         /**
          * If promise disconnected, watch again. Or if there's an Error, handle
