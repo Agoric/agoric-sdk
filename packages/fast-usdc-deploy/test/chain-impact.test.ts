@@ -67,6 +67,7 @@ test.before(async t => {
     configOverrides: {
       defaultReapInterval: 'never',
       defaultReapGCKrefs: 'never',
+      // we control when to snapshot; set interval to "never"
       snapshotInterval: 100000,
     },
     ...(snapshotDir
@@ -103,7 +104,18 @@ test.before(async t => {
     sim,
   };
 });
-test.after.always(t => t.context.shutdown?.());
+const stringifyBigint = (_p, v) => (typeof v === 'bigint' ? `${v}` : v);
+test.after.always(async t => {
+  t.context.shutdown?.();
+
+  const { observations, writeStats } = t.context;
+  if (writeStats) {
+    const lines = observations.map((o, ix) =>
+      JSON.stringify({ ix, ...o }, stringifyBigint),
+    );
+    await writeStats(lines.join('\n'));
+  }
+});
 
 const getResourceUsageStats = (
   controller: SwingsetController,
@@ -234,12 +246,10 @@ test.serial('iterate simulation several times', async t => {
     await sim.iteration(t, ix);
 
     const computrons = harness.totalComputronCount();
-    // const snapshots = [...snapStore.listAllSnapshots()];
     const observation = {
       id: `iter-${ix}`,
       time: Date.now(),
       computrons,
-      // snapshots,
       ...getResourceUsageStats(controller, storage.data),
     };
     observations.push(observation);
@@ -251,17 +261,4 @@ test.serial('iterate simulation several times', async t => {
   await doCleanupAndSnapshot('final');
 
   await writeFile('kernel-1.json', JSON.stringify(controller.dump(), null, 2));
-});
-
-const stringifyBigint = (_p, v) => (typeof v === 'bigint' ? `${v}` : v);
-
-test.serial('analyze observations', async t => {
-  const { observations, writeStats } = t.context;
-  if (writeStats) {
-    const lines = observations.map(
-      (o, ix) => `${JSON.stringify({ ix, ...o }, stringifyBigint)}\n`,
-    );
-    await writeStats(lines.join(''));
-  }
-  t.pass();
 });
