@@ -1,5 +1,5 @@
 import { Fail, q } from '@endo/errors';
-import { E } from '@endo/far';
+import { E, passStyleOf } from '@endo/far';
 import {
   AmountShape,
   BrandShape,
@@ -145,6 +145,7 @@ const trace = makeTracer('SmrtWlt');
 
 /**
  * @typedef {{ updated: 'offerStatus'; status: OfferStatus }
+ *   | { updated: 'invoke'; result: { passStyle: string } }
  *   | { updated: 'balance'; currentAmount: Amount }
  *   | { updated: 'walletAction'; status: { error: string } }} UpdateRecord
  *   Record of an update to the state of this wallet.
@@ -1095,7 +1096,14 @@ export const prepareSmartWallet = (baggage, shared) => {
           const c = new Compartment(endowments);
           trace('evalExpr', expr, 'with', Object.keys(endowments));
           const x = await c.evaluate(expr);
-          trace('eval result', x);
+          const ps = passStyleOf(x);
+          trace('eval result', ps, x);
+
+          const { updateRecorderKit } = this.state;
+          void updateRecorderKit.recorder.write({
+            updated: 'invoke',
+            result: { passStyle: ps },
+          });
         },
       },
 
