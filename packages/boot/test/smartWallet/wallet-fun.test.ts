@@ -27,19 +27,15 @@ import { start as startPriceContract } from './wallet-fun.contract.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext as TC,
-} from './walletFactory.ts';
+} from '../bootstrapTests/walletFactory.ts';
 import { slotToBoardRemote } from '@agoric/internal/src/marshal.js';
 
 const nodeRequire = createRequire(import.meta.url);
 
 const test = anyTest as TestFn<TC>;
 
-test.before(async t => {
-  t.context = await makeWalletFactoryContext(t);
-});
-test.after.always(t => {
-  return t.context.shutdown && t.context.shutdown();
-});
+test.before(async t => (t.context = await makeWalletFactoryContext(t)));
+test.after.always(t => t.context.shutdown && t.context.shutdown());
 
 const startContract = async <SF extends ContractStartFunction>(
   t: ExecutionContext<TC>,
@@ -364,4 +360,8 @@ test('upgrade a deployed contract', async t => {
 
   await admin.restart(t);
   t.is(await EV(subject.publicFacet).getIncarnation(), 2n);
+});
+
+test('require staked BLD for evalExpr', async t => {
+  t.fail('TODO');
 });
