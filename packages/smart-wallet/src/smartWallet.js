@@ -1060,6 +1060,7 @@ export const prepareSmartWallet = (baggage, shared) => {
          * @param {string} expr
          */
         async evalExpr(expr) {
+          const { fromEntries } = Object;
           trace(
             'TODO: validate Justin syntax; see https://github.com/endojs/Jessie/pull/121#discussion_r1988126110',
           );
@@ -1067,6 +1068,7 @@ export const prepareSmartWallet = (baggage, shared) => {
           const { namesByAddress } = this.state;
           const { nameHub, nameAdmin } = this.state.my;
           const endowments = {
+            my: fromEntries(nameHub.entries()),
             E,
             harden,
             assert,
