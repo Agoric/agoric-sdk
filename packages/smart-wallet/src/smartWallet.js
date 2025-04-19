@@ -52,6 +52,8 @@ import { prepareOfferWatcher, makeWatchOfferOutcomes } from './offerWatcher.js';
  * @import {InvitationDetails, PaymentPKeywordRecord, Proposal, UserSeat} from '@agoric/zoe';
  * @import {EReturn} from '@endo/far';
  * @import {OfferId, OfferStatus} from './offers.js';
+ * @import {StakingView} from './types.js';
+ * @import {Remote} from '@agoric/internal';
  */
 
 const trace = makeTracer('SmrtWlt');
@@ -510,9 +512,9 @@ export const prepareSmartWallet = (baggage, shared) => {
       evalExpr: M.callWhen(M.string()).returns(M.undefined()),
     }),
     self: M.interface('selfFacetI', {
-      handleBridgeAction: M.call(shape.StringCapData, M.boolean()).returns(
-        M.promise(),
-      ),
+      handleBridgeAction: M.call(shape.StringCapData)
+        .optional(M.boolean(), M.bigint())
+        .returns(M.promise()),
       getDepositFacet: M.call().returns(M.remotable()),
       getOffersFacet: M.call().returns(M.remotable()),
       getCurrentSubscriber: M.call().returns(SubscriberShape),
@@ -1115,9 +1117,10 @@ export const prepareSmartWallet = (baggage, shared) => {
          * @param {import('@endo/marshal').CapData<string | null>} actionCapData
          *   of type BridgeAction
          * @param {boolean} [canSpend]
+         * @param {NatValue} [stake]
          * @returns {Promise<void>}
          */
-        handleBridgeAction(actionCapData, canSpend = false) {
+        handleBridgeAction(actionCapData, canSpend = false, stake) {
           const { facets } = this;
           const { offers } = facets;
           const { publicMarshaller } = shared;
@@ -1148,6 +1151,9 @@ export const prepareSmartWallet = (baggage, shared) => {
                     return offers.tryExitOffer(action.offerId);
                   }
                   case 'evalExpr': {
+                    const EVAL_BOND = 10_000;
+                    (typeof stake === 'bigint' && stake > EVAL_BOND) ||
+                      Fail`insufficient BLD staked (${stake}) for evalExpr; ${EVAL_BOND} required`;
                     return facets.invoke.evalExpr(action.expr);
                   }
                   default: {

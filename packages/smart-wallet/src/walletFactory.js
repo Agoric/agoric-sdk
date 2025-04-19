@@ -20,6 +20,8 @@ import { shape } from './typeGuards.js';
 /**
  * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {NameHub} from '@agoric/vats';
+ * @import {StakingView} from './types.js';
+ * @import {Remote} from '@agoric/internal';
  */
 
 const trace = makeTracer('WltFct');
@@ -155,6 +157,7 @@ export const makeAssetRegistry = assetPublisher => {
  *     import('@agoric/vats').ScopedBridgeManager<'wallet'>
  *   >;
  *   walletReviver?: ERef<WalletReviver>;
+ *   stakingView: Remote<StakingView>;
  * }} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
@@ -163,7 +166,8 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   const { agoricNames, board, assetPublisher } = zcf.getTerms();
 
   const zoe = zcf.getZoeService();
-  const { storageNode, walletBridgeManager, walletReviver } = privateArgs;
+  const { stakingView, storageNode, walletBridgeManager, walletReviver } =
+    privateArgs;
 
   /** @type {MapStore<string, import('./smartWallet.js').SmartWallet>} */
   const walletsByAddress = provideDurableMapStore(baggage, WALLETS_BY_ADDRESS);
@@ -216,8 +220,12 @@ export const prepare = async (zcf, privateArgs, baggage) => {
             : walletsByAddress.get(address); // or throw
         const wallet = await walletP;
 
-        console.log('walletFactory:', { wallet, actionCapData });
-        return E(wallet).handleBridgeAction(actionCapData, canSpend);
+        // TODO: consider doing this only in the evalExpr case:
+        // instantiate an exoClass with the addr
+        const stake = await E(stakingView).get(address);
+
+        console.log('walletFactory:', { wallet, actionCapData, stake });
+        return E(wallet).handleBridgeAction(actionCapData, canSpend, stake);
       },
     },
   );
