@@ -374,4 +374,40 @@ test('use stakingView to get BLD stake', async t => {
   t.true(bldQty > 0n);
 });
 
-test.todo('require staked BLD for evalExpr');
+test('require staked BLD for evalExpr', async t => {
+  const { walletFactoryDriver } = t.context;
+  const { EV } = t.context.runUtils;
+  const stakingView = (await EV.vat('bootstrap').consumeItem(
+    'stakingView',
+  )) as StakingView;
+
+  const makeActor = (addr: string) => {
+    const wdP = walletFactoryDriver.provideSmartWallet(addr, stakingView);
+    return harden({
+      addr,
+      wdP,
+      evalExpr: async (expr: string) => {
+        const wd = await wdP;
+        await wd.evalExpr(expr);
+        const up = wd.getLatestUpdateRecord();
+        t.log('eval', addr, up);
+        if (up.updated === 'walletAction' && 'error' in up.status) {
+          throw Error(up.status.error);
+        }
+        if (up.updated === 'invoke') {
+          return up.result;
+        }
+        throw Error(up.updated);
+      },
+    });
+  };
+  const who = {
+    A: makeActor('agoric1notMuchStaked'),
+    B: makeActor('agoric1has50_000staked'),
+  };
+
+  await t.throwsAsync(who.A.evalExpr('1+1'), {
+    message: /insufficient BLD staked.*/,
+  });
+  t.like(await who.B.evalExpr('2+2'), { passStyle: 'number' });
+});
