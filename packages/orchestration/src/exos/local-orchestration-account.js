@@ -703,18 +703,10 @@ export const prepareLocalOrchestrationAccountKit = (
             );
             trace('got transfer route', route);
 
-            // set a `timeoutTimestamp` if caller does not supply either `timeoutHeight` or `timeoutTimestamp`
-            // TODO #9324 what's a reasonable default? currently 5 minutes
-            const timeoutTimestampVowOrValue =
-              opts?.timeoutTimestamp ??
-              (opts?.timeoutHeight
-                ? 0n
-                : asVow(() => E(timestampHelper).getTimeoutTimestampNS()));
-
             // don't resolve the vow until the transfer is confirmed on remote
             // and reject vow if the transfer fails for any reason
             const resultV = watch(
-              timeoutTimestampVowOrValue,
+              timestampHelper.vowOrValueFromOpts(opts),
               this.facets.transferWatcher,
               {
                 opts: rest,

@@ -366,7 +366,9 @@ test('slow path: forward to EUD; remove pending tx', async t => {
             encoding: 'bech32',
             value: 'noble1test',
           },
+          timeout: '10m',
         },
+        timeoutRelativeSeconds: 600n,
       },
     ],
   ]);
@@ -442,7 +444,9 @@ test('skip advance: forward to EUD; remove pending tx', async t => {
             encoding: 'bech32',
             value: 'noble1test',
           },
+          timeout: '10m',
         },
+        timeoutRelativeSeconds: 600n,
       },
     ],
   ]);
@@ -1023,7 +1027,12 @@ test('forward to Ethereum EUD', async t => {
   t.log('funds are forwarding; no interaction with LP');
   t.deepEqual(peekCalls(), []);
   t.deepEqual(accounts.settlement.callLog, [
-    ['transfer', intermediateRecipient, usdc.units(950)],
+    [
+      'transfer',
+      intermediateRecipient,
+      usdc.units(950),
+      { timeoutRelativeSeconds: 600n },
+    ],
   ]);
 
   t.deepEqual(
@@ -1192,7 +1201,14 @@ test('forward via cctp failed (MsgTransfer)', async t => {
   t.deepEqual(peekCalls(), [], 'Should not interact with LP repayer');
   t.deepEqual(
     accounts.settlement.callLog,
-    [['transfer', intermediateRecipient, usdc.units(950)]],
+    [
+      [
+        'transfer',
+        intermediateRecipient,
+        usdc.units(950),
+        { timeoutRelativeSeconds: 600n },
+      ],
+    ],
     'Should attempt transfer to intermediate recipient',
   );
 
@@ -1267,7 +1283,14 @@ test('forward via cctp failed (MsgDepositForBurn)', async t => {
   t.deepEqual(peekCalls(), [], 'Should not interact with LP repayer');
   t.deepEqual(
     accounts.settlement.callLog,
-    [['transfer', intermediateRecipient, usdc.units(950)]],
+    [
+      [
+        'transfer',
+        intermediateRecipient,
+        usdc.units(950),
+        { timeoutRelativeSeconds: 600n },
+      ],
+    ],
     'Should attempt transfer to intermediate recipient',
   );
 
