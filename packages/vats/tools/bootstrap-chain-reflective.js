@@ -11,6 +11,8 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
 import { makeReflectionMethods } from '@agoric/swingset-vat/tools/vat-puppet.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { feeIssuerConfig } from '@agoric/vats/src/core/utils.js';
 import { makeBootstrap } from '../src/core/lib-boot.js';
 import * as basicBehaviorsNamespace from '../src/core/basic-behaviors.js';
 import * as chainBehaviorsNamespace from '../src/core/chain-behaviors.js';
@@ -70,6 +72,7 @@ export const buildRootObject = (vatPowers, bootstrapParameters, baggage) => {
   const manualTimer = buildManualTimer();
   let vatAdmin;
   const { promise: vatAdminP, resolve: captureVatAdmin } = makePromiseKit();
+  const { promise: zoePromise, resolve: captureZoe } = makePromiseKit();
   void vatAdminP.then(value => (vatAdmin = value)); // for better debugging
   /** @typedef {{ root: object; incarnationNumber?: number }} VatRecord */
   /**
@@ -81,6 +84,8 @@ export const buildRootObject = (vatPowers, bootstrapParameters, baggage) => {
   /** @type {Map<string, VatRecord | DynamicVatRecord>} */
   const vatRecords = new Map();
   const devicesByName = new Map();
+
+  const contractAdminFacetMaps = new Map();
 
   const { baseManifest: manifestName = 'MINIMAL', addBehaviors = [] } =
     bootstrapParameters;
@@ -155,6 +160,23 @@ export const buildRootObject = (vatPowers, bootstrapParameters, baggage) => {
     clearBridgeHandler: () =>
       vatPowers.D(devicesByName.get('bridge')).unregisterInboundHandler(),
 
+    buildZoe: async () => {
+      const zoeVat = vatRecords.get('zoe');
+      if (!zoeVat) return;
+
+      await vatAdminP;
+      const zoeKit = await E(zoeVat.root).buildZoe(
+        vatAdmin,
+        feeIssuerConfig,
+        'zcf',
+      );
+      const { zoeService: zoe } = zoeKit;
+      captureZoe(zoe);
+      return zoe;
+    },
+
+    getZoeRoot: () => zoePromise,
+
     /**
      * @param {string} vatName
      * @param {string} [bundleCapName]
@@ -170,6 +192,44 @@ export const buildRootObject = (vatPowers, bootstrapParameters, baggage) => {
       });
       vatRecords.set(vatName, { root, adminNode, bundleCap });
       return root;
+    },
+
+    /**
+     * @param {string} bundleName
+     * @param {object} privateArgs
+     * @param {object} terms
+     */
+    startContract: async (bundleName, privateArgs, terms) => {
+      await vatAdminP;
+
+      const bundleId = await E(vatAdmin).getBundleIDByName(bundleName);
+      const installation = await E(zoePromise).installBundleID(bundleId);
+
+      const facets = await E(zoePromise).startInstance(
+        installation,
+        privateArgs,
+        terms,
+      );
+
+      const { adminFacet, publicFacet } = facets;
+      contractAdminFacetMaps.set(bundleName, adminFacet);
+
+      return publicFacet;
+    },
+
+    /**
+     * @param {string} bundleName
+     */
+    upgradeContract: async bundleName => {
+      const adminFacet = contractAdminFacetMaps.get(bundleName);
+      adminFacet || Fail`unknown vat name: ${q(bundleName)}`;
+
+      const bundleId = await E(vatAdmin).getBundleIDByName(bundleName);
+
+      const { incarnationNumber } =
+        await E(adminFacet).upgradeContract(bundleId);
+
+      return incarnationNumber;
     },
 
     /**

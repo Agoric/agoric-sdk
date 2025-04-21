@@ -1,58 +1,22 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { BridgeId, deepCopyJsonable } from '@agoric/internal';
-import { buildVatController } from '@agoric/swingset-vat';
-import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import { Fail } from '@endo/errors';
 import { makeTagged } from '@endo/marshal';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { importSpec, makeScenario } from '@aglocal/boot/test/tools/scenario.js';
 import type { IssuerKit } from '@agoric/ertp/src/types.js';
 import { matchAmount, matchIter, matchRef } from '../../tools/supports.js';
 
 import type { buildRootObject as buildTestMintVat } from './vat-mint.js';
 
 const bfile = name => new URL(name, import.meta.url).pathname;
-const importSpec = async spec =>
-  new URL(importMetaResolve(spec, import.meta.url)).pathname;
 
 const makeCallOutbound = t => (srcID, obj) => {
   t.log(`callOutbound(${srcID}, ${obj})`);
   return obj;
 };
 
-const makeScenario = async (
-  t: any,
-  kernelConfigOverrides: Partial<SwingSetConfig> = {},
-  deviceEndowments: Record<string, unknown> = {},
-) => {
-  const config: SwingSetConfig = {
-    includeDevDependencies: true, // for vat-data
-    bootstrap: 'bootstrap',
-    defaultReapInterval: 'never',
-    vats: {
-      bootstrap: {
-        sourceSpec: await importSpec(
-          '@agoric/vats/tools/bootstrap-chain-reflective.js',
-        ),
-      },
-    },
-    bundleCachePath: 'bundles',
-    ...kernelConfigOverrides,
-  };
-
-  const c = await buildVatController(
-    config,
-    undefined,
-    undefined,
-    deviceEndowments,
-  );
-  t.teardown(c.shutdown);
-  c.pinVatRoot('bootstrap');
-
-  await c.run();
-  const runUtils = makeRunUtils(c);
-  return runUtils;
-};
 const commonBundles = {
   agoricNames: {
     sourceSpec: await importSpec('@agoric/vats/src/vat-agoricNames.js'),
@@ -67,7 +31,10 @@ test('upgrade vat-board', async t => {
     },
   };
 
-  const { EV } = await makeScenario(t, { bundles });
+  const { EV } = await makeScenario({
+    testContext: t,
+    kernelConfigOverrides: { bundles },
+  });
 
   t.log('create initial version');
   const boardVatConfig = {
@@ -102,7 +69,10 @@ test('upgrade bootstrap vat', async t => {
       sourceSpec: await importSpec('@agoric/vats/src/core/boot-chain.js'),
     },
   };
-  const { EV } = await makeScenario(t, { bundles });
+  const { EV } = await makeScenario({
+    testContext: t,
+    kernelConfigOverrides: { bundles },
+  });
 
   t.log('create initial version');
   const chainVatConfig = {
@@ -134,10 +104,10 @@ test('upgrade vat-bridge', async t => {
   };
 
   const expectedStorageValues = ['abc', 'def'];
-  const { EV } = await makeScenario(
-    t,
-    { bundles, devices },
-    {
+  const { EV } = await makeScenario({
+    testContext: t,
+    kernelConfigOverrides: { bundles, devices },
+    deviceEndowments: {
       bridge: {
         t,
         callOutbound: makeCallOutbound(t),
@@ -151,7 +121,7 @@ test('upgrade vat-bridge', async t => {
         },
       },
     },
-  );
+  });
 
   t.log('create initial version');
   const bridgeVatConfig = {
@@ -253,10 +223,10 @@ test('upgrade vat-bank', async t => {
     bridge: { sourceSpec: bfile('./device-bridge.js') },
   };
 
-  const { EV } = await makeScenario(
-    t,
-    { bundles, devices },
-    {
+  const { EV } = await makeScenario({
+    testContext: t,
+    kernelConfigOverrides: { bundles, devices },
+    deviceEndowments: {
       bridge: {
         t,
         callOutbound: makeCallOutbound(t),
@@ -273,7 +243,7 @@ test('upgrade vat-bank', async t => {
         },
       },
     },
-  );
+  });
 
   t.log('create initial version');
   await EV.vat('bootstrap').clearBridgeHandler();
@@ -439,7 +409,10 @@ test('upgrade vat-priceAuthority', async t => {
     },
   };
 
-  const { EV } = await makeScenario(t, { bundles });
+  const { EV } = await makeScenario({
+    testContext: t,
+    kernelConfigOverrides: { bundles },
+  });
 
   t.log('create initial version');
   const priceAuthorityVatConfig = {
@@ -482,7 +455,10 @@ test('upgrade vat-vow', async t => {
     },
   };
 
-  const { EV } = await makeScenario(t, { bundles });
+  const { EV } = await makeScenario({
+    testContext: t,
+    kernelConfigOverrides: { bundles },
+  });
 
   t.log('create initial version, metered');
   const vatAdmin = await EV.vat('bootstrap').getVatAdmin();
