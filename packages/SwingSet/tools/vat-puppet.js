@@ -9,9 +9,13 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { objectMap } from '@agoric/internal';
 
 /**
+ * @typedef {[target: unknown, method: string, ...args: unknown[]]} SendArgs
+ */
+
+/**
  * @callback Die
  * @param {unknown} completion
- * @param {[target: unknown, method: string, ...args: unknown[]]} [finalSend]
+ * @param {SendArgs} [finalSend]
  */
 
 /**
@@ -27,17 +31,14 @@ export const makeReflectionMethods = (vatPowers, baggage) => {
   /** @type {Map<object, CallLog>} */
   const callLogsByRemotable = new Map();
   const heldInHeap = [];
+
+  /**
+   * @param {SendArgs[0]} target
+   * @param {SendArgs[1]} method
+   * @param  {...SendArgs[2]} args
+   * @returns {any}
+   */
   const send = (target, method, ...args) => E(target)[method](...args);
-  const makeSpy = (value, name, callLog) => {
-    const spyName = `get ${name}`;
-    const spy = {
-      [spyName](...args) {
-        callLog.push([name, ...args]);
-        return value;
-      },
-    }[spyName];
-    return spy;
-  };
 
   return {
     /** @type {Die} */
@@ -84,13 +85,27 @@ export const makeReflectionMethods = (vatPowers, baggage) => {
      * @param {Record<string, any>} [fields]
      */
     makeRemotable: (label = 'Remotable', fields = {}) => {
-      /** @type {CallLog} */
-      const callLog = [];
-      const methods = objectMap(fields, (value, name) =>
-        makeSpy(value, name, callLog),
-      );
-      const remotable = Far(label, { ...methods });
-      callLogsByRemotable.set(remotable, callLog);
+      let remotable;
+
+      const makeSpy = (value, name) => {
+        const spyName = `get ${name}`;
+        const spy = {
+          [spyName](...args) {
+            let existingLogs = callLogsByRemotable.get(remotable);
+            if (!existingLogs) existingLogs = [];
+            callLogsByRemotable.set(remotable, [
+              ...existingLogs,
+              [name, ...args],
+            ]);
+            return value;
+          },
+        }[spyName];
+        return spy;
+      };
+
+      const methods = objectMap(fields, makeSpy);
+      remotable = Far(label, { ...methods });
+      callLogsByRemotable.set(remotable, /** @type {CallLog} */ ([]));
       return remotable;
     },
 

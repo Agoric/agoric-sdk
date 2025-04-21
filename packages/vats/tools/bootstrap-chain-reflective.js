@@ -152,6 +152,9 @@ export const buildRootObject = (vatPowers, bootstrapParameters, baggage) => {
       return root;
     },
 
+    clearBridgeHandler: () =>
+      vatPowers.D(devicesByName.get('bridge')).unregisterInboundHandler(),
+
     /**
      * @param {string} vatName
      * @param {string} [bundleCapName]
@@ -159,9 +162,10 @@ export const buildRootObject = (vatPowers, bootstrapParameters, baggage) => {
      * @returns {Promise<DynamicVatRecord['root']>} root object of the new vat
      */
     createVat: async (vatName, bundleCapName = vatName, vatOptions = {}) => {
+      const { vatParameters = {} } = vatOptions;
       const bundleCap = await E(vatAdminP).getNamedBundleCap(bundleCapName);
       const { root, adminNode } = await E(vatAdminP).createVat(bundleCap, {
-        vatParameters: {},
+        vatParameters,
         ...vatOptions,
       });
       vatRecords.set(vatName, { root, adminNode, bundleCap });

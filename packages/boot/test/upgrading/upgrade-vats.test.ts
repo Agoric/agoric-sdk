@@ -32,7 +32,7 @@ const makeScenario = async (
     vats: {
       bootstrap: {
         sourceSpec: await importSpec(
-          '@agoric/swingset-vat/tools/bootstrap-relay.js',
+          '@agoric/vats/tools/bootstrap-chain-reflective.js',
         ),
       },
     },
@@ -53,9 +53,15 @@ const makeScenario = async (
   const runUtils = makeRunUtils(c);
   return runUtils;
 };
+const commonBundles = {
+  agoricNames: {
+    sourceSpec: await importSpec('@agoric/vats/src/vat-agoricNames.js'),
+  },
+};
 
 test('upgrade vat-board', async t => {
   const bundles = {
+    ...commonBundles,
     board: {
       sourceSpec: await importSpec('@agoric/vats/src/vat-board.js'),
     },
@@ -68,15 +74,20 @@ test('upgrade vat-board', async t => {
     name: 'board',
     bundleCapName: 'board',
   };
-  const boardRoot = await EV.vat('bootstrap').createVat(boardVatConfig);
+  const boardRoot = await EV.vat('bootstrap').createVat(
+    boardVatConfig.name,
+    boardVatConfig.bundleCapName,
+  );
   const board = await EV(boardRoot).getBoard();
   const thing = await EV.vat('bootstrap').makeRemotable('Thing', {});
   const thingId = await EV(board).getId(thing);
   t.regex(thingId, /^board0[0-9]+$/);
 
   t.log('now perform the null upgrade');
-  const { incarnationNumber } =
-    await EV.vat('bootstrap').upgradeVat(boardVatConfig);
+  const incarnationNumber = await EV.vat('bootstrap').upgradeVat(
+    boardVatConfig.name,
+    boardVatConfig.bundleCapName,
+  );
   t.is(incarnationNumber, 1, 'Board vat must be upgraded');
   const board2 = await EV(boardRoot).getBoard();
   matchRef(t, board2, board, 'must get the same board reference');
@@ -84,34 +95,38 @@ test('upgrade vat-board', async t => {
   matchRef(t, actualThing, thing, 'must get original value back');
 });
 
-test.failing('upgrade bootstrap vat', async t => {
+test('upgrade bootstrap vat', async t => {
   const bundles = {
+    ...commonBundles,
     chain: {
       sourceSpec: await importSpec('@agoric/vats/src/core/boot-chain.js'),
     },
   };
-  // @ts-expect-error error in skipped test
-  const { EV } = await makeScenario(t, bundles);
+  const { EV } = await makeScenario(t, { bundles });
 
   t.log('create initial version');
   const chainVatConfig = {
     name: 'chain',
     bundleCapName: 'chain',
   };
-  const chainRoot = await EV.vat('bootstrap').createVat(chainVatConfig);
-  await EV(chainRoot)
-    .bootstrap({}, {})
-    .catch(problem => t.log('TODO: address problem:', problem));
+
+  await EV.vat('bootstrap').createVat(
+    chainVatConfig.name,
+    chainVatConfig.bundleCapName,
+  );
 
   t.log('now perform the null upgrade');
 
-  const { incarnationNumber } =
-    await EV.vat('bootstrap').upgradeVat(chainVatConfig);
+  const incarnationNumber = await EV.vat('bootstrap').upgradeVat(
+    chainVatConfig.name,
+    chainVatConfig.bundleCapName,
+  );
   t.is(incarnationNumber, 1, 'vat must be upgraded');
 });
 
 test('upgrade vat-bridge', async t => {
   const bundles = {
+    ...commonBundles,
     bridge: { sourceSpec: await importSpec('@agoric/vats/src/vat-bridge.js') },
   };
   const devices = {
@@ -143,7 +158,13 @@ test('upgrade vat-bridge', async t => {
     name: 'bridge',
     bundleCapName: 'bridge',
   };
-  const bridgeRoot = await EV.vat('bootstrap').createVat(bridgeVatConfig);
+
+  await EV.vat('bootstrap').clearBridgeHandler();
+
+  const bridgeRoot = await EV.vat('bootstrap').createVat(
+    bridgeVatConfig.name,
+    bridgeVatConfig.bundleCapName,
+  );
 
   await t.throwsAsync(
     () => EV(bridgeRoot).provideManagerForBridge(1),
@@ -182,20 +203,22 @@ test('upgrade vat-bridge', async t => {
   );
   await EV(storageBridge).initHandler(storageHandler);
   t.deepEqual(
-    await EV.vat('bootstrap').getLogForRemotable(storageHandler),
+    await EV.vat('bootstrap').getCallLogForRemotable(storageHandler),
     [],
     'log must start empty',
   );
   await EV(storageBridge).fromBridge('storage handler is good');
   t.deepEqual(
-    await EV.vat('bootstrap').getLogForRemotable(storageHandler),
+    await EV.vat('bootstrap').getCallLogForRemotable(storageHandler),
     [['fromBridge', 'storage handler is good']],
     'log must show one handler call',
   );
 
   t.log('now perform the null upgrade');
-  const { incarnationNumber } =
-    await EV.vat('bootstrap').upgradeVat(bridgeVatConfig);
+  const incarnationNumber = await EV.vat('bootstrap').upgradeVat(
+    bridgeVatConfig.name,
+    bridgeVatConfig.bundleCapName,
+  );
 
   t.is(incarnationNumber, 1, 'Bridge vat must be upgraded');
 
@@ -210,7 +233,7 @@ test('upgrade vat-bridge', async t => {
 
   await EV(storageBridge).fromBridge('storage handler is still good');
   t.deepEqual(
-    await EV.vat('bootstrap').getLogForRemotable(storageHandler),
+    await EV.vat('bootstrap').getCallLogForRemotable(storageHandler),
     [
       ['fromBridge', 'storage handler is good'],
       ['fromBridge', 'storage handler is still good'],
@@ -221,6 +244,7 @@ test('upgrade vat-bridge', async t => {
 
 test('upgrade vat-bank', async t => {
   const bundles = {
+    ...commonBundles,
     bank: { sourceSpec: await importSpec('@agoric/vats/src/vat-bank.js') },
     bridge: { sourceSpec: await importSpec('@agoric/vats/src/vat-bridge.js') },
     mint: { sourceSpec: bfile('./vat-mint.js') },
@@ -252,6 +276,8 @@ test('upgrade vat-bank', async t => {
   );
 
   t.log('create initial version');
+  await EV.vat('bootstrap').clearBridgeHandler();
+
   const bridgeVatConfig = {
     name: 'bridge',
     bundleCapName: 'bridge',
@@ -264,10 +290,17 @@ test('upgrade vat-bank', async t => {
     name: 'mint',
     bundleCapName: 'mint',
   };
-  const bridgeRoot = await EV.vat('bootstrap').createVat(bridgeVatConfig);
-  const bankRoot: BankVat = await EV.vat('bootstrap').createVat(bankVatConfig);
-  const mintRoot: ReturnType<typeof buildTestMintVat> =
-    await EV.vat('bootstrap').createVat(mintVatConfig);
+  const bridgeRoot = await EV.vat('bootstrap').createVat(
+    bridgeVatConfig.name,
+    bridgeVatConfig.bundleCapName,
+  );
+  const bankRoot: BankVat = await EV.vat('bootstrap').createVat(
+    bankVatConfig.name,
+    bankVatConfig.bundleCapName,
+  );
+  const mintRoot: ReturnType<typeof buildTestMintVat> = await EV.vat(
+    'bootstrap',
+  ).createVat(mintVatConfig.name, mintVatConfig.bundleCapName);
 
   t.log(`create a non-bridged bank manager`);
   const noBridgeMgr = await EV(bankRoot).makeBankManager();
@@ -337,8 +370,10 @@ test('upgrade vat-bank', async t => {
   matchIter(t, await EV(bridgedIterator).next(), abcAsset);
 
   t.log('now perform the null upgrade');
-  const { incarnationNumber } =
-    await EV.vat('bootstrap').upgradeVat(bankVatConfig);
+  const incarnationNumber = await EV.vat('bootstrap').upgradeVat(
+    bankVatConfig.name,
+    bankVatConfig.bundleCapName,
+  );
 
   t.is(incarnationNumber, 1, 'Bank vat must be upgraded');
 
@@ -398,6 +433,7 @@ test('upgrade vat-bank', async t => {
 
 test('upgrade vat-priceAuthority', async t => {
   const bundles = {
+    ...commonBundles,
     priceAuthority: {
       sourceSpec: await importSpec('@agoric/vats/src/vat-priceAuthority.js'),
     },
@@ -412,7 +448,10 @@ test('upgrade vat-priceAuthority', async t => {
   };
   const priceAuthorityRoot: PriceAuthorityVat = await EV.vat(
     'bootstrap',
-  ).createVat(priceAuthorityVatConfig);
+  ).createVat(
+    priceAuthorityVatConfig.name,
+    priceAuthorityVatConfig.bundleCapName,
+  );
 
   const registry = await EV(priceAuthorityRoot).getRegistry();
 
@@ -421,8 +460,9 @@ test('upgrade vat-priceAuthority', async t => {
   // so we'll have to test that elsewhere.
 
   t.log('now perform the null upgrade');
-  const { incarnationNumber } = await EV.vat('bootstrap').upgradeVat(
-    priceAuthorityVatConfig,
+  const incarnationNumber = await EV.vat('bootstrap').upgradeVat(
+    priceAuthorityVatConfig.name,
+    priceAuthorityVatConfig.bundleCapName,
   );
   t.is(incarnationNumber, 1, 'vat must be reincarnated');
 
@@ -436,6 +476,7 @@ test('upgrade vat-priceAuthority', async t => {
 
 test('upgrade vat-vow', async t => {
   const bundles = {
+    ...commonBundles,
     vow: {
       sourceSpec: bfile('./vat-vow.js'),
     },
@@ -451,7 +492,11 @@ test('upgrade vat-vow', async t => {
     bundleCapName: 'vow',
   };
   const vatOptions = { managerType: 'xs-worker', meter };
-  const vowRoot = await EV.vat('bootstrap').createVat(vowVatConfig, vatOptions);
+  const vowRoot = await EV.vat('bootstrap').createVat(
+    vowVatConfig.name,
+    vowVatConfig.bundleCapName,
+    vatOptions,
+  );
 
   const makeFakeVowKit = async () => {
     const internalPromiseKit = await EV.vat('bootstrap').makePromiseKit();
@@ -510,8 +555,10 @@ test('upgrade vat-vow', async t => {
   });
 
   t.log('restart');
-  const { incarnationNumber } =
-    await EV.vat('bootstrap').upgradeVat(vowVatConfig);
+  const incarnationNumber = await EV.vat('bootstrap').upgradeVat(
+    vowVatConfig.name,
+    vowVatConfig.bundleCapName,
+  );
   t.is(incarnationNumber, 1, 'vat must be reincarnated');
 
   t.log('test incarnation 1');
