@@ -7,6 +7,7 @@ import { Far, E } from '@endo/far';
 
 /**
  * @import {ERef} from '@endo/far';
+ * @import {MapStore} from '@agoric/store';
  */
 
 /** @type {{ onReset: (firstTime: Promise<boolean>) => void}} */
