@@ -13,8 +13,7 @@ export const panic = (err = RangeError('Panic')) => {
   console.error('Panic', err);
   if (typeof globalThis[PanicEndowmentSymbol] === 'function') {
     /** @type {never} */ (globalThis[PanicEndowmentSymbol](err));
-  }
-  if (typeof process?.exit === 'function') {
+  } else if (typeof process?.exit === 'function') {
     process.exit(process.exitCode || 112);
   }
   for (;;); // What else can we do?
