@@ -30,12 +30,9 @@ import { prepareZcMint } from './zcfMint.js';
 import { ZcfI } from './typeGuards.js';
 import '../internal-types.js';
 
-/// <reference path="../internal-types.js" />
-
 /**
  * @import {Baggage} from '@agoric/vat-data';
  * @import {IssuerOptionsRecord} from '@agoric/ertp';
- * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
  * @import {ZoeIssuerRecord, ZCFRegisterFeeMint, ContractStartFn, SetTestJig} from './types.js';
  */
 

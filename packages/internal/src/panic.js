@@ -1,7 +1,5 @@
 /* global process globalThis */
 
-import { Fail } from '@endo/errors';
-
 export const PanicEndowmentSymbol = Symbol.for('@endo panic');
 
 /**
@@ -13,31 +11,24 @@ export const PanicEndowmentSymbol = Symbol.for('@endo panic');
  */
 export const panic = (err = RangeError('Panic')) => {
   console.error('Panic', err);
-  if (typeof process?.exit === 'function') {
-    process.exit(process.exitCode || 112);
-  }
   if (typeof globalThis[PanicEndowmentSymbol] === 'function') {
     /** @type {never} */ (globalThis[PanicEndowmentSymbol](err));
   }
+  if (typeof process?.exit === 'function') {
+    process.exit(process.exitCode || 112);
+  }
   for (;;); // What else can we do?
+  // According to the JavaScript spec, it is indeed impossible for execution
+  // to proceed within this so-called "agent" (vat, thread, worker) after
+  // this infinite loop.
+  // However, we know that some engines/hosts, such as some browsers,
+  // violate the spec and somehow resume execution within the same agent.
+  // TODO find out the behavior of those violations, and somehow poison
+  // continued execution of this agent to minimize the danger it might do
+  // damage by further computing using corrupted data.
 };
 harden(panic);
 
 /**
  * @typedef {typeof panic} Panic
  */
-
-/**
- * @param {Panic} endowedPanic
- */
-export const endowBackupPanic = endowedPanic => {
-  const oldEndowedPanic = globalThis[PanicEndowmentSymbol];
-  if (typeof oldEndowedPanic === 'function') {
-    if (oldEndowedPanic === endowedPanic) {
-      return;
-    }
-    throw Fail`Endowed backup panic already set to ${oldEndowedPanic}: ${endowedPanic}`;
-  }
-  globalThis[PanicEndowmentSymbol] = endowedPanic;
-};
-harden(endowBackupPanic);
