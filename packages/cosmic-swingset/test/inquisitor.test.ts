@@ -61,11 +61,7 @@ test('makeHelpers', async t => {
     }
     Fail`port ${q(destPortName)} not implemented for message ${msg}`;
   };
-  const env = {
-    ...process.env,
-    CHAIN_BOOTSTRAP_VAT_CONFIG: '@agoric/vm-config/decentral-core-config.json',
-  };
-  const testKit = await makeCosmicSwingsetTestKit(receiveBridgeSend, { env });
+  const testKit = await makeCosmicSwingsetTestKit(receiveBridgeSend);
   const { pushCoreEval, runNextBlock, swingStore, shutdown } = testKit;
   t.teardown(shutdown);
 

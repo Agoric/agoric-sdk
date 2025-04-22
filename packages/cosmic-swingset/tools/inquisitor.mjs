@@ -502,7 +502,7 @@ harden(wrapSubstore);
  * functionality into swing-store itself.
  *
  * @param {string} dbPath to a swingstore.sqlite file
- * @param {typeof wrapSubstore} wrapStore a function to replace swing-store sub-stores (kvStore/transcriptStore/etc.)
+ * @param {typeof wrapSubstore} [wrapStore] a function to replace swing-store sub-stores (kvStore/transcriptStore/etc.)
  */
 export const makeSwingStoreOverlay = (dbPath, wrapStore = wrapSubstore) => {
   /** @type {Array<[storeName: string, operation: string, ...args: unknown[]]>} */
