@@ -3,9 +3,10 @@
 NAME := $(shell sed -ne 's/.*"name": "\([^"]*\)".*/\1/p' package.json)
 VERSION := $(shell sed -ne 's/.*"version": "\([^"]*\)".*/\1/p' package.json)
 GIT_COMMIT = $(shell hash=`git rev-parse --short HEAD 2>/dev/null`; if test -n "$$hash"; then echo $$hash`git diff --quiet || echo -dirty`; else cat git-revision.txt; fi)
-PR_TARGET_REPO = ../../.git
+PR_TARGET_REPO = https://github.com/Agoric/agoric-sdk.git
 # TODO: figure out how to handle other branches like pismo-release
 PR_TARGET_BRANCH = master
+DOCKER := $(shell which docker)
 
 default: all
 
@@ -90,22 +91,35 @@ endif
 ###                           Protobuf                                    ###
 ###############################################################################
 
-proto-gen: proto-tools
-	PATH="${BIN}:$$PATH" ./scripts/protocgen.sh
+protoVer=0.15.3
+protoImageName=ghcr.io/cosmos/proto-builder:$(protoVer)
+protoImage=$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace $(protoImageName)
 
-proto-lint: proto-tools
-	${BIN}/buf lint
+proto-all: proto-format proto-lint proto-gen
 
-proto-check-breaking: proto-tools
-	${BIN}/buf breaking --against $(PR_TARGET_REPO)#branch=$(PR_TARGET_BRANCH),subdir=golang/cosmos
+proto-gen:
+	@echo "Generating Protobuf files"
+	@$(protoImage) sh ./scripts/protocgen.sh
 
-GOGO_PROTO_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/gogo/protobuf)
+proto-lint:
+	@$(protoImage) buf lint --error-format=json ./proto
+
+proto-check-breaking:
+	@$(protoImage) buf breaking --against $(PR_TARGET_REPO)#branch=$(PR_TARGET_BRANCH),subdir=golang/cosmos
+
+GOGO_PROTO_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/gogoproto)
 # GOOGLE_API_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/googleapis/googleapis)/google/api
-IBC_PROTO_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/ibc-go/v6)/proto/ibc/core
+IBC_PROTO_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/ibc-go/v7)/proto/ibc/core
 COSMOS_PROTO_PROTO_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/cosmos-proto)/proto/cosmos_proto
 COSMOS_SDK_PROTO_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/cosmos-sdk)/proto/cosmos
+COSMOS_SDK_AMINO_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/cosmos-sdk)/proto/amino
+
+# Needed for cosmic-proto.
+COSMOS_ICS23_URL = https://buf.build/cosmos/ics23/raw/main/-/cosmos/ics23/v1
 
 COSMOS_PROTO_TYPES = third_party/proto/cosmos_proto
+COSMOS_ICS23_TYPES = third_party/proto/cosmos/ics23/v1
+COSMOS_SDK_AMINO_TYPES = third_party/proto/amino
 GOGO_PROTO_TYPES  = third_party/proto/gogoproto
 GOOGLE_API_TYPES = third_party/proto/google/api
 GOOGLE_PROTO_TYPES = third_party/proto/google/protobuf
@@ -114,11 +128,16 @@ IBC_CLIENT_TYPES = third_party/proto/ibc/core/client/v1
 SDK_BASE_TYPES = third_party/proto/cosmos/base/v1beta1
 SDK_QUERY_TYPES = third_party/proto/cosmos/base/query/v1beta1
 SDK_UPGRADE_TYPES = third_party/proto/cosmos/upgrade/v1beta1
+SDK_MSG_TYPES = third_party/proto/cosmos/msg/v1
 
 proto-update-deps:
 	mkdir -p $(COSMOS_PROTO_TYPES)
 	url="$(COSMOS_PROTO_PROTO_URL)"; \
 	curl -sSL $$url/cosmos.proto > $(COSMOS_PROTO_TYPES)/cosmos.proto
+
+	mkdir -p $(COSMOS_ICS23_TYPES)
+	url="$(COSMOS_ICS23_URL)"; \
+	curl -sSL $$url/proofs.proto > $(COSMOS_ICS23_TYPES)/proofs.proto
 
 	mkdir -p $(GOGO_PROTO_TYPES)
 	url="$(GOGO_PROTO_URL)"; \
@@ -147,66 +166,15 @@ proto-update-deps:
 	mkdir -p $(SDK_QUERY_TYPES) && \
 	curl -sSL $$url/base/query/v1beta1/pagination.proto > $(SDK_QUERY_TYPES)/pagination.proto && \
 	mkdir -p $(SDK_UPGRADE_TYPES) && \
-	curl -sSL $$url/upgrade/v1beta1/upgrade.proto > $(SDK_UPGRADE_TYPES)/upgrade.proto
+	curl -sSL $$url/upgrade/v1beta1/upgrade.proto > $(SDK_UPGRADE_TYPES)/upgrade.proto && \
+	mkdir -p $(SDK_MSG_TYPES) && \
+	curl -sSL $$url/msg/v1/msg.proto > $(SDK_MSG_TYPES)/msg.proto
 
-UNAME_S ?= $(shell uname -s)
-UNAME_M ?= $(shell uname -m)
+	url="$(COSMOS_SDK_AMINO_URL)"; \
+	mkdir -p $(COSMOS_SDK_AMINO_TYPES) && \
+	curl -sSL $$url/amino.proto > $(COSMOS_SDK_AMINO_TYPES)/amino.proto
 
-BUF_VERSION ?= 1.0.0
-
-PROTOC_VERSION ?= 3.11.2
-ifeq ($(UNAME_S),Linux)
-  ifeq ($(UNAME_M),aarch64)
-    PROTOC_ZIP ?= protoc-${PROTOC_VERSION}-linux-aarch_64.zip
-  else
-    PROTOC_ZIP ?= protoc-${PROTOC_VERSION}-linux-x86_64.zip
-  endif
-endif
-ifeq ($(UNAME_S),Darwin)
-  PROTOC_ZIP ?= protoc-${PROTOC_VERSION}-osx-x86_64.zip
-endif
-
-proto-tools: proto-tools-stamp buf grpc-gateway-stamp
-
-proto-tools-stamp:
-	echo "Installing protoc compiler..."
-	mkdir -p "${BIN}"
-	(cd /tmp; \
-	curl -OL "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/${PROTOC_ZIP}"; \
-	unzip -o ${PROTOC_ZIP} -d "${BIN}/.." bin/protoc 'include/*'; \
-	rm -f ${PROTOC_ZIP})
-
-	echo "Installing protoc-gen-gocosmos..."
-	go install github.com/regen-network/cosmos-proto/protoc-gen-gocosmos
-
-	# Create dummy file to satisfy dependency and avoid
-	# rebuilding when this Makefile target is hit twice
-	# in a row
-	touch $@
-
-buf: buf-stamp
-
-buf-stamp:
-	echo "Installing buf..."
-	curl -sSL \
-    "https://github.com/bufbuild/buf/releases/download/v${BUF_VERSION}/buf-${UNAME_S}-${UNAME_M}" \
-    -o "${BIN}/buf" && \
-	chmod +x "${BIN}/buf"
-
-	touch $@
-
-GATEWAY_PKGS = \
-	github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway \
-	github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger \
-	google.golang.org/protobuf/cmd/protoc-gen-go
-
-grpc-gateway-stamp:
-	go install $(GATEWAY_PKGS)
-	touch $@
-
-tools-clean:
-	rm -f proto-tools-stamp buf-stamp grpc-gateway-stamp
-
+.PHONY: proto-all proto-gen proto-swagger-gen proto-format proto-lint proto-check-breaking proto-update-deps
 
 lint:
 	golangci-lint run

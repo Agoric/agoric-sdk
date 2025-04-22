@@ -10,12 +10,12 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/require"
 
+	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	dbm "github.com/tendermint/tm-db"
 
 	app "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/daemon/cmd"
@@ -42,10 +42,10 @@ func TestCLIFlags(t *testing.T) {
 		"abci-client-type":      "",
 		"address":               "",
 		"app-db-backend":        "",
+		"block_sync":            "",
 		"cpu-profile":           "",
 		"db_backend":            "",
 		"db_dir":                "",
-		"fast_sync":             "",
 		"genesis_hash":          "",
 		"grpc-only":             "",
 		"halt-height":           "",
@@ -93,6 +93,8 @@ func TestCLIFlags(t *testing.T) {
 		"grpc.max-recv-msg-size": "",
 		"grpc.max-send-msg-size": "",
 
+		"mempool.max-txs": "",
+
 		"p2p.external-address":       "",
 		"p2p.laddr":                  "",
 		"p2p.persistent_peers":       "",
@@ -101,7 +103,6 @@ func TestCLIFlags(t *testing.T) {
 		"p2p.seed_mode":              "",
 		"p2p.seeds":                  "",
 		"p2p.unconditional_peer_ids": "",
-		"p2p.upnp":                   "",
 
 		"rpc.grpc_laddr":  "",
 		"rpc.laddr":       "",
