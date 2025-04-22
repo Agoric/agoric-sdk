@@ -161,7 +161,7 @@ export const prepareSettler = (
   }: {
     /** e.g., `agoric-3` */
     currentChainReference: string;
-    chainHub: ChainHub;
+    chainHub: Pick<ChainHub, 'resolveAccountId'>;
     feeConfig: FeeConfig;
     getNobleICA: () => OrchestrationAccount<{ chainId: 'noble-1' }>;
     log?: LogFn;

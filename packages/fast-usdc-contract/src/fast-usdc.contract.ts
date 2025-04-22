@@ -141,7 +141,8 @@ export const contract = async (
     getNobleICA,
     vowTools: tools.vowTools,
     zcf,
-    chainHub,
+    // UNTIL we have an generic way to attenuate an Exo https://github.com/Agoric/agoric-sdk/issues/11309
+    chainHub: { resolveAccountId: chainHub.resolveAccountId.bind(chainHub) },
     currentChainReference: privateArgs.chainInfo.agoric.chainId,
   });
 
