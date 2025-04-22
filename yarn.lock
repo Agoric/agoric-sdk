@@ -821,6 +821,7 @@ __metadata:
     "@fast-check/ava": "npm:^2.0.1"
     anylogger: "npm:^0.21.0"
     ava: "npm:^5.3.0"
+    import-meta-resolve: "npm:^4.1.0"
     jessie.js: "npm:^0.3.4"
     tsd: "npm:^0.33.0"
   languageName: unknown
