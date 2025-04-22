@@ -4,6 +4,12 @@ import { M } from '@endo/patterns';
 
 /** @import {Amplify} from '@endo/exo'; */
 
+// This revocable kit implementation provides for both attenuation and
+// revocation, since both can be provided at the cost of one level of
+// indirection. But if you just need attenuation without revocation, better to
+// use the attenuator implementation in prepare-attenuator.js.
+// Please co-maintain these two modules.
+
 /**
  * @template [U=any]
  * @typedef {object} RevocableMakerKit
@@ -64,7 +70,7 @@ import { M } from '@endo/patterns';
  * @param {(string|symbol)[]} uMethodNames
  *   The method names of the underlying exo class that should be represented
  *   by transparently-forwarding methods of the revocable caretaker.
- * @param {RevocableKitOptions} [options]
+ * @param {RevocableKitOptions<U>} [options]
  * @returns {RevocableMakerKit<U>}
  */
 export const prepareRevocableMakerKit = (
