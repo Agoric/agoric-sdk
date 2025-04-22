@@ -93,6 +93,20 @@ export const makeReflectionMethods = (vatPowers, baggage, vatParameters) => {
   };
 
   return {
+    baggageHas: key => {
+      return baggage.has(key);
+    },
+    baggageGet: key => {
+      return baggage.get(key);
+    },
+    baggageSet: (key, value) => {
+      if (!baggage.has(key)) {
+        baggage.init(key, value);
+      } else {
+        baggage.set(key, value);
+      }
+    },
+
     /** @type {Die} */
     dieHappy: (completion, finalSend) => {
       vatPowers.exitVat(completion);
