@@ -13,6 +13,13 @@ export {};
  * with, like VatAdminService. */
 
 /**
+ * @template T
+ * @typedef {'Device' & { __deviceType__: T }} Device
+ */
+
+/** @typedef {<T>(target: Device<T>) => T} DProxy (approximately) */
+
+/**
  * @typedef {(extraProps?: SlogDurationProps) => void} FinishSlogDuration
  */
 

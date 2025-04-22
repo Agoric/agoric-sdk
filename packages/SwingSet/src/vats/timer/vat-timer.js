@@ -19,7 +19,7 @@ import { TimeMath } from '@agoric/time';
  * @import {Passable, RemotableObject} from '@endo/pass-style';
  * @import {Key} from '@endo/patterns';
  * @import {TimerDevice} from '../../devices/timer/device-timer.js';
- * @import {DProxy} from '../plugin-manager.js';
+ * @import {DProxy} from '../../types-external.js';
  */
 
 // This consumes O(N) RAM only for outstanding promises, via wakeAt(),

@@ -312,7 +312,7 @@ export function buildRootDeviceNode(tools) {
     },
   });
 }
-/** @typedef {import('../../vats/plugin-manager.js').Device<ReturnType<typeof buildRootDeviceNode>>} TimerDevice */
+/** @typedef {import('../../types-external.js').Device<ReturnType<typeof buildRootDeviceNode>>} TimerDevice */
 
 // exported for testing. Only buildRootDeviceNode is intended for production
 // use.
