@@ -301,6 +301,7 @@ export const IBCTransferOptionsShape = M.splitRecord(
       revisionHeight: M.bigint(),
       revisionNumber: M.bigint(),
     },
+    timeoutRelativeSeconds: M.bigint(),
     memo: M.string(),
     forwardOpts: ForwardOptsShape,
   },

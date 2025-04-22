@@ -748,6 +748,33 @@ test.serial('Ethereum destination', async t => {
     ],
     'Tx status ADVANCED after inbound queued flushed',
   );
+
+  // in due course, minted USDC arrives
+  await bridgeUtils.runInbound(
+    BridgeId.VTRANSFER,
+    buildVTransferEvent({
+      sequence: '1', // arbitrary; not used
+      amount: evidence.tx.amount,
+      denom: 'uusdc',
+      sender: evidence.tx.forwardingAddress,
+      target: settlementAccount,
+      receiver: encodeAddressHook(settlementAccount, { EUD }),
+      sourceChannel: nobleToAgoricChannel,
+      destinationChannel: agoricToNobleChannel,
+    }),
+  );
+
+  t.like(
+    getTxStatus(evidence.txHash),
+    [
+      { status: 'OBSERVED' },
+      { status: 'ADVANCING' },
+      { status: 'ADVANCED' },
+      // New since last check
+      { status: 'DISBURSED', split: { ContractFee: { value: 20_600n } } },
+    ],
+    'Tx status DISBURSED after simulated mint',
+  );
 });
 
 test.serial('LP withdraws', async t => {
