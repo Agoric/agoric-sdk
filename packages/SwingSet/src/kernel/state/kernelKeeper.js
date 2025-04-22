@@ -1093,11 +1093,14 @@ export default function makeKernelKeeper(
 
     // then scan for imported objects, which must be decrefed
     remaining = budget.imports ?? budget.default;
-    for (const { key } of enumeratePrefixedKeys(kvStore, importPrefix)) {
+    for (const { key, suffix } of enumeratePrefixedKeys(
+      kvStore,
+      importPrefix,
+    )) {
       // abandoned imports: delete the clist entry as if the vat did a
       // drop+retire
       const kref = kvStore.get(key) || Fail`getNextKey ensures get`;
-      const vref = stripPrefix(clistPrefix, key);
+      const vref = `o-${suffix}`;
       undertaker.deleteCListEntry(kref, vref);
       // that will also delete both db keys
       work.imports += 1;
@@ -1112,9 +1115,12 @@ export default function makeKernelKeeper(
     // kpids are still present in the dead vat's c-list. Clean those
     // up now.
     remaining = budget.promises ?? budget.default;
-    for (const { key } of enumeratePrefixedKeys(kvStore, promisePrefix)) {
+    for (const { key, suffix } of enumeratePrefixedKeys(
+      kvStore,
+      promisePrefix,
+    )) {
       const kref = kvStore.get(key) || Fail`getNextKey ensures get`;
-      const vref = stripPrefix(clistPrefix, key);
+      const vref = `p${suffix}`;
       undertaker.deleteCListEntry(kref, vref);
       // that will also delete both db keys
       work.promises += 1;
@@ -1166,10 +1172,8 @@ export default function makeKernelKeeper(
       kvStore.set(DYNAMIC_IDS_KEY, JSON.stringify(newDynamicVatIDs));
     } else {
       kdebug(`removing static vat ${vatID}`);
-      for (const { key, suffix: name } of enumeratePrefixedKeys(
-        kvStore,
-        'vat.name.',
-      )) {
+      const prefixedKeys = enumeratePrefixedKeys(kvStore, 'vat.name.');
+      for (const { key, suffix: name } of prefixedKeys) {
         if (kvStore.get(key) === vatID) {
           kvStore.delete(key);
           const VAT_NAMES_KEY = 'vat.names';
@@ -1450,10 +1454,8 @@ export default function makeKernelKeeper(
 
   function getDevices() {
     const result = [];
-    for (const { key, suffix: name } of enumeratePrefixedKeys(
-      kvStore,
-      'device.name.',
-    )) {
+    const prefixedKeys = enumeratePrefixedKeys(kvStore, 'device.name.');
+    for (const { key, suffix: name } of prefixedKeys) {
       const deviceID = kvStore.get(key) || Fail`getNextKey ensures get`;
       result.push([name, deviceID]);
     }

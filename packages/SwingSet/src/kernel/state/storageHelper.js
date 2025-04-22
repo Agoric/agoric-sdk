@@ -21,11 +21,10 @@ export function* enumeratePrefixedKeys(kvStore, prefix, exclusiveEnd) {
   let key = prefix;
   for (;;) {
     key = kvStore.getNextKey(key);
-    if (
-      !key ||
-      !key.startsWith(prefix) ||
-      (exclusiveEnd && key >= exclusiveEnd)
-    ) {
+    if (!key || !key.startsWith(prefix)) {
+      break;
+    }
+    if (exclusiveEnd && key >= exclusiveEnd) {
       break;
     }
     yield { key, suffix: key.slice(prefix.length) };
