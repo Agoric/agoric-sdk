@@ -7,21 +7,15 @@
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
+import { parseChainHubOpts } from '../orchestration/helpers.js';
 
 /**
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {QueryFlowsSF as StartFn} from '@agoric/orchestration/src/fixtures/query-flows.contract.js';
- * @import {ParseArgsConfig} from 'node:util'
  */
 
 const contractName = 'queryFlows';
 const trace = makeTracer(contractName, true);
-
-/** @type {ParseArgsConfig['options']} */
-const parserOpts = {
-  chainInfo: { type: 'string' },
-  assetInfo: { type: 'string' },
-};
 
 /**
  * See `@agoric/builders/builders/scripts/orchestration/init-query-flows.js` for
@@ -152,28 +146,8 @@ export const defaultProposalBuilder = async (
 export default async (homeP, endowments) => {
   // import dynamically so the modules can work in CoreEval environment
   const { makeHelpers } = await import('@agoric/deploy-script-support');
-  const { parseArgs } = await import('node:util');
   const { scriptArgs } = endowments;
-
-  const {
-    values: { chainInfo, assetInfo },
-  } = parseArgs({
-    args: scriptArgs,
-    options: parserOpts,
-  });
-
-  const parseChainInfo = () => {
-    if (typeof chainInfo !== 'string') return undefined;
-    return JSON.parse(chainInfo);
-  };
-  const parseAssetInfo = () => {
-    if (typeof assetInfo !== 'string') return undefined;
-    return JSON.parse(assetInfo);
-  };
-  const opts = harden({
-    chainInfo: parseChainInfo(),
-    assetInfo: parseAssetInfo(),
-  });
+  const opts = parseChainHubOpts(scriptArgs);
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
   await writeCoreEval(startQueryFlows.name, utils =>
     defaultProposalBuilder(utils, opts),
