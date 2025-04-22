@@ -4,8 +4,10 @@ import { prepareVowTools } from '@agoric/vow';
 import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
 import { makeChainHub } from '../exos/chain-hub.js';
+import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
 
 /**
+ * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {IBCConnectionID} from '@agoric/vats';
  * @import {StakeIcaSF,  StakeIcaTerms} from '../examples/stake-ica.contract';
  */
@@ -22,23 +24,32 @@ const trace = makeTracer('StartStakeAtom', true);
  *     };
  *   };
  * }} powers
+ * @param {{
+ *   options: {
+ *     chainInfo: Record<string, CosmosChainInfo>;
+ *     assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
+ *   };
+ * }} config
  */
-export const startStakeAtom = async ({
-  consume: {
-    agoricNames,
-    board,
-    chainStorage,
-    chainTimerService: timer,
-    cosmosInterchainService,
-    startUpgradable,
+export const startStakeAtom = async (
+  {
+    consume: {
+      agoricNames,
+      board,
+      chainStorage,
+      chainTimerService: timer,
+      cosmosInterchainService,
+      startUpgradable,
+    },
+    installation: {
+      consume: { stakeIca },
+    },
+    instance: {
+      produce: { stakeAtom: produceInstance },
+    },
   },
-  installation: {
-    consume: { stakeIca },
-  },
-  instance: {
-    produce: { stakeAtom: produceInstance },
-  },
-}) => {
+  { options: { chainInfo, assetInfo } },
+) => {
   const VSTORAGE_PATH = 'stakeAtom';
   trace('startStakeAtom');
   await null;
@@ -53,6 +64,8 @@ export const startStakeAtom = async ({
     await agoricNames,
     vt,
   );
+
+  registerChainsAndAssets(chainHub, {}, chainInfo, assetInfo);
 
   const [_, cosmoshub, connectionInfo] = await vt.when(
     chainHub.getChainsAndConnection('agoric', 'cosmoshub'),
@@ -86,7 +99,7 @@ harden(startStakeAtom);
 
 export const getManifestForStakeAtom = (
   { restoreRef },
-  { installKeys, ...options },
+  { installKeys, options },
 ) => {
   return {
     manifest: {

@@ -62,7 +62,10 @@ test.skip('stakeOsmo - queries', async t => {
     harness,
   } = t.context;
   await evalProposal(
-    buildProposal('@agoric/builders/scripts/orchestration/init-stakeOsmo.js'),
+    buildProposal('@agoric/builders/scripts/orchestration/init-stakeOsmo.js', [
+      '--chainInfo',
+      JSON.stringify(withChainCapabilities(minimalChainInfos)),
+    ]),
   );
 
   const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
@@ -102,7 +105,10 @@ test.serial('stakeAtom - smart wallet', async t => {
   } = t.context;
 
   await evalProposal(
-    buildProposal('@agoric/builders/scripts/orchestration/init-stakeAtom.js'),
+    buildProposal('@agoric/builders/scripts/orchestration/init-stakeAtom.js', [
+      '--chainInfo',
+      JSON.stringify(withChainCapabilities(minimalChainInfos)),
+    ]),
   );
 
   const wd = await t.context.walletFactoryDriver.provideSmartWallet(
@@ -434,7 +440,10 @@ test.serial('auto-stake-it - proposal', async t => {
 
   await t.notThrowsAsync(
     evalProposal(
-      buildProposal('@agoric/builders/scripts/testing/init-auto-stake-it.js'),
+      buildProposal('@agoric/builders/scripts/testing/init-auto-stake-it.js', [
+        '--chainInfo',
+        JSON.stringify(withChainCapabilities(minimalChainInfos)),
+      ]),
     ),
   );
 });
