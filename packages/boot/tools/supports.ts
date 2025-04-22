@@ -52,10 +52,7 @@ import type { ExecutionContext as AvaT } from 'ava';
 import type { FastUSDCCorePowers } from '@aglocal/fast-usdc-deploy/src/start-fast-usdc.core.js';
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
 import { computronCounter } from '@agoric/cosmic-swingset/src/computron-counter.js';
-import {
-  defaultBeansPerVatCreation,
-  defaultBeansPerXsnapComputron,
-} from '@agoric/cosmic-swingset/src/sim-params.js';
+import { defaultBeansPerVatCreation } from '@agoric/cosmic-swingset/src/sim-params.js';
 import type { EconomyBootstrapPowers } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import { base64ToBytes } from '@agoric/network';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
@@ -890,11 +887,6 @@ export const makeSwingsetTestKit = async (
 export type SwingsetTestKit = Awaited<ReturnType<typeof makeSwingsetTestKit>>;
 
 /**
- * Return a harness that can be dynamically configured to provide a computron-
- * counting run policy (and queried for the count of computrons recorded since
- * the last reset).
- */
-/**
  * Creates a harness for measuring computron usage in SwingSet tests.
  *
  * The harness can be dynamically configured to provide a computron-counting
@@ -902,15 +894,15 @@ export type SwingsetTestKit = Awaited<ReturnType<typeof makeSwingsetTestKit>>;
  *
  * @returns A harness object with methods to control and query computron counting
  */
-export const makeSwingsetHarness = () => {
-  const c2b = defaultBeansPerXsnapComputron;
-  const beansPerUnit = {
-    // see https://cosgov.org/agoric?msgType=parameterChangeProposal&network=main
-    blockComputeLimit: 65_000_000n * c2b,
+export const makeSwingsetHarness = ({
+  computronCost = 100n,
+  blockComputeLimit = 65_000_000n * computronCost,
+  beansPerUnit = {
+    blockComputeLimit,
     vatCreation: defaultBeansPerVatCreation,
-    xsnapComputron: c2b,
-  };
-
+    xsnapComputron: computronCost,
+  },
+} = {}) => {
   /** @type {ReturnType<typeof computronCounter> | undefined} */
   let policy;
   let policyEnabled = false;
@@ -929,7 +921,7 @@ export const makeSwingsetHarness = () => {
         policy = undefined;
       }
     },
-    totalComputronCount: () => (policy?.totalBeans() || 0n) / c2b,
+    totalComputronCount: () => (policy?.totalBeans() || 0n) / computronCost,
     resetRunPolicy: () => (policy = undefined),
   });
   return meter;
