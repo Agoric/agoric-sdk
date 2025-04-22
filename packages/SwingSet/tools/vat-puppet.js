@@ -217,7 +217,7 @@ harden(makeReflectionMethods);
 
 export function buildRootObject(vatPowers, vatParameters, baggage) {
   const methods = makeReflectionMethods(vatPowers, baggage, vatParameters);
-  const rootObject = Far('root', methods);
+  const rootObject = Far('root', { ...methods, getVersion: () => 1 });
 
   // Invoke specified methods of the new root object *before* returning,
   // supporting use of previous results as top-level arguments by interpreting
