@@ -128,8 +128,14 @@ export const makeHelpers = ({ db, EV }) => {
     valueGlob = undefined,
     lazy = /** @type {Lazy} */ (false),
   ) => {
+    // Glob metasyntax is `*` (any substring), `?` (any one character), and
+    // `[$chars]`/`[]$chars]` (any one character from inside the brackets, with
+    // a requirement that `]` for matching is only valid immediately after the
+    // opening bracket).
     const [_keyPattern, keyPrefix, keyTail, keySuffix] =
-      /** @type {string[]} */ (/^([^*?]*)((?:[*?]([^*?]*))*)$/.exec(keyGlob));
+      /** @type {string[]} */ (
+        /^([^*?[]*)((?:(?:[*?]|\[\]?[^\]]*\])([^*?[]*))*)$/.exec(keyGlob)
+      );
     let sql = sqlKVByHalfRange;
     /** @type {Record<'a' | 'b' | 'keySuffix' | 'keyGlob' | 'valueGlob', string | null>} */
     const args = {
