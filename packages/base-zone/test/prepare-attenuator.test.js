@@ -103,6 +103,6 @@ test('test revoke defineVirtualExoClassKit', t => {
   t.is(downCounter.decr(), 2);
   t.is(downCounter.selfRevoke(), true);
   t.throws(() => downCounter.decr(3), {
-    message: '"UpCounter_attenuator" revoked',
+    message: '"DownCounter_attenuator" revoked',
   });
 });
