@@ -7,7 +7,6 @@
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
-import { parseArgs } from 'node:util';
 
 /**
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
@@ -151,9 +150,9 @@ export const defaultProposalBuilder = async (
 
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
-  // import dynamically so the module can work in CoreEval environment
-  const dspModule = await import('@agoric/deploy-script-support');
-  const { makeHelpers } = dspModule;
+  // import dynamically so the modules can work in CoreEval environment
+  const { makeHelpers } = await import('@agoric/deploy-script-support');
+  const { parseArgs } = await import('node:util');
   const { scriptArgs } = endowments;
 
   const {
