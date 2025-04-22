@@ -20,7 +20,7 @@ const test: TestFn<WalletFactoryTestContext> = anyTest;
 test.before(async t => {
   t.context = await makeWalletFactoryContext(
     t,
-    '@agoric/vm-config/decentral-itest-orchestration-chains-config.json',
+    '@agoric/vm-config/decentral-itest-orchestration-config.json',
   );
 });
 test.after.always(t => t.context.shutdown?.());
@@ -159,7 +159,10 @@ test.serial('stakeAtom', async t => {
   } = t.context;
 
   await evalProposal(
-    buildProposal('@agoric/builders/scripts/orchestration/init-stakeAtom.js'),
+    buildProposal('@agoric/builders/scripts/orchestration/init-stakeAtom.js', [
+      '--chainInfo',
+      JSON.stringify(withChainCapabilities(minimalChainInfos)),
+    ]),
   );
 
   const wd = await t.context.walletFactoryDriver.provideSmartWallet(
@@ -246,7 +249,10 @@ test.serial('basicFlows', async t => {
 
   t.log('start basicFlows');
   await evalProposal(
-    buildProposal('@agoric/builders/scripts/orchestration/init-basic-flows.js'),
+    buildProposal(
+      '@agoric/builders/scripts/orchestration/init-basic-flows.js',
+      ['--chainInfo', JSON.stringify(withChainCapabilities(minimalChainInfos))],
+    ),
   );
 
   t.log('making offer');
