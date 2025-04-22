@@ -22,7 +22,7 @@ test('test attenuate defineVirtualExoClass', t => {
   const zone = makeHeapZone('rootZone');
 
   const makeUnderlyingCounter = zone.exoClass(
-    'UpCounter',
+    'Counter',
     CounterI,
     /** @param {number} [x] */
     (x = 0) => ({ x }),
@@ -55,7 +55,7 @@ test('test revoke defineVirtualExoClassKit', t => {
   const zone = makeHeapZone('rootZone');
 
   const makeUnderlyingCounter = zone.exoClass(
-    'UpCounter',
+    'Counter',
     CounterI,
     /** @param {number} [x] */
     (x = 0) => ({ x }),
@@ -75,7 +75,7 @@ test('test revoke defineVirtualExoClassKit', t => {
 
   const makeDownAttenuator = prepareAttenuatorMaker(
     zone,
-    'UpCounter',
+    'DownCounter',
     ['decr'],
     {
       extraMethodGuards: {
