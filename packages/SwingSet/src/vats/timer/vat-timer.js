@@ -15,9 +15,11 @@ import { TimeMath } from '@agoric/time';
 
 /**
  * @import {LegacyWeakMap, WeakMapStore} from '@agoric/store';
- * @import {MapStore} from '@agoric/swingset-liveslots';
+ * @import {Baggage, MapStore} from '@agoric/swingset-liveslots';
  * @import {Passable, RemotableObject} from '@endo/pass-style';
  * @import {Key} from '@endo/patterns';
+ * @import {TimerDevice} from '../../devices/timer/device-timer.js';
+ * @import {DProxy} from '../../types-external.js';
  */
 
 // This consumes O(N) RAM only for outstanding promises, via wakeAt(),
@@ -237,9 +239,17 @@ const measureInterval = (start, interval, now) => {
   return { latest, next };
 };
 
+/**
+ * @param {{
+ *   D: DProxy;
+ * }} vatPowers
+ * @param {{}} _vatParameters
+ * @param {Baggage} baggage
+ */
 export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
   const { D } = vatPowers;
 
+  /** @type {TimerDevice} */
   let timerDevice;
   const insistDevice = () => {
     assert(timerDevice, 'TimerService used before createTimerService()');
@@ -455,9 +465,6 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
     },
   };
 
-  /**
-   * @returns { PromiseEvent }
-   */
   const makePromiseEvent = prepareKind(
     baggage,
     'promiseEvent',
@@ -948,7 +955,7 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
    * device, but we don't prohibit it from being called again (to
    * replace the device), just in case that's useful someday
    *
-   * @param {unknown} timerNode
+   * @param {TimerDevice} timerNode
    * @returns {TimerService}
    */
   const createTimerService = timerNode => {

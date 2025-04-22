@@ -20,7 +20,7 @@ import {
 
 /**
  * @import {VatAdminRootDeviceNode} from '../../devices/vat-admin/device-vat-admin.js';
- * @import {DProxy} from'../plugin-manager.js';
+ * @import {DProxy} from'../../types-external.js';
  * @import {Baggage} from '@agoric/vat-data';
  */
 
@@ -49,7 +49,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
   const pendingBundles = new Map();
   const pendingUpgrades = new Map(); // upgradeID -> Promise<UpgradeResults>
 
-  /** @type {import('../plugin-manager.js').Device<VatAdminRootDeviceNode>} */
+  /** @type {import('../../types-external.js').Device<VatAdminRootDeviceNode>} */
   let vatAdminDev;
 
   const runningVats = new Map(); // vatID -> [doneP, { resolve, reject }]

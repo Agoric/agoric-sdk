@@ -1,18 +1,13 @@
 // Ambient type defs. Cannot use top-level import() because that would turn it into a module.
 
-/** This type conflicts with packages/SwingSet/src/vats/plugin-manager.js */
-type Device<T> = 'Device' & { __deviceType__: T };
+type Device<T> = import('@agoric/swingset-vat/src/types-external.js').Device<T>;
 
-/** (approximately) */
-type DProxy<T = any> = (target: Device<T>) => T;
+type DProxy = import('@agoric/swingset-vat/src/types-external.js').DProxy;
 
 type BootDevices<T> = { vatPowers: { D: DProxy }; devices: T };
 
-type BridgeDevice = Device<
-  ReturnType<
-    typeof import('@agoric/swingset-vat/src/devices/bridge/device-bridge.js').buildRootDeviceNode
-  >
->;
+type BridgeDevice =
+  import('@agoric/swingset-vat/src/devices/bridge/device-bridge.js').BridgeDevice;
 
 type CommandDevice = Device<
   ReturnType<
@@ -32,11 +27,8 @@ type PluginDevice = Device<
   >
 >;
 
-type TimerDevice = Device<
-  ReturnType<
-    typeof import('@agoric/swingset-vat/src/devices/timer/device-timer.js').buildRootDeviceNode
-  >
->;
+type TimerDevice =
+  import('@agoric/swingset-vat/src/devices/timer/device-timer.js').TimerDevice;
 
 type VatAdminDevice = Device<
   import('@agoric/swingset-vat/src/devices/vat-admin/device-vat-admin.js').VatAdminRootDeviceNode
@@ -86,15 +78,15 @@ type SoloDevices = {
   vatAdmin: VatAdminDevice;
   mailbox: MailboxDevice;
   command: CommandDevice;
-  timer: TimerDevice;
+  timer: import('@agoric/swingset-vat/src/devices/timer/device-timer.js').TimerDevice;
   plugin: PluginDevice;
 };
 
 type ChainDevices = {
   vatAdmin: VatAdminDevice;
   mailbox: MailboxDevice;
-  timer: TimerDevice;
-  bridge?: BridgeDevice;
+  timer: import('@agoric/swingset-vat/src/devices/timer/device-timer.js').TimerDevice;
+  bridge?: import('@agoric/swingset-vat/src/devices/bridge/device-bridge.js').BridgeDevice;
 };
 
 type ClientProvider = {
