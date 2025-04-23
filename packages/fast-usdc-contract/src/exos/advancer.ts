@@ -223,6 +223,7 @@ export const prepareAdvancerKit = (
               statusManager.skipAdvance(evidence, [
                 `Transfer to ${destChain} not supported.`,
               ]);
+              return;
             }
 
             const fullAmount = toAmount(evidence.tx.amount);
