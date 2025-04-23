@@ -1,5 +1,5 @@
-/** @file
- * Orchestration Contract template: Test simulation from sequence diagram.
+/**
+ * @file Orchestration Contract template: Test simulation from sequence diagram.
  *
  * For each (kind of) actor / participant in the diagram (my-orch-sequence.mmd),
  * we have a function to make one.
