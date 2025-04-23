@@ -35,8 +35,11 @@ export const contract = async (
     console.log('making tap');
     return zone.exo('tap', interfaceTODO, {
       async receiveUpcall(event: VTransferIBCEvent) {
-        console.log(event);
-        return when(makePosition());
+        console.log('receiveUpcall', event);
+        // TODO: use watch() rather than when for resumability
+        await when(makePosition()).catch(error => {
+          console.log('receiveUpcall: flow failed:', error);
+        });
       },
     });
   });
