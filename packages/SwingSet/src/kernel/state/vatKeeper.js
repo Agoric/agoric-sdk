@@ -761,11 +761,13 @@ export function makeVatKeeper(
   function dumpState() {
     const res = [];
     const prefix = `${vatID}.c.`;
-    for (const k of enumeratePrefixedKeys(kvStore, prefix)) {
-      const slot = k.slice(prefix.length);
+    for (const { key, suffix: slot } of enumeratePrefixedKeys(
+      kvStore,
+      prefix,
+    )) {
       if (!slot.startsWith('k')) {
         const vatSlot = slot;
-        const kernelSlot = kvStore.get(k) || Fail`getNextKey ensures get`;
+        const kernelSlot = kvStore.get(key) || Fail`getNextKey ensures get`;
         /** @type { [string, string, string] } */
         const item = [kernelSlot, vatID, vatSlot];
         res.push(item);
