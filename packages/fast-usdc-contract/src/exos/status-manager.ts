@@ -30,7 +30,7 @@ import { Fail, makeError, q } from '@endo/errors';
 import { E, type ERef } from '@endo/far';
 import { M } from '@endo/patterns';
 import { chainOfAccount } from '@agoric/orchestration/src/utils/address.js';
-import type { AccountId } from '@agoric/orchestration';
+import type { AccountId, CaipChainId } from '@agoric/orchestration';
 import { ForwardFailedTxShape, type ForwardFailedTx } from '../typeGuards.ts';
 import { type RouteHealth } from '../utils/route-health.ts';
 
@@ -223,6 +223,9 @@ export const prepareStatusManager = (
       skipAdvance: M.call(CctpTxEvidenceShape, M.arrayOf(M.string())).returns(),
       advanceOutcomeForMintedEarly: M.call(EvmHashShape, M.boolean()).returns(),
       advanceOutcomeForUnknownMint: M.call(CctpTxEvidenceShape).returns(),
+      getFailedForwards: M.call(M.string()).returns(
+        M.arrayOf(ForwardFailedTxShape),
+      ),
       hasBeenObserved: M.call(CctpTxEvidenceShape).returns(M.boolean()),
       deleteCompletedTxs: M.call().returns(M.undefined()),
       dequeueStatus: M.call(M.string(), M.bigint()).returns(
@@ -287,6 +290,9 @@ export const prepareStatusManager = (
         success: boolean,
         tx?: { destination: AccountId },
       ): void {
+        if (tx) {
+          routeHealth.noteSuccess(chainOfAccount(tx.destination));
+        }
         setPendingTxStatus(
           { nfa, amount },
           success ? PendingTxStatus.Advanced : PendingTxStatus.AdvanceFailed,
@@ -307,6 +313,9 @@ export const prepareStatusManager = (
         success: boolean,
         tx?: { destination: AccountId },
       ): void {
+        if (tx) {
+          routeHealth.noteSuccess(chainOfAccount(tx.destination));
+        }
         publishTxnRecord(
           txHash,
           harden({
@@ -330,6 +339,12 @@ export const prepareStatusManager = (
         }
         seenTxs.init(txHash, evidence.blockTimestamp);
         publishEvidence(txHash, evidence);
+      },
+
+      getFailedForwards(chainId: CaipChainId): Array<ForwardFailedTx> {
+        const valuePattern = M.splitRecord({ chainId });
+        // Spread to array because guarded methods can't pass Iterable
+        return [...failedForwards.values(undefined, valuePattern)];
       },
 
       /**
@@ -399,6 +414,12 @@ export const prepareStatusManager = (
        * @param txHash
        */
       forwarded(txHash: EvmHash, tx?: ForwardFailedTx): void {
+        if (tx) {
+          if (failedForwards.has(txHash)) {
+            failedForwards.delete(txHash);
+          }
+          routeHealth.noteSuccess(chainOfAccount(tx.destination));
+        }
         publishTxnRecord(
           txHash,
           harden({
@@ -408,10 +429,23 @@ export const prepareStatusManager = (
       },
 
       /**
-       * Mark a transaction as `FORWARD_FAILED`
+       * Mark a transaction as `FORWARD_FAILED`.
+       * If `tx` details are provided, register it for retry.
        * @param txHash
+       * @param tx - If provided, registers the transaction for retry.
        */
       forwardFailed(txHash: EvmHash, tx?: ForwardFailedTx): void {
+        if (tx) {
+          tx.txHash === txHash || Fail`txHash mismatch in forwardFailed`;
+          const chainId = chainOfAccount(tx.destination);
+          // Register for retry if details are provided
+          if (!failedForwards.has(txHash)) {
+            failedForwards.init(tx.txHash, harden({ ...tx, chainId }));
+          }
+          // Last because this can trigger the retry which will read from the store
+          routeHealth.noteFailure(chainId);
+        }
+        // Always publish the failed status
         publishTxnRecord(
           txHash,
           harden({

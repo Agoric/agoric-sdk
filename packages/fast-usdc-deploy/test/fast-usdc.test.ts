@@ -827,6 +827,129 @@ test.serial('LP withdraws', async t => {
   );
 });
 
+// Test timeouts here because,
+// 1. Zoe contract tests can't verify the behavior works through incarnations
+// 2. Multichain tests integrate more than is relevant to this logic
+test.serial('forward timeout', async t => {
+  const { bridgeUtils, readPublished, storage } = t.context;
+
+  const getTxStatus = txHash =>
+    storage
+      .getValues(`published.fastUsdc.txns.${txHash}`)
+      .map(defaultSerializer.parse);
+
+  // Mock user data
+  const EUD = 'cosmos1userforwardtimeout';
+  const { settlementAccount, nobleICA } = readPublished('fastUsdc');
+
+  // Create mock evidence
+  const mintAmt = 600_000n; // 0.6 USDC
+  const recipientAddress = encodeAddressHook(settlementAccount, { EUD });
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_AGORIC(recipientAddress);
+  evidence.tx.amount = mintAmt;
+  // make unique to avoid collision with previous tests
+  evidence.txHash =
+    '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
+  t.log('USDC minted before evidence is observed for timeout test');
+
+  // Simulate USDC being minted and received BEFORE evidence is submitted
+  await bridgeUtils.runInbound(
+    BridgeId.VTRANSFER,
+    buildVTransferEvent({
+      sequence: '1', // Sequence doesn't matter for this inbound mint
+      amount: evidence.tx.amount,
+      denom: 'uusdc',
+      sender: evidence.tx.forwardingAddress,
+      target: settlementAccount,
+      receiver: recipientAddress,
+      sourceChannel: nobleToAgoricChannel,
+      destinationChannel: agoricToNobleChannel,
+    }),
+  );
+
+  await eventLoopIteration();
+  t.log('USDC funds received in settlement account before evidence submission');
+
+  t.throws(
+    () => getTxStatus(evidence.txHash),
+    undefined,
+    'Transaction not in VSTORAGE before observation',
+  );
+
+  // Prevent auto-ack behavior for the vtransfer channel that the evidence is going to trigger
+  // bridgeUtils.setAckBehavior('vtransfer', 'sendPacket', 'NEVER');
+
+  // Now submit evidence from oracles (after funds already received)
+  await t.context.attest(evidence, 'submit-evidence-after-mint-timeout');
+  await eventLoopIteration(); // Allow contract to process evidence and initiate forward
+
+  // Verify the transaction status was set to OBSERVED initially
+  const statuses = getTxStatus(evidence.txHash);
+  t.deepEqual(
+    statuses,
+    [{ evidence, status: 'OBSERVED' }],
+    'Transaction status should be OBSERVED initially',
+  );
+
+  // Simulate timeout of the outgoing forward transfer (sequence '2' was used in previous test)
+  const firstForward = 4n; // XXX brittle, depends on IBC of previous tests
+  const forwardMemo = JSON.stringify(
+    /** @type {ForwardInfo} */
+    {
+      forward: {
+        receiver: recipientAddress,
+        port: 'transfer',
+        channel:
+          fetchedChainInfo.noble.connections['agoric-3'].transferChannel
+            .channelId,
+      },
+    },
+  );
+
+  const successfulForwardEvent = buildVTransferEvent({
+    sender: settlementAccount,
+    target: settlementAccount, // Target might not be relevant for timeout event structure
+    receiver: nobleICA,
+    sourceChannel: agoricToNobleChannel,
+    destinationChannel: nobleToAgoricChannel,
+    // XXX buildVTransferEvent should take care of casting
+    sequence: String(firstForward),
+    amount: evidence.tx.amount, // Amount might not be relevant for timeout event structure
+    memo: forwardMemo,
+  });
+
+  // Construct a corresponding timeout event we can send first
+  const { acknowledgement: _, ...timeoutEvent } = {
+    ...successfulForwardEvent,
+    event: 'timeoutPacket', // Change event type
+  };
+
+  await bridgeUtils.runInbound(BridgeId.VTRANSFER, timeoutEvent);
+  await eventLoopIteration();
+
+  // Verify the transaction status includes FORWARD_FAILED
+  t.deepEqual(
+    getTxStatus(evidence.txHash),
+    [{ evidence, status: 'OBSERVED' }, { status: 'FORWARD_FAILED' }],
+    'Transaction status should be FORWARD_FAILED after timeout',
+  );
+
+  // Simulate successful acknowledgement of the *same* outgoing forward transfer (as if retried)
+  successfulForwardEvent.packet.sequence = String(firstForward + 1n); // to match next attempt
+  await bridgeUtils.runInbound(BridgeId.VTRANSFER, successfulForwardEvent);
+
+  // Verify the transaction status is now FORWARDED
+  t.deepEqual(
+    getTxStatus(evidence.txHash),
+    [
+      { evidence, status: 'OBSERVED' },
+      { status: 'FORWARD_FAILED' },
+      { status: 'FORWARDED' }, // Now forwarded
+    ],
+    'Transaction status should be FORWARDED after successful retry/ack',
+  );
+});
+
 test.serial('restart contract', async t => {
   const {
     runUtils: { EV },
