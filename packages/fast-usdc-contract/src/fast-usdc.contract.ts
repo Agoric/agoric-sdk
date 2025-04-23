@@ -50,8 +50,12 @@ import type { OperatorOfferResult } from './exos/transaction-feed.ts';
 import { prepareTransactionFeedKit } from './exos/transaction-feed.ts';
 import * as flows from './fast-usdc.flows.ts';
 import { makeSupportsCctp } from './utils/cctp.ts';
+import { makeRouteHealth } from './utils/route-health.ts';
 
 const trace = makeTracer('FastUsdc');
+
+// With a 10 minute timeout this means retry for up to an hour.
+const MAX_ROUTE_FAILURES = 6;
 
 const TXNS_NODE = 'txns';
 const FEE_NODE = 'feeConfig';
@@ -115,10 +119,11 @@ export const contract = async (
     marshaller,
   );
 
+  const routeHealth = makeRouteHealth(MAX_ROUTE_FAILURES);
   const statusManager = prepareStatusManager(
     zone,
     E(storageNode).makeChildNode(TXNS_NODE),
-    { marshaller },
+    { marshaller, routeHealth },
   );
 
   const { USDC } = terms.brands;
