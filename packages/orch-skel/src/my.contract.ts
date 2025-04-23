@@ -1,20 +1,15 @@
 import {
   OrchestrationPowersShape,
   withOrchestration,
+  type OrchestrationTools,
 } from '@agoric/orchestration';
+import { type VTransferIBCEvent } from '@agoric/vats';
+import type { Zone } from '@agoric/zone';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import * as flows from './my.flows.ts';
 
-/**
- * @import {VTransferIBCEvent} from '@agoric/vats'
- */
 const interfaceTODO = undefined;
-
-/**
- * @import {Zone} from '@agoric/zone';
- * @import {OrchestrationTools} from '../types.js';
- */
 
 export const meta = M.splitRecord({
   privateArgsShape: {
@@ -25,14 +20,12 @@ export const meta = M.splitRecord({
 });
 harden(meta);
 
-/**
- * @param {any} _zcf
- * @param {any} _privateArgs
- * @param {Zone} zone
- * @param {OrchestrationTools} tools
- * @returns
- */
-export const contract = async (_zcf, _privateArgs, zone, tools) => {
+export const contract = async (
+  _zcf,
+  _privateArgs,
+  zone: Zone,
+  tools: OrchestrationTools,
+) => {
   const { orchestrateAll } = tools;
   const { makeHookAccount, makePosition } = orchestrateAll(flows, {});
 
@@ -41,8 +34,7 @@ export const contract = async (_zcf, _privateArgs, zone, tools) => {
   const tap = zone.makeOnce('tapPosition', _key => {
     console.log('making tap');
     return zone.exo('tap', interfaceTODO, {
-      /** @param {VTransferIBCEvent} event */
-      async receiveUpcall(event) {
+      async receiveUpcall(event: VTransferIBCEvent) {
         console.log(event);
         return when(makePosition());
       },

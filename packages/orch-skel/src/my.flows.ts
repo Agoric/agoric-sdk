@@ -1,30 +1,29 @@
-/**
- * @import {Orchestrator, OrchestrationFlow} from '@agoric/orchestration'
- * @import {TargetApp} from '@agoric/vats/src/bridge-target'
- * @import {Passable} from '@endo/pass-style'
- */
+import type {
+  OrchestrationAccount,
+  OrchestrationFlow,
+  Orchestrator,
+} from '@agoric/orchestration';
+import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
+import type { Passable } from '@endo/pass-style';
 
-/**
- * @satisfies {OrchestrationFlow}
- * @param {Orchestrator} orch
- * @param {unknown} _ctx
- * @param {TargetApp & Passable} tap
- */
-export const makeHookAccount = async (orch, _ctx, tap) => {
+export const makeHookAccount = (async (
+  orch: Orchestrator,
+  _ctx: unknown,
+  tap: TargetApp & Passable,
+) => {
   const agoricChain = await orch.getChain('agoric');
-  const hookAccount = await agoricChain.makeAccount();
+  const hookAccount =
+    (await agoricChain.makeAccount()) as OrchestrationAccount<{
+      chainId: 'agoric-any';
+    }>;
 
   const registration = hookAccount.monitorTransfers(tap);
   console.warn('TODO: keep registration', registration);
 
   return hookAccount;
-};
+}) satisfies OrchestrationFlow;
 harden(makeHookAccount);
 
-/**
- * @satisfies {OrchestrationFlow}
- * @param {Orchestrator} orch
- */
-export const makePosition = async orch => {
+export const makePosition = (async (orch: Orchestrator) => {
   throw Error('TODO!');
-};
+}) satisfies OrchestrationFlow;
