@@ -34,7 +34,12 @@ const makeCosmosAccount = (addr: string) => {
   const self = {
     toString: () => `<${addr}>`,
     getAddress: () => addr,
-    async send(t: Ex, amt: Coins, dest: CosmosAccount, fwd?: PFM) {
+    async send(
+      t: Ex,
+      amt: Coins,
+      dest: ReturnType<typeof makeCosmosAccount>,
+      fwd?: PFM,
+    ) {
       t.log(
         addr,
         'sending',
