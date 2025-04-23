@@ -147,6 +147,7 @@ export const contract = async (
       terms.brands,
       privateArgs.chainInfo,
       privateArgs.assetInfo,
+      { log: trace },
     );
   }
 
