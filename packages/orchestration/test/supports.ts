@@ -155,8 +155,21 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
    * Tracks `sequence` locally in test context, so this helper must be used
    * for all simulated VTransfer calls in a test run for sequence to be
    * accurate.
+   *
+   * @example
+   * ```js
+   * // send ack
+   * await transmitVTransferEvent('acknowledgementPacket');
+   * // send ack error
+   * await transmitVTransferEvent('acknowledgementPacket', 'packet-forward-middleware error: giving up on packet on channel (channel-21) port (transfer) after max retries');
+   * // send timeout
+   * await transmitVTransferEvent('timeoutPacket');
+   * ```
    */
-  const transmitVTransferEvent = async (event: VTransferIBCEvent['event']) => {
+  const transmitVTransferEvent = async (
+    event: VTransferIBCEvent['event'],
+    acknowledgementError?: string,
+  ) => {
     // assume this is called after each outgoing IBC transfer
     ibcSequenceNonce += 1n;
     // let the promise for the transfer start
@@ -177,6 +190,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
         target: lastMsgTransfer.sender,
         sourceChannel: lastMsgTransfer.sourceChannel,
         sequence: ibcSequenceNonce,
+        acknowledgementError,
       }),
     );
     // let the bridge handler finish

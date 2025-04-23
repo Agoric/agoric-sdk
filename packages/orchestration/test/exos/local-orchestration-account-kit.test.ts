@@ -296,6 +296,21 @@ test('transfer', async t => {
       retries: 3,
     },
   });
+
+  t.log('testing pfm ack error scenario...');
+  const { transferP: pfmTimeoutTransferP } = await startTransfer(
+    {
+      denom: uusdcOnAgoric,
+      value: 500_000n,
+    },
+    dydxDest,
+  );
+  const ackErrorMsg =
+    'packet-forward-middleware error: giving up on packet on channel (channel-33) port (transfer) after max retries';
+  await transmitVTransferEvent('acknowledgementPacket', ackErrorMsg);
+  await t.throwsAsync(pfmTimeoutTransferP, {
+    message: `ICS20-1 transfer error "${ackErrorMsg}"`,
+  });
 });
 
 test('monitor transfers', async t => {
