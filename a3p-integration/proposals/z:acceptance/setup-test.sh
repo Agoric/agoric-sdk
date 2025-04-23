@@ -1,6 +1,5 @@
 #!/bin/bash
-
-set -o errexit -o pipefail
+set -euo pipefail
 
 # shellcheck disable=SC1091
 source /usr/src/upgrade-test-scripts/env_setup.sh
