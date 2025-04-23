@@ -2,7 +2,11 @@ import { makeIssuerKit } from '@agoric/ertp';
 import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { makeNameHubKit, type VTransferIBCEvent } from '@agoric/vats';
+import {
+  makeNameHubKit,
+  type IBCChannelID,
+  type VTransferIBCEvent,
+} from '@agoric/vats';
 import { prepareBridgeTargetModule } from '@agoric/vats/src/bridge-target.js';
 import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
 import { prepareLocalChainTools } from '@agoric/vats/src/localchain.js';
@@ -20,6 +24,7 @@ import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
+import type { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import { registerKnownChains } from '../src/chain-info.js';
 import { makeChainHub } from '../src/exos/chain-hub.js';
 import { prepareCosmosInterchainService } from '../src/exos/cosmos-interchain-service.js';
@@ -29,6 +34,7 @@ import { setupFakeNetwork } from './network-fakes.js';
 import { withChainCapabilities } from '../src/chain-capabilities.js';
 import { registerChainsAndAssets } from '../src/utils/chain-hub-helper.js';
 import { assetOn } from '../src/utils/asset.js';
+import type { Bech32Address } from '../src/cosmos-api.js';
 
 export {
   makeFakeLocalchainBridge,
@@ -181,16 +187,20 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     if (!b1.messages || b1.messages.length < 1)
       throw Error('no messages in the last tx');
 
-    const lastMsgTransfer = b1.messages[0];
+    const lastMsgTransfer = b1.messages[0] as MsgTransfer;
     await E(transferBridge).fromBridge(
       buildVTransferEvent({
         event,
-        receiver: lastMsgTransfer.receiver,
-        sender: lastMsgTransfer.sender,
-        target: lastMsgTransfer.sender,
-        sourceChannel: lastMsgTransfer.sourceChannel,
+        receiver: lastMsgTransfer.receiver as Bech32Address,
+        sender: lastMsgTransfer.sender as Bech32Address,
+        target: lastMsgTransfer.sender as Bech32Address,
+        sourceChannel: lastMsgTransfer.sourceChannel as IBCChannelID,
         sequence: ibcSequenceNonce,
+        amount: BigInt(lastMsgTransfer.token.amount),
+        denom: lastMsgTransfer.token.denom,
+        memo: lastMsgTransfer.memo,
         acknowledgementError,
+        // XXX derive destinationChannel based from counterparty of sourceChannel
       }),
     );
     // let the bridge handler finish
