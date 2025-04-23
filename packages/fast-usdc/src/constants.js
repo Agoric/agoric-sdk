@@ -16,6 +16,8 @@ export const TxStatus = /** @type {const} */ ({
   AdvanceSkipped: 'ADVANCE_SKIPPED',
   /** settlement for matching advance received and funds disbursed */
   Disbursed: 'DISBURSED',
+  /** No route, forward not attempted */
+  ForwardedSkipped: 'FORWARD_SKIPPED',
   /** fallback: do not collect fees */
   Forwarded: 'FORWARDED',
   /** failed to forward to EUD */

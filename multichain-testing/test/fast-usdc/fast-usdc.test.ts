@@ -213,13 +213,10 @@ const makeTestContext = async (t: ExecutionContext) => {
    * Retry until the transaction status is the expected one.
    */
   const assertTxStatus = async (txHash: string, status: string) =>
-    t.notThrowsAsync(
-      common.retryUntilCondition(
-        () => queryTxRecord(txHash),
-        record => record.status === status,
-        `assertTxStatus ${txHash} status is ${status}`,
-      ),
-      `${txHash} status never reached ${status}`,
+    common.retryUntilCondition(
+      () => queryTxRecord(txHash),
+      record => record.status === status,
+      `assertTxStatus ${txHash} status is ${status}`,
     );
 
   const getUsdcDenom = (chainName: string) => {
@@ -241,24 +238,22 @@ const makeTestContext = async (t: ExecutionContext) => {
     eudChain: string,
     mintAmt: bigint,
   ) =>
-    t.notThrowsAsync(async () => {
-      await common.retryUntilCondition(
-        () => queryClient.queryBalance(EUD, getUsdcDenom(eudChain)),
-        ({ balance }) => {
-          if (!balance) return false; // retry
-          const value = BigInt(balance.amount);
-          if (value === 0n) return false; // retry
-          if (value < mintAmt) {
-            throw Error(`fees were deducted: ${value} < ${mintAmt}`);
-          }
-          t.log('forward done', value, 'uusdc');
-          return true;
-        },
-        `${EUD} forward available from fast-usdc`,
-        // this resolves quickly, so _decrease_ the interval so the timing is more apparent
-        { retryIntervalMs: 500, maxRetries: 20 },
-      );
-    });
+    common.retryUntilCondition(
+      () => queryClient.queryBalance(EUD, getUsdcDenom(eudChain)),
+      ({ balance }) => {
+        if (!balance) return false; // retry
+        const value = BigInt(balance.amount);
+        if (value === 0n) return false; // retry
+        if (value < mintAmt) {
+          throw Error(`fees were deducted: ${value} < ${mintAmt}`);
+        }
+        t.log('forward done', value, 'uusdc');
+        return true;
+      },
+      `${EUD} forward available from fast-usdc`,
+      // this resolves quickly, so _decrease_ the interval so the timing is more apparent
+      { retryIntervalMs: 500, maxRetries: 20 },
+    );
 
   return {
     ...common,
@@ -792,7 +787,7 @@ test.serial('minted before observed; forward path', async t => {
   await assertAmtForwarded(queryClient, EUD, eudChain, mintAmt);
 });
 
-test.serial('insufficient LP funds and forward failed', async t => {
+test.serial('forward skipped due to invalid EUD', async t => {
   const mintAmt = LP_DEPOSIT_AMOUNT * 2n;
   const {
     api,
@@ -854,7 +849,7 @@ test.serial('insufficient LP funds and forward failed', async t => {
 
   nobleTools.mockCctpMint(mintAmt, userForwardingAddr);
 
-  await assertTxStatus(evidence.txHash, 'FORWARD_FAILED');
+  await assertTxStatus(evidence.txHash, 'FORWARD_SKIPPED');
 
   const endingSettlementAccountBalance = await querySettlementAccountBalance();
   t.log(

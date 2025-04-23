@@ -10,6 +10,7 @@ import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import type { AmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import type { Zone } from '@agoric/zone';
 import type { FeeConfig, LogFn } from '@agoric/fast-usdc/src/types.js';
+import { makePromiseKit } from '@endo/promise-kit';
 
 export const prepareMockOrchAccounts = (
   zone: Zone,
@@ -24,17 +25,17 @@ export const prepareMockOrchAccounts = (
   },
 ) => {
   // each can only be resolved/rejected once per test
-  const poolAccountSendVK = makeVowKit<undefined>();
-  const poolAccountTransferVK = makeVowKit<undefined>();
-  const settleAccountTransferVK = makeVowKit<undefined>();
-  const settleAccountSendVK = makeVowKit<undefined>();
-  const intermediateAccountTransferVK = makeVowKit<undefined>();
-  const intermediateAccountDepositForBurnVK = makeVowKit<undefined>();
+  const poolAccountSendPK = makePromiseKit<void>();
+  const poolAccountTransferPK = makePromiseKit<void>();
+  const settleAccountTransferPK = makePromiseKit<void>();
+  const settleAccountSendPK = makePromiseKit<void>();
+  const intermediateAccountTransferPK = makePromiseKit<void>();
+  const intermediateAccountDepositForBurnPK = makePromiseKit<void>();
 
   const mockedPoolAccount = zone.exo('Mock Pool LocalOrchAccount', undefined, {
     transfer(destination: CosmosChainAddress, amount: DenomAmount) {
       log('PoolAccount.transfer() called with', destination, amount);
-      return poolAccountTransferVK.vow;
+      return poolAccountTransferPK.promise;
     },
     deposit(payment: Payment<'nat'>) {
       log('PoolAccount.deposit() called with', payment);
@@ -43,7 +44,7 @@ export const prepareMockOrchAccounts = (
     },
     send(destination: CosmosChainAddress, amount: DenomAmount) {
       log('PoolAccount.send() called with', destination, amount);
-      return poolAccountSendVK.vow;
+      return poolAccountSendPK.promise;
     },
   });
 
@@ -55,11 +56,11 @@ export const prepareMockOrchAccounts = (
   const settlementAccountMock = zone.exo('Mock Settlement Account', undefined, {
     transfer(...args) {
       settlementCallLog.push(harden(['transfer', ...args]));
-      return settleAccountTransferVK.vow;
+      return settleAccountTransferPK.promise;
     },
     send(...args) {
       settlementCallLog.push(harden(['send', ...args]));
-      return settleAccountSendVK.vow;
+      return settleAccountSendPK.promise;
     },
   });
   const settlementAccount = settlementAccountMock as unknown as HostInterface<
@@ -76,11 +77,11 @@ export const prepareMockOrchAccounts = (
     },
     transfer(...args) {
       intermediateCallLog.push(harden(['transfer', ...args]));
-      return intermediateAccountTransferVK.vow;
+      return intermediateAccountTransferPK.promise;
     },
     depositForBurn(...args) {
       intermediateCallLog.push(harden(['depositForBurn', ...args]));
-      return intermediateAccountDepositForBurnVK.vow;
+      return intermediateAccountDepositForBurnPK.promise;
     },
   });
   const intermediateAccount =
@@ -88,22 +89,25 @@ export const prepareMockOrchAccounts = (
       OrchestrationAccount<{ chainId: 'noble-any' }>
     >;
   return {
+    // These each have VResolver for "vow" resolver. The mocks actually
+    // deal in promises but the flow that awaits them expects that it's actually
+    // awaiting a vow (made by the membrane to look like a promise).
     mockPoolAccount: {
       account: poolAccount,
-      transferVResolver: poolAccountTransferVK.resolver,
-      sendVResolver: poolAccountSendVK.resolver,
+      transferVResolver: poolAccountTransferPK,
+      sendVResolver: poolAccountSendPK,
     },
     settlement: {
       account: settlementAccount,
       callLog: settlementCallLog,
-      transferVResolver: settleAccountTransferVK.resolver,
-      sendVResolver: settleAccountSendVK.resolver,
+      transferVResolver: settleAccountTransferPK,
+      sendVResolver: settleAccountSendPK,
     },
     intermediate: {
       account: intermediateAccount,
       callLog: intermediateCallLog,
-      transferVResolver: intermediateAccountTransferVK.resolver,
-      depositForBurnVResolver: intermediateAccountDepositForBurnVK.resolver,
+      transferVResolver: intermediateAccountTransferPK,
+      depositForBurnVResolver: intermediateAccountDepositForBurnPK,
     },
   };
 };
