@@ -10,10 +10,15 @@ on:
         required: true
         type: string
         description: 'Test command to run (e.g., "test:main" or "test:fast-usdc")'
+      test_suite_name:
+        required: true
+        type: string
+        description: 'Identifier for the test suite that will be used as part of the filename name for logs'
 
 jobs:
   multichain-e2e:
-    runs-on: ubuntu-latest-16core
+    name: Multichain E2E (${{ inputs.test_command }})
+    runs-on: 'depot-ubuntu-24.04-16'
 
     steps:
       - uses: actions/checkout@v4
@@ -23,7 +28,7 @@ jobs:
 
       - uses: ./agoric-sdk/.github/actions/restore-node
         with:
-          node-version: 18.x
+          node-version: 'node-new'
           path: ./agoric-sdk
 
       # Extract chain and relayer information
@@ -63,12 +68,18 @@ jobs:
         run: corepack enable
         working-directory: ./agoric-sdk/multichain-testing
 
+      # Before multichain-testing deps because that project portals into SDK
+      # but only the SDK postinstall script will runs its package patching.
+      - name: Install SDK deps
+        run: yarn install
+
       - name: Install @agoric/multichain-testing deps
         run: yarn install
         working-directory: ./agoric-sdk/multichain-testing
 
       - name: Lint @agoric/multichain-testing
-        run: yarn lint
+        # include testing imports to check package patches
+        run: yarn lint && yarn ava test/imports.test.ts
         working-directory: ./agoric-sdk/multichain-testing
 
       - name: docker build (sdk)
@@ -97,10 +108,6 @@ jobs:
           kubectl config set-context --current --namespace=${NAMESPACE}
           kubectl get pods
           make fund-provision-pool
-        working-directory: ./agoric-sdk/multichain-testing
-
-      - name: Override Chain Registry
-        run: make override-chain-registry
         working-directory: ./agoric-sdk/multichain-testing
 
       - name: Register Interchain Bank Assets
@@ -142,5 +149,5 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: multichain-e2e-logs-${{ env.NAMESPACE }}-${{ github.run_id }}-${{ github.job }}
+          name: multichain-e2e-logs-${{ env.NAMESPACE }}-${{ inputs.test_suite_name }}-${{ github.run_id }}-${{ github.job }}
           path: ${{ env.LOG_DIR }}

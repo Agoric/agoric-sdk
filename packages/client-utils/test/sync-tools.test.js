@@ -15,6 +15,9 @@ import {
 const retryIntervalMs = 10;
 const DEFAULT_TIMEOUT = 30;
 
+// suppress log output for test
+const log = () => {};
+
 const makeFakeVstorageKit = () => {
   let value;
 
@@ -65,7 +68,7 @@ test.serial('wait until contract is deployed', async t => {
     'name',
     {
       follow,
-      log: t.log,
+      log,
       setTimeout,
     },
     {
@@ -85,7 +88,7 @@ test.serial('wait until account funded', async t => {
 
   const waitP = waitUntilAccountFunded(
     'agoric12345',
-    { log: t.log, query, setTimeout },
+    { log, query, setTimeout },
     { denom: 'ufake', value: 100_000 },
     {
       maxRetries: 5,
@@ -123,7 +126,7 @@ test.serial('wait until account funded, insufficient balance', async t => {
 
   const waitP = waitUntilAccountFunded(
     'agoric12345',
-    { log: t.log, query, setTimeout },
+    { log, query, setTimeout },
     { denom: 'ufake', value: 100_000 },
     {
       maxRetries: 5,
@@ -166,7 +169,7 @@ test.serial(
       'agoric12345',
       'my-offer',
       false,
-      { log: t.log, follow, setTimeout },
+      { log, follow, setTimeout },
       {
         maxRetries: 5,
         retryIntervalMs,
@@ -186,7 +189,7 @@ test.serial('wait until offer result, wrong id - should throw', async t => {
     'agoric12345',
     'my-offer',
     false,
-    { log: t.log, follow, setTimeout },
+    { log, follow, setTimeout },
     {
       maxRetries: 5,
       retryIntervalMs,
@@ -205,7 +208,7 @@ test.serial('wait until offer result, no "status" - should throw', async t => {
     'agoric12345',
     'my-offer',
     false,
-    { follow, log: t.log, setTimeout },
+    { follow, log, setTimeout },
     {
       maxRetries: 5,
       retryIntervalMs,
@@ -229,7 +232,7 @@ test.serial(
       'agoric12345',
       'my-offer',
       false,
-      { follow, log: t.log, setTimeout },
+      { follow, log, setTimeout },
       {
         maxRetries: 5,
         retryIntervalMs,
@@ -249,7 +252,7 @@ test.serial('wait until offer result, do not wait for "payouts"', async t => {
     'agoric12345',
     'my-offer',
     false,
-    { follow, log: t.log, setTimeout },
+    { follow, log, setTimeout },
     {
       maxRetries: 7,
       retryIntervalMs,
@@ -285,7 +288,7 @@ test.serial('wait until offer result, wait for "payouts"', async t => {
     'agoric12345',
     'my-offer',
     true,
-    { follow, log: t.log, setTimeout },
+    { follow, log, setTimeout },
     {
       maxRetries: 7,
       retryIntervalMs,
@@ -334,7 +337,7 @@ test.serial(
 
     const waitP = waitUntilInvitationReceived(
       'agoric12345',
-      { follow, log: t.log, setTimeout },
+      { follow, log, setTimeout },
       {
         maxRetries: 3,
         retryIntervalMs,
@@ -354,7 +357,7 @@ test.serial(
 
     const waitP = waitUntilInvitationReceived(
       'agoric12345',
-      { follow, log: t.log, setTimeout },
+      { follow, log, setTimeout },
       {
         maxRetries: 5,
         retryIntervalMs,
@@ -379,7 +382,7 @@ test.serial(
 
     const waitP = waitUntilInvitationReceived(
       'agoric12345',
-      { follow, log: t.log, setTimeout },
+      { follow, log, setTimeout },
       {
         maxRetries: 3,
         retryIntervalMs,
@@ -397,7 +400,7 @@ test.serial('wait until invitation recevied', async t => {
 
   const waitP = waitUntilInvitationReceived(
     'agoric12345',
-    { follow, log: t.log, setTimeout },
+    { follow, log, setTimeout },
     {
       maxRetries: 5,
       retryIntervalMs,
@@ -424,7 +427,7 @@ test.serial('wait until offer exited', async t => {
   const waitP = waitUntilOfferExited(
     'agoric12345',
     'my-offer',
-    { follow, log: t.log, setTimeout },
+    { follow, log, setTimeout },
     {
       maxRetries: 5,
       retryIntervalMs,
@@ -455,7 +458,7 @@ test.serial('wait election result: question handle is respected', async t => {
     {
       // @ts-expect-error casting
       vstorage: { readLatestHead },
-      log: console.log,
+      log,
       setTimeout,
     },
     {
@@ -474,7 +477,7 @@ test.serial('wait election result: question handle is respected', async t => {
     {
       // @ts-expect-error casting
       vstorage: { readLatestHead },
-      log: console.log,
+      log,
       setTimeout,
     },
     {
@@ -513,7 +516,7 @@ test.serial('wait election result: deadline is respected', async t => {
     {
       // @ts-expect-error casting
       vstorage: { readLatestHead },
-      log: console.log,
+      log,
       setTimeout,
     },
     {
@@ -532,7 +535,7 @@ test.serial('wait election result: deadline is respected', async t => {
     {
       // @ts-expect-error casting
       vstorage: { readLatestHead },
-      log: console.log,
+      log,
       setTimeout,
     },
     {
@@ -574,7 +577,7 @@ test.serial('wait election result: outcome is respected', async t => {
     {
       // @ts-expect-error casting
       vstorage: { readLatestHead },
-      log: console.log,
+      log,
       setTimeout,
     },
     {
@@ -593,7 +596,7 @@ test.serial('wait election result: outcome is respected', async t => {
     {
       // @ts-expect-error casting
       vstorage: { readLatestHead },
-      log: console.log,
+      log,
       setTimeout,
     },
     {

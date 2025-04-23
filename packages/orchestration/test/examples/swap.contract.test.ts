@@ -5,12 +5,9 @@ import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
 import path from 'path';
 import { commonSetup } from '../supports.js';
+import * as contractExports from '../../src/examples/swap.contract.js';
 
-const dirname = path.dirname(new URL(import.meta.url).pathname);
-
-const contractFile = `${dirname}/../../src/examples/swap.contract.js`;
-type StartFn =
-  typeof import('@agoric/orchestration/src/examples/swap.contract.js').start;
+type StartFn = typeof contractExports.start;
 
 test('start', async t => {
   const {
@@ -22,7 +19,7 @@ test('start', async t => {
 
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
   const installation: Installation<StartFn> =
-    await bundleAndInstall(contractFile);
+    await bundleAndInstall(contractExports);
 
   const { publicFacet } = await E(zoe).startInstance(
     installation,

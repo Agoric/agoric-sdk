@@ -216,8 +216,8 @@ test('Attempt to withdraw more than available balance', async t => {
     ({ status }) => status.id === withdrawOfferId && status.error !== undefined,
     'Withdrawal offer error is in vstorage',
   );
-  t.is(
+  t.regex(
     offerResult.status.error,
-    'Error: One or more withdrawals failed ["[Error: cannot grab 200uist coins: 0uist is smaller than 200uist: insufficient funds]"]',
+    /Error: One or more withdrawals failed \["\[Error: cannot grab 200uist coins: (spendable balance )?(0uist)? is smaller than 200uist: insufficient funds\]"\]/,
   );
 });

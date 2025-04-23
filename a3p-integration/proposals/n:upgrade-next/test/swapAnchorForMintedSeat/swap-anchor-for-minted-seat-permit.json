@@ -1,8 +1,0 @@
-{
-    "consume": {
-      "contractKits": true,
-      "zoe": true,
-      "agoricNames": true,
-      "psmKit": true
-    }
-}

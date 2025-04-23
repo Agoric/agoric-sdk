@@ -9,8 +9,7 @@
     "type": "Software Upgrade Proposal",
     "sdk-generate": [
       "testing/add-USD-LEMONS.js test/generated/addUsdLemons",
-      "testing/add-USD-OLIVES.js test/generated/agoricNamesCoreEvals/addUsdOlives",
-      "testing/publish-test-info.js test/generated/agoricNamesCoreEvals/publishTestInfo"
+      "../../vats/src/proposals/terminate-governed-instance.js test/generated/terminate-price-feed board02963:ATOM-USD_price_feed"
     ]
   },
   "type": "module",
@@ -19,11 +18,11 @@
     "@agoric/client-utils": "dev",
     "@agoric/ertp": "dev",
     "@agoric/internal": "dev",
-    "@agoric/synthetic-chain": "^0.5.2",
+    "@agoric/synthetic-chain": "^0.5.6",
     "@agoric/zoe": "dev",
-    "@endo/errors": "^1.2.9",
-    "@endo/init": "^1.1.8",
-    "@endo/marshal": "^1.6.3",
+    "@endo/errors": "^1.2.10",
+    "@endo/init": "^1.1.9",
+    "@endo/marshal": "^1.6.4",
     "agoric": "dev",
     "ava": "^5.3.1",
     "better-sqlite3": "^9.6.0",
@@ -39,7 +38,7 @@
   "scripts": {
     "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops"
   },
-  "packageManager": "yarn@4.6.0",
+  "packageManager": "yarn@4.9.1",
   "devDependencies": {
     "eslint": "^8.57.0",
     "npm-run-all": "^4.1.5",

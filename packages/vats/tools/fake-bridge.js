@@ -290,8 +290,8 @@ export const fakeLocalChainBridgeQueryHandler = message => {
 
 /**
  * @param {import('@agoric/zone').Zone} zone
- * @param {(obj) => void} [onToBridge]
- * @param {(number) => string} makeAddressFn
+ * @param {(obj: object) => void} [onToBridge]
+ * @param {(index: number) => string} makeAddressFn
  * @returns {ScopedBridgeManager<'vlocalchain'>}
  */
 export const makeFakeLocalchainBridge = (

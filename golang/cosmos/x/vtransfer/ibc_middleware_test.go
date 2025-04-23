@@ -23,7 +23,6 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	swingsettesting "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/testing"
 	swingsettypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
-	vibckeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/keeper"
 	vibctypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/types"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -653,7 +652,7 @@ func (s *IntegrationTestSuite) TestHops() {
 					expectedRecords := []swingsettypes.InboundQueueRecord{}
 					if tc.receiverIsTarget {
 						expectedRecords = append(expectedRecords, swingsettypes.InboundQueueRecord{
-							Action: &vibckeeper.WriteAcknowledgementEvent{
+							Action: &vibctypes.WriteAcknowledgementEvent{
 								ActionHeader: &vm.ActionHeader{
 									Type:        "VTRANSFER_IBC_EVENT",
 									BlockHeight: writeAcknowledgementHeight,
@@ -661,7 +660,7 @@ func (s *IntegrationTestSuite) TestHops() {
 								},
 								Event:           "writeAcknowledgement",
 								Target:          baseReceiver,
-								Packet:          sendPacket,
+								Packet:          types.CopyToIBCPacket(sendPacket),
 								Acknowledgement: expectedAck.Acknowledgement(),
 							},
 							Context: swingsettypes.ActionContext{
@@ -765,7 +764,7 @@ func (s *IntegrationTestSuite) TestHops() {
 					expectedRecords := []swingsettypes.InboundQueueRecord{}
 					if tc.senderIsTarget {
 						expectedRecords = append(expectedRecords, swingsettypes.InboundQueueRecord{
-							Action: &vibckeeper.WriteAcknowledgementEvent{
+							Action: &vibctypes.AcknowledgementPacketEvent{
 								ActionHeader: &vm.ActionHeader{
 									Type:        "VTRANSFER_IBC_EVENT",
 									BlockHeight: acknowledgementHeight,
@@ -773,7 +772,7 @@ func (s *IntegrationTestSuite) TestHops() {
 								},
 								Event:           "acknowledgementPacket",
 								Target:          baseSender,
-								Packet:          expectedPacket,
+								Packet:          types.CopyToIBCPacket(expectedPacket),
 								Acknowledgement: ack.Acknowledgement(),
 								Relayer:         s.chainA.SenderAccount.GetAddress(),
 							},

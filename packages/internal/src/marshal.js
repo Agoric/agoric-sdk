@@ -2,7 +2,13 @@
 import { Fail } from '@endo/errors';
 import { Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
+import { M } from '@endo/patterns';
 import { isStreamCell } from './lib-chainStorage.js';
+
+/**
+ * @import {CapData} from '@endo/marshal';
+ * @import {TypedPattern} from './types.js';
+ */
 
 /**
  * Should be a union with Remotable, but that's `any`, making this type
@@ -52,18 +58,24 @@ export const boardSlottingMarshaller = (slotToVal = undefined) => {
   });
 };
 
-// TODO: Consolidate with `insistCapData` functions from swingset-liveslots,
-// swingset-xsnap-supervisor, etc.
+// TODO move CapDataShape to Endo
 /**
- * @param {unknown} data
- * @returns {asserts data is import('@endo/marshal').CapData<string>}
+ * @type {TypedPattern<CapData<any>>}
  */
-const assertCapData = data => {
+export const CapDataShape = { body: M.string(), slots: M.array() };
+harden(CapDataShape);
+
+/**
+ * Assert that this is CapData
+ *
+ * @param {unknown} data
+ * @returns {asserts data is CapData<unknown>}
+ */
+export const assertCapData = data => {
   assert.typeof(data, 'object');
   assert(data);
-  assert.typeof(data.body, 'string');
-  assert(Array.isArray(data.slots));
-  // XXX check that the .slots array elements are actually strings
+  typeof data.body === 'string' || Fail`data has non-string .body ${data.body}`;
+  Array.isArray(data.slots) || Fail`data has non-Array slots ${data.slots}`;
 };
 harden(assertCapData);
 

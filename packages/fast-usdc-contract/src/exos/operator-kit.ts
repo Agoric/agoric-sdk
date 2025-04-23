@@ -6,6 +6,7 @@ import type {
   CctpTxEvidence,
   RiskAssessment,
 } from '@agoric/fast-usdc/src/types.js';
+import type { Invitation } from '@agoric/zoe';
 
 const trace: (...args: unknown[]) => void = makeTracer('TxOperator');
 
@@ -69,7 +70,7 @@ export const prepareOperatorKit = (
          * @param evidence
          * @param riskAssessment
          */
-        async SubmitEvidence(
+        SubmitEvidence(
           evidence: CctpTxEvidence,
           riskAssessment: RiskAssessment,
         ): Promise<Invitation> {

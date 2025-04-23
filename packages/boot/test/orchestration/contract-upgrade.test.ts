@@ -16,7 +16,7 @@ const test: TestFn<WalletFactoryTestContext> = anyTest;
 test.before(async t => {
   t.context = await makeWalletFactoryContext(
     t,
-    '@agoric/vm-config/decentral-itest-orchestration-chains-config.json',
+    '@agoric/vm-config/decentral-itest-orchestration-config.json',
   );
 });
 test.after.always(t => t.context.shutdown?.());
@@ -87,7 +87,6 @@ test('resume', async t => {
   // This log shows the flow started, but didn't get past the IBC Transfer settlement
   t.deepEqual(getLogged(), [
     'sending {0} from cosmoshub to cosmos1whatever',
-    'got denom uist for [object Alleged: IST brand guest wrapper]',
     'got info for chain: cosmoshub cosmoshub-4',
     'completed transfer to localAccount',
   ]);
@@ -111,7 +110,6 @@ test('resume', async t => {
 
   t.deepEqual(getLogged(), [
     'sending {0} from cosmoshub to cosmos1whatever',
-    'got denom uist for [object Alleged: IST brand guest wrapper]',
     'got info for chain: cosmoshub cosmoshub-4',
     'completed transfer to localAccount',
     'completed transfer to cosmos1whatever',

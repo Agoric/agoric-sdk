@@ -41,7 +41,7 @@ export const updateSettlerReference = async (
   trace('fastUsdc upgraded', upgraded);
 
   await E(creatorFacet).connectToNoble();
-  trace('setIntermediateRecipient done');
+  trace('updateSettlerReference done');
 };
 
 /**

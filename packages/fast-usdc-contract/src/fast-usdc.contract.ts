@@ -1,25 +1,26 @@
-import { AssetKind } from '@agoric/ertp';
+import { AssetKind, type Amount } from '@agoric/ertp';
 import {
+  CosmosChainInfoShapeV1,
   FastUSDCTermsShape,
   FeeConfigShape,
 } from '@agoric/fast-usdc/src/type-guards.js';
 import { makeTracer } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import {
-  CosmosChainInfoShape,
   DenomDetailShape,
   DenomShape,
-  type IBCConnectionInfo,
   OrchestrationPowersShape,
   registerChainsAndAssets,
   withOrchestration,
+  type CosmosChainAddress,
+  type Denom,
+  type DenomDetail,
+  type IBCConnectionInfo,
   type OrchestrationAccount,
   type OrchestrationPowers,
   type OrchestrationTools,
-  type CosmosChainInfo,
-  type Denom,
-  type DenomDetail,
 } from '@agoric/orchestration';
+import type { HostForGuest } from '@agoric/orchestration/src/facade.js';
 import { makeZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
@@ -29,6 +30,7 @@ import { M } from '@endo/patterns';
 
 import type { HostInterface } from '@agoric/async-flow';
 import type {
+  ChainHubChainInfo,
   ContractRecord,
   FastUsdcTerms,
   FeeConfig,
@@ -38,20 +40,24 @@ import type {
   Marshaller,
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
+import type { ContractMeta, Invitation, ZCF } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
-import { prepareAdvancer } from './exos/advancer.js';
-import { prepareLiquidityPoolKit } from './exos/liquidity-pool.js';
-import { prepareSettler } from './exos/settler.js';
+import { prepareAdvancer } from './exos/advancer.ts';
+import { prepareLiquidityPoolKit } from './exos/liquidity-pool.ts';
+import { prepareSettler } from './exos/settler.ts';
 import { prepareStatusManager } from './exos/status-manager.ts';
 import type { OperatorOfferResult } from './exos/transaction-feed.ts';
 import { prepareTransactionFeedKit } from './exos/transaction-feed.ts';
 import * as flows from './fast-usdc.flows.ts';
+import { makeSupportsCctp } from './utils/cctp.ts';
 
 const trace = makeTracer('FastUsdc');
 
 const TXNS_NODE = 'txns';
 const FEE_NODE = 'feeConfig';
 const ADDRESSES_BAGGAGE_KEY = 'addresses';
+/** expected value: `OrchestrationAccount<{chainId: 'noble-1}>` Remotable */
+const NOBLE_ICA_BAGGAGE_KEY = 'nobleICA';
 
 export const meta = {
   customTermsShape: FastUSDCTermsShape,
@@ -59,7 +65,7 @@ export const meta = {
     // @ts-expect-error TypedPattern not recognized as record
     ...OrchestrationPowersShape,
     assetInfo: M.arrayOf([DenomShape, DenomDetailShape]),
-    chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
+    chainInfo: M.recordOf(M.string(), CosmosChainInfoShapeV1),
     feeConfig: FeeConfigShape,
     marshaller: M.remotable(),
     poolMetricsNode: M.remotable(),
@@ -89,7 +95,7 @@ export const contract = async (
   zcf: ZCF<FastUsdcTerms>,
   privateArgs: OrchestrationPowers & {
     assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
-    chainInfo: Record<string, CosmosChainInfo>;
+    chainInfo: Record<string, ChainHubChainInfo>;
     feeConfig: FeeConfig;
     marshaller: Marshaller;
     storageNode: StorageNode;
@@ -118,20 +124,78 @@ export const contract = async (
   const { USDC } = terms.brands;
   const { withdrawToSeat } = tools.zoeTools;
   const { baggage, chainHub, orchestrateAll, vowTools } = tools;
+
+  /**
+   * aka `IntermediateRecipientAccount`. A contract-controlled ICA on Noble that can send `MsgDepositForBurn`.
+   * retrieve from baggage, until:
+   * [Allow state shape with new optional fields #10200](https://github.com/Agoric/agoric-sdk/issues/10200)
+   *
+   * @throws {Error} if the Noble ICA is not set in baggage
+   */
+  const getNobleICA = (): OrchestrationAccount<{ chainId: 'noble-1' }> =>
+    baggage.get(NOBLE_ICA_BAGGAGE_KEY);
+
+  /** Chain, connection, and asset info can only be registered once */
+  const firstIncarnationKey = 'firstIncarnationKey';
+  // Perform this before makeLocalAccount() is called or it will cause
+  // `agoric` chain info to be pulled from agoricNames.
+  // UNTIL https://github.com/Agoric/agoric-sdk/issues/10602
+  if (!baggage.has(firstIncarnationKey)) {
+    baggage.init(firstIncarnationKey, true);
+    registerChainsAndAssets(
+      chainHub,
+      terms.brands,
+      privateArgs.chainInfo,
+      privateArgs.assetInfo,
+    );
+  }
+
+  const supportsCctp = makeSupportsCctp(chainHub);
+
+  const { makeLocalAccount, makeNobleAccount } = orchestrateAll(
+    {
+      // TODO flow picker for orchestrateAll with different contexts or ordering
+      makeLocalAccount: flows.makeLocalAccount,
+      makeNobleAccount: flows.makeNobleAccount,
+    },
+    {},
+  );
+
+  const poolAccountV = zone.makeOnce('PoolAccount', () => makeLocalAccount());
+  const settleAccountV = zone.makeOnce('SettleAccount', () =>
+    makeLocalAccount(),
+  );
+  const { forwardFunds } = orchestrateAll(
+    // @ts-expect-error flow membrance type debt
+    { forwardFunds: flows.forwardFunds },
+    {
+      currentChainReference: privateArgs.chainInfo.agoric.chainId,
+      getNobleICA,
+      log: makeTracer('ForwardFunds'),
+      settlementAccount: settleAccountV,
+      supportsCctp,
+      statusManager,
+    },
+  ) as { forwardFunds: HostForGuest<typeof flows.forwardFunds> };
+
   const makeSettler = prepareSettler(zone, {
     statusManager,
     USDC,
     withdrawToSeat,
     feeConfig,
+    forwardFunds,
+    getNobleICA,
     vowTools: tools.vowTools,
     zcf,
-    chainHub,
+    // UNTIL we have an generic way to attenuate an Exo https://github.com/Agoric/agoric-sdk/issues/11309
+    chainHub: { resolveAccountId: chainHub.resolveAccountId.bind(chainHub) },
   });
 
   const zoeTools = makeZoeTools(zcf, vowTools);
   const makeAdvancer = prepareAdvancer(zone, {
     chainHub,
     feeConfig,
+    getNobleICA,
     usdc: harden({
       brand: terms.brands.USDC,
       denom: terms.usdcDenom,
@@ -151,8 +215,6 @@ export const contract = async (
     { makeRecorderKit },
   );
 
-  const { makeLocalAccount, makeNobleAccount } = orchestrateAll(flows, {});
-
   const creatorFacet = zone.exo('Fast USDC Creator', undefined, {
     async makeOperatorInvitation(
       operatorId: string,
@@ -162,7 +224,7 @@ export const contract = async (
     removeOperator(operatorId: string): void {
       return feedKit.creator.removeOperator(operatorId);
     },
-    async getContractFeeBalance() {
+    async getContractFeeBalance(): Promise<Amount<'nat'>> {
       return poolKit.feeRecipient.getContractFeeBalance();
     },
     async makeWithdrawFeesInvitation(): Promise<Invitation<unknown>> {
@@ -172,7 +234,7 @@ export const contract = async (
       agoricChainId?: string,
       nobleChainId?: string,
       agoricToNoble?: IBCConnectionInfo,
-    ) {
+    ): Promise<CosmosChainAddress> {
       const shouldUpdate = agoricChainId && nobleChainId && agoricToNoble;
       if (shouldUpdate) {
         trace('connectToNoble', agoricChainId, nobleChainId, agoricToNoble);
@@ -188,15 +250,17 @@ export const contract = async (
 
       return vowTools.when(nobleAccountV, nobleAccount => {
         trace('nobleAccount', nobleAccount);
-        return vowTools.when(
-          E(nobleAccount).getAddress(),
-          intermediateRecipient => {
-            trace('intermediateRecipient', intermediateRecipient);
-            advancer.setIntermediateRecipient(intermediateRecipient);
-            settlerKit.creator.setIntermediateRecipient(intermediateRecipient);
-            return intermediateRecipient;
-          },
-        );
+        // store in the contract zone
+        if (baggage.has(NOBLE_ICA_BAGGAGE_KEY)) {
+          trace(
+            'Noble ICA already set in baggage. Equal?',
+            baggage.get(NOBLE_ICA_BAGGAGE_KEY) === nobleAccount,
+          );
+          baggage.set(NOBLE_ICA_BAGGAGE_KEY, nobleAccount);
+        } else {
+          baggage.init(NOBLE_ICA_BAGGAGE_KEY, nobleAccount);
+        }
+        return nobleAccount.getAddress();
       });
     },
     async publishAddresses() {
@@ -214,6 +278,14 @@ export const contract = async (
     },
     deleteCompletedTxs() {
       return statusManager.deleteCompletedTxs();
+    },
+    /** @type {typeof chainHub.updateChain} */
+    updateChain(chainName, chainInfo) {
+      return chainHub.updateChain(chainName, chainInfo);
+    },
+    /** @type {typeof chainHub.registerChain} */
+    registerChain(chainName, chainInfo) {
+      return chainHub.registerChain(chainName, chainInfo);
     },
   });
 
@@ -265,24 +337,8 @@ export const contract = async (
     makeLiquidityPoolKit(shareMint, privateArgs.poolMetricsNode),
   );
 
-  /** Chain, connection, and asset info can only be registered once */
-  const firstIncarnationKey = 'firstIncarnationKey';
-  if (!baggage.has(firstIncarnationKey)) {
-    baggage.init(firstIncarnationKey, true);
-    registerChainsAndAssets(
-      chainHub,
-      terms.brands,
-      privateArgs.chainInfo,
-      privateArgs.assetInfo,
-    );
-  }
-
   const feedKit = zone.makeOnce('Feed Kit', () => makeFeedKit());
 
-  const poolAccountV = zone.makeOnce('PoolAccount', () => makeLocalAccount());
-  const settleAccountV = zone.makeOnce('SettleAccount', () =>
-    makeLocalAccount(),
-  );
   // when() is OK here since this clearly resolves promptly.
   const [poolAccount, settlementAccount] = (await vowTools.when(
     vowTools.all([poolAccountV, settleAccountV]),
@@ -307,8 +363,8 @@ export const contract = async (
     }),
   );
 
-  // we create a new Advancer on every upgrade. It does not contain precious state, but on each
-  // upgrade we must remember to call `advancer.setIntermediateRecipient()`
+  // we create a new Advancer on every upgrade. It does not contain precious state and its Noble ICA
+  // access comes through the prepare scope. It all could since it's a singleton.
   // XXX delete `Advancer` that still may remain in zone after `update-settler-reference.core.js`
   const advancer = makeAdvancer({
     borrower: poolKit.borrower,
@@ -334,7 +390,9 @@ export const contract = async (
 };
 harden(contract);
 
-export const start = withOrchestration(contract);
+export const start = withOrchestration(contract, {
+  chainInfoValueShape: CosmosChainInfoShapeV1,
+});
 harden(start);
 
 export type FastUsdcSF = typeof start;

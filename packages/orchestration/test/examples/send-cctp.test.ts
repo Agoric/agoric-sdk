@@ -1,0 +1,254 @@
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
+import { E } from '@endo/far';
+import { makeIssuerKit } from '@agoric/ertp';
+import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
+import type { IBCMethod } from '@agoric/vats';
+import path from 'path';
+import { MsgDepositForBurn } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import type {
+  CosmosChainInfo,
+  IBCConnectionInfo,
+} from '../../src/cosmos-api.js';
+import { commonSetup } from '../supports.js';
+import { denomHash } from '../../src/utils/denomHash.js';
+import type { DenomDetail } from '../../src/types.js';
+import fetchedChainInfo from '../../src/fetched-chain-info.js';
+import { parseOutgoingTxPacket } from '../../tools/ibc-mocks.js';
+import * as contractExports from '../../src/examples/send-anywhere.contract.js';
+
+const contractName = 'sendAnywhere';
+type StartFn = typeof contractExports.start;
+
+const txChannelDefaults = {
+  counterPartyPortId: 'transfer',
+  version: 'ics20-1',
+  portId: 'transfer',
+  ordering: 1, // ORDER_UNORDERED
+  state: 3, // STATE_OPEN
+};
+
+const AgoricDevnetConfig = {
+  chains: {
+    axelar: {
+      chainId: 'axelar-testnet-lisbon-3',
+    },
+    osmosis: {
+      chainId: 'osmo-test-5',
+      namespace: 'cosmos',
+      reference: 'osmo-test-5',
+      bech32Prefix: 'osmosis',
+      connections: {
+        'axelar-testnet-lisbon-3': {
+          id: 'connection-1233333', // XXX???
+          client_id: '07-tendermint-1258',
+          state: 3, // STATE_OPEN,
+          counterparty: {
+            client_id: 'XXXX???',
+            connection_id: 'connection-87665', // XXX???
+          },
+          transferChannel: {
+            channelId: 'channel-566434324', // XXX???
+            counterPartyChannelId: 'channel-112233', // ???
+            ...txChannelDefaults,
+          },
+        } as IBCConnectionInfo,
+      },
+    } as CosmosChainInfo,
+  },
+  connections: {
+    'axelar-testnet-lisbon-3': {
+      // arbitrary ids...
+      id: 'connection-8600',
+      client_id: '07-tendermint-12700',
+      state: 3, // STATE_OPEN
+      counterparty: {
+        client_id: '07-tendermint-432600',
+        connection_id: 'connection-379300',
+      },
+      transferChannel: {
+        counterPartyChannelId: 'channel-1006200',
+        channelId: 'channel-6500',
+        ...txChannelDefaults,
+      },
+    } as IBCConnectionInfo,
+
+    'osmo-test-5': {
+      id: 'connection-86',
+      client_id: '07-tendermint-127',
+      state: 3, // STATE_OPEN
+      counterparty: {
+        client_id: '07-tendermint-4326',
+        connection_id: 'connection-3793',
+      },
+      transferChannel: {
+        counterPartyChannelId: 'channel-10062',
+        channelId: 'channel-65',
+        ...txChannelDefaults,
+      },
+    } as IBCConnectionInfo,
+  },
+};
+
+const registerUSDC = async ({ bankManager, agoricNamesAdmin }) => {
+  const usdcKit = withAmountUtils(makeIssuerKit('USDC'));
+  const { issuer, mint, brand } = usdcKit;
+
+  // TODO: use USDC denom
+  // const { axelar } = AgoricDevnetConfig.chains;
+  const { noble } = fetchedChainInfo;
+  const { channelId: agoricToNoble } =
+    fetchedChainInfo.agoric.connections[noble.chainId].transferChannel;
+  const denom = `ibc/${denomHash({ channelId: agoricToNoble, denom: 'uusdc' })}`;
+
+  const issuerName = 'USDC';
+  const proposedName = 'USDC noble';
+  await E(bankManager).addAsset(denom, issuerName, proposedName, {
+    issuer,
+    mint,
+    brand,
+  });
+  await E(E(agoricNamesAdmin).lookupAdmin('vbankAsset')).update(
+    denom,
+    /** @type {AssetInfo} */ harden({
+      brand,
+      issuer,
+      issuerName,
+      denom,
+      proposedName,
+      displayInfo: { IOU: true },
+    }),
+  );
+
+  return harden({ ...usdcKit, denom });
+};
+
+test('send to base via noble CCTP', async t => {
+  t.log('bootstrap, orchestration core-eval');
+  const {
+    bootstrap,
+    commonPrivateArgs,
+    brands: { ist },
+    utils: {
+      inspectLocalBridge,
+      transmitTransferAck,
+      populateChainHub,
+      inspectDibcBridge,
+    },
+  } = await commonSetup(t);
+  const vt = bootstrap.vowTools;
+
+  populateChainHub();
+  const { zoe, bundleAndInstall } = await setUpZoeForTest();
+
+  t.log('contract coreEval', contractName);
+
+  const installation: Installation<StartFn> =
+    await bundleAndInstall(contractExports);
+
+  const { bankManager, agoricNamesAdmin } = bootstrap;
+  const usdcKit = await registerUSDC({
+    bankManager,
+    agoricNamesAdmin,
+  });
+
+  const storageNode = await E(bootstrap.storage.rootNode).makeChildNode(
+    contractName,
+  );
+
+  // Mix osmosis from AgoricDevnetConfig with commonPrivateArgs
+  const {
+    agoric,
+    osmosis: _x,
+    ...withoutOsmosis
+  } = commonPrivateArgs.chainInfo;
+  const { osmosis } = AgoricDevnetConfig.chains;
+  const connections = {
+    ...agoric.connections,
+    ...AgoricDevnetConfig.connections,
+    // XXX to get from Agoric to axelar, use osmosis
+    'axelar-testnet-lisbon-3': AgoricDevnetConfig.connections[osmosis.chainId],
+  };
+  const chainInfo = {
+    ...withoutOsmosis,
+    osmosis,
+    agoric: { ...agoric, connections },
+  };
+  const assetInfo: Array<[string, DenomDetail]> = [
+    ...commonPrivateArgs.assetInfo,
+  ];
+  const sendKit = await E(zoe).startInstance(
+    installation,
+    { Stable: ist.issuer, USDC: usdcKit.issuer },
+    {},
+    {
+      ...commonPrivateArgs,
+      assetInfo,
+      chainInfo,
+      storageNode,
+    },
+  );
+
+  t.log('register the base chain');
+  await E(sendKit.creatorFacet).registerChain('base', {
+    // https://developers.circle.com/stablecoins/supported-domains
+    cctpDestinationDomain: 6,
+    namespace: 'eip155',
+    reference: '8453', // base mainnet
+  });
+
+  t.log('client uses contract to send to EVM chain via CCTP');
+  {
+    const anAmt = usdcKit.units(4.25);
+    const Send = await E(usdcKit.mint).mintPayment(anAmt);
+
+    const publicFacet = await E(zoe).getPublicFacet(sendKit.instance);
+    const inv = E(publicFacet).makeSendInvitation();
+    const userSeat = await E(zoe).offer(
+      inv,
+      { give: { Send: anAmt } },
+      { Send },
+      {
+        destAddr: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
+        chainName: 'base',
+      },
+    );
+    await transmitTransferAck();
+
+    await vt.when(E(userSeat).getOfferResult());
+    const history = inspectLocalBridge();
+    const { messages, address: fakeLocalChainAddr } = history.at(-1);
+    t.is(messages.length, 1);
+    const [txfr] = messages;
+    t.log('local bridge', txfr);
+    t.like(txfr, {
+      '@type': '/ibc.applications.transfer.v1.MsgTransfer',
+      receiver: 'cosmos1test', // TODO port setBech32Prefix from fastUSDC. This currently represents our NobleICA
+      sender: fakeLocalChainAddr,
+      sourceChannel: 'channel-62',
+      token: {
+        amount: '4250000',
+        // see test above
+        denom:
+          'ibc/FE98AAD68F02F03565E9FA39A5E627946699B2B07115889ED812D8BA639576A9',
+      },
+    });
+    t.is(
+      usdcKit.denom,
+      'ibc/FE98AAD68F02F03565E9FA39A5E627946699B2B07115889ED812D8BA639576A9',
+    );
+  }
+
+  await eventLoopIteration();
+
+  const { bridgeDowncalls } = await inspectDibcBridge();
+  const latest = bridgeDowncalls[
+    bridgeDowncalls.length - 1
+  ] as IBCMethod<'sendPacket'>;
+  const { messages } = parseOutgoingTxPacket(latest.packet.data);
+  const msg = MsgDepositForBurn.decode(messages[0].value);
+  t.is(msg.burnToken, 'uusdc');
+  t.is(messages[0].typeUrl, '/circle.cctp.v1.MsgDepositForBurn');
+});

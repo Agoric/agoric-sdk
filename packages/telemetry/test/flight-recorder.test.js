@@ -31,8 +31,25 @@ const bufferTests = test.macro(
       circularBufferSize: BUFFER_SIZE,
       circularBufferFilename: tmpFile,
     });
-    const slogSender = makeSlogSenderFromBuffer({ fileHandle, writeCircBuf });
-    t.teardown(slogSender.shutdown);
+    const realSlogSender = makeSlogSenderFromBuffer({
+      fileHandle,
+      writeCircBuf,
+    });
+    let wasShutdown = false;
+    const shutdown = () => {
+      if (wasShutdown) return;
+      wasShutdown = true;
+
+      return realSlogSender.shutdown();
+    };
+    t.teardown(shutdown);
+    // To verify lack of attempted mutation by the consumer, send only hardened
+    // entries.
+    /** @type {typeof realSlogSender} */
+    const slogSender = Object.assign(
+      (obj, serialized) => realSlogSender(harden(obj), serialized),
+      realSlogSender,
+    );
     slogSender({ type: 'start' });
     await slogSender.forceFlush();
     t.is(fs.readFileSync(tmpFile, { encoding: 'utf8' }).length, BUFFER_SIZE);
@@ -83,6 +100,18 @@ const bufferTests = test.macro(
     slogSender(null, 'PRE-SERIALIZED');
     await slogSender.forceFlush();
     t.truthy(fs.readFileSync(tmpFile).includes('PRE-SERIALIZED'));
+
+    slogSender(null, 'PRE_SHUTDOWN');
+    const shutdownP = shutdown();
+    slogSender(null, 'POST_SHUTDOWN');
+    await shutdownP;
+    slogSender(null, 'SHUTDOWN_COMPLETED');
+
+    const finalContent = fs.readFileSync(tmpFile);
+
+    t.truthy(finalContent.includes('PRE_SHUTDOWN'));
+    t.falsy(finalContent.includes('POST_SHUTDOWN'));
+    t.falsy(finalContent.includes('SHUTDOWN_COMPLETED'));
   },
 );
 

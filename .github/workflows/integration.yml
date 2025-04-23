@@ -64,7 +64,7 @@ jobs:
       # Prerequisites
       - uses: ./.github/actions/restore-node
         with:
-          node-version: 18.18
+          node-version: node-new
           keep-endo: 'true'
 
       # Select a branch of the
@@ -126,7 +126,7 @@ jobs:
     needs: pre_check
     if: needs.pre_check.outputs.should_run == 'true'
 
-    runs-on: ubuntu-22.04 # jammy (LTS)
+    runs-on: 'depot-ubuntu-22.04-4'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -140,42 +140,11 @@ jobs:
           path: ./agoric-sdk
       - uses: ./agoric-sdk/.github/actions/restore-node
         with:
-          # XXX loadgen not compatible with 18.19 https://github.com/Agoric/agoric-sdk/pull/8365#issuecomment-1848003597
-          node-version: 18.18
+          # NB the Dockerfile.sdk based images must match this node version
+          # The node version inside ansible deployment (prepare-machine.yml)
+          # should also match this node version
+          node-version: 20
           path: ./agoric-sdk
-          # Forces xsnap to initialize all memory to random data, which increases
-          # the chances the content of snapshots may deviate between validators
-          xsnap-random-init: '1'
-
-      # Select a branch of the
-      # [load generator dapp repository](https://github.com/Agoric/testnet-load-generator)
-      # to use, defaulting to 'main' but allowing overrides in the pull request
-      # description using lines like `#loadgen-branch: ceelab`
-      - name: Get the appropriate loadgen branch
-        id: get-loadgen-branch
-        uses: actions/github-script@v7
-        with:
-          result-encoding: string
-          script: |
-            let branch = 'main';
-            if (context.payload.pull_request) {
-              const { body } = context.payload.pull_request;
-              const regex = /^\#loadgen-branch:\s+(\S+)/m;
-              const result = regex.exec(body);
-              if (result) {
-                branch = result[1];
-              }
-            }
-            console.log('loadgen branch: ' + branch);
-            return branch;
-
-      - name: Check out loadgen
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ env.ORG_NAME }}/${{ env.LOADGEN_REPO_NAME }}
-          path: ./${{ env.LOADGEN_REPO_NAME }}
-          ref: ${{steps.get-loadgen-branch.outputs.result}}
-
       - name: Build cosmic-swingset dependencies
         working-directory: ./agoric-sdk
         run: |
@@ -191,8 +160,7 @@ jobs:
         run: |
           set -xe
           DOCKER_VOLUMES="$PWD/../agoric-sdk:/usr/src/agoric-sdk" \
-          LOADGEN=1 \
-          ../agoric-sdk/packages/deployment/scripts/integration-test.sh
+           ../agoric-sdk/packages/deployment/scripts/integration-test.sh
         timeout-minutes: 90
         env:
           NETWORK_NAME: chaintest
@@ -231,7 +199,7 @@ jobs:
   test-docker-build:
     needs: pre_check
     if: needs.pre_check.outputs.should_run == 'true'
-    runs-on: ubuntu-latest
+    runs-on: 'depot-ubuntu-22.04-8'
     timeout-minutes: 60
     steps:
       - name: update job environment
@@ -280,7 +248,7 @@ jobs:
           # and since we can't build core eval submissions from the SDK using a newer endo,
           # simply ignore any endo branch integration (this means we don't have full coverage)
           ignore-endo-branch: 'true'
-          node-version: '18.x'
+          node-version: 'node-new'
           path: ./agoric-sdk
           # Forces xsnap to initialize all memory to random data, which increases
           # the chances the content of snapshots may deviate between validators

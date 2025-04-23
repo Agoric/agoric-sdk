@@ -36,7 +36,8 @@ export const makeVstorageMock = (records: { [key: string]: any }) => {
   const vstorage = {
     readLatest: async (path: string) => {
       queryCounts[path] = (queryCounts[path] ?? 0) + 1;
-      return records[path];
+      const values = records[path];
+      return { value: JSON.stringify({ values }) };
     },
   };
 

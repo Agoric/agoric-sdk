@@ -11,7 +11,7 @@ const trace = makeTracer('FUSD-2', true);
 /** @type {typeof import('@agoric/ertp').AmountMath.make} */
 // @ts-expect-error AssetKind conditionals aren't captured
 const make = (brand, value) => harden({ brand, value });
-/** @type {typeof import('@agoric/zoe/src/contractSupport/ratio.js').makeRatio} */
+/** @type {typeof import('@agoric/ertp/src/ratio.js').makeRatio} */
 const makeRatio = (numerator, numeratorBrand, denominator = 100n) =>
   harden({
     numerator: make(numeratorBrand, numerator),
@@ -21,7 +21,7 @@ const makeRatio = (numerator, numeratorBrand, denominator = 100n) =>
 /**
  * @import {CopyRecord} from '@endo/pass-style';
  * @import {Brand, Ratio} from '@agoric/ertp';
- * @import {IBCConnectionInfo} from '@agoric/orchestration';
+ * @import {CosmosChainInfo, IBCConnectionInfo} from '@agoric/orchestration';
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {BundleID} from '@agoric/swingset-vat';
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js';
@@ -113,8 +113,8 @@ export const updateNobleICA = async (
 
   const { agoric, noble } = kitPre.privateArgs.chainInfo;
   const nobleICAaddr = await E(creatorFacet).connectToNoble(
-    agoric.chainId,
-    noble.chainId,
+    /** @type {CosmosChainInfo} */ (agoric).chainId,
+    /** @type {CosmosChainInfo} */ (noble).chainId,
     agoricToNoble,
   );
   trace('noble ICA', nobleICAaddr);

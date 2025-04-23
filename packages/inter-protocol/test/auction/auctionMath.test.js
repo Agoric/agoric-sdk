@@ -1,7 +1,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
-import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { makeRatioFromAmounts } from '@agoric/ertp/src/ratio.js';
 import { Far } from '@endo/far';
 import { amountsToSettle } from '../../src/auction/auctionMath.js';
 

@@ -199,7 +199,7 @@ export const AmountMath = {
    *
    * Does not verify that the Brand's AssetKind matches the value's.
    *
-   * @template {Brand} B
+   * @template {Brand<any>} B
    * @template {NatValue | CopySet | CopyBag | SetValue} V
    * @param {B} brand
    * @param {V} allegedValue

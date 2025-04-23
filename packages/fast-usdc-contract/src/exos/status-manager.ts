@@ -212,7 +212,6 @@ export const prepareStatusManager = (
       skipAdvance: M.call(CctpTxEvidenceShape, M.arrayOf(M.string())).returns(),
       advanceOutcomeForMintedEarly: M.call(EvmHashShape, M.boolean()).returns(),
       advanceOutcomeForUnknownMint: M.call(CctpTxEvidenceShape).returns(),
-      observe: M.call(CctpTxEvidenceShape).returns(),
       hasBeenObserved: M.call(CctpTxEvidenceShape).returns(M.boolean()),
       deleteCompletedTxs: M.call().returns(M.undefined()),
       dequeueStatus: M.call(M.string(), M.bigint()).returns(
@@ -227,7 +226,9 @@ export const prepareStatusManager = (
       disbursed: M.call(EvmHashShape, AmountKeywordRecordShape).returns(
         M.undefined(),
       ),
-      forwarded: M.call(EvmHashShape, M.boolean()).returns(),
+      forwarded: M.call(EvmHashShape).returns(),
+      forwardFailed: M.call(EvmHashShape).returns(),
+      forwardSkipped: M.call(EvmHashShape).returns(),
       lookupPending: M.call(M.string(), M.bigint()).returns(
         M.arrayOf(PendingTxShape),
       ),
@@ -315,14 +316,6 @@ export const prepareStatusManager = (
       },
 
       /**
-       * Add a new transaction with OBSERVED status
-       * @param evidence
-       */
-      observe(evidence: CctpTxEvidence): void {
-        initPendingTx(evidence, PendingTxStatus.Observed);
-      },
-
-      /**
        * Note: ADVANCING state implies tx has been OBSERVED
        * @param evidence
        */
@@ -348,9 +341,9 @@ export const prepareStatusManager = (
        * forwarding account and amount. Since multiple pending transactions may exist with
        * identical (account, amount) pairs, we process them in FIFO order.
        *
-       * @param nfa
-       * @param amount
-       * @returns undefined if no pending transactions exist for this address and amount combination.
+       * @param {bigint} nfa
+       * @param {NobleAddress} amount
+       * @returns {undefined} if no pending transactions exist for this address and amount combination.
        */
       dequeueStatus(
         nfa: NobleAddress,
@@ -385,15 +378,40 @@ export const prepareStatusManager = (
       },
 
       /**
-       * Mark a transaction as `FORWARDED` or `FORWARD_FAILED`
+       * Mark a transaction as `FORWARDED`
        * @param txHash
-       * @param success
        */
-      forwarded(txHash: EvmHash, success: boolean): void {
+      forwarded(txHash: EvmHash): void {
         publishTxnRecord(
           txHash,
           harden({
-            status: success ? TxStatus.Forwarded : TxStatus.ForwardFailed,
+            status: TxStatus.Forwarded,
+          }),
+        );
+      },
+
+      /**
+       * Mark a transaction as `FORWARD_FAILED`
+       * @param txHash
+       */
+      forwardFailed(txHash: EvmHash): void {
+        publishTxnRecord(
+          txHash,
+          harden({
+            status: TxStatus.ForwardFailed,
+          }),
+        );
+      },
+
+      /**
+       * Mark a transaction as `FORWARD_SKIPPED`
+       * @param txHash
+       */
+      forwardSkipped(txHash: EvmHash): void {
+        publishTxnRecord(
+          txHash,
+          harden({
+            status: 'FORWARD_SKIPPED',
           }),
         );
       },

@@ -22,7 +22,7 @@ import {
  * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  * @import {CosmosInterchainService} from './exo-interfaces.js';
  * @import {prepareCosmosOrchestrationAccount} from './cosmos-orchestration-account.js';
- * @import {CosmosChainInfo, IBCConnectionInfo, CosmosChainAddress, IcaAccount, Chain, ICQConnection} from '../types.js';
+ * @import {CosmosChainInfo, IBCConnectionInfo, CosmosChainAddress, IcaAccount, Chain, ICQConnection, ChainInfo} from '../types.js';
  */
 
 const trace = makeTracer('RemoteChainFacade');
@@ -41,8 +41,8 @@ const trace = makeTracer('RemoteChainFacade');
 
 /**
  * @typedef {{
- *   remoteChainInfo: CosmosChainInfo;
- *   connectionInfo: IBCConnectionInfo;
+ *   remoteChainInfo: ChainInfo;
+ *   connectionInfo: IBCConnectionInfo | undefined;
  *   icqConnection: ICQConnection | undefined;
  * }} RemoteChainFacadeState
  */
@@ -103,8 +103,8 @@ const prepareRemoteChainFacadeKit = (
       }),
     },
     /**
-     * @param {CosmosChainInfo} remoteChainInfo
-     * @param {IBCConnectionInfo} connectionInfo
+     * @param {ChainInfo} remoteChainInfo
+     * @param {IBCConnectionInfo} [connectionInfo]
      */
     (remoteChainInfo, connectionInfo) => {
       trace('making a RemoteChainFacade');
@@ -126,15 +126,21 @@ const prepareRemoteChainFacadeKit = (
           return asVow(() => {
             const { remoteChainInfo, connectionInfo } = this.state;
 
+            if (remoteChainInfo.namespace !== 'cosmos') {
+              throw Fail`only supported on 'cosmos' chains, not ${remoteChainInfo.namespace}`;
+            }
+            if (!connectionInfo) throw Fail`IBC connection info not found`;
+
             // icqConnection is ultimately retrieved from state, but let's
             // create a connection if it doesn't exist
             const icqConnOrUndefinedV =
-              remoteChainInfo.icqEnabled && !this.state.icqConnection
+              /** @type {CosmosChainInfo} */ (remoteChainInfo)?.icqEnabled &&
+              !this.state.icqConnection
                 ? E(orchestration).provideICQConnection(connectionInfo.id)
                 : undefined;
 
             const makeAccountV = E(orchestration).makeAccount(
-              remoteChainInfo.chainId,
+              /** @type {CosmosChainInfo} */ (remoteChainInfo).chainId,
               connectionInfo.counterparty.connection_id,
               connectionInfo.id,
             );
@@ -153,12 +159,16 @@ const prepareRemoteChainFacadeKit = (
         query(msgs) {
           return asVow(() => {
             const {
+              /** @type {CosmosChainInfo} */
               remoteChainInfo: { icqEnabled, chainId },
+              /** @type {IBCConnectionInfo | undefined} */
               connectionInfo,
-            } = this.state;
+            } = /** @type {any} */ (this.state);
+
             if (!icqEnabled) {
               throw Fail`Queries not available for chain ${q(chainId)}`;
             }
+            if (!connectionInfo) throw Fail`IBC connection info not found`;
             // if none exists, make one and still send the query in the handler
             if (!this.state.icqConnection) {
               return watch(

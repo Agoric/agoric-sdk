@@ -2,7 +2,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { Far } from '@endo/pass-style';
 import { mustMatch } from '@endo/patterns';
 import { AmountMath } from '@agoric/ertp';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import { FeeConfigShape } from '@agoric/fast-usdc/src/type-guards.js';
 import {
   fromLegible,

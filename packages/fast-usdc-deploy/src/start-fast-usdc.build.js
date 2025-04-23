@@ -2,10 +2,7 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { AmountMath } from '@agoric/ertp';
 import { FastUSDCConfigShape } from '@agoric/fast-usdc/src/type-guards.js';
-import {
-  multiplyBy,
-  parseRatio,
-} from '@agoric/zoe/src/contractSupport/ratio.js';
+import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import { Far } from '@endo/far';
 import { parseArgs } from 'node:util';
 import { configurations } from './utils/deploy-config.js';
@@ -87,7 +84,9 @@ export const defaultProposalBuilder = async (
         options: toExternalConfig(config, crossVatContext, FastUSDCConfigShape),
         installKeys: {
           fastUsdc: publishRef(
-            install('@aglocal/fast-usdc-contract/src/fast-usdc.contract.ts'),
+            install(
+              '@aglocal/fast-usdc-deploy/dist/fast-usdc.contract.bundle.js',
+            ),
           ),
         },
       },

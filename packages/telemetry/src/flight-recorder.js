@@ -283,20 +283,22 @@ export const makeSimpleCircularBuffer = async ({
  * @param {Pick<CircularBuffer, 'fileHandle' | 'writeCircBuf'>} circBuf
  */
 export const makeSlogSenderFromBuffer = ({ fileHandle, writeCircBuf }) => {
-  /** @type {Promise<void>} */
+  /** @type {Promise<void> | undefined} */
   let toWrite = Promise.resolve();
   const writeJSON = (obj, serialized = serializeSlogObj(obj)) => {
     // Prepend a newline so that the file can be more easily manipulated.
     const data = new TextEncoder().encode(`\n${serialized}`);
     // console.log('have obj', obj, data);
-    toWrite = toWrite.then(() => writeCircBuf(data));
+    toWrite = toWrite?.then(() => writeCircBuf(data));
   };
   return Object.assign(writeJSON, {
     forceFlush: async () => {
       await toWrite;
     },
     shutdown: async () => {
-      await toWrite;
+      const lastWritten = toWrite;
+      toWrite = undefined;
+      await lastWritten;
       await fileHandle.close();
     },
     usesJsonObject: true,

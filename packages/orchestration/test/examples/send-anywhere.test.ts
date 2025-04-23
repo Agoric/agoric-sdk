@@ -4,7 +4,7 @@ import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
 import path from 'path';
 import { mustMatch } from '@endo/patterns';
-import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { makeIssuerKit } from '@agoric/ertp';
 import {
   eventLoopIteration,
   inspectMapStore,
@@ -19,17 +19,15 @@ import type {
 import { commonSetup } from '../supports.js';
 import { SingleNatAmountRecord } from '../../src/examples/send-anywhere.contract.js';
 import { registerChain } from '../../src/chain-info.js';
+import * as contractExports from '../../src/examples/send-anywhere.contract.js';
 
-const dirname = path.dirname(new URL(import.meta.url).pathname);
 const expectUnhandled = makeExpectUnhandledRejection({
   test,
   importMetaUrl: import.meta.url,
 });
 
 const contractName = 'sendAnywhere';
-const contractFile = `${dirname}/../../src/examples/send-anywhere.contract.js`;
-type StartFn =
-  typeof import('../../src/examples/send-anywhere.contract.js').start;
+type StartFn = typeof contractExports.start;
 
 const chainInfoDefaults = {
   connections: {},
@@ -65,7 +63,7 @@ test('single amount proposal shape (keyword record)', async t => {
   }
 });
 
-test('send using arbitrary chain info', async t => {
+const bootstrapOrchestration = async t => {
   t.log('bootstrap, orchestration core-eval');
   const {
     bootstrap,
@@ -80,7 +78,7 @@ test('send using arbitrary chain info', async t => {
   t.log('contract coreEval', contractName);
 
   const installation: Installation<StartFn> =
-    await bundleAndInstall(contractFile);
+    await bundleAndInstall(contractExports);
 
   const storageNode = await E(bootstrap.storage.rootNode).makeChildNode(
     contractName,
@@ -91,9 +89,41 @@ test('send using arbitrary chain info', async t => {
     {},
     { ...commonPrivateArgs, storageNode },
   );
+  return {
+    bootstrap,
+    commonPrivateArgs,
+    ist,
+    inspectLocalBridge,
+    pourPayment,
+    transmitTransferAck,
+    vt,
+    zoe,
+    installation,
+    storageNode,
+    sendKit,
+  };
+};
+
+test('send using arbitrary chain info', async t => {
+  const {
+    bootstrap,
+    commonPrivateArgs,
+    ist,
+    inspectLocalBridge,
+    pourPayment,
+    transmitTransferAck,
+    vt,
+    zoe,
+    installation,
+    storageNode,
+    sendKit,
+  } = await bootstrapOrchestration(t);
 
   const hotChainInfo = harden({
+    bech32Prefix: 'hot',
     chainId: 'hot-new-chain-0',
+    namespace: 'cosmos',
+    reference: 'hot-new-chain-0',
     stakingTokens: [{ denom: 'uhot' }],
     ...chainInfoDefaults,
   }) as CosmosChainInfo;
@@ -195,10 +225,11 @@ test('send using arbitrary chain info', async t => {
     }),
   );
 
+  const usdcKit = withAmountUtils(makeIssuerKit('USDC'));
   t.log('another contract uses the now well-known hot chain');
   const orchKit = await E(zoe).startInstance(
     installation,
-    { Stable: ist.issuer },
+    { Stable: ist.issuer, USDC: usdcKit.issuer },
     {},
     { ...commonPrivateArgs, storageNode },
   );
@@ -247,7 +278,7 @@ test('baggage', async t => {
   });
 
   await E(zoe).startInstance(
-    await bundleAndInstall(contractFile),
+    await bundleAndInstall(contractExports),
     { Stable: ist.issuer },
     {},
     commonPrivateArgs,
@@ -273,7 +304,7 @@ test(expectUnhandled(1), 'failed ibc transfer returns give', async t => {
   t.log('contract coreEval', contractName);
 
   const installation: Installation<StartFn> =
-    await bundleAndInstall(contractFile);
+    await bundleAndInstall(contractExports);
 
   const storageNode = await E(bootstrap.storage.rootNode).makeChildNode(
     contractName,
@@ -366,7 +397,7 @@ test('non-vbank asset presented is returned', async t => {
   const moolah = withAmountUtils(makeIssuerKit('MOO'));
 
   const installation: Installation<StartFn> =
-    await bundleAndInstall(contractFile);
+    await bundleAndInstall(contractExports);
   const storageNode = await E(bootstrap.storage.rootNode).makeChildNode(
     contractName,
   );
@@ -413,7 +444,7 @@ test('rejects multi-asset send', async t => {
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
 
   const installation: Installation<StartFn> =
-    await bundleAndInstall(contractFile);
+    await bundleAndInstall(contractExports);
   const storageNode = await E(bootstrap.storage.rootNode).makeChildNode(
     contractName,
   );
@@ -441,5 +472,61 @@ test('rejects multi-asset send', async t => {
       message:
         '"send" proposal: give: Must not have more than 1 properties: {"BLD":{"brand":"[Alleged: BLD brand]","value":"[10n]"},"IST":{"brand":"[Alleged: IST brand]","value":"[10n]"}}',
     },
+  );
+});
+
+test('send to Noble', async t => {
+  const {
+    commonPrivateArgs,
+    ist,
+    inspectLocalBridge,
+    pourPayment,
+    transmitTransferAck,
+    vt,
+    zoe,
+    installation,
+    storageNode,
+    sendKit,
+  } = await bootstrapOrchestration(t);
+
+  t.log('client uses contract to send to noble');
+  {
+    const publicFacet = await E(zoe).getPublicFacet(sendKit.instance);
+    const anAmt = ist.units(3.5);
+    const Send = await pourPayment(anAmt);
+    const userSeat = await E(zoe).offer(
+      E(publicFacet).makeSendInvitation(),
+      { give: { Send: anAmt } },
+      { Send },
+      { destAddr: 'nobleDestAddr', chainName: 'noble' },
+    );
+    await transmitTransferAck();
+    await vt.when(E(userSeat).getOfferResult());
+
+    const history = inspectLocalBridge();
+    t.like(history, [
+      { type: 'VLOCALCHAIN_ALLOCATE_ADDRESS' },
+      { type: 'VLOCALCHAIN_EXECUTE_TX' },
+    ]);
+    const [_alloc, { messages, address: execAddr }] = history;
+    t.is(messages.length, 1);
+    const [txfr] = messages;
+    t.log('local bridge', txfr);
+    t.like(txfr, {
+      '@type': '/ibc.applications.transfer.v1.MsgTransfer',
+      receiver: 'nobleDestAddr',
+      sender: execAddr,
+      sourceChannel: 'channel-62',
+      sourcePort: 'transfer',
+      token: { amount: '3500000', denom: 'uist' },
+    });
+  }
+
+  const usdcKit = withAmountUtils(makeIssuerKit('USDC'));
+  const orchKit = await E(zoe).startInstance(
+    installation,
+    { Stable: ist.issuer, USDC: usdcKit.issuer },
+    {},
+    { ...commonPrivateArgs, storageNode },
   );
 });

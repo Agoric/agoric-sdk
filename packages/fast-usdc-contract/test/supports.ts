@@ -41,6 +41,10 @@ import { makeHeapZone, type Zone } from '@agoric/zone';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
+import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
+import { objectMap } from '@endo/patterns';
+import type { ChainHubChainInfo } from '@agoric/fast-usdc/src/types.js';
+import { CosmosChainInfoShapeV1 } from '@agoric/fast-usdc/src/type-guards.js';
 import { makeTestFeeConfig } from './mocks.js';
 
 export {
@@ -204,15 +208,30 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     await eventLoopIteration();
   };
 
+  /** A chainHub for Exo tests, distinct from the one a contract makes within `withOrchestration` */
   const chainHub = makeChainHub(
     rootZone.subZone('chainHub'),
     agoricNames,
     vowTools,
+    {
+      chainInfoValueShape: CosmosChainInfoShapeV1,
+    },
   );
 
   const chainInfo = harden(() => {
     const { agoric, osmosis, noble } = withChainCapabilities(fetchedChainInfo);
-    return { agoric, osmosis, noble };
+    const { ethereum, solana } = objectMap(cctpChainInfo, v => ({
+      ...v,
+      // for backwards compatibility with `CosmosChainInfoShapeV1` which expects a `chainId`
+      chainId: `${v.namespace}:${v.reference}`,
+    }));
+    return {
+      agoric,
+      osmosis,
+      noble,
+      ethereum,
+      solana,
+    } as Record<string, ChainHubChainInfo>;
   })();
 
   const assetInfo: [Denom, DenomDetail & { brandKey?: string }][] = harden([
@@ -264,6 +283,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       inspectLocalBridge: () => harden([...localBridgeMessages]),
       inspectDibcBridge: () => E(ibcBridge).inspectDibcBridge(),
       inspectBankBridge: () => harden([...bankBridgeMessages]),
+      rootZone,
       transmitTransferAck,
       vowTools,
     },

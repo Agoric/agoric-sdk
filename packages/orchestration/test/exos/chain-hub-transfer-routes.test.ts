@@ -53,7 +53,7 @@ test('to issuing chain', async t => {
     ]),
   );
 
-  const dest: CosmosChainAddress = chainHub.makeChainAddress('noble1234');
+  const dest = chainHub.coerceCosmosAddress('noble1234');
   {
     // 100 USDC on agoric -> noble
     const amt: DenomAmount = harden({ denom: uusdcOnAgoric, value: 100n });
@@ -94,7 +94,7 @@ test('from issuing chain', async t => {
     harden([assetOn('uist', 'agoric'), assetOn('uosmo', 'osmosis')]),
   );
 
-  const dest: CosmosChainAddress = chainHub.makeChainAddress('noble1234');
+  const dest = chainHub.coerceCosmosAddress('noble1234');
   {
     // IST on agoric -> noble
     const amt: DenomAmount = harden({ denom: 'uist', value: 100n });
@@ -133,7 +133,7 @@ test('through issuing chain', async t => {
     harden([[uusdcOnAgoric, agDetail]]),
   );
 
-  const dest: CosmosChainAddress = chainHub.makeChainAddress('osmo1234');
+  const dest = chainHub.coerceCosmosAddress('osmo1234');
   const amt: DenomAmount = harden({ denom: uusdcOnAgoric, value: 100n });
 
   // 100 USDC on agoric -> osmosis
@@ -191,7 +191,7 @@ test('takes forwardOpts', t => {
     harden([[uusdcOnOsmosis, osDetail]]),
   );
 
-  const dest: CosmosChainAddress = chainHub.makeChainAddress('agoric1234');
+  const dest = chainHub.coerceCosmosAddress('agoric1234');
   const amt: DenomAmount = harden({ denom: uusdcOnOsmosis, value: 100n });
   const forwardOpts = harden({
     retries: 1,
@@ -216,9 +216,9 @@ test('takes forwardOpts', t => {
 
   const nobleAddr = harden({
     value: 'noble1234',
-    encoding: 'bech32' as const,
+    encoding: 'bech32',
     chainId: 'noble-1',
-  });
+  } as const);
 
   t.deepEqual(
     chainHub.makeTransferRoute(dest, amt, 'osmosis', {
@@ -359,8 +359,8 @@ test('no connection info multi hop', t => {
     ]),
   );
 
-  const osmoDest = chainHub.makeChainAddress('osmo1234');
-  const agoricDest = chainHub.makeChainAddress('agoric1234');
+  const osmoDest = chainHub.coerceCosmosAddress('osmo1234');
+  const agoricDest = chainHub.coerceCosmosAddress('agoric1234');
 
   t.throws(
     () =>
@@ -423,7 +423,7 @@ test('no PFM path', t => {
   t.throws(
     () =>
       chainHub.makeTransferRoute(
-        chainHub.makeChainAddress('osmo1234'),
+        chainHub.coerceCosmosAddress('osmo1234'),
         harden({ denom: uusdcOnAgoric, value: 100n }),
         'agoric',
       ),

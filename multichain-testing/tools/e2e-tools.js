@@ -49,16 +49,15 @@ export const makeBlockTool = ({ rpc, delay }) => {
         .execute({ jsonrpc: '2.0', id, method: 'status', params: [] })
         .catch(_err => {});
 
-      if (!data) throw Error('no data from status');
-
-      if (data.jsonrpc !== '2.0') {
+      if (data?.jsonrpc !== '2.0') {
         await delay(period, { ...info, method: 'status' });
         continue;
       }
 
       const lastHeight = data.result.sync_info.latest_block_height;
+      const earliestHeight = data.result.sync_info.earliest_block_height;
 
-      if (lastHeight !== '1') {
+      if (lastHeight !== earliestHeight) {
         return Number(lastHeight);
       }
 
@@ -237,7 +236,10 @@ const provisionSmartWalletAndMakeDriver = async (
 
   const afterWhale = await retryUntilCondition(
     () => getCosmosBalances(),
-    ({ balances }) => balances.length === balanceEntries.length,
+    ({ balances }) => {
+      // XXX ensures there is at least some faucet but doesn't check that the balance went up
+      return balances.length >= balanceEntries.length;
+    },
     `${address} received tokens from whale`,
   );
   progress(`${address} after whale`, afterWhale);

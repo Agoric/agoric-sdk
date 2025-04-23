@@ -266,7 +266,7 @@ export const prepareLocalOrchestrationAccountKit = (
           /**
            * @type {OfferHandler<
            *   Vow<void>,
-           *   { toAccount: CosmosChainAddress; amount: AmountArg }
+           *   { toAccount: AccountIdArg; amount: AmountArg }
            * >}
            */
           const offerHandler = (seat, { toAccount, amount }) => {
@@ -294,7 +294,7 @@ export const prepareLocalOrchestrationAccountKit = (
            *   Vow<void>,
            *   {
            *     amount: AmountArg;
-           *     destination: CosmosChainAddress;
+           *     destination: AccountIdArg;
            *     opts?: IBCMsgTransferOptions;
            *   }
            * >}
@@ -637,12 +637,15 @@ export const prepareLocalOrchestrationAccountKit = (
         send(toAccount, amount) {
           return asVow(() => {
             trace('send', toAccount, amount);
+            const cosmosDest = chainHub.coerceCosmosAddress(toAccount);
+            cosmosDest.chainId === this.state.address.chainId ||
+              Fail`bank/send cannot send to a different chain ${q(cosmosDest.chainId)}`;
             const { helper } = this.facets;
             return watch(
               E(this.state.account).executeTx([
                 typedJson('/cosmos.bank.v1beta1.MsgSend', {
                   amount: [helper.amountToCoin(amount)],
-                  toAddress: toAccount.value,
+                  toAddress: cosmosDest.value,
                   fromAddress: this.state.address.value,
                 }),
               ]),
@@ -700,18 +703,10 @@ export const prepareLocalOrchestrationAccountKit = (
             );
             trace('got transfer route', route);
 
-            // set a `timeoutTimestamp` if caller does not supply either `timeoutHeight` or `timeoutTimestamp`
-            // TODO #9324 what's a reasonable default? currently 5 minutes
-            const timeoutTimestampVowOrValue =
-              opts?.timeoutTimestamp ??
-              (opts?.timeoutHeight
-                ? 0n
-                : asVow(() => E(timestampHelper).getTimeoutTimestampNS()));
-
             // don't resolve the vow until the transfer is confirmed on remote
             // and reject vow if the transfer fails for any reason
             const resultV = watch(
-              timeoutTimestampVowOrValue,
+              timestampHelper.vowOrValueFromOpts(opts),
               this.facets.transferWatcher,
               {
                 opts: rest,

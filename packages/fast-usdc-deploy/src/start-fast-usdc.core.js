@@ -182,6 +182,7 @@ export const startFastUSDC = async (
   trace('contract orch account addresses', addresses);
   if (!net.noNoble) {
     const { agoric, noble } = privateArgs.chainInfo;
+    // @ts-expect-error XXX 'connections' is there
     const agoricToNoble = agoric.connections[noble.chainId];
     const addr = await E(kit.creatorFacet).connectToNoble(
       agoric.chainId,

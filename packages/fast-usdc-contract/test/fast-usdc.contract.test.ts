@@ -7,6 +7,16 @@ import {
 } from '@agoric/cosmic-proto/address-hooks.js';
 import type { Amount, Issuer, NatValue, Purse } from '@agoric/ertp';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
+import { divideBy, multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
+import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.js';
+import { PoolMetricsShape } from '@agoric/fast-usdc/src/type-guards.js';
+import type {
+  CctpTxEvidence,
+  FeeConfig,
+  PoolMetrics,
+} from '@agoric/fast-usdc/src/types.js';
+import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
+import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
 import {
   eventLoopIteration,
   inspectMapStore,
@@ -18,37 +28,29 @@ import {
   type Publisher,
   type Subscriber,
 } from '@agoric/notifier';
+import type {
+  Bech32Address,
+  ChainHub,
+  CosmosChainInfo,
+} from '@agoric/orchestration';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { heapVowE as VE } from '@agoric/vow/vat.js';
-import {
-  divideBy,
-  multiplyBy,
-  parseRatio,
-} from '@agoric/zoe/src/contractSupport/ratio.js';
-import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
+import type { Invitation, ZoeService } from '@agoric/zoe';
+import type {
+  Installation,
+  Instance,
+} from '@agoric/zoe/src/zoeService/utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E, type EReturn } from '@endo/far';
+import { E, type ERef, type EReturn } from '@endo/far';
 import { matches } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
-import path from 'path';
-import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.js';
-import { PoolMetricsShape } from '@agoric/fast-usdc/src/type-guards.js';
-import type {
-  CctpTxEvidence,
-  FeeConfig,
-  PoolMetrics,
-} from '@agoric/fast-usdc/src/types.js';
-import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
-import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
-import type { FastUsdcSF } from '../src/fast-usdc.contract.ts';
 import type { OperatorOfferResult } from '../src/exos/transaction-feed.ts';
+import type { FastUsdcSF } from '../src/fast-usdc.contract.ts';
 import { commonSetup, uusdcOnAgoric } from './supports.js';
 
-const dirname = path.dirname(new URL(import.meta.url).pathname);
-
-const contractFile = `${dirname}/../src/fast-usdc.contract.ts`;
+import * as contractExports from '../src/fast-usdc.contract.js';
 
 const agToNoble = fetchedChainInfo.agoric.connections['noble-1'];
 
@@ -82,7 +84,7 @@ const startContract = async (
 
   const { zoe, bundleAndInstall } = await setUpZoeForTest({ setJig });
   const installation: Installation<FastUsdcSF> =
-    await bundleAndInstall(contractFile);
+    await bundleAndInstall(contractExports);
 
   const startKit = await E(zoe).startInstance(
     installation,
@@ -103,7 +105,7 @@ const startContract = async (
     ),
   );
   const { agoric, noble } = commonPrivateArgs.chainInfo;
-  const agoricToNoble = agoric.connections![noble.chainId];
+  const agoricToNoble = (agoric as CosmosChainInfo).connections![noble.chainId];
   await E(startKit.creatorFacet).connectToNoble(
     agoric.chainId,
     noble.chainId,
@@ -177,6 +179,13 @@ const makeTestContext = async (t: ExecutionContext) => {
     return rxd;
   };
 
+  /** local to test env, distinct from contract */
+  const { chainHub } = common.facadeServices;
+  chainHub.registerChain('agoric', fetchedChainInfo.agoric);
+  chainHub.registerChain('dydx', fetchedChainInfo.dydx);
+  chainHub.registerChain('osmosis', fetchedChainInfo.osmosis);
+  chainHub.registerChain('noble', fetchedChainInfo.noble);
+
   return {
     bridges: { snapshot, since },
     common,
@@ -206,7 +215,7 @@ test('initial baggage', async t => {
 
   const { zoe, bundleAndInstall } = await setUpZoeForTest({ setJig });
   const installation: Installation<FastUsdcSF> =
-    await bundleAndInstall(contractFile);
+    await bundleAndInstall(contractExports);
 
   await E(zoe).startInstance(
     installation,
@@ -394,7 +403,7 @@ const makeEVM = (template = MockCctpTxEvidences.AGORIC_PLUS_OSMO()) => {
 
   const makeTx = (
     amount: bigint,
-    recipientAddress: string,
+    recipientAddress: Bech32Address,
     nonceOverride?: number,
   ): CctpTxEvidence => {
     nonce += 1;
@@ -429,6 +438,7 @@ const makeCustomer = (
   cctp: ReturnType<typeof makeEVM>['cctp'],
   txPublisher: Publisher<TxWithRisk>,
   feeConfig: FeeConfig, // TODO: get from vstorage (or at least: a subscriber)
+  chainHub: ChainHub, // not something a customer would normally have, but needed to make an `AccountId`
 ) => {
   const USDC = feeConfig.flat.brand;
   const feeTools = makeFeeTools(feeConfig);
@@ -481,7 +491,10 @@ const makeCustomer = (
       // Mostly, see unit tests for calculateAdvance, calculateSplit
       const toReceive = forward
         ? { value: evidence.tx.amount }
-        : feeTools.calculateAdvance(AmountMath.make(USDC, evidence.tx.amount));
+        : feeTools.calculateAdvance(
+            AmountMath.make(USDC, evidence.tx.amount),
+            chainHub.resolveAccountId(evidence.aux.recipientAddress),
+          );
 
       if (forward) {
         t.log(who, 'waits for fallback / forward');
@@ -601,6 +614,7 @@ test.serial('Contract skips advance when risks identified', async t => {
   const {
     common: {
       commonPrivateArgs: { feeConfig },
+      facadeServices: { chainHub },
       utils: { transmitTransferAck },
     },
     evm: { cctp, txPub },
@@ -608,7 +622,13 @@ test.serial('Contract skips advance when risks identified', async t => {
     bridges: { snapshot, since },
     mint,
   } = t.context;
-  const custEmpty = makeCustomer('Skippy', cctp, txPub.publisher, feeConfig);
+  const custEmpty = makeCustomer(
+    'Skippy',
+    cctp,
+    txPub.publisher,
+    feeConfig,
+    chainHub,
+  );
   const bridgePos = snapshot();
   const sent = await custEmpty.sendFast(t, 1_000_000n, 'osmo123', true);
   const bridgeTraffic = since(bridgePos);
@@ -624,6 +644,7 @@ test.serial('STORY01: advancing happy path for 100 USDC', async t => {
       bootstrap: { storage },
       brands: { usdc },
       commonPrivateArgs: { feeConfig },
+      facadeServices: { chainHub },
       utils: { inspectBankBridge, transmitTransferAck },
     },
     evm: { cctp, txPub },
@@ -631,7 +652,13 @@ test.serial('STORY01: advancing happy path for 100 USDC', async t => {
     bridges: { snapshot, since },
     mint,
   } = t.context;
-  const cust1 = makeCustomer('Carl', cctp, txPub.publisher, feeConfig);
+  const cust1 = makeCustomer(
+    'Carl',
+    cctp,
+    txPub.publisher,
+    feeConfig,
+    chainHub,
+  );
 
   const bridgePos = snapshot();
   const sent1 = await cust1.sendFast(t, 108_000_000n, 'osmo1234advanceHappy');
@@ -647,7 +674,10 @@ test.serial('STORY01: advancing happy path for 100 USDC', async t => {
   );
 
   const { calculateAdvance, calculateSplit } = makeFeeTools(feeConfig);
-  const expectedAdvance = calculateAdvance(usdc.make(sent1.tx.amount));
+  const expectedAdvance = calculateAdvance(
+    usdc.make(sent1.tx.amount),
+    chainHub.resolveAccountId(sent1.aux.recipientAddress),
+  );
   t.log('advancer sent to PoolAccount', expectedAdvance);
   t.deepEqual(inspectBankBridge().at(-1), {
     amount: String(expectedAdvance.value),
@@ -693,7 +723,10 @@ test.serial('STORY01: advancing happy path for 100 USDC', async t => {
   // The metrics are a useful proxy, but the contract could lie.
   // The real test of whether the contract turns minted funds into liquidity is
   // the ability to advance the funds (in later tests).
-  const split = calculateSplit(usdc.make(sent1.tx.amount));
+  const split = calculateSplit(
+    usdc.make(sent1.tx.amount),
+    chainHub.resolveAccountId(sent1.aux.recipientAddress),
+  );
   t.like(
     await E(metricsSub)
       .getUpdateSince()
@@ -763,6 +796,7 @@ test.serial('With 250 available, 3 race to get ~100', async t => {
     evm: { cctp, txPub },
     common: {
       commonPrivateArgs: { feeConfig },
+      facadeServices: { chainHub },
       utils: { transmitTransferAck },
     },
     startKit: { metricsSub },
@@ -770,9 +804,9 @@ test.serial('With 250 available, 3 race to get ~100', async t => {
   } = t.context;
 
   const cust = {
-    racer1: makeCustomer('Racer1', cctp, txPub.publisher, feeConfig),
-    racer2: makeCustomer('Racer2', cctp, txPub.publisher, feeConfig),
-    racer3: makeCustomer('Racer3', cctp, txPub.publisher, feeConfig),
+    racer1: makeCustomer('Racer1', cctp, txPub.publisher, feeConfig, chainHub),
+    racer2: makeCustomer('Racer2', cctp, txPub.publisher, feeConfig, chainHub),
+    racer3: makeCustomer('Racer3', cctp, txPub.publisher, feeConfig, chainHub),
   };
 
   await cust.racer3.checkPoolAvailable(t, 125_000_000n, metricsSub);
@@ -818,6 +852,7 @@ test.serial('withdraw all liquidity while ADVANCING', async t => {
       utils,
       brands: { usdc },
       bootstrap: { storage },
+      facadeServices: { chainHub },
     },
     evm: { cctp, txPub },
     mint,
@@ -830,7 +865,7 @@ test.serial('withdraw all liquidity while ADVANCING', async t => {
   await E(alice).deposit(t, 10_000_000n);
 
   // 2. Bob initiates an advance of 6, reducing the pool to 4
-  const bob = makeCustomer('Bob', cctp, txPub.publisher, feeConfig);
+  const bob = makeCustomer('Bob', cctp, txPub.publisher, feeConfig, chainHub);
   const bridgePos = snapshot();
   const sent = await bob.sendFast(t, 6_000_000n, 'osmo123bob5');
   await eventLoopIteration();
@@ -904,11 +939,18 @@ test.serial('STORY09: insufficient liquidity: no FastUSDC option', async t => {
   const {
     common: {
       commonPrivateArgs: { feeConfig },
+      facadeServices: { chainHub },
     },
     evm: { cctp, txPub },
     startKit: { metricsSub },
   } = t.context;
-  const early = makeCustomer('Unice', cctp, txPub.publisher, feeConfig);
+  const early = makeCustomer(
+    'Unice',
+    cctp,
+    txPub.publisher,
+    feeConfig,
+    chainHub,
+  );
   const available = await early.checkPoolAvailable(t, 5_000_000n, metricsSub);
   t.false(available);
 });
@@ -917,13 +959,20 @@ test.serial('C20 - Contract MUST function with an empty pool', async t => {
   const {
     common: {
       commonPrivateArgs: { feeConfig },
+      facadeServices: { chainHub },
       utils: { transmitTransferAck },
     },
     evm: { cctp, txPub },
     bridges: { snapshot, since },
     mint,
   } = t.context;
-  const custEmpty = makeCustomer('Earl', cctp, txPub.publisher, feeConfig);
+  const custEmpty = makeCustomer(
+    'Earl',
+    cctp,
+    txPub.publisher,
+    feeConfig,
+    chainHub,
+  );
   const bridgePos = snapshot();
   const sent = await custEmpty.sendFast(t, 150_000_000n, 'osmo123');
   const bridgeTraffic = since(bridgePos);
@@ -943,6 +992,7 @@ test.serial('Settlement for unknown transaction (operator down)', async t => {
     common: {
       bootstrap: { storage },
       commonPrivateArgs: { feeConfig },
+      facadeServices: { chainHub },
       mocks: { transferBridge },
       utils: { transmitTransferAck },
     },
@@ -955,7 +1005,13 @@ test.serial('Settlement for unknown transaction (operator down)', async t => {
   operators[0].setActive(false);
   operators[1].setActive(false);
 
-  const opDown = makeCustomer('Otto', cctp, txPub.publisher, feeConfig);
+  const opDown = makeCustomer(
+    'Otto',
+    cctp,
+    txPub.publisher,
+    feeConfig,
+    chainHub,
+  );
 
   const bridgePos = snapshot();
   const EUD = 'osmo10tt0';
@@ -1044,6 +1100,7 @@ test.serial('mint received while ADVANCING', async t => {
       utils,
       brands: { usdc },
       bootstrap: { storage },
+      facadeServices: { chainHub },
     },
     evm: { cctp, txPub },
     mint,
@@ -1055,7 +1112,13 @@ test.serial('mint received while ADVANCING', async t => {
   const lp999 = makeLP('Leo ', usdcPurse(999_000_000n), zoe, instance);
   await E(lp999).deposit(t, 999_000_000n);
 
-  const earlySettle = makeCustomer('Earl E.', cctp, txPub.publisher, feeConfig);
+  const earlySettle = makeCustomer(
+    'Earl E.',
+    cctp,
+    txPub.publisher,
+    feeConfig,
+    chainHub,
+  );
   const bridgePos = snapshot();
 
   await earlySettle.checkPoolAvailable(t, 5_000_000n, metricsSub);
@@ -1067,7 +1130,10 @@ test.serial('mint received while ADVANCING', async t => {
   // mint received before Advance transfer settles
   await utils.transmitTransferAck();
 
-  const split = makeFeeTools(feeConfig).calculateSplit(usdc.make(5_000_000n));
+  const split = makeFeeTools(feeConfig).calculateSplit(
+    usdc.make(5_000_000n),
+    chainHub.resolveAccountId(sent.aux.recipientAddress),
+  );
   t.deepEqual(storage.getDeserialized(`fun.txns.${sent.txHash}`), [
     { evidence: sent, status: 'OBSERVED' },
     { status: 'ADVANCING' },
