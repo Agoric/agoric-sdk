@@ -1,8 +1,8 @@
 {
-  "name": "@aglocal/fast-usdc-contract",
+  "name": "@aglocal/orch-skel-contract",
   "private": true,
   "version": "0.1.0",
-  "description": "Smart contract component of the Fast USDC product",
+  "description": "Smart contract component of orchestration skeleton",
   "type": "module",
   "files": [
     "src",
