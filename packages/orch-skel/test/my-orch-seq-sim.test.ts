@@ -68,12 +68,11 @@ const makeCosmosAccount = (addr: string) => {
 };
 type CosmosAccount = ReturnType<typeof makeCosmosAccount>;
 
-const accountMaker = (to: string) =>
-  to.startsWith('stride1')
-    ? makeStrideAccount
-    : to.startsWith('agoric1')
-      ? makeLocalOrchAccount
-      : makeCosmosAccount;
+const accountMaker = (to: string) => {
+  if (to.startsWith('stride1')) return makeStrideAccount;
+  if (to.startsWith('agoric1')) return makeLocalOrchAccount;
+  return makeCosmosAccount;
+};
 
 const makeLocalOrchAccount = (addr: string, strideAddr: string) => {
   const base = makeCosmosAccount(addr);
