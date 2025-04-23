@@ -5,7 +5,7 @@ import {
   decodeAddressHook,
   encodeAddressHook,
 } from '@agoric/cosmic-proto/address-hooks.js';
-import type { Amount, Issuer, NatValue, Purse } from '@agoric/ertp';
+import type { Amount, Issuer, NatAmount, NatValue, Purse } from '@agoric/ertp';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import { divideBy, multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.js';
@@ -149,7 +149,10 @@ const makeTestContext = async (t: ExecutionContext) => {
 
   const { brands, utils } = common;
   const { bankManager } = common.bootstrap;
-  const receiveUSDCAt = async (addr: string, amount: NatValue) => {
+  const receiveUSDCAt = async (
+    addr: string,
+    amount: NatValue,
+  ): Promise<NatAmount> => {
     const pmt = await utils.pourPayment(make(brands.usdc.brand, amount));
     const purse = E(E(bankManager).getBankForAddress(addr)).getPurse(
       brands.usdc.brand,
@@ -163,7 +166,7 @@ const makeTestContext = async (t: ExecutionContext) => {
   );
   t.is(settlementAccount, 'agoric1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqc09z0g');
   t.is(poolAccount, 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht');
-  const mint = async (e: CctpTxEvidence) => {
+  const mint = async (e: CctpTxEvidence): Promise<NatAmount> => {
     const rxd = await receiveUSDCAt(settlementAccount, e.tx.amount);
     await VE(transferBridge).fromBridge(
       buildVTransferEvent({
