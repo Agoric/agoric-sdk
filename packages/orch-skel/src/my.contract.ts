@@ -1,8 +1,10 @@
-import { M } from '@endo/patterns';
-import { OrchestrationPowersShape } from '../typeGuards.js';
-import { withOrchestration } from '../utils/start-helper.js';
-import * as flows from './my.flows.js';
+import {
+  OrchestrationPowersShape,
+  withOrchestration,
+} from '@agoric/orchestration';
 import { E } from '@endo/far';
+import { M } from '@endo/patterns';
+import * as flows from './my.flows.ts';
 
 /**
  * @import {VTransferIBCEvent} from '@agoric/vats'

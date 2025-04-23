@@ -9,15 +9,15 @@ import { E, passStyleOf } from '@endo/far';
 import { Nat } from '@endo/nat';
 import { M, mustMatch } from '@endo/patterns';
 import { createRequire } from 'module';
-import { ChainAddressShape } from '../../src/typeGuards.js';
-import { buildVTransferEvent } from '../../tools/ibc-mocks.js';
-import { commonSetup } from '../supports.js';
+import { ChainAddressShape } from '@agoric/orchestration';
+import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
+import { commonSetup } from './supports.js';
 
 const nodeRequire = createRequire(import.meta.url);
 
 const contractName = 'myOrchContract';
-const contractFile = nodeRequire.resolve('../../src/examples/my.contract.js');
-type StartFn = typeof import('../../src/examples/my.contract.js').start;
+const contractFile = nodeRequire.resolve('../src/my.contract.ts');
+type StartFn = typeof import('../src/my.contract.ts').start;
 
 test('start my orch contract', async t => {
   const common = await commonSetup(t);
@@ -52,10 +52,11 @@ test('start my orch contract', async t => {
 
   const { transferBridge } = common.mocks;
   const deposit = async (coins: CoinSDKType) => {
+    const target = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht'; // TODO: where does this come from?
     await VE(transferBridge).fromBridge(
       buildVTransferEvent({
         receiver: 'rx TODO',
-        target: 'agoric1fakeLCAAddress',
+        target,
         sourceChannel: 'channel-1', // TODO: hubToAg.transferChannel.counterPartyChannelId,
         denom: coins.denom,
         amount: Nat(BigInt(coins.amount)),
