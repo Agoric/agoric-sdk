@@ -70,7 +70,7 @@ export interface CctpTxEvidence {
   txHash: EvmHash;
 }
 
-export interface EvidenceWithRisk {
+export interface EvidenceWithRisk extends CopyRecord {
   evidence: CctpTxEvidence;
   risk: RiskAssessment;
 }
