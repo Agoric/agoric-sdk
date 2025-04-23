@@ -125,26 +125,27 @@ test('storage helpers', t => {
   kv.set('bar.5', 'b5');
   kv.set('cab.2', 'c');
 
-  t.deepEqual(Array.from(enumeratePrefixedKeys(kv, 'bar')), [
-    'bar.1',
-    'bar.3',
-    'bar.5',
-  ]);
+  t.deepEqual(
+    Array.from(enumeratePrefixedKeys(kv, 'bar'), ({ key }) => key),
+    ['bar.1', 'bar.3', 'bar.5'],
+  );
 
-  t.deepEqual(Array.from(enumeratePrefixedKeys(kv, 'bar', 'bar.1')), []);
-  t.deepEqual(Array.from(enumeratePrefixedKeys(kv, 'bar', 'bar.4')), [
-    'bar.1',
-    'bar.3',
-  ]);
-  t.deepEqual(Array.from(enumeratePrefixedKeys(kv, 'bar', 'bar.5')), [
-    'bar.1',
-    'bar.3',
-  ]);
-  t.deepEqual(Array.from(enumeratePrefixedKeys(kv, 'bar', 'bar.6')), [
-    'bar.1',
-    'bar.3',
-    'bar.5',
-  ]);
+  t.deepEqual(
+    Array.from(enumeratePrefixedKeys(kv, 'bar', 'bar.1'), ({ key }) => key),
+    [],
+  );
+  t.deepEqual(
+    Array.from(enumeratePrefixedKeys(kv, 'bar', 'bar.4'), ({ key }) => key),
+    ['bar.1', 'bar.3'],
+  );
+  t.deepEqual(
+    Array.from(enumeratePrefixedKeys(kv, 'bar', 'bar.5'), ({ key }) => key),
+    ['bar.1', 'bar.3'],
+  );
+  t.deepEqual(
+    Array.from(enumeratePrefixedKeys(kv, 'bar', 'bar.6'), ({ key }) => key),
+    ['bar.1', 'bar.3', 'bar.5'],
+  );
 });
 
 function buildKeeperStorageInMemory() {
