@@ -37,6 +37,7 @@ import {
 } from '../fixtures.js';
 import { makeTestLogger, prepareMockOrchAccounts } from '../mocks.js';
 import { commonSetup } from '../supports.js';
+import { makeRouteHealth } from '../../src/utils/route-health.ts';
 
 const mockZcf = (zone: Zone) => {
   const callLog = [] as any[];
@@ -70,7 +71,7 @@ const makeTestContext = async t => {
   const statusManager = prepareStatusManager(
     zone.subZone('status-manager'),
     common.commonPrivateArgs.storageNode.makeChildNode('txns'),
-    { marshaller: defaultMarshaller, log },
+    { marshaller: defaultMarshaller, log, routeHealth: makeRouteHealth(1) },
   );
   const { zcf, callLog } = mockZcf(zone.subZone('Mock ZCF'));
 

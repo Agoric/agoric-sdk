@@ -31,6 +31,7 @@ import {
   type SettlerKit,
 } from '../../src/exos/settler.ts';
 import { prepareStatusManager } from '../../src/exos/status-manager.ts';
+import { makeRouteHealth } from '../../src/utils/route-health.ts';
 import { intermediateRecipient } from '../fixtures.js';
 import {
   makeTestFeeConfig,
@@ -73,7 +74,10 @@ const createTestExtensions = (t, common: CommonSetup) => {
   const statusManager = prepareStatusManager(
     contractZone.subZone('status-manager'),
     storageNode.makeChildNode('txns'),
-    { marshaller: common.commonPrivateArgs.marshaller },
+    {
+      marshaller: common.commonPrivateArgs.marshaller,
+      routeHealth: makeRouteHealth(1),
+    },
   );
 
   const mockAccounts = prepareMockOrchAccounts(

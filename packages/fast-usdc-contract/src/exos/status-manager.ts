@@ -40,6 +40,7 @@ type PendingTxKey = `pendingTx:${bigint}:${NobleAddress}`;
 interface StatusManagerPowers {
   log?: LogFn;
   marshaller: ERef<Marshaller>;
+  routeHealth: RouteHealth;
 }
 
 /**
@@ -78,7 +79,7 @@ export const stateShape = harden({
 export const prepareStatusManager = (
   zone: Zone,
   txnsNode: ERef<StorageNode>,
-  { marshaller }: StatusManagerPowers,
+  { marshaller, routeHealth }: StatusManagerPowers,
 ) => {
   /**
    * Keyed by a tuple of the Noble Forwarding Account and amount.
@@ -105,6 +106,16 @@ export const prepareStatusManager = (
     keyShape: M.string(),
     valueShape: M.nat(),
   });
+
+  // NB: has entries only from `forwardFailed` calls that include the full tx
+  // (the handler before the forwardFunds flow did not).
+  const failedForwards: MapStore<EvmHash, ForwardFailedTx> = zone.mapStore(
+    'FailedForwards',
+    {
+      keyShape: EvmHashShape,
+      valueShape: ForwardFailedTxShape,
+    },
+  );
 
   /**
    * Transactions that have completed, but are still in vstorage.

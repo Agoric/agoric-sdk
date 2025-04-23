@@ -13,6 +13,8 @@ import {
   type StatusManager,
 } from '../../src/exos/status-manager.ts';
 import { commonSetup, provideDurableZone } from '../supports.js';
+import { makeRouteHealth } from '../../src/utils/route-health.ts';
+import { commonSetup, provideDurableZone } from '../supports.js';
 
 type Common = EReturn<typeof commonSetup>;
 type TestContext = {
@@ -33,7 +35,7 @@ test.beforeEach(async t => {
   const statusManager = prepareStatusManager(
     zone.subZone('status-manager'),
     txnsNode,
-    { marshaller: defaultMarshaller },
+    { marshaller: defaultMarshaller, routeHealth: makeRouteHealth(1) },
   );
   t.context = {
     statusManager,
