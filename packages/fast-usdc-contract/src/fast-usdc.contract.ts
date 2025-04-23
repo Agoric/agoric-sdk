@@ -50,6 +50,7 @@ import type { OperatorOfferResult } from './exos/transaction-feed.ts';
 import { prepareTransactionFeedKit } from './exos/transaction-feed.ts';
 import * as flows from './fast-usdc.flows.ts';
 import { makeSupportsCctp } from './utils/cctp.ts';
+import { startForwardRetrier } from './utils/forward-retrier.ts';
 import { makeRouteHealth } from './utils/route-health.ts';
 
 const trace = makeTracer('FastUsdc');
@@ -120,6 +121,7 @@ export const contract = async (
   );
 
   const routeHealth = makeRouteHealth(MAX_ROUTE_FAILURES);
+
   const statusManager = prepareStatusManager(
     zone,
     E(storageNode).makeChildNode(TXNS_NODE),
@@ -391,6 +393,14 @@ export const contract = async (
   });
 
   await settlerKit.creator.monitorMintingDeposits();
+
+  startForwardRetrier({
+    forwardFunds,
+    getFailedForwards: statusManager.getFailedForwards.bind(statusManager),
+    log: trace,
+    routeHealth,
+    USDC,
+  });
 
   return harden({ creatorFacet, publicFacet });
 };

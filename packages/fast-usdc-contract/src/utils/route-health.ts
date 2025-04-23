@@ -1,3 +1,9 @@
+interface EventHandler {
+  onFailure: (route: string) => void;
+  onWorking: (route: string) => void;
+  onDerelict: (route: string) => void;
+}
+
 /**
  * Tracks the health of relayer routes based on consecutive failures.
  *
@@ -19,33 +25,28 @@
  *   Derelict --> Working: noteSuccess() [reset count]
  * ```
  * @param maxFailures The number of consecutive failures before a route is considered derelict.
- * @param cb
- * @param cb.onWorking Optional callback function called when a route transitions to the Working state.
- * @param cb.onDerelict Optional callback function called when a route transitions to the Derelict state.
  */
-export const makeRouteHealth = (
-  maxFailures: number,
-  {
-    onWorking = (_route: string) => {},
-    onDerelict = (_route: string) => {},
-  }: {
-    onWorking?: (route: string) => void;
-    onDerelict?: (route: string) => void;
-  } = {},
-) => {
+export const makeRouteHealth = (maxFailures: number) => {
   /** count consecutive failures */
   const failures = new Map<string, number>();
 
   const getFailureCount = (route: string) => failures.get(route) ?? 0;
+
+  let handlers: EventHandler = {
+    onFailure: (_route: string) => {},
+    onWorking: (_route: string) => {},
+    onDerelict: (_route: string) => {},
+  };
 
   return {
     noteFailure: (route: string) => {
       const oldCount = getFailureCount(route);
       const newCount = oldCount + 1;
       failures.set(route, newCount);
+      handlers.onFailure(route);
       // Transition from Working to Derelict
       if (newCount === maxFailures && oldCount < maxFailures) {
-        onDerelict(route);
+        handlers.onDerelict(route);
       }
     },
     /** Reset the failure count and potentially transition state */
@@ -54,7 +55,7 @@ export const makeRouteHealth = (
       failures.delete(route);
       // Transition from Derelict to Working
       if (oldCount >= maxFailures) {
-        onWorking(route);
+        handlers.onWorking(route);
       }
     },
     /**
@@ -62,6 +63,15 @@ export const makeRouteHealth = (
      */
     isWorking: (route: string) => {
       return getFailureCount(route) < maxFailures;
+    },
+    /**
+     * @param cb
+     * @param cb.onFailure Optional callback function called when any route fails.
+     * @param cb.onWorking Optional callback function called when a route transitions to the Working state.
+     * @param cb.onDerelict Optional callback function called when a route transitions to the Derelict state.
+     */
+    setEventHandlers: (cb: Partial<EventHandler>) => {
+      handlers = { ...handlers, ...cb };
     },
   };
 };
