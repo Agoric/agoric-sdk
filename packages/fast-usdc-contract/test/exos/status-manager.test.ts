@@ -1,18 +1,19 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
-import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import type { EReturn } from '@endo/far';
 import { PendingTxStatus } from '@agoric/fast-usdc/src/constants.js';
 import type { CctpTxEvidence } from '@agoric/fast-usdc/src/types.js';
 import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
+import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import type { EReturn } from '@endo/far';
 import {
   prepareStatusManager,
   stateShape,
   type StatusManager,
 } from '../../src/exos/status-manager.ts';
-import { setupFastUsdcTest, provideDurableZone } from '../supports.js';
+import { makeRouteHealth } from '../../src/utils/route-health.ts';
+import { provideDurableZone, setupFastUsdcTest } from '../supports.js';
 
 type Common = EReturn<typeof setupFastUsdcTest>;
 type TestContext = {
@@ -33,7 +34,7 @@ test.beforeEach(async t => {
   const statusManager = prepareStatusManager(
     zone.subZone('status-manager'),
     txnsNode,
-    { marshaller: defaultMarshaller },
+    { marshaller: defaultMarshaller, routeHealth: makeRouteHealth(1) },
   );
   t.context = {
     statusManager,
