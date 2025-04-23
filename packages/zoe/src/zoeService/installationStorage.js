@@ -9,8 +9,6 @@ import {
   InstallationShape,
   UnwrappedInstallationShape,
 } from '../typeGuards.js';
-import '../internal-types.js';
-import './internal-types.js';
 
 /**
  * @import {Baggage} from '@agoric/swingset-liveslots';
