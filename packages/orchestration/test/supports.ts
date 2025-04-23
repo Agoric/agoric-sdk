@@ -41,7 +41,6 @@ export {
 } from '@agoric/vats/tools/fake-bridge.js';
 
 export const commonSetup = async (t: ExecutionContext<any>) => {
-  t.log('bootstrap vat dependencies');
   // The common setup cannot support a durable zone because many of the fakes are not durable.
   // They were made before we had durable kinds (and thus don't take a zone or baggage).
   // To test durability in unit tests, test a particular entity with `relaxDurabilityRules: false`.
