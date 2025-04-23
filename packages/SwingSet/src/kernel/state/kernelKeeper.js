@@ -724,7 +724,9 @@ export default function makeKernelKeeper(
     const ranges = [[ephStart, durStart], [virStart]];
     for (const range of ranges) {
       const rangeSuffix = range[0];
-      const args = /** @type {typeof ranges[0]} */ (/** @type {unknown} */ (range.map(s => `${prefix}${s}`)));
+      const args = /** @type {typeof ranges[0]} */ (
+        /** @type {unknown} */ (range.map(s => `${prefix}${s}`))
+      );
       const prefixedKeys = enumeratePrefixedKeys(kvStore, ...args);
       for (const { key, suffix } of prefixedKeys) {
         const vref = `${rangeSuffix}${suffix}`;
