@@ -156,6 +156,8 @@ export function buildQueryPacketString(
 }
 
 type BuildVTransferEventParams = {
+  /** if present, will return  `btoa(JSON.stringify({ error: acknowledgementError }))` instead of { result: 'AQ=='} */
+  acknowledgementError?: string;
   event?: VTransferIBCEvent['event'];
   /* defaults to cosmos1AccAddress. set to `agoric1fakeLCAAddress` to simulate an outgoing transfer event */
   sender?: CosmosChainAddress['value'];
@@ -197,7 +199,7 @@ type BuildVTransferEventParams = {
  * @param {{BuildVTransferEventParams}} args
  */
 export const buildVTransferEvent = ({
-  event = 'acknowledgementPacket' as const,
+  event = 'acknowledgementPacket' as VTransferIBCEvent['event'],
   sender = 'cosmos1AccAddress',
   receiver = LOCALCHAIN_DEFAULT_ADDRESS,
   target = LOCALCHAIN_DEFAULT_ADDRESS,
@@ -207,12 +209,19 @@ export const buildVTransferEvent = ({
   sourceChannel = 'channel-405' as IBCChannelID,
   sequence = 0n,
   memo = '',
+  acknowledgementError,
 }: BuildVTransferEventParams = {}): VTransferIBCEvent => ({
   type: VTRANSFER_IBC_EVENT,
   blockHeight: 0,
   blockTime: 0,
   event,
-  acknowledgement: btoa(JSON.stringify({ result: 'AQ==' })),
+  acknowledgement: btoa(
+    JSON.stringify(
+      acknowledgementError
+        ? { error: acknowledgementError }
+        : { result: 'AQ==' },
+    ),
+  ),
   relayer: 'agoric123',
   target,
   packet: {
