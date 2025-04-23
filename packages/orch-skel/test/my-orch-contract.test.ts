@@ -55,7 +55,7 @@ test('start my orch contract', async t => {
     const target = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht'; // TODO: where does this come from?
     await VE(transferBridge).fromBridge(
       buildVTransferEvent({
-        receiver: 'rx TODO',
+        receiver: 'rx1...TODO',
         target,
         sourceChannel: 'channel-1', // TODO: hubToAg.transferChannel.counterPartyChannelId,
         denom: coins.denom,
