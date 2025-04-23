@@ -95,4 +95,5 @@ stateDiagram-v2
   AdvanceFailed --> Forwarding : Mint deposited
   AdvancingChoice --> AdvanceFailed : advancer's transferHandler detects failure
   Forwarding --> ForwardFailed : settler.forward() fails
+  ForwardFailed --> Forwarding : retry when any transfer to destination chain succeeds
 ```

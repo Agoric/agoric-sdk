@@ -106,42 +106,55 @@ export const forwardFunds = async (
             },
           });
     try {
+      statusManager.forwarding(txHash);
       await completion;
       log('forward successful for', txHash);
-      statusManager.forwarded(tx.txHash);
+      statusManager.forwarded(txHash, {
+        txHash,
+        destination,
+        amount: amount.value,
+      });
     } catch (reason) {
-      // funds remain in `settlementAccount` and must be recovered via a
-      // contract upgrade
-      log('🚨 forward transfer rejected!', reason, txHash);
-      // update status manager, flagging a terminal state that needs to be
-      // manual intervention or a code update to remediate
-      statusManager.forwardFailed(txHash);
+      log('⚠️ forward transfer rejected', reason, txHash);
+      // funds remain in `settlementAccount`
+      statusManager.forwardFailed(txHash, {
+        txHash,
+        destination,
+        amount: amount.value,
+      });
     }
   } else if (supportsCctp(destination)) {
     try {
+      statusManager.forwarding(txHash);
       await settlement.transfer(intermediateRecipient, amount, {
         timeoutRelativeSeconds: FORWARD_TIMEOUT.sec,
       });
     } catch (reason) {
-      // funds remain in `settlementAccount` and must be recovered via a
-      // contract upgrade
-      log('🚨 forward intermediate transfer rejected!', reason, txHash);
-      // update status manager, flagging a terminal state that needs manual
-      // intervention or a code update to remediate
-      statusManager.forwardFailed(txHash);
+      log('⚠️ forward intermediate transfer rejected', reason, txHash);
+      // funds remain in `settlementAccount`
+      statusManager.forwardFailed(txHash, {
+        txHash,
+        destination,
+        amount: amount.value,
+      });
     }
 
+    // UNTIL #10449
+    const burnAmount = { denom: 'uusdc', value: amount.value };
+
     try {
-      await getNobleICA().depositForBurn(destination, amount);
+      await getNobleICA().depositForBurn(destination, burnAmount);
       log('forward transfer and depositForBurn successful for', txHash);
       statusManager.forwarded(tx.txHash);
     } catch (reason) {
-      // funds remain in `nobleAccount` and must be recovered via a
-      // contract upgrade
-      log('🚨 forward depositForBurn rejected!', reason, txHash);
-      // update status manager, flagging a terminal state that needs manual
-      // intervention or a code update to remediate
-      statusManager.forwardFailed(txHash);
+      log('⚠️ forward depositForBurn rejected', reason, txHash);
+      // funds remain in `nobleAccount`
+      statusManager.forwardFailed(txHash, {
+        txHash,
+        destination,
+        amount: amount.value,
+        fundsInNobleIca: true,
+      });
     }
   } else {
     log(

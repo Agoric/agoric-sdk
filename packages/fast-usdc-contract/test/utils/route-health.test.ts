@@ -94,7 +94,8 @@ test('makeRouteHealth handles multiple routes', t => {
 test('makeRouteHealth onDerelict callback', t => {
   let derelictCalled = 0;
   let derelictRoute = '';
-  const health = makeRouteHealth(MAX_FAILURES, {
+  const health = makeRouteHealth(MAX_FAILURES);
+  health.setEventHandlers({
     onDerelict: route => {
       derelictCalled += 1;
       derelictRoute = route;
@@ -129,7 +130,8 @@ test('makeRouteHealth onDerelict callback', t => {
 test('makeRouteHealth onWorking callback', t => {
   let workingCalled = 0;
   let workingRoute = '';
-  const health = makeRouteHealth(MAX_FAILURES, {
+  const health = makeRouteHealth(MAX_FAILURES);
+  health.setEventHandlers({
     onWorking: route => {
       workingCalled += 1;
       workingRoute = route;
