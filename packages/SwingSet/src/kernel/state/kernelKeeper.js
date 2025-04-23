@@ -717,14 +717,17 @@ export default function makeKernelKeeper(
     // We iterate through all ephemeral and virtual entries so the kernel
     // can ensure that they are abandoned by a vat being upgraded.
     const prefix = `${vatID}.c.`;
-    const ephStart = `${prefix}o+`;
-    const durStart = `${prefix}o+d`;
-    const virStart = `${prefix}o+v`;
+    const ephStart = `o+`;
+    const durStart = `o+d`;
+    const virStart = `o+v`;
     /** @type {[string, string?][]} */
     const ranges = [[ephStart, durStart], [virStart]];
     for (const range of ranges) {
-      for (const { key } of enumeratePrefixedKeys(kvStore, ...range)) {
-        const vref = key.slice(prefix.length);
+      const rangeSuffix = range[0];
+      const args = /** @type {typeof ranges[0]} */ (/** @type {unknown} */ (range.map(s => `${prefix}${s}`)));
+      const prefixedKeys = enumeratePrefixedKeys(kvStore, ...args);
+      for (const { key, suffix } of prefixedKeys) {
+        const vref = `${rangeSuffix}${suffix}`;
         // exclude the root object, which is replaced by upgrade
         if (vref !== 'o+0') {
           const kref = kvStore.get(key);
@@ -1079,8 +1082,6 @@ export default function makeKernelKeeper(
       // begin with `vMM.c.o+`.  In addition to deleting the c-list entry, we
       // must also delete the corresponding kernel owner entry for the object,
       // since the object will no longer be accessible.
-      const vref = stripPrefix(clistPrefix, key);
-      assert(vref.startsWith('o+'), vref);
       const kref = kvStore.get(key);
       // note: adds to maybeFreeKrefs, deletes c-list and .owner
       orphanKernelObject(kref, vatID);
