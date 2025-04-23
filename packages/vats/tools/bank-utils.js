@@ -21,7 +21,7 @@ export const makeFakeBankKit = issuerKits => {
   /**
    * @type {MapStore<
    *   Brand,
-   *   ERef<import('../src/vat-bank.js').VirtualPurse>
+   *   ERef<import('../src/virtual-purse.js').VirtualPurse>
    * >}
    */
   const purses = makeScalarMapStore();
