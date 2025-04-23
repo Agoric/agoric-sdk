@@ -1264,7 +1264,7 @@ test('forward via cctp failed (MsgTransfer)', async t => {
 
   // Verify error was logged
   t.deepEqual(inspectLogs().at(-1), [
-    '🚨 forward intermediate transfer rejected!',
+    '⚠️ forward intermediate transfer rejected',
     mockTransferError,
     cctpTxEvidence.txHash,
   ]);
@@ -1348,7 +1348,7 @@ test('forward via cctp failed (MsgDepositForBurn)', async t => {
   t.deepEqual(
     inspectLogs().at(-1),
     [
-      '🚨 forward depositForBurn rejected!',
+      '⚠️ forward depositForBurn rejected',
       mockDepositError,
       cctpTxEvidence.txHash,
     ],

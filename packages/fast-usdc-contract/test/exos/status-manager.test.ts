@@ -1,18 +1,18 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
+import { PendingTxStatus, TxStatus } from '@agoric/fast-usdc/src/constants.js';
+import type { CctpTxEvidence } from '@agoric/fast-usdc/src/types.js';
+import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
 import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { EReturn } from '@endo/far';
-import { PendingTxStatus } from '@agoric/fast-usdc/src/constants.js';
-import type { CctpTxEvidence } from '@agoric/fast-usdc/src/types.js';
-import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
 import {
   prepareStatusManager,
   stateShape,
   type StatusManager,
 } from '../../src/exos/status-manager.ts';
-import { commonSetup, provideDurableZone } from '../supports.js';
+import type { ForwardFailedTx } from '../../src/typeGuards.ts';
 import { makeRouteHealth } from '../../src/utils/route-health.ts';
 import { commonSetup, provideDurableZone } from '../supports.js';
 
@@ -20,7 +20,7 @@ type Common = EReturn<typeof commonSetup>;
 type TestContext = {
   statusManager: StatusManager;
   storage: Common['bootstrap']['storage'];
-};
+} & Common;
 
 const test = anyTest as TestFn<TestContext>;
 
@@ -40,6 +40,7 @@ test.beforeEach(async t => {
   t.context = {
     statusManager,
     storage: common.bootstrap.storage,
+    ...common,
   };
 });
 
@@ -337,6 +338,117 @@ test('StatusManagerKey logic handles addresses with hyphens', t => {
     evidence.tx.amount,
   );
   t.is(remainingEntries.length, 0, 'Entry should be dequeued from pending');
+});
+
+test('forwardFailed with retry details stores tx for getFailedForwards', async t => {
+  const { statusManager, storage } = t.context;
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  const { txHash } = evidence;
+  const destination = 'cosmos:osmosis-1:osmo1testdestinationaddr';
+
+  const failedTx: ForwardFailedTx = {
+    txHash,
+    destination,
+    amount: 100n,
+  };
+
+  statusManager.forwardFailed(txHash, failedTx);
+  await eventLoopIteration();
+
+  // Check vstorage for FORWARD_FAILED status
+  const storedRecords = storage.getDeserialized(`fun.txns.${txHash}`);
+  t.true(
+    storedRecords.some(
+      (record: any) => record.status === TxStatus.ForwardFailed,
+    ),
+    'FORWARD_FAILED status should be published',
+  );
+
+  // Check getFailedForwards
+  const failedForwards = statusManager.getFailedForwards('cosmos:osmosis-1');
+  t.is(failedForwards.length, 1, 'Should retrieve one failed forward');
+  t.deepEqual(
+    failedForwards[0],
+    { ...failedTx, chainId: 'cosmos:osmosis-1' },
+    'Retrieved failed forward should match input',
+  );
+});
+
+test('forwardFailed without retry details does not store tx for getFailedForwards', async t => {
+  const { statusManager, storage } = t.context;
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  const { txHash } = evidence;
+
+  statusManager.forwardFailed(txHash); // No ForwardFailedTx provided
+  await eventLoopIteration();
+
+  // Check vstorage for FORWARD_FAILED status
+  const storedRecords = storage.getDeserialized(`fun.txns.${txHash}`);
+  t.true(
+    storedRecords.some(
+      (record: any) => record.status === TxStatus.ForwardFailed,
+    ),
+    'FORWARD_FAILED status should be published',
+  );
+
+  // Check getFailedForwards - should be empty
+  const failedForwards = [
+    ...statusManager.getFailedForwards('cosmos:osmosis-1'),
+  ];
+  t.is(
+    failedForwards.length,
+    0,
+    'Should not retrieve failed forward when no details provided',
+  );
+});
+
+test('forwardFailed with retry details is idempotent for storage', t => {
+  const { statusManager } = t.context;
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
+  const { txHash } = evidence;
+  const destination = 'cosmos:dydx-mainnet-1:dydx1testdest';
+
+  const failedTx: ForwardFailedTx = {
+    txHash,
+    destination,
+    amount: 100n,
+  };
+
+  statusManager.forwardFailed(txHash, failedTx);
+  // Call again with the same details
+  statusManager.forwardFailed(txHash, failedTx);
+
+  // Check getFailedForwards
+  const failedForwards = [
+    ...statusManager.getFailedForwards('cosmos:dydx-mainnet-1'),
+  ];
+  t.is(
+    failedForwards.length,
+    1,
+    'Should retrieve only one failed forward despite multiple calls',
+  );
+  t.deepEqual(
+    failedForwards[0],
+    { ...failedTx, chainId: 'cosmos:dydx-mainnet-1' },
+    'Retrieved failed forward should match input',
+  );
+});
+
+test('forwardFailed throws if txHash mismatches in ForwardFailedTx', t => {
+  const { statusManager } = t.context;
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  const { txHash } = evidence;
+  const destination = 'cosmos:osmosis-1:osmo1testdestinationaddr';
+
+  const failedTx: ForwardFailedTx = {
+    txHash: '0xDifferentHash', // Mismatched hash
+    destination,
+    amount: 100n,
+  };
+
+  t.throws(() => statusManager.forwardFailed(txHash, failedTx), {
+    message: 'txHash mismatch in forwardFailed',
+  });
 });
 
 test.todo('ADVANCE_FAILED -> FORWARDED transition');

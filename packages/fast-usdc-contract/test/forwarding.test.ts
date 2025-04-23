@@ -7,15 +7,21 @@ import { E, type EReturn } from '@endo/far';
 import { makePublishKit } from '@agoric/notifier';
 import {
   makeCustomer,
+  makeLP,
   makeOracleOperator,
   makeTestContext,
+  purseOf,
 } from './contract-setup.ts';
 
 const test = anyTest as TestFn<EReturn<typeof makeTestContext>>;
 test.before(async t => {
   t.context = await makeTestContext(t);
   const {
-    startKit: { zoe, invitations },
+    startKit: { zoe, instance, invitations },
+    common: {
+      brands: { usdc },
+      utils,
+    },
     evm: { txPub },
     sync,
   } = t.context;
@@ -29,6 +35,12 @@ test.before(async t => {
       }),
     ),
   );
+
+  // Fund the LP with 500 USDCC
+  const usdcPurse = purseOf(usdc.issuer, utils);
+  const lp500 = makeLP('Logan', usdcPurse(500_000_000n), zoe, instance);
+  await E(lp500).deposit(t, 200_000_000n);
+  sync.lp.resolve({ lp500 });
 });
 
 test.serial('Observed after mint: Forward', async t => {
@@ -144,4 +156,105 @@ test.serial('Observed after mint: Forward failed', async t => {
     },
     { status: 'FORWARD_FAILED' },
   ]);
+
+  // Contract's retry succeeds
+  await transmitVTransferEvent('acknowledgementPacket');
+  t.deepEqual(storage.getDeserialized(`fun.txns.${evidence.txHash}`), [
+    { evidence, status: 'OBSERVED' },
+    {
+      risksIdentified: ['RISK1'],
+      status: 'ADVANCE_SKIPPED',
+    },
+    { status: 'FORWARD_FAILED' },
+    { status: 'FORWARDED' },
+  ]);
+});
+
+test.serial.only('Interleave scenario', async t => {
+  // FailedForwards contains 1 tx for Carol to eip155:1 at 0:00
+  // Alice requests advance to eip155:1 at 0:00, it fulfills at 0:30
+  // Bob requests advance to eip155:1 at 0:05, it fulfills at 0:35
+  // At 0:30, Carol's FailedForward is retried, it fulfills at 0:60
+  // At 0:35, onWorking is called which triggers attemptToClear(). getFailedForwards() returns Carol's tx
+  // this. .transfer() might reject since SettlementAccount is out of money. It might fulfill if there are funds in there and carol will get 2x her request. If it rejects, it's re-added to failedForwards and Carol might get 2x in the future
+
+  const {
+    evm: { cctp, txPub },
+    common: {
+      bootstrap: { storage },
+      commonPrivateArgs: { feeConfig },
+      facadeServices: { chainHub },
+      utils: { transmitVTransferEvent },
+    },
+    mint,
+  } = t.context;
+
+  // The key here is that they're going to the same chain. We re-use the EUD just to simplify the test.
+  const EUD = 'eip155:1:0x1234567890123456789012345678901234567890';
+
+  const alice = makeCustomer(
+    'Alice',
+    cctp,
+    txPub.publisher,
+    feeConfig,
+    chainHub,
+  );
+  const bob = makeCustomer('Bob', cctp, txPub.publisher, feeConfig, chainHub);
+  const carol = makeCustomer(
+    'Carol',
+    cctp,
+    txPub.publisher,
+    feeConfig,
+    chainHub,
+  );
+
+  // First, Carol's forward fails
+  // publish a risky transaction, so the Advance is skipped and forward() instead
+  const carolEv = await carol.sendFast(t, 3_000_000n, EUD, true);
+  await mint(carolEv);
+  await transmitVTransferEvent('timeoutPacket');
+
+  t.deepEqual(storage.getDeserialized(`fun.txns.${carolEv.txHash}`), [
+    { evidence: carolEv, status: 'OBSERVED' },
+    {
+      risksIdentified: ['RISK1'],
+      status: 'ADVANCE_SKIPPED',
+    },
+    { status: 'FORWARD_FAILED' },
+  ]);
+
+  // Now, Alice and Bob's interleave their requests
+  const aliceEv = await alice.sendFast(t, 1_000_000n, EUD);
+  await transmitVTransferEvent('acknowledgementPacket');
+  await eventLoopIteration();
+
+  // const bobEv = await bob.sendFast(t, 2_000_000n, EUD);
+  t.deepEqual(storage.getDeserialized(`fun.txns.${aliceEv.txHash}`), [
+    { evidence: aliceEv, status: 'OBSERVED' },
+    { status: 'ADVANCING' },
+  ]);
+  // t.deepEqual(storage.getDeserialized(`fun.txns.${bobEv.txHash}`), [
+  //   { evidence: bobEv, status: 'OBSERVED' },
+  //   { status: 'ADVANCING' },
+  // ]);
+
+  // FIXME how to get Alice's advance to complete?
+  t.deepEqual(storage.getDeserialized(`fun.txns.${aliceEv.txHash}`), [
+    { evidence: aliceEv, status: 'OBSERVED' },
+    { status: 'ADVANCING' },
+    { status: 'ADVANCED' },
+  ]);
+
+  // await mint(aliceEv);
+  // // Carol's mint arrives
+  // await transmitVTransferEvent('acknowledgementPacket');
+  // t.deepEqual(storage.getDeserialized(`fun.txns.${aliceEv.txHash}`), [
+  //   { evidence: aliceEv, status: 'OBSERVED' },
+  //   { status: 'ADVANCING' },
+  //   { status: 'DISBURSED' },
+  // ]);
+
+  // await mint(bobEv);
+
+  // Carol
 });
