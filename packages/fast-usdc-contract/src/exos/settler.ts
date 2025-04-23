@@ -324,7 +324,12 @@ export const prepareSettler = (
               void this.facets.self.forward(txHash, fullAmount, destination);
             }
           } else {
-            statusManager.advanceOutcome(forwardingAddress, fullValue, success);
+            statusManager.advanceOutcome(
+              forwardingAddress,
+              fullValue,
+              success,
+              { destination },
+            );
           }
         },
         /**

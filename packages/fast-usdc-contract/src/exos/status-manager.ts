@@ -1,4 +1,4 @@
-import type { NatValue } from '@agoric/ertp';
+import { type NatValue } from '@agoric/ertp';
 import {
   PendingTxStatus,
   TerminalTxStatus,
@@ -29,6 +29,10 @@ import type { Zone } from '@agoric/zone';
 import { Fail, makeError, q } from '@endo/errors';
 import { E, type ERef } from '@endo/far';
 import { M } from '@endo/patterns';
+import { chainOfAccount } from '@agoric/orchestration/src/utils/address.js';
+import type { AccountId } from '@agoric/orchestration';
+import { ForwardFailedTxShape, type ForwardFailedTx } from '../typeGuards.ts';
+import { type RouteHealth } from '../utils/route-health.ts';
 
 /** The string template is for developer visibility but not meant to ever be parsed. */
 type PendingTxKey = `pendingTx:${bigint}:${NobleAddress}`;
@@ -202,7 +206,9 @@ export const prepareStatusManager = (
     M.interface('StatusManagerI', {
       // TODO: naming scheme for transition events
       advance: M.call(CctpTxEvidenceShape).returns(),
-      advanceOutcome: M.call(M.string(), M.nat(), M.boolean()).returns(),
+      advanceOutcome: M.call(M.string(), M.nat(), M.boolean())
+        .optional(M.splitRecord({ destination: M.string() }))
+        .returns(),
       skipAdvance: M.call(CctpTxEvidenceShape, M.arrayOf(M.string())).returns(),
       advanceOutcomeForMintedEarly: M.call(EvmHashShape, M.boolean()).returns(),
       advanceOutcomeForUnknownMint: M.call(CctpTxEvidenceShape).returns(),
@@ -220,8 +226,12 @@ export const prepareStatusManager = (
       disbursed: M.call(EvmHashShape, AmountKeywordRecordShape).returns(
         M.undefined(),
       ),
-      forwarded: M.call(EvmHashShape).returns(),
-      forwardFailed: M.call(EvmHashShape).returns(),
+      forwarded: M.call(EvmHashShape)
+        .optional(M.splitRecord({ destination: M.string() }))
+        .returns(),
+      forwardFailed: M.call(EvmHashShape)
+        .optional(ForwardFailedTxShape)
+        .returns(),
       forwardSkipped: M.call(EvmHashShape).returns(),
       lookupPending: M.call(M.string(), M.bigint()).returns(
         M.arrayOf(PendingTxShape),
@@ -258,15 +268,13 @@ export const prepareStatusManager = (
       /**
        * Record result of an ADVANCING transaction
        *
-       * @param nfa
-       * @param amount
-       * @param success
        * @throws {Error} if nothing to advance
        */
       advanceOutcome(
         nfa: NobleAddress,
         amount: bigint,
         success: boolean,
+        tx?: { destination: AccountId },
       ): void {
         setPendingTxStatus(
           { nfa, amount },
@@ -283,7 +291,11 @@ export const prepareStatusManager = (
        * @param txHash
        * @param success
        */
-      advanceOutcomeForMintedEarly(txHash: EvmHash, success: boolean): void {
+      advanceOutcomeForMintedEarly(
+        txHash: EvmHash,
+        success: boolean,
+        tx?: { destination: AccountId },
+      ): void {
         publishTxnRecord(
           txHash,
           harden({
@@ -375,7 +387,7 @@ export const prepareStatusManager = (
        * Mark a transaction as `FORWARDED`
        * @param txHash
        */
-      forwarded(txHash: EvmHash): void {
+      forwarded(txHash: EvmHash, tx?: ForwardFailedTx): void {
         publishTxnRecord(
           txHash,
           harden({
@@ -388,7 +400,7 @@ export const prepareStatusManager = (
        * Mark a transaction as `FORWARD_FAILED`
        * @param txHash
        */
-      forwardFailed(txHash: EvmHash): void {
+      forwardFailed(txHash: EvmHash, tx?: ForwardFailedTx): void {
         publishTxnRecord(
           txHash,
           harden({
