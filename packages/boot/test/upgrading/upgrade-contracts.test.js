@@ -34,8 +34,6 @@ test('upgrade mintHolder', async t => {
     },
   });
 
-  await EV.vat('bootstrap').buildZoe();
-
   const issuer = await EV.vat('bootstrap').startContract(
     bundleName,
     {},
@@ -48,5 +46,5 @@ test('upgrade mintHolder', async t => {
   assert.equal(incarnationNumber, 1);
 
   const actualBrand = await EV(issuer).getBrand();
-  assert.equal(expectedBrand, actualBrand);
+  t.is(expectedBrand.getKref(), actualBrand.getKref());
 });

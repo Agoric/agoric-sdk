@@ -70,9 +70,14 @@ manifests.MINIMAL = makeManifestForBehaviors([
  */
 export const buildRootObject = (vatPowers, bootstrapParameters, baggage) => {
   const manualTimer = buildManualTimer();
+
+  /** @type {(value: any) => void} */
+  let captureZoe;
   let vatAdmin;
+  /** @type {Promise<any>} */
+  let zoePromise;
+
   const { promise: vatAdminP, resolve: captureVatAdmin } = makePromiseKit();
-  const { promise: zoePromise, resolve: captureZoe } = makePromiseKit();
   void vatAdminP.then(value => (vatAdmin = value)); // for better debugging
   /** @typedef {{ root: object; incarnationNumber?: number }} VatRecord */
   /**
@@ -115,6 +120,30 @@ export const buildRootObject = (vatPowers, bootstrapParameters, baggage) => {
   );
 
   const reflectionMethods = makeReflectionMethods(vatPowers, baggage);
+
+  const buildZoe = async () => {
+    const zoeVat = vatRecords.get('zoe');
+    if (!zoeVat) return;
+
+    await vatAdminP;
+    const zoeKit = await E(zoeVat.root).buildZoe(
+      vatAdmin,
+      feeIssuerConfig,
+      'zcf',
+    );
+    const { zoeService: zoe } = zoeKit;
+    captureZoe(zoe);
+    return zoe;
+  };
+
+  const getZoeRoot = () => {
+    if (!zoePromise) {
+      ({ promise: zoePromise, resolve: captureZoe } = makePromiseKit());
+      void buildZoe();
+    }
+
+    return zoePromise;
+  };
 
   return Far('root', {
     ...reflectionMethods,
@@ -160,23 +189,6 @@ export const buildRootObject = (vatPowers, bootstrapParameters, baggage) => {
     clearBridgeHandler: () =>
       vatPowers.D(devicesByName.get('bridge')).unregisterInboundHandler(),
 
-    buildZoe: async () => {
-      const zoeVat = vatRecords.get('zoe');
-      if (!zoeVat) return;
-
-      await vatAdminP;
-      const zoeKit = await E(zoeVat.root).buildZoe(
-        vatAdmin,
-        feeIssuerConfig,
-        'zcf',
-      );
-      const { zoeService: zoe } = zoeKit;
-      captureZoe(zoe);
-      return zoe;
-    },
-
-    getZoeRoot: () => zoePromise,
-
     /**
      * @param {string} vatName
      * @param {string} [bundleCapName]
@@ -203,9 +215,9 @@ export const buildRootObject = (vatPowers, bootstrapParameters, baggage) => {
       await vatAdminP;
 
       const bundleId = await E(vatAdmin).getBundleIDByName(bundleName);
-      const installation = await E(zoePromise).installBundleID(bundleId);
+      const installation = await E(getZoeRoot()).installBundleID(bundleId);
 
-      const facets = await E(zoePromise).startInstance(
+      const facets = await E(getZoeRoot()).startInstance(
         installation,
         privateArgs,
         terms,
