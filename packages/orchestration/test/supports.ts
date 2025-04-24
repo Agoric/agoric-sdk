@@ -188,20 +188,22 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       throw Error('no messages in the last tx');
 
     const lastMsgTransfer = b1.messages[0] as MsgTransfer;
+    const base = {
+      receiver: lastMsgTransfer.receiver as Bech32Address,
+      sender: lastMsgTransfer.sender as Bech32Address,
+      target: lastMsgTransfer.sender as Bech32Address,
+      sourceChannel: lastMsgTransfer.sourceChannel as IBCChannelID,
+      sequence: ibcSequenceNonce,
+      amount: BigInt(lastMsgTransfer.token.amount),
+      denom: lastMsgTransfer.token.denom,
+      memo: lastMsgTransfer.memo,
+    };
     await E(transferBridge).fromBridge(
-      buildVTransferEvent({
-        event,
-        receiver: lastMsgTransfer.receiver as Bech32Address,
-        sender: lastMsgTransfer.sender as Bech32Address,
-        target: lastMsgTransfer.sender as Bech32Address,
-        sourceChannel: lastMsgTransfer.sourceChannel as IBCChannelID,
-        sequence: ibcSequenceNonce,
-        amount: BigInt(lastMsgTransfer.token.amount),
-        denom: lastMsgTransfer.token.denom,
-        memo: lastMsgTransfer.memo,
-        acknowledgementError,
-        // XXX derive destinationChannel based from counterparty of sourceChannel
-      }),
+      buildVTransferEvent(
+        event === 'timeoutPacket'
+          ? { event, ...base }
+          : { event, ...base, acknowledgementError },
+      ),
     );
     // let the bridge handler finish
     await eventLoopIteration();
