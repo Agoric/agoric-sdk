@@ -299,5 +299,3 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     },
   };
 };
-
-export const makeDefaultContext = <SF>(contract: Installation<SF>) => {};
