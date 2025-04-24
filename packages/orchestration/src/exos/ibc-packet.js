@@ -89,6 +89,12 @@ export const prepareIBCTransferSender = (zone, { watch, makeIBCReplyKit }) => {
     }),
     {
       public: {
+        /**
+         * @param {Vow<
+         *   IBCEvent<'acknowledgementPacket'> | IBCEvent<'timeoutPacket'>
+         * >} match
+         * @param {PacketOptions} opts
+         */
         sendPacket(match, opts) {
           const { txExecutor, transferMsg } = this.state;
           return watch(
