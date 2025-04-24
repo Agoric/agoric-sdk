@@ -26,8 +26,6 @@ import {
   ZoeMintI,
   ZoeStorageManagerIKit,
 } from '../typeGuards.js';
-import '../internal-types.js';
-import './internal-types.js';
 
 /**
  * @import {Baggage} from '@agoric/vat-data';

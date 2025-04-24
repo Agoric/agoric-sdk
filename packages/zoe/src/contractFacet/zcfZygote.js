@@ -28,7 +28,6 @@ import { createSeatManager } from './zcfSeat.js';
 import { HandleOfferI, InvitationHandleShape } from '../typeGuards.js';
 import { prepareZcMint } from './zcfMint.js';
 import { ZcfI } from './typeGuards.js';
-import '../internal-types.js';
 
 /**
  * @import {ShutdownWithFailure} from '@agoric/swingset-vat';

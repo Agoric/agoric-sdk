@@ -10,10 +10,6 @@
  * validate that.
  */
 
-/// <reference types="@agoric/internal/exported" />
-/// <reference types="@agoric/notifier/exported.js" />
-/// <reference path="../internal-types.js" />
-
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
@@ -27,8 +23,6 @@ import { makeInvitationQueryFns } from './invitationQueries.js';
 import { getZcfBundleCap } from './createZCFVat.js';
 import { defaultFeeIssuerConfig, prepareFeeMint } from './feeMint.js';
 import { ZoeServiceI } from '../typeGuards.js';
-import '../internal-types.js';
-import './internal-types.js';
 
 /**
  * @import {VatAdminSvc, ShutdownWithFailure} from '@agoric/swingset-vat';

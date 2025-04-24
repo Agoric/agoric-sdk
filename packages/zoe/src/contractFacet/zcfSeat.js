@@ -19,7 +19,6 @@ import {
 } from '../typeGuards.js';
 import { makeAllocationMap } from './reallocate.js';
 import { TransferPartShape } from '../contractSupport/atomicTransfer.js';
-import '../internal-types.js';
 
 /**
  * @import {WeakMapStore} from '@agoric/store';

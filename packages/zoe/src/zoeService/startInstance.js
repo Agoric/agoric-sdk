@@ -18,8 +18,6 @@ import {
   InstanceAdminI,
   InstanceAdminShape,
 } from '../typeGuards.js';
-import '../internal-types.js';
-import './internal-types.js';
 
 /**
  * @import {Baggage} from '@agoric/vat-data';
