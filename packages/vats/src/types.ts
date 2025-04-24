@@ -167,15 +167,16 @@ export type ConnectingInfo = {
 
 /** see [ibc_module.go](../../../golang/cosmos/x/vibc/types/ibc_module.go) */
 export type IBCBridgeEvent =
+  | 'writeAcknowledgement'
   | 'channelOpenInit'
   | 'channelOpenTry'
   | 'channelOpenAck'
   | 'channelOpenConfirm'
+  | 'channelCloseInit'
+  | 'channelCloseConfirm'
   | 'receivePacket'
   | 'acknowledgementPacket'
   | 'timeoutPacket'
-  | 'channelCloseInit'
-  | 'channelCloseConfirm'
   | 'sendPacket';
 
 type IBCPacketEvents = {
@@ -191,6 +192,11 @@ type IBCPacketEvents = {
     packet: IBCPacket;
     relayer: string; // chain address
   };
+  writeAcknowledgement: {
+    acknowledgement: Bytes;
+    packet: IBCPacket;
+    relayer: string; // chain address
+  };
   timeoutPacket: {
     packet: IBCPacket;
   };
@@ -199,11 +205,22 @@ type IBCPacketEvents = {
   sendPacket: { relativeTimeoutNs: bigint; packet: IBCPacket };
 };
 
-export type IBCEvent<E extends IBCBridgeEvent> = {
-  type: 'IBC_EVENT';
+/**
+ * ActionTypes as specified by `vibc` and `vtransfer`. This list is expected to
+ * grow as more IBC Applications modules are implemented.
+ */
+type IBCEventType = 'IBC_EVENT' | 'VTRANSFER_IBC_EVENT';
+
+export type IBCEvent<
+  E extends IBCBridgeEvent,
+  T extends IBCEventType = 'IBC_EVENT',
+> = {
+  type: T;
   blockHeight: number;
   blockTime: number;
   event: E;
+  /** e.g. the chain address of the LocalChainAccount */
+  target?: string;
 } & {
   [K in keyof IBCPacketEvents[E]]: IBCPacketEvents[E][K];
 };
@@ -287,24 +304,12 @@ type SendPacketDownCall = {
  * This event is emitted when a FungibleTokenPacket is sent or received
  * by a target (e.g. a {@link LocalChainAccount}) that has a registered
  * {@link TargetApp}. It is passed through the `receiveUpcall` handler.
+ *
+ * For ICS-20 transfer (including `MsgTransfer`), the `packet.data` field is a
+ * {@link FungibleTokenPacketData} object, and you can use
+ * `JSON.parse(atob(packet.data))` to extract it.
  */
-export type VTransferIBCEvent = {
-  type: 'VTRANSFER_IBC_EVENT';
-  blockHeight: number;
-  blockTime: number;
-  /**
-   * Indicates the type of IBC packet event:
-   * - 'acknowledgementPacket': passive tap that communicates the result of an acknowledged packet
-   * - 'writeAcknowledgement': active tap where the receiver can return a write acknowledgement
-   */
-  event: 'acknowledgementPacket' | 'writeAcknowledgement';
-  acknowledgement: Bytes;
-  /**
-   * Use `JSON.parse(atob(packet.data))` to get a
-   * {@link FungibleTokenPacketData} object.
-   */
-  packet: IBCPacket;
-  relayer: string;
-  /** e.g. the chain address of the LocalChainAccount */
-  target: string;
-};
+export type VTransferIBCEvent =
+  | IBCEvent<'acknowledgementPacket', 'VTRANSFER_IBC_EVENT'>
+  | IBCEvent<'writeAcknowledgement', 'VTRANSFER_IBC_EVENT'>
+  | IBCEvent<'timeoutPacket', 'VTRANSFER_IBC_EVENT'>;
