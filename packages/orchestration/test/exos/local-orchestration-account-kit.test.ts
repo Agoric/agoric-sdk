@@ -10,7 +10,6 @@ import {
 } from '@agoric/vats/tools/fake-bridge.js';
 import { heapVowE as VE } from '@agoric/vow/vat.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import type { IBCChannelID } from '@agoric/vats';
 import type {
   CosmosChainAddress,
   AmountArg,
@@ -115,20 +114,15 @@ test('delegate, undelegate', async t => {
   );
 });
 
-// TODO(#11026): This use of expectUnhandled should not be necessary.
-test(expectUnhandled(1), 'transfer', async t => {
+test('transfer', async t => {
   const common = await commonSetup(t);
+  const {
+    brands: { bld: stake },
+    utils: { inspectLocalBridge, pourPayment, transmitVTransferEvent },
+  } = common;
   common.utils.populateChainHub();
   const makeTestLOAKit = prepareMakeTestLOAKit(t, common);
   const account = await makeTestLOAKit();
-
-  const { value: sender } = await VE(account).getAddress();
-
-  const {
-    brands: { bld: stake },
-    mocks: { transferBridge },
-    utils: { inspectLocalBridge, pourPayment },
-  } = common;
 
   t.truthy(account, 'account is returned');
 
@@ -147,8 +141,6 @@ test(expectUnhandled(1), 'transfer', async t => {
     encoding: 'bech32',
   };
 
-  /** The running tally of transfer messages that were sent over the bridge */
-  let lastSequence = 0n;
   /**
    * Helper to start the transfer without awaiting the result. It await the
    * event loop so the promise starts and increments sequence for use in the
@@ -163,7 +155,6 @@ test(expectUnhandled(1), 'transfer', async t => {
     opts: IBCMsgTransferOptions = {},
   ) => {
     const transferP = VE(account).transfer(dest, amount, opts);
-    lastSequence += 1n;
     // Ensure the toBridge of the transferP happens before the fromBridge is awaited after this function returns
     await eventLoopIteration();
     return { transferP };
@@ -175,34 +166,22 @@ test(expectUnhandled(1), 'transfer', async t => {
     destination,
   );
   t.is(await Promise.race([transferP, 'not yet']), 'not yet');
-
   // simulate incoming message so that the transfer promise resolves
-  await VE(transferBridge).fromBridge(
-    buildVTransferEvent({
-      receiver: destination.value,
-      sender,
-      sourceChannel:
-        fetchedChainInfo.agoric.connections[destination.chainId].transferChannel
-          .channelId,
-      sequence: lastSequence,
-    }),
-  );
-
+  await transmitVTransferEvent('acknowledgementPacket');
   const transferRes = await transferP;
   t.true(transferRes === undefined, 'Successful transfer returns Vow<void>.');
 
-  await t.throwsAsync(
-    (
-      await startTransfer(
-        { denom: 'ubld', value: SIMULATED_ERRORS.TIMEOUT },
-        destination,
-      )
-    ).transferP,
-    {
-      message: 'simulated unexpected MsgTransfer packet timeout',
-    },
+  t.log('testing timeout packet scenario...');
+  const { transferP: timeoutTransferP } = await startTransfer(
+    { denom: 'ubld', value: 504n },
+    destination,
   );
+  await transmitVTransferEvent('timeoutPacket');
+  await t.throwsAsync(timeoutTransferP, {
+    message: 'transfer operation received timeout packet',
+  });
 
+  t.log('testing unknown destination scenario...');
   const unknownDestination: CosmosChainAddress = {
     chainId: 'fakenet',
     value: 'fakenet1pleab',
@@ -217,30 +196,14 @@ test(expectUnhandled(1), 'transfer', async t => {
 
   /**
    * Helper to start the transfer AND send the ack packet so this promise can be awaited
-   * @param amount
-   * @param dest
-   * @param opts
-   * @param sourceChannel
    */
   const doTransfer = async (
     amount: AmountArg,
     dest: CosmosChainAddress,
     opts: IBCMsgTransferOptions = {},
-    sourceChannel?: IBCChannelID,
   ) => {
     const { transferP: promise } = await startTransfer(amount, dest, opts);
-    // simulate incoming message so that promise resolves
-    await VE(transferBridge).fromBridge(
-      buildVTransferEvent({
-        receiver: dest.value,
-        sender,
-        sourceChannel:
-          sourceChannel ||
-          fetchedChainInfo.agoric.connections[dest.chainId].transferChannel
-            .channelId,
-        sequence: lastSequence,
-      }),
-    );
+    await transmitVTransferEvent('acknowledgementPacket');
     return promise;
   };
 
@@ -295,14 +258,7 @@ test(expectUnhandled(1), 'transfer', async t => {
   };
 
   t.log('Transfer handles multi-hop transfers');
-  await t.notThrowsAsync(
-    doTransfer(
-      aDenomAmount,
-      dydxDest,
-      {},
-      fetchedChainInfo.agoric.connections['noble-1'].transferChannel.channelId,
-    ),
-  );
+  await t.notThrowsAsync(doTransfer(aDenomAmount, dydxDest));
 
   t.is(latestTxMsg().receiver, PFM_RECEIVER, 'defaults to "pfm" receiver');
   t.deepEqual(JSON.parse(latestTxMsg().memo), {
@@ -322,17 +278,12 @@ test(expectUnhandled(1), 'transfer', async t => {
     encoding: 'bech32',
   };
   await t.notThrowsAsync(
-    doTransfer(
-      aDenomAmount,
-      dydxDest,
-      {
-        forwardOpts: {
-          timeout: '999m',
-          intermediateRecipient,
-        },
+    doTransfer(aDenomAmount, dydxDest, {
+      forwardOpts: {
+        timeout: '999m',
+        intermediateRecipient,
       },
-      fetchedChainInfo.agoric.connections['noble-1'].transferChannel.channelId,
-    ),
+    }),
   );
 
   t.is(latestTxMsg().receiver, intermediateRecipient.value);
@@ -344,6 +295,21 @@ test(expectUnhandled(1), 'transfer', async t => {
       receiver: 'dydx1test',
       retries: 3,
     },
+  });
+
+  t.log('testing pfm ack error scenario...');
+  const { transferP: pfmTimeoutTransferP } = await startTransfer(
+    {
+      denom: uusdcOnAgoric,
+      value: 500_000n,
+    },
+    dydxDest,
+  );
+  const ackErrorMsg =
+    'packet-forward-middleware error: giving up on packet on channel (channel-33) port (transfer) after max retries';
+  await transmitVTransferEvent('acknowledgementPacket', ackErrorMsg);
+  await t.throwsAsync(pfmTimeoutTransferP, {
+    message: `ICS20-1 transfer error "${ackErrorMsg}"`,
   });
 });
 

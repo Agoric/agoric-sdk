@@ -288,14 +288,18 @@ test('baggage', async t => {
   t.snapshot(tree, 'contract baggage after start');
 });
 
-// TODO(#11026): This use of expectUnhandled should not be necessary.
-test(expectUnhandled(1), 'failed ibc transfer returns give', async t => {
+test('failed ibc transfer returns give', async t => {
   t.log('bootstrap, orchestration core-eval');
   const {
     bootstrap,
     commonPrivateArgs,
     brands: { ist },
-    utils: { inspectLocalBridge, pourPayment, inspectBankBridge },
+    utils: {
+      inspectLocalBridge,
+      pourPayment,
+      inspectBankBridge,
+      transmitVTransferEvent,
+    },
   } = await commonSetup(t);
   const vt = bootstrap.vowTools;
 
@@ -323,7 +327,7 @@ test(expectUnhandled(1), 'failed ibc transfer returns give', async t => {
   const amt = await E(zoe).getInvitationDetails(inv);
   t.is(amt.description, 'send');
 
-  const anAmt = ist.make(SIMULATED_ERRORS.TIMEOUT);
+  const anAmt = ist.make(504n);
   const Send = await pourPayment(anAmt);
   const userSeat = await E(zoe).offer(
     inv,
@@ -332,7 +336,7 @@ test(expectUnhandled(1), 'failed ibc transfer returns give', async t => {
     { destAddr: 'cosmos1destAddr', chainName: 'cosmoshub' },
   );
 
-  await eventLoopIteration();
+  await transmitVTransferEvent('timeoutPacket');
   await E(userSeat).hasExited();
   const payouts = await E(userSeat).getPayouts();
   t.log('Failed offer payouts', payouts);
@@ -342,7 +346,7 @@ test(expectUnhandled(1), 'failed ibc transfer returns give', async t => {
 
   await t.throwsAsync(vt.when(E(userSeat).getOfferResult()), {
     message:
-      'IBC Transfer failed "[Error: simulated unexpected MsgTransfer packet timeout]"',
+      'IBC Transfer failed "[Error: transfer operation received timeout packet]"',
   });
 
   t.log('ibc MsgTransfer was attempted from a local chain account');
