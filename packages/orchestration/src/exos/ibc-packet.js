@@ -109,10 +109,15 @@ export const prepareIBCTransferSender = (zone, { watch, makeIBCReplyKit }) => {
          *     >
          *   >,
          * ]} response
-         * @param {Record<string, any>} ctx
+         * @param {{
+         *   opts: PacketOptions;
+         *   match: Vow<
+         *     IBCEvent<'acknowledgementPacket'> | IBCEvent<'timeoutPacket'>
+         *   >;
+         * }} ctx
          */
         onFulfilled([{ sequence }], ctx) {
-          const { match } = ctx;
+          const { match, opts } = ctx;
           const { transferMsg } = this.state;
 
           // sequence + sourceChannel uniquely identifies a transfer.
@@ -129,7 +134,7 @@ export const prepareIBCTransferSender = (zone, { watch, makeIBCReplyKit }) => {
           const { resultV: ackDataV, ...rest } = makeIBCReplyKit(
             replyPacketPattern,
             match,
-            ctx,
+            opts,
           );
           const resultV = watch(ackDataV, this.facets.verifyTransferSuccess);
           return harden({ resultV, ...rest });
