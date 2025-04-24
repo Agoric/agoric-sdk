@@ -27,7 +27,7 @@
     "@endo/check-bundle": "^1.0.14",
     "@endo/errors": "^1.2.10",
     "@endo/nat": "^5.1.0",
-    "better-sqlite3": "^9.1.1"
+    "better-sqlite3": "^10.1.0"
   },
   "devDependencies": {
     "@endo/init": "^1.1.9",
@@ -49,6 +49,6 @@
     "timeout": "2m"
   },
   "typeCoverage": {
-    "atLeast": 79.43
+    "atLeast": 79.33
   }
 }

@@ -20,6 +20,7 @@ import {
   type OrchestrationPowers,
   type OrchestrationTools,
 } from '@agoric/orchestration';
+import type { HostForGuest } from '@agoric/orchestration/src/facade.js';
 import { makeZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
@@ -48,6 +49,7 @@ import { prepareStatusManager } from './exos/status-manager.ts';
 import type { OperatorOfferResult } from './exos/transaction-feed.ts';
 import { prepareTransactionFeedKit } from './exos/transaction-feed.ts';
 import * as flows from './fast-usdc.flows.ts';
+import { makeSupportsCctp } from './utils/cctp.ts';
 
 const trace = makeTracer('FastUsdc');
 
@@ -133,16 +135,60 @@ export const contract = async (
   const getNobleICA = (): OrchestrationAccount<{ chainId: 'noble-1' }> =>
     baggage.get(NOBLE_ICA_BAGGAGE_KEY);
 
+  /** Chain, connection, and asset info can only be registered once */
+  const firstIncarnationKey = 'firstIncarnationKey';
+  // Perform this before makeLocalAccount() is called or it will cause
+  // `agoric` chain info to be pulled from agoricNames.
+  // UNTIL https://github.com/Agoric/agoric-sdk/issues/10602
+  if (!baggage.has(firstIncarnationKey)) {
+    baggage.init(firstIncarnationKey, true);
+    registerChainsAndAssets(
+      chainHub,
+      terms.brands,
+      privateArgs.chainInfo,
+      privateArgs.assetInfo,
+    );
+  }
+
+  const supportsCctp = makeSupportsCctp(chainHub);
+
+  const { makeLocalAccount, makeNobleAccount } = orchestrateAll(
+    {
+      // TODO flow picker for orchestrateAll with different contexts or ordering
+      makeLocalAccount: flows.makeLocalAccount,
+      makeNobleAccount: flows.makeNobleAccount,
+    },
+    {},
+  );
+
+  const poolAccountV = zone.makeOnce('PoolAccount', () => makeLocalAccount());
+  const settleAccountV = zone.makeOnce('SettleAccount', () =>
+    makeLocalAccount(),
+  );
+  const { forwardFunds } = orchestrateAll(
+    // @ts-expect-error flow membrance type debt
+    { forwardFunds: flows.forwardFunds },
+    {
+      currentChainReference: privateArgs.chainInfo.agoric.chainId,
+      getNobleICA,
+      log: makeTracer('ForwardFunds'),
+      settlementAccount: settleAccountV,
+      supportsCctp,
+      statusManager,
+    },
+  ) as { forwardFunds: HostForGuest<typeof flows.forwardFunds> };
+
   const makeSettler = prepareSettler(zone, {
     statusManager,
     USDC,
     withdrawToSeat,
     feeConfig,
+    forwardFunds,
     getNobleICA,
     vowTools: tools.vowTools,
     zcf,
-    chainHub,
-    currentChainReference: privateArgs.chainInfo.agoric.chainId,
+    // UNTIL we have an generic way to attenuate an Exo https://github.com/Agoric/agoric-sdk/issues/11309
+    chainHub: { resolveAccountId: chainHub.resolveAccountId.bind(chainHub) },
   });
 
   const zoeTools = makeZoeTools(zcf, vowTools);
@@ -168,8 +214,6 @@ export const contract = async (
     terms.brands.USDC,
     { makeRecorderKit },
   );
-
-  const { makeLocalAccount, makeNobleAccount } = orchestrateAll(flows, {});
 
   const creatorFacet = zone.exo('Fast USDC Creator', undefined, {
     async makeOperatorInvitation(
@@ -293,24 +337,8 @@ export const contract = async (
     makeLiquidityPoolKit(shareMint, privateArgs.poolMetricsNode),
   );
 
-  /** Chain, connection, and asset info can only be registered once */
-  const firstIncarnationKey = 'firstIncarnationKey';
-  if (!baggage.has(firstIncarnationKey)) {
-    baggage.init(firstIncarnationKey, true);
-    registerChainsAndAssets(
-      chainHub,
-      terms.brands,
-      privateArgs.chainInfo,
-      privateArgs.assetInfo,
-    );
-  }
-
   const feedKit = zone.makeOnce('Feed Kit', () => makeFeedKit());
 
-  const poolAccountV = zone.makeOnce('PoolAccount', () => makeLocalAccount());
-  const settleAccountV = zone.makeOnce('SettleAccount', () =>
-    makeLocalAccount(),
-  );
   // when() is OK here since this clearly resolves promptly.
   const [poolAccount, settlementAccount] = (await vowTools.when(
     vowTools.all([poolAccountV, settleAccountV]),

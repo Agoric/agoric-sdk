@@ -122,7 +122,7 @@ async function doSlowTerminate(t, mode) {
   const vatID = JSON.parse(kvStore.get('vat.dynamicIDs'))[0];
   t.is(vatID, 'v6'); // change if necessary
   const remainingKV = () =>
-    Array.from(enumeratePrefixedKeys(kvStore, `${vatID}.`));
+    Array.from(enumeratePrefixedKeys(kvStore, `${vatID}.`), ({ key }) => key);
   const remainingSnapshots = () =>
     db
       .prepare('SELECT COUNT(*) FROM snapshots WHERE vatID=?')

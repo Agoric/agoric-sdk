@@ -15,7 +15,10 @@ import { subtractRatios } from '@agoric/ertp/src/ratio.js';
 import { makeTracer } from '@agoric/internal/src/index.js';
 import { amountPattern, ratioPattern } from '../contractSupport.js';
 
-/** @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js'; */
+/**
+ * @import {MapStore} from '@agoric/store';
+ * @import {PriceAuthority} from '@agoric/zoe/tools/types.js';
+ */
 
 export const CHARGING_PERIOD_KEY = 'ChargingPeriod';
 export const RECORDING_PERIOD_KEY = 'RecordingPeriod';
