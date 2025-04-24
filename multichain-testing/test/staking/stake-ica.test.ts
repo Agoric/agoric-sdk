@@ -41,6 +41,7 @@ interface StakeIcaScenario {
 
 const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
   const {
+    commonBuilderOpts,
     wallets,
     provisionSmartWallet,
     vstorageClient,
@@ -49,7 +50,11 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
     startContract,
   } = t.context;
 
-  await startContract(scenario.contractName, scenario.builder);
+  await startContract(
+    scenario.contractName,
+    scenario.builder,
+    commonBuilderOpts,
+  );
   const wdUser1 = await provisionSmartWallet(wallets[scenario.wallet], {
     BLD: 100n,
     IST: 100n,

@@ -189,11 +189,12 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
     /** @type {Array<[string, string, string]>} */
     const res = [];
     const prefix = `${deviceID}.c.`;
-    for (const k of enumeratePrefixedKeys(kvStore, prefix)) {
-      const slot = k.slice(prefix.length);
+    const prefixedKeys = enumeratePrefixedKeys(kvStore, prefix);
+
+    for (const { key, suffix: slot } of prefixedKeys) {
       if (!slot.startsWith('k')) {
         const devSlot = slot;
-        const kernelSlot = kvStore.get(k);
+        const kernelSlot = kvStore.get(key);
         res.push([kernelSlot, deviceID, devSlot]);
       }
     }

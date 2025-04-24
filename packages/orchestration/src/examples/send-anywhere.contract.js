@@ -70,6 +70,15 @@ export const contract = async (
   const { brands } = zcf.getTerms();
 
   /**
+   * ensure ChainHub is populated before trying to use it in flows
+   */
+  registerChainsAndAssets(
+    chainHub,
+    zcf.getTerms().brands,
+    privateArgs.chainInfo,
+    privateArgs.assetInfo,
+  );
+  /**
    * Set up a shared local account for use in async-flow functions. Typically,
    * exo initState functions need to resolve synchronously, but `makeOnce`
    * allows us to provide a Promise. When using this inside a flow, we must
@@ -113,13 +122,6 @@ export const contract = async (
         );
       },
     },
-  );
-
-  registerChainsAndAssets(
-    chainHub,
-    zcf.getTerms().brands,
-    privateArgs.chainInfo,
-    privateArgs.assetInfo,
   );
 
   return { publicFacet, creatorFacet };

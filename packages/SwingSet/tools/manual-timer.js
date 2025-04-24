@@ -34,6 +34,7 @@ const setup = callbacks => {
     currentWakeup: undefined,
     currentHandler: undefined,
   };
+  /** @type {any} */
   const deviceMarker = harden({});
   const timerDeviceFuncs = harden({
     getLastPolled: () => state.now,
@@ -54,6 +55,7 @@ const setup = callbacks => {
       state.currentHandler = undefined;
     },
   });
+  /** @type {any} */
   const D = node => {
     assert.equal(node, deviceMarker, 'fake D only supports devices.timer');
     return timerDeviceFuncs;
