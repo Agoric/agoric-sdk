@@ -37,7 +37,7 @@ const Shape2 = /** @type {const} */ ({
     { handler: Shape1.ConnectionHandler },
     { remoteAddress: Shape1.Endpoint, localAddress: Shape1.Endpoint },
   ),
-  Opts: M.recordOf(M.string(), M.any()),
+  Opts: SendOptionsShape,
 });
 
 export const Shape = /** @type {const} */ harden({
