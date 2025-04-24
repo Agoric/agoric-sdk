@@ -1,4 +1,5 @@
 import { BrandShape } from '@agoric/ertp/src/typeGuards.js';
+import { SendOptionsShape } from '@agoric/network';
 import { VowShape } from '@agoric/vow';
 import { M } from '@endo/patterns';
 
@@ -222,13 +223,14 @@ harden(TimestampProtoShape);
  *
  * @internal
  */
-export const TxBodyOptsShape = M.splitRecord(
+export const ExecuteICATxOptsShape = M.splitRecord(
   {},
   {
     memo: M.string(),
     timeoutHeight: M.bigint(),
     extensionOptions: M.arrayOf(M.any()),
     nonCriticalExtensionOptions: M.arrayOf(M.any()),
+    sendOpts: SendOptionsShape,
   },
 );
 
