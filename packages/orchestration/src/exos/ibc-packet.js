@@ -12,6 +12,7 @@ const trace = makeTracer('IBCP');
  * @import {Key, Pattern} from '@endo/patterns';
  * @import {JsonSafe, TypedJson, ResponseTo} from '@agoric/cosmic-proto';
  * @import {Vow, VowTools} from '@agoric/vow';
+ * @import {IBCEvent, IBCPacket} from '@agoric/vats';
  * @import {LocalChainAccount} from '@agoric/vats/src/localchain.js';
  * @import {PacketOptions} from './packet-tools.js';
  */
@@ -160,6 +161,12 @@ export const prepareIBCTransferSender = (zone, { watch, makeIBCReplyKit }) => {
 harden(prepareIBCTransferSender);
 
 /**
+ * `makeIBCReplyKit` creates a pattern for `acknowledgementPacket` and
+ * `timeoutPacket` {@link IBCEvent}s using the provided {@link IBCPacket}
+ * pattern.
+ *
+ * Returns a vow that settles when a match is found.
+ *
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {VowTools} vowTools
  */
@@ -171,7 +178,17 @@ export const prepareIBCReplyKit = (zone, vowTools) => {
       onFulfilled: M.call(M.record(), M.record()).returns(Vow$(M.string())),
     }),
     {
-      onFulfilled({ event, acknowledgement }, { opName = 'unknown' }) {
+      /**
+       * @param {IBCEvent<'acknowledgementPacket'>
+       *   | IBCEvent<'timeoutPacket'>} ibcEvent
+       * @param {PacketOptions} ctx
+       */
+      onFulfilled(ibcEvent, { opName = 'unknown' }) {
+        const {
+          event,
+          // @ts-expect-error `acknowledgement` does not exist on IBCEvent<'timeoutPacket'>
+          acknowledgement,
+        } = ibcEvent;
         assertAllDefined({ event, acknowledgement });
         switch (event) {
           case 'acknowledgementPacket':
@@ -186,8 +203,9 @@ export const prepareIBCReplyKit = (zone, vowTools) => {
   );
 
   /**
+   * @template {IBCEvent<'acknowledgementPacket'> | IBCEvent<'timeoutPacket'>} [E=IBCEvent<'acknowledgementPacket'>| IBCEvent<'timeoutPacket'>]
    * @param {Pattern} replyPacketPattern
-   * @param {Vow<any>} matchV
+   * @param {Vow<E>} matchV
    * @param {PacketOptions} opts
    */
   const makeIBCReplyKit = (replyPacketPattern, matchV, opts) => {
