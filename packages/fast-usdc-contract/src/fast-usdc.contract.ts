@@ -1,3 +1,4 @@
+import { prepareAttenuatorMaker } from '@agoric/base-zone/zone-helpers.js';
 import { AssetKind, type Amount } from '@agoric/ertp';
 import {
   CosmosChainInfoShapeV1,
@@ -178,6 +179,12 @@ export const contract = async (
     },
   ) as { forwardFunds: HostForGuest<typeof flows.forwardFunds> };
 
+  const makeResolveOnlyHub = prepareAttenuatorMaker(zone, 'ResolveOnlyHub', [
+    'resolveAccountId',
+  ]);
+
+  const resolveOnlyHub = makeResolveOnlyHub(chainHub);
+
   const makeSettler = prepareSettler(zone, {
     statusManager,
     USDC,
@@ -187,8 +194,7 @@ export const contract = async (
     getNobleICA,
     vowTools: tools.vowTools,
     zcf,
-    // UNTIL we have an generic way to attenuate an Exo https://github.com/Agoric/agoric-sdk/issues/11309
-    chainHub: { resolveAccountId: chainHub.resolveAccountId.bind(chainHub) },
+    chainHub: resolveOnlyHub,
   });
 
   const zoeTools = makeZoeTools(zcf, vowTools);
