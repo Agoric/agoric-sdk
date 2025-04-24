@@ -110,10 +110,6 @@ jobs:
           make fund-provision-pool
         working-directory: ./agoric-sdk/multichain-testing
 
-      - name: Override Chain Registry
-        run: make override-chain-registry
-        working-directory: ./agoric-sdk/multichain-testing
-
       - name: Register Interchain Bank Assets
         run: make register-bank-assets
         working-directory: ./agoric-sdk/multichain-testing

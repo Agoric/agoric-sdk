@@ -787,7 +787,7 @@ test.serial('minted before observed; forward path', async t => {
   await assertAmtForwarded(queryClient, EUD, eudChain, mintAmt);
 });
 
-test.serial('insufficient LP funds and forward failed', async t => {
+test.serial('forward skipped due to invalid EUD', async t => {
   const mintAmt = LP_DEPOSIT_AMOUNT * 2n;
   const {
     api,
@@ -849,7 +849,7 @@ test.serial('insufficient LP funds and forward failed', async t => {
 
   nobleTools.mockCctpMint(mintAmt, userForwardingAddr);
 
-  await assertTxStatus(evidence.txHash, 'FORWARD_FAILED');
+  await assertTxStatus(evidence.txHash, 'FORWARD_SKIPPED');
 
   const endingSettlementAccountBalance = await querySettlementAccountBalance();
   t.log(

@@ -31,8 +31,8 @@ test.before(async t => {
   await deleteTestKeys(accounts).catch();
   const wallets = await setupTestKeys(accounts);
   t.context = { ...rest, wallets, deleteTestKeys };
-  const { startContract } = rest;
-  await startContract(contractName, contractBuilder);
+  const { startContract, commonBuilderOpts } = rest;
+  await startContract(contractName, contractBuilder, commonBuilderOpts);
 });
 
 test.after(async t => {

@@ -75,10 +75,6 @@ add-address:
 fund-provision-pool:
 	scripts/fund-provision-pool.ts
 
-override-chain-registry:
-	scripts/fetch-starship-chain-info.ts && \
-	scripts/deploy-cli.ts src/revise-chain-info.builder.js
-
 register-bank-assets:
 	scripts/fetch-starship-chain-info.ts && \
 	scripts/deploy-cli.ts src/register-interchain-bank-assets.builder.js \
@@ -106,5 +102,5 @@ wait-for-pods:
 	scripts/pod-readiness.ts
 
 .PHONY: start
-start: install wait-for-pods port-forward fund-provision-pool override-chain-registry register-bank-assets
+start: install wait-for-pods port-forward fund-provision-pool register-bank-assets
 

@@ -49,19 +49,13 @@ import type { WithdrawToSeat } from '@agoric/orchestration/src/utils/zoe-tools.j
 import { mustMatch, type MapStore } from '@agoric/store';
 import type { IBCChannelID, IBCPacket, VTransferIBCEvent } from '@agoric/vats';
 import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
-import type { VowTools } from '@agoric/vow';
+import type { Vow, VowTools } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe/src/zoeService/zoe.js';
 import type { Zone } from '@agoric/zone';
 import { makeSupportsCctp } from '../utils/cctp.ts';
 import { asMultiset } from '../utils/store.ts';
 import type { LiquidityPoolKit } from './liquidity-pool.js';
 import type { StatusManager } from './status-manager.js';
-
-const FORWARD_TIMEOUT = {
-  sec: 10n * 60n,
-  p: '10m',
-} as const;
-harden(FORWARD_TIMEOUT);
 
 const decodeEventPacket = (
   { data }: IBCPacket,
@@ -148,9 +142,9 @@ export const stateShape = harden({
 export const prepareSettler = (
   zone: Zone,
   {
-    currentChainReference,
     chainHub,
     feeConfig,
+    forwardFunds,
     getNobleICA,
     log = makeTracer('Settler', true),
     statusManager,
@@ -159,10 +153,14 @@ export const prepareSettler = (
     withdrawToSeat,
     zcf,
   }: {
-    /** e.g., `agoric-3` */
-    currentChainReference: string;
-    chainHub: ChainHub;
+    chainHub: Pick<ChainHub, 'resolveAccountId'>;
     feeConfig: FeeConfig;
+    forwardFunds: (tx: {
+      txHash: EvmHash;
+      amount: NatAmount;
+      destination: AccountId;
+      fundsInNobleIca?: boolean;
+    }) => Vow<void>;
     getNobleICA: () => OrchestrationAccount<{ chainId: 'noble-1' }>;
     log?: LogFn;
     statusManager: StatusManager;
@@ -174,7 +172,7 @@ export const prepareSettler = (
 ) => {
   assertAllDefined({ statusManager });
 
-  const supportsCctp = makeSupportsCctp(chainHub);
+  const UsdcAmountShape = makeNatAmountShape(USDC);
 
   return zone.exoClassKit(
     'Fast USDC Settler',
@@ -195,12 +193,16 @@ export const prepareSettler = (
         ),
       }),
       self: M.interface('SettlerSelfI', {
-        addMintedEarly: M.call(M.string(), M.nat()).returns(),
-        disburse: M.call(EvmHashShape, M.nat(), M.string()).returns(
+        addMintedEarly: M.call(M.string(), UsdcAmountShape).returns(),
+        disburse: M.call(EvmHashShape, UsdcAmountShape, M.string()).returns(
           M.promise(),
         ),
-        forward: M.call(EvmHashShape, M.nat(), M.string()).returns(),
+        forward: M.call(EvmHashShape, UsdcAmountShape, M.string()).returns(),
       }),
+      // XXX the following handlers are from before refactoring to an async flow for `forwardFunds`.
+      // They must remain implemented for as long as any vow might settle and need their behavior.
+      // Once all possible such vows are settled, the methods could be removed but the handler
+      // facets must remain to satisfy the kind definition backward compatibility checker.
       transferHandler: M.interface('SettlerTransferI', {
         onFulfilled: M.call(M.undefined(), M.string()).returns(),
         onRejected: M.call(M.error(), M.string()).returns(),
@@ -274,25 +276,27 @@ export const prepareSettler = (
           const { self } = this.facets;
           const found = statusManager.dequeueStatus(nfa, amount);
           log('dequeued', found, 'for', nfa, amount);
+          const fullValue = AmountMath.make(USDC, amount);
+
           switch (found?.status) {
             case PendingTxStatus.Advanced:
-              return self.disburse(found.txHash, amount, EUD);
+              return self.disburse(found.txHash, fullValue, EUD);
 
             case PendingTxStatus.Advancing:
               log('⚠️ tap: minted while advancing', nfa, amount);
-              self.addMintedEarly(nfa, amount);
+              self.addMintedEarly(nfa, fullValue);
               return;
 
             case PendingTxStatus.AdvanceSkipped:
             case PendingTxStatus.AdvanceFailed:
-              return self.forward(found.txHash, amount, EUD);
+              return self.forward(found.txHash, fullValue, EUD);
 
             case undefined:
             default:
               log('⚠️ tap: minted before observed', nfa, amount);
               // XXX consider capturing in vstorage
               // we would need a new key, as this does not have a txHash
-              self.addMintedEarly(nfa, amount);
+              self.addMintedEarly(nfa, fullValue);
           }
         },
       },
@@ -319,9 +323,9 @@ export const prepareSettler = (
             asMultiset(mintedEarly).remove(key);
             statusManager.advanceOutcomeForMintedEarly(txHash, success);
             if (success) {
-              void this.facets.self.disburse(txHash, fullValue, destination);
+              void this.facets.self.disburse(txHash, fullAmount, destination);
             } else {
-              void this.facets.self.forward(txHash, fullValue, destination);
+              void this.facets.self.forward(txHash, fullAmount, destination);
             }
           } else {
             statusManager.advanceOutcome(forwardingAddress, fullValue, success);
@@ -353,7 +357,11 @@ export const prepareSettler = (
             );
             asMultiset(mintedEarly).remove(key);
             statusManager.advanceOutcomeForUnknownMint(evidence);
-            void this.facets.self.forward(txHash, amount, destination);
+            void this.facets.self.forward(
+              txHash,
+              AmountMath.make(USDC, amount),
+              destination,
+            );
             return true;
           }
           return false;
@@ -365,8 +373,8 @@ export const prepareSettler = (
          * @param address
          * @param amount
          */
-        addMintedEarly(address: NobleAddress, amount: NatValue) {
-          const key = makeMintedEarlyKey(address, amount);
+        addMintedEarly(address: NobleAddress, amount: NatAmount) {
+          const key = makeMintedEarlyKey(address, amount.value);
           const { mintedEarly } = this.state;
           asMultiset(mintedEarly).add(key);
         },
@@ -377,11 +385,10 @@ export const prepareSettler = (
         // eslint-disable-next-line no-restricted-syntax -- will resolve before vat restart
         async disburse(
           txHash: EvmHash,
-          fullValue: NatValue,
+          received: NatAmount,
           EUD: AccountId | Bech32Address,
         ) {
           const { repayer, settlementAccount } = this.state;
-          const received = AmountMath.make(USDC, fullValue);
           const { zcfSeat: settlingSeat } = zcf.makeEmptySeatKit();
           const { calculateSplit } = makeFeeTools(feeConfig);
           // theoretically can throw, but shouldn't since Advancer already validated
@@ -412,73 +419,40 @@ export const prepareSettler = (
          * Funds were not advanced. Forward proceeds to the payee directly.
          *
          * @param {EvmHash} txHash
-         * @param {NatValue} fullValue
+         * @param {NatAmount} fullValue
          * @param {string} EUD
          */
         forward(
           txHash: EvmHash,
-          fullValue: NatValue,
+          fullValue: NatAmount,
           EUD: AccountId | Bech32Address,
         ) {
-          const { settlementAccount } = this.state;
-          log('forwarding', fullValue, 'to', EUD, 'for', txHash);
+          log('forwarding', fullValue.value, 'to', EUD, 'for', txHash);
 
           const dest: AccountId | null = (() => {
             try {
               return chainHub.resolveAccountId(EUD);
             } catch (e) {
-              log('⚠️ forward transfer failed!', e, txHash);
-              statusManager.forwarded(txHash, false);
+              log(
+                '⚠️ forward not attempted',
+                'unresolvable destination',
+                txHash,
+                EUD,
+              );
+              statusManager.forwardSkipped(txHash);
               return null;
             }
           })();
           if (!dest) return;
 
-          const { namespace, reference } = parseAccountId(dest);
-          const amt = AmountMath.make(USDC, fullValue);
-
-          const intermediateRecipient = getNobleICA().getAddress();
-
-          if (namespace === 'cosmos') {
-            const transferOrSendV =
-              reference === currentChainReference
-                ? E(settlementAccount).send(dest, amt)
-                : E(settlementAccount).transfer(dest, amt, {
-                    timeoutRelativeSeconds: FORWARD_TIMEOUT.sec,
-                    forwardOpts: {
-                      intermediateRecipient,
-                      timeout: FORWARD_TIMEOUT.p,
-                    },
-                  });
-            void vowTools.watch(
-              transferOrSendV,
-              this.facets.transferHandler,
-              txHash,
-            );
-          } else if (supportsCctp(dest)) {
-            // send to Noble then call `.depositForBurn(dest, amt)`
-            void vowTools.watch(
-              E(settlementAccount).transfer(intermediateRecipient, amt, {
-                timeoutRelativeSeconds: FORWARD_TIMEOUT.sec,
-              }),
-              this.facets.intermediateTransferHandler,
-              { amt, dest, txHash },
-            );
-          } else {
-            log(
-              '🚨 forward not attempted!',
-              'unsupported destination',
-              txHash,
-              dest,
-            );
-            statusManager.forwarded(txHash, false);
-          }
+          // This synchronous function returns a Vow that does its own error handling.
+          void forwardFunds({ txHash, amount: fullValue, destination: dest });
         },
       },
       transferHandler: {
         onFulfilled(_result: unknown, txHash: EvmHash) {
           // update status manager, marking tx `FORWARDED` without fee split
-          statusManager.forwarded(txHash, true);
+          statusManager.forwarded(txHash);
         },
         onRejected(reason: unknown, txHash: EvmHash) {
           // funds remain in `settlementAccount` and must be recovered via a
@@ -486,7 +460,7 @@ export const prepareSettler = (
           log('🚨 forward transfer rejected!', reason, txHash);
           // update status manager, flagging a terminal state that needs to be
           // manual intervention or a code update to remediate
-          statusManager.forwarded(txHash, false);
+          statusManager.forwardFailed(txHash);
         },
       },
       intermediateTransferHandler: {
@@ -514,13 +488,13 @@ export const prepareSettler = (
           log('🚨 forward intermediate transfer rejected!', reason, txHash);
           // update status manager, flagging a terminal state that needs manual
           // intervention or a code update to remediate
-          statusManager.forwarded(txHash, false);
+          statusManager.forwardFailed(txHash);
         },
       },
       depositForBurnHandler: {
         onFulfilled(_result: unknown, txHash: EvmHash) {
           // update status manager, marking tx `FORWARDED` without fee split
-          statusManager.forwarded(txHash, true);
+          statusManager.forwarded(txHash);
         },
         onRejected(reason: unknown, txHash: EvmHash) {
           // funds remain in `nobleAccount` and must be recovered via a
@@ -528,7 +502,7 @@ export const prepareSettler = (
           log('🚨 forward depositForBurn rejected!', reason, txHash);
           // update status manager, flagging a terminal state that needs manual
           // intervention or a code update to remediate
-          statusManager.forwarded(txHash, false);
+          statusManager.forwardFailed(txHash);
         },
       },
     },
