@@ -13,6 +13,7 @@ import {
   Unserializer as _Unserializer,
   VStorageKey as _VStorageKey,
 } from './src/lib-chainStorage.js';
+import { Panic as _Panic } from './src/panic.js';
 
 declare global {
   // @ts-ignore TS2666: Exports and export assignments are not permitted in module augmentations.
@@ -24,5 +25,6 @@ declare global {
     _StorageNode as StorageNode,
     _Unserializer as Unserializer,
     _VStorageKey as VStorageKey,
+    _Panic as Panic,
   };
 }

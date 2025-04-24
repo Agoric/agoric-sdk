@@ -25,7 +25,7 @@ import { defaultFeeIssuerConfig, prepareFeeMint } from './feeMint.js';
 import { ZoeServiceI } from '../typeGuards.js';
 
 /**
- * @import {VatAdminSvc, ShutdownWithFailure} from '@agoric/swingset-vat';
+ * @import {VatAdminSvc} from '@agoric/swingset-vat';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {FeeIssuerConfig, FeeMintAccess, ZCFSpec, ZoeService} from './types.js';
  */
@@ -34,20 +34,18 @@ import { ZoeServiceI } from '../typeGuards.js';
  * Create a durable instance of Zoe.
  *
  * @param {object} options
- * @param {Baggage} options.zoeBaggage - the baggage for Zoe durability. Must be provided by caller
- * @param {Promise<VatAdminSvc> | VatAdminSvc} [options.vatAdminSvc] - The vatAdmin Service, which carries the
- * power to create a new vat. If it's not available when makeZoe() is called, it
- * must be provided later using setVatAdminService().
- * @param {ShutdownWithFailure} [options.shutdownZoeVat] - a function to
- * shutdown the Zoe Vat. This function needs to use the vatPowers
- * available to a vat.
+ * @param {Baggage} options.zoeBaggage - the baggage for Zoe durability.
+ *   Must be provided by caller
+ * @param {Promise<VatAdminSvc> | VatAdminSvc} [options.vatAdminSvc]
+ *   The vatAdmin Service, which carries the
+ *   power to create a new vat. If it's not available when makeZoe() is called,
+ *   it must be provided later using setVatAdminService().
  * @param {FeeIssuerConfig} [options.feeIssuerConfig]
  * @param {ZCFSpec} [options.zcfSpec] - Pointer to the contract facet bundle.
  */
 const makeDurableZoeKit = ({
   zoeBaggage,
   vatAdminSvc,
-  shutdownZoeVat = () => {},
   feeIssuerConfig = defaultFeeIssuerConfig,
   zcfSpec = { name: 'zcf' },
 }) => {
@@ -84,11 +82,7 @@ const makeDurableZoeKit = ({
     vatAdminSvc = zoeBaggage.get('vatAdminSvc');
   }
 
-  const feeMintKit = prepareFeeMint(
-    zoeBaggage,
-    feeIssuerConfig,
-    shutdownZoeVat,
-  );
+  const feeMintKit = prepareFeeMint(zoeBaggage, feeIssuerConfig);
 
   // guarantee that vatAdminSvcP has been defined.
   const getActualVatAdminSvcP = () => {
@@ -142,7 +136,6 @@ const makeDurableZoeKit = ({
   } = makeZoeStorageManager(
     createZCFVat,
     getBundleCapForID,
-    shutdownZoeVat,
     feeMintKit.feeMint,
     zoeBaggage,
   );
@@ -268,16 +261,16 @@ const makeDurableZoeKit = ({
  * @param {Promise<VatAdminSvc> | VatAdminSvc} [vatAdminSvc] - The vatAdmin Service, which carries the
  * power to create a new vat. If it's not available when makeZoe() is called, it
  * must be provided later using setVatAdminService().
- * @param {ShutdownWithFailure} [shutdownZoeVat] - a function to
- * shutdown the Zoe Vat. This function needs to use the vatPowers
- * available to a vat.
  * @param {FeeIssuerConfig} [feeIssuerConfig]
  * @param {ZCFSpec} [zcfSpec] - Pointer to the contract facet bundle.
  */
-const makeZoeKit = (vatAdminSvc, shutdownZoeVat, feeIssuerConfig, zcfSpec) =>
+const makeZoeKit = (
+  vatAdminSvc,
+  feeIssuerConfig = undefined,
+  zcfSpec = undefined,
+) =>
   makeDurableZoeKit({
     vatAdminSvc,
-    shutdownZoeVat,
     feeIssuerConfig,
     zcfSpec,
     zoeBaggage: makeScalarBigMapStore('fake zoe baggage', { durable: true }),

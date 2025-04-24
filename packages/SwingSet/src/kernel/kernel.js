@@ -525,7 +525,7 @@ export default function buildKernel(
       results.terminate = { vatID, reject: true, info };
     } else if (status.vatRequestedTermination) {
       if (status.vatRequestedTermination.reject) {
-        results.abort = true; // vatPowers.exitWithFailure wants rewind
+        results.abort = true; // panic wants rewind
       }
       results.terminate = { vatID, ...status.vatRequestedTermination };
     }

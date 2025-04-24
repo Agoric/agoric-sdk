@@ -1,4 +1,5 @@
 import { E } from '@endo/eventual-send';
+import { panic } from '@agoric/internal';
 import { AmountMath } from '@agoric/ertp';
 
 import { offerTo } from '../../contractSupport/zoeHelpers.js';
@@ -45,8 +46,7 @@ export const doLiquidation = async (
   const closeWithFailure = err => {
     lenderSeat.fail(err);
     collateralSeat.fail(err);
-    zcf.shutdownWithFailure(err);
-    throw err;
+    panic(err);
   };
 
   const offerResultP = E(autoswapUserSeat).getOfferResult();

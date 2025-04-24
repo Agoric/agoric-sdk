@@ -16,7 +16,6 @@ import { FeeMintAccessShape } from '../typeGuards.js';
 
 /**
  * @import {Baggage} from '@agoric/vat-data';
- * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
  * @import {FeeIssuerConfig} from './types.js';
  */
 
@@ -34,9 +33,8 @@ export const defaultFeeIssuerConfig = harden(
 /**
  * @param {Baggage} zoeBaggage
  * @param {FeeIssuerConfig} feeIssuerConfig
- * @param {ShutdownWithFailure} shutdownZoeVat
  */
-const prepareFeeMint = (zoeBaggage, feeIssuerConfig, shutdownZoeVat) => {
+const prepareFeeMint = (zoeBaggage, feeIssuerConfig) => {
   const mintBaggage = provideDurableMapStore(zoeBaggage, 'mintBaggage');
   if (mintBaggage.has(FEE_MINT_KIT)) {
     hasIssuer(mintBaggage) ||
@@ -53,7 +51,6 @@ const prepareFeeMint = (zoeBaggage, feeIssuerConfig, shutdownZoeVat) => {
       feeIssuerConfig.name,
       feeIssuerConfig.assetKind,
       feeIssuerConfig.displayInfo,
-      shutdownZoeVat,
     )
   );
 

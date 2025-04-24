@@ -1,6 +1,7 @@
 import { Fail, q } from '@endo/errors';
 import { E, Far } from '@endo/far';
 import { makeHeapZone } from '@agoric/zone';
+import { panic } from '@agoric/internal';
 import {
   makeVatSpace,
   makeWellKnownSpaces,
@@ -185,9 +186,7 @@ export const makeBootstrap = (
       }
       return rawBootstrap(vats, devices).catch(e => {
         // Terminate because the vat is in an irrecoverable state.
-        vatPowers.exitVatWithFailure(e);
-        // Throw the error to reject this promise but it will be unhandled because rawBoostrap() isn't returned.
-        throw e;
+        panic(e);
       });
     },
     /** @param {string} name } */

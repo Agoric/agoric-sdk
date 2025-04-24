@@ -1,3 +1,4 @@
+/* global globalThis */
 // no jessie-check because this code runs only in Node for testing
 /* eslint-env node */
 
@@ -5,6 +6,7 @@ import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Far } from '@endo/marshal';
+import { PanicEndowmentSymbol } from '@agoric/internal';
 import { makeScalarMapStore } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 
@@ -52,6 +54,20 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
     }),
     testJigSetter: testContextSetter,
   };
+
+  // TODO: This is almost certainly the wrong place for this.
+  const fakePanicEndowment = (err = RangeError('Panic')) => {
+    fakeVatPowers.exitVatWithFailure(err);
+    // Under the fake unit test environment, the thing that should be
+    // terminated, representing what would be the real vat, is instead
+    // synchroously called by the code that represents what would be
+    // either the kernel or the test code, which in theory should be in a
+    // separate vat. Thus, we have no clean way to abort only the computation
+    // that would have been in a separately abortable vat.
+    throw err;
+  };
+  harden(fakePanicEndowment);
+  globalThis[PanicEndowmentSymbol] = fakePanicEndowment;
 
   // This is explicitly intended to be mutable so that
   // test-only state can be provided from contracts

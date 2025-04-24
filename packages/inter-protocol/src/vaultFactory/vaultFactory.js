@@ -15,24 +15,24 @@
 // contractHelper to satisfy contractGovernor. It needs to return a creatorFacet
 // with { getParamMgrRetriever, getInvitation, getLimitedCreatorFacet }.
 
+import { E } from '@endo/eventual-send';
+import { M } from '@endo/patterns';
+import { makeTracer, StorageNodeShape, panic } from '@agoric/internal';
+import { makeStoredSubscription, makeSubscriptionKit } from '@agoric/notifier';
+import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
+import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
+import { FeeMintAccessShape } from '@agoric/zoe/src/typeGuards.js';
 import { CONTRACT_ELECTORATE } from '@agoric/governance';
 import { makeParamManagerFromTerms } from '@agoric/governance/src/contractGovernance/typedParamManager.js';
 import { validateElectorate } from '@agoric/governance/src/contractHelper.js';
-import { makeTracer, StorageNodeShape } from '@agoric/internal';
-import { makeStoredSubscription, makeSubscriptionKit } from '@agoric/notifier';
-import { M } from '@agoric/store';
-import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
-import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
-import { E } from '@endo/eventual-send';
-import { FeeMintAccessShape } from '@agoric/zoe/src/typeGuards.js';
 import { InvitationShape } from '../auction/params.js';
 import { SHORTFALL_INVITATION_KEY, vaultDirectorParamTypes } from './params.js';
 import { provideDirector } from './vaultDirector.js';
 
 /**
- * @import {ContractMeta, FeeMintAccess, HandleOffer, Invitation, OfferHandler, TransferPart, ZCF, ZCFMint, ZCFSeat} from '@agoric/zoe';
+ * @import {ContractMeta, FeeMintAccess, Invitation, ZCF} from '@agoric/zoe';
  * @import {ContractOf} from '@agoric/zoe/src/zoeService/utils.js';
- * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {PriceAuthority} from '@agoric/zoe/tools/types.js';
  */
 
 const trace = makeTracer('VF', true);
@@ -155,7 +155,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   // cannot await because it would make remote calls during vat restart
   director.helper.start().catch(err => {
     console.error('💀 vaultDirector failed to start:', err);
-    zcf.shutdownWithFailure(err);
+    panic(err);
   });
 
   // validate async to wait for params to be finished

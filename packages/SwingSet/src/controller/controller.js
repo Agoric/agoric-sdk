@@ -557,7 +557,7 @@ export async function makeSwingsetController(
        * This allows the host app to terminate any vat. The effect is
        * equivalent to the holder of the vat's `adminNode` calling
        * `E(adminNode).terminateWithFailure(reason)`, or the vat itself
-       * calling `vatPowers.exitVatWithFailure(reason)`. It accepts a
+       * calling `panic(reason)`. It accepts a
        * reason capdata structure (use 'kser()' to build one), which
        * will be included in rejection data for the promise available to
        * `E(adminNode).done()`, just like the internal termination APIs.

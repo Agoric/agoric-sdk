@@ -1,5 +1,8 @@
 import { annotateError, Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
+import { M } from '@endo/patterns';
+import { initEmpty } from '@endo/exo';
+import { panic } from '@agoric/internal';
 import {
   makeScalarBigWeakMapStore,
   prepareExoClass,
@@ -8,7 +11,6 @@ import {
   provideDurableWeakMapStore,
 } from '@agoric/vat-data';
 import { AmountMath } from '@agoric/ertp';
-import { initEmpty, M } from '@agoric/store';
 
 import { isOfferSafe } from './offerSafety.js';
 import { assertRightsConserved } from './rightsConservation.js';
@@ -22,7 +24,6 @@ import { TransferPartShape } from '../contractSupport/atomicTransfer.js';
 
 /**
  * @import {WeakMapStore} from '@agoric/store';
- * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {Allocation} from './types.js';
  */
@@ -33,14 +34,12 @@ import { TransferPartShape } from '../contractSupport/atomicTransfer.js';
  *
  * @param {ERef<ZoeInstanceAdmin>} zoeInstanceAdmin
  * @param {GetAssetKindByBrand} getAssetKindByBrand
- * @param {ShutdownWithFailure} shutdownWithFailure
  * @param {Baggage} zcfBaggage
  * @returns {{ seatManager: ZcfSeatManager, zcfMintReallocator: ZcfMintReallocator }}
  */
 export const createSeatManager = (
   zoeInstanceAdmin,
   getAssetKindByBrand,
-  shutdownWithFailure,
   zcfBaggage,
 ) => {
   /** @type {WeakMapStore<ZCFSeat, Allocation>}  */
@@ -295,8 +294,7 @@ export const createSeatManager = (
             // Zoe, but *all subsequent updates come from ZCF to Zoe*.
             void E(zoeInstanceAdmin).replaceAllocations(seatHandleAllocations);
           } catch (err) {
-            shutdownWithFailure(err);
-            throw err;
+            panic(err);
           }
         },
         dropAllReferences() {
@@ -337,8 +335,7 @@ export const createSeatManager = (
 
             E(zoeInstanceAdmin).replaceAllocations(seatHandleAllocations);
           } catch (err) {
-            shutdownWithFailure(err);
-            throw err;
+            panic(err);
           }
         },
       },

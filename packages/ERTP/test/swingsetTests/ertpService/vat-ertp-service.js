@@ -11,7 +11,7 @@ import {
   upgradeIssuerKit,
 } from '../../../src/index.js';
 
-export const prepareErtpService = (baggage, exitVatWithFailure) => {
+export const prepareErtpService = baggage => {
   const issuerBaggageSet = provideDurableSetStore(baggage, 'BaggageSet');
   const ertpService = prepareSingleton(baggage, 'ERTPService', {
     makeIssuerKit: (
@@ -27,7 +27,6 @@ export const prepareErtpService = (baggage, exitVatWithFailure) => {
         name,
         assetKind,
         displayInfo,
-        exitVatWithFailure,
       );
       issuerBaggageSet.add(issuerBaggage);
 
@@ -36,15 +35,15 @@ export const prepareErtpService = (baggage, exitVatWithFailure) => {
   });
 
   for (const issuerBaggage of issuerBaggageSet.values()) {
-    upgradeIssuerKit(issuerBaggage, exitVatWithFailure);
+    upgradeIssuerKit(issuerBaggage);
   }
 
   return ertpService;
 };
 harden(prepareErtpService);
 
-export const buildRootObject = async (vatPowers, _vatParams, baggage) => {
-  const ertpService = prepareErtpService(baggage, vatPowers.exitVatWithFailure);
+export const buildRootObject = async (_vatPowers, _vatParams, baggage) => {
+  const ertpService = prepareErtpService(baggage);
   return Far('root', {
     getErtpService: () => ertpService,
   });
