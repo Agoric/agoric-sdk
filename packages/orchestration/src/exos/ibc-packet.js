@@ -1,7 +1,7 @@
 import { makeTracer } from '@agoric/internal';
 import { base64ToBytes, Shape as NetworkShape } from '@agoric/network';
-import { M } from '@endo/patterns';
 import { E } from '@endo/far';
+import { M } from '@endo/patterns';
 
 // As specified in ICS20, the success result is a base64-encoded '\0x1' byte.
 export const ICS20_TRANSFER_SUCCESS_RESULT = 'AQ==';
