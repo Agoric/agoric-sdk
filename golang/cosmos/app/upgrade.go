@@ -122,9 +122,10 @@ func getVariantFromUpgradeName(upgradeName string) string {
 	switch upgradeName {
 	case "agoric-upgrade-19-a3p":
 		return "A3P_INTEGRATION"
-	case "agoric-upgrade-19-mainnet":
-		return "MAINNET"
-	case "agoric-upgrade-19-devnet":
+	// proposal on devnet unintentionally used mainnet upgrade name
+	// mapping mainnet to devnet variant for this use-case
+	case "agoric-upgrade-19-mainnet",
+		"agoric-upgrade-19-devnet":
 		return "DEVNET"
 	case "agoric-upgrade-19-emerynet":
 		return "EMERYNET"
