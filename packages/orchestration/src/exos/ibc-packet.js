@@ -140,7 +140,7 @@ export const prepareIBCTransferSender = (zone, { watch, makeIBCReplyKit }) => {
           const { resultV: ackDataV, ...rest } = makeIBCReplyKit(
             replyPacketPattern,
             match,
-            opts,
+            { opName: 'transfer', ...opts },
           );
           const resultV = watch(ackDataV, this.facets.verifyTransferSuccess);
           return harden({ resultV, ...rest });
