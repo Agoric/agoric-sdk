@@ -13,7 +13,6 @@ import {
   KeywordShape,
   PaymentPKeywordRecordShape,
 } from '../typeGuards.js';
-import '../internal-types.js';
 
 export const coreUserSeatMethods = harden({
   getProposal: M.call().returns(M.promise()),
