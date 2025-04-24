@@ -618,7 +618,6 @@ test.serial('Contract skips advance when risks identified', async t => {
       utils: { transmitTransferAck },
     },
     evm: { cctp, txPub },
-    startKit: { metricsSub },
     bridges: { snapshot, since },
     mint,
   } = t.context;
@@ -758,9 +757,6 @@ test.todo(
 
 test.serial('STORY03: see accounting metrics', async t => {
   const {
-    common: {
-      brands: { usdc },
-    },
     startKit: { metricsSub },
   } = t.context;
   const { value: metrics } = await E(metricsSub).getUpdateSince();
@@ -827,12 +823,7 @@ test.serial('With 250 available, 3 race to get ~100', async t => {
 });
 
 test.serial('STORY05(cont): LPs withdraw all liquidity', async t => {
-  const {
-    sync,
-    common: {
-      brands: { usdc },
-    },
-  } = t.context;
+  const { sync } = t.context;
 
   const lp = await sync.lp.promise;
   const [a, b] = await Promise.all([
@@ -856,7 +847,7 @@ test.serial('withdraw all liquidity while ADVANCING', async t => {
     },
     evm: { cctp, txPub },
     mint,
-    startKit: { zoe, instance, metricsSub },
+    startKit: { zoe, instance },
   } = t.context;
 
   const usdcPurse = purseOf(usdc.issuer, utils);

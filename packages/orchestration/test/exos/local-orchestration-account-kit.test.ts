@@ -2,7 +2,6 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { makeExpectUnhandledRejection } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
 import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
 import {
   LOCALCHAIN_QUERY_ALL_BALANCES_RESPONSE,
@@ -10,26 +9,21 @@ import {
 } from '@agoric/vats/tools/fake-bridge.js';
 import { heapVowE as VE } from '@agoric/vow/vat.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
+import type { IBCMsgTransferOptions } from '../../src/cosmos-api.js';
+import { PFM_RECEIVER } from '../../src/exos/chain-hub.js';
+import fetchedChainInfo from '../../src/fetched-chain-info.js';
 import type {
-  CosmosChainAddress,
   AmountArg,
+  CosmosChainAddress,
   DenomAmount,
 } from '../../src/orchestration-api.js';
+import { assetOn } from '../../src/utils/asset.js';
 import { maxClockSkew } from '../../src/utils/cosmos.js';
 import { NANOSECONDS_PER_SECOND } from '../../src/utils/time.js';
 import { buildVTransferEvent } from '../../tools/ibc-mocks.js';
 import { UNBOND_PERIOD_SECONDS } from '../ibc-mocks.js';
 import { commonSetup } from '../supports.js';
 import { prepareMakeTestLOAKit } from './make-test-loa-kit.js';
-import fetchedChainInfo from '../../src/fetched-chain-info.js';
-import type { IBCMsgTransferOptions } from '../../src/cosmos-api.js';
-import { PFM_RECEIVER } from '../../src/exos/chain-hub.js';
-import { assetOn } from '../../src/utils/asset.js';
-
-const expectUnhandled = makeExpectUnhandledRejection({
-  test,
-  importMetaUrl: import.meta.url,
-});
 
 test('deposit, withdraw', async t => {
   const common = await commonSetup(t);

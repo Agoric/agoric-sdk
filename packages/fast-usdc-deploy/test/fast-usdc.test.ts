@@ -14,11 +14,10 @@ import {
 } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
 import { AmountMath } from '@agoric/ertp';
 import { makeRatio } from '@agoric/ertp/src/ratio.js';
-import type { CctpTxEvidence, FeeConfig } from '@agoric/fast-usdc';
+import type { CctpTxEvidence } from '@agoric/fast-usdc';
 import { Offers } from '@agoric/fast-usdc/src/clientSupport.js';
 import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
 import { BridgeId, NonNullish } from '@agoric/internal';
-import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import {
   defaultSerializer,
   documentStorageSchema,
@@ -32,7 +31,6 @@ import {
   buildVTransferEvent,
 } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { Fail } from '@endo/errors';
-import { makeMarshal } from '@endo/marshal';
 import { configurations } from '../src/utils/deploy-config.js';
 import {
   makeWalletFactoryContext,
@@ -634,9 +632,7 @@ test.serial('distributes fees per BLD staker decision', async t => {
 
 test.serial('skips usdc advance when risks identified', async t => {
   const { walletFactoryDriver: wfd, readPublished, storage } = t.context;
-  const oracles = await Promise.all(
-    oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
-  );
+  await Promise.all(oracleAddrs.map(addr => wfd.provideSmartWallet(addr)));
 
   const EUD = 'dydx1riskyeud';
   const { settlementAccount } = readPublished('fastUsdc');

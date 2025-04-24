@@ -1,11 +1,12 @@
+/* eslint-disable @typescript-eslint/no-unused-vars -- fails to notice the @see uses */
+import type { JsonSafe } from '@agoric/cosmic-proto';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
+import type { PacketSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
 import type { BridgeId, Remote } from '@agoric/internal';
 import type { Bytes } from '@agoric/network';
 import type { Guarded } from '@endo/exo';
-import type { PacketSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
-import type { JsonSafe } from '@agoric/cosmic-proto';
-import type { LocalChainAccount } from './localchain.js';
 import type { TargetApp } from './bridge-target.js';
+import type { LocalChainAccount } from './localchain.js';
 
 export type Board = ReturnType<
   ReturnType<typeof import('./lib-board.js').prepareBoardKit>

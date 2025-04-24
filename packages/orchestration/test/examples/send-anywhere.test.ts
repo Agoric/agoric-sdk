@@ -1,30 +1,19 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E } from '@endo/far';
-import path from 'path';
-import { mustMatch } from '@endo/patterns';
 import { makeIssuerKit } from '@agoric/ertp';
-import {
-  eventLoopIteration,
-  inspectMapStore,
-} from '@agoric/internal/src/testing-utils.js';
-import { makeExpectUnhandledRejection } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
-import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
+import { inspectMapStore } from '@agoric/internal/src/testing-utils.js';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
+import { E } from '@endo/far';
+import { mustMatch } from '@endo/patterns';
+import { registerChain } from '../../src/chain-info.js';
 import type {
   CosmosChainInfo,
   IBCConnectionInfo,
 } from '../../src/cosmos-api.js';
-import { commonSetup } from '../supports.js';
-import { SingleNatAmountRecord } from '../../src/examples/send-anywhere.contract.js';
-import { registerChain } from '../../src/chain-info.js';
 import * as contractExports from '../../src/examples/send-anywhere.contract.js';
-
-const expectUnhandled = makeExpectUnhandledRejection({
-  test,
-  importMetaUrl: import.meta.url,
-});
+import { SingleNatAmountRecord } from '../../src/examples/send-anywhere.contract.js';
+import { commonSetup } from '../supports.js';
 
 const contractName = 'sendAnywhere';
 type StartFn = typeof contractExports.start;
@@ -443,7 +432,6 @@ test('rejects multi-asset send', async t => {
     brands: { ist, bld },
     utils: { pourPayment },
   } = await commonSetup(t);
-  const vt = bootstrap.vowTools;
 
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
 
@@ -527,7 +515,7 @@ test('send to Noble', async t => {
   }
 
   const usdcKit = withAmountUtils(makeIssuerKit('USDC'));
-  const orchKit = await E(zoe).startInstance(
+  await E(zoe).startInstance(
     installation,
     { Stable: ist.issuer, USDC: usdcKit.issuer },
     {},
