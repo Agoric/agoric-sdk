@@ -15,6 +15,7 @@ import {
 /**
  * @import {EReturn} from '@endo/far';
  * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
+ * @import {StakingView} from '@agoric/smart-wallet/src/types.js';
  */
 
 const trace = makeTracer('StartWF', 'verbose');
@@ -78,6 +79,7 @@ const publishRevivableWalletState = async (
  *     };
  *     walletBridgeManager: import('../types.js').ScopedBridgeManager<'wallet'>;
  *     provisionWalletBridgeManager: import('../types.js').ScopedBridgeManager<'provisionWallet'>;
+ *     stakingView: StakingView;
  *   }>} powers
  * @param {{
  *   options?: {
@@ -97,6 +99,7 @@ export const startWalletFactory = async (
       chainStorage,
       namesByAddressAdmin: namesByAddressAdminP,
       econCharterKit,
+      stakingView: stakingViewP,
       startUpgradable,
       startGovernedUpgradable,
     },
@@ -146,12 +149,14 @@ export const startWalletFactory = async (
     namesByAddressAdmin,
     feeBrand,
     feeIssuer,
+    stakingView,
   ] = await Promise.all([
     makeStorageNodeChild(chainStorage, WALLET_STORAGE_PATH_SEGMENT),
     makeStorageNodeChild(chainStorage, POOL_STORAGE_PATH_SEGMENT),
     namesByAddressAdminP,
     feeBrandP,
     feeIssuerP,
+    stakingViewP,
   ]);
 
   // Restore metrics with updated brand references.
@@ -227,6 +232,7 @@ export const startWalletFactory = async (
       storageNode: walletStorageNode,
       walletBridgeManager,
       walletReviver: E(E.get(ppFacetsP).creatorFacet).getWalletReviver(),
+      stakingView,
     },
     label: 'walletFactory',
   });
@@ -306,6 +312,7 @@ export const WALLET_FACTORY_MANIFEST = {
       provisionWalletBridgeManager: true,
       chainStorage: 'bridge',
       namesByAddressAdmin: true,
+      stakingView: true,
       startUpgradable: true,
       startGovernedUpgradable: true,
       econCharterKit: 'psmCharter',

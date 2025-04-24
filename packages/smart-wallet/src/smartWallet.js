@@ -1,5 +1,5 @@
 import { Fail, q } from '@endo/errors';
-import { E } from '@endo/far';
+import { E, passStyleOf } from '@endo/far';
 import {
   AmountShape,
   BrandShape,
@@ -40,6 +40,7 @@ import {
 import { prepareVowTools } from '@agoric/vow';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
+import { prepareNameHubKit } from '@agoric/vats';
 import { makeInvitationsHelper } from './invitations.js';
 import { shape } from './typeGuards.js';
 import { objectMapStoragePath } from './utils.js';
@@ -51,6 +52,8 @@ import { prepareOfferWatcher, makeWatchOfferOutcomes } from './offerWatcher.js';
  * @import {InvitationDetails, PaymentPKeywordRecord, Proposal, UserSeat} from '@agoric/zoe';
  * @import {EReturn} from '@endo/far';
  * @import {OfferId, OfferStatus} from './offers.js';
+ * @import {StakingView} from './types.js';
+ * @import {Remote} from '@agoric/internal';
  */
 
 const trace = makeTracer('SmrtWlt');
@@ -96,10 +99,17 @@ const trace = makeTracer('SmrtWlt');
  * }} TryExitOfferAction
  */
 
+/**
+ * @typedef {{
+ *   method: 'evalExpr';
+ *   expr: string;
+ * }} EvalExprAction
+ */
+
 // Discriminated union. Possible future messages types:
 // maybe suggestIssuer for https://github.com/Agoric/agoric-sdk/issues/6132
 // setting petnames and adding brands for https://github.com/Agoric/agoric-sdk/issues/6126
-/** @typedef {ExecuteOfferAction | TryExitOfferAction} BridgeAction */
+/** @typedef {ExecuteOfferAction | TryExitOfferAction | EvalExprAction} BridgeAction */
 
 /**
  * Purses is an array to support a future requirement of multiple purses per
@@ -137,6 +147,7 @@ const trace = makeTracer('SmrtWlt');
 
 /**
  * @typedef {{ updated: 'offerStatus'; status: OfferStatus }
+ *   | { updated: 'invoke'; result: { passStyle: string } }
  *   | { updated: 'balance'; currentAmount: Amount }
  *   | { updated: 'walletAction'; status: { error: string } }} UpdateRecord
  *   Record of an update to the state of this wallet.
@@ -172,6 +183,10 @@ const trace = makeTracer('SmrtWlt');
  *   walletStorageNode: StorageNode;
  * }} UniqueParams
  *
+ *
+ * @typedef {{
+ *   namesByAddress: import('@agoric/vats').NameHub;
+ * }} LateParams
  *
  * @typedef {Pick<MapStore<Brand, BrandDescriptor>, 'has' | 'get' | 'values'>} BrandDescriptorRegistry
  *
@@ -211,7 +226,8 @@ const trace = makeTracer('SmrtWlt');
  *     liveOffers: MapStore<OfferId, OfferStatus>;
  *     liveOfferSeats: MapStore<OfferId, UserSeat<unknown>>;
  *     liveOfferPayments: MapStore<OfferId, MapStore<Brand, Payment>>;
- *   }
+ *     my: import('@agoric/vats').NameHubKit;
+ *   } & LateParams
  * >} ImmutableState
  *
  *
@@ -270,6 +286,21 @@ const getBrandToPurses = (walletPurses, key) => {
 };
 
 /**
+ * @template {{ [m: string]: (...args: any) => any }} T
+ * @template {keyof T} M
+ * @template OBJ
+ * @param {OBJ} obj
+ * @param {object} msg
+ * @param {ERef<T>} msg.rx
+ * @param {M} msg.method
+ * @param {Parameters<T[M]>} msg.args
+ * @returns {Promise<OBJ>}
+ */
+export const after = async (obj, { rx, method, args }) =>
+  // @ts-expect-error TODO: how to get the types right for this???
+  E.when(E(rx)[method](...args), () => obj);
+
+/**
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {SharedParams} shared
  */
@@ -302,6 +333,7 @@ export const prepareSmartWallet = (baggage, shared) => {
 
   const makeOfferWatcher = prepareOfferWatcher(baggage, vowTools);
   const watchOfferOutcomes = makeWatchOfferOutcomes(vowTools);
+  const makeNameHubKit = prepareNameHubKit(zone.subZone('names'));
 
   const updateShape = {
     value: AmountShape,
@@ -357,7 +389,7 @@ export const prepareSmartWallet = (baggage, shared) => {
   const makeAmountWatcher = prepareAmountWatcher();
 
   /**
-   * @param {UniqueParams} unique
+   * @param {UniqueParams & LateParams} unique
    * @returns {State}
    */
   const initState = unique => {
@@ -370,6 +402,7 @@ export const prepareSmartWallet = (baggage, shared) => {
         invitationPurse: PurseShape,
         currentStorageNode: M.eref(StorageNodeShape),
         walletStorageNode: M.eref(StorageNodeShape),
+        namesByAddress: M.remotable('namesByAddress'),
       }),
     );
 
@@ -400,6 +433,8 @@ export const prepareSmartWallet = (baggage, shared) => {
           durable: true,
         },
       ),
+      // TODO: state migration
+      my: makeNameHubKit(),
     };
 
     /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<UpdateRecord>} */
@@ -453,6 +488,8 @@ export const prepareSmartWallet = (baggage, shared) => {
       logWalletInfo: M.call().rest(M.arrayOf(M.any())).returns(),
       logWalletError: M.call().rest(M.arrayOf(M.any())).returns(),
       getLiveOfferPayments: M.call().returns(M.remotable('mapStore')),
+      saveOfferResult: M.call(M.string(), M.any()).returns(),
+      receive: M.callWhen(M.await(M.eref(PaymentShape))).returns(AmountShape),
     }),
 
     deposit: M.interface('depositFacetI', {
@@ -471,10 +508,13 @@ export const prepareSmartWallet = (baggage, shared) => {
       executeOffer: M.call(shape.OfferSpec).returns(M.promise()),
       tryExitOffer: M.call(M.scalar()).returns(M.promise()),
     }),
+    invoke: M.interface('invoke', {
+      evalExpr: M.callWhen(M.string()).returns(M.undefined()),
+    }),
     self: M.interface('selfFacetI', {
-      handleBridgeAction: M.call(shape.StringCapData, M.boolean()).returns(
-        M.promise(),
-      ),
+      handleBridgeAction: M.call(shape.StringCapData)
+        .optional(M.boolean(), M.bigint())
+        .returns(M.promise()),
       getDepositFacet: M.call().returns(M.remotable()),
       getOffersFacet: M.call().returns(M.remotable()),
       getCurrentSubscriber: M.call().returns(SubscriberShape),
@@ -744,6 +784,19 @@ export const prepareSmartWallet = (baggage, shared) => {
             );
           }
           return baggage.get(state.address);
+        },
+        /**
+         * @param {string} name
+         * @param {unknown} result
+         */
+        saveOfferResult(name, result) {
+          const { my } = this.state;
+          my.nameAdmin.update(name, result);
+          trace('saved', name, '=', result);
+        },
+        /** @param {Payment} payment */
+        receive(payment) {
+          return this.facets.deposit.receive(payment);
         },
       },
       /**
@@ -1019,6 +1072,43 @@ export const prepareSmartWallet = (baggage, shared) => {
           await E(seatRef).tryExit();
         },
       },
+
+      invoke: {
+        /**
+         * @param {string} expr
+         */
+        async evalExpr(expr) {
+          const { fromEntries } = Object;
+          trace(
+            'TODO: validate Justin syntax; see https://github.com/endojs/Jessie/pull/121#discussion_r1988126110',
+          );
+          // XXX worth using a nameHub vs. a mapStore?
+          const { namesByAddress } = this.state;
+          const { nameHub, nameAdmin } = this.state.my;
+          const endowments = {
+            my: fromEntries(nameHub.entries()),
+            E,
+            after,
+            harden,
+            assert,
+            nameHub,
+            nameAdmin,
+            namesByAddress,
+          };
+          const c = new Compartment(endowments);
+          trace('evalExpr', expr, 'with', Object.keys(endowments));
+          const x = await c.evaluate(expr);
+          const ps = passStyleOf(x);
+          trace('eval result', ps, x);
+
+          const { updateRecorderKit } = this.state;
+          void updateRecorderKit.recorder.write({
+            updated: 'invoke',
+            result: { passStyle: ps },
+          });
+        },
+      },
+
       self: {
         /**
          * Umarshals the actionCapData and delegates to the appropriate action
@@ -1027,9 +1117,10 @@ export const prepareSmartWallet = (baggage, shared) => {
          * @param {import('@endo/marshal').CapData<string | null>} actionCapData
          *   of type BridgeAction
          * @param {boolean} [canSpend]
+         * @param {NatValue} [stake]
          * @returns {Promise<void>}
          */
-        handleBridgeAction(actionCapData, canSpend = false) {
+        handleBridgeAction(actionCapData, canSpend = false, stake) {
           const { facets } = this;
           const { offers } = facets;
           const { publicMarshaller } = shared;
@@ -1058,6 +1149,12 @@ export const prepareSmartWallet = (baggage, shared) => {
                   case 'tryExitOffer': {
                     assert(canSpend, 'tryExitOffer requires spend authority');
                     return offers.tryExitOffer(action.offerId);
+                  }
+                  case 'evalExpr': {
+                    const EVAL_BOND = 10_000;
+                    (typeof stake === 'bigint' && stake > EVAL_BOND) ||
+                      Fail`insufficient BLD staked (${stake}) for evalExpr; ${EVAL_BOND} required`;
+                    return facets.invoke.evalExpr(action.expr);
                   }
                   default: {
                     throw Fail`invalid handle bridge action ${q(action)}`;
@@ -1123,9 +1220,10 @@ export const prepareSmartWallet = (baggage, shared) => {
    * @param {Omit<
    *   UniqueParams,
    *   'currentStorageNode' | 'walletStorageNode'
-   * > & {
-   *   walletStorageNode: ERef<StorageNode>;
-   * }} uniqueWithoutChildNodes
+   * > &
+   *   LateParams & {
+   *     walletStorageNode: ERef<StorageNode>;
+   *   }} uniqueWithoutChildNodes
    */
   const makeSmartWallet = async uniqueWithoutChildNodes => {
     const [walletStorageNode, currentStorageNode] = await Promise.all([

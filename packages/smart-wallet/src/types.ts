@@ -89,3 +89,7 @@ export type OfferMaker = (
   agoricNames: AgoricNamesRemotes,
   ...rest: any[]
 ) => OfferSpec;
+
+export interface StakingView {
+  get(addr: string): bigint;
+}

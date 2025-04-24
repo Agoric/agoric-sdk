@@ -8,6 +8,8 @@ import {
   makeSwingsetTestKit,
 } from '../../tools/supports.js';
 import { makeWalletFactoryDriver } from '../../tools/drivers.js';
+import type { StakingView } from '@agoric/smart-wallet/src/types.js';
+import { mockStakingViewKit } from '../smartWallet/staking-vew.mock.js';
 
 export const makeWalletFactoryContext = async (
   t,
@@ -51,6 +53,24 @@ export const makeWalletFactoryContext = async (
       refreshAgoricNamesRemotes();
     }
   };
+
+  {
+    const produceStakingView = async (
+      powers: PromiseSpaceOf<{ stakingView: StakingView }>,
+    ) => {
+      const { view } = mockStakingViewKit();
+      powers.produce.stakingView.resolve(view);
+    };
+
+    const js_code = `
+    const mockStakingViewKit = (${mockStakingViewKit});
+    (${produceStakingView})
+    `;
+    await swingsetTestKit.evalProposal({
+      evals: [{ js_code, json_permits: 'true' }],
+      bundles: [],
+    });
+  }
 
   const walletFactoryDriver = await makeWalletFactoryDriver(
     runUtils,
