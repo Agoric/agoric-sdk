@@ -40,6 +40,20 @@ export const makeReflectionMethods = (vatPowers, baggage) => {
   };
 
   return {
+    baggageHas: key => {
+      return baggage.has(key);
+    },
+    baggageGet: key => {
+      return baggage.get(key);
+    },
+    baggageSet: (key, value) => {
+      if (!baggage.has(key)) {
+        baggage.init(key, value);
+      } else {
+        baggage.set(key, value);
+      }
+    },
+
     /** @type {Die} */
     dieHappy: (completion, finalSend) => {
       vatPowers.exitVat(completion);
@@ -107,5 +121,9 @@ harden(makeReflectionMethods);
 
 export function buildRootObject(vatPowers, _vatParameters, baggage) {
   const methods = makeReflectionMethods(vatPowers, baggage);
-  return Far('root', methods);
+  return Far('root', {
+    ...methods,
+
+    getVersion: () => 1,
+  });
 }

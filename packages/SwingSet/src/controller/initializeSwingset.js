@@ -6,7 +6,7 @@ import { assert, b, Fail } from '@endo/errors';
 import { deepCopyJsonable, makeTracer } from '@agoric/internal';
 import { mustMatch } from '@agoric/store';
 import bundleSource from '@endo/bundle-source';
-import { resolve as resolveModuleSpecifier } from 'import-meta-resolve';
+import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { ManagerType } from '../typeGuards.js';
 import { provideBundleCache } from '../../tools/bundleTool.js';
 import { kdebugEnable } from '../lib/kdebug.js';
@@ -165,7 +165,7 @@ export function loadBasedir(basedir, options = {}) {
 async function resolveSpecFromConfig(referrer, specPath) {
   await null;
   try {
-    return new URL(await resolveModuleSpecifier(specPath, referrer)).pathname;
+    return new URL(await importMetaResolve(specPath, referrer)).pathname;
   } catch (e) {
     if (e.code !== 'MODULE_NOT_FOUND' && e.code !== 'ERR_MODULE_NOT_FOUND') {
       throw e;

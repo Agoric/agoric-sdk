@@ -111,6 +111,63 @@ export const buildRootObject = (vatPowers, bootstrapParameters, baggage) => {
 
   const reflectionMethods = makeReflectionMethods(vatPowers, baggage);
 
+  /**
+   * @param {string} bundleIdOrName
+   * @returns {Promise<import('@agoric/swingset-vat').BundleCap>}
+   */
+  const getBundleCapByIdOrName = bundleIdOrName =>
+    bundleIdOrName.startsWith('b1-')
+      ? E(vatAdminP).getBundleCap(bundleIdOrName)
+      : E(vatAdminP).getNamedBundleCap(bundleIdOrName);
+
+  /**
+   * @template BundleIdentifier
+   * @callback CreateVat
+   * @param {string} vatName
+   * @param {BundleIdentifier} bundleIdentifier
+   * @param {{ vatParameters?: object } & Record<string, unknown>} [vatOptions]
+   * @returns {Promise<DynamicVatRecord['root']>} root object of the new vat
+   */
+
+  /** @type {CreateVat<import('@agoric/swingset-vat').BundleCap>} */
+  const createVat = async (vatName, bundleCap, vatOptions = {}) => {
+    const { root, adminNode } = await E(vatAdminP).createVat(bundleCap, {
+      vatParameters: {},
+      ...vatOptions,
+    });
+    vatRecords.set(vatName, { root, adminNode, bundleCap });
+    return root;
+  };
+
+  /**
+   * @template BundleIdentifier
+   * @callback UpgradeVat
+   * @param {string} vatName
+   * @param {BundleIdentifier} bundleIdentifier
+   * @param {{ vatParameters?: object } & Record<string, unknown>} [vatOptions]
+   * @returns {Promise<number>} the resulting incarnation number
+   */
+
+  /**
+   * @type {UpgradeVat<
+   *   import('@agoric/swingset-vat').BundleCap | undefined
+   * >}
+   */
+  const upgradeVat = async (vatName, bundleCap, vatOptions = {}) => {
+    const vatRecord = /** @type {DynamicVatRecord} */ (
+      vatRecords.get(vatName) || Fail`unknown vat name: ${q(vatName)}`
+    );
+    vatRecord.adminNode ||
+      Fail`no adminNode for vat ${q(vatName)}; is it static?`;
+    const upgradeOptions = { vatParameters: {}, ...vatOptions };
+    const { incarnationNumber } = await E(vatRecord.adminNode).upgrade(
+      bundleCap || vatRecord.bundleCap,
+      upgradeOptions,
+    );
+    vatRecord.incarnationNumber = incarnationNumber;
+    return incarnationNumber;
+  };
+
   return Far('root', {
     ...reflectionMethods,
 
@@ -152,42 +209,49 @@ export const buildRootObject = (vatPowers, bootstrapParameters, baggage) => {
       return root;
     },
 
-    /**
-     * @param {string} vatName
-     * @param {string} [bundleCapName]
-     * @param {{ vatParameters?: object } & Record<string, unknown>} [vatOptions]
-     * @returns {Promise<DynamicVatRecord['root']>} root object of the new vat
-     */
-    createVat: async (vatName, bundleCapName = vatName, vatOptions = {}) => {
-      const bundleCap = await E(vatAdminP).getNamedBundleCap(bundleCapName);
-      const { root, adminNode } = await E(vatAdminP).createVat(bundleCap, {
-        vatParameters: {},
-        ...vatOptions,
-      });
-      vatRecords.set(vatName, { root, adminNode, bundleCap });
-      return root;
+    /** @type {CreateVat<string>} */
+    createVatByBundleID: async (vatName, bundleID, vatOptions) => {
+      const bundleCap = await E(vatAdminP).getBundleCap(bundleID);
+      return createVat(vatName, bundleCap, vatOptions);
     },
 
-    /**
-     * @param {string} vatName
-     * @param {string} [bundleCapName]
-     * @param {{ vatParameters?: object } & Record<string, unknown>} [vatOptions]
-     * @returns {Promise<number>} the resulting incarnation number
-     */
-    upgradeVat: async (vatName, bundleCapName, vatOptions = {}) => {
-      const vatRecord = /** @type {DynamicVatRecord} */ (
-        vatRecords.get(vatName) || Fail`unknown vat name: ${q(vatName)}`
-      );
-      const bundleCap = await (bundleCapName
-        ? E(vatAdminP).getNamedBundleCap(bundleCapName)
-        : vatRecord.bundleCap);
-      const upgradeOptions = { vatParameters: {}, ...vatOptions };
-      const { incarnationNumber } = await E(vatRecord.adminNode).upgrade(
-        bundleCap,
-        upgradeOptions,
-      );
-      vatRecord.incarnationNumber = incarnationNumber;
-      return incarnationNumber;
+    /** @type {CreateVat<string | undefined>} */
+    createVatByBundleName: async (
+      vatName,
+      bundleName = vatName,
+      vatOptions,
+    ) => {
+      const bundleCap = await E(vatAdminP).getNamedBundleCap(bundleName);
+      return createVat(vatName, bundleCap, vatOptions);
+    },
+
+    /** @type {CreateVat<string | undefined>} */
+    createVat: async (vatName, bundleIdOrName = vatName, vatOptions) => {
+      const bundleCap = await getBundleCapByIdOrName(bundleIdOrName);
+      return createVat(vatName, bundleCap, vatOptions);
+    },
+
+    /** @type {UpgradeVat<string | undefined>} */
+    upgradeVatByBundleID: async (vatName, bundleID, vatOptions) => {
+      vatRecords.has(vatName) || Fail`unknown vat name: ${q(vatName)}`;
+      const bundleCap = await (bundleID && E(vatAdminP).getBundleCap(bundleID));
+      return upgradeVat(vatName, bundleCap, vatOptions);
+    },
+
+    /** @type {UpgradeVat<string | undefined>} */
+    upgradeVatByBundleName: async (vatName, bundleName, vatOptions) => {
+      vatRecords.has(vatName) || Fail`unknown vat name: ${q(vatName)}`;
+      const bundleCap = await (bundleName &&
+        E(vatAdminP).getNamedBundleCap(bundleName));
+      return upgradeVat(vatName, bundleCap, vatOptions);
+    },
+
+    /** @type {UpgradeVat<string | undefined>} */
+    upgradeVat: async (vatName, bundleIdOrName, vatOptions) => {
+      vatRecords.has(vatName) || Fail`unknown vat name: ${q(vatName)}`;
+      const bundleCap = await (bundleIdOrName &&
+        getBundleCapByIdOrName(bundleIdOrName));
+      return upgradeVat(vatName, bundleCap, vatOptions);
     },
   });
 };
