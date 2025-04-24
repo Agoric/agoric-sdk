@@ -1,3 +1,4 @@
+import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import { prepareAttenuatorMaker } from '@agoric/base-zone/zone-helpers.js';
 import { AssetKind, type Amount } from '@agoric/ertp';
 import {
@@ -179,9 +180,16 @@ export const contract = async (
     },
   ) as { forwardFunds: HostForGuest<typeof flows.forwardFunds> };
 
-  const makeResolveOnlyHub = prepareAttenuatorMaker(zone, 'ResolveOnlyHub', [
-    'resolveAccountId',
-  ]);
+  const heapZone = makeHeapZone();
+
+  const makeResolveOnlyHub = prepareAttenuatorMaker(
+    // The `resolveOnlyHub` can be ephemeral, so make it in the `heapZone`
+    // even though the underlying is durable. There should be no tension
+    // in having an ephemeral exo point at and use a durable exo.
+    heapZone,
+    'ResolveOnlyHub',
+    ['resolveAccountId'],
+  );
 
   const resolveOnlyHub = makeResolveOnlyHub(chainHub);
 
