@@ -26,7 +26,13 @@ import {
   ZoeMintI,
   ZoeStorageManagerIKit,
 } from '../typeGuards.js';
-import '../internal-types.js';
+
+// Deleting this imperative-looking import does not break `yarn lint` in the
+// zoe package. However, clients of zoe such as governance then claim that
+// the `../zoe` package has many "Cannot find name <type>" errors for other
+// types in the zoe package.
+// See https://github.com/Agoric/agoric-sdk/pull/11243#discussion_r2059200058
+// TODO investigate and hopefully fix.
 import './internal-types.js';
 
 /**

@@ -27,8 +27,6 @@ import { makeInvitationQueryFns } from './invitationQueries.js';
 import { getZcfBundleCap } from './createZCFVat.js';
 import { defaultFeeIssuerConfig, prepareFeeMint } from './feeMint.js';
 import { ZoeServiceI } from '../typeGuards.js';
-import '../internal-types.js';
-import './internal-types.js';
 
 /**
  * @import {VatAdminSvc, ShutdownWithFailure} from '@agoric/swingset-vat';

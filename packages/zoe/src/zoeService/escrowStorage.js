@@ -5,8 +5,6 @@ import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
 import { provideDurableWeakMapStore } from '@agoric/vat-data';
 
 /// <reference path="./types.js" />
-import '../internal-types.js';
-import './internal-types.js';
 
 import { cleanKeywords } from '../cleanProposal.js';
 
