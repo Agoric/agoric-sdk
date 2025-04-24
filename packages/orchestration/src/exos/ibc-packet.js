@@ -1,4 +1,4 @@
-import { assertAllDefined, makeTracer } from '@agoric/internal';
+import { makeTracer } from '@agoric/internal';
 import { base64ToBytes, Shape as NetworkShape } from '@agoric/network';
 import { M } from '@endo/patterns';
 import { E } from '@endo/far';
@@ -175,7 +175,10 @@ export const prepareIBCReplyKit = (zone, vowTools) => {
   const ibcWatcher = zone.exo(
     'ibcResultWatcher',
     M.interface('processIBCWatcher', {
-      onFulfilled: M.call(M.record(), M.record()).returns(Vow$(M.string())),
+      onFulfilled: M.call(
+        M.splitRecord({ event: M.string() }, { acknowledgement: M.string() }),
+        M.splitRecord({}, { opName: M.string(), timeout: M.record() }),
+      ).returns(Vow$(M.string())),
     }),
     {
       /**
@@ -184,15 +187,14 @@ export const prepareIBCReplyKit = (zone, vowTools) => {
        * @param {PacketOptions} ctx
        */
       onFulfilled(ibcEvent, { opName = 'unknown' }) {
-        const {
-          event,
-          // @ts-expect-error `acknowledgement` does not exist on IBCEvent<'timeoutPacket'>
-          acknowledgement,
-        } = ibcEvent;
-        assertAllDefined({ event, acknowledgement });
+        const { event } = ibcEvent;
         switch (event) {
-          case 'acknowledgementPacket':
+          case 'acknowledgementPacket': {
+            const { acknowledgement } = ibcEvent;
+            acknowledgement ||
+              Fail`acknowledgementPacket missing 'acknowledgement'`;
             return base64ToBytes(acknowledgement);
+          }
           case 'timeoutPacket':
             throw Fail`${bare(opName)} operation received timeout packet`;
           default:
