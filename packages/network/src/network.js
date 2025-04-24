@@ -10,7 +10,7 @@ import { Shape } from './shapes.js';
 
 /// <reference path="./types.js" />
 /**
- * @import {AttemptDescription, Bytes, CloseReason, Closable, Connection, ConnectionHandler, Endpoint, ListenHandler, Port, Protocol, ProtocolHandler, ProtocolImpl} from './types.js';
+ * @import {AttemptDescription, Bytes, CloseReason, Closable, Connection, ConnectionHandler, Endpoint, ListenHandler, Port, Protocol, ProtocolHandler, ProtocolImpl, SendOptions} from './types.js';
  * @import {PromiseVow, Remote, VowTools} from '@agoric/vow';
  */
 
@@ -114,8 +114,11 @@ const prepareHalfConnection = (zone, { watch, allVows, finalizer }) => {
           const { addrs, r } = this.state;
           return addrs[r];
         },
-        /** @param {Bytes} packetBytes */
-        async send(packetBytes) {
+        /**
+         * @param {Bytes} packetBytes
+         * @param {SendOptions} [opts]
+         */
+        async send(packetBytes, opts) {
           const { closed, handlers, r, conns } = this.state;
           if (closed) {
             throw Error(closed);
@@ -126,6 +129,7 @@ const prepareHalfConnection = (zone, { watch, allVows, finalizer }) => {
               conns.get(r),
               toBytes(packetBytes),
               handlers[r],
+              opts,
             ),
             this.facets.openConnectionAckWatcher,
           );
