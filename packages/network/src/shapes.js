@@ -25,6 +25,11 @@ const Shape1 = /** @type {const} */ ({
   ProtocolImpl: M.remotable('ProtocolImpl'),
 });
 
+export const SendOptionsShape = M.splitRecord(
+  {},
+  { relativeTimeoutNs: M.bigint() },
+);
+
 const Shape2 = /** @type {const} */ ({
   ...Shape1,
   Vow$: shape => M.or(shape, Shape1.Vow),
