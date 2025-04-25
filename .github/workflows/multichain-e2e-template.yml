@@ -115,10 +115,30 @@ jobs:
         working-directory: ./agoric-sdk/multichain-testing
 
       - name: Run @agoric/multichain-testing E2E Tests
-        run: ${{ inputs.test_command }}
-        working-directory: ./agoric-sdk/multichain-testing
+        id: run-tests
+        # These integration tests can be flaky so retry automatically
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 10
+          max_attempts: 2 # only retry once
+          retry_on: error # let command timeout fail the job
+          command: cd ./agoric-sdk/multichain-testing && ${{ inputs.test_command }}
         env:
           FILE: ${{ inputs.config }}
+
+      - name: Notify of flakey test
+        # If tests passed but required more than 1 attempt, then the test was flaky, so report it via Slack.
+        if: ${{ steps.run-tests.outputs.exit_code == '0' && steps.run-tests.outputs.total_attempts > '1' }}
+        uses: slackapi/slack-github-action@v2
+        with:
+          payload: |
+            {
+              "text": "🎯 Flakey test detected in job ${{ github.job }} in workflow ${{ github.workflow }} of ${{ github.repository }}",
+              "username": "GitHub"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
 
       - name: Capture slog.slog
         if: always()
