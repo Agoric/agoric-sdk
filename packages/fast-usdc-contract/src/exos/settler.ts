@@ -149,7 +149,7 @@ export const prepareSettler = (
     feeConfig: FeeConfig;
     forwardFunds: (tx: {
       txHash: EvmHash;
-      amount: NatValue;
+      amount: NatAmount;
       destination: AccountId;
       fundsInNobleIca?: boolean;
     }) => Vow<void>;
@@ -433,7 +433,11 @@ export const prepareSettler = (
           if (!dest) return;
 
           // This synchronous function returns a Vow that does its own error handling.
-          void forwardFunds({ txHash, amount: fullValue, destination: dest });
+          void forwardFunds({
+            txHash,
+            amount: AmountMath.make(USDC, fullValue),
+            destination: dest,
+          });
         },
       },
       transferHandler: {

@@ -12,6 +12,7 @@ import {
   makeTestContext,
   purseOf,
 } from './contract-setup.ts';
+import type { Bech32Address } from '@agoric/orchestration';
 
 const test = anyTest as TestFn<EReturn<typeof makeTestContext>>;
 test.before(async t => {
@@ -184,13 +185,13 @@ test.serial.only('Interleave scenario', async t => {
       bootstrap: { storage },
       commonPrivateArgs: { feeConfig },
       facadeServices: { chainHub },
-      utils: { transmitVTransferEvent },
+      utils: { transmitVTransferEvent, inspectLocalBridge },
     },
     mint,
   } = t.context;
 
   // The key here is that they're going to the same chain. We re-use the EUD just to simplify the test.
-  const EUD = 'eip155:1:0x1234567890123456789012345678901234567890';
+  const EUD = 'noble1eud';
 
   const alice = makeCustomer(
     'Alice',
@@ -208,12 +209,35 @@ test.serial.only('Interleave scenario', async t => {
     chainHub,
   );
 
+  const lookupOutgoingTransfers = ({
+    amount,
+    sender,
+    receiver,
+  }: {
+    amount?: bigint;
+    sender?: Bech32Address;
+    receiver?: Bech32Address;
+  } = {}) =>
+    inspectLocalBridge().filter(x => {
+      if (x.type !== 'VLOCALCHAIN_EXECUTE_TX') return false;
+      if (amount && x.messages[0].token.amount !== String(amount)) return false;
+      if (sender && x.messages[0].sender !== sender) return false;
+      if (receiver && x.messages[0].receiver !== receiver) return false;
+      return true;
+    });
+
+  t.is(lookupOutgoingTransfers().length, 0);
+
   // First, Carol's forward fails
   // publish a risky transaction, so the Advance is skipped and forward() instead
   const carolEv = await carol.sendFast(t, 3_000_000n, EUD, true);
+  t.is(lookupOutgoingTransfers().length, 0, "alice's advance not attempted");
   await mint(carolEv);
-  await transmitVTransferEvent('timeoutPacket');
 
+  const countCarolAttempts = () =>
+    lookupOutgoingTransfers({ amount: 3_000_000n }).length;
+  t.is(countCarolAttempts(), 1, "alice's forward attempted");
+  await transmitVTransferEvent('timeoutPacket');
   t.deepEqual(storage.getDeserialized(`fun.txns.${carolEv.txHash}`), [
     { evidence: carolEv, status: 'OBSERVED' },
     {
@@ -222,21 +246,75 @@ test.serial.only('Interleave scenario', async t => {
     },
     { status: 'FORWARD_FAILED' },
   ]);
+  t.is(
+    countCarolAttempts(),
+    2,
+    "alice's forward re-attempted since there's up to 6 retries",
+  );
+  {
+    // XXX get Channel to MaxRetries so Carol doesn't have in-flight attempts
+
+    await transmitVTransferEvent('timeoutPacket'); // 2 fails
+    debugger;
+    // t.is(storage.getDeserialized(`fun.txns.${carolEv.txHash}`).length, 4);
+    t.is(countCarolAttempts(), 3);
+    await transmitVTransferEvent('timeoutPacket'); // 3 fails
+    debugger;
+    // t.is(storage.getDeserialized(`fun.txns.${carolEv.txHash}`).length, 5);
+    t.is(countCarolAttempts(), 4);
+    await transmitVTransferEvent('timeoutPacket'); // 4 fails
+    // t.is(storage.getDeserialized(`fun.txns.${carolEv.txHash}`).length, 6);
+    t.is(countCarolAttempts(), 5);
+    await transmitVTransferEvent('timeoutPacket'); // 5 fails
+    // t.is(storage.getDeserialized(`fun.txns.${carolEv.txHash}`).length, 7);
+    t.is(countCarolAttempts(), 6);
+    await transmitVTransferEvent('timeoutPacket'); // 6 fails
+    // t.is(storage.getDeserialized(`fun.txns.${carolEv.txHash}`).length, 8);
+    t.is(
+      countCarolAttempts(),
+      6,
+      'no more attempts should be made until healthy',
+    );
+  }
 
   // Now, Alice and Bob's interleave their requests
+  /**
+   * sequence: 3
+   * net amount: 979_999n
+   */
   const aliceEv = await alice.sendFast(t, 1_000_000n, EUD);
-  await transmitVTransferEvent('acknowledgementPacket');
-  await eventLoopIteration();
+  t.is(lookupOutgoingTransfers().length, 3, "alice's advance started");
+  t.is(lookupOutgoingTransfers({ amount: 979_999n }).length, 1);
 
-  // const bobEv = await bob.sendFast(t, 2_000_000n, EUD);
+  /**
+   * sequence: 4
+   * net amount: 1_959_999n
+   */
+  const bobEv = await bob.sendFast(t, 2_000_000n, EUD); // sequence 4
+  t.is(lookupOutgoingTransfers().length, 4, "bob's advance started");
+  t.is(lookupOutgoingTransfers({ amount: 1_959_999n }).length, 1);
+
+  // vstorage shows still advancing
   t.deepEqual(storage.getDeserialized(`fun.txns.${aliceEv.txHash}`), [
     { evidence: aliceEv, status: 'OBSERVED' },
     { status: 'ADVANCING' },
   ]);
-  // t.deepEqual(storage.getDeserialized(`fun.txns.${bobEv.txHash}`), [
-  //   { evidence: bobEv, status: 'OBSERVED' },
-  //   { status: 'ADVANCING' },
-  // ]);
+  t.deepEqual(storage.getDeserialized(`fun.txns.${bobEv.txHash}`), [
+    { evidence: bobEv, status: 'OBSERVED' },
+    { status: 'ADVANCING' },
+  ]);
+
+  await transmitVTransferEvent('acknowledgementPacket');
+
+  const m4 = inspectLocalBridge();
+
+  // const m3 = inspectLocalBridge();
+  const aliceStatus = storage.getDeserialized(`fun.txns.${aliceEv.txHash}`);
+  const bobStatus = storage.getDeserialized(`fun.txns.${bobEv.txHash}`);
+  const carolStatus = storage.getDeserialized(`fun.txns.${carolEv.txHash}`);
+  // debugger;
+
+  debugger;
 
   // FIXME how to get Alice's advance to complete?
   t.deepEqual(storage.getDeserialized(`fun.txns.${aliceEv.txHash}`), [
