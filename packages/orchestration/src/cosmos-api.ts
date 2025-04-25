@@ -328,7 +328,8 @@ export interface NobleMethods {
   /** burn USDC on Noble and mint on a destination chain via CCTP */
   depositForBurn: (
     mintRecipient: AccountId,
-    amount: AmountArg,
+    // XXX should be AmountArg but that fails due to #10449
+    amount: DenomAmount,
     /** if specified, only this account can call MsgReceive on the destination chain */
     caller?: AccountId,
   ) => Promise<void>;
