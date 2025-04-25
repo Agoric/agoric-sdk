@@ -1,7 +1,6 @@
 # orch-skel - skeletal orchestration contract package
 
 To develop an orchestration contract:
-  0. copy this package to a new directory; change the name (and description) in `package.json`
   1. make a rough sequence diagram - `test/my-orch-sequence.mmd`
   2. refine the sequence diagram to `@agoric/orchestration` objects and messages
   3. prototype each of the objects in the sequence diagram and make a test to exercise them - `test/my-orch-seq-sim.test.ts`
