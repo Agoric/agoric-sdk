@@ -7,8 +7,7 @@ import sqlite3 from 'better-sqlite3';
 
 import { Fail, q } from '@endo/errors';
 
-import { attenuate } from '@agoric/internal';
-import { TRUE } from '@agoric/internal/src/js-utils.js';
+import { attenuateOne } from '@agoric/base-zone/zone-helpers.js';
 
 import { dbFileInDirectory } from './util.js';
 import { makeKVStore, getKeyType } from './kvStore.js';
@@ -566,32 +565,32 @@ export function makeSwingStore(path, forceReset, options = {}) {
     return db;
   }
 
-  const transcriptStore = attenuate(transcriptStoreInternal, {
-    initTranscript: TRUE,
-    rolloverSpan: TRUE,
-    rolloverIncarnation: TRUE,
-    getCurrentSpanBounds: TRUE,
-    addItem: TRUE,
-    readSpan: TRUE,
-    stopUsingTranscript: TRUE,
-    deleteVatTranscripts: TRUE,
-  });
+  const transcriptStore = attenuateOne(transcriptStoreInternal, [
+    'initTranscript',
+    'rolloverSpan',
+    'rolloverIncarnation',
+    'getCurrentSpanBounds',
+    'addItem',
+    'readSpan',
+    'stopUsingTranscript',
+    'deleteVatTranscripts',
+  ]);
 
-  const snapStore = attenuate(snapStoreInternal, {
-    loadSnapshot: TRUE,
-    saveSnapshot: TRUE,
-    deleteAllUnusedSnapshots: TRUE,
-    deleteVatSnapshots: TRUE,
-    stopUsingLastSnapshot: TRUE,
-    getSnapshotInfo: TRUE,
-  });
+  const snapStore = attenuateOne(snapStoreInternal, [
+    'loadSnapshot',
+    'saveSnapshot',
+    'deleteAllUnusedSnapshots',
+    'deleteVatSnapshots',
+    'stopUsingLastSnapshot',
+    'getSnapshotInfo',
+  ]);
 
-  const bundleStore = attenuate(bundleStoreInternal, {
-    addBundle: TRUE,
-    hasBundle: TRUE,
-    getBundle: TRUE,
-    deleteBundle: TRUE,
-  });
+  const bundleStore = attenuateOne(bundleStoreInternal, [
+    'addBundle',
+    'hasBundle',
+    'getBundle',
+    'deleteBundle',
+  ]);
 
   const kernelStorage = {
     kvStore: kernelKVStore,
@@ -618,12 +617,14 @@ export function makeSwingStore(path, forceReset, options = {}) {
     getDatabase,
   };
 
-  return harden({
-    kernelStorage,
-    hostStorage,
-    debug,
-    internal,
-  });
+  return /** @type {SwingStore} */ (
+    harden({
+      kernelStorage,
+      hostStorage,
+      debug,
+      internal,
+    })
+  );
 }
 
 /**

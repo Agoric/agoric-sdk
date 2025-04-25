@@ -25,7 +25,7 @@ import {
   upgradeSwingset,
 } from '@agoric/swingset-vat';
 import { openSwingStore } from '@agoric/swing-store';
-import { attenuate, BridgeId as BRIDGE_ID } from '@agoric/internal';
+import { deepPick, BridgeId as BRIDGE_ID } from '@agoric/internal';
 import * as ActionType from '@agoric/internal/src/action-types.js';
 import { objectMapMutable, TRUE } from '@agoric/internal/src/js-utils.js';
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
@@ -1458,7 +1458,22 @@ export async function launchAndShareInternals({
  */
 export async function launch(options) {
   const launchResult = await launchAndShareInternals(options);
-  return attenuate(launchResult, {
+  // TODO This really is a deep pick rather than a POLA abstraction like
+  // `attenuateOne`.
+  // Neither `launchResult` nor this attenuation of are passable. Nor could they
+  // be made passable since they mix methods and data properties. At the JS
+  // object level, as supported by HardenedJS itself, this could be made
+  // defensive. But
+  // - This `attenuate` abstraction seems to not even harden the attenuator
+  //   it returns, meaning that even at that low level it is already
+  //   non-defensive.
+  // - We are moving to a model where we treat only exo boundaries as
+  //   defensible, since exos bundle in interface guards, providing sound
+  //   declarative type-like input (and output) validation. This still leaves
+  //   remaining input validation up to the guarded method. But experience shows
+  //   that it is usually too hard to do all input validation without
+  //   guards or patterns. (That's why we created them.)
+  return deepPick(launchResult, {
     blockingSend: TRUE,
     shutdown: TRUE,
     writeSlogObject: TRUE,
