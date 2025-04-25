@@ -1,22 +1,28 @@
 import { NonNullish, makeTracer } from '@agoric/internal';
 import { Fail, makeError, q } from '@endo/errors';
 import { M, mustMatch } from '@endo/patterns';
-import { RatioShape } from '@agoric/ertp';
 
 const trace = makeTracer('SwapAnything');
 
 const { entries } = Object;
 
 /**
+ * @typedef {{
+ *   destAddr: string;
+ *   receiverAddr: string;
+ *   outDenom: Denom;
+ *   slippage: { slippagePercentage: string; windowSeconds: number };
+ *   onFailedDelivery: string;
+ *   nextMemo?: string;
+ * }} SwapInfo
+ *
  * @import {GuestInterface, GuestOf} from '@agoric/async-flow';
- * @import {Denom, DenomDetail} from '@agoric/orchestration';
- * @import {ZCF, ZCFSeat} from '@agoric/zoe';
- * @import {Brand} from '@agoric/ertp';
+ * @import {Denom} from '@agoric/orchestration';
+ * @import {ZCFSeat} from '@agoric/zoe';
  * @import {Vow} from '@agoric/vow';
  * @import {LocalOrchestrationAccountKit} from '../exos/local-orchestration-account.js';
  * @import {ZoeTools} from '../utils/zoe-tools.js';
- * @import {Orchestrator, OrchestrationFlow, ChainHub, ChainInfo} from '../types.js';
- * @import {AccountIdArg} from '../orchestration-api.ts';
+ * @import {Orchestrator, OrchestrationFlow, ChainHub, ChainInfo, CosmosChainInfo} from '../types.js';
  */
 
 const denomForBrand = async (orch, brand) => {
@@ -30,6 +36,34 @@ const denomForBrand = async (orch, brand) => {
 };
 
 /**
+ * @param {SwapInfo} swapInfo
+ * @returns {string}
+ */
+const buildXCSMemo = swapInfo => {
+  const memo = {
+    wasm: {
+      contract: swapInfo.destAddr,
+      msg: {
+        osmosis_swap: {
+          output_denom: swapInfo.outDenom,
+          slippage: {
+            twap: {
+              window_seconds: swapInfo.slippage.windowSeconds,
+              slippage_percentage: swapInfo.slippage.slippagePercentage,
+            },
+          },
+          receiver: swapInfo.receiverAddr,
+          on_failed_delivery: swapInfo.onFailedDelivery,
+          nextMemo: swapInfo.nextMemo,
+        },
+      },
+    },
+  };
+
+  return JSON.stringify(memo);
+};
+
+/**
  * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {object} ctx
@@ -38,14 +72,7 @@ const denomForBrand = async (orch, brand) => {
  * @param {GuestInterface<ZoeTools>} ctx.zoeTools
  * @param {GuestOf<(msg: string) => Vow<void>>} ctx.log
  * @param {ZCFSeat} seat
- * @param {{
- *   destAddr: string;
- *   receiverAddr: string;
- *   outDenom: Denom;
- *   slippage: { slippageRatio: Ratio; windowSeconds: bigint };
- *   onFailedDelivery: string;
- *   nextMemo?: string;
- * }} offerArgs
+ * @param {SwapInfo} offerArgs
  */
 
 // Given USDC, swap to desired token with slippage
@@ -61,15 +88,6 @@ export const swapIt = async (
   seat,
   offerArgs,
 ) => {
-  //   offerArgs,
-  //   harden({
-  //     destAddr: M.string(),
-  //     receiverAddr: M.string(),
-  //     outDenom: M.string(),
-  //     onFailedDelivery: M.string(),
-  //     slippage: { slippageRatio: RatioShape, windowSeconds: M.bigint() },
-  //   }),
-  // );
   mustMatch(
     offerArgs,
     M.splitRecord(
@@ -78,23 +96,18 @@ export const swapIt = async (
         receiverAddr: M.string(),
         outDenom: M.string(),
         onFailedDelivery: M.string(),
-        slippage: { slippageRatio: RatioShape, windowSeconds: M.bigint() },
+        slippage: { slippagePercentage: M.string(), windowSeconds: M.number() },
       },
-      { nextMemo: M.or(undefined, M.string()) },
+      { nextMemo: M.string() },
     ),
   );
 
-  trace('HELLLOOOOO');
-
-  const { destAddr } = offerArgs;
+  const { receiverAddr, destAddr } = offerArgs;
   // NOTE the proposal shape ensures that the `give` is a single asset
   const { give } = seat.getProposal();
   const [[_kw, amt]] = entries(give);
-  void log(`sending {${amt.value}} from osmosis to ${destAddr}`);
+  void log(`sending {${amt.value}} from osmosis to ${receiverAddr}`);
   const denom = await denomForBrand(orch, amt.brand);
-
-  /** @type {ChainInfo} */
-  const info = await chainHub.getChainInfo('osmosis');
 
   /**
    * @type {any} XXX methods returning vows
@@ -115,26 +128,29 @@ export const swapIt = async (
     throw makeError(errorMsg);
   };
 
-  const { chainId } = info;
-  assert(typeof chainId === 'string', 'bad chainId');
-
-  const [_a, _o, connection] = await chainHub.getChainsAndConnection(
-    'agoric',
-    'osmosis',
-  );
+  const [_a, osmosisChainInfo, connection] =
+    await chainHub.getChainsAndConnection('agoric', 'osmosis');
 
   connection.counterparty || Fail`No IBC connection to Osmosis`;
 
-  void log(`got info for chain: osmosis ${chainId}`);
+  void log(`got info for chain: osmosis ${osmosisChainInfo}`);
+  trace(osmosisChainInfo);
 
   await localTransfer(seat, sharedLocalAccount, give);
   void log(`completed transfer to localAccount`);
 
   try {
+    const memo = buildXCSMemo(offerArgs);
+    trace(memo);
+
     await sharedLocalAccount.transfer(
-      { value: destAddr, encoding: 'bech32', chainId },
+      {
+        value: destAddr,
+        encoding: 'bech32',
+        chainId: /** @type {CosmosChainInfo} */ (osmosisChainInfo).chainId,
+      },
       { denom, value: amt.value },
-      // memo here
+      { memo },
     );
     void log(`completed transfer to ${destAddr}`);
   } catch (e) {
