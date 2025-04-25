@@ -27,7 +27,7 @@ import { fromOnly } from '@agoric/zoe/src/contractSupport/index.js';
 
 import type { HostInterface, HostOf } from '@agoric/async-flow';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
-import type { Amount, Brand, NatAmount } from '@agoric/ertp';
+import type { Amount, Brand, NatAmount, NatValue } from '@agoric/ertp';
 import type {
   CctpTxEvidence,
   EvmHash,
@@ -98,14 +98,10 @@ harden(decodeEventPacket);
 
 /**
  * NOTE: not meant to be parsable.
- *
- * @param {NobleAddress} addr
- * @param {bigint} amount
  */
 const makeMintedEarlyKey = (addr: NobleAddress, amount: bigint): string =>
   `pendingTx:${JSON.stringify([addr, String(amount)])}`;
 
-/** @param {Brand<'nat'>} USDC */
 export const makeAdvanceDetailsShape = (USDC: Brand<'nat'>) =>
   harden({
     destination: M.string(),
@@ -153,7 +149,7 @@ export const prepareSettler = (
     feeConfig: FeeConfig;
     forwardFunds: (tx: {
       txHash: EvmHash;
-      amount: NatAmount;
+      amount: NatValue;
       destination: AccountId;
       fundsInNobleIca?: boolean;
     }) => Vow<void>;
@@ -167,8 +163,6 @@ export const prepareSettler = (
   },
 ) => {
   assertAllDefined({ statusManager });
-
-  const UsdcAmountShape = makeNatAmountShape(USDC);
 
   return zone.exoClassKit(
     'Fast USDC Settler',
@@ -189,11 +183,11 @@ export const prepareSettler = (
         ),
       }),
       self: M.interface('SettlerSelfI', {
-        addMintedEarly: M.call(M.string(), UsdcAmountShape).returns(),
-        disburse: M.call(EvmHashShape, UsdcAmountShape, M.string()).returns(
+        addMintedEarly: M.call(M.string(), M.nat()).returns(),
+        disburse: M.call(EvmHashShape, M.nat(), M.string()).returns(
           M.promise(),
         ),
-        forward: M.call(EvmHashShape, UsdcAmountShape, M.string()).returns(),
+        forward: M.call(EvmHashShape, M.nat(), M.string()).returns(),
       }),
       // XXX the following handlers are from before refactoring to an async flow for `forwardFunds`.
       // They must remain implemented for as long as any vow might settle and need their behavior.
@@ -272,27 +266,26 @@ export const prepareSettler = (
           const { self } = this.facets;
           const found = statusManager.dequeueStatus(nfa, amount);
           log('dequeued', found, 'for', nfa, amount);
-          const fullValue = AmountMath.make(USDC, amount);
 
           switch (found?.status) {
             case PendingTxStatus.Advanced:
-              return self.disburse(found.txHash, fullValue, EUD);
+              return self.disburse(found.txHash, amount, EUD);
 
             case PendingTxStatus.Advancing:
               log('⚠️ tap: minted while advancing', nfa, amount);
-              self.addMintedEarly(nfa, fullValue);
+              self.addMintedEarly(nfa, amount);
               return;
 
             case PendingTxStatus.AdvanceSkipped:
             case PendingTxStatus.AdvanceFailed:
-              return self.forward(found.txHash, fullValue, EUD);
+              return self.forward(found.txHash, amount, EUD);
 
             case undefined:
             default:
               log('⚠️ tap: minted before observed', nfa, amount);
               // XXX consider capturing in vstorage
               // we would need a new key, as this does not have a txHash
-              self.addMintedEarly(nfa, fullValue);
+              self.addMintedEarly(nfa, amount);
           }
         },
       },
@@ -336,9 +329,7 @@ export const prepareSettler = (
          * If the EUD received minted funds without an advance, forward the
          * funds to the pool.
          *
-         * @param {CctpTxEvidence} evidence
-         * @param {AccountId} destination
-         * @returns {boolean} whether the EUD received funds without an advance
+         * @returns whether the EUD received funds without an advance
          */
         checkMintedEarly(
           evidence: CctpTxEvidence,
@@ -371,11 +362,9 @@ export const prepareSettler = (
       self: {
         /**
          * Helper function to track a minted-early transaction by incrementing or initializing its counter
-         * @param address
-         * @param amount
          */
-        addMintedEarly(address: NobleAddress, amount: NatAmount) {
-          const key = makeMintedEarlyKey(address, amount.value);
+        addMintedEarly(address: NobleAddress, amount: NatValue) {
+          const key = makeMintedEarlyKey(address, amount);
           const { mintedEarly } = this.state;
           asMultiset(mintedEarly).add(key);
         },
@@ -386,7 +375,7 @@ export const prepareSettler = (
         // eslint-disable-next-line no-restricted-syntax -- will resolve before vat restart
         async disburse(
           txHash: EvmHash,
-          received: NatAmount,
+          fullValue: NatValue,
           EUD: AccountId | Bech32Address,
         ) {
           const { repayer, settlementAccount } = this.state;
@@ -394,6 +383,7 @@ export const prepareSettler = (
           const { calculateSplit } = makeFeeTools(feeConfig);
           // theoretically can throw, but shouldn't since Advancer already validated
           const accountId = chainHub.resolveAccountId(EUD);
+          const received = AmountMath.make(USDC, fullValue);
           const split = calculateSplit(received, accountId);
           log('disbursing', split);
 
@@ -418,17 +408,13 @@ export const prepareSettler = (
         },
         /**
          * Funds were not advanced. Forward proceeds to the payee directly.
-         *
-         * @param {EvmHash} txHash
-         * @param {NatAmount} fullValue
-         * @param {string} EUD
          */
         forward(
           txHash: EvmHash,
-          fullValue: NatAmount,
+          fullValue: NatValue,
           EUD: AccountId | Bech32Address,
         ) {
-          log('forwarding', fullValue.value, 'to', EUD, 'for', txHash);
+          log('forwarding', fullValue, 'to', EUD, 'for', txHash);
 
           const dest: AccountId | null = (() => {
             try {

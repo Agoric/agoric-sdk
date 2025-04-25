@@ -2,6 +2,7 @@ import type { NatAmount } from '@agoric/ertp';
 import type { EvmHash } from '@agoric/fast-usdc/src/types.ts';
 import type {
   AccountId,
+  DenomAmount,
   OrchestrationAccount,
   OrchestrationFlow,
   Orchestrator,
@@ -50,7 +51,7 @@ export const forwardFunds = async (
   }: Context,
   tx: {
     txHash: EvmHash;
-    amount: NatAmount;
+    amount: DenomAmount;
     destination: AccountId;
   },
 ) => {
