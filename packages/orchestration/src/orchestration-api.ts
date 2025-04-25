@@ -234,10 +234,18 @@ export interface OrchestrationAccountCommon {
    */
   getAddress: () => CosmosChainAddress;
 
-  /** @returns an array of amounts for every balance in the account. */
+  /**
+   * @returns an array of amounts for every balance in the account.
+   *
+   * @throws when prohibited (see `icqEnabled` in {@link CosmosChainInfo})
+   */
   getBalances: () => Promise<DenomAmount[]>;
 
-  /** @returns the balance of a specific denom for the account. */
+  /**
+   * @returns the balance of a specific denom for the account.
+   *
+   * @throws when prohibited (see `icqEnabled` in {@link CosmosChainInfo})
+   */
   getBalance: (denom: DenomArg) => Promise<DenomAmount>;
 
   /**
