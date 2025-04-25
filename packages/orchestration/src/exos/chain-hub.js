@@ -231,7 +231,9 @@ const ChainHubI = M.interface('ChainHub', {
   getAsset: M.call(M.string(), M.string()).returns(
     M.or(DenomDetailShape, M.undefined()),
   ),
-  getDenom: M.call(BrandShape).returns(M.or(M.string(), M.undefined())),
+  getDenom: M.call(BrandShape)
+    .optional(M.string())
+    .returns(M.or(M.string(), M.undefined())),
   coerceCosmosAddress: M.call(AccountIdArgShape).returns(
     CosmosChainAddressShape,
   ),
@@ -293,6 +295,16 @@ export const makeChainHub = (
     keyShape: BrandShape,
     valueShape: M.string(),
   });
+
+  /**
+   * In-memory cache for expensive (brand, chain) → denom searches (non-durable
+   * by design – rebuilt after a vat restart if needed)
+   *
+   * Keyed by: `${agoricDenom}:${chainName}`
+   *
+   * @type {Map<string, Denom>}
+   */
+  const denomCache = new Map();
   /**
    * Handle mapping of, for example, "osmosis" chain that has bech32 prefix
    * "osmo" and chainId "osmosis-1".
@@ -667,16 +679,52 @@ export const makeChainHub = (
       }
       return undefined;
     },
+
     /**
-     * Retrieve denom (string) for a Brand.
+     * Resolve the denom that represents an Agoric `brand` on the requested
+     * chain.
+     *
+     * Assumes you want the denom on Agoric unless specified otherwise.
      *
      * @param {Brand} brand
+     * @param {string} [chainName='agoric']
      * @returns {Denom | undefined}
      */
-    getDenom(brand) {
-      if (brandDenoms.has(brand)) {
-        return brandDenoms.get(brand);
+    getDenom(brand, chainName = 'agoric') {
+      // brand never registered, return early
+      if (!brandDenoms.has(brand)) return undefined;
+      if (chainName === 'agoric') return brandDenoms.get(brand);
+
+      chainInfos.has(chainName) || Fail`chain ${q(chainName)} not registered`;
+
+      const denomOnAgoric = brandDenoms.get(brand);
+      const cacheKey = `${denomOnAgoric}:${chainName}`;
+      if (denomCache.has(cacheKey)) return denomCache.get(cacheKey);
+
+      const agoricKey = makeDenomKey(denomOnAgoric, 'agoric');
+      denomDetails.has(agoricKey) ||
+        Fail`no DenomDetail registered for brand ${q(brand)}`;
+
+      const { baseName, baseDenom } = denomDetails.get(agoricKey);
+
+      if (chainName === baseName) {
+        denomCache.set(cacheKey, baseDenom);
+        return baseDenom;
       }
+
+      // must search since the denom is not on the issuing chain; results are cached
+      for (const [key, detail] of denomDetails.entries()) {
+        if (
+          detail.chainName === chainName &&
+          detail.baseName === baseName &&
+          detail.baseDenom === baseDenom
+        ) {
+          const [, denomOnTarget] = key.split(':', 2);
+          denomCache.set(cacheKey, denomOnTarget);
+          return denomOnTarget;
+        }
+      }
+      // not found (leave uncached so we can pick it up if registered later)
       return undefined;
     },
 

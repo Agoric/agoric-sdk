@@ -20,6 +20,8 @@ import { makeChainHub, registerAssets } from '../../src/exos/chain-hub.js';
 import knownChains from '../../src/fetched-chain-info.js';
 import { assets as assetFixture } from '../assets.fixture.js';
 import { provideFreshRootZone } from '../durability.js';
+import { denomHash } from '../../src/utils/denomHash.js';
+import fetchedChainInfo from '../../src/fetched-chain-info.js';
 
 // fresh state for each test
 const setup = () => {
@@ -559,4 +561,68 @@ test('cctp, non-cosmos chains', async t => {
     reference: '1',
     cctpDestinationDomain: 0,
   });
+});
+
+test('getDenom supports remote denoms', t => {
+  const { chainHub } = setup();
+
+  chainHub.registerChain('agoric', {
+    chainId: 'agoric-3',
+    bech32Prefix: 'agoric',
+    namespace: 'cosmos',
+    reference: 'agoric-3',
+  });
+  chainHub.registerChain('noble', {
+    chainId: 'noble-1',
+    bech32Prefix: 'noble',
+    namespace: 'cosmos',
+    reference: 'noble-1',
+  });
+  chainHub.registerChain('osmosis', {
+    chainId: 'osmosis-1',
+    bech32Prefix: 'osmo',
+    namespace: 'cosmos',
+    reference: 'osmosis-1',
+  });
+
+  const { brand: usdcBrand } = withAmountUtils(makeIssuerKit('USDC'));
+
+  const usdcOnAgoric = denomHash({
+    channelId:
+      fetchedChainInfo.agoric.connections['noble-1'].transferChannel.channelId,
+    denom: 'uusdc',
+  });
+  const usdcOnOsmosis = denomHash({
+    channelId:
+      fetchedChainInfo.osmosis.connections['noble-1'].transferChannel.channelId,
+    denom: 'uusdc',
+  });
+  chainHub.registerAsset(usdcOnAgoric, {
+    chainName: 'agoric',
+    baseName: 'noble',
+    baseDenom: 'uusdc',
+    brand: usdcBrand,
+  });
+  chainHub.registerAsset('uusdc', {
+    chainName: 'noble',
+    baseName: 'noble',
+    baseDenom: 'uusdc',
+  });
+  chainHub.registerAsset(usdcOnOsmosis, {
+    chainName: 'osmosis',
+    baseName: 'noble',
+    baseDenom: 'uusdc',
+  });
+
+  t.is(chainHub.getDenom(usdcBrand), usdcOnAgoric, 'defaults to Agoric');
+  t.is(
+    chainHub.getDenom(usdcBrand, 'noble'),
+    'uusdc',
+    'returns native denom on Noble',
+  );
+  t.is(
+    chainHub.getDenom(usdcBrand, 'osmosis'),
+    usdcOnOsmosis,
+    'returns IBC denom on Osmosis',
+  );
 });
