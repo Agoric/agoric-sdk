@@ -365,8 +365,9 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @returns {Coin}
          */
         amountToCoin(amount) {
-          !('brand' in amount) ||
-            Fail`'amountToCoin' not working for ${q(amount.brand)} until #10449; use 'DenomAmount' for now`;
+          if ('brand' in amount) {
+            throw Fail`'amountToCoin' not working for ${q(amount.brand)} until #10449; use 'DenomAmount' for now`;
+          }
           return coerceCoin(chainHub, amount);
         },
       },
