@@ -214,30 +214,52 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
    */
   const transmitVTransferEvent = async (
     event: VTransferIBCEvent['event'],
-    acknowledgementError?: string,
+    {
+      acknowledgementError,
+      transferMsg,
+      overrideSequence,
+    }: {
+      acknowledgementError?: string;
+    } & (
+      | { transferMsg: MsgTransfer; overrideSequence: bigint }
+      | { transferMsg?: never; overrideSequence?: never }
+    ) = {},
   ) => {
-    // assume this is called after each outgoing IBC transfer
-    ibcSequenceNonce += 1n;
-    // let the promise for the transfer start
-    await eventLoopIteration();
-    if (localBridgeMessages.length < 1)
-      throw Error('no messages on the local bridge');
+    let lastMsgTransfer: MsgTransfer;
+    let sequence: bigint;
 
-    const b1 = localBridgeMessages.at(-1);
-    if (!b1.messages || b1.messages.length < 1)
-      throw Error('no messages in the last tx');
+    if (transferMsg && overrideSequence !== undefined) {
+      // Use provided transfer message and sequence
+      lastMsgTransfer = transferMsg;
+      sequence = overrideSequence;
+    } else {
+      // Original behavior: look up from local bridge messages
+      // assume this is called after each outgoing IBC transfer
+      ibcSequenceNonce += 1n;
+      // let the promise for the transfer start
+      await eventLoopIteration();
+      if (localBridgeMessages.length < 1)
+        throw Error('no messages on the local bridge');
 
-    const lastMsgTransfer = b1.messages[0] as MsgTransfer;
+      const b1 = localBridgeMessages.at(-1);
+      if (!b1.messages || b1.messages.length < 1)
+        throw Error('no messages in the last tx');
+
+      lastMsgTransfer = b1.messages[0] as MsgTransfer;
+      sequence = ibcSequenceNonce;
+    }
+
     const base = {
       receiver: lastMsgTransfer.receiver as Bech32Address,
       sender: lastMsgTransfer.sender as Bech32Address,
       target: lastMsgTransfer.sender as Bech32Address,
       sourceChannel: lastMsgTransfer.sourceChannel as IBCChannelID,
-      sequence: ibcSequenceNonce,
+      sequence,
       amount: BigInt(lastMsgTransfer.token.amount),
       denom: lastMsgTransfer.token.denom,
       memo: lastMsgTransfer.memo,
     };
+
     await E(transferBridge).fromBridge(
       buildVTransferEvent(
         event === 'timeoutPacket'
