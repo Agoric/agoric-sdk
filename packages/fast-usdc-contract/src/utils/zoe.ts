@@ -1,5 +1,5 @@
 import { makeTracer } from '@agoric/internal';
-import type { Invitation, ZCF } from '@agoric/zoe/src/zoeService/zoe.js';
+import type { ZCF } from '@agoric/zoe/src/zoeService/zoe.js';
 
 const trace = makeTracer('ZoeUtils');
 

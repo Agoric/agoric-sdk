@@ -193,7 +193,6 @@ test.skip('Query connection can be created', async t => {
     runUtils: { EV },
   } = t.context;
 
-  type Powers = { orchestration: CosmosInterchainService };
   const contract = async ({ orchestration }) => {
     const connection =
       await EV(orchestration).provideICQConnection('connection-0');
@@ -219,7 +218,6 @@ test.skip('Query connection can send a query', async t => {
     runUtils: { EV },
   } = t.context;
 
-  type Powers = { orchestration: CosmosInterchainService };
   const contract = async ({ orchestration }) => {
     const queryConnection =
       await EV(orchestration).provideICQConnection('connection-0');

@@ -2,9 +2,9 @@ import type { TestFn } from 'ava';
 import anyTest from 'ava';
 
 // Use ambient authority only in test.before()
-import { spawn as ambientSpawn, type ChildProcess } from 'child_process';
-import * as ambientPath from 'path';
+import { spawn as ambientSpawn } from 'child_process';
 import * as ambientFs from 'fs';
+import * as ambientPath from 'path';
 
 import { VBankAccount } from '@agoric/internal';
 import { makeScenario2, makeWalletTool, pspawn } from './scenario2.js';

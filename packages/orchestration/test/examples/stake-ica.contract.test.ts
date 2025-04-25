@@ -4,7 +4,6 @@ import { makeNotifierFromSubscriber } from '@agoric/notifier';
 import { heapVowE as E } from '@agoric/vow/vat.js';
 import type { Installation } from '@agoric/zoe/src/zoeService/utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import path from 'path';
 import type { CosmosChainInfo } from '../../src/cosmos-api.js';
 import { type StakeIcaTerms } from '../../src/examples/stake-ica.contract.js';
 import fetchedChainInfo from '../../src/fetched-chain-info.js';

@@ -1,32 +1,21 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import {
-  eventLoopIteration,
-  inspectMapStore,
-} from '@agoric/internal/src/testing-utils.js';
-import { makeExpectUnhandledRejection } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E } from '@endo/far';
-import path from 'path';
-import {
   MsgTransfer,
   MsgTransferResponse,
 } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import { inspectMapStore } from '@agoric/internal/src/testing-utils.js';
 import type { IBCMethod } from '@agoric/vats';
 import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
-import { protoMsgMocks, UNBOND_PERIOD_SECONDS } from '../ibc-mocks.js';
-import { commonSetup } from '../supports.js';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
+import { E } from '@endo/far';
+import * as contractExports from '../../src/examples/staking-combinations.contract.js';
 import {
   buildMsgResponseString,
-  buildVTransferEvent,
   parseOutgoingTxPacket,
 } from '../../tools/ibc-mocks.js';
-import * as contractExports from '../../src/examples/staking-combinations.contract.js';
-
-const expectUnhandled = makeExpectUnhandledRejection({
-  test,
-  importMetaUrl: import.meta.url,
-});
+import { protoMsgMocks, UNBOND_PERIOD_SECONDS } from '../ibc-mocks.js';
+import { commonSetup } from '../supports.js';
 
 type StartFn = typeof contractExports.start;
 
@@ -34,7 +23,7 @@ test('start', async t => {
   const {
     bootstrap: { timer, vowTools: vt },
     brands: { bld },
-    mocks: { ibcBridge, transferBridge },
+    mocks: { ibcBridge },
     utils: { inspectDibcBridge, pourPayment, transmitVTransferEvent },
     commonPrivateArgs,
   } = await commonSetup(t);

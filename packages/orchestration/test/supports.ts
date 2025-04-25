@@ -1,3 +1,4 @@
+import type { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import { makeIssuerKit } from '@agoric/ertp';
 import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
@@ -18,23 +19,21 @@ import {
   makeFakeTransferBridge,
 } from '@agoric/vats/tools/fake-bridge.js';
 import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
-import type { Installation } from '@agoric/zoe/src/zoeService/utils.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
-import type { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import { withChainCapabilities } from '../src/chain-capabilities.js';
 import { registerKnownChains } from '../src/chain-info.js';
+import type { Bech32Address } from '../src/cosmos-api.js';
 import { makeChainHub } from '../src/exos/chain-hub.js';
 import { prepareCosmosInterchainService } from '../src/exos/cosmos-interchain-service.js';
 import fetchedChainInfo from '../src/fetched-chain-info.js';
+import { assetOn } from '../src/utils/asset.js';
+import { registerChainsAndAssets } from '../src/utils/chain-hub-helper.js';
 import { buildVTransferEvent } from '../tools/ibc-mocks.js';
 import { setupFakeNetwork } from './network-fakes.js';
-import { withChainCapabilities } from '../src/chain-capabilities.js';
-import { registerChainsAndAssets } from '../src/utils/chain-hub-helper.js';
-import { assetOn } from '../src/utils/asset.js';
-import type { Bech32Address } from '../src/cosmos-api.js';
 
 export {
   makeFakeLocalchainBridge,
@@ -299,5 +298,3 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     },
   };
 };
-
-export const makeDefaultContext = <SF>(contract: Installation<SF>) => {};

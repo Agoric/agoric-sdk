@@ -1,4 +1,6 @@
 import { makeIssuerKit } from '@agoric/ertp';
+import { CosmosChainInfoShapeV1 } from '@agoric/fast-usdc/src/type-guards.js';
+import type { ChainHubChainInfo } from '@agoric/fast-usdc/src/types.js';
 import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
 import {
   defaultSerializer,
@@ -11,6 +13,7 @@ import {
   type CosmosChainInfo,
   type Denom,
 } from '@agoric/orchestration';
+import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
 import { registerKnownChains } from '@agoric/orchestration/src/chain-info.js';
 import {
   makeChainHub,
@@ -34,17 +37,13 @@ import {
   makeFakeTransferBridge,
 } from '@agoric/vats/tools/fake-bridge.js';
 import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
-import type { Installation } from '@agoric/zoe/src/zoeService/utils.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { makeHeapZone, type Zone } from '@agoric/zone';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
-import type { ExecutionContext } from 'ava';
-import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
 import { objectMap } from '@endo/patterns';
-import type { ChainHubChainInfo } from '@agoric/fast-usdc/src/types.js';
-import { CosmosChainInfoShapeV1 } from '@agoric/fast-usdc/src/type-guards.js';
+import type { ExecutionContext } from 'ava';
 import { makeTestFeeConfig } from './mocks.js';
 
 export {
@@ -289,8 +288,6 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     },
   };
 };
-
-export const makeDefaultContext = <SF>(contract: Installation<SF>) => {};
 
 /**
  * Reincarnate without relaxDurabilityRules and provide a durable zone in the incarnation.

@@ -4,6 +4,7 @@
  * - should remain relatively stable.
  */
 import type { Amount, Brand, NatAmount } from '@agoric/ertp/src/types.js';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- fails to notice the @see uses
 import type { CurrentWalletRecord } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { Timestamp } from '@agoric/time';
 import type { QueryManyFn } from '@agoric/vats/src/localchain.js';

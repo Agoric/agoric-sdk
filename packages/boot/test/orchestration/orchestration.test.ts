@@ -59,7 +59,6 @@ test.skip('stakeOsmo - queries', async t => {
     buildProposal,
     evalProposal,
     runUtils: { EV },
-    harness,
   } = t.context;
   await evalProposal(
     buildProposal('@agoric/builders/scripts/orchestration/init-stakeOsmo.js', [
@@ -224,7 +223,6 @@ test.serial('basic-flows', async t => {
   const {
     buildProposal,
     evalProposal,
-    agoricNamesRemotes,
     readPublished,
     bridgeUtils: { flushInboundQueue, runInbound },
   } = t.context;
