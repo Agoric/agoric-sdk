@@ -116,6 +116,7 @@ const makeTestContext = async t => {
         settlementAccount: Promise.resolve(
           mockAccounts.settlement.account as any,
         ),
+        usdcDenom: defaultSettlerParams.remoteDenom,
       },
       tx,
     );

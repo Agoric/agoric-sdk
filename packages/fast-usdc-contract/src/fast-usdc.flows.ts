@@ -24,6 +24,7 @@ export interface Context {
   statusManager: StatusManager;
   getNobleICA: () => OrchestrationAccount<{ chainId: 'noble-1' }>;
   settlementAccount: Promise<OrchestrationAccount<{ chainId: 'agoric-any' }>>;
+  usdcDenom: string;
 }
 
 export const makeLocalAccount = (async (orch: Orchestrator) => {
@@ -47,6 +48,7 @@ export const forwardFunds = async (
     getNobleICA,
     settlementAccount,
     statusManager,
+    usdcDenom,
   }: Context,
   tx: {
     txHash: EvmHash;
@@ -63,6 +65,7 @@ export const forwardFunds = async (
     settlementAccount,
     statusManager,
     tx,
+    usdcDenom,
   });
   const { amount, destination, txHash } = tx;
   log('trying forward for', amount, 'to', destination, 'for', txHash);
@@ -110,7 +113,8 @@ export const forwardFunds = async (
     }
 
     try {
-      await getNobleICA().depositForBurn(destination, amount);
+      const denomAmount = { denom: usdcDenom, value: amount.value };
+      await getNobleICA().depositForBurn(destination, denomAmount);
       log('forward transfer and depositForBurn successful for', txHash);
       statusManager.forwarded(tx.txHash);
     } catch (reason) {

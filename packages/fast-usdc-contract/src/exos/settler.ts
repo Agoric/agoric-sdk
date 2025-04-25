@@ -469,8 +469,12 @@ export const prepareSettler = (
           }: { amt: NatAmount; dest: AccountId; txHash: EvmHash },
         ) {
           const nobleIca = getNobleICA();
+          const burnAmount = {
+            denom: this.state.remoteDenom,
+            value: amt.value,
+          };
           void vowTools.watch(
-            E(nobleIca).depositForBurn(dest, amt),
+            E(nobleIca).depositForBurn(dest, burnAmount),
             this.facets.depositForBurnHandler,
             txHash,
           );
