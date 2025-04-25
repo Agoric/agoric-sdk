@@ -16,7 +16,7 @@ import {
   IBCChannelIDShape,
   IBCConnectionInfoShape,
 } from '../typeGuards.js';
-import { getBech32Prefix } from '../utils/address.js';
+import { chainOfAccount, getBech32Prefix } from '../utils/address.js';
 import { caipIdFromInfo } from '../utils/chain-info.js';
 
 /**
@@ -214,6 +214,7 @@ const ChainHubI = M.interface('ChainHub', {
   updateChain: M.call(M.string(), ChainInfoShape).returns(),
   getChainInfo: M.call(M.string()).returns(VowShape),
   getChainInfoByChainId: M.call(M.string()).returns(ChainInfoShape),
+  getChainNameByAccount: M.call(M.string()).returns(M.string()),
   registerConnection: M.call(
     M.string(),
     M.string(),
@@ -529,6 +530,18 @@ export const makeChainHub = (
       const chainName = chainIdToChainName.get(chainId);
       chainInfos.has(chainName) || Fail`Chain Info not found for ${q(chainId)}`;
       return chainInfos.get(chainName);
+    },
+    /**
+     * @param {AccountId | Bech32Address} partialId CAIP-10 account ID or a
+     *   Cosmos bech32 address
+     * @returns {string}
+     */
+    getChainNameByAccount(partialId) {
+      const accountId = chainHub.resolveAccountId(partialId);
+      const chainId = chainOfAccount(accountId);
+      chainIdToChainName.has(chainId) ||
+        Fail`Chain name not found for ${q(chainId)}`;
+      return chainIdToChainName.get(chainId);
     },
     /**
      * Register information for a Cosmos chain

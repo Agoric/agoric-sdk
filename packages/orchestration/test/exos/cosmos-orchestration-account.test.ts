@@ -146,14 +146,7 @@ test('send (to addr on same chain)', async t => {
     'send accepts AccountId',
   );
 
-  await t.throwsAsync(
-    () => E(account).send(toAddress, ist.make(10n) as AmountArg),
-    {
-      message:
-        "'amountToCoin' not working for \"[Alleged: IST brand]\" until #10449; use 'DenomAmount' for now",
-    },
-    'TODO #10449 amountToCoin for CosmosOrchestrationAccount',
-  );
+  t.is(await E(account).send(toAddress, ist.make(10n) as AmountArg), undefined);
 
   // simulate timeout error
   await t.throwsAsync(
@@ -167,10 +160,7 @@ test('send (to addr on same chain)', async t => {
   await t.throwsAsync(
     E(account).send(toAddress, moolah.make(10n) as AmountArg),
     {
-      // TODO #10449
-      // message: 'No denom for brand [object Alleged: MOO brand]',
-      message:
-        "'amountToCoin' not working for \"[Alleged: MOO brand]\" until #10449; use 'DenomAmount' for now",
+      message: 'No denom for brand [object Alleged: MOO brand]',
     },
   );
 
@@ -186,8 +176,8 @@ test('send (to addr on same chain)', async t => {
   const { bridgeDowncalls } = await inspectDibcBridge();
   t.is(
     bridgeDowncalls.filter(d => d.method === 'sendPacket').length,
-    5,
-    'sent 4 successful txs and 1 failed. 1 rejected before sending',
+    6,
+    'sent 5 successful txs and 1 failed. 1 rejected before sending',
   );
 
   await t.throwsAsync(
@@ -402,10 +392,7 @@ test('transfer', async t => {
   const moolah = withAmountUtils(makeIssuerKit('MOO'));
   t.log('transfer throws if asset is not in its chainHub');
   await t.throwsAsync(E(account).transfer(mockDestination, moolah.make(10n)), {
-    // TODO #10449
-    // message: 'No denom for brand [object Alleged: MOO brand]',
-    message:
-      "'amountToCoin' not working for \"[Alleged: MOO brand]\" until #10449; use 'DenomAmount' for now",
+    message: 'No denom for brand [object Alleged: MOO brand]',
   });
   chainHub.registerAsset('umoo', {
     baseDenom: 'umoo',
@@ -413,12 +400,14 @@ test('transfer', async t => {
     brand: moolah.brand,
     chainName: 'agoric',
   });
+  chainHub.registerAsset('ibc/umooOnCosmos', {
+    baseDenom: 'umoo',
+    baseName: 'agoric',
+    chainName: 'cosmoshub',
+  });
   // uses umooTransfer mock above
-  await E(account).transfer(
-    mockDestination,
-    // moolah.make(10n), // TODO #10449 restore
-    { denom: 'umoo', value: 10n },
-  );
+  await E(account).transfer(mockDestination, moolah.make(10n));
+  // ? TODO add mock ack for above, old one incorrectly has `umoo` instead of `ibc/umooOnCosmos`
 
   t.log('transfer timeout error recieved and handled from the bridge');
   await t.throwsAsync(

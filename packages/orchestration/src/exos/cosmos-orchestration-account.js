@@ -68,7 +68,11 @@ import {
 } from '../utils/cosmos.js';
 import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
 import { makeTimestampHelper } from '../utils/time.js';
-import { accountIdTo32Bytes, parseAccountId } from '../utils/address.js';
+import {
+  accountIdTo32Bytes,
+  chainOfAccount,
+  parseAccountId,
+} from '../utils/address.js';
 
 /**
  * @import {HostOf} from '@agoric/async-flow';
@@ -365,9 +369,10 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @returns {Coin}
          */
         amountToCoin(amount) {
-          !('brand' in amount) ||
-            Fail`'amountToCoin' not working for ${q(amount.brand)} until #10449; use 'DenomAmount' for now`;
-          return coerceCoin(chainHub, amount);
+          const chainName = chainHub.getChainNameByAccount(
+            this.state.chainAddress.value,
+          );
+          return coerceCoin(chainHub, amount, chainName);
         },
       },
       balanceQueryWatcher: {

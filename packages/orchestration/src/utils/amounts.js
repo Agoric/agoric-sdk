@@ -9,15 +9,16 @@ import { makeError } from '@endo/errors';
 /**
  * @param {ChainHub} chainHub
  * @param {DenomArg} denomArg
+ * @param {string} [chainName='agoric']
  * @returns {Denom}
  * @throws {Error} if Brand is provided and ChainHub doesn't contain Brand:Denom
  *   mapping
  */
-export const coerceDenom = (chainHub, denomArg) => {
+export const coerceDenom = (chainHub, denomArg, chainName = 'agoric') => {
   if (typeof denomArg === 'string') {
     return denomArg;
   }
-  const denom = chainHub.getDenom(denomArg);
+  const denom = chainHub.getDenom(denomArg, chainName);
   if (!denom) {
     throw makeError(`No denom for brand ${denomArg}`);
   }
@@ -45,13 +46,16 @@ export const coerceDenomAmount = (chainHub, amount) => {
 /**
  * @param {ChainHub} chainHub
  * @param {AmountArg} amount
+ * @param {string} [chainName='agoric']
  * @returns {Coin}
  * @throws {Error} if ERTP Amount is provided and ChainHub doesn't contain
  *   Brand:Denom mapping
  */
-export const coerceCoin = (chainHub, amount) => {
+export const coerceCoin = (chainHub, amount, chainName = 'agoric') => {
   const denom =
-    'denom' in amount ? amount.denom : coerceDenom(chainHub, amount.brand);
+    'denom' in amount
+      ? amount.denom
+      : coerceDenom(chainHub, amount.brand, chainName);
   return harden({
     denom,
     amount: String(amount.value),
