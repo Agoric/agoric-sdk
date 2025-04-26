@@ -329,7 +329,7 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
 
   // Verify receipt of a published value via subscribeAfter
   // and async iterators.
-  const value1 = Symbol.for('value1');
+  const value1 = 'value1';
   await publish(value1);
   const expectedV1FirstResult = { value: value1, done: false };
   const v1FirstCell = await messageToObject(sub1, 'subscribeAfter');
@@ -351,7 +351,7 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
 
   // Verify receipt of a second published value via tail and subscribeAfter
   // and async iterators.
-  const value2 = Symbol.for('value2');
+  const value2 = 'value2';
   await publish(value2);
   const expectedV1SecondResult = { value: value2, done: false };
   await messageToObject(sub1, 'subscribeAfter');
