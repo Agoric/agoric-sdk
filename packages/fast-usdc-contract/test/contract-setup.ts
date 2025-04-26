@@ -11,6 +11,7 @@ import type {
   CctpTxEvidence,
   FeeConfig,
   PoolMetrics,
+  TransactionRecord,
 } from '@agoric/fast-usdc/src/types.ts';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
@@ -196,8 +197,14 @@ export const makeTestContext = async (t: ExecutionContext) => {
   chainHub.registerChain('osmosis', fetchedChainInfo.osmosis);
   chainHub.registerChain('noble', fetchedChainInfo.noble);
 
+  /** Read the deserialized transaction status from storage */
+  const readTxnRecord = ({ txHash }: { txHash: string }): TransactionRecord => {
+    return common.bootstrap.storage.getDeserialized(`fun.txns.${txHash}`);
+  };
+
   return {
     bridges: { snapshot, since },
+    readTxnRecord,
     common,
     evm,
     mint,

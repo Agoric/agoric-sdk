@@ -163,7 +163,6 @@ test.serial('Contract skips advance when risks identified', async t => {
 test.serial('STORY01: advancing happy path for 100 USDC', async t => {
   const {
     common: {
-      bootstrap: { storage },
       brands: { usdc },
       commonPrivateArgs: { feeConfig },
       facadeServices: { chainHub },
@@ -190,10 +189,7 @@ test.serial('STORY01: advancing happy path for 100 USDC', async t => {
     { status: 'ADVANCING' },
     { status: 'ADVANCED' },
   ];
-  t.deepEqual(
-    storage.getDeserialized(`fun.txns.${sent1.txHash}`),
-    expectedTransitions,
-  );
+  t.deepEqual(t.context.readTxnRecord(sent1), expectedTransitions);
 
   const { calculateAdvance, calculateSplit } = makeFeeTools(feeConfig);
   const expectedAdvance = calculateAdvance(
@@ -267,7 +263,7 @@ test.serial('STORY01: advancing happy path for 100 USDC', async t => {
     'metrics after advancing',
   );
 
-  t.deepEqual(storage.getDeserialized(`fun.txns.${sent1.txHash}`), [
+  t.deepEqual(t.context.readTxnRecord(sent1), [
     ...expectedTransitions,
     { split, status: 'DISBURSED' },
   ]);
@@ -502,7 +498,6 @@ test.serial('Settlement for unknown transaction (operator down)', async t => {
     bridges: { snapshot, since },
     evm: { cctp, txPub },
     common: {
-      bootstrap: { storage },
       commonPrivateArgs: { feeConfig },
       facadeServices: { chainHub },
       mocks: { transferBridge },
@@ -597,7 +592,7 @@ test.serial('Settlement for unknown transaction (operator down)', async t => {
   );
   await eventLoopIteration();
 
-  t.deepEqual(storage.getDeserialized(`fun.txns.${sent.txHash}`), [
+  t.deepEqual(t.context.readTxnRecord(sent), [
     { evidence: sent, status: 'OBSERVED' },
     { status: 'FORWARDED' },
   ]);

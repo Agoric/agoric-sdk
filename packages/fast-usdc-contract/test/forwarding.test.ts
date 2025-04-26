@@ -109,7 +109,7 @@ test.serial('Observed after mint: Forward', async t => {
   );
   await eventLoopIteration();
 
-  t.deepEqual(storage.getDeserialized(`fun.txns.${evidence.txHash}`), [
+  t.deepEqual(t.context.readTxnRecord(evidence), [
     { evidence, status: 'OBSERVED' },
     { status: 'FORWARDED' },
   ]);
@@ -119,7 +119,6 @@ test.serial('Observed after mint: Forward failed', async t => {
   const {
     evm: { cctp, txPub },
     common: {
-      bootstrap: { storage },
       commonPrivateArgs: { feeConfig },
       facadeServices: { chainHub },
       utils: { transmitVTransferEvent },
@@ -136,7 +135,7 @@ test.serial('Observed after mint: Forward failed', async t => {
   await mint(evidence);
   await transmitVTransferEvent('timeoutPacket');
 
-  t.deepEqual(storage.getDeserialized(`fun.txns.${evidence.txHash}`), [
+  t.deepEqual(t.context.readTxnRecord(evidence), [
     { evidence, status: 'OBSERVED' },
     {
       risksIdentified: ['RISK1'],
