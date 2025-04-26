@@ -147,12 +147,17 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
   finisher.useRegistry(bridgeTargetKit.targetRegistry);
   await E(transferBridge).initHandler(bridgeTargetKit.bridgeHandler);
 
-  const localBridgeMessages = [] as any[];
+  const localBridgeLog: { obj: any; result: any }[] = [];
   const localchainBridge = makeFakeLocalchainBridge(
     rootZone,
-    obj => localBridgeMessages.push(obj),
+    (obj, result) => localBridgeLog.push({ obj, result }),
     makeTestAddress,
   );
+  const inspectLocalBridgeLog = () => harden([...localBridgeLog]);
+  /** @returns {ReadonlyArray<any>} the input messages sent to the localchain bridge */
+  const inspectLocalBridge = () =>
+    harden(localBridgeLog.map(entry => entry.obj));
+
   const localchain = prepareLocalChainTools(
     rootZone.subZone('localchain'),
     vowTools,
@@ -189,55 +194,102 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
 
   await registerKnownChains(agoricNamesAdmin, () => {});
 
-  // XXX: copied from orchestration supports
-  /** proxy for current sequence of the IBC Channel */
-  let ibcSequenceNonce = 0n;
   /**
-   * Simulate an inbound message to the vtransfer bridge.
+   * Find the Nth outgoing MsgTransfer and its sequence number from the localchain bridge log.
+   * @param index 0-based index from the start, or negative index from the end.
+   * @returns The MsgTransfer message and its sequence number.
+   * @throws If index is out of bounds or sequence is not found in the log result.
+   */
+  const outgoingTransferAt = (index: number) => {
+    const log = inspectLocalBridgeLog();
+    const transferMessagesInfo: { message: MsgTransfer; sequence: bigint }[] =
+      [];
+
+    for (const entry of log) {
+      const { obj, result } = entry;
+      if (
+        obj.type === 'VLOCALCHAIN_EXECUTE_TX' &&
+        obj.messages &&
+        Array.isArray(result)
+      ) {
+        for (let i = 0; i < obj.messages.length; i += 1) {
+          const message = obj.messages[i];
+          if (
+            message['@type'] === '/ibc.applications.transfer.v1.MsgTransfer'
+          ) {
+            const msgResult = result[i];
+            // Check sequence exists in result object associated with this message
+            if (msgResult && typeof msgResult.sequence !== 'undefined') {
+              transferMessagesInfo.push({
+                message,
+                sequence: BigInt(msgResult.sequence),
+              });
+            } else {
+              throw new Error(
+                `Sequence not found in result for MsgTransfer: ${JSON.stringify(message)}`,
+              );
+            }
+          }
+        }
+      }
+    }
+
+    const totalTransfers = transferMessagesInfo.length;
+    let targetIndex = index;
+    if (index < 0) {
+      targetIndex = totalTransfers + index;
+    }
+
+    if (targetIndex < 0 || targetIndex >= totalTransfers) {
+      throw new Error(
+        `Index ${index} out of bounds for ${totalTransfers} outgoing transfers.`,
+      );
+    }
+
+    return transferMessagesInfo[targetIndex];
+  };
+
+  /**
+   * Simulate an inbound VTransferIBCEvent message to the vtransfer bridge for a specific transfer.
    *
-   * Uses the localchain bridge to lookup the last message and infer packet
-   * and transaction details.
-   *
-   * Tracks `sequence` locally in test context, so this helper must be used
-   * for all simulated VTransfer calls in a test run for sequence to be
-   * accurate.
+   * @param event The type of IBC event ('acknowledgementPacket' or 'timeoutPacket').
+   * @param query Index of the outgoing transfer (e.g., -1 for the last one) or the `{ message: MsgTransfer, sequence: bigint }` object itself.
+   * @param acknowledgementError Optional error string for acknowledgementPacket events.
    *
    * @example
    * ```js
-   * // send ack
-   * await transmitVTransferEvent('acknowledgementPacket');
-   * // send ack error
-   * await transmitVTransferEvent('acknowledgementPacket', 'packet-forward-middleware error: giving up on packet on channel (channel-21) port (transfer) after max retries');
-   * // send timeout
-   * await transmitVTransferEvent('timeoutPacket');
+   * // send ack for the last transfer
+   * await transmitVTransferEvent('acknowledgementPacket', -1);
+   * // send ack error for the first transfer
+   * await transmitVTransferEvent('acknowledgementPacket', 0, 'simulated error');
+   * // send timeout for the second-to-last transfer
+   * await transmitVTransferEvent('timeoutPacket', -2);
    * ```
    */
   const transmitVTransferEvent = async (
     event: VTransferIBCEvent['event'],
+    query: number | { message: MsgTransfer; sequence: bigint },
     acknowledgementError?: string,
   ) => {
-    // assume this is called after each outgoing IBC transfer
-    ibcSequenceNonce += 1n;
-    // let the promise for the transfer start
+    // let the promise for the transfer start (if any)
     await eventLoopIteration();
-    if (localBridgeMessages.length < 1)
-      throw Error('no messages on the local bridge');
 
-    const b1 = localBridgeMessages.at(-1);
-    if (!b1.messages || b1.messages.length < 1)
-      throw Error('no messages in the last tx');
+    const transferInfo =
+      typeof query === 'number' ? outgoingTransferAt(query) : query;
 
-    const lastMsgTransfer = b1.messages[0] as MsgTransfer;
+    const { message: msg, sequence } = transferInfo;
+
     const base = {
-      receiver: lastMsgTransfer.receiver as Bech32Address,
-      sender: lastMsgTransfer.sender as Bech32Address,
-      target: lastMsgTransfer.sender as Bech32Address,
-      sourceChannel: lastMsgTransfer.sourceChannel as IBCChannelID,
-      sequence: ibcSequenceNonce,
-      amount: BigInt(lastMsgTransfer.token.amount),
-      denom: lastMsgTransfer.token.denom,
-      memo: lastMsgTransfer.memo,
+      receiver: msg.receiver as Bech32Address,
+      sender: msg.sender as Bech32Address,
+      target: msg.sender as Bech32Address, // target is usually the sender for outgoing transfers
+      sourceChannel: msg.sourceChannel as IBCChannelID,
+      sequence, // Use sequence from transferInfo
+      amount: BigInt(msg.token.amount),
+      denom: msg.token.denom,
+      memo: msg.memo,
     };
+
     await E(transferBridge).fromBridge(
       buildVTransferEvent(
         event === 'timeoutPacket'
@@ -248,12 +300,6 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     // let the bridge handler finish
     await eventLoopIteration();
   };
-  /**
-   * simulate incoming message as if the transfer completed over IBC
-   * @deprecated use `transmitVTransferEvent('acknowledgementPacket')` directly
-   */
-  const transmitTransferAck = async () =>
-    transmitVTransferEvent('acknowledgementPacket');
 
   /** A chainHub for Exo tests, distinct from the one a contract makes within `withOrchestration` */
   const chainHub = makeChainHub(
@@ -327,11 +373,11 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     utils: {
       contractZone: rootZone.subZone('contract'),
       pourPayment,
-      inspectLocalBridge: () => harden([...localBridgeMessages]),
+      inspectLocalBridge,
       inspectDibcBridge: () => E(ibcBridge).inspectDibcBridge(),
       inspectBankBridge: () => harden([...bankBridgeMessages]),
+      outgoingTransferAt,
       rootZone,
-      transmitTransferAck,
       transmitVTransferEvent,
       vowTools,
     },

@@ -9,7 +9,6 @@ import {
   eventLoopIteration,
   inspectMapStore,
 } from '@agoric/internal/src/testing-utils.js';
-import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import type { Installation } from '@agoric/zoe/src/zoeService/utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
@@ -138,7 +137,7 @@ test.serial('Contract skips advance when risks identified', async t => {
     common: {
       commonPrivateArgs: { feeConfig },
       facadeServices: { chainHub },
-      utils: { transmitTransferAck },
+      utils: { transmitVTransferEvent },
     },
     evm: { cctp, txPub },
     bridges: { snapshot, since },
@@ -157,7 +156,8 @@ test.serial('Contract skips advance when risks identified', async t => {
   await mint(sent);
   custEmpty.checkSent(t, bridgeTraffic, 'forward');
   t.log('No advancement, just settlement');
-  await transmitTransferAck(); // ack IBC transfer for forward
+  // ack IBC transfer for forward
+  await transmitVTransferEvent('acknowledgementPacket', -1);
 });
 
 test.serial('STORY01: advancing happy path for 100 USDC', async t => {
@@ -166,7 +166,7 @@ test.serial('STORY01: advancing happy path for 100 USDC', async t => {
       brands: { usdc },
       commonPrivateArgs: { feeConfig },
       facadeServices: { chainHub },
-      utils: { inspectBankBridge, transmitTransferAck },
+      utils: { inspectBankBridge, transmitVTransferEvent },
     },
     evm: { cctp, txPub },
     startKit: { metricsSub },
@@ -183,7 +183,8 @@ test.serial('STORY01: advancing happy path for 100 USDC', async t => {
 
   const bridgePos = snapshot();
   const sent1 = await cust1.sendFast(t, 108_000_000n, 'osmo1234advanceHappy');
-  await transmitTransferAck(); // ack IBC transfer for advance
+  // ack IBC transfer for advance
+  await transmitVTransferEvent('acknowledgementPacket', -1);
   const expectedTransitions = [
     { evidence: sent1, status: 'OBSERVED' },
     { status: 'ADVANCING' },
@@ -312,7 +313,7 @@ test.serial('With 250 available, 3 race to get ~100', async t => {
     common: {
       commonPrivateArgs: { feeConfig },
       facadeServices: { chainHub },
-      utils: { transmitTransferAck },
+      utils: { transmitVTransferEvent },
     },
     startKit: { metricsSub },
     mint,
@@ -332,12 +333,16 @@ test.serial('With 250 available, 3 race to get ~100', async t => {
     cust.racer2.sendFast(t, 120_000_000n, 'osmo1234b'),
     cust.racer3.sendFast(t, 125_000_000n, 'osmo1234c'),
   ]);
+
   cust.racer1.checkSent(t, since(bridgePos));
   cust.racer2.checkSent(t, since(bridgePos));
   // TODO/WIP: cust.racer3.checkSent(t, since(bridgePos), 'forward - LP depleted');
-  await transmitTransferAck();
-  await transmitTransferAck();
-  await transmitTransferAck();
+
+  // Ack all three transfers using their index relative to the end
+  await transmitVTransferEvent('acknowledgementPacket', -3); // First racer's transfer
+  await transmitVTransferEvent('acknowledgementPacket', -2); // Second racer's transfer
+  await transmitVTransferEvent('acknowledgementPacket', -1); // Third racer's transfer
+
   await Promise.all([mint(sent1), mint(sent2), mint(sent3)]);
 });
 
@@ -389,7 +394,9 @@ test.serial('withdraw all liquidity while ADVANCING', async t => {
 
   // 4. Bob's advance is settled
   await mint(sent);
-  await utils.transmitTransferAck();
+  // Ack Bob's advance transfer (it was the last one)
+  await utils.transmitVTransferEvent('acknowledgementPacket', -1);
+
   t.like(storage.getDeserialized(`fun.txns.${sent.txHash}`), [
     { evidence: sent, status: 'OBSERVED' },
     { status: 'ADVANCING' },
@@ -470,7 +477,7 @@ test.serial('C20 - Contract MUST function with an empty pool', async t => {
     common: {
       commonPrivateArgs: { feeConfig },
       facadeServices: { chainHub },
-      utils: { transmitTransferAck },
+      utils: { transmitVTransferEvent },
     },
     evm: { cctp, txPub },
     bridges: { snapshot, since },
@@ -489,7 +496,8 @@ test.serial('C20 - Contract MUST function with an empty pool', async t => {
   await mint(sent);
   custEmpty.checkSent(t, bridgeTraffic, 'forward');
   t.log('No advancement, just settlement');
-  await transmitTransferAck(); // ack IBC transfer for forward
+  // ack IBC transfer for forward
+  await transmitVTransferEvent('acknowledgementPacket', -1);
 });
 
 test.serial('Settlement for unknown transaction (operator down)', async t => {
@@ -500,8 +508,7 @@ test.serial('Settlement for unknown transaction (operator down)', async t => {
     common: {
       commonPrivateArgs: { feeConfig },
       facadeServices: { chainHub },
-      mocks: { transferBridge },
-      utils: { transmitTransferAck },
+      utils: { transmitVTransferEvent },
     },
     mint,
     addresses,
@@ -544,8 +551,8 @@ test.serial('Settlement for unknown transaction (operator down)', async t => {
     '20 USDC arrive at the settlement account',
   );
 
-  await transmitTransferAck();
-  t.deepEqual(bridgeTraffic.local, [], 'no IBC transfers');
+  // No ack needed here as the first sendFast didn't trigger an IBC transfer (operators were down)
+  t.deepEqual(bridgeTraffic.local, [], 'no IBC transfers initially');
 
   // activate oracles and submit evidence; expect Settler to forward (slow path)
   // 'C12 - Contract MUST only pay back the Pool (fees) only if they started the advance before USDC is minted',
@@ -578,19 +585,8 @@ test.serial('Settlement for unknown transaction (operator down)', async t => {
   const forwardInfo = JSON.parse(outgoingForwardMessage.memo).forward;
   t.is(forwardInfo.receiver, EUD, 'receiver is osmo10tt0');
 
-  // in lieu of transmitTransferAck so we can set a nonce that matches our initial Advance
-  await E(transferBridge).fromBridge(
-    buildVTransferEvent({
-      receiver: outgoingForwardMessage.receiver,
-      sender: outgoingForwardMessage.sender,
-      target: outgoingForwardMessage.sender,
-      sourceChannel: outgoingForwardMessage.sourceChannel,
-      sequence: BigInt(nonce),
-      denom: outgoingForwardMessage.token.denom,
-      amount: BigInt(outgoingForwardMessage.token.amount),
-    }),
-  );
-  await eventLoopIteration();
+  // Ack the forwarded transfer (it was the last one)
+  await transmitVTransferEvent('acknowledgementPacket', -1);
 
   t.deepEqual(t.context.readTxnRecord(sent), [
     { evidence: sent, status: 'OBSERVED' },
@@ -635,7 +631,8 @@ test.serial('mint received while ADVANCING', async t => {
 
   await mint(sent);
   // mint received before Advance transfer settles
-  await utils.transmitTransferAck();
+  // Ack the advance transfer (it was the last one)
+  await utils.transmitVTransferEvent('acknowledgementPacket', -1);
 
   const split = makeFeeTools(feeConfig).calculateSplit(
     usdc.make(5_000_000n),

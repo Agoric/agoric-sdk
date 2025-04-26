@@ -400,7 +400,7 @@ test('send', async t => {
     { denom: 'uist', value: 10_000_000n },
   ]);
 
-  const messages = await inspectLocalBridge();
+  const messages = inspectLocalBridge();
   const executedBankSends = messages.filter(
     m =>
       m.type === 'VLOCALCHAIN_EXECUTE_TX' &&
@@ -408,7 +408,7 @@ test('send', async t => {
   );
   t.is(
     executedBankSends.length,
-    4,
+    3,
     'sent 2 successful txs and 1 failed. 1 rejected before sending',
   );
 
