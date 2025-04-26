@@ -29,6 +29,9 @@
     "url": "https://github.com/Agoric/agoric-sdk/issues"
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
+  "dependencies": {
+    "@agoric/internal": "^0.3.2"
+  },
   "devDependencies": {
     "@agoric/swingset-vat": "^0.32.2",
     "ava": "^5.3.0",

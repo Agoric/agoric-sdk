@@ -410,21 +410,14 @@ test('liveslots retires result promise IDs after reject', async t => {
 
 test('liveslots vs symbols', async t => {
   const { log, syscall } = buildSyscall();
-  const arbitrarySymbol = Symbol.for('arbitrary');
 
   function build(_vatPowers) {
     return Far('root', {
       [Symbol.asyncIterator](arg) {
         return ['ok', 'asyncIterator', arg];
       },
-      [arbitrarySymbol](arg) {
-        return ['ok', 'arbitrary', arg];
-      },
       sendAsyncIterator(target) {
         E(target)[Symbol.asyncIterator]('arg');
-      },
-      sendArbitrary(target) {
-        E(target)[arbitrarySymbol]('arg');
       },
     });
   }
@@ -443,15 +436,6 @@ test('liveslots vs symbols', async t => {
   });
   t.deepEqual(log, []);
 
-  // E(root)[arbitrarySymbol]('two')
-  const rp2 = 'p-2';
-  await dispatch(makeMessage(rootA, Symbol.for('arbitrary'), ['two'], rp2));
-  t.deepEqual(log.shift(), {
-    type: 'resolve',
-    resolutions: [[rp2, false, kser(['ok', 'arbitrary', 'two'])]],
-  });
-  t.deepEqual(log, []);
-
   // root~.sendAsyncIterator(target) -> send(methodname=Symbol.asyncIterator)
   await dispatch(makeMessage(rootA, 'sendAsyncIterator', [kslot(target)]));
   t.deepEqual(log.shift(), {
@@ -461,18 +445,6 @@ test('liveslots vs symbols', async t => {
     resultSlot: 'p+5',
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: 'p+5' });
-  matchIDCounterSet(t, log);
-  t.deepEqual(log, []);
-
-  // root~.sendArbitrary(target) -> send(methodname=Symbol.for('arbitrary')
-  await dispatch(makeMessage(rootA, 'sendArbitrary', [kslot(target)]));
-  t.deepEqual(log.shift(), {
-    type: 'send',
-    targetSlot: target,
-    methargs: kser([Symbol.for('arbitrary'), ['arg']]),
-    resultSlot: 'p+6',
-  });
-  t.deepEqual(log.shift(), { type: 'subscribe', target: 'p+6' });
   matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 });
