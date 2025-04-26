@@ -259,7 +259,7 @@ test('local promises are rejected by vat upgrade', async t => {
     return awaitRun(kpid);
   };
 
-  const S = Symbol.for('passable');
+  const S = 'passable';
   const watcher = await messageToVat('bootstrap', 'createVat', {
     name: 'watcher',
     bundleCapName: 'watcher',

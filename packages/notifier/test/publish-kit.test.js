@@ -118,7 +118,7 @@ const verifyPublishKit = test.macro(async (t, makePublishKit) => {
   };
 
   const firstCellsP = getLatestPromises();
-  const firstVal = Symbol.for('first');
+  const firstVal = 'first';
   publisher.publish(firstVal);
   firstCellsP.push(...getLatestPromises());
   const firstCells = await Promise.all(firstCellsP);
@@ -130,7 +130,7 @@ const verifyPublishKit = test.macro(async (t, makePublishKit) => {
   const secondCellsP = [subscriber.subscribeAfter(firstPublishCount)];
   const secondVal = { previous: firstVal };
   publisher.publish(secondVal);
-  const thirdVal = Symbol.for('third');
+  const thirdVal = 'third';
   publisher.publish(thirdVal);
   const thirdCellsP = getLatestPromises().slice(0, -1);
   secondCellsP.push(firstCells[0].tail);
@@ -231,7 +231,7 @@ test('durable publish kit rejects non-durable values', async t => {
   t.throws(() => publisher.publish(nonPassable));
   t.throws(() => publisher.finish(nonPassable));
   t.throws(() => publisher.fail(nonPassable));
-  await assertTransmission(t, publishKit, Symbol.for('value'));
+  await assertTransmission(t, publishKit, 'value');
 });
 
 test('durable publish kit upgrade trauma (full-vat integration)', async t => {
@@ -410,7 +410,7 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
   });
 
   // Verify receipt of a published value from v2.
-  const value3 = Symbol.for('value3');
+  const value3 = 'value3';
   await publish(value3);
   const expectedV2SecondResult = { value: value3, done: false };
   const v2SecondCells = [
@@ -440,7 +440,7 @@ test.failing('durable publish kit upgrade trauma', async t => {
   );
   const kit1 = makeDurablePublishKit();
   const { publisher: pub1, subscriber: sub1 } = kit1;
-  const value = Symbol.for('value');
+  const value = 'value';
   await assertTransmission(t, kit1, value);
   // THEN A MIRACLE OCCURS...
   // @ts-expect-error
@@ -451,7 +451,7 @@ test.failing('durable publish kit upgrade trauma', async t => {
   t.not(sub2, sub1);
   const recoveredCell = await sub2.subscribeAfter();
   t.is(recoveredCell.head.value, value, 'published value must be recovered');
-  const finalValue = Symbol.for('final');
+  const finalValue = 'final';
   await assertTransmission(t, kit2, finalValue, 'finish');
   // @ts-expect-error
   // eslint-disable-next-line no-undef
@@ -482,7 +482,7 @@ const verifyPublishKitTermination = test.macro(
       /** @type {object} */ (config);
 
     const cellsP = [...(await getExtraFinalPromises(publisher, subscriber))];
-    const value = Symbol.for('termination');
+    const value = 'termination';
     publisher[method](value);
     const promiseMapper = method === 'fail' ? invertPromiseSettlement : p => p;
     const results = await Promise.all(
@@ -635,7 +635,7 @@ const verifySubscribeAfterSequencing = test.macro(async (t, makePublishKit) => {
   sub2LIFO.unshift(await sub2.subscribeAfter());
   t.deepEqual(sub1FirstAll, [], 'there must be no results before publication');
 
-  const pub1First = Symbol.for('pub1First');
+  const pub1First = 'pub1First';
   pub1.publish(pub1First);
   sub1FirstAll.push(await sub1.subscribeAfter());
   t.is(
@@ -671,7 +671,7 @@ const verifySubscribeAfterSequencing = test.macro(async (t, makePublishKit) => {
     'there must be no future results before another publication',
   );
 
-  const pub1Second = Symbol.for('pub1Second');
+  const pub1Second = 'pub1Second';
   pub1.publish(pub1Second);
   pub2.publish(undefined);
   sub2LIFO.unshift(await sub2.subscribeAfter(sub2LIFO[0].publishCount));
@@ -701,7 +701,7 @@ const verifySubscribeAfterSequencing = test.macro(async (t, makePublishKit) => {
   assertCells(t, 'second (late)', sub1SecondLateAll, 2n, secondResult);
   t.deepEqual(sub1FinalAll, [], 'there must be no final results before finish');
 
-  const pub1Final = Symbol.for('pub1Final');
+  const pub1Final = 'pub1Final';
   pub1.finish(pub1Final);
   pub2.publish(undefined);
   sub2LIFO.unshift(await sub2.subscribeAfter(sub2LIFO[0].publishCount));

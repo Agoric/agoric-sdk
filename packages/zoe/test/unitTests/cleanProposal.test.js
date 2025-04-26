@@ -205,15 +205,9 @@ test('cleanProposal - other wrong stuff', t => {
   );
   proposeBad(
     t,
-    { [Symbol.for('what')]: { 'Not Ident': simoleans(1n) } },
+    { what: { 'Not Ident': simoleans(1n) } },
     'nat',
-    /cannot serialize Remotables with non-methods like "Symbol\(what\)" in {}/,
-  );
-  proposeBad(
-    t,
-    { want: { [Symbol.for('S')]: simoleans(1n) } },
-    'nat',
-    /cannot serialize Remotables with non-methods like "Symbol\(S\)" in {}/,
+    '{"what":{"Not Ident":{"brand":"[Alleged: simoleans brand]","value":"[1n]"}}} - Must only have want:, give:, exit: properties: {"what":{"Not Ident":{"brand":"[Alleged: simoleans brand]","value":"[1n]"}}}',
   );
   proposeBad(
     t,

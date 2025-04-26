@@ -50,7 +50,6 @@ test('near function callbacks', t => {
 });
 
 test('near method callbacks', t => {
-  const m2 = Symbol.for('m2');
   const o = {
     /**
      * @param {number} a
@@ -68,7 +67,7 @@ test('near method callbacks', t => {
      * @param {string} c
      * @returns {string}
      */
-    [m2](a, b, c) {
+    m2(a, b, c) {
       return `${a + b}${c}`;
     },
   };
@@ -100,8 +99,13 @@ test('near method callbacks', t => {
   });
 
   /** @type {SyncCallback<(c: string) => string>} */
-  const cb4 = cb.makeSyncMethodCallback(o, m2, 9, 10);
-  t.deepEqual(cb4, { target: o, methodName: m2, bound: [9, 10], isSync: true });
+  const cb4 = cb.makeSyncMethodCallback(o, 'm2', 9, 10);
+  t.deepEqual(cb4, {
+    target: o,
+    methodName: 'm2',
+    bound: [9, 10],
+    isSync: true,
+  });
 
   // @ts-expect-error deliberate: Expected 4 arguments but got 5
   t.is(cb.callSync(cb0, 2, 3, 'go', 'bad'), '5go');
@@ -121,7 +125,6 @@ test('near method callbacks', t => {
 });
 
 test('far method callbacks', async t => {
-  const m2 = Symbol.for('m2');
   const o = Far('MyObject', {
     /**
      * @param {number} a
@@ -139,7 +142,7 @@ test('far method callbacks', async t => {
      * @param {string} c
      * @returns {Promise<string>}
      */
-    [m2]: async (a, b, c) => {
+    m2: async (a, b, c) => {
       return `${a + b}${c}`;
     },
   });
@@ -153,8 +156,8 @@ test('far method callbacks', async t => {
   t.is(await p2r, '19go');
 
   /** @type {Callback<(c: string) => Promise<string>>} */
-  const cbp3 = cb.makeMethodCallback(Promise.resolve(o), m2, 9, 10);
-  t.like(cbp3, { methodName: m2, bound: [9, 10] });
+  const cbp3 = cb.makeMethodCallback(Promise.resolve(o), 'm2', 9, 10);
+  t.like(cbp3, { methodName: 'm2', bound: [9, 10] });
   t.assert(cbp3.target instanceof Promise);
   const p3r = cb.callE(cbp3, 'go');
   t.assert(p3r instanceof Promise);
@@ -236,7 +239,7 @@ test('isCallback', t => {
     'manual method',
   );
   t.true(
-    cb.isCallback({ target: {}, methodName: Symbol.for('foo'), bound: [] }),
+    cb.isCallback({ target: {}, methodName: 'foo', bound: [] }),
     'manual symbol-keyed method',
   );
 

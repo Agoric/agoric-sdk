@@ -25,9 +25,6 @@ const something = makeGenericRemotable('something');
 const somethingElse = makeGenericRemotable('something else');
 const somethingMissing = makeGenericRemotable('something missing');
 
-const symbolBozo = Symbol.for('bozo');
-const symbolKrusty = Symbol.for('krusty');
-
 // prettier-ignore
 const primes = [
    2,  3,  5,  7, 11,
@@ -51,8 +48,8 @@ const stuff = [
   [true, 'boolean true'],
   [something, 'remotable object "something"'],
   [somethingElse, 'remotable object "something else"'],
-  [symbolBozo, 'symbol bozo'],
-  [symbolKrusty, 'symbol krusty'],
+  ['bozo', 'symbol bozo'],
+  ['krusty', 'symbol krusty'],
 ];
 
 function m(s) {
@@ -677,7 +674,12 @@ test('map queries', t => {
   t.is(testStore.getSize(M.number()), 3);
   t.deepEqual(Array.from(testStore.keys(47)), [47]);
   t.deepEqual(Array.from(testStore.keys(M.bigint())), [-77n, 1000n]);
-  t.deepEqual(Array.from(testStore.keys(M.string())), ['@#$@#$@#$@', 'hello']);
+  t.deepEqual(Array.from(testStore.keys(M.string())), [
+    '@#$@#$@#$@',
+    'bozo',
+    'hello',
+    'krusty',
+  ]);
   t.deepEqual(Array.from(testStore.keys(M.null())), [null]);
   t.deepEqual(Array.from(testStore.keys(M.boolean())), [false, true]);
   t.deepEqual(Array.from(testStore.keys(M.undefined())), [undefined]);
@@ -685,10 +687,7 @@ test('map queries', t => {
     something,
     somethingElse,
   ]);
-  t.deepEqual(Array.from(testStore.keys(M.symbol())), [
-    symbolBozo,
-    symbolKrusty,
-  ]);
+  t.deepEqual(Array.from(testStore.keys(M.symbol())), []);
   t.deepEqual(Array.from(testStore.keys(M.any())), [
     false,
     true,
@@ -700,10 +699,10 @@ test('map queries', t => {
     something,
     somethingElse,
     '@#$@#$@#$@',
+    'bozo',
     'hello',
+    'krusty',
     null,
-    symbolBozo,
-    symbolKrusty,
     undefined,
   ]);
   t.deepEqual(Array.from(testStore.keys(M.scalar())), [
@@ -717,10 +716,10 @@ test('map queries', t => {
     something,
     somethingElse,
     '@#$@#$@#$@',
+    'bozo',
     'hello',
+    'krusty',
     null,
-    symbolBozo,
-    symbolKrusty,
     undefined,
   ]);
 
@@ -736,7 +735,9 @@ test('map queries', t => {
   ]);
   t.deepEqual(Array.from(testStore.values(M.string())), [
     'string stuff',
+    'symbol bozo',
     'string hello',
+    'symbol krusty',
   ]);
   t.deepEqual(Array.from(testStore.values(M.null())), ['singleton null']);
   t.deepEqual(Array.from(testStore.values(M.boolean())), [
@@ -750,10 +751,7 @@ test('map queries', t => {
     'remotable object "something"',
     'remotable object "something else"',
   ]);
-  t.deepEqual(Array.from(testStore.values(M.symbol())), [
-    'symbol bozo',
-    'symbol krusty',
-  ]);
+  t.deepEqual(Array.from(testStore.values(M.symbol())), []);
   t.deepEqual(Array.from(testStore.values(M.any())), [
     'boolean false',
     'boolean true',
@@ -765,10 +763,10 @@ test('map queries', t => {
     'remotable object "something"',
     'remotable object "something else"',
     'string stuff',
-    'string hello',
-    'singleton null',
     'symbol bozo',
+    'string hello',
     'symbol krusty',
+    'singleton null',
     'singleton undefined',
   ]);
   t.deepEqual(Array.from(testStore.values(M.scalar())), [
@@ -782,10 +780,10 @@ test('map queries', t => {
     'remotable object "something"',
     'remotable object "something else"',
     'string stuff',
-    'string hello',
-    'singleton null',
     'symbol bozo',
+    'string hello',
     'symbol krusty',
+    'singleton null',
     'singleton undefined',
   ]);
 
@@ -801,7 +799,9 @@ test('map queries', t => {
   ]);
   t.deepEqual(Array.from(testStore.entries(M.string())), [
     ['@#$@#$@#$@', 'string stuff'],
+    ['bozo', 'symbol bozo'],
     ['hello', 'string hello'],
+    ['krusty', 'symbol krusty'],
   ]);
   t.deepEqual(Array.from(testStore.entries(M.null())), [
     [null, 'singleton null'],
@@ -817,10 +817,7 @@ test('map queries', t => {
     [something, 'remotable object "something"'],
     [somethingElse, 'remotable object "something else"'],
   ]);
-  t.deepEqual(Array.from(testStore.entries(M.symbol())), [
-    [symbolBozo, 'symbol bozo'],
-    [symbolKrusty, 'symbol krusty'],
-  ]);
+  t.deepEqual(Array.from(testStore.entries(M.symbol())), []);
   t.deepEqual(Array.from(testStore.entries(M.any())), [
     [false, 'boolean false'],
     [true, 'boolean true'],
@@ -832,10 +829,10 @@ test('map queries', t => {
     [something, 'remotable object "something"'],
     [somethingElse, 'remotable object "something else"'],
     ['@#$@#$@#$@', 'string stuff'],
+    ['bozo', 'symbol bozo'],
     ['hello', 'string hello'],
+    ['krusty', 'symbol krusty'],
     [null, 'singleton null'],
-    [symbolBozo, 'symbol bozo'],
-    [symbolKrusty, 'symbol krusty'],
     [undefined, 'singleton undefined'],
   ]);
   t.deepEqual(Array.from(testStore.entries(M.scalar())), [
@@ -849,10 +846,10 @@ test('map queries', t => {
     [something, 'remotable object "something"'],
     [somethingElse, 'remotable object "something else"'],
     ['@#$@#$@#$@', 'string stuff'],
+    ['bozo', 'symbol bozo'],
     ['hello', 'string hello'],
+    ['krusty', 'symbol krusty'],
     [null, 'singleton null'],
-    [symbolBozo, 'symbol bozo'],
-    [symbolKrusty, 'symbol krusty'],
     [undefined, 'singleton undefined'],
   ]);
 });
@@ -866,7 +863,9 @@ test('set queries', t => {
   t.deepEqual(Array.from(testStore.values(M.bigint())), [-77n, 1000n]);
   t.deepEqual(Array.from(testStore.values(M.string())), [
     '@#$@#$@#$@',
+    'bozo',
     'hello',
+    'krusty',
   ]);
   t.deepEqual(Array.from(testStore.values(M.null())), [null]);
   t.deepEqual(Array.from(testStore.values(M.boolean())), [false, true]);
@@ -875,10 +874,7 @@ test('set queries', t => {
     something,
     somethingElse,
   ]);
-  t.deepEqual(Array.from(testStore.values(M.symbol())), [
-    symbolBozo,
-    symbolKrusty,
-  ]);
+  t.deepEqual(Array.from(testStore.values(M.symbol())), []);
   t.deepEqual(Array.from(testStore.values(M.any())), [
     false,
     true,
@@ -890,10 +886,10 @@ test('set queries', t => {
     something,
     somethingElse,
     '@#$@#$@#$@',
+    'bozo',
     'hello',
+    'krusty',
     null,
-    symbolBozo,
-    symbolKrusty,
     undefined,
   ]);
   t.deepEqual(Array.from(testStore.values(M.scalar())), [
@@ -907,10 +903,10 @@ test('set queries', t => {
     something,
     somethingElse,
     '@#$@#$@#$@',
+    'bozo',
     'hello',
+    'krusty',
     null,
-    symbolBozo,
-    symbolKrusty,
     undefined,
   ]);
 });
