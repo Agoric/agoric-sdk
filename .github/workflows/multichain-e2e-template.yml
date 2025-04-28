@@ -14,16 +14,6 @@ on:
         required: true
         type: string
         description: 'Identifier for the test suite that will be used as part of the filename name for logs'
-      osmosis_pool:
-        description: 'Condition to open liquidity pool on osmosis'
-        default: false
-        required: false
-        type: boolean
-      osmosis_xcs:
-        description: 'Flag to enable Osmosis Crosschain Swaps'
-        default: false
-        required: false
-        type: boolean
 
 jobs:
   multichain-e2e:
@@ -122,14 +112,6 @@ jobs:
 
       - name: Register Interchain Bank Assets
         run: make register-bank-assets
-        working-directory: ./agoric-sdk/multichain-testing
-
-      - name: Setup Osmosis XCS Contracts
-        run: make osmosis-xcs-setup
-        working-directory: ./agoric-sdk/multichain-testing
-
-      - name: Create Osmosis Pool
-        run: make create-osmosis-pool
         working-directory: ./agoric-sdk/multichain-testing
 
       - name: Run @agoric/multichain-testing E2E Tests
