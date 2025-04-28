@@ -8,7 +8,6 @@ set -eux
 
 ls $CHAIN_DIR
 
-
 echo "Update config.toml file"
 sed -i -e 's#"tcp://127.0.0.1:26657"#"tcp://0.0.0.0:26657"#g' $CHAIN_DIR/config/config.toml
 sed -i -e 's/index_all_keys = false/index_all_keys = true/g' $CHAIN_DIR/config/config.toml
@@ -21,7 +20,6 @@ sed -i -e 's#keyring-backend = "os"#keyring-backend = "test"#g' $CHAIN_DIR/confi
 sed -i -e 's#output = "text"#output = "json"#g' $CHAIN_DIR/config/client.toml
 sed -i -e "s#chain-id = \"\"#chain-id = \"$CHAIN_ID\"#g" $CHAIN_DIR/config/client.toml
 
-
 echo "Update app.toml file"
 sed -i -e "s#minimum-gas-prices = \".*\"#minimum-gas-prices = \"0$DENOM\"#g" $CHAIN_DIR/config/app.toml
 sed -i -e "s#pruning = \".*\"#pruning = \"default\"#g" $CHAIN_DIR/config/app.toml
@@ -31,7 +29,6 @@ sed -i -e 's/enable = false/enable = true/g' $CHAIN_DIR/config/app.toml
 sed -i -e 's/swagger = false/swagger = true/g' $CHAIN_DIR/config/app.toml
 sed -i -e 's/enable = false/enable = true/g' $CHAIN_DIR/config/app.toml
 sed -i -e 's/enabled = false/enabled = true/g' $CHAIN_DIR/config/app.toml
-
 
 function get_next_line_number() {
   local txt=$1
