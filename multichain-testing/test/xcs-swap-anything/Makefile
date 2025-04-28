@@ -16,16 +16,16 @@ CHANNEL_INFO=$(shell $(cli-hermes) --json query channels --show-counterparty --c
 AGORIC_OSMOSIS_CHANNEL=$(shell echo '$(CHANNEL_INFO)' | jq -r '.channel_a')
 OSMOSIS_AGORIC_CHANNEL=$(shell echo '$(CHANNEL_INFO)' | jq -r '.channel_b')
 
-REGISTRY_ADDRESS="osmo1nc5tatafv6eyq7llkr2gv50ff9e22mnf70qgjlv737ktmt4eswrqvlx82r"
-SWAPROUTER_ADDRESS="osmo14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9sq2r9g9"
-SWAP_ADDRESS="osmo17p9rzwnnfxcjp32un9ug7yhhzgtkhvl9jfksztgw5uh69wac2pgs5yczr8"
+REGISTRY_ADDRESS="osmo1wkwy0xh89ksdgj9hr347dyd2dw7zesmtrue6kfzyml4vdtz6e5wsfdyyaj"
+SWAPROUTER_ADDRESS="osmo1hrpna9v7vs3stzyd4z3xf00676kf78zpe2u5ksvljswn2vnjp3ysgnqrud"
+SWAP_ADDRESS="osmo1ufs3tlq4umljk0qfe8k5ya0x6hpavn897u2cnf9k0en9jr7qarqq7fzxcr"
 
 POOL_ASSET_1_DENOM="uosmo"
 POOL_ASSET_1_AMOUNT="250000"
 POOL_ASSET_2_DENOM="ibc/E7827844CB818EE9C4DB2C159F1543FF62B26213B44CE8029D5CEFE52F0EE596"
 
 GET_ROUTE_JSON = '{"get_route":{"input_denom":$(POOL_ASSET_2_DENOM),"output_denom":$(POOL_ASSET_1_DENOM)}}'
-SET_CHAIN_CHANNEL_LINKS='{"modify_chain_channel_links":{"operations":[{"operation":"set","source_chain":"agoric","destination_chain":"osmosis","channel_id":$(AGORIC_OSMOSIS_CHANNEL)},{"operation":"set","source_chain":"osmosis","destination_chain":"agoric","channel_id":$(OSMOSIS_AGORIC_CHANNEL)}]}}'
+SET_CHAIN_CHANNEL_LINKS='{"modify_chain_channel_links":{"operations":[{"operation":"set","source_chain":"agoric","destination_chain":"osmosis","channel_id":"$(AGORIC_OSMOSIS_CHANNEL)"},{"operation":"set","source_chain":"osmosis","destination_chain":"agoric","channel_id":"$(OSMOSIS_AGORIC_CHANNEL)"}]}}'
 SET_PREFIXES_MSG='{"modify_bech32_prefixes":{"operations":[{"operation":"set","chain_name":"osmosis","prefix":"osmo"},{"operation":"set","chain_name":"agoric","prefix":"agoric"}]}}'
 GET_CHANNEL_FROM_CHAINS_MSG='{"get_channel_from_chain_pair":{"source_chain":"osmosis","destination_chain":"agoric"}}'
 GET_PREFIX_FROM_CHAIN_MSG='{"get_bech32_prefix_from_chain_name":{"chain_name":"osmosis"}}'
@@ -49,6 +49,9 @@ BAD_SWAP_MEMO=' \
 		} \
 	} \
 }}'
+
+print-wasm-info:
+	$(cli-osmo) "cat /contract-info.json"
 
 print-channel-info:
 	@echo $(CHANNEL_INFO)
