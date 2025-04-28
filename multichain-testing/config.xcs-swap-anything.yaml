@@ -106,7 +106,7 @@ relayers:
       - osmosislocal
     config:
       global:
-        log_level: "debug"
+        log_level: 'debug'
       telemetry:
         enabled: true
   - name: agoric-cosmoshub
