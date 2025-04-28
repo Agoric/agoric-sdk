@@ -37,7 +37,7 @@ import {
   makeTestLogger,
   prepareMockOrchAccounts,
 } from '../mocks.js';
-import { fastUsdcSetup } from '../supports.js';
+import { setupFastUsdcTest } from '../supports.js';
 
 const trace = makeTracer('AdvancerTest', false);
 
@@ -47,7 +47,7 @@ const LOCAL_DENOM = `ibc/${denomHash({
     fetchedChainInfo.agoric.connections['noble-1'].transferChannel.channelId,
 })}`;
 
-type CommonSetup = EReturn<typeof fastUsdcSetup>;
+type CommonSetup = EReturn<typeof setupFastUsdcTest>;
 
 const theExit = harden(() => {}); // for ava comparison
 
@@ -207,7 +207,7 @@ type TestContext = CommonSetup & {
 const test = anyTest as TestFn<TestContext>;
 
 test.beforeEach(async t => {
-  const common = await fastUsdcSetup(t);
+  const common = await setupFastUsdcTest(t);
   t.context = {
     ...common,
     extensions: createTestExtensions(t, common),

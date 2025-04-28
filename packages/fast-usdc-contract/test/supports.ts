@@ -62,7 +62,7 @@ export const provideDurableZone = (key: string): Zone => {
 };
 
 /** Setup with mocks common to Fast USDC contract tests. */
-export const fastUsdcSetup = async ({
+export const setupFastUsdcTest = async ({
   log,
 }: {
   log: ExecutionContext<any>['log'];
