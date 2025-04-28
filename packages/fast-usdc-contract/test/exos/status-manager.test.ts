@@ -12,9 +12,9 @@ import {
   stateShape,
   type StatusManager,
 } from '../../src/exos/status-manager.ts';
-import { commonSetup, provideDurableZone } from '../supports.js';
+import { fastUsdcSetup, provideDurableZone } from '../supports.js';
 
-type Common = EReturn<typeof commonSetup>;
+type Common = EReturn<typeof fastUsdcSetup>;
 type TestContext = {
   statusManager: StatusManager;
   storage: Common['bootstrap']['storage'];
@@ -27,7 +27,7 @@ test('stateShape', t => {
 });
 
 test.beforeEach(async t => {
-  const common = await commonSetup(t);
+  const common = await fastUsdcSetup(t);
   const zone = provideDurableZone('status-test');
   const txnsNode = common.commonPrivateArgs.storageNode.makeChildNode('txns');
   const statusManager = prepareStatusManager(

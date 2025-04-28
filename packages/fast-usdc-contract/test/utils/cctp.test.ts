@@ -4,17 +4,17 @@ import type { TestFn } from 'ava';
 import type { EReturn } from '@endo/far';
 import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
 import type { AccountId } from '@agoric/orchestration';
-import { commonSetup } from '../supports.js';
+import { fastUsdcSetup } from '../supports.js';
 import { makeSupportsCctp } from '../../src/utils/cctp.ts';
 
-type Common = EReturn<typeof commonSetup>;
+type Common = EReturn<typeof fastUsdcSetup>;
 
 const test = anyTest as TestFn<
   Common & { supportsCctp: ReturnType<typeof makeSupportsCctp> }
 >;
 
 test.beforeEach(async t => {
-  const common = await commonSetup(t);
+  const common = await fastUsdcSetup(t);
   const { chainHub } = common.facadeServices;
 
   for (const [name, info] of Object.entries(cctpChainInfo)) {

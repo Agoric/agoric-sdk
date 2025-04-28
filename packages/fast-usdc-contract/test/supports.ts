@@ -87,6 +87,10 @@ export const [uusdcOnAgoric, agUSDCDetail] = assetOn(
   'USDC',
 );
 
+/**
+ * Common setup for contract tests, without any specific asset configuration.
+ * Use `fastUsdcSetup` for tests involving the USDC asset.
+ */
 export const commonSetup = async (t: ExecutionContext<any>) => {
   // The common setup cannot support a durable zone because many of the fakes are not durable.
   // They were made before we had durable kinds (and thus don't take a zone or baggage).
@@ -97,34 +101,13 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
   const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
     makeNameHubKit();
 
-  const usdc = withAmountUtils(makeIssuerKit('USDC'));
   const bankBridgeMessages = [] as any[];
   const { bankManager, pourPayment } = await makeFakeBankManagerKit({
     onToBridge: obj => bankBridgeMessages.push(obj),
   });
-  await E(bankManager).addAsset(
-    uusdcOnAgoric,
-    'USDC',
-    'USD Circle Stablecoin',
-    usdc.issuerKit,
-  );
-  // These mints no longer stay in sync with bankManager.
-  // Use pourPayment() for IST.
-  const { mint: _i, ...usdcSansMint } = usdc;
   // XXX real bankManager does this. fake should too?
   // TODO https://github.com/Agoric/agoric-sdk/issues/9966
   await makeWellKnownSpaces(agoricNamesAdmin, t.log, ['vbankAsset']);
-  await E(E(agoricNamesAdmin).lookupAdmin('vbankAsset')).update(
-    uusdcOnAgoric,
-    /** @type {AssetInfo} */ harden({
-      brand: usdc.brand,
-      issuer: usdc.issuer,
-      issuerName: 'USDC',
-      denom: 'uusdc',
-      proposedName: 'USDC',
-      displayInfo: { IOU: true },
-    }),
-  );
 
   const vowTools = prepareSwingsetVowTools(rootZone.subZone('vows'));
 
@@ -327,12 +310,6 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     } as Record<string, ChainHubChainInfo>;
   })();
 
-  const assetInfo: [Denom, DenomDetail & { brandKey?: string }][] = harden([
-    assetOn('uusdc', 'noble'),
-    [uusdcOnAgoric, agUSDCDetail],
-    assetOn('uusdc', 'noble', 'osmosis', fetchedChainInfo),
-  ]);
-
   return {
     bootstrap: {
       agoricNames,
@@ -342,9 +319,6 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       localchain,
       cosmosInterchainService,
       storage,
-    },
-    brands: {
-      usdc: usdcSansMint,
     },
     mocks: {
       ibcBridge,
@@ -358,9 +332,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       poolMetricsNode: storage.rootNode.makeChildNode('poolMetrics'),
       marshaller,
       timerService: timer,
-      feeConfig: makeTestFeeConfig(usdc),
       chainInfo,
-      assetInfo,
     },
     facadeServices: {
       agoricNames,
@@ -393,4 +365,52 @@ export const provideDurableZone = (key: string): Zone => {
   const root = fakeVomKit.cm.provideBaggage();
   const zone = makeDurableZone(root);
   return zone.subZone(key);
+};
+
+/** Setup with mocks common to Fast USDC contract tests. */
+export const fastUsdcSetup = async (t: ExecutionContext<any>) => {
+  const common = await commonSetup(t);
+  const {
+    bootstrap: { agoricNamesAdmin, bankManager },
+  } = common;
+
+  const usdc = withAmountUtils(makeIssuerKit('USDC'));
+  await E(bankManager).addAsset(
+    uusdcOnAgoric,
+    'USDC',
+    'USD Circle Stablecoin',
+    usdc.issuerKit,
+  );
+  // These mints no longer stay in sync with bankManager.
+  // Use pourPayment() for IST.
+  const { mint: _i, ...usdcSansMint } = usdc;
+  await E(E(agoricNamesAdmin).lookupAdmin('vbankAsset')).update(
+    uusdcOnAgoric,
+    /** @type {AssetInfo} */ harden({
+      brand: usdc.brand,
+      issuer: usdc.issuer,
+      issuerName: 'USDC',
+      denom: 'uusdc',
+      proposedName: 'USDC',
+      displayInfo: { IOU: true },
+    }),
+  );
+
+  const assetInfo: [Denom, DenomDetail & { brandKey?: string }][] = harden([
+    assetOn('uusdc', 'noble'),
+    [uusdcOnAgoric, agUSDCDetail],
+    assetOn('uusdc', 'noble', 'osmosis', fetchedChainInfo),
+  ]);
+
+  return {
+    ...common,
+    brands: {
+      usdc: usdcSansMint,
+    },
+    commonPrivateArgs: {
+      ...common.commonPrivateArgs,
+      feeConfig: makeTestFeeConfig(usdc),
+      assetInfo,
+    },
+  };
 };

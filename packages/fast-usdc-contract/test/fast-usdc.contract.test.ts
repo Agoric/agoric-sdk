@@ -15,7 +15,7 @@ import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, type EReturn } from '@endo/far';
 import { matches } from '@endo/patterns';
 import type { FastUsdcSF } from '../src/fast-usdc.contract.ts';
-import { commonSetup, uusdcOnAgoric } from './supports.js';
+import { fastUsdcSetup, uusdcOnAgoric } from './supports.js';
 
 import * as contractExports from '../src/fast-usdc.contract.js';
 import {
@@ -34,7 +34,7 @@ test('initial baggage', async t => {
   const {
     brands: { usdc },
     commonPrivateArgs,
-  } = await commonSetup(t);
+  } = await fastUsdcSetup(t);
 
   let contractBaggage;
   const setJig = ({ baggage }) => {

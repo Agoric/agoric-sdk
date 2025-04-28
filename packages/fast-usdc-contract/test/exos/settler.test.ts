@@ -36,7 +36,7 @@ import {
   MockVTransferEvents,
 } from '../fixtures.js';
 import { makeTestLogger, prepareMockOrchAccounts } from '../mocks.js';
-import { commonSetup } from '../supports.js';
+import { fastUsdcSetup } from '../supports.js';
 
 const mockZcf = (zone: Zone) => {
   const callLog = [] as any[];
@@ -64,7 +64,7 @@ const mockZcf = (zone: Zone) => {
 };
 
 const makeTestContext = async t => {
-  const common = await commonSetup(t);
+  const common = await fastUsdcSetup(t);
   const { contractZone: zone } = common.utils;
   const { log, inspectLogs } = makeTestLogger(t.log);
   const statusManager = prepareStatusManager(

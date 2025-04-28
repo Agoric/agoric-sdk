@@ -46,7 +46,7 @@ import type { OperatorOfferResult } from '../src/exos/transaction-feed.ts';
 import * as contractExports from '../src/fast-usdc.contract.ts';
 import type { FastUsdcSF } from '../src/fast-usdc.contract.ts';
 import { MockCctpTxEvidences } from './fixtures.ts';
-import { commonSetup, uusdcOnAgoric } from './supports.ts';
+import { fastUsdcSetup, uusdcOnAgoric } from './supports.ts';
 
 type FucContext = EReturn<typeof makeTestContext>;
 
@@ -77,7 +77,7 @@ export const operatorQty = 3;
 
 const startContract = async (
   common: Pick<
-    EReturn<typeof commonSetup>,
+    EReturn<typeof fastUsdcSetup>,
     'brands' | 'commonPrivateArgs' | 'utils'
   >,
 ) => {
@@ -132,7 +132,7 @@ const startContract = async (
   };
 };
 export const makeTestContext = async (t: ExecutionContext) => {
-  const common = await commonSetup(t);
+  const common = await fastUsdcSetup(t);
   await E(common.mocks.ibcBridge).setAddressPrefix('noble');
 
   const startKit = await startContract(common);
