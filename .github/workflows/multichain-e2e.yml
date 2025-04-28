@@ -30,8 +30,6 @@ jobs:
       config: config.yaml
       test_command: yarn test:main
       test_suite_name: orchestration-api-hermes
-      osmosis_pool: true
-      osmosis_xcs: true
 
   fast-usdc-hermes:
     name: Fast USDC - Hermes
