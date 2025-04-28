@@ -63,7 +63,7 @@ test('ADVANCED transactions are published to vstorage', async t => {
   await eventLoopIteration();
 
   const { storage } = t.context;
-  t.deepEqual(storage.getDeserialized(`fun.txns.${evidence.txHash}`), [
+  t.deepEqual(storage.getDeserialized(`orchtest.txns.${evidence.txHash}`), [
     { evidence, status: 'OBSERVED' },
     { status: 'ADVANCING' },
   ]);
@@ -91,7 +91,7 @@ test('ADVANCE_SKIPPED transactions are published to vstorage', async t => {
   await eventLoopIteration();
 
   const { storage } = t.context;
-  t.deepEqual(storage.getDeserialized(`fun.txns.${evidence.txHash}`), [
+  t.deepEqual(storage.getDeserialized(`orchtest.txns.${evidence.txHash}`), [
     { evidence, status: 'OBSERVED' },
     { status: 'ADVANCE_SKIPPED', risksIdentified: ['RISK1'] },
   ]);
@@ -212,7 +212,7 @@ test('advanceOutcome transitions to ADVANCED and ADVANCE_FAILED', async t => {
     },
   ]);
   await eventLoopIteration();
-  t.deepEqual(storage.getDeserialized(`fun.txns.${e1.txHash}`), [
+  t.deepEqual(storage.getDeserialized(`orchtest.txns.${e1.txHash}`), [
     { evidence: e1, status: 'OBSERVED' },
     { status: 'ADVANCING' },
     { status: 'ADVANCED' },
@@ -226,7 +226,7 @@ test('advanceOutcome transitions to ADVANCED and ADVANCE_FAILED', async t => {
     },
   ]);
   await eventLoopIteration();
-  t.deepEqual(storage.getDeserialized(`fun.txns.${e2.txHash}`), [
+  t.deepEqual(storage.getDeserialized(`orchtest.txns.${e2.txHash}`), [
     { evidence: e2, status: 'OBSERVED' },
     { status: 'ADVANCING' },
     { status: 'ADVANCE_FAILED' },

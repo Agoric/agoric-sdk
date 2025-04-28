@@ -193,7 +193,7 @@ test.serial('STORY01: advancing happy path for 100 USDC', async t => {
     { status: 'ADVANCING' },
     { status: 'ADVANCED' },
   ];
-  t.deepEqual(t.context.readTxnRecord(sent1), expectedTransitions);
+  t.deepEqual(t.context.common.readTxnRecord(sent1), expectedTransitions);
 
   const { calculateAdvance, calculateSplit } = makeFeeTools(feeConfig);
   const expectedAdvance = calculateAdvance(
@@ -267,7 +267,7 @@ test.serial('STORY01: advancing happy path for 100 USDC', async t => {
     'metrics after advancing',
   );
 
-  t.deepEqual(t.context.readTxnRecord(sent1), [
+  t.deepEqual(t.context.common.readTxnRecord(sent1), [
     ...expectedTransitions,
     { split, status: 'DISBURSED' },
   ]);
@@ -369,7 +369,6 @@ test.serial('withdraw all liquidity while ADVANCING', async t => {
       commonPrivateArgs: { feeConfig },
       utils,
       brands: { usdc },
-      bootstrap: { storage },
       facadeServices: { chainHub },
     },
     evm: { cctp, txPub },
@@ -400,7 +399,7 @@ test.serial('withdraw all liquidity while ADVANCING', async t => {
   // Ack Bob's advance transfer (it was the last one)
   await utils.transmitVTransferEvent('acknowledgementPacket', -1);
 
-  t.like(storage.getDeserialized(`fun.txns.${sent.txHash}`), [
+  t.like(t.context.common.readTxnRecord(sent), [
     { evidence: sent, status: 'OBSERVED' },
     { status: 'ADVANCING' },
     { status: 'ADVANCED' },
@@ -591,7 +590,7 @@ test.serial('Settlement for unknown transaction (operator down)', async t => {
   // Ack the forwarded transfer (it was the last one)
   await transmitVTransferEvent('acknowledgementPacket', -1);
 
-  t.deepEqual(t.context.readTxnRecord(sent), [
+  t.deepEqual(t.context.common.readTxnRecord(sent), [
     { evidence: sent, status: 'OBSERVED' },
     { status: 'FORWARDED' },
   ]);
@@ -605,7 +604,6 @@ test.serial('mint received while ADVANCING', async t => {
       commonPrivateArgs: { feeConfig },
       utils,
       brands: { usdc },
-      bootstrap: { storage },
       facadeServices: { chainHub },
     },
     evm: { cctp, txPub },
@@ -641,7 +639,7 @@ test.serial('mint received while ADVANCING', async t => {
     usdc.make(5_000_000n),
     chainHub.resolveAccountId(sent.aux.recipientAddress),
   );
-  t.deepEqual(storage.getDeserialized(`fun.txns.${sent.txHash}`), [
+  t.deepEqual(t.context.common.readTxnRecord(sent), [
     { evidence: sent, status: 'OBSERVED' },
     { status: 'ADVANCING' },
     { status: 'ADVANCED' },

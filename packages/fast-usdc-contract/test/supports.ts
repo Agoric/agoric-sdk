@@ -13,6 +13,7 @@ import { type Zone } from '@agoric/zone';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
+import type { TransactionRecord } from '@agoric/fast-usdc/src/types.ts';
 import { makeTestFeeConfig } from './mocks.js';
 
 export {
@@ -100,6 +101,17 @@ export const setupFastUsdcTest = async ({
     assetOn('uusdc', 'noble', 'osmosis', fetchedChainInfo),
   ]);
 
+  /** Read the deserialized transaction status from storage */
+  const readTxnRecord = ({
+    txHash,
+  }: {
+    txHash: string;
+  }): TransactionRecord[] => {
+    return common.bootstrap.storage.getDeserialized(
+      `orchtest.txns.${txHash}`,
+    ) as TransactionRecord[];
+  };
+
   return {
     ...common,
     brands: {
@@ -110,5 +122,6 @@ export const setupFastUsdcTest = async ({
       feeConfig: makeTestFeeConfig(usdc),
       assetInfo,
     },
+    readTxnRecord,
   };
 };

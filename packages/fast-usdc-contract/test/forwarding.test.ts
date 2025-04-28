@@ -35,7 +35,6 @@ test.serial('Observed after mint: Forward', async t => {
     bridges: { snapshot, since },
     evm: { cctp, txPub },
     common: {
-      bootstrap: { storage },
       commonPrivateArgs: { feeConfig },
       facadeServices: { chainHub },
       utils: { transmitVTransferEvent },
@@ -60,7 +59,7 @@ test.serial('Observed after mint: Forward', async t => {
   await mint(evidence);
 
   t.throws(
-    () => storage.getDeserialized(`fun.txns.${evidence.txHash}`),
+    () => t.context.common.readTxnRecord(evidence),
     undefined,
     'no record of txn until observed',
   );
@@ -95,7 +94,7 @@ test.serial('Observed after mint: Forward', async t => {
   // and make the forward() succeed by acking the transfer (it was the last one)
   await transmitVTransferEvent('acknowledgementPacket', -1);
 
-  t.deepEqual(t.context.readTxnRecord(evidence), [
+  t.deepEqual(t.context.common.readTxnRecord(evidence), [
     { evidence, status: 'OBSERVED' },
     { status: 'FORWARDED' },
   ]);
@@ -124,7 +123,7 @@ test.serial('Observed after mint: Forward failed', async t => {
   // Make the forward() timeout by sending a timeout event for the last transfer
   await transmitVTransferEvent('timeoutPacket', -1);
 
-  t.deepEqual(t.context.readTxnRecord(evidence), [
+  t.deepEqual(t.context.common.readTxnRecord(evidence), [
     { evidence, status: 'OBSERVED' },
     {
       risksIdentified: ['RISK1'],

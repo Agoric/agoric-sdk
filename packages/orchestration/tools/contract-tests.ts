@@ -36,6 +36,8 @@ import { prepareCosmosInterchainService } from '../src/exos/cosmos-interchain-se
 import fetchedChainInfo from '../src/fetched-chain-info.js';
 import { makeTestAddress } from './make-test-address.js';
 
+export const ROOT_STORAGE_PATH = 'orchtest'; // Orchetration Contract Test
+
 /**
  * Common setup for contract tests, without any specific asset configuration.
  */
@@ -102,15 +104,7 @@ export const setupOrchestrationTest = async ({
   });
   const timer = buildZoeManualTimer(log);
   const marshaller = makeFakeBoard().getPublishingMarshaller();
-  const storage = makeFakeStorageKit(
-    'fun', // Fast USDC Node
-  );
-  /**
-   * Read pure data (CapData that has no slots) from the storage path
-   * @param path
-   */
-  storage.getDeserialized = (path: string): unknown =>
-    storage.getValues(path).map(defaultSerializer.parse);
+  const storage = makeFakeStorageKit(ROOT_STORAGE_PATH);
 
   const { portAllocator, setupIBCProtocol, ibcBridge } = setupFakeNetwork(
     rootZone.subZone('network'),
@@ -251,7 +245,15 @@ export const setupOrchestrationTest = async ({
       timer,
       localchain,
       cosmosInterchainService,
-      storage,
+      storage: {
+        ...storage,
+        /**
+         * Read pure data (CapData that has no slots) from the storage path
+         */
+        getDeserialized(path: string): unknown[] {
+          return storage.getValues(path).map(defaultSerializer.parse);
+        },
+      },
     },
     mocks: {
       ibcBridge,

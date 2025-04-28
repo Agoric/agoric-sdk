@@ -1,4 +1,8 @@
 import {
+  decodeAddressHook,
+  encodeAddressHook,
+} from '@agoric/cosmic-proto/address-hooks.js';
+import {
   type Amount,
   AmountMath,
   type Issuer,
@@ -11,10 +15,11 @@ import type {
   CctpTxEvidence,
   FeeConfig,
   PoolMetrics,
-  TransactionRecord,
 } from '@agoric/fast-usdc/src/types.ts';
+import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
+  type Publisher,
   type Subscriber,
   makePublishKit,
   observeIteration,
@@ -26,6 +31,7 @@ import type {
   CosmosChainInfo,
 } from '@agoric/orchestration';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
+import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.ts';
 import { heapVowE as VE } from '@agoric/vow';
 import type { Invitation, ZoeService } from '@agoric/zoe';
@@ -37,14 +43,9 @@ import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, type ERef, type EReturn } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import type { ExecutionContext } from 'ava';
-import {
-  encodeAddressHook,
-  decodeAddressHook,
-} from '@agoric/cosmic-proto/address-hooks.js';
-import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
 import type { OperatorOfferResult } from '../src/exos/transaction-feed.ts';
-import * as contractExports from '../src/fast-usdc.contract.ts';
 import type { FastUsdcSF } from '../src/fast-usdc.contract.ts';
+import * as contractExports from '../src/fast-usdc.contract.ts';
 import { MockCctpTxEvidences } from './fixtures.ts';
 import { setupFastUsdcTest, uusdcOnAgoric } from './supports.ts';
 
@@ -171,7 +172,7 @@ export const makeTestContext = async (t: ExecutionContext) => {
     return E(purse).deposit(pmt);
   };
 
-  const accountsData = common.bootstrap.storage.data.get('fun');
+  const accountsData = common.bootstrap.storage.data.get(ROOT_STORAGE_PATH);
   const { settlementAccount, poolAccount } = JSON.parse(
     JSON.parse(accountsData!).values[0],
   );
@@ -200,14 +201,8 @@ export const makeTestContext = async (t: ExecutionContext) => {
   chainHub.registerChain('osmosis', fetchedChainInfo.osmosis);
   chainHub.registerChain('noble', fetchedChainInfo.noble);
 
-  /** Read the deserialized transaction status from storage */
-  const readTxnRecord = ({ txHash }: { txHash: string }): TransactionRecord => {
-    return common.bootstrap.storage.getDeserialized(`fun.txns.${txHash}`);
-  };
-
   return {
     bridges: { snapshot, since },
-    readTxnRecord,
     common,
     evm,
     mint,
@@ -423,7 +418,7 @@ export const makeCustomer = (
       nonceOverride?: number,
     ) => {
       const { storage } = t.context.common.bootstrap;
-      const accountsData = storage.data.get('fun');
+      const accountsData = storage.data.get(ROOT_STORAGE_PATH);
       const { settlementAccount } = JSON.parse(
         JSON.parse(accountsData!).values[0],
       );
