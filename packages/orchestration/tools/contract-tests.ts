@@ -137,49 +137,35 @@ export const setupOrchestrationTest = async ({
   const outgoingTransferAt = (index: number) => {
     const transferMessagesInfo: { message: MsgTransfer; sequence: bigint }[] =
       [];
-
-    for (const entry of localBridgeLog) {
-      const { obj, result } = entry;
-      if (
-        obj.type === 'VLOCALCHAIN_EXECUTE_TX' &&
-        obj.messages &&
-        Array.isArray(result)
-      ) {
-        for (let i = 0; i < obj.messages.length; i += 1) {
-          const message = obj.messages[i];
-          if (
-            message['@type'] === '/ibc.applications.transfer.v1.MsgTransfer'
-          ) {
-            const msgResult = result[i];
-            // Check sequence exists in result object associated with this message
-            if (msgResult && typeof msgResult.sequence !== 'undefined') {
-              transferMessagesInfo.push({
-                message,
-                sequence: BigInt(msgResult.sequence),
-              });
-            } else {
-              throw new Error(
-                `Sequence not found in result for MsgTransfer: ${JSON.stringify(message)}`,
-              );
-            }
+    const isRelevant = ({ obj, result }) =>
+      obj.type === 'VLOCALCHAIN_EXECUTE_TX' &&
+      obj.messages &&
+      Array.isArray(result);
+    for (const { obj, result } of localBridgeLog.filter(isRelevant)) {
+      // `obj.messages` and `result` are paired arrays.
+      for (let i = 0; i < obj.messages.length; i += 1) {
+        const message = obj.messages[i];
+        if (message['@type'] === '/ibc.applications.transfer.v1.MsgTransfer') {
+          const messageResult = result[i];
+          try {
+            const sequence = BigInt(messageResult.sequence);
+            transferMessagesInfo.push({ message, sequence });
+          } catch (cause) {
+            throw new Error(
+              `Sequence not found in result for MsgTransfer: ${JSON.stringify(message)}`,
+              { cause },
+            );
           }
         }
       }
     }
-
-    const totalTransfers = transferMessagesInfo.length;
-    let targetIndex = index;
-    if (index < 0) {
-      targetIndex = totalTransfers + index;
-    }
-
-    if (targetIndex < 0 || targetIndex >= totalTransfers) {
+    const transferMessageInfo = transferMessagesInfo.at(index);
+    if (!transferMessageInfo) {
       throw new Error(
-        `Index ${index} out of bounds for ${totalTransfers} outgoing transfers.`,
+        `Index ${index} out of bounds for ${transferMessagesInfo.length} outgoing transfers.`,
       );
     }
-
-    return transferMessagesInfo[targetIndex];
+    return transferMessageInfo;
   };
 
   /**
