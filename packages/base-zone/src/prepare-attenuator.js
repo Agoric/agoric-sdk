@@ -98,7 +98,7 @@ harden(wrapperMethods);
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {string} uKindName
  *   The `kindName` of the underlying exo class
- * @param {PropertyKey[]} uMethodNames
+ * @param {(keyof U)[]} uMethodNames
  *   The method names of the underlying exo class that should be represented
  *   by transparently-forwarding methods of the attenuator.
  * @param {AttenuatorOptions<U>} [options]
@@ -148,7 +148,7 @@ const PrefixedKindNameRE = /(alleged: |DebugName: )(.*)/;
  *
  * @template {any} U
  * @param {U} underlying
- * @param {PropertyKey[]} uMethodNames
+ * @param {(keyof U)[]} uMethodNames
  * @param {AttenuatorOptions<U>} [options]
  * @returns {Partial<U>}
  */
