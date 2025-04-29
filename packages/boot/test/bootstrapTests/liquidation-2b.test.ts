@@ -10,7 +10,6 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { NonNullish } from '@agoric/internal';
 import type { TestFn } from 'ava';
-import type { ScheduleNotification } from '@agoric/inter-protocol/src/auction/scheduler.js';
 import {
   type LiquidationSetup,
   type LiquidationTestContext,
@@ -131,7 +130,6 @@ test.serial('scenario: Flow 2b', async t => {
     advanceTimeTo,
     check,
     priceFeedDrivers,
-    readLatest,
     readPublished,
     setupVaults,
     placeBids,

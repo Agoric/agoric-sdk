@@ -209,8 +209,7 @@ const makeTestContext = async t => {
        */
       observeLate: (evidence?: CctpTxEvidence) => {
         const cctpTxEvidence = makeEvidence(evidence);
-        const { destination, forwardingAddress, fullAmount, txHash } =
-          makeNotifyInfo(cctpTxEvidence);
+        const { destination } = makeNotifyInfo(cctpTxEvidence);
         notifier.checkMintedEarly(cctpTxEvidence, destination);
         return cctpTxEvidence;
       },
@@ -571,9 +570,6 @@ test('Settlement for unknown transaction (minted early)', async t => {
 
 test('Multiple minted early transactions with same address and amount', async t => {
   const {
-    common: {
-      brands: { usdc },
-    },
     makeSettler,
     defaultSettlerParams,
     repayer,
@@ -808,7 +804,6 @@ test('Settlement for Advancing transaction (advance fails)', async t => {
 
 test('slow path, and forward fails (terminal state)', async t => {
   const {
-    common,
     makeSettler,
     defaultSettlerParams,
     repayer,
@@ -817,7 +812,6 @@ test('slow path, and forward fails (terminal state)', async t => {
     accounts,
     storage,
   } = t.context;
-  const { usdc } = common.brands;
 
   const settler = makeSettler({
     repayer,
@@ -1124,7 +1118,6 @@ test('forward not attempted: unresolvable destination', async t => {
 
 test('forward not attempted: unsupported destination', async t => {
   const {
-    common,
     makeSettler,
     statusManager,
     defaultSettlerParams,
@@ -1135,7 +1128,6 @@ test('forward not attempted: unsupported destination', async t => {
     inspectLogs,
     storage,
   } = t.context;
-  const { usdc } = common.brands;
 
   const settler = makeSettler({
     repayer,

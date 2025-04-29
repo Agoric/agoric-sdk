@@ -4,7 +4,7 @@
 // https://devblogs.microsoft.com/typescript/announcing-typescript-5-8-beta/#the---erasablesyntaxonly-option
 
 // @ts-expect-error ts(1294) This syntax is not allowed when 'erasableSyntaxOnly' is enabled.
-enum Foo {
+export enum Foo {
   A = 1,
   B = 2,
   C = 3,

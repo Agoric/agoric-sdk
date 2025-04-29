@@ -1,21 +1,21 @@
 import type { HostInterface } from '@agoric/async-flow';
 import type { Brand, Issuer, Payment } from '@agoric/ertp';
+import { makeRatio } from '@agoric/ertp/src/ratio.js';
+import type { FeeConfig, LogFn } from '@agoric/fast-usdc/src/types.js';
 import type {
   CosmosChainAddress,
   DenomAmount,
   OrchestrationAccount,
 } from '@agoric/orchestration';
 import type { VowTools } from '@agoric/vow';
-import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import type { AmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import type { Zone } from '@agoric/zone';
-import type { FeeConfig, LogFn } from '@agoric/fast-usdc/src/types.js';
 import { makePromiseKit } from '@endo/promise-kit';
 
 export const prepareMockOrchAccounts = (
   zone: Zone,
   {
-    vowTools: { makeVowKit, asVow },
+    vowTools: { asVow },
     log,
     usdc,
   }: {

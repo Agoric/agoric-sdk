@@ -22,7 +22,9 @@ import { TransferPartShape } from '../contractSupport/atomicTransfer.js';
 
 /**
  * @import {WeakMapStore} from '@agoric/store';
- * @import {TransferPart, ZCFSeat} from '@agoric/zoe';
+ * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {Allocation} from './types.js';
  */
 
 /**
@@ -31,8 +33,8 @@ import { TransferPartShape } from '../contractSupport/atomicTransfer.js';
  *
  * @param {ERef<ZoeInstanceAdmin>} zoeInstanceAdmin
  * @param {GetAssetKindByBrand} getAssetKindByBrand
- * @param {import('@agoric/swingset-vat').ShutdownWithFailure} shutdownWithFailure
- * @param {import('@agoric/vat-data').Baggage} zcfBaggage
+ * @param {ShutdownWithFailure} shutdownWithFailure
+ * @param {Baggage} zcfBaggage
  * @returns {{ seatManager: ZcfSeatManager, zcfMintReallocator: ZcfMintReallocator }}
  */
 export const createSeatManager = (

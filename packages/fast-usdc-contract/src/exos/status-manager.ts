@@ -18,7 +18,6 @@ import type {
   TransactionRecord,
 } from '@agoric/fast-usdc/src/types.js';
 import type { RepayAmountKWR } from '@agoric/fast-usdc/src/utils/fees.js';
-import { makeTracer } from '@agoric/internal';
 import type {
   Marshaller,
   StorageNode,
@@ -71,16 +70,11 @@ export const stateShape = harden({
  * and `Settler`.
  *
  * XXX consider separate facets for `Advancing` and `Settling` capabilities.
- * @param zone
- * @param txnsNode
- * @param root0
- * @param root0.marshaller
- * @param root0.log
  */
 export const prepareStatusManager = (
   zone: Zone,
   txnsNode: ERef<StorageNode>,
-  { marshaller, log = makeTracer('StatusManager', true) }: StatusManagerPowers,
+  { marshaller }: StatusManagerPowers,
 ) => {
   /**
    * Keyed by a tuple of the Noble Forwarding Account and amount.

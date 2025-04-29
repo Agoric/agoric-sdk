@@ -7,7 +7,7 @@ export const makeSupportsCctp = (chainHub: ChainHub) => (dest: AccountId) => {
   try {
     const ci = chainHub.getChainInfoByChainId(`${namespace}:${reference}`);
     return typeof ci.cctpDestinationDomain === 'number';
-  } catch (e) {
+  } catch {
     return false;
   }
 };

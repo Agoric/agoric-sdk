@@ -1,6 +1,6 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
-import { TimeMath } from '@agoric/time';
 import {
   makeTimestampHelper,
   NANOSECONDS_PER_SECOND,

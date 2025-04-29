@@ -1,30 +1,19 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E } from '@endo/far';
-import path from 'path';
-import { mustMatch } from '@endo/patterns';
 import { makeIssuerKit } from '@agoric/ertp';
-import {
-  eventLoopIteration,
-  inspectMapStore,
-} from '@agoric/internal/src/testing-utils.js';
-import { makeExpectUnhandledRejection } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
-import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
+import { inspectMapStore } from '@agoric/internal/src/testing-utils.js';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
+import { E } from '@endo/far';
+import { mustMatch } from '@endo/patterns';
+import { registerChain } from '../../src/chain-info.js';
 import type {
   CosmosChainInfo,
   IBCConnectionInfo,
 } from '../../src/cosmos-api.js';
-import { commonSetup } from '../supports.js';
-import { SingleNatAmountRecord } from '../../src/examples/send-anywhere.contract.js';
-import { registerChain } from '../../src/chain-info.js';
 import * as contractExports from '../../src/examples/send-anywhere.contract.js';
-
-const expectUnhandled = makeExpectUnhandledRejection({
-  test,
-  importMetaUrl: import.meta.url,
-});
+import { SingleNatAmountRecord } from '../../src/examples/send-anywhere.contract.js';
+import { commonSetup } from '../supports.js';
 
 const contractName = 'sendAnywhere';
 type StartFn = typeof contractExports.start;
@@ -288,14 +277,18 @@ test('baggage', async t => {
   t.snapshot(tree, 'contract baggage after start');
 });
 
-// TODO(#11026): This use of expectUnhandled should not be necessary.
-test(expectUnhandled(1), 'failed ibc transfer returns give', async t => {
+test('failed ibc transfer returns give', async t => {
   t.log('bootstrap, orchestration core-eval');
   const {
     bootstrap,
     commonPrivateArgs,
     brands: { ist },
-    utils: { inspectLocalBridge, pourPayment, inspectBankBridge },
+    utils: {
+      inspectLocalBridge,
+      pourPayment,
+      inspectBankBridge,
+      transmitVTransferEvent,
+    },
   } = await commonSetup(t);
   const vt = bootstrap.vowTools;
 
@@ -323,7 +316,7 @@ test(expectUnhandled(1), 'failed ibc transfer returns give', async t => {
   const amt = await E(zoe).getInvitationDetails(inv);
   t.is(amt.description, 'send');
 
-  const anAmt = ist.make(SIMULATED_ERRORS.TIMEOUT);
+  const anAmt = ist.make(504n);
   const Send = await pourPayment(anAmt);
   const userSeat = await E(zoe).offer(
     inv,
@@ -332,7 +325,7 @@ test(expectUnhandled(1), 'failed ibc transfer returns give', async t => {
     { destAddr: 'cosmos1destAddr', chainName: 'cosmoshub' },
   );
 
-  await eventLoopIteration();
+  await transmitVTransferEvent('timeoutPacket');
   await E(userSeat).hasExited();
   const payouts = await E(userSeat).getPayouts();
   t.log('Failed offer payouts', payouts);
@@ -342,7 +335,7 @@ test(expectUnhandled(1), 'failed ibc transfer returns give', async t => {
 
   await t.throwsAsync(vt.when(E(userSeat).getOfferResult()), {
     message:
-      'IBC Transfer failed "[Error: simulated unexpected MsgTransfer packet timeout]"',
+      'IBC Transfer failed "[Error: transfer operation received timeout packet]"',
   });
 
   t.log('ibc MsgTransfer was attempted from a local chain account');
@@ -439,7 +432,6 @@ test('rejects multi-asset send', async t => {
     brands: { ist, bld },
     utils: { pourPayment },
   } = await commonSetup(t);
-  const vt = bootstrap.vowTools;
 
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
 
@@ -523,7 +515,7 @@ test('send to Noble', async t => {
   }
 
   const usdcKit = withAmountUtils(makeIssuerKit('USDC'));
-  const orchKit = await E(zoe).startInstance(
+  await E(zoe).startInstance(
     installation,
     { Stable: ist.issuer, USDC: usdcKit.issuer },
     {},

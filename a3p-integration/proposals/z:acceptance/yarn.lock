@@ -267,7 +267,7 @@ __metadata:
     "@endo/check-bundle": "npm:^1.0.14"
     "@endo/errors": "npm:^1.2.10"
     "@endo/nat": "npm:^5.1.0"
-    better-sqlite3: "npm:^9.1.1"
+    better-sqlite3: "npm:^10.1.0"
   languageName: node
   linkType: soft
 
@@ -324,7 +324,7 @@ __metadata:
     "@endo/zip": "npm:^1.0.9"
     ansi-styles: "npm:^6.2.1"
     anylogger: "npm:^0.21.0"
-    better-sqlite3: "npm:^9.1.1"
+    better-sqlite3: "npm:^10.1.0"
     import-meta-resolve: "npm:^4.1.0"
     microtime: "npm:^3.1.0"
     semver: "npm:^6.3.0"
@@ -1692,6 +1692,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"better-sqlite3@npm:^10.1.0":
+  version: 10.1.0
+  resolution: "better-sqlite3@npm:10.1.0"
+  dependencies:
+    bindings: "npm:^1.5.0"
+    node-gyp: "npm:latest"
+    prebuild-install: "npm:^7.1.1"
+  checksum: 10c0/3c858214b8b6f0c3f536759a863dfc79b11c52cecd6061525fb7707d950ea2ef369280276d8cc62d504119514b7d32ea4aab134d260f6b5a0419a8119d613a67
+  languageName: node
+  linkType: hard
+
 "better-sqlite3@npm:^11.8.1":
   version: 11.8.1
   resolution: "better-sqlite3@npm:11.8.1"
@@ -1700,17 +1711,6 @@ __metadata:
     node-gyp: "npm:latest"
     prebuild-install: "npm:^7.1.1"
   checksum: 10c0/b6b1844f8ed5668080cc1e2a137656da756af406b616ffbd6139b230c906b9c0571bbdac53cd78cc1415689f5090d25daf95ea596ced0b9ad5e8be9b4a08662e
-  languageName: node
-  linkType: hard
-
-"better-sqlite3@npm:^9.1.1":
-  version: 9.6.0
-  resolution: "better-sqlite3@npm:9.6.0"
-  dependencies:
-    bindings: "npm:^1.5.0"
-    node-gyp: "npm:latest"
-    prebuild-install: "npm:^7.1.1"
-  checksum: 10c0/8db9b38f414e26a56d4c40fc16e94a253118491dae0e2c054338a9e470f1a883c7eb4cb330f2f5737db30f704d4f2e697c59071ca04e03364ee9fe04375aa9c8
   languageName: node
   linkType: hard
 

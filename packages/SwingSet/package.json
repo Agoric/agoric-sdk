@@ -21,7 +21,7 @@
     "lint:eslint": "eslint ."
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.9",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/microtime": "^2.1.0",
     "@types/tmp": "^0.2.0",
     "@types/yargs-parser": "^21.0.0"
@@ -56,7 +56,7 @@
     "@endo/zip": "^1.0.9",
     "ansi-styles": "^6.2.1",
     "anylogger": "^0.21.0",
-    "better-sqlite3": "^9.1.1",
+    "better-sqlite3": "^10.1.0",
     "import-meta-resolve": "^4.1.0",
     "microtime": "^3.1.0",
     "semver": "^6.3.0",
