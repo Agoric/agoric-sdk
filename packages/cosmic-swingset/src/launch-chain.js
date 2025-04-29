@@ -1458,13 +1458,13 @@ export async function launchAndShareInternals({
  */
 export async function launch(options) {
   const launchResult = await launchAndShareInternals(options);
-  // TODO This really is a deep pick rather than a POLA abstraction like
-  // `attenuateOne`.
-  // Neither `launchResult` nor this attenuation of are passable. Nor could they
+  // CAVEAT: `attenuateOne` provides a defensive POLA abstraction and should
+  // be used instead of `deepPick`
+  // Neither `launchResult` nor this `deepPick` of it are passable. Nor could they
   // be made passable since they mix methods and data properties. At the JS
   // object level, as supported by HardenedJS itself, this could be made
   // defensive. But
-  // - This `attenuate` abstraction seems to not even harden the attenuator
+  // - The `deepPick` abstraction seems to not even harden the object
   //   it returns, meaning that even at that low level it is already
   //   non-defensive.
   // - We are moving to a model where we treat only exo boundaries as
