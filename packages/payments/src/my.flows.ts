@@ -24,6 +24,24 @@ export const makeHookAccount = (async (
 }) satisfies OrchestrationFlow;
 harden(makeHookAccount);
 
-export const makePosition = (async (orch: Orchestrator) => {
-  throw Error('TODO!');
-}) satisfies OrchestrationFlow;
+export const swapAndSend = async (
+  orch: Orchestrator,
+  _ctx: unknown,
+  {
+    amount,
+    denom,
+    swapDenom,
+    sender,
+    receiver,
+  }: {
+    amount: bigint;
+    denom: string;
+    swapDenom: string;
+    sender: string;
+    receiver: string;
+  },
+) => {
+  // FIXME: this is a placeholder
+  console.log('swapAndSend', { amount, denom, swapDenom, sender, receiver });
+  throw Error('TODO: implement swapAndSend');
+};
