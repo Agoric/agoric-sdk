@@ -48,7 +48,14 @@ export const contract = async (
               receiver: origReceiver,
             } = JSON.parse(event.packet.data) as FungibleTokenPacketData;
 
+            /*
             // Extract the destination address and denomination.
+            const addr = encodeAddressHook("agoric1blahblah", {
+              DST: 'cosmos1taihetahieate',
+              SWP: ''
+            });
+            // agoric10rchdaidideiadieeadiddaeadediad -> agoric1blahblah?DST=cosmos1&SWP=
+            */
             const { baseAddress, query } = decodeAddressHook(origReceiver);
             const { DST: receiver, SWP: swapDenom } = query;
             assert.typeof(receiver, 'string');

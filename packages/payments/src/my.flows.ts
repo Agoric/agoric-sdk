@@ -43,5 +43,6 @@ export const swapAndSend = async (
 ) => {
   // FIXME: this is a placeholder
   console.log('swapAndSend', { amount, denom, swapDenom, sender, receiver });
-  throw Error('TODO: implement swapAndSend');
+  const result = await Promise.resolve('FIXME: swapAndSend result');
+  return result;
 };

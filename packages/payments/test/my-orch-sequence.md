@@ -13,7 +13,7 @@
 sequenceDiagram
     title Payments Orchestration Flow - Transactional Model
     autonumber
-    actor webUA as Producer's WebApp<br/>[Browser]
+    actor webUA as Payee's WebApp<br/>[Browser]
     %% [Where it runs]
     box Aqua Consumer's Chain
     participant acctOrig as Consumer's Acct
@@ -46,9 +46,9 @@ sequenceDiagram
     chainDex -->> chainPay: send(8 USDC, [payee])
 
     chainPay -->> acctDest: deposit(8 USDC, [payee])
-    note right of chainPay: [payee] may be an agoric10rch...action address hook
+    note right of chainPay: [payee] may be an<br/>agoric10rch...action address hook
 
     chainPay -->> myOrch: resolve(8 USDC)
     myOrch -->> webUA: updateStorage(success)
-    note right of webUA: User notified that execution<br/> is complete and tip is deposited
+    note right of webUA: User notified that execution<br/>is complete
 ```

@@ -12,6 +12,7 @@ import { createRequire } from 'module';
 import { ChainAddressShape } from '@agoric/orchestration';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { commonSetup } from './supports.js';
+import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 
 const nodeRequire = createRequire(import.meta.url);
 
@@ -49,22 +50,27 @@ test('start my orch contract', async t => {
   const hookAddress = await E(myKit.publicFacet).getHookAddress();
   t.log('hookAddress', hookAddress);
   t.notThrows(() => mustMatch(hookAddress, ChainAddressShape));
+  const target = hookAddress.value;
 
   const { transferBridge } = common.mocks;
-  const deposit = async (coins: CoinSDKType) => {
-    const target = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht'; // TODO: where does this come from?
+  const swapAndSend = async (coins: CoinSDKType) => {
+    const receiver = encodeAddressHook(target, {
+      DST: 'cosmos1taihetahieate',
+      SWP: 'uatom',
+    });
+
     await VE(transferBridge).fromBridge(
       buildVTransferEvent({
-        receiver: 'rx1...TODO',
+        receiver,
         target,
         sourceChannel: 'channel-1', // TODO: hubToAg.transferChannel.counterPartyChannelId,
         denom: coins.denom,
         amount: Nat(BigInt(coins.amount)),
-        sender: 'cosmos1xyz',
+        sender: 'noble1fofofof',
       }),
     );
     await eventLoopIteration(); // let contract do work
   };
 
-  await t.notThrowsAsync(deposit({ amount: '10000000', denom: 'uatom' }));
+  await t.notThrowsAsync(swapAndSend({ amount: '10000000', denom: 'uusdc' }));
 });
