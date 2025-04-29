@@ -102,6 +102,7 @@
     "test:xs": "yarn workspaces foreach --all run test:xs",
     "build": "yarn workspaces foreach --all run build && scripts/agd-builder.sh stamp yarn-built",
     "postinstall": "scripts/agd-builder.sh stamp yarn-installed",
+    "build-lockfiles": "./scripts/update-package-locks.sh",
     "build-ts": "tsc --build tsconfig.build.json",
     "build-xs-worker": "cd packages/xs-vat-worker && yarn build:xs-lin"
   },
