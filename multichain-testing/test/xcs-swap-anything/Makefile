@@ -16,9 +16,9 @@ CHANNEL_INFO=$(shell $(cli-hermes) --json query channels --show-counterparty --c
 AGORIC_OSMOSIS_CHANNEL=$(shell echo '$(CHANNEL_INFO)' | jq -r '.channel_a')
 OSMOSIS_AGORIC_CHANNEL=$(shell echo '$(CHANNEL_INFO)' | jq -r '.channel_b')
 
-REGISTRY_ADDRESS="osmo1wkwy0xh89ksdgj9hr347dyd2dw7zesmtrue6kfzyml4vdtz6e5wsfdyyaj"
-SWAPROUTER_ADDRESS="osmo1hrpna9v7vs3stzyd4z3xf00676kf78zpe2u5ksvljswn2vnjp3ysgnqrud"
-SWAP_ADDRESS="osmo1ufs3tlq4umljk0qfe8k5ya0x6hpavn897u2cnf9k0en9jr7qarqq7fzxcr"
+REGISTRY_ADDRESS="osmo1nc5tatafv6eyq7llkr2gv50ff9e22mnf70qgjlv737ktmt4eswrqvlx82r"
+SWAPROUTER_ADDRESS="osmo14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9sq2r9g9"
+SWAP_ADDRESS="osmo17p9rzwnnfxcjp32un9ug7yhhzgtkhvl9jfksztgw5uh69wac2pgs5yczr8"
 
 POOL_ASSET_1_DENOM="uosmo"
 POOL_ASSET_1_AMOUNT="250000"

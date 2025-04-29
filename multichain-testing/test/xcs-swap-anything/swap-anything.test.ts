@@ -1,12 +1,10 @@
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
-import { makeDoOffer } from '../../tools/e2e-tools.js';
-import {
-  commonSetup,
-  type SetupContextWithWallets,
-} from '../support.js';
 import { AmountMath } from '@agoric/ertp';
+import { makeDoOffer } from '../../tools/e2e-tools.js';
+import { commonSetup, type SetupContextWithWallets } from '../support.js';
 import { makeQueryClient } from '../../tools/query.js';
+import starshipChainInfo from '../../starship-chain-info.js';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
@@ -43,11 +41,11 @@ test('BLD for OSMO, receiver on Agoric', async t => {
   });
   t.log(`Provisioned Agoric smart wallet for ${agoricAddr}`);
 
-  // const osmosisChainId = useChain('osmosis').chain.chain_id;
+  const osmosisChainId = useChain('osmosis').chain.chain_id;
 
-  // const {
-  //   transferChannel: { counterPartyChannelId, channelId },
-  // } = starshipChainInfo.agoric.connections[osmosisChainId];
+  const {
+    transferChannel: { channelId },
+  } = starshipChainInfo.agoric.connections[osmosisChainId];
 
   const doOffer = makeDoOffer(wdUser);
 
@@ -72,7 +70,9 @@ test('BLD for OSMO, receiver on Agoric', async t => {
       callPipe: [['makeSendInvitation']],
     },
     offerArgs: {
-      destAddr: 'osmo1ufs3tlq4umljk0qfe8k5ya0x6hpavn897u2cnf9k0en9jr7qarqq7fzxcr',
+      // TODO: get the contract address dynamically
+      destAddr:
+        'osmo17p9rzwnnfxcjp32un9ug7yhhzgtkhvl9jfksztgw5uh69wac2pgs5yczr8',
       receiverAddr: wallets.agoricReceiver,
       outDenom: 'uosmo',
       slippage: { slippagePercentage: '20', windowSeconds: 10 },
@@ -81,14 +81,26 @@ test('BLD for OSMO, receiver on Agoric', async t => {
     proposal: { give: { Send: swapInAmount } },
   });
 
-  const agoricReceiverBalance = await retryUntilCondition(
+  const { balances: agoricReceiverBalances } = await retryUntilCondition(
     () => queryClient.queryBalances(wallets.agoricReceiver),
     ({ balances }) => balances.length > balancesBefore.length,
     'Deposit reflected in localOrchAccount balance',
   );
-  t.log(agoricReceiverBalance);
+  t.log(agoricReceiverBalances);
 
-  t.pass();
+  const { hash: expectedHash } = await queryClient.queryDenom(
+    `transfer/${channelId}`,
+    'uosmo',
+  );
+
+  t.log('Expected denom hash:', expectedHash);
+
+  t.regex(agoricReceiverBalances[0]?.denom, /^ibc/);
+  t.is(
+    agoricReceiverBalances[0]?.denom.split('ibc/')[1],
+    expectedHash,
+    'got expected ibc denom hash',
+  );
 });
 
 test.after(async t => {
