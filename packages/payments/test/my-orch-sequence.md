@@ -19,36 +19,42 @@ sequenceDiagram
     participant acctOrig as Consumer's Acct
     end
     box Red Agoric Chain
-    participant myOrch as Orch. Contract
-    participant orchLCA1 as agoric10rchFEED
+    participant myOrch as Payments Contract
+    participant orchSWAP as agoric10rchSWAP
+    participant myAction as Staking Contract
+    participant orchAction as agoric10rchSTAKE
     end
     box Yellow as Osmosis Chain
     participant chainDex as Osmosis Chain
     end
-    box Grey Payee's Chain
-    participant chainPay as Payee's Chain
-    participant acctDest as Payee's Account<br />payee1xyz or agoric10rch...action
+    box Grey Cosmos Chain
+    participant chainStake as Cosmos Chain
+    participant acctICA as Staking Account<br />cosmos1xyz
     end
 
     %% Notation: ->> for initial message, -->> for consequences
 
     note left of myOrch: contract starts
     myOrch ->> myOrch: makeLocalAccount()
-    myOrch ->> orchLCA1: monitorTransfers(...)
+    myOrch ->> orchSWAP: monitorTransfers(...)
     
     note right of webUA: User Initiates Action
-    webUA ->> webUA: submitAction(send(10 ATOM, agoric10rchFEED...data))
-    webUA ->> acctOrig: broadcast(send(10 ATOM, agoric10rchFEED...data))
-    acctOrig -->> orchLCA1: send(10 ATOM, agoric10rchFEED...data)
-    orchLCA1 -->> myOrch: receiveUpcall(10 ATOM)
-    myOrch -->> chainDex: send(swap(in: 10 ATOM, out: USDC, receiver: [payee]), osmo1swapper)
-    chainDex -->> chainDex: swap(in: 10 ATOM, out: USDC)
-    chainDex -->> chainPay: send(8 USDC, [payee])
+    webUA ->> webUA: submitAction(send(10 USDC, agoric10rchSWAP...data))
+    webUA ->> acctOrig: broadcast(send(10 USDC,<br/>  agoric10rchSWAP...data))
+    acctOrig -->> orchSWAP: send(10 USDC, agoric10rchSWAP...data)
+    orchSWAP -->> myOrch: receiveUpcall(10 USDC)
+    myOrch -->> chainDex: send(swap(in: 10 USDC, out: ATOM, receiver: agoric10rchSTAKE...data), osmo1swapper)
+    chainDex -->> chainDex: swap(in: 10 USDC, out: ATOM)
+    chainDex -->> orchAction: send(8 ATOM,<br/> agoric10rchSTAKE...data)
 
-    chainPay -->> acctDest: deposit(8 USDC, [payee])
-    note right of chainPay: [payee] may be an<br/>agoric10rch...action address hook
+    orchAction -->> myAction: receiveUpcall(8 ATOM)
+    myAction -->> chainStake: send(8 ATOM, cosmos1xyz)
+    chainStake -->> acctICA: deposit(8 ATOM, cosmos1xyz)
+    chainStake -->> myAction: fulfill(deposited)
+    myAction -->> acctICA: stake(8 ATOM, cosmosvaloper1myvalidator)
+    acctICA -->> myAction: fulfill(staked)
 
-    chainPay -->> myOrch: resolve(8 USDC)
+    myAction -->> myOrch: fulfill(staked)
     myOrch -->> webUA: updateStorage(success)
     note right of webUA: User notified that execution<br/>is complete
 ```
