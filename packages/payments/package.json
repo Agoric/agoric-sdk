@@ -19,7 +19,6 @@
     "lint:eslint": "eslint ."
   },
   "devDependencies": {
-    "@agoric/cosmic-proto": "^0.4.0",
     "@agoric/ertp": "^0.16.2",
     "@agoric/fast-usdc": "^0.1.0",
     "@agoric/internal": "^0.3.2",
