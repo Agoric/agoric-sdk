@@ -8,7 +8,8 @@
     },
     "type": "Software Upgrade Proposal",
     "sdk-generate": [
-      "testing/add-USD-LEMONS.js test/generated/addUsdLemons"
+      "testing/add-USD-LEMONS.js test/generated/addUsdLemons",
+      "../../vats/src/proposals/terminate-governed-instance.js test/generated/terminate-price-feed board02963:ATOM-USD_price_feed"
     ]
   },
   "type": "module",
@@ -24,7 +25,6 @@
     "@endo/marshal": "^1.6.4",
     "agoric": "dev",
     "ava": "^5.3.1",
-    "better-sqlite3": "^9.6.0",
     "execa": "9.1.0"
   },
   "ava": {

@@ -2,6 +2,7 @@
 import test from 'ava';
 import { encodeBase64 } from '@endo/base64';
 import { makeAgoricNames, makeVstorageKit } from '../src/vstorage-kit.js';
+import { makeAbciQuery } from '../src/vstorage.js';
 
 const makeDefaultMockResponse = () => {
   const jsonString = JSON.stringify({ value: '{"blockHeight":1,"values":[]}' });
@@ -38,11 +39,10 @@ test('agoricNames contains expected structure', async t => {
     { fetch: (...args) => mockFetch(...args) },
     makeTestConfig(),
   );
-  const { vstorage } = vstorageKit;
 
   // @ts-expect-error mock
   mockFetch = makeMockFetch({
-    [`http://localhost:26657${vstorage.url('published.agoricNames.brand', { kind: 'data' })}`]:
+    [`http://localhost:26657${makeAbciQuery('published.agoricNames.brand', { kind: 'data' })}`]:
       {
         result: {
           response: {
@@ -53,7 +53,7 @@ test('agoricNames contains expected structure', async t => {
           },
         },
       },
-    [`http://localhost:26657${vstorage.url('published.agoricNames.instance', { kind: 'data' })}`]:
+    [`http://localhost:26657${makeAbciQuery('published.agoricNames.instance', { kind: 'data' })}`]:
       {
         result: {
           response: {
@@ -64,7 +64,7 @@ test('agoricNames contains expected structure', async t => {
           },
         },
       },
-    [`http://localhost:26657${vstorage.url('published.agoricNames.vbankAsset', { kind: 'data' })}`]:
+    [`http://localhost:26657${makeAbciQuery('published.agoricNames.vbankAsset', { kind: 'data' })}`]:
       {
         result: {
           response: {
@@ -75,7 +75,7 @@ test('agoricNames contains expected structure', async t => {
           },
         },
       },
-    [`http://localhost:26657${vstorage.url('published.priceFeed.ATOM-USD_price_feed', { kind: 'data' })}`]:
+    [`http://localhost:26657${makeAbciQuery('published.priceFeed.ATOM-USD_price_feed', { kind: 'data' })}`]:
       {
         id: 'priceFeed.ATOM-USD_price_feed',
         result: {

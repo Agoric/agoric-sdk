@@ -8,7 +8,7 @@ import { divideBy, multiplyBy } from '@agoric/ertp/src/ratio.js';
 import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.js';
 import type { CctpTxEvidence } from '@agoric/fast-usdc/src/types.js';
 import { makeTracer } from '@agoric/internal';
-import type { Denom, DenomDetail } from '@agoric/orchestration';
+import type { AccountId, Denom, DenomDetail } from '@agoric/orchestration';
 import type { ExecutionContext, TestFn } from 'ava';
 import { makeDenomTools } from '../../tools/asset-info.js';
 import { makeBlocksIterable } from '../../tools/block-iter.js';
@@ -209,16 +209,14 @@ const makeTestContext = async (t: ExecutionContext) => {
     return record;
   };
 
+  /**
+   * Retry until the transaction status is the expected one.
+   */
   const assertTxStatus = async (txHash: string, status: string) =>
-    t.notThrowsAsync(() =>
-      common.retryUntilCondition(
-        () => queryTxRecord(txHash),
-        record => {
-          trace('tx record', record);
-          return record.status === status;
-        },
-        `${txHash} status is ${status}`,
-      ),
+    common.retryUntilCondition(
+      () => queryTxRecord(txHash),
+      record => record.status === status,
+      `assertTxStatus ${txHash} status is ${status}`,
     );
 
   const getUsdcDenom = (chainName: string) => {
@@ -240,24 +238,22 @@ const makeTestContext = async (t: ExecutionContext) => {
     eudChain: string,
     mintAmt: bigint,
   ) =>
-    t.notThrowsAsync(async () => {
-      await common.retryUntilCondition(
-        () => queryClient.queryBalance(EUD, getUsdcDenom(eudChain)),
-        ({ balance }) => {
-          if (!balance) return false; // retry
-          const value = BigInt(balance.amount);
-          if (value === 0n) return false; // retry
-          if (value < mintAmt) {
-            throw Error(`fees were deducted: ${value} < ${mintAmt}`);
-          }
-          t.log('forward done', value, 'uusdc');
-          return true;
-        },
-        `${EUD} forward available from fast-usdc`,
-        // this resolves quickly, so _decrease_ the interval so the timing is more apparent
-        { retryIntervalMs: 500, maxRetries: 20 },
-      );
-    });
+    common.retryUntilCondition(
+      () => queryClient.queryBalance(EUD, getUsdcDenom(eudChain)),
+      ({ balance }) => {
+        if (!balance) return false; // retry
+        const value = BigInt(balance.amount);
+        if (value === 0n) return false; // retry
+        if (value < mintAmt) {
+          throw Error(`fees were deducted: ${value} < ${mintAmt}`);
+        }
+        t.log('forward done', value, 'uusdc');
+        return true;
+      },
+      `${EUD} forward available from fast-usdc`,
+      // this resolves quickly, so _decrease_ the interval so the timing is more apparent
+      { retryIntervalMs: 500, maxRetries: 20 },
+    );
 
   return {
     ...common,
@@ -321,18 +317,13 @@ const advanceAndSettleScenario = test.macro({
     const recipientAddress = encodeAddressHook(settlementAccount, { EUD });
     t.log('recipientAddress', recipientAddress);
 
-    // register forwarding address on noble
-    const txRes = nobleTools.registerForwardingAcct(
-      nobleAgoricChannelId,
-      recipientAddress,
-    );
-    t.is(txRes?.code, 0, 'registered forwarding account');
+    // provide forwarding address on noble
+    nobleTools.registerForwardingAcct(nobleAgoricChannelId, recipientAddress);
 
-    const { address: userForwardingAddr } = nobleTools.queryForwardingAddress(
-      nobleAgoricChannelId,
-      recipientAddress,
-    );
+    const { address: userForwardingAddr, exists } =
+      nobleTools.queryForwardingAddress(nobleAgoricChannelId, recipientAddress);
     t.log('got forwardingAddress', userForwardingAddr);
+    t.true(exists, 'registered forwarding account');
 
     const evidence = makeFakeEvidence(
       mintAmt,
@@ -410,6 +401,7 @@ const advanceAndSettleScenario = test.macro({
       'encumberedBalance returns to 0',
     );
 
+    // retry until status is reached
     await assertTxStatus(evidence.txHash, 'DISBURSED');
   },
 });
@@ -417,6 +409,107 @@ const advanceAndSettleScenario = test.macro({
 test.serial(advanceAndSettleScenario, LP_DEPOSIT_AMOUNT / 4n, 'osmosis');
 test.serial(advanceAndSettleScenario, LP_DEPOSIT_AMOUNT / 8n, 'noble');
 test.serial(advanceAndSettleScenario, LP_DEPOSIT_AMOUNT / 5n, 'agoric');
+
+/**
+ * 1. Evidence is published to the transaction feed
+ * 2. Advancer observes the evidence
+ * 3. poolAccount borrows from liquidity pool and sends to `nobleICA`
+ * 4. When that settles, we get the IBC ACK
+ * 5. Call `MsgDepositForBurn` on `nobleICA`
+ * 6. CCTP relayer calls ReceiveMsg on EVM destination using attestation from Circle (looks for the burn in order to make the attestation)
+ *    (Read the self-relaying guid
+ */
+test.serial('Ethereum destination', async t => {
+  const mintAmt = LP_DEPOSIT_AMOUNT / 6n;
+  const {
+    assertTxStatus,
+    attest,
+    makeFakeEvidence,
+    nobleTools,
+    nobleAgoricChannelId,
+    retryUntilCondition,
+    vstorageClient,
+  } = t.context;
+  const eudChain = 'ethereum';
+  console.time(`UX->${eudChain}`);
+
+  // Ethereum EUD
+  const EUD: AccountId = 'eip155:1:0x1234567890123456789012345678901234567890';
+  t.log(`Ethereum EUD: ${EUD}`);
+
+  // parameterize agoric address
+  const { settlementAccount } = await vstorageClient.queryData(
+    `published.${contractName}`,
+  );
+  t.log('settlementAccount address', settlementAccount);
+
+  const recipientAddress = encodeAddressHook(settlementAccount, { EUD });
+  t.log('recipientAddress', recipientAddress);
+
+  // provide forwarding address on noble
+  nobleTools.registerForwardingAcct(nobleAgoricChannelId, recipientAddress);
+
+  const { address: userForwardingAddr, exists } =
+    nobleTools.queryForwardingAddress(nobleAgoricChannelId, recipientAddress);
+  t.log('got forwardingAddress', userForwardingAddr);
+  t.true(exists, 'registered forwarding account');
+
+  const evidence = makeFakeEvidence(
+    mintAmt,
+    userForwardingAddr,
+    recipientAddress,
+  );
+
+  const { encumberedBalance: balanceBeforeBurn } =
+    await fastLPQ(vstorageClient).metrics();
+
+  trace('User initiates EVM burn:', evidence.txHash);
+  await attest(evidence, eudChain);
+
+  await assertTxStatus(evidence.txHash, 'ADVANCED');
+  trace('Advance completed, waiting for mint...');
+
+  t.true(
+    AmountMath.isGTE(
+      (await fastLPQ(vstorageClient).metrics()).encumberedBalance,
+      balanceBeforeBurn,
+    ),
+    'encumberedBalance must go up upon advance',
+  );
+
+  // Here is would be ideal to check the balance of `nobleICA` account to make sure
+  // it decreases by the mint amount. The actual `MsgDepositForBurn` message is our
+  // interface with CCTP, which isn't being tested, so we should test that we're
+  // fulfilling that interface. Since that's laborious we use a proxy: that the
+  // balance goes up (presumably to due to the transfer) and back down
+  // (presumably due the burn message.) Our lower level tests are verifying that
+  // the messages are being sent.
+  //
+  // However, 1) it's difficult to do with Noble v7 and Cosmos SDK v47 we have
+  // available at present and 2) the vow will reject if there's a problem with
+  // the CCTP burn.
+  // So for now we have sufficient coverage. When we're on Noble v9 and Cosmos SDK v50+
+  // we should have a helper to check the balances. This commit is a good place to start:
+  // https://github.com/Agoric/agoric-sdk/commit/7eedb191cda713232b54a48c1775146f8b6599a0
+
+  // Verify disbursement succeeds
+  nobleTools.mockCctpMint(mintAmt, userForwardingAddr);
+  await retryUntilCondition(
+    () => fastLPQ(vstorageClient).metrics(),
+    ({ encumberedBalance }) =>
+      AmountMath.isEqual(encumberedBalance, balanceBeforeBurn),
+    'encumberedBalance returns to original value',
+  );
+
+  await retryUntilCondition(
+    () => fastLPQ(vstorageClient).metrics(),
+    ({ encumberedBalance }) =>
+      AmountMath.isEqual(encumberedBalance, balanceBeforeBurn),
+    'encumberedBalance returns to original value',
+  );
+
+  await assertTxStatus(evidence.txHash, 'DISBURSED');
+});
 
 test.serial('advance failed', async t => {
   const mintAmt = LP_DEPOSIT_AMOUNT / 10n;
@@ -694,7 +787,7 @@ test.serial('minted before observed; forward path', async t => {
   await assertAmtForwarded(queryClient, EUD, eudChain, mintAmt);
 });
 
-test.serial('insufficient LP funds and forward failed', async t => {
+test.serial('forward skipped due to invalid EUD', async t => {
   const mintAmt = LP_DEPOSIT_AMOUNT * 2n;
   const {
     api,
@@ -756,7 +849,7 @@ test.serial('insufficient LP funds and forward failed', async t => {
 
   nobleTools.mockCctpMint(mintAmt, userForwardingAddr);
 
-  await assertTxStatus(evidence.txHash, 'FORWARD_FAILED');
+  await assertTxStatus(evidence.txHash, 'FORWARD_SKIPPED');
 
   const endingSettlementAccountBalance = await querySettlementAccountBalance();
   t.log(

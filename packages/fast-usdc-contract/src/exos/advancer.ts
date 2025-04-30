@@ -283,7 +283,7 @@ export const prepareAdvancerKit = (
           return asVow(() => {
             const { poolAccount, settlementAddress } = this.state;
             const { tmpSeat, ...vowContext } = ctx;
-            const { destination, advanceAmount, ...detail } = vowContext;
+            const { destination, advanceAmount } = vowContext;
             tmpSeat.exit();
             const amount = harden({
               denom: usdc.denom,
@@ -391,7 +391,7 @@ export const prepareAdvancerKit = (
          * @throws {never} WARNING: this function must not throw, because user funds are at risk
          */
         onFulfilled(result: undefined, ctx: AdvancerVowCtx) {
-          const { advanceAmount, destination, ...detail } = ctx;
+          const { advanceAmount, destination } = ctx;
           // assets are on noble, transfer to dest.
           const intermediaryAccount = getNobleICA();
           const amount = harden({
@@ -401,7 +401,7 @@ export const prepareAdvancerKit = (
           const burn = intermediaryAccount.depositForBurn(destination, amount);
           return watch(burn, this.facets.transferHandler, ctx);
         },
-        onRejected(error: Error, ctx: AdvancerVowCtx) {
+        onRejected(error: Error, _ctx: AdvancerVowCtx) {
           log('🚨 CCTP transfer failed', error);
           // FIXME really handle, with tests
         },

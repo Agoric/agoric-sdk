@@ -13,10 +13,10 @@ import {
   type SetupContextWithWallets,
   chainConfig,
   FAUCET_POUR,
-} from './support.js';
-import { makeDoOffer } from '../tools/e2e-tools.js';
-import { createWallet } from '../tools/wallet.js';
-import { makeQueryClient } from '../tools/query.js';
+} from '../support.js';
+import { makeDoOffer } from '../../tools/e2e-tools.js';
+import { createWallet } from '../../tools/wallet.js';
+import { makeQueryClient } from '../../tools/query.js';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
@@ -31,8 +31,8 @@ test.before(async t => {
   await deleteTestKeys(accounts).catch();
   const wallets = await setupTestKeys(accounts);
   t.context = { ...rest, wallets, deleteTestKeys };
-  const { startContract } = rest;
-  await startContract(contractName, contractBuilder);
+  const { startContract, commonBuilderOpts } = rest;
+  await startContract(contractName, contractBuilder, commonBuilderOpts);
 });
 
 test.after(async t => {

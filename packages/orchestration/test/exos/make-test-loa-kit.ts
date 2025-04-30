@@ -19,7 +19,6 @@ export const prepareMakeTestLOAKit = (
     bootstrap,
     commonPrivateArgs: { marshaller },
     facadeServices: { chainHub },
-    utils,
   }: EReturn<typeof commonSetup>,
   { zcf = Far('MockZCF', {}) } = {},
 ) => {

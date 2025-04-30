@@ -66,9 +66,10 @@ import { calculateDistributionPlan } from './proceeds.js';
 import { AuctionPFShape } from '../auction/auctioneer.js';
 
 /**
+ * @import {MapStore, SetStore} from '@agoric/store';
  * @import {EReturn} from '@endo/far';
- * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
- * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {ZCFMint} from '@agoric/zoe';
+ * @import {PriceQuote} from '@agoric/zoe/tools/types.js';
  */
 
 const trace = makeTracer('VM');

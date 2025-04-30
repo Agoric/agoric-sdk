@@ -566,18 +566,20 @@ export function makeVatWarehouse({
 
   /**
    * Save a heap snapshot for the given vatID, if the snapshotInterval
-   * is satisified
+   * is satisfied or a lower explicit delivery count has been reached.
    *
    * @param {VatID} vatID
+   * @param {number} [minDeliveryCount]
    */
-  async function maybeSaveSnapshot(vatID) {
-    const recreate = true; // PANIC in the failure case
-    const { manager } = await ensureVatOnline(vatID, recreate);
-    if (!manager.makeSnapshot) {
-      return false; // worker cannot make snapshots
+  async function maybeSaveSnapshot(vatID, minDeliveryCount = snapshotInterval) {
+    kernelKeeper.vatIsAlive(vatID) || Fail`${q(vatID)}: not alive`;
+    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+    const vatOptions = vatKeeper.getOptions();
+
+    if (!vatOptions.useTranscript) {
+      return false;
     }
 
-    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     let reason;
 
     const hasSnapshot = !!vatKeeper.getSnapshotInfo();
@@ -586,13 +588,19 @@ export function makeVatWarehouse({
     if (!hasSnapshot && deliveriesInSpan >= snapshotInitial) {
       // begin snapshot after 'snapshotInitial' deliveries in an incarnation
       reason = { snapshotInitial };
-    } else if (deliveriesInSpan >= snapshotInterval) {
+    } else if (deliveriesInSpan >= minDeliveryCount) {
       // begin snapshot after 'snapshotInterval' deliveries in a span
-      reason = { snapshotInterval };
+      reason = { snapshotInterval: minDeliveryCount };
     }
     // console.log('maybeSaveSnapshot: reason:', reason);
     if (!reason) {
       return false; // not time to make a snapshot
+    }
+
+    const recreate = true; // PANIC in the failure case
+    const { manager } = await ensureVatOnline(vatID, recreate);
+    if (!manager.makeSnapshot) {
+      return false; // worker cannot make snapshots
     }
 
     // always do a bringOutYourDead just before a snapshot, to shake

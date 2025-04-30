@@ -132,9 +132,11 @@ export const makeMapStoreMethods = (
  * or remotables. Other storeMaps will accept, for example, copyArrays and
  * copyRecords, as keys and look them up based on equality of their contents.
  *
+ * @template K=any
+ * @template V=any
  * @param {string} [tag] - the column name for the key
  * @param {StoreOptions} [options]
- * @returns {MapStore<any, any>}
+ * @returns {MapStore<K, V>}
  */
 export const makeScalarMapStore = (
   tag = 'key',

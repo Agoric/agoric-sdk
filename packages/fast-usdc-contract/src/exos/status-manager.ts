@@ -18,7 +18,6 @@ import type {
   TransactionRecord,
 } from '@agoric/fast-usdc/src/types.js';
 import type { RepayAmountKWR } from '@agoric/fast-usdc/src/utils/fees.js';
-import { makeTracer } from '@agoric/internal';
 import type {
   Marshaller,
   StorageNode,
@@ -71,16 +70,11 @@ export const stateShape = harden({
  * and `Settler`.
  *
  * XXX consider separate facets for `Advancing` and `Settling` capabilities.
- * @param zone
- * @param txnsNode
- * @param root0
- * @param root0.marshaller
- * @param root0.log
  */
 export const prepareStatusManager = (
   zone: Zone,
   txnsNode: ERef<StorageNode>,
-  { marshaller, log = makeTracer('StatusManager', true) }: StatusManagerPowers,
+  { marshaller }: StatusManagerPowers,
 ) => {
   /**
    * Keyed by a tuple of the Noble Forwarding Account and amount.
@@ -226,7 +220,9 @@ export const prepareStatusManager = (
       disbursed: M.call(EvmHashShape, AmountKeywordRecordShape).returns(
         M.undefined(),
       ),
-      forwarded: M.call(EvmHashShape, M.boolean()).returns(),
+      forwarded: M.call(EvmHashShape).returns(),
+      forwardFailed: M.call(EvmHashShape).returns(),
+      forwardSkipped: M.call(EvmHashShape).returns(),
       lookupPending: M.call(M.string(), M.bigint()).returns(
         M.arrayOf(PendingTxShape),
       ),
@@ -376,15 +372,40 @@ export const prepareStatusManager = (
       },
 
       /**
-       * Mark a transaction as `FORWARDED` or `FORWARD_FAILED`
+       * Mark a transaction as `FORWARDED`
        * @param txHash
-       * @param success
        */
-      forwarded(txHash: EvmHash, success: boolean): void {
+      forwarded(txHash: EvmHash): void {
         publishTxnRecord(
           txHash,
           harden({
-            status: success ? TxStatus.Forwarded : TxStatus.ForwardFailed,
+            status: TxStatus.Forwarded,
+          }),
+        );
+      },
+
+      /**
+       * Mark a transaction as `FORWARD_FAILED`
+       * @param txHash
+       */
+      forwardFailed(txHash: EvmHash): void {
+        publishTxnRecord(
+          txHash,
+          harden({
+            status: TxStatus.ForwardFailed,
+          }),
+        );
+      },
+
+      /**
+       * Mark a transaction as `FORWARD_SKIPPED`
+       * @param txHash
+       */
+      forwardSkipped(txHash: EvmHash): void {
+        publishTxnRecord(
+          txHash,
+          harden({
+            status: 'FORWARD_SKIPPED',
           }),
         );
       },

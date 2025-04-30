@@ -6,6 +6,7 @@ import { makeNameHubKit, type IBCChannelID } from '@agoric/vats';
 import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { E } from '@endo/far';
+import cctpChainInfo from '../../src/cctp-chain-info.js';
 import {
   registerChainAssets,
   registerKnownChains,
@@ -19,8 +20,6 @@ import { makeChainHub, registerAssets } from '../../src/exos/chain-hub.js';
 import knownChains from '../../src/fetched-chain-info.js';
 import { assets as assetFixture } from '../assets.fixture.js';
 import { provideFreshRootZone } from '../durability.js';
-import cctpChainInfo from '../../src/cctp-chain-info.js';
-import type { BaseChainInfo } from '../../src/orchestration-api.js';
 
 // fresh state for each test
 const setup = () => {
@@ -450,7 +449,7 @@ test('updateAsset updates existing asset and brand mappings', t => {
 });
 
 test('updateAsset errors appropriately', t => {
-  const { chainHub, zone } = setup();
+  const { chainHub } = setup();
 
   // Register chains
   chainHub.registerChain('agoric', {

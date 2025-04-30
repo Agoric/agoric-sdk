@@ -2,18 +2,15 @@ import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import type { Bech32Address, CosmosChainAddress } from '@agoric/orchestration';
 import type { CctpTxEvidence, EvmAddress } from '../src/types.js';
 
-const mockScenarios = [
-  'AGORIC_PLUS_OSMO',
-  'AGORIC_PLUS_DYDX',
-  'AGORIC_PLUS_AGORIC',
-  'AGORIC_NO_PARAMS',
-  'AGORIC_UNKNOWN_EUD',
-  'AGORIC_PLUS_ETHEREUM',
-  'AGORIC_PLUS_NOBLE',
-  'AGORIC_PLUS_NOBLE_B32EUD',
-] as const;
-
-export type MockScenario = (typeof mockScenarios)[number];
+export type MockScenario =
+  | 'AGORIC_PLUS_OSMO'
+  | 'AGORIC_PLUS_DYDX'
+  | 'AGORIC_PLUS_AGORIC'
+  | 'AGORIC_NO_PARAMS'
+  | 'AGORIC_UNKNOWN_EUD'
+  | 'AGORIC_PLUS_ETHEREUM'
+  | 'AGORIC_PLUS_NOBLE'
+  | 'AGORIC_PLUS_NOBLE_B32EUD';
 
 export const Senders = {
   default: '0xDefaultFakeEthereumAddress',

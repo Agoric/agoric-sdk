@@ -34,6 +34,19 @@ export const cctpTypes: ReadonlyArray<[string, GeneratedType]> = [
 ];
 
 const configs = {
+  local: {
+    noble: {
+      rpc: 'http://localhost:26654',
+      api: 'http://localhost:1314',
+    },
+    dest: {
+      eth: {
+        explorer: '',
+        chainRef: 'eip155:1',
+        domain: 0,
+      },
+    },
+  },
   test: {
     circle: {
       iris: 'https://iris-api-sandbox.circle.com',
@@ -72,18 +85,24 @@ const configs = {
     },
   },
 };
-const config = configs.test;
+
+type Net = keyof typeof configs;
 
 const fee1 = {
   amount: [{ denom: 'uusdc', amount: '0' }],
   gas: '200000',
 };
 
-const makeBurnMsg = (from: NobleAddress, destId: string, amount = 1n) => {
+const makeBurnMsg = (
+  from: NobleAddress,
+  destId: string,
+  net: Net,
+  amount = 1n,
+) => {
   // parseAccountId is defensive; can handle string
   const dest = parseAccountId(destId as AccountId);
   const mintRecipient = accountIdTo32Bytes(destId as AccountId);
-  const destInfo = Object.values(config.dest).find(
+  const destInfo = Object.values(configs[net].dest).find(
     info => info.chainRef === `${dest.namespace}:${dest.reference}`,
   );
   if (!destInfo)
@@ -132,11 +151,16 @@ const makePoll = (setTimeout: typeof globalThis.setTimeout, period = 2_000) => {
 };
 
 const main = async ({
-  env: { MNEMONIC, CCTP_DEST } = process.env,
+  env: { MNEMONIC, CCTP_DEST, NET } = process.env,
   connectWithSigner = SigningStargateClient.connectWithSigner,
   fetch = globalThis.fetch,
   setTimeout = globalThis.setTimeout,
 } = {}) => {
+  if (!NET || !configs[NET])
+    throw new Error(
+      `Must set process.env.NET to one of: ${Object.keys(configs).join(', ')}`,
+    );
+  const config = configs[NET];
   const fetchJSON = async (url: string) => {
     const res = await fetch(url);
     if (!res.ok) throw Error(res.statusText);
@@ -165,14 +189,19 @@ const main = async ({
   const dest = CCTP_DEST!;
   console.log('minting on:', dest);
 
-  const burn = makeBurnMsg(address, dest);
+  const burn = makeBurnMsg(address, dest, NET as Net);
   console.log('broadcasting', burn, MsgDepositForBurn.toProtoMsg(burn.value));
   const txResp = await client.signAndBroadcast(address, [burn], fee1);
   console.log(
     `Burned on Noble: ${config.noble.explorer}/tx/${txResp.transactionHash}`,
   );
-
   const tx = await api(`/cosmos/tx/v1beta1/txs/${txResp.transactionHash}`);
+
+  // locally, we don't have an attestation service. so let's just inspect the tx on noble and look for potential errors
+  if (NET === 'local') {
+    console.log(tx);
+    return;
+  }
 
   const key = attestationKey(tx);
   console.log('GET attestation', `${config.circle.iris}/attestations/${key}`);

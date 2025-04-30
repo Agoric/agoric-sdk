@@ -183,7 +183,6 @@ test('withdrawal offer overestimates value of share', t => {
 test('withdrawal during advance can fail', t => {
   const { PoolShares, USDC } = brands;
   const state0 = makeParity(USDC, PoolShares);
-  const emptyShares = makeEmpty(PoolShares);
 
   const pDep = {
     give: { USDC: make(USDC, 100n) },
@@ -209,13 +208,8 @@ const scaleAmount = (frac: number, amount: Amount<'nat'>) => {
   return multiplyBy(amount, asRatio);
 };
 
-// ack: https://stackoverflow.com/a/2901298/7963
-const numberWithCommas = x =>
-  x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-
 const logAmt = amt => [
   Number(amt.value),
-  //   numberWithCommas(Number(amt.value)),
   amt.brand
     .toString()
     .replace(/^\[object Alleged:/, '')

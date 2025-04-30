@@ -197,9 +197,19 @@ export const fakeLocalChainBridgeTxMsgHandler = (message, sequence) => {
   switch (message['@type']) {
     // TODO #9402 reference bank to ensure caller has tokens they are transferring
     case '/ibc.applications.transfer.v1.MsgTransfer': {
-      if (message.token.amount === String(SIMULATED_ERRORS.TIMEOUT)) {
-        throw Error('simulated unexpected MsgTransfer packet timeout');
-      }
+      /**
+       * This call should always resolve with a sequence number unless the
+       * message is rejected by the local chain (malformed, unauthorized, etc).
+       * This sequence number is wrt to the channel (not the account) and
+       * indicates an outgoing IBC transfer has _started_ but doesn't mean it
+       * has been acknowledged by the remote chain.
+       *
+       * If you are testing `MsgTransfer` with a `LocalOrchestrationAccount`,
+       * you must inbound a `VTRANSFER_IBC_EVENT` to the `vtransfer` bridge with
+       * an acknowledgement, acknowledgement error, or timeout. See
+       * `buildVTransferEvent`, `transmitTransferTimeout`, `transmitTransferAck`
+       * and `transmitTransferAckError` for examples.
+       */
       // like `JsonSafe<MsgTransferResponse>`, but bigints are converted to numbers
       // FIXME should vlocalchain return a string instead of number for bigint?
       return {

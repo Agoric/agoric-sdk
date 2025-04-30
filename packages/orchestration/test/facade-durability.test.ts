@@ -7,8 +7,8 @@ import fetchedChainInfo from '../src/fetched-chain-info.js'; // Refresh with scr
 import type { Chain } from '../src/orchestration-api.js';
 import { denomHash } from '../src/utils/denomHash.js';
 import { provideOrchestration } from '../src/utils/start-helper.js';
+import { provideFreshRootZone } from './durability.js';
 import { commonSetup } from './supports.js';
-import { provideDurableZone, provideFreshRootZone } from './durability.js';
 
 const test = anyTest;
 
@@ -261,13 +261,13 @@ test('asset / denom info', async t => {
     baseDenom: 'utoken2',
   });
 
-  const missingGetChain = orchestrate('missing getChain', {}, async orc => {
-    const actual = orc.getDenomInfo(
+  const missingGetChain = orchestrate('missing getChain', {}, async orc =>
+    orc.getDenomInfo(
       'utoken2',
       // @ts-expect-error 'mock' not a KnownChain
       'anotherChain',
-    );
-  });
+    ),
+  );
 
   await t.throwsAsync(vt.when(missingGetChain()), {
     message: 'use getChain("anotherChain") before getDenomInfo("utoken2")',

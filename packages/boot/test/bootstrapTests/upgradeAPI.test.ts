@@ -186,7 +186,6 @@ test.serial(`verify API governance`, async t => {
   } = t.context;
   const {
     governorFacets: { creatorFacet, instance },
-    voteCounterInstallation: vci,
   } = facets;
 
   const { EV } = runUtils;
@@ -253,14 +252,12 @@ test.serial(`verify API governance`, async t => {
 });
 
 test.serial(`upgrade`, async t => {
-  const { runUtils, facets, governanceDriver, advanceTimeBy } = t.context;
+  const { runUtils, facets } = t.context;
   const {
     governorFacets: { creatorFacet },
-    voteCounterInstallation: vci,
     contract2SHA,
     poserInvitation2,
   } = facets;
-  const committee = governanceDriver.ecMembers;
 
   const { EV } = runUtils;
   const af = await EV(creatorFacet).getAdminFacet();
@@ -283,8 +280,7 @@ test.serial(`verify API governance post-upgrade`, async t => {
     governedContract,
   } = t.context;
   const {
-    governorFacets: { creatorFacet, instance },
-    voteCounterInstallation: vci,
+    governorFacets: { creatorFacet },
   } = facets;
 
   const { EV } = runUtils;

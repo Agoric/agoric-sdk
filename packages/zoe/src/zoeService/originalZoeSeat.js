@@ -7,7 +7,6 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { NonNullish } from '@agoric/internal';
 
 import { satisfiesWant } from '../contractFacet/offerSafety.js';
-import '../internal-types.js';
 import {
   AmountKeywordRecordShape,
   ExitObjectShape,

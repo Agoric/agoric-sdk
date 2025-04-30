@@ -5,20 +5,6 @@ import {
   encodeAddressHook,
 } from '@agoric/cosmic-proto/address-hooks.js';
 import type { NatAmount } from '@agoric/ertp';
-import { makeTracer } from '@agoric/internal';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import {
-  AccountIdArgShape,
-  CosmosChainAddressShape,
-  denomHash,
-} from '@agoric/orchestration';
-import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
-import { type ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import { q } from '@endo/errors';
-import type { EReturn } from '@endo/far';
-import { Far } from '@endo/pass-style';
-import { M, mustMatch } from '@endo/patterns';
-import type { TestFn } from 'ava';
 import { PendingTxStatus } from '@agoric/fast-usdc/src/constants.js';
 import { CctpTxEvidenceShape } from '@agoric/fast-usdc/src/type-guards.js';
 import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
@@ -26,22 +12,32 @@ import {
   MockCctpTxEvidences,
   settlementAddress,
 } from '@agoric/fast-usdc/tools/mock-evidence.js';
-import type { ZCFSeat } from '@agoric/zoe';
+import { makeTracer } from '@agoric/internal';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { denomHash } from '@agoric/orchestration';
 import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
+import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
+import { type ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
+import type { ZCFSeat } from '@agoric/zoe';
+import { q } from '@endo/errors';
+import type { EReturn } from '@endo/far';
+import { Far } from '@endo/pass-style';
+import { M, mustMatch } from '@endo/patterns';
+import type { TestFn } from 'ava';
 import { prepareAdvancer, stateShape } from '../../src/exos/advancer.ts';
+import type { LiquidityPoolKit } from '../../src/exos/liquidity-pool.ts';
 import {
   makeAdvanceDetailsShape,
   type SettlerKit,
 } from '../../src/exos/settler.ts';
 import { prepareStatusManager } from '../../src/exos/status-manager.ts';
-import type { LiquidityPoolKit } from '../../src/exos/liquidity-pool.ts';
+import { intermediateRecipient } from '../fixtures.js';
 import {
   makeTestFeeConfig,
   makeTestLogger,
   prepareMockOrchAccounts,
 } from '../mocks.js';
 import { commonSetup } from '../supports.js';
-import { intermediateRecipient } from '../fixtures.js';
 
 const trace = makeTracer('AdvancerTest', false);
 
@@ -225,7 +221,7 @@ test('stateShape', t => {
 test('updates status to ADVANCING in happy path', async t => {
   const {
     extensions: {
-      services: { advancer, feeTools },
+      services: { advancer },
       helpers: { inspectLogs, inspectNotifyCalls },
       mocks: { mockPoolAccount, resolveLocalTransferV },
     },
@@ -378,7 +374,7 @@ test('recovery behavior if Advance Fails (ADVANCE_FAILED)', async t => {
   const {
     bootstrap: { storage },
     extensions: {
-      services: { advancer, feeTools },
+      services: { advancer },
       helpers: { inspectBorrowerFacetCalls, inspectLogs, inspectNotifyCalls },
       mocks: { mockPoolAccount, resolveLocalTransferV, resolveWithdrawToSeatV },
     },
@@ -450,7 +446,6 @@ test('logs error if withdrawToSeat fails during AdvanceFailed recovery', async t
       helpers: { inspectLogs, inspectNotifyCalls },
       mocks: { mockPoolAccount, resolveLocalTransferV, rejectWithdrawToSeatV },
     },
-    brands: { usdc },
   } = t.context;
 
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
@@ -487,7 +482,6 @@ test('logs error if withdrawToSeat fails during AdvanceFailed recovery', async t
 
 test('logs error if returnToPool fails during AdvanceFailed recovery', async t => {
   const {
-    brands: { usdc },
     extensions: {
       services: { makeAdvancer },
       helpers: { inspectLogs, inspectNotifyCalls },
@@ -501,10 +495,10 @@ test('logs error if returnToPool fails during AdvanceFailed recovery', async t =
   } = t.context;
 
   const mockBorrowerFacet = Far('LiquidityPool Borrow Facet', {
-    borrow: (seat: ZCFSeat, amount: NatAmount) => {
+    borrow: () => {
       // note: will not be tracked by `inspectBorrowerFacetCalls`
     },
-    returnToPool: (seat: ZCFSeat, amount: NatAmount) => {
+    returnToPool: () => {
       throw new Error('returnToPool failed');
     },
   });
@@ -756,7 +750,7 @@ test('alerts if `returnToPool` fallback fails', async t => {
   } = t.context;
 
   const mockBorrowerFacet = Far('LiquidityPool Borrow Facet', {
-    borrow: (seat: ZCFSeat, amount: NatAmount) => {
+    borrow: () => {
       // note: will not be tracked by `inspectBorrowerFacetCalls`
     },
     returnToPool: (seat: ZCFSeat, amount: NatAmount) => {
@@ -843,7 +837,6 @@ test('rejects advances to unknown settlementAccount', async t => {
 
 test('no status update if `checkMintedEarly` returns true', async t => {
   const {
-    brands: { usdc },
     bootstrap: { storage },
     extensions: {
       services: { makeAdvancer },
@@ -854,7 +847,7 @@ test('no status update if `checkMintedEarly` returns true', async t => {
 
   const mockNotifyF = Far('Settler Notify Facet', {
     notifyAdvancingResult: () => {},
-    checkMintedEarly: (evidence, destination) => {
+    checkMintedEarly: () => {
       return true;
     },
   });
@@ -891,7 +884,6 @@ test('uses bank send for agoric1 EUD', async t => {
       mocks: { mockPoolAccount, resolveLocalTransferV },
     },
     brands: { usdc },
-    bootstrap: { storage },
   } = t.context;
 
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_AGORIC();
@@ -1057,7 +1049,6 @@ test('uses transfer when dest is Noble', async t => {
       mocks: { mockPoolAccount, resolveLocalTransferV },
     },
     brands: { usdc },
-    bootstrap: { storage },
   } = t.context;
 
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_NOBLE();
@@ -1110,7 +1101,6 @@ test('uses transfer for Noble bech32', async t => {
       mocks: { mockPoolAccount, resolveLocalTransferV },
     },
     brands: { usdc },
-    bootstrap: { storage },
   } = t.context;
 
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_NOBLE_B32EUD();
@@ -1157,7 +1147,7 @@ test('Advance Fails on transfer to Noble', async t => {
   const {
     bootstrap: { storage },
     extensions: {
-      services: { advancer, feeTools },
+      services: { advancer },
       helpers: { inspectBorrowerFacetCalls, inspectLogs, inspectNotifyCalls },
       mocks: { mockPoolAccount, resolveLocalTransferV, resolveWithdrawToSeatV },
     },

@@ -1,19 +1,18 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E } from '@endo/far';
-import path from 'path';
-import { inspectMapStore } from '@agoric/internal/src/testing-utils.js';
+import { QueryBalanceResponse } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import { QueryDelegatorDelegationsResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
 import { MsgUndelegateResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { MsgTransferResponse } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
-import { QueryBalanceResponse } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
-import { commonSetup } from '../supports.js';
+import { inspectMapStore } from '@agoric/internal/src/testing-utils.js';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
+import { E } from '@endo/far';
+import * as contractExports from '../../src/examples/unbond.contract.js';
 import {
   buildMsgResponseString,
   buildQueryResponseString,
 } from '../../tools/ibc-mocks.js';
-import * as contractExports from '../../src/examples/unbond.contract.js';
+import { commonSetup } from '../supports.js';
 
 type StartFn = typeof contractExports.start;
 

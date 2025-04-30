@@ -3,9 +3,8 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { LOCALCHAIN_DEFAULT_ADDRESS } from '@agoric/vats/tools/fake-bridge.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
-import path from 'path';
-import { commonSetup } from '../supports.js';
 import * as contractExports from '../../src/examples/swap.contract.js';
+import { commonSetup } from '../supports.js';
 
 type StartFn = typeof contractExports.start;
 

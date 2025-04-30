@@ -26,7 +26,7 @@ const { make } = AmountMath;
 
 const { keys } = Object;
 
-const externalConfigContext = /** @type {const} */ ({
+export const externalConfigContext = /** @type {const} */ ({
   /** @type {Brand<'nat'>} */
   USDC: Far('USDC Brand'),
 });
@@ -37,7 +37,7 @@ const externalConfigContext = /** @type {const} */ ({
  */
 const USDC = value => make(externalConfigContext.USDC, value);
 
-const config = /** @type {const} */ ({
+export const config = /** @type {const} */ ({
   MAINNET: {
     agoricToNoble: {
       id: 'connection-72',
@@ -57,28 +57,17 @@ const config = /** @type {const} */ ({
         version: 'ics20-1',
       },
     },
-    /** FIXME #11149 use real values */
     legibleDestinationOverrides: toExternalConfig(
-      harden({
-        'eip155:1': {
-          relay: USDC(1_000_000n),
-        },
-        'eip155:43114': {
-          relay: USDC(500_000n),
-        },
-        'eip155:10': {
-          relay: USDC(500_000n),
-        },
-        'eip155:42161': {
-          relay: USDC(500_000n),
-        },
-        'eip155:8453': {
-          relay: USDC(500_000n),
-        },
-        'eip155:137': {
-          relay: USDC(500_000n),
-        },
-      }),
+      harden(
+        /** @type {FeeConfig['destinationOverrides']} */ ({
+          'eip155:1': { relay: USDC(500_000n) }, // ethereum L1
+          'eip155:43114': { relay: USDC(10_000n) }, // avalanche
+          'eip155:10': { relay: USDC(10_000n) }, // optimism
+          'eip155:42161': { relay: USDC(10_000n) }, // arbitrum
+          'eip155:8453': { relay: USDC(10_000n) }, // base
+          'eip155:137': { relay: USDC(10_000n) }, // polygon
+        }),
+      ),
       externalConfigContext,
       DestinationOverridesShape,
     ),
@@ -117,7 +106,6 @@ export const upgradeEvmDests = async (
   trace('options', options);
   const {
     agoricToNoble = config.MAINNET.agoricToNoble,
-    // @ts-expect-error Type instantiation is excessively deep and possibly infinite.
     legibleDestinationOverrides = config.MAINNET.legibleDestinationOverrides,
     fastUsdcCode = assert.fail('missing bundleID'),
   } = options;

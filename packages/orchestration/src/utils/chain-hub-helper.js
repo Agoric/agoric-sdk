@@ -1,5 +1,5 @@
 /**
- * @import {ChainHub, ChainInfo, CosmosChainInfo, Denom, DenomDetail} from '../types.js';
+ * @import {ChainHub, ChainInfo, Denom, DenomDetail} from '../types.js';
  */
 
 /**
@@ -13,14 +13,17 @@
  * @param {Record<string, Brand<'nat'>>} brands
  * @param {Record<string, ChainInfo> | undefined} chainInfo
  * @param {[Denom, DenomDetail & { brandKey?: string }][] | undefined} assetInfo
+ * @param {object} opts
+ * @param {Console['log']} [opts.log]
  */
 export const registerChainsAndAssets = (
   chainHub,
   brands,
   chainInfo,
   assetInfo,
+  { log = () => {} } = {},
 ) => {
-  console.log('chainHub: registering chains', Object.keys(chainInfo || {}));
+  log('chainHub: registering chains', Object.keys(chainInfo || {}));
   if (!chainInfo) {
     return;
   }
@@ -45,9 +48,9 @@ export const registerChainsAndAssets = (
       }
     }
   }
-  console.log('chainHub: registered connections', [...registeredPairs].sort());
+  log('chainHub: registered connections', [...registeredPairs].sort());
 
-  console.log(
+  log(
     'chainHub: registering assets',
     assetInfo?.map(([denom, { chainName }]) => `${chainName}: ${denom}`),
   );

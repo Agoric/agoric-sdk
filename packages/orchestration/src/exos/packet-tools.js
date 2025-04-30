@@ -20,7 +20,7 @@ const just = obj => {
  * @import {Pattern} from '@endo/patterns';
  * @import {EVow, Remote, Vow, VowResolver, VowTools} from '@agoric/vow';
  * @import {LocalChainAccount} from '@agoric/vats/src/localchain.js';
- * @import {VTransferIBCEvent} from '@agoric/vats';
+ * @import {IBCEvent, VTransferIBCEvent} from '@agoric/vats';
  * @import {TargetApp, TargetRegistration} from '@agoric/vats/src/bridge-target.js';
  */
 
@@ -33,6 +33,7 @@ const just = obj => {
 /**
  * @typedef {object} PacketSender
  * @property {(
+ *   match: Vow<IBCEvent<'acknowledgementPacket'> | IBCEvent<'timeoutPacket'>>,
  *   opts: PacketOptions,
  * ) => Vow<{ eventPattern: Pattern; resultV: Vow<any> }>} sendPacket
  */
@@ -241,6 +242,18 @@ export const preparePacketTools = (zone, vowTools) => {
         },
       },
       sendPacketWatcher: {
+        /**
+         * @param {[
+         *   {
+         *     resolver: VowResolver<any>;
+         *     match: Vow<
+         *       IBCEvent<'acknowledgementPacket'> | IBCEvent<'timeoutPacket'>
+         *     >;
+         *   },
+         *   Remote<PacketSender>,
+         * ]} result
+         * @param {{ opts: PacketOptions }} ctx
+         */
         onFulfilled([{ match }, sender], ctx) {
           return watch(E(sender).sendPacket(match, ctx.opts));
         },

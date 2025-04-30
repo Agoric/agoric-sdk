@@ -44,7 +44,7 @@ test('makeAccount, deposit, withdraw', async t => {
     commonPrivateArgs: { marshaller },
     utils,
   } = await commonSetup(t);
-  const { publicFacet, zoe } = await startContract({
+  const { publicFacet } = await startContract({
     ...bootstrap,
     bld,
     marshaller,
@@ -55,9 +55,7 @@ test('makeAccount, deposit, withdraw', async t => {
   t.truthy(account, 'account is returned');
 
   t.log('deposit 100 bld to account');
-  const depositResp = await E(account).deposit(
-    await utils.pourPayment(bld.units(100)),
-  );
+  await E(account).deposit(await utils.pourPayment(bld.units(100)));
   t.deepEqual(await E(account).getBalance('ubld'), {
     denom: 'ubld',
     value: bld.units(100).value,
@@ -146,7 +144,6 @@ test('makeAccountInvitationMaker', async t => {
     bootstrap,
     brands: { bld },
     commonPrivateArgs: { marshaller },
-    utils,
   } = await commonSetup(t);
   const { publicFacet, zoe } = await startContract({
     ...bootstrap,

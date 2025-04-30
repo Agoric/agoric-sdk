@@ -62,3 +62,5 @@ export function buildRootDeviceNode(tools) {
     },
   });
 }
+
+/** @typedef {import('../../types-external.js').Device<ReturnType<typeof buildRootDeviceNode>>} BridgeDevice */

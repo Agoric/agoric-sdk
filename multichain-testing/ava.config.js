@@ -10,4 +10,7 @@ export default {
   serial: true,
   timeout: '125s',
   failFast: true,
+  environmentVariables: {
+    LOCKDOWN_HARDEN_TAMING: 'unsafe',
+  },
 };

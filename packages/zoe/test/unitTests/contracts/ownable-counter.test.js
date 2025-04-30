@@ -37,14 +37,10 @@ test('zoe - ownable-counter contract', async t => {
     'c1-ownable-counter',
   );
 
-  await t.throwsAsync(
-    // @ts-expect-error method of underlying that ownable doesn't allow
-    E(firstCounter).toBeAttenuated(),
-    {
-      message:
-        'target has no method "toBeAttenuated", has ["__getInterfaceGuard__","__getMethodNames__","getInvitationCustomDetails","incr","makeTransferInvitation"]',
-    },
-  );
+  await t.throwsAsync(E(firstCounter).toBeAttenuated(), {
+    message:
+      'target has no method "toBeAttenuated", has ["__getInterfaceGuard__","__getMethodNames__","getInvitationCustomDetails","incr","makeTransferInvitation"]',
+  });
 
   // the following tests could invoke `firstCounter` and `viewCounter`
   // synchronously. But we don't in order to better model the user

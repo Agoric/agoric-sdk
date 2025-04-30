@@ -2,6 +2,10 @@ import { M } from '@endo/patterns';
 import { makeExo } from '@endo/exo';
 
 /**
+ * @import {ContractStartFn} from '../../../src/contractFacet/types.js';
+ */
+
+/**
  * This contract just provides two invitations to support the test in
  * test-invitation-details.js
  *

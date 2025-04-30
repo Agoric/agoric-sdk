@@ -110,6 +110,7 @@ harden(AddressHookShape);
 
 const NatAmountShape = { brand: BrandShape, value: M.nat() };
 
+/** @type {TypedPattern<FeeConfig['destinationOverrides']>} */
 export const DestinationOverridesShape = M.recordOf(
   M.string(),
   M.splitRecord(

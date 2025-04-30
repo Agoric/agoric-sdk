@@ -107,7 +107,7 @@ export const makeLiquidationTestKit = async ({
     price: number;
   }) => {
     const managerPath = `vaultFactory.managers.manager${managerIndex}`;
-    const { advanceTimeBy, readLatest, readPublished } = swingsetTestKit;
+    const { advanceTimeBy, readPublished } = swingsetTestKit;
 
     await null;
     if (!priceFeedDrivers[collateralBrandKey]) {

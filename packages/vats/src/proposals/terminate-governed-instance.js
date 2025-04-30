@@ -14,6 +14,7 @@
 // dynamic import { getSpecifier } from '@agoric/internal/src/module-utils.js';
 import { E, passStyleOf } from '@endo/far';
 import { makeTracer } from '@agoric/internal/src/debug.js';
+import { isAbandonedError } from '@agoric/internal/src/upgrade-api.js';
 
 const USAGE = `Usage: agoric run /path/to/terminate-governed-instance.js \\
   <$instanceHandleBoardID:$instanceKitLabel>...`;
@@ -97,14 +98,36 @@ export const terminateGoverned = async (
       label === instanceKitLabel ||
         Fail`${logLabel} unexpected instanceKit label, got ${label} but wanted ${q(instanceKitLabel)}`;
       const govTerms = /** @type {any} */ (await E(zoe).getTerms(governor));
-      trace({ govTerms });
+      trace('governor terms', govTerms);
       (passStyleOf(govTerms?.governed) === 'copyRecord' &&
         passStyleOf(govTerms?.governedContractInstallation) === 'remotable') ||
         Fail`${logLabel} instanceKit governor does not appear to have the right terms shape`;
 
-      const instanceAdminFacet = await E(governorCreatorFacet).getAdminFacet();
-      trace({ instanceAdminFacet });
-      return { logLabel, trace, instanceAdminFacet, governorAdminFacet };
+      // We need an adminFacet for the contract instance. Prefer to get it from
+      // the governor, but fall back on extracting it from the kit if the
+      // governor has already been terminated.
+      let { adminFacet: instanceAdminFacet } = instanceKit;
+      let governorOk = true;
+      try {
+        instanceAdminFacet = await E(governorCreatorFacet).getAdminFacet();
+      } catch (err) {
+        if (!isAbandonedError(err)) throw err;
+        governorOk = false;
+      }
+      trace(
+        governorOk
+          ? 'instance adminFacet from governor'
+          : 'instance adminFacet from kit',
+        instanceAdminFacet,
+      );
+      instanceAdminFacet ||
+        Fail`${logLabel} instanceKit is missing the instance admin facet`;
+      return {
+        logLabel,
+        trace,
+        instanceAdminFacet,
+        governorAdminFacet: governorOk ? governorAdminFacet : undefined,
+      };
     }),
   );
   const validationProblems = targets.flatMap(
@@ -129,17 +152,20 @@ export const terminateGoverned = async (
       assert(settlement.status === 'fulfilled');
       const { logLabel, trace, instanceAdminFacet, governorAdminFacet } =
         settlement.value;
+
       const terminateInstanceMessage = `governed contract ${logLabel} terminated by terminate-governed-instance`;
       await E(instanceAdminFacet).terminateContract(
         harden(Error(terminateInstanceMessage)),
       );
       trace('terminated governed instance');
 
-      const terminateGovernorMessage = `governor ${logLabel} terminated by terminate-governed-instance`;
-      await E(governorAdminFacet).terminateContract(
-        harden(Error(terminateGovernorMessage)),
-      );
-      trace('terminated governor');
+      if (governorAdminFacet) {
+        const terminateGovernorMessage = `governor ${logLabel} terminated by terminate-governed-instance`;
+        await E(governorAdminFacet).terminateContract(
+          harden(Error(terminateGovernorMessage)),
+        );
+        trace('terminated governor');
+      }
     }),
   );
   const terminationProblems = targets.flatMap(

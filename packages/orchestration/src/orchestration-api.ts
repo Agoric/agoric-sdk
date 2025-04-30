@@ -4,6 +4,7 @@
  * - should remain relatively stable.
  */
 import type { Amount, Brand, NatAmount } from '@agoric/ertp/src/types.js';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- fails to notice the @see uses
 import type { CurrentWalletRecord } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { Timestamp } from '@agoric/time';
 import type { QueryManyFn } from '@agoric/vats/src/localchain.js';
@@ -234,10 +235,18 @@ export interface OrchestrationAccountCommon {
    */
   getAddress: () => CosmosChainAddress;
 
-  /** @returns an array of amounts for every balance in the account. */
+  /**
+   * @returns an array of amounts for every balance in the account.
+   *
+   * @throws when prohibited (see `icqEnabled` in {@link CosmosChainInfo})
+   */
   getBalances: () => Promise<DenomAmount[]>;
 
-  /** @returns the balance of a specific denom for the account. */
+  /**
+   * @returns the balance of a specific denom for the account.
+   *
+   * @throws when prohibited (see `icqEnabled` in {@link CosmosChainInfo})
+   */
   getBalance: (denom: DenomArg) => Promise<DenomAmount>;
 
   /**

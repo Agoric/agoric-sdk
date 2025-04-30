@@ -21,7 +21,7 @@ import { queryUSDCBalance } from './util/bank.js';
 /** @import { SigningStargateClient } from '@cosmjs/stargate' */
 /** @import { JsonRpcProvider as ethProvider } from 'ethers' */
 
-const transfer = async (
+export const transfer = async (
   /** @type {File} */ configFile,
   /** @type {string} */ amount,
   /** @type {string} */ EUD,
@@ -137,5 +137,3 @@ const transfer = async (
   }
   await execute(config);
 };
-
-export default { transfer };

@@ -1,23 +1,22 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E } from '@endo/far';
-import { makeIssuerKit } from '@agoric/ertp';
-import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import type { IBCMethod } from '@agoric/vats';
-import path from 'path';
 import { MsgDepositForBurn } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
+import { makeIssuerKit } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import type { IBCMethod } from '@agoric/vats';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
+import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
+import { E } from '@endo/far';
 import type {
   CosmosChainInfo,
   IBCConnectionInfo,
 } from '../../src/cosmos-api.js';
-import { commonSetup } from '../supports.js';
-import { denomHash } from '../../src/utils/denomHash.js';
-import type { DenomDetail } from '../../src/types.js';
-import fetchedChainInfo from '../../src/fetched-chain-info.js';
-import { parseOutgoingTxPacket } from '../../tools/ibc-mocks.js';
 import * as contractExports from '../../src/examples/send-anywhere.contract.js';
+import fetchedChainInfo from '../../src/fetched-chain-info.js';
+import type { DenomDetail } from '../../src/types.js';
+import { denomHash } from '../../src/utils/denomHash.js';
+import { parseOutgoingTxPacket } from '../../tools/ibc-mocks.js';
+import { commonSetup } from '../supports.js';
 
 const contractName = 'sendAnywhere';
 type StartFn = typeof contractExports.start;

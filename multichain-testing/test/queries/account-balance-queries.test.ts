@@ -5,10 +5,10 @@ import {
   commonSetup,
   type SetupContextWithWallets,
   chainConfig,
-} from './support.js';
-import { makeDoOffer } from '../tools/e2e-tools.js';
-import chainInfo from '../starship-chain-info.js';
-import { MAKE_ACCOUNT_AND_QUERY_BALANCE_TIMEOUT } from './config.js';
+} from '../support.js';
+import { makeDoOffer } from '../../tools/e2e-tools.js';
+import chainInfo from '../../starship-chain-info.js';
+import { MAKE_ACCOUNT_AND_QUERY_BALANCE_TIMEOUT } from '../config.js';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
@@ -23,8 +23,8 @@ test.before(async t => {
   await deleteTestKeys(accounts).catch();
   const wallets = await setupTestKeys(accounts);
   t.context = { ...rest, wallets, deleteTestKeys };
-  const { startContract } = rest;
-  await startContract(contractName, contractBuilder);
+  const { startContract, commonBuilderOpts } = rest;
+  await startContract(contractName, contractBuilder, commonBuilderOpts);
 });
 
 test.after(async t => {

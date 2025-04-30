@@ -1,12 +1,5 @@
-import type {
-  Issuer,
-  Brand,
-  AssetKind,
-  DisplayInfo,
-  AnyAmount,
-} from '@agoric/ertp';
+import type { Brand, Issuer } from '@agoric/ertp';
 import type { RemotableObject } from '@endo/pass-style';
-import type { Key } from '@endo/patterns';
 
 /**
  * Alias for RemotableObject

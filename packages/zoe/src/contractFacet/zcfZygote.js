@@ -29,11 +29,11 @@ import { HandleOfferI, InvitationHandleShape } from '../typeGuards.js';
 import { prepareZcMint } from './zcfMint.js';
 import { ZcfI } from './typeGuards.js';
 
-/// <reference path="../internal-types.js" />
-
 /**
+ * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
+ * @import {Baggage} from '@agoric/vat-data';
  * @import {IssuerOptionsRecord} from '@agoric/ertp';
- * @import {ContractMeta, ContractStartFn, SetTestJig, ZCF, ZCFMint, ZCFRegisterFeeMint, ZoeService} from '@agoric/zoe';
+ * @import {ZoeIssuerRecord, ZCFRegisterFeeMint, ContractStartFn, SetTestJig} from './types.js';
  */
 
 /**
@@ -56,7 +56,7 @@ import { ZcfI } from './typeGuards.js';
  * @param {Issuer<'set'>} invitationIssuer
  * @param {( {zcf}: {zcf: ZCF} ) => void} testJigSetter
  * @param {BundleCap} contractBundleCap
- * @param {import('@agoric/vat-data').Baggage} zcfBaggage
+ * @param {Baggage} zcfBaggage
  * @returns {Promise<ZCFZygote>}
  */
 export const makeZCFZygote = async (
@@ -88,7 +88,7 @@ export const makeZCFZygote = async (
     instantiate: instantiateIssuerStorage,
   } = provideIssuerStorage(zcfBaggage);
 
-  /** @type {import('@agoric/swingset-vat').ShutdownWithFailure} */
+  /** @type {ShutdownWithFailure} */
   const shutdownWithFailure = reason => {
     void E(zoeInstanceAdmin).failAllSeats(reason);
     seatManager.dropAllReferences();

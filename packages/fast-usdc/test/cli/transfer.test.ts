@@ -1,6 +1,6 @@
 import test from 'ava';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
-import transfer from '../../src/cli/transfer.js';
+import * as transferLib from '../../src/cli/transfer.js';
 import {
   mockOut,
   mockFile,
@@ -16,7 +16,7 @@ test('Errors if config missing', async t => {
   const file = mockFile(path);
 
   // @ts-expect-error mocking partial Console
-  await t.throwsAsync(transfer.transfer(file, '1500000', 'noble1234', out));
+  await t.throwsAsync(transferLib.transfer(file, '1500000', 'noble1234', out));
 
   t.is(
     out.getErrOut(),
@@ -75,9 +75,14 @@ test('Transfer registers the noble forwarding account if it does not exist', asy
   const out = mockOut();
   const file = mockFile(path, JSON.stringify(config));
   const agoricSettlementAccount = settlementAddress.value;
-  const settlementAccountVstoragePath = 'published.fastUsdc.settlementAccount';
   const vstorageMock = makeVstorageMock({
-    [settlementAccountVstoragePath]: agoricSettlementAccount,
+    'published.fastUsdc': [
+      JSON.stringify({
+        poolAccount:
+          'agoric1zcqu6ug37luep6eq6hd8jzl478ku9mg9jyvtmuvaqfv39qe5j58qhz8ydx',
+        settlementAccount: settlementAddress.value,
+      }),
+    ],
   });
   const amount = '150';
   const EUD = 'dydx1234';
@@ -109,7 +114,7 @@ test('Transfer registers the noble forwarding account if it does not exist', asy
   const signerMock = makeMockSigner();
   const mockEthProvider = makeMockEthProvider();
 
-  await transfer.transfer(
+  await transferLib.transfer(
     file,
     amount,
     EUD,
@@ -120,7 +125,7 @@ test('Transfer registers the noble forwarding account if it does not exist', asy
     { signer: signerMock.signer, address: nobleSignerAddress },
     mockEthProvider.provider,
   );
-  t.is(vstorageMock.getQueryCounts()[settlementAccountVstoragePath], 1);
+  t.is(vstorageMock.getQueryCounts()['published.fastUsdc'], 1);
   t.is(fetchMock.getQueryCounts()[nobleFwdAccountQuery], 1);
   t.snapshot(signerMock.getSigned());
 });
@@ -151,9 +156,14 @@ test('Transfer signs and broadcasts the depositForBurn message on Ethereum', asy
   const out = mockOut();
   const file = mockFile(path, JSON.stringify(config));
   const agoricSettlementAccount = settlementAddress.value;
-  const settlementAccountVstoragePath = 'published.fastUsdc.settlementAccount';
   const vstorageMock = makeVstorageMock({
-    [settlementAccountVstoragePath]: agoricSettlementAccount,
+    'published.fastUsdc': [
+      JSON.stringify({
+        poolAccount:
+          'agoric1zcqu6ug37luep6eq6hd8jzl478ku9mg9jyvtmuvaqfv39qe5j58qhz8ydx',
+        settlementAccount: settlementAddress.value,
+      }),
+    ],
   });
   const amount = '150';
   const EUD = 'dydx1234';
@@ -185,7 +195,7 @@ test('Transfer signs and broadcasts the depositForBurn message on Ethereum', asy
   const signerMock = makeMockSigner();
   const mockEthProvider = makeMockEthProvider();
 
-  await transfer.transfer(
+  await transferLib.transfer(
     file,
     amount,
     EUD,

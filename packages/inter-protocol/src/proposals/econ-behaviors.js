@@ -11,8 +11,17 @@ import { makeReserveTerms } from '../reserve/params.js';
 import { makeGovernedTerms as makeGovernedVFTerms } from '../vaultFactory/params.js';
 
 /**
+ * @import {GovernorCreatorFacet, GovernanceFacetKit, GovernorStartedInstallationKit} from '@agoric/governance/src/types.js';
  * @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils.js';
- * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
+ * @import {AdminFacet} from '@agoric/zoe';
+ */
+
+// Duplicated from vaultFactory/types-ambient.js to solve a CI problem.
+// Not worth refactoring to DRY because vaultFactory is going away.
+/**
+ * @typedef {object} InterestTiming
+ * @property {import('@agoric/time').RelativeTime} chargingPeriod in seconds
+ * @property {import('@agoric/time').RelativeTime} recordingPeriod in seconds
  */
 
 const trace = makeTracer('RunEconBehaviors', true);

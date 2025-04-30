@@ -27,6 +27,14 @@ import {
   ZoeStorageManagerIKit,
 } from '../typeGuards.js';
 
+// Deleting this imperative-looking import does not break `yarn lint` in the
+// zoe package. However, clients of zoe such as governance then claim that
+// the `../zoe` package has many "Cannot find name <type>" errors for other
+// types in the zoe package.
+// See https://github.com/Agoric/agoric-sdk/pull/11243#discussion_r2059200058
+// TODO investigate and hopefully fix.
+import './internal-types.js';
+
 /**
  * @import {Baggage} from '@agoric/vat-data';
  * @import {InvitationAmount} from '@agoric/zoe';
@@ -47,7 +55,7 @@ const { ownKeys } = Reflect;
  * @param {CreateZCFVat} createZCFVat - the ability to create a new
  * ZCF Vat
  * @param {GetBundleCapForID} getBundleCapForID
- * @param {import('@agoric/swingset-vat').ShutdownWithFailure} shutdownZoeVat
+ * @param {ShutdownWithFailure} shutdownZoeVat
  * @param {{
  *    getFeeIssuerKit: GetFeeIssuerKit,
  *    getFeeIssuer: () => Issuer,

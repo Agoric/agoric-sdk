@@ -7,8 +7,10 @@
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
+import { parseChainHubOpts } from '../orchestration/helpers.js';
 
 /**
+ * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {QueryFlowsSF as StartFn} from '@agoric/orchestration/src/fixtures/query-flows.contract.js';
  */
 
@@ -28,25 +30,34 @@ const trace = makeTracer(contractName, true);
  *     };
  *   };
  * }} powers
+ * @param {{
+ *   options: {
+ *     chainInfo: Record<string, CosmosChainInfo>;
+ *     assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
+ *   };
+ * }} config
  */
-export const startQueryFlows = async ({
-  consume: {
-    agoricNames,
-    board,
-    chainStorage,
-    chainTimerService,
-    cosmosInterchainService,
-    localchain,
-    startUpgradable,
+export const startQueryFlows = async (
+  {
+    consume: {
+      agoricNames,
+      board,
+      chainStorage,
+      chainTimerService,
+      cosmosInterchainService,
+      localchain,
+      startUpgradable,
+    },
+    installation: {
+      consume: { [contractName]: installation },
+    },
+    instance: {
+      // @ts-expect-error unknown instance
+      produce: { [contractName]: produceInstance },
+    },
   },
-  installation: {
-    consume: { [contractName]: installation },
-  },
-  instance: {
-    // @ts-expect-error unknown instance
-    produce: { [contractName]: produceInstance },
-  },
-}) => {
+  { options: { chainInfo, assetInfo } },
+) => {
   trace(`start ${contractName}`);
 
   const storageNode = await makeStorageNodeChild(chainStorage, contractName);
@@ -60,6 +71,8 @@ export const startQueryFlows = async ({
     privateArgs: await deeplyFulfilledObject(
       harden({
         agoricNames,
+        assetInfo,
+        chainInfo,
         orchestrationService: cosmosInterchainService,
         localchain,
         storageNode,
@@ -76,7 +89,7 @@ harden(startQueryFlows);
 
 export const getManifestForContract = (
   { restoreRef },
-  { installKeys, ...options },
+  { installKeys, options },
 ) => {
   return {
     manifest: {
@@ -106,7 +119,10 @@ export const getManifestForContract = (
 };
 
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
-export const defaultProposalBuilder = async ({ publishRef, install }) => {
+export const defaultProposalBuilder = async (
+  { publishRef, install },
+  options,
+) => {
   return harden({
     // Somewhat unorthodox, source the exports from this builder module
     sourceSpec: '@agoric/builders/scripts/testing/start-query-flows.js',
@@ -120,6 +136,7 @@ export const defaultProposalBuilder = async ({ publishRef, install }) => {
             ),
           ),
         },
+        options,
       },
     ],
   });
@@ -127,9 +144,12 @@ export const defaultProposalBuilder = async ({ publishRef, install }) => {
 
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
-  // import dynamically so the module can work in CoreEval environment
-  const dspModule = await import('@agoric/deploy-script-support');
-  const { makeHelpers } = dspModule;
+  // import dynamically so the modules can work in CoreEval environment
+  const { makeHelpers } = await import('@agoric/deploy-script-support');
+  const { scriptArgs } = endowments;
+  const opts = parseChainHubOpts(scriptArgs);
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
-  await writeCoreEval(startQueryFlows.name, defaultProposalBuilder);
+  await writeCoreEval(startQueryFlows.name, utils =>
+    defaultProposalBuilder(utils, opts),
+  );
 };

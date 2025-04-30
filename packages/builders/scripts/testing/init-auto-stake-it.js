@@ -6,17 +6,7 @@
  */
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { startAutoStakeIt } from '@agoric/orchestration/src/proposals/start-auto-stake-it.js';
-import { parseArgs } from 'node:util';
-
-/**
- * @import {ParseArgsConfig} from 'node:util'
- */
-
-/** @type {ParseArgsConfig['options']} */
-const parserOpts = {
-  chainInfo: { type: 'string' },
-  assetInfo: { type: 'string' },
-};
+import { parseChainHubOpts } from '../orchestration/helpers.js';
 
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
 export const defaultProposalBuilder = async (
@@ -44,29 +34,8 @@ export const defaultProposalBuilder = async (
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { scriptArgs } = endowments;
-
-  const {
-    values: { chainInfo, assetInfo },
-  } = parseArgs({
-    args: scriptArgs,
-    options: parserOpts,
-  });
-
-  const parseChainInfo = () => {
-    if (typeof chainInfo !== 'string') return undefined;
-    return JSON.parse(chainInfo);
-  };
-  const parseAssetInfo = () => {
-    if (typeof assetInfo !== 'string') return undefined;
-    return JSON.parse(assetInfo);
-  };
-  const opts = harden({
-    chainInfo: parseChainInfo(),
-    assetInfo: parseAssetInfo(),
-  });
-
+  const opts = parseChainHubOpts(scriptArgs);
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
-
   await writeCoreEval(startAutoStakeIt.name, utils =>
     defaultProposalBuilder(utils, opts),
   );

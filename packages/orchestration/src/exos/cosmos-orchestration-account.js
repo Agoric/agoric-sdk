@@ -936,20 +936,15 @@ export const prepareCosmosOrchestrationAccountKit = (
               ),
             );
 
-            // set a `timeoutTimestamp` if caller does not supply either `timeoutHeight` or `timeoutTimestamp`
-            // TODO #9324 what's a reasonable default? currently 5 minutes
-            const timeoutTimestampVowOrValue =
-              opts?.timeoutTimestamp ??
-              (opts?.timeoutHeight
-                ? 0n
-                : E(timestampHelper).getTimeoutTimestampNS());
-
             // Resolves when host chain successfully submits, but not when
             // the receiving chain acknowledges.
             // See https://github.com/Agoric/agoric-sdk/issues/9784 for a
             // solution that tracks the acknowledgement on the receiving chain.
             return watch(
-              allVows([connectionInfoV, timeoutTimestampVowOrValue]),
+              allVows([
+                connectionInfoV,
+                timestampHelper.vowOrValueFromOpts(opts),
+              ]),
               this.facets.transferWatcher,
               { opts, token, destination: cosmosDest },
             );

@@ -442,7 +442,10 @@ test('virtual object gc', async t => {
   t.deepEqual(c.kpResolution(c.bootstrapResult), kser(undefined));
   const v = 'v6';
   const remainingVOs = {};
-  for (const key of enumeratePrefixedKeys(kernelStorage.kvStore, `${v}.vs.`)) {
+  for (const { key } of enumeratePrefixedKeys(
+    kernelStorage.kvStore,
+    `${v}.vs.`,
+  )) {
     remainingVOs[key] = kernelStorage.kvStore.get(key);
   }
   // prettier-ignore

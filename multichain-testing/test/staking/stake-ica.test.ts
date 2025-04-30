@@ -4,11 +4,11 @@ import {
   commonSetup,
   type SetupContextWithWallets,
   FAUCET_POUR,
-} from './support.js';
-import { makeDoOffer } from '../tools/e2e-tools.js';
-import { makeQueryClient } from '../tools/query.js';
-import { sleep } from '../tools/sleep.js';
-import { STAKING_REWARDS_TIMEOUT } from './config.js';
+} from '../support.js';
+import { makeDoOffer } from '../../tools/e2e-tools.js';
+import { makeQueryClient } from '../../tools/query.js';
+import { sleep } from '../../tools/sleep.js';
+import { STAKING_REWARDS_TIMEOUT } from '../config.js';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
@@ -41,6 +41,7 @@ interface StakeIcaScenario {
 
 const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
   const {
+    commonBuilderOpts,
     wallets,
     provisionSmartWallet,
     vstorageClient,
@@ -49,7 +50,11 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
     startContract,
   } = t.context;
 
-  await startContract(scenario.contractName, scenario.builder);
+  await startContract(
+    scenario.contractName,
+    scenario.builder,
+    commonBuilderOpts,
+  );
   const wdUser1 = await provisionSmartWallet(wallets[scenario.wallet], {
     BLD: 100n,
     IST: 100n,

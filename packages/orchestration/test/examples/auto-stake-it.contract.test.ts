@@ -1,20 +1,17 @@
+import { MsgDelegateResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import type { IBCEvent } from '@agoric/vats';
+import { heapVowE } from '@agoric/vow/vat.js';
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
-import { heapVowE } from '@agoric/vow/vat.js';
-import path from 'path';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { MsgDelegateResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
-import type { IBCEvent } from '@agoric/vats';
-import { commonSetup } from '../supports.js';
 import {
   buildMsgResponseString,
   buildVTransferEvent,
 } from '../../tools/ibc-mocks.js';
+import { commonSetup } from '../supports.js';
 
 import * as contractExports from '../../src/examples/auto-stake-it.contract.js';
-
-const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const contractName = 'auto-stake-it';
 type StartFn = typeof contractExports.start;

@@ -12,8 +12,7 @@ import {
 
 /**
  * @import {Baggage} from '@agoric/swingset-liveslots';
- * @import {LegacyWeakMap, WeakMapStore} from '@agoric/store';
- * @import {MapStore} from '@agoric/swingset-liveslots';
+ * @import {WeakMapStore} from '@agoric/store';
  * @import {BundleID, BundleCap} from '@agoric/swingset-vat';
  * @import {SourceBundle} from '@agoric/zoe';
  */

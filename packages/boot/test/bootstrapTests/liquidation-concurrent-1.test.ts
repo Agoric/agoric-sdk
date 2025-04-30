@@ -396,6 +396,7 @@ test('concurrent flow 1', async t => {
   {
     const { nextDescendingStepTime, nextStartTime } =
       readPublished('auction.schedule');
+    // @ts-expect-error could be null or a different shape
     t.is(nextDescendingStepTime.absValue, nextStartTime.absValue);
   }
 

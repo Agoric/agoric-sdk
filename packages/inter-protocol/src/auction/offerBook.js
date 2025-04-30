@@ -13,6 +13,7 @@ import {
 } from './sortedOffers.js';
 
 /**
+ * @import {MapStore} from '@agoric/store';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {Key, Pattern} from '@endo/patterns';
  */
