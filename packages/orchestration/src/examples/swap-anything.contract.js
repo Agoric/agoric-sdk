@@ -1,12 +1,18 @@
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
+import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
 import { withOrchestration } from '../utils/start-helper.js';
 import * as sharedFlows from './shared.flows.js';
-import { swapIt } from './swap-anything.flows.js';
+import { swapIt, swapAnythingViaHook } from './swap-anything.flows.js';
 import { AnyNatAmountShape } from '../typeGuards.js';
 import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
+
+const trace = makeTracer('SwapAnything.Contract');
+
+const interfaceTODO = undefined;
 
 /**
  * @import {Remote, Vow} from '@agoric/vow';
@@ -65,11 +71,89 @@ export const contract = async (
     makeLocalAccount(),
   );
 
-  const swapAnything = orchestrate(
+  const swapAnythingOffer = orchestrate(
     'swapAnything',
     { chainHub, sharedLocalAccountP, log, zoeTools },
     swapIt,
   );
+
+  const swapAnythingAddressHook = orchestrate(
+    'swapAnythingViaHook',
+    {
+      chainHub,
+      sharedLocalAccountP,
+      log,
+    },
+    swapAnythingViaHook,
+  );
+
+  const tap = zone.makeOnce('tapPosition', _key => {
+    console.log('making tap');
+    return zone.exo('tap', interfaceTODO, {
+      /*
+       * @param {import('@agoric/vats').VTransferIBCEvent} event
+       */
+      async receiveUpcall(event) {
+        await null;
+        console.log('receiveUpcall', event);
+        /**
+         * Extract the incoming packet data.
+         *
+         * @type {import('@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js').FungibleTokenPacketData}
+         */
+        const {
+          amount,
+          denom,
+          receiver: origReceiver,
+        } = JSON.parse(atob(event.packet.data));
+
+        trace({ amount, denom, origReceiver });
+
+        const { baseAddress, query } = decodeAddressHook(origReceiver);
+
+        /**
+         * @type {{
+         *   destAddr: string;
+         *   receiverAddr: string;
+         *   outDenom: string;
+         * }}
+         */
+        // @ts-expect-error
+        const { destAddr, receiverAddr, outDenom } = query;
+
+        trace({
+          baseAddress,
+          destAddr,
+          receiverAddr,
+          outDenom,
+        });
+
+        if (!receiverAddr || !destAddr || !outDenom) return;
+        // Invoke the flow to perform swap and end up at the final destination.
+        return swapAnythingAddressHook(
+          { denom, amount },
+          {
+            destAddr,
+            receiverAddr,
+            outDenom,
+            onFailedDelivery: 'do_nothing',
+            slippage: {
+              slippagePercentage: '20',
+              windowSeconds: 10,
+            },
+          },
+        );
+      },
+    });
+  });
+
+  void vowTools.when(sharedLocalAccountP, async sharedLocalAccount => {
+    sharedLocalAccount.monitorTransfers(tap);
+    const encoded = await E(privateArgs.marshaller).toCapData({
+      sharedLocalAccount: sharedLocalAccount.getAddress(),
+    });
+    void E(privateArgs.storageNode).setValue(JSON.stringify(encoded));
+  });
 
   const publicFacet = zone.exo(
     'Send PF',
@@ -79,7 +163,7 @@ export const contract = async (
     {
       makeSendInvitation() {
         return zcf.makeInvitation(
-          swapAnything,
+          swapAnythingOffer,
           'swap',
           undefined,
           M.splitRecord({ give: SingleNatAmountRecord }),

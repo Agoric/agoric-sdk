@@ -2,7 +2,7 @@ import { NonNullish, makeTracer } from '@agoric/internal';
 import { Fail, makeError, q } from '@endo/errors';
 import { M, mustMatch } from '@endo/patterns';
 
-const trace = makeTracer('SwapAnything');
+const trace = makeTracer('SwapAnything.Flow');
 
 const { entries } = Object;
 
@@ -22,7 +22,7 @@ const { entries } = Object;
  * @import {Vow} from '@agoric/vow';
  * @import {LocalOrchestrationAccountKit} from '../exos/local-orchestration-account.js';
  * @import {ZoeTools} from '../utils/zoe-tools.js';
- * @import {Orchestrator, OrchestrationFlow, ChainHub, ChainInfo, CosmosChainInfo} from '../types.js';
+ * @import {Orchestrator, OrchestrationFlow, ChainHub, CosmosChainInfo} from '../types.js';
  */
 
 const denomForBrand = async (orch, brand) => {
@@ -161,3 +161,66 @@ export const swapIt = async (
   void log(`transfer complete, seat exited`);
 };
 harden(swapIt);
+
+/**
+ * @satisfies {OrchestrationFlow}
+ * @param {Orchestrator} _orch
+ * @param {object} ctx
+ * @param {GuestInterface<ChainHub>} ctx.chainHub
+ * @param {Promise<GuestInterface<LocalOrchestrationAccountKit['holder']>>} ctx.sharedLocalAccountP
+ * @param {GuestOf<(msg: string) => Vow<void>>} ctx.log
+ * @param {{ denom: string; amount: string }} transferInfo
+ * @param {SwapInfo} memoArgs
+ */
+export const swapAnythingViaHook = async (
+  _orch,
+  { chainHub, sharedLocalAccountP, log },
+  { denom, amount },
+  memoArgs,
+) => {
+  mustMatch(
+    memoArgs,
+    M.splitRecord(
+      {
+        destAddr: M.string(),
+        receiverAddr: M.string(),
+        outDenom: M.string(),
+        onFailedDelivery: M.string(),
+        slippage: { slippagePercentage: M.string(), windowSeconds: M.number() },
+      },
+      { nextMemo: M.string() },
+    ),
+  );
+
+  const { receiverAddr, destAddr } = memoArgs;
+  void log(`sending {${amount}} from osmosis to ${receiverAddr}`);
+
+  /**
+   * @type {any} XXX methods returning vows
+   *   https://github.com/Agoric/agoric-sdk/issues/9822
+   */
+  const sharedLocalAccount = await sharedLocalAccountP;
+
+  const [_a, osmosisChainInfo, connection] =
+    await chainHub.getChainsAndConnection('agoric', 'osmosis');
+
+  connection.counterparty || Fail`No IBC connection to Osmosis`;
+
+  void log(`got info for chain: osmosis ${osmosisChainInfo}`);
+  trace(osmosisChainInfo);
+
+  const memo = buildXCSMemo(memoArgs);
+
+  await sharedLocalAccount.transfer(
+    {
+      value: destAddr,
+      encoding: 'bech32',
+      chainId: /** @type {CosmosChainInfo} */ (osmosisChainInfo).chainId,
+    },
+    { denom, value: BigInt(amount) },
+    { memo },
+  );
+
+  return 'Done';
+};
+harden(swapAnythingViaHook);
