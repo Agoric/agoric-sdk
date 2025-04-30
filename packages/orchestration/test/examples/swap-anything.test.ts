@@ -1,8 +1,12 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
+import { NonNullish } from '@agoric/internal';
 import * as contractExports from '../../src/examples/swap-anything.contract.js';
 import { commonSetup } from '../supports.js';
+import { buildVTransferEvent } from '../../tools/ibc-mocks.js';
 
 const contractName = 'swap-anything';
 type StartFn = typeof contractExports.start;
@@ -22,6 +26,7 @@ const bootstrapOrchestration = async t => {
     commonPrivateArgs,
     brands: { bld },
     utils: { inspectLocalBridge, pourPayment, transmitTransferAck },
+    mocks: { transferBridge },
   } = await commonSetup(t);
   const vt = bootstrap.vowTools;
 
@@ -55,6 +60,7 @@ const bootstrapOrchestration = async t => {
     installation,
     storageNode,
     swapKit,
+    transferBridge,
   };
 };
 
@@ -131,6 +137,58 @@ test('swap BLD for Osmo, receiver on Agoric', async t => {
     {
       '@type': '/ibc.applications.transfer.v1.MsgTransfer',
       receiver: offerArgs.destAddr, // XCS contract has to be the one receiving the IBC message
+      sender: 'agoric1fakeLCAAddress',
+      memo: config.xcsInformation.rawMsgNoNextMemo,
+    },
+    'crosschain swap sent',
+  );
+});
+
+test('trigger osmosis swap from an address hook', async t => {
+  const {
+    bootstrap: { storage },
+    transferBridge,
+    transmitTransferAck,
+    inspectLocalBridge,
+    commonPrivateArgs,
+  } = await bootstrapOrchestration(t);
+  await eventLoopIteration();
+
+  const { sharedLocalAccount } = commonPrivateArgs.marshaller.fromCapData(
+    JSON.parse(
+      NonNullish(storage.data.get('mockChainStorageRoot.swap-anything')),
+    ),
+  );
+
+  t.deepEqual(sharedLocalAccount.value, 'agoric1fakeLCAAddress');
+
+  const memoArgs = buildOfferArgs(config.xcsInformation.rawMsgNoNextMemo);
+  t.log(memoArgs);
+
+  await E(transferBridge).fromBridge(
+    buildVTransferEvent({
+      denom: 'ubld',
+      receiver: encodeAddressHook(
+        'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht',
+        {
+          destAddr: memoArgs.destAddr,
+          receiverAddr: memoArgs.receiverAddr,
+          outDenom: memoArgs.outDenom,
+        },
+      ),
+    }),
+  );
+
+  await transmitTransferAck();
+
+  const history = inspectLocalBridge();
+  t.log(history);
+
+  t.like(
+    history.find(x => x.type === 'VLOCALCHAIN_EXECUTE_TX')?.messages?.[0],
+    {
+      '@type': '/ibc.applications.transfer.v1.MsgTransfer',
+      receiver: memoArgs.destAddr, // XCS contract has to be the one receiving the IBC message
       sender: 'agoric1fakeLCAAddress',
       memo: config.xcsInformation.rawMsgNoNextMemo,
     },
