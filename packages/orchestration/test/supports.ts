@@ -146,7 +146,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
 
   let ibcSequenceNonce = 0n;
   /** simulate incoming message as if the transfer completed over IBC */
-  const transmitTransferAck = async () => {
+  const transmitTransferAck = async (failed = false) => {
     // assume this is called after each outgoing IBC transfer
     ibcSequenceNonce += 1n;
     // let the promise for the transfer start
@@ -166,6 +166,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
         target: lastMsgTransfer.sender,
         sourceChannel: lastMsgTransfer.sourceChannel,
         sequence: ibcSequenceNonce,
+        failed,
       }),
     );
     // let the bridge handler finish
@@ -189,6 +190,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     assetOn('uusdc', 'noble', undefined, 'agoric', chainInfoWithCaps),
     assetOn('uatom', 'cosmoshub', undefined, 'agoric', chainInfoWithCaps),
     assetOn('uusdc', 'noble', undefined, 'dydx', chainInfoWithCaps),
+    assetOn('ibc/92287A0B6A572CDB384B6CD0FE396DFE23F5C2E02801E9562659DACCFD74941E', 'elys', undefined, 'agoric', chainInfoWithCaps),
   ]);
 
   /**

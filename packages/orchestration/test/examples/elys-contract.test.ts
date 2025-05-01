@@ -8,8 +8,12 @@ import { createRequire } from 'module';
 import type { CoinSDKType } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
 import { MsgTransferResponse } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import type { IBCEvent } from '@agoric/vats';
-import { MsgLiquidStakeResponse } from '@agoric/cosmic-proto/stride/stakeibc/tx.js';
+import {
+  MsgLiquidStakeResponse,
+  MsgRedeemStake,
+} from '@agoric/cosmic-proto/stride/stakeibc/tx.js';
 import { MsgSendResponse } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
+import type { Bech32Address } from '@agoric/cosmic-proto/address-hooks.js';
 import { ChainAddressShape } from '../../src/typeGuards.js';
 import { commonSetup } from '../supports.js';
 import {
@@ -18,7 +22,6 @@ import {
 } from '../../tools/ibc-mocks.js';
 import type { CosmosChainAddress } from '../../src/orchestration-api.js';
 import type { FeeConfigShape } from '../../src/examples/elys-contract-type-gaurd.js';
-import type { Bech32Address } from '@agoric/cosmic-proto/address-hooks.js';
 
 const nodeRequire = createRequire(import.meta.url);
 
@@ -78,7 +81,9 @@ test('Failing case: Wrong fee config', async t => {
   const storageNode = await E(storage.rootNode).makeChildNode(contractName);
   const allowedChains = ['cosmoshub'];
 
-  const feeConfig = createFeeTestConfig('agoric1euw2t0lxgeerlpj0tcy77f9syrmgx26ehdx3sq');
+  const feeConfig = createFeeTestConfig(
+    'agoric1euw2t0lxgeerlpj0tcy77f9syrmgx26ehdx3sq',
+  );
   feeConfig.onBoardRate.denominator = BigInt(123);
   feeConfig.onBoardRate.nominator = BigInt(124);
 
@@ -92,6 +97,79 @@ test('Failing case: Wrong fee config', async t => {
       );
     },
     { message: /Invalid fee config/ },
+  );
+});
+
+test('Failing case: IBC transfer to host chain fails, user receives token at agoric chain address', async t => {
+  const {
+    bootstrap: { storage },
+    commonPrivateArgs,
+    mocks: { transferBridge, ibcBridge },
+    utils: { inspectLocalBridge, inspectDibcBridge, transmitTransferAck },
+  } = await commonSetup(t);
+
+  const { zoe, bundleAndInstall } = await setUpZoeForTest();
+
+  const installation: Installation<StartFn> =
+    await bundleAndInstall(contractFile);
+  t.is(passStyleOf(installation), 'remotable');
+
+  const storageNode = await E(storage.rootNode).makeChildNode(contractName);
+  const feeConfig = createFeeTestConfig(
+    'agoric1euw2t0lxgeerlpj0tcy77f9syrmgx26ehdx3sq',
+  );
+  const allowedChains = ['cosmoshub'];
+  const myContract = await E(zoe).startInstance(
+    installation,
+    undefined,
+    {},
+    { ...commonPrivateArgs, storageNode, feeConfig, allowedChains },
+  );
+  t.notThrows(() =>
+    mustMatch(
+      myContract,
+      M.splitRecord({
+        instance: M.remotable(),
+        publicFacet: M.remotable(),
+        creatorFacet: M.remotable(),
+      }),
+    ),
+  );
+
+  const agorichookAddress = await E(myContract.publicFacet).getLocalAddress();
+  t.log('agorichookAddress', agorichookAddress);
+
+  t.notThrows(() => mustMatch(agorichookAddress, ChainAddressShape));
+
+  // send atom for stride liquid staking
+  await t.notThrowsAsync(
+    deposit(
+      { amount: '630', denom: 'uatom' },
+      'channel-405',
+      'cosmos175c7xwly7nwycghwww87x83h56tdkjxzjfv55d',
+      agorichookAddress,
+      transferBridge,
+    ),
+  );
+
+  const { messages, address: execAddr } = inspectLocalBridge().at(-1);
+  t.is(messages?.length, 1, 'transfer message sent');
+  console.log('messages', messages);
+  t.like(
+    messages[0],
+    {
+      '@type': '/cosmos.bank.v1beta1.MsgSend',
+      fromAddress: execAddr,
+      toAddress: 'agoric175c7xwly7nwycghwww87x83h56tdkjxzq5wtym',
+      amount: [
+        {
+          denom:
+            'ibc/BA313C4A19DFBF943586C0387E6B11286F9E416B4DD27574E6909CABE0E342FA',
+          amount: '504',
+        },
+      ],
+    },
+    'tokens transferred from LOA to COA',
   );
 });
 
@@ -110,7 +188,9 @@ test('Failing case: IBC transfer from host to stride chain fails, user receives 
   t.is(passStyleOf(installation), 'remotable');
 
   const storageNode = await E(storage.rootNode).makeChildNode(contractName);
-  const feeConfig = createFeeTestConfig('agoric1euw2t0lxgeerlpj0tcy77f9syrmgx26ehdx3sq');
+  const feeConfig = createFeeTestConfig(
+    'agoric1euw2t0lxgeerlpj0tcy77f9syrmgx26ehdx3sq',
+  );
   const allowedChains = ['cosmoshub'];
   const myContract = await E(zoe).startInstance(
     installation,
@@ -213,7 +293,9 @@ test('Failing case: Liquid stake on stride fails, user receives token at stride 
   t.is(passStyleOf(installation), 'remotable');
 
   const storageNode = await E(storage.rootNode).makeChildNode(contractName);
-  const feeConfig = createFeeTestConfig('agoric1euw2t0lxgeerlpj0tcy77f9syrmgx26ehdx3sq');
+  const feeConfig = createFeeTestConfig(
+    'agoric1euw2t0lxgeerlpj0tcy77f9syrmgx26ehdx3sq',
+  );
   const allowedChains = ['cosmoshub'];
 
   const myContract = await E(zoe).startInstance(
@@ -342,7 +424,9 @@ test('Failing case: IBC transfer of statom from stride to elys chain fails, user
   t.is(passStyleOf(installation), 'remotable');
 
   const storageNode = await E(storage.rootNode).makeChildNode(contractName);
-  const feeConfig = createFeeTestConfig('agoric1euw2t0lxgeerlpj0tcy77f9syrmgx26ehdx3sq');
+  const feeConfig = createFeeTestConfig(
+    'agoric1euw2t0lxgeerlpj0tcy77f9syrmgx26ehdx3sq',
+  );
   const allowedChains = ['cosmoshub'];
 
   const myContract = await E(zoe).startInstance(
@@ -498,7 +582,9 @@ test('Happy Flow: input atom at agoric receives statom on elys', async t => {
   t.is(passStyleOf(installation), 'remotable');
 
   const storageNode = await E(storage.rootNode).makeChildNode(contractName);
-  const feeConfig = createFeeTestConfig('agoric1euw2t0lxgeerlpj0tcy77f9syrmgx26ehdx3sq');
+  const feeConfig = createFeeTestConfig(
+    'agoric1euw2t0lxgeerlpj0tcy77f9syrmgx26ehdx3sq',
+  );
   const allowedChains = ['cosmoshub'];
 
   const myContract = await E(zoe).startInstance(
@@ -626,6 +712,140 @@ test('Happy Flow: input atom at agoric receives statom on elys', async t => {
       destination_channel: 'channel-0',
       destination_port: 'icahost',
       sequence: '2',
+      source_channel: 'channel-0',
+      source_port: 'icacontroller-1',
+      timeout_timestamp: '1712183910866313000',
+    },
+    relayer: 'agoric1gtkg0g6x8lqc734ht3qe2sdkrfugpdp2h7fuu0',
+    type: 'IBC_EVENT',
+  });
+
+  for (const ack of acknowledgements) {
+    t.log('acknowledgement ', ack as IBCEvent<'acknowledgementPacket'>);
+  }
+});
+
+test('Happy Return Flow: input stAtom at agoric receives atom on cosmoshub', async t => {
+  const {
+    bootstrap: { storage },
+    commonPrivateArgs,
+    mocks: { transferBridge, ibcBridge },
+    utils: { inspectLocalBridge, inspectDibcBridge, transmitTransferAck },
+  } = await commonSetup(t);
+
+  const { zoe, bundleAndInstall } = await setUpZoeForTest();
+  t.log('contract deployment', contractName);
+
+  const installation: Installation<StartFn> =
+    await bundleAndInstall(contractFile);
+  t.is(passStyleOf(installation), 'remotable');
+
+  const storageNode = await E(storage.rootNode).makeChildNode(contractName);
+  const feeConfig = createFeeTestConfig(
+    'agoric1euw2t0lxgeerlpj0tcy77f9syrmgx26ehdx3sq',
+  );
+  const allowedChains = ['cosmoshub', 'elys'];
+
+  const myContract = await E(zoe).startInstance(
+    installation,
+    undefined, // issuers
+    {}, // terms
+    { ...commonPrivateArgs, storageNode, feeConfig, allowedChains },
+  );
+  t.notThrows(() =>
+    mustMatch(
+      myContract,
+      M.splitRecord({
+        instance: M.remotable(),
+        publicFacet: M.remotable(),
+        creatorFacet: M.remotable(),
+      }),
+    ),
+  );
+
+  const agorichookAddress = await E(myContract.publicFacet).getLocalAddress();
+  t.log('agorichookAddress', agorichookAddress);
+
+  t.notThrows(() => mustMatch(agorichookAddress, ChainAddressShape));
+
+  await t.notThrowsAsync(
+    deposit(
+      {
+        amount: '10',
+        denom:
+          'ibc/92287A0B6A572CDB384B6CD0FE396DFE23F5C2E02801E9562659DACCFD74941E',
+      },
+      'channel-12696',
+      'elys175c7xwly7nwycghwww87x83h56tdkjxzjf4ne0',
+      agorichookAddress,
+      transferBridge,
+    ),
+  );
+
+  const { messages, address: execAddr } = inspectLocalBridge().at(-1);
+  t.is(messages?.length, 1, 'transfer message sent');
+  t.like(
+    messages[0],
+    {
+      '@type': '/ibc.applications.transfer.v1.MsgTransfer',
+      receiver: 'cosmos1test1',
+      sender: execAddr,
+      sourceChannel: 'channel-19898',
+      token: {
+        amount: '9',
+      },
+    },
+    'tokens transferred from LOA to COA',
+  );
+
+  ibcBridge.addMockAck(
+    'eyJ0eXBlIjoxLCJkYXRhIjoiQ3JRQkNpa3ZhV0pqTG1Gd2NHeHBZMkYwYVc5dWN5NTBjbUZ1YzJabGNpNTJNUzVOYzJkVWNtRnVjMlpsY2hLR0FRb0lkSEpoYm5ObVpYSVNDMk5vWVc1dVpXd3RPVGs0R2trS1JHbGlZeTg1TWpJNE4wRXdRalpCTlRjeVEwUkNNemcwUWpaRFJEQkdSVE01TmtSR1JUSXpSalZETWtVd01qZ3dNVVU1TlRZeU5qVTVSRUZEUTBaRU56UTVOREZGRWdFNUlneGpiM050YjNNeGRHVnpkREVxQzJOdmMyMXZjekYwWlhOME1nQTRnUENTeTkwSSIsIm1lbW8iOiIifQ==',
+    buildMsgResponseString(MsgTransferResponse, { sequence: 1n }),
+  );
+  ibcBridge.addMockAck(
+    'eyJ0eXBlIjoxLCJkYXRhIjoiQ21rS0h5OXpkSEpwWkdVdWMzUmhhMlZwWW1NdVRYTm5VbVZrWldWdFUzUmhhMlVTUmdvTFkyOXpiVzl6TVhSbGMzUVNBakV3R2dabGJIbHpMVEVpSzJWc2VYTXhOelZqTjNoM2JIazNibmQ1WTJkb2QzZDNPRGQ0T0ROb05UWjBaR3RxZUhwcVpqUnVaVEE9IiwibWVtbyI6IiJ9',
+    buildMsgResponseString(MsgRedeemStake, {
+      creator: 'cosmos1test',
+      amount: '10',
+      hostZone: 'elys-1',
+      receiver: 'cosmos1test1',
+    }),
+  );
+  await transmitTransferAck();
+  await transmitTransferAck();
+
+  const acknowledgements = (await inspectDibcBridge()).bridgeEvents;
+
+  t.deepEqual(acknowledgements[4], {
+    acknowledgement:
+      'eyJyZXN1bHQiOiJFamNLTVM5cFltTXVZWEJ3YkdsallYUnBiMjV6TG5SeVlXNXpabVZ5TG5ZeExrMXpaMVJ5WVc1elptVnlVbVZ6Y0c5dWMyVVNBZ2dCIn0=',
+    blockHeight: 289,
+    blockTime: 1712180320,
+    event: 'acknowledgementPacket',
+    packet: {
+      data: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ3JRQkNpa3ZhV0pqTG1Gd2NHeHBZMkYwYVc5dWN5NTBjbUZ1YzJabGNpNTJNUzVOYzJkVWNtRnVjMlpsY2hLR0FRb0lkSEpoYm5ObVpYSVNDMk5vWVc1dVpXd3RPVGs0R2trS1JHbGlZeTg1TWpJNE4wRXdRalpCTlRjeVEwUkNNemcwUWpaRFJEQkdSVE01TmtSR1JUSXpSalZETWtVd01qZ3dNVVU1TlRZeU5qVTVSRUZEUTBaRU56UTVOREZGRWdFNUlneGpiM050YjNNeGRHVnpkREVxQzJOdmMyMXZjekYwWlhOME1nQTRnUENTeTkwSSIsIm1lbW8iOiIifQ==',
+      destination_channel: 'channel-0',
+      destination_port: 'icahost',
+      sequence: '0',
+      source_channel: 'channel-1',
+      source_port: 'icacontroller-2',
+      timeout_timestamp: '1712183910866313000',
+    },
+    relayer: 'agoric1gtkg0g6x8lqc734ht3qe2sdkrfugpdp2h7fuu0',
+    type: 'IBC_EVENT',
+  });
+
+  t.deepEqual(acknowledgements[5], {
+    acknowledgement:
+      'eyJyZXN1bHQiOiJFa29LSHk5emRISnBaR1V1YzNSaGEyVnBZbU11VFhOblVtVmtaV1Z0VTNSaGEyVVNKd29MWTI5emJXOXpNWFJsYzNRU0FqRXdHZ1psYkhsekxURWlER052YzIxdmN6RjBaWE4wTVE9PSJ9',
+    blockHeight: 289,
+    blockTime: 1712180320,
+    event: 'acknowledgementPacket',
+    packet: {
+      data: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ21rS0h5OXpkSEpwWkdVdWMzUmhhMlZwWW1NdVRYTm5VbVZrWldWdFUzUmhhMlVTUmdvTFkyOXpiVzl6TVhSbGMzUVNBakV3R2dabGJIbHpMVEVpSzJWc2VYTXhOelZqTjNoM2JIazNibmQ1WTJkb2QzZDNPRGQ0T0ROb05UWjBaR3RxZUhwcVpqUnVaVEE9IiwibWVtbyI6IiJ9',
+      destination_channel: 'channel-0',
+      destination_port: 'icahost',
+      sequence: '1',
       source_channel: 'channel-0',
       source_port: 'icacontroller-1',
       timeout_timestamp: '1712183910866313000',

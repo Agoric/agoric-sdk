@@ -169,6 +169,7 @@ type BuildVTransferEventParams = {
   /* support bigint and string, to facilitate bootstrap testing */
   sequence?: PacketSDKType['sequence'] | JsonSafe<PacketSDKType['sequence']>;
   memo?: string;
+  failed?: boolean;
 };
 
 /**
@@ -207,12 +208,16 @@ export const buildVTransferEvent = ({
   sourceChannel = 'channel-405' as IBCChannelID,
   sequence = 0n,
   memo = '',
+  failed = false,
 }: BuildVTransferEventParams = {}): VTransferIBCEvent => ({
   type: VTRANSFER_IBC_EVENT,
   blockHeight: 0,
   blockTime: 0,
   event,
-  acknowledgement: btoa(JSON.stringify({ result: 'AQ==' })),
+  // acknowledgement: btoa(JSON.stringify({ result: 'AQ==' })),
+  acknowledgement: failed
+  ? btoa(JSON.stringify({ error: 'Error occured' }))
+  : btoa(JSON.stringify({ result: 'AQ==' })),
   relayer: 'agoric123',
   target,
   packet: {

@@ -1,11 +1,12 @@
 /* eslint-disable jsdoc/require-returns-type, @jessie.js/safe-await-separator */
 /* eslint-env node */
 
-import childProcessAmbient from 'child_process';
-import { promises as fsAmbientPromises } from 'fs';
+import childProcessAmbient from 'node:child_process';
+import { promises as fsAmbientPromises } from 'node:fs';
 import { createRequire } from 'node:module';
-import { basename, join } from 'path';
-import { inspect } from 'util';
+import { basename, join } from 'node:path';
+import { inspect } from 'node:util';
+import tmp from 'tmp';
 
 import type { TypedPublished } from '@agoric/client-utils';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
@@ -19,6 +20,7 @@ import {
 } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 import { krefOf } from '@agoric/kmarshal';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { decodeProtobufBase64 } from '@agoric/orchestration/tools/protobuf-decoder.js';
@@ -50,10 +52,7 @@ import type { ExecutionContext as AvaT } from 'ava';
 import type { FastUSDCCorePowers } from '@aglocal/fast-usdc-deploy/src/start-fast-usdc.core.js';
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
 import { computronCounter } from '@agoric/cosmic-swingset/src/computron-counter.js';
-import {
-  defaultBeansPerVatCreation,
-  defaultBeansPerXsnapComputron,
-} from '@agoric/cosmic-swingset/src/sim-params.js';
+import { defaultBeansPerVatCreation } from '@agoric/cosmic-swingset/src/sim-params.js';
 import type { EconomyBootstrapPowers } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import { base64ToBytes } from '@agoric/network';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
@@ -61,8 +60,9 @@ import type { BridgeHandler, IBCDowncallMethod, IBCMethod } from '@agoric/vats';
 import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
 import type { EProxy } from '@endo/eventual-send';
 import { FileSystemCache, NodeFetchCache } from 'node-fetch-cache';
-import { tmpdir } from 'node:os';
 import { icaMocks, protoMsgMockMap, protoMsgMocks } from './ibc/mocks.js';
+
+const tmpDir = makeTempDirFactory(tmp);
 
 const trace = makeTracer('BSTSupport', false);
 
@@ -143,6 +143,9 @@ export const keyArrayEqual = (
  * @param options.configPath - Path to the base config file
  * @param options.defaultManagerType - SwingSet manager type to use
  * @param options.discriminator - Optional string to include in the config filename
+ * @param options.configOverrides - Other SwingSet options to set in the config
+   (may be overridden by more specific options such as `bundleDir` and
+   `defaultManagerType`)
  * @returns Path to the generated config file
  */
 export const getNodeTestVaultsConfig = async ({
@@ -150,29 +153,32 @@ export const getNodeTestVaultsConfig = async ({
   configPath,
   defaultManagerType = 'local' as ManagerType,
   discriminator = '',
+  configOverrides = {},
 }) => {
-  const config: SwingSetConfig & { coreProposals?: any[] } = NonNullish(
+  const configFromFile: SwingSetConfig & { coreProposals?: any[] } = NonNullish(
     await loadSwingsetConfigFile(configPath),
   );
 
-  // Manager types:
-  //   'local':
-  //     - much faster (~3x speedup)
-  //     - much easier to use debugger
-  //     - exhibits inconsistent GC behavior from run to run
-  //   'xs-worker'
-  //     - timing results more accurately reflect production
-  config.defaultManagerType = defaultManagerType;
-  // speed up build (60s down to 10s in testing)
-  config.bundleCachePath = bundleDir;
+  const config: SwingSetConfig & { coreProposals?: any[] } = {
+    ...configFromFile,
+    // exclude Pegasus from core proposals because it relies on IBC to Golang
+    // that isn't running
+    coreProposals: configFromFile.coreProposals?.filter(
+      spec => spec !== '@agoric/pegasus/scripts/init-core.js',
+    ),
+    ...configOverrides,
+    // Manager types:
+    //   'local':
+    //     - much faster (~3x speedup)
+    //     - much easier to use debugger
+    //     - exhibits inconsistent GC behavior from run to run
+    //   'xs-worker'
+    //     - timing results more accurately reflect production
+    defaultManagerType,
+    // speed up build (60s down to 10s in testing)
+    bundleCachePath: bundleDir,
+  };
   await fsAmbientPromises.mkdir(bundleDir, { recursive: true });
-
-  if (config.coreProposals) {
-    // remove Pegasus because it relies on IBC to Golang that isn't running
-    config.coreProposals = config.coreProposals.filter(
-      v => v !== '@agoric/pegasus/scripts/init-core.js',
-    );
-  }
 
   // make an almost-certainly-unique file name with a fixed-length prefix
   const configFilenameParts = [
@@ -209,87 +215,78 @@ export const makeProposalExtractor = (
   resolveBase = import.meta.url,
 ) => {
   const importSpec = createRequire(resolveBase).resolve;
-  const runPackageScript = (
-    outputDir: string,
-    scriptPath: string,
-    env: NodeJS.ProcessEnv,
-    cliArgs: string[] = [],
-  ) => {
-    console.info('running package script:', scriptPath);
-    return childProcess.execFileSync(
-      importSpec('agoric/src/entrypoint.js'),
-      ['run', scriptPath, ...cliArgs],
-      {
-        cwd: outputDir,
-        env,
-      },
-    );
-  };
 
-  const loadJSON = async filePath =>
+  const readJSONFile = async filePath =>
     harden(JSON.parse(await fs.readFile(filePath, 'utf8')));
 
   // XXX parses the output to find the files but could write them to a path that can be traversed
-  const parseProposalParts = (txt: string) => {
+  const parseProposalParts = (agoricRunOutput: string) => {
     const evals = [
-      ...txt.matchAll(/swingset-core-eval (?<permit>\S+) (?<script>\S+)/g),
+      ...agoricRunOutput.matchAll(
+        /swingset-core-eval (?<permit>\S+) (?<script>\S+)/g,
+      ),
     ].map(m => {
       if (!m.groups) throw Fail`Invalid proposal output ${m[0]}`;
       const { permit, script } = m.groups;
       return { permit, script };
     });
     evals.length ||
-      Fail`No swingset-core-eval found in proposal output: ${txt}`;
+      Fail`No swingset-core-eval found in proposal output: ${agoricRunOutput}`;
 
     const bundles = [
-      ...txt.matchAll(/swingset install-bundle @([^\n]+)/gm),
+      ...agoricRunOutput.matchAll(/swingset install-bundle @([^\n]+)/g),
     ].map(([, bundle]) => bundle);
-    bundles.length || Fail`No bundles found in proposal output: ${txt}`;
+    bundles.length ||
+      Fail`No bundles found in proposal output: ${agoricRunOutput}`;
 
     return { evals, bundles };
   };
 
+  // XXX rebuilds every time
   const buildAndExtract = async (builderPath: string, args: string[] = []) => {
-    // XXX rebuilds every time
-    const tmpDir = await fsAmbientPromises.mkdtemp(
-      join(tmpdir(), 'agoric-proposal-'),
-    );
+    const [builtDir, cleanup] = tmpDir('agoric-proposal');
 
-    const built = parseProposalParts(
-      runPackageScript(
-        tmpDir,
-        importSpec(builderPath),
-        process.env,
-        args,
-      ).toString(),
-    );
+    const readPkgFile = fileName =>
+      fs.readFile(join(builtDir, fileName), 'utf8');
 
-    const loadPkgFile = fileName => fs.readFile(join(tmpDir, fileName), 'utf8');
+    await null;
+    try {
+      const scriptPath = importSpec(builderPath);
 
-    const evalsP = Promise.all(
-      built.evals.map(async ({ permit, script }) => {
-        const [permits, code] = await Promise.all([
-          loadPkgFile(permit),
-          loadPkgFile(script),
-        ]);
-        // Fire and forget. There's a chance the Node process could terminate
-        // before the deletion completes. This is a minor inconvenience to clean
-        // up manually and not worth slowing down the test execution to prevent.
-        void fsAmbientPromises.rm(tmpDir, { recursive: true, force: true });
-        return { json_permits: permits, js_code: code } as CoreEvalSDKType;
-      }),
-    );
+      console.info('running package script:', scriptPath);
+      const agoricRunOutput = childProcess.execFileSync(
+        importSpec('agoric/src/entrypoint.js'),
+        ['run', scriptPath, ...args],
+        { cwd: builtDir },
+      );
+      const built = parseProposalParts(agoricRunOutput.toString());
 
-    const bundlesP = Promise.all(
-      built.bundles.map(
-        async bundleFile =>
-          loadJSON(bundleFile) as Promise<EndoZipBase64Bundle>,
-      ),
-    );
-    return Promise.all([evalsP, bundlesP]).then(([evals, bundles]) => ({
-      evals,
-      bundles,
-    }));
+      const evalsP = Promise.all(
+        built.evals.map(async ({ permit, script }) => {
+          const [permits, code] = await Promise.all(
+            [permit, script].map(path => readPkgFile(path)),
+          );
+          return { json_permits: permits, js_code: code } as CoreEvalSDKType;
+        }),
+      );
+
+      const bundlesP = Promise.all(
+        built.bundles.map(
+          async path => readJSONFile(path) as Promise<EndoZipBase64Bundle>,
+        ),
+      );
+
+      const [evals, bundles] = await Promise.all([evalsP, bundlesP]);
+      return { evals, bundles };
+    } finally {
+      // Defer `cleanup` and ignore any exception; spurious test failures would
+      // be worse than the minor inconvenience of manual temp dir removal.
+      const cleanupP = Promise.resolve().then(() => cleanup());
+      cleanupP.catch(err => {
+        console.error(err);
+        throw err; // unhandled rejection
+      });
+    }
   };
   return buildAndExtract;
 };
@@ -419,6 +416,9 @@ type AckBehaviorType = (typeof AckBehavior)[keyof typeof AckBehavior];
  * @param options.defaultManagerType - SwingSet manager type to use
  * @param options.harness - Optional run harness
  * @param options.resolveBase - Base URL or path for resolving module paths
+ * @param options.configOverrides - Other SwingSet options to set in the config
+   (may be overridden by more specific options such as `bundleDir` and
+   `defaultManagerType`)
  * @returns A test kit with various utilities for interacting with the SwingSet
  */
 export const makeSwingsetTestKit = async (
@@ -435,6 +435,7 @@ export const makeSwingsetTestKit = async (
     defaultManagerType = 'local' as ManagerType,
     harness = undefined as RunHarness | undefined,
     resolveBase = import.meta.url,
+    configOverrides = {} as Partial<SwingSetConfig>,
   } = {},
 ) => {
   const importSpec = createRequire(resolveBase).resolve;
@@ -444,13 +445,22 @@ export const makeSwingsetTestKit = async (
     configPath: importSpec(configSpecifier),
     discriminator: label,
     defaultManagerType,
+    configOverrides,
   });
   const swingStore = initSwingStore();
   const { kernelStorage, hostStorage } = swingStore;
   const { fromCapData } = boardSlottingMarshaller(slotToBoardRemote);
 
   const readLatest = (path: string): any => {
-    const data = unmarshalFromVstorage(storage.data, path, fromCapData, -1);
+    let data;
+    try {
+      data = unmarshalFromVstorage(storage.data, path, fromCapData, -1);
+    } catch {
+      // fall back to regular JSON
+      const raw = storage.getValues(path).at(-1);
+      assert(raw, `No data found for ${path}`);
+      data = JSON.parse(raw);
+    }
     trace('readLatest', path, 'returning', inspect(data, false, 20, true));
     return data;
   };
@@ -675,17 +685,17 @@ export const makeSwingsetTestKit = async (
     }
   };
 
-  let slogSender;
-  if (slogFile) {
-    slogSender = await makeSlogSender({
-      stateDir: '.',
-      env: {
-        ...process.env,
-        SLOGFILE: slogFile,
-        SLOGSENDER: '',
-      },
-    });
-  }
+  const slogSender = slogFile
+    ? await makeSlogSender({
+        stateDir: '.',
+        env: {
+          ...process.env,
+          SLOGFILE: slogFile,
+          SLOGSENDER: '',
+        },
+      })
+    : undefined;
+
   const mailboxStorage = new Map();
   const { controller, timer, bridgeInbound } = await buildSwingset(
     // @ts-expect-error missing method 'getNextKey'
@@ -871,15 +881,11 @@ export const makeSwingsetTestKit = async (
     storage,
     swingStore,
     timer,
+    slogSender,
   };
 };
 export type SwingsetTestKit = Awaited<ReturnType<typeof makeSwingsetTestKit>>;
 
-/**
- * Return a harness that can be dynamically configured to provide a computron-
- * counting run policy (and queried for the count of computrons recorded since
- * the last reset).
- */
 /**
  * Creates a harness for measuring computron usage in SwingSet tests.
  *
@@ -888,15 +894,15 @@ export type SwingsetTestKit = Awaited<ReturnType<typeof makeSwingsetTestKit>>;
  *
  * @returns A harness object with methods to control and query computron counting
  */
-export const makeSwingsetHarness = () => {
-  const c2b = defaultBeansPerXsnapComputron;
-  const beansPerUnit = {
-    // see https://cosgov.org/agoric?msgType=parameterChangeProposal&network=main
-    blockComputeLimit: 65_000_000n * c2b,
+export const makeSwingsetHarness = ({
+  computronCost = 100n,
+  blockComputeLimit = 65_000_000n * computronCost,
+  beansPerUnit = {
+    blockComputeLimit,
     vatCreation: defaultBeansPerVatCreation,
-    xsnapComputron: c2b,
-  };
-
+    xsnapComputron: computronCost,
+  },
+} = {}) => {
   /** @type {ReturnType<typeof computronCounter> | undefined} */
   let policy;
   let policyEnabled = false;
@@ -915,7 +921,7 @@ export const makeSwingsetHarness = () => {
         policy = undefined;
       }
     },
-    totalComputronCount: () => (policy?.totalBeans() || 0n) / c2b,
+    totalComputronCount: () => (policy?.totalBeans() || 0n) / computronCost,
     resetRunPolicy: () => (policy = undefined),
   });
   return meter;
@@ -979,7 +985,7 @@ export const fetchCoreEvalRelease = async (
 
       return { bundles, evals: [{ js_code: script, json_permits: permit }] };
     }
-  } catch (error) {
+  } catch {
     console.warn(
       `Plan file not found at ${planUrl}. Falling back to direct artifact detection.`,
     );

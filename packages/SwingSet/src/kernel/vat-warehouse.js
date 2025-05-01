@@ -564,62 +564,70 @@ export function makeVatWarehouse({
     return deliveryResult; // return delivery results to caller for evaluation
   }
 
-  /**
+ /**
    * Save a heap snapshot for the given vatID, if the snapshotInterval
-   * is satisified
+   * is satisfied or a lower explicit delivery count has been reached.
    *
    * @param {VatID} vatID
+   * @param {number} [minDeliveryCount]
    */
-  async function maybeSaveSnapshot(vatID) {
-    const recreate = true; // PANIC in the failure case
-    const { manager } = await ensureVatOnline(vatID, recreate);
-    if (!manager.makeSnapshot) {
-      return false; // worker cannot make snapshots
-    }
+ async function maybeSaveSnapshot(vatID, minDeliveryCount = snapshotInterval) {
+  kernelKeeper.vatIsAlive(vatID) || Fail`${q(vatID)}: not alive`;
+  const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+  const vatOptions = vatKeeper.getOptions();
 
-    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-    let reason;
-
-    const hasSnapshot = !!vatKeeper.getSnapshotInfo();
-    const deliveriesInSpan = vatKeeper.transcriptSpanEntries();
-
-    if (!hasSnapshot && deliveriesInSpan >= snapshotInitial) {
-      // begin snapshot after 'snapshotInitial' deliveries in an incarnation
-      reason = { snapshotInitial };
-    } else if (deliveriesInSpan >= snapshotInterval) {
-      // begin snapshot after 'snapshotInterval' deliveries in a span
-      reason = { snapshotInterval };
-    }
-    // console.log('maybeSaveSnapshot: reason:', reason);
-    if (!reason) {
-      return false; // not time to make a snapshot
-    }
-
-    // always do a bringOutYourDead just before a snapshot, to shake
-    // loose as much garbage as we can, and to minimize the GC
-    // sensitivity effects of the forced GC that snapshots perform
-    // TODO:
-    // * computrons consumed are not reported to the runPolicy
-    // * computrons consumed are not deducted from the meter
-    //   (not sure we'd want that anyways)
-    // * vat-fatal errors or self-termination are not processed
-    //
-    /** @type { KernelDeliveryObject } */
-    const kd = harden(['bringOutYourDead']);
-    const vd = kernelDeliveryToVatDelivery(vatID, kd);
-    const vs = kernelSlog.provideVatSlogger(vatID).vatSlog;
-    await deliverToVat(vatID, kd, vd, vs);
-
-    // in addition to saving the actual snapshot,
-    // vatKeeper.saveSnapshot() pushes a save-snapshot transcript
-    // entry, then starts a new transcript span, then pushes a
-    // load-snapshot entry, so that the current span always starts
-    // with an initialize-snapshot or load-snapshot pseudo-delivery,
-    // regardless of whether the worker was restarted from snapshot
-    // or not.
-    await vatKeeper.saveSnapshot(manager, restartWorkerOnSnapshot);
-    return true;
+  if (!vatOptions.useTranscript) {
+    return false;
   }
+
+  let reason;
+
+  const hasSnapshot = !!vatKeeper.getSnapshotInfo();
+  const deliveriesInSpan = vatKeeper.transcriptSpanEntries();
+
+  if (!hasSnapshot && deliveriesInSpan >= snapshotInitial) {
+    // begin snapshot after 'snapshotInitial' deliveries in an incarnation
+    reason = { snapshotInitial };
+  } else if (deliveriesInSpan >= minDeliveryCount) {
+    // begin snapshot after 'snapshotInterval' deliveries in a span
+    reason = { snapshotInterval: minDeliveryCount };
+  }
+  // console.log('maybeSaveSnapshot: reason:', reason);
+  if (!reason) {
+    return false; // not time to make a snapshot
+  }
+
+  const recreate = true; // PANIC in the failure case
+  const { manager } = await ensureVatOnline(vatID, recreate);
+  if (!manager.makeSnapshot) {
+    return false; // worker cannot make snapshots
+  }
+
+  // always do a bringOutYourDead just before a snapshot, to shake
+  // loose as much garbage as we can, and to minimize the GC
+  // sensitivity effects of the forced GC that snapshots perform
+  // TODO:
+  // * computrons consumed are not reported to the runPolicy
+  // * computrons consumed are not deducted from the meter
+  //   (not sure we'd want that anyways)
+  // * vat-fatal errors or self-termination are not processed
+  //
+  /** @type { KernelDeliveryObject } */
+  const kd = harden(['bringOutYourDead']);
+  const vd = kernelDeliveryToVatDelivery(vatID, kd);
+  const vs = kernelSlog.provideVatSlogger(vatID).vatSlog;
+  await deliverToVat(vatID, kd, vd, vs);
+
+  // in addition to saving the actual snapshot,
+  // vatKeeper.saveSnapshot() pushes a save-snapshot transcript
+  // entry, then starts a new transcript span, then pushes a
+  // load-snapshot entry, so that the current span always starts
+  // with an initialize-snapshot or load-snapshot pseudo-delivery,
+  // regardless of whether the worker was restarted from snapshot
+  // or not.
+  await vatKeeper.saveSnapshot(manager, restartWorkerOnSnapshot);
+  return true;
+}
 
   /**
    * @param {string} vatID

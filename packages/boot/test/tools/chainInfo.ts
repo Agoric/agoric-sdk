@@ -6,4 +6,6 @@ export const minimalChainInfos = {
   dydx: fetchedChainInfo.dydx,
   noble: fetchedChainInfo.noble,
   cosmoshub: fetchedChainInfo.cosmoshub,
+  stride: fetchedChainInfo.stride,
+  elys: fetchedChainInfo.elys,
 };
