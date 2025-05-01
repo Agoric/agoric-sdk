@@ -87,6 +87,8 @@ test('test revoke defineVirtualExoClassKit', t => {
           if (state.underlying === undefined) {
             return false;
           }
+          // @ts-expect-error Setting this to `undefined` is purposely outside
+          // the type system.
           state.underlying = undefined;
           return true;
         },
