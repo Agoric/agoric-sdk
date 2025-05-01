@@ -90,12 +90,15 @@ export const contract = async (
   const tap = zone.makeOnce('tapPosition', _key => {
     console.log('making tap');
     return zone.exo('tap', interfaceTODO, {
-      /*
+      /**
        * @param {import('@agoric/vats').VTransferIBCEvent} event
        */
       async receiveUpcall(event) {
         await null;
-        console.log('receiveUpcall', event);
+        trace('receiveUpcall', event);
+
+        if (event.event !== 'writeAcknowledgement') return;
+        trace('Moving on...');
         /**
          * Extract the incoming packet data.
          *
@@ -103,7 +106,7 @@ export const contract = async (
          */
         const {
           amount,
-          denom,
+          denom, // transfer/channel-1/ubld, uatom
           receiver: origReceiver,
         } = JSON.parse(atob(event.packet.data));
 
@@ -131,11 +134,11 @@ export const contract = async (
         if (!receiverAddr || !destAddr || !outDenom) return;
         // Invoke the flow to perform swap and end up at the final destination.
         return swapAnythingAddressHook(
-          { denom, amount },
+          { denom: 'ubld', amount },
           {
             destAddr,
             receiverAddr,
-            outDenom,
+            outDenom, // swapOutDenom
             onFailedDelivery: 'do_nothing',
             slippage: {
               slippagePercentage: '20',

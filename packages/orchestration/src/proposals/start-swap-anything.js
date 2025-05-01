@@ -10,7 +10,7 @@ import { E } from '@endo/far';
 /**
  * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
- * @import {start as StartFn} from '@agoric/orchestration/src/examples/send-anywhere.contract.js';
+ * @import {start as StartFn} from '@agoric/orchestration/src/examples/swap-anything.contract.js';
  */
 
 const trace = makeTracer('StartSA', true);
@@ -75,7 +75,7 @@ export const startSwapAnything = async (
       marshaller,
       orchestrationService: cosmosInterchainService,
       storageNode: E(NonNullish(await chainStorage)).makeChildNode(
-        'send-anywhere',
+        'swap-anything',
       ),
       timerService: chainTimerService,
       chainInfo,

@@ -148,7 +148,6 @@ test('trigger osmosis swap from an address hook', async t => {
   const {
     bootstrap: { storage },
     transferBridge,
-    transmitTransferAck,
     inspectLocalBridge,
     commonPrivateArgs,
   } = await bootstrapOrchestration(t);
@@ -167,6 +166,7 @@ test('trigger osmosis swap from an address hook', async t => {
 
   await E(transferBridge).fromBridge(
     buildVTransferEvent({
+      event: 'writeAcknowledgement',
       denom: 'ubld',
       receiver: encodeAddressHook(
         'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht',
@@ -178,8 +178,7 @@ test('trigger osmosis swap from an address hook', async t => {
       ),
     }),
   );
-
-  await transmitTransferAck();
+  await eventLoopIteration();
 
   const history = inspectLocalBridge();
   t.log(history);

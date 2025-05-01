@@ -1,10 +1,15 @@
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
 import { AmountMath } from '@agoric/ertp';
+import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { makeDoOffer } from '../../tools/e2e-tools.js';
 import { commonSetup, type SetupContextWithWallets } from '../support.js';
 import { makeQueryClient } from '../../tools/query.js';
 import starshipChainInfo from '../../starship-chain-info.js';
+import {
+  createFundedWalletAndClient,
+  makeIBCTransferMsg,
+} from '../../tools/ibc-transfer.js';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
@@ -13,6 +18,69 @@ const accounts = ['agoricSender', 'agoricReceiver'];
 const contractName = 'swapAnything';
 const contractBuilder =
   '../packages/builders/scripts/testing/init-swap-anything.js';
+
+const fundRemote = async (
+  t,
+  destinationChain,
+  denomToTransfer = 'ubld',
+  amount = 100000000n,
+) => {
+  const { retryUntilCondition, useChain } = t.context;
+
+  const { client, address, wallet } = await createFundedWalletAndClient(
+    t.log,
+    destinationChain,
+    useChain,
+  );
+  const balancesResult = await retryUntilCondition(
+    () => client.getAllBalances(address),
+    coins => !!coins?.length,
+    `Faucet balances found for ${address}`,
+  );
+  console.log('Balances:', balancesResult);
+
+  const { client: agoricClient, address: agoricAddress } =
+    await createFundedWalletAndClient(t.log, 'agoric', useChain);
+
+  const balancesResultAg = await retryUntilCondition(
+    () => agoricClient.getAllBalances(agoricAddress),
+    coins => !!coins?.length,
+    `Faucet balances found for ${agoricAddress}`,
+  );
+  console.log('Balances AGORIC:', balancesResultAg);
+
+  const transferArgs = makeIBCTransferMsg(
+    { denom: denomToTransfer, value: amount },
+    { address, chainName: destinationChain },
+    { address: agoricAddress, chainName: 'agoric' },
+    Date.now(),
+    useChain,
+  );
+  console.log('Transfer Args:', transferArgs);
+  // TODO #9200 `sendIbcTokens` does not support `memo`
+  // @ts-expect-error spread argument for concise code
+  const txRes = await agoricClient.sendIbcTokens(...transferArgs);
+  if (txRes && txRes.code !== 0) {
+    console.error(txRes);
+    throw Error(`failed to ibc transfer funds to ${denomToTransfer}`);
+  }
+  const { events: _events, ...txRest } = txRes;
+  console.log(txRest);
+  t.is(txRes.code, 0, `Transaction succeeded`);
+  t.log(`Funds transferred to ${agoricAddress}`);
+
+  await retryUntilCondition(
+    () => client.getAllBalances(address),
+    coins => !!coins?.length,
+    `${denomToTransfer} transferred to ${address}`,
+  );
+
+  return {
+    client,
+    address,
+    wallet,
+  };
+};
 
 test.before(async t => {
   const { setupTestKeys, ...common } = await commonSetup(t);
@@ -24,7 +92,7 @@ test.before(async t => {
   await startContract(contractName, contractBuilder, commonBuilderOpts);
 });
 
-test('BLD for OSMO, receiver on Agoric', async t => {
+test.serial('BLD for OSMO, receiver on Agoric', async t => {
   const {
     wallets,
     provisionSmartWallet,
@@ -80,6 +148,94 @@ test('BLD for OSMO, receiver on Agoric', async t => {
     },
     proposal: { give: { Send: swapInAmount } },
   });
+
+  const { balances: agoricReceiverBalances } = await retryUntilCondition(
+    () => queryClient.queryBalances(wallets.agoricReceiver),
+    ({ balances }) => balances.length > balancesBefore.length,
+    'Deposit reflected in localOrchAccount balance',
+  );
+  t.log(agoricReceiverBalances);
+
+  const { hash: expectedHash } = await queryClient.queryDenom(
+    `transfer/${channelId}`,
+    'uosmo',
+  );
+
+  t.log('Expected denom hash:', expectedHash);
+
+  t.regex(agoricReceiverBalances[0]?.denom, /^ibc/);
+  t.is(
+    agoricReceiverBalances[0]?.denom.split('ibc/')[1],
+    expectedHash,
+    'got expected ibc denom hash',
+  );
+});
+
+test.serial('address hook - BLD for OSMO, receiver on Agoric', async t => {
+  const { wallets, vstorageClient, retryUntilCondition, useChain } = t.context;
+  const { getRestEndpoint, chain: cosmosChain } = useChain('cosmoshub');
+
+  const { address: cosmosHubAddr, client: cosmosHubClient } = await fundRemote(
+    t,
+    'cosmoshub',
+  );
+
+  const cosmosHubApiUrl = await getRestEndpoint();
+  const cosmosHubQueryClient = makeQueryClient(cosmosHubApiUrl);
+
+  const {
+    transferChannel: { counterPartyChannelId },
+  } = starshipChainInfo.agoric.connections[cosmosChain.chain_id];
+
+  const apiUrl = await useChain('agoric').getRestEndpoint();
+  const queryClient = makeQueryClient(apiUrl);
+
+  const { balances: balancesBefore } = await queryClient.queryBalances(
+    wallets.agoricReceiver,
+  );
+
+  const { hash: bldDenomOnHub } = await cosmosHubQueryClient.queryDenom(
+    `transfer/${counterPartyChannelId}`,
+    'ubld',
+  );
+  t.log({ bldDenomOnHub, counterPartyChannelId });
+
+  const {
+    sharedLocalAccount: { value: baseAddress },
+  } = await vstorageClient.queryData('published.swap-anything');
+  t.log(baseAddress);
+
+  const orcContractReceiverAddress = encodeAddressHook(baseAddress, {
+    destAddr: 'osmo17p9rzwnnfxcjp32un9ug7yhhzgtkhvl9jfksztgw5uh69wac2pgs5yczr8',
+    receiverAddr: wallets.agoricReceiver,
+    outDenom: 'uosmo',
+  });
+
+  const transferArgs = makeIBCTransferMsg(
+    { denom: `ibc/${bldDenomOnHub}`, value: 125n },
+    { address: orcContractReceiverAddress, chainName: 'agoric' },
+    { address: cosmosHubAddr, chainName: 'cosmoshub' },
+    Date.now(),
+    useChain,
+  );
+  console.log('Transfer Args:', transferArgs);
+  // TODO #9200 `sendIbcTokens` does not support `memo`
+  // @ts-expect-error spread argument for concise code
+  const txRes = await cosmosHubClient.sendIbcTokens(...transferArgs);
+  if (txRes && txRes.code !== 0) {
+    console.error(txRes);
+    throw Error(`failed to ibc transfer funds to ibc/${bldDenomOnHub}`);
+  }
+  const { events: _events, ...txRest } = txRes;
+  console.log(txRest);
+  t.is(txRes.code, 0, `Transaction succeeded`);
+  t.log(`Funds transferred to ${orcContractReceiverAddress}`);
+
+  const osmosisChainId = useChain('osmosis').chain.chain_id;
+
+  const {
+    transferChannel: { channelId },
+  } = starshipChainInfo.agoric.connections[osmosisChainId];
 
   const { balances: agoricReceiverBalances } = await retryUntilCondition(
     () => queryClient.queryBalances(wallets.agoricReceiver),
