@@ -117,13 +117,16 @@ export const convertChainInfo = async registry => {
     console.log('processing connections', name);
 
     const ibcData = ibcLookup[name];
-    const connections = Object.fromEntries(
-      ibcData
-        .map(datum => toConnectionEntry(datum, name, chainInfo))
-        .filter(entry => entry.length > 0)
-        // sort alphabetically for consistency
-        .sort(([a], [b]) => a.localeCompare(b)),
-    );
+
+    const connections = ibcData
+      ? Object.fromEntries(
+          ibcData
+            .map(datum => toConnectionEntry(datum, name, chainInfo))
+            .filter(entry => entry.length > 0)
+            // sort alphabetically for consistency
+            .sort(([a], [b]) => a.localeCompare(b)),
+        )
+      : {};
     chainInfo[name] = { ...chainInfo[name], connections };
   }
 

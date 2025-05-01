@@ -10,7 +10,7 @@
   },
   "scripts": {
     "build": "exit 0",
-    "codegen": "scripts/fetch-chain-info.ts",
+    "codegen": "scripts/fetch-chain-info.ts && scripts/fetch-devnet-chain-info.ts",
     "prepack": "tsc --build tsconfig.build.json",
     "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
     "test": "ava",
