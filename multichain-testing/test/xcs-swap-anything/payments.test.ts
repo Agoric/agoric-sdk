@@ -7,8 +7,7 @@ const test = anyTest as TestFn<SetupContextWithWallets>;
 const accounts = ['agoricSender', 'agoricReceiver'];
 
 const contractName = 'payments';
-const contractBuilder =
-  '../packages/payments/scripts/init-payments.js';
+const contractBuilder = '../packages/payments/scripts/init-payments.js';
 
 test.before(async t => {
   const { setupTestKeys, ...common } = await commonSetup(t);
@@ -17,7 +16,7 @@ test.before(async t => {
   const wallets = await setupTestKeys(accounts);
   console.log('WALLETS', wallets);
   t.context = { ...common, wallets };
-  await startContract(contractName, contractBuilder, commonBuilderOpts, { skipInstanceCheck: true });
+  await startContract(contractName, contractBuilder, commonBuilderOpts);
 });
 
 test('check-vstorage-for-local-account', async t => {
