@@ -101,12 +101,13 @@ export const swapIt = async (
       { nextMemo: M.string() },
     ),
   );
+  void log('Begin swapIt');
 
   const { receiverAddr, destAddr } = offerArgs;
   // NOTE the proposal shape ensures that the `give` is a single asset
   const { give } = seat.getProposal();
   const [[_kw, amt]] = entries(give);
-  void log(`sending {${amt.value}} from osmosis to ${receiverAddr}`);
+  trace(`sending {${amt.value}} from osmosis to ${receiverAddr}`);
   const denom = await denomForBrand(orch, amt.brand);
 
   /**
@@ -123,7 +124,7 @@ export const swapIt = async (
   const recoverFailedTransfer = async e => {
     await withdrawToSeat(sharedLocalAccount, seat, give);
     const errorMsg = `IBC Transfer failed ${q(e)}`;
-    void log(`ERROR: ${errorMsg}`);
+    trace(`ERROR: ${errorMsg}`);
     seat.fail(errorMsg);
     throw makeError(errorMsg);
   };
@@ -133,11 +134,11 @@ export const swapIt = async (
 
   connection.counterparty || Fail`No IBC connection to Osmosis`;
 
-  void log(`got info for chain: osmosis ${osmosisChainInfo}`);
+  trace(`got info for chain: osmosis ${osmosisChainInfo}`);
   trace(osmosisChainInfo);
 
   await localTransfer(seat, sharedLocalAccount, give);
-  void log(`completed transfer to localAccount`);
+  trace(`completed transfer to localAccount`);
 
   try {
     const memo = buildXCSMemo(offerArgs);
@@ -152,13 +153,13 @@ export const swapIt = async (
       { denom, value: amt.value },
       { memo },
     );
-    void log(`completed transfer to ${destAddr}`);
+    trace(`completed transfer to ${destAddr}`);
   } catch (e) {
     return recoverFailedTransfer(e);
   }
 
   seat.exit();
-  void log(`transfer complete, seat exited`);
+  trace(`transfer complete, seat exited`);
 };
 harden(swapIt);
 
@@ -168,13 +169,12 @@ harden(swapIt);
  * @param {object} ctx
  * @param {GuestInterface<ChainHub>} ctx.chainHub
  * @param {Promise<GuestInterface<LocalOrchestrationAccountKit['holder']>>} ctx.sharedLocalAccountP
- * @param {GuestOf<(msg: string) => Vow<void>>} ctx.log
  * @param {{ denom: string; amount: string }} transferInfo
  * @param {SwapInfo} memoArgs
  */
 export const swapAnythingViaHook = async (
   _orch,
-  { chainHub, sharedLocalAccountP, log },
+  { chainHub, sharedLocalAccountP },
   { denom, amount },
   memoArgs,
 ) => {
@@ -193,7 +193,7 @@ export const swapAnythingViaHook = async (
   );
 
   const { receiverAddr, destAddr } = memoArgs;
-  void log(`sending {${amount}} from osmosis to ${receiverAddr}`);
+  trace(`sending {${amount}} from osmosis to ${receiverAddr}`);
 
   /**
    * @type {any} XXX methods returning vows
@@ -206,7 +206,7 @@ export const swapAnythingViaHook = async (
 
   connection.counterparty || Fail`No IBC connection to Osmosis`;
 
-  void log(`got info for chain: osmosis ${osmosisChainInfo}`);
+  trace(`got info for chain: osmosis ${osmosisChainInfo}`);
   trace(osmosisChainInfo);
 
   const memo = buildXCSMemo(memoArgs);
