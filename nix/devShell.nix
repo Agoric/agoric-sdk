@@ -21,7 +21,7 @@
         buf
       ] ++ (with nodePkgs; [
         nodejs
-        yarn
+        corepack
       ]);
 
       shellHook = ''
