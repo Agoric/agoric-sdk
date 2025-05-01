@@ -1,15 +1,30 @@
 import {
   OrchestrationPowersShape,
+  registerChainsAndAssets,
   withOrchestration,
   type OrchestrationTools,
+  type OrchestrationPowers,
+  type CosmosChainInfo,
+  type Denom,
+  type DenomDetail,
 } from '@agoric/orchestration';
+import { makeTracer, NonNullish } from '@agoric/internal';
 import { type VTransferIBCEvent } from '@agoric/vats';
 import type { Zone } from '@agoric/zone';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
+import type { Marshaller } from '@agoric/internal/src/lib-chainStorage.js';
 import * as flows from './my.flows.ts';
+
+const trace = makeTracer('PaymentsContract');
+
+export type PrivateArgs = OrchestrationPowers & {
+  chainInfo?: Record<string, CosmosChainInfo>;
+  assetInfo?: [Denom, DenomDetail & { brandKey?: string }][];
+  marshaller: Marshaller;
+};
 
 const interfaceTODO = undefined;
 
@@ -23,12 +38,13 @@ export const meta = M.splitRecord({
 harden(meta);
 
 export const contract = async (
-  _zcf,
-  _privateArgs,
+  zcf,
+  privateArgs: PrivateArgs,
   zone: Zone,
   tools: OrchestrationTools,
 ) => {
-  const { orchestrateAll } = tools;
+  trace('Start contract');
+  const { orchestrateAll, chainHub } = tools;
   const { makeHookAccount, swapAndSend } = orchestrateAll(flows, {});
 
   const { when } = tools.vowTools;
@@ -81,6 +97,22 @@ export const contract = async (
 
   const hookAccountV = zone.makeOnce('hookAccount', _key =>
     makeHookAccount(tap),
+  );
+
+  void when(hookAccountV, async hookAccount => {
+    const encoded = await E(privateArgs.marshaller).toCapData({
+      hookAccount: hookAccount.getAddress(),
+    });
+    void E(NonNullish(privateArgs.storageNode)).setValue(
+      JSON.stringify(encoded),
+    );
+  });
+
+  registerChainsAndAssets(
+    chainHub,
+    zcf.getTerms().brands,
+    privateArgs.chainInfo,
+    privateArgs.assetInfo,
   );
 
   return {
