@@ -13,6 +13,7 @@ import { Fail } from '@endo/errors';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import type {
   CurrentWalletRecord,
+  ScriptExecutionId,
   SmartWallet,
   UpdateRecord,
 } from '@agoric/smart-wallet/src/smartWallet.js';
@@ -98,6 +99,24 @@ export const makeWalletFactoryDriver = async (
       const offer = makeOffer(agoricNamesRemotes, firstArg, secondArg);
       return this.sendOffer(offer);
     },
+    executeScript(
+      executionId: ScriptExecutionId,
+      permit: unknown,
+      jsCode: string,
+    ) {
+      const jsonPermit = JSON.stringify(permit);
+
+      const actionCapData = marshaller.toCapData(
+        harden({
+          method: 'executeScript',
+          executionId,
+          jsCode,
+          jsonPermit,
+        }),
+      );
+
+      return EV(walletPresence).handleBridgeAction(actionCapData, true);
+    },
 
     getCurrentWalletRecord(): CurrentWalletRecord {
       return unmarshalFromVstorage(
@@ -108,12 +127,12 @@ export const makeWalletFactoryDriver = async (
       ) as any;
     },
 
-    getLatestUpdateRecord(): UpdateRecord {
+    getLatestUpdateRecord(index = -1): UpdateRecord {
       return unmarshalFromVstorage(
         storage.data,
         `published.wallet.${walletAddress}`,
         (...args) => Reflect.apply(marshaller.fromCapData, marshaller, args),
-        -1,
+        index,
       ) as any;
     },
   });

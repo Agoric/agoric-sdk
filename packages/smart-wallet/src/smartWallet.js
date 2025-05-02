@@ -38,12 +38,15 @@ import {
   PaymentPKeywordRecordShape,
 } from '@agoric/zoe/src/typeGuards.js';
 import { prepareVowTools } from '@agoric/vow';
+import { prepareAsyncFlowTools } from '@agoric/async-flow';
 import { makeDurableZone } from '@agoric/zone/durable.js';
+import { extractPowers } from '@agoric/vats/src/core/utils.js';
 
 import { makeInvitationsHelper } from './invitations.js';
 import { shape } from './typeGuards.js';
 import { objectMapStoragePath } from './utils.js';
 import { prepareOfferWatcher, makeWatchOfferOutcomes } from './offerWatcher.js';
+import { prepareExecuteScript } from './scriptExecute.js';
 
 /**
  * @import {Amount, Brand, Issuer, Payment, Purse} from '@agoric/ertp';
@@ -61,6 +64,7 @@ const trace = makeTracer('SmrtWlt');
  */
 
 /** @typedef {number | string} OfferId */
+/** @typedef {number | string} ScriptExecutionId */
 
 /**
  * @typedef {{
@@ -91,6 +95,15 @@ const trace = makeTracer('SmrtWlt');
 
 /**
  * @typedef {{
+ *   method: 'executeScript';
+ *   executionId: ScriptExecutionId;
+ *   jsCode: string;
+ *   jsonPermit: string;
+ * }} ExecuteScriptAction
+ */
+
+/**
+ * @typedef {{
  *   method: 'tryExitOffer';
  *   offerId: OfferId;
  * }} TryExitOfferAction
@@ -99,7 +112,36 @@ const trace = makeTracer('SmrtWlt');
 // Discriminated union. Possible future messages types:
 // maybe suggestIssuer for https://github.com/Agoric/agoric-sdk/issues/6132
 // setting petnames and adding brands for https://github.com/Agoric/agoric-sdk/issues/6126
-/** @typedef {ExecuteOfferAction | TryExitOfferAction} BridgeAction */
+/** @typedef {ExecuteOfferAction | TryExitOfferAction | ExecuteScriptAction} BridgeAction */
+
+/**
+ * @typedef {{
+ *   eventType: 'start';
+ *   jsCode: string;
+ *   jsonPermit: string;
+ * }} ScriptExecutionStart
+ */
+
+/**
+ * @typedef {{
+ *   eventType: 'log';
+ *   message: string;
+ * }} ScriptExecutionLog
+ */
+
+/**
+ * @typedef {{
+ *   eventType: 'finish';
+ *   success: boolean;
+ *   error?: string;
+ * }} ScriptExecutionFinish
+ */
+
+/**
+ * @typedef {ScriptExecutionStart
+ *   | ScriptExecutionLog
+ *   | ScriptExecutionFinish} ScriptExecutionStatus
+ */
 
 /**
  * Purses is an array to support a future requirement of multiple purses per
@@ -132,13 +174,21 @@ const trace = makeTracer('SmrtWlt');
  *     publicTopics: { [subscriberName: string]: string },
  *   ][];
  *   liveOffers: [OfferId, OfferStatus][];
+ *   activeScriptExecutions: ScriptExecutionId[];
  * }} CurrentWalletRecord
  */
 
 /**
  * @typedef {{ updated: 'offerStatus'; status: OfferStatus }
+ *   | {
+ *       updated: 'scriptExecutionStatus';
+ *       executionId: ScriptExecutionId;
+ *       status: ScriptExecutionStatus;
+ *     }
  *   | { updated: 'balance'; currentAmount: Amount }
  *   | { updated: 'walletAction'; status: { error: string } }} UpdateRecord
+ *   // Add new update record type
+ *
  *   Record of an update to the state of this wallet.
  *
  *   Client is responsible for coalescing updates into a current state. See
@@ -257,11 +307,33 @@ const checkMutual = (issuer, brand) =>
   ]).then(checks => checks.every(Boolean));
 
 export const BRAND_TO_PURSES_KEY = 'brandToPurses';
+export const ACTIVE_FLOWS_KEY = 'activeFlows';
 
 const updateShape = {
   value: AmountShape,
   updateCount: M.bigint(),
 };
+
+const scriptExecutionStatusUpdateShape = M.or(
+  {
+    eventType: 'start',
+    jsCode: M.string(),
+    jsonPermit: M.string(),
+  },
+  {
+    eventType: 'finish',
+    success: true,
+  },
+  {
+    eventType: 'finish',
+    success: false,
+    error: M.string(),
+  },
+  {
+    eventType: 'log',
+    message: M.string(),
+  },
+);
 
 const NotifierShape = M.remotable();
 const amountWatcherGuard = M.interface('paymentWatcher', {
@@ -321,9 +393,42 @@ export const prepareSmartWallet = (baggage, shared) => {
 
   const vowTools = prepareVowTools(zone.subZone('vow'));
 
+  const asyncFlowTools = prepareAsyncFlowTools(zone.subZone('asyncFlow'), {
+    vowTools,
+  });
+
+  const activeFlowsByWallet = zone.makeOnce(ACTIVE_FLOWS_KEY, () => {
+    trace(
+      'make active flows by wallet and save in baggage at',
+      ACTIVE_FLOWS_KEY,
+    );
+    /**
+     * @type {WeakMapStore<
+     *   unknown,
+     *   MapStore<
+     *     ScriptExecutionId,
+     *     import('./scriptExecute.js').ActiveFlowsValue
+     *   >
+     * >}
+     */
+    const store = makeScalarBigWeakMapStore('flows by wallet', {
+      durable: true,
+    });
+    return store;
+  });
+  const getActiveFlows = makeLazyMapStoreForWalletProvider(
+    activeFlowsByWallet,
+    'active flows by executionId',
+  );
+
   const makeOfferWatcher = prepareOfferWatcher(baggage, vowTools);
   const watchOfferOutcomes = makeWatchOfferOutcomes(vowTools);
 
+  const executeScript = prepareExecuteScript(
+    zone.subZone('executeScript'),
+    vowTools,
+    asyncFlowTools,
+  );
 
   const prepareAmountWatcher = () =>
     prepareExoClass(
@@ -466,6 +571,17 @@ export const prepareSmartWallet = (baggage, shared) => {
       getLiveOfferPayments: M.call().returns(M.remotable('mapStore')),
     }),
 
+    executeScriptHelper: M.interface('executeScriptHelperFacetI', {
+      getActiveFlows: M.call().returns(M.remotable()),
+      updateStatus: M.call(
+        M.string(),
+        scriptExecutionStatusUpdateShape,
+      ).returns(),
+      providePowers: M.call(
+        M.or(true, M.string(), M.recordOf(M.string(), M.any())),
+      ).returns(M.recordOf(M.string(), M.any())),
+    }),
+
     deposit: M.interface('depositFacetI', {
       receive: M.callWhen(M.await(M.eref(PaymentShape))).returns(AmountShape),
     }),
@@ -554,12 +670,19 @@ export const prepareSmartWallet = (baggage, shared) => {
 
         publishCurrentState() {
           const {
+            state,
+            facets: { self },
+          } = this;
+          const {
             currentRecorderKit,
             offerToUsedInvitation,
             offerToPublicSubscriberPaths,
             purseBalances,
             liveOffers,
-          } = this.state;
+          } = state;
+
+          const activeFlows = getActiveFlows(self);
+
           void currentRecorderKit.recorder.write({
             purses: [...purseBalances.values()].map(a => ({
               brand: a.brand,
@@ -570,6 +693,7 @@ export const prepareSmartWallet = (baggage, shared) => {
               ...offerToPublicSubscriberPaths.entries(),
             ],
             liveOffers: [...liveOffers.entries()],
+            activeScriptExecutions: [...activeFlows.keys()],
           });
         },
 
@@ -757,6 +881,62 @@ export const prepareSmartWallet = (baggage, shared) => {
           return baggage.get(state.address);
         },
       },
+      executeScriptHelper: {
+        getActiveFlows() {
+          const {
+            facets: { self },
+          } = this;
+          return getActiveFlows(self);
+        },
+        /**
+         * @param {ScriptExecutionId} executionId
+         * @param {ScriptExecutionStatus} status
+         */
+        updateStatus(executionId, status) {
+          const { state, facets } = this;
+          facets.helper.logWalletInfo(
+            'scriptExecutionStatus',
+            executionId,
+            status,
+          );
+
+          void state.updateRecorderKit.recorder.write({
+            updated: 'scriptExecutionStatus',
+            executionId,
+            status,
+          });
+
+          if (status.eventType === 'start' || status.eventType === 'finish') {
+            facets.helper.publishCurrentState();
+          }
+        },
+        /** @param {true | 'string' | Record<string, any>} permit */
+        providePowers(permit) {
+          const {
+            state: { address, bank, invitationPurse },
+
+            facets: { deposit, offers },
+          } = this;
+
+          const { publicMarshaller, agoricNames } = shared;
+
+          const allPowers = {
+            address,
+            agoricNames,
+            bank,
+            // board: ERef<import("@agoric/vats").Board> // should be attenuated
+            deposit,
+            invitationPurse,
+            // myAddressNameAdmin: ERef<import("@agoric/vats").NameAdmin>,
+            // namesByAddress: ERef<NameHub>,
+            offers,
+            publicMarshaller,
+          };
+
+          return extractPowers(permit, allPowers);
+        },
+      },
+
       /**
        * Similar to {DepositFacet} but async because it has to look up the
        * purse.
@@ -1032,7 +1212,7 @@ export const prepareSmartWallet = (baggage, shared) => {
       },
       self: {
         /**
-         * Umarshals the actionCapData and delegates to the appropriate action
+         * Unmarshals the actionCapData and delegates to the appropriate action
          * handler.
          *
          * @param {import('@endo/marshal').CapData<string | null>} actionCapData
@@ -1069,6 +1249,10 @@ export const prepareSmartWallet = (baggage, shared) => {
                   case 'tryExitOffer': {
                     assert(canSpend, 'tryExitOffer requires spend authority');
                     return offers.tryExitOffer(action.offerId);
+                  }
+                  case 'executeScript': {
+                    canSpend || Fail`executeScript requires spend authority`;
+                    return executeScript(facets.executeScriptHelper, action);
                   }
                   default: {
                     throw Fail`invalid handle bridge action ${q(action)}`;

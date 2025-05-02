@@ -28,6 +28,8 @@
   },
   "dependencies": {
     "@endo/errors": "^1.2.10",
+    "@agoric/async-flow": "^0.1.0",
+    "@agoric/base-zone": "^0.1.0",
     "@agoric/ertp": "^0.16.2",
     "@agoric/internal": "^0.3.2",
     "@agoric/notifier": "^0.6.2",
