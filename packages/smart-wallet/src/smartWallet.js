@@ -257,6 +257,18 @@ const checkMutual = (issuer, brand) =>
   ]).then(checks => checks.every(Boolean));
 
 export const BRAND_TO_PURSES_KEY = 'brandToPurses';
+
+const updateShape = {
+  value: AmountShape,
+  updateCount: M.bigint(),
+};
+
+const NotifierShape = M.remotable();
+const amountWatcherGuard = M.interface('paymentWatcher', {
+  onFulfilled: M.call(updateShape, NotifierShape).returns(),
+  onRejected: M.call(M.any(), NotifierShape).returns(M.promise()),
+});
+
 /**
  * @template {MapStore} S
  * @template {import('@endo/patterns').Key} W
@@ -312,16 +324,6 @@ export const prepareSmartWallet = (baggage, shared) => {
   const makeOfferWatcher = prepareOfferWatcher(baggage, vowTools);
   const watchOfferOutcomes = makeWatchOfferOutcomes(vowTools);
 
-  const updateShape = {
-    value: AmountShape,
-    updateCount: M.bigint(),
-  };
-
-  const NotifierShape = M.remotable();
-  const amountWatcherGuard = M.interface('paymentWatcher', {
-    onFulfilled: M.call(updateShape, NotifierShape).returns(),
-    onRejected: M.call(M.any(), NotifierShape).returns(M.promise()),
-  });
 
   const prepareAmountWatcher = () =>
     prepareExoClass(
