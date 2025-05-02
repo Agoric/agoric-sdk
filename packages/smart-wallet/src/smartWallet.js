@@ -257,17 +257,22 @@ const checkMutual = (issuer, brand) =>
   ]).then(checks => checks.every(Boolean));
 
 export const BRAND_TO_PURSES_KEY = 'brandToPurses';
-
-const getBrandToPurses = (walletPurses, key) => {
-  const brandToPurses = provideLazy(walletPurses, key, _k => {
-    /** @type {MapStore<Brand, PurseRecord[]>} */
-    const store = makeScalarBigMapStore('purses by brand', {
-      durable: true,
-    });
+/**
+ * @template {MapStore} S
+ * @template {import('@endo/patterns').Key} W
+ * @param {WeakMapStore<W, S>} mapStoreByWallet
+ * @param {string} label
+ * @returns {(wallet: W) => S}
+ */
+const makeLazyMapStoreForWalletProvider = (mapStoreByWallet, label) => wallet =>
+  provideLazy(mapStoreByWallet, wallet, _ => {
+    const store = /** @type {S} */ (
+      makeScalarBigMapStore(label, {
+        durable: true,
+      })
+    );
     return store;
   });
-  return brandToPurses;
-};
 
 /**
  * @param {import('@agoric/vat-data').Baggage} baggage
@@ -297,6 +302,10 @@ export const prepareSmartWallet = (baggage, shared) => {
     });
     return store;
   });
+  const getBrandToPurses = makeLazyMapStoreForWalletProvider(
+    walletPurses,
+    'purses by brand',
+  );
 
   const vowTools = prepareVowTools(zone.subZone('vow'));
 
@@ -598,7 +607,7 @@ export const prepareSmartWallet = (baggage, shared) => {
          */
         async getPurseIfKnownBrand(brand, known) {
           const { helper, self } = this.facets;
-          const brandToPurses = getBrandToPurses(walletPurses, self);
+          const brandToPurses = getBrandToPurses(self);
 
           if (brandToPurses.has(brand)) {
             const purses = brandToPurses.get(brand);
