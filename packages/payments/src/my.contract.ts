@@ -10,6 +10,7 @@ import {
   CosmosChainInfoShape,
   DenomDetailShape,
   DenomShape,
+  type OrchestrationAccount,
 } from '@agoric/orchestration';
 import { makeTracer, NonNullish } from '@agoric/internal';
 import { type VTransferIBCEvent } from '@agoric/vats';
@@ -20,6 +21,7 @@ import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import type { Marshaller } from '@agoric/internal/src/lib-chainStorage.js';
 import * as flows from './my.flows.ts';
+import { typedJson } from '@agoric/cosmic-proto';
 
 const trace = makeTracer('PaymentsContract');
 
@@ -61,6 +63,8 @@ export const contract = async (
 
   const { when } = tools.vowTools;
 
+  let hookAccount: OrchestrationAccount<{ chainId: 'agoric' }>;
+
   const tap = zone.makeOnce('tapPosition', _key => {
     console.log('making tap');
     return zone.exo('tap', interfaceTODO, {
@@ -72,9 +76,27 @@ export const contract = async (
             // Extract the incoming packet data.
             const {
               amount,
-              denom,
+              denom: origDenom,
               receiver: origReceiver,
             } = JSON.parse(event.packet.data) as FungibleTokenPacketData;
+
+            let denom: Denom = origDenom;
+            if (false) {
+              const prefix = `${event.packet.destination_port}/${event.packet.destination_channel}/`;
+              if (origDenom.startsWith(prefix)) {
+                // Extract the denom from the packet data.
+                denom = origDenom.slice(prefix.length);
+              } else {
+                // The denom is not prefixed with the channel info.
+                // Query the chain for the denom.
+                const trace = `${event.packet.source_port}/${event.packet.source_channel}/${denom}`;
+                denom = await when(
+                  E(hookAccount).query(
+                    typedJson('/ibc.getMyDenomHash', { trace }),
+                  ),
+                );
+              }
+            }
 
             /*
             // Extract the destination address and denomination.
@@ -111,9 +133,10 @@ export const contract = async (
     makeHookAccount(tap),
   );
 
-  void when(hookAccountV, async hookAccount => {
+  void when(hookAccountV, async lca => {
+    hookAccount = lca;
     const encoded = await E(privateArgs.marshaller).toCapData({
-      hookAccount: hookAccount.getAddress(),
+      hookAccount: lca.getAddress(),
     });
     void E(NonNullish(privateArgs.storageNode)).setValue(
       JSON.stringify(encoded),
