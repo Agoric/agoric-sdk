@@ -6,6 +6,7 @@
     "*.js",
     "scripts/**/*.js",
     "src/**/*.js",
+    "src/**/*.ts",
     "test/**/*.js",
     "tools/**/*.js",
   ],
