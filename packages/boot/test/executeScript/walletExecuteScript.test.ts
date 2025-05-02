@@ -1,12 +1,21 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { TestFn } from 'ava';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
 } from '../bootstrapTests/walletFactory.js';
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
+
+const readRelativeFile = (filename: string) =>
+  fs.readFileSync(
+    path.join(path.dirname(fileURLToPath(import.meta.url)), filename),
+    'utf-8',
+  );
 
 test.before(async t => {
   t.context = await makeWalletFactoryContext(
@@ -28,24 +37,11 @@ test('executes', async t => {
     'agoric1getterexecutor',
   );
   console.log('executing script');
+
   await getterExecutor.executeScript(
     'execute-get-value',
     true,
-    `
-      const { offers } = powers;
-      
-      const getResultP = E(offers).executeOffer({
-        id: 'get-value',
-        invitationSpec: {
-          source: 'agoricContract',
-          instancePath: ['valueVow'],
-          callPipe: [['makeGetterInvitation']],
-        },
-        proposal: {},
-      });
-
-      await getResultP;
-    `,
+    readRelativeFile('execute-get-value.script.mjs'),
   );
 
   t.log('confirm the value is not in offer results');

@@ -8,6 +8,7 @@
     "scripts/**/*.js",
     "src/**/*.js",
     "test/**/*.js",
+    "test/**/*.mjs",
     "test/**/*.ts",
     "tools/**/*.js",
     "tools/**/*.ts",
