@@ -1,4 +1,6 @@
 import { PromiseWatcherI } from '@agoric/base-zone';
+import { makeScalarMapStore } from '@agoric/store';
+import { prepareExo } from '@agoric/vat-data';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 
@@ -117,9 +119,15 @@ export const prepareExecuteScript = (zone, { watch }, { asyncFlow }) => {
 
     const powers = walletHelper.providePowers(permit);
 
-    const endowments = harden({
-      // log ?
-    });
+    // XXX fake durability
+    const endowments = prepareExo(
+      makeScalarMapStore(),
+      'endowments',
+      undefined,
+      {
+        trace: (...args) => console.log(`execution:${executionId}: `, ...args),
+      },
+    );
 
     // executeScriptFlow will not execute user script synchronously
     const vow = executeScriptFlow(endowments, powers, jsCode);

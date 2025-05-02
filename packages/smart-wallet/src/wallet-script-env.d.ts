@@ -22,6 +22,9 @@ declare global {
   // @endo/far exports
   var E: typeof far.E;
 
+  /** Log output tagged with the execution id */
+  var trace: typeof console.log;
+
   // This is correctly the `Assert` type from `'ses'`, not from @endo/errors
   // See https://github.com/Agoric/agoric-sdk/issues/9515
   var assert: Assert;
