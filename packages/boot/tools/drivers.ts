@@ -98,6 +98,10 @@ export const makeWalletFactoryDriver = async (
       const offer = makeOffer(agoricNamesRemotes, firstArg, secondArg);
       return this.sendOffer(offer);
     },
+    /**
+     * Start executing the script (as a spendAction would).
+     * Completion is signaled only through vstorage.
+     */
     executeScript(executionId: string, permit: unknown, jsCode: string) {
       const jsonPermit = JSON.stringify(permit);
 
