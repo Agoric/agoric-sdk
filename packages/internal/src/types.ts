@@ -1,6 +1,6 @@
 /* eslint-disable max-classes-per-file */
 import type { ERef, RemotableBrand } from '@endo/eventual-send';
-import type { Primitive } from '@endo/pass-style';
+import type { Atom } from '@endo/pass-style';
 import type { Pattern } from '@endo/patterns';
 import type { Callable } from './ses-utils.js';
 
@@ -57,25 +57,25 @@ export declare class SyncCallback<
 }
 
 /**
-Returns a boolean for whether the given type is primitive value or primitive type.
- 
-@example
-```
-IsPrimitive<'string'>
-//=> true
- 
-IsPrimitive<string>
-//=> true
- 
-IsPrimitive<Object>
-//=> false
-```
+ * Returns a boolean for whether the given type is primitive value or primitive type.
+ *
+ * @example
+ * ```
+ * IsAtom<'string'>
+ * //=> true
+ *
+ * IsAtom<string>
+ * //=> true
+ *
+ * IsAtom<Object>
+ * //=> false
+ * ```
  */
-export type IsPrimitive<T> = [T] extends [Primitive] ? true : false;
+export type IsAtom<T> = [T] extends [Atom] ? true : false;
 
 /** Recursively extract the non-callable properties of T */
 export type DataOnly<T> =
-  IsPrimitive<T> extends true
+  IsAtom<T> extends true
     ? T
     : T extends Callable
       ? never
