@@ -36,8 +36,8 @@
   },
   "dependencies": {
     "@agoric/cosmic-proto": "^0.4.0",
-    "@agoric/deploy-script-support": "^0.10.4-u20.0",
-    "@agoric/internal": "0.4.0-u20.0",
+    "@agoric/deploy-script-support": "^0.10.3",
+    "@agoric/internal": "^0.3.2",
     "@endo/errors": "^1.2.10",
     "@endo/far": "^1.1.11",
     "@endo/pass-style": "^1.5.0",

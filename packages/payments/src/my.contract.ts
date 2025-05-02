@@ -7,6 +7,9 @@ import {
   type CosmosChainInfo,
   type Denom,
   type DenomDetail,
+  CosmosChainInfoShape,
+  DenomDetailShape,
+  DenomShape,
 } from '@agoric/orchestration';
 import { makeTracer, NonNullish } from '@agoric/internal';
 import { type VTransferIBCEvent } from '@agoric/vats';
@@ -29,11 +32,20 @@ export type PrivateArgs = OrchestrationPowers & {
 const interfaceTODO = undefined;
 
 export const meta = M.splitRecord({
-  privateArgsShape: {
-    // @ts-expect-error TypedPattern not recognized as record
-    ...OrchestrationPowersShape,
-    marshaller: M.remotable('marshaller'),
-  },
+  privateArgsShape: M.splitRecord(
+    {
+      // @ts-expect-error TypedPattern not recognized as record
+      ...OrchestrationPowersShape,
+      marshaller: M.remotable('marshaller'),
+    },
+    {
+      chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
+      assetInfo: M.arrayOf([
+        DenomShape,
+        M.and(DenomDetailShape, M.splitRecord({}, { brandKey: M.string() })),
+      ]),
+    },
+  ),
 });
 harden(meta);
 
