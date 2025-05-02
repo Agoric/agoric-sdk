@@ -4,7 +4,7 @@ import { M } from '@endo/patterns';
 import { makeScalarWeakMapStore } from '@agoric/store';
 import { PromiseWatcherI } from '@agoric/base-zone';
 import { prepareVowTools, toPassableCap, VowShape } from '@agoric/vow';
-import { makeReplayMembrane } from './replay-membrane.js';
+import { makeReplayMembraneForTesting } from './replay-membrane.js';
 import { prepareLogStore } from './log-store.js';
 import { prepareBijection } from './bijection.js';
 import { prepareEndowmentTools } from './endowments.js';
@@ -102,6 +102,8 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
     const {
       // May change default to false, once instances reliably wake up
       startEager = true,
+      // For "testing"
+      enableEventualSend = false,
     } = options;
 
     const internalMakeAsyncFlowKit = zone.exoClassKit(
@@ -192,12 +194,13 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
               watch(vowish, wakeWatcher);
             };
             const panic = err => admin.panic(err);
-            const membrane = makeReplayMembrane({
+            const membrane = makeReplayMembraneForTesting({
               log,
               bijection,
               vowTools,
               watchWake,
               panic,
+              __eventualSendForTesting: enableEventualSend,
             });
             initMembrane(flow, membrane);
             const guestArgs = membrane.hostToGuest(activationArgs);

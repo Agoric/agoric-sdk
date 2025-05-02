@@ -99,6 +99,7 @@ export type PreparationOptions = {
 };
 export type FlowOptions = {
   startEager?: boolean;
+  enableEventualSend?: boolean;
 };
 export type OutcomeKind = 'return' | 'throw';
 
