@@ -50,6 +50,7 @@ import { prepareExecuteScript } from './scriptExecute.js';
 
 /**
  * @import {Amount, Brand, Issuer, Payment, Purse} from '@agoric/ertp';
+ * @import {Attenuated, Permit} from '@agoric/internal';
  * @import {WeakMapStore, MapStore} from '@agoric/store'
  * @import {InvitationDetails, PaymentPKeywordRecord, Proposal, UserSeat} from '@agoric/zoe';
  * @import {EReturn} from '@endo/far';
@@ -358,6 +359,18 @@ const makeLazyMapStoreForWalletProvider = (mapStoreByWallet, label) => wallet =>
     return store;
   });
 
+/**
+ * @typedef {{
+ *   address: string;
+ *   agoricNames: ERef<import('@agoric/vats').NameHub>;
+ *   bank: ERef<import('@agoric/vats/src/vat-bank.js').Bank>;
+ *   deposit: { receive: (payment: Payment) => Promise<Amount> };
+ *   invitationPurse: Purse;
+ *   offers: { executeOffer: (spec: OfferSpec) => Promise<void> };
+ *   publicMarshaller: import('@agoric/internal/src/lib-chainStorage.js').Marshaller;
+ * }} AllPowers
+ */
+
 const ExecuteScriptHelperI = M.interface('executeScriptHelperFacetI', {
   getActiveFlows: M.call().returns(M.remotable()),
   updateStatus: M.call(M.string(), ScriptExecutionStatusUpdateShape).returns(),
@@ -372,9 +385,7 @@ const ExecuteScriptHelperI = M.interface('executeScriptHelperFacetI', {
  *   import('./scriptExecute.js').ActiveFlowsValue
  * >} getActiveFlows
  * @property {(id: string, status: ScriptExecutionStatus) => void} updateStatus
- * @property {(
- *   powers: true | string | Record<string, any>,
- * ) => Record<string, any>} providePowers
+ * @property {<P extends Permit<any>>(permit: P) => Attenuated<AllPowers, P>} providePowers
  */
 
 /**
@@ -917,7 +928,7 @@ export const prepareSmartWallet = (baggage, shared) => {
             facets.helper.publishCurrentState();
           }
         },
-        /** @param {true | 'string' | Record<string, any>} permit */
+        /** @param {true | string | Record<string, any>} permit */
         providePowers(permit) {
           const {
             state: { address, bank, invitationPurse },
@@ -927,6 +938,7 @@ export const prepareSmartWallet = (baggage, shared) => {
 
           const { publicMarshaller, agoricNames } = shared;
 
+          /** @type {AllPowers} */
           const allPowers = {
             address,
             agoricNames,

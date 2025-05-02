@@ -6,13 +6,18 @@ import { E } from '@endo/eventual-send';
  * @import {AsyncFlowTools} from '@agoric/async-flow';
  * @import {VowTools, Vow} from '@agoric/vow';
  * @import {Zone} from '@agoric/base-zone';
- * @import {ExecuteScriptAction, ExecuteScriptHelper, ScriptExecutionStatus} from './smartWallet.js';
+ * @import {AllPowers, ExecuteScriptAction, ExecuteScriptHelper, ScriptExecutionStatus} from './smartWallet.js';
  */
 
 /**
  * @typedef {Vow} ActiveFlowsValue
  */
 
+/**
+ * @param {{}} endowments
+ * @param {Partial<AllPowers>} powers
+ * @param {string} script
+ */
 export const executeScriptGuest = async (endowments, powers, script) => {
   const globals = harden({
     E,
