@@ -67,7 +67,7 @@ export const startPayments = async (
       marshaller,
       orchestrationService: cosmosInterchainService,
       storageNode: E(NonNullish(await chainStorage)).makeChildNode(
-        'spikePayments',
+        'SwapMachine-alpha',
       ),
       timerService: chainTimerService,
       chainInfo,
