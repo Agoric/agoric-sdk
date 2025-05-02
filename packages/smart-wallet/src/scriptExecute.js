@@ -6,7 +6,7 @@ import { E } from '@endo/eventual-send';
  * @import {AsyncFlowTools} from '@agoric/async-flow';
  * @import {VowTools, Vow} from '@agoric/vow';
  * @import {Zone} from '@agoric/base-zone';
- * @import {ExecuteScriptAction, ScriptExecutionId, ScriptExecutionStatus} from './smartWallet.js';
+ * @import {ExecuteScriptAction, ExecuteScriptHelper, ScriptExecutionStatus} from './smartWallet.js';
  */
 
 /**
@@ -50,8 +50,8 @@ export const prepareExecuteScript = (zone, { watch }, { asyncFlow }) => {
   });
 
   /**
-   * @param {any} walletHelper
-   * @param {ScriptExecutionId} executionId
+   * @param {ExecuteScriptHelper} walletHelper
+   * @param {string} executionId
    * @param {ScriptExecutionStatus} status
    */
   const finalizeExecution = (walletHelper, executionId, status) => {
@@ -91,7 +91,7 @@ export const prepareExecuteScript = (zone, { watch }, { asyncFlow }) => {
   });
 
   /**
-   * @param {any} walletHelper
+   * @param {ExecuteScriptHelper} walletHelper
    * @param {ExecuteScriptAction} action
    */
   const initiateScriptExecution = (

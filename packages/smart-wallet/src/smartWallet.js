@@ -63,8 +63,8 @@ const trace = makeTracer('SmrtWlt');
  * @see {@link ../README.md} }
  */
 
+// XXX number just for backwards compatibility
 /** @typedef {number | string} OfferId */
-/** @typedef {number | string} ScriptExecutionId */
 
 /**
  * @typedef {{
@@ -96,7 +96,7 @@ const trace = makeTracer('SmrtWlt');
 /**
  * @typedef {{
  *   method: 'executeScript';
- *   executionId: ScriptExecutionId;
+ *   executionId: string;
  *   jsCode: string;
  *   jsonPermit: string;
  * }} ExecuteScriptAction
@@ -174,7 +174,7 @@ const trace = makeTracer('SmrtWlt');
  *     publicTopics: { [subscriberName: string]: string },
  *   ][];
  *   liveOffers: [OfferId, OfferStatus][];
- *   activeScriptExecutions: ScriptExecutionId[];
+ *   activeScriptExecutions: string[];
  * }} CurrentWalletRecord
  */
 
@@ -182,7 +182,7 @@ const trace = makeTracer('SmrtWlt');
  * @typedef {{ updated: 'offerStatus'; status: OfferStatus }
  *   | {
  *       updated: 'scriptExecutionStatus';
- *       executionId: ScriptExecutionId;
+ *       executionId: string;
  *       status: ScriptExecutionStatus;
  *     }
  *   | { updated: 'balance'; currentAmount: Amount }
@@ -314,7 +314,7 @@ const updateShape = {
   updateCount: M.bigint(),
 };
 
-const scriptExecutionStatusUpdateShape = M.or(
+const ScriptExecutionStatusUpdateShape = M.or(
   {
     eventType: 'start',
     jsCode: M.string(),
@@ -357,6 +357,25 @@ const makeLazyMapStoreForWalletProvider = (mapStoreByWallet, label) => wallet =>
     );
     return store;
   });
+
+const ExecuteScriptHelperI = M.interface('executeScriptHelperFacetI', {
+  getActiveFlows: M.call().returns(M.remotable()),
+  updateStatus: M.call(M.string(), ScriptExecutionStatusUpdateShape).returns(),
+  providePowers: M.call(
+    M.or(true, M.string(), M.recordOf(M.string(), M.any())),
+  ).returns(M.recordOf(M.string(), M.any())),
+});
+/**
+ * @typedef ExecuteScriptHelper
+ * @property {() => MapStore<
+ *   string,
+ *   import('./scriptExecute.js').ActiveFlowsValue
+ * >} getActiveFlows
+ * @property {(id: string, status: ScriptExecutionStatus) => void} updateStatus
+ * @property {(
+ *   powers: true | string | Record<string, any>,
+ * ) => Record<string, any>} providePowers
+ */
 
 /**
  * @param {import('@agoric/vat-data').Baggage} baggage
@@ -405,10 +424,7 @@ export const prepareSmartWallet = (baggage, shared) => {
     /**
      * @type {WeakMapStore<
      *   unknown,
-     *   MapStore<
-     *     ScriptExecutionId,
-     *     import('./scriptExecute.js').ActiveFlowsValue
-     *   >
+     *   MapStore<string, import('./scriptExecute.js').ActiveFlowsValue>
      * >}
      */
     const store = makeScalarBigWeakMapStore('flows by wallet', {
@@ -571,16 +587,7 @@ export const prepareSmartWallet = (baggage, shared) => {
       getLiveOfferPayments: M.call().returns(M.remotable('mapStore')),
     }),
 
-    executeScriptHelper: M.interface('executeScriptHelperFacetI', {
-      getActiveFlows: M.call().returns(M.remotable()),
-      updateStatus: M.call(
-        M.string(),
-        scriptExecutionStatusUpdateShape,
-      ).returns(),
-      providePowers: M.call(
-        M.or(true, M.string(), M.recordOf(M.string(), M.any())),
-      ).returns(M.recordOf(M.string(), M.any())),
-    }),
+    executeScriptHelper: ExecuteScriptHelperI,
 
     deposit: M.interface('depositFacetI', {
       receive: M.callWhen(M.await(M.eref(PaymentShape))).returns(AmountShape),
@@ -889,7 +896,7 @@ export const prepareSmartWallet = (baggage, shared) => {
           return getActiveFlows(self);
         },
         /**
-         * @param {ScriptExecutionId} executionId
+         * @param {string} executionId
          * @param {ScriptExecutionStatus} status
          */
         updateStatus(executionId, status) {

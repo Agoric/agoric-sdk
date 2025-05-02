@@ -13,7 +13,6 @@ import { Fail } from '@endo/errors';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import type {
   CurrentWalletRecord,
-  ScriptExecutionId,
   SmartWallet,
   UpdateRecord,
 } from '@agoric/smart-wallet/src/smartWallet.js';
@@ -99,11 +98,7 @@ export const makeWalletFactoryDriver = async (
       const offer = makeOffer(agoricNamesRemotes, firstArg, secondArg);
       return this.sendOffer(offer);
     },
-    executeScript(
-      executionId: ScriptExecutionId,
-      permit: unknown,
-      jsCode: string,
-    ) {
+    executeScript(executionId: string, permit: unknown, jsCode: string) {
       const jsonPermit = JSON.stringify(permit);
 
       const actionCapData = marshaller.toCapData(
