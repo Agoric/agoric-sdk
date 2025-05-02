@@ -1,18 +1,18 @@
-/** @file Hand-written based on current devnet as of 2025-05-02T04:06:00Z */
+/** @file Hand-written based on agoricdev-25 as of 2025-05-02T04:06:00Z */
 export default /** @type {const} */ ({
-  agoricdevnet: {
+  agoric: {
     bech32Prefix: 'agoric',
     chainId: 'agoricdev-25',
     icqEnabled: false,
     namespace: 'cosmos',
-    reference: 'agoricdevnet',
+    reference: 'agoric',
     stakingTokens: [
       {
         denom: 'ubld',
       },
     ],
     connections: {
-      axelartestnet: {
+      axelar: {
         id: 'connection-7',
         client_id: '07-tendermint-7',
         counterparty: {
@@ -23,14 +23,14 @@ export default /** @type {const} */ ({
         transferChannel: {
           channelId: 'channel-6',
           portId: 'transfer',
-          counterpartyChannelId: 'channel-599',
-          counterpartyPortId: 'transfer',
+          counterPartyChannelId: 'channel-599',
+          counterPartyPortId: 'transfer',
           ordering: 0,
           state: 3,
           version: 'ics20-1',
         },
       },
-      neutrontestnet: {
+      neutron: {
         id: 'connection-9',
         client_id: '07-tendermint-9',
         counterparty: {
@@ -41,14 +41,14 @@ export default /** @type {const} */ ({
         transferChannel: {
           channelId: 'channel-7',
           portId: 'transfer',
-          counterpartyChannelId: 'channel-1748',
-          counterpartyPortId: 'transfer',
+          counterPartyChannelId: 'channel-1748',
+          counterPartyPortId: 'transfer',
           ordering: 0,
           state: 3,
           version: 'ics20-1',
         },
       },
-      nobletestnet: {
+      noble: {
         id: 'connection-13',
         client_id: '07-tendermint-13',
         counterparty: {
@@ -59,14 +59,14 @@ export default /** @type {const} */ ({
         transferChannel: {
           channelId: 'channel-11',
           portId: 'transfer',
-          counterpartyChannelId: 'channel-337',
-          counterpartyPortId: 'transfer',
+          counterPartyChannelId: 'channel-337',
+          counterPartyPortId: 'transfer',
           ordering: 0,
           state: 3,
           version: 'ics20-1',
         },
       },
-      osmosistestnet: {
+      osmosis: {
         id: 'connection-6',
         client_id: '07-tendermint-6',
         counterparty: {
@@ -77,8 +77,8 @@ export default /** @type {const} */ ({
         transferChannel: {
           channelId: 'channel-5',
           portId: 'transfer',
-          counterpartyChannelId: 'channel-10293',
-          counterpartyPortId: 'transfer',
+          counterPartyChannelId: 'channel-10293',
+          counterPartyPortId: 'transfer',
           ordering: 0,
           state: 3,
           version: 'ics20-1',
@@ -86,19 +86,19 @@ export default /** @type {const} */ ({
       },
     },
   },
-  axelartestnet: {
+  axelar: {
     bech32Prefix: 'axelar',
     chainId: 'axelar-testnet-lisbon-3',
     icqEnabled: false,
     namespace: 'cosmos',
-    reference: 'axelartestnet',
+    reference: 'axelar',
     stakingTokens: [
       {
         denom: 'uaxl',
       },
     ],
     connections: {
-      agoricdevnet: {
+      agoric: {
         id: 'connection-1107',
         client_id: '07-tendermint-863',
         counterparty: {
@@ -109,8 +109,8 @@ export default /** @type {const} */ ({
         transferChannel: {
           channelId: 'channel-599',
           portId: 'transfer',
-          counterpartyChannelId: 'channel-6',
-          counterpartyPortId: 'transfer',
+          counterPartyChannelId: 'channel-6',
+          counterPartyPortId: 'transfer',
           ordering: 0,
           state: 3,
           version: 'ics20-1',
@@ -118,19 +118,19 @@ export default /** @type {const} */ ({
       },
     },
   },
-  neutrontestnet: {
+  neutron: {
     bech32Prefix: 'neutron',
     chainId: 'pion-1',
     icqEnabled: false,
     namespace: 'cosmos',
-    reference: 'neutrontestnet',
+    reference: 'neutron',
     stakingTokens: [
       {
         denom: 'untrn',
       },
     ],
     connections: {
-      agoricdevnet: {
+      agoric: {
         id: 'connection-558',
         client_id: '07-tendermint-602',
         counterparty: {
@@ -141,8 +141,8 @@ export default /** @type {const} */ ({
         transferChannel: {
           channelId: 'channel-1748',
           portId: 'transfer',
-          counterpartyChannelId: 'channel-7',
-          counterpartyPortId: 'transfer',
+          counterPartyChannelId: 'channel-7',
+          counterPartyPortId: 'transfer',
           ordering: 0,
           state: 3,
           version: 'ics20-1',
@@ -150,19 +150,19 @@ export default /** @type {const} */ ({
       },
     },
   },
-  nobletestnet: {
+  noble: {
     bech32Prefix: 'noble',
     chainId: 'grand-1',
     icqEnabled: false,
     namespace: 'cosmos',
-    reference: 'nobletestnet',
+    reference: 'noble',
     stakingTokens: [
       {
         denom: 'unoble',
       },
     ],
     connections: {
-      agoricdevnet: {
+      agoric: {
         id: 'connection-396',
         client_id: '07-tendermint-432',
         counterparty: {
@@ -173,8 +173,8 @@ export default /** @type {const} */ ({
         transferChannel: {
           channelId: 'channel-337',
           portId: 'transfer',
-          counterpartyChannelId: 'channel-11',
-          counterpartyPortId: 'transfer',
+          counterPartyChannelId: 'channel-11',
+          counterPartyPortId: 'transfer',
           ordering: 0,
           state: 3,
           version: 'ics20-1',
@@ -182,19 +182,19 @@ export default /** @type {const} */ ({
       },
     },
   },
-  osmosistestnet: {
+  osmosis: {
     bech32Prefix: 'osmo',
     chainId: 'osmo-test-5',
     icqEnabled: true,
     namespace: 'cosmos',
-    reference: 'osmosistestnet',
+    reference: 'osmosis',
     stakingTokens: [
       {
         denom: 'uosmo',
       },
     ],
     connections: {
-      agoricdevnet: {
+      agoric: {
         id: 'connection-3957',
         client_id: '07-tendermint-4596',
         counterparty: {
@@ -205,8 +205,8 @@ export default /** @type {const} */ ({
         transferChannel: {
           channelId: 'channel-10293',
           portId: 'transfer',
-          counterpartyChannelId: 'channel-5',
-          counterpartyPortId: 'transfer',
+          counterPartyChannelId: 'channel-5',
+          counterPartyPortId: 'transfer',
           ordering: 0,
           state: 3,
           version: 'ics20-1',
