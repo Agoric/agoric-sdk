@@ -25,7 +25,7 @@ test.before(async t => {
 });
 test.after.always(t => t.context.shutdown?.());
 
-test('executes', async t => {
+test.serial('executes', async t => {
   const { walletFactoryDriver, buildProposal, evalProposal } = t.context;
 
   t.log('start valueVow');
@@ -138,6 +138,35 @@ test('executes', async t => {
     t.like(getterExecutor.getLatestUpdateRecord(-1), {
       updated: 'scriptExecutionStatus',
       executionId: 'execute-get-value',
+      status: {
+        eventType: 'finish',
+        success: true,
+      },
+    });
+  }
+});
+
+test.serial.failing('Buy FastLP with IST', async t => {
+  const { walletFactoryDriver } = t.context;
+
+  const wd = await walletFactoryDriver.provideSmartWallet('agoric1buyfastlp');
+  console.log('executing script');
+  // XXX can we get the `success` value from the script execution status?
+  await wd.executeScript(
+    'execute-buy-fastlp',
+    true,
+    readRelativeFile('execute-buy-fastlp.script.mjs'),
+  );
+
+  t.log('confirm the execution is no longer active');
+  {
+    const walletRecord = wd.getCurrentWalletRecord();
+    t.like(walletRecord, {
+      activeScriptExecutions: [],
+    });
+
+    t.like(wd.getLatestUpdateRecord(-1), {
+      updated: 'scriptExecutionStatus',
       status: {
         eventType: 'finish',
         success: true,
