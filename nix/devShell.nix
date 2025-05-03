@@ -19,6 +19,9 @@
         gnumake
         protobuf
         buf
+        # Multichain testing deps
+        kubernetes-helm
+        yq
       ] ++ (with nodePkgs; [
         nodejs
         corepack
