@@ -15,7 +15,7 @@ import { makePromiseKit } from '@endo/promise-kit';
 export const prepareMockOrchAccounts = (
   zone: Zone,
   {
-    vowTools: { makeVowKit, asVow },
+    vowTools: { makeVowKit: _, asVow },
     log,
     usdc,
   }: {

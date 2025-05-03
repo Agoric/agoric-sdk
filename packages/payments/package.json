@@ -38,6 +38,8 @@
     "@agoric/cosmic-proto": "^0.4.0",
     "@agoric/deploy-script-support": "^0.10.3",
     "@agoric/internal": "^0.3.2",
+    "@agoric/orchestration": "^0.1.0",
+    "@agoric/vats": "^0.15.1",
     "@endo/errors": "^1.2.10",
     "@endo/far": "^1.1.11",
     "@endo/pass-style": "^1.5.0",

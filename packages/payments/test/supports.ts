@@ -290,7 +290,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
   };
 };
 
-export const makeDefaultContext = <SF>(contract: Installation<SF>) => {};
+export const makeDefaultContext = <SF>(_contract: Installation<SF>) => {};
 
 /**
  * Reincarnate without relaxDurabilityRules and provide a durable zone in the incarnation.
