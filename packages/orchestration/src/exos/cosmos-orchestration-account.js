@@ -951,6 +951,16 @@ export const prepareCosmosOrchestrationAccountKit = (
           });
         },
 
+        /**
+         * @type {HostOf<
+         *   OrchestrationAccountCommon['parseInboundTransfer']
+         * >}
+         */
+        parseInboundTransfer(record) {
+          trace('parseInboundTransfer', record);
+          return asVow(() => Fail`not yet implemented`);
+        },
+
         /** @type {HostOf<OrchestrationAccountCommon['transferSteps']>} */
         transferSteps(amount, msg) {
           console.log('transferSteps got', amount, msg);

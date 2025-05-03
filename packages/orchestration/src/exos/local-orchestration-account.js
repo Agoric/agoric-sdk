@@ -28,8 +28,11 @@ import { TransferRouteShape } from './chain-hub.js';
 /**
  * @import {HostOf} from '@agoric/async-flow';
  * @import {LocalChain, LocalChainAccount} from '@agoric/vats/src/localchain.js';
- * @import {AmountArg, CosmosChainAddress, DenomAmount, IBCMsgTransferOptions, IBCConnectionInfo, OrchestrationAccountCommon, LocalAccountMethods, TransferRoute, AccountId, AccountIdArg} from '@agoric/orchestration';
+ * @import {AmountArg, CosmosChainAddress, DenomAmount, IBCMsgTransferOptions, IBCConnectionInfo, OrchestrationAccountCommon, LocalAccountMethods, TransferRoute, AccountId, AccountIdArg, CosmosChainInfo, Denom, Bech32Address} from '@agoric/orchestration';
  * @import {ContractMeta, Invitation, OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {IBCEvent} from '@agoric/vats';
+ * @import {QueryDenomHashResponse} from '@agoric/cosmic-proto/ibc/applications/transfer/v1/query.js';
+ * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Zone} from '@agoric/zone';
  * @import {Remote} from '@agoric/internal';
@@ -166,6 +169,9 @@ export const prepareLocalOrchestrationAccountKit = (
         onFulfilled: M.call(TypedJsonShape).returns(
           M.arrayOf(DenomAmountShape),
         ),
+      }),
+      parseInboundTransferWatcher: M.interface('parseInboundTransferWatcher', {
+        onFulfilled: M.call(M.or(M.string(), M.record())).returns(M.record()),
       }),
       invitationMakers: M.interface('invitationMakers', {
         CloseAccount: M.call().returns(M.promise()),
@@ -481,6 +487,23 @@ export const prepareLocalOrchestrationAccountKit = (
           return harden(balances.map(toDenomAmount));
         },
       },
+      parseInboundTransferWatcher: {
+        /**
+         * @param {QueryDenomHashResponse} localDenomHash
+         * @param {Awaited<
+         *   ReturnType<OrchestrationAccountCommon['parseInboundTransfer']>
+         * >} resultWithoutLocalDenom
+         */
+        onFulfilled(localDenomHash, resultWithoutLocalDenom) {
+          const localDenom = `ibc/${localDenomHash.hash}`;
+          const { amount, ...rest } = resultWithoutLocalDenom;
+          const { denom: _, ...amountRest } = amount;
+          return harden({
+            ...rest,
+            amount: { ...amountRest, denom: localDenom },
+          });
+        },
+      },
       holder: {
         /** @type {HostOf<OrchestrationAccountCommon['asContinuingOffer']>} */
         asContinuingOffer() {
@@ -714,6 +737,76 @@ export const prepareLocalOrchestrationAccountKit = (
               },
             );
             return resultV;
+          });
+        },
+        /**
+         * @type {HostOf<
+         *   OrchestrationAccountCommon['parseInboundTransfer']
+         * >}
+         */
+        parseInboundTransfer(record) {
+          trace('parseInboundTransfer', record);
+          return asVow(() => {
+            const packet =
+              /** @type {IBCEvent<'writeAcknowledgement'>['packet']} */ (
+                record
+              );
+
+            /** @type {FungibleTokenPacketData} */
+            const {
+              denom: transferDenom,
+              sender,
+              receiver,
+              amount,
+              ...restData
+            } = JSON.parse(packet.data);
+
+            /**
+             * @param {string} address
+             */
+            const resolveBech32Address = address =>
+              chainHub.resolveAccountId(/** @type {Bech32Address} */ (address));
+
+            /**
+             * @param {Denom} localDenom
+             */
+            const buildReturnValue = localDenom =>
+              harden({
+                amount: /** @type {DenomAmount} */ ({
+                  value: BigInt(amount),
+                  denom: localDenom,
+                }),
+                fromAccount: resolveBech32Address(sender),
+                toAccount: resolveBech32Address(receiver),
+                extra: {
+                  transferDenom,
+                  ...restData,
+                },
+              });
+
+            const prefix = `${packet.destination_port}/${packet.destination_channel}/`;
+            if (transferDenom.startsWith(prefix)) {
+              /**
+               * Extract the denom from the packet data.
+               *
+               * @type {Denom}
+               */
+              const localDenom = transferDenom.slice(prefix.length);
+              return buildReturnValue(localDenom);
+            }
+
+            // Find the local denom hash for the transferDenom.
+            const denomTrace = `${packet.source_port}/${packet.source_channel}/${transferDenom}`;
+            return watch(
+              E(localchain).query(
+                typedJson(
+                  '/ibc.applications.transfer.v1.QueryDenomHashRequest',
+                  { trace: denomTrace },
+                ),
+              ),
+              this.facets.parseInboundTransferWatcher,
+              buildReturnValue('ibc/DENOM-HASH-QUERY-IN-PROGRESS'),
+            );
           });
         },
         /** @type {HostOf<OrchestrationAccountCommon['transferSteps']>} */

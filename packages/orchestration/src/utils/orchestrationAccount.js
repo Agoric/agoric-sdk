@@ -29,6 +29,20 @@ export const orchestrationAccountMethods = {
   transfer: M.call(AccountIdArgShape, AmountArgShape)
     .optional(IBCTransferOptionsShape)
     .returns(VowShape),
+  parseInboundTransfer: M.call(M.recordOf(M.string(), M.any())).returns(
+    Vow$(
+      M.splitRecord(
+        {
+          amount: AmountArgShape,
+          fromAccount: AccountIdArgShape,
+          toAccount: AccountIdArgShape,
+        },
+        {
+          extra: M.recordOf(M.string(), M.any()),
+        },
+      ),
+    ),
+  ),
   transferSteps: M.call(AmountArgShape, M.any()).returns(VowShape),
   asContinuingOffer: M.call().returns(
     Vow$({

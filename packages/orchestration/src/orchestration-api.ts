@@ -285,6 +285,16 @@ export interface OrchestrationAccountCommon {
   ) => Promise<void>;
 
   /**
+   * Parse an incoming transfer message and return its details.
+   */
+  parseInboundTransfer: (packet: Record<string, any>) => Promise<{
+    amount: DenomAmount;
+    fromAccount: AccountId;
+    toAccount: AccountId;
+    extra?: Record<string, any>;
+  }>;
+
+  /**
    * Transfer an amount to another account in multiple steps. The promise settles when
    * the entire path of the transfer is complete.
    * @param amount - the amount to transfer
