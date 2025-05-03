@@ -291,7 +291,7 @@ export interface OrchestrationAccountCommon {
     amount: DenomAmount;
     fromAccount: AccountId;
     toAccount: AccountId;
-    extra?: Record<string, any>;
+    extra: Record<string, any>;
   }>;
 
   /**

@@ -753,13 +753,13 @@ export const prepareLocalOrchestrationAccountKit = (
               );
 
             /** @type {FungibleTokenPacketData} */
+            const ftPacketData = JSON.parse(packet.data);
             const {
               denom: transferDenom,
               sender,
               receiver,
               amount,
-              ...restData
-            } = JSON.parse(packet.data);
+            } = ftPacketData;
 
             /**
              * @param {string} address
@@ -779,8 +779,7 @@ export const prepareLocalOrchestrationAccountKit = (
                 fromAccount: resolveBech32Address(sender),
                 toAccount: resolveBech32Address(receiver),
                 extra: {
-                  transferDenom,
-                  ...restData,
+                  ...ftPacketData,
                 },
               });
 
