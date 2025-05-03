@@ -22,8 +22,32 @@ export const defaultProposalBuilder = async (
 
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
+  await null;
   const { scriptArgs } = endowments;
-  const opts = parseChainHubOpts(scriptArgs);
+
+  let chainInfoImport;
+  switch (scriptArgs && scriptArgs[0]) {
+    case 'devnet': {
+      chainInfoImport =
+        '@agoric/orchestration/src/fetched-chain-info.devnet.js';
+      break;
+    }
+    case 'main': {
+      chainInfoImport = '@agoric/orchestration/src/fetched-chain-info.js';
+      break;
+    }
+    default: {
+      break;
+    }
+  }
+
+  let args = scriptArgs;
+  if (chainInfoImport) {
+    const { default: chainInfo } = await import(chainInfoImport);
+    args = ['--chainInfo', JSON.stringify(chainInfo), ...args.slice(1)];
+  }
+
+  const opts = parseChainHubOpts(args);
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
   await writeCoreEval(startPayments.name, utils =>
     defaultProposalBuilder(utils, opts),
