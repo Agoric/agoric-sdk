@@ -41,7 +41,7 @@ export default async (homeP, endowments) => {
     }
   }
 
-  let args = scriptArgs;
+  let args = Array.isArray(scriptArgs) ? scriptArgs : [];
   if (chainInfoImport) {
     const { default: chainInfo } = await import(chainInfoImport);
     args = ['--chainInfo', JSON.stringify(chainInfo), ...args.slice(1)];

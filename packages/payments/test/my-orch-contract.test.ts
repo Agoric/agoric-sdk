@@ -9,10 +9,10 @@ import { E, passStyleOf } from '@endo/far';
 import { Nat } from '@endo/nat';
 import { M, mustMatch } from '@endo/patterns';
 import { createRequire } from 'module';
-import { ChainAddressShape } from '@agoric/orchestration';
+import { ChainAddressShape, type CosmosChainInfo } from '@agoric/orchestration';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
-import { commonSetup } from './supports.js';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
+import { commonSetup } from './supports.js';
 
 const nodeRequire = createRequire(import.meta.url);
 
@@ -29,11 +29,15 @@ test('start my orch contract', async t => {
     await bundleAndInstall(contractFile);
   t.is(passStyleOf(installation), 'remotable');
 
+  const { commonPrivateArgs } = common;
   const myKit = await E(zoe).startInstance(
     installation,
     {}, // issuers
     {}, // terms
-    common.commonPrivateArgs,
+    {
+      ...commonPrivateArgs,
+      chainInfo: commonPrivateArgs.chainInfo as Record<string, CosmosChainInfo>,
+    },
   );
   t.notThrows(() =>
     mustMatch(

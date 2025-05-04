@@ -4,13 +4,13 @@ import type {
   OrchestrationAccount,
   OrchestrationFlow,
   Orchestrator,
+  Denom,
 } from '@agoric/orchestration';
 import type { GuestInterface, GuestOf } from '@agoric/async-flow';
 import type { LocalOrchestrationAccountKit } from '@agoric/orchestration/src/exos/local-orchestration-account';
 import type { Vow } from '@agoric/vow';
 import { Fail } from '@endo/errors';
 import { makeTracer } from '@agoric/internal';
-import type { Denom } from '@agoric/orchestration';
 import type { TargetApp } from '@agoric/vats/src/bridge-target';
 
 const trace = makeTracer('SwapAndSend');
@@ -102,10 +102,14 @@ export const swapAndSend = async (
     receiver: string;
   },
 ) => {
-  
   // FIXME: this is a placeholder
   console.log('swapAndSend', { amount, denom, swapDenom, sender, receiver });
-  const { chainHub, localAccountHolder: localAccountHolderP, log, tools } = ctx;
+  const {
+    chainHub,
+    localAccountHolder: localAccountHolderP,
+    log,
+    tools: _,
+  } = ctx;
 
   const sharedLocalAccount = await localAccountHolderP;
 

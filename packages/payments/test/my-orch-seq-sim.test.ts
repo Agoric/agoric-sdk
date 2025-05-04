@@ -66,7 +66,6 @@ const makeCosmosAccount = (addr: string) => {
   };
   return freeze(self);
 };
-type CosmosAccount = ReturnType<typeof makeCosmosAccount>;
 
 const accountMaker = (to: string) => {
   if (to.startsWith('stride1')) return makeStrideAccount;
@@ -88,7 +87,7 @@ const makeLocalOrchAccount = (addr: string, strideAddr: string) => {
         await self.receiveUpcall(t, amt, fwd);
       }
     },
-    async receiveUpcall(t: Ex, amt: Coins, fwd?: PFM) {
+    async receiveUpcall(t: Ex, amt: Coins, _fwd?: PFM) {
       t.log('orch hook received', amt);
       // Send back to cosmos account first with forwarding instructions
       await base.send(t, amt, makeStrideAccount(strideAddr), {
@@ -118,7 +117,7 @@ const makeUA = (orch: Awaited<ReturnType<typeof makeOrchContract>>) => {
     t: Ex,
     amt: Coins,
     destAddr: string,
-    memo = '',
+    _memo = '',
   ) => {
     if (destAddr !== myAcct.getAddress()) throw Error('unsupported');
     const acct = await hookAcctP;
