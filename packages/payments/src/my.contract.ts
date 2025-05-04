@@ -18,10 +18,8 @@ import type { Zone } from '@agoric/zone';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
-import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import type { Marshaller } from '@agoric/internal/src/lib-chainStorage.js';
 import * as flows from './my.flows.ts';
-import { typedJson } from '@agoric/cosmic-proto';
 
 const trace = makeTracer('PaymentsContract');
 
@@ -76,36 +74,9 @@ export const contract = async (
             // Extract the incoming packet data.
             const {
               amount,
-              denom: origDenom,
-              receiver: origReceiver,
-            } = JSON.parse(event.packet.data) as FungibleTokenPacketData;
+              extra: { receiver: origReceiver },
+            } = await E(hookAccount).parseInboundTransfer(event.packet);
 
-            let denom: Denom = origDenom;
-            if (false) {
-              const prefix = `${event.packet.destination_port}/${event.packet.destination_channel}/`;
-              if (origDenom.startsWith(prefix)) {
-                // Extract the denom from the packet data.
-                denom = origDenom.slice(prefix.length);
-              } else {
-                // The denom is not prefixed with the channel info.
-                // Query the chain for the denom.
-                const trace = `${event.packet.source_port}/${event.packet.source_channel}/${denom}`;
-                denom = await when(
-                  E(hookAccount).query(
-                    typedJson('/ibc.getMyDenomHash', { trace }),
-                  ),
-                );
-              }
-            }
-
-            /*
-            // Extract the destination address and denomination.
-            const addr = encodeAddressHook("agoric1blahblah", {
-              DST: 'cosmos1taihetahieate',
-              SWP: ''
-            });
-            // agoric10rchdaidideiadieeadiddaeadediad -> agoric1blahblah?DST=cosmos1&SWP=
-            */
             const { baseAddress, query } = decodeAddressHook(origReceiver);
             const { DST: receiver, SWP: swapDenom } = query;
             assert.typeof(receiver, 'string');
@@ -113,8 +84,8 @@ export const contract = async (
 
             // Invoke the flow to perform swap and end up at the final destination.
             return swapAndSend({
-              amount: BigInt(amount),
-              denom,
+              amount: BigInt(amount.value),
+              denom: amount.denom,
               swapDenom,
               sender: baseAddress,
               receiver,
