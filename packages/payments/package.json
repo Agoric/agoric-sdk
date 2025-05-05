@@ -10,6 +10,7 @@
   ],
   "scripts": {
     "build": "esbuild ./src/my.contract.ts --bundle --platform=neutral --main-fields=main --outfile=dist/my.contract.bundle.js --metafile=dist/my.contract.meta.json",
+    "build:other": "esbuild ./src/other.contract.ts --bundle --platform=neutral --main-fields=main --outfile=dist/other.contract.bundle.js --metafile=dist/other.contract.meta.json",
     "test": "ava",
     "test:c8": "c8 --all $C8_OPTIONS ava",
     "test:xs": "exit 0",

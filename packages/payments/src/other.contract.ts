@@ -1,0 +1,137 @@
+import {
+  OrchestrationPowersShape,
+  registerChainsAndAssets,
+  withOrchestration,
+  type OrchestrationTools,
+  type OrchestrationPowers,
+  type CosmosChainInfo,
+  type Denom,
+  type DenomDetail,
+  CosmosChainInfoShape,
+  DenomDetailShape,
+  DenomShape,
+  type OrchestrationAccount,
+} from '@agoric/orchestration';
+import { makeTracer, NonNullish } from '@agoric/internal';
+import { type VTransferIBCEvent } from '@agoric/vats';
+import type { Zone } from '@agoric/zone';
+import { E } from '@endo/far';
+import { M } from '@endo/patterns';
+import type { Marshaller } from '@agoric/internal/src/lib-chainStorage.js';
+import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
+import * as flows from './my.flows.ts';
+
+const trace = makeTracer('OtherContract');
+
+export type PrivateArgs = OrchestrationPowers & {
+  chainInfo?: Record<string, CosmosChainInfo>;
+  assetInfo?: [Denom, DenomDetail & { brandKey?: string }][];
+  marshaller: Marshaller;
+};
+
+const interfaceTODO = undefined;
+
+export const meta = M.splitRecord({
+  privateArgsShape: M.splitRecord(
+    {
+      // @ts-expect-error TypedPattern not recognized as record
+      ...OrchestrationPowersShape,
+      marshaller: M.remotable('marshaller'),
+    },
+    {
+      chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
+      assetInfo: M.arrayOf([
+        DenomShape,
+        M.and(DenomDetailShape, M.splitRecord({}, { brandKey: M.string() })),
+      ]),
+    },
+  ),
+});
+harden(meta);
+
+export const contract = async (
+  zcf,
+  privateArgs: PrivateArgs,
+  zone: Zone,
+  tools: OrchestrationTools,
+) => {
+  trace('Start contract');
+  const { orchestrateAll, chainHub } = tools;
+  const { makeHookAccount } = orchestrateAll(flows, {});
+
+  const { when } = tools.vowTools;
+
+  const latestTransferNode = E(privateArgs.storageNode)?.makeChildNode(
+    'latestTransfer',
+  );
+
+  let hookAccount: OrchestrationAccount<{ chainId: 'agoric' }>;
+
+  const tap = zone.makeOnce('tapPosition', _key => {
+    trace('making tap');
+    return zone.exo('tap', interfaceTODO, {
+      async receiveUpcall(event: VTransferIBCEvent) {
+        await null;
+        trace('receiveUpcall', event);
+        switch (event.event) {
+          case 'writeAcknowledgement': {
+            // Extract the incoming packet data.
+            const { amount, extra } = await when(
+              E(hookAccount).parseInboundTransfer(event.packet),
+            );
+            trace(amount, extra);
+            const { sender, receiver: origReceiver } = extra;
+            const { query } = decodeAddressHook(origReceiver);
+
+            const encoded = await E(privateArgs.marshaller).toCapData({
+              amount,
+              origReceiver,
+              sender,
+              query,
+            });
+            void E(NonNullish(latestTransferNode)).setValue(
+              JSON.stringify(encoded),
+            );
+
+            // Invoke the flow to perform swap and end up at the final destination.
+            return 'DONE';
+          }
+          default: {
+            break;
+          }
+        }
+      },
+    });
+  });
+
+  const hookAccountV = zone.makeOnce('hookAccount', _key =>
+    makeHookAccount(tap),
+  );
+
+  void when(hookAccountV, async lca => {
+    hookAccount = lca;
+    const encoded = await E(privateArgs.marshaller).toCapData({
+      otherLcaBase: lca.getAddress(),
+    });
+    void E(NonNullish(privateArgs.storageNode)).setValue(
+      JSON.stringify(encoded),
+    );
+  });
+
+  registerChainsAndAssets(
+    chainHub,
+    zcf.getTerms().brands,
+    privateArgs.chainInfo,
+    privateArgs.assetInfo,
+  );
+
+  return {
+    publicFacet: zone.exo('PaymentPub', interfaceTODO, {
+      getHookAddress: () => E(when(hookAccountV)).getAddress(),
+    }),
+    creatorFacet: zone.exo('PaymentCreator', undefined, {}),
+  };
+};
+
+export const start = withOrchestration(contract);
+harden(start);
