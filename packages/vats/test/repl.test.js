@@ -86,11 +86,11 @@ test('repl: Symbols', t => {
 
   let histnum = 0;
   const exprDisplays = ['asyncIterator', 'toStringTag', 'hasInstance'].map(
-    name => [`Symbol.${name}`, `Symbol(Symbol.${name})`],
+    name => [`Symbol.${name}`, `unpassableSymbolForName(Symbol.${name})`],
   );
   exprDisplays.push(
-    [`Symbol.for('foo')`, `Symbol(foo)`],
-    [`Symbol('foo')`, `Symbol(foo)`],
+    [`passableSymbolForName('foo')`, `unpassableSymbolForName(foo)`],
+    [`unpassableSymbolForName('foo')`, `unpassableSymbolForName(foo)`],
   );
   for (const [expr, display] of exprDisplays) {
     t.deepEqual(doEval(histnum, expr), {});

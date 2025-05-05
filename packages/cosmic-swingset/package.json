@@ -40,6 +40,7 @@
     "@endo/init": "^1.1.12",
     "@endo/marshal": "^1.8.0",
     "@endo/nat": "^5.1.3",
+    "@endo/pass-style": "^1.6.3",
     "@endo/patterns": "^1.7.0",
     "@endo/promise-kit": "^1.1.13",
     "@iarna/toml": "^2.2.3",

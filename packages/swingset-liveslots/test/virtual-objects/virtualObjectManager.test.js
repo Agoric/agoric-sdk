@@ -442,7 +442,7 @@ test('symbol named methods', t => {
       log,
     });
 
-  const IncSym = Symbol.for('incsym');
+  const IncSym = passableSymbolForName('incsym');
 
   const symThingBehavior = {
     [IncSym]({ state }) {
