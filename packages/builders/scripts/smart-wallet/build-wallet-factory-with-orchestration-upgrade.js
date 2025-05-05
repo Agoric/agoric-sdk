@@ -2,7 +2,7 @@ import { makeHelpers } from '@agoric/deploy-script-support';
 
 /**
  * @file
- *   `agoric run scripts/smart-wallet/build-wallet-factory2-upgrade.js`
+ *   `agoric run scripts/smart-wallet/build-wallet-factory-with-orchestration-upgrade.js`
  * produces a proposal and permit file, as well as the necessary bundles. It
  * also prints helpful instructions for copying the files and installing them.
  */
@@ -11,7 +11,7 @@ import { makeHelpers } from '@agoric/deploy-script-support';
 export const defaultProposalBuilder = async ({ publishRef, install }) =>
   harden({
     sourceSpec:
-      '@agoric/smart-wallet/src/proposals/upgrade-wallet-factory2-proposal.js',
+      '@agoric/smart-wallet/src/proposals/upgrade-wallet-factory-with-orch-proposal.js',
     getManifestCall: [
       'getManifestForUpgradeWallet',
       {

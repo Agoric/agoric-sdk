@@ -9,6 +9,10 @@ import { shape } from './typeGuards.js';
 const MAX_PIPE_LENGTH = 2;
 
 /**
+ * @import {Remote} from '@agoric/internal';
+ */
+
+/**
  * @typedef {AgoricContractInvitationSpec
  *   | ContractInvitationSpec
  *   | PurseInvitationSpec
@@ -67,7 +71,7 @@ const MAX_PIPE_LENGTH = 2;
 
 /**
  * @param {ERef<ZoeService>} zoe
- * @param {ERef<import('@agoric/vats').NameHub>} agoricNames
+ * @param {Remote<import('@agoric/vats').NameHub>} agoricNames
  * @param {Brand<'set'>} invitationBrand
  * @param {Purse<'set', import('@agoric/zoe').InvitationDetails>} invitationsPurse
  * @param {(fromOfferId: string) => import('./types.js').InvitationMakers} getInvitationContinuation

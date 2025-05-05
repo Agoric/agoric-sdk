@@ -89,6 +89,12 @@ export const startWalletFactory = async (
   {
     vatParameters: { chainStorageEntries = [] },
     consume: {
+      namesByAddress,
+      chainTimerService: timerService,
+      localchain,
+      cosmosInterchainService: orchestrationService,
+      // zoe,
+
       agoricNames,
       bankManager,
       board,
@@ -219,11 +225,27 @@ export const startWalletFactory = async (
     }),
   );
 
+  const orchPrivateArgs = await deeplyFulfilled(
+    harden({
+      // agoricNames,
+      namesByAddress,
+      // bankManager,
+      // board,
+      // chainStorage,
+      timerService,
+      localchain,
+      orchestrationService,
+      // startUpgradable,
+      // zoe,
+    }),
+  );
+
   const wfFacets = await E(startUpgradable)({
     installation: walletFactory,
     issuerKeywordRecord: { Fee: feeIssuer },
     terms,
     privateArgs: {
+      ...orchPrivateArgs,
       storageNode: walletStorageNode,
       walletBridgeManager,
       walletReviver: E(E.get(ppFacetsP).creatorFacet).getWalletReviver(),
@@ -309,6 +331,17 @@ export const WALLET_FACTORY_MANIFEST = {
       startUpgradable: true,
       startGovernedUpgradable: true,
       econCharterKit: 'psmCharter',
+
+      // For orchestration
+      chainTimerService: true,
+      localchain: true,
+      cosmosInterchainService: true,
+
+      // // limited distribution durin MN2: contract installation
+      // zoe: true, // only getTerms() is needed. XXX should be split?
+
+      // widely shared: name services
+      namesByAddress: true,
     },
     produce: {
       client: true, // dummy client in this configuration

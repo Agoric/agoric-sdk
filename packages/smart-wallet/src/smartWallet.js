@@ -50,7 +50,8 @@ import { prepareExecuteScript } from './scriptExecute.js';
 
 /**
  * @import {Amount, Brand, Issuer, Payment, Purse} from '@agoric/ertp';
- * @import {Attenuated, Permit} from '@agoric/internal';
+ * @import {Attenuated, Permit, Remote} from '@agoric/internal';
+ * @import {OrchestrationPowers} from '@agoric/orchestration';
  * @import {WeakMapStore, MapStore} from '@agoric/store'
  * @import {InvitationDetails, PaymentPKeywordRecord, Proposal, UserSeat} from '@agoric/zoe';
  * @import {EReturn} from '@endo/far';
@@ -228,13 +229,15 @@ const trace = makeTracer('SmrtWlt');
  *
  *
  * @typedef {{
- *   agoricNames: ERef<import('@agoric/vats').NameHub>;
+ *   agoricNames: Remote<import('@agoric/vats').NameHub>;
  *   registry: BrandDescriptorRegistry;
  *   invitationIssuer: Issuer<'set'>;
  *   invitationBrand: Brand<'set'>;
  *   invitationDisplayInfo: DisplayInfo;
  *   publicMarshaller: Marshaller;
+ *   zcf: ZCF;
  *   zoe: ERef<ZoeService>;
+ *   namesByAddress: Remote<import('@agoric/vats').NameHub>;
  * }} SharedParams
  *
  *
@@ -362,7 +365,7 @@ const makeLazyMapStoreForWalletProvider = (mapStoreByWallet, label) => wallet =>
 /**
  * @typedef {{
  *   address: string;
- *   agoricNames: ERef<import('@agoric/vats').NameHub>;
+ *   agoricNames: Remote<import('@agoric/vats').NameHub>;
  *   bank: ERef<import('@agoric/vats/src/vat-bank.js').Bank>;
  *   deposit: { receive: (payment: Payment) => Promise<Amount> };
  *   invitationPurse: Purse;
@@ -392,7 +395,7 @@ const ExecuteScriptHelperI = M.interface('executeScriptHelperFacetI', {
 
 /**
  * @param {import('@agoric/vat-data').Baggage} baggage
- * @param {SharedParams} shared
+ * @param {Omit<OrchestrationPowers, 'agoricNames'> & SharedParams} shared
  */
 export const prepareSmartWallet = (baggage, shared) => {
   const { registry: _r, ...passableShared } = shared;
@@ -403,8 +406,13 @@ export const prepareSmartWallet = (baggage, shared) => {
       invitationIssuer: IssuerShape,
       invitationBrand: BrandShape,
       invitationDisplayInfo: DisplayInfoShape,
+      localchain: M.remotable('localChain'),
+      namesByAddress: M.remotable('namesByAddress'),
+      orchestrationService: M.remotable('orchestrationService'),
       publicMarshaller: M.remotable('Marshaller'),
+      timerService: M.remotable('timerService'),
       zoe: M.eref(M.remotable('ZoeService')),
+      zcf: M.remotable('zcf'),
     }),
   );
   const zone = makeDurableZone(baggage);
@@ -747,7 +755,7 @@ export const prepareSmartWallet = (baggage, shared) => {
          * transition to decentralized introductions.
          *
          * @param {Brand} brand
-         * @param {ERef<import('@agoric/vats').NameHub>} known - namehub with
+         * @param {Remote<import('@agoric/vats').NameHub>} known - namehub with
          *   brand, issuer branches
          * @returns {Promise<Purse | undefined>} undefined if brand is not known
          */

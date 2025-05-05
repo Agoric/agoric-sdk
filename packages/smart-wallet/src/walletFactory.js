@@ -19,7 +19,9 @@ import { shape } from './typeGuards.js';
 
 /**
  * @import {MapStore} from '@agoric/swingset-liveslots';
+ * @import {Remote} from '@agoric/internal';
  * @import {NameHub} from '@agoric/vats';
+ * @import {OrchestrationPowers} from '@agoric/orchestration';
  */
 
 const trace = makeTracer('WltFct');
@@ -121,7 +123,7 @@ export const makeAssetRegistry = assetPublisher => {
 
 /**
  * @typedef {{
- *   agoricNames: ERef<NameHub>;
+ *   agoricNames: Remote<NameHub>;
  *   board: ERef<import('@agoric/vats').Board>;
  *   assetPublisher: AssetPublisher;
  * }} SmartWalletContractTerms
@@ -149,7 +151,8 @@ export const makeAssetRegistry = assetPublisher => {
 // 2. they should never be able to detect behaviors from another wallet
 /**
  * @param {ZCF<SmartWalletContractTerms>} zcf
- * @param {{
+ * @param {Omit<OrchestrationPowers, 'agoricNames'> & {
+ *   namesByAddress: Remote<NameHub>;
  *   storageNode: ERef<StorageNode>;
  *   walletBridgeManager?: ERef<
  *     import('@agoric/vats').ScopedBridgeManager<'wallet'>
@@ -163,7 +166,15 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   const { agoricNames, board, assetPublisher } = zcf.getTerms();
 
   const zoe = zcf.getZoeService();
-  const { storageNode, walletBridgeManager, walletReviver } = privateArgs;
+  const {
+    storageNode,
+    walletBridgeManager,
+    walletReviver,
+    localchain,
+    orchestrationService,
+    timerService,
+    namesByAddress,
+  } = privateArgs;
 
   /** @type {MapStore<string, import('./smartWallet.js').SmartWallet>} */
   const walletsByAddress = provideDurableMapStore(baggage, WALLETS_BY_ADDRESS);
@@ -248,6 +259,11 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     publicMarshaller,
     registry,
     zoe,
+    zcf,
+    localchain,
+    orchestrationService,
+    timerService,
+    namesByAddress,
   });
 
   /**

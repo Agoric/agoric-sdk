@@ -172,7 +172,7 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 				// because of #10794, we need to do at least a null upgrade of
 				// the walletFactory on every software upgrade
 				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/smart-wallet/build-wallet-factory2-upgrade.js",
+					"@agoric/builders/scripts/smart-wallet/build-wallet-factory-with-orchestration-upgrade.js",
 				),
 				// vat-bank is slowly leaking, possibly because of the liveslots resolved promise leak
 				// (https://github.com/Agoric/agoric-sdk/issues/11118). Restart to pick up the fix.
