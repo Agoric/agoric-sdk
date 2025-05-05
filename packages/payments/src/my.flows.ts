@@ -24,6 +24,12 @@ type SwapInfo = {
   nextMemo?: string;
 };
 
+export type DexInfo = {
+  dex: string;
+  dexInfo: string;
+  chainId: string;
+};
+
 export const makeHookAccount = (async (
   orch: Orchestrator,
   _ctx: unknown,
@@ -85,7 +91,7 @@ type SendContext = {
  * @param {SendContext} ctx
  * @param {amount: bigint; denom: string; swapDenom: string; sender: string; receiver: string} args
  */
-export const swapAndSend = async (
+export const osmosisSwapAndSend = async (
   orch: Orchestrator,
   ctx: SendContext,
   {
@@ -94,12 +100,14 @@ export const swapAndSend = async (
     swapDenom,
     sender,
     receiver,
+    dex,
   }: {
     amount: bigint;
     denom: Denom;
     swapDenom: Denom;
     sender: string;
     receiver: string;
+    dex: string;
   },
 ) => {
   // FIXME: this is a placeholder
@@ -111,17 +119,19 @@ export const swapAndSend = async (
     tools: _,
   } = ctx;
 
+
   const sharedLocalAccount = await localAccountHolderP;
 
-  void log(`Initiating send: ${amount} ${denom} to ${receiver} on Osmosis`);
 
-  const [_a, osmosisChainInfo, connection] =
-    await chainHub.getChainsAndConnection('agoric', 'osmosis');
+  void log(`Initiating send: ${amount} ${denom} to ${receiver} on ${dex}`);
 
-  connection.counterparty || Fail`No IBC connection to Osmosis`;
-  const cosmosOsmosisChainInfo = osmosisChainInfo as CosmosChainInfo;
-  void log(`got info for chain: osmosis ${cosmosOsmosisChainInfo.chainId}`);
-  trace(cosmosOsmosisChainInfo);
+  const [_a, dexChainInfo, connection] =
+    await chainHub.getChainsAndConnection('agoric', dex);
+
+  connection.counterparty || Fail`No IBC connection to ${dex}`;
+  const cosmosDexChainInfo = dexChainInfo as CosmosChainInfo;
+  void log(`got info for chain: ${dex} ${cosmosDexChainInfo.chainId}`);
+  trace(cosmosDexChainInfo);
 
   const offerArgs = {
     destAddr: receiver,
@@ -141,7 +151,7 @@ export const swapAndSend = async (
     {
       value: receiver as `${string}1${string}`,
       encoding: 'bech32',
-      chainId: /** @type {CosmosChainInfo} */ cosmosOsmosisChainInfo.chainId,
+      chainId: /** @type {CosmosChainInfo} */ cosmosDexChainInfo.chainId,
     },
     { denom, value: BigInt(amount) },
     { memo },
