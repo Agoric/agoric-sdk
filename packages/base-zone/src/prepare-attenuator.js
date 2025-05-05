@@ -135,7 +135,8 @@ export const prepareAttenuatorMaker = (
 };
 harden(prepareAttenuatorMaker);
 
-const PrefixedKindNameRE = /(alleged: |DebugName: )(.*)/;
+// cf. https://endojs.github.io/endo/functions/_endo_pass_style.Remotable.html
+const RemotablePrefixRE = /^(Alleged: |DebugName: )/;
 
 /**
  * A convenience above `prepareAttenuatorMaker` for doing a singleton
@@ -154,11 +155,10 @@ const PrefixedKindNameRE = /(alleged: |DebugName: )(.*)/;
  */
 export const attenuateOne = (underlying, uMethodNames, options = undefined) => {
   const heapZone = makeHeapZone();
-  let uKindName = underlying[Symbol.toStringTag] || 'Underlying';
-  const match = PrefixedKindNameRE.exec(uKindName);
-  if (match) {
-    uKindName = match[2];
-  }
+  const uKindName = (underlying[Symbol.toStringTag] || 'Underlying').replace(
+    RemotablePrefixRE,
+    '',
+  );
   const makeAttenuator = prepareAttenuatorMaker(
     heapZone,
     uKindName,
