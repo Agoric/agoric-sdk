@@ -22,7 +22,6 @@
     "@agoric/cosmic-proto": "^0.4.0",
     "@agoric/ertp": "^0.16.2",
     "@agoric/fast-usdc": "^0.1.0",
-    "@agoric/internal": "^0.3.2",
     "@agoric/swingset-liveslots": "^0.10.2",
     "@agoric/vow": "^0.1.0",
     "@agoric/zoe": "^0.26.2",
@@ -36,6 +35,7 @@
     "ts-blank-space": "^0.6.1"
   },
   "dependencies": {
+    "@agoric/internal": "^0.3.2",
     "@agoric/orchestration": "^0.1.0",
     "@agoric/vats": "^0.15.1",
     "@endo/errors": "^1.2.10",
