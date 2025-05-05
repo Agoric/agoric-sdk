@@ -7,7 +7,9 @@ import { fileURLToPath } from 'node:url';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
-} from '../bootstrapTests/walletFactory.js';
+} from '@aglocal/fast-usdc-deploy/test/walletFactory.ts';
+import { makeSimulation } from '@aglocal/fast-usdc-deploy/test/fu-sim-iter.js';
+import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
 
@@ -149,7 +151,27 @@ test.serial('executes', async t => {
 test.serial.failing('Buy FastLP with IST', async t => {
   const { walletFactoryDriver } = t.context;
 
+  const sim = await makeSimulation(t.context);
+
+  await sim.beforeDeploy(t);
+  const instance = await sim.deployContract(t.context);
+  t.truthy(instance);
+  await sim.beforeIterations(t);
+
   const wd = await walletFactoryDriver.provideSmartWallet('agoric1buyfastlp');
+
+  await wd.executeOfferMaker(Offers.vaults.OpenVault, {
+    offerId: 'open1',
+    collateralBrandKey: 'ATOM', // Tests are wired for ATOM collateral
+    wantMinted: 5.0,
+    giveCollateral: 9.0,
+  });
+
+  t.like(wd.getLatestUpdateRecord(), {
+    updated: 'offerStatus',
+    status: { id: 'open1', numWantsSatisfied: 1 },
+  });
+
   console.log('executing script');
   // XXX can we get the `success` value from the script execution status?
   await wd.executeScript(
