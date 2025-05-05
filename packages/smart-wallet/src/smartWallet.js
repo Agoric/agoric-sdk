@@ -385,7 +385,9 @@ const ExecuteScriptHelperI = M.interface('executeScriptHelperFacetI', {
  *   import('./scriptExecute.js').ActiveFlowsValue
  * >} getActiveFlows
  * @property {(id: string, status: ScriptExecutionStatus) => void} updateStatus
- * @property {<P extends Permit<any>>(permit: P) => Attenuated<AllPowers, P>} providePowers
+ * @property {<P extends Permit<any>>(
+ *   permit: P,
+ * ) => Attenuated<AllPowers, P & { address: true }>} providePowers
  */
 
 /**
@@ -951,6 +953,11 @@ export const prepareSmartWallet = (baggage, shared) => {
             offers,
             publicMarshaller,
           };
+
+          // Always provide the address permit
+          if (typeof permit === 'object') {
+            permit = { ...(permit ?? {}), address: true };
+          }
 
           return extractPowers(permit, allPowers);
         },

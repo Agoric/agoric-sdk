@@ -1,6 +1,4 @@
 import { PromiseWatcherI } from '@agoric/base-zone';
-import { makeScalarMapStore } from '@agoric/store';
-import { prepareExo } from '@agoric/vat-data';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 
@@ -16,14 +14,19 @@ import { E } from '@endo/eventual-send';
  */
 
 /**
- * @param {{}} endowments
+ * @param {Record<string, any>} endowments
  * @param {Partial<AllPowers>} powers
  * @param {string} script
  */
 export const executeScriptGuest = async (endowments, powers, script) => {
+  const { tracer, otherEndowments } = endowments;
+
+  const trace = tracer.trace.bind(tracer);
+
   const globals = harden({
     E,
-    ...endowments,
+    trace,
+    ...otherEndowments,
   });
 
   // Evaluate the code in the context of the globals.
@@ -97,6 +100,27 @@ export const prepareExecuteScript = (zone, { watch }, { asyncFlow }) => {
     },
   });
 
+  const makeTracer = zone.exoClass(
+    'Tracer',
+    undefined,
+    (executionId, address) => ({ executionId, address, count: 0 }),
+    {
+      trace(...args) {
+        const { state } = this;
+        const { executionId, address } = state;
+        state.count += 1;
+        console.log(
+          `wallet`,
+          address,
+          `script execution`,
+          executionId,
+          `${state.count}:`,
+          ...args,
+        );
+      },
+    },
+  );
+
   /**
    * @param {ExecuteScriptHelper} walletHelper
    * @param {ExecuteScriptAction} action
@@ -119,15 +143,9 @@ export const prepareExecuteScript = (zone, { watch }, { asyncFlow }) => {
 
     const powers = walletHelper.providePowers(permit);
 
-    // XXX fake durability
-    const endowments = prepareExo(
-      makeScalarMapStore(),
-      'endowments',
-      undefined,
-      {
-        trace: (...args) => console.log(`execution:${executionId}: `, ...args),
-      },
-    );
+    const endowments = {
+      tracer: makeTracer(executionId, powers.address),
+    };
 
     // executeScriptFlow will not execute user script synchronously
     const vow = executeScriptFlow(endowments, powers, jsCode);
