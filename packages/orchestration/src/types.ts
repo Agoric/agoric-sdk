@@ -15,6 +15,7 @@ export type * from './exos/portfolio-holder-kit.js';
 export type * from './orchestration-api.js';
 export type * from './vat-orchestration.js';
 export type * from './utils/start-helper.js';
+export type { ZoeTools } from './utils/zoe-tools.js';
 
 /**
  * ({@link ZCF})-like tools for use in {@link OrchestrationFlow}s.

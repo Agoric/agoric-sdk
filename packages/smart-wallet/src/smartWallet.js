@@ -41,6 +41,16 @@ import { prepareVowTools } from '@agoric/vow';
 import { prepareAsyncFlowTools } from '@agoric/async-flow';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { extractPowers } from '@agoric/vats/src/core/utils.js';
+import {
+  makeChainHub,
+  makeZcfTools,
+  makeZoeTools,
+  prepareCosmosOrchestrationAccount,
+  prepareLocalChainFacade,
+  prepareLocalOrchestrationAccountKit,
+  prepareOrchestrator,
+  prepareRemoteChainFacade,
+} from '@agoric/orchestration';
 
 import { makeInvitationsHelper } from './invitations.js';
 import { shape } from './typeGuards.js';
@@ -367,10 +377,21 @@ const makeLazyMapStoreForWalletProvider = (mapStoreByWallet, label) => wallet =>
  *   address: string;
  *   agoricNames: Remote<import('@agoric/vats').NameHub>;
  *   bank: ERef<import('@agoric/vats/src/vat-bank.js').Bank>;
+ *   chainHub: import('@agoric/orchestration').ChainHub;
  *   deposit: { receive: (payment: Payment) => Promise<Amount> };
  *   invitationPurse: Purse;
+ *   namesByAddress: Remote<import('@agoric/vats').NameHub>;
  *   offers: { executeOffer: (spec: OfferSpec) => Promise<void> };
- *   publicMarshaller: import('@agoric/internal/src/lib-chainStorage.js').Marshaller;
+ *   orchestrator: import('@agoric/async-flow').HostInterface<
+ *     import('@agoric/orchestration').Orchestrator
+ *   >;
+ *   publicMarshaller: Remote<
+ *     import('@agoric/internal/src/lib-chainStorage.js').Marshaller
+ *   >;
+ *   zcfTools: import('@agoric/async-flow').HostInterface<
+ *     import('@agoric/orchestration').ZcfTools
+ *   >;
+ *   zoeTools: import('@agoric/orchestration').ZoeTools;
  * }} AllPowers
  */
 
@@ -508,6 +529,78 @@ export const prepareSmartWallet = (baggage, shared) => {
     );
 
   const makeAmountWatcher = prepareAmountWatcher();
+
+  // TODO: chain hub per wallet, or make sure wallets only get read-only / side-effect free chain hub
+  const chainHub = makeChainHub(
+    zone.subZone('chainHub'),
+    shared.agoricNames,
+    vowTools,
+  );
+
+  const orchestrationZone = zone.subZone('orchestration');
+
+  // These tools don't seem to use any contract level zcf powers
+  const zoeTools = orchestrationZone.exo(
+    'ZoeTools',
+    undefined,
+    makeZoeTools(shared.zcf, vowTools),
+  );
+  const zcfTools = orchestrationZone.exo(
+    'ZCFTools',
+    undefined,
+    makeZcfTools(shared.zcf, vowTools),
+  );
+
+  // Using the publicMarshaller makeRecorderKit
+
+  const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
+    orchestrationZone,
+    {
+      makeRecorderKit,
+      zcf: shared.zcf,
+      timerService: shared.timerService,
+      vowTools,
+      chainHub,
+      localchain: shared.localchain,
+      zoeTools,
+    },
+  );
+
+  const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
+    orchestrationZone,
+    {
+      chainHub,
+      makeRecorderKit,
+      timerService: shared.timerService,
+      vowTools,
+      zcf: shared.zcf,
+    },
+  );
+
+  const makeRemoteChainFacade = prepareRemoteChainFacade(orchestrationZone, {
+    makeCosmosOrchestrationAccount,
+    orchestration: shared.orchestrationService,
+    storageNode: undefined, // Cannot plumb a wallet specific storageNode at this point
+    timer: shared.timerService,
+    vowTools,
+  });
+
+  const makeLocalChainFacade = prepareLocalChainFacade(orchestrationZone, {
+    makeLocalOrchestrationAccountKit,
+    localchain: shared.localchain,
+    storageNode: undefined, // Cannot plumb a wallet specific storageNode at this point
+    agoricNames: shared.agoricNames,
+    orchestration: shared.orchestrationService,
+    timer: shared.timerService,
+    vowTools,
+  });
+
+  const makeOrchestrator = prepareOrchestrator(orchestrationZone, {
+    chainHub,
+    makeLocalChainFacade,
+    makeRemoteChainFacade,
+    vowTools,
+  });
 
   /**
    * @param {UniqueParams} unique
@@ -946,20 +1039,26 @@ export const prepareSmartWallet = (baggage, shared) => {
             facets: { deposit, offers },
           } = this;
 
-          const { publicMarshaller, agoricNames } = shared;
+          const { publicMarshaller, agoricNames, namesByAddress } = shared;
 
           /** @type {AllPowers} */
           const allPowers = {
             address,
             agoricNames,
             bank,
+            chainHub,
             // board: ERef<import("@agoric/vats").Board> // should be attenuated
             deposit,
             invitationPurse,
             // myAddressNameAdmin: ERef<import("@agoric/vats").NameAdmin>,
-            // namesByAddress: ERef<NameHub>,
+            namesByAddress,
             offers,
             publicMarshaller,
+            get orchestrator() {
+              return makeOrchestrator();
+            },
+            zcfTools,
+            zoeTools,
           };
 
           // Always provide the address permit
@@ -967,7 +1066,7 @@ export const prepareSmartWallet = (baggage, shared) => {
             permit = { ...(permit ?? {}), address: true };
           }
 
-          return extractPowers(permit, allPowers);
+          return { ...extractPowers(permit, allPowers) };
         },
       },
 
