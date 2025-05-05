@@ -11,13 +11,14 @@
  */
 
 import type * as far from '@endo/far';
+import type { GuestInterface } from '@agoric/async-flow';
 import type { Assert } from 'ses';
 import type { AllPowers } from './smartWallet.js';
 
 // Provided by 'CORE_EVAL' handler in chain-behaviors.js
 declare global {
   // powers the script may be permitted to use
-  var powers: AllPowers;
+  var powers: GuestInterface<AllPowers>;
 
   // @endo/far exports
   var E: typeof far.E;

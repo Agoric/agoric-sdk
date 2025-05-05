@@ -1,5 +1,5 @@
 import type { Passable } from '@endo/pass-style';
-import type { Vow, VowTools } from '@agoric/vow';
+import type { Remote, Vow, VowTools } from '@agoric/vow';
 import type { LogStore } from './log-store.js';
 import type { Bijection } from './bijection.js';
 import type { EndowmentTools } from './endowments.js';
@@ -63,17 +63,20 @@ export type HostInterface<T> = {
 /**
  * Convert an entire Host interface into what the Guest will receive.
  */
-export type GuestInterface<T> = {
-  [K in keyof T]: T[K] extends (...args: any[]) => Vow<infer R>
-    ? (...args: Parameters<T[K]>) => Promise<R>
-    : T[K] extends HostAsyncFuncWrapper
-      ? GuestOf<T[K]>
-      : T[K] extends (...args: any[]) => any
-        ? T[K]
-        : T[K] extends object
-          ? GuestInterface<T[K]>
-          : T[K];
-};
+export type GuestInterface<T> =
+  T extends Remote<any>
+    ? T
+    : {
+        [K in keyof T]: T[K] extends (...args: any[]) => Vow<infer R>
+          ? (...args: Parameters<T[K]>) => Promise<R>
+          : T[K] extends HostAsyncFuncWrapper
+            ? GuestOf<T[K]>
+            : T[K] extends (...args: any[]) => any
+              ? T[K]
+              : T[K] extends object
+                ? GuestInterface<T[K]>
+                : T[K];
+      };
 
 /**
  * The function the host must provide to match an interface the guest expects.
