@@ -5,14 +5,14 @@ export default /** @type {const} */ ({
     chainId: 'agoricdev-25',
     icqEnabled: false,
     namespace: 'cosmos',
-    reference: 'agoric',
+    reference: 'agoricdev-25',
     stakingTokens: [
       {
         denom: 'ubld',
       },
     ],
     connections: {
-      axelar: {
+      'axelar-testnet-lisbon-3': {
         id: 'connection-7',
         client_id: '07-tendermint-7',
         counterparty: {
@@ -30,7 +30,7 @@ export default /** @type {const} */ ({
           version: 'ics20-1',
         },
       },
-      neutron: {
+      'pion-1': {
         id: 'connection-9',
         client_id: '07-tendermint-9',
         counterparty: {
@@ -48,7 +48,7 @@ export default /** @type {const} */ ({
           version: 'ics20-1',
         },
       },
-      noble: {
+      'grand-1': {
         id: 'connection-13',
         client_id: '07-tendermint-13',
         counterparty: {
@@ -66,7 +66,7 @@ export default /** @type {const} */ ({
           version: 'ics20-1',
         },
       },
-      osmosis: {
+      'osmo-test-5': {
         id: 'connection-6',
         client_id: '07-tendermint-6',
         counterparty: {
@@ -91,14 +91,14 @@ export default /** @type {const} */ ({
     chainId: 'axelar-testnet-lisbon-3',
     icqEnabled: false,
     namespace: 'cosmos',
-    reference: 'axelar',
+    reference: 'axelar-testnet-lisbon-3',
     stakingTokens: [
       {
         denom: 'uaxl',
       },
     ],
     connections: {
-      agoric: {
+      'agoricdev-25': {
         id: 'connection-1107',
         client_id: '07-tendermint-863',
         counterparty: {
@@ -123,14 +123,14 @@ export default /** @type {const} */ ({
     chainId: 'pion-1',
     icqEnabled: false,
     namespace: 'cosmos',
-    reference: 'neutron',
+    reference: 'pion-1',
     stakingTokens: [
       {
         denom: 'untrn',
       },
     ],
     connections: {
-      agoric: {
+      'agoricdev-25': {
         id: 'connection-558',
         client_id: '07-tendermint-602',
         counterparty: {
@@ -155,14 +155,14 @@ export default /** @type {const} */ ({
     chainId: 'grand-1',
     icqEnabled: false,
     namespace: 'cosmos',
-    reference: 'noble',
+    reference: 'grand-1',
     stakingTokens: [
       {
         denom: 'unoble',
       },
     ],
     connections: {
-      agoric: {
+      'agoricdev-25': {
         id: 'connection-396',
         client_id: '07-tendermint-432',
         counterparty: {
@@ -187,14 +187,14 @@ export default /** @type {const} */ ({
     chainId: 'osmo-test-5',
     icqEnabled: true,
     namespace: 'cosmos',
-    reference: 'osmosis',
+    reference: 'osmo-test-5',
     stakingTokens: [
       {
         denom: 'uosmo',
       },
     ],
     connections: {
-      agoric: {
+      'agoricdev-25': {
         id: 'connection-3957',
         client_id: '07-tendermint-4596',
         counterparty: {
