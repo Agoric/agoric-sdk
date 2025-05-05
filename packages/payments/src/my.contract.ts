@@ -20,7 +20,6 @@ import { M } from '@endo/patterns';
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import type { Marshaller } from '@agoric/internal/src/lib-chainStorage.js';
 import * as flows from './my.flows.ts';
-
 const trace = makeTracer('PaymentsContract');
 
 export type PrivateArgs = OrchestrationPowers & {
@@ -28,6 +27,7 @@ export type PrivateArgs = OrchestrationPowers & {
   assetInfo?: [Denom, DenomDetail & { brandKey?: string }][];
   marshaller: Marshaller;
 };
+
 
 const interfaceTODO = undefined;
 
@@ -57,7 +57,7 @@ export const contract = async (
 ) => {
   trace('Start contract');
   const { orchestrateAll, chainHub } = tools;
-  const { makeHookAccount, swapAndSend } = orchestrateAll(flows, {});
+  const { makeHookAccount, ...swapAndSends } = orchestrateAll(flows, {});
 
   const { when } = tools.vowTools;
 
@@ -78,17 +78,22 @@ export const contract = async (
             } = await E(hookAccount).parseInboundTransfer(event.packet);
 
             const { baseAddress, query } = decodeAddressHook(origReceiver);
-            const { DST: receiver, SWP: swapDenom } = query;
+            const { DST: receiver, SWP: swapDenom, dex = 'osmosis' } = query;
+            assert.typeof(dex, 'string');
             assert.typeof(receiver, 'string');
             assert.typeof(swapDenom, 'string');
 
+            const dexSwapAndSend = swapAndSends[`${dex}SwapAndSend`];
+
+
             // Invoke the flow to perform swap and end up at the final destination.
-            return swapAndSend({
+            return dexSwapAndSend({
               amount: BigInt(amount.value),
               denom: amount.denom,
               swapDenom,
               sender: baseAddress,
               receiver,
+              dex,
             });
           }
 
