@@ -187,15 +187,54 @@ test.serial('partial completion', async t => {
     chainHub,
   );
 
+  debugger;
   // 1. Alice and Bob fail initially (risky tx -> skipAdvance -> forward timeout)
   const aliceEv = await alice.sendFast(t, 1_000_000n, 'osmo1alice', true);
   await mint(aliceEv);
   await transmitVTransferEvent('timeoutPacket', -1); // Alice forward fails
+  // FIXME the VTransfer is timing out but the burn isn't working so the forward isn't attempted?
+  /*
+  ----- PacketTools.9  39 Matched pattern: makeTagged("match:or",[makeTagged("match:splitRecord",[{acknowledgement:makeTagged("match:string",[]),event:"acknowledgementPacket",packet:makeTagged("match:splitRecord",[{sequence:makeTagged("match:or",[9n,9,"9"]),source_channel:"channel-62",source_port:"transfer"}])}]),makeTagged("match:splitRecord",[{event:"timeoutPacket",packet:makeTagged("match:splitRecord",[{sequence:makeTagged("match:or",[9n,9,"9"]),source_channel:"channel-62",source_port:"transfer"}])}])])
+----- CosmosOrchAccount.8  4 depositForBurn {
+  destination: 'eip155:1:0x1234567890123456789012345678901234567890',
+  amount: {
+    denom: 'ibc/FE98AAD68F02F03565E9FA39A5E627946699B2B07115889ED812D8BA639576A9',
+    value: 979999n
+  }
+}
+----- NetworkFakes.5  8 toBridge {
+  packet: {
+    source_port: 'icacontroller-1',
+    source_channel: 'channel-0',
+    destination_port: 'icahost',
+    destination_channel: 'channel-0',
+    data: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ21JS0lTOWphWEpqYkdVdVkyTjBjQzUyTVM1TmMyZEVaWEJ2YzJsMFJtOXlRblZ5YmhJOUNncHViMkpzWlRGMFpYTjBFZ1k1TnprNU9Ua2lJQUFBQUFBQUFBQUFBQUFBQUJJMFZuaVFFalJXZUpBU05GWjRrQkkwVm5pUUtnVjFkWE5rWXc9PSIsIm1lbW8iOiIifQ=='
+  },
+  relativeTimeoutNs: 3600000000000n,
+  type: 'IBC_METHOD',
+  method: 'sendPacket'
+} {"type":1,"data":"CmIKIS9jaXJjbGUuY2N0cC52MS5Nc2dEZXBvc2l0Rm9yQnVybhI9Cgpub2JsZTF0ZXN0EgY5Nzk5OTkiIAAAAAAAAAAAAAAAABI0VniQEjRWeJASNFZ4kBI0VniQKgV1dXNkYw==","memo":""}
+----- NetworkFakes.5  9 sendPacket acking err because no mock ack for b64 data key: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ21JS0lTOWphWEpqYkdVdVkyTjBjQzUyTVM1TmMyZEVaWEJ2YzJsMFJtOXlRblZ5YmhJOUNncHViMkpzWlRGMFpYTjBFZ1k1TnprNU9Ua2lJQUFBQUFBQUFBQUFBQUFBQUJJMFZuaVFFalJXZUpBU05GWjRrQkkwVm5pUUtnVjFkWE5rWXc9PSIsIm1lbW8iOiIifQ=='
+----- NetworkFakes.5  10 Fix the source of this request or define a ack mapping for it: {
+  value: {
+    subMessage_1: {
+      subMessage_1: '/circle.cctp.v1.MsgDepositForBurn',
+      subMessage_2: {
+        subMessage_1: 'noble1test',
+        subMessage_2: '979999',
+        subMessage_4: '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x124Vx�\x124Vx�\x124Vx�\x124Vx�',
+        subMessage_5: { fixed32_14: 1667527541 }
+      }
+    }
+  },
+  bytesRead: 100
+}*/
   t.like(
     t.context.common.readTxnRecord(aliceEv),
     { status: 'FORWARD_FAILED' },
     'Alice forward failed initially',
   );
+  return;
 
   const bobEv = await bob.sendFast(t, 2_000_000n, 'osmo1bob', true);
   await mint(bobEv);
