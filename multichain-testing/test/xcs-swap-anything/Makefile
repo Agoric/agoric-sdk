@@ -1,4 +1,4 @@
-cli-hermes=kubectl exec -it hermes-agoric-osmosis-0 -c relayer -- hermes
+cli-hermes=kubectl exec -i hermes-agoric-osmosis-0 -c relayer -- hermes
 exec-agd=kubectl exec -i agoriclocal-genesis-0 -c validator -- agd
 exec-osmo=kubectl exec -i osmosislocal-genesis-0 -c validator -- osmosisd
 cli-osmo=kubectl exec -i osmosislocal-genesis-0 -c validator -- /bin/bash -c
