@@ -16,7 +16,7 @@
     "lint:eslint": "eslint ."
   },
   "dependencies": {
-    "@endo/errors": "^1.2.9"
+    "@endo/errors": "^1.2.10"
   },
   "peerDependencies": {
     "canvas": "^2.6.1",

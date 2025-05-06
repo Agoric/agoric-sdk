@@ -3,6 +3,10 @@ import { AmountMath } from '@agoric/ertp';
 
 import { offerTo } from '../../contractSupport/zoeHelpers.js';
 
+/**
+ * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
+ */
+
 export const doLiquidation = async (
   zcf,
   collateralSeat,
@@ -37,7 +41,7 @@ export const doLiquidation = async (
     zcf.shutdown('your loan had to be liquidated');
   };
 
-  /** @type {import('@agoric/swingset-vat').ShutdownWithFailure} */
+  /** @type {ShutdownWithFailure} */
   const closeWithFailure = err => {
     lenderSeat.fail(err);
     collateralSeat.fail(err);

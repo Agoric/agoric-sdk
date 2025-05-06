@@ -10,14 +10,13 @@ import (
 // - A "path" is a sequence of zero or more dot-separated nonempty segments
 // using a restricted alphabet of ASCII alphanumerics plus underscore and dash,
 // consistent with packages/internal/src/lib-chainStorage.js but not currently
-// enforcing a length restriction on path segments.
-// So `""`, `"foo"`, and `"foo.bar__baz.qux--quux"` are paths but `"."`,
-// `"foo/bar"`, `"fo\to"`, and `"foö"` are not.
-// This alphabet might be expanded in the future, but such expansion SHOULD NOT
-// include control characters (including those that are not ASCII, such as
-// U+202E RIGHT-TO-LEFT OVERRIDE), slash `/` (which separates ABCI request path
-// segments in e.g. `custom/vstorage/data/foo`), or backslash `\` (which should
-// be reserved for adding escape sequences).
+// enforcing a length restriction on path segments.  So `""`, `"foo"`, and
+// `"foo.bar__baz.qux--quux"` are paths but `"."`, `"foo/bar"`, `"fo\to"`, and
+// `"foö"` are not.  This alphabet might be expanded in the future, but such
+// expansion SHOULD NOT include control characters (including those that are not
+// ASCII, such as U+202E RIGHT-TO-LEFT OVERRIDE), slash `/` (which separates
+// ABCI request path segments in e.g. `/agoric.vstorage.Query/Data`), or
+// backslash `\` (which should be reserved for adding escape sequences).
 //
 // - An encoded key for a path is the path prefixed with its length (in ASCII
 // digits), separated by nul, followed by the path with dots replaced with nul.

@@ -8,7 +8,7 @@ import type { ExecutionContext } from 'ava';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { AmountMath, type Brand } from '@agoric/ertp';
 import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.js';
-import { divideBy } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { divideBy } from '@agoric/ertp/src/ratio.js';
 import { makeDenomTools } from '../tools/asset-info.js';
 import { makeDoOffer } from '../tools/e2e-tools.js';
 import { commonSetup } from '../test/support.js';
@@ -41,7 +41,7 @@ Examples:
 
 const contractName = 'fastUsdc';
 const contractBuilder =
-  '../packages/builders/scripts/fast-usdc/start-fast-usdc.build.js';
+  '../packages/fast-usdc-deploy/src/start-fast-usdc.build.js';
 
 /** ava test context partial, to appease dependencies expecting this */
 const runT = {
@@ -108,7 +108,7 @@ const main = async () => {
     vstorageClient,
   } = await commonSetup(runT, { config: '../config.fusdc.yaml' });
 
-  const assertProvisioned = async address => {
+  const assertProvisioned = async (address: string) => {
     try {
       await vstorageClient.queryData(`published.wallet.${address}.current`);
     } catch {

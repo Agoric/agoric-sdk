@@ -58,6 +58,7 @@ test('resume', async t => {
           'uist',
           {
             baseDenom: 'uist',
+            brandKey: 'IST',
             baseName: 'agoric',
             chainName: 'agoric',
           },

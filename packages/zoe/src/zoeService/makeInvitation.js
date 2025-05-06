@@ -6,13 +6,19 @@ import { AssetKind, hasIssuer, prepareIssuerKit } from '@agoric/ertp';
 import { InvitationElementShape } from '../typeGuards.js';
 
 /**
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
+ * @import {InvitationDetails} from '../types-index.js';
+ */
+
+/**
  * Not deprecated because the first use below is still correct.
  */
 const ZOE_INVITATION_KIT = 'ZoeInvitationKit';
 
 /**
- * @param {import('@agoric/vat-data').Baggage} baggage
- * @param {import('@agoric/swingset-vat').ShutdownWithFailure | undefined} shutdownZoeVat
+ * @param {Baggage} baggage
+ * @param {ShutdownWithFailure | undefined} shutdownZoeVat
  */
 export const prepareInvitationKit = (baggage, shutdownZoeVat = undefined) => {
   const invitationKitBaggage = provideDurableMapStore(

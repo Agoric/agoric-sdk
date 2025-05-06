@@ -1,8 +1,13 @@
+import type { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import { makeIssuerKit } from '@agoric/ertp';
 import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { makeNameHubKit } from '@agoric/vats';
+import {
+  makeNameHubKit,
+  type IBCChannelID,
+  type VTransferIBCEvent,
+} from '@agoric/vats';
 import { prepareBridgeTargetModule } from '@agoric/vats/src/bridge-target.js';
 import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
 import { prepareLocalChainTools } from '@agoric/vats/src/localchain.js';
@@ -14,21 +19,21 @@ import {
   makeFakeTransferBridge,
 } from '@agoric/vats/tools/fake-bridge.js';
 import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
-import type { Installation } from '@agoric/zoe/src/zoeService/utils.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
+import { withChainCapabilities } from '../src/chain-capabilities.js';
 import { registerKnownChains } from '../src/chain-info.js';
+import type { Bech32Address } from '../src/cosmos-api.js';
 import { makeChainHub } from '../src/exos/chain-hub.js';
 import { prepareCosmosInterchainService } from '../src/exos/cosmos-interchain-service.js';
 import fetchedChainInfo from '../src/fetched-chain-info.js';
+import { assetOn } from '../src/utils/asset.js';
+import { registerChainsAndAssets } from '../src/utils/chain-hub-helper.js';
 import { buildVTransferEvent } from '../tools/ibc-mocks.js';
 import { setupFakeNetwork } from './network-fakes.js';
-import { withChainCapabilities } from '../src/chain-capabilities.js';
-import { registerChainsAndAssets } from '../src/utils/chain-hub-helper.js';
-import { assetOn } from '../src/utils/asset.js';
 
 export {
   makeFakeLocalchainBridge,
@@ -36,7 +41,6 @@ export {
 } from '@agoric/vats/tools/fake-bridge.js';
 
 export const commonSetup = async (t: ExecutionContext<any>) => {
-  t.log('bootstrap vat dependencies');
   // The common setup cannot support a durable zone because many of the fakes are not durable.
   // They were made before we had durable kinds (and thus don't take a zone or baggage).
   // To test durability in unit tests, test a particular entity with `relaxDurabilityRules: false`.
@@ -144,27 +148,70 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
 
   await registerKnownChains(agoricNamesAdmin, () => {});
 
+  /** proxy for current sequence of the IBC Channel */
   let ibcSequenceNonce = 0n;
-  /** simulate incoming message as if the transfer completed over IBC */
-  const transmitTransferAck = async (failed = false) => {
+  /**
+   * Simulate an inbound message to the vtransfer bridge.
+   *
+   * Uses the localchain bridge to lookup the last message and infer packet
+   * and transaction details.
+   *
+   * Tracks `sequence` locally in test context, so this helper must be used
+   * for all simulated VTransfer calls in a test run for sequence to be
+   * accurate.
+   *
+   * @example
+   * ```js
+   * // send ack
+   * await transmitVTransferEvent('acknowledgementPacket');
+   * // send ack error
+   * await transmitVTransferEvent('acknowledgementPacket', 'packet-forward-middleware error: giving up on packet on channel (channel-21) port (transfer) after max retries');
+   * // send timeout
+   * await transmitVTransferEvent('timeoutPacket');
+   * ```
+   */
+  const transmitVTransferEvent = async (
+    event: VTransferIBCEvent['event'],
+    acknowledgementError?: string,
+  ) => {
     // assume this is called after each outgoing IBC transfer
     ibcSequenceNonce += 1n;
     // let the promise for the transfer start
     await eventLoopIteration();
-    const lastMsgTransfer = localBridgeMessages.at(-1).messages[0];
+    if (localBridgeMessages.length < 1)
+      throw Error('no messages on the local bridge');
+
+    const b1 = localBridgeMessages.at(-1);
+    if (!b1.messages || b1.messages.length < 1)
+      throw Error('no messages in the last tx');
+
+    const lastMsgTransfer = b1.messages[0] as MsgTransfer;
+    const base = {
+      receiver: lastMsgTransfer.receiver as Bech32Address,
+      sender: lastMsgTransfer.sender as Bech32Address,
+      target: lastMsgTransfer.sender as Bech32Address,
+      sourceChannel: lastMsgTransfer.sourceChannel as IBCChannelID,
+      sequence: ibcSequenceNonce,
+      amount: BigInt(lastMsgTransfer.token.amount),
+      denom: lastMsgTransfer.token.denom,
+      memo: lastMsgTransfer.memo,
+    };
     await E(transferBridge).fromBridge(
-      buildVTransferEvent({
-        receiver: lastMsgTransfer.receiver,
-        sender: lastMsgTransfer.sender,
-        target: lastMsgTransfer.sender,
-        sourceChannel: lastMsgTransfer.sourceChannel,
-        sequence: ibcSequenceNonce,
-        failed,
-      }),
+      buildVTransferEvent(
+        event === 'timeoutPacket'
+          ? { event, ...base }
+          : { event, ...base, acknowledgementError },
+      ),
     );
     // let the bridge handler finish
     await eventLoopIteration();
   };
+  /**
+   * simulate incoming message as if the transfer completed over IBC
+   * @deprecated use `transmitVTransferEvent('acknowledgementPacket')` directly
+   */
+  const transmitTransferAck = async () =>
+    transmitVTransferEvent('acknowledgementPacket');
 
   const chainHub = makeChainHub(
     rootZone.subZone('chainHub'),
@@ -247,8 +294,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       inspectBankBridge: () => harden([...bankBridgeMessages]),
       populateChainHub,
       transmitTransferAck,
+      transmitVTransferEvent,
     },
   };
 };
-
-export const makeDefaultContext = <SF>(contract: Installation<SF>) => {};

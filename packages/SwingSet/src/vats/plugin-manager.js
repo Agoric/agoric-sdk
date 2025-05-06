@@ -6,8 +6,9 @@ import { Remotable } from '@endo/marshal';
 import { Far, E } from '@endo/far';
 
 /**
- * @template T
- * @typedef {T | PromiseLike<T>} ERef
+ * @import {ERef} from '@endo/far';
+ * @import {MapStore} from '@agoric/store';
+ * @import {Device, DProxy} from '@agoric/swingset-vat/src/types-external.js';
  */
 
 /** @type {{ onReset: (firstTime: Promise<boolean>) => void}} */
@@ -15,13 +16,6 @@ const DEFAULT_RESETTER = Far('resetter', { onReset: _ => {} });
 
 /** @type {{ walk: (pluginRootP: any) => any }} */
 const DEFAULT_WALKER = Far('walker', { walk: pluginRootP => pluginRootP });
-
-/**
- * @template T
- * @typedef {'Device' & { __deviceType__: T }} Device
- */
-
-/** @typedef {<T>(target: Device<T>) => T} DProxy (approximately) */
 
 /**
  * @callback LoadPlugin

@@ -35,6 +35,23 @@ chains:
   - id: cosmoshublocal
     name: cosmoshub
     numValidators: 1
+    genesis:
+      app_state:
+        staking:
+          params:
+            unbonding_time: '2m'
+        interchainaccounts:
+          host_genesis_state:
+            params:
+              host_enabled: true
+              allow_messages: ['*']
+        interchainquery:
+          host_port: 'icqhost'
+          params:
+            host_enabled: true
+            allow_queries:
+              - /cosmos.bank.v1beta1.Query/Balance
+              - /cosmos.bank.v1beta1.Query/AllBalances
     faucet:
       enabled: true
       type: starship
@@ -101,7 +118,10 @@ chains:
     numValidators: 1
     genesis:
       app_state:
-        interchain_accounts:
+        staking:
+          params:
+            unbonding_time: '2m'
+        interchainaccounts:
           host_genesis_state:
             params:
               host_enabled: true

@@ -4,7 +4,6 @@ import { makeNotifierFromSubscriber } from '@agoric/notifier';
 import { heapVowE as E } from '@agoric/vow/vat.js';
 import type { Installation } from '@agoric/zoe/src/zoeService/utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import path from 'path';
 import type { CosmosChainInfo } from '../../src/cosmos-api.js';
 import { type StakeIcaTerms } from '../../src/examples/stake-ica.contract.js';
 import fetchedChainInfo from '../../src/fetched-chain-info.js';
@@ -13,11 +12,9 @@ import { maxClockSkew } from '../../src/utils/cosmos.js';
 import { UNBOND_PERIOD_SECONDS } from '../ibc-mocks.js';
 import { commonSetup } from '../supports.js';
 
-const dirname = path.dirname(new URL(import.meta.url).pathname);
+import * as contractExports from '../../src/examples/stake-ica.contract.js';
 
-const contractFile = `${dirname}/../../src/examples/stake-ica.contract.js`;
-type StartFn =
-  typeof import('@agoric/orchestration/src/examples/stake-ica.contract.js').start;
+type StartFn = typeof contractExports.start;
 
 const getChainTerms = (
   chainName: keyof typeof fetchedChainInfo,
@@ -48,7 +45,7 @@ const startContract = async ({
 }) => {
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
   const installation: Installation<StartFn> =
-    await bundleAndInstall(contractFile);
+    await bundleAndInstall(contractExports);
 
   const { publicFacet } = await E(zoe).startInstance(
     installation,
@@ -154,6 +151,7 @@ test('delegate, undelegate, redelegate, withdrawReward', async t => {
     validatorAddr,
     {
       ...validatorAddr,
+      // @ts-expect-error XXX invalid Bech32
       value: 'cosmosvaloper2test',
     },
     { denom: 'uatom', value: 10n },

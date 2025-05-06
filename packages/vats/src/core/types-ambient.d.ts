@@ -1,18 +1,13 @@
 // Ambient type defs. Cannot use top-level import() because that would turn it into a module.
 
-/** This type conflicts with packages/SwingSet/src/vats/plugin-manager.js */
-type Device<T> = 'Device' & { __deviceType__: T };
+type Device<T> = import('@agoric/swingset-vat/src/types-external.js').Device<T>;
 
-/** (approximately) */
-type DProxy<T = any> = (target: Device<T>) => T;
+type DProxy = import('@agoric/swingset-vat/src/types-external.js').DProxy;
 
 type BootDevices<T> = { vatPowers: { D: DProxy }; devices: T };
 
-type BridgeDevice = Device<
-  ReturnType<
-    typeof import('@agoric/swingset-vat/src/devices/bridge/device-bridge.js').buildRootDeviceNode
-  >
->;
+type BridgeDevice =
+  import('@agoric/swingset-vat/src/devices/bridge/device-bridge.js').BridgeDevice;
 
 type CommandDevice = Device<
   ReturnType<
@@ -32,11 +27,8 @@ type PluginDevice = Device<
   >
 >;
 
-type TimerDevice = Device<
-  ReturnType<
-    typeof import('@agoric/swingset-vat/src/devices/timer/device-timer.js').buildRootDeviceNode
-  >
->;
+type TimerDevice =
+  import('@agoric/swingset-vat/src/devices/timer/device-timer.js').TimerDevice;
 
 type VatAdminDevice = Device<
   import('@agoric/swingset-vat/src/devices/vat-admin/device-vat-admin.js').VatAdminRootDeviceNode
@@ -86,15 +78,15 @@ type SoloDevices = {
   vatAdmin: VatAdminDevice;
   mailbox: MailboxDevice;
   command: CommandDevice;
-  timer: TimerDevice;
+  timer: import('@agoric/swingset-vat/src/devices/timer/device-timer.js').TimerDevice;
   plugin: PluginDevice;
 };
 
 type ChainDevices = {
   vatAdmin: VatAdminDevice;
   mailbox: MailboxDevice;
-  timer: TimerDevice;
-  bridge?: BridgeDevice;
+  timer: import('@agoric/swingset-vat/src/devices/timer/device-timer.js').TimerDevice;
+  bridge?: import('@agoric/swingset-vat/src/devices/bridge/device-bridge.js').BridgeDevice;
 };
 
 type ClientProvider = {
@@ -207,13 +199,19 @@ type WellKnownName = {
 };
 
 type ContractInstallationPromises<
-  StartFns extends Record<WellKnownName['installation'], ContractStartFn>,
+  StartFns extends Record<
+    WellKnownName['installation'],
+    import('@agoric/zoe').ContractStartFn
+  >,
 > = {
   [Property in keyof StartFns]: Promise<Installation<StartFns[Property]>>;
 };
 
 type ContractInstancePromises<
-  StartFns extends Record<WellKnownName['instance'], ContractStartFn>,
+  StartFns extends Record<
+    WellKnownName['instance'],
+    import('@agoric/zoe').ContractStartFn
+  >,
 > = {
   [Property in keyof StartFns]: Promise<
     import('@agoric/zoe/src/zoeService/utils.js').Instance<StartFns[Property]>
@@ -232,6 +230,7 @@ type WellKnownContracts = {
   provisionPool: typeof import('@agoric/inter-protocol/src/provisionPool.js').start;
   priceAggregator: typeof import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js').start;
   reserve: typeof import('@agoric/inter-protocol/src/reserve/assetReserve.js').start;
+  reserveGovernor: typeof import('@agoric/governance/src/contractGovernor.js').start;
   VaultFactory: typeof import('@agoric/inter-protocol/src/vaultFactory/vaultFactory.js').start;
   // no typeof because walletFactory is exporting `start` as a type
   walletFactory: import('@agoric/smart-wallet/src/walletFactory.js').start;
@@ -285,12 +284,12 @@ type StartGovernedUpgradableOpts<SF extends GovernableStartFn> = {
   issuerKeywordRecord?: IssuerKeywordRecord;
   governedParams: Record<string, unknown>;
   terms: Omit<
-    import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['terms'],
+    import('@agoric/zoe/src/zoeService/utils.js').StartParams<SF>['terms'],
     'brands' | 'issuers' | 'governedParams' | 'electionManager'
   >;
   privateArgs: Omit<
     // @ts-expect-error XXX
-    import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['privateArgs'],
+    import('@agoric/zoe/src/zoeService/utils.js').StartParams<SF>['privateArgs'],
     'initialPoserInvitation'
   >;
   label: string;
@@ -301,12 +300,13 @@ type StartGovernedUpgradable = <SF extends GovernableStartFn>(
 ) => Promise<GovernanceFacetKit<SF>>;
 
 type StartUpgradableOpts<
-  SF extends import('@agoric/zoe/src/zoeService/utils').ContractStartFunction,
+  SF extends
+    import('@agoric/zoe/src/zoeService/utils.js').ContractStartFunction,
 > = {
   installation: ERef<Installation<SF>>;
   issuerKeywordRecord?: IssuerKeywordRecord;
   terms?: Omit<
-    import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['terms'],
+    import('@agoric/zoe/src/zoeService/utils.js').StartParams<SF>['terms'],
     'brands' | 'issuers'
   >;
   privateArgs?: Parameters<SF>[1];
@@ -314,23 +314,24 @@ type StartUpgradableOpts<
 };
 
 type StartUpgradable = <
-  SF extends import('@agoric/zoe/src/zoeService/utils').ContractStartFunction,
+  SF extends
+    import('@agoric/zoe/src/zoeService/utils.js').ContractStartFunction,
 >(
   opts: StartUpgradableOpts<SF>,
 ) => Promise<
-  import('@agoric/zoe/src/zoeService/utils').StartedInstanceKit<SF> & {
+  import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<SF> & {
     label: string;
   }
 >;
 
 type StartedInstanceKit<
-  T extends import('@agoric/zoe/src/zoeService/utils').ContractStartFunction,
-> = import('@agoric/zoe/src/zoeService/utils').StartedInstanceKit<T>;
+  T extends import('@agoric/zoe/src/zoeService/utils.js').ContractStartFunction,
+> = import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<T>;
 
 type StartedInstanceKitWithLabel = {
   label: string;
 } & StartedInstanceKit<
-  import('@agoric/zoe/src/zoeService/utils').ContractStartFunction
+  import('@agoric/zoe/src/zoeService/utils.js').ContractStartFunction
 >;
 
 type ChainBootstrapSpaceT = {

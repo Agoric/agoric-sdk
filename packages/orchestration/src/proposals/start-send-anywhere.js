@@ -97,12 +97,16 @@ export const startSendAnywhere = async (
   const osmoIssuer = await safeFulfill(() =>
     E(agoricNames).lookup('issuer', 'OSMO'),
   );
+  const USDCIssuer = await safeFulfill(() =>
+    E(agoricNames).lookup('issuer', 'USDC'),
+  );
 
   const issuerKeywordRecord = harden({
     BLD: await BLD,
     IST: await IST,
     ...(atomIssuer && { ATOM: atomIssuer }),
     ...(osmoIssuer && { OSMO: osmoIssuer }),
+    ...(USDCIssuer && { USDC: USDCIssuer }),
   });
   trace('issuerKeywordRecord', issuerKeywordRecord);
 

@@ -51,12 +51,11 @@ import {
   introduceAndProvision,
   provision,
 } from '../test-lib/provision-helpers.js';
-import { getIncarnationFromDetails } from '../test-lib/utils.js';
 
 const PROVISIONING_POOL_ADDR = 'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346';
 
+const ADD_PSM_DIR = 'generated/addUsdLemons';
 const DEPOSIT_USD_LEMONS_DIR = 'depositUSD-LEMONS';
-const NULL_UPGRADE_PP_DIR = 'nullUpgradePP';
 
 const USDC_DENOM = NonNullish(process.env.USDC_DENOM);
 
@@ -67,22 +66,14 @@ const ambientAuthority = {
   log: console.log,
 };
 
-const upgradedVats = ['provisionPool', 'provisionPool-governor'];
-
 test.before(async t => {
   const vstorageKit = await makeVstorageKit(
     { fetch },
     { rpcAddrs: ['http://localhost:26657'], chainName: 'agoriclocal' },
   );
 
-  const currentVatIncarnations = {};
-  for await (const vatName of upgradedVats) {
-    currentVatIncarnations[vatName] = await getIncarnationFromDetails(vatName);
-  }
-
   t.context = {
     vstorageKit,
-    currentVatIncarnations,
   };
 });
 
@@ -109,7 +100,7 @@ test.serial(
     );
 
     // agoricNames already added USD_LEMONS
-    // await evalBundles(ADD_PSM_DIR);
+    await evalBundles(ADD_PSM_DIR);
     await waitUntilContractDeployed('psm-IST-USD_LEMONS', ambientAuthority, {
       errorMessage: 'psm-IST-USD_LEMONS instance not observed.',
     });
@@ -137,17 +128,6 @@ test.serial(
     t.pass();
   },
 );
-
-test.serial('null upgrade', async t => {
-  const incarnationBefore = await getIncarnationFromDetails('provisionPool');
-
-  await evalBundles(NULL_UPGRADE_PP_DIR);
-
-  const incarnationAfter = await getIncarnationFromDetails('provisionPool');
-
-  t.log({ incarnationBefore, incarnationAfter });
-  t.is(incarnationAfter, incarnationBefore + 1, 'incorrect incarnation');
-});
 
 test.serial('auto provision', async t => {
   // @ts-expect-error casting

@@ -71,10 +71,6 @@ test.after.always(t => {
   return t.context.shutdown && t.context.shutdown();
 });
 
-const outcome = {
-  bids: [{ payouts: { Bid: 0, Collateral: 1.800828 } }],
-};
-
 test('restart vaultFactory, change params', async t => {
   const { runUtils, gd, agoricNamesRemotes } = t.context;
   const { EV } = runUtils;

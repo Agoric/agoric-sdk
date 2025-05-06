@@ -36,13 +36,12 @@ export function makeWatchedPromiseManager({
   const { defineDurableKind } = vom;
 
   /**
-   * virtual Store (not durable) mapping vpid to Promise objects, to
-   * maintain the slotToVal registration until resolution. Without
-   * this, slotToVal would forget local Promises that aren't exported.
+   * Track promises watched in `buildRootObject` so `loadWatchedPromiseTable`
+   * can differentiate them from promises watched in a previous incarnation.
    *
-   * @type {MapStore<string, Promise<unknown>>}
+   * @type {Set<string> | null}
    */
-  let promiseRegistrations;
+  let buildRootObjectWatchedPromiseRefs;
 
   /**
    * watched promises by vpid: each entry is an array of watches on the
@@ -60,7 +59,7 @@ export function makeWatchedPromiseManager({
   let promiseWatcherByKindTable;
 
   function preparePromiseWatcherTables() {
-    promiseRegistrations = makeScalarBigMapStore('promiseRegistrations');
+    buildRootObjectWatchedPromiseRefs = new Set();
     let watcherTableID = syscall.vatstoreGet('watcherTableID');
     if (watcherTableID) {
       promiseWatcherByKindTable = convertSlotToVal(watcherTableID);
@@ -105,7 +104,7 @@ export function makeWatchedPromiseManager({
     function settle(value, wasFulfilled) {
       const watches = watchedPromiseTable.get(vpid);
       watchedPromiseTable.delete(vpid);
-      promiseRegistrations.delete(vpid);
+      buildRootObjectWatchedPromiseRefs?.delete(vpid);
       for (const watch of watches) {
         const [watcher, ...args] = watch;
         void Promise.resolve().then(() => {
@@ -139,16 +138,16 @@ export function makeWatchedPromiseManager({
    */
   function loadWatchedPromiseTable(revivePromise) {
     for (const vpid of watchedPromiseTable.keys()) {
-      if (promiseRegistrations.has(vpid)) {
+      if (buildRootObjectWatchedPromiseRefs?.has(vpid)) {
         // We're only interested in reconnecting the promises from the previous
         // incarnation. Any promise watched during buildRootObject would have
         // already created a registration.
         continue;
       }
       const p = revivePromise(vpid);
-      promiseRegistrations.init(vpid, p);
       pseudoThen(p, vpid);
     }
+    buildRootObjectWatchedPromiseRefs = null;
   }
 
   /**
@@ -235,11 +234,9 @@ export function makeWatchedPromiseManager({
       } else {
         watchedPromiseTable.init(vpid, harden([[watcher, ...args]]));
 
-        promiseRegistrations.init(vpid, p);
+        buildRootObjectWatchedPromiseRefs?.add(vpid);
 
-        // pseudoThen registers a settlement callback that will remove
-        // this promise from promiseRegistrations and
-        // watchedPromiseTable. To avoid triggering
+        // To avoid triggering
         // https://github.com/Agoric/agoric-sdk/issues/10757 and
         // preventing slotToVal cleanup, the `pseudoThen()` should
         // precede `maybeExportPromise()`. This isn't foolproof, but

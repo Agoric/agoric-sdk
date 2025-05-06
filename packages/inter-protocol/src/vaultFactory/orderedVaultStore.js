@@ -11,8 +11,10 @@ import { fromVaultKey, toVaultKey } from './storeUtils.js';
  * debt-to-collateral come first.)
  */
 
-/** @import {Vault} from './vault.js' */
-/** @import {CompositeKey} from './storeUtils.js' */
+/**
+ * @import {MapStore} from '@agoric/store';
+ * @import {Vault} from './vault.js';
+ */
 
 /** @param {MapStore<string, Vault>} store */
 export const makeOrderedVaultStore = store => {

@@ -67,18 +67,13 @@ clean-kind:
 ###############################################################################
 ###                          Agoric Setup                                   ###
 ###############################################################################
-PROVISION_POOL_ADDR=agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346
 
 # add address
 add-address:
 	kubectl exec -i agoriclocal-genesis-0 -c validator -- agd keys add user1
 
 fund-provision-pool:
-	kubectl exec -i agoriclocal-genesis-0 -c validator -- agd tx bank send faucet $(PROVISION_POOL_ADDR) 1000000000uist -y -b block
-
-override-chain-registry:
-	scripts/fetch-starship-chain-info.ts && \
-	scripts/deploy-cli.ts src/revise-chain-info.builder.js
+	scripts/fund-provision-pool.ts
 
 register-bank-assets:
 	scripts/fetch-starship-chain-info.ts && \
@@ -106,10 +101,8 @@ tail-slog:
 wait-for-pods:
 	scripts/pod-readiness.ts
 
-stride-host-zone:
-	./scripts/update_hostzone_proposal.sh
-# Clean up old proposal file if present
-	-kubectl exec -i stridelocal-genesis-0 -- rm /tmp/add_hostzones_proposal.json
+.PHONY: start
+start: install wait-for-pods port-forward fund-provision-pool register-bank-assets
 
 # Copy proposal JSON into container
 	kubectl cp ./scripts/add_hostzones_proposal.json stridelocal-genesis-0:/tmp/add_hostzones_proposal.json

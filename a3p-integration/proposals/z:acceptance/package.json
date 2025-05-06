@@ -19,14 +19,14 @@
     "@agoric/inter-protocol": "dev",
     "@agoric/internal": "dev",
     "@agoric/store": "dev",
-    "@agoric/synthetic-chain": "^0.5.2",
+    "@agoric/synthetic-chain": "^0.5.6",
     "@agoric/zoe": "dev",
-    "@cosmjs/stargate": "^0.32.3",
-    "@cosmjs/tendermint-rpc": "^0.32.3",
-    "@endo/errors": "^1.2.9",
-    "@endo/far": "^1.1.10",
-    "@endo/init": "^1.1.8",
-    "@endo/marshal": "^1.6.3",
+    "@cosmjs/stargate": "^0.33.0",
+    "@cosmjs/tendermint-rpc": "^0.33.0",
+    "@endo/errors": "^1.2.10",
+    "@endo/far": "^1.1.11",
+    "@endo/init": "^1.1.9",
+    "@endo/marshal": "^1.6.4",
     "agoric": "dev",
     "ava": "^6.1.2",
     "execa": "9.1.0"
@@ -97,7 +97,7 @@
   "scripts": {
     "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops"
   },
-  "packageManager": "yarn@4.6.0",
+  "packageManager": "yarn@4.9.1",
   "devDependencies": {
     "eslint": "^8.57.0",
     "npm-run-all": "^4.1.5",

@@ -31,7 +31,7 @@ import { decodeProtobufBase64 } from '../tools/protobuf-decoder.js';
 const trace = makeTracer('NetworkFakes');
 
 /**
- * Mimic IBC Channel version negotation
+ * Mimic IBC Channel version negotiation
  *
  * As part of the IBC Channel initialization, the version field is negotiated
  * with the host. `version` is a String or JSON string as determined by the IBC
@@ -121,10 +121,10 @@ export const ibcBridgeMocks: {
         data: obj.packet.data,
         destination_channel: obj.packet.destination_channel,
         destination_port: obj.packet.destination_port,
-        sequence,
+        sequence: String(sequence),
         source_channel: obj.packet.source_channel,
         source_port: obj.packet.source_port,
-        timeout_timestamp: 1712183910866313000n,
+        timeout_timestamp: '1712183910866313000',
       },
       relayer: 'agoric1gtkg0g6x8lqc734ht3qe2sdkrfugpdp2h7fuu0',
       type: 'IBC_EVENT',

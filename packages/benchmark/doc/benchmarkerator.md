@@ -41,7 +41,7 @@ yourself).[^2]
 
 The first thing a benchmark should do is import The Benchmarkerator:
 ```
-import { bench } from '@agoric/benchmark';
+import { bench } from '@aglocal/benchmark';
 ```
 
 Note that this importation usually should be the very first thing you do, much

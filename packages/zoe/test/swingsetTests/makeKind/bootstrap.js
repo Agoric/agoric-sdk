@@ -1,6 +1,10 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
+/**
+ * @import {ZoeService} from '@agoric/zoe';
+ */
+
 export function buildRootObject(vatPowers) {
   const { D } = vatPowers;
   return Far('root', {

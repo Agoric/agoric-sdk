@@ -1,7 +1,8 @@
 //@ts-nocheck
 import { Validator, type ValidatorSDKType } from './validator.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
-import { Decimal, isSet } from '../../helpers.js';
+import { Decimal } from '../../decimals.js';
+import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
 /**
  * CommunityPoolRebate stores the size of the community pool liquid stake

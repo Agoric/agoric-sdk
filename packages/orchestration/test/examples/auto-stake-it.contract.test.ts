@@ -1,23 +1,20 @@
+import { MsgDelegateResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import type { IBCEvent } from '@agoric/vats';
+import { heapVowE } from '@agoric/vow/vat.js';
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
-import { heapVowE } from '@agoric/vow/vat.js';
-import path from 'path';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { MsgDelegateResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
-import type { IBCEvent } from '@agoric/vats';
-import { commonSetup } from '../supports.js';
 import {
   buildMsgResponseString,
   buildVTransferEvent,
 } from '../../tools/ibc-mocks.js';
+import { commonSetup } from '../supports.js';
 
-const dirname = path.dirname(new URL(import.meta.url).pathname);
+import * as contractExports from '../../src/examples/auto-stake-it.contract.js';
 
 const contractName = 'auto-stake-it';
-const contractFile = `${dirname}/../../src/examples/${contractName}.contract.js`;
-type StartFn =
-  typeof import('../../src/examples/auto-stake-it.contract.js').start;
+type StartFn = typeof contractExports.start;
 
 test('make accounts, register tap, return invitationMakers', async t => {
   t.log('bootstrap, orchestration core-eval');
@@ -32,7 +29,7 @@ test('make accounts, register tap, return invitationMakers', async t => {
 
   t.log('contract coreEval', contractName);
   const installation: Installation<StartFn> =
-    await bundleAndInstall(contractFile);
+    await bundleAndInstall(contractExports);
   const storageNode = await E(storage.rootNode).makeChildNode(contractName);
   const autoAutoStakeItKit = await E(zoe).startInstance(
     installation,

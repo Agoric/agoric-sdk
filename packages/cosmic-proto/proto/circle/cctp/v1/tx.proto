@@ -29,32 +29,34 @@ option go_package = "github.com/circlefin/noble-cctp/x/cctp/types";
 service Msg {
   option (cosmos.msg.v1.service) = true;
 
-  rpc AcceptOwner(MsgAcceptOwner) returns (MsgAcceptOwnerResponse);
-  rpc AddRemoteTokenMessenger(MsgAddRemoteTokenMessenger) returns (MsgAddRemoteTokenMessengerResponse);
+  // rpc AcceptOwner(MsgAcceptOwner) returns (MsgAcceptOwnerResponse);
+  // rpc AddRemoteTokenMessenger(MsgAddRemoteTokenMessenger) returns (MsgAddRemoteTokenMessengerResponse);
   rpc DepositForBurn(MsgDepositForBurn) returns (MsgDepositForBurnResponse);
   rpc DepositForBurnWithCaller(MsgDepositForBurnWithCaller) returns (MsgDepositForBurnWithCallerResponse);
-  rpc DisableAttester(MsgDisableAttester) returns (MsgDisableAttesterResponse);
-  rpc EnableAttester(MsgEnableAttester) returns (MsgEnableAttesterResponse);
-  rpc LinkTokenPair(MsgLinkTokenPair) returns (MsgLinkTokenPairResponse);
-  rpc PauseBurningAndMinting(MsgPauseBurningAndMinting) returns (MsgPauseBurningAndMintingResponse);
-  rpc PauseSendingAndReceivingMessages(MsgPauseSendingAndReceivingMessages) returns (MsgPauseSendingAndReceivingMessagesResponse);
-  rpc ReceiveMessage(MsgReceiveMessage) returns (MsgReceiveMessageResponse);
-  rpc RemoveRemoteTokenMessenger(MsgRemoveRemoteTokenMessenger) returns (MsgRemoveRemoteTokenMessengerResponse);
-  rpc ReplaceDepositForBurn(MsgReplaceDepositForBurn) returns (MsgReplaceDepositForBurnResponse);
-  rpc ReplaceMessage(MsgReplaceMessage) returns (MsgReplaceMessageResponse);
-  rpc SendMessage(MsgSendMessage) returns (MsgSendMessageResponse);
-  rpc SendMessageWithCaller(MsgSendMessageWithCaller) returns (MsgSendMessageWithCallerResponse);
-  rpc UnlinkTokenPair(MsgUnlinkTokenPair) returns (MsgUnlinkTokenPairResponse);
-  rpc UnpauseBurningAndMinting(MsgUnpauseBurningAndMinting) returns (MsgUnpauseBurningAndMintingResponse);
-  rpc UnpauseSendingAndReceivingMessages(MsgUnpauseSendingAndReceivingMessages) returns (MsgUnpauseSendingAndReceivingMessagesResponse);
-  rpc UpdateOwner(MsgUpdateOwner) returns (MsgUpdateOwnerResponse);
-  rpc UpdateAttesterManager(MsgUpdateAttesterManager) returns (MsgUpdateAttesterManagerResponse);
-  rpc UpdateTokenController(MsgUpdateTokenController) returns (MsgUpdateTokenControllerResponse);
-  rpc UpdatePauser(MsgUpdatePauser) returns (MsgUpdatePauserResponse);
-  rpc UpdateMaxMessageBodySize(MsgUpdateMaxMessageBodySize) returns (MsgUpdateMaxMessageBodySizeResponse);
-  rpc SetMaxBurnAmountPerMessage(MsgSetMaxBurnAmountPerMessage) returns (MsgSetMaxBurnAmountPerMessageResponse);
-  rpc UpdateSignatureThreshold(MsgUpdateSignatureThreshold) returns (MsgUpdateSignatureThresholdResponse);
+  // rpc DisableAttester(MsgDisableAttester) returns (MsgDisableAttesterResponse);
+  // rpc EnableAttester(MsgEnableAttester) returns (MsgEnableAttesterResponse);
+  // rpc LinkTokenPair(MsgLinkTokenPair) returns (MsgLinkTokenPairResponse);
+  // rpc PauseBurningAndMinting(MsgPauseBurningAndMinting) returns (MsgPauseBurningAndMintingResponse);
+  // rpc PauseSendingAndReceivingMessages(MsgPauseSendingAndReceivingMessages) returns (MsgPauseSendingAndReceivingMessagesResponse);
+  // rpc ReceiveMessage(MsgReceiveMessage) returns (MsgReceiveMessageResponse);
+  // rpc RemoveRemoteTokenMessenger(MsgRemoveRemoteTokenMessenger) returns (MsgRemoveRemoteTokenMessengerResponse);
+  // rpc ReplaceDepositForBurn(MsgReplaceDepositForBurn) returns (MsgReplaceDepositForBurnResponse);
+  // rpc ReplaceMessage(MsgReplaceMessage) returns (MsgReplaceMessageResponse);
+  // rpc SendMessage(MsgSendMessage) returns (MsgSendMessageResponse);
+  // rpc SendMessageWithCaller(MsgSendMessageWithCaller) returns (MsgSendMessageWithCallerResponse);
+  // rpc UnlinkTokenPair(MsgUnlinkTokenPair) returns (MsgUnlinkTokenPairResponse);
+  // rpc UnpauseBurningAndMinting(MsgUnpauseBurningAndMinting) returns (MsgUnpauseBurningAndMintingResponse);
+  // rpc UnpauseSendingAndReceivingMessages(MsgUnpauseSendingAndReceivingMessages) returns (MsgUnpauseSendingAndReceivingMessagesResponse);
+  // rpc UpdateOwner(MsgUpdateOwner) returns (MsgUpdateOwnerResponse);
+  // rpc UpdateAttesterManager(MsgUpdateAttesterManager) returns (MsgUpdateAttesterManagerResponse);
+  // rpc UpdateTokenController(MsgUpdateTokenController) returns (MsgUpdateTokenControllerResponse);
+  // rpc UpdatePauser(MsgUpdatePauser) returns (MsgUpdatePauserResponse);
+  // rpc UpdateMaxMessageBodySize(MsgUpdateMaxMessageBodySize) returns (MsgUpdateMaxMessageBodySizeResponse);
+  // rpc SetMaxBurnAmountPerMessage(MsgSetMaxBurnAmountPerMessage) returns (MsgSetMaxBurnAmountPerMessageResponse);
+  // rpc UpdateSignatureThreshold(MsgUpdateSignatureThreshold) returns (MsgUpdateSignatureThresholdResponse);
 }
+
+/*
 
 message MsgUpdateOwner {
   option (cosmos.msg.v1.signer) = "from";
@@ -223,6 +225,7 @@ message MsgSetMaxBurnAmountPerMessage {
 }
 
 message MsgSetMaxBurnAmountPerMessageResponse {}
+*/
 
 message MsgDepositForBurn {
   option (cosmos.msg.v1.signer) = "from";
@@ -266,7 +269,7 @@ message MsgDepositForBurnWithCaller {
 message MsgDepositForBurnWithCallerResponse {
   uint64 nonce = 1;
 }
-
+/*
 message MsgReplaceDepositForBurn {
   option (cosmos.msg.v1.signer) = "from";
   option (amino.name) = "cctp/ReplaceDepositForBurn";
@@ -419,3 +422,4 @@ message MsgRemoveRemoteTokenMessenger {
 }
 
 message MsgRemoveRemoteTokenMessengerResponse {}
+*/

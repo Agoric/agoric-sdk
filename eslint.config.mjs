@@ -117,7 +117,7 @@ export default [
         },
 
         tsconfigRootDir: __dirname,
-        extraFileExtensions: ['.cjs'],
+        extraFileExtensions: ['.cjs', '.mjs'],
       },
     },
 
@@ -182,6 +182,7 @@ export default [
     files: [
       'packages/*/src/**/*.js',
       'packages/*/tools/**/*.js',
+      'packages/*/tools/**/*.mjs',
       'packages/*/*.js',
       'packages/wallet/api/src/**/*.js',
     ],
@@ -226,19 +227,21 @@ export default [
     },
   },
   {
-    files: ['packages/orchestration/src/exos/**'],
+    files: ['packages/*/src/exos/**'],
 
     rules: {
       'no-restricted-syntax': [
         'error',
         {
+          // Exclusions are for handlers that return prompt promises
           selector:
-            'FunctionExpression[async=true]:not(Property[key.name="connectionHandler"] > ObjectExpression > Property[key.name=/^(onOpen|onClose)$/] > FunctionExpression[async=true])',
+            'FunctionExpression[async=true]:not(Property[key.name=/^(connectionHandler|tap)$/] > ObjectExpression > Property[key.name=/^(onOpen|onClose|receiveUpcall)$/] > FunctionExpression[async=true])',
           message: 'Non-immediate functions must return vows, not promises',
         },
         {
           selector: 'ArrowFunctionExpression[async=true]',
-          message: 'Non-immediate functions must return vows, not promises',
+          message:
+            'Non-immediate arrow functions must return vows, not promises',
         },
         {
           selector: "Identifier[name='callWhen']",
@@ -270,8 +273,16 @@ export default [
     files: ['**/*.ts'],
 
     rules: {
+      'jsdoc/require-param': 'off',
       'jsdoc/require-param-type': 'off',
       'no-undef': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+        },
+      ],
     },
   },
   {
@@ -279,6 +290,12 @@ export default [
 
     rules: {
       'no-redeclare': 'off',
+    },
+  },
+  {
+    files: ['**/*.test-d.ts'],
+    rules: {
+      '@typescript-eslint/no-unused-vars': 'off',
     },
   },
   ...compat

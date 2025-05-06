@@ -9,7 +9,7 @@ import { AmountShape } from '@agoric/ertp';
 import { M } from '@endo/patterns';
 import { prepareCombineInvitationMakers } from '../exos/combine-invitation-makers.js';
 import { CosmosOrchestrationInvitationMakersI } from '../exos/cosmos-orchestration-account.js';
-import { ChainAddressShape, DelegationShape } from '../typeGuards.js';
+import { CosmosChainAddressShape, DelegationShape } from '../typeGuards.js';
 import { withOrchestration } from '../utils/start-helper.js';
 import * as flows from './staking-combinations.flows.js';
 import * as sharedFlows from './shared.flows.js';
@@ -17,10 +17,11 @@ import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
 
 /**
  * @import {GuestInterface} from '@agoric/async-flow';
+ * @import {ContractMeta, Invitation, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationTools, OrchestrationPowers} from '../utils/start-helper.js';
  * @import {CosmosOrchestrationAccount} from '../exos/cosmos-orchestration-account.js';
- * @import {AmountArg, ChainAddress, CosmosValidatorAddress} from '../types.js';
+ * @import {AmountArg, CosmosChainAddress, CosmosValidatorAddress} from '../types.js';
  */
 
 const emptyOfferShape = harden({
@@ -52,7 +53,7 @@ const contract = async (
       DepositAndDelegate: M.call().returns(M.promise()),
       UndelegateAndTransfer: M.call(
         M.arrayOf(DelegationShape),
-        ChainAddressShape,
+        CosmosChainAddressShape,
       ).returns(M.promise()),
     },
   );
@@ -90,7 +91,7 @@ const contract = async (
       },
       /**
        * @param {{ amount: AmountArg; validator: CosmosValidatorAddress }[]} delegations
-       * @param {ChainAddress} destination
+       * @param {CosmosChainAddress} destination
        */
       UndelegateAndTransfer(delegations, destination) {
         const { account } = this.state;

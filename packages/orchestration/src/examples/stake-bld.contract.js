@@ -19,6 +19,7 @@ import { makeZoeTools } from '../utils/zoe-tools.js';
  * @import {Remote} from '@agoric/internal';
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
+ * @import {ZCF} from '@agoric/zoe';
  */
 
 const trace = makeTracer('StakeBld');
@@ -112,7 +113,8 @@ export const start = async (zcf, privateArgs, baggage) => {
             trace('makeStakeBldInvitation', give);
             const { holder } = await makeLocalAccountKit();
             /** @type {Record<string, Payment<'nat'>>} */
-            // @ts-expect-error XXX PaymentPKeywordRecord throught deeplyFulfilled will be a PaymnentKeywordRecord
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- fails only through some build paths
+            // @ts-ignore XXX PaymentPKeywordRecord, though after deeplyFulfilled it will be a PaymentKeywordRecord
             const { In } = await deeplyFulfilled(
               withdrawFromSeat(zcf, seat, give),
             );

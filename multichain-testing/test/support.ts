@@ -21,7 +21,9 @@ import { makeRelayer } from '../tools/relayer-tools.js';
 import { makeNobleTools } from '../tools/noble-tools.js';
 import { makeAssetInfo } from '../tools/asset-info.js';
 import starshipChainInfo from '../starship-chain-info.js';
+import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
 import { makeFaucetTools } from '../tools/faucet-tools.js';
+import { withCosmosChainId } from '@aglocal/fast-usdc-deploy/src/utils/deploy-config.js';
 
 export const FAUCET_POUR = 10_000n * 1_000_000n;
 
@@ -122,12 +124,16 @@ export const commonSetup = async (
         },
       },
     },
+    namespace: 'cosmos',
+    reference: 'unreachable-chain',
   };
 
   const chainInfo = {
     ...withChainCapabilities(starshipChainInfo),
     ...withChainCapabilities({ unreachableChain }),
+    ...withCosmosChainId({ ethereum: cctpChainInfo.ethereum }),
   };
+
   const faucetTools = makeFaucetTools(
     t,
     tools.agd,
@@ -152,6 +158,7 @@ export const commonSetup = async (
     builderOpts?: Record<string, string | string[]>,
     { skipInstanceCheck = false } = {},
   ) => {
+    await null;
     const { vstorageClient } = tools;
     if (!skipInstanceCheck) {
       const instances = Object.fromEntries(

@@ -11,6 +11,10 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 
+/**
+ * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
+ */
+
 const trace = makeTracer('BootWFUpg', false);
 
 export const wfV1BundleName = 'walletFactoryV1';

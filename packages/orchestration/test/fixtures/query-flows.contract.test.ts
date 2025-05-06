@@ -1,9 +1,5 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import type { TestFn } from 'ava';
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
-import { E, type EReturn } from '@endo/far';
-import path from 'path';
+
 import {
   type JsonSafe,
   toRequestQueryJson,
@@ -16,24 +12,25 @@ import {
   QueryBalanceResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import type { ResponseQuery } from '@agoric/cosmic-proto/tendermint/abci/types.js';
-import { decodeBase64 } from '@endo/base64';
 import {
   LOCALCHAIN_DEFAULT_ADDRESS,
   LOCALCHAIN_QUERY_ALL_BALANCES_RESPONSE,
 } from '@agoric/vats/tools/fake-bridge.js';
-import { commonSetup } from '../supports.js';
-import { defaultMockAckMap } from '../ibc-mocks.js';
+import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
+import { decodeBase64 } from '@endo/base64';
+import { E, type EReturn } from '@endo/far';
+import type { TestFn } from 'ava';
+import * as contractExports from '../../src/fixtures/query-flows.contract.js';
 import {
   buildQueryPacketString,
   buildQueryResponseString,
 } from '../../tools/ibc-mocks.js';
-
-const dirname = path.dirname(new URL(import.meta.url).pathname);
+import { defaultMockAckMap } from '../ibc-mocks.js';
+import { commonSetup } from '../supports.js';
 
 const contractName = 'query-flows';
-const contractFile = `${dirname}/../../src/fixtures/query-flows.contract.js`;
-type StartFn =
-  typeof import('../../src/fixtures/query-flows.contract.js').start;
+type StartFn = typeof contractExports.start;
 
 type TestContext = EReturn<typeof commonSetup> & {
   zoe: ZoeService;
@@ -55,7 +52,7 @@ test.beforeEach(async t => {
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
 
   t.log('contract coreEval', contractName);
-  const installation = await bundleAndInstall(contractFile);
+  const installation = await bundleAndInstall(contractExports);
 
   const storageNode = await E(storage.rootNode).makeChildNode(contractName);
   const { instance } = await E(zoe).startInstance(
