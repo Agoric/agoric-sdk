@@ -157,6 +157,58 @@ test.serial('Observed after mint: Forward failed', async t => {
   ]);
 });
 
+test.serial.failing('Forwards are retried maxRetries times', async t => {
+  const {
+    evm: { cctp, txPub },
+    common: {
+      bootstrap: { storage },
+      commonPrivateArgs: { feeConfig },
+      facadeServices: { chainHub },
+      utils: { transmitVTransferEvent, inspectLocalBridge },
+    },
+    mint,
+  } = t.context;
+
+  const max = makeCustomer('Max', cctp, txPub.publisher, feeConfig, chainHub);
+  const maxEud = 'osmo1max';
+
+  // publish a risky transaction, so the Advance is skipped and forward() instead
+  const maxEvidence = await max.sendFast(t, 3_000_000n, maxEud, true);
+  await mint(maxEvidence);
+  // timeout the forward attempt
+  await transmitVTransferEvent('timeoutPacket', -1);
+
+  t.deepEqual(storage.getDeserialized(`orchtest.txns.${maxEvidence.txHash}`), [
+    { evidence: maxEvidence, status: 'OBSERVED' },
+    {
+      risksIdentified: ['RISK1'],
+      status: 'ADVANCE_SKIPPED',
+    },
+    { status: 'FORWARD_FAILED' },
+  ]);
+
+  const getForwardAttempts = (eud: string) =>
+    inspectLocalBridge().filter(x => x.messages?.[0].memo.includes(eud)).length;
+
+  t.is(getForwardAttempts(maxEud), 2, 'failure is automatically retried');
+
+  for (let i = 3; i <= 6; i += 1) {
+    await transmitVTransferEvent('timeoutPacket', -1);
+    await eventLoopIteration(); // XXX safe to remove?
+    t.is(getForwardAttempts(maxEud), i, `retry attempt ${i}`);
+  }
+
+  // timeout the 6th (max) retry attempt
+  await transmitVTransferEvent('timeoutPacket', -1);
+  t.is(
+    getForwardAttempts(maxEud),
+    6,
+    'transfer not attempted after maxRetries',
+  );
+
+  // XXX consider simulating a successful advance through the same route to reset `maxRetries`
+});
+
 test.serial('partial completion', async t => {
   const {
     bridges: { snapshot, since },
