@@ -1,7 +1,8 @@
 //@ts-nocheck
 import { ICAAccount, type ICAAccountSDKType } from './ica_account.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
-import { Decimal, isSet } from '../../helpers.js';
+import { Decimal } from '../../decimals.js';
+import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
 /**
  * Deprecated, this configuration is no longer needed since swaps
