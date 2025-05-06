@@ -2,7 +2,7 @@
 import {
   CommitmentProof,
   type CommitmentProofSDKType,
-} from '../../../../proofs.js';
+} from '../../../../cosmos/ics23/v1/proofs.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import {
   isSet,
