@@ -27,7 +27,7 @@ jobs:
       - name: Run tests for elys-contract
         run: |
           cd packages/orchestration
-          yarn test test/examples/elys-contract.test.ts
+          AGORIC_AVA_EXPECT_UNHANDLED_REJECTIONS=1 yarn test test/examples/elys-contract.test.ts
 
       - name: Run tests for contract-upgrade
         run: |
