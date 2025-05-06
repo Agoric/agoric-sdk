@@ -495,7 +495,7 @@ export const prepareLocalOrchestrationAccountKit = (
          * >} resultWithoutLocalDenom
          */
         onFulfilled(localDenomHash, resultWithoutLocalDenom) {
-          trace('HELLLO', { localDenomHash, resultWithoutLocalDenom });
+          trace('parseInboundTransferWatcher', { localDenomHash, resultWithoutLocalDenom });
           const localDenom = `ibc/${localDenomHash.hash}`;
           const { amount, ...rest } = resultWithoutLocalDenom;
           const { denom: _, ...amountRest } = amount;

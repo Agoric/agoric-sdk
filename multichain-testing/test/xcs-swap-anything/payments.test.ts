@@ -122,7 +122,6 @@ test.serial.skip('check-others-contract', async t => {
   // Encode addressHook
   const orcContractReceiverAddress = encodeAddressHook(baseAddress, {
     foo: 'bar',
-    anil: 'loves gulsum'
   }); 
   // Send uatom to it
   await fundAndTransfer('cosmoshub', orcContractReceiverAddress, 99n);
