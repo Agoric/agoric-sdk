@@ -338,90 +338,191 @@ test.serial('partial completion', async t => {
   );
 });
 
-test.serial.failing('Interleave scenario', async t => {
-  // FailedForwards contains 1 tx for Carol to eip155:1 at 0:00
-  // Alice requests advance to eip155:1 at 0:00, it fulfills at 0:30
-  // Bob requests advance to eip155:1 at 0:05, it fulfills at 0:35
-  // At 0:30, Carol's FailedForward is retried, it fulfills at 0:60
-  // At 0:35, onWorking is called which triggers attemptToClear(). getFailedForwards() returns Carol's tx
-  // this. .transfer() might reject since SettlementAccount is out of money. It might fulfill if there are funds in there and carol will get 2x her request. If it rejects, it's re-added to failedForwards and Carol might get 2x in the future
+type InterleaveScenario = 'bobFulfills' | 'bobRejects';
 
-  const {
-    evm: { cctp, txPub },
-    common: {
-      bootstrap: { storage },
-      commonPrivateArgs: { feeConfig },
-      facadeServices: { chainHub },
-      utils: { transmitVTransferEvent },
-    },
-    mint,
-  } = t.context;
+/**
+ * This test ensures interleaving does not result in Carol receiving multiple
+ * Forwards (successful IBC transfers).
+ *
+ * Here is the timeline of events:
+ * 1. FailedForwards contains 1 tx for Carol to osmosis at 0:00.
+ *    - note: the test attempts + fails Carol maxRetries: 6 times to set this up.
+ * 2. Alice requests advance to osmosis at 0:00, it fulfills at 0:30.
+ * 3. Bob requests advance to osmosis at 0:05, it settles (fulfillment or rejection) at 0:35.
+ * 4. At 0:30, Carol's FailedForward is retried, we expect it to fulfill at 0:60.
+ * 5. At 0:35, there will be a calls to `noteSuccess` and `noteFailure` depending
+ *    on the scenario (`bobFulfills` or `bobRejects`).
+ */
+const makeInterleaveScenario = test.macro({
+  title: (_, scenario: InterleaveScenario) => `interleave via ${scenario}`,
+  exec: async (t, scenario: InterleaveScenario) => {
+    const {
+      evm: { cctp, txPub },
+      common: {
+        commonPrivateArgs: { feeConfig },
+        facadeServices: { chainHub },
+        utils: { transmitVTransferEvent, inspectLocalBridge },
+      },
+      mint,
+    } = t.context;
 
-  // The key here is that they're going to the same chain. We re-use the EUD just to simplify the test.
-  const EUD = 'eip155:1:0x1234567890123456789012345678901234567890';
+    // Make EUDs unique to this test
+    const [aliceEud, bobEud, carolEud] = [
+      `osmo1alice${scenario}`,
+      `osmo1bob${scenario}`,
+      `osmo1carol${scenario}`,
+    ];
 
-  const alice = makeCustomer(
-    'Alice',
-    cctp,
-    txPub.publisher,
-    feeConfig,
-    chainHub,
-  );
-  // const bob = makeCustomer('Bob', cctp, txPub.publisher, feeConfig, chainHub);
-  const carol = makeCustomer(
-    'Carol',
-    cctp,
-    txPub.publisher,
-    feeConfig,
-    chainHub,
-  );
+    const [alice, bob, carol] = [
+      makeCustomer('Alice', cctp, txPub.publisher, feeConfig, chainHub),
+      makeCustomer('Bob', cctp, txPub.publisher, feeConfig, chainHub),
+      makeCustomer('Carol', cctp, txPub.publisher, feeConfig, chainHub),
+    ];
 
-  // First, Carol's forward fails
-  // publish a risky transaction, so the Advance is skipped and forward() instead
-  const carolEv = await carol.sendFast(t, 3_000_000n, EUD, true);
-  await mint(carolEv);
-  await transmitVTransferEvent('timeoutPacket', -1);
+    // First, Carol's forward fails
+    // publish a risky transaction, so the Advance is skipped and forward() instead
+    const carolEv = await carol.sendFast(t, 3_000_000n, carolEud, true);
+    await mint(carolEv);
+    await transmitVTransferEvent('timeoutPacket', -1);
 
-  t.deepEqual(storage.getDeserialized(`orchtest.txns.${carolEv.txHash}`), [
-    { evidence: carolEv, status: 'OBSERVED' },
-    {
-      risksIdentified: ['RISK1'],
-      status: 'ADVANCE_SKIPPED',
-    },
-    { status: 'FORWARD_FAILED' },
-  ]);
+    t.deepEqual(t.context.common.readTxnRecord(carolEv), [
+      { evidence: carolEv, status: 'OBSERVED' },
+      {
+        risksIdentified: ['RISK1'],
+        status: 'ADVANCE_SKIPPED',
+      },
+      { status: 'FORWARD_FAILED' },
+    ]);
 
-  // Now, Alice and Bob's interleave their requests
-  const aliceEv = await alice.sendFast(t, 1_000_000n, EUD);
-  await transmitVTransferEvent('acknowledgementPacket', -1);
+    /** helper function to get # of outgoing MsgTransfer attempts to Carol's EUD */
+    const getCarolAttempts = () =>
+      inspectLocalBridge().filter(x => x.messages?.[0].memo.includes(carolEud))
+        .length;
 
-  // const bobEv = await bob.sendFast(t, 2_000_000n, EUD);
-  t.deepEqual(storage.getDeserialized(`orchtest.txns.${aliceEv.txHash}`), [
-    { evidence: aliceEv, status: 'OBSERVED' },
-    { status: 'ADVANCING' },
-  ]);
-  // t.deepEqual(storage.getDeserialized(`orchtest.txns.${bobEv.txHash}`), [
-  //   { evidence: bobEv, status: 'OBSERVED' },
-  //   { status: 'ADVANCING' },
-  // ]);
+    t.is(getCarolAttempts(), 2, 'failure is automatically retried');
 
-  // FIXME how to get Alice's advance to complete?
-  t.deepEqual(storage.getDeserialized(`orchtest.txns.${aliceEv.txHash}`), [
-    { evidence: aliceEv, status: 'OBSERVED' },
-    { status: 'ADVANCING' },
-    { status: 'ADVANCED' },
-  ]);
+    // given RouteHealth maxFailures = 6, attempt and fail 6 times to get to a
+    // terminal state
+    for (let i = 3; i <= 6; i += 1) {
+      await transmitVTransferEvent('timeoutPacket', -1);
+      t.is(getCarolAttempts(), i, `retry attempt ${i}`);
+    }
+    await transmitVTransferEvent('timeoutPacket', -1);
 
-  // await mint(aliceEv);
-  // // Carol's mint arrives
-  // await transmitVTransferEvent('acknowledgementPacket');
-  // t.deepEqual(storage.getDeserialized(`orchtest.txns.${aliceEv.txHash}`), [
-  //   { evidence: aliceEv, status: 'OBSERVED' },
-  //   { status: 'ADVANCING' },
-  //   { status: 'DISBURSED' },
-  // ]);
+    t.deepEqual(t.context.common.readTxnRecord(carolEv), [
+      { evidence: carolEv, status: 'OBSERVED' },
+      {
+        risksIdentified: ['RISK1'],
+        status: 'ADVANCE_SKIPPED',
+      },
+      ...Array(6).fill({ status: 'FORWARD_FAILED' }),
+    ]);
 
-  // await mint(bobEv);
+    // Now, Alice and Bob interleave their requests
+    const aliceEv = await alice.sendFast(t, 1_000_000n, aliceEud);
+    t.deepEqual(t.context.common.readTxnRecord(aliceEv), [
+      { evidence: aliceEv, status: 'OBSERVED' },
+      { status: 'ADVANCING' },
+    ]);
 
-  // Carol
+    const bobEv = await bob.sendFast(t, 2_000_000n, bobEud);
+    t.deepEqual(t.context.common.readTxnRecord(bobEv), [
+      { evidence: bobEv, status: 'OBSERVED' },
+      { status: 'ADVANCING' },
+    ]);
+
+    const getIndexByEUD = (eud: string) => {
+      const txs = inspectLocalBridge().filter(x => x?.messages?.length);
+      const eudIdx = txs.findIndex(x => x.messages?.[0].memo.includes(eud));
+      if (eudIdx === -1) throw new Error(`no tx found for ${eud}`);
+      const res = (txs.length - eudIdx) * -1;
+      return res;
+    };
+
+    t.is(getIndexByEUD(aliceEud), -2, "second to last tx is alice's");
+    t.is(getIndexByEUD(bobEud), -1, "last tx is bob's");
+
+    // Alice's advance settles
+    await transmitVTransferEvent('acknowledgementPacket', -2);
+    t.deepEqual(t.context.common.readTxnRecord(aliceEv), [
+      { evidence: aliceEv, status: 'OBSERVED' },
+      { status: 'ADVANCING' },
+      { status: 'ADVANCED' },
+    ]);
+
+    t.is(
+      getCarolAttempts(),
+      7,
+      'carol is retried since alice succeeds on same route',
+    );
+
+    // Bob's advance settles, while Carol's 7th attempt is still outstanding.
+    // Depending on `scenario: InterleaveScenario`, it fulfills or times out.
+    t.is(getIndexByEUD(bobEud), -2, 'bobs tx is now second to last');
+    if (scenario === 'bobRejects') {
+      await transmitVTransferEvent('timeoutPacket', -2);
+      t.deepEqual(t.context.common.readTxnRecord(bobEv), [
+        { evidence: bobEv, status: 'OBSERVED' },
+        { status: 'ADVANCING' },
+        { status: 'ADVANCE_FAILED' },
+      ]);
+    } else {
+      // default to `bobFulfills`
+      await transmitVTransferEvent('acknowledgementPacket', -2);
+      t.deepEqual(t.context.common.readTxnRecord(bobEv), [
+        { evidence: bobEv, status: 'OBSERVED' },
+        { status: 'ADVANCING' },
+        { status: 'ADVANCED' },
+      ]);
+    }
+
+    t.is(
+      getCarolAttempts(),
+      7,
+      'carol should no be retried when her forward attempt is unsettled',
+    );
+
+    // Carol's retry finally succeeds
+    await transmitVTransferEvent('acknowledgementPacket', -1);
+    t.deepEqual(t.context.common.readTxnRecord(carolEv), [
+      { evidence: carolEv, status: 'OBSERVED' },
+      {
+        risksIdentified: ['RISK1'],
+        status: 'ADVANCE_SKIPPED',
+      },
+      ...Array(6).fill({ status: 'FORWARD_FAILED' }),
+      { status: 'FORWARDED' },
+    ]);
+
+    // alice and bob's mints arrive
+    await mint(aliceEv);
+    await mint(bobEv);
+    t.like(t.context.common.readTxnRecord(aliceEv), [
+      { evidence: aliceEv, status: 'OBSERVED' },
+      { status: 'ADVANCING' },
+      { status: 'ADVANCED' },
+      { status: 'DISBURSED' },
+    ]);
+
+    if (scenario === 'bobRejects') {
+      t.deepEqual(t.context.common.readTxnRecord(bobEv), [
+        { evidence: bobEv, status: 'OBSERVED' },
+        { status: 'ADVANCING' },
+        { status: 'ADVANCE_FAILED' },
+        // consider acking the outgoing forward for bob, but not necessary for
+        // the goal of this test
+      ]);
+    } else {
+      // default to `bobFulfills`
+      t.like(t.context.common.readTxnRecord(bobEv), [
+        { evidence: bobEv, status: 'OBSERVED' },
+        { status: 'ADVANCING' },
+        { status: 'ADVANCED' },
+        { status: 'DISBURSED' },
+      ]);
+    }
+  },
 });
+
+test.serial(makeInterleaveScenario, 'bobFulfills');
+test.serial(makeInterleaveScenario, 'bobRejects');
