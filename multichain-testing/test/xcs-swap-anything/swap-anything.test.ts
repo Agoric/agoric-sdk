@@ -88,43 +88,42 @@ const fundRemote = async (
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
 
-const setupXcsContracts = async () => {
+const setupXcsContracts = async (t) => {
   console.log("Setting XXC Contracts ...");
-  
   try {
     const scriptPath = path.resolve(dirname, '../../scripts/setup-xcs.sh');
     const { stdout } = await execa(scriptPath);
     console.log("setup-xcs script output:", stdout);
   } catch (error) {
-    console.log("setup-xcs script failed", error);
+    t.fail(`setup-xcs script failed with error: ${error}`);
   }
 }
 
-const createOsmosisPool = async () => {
+const createOsmosisPool = async (t) => {
   console.log("Creating Osmosis Pool ...");
   try {
     const scriptPath = path.resolve(dirname, '../../scripts/create-osmosis-pool.sh');
     const { stdout } = await execa(scriptPath);
     console.log("create-osmosis-pool  script output:", stdout);
   } catch (error) {
-    console.log("create-osmosis-pool failed", error);
+    t.fail(`create-osmosis-pool failed with error: ${error}`);
   }
 }
 
-const setupXcsState = async () => {
+const setupXcsState = async (t) => {
   console.log("Setting XXC State ...");
   try {
     const { stdout } = await execa('make', ['tx-chain-channel-links'], { cwd: dirname });
     console.log("tx-chain-channel-links  target output:", stdout);
   } catch (error) {
-    console.log("setupXcsState failed", error);
+    t.fail(`tx-chain-channel-links failed with error: ${error}`);
   }
 
   try {
     const { stdout } = await execa('make', ['tx-bec32-prefixes'], { cwd: dirname });
     console.log("tx-bec32-prefixes target output:", stdout);
   } catch (error) {
-    console.log("setupXcsState failed", error);
+    t.fail(`tx-bec32-prefixes failed with error: ${error}`);
   }
 }
 
@@ -136,9 +135,9 @@ test.before(async t => {
   console.log('WALLETS', wallets);
   t.context = { ...common, wallets };
   await startContract(contractName, contractBuilder, commonBuilderOpts);
-  await setupXcsContracts()
-  await createOsmosisPool()
-  await setupXcsState()
+  await setupXcsContracts(t)
+  await createOsmosisPool(t)
+  await setupXcsState(t)
 });
 
 test.serial('BLD for OSMO, receiver on Agoric', async t => {
