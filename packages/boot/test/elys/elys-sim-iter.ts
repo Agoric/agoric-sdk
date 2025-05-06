@@ -47,12 +47,12 @@ const transferAck = (
   destinationChannel: IBCChannelID,
 ) => {
   const { runInbound } = bridgeUtils;
-  let sequence = 1;
   return harden({
     async ack(
       sender: CosmosChainAddress['value'],
       receiver: CosmosChainAddress['value'],
       denom: string,
+      sequence: number,
     ) {
       await runInbound(
         BridgeId.VTRANSFER,
@@ -62,7 +62,7 @@ const transferAck = (
           target: 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht',
           sourceChannel,
           destinationChannel,
-          sequence: `${(sequence += 1)}`,
+          sequence: `${sequence}`,
           denom,
           amount: 8n,
         }),
@@ -159,7 +159,11 @@ export const makeSimulation = (ctx: WalletFactoryTestContext) => {
     async iteration(t: ExecutionContext, iter: number) {
       const webUI = makeUA(elysQ);
       const { agoricOrchestrationAddress } = await webUI.advance(t);
-      t.not(agoricOrchestrationAddress, undefined, 'agoricOrchestrationAddress should not be undefined');
+      t.not(
+        agoricOrchestrationAddress,
+        undefined,
+        'agoricOrchestrationAddress should not be undefined',
+      );
       // send atom for stride liquid staking
       await receiveInAgoricAccount.ack(
         { amount: '10', denom: 'uatom' },
@@ -171,6 +175,7 @@ export const makeSimulation = (ctx: WalletFactoryTestContext) => {
           agoricOrchestrationAddress.value,
           'cosmos1test2',
           'ibc/BA313C4A19DFBF943586C0387E6B11286F9E416B4DD27574E6909CABE0E342FA',
+          iter * 2 + 2,
         );
       await ctx.bridgeUtils.flushInboundQueue();
     },
