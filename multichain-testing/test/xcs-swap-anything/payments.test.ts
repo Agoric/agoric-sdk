@@ -91,11 +91,12 @@ test.before(async t => {
   await startContract(
     otherContractName,
     otherContractBuilder,
-    commonBuilderOpts
+    commonBuilderOpts,
+    { skipInstanceCheck: false }
   );
 });
 
-test.skip('check-vstorage-for-local-account', async t => {
+test.serial.skip('check-vstorage-for-local-account', async t => {
   const { vstorageClient } = t.context;
 
   const {
@@ -104,7 +105,7 @@ test.skip('check-vstorage-for-local-account', async t => {
   t.regex(baseAddress, /^agoric1/, 'LOA address is valid');
 });
 
-test.skip('check-others-contract', async t => {
+test.serial.skip('check-others-contract', async t => {
   const { vstorageClient, retryUntilCondition, useChain } = t.context;
 
   const fundAndTransfer = makeFundAndTransfer(
@@ -163,6 +164,71 @@ test.only('WIP', async t => {
   const orcContractReceiverAddress = encodeAddressHook(baseAddress, {
     dex: 'osmo17p9rzwnnfxcjp32un9ug7yhhzgtkhvl9jfksztgw5uh69wac2pgs5yczr8',
     finalReceiver: wallets.agoricReceiver, // other addr here
+    swapOutDenom: 'uosmo',
+  });
+
+  const transferArgs = makeIBCTransferMsg(
+    { denom: `ibc/${bldDenomOnHub}`, value: 125n },
+    { address: orcContractReceiverAddress, chainName: 'agoric' },
+    { address: cosmosHubAddr, chainName: 'cosmoshub' },
+    Date.now(),
+    useChain,
+  );
+  console.log('Transfer Args:', transferArgs);
+  // TODO #9200 `sendIbcTokens` does not support `memo`
+  // @ts-expect-error spread argument for concise code
+  const txRes = await cosmosHubClient.sendIbcTokens(...transferArgs);
+  if (txRes && txRes.code !== 0) {
+    console.error(txRes);
+    throw Error(`failed to ibc transfer funds to ibc/${bldDenomOnHub}`);
+  }
+  const { events: _events, ...txRest } = txRes;
+  console.log(txRest);
+  t.is(txRes.code, 0, `Transaction succeeded`);
+  t.log(`Funds transferred to ${orcContractReceiverAddress}`);
+
+  const latestTransfer = await vstorageClient.queryData('published.otherContract.latestTransfer');
+  t.log(latestTransfer);
+});
+
+test.skip('WIP-pickup from here', async t => {
+  const { wallets, vstorageClient, useChain } = t.context;
+  const { getRestEndpoint, chain: cosmosChain } = useChain('cosmoshub');
+
+  const { address: cosmosHubAddr, client: cosmosHubClient } = await fundRemote(
+    t,
+    'cosmoshub',
+  );
+
+  const cosmosHubApiUrl = await getRestEndpoint();
+  const cosmosHubQueryClient = makeQueryClient(cosmosHubApiUrl);
+
+  const {
+    transferChannel: { counterPartyChannelId },
+  } = starshipChainInfo.agoric.connections[cosmosChain.chain_id];
+
+  const { hash: bldDenomOnHub } = await cosmosHubQueryClient.queryDenom(
+    `transfer/${counterPartyChannelId}`,
+    'ubld',
+  );
+  t.log({ bldDenomOnHub, counterPartyChannelId });
+
+  const {
+    hookAccount: { value: baseAddress },
+  } = await vstorageClient.queryData('published.SwapMachine-alpha');
+
+  const {
+    otherLcaBase: { value: otherContractAddress },
+  } = await vstorageClient.queryData('published.otherContract');
+
+    // Encode addressHook
+  const otherContractAddressEncoded = encodeAddressHook(otherContractAddress, {
+    foo: 'bar',
+  }); 
+
+  const orcContractReceiverAddress = encodeAddressHook(baseAddress, {
+    dex: 'osmo17p9rzwnnfxcjp32un9ug7yhhzgtkhvl9jfksztgw5uh69wac2pgs5yczr8',
+    finalReceiver: otherContractAddressEncoded, // other addr here
     swapOutDenom: 'uosmo',
   });
 

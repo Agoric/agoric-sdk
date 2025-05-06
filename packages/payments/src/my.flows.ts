@@ -119,14 +119,14 @@ export const osmosisSwapAndSend = async (
     tools: _,
   } = ctx;
 
-
   const sharedLocalAccount = await localAccountHolderP;
-
 
   void log(`Initiating send: ${amount} ${denom} to ${receiver} on ${dex}`);
 
-  const [_a, dexChainInfo, connection] =
-    await chainHub.getChainsAndConnection('agoric', dex);
+  const [_a, dexChainInfo, connection] = await chainHub.getChainsAndConnection(
+    'agoric',
+    dex,
+  );
 
   connection.counterparty || Fail`No IBC connection to ${dex}`;
   const cosmosDexChainInfo = dexChainInfo as CosmosChainInfo;

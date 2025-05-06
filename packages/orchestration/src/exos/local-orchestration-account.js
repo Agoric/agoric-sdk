@@ -171,7 +171,7 @@ export const prepareLocalOrchestrationAccountKit = (
         ),
       }),
       parseInboundTransferWatcher: M.interface('parseInboundTransferWatcher', {
-        onFulfilled: M.call(M.or(M.string(), M.record())).returns(M.record()),
+        onFulfilled: M.call(M.any(), M.any()).returns(M.any()),
       }),
       invitationMakers: M.interface('invitationMakers', {
         CloseAccount: M.call().returns(M.promise()),
@@ -495,6 +495,7 @@ export const prepareLocalOrchestrationAccountKit = (
          * >} resultWithoutLocalDenom
          */
         onFulfilled(localDenomHash, resultWithoutLocalDenom) {
+          trace('HELLLO', { localDenomHash, resultWithoutLocalDenom });
           const localDenom = `ibc/${localDenomHash.hash}`;
           const { amount, ...rest } = resultWithoutLocalDenom;
           const { denom: _, ...amountRest } = amount;
@@ -753,7 +754,7 @@ export const prepareLocalOrchestrationAccountKit = (
               );
 
             /** @type {FungibleTokenPacketData} */
-            const ftPacketData = JSON.parse(packet.data);
+            const ftPacketData = JSON.parse(atob(packet.data));
             const {
               denom: transferDenom,
               sender,
@@ -784,6 +785,8 @@ export const prepareLocalOrchestrationAccountKit = (
               });
 
             const prefix = `${packet.destination_port}/${packet.destination_channel}/`;
+            trace('PREFIX', prefix);
+            trace('TRANSFER_DENOM', transferDenom);
             if (transferDenom.startsWith(prefix)) {
               /**
                * Extract the denom from the packet data.
@@ -791,11 +794,13 @@ export const prepareLocalOrchestrationAccountKit = (
                * @type {Denom}
                */
               const localDenom = transferDenom.slice(prefix.length);
+              trace('FOUND', localDenom);
               return buildReturnValue(localDenom);
             }
 
             // Find the local denom hash for the transferDenom.
-            const denomTrace = `${packet.source_port}/${packet.source_channel}/${transferDenom}`;
+            const denomTrace = `${packet.source_port}/${packet.destination_channel}/${transferDenom}`;
+            trace('DENOM_TRACE', denomTrace);
             return watch(
               E(localchain).query(
                 typedJson(

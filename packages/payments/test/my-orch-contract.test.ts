@@ -65,6 +65,7 @@ test('start my orch contract', async t => {
 
     await VE(transferBridge).fromBridge(
       buildVTransferEvent({
+        event: 'writeAcknowledgement',
         receiver,
         target,
         sourceChannel: 'channel-1', // TODO: hubToAg.transferChannel.counterPartyChannelId,

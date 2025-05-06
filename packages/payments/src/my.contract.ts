@@ -12,6 +12,7 @@ import {
   DenomShape,
   type OrchestrationAccount,
 } from '@agoric/orchestration';
+import { swapAnythingViaHook } from '@agoric/orchestration/src/examples/swap-anything.flows.js';
 import { makeTracer, NonNullish } from '@agoric/internal';
 import { type VTransferIBCEvent } from '@agoric/vats';
 import type { Zone } from '@agoric/zone';
@@ -20,14 +21,20 @@ import { M } from '@endo/patterns';
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import type { Marshaller } from '@agoric/internal/src/lib-chainStorage.js';
 import * as flows from './my.flows.ts';
+
 const trace = makeTracer('PaymentsContract');
+
+export type OsmosiDex = {
+  crosschainSwaps: {
+    address: string;
+  };
+};
 
 export type PrivateArgs = OrchestrationPowers & {
   chainInfo?: Record<string, CosmosChainInfo>;
   assetInfo?: [Denom, DenomDetail & { brandKey?: string }][];
   marshaller: Marshaller;
 };
-
 
 const interfaceTODO = undefined;
 
@@ -56,8 +63,8 @@ export const contract = async (
   tools: OrchestrationTools,
 ) => {
   trace('Start contract');
-  const { orchestrateAll, chainHub } = tools;
-  const { makeHookAccount, ...swapAndSends } = orchestrateAll(flows, {});
+  const { orchestrateAll, chainHub, orchestrate } = tools;
+  const { makeHookAccount } = orchestrateAll(flows, {});
 
   const { when } = tools.vowTools;
 
@@ -75,25 +82,37 @@ export const contract = async (
             const {
               amount,
               extra: { receiver: origReceiver },
-            } = await E(hookAccount).parseInboundTransfer(event.packet);
+            } = await when(E(hookAccount).parseInboundTransfer(event.packet));
 
-            const { baseAddress, query } = decodeAddressHook(origReceiver);
-            const { DST: receiver, SWP: swapDenom, dex = 'osmosis' } = query;
+            const { query } = decodeAddressHook(origReceiver);
+            const {
+              finalReceiver,
+              swapOutDenom,
+              dex = 'osmo17p9rzwnnfxcjp32un9ug7yhhzgtkhvl9jfksztgw5uh69wac2pgs5yczr8',
+            } = query;
             assert.typeof(dex, 'string');
-            assert.typeof(receiver, 'string');
-            assert.typeof(swapDenom, 'string');
+            assert.typeof(finalReceiver, 'string');
+            assert.typeof(swapOutDenom, 'string');
 
-            const dexSwapAndSend = swapAndSends[`${dex}SwapAndSend`];
-
+            // const dexSwapAndSend = swapAndSends[`${dex}SwapAndSend`];
+            trace({
+              amount,
+              origReceiver,
+              finalReceiver,
+              swapOutDenom,
+              dex,
+            });
 
             // Invoke the flow to perform swap and end up at the final destination.
-            return dexSwapAndSend({
-              amount: BigInt(amount.value),
-              denom: amount.denom,
-              swapDenom,
-              sender: baseAddress,
-              receiver,
-              dex,
+            return swapAnythingAddressHook(amount, {
+              destAddr: dex,
+              receiverAddr: finalReceiver,
+              outDenom: swapOutDenom,
+              onFailedDelivery: 'do_nothing',
+              slippage: {
+                slippagePercentage: '20',
+                windowSeconds: 10,
+              },
             });
           }
 
@@ -107,6 +126,16 @@ export const contract = async (
 
   const hookAccountV = zone.makeOnce('hookAccount', _key =>
     makeHookAccount(tap),
+  );
+
+  const swapAnythingAddressHook = orchestrate(
+    'swapAnythingViaHook',
+    {
+      chainHub,
+      sharedLocalAccountP: hookAccountV,
+      log: trace,
+    },
+    swapAnythingViaHook,
   );
 
   void when(hookAccountV, async lca => {

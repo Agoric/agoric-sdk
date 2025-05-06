@@ -524,3 +524,56 @@ test('getBalances', async t => {
   );
   t.is(queryMessages.length, 1, 'getBalances sends query to cosmos golang');
 });
+
+test('parseInboundTransfer', async t => {
+  const common = await commonSetup(t);
+  common.utils.populateChainHub();
+  const makeTestLOAKit = prepareMakeTestLOAKit(t, common);
+  const account = await makeTestLOAKit();
+  const {
+    mocks: { transferBridge },
+    bootstrap: { rootZone },
+  } = common;
+
+  const { value: target } = await VE(account).getAddress();
+  const result = await VE(account).parseInboundTransfer(
+    buildVTransferEvent({ receiver: target }).packet,
+  );
+
+  t.log(result);
+  t.pass();
+
+  // let upcallCount = 0;
+  // const zone = rootZone.subZone('tap');
+  // const tap: TargetApp = zone.exo('tap', undefined, {
+  //   receiveUpcall: (obj: unknown) => {
+  //     upcallCount += 1;
+  //     t.log('receiveUpcall', obj);
+  //     return Promise.resolve();
+  //   },
+  // });
+
+  // const { value: target } = await VE(account).getAddress();
+  // // XXX let the PacketTools subscribeToTransfers complete before triggering it
+  // // again with monitorTransfers
+  // await eventLoopIteration();
+
+  // const appRegistration = await VE(account).monitorTransfers(tap);
+
+  // // simulate upcall from golang to VM
+  // const simulateIncomingTransfer = async () =>
+  //   VE(transferBridge).fromBridge(
+  //     buildVTransferEvent({
+  //       receiver: target,
+  //     }),
+  //   );
+
+  // await simulateIncomingTransfer();
+  // t.is(upcallCount, 1, 'first upcall received');
+  // await simulateIncomingTransfer();
+  // t.is(upcallCount, 2, 'second upcall received');
+
+  // await appRegistration.revoke();
+  // await simulateIncomingTransfer();
+  // t.is(upcallCount, 2, 'no more events after app is revoked');
+});

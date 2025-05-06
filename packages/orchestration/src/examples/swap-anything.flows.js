@@ -191,6 +191,10 @@ export const swapAnythingViaHook = async (
       { nextMemo: M.string() },
     ),
   );
+  trace({
+    coin: { denom, amount },
+    memoArgs,
+  });
 
   const { receiverAddr, destAddr } = memoArgs;
   void log(`sending {${amount}} from osmosis to ${receiverAddr}`);
