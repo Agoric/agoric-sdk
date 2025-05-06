@@ -8,6 +8,7 @@ import type { EvmHash } from '@agoric/fast-usdc/src/types.ts';
 import type { StatusManager } from '../../src/exos/status-manager.js';
 import { startForwardRetrier } from '../../src/utils/forward-retrier.js';
 import { makeRouteHealth } from '../../src/utils/route-health.js';
+import type { ForwardFailedTx } from '../../src/typeGuards.ts';
 
 const { brand: USDC } = makeIssuerKit('USDC');
 
@@ -16,13 +17,23 @@ const setup = t => {
   const log = sandbox.spy(t.log); // Use t.log for test output
   const routeHealth = makeRouteHealth(2); // Derelict after 2 failures
   const forwardFunds = sandbox.stub();
-  const failedForwardsMap = new Map<
-    CaipChainId,
-    ReturnType<StatusManager['getFailedForwards']>
-  >();
+  const failedForwardsMap = new Map<CaipChainId, ForwardFailedTx[]>();
 
-  const getFailedForwards: StatusManager['getFailedForwards'] = chain =>
-    failedForwardsMap.get(chain) ?? [];
+  const dequeueForwardFailedTx: StatusManager['dequeueForwardFailedTx'] =
+    chain => {
+      if (!failedForwardsMap.has(chain)) return undefined;
+      const [first, ...rest] = failedForwardsMap.get(chain) ?? [];
+      if (!first) {
+        failedForwardsMap.delete(chain);
+        return undefined;
+      }
+      if (rest.length) {
+        failedForwardsMap.set(chain, rest);
+      } else {
+        failedForwardsMap.delete(chain);
+      }
+      return first;
+    };
 
   // Need to capture the handlers passed to routeHealth
   let routeHealthHandlers:
@@ -33,7 +44,7 @@ const setup = t => {
   });
 
   startForwardRetrier({
-    getFailedForwards,
+    dequeueForwardFailedTx,
     forwardFunds,
     log,
     routeHealth,
@@ -48,7 +59,7 @@ const setup = t => {
     sandbox,
     forwardFunds,
     failedForwardsMap,
-    getFailedForwards,
+    dequeueForwardFailedTx,
     // Helper to simulate route health events
     triggerRouteEvent: (
       type: 'onFailure' | 'onWorking' | 'onDerelict',
@@ -85,7 +96,7 @@ test('retries failed forwards when route becomes working', t => {
   // Simulate route becoming working (e.g., after being derelict)
   triggerRouteEvent('onWorking', route);
 
-  t.is(forwardFunds.callCount, 2, 'forwardFunds should be called twice');
+  t.is(forwardFunds.callCount, 1, 'forwardFunds should be called once, so far');
   t.deepEqual(
     forwardFunds.getCall(0).args[0],
     {
@@ -94,6 +105,14 @@ test('retries failed forwards when route becomes working', t => {
       destination: failed1.destination,
     },
     'First failed forward should be retried',
+  );
+
+  // simulate first retry success
+  triggerRouteEvent('onWorking', route);
+  t.is(
+    forwardFunds.callCount,
+    2,
+    'forwardFunds should be called a total of 2 times',
   );
   t.deepEqual(
     forwardFunds.getCall(1).args[0],
@@ -104,6 +123,9 @@ test('retries failed forwards when route becomes working', t => {
     },
     'Second failed forward should be retried',
   );
+  // simulate second retry success
+  triggerRouteEvent('onWorking', route);
+  t.is(forwardFunds.callCount, 2, 'not additional txs to attempt');
 });
 
 test('stops retrying if route becomes derelict during clearing', t => {

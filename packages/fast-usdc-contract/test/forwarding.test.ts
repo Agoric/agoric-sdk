@@ -157,7 +157,7 @@ test.serial('Observed after mint: Forward failed', async t => {
   ]);
 });
 
-test.serial.failing('Forwards are retried maxRetries times', async t => {
+test.serial('Forwards are retried maxRetries times', async t => {
   const {
     evm: { cctp, txPub },
     common: {
@@ -194,7 +194,6 @@ test.serial.failing('Forwards are retried maxRetries times', async t => {
 
   for (let i = 3; i <= 6; i += 1) {
     await transmitVTransferEvent('timeoutPacket', -1);
-    await eventLoopIteration(); // XXX safe to remove?
     t.is(getForwardAttempts(maxEud), i, `retry attempt ${i}`);
   }
 

@@ -396,7 +396,8 @@ export const contract = async (
 
   startForwardRetrier({
     forwardFunds,
-    getFailedForwards: statusManager.getFailedForwards.bind(statusManager),
+    dequeueForwardFailedTx:
+      statusManager.dequeueForwardFailedTx.bind(statusManager),
     log: trace,
     routeHealth,
     USDC,

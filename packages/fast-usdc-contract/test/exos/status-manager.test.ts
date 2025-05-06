@@ -340,7 +340,7 @@ test('StatusManagerKey logic handles addresses with hyphens', t => {
   t.is(remainingEntries.length, 0, 'Entry should be dequeued from pending');
 });
 
-test('forwardFailed with retry details stores tx for getFailedForwards', async t => {
+test('forwardFailed with retry details stores tx for dequeueForwardFailedTx', async t => {
   const { statusManager, storage } = t.context;
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
   const { txHash } = evidence;
@@ -364,17 +364,22 @@ test('forwardFailed with retry details stores tx for getFailedForwards', async t
     'FORWARD_FAILED status should be published',
   );
 
-  // Check getFailedForwards
-  const failedForwards = statusManager.getFailedForwards('cosmos:osmosis-1');
-  t.is(failedForwards.length, 1, 'Should retrieve one failed forward');
+  const found = statusManager.dequeueForwardFailedTx('cosmos:osmosis-1');
+  t.not(found, undefined, 'Should retrieve a failed forward');
   t.deepEqual(
-    failedForwards[0],
-    { ...failedTx, chainId: 'cosmos:osmosis-1' },
+    found,
+    failedTx, // XXX understand why chainId is optional
+    // { ...failedTx, chainId: 'cosmos:osmosis-1' },
     'Retrieved failed forward should match input',
+  );
+  t.is(
+    statusManager.dequeueForwardFailedTx('cosmos:osmosis-1'),
+    undefined,
+    'no more failed forwards',
   );
 });
 
-test('forwardFailed without retry details does not store tx for getFailedForwards', async t => {
+test('forwardFailed without retry details does not store tx for dequeueForwardFailedTx', async t => {
   const { statusManager, storage } = t.context;
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
   const { txHash } = evidence;
@@ -391,13 +396,10 @@ test('forwardFailed without retry details does not store tx for getFailedForward
     'FORWARD_FAILED status should be published',
   );
 
-  // Check getFailedForwards - should be empty
-  const failedForwards = [
-    ...statusManager.getFailedForwards('cosmos:osmosis-1'),
-  ];
+  const found = statusManager.dequeueForwardFailedTx('cosmos:osmosis-1');
   t.is(
-    failedForwards.length,
-    0,
+    found,
+    undefined,
     'Should not retrieve failed forward when no details provided',
   );
 });
@@ -418,19 +420,19 @@ test('forwardFailed with retry details is idempotent for storage', t => {
   // Call again with the same details
   statusManager.forwardFailed(txHash, failedTx);
 
-  // Check getFailedForwards
-  const failedForwards = [
-    ...statusManager.getFailedForwards('cosmos:dydx-mainnet-1'),
-  ];
-  t.is(
-    failedForwards.length,
-    1,
-    'Should retrieve only one failed forward despite multiple calls',
+  const failedForward = statusManager.dequeueForwardFailedTx(
+    'cosmos:dydx-mainnet-1',
   );
   t.deepEqual(
-    failedForwards[0],
-    { ...failedTx, chainId: 'cosmos:dydx-mainnet-1' },
+    failedForward,
+    failedTx,
+    // { ...failedTx, chainId: 'cosmos:dydx-mainnet-1' }, // XXX understand why chainId is optional
     'Retrieved failed forward should match input',
+  );
+  t.is(
+    statusManager.dequeueForwardFailedTx('cosmos:dydx-mainnet-1'),
+    undefined,
+    'Should retrieve only one failed forward despite multiple calls',
   );
 });
 

@@ -9,13 +9,13 @@ import type * as flows from '../fast-usdc.flows.ts';
 type ForwardFundsFlow = HostForGuest<typeof flows.forwardFunds>;
 
 export const startForwardRetrier = ({
-  getFailedForwards,
+  dequeueForwardFailedTx,
   forwardFunds,
   log = () => {},
   routeHealth,
   USDC,
 }: {
-  getFailedForwards: StatusManager['getFailedForwards'];
+  dequeueForwardFailedTx: StatusManager['dequeueForwardFailedTx'];
   forwardFunds: ForwardFundsFlow;
   log?: Console['log'];
   routeHealth: RouteHealth;
@@ -23,29 +23,28 @@ export const startForwardRetrier = ({
 }): void => {
   /** Retry failed transactions on the destination chain as long as it's working */
   const attemptToClear = (chain: CaipChainId) => {
-    const failedForwards = getFailedForwards(chain);
-    if (!failedForwards.length) {
+    if (!routeHealth.isWorking(chain)) {
+      // route is not healthy; do not attempt to clear
+      return;
+    }
+    const failedForward = dequeueForwardFailedTx(chain);
+    if (!failedForward) {
       log(`No failed forwards to clear for ${chain}`);
       return;
     }
     log(
-      `Attempting to clear ${failedForwards.length} failed forwards for ${chain}`,
+      `Attempting to clear ${failedForward.txHash} failed forward for ${chain}`,
     );
-    // TODO round robin
-    for (const failedForward of failedForwards) {
-      if (!routeHealth.isWorking(chain)) {
-        // stop trying
-        break;
-      }
-      const { txHash, amount: amtValue, destination } = failedForward;
-      // TODO refactor amount types to avoid ERTP and have consistent naming
-      const amount = AmountMath.make(USDC, amtValue);
-      forwardFunds({
-        txHash,
-        amount,
-        destination,
-      });
-    }
+
+    const { txHash, amount: amtValue, destination } = failedForward;
+    // TODO refactor amount types to avoid ERTP and have consistent naming
+    const amount = AmountMath.make(USDC, amtValue);
+    // XXX do we need to `watch()` ?
+    void forwardFunds({
+      txHash,
+      amount,
+      destination,
+    });
   };
 
   const onFailure = (chain: CaipChainId) => {

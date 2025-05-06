@@ -118,6 +118,17 @@ export const prepareStatusManager = (
   );
 
   /**
+   * Must be kept in sync with `failedForwards`.
+   *
+   * XXX consider just storing an array of tx hashes
+   */
+  const failedForwardsByDest: MapStore<CaipChainId, ForwardFailedTx[]> =
+    zone.mapStore('FailedForwardsByDest', {
+      keyShape: M.string(),
+      valueShape: M.arrayOf(ForwardFailedTxShape),
+    });
+
+  /**
    * Transactions that have completed, but are still in vstorage.
    */
   const storedCompletedTxs: SetStore<EvmHash> = zone.setStore(
@@ -223,8 +234,8 @@ export const prepareStatusManager = (
       skipAdvance: M.call(CctpTxEvidenceShape, M.arrayOf(M.string())).returns(),
       advanceOutcomeForMintedEarly: M.call(EvmHashShape, M.boolean()).returns(),
       advanceOutcomeForUnknownMint: M.call(CctpTxEvidenceShape).returns(),
-      getFailedForwards: M.call(M.string()).returns(
-        M.arrayOf(ForwardFailedTxShape),
+      dequeueForwardFailedTx: M.call(M.string()).returns(
+        M.or(ForwardFailedTxShape, M.undefined()),
       ),
       hasBeenObserved: M.call(CctpTxEvidenceShape).returns(M.boolean()),
       deleteCompletedTxs: M.call().returns(M.undefined()),
@@ -341,10 +352,31 @@ export const prepareStatusManager = (
         publishEvidence(txHash, evidence);
       },
 
-      getFailedForwards(chainId: CaipChainId): Array<ForwardFailedTx> {
-        const valuePattern = M.splitRecord({ chainId });
-        // Spread to array because guarded methods can't pass Iterable
-        return [...failedForwards.values(undefined, valuePattern)];
+      /**
+       * Remove a `ForwardFailed` transaction from the queue so it can be re-attempted
+       * @param chainId
+       */
+      dequeueForwardFailedTx(
+        chainId: CaipChainId,
+      ): ForwardFailedTx | undefined {
+        if (!failedForwardsByDest.has(chainId)) {
+          return undefined;
+        }
+        const failed = failedForwardsByDest.get(chainId);
+        // unexpected path; empty arrays should be cleaned up
+        if (failed.length === 0) return undefined;
+        // extract first item
+        const [first, ...remaining] = failed;
+
+        // clean up `failedForwardsByDest`
+        if (remaining.length) {
+          failedForwardsByDest.set(chainId, harden(remaining));
+        } else {
+          failedForwardsByDest.delete(chainId);
+        }
+        // clean up `failedForwards` (must be kept in sync)
+        failedForwards.delete(first.txHash);
+        return first;
       },
 
       /**
@@ -441,6 +473,16 @@ export const prepareStatusManager = (
             return;
           }
           failedForwards.init(tx.txHash, harden({ ...tx, chainId }));
+
+          if (!failedForwardsByDest.has(chainId)) {
+            failedForwardsByDest.init(chainId, harden([tx]));
+          } else {
+            failedForwardsByDest.set(
+              chainId,
+              harden([...failedForwardsByDest.get(chainId), tx]),
+            );
+          }
+
           // Last because this can trigger the retry which will read from the store
           routeHealth.noteFailure(chainId);
         }
