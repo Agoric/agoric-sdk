@@ -291,7 +291,11 @@ export const prepareStatusManager = (
         tx?: { destination: AccountId },
       ): void {
         if (tx) {
-          routeHealth.noteSuccess(chainOfAccount(tx.destination));
+          if (success) {
+            routeHealth.noteSuccess(chainOfAccount(tx.destination));
+          } else {
+            routeHealth.noteFailure(chainOfAccount(tx.destination));
+          }
         }
         setPendingTxStatus(
           { nfa, amount },
@@ -314,7 +318,11 @@ export const prepareStatusManager = (
         tx?: { destination: AccountId },
       ): void {
         if (tx) {
-          routeHealth.noteSuccess(chainOfAccount(tx.destination));
+          if (success) {
+            routeHealth.noteSuccess(chainOfAccount(tx.destination));
+          } else {
+            routeHealth.noteFailure(chainOfAccount(tx.destination));
+          }
         }
         publishTxnRecord(
           txHash,
