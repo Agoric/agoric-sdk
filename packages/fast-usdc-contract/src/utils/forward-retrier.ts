@@ -56,8 +56,13 @@ export const startForwardRetrier = ({
     log(`Route ${chain} is working again.`);
     attemptToClear(chain);
   };
+  const onDerelict = (chain: CaipChainId) =>
+    log(
+      `Route ${chain} is derelict. A successful transfer must be observed for failed forwards to be reattempted.`,
+    );
   routeHealth.setEventHandlers({
     onFailure,
     onWorking,
+    onDerelict,
   });
 };
