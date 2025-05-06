@@ -435,7 +435,7 @@ test.serial('Interleave scenario', async t => {
     ...Array(6).fill({ status: 'FORWARD_FAILED' }),
   ]);
 
-  // Now, Alice and Bob's interleave their requests
+  // Now, Alice and Bob interleave their requests
   const aliceEv = await alice.sendFast(t, 1_000_000n, aliceEud);
   t.deepEqual(storage.getDeserialized(`orchtest.txns.${aliceEv.txHash}`), [
     { evidence: aliceEv, status: 'OBSERVED' },
@@ -485,7 +485,7 @@ test.serial('Interleave scenario', async t => {
   t.is(
     getCarolAttempts(),
     7,
-    'carol should no be retried when her forward attempt is unsettled',
+    'carol should not be retried when her forward attempt is unsettled',
   );
 
   // Carol's retry finally succeeds
