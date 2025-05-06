@@ -10,6 +10,9 @@ import {
   createFundedWalletAndClient,
   makeIBCTransferMsg,
 } from '../../tools/ibc-transfer.js';
+import { execa } from 'execa';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
@@ -82,6 +85,49 @@ const fundRemote = async (
   };
 };
 
+const filename = fileURLToPath(import.meta.url);
+const dirname = path.dirname(filename);
+
+const setupXcsContracts = async () => {
+  console.log("Setting XXC Contracts ...");
+  
+  try {
+    const scriptPath = path.resolve(dirname, '../../scripts/setup-xcs.sh');
+    const { stdout } = await execa(scriptPath);
+    console.log("setup-xcs script output:", stdout);
+  } catch (error) {
+    console.log("setup-xcs script failed", error);
+  }
+}
+
+const createOsmosisPool = async () => {
+  console.log("Creating Osmosis Pool ...");
+  try {
+    const scriptPath = path.resolve(dirname, '../../scripts/create-osmosis-pool.sh');
+    const { stdout } = await execa(scriptPath);
+    console.log("create-osmosis-pool  script output:", stdout);
+  } catch (error) {
+    console.log("create-osmosis-pool failed", error);
+  }
+}
+
+const setupXcsState = async () => {
+  console.log("Setting XXC State ...");
+  try {
+    const { stdout } = await execa('make', ['tx-chain-channel-links'], { cwd: dirname });
+    console.log("tx-chain-channel-links  target output:", stdout);
+  } catch (error) {
+    console.log("setupXcsState failed", error);
+  }
+
+  try {
+    const { stdout } = await execa('make', ['tx-bec32-prefixes'], { cwd: dirname });
+    console.log("tx-bec32-prefixes target output:", stdout);
+  } catch (error) {
+    console.log("setupXcsState failed", error);
+  }
+}
+
 test.before(async t => {
   const { setupTestKeys, ...common } = await commonSetup(t);
   const { commonBuilderOpts, deleteTestKeys, startContract } = common;
@@ -90,6 +136,9 @@ test.before(async t => {
   console.log('WALLETS', wallets);
   t.context = { ...common, wallets };
   await startContract(contractName, contractBuilder, commonBuilderOpts);
+  await setupXcsContracts()
+  await createOsmosisPool()
+  await setupXcsState()
 });
 
 test.serial('BLD for OSMO, receiver on Agoric', async t => {
@@ -239,7 +288,11 @@ test.serial('address hook - BLD for OSMO, receiver on Agoric', async t => {
 
   const { balances: agoricReceiverBalances } = await retryUntilCondition(
     () => queryClient.queryBalances(wallets.agoricReceiver),
-    ({ balances }) => balances.length > balancesBefore.length,
+    ({ balances }) => {
+      const balancesBeforeAmount = BigInt(balancesBefore[0]?.amount || 0)
+      const currentBalanceAmount = BigInt(balances[0]?.amount || 0)
+      return currentBalanceAmount > balancesBeforeAmount
+    },
     'Deposit reflected in localOrchAccount balance',
   );
   t.log(agoricReceiverBalances);
