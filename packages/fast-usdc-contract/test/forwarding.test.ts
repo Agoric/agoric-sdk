@@ -455,11 +455,11 @@ test.serial('Interleave scenario', async t => {
 
   // Bob's advance settles
   t.is(getIndexByEUD(bobEud), -2, 'bobs tx is now second to last');
-  await transmitVTransferEvent('acknowledgementPacket', -2);
+  await transmitVTransferEvent('timeoutPacket', -2);
   t.deepEqual(t.context.common.readTxnRecord(bobEv), [
     { evidence: bobEv, status: 'OBSERVED' },
     { status: 'ADVANCING' },
-    { status: 'ADVANCED' },
+    { status: 'ADVANCE_FAILED' },
   ]);
 
   t.is(
@@ -492,7 +492,6 @@ test.serial('Interleave scenario', async t => {
   t.like(t.context.common.readTxnRecord(bobEv), [
     { evidence: bobEv, status: 'OBSERVED' },
     { status: 'ADVANCING' },
-    { status: 'ADVANCED' },
-    { status: 'DISBURSED' },
+    { status: 'ADVANCE_FAILED' },
   ]);
 });
