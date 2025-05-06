@@ -273,11 +273,6 @@ test.serial('STORY01: advancing happy path for 100 USDC', async t => {
   ]);
 });
 
-// most likely in exo unit tests
-test.todo(
-  'C21 - Contract MUST log / timestamp each step in the transaction flow',
-);
-
 test.serial('STORY03: see accounting metrics', async t => {
   const {
     startKit: { metricsSub },
@@ -287,8 +282,6 @@ test.serial('STORY03: see accounting metrics', async t => {
   t.log(metrics);
   t.true(matches(metrics, PoolMetricsShape));
 });
-test.todo('document metrics storage schema');
-test.todo('get metrics from vstorage');
 
 test.serial('STORY05: LP collects fees on 100 USDC', async t => {
   const {
@@ -646,7 +639,3 @@ test.serial('mint received while ADVANCING', async t => {
     { split, status: 'DISBURSED' },
   ]);
 });
-
-test.todo(
-  'fee levels MUST be visible to external parties - i.e., written to public storage',
-);
