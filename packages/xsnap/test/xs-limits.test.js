@@ -107,8 +107,8 @@ test.skip('property name space exhaustion: orderly fail-stop', async t => {
     'new Uint32Array(532_676_605)',
     'new BigUint64Array(266_338_303);',
     // Regressed between Moddable 3.9.2 and 5.5.0:
-    //'new Array(66_584_576).fill(0)',
-    //'(new Array(66_584_575).fill(0))[66_584_575] = 0;',
+    // 'new Array(66_584_576).fill(0)',
+    // '(new Array(66_584_575).fill(0))[66_584_575] = 0;',
   ];
 
   for (const statement of challenges) {
