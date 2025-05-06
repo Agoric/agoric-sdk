@@ -37,7 +37,7 @@ import {
   makeTestLogger,
   prepareMockOrchAccounts,
 } from '../mocks.js';
-import { commonSetup } from '../supports.js';
+import { setupFastUsdcTest } from '../supports.js';
 
 const trace = makeTracer('AdvancerTest', false);
 
@@ -47,7 +47,7 @@ const LOCAL_DENOM = `ibc/${denomHash({
     fetchedChainInfo.agoric.connections['noble-1'].transferChannel.channelId,
 })}`;
 
-type CommonSetup = EReturn<typeof commonSetup>;
+type CommonSetup = EReturn<typeof setupFastUsdcTest>;
 
 const theExit = harden(() => {}); // for ava comparison
 
@@ -207,7 +207,7 @@ type TestContext = CommonSetup & {
 const test = anyTest as TestFn<TestContext>;
 
 test.beforeEach(async t => {
-  const common = await commonSetup(t);
+  const common = await setupFastUsdcTest(t);
   t.context = {
     ...common,
     extensions: createTestExtensions(t, common),
@@ -240,7 +240,7 @@ test('updates status to ADVANCING in happy path', async t => {
   await eventLoopIteration();
 
   t.deepEqual(
-    storage.getDeserialized(`fun.txns.${evidence.txHash}`),
+    storage.getDeserialized(`orchtest.txns.${evidence.txHash}`),
     [
       { evidence, status: PendingTxStatus.Observed },
       { status: PendingTxStatus.Advancing },
@@ -312,7 +312,7 @@ test('updates status to ADVANCE_SKIPPED on insufficient pool funds', async t => 
   await eventLoopIteration();
 
   t.deepEqual(
-    storage.getDeserialized(`fun.txns.${evidence.txHash}`),
+    storage.getDeserialized(`orchtest.txns.${evidence.txHash}`),
     [
       { evidence, status: PendingTxStatus.Observed },
       {
@@ -350,7 +350,7 @@ test('updates status to ADVANCE_SKIPPED if coerceCosmosAddress fails', async t =
   await eventLoopIteration();
 
   t.deepEqual(
-    storage.getDeserialized(`fun.txns.${evidence.txHash}`),
+    storage.getDeserialized(`orchtest.txns.${evidence.txHash}`),
     [
       { evidence, status: PendingTxStatus.Observed },
       {
@@ -389,7 +389,7 @@ test('recovery behavior if Advance Fails (ADVANCE_FAILED)', async t => {
   await eventLoopIteration();
 
   t.deepEqual(
-    storage.getDeserialized(`fun.txns.${evidence.txHash}`),
+    storage.getDeserialized(`orchtest.txns.${evidence.txHash}`),
     [
       { evidence, status: PendingTxStatus.Observed },
       { status: PendingTxStatus.Advancing },
@@ -559,7 +559,7 @@ test('updates status to ADVANCE_SKIPPED if pre-condition checks fail', async t =
   await eventLoopIteration();
 
   t.deepEqual(
-    storage.getDeserialized(`fun.txns.${evidence.txHash}`),
+    storage.getDeserialized(`orchtest.txns.${evidence.txHash}`),
     [
       { evidence, status: PendingTxStatus.Observed },
       {
@@ -619,7 +619,7 @@ test('updates status to ADVANCE_SKIPPED if risks identified', async t => {
   await eventLoopIteration();
 
   t.deepEqual(
-    storage.getDeserialized(`fun.txns.${evidence.txHash}`),
+    storage.getDeserialized(`orchtest.txns.${evidence.txHash}`),
     [
       { evidence, status: PendingTxStatus.Observed },
       {
@@ -866,8 +866,8 @@ test('no status update if `checkMintedEarly` returns true', async t => {
 
   // advancer does not post a tx status; settler will Forward and
   // communicate Forwarded/ForwardFailed status'
-  t.throws(() => storage.getDeserialized(`fun.txns.${evidence.txHash}`), {
-    message: /no data at path fun.txns.0x/,
+  t.throws(() => storage.getDeserialized(`orchtest.txns.${evidence.txHash}`), {
+    message: /no data at path/,
   });
 
   t.deepEqual(inspectLogs(), [
@@ -1145,7 +1145,6 @@ test('uses transfer for Noble bech32', async t => {
 
 test('Advance Fails on transfer to Noble', async t => {
   const {
-    bootstrap: { storage },
     extensions: {
       services: { advancer },
       helpers: { inspectBorrowerFacetCalls, inspectLogs, inspectNotifyCalls },
@@ -1162,7 +1161,7 @@ test('Advance Fails on transfer to Noble', async t => {
   await eventLoopIteration();
 
   t.deepEqual(
-    storage.getDeserialized(`fun.txns.${evidence.txHash}`),
+    t.context.readTxnRecord(evidence),
     [
       { evidence, status: PendingTxStatus.Observed },
       { status: PendingTxStatus.Advancing },

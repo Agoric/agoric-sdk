@@ -36,7 +36,7 @@ import {
   MockVTransferEvents,
 } from '../fixtures.js';
 import { makeTestLogger, prepareMockOrchAccounts } from '../mocks.js';
-import { commonSetup } from '../supports.js';
+import { setupFastUsdcTest } from '../supports.js';
 
 const mockZcf = (zone: Zone) => {
   const callLog = [] as any[];
@@ -64,7 +64,7 @@ const mockZcf = (zone: Zone) => {
 };
 
 const makeTestContext = async t => {
-  const common = await commonSetup(t);
+  const common = await setupFastUsdcTest(t);
   const { contractZone: zone } = common.utils;
   const { log, inspectLogs } = makeTestLogger(t.log);
   const statusManager = prepareStatusManager(
@@ -331,7 +331,7 @@ test('happy path: disburse to LPs; StatusManager removes tx', async t => {
   );
   await eventLoopIteration();
   const { storage } = t.context;
-  t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
+  t.deepEqual(t.context.common.readTxnRecord(cctpTxEvidence), [
     { evidence: cctpTxEvidence, status: 'OBSERVED' },
     { status: 'ADVANCING' },
     { status: 'ADVANCED' },
@@ -341,7 +341,7 @@ test('happy path: disburse to LPs; StatusManager removes tx', async t => {
   // Check deletion of DISBURSED transactions
   statusManager.deleteCompletedTxs();
   await eventLoopIteration();
-  t.is(storage.data.get(`fun.txns.${cctpTxEvidence.txHash}`), undefined);
+  t.is(storage.data.get(`orchtest.txns.${cctpTxEvidence.txHash}`), undefined);
 });
 
 test('slow path: forward to EUD; remove pending tx', async t => {
@@ -401,7 +401,7 @@ test('slow path: forward to EUD; remove pending tx', async t => {
   const { storage } = t.context;
   accounts.settlement.transferVResolver.resolve(undefined);
   await eventLoopIteration();
-  t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
+  t.deepEqual(t.context.common.readTxnRecord(cctpTxEvidence), [
     { evidence: cctpTxEvidence, status: 'OBSERVED' },
     { risksIdentified: ['TOO_LARGE_AMOUNT'], status: 'ADVANCE_SKIPPED' },
     { status: 'FORWARDED' },
@@ -410,7 +410,7 @@ test('slow path: forward to EUD; remove pending tx', async t => {
   // Check deletion of FORWARDED transactions
   statusManager.deleteCompletedTxs();
   await eventLoopIteration();
-  t.is(storage.data.get(`fun.txns.${cctpTxEvidence.txHash}`), undefined);
+  t.is(storage.data.get(`orchtest.txns.${cctpTxEvidence.txHash}`), undefined);
 });
 
 test('skip advance: forward to EUD; remove pending tx', async t => {
@@ -479,7 +479,7 @@ test('skip advance: forward to EUD; remove pending tx', async t => {
     'FORWARDED entry removed from StatusManger',
   );
   const { storage } = t.context;
-  t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
+  t.deepEqual(t.context.common.readTxnRecord(cctpTxEvidence), [
     { evidence: cctpTxEvidence, status: 'OBSERVED' },
     { status: 'ADVANCE_SKIPPED', risksIdentified: ['TOO_LARGE_AMOUNT'] },
     { status: 'FORWARDED' },
@@ -488,7 +488,7 @@ test('skip advance: forward to EUD; remove pending tx', async t => {
   // Check deletion of FORWARDED transactions
   statusManager.deleteCompletedTxs();
   await eventLoopIteration();
-  t.is(storage.data.get(`fun.txns.${cctpTxEvidence.txHash}`), undefined);
+  t.is(storage.data.get(`orchtest.txns.${cctpTxEvidence.txHash}`), undefined);
 });
 
 test('Settlement for unknown transaction (minted early)', async t => {
@@ -503,7 +503,6 @@ test('Settlement for unknown transaction (minted early)', async t => {
     peekCalls,
     inspectLogs,
     makeSimulate,
-    storage,
   } = t.context;
 
   const settler = makeSettler({
@@ -562,7 +561,7 @@ test('Settlement for unknown transaction (minted early)', async t => {
   ]);
   accounts.settlement.transferVResolver.resolve(undefined);
   await eventLoopIteration();
-  t.deepEqual(storage.getDeserialized(`fun.txns.${evidence.txHash}`), [
+  t.deepEqual(t.context.common.readTxnRecord(evidence), [
     { evidence, status: 'OBSERVED' },
     { status: 'FORWARDED' },
   ]);
@@ -626,7 +625,7 @@ test('Multiple minted early transactions with same address and amount', async t 
   );
   accounts.settlement.transferVResolver.resolve(undefined);
   await eventLoopIteration();
-  t.deepEqual(storage.getDeserialized(`fun.txns.${evidence1.txHash}`), [
+  t.deepEqual(storage.getDeserialized(`orchtest.txns.${evidence1.txHash}`), [
     { evidence: evidence1, status: 'OBSERVED' },
     { status: 'FORWARDED' },
   ]);
@@ -649,7 +648,7 @@ test('Multiple minted early transactions with same address and amount', async t 
   );
   accounts.settlement.transferVResolver.resolve(undefined);
   await eventLoopIteration();
-  t.deepEqual(storage.getDeserialized(`fun.txns.${evidence2.txHash}`), [
+  t.deepEqual(storage.getDeserialized(`orchtest.txns.${evidence2.txHash}`), [
     { evidence: evidence2, status: 'OBSERVED' },
     { status: 'FORWARDED' },
   ]);
@@ -692,7 +691,6 @@ test('Settlement for Advancing transaction (advance succeeds)', async t => {
       commonPrivateArgs: { feeConfig },
       facadeServices: { chainHub },
     },
-    storage,
   } = t.context;
 
   const settler = makeSettler({
@@ -730,7 +728,7 @@ test('Settlement for Advancing transaction (advance succeeds)', async t => {
   t.log('Simulate advance success');
   simulate.finishAdvance(cctpTxEvidence, true);
   await eventLoopIteration();
-  t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
+  t.deepEqual(t.context.common.readTxnRecord(cctpTxEvidence), [
     { evidence: cctpTxEvidence, status: 'OBSERVED' },
     { status: 'ADVANCING' },
     { status: 'ADVANCED' },
@@ -749,7 +747,6 @@ test('Settlement for Advancing transaction (advance fails)', async t => {
     common: {
       brands: { usdc },
     },
-    storage,
   } = t.context;
 
   const settler = makeSettler({
@@ -794,7 +791,7 @@ test('Settlement for Advancing transaction (advance fails)', async t => {
   t.log('Pretend Forward succeeds');
   accounts.settlement.transferVResolver.resolve(undefined);
   await eventLoopIteration();
-  t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
+  t.deepEqual(t.context.common.readTxnRecord(cctpTxEvidence), [
     { evidence: cctpTxEvidence, status: 'OBSERVED' },
     { status: 'ADVANCING' },
     { status: 'ADVANCE_FAILED' },
@@ -810,7 +807,6 @@ test('slow path, and forward fails (terminal state)', async t => {
     makeSimulate,
     inspectLogs,
     accounts,
-    storage,
   } = t.context;
 
   const settler = makeSettler({
@@ -842,7 +838,7 @@ test('slow path, and forward fails (terminal state)', async t => {
     ],
   ]);
 
-  t.deepEqual(storage.getDeserialized(`fun.txns.${evidence.txHash}`), [
+  t.deepEqual(t.context.common.readTxnRecord(evidence), [
     { evidence, status: 'OBSERVED' },
     { status: 'FORWARD_FAILED' },
   ]);
@@ -951,6 +947,7 @@ test('forward to agoric EUD', async t => {
     makeSimulate,
     accounts,
     peekCalls,
+    storage,
   } = t.context;
   const { usdc } = common.brands;
 
@@ -992,10 +989,9 @@ test('forward to agoric EUD', async t => {
     [],
     'dequeueStatus entry removed from StatusManger',
   );
-  const { storage } = t.context;
   accounts.settlement.sendVResolver.resolve(undefined);
   await eventLoopIteration();
-  t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
+  t.deepEqual(t.context.common.readTxnRecord(cctpTxEvidence), [
     { evidence: cctpTxEvidence, status: 'OBSERVED' },
     { risksIdentified: ['TOO_LARGE_AMOUNT'], status: 'ADVANCE_SKIPPED' },
     { status: 'FORWARDED' },
@@ -1004,7 +1000,8 @@ test('forward to agoric EUD', async t => {
   // Check deletion of FORWARDED transactions
   statusManager.deleteCompletedTxs();
   await eventLoopIteration();
-  t.is(storage.data.get(`fun.txns.${cctpTxEvidence.txHash}`), undefined);
+
+  t.is(storage.data.get(`orchtest.txns.${cctpTxEvidence.txHash}`), undefined);
 });
 
 test('forward to Ethereum EUD', async t => {
@@ -1065,7 +1062,7 @@ test('forward to Ethereum EUD', async t => {
   accounts.intermediate.depositForBurnVResolver.resolve(undefined);
   await eventLoopIteration();
 
-  t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
+  t.deepEqual(t.context.common.readTxnRecord(cctpTxEvidence), [
     { evidence: cctpTxEvidence, status: 'OBSERVED' },
     { risksIdentified: ['TOO_LARGE_AMOUNT'], status: 'ADVANCE_SKIPPED' },
     { status: 'FORWARDED' },
@@ -1074,7 +1071,7 @@ test('forward to Ethereum EUD', async t => {
   // Check deletion of FORWARDED transactions
   statusManager.deleteCompletedTxs();
   await eventLoopIteration();
-  t.is(storage.data.get(`fun.txns.${cctpTxEvidence.txHash}`), undefined);
+  t.is(storage.data.get(`orchtest.txns.${cctpTxEvidence.txHash}`), undefined);
 });
 
 test('forward not attempted: unresolvable destination', async t => {
@@ -1111,7 +1108,7 @@ test('forward not attempted: unresolvable destination', async t => {
   // Verify the transaction record in storage
   await eventLoopIteration();
   t.deepEqual(
-    storage.getDeserialized(`fun.txns.${txHash}`).at(-1),
+    storage.getDeserialized(`orchtest.txns.${txHash}`).at(-1),
     { status: 'FORWARD_SKIPPED' }, // unresolvable destination
   );
 });
@@ -1126,7 +1123,6 @@ test('forward not attempted: unsupported destination', async t => {
     accounts,
     peekCalls,
     inspectLogs,
-    storage,
   } = t.context;
 
   const settler = makeSettler({
@@ -1204,7 +1200,7 @@ test('forward not attempted: unsupported destination', async t => {
 
   // Verify the transaction record in storage
   await eventLoopIteration();
-  t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
+  t.deepEqual(t.context.common.readTxnRecord(cctpTxEvidence), [
     { evidence: cctpTxEvidence, status: 'OBSERVED' },
     { risksIdentified: ['TOO_LARGE_AMOUNT'], status: 'ADVANCE_SKIPPED' },
     { status: 'FORWARD_SKIPPED' }, // unsupported destination
@@ -1222,7 +1218,6 @@ test('forward via cctp failed (MsgTransfer)', async t => {
     accounts,
     peekCalls,
     inspectLogs,
-    storage,
   } = t.context;
   const { usdc } = common.brands;
 
@@ -1280,7 +1275,7 @@ test('forward via cctp failed (MsgTransfer)', async t => {
 
   // Verify the transaction record in storage
   await eventLoopIteration();
-  t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
+  t.deepEqual(t.context.common.readTxnRecord(cctpTxEvidence), [
     { evidence: cctpTxEvidence, status: 'OBSERVED' },
     { risksIdentified: ['TOO_LARGE_AMOUNT'], status: 'ADVANCE_SKIPPED' },
     { status: 'FORWARD_FAILED' }, // Transaction should be marked as FORWARD_FAILED
@@ -1298,7 +1293,6 @@ test('forward via cctp failed (MsgDepositForBurn)', async t => {
     accounts,
     peekCalls,
     inspectLogs,
-    storage,
   } = t.context;
   const { usdc } = common.brands;
 
@@ -1366,7 +1360,7 @@ test('forward via cctp failed (MsgDepositForBurn)', async t => {
 
   // Verify the transaction record in storage
   await eventLoopIteration();
-  t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
+  t.deepEqual(t.context.common.readTxnRecord(cctpTxEvidence), [
     { evidence: cctpTxEvidence, status: 'OBSERVED' },
     { risksIdentified: ['TOO_LARGE_AMOUNT'], status: 'ADVANCE_SKIPPED' },
     { status: 'FORWARD_FAILED' }, // Transaction should be marked as FORWARD_FAILED
