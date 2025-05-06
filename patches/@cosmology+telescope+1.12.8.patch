@@ -1,3 +1,23 @@
+diff --git a/node_modules/@cosmology/telescope/main/generators/customize-utils.js b/node_modules/@cosmology/telescope/main/generators/customize-utils.js
+index 39b65d5..5553874 100644
+--- a/node_modules/@cosmology/telescope/main/generators/customize-utils.js
++++ b/node_modules/@cosmology/telescope/main/generators/customize-utils.js
+@@ -32,13 +32,13 @@ const plugin = (builder) => {
+         utils_1.UTILS.base64FromBytes = {
+             type: 'import',
+             path: '@endo/base64',
+-            name: 'decodeBase64',
++            name: 'encodeBase64',
+             importAs: 'base64FromBytes',
+         };
+         utils_1.UTILS.bytesFromBase64 = {
+             type: 'import',
+             path: '@endo/base64',
+-            name: 'encodeBase64',
++            name: 'decodeBase64',
+             importAs: 'bytesFromBase64',
+         };
+     }
 diff --git a/node_modules/@cosmology/telescope/main/helpers/internal-for-bigint.js b/node_modules/@cosmology/telescope/main/helpers/internal-for-bigint.js
 index b90267f..0740b1e 100644
 --- a/node_modules/@cosmology/telescope/main/helpers/internal-for-bigint.js
@@ -140,6 +160,26 @@ index 07b6e47..6a02c01 100644
  
  export interface AminoHeight {
    readonly revision_number?: string;
+diff --git a/node_modules/@cosmology/telescope/module/generators/customize-utils.js b/node_modules/@cosmology/telescope/module/generators/customize-utils.js
+index d6a50e0..92714e1 100644
+--- a/node_modules/@cosmology/telescope/module/generators/customize-utils.js
++++ b/node_modules/@cosmology/telescope/module/generators/customize-utils.js
+@@ -29,13 +29,13 @@ export const plugin = (builder) => {
+         UTILS.base64FromBytes = {
+             type: 'import',
+             path: '@endo/base64',
+-            name: 'decodeBase64',
++            name: 'encodeBase64',
+             importAs: 'base64FromBytes',
+         };
+         UTILS.bytesFromBase64 = {
+             type: 'import',
+             path: '@endo/base64',
+-            name: 'encodeBase64',
++            name: 'decodeBase64',
+             importAs: 'bytesFromBase64',
+         };
+     }
 diff --git a/node_modules/@cosmology/telescope/module/helpers/internal.js b/node_modules/@cosmology/telescope/module/helpers/internal.js
 index d24ec70..2fb7cc4 100644
 --- a/node_modules/@cosmology/telescope/module/helpers/internal.js
@@ -186,6 +226,26 @@ index d24ec70..2fb7cc4 100644
  
  export interface AminoHeight {
      readonly revision_number?: string;
+diff --git a/node_modules/@cosmology/telescope/src/generators/customize-utils.ts b/node_modules/@cosmology/telescope/src/generators/customize-utils.ts
+index 5373663..bb87283 100644
+--- a/node_modules/@cosmology/telescope/src/generators/customize-utils.ts
++++ b/node_modules/@cosmology/telescope/src/generators/customize-utils.ts
+@@ -38,13 +38,13 @@ export const plugin = (builder: TelescopeBuilder) => {
+     UTILS.base64FromBytes = {
+       type: 'import',
+       path: '@endo/base64',
+-      name: 'decodeBase64',
++      name: 'encodeBase64',
+       importAs: 'base64FromBytes',
+     };
+     UTILS.bytesFromBase64 = {
+       type: 'import',
+       path: '@endo/base64',
+-      name: 'encodeBase64',
++      name: 'decodeBase64',
+       importAs: 'bytesFromBase64',
+     };
+   } else {
 diff --git a/node_modules/@cosmology/telescope/src/helpers/internal-for-bigint.ts b/node_modules/@cosmology/telescope/src/helpers/internal-for-bigint.ts
 index 9308f40..425b617 100644
 --- a/node_modules/@cosmology/telescope/src/helpers/internal-for-bigint.ts
