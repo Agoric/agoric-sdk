@@ -1,0 +1,32 @@
+version: 1
+
+chains:
+  ollinet:
+    chain_id: agoricollinet-55
+    # Bech32 prefix for addresses
+    prefix: agoric
+    # This determines the gas payments we make (and defines the fee token)
+    gas_price: 0.25ubld
+    # The path we use to derive the private key from the mnemonic
+    # Note: The hd paths shown have no meaningful relationship to the existing chains.
+    # It is recommended practice to use a different hd_path than those commonly used for user accounts.
+    hd_path: m/44'/1234'/0'/1'
+    # If you include an optional faucet, it will load the relayer with tokens in `ibc-setup init`
+    #faucet: https://faucet.malaga-420.cosmwasm.com:443
+    # You can optionally define a default ics20_port that will be used instead of transfer if no flags set
+    ics20_port: 'transfer'
+    estimated_block_time: 6000
+    estimated_indexer_time: 100
+    # You can include multiple RPC endpoints and it will rotate through them if
+    # one is down (TODO)
+    rpc:
+      - https://ollinet.rpc.agoric.net:443
+  local:
+    chain_id: agoriclocal
+    prefix: agoric
+    gas_price: 0uist
+    hd_path: m/44'/1234'/0'/2'
+    estimated_block_time: 400
+    estimated_indexer_time: 60
+    rpc:
+      - http://localhost:26657

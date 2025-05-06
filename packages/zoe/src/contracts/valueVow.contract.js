@@ -2,7 +2,6 @@ import { prepareVowTools } from '@agoric/vow';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
 /**
- * @import {ContractMeta, HandleOffer, ZCF} from '@agoric/zoe';
  * @import { Baggage } from '@agoric/vat-data';
  */
 

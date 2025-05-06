@@ -200,9 +200,7 @@ wait-for-cosmos:
 	@echo -n "Waiting for $(COSMOS_RPC_HOST):$(COSMOS_RPC_PORT) to come live..."
 	@while true; do \
 	  block=$$(curl -s http://$(COSMOS_RPC_HOST):$(COSMOS_RPC_PORT)/status | jq -r .result.sync_info.latest_block_height); \
-		if test -n "$$block" && test "$$block" -lt 1; then \
-		  true; \
-		elif test -z "$$start"; then \
+		if test -z "$$start"; then \
 		  start=$$block; \
 		elif test $$block -gt $$start; then \
 		  break; \
@@ -237,34 +235,29 @@ t1-provision-one-with-powers: wait-for-cosmos
 		  t1/$(BASE_PORT) $$addr $(AGORIC_POWERS) -ojson | tee /dev/stderr | grep -q '"code":0'; }
 
 # Send some USDC to the vbank/provision module account where it can be traded for IST.
+fund-provision-pool:
+# The agoric1megzy… address is the account of the provisioning pool.
 # The mint limit is 1000 IST and each wallet gets 0.25 IST when
 # provisioned, so make room for 400 accounts with 100 USDC which mints 100 IST.
-#
-# This module account for the provision pool resolves to the agoric1megzy… address.
-# In other parts of the system it is assumed to be a constant (Cosmos SDK currently guarantees it),
-# but we generate it here similarly to how we do in JS.
-fund-provision-pool:
-	PROVISION_POOL=$$($(AGCH) query auth module-account vbank/provision -ojson | \
-	  jq -r .account.base_account.address) && \
-	  $(MAKE) ACCT_ADDR="$$PROVISION_POOL" FUNDS=1000000000ibc/toyusdc fund-acct
+	$(MAKE) ACCT_ADDR=agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346 FUNDS=1000000000ibc/toyusdc fund-acct
 
 fund-acct:
 	$(AGCH) \
 	  --home=t1/bootstrap --keyring-backend=test --from=bootstrap \
-	  tx bank send bootstrap "$(ACCT_ADDR)" "$(FUNDS)" \
-	  --gas=auto --gas-adjustment="$(GAS_ADJUSTMENT)" --broadcast-mode=block --yes --chain-id=$(CHAIN_ID)
+	  tx bank send bootstrap $(ACCT_ADDR) $(FUNDS) \
+	  --gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID)
 
 provision-acct:
 	$(AGCH) --chain-id=$(CHAIN_ID) \
 	  --home=t1/bootstrap --keyring-backend=test --from=bootstrap \
-	  tx swingset provision-one "t1/$(BASE_PORT)" "$(ACCT_ADDR)" SMART_WALLET \
-	  --gas=auto --gas-adjustment="$(GAS_ADJUSTMENT)" --broadcast-mode=block --yes
+	  tx swingset provision-one t1/$(BASE_PORT) $(ACCT_ADDR) SMART_WALLET \
+	  --gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes
 
 provision-my-acct:
 	$(AGCH) --chain-id=$(CHAIN_ID) \
 	  --home t1/8000/ag-cosmos-helper-statedir --keyring-backend=test --from=ag-solo \
-	  tx swingset provision-one "t1/$(BASE_PORT)" "$(ACCT_ADDR)" SMART_WALLET \
-	  --gas=auto --gas-adjustment="$(GAS_ADJUSTMENT)" --broadcast-mode=block --yes
+	  tx swingset provision-one t1/$(BASE_PORT) $(ACCT_ADDR) SMART_WALLET \
+	  --gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes
 
 FROM_KEY=bootstrap
 SIGN_MODE=

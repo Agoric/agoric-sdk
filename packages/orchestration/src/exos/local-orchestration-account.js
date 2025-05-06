@@ -28,8 +28,7 @@ import { TransferRouteShape } from './chain-hub.js';
 /**
  * @import {HostOf} from '@agoric/async-flow';
  * @import {LocalChain, LocalChainAccount} from '@agoric/vats/src/localchain.js';
- * @import {AmountArg, CosmosChainAddress, DenomAmount, IBCMsgTransferOptions, IBCConnectionInfo, OrchestrationAccountCommon, LocalAccountMethods, TransferRoute, AccountId, AccountIdArg} from '@agoric/orchestration';
- * @import {ContractMeta, Invitation, OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, IBCConnectionInfo, OrchestrationAccountCommon, LocalAccountMethods, TransferRoute} from '@agoric/orchestration';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Zone} from '@agoric/zone';
  * @import {Remote} from '@agoric/internal';
@@ -61,7 +60,7 @@ const EVow$ = shape => M.or(Vow$(shape), M.promise(/* shape */));
  *   topicKit: RecorderKit<LocalChainAccountNotification> | undefined;
  *   packetTools: PacketTools;
  *   account: LocalChainAccount;
- *   address: CosmosChainAddress;
+ *   address: ChainAddress;
  * }} State
  *   Internal to the LocalOrchestrationAccount exo
  */
@@ -181,7 +180,7 @@ export const prepareLocalOrchestrationAccountKit = (
     /**
      * @param {object} initState
      * @param {LocalChainAccount} initState.account
-     * @param {CosmosChainAddress} initState.address
+     * @param {ChainAddress} initState.address
      * @param {Remote<StorageNode>} [initState.storageNode]
      * @returns {State}
      */
@@ -266,7 +265,7 @@ export const prepareLocalOrchestrationAccountKit = (
           /**
            * @type {OfferHandler<
            *   Vow<void>,
-           *   { toAccount: AccountIdArg; amount: AmountArg }
+           *   { toAccount: ChainAddress; amount: AmountArg }
            * >}
            */
           const offerHandler = (seat, { toAccount, amount }) => {
@@ -279,7 +278,7 @@ export const prepareLocalOrchestrationAccountKit = (
           /**
            * @type {OfferHandler<
            *   Vow<void>,
-           *   { toAccount: CosmosChainAddress; amounts: AmountArg[] }
+           *   { toAccount: ChainAddress; amounts: AmountArg[] }
            * >}
            */
           const offerHandler = (seat, { toAccount, amounts }) => {
@@ -294,7 +293,7 @@ export const prepareLocalOrchestrationAccountKit = (
            *   Vow<void>,
            *   {
            *     amount: AmountArg;
-           *     destination: AccountIdArg;
+           *     destination: ChainAddress;
            *     opts?: IBCMsgTransferOptions;
            *   }
            * >}
@@ -637,15 +636,12 @@ export const prepareLocalOrchestrationAccountKit = (
         send(toAccount, amount) {
           return asVow(() => {
             trace('send', toAccount, amount);
-            const cosmosDest = chainHub.coerceCosmosAddress(toAccount);
-            cosmosDest.chainId === this.state.address.chainId ||
-              Fail`bank/send cannot send to a different chain ${q(cosmosDest.chainId)}`;
             const { helper } = this.facets;
             return watch(
               E(this.state.account).executeTx([
                 typedJson('/cosmos.bank.v1beta1.MsgSend', {
                   amount: [helper.amountToCoin(amount)],
-                  toAddress: cosmosDest.value,
+                  toAddress: toAccount.value,
                   fromAddress: this.state.address.value,
                 }),
               ]),
@@ -675,7 +671,7 @@ export const prepareLocalOrchestrationAccountKit = (
           });
         },
         /**
-         * @param {AccountIdArg} destination
+         * @param {ChainAddress} destination
          * @param {AmountArg} amount an ERTP {@link Amount} or a
          *   {@link DenomAmount}
          * @param {IBCMsgTransferOptions} [opts] if either timeoutHeight or
@@ -689,7 +685,6 @@ export const prepareLocalOrchestrationAccountKit = (
         transfer(destination, amount, opts) {
           return asVow(() => {
             trace('Transferring funds over IBC');
-
             const denomAmount = coerceDenomAmount(chainHub, amount);
 
             const { forwardOpts, ...rest } = opts ?? {};

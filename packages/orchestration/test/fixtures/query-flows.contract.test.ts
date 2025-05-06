@@ -27,10 +27,13 @@ import {
   buildQueryPacketString,
   buildQueryResponseString,
 } from '../../tools/ibc-mocks.js';
-import * as contractExports from '../../src/fixtures/query-flows.contract.js';
+
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const contractName = 'query-flows';
-type StartFn = typeof contractExports.start;
+const contractFile = `${dirname}/../../src/fixtures/query-flows.contract.js`;
+type StartFn =
+  typeof import('../../src/fixtures/query-flows.contract.js').start;
 
 type TestContext = EReturn<typeof commonSetup> & {
   zoe: ZoeService;
@@ -52,7 +55,7 @@ test.beforeEach(async t => {
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
 
   t.log('contract coreEval', contractName);
-  const installation = await bundleAndInstall(contractExports);
+  const installation = await bundleAndInstall(contractFile);
 
   const storageNode = await E(storage.rootNode).makeChildNode(contractName);
   const { instance } = await E(zoe).startInstance(

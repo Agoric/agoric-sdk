@@ -5,10 +5,10 @@ import { deeplyFulfilled } from '@endo/marshal';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { AmountMath } from '@agoric/ertp';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
-import * as centralSupply from '../src/centralSupply.js';
+import centralSupplyBundle from '../bundles/bundle-centralSupply.js';
 import { feeIssuerConfig } from '../src/core/utils.js';
 
-/** @import {FeeMintAccess, Installation} from '@agoric/zoe' */
+/** @import {Installation} from '@agoric/zoe/src/zoeService/utils.js' */
 /**
  * @typedef {import('ava').ExecutionContext<{
  *   zoe: ZoeService;
@@ -17,13 +17,13 @@ import { feeIssuerConfig } from '../src/core/utils.js';
  *   brand: Record<'IST', Brand>;
  *   installation: Record<
  *     'centralSupply',
- *     Installation<typeof centralSupply.start>
+ *     Installation<import('../src/centralSupply.js').start>
  *   >;
  * }>} CentralSupplyTestContext
  */
 
 test.before(async (/** @type {CentralSupplyTestContext} */ t) => {
-  const { bundleAndInstall, zoe, feeMintAccessP } = await setUpZoeForTest({
+  const { zoe, feeMintAccessP } = await setUpZoeForTest({
     feeIssuerConfig,
   });
   const issuer = {
@@ -34,7 +34,7 @@ test.before(async (/** @type {CentralSupplyTestContext} */ t) => {
   };
 
   const installation = {
-    centralSupply: bundleAndInstall(centralSupply),
+    centralSupply: E(zoe).install(centralSupplyBundle),
   };
 
   t.context = await deeplyFulfilled(

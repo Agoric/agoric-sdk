@@ -1,6 +1,5 @@
 import test from 'ava';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
-import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
 
 // List of chains to test to ensure an IBC connection exists from noble to them
 // XXX: Some missing connections.
@@ -59,32 +58,4 @@ const testNobleConnection = test.macro({
 
 for (const chain of fastUsdcDestinationChains) {
   test(testNobleConnection, chain);
-}
-
-/**
- * List of chains reachable over CCTP through Noble
- */
-const cctpDestinationChains = [
-  'ethereum',
-  'avalanche',
-  'optimism',
-  'arbitrum',
-  'solana',
-  'base',
-  'polygon',
-];
-
-const testCctpDesintation = test.macro({
-  exec(t, input) {
-    const info = cctpChainInfo[/** @type {string} */ (input)];
-    t.true('cctpDestinationDomain' in info);
-    t.true(info.cctpDestinationDomain >= 0);
-  },
-  title(_, input) {
-    return `Connection from noble to ${input}`;
-  },
-});
-
-for (const chain of cctpDestinationChains) {
-  test(testCctpDesintation, chain);
 }

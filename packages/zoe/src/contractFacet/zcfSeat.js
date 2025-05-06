@@ -21,8 +21,8 @@ import { makeAllocationMap } from './reallocate.js';
 import { TransferPartShape } from '../contractSupport/atomicTransfer.js';
 
 /**
- * @import {WeakMapStore} from '@agoric/store';
- * @import {TransferPart, ZCFSeat} from '@agoric/zoe';
+ * @import {LegacyWeakMap, WeakMapStore} from '@agoric/store';
+ * @import {MapStore} from '@agoric/swingset-liveslots';
  */
 
 /**

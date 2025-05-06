@@ -16,7 +16,7 @@ import {
 } from './util/noble.js';
 import { queryUSDCBalance } from './util/bank.js';
 
-/** @import { File } from './util/file.js' */
+/** @import { File } from './util/file' */
 /** @import { VStorage } from '@agoric/client-utils' */
 /** @import { SigningStargateClient } from '@cosmjs/stargate' */
 /** @import { JsonRpcProvider as ethProvider } from 'ethers' */
@@ -34,7 +34,7 @@ const transfer = async (
   setTimeout = globalThis.setTimeout,
 ) => {
   const execute = async (
-    /** @type {import('./config.js').ConfigOpts} */ config,
+    /** @type {import('./config').ConfigOpts} */ config,
   ) => {
     const netConfig = await fetchEnvNetworkConfig({ env, fetch });
     vstorage ||= makeVStorage(

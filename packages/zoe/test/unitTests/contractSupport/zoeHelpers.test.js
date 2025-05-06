@@ -8,10 +8,6 @@ import {
   satisfies,
 } from '../../../src/contractSupport/index.js';
 
-/**
- * @import {ContractMeta, Invitation, OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
- */
-
 test('ZoeHelpers messages', t => {
   t.is(
     defaultAcceptanceMsg,

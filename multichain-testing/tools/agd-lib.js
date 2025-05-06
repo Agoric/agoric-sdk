@@ -45,7 +45,7 @@ export const flags = record => {
  */
 
 /**
- * @param {{ execFileSync: typeof import('node:child_process')['execFileSync'] }} io
+ * @param {{ execFileSync: ExecSync }} io
  */
 export const makeAgd = ({ execFileSync }) => {
   /**
@@ -72,7 +72,7 @@ export const makeAgd = ({ execFileSync }) => {
      */
     const exec = (
       args,
-      opts = { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] },
+      opts = { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] },
     ) => execFileSync(kubectlBinary, [...binaryArgs, ...args], opts);
 
     const outJson = flags({ output: 'json' });
@@ -88,7 +88,7 @@ export const makeAgd = ({ execFileSync }) => {
       query: async qArgs => {
         const out = exec(['query', ...qArgs, ...nodeArgs, ...outJson], {
           encoding: 'utf-8',
-          stdio: ['ignore', 'pipe', 'pipe'],
+          stdio: ['ignore', 'pipe', 'ignore'],
         });
 
         try {
@@ -132,7 +132,6 @@ export const makeAgd = ({ execFileSync }) => {
           ...keyringArgs,
           ...flags({ 'chain-id': chainId, from }),
           ...flags({
-            // FIXME removed in cosmos-sdk https://github.com/Agoric/agoric-sdk/issues/9016
             'broadcast-mode': 'block',
             gas: 'auto',
             'gas-adjustment': '1.4',
@@ -141,7 +140,7 @@ export const makeAgd = ({ execFileSync }) => {
           ...outJson,
         ];
         trace('$ agd', ...args);
-        const out = exec(args, { stdio: ['ignore', 'pipe', 'pipe'] });
+        const out = exec(args, { stdio: ['ignore', 'pipe', 'ignore'] });
         try {
           // XXX approximate type
           /** @type {{ height: string, txhash: string, code: number, codespace: string, raw_log: string }} */
@@ -227,20 +226,20 @@ export const makeCopyFiles = (
       `exec -i ${podName} -c ${containerName} -- mkdir -p ${destDir}`.split(
         ' ',
       ),
-      { stdio: ['ignore', 'pipe', 'pipe'] },
+      { stdio: ['ignore', 'pipe', 'ignore'] },
     );
     for (const path of paths) {
       execFileSync(
         kubectlBinary,
         `cp ${path} ${podName}:${destDir}/ -c ${containerName}`.split(' '),
-        { stdio: ['ignore', 'pipe', 'pipe'] },
+        { stdio: ['ignore', 'pipe', 'ignore'] },
       );
       log(`Copied ${path} to ${destDir} in pod ${podName}`);
     }
     const lsOutput = execFileSync(
       kubectlBinary,
       `exec -i ${podName} -c ${containerName}  -- ls ${destDir}`.split(' '),
-      { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf-8' },
+      { stdio: ['ignore', 'pipe', 'ignore'], encoding: 'utf-8' },
     );
     log(`ls ${destDir}:\n${lsOutput}`);
     return lsOutput;

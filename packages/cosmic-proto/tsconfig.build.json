@@ -21,7 +21,6 @@
         "downlevelIteration": true,
     },
     "exclude": [
-        "scripts",
         "test",
     ]
 }

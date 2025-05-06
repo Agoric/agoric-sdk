@@ -27,10 +27,6 @@ import {
   MsgRedeemStakeResponse,
 } from '@agoric/cosmic-proto/stride/stakeibc/tx.js';
 import {
-  MsgDepositForBurn,
-  MsgDepositForBurnResponse,
-} from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
-import {
   buildMsgResponseString,
   buildQueryResponseString,
   buildMsgErrorString,
@@ -38,7 +34,6 @@ import {
   buildQueryPacketString,
   createMockAckMap,
 } from '../tools/ibc-mocks.js';
-import { leftPadEthAddressTo32Bytes } from '../src/utils/address.js';
 
 /**
  * TODO: provide mappings to cosmos error codes (and module specific error codes)
@@ -81,12 +76,12 @@ const redelegation = {
 };
 const bankSend = {
   fromAddress: 'cosmos1test',
-  toAddress: 'cosmos1testrecipient',
+  toAddress: 'cosmos99test',
   amount: [{ denom: 'uatom', amount: '10' }],
 };
 const bankSendMulti = {
   fromAddress: 'cosmos1test',
-  toAddress: 'cosmos1testrecipient',
+  toAddress: 'cosmos99test',
   amount: [
     { denom: 'uatom', amount: '10' },
     { denom: 'ibc/1234', amount: '10' },
@@ -156,36 +151,6 @@ export const protoMsgMocks = {
   bankSendMulti: {
     msg: buildTxPacketString([MsgSend.toProtoMsg(bankSendMulti)]),
     ack: buildMsgResponseString(MsgSendResponse, {}),
-  },
-  depositForBurn: {
-    // msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ21ZS0lTOWphWEpqYkdVdVkyTjBjQzUyTVM1TmMyZEVaWEJ2YzJsMFJtOXlRblZ5YmhKQkNndGpiM050YjNNeGRHVnpkQklITkRJMU1EQXdNQmdHSWlBQUFBQUFBQUFBQUFBQUFBQWc1bzlzSjJyRzRwZXNSc2hLc21DU2duWnBIU29GZFhWelpHTT0iLCJtZW1vIjoiIn0=',
-    msg: buildTxPacketString([
-      MsgDepositForBurn.toProtoMsg({
-        amount: '4250000',
-        burnToken: 'uusdc',
-        from: 'cosmos1test',
-        destinationDomain: 6,
-        mintRecipient: leftPadEthAddressTo32Bytes(
-          '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
-        ),
-      }),
-    ]),
-    ack: buildMsgResponseString(MsgDepositForBurnResponse, {}),
-  },
-  depositForBurnForBase: {
-    msg: buildTxPacketString([
-      MsgDepositForBurn.toProtoMsg({
-        amount: '10',
-        burnToken: 'uusdc',
-        from: 'cosmos1test',
-        destinationDomain: 0,
-        mintRecipient: leftPadEthAddressTo32Bytes(
-          '0xe0d43135EBd2593907F8f56c25ADC1Bf94FCf993',
-        ),
-      }),
-    ]),
-    // 'depositForBurn via Noble to Base' in cosmos-orchestration-account.test.ts
-    ack: buildMsgResponseString(MsgDepositForBurnResponse, {}),
   },
 };
 

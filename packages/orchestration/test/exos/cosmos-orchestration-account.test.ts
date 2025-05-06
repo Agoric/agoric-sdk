@@ -47,12 +47,11 @@ import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { decodeBase64 } from '@endo/base64';
 import type { EReturn } from '@endo/far';
 import type { TestFn } from 'ava';
-import { MsgDepositForBurn } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
 import type { CosmosValidatorAddress } from '../../src/cosmos-api.js';
 import fetchedChainInfo from '../../src/fetched-chain-info.js';
 import type {
   AmountArg,
-  CosmosChainAddress,
+  ChainAddress,
   Denom,
 } from '../../src/orchestration-api.js';
 import { assetOn } from '../../src/utils/asset.js';
@@ -66,7 +65,6 @@ import {
 import { protoMsgMocks } from '../ibc-mocks.js';
 import { commonSetup } from '../supports.js';
 import { prepareMakeTestCOAKit } from './make-test-coa-kit.js';
-import { leftPadEthAddressTo32Bytes } from '../../src/utils/address.js';
 
 type TestContext = EReturn<typeof commonSetup>;
 
@@ -95,8 +93,8 @@ test('send (to addr on same chain)', async t => {
   const account = await makeTestCOAKit();
   t.assert(account, 'account is returned');
 
-  const toAddress: CosmosChainAddress = {
-    value: 'cosmos1testrecipient',
+  const toAddress: ChainAddress = {
+    value: 'cosmos99test',
     chainId: 'cosmoshub-4',
     encoding: 'bech32',
   };
@@ -115,7 +113,7 @@ test('send (to addr on same chain)', async t => {
     buildTxPacketString([
       MsgSend.toProtoMsg({
         fromAddress: 'cosmos1test',
-        toAddress: 'cosmos1testrecipient',
+        toAddress: 'cosmos99test',
         amount: [
           {
             denom: uistOnCosmos,
@@ -135,15 +133,6 @@ test('send (to addr on same chain)', async t => {
     } as AmountArg),
     undefined,
     'send accepts Amount',
-  );
-
-  t.is(
-    await E(account).send(`cosmos:${toAddress.chainId}:${toAddress.value}`, {
-      denom: uistOnCosmos,
-      value: 10n,
-    } as AmountArg),
-    undefined,
-    'send accepts AccountId',
   );
 
   await t.throwsAsync(
@@ -186,23 +175,14 @@ test('send (to addr on same chain)', async t => {
   const { bridgeDowncalls } = await inspectDibcBridge();
   t.is(
     bridgeDowncalls.filter(d => d.method === 'sendPacket').length,
-    5,
-    'sent 4 successful txs and 1 failed. 1 rejected before sending',
-  );
-
-  await t.throwsAsync(
-    E(account).send(
-      { ...toAddress, chainId: 'not-cosmos-1' },
-      moolah.make(10n) as AmountArg,
-    ),
-    {
-      message: 'bank/send cannot send to a different chain "not-cosmos-1"',
-    },
+    4,
+    'sent 3 successful txs and 1 failed. 1 rejected before sending',
   );
 });
 
 test('transfer', async t => {
   const {
+    brands: { ist },
     facadeServices: { chainHub },
     utils: { inspectDibcBridge, populateChainHub },
     mocks: { ibcBridge },
@@ -302,7 +282,7 @@ test('transfer', async t => {
   const account = await makeTestCOAKit();
 
   t.log('Send tokens from cosmoshub to noble');
-  const mockDestination: CosmosChainAddress = {
+  const mockDestination: ChainAddress = {
     value: 'noble1test',
     chainId: 'noble-1',
     encoding: 'bech32',
@@ -449,7 +429,7 @@ test('getBalance and getBalances', async t => {
 
   const buildMocks = () => {
     const makeBalanceReq = (
-      address: CosmosChainAddress['value'] = 'osmo1test',
+      address: ChainAddress['value'] = 'osmo1test',
       denom: Denom = 'uosmo',
     ) =>
       buildQueryPacketString([
@@ -458,9 +438,7 @@ test('getBalance and getBalances', async t => {
           denom,
         }),
       ]);
-    const makeAllBalanceReq = (
-      address: CosmosChainAddress['value'] = 'osmo1test',
-    ) =>
+    const makeAllBalanceReq = (address: ChainAddress['value'] = 'osmo1test') =>
       buildQueryPacketString([
         QueryAllBalancesRequest.toProtoMsg({
           address,
@@ -958,79 +936,5 @@ test('executeEncodedTx', async t => {
     }),
     'Ei0KKy9jb3Ntb3Muc3Rha2luZy52MWJldGExLk1zZ0RlbGVnYXRlUmVzcG9uc2U=', // cosmos.staking.v1beta1.MsgDelegateResponse
     'delegateMsgSuccess',
-  );
-});
-
-test(`depositForBurn via Noble to Base`, async t => {
-  t.context.utils.populateChainHub();
-  const { chainHub } = t.context.facadeServices;
-
-  chainHub.registerChain('base', {
-    namespace: 'eip155',
-    reference: '8453', // Base https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-8453.json
-    cctpDestinationDomain: 0,
-  });
-  const makeTestCOAKit = prepareMakeTestCOAKit(t, t.context, { noble: true });
-  const nobleAccount = await makeTestCOAKit();
-  const amount = {
-    denom: 'uusdc',
-    value: 10n,
-  };
-
-  const actual = await E(nobleAccount).depositForBurn(
-    'eip155:8453:0xe0d43135EBd2593907F8f56c25ADC1Bf94FCf993',
-    amount,
-  );
-
-  t.log('check the bridge');
-  t.deepEqual(actual, undefined);
-
-  const getAndDecodeLatestPacket = async () => {
-    await eventLoopIteration();
-    const { bridgeDowncalls } = await t.context.utils.inspectDibcBridge();
-    const latest = bridgeDowncalls[
-      bridgeDowncalls.length - 1
-    ] as IBCMethod<'sendPacket'>;
-    const { messages } = parseOutgoingTxPacket(latest.packet.data);
-    return MsgDepositForBurn.decode(messages[0].value);
-  };
-
-  const packet = await getAndDecodeLatestPacket();
-  t.log({ packet });
-  t.like(
-    packet,
-    {
-      amount: '10',
-      burnToken: 'uusdc',
-      destinationDomain: 0,
-      from: 'cosmos1test',
-    },
-    'it worked',
-  );
-
-  const paddedAddr = leftPadEthAddressTo32Bytes(
-    '0xe0d43135EBd2593907F8f56c25ADC1Bf94FCf993',
-  );
-  t.deepEqual(packet.mintRecipient, paddedAddr);
-});
-
-test.failing(`depositForBurn via Noble to Solana (not yet)`, async t => {
-  t.context.utils.populateChainHub();
-  const { chainHub } = t.context.facadeServices;
-  chainHub.registerChain('solana', {
-    namespace: 'solana',
-    reference: '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp', // Solana Mainnet
-    cctpDestinationDomain: 0,
-  });
-  const makeTestCOAKit = prepareMakeTestCOAKit(t, t.context, { noble: true });
-  const nobleAccount = await makeTestCOAKit();
-  const amount = {
-    denom: 'uusdc',
-    value: 10n,
-  };
-
-  await E(nobleAccount).depositForBurn(
-    'eip155:1:0xe0d43135EBd2593907F8f56c25ADC1Bf94FCf993',
-    amount,
   );
 });

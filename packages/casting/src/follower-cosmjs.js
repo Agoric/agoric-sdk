@@ -92,10 +92,6 @@ const collectSingle = values => {
   return head[0];
 };
 
-// NB: 'none' is the only value that works. We've left the other cases
-// in anticipation of the ecosystem providing JS proofs again.
-// See https://github.com/cosmos/cosmjs/issues/1618#issuecomment-2574934505
-// and https://github.com/cosmos/ics23/pull/353?email_source=slack
 // Coordinate with switch/case of tryGetDataAtHeight.
 const proofs = ['strict', 'none', 'optimistic'];
 
@@ -114,7 +110,7 @@ export const makeCosmjsFollower = (
   const {
     decode = MAKE_DEFAULT_DECODER(),
     unserializer = MAKE_DEFAULT_UNSERIALIZER(),
-    proof = 'none',
+    proof = 'optimistic',
     crasher = null,
   } = options;
 
@@ -221,20 +217,14 @@ export const makeCosmjsFollower = (
   };
 
   /**
-   * @deprecated no longer supported https://github.com/cosmos/cosmjs/pull/1623
    * @param {number} [height]
    * @returns {Promise<QueryStoreResponse>}
    */
   const getProvenDataAtHeight = async height => {
-    console.error(
-      'getProvenDataAtHeight',
-      height,
-      'is no longer supported; use',
-      { proof: 'none' },
-    );
-    throw makeError(
-      X`Verified queries are no longer supported; use { proof: 'none' }`,
-    );
+    return retryGetPrefixedData(async (endpoint, storeName, storeSubkey) => {
+      const queryClient = await provideQueryClient(endpoint);
+      return E(queryClient).queryStoreVerified(storeName, storeSubkey, height);
+    });
   };
 
   /**

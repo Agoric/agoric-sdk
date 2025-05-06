@@ -1,6 +1,6 @@
-import { open } from 'node:fs/promises';
+import { createWriteStream } from 'node:fs';
 import process from 'node:process';
-import { promisify } from 'node:util';
+import { open } from 'node:fs/promises';
 
 /**
  * @param {import('fs').ReadStream
@@ -40,6 +40,10 @@ export const fsStreamReady = stream =>
     stream.on('error', onError);
   });
 
+const noPath = /** @type {import('fs').PathLike} */ (
+  /** @type {unknown} */ (undefined)
+);
+
 /** @typedef {NonNullable<Awaited<ReturnType<typeof makeFsStreamWriter>>>} FsStreamWriter */
 /** @param {string | undefined | null} filePath */
 export const makeFsStreamWriter = async filePath => {
@@ -47,22 +51,12 @@ export const makeFsStreamWriter = async filePath => {
     return undefined;
   }
 
-  const useStdout = filePath === '-';
-  const { handle, stream } = await (async () => {
-    if (useStdout) {
-      return { handle: undefined, stream: process.stdout };
-    }
-    const fh = await open(filePath, 'a');
-    return { handle: fh, stream: fh.createWriteStream({ flush: true }) };
-  })();
+  const handle = await (filePath !== '-' ? open(filePath, 'a') : undefined);
+
+  const stream = handle
+    ? createWriteStream(noPath, { fd: handle.fd })
+    : process.stdout;
   await fsStreamReady(stream);
-  const writeAsync = promisify(stream.write.bind(stream));
-  const closeAsync =
-    useStdout || !(/** @type {any} */ (stream).close)
-      ? undefined
-      : promisify(
-          /** @type {import('fs').WriteStream} */ (stream).close.bind(stream),
-        );
 
   let flushed = Promise.resolve();
   let closed = false;
@@ -83,14 +77,20 @@ export const makeFsStreamWriter = async filePath => {
   };
 
   const write = async data => {
+    /** @type {Promise<void>} */
     const written = closed
       ? Promise.reject(Error('Stream closed'))
-      : writeAsync(data);
+      : new Promise((resolve, reject) => {
+          stream.write(data, err => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve();
+            }
+          });
+        });
     updateFlushed(written);
-    const waitForDrain = await written;
-    if (waitForDrain) {
-      await new Promise(resolve => stream.once('drain', resolve));
-    }
+    return written;
   };
 
   const flush = async () => {
@@ -107,7 +107,8 @@ export const makeFsStreamWriter = async filePath => {
     // TODO: Consider creating a single Error here to use a write rejection
     closed = true;
     await flush();
-    await closeAsync?.();
+    // @ts-expect-error calling a possibly missing method
+    stream.close?.();
   };
 
   stream.on('error', err => updateFlushed(Promise.reject(err)));

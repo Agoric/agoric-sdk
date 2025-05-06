@@ -12,7 +12,6 @@ import {
 import { ParamChangesQuestionDetailsShape } from '../typeGuards.js';
 
 /**
- * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
  * @import {ParamValue, ParamChangePositions, QuestionSpec, ChangeParamsPosition, ParamChangeIssue, ParamGovernor, ParamManagerRetriever, PoserFacet, VoteOnParamChanges} from '../types.js';
  */
 

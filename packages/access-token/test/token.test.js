@@ -1,12 +1,10 @@
 import test from 'ava';
-import tmp from 'tmp';
-import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
+import { tmpDir } from './tmp.js';
+
 import { getAccessToken } from '../src/access-token.js';
 
-const tmpDir = makeTempDirFactory(tmp);
-
 test('access tokens', async t => {
-  const [sharedStateDir, removeCallback] = tmpDir('access-token-test');
+  const [sharedStateDir, removeCallback] = await tmpDir('access-token-test');
   const [a, b, c] = await Promise.all([
     getAccessToken(1234, sharedStateDir),
     getAccessToken(1234, sharedStateDir),

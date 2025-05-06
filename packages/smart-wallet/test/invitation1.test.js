@@ -17,10 +17,6 @@ import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { prepareSmartWallet } from '../src/smartWallet.js';
 
-/**
- * @import {InvitationDetails, Proposal} from '@agoric/zoe';
- */
-
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;
 

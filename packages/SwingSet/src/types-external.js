@@ -1,11 +1,10 @@
+/** @import { ERef } from '@endo/far'; */
+
 export {};
 
 /**
  * @import {Guarded} from '@endo/exo';
- * @import {ERef} from '@endo/far';
  * @import {Passable, RemotableObject} from '@endo/pass-style';
- * @import {LimitedConsole} from '@agoric/internal/src/js-utils.js';
- * @import {SlogProps, SlogDurationProps} from './controller/controller.js';
  */
 
 /* This file defines types that part of the external API of swingset. That
@@ -13,23 +12,18 @@ export {};
  * with, like VatAdminService. */
 
 /**
- * @typedef {(extraProps?: SlogDurationProps) => void} FinishSlogDuration
+ * @typedef {'getExport' | 'nestedEvaluate' | 'endoZipBase64'} BundleFormat
  */
 
 /**
  * @typedef {import('@endo/marshal').CapData<string>} SwingSetCapData
  */
 
-// TODO move Bundle types into Endo
 /**
- * @typedef {'getExport' | 'nestedEvaluate' | 'endoZipBase64'} BundleFormat
  * @typedef { { moduleFormat: 'getExport', source: string, sourceMap?: string } } GetExportBundle
  * @typedef { { moduleFormat: 'nestedEvaluate', source: string, sourceMap?: string } } NestedEvaluateBundle
- * @typedef { { moduleFormat: 'test' } } TestBundle
- * @typedef { EndoZipBase64Bundle | GetExportBundle | NestedEvaluateBundle | TestBundle} Bundle
- */
-
-/**
+ * @typedef { EndoZipBase64Bundle | GetExportBundle | NestedEvaluateBundle } Bundle
+ *
  * @typedef { 'local' | 'node-subprocess' | 'xsnap' | 'xs-worker' } ManagerType
  */
 
@@ -134,18 +128,8 @@ export {};
  * @typedef { Awaited<ReturnType<typeof import('@agoric/xsnap').xsnap>> } XSnap
  * @typedef { (dr: VatDeliveryResult) => void } SlogFinishDelivery
  * @typedef { (ksr: KernelSyscallResult, vsr: VatSyscallResult) => void } SlogFinishSyscall
- * @typedef { { write: (obj: SlogProps) => void,
- *              startDuration:     (labels: readonly [startLabel: string, endLabel: string],
- *                                  startProps: SlogDurationProps) => FinishSlogDuration,
- *              provideVatSlogger: (vatID: string,
- *                                  dynamic?: boolean,
- *                                  description?: string,
- *                                  name?: string,
- *                                  vatSourceBundle?: unknown,
- *                                  managerType?: string,
- *                                  vatParameters?: unknown) => { vatSlog: VatSlog },
- *              vatConsole: (vatID: string, origConsole: LimitedConsole) => LimitedConsole,
- *              startup: (vatID: string) => () => void,
+ * @typedef { { write: ({}) => void,
+ *              vatConsole: (vatID: string, origConsole: {}) => {},
  *              delivery: (vatID: string,
  *                         newCrankNum: BigInt, newDeliveryNum: BigInt,
  *                         kd: KernelDeliveryObject, vd: VatDeliveryObject,
@@ -153,11 +137,13 @@ export {};
  *              syscall: (vatID: string,
  *                        ksc: KernelSyscallObject | undefined,
  *                        vsc: VatSyscallObject) => SlogFinishSyscall,
- *              changeCList: (vatID: string,
- *                            crankNum: BigInt,
- *                            mode: 'import' | 'export' | 'drop',
- *                            kernelSlot: string,
- *                            vatSlot: string) => void,
+ *              provideVatSlogger: (vatID: string,
+ *                                  dynamic?: boolean,
+ *                                  description?: string,
+ *                                  name?: string,
+ *                                  vatSourceBundle?: unknown,
+ *                                  managerType?: string,
+ *                                  vatParameters?: unknown) => { vatSlog: VatSlog },
  *              terminateVat: (vatID: string, shouldReject: boolean, info: SwingSetCapData) => void,
  *             } } KernelSlog
  * @typedef {{

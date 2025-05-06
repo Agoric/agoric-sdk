@@ -1,4 +1,5 @@
 // @jessie-check
+// @ts-check
 
 import {
   handleParamGovernance,
@@ -17,12 +18,7 @@ import {
   prepareProvisionPoolKit,
 } from './provisionPoolKit.js';
 
-/**
- * @import {Marshal} from '@endo/marshal';
- * @import {Amount, Brand, Payment, Purse} from '@agoric/ertp';
- * @import {ContractMeta, Invitation, StandardTerms, ZCF} from '@agoric/zoe';
- * @import {GovernanceTerms} from '@agoric/governance/src/types.js';
- */
+/** @import {Marshal} from '@endo/marshal'; */
 
 /** @type {ContractMeta} */
 export const meta = {

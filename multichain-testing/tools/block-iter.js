@@ -12,7 +12,7 @@ const { freeze } = Object;
  * @param {number} [delta]
  */
 const recentBlockRate = async (api, delta = 2) => {
-  /** @param {{ height: string, time: string }} header */
+  /** @param {{ height: number, time: string }} header */
   const relevant = ({ height, time }) => ({ height, time });
   const { block: latest } = await api.queryBlock();
   const heightRecent = Number(latest.header.height) - delta;

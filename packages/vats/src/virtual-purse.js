@@ -14,11 +14,6 @@ import {
 } from '@agoric/ertp';
 
 /**
- * @import {Key, Pattern} from '@endo/patterns';
- * @import {Amount, Issuer, IssuerKit, Paymnent} from '@agoric/ertp';
- */
-
-/**
  * @param {Pattern} [brandShape]
  * @param {Pattern} [amountShape]
  */

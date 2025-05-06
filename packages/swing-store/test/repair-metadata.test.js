@@ -3,18 +3,14 @@
 import path from 'path';
 import test from 'ava';
 import sqlite3 from 'better-sqlite3';
-import tmp from 'tmp';
-
-import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 
 import { importSwingStore, openSwingStore } from '../src/index.js';
 
 import { makeExporter, buildData } from './exports.js';
-
-const tmpDir = makeTempDirFactory(tmp);
+import { tmpDir } from './util.js';
 
 test('repair metadata', async t => {
-  const [dbDir, cleanup] = tmpDir('testdb');
+  const [dbDir, cleanup] = await tmpDir('testdb');
   t.teardown(cleanup);
 
   const { exportData, artifacts } = buildData();
@@ -78,7 +74,7 @@ test('repair metadata', async t => {
 });
 
 test('repair metadata ignores kvStore entries', async t => {
-  const [dbDir, cleanup] = tmpDir('testdb');
+  const [dbDir, cleanup] = await tmpDir('testdb');
   t.teardown(cleanup);
 
   const { exportData, artifacts } = buildData();
@@ -101,7 +97,7 @@ test('repair metadata ignores kvStore entries', async t => {
 });
 
 test('repair metadata rejects mismatched snapshot entries', async t => {
-  const [dbDir, cleanup] = tmpDir('testdb');
+  const [dbDir, cleanup] = await tmpDir('testdb');
   t.teardown(cleanup);
 
   const { exportData, artifacts } = buildData();
@@ -124,7 +120,7 @@ test('repair metadata rejects mismatched snapshot entries', async t => {
 });
 
 test('repair metadata rejects mismatched transcript span', async t => {
-  const [dbDir, cleanup] = tmpDir('testdb');
+  const [dbDir, cleanup] = await tmpDir('testdb');
   t.teardown(cleanup);
 
   const { exportData, artifacts } = buildData();

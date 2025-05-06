@@ -4,10 +4,11 @@
     ],
     "entryPoints": [
         "src/contractFacet/internal-types.js",
-        "src/contractFacet/types.js",
+        "src/contractFacet/types-ambient.d.ts",
         "src/contractSupport/index.js",
         "src/contractSupport/types-ambient.js",
         "src/types.js",
+        "src/zoeService/types-ambient.js",
         "src/zoeService/utils.d.ts",
         "src/zoeService/zoe.js",
         "tools/manualTimer.js"

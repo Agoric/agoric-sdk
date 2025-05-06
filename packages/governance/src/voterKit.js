@@ -4,7 +4,6 @@ import { E } from '@endo/eventual-send';
 import { PositionShape, QuestionHandleShape } from './typeGuards.js';
 
 /**
- * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
  * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn, CompletedBallet, Position} from './types.js';
  */
 

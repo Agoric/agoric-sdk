@@ -11,14 +11,12 @@ import { Fail } from '@endo/errors';
 import { Far } from '@endo/marshal';
 import { E } from '@endo/far';
 
+import '../internal-types.js';
+
 import { makeZCFZygote } from './zcfZygote.js';
 
 /**
- * @import {ZoeService} from '@agoric/zoe';
- */
-
-/**
- * @param {VatPowers & { testJigSetter: ( {zcf}: {zcf: ZCF} ) => void }} powers
+ * @param {VatPowers & { testJigSetter: TestJigSetter }} powers
  * @param {{contractBundleCap: BundleCap, zoeService: ZoeService, invitationIssuer: Issuer<'set'>, privateArgs?: any}} vatParameters
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
@@ -74,6 +72,7 @@ export async function buildRootObject(powers, vatParameters, baggage) {
       issuerStorageFromZoe,
       privateArgs = undefined,
     ) => {
+      /** @type {ZCFZygote} */
       return E(zcfZygote).startContract(
         zoeInstanceAdmin,
         instanceRecordFromZoe,

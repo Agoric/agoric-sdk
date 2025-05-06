@@ -36,19 +36,20 @@
     "type-coverage": "^2.27.1",
     "typedoc": "^0.26.7",
     "typedoc-plugin-markdown": "^4.2.1",
-    "typescript": "~5.8.2",
-    "typescript-eslint": "^8.26.0"
+    "typescript": "~5.8.0-beta",
+    "typescript-eslint": "^8.22.0"
   },
   "resolutions": {
     "**/protobufjs": "^7.2.6",
     "**/@types/estree": "^1.0.0",
-    "@endo/eslint-plugin/typescript-eslint": "^8.26.0"
+    "@endo/eslint-plugin/typescript-eslint": "^8.22.0"
   },
   "engines": {
     "node": "^18.12 || ^20.9"
   },
   "scripts": {
     "clean": "yarn lerna run --no-bail clean",
+    "check-dependencies": "node ./scripts/check-mismatched-dependencies.cjs",
     "docs": "run-s docs:build docs:update-functions-path",
     "docs:build": "typedoc --tsconfig tsconfig.build.json",
     "docs:markdown-for-agoric-documentation-repo": "run-s docs:markdown-build 'docs:update-functions-path md'",
@@ -63,8 +64,6 @@
     "lint-fix": "yarn lerna run --no-bail lint-fix",
     "lint": "run-s --continue-on-error lint:*",
     "lint:packages": "yarn lerna run --no-bail lint",
-    "lint:package-names": "./scripts/verify-package-names.js",
-    "lint:types": "tsc",
     "test": "yarn lerna run --no-bail test",
     "test:xs": "yarn workspaces run test:xs",
     "build": "yarn workspaces run build && scripts/agd-builder.sh stamp yarn-built",

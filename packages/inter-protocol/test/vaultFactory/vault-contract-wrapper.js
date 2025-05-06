@@ -15,7 +15,7 @@ import {
   makeRatio,
   multiplyBy,
   multiplyRatios,
-} from '@agoric/ertp/src/ratio.js';
+} from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makeFakePriceAuthority } from '@agoric/zoe/tools/fakePriceAuthority.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';

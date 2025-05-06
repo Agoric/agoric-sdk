@@ -4,10 +4,6 @@ import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 
 /**
- * @import {ContractStartFn, Invitation, ZCF, ZCFSeat} from '@agoric/zoe';
- */
-
-/**
  * This contract lets a funder endow a bounty that will pay out if an Oracle
  * reports an event at a deadline. To make a simple contract for a test the
  * contract only pays attention to the event that occurs at the requested

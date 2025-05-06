@@ -13,7 +13,6 @@
     "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
     "test": "ava",
     "test:xs": "exit 0",
-    "test:xs:ci": "npm run test:xs",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
     "lint:eslint": "eslint .",
@@ -23,18 +22,18 @@
     "@agoric/base-zone": "^0.1.0",
     "@agoric/internal": "^0.3.2",
     "@endo/env-options": "^1.1.8",
-    "@endo/errors": "^1.2.10",
-    "@endo/eventual-send": "^1.3.1",
-    "@endo/pass-style": "^1.5.0",
-    "@endo/patterns": "^1.5.0",
-    "@endo/promise-kit": "^1.1.10"
+    "@endo/errors": "^1.2.9",
+    "@endo/eventual-send": "^1.3.0",
+    "@endo/pass-style": "^1.4.8",
+    "@endo/patterns": "^1.4.8",
+    "@endo/promise-kit": "^1.1.9"
   },
   "devDependencies": {
     "@agoric/internal": "^0.3.2",
     "@agoric/swingset-vat": "^0.32.2",
     "@agoric/zone": "^0.2.2",
-    "@endo/far": "^1.1.11",
-    "@endo/init": "^1.1.9",
+    "@endo/far": "^1.1.10",
+    "@endo/init": "^1.1.8",
     "ava": "^5.3.0",
     "tsd": "^0.31.1"
   },
@@ -56,6 +55,6 @@
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 91.75
+    "atLeast": 91.62
   }
 }

@@ -1,7 +1,7 @@
 #! /bin/sh
 # shellcheck disable=SC2034
 NODEJS_VERSION=v20
-GOLANG_VERSION=1.22.12
+GOLANG_VERSION=1.22
 GOLANG_DIR=golang/cosmos
 GOLANG_DAEMON=$GOLANG_DIR/build/agd
 
@@ -9,10 +9,9 @@ GOLANG_DAEMON=$GOLANG_DIR/build/agd
 golang_version_check() {
   # Keep synchronized with README.md section "Prerequisites".
   {
-    [ "$1" -eq 1 ] && [ "$2" -eq 22 ] && [ "$3" -ge 12 ] && return 0
-    [ "$1" -eq 1 ] && [ "$2" -ge 23 ] && return 0
+    [ "$1" -eq 1 ] && [ "$2" -ge 22 ] && return 0
   } 2> /dev/null
-  echo 1>&2 "need Go version $GOLANG_VERSION+, found $4"
+  echo 1>&2 "need Go version 1.22+, found $4"
   return 1
 }
 

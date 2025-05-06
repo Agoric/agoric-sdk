@@ -9,7 +9,6 @@ import type { agoric } from '@agoric/cosmic-proto/agoric/bundle.js';
 import type { AgoricNamesRemotes } from '@agoric/vats/tools/board-utils.js';
 import type { PublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Payment } from '@agoric/ertp';
-import type { InvitationDetails } from '@agoric/zoe';
 import type { OfferSpec } from './offers.js';
 
 declare const CapDataShape: unique symbol;

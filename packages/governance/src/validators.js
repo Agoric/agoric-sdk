@@ -27,7 +27,6 @@ const assertContractGovernance = async (
     await Promise.all([allegedGovernedTermsP, realGovernedP]);
 
   assert(
-    // @ts-expect-error XXX types
     allegedGovernor === realGovernorInstance,
     'The alleged governor did not match the governor retrieved from the governed contract',
   );

@@ -1,5 +1,5 @@
 import { AmountMath } from '@agoric/ertp';
-import { makeRatio } from '../src/contractSupport/index.js';
+import { makeRatio } from '../src/contractSupport/ratio.js';
 
 /**
  * @import {Amount, Brand, DepositFacet, Issuer, IssuerKit, NatValue} from '@agoric/ertp';

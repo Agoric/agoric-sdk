@@ -40,29 +40,21 @@ test('makePromiseSpace', async t => {
 test('makePromiseSpace copied into store', async t => {
   /** @type {MapStore<string, string>} */
   const store = makeScalarBigMapStore('stuff', { durable: true });
-
   {
     const { produce, consume } = makePromiseSpace({ store });
-
     produce.alice.resolve(`Hi, I'm Alice!`);
     await consume.alice;
-    t.is(store.get('alice'), `Hi, I'm Alice!`);
-
-    // Reusing the same store with a new promise space should not need to reset
-    // for an update.
-    const pc2 = makePromiseSpace({ store });
-    pc2.produce.alice.resolve(`I updated the store!`);
-    await pc2.consume.alice;
-    t.is(store.get('alice'), `I updated the store!`);
-
-    const p = Promise.resolve(`Hi again!`);
+  }
+  t.is(store.get('alice'), `Hi, I'm Alice!`);
+  const p = Promise.resolve(`Hi again!`);
+  {
+    const { produce, consume } = makePromiseSpace({ store });
     produce.alice.reset();
     produce.alice.resolve(p);
-    produce.alice.reject(Error('should be ignored (alice has not been reset)'));
     await consume.alice;
-    await p;
-    t.is(store.get('alice'), `Hi again!`);
   }
+  await p;
+  t.is(store.get('alice'), `Hi again!`);
 
   {
     const { produce } = makePromiseSpace({ store });
@@ -158,19 +150,5 @@ test('resolve after reset', async t => {
     t.is(await bar1, 2); // captured before reset()
     t.is(await bar2, 3);
     t.is(await bar3, 3);
-  }
-
-  // A reset before the first resolve reuses the same promise.
-  {
-    const baz1 = consume.baz;
-    produce.baz.reset();
-    const baz2 = consume.baz;
-    produce.baz.resolve(2);
-    const baz3 = consume.baz;
-    t.is(baz1, baz2, 'baz1 and baz2 are the same promise');
-    t.is(baz2, baz3, 'baz2 and baz3 are the same promise');
-    t.is(await baz1, 2);
-    t.is(await baz2, 2);
-    t.is(await baz3, 2);
   }
 });

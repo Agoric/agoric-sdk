@@ -4,7 +4,7 @@
  * @property {() => Amount} getAvailableItems
  *
  * @typedef {object} SellItemsCreatorOnly
- * @property {() => Promise<import('../types-index').Invitation>} makeBuyerInvitation
+ * @property {() => Promise<Invitation>} makeBuyerInvitation
  *
  * @typedef {SellItemsPublicFacet & SellItemsCreatorOnly} SellItemsCreatorFacet
  */
@@ -31,22 +31,22 @@
 /**
  * @typedef {object} AutomaticRefundPublicFacet
  * @property {() => bigint} getOffersCount
- * @property {() => Promise<import('../types-index').Invitation>} makeInvitation
+ * @property {() => Promise<Invitation>} makeInvitation
  */
 
 /**
  * @typedef {object} AutoswapPublicFacet
- * @property {() => Promise<import('../types-index').Invitation>} makeSwapInvitation synonym for
+ * @property {() => Promise<Invitation>} makeSwapInvitation synonym for
  * makeSwapInInvitation
- * @property {() => Promise<import('../types-index').Invitation>} makeSwapInInvitation make an invitation
+ * @property {() => Promise<Invitation>} makeSwapInInvitation make an invitation
  * that allows one to do a swap in which the In amount is specified and the Out
  * amount is calculated
- * @property {() => Promise<import('../types-index').Invitation>} makeSwapOutInvitation make an invitation
+ * @property {() => Promise<Invitation>} makeSwapOutInvitation make an invitation
  * that allows one to do a swap in which the Out amount is specified and the In
  * amount is calculated
- * @property {() => Promise<import('../types-index').Invitation>} makeAddLiquidityInvitation make an
+ * @property {() => Promise<Invitation>} makeAddLiquidityInvitation make an
  * invitation that allows one to add liquidity to the pool.
- * @property {() => Promise<import('../types-index').Invitation>} makeRemoveLiquidityInvitation make an
+ * @property {() => Promise<Invitation>} makeRemoveLiquidityInvitation make an
  * invitation that allows one to remove liquidity from the pool.
  * @property {() => Issuer} getLiquidityIssuer
  * @property {() => bigint} getLiquiditySupply get the current value of

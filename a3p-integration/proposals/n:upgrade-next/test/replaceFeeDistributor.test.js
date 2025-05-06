@@ -26,7 +26,7 @@ import {
   USER1ADDR,
 } from '@agoric/synthetic-chain';
 import { AmountMath } from '@agoric/ertp';
-import { floorMultiplyBy } from '@agoric/ertp/src/ratio.js';
+import { floorMultiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
 
 // TODO @import {Ratio} from '@agoric/zoe'
 /** @typedef {any} Ratio */
@@ -90,12 +90,12 @@ const produceFeesAndWait = async (vstorage, feeAmount) => {
   await retryUntilCondition(
     () => vstorage.readLatestHead('published.reserve.metrics'),
     metrics =>
-      AmountMath.isGTE(
+      AmountMath.isEqual(
         // @ts-expect-error metrics has these fields.
         metrics.allocations.Fee,
         AmountMath.add(metricsBefore.allocations.Fee, feeAmount),
       ),
-    `At least ${feeAmount.value} amount of fee not received`,
+    'Fee not received',
     { log: console.log, setTimeout, ...config.retryOptions },
   );
 };

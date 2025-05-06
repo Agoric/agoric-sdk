@@ -15,10 +15,9 @@ import { makeQueue } from '@endo/stream';
  */
 export const makeRunUtils = (controller, harness) => {
   const mutex = makeQueue();
-  mutex.put('dummy result'); // so the first `await mutex.get()` doesn't hang
-
   const logRunFailure = reason =>
     console.log('controller.run() failure', reason);
+  mutex.put(controller.run().catch(logRunFailure));
 
   /**
    * Wait for exclusive access to the controller, then before relinquishing that access,

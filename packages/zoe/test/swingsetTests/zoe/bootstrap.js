@@ -3,10 +3,6 @@ import { Far } from '@endo/marshal';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import buildManualTimer from '../../../tools/manualTimer.js';
 
-/**
- * @import {ZoeService} from '@agoric/zoe';
- */
-
 const setupBasicMints = () => {
   const all = [
     makeIssuerKit('moola'),

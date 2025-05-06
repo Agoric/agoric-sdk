@@ -9,9 +9,6 @@ import { M, matches } from '@endo/patterns';
  * @import {MakeVowKit} from './vow.js';
  */
 
-export const sink = () => {};
-harden(sink);
-
 export { basicE };
 
 export const VowShape = M.tagged(

@@ -7,7 +7,7 @@ import { Far } from '@endo/marshal';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
-import { parseRatio } from '@agoric/ertp/src/ratio.js';
+import { parseRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { E } from '@endo/far';
 import { Stable } from '@agoric/internal/src/tokens.js';
 import { TimeMath } from '@agoric/time/src/timeMath.js';

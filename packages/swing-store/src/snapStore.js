@@ -8,11 +8,6 @@ import { withDeferredCleanup } from '@agoric/internal';
 import { buffer } from './util.js';
 
 /**
- * @import { AnyIterable, SwingStoreExporter } from './exporter.js';
- * @import { ArtifactMode } from './internal.js';
- */
-
-/**
  * @typedef {object} SnapshotResult
  * @property {string} hash sha256 hash of (uncompressed) snapshot
  * @property {number} uncompressedSize size of (uncompressed) snapshot
@@ -31,6 +26,13 @@ import { buffer } from './util.js';
  */
 
 /**
+ * @import {AnyIterableIterator} from './exporter.js'
+ */
+
+/**
+ * @typedef { import('./exporter.js').SwingStoreExporter } SwingStoreExporter
+ * @typedef { import('./internal.js').ArtifactMode } ArtifactMode
+ *
  * @typedef {{
  *   loadSnapshot: (vatID: string) => AsyncIterableIterator<Uint8Array>,
  *   saveSnapshot: (vatID: string, snapPos: number, snapshotStream: AsyncIterable<Uint8Array>) => Promise<SnapshotResult>,
@@ -45,23 +47,17 @@ import { buffer } from './util.js';
  *   getExportRecords: (includeHistorical: boolean) => IterableIterator<readonly [key: string, value: string]>,
  *   getArtifactNames: (artifactMode: ArtifactMode) => AsyncIterableIterator<string>,
  *   importSnapshotRecord: (key: string, value: string) => void,
- *   populateSnapshot: (name: string, makeChunkIterator: () => AnyIterable<Uint8Array>, options: { artifactMode: ArtifactMode }) => Promise<void>,
+ *   populateSnapshot: (name: string, makeChunkIterator: () => AnyIterableIterator<Uint8Array>, options: { artifactMode: ArtifactMode }) => Promise<void>,
  *   assertComplete: (checkMode: Omit<ArtifactMode, 'debug'>) => void,
  *   repairSnapshotRecord: (key: string, value: string) => void,
  * }} SnapStoreInternal
  *
  * @typedef {{
  *   hasHash: (vatID: string, hash: string) => boolean,
- *   listAllSnapshots: () => Iterable<{}>,
- *   dumpSnapshots: (includeHistorical?: boolean) => Record<string, Array<{snapPos: number, hash: string, compressedSnapshot: Buffer, inUse: (null | 0 | 1)}>>,
+ *   dumpSnapshots: (includeHistorical?: boolean) => {},
  *   deleteSnapshotByHash: (vatID: string, hash: string) => void,
  * }} SnapStoreDebug
  *
- * @callback SnapshotCallback
- * Called with the gzipped contents of a new heap snapshot.
- * @param {string} name  an export key, e.g. `snapshot.${vatID}.${deliveryCount}`
- * @param {Parameters<import('stream').Readable.from>[0]} compressedData
- * @returns {Promise<void>}
  */
 
 const finished = promisify(finishedCallback);
@@ -75,7 +71,7 @@ const finished = promisify(finishedCallback);
  * @param {(key: string, value: string | undefined) => void} noteExport
  * @param {object} [options]
  * @param {boolean | undefined} [options.keepSnapshots]
- * @param {SnapshotCallback} [options.archiveSnapshot]
+ * @param {(name: string, compressedData: Parameters<import('stream').Readable.from>[0]) => Promise<void>} [options.archiveSnapshot]
  * @returns {SnapStore & SnapStoreInternal & SnapStoreDebug}
  */
 export function makeSnapStore(
@@ -609,7 +605,7 @@ export function makeSnapStore(
 
   /**
    * @param {string} name  Artifact name of the snapshot
-   * @param {() => AnyIterable<Uint8Array>} makeChunkIterator  get an iterator of snapshot byte chunks
+   * @param {() => AnyIterableIterator<Uint8Array>} makeChunkIterator  get an iterator of snapshot byte chunks
    * @param {object} options
    * @param {ArtifactMode} options.artifactMode
    * @returns {Promise<void>}
@@ -681,6 +677,7 @@ export function makeSnapStore(
 
   /**
    * debug function to list all snapshots
+   *
    */
   function* listAllSnapshots() {
     yield* sqlListAllSnapshots.iterate();
@@ -709,7 +706,6 @@ export function makeSnapStore(
     const sql = includeHistorical
       ? sqlDumpAllSnapshots
       : sqlDumpCurrentSnapshots;
-    /** @type {Record<string, Array<{snapPos: number, hash: string, compressedSnapshot: Buffer, inUse: (null | 0 | 1)}>>} */
     const dump = {};
     for (const row of sql.iterate()) {
       const { vatID, snapPos, hash, compressedSnapshot, inUse } = row;

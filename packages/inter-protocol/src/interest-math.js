@@ -6,7 +6,7 @@ import {
   invertRatio,
   multiplyRatios,
   ratiosSame,
-} from '@agoric/ertp/src/ratio.js';
+} from '@agoric/zoe/src/contractSupport/ratio.js';
 
 /**
  * @import {Amount, Brand, Payment} from '@agoric/ertp';

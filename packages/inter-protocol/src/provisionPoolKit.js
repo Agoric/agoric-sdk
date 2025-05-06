@@ -24,13 +24,7 @@ import { InstanceHandleShape } from '@agoric/zoe/src/typeGuards.js';
 import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 
 /**
- * @import {EReturn} from '@endo/far';
  * @import {BridgeMessage} from '@agoric/cosmic-swingset/src/types.js';
- * @import {Amount, Brand, Payment, Purse} from '@agoric/ertp';
- * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
- * @import {ZCF} from '@agoric/zoe';
- * @import {ERef} from '@endo/far'
- * @import {Bank, BankManager} from '@agoric/vats/src/vat-bank.js'
  */
 
 const trace = makeTracer('ProvPool');
@@ -39,12 +33,17 @@ const FIRST_UPPER_KEYWORD = /^[A-Z][a-zA-Z0-9_$]*$/;
 // see https://github.com/Agoric/agoric-sdk/issues/8238
 const FIRST_LOWER_NEAR_KEYWORD = /^[a-z][a-zA-Z0-9_$]*$/;
 
+/**
+ * @import {ERef} from '@endo/far'
+ * @import {Amount} from '@agoric/ertp/src/types.js'
+ * @import {Bank, BankManager} from '@agoric/vats/src/vat-bank.js'
+ */
+
 // XXX when inferred, error TS2742: cannot be named without a reference to '../../../node_modules/@endo/exo/src/get-interface.js'. This is likely not portable. A type annotation is necessary.
 /**
  * @typedef {{
  *   machine: any;
  *   helper: any;
- *   forHandler: any;
  *   public: any;
  * }} ProvisionPoolKit
  */
@@ -86,16 +85,6 @@ export const prepareBridgeProvisionTool = zone =>
     M.interface('ProvisionBridgeHandlerMaker', {
       fromBridge: M.callWhen(M.record()).returns(),
     }),
-    /**
-     * @param {ERef<BankManager>} bankManager
-     * @param {ERef<
-     *   EReturn<
-     *     import('@agoric/smart-wallet/src/walletFactory.js').start
-     *   >['creatorFacet']
-     * >} walletFactory
-     * @param {ERef<import('@agoric/vats').NameAdmin>} namesByAddressAdmin
-     * @param {ProvisionPoolKit['forHandler']} forHandler
-     */
     (bankManager, walletFactory, namesByAddressAdmin, forHandler) => ({
       bankManager,
       walletFactory,
@@ -499,7 +488,6 @@ export const prepareProvisionPoolKit = (
           const perAccountInitialAmount = /** @type {Amount<'nat'>} */ (
             params.getPerAccountInitialAmount()
           );
-          trace('sendInitialPayment withdrawing', perAccountInitialAmount);
           const initialPmt = await E(fundPurse).withdraw(
             perAccountInitialAmount,
           );

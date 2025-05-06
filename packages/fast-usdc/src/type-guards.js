@@ -1,6 +1,7 @@
 import { AmountShape, BrandShape, RatioShape } from '@agoric/ertp';
 import { M } from '@endo/patterns';
 import {
+  CosmosChainInfoShape,
   DenomDetailShape,
   DenomShape,
 } from '@agoric/orchestration/src/typeGuards.js';
@@ -9,13 +10,13 @@ import { PendingTxStatus } from './constants.js';
 /**
  * @import {Amount, Brand, NatValue, Payment} from '@agoric/ertp';
  * @import {TypedPattern} from '@agoric/internal';
- * @import {CosmosChainInfo, Denom, DenomDetail, OrchestrationAccount, IBCConnectionInfo, CaipChainId} from '@agoric/orchestration';
+ * @import {FastUsdcTerms} from './fast-usdc.contract.js';
  * @import {USDCProposalShapes} from './pool-share-math.js';
- * @import {CctpTxEvidence, FastUSDCConfig, FastUsdcTerms, FeeConfig, PendingTx, PoolMetrics, ChainPolicy, FeedPolicy, AddressHook, EvmAddress, EvmHash, RiskAssessment, EvidenceWithRisk} from './types.js';
+ * @import {CctpTxEvidence, FastUSDCConfig, FeeConfig, PendingTx, PoolMetrics, ChainPolicy, FeedPolicy, AddressHook, EvmAddress, EvmHash, RiskAssessment, EvidenceWithRisk} from './types.js';
  */
 
 /**
- * @param {Brand<'nat'>} brand must be a 'nat' brand, not checked
+ * @param {Brand} brand must be a 'nat' brand, not checked
  * @param {NatValue} [min]
  */
 export const makeNatAmountShape = (brand, min) =>
@@ -109,33 +110,13 @@ export const AddressHookShape = {
 harden(AddressHookShape);
 
 const NatAmountShape = { brand: BrandShape, value: M.nat() };
-
-export const DestinationOverridesShape = M.recordOf(
-  M.string(),
-  M.splitRecord(
-    {},
-    {
-      flat: NatAmountShape,
-      variableRate: RatioShape,
-      contractRate: RatioShape,
-      relay: NatAmountShape,
-    },
-  ),
-);
-
 /** @type {TypedPattern<FeeConfig>} */
-export const FeeConfigShape = M.splitRecord(
-  {
-    flat: NatAmountShape,
-    variableRate: RatioShape,
-    contractRate: RatioShape,
-  },
-  {
-    relay: NatAmountShape,
-    destinationOverrides: DestinationOverridesShape,
-  },
-  {},
-);
+export const FeeConfigShape = {
+  flat: NatAmountShape,
+  variableRate: RatioShape,
+  contractRate: RatioShape,
+};
+harden(FeeConfigShape);
 
 /** @type {TypedPattern<PoolMetrics>} */
 export const PoolMetricsShape = {
@@ -169,7 +150,8 @@ harden(ChainPolicyShape);
 /**
  * @type {TypedPattern<FeedPolicy>}
  *
- * must be CopyData; no Brands or other Remotables
+ * Should be JSON serializable so CLI can specify policy. E.g. no bigint,
+ * undefined, remotable, etc.
  */
 export const FeedPolicyShape = M.splitRecord(
   {
@@ -181,30 +163,12 @@ export const FeedPolicyShape = M.splitRecord(
 );
 harden(FeedPolicyShape);
 
-/**
- * The version of CosmosChainInfoShape that matches the `valueShape` used in FUSDC's ChainHub's `chainInfos` mapStore.
- * @type {TypedPattern<CosmosChainInfo>}
- */
-export const CosmosChainInfoShapeV1 = M.splitRecord(
-  {
-    chainId: M.string(),
-  },
-  {
-    bech32Prefix: M.string(),
-    connections: M.record(),
-    stakingTokens: M.arrayOf({ denom: M.string() }),
-    // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
-    icqEnabled: M.boolean(),
-    pfmEnabled: M.boolean(),
-  },
-);
-
 /** @type {TypedPattern<FastUSDCConfig>} */
 export const FastUSDCConfigShape = M.splitRecord({
   terms: FastUSDCTermsShape,
   oracles: M.recordOf(M.string(), M.string()),
   feeConfig: FeeConfigShape,
   feedPolicy: FeedPolicyShape,
-  chainInfo: M.recordOf(M.string(), CosmosChainInfoShapeV1),
+  chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
   assetInfo: M.arrayOf([DenomShape, DenomDetailShape]),
 });

@@ -8,14 +8,10 @@ import { E } from '@endo/eventual-send';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
 import { makeZoeForTest } from '../../../tools/setup-zoe.js';
-import { makeRatio } from '../../../src/contractSupport/index.js';
+import { makeRatio } from '../../../src/contractSupport/ratio.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
 import { makeManualPriceAuthority } from '../../../tools/manualPriceAuthority.js';
-
-/**
- * @import {FeeIssuerConfig, ZoeService} from '@agoric/zoe';
- */
 
 // This contract still uses 'prepare', so this test covers that case.
 /**

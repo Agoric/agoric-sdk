@@ -117,7 +117,7 @@ export default [
         },
 
         tsconfigRootDir: __dirname,
-        extraFileExtensions: ['.cjs', '.mjs'],
+        extraFileExtensions: ['.cjs'],
       },
     },
 
@@ -182,7 +182,6 @@ export default [
     files: [
       'packages/*/src/**/*.js',
       'packages/*/tools/**/*.js',
-      'packages/*/tools/**/*.mjs',
       'packages/*/*.js',
       'packages/wallet/api/src/**/*.js',
     ],
@@ -271,7 +270,6 @@ export default [
     files: ['**/*.ts'],
 
     rules: {
-      'jsdoc/require-param': 'off',
       'jsdoc/require-param-type': 'off',
       'no-undef': 'off',
     },

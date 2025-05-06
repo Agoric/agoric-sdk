@@ -9,7 +9,6 @@ import { atomicTransfer, fromOnly, toOnly } from './atomicTransfer.js';
 
 /**
  * @import {Pattern} from '@endo/patterns';
- * @import {ContractMeta, Invitation, Proposal, ZCF, ZCFSeat} from '@agoric/zoe';
  */
 
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;

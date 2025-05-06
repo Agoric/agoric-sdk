@@ -3,6 +3,9 @@ package gaia
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
+	"strings"
+	"text/template"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	swingsetkeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
@@ -75,30 +78,45 @@ func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
 	return true
 }
 
-// buildProposalStepWithArgs returns a CoreProposal representing invocation of
-// the specified module-specific entry point with arbitrary Jsonable arguments
-// provided after core-eval powers.
-func buildProposalStepWithArgs(moduleName string, entrypoint string, args ...vm.Jsonable) (vm.CoreProposalStep, error) {
-	argsBz, err := json.Marshal(args)
+func buildProposalStepWithArgs(moduleName string, entrypoint string, extra any) (vm.CoreProposalStep, error) {
+	t := template.Must(template.New("").Parse(`{
+  "module": "{{.moduleName}}",
+  "entrypoint": "{{.entrypoint}}",
+  "args": {{.args}}
+}`))
+
+	var args []byte
+	var err error
+	if extra == nil {
+		// The specified entrypoint will be called with no extra arguments after powers.
+		args = []byte(`[]`)
+	} else if reflect.TypeOf(extra).Kind() == reflect.Map && reflect.TypeOf(extra).Key().Kind() == reflect.String {
+		// The specified entrypoint will be called with this options argument after powers.
+		args, err = json.Marshal([]any{extra})
+	} else if reflect.TypeOf(extra).Kind() == reflect.Slice {
+		// The specified entrypoint will be called with each of these arguments after powers.
+		args, err = json.Marshal(extra)
+	} else {
+		return nil, fmt.Errorf("proposal extra must be nil, array, or string map, not %v", extra)
+	}
 	if err != nil {
 		return nil, err
 	}
 
-	mea := struct {
-		Module     string          `json:"module"`
-		Entrypoint string          `json:"entrypoint"`
-		Args       json.RawMessage `json:"args"`
-	}{
-		Module:     moduleName,
-		Entrypoint: entrypoint,
-		Args:       argsBz,
-	}
-
-	jsonBz, err := json.Marshal(mea)
+	var result strings.Builder
+	err = t.Execute(&result, map[string]any{
+		"moduleName": moduleName,
+		"entrypoint": entrypoint,
+		"args":       string(args),
+	})
 	if err != nil {
 		return nil, err
 	}
-
+	jsonStr := result.String()
+	jsonBz := []byte(jsonStr)
+	if !json.Valid(jsonBz) {
+		return nil, fmt.Errorf("invalid JSON: %s", jsonStr)
+	}
 	proposal := vm.ArbitraryCoreProposal{Json: jsonBz}
 	return vm.CoreProposalStepForModules(proposal), nil
 }
@@ -139,11 +157,8 @@ func buildProposalStepFromScript(targetUpgrade string, builderScript string) (vm
 	return buildProposalStepWithArgs(
 		builderScript,
 		"defaultProposalBuilder",
-		// Map iteration is randomised; use an anonymous struct instead.
-		struct {
-			Variant string `json:"variant"`
-		}{
-			Variant: variant,
+		map[string]any{
+			"variant": variant,
 		},
 	)
 }
@@ -165,26 +180,9 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 				return module.VersionMap{}, fmt.Errorf("cannot run %s as first upgrade", plan.Name)
 			}
 
-			upgradeIbcVatStep, err :=
-				buildProposalStepWithArgs(
-					"@agoric/builders/scripts/vats/upgrade-vats.js",
-					"upgradeVatsProposalBuilder",
-					// Map iteration is randomised; use an anonymous struct instead.
-					struct {
-						Ibc string `json:"ibc"`
-					}{
-						Ibc: "@agoric/vats/src/vat-ibc.js",
-					},
-				)
-			if err != nil {
-				return module.VersionMap{}, err
-			}
-
 			// Each CoreProposalStep runs sequentially, and can be constructed from
 			// one or more modules executing in parallel within the step.
 			CoreProposalSteps = append(CoreProposalSteps,
-				// Accommodate string sequence numbers.
-				upgradeIbcVatStep,
 				// Register a new ZCF to be used for all future contract instances and upgrades
 				vm.CoreProposalStepForModules(
 					"@agoric/builders/scripts/vats/upgrade-zcf.js",

@@ -45,7 +45,6 @@ import { makeNatAmountShape } from '../contractSupport.js';
 
 /**
  * @import {EReturn} from '@endo/far';
- * @import {ContractMeta, FeeMintAccess, Installation} from '@agoric/zoe';
  */
 
 /**

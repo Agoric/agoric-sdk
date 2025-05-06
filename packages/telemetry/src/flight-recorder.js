@@ -39,9 +39,6 @@ const initializeCircularBuffer = async (bufferFile, circularBufferSize) => {
     }
     throw e;
   });
-
-  // Use the default size if not provided and file doesn't exist.
-  circularBufferSize = circularBufferSize || stbuf?.size || DEFAULT_CBUF_SIZE;
   const arenaSize = BigInt(circularBufferSize - I_ARENA_START);
 
   if (stbuf && stbuf.size >= I_ARENA_START) {
@@ -79,7 +76,7 @@ const initializeCircularBuffer = async (bufferFile, circularBufferSize) => {
  * @param {(outbuf: Uint8Array, readStart: number, firstReadLength: number) => void} readRecord
  * @param {(record: Uint8Array, firstWriteLength: number, circEnd: bigint) => Promise<void>} writeRecord
  */
-function makeCircBufMethods(arenaSize, header, readRecord, writeRecord) {
+function finishCircularBuffer(arenaSize, header, readRecord, writeRecord) {
   const readCircBuf = (outbuf, offset = 0) => {
     offset + outbuf.byteLength <= arenaSize ||
       Fail`Reading past end of circular buffer`;
@@ -272,17 +269,14 @@ export const makeSimpleCircularBuffer = async ({
     await file.write(headerBuffer, undefined, undefined, 0);
   };
 
-  return {
-    fileHandle: file,
-    ...makeCircBufMethods(arenaSize, header, readRecord, writeRecord),
-  };
+  return finishCircularBuffer(arenaSize, header, readRecord, writeRecord);
 };
 
 /**
  *
- * @param {Pick<CircularBuffer, 'fileHandle' | 'writeCircBuf'>} circBuf
+ * @param {Pick<EReturn<typeof makeSimpleCircularBuffer>, 'writeCircBuf'>} circBuf
  */
-export const makeSlogSenderFromBuffer = ({ fileHandle, writeCircBuf }) => {
+export const makeSlogSenderFromBuffer = ({ writeCircBuf }) => {
   /** @type {Promise<void>} */
   let toWrite = Promise.resolve();
   const writeJSON = (obj, serialized = serializeSlogObj(obj)) => {
@@ -295,10 +289,6 @@ export const makeSlogSenderFromBuffer = ({ fileHandle, writeCircBuf }) => {
     forceFlush: async () => {
       await toWrite;
     },
-    shutdown: async () => {
-      await toWrite;
-      await fileHandle.close();
-    },
     usesJsonObject: true,
   });
 };
@@ -309,6 +299,6 @@ export const makeSlogSenderFromBuffer = ({ fileHandle, writeCircBuf }) => {
  * @type {import('./index.js').MakeSlogSender}
  */
 export const makeSlogSender = async opts => {
-  const { fileHandle, writeCircBuf } = await makeSimpleCircularBuffer(opts);
-  return makeSlogSenderFromBuffer({ fileHandle, writeCircBuf });
+  const { writeCircBuf } = await makeSimpleCircularBuffer(opts);
+  return makeSlogSenderFromBuffer({ writeCircBuf });
 };

@@ -1,24 +1,26 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
-import { makeIssuerKit } from '@agoric/ertp';
-import type { Issuer } from '@agoric/ertp/src/types.js';
-import {
-  LOCALCHAIN_DEFAULT_ADDRESS,
-  SIMULATED_ERRORS,
-} from '@agoric/vats/tools/fake-bridge.js';
+import path from 'path';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
+import { makeIssuerKit } from '@agoric/ertp';
 import {
   type AmountUtils,
   withAmountUtils,
 } from '@agoric/zoe/tools/test-utils.js';
+import type { Issuer } from '@agoric/ertp/src/types.js';
 import { E, type EReturn } from '@endo/far';
+import {
+  LOCALCHAIN_DEFAULT_ADDRESS,
+  SIMULATED_ERRORS,
+} from '@agoric/vats/tools/fake-bridge.js';
 import { commonSetup } from '../supports.js';
 
-import * as contractExports from '../fixtures/zoe-tools.contract.js';
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const contractName = 'zoeTools';
-type StartFn = typeof contractExports.start;
+const contractFile = `${dirname}/../../test/fixtures/zoe-tools.contract.js`;
+type StartFn = typeof import('../../test/fixtures/zoe-tools.contract.js').start;
 
 type TestContext = EReturn<typeof commonSetup> & {
   brands: EReturn<typeof commonSetup>['brands'] & {
@@ -46,7 +48,7 @@ test.beforeEach(async t => {
   t.log('contract coreEval', contractName);
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
   const installation: Installation<StartFn> =
-    await bundleAndInstall(contractExports);
+    await bundleAndInstall(contractFile);
 
   const issuerKeywordRecord = harden({
     IST: ist.issuer,

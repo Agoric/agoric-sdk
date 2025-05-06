@@ -13,7 +13,6 @@ on:
 
 jobs:
   multichain-e2e:
-    name: Multichain E2E (${{ inputs.test_command }})
     runs-on: ubuntu-latest-16core
 
     steps:
@@ -22,9 +21,15 @@ jobs:
           submodules: 'true'
           path: ./agoric-sdk
 
+      - name: docker build (sdk)
+        # Produces local ghcr.io/agoric/agoric-sdk:dev used in the following test.
+        run: |
+          make docker-build-sdk TAG=dev
+        working-directory: ./agoric-sdk/packages/deployment
+
       - uses: ./agoric-sdk/.github/actions/restore-node
         with:
-          node-version: 'node-old'
+          node-version: 18.x
           path: ./agoric-sdk
 
       # Extract chain and relayer information
@@ -64,25 +69,13 @@ jobs:
         run: corepack enable
         working-directory: ./agoric-sdk/multichain-testing
 
-      # Before multichain-testing deps because that project portals into SDK
-      # but only the SDK postinstall script will runs its package patching.
-      - name: Install SDK deps
-        run: yarn install
-
       - name: Install @agoric/multichain-testing deps
         run: yarn install
         working-directory: ./agoric-sdk/multichain-testing
 
       - name: Lint @agoric/multichain-testing
-        # include testing imports to check package patches
-        run: yarn lint && yarn ava test/imports.test.ts
+        run: yarn lint
         working-directory: ./agoric-sdk/multichain-testing
-
-      - name: docker build (sdk)
-        # Produces local ghcr.io/agoric/agoric-sdk:dev used in the following test.
-        run: |
-          make docker-build-sdk TAG=dev
-        working-directory: ./agoric-sdk/packages/deployment
 
       - name: Setup Starship Infrastructure
         id: starship-infra
@@ -93,7 +86,7 @@ jobs:
           values: ./agoric-sdk/multichain-testing/${{ inputs.config }}
           port-forward: true
           version: 0.2.20
-          timeout: 20m # Usually 13min
+          timeout: 30m
           # Load the locally-built dev Docker image for the chain into kind.
           load-docker-images: ghcr.io/agoric/agoric-sdk:dev
           namespace: ${{ env.NAMESPACE }}

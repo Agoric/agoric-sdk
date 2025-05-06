@@ -6,7 +6,7 @@ const { apply } = Reflect;
 
 /**
  * @import { PromiseWatcher, Zone } from '@agoric/base-zone';
- * @import { EVow, IsRetryableReason, VowKit, VowResolver, Watcher } from './types.js';
+ * @import { ERef, EVow, IsRetryableReason, Vow, VowKit, VowResolver, Watcher } from './types.js';
  */
 
 /**
@@ -40,8 +40,7 @@ const makeWatchNextStep =
  * @param {unknown} value
  * @param {unknown[]} [watcherArgs]
  */
-const settle = async (resolver, watcher, wcb, value, watcherArgs = []) => {
-  await null;
+const settle = (resolver, watcher, wcb, value, watcherArgs = []) => {
   try {
     let chainedValue = value;
     const w = watcher && watcher[wcb];
@@ -50,23 +49,14 @@ const settle = async (resolver, watcher, wcb, value, watcherArgs = []) => {
     } else if (wcb === 'onRejected') {
       throw value;
     }
-
-    if (resolver) {
-      resolver.resolve(chainedValue);
-      return;
-    }
-
-    // We want to propagate rejections (but not fulfillment values) to our
-    // caller if no resolver was provided.
-    await chainedValue;
+    resolver && resolver.resolve(chainedValue);
   } catch (e) {
     if (resolver) {
       resolver.reject(e);
-      return;
+    } else {
+      // for host's unhandled rejection handler to catch
+      throw e;
     }
-
-    // Create a native unhandled rejection.
-    throw e;
   }
 };
 
@@ -116,9 +106,6 @@ const preparePromiseWatcher = (zone, isRetryableReason, watchNextStep) => {
       /** @type {Required<PromiseWatcher>['onFulfilled']} */
       onFulfilled(value) {
         const { watcher, watcherArgs, resolver } = this.state;
-        if (!resolver) {
-          throw Error('Unexpected multiple calls to PromiseWatcher');
-        }
         const payload = getVowPayload(value);
         if (payload) {
           const seenPayloads = getSeenPayloads(this.self);
@@ -136,30 +123,26 @@ const preparePromiseWatcher = (zone, isRetryableReason, watchNextStep) => {
         this.state.priorRetryValue = undefined;
         this.state.watcher = undefined;
         this.state.resolver = undefined;
-        void settle(resolver, watcher, 'onFulfilled', value, watcherArgs);
+        settle(resolver, watcher, 'onFulfilled', value, watcherArgs);
       },
       /** @type {Required<PromiseWatcher>['onRejected']} */
       onRejected(reason) {
         const { vow, watcher, watcherArgs, resolver, priorRetryValue } =
           this.state;
-        if (!resolver) {
-          throw Error('Unexpected multiple calls to PromiseWatcher');
-        }
-        const retryValue = isRetryableReason(reason, priorRetryValue);
-        if (retryValue) {
-          this.state.priorRetryValue = retryValue;
-          if (vow) {
+        if (vow) {
+          const retryValue = isRetryableReason(reason, priorRetryValue);
+          if (retryValue) {
             // Retry the same specimen.
+            this.state.priorRetryValue = retryValue;
             watchNextStep(vow, this.self);
             return;
           }
         }
-        // Final rejection.
         watcherSeenPayloads.delete(this.self);
         this.state.priorRetryValue = undefined;
         this.state.resolver = undefined;
         this.state.watcher = undefined;
-        void settle(resolver, watcher, 'onRejected', reason, watcherArgs);
+        settle(resolver, watcher, 'onRejected', reason, watcherArgs);
       },
     },
   );
@@ -202,8 +185,7 @@ export const prepareWatch = (
     const promiseWatcher = makePromiseWatcher(resolver, watcher, watcherArgs);
 
     // Coerce the specimen to a promise, and start the watcher cycle.
-    const promise = basicE.resolve(specimenP);
-    zone.watchPromise(promise, promiseWatcher);
+    zone.watchPromise(basicE.resolve(specimenP), promiseWatcher);
 
     return vow;
   };

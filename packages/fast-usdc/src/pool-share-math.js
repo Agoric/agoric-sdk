@@ -4,17 +4,16 @@ import {
   makeRatio,
   makeRatioFromAmounts,
   multiplyBy,
-} from '@agoric/ertp/src/ratio.js';
+} from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Fail, q } from '@endo/errors';
 
 const { keys } = Object;
 const { add, isEmpty, isEqual, isGTE, make, makeEmpty, subtract } = AmountMath;
 
 /**
- * @import {Amount, Brand, DepositFacet, NatValue, Payment, Ratio} from '@agoric/ertp';
- * @import {Allocation} from '@agoric/zoe';
- * @import {PoolStats} from './types.js';
- * @import {RepayAmountKWR} from './utils/fees.js';
+ * @import {Amount, Brand, DepositFacet, NatValue, Payment} from '@agoric/ertp';
+ * @import {PoolStats} from './types';
+ * @import {RepayAmountKWR} from './exos/liquidity-pool';
  */
 
 /**
@@ -202,26 +201,35 @@ export const borrowCalc = (
 
 /**
  * @param {ShareWorth} shareWorth
- * @param {RepayAmountKWR} split
+ * @param {Allocation} fromSeatAllocation
+ * @param {RepayAmountKWR} amounts
  * @param {Amount<'nat'>} encumberedBalance aka 'outstanding borrows'
  * @param {PoolStats} poolStats
- * @throws {Error} if Principal exceeds encumberedBalance
+ * @throws {Error} if allocations do not match amounts or Principal exceeds encumberedBalance
  */
-export const repayCalc = (shareWorth, split, encumberedBalance, poolStats) => {
-  isGTE(encumberedBalance, split.Principal) ||
-    Fail`Cannot repay. Principal ${q(split.Principal)} exceeds encumberedBalance ${q(encumberedBalance)}.`;
+export const repayCalc = (
+  shareWorth,
+  fromSeatAllocation,
+  amounts,
+  encumberedBalance,
+  poolStats,
+) => {
+  (isEqual(fromSeatAllocation.Principal, amounts.Principal) &&
+    isEqual(fromSeatAllocation.PoolFee, amounts.PoolFee) &&
+    isEqual(fromSeatAllocation.ContractFee, amounts.ContractFee)) ||
+    Fail`Cannot repay. From seat allocation ${q(fromSeatAllocation)} does not equal amounts ${q(amounts)}.`;
+
+  isGTE(encumberedBalance, amounts.Principal) ||
+    Fail`Cannot repay. Principal ${q(amounts.Principal)} exceeds encumberedBalance ${q(encumberedBalance)}.`;
 
   return harden({
-    shareWorth: withFees(shareWorth, split.PoolFee),
-    encumberedBalance: subtract(encumberedBalance, split.Principal),
+    shareWorth: withFees(shareWorth, amounts.PoolFee),
+    encumberedBalance: subtract(encumberedBalance, amounts.Principal),
     poolStats: {
       ...poolStats,
-      totalRepays: add(poolStats.totalRepays, split.Principal),
-      totalPoolFees: add(poolStats.totalPoolFees, split.PoolFee),
-      totalContractFees: add(
-        add(poolStats.totalContractFees, split.ContractFee),
-        split.RelayFee,
-      ),
+      totalRepays: add(poolStats.totalRepays, amounts.Principal),
+      totalPoolFees: add(poolStats.totalPoolFees, amounts.PoolFee),
+      totalContractFees: add(poolStats.totalContractFees, amounts.ContractFee),
     },
   });
 };

@@ -3,6 +3,7 @@
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
+import anylogger from 'anylogger';
 import { Fail } from '@endo/errors';
 import { kser, kslot } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
@@ -11,10 +12,19 @@ import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQui
 import buildKernel from '../src/kernel/index.js';
 import { initializeKernel } from '../src/controller/initializeKernel.js';
 
-import { buildDispatch, makeConsole } from './util.js';
+import { buildDispatch } from './util.js';
 
 function oneResolution(promiseID, rejected, data) {
   return [[promiseID, rejected, data]];
+}
+
+function makeConsole(tag) {
+  const log = anylogger(tag);
+  const cons = {};
+  for (const level of ['debug', 'log', 'info', 'warn', 'error']) {
+    cons[level] = log[level];
+  }
+  return harden(cons);
 }
 
 function makeEndowments() {

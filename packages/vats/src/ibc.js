@@ -5,7 +5,7 @@ import { E } from '@endo/far';
 
 import { byteSourceToBase64, base64ToBytes } from '@agoric/network';
 
-import { makeTracer, NonNullish } from '@agoric/internal';
+import { makeTracer } from '@agoric/internal';
 import {
   localAddrToPortID,
   decodeRemoteIbcAddress,
@@ -29,7 +29,7 @@ const DEFAULT_PACKET_TIMEOUT_NS = 60n * 60n * 1_000_000_000n;
 
 /**
  * @import {Endpoint, Connection, ConnectionHandler, InboundAttempt, Bytes, ProtocolHandler, ProtocolImpl} from '@agoric/network';
- * @import {BridgeHandler, ScopedBridgeManager, ConnectingInfo, IBCChannelID, IBCChannelOrdering, IBCEvent, IBCPacket, IBCPortID, IBCDowncallPacket, IBCDowncallMethod, IBCDowncallReturn, IBCDowncall, IBCBridgeEvent} from './types.js';
+ * @import {BridgeHandler, ScopedBridgeManager, ConnectingInfo, IBCChannelID, IBCChannelOrdering, IBCEvent, IBCPacket, IBCPortID, IBCDowncallPacket, IBCDowncallMethod, IBCDowncall, IBCBridgeEvent} from './types.js';
  * @import {Zone} from '@agoric/base-zone';
  * @import {PromiseVow, Remote, VowKit, VowResolver, VowTools} from '@agoric/vow';
  */
@@ -73,10 +73,7 @@ export const prepareIBCConnectionHandler = zone => {
      *   >;
      *   channelKeyToSeqAck: MapStore<
      *     string,
-     *     MapStore<
-     *       bigint | number,
-     *       Partial<import('@agoric/vow').VowKit<Bytes>>
-     *     >
+     *     MapStore<number, import('@agoric/vow').VowKit<Bytes>>
      *   >;
      * }} param0
      * @param {{
@@ -156,10 +153,8 @@ export const prepareIBCConnectionHandler = zone => {
         const rejectReason = Error('Connection closed');
         const seqToAck = channelKeyToSeqAck.get(channelKey);
 
-        for (const { resolver } of seqToAck.values()) {
-          if (resolver) {
-            resolver.reject(rejectReason);
-          }
+        for (const ackKit of seqToAck.values()) {
+          ackKit.resolver.reject(rejectReason);
         }
         channelKeyToSeqAck.delete(channelKey);
 
@@ -227,12 +222,7 @@ export const prepareIBCProtocol = (zone, powers) => {
       /** @type {MapStore<string, Outbound[]>} */
       const srcPortToOutbounds = detached.mapStore('srcPortToOutbounds');
 
-      /**
-       * @type {MapStore<
-       *   string,
-       *   MapStore<bigint | number, Partial<VowKit<Bytes>>>
-       * >}
-       */
+      /** @type {MapStore<string, MapStore<bigint, VowKit<Bytes>>>} */
       const channelKeyToSeqAck = detached.mapStore('channelKeyToSeqAck');
 
       /** @type {MapStore<string, SetStore<VowResolver>>} */
@@ -582,13 +572,8 @@ export const prepareIBCProtocol = (zone, powers) => {
               } = packet;
               if (sequence === undefined)
                 throw TypeError('acknowledgementPacket without sequence');
-              const resolver = util.extractFromAckKit(
-                channelID,
-                portID,
-                BigInt(sequence),
-                'resolver',
-              );
-              resolver && resolver.resolve(base64ToBytes(acknowledgement));
+              const ackKit = util.findAckKit(channelID, portID, sequence);
+              ackKit.resolver.resolve(base64ToBytes(acknowledgement));
               break;
             }
 
@@ -602,13 +587,8 @@ export const prepareIBCProtocol = (zone, powers) => {
               if (sequence === undefined)
                 throw TypeError('timeoutPacket without sequence');
 
-              const resolver = util.extractFromAckKit(
-                channelID,
-                portID,
-                BigInt(sequence),
-                'resolver',
-              );
-              resolver && resolver.reject(Error(`Packet timed out`));
+              const ackKit = util.findAckKit(channelID, portID, sequence);
+              ackKit.resolver.reject(Error(`Packet timed out`));
               break;
             }
 
@@ -652,7 +632,6 @@ export const prepareIBCProtocol = (zone, powers) => {
          * @template {IBCDowncallMethod} M
          * @param {M} method
          * @param {IBCDowncall<M>} args
-         * @returns {Promise<IBCDowncallReturn<M>>}
          */
         downcall(method, args) {
           return E(this.state.ibcdev).downcall(method, args);
@@ -682,61 +661,26 @@ export const prepareIBCProtocol = (zone, powers) => {
             source_port: portID,
           } = fullPacket;
 
-          const vow = util.extractFromAckKit(
-            channelID,
-            portID,
-            BigInt(sequence),
-            'vow',
-          );
-          return NonNullish(vow);
+          /** @type {VowKit<Bytes>} */
+          const { vow } = util.findAckKit(channelID, portID, sequence);
+          return vow;
         },
 
         /**
-         * Find an acknowledgment kit for the specified\
-         * (channelID, portID, sequence), creating it if not found, and then
-         * extract the specified key and perform any necessary cleanup.
-         *
-         * @template {'resolver' | 'vow'} K
          * @param {IBCChannelID} channelID
          * @param {IBCPortID} portID
          * @param {bigint} sequence
-         * @param {K} key
-         * @returns {VowKit<Bytes>[K] | undefined}
          */
-        extractFromAckKit(channelID, portID, sequence, key) {
+        findAckKit(channelID, portID, sequence) {
           const { channelKeyToSeqAck } = this.state;
           const channelKey = `${channelID}:${portID}`;
           const seqToAck = channelKeyToSeqAck.get(channelKey);
-
-          // Try also looking up the sequence as a number in case it was added
-          // to the map before the upgrade to bigints.
-          for (const seq of [sequence, Number(sequence)]) {
-            if (!seqToAck.has(seq)) {
-              continue;
-            }
-
-            const { [key]: extracted, ...rest } = seqToAck.get(seq);
-            if (Reflect.has(rest, 'resolver') || Reflect.has(rest, 'vow')) {
-              // We have some other stuff in the kit, so just update it.
-              seqToAck.set(seq, harden(rest));
-            } else {
-              // We emptied everything from the kit, so now delete it.  It
-              // shan't be resurrected, by the rules that 'vow' is used only by
-              // sendPacket, and 'resolver' is used only by one of
-              // onAcknowledgement or onTimeout.
-              seqToAck.delete(seq);
-            }
-            return extracted;
+          if (seqToAck.has(sequence)) {
+            return seqToAck.get(sequence);
           }
-
-          /**
-           * We don't have a kit for this sequence yet, so create one.
-           *
-           * @type {VowKit<Bytes>}
-           */
-          const { [key]: extracted, ...rest } = makeVowKit();
-          seqToAck.init(sequence, harden(rest));
-          return extracted;
+          const kit = makeVowKit();
+          seqToAck.init(sequence, kit);
+          return kit;
         },
       },
       ackWatcher: {

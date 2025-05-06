@@ -1,7 +1,7 @@
 {
   "private": true,
   "agoricSyntheticChain": {
-    "fromTag": "use-fast-usdc-rc1"
+    "fromTag": "use-upgrade-18a"
   },
   "scripts": {
     "build": "yarn run build:sdk && yarn run build:submissions && yarn run build:synthetic-chain",
@@ -16,13 +16,13 @@
     "doctor": "yarn synthetic-chain doctor"
   },
   "dependencies": {
-    "@agoric/synthetic-chain": "^0.5.3",
+    "@agoric/synthetic-chain": "^0.5.2",
     "@types/better-sqlite3": "^7.6.11"
   },
   "devDependencies": {
     "eslint": "^8.57.1",
     "npm-run-all": "^4.1.5"
   },
-  "packageManager": "yarn@4.8.1",
+  "packageManager": "yarn@4.6.0",
   "license": "Apache-2.0"
 }

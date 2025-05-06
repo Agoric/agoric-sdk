@@ -12,7 +12,6 @@ import {
 } from '../src/contractSupport/index.js';
 
 /**
- * @import {Amount, Brand, Issuer, IssuerKit, Payment, Purse} from '@agoric/ertp';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  */
 

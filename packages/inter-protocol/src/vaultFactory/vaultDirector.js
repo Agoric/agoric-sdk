@@ -40,7 +40,6 @@ import {
 } from './vaultManager.js';
 
 /**
- * @import {ContractMeta, ContractStartFn, HandleOffer, Invitation, OfferHandler, TransferPart, ZCF, ZCFMint, ZCFSeat} from '@agoric/zoe';
  * @import {EReturn} from '@endo/far';
  * @import {TypedPattern} from '@agoric/internal';
  */

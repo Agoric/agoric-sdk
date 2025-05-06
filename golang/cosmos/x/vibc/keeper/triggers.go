@@ -3,11 +3,37 @@ package keeper
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	clienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
 	ibcexported "github.com/cosmos/ibc-go/v6/modules/core/exported"
 
-	agtypes "github.com/Agoric/agoric-sdk/golang/cosmos/types"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/types"
 )
+
+func reifyPacket(packet ibcexported.PacketI) channeltypes.Packet {
+
+	timeoutHeight := clienttypes.MustParseHeight(packet.GetTimeoutHeight().String())
+	return channeltypes.Packet{
+		Sequence:           packet.GetSequence(),
+		SourcePort:         packet.GetSourcePort(),
+		SourceChannel:      packet.GetSourceChannel(),
+		DestinationPort:    packet.GetDestPort(),
+		DestinationChannel: packet.GetDestChannel(),
+		Data:               packet.GetData(),
+		TimeoutHeight:      timeoutHeight,
+		TimeoutTimestamp:   packet.GetTimeoutTimestamp(),
+	}
+}
+
+type WriteAcknowledgementEvent struct {
+	*vm.ActionHeader `actionType:"IBC_EVENT"`
+	Event            string              `json:"event" default:"writeAcknowledgement"`
+	Target           string              `json:"target"`
+	Packet           channeltypes.Packet `json:"packet"`
+	Acknowledgement  []byte              `json:"acknowledgement"`
+	Relayer          sdk.AccAddress      `json:"relayer"`
+}
 
 func (k Keeper) TriggerWriteAcknowledgement(
 	ctx sdk.Context,
@@ -15,9 +41,9 @@ func (k Keeper) TriggerWriteAcknowledgement(
 	packet ibcexported.PacketI,
 	acknowledgement ibcexported.Acknowledgement,
 ) error {
-	event := types.WriteAcknowledgementEvent{
+	event := WriteAcknowledgementEvent{
 		Target:          target,
-		Packet:          agtypes.CopyToIBCPacket(packet),
+		Packet:          reifyPacket(packet),
 		Acknowledgement: acknowledgement.Acknowledgement(),
 	}
 
@@ -38,7 +64,7 @@ func (k Keeper) TriggerOnAcknowledgementPacket(
 ) error {
 	event := types.AcknowledgementPacketEvent{
 		Target:          target,
-		Packet:          agtypes.CopyToIBCPacket(packet),
+		Packet:          reifyPacket(packet),
 		Acknowledgement: acknowledgement,
 		Relayer:         relayer,
 	}
@@ -59,7 +85,7 @@ func (k Keeper) TriggerOnTimeoutPacket(
 ) error {
 	event := types.TimeoutPacketEvent{
 		Target:  target,
-		Packet:  agtypes.CopyToIBCPacket(packet),
+		Packet:  reifyPacket(packet),
 		Relayer: relayer,
 	}
 

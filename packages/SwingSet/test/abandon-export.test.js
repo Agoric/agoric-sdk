@@ -4,7 +4,6 @@ import { test } from '../tools/prepare-test-env-ava.js';
 
 import buildKernel from '../src/kernel/index.js';
 import { initializeKernel } from '../src/controller/initializeKernel.js';
-import { makeDummySlogger } from '../src/kernel/slogger.js';
 import { extractMethod } from '../src/lib/kdebug.js';
 import makeKernelKeeper, {
   CURRENT_SCHEMA_VERSION,
@@ -18,11 +17,7 @@ const makeKernel = async () => {
   const { kvStore } = kernelStorage;
   await initializeKernel({}, kernelStorage);
   const kernel = buildKernel(endowments, {}, {});
-  const kernelKeeper = makeKernelKeeper(
-    kernelStorage,
-    CURRENT_SCHEMA_VERSION,
-    makeDummySlogger({}),
-  );
+  const kernelKeeper = makeKernelKeeper(kernelStorage, CURRENT_SCHEMA_VERSION);
   kernelKeeper.loadStats();
   return { kernel, kvStore, kernelKeeper };
 };

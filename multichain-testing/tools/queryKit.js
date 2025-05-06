@@ -6,7 +6,7 @@ import { makeClientMarshaller } from './marshalTables.js';
 /**
  * Iter tools...
  *
- * @template {Promise<any>} PT
+ * @template {Promise} PT
  * @param {() => PT} fn
  * @param {{ delay: (ms: number) => Promise<void>, period?: number }} opts
  */
@@ -20,7 +20,7 @@ export async function* poll(fn, { delay, period = 1000 }) {
 }
 
 /**
- * @template {Promise<any>} PT
+ * @template {Promise} PT
  * @param {AsyncGenerator<Awaited<PT>>} src
  * @param {(a: unknown, b: unknown) => boolean} [equal]
  */
@@ -35,8 +35,8 @@ export async function* dedup(src, equal = (x, y) => x === y) {
 }
 
 /**
- * @template {Promise<any>} PT
- * @template {Promise<any>} PU
+ * @template {Promise} PT
+ * @template {Promise} PU
  * @param {AsyncGenerator<Awaited<PT>>} src
  * @param {(x: Awaited<PT>) => PU} fn
  */
@@ -112,7 +112,7 @@ export const makeQueryKit = (vstorage, m = makeClientMarshaller()) => {
   const queryData = async path => {
     const [[_p, answer]] = await batchQuery([['data', path]]);
     if (typeof answer === 'string') return answer;
-    if ('error' in answer) throw Error(answer.error);
+    if (answer.error) throw Error(answer.error);
     return answer.value;
   };
 
@@ -120,7 +120,7 @@ export const makeQueryKit = (vstorage, m = makeClientMarshaller()) => {
   const queryChildren = async path => {
     const [[_p, answer]] = await batchQuery([['children', path]]);
     if (typeof answer === 'string') return answer;
-    if ('error' in answer) throw Error(answer.error);
+    if (answer.error) throw Error(answer.error);
     return answer.value;
   };
 

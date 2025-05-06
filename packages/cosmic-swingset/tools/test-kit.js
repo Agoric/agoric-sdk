@@ -13,9 +13,8 @@ import {
 } from '@agoric/internal/src/action-types.js';
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import { deepCopyJsonable } from '@agoric/internal/src/js-utils.js';
-import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
-import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import { initSwingStore } from '@agoric/swing-store';
+
 import {
   extractPortNums,
   makeLaunchChain,
@@ -24,12 +23,9 @@ import {
 import { DEFAULT_SIM_SWINGSET_PARAMS } from '../src/sim-params.js';
 import { makeQueue } from '../src/helpers/make-queue.js';
 
-/** @import {EReturn} from '@endo/far'; */
 /** @import { BlockInfo, InitMsg } from '@agoric/internal/src/chain-utils.js' */
 /** @import { ManagerType, SwingSetConfig } from '@agoric/swingset-vat' */
 /** @import { InboundQueue } from '../src/launch-chain.js'; */
-
-const tmpDir = makeTempDirFactory(tmp);
 
 /**
  * @template T
@@ -248,30 +244,21 @@ export const makeCosmicSwingsetTestKit = async (
     STORAGE_PATH.HIGH_PRIORITY_QUEUE,
   );
 
-  const [dbDir, cleanupDB] = tmpDir(debugName || 'testdb');
+  const { name: dbDir, removeCallback: cleanupDB } = tmp.dirSync({
+    prefix: debugName || 'testdb',
+    unsafeCleanup: true,
+  });
   const launchChain = makeLaunchChain(fakeAgcc, dbDir, {
     env,
     fs,
     path: nativePath,
-    testingOverrides: {
-      debugName,
-      slogSender,
-      swingStore,
-      vatconfig: config,
-      withInternals: true,
-    },
+    testingOverrides: { debugName, slogSender, swingStore, vatconfig: config },
   });
   const launchResult = await launchChain({
     ...initMessage,
     resolvedConfig: swingsetConfig,
   });
-  const {
-    blockingSend,
-    shutdown: shutdownKernel,
-    internals,
-  } = /** @type {EReturn<import('../src/launch-chain.js').launchAndShareInternals>} */ (
-    launchResult
-  );
+  const { blockingSend, shutdown: shutdownKernel } = launchResult;
   /** @type {(options?: { kernelOnly?: boolean }) => Promise<void>} */
   const shutdown = async ({ kernelOnly = false } = {}) => {
     await shutdownKernel();
@@ -279,8 +266,6 @@ export const makeCosmicSwingsetTestKit = async (
     await hostStorage.close();
     await cleanupDB();
   };
-  const { controller, bridgeInbound, timer } = internals;
-  const { queueAndRun, EV } = makeRunUtils(controller);
 
   // Remember information about the current block, starting with the init
   // message.
@@ -402,13 +387,6 @@ export const makeCosmicSwingsetTestKit = async (
     highPriorityQueue,
     shutdown,
     swingStore,
-
-    // Controller-oriented helpers.
-    controller,
-    bridgeInbound,
-    timer,
-    queueAndRun,
-    EV,
 
     // Functions specific to this kit.
     getLastBlockInfo,

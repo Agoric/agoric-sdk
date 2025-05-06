@@ -367,16 +367,12 @@ test('vowTools.allSettled handles unstorable results', async t => {
 
   const vowA = watch(Promise.resolve('a'));
   const vowB = watch(nonPassable);
-  const vowC = watch(Promise.reject(nonPassable));
 
-  const result = await when(allSettled([vowA, vowB, vowC]));
+  const result = await when(allSettled([vowA, vowB]));
 
-  t.is(result.length, 3);
+  t.is(result.length, 2);
   t.deepEqual(result[0], { status: 'fulfilled', value: 'a' });
   t.deepEqual(result[1], { status: 'fulfilled', value: nonPassable });
   // @ts-expect-error narrowed in line above
   t.is(result[1].value(), 'im a function');
-  t.deepEqual(result[2], { status: 'rejected', reason: nonPassable });
-  // @ts-expect-error narrowed in line above
-  t.is(result[2].reason(), 'im a function');
 });

@@ -4,7 +4,6 @@ import {
   eventLoopIteration,
   inspectMapStore,
 } from '@agoric/internal/src/testing-utils.js';
-import { makeExpectUnhandledRejection } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
 import path from 'path';
@@ -21,18 +20,14 @@ import {
   buildVTransferEvent,
   parseOutgoingTxPacket,
 } from '../../tools/ibc-mocks.js';
-import * as contractExports from '../../src/examples/staking-combinations.contract.js';
 
-const expectUnhandled = makeExpectUnhandledRejection({
-  test,
-  importMetaUrl: import.meta.url,
-});
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
-type StartFn = typeof contractExports.start;
+const contractFile = `${dirname}/../../src/examples/staking-combinations.contract.js`;
+type StartFn =
+  typeof import('@agoric/orchestration/src/examples/staking-combinations.contract.js').start;
 
-// TODO(#11026): This use of expectUnhandled should not be necessary.
-// TODO(#11026): skipped in #11131 since snapshot cannot be updated with `expectUnhandled(1)`
-test.skip(expectUnhandled(1), 'start', async t => {
+test('start', async t => {
   const {
     bootstrap: { timer, vowTools: vt },
     brands: { bld },
@@ -48,7 +43,7 @@ test.skip(expectUnhandled(1), 'start', async t => {
     },
   });
   const installation: Installation<StartFn> =
-    await bundleAndInstall(contractExports);
+    await bundleAndInstall(contractFile);
 
   const { publicFacet, creatorFacet } = await E(zoe).startInstance(
     installation,

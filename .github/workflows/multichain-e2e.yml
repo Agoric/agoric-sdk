@@ -16,7 +16,7 @@ on:
 
 jobs:
   orchestration-api-hermes:
-    name: Orchestration API - Hermes
+    name: Multichain E2E (Orchestration API - Hermes)
     if: |
       github.event_name == 'workflow_call' ||
       github.event_name == 'pull_request' ||
@@ -27,7 +27,7 @@ jobs:
       test_command: yarn test:main
 
   fast-usdc-hermes:
-    name: Fast USDC - Hermes
+    name: Multichain E2E (Fast USDC - Hermes)
     if: |
       github.event_name == 'workflow_call' ||
       github.event_name == 'pull_request' ||
@@ -38,7 +38,7 @@ jobs:
       test_command: yarn test:fast-usdc
 
   orchestration-api-go-relayer:
-    name: Orchestration API - Go Relayer
+    name: Multichain E2E (Orchestration API - Go Relayer)
     # run on dispatch only
     if: github.event_name == 'workflow_dispatch' && inputs.test_type == 'orchestration-api-go-relayer'
     uses: ./.github/workflows/multichain-e2e-template.yml
@@ -47,7 +47,7 @@ jobs:
       test_command: RELAYER_TYPE=go-relayer yarn test:main
 
   fast-usdc-go-relayer:
-    name: Fast USDC - Go Relayer
+    name: Multichain E2E (Fast USDC - Go Relayer)
     # run on dispatch only
     if: github.event_name == 'workflow_dispatch' && inputs.test_type == 'fast-usdc-go-relayer'
     uses: ./.github/workflows/multichain-e2e-template.yml

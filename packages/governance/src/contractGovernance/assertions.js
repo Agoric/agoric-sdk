@@ -1,6 +1,6 @@
 import { Fail } from '@endo/errors';
 import { isRemotable } from '@endo/marshal';
-import { assertIsRatio } from '@agoric/ertp/src/ratio.js';
+import { assertIsRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { mustMatch } from '@agoric/store';
 import { RelativeTimeRecordShape, TimestampRecordShape } from '@agoric/time';
 

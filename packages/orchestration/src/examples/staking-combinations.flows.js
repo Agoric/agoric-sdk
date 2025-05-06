@@ -1,6 +1,6 @@
 /**
  * @import {GuestInterface} from '@agoric/async-flow';
- * @import {Orchestrator, OrchestrationFlow, AmountArg, CosmosValidatorAddress, CosmosChainAddress, LocalAccountMethods, OrchestrationAccountCommon, ChainHub} from '../types.js'
+ * @import {Orchestrator, OrchestrationFlow, AmountArg, CosmosValidatorAddress, ChainAddress, LocalAccountMethods, OrchestrationAccountCommon, ChainHub} from '../types.js'
  * @import {ContinuingOfferResult, InvitationMakers} from '@agoric/smart-wallet/src/types.js';
  * @import {LocalOrchestrationAccountKit} from '../exos/local-orchestration-account.js';
  * @import {MakeCombineInvitationMakers} from '../exos/combine-invitation-makers.js';
@@ -11,7 +11,7 @@
 import { mustMatch } from '@endo/patterns';
 import { Fail, makeError, q } from '@endo/errors';
 import { makeTracer } from '@agoric/internal';
-import { CosmosChainAddressShape } from '../typeGuards.js';
+import { ChainAddressShape } from '../typeGuards.js';
 
 const trace = makeTracer('StakingCombinationsFlows');
 
@@ -65,7 +65,7 @@ export const depositAndDelegate = async (
 ) => {
   await null;
   trace('depositAndDelegate', account, seat, validator);
-  mustMatch(validator, CosmosChainAddressShape);
+  mustMatch(validator, ChainAddressShape);
 
   const { give } = seat.getProposal();
   /**
@@ -100,7 +100,7 @@ harden(depositAndDelegate);
  * @param {GuestInterface<CosmosOrchestrationAccount>} account
  * @param {{
  *   delegations: { amount: AmountArg; validator: CosmosValidatorAddress }[];
- *   destination: CosmosChainAddress;
+ *   destination: ChainAddress;
  * }} offerArgs
  * @returns {Promise<void>}
  */

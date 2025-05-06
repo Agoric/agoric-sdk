@@ -10,11 +10,6 @@ import { makeNotifierKit } from '@agoric/notifier';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { prepareVirtualPurse } from '../src/virtual-purse.js';
 
-/**
- * @import {Amount} from '@agoric/ertp';
- * @import {NotifierRecord} from '@agoric/notifier';
- */
-
 /** @type {import('ava').TestFn<ReturnType<makeTestContext>>} */
 const test = rawTest;
 

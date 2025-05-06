@@ -1,3 +1,4 @@
+/* eslint-disable jsdoc/require-param -- ts types */
 import { heapVowE as E } from '@agoric/vow/vat.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { Far, type EReturn } from '@endo/far';

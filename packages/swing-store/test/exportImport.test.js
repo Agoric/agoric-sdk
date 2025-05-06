@@ -6,13 +6,9 @@ import test from 'ava';
 import tmp from 'tmp';
 import bundleSource from '@endo/bundle-source';
 
-import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
-
 import { initSwingStore } from '../src/swingStore.js';
 import { makeSwingStoreExporter } from '../src/exporter.js';
 import { importSwingStore } from '../src/importer.js';
-
-const tmpDir = makeTempDirFactory(tmp);
 
 function makeExportLog() {
   const exportLog = [];
@@ -36,6 +32,21 @@ function makeExportLog() {
     },
   };
 }
+
+/**
+ * @param {string} [prefix]
+ * @returns {Promise<[string, () => void]>}
+ */
+const tmpDir = prefix =>
+  new Promise((resolve, reject) => {
+    tmp.dir({ unsafeCleanup: true, prefix }, (err, name, removeCallback) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve([name, removeCallback]);
+      }
+    });
+  });
 
 async function embundle(filename) {
   const bundleFile = new URL(filename, import.meta.url).pathname;
@@ -85,7 +96,7 @@ const compareElems = (a, b) => a[0].localeCompare(b[0]);
 
 test('crank abort leaves no debris in export log', async t => {
   const exportLog = makeExportLog();
-  const [dbDir, cleanup] = tmpDir('testdb');
+  const [dbDir, cleanup] = await tmpDir('testdb');
   t.teardown(cleanup);
 
   const ssOut = initSwingStore(dbDir, {
@@ -165,7 +176,7 @@ async function testExportImport(
   failureMode = 'none',
 ) {
   const exportLog = makeExportLog();
-  const [dbDir, cleanup] = tmpDir('testdb');
+  const [dbDir, cleanup] = await tmpDir('testdb');
   t.teardown(cleanup);
 
   const keepTranscripts = runMode !== 'operational';

@@ -6,15 +6,15 @@ import { prepareExoClass } from '@agoric/vat-data';
 import { coerceAmountKeywordRecord } from '../cleanProposal.js';
 import { assertFullIssuerRecord, makeIssuerRecord } from '../issuerRecord.js';
 import { addToAllocation, subtractFromAllocation } from './allocationMath.js';
-import { ZcfMintI } from './typeGuards.js';
 
-/**
- * @import {ZCFMint, ZCFSeat} from '@agoric/zoe';
- */
+import '../internal-types.js';
+import { ZcfMintI } from './typeGuards.js';
+import './internal-types.js';
+import './types-ambient.js';
 
 /**
  * @param {AmountKeywordRecord} amr
- * @param {ZoeIssuerRecord} issuerRecord
+ * @param {IssuerRecord} issuerRecord
  * @returns {Amount}
  */
 export const sumAmountKeywordRecord = (amr, issuerRecord) => {
@@ -31,7 +31,7 @@ export const sumAmountKeywordRecord = (amr, issuerRecord) => {
 
 /**
  * @param {import('@agoric/vat-data').Baggage} zcfBaggage
- * @param {{ (keyword: string, issuerRecord: ZoeIssuerRecord): void }} recordIssuer
+ * @param {{ (keyword: string, issuerRecord: IssuerRecord): void }} recordIssuer
  * @param {GetAssetKindByBrand} getAssetKindByBrand
  * @param {(exit?: undefined) => { zcfSeat: any; userSeat: Promise<UserSeat> }} makeEmptySeatKit
  * @param {ZcfMintReallocator} reallocator
@@ -51,7 +51,7 @@ export const prepareZcMint = (
      * @template {AssetKind} [K=AssetKind]
      * @param {string} keyword
      * @param {ZoeMint<K>} zoeMint
-     * @param {Required<ZoeIssuerRecord<K>>} issuerRecord
+     * @param {Required<IssuerRecord<K>>} issuerRecord
      */
     (keyword, zoeMint, issuerRecord) => {
       const {

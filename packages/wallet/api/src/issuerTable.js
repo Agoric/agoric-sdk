@@ -20,9 +20,9 @@ import './internal-types.js';
  * remote calls to get the brand and AmountMath and save them.
  */
 const makeIssuerTable = () => {
-  /** @type {WeakMapStore<Brand, ZoeIssuerRecord>} */
+  /** @type {WeakMapStore<Brand,IssuerRecord>} */
   const brandToIssuerRecord = makeScalarWeakMapStore('brand');
-  /** @type {WeakMapStore<Issuer, ZoeIssuerRecord>} */
+  /** @type {WeakMapStore<Issuer,IssuerRecord>} */
   const issuerToIssuerRecord = makeScalarWeakMapStore('issuer');
 
   /** @type {IssuerTable} */

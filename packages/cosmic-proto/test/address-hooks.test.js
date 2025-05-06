@@ -228,7 +228,7 @@ const lengthCheckMacro = test.macro({
  *   [
  *     baseAddress: string,
  *     query: import('../src/address-hooks.js').HookQuery,
- *     expected: import('../src/address-hooks.js').Bech32Address,
+ *     expected: string,
  *   ]
  * >}
  */

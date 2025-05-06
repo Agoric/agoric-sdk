@@ -10,7 +10,10 @@ import {
   GOV1ADDR,
   GOV2ADDR,
 } from '@agoric/synthetic-chain';
-import { ceilMultiplyBy, makeRatio } from '@agoric/ertp/src/ratio.js';
+import {
+  ceilMultiplyBy,
+  makeRatio,
+} from '@agoric/zoe/src/contractSupport/ratio.js';
 import { smartWalletKit } from './index.js';
 import { listVaults, vstorageKit } from './utils.js';
 

@@ -27,7 +27,7 @@ export function getKeyType(key) {
 /**
  * @param {object} db  The SQLite database connection.
  * @param {() => void} ensureTxn  Called before mutating methods to establish a DB transaction
- * @param {(...args: string[]) => void} trace  Called after set/delete to record a debug log
+ * @param {(...args: string[]) => void} trace  Called after sets/gets to record a debug log
  * @returns { KVStore }
  */
 

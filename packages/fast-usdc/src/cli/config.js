@@ -23,7 +23,7 @@ import { stdin as input, stdout as output } from 'node:process';
   }} ConfigOpts
  */
 
-/** @import { File } from './util/file.js' */
+/** @import { File } from './util/file' */
 
 export const init = async (
   /** @type {File} */ configFile,

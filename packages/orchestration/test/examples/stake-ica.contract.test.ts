@@ -13,9 +13,11 @@ import { maxClockSkew } from '../../src/utils/cosmos.js';
 import { UNBOND_PERIOD_SECONDS } from '../ibc-mocks.js';
 import { commonSetup } from '../supports.js';
 
-import * as contractExports from '../../src/examples/stake-ica.contract.js';
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
-type StartFn = typeof contractExports.start;
+const contractFile = `${dirname}/../../src/examples/stake-ica.contract.js`;
+type StartFn =
+  typeof import('@agoric/orchestration/src/examples/stake-ica.contract.js').start;
 
 const getChainTerms = (
   chainName: keyof typeof fetchedChainInfo,
@@ -46,7 +48,7 @@ const startContract = async ({
 }) => {
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
   const installation: Installation<StartFn> =
-    await bundleAndInstall(contractExports);
+    await bundleAndInstall(contractFile);
 
   const { publicFacet } = await E(zoe).startInstance(
     installation,
@@ -152,7 +154,6 @@ test('delegate, undelegate, redelegate, withdrawReward', async t => {
     validatorAddr,
     {
       ...validatorAddr,
-      // @ts-expect-error XXX invalid Bech32
       value: 'cosmosvaloper2test',
     },
     { denom: 'uatom', value: 10n },

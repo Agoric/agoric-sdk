@@ -1,7 +1,10 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-import { makeRatio, makeRatioFromAmounts } from '@agoric/ertp/src/ratio.js';
+import {
+  makeRatio,
+  makeRatioFromAmounts,
+} from '@agoric/zoe/src/contractSupport/ratio.js';
 
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import {

@@ -12,10 +12,6 @@ const dirname = path.dirname(new URL(import.meta.url).pathname);
 const contractRoot = `${dirname}/zcfTesterContract.js`;
 
 /**
- * @import {ContractMeta, Invitation, OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
- */
-
-/**
  * Test setup utility
  *
  * @template {object} [T=object] terms

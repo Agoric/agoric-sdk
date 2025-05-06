@@ -1,14 +1,13 @@
-import { BrandShape } from '@agoric/ertp/src/typeGuards.js';
 import { Fail, makeError, q } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+import { BrandShape } from '@agoric/ertp/src/typeGuards.js';
 
 import { VowShape } from '@agoric/vow';
 import {
-  AccountIdArgShape,
-  ChainInfoShape,
+  ChainAddressShape,
   CoinShape,
-  CosmosChainAddressShape,
+  CosmosChainInfoShape,
   DenomAmountShape,
   DenomDetailShape,
   ForwardInfoShape,
@@ -17,17 +16,15 @@ import {
   IBCConnectionInfoShape,
 } from '../typeGuards.js';
 import { getBech32Prefix } from '../utils/address.js';
-import { caipIdFromInfo } from '../utils/chain-info.js';
 
 /**
  * @import {NameHub} from '@agoric/vats';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
- * @import {CosmosAssetInfo, CosmosChainInfo, ForwardInfo, IBCConnectionInfo, IBCMsgTransferOptions, TransferRoute, GoDuration, Bech32Address} from '../cosmos-api.js';
- * @import {KnownChains} from '../chain-info.js';
- * @import {AccountId, CosmosChainAddress, ChainInfo, CaipChainId, Denom, DenomAmount, AccountIdArg} from '../orchestration-api.js';
+ * @import {CosmosAssetInfo, CosmosChainInfo, ForwardInfo, IBCConnectionInfo, IBCMsgTransferOptions, TransferRoute, GoDuration} from '../cosmos-api.js';
+ * @import {ChainInfo, KnownChains} from '../chain-info.js';
+ * @import {ChainAddress, Denom, DenomAmount} from '../orchestration-api.js';
  * @import {Remote, TypedPattern} from '@agoric/internal';
- * @import {Pattern} from '@endo/patterns';
  */
 
 /** receiver address value for ibc transfers that involve PFM */
@@ -77,8 +74,6 @@ export const ASSETS_KEY = HubName.ChainAssets;
  */
 const CHAIN_ID_SEPARATOR = '_';
 
-/** @typedef {`${string}${CHAIN_ID_SEPARATOR}${string}`} IbcConnectionKey */
-
 /**
  * Vstorage keys can be only alphanumerics, dash, or underscore, which are all
  * valid characters in chain IDs. So, double each occurence of
@@ -101,15 +96,12 @@ export const encodeChainId = chainId =>
  *
  * @param {string} chainId1
  * @param {string} chainId2
- * @returns {IbcConnectionKey}
  */
 export const connectionKey = (chainId1, chainId2) => {
   const chainId1Sanitized = encodeChainId(chainId1);
   const chainId2Sanitized = encodeChainId(chainId2);
 
-  return /** @type {IbcConnectionKey} */ (
-    [chainId1Sanitized, chainId2Sanitized].sort().join(CHAIN_ID_SEPARATOR)
-  );
+  return [chainId1Sanitized, chainId2Sanitized].sort().join(CHAIN_ID_SEPARATOR);
 };
 
 /**
@@ -144,7 +136,7 @@ const reverseConnInfo = connInfo => {
  * @param {string} primaryChainId
  * @param {string} counterChainId
  * @param {IBCConnectionInfo} directed
- * @returns {[IbcConnectionKey, IBCConnectionInfo]}
+ * @returns {[string, IBCConnectionInfo]}
  */
 export const normalizeConnectionInfo = (
   primaryChainId,
@@ -210,16 +202,9 @@ export const TransferRouteShape = M.splitRecord(
 );
 
 const ChainHubI = M.interface('ChainHub', {
-  registerChain: M.call(M.string(), ChainInfoShape).returns(),
-  updateChain: M.call(M.string(), ChainInfoShape).returns(),
+  registerChain: M.call(M.string(), CosmosChainInfoShape).returns(),
   getChainInfo: M.call(M.string()).returns(VowShape),
-  getChainInfoByChainId: M.call(M.string()).returns(ChainInfoShape),
   registerConnection: M.call(
-    M.string(),
-    M.string(),
-    IBCConnectionInfoShape,
-  ).returns(),
-  updateConnection: M.call(
     M.string(),
     M.string(),
     IBCConnectionInfoShape,
@@ -227,16 +212,12 @@ const ChainHubI = M.interface('ChainHub', {
   getConnectionInfo: M.call(ChainIdArgShape, ChainIdArgShape).returns(VowShape),
   getChainsAndConnection: M.call(M.string(), M.string()).returns(VowShape),
   registerAsset: M.call(M.string(), DenomDetailShape).returns(),
-  updateAsset: M.call(M.string(), DenomDetailShape).returns(),
   getAsset: M.call(M.string(), M.string()).returns(
     M.or(DenomDetailShape, M.undefined()),
   ),
   getDenom: M.call(BrandShape).returns(M.or(M.string(), M.undefined())),
-  coerceCosmosAddress: M.call(AccountIdArgShape).returns(
-    CosmosChainAddressShape,
-  ),
-  resolveAccountId: M.call(M.string()).returns(M.string()),
-  makeTransferRoute: M.call(AccountIdArgShape, DenomAmountShape, M.string())
+  makeChainAddress: M.call(M.string()).returns(ChainAddressShape),
+  makeTransferRoute: M.call(ChainAddressShape, DenomAmountShape, M.string())
     .optional(ForwardOptsShape)
     .returns(M.or(M.undefined(), TransferRouteShape)),
 });
@@ -244,40 +225,22 @@ const ChainHubI = M.interface('ChainHub', {
 /**
  * Make a new ChainHub in the zone.
  *
- * The resulting object is an Exo singleton. It has no precious state. Its only
+ * The resulting object is an Exo singleton. It has no precious state. It's only
  * state is a cache of queries to agoricNames and whatever info was provided in
  * registration calls. When you need a newer version you can simply make a hub
- * and repeat the registrations.
+ * hub and repeat the registrations.
  *
  * @param {Zone} zone
  * @param {Remote<NameHub>} agoricNames
  * @param {VowTools} vowTools
- * @param {object} [opts]
- * @param {Pattern} [opts.chainInfoValueShape] legacy support for contracts
- *   deployed with `valueShape: CosmosChainInfoShape`. If nothing is supplied,
- *   defaults to {@link ChainInfoShape}
  */
-export const makeChainHub = (
-  zone,
-  agoricNames,
-  vowTools,
-  { chainInfoValueShape = /** @type {Pattern} */ (ChainInfoShape) } = {},
-) => {
-  /**
-   * Handle mapping of a chain's common name (e.g. 'ethereum' or "doravota") to
-   * its info (e.g. specififying CAIP-2 eip155:1 or Cosmos chainId 'votash')
-   *
-   * @type {MapStore<string, ChainInfo>}
-   */
+export const makeChainHub = (zone, agoricNames, vowTools) => {
+  /** @type {MapStore<string, CosmosChainInfo>} */
   const chainInfos = zone.mapStore('chainInfos', {
     keyShape: M.string(),
-    valueShape: chainInfoValueShape,
+    valueShape: CosmosChainInfoShape,
   });
-  /**
-   * IBC connection paths, keyed by a function of each chain's Cosmos chainId
-   *
-   * @type {MapStore<IbcConnectionKey, IBCConnectionInfo>}
-   */
+  /** @type {MapStore<string, IBCConnectionInfo>} */
   const connectionInfos = zone.mapStore('connectionInfos', {
     keyShape: M.string(),
     valueShape: IBCConnectionInfoShape,
@@ -293,23 +256,8 @@ export const makeChainHub = (
     keyShape: BrandShape,
     valueShape: M.string(),
   });
-  /**
-   * Handle mapping of, for example, "osmosis" chain that has bech32 prefix
-   * "osmo" and chainId "osmosis-1".
-   *
-   * @type {MapStore<string, string>}
-   */
+  /** @type {MapStore<string, string>} */
   const bech32PrefixToChainName = zone.mapStore('bech32PrefixToChainName', {
-    keyShape: M.string(),
-    valueShape: M.string(),
-  });
-  /**
-   * CaipChainId is implied by the ChainInfo. The value in this store is a key
-   * into `chainInfos`.
-   *
-   * @type {MapStore<CaipChainId, string>}
-   */
-  const chainIdToChainName = zone.mapStore('chainIdToChainName', {
     keyShape: M.string(),
     valueShape: M.string(),
   });
@@ -319,23 +267,6 @@ export const makeChainHub = (
    * @param {DenomDetail['chainName']} srcChainName
    */
   const makeDenomKey = (denom, srcChainName) => `${srcChainName}:${denom}`;
-
-  /**
-   * @param {Bech32Address | string} address
-   * @returns {string}
-   */
-  const resolveCosmosChainId = address => {
-    // Infer it from the bech32 prefix
-    const prefix = getBech32Prefix(address);
-    if (!bech32PrefixToChainName.has(prefix)) {
-      throw makeError(`Chain info not found for bech32Prefix ${q(prefix)}`);
-    }
-    const chainName = bech32PrefixToChainName.get(prefix);
-    const { chainId } = /** @type {CosmosChainInfo} */ (
-      chainInfos.get(chainName)
-    );
-    return chainId;
-  };
 
   const lookupChainInfo = vowTools.retryable(
     zone,
@@ -350,7 +281,6 @@ export const makeChainHub = (
         // TODO consider makeAtomicProvider for vows
         if (!chainInfos.has(chainName)) {
           chainInfos.init(chainName, chainInfo);
-          chainIdToChainName.init(caipIdFromInfo(chainInfo), chainName);
           if (chainInfo.bech32Prefix) {
             bech32PrefixToChainName.init(chainInfo.bech32Prefix, chainName);
           }
@@ -402,11 +332,7 @@ export const makeChainHub = (
      * @param {C1} primaryName
      * @param {C2} counterName
      * @returns {Promise<
-     *   [
-     *     ActualChainInfo<C1>,
-     *     ActualChainInfo<C2>,
-     *     IBCConnectionInfo | undefined,
-     *   ]
+     *   [ActualChainInfo<C1>, ActualChainInfo<C2>, IBCConnectionInfo]
      * >}
      */
     // eslint-disable-next-line no-restricted-syntax -- TODO more exact rules for vow best practices
@@ -417,22 +343,14 @@ export const makeChainHub = (
           chainHub.getChainInfo(counterName),
         ]),
       );
-
-      const connectionInfo =
-        primary.namespace === 'cosmos' && counter.namespace === 'cosmos'
-          ? await vowTools.asPromise(
-              chainHub.getConnectionInfo(primary, counter),
-            )
-          : undefined;
-      return (
-        /**
-         * @type {[
-         *   ActualChainInfo<C1>,
-         *   ActualChainInfo<C2>,
-         *   IBCConnectionInfo | undefined,
-         * ]}
-         */ ([primary, counter, connectionInfo])
+      const connectionInfo = await vowTools.asPromise(
+        chainHub.getConnectionInfo(primary, counter),
       );
+      return /** @type {[ActualChainInfo<C1>, ActualChainInfo<C2>, IBCConnectionInfo]} */ ([
+        primary,
+        counter,
+        connectionInfo,
+      ]);
     },
   );
 
@@ -447,43 +365,12 @@ export const makeChainHub = (
      * contract `start` the call will happen again naturally.
      *
      * @param {string} name
-     * @param {ChainInfo} chainInfo
+     * @param {CosmosChainInfo} chainInfo
      */
     registerChain(name, chainInfo) {
       chainInfos.init(name, chainInfo);
-      chainIdToChainName.init(caipIdFromInfo(chainInfo), name);
-      if (chainInfo.namespace === 'cosmos' && chainInfo.bech32Prefix) {
+      if (chainInfo.bech32Prefix) {
         bech32PrefixToChainName.init(chainInfo.bech32Prefix, name);
-      }
-    },
-    /**
-     * Update chain info by completely replacing existing entry
-     *
-     * @param {string} chainName - Name of the chain to update
-     * @param {ChainInfo} chainInfo - New chain info
-     * @throws {Error} If chain not registered
-     */
-    updateChain(chainName, chainInfo) {
-      if (!chainInfos.has(chainName)) {
-        throw makeError(`Chain ${q(chainName)} not registered`);
-      }
-      const oldInfo = chainInfos.get(chainName);
-      // defensively check, for older versions which may not have `chainIdToChainName`
-      if (chainIdToChainName.has(caipIdFromInfo(oldInfo))) {
-        chainIdToChainName.delete(caipIdFromInfo(oldInfo));
-      }
-      if (/** @type {CosmosChainInfo} */ (oldInfo).bech32Prefix) {
-        bech32PrefixToChainName.delete(
-          /** @type {CosmosChainInfo} */ (oldInfo).bech32Prefix,
-        );
-      }
-      chainInfos.set(chainName, chainInfo);
-      chainIdToChainName.init(caipIdFromInfo(chainInfo), chainName);
-      if (/** @type {CosmosChainInfo} */ (chainInfo).bech32Prefix) {
-        bech32PrefixToChainName.init(
-          /** @type {CosmosChainInfo} */ (chainInfo).bech32Prefix,
-          chainName,
-        );
       }
     },
     /**
@@ -492,35 +379,16 @@ export const makeChainHub = (
      * @returns {Vow<ActualChainInfo<K>>}
      */
     getChainInfo(chainName) {
-      chainName.includes(':') &&
-        Fail`${chainName} must be a bare chain name. Maybe try getChainInfoByChainId()`;
       // Either from registerChain or memoized remote lookup()
       if (chainInfos.has(chainName)) {
         return /** @type {Vow<ActualChainInfo<K>>} */ (
-          vowTools.asVow(() =>
-            // @ts-expect-error Type 'ChainInfo' is not assignable to type 'CosmosChainInfo | Vow<CosmosChainInfo> | PromiseVow<CosmosChainInfo>'.
-            chainInfos.get(chainName),
-          )
+          vowTools.asVow(() => chainInfos.get(chainName))
         );
       }
 
       return lookupChainInfo(chainName);
     },
     /**
-     * @param {CaipChainId} chainId
-     * @returns {ChainInfo}
-     */
-    getChainInfoByChainId(chainId) {
-      // Either from registerChain or memoized remote lookup()
-      chainIdToChainName.has(chainId) ||
-        Fail`Chain name not found for ${q(chainId)}`;
-      const chainName = chainIdToChainName.get(chainId);
-      chainInfos.has(chainName) || Fail`Chain Info not found for ${q(chainId)}`;
-      return chainInfos.get(chainName);
-    },
-    /**
-     * Register information for a Cosmos chain
-     *
      * @param {string} primaryChainId
      * @param {string} counterpartyChainId
      * @param {IBCConnectionInfo} connectionInfo from primary to counterparty
@@ -533,29 +401,7 @@ export const makeChainHub = (
       );
       connectionInfos.init(key, normalized);
     },
-    /**
-     * Update connection info by completely replacing existing entry
-     *
-     * @param {string} primaryChainId - Cosmos chainId of primary chain
-     * @param {string} counterpartyChainId - Cosmos chainId of counterparty
-     *   chain
-     * @param {IBCConnectionInfo} connectionInfo - New connection info
-     * @throws {Error} If connection not registered
-     */
-    updateConnection(primaryChainId, counterpartyChainId, connectionInfo) {
-      const key = connectionKey(primaryChainId, counterpartyChainId);
-      if (!connectionInfos.has(key)) {
-        throw makeError(
-          `Connection ${q(primaryChainId)}<->${q(counterpartyChainId)} not registered`,
-        );
-      }
-      const [_, normalizedInfo] = normalizeConnectionInfo(
-        primaryChainId,
-        counterpartyChainId,
-        connectionInfo,
-      );
-      connectionInfos.set(key, normalizedInfo);
-    },
+
     /**
      * @param {string | { chainId: string }} primary the primary chain
      * @param {string | { chainId: string }} counter the counterparty chain
@@ -618,42 +464,6 @@ export const makeChainHub = (
       }
     },
     /**
-     * Update asset info by completely replacing existing entry
-     *
-     * @param {Denom} denom - Denom on the holding chain
-     * @param {DenomDetail} detail - New asset details
-     * @throws {Error} If asset not registered or referenced chains not
-     *   registered
-     */
-    updateAsset(denom, detail) {
-      const { baseName, brand, chainName } = detail;
-      const denomKey = makeDenomKey(denom, chainName);
-      if (!denomDetails.has(denomKey)) {
-        throw makeError(`Asset ${q(denom)} on ${q(chainName)} not registered`);
-      }
-      if (!chainInfos.has(chainName)) {
-        throw makeError(`Chain ${q(chainName)} not registered`);
-      }
-      if (!chainInfos.has(baseName)) {
-        throw makeError(`Chain ${q(baseName)} not registered`);
-      }
-      if (brand) {
-        if (chainName !== 'agoric') {
-          throw makeError('Brands only registerable for agoric-held assets');
-        }
-      }
-
-      const oldDetail = denomDetails.get(denomKey);
-      if (oldDetail.brand) {
-        brandDenoms.delete(oldDetail.brand);
-      }
-
-      denomDetails.set(denomKey, detail);
-      if (brand) {
-        brandDenoms.init(brand, denom);
-      }
-    },
-    /**
      * Retrieve holding, issuing chain names etc. for a denom.
      *
      * @param {Denom} denom
@@ -679,60 +489,26 @@ export const makeChainHub = (
       }
       return undefined;
     },
-
     /**
-     * @param {AccountId | Bech32Address} partialId CAIP-10 account ID or a
-     *   Cosmos bech32 address
-     * @returns {AccountId}
+     * @param {string} address bech32 address
+     * @returns {ChainAddress}
      * @throws {Error} if chain info not found for bech32Prefix
      */
-    resolveAccountId(partialId) {
-      if (partialId.split(':').length === 3) {
-        // if it's already a CAIP-10, return it.
-        return /** @type {AccountId} */ (partialId);
+    makeChainAddress(address) {
+      const prefix = getBech32Prefix(address);
+      if (!bech32PrefixToChainName.has(prefix)) {
+        throw makeError(`Chain info not found for bech32Prefix ${q(prefix)}`);
       }
-
-      const cosmosChainId = resolveCosmosChainId(
-        /** @type {Bech32Address} */ (partialId),
-      );
-      return `cosmos:${cosmosChainId}:${partialId}`;
-    },
-
-    /**
-     * Like {@see resolveAccountId} but always returns a CosmosChainAddress.
-     *
-     * @param {AccountIdArg | Bech32Address} partialId CAIP-10 account ID or a
-     *   Cosmos bech32 address
-     * @returns {CosmosChainAddress}
-     * @throws {Error} if chain info not found for bech32Prefix
-     */
-    coerceCosmosAddress(partialId) {
-      if (typeof partialId !== 'string') {
-        // already a CosmosChainAddress
-        return partialId;
-      }
-      const parts = partialId.split(':');
-      if (parts.length === 3) {
-        assert.equal(parts[0], 'cosmos');
-        return harden({
-          chainId: parts[1],
-          encoding: 'bech32',
-          value: /** @type {Bech32Address} */ (parts[2]),
-        });
-      }
-
-      assert.equal(parts.length, 1); // no colons
-      const value = /** @type {Bech32Address} */ (partialId);
-      const cosmosChainId = resolveCosmosChainId(value);
+      const chainName = bech32PrefixToChainName.get(prefix);
+      const { chainId } = chainInfos.get(chainName);
       return harden({
-        chainId: cosmosChainId,
-        value,
+        chainId,
+        value: address,
         encoding: /** @type {const} */ ('bech32'),
       });
     },
-
     /**
-     * Determine the IBC transfer route for a destination and amount given the
+     * Determine the transfer route for a destination and amount given the
      * current holding chain.
      *
      * Does not account for routes with more than 1 intermediary hop - that is,
@@ -740,7 +516,7 @@ export const makeChainHub = (
      *
      * XXX consider accepting AmountArg #10449
      *
-     * @param {AccountIdArg | Bech32Address} destination
+     * @param {ChainAddress} destination
      * @param {DenomAmount} denomAmount
      * @param {string} srcChainName
      * @param {IBCMsgTransferOptions['forwardOpts']} [forwardOpts]
@@ -765,29 +541,20 @@ export const makeChainHub = (
       chainInfos.has(baseName) ||
         Fail`chain info not found for issuing chain: ${q(baseName)}`;
 
-      const baseChainInfo = chainInfos.get(baseName);
-      if (baseChainInfo.namespace !== 'cosmos')
-        throw Fail`Only cosmos supported; got ${q(baseChainInfo.namespace)}`;
-      const { chainId: baseChainId, pfmEnabled } = baseChainInfo;
+      const { chainId: baseChainId, pfmEnabled } = chainInfos.get(baseName);
 
-      const holdingChainInfo = chainInfos.get(srcChainName);
-      if (holdingChainInfo.namespace !== 'cosmos') {
-        throw Fail`Only cosmos supported; got ${q(holdingChainInfo.namespace)}`;
-      }
-      const { chainId: holdingChainId } = holdingChainInfo;
-
-      const cosmosDest = chainHub.coerceCosmosAddress(destination);
+      const holdingChainId = chainInfos.get(srcChainName).chainId;
 
       // asset is transferring to or from the issuing chain, return direct route
-      if (baseChainId === cosmosDest.chainId || baseName === srcChainName) {
+      if (baseChainId === destination.chainId || baseName === srcChainName) {
         // TODO use getConnectionInfo once its sync
-        const connKey = connectionKey(holdingChainId, cosmosDest.chainId);
+        const connKey = connectionKey(holdingChainId, destination.chainId);
         connectionInfos.has(connKey) ||
-          Fail`no connection info found for ${holdingChainId}<->${cosmosDest.chainId}`;
+          Fail`no connection info found for ${holdingChainId}<->${destination.chainId}`;
 
         const { transferChannel } = denormalizeConnectionInfo(
           holdingChainId, // from chain (primary)
-          cosmosDest.chainId, // to chain (counterparty)
+          destination.chainId, // to chain (counterparty)
           connectionInfos.get(connKey),
         );
         return harden({
@@ -797,7 +564,7 @@ export const makeChainHub = (
             amount: String(denomAmount.value),
             denom: denomAmount.denom,
           },
-          receiver: cosmosDest.value,
+          receiver: destination.value,
         });
       }
 
@@ -809,9 +576,9 @@ export const makeChainHub = (
       connectionInfos.has(currToIssuerKey) ||
         Fail`no connection info found for ${holdingChainId}<->${baseChainId}`;
 
-      const issuerToDestKey = connectionKey(baseChainId, cosmosDest.chainId);
+      const issuerToDestKey = connectionKey(baseChainId, destination.chainId);
       connectionInfos.has(issuerToDestKey) ||
-        Fail`no connection info found for ${baseChainId}<->${cosmosDest.chainId}`;
+        Fail`no connection info found for ${baseChainId}<->${destination.chainId}`;
 
       const currToIssuer = denormalizeConnectionInfo(
         holdingChainId,
@@ -820,19 +587,18 @@ export const makeChainHub = (
       );
       const issuerToDest = denormalizeConnectionInfo(
         baseChainId,
-        cosmosDest.chainId,
+        destination.chainId,
         connectionInfos.get(issuerToDestKey),
       );
 
-      const { intermediateRecipient, ...rest } = forwardOpts ?? {};
       /** @type {ForwardInfo} */
       const forwardInfo = harden({
         forward: {
-          receiver: cosmosDest.value,
+          receiver: destination.value,
           port: issuerToDest.transferChannel.portId,
           channel: issuerToDest.transferChannel.channelId,
           ...DefaultPfmTimeoutOpts,
-          .../** @type {ForwardInfo} */ (rest), // timeout and retries
+          ...forwardOpts,
         },
       });
       return harden({
@@ -846,7 +612,7 @@ export const makeChainHub = (
          * purposely using invalid bech32
          * {@link https://github.com/cosmos/ibc-apps/blob/26f3ad8f58e4ffc7769c6766cb42b954181dc100/middleware/packet-forward-middleware/README.md#minimal-example---chain-forward-a-b-c}
          */
-        receiver: intermediateRecipient?.value || PFM_RECEIVER,
+        receiver: forwardOpts?.intermediateRecipient?.value || PFM_RECEIVER,
         forwardInfo,
       });
     },

@@ -86,7 +86,7 @@ export function initializeVatState(
 /**
  * @typedef {object} VatKeeperPowers
  * @property {TranscriptStore} transcriptStore  Accompanying transcript store, for the transcripts
- * @property {KernelSlog} kernelSlog
+ * @property {*} kernelSlog
  * @property {*} addKernelObject  Kernel function to add a new object to the kernel's mapping tables.
  * @property {*} addKernelPromiseForVat  Kernel function to add a new promise to the kernel's mapping tables.
  * @property {(kernelSlot: string) => boolean} kernelObjectExists
@@ -411,13 +411,15 @@ export function makeVatKeeper(
         // update any necessary refcounts consistently
         kvStore.set(kernelKey, buildReachableAndVatSlot(false, vatSlot));
         kvStore.set(vatKey, kernelSlot);
-        kernelSlog.changeCList(
-          vatID,
-          getCrankNumber(),
-          'export',
-          kernelSlot,
-          vatSlot,
-        );
+        if (kernelSlog) {
+          kernelSlog.changeCList(
+            vatID,
+            getCrankNumber(),
+            'export',
+            kernelSlot,
+            vatSlot,
+          );
+        }
         kdebug(`Add mapping v->k ${kernelKey}<=>${vatKey}`);
       } else {
         // the vat didn't allocate it, and the kernel didn't allocate it
@@ -484,13 +486,15 @@ export function makeVatKeeper(
       incStat('clistEntries');
       kvStore.set(vatKey, kernelSlot);
       kvStore.set(kernelKey, buildReachableAndVatSlot(false, vatSlot));
-      kernelSlog.changeCList(
-        vatID,
-        getCrankNumber(),
-        'import',
-        kernelSlot,
-        vatSlot,
-      );
+      if (kernelSlog) {
+        kernelSlog.changeCList(
+          vatID,
+          getCrankNumber(),
+          'import',
+          kernelSlot,
+          vatSlot,
+        );
+      }
       kdebug(`Add mapping k->v ${kernelKey}<=>${vatKey}`);
     }
 
@@ -533,13 +537,15 @@ export function makeVatKeeper(
     const vatKey = `${vatID}.c.${vatSlot}`;
     assert(kvStore.has(kernelKey));
     kdebug(`Delete mapping ${kernelKey}<=>${vatKey}`);
-    kernelSlog.changeCList(
-      vatID,
-      getCrankNumber(),
-      'drop',
-      kernelSlot,
-      vatSlot,
-    );
+    if (kernelSlog) {
+      kernelSlog.changeCList(
+        vatID,
+        getCrankNumber(),
+        'drop',
+        kernelSlot,
+        vatSlot,
+      );
+    }
     const isExport = allocatedByVat;
     // We tolerate the object kref not being present in the kernel object
     // table, either because we're being called during the translation of

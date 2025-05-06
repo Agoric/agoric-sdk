@@ -26,7 +26,7 @@ export const buildRootObject = (_vatPowers, _args, baggage) => {
    * well as accommodate the lack of complex keys.
    *
    * @type {WeakMapStore<
-   *   import('./types.js').ScopedBridgeManager<any>,
+   *   import('./types').ScopedBridgeManager<any>,
    *   MapStore<string, ReturnType<typeof makeBridgeTargetKit>>
    * >}
    */
@@ -34,9 +34,9 @@ export const buildRootObject = (_vatPowers, _args, baggage) => {
   return Far('TransferVat', {
     /**
      * @template {import('@agoric/internal').BridgeId} T
-     * @param {import('./types.js').ScopedBridgeManager<T>} manager
+     * @param {import('./types').ScopedBridgeManager<T>} manager
      * @param {string} [inboundType]
-     * @param {import('./bridge-target.js').AppTransformer} [appTransformer]
+     * @param {import('./bridge-target').AppTransformer} [appTransformer]
      */
     provideBridgeTargetKit(
       manager,

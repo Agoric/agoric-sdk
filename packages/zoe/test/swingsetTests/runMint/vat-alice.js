@@ -2,10 +2,6 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
 /**
- * @import {ZoeService} from '@agoric/zoe';
- */
-
-/**
  * @param {*} log
  * @param {ZoeService} zoe
  * @param {*} installations

@@ -12,7 +12,6 @@ import { GovernorFacetShape } from './typeGuards.js';
 import { CONTRACT_ELECTORATE } from './contractGovernance/governParam.js';
 
 /**
- * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
  * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn, GovernanceSubscriptionState, GovernanceTerms, GovernedApis, GovernedCreatorFacet, GovernedPublicFacet} from './types.js';
  * @import {Baggage} from '@agoric/vat-data';
  */

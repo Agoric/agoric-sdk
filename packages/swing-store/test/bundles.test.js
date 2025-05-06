@@ -1,15 +1,12 @@
 // @ts-check
 import test from 'ava';
-import { Buffer } from 'buffer';
 import tmp from 'tmp';
-import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
+import { Buffer } from 'buffer';
 import { createSHA256 } from '../src/hasher.js';
 import { initSwingStore } from '../src/swingStore.js';
 import { makeSwingStoreExporter } from '../src/exporter.js';
 import { importSwingStore } from '../src/importer.js';
 import { buffer } from '../src/util.js';
-
-const tmpDir = makeTempDirFactory(tmp);
 
 function makeB0ID(bundle) {
   return `b0-${createSHA256(JSON.stringify(bundle)).finish()}`;
@@ -56,6 +53,17 @@ function makeExportCallback() {
   };
 }
 
+const tmpDir = prefix =>
+  new Promise((resolve, reject) => {
+    tmp.dir({ unsafeCleanup: true, prefix }, (err, name, removeCallback) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve([name, removeCallback]);
+      }
+    });
+  });
+
 const collectArray = async iter => {
   const items = [];
   for await (const item of iter) {
@@ -65,7 +73,7 @@ const collectArray = async iter => {
 };
 
 test('b0 export', async t => {
-  const [dbDir, cleanup] = tmpDir('testdb');
+  const [dbDir, cleanup] = await tmpDir('testdb');
   t.teardown(cleanup);
   const { exportData, exportCallback } = makeExportCallback();
   const { kernelStorage, hostStorage } = initSwingStore(dbDir, {

@@ -2,12 +2,9 @@
 import { assert } from '@endo/errors';
 import { E } from '@endo/far';
 
-/**
- * @import {ERef} from '@endo/far';
- * @import {FromCapData} from '@endo/marshal';
- */
-
 /** @typedef {'children' | 'data'} AgoricChainStoragePathKind */
+/** @template T @typedef {import('@endo/marshal').FromCapData<T>} FromCapData<T> */
+/** @template T @typedef {import('@endo/eventual-send').ERef<T>} ERef<T> */
 
 /**
  * @param {[kind: AgoricChainStoragePathKind, item: string]} path
@@ -41,10 +38,11 @@ async function* mapHistory(f, chunks) {
  * @param {ERef<import('./makeHttpClient').LCD>} lcd
  */
 export const makeVStorage = lcd => {
+  const getJSON = (href, options) => E(lcd).getJSON(href, options);
+
   // height=0 is the same as omitting height and implies the highest block
   const href = (path = 'published', { kind = 'data' } = {}) =>
     `/agoric/vstorage/${kind}/${path}`;
-  /** @param {number} height */
   const headers = height =>
     height ? { 'x-cosmos-block-height': `${height}` } : undefined;
 
@@ -52,12 +50,9 @@ export const makeVStorage = lcd => {
     path = 'published',
     { kind = 'data', height = 0 } = {},
   ) =>
-    E(lcd)
-      .getJSON(href(path, { kind }), { headers: headers(height) })
-      .catch(err => {
-        throw Error(`cannot read ${kind} of ${path}: ${err.message}`);
-      });
-  /** @type {typeof readStorage} */
+    getJSON(href(path, { kind }), { headers: headers(height) }).catch(err => {
+      throw Error(`cannot read ${kind} of ${path}: ${err.message}`);
+    });
   const readCell = (path, opts) =>
     readStorage(path, opts)
       .then(data => data.value)

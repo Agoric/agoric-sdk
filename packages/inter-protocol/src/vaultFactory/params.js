@@ -11,7 +11,7 @@ import { makeStoredPublisherKit } from '@agoric/notifier';
 import { M, makeScalarMapStore } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
 import { provideDurableMapStore } from '@agoric/vat-data';
-import { subtractRatios } from '@agoric/ertp/src/ratio.js';
+import { subtractRatios } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makeTracer } from '@agoric/internal/src/index.js';
 import { amountPattern, ratioPattern } from '../contractSupport.js';
 

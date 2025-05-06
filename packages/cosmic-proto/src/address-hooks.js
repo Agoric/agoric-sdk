@@ -31,14 +31,6 @@
 import { bech32 } from 'bech32';
 import queryString from 'query-string';
 
-/**
- * @typedef {`${string}1${string}`} Bech32Address
- * @example
- *
- *    agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346
- *    cosmosvaloper1npm9gvss52mlmk
- */
-
 /* global globalThis */
 /** @type {<T>(x: T) => T} */
 const harden = globalThis.harden || Object.freeze;
@@ -102,7 +94,7 @@ harden(decodeBech32);
  * @param {string} humanReadablePart
  * @param {ArrayLike<number>} bytes
  * @param {number} [charLimit]
- * @returns {Bech32Address}
+ * @returns {string}
  */
 export const encodeBech32 = (
   humanReadablePart,
@@ -110,9 +102,7 @@ export const encodeBech32 = (
   charLimit = DEFAULT_HOOKED_ADDRESS_CHAR_LIMIT,
 ) => {
   const words = bech32.toWords(bytes);
-  return /** @type {Bech32Address} */ (
-    bech32.encode(humanReadablePart, words, charLimit)
-  );
+  return bech32.encode(humanReadablePart, words, charLimit);
 };
 harden(encodeBech32);
 
@@ -136,7 +126,7 @@ harden(encodeBech32);
  * @param {string} baseAddress
  * @param {ArrayLike<number>} hookData
  * @param {number} [charLimit]
- * @returns {Bech32Address}
+ * @returns {string}
  */
 export const joinHookedAddress = (
   baseAddress,
@@ -188,7 +178,6 @@ harden(joinHookedAddress);
  * @param {string} baseAddress
  * @param {HookQuery} query
  * @param {number} [charLimit]
- * @returns {Bech32Address}
  */
 export const encodeAddressHook = (baseAddress, query, charLimit) => {
   const queryStr = queryString.stringify(query);

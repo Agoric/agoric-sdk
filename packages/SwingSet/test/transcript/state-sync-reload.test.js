@@ -2,7 +2,6 @@
 import test from 'ava';
 
 import tmp from 'tmp';
-import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 import { kunser } from '@agoric/kmarshal';
 import {
   initSwingStore,
@@ -13,7 +12,20 @@ import {
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import { buildKernelBundle } from '../../src/controller/initializeSwingset.js';
 
-const tmpDir = makeTempDirFactory(tmp);
+/**
+ * @param {string} [prefix]
+ * @returns {Promise<[string, () => void]>}
+ */
+const tmpDir = prefix =>
+  new Promise((resolve, reject) => {
+    tmp.dir({ unsafeCleanup: true, prefix }, (err, name, removeCallback) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve([name, removeCallback]);
+      }
+    });
+  });
 
 const bfile = name => new URL(name, import.meta.url).pathname;
 
@@ -23,8 +35,8 @@ test.before(async t => {
 });
 
 test('state-sync reload', async t => {
-  const [dbDir, cleanup] = tmpDir('testdb');
-  const [importDbDir, cleanupImport] = tmpDir('importtestdb');
+  const [dbDir, cleanup] = await tmpDir('testdb');
+  const [importDbDir, cleanupImport] = await tmpDir('importtestdb');
   t.teardown(cleanup);
   t.teardown(cleanupImport);
 

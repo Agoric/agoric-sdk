@@ -9,7 +9,6 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { prepareVowKit } from '../src/vow.js';
 import { isVow } from '../src/vow-utils.js';
 import { prepareRetryableTools } from '../src/retryable.js';
-import { prepareVowRejectionTracker } from '../src/rejection-tracker.js';
 import { makeWhen } from '../src/when.js';
 
 /**
@@ -22,8 +21,7 @@ import { makeWhen } from '../src/when.js';
  */
 const makeTestTools = ({ isRetryableReason = () => false } = {}) => {
   const zone = makeHeapZone();
-  const vowRejectionTracker = prepareVowRejectionTracker(zone);
-  const makeVowKit = prepareVowKit(zone, vowRejectionTracker);
+  const makeVowKit = prepareVowKit(zone);
   const when = makeWhen(isRetryableReason);
 
   const { retryable, adminRetryableFlow } = prepareRetryableTools(zone, {

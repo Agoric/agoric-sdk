@@ -1,14 +1,11 @@
 // @ts-check
 /* eslint-env node */
 import * as fs from 'fs';
-import * as pathlib from 'path';
+import * as path from 'path';
 
 import sqlite3 from 'better-sqlite3';
 
 import { Fail, q } from '@endo/errors';
-
-import { attenuate } from '@agoric/internal';
-import { TRUE } from '@agoric/internal/src/js-utils.js';
 
 import { dbFileInDirectory } from './util.js';
 import { makeKVStore, getKeyType } from './kvStore.js';
@@ -18,14 +15,6 @@ import { makeBundleStore } from './bundleStore.js';
 import { createSHA256 } from './hasher.js';
 import { makeSnapStoreIO } from './snapStoreIO.js';
 import { doRepairMetadata } from './repairMetadata.js';
-
-// https://github.com/WiseLibs/better-sqlite3/blob/HEAD/docs/api.md#new-databasepath-options
-const IN_MEMORY = ':memory:';
-
-/**
- * @template T
- * @typedef {(input: T) => T} Replacer
- */
 
 /**
  * @typedef { import('./kvStore.js').KVStore } KVStore
@@ -131,62 +120,23 @@ const IN_MEMORY = ':memory:';
  */
 
 /**
- * @typedef {object} SwingStoreOptions
- * @property {boolean} [asFile]  For testing, interpret path as a file rather than a swingstore.sqlite parent directory
- * @property {Buffer} [serialized]  Binary data to load in memory
- * @property {boolean} [unsafeFastMode]  Disable SQLite safeties for e.g. fast import
- * @property {boolean} [readonly]
- * @property {string} [traceFile]  Path at which to record KVStore set/delete activity
- * @property {boolean} [keepSnapshots]  Retain old heap snapshots
- * @property {boolean} [keepTranscripts]  Retain old transcript span items
- * @property {import('./snapStore.js').SnapshotCallback} [archiveSnapshot]  Called after creation of a new heap snapshot
- * @property {import('./transcriptStore.js').TranscriptCallback} [archiveTranscript]  Called after a formerly-current transcript span is finalized
- * @property {(pendingExports: Iterable<[key: string, value: string | null]>) => void} [exportCallback]
- * @property {Replacer<ReturnType<makeKVStore>>} [wrapKvStore]
- * @property {Replacer<ReturnType<makeTranscriptStore>>} [wrapTranscriptStore]
- * @property {Replacer<ReturnType<makeSnapStore>>} [wrapSnapStore]
- * @property {Replacer<ReturnType<makeBundleStore>>} [wrapBundleStore]
- */
-
-/**
  * Do the work of `initSwingStore` and `openSwingStore`.
  *
- * @param {string|null} path  Path to a directory in which database files may
- *   be kept (or when the `asFile` option is true, the path to such a database
- *   file).  If this is null, the database will be an in-memory ephemeral
+ * @param {string|null} dirPath  Path to a directory in which database files may
+ *   be kept.  If this is null, the database will be an in-memory ephemeral
  *   database that evaporates when the process exits, which is useful for testing.
  * @param {boolean} forceReset  If true, initialize the database to an empty
  *   state if it already exists
- * @param {SwingStoreOptions} [options]
+ * @param {object} options  Configuration options
+ *
  * @returns {SwingStore}
  */
-export function makeSwingStore(path, forceReset, options = {}) {
-  const {
-    asFile = false,
-    serialized,
-    unsafeFastMode,
-    readonly = false,
-
-    traceFile,
-    keepSnapshots,
-    keepTranscripts,
-    archiveSnapshot,
-    archiveTranscript,
-    exportCallback,
-    wrapKvStore = x => x,
-    wrapTranscriptStore = x => x,
-    wrapSnapStore = x => x,
-    wrapBundleStore = x => x,
-  } = options;
-
+export function makeSwingStore(dirPath, forceReset, options = {}) {
+  const { serialized } = options;
   if (serialized) {
     Buffer.isBuffer(serialized) || Fail`options.serialized must be Buffer`;
-    path === null || Fail`options.serialized makes :memory: DB`;
+    dirPath === null || Fail`options.serialized makes :memory: DB`;
   }
-  exportCallback === undefined ||
-    typeof exportCallback === 'function' ||
-    Fail`export callback must be a function`;
-
   let crankhasher;
   function resetCrankhash() {
     crankhasher = createSHA256();
@@ -194,22 +144,40 @@ export function makeSwingStore(path, forceReset, options = {}) {
   resetCrankhash();
 
   let filePath;
-  if (path) {
+  if (dirPath) {
     if (forceReset) {
-      fs.rmSync(path, { recursive: true, force: true });
+      try {
+        // Node.js 16.8.0 warns:
+        // In future versions of Node.js, fs.rmdir(path, { recursive: true }) will
+        // be removed. Use fs.rm(path, { recursive: true }) instead
+        if (fs.rmSync) {
+          fs.rmSync(dirPath, { recursive: true });
+        } else {
+          fs.rmdirSync(dirPath, { recursive: true });
+        }
+      } catch (e) {
+        // Attempting to delete a non-existent directory is allowed
+        if (e.code !== 'ENOENT') {
+          throw e;
+        }
+      }
     }
-    if (asFile) {
-      filePath = path;
-    } else {
-      fs.mkdirSync(path, { recursive: true });
-      filePath = dbFileInDirectory(path);
-    }
+    fs.mkdirSync(dirPath, { recursive: true });
+    filePath = dbFileInDirectory(dirPath);
   } else {
     filePath = ':memory:';
   }
 
+  const {
+    traceFile,
+    keepSnapshots,
+    keepTranscripts,
+    archiveSnapshot,
+    archiveTranscript,
+  } = options;
+
   let traceOutput = traceFile
-    ? fs.createWriteStream(pathlib.resolve(traceFile), {
+    ? fs.createWriteStream(path.resolve(traceFile), {
         flags: 'a',
       })
     : null;
@@ -226,10 +194,10 @@ export function makeSwingStore(path, forceReset, options = {}) {
   }
 
   /** @type {*} */
-  let db = sqlite3(/** @type {string} */ (serialized || filePath), {
-    readonly,
-    // verbose: console.log,
-  });
+  let db = sqlite3(
+    serialized || filePath,
+    // { verbose: console.log },
+  );
 
   // We use WAL (write-ahead log) mode to allow a background export process to
   // keep reading from an earlier DB state, while allowing execution to proceed
@@ -262,7 +230,7 @@ export function makeSwingStore(path, forceReset, options = {}) {
   }
 
   // PRAGMAs have to happen outside a transaction
-  if (!readonly) setUnsafeFastMode(unsafeFastMode);
+  setUnsafeFastMode(options.unsafeFastMode);
 
   // We use IMMEDIATE because the kernel is supposed to be the sole writer of
   // the DB, and if some other process is holding a write lock, we want to find
@@ -305,6 +273,11 @@ export function makeSwingStore(path, forceReset, options = {}) {
     )
   `);
 
+  const { exportCallback } = options;
+  exportCallback === undefined ||
+    typeof exportCallback === 'function' ||
+    Fail`export callback must be a function`;
+
   const sqlAddPendingExport = db.prepare(`
     INSERT INTO pendingExports (key, value)
     VALUES (?, ?)
@@ -317,22 +290,31 @@ export function makeSwingStore(path, forceReset, options = {}) {
     }
   }
 
-  const kvStore = wrapKvStore(makeKVStore(db, ensureTxn, trace));
+  const kvStore = makeKVStore(db, ensureTxn, trace);
 
-  const { dumpTranscripts, ...transcriptStoreInternal } = wrapTranscriptStore(
-    makeTranscriptStore(db, ensureTxn, noteExport, {
+  const { dumpTranscripts, ...transcriptStore } = makeTranscriptStore(
+    db,
+    ensureTxn,
+    noteExport,
+    {
       keepTranscripts,
       archiveTranscript,
-    }),
+    },
   );
-  const { dumpSnapshots, ...snapStoreInternal } = wrapSnapStore(
-    makeSnapStore(db, ensureTxn, makeSnapStoreIO(), noteExport, {
+  const { dumpSnapshots, ...snapStore } = makeSnapStore(
+    db,
+    ensureTxn,
+    makeSnapStoreIO(),
+    noteExport,
+    {
       keepSnapshots,
       archiveSnapshot,
-    }),
+    },
   );
-  const { dumpBundles, ...bundleStoreInternal } = wrapBundleStore(
-    makeBundleStore(db, ensureTxn, noteExport),
+  const { dumpBundles, ...bundleStore } = makeBundleStore(
+    db,
+    ensureTxn,
+    noteExport,
   );
 
   const sqlCommit = db.prepare('COMMIT');
@@ -343,9 +325,13 @@ export function makeSwingStore(path, forceReset, options = {}) {
   let inCrank = false;
 
   function diskUsage() {
-    if (filePath === IN_MEMORY) return 0;
-    const stat = fs.statSync(filePath);
-    return stat.size;
+    if (dirPath) {
+      const dataFilePath = dbFileInDirectory(dirPath);
+      const stat = fs.statSync(dataFilePath);
+      return stat.size;
+    } else {
+      return 0;
+    }
   }
 
   const kernelKVStore = {
@@ -517,13 +503,10 @@ export function makeSwingStore(path, forceReset, options = {}) {
 
   /** @type {import('./internal.js').SwingStoreInternal} */
   const internal = harden({
-    dirPath: asFile ? null : path,
-    asFile,
-    db,
-    kvStore,
-    snapStore: snapStoreInternal,
-    transcriptStore: transcriptStoreInternal,
-    bundleStore: bundleStoreInternal,
+    dirPath,
+    snapStore,
+    transcriptStore,
+    bundleStore,
   });
 
   async function repairMetadata(exporter) {
@@ -566,38 +549,38 @@ export function makeSwingStore(path, forceReset, options = {}) {
     return db;
   }
 
-  const transcriptStore = attenuate(transcriptStoreInternal, {
-    initTranscript: TRUE,
-    rolloverSpan: TRUE,
-    rolloverIncarnation: TRUE,
-    getCurrentSpanBounds: TRUE,
-    addItem: TRUE,
-    readSpan: TRUE,
-    stopUsingTranscript: TRUE,
-    deleteVatTranscripts: TRUE,
-  });
+  const transcriptStorePublic = {
+    initTranscript: transcriptStore.initTranscript,
+    rolloverSpan: transcriptStore.rolloverSpan,
+    rolloverIncarnation: transcriptStore.rolloverIncarnation,
+    getCurrentSpanBounds: transcriptStore.getCurrentSpanBounds,
+    addItem: transcriptStore.addItem,
+    readSpan: transcriptStore.readSpan,
+    stopUsingTranscript: transcriptStore.stopUsingTranscript,
+    deleteVatTranscripts: transcriptStore.deleteVatTranscripts,
+  };
 
-  const snapStore = attenuate(snapStoreInternal, {
-    loadSnapshot: TRUE,
-    saveSnapshot: TRUE,
-    deleteAllUnusedSnapshots: TRUE,
-    deleteVatSnapshots: TRUE,
-    stopUsingLastSnapshot: TRUE,
-    getSnapshotInfo: TRUE,
-  });
+  const snapStorePublic = {
+    loadSnapshot: snapStore.loadSnapshot,
+    saveSnapshot: snapStore.saveSnapshot,
+    deleteAllUnusedSnapshots: snapStore.deleteAllUnusedSnapshots,
+    deleteVatSnapshots: snapStore.deleteVatSnapshots,
+    stopUsingLastSnapshot: snapStore.stopUsingLastSnapshot,
+    getSnapshotInfo: snapStore.getSnapshotInfo,
+  };
 
-  const bundleStore = attenuate(bundleStoreInternal, {
-    addBundle: TRUE,
-    hasBundle: TRUE,
-    getBundle: TRUE,
-    deleteBundle: TRUE,
-  });
+  const bundleStorePublic = {
+    addBundle: bundleStore.addBundle,
+    hasBundle: bundleStore.hasBundle,
+    getBundle: bundleStore.getBundle,
+    deleteBundle: bundleStore.deleteBundle,
+  };
 
   const kernelStorage = {
     kvStore: kernelKVStore,
-    transcriptStore,
-    snapStore,
-    bundleStore,
+    transcriptStore: transcriptStorePublic,
+    snapStore: snapStorePublic,
+    bundleStore: bundleStorePublic,
     startCrank,
     establishCrankSavepoint,
     rollbackCrank,
@@ -627,40 +610,43 @@ export function makeSwingStore(path, forceReset, options = {}) {
 }
 
 /**
- * Create a new swingset store at the given `path`, overwriting any prior store
- * there.
+ * Create a new swingset store.  If given a directory path string, a persistent
+ * store will be created in that directory; if there is already a store there,
+ * it will be reinitialized to an empty state.  If the path is null or
+ * undefined, a memory-only ephemeral store will be created that will evaporate
+ * on program exit.
  *
- * @param {string|null} [path] Path to a directory in which database files may
- *   be kept (or when the `asFile` option is true, the path to such a database
- *   file).  This directory or file need not actually exist yet (if it doesn't
- *   it will be created) but it is reserved (by the caller) for the exclusive
- *   use of this swing store instance.  If null, an ephemeral (memory only)
- *   store will be created.
- * @param {SwingStoreOptions} [options]
+ * @param {string|null} dirPath Path to a directory in which database files may
+ *   be kept.  This directory need not actually exist yet (if it doesn't it will
+ *   be created) but it is reserved (by the caller) for the exclusive use of
+ *   this swing store instance.  If null, an ephemeral (memory only) store will
+ *   be created.
+ * @param {object?} options  Optional configuration options
+ *
  * @returns {SwingStore}
  */
-export function initSwingStore(path = null, options = {}) {
-  if (path) {
-    typeof path === 'string' || Fail`path must be a string`;
+export function initSwingStore(dirPath = null, options = {}) {
+  if (dirPath) {
+    typeof dirPath === 'string' || Fail`dirPath must be a string`;
   }
-  return makeSwingStore(path, true, options);
+  return makeSwingStore(dirPath, true, options);
 }
 
 /**
  * Open a persistent swingset store.  If there is no existing store at the given
- * `path`, a new, empty store will be created.
+ * `dirPath`, a new, empty store will be created.
  *
- * @param {string} path  Path to a directory in which database files may be kept
- *   (or when the `asFile` option is true, the path to such a database file).
- *   This directory or file need not actually exist yet (if it doesn't it will
- *   be created) but it is reserved (by the caller) for the exclusive use of
- *   this swing store instance.
- * @param {SwingStoreOptions} [options]
+ * @param {string} dirPath  Path to a directory in which database files may be kept.
+ *   This directory need not actually exist yet (if it doesn't it will be
+ *   created) but it is reserved (by the caller) for the exclusive use of this
+ *   swing store instance.
+ * @param {object?} options  Optional configuration options
+ *
  * @returns {SwingStore}
  */
-export function openSwingStore(path, options = {}) {
-  typeof path === 'string' || Fail`path must be a string`;
-  return makeSwingStore(path, false, options);
+export function openSwingStore(dirPath, options = {}) {
+  typeof dirPath === 'string' || Fail`dirPath must be a string`;
+  return makeSwingStore(dirPath, false, options);
 }
 
 /**

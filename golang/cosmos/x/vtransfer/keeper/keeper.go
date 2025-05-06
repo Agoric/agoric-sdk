@@ -10,14 +10,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	sdkioerrors "cosmossdk.io/errors"
-	sdktypeserrors "github.com/cosmos/cosmos-sdk/types/errors"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 
-	agtypes "github.com/Agoric/agoric-sdk/golang/cosmos/types"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc"
 	vibctypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/types"
@@ -94,7 +92,7 @@ func (i4 *ics4Wrapper) SendPacket(
 	}
 
 	var strippedData []byte
-	_, err = agtypes.ExtractBaseAddressFromData(i4.k.cdc, data, agtypes.RoleSender, &strippedData)
+	_, err = types.ExtractBaseAddressFromData(i4.k.cdc, data, types.RoleSender, &strippedData)
 	if err != nil {
 		return sequence, err
 	}
@@ -107,7 +105,7 @@ func (i4 *ics4Wrapper) SendPacket(
 
 	// Store the original data if it is hooked for later retrieval by middleware.
 	if !i4.k.debug.DoNotStore && !bytes.Equal(strippedData, data) {
-		packetStore, packetKey := i4.k.PacketStore(ctx, agtypes.PacketSrc, sourcePort, sourceChannel, sequence)
+		packetStore, packetKey := i4.k.PacketStore(ctx, types.PacketSrc, sourcePort, sourceChannel, sequence)
 		packetStore.Set(packetKey, data)
 	}
 
@@ -120,8 +118,14 @@ func (i4 *ics4Wrapper) WriteAcknowledgement(
 	packet ibcexported.PacketI,
 	ack ibcexported.Acknowledgement,
 ) error {
-	origPacket := agtypes.CopyToIBCPacket(packet)
-	packetStore, packetKey := i4.k.PacketStoreFromOrigin(ctx, agtypes.PacketDst, packet)
+	origPacket := channeltypes.NewPacket(
+		packet.GetData(), packet.GetSequence(),
+		packet.GetSourcePort(), packet.GetSourceChannel(),
+		packet.GetDestPort(), packet.GetDestChannel(),
+		clienttypes.MustParseHeight(packet.GetTimeoutHeight().String()),
+		packet.GetTimeoutTimestamp(),
+	)
+	packetStore, packetKey := i4.k.PacketStoreFromOrigin(ctx, types.PacketDst, packet)
 	if packetStore.Has(packetKey) {
 		origPacket.Data = packetStore.Get(packetKey)
 		packetStore.Delete(packetKey)
@@ -205,20 +209,20 @@ func sequencePath(sequence uint64) string {
 // PacketStore returns a new KVStore for storing packet data, and a key for
 // that store.  The KVStore is divided into src or dst PacketOrigins because we
 // need to record separate data for packets travelling in each direction.
-func (k Keeper) PacketStore(ctx sdk.Context, ourOrigin agtypes.PacketOrigin, ourPort string, ourChannel string, sequence uint64) (storetypes.KVStore, []byte) {
+func (k Keeper) PacketStore(ctx sdk.Context, ourOrigin types.PacketOrigin, ourPort string, ourChannel string, sequence uint64) (storetypes.KVStore, []byte) {
 	key := fmt.Sprintf("%s/%s/%s", ourOrigin, channelPath(ourPort, ourChannel), sequencePath(sequence))
 	packetKey := []byte(key)
 	return prefix.NewStore(ctx.KVStore(k.key), []byte(packetDataStoreKeyPrefix)), packetKey
 }
 
-func (k Keeper) PacketStoreFromOrigin(ctx sdk.Context, ourOrigin agtypes.PacketOrigin, packet ibcexported.PacketI) (storetypes.KVStore, []byte) {
+func (k Keeper) PacketStoreFromOrigin(ctx sdk.Context, ourOrigin types.PacketOrigin, packet ibcexported.PacketI) (storetypes.KVStore, []byte) {
 	var ourPort, ourChannel string
 
 	switch ourOrigin {
-	case agtypes.PacketSrc:
+	case types.PacketSrc:
 		ourPort = packet.GetSourcePort()
 		ourChannel = packet.GetSourceChannel()
-	case agtypes.PacketDst:
+	case types.PacketDst:
 		ourPort = packet.GetDestPort()
 		ourChannel = packet.GetDestChannel()
 	default:
@@ -232,10 +236,10 @@ func (k Keeper) PacketStoreFromOrigin(ctx sdk.Context, ourOrigin agtypes.PacketO
 // Many error acknowledgments are sent synchronously, but most cases instead return nil
 // to tell the IBC system that acknowledgment is async (i.e., that WriteAcknowledgement
 // will be called later, after the VM has dealt with the packet).
-func (k Keeper) InterceptOnRecvPacket(ctx sdk.Context, ibcModule porttypes.IBCModule, packet ibcexported.PacketI, relayer sdk.AccAddress) ibcexported.Acknowledgement {
+func (k Keeper) InterceptOnRecvPacket(ctx sdk.Context, ibcModule porttypes.IBCModule, packet channeltypes.Packet, relayer sdk.AccAddress) ibcexported.Acknowledgement {
 	// Pass every (stripped-receiver) inbound packet to the wrapped IBC module.
-	var strippedPacket agtypes.IBCPacket
-	_, err := agtypes.ExtractBaseAddressFromPacket(k.cdc, packet, agtypes.RoleReceiver, &strippedPacket)
+	var strippedPacket channeltypes.Packet
+	_, err := types.ExtractBaseAddressFromPacket(k.cdc, packet, types.RoleReceiver, &strippedPacket)
 	if err != nil {
 		return channeltypes.NewErrorAcknowledgement(err)
 	}
@@ -245,16 +249,16 @@ func (k Keeper) InterceptOnRecvPacket(ctx sdk.Context, ibcModule porttypes.IBCMo
 	capName := host.ChannelCapabilityPath(portID, channelID)
 	chanCap, ok := k.vibcKeeper.GetCapability(ctx, capName)
 	if !ok {
-		err := sdkioerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
+		err := sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 		return channeltypes.NewErrorAcknowledgement(err)
 	}
 
 	if !k.debug.DoNotStore && !bytes.Equal(strippedPacket.GetData(), packet.GetData()) {
-		packetStore, packetKey := k.PacketStore(ctx, agtypes.PacketDst, portID, channelID, packet.GetSequence())
+		packetStore, packetKey := k.PacketStore(ctx, types.PacketDst, portID, channelID, packet.GetSequence())
 		packetStore.Set(packetKey, packet.GetData())
 	}
 
-	ack := ibcModule.OnRecvPacket(ctx, agtypes.CopyToChannelPacket(strippedPacket), relayer)
+	ack := ibcModule.OnRecvPacket(ctx, strippedPacket, relayer)
 	if ack == nil {
 		// Already declared to be an async ack.  Will be cleaned up by ics4Wrapper.WriteAcknowledgement.
 		return nil
@@ -270,23 +274,23 @@ func (k Keeper) InterceptOnRecvPacket(ctx sdk.Context, ibcModule porttypes.IBCMo
 func (k Keeper) InterceptOnAcknowledgementPacket(
 	ctx sdk.Context,
 	ibcModule porttypes.IBCModule,
-	packet ibcexported.PacketI,
+	packet channeltypes.Packet,
 	acknowledgement []byte,
 	relayer sdk.AccAddress,
 ) error {
-	baseSender, err := agtypes.ExtractBaseAddressFromData(k.cdc, packet.GetData(), agtypes.RoleSender, nil)
+	baseSender, err := types.ExtractBaseAddressFromData(k.cdc, packet.GetData(), types.RoleSender, nil)
 	if err != nil {
 		return err
 	}
 
-	origPacket := agtypes.CopyToIBCPacket(packet)
-	packetStore, packetKey := k.PacketStoreFromOrigin(ctx, agtypes.PacketSrc, packet)
+	origPacket := packet
+	packetStore, packetKey := k.PacketStoreFromOrigin(ctx, types.PacketSrc, packet)
 	if packetStore.Has(packetKey) {
 		origPacket.Data = packetStore.Get(packetKey)
 		packetStore.Delete(packetKey)
 	}
 
-	modErr := ibcModule.OnAcknowledgementPacket(ctx, agtypes.CopyToChannelPacket(packet), acknowledgement, relayer)
+	modErr := ibcModule.OnAcknowledgementPacket(ctx, packet, acknowledgement, relayer)
 
 	// If the sender is not a watched account, we're done.
 	if !k.targetIsWatched(ctx, baseSender) {
@@ -308,23 +312,23 @@ func (k Keeper) InterceptOnAcknowledgementPacket(
 func (k Keeper) InterceptOnTimeoutPacket(
 	ctx sdk.Context,
 	ibcModule porttypes.IBCModule,
-	packet ibcexported.PacketI,
+	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) error {
-	baseSender, err := agtypes.ExtractBaseAddressFromData(k.cdc, packet.GetData(), agtypes.RoleSender, nil)
+	baseSender, err := types.ExtractBaseAddressFromData(k.cdc, packet.GetData(), types.RoleSender, nil)
 	if err != nil {
 		return err
 	}
 
-	origPacket := agtypes.CopyToIBCPacket(packet)
-	packetStore, packetKey := k.PacketStoreFromOrigin(ctx, agtypes.PacketSrc, packet)
+	origPacket := packet
+	packetStore, packetKey := k.PacketStoreFromOrigin(ctx, types.PacketSrc, packet)
 	if packetStore.Has(packetKey) {
 		origPacket.Data = packetStore.Get(packetKey)
 		packetStore.Delete(packetKey)
 	}
 
 	// Pass every stripped-sender timeout to the wrapped IBC module.
-	modErr := ibcModule.OnTimeoutPacket(ctx, agtypes.CopyToChannelPacket(packet), relayer)
+	modErr := ibcModule.OnTimeoutPacket(ctx, packet, relayer)
 
 	// If the sender is not a watched account, we're done.
 	if !k.targetIsWatched(ctx, baseSender) {
@@ -345,10 +349,16 @@ func (k Keeper) InterceptOnTimeoutPacket(
 // targeted account, and if so, delegates to the VM.
 func (k Keeper) InterceptWriteAcknowledgement(ctx sdk.Context, chanCap *capabilitytypes.Capability, packet ibcexported.PacketI, ack ibcexported.Acknowledgement) (ibcexported.Acknowledgement, ibcexported.PacketI) {
 	// Get the base receiver from the packet, without computing a stripped packet.
-	baseReceiver, err := agtypes.ExtractBaseAddressFromPacket(k.cdc, packet, agtypes.RoleReceiver, nil)
+	baseReceiver, err := types.ExtractBaseAddressFromPacket(k.cdc, packet, types.RoleReceiver, nil)
 
-	origPacket := agtypes.CopyToIBCPacket(packet)
-	packetStore, packetKey := k.PacketStoreFromOrigin(ctx, agtypes.PacketDst, packet)
+	origPacket := channeltypes.NewPacket(
+		packet.GetData(), packet.GetSequence(),
+		packet.GetSourcePort(), packet.GetSourceChannel(),
+		packet.GetDestPort(), packet.GetDestChannel(),
+		clienttypes.MustParseHeight(packet.GetTimeoutHeight().String()),
+		packet.GetTimeoutTimestamp(),
+	)
+	packetStore, packetKey := k.PacketStoreFromOrigin(ctx, types.PacketDst, packet)
 	if packetStore.Has(packetKey) {
 		origPacket.Data = packetStore.Get(packetKey)
 		packetStore.Delete(packetKey)
@@ -430,7 +440,7 @@ func (k Keeper) Receive(cctx context.Context, jsonRequest string) (jsonReply str
 	case "BRIDGE_TARGET_UNREGISTER":
 		prefixStore.Delete([]byte(msg.Target))
 	default:
-		return "", sdkioerrors.Wrapf(sdktypeserrors.ErrUnknownRequest, "unknown action type: %s", msg.Type)
+		return "", sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unknown action type: %s", msg.Type)
 	}
 	return "true", nil
 }

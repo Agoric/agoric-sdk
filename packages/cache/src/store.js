@@ -4,11 +4,7 @@ import { matches, makeScalarMapStore } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { untilTrue } from '@agoric/internal';
 import { withGroundState, makeState } from './state.js';
-
-/**
- * @import {Passable, RemotableObject} from '@endo/pass-style';
- * @import {Key, Pattern} from '@endo/patterns';
- */
+/** @import {Passable} from '@endo/pass-style' */
 
 /**
  * @param {(obj: Passable) => Passable} [sanitize]

@@ -12,7 +12,7 @@ import {
   ceilMultiplyBy,
   floorDivideBy,
   ratioGTE,
-} from '@agoric/ertp/src/ratio.js';
+} from '@agoric/zoe/src/contractSupport/ratio.js';
 import { priceFrom } from '../auction/util.js';
 import { addSubtract } from '../contractSupport.js';
 

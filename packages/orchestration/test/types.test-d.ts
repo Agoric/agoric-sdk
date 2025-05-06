@@ -1,5 +1,5 @@
 /**
- * @file pure types, no runtime, ignored by Ava
+ * @file pure types types, no runtime, ignored by Ava
  */
 
 import type { HostInterface, HostOf } from '@agoric/async-flow';
@@ -25,7 +25,7 @@ import type { OrchestrationFacade } from '../src/facade.js';
 import type {
   AmountArg,
   Chain,
-  CosmosChainAddress,
+  ChainAddress,
   ChainInfo,
   CosmosChainInfo,
   CosmosValidatorAddress,
@@ -33,12 +33,8 @@ import type {
   OrchestrationAccount,
   Orchestrator,
   StakingAccountActions,
-  KnownChains,
 } from '../src/types.js';
 import type { ResolvedContinuingOfferResult } from '../src/utils/zoe-tools.js';
-import { withChainCapabilities } from '../src/chain-capabilities.js';
-import fetchedChainInfo from '../src/fetched-chain-info.js';
-import cctpChainInfo from '../src/cctp-chain-info.js';
 
 const anyVal = null as any;
 
@@ -56,7 +52,7 @@ const chainAddr = {
   value: 'agoric1pleab',
   encoding: 'bech32',
 } as const;
-expectType<CosmosChainAddress>(chainAddr);
+expectType<ChainAddress>(chainAddr);
 expectNotType<CosmosValidatorAddress>(chainAddr);
 
 {
@@ -323,58 +319,4 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   expectType<
     (validator: CosmosValidatorAddress, amount: AmountArg) => Promise<void>
   >(account.delegate);
-
-  expectType<(destination, amount: AmountArg) => Promise<void>>(
-    // @ts-expect-error `depositForBurn` only available for noble
-    account.depositForBurn,
-  );
-}
-
-// Test NobleAccountMethods
-{
-  type ChainFacade = Chain<
-    CosmosChainInfo & {
-      chainId: 'noble-1';
-    }
-  >;
-  const remoteChain: ChainFacade = null as any;
-  const account = await remoteChain.makeAccount();
-
-  expectType<(destination, amount: AmountArg) => Promise<void>>(
-    account.depositForBurn,
-  );
-
-  // Verify delegate is not available (no stakingTokens parameter)
-  expectType<
-    (validator: CosmosValidatorAddress, amount: AmountArg) => Promise<void>
-    // @ts-expect-error StakingMethods not available on noble
-  >(account.delegate);
-}
-
-// KnownChains - Agoric
-{
-  const fetchedAgoricInfo = fetchedChainInfo.agoric;
-
-  // ensure capabilities added to KnownChains
-  const agoricChainInfo = withChainCapabilities(fetchedChainInfo).agoric;
-  expectType<KnownChains['agoric']>(agoricChainInfo);
-  expectType<boolean>(agoricChainInfo.pfmEnabled);
-  expectType<boolean>(agoricChainInfo.icqEnabled);
-  expectType<boolean>(agoricChainInfo.icaEnabled);
-  // fetched info is preserved
-  expectType<'agoric-3'>(fetchedAgoricInfo.chainId);
-  expectType<'agoric'>(fetchedAgoricInfo.bech32Prefix);
-  expectType<'cosmos'>(fetchedAgoricInfo.namespace);
-  expectType<'agoric-3'>(fetchedAgoricInfo.reference);
-  expectType<string>(fetchedAgoricInfo.stakingTokens[0].denom);
-}
-
-// KnownChains - Ethereum
-{
-  const ethChainInfo = cctpChainInfo.ethereum;
-  expectType<KnownChains['ethereum']>(ethChainInfo);
-
-  expectType<'eip155'>(ethChainInfo.namespace);
-  expectType<'1'>(ethChainInfo.reference);
-  expectType<number>(ethChainInfo.cctpDestinationDomain);
 }

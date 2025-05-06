@@ -278,7 +278,6 @@ export async function setupTestLiveslots(
     dispatchDropExports,
     dispatchRetireExports,
     dispatchRetireImports,
-    nextPImport: nextRP,
     testHooks,
   };
 }

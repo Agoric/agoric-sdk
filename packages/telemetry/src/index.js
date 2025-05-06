@@ -34,10 +34,7 @@ export const tryFlushSlogSender = async (
   slogSender,
   { env = {}, log } = {},
 ) => {
-  await null;
-  try {
-    await slogSender?.forceFlush?.();
-  } catch (err) {
+  await Promise.resolve(slogSender?.forceFlush?.()).catch(err => {
     log?.('Failed to flush slog sender', err);
     if (err.errors) {
       for (const error of err.errors) {
@@ -47,7 +44,7 @@ export const tryFlushSlogSender = async (
     if (env.SLOGSENDER_FAIL_ON_ERROR) {
       throw err;
     }
-  }
+  });
 };
 
 export const getResourceAttributes = ({
@@ -84,37 +81,44 @@ export const getResourceAttributes = ({
 
 /**
  * @typedef {object} Powers
- * @property {Pick<Console, 'warn'>} console
+ * @property {{ warn: Console['warn'] }} console
  * @property {NodeJS.ProcessEnv} env
  * @property {import('@opentelemetry/sdk-metrics').View[]} views
  * @property {string} [serviceName]
  */
 
 /**
- * @param {Partial<Powers>} powers
+ * @param {Partial<Powers>} param0
  */
-export const getPrometheusMeterProvider = ({
+const getPrometheusMeterProvider = ({
   console = globalThis.console,
   env = process.env,
   views,
   ...rest
 } = {}) => {
-  const { OTEL_EXPORTER_PROMETHEUS_HOST, OTEL_EXPORTER_PROMETHEUS_PORT } = env;
-
-  // The opt-in signal is a non-empty OTEL_EXPORTER_PROMETHEUS_PORT.
-  if (!OTEL_EXPORTER_PROMETHEUS_PORT) return;
+  const { OTEL_EXPORTER_PROMETHEUS_PORT } = env;
+  if (!OTEL_EXPORTER_PROMETHEUS_PORT) {
+    // No Prometheus config, so don't install.
+    return undefined;
+  }
 
   const resource = new Resource(getResourceAttributes({ env, ...rest }));
 
-  const { DEFAULT_OPTIONS } = PrometheusExporter;
-  const host = OTEL_EXPORTER_PROMETHEUS_HOST || DEFAULT_OPTIONS.host;
-  const port = +OTEL_EXPORTER_PROMETHEUS_PORT || DEFAULT_OPTIONS.port;
-  const url = `http://${host || '0.0.0.0'}:${port}${DEFAULT_OPTIONS.endpoint}`;
+  const port =
+    parseInt(OTEL_EXPORTER_PROMETHEUS_PORT || '', 10) ||
+    PrometheusExporter.DEFAULT_OPTIONS.port;
 
-  const options = { host, port, appendTimestamp: true };
-  const exporter = new PrometheusExporter(options, () => {
-    console.warn(`Prometheus scrape endpoint: ${url}`);
-  });
+  const exporter = new PrometheusExporter(
+    {
+      port,
+      appendTimestamp: true,
+    },
+    () => {
+      console.warn(
+        `Prometheus scrape endpoint: http://0.0.0.0:${port}${PrometheusExporter.DEFAULT_OPTIONS.endpoint}`,
+      );
+    },
+  );
 
   const provider = new MeterProvider({ resource, views });
   provider.addMetricReader(exporter);

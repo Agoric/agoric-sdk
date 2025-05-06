@@ -3,7 +3,7 @@ description: 'Set up Node.js environment and restore cached built files'
 
 inputs:
   node-version:
-    description: 'The version or semantic name (node-old, node-new and xs supported) of Node.js to use'
+    description: 'The version of Node.js to use'
     required: true
   path:
     description: 'The relative path to the agoric-sdk directory'
@@ -33,27 +33,6 @@ runs:
     - name: set default environment variables
       shell: bash
       run: echo ESM_DISABLE_CACHE=true >> $GITHUB_ENV
-
-    - id: set-node-version
-      name: Set correct node version
-      shell: bash
-      run: |
-        set -o xtrace
-
-        VERSION_IDENTIFIER="${{ inputs.node-version }}"
-        OUTPUT_NODE_VERSION="$VERSION_IDENTIFIER"
-
-        if test "$VERSION_IDENTIFIER" == "node-new"
-        then
-          OUTPUT_NODE_VERSION="20"
-        else
-          if test "$VERSION_IDENTIFIER" == "node-old" || test "$VERSION_IDENTIFIER" == "xs"
-          then
-            OUTPUT_NODE_VERSION="18"
-          fi
-        fi
-
-        echo "NODE_VERSION=$OUTPUT_NODE_VERSION" >> "$GITHUB_OUTPUT"
 
     - uses: actions/checkout@v4
       with:
@@ -139,7 +118,7 @@ runs:
 
     - uses: actions/setup-node@v4
       with:
-        node-version: ${{ steps.set-node-version.outputs.NODE_VERSION }}
+        node-version: ${{ inputs.node-version }}
         cache: yarn
         cache-dependency-path: |
           ${{ inputs.path }}/yarn.lock
@@ -153,7 +132,7 @@ runs:
       uses: actions/cache@v4
       with:
         path: ${{ inputs.path }}
-        key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-node-${{ steps.set-node-version.outputs.NODE_VERSION }}-built-${{ inputs.xsnap-random-init }}-${{ github.sha }}-${{ steps.endo-sha.outputs.sha }}
+        key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-node-${{ inputs.node-version }}-built-${{ inputs.xsnap-random-init }}-${{ github.sha }}-${{ steps.endo-sha.outputs.sha }}
 
     # This and the git diff below are to detect if `yarn install` results in a
     # change to the lock file.

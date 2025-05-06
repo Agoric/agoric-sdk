@@ -12,12 +12,12 @@ import {
   buildVTransferEvent,
 } from '../../tools/ibc-mocks.js';
 
-import * as contractExports from '../../src/examples/auto-stake-it.contract.js';
-
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const contractName = 'auto-stake-it';
-type StartFn = typeof contractExports.start;
+const contractFile = `${dirname}/../../src/examples/${contractName}.contract.js`;
+type StartFn =
+  typeof import('../../src/examples/auto-stake-it.contract.js').start;
 
 test('make accounts, register tap, return invitationMakers', async t => {
   t.log('bootstrap, orchestration core-eval');
@@ -32,7 +32,7 @@ test('make accounts, register tap, return invitationMakers', async t => {
 
   t.log('contract coreEval', contractName);
   const installation: Installation<StartFn> =
-    await bundleAndInstall(contractExports);
+    await bundleAndInstall(contractFile);
   const storageNode = await E(storage.rootNode).makeChildNode(contractName);
   const autoAutoStakeItKit = await E(zoe).startInstance(
     installation,

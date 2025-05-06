@@ -1,7 +1,7 @@
 // @ts-check
 /**
  * @file provides a `makeE` that can be parameterized with an `unwrap` function
- * and corresponding `import('./types.js').EUnwrap<T>`.  These will be used to
+ * and corresponding `import('./types').EUnwrap<T>`.  These will be used to
  * extract the final settlement from a chain of PromiseLikes and PromiseSteps or
  * similar non-thenable pseudo-promises.
  *
@@ -18,10 +18,6 @@
 import { X, q, Fail, makeError } from '@endo/errors';
 import { trackTurns } from './track-turns.js';
 import { makeMessageBreakpointTester } from './message-breakpoints.js';
-
-/**
- * @import {ERef} from '@endo/far';
- */
 
 const { assign, create } = Object;
 
@@ -318,6 +314,12 @@ export default makeE;
  *
  * @template T The type to be filtered.
  * @typedef {Omit<T, FilteredKeys<T, Callable>>} DataOnly
+ */
+
+/**
+ * @see {@link https://github.com/microsoft/TypeScript/issues/31394}
+ * @template T
+ * @typedef {PromiseLike<T> | T} ERef
  */
 
 /**

@@ -14,10 +14,6 @@ import {
 } from '../../zoeTestHelpers.js';
 import { makeFakePriceAuthority } from '../../../tools/fakePriceAuthority.js';
 
-/**
- * @import {ContractMeta, Invitation, OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
- */
-
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const fundedCallSpread = `${dirname}/../../../src/contracts/callSpread/fundedCallSpread.js`;

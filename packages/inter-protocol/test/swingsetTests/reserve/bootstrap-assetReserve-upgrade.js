@@ -17,10 +17,6 @@ import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 import { withAmountUtils } from '../../supports.js';
 
-/**
- * @import {FeeMintAccess} from '@agoric/zoe';
- */
-
 const trace = makeTracer('BootFAUpg');
 
 export const arV1BundleName = 'assetReserveV1';

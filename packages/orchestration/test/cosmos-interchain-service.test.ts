@@ -18,7 +18,7 @@ import type { Port } from '@agoric/network';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { IBCMethod } from '@agoric/vats';
 import { commonSetup } from './supports.js';
-import { CosmosChainAddressShape } from '../src/typeGuards.js';
+import { ChainAddressShape } from '../src/typeGuards.js';
 import { tryDecodeResponse } from '../src/utils/cosmos.js';
 import { buildChannelCloseConfirmEvent } from '../tools/ibc-mocks.js';
 
@@ -162,7 +162,7 @@ test.serial('makeAccount returns an IcaAccountKit', async t => {
     'IcaAccountKit returns a Port remotable',
   );
 
-  t.true(matches(chainAddr, CosmosChainAddressShape));
+  t.true(matches(chainAddr, ChainAddressShape));
   t.regex(chainAddr.value, /cosmos1test/);
 
   const delegateMsg = Any.toJSON(

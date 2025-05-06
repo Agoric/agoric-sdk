@@ -1,14 +1,11 @@
 import test from 'ava';
-import tmp from 'tmp';
-import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
+import { tmpDir } from './tmp.js';
 import {
   initJSONStore,
   openJSONStore,
   getAllState,
   isJSONStore,
 } from '../src/json-store.js';
-
-const tmpDir = makeTempDirFactory(tmp);
 
 function testStorage(t, storage) {
   t.falsy(storage.has('missing'));
@@ -42,7 +39,7 @@ function testStorage(t, storage) {
 }
 
 test('storageInFile', async t => {
-  const [dbDir, cleanup] = tmpDir('testdb');
+  const [dbDir, cleanup] = await tmpDir('testdb');
   t.teardown(cleanup);
   t.is(isJSONStore(dbDir), false);
   const { storage, commit, close } = await initJSONStore(dbDir);

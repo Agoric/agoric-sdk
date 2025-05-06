@@ -19,7 +19,6 @@ import "gogoproto/gogo.proto";
 //----------------------------------------
 // Request types
 
-/*
 message Request {
   oneof value {
     RequestEcho               echo                 = 1;
@@ -66,7 +65,7 @@ message RequestInitChain {
   bytes                     app_state_bytes  = 5;
   int64                     initial_height   = 6;
 }
-*/
+
 message RequestQuery {
   bytes  data   = 1;
   string path   = 2;
@@ -100,7 +99,6 @@ message RequestEndBlock {
 }
 
 message RequestCommit {}
-/*
 
 // lists available snapshots
 message RequestListSnapshots {}
@@ -183,7 +181,7 @@ message ResponseInitChain {
   repeated ValidatorUpdate validators       = 2 [(gogoproto.nullable) = false];
   bytes                    app_hash         = 3;
 }
-*/
+
 message ResponseQuery {
   uint32 code = 1;
   // bytes data = 2; // use "value" instead.
@@ -235,7 +233,6 @@ message ResponseCommit {
   int64 retain_height = 3;
 }
 
-/*
 message ResponseListSnapshots {
   repeated Snapshot snapshots = 1;
 }
@@ -291,7 +288,6 @@ message BlockParams {
   // Note: must be greater or equal to -1
   int64 max_gas = 2;
 }
-*/
 
 message LastCommitInfo {
   int32             round = 1;
@@ -364,7 +360,6 @@ message Evidence {
   // https://github.com/tendermint/tendermint/issues/4581
   int64 total_voting_power = 5;
 }
-/*
 
 //----------------------------------------
 // State Sync Types
@@ -397,4 +392,3 @@ service ABCIApplication {
   rpc LoadSnapshotChunk(RequestLoadSnapshotChunk) returns (ResponseLoadSnapshotChunk);
   rpc ApplySnapshotChunk(RequestApplySnapshotChunk) returns (ResponseApplySnapshotChunk);
 }
-*/

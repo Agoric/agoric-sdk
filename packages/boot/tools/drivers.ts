@@ -1,5 +1,5 @@
+/* eslint-disable jsdoc/require-param */
 import { Fail } from '@endo/errors';
-import { type Amount } from '@agoric/ertp';
 import { NonNullish } from '@agoric/internal';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { SECONDS_PER_MINUTE } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
@@ -28,7 +28,6 @@ import type { TimerService } from '@agoric/time';
 import type { OfferMaker } from '@agoric/smart-wallet/src/types.js';
 import type { RunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import { makeMarshal } from '@endo/marshal';
-import type { InvitationDetails } from '@agoric/zoe';
 import type { SwingsetTestKit } from './supports.js';
 
 // XXX SwingsetTestKit would simplify this
@@ -312,8 +311,8 @@ export const makeGovernanceDriver = async (
         .getCurrentWalletRecord()
         // TODO: manage brands by object identity #10167
         .purses.find(p => p.brand.toString().includes('Invitation'));
-      const invBalance = purse?.balance as Amount<'set', InvitationDetails>;
-      const invitation = invBalance.value.find(
+      // @ts-expect-error
+      const invitation = purse?.balance.value.find(
         v => v.description === 'oracle invitation',
       );
       return invitation;

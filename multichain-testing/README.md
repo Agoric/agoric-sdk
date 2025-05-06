@@ -13,10 +13,6 @@ The `agoric` software revision includes the vats necessary for building and test
 - vat-transfer
 - vat-orchestration
 
-## Resource Requirements
-
-The Kubernetes deployments in `config.yaml` and `config.fusdc.yaml` are configured to request approximately 6.5 CPU cores and 9.5 GiB of memory from the host machine. Make sure your local Kubernetes environment (Docker Desktop or similar) has sufficient resources allocated.
-
 ## Initial Setup
 
 Install the relevant dependencies:

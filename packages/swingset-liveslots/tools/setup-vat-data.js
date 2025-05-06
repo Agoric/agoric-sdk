@@ -1,3 +1,4 @@
+// @ts-check
 /* global globalThis */
 
 // This file produces the globalThis.VatData property outside of a

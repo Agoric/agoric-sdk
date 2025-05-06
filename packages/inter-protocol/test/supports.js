@@ -18,10 +18,7 @@ import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { setUpZoeForTest as generalSetUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
 
-/**
- * @import {SourceBundle} from '@agoric/zoe';
- * @import {EconomyBootstrapPowers as Space} from '../src/proposals/econ-behaviors.js'
- */
+/** @import {EconomyBootstrapPowers as Space} from '../src/proposals/econ-behaviors.js' */
 
 export { makeMockChainStorageRoot };
 

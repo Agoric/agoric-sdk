@@ -27,7 +27,6 @@ import { makeCache } from './cache.js';
 
 /**
  * @import {ToCapData, FromCapData} from '@endo/marshal';
- * @import {Pattern} from '@endo/patterns';
  */
 
 // XXX TODO: The following key length limit was put in place due to limitations

@@ -2,11 +2,7 @@
 import { assert } from '@endo/errors';
 import { E, passStyleOf } from '@endo/far';
 
-/**
- * @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js';
- * @import {Amount, Brand, Issuer, Payment, Purse} from '@agoric/ertp';
- * @import {IssuerKeywordRecord, Keyword} from '@agoric/zoe';
- */
+/** @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js' */
 
 /**
  * @template T

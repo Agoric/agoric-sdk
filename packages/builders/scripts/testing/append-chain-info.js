@@ -1,10 +1,10 @@
 /// <reference types="ses" />
 import { makeHelpers } from '@agoric/deploy-script-support';
 
-/** @type {Record<string, import('@agoric/orchestration').ChainInfo>} */
+/** @type {Record<string, import('@agoric/orchestration/src/chain-info.js').ChainInfo>} */
 const chainInfo = {
   hot: {
-    bech32Prefix: 'cosmos',
+    allegedName: 'Hot New Chain',
     chainId: 'hot-1',
     connections: {
       'cosmoshub-4': {
@@ -26,8 +26,6 @@ const chainInfo = {
         },
       },
     },
-    namespace: 'cosmos',
-    reference: 'hot-1',
   },
 };
 

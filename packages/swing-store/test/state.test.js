@@ -1,11 +1,9 @@
 // @ts-check
 
-import test from 'ava';
 import tmp from 'tmp';
+import test from 'ava';
 
 import bundleSource from '@endo/bundle-source';
-
-import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 
 import {
   initSwingStore,
@@ -13,7 +11,20 @@ import {
   isSwingStore,
 } from '../src/swingStore.js';
 
-const tmpDir = makeTempDirFactory(tmp);
+/**
+ * @param {string} [prefix]
+ * @returns {Promise<[string, () => void]>}
+ */
+const tmpDir = prefix =>
+  new Promise((resolve, reject) => {
+    tmp.dir({ unsafeCleanup: true, prefix }, (err, name, removeCallback) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve([name, removeCallback]);
+      }
+    });
+  });
 
 async function embundle(filename) {
   const bundleFile = new URL(filename, import.meta.url).pathname;
@@ -110,9 +121,9 @@ test('in-memory kvStore read/write', t => {
 });
 
 test('persistent kvStore read/write/re-open', async t => {
-  const [dbDir, cleanup] = tmpDir('testdb');
-  t.teardown(cleanup);
+  const [dbDir, cleanup] = await tmpDir('testdb');
   const exportLog = makeExportLog();
+  t.teardown(cleanup);
   t.is(isSwingStore(dbDir), false);
   const ss1 = initSwingStore(dbDir, { exportCallback: exportLog.callback });
   testKVStore(t, ss1, exportLog);
@@ -135,7 +146,7 @@ test('persistent kvStore maxKeySize write', async t => {
   // This tests that no matter what, we can write 254 unicode characters in the
   // 0x0800 - 0xFFFF range (single UTF-16 codepoint, but 3 byte UTF-8).
 
-  const [dbDir, cleanup] = tmpDir('testdb');
+  const [dbDir, cleanup] = await tmpDir('testdb');
   t.teardown(cleanup);
   t.is(isSwingStore(dbDir), false);
   const { kernelStorage, hostStorage } = initSwingStore(dbDir);
@@ -153,7 +164,7 @@ const testTranscriptStore = test.macro({
   async exec(t, { ephemeral, keepTranscripts }) {
     let dbDir = null;
     if (!ephemeral) {
-      const [tmpPath, cleanup] = tmpDir('testdb');
+      const [tmpPath, cleanup] = await tmpDir('testdb');
       t.teardown(cleanup);
       t.is(isSwingStore(tmpPath), false);
       dbDir = tmpPath;
@@ -246,7 +257,7 @@ test(testTranscriptStore, { ephemeral: false, keepTranscripts: true });
 test(testTranscriptStore, { ephemeral: false, keepTranscripts: false });
 
 test('transcriptStore abort', async t => {
-  const [dbDir, cleanup] = tmpDir('testdb');
+  const [dbDir, cleanup] = await tmpDir('testdb');
   t.teardown(cleanup);
   const { kernelStorage, hostStorage } = initSwingStore(dbDir);
   const { transcriptStore } = kernelStorage;
@@ -305,14 +316,14 @@ test('in-memory bundleStore read/write', async t => {
 });
 
 test('persistent bundleStore read/write', async t => {
-  const [dbDir, cleanup] = tmpDir('testdb');
+  const [dbDir, cleanup] = await tmpDir('testdb');
   t.teardown(cleanup);
   t.is(isSwingStore(dbDir), false);
   await testBundleStore(t, dbDir);
 });
 
 test('close will abort transaction', async t => {
-  const [dbDir, cleanup] = tmpDir('testdb');
+  const [dbDir, cleanup] = await tmpDir('testdb');
   t.teardown(cleanup);
   const ss1 = initSwingStore(dbDir);
   ss1.kernelStorage.kvStore.set('key1', 'value');
@@ -330,7 +341,7 @@ test('close will abort transaction', async t => {
 });
 
 test('savepoints', async t => {
-  const [dbDir, cleanup] = tmpDir('testdb');
+  const [dbDir, cleanup] = await tmpDir('testdb');
   t.teardown(cleanup);
   const ss1 = initSwingStore(dbDir);
   ss1.kernelStorage.startCrank();
@@ -349,7 +360,7 @@ test('savepoints', async t => {
 });
 
 test('savepoints do not automatically commit', async t => {
-  const [dbDir, cleanup] = tmpDir('testdb');
+  const [dbDir, cleanup] = await tmpDir('testdb');
   t.teardown(cleanup);
   const ss1 = initSwingStore(dbDir);
   ss1.kernelStorage.startCrank();

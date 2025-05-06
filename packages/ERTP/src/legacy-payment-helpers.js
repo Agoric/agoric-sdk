@@ -7,7 +7,7 @@ import { AmountMath } from './amountMath.js';
 
 /**
  * @import {ERef} from '@endo/far';
- * @import {Key, Pattern} from '@endo/patterns';
+ * @import {Key} from '@endo/patterns';
  * @import {Amount, AssetKind, Payment, Purse} from './types.js';
  */
 

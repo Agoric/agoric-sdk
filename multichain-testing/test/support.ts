@@ -122,8 +122,6 @@ export const commonSetup = async (
         },
       },
     },
-    namespace: 'cosmos',
-    reference: 'unreachable-chain',
   };
 
   const chainInfo = {
@@ -154,7 +152,6 @@ export const commonSetup = async (
     builderOpts?: Record<string, string | string[]>,
     { skipInstanceCheck = false } = {},
   ) => {
-    await null;
     const { vstorageClient } = tools;
     if (!skipInstanceCheck) {
       const instances = Object.fromEntries(

@@ -1,6 +1,6 @@
 import { Fail, q } from '@endo/errors';
 import { Far } from '@endo/marshal';
-import { isCopyMap, isCopySet } from '@endo/patterns';
+import { M, matches } from '@endo/patterns';
 
 /**
  * @import {RankCompare} from '@endo/marshal';
@@ -9,7 +9,29 @@ import { isCopyMap, isCopySet } from '@endo/patterns';
  * @import {Key} from '@endo/patterns';
  */
 
-export { isCopyMap, isCopySet };
+// TODO: Undate `@endo/patterns` to export the original, and delete the
+// reimplementation here.
+/**
+ * Should behave identically to the one in `@endo/patterns`, but reimplemented
+ * for now because `@endo/patterns` forgot to export this one. This one is
+ * simple enough that I prefer a reimplementation to a deep import.
+ *
+ * @param {unknown} s
+ * @returns {s is CopySet}
+ */
+export const isCopySet = s => matches(s, M.set());
+
+// TODO: Undate `@endo/patterns` to export the original, and delete the
+// reimplementation here.
+/**
+ * Should behave identically to the one in `@endo/patterns`, but reimplemented
+ * for now because `@endo/patterns` forgot to export this one. This one is
+ * simple enough that I prefer a reimplementation to a deep import.
+ *
+ * @param {unknown} m
+ * @returns {m is CopyMap}
+ */
+export const isCopyMap = m => matches(m, M.map());
 
 /**
  * @template {Key} K

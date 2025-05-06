@@ -9,7 +9,6 @@ import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
 import { E, Far, type EReturn } from '@endo/far';
 import type { TestFn } from 'ava';
 import { createRequire } from 'node:module';
-import type { ZCF } from '@agoric/zoe';
 import { makeZcfTools } from '../../src/utils/zcf-tools.js';
 
 const nodeRequire = createRequire(import.meta.url);

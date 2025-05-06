@@ -4,16 +4,13 @@ ARG REGISTRY=ghcr.io
 
 FROM $REGISTRY/$REPO:$TAG
 
+COPY ./scripts/install-deps.sh /usr/src/agoric-sdk/packages/deployment/scripts/
+RUN /usr/src/agoric-sdk/packages/deployment/scripts/install-deps.sh
+
 WORKDIR /usr/src/agoric-sdk/packages/deployment
-
-COPY ./scripts/install-deps.sh scripts/
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    ./scripts/install-deps.sh
-
 COPY . .
 RUN ln -sf $PWD/bin/ag-setup-cosmos /usr/local/bin/ag-setup-cosmos
 
 WORKDIR /data/chains
 
-ENTRYPOINT ["ag-setup-cosmos"]
+ENTRYPOINT [ "ag-setup-cosmos" ]

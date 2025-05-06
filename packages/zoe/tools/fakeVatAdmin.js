@@ -1,5 +1,4 @@
-// no jessie-check because this code runs only in Node for testing
-/* eslint-env node */
+// @jessie-check
 
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
@@ -14,8 +13,9 @@ import { makeHandle } from '../src/makeHandle.js';
 import zcfBundle from '../bundles/bundle-contractFacet.js';
 
 /**
+ * @import {LegacyWeakMap, WeakMapStore} from '@agoric/store';
  * @import {MapStore} from '@agoric/swingset-liveslots';
- * @import {BundleID, EndoZipBase64Bundle, TestBundle} from '@agoric/swingset-vat';
+ * @import {BundleID, EndoZipBase64Bundle} from '@agoric/swingset-vat';
  */
 
 // this simulates a bundlecap, which is normally a swingset "device node"
@@ -37,8 +37,8 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
   let exitWithFailure;
   /** @type {MapStore<BundleID, BundleCap>} */
   const idToBundleCap = makeScalarMapStore('idToBundleCap');
-  /** @type {Map<BundleCap, EndoZipBase64Bundle | {moduleFormat: 'test'}>} */
-  const bundleCapToBundle = new Map();
+  /** @type {MapStore<BundleCap, EndoZipBase64Bundle>} */
+  const bundleCapToBundle = makeScalarMapStore('bundleCapToBundle');
   /** @type {MapStore<string, BundleID>} */
   const nameToBundleID = makeScalarMapStore('nameToBundleID');
   const fakeVatPowers = {
@@ -139,25 +139,17 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
     getExitMessage: () => exitMessage,
     getHasExited: () => hasExited,
     getExitWithFailure: () => exitWithFailure,
-    /**
-     * @param {string} id
-     * @param {EndoZipBase64Bundle | TestBundle} bundle
-     */
     installBundle: (id, bundle) => {
       if (idToBundleCap.has(id)) {
-        const extant = bundleCapToBundle.get(idToBundleCap.get(id));
-        assert(extant);
-        assert.equal(bundle.moduleFormat, extant.moduleFormat);
-        if (extant.moduleFormat === 'endoZipBase64') {
-          // Narrow bundle.moduleFormat now that extant.moduleFormat is narrowed
-          assert.equal(bundle.moduleFormat, extant.moduleFormat);
-          assert.equal(bundle.endoZipBase64, extant.endoZipBase64);
-        }
+        assert.equal(
+          bundle.endoZipBase64,
+          bundleCapToBundle.get(idToBundleCap.get(id)).endoZipBase64,
+        );
         return idToBundleCap.get(id);
       }
       const bundleCap = fakeBundleCap();
       idToBundleCap.init(id, bundleCap);
-      bundleCapToBundle.set(bundleCap, bundle);
+      bundleCapToBundle.init(bundleCap, bundle);
       return bundleCap;
     },
     installNamedBundle: (name, id, bundle) => {

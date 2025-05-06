@@ -1,5 +1,5 @@
 import type { IBCChannelID, IBCConnectionID, IBCPortID } from '@agoric/vats';
-import type { ExecSyncOptions } from 'node:child_process';
+import type { ExecSync } from './agd-lib.js';
 
 const kubectlBinary = 'kubectl';
 
@@ -46,20 +46,13 @@ type ChannelCloseParams = {
 const getPathname = (srcChainId: string, dstChainId: string) =>
   [srcChainId, dstChainId].sort().join('-');
 
-export const makeRelayer = ({
-  execFileSync,
-}: {
-  execFileSync: (typeof import('node:child_process'))['execFileSync'];
-}) => {
+export const makeRelayer = ({ execFileSync }: { execFileSync: ExecSync }) => {
   const relayerType = (process.env.RELAYER_TYPE || 'hermes') as RelayerType;
 
   const exec = (
     chainName: string,
     args: string[],
-    opts: ExecSyncOptions = {
-      encoding: 'utf-8' as const,
-      stdio: ['ignore', 'pipe', 'pipe'] as const,
-    },
+    opts = { encoding: 'utf-8' as const, stdio: ['ignore', 'pipe', 'ignore'] },
   ) =>
     execFileSync(
       kubectlBinary,

@@ -10,11 +10,7 @@ import type {
   CurrentWalletRecord,
   UpdateRecord,
 } from '@agoric/smart-wallet/src/smartWallet.js';
-import type {
-  ContractRecord,
-  PoolMetrics,
-  TransactionRecord,
-} from '@agoric/fast-usdc';
+import type { ContractRecord, PoolMetrics } from '@agoric/fast-usdc';
 
 // For static string key types. String template matching has to be in the ternary below.
 type PublishedTypeMap = {
@@ -47,6 +43,4 @@ export type TypedPublished<T extends string> = T extends keyof PublishedTypeMap
                   ? ContractRecord
                   : T extends 'fastUsdc.poolMetrics'
                     ? PoolMetrics
-                    : T extends `fastUsdc.txns.${string}`
-                      ? TransactionRecord
-                      : unknown;
+                    : unknown;

@@ -21,10 +21,7 @@ import type {
 } from '@agoric/vats';
 import { LOCALCHAIN_DEFAULT_ADDRESS } from '@agoric/vats/tools/fake-bridge.js';
 import { atob, btoa, decodeBase64, encodeBase64 } from '@endo/base64';
-import type {
-  AccountId,
-  CosmosChainAddress,
-} from '../src/orchestration-api.js';
+import type { ChainAddress } from '../src/orchestration-api.js';
 import { makeQueryPacket, makeTxPacket } from '../src/utils/packet.js';
 
 interface EncoderCommon<T> {
@@ -158,10 +155,10 @@ export function buildQueryPacketString(
 type BuildVTransferEventParams = {
   event?: VTransferIBCEvent['event'];
   /* defaults to cosmos1AccAddress. set to `agoric1fakeLCAAddress` to simulate an outgoing transfer event */
-  sender?: CosmosChainAddress['value'];
+  sender?: ChainAddress['value'];
   /*  defaults to agoric1fakeLCAAddress. set to a different value to simulate an outgoing transfer event */
-  receiver?: AccountId | CosmosChainAddress['value'];
-  target?: CosmosChainAddress['value'];
+  receiver?: ChainAddress['value'];
+  target?: ChainAddress['value'];
   amount?: bigint;
   denom?: string;
   destinationChannel?: IBCChannelID;
@@ -228,7 +225,6 @@ export const buildVTransferEvent = ({
           denom,
           sender,
           receiver,
-          memo,
         }),
       ),
     ),

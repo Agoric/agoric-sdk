@@ -20,7 +20,6 @@ import { CONTRACT_ELECTORATE } from './governParam.js';
 
 /**
  * @import {MapStore} from '@agoric/swingset-liveslots';
- * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
  * @import {AnyParamManager, GovernanceSubscriptionState, ParamManagerBase, ParamStateRecord, ParamValueTyped, UpdateParams} from '../types.js';
  */
 

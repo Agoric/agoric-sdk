@@ -1,10 +1,6 @@
 import { M } from '@agoric/store';
 import { AmountKeywordRecordShape, SeatShape } from '../typeGuards.js';
 
-/**
- * @import {TransferPart, ZCF, ZCFSeat} from '@agoric/zoe';
- */
-
 export const TransferPartShape = M.splitArray(
   harden([M.opt(SeatShape), M.opt(SeatShape), M.opt(AmountKeywordRecordShape)]),
   harden([M.opt(AmountKeywordRecordShape)]),

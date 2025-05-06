@@ -18,7 +18,7 @@ import {
   floorDivideBy,
   multiplyBy,
   parseRatio,
-} from '@agoric/ertp/src/ratio.js';
+} from '@agoric/zoe/src/contractSupport/ratio.js';
 import { InvalidArgumentError } from 'commander';
 import { outputActionAndHint } from './bridge-action.js';
 import { Offers } from '../clientSupport.js';
@@ -38,7 +38,7 @@ const parseDecimal = arg => {
 
 /**
  * @param {string} amountString
- * @param {Brand<'nat'>} usdc
+ * @param {Brand} usdc
  */
 const parseUSDCAmount = (amountString, usdc) => {
   const USDC_DECIMALS = 6;

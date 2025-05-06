@@ -6,7 +6,7 @@ import { M } from '@endo/patterns';
 import { pickFacet } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
 import {
-  CosmosChainAddressShape,
+  ChainAddressShape,
   chainFacadeMethods,
   ICQMsgShape,
 } from '../typeGuards.js';
@@ -22,7 +22,7 @@ import {
  * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  * @import {CosmosInterchainService} from './exo-interfaces.js';
  * @import {prepareCosmosOrchestrationAccount} from './cosmos-orchestration-account.js';
- * @import {CosmosChainInfo, IBCConnectionInfo, CosmosChainAddress, IcaAccount, Chain, ICQConnection, ChainInfo} from '../types.js';
+ * @import {CosmosChainInfo, IBCConnectionInfo, ChainAddress, IcaAccount, Chain, ICQConnection} from '../types.js';
  */
 
 const trace = makeTracer('RemoteChainFacade');
@@ -41,8 +41,8 @@ const trace = makeTracer('RemoteChainFacade');
 
 /**
  * @typedef {{
- *   remoteChainInfo: ChainInfo;
- *   connectionInfo: IBCConnectionInfo | undefined;
+ *   remoteChainInfo: CosmosChainInfo;
+ *   connectionInfo: IBCConnectionInfo;
  *   icqConnection: ICQConnection | undefined;
  * }} RemoteChainFacadeState
  */
@@ -89,22 +89,22 @@ const prepareRemoteChainFacadeKit = (
       ),
       getAddressesWatcher: M.interface('getAddressWatcher', {
         onFulfilled: M.call(
-          [CosmosChainAddressShape, M.string(), M.string()],
+          [ChainAddressShape, M.string(), M.string()],
           M.remotable(),
         ).returns(VowShape),
       }),
       makeChildNodeWatcher: M.interface('makeChildNodeWatcher', {
         onFulfilled: M.call(M.or(M.remotable(), M.undefined()), {
           account: M.remotable(),
-          chainAddress: CosmosChainAddressShape,
+          chainAddress: ChainAddressShape,
           localAddress: M.string(),
           remoteAddress: M.string(),
         }).returns(M.remotable()),
       }),
     },
     /**
-     * @param {ChainInfo} remoteChainInfo
-     * @param {IBCConnectionInfo} [connectionInfo]
+     * @param {CosmosChainInfo} remoteChainInfo
+     * @param {IBCConnectionInfo} connectionInfo
      */
     (remoteChainInfo, connectionInfo) => {
       trace('making a RemoteChainFacade');
@@ -126,21 +126,15 @@ const prepareRemoteChainFacadeKit = (
           return asVow(() => {
             const { remoteChainInfo, connectionInfo } = this.state;
 
-            if (remoteChainInfo.namespace !== 'cosmos') {
-              throw Fail`only supported on 'cosmos' chains, not ${remoteChainInfo.namespace}`;
-            }
-            if (!connectionInfo) throw Fail`IBC connection info not found`;
-
             // icqConnection is ultimately retrieved from state, but let's
             // create a connection if it doesn't exist
             const icqConnOrUndefinedV =
-              /** @type {CosmosChainInfo} */ (remoteChainInfo)?.icqEnabled &&
-              !this.state.icqConnection
+              remoteChainInfo.icqEnabled && !this.state.icqConnection
                 ? E(orchestration).provideICQConnection(connectionInfo.id)
                 : undefined;
 
             const makeAccountV = E(orchestration).makeAccount(
-              /** @type {CosmosChainInfo} */ (remoteChainInfo).chainId,
+              remoteChainInfo.chainId,
               connectionInfo.counterparty.connection_id,
               connectionInfo.id,
             );
@@ -161,17 +155,10 @@ const prepareRemoteChainFacadeKit = (
             const {
               remoteChainInfo: { icqEnabled, chainId },
               connectionInfo,
-            } = /**
-             * @type {{
-             *   remoteChainInfo: CosmosChainInfo;
-             *   connectionInfo?: IBCConnectionInfo;
-             * }}
-             */ (this.state);
-
+            } = this.state;
             if (!icqEnabled) {
               throw Fail`Queries not available for chain ${q(chainId)}`;
             }
-            if (!connectionInfo) throw Fail`IBC connection info not found`;
             // if none exists, make one and still send the query in the handler
             if (!this.state.icqConnection) {
               return watch(
@@ -219,7 +206,7 @@ const prepareRemoteChainFacadeKit = (
       },
       getAddressesWatcher: {
         /**
-         * @param {[CosmosChainAddress, LocalIbcAddress, RemoteIbcAddress]} chainAddresses
+         * @param {[ChainAddress, LocalIbcAddress, RemoteIbcAddress]} chainAddresses
          * @param {IcaAccount} account
          */
         onFulfilled([chainAddress, localAddress, remoteAddress], account) {
@@ -239,7 +226,7 @@ const prepareRemoteChainFacadeKit = (
          * @param {Remote<StorageNode> | undefined} childNode
          * @param {{
          *   account: IcaAccount;
-         *   chainAddress: CosmosChainAddress;
+         *   chainAddress: ChainAddress;
          *   localAddress: LocalIbcAddress;
          *   remoteAddress: RemoteIbcAddress;
          * }} ctx

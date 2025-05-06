@@ -7,7 +7,6 @@ import { withOrchestration } from '../utils/start-helper.js';
 import * as flows from './query-flows.flows.js';
 
 /**
- * @import {ZCF} from '@agoric/zoe';
  * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationPowers} from '..//utils/start-helper.js';
  * @import {OrchestrationTools} from '../utils/start-helper.js';

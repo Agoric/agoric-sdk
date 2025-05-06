@@ -3,12 +3,7 @@
 import { Fail } from '@endo/errors';
 import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined } from '@agoric/internal';
-import { parseRatio } from '@agoric/ertp/src/ratio.js';
-
-/**
- * @import {Amount, Brand, Payment, Purse} from '@agoric/ertp';
- * @import {Proposal} from '@agoric/zoe';
- */
+import { parseRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 
 // XXX support other decimal places
 const COSMOS_UNIT = 1_000_000n;

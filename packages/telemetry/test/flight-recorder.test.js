@@ -1,5 +1,4 @@
 import fs from 'node:fs';
-import { promisify } from 'node:util';
 import tmp from 'tmp';
 import { test } from './prepare-test-env-ava.js';
 
@@ -18,31 +17,12 @@ const bufferTests = test.macro(
   async (t, input) => {
     const BUFFER_SIZE = 512;
 
-    const {
-      name: tmpFile,
-      fd,
-      removeCallback,
-    } = tmp.fileSync({ detachDescriptor: true });
-    t.teardown(removeCallback);
-    const fileHandle = /** @type {import('fs/promises').FileHandle} */ ({
-      close: promisify(fs.close.bind(fs, fd)),
-    });
+    const { name: tmpFile, removeCallback } = tmp.fileSync();
     const { readCircBuf, writeCircBuf } = await input.makeBuffer({
       circularBufferSize: BUFFER_SIZE,
       circularBufferFilename: tmpFile,
     });
-    const realSlogSender = makeSlogSenderFromBuffer({
-      fileHandle,
-      writeCircBuf,
-    });
-    t.teardown(realSlogSender.shutdown);
-    // To verify lack of attempted mutation by the consumer, send only hardened
-    // entries.
-    /** @type {typeof realSlogSender} */
-    const slogSender = Object.assign(
-      (obj, serialized) => realSlogSender(harden(obj), serialized),
-      realSlogSender,
-    );
+    const slogSender = makeSlogSenderFromBuffer({ writeCircBuf });
     slogSender({ type: 'start' });
     await slogSender.forceFlush();
     t.is(fs.readFileSync(tmpFile, { encoding: 'utf8' }).length, BUFFER_SIZE);
@@ -93,6 +73,8 @@ const bufferTests = test.macro(
     slogSender(null, 'PRE-SERIALIZED');
     await slogSender.forceFlush();
     t.truthy(fs.readFileSync(tmpFile).includes('PRE-SERIALIZED'));
+    // console.log({ tmpFile });
+    removeCallback();
   },
 );
 

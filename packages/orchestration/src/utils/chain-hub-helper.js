@@ -1,5 +1,5 @@
 /**
- * @import {ChainHub, ChainInfo, CosmosChainInfo, Denom, DenomDetail} from '../types.js';
+ * @import {ChainHub, CosmosChainInfo, Denom, DenomDetail} from '../types.js';
  */
 
 /**
@@ -11,7 +11,7 @@
  *
  * @param {ChainHub} chainHub
  * @param {Record<string, Brand<'nat'>>} brands
- * @param {Record<string, ChainInfo> | undefined} chainInfo
+ * @param {Record<string, CosmosChainInfo> | undefined} chainInfo
  * @param {[Denom, DenomDetail & { brandKey?: string }][] | undefined} assetInfo
  */
 export const registerChainsAndAssets = (
@@ -27,13 +27,9 @@ export const registerChainsAndAssets = (
 
   const conns = {};
   for (const [chainName, allInfo] of Object.entries(chainInfo)) {
-    if (allInfo.namespace === 'cosmos') {
-      const { connections, ...info } = allInfo;
-      chainHub.registerChain(chainName, info);
-      if (connections) conns[info.chainId] = connections;
-    } else {
-      chainHub.registerChain(chainName, allInfo);
-    }
+    const { connections, ...info } = allInfo;
+    chainHub.registerChain(chainName, info);
+    if (connections) conns[info.chainId] = connections;
   }
   const registeredPairs = new Set();
   for (const [pChainId, connInfos] of Object.entries(conns)) {

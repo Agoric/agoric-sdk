@@ -2287,7 +2287,7 @@ import { makeUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 import { kser, kslot, makeError } from '@agoric/kmarshal';
 import { assertKnownOptions } from '../lib/assertOptions.js';
 import { foreverPolicy } from '../lib/runPolicies.js';
-import { makeVatManagerMaker } from './vat-loader/manager-factory.js';
+import { makeVatManagerFactory } from './vat-loader/manager-factory.js';
 import { makeVatWarehouse } from './vat-warehouse.js';
 import makeDeviceManager from './deviceManager.js';
 import makeKernelKeeper, {
@@ -2377,7 +2377,6 @@ export default function buildKernel(
     startSubprocessWorkerNode,
     startXSnap,
     writeSlogObject,
-    slogDuration,
     WeakRef,
     FinalizationRegistry,
     gcAndFinalize,
@@ -2389,13 +2388,13 @@ export default function buildKernel(
     warehousePolicy,
     overrideVatManagerOptions = {},
   } = kernelRuntimeOptions;
-  const logStartup = verbose ? console.debug : () => {};
-  if (verbose) kdebugEnable(true);
+  const logStartup = verbose ? console.debug : () => 0;
 
   const vatAdminRootKref = kernelStorage.kvStore.get('vatAdminRootKref');
 
+  /** @type { KernelSlog } */
   const kernelSlog = writeSlogObject
-    ? makeSlogger(slogCallbacks, writeSlogObject, slogDuration)
+    ? makeSlogger(slogCallbacks, writeSlogObject)
     : makeDummySlogger(slogCallbacks, makeConsole('disabled slogger'));
 
   const kernelKeeper = makeKernelKeeper(
@@ -2446,9 +2445,10 @@ export default function buildKernel(
   harden(testLog);
 
   function makeSourcedConsole(vatID) {
-    const origConsole = makeConsole(
-      source => `${debugPrefix}SwingSet:${source}:${vatID}`,
-    );
+    const origConsole = makeConsole(args => {
+      const source = args.shift();
+      return `${debugPrefix}SwingSet:${source}:${vatID}`;
+    });
     return kernelSlog.vatConsole(vatID, origConsole);
   }
 
@@ -2839,10 +2839,6 @@ export default function buildKernel(
    */
   async function processSend(vatID, target, msg) {
     insistMessage(msg);
-    // DEPRECATED: These counts are available as "crank-start"/"crank-finish"
-    // slog entries with crankType "delivery" (the latter count filtered on
-    // messageType "send") and "deliver"/"deliver-result" slog entries (the
-    // latter count filtered on dispatch "message").
     kernelKeeper.incStat('dispatches');
     kernelKeeper.incStat('dispatchDeliver');
 
@@ -2873,8 +2869,6 @@ export default function buildKernel(
     const { vatID, kpid } = message;
     insistVatID(vatID);
     insistKernelType('promise', kpid);
-    // DEPRECATED: This count is available as "crank-start"/"crank-finish"
-    // slog entries with crankType "delivery".
     kernelKeeper.incStat('dispatches');
     const vatInfo = vatWarehouse.lookup(vatID);
     if (!vatInfo) {
@@ -2884,8 +2878,6 @@ export default function buildKernel(
     const { meterID } = vatInfo;
 
     const p = kernelKeeper.getKernelPromise(kpid);
-    // DEPRECATED: This count is available as "deliver"/"deliver-result" slog
-    // entries with dispatch "notify".
     kernelKeeper.incStat('dispatchNotify');
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     if (p.state === 'unresolved') {
@@ -3630,15 +3622,14 @@ export default function buildKernel(
    * @returns {Promise<PolicyInput>}
    */
   async function processDeliveryMessage(message) {
-    const messageType = message.type;
     kdebug('');
     // prettier-ignore
     kdebug(`processQ crank ${kernelKeeper.getCrankNumber()} ${JSON.stringify(message)}`);
     kdebug(legibilizeMessage(message));
-    const finish = kernelSlog.startDuration(['crank-start', 'crank-finish'], {
+    kernelSlog.write({
+      type: 'crank-start',
       crankType: 'delivery',
       crankNum: kernelKeeper.getCrankNumber(),
-      messageType,
       message,
     });
     /** @type { PolicyInput } */
@@ -3740,8 +3731,12 @@ export default function buildKernel(
     const crankNum = kernelKeeper.getCrankNumber();
     kernelKeeper.incrementCrankNumber();
     const { crankhash, activityhash } = kernelKeeper.emitCrankHashes();
-    finish({
-      message: undefined,
+    // kernelSlog.write({
+    //   type: 'kernel-stats',
+    //   stats: kernelKeeper.getStats(),
+    // });
+    kernelSlog.write({
+      type: 'crank-finish',
       crankNum,
       crankhash,
       activityhash,
@@ -3779,15 +3774,14 @@ export default function buildKernel(
    * @returns {Promise<PolicyInput>}
    */
   async function processAcceptanceMessage(message) {
-    const messageType = message.type;
     kdebug('');
     // prettier-ignore
-    kdebug(`processAcceptanceQ crank ${kernelKeeper.getCrankNumber()} ${messageType}`);
+    kdebug(`processAcceptanceQ crank ${kernelKeeper.getCrankNumber()} ${message.type}`);
     // kdebug(legibilizeMessage(message));
-    const finish = kernelSlog.startDuration(['crank-start', 'crank-finish'], {
+    kernelSlog.write({
+      type: 'crank-start',
       crankType: 'routing',
       crankNum: kernelKeeper.getCrankNumber(),
-      messageType,
       message,
     });
     /** @type { PolicyInput } */
@@ -3824,8 +3818,8 @@ export default function buildKernel(
     const crankNum = kernelKeeper.getCrankNumber();
     kernelKeeper.incrementCrankNumber();
     const { crankhash, activityhash } = kernelKeeper.emitCrankHashes();
-    finish({
-      message: undefined,
+    kernelSlog.write({
+      type: 'crank-finish',
       crankNum,
       crankhash,
       activityhash,
@@ -3841,7 +3835,7 @@ export default function buildKernel(
     gcAndFinalize,
     meterControl: makeDummyMeterControl(),
   });
-  const makeVatManager = makeVatManagerMaker({
+  const vatManagerFactory = makeVatManagerFactory({
     allVatPowers,
     kernelKeeper,
     vatEndowments,
@@ -3936,7 +3930,7 @@ export default function buildKernel(
   }
 
   const vatLoader = makeVatLoader({
-    makeVatManager,
+    vatManagerFactory,
     kernelSlog,
     makeSourcedConsole,
     kernelKeeper,
@@ -4496,11 +4490,6 @@ export default function buildKernel(
       ephemeral.log.push(`${str}`);
     },
 
-    /**
-     * Return a fresh stats snapshot.
-     *
-     * @returns {Record<string, number>}
-     */
     getStats() {
       return kernelKeeper.getStats();
     },

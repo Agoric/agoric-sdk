@@ -3,10 +3,6 @@ import { makeScalarMapStore } from '@agoric/store';
 import { makeZoeForTest } from '../../tools/setup-zoe.js';
 import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
 
-/**
- * @import {MapStore} from '@agoric/swingset-liveslots';
- */
-
 export const setup = () => {
   const moolaKit = makeIssuerKit('moola');
   const simoleanKit = makeIssuerKit('simoleans');

@@ -36,7 +36,6 @@ import {
   makeEphemeralMailboxStorage,
 } from '@agoric/swingset-vat';
 import { openSwingStore } from '@agoric/swing-store';
-import { unprefixedProperties } from '@agoric/internal/src/js-utils.js';
 import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 import {
@@ -168,9 +167,14 @@ const buildSwingset = async (
     plugin: { ...plugin.endowments },
   };
 
+  const soloEnv = Object.fromEntries(
+    Object.entries(process.env)
+      .filter(([k]) => k.match(/^SOLO_/)) // narrow to SOLO_ prefixes. e.g. SOLO_SLOGFILE
+      .map(([k, v]) => [k.replace(/^SOLO_/, ''), v]), // Replace SOLO_ controls with chain version.
+  );
   const env = {
     ...process.env,
-    ...unprefixedProperties(process.env, 'SOLO_'),
+    ...soloEnv,
   };
   const { metricsProvider = makeDefaultMeterProvider() } =
     getTelemetryProviders({

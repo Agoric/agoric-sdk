@@ -1,14 +1,9 @@
 import test from 'ava';
-import tmp from 'tmp';
-
-import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 
 import { buffer } from '../src/util.js';
 import { initSwingStore, makeSwingStoreExporter } from '../src/index.js';
 
-import { getSnapshotStream, makeB0ID } from './util.js';
-
-const tmpDir = makeTempDirFactory(tmp);
+import { tmpDir, getSnapshotStream, makeB0ID } from './util.js';
 
 const rank = {
   operational: 1,
@@ -28,7 +23,7 @@ const bundle0 = { moduleFormat: 'nestedEvaluate', source: '1+1' };
 const bundle0ID = makeB0ID(bundle0);
 
 const exportTest = test.macro(async (t, mode) => {
-  const [dbDir, cleanup] = tmpDir('testdb');
+  const [dbDir, cleanup] = await tmpDir('testdb');
   t.teardown(cleanup);
   // const dbDir = 't-db';
 
@@ -239,7 +234,7 @@ test('export debug', exportTest, 'debug');
 test('export debug-on-pruned', exportTest, 'debug-on-pruned');
 
 test('export omits pruned span artifacts', async t => {
-  const [dbDir, cleanup] = tmpDir('testdb');
+  const [dbDir, cleanup] = await tmpDir('testdb');
   t.teardown(cleanup);
   // const dbDir = 't-db';
 

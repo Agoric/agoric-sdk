@@ -4,7 +4,7 @@ import { makeLocalVatManagerFactory } from './manager-local.js';
 import { makeNodeSubprocessFactory } from './manager-subprocess-node.js';
 import { makeXsSubprocessFactory } from './manager-subprocess-xsnap.js';
 
-export function makeVatManagerMaker({
+export function makeVatManagerFactory({
   allVatPowers,
   kernelKeeper,
   vatEndowments,
@@ -18,12 +18,14 @@ export function makeVatManagerMaker({
     vatEndowments,
     gcTools,
   });
+
   const nodeSubprocessFactory = makeNodeSubprocessFactory({
     startSubprocessWorker: startSubprocessWorkerNode,
     kernelKeeper,
     kernelSlog,
     testLog: allVatPowers.testLog,
   });
+
   const xsWorkerFactory = makeXsSubprocessFactory({
     startXSnap,
     kernelKeeper,
@@ -67,41 +69,58 @@ export function makeVatManagerMaker({
    * @param {import('@agoric/swingset-liveslots').LiveSlotsOptions} options.liveSlotsOptions
    * @returns { Promise<import('../../types-internal.js').VatManager> }
    */
-  async function makeVatManager(vatID, options) {
-    const { managerOptions, liveSlotsOptions } = options;
+  async function vatManagerFactory(
+    vatID,
+    { managerOptions, liveSlotsOptions },
+  ) {
     validateManagerOptions(managerOptions);
     const { workerOptions, enableSetup } = managerOptions;
     const { type } = workerOptions;
 
-    if (type !== 'local' && (enableSetup || 'setup' in managerOptions)) {
-      console.warn(`TODO: stop using enableSetup and setup() with ${type}`);
+    if (type !== 'local' && 'setup' in managerOptions) {
+      console.warn(`TODO: stop using setup() with ${type}`);
+    }
+    if (enableSetup) {
+      if (managerOptions.setup) {
+        return localFactory.createFromSetup(vatID, managerOptions);
+      } else {
+        return localFactory.createFromBundle(
+          vatID,
+          managerOptions.bundle,
+          managerOptions,
+          liveSlotsOptions,
+        );
+      }
+    } else if (type === 'local') {
+      return localFactory.createFromBundle(
+        vatID,
+        managerOptions.bundle,
+        managerOptions,
+        liveSlotsOptions,
+      );
     }
 
-    if (enableSetup && managerOptions.setup) {
-      return localFactory.createFromSetup(vatID, managerOptions);
+    if (type === 'node-subprocess') {
+      return nodeSubprocessFactory.createFromBundle(
+        vatID,
+        managerOptions.bundle,
+        managerOptions,
+        liveSlotsOptions,
+      );
     }
 
-    /** @type {Pick<typeof xsWorkerFactory, 'createFromBundle'>} */
-    let factory;
-    if (enableSetup || type === 'local') {
-      factory = localFactory;
-    } else if (type === 'node-subprocess') {
-      factory = nodeSubprocessFactory;
-    } else if (type === 'xsnap') {
-      assert(managerOptions.bundle, 'worker type xsnap requires a bundle');
-      factory = xsWorkerFactory;
-    } else {
-      throw Error(`unknown vat worker type ${type}`);
+    if (type === 'xsnap') {
+      assert(managerOptions.bundle, 'xsnap requires Bundle');
+      return xsWorkerFactory.createFromBundle(
+        vatID,
+        managerOptions.bundle,
+        managerOptions,
+        liveSlotsOptions,
+      );
     }
 
-    return factory.createFromBundle(
-      vatID,
-      // @ts-expect-error managerOptions.bundle might be undefined
-      managerOptions.bundle,
-      managerOptions,
-      liveSlotsOptions,
-    );
+    throw Error(`unknown type ${type}, not 'local' or 'xsnap'`);
   }
 
-  return harden(makeVatManager);
+  return harden(vatManagerFactory);
 }

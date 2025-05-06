@@ -1,10 +1,6 @@
 /** @file Use-object for the owner of a staking account */
 import { toRequestQueryJson } from '@agoric/cosmic-proto';
 import {
-  MsgDepositForBurn,
-  MsgDepositForBurnWithCaller,
-} from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
-import {
   QueryAllBalancesRequest,
   QueryAllBalancesResponse,
   QueryBalanceRequest,
@@ -50,7 +46,7 @@ import { Fail, makeError, q } from '@endo/errors';
 import { E } from '@endo/far';
 import {
   AmountArgShape,
-  CosmosChainAddressShape,
+  ChainAddressShape,
   DelegationShape,
   DenomAmountShape,
   IBCTransferOptionsShape,
@@ -68,12 +64,10 @@ import {
 } from '../utils/cosmos.js';
 import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
 import { makeTimestampHelper } from '../utils/time.js';
-import { accountIdTo32Bytes, parseAccountId } from '../utils/address.js';
 
 /**
  * @import {HostOf} from '@agoric/async-flow';
- * @import {AmountArg, IcaAccount, CosmosChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, StakingAccountQueries, NobleMethods, OrchestrationAccountCommon, CosmosRewardsResponse, IBCConnectionInfo, IBCMsgTransferOptions, ChainHub, CosmosDelegationResponse, CaipChainId, AccountIdArg} from '../types.js';
- * @import {ContractMeta, Invitation, OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {AmountArg, IcaAccount, ChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, StakingAccountQueries, OrchestrationAccountCommon, CosmosRewardsResponse, IBCConnectionInfo, IBCMsgTransferOptions, ChainHub, CosmosDelegationResponse} from '../types.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  * @import {Remote} from '@agoric/internal';
@@ -94,14 +88,14 @@ const { Vow$ } = NetworkShape; // TODO #9611
 
 /**
  * @typedef {object} CosmosOrchestrationAccountNotification
- * @property {CosmosChainAddress} chainAddress
+ * @property {ChainAddress} chainAddress
  */
 
 /**
  * @private
  * @typedef {{
  *   account: IcaAccount;
- *   chainAddress: CosmosChainAddress;
+ *   chainAddress: ChainAddress;
  *   icqConnection: ICQConnection | undefined;
  *   localAddress: LocalIbcAddress;
  *   remoteAddress: RemoteIbcAddress;
@@ -120,14 +114,14 @@ const { Vow$ } = NetworkShape; // TODO #9611
 
 /** @see {StakingAccountActions} */
 const stakingAccountActionsMethods = {
-  delegate: M.call(CosmosChainAddressShape, AmountArgShape).returns(VowShape),
+  delegate: M.call(ChainAddressShape, AmountArgShape).returns(VowShape),
   redelegate: M.call(
-    CosmosChainAddressShape,
-    CosmosChainAddressShape,
+    ChainAddressShape,
+    ChainAddressShape,
     AmountArgShape,
   ).returns(VowShape),
   undelegate: M.call(M.arrayOf(DelegationShape)).returns(VowShape),
-  withdrawReward: M.call(CosmosChainAddressShape).returns(
+  withdrawReward: M.call(ChainAddressShape).returns(
     Vow$(M.arrayOf(DenomAmountShape)),
   ),
   withdrawRewards: M.call().returns(Vow$(M.arrayOf(DenomAmountShape))),
@@ -135,25 +129,17 @@ const stakingAccountActionsMethods = {
 
 /** @see {StakingAccountQueries} */
 const stakingAccountQueriesMethods = {
-  getDelegation: M.call(CosmosChainAddressShape).returns(VowShape),
+  getDelegation: M.call(ChainAddressShape).returns(VowShape),
   getDelegations: M.call().returns(VowShape),
-  getUnbondingDelegation: M.call(CosmosChainAddressShape).returns(VowShape),
+  getUnbondingDelegation: M.call(ChainAddressShape).returns(VowShape),
   getUnbondingDelegations: M.call().returns(VowShape),
   getRedelegations: M.call().returns(VowShape),
-  getReward: M.call(CosmosChainAddressShape).returns(VowShape),
+  getReward: M.call(ChainAddressShape).returns(VowShape),
   getRewards: M.call().returns(VowShape),
-};
-
-/** @see {NobleMethods} */
-const nobleMethods = {
-  depositForBurn: M.call(M.string(), AmountArgShape)
-    .optional(M.string())
-    .returns(VowShape),
 };
 
 /** @see {OrchestrationAccountCommon} */
 export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
-  ...nobleMethods,
   ...orchestrationAccountMethods,
   ...stakingAccountActionsMethods,
   ...stakingAccountQueriesMethods,
@@ -172,15 +158,13 @@ const PUBLIC_TOPICS = {
 export const CosmosOrchestrationInvitationMakersI = M.interface(
   'invitationMakers',
   {
-    Delegate: M.call(CosmosChainAddressShape, AmountArgShape).returns(
-      M.promise(),
-    ),
+    Delegate: M.call(ChainAddressShape, AmountArgShape).returns(M.promise()),
     Redelegate: M.call(
-      CosmosChainAddressShape,
-      CosmosChainAddressShape,
+      ChainAddressShape,
+      ChainAddressShape,
       AmountArgShape,
     ).returns(M.promise()),
-    WithdrawReward: M.call(CosmosChainAddressShape).returns(M.promise()),
+    WithdrawReward: M.call(ChainAddressShape).returns(M.promise()),
     Undelegate: M.call(M.arrayOf(DelegationShape)).returns(M.promise()),
     DeactivateAccount: M.call().returns(M.promise()),
     ReactivateAccount: M.call().returns(M.promise()),
@@ -221,7 +205,7 @@ export const prepareCosmosOrchestrationAccountKit = (
         amountToCoin: M.call(AmountArgShape).returns(M.record()),
       }),
       returnVoidWatcher: M.interface('returnVoidWatcher', {
-        onFulfilled: M.call(M.any())
+        onFulfilled: M.call(M.or(M.string(), M.record()))
           .optional(M.arrayOf(M.undefined()))
           .returns(M.undefined()),
       }),
@@ -248,7 +232,7 @@ export const prepareCosmosOrchestrationAccountKit = (
       transferWatcher: M.interface('transferWatcher', {
         onFulfilled: M.call([M.record(), M.nat()])
           .optional({
-            destination: CosmosChainAddressShape,
+            destination: ChainAddressShape,
             opts: M.or(M.undefined(), IBCTransferOptionsShape),
             token: {
               denom: M.string(),
@@ -302,7 +286,7 @@ export const prepareCosmosOrchestrationAccountKit = (
     },
     /**
      * @param {object} info
-     * @param {CosmosChainAddress} info.chainAddress
+     * @param {ChainAddress} info.chainAddress
      * @param {LocalIbcAddress} info.localAddress
      * @param {RemoteIbcAddress} info.remoteAddress
      * @param {object} io
@@ -313,11 +297,6 @@ export const prepareCosmosOrchestrationAccountKit = (
      * @returns {State}
      */
     ({ chainAddress, localAddress, remoteAddress }, io) => {
-      trace('cosmos orch acct init', {
-        chainAddress,
-        localAddress,
-        remoteAddress,
-      });
       const { storageNode } = io;
       // must be the fully synchronous maker because the kit is held in durable state
       const topicKit = storageNode
@@ -582,7 +561,7 @@ export const prepareCosmosOrchestrationAccountKit = (
          *   bigint,
          * ]} results
          * @param {{
-         *   destination: CosmosChainAddress;
+         *   destination: ChainAddress;
          *   opts?: IBCMsgTransferOptions;
          *   token: Coin;
          * }} ctx
@@ -676,7 +655,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           /**
            * @type {OfferHandler<
            *   Vow<void>,
-           *   { toAccount: AccountIdArg; amount: AmountArg }
+           *   { toAccount: ChainAddress; amount: AmountArg }
            * >}
            */
           const offerHandler = (seat, { toAccount, amount }) => {
@@ -689,7 +668,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           /**
            * @type {OfferHandler<
            *   Vow<void>,
-           *   { toAccount: CosmosChainAddress; amounts: AmountArg[] }
+           *   { toAccount: ChainAddress; amounts: AmountArg[] }
            * >}
            */
           const offerHandler = (seat, { toAccount, amounts }) => {
@@ -712,7 +691,7 @@ export const prepareCosmosOrchestrationAccountKit = (
            *   Vow<void>,
            *   {
            *     amount: AmountArg;
-           *     destination: AccountIdArg;
+           *     destination: ChainAddress;
            *     opts?: IBCMsgTransferOptions;
            *   }
            * >}
@@ -875,17 +854,14 @@ export const prepareCosmosOrchestrationAccountKit = (
         send(toAccount, amount) {
           return asVow(() => {
             trace('send', toAccount, amount);
-            const cosmosDest = chainHub.coerceCosmosAddress(toAccount);
-            const { chainAddress } = this.state;
-            cosmosDest.chainId === chainAddress.chainId ||
-              Fail`bank/send cannot send to a different chain ${q(cosmosDest.chainId)}`;
             const { helper } = this.facets;
+            const { chainAddress } = this.state;
             return watch(
               E(helper.owned()).executeEncodedTx([
                 Any.toJSON(
                   MsgSend.toProtoMsg({
                     fromAddress: chainAddress.value,
-                    toAddress: cosmosDest.value,
+                    toAddress: toAccount.value,
                     amount: [helper.amountToCoin(amount)],
                   }),
                 ),
@@ -920,19 +896,13 @@ export const prepareCosmosOrchestrationAccountKit = (
         transfer(destination, amount, opts) {
           trace('transfer', destination, amount, opts);
           return asVow(() => {
-            // `destination` arg can be non-Cosmos per the common `.transfer` method signature
-            // but this implementation only supports transferring to another Cosmos chain.
-            // It relies on `coerceCosmosChainAddress` to throw if `destination` has another namespace.
-
-            const cosmosDest = chainHub.coerceCosmosAddress(destination);
-
             const { helper } = this.facets;
             const token = helper.amountToCoin(amount);
 
             const connectionInfoV = watch(
               chainHub.getConnectionInfo(
                 this.state.chainAddress.chainId,
-                cosmosDest.chainId,
+                destination.chainId,
               ),
             );
 
@@ -951,7 +921,7 @@ export const prepareCosmosOrchestrationAccountKit = (
             return watch(
               allVows([connectionInfoV, timeoutTimestampVowOrValue]),
               this.facets.transferWatcher,
-              { opts, token, destination: cosmosDest },
+              { opts, token, destination },
             );
           });
         },
@@ -1005,7 +975,6 @@ export const prepareCosmosOrchestrationAccountKit = (
         },
         /** @type {HostOf<StakingAccountQueries['getDelegation']>} */
         getDelegation(validator) {
-          // @ts-expect-error XXX string template with generics
           return asVow(() => {
             trace('getDelegation', validator);
             const { chainAddress, icqConnection } = this.state;
@@ -1025,7 +994,6 @@ export const prepareCosmosOrchestrationAccountKit = (
         },
         /** @type {HostOf<StakingAccountQueries['getDelegations']>} */
         getDelegations() {
-          // @ts-expect-error XXX string template with generics
           return asVow(() => {
             trace('getDelegations');
             const { chainAddress, icqConnection } = this.state;
@@ -1121,7 +1089,6 @@ export const prepareCosmosOrchestrationAccountKit = (
         },
         /** @type {HostOf<StakingAccountQueries['getRewards']>} */
         getRewards() {
-          // @ts-expect-error XXX string template with generics
           return asVow(() => {
             trace('getRewards');
             const { chainAddress, icqConnection } = this.state;
@@ -1143,58 +1110,6 @@ export const prepareCosmosOrchestrationAccountKit = (
           return asVow(() =>
             watch(E(this.facets.helper.owned()).executeEncodedTx(msgs, opts)),
           );
-        },
-        /**
-         * @type {HostOf<NobleMethods['depositForBurn']>}
-         */
-        depositForBurn(destination, amount, caller) {
-          return asVow(() => {
-            trace('depositForBurn', { destination, amount });
-            const { helper } = this.facets;
-            const { chainAddress } = this.state;
-
-            const destParts = parseAccountId(destination);
-            /** @type {CaipChainId} */
-            const chainId = `${destParts.namespace}:${destParts.reference}`;
-
-            const { cctpDestinationDomain } =
-              chainHub.getChainInfoByChainId(chainId);
-            if (typeof cctpDestinationDomain !== 'number') {
-              throw Fail`${q(chainId)} does not have "cctpDestinationDomain" set in ChainInfo`;
-            }
-
-            /** @satisfies {MsgDepositForBurn} */
-            const depositForBurn = {
-              amount: helper.amountToCoin(amount)?.amount,
-              from: chainAddress.value,
-              destinationDomain: cctpDestinationDomain,
-              mintRecipient: accountIdTo32Bytes(destination),
-              // safe to hardcode since `uusdc` is the only asset supported by CCTP
-              burnToken: 'uusdc',
-            };
-
-            const destinationCaller = (() => {
-              if (!caller) return undefined;
-              const callerParts = parseAccountId(caller);
-              callerParts.namespace === destParts.namespace ||
-                Fail`caller ${q(caller)} must be in same namespace as destination ${q(destination)}`;
-              return accountIdTo32Bytes(caller);
-            })();
-
-            return watch(
-              E(helper.owned()).executeEncodedTx([
-                Any.toJSON(
-                  destinationCaller
-                    ? MsgDepositForBurnWithCaller.toProtoMsg({
-                        ...depositForBurn,
-                        destinationCaller,
-                      })
-                    : MsgDepositForBurn.toProtoMsg(depositForBurn),
-                ),
-              ]),
-              this.facets.returnVoidWatcher,
-            );
-          });
         },
       },
     },

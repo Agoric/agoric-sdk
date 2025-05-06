@@ -18,9 +18,6 @@
 import { makeError, q, Fail } from '@endo/errors';
 import { depositToSeat } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
-import { makeTracer } from '@agoric/internal';
-
-const trace = makeTracer('ZoeTools');
 
 const { assign, keys, values } = Object;
 
@@ -124,7 +121,7 @@ export const makeZoeTools = (zcf, { when, allVows, allSettled, asVow }) => {
           amounts,
           paymentKwr,
         );
-        trace('localTransfer depositResponse', depositResponse);
+        console.debug(depositResponse);
         throw makeError(`One or more deposits failed ${q(errors)}`);
       }
       // TODO #9541 remove userSeat from baggage
@@ -177,7 +174,7 @@ export const makeZoeTools = (zcf, { when, allVows, allSettled, asVow }) => {
         amounts,
         paymentKwr,
       );
-      trace('withdrawToSeat depositResponse', depositResponse);
+      console.debug(depositResponse);
     });
 
   return harden({

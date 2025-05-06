@@ -15,10 +15,6 @@ import { setup } from '../setupBasicMints.js';
 import { setupNonFungible } from '../setupNonFungibleMints.js';
 import { assertAmountsEqual } from '../../zoeTestHelpers.js';
 
-/**
- * @import {FeeIssuerConfig, InvitationDetails} from '@agoric/zoe';
- */
-
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const coveredCallRoot = `${dirname}/../../../src/contracts/coveredCall.js`;

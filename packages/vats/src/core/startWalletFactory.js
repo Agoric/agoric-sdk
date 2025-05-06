@@ -14,10 +14,9 @@ import {
 
 /**
  * @import {EReturn} from '@endo/far';
- * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
  */
 
-const trace = makeTracer('StartWF', 'verbose');
+const trace = makeTracer('StartWF');
 
 /**
  * @param {ERef<ZoeService>} zoe
@@ -185,11 +184,7 @@ export const startWalletFactory = async (
 
   const marshaller = await E(board).getPublishingMarshaller();
   const poolBank = E(bankManager).getBankForAddress(poolAddr);
-
-  // We cannot await the start of the provisionPool, since
-  // startGovernedUpgradable may potentially only fulfil after the
-  // inter-protocol init-core.js is settled.
-  const ppFacetsP = E(startGovernedUpgradable)({
+  const ppFacets = await E(startGovernedUpgradable)({
     installation: provisionPool,
     terms: {},
     privateArgs: harden({
@@ -206,6 +201,8 @@ export const startWalletFactory = async (
       },
     },
   });
+  provisionPoolStartResult.resolve(ppFacets);
+  instanceProduce.provisionPool.resolve(ppFacets.instance);
 
   const terms = await deeplyFulfilled(
     harden({
@@ -226,60 +223,32 @@ export const startWalletFactory = async (
     privateArgs: {
       storageNode: walletStorageNode,
       walletBridgeManager,
-      walletReviver: E(E.get(ppFacetsP).creatorFacet).getWalletReviver(),
+      walletReviver: E(ppFacets.creatorFacet).getWalletReviver(),
     },
     label: 'walletFactory',
   });
   walletFactoryStartResult.resolve(wfFacets);
   instanceProduce.walletFactory.resolve(wfFacets.instance);
 
-  await publishRevivableWalletState(
-    oldAddresses,
-    marshaller,
-    walletStorageNode,
-  );
+  await Promise.all([
+    E(ppFacets.creatorFacet).addRevivableAddresses(oldAddresses),
+    E(ppFacets.creatorFacet).setReferences({
+      bankManager,
+      namesByAddressAdmin,
+      walletFactory: wfFacets.creatorFacet,
+    }),
+    publishRevivableWalletState(oldAddresses, marshaller, walletStorageNode),
+  ]);
+  const bridgeHandler = await E(ppFacets.creatorFacet).makeHandler();
 
-  // The following initialization can only be done after the provisionPool
-  // settles, and that requires the economicCommittee
-  const initAfterProvisionPool = async () => {
-    trace('initAfterProvisionPool awaiting provisionPoolFacets');
-    const ppFacets = await ppFacetsP;
-    trace('initAfterProvisionPool settled provisionPoolFacets');
-
-    provisionPoolStartResult.resolve(ppFacets);
-    instanceProduce.provisionPool.resolve(ppFacets.instance);
-
-    await Promise.all([
-      E(ppFacets.creatorFacet).addRevivableAddresses(oldAddresses),
-      E(ppFacets.creatorFacet).setReferences({
-        bankManager,
-        namesByAddressAdmin,
-        walletFactory: wfFacets.creatorFacet,
-      }),
-    ]);
-
-    const bridgeHandler = await E(ppFacets.creatorFacet).makeHandler();
-
-    await Promise.all([
-      E(provisionWalletBridgeManager).initHandler(bridgeHandler),
-      E(E.get(econCharterKit).creatorFacet).addInstance(
-        ppFacets.instance,
-        ppFacets.governorCreatorFacet,
-        'provisionPool',
-      ),
-    ]);
-    trace('initAfterProvisionPool done');
-  };
-
-  // Don't block until ppFacetsP settles, but if rejected, report and leave
-  // unhandled.
-  initAfterProvisionPool().catch(e => {
-    const err = assert.error(
-      assert.details`initAfterProvisionPool rejected with reason: ${e}`,
-    );
-    console.error(err);
-    throw err;
-  });
+  await Promise.all([
+    E(provisionWalletBridgeManager).initHandler(bridgeHandler),
+    E(E.get(econCharterKit).creatorFacet).addInstance(
+      ppFacets.instance,
+      ppFacets.governorCreatorFacet,
+      'provisionPool',
+    ),
+  ]);
 
   // TODO: move to its own producer, omitted in some configurations
   client.resolve(

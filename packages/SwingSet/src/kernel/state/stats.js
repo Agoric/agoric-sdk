@@ -70,9 +70,10 @@ export const makeKernelStats = kernelStatsMetrics => {
   Object.freeze(allStatsKeys);
 
   const pickStats = (stat, gauge = false) => {
-    if (!kernelConsensusStats || !kernelLocalStats) {
-      throw Fail`Kernel stats not initialized`;
-    }
+    assert(
+      kernelConsensusStats && kernelLocalStats,
+      'Kernel stats not initialized',
+    );
     const metricType = allStatsKeys[stat];
     if (gauge) {
       metricType === 'gauge' || Fail`Invalid kernel gauge stat ${stat}`;
@@ -115,12 +116,7 @@ export const makeKernelStats = kernelStatsMetrics => {
     kernelStats[downStat] += delta;
   };
 
-  /**
-   * Return a fresh snapshot, with or without local stats.
-   *
-   * @param {boolean | undefined} [consensusOnly]
-   * @returns {Record<string, number>}
-   */
+  /** @param {boolean | undefined} [consensusOnly] */
   const getStats = consensusOnly => {
     return {
       ...(consensusOnly ? {} : kernelLocalStats),
@@ -134,9 +130,10 @@ export const makeKernelStats = kernelStatsMetrics => {
   };
 
   const getSerializedStats = () => {
-    if (!kernelConsensusStats || !kernelLocalStats) {
-      throw Fail`Kernel stats not initialized`;
-    }
+    assert(
+      kernelConsensusStats && kernelLocalStats,
+      'Kernel stats not initialized',
+    );
 
     return {
       consensusStats: JSON.stringify(kernelConsensusStats),

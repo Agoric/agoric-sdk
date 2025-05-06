@@ -8,7 +8,7 @@ import {
   makeFetchMock,
   makeMockSigner,
 } from '../../testing/mocks.js';
-import { settlementAddress } from '../../tools/mock-evidence.js';
+import { settlementAddress } from '../fixtures.js';
 
 test('Errors if config missing', async t => {
   const path = 'config/dir/.fast-usdc/config.json';

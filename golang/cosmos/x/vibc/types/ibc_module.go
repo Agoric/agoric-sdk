@@ -4,7 +4,6 @@ import (
 	fmt "fmt"
 
 	sdkioerrors "cosmossdk.io/errors"
-	agtypes "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
 	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
@@ -44,15 +43,6 @@ func NewIBCModule(impl IBCModuleImpl) IBCModule {
 	return IBCModule{
 		impl: impl,
 	}
-}
-
-type WriteAcknowledgementEvent struct {
-	*vm.ActionHeader `actionType:"IBC_EVENT"`
-	Event            string            `json:"event" default:"writeAcknowledgement"`
-	Target           string            `json:"target"`
-	Packet           agtypes.IBCPacket `json:"packet"`
-	Acknowledgement  []byte            `json:"acknowledgement"`
-	Relayer          sdk.AccAddress    `json:"relayer"`
 }
 
 type ChannelOpenInitEvent struct {
@@ -263,10 +253,10 @@ func (im IBCModule) OnChanCloseConfirm(
 
 type ReceivePacketEvent struct {
 	*vm.ActionHeader `actionType:"IBC_EVENT"`
-	Event            string            `json:"event" default:"receivePacket"`
-	Target           string            `json:"target,omitempty"`
-	Packet           agtypes.IBCPacket `json:"packet"`
-	Relayer          sdk.AccAddress    `json:"relayer"`
+	Event            string              `json:"event" default:"receivePacket"`
+	Target           string              `json:"target,omitempty"`
+	Packet           channeltypes.Packet `json:"packet"`
+	Relayer          sdk.AccAddress      `json:"relayer"`
 }
 
 func (im IBCModule) OnRecvPacket(
@@ -283,7 +273,7 @@ func (im IBCModule) OnRecvPacket(
 	// the same packets.
 
 	event := ReceivePacketEvent{
-		Packet:  agtypes.CopyToIBCPacket(packet),
+		Packet:  packet,
 		Relayer: relayer,
 	}
 
@@ -297,11 +287,11 @@ func (im IBCModule) OnRecvPacket(
 
 type AcknowledgementPacketEvent struct {
 	*vm.ActionHeader `actionType:"IBC_EVENT"`
-	Event            string            `json:"event" default:"acknowledgementPacket"`
-	Target           string            `json:"target,omitempty"`
-	Packet           agtypes.IBCPacket `json:"packet"`
-	Acknowledgement  []byte            `json:"acknowledgement"`
-	Relayer          sdk.AccAddress    `json:"relayer"`
+	Event            string              `json:"event" default:"acknowledgementPacket"`
+	Target           string              `json:"target,omitempty"`
+	Packet           channeltypes.Packet `json:"packet"`
+	Acknowledgement  []byte              `json:"acknowledgement"`
+	Relayer          sdk.AccAddress      `json:"relayer"`
 }
 
 func (im IBCModule) OnAcknowledgementPacket(
@@ -311,7 +301,7 @@ func (im IBCModule) OnAcknowledgementPacket(
 	relayer sdk.AccAddress,
 ) error {
 	event := AcknowledgementPacketEvent{
-		Packet:          agtypes.CopyToIBCPacket(packet),
+		Packet:          packet,
 		Acknowledgement: acknowledgement,
 		Relayer:         relayer,
 	}
@@ -326,10 +316,10 @@ func (im IBCModule) OnAcknowledgementPacket(
 
 type TimeoutPacketEvent struct {
 	*vm.ActionHeader `actionType:"IBC_EVENT"`
-	Event            string            `json:"event" default:"timeoutPacket"`
-	Target           string            `json:"target,omitempty"`
-	Packet           agtypes.IBCPacket `json:"packet"`
-	Relayer          sdk.AccAddress    `json:"relayer"`
+	Event            string              `json:"event" default:"timeoutPacket"`
+	Target           string              `json:"target,omitempty"`
+	Packet           channeltypes.Packet `json:"packet"`
+	Relayer          sdk.AccAddress      `json:"relayer"`
 }
 
 func (im IBCModule) OnTimeoutPacket(
@@ -338,7 +328,7 @@ func (im IBCModule) OnTimeoutPacket(
 	relayer sdk.AccAddress,
 ) error {
 	event := TimeoutPacketEvent{
-		Packet:  agtypes.CopyToIBCPacket(packet),
+		Packet:  packet,
 		Relayer: relayer,
 	}
 

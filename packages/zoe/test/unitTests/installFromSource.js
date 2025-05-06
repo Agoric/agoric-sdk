@@ -2,10 +2,6 @@ import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 
 /**
- * @import {FeeIssuerConfig, ZoeService} from '@agoric/zoe';
- */
-
-/**
  * @param {ZoeService} zoe
  * @param {*} vatAdminState
  * @param {string} path

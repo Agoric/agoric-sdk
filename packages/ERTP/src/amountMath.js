@@ -9,7 +9,7 @@ import { copyBagMathHelpers } from './mathHelpers/copyBagMathHelpers.js';
 
 /**
  * @import {CopyBag, CopySet} from '@endo/patterns';
- * @import {Amount, AmountValue, AssetValueForKind, Brand, CopyBagAmount, CopySetAmount, MathHelpers, NatAmount, NatValue, SetAmount, SetValue} from './types.js';
+ * @import {Amount, AssetValueForKind, Brand, CopyBagAmount, CopySetAmount, MathHelpers, NatAmount, NatValue, SetAmount, SetValue} from './types.js';
  */
 
 // NB: AssetKind is both a constant for enumerated values and a type for those values.
@@ -105,7 +105,7 @@ const assertValueGetAssetKind = value => {
  *
  * Made available only for testing, but it is harmless for other uses.
  *
- * @template {AmountValue} V
+ * @template V
  * @param {V} value
  * @returns {MathHelpers<V>}
  */
@@ -113,9 +113,7 @@ export const assertValueGetHelpers = value =>
   // @ts-expect-error cast
   helpers[assertValueGetAssetKind(value)];
 
-/**
- * @type {(allegedBrand: Brand<any>, brand?: Brand<any>) => void}
- */
+/** @type {(allegedBrand: Brand, brand?: Brand) => void} */
 const optionalBrandCheck = (allegedBrand, brand) => {
   if (brand !== undefined) {
     assertRemotable(brand, 'brand');
@@ -158,7 +156,7 @@ const checkLRAndGetHelpers = (leftAmount, rightAmount, brand = undefined) => {
  * @param {MathHelpers<AssetValueForKind<K>>} h
  * @param {Amount<K>} leftAmount
  * @param {Amount<K>} rightAmount
- * @returns {[AssetValueForKind<K>, AssetValueForKind<K>]}
+ * @returns {[K, K]}
  */
 const coerceLR = (h, leftAmount, rightAmount) => {
   // @ts-expect-error could be arbitrary subtype
@@ -199,7 +197,7 @@ export const AmountMath = {
    *
    * Does not verify that the Brand's AssetKind matches the value's.
    *
-   * @template {Brand<any>} B
+   * @template {Brand} B
    * @template {NatValue | CopySet | CopyBag | SetValue} V
    * @param {B} brand
    * @param {V} allegedValue

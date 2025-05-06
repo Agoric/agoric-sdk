@@ -7,7 +7,6 @@ import { watchPromise } from './watch-promise.js';
 export {};
 
 /**
- * @import {MapStore, SetStore, StoreOptions, WeakMapStore, WeakSetStore} from '@agoric/store';
  * @import {Key} from '@endo/patterns';
  * @import {Passable} from '@endo/pass-style';
  */

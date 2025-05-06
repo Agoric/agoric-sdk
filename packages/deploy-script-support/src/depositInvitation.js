@@ -2,11 +2,6 @@
 import { E } from '@endo/far';
 
 /**
- * @import {Amount, Brand, Issuer, Payment, Purse} from '@agoric/ertp';
- * @import {InvitationDetails} from '@agoric/zoe';
- */
-
-/**
  * @param {ERef<Purse>} zoeInvitationPurse
  */
 export const makeDepositInvitation = zoeInvitationPurse => {

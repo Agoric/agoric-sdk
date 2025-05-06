@@ -1,7 +1,7 @@
 import type { IBCChannelID } from '@agoric/vats';
-import type { CosmosChainAddress } from '@agoric/orchestration';
+import type { ExecSync } from './agd-lib.js';
+import type { ChainAddress } from '@agoric/orchestration';
 import type { NobleAddress } from '@agoric/fast-usdc';
-import type { ExecSyncOptions } from 'node:child_process';
 
 const kubectlBinary = 'kubectl';
 const noblePod = 'noblelocal-genesis-0';
@@ -24,23 +24,19 @@ export const makeNobleTools = (
   {
     execFileSync,
   }: {
-    execFileSync: (typeof import('node:child_process'))['execFileSync'];
+    execFileSync: ExecSync;
   },
   log: (...args: unknown[]) => void = (...args) =>
     console.log('NobleTools', ...args),
 ) => {
   const exec = (
     args: string[],
-    opts: ExecSyncOptions = {
-      encoding: 'utf-8' as const,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    },
-  ) =>
-    execFileSync(kubectlBinary, [...makeKubeArgs(), ...args], opts) as string;
+    opts = { encoding: 'utf-8' as const, stdio: ['ignore', 'pipe', 'ignore'] },
+  ) => execFileSync(kubectlBinary, [...makeKubeArgs(), ...args], opts);
 
   const registerForwardingAcct = (
     channelId: IBCChannelID,
-    address: CosmosChainAddress['value'],
+    address: ChainAddress['value'],
   ): { txhash: string; code: number; data: string; height: string } => {
     log('creating forwarding address', address, channelId);
     return JSON.parse(
@@ -52,17 +48,13 @@ export const makeNobleTools = (
         address,
         '--from=genesis',
         '-y',
-        // FIXME removed in cosmos-sdk https://github.com/Agoric/agoric-sdk/issues/9016
-        '--broadcast-mode',
+        '-b',
         'block',
       ]),
     );
   };
 
-  const mockCctpMint = (
-    amount: bigint,
-    destination: CosmosChainAddress['value'],
-  ) => {
+  const mockCctpMint = (amount: bigint, destination: ChainAddress['value']) => {
     const denomAmount = `${Number(amount)}uusdc`;
     log('mock cctp mint', destination, denomAmount);
     return JSON.parse(
@@ -75,8 +67,7 @@ export const makeNobleTools = (
         denomAmount,
         '--from=faucet',
         '-y',
-        // FIXME removed in cosmos-sdk https://github.com/Agoric/agoric-sdk/issues/9016
-        '--broadcast-mode',
+        '-b',
         'block',
       ]),
     );
@@ -84,7 +75,7 @@ export const makeNobleTools = (
 
   const queryForwardingAddress = (
     channelId: IBCChannelID,
-    address: CosmosChainAddress['value'],
+    address: ChainAddress['value'],
   ): { address: NobleAddress; exists: boolean } => {
     log('querying forwarding address', address, channelId);
     return JSON.parse(

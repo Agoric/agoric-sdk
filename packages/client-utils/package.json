@@ -32,14 +32,14 @@
     "@agoric/internal": "^0.3.2",
     "@agoric/smart-wallet": "^0.5.3",
     "@agoric/vats": "^0.15.1",
-    "@cosmjs/stargate": "^0.33.0",
-    "@cosmjs/tendermint-rpc": "^0.33.0",
-    "@endo/common": "^1.2.10",
-    "@endo/errors": "^1.2.10",
-    "@endo/marshal": "^1.6.4",
-    "@endo/pass-style": "^1.5.0",
-    "@endo/patterns": "^1.5.0",
-    "@endo/promise-kit": "^1.1.10"
+    "@cosmjs/stargate": "^0.32.3",
+    "@cosmjs/tendermint-rpc": "^0.32.3",
+    "@endo/common": "^1.2.9",
+    "@endo/errors": "^1.2.9",
+    "@endo/marshal": "^1.6.3",
+    "@endo/pass-style": "^1.4.8",
+    "@endo/patterns": "^1.4.8",
+    "@endo/promise-kit": "^1.1.9"
   },
   "ava": {
     "extensions": {

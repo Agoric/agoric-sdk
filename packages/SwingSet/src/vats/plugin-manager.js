@@ -6,7 +6,8 @@ import { Remotable } from '@endo/marshal';
 import { Far, E } from '@endo/far';
 
 /**
- * @import {ERef} from '@endo/far';
+ * @template T
+ * @typedef {T | PromiseLike<T>} ERef
  */
 
 /** @type {{ onReset: (firstTime: Promise<boolean>) => void}} */

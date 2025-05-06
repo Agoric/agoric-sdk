@@ -1,7 +1,3 @@
-/**
- * @import {OfferHandler, ZCF} from '@agoric/zoe';
- */
-
 /** @param {ZCF} zcf */
 const start = zcf => {
   /** @type {OfferHandler} */

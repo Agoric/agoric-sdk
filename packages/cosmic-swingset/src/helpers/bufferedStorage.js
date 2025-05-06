@@ -1,3 +1,5 @@
+// @ts-check
+
 import { assert, Fail } from '@endo/errors';
 
 // XXX Do these "StorageAPI" functions belong in their own package?
@@ -74,8 +76,10 @@ export const makeKVStoreFromMap = map => {
   let priorKeyIndex;
 
   const ensureSorted = () => {
-    if (sortedKeys) return;
-    sortedKeys = [...map.keys()].sort(compareByCodePoints);
+    if (!sortedKeys) {
+      sortedKeys = [...map.keys()];
+      sortedKeys.sort(compareByCodePoints);
+    }
   };
 
   const clearGetNextKeyCache = () => {
@@ -97,16 +101,9 @@ export const makeKVStoreFromMap = map => {
       assert.typeof(priorKey, 'string');
       ensureSorted();
       const start =
-        priorKeyReturned === undefined
-          ? 0
-          : // If priorKeyReturned <= priorKey, start just after it.
-            (compareByCodePoints(priorKeyReturned, priorKey) <= 0 &&
-              priorKeyIndex + 1) ||
-            // Else if priorKeyReturned immediately follows priorKey, start at
-            // its index (and expect to return it again).
-            (sortedKeys.at(priorKeyIndex - 1) === priorKey && priorKeyIndex) ||
-            // Otherwise, start at the beginning.
-            0;
+        compareByCodePoints(priorKeyReturned, priorKey) <= 0
+          ? priorKeyIndex + 1
+          : 0;
       for (let i = start; i < sortedKeys.length; i += 1) {
         const key = sortedKeys[i];
         if (compareByCodePoints(key, priorKey) <= 0) continue;
@@ -229,8 +226,7 @@ export function makeBufferedStorage(kvStore, listeners = {}) {
 
   // To avoid confusion, additions and deletions are prevented from sharing
   // the same key at any given time.
-  /** @type {Map<string, T> & KVStore<T>} */
-  const additions = provideEnhancedKVStore(makeKVStoreFromMap(new Map()));
+  const additions = new Map();
   const deletions = new Set();
 
   /** @type {KVStore<T>} */
@@ -261,18 +257,13 @@ export function makeBufferedStorage(kvStore, listeners = {}) {
       deletions.add(key);
       if (onPendingDelete !== undefined) onPendingDelete(key);
     },
+
+    /**
+     * @param {string} previousKey
+     */
     getNextKey(previousKey) {
       assert.typeof(previousKey, 'string');
-      const bufferedNextKey = additions.getNextKey(previousKey);
-      let nextKey = kvStore.getNextKey(previousKey);
-      while (nextKey !== undefined) {
-        if (bufferedNextKey !== undefined) {
-          if (compareByCodePoints(bufferedNextKey, nextKey) <= 0) break;
-        }
-        if (!deletions.has(nextKey)) return nextKey;
-        nextKey = kvStore.getNextKey(nextKey);
-      }
-      return bufferedNextKey;
+      throw Error('not implemented');
     },
   };
   function commit() {
@@ -295,7 +286,7 @@ export function makeBufferedStorage(kvStore, listeners = {}) {
 }
 
 /**
- * @template [T=unknown]
+ * @template {unknown} [T=unknown]
  * @param {KVStore<T>} kvStore
  * @returns {BufferedKVStore<T>}
  */

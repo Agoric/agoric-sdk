@@ -8,7 +8,6 @@ import { makeApiInvocationPositions } from '../src/contractGovernance/governApi.
 
 /**
  * @import {Passable, RemotableObject} from '@endo/pass-style';
- * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
  * @import {GovernableStartFn, ParamChangesSpec} from '../src/types.js';
  */
 

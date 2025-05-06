@@ -11,7 +11,6 @@ import {
 } from '../question.js';
 
 /**
- * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
  * @import {Position, ApiGovernor, ApiInvocationIssue, PoserFacet, VoteOnApiInvocation, FilterGovernor, GovernedCreatorFacet, OfferFilterIssue, VoteOnOfferFilter} from '../types.js';
  */
 

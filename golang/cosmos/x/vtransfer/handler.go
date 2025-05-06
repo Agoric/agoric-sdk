@@ -5,9 +5,7 @@ import (
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vtransfer/keeper"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	sdkioerrors "cosmossdk.io/errors"
-	sdktypeserrors "github.com/cosmos/cosmos-sdk/types/errors"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 // NewHandler returns a handler for "vtransfer" type messages.
@@ -16,7 +14,7 @@ func NewHandler(keeper keeper.Keeper) sdk.Handler {
 		switch msg := msg.(type) {
 		default:
 			errMsg := fmt.Sprintf("Unrecognized vtransfer Msg type: %T", msg)
-			return nil, sdkioerrors.Wrap(sdktypeserrors.ErrUnknownRequest, errMsg)
+			return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, errMsg)
 		}
 	}
 }

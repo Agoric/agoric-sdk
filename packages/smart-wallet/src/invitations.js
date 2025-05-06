@@ -59,17 +59,14 @@ const MAX_PIPE_LENGTH = 2;
  */
 
 /**
- * @typedef {Pick<
- *   import('@agoric/zoe').InvitationDetails,
- *   'description' | 'instance'
- * >} InvitationsPurseQuery
+ * @typedef {Pick<InvitationDetails, 'description' | 'instance'>} InvitationsPurseQuery
  */
 
 /**
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<import('@agoric/vats').NameHub>} agoricNames
  * @param {Brand<'set'>} invitationBrand
- * @param {Purse<'set', import('@agoric/zoe').InvitationDetails>} invitationsPurse
+ * @param {Purse<'set', InvitationDetails>} invitationsPurse
  * @param {(fromOfferId: string) => import('./types.js').InvitationMakers} getInvitationContinuation
  */
 export const makeInvitationsHelper = (

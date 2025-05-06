@@ -1,3 +1,4 @@
+/* eslint-disable jsdoc/require-param -- ts types */
 import { heapVowE as E } from '@agoric/vow/vat.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { Far, type EReturn } from '@endo/far';
@@ -20,8 +21,8 @@ export const prepareMakeTestCOAKit = (
     bootstrap,
     commonPrivateArgs: { marshaller },
     facadeServices,
+    utils,
   }: EReturn<typeof commonSetup>,
-  { noble } = { noble: false },
   { zcf = Far('MockZCF', {}) } = {},
 ) => {
   t.log('exo setup - prepareCosmosOrchestrationAccount');
@@ -46,7 +47,7 @@ export const prepareMakeTestCOAKit = (
 
   return async ({
     storageNode = bootstrap.storage.rootNode.makeChildNode('accounts'),
-    chainId = noble ? 'noble-1' : 'cosmoshub-4',
+    chainId = 'cosmoshub-4',
     hostConnectionId = 'connection-0' as const,
     controllerConnectionId = 'connection-1' as const,
     icqEnabled = false,

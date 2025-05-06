@@ -73,7 +73,6 @@ const build = async (log, zoe) => {
       });
     },
     createMultiVoter: async (name, invitation, choices) => {
-      /** @type {any} */
       const electorateInstance = await E(zoe).getInstance(invitation);
       /** @type {Promise<CommitteeElectoratePublic>} electoratePublicFacet */
       const electoratePublicFacet = E(zoe).getPublicFacet(electorateInstance);

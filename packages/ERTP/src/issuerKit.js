@@ -13,8 +13,6 @@ import { preparePaymentLedger } from './paymentLedger.js';
  * @import {AdditionalDisplayInfo, RecoverySetsOption, IssuerKit, PaymentLedger} from './types.js';
  * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
  * @import {TypedPattern} from '@agoric/internal';
- * @import {CopyTaggedInterface, Key, RemotableObject} from '@endo/patterns';
- * @import {Pattern} from '@endo/patterns';
  */
 
 /**
@@ -254,7 +252,7 @@ harden(makeDurableIssuerKit);
  *   anything else is corrupted by that corrupted state. See
  *   https://github.com/Agoric/agoric-sdk/issues/3434
  * @param {O} [options]
- * @returns {O['elementShape'] extends TypedPattern<infer T extends Key>
+ * @returns {O['elementShape'] extends TypedPattern<infer T>
  *     ? IssuerKit<K, T>
  *     : IssuerKit<K>}
  */
@@ -330,7 +328,7 @@ harden(prepareIssuerKit);
  *   anything else is corrupted by that corrupted state. See
  *   https://github.com/Agoric/agoric-sdk/issues/3434
  * @param {O} [options]
- * @returns {O['elementShape'] extends TypedPattern<infer T extends Key>
+ * @returns {O['elementShape'] extends TypedPattern<infer T>
  *     ? IssuerKit<K, T>
  *     : IssuerKit<K>}
  */

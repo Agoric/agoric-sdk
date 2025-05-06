@@ -1,11 +1,16 @@
 /** @file Orchestrator exo */
 import { AmountShape } from '@agoric/ertp';
-import { makeScalarMapStore, pickFacet } from '@agoric/vat-data';
+import { pickFacet } from '@agoric/vat-data';
 import { makeTracer } from '@agoric/internal';
 import { Shape as NetworkShape } from '@agoric/network';
 import { Fail, q } from '@endo/errors';
 import { M } from '@endo/patterns';
-import { DenomInfoShape, DenomAmountShape, DenomShape } from '../typeGuards.js';
+import {
+  DenomInfoShape,
+  ChainInfoShape,
+  DenomAmountShape,
+  DenomShape,
+} from '../typeGuards.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone';
@@ -28,7 +33,7 @@ const trace = makeTracer('Orchestrator');
 
 /** @see {Orchestrator} */
 export const OrchestratorI = M.interface('Orchestrator', {
-  getChain: M.call(M.string()).returns(Vow$(M.remotable('ChainFacade'))),
+  getChain: M.call(M.string()).returns(Vow$(ChainInfoShape)),
   getDenomInfo: M.call(DenomShape, M.string()).returns(DenomInfoShape),
   asAmount: M.call(DenomAmountShape).returns(AmountShape),
 });
@@ -56,12 +61,8 @@ const prepareOrchestratorKit = (
    * @typedef {{ vow: Vow<T>; pending: true } | { value: T; pending: false }} MaybePendingValue
    */
 
-  /**
-   * heap store is fine for a cache
-   *
-   * @type {MapStore<string, MaybePendingValue<HostInterface<Chain>>>}
-   */
-  const chainByName = makeScalarMapStore('chainName');
+  /** @type {MapStore<string, MaybePendingValue<HostInterface<Chain>>>} */
+  const chainByName = zone.mapStore('chainName');
 
   return zone.exoClassKit(
     'Orchestrator',

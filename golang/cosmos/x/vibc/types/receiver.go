@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
 
@@ -40,14 +39,14 @@ func NewReceiver(impl ReceiverImpl) Receiver {
 }
 
 type portMessage struct { // comes from swingset's IBC handler
-	Type              string          `json:"type"` // IBC_METHOD
-	Method            string          `json:"method"`
-	Packet            types.IBCPacket `json:"packet"`
-	RelativeTimeoutNs uint64          `json:"relativeTimeoutNs,string"`
-	Order             string          `json:"order"`
-	Hops              []string        `json:"hops"`
-	Version           string          `json:"version"`
-	Ack               []byte          `json:"ack"`
+	Type              string              `json:"type"` // IBC_METHOD
+	Method            string              `json:"method"`
+	Packet            channeltypes.Packet `json:"packet"`
+	RelativeTimeoutNs uint64              `json:"relativeTimeoutNs,string"`
+	Order             string              `json:"order"`
+	Hops              []string            `json:"hops"`
+	Version           string              `json:"version"`
+	Ack               []byte              `json:"ack"`
 }
 
 func stringToOrder(order string) channeltypes.Order {
@@ -122,19 +121,20 @@ func (ir Receiver) Receive(cctx context.Context, jsonRequest string) (jsonReply 
 			timeoutTimestamp = uint64(ctx.BlockTime().UnixNano()) + msg.RelativeTimeoutNs
 		}
 
-		packet := types.CopyToIBCPacket(msg.Packet)
-		packet.TimeoutTimestamp = timeoutTimestamp
+		packet := channeltypes.NewPacket(
+			msg.Packet.Data, 0,
+			msg.Packet.SourcePort, msg.Packet.SourceChannel,
+			msg.Packet.DestinationPort, msg.Packet.DestinationChannel,
+			msg.Packet.TimeoutHeight, timeoutTimestamp,
+		)
 		seq, err := impl.ReceiveSendPacket(ctx, packet)
 		if err == nil {
 			packet.Sequence = seq
-			bytes, err := json.Marshal(packet)
+			bytes, err := json.Marshal(&packet)
 			if err == nil {
 				jsonReply = string(bytes)
 			}
 		}
-
-	case "initOpenExecuted":
-		err = fmt.Errorf("initOpenExecuted not yet implemented")
 
 	case "tryOpenExecuted":
 		err = impl.ReceiveWriteOpenTryChannel(

@@ -55,10 +55,10 @@ export const upgradeVaults = async (
 
   await priceAuthority8400;
 
-  /** @type {Instance<import('../auction/auctioneer.js').start>} */
   const auctionNewInstance = await auctionUpgradeNewInstance;
   auctionUpgradeNewInstanceProducer.reset();
   const publicFacet = E(zoe).getPublicFacet(auctionNewInstance);
+  /** @type {import('@agoric/inter-protocol/src/auction/scheduler.js').FullSchedule} */
   const schedules = await E(publicFacet).getSchedules();
   const now = await E(chainTimerService).getCurrentTimestamp();
   (schedules.nextAuctionSchedule &&
@@ -97,6 +97,7 @@ export const upgradeVaults = async (
     for (const kwd of Object.keys(vaultBrands)) {
       const collateralBrand = vaultBrands[kwd];
 
+      /** @type {any} */
       const governedParams = await E(directorPF).getGovernedParams({
         collateralBrand,
       });

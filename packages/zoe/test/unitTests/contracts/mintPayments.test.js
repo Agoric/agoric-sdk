@@ -64,7 +64,6 @@ test('zoe - mint payments', async t => {
 
         // Let's get the tokenIssuer from the contract so we can evaluate
         // what we get as our payout
-        /** @type {any} */
         const publicFacet = await E(zoe).getPublicFacet(instance);
         const tokenIssuer = await E(publicFacet).getTokenIssuer();
         const tokenBrand = await E(tokenIssuer).getBrand();
@@ -159,7 +158,6 @@ test('zoe - mint payments with unrelated give and want', async t => {
 
         // Let's get the tokenIssuer from the contract so we can evaluate
         // what we get as our payout
-        /** @type {any} */
         const publicFacet = await E(zoe).getPublicFacet(instance);
         const tokenIssuer = await E(publicFacet).getTokenIssuer();
         const tokenBrand = await E(tokenIssuer).getBrand();

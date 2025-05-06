@@ -1,6 +1,5 @@
 import { E } from '@endo/far';
 import type { StartedInstanceKit } from './utils.js';
-import type { ZCF } from '../types-index.js';
 
 const someContractStartFn = (
   zcf: ZCF,
