@@ -156,6 +156,76 @@ test.serial('Observed after mint: Forward failed', async t => {
   ]);
 });
 
+test.serial('Forwards are retried maxRetries times', async t => {
+  const {
+    evm: { cctp, txPub },
+    common: {
+      commonPrivateArgs: { feeConfig },
+      facadeServices: { chainHub },
+      utils: { transmitVTransferEvent, inspectLocalBridge },
+    },
+    mint,
+  } = t.context;
+
+  const max = makeCustomer('Max', cctp, txPub.publisher, feeConfig, chainHub);
+  const maxEud = 'osmo1max';
+
+  // publish a risky transaction, so the Advance is skipped and forward() instead
+  const maxEvidence = await max.sendFast(t, 3_000_000n, maxEud, true);
+  await mint(maxEvidence);
+  // timeout the forward attempt
+  await transmitVTransferEvent('timeoutPacket', -1);
+
+  t.deepEqual(t.context.common.readTxnRecord(maxEvidence), [
+    { evidence: maxEvidence, status: 'OBSERVED' },
+    {
+      risksIdentified: ['RISK1'],
+      status: 'ADVANCE_SKIPPED',
+    },
+    { status: 'FORWARD_FAILED' },
+  ]);
+
+  const getForwardAttempts = (eud: string) =>
+    inspectLocalBridge().filter(x => x.messages?.[0].memo.includes(eud)).length;
+
+  t.is(getForwardAttempts(maxEud), 2, 'failure is automatically retried');
+
+  for (let i = 3; i <= 6; i += 1) {
+    await transmitVTransferEvent('timeoutPacket', -1);
+    await eventLoopIteration(); // XXX safe to remove?
+    t.is(getForwardAttempts(maxEud), i, `retry attempt ${i}`);
+  }
+
+  // timeout the 6th (max) retry attempt
+  await transmitVTransferEvent('timeoutPacket', -1);
+  t.is(
+    getForwardAttempts(maxEud),
+    6,
+    'transfer not attempted after maxRetries',
+  );
+  // Log should show something like:
+  // Route cosmos:osmosis-1 is derelict. A successful transfer must be observed for failed forwards to be reattempted.
+
+  // a new transaction is attempted and its success awakens the channel
+  const ned = makeCustomer('ned', cctp, txPub.publisher, feeConfig, chainHub);
+  const nedEv = await ned.sendFast(t, 1_200_000n, 'osmo1ned', true);
+  await mint(nedEv);
+  await transmitVTransferEvent('acknowledgementPacket', -1);
+  t.deepEqual(t.context.common.readTxnRecord(nedEv).at(-1), {
+    status: 'FORWARDED',
+  });
+
+  // Log should show something like:
+  // Route cosmos:osmosis-1 is working again. Attempting to clear 1 failed forwards for cosmos:osmosis-1
+
+  // Ensure the failed forwards list is clear for subsequent tests
+  t.is(getForwardAttempts(maxEud), 7, 'one more on healthy channel');
+  await transmitVTransferEvent('acknowledgementPacket', -1);
+  t.deepEqual(t.context.common.readTxnRecord(maxEvidence).at(-1), {
+    status: 'FORWARDED',
+  });
+});
+
 test.serial('partial completion', async t => {
   const {
     bridges: { snapshot, since },
