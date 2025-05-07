@@ -90,10 +90,11 @@ const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
 
 const setupXcsContracts = async t => {
-  console.log('Setting XXC Contracts ...');
+  console.log('Setting XCS Contracts ...');
+  const osmosisBranch = 'main';
   try {
     const scriptPath = path.resolve(dirname, '../../scripts/setup-xcs.sh');
-    const { stdout } = await execa(scriptPath);
+    const { stdout } = await execa(scriptPath, [osmosisBranch]);
     console.log('setup-xcs script output:', stdout);
   } catch (error) {
     t.fail(`setup-xcs script failed with error: ${error}`);
@@ -102,12 +103,25 @@ const setupXcsContracts = async t => {
 
 const createOsmosisPool = async t => {
   console.log('Creating Osmosis Pool ...');
+  const tokenInDenom = 'ubld';
+  const tokenInAmount = '250000';
+  const tokenInWeight = '1';
+  const tokenOutDenom = 'uosmo';
+  const tokenOutAmount = '250000';
+  const tokenOutWeight = '1';
   try {
     const scriptPath = path.resolve(
       dirname,
       '../../scripts/create-osmosis-pool.sh',
     );
-    const { stdout } = await execa(scriptPath);
+    const { stdout } = await execa(scriptPath, [
+      tokenInDenom,
+      tokenInAmount,
+      tokenInWeight,
+      tokenOutDenom,
+      tokenOutAmount,
+      tokenOutWeight,
+    ]);
     console.log('create-osmosis-pool  script output:', stdout);
   } catch (error) {
     t.fail(`create-osmosis-pool failed with error: ${error}`);
@@ -115,25 +129,42 @@ const createOsmosisPool = async t => {
 };
 
 const setupXcsState = async t => {
-  console.log('Setting XXC State ...');
+  console.log('Setting XCS State ...');
   try {
-    const { stdout } = await execa('make', ['tx-chain-channel-links'], {
-      cwd: dirname,
-    });
-    console.log('tx-chain-channel-links  target output:', stdout);
+    const scriptPath = path.resolve(
+      dirname,
+      '../../scripts/setup-xcs-state.sh',
+    );
+    const { stdout } = await execa(scriptPath);
+    console.log('setup-xcs-state script output:', stdout);
   } catch (error) {
-    t.fail(`tx-chain-channel-links failed with error: ${error}`);
+    t.fail(`setup-xcs-state script failed with error: ${error}`);
   }
+};
+
+const getXcsContractsAddress = async t => {
+  const osmosisCLI =
+    'kubectl exec -i osmosislocal-genesis-0 -c validator -- /bin/bash -c';
+
+  const registryQuery = `${osmosisCLI} "jq -r '.crosschain_registry.address' /contract-info.json"`;
+  const swaprouterQuery = `${osmosisCLI} "jq -r '.swaprouter.address' /contract-info.json"`;
+  const swapQuery = `${osmosisCLI} "jq -r '.crosschain_swaps.address' /contract-info.json"`;
 
   await t.context.waitForBlock(2);
 
   try {
-    const { stdout } = await execa('make', ['tx-bec32-prefixes'], {
-      cwd: dirname,
+    const { stdout: registryAddress } = await execa(registryQuery, {
+      shell: true,
     });
-    console.log('tx-bec32-prefixes target output:', stdout);
+    const { stdout: swaprouterAddress } = await execa(swaprouterQuery, {
+      shell: true,
+    });
+    const { stdout: swapAddress } = await execa(swapQuery, { shell: true });
+
+    return { registryAddress, swaprouterAddress, swapAddress };
   } catch (error) {
-    t.fail(`tx-bec32-prefixes failed with error: ${error}`);
+    t.fail(`failed to get xcs contracts address with error: ${error}`);
+    throw new Error(`Failed to get xcs contracts address: ${error}`);
   }
 };
 
@@ -185,6 +216,8 @@ test.serial('BLD for OSMO, receiver on Agoric', async t => {
     transferChannel: { channelId },
   } = starshipChainInfo.agoric.connections[osmosisChainId];
 
+  const { swapAddress } = await getXcsContractsAddress(t);
+
   const doOffer = makeDoOffer(wdUser);
 
   // Verify deposit
@@ -209,8 +242,7 @@ test.serial('BLD for OSMO, receiver on Agoric', async t => {
     },
     offerArgs: {
       // TODO: get the contract address dynamically
-      destAddr:
-        'osmo17p9rzwnnfxcjp32un9ug7yhhzgtkhvl9jfksztgw5uh69wac2pgs5yczr8',
+      destAddr: swapAddress,
       receiverAddr: wallets.agoricReceiver,
       outDenom: 'uosmo',
       slippage: { slippagePercentage: '20', windowSeconds: 10 },
@@ -221,7 +253,11 @@ test.serial('BLD for OSMO, receiver on Agoric', async t => {
 
   const { balances: agoricReceiverBalances } = await retryUntilCondition(
     () => queryClient.queryBalances(wallets.agoricReceiver),
-    ({ balances }) => balances.length > balancesBefore.length,
+    ({ balances }) => {
+      const balancesBeforeAmount = BigInt(balancesBefore[0]?.amount || 0);
+      const currentBalanceAmount = BigInt(balances[0]?.amount || 0);
+      return currentBalanceAmount > balancesBeforeAmount;
+    },
     'Deposit reflected in localOrchAccount balance',
   );
   t.log(agoricReceiverBalances);
@@ -279,8 +315,10 @@ test.skip('address hook - BLD for OSMO, receiver on Agoric', async t => {
   } = await vstorageClient.queryData('published.swap-anything');
   t.log(baseAddress);
 
+  const { swapAddress } = await getXcsContractsAddress(t);
+
   const orcContractReceiverAddress = encodeAddressHook(baseAddress, {
-    destAddr: 'osmo17p9rzwnnfxcjp32un9ug7yhhzgtkhvl9jfksztgw5uh69wac2pgs5yczr8',
+    destAddr: swapAddress,
     receiverAddr: wallets.agoricReceiver,
     outDenom: 'uosmo',
   });
