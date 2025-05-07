@@ -46,7 +46,7 @@ const makeDefaultTestContext = async () => {
         });
       }
       case `${BridgeId.DIBC}:IBC_METHOD`:
-        return {};
+        return String(undefined);
       default:
         break;
     }
@@ -118,8 +118,8 @@ test('sim/demo config provides home with .myAddressNameAdmin', async t => {
   keyArrayEqual(t, keys(home).sort(), homeKeys);
 });
 
-test.skip('namesByAddress contains provisioned account', async t => {
-  const { EV } = t.context.runUtils;
+test('namesByAddress contains provisioned account', async t => {
+  const { EV } = t.context;
   const addr = 'agoric1234new';
   const home = await makeHomeFor(addr, EV);
   t.truthy(home);
@@ -128,8 +128,8 @@ test.skip('namesByAddress contains provisioned account', async t => {
   await t.notThrowsAsync(EV(namesByAddress).lookup(addr));
 });
 
-test.skip('sim/demo config launches Vaults as expected by loadgen', async t => {
-  const { EV } = t.context.runUtils;
+test('sim/demo config launches Vaults as expected by loadgen', async t => {
+  const { EV } = t.context;
   const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
   const vaultsInstance = await EV(agoricNames).lookup(
     'instance',
@@ -148,8 +148,8 @@ test.skip('sim/demo config launches Vaults as expected by loadgen', async t => {
  * decentral-demo-config.json into separate configurations for sim-chain,
  * loadgen.
  */
-test.skip('demo config meets loadgen constraint: no USDC', async t => {
-  const { EV } = t.context.runUtils;
+test('demo config meets loadgen constraint: no USDC', async t => {
+  const { EV } = t.context;
   const home = await makeHomeFor('addr123', EV);
   const pmtInfo = await EV(home.faucet).tapFaucet();
   const found = pmtInfo.find(p => p.issuerPetname === 'USDC');
