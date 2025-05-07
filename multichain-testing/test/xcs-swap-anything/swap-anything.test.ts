@@ -2,7 +2,7 @@ import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
 import { AmountMath } from '@agoric/ertp';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
-import { makeDoOffer } from '../../tools/e2e-tools.js';
+import { makeBlockTool, makeDoOffer } from '../../tools/e2e-tools.js';
 import { commonSetup, type SetupContextWithWallets } from '../support.js';
 import { makeQueryClient } from '../../tools/query.js';
 import starshipChainInfo from '../../starship-chain-info.js';
@@ -13,6 +13,7 @@ import {
 import { execa } from 'execa';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { makeHttpClient } from '../../tools/makeHttpClient.js';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
@@ -124,6 +125,8 @@ const setupXcsState = async t => {
     t.fail(`tx-chain-channel-links failed with error: ${error}`);
   }
 
+  await t.context.waitForBlock(2);
+
   try {
     const { stdout } = await execa('make', ['tx-bec32-prefixes'], {
       cwd: dirname,
@@ -137,10 +140,15 @@ const setupXcsState = async t => {
 test.before(async t => {
   const { setupTestKeys, ...common } = await commonSetup(t);
   const { commonBuilderOpts, deleteTestKeys, startContract } = common;
+    const { waitForBlock } = makeBlockTool({
+      rpc: makeHttpClient('http://localhost:26657', fetch),
+      delay: ms => new Promise(resolve => setTimeout(resolve, ms)),
+    });
   await deleteTestKeys(accounts).catch();
   const wallets = await setupTestKeys(accounts);
   console.log('WALLETS', wallets);
-  t.context = { ...common, wallets };
+  // @ts-expect-error type
+  t.context = { ...common, wallets, waitForBlock };
   await startContract(contractName, contractBuilder, commonBuilderOpts);
   await setupXcsContracts(t);
   await createOsmosisPool(t);
