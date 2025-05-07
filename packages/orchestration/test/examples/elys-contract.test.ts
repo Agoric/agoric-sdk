@@ -105,7 +105,7 @@ test('Failing case: IBC transfer to host chain fails, user receives token at ago
     bootstrap: { storage },
     commonPrivateArgs,
     mocks: { transferBridge, ibcBridge },
-    utils: { inspectLocalBridge, inspectDibcBridge, transmitTransferAck },
+    utils: { inspectLocalBridge, inspectDibcBridge, transmitTransferAck,transmitVTransferEvent },
   } = await commonSetup(t);
 
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
@@ -151,6 +151,8 @@ test('Failing case: IBC transfer to host chain fails, user receives token at ago
       transferBridge,
     ),
   );
+
+  await transmitVTransferEvent('timeoutPacket','packet timed out', 2n);
 
   const { messages, address: execAddr } = inspectLocalBridge().at(-1);
   t.is(messages?.length, 1, 'transfer message sent');

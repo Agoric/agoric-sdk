@@ -173,6 +173,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
   const transmitVTransferEvent = async (
     event: VTransferIBCEvent['event'],
     acknowledgementError?: string,
+    sequenceOverride?: bigint,
   ) => {
     // assume this is called after each outgoing IBC transfer
     ibcSequenceNonce += 1n;
@@ -191,7 +192,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       sender: lastMsgTransfer.sender as Bech32Address,
       target: lastMsgTransfer.sender as Bech32Address,
       sourceChannel: lastMsgTransfer.sourceChannel as IBCChannelID,
-      sequence: ibcSequenceNonce,
+      sequence: sequenceOverride ?? ibcSequenceNonce,
       amount: BigInt(lastMsgTransfer.token.amount),
       denom: lastMsgTransfer.token.denom,
       memo: lastMsgTransfer.memo,
