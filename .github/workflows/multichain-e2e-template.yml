@@ -103,23 +103,25 @@ jobs:
           namespace: ${{ env.NAMESPACE }}
           repo: https://hyperweb-io.github.io/starship
 
-      - name: Fund Provision Pool
+      - name: Await pods
         run: |
           kubectl config set-context --current --namespace=${NAMESPACE}
           kubectl get pods
-          make fund-provision-pool
         working-directory: ./agoric-sdk/multichain-testing
 
-      - name: Register Interchain Bank Assets
-        run: make register-bank-assets
-        working-directory: ./agoric-sdk/multichain-testing
+      - name: Setup Agoric chain state
+        uses: nick-fields/retry@v3
+        with:
+          # Retry arbitrarily; this isn't the test itself so don't wire up the flake detection.
+          max_attempts: 3
+          command: cd ./agoric-sdk/multichain-testing && make fund-provision-pool register-bank-assets
 
       - name: Run @agoric/multichain-testing E2E Tests
         id: run-tests
         # These integration tests can be flaky so retry automatically
         uses: nick-fields/retry@v3
         with:
-          timeout_minutes: 10
+          timeout_minutes: 15
           max_attempts: 2 # only retry once
           retry_on: error # let command timeout fail the job
           command: cd ./agoric-sdk/multichain-testing && ${{ inputs.test_command }}
@@ -128,12 +130,12 @@ jobs:
 
       - name: Notify of flakey test
         # If tests passed but required more than 1 attempt, then the test was flaky, so report it via Slack.
-        if: ${{ steps.run-tests.outputs.exit_code == '0' && steps.run-tests.outputs.total_attempts > '1' }}
+        if: ${{ steps.run-tests.outputs.exit_code == 0 && steps.run-tests.outputs.total_attempts > 1 }}
         uses: slackapi/slack-github-action@v2
         with:
           payload: |
             {
-              "text": "🎯 Flakey test detected in job ${{ github.job }} in workflow ${{ github.workflow }} of ${{ github.repository }}",
+              "text": "🎯 Flakey test detected in job ${{ github.job }} in workflow ${{ github.workflow }} of ${{ github.repository }}\nDetails at ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/1",
               "username": "GitHub"
             }
         env:
