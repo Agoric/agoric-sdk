@@ -233,6 +233,10 @@ test.serial('BLD for OSMO, receiver on Agoric', async t => {
   );
 });
 
+/**
+ * UNTIL https://github.com/Agoric/BytePitchPartnerEng/issues/51, we are skipping this
+ * until the ticket above is done
+ */
 test.skip('address hook - BLD for OSMO, receiver on Agoric', async t => {
   const { wallets, vstorageClient, retryUntilCondition, useChain } = t.context;
   const { getRestEndpoint, chain: cosmosChain } = useChain('cosmoshub');

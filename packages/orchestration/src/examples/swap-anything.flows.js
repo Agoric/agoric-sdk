@@ -75,7 +75,6 @@ const buildXCSMemo = swapInfo => {
  * @param {SwapInfo} offerArgs
  */
 
-// Given USDC, swap to desired token with slippage
 // Ref: https://github.com/osmosis-labs/osmosis/tree/main/cosmwasm/contracts/crosschain-swaps#via-ibc
 export const swapIt = async (
   orch,
@@ -164,6 +163,9 @@ export const swapIt = async (
 harden(swapIt);
 
 /**
+ * UNTIL https://github.com/Agoric/BytePitchPartnerEng/issues/51 is done, we
+ * can't demonstrate this
+ *
  * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} _orch
  * @param {object} ctx
