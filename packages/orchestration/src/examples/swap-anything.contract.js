@@ -2,17 +2,14 @@ import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
 import { withOrchestration } from '../utils/start-helper.js';
 import * as sharedFlows from './shared.flows.js';
-import { swapIt, swapAnythingViaHook } from './swap-anything.flows.js';
+import { swapIt } from './swap-anything.flows.js';
 import { AnyNatAmountShape } from '../typeGuards.js';
 import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
 
 const trace = makeTracer('SwapAnything.Contract');
-
-const interfaceTODO = undefined;
 
 /**
  * @import {Remote, Vow} from '@agoric/vow';
@@ -28,9 +25,8 @@ export const SingleNatAmountRecord = M.and(
 harden(SingleNatAmountRecord);
 
 /**
- * Send assets currently in an ERTP purse to an account on another chain. This
- * currently supports IBC and CCTP transfers. It could eventually support other
- * protocols, like Axelar GMP or IBC Eureka.
+ * Swap assets that are currently in an ERTP purse against another cosmos asset
+ * by using an Osmosis pool then have the swap output routed to any address
  *
  * Orchestration contract to be wrapped by withOrchestration for Zoe
  *
@@ -55,7 +51,8 @@ export const contract = async (
   // UNTIL https://github.com/Agoric/agoric-sdk/issues/9066
   const logNode = E(privateArgs.storageNode).makeChildNode('log');
   /** @type {(msg: string) => Vow<void>} */
-  const log = msg => vowTools.watch(E(logNode).setValue(msg));
+  const log = msg =>
+    vowTools.watch(E(logNode).setValue(JSON.stringify({ msg })));
 
   const makeLocalAccount = orchestrate(
     'makeLocalAccount',
@@ -77,85 +74,12 @@ export const contract = async (
     swapIt,
   );
 
-  const swapAnythingAddressHook = orchestrate(
-    'swapAnythingViaHook',
-    {
-      chainHub,
-      sharedLocalAccountP,
-      log,
-    },
-    swapAnythingViaHook,
-  );
-
-  const tap = zone.makeOnce('tapPosition', _key => {
-    console.log('making tap');
-    return zone.exo('tap', interfaceTODO, {
-      /**
-       * @param {import('@agoric/vats').VTransferIBCEvent} event
-       */
-      async receiveUpcall(event) {
-        await null;
-        trace('receiveUpcall', event);
-
-        if (event.event !== 'writeAcknowledgement') return;
-        trace('Moving on...');
-        /**
-         * Extract the incoming packet data.
-         *
-         * @type {import('@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js').FungibleTokenPacketData}
-         */
-        const {
-          amount,
-          denom, // transfer/channel-1/ubld, uatom
-          receiver: origReceiver,
-        } = JSON.parse(atob(event.packet.data));
-
-        trace({ amount, denom, origReceiver });
-
-        const { baseAddress, query } = decodeAddressHook(origReceiver);
-
-        /**
-         * @type {{
-         *   destAddr: string;
-         *   receiverAddr: string;
-         *   outDenom: string;
-         * }}
-         */
-        // @ts-expect-error
-        const { destAddr, receiverAddr, outDenom } = query;
-
-        trace({
-          baseAddress,
-          destAddr,
-          receiverAddr,
-          outDenom,
-        });
-
-        if (!receiverAddr || !destAddr || !outDenom) return;
-        // Invoke the flow to perform swap and end up at the final destination.
-        return swapAnythingAddressHook(
-          { denom: 'ubld', amount },
-          {
-            destAddr,
-            receiverAddr,
-            outDenom, // swapOutDenom
-            onFailedDelivery: 'do_nothing',
-            slippage: {
-              slippagePercentage: '20',
-              windowSeconds: 10,
-            },
-          },
-        );
-      },
-    });
-  });
-
   void vowTools.when(sharedLocalAccountP, async sharedLocalAccount => {
-    sharedLocalAccount.monitorTransfers(tap);
     const encoded = await E(privateArgs.marshaller).toCapData({
       sharedLocalAccount: sharedLocalAccount.getAddress(),
     });
     void E(privateArgs.storageNode).setValue(JSON.stringify(encoded));
+    trace('Localchain account information published', encoded);
   });
 
   const publicFacet = zone.exo(
