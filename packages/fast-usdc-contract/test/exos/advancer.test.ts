@@ -7,6 +7,7 @@ import {
 import type { NatAmount } from '@agoric/ertp';
 import { PendingTxStatus } from '@agoric/fast-usdc/src/constants.js';
 import { CctpTxEvidenceShape } from '@agoric/fast-usdc/src/type-guards.js';
+import type { EvidenceWithRisk } from '@agoric/fast-usdc/src/types.ts';
 import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
 import {
   MockCctpTxEvidences,
@@ -18,7 +19,8 @@ import { denomHash } from '@agoric/orchestration';
 import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { type ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import type { ZCFSeat } from '@agoric/zoe';
+import type { Vow } from '@agoric/vow';
+import type { ZCFSeat, ZcfSeatKit } from '@agoric/zoe';
 import { q } from '@endo/errors';
 import type { EReturn } from '@endo/far';
 import { Far } from '@endo/pass-style';
@@ -31,6 +33,7 @@ import {
   type SettlerKit,
 } from '../../src/exos/settler.ts';
 import { prepareStatusManager } from '../../src/exos/status-manager.ts';
+import * as flows from '../../src/fast-usdc.flows.ts';
 import { intermediateRecipient } from '../fixtures.js';
 import {
   makeTestFeeConfig,
@@ -86,9 +89,10 @@ const createTestExtensions = (t, common: CommonSetup) => {
   );
 
   const mockZCF = Far('MockZCF', {
-    makeEmptySeatKit: () => ({
-      zcfSeat: Far('MockZCFSeat', { exit: theExit }),
-    }),
+    makeEmptySeatKit: () =>
+      ({
+        zcfSeat: Far('MockZCFSeat', { exit: theExit }),
+      }) as unknown as ZcfSeatKit,
   });
 
   const localTransferVK = vowTools.makeVowKit<void>();
@@ -107,16 +111,37 @@ const createTestExtensions = (t, common: CommonSetup) => {
   const mockZoeTools = Far('MockZoeTools', {
     localTransfer(...args: Parameters<ZoeTools['localTransfer']>) {
       trace('ZoeTools.localTransfer called with', args);
-      return localTransferVK.vow;
+      // simulate part of the membrane
+      return vowTools.when(localTransferVK.vow);
     },
     withdrawToSeat(...args: Parameters<ZoeTools['withdrawToSeat']>) {
       trace('ZoeTools.withdrawToSeat called with', args);
-      return withdrawToSeatVK.vow;
+      // simulate part of the membrane
+      return vowTools.when(withdrawToSeatVK.vow);
     },
-  });
+  }) as unknown as ZoeTools;
 
   const feeConfig = makeTestFeeConfig(usdc);
+  const advanceFunds = (er: EvidenceWithRisk, config) =>
+    flows.advanceFunds(
+      undefined as any,
+      {
+        chainHubTools: chainHub,
+        feeConfig,
+        getNobleICA: () => mockAccounts.intermediate.account as any,
+        log, // some tests check the log calls
+        statusManager,
+        usdc: harden({ brand: usdc.brand, denom: LOCAL_DENOM }),
+        zcfTools: {
+          makeEmptyZCFSeat: () => mockZCF.makeEmptySeatKit().zcfSeat,
+        },
+        zoeTools: mockZoeTools,
+      },
+      er,
+      config,
+    ) as unknown as Vow<void>; // simulate part of the membrane
   const makeAdvancer = prepareAdvancer(contractZone.subZone('advancer'), {
+    advanceFunds,
     chainHub,
     feeConfig,
     getNobleICA: () => mockAccounts.intermediate.account as any,
