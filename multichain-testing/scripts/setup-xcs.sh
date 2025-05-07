@@ -6,6 +6,8 @@ shopt -s expand_aliases
 alias osmo-exec="kubectl exec -i osmosislocal-genesis-0 -c validator -- osmosisd"
 alias osmo-cli="kubectl exec -i osmosislocal-genesis-0 -c validator -- /bin/bash -c"
 
+OSMOSIS_BRANCH="$1"
+
 RPC=http://localhost:26655
 TX_FLAGS="--keyring-backend=test --gas=auto --gas-prices 0.1uosmo --gas-adjustment 1.3 --yes --chain-id osmosislocal"
 OWNER=genesis
@@ -66,8 +68,9 @@ cat ./scripts/download-wasm-artifacts.sh | osmo-cli "tee /download-wasm-artifact
 echo "Set newly created file's permissions..."
 osmo-cli "chmod 755 /download-wasm-artifacts.sh"
 
+# Pass branch as argument TODO
 echo "Download artifacts for XCS..."
-osmo-cli "/download-wasm-artifacts.sh osmosis-labs osmosis main tests/ibc-hooks/bytecode /wasm-artifacts crosschain_swaps.wasm swaprouter.wasm crosschain_registry.wasm"
+osmo-cli "/download-wasm-artifacts.sh osmosis-labs osmosis $OSMOSIS_BRANCH tests/ibc-hooks/bytecode /wasm-artifacts crosschain_swaps.wasm swaprouter.wasm crosschain_registry.wasm"
 
 echo "Storing Swaprouter code..."
 osmo-exec tx wasm store /wasm-artifacts/swaprouter.wasm --from $OWNER $TX_FLAGS
