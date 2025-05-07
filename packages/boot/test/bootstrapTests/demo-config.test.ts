@@ -24,7 +24,7 @@ const makeDefaultTestContext = async () => {
       case BridgeId.STORAGE:
         return toStorage(obj);
       default:
-        console.warn('bridgeId:', bridgeId, ', obj: ', obj);
+        break;
     }
 
     switch (bridgeType) {
