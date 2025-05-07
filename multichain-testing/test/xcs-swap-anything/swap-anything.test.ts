@@ -88,44 +88,51 @@ const fundRemote = async (
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
 
-const setupXcsContracts = async (t) => {
-  console.log("Setting XXC Contracts ...");
+const setupXcsContracts = async t => {
+  console.log('Setting XXC Contracts ...');
   try {
     const scriptPath = path.resolve(dirname, '../../scripts/setup-xcs.sh');
     const { stdout } = await execa(scriptPath);
-    console.log("setup-xcs script output:", stdout);
+    console.log('setup-xcs script output:', stdout);
   } catch (error) {
     t.fail(`setup-xcs script failed with error: ${error}`);
   }
-}
+};
 
-const createOsmosisPool = async (t) => {
-  console.log("Creating Osmosis Pool ...");
+const createOsmosisPool = async t => {
+  console.log('Creating Osmosis Pool ...');
   try {
-    const scriptPath = path.resolve(dirname, '../../scripts/create-osmosis-pool.sh');
+    const scriptPath = path.resolve(
+      dirname,
+      '../../scripts/create-osmosis-pool.sh',
+    );
     const { stdout } = await execa(scriptPath);
-    console.log("create-osmosis-pool  script output:", stdout);
+    console.log('create-osmosis-pool  script output:', stdout);
   } catch (error) {
     t.fail(`create-osmosis-pool failed with error: ${error}`);
   }
-}
+};
 
-const setupXcsState = async (t) => {
-  console.log("Setting XXC State ...");
+const setupXcsState = async t => {
+  console.log('Setting XXC State ...');
   try {
-    const { stdout } = await execa('make', ['tx-chain-channel-links'], { cwd: dirname });
-    console.log("tx-chain-channel-links  target output:", stdout);
+    const { stdout } = await execa('make', ['tx-chain-channel-links'], {
+      cwd: dirname,
+    });
+    console.log('tx-chain-channel-links  target output:', stdout);
   } catch (error) {
     t.fail(`tx-chain-channel-links failed with error: ${error}`);
   }
 
   try {
-    const { stdout } = await execa('make', ['tx-bec32-prefixes'], { cwd: dirname });
-    console.log("tx-bec32-prefixes target output:", stdout);
+    const { stdout } = await execa('make', ['tx-bec32-prefixes'], {
+      cwd: dirname,
+    });
+    console.log('tx-bec32-prefixes target output:', stdout);
   } catch (error) {
     t.fail(`tx-bec32-prefixes failed with error: ${error}`);
   }
-}
+};
 
 test.before(async t => {
   const { setupTestKeys, ...common } = await commonSetup(t);
@@ -135,9 +142,9 @@ test.before(async t => {
   console.log('WALLETS', wallets);
   t.context = { ...common, wallets };
   await startContract(contractName, contractBuilder, commonBuilderOpts);
-  await setupXcsContracts(t)
-  await createOsmosisPool(t)
-  await setupXcsState(t)
+  await setupXcsContracts(t);
+  await createOsmosisPool(t);
+  await setupXcsState(t);
 });
 
 test.serial('BLD for OSMO, receiver on Agoric', async t => {
@@ -288,9 +295,9 @@ test.serial('address hook - BLD for OSMO, receiver on Agoric', async t => {
   const { balances: agoricReceiverBalances } = await retryUntilCondition(
     () => queryClient.queryBalances(wallets.agoricReceiver),
     ({ balances }) => {
-      const balancesBeforeAmount = BigInt(balancesBefore[0]?.amount || 0)
-      const currentBalanceAmount = BigInt(balances[0]?.amount || 0)
-      return currentBalanceAmount > balancesBeforeAmount
+      const balancesBeforeAmount = BigInt(balancesBefore[0]?.amount || 0);
+      const currentBalanceAmount = BigInt(balances[0]?.amount || 0);
+      return currentBalanceAmount > balancesBeforeAmount;
     },
     'Deposit reflected in localOrchAccount balance',
   );
