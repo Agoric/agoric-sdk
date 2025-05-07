@@ -9,7 +9,8 @@
     "test:main": "ava --config ava.rest.config.js",
     "test:fast-usdc": "ava --config ava.fusdc.config.js",
     "test:queries": "ava --config ava.queries.config.js",
-    "test:staking": "ava --config ava.staking.config.js"
+    "test:staking": "ava --config ava.staking.config.js",
+    "test:xcs": "ava --config ava.xcs.config.js"
   },
   "packageManager": "yarn@4.9.1",
   "devDependencies": {
