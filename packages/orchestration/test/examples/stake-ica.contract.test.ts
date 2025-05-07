@@ -102,7 +102,10 @@ test('makeAccount, getAddress', async t => {
     t.like(chainAddress, { chainId: 'osmosis-1' });
   }
 
-  t.snapshot(bootstrap.storage.data.entries(), 'accounts in vstorage');
+  t.snapshot(
+    Object.fromEntries(bootstrap.storage.data.entries()),
+    'accounts in vstorage',
+  );
 });
 
 test('delegate, undelegate, redelegate, withdrawReward', async t => {
