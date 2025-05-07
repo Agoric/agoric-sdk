@@ -142,7 +142,7 @@ const setupXcsState = async t => {
   }
 };
 
-const getXcsContractsAddress = async t => {
+const getXcsContractsAddress = async () => {
   const osmosisCLI =
     'kubectl exec -i osmosislocal-genesis-0 -c validator -- /bin/bash -c';
 
@@ -150,22 +150,115 @@ const getXcsContractsAddress = async t => {
   const swaprouterQuery = `${osmosisCLI} "jq -r '.swaprouter.address' /contract-info.json"`;
   const swapQuery = `${osmosisCLI} "jq -r '.crosschain_swaps.address' /contract-info.json"`;
 
-  await t.context.waitForBlock(2);
+  const { stdout: registryAddress } = await execa(registryQuery, {
+    shell: true,
+  });
+  const { stdout: swaprouterAddress } = await execa(swaprouterQuery, {
+    shell: true,
+  });
+  const { stdout: swapAddress } = await execa(swapQuery, { shell: true });
 
-  try {
-    const { stdout: registryAddress } = await execa(registryQuery, {
-      shell: true,
-    });
-    const { stdout: swaprouterAddress } = await execa(swaprouterQuery, {
-      shell: true,
-    });
-    const { stdout: swapAddress } = await execa(swapQuery, { shell: true });
+  return { registryAddress, swaprouterAddress, swapAddress };
+};
 
-    return { registryAddress, swaprouterAddress, swapAddress };
-  } catch (error) {
-    t.fail(`failed to get xcs contracts address with error: ${error}`);
-    throw new Error(`Failed to get xcs contracts address: ${error}`);
-  }
+const getXcsState = async () => {
+  const { registryAddress } = await getXcsContractsAddress();
+
+  const osmosisExecQuery =
+    'kubectl exec -i osmosislocal-genesis-0 -c validator -- osmosisd query wasm contract-state smart';
+
+  const channelObj = {
+    get_channel_from_chain_pair: {
+      source_chain: 'osmosis',
+      destination_chain: 'agoric',
+    },
+  };
+  const channelJson = `'${JSON.stringify(channelObj)}'`;
+  const channelQuery = `${osmosisExecQuery} ${registryAddress} ${channelJson}`;
+
+  const { stdout: channel } = await execa(channelQuery, {
+    shell: true,
+  });
+
+  const prefixObj = {
+    get_bech32_prefix_from_chain_name: {
+      chain_name: 'osmosis',
+    },
+  };
+  const prefixJson = `'${JSON.stringify(prefixObj)}'`;
+  const prefixQuery = `${osmosisExecQuery} ${registryAddress} ${prefixJson}`;
+
+  const { stdout: prefix } = await execa(prefixQuery, {
+    shell: true,
+  });
+
+  const channelData = JSON.parse(channel).data;
+  const prefixData = JSON.parse(prefix).data;
+
+  return { channelData, prefixData };
+};
+
+const getPoolRoute = async () => {
+  const { swaprouterAddress } = await getXcsContractsAddress();
+
+  const osmosisExecQuery =
+    'kubectl exec -i osmosislocal-genesis-0 -c validator -- osmosisd query wasm contract-state smart';
+
+  const routeObj = {
+    get_route: {
+      input_denom:
+        'ibc/E7827844CB818EE9C4DB2C159F1543FF62B26213B44CE8029D5CEFE52F0EE596',
+      output_denom: 'uosmo',
+    },
+  };
+  const routeJson = `'${JSON.stringify(routeObj)}'`;
+  const routeQuery = `${osmosisExecQuery} ${swaprouterAddress} ${routeJson}`;
+
+  const { stdout } = await execa(routeQuery, {
+    shell: true,
+  });
+
+  const routeData = JSON.parse(stdout).data;
+  const route = routeData.pool_route[routeData.pool_route.length - 1];
+
+  return route;
+};
+
+const getPool = async poolId => {
+  const osmosisExec =
+    'kubectl exec -i osmosislocal-genesis-0 -c validator -- osmosisd';
+
+  const poolQuery = `${osmosisExec} query gamm pool ${poolId}`;
+
+  const { stdout } = await execa(poolQuery, {
+    shell: true,
+  });
+
+  const pool = JSON.parse(stdout).pool;
+
+  return pool;
+};
+
+const getChannel = async () => {
+  const hermesExec =
+    'kubectl exec -i hermes-agoric-osmosis-0 -c relayer -- hermes';
+
+  const queryCmd = `${hermesExec} --json query channels --show-counterparty --chain agoriclocal`;
+
+  const { stdout } = await execa(queryCmd, { shell: true });
+
+  const lines = stdout.trim().split('\n');
+  const lastLine = lines[lines.length - 1];
+  const parsed = JSON.parse(lastLine);
+
+  const result = parsed.result.filter(
+    item => item.chain_id_b === 'osmosislocal',
+  );
+
+  const agoricOsmosisChannel = result[0]?.channel_a;
+  const osmosisAgoricChannel = result[0]?.channel_b;
+
+  return { agoricOsmosisChannel, osmosisAgoricChannel };
 };
 
 test.before(async t => {
@@ -186,12 +279,27 @@ test.before(async t => {
   await setupXcsState(t);
 });
 
-/**
- * We could use this test to extract the contract addresses from the osmosis container
- * (see make print-wasm-info) and some other verifications using the queries that we
- * see useful.
- */
-test.todo('verify-xcs-boot-correctly');
+test.serial('test osmosis xcs state', async t => {
+  // verify if Osmosis XCS contracts were instantiated
+  const { registryAddress, swaprouterAddress, swapAddress } =
+    await getXcsContractsAddress();
+  t.assert(registryAddress, 'crosschain_registry contract address not found');
+  t.assert(swaprouterAddress, 'swaprouter contract address not found');
+  t.assert(swapAddress, 'crosschain_swaps contract address not found');
+
+  // verify if Osmosis XCS State was modified
+  const { channelData, prefixData: osmosisPrefix } = await getXcsState();
+  const { osmosisAgoricChannel } = await getChannel();
+  t.is(osmosisPrefix, 'osmo');
+  t.is(channelData, osmosisAgoricChannel);
+
+  const { pool_id, token_out_denom } = await getPoolRoute();
+  t.is(token_out_denom, 'uosmo');
+
+  // verify if Osmosis pool was created
+  const pool = await getPool(pool_id);
+  t.assert(pool);
+});
 
 test.serial('BLD for OSMO, receiver on Agoric', async t => {
   const {
@@ -216,7 +324,7 @@ test.serial('BLD for OSMO, receiver on Agoric', async t => {
     transferChannel: { channelId },
   } = starshipChainInfo.agoric.connections[osmosisChainId];
 
-  const { swapAddress } = await getXcsContractsAddress(t);
+  const { swapAddress } = await getXcsContractsAddress();
 
   const doOffer = makeDoOffer(wdUser);
 
@@ -315,7 +423,7 @@ test.skip('address hook - BLD for OSMO, receiver on Agoric', async t => {
   } = await vstorageClient.queryData('published.swap-anything');
   t.log(baseAddress);
 
-  const { swapAddress } = await getXcsContractsAddress(t);
+  const { swapAddress } = await getXcsContractsAddress();
 
   const orcContractReceiverAddress = encodeAddressHook(baseAddress, {
     destAddr: swapAddress,
