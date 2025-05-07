@@ -5,6 +5,7 @@ import { type RouteHealth } from './route-health.ts';
 
 import type { StatusManager } from '../exos/status-manager.ts';
 import type * as flows from '../fast-usdc.flows.ts';
+import type { ForwardFailedTx } from '../typeGuards.ts';
 
 type ForwardFundsFlow = HostForGuest<typeof flows.forwardFunds>;
 
@@ -21,6 +22,18 @@ export const startForwardRetrier = ({
   routeHealth: RouteHealth;
   USDC: Brand<'nat'>;
 }): void => {
+  const forwardFailed = (failedForward: ForwardFailedTx) => {
+    const { txHash, amount: amtValue, destination } = failedForward;
+    // TODO refactor amount types to avoid ERTP and have consistent naming
+    // UNTIL https://github.com/Agoric/agoric-sdk/issues/11357
+    const amount = AmountMath.make(USDC, amtValue);
+    // This synchronously returns a Vow that has its own resolution handling.
+    void forwardFunds({
+      txHash,
+      amount,
+      destination,
+    });
+  };
   /** Retry failed transactions on the destination chain as long as it's working */
   const attemptToClear = (chain: CaipChainId) => {
     const failedForwards = getForwardsToRetry(chain);
@@ -31,26 +44,40 @@ export const startForwardRetrier = ({
     log(
       `Attempting to clear ${failedForwards.length} failed forwards for ${chain}`,
     );
-    // TODO round robin
     for (const failedForward of failedForwards) {
       if (!routeHealth.isWorking(chain)) {
         // stop trying
         break;
       }
-      const { txHash, amount: amtValue, destination } = failedForward;
-      // TODO refactor amount types to avoid ERTP and have consistent naming
-      const amount = AmountMath.make(USDC, amtValue);
-      forwardFunds({
-        txHash,
-        amount,
-        destination,
-      });
+      forwardFailed(failedForward);
     }
+  };
+
+  /**
+   * Try just one because we don't know if the chain is working yet
+   * and if it isn't we don't want congestion with so many attempts.
+   */
+  const attemptOne = (chain: CaipChainId) => {
+    const failedForwards = getForwardsToRetry(chain);
+    if (!failedForwards.length) {
+      log(`No failed forwards to try for ${chain}`);
+      return;
+    }
+    log(
+      `Retrying one of ${failedForwards.length} failed forwards for ${chain}`,
+    );
+    // XXX assumes the first is as good as any other to retry
+    forwardFailed(failedForwards[0]);
   };
 
   const onEachFailure = (chain: CaipChainId) => {
     log(`Route ${chain} failed.`);
-    attemptToClear(chain);
+    // If the route is still working, retry one of the failed forwards
+    // to see if it succeeds. When too many failures occur, the route
+    // becomes derelict and we stop retrying.
+    if (routeHealth.isWorking(chain)) {
+      attemptOne(chain);
+    }
   };
   const onWorking = (chain: CaipChainId) => {
     log(`Route ${chain} is working again.`);
