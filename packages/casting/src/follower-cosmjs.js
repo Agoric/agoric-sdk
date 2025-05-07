@@ -140,7 +140,7 @@ export const makeCosmjsFollower = (
   const tendermintClientPs = new Map();
   /**
    * @param {string} endpoint
-   * @returns {tendermint34.Tendermint34Client}
+   * @returns {Promise<tendermint34.Tendermint34Client>}
    */
   const provideTendermintClient = endpoint => {
     let clientP = tendermintClientPs.get(endpoint);
