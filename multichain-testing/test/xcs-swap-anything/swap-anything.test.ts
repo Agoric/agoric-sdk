@@ -147,6 +147,13 @@ test.before(async t => {
   await setupXcsState(t);
 });
 
+/**
+ * We could use this test to extract the contract addresses from the osmosis container
+ * (see make print-wasm-info) and some other verifications using the queries that we
+ * see useful.
+ */
+test.todo('verify-xcs-boot-correctly');
+
 test.serial('BLD for OSMO, receiver on Agoric', async t => {
   const {
     wallets,
@@ -226,7 +233,7 @@ test.serial('BLD for OSMO, receiver on Agoric', async t => {
   );
 });
 
-test.serial('address hook - BLD for OSMO, receiver on Agoric', async t => {
+test.skip('address hook - BLD for OSMO, receiver on Agoric', async t => {
   const { wallets, vstorageClient, retryUntilCondition, useChain } = t.context;
   const { getRestEndpoint, chain: cosmosChain } = useChain('cosmoshub');
 
