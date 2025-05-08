@@ -317,7 +317,7 @@ test('no asset info', t => {
 
 const knownChainsSansConns = objectMap(
   withChainCapabilities(knownChains),
-  ({ connections, ...rest }) => rest,
+  ({ connections: _, ...rest }) => rest,
 );
 
 test('no connection info single hop', t => {

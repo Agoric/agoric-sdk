@@ -1,204 +1,32 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import type { ExecutionContext, TestFn } from 'ava';
+import type { TestFn } from 'ava';
 
-import {
-  decodeAddressHook,
-  encodeAddressHook,
-} from '@agoric/cosmic-proto/address-hooks.js';
-import type { Amount, Issuer, NatValue, Purse } from '@agoric/ertp';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
-import { divideBy, multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.js';
 import { PoolMetricsShape } from '@agoric/fast-usdc/src/type-guards.js';
-import type {
-  CctpTxEvidence,
-  FeeConfig,
-  PoolMetrics,
-} from '@agoric/fast-usdc/src/types.js';
 import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
-import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
 import {
   eventLoopIteration,
   inspectMapStore,
 } from '@agoric/internal/src/testing-utils.js';
-import {
-  makePublishKit,
-  observeIteration,
-  subscribeEach,
-  type Publisher,
-  type Subscriber,
-} from '@agoric/notifier';
-import type {
-  Bech32Address,
-  ChainHub,
-  CosmosChainInfo,
-} from '@agoric/orchestration';
-import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
-import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
-import { heapVowE as VE } from '@agoric/vow/vat.js';
-import type { Invitation, ZoeService } from '@agoric/zoe';
-import type {
-  Installation,
-  Instance,
-} from '@agoric/zoe/src/zoeService/utils.js';
+import type { Installation } from '@agoric/zoe/src/zoeService/utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E, type ERef, type EReturn } from '@endo/far';
+import { E, type EReturn } from '@endo/far';
 import { matches } from '@endo/patterns';
-import { makePromiseKit } from '@endo/promise-kit';
-import type { OperatorOfferResult } from '../src/exos/transaction-feed.ts';
 import type { FastUsdcSF } from '../src/fast-usdc.contract.ts';
-import { commonSetup, uusdcOnAgoric } from './supports.js';
+import { setupFastUsdcTest, uusdcOnAgoric } from './supports.js';
 
 import * as contractExports from '../src/fast-usdc.contract.js';
+import {
+  makeCustomer,
+  makeLP,
+  makeOracleOperator,
+  makeTestContext,
+  purseOf,
+} from './contract-setup.ts';
 
-const agToNoble = fetchedChainInfo.agoric.connections['noble-1'];
-
-const { add, isGTE, make, subtract, min } = AmountMath;
-
-const getInvitationProperties = async (
-  zoe: ZoeService,
-  invitation: Invitation,
-) => {
-  const invitationIssuer = E(zoe).getInvitationIssuer();
-  const amount = await E(invitationIssuer).getAmountOf(invitation);
-  return amount.value[0];
-};
-
-// Spec for Mainnet. Other values are covered in unit tests of TransactionFeed.
-const operatorQty = 3;
-
-type CommonSetup = EReturn<typeof commonSetup>;
-const startContract = async (
-  common: Pick<CommonSetup, 'brands' | 'commonPrivateArgs' | 'utils'>,
-) => {
-  const {
-    brands: { usdc },
-    commonPrivateArgs,
-  } = common;
-
-  let contractBaggage;
-  const setJig = ({ baggage }) => {
-    contractBaggage = baggage;
-  };
-
-  const { zoe, bundleAndInstall } = await setUpZoeForTest({ setJig });
-  const installation: Installation<FastUsdcSF> =
-    await bundleAndInstall(contractExports);
-
-  const startKit = await E(zoe).startInstance(
-    installation,
-    { USDC: usdc.issuer },
-    { usdcDenom: uusdcOnAgoric },
-    commonPrivateArgs,
-  );
-
-  const terms = await E(zoe).getTerms(startKit.instance);
-
-  const { subscriber: metricsSub } = E.get(
-    E.get(E(startKit.publicFacet).getPublicTopics()).poolMetrics,
-  );
-
-  const opInvs = await Promise.all(
-    [...Array(operatorQty).keys()].map(opIx =>
-      E(startKit.creatorFacet).makeOperatorInvitation(`operator-${opIx}`),
-    ),
-  );
-  const { agoric, noble } = commonPrivateArgs.chainInfo;
-  const agoricToNoble = (agoric as CosmosChainInfo).connections![noble.chainId];
-  await E(startKit.creatorFacet).connectToNoble(
-    agoric.chainId,
-    noble.chainId,
-    agoricToNoble,
-  );
-  await E(startKit.creatorFacet).publishAddresses();
-
-  return {
-    ...startKit,
-    contractBaggage,
-    terms,
-    zoe,
-    metricsSub,
-    invitations: { operator: opInvs },
-  };
-};
-
-const makeTestContext = async (t: ExecutionContext) => {
-  const common = await commonSetup(t);
-  await E(common.mocks.ibcBridge).setAddressPrefix('noble');
-
-  const startKit = await startContract(common);
-
-  const { transferBridge } = common.mocks;
-  const evm = makeEVM();
-
-  const { inspectBankBridge, inspectLocalBridge } = common.utils;
-  const snapshot = () => ({
-    bank: inspectBankBridge().length,
-    local: inspectLocalBridge().length,
-  });
-  const since = ix => ({
-    bank: inspectBankBridge().slice(ix.bank),
-    local: inspectLocalBridge().slice(ix.local),
-  });
-
-  const sync = {
-    ocw: makePromiseKit<EReturn<typeof makeOracleOperator>[]>(),
-    lp: makePromiseKit<Record<string, ReturnType<typeof makeLP>>>(),
-  };
-
-  const { brands, utils } = common;
-  const { bankManager } = common.bootstrap;
-  const receiveUSDCAt = async (addr: string, amount: NatValue) => {
-    const pmt = await utils.pourPayment(make(brands.usdc.brand, amount));
-    const purse = E(E(bankManager).getBankForAddress(addr)).getPurse(
-      brands.usdc.brand,
-    );
-    return E(purse).deposit(pmt);
-  };
-
-  const accountsData = common.bootstrap.storage.data.get('fun');
-  const { settlementAccount, poolAccount } = JSON.parse(
-    JSON.parse(accountsData!).values[0],
-  );
-  t.is(settlementAccount, 'agoric1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqc09z0g');
-  t.is(poolAccount, 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht');
-  const mint = async (e: CctpTxEvidence) => {
-    const rxd = await receiveUSDCAt(settlementAccount, e.tx.amount);
-    await VE(transferBridge).fromBridge(
-      buildVTransferEvent({
-        receiver: e.aux.recipientAddress,
-        target: settlementAccount,
-        sourceChannel: agToNoble.transferChannel.counterPartyChannelId,
-        denom: 'uusdc',
-        amount: e.tx.amount,
-        sender: e.tx.forwardingAddress,
-      }),
-    );
-    await eventLoopIteration(); // let settler do work
-    return rxd;
-  };
-
-  /** local to test env, distinct from contract */
-  const { chainHub } = common.facadeServices;
-  chainHub.registerChain('agoric', fetchedChainInfo.agoric);
-  chainHub.registerChain('dydx', fetchedChainInfo.dydx);
-  chainHub.registerChain('osmosis', fetchedChainInfo.osmosis);
-  chainHub.registerChain('noble', fetchedChainInfo.noble);
-
-  return {
-    bridges: { snapshot, since },
-    common,
-    evm,
-    mint,
-    startKit,
-    sync,
-    addresses: { settlementAccount, poolAccount },
-  };
-};
-
-type FucContext = EReturn<typeof makeTestContext>;
-const test = anyTest as TestFn<FucContext>;
+const test = anyTest as TestFn<EReturn<typeof makeTestContext>>;
 test.before(async t => (t.context = await makeTestContext(t)));
 
 // baggage after a simple startInstance, without any other startup logic
@@ -206,7 +34,7 @@ test('initial baggage', async t => {
   const {
     brands: { usdc },
     commonPrivateArgs,
-  } = await commonSetup(t);
+  } = await setupFastUsdcTest(t);
 
   let contractBaggage;
   const setJig = ({ baggage }) => {
@@ -221,6 +49,9 @@ test('initial baggage', async t => {
     installation,
     { USDC: usdc.issuer },
     { usdcDenom: uusdcOnAgoric },
+    // @ts-expect-error XXX contract expecting CosmosChainInfo with bech32
+    // prefix but the Orchestration setup doesn't have it. The tests pass anyway
+    // so we elide this infidelity to production.
     commonPrivateArgs,
   );
 
@@ -246,315 +77,6 @@ test('getStaticInfo', async t => {
     },
   });
 });
-
-const purseOf =
-  (issuer: Issuer, { pourPayment }) =>
-  async (value: bigint) => {
-    const brand = await E(issuer).getBrand();
-    const purse = E(issuer).makeEmptyPurse();
-    const pmt = await pourPayment(make(brand, value));
-    await E(purse).deposit(pmt);
-    return purse;
-  };
-
-const makeOracleOperator = async (
-  opInv: Invitation<OperatorOfferResult>,
-  txSubscriber: Subscriber<TxWithRisk>,
-  zoe: ZoeService,
-  t: ExecutionContext,
-) => {
-  let done = 0;
-  const failures = [] as any[];
-  t.like(await getInvitationProperties(zoe, opInv), {
-    description: 'oracle operator invitation',
-  });
-
-  const offerResult = await E(E(zoe).offer(opInv)).getOfferResult();
-  t.deepEqual(Object.keys(offerResult), ['invitationMakers', 'operator']);
-  const { invitationMakers } = offerResult;
-
-  let active = true;
-
-  return harden({
-    watch: () => {
-      void observeIteration(subscribeEach(txSubscriber), {
-        updateState: ({ evidence, isRisk }) => {
-          if (!active) {
-            return;
-          }
-          // KLUDGE: tx wouldn't include aux. OCW looks it up
-          return E.when(
-            E(invitationMakers).SubmitEvidence(
-              evidence,
-              isRisk ? { risksIdentified: ['RISK1'] } : {},
-            ),
-            inv =>
-              E.when(E(E(zoe).offer(inv)).getOfferResult(), res => {
-                t.is(res, 'inert; nothing should be expected from this offer');
-                done += 1;
-              }),
-            reason => {
-              failures.push(reason.message);
-            },
-          );
-        },
-      });
-    },
-    getDone: () => done,
-    getFailures: () => harden([...failures]),
-    // operator only gets .invitationMakers
-    getKit: () => offerResult,
-    setActive: flag => {
-      active = flag;
-    },
-  });
-};
-
-const logAmt = amt => [
-  Number(amt.value),
-  //   numberWithCommas(Number(amt.value)),
-  amt.brand
-    .toString()
-    .replace(/^\[object Alleged:/, '')
-    .replace(/ brand]$/, ''),
-];
-const scaleAmount = (frac: number, amount: Amount<'nat'>) => {
-  const asRatio = parseRatio(frac, amount.brand);
-  return multiplyBy(amount, asRatio);
-};
-
-const makeLP = async (
-  name: string,
-  usdcPurse: ERef<Purse>,
-  zoe: ZoeService,
-  instance: Instance<FastUsdcSF>,
-) => {
-  const publicFacet = E(zoe).getPublicFacet(instance);
-  const { subscriber } = E.get(
-    E.get(E(publicFacet).getPublicTopics()).poolMetrics,
-  );
-  const terms = await E(zoe).getTerms(instance);
-  const { USDC } = terms.brands;
-  const sharePurse = E(terms.issuers.PoolShares).makeEmptyPurse();
-  let investment = AmountMath.makeEmpty(USDC);
-  const me = harden({
-    deposit: async (t: ExecutionContext, qty: bigint) => {
-      const {
-        value: { shareWorth },
-      } = await E(subscriber).getUpdateSince();
-      const give = { USDC: make(USDC, qty) };
-      const proposal = harden({
-        give,
-        want: { PoolShare: divideBy(give.USDC, shareWorth) },
-      });
-      t.log(name, 'deposits', ...logAmt(proposal.give.USDC));
-      const toDeposit = await E(publicFacet).makeDepositInvitation();
-      const payments = { USDC: await E(usdcPurse).withdraw(give.USDC) };
-      const payout = await E(zoe)
-        .offer(toDeposit, proposal, payments)
-        .then(seat => E(seat).getPayout('PoolShare'))
-        .then(pmt => E(sharePurse).deposit(pmt))
-        .then(a => a as Amount<'nat'>);
-      t.log(name, 'deposit payout', ...logAmt(payout));
-      t.true(isGTE(payout, proposal.want.PoolShare));
-      investment = add(investment, give.USDC);
-    },
-
-    withdraw: async (t: ExecutionContext, portion: number) => {
-      const myShares = await E(sharePurse)
-        .getCurrentAmount()
-        .then(a => a as Amount<'nat'>);
-      const give = { PoolShare: scaleAmount(portion, myShares) };
-      const {
-        value: { shareWorth },
-      } = await E(subscriber).getUpdateSince();
-      const myUSDC = multiplyBy(myShares, shareWorth);
-      const myFees = subtract(myUSDC, investment);
-      t.log(name, 'sees fees earned', ...logAmt(myFees));
-      const proposal = harden({
-        give,
-        want: { USDC: multiplyBy(give.PoolShare, shareWorth) },
-      });
-      const pct = portion * 100;
-      t.log(name, 'withdraws', pct, '%:', ...logAmt(proposal.give.PoolShare));
-      const toWithdraw = await E(publicFacet).makeWithdrawInvitation();
-      const usdcPmt = await E(sharePurse)
-        .withdraw(proposal.give.PoolShare)
-        .then(pmt => E(zoe).offer(toWithdraw, proposal, { PoolShare: pmt }))
-        .then(async seat => {
-          // be sure to collect refund
-          void E(sharePurse).deposit(await E(seat).getPayout('PoolShare'));
-          t.log(await E(seat).getOfferResult());
-          return E(seat).getPayout('USDC');
-        });
-      const amt = await E(usdcPurse).deposit(usdcPmt);
-      t.log(name, 'withdraw payout', ...logAmt(amt));
-      t.true(isGTE(amt, proposal.want.USDC));
-      // min() in case things changed between checking metrics and withdrawing
-      investment = subtract(investment, min(amt, investment));
-      return amt;
-    },
-  });
-  return me;
-};
-
-const makeEVM = (template = MockCctpTxEvidences.AGORIC_PLUS_OSMO()) => {
-  let nonce = 0;
-
-  const makeTx = (
-    amount: bigint,
-    recipientAddress: Bech32Address,
-    nonceOverride?: number,
-  ): CctpTxEvidence => {
-    nonce += 1;
-
-    const tx: CctpTxEvidence = harden({
-      ...template,
-      txHash: `0x00000${nonceOverride || nonce}`,
-      blockNumber: template.blockNumber + BigInt(nonceOverride || nonce),
-      tx: { ...template.tx, amount },
-      // KLUDGE: CCTP doesn't know about aux; it would be added by OCW
-      aux: { ...template.aux, recipientAddress },
-    });
-    return tx;
-  };
-
-  const txPub = makePublishKit<TxWithRisk>();
-
-  return harden({ cctp: { makeTx }, txPub });
-};
-
-/**
- * We pass around evidence along with a flag to indicate whether it should be
- * treated as risky for testing purposes.
- */
-interface TxWithRisk {
-  evidence: CctpTxEvidence;
-  isRisk: boolean;
-}
-
-const makeCustomer = (
-  who: string,
-  cctp: ReturnType<typeof makeEVM>['cctp'],
-  txPublisher: Publisher<TxWithRisk>,
-  feeConfig: FeeConfig, // TODO: get from vstorage (or at least: a subscriber)
-  chainHub: ChainHub, // not something a customer would normally have, but needed to make an `AccountId`
-) => {
-  const USDC = feeConfig.flat.brand;
-  const feeTools = makeFeeTools(feeConfig);
-  const sent = [] as TxWithRisk[];
-
-  const me = harden({
-    checkPoolAvailable: async (
-      t: ExecutionContext,
-      want: NatValue,
-      metricsSub: ERef<Subscriber<PoolMetrics>>,
-    ) => {
-      const { value: m } = await E(metricsSub).getUpdateSince();
-      const { numerator: poolBalance } = m.shareWorth; // XXX awkward API?
-      const enough = poolBalance.value > want;
-      t.log(who, 'sees', poolBalance.value, enough ? '>' : 'NOT >', want);
-      return enough;
-    },
-    sendFast: async (
-      t: ExecutionContext<FucContext>,
-      amount: bigint,
-      EUD: string,
-      isRisk = false,
-      nonceOverride?: number,
-    ) => {
-      const { storage } = t.context.common.bootstrap;
-      const accountsData = storage.data.get('fun');
-      const { settlementAccount } = JSON.parse(
-        JSON.parse(accountsData!).values[0],
-      );
-      const recipientAddress = encodeAddressHook(settlementAccount, { EUD });
-      // KLUDGE: UI would ask noble for a forwardingAddress
-      // "cctp" here has some noble stuff mixed in.
-      const tx = cctp.makeTx(amount, recipientAddress, nonceOverride);
-      t.log(who, 'signs CCTP for', amount, 'uusdc w/EUD:', EUD);
-      txPublisher.publish({ evidence: tx, isRisk });
-      sent.push({ evidence: tx, isRisk });
-      await eventLoopIteration();
-      return tx;
-    },
-    checkSent: (
-      t: ExecutionContext<FucContext>,
-      { bank = [] as any[], local = [] as any[] } = {},
-      forward?: unknown,
-    ) => {
-      const next = sent.shift();
-      if (!next) throw t.fail('nothing sent');
-      const { evidence } = next;
-
-      // C3 - Contract MUST calculate AdvanceAmount by ...
-      // Mostly, see unit tests for calculateAdvance, calculateSplit
-      const toReceive = forward
-        ? { value: evidence.tx.amount }
-        : feeTools.calculateAdvance(
-            AmountMath.make(USDC, evidence.tx.amount),
-            chainHub.resolveAccountId(evidence.aux.recipientAddress),
-          );
-
-      if (forward) {
-        t.log(who, 'waits for fallback / forward');
-        t.deepEqual(bank, []); // no vbank GIVE / GRAB
-      }
-
-      const { EUD } = decodeAddressHook(evidence.aux.recipientAddress).query;
-
-      const myMsg = local.find(lm => {
-        if (lm.type !== 'VLOCALCHAIN_EXECUTE_TX') return false;
-        const [ibcTransferMsg] = lm.messages;
-        // support advances to noble + other chains
-        const receiver =
-          ibcTransferMsg.receiver === 'noble1test' // intermediateRecipient value
-            ? JSON.parse(ibcTransferMsg.memo).forward.receiver
-            : ibcTransferMsg.receiver;
-        return (
-          ibcTransferMsg['@type'] ===
-            '/ibc.applications.transfer.v1.MsgTransfer' && receiver === EUD
-        );
-      });
-      if (!myMsg) {
-        if (forward) return;
-        throw t.fail(`no MsgTransfer to ${EUD}`);
-      }
-      const { poolAccount } = t.context.addresses;
-      t.is(myMsg.address, poolAccount, 'advance sent from pool account');
-      const [ibcTransferMsg] = myMsg.messages;
-      // C4 - Contract MUST release funds to the end user destination address
-      // in response to invocation by the off-chain watcher that
-      // an acceptable Fast USDC Transaction has been initiated.
-      t.deepEqual(
-        ibcTransferMsg.token,
-        { amount: String(toReceive.value), denom: uusdcOnAgoric },
-        'C4',
-      );
-      t.log(who, 'sees', ibcTransferMsg.token, 'sending to', EUD);
-      if (!(EUD as string).startsWith('noble')) {
-        t.like(
-          JSON.parse(ibcTransferMsg.memo),
-          {
-            forward: {
-              receiver: EUD,
-            },
-          },
-          'PFM receiver is EUD',
-        );
-      } else {
-        t.like(ibcTransferMsg, { receiver: EUD });
-      }
-      t.is(
-        ibcTransferMsg.sourceChannel,
-        fetchedChainInfo.agoric.connections['noble-1'].transferChannel
-          .channelId,
-        'expect routing through Noble',
-      );
-    },
-  });
-  return me;
-};
 
 test.serial('OCW operators redeem invitations and start watching', async t => {
   const {
@@ -607,7 +129,10 @@ test.serial('C25 - LPs can deposit USDC', async t => {
       shareWorth: { numerator: poolBalance },
     },
   } = await E(metricsSub).getUpdateSince();
-  t.deepEqual(poolBalance, make(usdc.brand, 250_000_000n + balance0.value));
+  t.deepEqual(
+    poolBalance,
+    AmountMath.make(usdc.brand, 250_000_000n + balance0.value),
+  );
 });
 
 test.serial('Contract skips advance when risks identified', async t => {
@@ -615,10 +140,9 @@ test.serial('Contract skips advance when risks identified', async t => {
     common: {
       commonPrivateArgs: { feeConfig },
       facadeServices: { chainHub },
-      utils: { transmitTransferAck },
+      utils: { transmitVTransferEvent },
     },
     evm: { cctp, txPub },
-    startKit: { metricsSub },
     bridges: { snapshot, since },
     mint,
   } = t.context;
@@ -635,17 +159,17 @@ test.serial('Contract skips advance when risks identified', async t => {
   await mint(sent);
   custEmpty.checkSent(t, bridgeTraffic, 'forward');
   t.log('No advancement, just settlement');
-  await transmitTransferAck(); // ack IBC transfer for forward
+  // ack IBC transfer for forward
+  await transmitVTransferEvent('acknowledgementPacket', -1);
 });
 
 test.serial('STORY01: advancing happy path for 100 USDC', async t => {
   const {
     common: {
-      bootstrap: { storage },
       brands: { usdc },
       commonPrivateArgs: { feeConfig },
       facadeServices: { chainHub },
-      utils: { inspectBankBridge, transmitTransferAck },
+      utils: { inspectBankBridge, transmitVTransferEvent },
     },
     evm: { cctp, txPub },
     startKit: { metricsSub },
@@ -662,16 +186,14 @@ test.serial('STORY01: advancing happy path for 100 USDC', async t => {
 
   const bridgePos = snapshot();
   const sent1 = await cust1.sendFast(t, 108_000_000n, 'osmo1234advanceHappy');
-  await transmitTransferAck(); // ack IBC transfer for advance
+  // ack IBC transfer for advance
+  await transmitVTransferEvent('acknowledgementPacket', -1);
   const expectedTransitions = [
     { evidence: sent1, status: 'OBSERVED' },
     { status: 'ADVANCING' },
     { status: 'ADVANCED' },
   ];
-  t.deepEqual(
-    storage.getDeserialized(`fun.txns.${sent1.txHash}`),
-    expectedTransitions,
-  );
+  t.deepEqual(t.context.common.readTxnRecord(sent1), expectedTransitions);
 
   const { calculateAdvance, calculateSplit } = makeFeeTools(feeConfig);
   const expectedAdvance = calculateAdvance(
@@ -735,7 +257,7 @@ test.serial('STORY01: advancing happy path for 100 USDC', async t => {
       ...emptyMetrics,
       shareWorth: {
         ...par250,
-        numerator: add(par250.numerator, split.PoolFee),
+        numerator: AmountMath.add(par250.numerator, split.PoolFee),
       },
       totalBorrows: { value: 105839999n },
       totalContractFees: { value: 432000n },
@@ -745,7 +267,7 @@ test.serial('STORY01: advancing happy path for 100 USDC', async t => {
     'metrics after advancing',
   );
 
-  t.deepEqual(storage.getDeserialized(`fun.txns.${sent1.txHash}`), [
+  t.deepEqual(t.context.common.readTxnRecord(sent1), [
     ...expectedTransitions,
     { split, status: 'DISBURSED' },
   ]);
@@ -758,9 +280,6 @@ test.todo(
 
 test.serial('STORY03: see accounting metrics', async t => {
   const {
-    common: {
-      brands: { usdc },
-    },
     startKit: { metricsSub },
   } = t.context;
   const { value: metrics } = await E(metricsSub).getUpdateSince();
@@ -785,7 +304,7 @@ test.serial('STORY05: LP collects fees on 100 USDC', async t => {
   // C3 - Contract MUST calculate ...
   // Mostly, see unit tests for calculateAdvance, calculateSplit
   // TODO: add a feeTools unit test for the magic number below.
-  t.deepEqual(got, add(usdc.units(100), usdc.make(691_200n)));
+  t.deepEqual(got, AmountMath.add(usdc.units(100), usdc.make(691_200n)));
 
   await E(lp.lp200).deposit(t, 100_000_000n); // put all but the fees back in
 });
@@ -797,7 +316,7 @@ test.serial('With 250 available, 3 race to get ~100', async t => {
     common: {
       commonPrivateArgs: { feeConfig },
       facadeServices: { chainHub },
-      utils: { transmitTransferAck },
+      utils: { transmitVTransferEvent },
     },
     startKit: { metricsSub },
     mint,
@@ -817,29 +336,28 @@ test.serial('With 250 available, 3 race to get ~100', async t => {
     cust.racer2.sendFast(t, 120_000_000n, 'osmo1234b'),
     cust.racer3.sendFast(t, 125_000_000n, 'osmo1234c'),
   ]);
+
   cust.racer1.checkSent(t, since(bridgePos));
   cust.racer2.checkSent(t, since(bridgePos));
   // TODO/WIP: cust.racer3.checkSent(t, since(bridgePos), 'forward - LP depleted');
-  await transmitTransferAck();
-  await transmitTransferAck();
-  await transmitTransferAck();
+
+  // Ack all three transfers using their index relative to the end
+  await transmitVTransferEvent('acknowledgementPacket', -3); // First racer's transfer
+  await transmitVTransferEvent('acknowledgementPacket', -2); // Second racer's transfer
+  await transmitVTransferEvent('acknowledgementPacket', -1); // Third racer's transfer
+
   await Promise.all([mint(sent1), mint(sent2), mint(sent3)]);
 });
 
 test.serial('STORY05(cont): LPs withdraw all liquidity', async t => {
-  const {
-    sync,
-    common: {
-      brands: { usdc },
-    },
-  } = t.context;
+  const { sync } = t.context;
 
   const lp = await sync.lp.promise;
   const [a, b] = await Promise.all([
     E(lp.lp200).withdraw(t, 1),
     E(lp.lp50).withdraw(t, 1),
   ]);
-  t.log({ a, b, sum: add(a, b) });
+  t.log({ a, b, sum: AmountMath.add(a, b) });
   t.truthy(a);
   t.truthy(b);
 });
@@ -851,12 +369,11 @@ test.serial('withdraw all liquidity while ADVANCING', async t => {
       commonPrivateArgs: { feeConfig },
       utils,
       brands: { usdc },
-      bootstrap: { storage },
       facadeServices: { chainHub },
     },
     evm: { cctp, txPub },
     mint,
-    startKit: { zoe, instance, metricsSub },
+    startKit: { zoe, instance },
   } = t.context;
 
   const usdcPurse = purseOf(usdc.issuer, utils);
@@ -879,8 +396,10 @@ test.serial('withdraw all liquidity while ADVANCING', async t => {
 
   // 4. Bob's advance is settled
   await mint(sent);
-  await utils.transmitTransferAck();
-  t.like(storage.getDeserialized(`fun.txns.${sent.txHash}`), [
+  // Ack Bob's advance transfer (it was the last one)
+  await utils.transmitVTransferEvent('acknowledgementPacket', -1);
+
+  t.like(t.context.common.readTxnRecord(sent), [
     { evidence: sent, status: 'OBSERVED' },
     { status: 'ADVANCING' },
     { status: 'ADVANCED' },
@@ -960,7 +479,7 @@ test.serial('C20 - Contract MUST function with an empty pool', async t => {
     common: {
       commonPrivateArgs: { feeConfig },
       facadeServices: { chainHub },
-      utils: { transmitTransferAck },
+      utils: { transmitVTransferEvent },
     },
     evm: { cctp, txPub },
     bridges: { snapshot, since },
@@ -979,10 +498,9 @@ test.serial('C20 - Contract MUST function with an empty pool', async t => {
   await mint(sent);
   custEmpty.checkSent(t, bridgeTraffic, 'forward');
   t.log('No advancement, just settlement');
-  await transmitTransferAck(); // ack IBC transfer for forward
+  // ack IBC transfer for forward
+  await transmitVTransferEvent('acknowledgementPacket', -1);
 });
-
-test.todo('C18 - forward - MUST log and alert these incidents');
 
 test.serial('Settlement for unknown transaction (operator down)', async t => {
   const {
@@ -990,11 +508,9 @@ test.serial('Settlement for unknown transaction (operator down)', async t => {
     bridges: { snapshot, since },
     evm: { cctp, txPub },
     common: {
-      bootstrap: { storage },
       commonPrivateArgs: { feeConfig },
       facadeServices: { chainHub },
-      mocks: { transferBridge },
-      utils: { transmitTransferAck },
+      utils: { transmitVTransferEvent },
     },
     mint,
     addresses,
@@ -1037,8 +553,8 @@ test.serial('Settlement for unknown transaction (operator down)', async t => {
     '20 USDC arrive at the settlement account',
   );
 
-  await transmitTransferAck();
-  t.deepEqual(bridgeTraffic.local, [], 'no IBC transfers');
+  // No ack needed here as the first sendFast didn't trigger an IBC transfer (operators were down)
+  t.deepEqual(bridgeTraffic.local, [], 'no IBC transfers initially');
 
   // activate oracles and submit evidence; expect Settler to forward (slow path)
   // 'C12 - Contract MUST only pay back the Pool (fees) only if they started the advance before USDC is minted',
@@ -1071,21 +587,10 @@ test.serial('Settlement for unknown transaction (operator down)', async t => {
   const forwardInfo = JSON.parse(outgoingForwardMessage.memo).forward;
   t.is(forwardInfo.receiver, EUD, 'receiver is osmo10tt0');
 
-  // in lieu of transmitTransferAck so we can set a nonce that matches our initial Advance
-  await E(transferBridge).fromBridge(
-    buildVTransferEvent({
-      receiver: outgoingForwardMessage.receiver,
-      sender: outgoingForwardMessage.sender,
-      target: outgoingForwardMessage.sender,
-      sourceChannel: outgoingForwardMessage.sourceChannel,
-      sequence: BigInt(nonce),
-      denom: outgoingForwardMessage.token.denom,
-      amount: BigInt(outgoingForwardMessage.token.amount),
-    }),
-  );
-  await eventLoopIteration();
+  // Ack the forwarded transfer (it was the last one)
+  await transmitVTransferEvent('acknowledgementPacket', -1);
 
-  t.deepEqual(storage.getDeserialized(`fun.txns.${sent.txHash}`), [
+  t.deepEqual(t.context.common.readTxnRecord(sent), [
     { evidence: sent, status: 'OBSERVED' },
     { status: 'FORWARDED' },
   ]);
@@ -1099,7 +604,6 @@ test.serial('mint received while ADVANCING', async t => {
       commonPrivateArgs: { feeConfig },
       utils,
       brands: { usdc },
-      bootstrap: { storage },
       facadeServices: { chainHub },
     },
     evm: { cctp, txPub },
@@ -1128,13 +632,14 @@ test.serial('mint received while ADVANCING', async t => {
 
   await mint(sent);
   // mint received before Advance transfer settles
-  await utils.transmitTransferAck();
+  // Ack the advance transfer (it was the last one)
+  await utils.transmitVTransferEvent('acknowledgementPacket', -1);
 
   const split = makeFeeTools(feeConfig).calculateSplit(
     usdc.make(5_000_000n),
     chainHub.resolveAccountId(sent.aux.recipientAddress),
   );
-  t.deepEqual(storage.getDeserialized(`fun.txns.${sent.txHash}`), [
+  t.deepEqual(t.context.common.readTxnRecord(sent), [
     { evidence: sent, status: 'OBSERVED' },
     { status: 'ADVANCING' },
     { status: 'ADVANCED' },

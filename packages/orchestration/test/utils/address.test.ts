@@ -253,7 +253,7 @@ const cctpFixture = [
 
 const mintRecipientMacro = test.macro({
   title(txt = '', { accountId, mintRecipient: _ }) {
-    return `CCTP mintRecipient: ${accountId.slice(0, 24)}...`;
+    return `${txt} CCTP mintRecipient: ${accountId.slice(0, 24)}...`;
   },
   exec(t, { accountId, mintRecipient }) {
     const actual = accountIdTo32Bytes(accountId);

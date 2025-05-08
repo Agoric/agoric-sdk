@@ -27,7 +27,7 @@ import { fromOnly } from '@agoric/zoe/src/contractSupport/index.js';
 
 import type { HostInterface, HostOf } from '@agoric/async-flow';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
-import type { Amount, Brand, NatAmount, NatValue } from '@agoric/ertp';
+import type { Amount, Brand, NatAmount } from '@agoric/ertp';
 import type {
   CctpTxEvidence,
   EvmHash,
@@ -37,14 +37,11 @@ import type {
 } from '@agoric/fast-usdc/src/types.js';
 import type {
   AccountId,
-  AccountIdArg,
   Bech32Address,
   ChainHub,
-  CosmosChainAddress,
   Denom,
   OrchestrationAccount,
 } from '@agoric/orchestration';
-import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { WithdrawToSeat } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { mustMatch, type MapStore } from '@agoric/store';
 import type { IBCChannelID, IBCPacket, VTransferIBCEvent } from '@agoric/vats';
@@ -52,7 +49,6 @@ import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
 import type { Vow, VowTools } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe/src/zoeService/zoe.js';
 import type { Zone } from '@agoric/zone';
-import { makeSupportsCctp } from '../utils/cctp.ts';
 import { asMultiset } from '../utils/store.ts';
 import type { LiquidityPoolKit } from './liquidity-pool.js';
 import type { StatusManager } from './status-manager.js';
@@ -67,7 +63,7 @@ const decodeEventPacket = (
   let tx: FungibleTokenPacketData;
   try {
     tx = JSON.parse(atob(data));
-  } catch (e) {
+  } catch {
     return { error: ['could not parse packet data', data] };
   }
 
@@ -85,14 +81,14 @@ const decodeEventPacket = (
     mustMatch(decoded, AddressHookShape);
 
     ({ EUD } = decoded.query);
-  } catch (e) {
+  } catch {
     return { error: ['no query params', tx.receiver] };
   }
 
   let amount: bigint;
   try {
     amount = BigInt(tx.amount);
-  } catch (e) {
+  } catch {
     return { error: ['invalid amount', tx.amount] };
   }
 
@@ -432,7 +428,7 @@ export const prepareSettler = (
           const dest: AccountId | null = (() => {
             try {
               return chainHub.resolveAccountId(EUD);
-            } catch (e) {
+            } catch {
               log(
                 '⚠️ forward not attempted',
                 'unresolvable destination',

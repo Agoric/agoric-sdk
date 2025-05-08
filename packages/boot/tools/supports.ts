@@ -455,7 +455,7 @@ export const makeSwingsetTestKit = async (
     let data;
     try {
       data = unmarshalFromVstorage(storage.data, path, fromCapData, -1);
-    } catch (e) {
+    } catch {
       // fall back to regular JSON
       const raw = storage.getValues(path).at(-1);
       assert(raw, `No data found for ${path}`);
@@ -985,7 +985,7 @@ export const fetchCoreEvalRelease = async (
 
       return { bundles, evals: [{ js_code: script, json_permits: permit }] };
     }
-  } catch (error) {
+  } catch {
     console.warn(
       `Plan file not found at ${planUrl}. Falling back to direct artifact detection.`,
     );

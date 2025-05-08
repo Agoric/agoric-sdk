@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars -- fails to notice the @see uses */
 import type { BaseChainInfo } from './orchestration-api.ts';
 
 /**

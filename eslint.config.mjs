@@ -276,6 +276,13 @@ export default [
       'jsdoc/require-param': 'off',
       'jsdoc/require-param-type': 'off',
       'no-undef': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+        },
+      ],
     },
   },
   {
@@ -283,6 +290,12 @@ export default [
 
     rules: {
       'no-redeclare': 'off',
+    },
+  },
+  {
+    files: ['**/*.test-d.ts'],
+    rules: {
+      '@typescript-eslint/no-unused-vars': 'off',
     },
   },
   ...compat

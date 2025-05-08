@@ -1,17 +1,17 @@
+import type { Amount } from '@agoric/ertp';
 import type {
   AccountId,
-  CosmosChainAddress,
+  BaseChainInfo,
   Bech32Address,
+  CaipChainId,
+  CosmosChainAddress,
   CosmosChainInfo,
   Denom,
   DenomDetail,
-  BaseChainInfo,
   KnownNamespace,
-  CaipChainId,
 } from '@agoric/orchestration';
 import type { IBCChannelID } from '@agoric/vats';
-import type { Amount } from '@agoric/ertp';
-import type { CopyRecord, Passable } from '@endo/pass-style';
+import type { CopyRecord } from '@endo/pass-style';
 import type { PendingTxStatus, TxStatus } from './constants.js';
 import type { RepayAmountKWR } from './utils/fees.js';
 
@@ -70,7 +70,7 @@ export interface CctpTxEvidence {
   txHash: EvmHash;
 }
 
-export interface EvidenceWithRisk {
+export interface EvidenceWithRisk extends CopyRecord {
   evidence: CctpTxEvidence;
   risk: RiskAssessment;
 }

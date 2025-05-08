@@ -197,9 +197,19 @@ export const fakeLocalChainBridgeTxMsgHandler = (message, sequence) => {
   switch (message['@type']) {
     // TODO #9402 reference bank to ensure caller has tokens they are transferring
     case '/ibc.applications.transfer.v1.MsgTransfer': {
-      if (message.token.amount === String(SIMULATED_ERRORS.TIMEOUT)) {
-        throw Error('simulated unexpected MsgTransfer packet timeout');
-      }
+      /**
+       * This call should always resolve with a sequence number unless the
+       * message is rejected by the local chain (malformed, unauthorized, etc).
+       * This sequence number is wrt to the channel (not the account) and
+       * indicates an outgoing IBC transfer has _started_ but doesn't mean it
+       * has been acknowledged by the remote chain.
+       *
+       * If you are testing `MsgTransfer` with a `LocalOrchestrationAccount`,
+       * you must inbound a `VTRANSFER_IBC_EVENT` to the `vtransfer` bridge with
+       * an acknowledgement, acknowledgement error, or timeout. See
+       * `buildVTransferEvent`, `transmitTransferTimeout`, `transmitTransferAck`
+       * and `transmitTransferAckError` for examples.
+       */
       // like `JsonSafe<MsgTransferResponse>`, but bigints are converted to numbers
       // FIXME should vlocalchain return a string instead of number for bigint?
       return {
@@ -290,46 +300,71 @@ export const fakeLocalChainBridgeQueryHandler = message => {
 
 /**
  * @param {import('@agoric/zone').Zone} zone
- * @param {(obj: object) => void} [onToBridge]
+ * @param {(obj: object, result: unknown) => void} [onToBridge] Log message and
+ *   result
  * @param {(index: number) => string} makeAddressFn
  * @returns {ScopedBridgeManager<'vlocalchain'>}
  */
 export const makeFakeLocalchainBridge = (
   zone,
-  onToBridge = () => {},
+  onToBridge = (_obj, _result) => {},
   makeAddressFn = index => `${LOCALCHAIN_DEFAULT_ADDRESS}${index || ''}`,
 ) => {
   /** @type {Remote<BridgeHandler>} */
   let hndlr;
   let lcaExecuteTxSequence = 0;
   let accountsCreated = 0;
+
   return zone.exo('Fake Localchain Bridge Manager', undefined, {
     getBridgeId: () => 'vlocalchain',
     toBridge: async obj => {
-      onToBridge(obj);
       const { method, type, ...params } = obj;
       trace('toBridge', type, method, params);
+      let result;
       switch (type) {
         case 'VLOCALCHAIN_ALLOCATE_ADDRESS': {
           const address = makeAddressFn(accountsCreated);
           accountsCreated += 1;
-          return address;
+          result = address;
+          break;
         }
         case 'VLOCALCHAIN_EXECUTE_TX': {
-          lcaExecuteTxSequence += 1;
-          return obj.messages.map(message =>
-            fakeLocalChainBridgeTxMsgHandler(message, lcaExecuteTxSequence),
-          );
+          const results = [];
+          for (const message of obj.messages) {
+            lcaExecuteTxSequence += 1;
+            /** @type {any} */
+            const msgResult = fakeLocalChainBridgeTxMsgHandler(
+              message,
+              lcaExecuteTxSequence,
+            );
+            // Store the sequence *in* the result object for MsgTransfer
+            if (
+              message['@type'] === '/ibc.applications.transfer.v1.MsgTransfer'
+            ) {
+              // Ensure result is an object before assigning sequence
+              if (typeof msgResult !== 'object' || msgResult === null) {
+                throw new Error(
+                  `Expected object result for MsgTransfer, got ${typeof msgResult}`,
+                );
+              }
+              msgResult.sequence = lcaExecuteTxSequence;
+            }
+            results.push(msgResult);
+          }
+          result = results;
+          break;
         }
         case 'VLOCALCHAIN_QUERY_MANY': {
-          return obj.messages.map(message =>
+          result = obj.messages.map(message =>
             fakeLocalChainBridgeQueryHandler(message),
           );
+          break;
         }
         default:
           Fail`unknown type ${type}`;
       }
-      return undefined;
+      onToBridge(obj, result); // Log the input obj and the computed result
+      return result;
     },
     fromBridge: async obj => {
       if (!hndlr) throw Error('no handler!');

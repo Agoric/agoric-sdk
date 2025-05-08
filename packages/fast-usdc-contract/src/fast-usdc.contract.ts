@@ -147,6 +147,7 @@ export const contract = async (
       terms.brands,
       privateArgs.chainInfo,
       privateArgs.assetInfo,
+      { log: trace },
     );
   }
 
@@ -192,9 +193,37 @@ export const contract = async (
   });
 
   const zoeTools = makeZoeTools(zcf, vowTools);
+  const { advanceFunds } = orchestrateAll(
+    // @ts-expect-error flow membrance type debt
+    { advanceFunds: flows.advanceFunds },
+    {
+      // UNTIL #11309 as above
+      chainHubTools: {
+        getChainInfoByChainId: chainHub.getChainInfoByChainId.bind(chainHub),
+        resolveAccountId: chainHub.resolveAccountId.bind(chainHub),
+      },
+      feeConfig,
+      getNobleICA,
+      log: makeTracer('AdvanceFunds'),
+      settlementAccount: settleAccountV,
+      statusManager,
+      usdc: harden({
+        brand: terms.brands.USDC,
+        denom: terms.usdcDenom,
+      }),
+      zcfTools: harden({
+        makeEmptyZCFSeat: () => {
+          const { zcfSeat } = zcf.makeEmptySeatKit();
+          return zcfSeat;
+        },
+      }),
+      zoeTools,
+    },
+  ) as { advanceFunds: HostForGuest<typeof flows.advanceFunds> };
+
   const makeAdvancer = prepareAdvancer(zone, {
+    advanceFunds,
     chainHub,
-    feeConfig,
     getNobleICA,
     usdc: harden({
       brand: terms.brands.USDC,

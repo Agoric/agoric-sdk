@@ -36,7 +36,7 @@ test.beforeEach(async t => {
 });
 
 test('calls between flows', async t => {
-  const { vt, orchestrateAll, zcf } = t.context;
+  const { vt, orchestrateAll } = t.context;
 
   const flows = {
     outer(orch, ctx, ...recipients) {
@@ -47,7 +47,7 @@ test('calls between flows', async t => {
     },
   } as Record<string, OrchestrationFlow<any>>;
 
-  const { outer, outer2, inner } = orchestrateAll(flows, {
+  const { outer, inner } = orchestrateAll(flows, {
     peerFlows: flows,
   });
 
@@ -56,7 +56,7 @@ test('calls between flows', async t => {
 });
 
 test('context mapping individual flows', async t => {
-  const { vt, orchestrateAll, zcf } = t.context;
+  const { vt, orchestrateAll } = t.context;
 
   const flows = {
     outer(orch, ctx, ...recipients) {

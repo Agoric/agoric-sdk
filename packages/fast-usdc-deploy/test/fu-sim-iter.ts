@@ -283,7 +283,6 @@ const makeIBCChannel = (
 export const makeSimulation = (ctx: WalletFactoryTestContext) => {
   const cctp = makeCctp(ctx, nobleAgoricChannelId, 'channel-62');
   const toNoble = makeIBCChannel(ctx.bridgeUtils, 'channel-62');
-  const fromNoble = 'channel-21';
   const oracles = Object.entries(configurations.MAINNET.oracles).map(
     ([name, addr]) => makeTxOracle(ctx, name, addr),
   );

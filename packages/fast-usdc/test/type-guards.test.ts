@@ -1,7 +1,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { M, mustMatch } from '@endo/patterns';
-import { TxStatus, PendingTxStatus } from '../src/constants.js';
+import { mustMatch } from '@endo/patterns';
+import { PendingTxStatus, TxStatus } from '../src/constants.js';
 import {
   CctpTxEvidenceShape,
   ChainPolicyShape,

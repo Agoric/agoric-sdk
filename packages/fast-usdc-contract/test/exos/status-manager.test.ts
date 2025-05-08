@@ -12,9 +12,9 @@ import {
   stateShape,
   type StatusManager,
 } from '../../src/exos/status-manager.ts';
-import { commonSetup, provideDurableZone } from '../supports.js';
+import { setupFastUsdcTest, provideDurableZone } from '../supports.js';
 
-type Common = EReturn<typeof commonSetup>;
+type Common = EReturn<typeof setupFastUsdcTest>;
 type TestContext = {
   statusManager: StatusManager;
   storage: Common['bootstrap']['storage'];
@@ -27,7 +27,7 @@ test('stateShape', t => {
 });
 
 test.beforeEach(async t => {
-  const common = await commonSetup(t);
+  const common = await setupFastUsdcTest(t);
   const zone = provideDurableZone('status-test');
   const txnsNode = common.commonPrivateArgs.storageNode.makeChildNode('txns');
   const statusManager = prepareStatusManager(
@@ -63,7 +63,7 @@ test('ADVANCED transactions are published to vstorage', async t => {
   await eventLoopIteration();
 
   const { storage } = t.context;
-  t.deepEqual(storage.getDeserialized(`fun.txns.${evidence.txHash}`), [
+  t.deepEqual(storage.getDeserialized(`orchtest.txns.${evidence.txHash}`), [
     { evidence, status: 'OBSERVED' },
     { status: 'ADVANCING' },
   ]);
@@ -91,7 +91,7 @@ test('ADVANCE_SKIPPED transactions are published to vstorage', async t => {
   await eventLoopIteration();
 
   const { storage } = t.context;
-  t.deepEqual(storage.getDeserialized(`fun.txns.${evidence.txHash}`), [
+  t.deepEqual(storage.getDeserialized(`orchtest.txns.${evidence.txHash}`), [
     { evidence, status: 'OBSERVED' },
     { status: 'ADVANCE_SKIPPED', risksIdentified: ['RISK1'] },
   ]);
@@ -212,7 +212,7 @@ test('advanceOutcome transitions to ADVANCED and ADVANCE_FAILED', async t => {
     },
   ]);
   await eventLoopIteration();
-  t.deepEqual(storage.getDeserialized(`fun.txns.${e1.txHash}`), [
+  t.deepEqual(storage.getDeserialized(`orchtest.txns.${e1.txHash}`), [
     { evidence: e1, status: 'OBSERVED' },
     { status: 'ADVANCING' },
     { status: 'ADVANCED' },
@@ -226,7 +226,7 @@ test('advanceOutcome transitions to ADVANCED and ADVANCE_FAILED', async t => {
     },
   ]);
   await eventLoopIteration();
-  t.deepEqual(storage.getDeserialized(`fun.txns.${e2.txHash}`), [
+  t.deepEqual(storage.getDeserialized(`orchtest.txns.${e2.txHash}`), [
     { evidence: e2, status: 'OBSERVED' },
     { status: 'ADVANCING' },
     { status: 'ADVANCE_FAILED' },

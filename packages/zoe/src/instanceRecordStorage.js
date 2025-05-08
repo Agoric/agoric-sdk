@@ -11,6 +11,11 @@ import {
   TermsShape,
 } from './typeGuards.js';
 
+/**
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {InstanceRecord} from './zoeService/utils.js';
+ */
+
 const { ownKeys } = Reflect;
 
 /**
@@ -24,7 +29,7 @@ const { ownKeys } = Reflect;
  */
 
 /**
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  * @returns {(ir: InstanceRecord) => InstanceState}
  */
 export const makeInstanceRecordStorage = baggage => {

@@ -5,6 +5,7 @@ import { makePegasus } from './pegasus.js';
 
 /**
  * @import {Remote} from '@agoric/vow';
+ * @import {ContractStartFn} from '@agoric/zoe';
  */
 
 /**

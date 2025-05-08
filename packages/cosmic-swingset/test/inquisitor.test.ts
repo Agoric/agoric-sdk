@@ -1,12 +1,12 @@
 import type { TestFn } from 'ava';
 import anyTest from 'ava';
 
-import { q, Fail } from '@endo/errors';
+import { Fail, q } from '@endo/errors';
 
 import { BridgeId, VBankAccount } from '@agoric/internal';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 
-import { makeHelpers, type Helpers } from '../tools/inquisitor.mjs';
+import { makeHelpers } from '../tools/inquisitor.mjs';
 import { makeCosmicSwingsetTestKit } from '../tools/test-kit.js';
 
 const test = anyTest as TestFn;
