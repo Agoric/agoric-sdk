@@ -17,7 +17,8 @@ const testYamlContent = fs.readFileSync(testYaml, 'utf-8');
 console.log('Searching for "cd <location> && yarn test"...');
 let status = 0;
 for (const { name: pkg, location } of listWorkspaces({ execFileSync })) {
-  const cmd = `cd ${location} && yarn \${{ steps.vars.outputs.test }}`;
+  const cmd = `cd ${location} && yarn ${{'${{ steps.vars.outputs.test }}'}`}`;
+  
   if (!testYamlContent.includes(cmd)) {
     console.error(`Cannot find ${location} (${pkg})`);
     status = 1;
