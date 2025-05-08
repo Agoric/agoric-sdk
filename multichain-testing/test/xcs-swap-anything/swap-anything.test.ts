@@ -128,17 +128,31 @@ const createOsmosisPool = async t => {
   }
 };
 
-const setupXcsState = async t => {
-  console.log('Setting XCS State ...');
+const setupXcsChannelLink = async (t, chainA, chainB) => {
+  console.log('Setting XCS Channel Links ...');
   try {
     const scriptPath = path.resolve(
       dirname,
-      '../../scripts/setup-xcs-state.sh',
+      '../../scripts/setup-xcs-channel-link.sh',
+    );
+    const { stdout } = await execa(scriptPath, [chainA, chainB]);
+    console.log('channel link setup output:', stdout);
+  } catch (error) {
+    t.fail(`channel link setup failed with error: ${error}`);
+  }
+};
+
+const setupXcsPrefix = async t => {
+  console.log('Setting XCS Prefixes ...');
+  try {
+    const scriptPath = path.resolve(
+      dirname,
+      '../../scripts/setup-xcs-prefix.sh',
     );
     const { stdout } = await execa(scriptPath);
-    console.log('setup-xcs-state script output:', stdout);
+    console.log('prefix setup output:', stdout);
   } catch (error) {
-    t.fail(`setup-xcs-state script failed with error: ${error}`);
+    t.fail(`prefix setup failed with error: ${error}`);
   }
 };
 
@@ -239,35 +253,13 @@ const getPool = async poolId => {
   return pool;
 };
 
-const getChannel = async () => {
-  const hermesExec =
-    'kubectl exec -i hermes-agoric-osmosis-0 -c relayer -- hermes';
-
-  const queryCmd = `${hermesExec} --json query channels --show-counterparty --chain agoriclocal`;
-
-  const { stdout } = await execa(queryCmd, { shell: true });
-
-  const lines = stdout.trim().split('\n');
-  const lastLine = lines[lines.length - 1];
-  const parsed = JSON.parse(lastLine);
-
-  const result = parsed.result.filter(
-    item => item.chain_id_b === 'osmosislocal',
-  );
-
-  const agoricOsmosisChannel = result[0]?.channel_a;
-  const osmosisAgoricChannel = result[0]?.channel_b;
-
-  return { agoricOsmosisChannel, osmosisAgoricChannel };
-};
-
 test.before(async t => {
   const { setupTestKeys, ...common } = await commonSetup(t);
   const { commonBuilderOpts, deleteTestKeys, startContract } = common;
-    const { waitForBlock } = makeBlockTool({
-      rpc: makeHttpClient('http://localhost:26657', fetch),
-      delay: ms => new Promise(resolve => setTimeout(resolve, ms)),
-    });
+  const { waitForBlock } = makeBlockTool({
+    rpc: makeHttpClient('http://localhost:26657', fetch),
+    delay: ms => new Promise(resolve => setTimeout(resolve, ms)),
+  });
   await deleteTestKeys(accounts).catch();
   const wallets = await setupTestKeys(accounts);
   console.log('WALLETS', wallets);
@@ -276,10 +268,13 @@ test.before(async t => {
   await startContract(contractName, contractBuilder, commonBuilderOpts);
   await setupXcsContracts(t);
   await createOsmosisPool(t);
-  await setupXcsState(t);
+  await setupXcsChannelLink(t, 'agoric', 'osmosis');
+  await setupXcsPrefix(t);
 });
 
 test.serial('test osmosis xcs state', async t => {
+  const { useChain } = t.context;
+
   // verify if Osmosis XCS contracts were instantiated
   const { registryAddress, swaprouterAddress, swapAddress } =
     await getXcsContractsAddress();
@@ -288,10 +283,15 @@ test.serial('test osmosis xcs state', async t => {
   t.assert(swapAddress, 'crosschain_swaps contract address not found');
 
   // verify if Osmosis XCS State was modified
+  const osmosisChainId = useChain('osmosis').chain.chain_id;
+  const {
+    transferChannel: { channelId },
+  } = starshipChainInfo.agoric.connections[osmosisChainId];
+
   const { channelData, prefixData: osmosisPrefix } = await getXcsState();
-  const { osmosisAgoricChannel } = await getChannel();
+
   t.is(osmosisPrefix, 'osmo');
-  t.is(channelData, osmosisAgoricChannel);
+  t.is(channelData, channelId);
 
   const { pool_id, token_out_denom } = await getPoolRoute();
   t.is(token_out_denom, 'uosmo');
@@ -380,6 +380,96 @@ test.serial('BLD for OSMO, receiver on Agoric', async t => {
   t.regex(agoricReceiverBalances[0]?.denom, /^ibc/);
   t.is(
     agoricReceiverBalances[0]?.denom.split('ibc/')[1],
+    expectedHash,
+    'got expected ibc denom hash',
+  );
+});
+
+test.serial('BLD for OSMO, receiver on CosmosHub', async t => {
+  const {
+    wallets,
+    provisionSmartWallet,
+    vstorageClient,
+    retryUntilCondition,
+    useChain,
+  } = t.context;
+
+  const { client, address } = await createFundedWalletAndClient(
+    t.log,
+    'cosmoshub',
+    useChain,
+  );
+
+  const balancesResult = await retryUntilCondition(
+    () => client.getAllBalances(address),
+    coins => !!coins?.length,
+    `Faucet balances found for ${address}`,
+  );
+  console.log('Balances:', balancesResult);
+
+  await setupXcsChannelLink(t, 'osmosis', 'cosmoshub');
+
+  // Provision the Agoric smart wallet
+  const agoricAddr = wallets.agoricSender;
+  const wdUser = await provisionSmartWallet(agoricAddr, {
+    BLD: 1000n,
+    IST: 1000n,
+  });
+  t.log(`Provisioned Agoric smart wallet for ${agoricAddr}`);
+
+  const { swapAddress } = await getXcsContractsAddress();
+
+  const doOffer = makeDoOffer(wdUser);
+
+  const brands = await vstorageClient.queryData('published.agoricNames.brand');
+  const bldBrand = Object.fromEntries(brands).BLD;
+  const swapInAmount = AmountMath.make(bldBrand, 125n);
+
+  // Send swap offer
+  const makeAccountOfferId = `swap-ubld-uosmo-${Date.now()}`;
+  await doOffer({
+    id: makeAccountOfferId,
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: [contractName],
+      callPipe: [['makeSendInvitation']],
+    },
+    offerArgs: {
+      // TODO: get the contract address dynamically
+      destAddr: swapAddress,
+      receiverAddr: address,
+      outDenom: 'uosmo',
+      slippage: { slippagePercentage: '20', windowSeconds: 10 },
+      onFailedDelivery: 'do_nothing',
+    },
+    proposal: { give: { Send: swapInAmount } },
+  });
+
+  const balancesResultAfter = await retryUntilCondition(
+    () => client.getAllBalances(address),
+    coins => coins?.length > 1,
+    `Faucet balances found for ${address}`,
+  );
+  console.log('Balances:', balancesResultAfter);
+
+  const cosmosChainId = useChain('cosmoshub').chain.chain_id;
+  const {
+    transferChannel: { channelId },
+  } = starshipChainInfo.agoric.connections[cosmosChainId];
+
+  const apiUrl = await useChain('cosmoshub').getRestEndpoint();
+  const queryClient = makeQueryClient(apiUrl);
+
+  const { hash: expectedHash } = await queryClient.queryDenom(
+    `transfer/${channelId}`,
+    'uosmo',
+  );
+
+  t.log('Expected denom hash:', expectedHash);
+
+  t.regex(balancesResultAfter[0]?.denom, /^ibc/);
+  t.is(
+    balancesResultAfter[0]?.denom.split('ibc/')[1],
     expectedHash,
     'got expected ibc denom hash',
   );
