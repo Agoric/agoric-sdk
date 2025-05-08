@@ -356,6 +356,7 @@ type InterleaveScenario = 'bobFulfills' | 'bobRejects';
 const makeInterleaveScenario = test.macro({
   title: (_, scenario: InterleaveScenario) => `interleave via ${scenario}`,
   exec: async (t, scenario: InterleaveScenario) => {
+    const bobFulfills = scenario === 'bobFulfills'; // otherwise bobRejects
     const {
       evm: { cctp, txPub },
       common: {
@@ -459,7 +460,7 @@ const makeInterleaveScenario = test.macro({
     // Bob's advance settles, while Carol's 7th attempt is still outstanding.
     // Depending on `scenario: InterleaveScenario`, it fulfills or times out.
     t.is(getIndexByEUD(bobEud), -2, 'bobs tx is now second to last');
-    if (scenario === 'bobRejects') {
+    if (bobFulfills) {
       await transmitVTransferEvent('timeoutPacket', -2);
       t.deepEqual(t.context.common.readTxnRecord(bobEv), [
         { evidence: bobEv, status: 'OBSERVED' },
@@ -467,7 +468,6 @@ const makeInterleaveScenario = test.macro({
         { status: 'ADVANCE_FAILED' },
       ]);
     } else {
-      // default to `bobFulfills`
       await transmitVTransferEvent('acknowledgementPacket', -2);
       t.deepEqual(t.context.common.readTxnRecord(bobEv), [
         { evidence: bobEv, status: 'OBSERVED' },
@@ -504,7 +504,7 @@ const makeInterleaveScenario = test.macro({
       { status: 'DISBURSED' },
     ]);
 
-    if (scenario === 'bobRejects') {
+    if (bobFulfills) {
       t.deepEqual(t.context.common.readTxnRecord(bobEv), [
         { evidence: bobEv, status: 'OBSERVED' },
         { status: 'ADVANCING' },
@@ -513,7 +513,6 @@ const makeInterleaveScenario = test.macro({
         // the goal of this test
       ]);
     } else {
-      // default to `bobFulfills`
       t.like(t.context.common.readTxnRecord(bobEv), [
         { evidence: bobEv, status: 'OBSERVED' },
         { status: 'ADVANCING' },
