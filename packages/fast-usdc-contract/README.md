@@ -76,6 +76,11 @@ non-Cosmos destinations is expected to take longer than Cosmos destinations
 since there are two IBC packet lifecycles that need to take place - one for the
 IBC Transfer to the Noble ICA and one for `MsgDepositForBurn`.
 
+Minting deposits can sometimes arrive before the oracles provide an observation of the transaction. `mintedEarly` is used by both **Advancer** and **Settler** to handle token deposits that arrive before there is enough evidence to determine whether to advance or skip, or that arrive while an advance is already in progress.
+
+- **Pre-Evidence Deposits**: Tokens can be minted into the settlement account (via `receiveUpcall`) before we have the oracle evidence. These funds are tracked in `mintedEarly` until evidence is received, at which point the system will `Forward`.
+- **Mid-Advance Deposits**: If additional tokens arrive while the Advancer is still waiting for an IBC transfer to settle (`Advancing`), those funds also go into `mintedEarly`. Once the transfer completes — when an IBC acknowledgment or timeout is received from the destination chain — the corresponding `mintedEarly` entry is cleared, and the settlement is either disbursed or forwarded. Disbursement occurs if the advance is successful, while a forward (no fees) retries the transfer.
+
 
 ```mermaid
 stateDiagram-v2
