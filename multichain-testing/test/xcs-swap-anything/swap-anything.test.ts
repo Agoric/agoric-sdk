@@ -49,9 +49,6 @@ test.before(async t => {
   await createOsmosisPool(t);
   await setupXcsChannelLink(t, 'agoric', 'osmosis');
   await setupXcsPrefix(t);
-
-  // @ts-expect-error type
-  t.context = { ...common, wallets, waitForBlock };
 });
 
 test.serial('test osmosis xcs state', async t => {
