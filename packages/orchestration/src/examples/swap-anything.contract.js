@@ -51,8 +51,8 @@ export const contract = async (
   // UNTIL https://github.com/Agoric/agoric-sdk/issues/9066
   const logNode = E(privateArgs.storageNode).makeChildNode('log');
   /** @type {(msg: string) => Vow<void>} */
-  const log = msg =>
-    vowTools.watch(E(logNode).setValue(JSON.stringify({ msg })));
+  const log = (msg, level = 'info') =>
+    vowTools.watch(E(logNode).setValue(JSON.stringify({ msg, level })));
 
   const makeLocalAccount = orchestrate(
     'makeLocalAccount',
