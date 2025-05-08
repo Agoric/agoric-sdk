@@ -11,6 +11,17 @@ import {
   makeIBCTransferMsg,
 } from '../../tools/ibc-transfer.js';
 import { makeHttpClient } from '../../tools/makeHttpClient.js';
+import {
+  fundRemote,
+  setupXcsContracts,
+  createOsmosisPool,
+  setupXcsChannelLink,
+  setupXcsPrefix,
+  getXcsContractsAddress,
+  getXcsState,
+  getPoolRoute,
+  getPool,
+} from './helpers.js';
 import type { OfferStatus } from '@agoric/smart-wallet/src/offers.js';
 import {
   fundRemote,
@@ -49,6 +60,9 @@ test.before(async t => {
   await createOsmosisPool(t);
   await setupXcsChannelLink(t, 'agoric', 'osmosis');
   await setupXcsPrefix(t);
+
+  // @ts-expect-error type
+  t.context = { ...common, wallets, waitForBlock };
 });
 
 test.serial('test osmosis xcs state', async t => {
