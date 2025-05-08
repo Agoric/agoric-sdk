@@ -96,4 +96,9 @@ stateDiagram-v2
   AdvancingChoice --> AdvanceFailed : advancer's transferHandler detects failure
   Forwarding --> ForwardFailed : settler.forward() fails
   ForwardFailed --> Forwarding : retry when any transfer to destination chain succeeds
+
+  # Terminal states
+  Disbursed --> [*]
+  Forwarded --> [*]
+  ForwardSkipped --> [*]
 ```
