@@ -200,6 +200,7 @@ export const prepareAdvancerKit = (
       // They must remain implemented for as long as any vow might settle and need their behavior.
       // Once all possible such vows are settled, the methods could be removed but the handler
       // facets must remain to satisfy the kind definition backward compatibility checker.
+      /* c8 ignore start */
       depositHandler: {
         /**
          * @param result
@@ -387,6 +388,7 @@ export const prepareAdvancerKit = (
           tmpReturnSeat.exit();
         },
       },
+      /* c8 ignore stop */
     },
     {
       stateShape,
