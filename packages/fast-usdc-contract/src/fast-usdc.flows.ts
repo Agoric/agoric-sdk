@@ -302,20 +302,20 @@ export const advanceFunds = (async (
         // send USDC via CCTP
         try {
           await poolAccount.transfer(intermediateRecipient, amount);
-          // transferCctpHandler.onFulfilled
-          // assets are on noble, transfer to dest.
-          const intermediaryAccount = getNobleICA();
-          try {
-            await intermediaryAccount.depositForBurn(destination, amount);
-            // transferHandler.onFulfilled
-            log('Advance succeeded', { advanceAmount, destination });
-            notifier.notifyAdvancingResult(detail, true);
-          } catch (error) {
-            await transferRejected(error);
-          }
         } catch (error) {
-          transferCctpRejected(error);
+          return transferCctpRejected(error);
         }
+        // transferCctpHandler.onFulfilled
+        // assets are on noble, transfer to dest.
+        const intermediaryAccount = getNobleICA();
+        try {
+          await intermediaryAccount.depositForBurn(destination, amount);
+        } catch (error) {
+          return transferRejected(error);
+        }
+        // transferHandler.onFulfilled
+        log('Advance succeeded', { advanceAmount, destination });
+        notifier.notifyAdvancingResult(detail, true);
       } else {
         // This is supposed to be caught in handleTransactionEvent()
         Fail`🚨 can only transfer to Agoric addresses, via IBC, or via CCTP`;
