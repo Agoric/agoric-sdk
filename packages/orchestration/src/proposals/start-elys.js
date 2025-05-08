@@ -89,7 +89,11 @@ export const startElys = async (
     ),
   };
 
-  const { instance } = await E(startUpgradable)(startOpts);
+  const { instance, creatorFacet } = await E(startUpgradable)(startOpts);
+  const addressNode = await E(storageNode).makeChildNode('address');
+  const address = await E(creatorFacet).getLocalAddress();
+  await E(addressNode).setValue( JSON.stringify(address) );
+
   produceInstance.resolve(instance);
 };
 harden(startElys);
