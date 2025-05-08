@@ -249,6 +249,7 @@ export const advanceFunds = (async (
 
     // throws if requested does not exceed fees
     const advanceAmount = feeTools.calculateAdvance(fullAmount, destination);
+    const amount = harden({ denom: usdc.denom, value: advanceAmount.value });
 
     const tmpSeat = zcfTools.makeEmptyZCFSeat();
     // throws if the pool has insufficient funds
@@ -273,10 +274,6 @@ export const advanceFunds = (async (
 
       // depositHandler.onfulFilled
       tmpSeat.exit();
-      const amount = harden({
-        denom: usdc.denom,
-        value: advanceAmount.value,
-      });
 
       const intermediateRecipient = getNobleICA().getAddress();
 
@@ -303,7 +300,7 @@ export const advanceFunds = (async (
         try {
           await poolAccount.transfer(intermediateRecipient, amount);
         } catch (error) {
-          return transferCctpRejected(error);
+          return transferRejected(error);
         }
         // transferCctpHandler.onFulfilled
         // assets are on noble, transfer to dest.
@@ -311,7 +308,7 @@ export const advanceFunds = (async (
         try {
           await intermediaryAccount.depositForBurn(destination, amount);
         } catch (error) {
-          return transferRejected(error);
+          return cctpFromNobleRejected(error);
         }
         // transferHandler.onFulfilled
         log('Advance succeeded', { advanceAmount, destination });
@@ -339,11 +336,10 @@ export const advanceFunds = (async (
       }
     }
 
-    async function transferRejected(reason: any) {
-      log('Advance failed', reason);
-      notifier.notifyAdvancingResult(detail, false);
+    async function repayPool() {
       const tmpReturnSeat = zcfTools.makeEmptyZCFSeat();
       await null;
+
       try {
         // XXX async flow types
         await (withdrawToSeat as unknown as GuestOf<typeof withdrawToSeat>)(
@@ -368,6 +364,12 @@ export const advanceFunds = (async (
       }
     }
 
+    async function transferRejected(reason: any) {
+      log('Advance failed', reason);
+      notifier.notifyAdvancingResult(detail, false);
+      return repayPool();
+    }
+
     function withdrawRejected(error: any, tmpReturnSeat: ZCFSeat) {
       log(
         `🚨 withdraw ${q(advanceAmount)} from "poolAccount" to return to pool failed`,
@@ -378,9 +380,17 @@ export const advanceFunds = (async (
       tmpReturnSeat.exit();
     }
 
-    function transferCctpRejected(error: any) {
-      log('🚨 CCTP transfer failed', error);
-      // FIXME really handle, with tests
+    async function cctpFromNobleRejected(reason: any) {
+      log('⚠️ CCTP transfer failed', reason);
+      notifier.notifyAdvancingResult(detail, false);
+      await null;
+      try {
+        await getNobleICA().transfer(poolAccount.getAddress(), amount);
+      } catch (error) {
+        // XXX should retry?
+        log('🚨 failed to transfer back from noble ICA', amount.value, error);
+      }
+      return repayPool();
     }
   } catch (error) {
     log('Advancer error:', error);
