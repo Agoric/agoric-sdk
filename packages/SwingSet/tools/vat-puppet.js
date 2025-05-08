@@ -9,13 +9,17 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { objectMap } from '@agoric/internal';
 
 /**
- * @typedef {[target: unknown, method: string, ...args: unknown[]]} SendArgs
+ * @callback Die
+ * @param {unknown} completion
+ * @param {Parameters<Send>} [finalSend]
  */
 
 /**
- * @callback Die
- * @param {unknown} completion
- * @param {SendArgs} [finalSend]
+ * @callback Send
+ * @param {unknown} target
+ * @param {string} method
+ * @param {...unknown[]} args
+ * @returns {any}
  */
 
 /**
@@ -33,10 +37,7 @@ export const makeReflectionMethods = (vatPowers, baggage) => {
   const heldInHeap = [];
 
   /**
-   * @param {SendArgs[0]} target
-   * @param {SendArgs[1]} method
-   * @param  {...SendArgs[2]} args
-   * @returns {any}
+   * @type {Send}
    */
   const send = (target, method, ...args) => E(target)[method](...args);
 
