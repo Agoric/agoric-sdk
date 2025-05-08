@@ -114,6 +114,7 @@ jobs:
         with:
           # Retry arbitrarily; this isn't the test itself so don't wire up the flake detection.
           max_attempts: 3
+          timeout_minutes: 5
           command: cd ./agoric-sdk/multichain-testing && make fund-provision-pool register-bank-assets
 
       - name: Run @agoric/multichain-testing E2E Tests
