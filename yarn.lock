@@ -6289,10 +6289,6 @@ eslint@^9.19.0:
     natural-compare "^1.4.0"
     optionator "^0.9.3"
 
-esm@agoric-labs/esm#Agoric-built:
-  version "3.2.25"
-  resolved "https://codeload.github.com/agoric-labs/esm/tar.gz/3603726ad4636b2f865f463188fcaade6375638e"
-
 espree@^10.0.1, espree@^10.1.0, espree@^10.3.0:
   version "10.3.0"
   resolved "https://registry.yarnpkg.com/espree/-/espree-10.3.0.tgz#29267cf5b0cb98735b65e64ba07e0ed49d1eed8a"
