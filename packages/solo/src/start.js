@@ -9,8 +9,6 @@ import { promisify } from 'util';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 // import { createHash } from 'crypto';
 
-import createRequire from 'esm';
-
 import anylogger from 'anylogger';
 
 // import connect from 'lotion-connect';
@@ -52,9 +50,6 @@ import { makeHTTPListener } from './web.js';
 import { connectToChain } from './chain-cosmos-sdk.js';
 
 const log = anylogger('start');
-
-// FIXME: Needed for legacy plugins.
-const esmRequire = createRequire(/** @type {any} */ ({}));
 
 let swingSetRunning = false;
 
@@ -138,7 +133,7 @@ const buildSwingset = async (
 
     // TODO: Detect the module type and use the appropriate loader, just like
     // `agoric deploy`.
-    return esmRequire(pluginFile);
+    return import(pluginFile);
   };
 
   const plugin = buildPlugin(pluginDir, importPlugin, queueThunkForKernel);
