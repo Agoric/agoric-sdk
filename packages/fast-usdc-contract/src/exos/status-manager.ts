@@ -470,13 +470,15 @@ export const prepareStatusManager = (
       /**
        * Mark a transaction as `FORWARD_FAILED`.
        * If `tx` details are provided, register it for retry.
-       * @param txHash
-       * @param tx - If provided, registers the transaction for retry.
+       *
+       * @param txHash - redundant with tx.txHash for backwards compatibility
+       * @param tx - registers the transaction for retry (optional for backwards compatibility)
        */
       forwardFailed(txHash: EvmHash, tx?: ForwardFailedTx): void {
         if (forwardInProgress.has(txHash)) {
           forwardInProgress.delete(txHash);
         } else {
+          // Not expected production, but if it does it's not a problem.
           console.warn(
             `Transaction ${txHash} forward failed without being marked as in progress`,
           );

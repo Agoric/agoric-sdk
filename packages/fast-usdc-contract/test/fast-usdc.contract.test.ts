@@ -72,6 +72,7 @@ test('initial baggage', async t => {
   t.snapshot(tree, 'contract baggage after start');
 });
 
+// Runs after all the serial tests
 test('used baggage', async t => {
   const { startKit } = t.context;
 
