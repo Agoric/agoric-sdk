@@ -39,6 +39,7 @@ import type {
   AccountId,
   Bech32Address,
   ChainHub,
+  CosmosChainAddress,
   Denom,
   OrchestrationAccount,
 } from '@agoric/orchestration';
@@ -117,7 +118,8 @@ const parseMintedEarlyKey = (key: ReturnType<typeof makeMintedEarlyKey>) => {
 /** @param {Brand<'nat'>} USDC */
 export const makeAdvanceDetailsShape = (USDC: Brand<'nat'>) =>
   harden({
-    destination: M.string(),
+    // XXX backwards compatibility
+    destination: M.or(CosmosChainAddressShape, M.string(/* AccountId */)),
     forwardingAddress: M.string(),
     fullAmount: makeNatAmountShape(USDC),
     txHash: EvmHashShape,
@@ -334,16 +336,22 @@ export const prepareSettler = (
             txHash,
             forwardingAddress,
             fullAmount,
-            destination,
+            destination: maybeCaip,
           }: {
             txHash: EvmHash;
             forwardingAddress: NobleAddress;
             fullAmount: Amount<'nat'>;
-            destination: AccountId;
+            destination: AccountId | CosmosChainAddress;
           },
           success: boolean,
         ): void {
           const { value: fullValue } = fullAmount;
+
+          // TODO helper function to convert to CAIP-2
+          const destination =
+            typeof maybeCaip === 'string'
+              ? maybeCaip
+              : (`cosmos:${maybeCaip.chainId}:${maybeCaip.value}` as AccountId);
 
           if (statusManager.dequeueMintedEarly(forwardingAddress, fullValue)) {
             statusManager.advanceOutcomeForMintedEarly(txHash, success);

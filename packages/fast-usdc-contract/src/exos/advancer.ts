@@ -68,11 +68,18 @@ interface AdvancerVowCtx {
   txHash: EvmHash;
 }
 
-const AdvancerVowCtxShape: TypedPattern<AdvancerVowCtx> = M.splitRecord(
+/**
+ * @deprecated from before the adoption of CAIP-10
+ */
+type OldAdvancerVowCtx = Omit<AdvancerVowCtx, 'destination'> & {
+  destination: AccountId | CosmosChainAddress;
+};
+
+const AdvancerVowCtxShape: TypedPattern<OldAdvancerVowCtx> = M.splitRecord(
   {
     fullAmount: AnyNatAmountShape,
     advanceAmount: AnyNatAmountShape,
-    destination: M.string(), // AccountId
+    destination: M.or(CosmosChainAddressShape, M.string()), // AccountId is preferred
     forwardingAddress: M.string(),
     txHash: EvmHashShape,
   },
@@ -209,17 +216,23 @@ export const prepareAdvancerKit = (
          */
         onFulfilled(
           result: undefined,
-          ctx: AdvancerVowCtx & { tmpSeat: ZCFSeat },
+          ctx: OldAdvancerVowCtx & { tmpSeat: ZCFSeat },
         ) {
           return asVow(() => {
             const { poolAccount, settlementAddress } = this.state;
             const { tmpSeat, ...vowContext } = ctx;
-            const { destination, advanceAmount } = vowContext;
+            const { destination: destStrOrObj, advanceAmount } = vowContext;
             tmpSeat.exit();
             const amount = harden({
               denom: usdc.denom,
               value: advanceAmount.value,
             });
+
+            // Backwards compatibility with vows that fulfill using the old object form
+            const destination =
+              typeof destStrOrObj === 'string'
+                ? destStrOrObj
+                : (`cosmos:${destStrOrObj.chainId}:${destStrOrObj.value}` as AccountId);
 
             const intermediateRecipient = getNobleICA().getAddress();
 
@@ -258,7 +271,7 @@ export const prepareAdvancerKit = (
          * notify of Advancing failure.
          *
          * @param {Error} error
-         * @param {AdvancerVowCtx & { tmpSeat: ZCFSeat }} ctx
+         * @param {OldAdvancerVowCtx & { tmpSeat: ZCFSeat }} ctx
          * @throws {never} WARNING: this function must not throw, because user funds are at risk
          */
         onRejected(
@@ -267,7 +280,7 @@ export const prepareAdvancerKit = (
             tmpSeat,
             advanceAmount,
             ...restCtx
-          }: AdvancerVowCtx & { tmpSeat: ZCFSeat },
+          }: OldAdvancerVowCtx & { tmpSeat: ZCFSeat },
         ) {
           log(
             '⚠️ deposit to localOrchAccount failed, attempting to return payment to LP',
@@ -286,7 +299,7 @@ export const prepareAdvancerKit = (
       transferHandler: {
         /**
          * @param {undefined} result
-         * @param {AdvancerVowCtx} ctx
+         * @param {OldAdvancerVowCtx} ctx
          * @throws {never} WARNING: this function must not throw, because user funds are at risk
          */
         onFulfilled(result: undefined, ctx: AdvancerVowCtx) {
@@ -317,18 +330,22 @@ export const prepareAdvancerKit = (
       },
       transferCctpHandler: {
         /**
-         * @param {undefined} result
-         * @param {AdvancerVowCtx} ctx
+         * @param result
+         * @param ctx
          * @throws {never} WARNING: this function must not throw, because user funds are at risk
          */
-        onFulfilled(result: undefined, ctx: AdvancerVowCtx) {
-          const { advanceAmount, destination } = ctx;
+        onFulfilled(result: undefined, ctx: OldAdvancerVowCtx) {
+          const { advanceAmount } = ctx;
           // assets are on noble, transfer to dest.
           const intermediaryAccount = getNobleICA();
           const amount = harden({
             denom: usdc.denom,
             value: advanceAmount.value,
           });
+          const destination =
+            typeof ctx.destination === 'string'
+              ? ctx.destination
+              : (`cosmos:${ctx.destination.chainId}:${ctx.destination.value}` as AccountId);
           const burn = intermediaryAccount.depositForBurn(destination, amount);
           return watch(burn, this.facets.transferHandler, ctx);
         },
@@ -340,10 +357,6 @@ export const prepareAdvancerKit = (
       withdrawHandler: {
         /**
          *
-         * @param {undefined} result
-         * @param ctx
-         * @param ctx.advanceAmount
-         * @param ctx.tmpReturnSeat
          * @throws {never} WARNING: this function must not throw, because user funds are at risk
          */
         onFulfilled(
@@ -366,10 +379,6 @@ export const prepareAdvancerKit = (
           }
         },
         /**
-         * @param {Error} error
-         * @param ctx
-         * @param ctx.advanceAmount
-         * @param ctx.tmpReturnSeat
          * @throws {never} WARNING: this function must not throw, because user funds are at risk
          */
         onRejected(
