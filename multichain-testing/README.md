@@ -134,6 +134,13 @@ make provision-smart-wallet ADDR=$ADDR
 kubectl exec -i noblelocal-genesis-0 -c validator -- nobled query interchain-accounts host params | jq
 ```
 
+## Optional Features
+
+```sh
+# create and fund a liquidity pool on Osmosis
+make create-osmosis-pool
+```
+
 ## Chain Registry
 
 These only work if you've done `make port-forward`.
