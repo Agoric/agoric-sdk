@@ -1,4 +1,4 @@
-import type { NatValue } from '@agoric/ertp';
+import { type NatValue } from '@agoric/ertp';
 import {
   PendingTxStatus,
   TerminalTxStatus,
@@ -29,6 +29,10 @@ import type { Zone } from '@agoric/zone';
 import { Fail, makeError, q } from '@endo/errors';
 import { E, type ERef } from '@endo/far';
 import { M } from '@endo/patterns';
+import { chainOfAccount } from '@agoric/orchestration/src/utils/address.js';
+import type { AccountId, CaipChainId } from '@agoric/orchestration';
+import { ForwardFailedTxShape, type ForwardFailedTx } from '../typeGuards.ts';
+import { type RouteHealth } from '../utils/route-health.ts';
 
 /** The string template is for developer visibility but not meant to ever be parsed. */
 type PendingTxKey = `pendingTx:${bigint}:${NobleAddress}`;
@@ -36,6 +40,7 @@ type PendingTxKey = `pendingTx:${bigint}:${NobleAddress}`;
 interface StatusManagerPowers {
   log?: LogFn;
   marshaller: ERef<Marshaller>;
+  routeHealth: RouteHealth;
 }
 
 /**
@@ -74,7 +79,7 @@ export const stateShape = harden({
 export const prepareStatusManager = (
   zone: Zone,
   txnsNode: ERef<StorageNode>,
-  { marshaller }: StatusManagerPowers,
+  { marshaller, routeHealth }: StatusManagerPowers,
 ) => {
   /**
    * Keyed by a tuple of the Noble Forwarding Account and amount.
@@ -102,6 +107,23 @@ export const prepareStatusManager = (
     valueShape: M.nat(),
   });
 
+  // NB: has entries only from `forwardFailed` calls that include the full tx
+  // (the handler before the forwardFunds flow did not).
+  const failedForwards: MapStore<EvmHash, ForwardFailedTx> = zone.mapStore(
+    'FailedForwards',
+    {
+      keyShape: EvmHashShape,
+      valueShape: ForwardFailedTxShape,
+    },
+  );
+
+  const forwardInProgress: SetStore<EvmHash> = zone.setStore(
+    'ForwardInProgress',
+    {
+      keyShape: M.string(),
+    },
+  );
+
   /**
    * Transactions that have completed, but are still in vstorage.
    */
@@ -111,6 +133,18 @@ export const prepareStatusManager = (
       keyShape: M.string(),
     },
   );
+
+  const noteRouteHealth = (
+    tx: { destination: AccountId },
+    isWorking: boolean,
+  ): void => {
+    const chainId = chainOfAccount(tx.destination);
+    if (isWorking) {
+      routeHealth.noteSuccess(chainId);
+    } else {
+      routeHealth.noteFailure(chainId);
+    }
+  };
 
   const publishTxnRecord = (txId: EvmHash, record: TransactionRecord): void => {
     const txNode = E(txnsNode).makeChildNode(txId, {
@@ -202,10 +236,15 @@ export const prepareStatusManager = (
     M.interface('StatusManagerI', {
       // TODO: naming scheme for transition events
       advance: M.call(CctpTxEvidenceShape).returns(),
-      advanceOutcome: M.call(M.string(), M.nat(), M.boolean()).returns(),
+      advanceOutcome: M.call(M.string(), M.nat(), M.boolean())
+        .optional(M.splitRecord({ destination: M.string() }))
+        .returns(),
       skipAdvance: M.call(CctpTxEvidenceShape, M.arrayOf(M.string())).returns(),
       advanceOutcomeForMintedEarly: M.call(EvmHashShape, M.boolean()).returns(),
       advanceOutcomeForUnknownMint: M.call(CctpTxEvidenceShape).returns(),
+      getForwardsToRetry: M.call(M.string()).returns(
+        M.arrayOf(ForwardFailedTxShape),
+      ),
       hasBeenObserved: M.call(CctpTxEvidenceShape).returns(M.boolean()),
       deleteCompletedTxs: M.call().returns(M.undefined()),
       dequeueStatus: M.call(M.string(), M.bigint()).returns(
@@ -220,8 +259,13 @@ export const prepareStatusManager = (
       disbursed: M.call(EvmHashShape, AmountKeywordRecordShape).returns(
         M.undefined(),
       ),
-      forwarded: M.call(EvmHashShape).returns(),
-      forwardFailed: M.call(EvmHashShape).returns(),
+      forwarded: M.call(EvmHashShape)
+        .optional(M.splitRecord({ destination: M.string() }))
+        .returns(),
+      forwardFailed: M.call(EvmHashShape)
+        .optional(ForwardFailedTxShape)
+        .returns(),
+      forwarding: M.call(EvmHashShape).returns(),
       forwardSkipped: M.call(EvmHashShape).returns(),
       lookupPending: M.call(M.string(), M.bigint()).returns(
         M.arrayOf(PendingTxShape),
@@ -258,16 +302,17 @@ export const prepareStatusManager = (
       /**
        * Record result of an ADVANCING transaction
        *
-       * @param nfa
-       * @param amount
-       * @param success
        * @throws {Error} if nothing to advance
        */
       advanceOutcome(
         nfa: NobleAddress,
         amount: bigint,
         success: boolean,
+        tx?: { destination: AccountId },
       ): void {
+        if (tx) {
+          noteRouteHealth(tx, success);
+        }
         setPendingTxStatus(
           { nfa, amount },
           success ? PendingTxStatus.Advanced : PendingTxStatus.AdvanceFailed,
@@ -283,7 +328,14 @@ export const prepareStatusManager = (
        * @param txHash
        * @param success
        */
-      advanceOutcomeForMintedEarly(txHash: EvmHash, success: boolean): void {
+      advanceOutcomeForMintedEarly(
+        txHash: EvmHash,
+        success: boolean,
+        tx?: { destination: AccountId },
+      ): void {
+        if (tx) {
+          noteRouteHealth(tx, success);
+        }
         publishTxnRecord(
           txHash,
           harden({
@@ -307,6 +359,13 @@ export const prepareStatusManager = (
         }
         seenTxs.init(txHash, evidence.blockTimestamp);
         publishEvidence(txHash, evidence);
+      },
+
+      getForwardsToRetry(chainId: CaipChainId): Array<ForwardFailedTx> {
+        const valuePattern = M.splitRecord({ chainId });
+        // Spread to array because guarded methods can't pass Iterable
+        const failed = [...failedForwards.values(undefined, valuePattern)];
+        return failed.filter(tx => !forwardInProgress.has(tx.txHash));
       },
 
       /**
@@ -372,10 +431,34 @@ export const prepareStatusManager = (
       },
 
       /**
+       * Call when a transaction forward is started.
+       */
+      forwarding(txHash: EvmHash): void {
+        if (forwardInProgress.has(txHash)) {
+          throw Fail`Transaction already in progress: ${q(txHash)}`;
+        }
+        forwardInProgress.add(txHash);
+      },
+
+      /**
        * Mark a transaction as `FORWARDED`
        * @param txHash
        */
-      forwarded(txHash: EvmHash): void {
+      forwarded(txHash: EvmHash, tx?: ForwardFailedTx): void {
+        if (forwardInProgress.has(txHash)) {
+          forwardInProgress.delete(txHash);
+        } else {
+          console.warn(
+            `Transaction ${txHash} forwarded without being marked as in progress`,
+          );
+        }
+
+        if (tx) {
+          if (failedForwards.has(txHash)) {
+            failedForwards.delete(txHash);
+          }
+          noteRouteHealth(tx, true);
+        }
         publishTxnRecord(
           txHash,
           harden({
@@ -385,10 +468,30 @@ export const prepareStatusManager = (
       },
 
       /**
-       * Mark a transaction as `FORWARD_FAILED`
+       * Mark a transaction as `FORWARD_FAILED`.
+       * If `tx` details are provided, register it for retry.
        * @param txHash
+       * @param tx - If provided, registers the transaction for retry.
        */
-      forwardFailed(txHash: EvmHash): void {
+      forwardFailed(txHash: EvmHash, tx?: ForwardFailedTx): void {
+        if (forwardInProgress.has(txHash)) {
+          forwardInProgress.delete(txHash);
+        } else {
+          console.warn(
+            `Transaction ${txHash} forward failed without being marked as in progress`,
+          );
+        }
+        if (tx) {
+          tx.txHash === txHash || Fail`txHash mismatch in forwardFailed`;
+          const chainId = chainOfAccount(tx.destination);
+          // Register for retry if details are provided
+          if (!failedForwards.has(txHash)) {
+            failedForwards.init(tx.txHash, harden({ ...tx, chainId }));
+          }
+          // Last because this can trigger the retry which will read from the store
+          noteRouteHealth(tx, false);
+        }
+        // Always publish the failed status
         publishTxnRecord(
           txHash,
           harden({

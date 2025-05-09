@@ -1,6 +1,14 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
+import {
+  MsgDepositForBurn,
+  MsgDepositForBurnResponse,
+} from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
+import {
+  MsgTransfer,
+  MsgTransferResponse,
+} from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.js';
 import { PoolMetricsShape } from '@agoric/fast-usdc/src/type-guards.js';
@@ -9,15 +17,19 @@ import {
   eventLoopIteration,
   inspectMapStore,
 } from '@agoric/internal/src/testing-utils.js';
+import { leftPadEthAddressTo32Bytes } from '@agoric/orchestration/src/utils/address.js';
+import {
+  buildMsgErrorString,
+  buildMsgResponseString,
+  buildTxPacketString,
+} from '@agoric/orchestration/tools/ibc-mocks.ts';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import type { Installation } from '@agoric/zoe/src/zoeService/utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, type EReturn } from '@endo/far';
 import { matches } from '@endo/patterns';
-import type { FastUsdcSF } from '../src/fast-usdc.contract.ts';
-import { setupFastUsdcTest, uusdcOnAgoric } from './supports.js';
-
 import * as contractExports from '../src/fast-usdc.contract.js';
+import type { FastUsdcSF } from '../src/fast-usdc.contract.ts';
 import {
   makeCustomer,
   makeLP,
@@ -25,6 +37,7 @@ import {
   makeTestContext,
   purseOf,
 } from './contract-setup.ts';
+import { setupFastUsdcTest, uusdcOnAgoric } from './supports.js';
 
 const test = anyTest as TestFn<EReturn<typeof makeTestContext>>;
 test.before(async t => (t.context = await makeTestContext(t)));
@@ -157,7 +170,7 @@ test.serial('Contract skips advance when risks identified', async t => {
   const sent = await custEmpty.sendFast(t, 1_000_000n, 'osmo123', true);
   const bridgeTraffic = since(bridgePos);
   await mint(sent);
-  custEmpty.checkSent(t, bridgeTraffic, 'forward');
+  custEmpty.checkSent(t, bridgeTraffic, { forward: true });
   t.log('No advancement, just settlement');
   // ack IBC transfer for forward
   await transmitVTransferEvent('acknowledgementPacket', -1);
@@ -273,11 +286,6 @@ test.serial('STORY01: advancing happy path for 100 USDC', async t => {
   ]);
 });
 
-// most likely in exo unit tests
-test.todo(
-  'C21 - Contract MUST log / timestamp each step in the transaction flow',
-);
-
 test.serial('STORY03: see accounting metrics', async t => {
   const {
     startKit: { metricsSub },
@@ -287,8 +295,6 @@ test.serial('STORY03: see accounting metrics', async t => {
   t.log(metrics);
   t.true(matches(metrics, PoolMetricsShape));
 });
-test.todo('document metrics storage schema');
-test.todo('get metrics from vstorage');
 
 test.serial('STORY05: LP collects fees on 100 USDC', async t => {
   const {
@@ -347,6 +353,121 @@ test.serial('With 250 available, 3 race to get ~100', async t => {
   await transmitVTransferEvent('acknowledgementPacket', -1); // Third racer's transfer
 
   await Promise.all([mint(sent1), mint(sent2), mint(sent3)]);
+});
+
+const mockAcks = {
+  cctpAdvanceFails: {
+    msg: buildTxPacketString([
+      MsgDepositForBurn.toProtoMsg({
+        amount: '117599',
+        burnToken: 'uusdc',
+        from: 'noble1test',
+        destinationDomain: 0,
+        mintRecipient: leftPadEthAddressTo32Bytes(
+          '0x1234567890123456789012345678901234567890',
+        ),
+      }),
+    ]),
+    ack: buildMsgErrorString('intentional depositForBurn failure'),
+  },
+
+  transferBackFromNoble: {
+    msg: buildTxPacketString([
+      MsgTransfer.toProtoMsg({
+        sourcePort: 'transfer',
+        sourceChannel: 'channel-21',
+        token: {
+          denom:
+            'ibc/FE98AAD68F02F03565E9FA39A5E627946699B2B07115889ED812D8BA639576A9',
+          amount: '117599',
+        },
+        sender: 'noble1test',
+        receiver: 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht',
+        timeoutHeight: { revisionHeight: 0n, revisionNumber: 0n },
+        timeoutTimestamp: 300000000000n,
+        memo: '',
+      }),
+    ]),
+    ack: buildMsgResponseString(MsgTransferResponse, {}),
+  },
+
+  cctpForward: {
+    msg0: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ21JS0lTOWphWEpqYkdVdVkyTjBjQzUyTVM1TmMyZEVaWEJ2YzJsMFJtOXlRblZ5YmhJOUNncHViMkpzWlRGMFpYTjBFZ1l4TWpBd01EQWlJQUFBQUFBQUFBQUFBQUFBQUJJMFZuaVFFalJXZUpBU05GWjRrQkkwVm5pUUtnVjFkWE5rWXc9PSIsIm1lbW8iOiIifQ==',
+    msg: buildTxPacketString([
+      MsgDepositForBurn.toProtoMsg({
+        from: 'noble1test',
+        amount: '120000',
+        burnToken: 'uusdc',
+        destinationDomain: 0,
+        mintRecipient: leftPadEthAddressTo32Bytes(
+          '0x1234567890123456789012345678901234567890',
+        ),
+      }),
+    ]),
+    ack: buildMsgResponseString(MsgDepositForBurnResponse, {}),
+  },
+};
+
+test.serial('repay liquidity pool on depositForBurn failure', async t => {
+  const {
+    startKit: { metricsSub },
+    common: {
+      commonPrivateArgs: { feeConfig },
+      facadeServices: { chainHub },
+      utils: { transmitVTransferEvent },
+      mocks: { ibcBridge },
+    },
+    evm: { cctp, txPub },
+    bridges: { snapshot, since },
+    mint,
+  } = t.context;
+
+  for (const { msg, ack } of Object.values(mockAcks)) {
+    ibcBridge.addMockAck(msg, ack);
+  }
+
+  const custEth = makeCustomer(
+    'Esther',
+    cctp,
+    txPub.publisher,
+    feeConfig,
+    chainHub,
+  );
+
+  await eventLoopIteration();
+  const {
+    value: { encumberedBalance: encPre },
+  } = await E(metricsSub).getUpdateSince();
+  t.log('encumbered balance before', encPre);
+
+  const bridgePos = snapshot();
+  const EUD = 'eip155:1:0x1234567890123456789012345678901234567890';
+  const sent1 = await custEth.sendFast(t, 120_000n, EUD);
+  // ack IBC transfer to noble
+  await transmitVTransferEvent('acknowledgementPacket', -1);
+
+  custEth.checkSent(t, since(bridgePos), { route: 'cctp' }); // send attempted
+  await eventLoopIteration();
+  // XXX how to decode last ibcBridge downcall to check EUD, amount?
+
+  await mint(sent1);
+
+  await eventLoopIteration();
+  const {
+    value: { encumberedBalance: encPost },
+  } = await E(metricsSub).getUpdateSince();
+  t.log('encumbered balance after', encPost);
+  t.deepEqual(encPre, encPost);
+
+  // ack forward
+  await transmitVTransferEvent('acknowledgementPacket', -1);
+
+  t.deepEqual(t.context.common.readTxnRecord(sent1), [
+    { evidence: sent1, status: 'OBSERVED' },
+    { status: 'ADVANCING' },
+    { status: 'ADVANCE_FAILED' },
+    { status: 'FORWARDED' },
+  ]);
 });
 
 test.serial('STORY05(cont): LPs withdraw all liquidity', async t => {
@@ -496,7 +617,7 @@ test.serial('C20 - Contract MUST function with an empty pool', async t => {
   const sent = await custEmpty.sendFast(t, 150_000_000n, 'osmo123');
   const bridgeTraffic = since(bridgePos);
   await mint(sent);
-  custEmpty.checkSent(t, bridgeTraffic, 'forward');
+  custEmpty.checkSent(t, bridgeTraffic, { forward: true });
   t.log('No advancement, just settlement');
   // ack IBC transfer for forward
   await transmitVTransferEvent('acknowledgementPacket', -1);
@@ -646,7 +767,3 @@ test.serial('mint received while ADVANCING', async t => {
     { split, status: 'DISBURSED' },
   ]);
 });
-
-test.todo(
-  'fee levels MUST be visible to external parties - i.e., written to public storage',
-);

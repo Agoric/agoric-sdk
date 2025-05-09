@@ -30,6 +30,7 @@ import {
 import { prepareStatusManager } from '../../src/exos/status-manager.ts';
 import * as flows from '../../src/fast-usdc.flows.ts';
 import { makeSupportsCctp } from '../../src/utils/cctp.ts';
+import { makeRouteHealth } from '../../src/utils/route-health.ts';
 import {
   intermediateRecipient,
   MockCctpTxEvidences,
@@ -70,7 +71,7 @@ const makeTestContext = async t => {
   const statusManager = prepareStatusManager(
     zone.subZone('status-manager'),
     common.commonPrivateArgs.storageNode.makeChildNode('txns'),
-    { marshaller: defaultMarshaller, log },
+    { marshaller: defaultMarshaller, log, routeHealth: makeRouteHealth(1) },
   );
   const { zcf, callLog } = mockZcf(zone.subZone('Mock ZCF'));
 
@@ -1258,7 +1259,7 @@ test('forward via cctp failed (MsgTransfer)', async t => {
 
   // Verify error was logged
   t.deepEqual(inspectLogs().at(-1), [
-    '🚨 forward intermediate transfer rejected!',
+    '⚠️ forward intermediate transfer rejected',
     mockTransferError,
     cctpTxEvidence.txHash,
   ]);
@@ -1341,7 +1342,7 @@ test('forward via cctp failed (MsgDepositForBurn)', async t => {
   t.deepEqual(
     inspectLogs().at(-1),
     [
-      '🚨 forward depositForBurn rejected!',
+      '⚠️ forward depositForBurn rejected',
       mockDepositError,
       cctpTxEvidence.txHash,
     ],

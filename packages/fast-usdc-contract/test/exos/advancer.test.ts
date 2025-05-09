@@ -7,6 +7,10 @@ import {
 import type { NatAmount } from '@agoric/ertp';
 import { PendingTxStatus } from '@agoric/fast-usdc/src/constants.js';
 import { CctpTxEvidenceShape } from '@agoric/fast-usdc/src/type-guards.js';
+import type {
+  CctpTxEvidence,
+  EvidenceWithRisk,
+} from '@agoric/fast-usdc/src/types.ts';
 import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
 import {
   MockCctpTxEvidences,
@@ -18,7 +22,8 @@ import { denomHash } from '@agoric/orchestration';
 import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { type ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import type { ZCFSeat } from '@agoric/zoe';
+import type { Vow } from '@agoric/vow';
+import type { ZCFSeat, ZcfSeatKit } from '@agoric/zoe';
 import { q } from '@endo/errors';
 import type { EReturn } from '@endo/far';
 import { Far } from '@endo/pass-style';
@@ -31,6 +36,8 @@ import {
   type SettlerKit,
 } from '../../src/exos/settler.ts';
 import { prepareStatusManager } from '../../src/exos/status-manager.ts';
+import * as flows from '../../src/fast-usdc.flows.ts';
+import { makeRouteHealth } from '../../src/utils/route-health.ts';
 import { intermediateRecipient } from '../fixtures.js';
 import {
   makeTestFeeConfig,
@@ -73,7 +80,10 @@ const createTestExtensions = (t, common: CommonSetup) => {
   const statusManager = prepareStatusManager(
     contractZone.subZone('status-manager'),
     storageNode.makeChildNode('txns'),
-    { marshaller: common.commonPrivateArgs.marshaller },
+    {
+      marshaller: common.commonPrivateArgs.marshaller,
+      routeHealth: makeRouteHealth(1),
+    },
   );
 
   const mockAccounts = prepareMockOrchAccounts(
@@ -86,9 +96,10 @@ const createTestExtensions = (t, common: CommonSetup) => {
   );
 
   const mockZCF = Far('MockZCF', {
-    makeEmptySeatKit: () => ({
-      zcfSeat: Far('MockZCFSeat', { exit: theExit }),
-    }),
+    makeEmptySeatKit: () =>
+      ({
+        zcfSeat: Far('MockZCFSeat', { exit: theExit }),
+      }) as unknown as ZcfSeatKit,
   });
 
   const localTransferVK = vowTools.makeVowKit<void>();
@@ -107,16 +118,37 @@ const createTestExtensions = (t, common: CommonSetup) => {
   const mockZoeTools = Far('MockZoeTools', {
     localTransfer(...args: Parameters<ZoeTools['localTransfer']>) {
       trace('ZoeTools.localTransfer called with', args);
-      return localTransferVK.vow;
+      // simulate part of the membrane
+      return vowTools.when(localTransferVK.vow);
     },
     withdrawToSeat(...args: Parameters<ZoeTools['withdrawToSeat']>) {
       trace('ZoeTools.withdrawToSeat called with', args);
-      return withdrawToSeatVK.vow;
+      // simulate part of the membrane
+      return vowTools.when(withdrawToSeatVK.vow);
     },
-  });
+  }) as unknown as ZoeTools;
 
   const feeConfig = makeTestFeeConfig(usdc);
+  const advanceFunds = (er: EvidenceWithRisk, config) =>
+    flows.advanceFunds(
+      undefined as any,
+      {
+        chainHubTools: chainHub,
+        feeConfig,
+        getNobleICA: () => mockAccounts.intermediate.account as any,
+        log, // some tests check the log calls
+        statusManager,
+        usdc: harden({ brand: usdc.brand, denom: LOCAL_DENOM }),
+        zcfTools: {
+          makeEmptyZCFSeat: () => mockZCF.makeEmptySeatKit().zcfSeat,
+        },
+        zoeTools: mockZoeTools,
+      },
+      er,
+      config,
+    ) as unknown as Vow<void>; // simulate part of the membrane
   const makeAdvancer = prepareAdvancer(contractZone.subZone('advancer'), {
+    advanceFunds,
     chainHub,
     feeConfig,
     getNobleICA: () => mockAccounts.intermediate.account as any,
@@ -180,7 +212,11 @@ const createTestExtensions = (t, common: CommonSetup) => {
     helpers: {
       inspectLogs,
       inspectNotifyCalls: () => harden(notifyAdvancingResultCalls),
-      inspectBorrowerFacetCalls: () => harden(mockBorrowerFacetCalls),
+      inspectBorrowerFacetCalls: () =>
+        harden({
+          borrow: [...mockBorrowerFacetCalls.borrow],
+          returnToPool: [...mockBorrowerFacetCalls.returnToPool],
+        }),
     },
     mocks: {
       ...mockAccounts,
@@ -1041,6 +1077,85 @@ test('uses CCTP for ETH', async t => {
   ]);
 });
 
+test('repays pool when depositForBurn fails', async t => {
+  const {
+    extensions: {
+      services: { advancer },
+      helpers: { inspectLogs, inspectNotifyCalls, inspectBorrowerFacetCalls },
+      mocks: {
+        resolveLocalTransferV,
+        intermediate,
+        mockPoolAccount,
+        resolveWithdrawToSeatV,
+      },
+    },
+    brands: { usdc },
+  } = t.context;
+
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_ETHEREUM();
+  void advancer.handleTransactionEvent({ evidence, risk: {} });
+
+  resolveLocalTransferV(); // complete deposit to poolAccount
+  mockPoolAccount.transferVResolver.resolve(); // complete transfer to noble
+  intermediate.depositForBurnVResolver.reject('intentional failure');
+
+  await eventLoopIteration();
+
+  // advancer logs
+  t.deepEqual(inspectLogs(), [
+    ['decoded EUD: eip155:1:0x1234567890123456789012345678901234567890'],
+    ['⚠️ CCTP transfer failed', 'intentional failure'],
+  ]);
+  const EUD = 'eip155:1:0x1234567890123456789012345678901234567890';
+
+  const netAdvance = usdc.make(930999999n); // 950000000n net of fees
+  const netDenomAmt = {
+    denom:
+      'ibc/FE98AAD68F02F03565E9FA39A5E627946699B2B07115889ED812D8BA639576A9',
+    value: netAdvance.value,
+  };
+  t.deepEqual(inspectBorrowerFacetCalls().borrow, [
+    [Far('MockZCFSeat', { exit: theExit }), netAdvance],
+  ]);
+
+  // noble ICA calls
+  t.deepEqual(intermediate.callLog, [
+    ['depositForBurn', EUD, netDenomAmt],
+    [
+      'transfer', // back to poolAccount
+      {
+        chainId: 'agoric-3',
+        encoding: 'bech32',
+        value: 'agoric1mockPoolAccount',
+      },
+      netDenomAmt,
+    ],
+  ]);
+
+  // ensure Settler is notified of failure to advance
+  t.like(inspectNotifyCalls(), [
+    [
+      {
+        txHash: evidence.txHash,
+        forwardingAddress: evidence.tx.forwardingAddress,
+        fullAmount: usdc.make(evidence.tx.amount),
+        destination: EUD,
+      },
+      false, // indicates send failed
+    ],
+  ]);
+
+  intermediate.transferVResolver.resolve(); // complete return transfer
+
+  resolveWithdrawToSeatV(); // poolAccount.withdraw() completes
+  await eventLoopIteration();
+  t.deepEqual(
+    inspectBorrowerFacetCalls().returnToPool,
+    [[Far('MockZCFSeat', { exit: theExit }), netAdvance]],
+    'same amount borrowed is returned to LP',
+  );
+});
+
 test('uses transfer when dest is Noble', async t => {
   const {
     extensions: {
@@ -1143,7 +1258,8 @@ test('uses transfer for Noble bech32', async t => {
   ]);
 });
 
-test('Advance Fails on transfer to Noble', async t => {
+type To = { evidence: CctpTxEvidence; EUD: string };
+const transferFails = test.macro(async (t, { evidence, EUD }: To) => {
   const {
     extensions: {
       services: { advancer },
@@ -1153,7 +1269,6 @@ test('Advance Fails on transfer to Noble', async t => {
     brands: { usdc },
   } = t.context;
 
-  const evidence = MockCctpTxEvidences.AGORIC_PLUS_NOBLE();
   void advancer.handleTransactionEvent({ evidence, risk: {} });
 
   // pretend borrow and deposit to LCA succeed
@@ -1173,9 +1288,7 @@ test('Advance Fails on transfer to Noble', async t => {
   await eventLoopIteration();
 
   t.deepEqual(inspectLogs(), [
-    [
-      'decoded EUD: cosmos:noble-1:noble1u2l9za2wa7wvffhtekgyuvyvum06lwhqxfyr5d',
-    ],
+    [`decoded EUD: ${EUD}`],
     ['Advance failed', Error('simulated error')],
   ]);
 
@@ -1210,4 +1323,14 @@ test('Advance Fails on transfer to Noble', async t => {
     ],
     'same amount borrowed is returned to LP',
   );
+});
+
+test('Advance Fails on transfer to Noble', transferFails, {
+  evidence: MockCctpTxEvidences.AGORIC_PLUS_NOBLE(),
+  EUD: 'cosmos:noble-1:noble1u2l9za2wa7wvffhtekgyuvyvum06lwhqxfyr5d',
+});
+
+test('Advance Fails on transfer to Noble for CCTP', transferFails, {
+  evidence: MockCctpTxEvidences.AGORIC_PLUS_ETHEREUM(),
+  EUD: 'eip155:1:0x1234567890123456789012345678901234567890',
 });

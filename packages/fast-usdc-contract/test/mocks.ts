@@ -33,6 +33,14 @@ export const prepareMockOrchAccounts = (
   const intermediateAccountDepositForBurnPK = makePromiseKit<void>();
 
   const mockedPoolAccount = zone.exo('Mock Pool LocalOrchAccount', undefined, {
+    getAddress() {
+      const addr: CosmosChainAddress = {
+        chainId: 'agoric-3',
+        encoding: 'bech32',
+        value: 'agoric1mockPoolAccount',
+      };
+      return addr;
+    },
     transfer(destination: CosmosChainAddress, amount: DenomAmount) {
       log('PoolAccount.transfer() called with', destination, amount);
       return poolAccountTransferPK.promise;

@@ -50,8 +50,13 @@ import type { OperatorOfferResult } from './exos/transaction-feed.ts';
 import { prepareTransactionFeedKit } from './exos/transaction-feed.ts';
 import * as flows from './fast-usdc.flows.ts';
 import { makeSupportsCctp } from './utils/cctp.ts';
+import { startForwardRetrier } from './utils/forward-retrier.ts';
+import { makeRouteHealth } from './utils/route-health.ts';
 
 const trace = makeTracer('FastUsdc');
+
+// With a 10 minute timeout this means retry for up to an hour.
+const MAX_ROUTE_FAILURES = 6;
 
 const TXNS_NODE = 'txns';
 const FEE_NODE = 'feeConfig';
@@ -115,10 +120,12 @@ export const contract = async (
     marshaller,
   );
 
+  const routeHealth = makeRouteHealth(MAX_ROUTE_FAILURES);
+
   const statusManager = prepareStatusManager(
     zone,
     E(storageNode).makeChildNode(TXNS_NODE),
-    { marshaller },
+    { marshaller, routeHealth },
   );
 
   const { USDC } = terms.brands;
@@ -193,9 +200,37 @@ export const contract = async (
   });
 
   const zoeTools = makeZoeTools(zcf, vowTools);
+  const { advanceFunds } = orchestrateAll(
+    // @ts-expect-error flow membrance type debt
+    { advanceFunds: flows.advanceFunds },
+    {
+      // UNTIL #11309 as above
+      chainHubTools: {
+        getChainInfoByChainId: chainHub.getChainInfoByChainId.bind(chainHub),
+        resolveAccountId: chainHub.resolveAccountId.bind(chainHub),
+      },
+      feeConfig,
+      getNobleICA,
+      log: makeTracer('AdvanceFunds'),
+      settlementAccount: settleAccountV,
+      statusManager,
+      usdc: harden({
+        brand: terms.brands.USDC,
+        denom: terms.usdcDenom,
+      }),
+      zcfTools: harden({
+        makeEmptyZCFSeat: () => {
+          const { zcfSeat } = zcf.makeEmptySeatKit();
+          return zcfSeat;
+        },
+      }),
+      zoeTools,
+    },
+  ) as { advanceFunds: HostForGuest<typeof flows.advanceFunds> };
+
   const makeAdvancer = prepareAdvancer(zone, {
+    advanceFunds,
     chainHub,
-    feeConfig,
     getNobleICA,
     usdc: harden({
       brand: terms.brands.USDC,
@@ -386,6 +421,14 @@ export const contract = async (
   });
 
   await settlerKit.creator.monitorMintingDeposits();
+
+  startForwardRetrier({
+    forwardFunds,
+    getForwardsToRetry: statusManager.getForwardsToRetry.bind(statusManager),
+    log: trace,
+    routeHealth,
+    USDC,
+  });
 
   return harden({ creatorFacet, publicFacet });
 };
