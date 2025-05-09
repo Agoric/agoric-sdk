@@ -206,26 +206,27 @@ export const prepareStatusManager = (
 
   /**
    * Update the pending transaction status.
+   * @param root0
+   * @param root0.nfa
+   * @param root0.amount
+   * @param status
    */
   function setPendingTxStatus(
-    details: { nfa: NobleAddress; amount: bigint },
+    { nfa, amount }: { nfa: NobleAddress; amount: bigint },
     status: PendingTxStatus,
   ): void {
-    const { nfa, amount } = details;
-    pendingSettleTxs.has(nfa) || Fail`no advancing tx with ${details}`;
-
+    pendingSettleTxs.has(nfa) || Fail`no advancing tx with ${{ nfa, amount }}`;
     const pending = pendingSettleTxs.get(nfa);
-    const ix = pending.findIndex(
-      tx => tx.tx.amount === amount && tx.status === PendingTxStatus.Advancing,
-    );
-
-    ix > -1 || Fail`no advancing tx with ${details}`;
-
-    const updatedPending = [...pending];
-    updatedPending[ix] = { ...updatedPending[ix], status };
-    pendingSettleTxs.set(nfa, harden(updatedPending));
-
-    publishTxnRecord(pending[ix].txHash, harden({ status }));
+    const ix = pending.findIndex(tx => tx.status === PendingTxStatus.Advancing);
+    ix >= 0 || Fail`no advancing tx with ${{ nfa, amount }}`;
+    const [prefix, tx, suffix] = [
+      pending.slice(0, ix),
+      pending[ix],
+      pending.slice(ix + 1),
+    ];
+    const txpost = { ...tx, status };
+    pendingSettleTxs.set(nfa, harden([...prefix, txpost, ...suffix]));
+    publishTxnRecord(tx.txHash, harden({ status }));
   }
 
   return zone.exo(
