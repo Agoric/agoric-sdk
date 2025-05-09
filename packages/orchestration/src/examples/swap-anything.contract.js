@@ -83,12 +83,12 @@ export const contract = async (
   });
 
   const publicFacet = zone.exo(
-    'Send PF',
-    M.interface('Send PF', {
-      makeSendInvitation: M.callWhen().returns(InvitationShape),
+    'Swap Anything PF',
+    M.interface('Swap Anything PF', {
+      makeSwapInvitation: M.callWhen().returns(InvitationShape),
     }),
     {
-      makeSendInvitation() {
+      makeSwapInvitation() {
         return zcf.makeInvitation(
           swapAnythingOffer,
           'swap',
