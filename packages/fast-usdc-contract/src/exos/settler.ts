@@ -183,7 +183,7 @@ export const prepareSettler = (
     'Fast USDC Settler',
     {
       creator: M.interface('SettlerCreatorI', {
-        monitorMintingDeposits: M.call().returns(M.promise()),
+        monitorMintingDeposits: M.call().returns(M.any()),
         migrateMintedEarly: M.call().returns(),
       }),
       tap: M.interface('SettlerTapI', {
