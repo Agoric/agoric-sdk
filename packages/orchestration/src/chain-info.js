@@ -16,7 +16,7 @@ import { withChainCapabilities } from './chain-capabilities.js';
 /**
  * @import {CosmosAssetInfo, CosmosChainInfo, IBCConnectionInfo} from './types.js';
  * @import {NameAdmin} from '@agoric/vats';
- * @import {ChainInfo} from './orchestration-api.ts';
+ * @import {ChainInfo} from './orchestration-api.js';
  */
 
 /**
