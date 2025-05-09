@@ -436,10 +436,7 @@ export const prepareStatusManager = (
        * @param {bigint} amount - Amount to match
        * @returns {PendingTx[]} - Status and hash of the first matched transaction, or undefined if no match
        */
-      dequeueStatus(
-        nfa: NobleAddress,
-        amount: bigint,
-      ): { txHash: EvmHash; status: PendingTxStatus }[] {
+      dequeueStatus(nfa: NobleAddress, amount: bigint): PendingTx[] {
         return matchSettlement(nfa, amount);
       },
 

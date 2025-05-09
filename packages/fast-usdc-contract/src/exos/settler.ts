@@ -304,17 +304,17 @@ export const prepareSettler = (
           }
 
           log('dequeued', dequeued, 'for', nfa, amount);
-          const fullValue = AmountMath.make(USDC, amount);
           for (const found of dequeued) {
+            const fullValue = AmountMath.make(USDC, found.tx.amount);
             switch (found.status) {
               case PendingTxStatus.Advanced:
                 void self.disburse(found.txHash, fullValue, EUD);
                 break;
 
               case PendingTxStatus.Advancing:
-                log('⚠️ tap: minted while advancing', nfa, amount);
+                log('⚠️ tap: minted while advancing', nfa, found.tx.amount);
                 // XXX consider tracking these separately from unknown mints?
-                statusManager.addMintedEarly(nfa, amount);
+                statusManager.addMintedEarly(nfa, found.tx.amount);
                 break;
 
               case PendingTxStatus.AdvanceSkipped:
