@@ -166,6 +166,91 @@ test.serial('BLD for OSMO, receiver on Agoric', async t => {
   );
 });
 
+test.serial('OSMO for BLD, receiver on Agoric', async t => {
+  const {
+    wallets,
+    provisionSmartWallet,
+    vstorageClient,
+    retryUntilCondition,
+    useChain,
+  } = t.context;
+
+  // Provision the Agoric smart wallet
+  const agoricAddr = wallets.agoricReceiver;
+  const wdUser = await provisionSmartWallet(agoricAddr, {
+    BLD: 1000n,
+    IST: 1000n,
+  });
+  t.log(`Provisioned Agoric smart wallet for ${agoricAddr}`);
+
+  const { swapAddress } = await getXcsContractsAddress();
+
+  const doOffer = makeDoOffer(wdUser);
+
+  // Verify deposit
+  const apiUrl = await useChain('agoric').getRestEndpoint();
+  const queryClient = makeQueryClient(apiUrl);
+
+  const brands = await vstorageClient.queryData('published.agoricNames.brand');
+  const bldBrand = Object.fromEntries(brands).OSMO;
+  const swapInAmount = AmountMath.make(bldBrand, 75n);
+  const { balances: balancesBefore } = await queryClient.queryBalances(
+    wallets.agoricReceiver,
+  );
+
+  const osmosisApiUrl = await useChain('osmosis').getRestEndpoint();
+  const osmosisQueryClient = makeQueryClient(osmosisApiUrl);
+
+  const agoricChainId = useChain('agoric').chain.chain_id;
+
+  const {
+    transferChannel: { channelId },
+  } = starshipChainInfo.osmosis.connections[agoricChainId];
+
+  const { hash: outDenomHash } = await osmosisQueryClient.queryDenom(
+    `transfer/${channelId}`,
+    'ubld',
+  );
+
+  // Send swap offer
+  const makeAccountOfferId = `swap-ubld-uosmo-${Date.now()}`;
+  await doOffer({
+    id: makeAccountOfferId,
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: [contractName],
+      callPipe: [['makeSendInvitation']],
+    },
+    offerArgs: {
+      // TODO: get the contract address dynamically
+      destAddr: swapAddress,
+      receiverAddr: wallets.agoricReceiver,
+      outDenom: `ibc/${outDenomHash}`,
+      slippage: { slippagePercentage: '20', windowSeconds: 10 },
+      onFailedDelivery: 'do_nothing',
+    },
+    proposal: { give: { Send: swapInAmount } },
+  });
+
+  const { balances: agoricReceiverBalances } = await retryUntilCondition(
+    () => queryClient.queryBalances(wallets.agoricReceiver),
+    ({ balances }) => {
+      const balancesBeforeAmount = BigInt(balancesBefore[0]?.amount || 0);
+      const currentBalanceAmount = BigInt(balances[0]?.amount || 0);
+      return currentBalanceAmount < balancesBeforeAmount;
+    },
+    'Deposit reflected in localOrchAccount balance',
+  );
+  t.log(agoricReceiverBalances);
+
+  t.assert(
+    BigInt(balancesBefore[0].amount) > BigInt(agoricReceiverBalances[0].amount),
+  );
+  t.assert(
+    BigInt(balancesBefore[1].amount) < BigInt(agoricReceiverBalances[1].amount),
+  );
+});
+
 test.serial('BLD for OSMO, receiver on CosmosHub', async t => {
   const {
     wallets,

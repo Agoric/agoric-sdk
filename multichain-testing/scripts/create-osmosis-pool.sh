@@ -186,3 +186,59 @@ echo "Querying pool route ..."
 )
 
 echo "Liquidity Pool open and stored on swaprouter successfully."
+
+SET_REVERSE_ROUTE_JSON=$(jq -n \
+  --arg tokenIn "$TOKEN_OUT_DENOM" \
+  --arg tokenOut "$TOKEN_IN_DENOM" \
+  --arg poolId "$POOL_ID" \
+  '{
+    set_route: {
+      input_denom: $tokenIn,
+      output_denom: $tokenOut,
+      pool_route: [
+        {
+          pool_id: $poolId,
+          token_out_denom: $tokenOut
+        }
+      ]
+    }
+  }')
+
+GET_REVERSE_ROUTE_JSON=$(jq -n \
+  --arg tokenIn "$TOKEN_OUT_DENOM" \
+  --arg tokenOut "$TOKEN_IN_DENOM" \
+  '{
+  "get_route": {
+    "input_denom": $tokenIn,
+    "output_denom": $tokenOut
+  }
+}')
+
+echo "Storing reverse pool on swaprouter contract ..."
+osmosis-exec tx wasm execute "$SWAPROUTER_ADDRESS" "$SET_REVERSE_ROUTE_JSON" --from "$SWAPROUTER_OWNER_ADDRESS" --chain-id osmosislocal --yes --fees 1000uosmo
+
+echo "Querying reverse pool route ..."
+(
+  set +e # handle failure of "osmosis-exec query wasm contract-state smart"
+
+  for ((i = 1; i <= MAX_RETRIES; i++)); do
+    echo "Attempt $i of $MAX_RETRIES..."
+    pool_route_json=$(osmosis-exec query wasm contract-state smart "$SWAPROUTER_ADDRESS" "$GET_REVERSE_ROUTE_JSON" 2> /dev/null)
+
+    if [[ $? -eq 0 ]]; then
+      echo "Pool route found:"
+      echo "$pool_route_json"
+      break
+    fi
+
+    if [[ $i -eq MAX_RETRIES ]]; then
+      echo "Pool not stored after $MAX_RETRIES attempts."
+      exit 1
+    fi
+
+    echo "Query failed. Waiting $DELAY seconds before retrying..."
+    sleep "$DELAY"
+  done
+)
+
+echo "Reverse liquidity Pool open and stored on swaprouter successfully."
