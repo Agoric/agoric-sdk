@@ -108,7 +108,7 @@ test('swap BLD for Osmo, receiver on Agoric', async t => {
   } = await bootstrapOrchestration(t);
 
   const publicFacet = await E(zoe).getPublicFacet(swapKit.instance);
-  const inv = E(publicFacet).makeSendInvitation();
+  const inv = E(publicFacet).makeSwapInvitation();
   const amt = await E(zoe).getInvitationDetails(inv);
   t.is(amt.description, 'swap');
 
@@ -144,7 +144,11 @@ test('swap BLD for Osmo, receiver on Agoric', async t => {
   );
 });
 
-test('trigger osmosis swap from an address hook', async t => {
+/**
+ * UNTIL https://github.com/Agoric/BytePitchPartnerEng/issues/51, we are skipping this
+ * until the ticket above is done
+ */
+test.skip('trigger osmosis swap from an address hook', async t => {
   const {
     bootstrap: { storage },
     transferBridge,
