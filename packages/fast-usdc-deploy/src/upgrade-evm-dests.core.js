@@ -175,6 +175,10 @@ export const upgradeEvmDests = async (
     noble.chainId,
     agoricToNoble,
   );
+
+  // Just once to fix https://github.com/Agoric/agoric-private/issues/312
+  await E(creatorFacet).remediateUndetectedBatches(10_000_000n); // $10 min
+
   trace('upgradeEvmDests done');
 };
 
