@@ -8,6 +8,7 @@ import {
   makeFakeStorageKit,
   slotStringUnserialize,
 } from '../src/storage-test-utils.js';
+import { unpassableSymbolForName } from '../src/ses-utils.js';
 
 test('makeFakeStorageKit', async t => {
   const rootPath = 'root';
@@ -29,7 +30,7 @@ test('makeFakeStorageKit', async t => {
       boolean: true,
       null: null,
       undefined,
-      symbol: Symbol('foo'),
+      symbol: unpassableSymbolForName('foo'),
       array: ['foo'],
       object: {
         toString() {

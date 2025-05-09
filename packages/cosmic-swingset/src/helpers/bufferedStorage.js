@@ -1,4 +1,5 @@
 import { assert, Fail } from '@endo/errors';
+import { unpassableSymbolForName } from '@agoric/internal';
 
 // XXX Do these "StorageAPI" functions belong in their own package?
 
@@ -302,8 +303,8 @@ export function makeBufferedStorage(kvStore, listeners = {}) {
 export const makeReadCachingStorage = kvStore => {
   // In addition to the wrapping write buffer, keep a simple cache of
   // read values for has and get.
-  const deleted = Symbol('deleted');
-  const undef = Symbol('undefined');
+  const deleted = unpassableSymbolForName('deleted');
+  const undef = unpassableSymbolForName('undefined');
   /** @typedef {(typeof deleted) | (typeof undef)} ReadCacheSentinel */
   /** @type {Map<string, T | ReadCacheSentinel>} */
   let cache;
@@ -312,50 +313,51 @@ export const makeReadCachingStorage = kvStore => {
   }
   resetCache();
 
-  /** @type {KVStore<T>} */
-  const storage = harden({
-    has(key) {
-      const value = cache.get(key);
-      if (value !== undefined) {
-        return value !== deleted;
-      } else {
-        const ret = kvStore.has(key);
-        if (!ret) {
-          cache.set(key, deleted);
+  const storage = /** @type {KVStore<T>} */ (
+    harden({
+      has(key) {
+        const value = cache.get(key);
+        if (value !== undefined) {
+          return value !== deleted;
+        } else {
+          const ret = kvStore.has(key);
+          if (!ret) {
+            cache.set(key, deleted);
+          }
+          return ret;
         }
-        return ret;
-      }
-    },
-    get(key) {
-      let value = cache.get(key);
-      if (value !== undefined) {
-        return value === deleted || value === undef ? undefined : value;
-      }
+      },
+      get(key) {
+        let value = cache.get(key);
+        if (value !== undefined) {
+          return value === deleted || value === undef ? undefined : value;
+        }
 
-      // Fetch the value and cache it until the next commit or abort.
-      value = kvStore.get(key);
-      cache.set(key, value === undefined ? undef : value);
-      return value;
-    },
-    set(key, value) {
-      // Set the value and cache it until the next commit or abort (which is
-      // expected immediately, since the buffered wrapper only calls set
-      // *during* a commit).
-      // `undefined` is a valid value technically different than deletion,
-      // depending on how the underlying store does its serialization
-      cache.set(key, value === undefined ? undef : value);
-      kvStore.set(key, value);
-    },
-    delete(key) {
-      // Delete the value and cache the deletion until next commit or abort.
-      // Deletion results in `undefined` on `get`, but `false` on `has`
-      cache.set(key, deleted);
-      kvStore.delete(key);
-    },
-    getNextKey(_previousKey) {
-      throw Error('not implemented');
-    },
-  });
+        // Fetch the value and cache it until the next commit or abort.
+        value = kvStore.get(key);
+        cache.set(key, value === undefined ? undef : value);
+        return value;
+      },
+      set(key, value) {
+        // Set the value and cache it until the next commit or abort (which is
+        // expected immediately, since the buffered wrapper only calls set
+        // *during* a commit).
+        // `undefined` is a valid value technically different than deletion,
+        // depending on how the underlying store does its serialization
+        cache.set(key, value === undefined ? undef : value);
+        kvStore.set(key, value);
+      },
+      delete(key) {
+        // Delete the value and cache the deletion until next commit or abort.
+        // Deletion results in `undefined` on `get`, but `false` on `has`
+        cache.set(key, deleted);
+        kvStore.delete(key);
+      },
+      getNextKey(_previousKey) {
+        throw Error('not implemented');
+      },
+    })
+  );
   const {
     kvStore: buffered,
     commit,

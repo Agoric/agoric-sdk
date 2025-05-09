@@ -1,5 +1,6 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { M } from '@agoric/store';
+import { passableSymbolForName } from '@agoric/internal';
 
 import { cleanProposal } from '../../src/cleanProposal.js';
 import { setup } from './setupBasicMints.js';
@@ -205,13 +206,13 @@ test('cleanProposal - other wrong stuff', t => {
   );
   proposeBad(
     t,
-    { [Symbol.for('what')]: { 'Not Ident': simoleans(1n) } },
+    { [passableSymbolForName('what')]: { 'Not Ident': simoleans(1n) } },
     'nat',
     /cannot serialize Remotables with non-methods like "Symbol\(what\)" in {}/,
   );
   proposeBad(
     t,
-    { want: { [Symbol.for('S')]: simoleans(1n) } },
+    { want: { [passableSymbolForName('S')]: simoleans(1n) } },
     'nat',
     /cannot serialize Remotables with non-methods like "Symbol\(S\)" in {}/,
   );
