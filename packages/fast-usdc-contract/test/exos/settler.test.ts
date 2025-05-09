@@ -520,17 +520,16 @@ test('Settlement for unknown transaction (minted early)', async t => {
   t.log('Nothing was transferred');
   t.deepEqual(peekCalls(), []);
   t.deepEqual(accounts.settlement.callLog, []);
-  const tapLogs = inspectLogs();
+  const tapLogs = [...inspectLogs()];
   t.like(tapLogs, [
     ['config', { sourceChannel: 'channel-21' }],
     ['upcall event'],
-    ['dequeued', undefined],
     ['⚠️ tap: minted before observed'],
   ]);
 
   t.log('Oracle operators eventually report...');
   const evidence = simulate.observeLate();
-  t.deepEqual(inspectLogs().slice(4), [
+  t.deepEqual(inspectLogs().slice(tapLogs.length), [
     [
       'matched minted early key, initiating forward',
       'noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd',
@@ -716,7 +715,7 @@ test('Settlement for Advancing transaction (advance succeeds)', async t => {
   t.like(inspectLogs(), [
     ['config', { sourceChannel: 'channel-21' }],
     ['upcall event'],
-    ['dequeued', { status: PendingTxStatus.Advancing }],
+    ['dequeued', [{ status: PendingTxStatus.Advancing }]],
     ['⚠️ tap: minted while advancing'],
   ]);
 
@@ -765,7 +764,7 @@ test('Settlement for Advancing transaction (advance fails)', async t => {
   t.like(inspectLogs(), [
     ['config', { sourceChannel: 'channel-21' }],
     ['upcall event'],
-    ['dequeued', { status: PendingTxStatus.Advancing }],
+    ['dequeued', [{ status: PendingTxStatus.Advancing }]],
     ['⚠️ tap: minted while advancing'],
   ]);
 

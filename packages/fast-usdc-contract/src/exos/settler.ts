@@ -49,7 +49,6 @@ import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
 import type { Vow, VowTools } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe/src/zoeService/zoe.js';
 import type { Zone } from '@agoric/zone';
-import { asMultiset } from '../utils/store.ts';
 import type { LiquidityPoolKit } from './liquidity-pool.js';
 import type { StatusManager } from './status-manager.js';
 
@@ -101,9 +100,19 @@ harden(decodeEventPacket);
  *
  * @param {NobleAddress} addr
  * @param {bigint} amount
+ * @deprecated
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const makeMintedEarlyKey = (addr: NobleAddress, amount: bigint): string =>
   `pendingTx:${JSON.stringify([addr, String(amount)])}`;
+
+/**
+ * Helper for migrating `mintedEarly` store
+ */
+const parseMintedEarlyKey = (key: ReturnType<typeof makeMintedEarlyKey>) => {
+  const [address, amount] = JSON.parse(key.split(':')[1]);
+  return harden({ address, amount: BigInt(amount) });
+};
 
 /** @param {Brand<'nat'>} USDC */
 export const makeAdvanceDetailsShape = (USDC: Brand<'nat'>) =>
@@ -174,7 +183,8 @@ export const prepareSettler = (
     'Fast USDC Settler',
     {
       creator: M.interface('SettlerCreatorI', {
-        monitorMintingDeposits: M.call().returns(M.any()),
+        monitorMintingDeposits: M.call().returns(M.promise()),
+        migrateMintedEarly: M.call().returns(),
       }),
       tap: M.interface('SettlerTapI', {
         receiveUpcall: M.call(M.record()).returns(M.promise()),
@@ -189,7 +199,6 @@ export const prepareSettler = (
         ),
       }),
       self: M.interface('SettlerSelfI', {
-        addMintedEarly: M.call(M.string(), UsdcAmountShape).returns(),
         disburse: M.call(EvmHashShape, UsdcAmountShape, M.string()).returns(
           M.promise(),
         ),
@@ -229,6 +238,7 @@ export const prepareSettler = (
         registration: undefined as
           | HostInterface<TargetRegistration>
           | undefined,
+        /** @deprecated - will be cleared and moved to `StatusManager` */
         mintedEarly: zone.detached().mapStore('mintedEarly') as MapStore<
           ReturnType<typeof makeMintedEarlyKey>,
           number
@@ -246,6 +256,16 @@ export const prepareSettler = (
           assert.typeof(registration, 'object');
           this.state.registration = registration;
         },
+        migrateMintedEarly() {
+          const { mintedEarly } = this.state;
+          for (const [key, count] of mintedEarly.entries()) {
+            const { address, amount } = parseMintedEarlyKey(key);
+            for (let i = 0; i < count; i += 1) {
+              statusManager.addMintedEarly(address, amount);
+            }
+          }
+          mintedEarly.clear();
+        },
       },
       tap: {
         async receiveUpcall(event: VTransferIBCEvent) {
@@ -257,7 +277,10 @@ export const prepareSettler = (
             // Mismatched source channel is normal when forwarding from SettlementAccount,
             // but in that case the destination channel should match.
             if (packet.destination_channel !== sourceChannel) {
-              log('⚠️ unexpected channel', { actual, expected: sourceChannel });
+              log('⚠️ unexpected channel', {
+                actual,
+                expected: sourceChannel,
+              });
             }
             return;
           }
@@ -270,29 +293,38 @@ export const prepareSettler = (
 
           const { nfa, amount, EUD } = decoded;
           const { self } = this.facets;
-          const found = statusManager.dequeueStatus(nfa, amount);
-          log('dequeued', found, 'for', nfa, amount);
+          const dequeued = statusManager.dequeueStatus(nfa, amount);
+
+          if (dequeued.length === 0) {
+            log('⚠️ tap: minted before observed', nfa, amount);
+            // XXX consider capturing in vstorage
+            // we would need a new key, as this does not have a txHash
+            statusManager.addMintedEarly(nfa, amount);
+            return;
+          }
+
+          log('dequeued', dequeued, 'for', nfa, amount);
           const fullValue = AmountMath.make(USDC, amount);
+          for (const found of dequeued) {
+            switch (found.status) {
+              case PendingTxStatus.Advanced:
+                void self.disburse(found.txHash, fullValue, EUD);
+                break;
 
-          switch (found?.status) {
-            case PendingTxStatus.Advanced:
-              return self.disburse(found.txHash, fullValue, EUD);
+              case PendingTxStatus.Advancing:
+                log('⚠️ tap: minted while advancing', nfa, amount);
+                // XXX consider tracking these separately from unknown mints?
+                statusManager.addMintedEarly(nfa, amount);
+                break;
 
-            case PendingTxStatus.Advancing:
-              log('⚠️ tap: minted while advancing', nfa, amount);
-              self.addMintedEarly(nfa, fullValue);
-              return;
+              case PendingTxStatus.AdvanceSkipped:
+              case PendingTxStatus.AdvanceFailed:
+                self.forward(found.txHash, fullValue, EUD);
+                break;
 
-            case PendingTxStatus.AdvanceSkipped:
-            case PendingTxStatus.AdvanceFailed:
-              return self.forward(found.txHash, fullValue, EUD);
-
-            case undefined:
-            default:
-              log('⚠️ tap: minted before observed', nfa, amount);
-              // XXX consider capturing in vstorage
-              // we would need a new key, as this does not have a txHash
-              self.addMintedEarly(nfa, fullValue);
+              default:
+                log('⚠️ unexpected status', found.status, 'for', found);
+            }
           }
         },
       },
@@ -311,12 +343,9 @@ export const prepareSettler = (
           },
           success: boolean,
         ): void {
-          const { mintedEarly } = this.state;
           const { value: fullValue } = fullAmount;
-          const key = makeMintedEarlyKey(forwardingAddress, fullValue);
 
-          if (mintedEarly.has(key)) {
-            asMultiset(mintedEarly).remove(key);
+          if (statusManager.dequeueMintedEarly(forwardingAddress, fullValue)) {
             statusManager.advanceOutcomeForMintedEarly(txHash, success);
             if (success) {
               void this.facets.self.disburse(txHash, fullAmount, destination);
@@ -348,15 +377,12 @@ export const prepareSettler = (
             tx: { forwardingAddress, amount },
             txHash,
           } = evidence;
-          const key = makeMintedEarlyKey(forwardingAddress, amount);
-          const { mintedEarly } = this.state;
-          if (mintedEarly.has(key)) {
+          if (statusManager.dequeueMintedEarly(forwardingAddress, amount)) {
             log(
               'matched minted early key, initiating forward',
               forwardingAddress,
               amount,
             );
-            asMultiset(mintedEarly).remove(key);
             statusManager.advanceOutcomeForUnknownMint(evidence);
             void this.facets.self.forward(
               txHash,
@@ -369,16 +395,6 @@ export const prepareSettler = (
         },
       },
       self: {
-        /**
-         * Helper function to track a minted-early transaction by incrementing or initializing its counter
-         * @param address
-         * @param amount
-         */
-        addMintedEarly(address: NobleAddress, amount: NatAmount) {
-          const key = makeMintedEarlyKey(address, amount.value);
-          const { mintedEarly } = this.state;
-          asMultiset(mintedEarly).add(key);
-        },
         /**
          * The intended payee received an advance from the pool. When the funds
          * are minted, disburse them to the pool and fee seats.

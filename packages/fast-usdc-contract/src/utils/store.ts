@@ -113,3 +113,51 @@ export const asMultiset = <K extends Key>(mapStore: MapStore<K, number>) =>
       mapStore.clear();
     },
   });
+
+/**
+ * Append `item` to the array held at `key`, keeping it **sorted** according
+ * to `compare`.  Uses a simple linear scan – clearer than a binary search and
+ * plenty fast for small lists.
+ *
+ * Stable‑after: duplicates are inserted *after* existing equal elements.
+ *
+ * @template K - Type of keys in the map store
+ * @template V - Type of values in the arrays stored in the map
+ */
+export const appendToSortedStoredArray = <K, V>(
+  mapStore: MapStore<K, V[]>,
+  key: K,
+  item: V,
+  compare: (a: V, b: V) => number = defaultCompareDesc as any,
+): void => {
+  if (!mapStore.has(key)) {
+    mapStore.init(key, harden([item]));
+    return;
+  }
+
+  const cur = mapStore.get(key);
+
+  // linear scan to find insertion index
+  let i = cur.length;
+  while (i > 0 && compare(item, cur[i - 1]) < 0) {
+    i -= 1;
+  }
+
+  const next = [...cur];
+  next.splice(i, 0, item); // insert after any equal items
+  mapStore.set(key, harden(next));
+};
+harden(appendToSortedStoredArray);
+
+/**
+ * Default ascending comparator for numbers, bigints, and strings.
+ */
+const defaultCompareDesc = <T extends bigint | number | string>(
+  a: T,
+  b: T,
+): number => {
+  if (a < b) return 1;
+  else if (a > b) return -1;
+  else return 0;
+};
+harden(defaultCompareDesc);
