@@ -70,7 +70,7 @@ const buildXCSMemo = swapInfo => {
  * @param {GuestInterface<ChainHub>} ctx.chainHub
  * @param {Promise<GuestInterface<LocalOrchestrationAccountKit['holder']>>} ctx.sharedLocalAccountP
  * @param {GuestInterface<ZoeTools>} ctx.zoeTools
- * @param {GuestOf<(msg: string) => Vow<void>>} ctx.log
+ * @param {GuestOf<(msg: string, level?: string) => Vow<void>>} ctx.log
  * @param {ZCFSeat} seat
  * @param {SwapInfo} offerArgs
  */
@@ -124,6 +124,7 @@ export const swapIt = async (
     await withdrawToSeat(sharedLocalAccount, seat, give);
     const errorMsg = `IBC Transfer failed ${q(e)}`;
     trace(`ERROR: ${errorMsg}`);
+    void log(errorMsg, 'error');
     seat.fail(errorMsg);
     throw makeError(errorMsg);
   };
@@ -142,6 +143,7 @@ export const swapIt = async (
   try {
     const memo = buildXCSMemo(offerArgs);
     trace(memo);
+    void log(`sending transfer with ${q(memo)}`);
 
     await sharedLocalAccount.transfer(
       {
@@ -154,6 +156,7 @@ export const swapIt = async (
     );
     trace(`completed transfer to ${destAddr}`);
   } catch (e) {
+    void log(`transfer error ${q(e)}`, 'error');
     return recoverFailedTransfer(e);
   }
 
