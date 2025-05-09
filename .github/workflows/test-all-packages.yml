@@ -82,9 +82,6 @@ jobs:
 
   ##################
   # Lint tests
-  # We run per package bc of https://github.com/typescript-eslint/typescript-eslint/issues/1192
-  # We split the package tests into two jobs because type linting
-  # is inefficient and slow https://github.com/typescript-eslint/typescript-eslint/issues/2094
   lint-primary:
     timeout-minutes: 20
     needs: build
@@ -95,10 +92,8 @@ jobs:
         with:
           node-version: 'node-new'
 
-      - name: lint repo format
-        run: yarn lint:format
-      - run: yarn lint:package-names
       # eslint and tsc
+      # XXX running tsc in every package is slow and redundant.
       - run: yarn lint:packages
 
   # A second job for what's not covered in primary
@@ -109,6 +104,11 @@ jobs:
       - uses: ./.github/actions/restore-node
         with:
           node-version: 'node-new'
+
+      - name: lint repo format
+        run: yarn lint:format
+
+      - run: yarn lint:package-names
 
       # Check some of a3p-integration in this job that runs on PRs instead of
       # waiting for the slow integration test that by default only runs in the
