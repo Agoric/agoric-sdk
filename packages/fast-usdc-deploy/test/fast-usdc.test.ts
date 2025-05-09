@@ -14,7 +14,7 @@ import {
 } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
 import { AmountMath } from '@agoric/ertp';
 import { makeRatio } from '@agoric/ertp/src/ratio.js';
-import type { CctpTxEvidence } from '@agoric/fast-usdc';
+import type { CctpTxEvidence, TransactionRecord } from '@agoric/fast-usdc';
 import { Offers } from '@agoric/fast-usdc/src/clientSupport.js';
 import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
 import { BridgeId, NonNullish } from '@agoric/internal';
@@ -49,6 +49,7 @@ const test: TestFn<
       ...extraArgs: unknown[]
     ) => Promise<void>;
     harness?: ReturnType<typeof makeSwingsetHarness>;
+    readTxnRecord({ txHash }: { txHash: string }): TransactionRecord[];
   }
 > = anyTest;
 
@@ -112,7 +113,12 @@ test.before('bootstrap', async t => {
     await eventLoopIteration();
   };
 
-  t.context = { ...ctx, attest, harness };
+  const readTxnRecord = ({ txHash }) =>
+    t.context.storage
+      .getValues(`published.fastUsdc.txns.${txHash}`)
+      .map(defaultSerializer.parse) as TransactionRecord[];
+
+  t.context = { ...ctx, attest, harness, readTxnRecord };
 });
 test.after.always(t => t.context.shutdown?.());
 
@@ -464,12 +470,7 @@ test.serial('makes usdc advance', async t => {
     );
   harness?.resetRunPolicy();
 
-  const getTxStatus = txHash =>
-    storage
-      .getValues(`published.fastUsdc.txns.${txHash}`)
-      .map(defaultSerializer.parse);
-
-  t.deepEqual(getTxStatus(evidence.txHash), [
+  t.deepEqual(t.context.readTxnRecord(evidence), [
     { evidence, status: 'OBSERVED' }, // observation includes evidence observed
     { status: 'ADVANCING' },
   ]);
@@ -506,7 +507,7 @@ test.serial('makes usdc advance', async t => {
   );
 
   await eventLoopIteration();
-  t.like(getTxStatus(evidence.txHash), [
+  t.like(t.context.readTxnRecord(evidence), [
     { status: 'OBSERVED' },
     { status: 'ADVANCING' },
     { status: 'ADVANCED' },
@@ -583,14 +584,9 @@ test.serial('minted before observed; forward path', async t => {
   );
   await eventLoopIteration();
 
-  const getTxStatus = txHash =>
-    storage
-      .getValues(`published.fastUsdc.txns.${txHash}`)
-      .map(defaultSerializer.parse);
-
   // Verify the transaction status was set to FORWARDED
   t.deepEqual(
-    getTxStatus(evidence.txHash),
+    t.context.readTxnRecord(evidence),
     [{ evidence, status: 'OBSERVED' }, { status: 'FORWARDED' }],
     'Transaction status should be FORWARDED when funds arrive before evidence',
   );
@@ -664,7 +660,7 @@ test.serial('skips usdc advance when risks identified', async t => {
 });
 
 test.serial('Ethereum destination', async t => {
-  const { readPublished, storage, bridgeUtils } = t.context;
+  const { readPublished, bridgeUtils } = t.context;
 
   const { nobleICA, poolAccount, settlementAccount } =
     readPublished('fastUsdc');
@@ -717,13 +713,8 @@ test.serial('Ethereum destination', async t => {
     }),
   );
 
-  const getTxStatus = txHash =>
-    storage
-      .getValues(`published.fastUsdc.txns.${txHash}`)
-      .map(defaultSerializer.parse);
-
   t.deepEqual(
-    getTxStatus(evidence.txHash),
+    t.context.readTxnRecord(evidence),
     [
       { evidence, status: 'OBSERVED' }, // observation includes evidence observed
       { status: 'ADVANCING' },
@@ -735,7 +726,7 @@ test.serial('Ethereum destination', async t => {
   await t.context.bridgeUtils.flushInboundQueue();
 
   t.like(
-    getTxStatus(evidence.txHash),
+    t.context.readTxnRecord(evidence),
     [
       { status: 'OBSERVED' },
       { status: 'ADVANCING' },
@@ -761,7 +752,7 @@ test.serial('Ethereum destination', async t => {
   );
 
   t.like(
-    getTxStatus(evidence.txHash),
+    t.context.readTxnRecord(evidence),
     [
       { status: 'OBSERVED' },
       { status: 'ADVANCING' },
@@ -831,12 +822,7 @@ test.serial('LP withdraws', async t => {
 // 1. Zoe contract tests can't verify the behavior works through incarnations
 // 2. Multichain tests integrate more than is relevant to this logic
 test.serial('forward timeout', async t => {
-  const { bridgeUtils, readPublished, storage } = t.context;
-
-  const getTxStatus = txHash =>
-    storage
-      .getValues(`published.fastUsdc.txns.${txHash}`)
-      .map(defaultSerializer.parse);
+  const { bridgeUtils, readPublished } = t.context;
 
   // Mock user data
   const EUD = 'cosmos1userforwardtimeout';
@@ -871,7 +857,7 @@ test.serial('forward timeout', async t => {
   t.log('USDC funds received in settlement account before evidence submission');
 
   t.throws(
-    () => getTxStatus(evidence.txHash),
+    () => t.context.readTxnRecord(evidence),
     undefined,
     'Transaction not in VSTORAGE before observation',
   );
@@ -884,7 +870,7 @@ test.serial('forward timeout', async t => {
   await eventLoopIteration(); // Allow contract to process evidence and initiate forward
 
   // Verify the transaction status was set to OBSERVED initially
-  const statuses = getTxStatus(evidence.txHash);
+  const statuses = t.context.readTxnRecord(evidence);
   t.deepEqual(
     statuses,
     [{ evidence, status: 'OBSERVED' }],
@@ -929,7 +915,7 @@ test.serial('forward timeout', async t => {
 
   // Verify the transaction status includes FORWARD_FAILED
   t.deepEqual(
-    getTxStatus(evidence.txHash),
+    t.context.readTxnRecord(evidence),
     [{ evidence, status: 'OBSERVED' }, { status: 'FORWARD_FAILED' }],
     'Transaction status should be FORWARD_FAILED after timeout',
   );
@@ -940,7 +926,7 @@ test.serial('forward timeout', async t => {
 
   // Verify the transaction status is now FORWARDED
   t.deepEqual(
-    getTxStatus(evidence.txHash),
+    t.context.readTxnRecord(evidence),
     [
       { evidence, status: 'OBSERVED' },
       { status: 'FORWARD_FAILED' },
