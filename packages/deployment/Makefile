@@ -16,7 +16,7 @@ docker-build: docker-build-sdk docker-build-solo \
 
 docker-build-sdk:
 	bargs=`node ../xsnap/src/build.js --show-env | sed -e 's/^/ --build-arg=/'`; \
-	$(DOCKER_BUILD) $$bargs \
+	$(DOCKER_BUILD) $$bargs --progress=plain \
 		-t $(REPOSITORY_SDK):$(TAG) --file=Dockerfile.sdk ../..
 	docker tag $(REPOSITORY_SDK):$(TAG) $(REPOSITORY_SDK):latest
 

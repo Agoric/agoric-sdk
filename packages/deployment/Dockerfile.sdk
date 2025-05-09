@@ -104,6 +104,7 @@ COPY --link patches patches
 COPY --link scripts scripts
 COPY --from=cosmos-package --link /usr/src/agoric-sdk/golang golang
 COPY --from=xsnap-package --link /usr/src/agoric-sdk/packages/xsnap packages/xsnap
+RUN scripts/directory-checksum --max-depth=3 .
 
 # XXX until https://github.com/Agoric/agoric-sdk/issues/9043, then just:
 # RUN --mount=type=cache,target=$YARN_CACHE_FOLDER yarn install --frozen-lockfile
@@ -140,6 +141,7 @@ RUN ln -sf /data/solo /usr/src/agoric-sdk/packages/cosmic-swingset/solo
 RUN ln -sf /data/chains /usr/src/agoric-sdk/packages/cosmic-swingset/chains
 
 COPY --link scripts agoric-sdk/scripts
+RUN agoric-sdk/scripts/directory-checksum --max-depth=3 .
 RUN /usr/src/agoric-sdk/scripts/smoketest-binaries.sh
 
 # By default, run the daemon with specified arguments.
