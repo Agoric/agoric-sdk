@@ -9,7 +9,10 @@
 
 import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
-import { CosmosChainAddressShape } from '@agoric/orchestration';
+import {
+  AccountIdArgShape,
+  CosmosChainAddressShape,
+} from '@agoric/orchestration';
 import { atob } from '@endo/base64';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
@@ -37,11 +40,13 @@ import type {
 } from '@agoric/fast-usdc/src/types.js';
 import type {
   AccountId,
+  AccountIdArg,
   Bech32Address,
   ChainHub,
   Denom,
   OrchestrationAccount,
 } from '@agoric/orchestration';
+import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { WithdrawToSeat } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { mustMatch, type MapStore } from '@agoric/store';
 import type { IBCChannelID, IBCPacket, VTransferIBCEvent } from '@agoric/vats';
@@ -108,7 +113,7 @@ const makeMintedEarlyKey = (addr: NobleAddress, amount: bigint): string =>
 /** @param {Brand<'nat'>} USDC */
 export const makeAdvanceDetailsShape = (USDC: Brand<'nat'>) =>
   harden({
-    destination: M.string(),
+    destination: AccountIdArgShape, // CosmosChainAddress for compatibility with older incarnations
     forwardingAddress: M.string(),
     fullAmount: makeNatAmountShape(USDC),
     txHash: EvmHashShape,
@@ -310,12 +315,12 @@ export const prepareSettler = (
             txHash,
             forwardingAddress,
             fullAmount,
-            destination,
+            destination: destArg,
           }: {
             txHash: EvmHash;
             forwardingAddress: NobleAddress;
             fullAmount: Amount<'nat'>;
-            destination: AccountId;
+            destination: AccountIdArg;
           },
           success: boolean,
         ): void {
@@ -323,8 +328,11 @@ export const prepareSettler = (
           const { value: fullValue } = fullAmount;
           const key = makeMintedEarlyKey(forwardingAddress, fullValue);
 
+          const destination = coerceAccountId(destArg);
+
           if (mintedEarly.has(key)) {
             asMultiset(mintedEarly).remove(key);
+
             statusManager.advanceOutcomeForMintedEarly(txHash, success);
             if (success) {
               void this.facets.self.disburse(txHash, fullAmount, destination);
