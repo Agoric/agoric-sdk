@@ -3,9 +3,11 @@ import { createRequire } from 'node:module';
 import type { TestFn } from 'ava';
 
 import { keyArrayEqual } from '@aglocal/boot/tools/supports.js';
-import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
-import { BridgeId, NonNullish, VBankAccount } from '@agoric/internal';
-import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import {
+  makeCosmicSwingsetTestKit,
+  makeDefaultReceiveBridgeSend,
+} from '@agoric/cosmic-swingset/tools/test-kit.js';
+import { NonNullish } from '@agoric/internal';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { PowerFlags } from '@agoric/vats/src/walletFlags.js';
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
@@ -14,51 +16,16 @@ const { keys } = Object;
 const { resolve: resolvePath } = createRequire(import.meta.url);
 
 const makeDefaultTestContext = async () => {
-  let lastBankNonce = 0n;
-  const { toStorage } = makeFakeStorageKit('');
-
-  const receiveBridgeSend = (bridgeId: BridgeId, obj: any) => {
-    const bridgeType = `${bridgeId}:${obj.type}`;
-
-    switch (bridgeId) {
-      case BridgeId.STORAGE:
-        return toStorage(obj);
-      default:
-        break;
-    }
-
-    switch (bridgeType) {
-      case `${BridgeId.BANK}:VBANK_GET_BALANCE`:
-        return '0';
-      case `${BridgeId.BANK}:VBANK_GET_MODULE_ACCOUNT_ADDRESS`: {
-        const { moduleName } = obj;
-        const moduleDescriptor = Object.values(VBankAccount).find(
-          ({ module }) => module === moduleName,
-        );
-        return !moduleDescriptor ? String(undefined) : moduleDescriptor.address;
-      }
-      case `${BridgeId.BANK}:VBANK_GIVE`: {
-        lastBankNonce += 1n;
-        return harden({
-          nonce: `${lastBankNonce}`,
-          type: 'VBANK_BALANCE_UPDATE',
-          updated: [],
-        });
-      }
-      case `${BridgeId.DIBC}:IBC_METHOD`:
-        return String(undefined);
-      default:
-        break;
-    }
-  };
-
-  const testkit = await makeCosmicSwingsetTestKit(receiveBridgeSend, {
-    configOverrides: NonNullish(
-      await loadSwingsetConfigFile(
-        resolvePath('@agoric/vm-config/decentral-demo-config.json'),
+  const testkit = await makeCosmicSwingsetTestKit(
+    makeDefaultReceiveBridgeSend(),
+    {
+      configOverrides: NonNullish(
+        await loadSwingsetConfigFile(
+          resolvePath('@agoric/vm-config/decentral-demo-config.json'),
+        ),
       ),
-    ),
-  });
+    },
+  );
   await testkit.runNextBlock();
 
   return testkit;

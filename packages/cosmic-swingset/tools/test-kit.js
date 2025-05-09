@@ -7,14 +7,16 @@ import nativePath from 'node:path';
 import tmp from 'tmp';
 import { Fail } from '@endo/errors';
 
+import { BridgeId, VBankAccount } from '@agoric/internal';
 import {
   SwingsetMessageType,
   QueuedActionType,
 } from '@agoric/internal/src/action-types.js';
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import { deepCopyJsonable } from '@agoric/internal/src/js-utils.js';
-import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
+import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
+import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 import { initSwingStore } from '@agoric/swing-store';
 import {
   extractPortNums,
@@ -115,6 +117,49 @@ const baseConfig = harden({
 });
 
 /**
+ * @param {ReturnType<makeFakeStorageKit>} storageKit
+ * @returns {(bridgeId: BridgeId, obj: any) => any}
+ */
+export const makeDefaultReceiveBridgeSend =
+  (storageKit = makeFakeStorageKit('')) =>
+  (bridgeId, obj) => {
+    const bridgeType = `${bridgeId}:${obj.type}`;
+    let lastBankNonce = 0n;
+    const { toStorage } = storageKit;
+
+    switch (bridgeId) {
+      case BridgeId.STORAGE:
+        return toStorage(obj);
+      default:
+        break;
+    }
+
+    switch (bridgeType) {
+      case `${BridgeId.BANK}:VBANK_GET_BALANCE`:
+        return '0';
+      case `${BridgeId.BANK}:VBANK_GET_MODULE_ACCOUNT_ADDRESS`: {
+        const { moduleName } = obj;
+        const moduleDescriptor = Object.values(VBankAccount).find(
+          ({ module }) => module === moduleName,
+        );
+        return !moduleDescriptor ? String(undefined) : moduleDescriptor.address;
+      }
+      case `${BridgeId.BANK}:VBANK_GIVE`: {
+        lastBankNonce += 1n;
+        return harden({
+          nonce: `${lastBankNonce}`,
+          type: 'VBANK_BALANCE_UPDATE',
+          updated: [],
+        });
+      }
+      case `${BridgeId.DIBC}:IBC_METHOD`:
+        return String(undefined);
+      default:
+        break;
+    }
+  };
+
+/**
  * Start a SwingSet kernel to be used by tests and benchmarks, returning objects
  * and functions for representing a (mock) blockchain to which it is connected.
  *
@@ -163,7 +208,7 @@ const baseConfig = harden({
  * @param {typeof import('node:path').resolve} [powers.resolvePath]
  */
 export const makeCosmicSwingsetTestKit = async (
-  receiveBridgeSend,
+  receiveBridgeSend = makeDefaultReceiveBridgeSend(),
   {
     // Options for the SwingSet controller/kernel.
     bundleDir = 'bundles',

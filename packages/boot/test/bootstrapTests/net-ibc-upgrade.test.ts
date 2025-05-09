@@ -1,23 +1,30 @@
 /** @file upgrade network / IBC vat at many points in state machine */
+
+import type { ExecutionContext, TestFn } from 'ava';
+
+import { createRequire } from 'node:module';
+
+import {
+  makeCosmicSwingsetTestKit,
+  makeDefaultReceiveBridgeSend,
+} from '@agoric/cosmic-swingset/tools/test-kit.js';
+import { NonNullish } from '@agoric/internal';
+import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
+import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-
 import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
-import type { TestFn } from 'ava';
-import { createRequire } from 'module';
-
-import { makeSwingsetTestKit } from '../../tools/supports.js';
 
 const { entries, assign } = Object;
 
 const PLATFORM_CONFIG = '@agoric/vm-config/decentral-itest-vaults-config.json';
 
-const nodeRequire = createRequire(import.meta.url);
+const { resolve: resolvePath } = createRequire(import.meta.url);
 const asset = {
-  ibcServerMock: nodeRequire.resolve('./ibcServerMock.js'),
-  ibcClientMock: nodeRequire.resolve('./ibcClientMock.js'),
+  ibcServerMock: resolvePath('./ibcServerMock.js'),
+  ibcClientMock: resolvePath('./ibcClientMock.js'),
 };
 
-export const makeTestContext = async t => {
+export const makeTestContext = async () => {
   console.time('DefaultTestContext');
 
   const bundleDir = 'bundles';
@@ -26,24 +33,34 @@ export const makeTestContext = async t => {
     { cacheSourceMaps: false },
     s => import(s),
   );
-  const swingsetTestKit = await makeSwingsetTestKit(t.log, bundleDir, {
-    configSpecifier: PLATFORM_CONFIG,
-  });
+  const config = NonNullish(
+    await loadSwingsetConfigFile(resolvePath(PLATFORM_CONFIG)),
+  );
+  config.bundleCachePath = bundleDir;
+
+  const swingsetTestKit = await makeCosmicSwingsetTestKit(
+    makeDefaultReceiveBridgeSend(),
+    {
+      configOverrides: config,
+    },
+  );
+  await swingsetTestKit.runNextBlock();
+
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
 
   const installation = {} as Record<string, Installation>;
   return { ...swingsetTestKit, bundleCache, installation };
 };
 
-const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
+type Context = Awaited<ReturnType<typeof makeTestContext>>;
 
-test.before(async t => {
-  t.context = await makeTestContext(t);
-});
+const test = anyTest as TestFn<Context>;
+
+test.before(async t => (t.context = await makeTestContext()));
 test.after.always(t => t.context.shutdown?.());
 
 test.serial('bootstrap produces provisioning vat', async t => {
-  const { EV } = t.context.runUtils;
+  const { EV } = t.context;
   const provisioning = await EV.vat('bootstrap').consumeItem('provisioning');
   console.timeLog('DefaultTestContext', 'provisioning');
   t.log('provisioning', provisioning);
@@ -51,7 +68,7 @@ test.serial('bootstrap produces provisioning vat', async t => {
 });
 
 test.serial('bootstrap launches network, ibc vats', async t => {
-  const { EV } = t.context.runUtils;
+  const { EV } = t.context;
 
   t.log('network proposal executed');
   const vatStore = await EV.vat('bootstrap').consumeItem('vatStore');
@@ -60,8 +77,7 @@ test.serial('bootstrap launches network, ibc vats', async t => {
 });
 
 test.serial('test contracts are installed', async t => {
-  const { bundleCache } = t.context;
-  const { EV } = t.context.runUtils;
+  const { bundleCache, EV } = t.context;
   const zoe: ZoeService = await EV.vat('bootstrap').consumeItem('zoe');
   for (const [name, path] of entries(asset)) {
     const bundle = await bundleCache.load(path, name);
@@ -71,7 +87,11 @@ test.serial('test contracts are installed', async t => {
   }
 });
 
-const upgradeVats = async (t, EV, vatsToUpgrade) => {
+const upgradeVats = async (
+  t: ExecutionContext<Context>,
+  EV: ReturnType<typeof makeRunUtils>['EV'],
+  vatsToUpgrade: Array<string>,
+) => {
   const vatStore = await EV.vat('bootstrap').consumeItem('vatStore');
   const vatUpgradeInfo =
     await EV.vat('bootstrap').consumeItem('vatUpgradeInfo');
@@ -89,8 +109,7 @@ const upgradeVats = async (t, EV, vatsToUpgrade) => {
 };
 
 test.serial('upgrade at many points in network API flow', async t => {
-  const { installation } = t.context;
-  const { EV } = t.context.runUtils;
+  const { EV, installation } = t.context;
   const portAllocator = await EV.vat('bootstrap').consumeItem('portAllocator');
   const zoe: ZoeService = await EV.vat('bootstrap').consumeItem('zoe');
 
@@ -159,7 +178,7 @@ test.serial('upgrade at many points in network API flow', async t => {
     },
   });
 
-  const doSteps = async (label, steps, input: unknown = undefined) => {
+  const doSteps = async (label: string, steps, input: unknown = undefined) => {
     await null;
     let result = input;
     for (const [stepName, fn] of steps) {
