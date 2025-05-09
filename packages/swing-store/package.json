@@ -21,6 +21,7 @@
     "lint:eslint": "eslint ."
   },
   "dependencies": {
+    "@agoric/base-zone": "^0.1.0",
     "@agoric/internal": "^0.3.2",
     "@endo/base64": "^1.0.9",
     "@endo/bundle-source": "^4.0.0",
