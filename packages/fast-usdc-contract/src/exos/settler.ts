@@ -49,6 +49,7 @@ import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
 import type { Vow, VowTools } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe/src/zoeService/zoe.js';
 import type { Zone } from '@agoric/zone';
+import { asMultiset } from '../utils/store.ts';
 import type { LiquidityPoolKit } from './liquidity-pool.js';
 import type { StatusManager } from './status-manager.js';
 
@@ -100,15 +101,14 @@ harden(decodeEventPacket);
  *
  * @param {NobleAddress} addr
  * @param {bigint} amount
- * @deprecated
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const makeMintedEarlyKey = (addr: NobleAddress, amount: bigint): string =>
   `pendingTx:${JSON.stringify([addr, String(amount)])}`;
 
 /**
- * Helper for migrating `mintedEarly` store
+ * Helper for iterating through entries in `mintedEarly` store
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const parseMintedEarlyKey = (key: ReturnType<typeof makeMintedEarlyKey>) => {
   const [address, amount] = JSON.parse(key.split(':')[1]);
   return harden({ address, amount: BigInt(amount) });
@@ -184,7 +184,6 @@ export const prepareSettler = (
     {
       creator: M.interface('SettlerCreatorI', {
         monitorMintingDeposits: M.call().returns(M.any()),
-        migrateMintedEarly: M.call().returns(),
       }),
       tap: M.interface('SettlerTapI', {
         receiveUpcall: M.call(M.record()).returns(M.promise()),
@@ -199,6 +198,7 @@ export const prepareSettler = (
         ),
       }),
       self: M.interface('SettlerSelfI', {
+        addMintedEarly: M.call(M.string(), UsdcAmountShape).returns(),
         disburse: M.call(EvmHashShape, UsdcAmountShape, M.string()).returns(
           M.promise(),
         ),
@@ -238,7 +238,6 @@ export const prepareSettler = (
         registration: undefined as
           | HostInterface<TargetRegistration>
           | undefined,
-        /** @deprecated - will be cleared and moved to `StatusManager` */
         mintedEarly: zone.detached().mapStore('mintedEarly') as MapStore<
           ReturnType<typeof makeMintedEarlyKey>,
           number
@@ -256,16 +255,6 @@ export const prepareSettler = (
           assert.typeof(registration, 'object');
           this.state.registration = registration;
         },
-        migrateMintedEarly() {
-          const { mintedEarly } = this.state;
-          for (const [key, count] of mintedEarly.entries()) {
-            const { address, amount } = parseMintedEarlyKey(key);
-            for (let i = 0; i < count; i += 1) {
-              statusManager.addMintedEarly(address, amount);
-            }
-          }
-          mintedEarly.clear();
-        },
       },
       tap: {
         async receiveUpcall(event: VTransferIBCEvent) {
@@ -277,10 +266,7 @@ export const prepareSettler = (
             // Mismatched source channel is normal when forwarding from SettlementAccount,
             // but in that case the destination channel should match.
             if (packet.destination_channel !== sourceChannel) {
-              log('⚠️ unexpected channel', {
-                actual,
-                expected: sourceChannel,
-              });
+              log('⚠️ unexpected channel', { actual, expected: sourceChannel });
             }
             return;
           }
@@ -299,7 +285,7 @@ export const prepareSettler = (
             log('⚠️ tap: minted before observed', nfa, amount);
             // XXX consider capturing in vstorage
             // we would need a new key, as this does not have a txHash
-            statusManager.addMintedEarly(nfa, amount);
+            self.addMintedEarly(nfa, AmountMath.make(USDC, amount));
             return;
           }
 
@@ -314,7 +300,7 @@ export const prepareSettler = (
               case PendingTxStatus.Advancing:
                 log('⚠️ tap: minted while advancing', nfa, found.tx.amount);
                 // XXX consider tracking these separately from unknown mints?
-                statusManager.addMintedEarly(nfa, found.tx.amount);
+                self.addMintedEarly(nfa, fullValue);
                 break;
 
               case PendingTxStatus.AdvanceSkipped:
@@ -343,9 +329,12 @@ export const prepareSettler = (
           },
           success: boolean,
         ): void {
+          const { mintedEarly } = this.state;
           const { value: fullValue } = fullAmount;
+          const key = makeMintedEarlyKey(forwardingAddress, fullValue);
 
-          if (statusManager.dequeueMintedEarly(forwardingAddress, fullValue)) {
+          if (mintedEarly.has(key)) {
+            asMultiset(mintedEarly).remove(key);
             statusManager.advanceOutcomeForMintedEarly(txHash, success);
             if (success) {
               void this.facets.self.disburse(txHash, fullAmount, destination);
@@ -377,12 +366,15 @@ export const prepareSettler = (
             tx: { forwardingAddress, amount },
             txHash,
           } = evidence;
-          if (statusManager.dequeueMintedEarly(forwardingAddress, amount)) {
+          const key = makeMintedEarlyKey(forwardingAddress, amount);
+          const { mintedEarly } = this.state;
+          if (mintedEarly.has(key)) {
             log(
               'matched minted early key, initiating forward',
               forwardingAddress,
               amount,
             );
+            asMultiset(mintedEarly).remove(key);
             statusManager.advanceOutcomeForUnknownMint(evidence);
             void this.facets.self.forward(
               txHash,
@@ -395,6 +387,16 @@ export const prepareSettler = (
         },
       },
       self: {
+        /**
+         * Helper function to track a minted-early transaction by incrementing or initializing its counter
+         * @param address
+         * @param amount
+         */
+        addMintedEarly(address: NobleAddress, amount: NatAmount) {
+          const key = makeMintedEarlyKey(address, amount.value);
+          const { mintedEarly } = this.state;
+          asMultiset(mintedEarly).add(key);
+        },
         /**
          * The intended payee received an advance from the pool. When the funds
          * are minted, disburse them to the pool and fee seats.

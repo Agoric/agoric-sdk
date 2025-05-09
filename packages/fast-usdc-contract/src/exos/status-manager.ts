@@ -6,7 +6,6 @@ import {
 } from '@agoric/fast-usdc/src/constants.js';
 import {
   CctpTxEvidenceShape,
-  EvmAddressShape,
   EvmHashShape,
   PendingTxShape,
 } from '@agoric/fast-usdc/src/type-guards.js';
@@ -31,13 +30,9 @@ import { E, type ERef } from '@endo/far';
 import { M } from '@endo/patterns';
 import { chainOfAccount } from '@agoric/orchestration/src/utils/address.js';
 import type { AccountId, CaipChainId } from '@agoric/orchestration';
-import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
 import { ForwardFailedTxShape, type ForwardFailedTx } from '../typeGuards.ts';
 import { type RouteHealth } from '../utils/route-health.ts';
 import { makeSettlementMatching } from '../utils/settlement-matching.ts';
-
-/** The string template is for developer visibility but not meant to ever be parsed. */
-type PendingTxKey = `pendingTx:${bigint}:${NobleAddress}`;
 
 interface StatusManagerPowers {
   log?: LogFn;
@@ -64,38 +59,16 @@ export const prepareStatusManager = (
   { marshaller, routeHealth }: StatusManagerPowers,
 ) => {
   /**
-   * Keyed by a tuple of the Noble Forwarding Account and amount.
-   * @deprecated this is the old format and is only used for migration.
-   */
-  const pendingSettleTxsOld: MapStore<PendingTxKey, PendingTx[]> =
-    zone.mapStore('PendingSettleTxs', {
-      keyShape: M.string(),
-      valueShape: M.arrayOf(PendingTxShape),
-    });
-
-  /**
+   * Keyed by Noble Forwarding Account
+   *
    * Transactions that are `Advanced`, `AdvanceFailed`, or `AdvanceSkipped`
    * and are awaiting a mint.
    */
   const pendingSettleTxs: MapStore<NobleAddress, PendingTx[]> = zone.mapStore(
-    'PendingSettleTxsByNFA',
+    'PendingSettleTxs',
     {
       keyShape: M.string(),
       valueShape: M.arrayOf(PendingTxShape),
-    },
-  );
-
-  /**
-   * Mints received that do not correspond to an observed transaction.
-   *
-   * Entries do not necessarily correspond 1:1 with `pendingSettleTxs`
-   * as mints are sometimes batched.
-   */
-  const mintedEarly: MapStore<NobleAddress, bigint[]> = zone.mapStore(
-    'MintedEarly',
-    {
-      keyShape: M.string(),
-      valueShape: M.arrayOf(M.bigint()),
     },
   );
 
@@ -113,12 +86,13 @@ export const prepareStatusManager = (
    * Uses `zone.makeOnce` as a cheap abstraction for "only do this once".
    */
   zone.makeOnce('migrateToPendingSettleTxsByNFA', () => {
-    for (const txs of pendingSettleTxsOld.values()) {
+    const current = [...pendingSettleTxs.values()]; // XXX copy necessary?
+    pendingSettleTxs.clear();
+    for (const txs of current) {
       for (const tx of txs) {
         addPendingSettleTx(tx);
       }
     }
-    pendingSettleTxsOld.clear();
   });
 
   /**
@@ -278,7 +252,6 @@ export const prepareStatusManager = (
           }),
         ),
       ),
-      dequeueMintedEarly: M.call(M.string(), M.bigint()).returns(M.boolean()),
       disbursed: M.call(EvmHashShape, AmountKeywordRecordShape).returns(
         M.undefined(),
       ),
@@ -293,18 +266,8 @@ export const prepareStatusManager = (
       lookupPending: M.call(M.string(), M.bigint()).returns(
         M.arrayOf(PendingTxShape),
       ),
-      addMintedEarly: M.call(M.string(), M.bigint()).returns(),
     }),
     {
-      /**
-       * Record a mint that doesn't have a corresponding transaction
-       *
-       * This can be the result of an Advance in flight or an Observation
-       * that's yet to occur.
-       */
-      addMintedEarly: (nfa: NobleAddress, amount: bigint): void => {
-        appendToStoredArray(mintedEarly, nfa, amount);
-      },
       /**
        * Add a new transaction with ADVANCING status
        *
@@ -438,27 +401,6 @@ export const prepareStatusManager = (
        */
       dequeueStatus(nfa: NobleAddress, amount: bigint): PendingTx[] {
         return matchSettlement(nfa, amount);
-      },
-
-      dequeueMintedEarly(nfa: NobleAddress, amount: bigint): boolean {
-        if (!mintedEarly.has(nfa)) {
-          return false;
-        }
-        const minted = mintedEarly.get(nfa);
-        const ix = minted.findIndex(m => m === amount);
-        if (ix < 0) {
-          return false;
-        }
-        // found a match; delete the entry
-        if (minted.length === 1) {
-          mintedEarly.delete(nfa);
-        } else {
-          mintedEarly.set(
-            nfa,
-            minted.filter((_, i) => i !== ix),
-          );
-        }
-        return true;
       },
 
       /**
