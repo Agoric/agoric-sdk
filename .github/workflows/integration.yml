@@ -126,7 +126,7 @@ jobs:
     needs: pre_check
     if: needs.pre_check.outputs.should_run == 'true'
 
-    runs-on: 'depot-ubuntu-22.04-4'
+    runs-on: 'ubuntu-22.04-4core-150SSD-16RAM'
     steps:
       - uses: actions/checkout@v4
         with:
