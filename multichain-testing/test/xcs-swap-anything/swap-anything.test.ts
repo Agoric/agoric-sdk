@@ -128,7 +128,7 @@ test.serial('BLD for OSMO, receiver on Agoric', async t => {
     invitationSpec: {
       source: 'agoricContract',
       instancePath: [contractName],
-      callPipe: [['makeSendInvitation']],
+      callPipe: [['makeSwapInvitation']],
     },
     offerArgs: {
       // TODO: get the contract address dynamically
@@ -220,7 +220,7 @@ test.serial('OSMO for BLD, receiver on Agoric', async t => {
     invitationSpec: {
       source: 'agoricContract',
       instancePath: [contractName],
-      callPipe: [['makeSendInvitation']],
+      callPipe: [['makeSwapInvitation']],
     },
     offerArgs: {
       // TODO: get the contract address dynamically
@@ -299,7 +299,7 @@ test.serial('BLD for OSMO, receiver on CosmosHub', async t => {
     invitationSpec: {
       source: 'agoricContract',
       instancePath: [contractName],
-      callPipe: [['makeSendInvitation']],
+      callPipe: [['makeSwapInvitation']],
     },
     offerArgs: {
       // TODO: get the contract address dynamically
@@ -374,6 +374,8 @@ test.serial(
       'ubld',
     );
 
+    const { swapAddress } = await getXcsContractsAddress();
+
     // Send swap offer
     const makeAccountOfferId = `swap-ubld-uosmo-${Date.now()}`;
     const updates = wdUser.offers.executeOffer({
@@ -381,13 +383,11 @@ test.serial(
       invitationSpec: {
         source: 'agoricContract',
         instancePath: [contractName],
-        callPipe: [['makeSendInvitation']],
+        callPipe: [['makeSwapInvitation']],
       },
       offerArgs: {
-        // TODO: get the contract address dynamically
-        destAddr:
-          'osmo17p9rzwnnfxcjp32un9ug7yhhzgtkhvl9jfksztgw5uh69wac2pgs5yczr8',
-        receiverAddr: 'noble/noble1foo',
+        destAddr: swapAddress,
+        receiverAddr: 'noble/noble1foo', // bad swap receiver
         outDenom: 'uosmo',
         slippage: { slippagePercentage: '20', windowSeconds: 10 },
         onFailedDelivery: 'do_nothing',
