@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "noEmit": true,
+    "target": "esnext",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "allowJs": true,
+    "checkJs": true,
+    "strict": false,
+    "strictNullChecks": true,
+    "noImplicitThis": true,
+    // XXX synthetic-chain has some errors
+    "skipLibCheck": true
+  },
+  "exclude": [
+    "generated/"
+  ]
+}

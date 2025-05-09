@@ -1,7 +1,9 @@
 /** @file Bootstrap test of restarting contracts using orchestration */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
-
+import { BridgeId } from '@agoric/internal';
+import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
+import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { withChainCapabilities } from '@agoric/orchestration';
 import type { start as startElysContract } from '@agoric/orchestration/src/examples/elys.contract.js';
 import { commonSetup } from '@agoric/orchestration/test/supports.js';
@@ -11,6 +13,7 @@ import {
   type WalletFactoryTestContext,
 } from '../bootstrapTests/walletFactory.js';
 import { minimalChainInfos } from '../tools/chainInfo.js';
+import { AckBehavior } from '../../tools/supports.js';
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
 test.before(async t => {
@@ -45,8 +48,12 @@ test('resume', async t => {
   // } = await commonSetup(t);
 
   await commonSetup(t);
-
   t.log('Initialising Elys contract');
+  t.context.bridgeUtils.setAckBehavior(
+    BridgeId.DIBC,
+    'startChannelOpenInit',
+    AckBehavior.Immediate,
+  );
 
   await evalProposal(
     buildProposal('@agoric/builders/scripts/testing/init-elys-contract.js', [
@@ -58,6 +65,7 @@ test('resume', async t => {
           'uist',
           {
             baseDenom: 'uist',
+            brandKey: 'IST',
             baseName: 'agoric',
             chainName: 'agoric',
           },
@@ -65,6 +73,9 @@ test('resume', async t => {
       ]),
     ]),
   );
+
+
+
   let agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
   let instance: Instance<typeof startElysContract> = await EV(
     agoricNames,
@@ -75,6 +86,7 @@ test('resume', async t => {
   await evalProposal(
     buildProposal('@agoric/builders/scripts/testing/upgrade-elys-contract.js'),
   );
+
 
   agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
   instance = await EV(agoricNames).lookup('instance', 'ElysContract');

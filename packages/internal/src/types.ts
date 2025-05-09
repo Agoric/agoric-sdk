@@ -15,6 +15,27 @@ export type TotalMap<K, V> = Omit<Map<K, V>, 'get'> & {
 export type TotalMapFrom<M extends Map<any, any>> =
   M extends Map<infer K, infer V> ? TotalMap<K, V> : never;
 
+/**
+ * A permit is either `true` or a string (both meaning no attenuation, with a
+ * string serving as a grouping label for convenience and/or diagram
+ * generation), or an object whose keys identify child properties and whose
+ * corresponding values are theirselves (recursive) Permits.
+ */
+export type Permit<T> =
+  | true
+  | string
+  | Partial<{ [K in keyof T]: K extends string ? Permit<T[K]> : never }>;
+
+export type Attenuated<T, P extends Permit<T>> = P extends object
+  ? {
+      [K in keyof P]: K extends keyof T
+        ? P[K] extends Permit<T[K]>
+          ? Attenuated<T[K], P[K]>
+          : never
+        : never;
+    }
+  : T;
+
 export declare class Callback<I extends (...args: any[]) => any> {
   private iface: I;
 

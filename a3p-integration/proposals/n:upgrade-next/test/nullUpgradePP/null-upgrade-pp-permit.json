@@ -1,7 +1,0 @@
-{
-    "consume": {
-        "provisionPoolStartResult": true, 
-        "instancePrivateArgs": true,
-        "economicCommitteeCreatorFacet": true
-    }
-}

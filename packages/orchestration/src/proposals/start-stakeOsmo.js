@@ -4,8 +4,10 @@ import { prepareVowTools } from '@agoric/vow';
 import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
 import { makeChainHub } from '../exos/chain-hub.js';
+import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
 
 /**
+ * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {IBCConnectionID} from '@agoric/vats';
  * @import {StakeIcaSF} from '../examples/stake-ica.contract';
  */
@@ -27,23 +29,32 @@ const trace = makeTracer('StartStakeOsmo', true);
  *     };
  *   };
  * }} powers
+ * @param {{
+ *   options: {
+ *     chainInfo: Record<string, CosmosChainInfo>;
+ *     assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
+ *   };
+ * }} config
  */
-export const startStakeOsmo = async ({
-  consume: {
-    agoricNames,
-    board,
-    chainStorage,
-    chainTimerService: timer,
-    cosmosInterchainService,
-    startUpgradable,
+export const startStakeOsmo = async (
+  {
+    consume: {
+      agoricNames,
+      board,
+      chainStorage,
+      chainTimerService: timer,
+      cosmosInterchainService,
+      startUpgradable,
+    },
+    installation: {
+      consume: { stakeIca },
+    },
+    instance: {
+      produce: { stakeOsmo: produceInstance },
+    },
   },
-  installation: {
-    consume: { stakeIca },
-  },
-  instance: {
-    produce: { stakeOsmo: produceInstance },
-  },
-}) => {
+  { options: { chainInfo, assetInfo } },
+) => {
   const VSTORAGE_PATH = 'stakeOsmo';
   trace('startStakeOsmo');
   await null;
@@ -58,6 +69,8 @@ export const startStakeOsmo = async ({
     await agoricNames,
     vt,
   );
+
+  registerChainsAndAssets(chainHub, {}, chainInfo, assetInfo);
 
   const [_, osmosis, connectionInfo] = await vt.when(
     chainHub.getChainsAndConnection('agoric', 'osmosis'),
@@ -91,7 +104,7 @@ harden(startStakeOsmo);
 
 export const getManifestForStakeOsmo = (
   { restoreRef },
-  { installKeys, ...options },
+  { installKeys, options },
 ) => {
   return {
     manifest: {

@@ -159,8 +159,12 @@ Affects: cosmic-swingset
 
 Purpose: enabling Prometheus metrics exports
 
-Description: When either is set, these are the host IP and port number to use
-for the Prometheus scrape endpoint to export telemetry.
+Description: When set, metrics will be exposed in the [Prometheus text-based
+format](https://prometheus.io/docs/instrumenting/exposition_formats/#text-based-format)
+via HTTP on this port (or the default port 9464 when the value is not a number)
+for the host specified by `OTEL_EXPORTER_PROMETHEUS_HOST` (or default host
+0.0.0.0) at default path "/metrics". See also
+[README-telemetry.md](../packages/cosmic-swingset/README-telemetry.md#agoric-vm-swingset-metrics).
 
 Lifetime: until we decide not to support Prometheus for metrics export
 
@@ -182,11 +186,13 @@ Affects: cosmic-swingset
 Purpose: intercept the SwingSet LOG file in realtime
 
 Description: when nonempty, use the value as a list of module specifiers
-separated by commas `,`.  The modules will be loaded by
-`@agoric/telemetry/src/make-slog-sender.js`, via `import(moduleSpec)`, and
-their exported `makeSlogSender` function called to create an aggregate
-`slogSender`. Every time a SLOG object is written by SwingSet, each module's
-`slogSender(slogObject)` will be called.
+separated by commas `,`.  `@agoric/telemetry/src/make-slog-sender.js` export
+`makeSlogSender` loads each module via dynamic `import` and calls its exported
+`makeSlogSender` function to construct a slogSender that will be called with
+each new slog entry (fanning such objects out to each module). Prefixing a
+module specifier with `-` causes it to be excluded, and can be used to suppress
+otherwise automatic use of modules for e.g. writing slogfiles and exporting
+Prometheus metrics.
 
 The default is `'@agoric/telemetry/src/flight-recorder.js'`, which writes to an
 mmap'ed circular buffer.
@@ -202,6 +208,13 @@ and thread as the SwingSet kernel. If `'process'`, slog senders are loaded in a
 sub-process which receives all SLOG events over an IPC connection.
 
 The default is `'self'`.
+
+## SLOGSENDER_AGENT_*
+
+A `SLOGSENDER_AGENT_` prefix may be used to set variables in the environment of
+slog sender modules. The name prefix is stripped, allowing slog senders to see a
+different value for e.g.
+[`OTEL_EXPORTER_PROMETHEUS_PORT`](#otel_exporter_prometheus_port).
 
 ## SLOGSENDER_FAIL_ON_ERROR
 
@@ -249,21 +262,32 @@ Seed phrase for HD key derivation.
 
 Affects: solo
 
-Same as `OTEL_EXPORTER_PROMETHEUS_PORT`, but for solo instead of chain.
+Same as [`OTEL_EXPORTER_PROMETHEUS_PORT`](#otel_exporter_prometheus_port), but
+for solo instead of chain.
 
 Lifetime: ?
 
 ## SOLO_SLOGFILE
 
-Same as `SLOGFILE`, but for solo instead of chain.
+Affects: solo
+
+Same as [`SLOGFILE`](#slogfile), but for solo instead of chain.
 
 Lifetime: ?
 
 ## SOLO_SLOGSENDER
 
-Same as `SLOGSENDER`, but for solo instead of chain.
+Affects: solo
+
+Same as [`SLOGSENDER`](#slogsender), but for solo instead of chain.
 
 Lifetime: ?
+
+## SOLO_*
+
+A `SOLO` prefix may be used to set variables used only by solo processes. The
+name prefix is stripped, allowing such variables to be set in a shell
+environment without affecting cosmic-swingset.
 
 ## SWINGSET_WORKER_TYPE
 

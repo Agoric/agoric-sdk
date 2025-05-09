@@ -5,6 +5,8 @@ import type { IBCChannelID, IBCEvent, IBCMethod } from '@agoric/vats';
 /** @import { IBCChannelID, IBCMethod, IBCEvent } from '@agoric/vats'; */
 
 const responses = {
+  liquidStake:
+    'eyJyZXN1bHQiOiJFajRLSnk5emRISnBaR1V1YzNSaGEyVnBZbU11VFhOblRHbHhkV2xrVTNSaGEyVlNaWE53YjI1elpSSVRDaEVLQm5OMFlYUnZiUklITVRnd01EQXdNQT09In0=',
   // {"result":"+/cosmos.staking.v1beta1.MsgDelegateResponse"}
   delegate:
     'eyJyZXN1bHQiOiJFaTBLS3k5amIzTnRiM011YzNSaGEybHVaeTUyTVdKbGRHRXhMazF6WjBSbGJHVm5ZWFJsVW1WemNHOXVjMlU9In0=',
@@ -69,6 +71,18 @@ export const protoMsgMocks = {
   // MsgTransfer 10 ibc/uusdchash from cosmos1test1 to noble1test through channel-536
   ibcTransfer2: {
     msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ253S0tTOXBZbU11WVhCd2JHbGpZWFJwYjI1ekxuUnlZVzV6Wm1WeUxuWXhMazF6WjFSeVlXNXpabVZ5RWs4S0NIUnlZVzV6Wm1WeUVndGphR0Z1Ym1Wc0xUVXpOaG9UQ2cxcFltTXZkWFZ6WkdOb1lYTm9FZ0l4TUNJTVkyOXpiVzl6TVhSbGMzUXhLZ3B1YjJKc1pURjBaWE4wTWdBNGdQQ1N5OTBJIiwibWVtbyI6IiJ9',
+    ack: responses.ibcTransfer,
+  },
+  ibcTransferHubToStride: {
+    msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ25RS0tTOXBZbU11WVhCd2JHbGpZWFJwYjI1ekxuUnlZVzV6Wm1WeUxuWXhMazF6WjFSeVlXNXpabVZ5RWtjS0NIUnlZVzV6Wm1WeUVndGphR0Z1Ym1Wc0xUTTVNUm9LQ2dWMVlYUnZiUklCT0NJTVkyOXpiVzl6TVhSbGMzUXlLZ3RqYjNOdGIzTXhkR1Z6ZERJQU9JRHdrc3ZkQ0E9PSIsIm1lbW8iOiIifQ==',
+    ack: responses.ibcTransfer,
+  },
+  liquidStake: {
+    msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ2pvS0h5OXpkSEpwWkdVdWMzUmhhMlZwWW1NdVRYTm5UR2x4ZFdsa1UzUmhhMlVTRndvTFkyOXpiVzl6TVhSbGMzUVNBVGdhQlhWaGRHOXQiLCJtZW1vIjoiIn0=',
+    ack: responses.liquidStake,
+  },
+  movestTokenFromStrideToElys: {
+    msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ3BvQkNpa3ZhV0pqTG1Gd2NHeHBZMkYwYVc5dWN5NTBjbUZ1YzJabGNpNTJNUzVOYzJkVWNtRnVjMlpsY2hKdENnaDBjbUZ1YzJabGNoSUxZMmhoYm01bGJDMDVPVGthRVFvR2MzUmhkRzl0RWdjeE9EQXdNREF3SWd0amIzTnRiM014ZEdWemRDb3JaV3g1Y3pFM05XTTNlSGRzZVRkdWQzbGpaMmgzZDNjNE4zZzRNMmcxTm5Sa2EycDRlbXBtTkc1bE1ESUFPSUR3a3N2ZENBPT0iLCJtZW1vIjoiIn0=',
     ack: responses.ibcTransfer,
   },
   error: {
@@ -159,11 +173,11 @@ export const icaMocks = {
         data: obj.packet.data,
         destination_channel: obj.packet.destination_channel,
         destination_port: obj.packet.destination_port,
-        sequence,
+        sequence: String(sequence),
         source_channel: obj.packet.source_channel,
         source_port: obj.packet.source_port,
-        timeout_height: 0,
-        timeout_timestamp: 1712183910866313000,
+        timeout_height: { revision_number: '0', revision_height: '0' },
+        timeout_timestamp: '1712183910866313000',
       },
       relayer: 'agoric1gtkg0g6x8lqc734ht3qe2sdkrfugpdp2h7fuu0',
       type: 'IBC_EVENT',

@@ -5,9 +5,10 @@
     "skipLibCheck": false
   },
   "include": [
-    "calc-*.js",
-    "src/**/*.js",
-    "test/**/*.js",
     "*.cjs",
+    "*.js",
+    "src",
+    "test",
+    "tools",
   ],
 }

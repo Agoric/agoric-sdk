@@ -3,6 +3,9 @@ import { Shape as NetworkShape } from '@agoric/network';
 import { M, matches } from '@endo/patterns';
 import { E } from '@endo/far';
 import { pickFacet } from '@agoric/vat-data';
+import { makeTracer } from '@agoric/internal';
+
+const trace = makeTracer('PacketTools');
 
 const { toCapData } = makeMarshal(undefined, undefined, {
   marshalName: 'JustEncoder',
@@ -10,13 +13,14 @@ const { toCapData } = makeMarshal(undefined, undefined, {
 });
 const just = obj => {
   const { body } = toCapData(obj);
-  return decodeToJustin(JSON.parse(body), true);
+  return decodeToJustin(JSON.parse(body), false);
 };
 
 /**
  * @import {Pattern} from '@endo/patterns';
  * @import {EVow, Remote, Vow, VowResolver, VowTools} from '@agoric/vow';
  * @import {LocalChainAccount} from '@agoric/vats/src/localchain.js';
+ * @import {IBCEvent, VTransferIBCEvent} from '@agoric/vats';
  * @import {TargetApp, TargetRegistration} from '@agoric/vats/src/bridge-target.js';
  */
 
@@ -29,6 +33,7 @@ const just = obj => {
 /**
  * @typedef {object} PacketSender
  * @property {(
+ *   match: Vow<IBCEvent<'acknowledgementPacket'> | IBCEvent<'timeoutPacket'>>,
  *   opts: PacketOptions,
  * ) => Vow<{ eventPattern: Pattern; resultV: Vow<any> }>} sendPacket
  */
@@ -203,11 +208,13 @@ export const preparePacketTools = (zone, vowTools) => {
         },
       },
       tap: {
-        // eslint-disable-next-line no-restricted-syntax
+        /**
+         * @param {VTransferIBCEvent} obj
+         */
         async receiveUpcall(obj) {
           const { monitor, resolverToPattern, upcallQueue, pending } =
             this.state;
-          console.debug(
+          trace(
             `Trying ${resolverToPattern.getSize()} current patterns and ${pending} pending patterns against`,
             just(obj),
           );
@@ -219,7 +226,7 @@ export const preparePacketTools = (zone, vowTools) => {
           // Check all our fulfilled patterns for matches.
           for (const [resolver, pattern] of resolverToPattern.entries()) {
             if (matches(obj, pattern)) {
-              console.debug('Matched pattern:', just(pattern));
+              trace('Matched pattern:', just(pattern));
               resolver.resolve(obj);
               resolverToPattern.delete(resolver);
               return;
@@ -228,13 +235,25 @@ export const preparePacketTools = (zone, vowTools) => {
           if (upcallQueue) {
             // We have some pending patterns (ones that have been requested but
             // haven't yet settled) that may match this object.
-            console.debug('Stashing object in upcallQueue');
+            trace('Stashing object in upcallQueue');
             this.state.upcallQueue = harden(upcallQueue.concat(obj));
           }
-          console.debug('No match yet.');
+          trace('No match yet.');
         },
       },
       sendPacketWatcher: {
+        /**
+         * @param {[
+         *   {
+         *     resolver: VowResolver<any>;
+         *     match: Vow<
+         *       IBCEvent<'acknowledgementPacket'> | IBCEvent<'timeoutPacket'>
+         *     >;
+         *   },
+         *   Remote<PacketSender>,
+         * ]} result
+         * @param {{ opts: PacketOptions }} ctx
+         */
         onFulfilled([{ match }, sender], ctx) {
           return watch(E(sender).sendPacket(match, ctx.opts));
         },
@@ -276,25 +295,24 @@ export const preparePacketTools = (zone, vowTools) => {
         onFulfilled(pattern, { resolver }) {
           const { resolverToPattern, upcallQueue } = this.state;
 
-          console.debug('watchPacketPattern onFulfilled', just(pattern));
+          trace('watchPacketPattern onFulfilled', just(pattern));
           if (!upcallQueue) {
             // Save the pattern for later.
-            console.debug('No upcall queue yet.  Save the pattern for later.');
+            trace('No upcall queue yet.  Save the pattern for later.');
             resolverToPattern.init(resolver, pattern);
             return;
           }
 
           // Try matching the first in queue.
           const i = upcallQueue.findIndex(obj => matches(obj, pattern));
-          if (i < 0) {
-            // No match yet. Save the pattern for later.
-            console.debug('No match yet. Save the pattern for later.');
+          if (i === -1) {
+            trace('No match yet. Save the pattern for later.');
             resolverToPattern.init(resolver, pattern);
             return;
           }
 
           // Success! Remove the matched object from the queue.
-          console.debug(
+          trace(
             'Success! Remove the matched object from the queue.',
             just(upcallQueue[i]),
           );

@@ -3,6 +3,9 @@ export {};
 /**
  * @import {Guarded} from '@endo/exo';
  * @import {Passable, Container} from '@endo/pass-style';
+ * @import {Publisher} from '@agoric/notifier';
+ * @import {AdminFacet, InstallationStart, InvitationAmount} from '@agoric/zoe';
+ * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
  * @import {ContractStartFunction} from '@agoric/zoe/src/zoeService/utils.js';
  */
 
@@ -550,7 +553,7 @@ export {};
 
 /**
  * @typedef {object} ContractGovernanceVoteResult
- * @property {Instance} instance - instance of the VoteCounter
+ * @property {Instance<((zcf: ZCF<{questionSpec: QuestionSpec, quorumThreshold: bigint }>, { outcomePublisher }: { outcomePublisher: Publisher<OutcomeRecord>; }) => {publicFacet: VoteCounterPublicFacet, creatorFacet: VoteCounterCreatorFacet})>} instance - instance of the VoteCounter
  * @property {ERef<QuestionDetails>} details
  * @property {Promise<ParamValue>} outcomeOfUpdate - A promise for the result
  *    of updating the parameter value. Primarily useful for its behavior on
@@ -687,7 +690,7 @@ export {};
  *
  * @param {ERef<ZoeService>} zoe
  * @param {import('@agoric/zoe/src/zoeService/utils.js').Instance<(zcf: ZCF<GovernanceTerms<{}>>) => {}>} allegedGoverned
- * @param {Instance} allegedGovernor
+ * @param {Instance<(zcf) => {publicFacet: GovernorPublic}>} allegedGovernor
  * @param {Installation<import('@agoric/governance/src/contractGovernor.js').start>} contractGovernorInstallation
  * @returns {Promise<GovernancePair>}
  */
@@ -697,7 +700,7 @@ export {};
  *   electorate
  *
  * @param {ERef<ZoeService>} zoe
- * @param {Instance} allegedGovernor
+ * @param {Instance<(zcf) => {publicFacet: GovernorPublic}>} allegedGovernor
  * @param {Instance} allegedElectorate
  * @returns {Promise<true>}
  */

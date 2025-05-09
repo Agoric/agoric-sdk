@@ -87,7 +87,6 @@ test.serial('setupVaults; run updatePriceFeeds proposals', async t => {
   const priceFeedBuilder =
     '@agoric/builders/scripts/inter-protocol/updatePriceFeeds.js';
   t.log('building', priceFeedBuilder);
-  const brandName = collateralBrandKey;
 
   const { ATOM } = agoricNamesRemotes.brand;
   ATOM || Fail`ATOM missing from agoricNames`;

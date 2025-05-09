@@ -1,14 +1,26 @@
-import { Fail, q } from '@endo/errors';
-import { fromUniqueEntries } from '@endo/common/from-unique-entries.js';
 import { M } from '@endo/patterns';
+import { wrapperMethods } from './prepare-attenuator.js';
 
 /** @import {Amplify} from '@endo/exo'; */
+
+// This revocable kit implementation provides for both attenuation and
+// revocation, since both can be provided at the cost of one level of
+// indirection. But if you just need attenuation without revocation, better to
+// use the attenuator implementation in prepare-attenuator.js.
+// Please co-maintain these two modules.
+
+/**
+ * @template [U=any]
+ * @callback MakeRevocable
+ * @param {U} underlying
+ * @returns {Partial<U>}
+ */
 
 /**
  * @template [U=any]
  * @typedef {object} RevocableMakerKit
  * @property {(revocable: U) => boolean} revoke
- * @property {(underlying: U) => U} makeRevocable
+ * @property {MakeRevocable} makeRevocable
  *   Forwards to the underlying exo object, until revoked
  */
 
@@ -21,7 +33,7 @@ import { M } from '@endo/patterns';
  * @template [U=any]
  * @typedef {object} RevocableKit
  * @property {RevokerFacet} revoker
- * @property {U} revocable
+ * @property {Partial<U>} revocable
  *   Forwards to the underlying exo object, until revoked
  */
 
@@ -39,14 +51,14 @@ import { M } from '@endo/patterns';
  *   The `interfaceName` of the underlying interface guard.
  *   Defaults to the `uKindName`.
  * @property {Record<
- *   string|symbol,
+ *   PropertyKey,
  *   import('@endo/patterns').MethodGuard
  * >} [extraMethodGuards]
  * For guarding the `extraMethods`, if you include them below. These appear
  * only on the synthesized interface guard for the revocable caretaker, and
  * do not necessarily correspond to any method of the underlying.
  * @property {Record<
- *   string|symbol,
+ *   PropertyKey,
  *   (this: RevocableKitThis<U>, ...args: any[]) => any
  * >} [extraMethods]
  * Extra methods adding behavior only to the revocable caretaker, and
@@ -61,10 +73,10 @@ import { M } from '@endo/patterns';
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {string} uKindName
  *   The `kindName` of the underlying exo class
- * @param {(string|symbol)[]} uMethodNames
+ * @param {PropertyKey[]} uMethodNames
  *   The method names of the underlying exo class that should be represented
  *   by transparently-forwarding methods of the revocable caretaker.
- * @param {RevocableKitOptions} [options]
+ * @param {RevocableKitOptions<U>} [options]
  * @returns {RevocableMakerKit<U>}
  */
 export const prepareRevocableMakerKit = (
@@ -75,22 +87,16 @@ export const prepareRevocableMakerKit = (
 ) => {
   const {
     uInterfaceName = uKindName,
-    extraMethodGuards = undefined,
-    extraMethods = undefined,
+    extraMethodGuards = {},
+    extraMethods = {},
   } = options;
   const RevocableIKit = harden({
     revoker: M.interface(`${uInterfaceName}_revoker`, {
       revoke: M.call().returns(M.boolean()),
     }),
-    revocable: M.interface(
-      `${uInterfaceName}_revocable`,
-      {
-        ...extraMethodGuards,
-      },
-      {
-        defaultGuards: 'raw',
-      },
-    ),
+    revocable: M.interface(`${uInterfaceName}_revocable`, extraMethodGuards, {
+      defaultGuards: 'raw',
+    }),
   });
 
   const revocableKindName = `${uKindName}_caretaker`;
@@ -101,9 +107,7 @@ export const prepareRevocableMakerKit = (
   const makeRevocableKit = zone.exoClassKit(
     revocableKindName,
     RevocableIKit,
-    underlying => ({
-      underlying,
-    }),
+    underlying => ({ underlying }),
     {
       revoker: {
         revoke() {
@@ -115,30 +119,10 @@ export const prepareRevocableMakerKit = (
           return true;
         },
       },
-      revocable: {
-        ...fromUniqueEntries(
-          uMethodNames.map(name => [
-            name,
-            {
-              // Use concise method syntax for exo methods
-              [name](...args) {
-                // @ts-expect-error normal exo-this typing confusion
-                const { underlying } = this.state;
-                underlying !== undefined ||
-                  Fail`${q(revocableKindName)} revoked`;
-                return underlying[name](...args);
-              },
-              // @ts-expect-error using possible symbol as index type
-            }[name],
-          ]),
-        ),
-        ...extraMethods,
-      },
+      revocable: wrapperMethods(revocableKindName, uMethodNames, extraMethods),
     },
     {
-      stateShape: {
-        underlying: M.opt(M.remotable('underlying')),
-      },
+      stateShape: { underlying: M.opt(M.remotable('underlying')) },
       receiveAmplifier: amp => {
         amplifier = amp;
       },
@@ -146,12 +130,9 @@ export const prepareRevocableMakerKit = (
   );
 
   /**
-   * @param {U} underlying
-   * @returns {U}
+   * @type {MakeRevocable}
    */
-  const makeRevocable = underlying =>
-    // @ts-expect-error some confusion about UU vs Guarded<U> I think
-    makeRevocableKit(underlying).revocable;
+  const makeRevocable = underlying => makeRevocableKit(underlying).revocable;
 
   /**
    * @param {U} revocable

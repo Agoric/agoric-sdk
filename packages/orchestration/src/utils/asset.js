@@ -27,7 +27,7 @@ export const assetOn = (baseDenom, baseName, brand, chainName, infoOf) => {
   if (!holdingInfo.connections)
     throw Error(`connections missing for ${chainName}`);
   const { channelId } =
-    holdingInfo.connections[issuerInfo.chainId].transferChannel;
+  holdingInfo.connections[issuerInfo.chainId].transferChannel;
   const denom = `ibc/${denomHash({ denom: baseDenom, channelId })}`;
   return harden([denom, detail]);
 };

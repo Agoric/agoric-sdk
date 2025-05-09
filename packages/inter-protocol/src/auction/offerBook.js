@@ -12,7 +12,11 @@ import {
   toScaledRateOfferKey,
 } from './sortedOffers.js';
 
-/** @import {Baggage} from '@agoric/vat-data' */
+/**
+ * @import {MapStore} from '@agoric/store';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {Key, Pattern} from '@endo/patterns';
+ */
 
 // multiple offers might be provided at the same time (since the time
 // granularity is limited to blocks), so we increment a sequenceNumber with each

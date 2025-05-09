@@ -1,4 +1,4 @@
-import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import type { EReturn } from '@endo/far';
 import { Far, makeMarshal } from '@endo/marshal';
 import anyTest, { type TestFn } from 'ava';

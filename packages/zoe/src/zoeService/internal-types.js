@@ -1,4 +1,10 @@
 // @jessie-check
+/// <reference types="@agoric/zoe/exported" />
+
+/**
+ * @import {FeeMintAccess, GetBrands, GetBundleIDFromInstallation, GetIssuers, InstallBundle, InstallBundleID, SourceBundle} from './types.js';
+ * @import {InstanceRecord} from './utils.js';
+ */
 
 /**
  * Create a purse for a new issuer
@@ -127,9 +133,9 @@
  * @property {GetBrands} getBrands
  * @property {GetIssuers} getIssuers
  * @property {import('./utils.js').GetTerms} getTerms
- * @property {GetOfferFilter} getOfferFilter
- * @property {SetOfferFilter} setOfferFilter
- * @property {GetInstallationForInstance} getInstallationForInstance
+ * @property {(instance: import('./utils.js').Instance<any>) => string[]} getOfferFilter
+ * @property {(instance: Instance, strings: string[]) => any} setOfferFilter
+ * @property {(instance: import('./utils.js').Instance<any>) => Promise<Installation>} getInstallationForInstance
  * @property {GetInstanceAdmin} getInstanceAdmin
  * @property {UnwrapInstallation} unwrapInstallation
  * @property {(invitationHandle: InvitationHandle) => import('@endo/patterns').Pattern | undefined} getProposalShapeForInvitation

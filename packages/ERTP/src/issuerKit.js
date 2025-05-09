@@ -10,9 +10,12 @@ import { coerceDisplayInfo } from './displayInfo.js';
 import { preparePaymentLedger } from './paymentLedger.js';
 
 /**
- * @import {AdditionalDisplayInfo, RecoverySetsOption, IssuerKit, PaymentLedger} from './types.js';
+ * @import {Key, Pattern} from '@endo/patterns';
+ * @import {Zone} from '@agoric/base-zone';
  * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
  * @import {TypedPattern} from '@agoric/internal';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {AdditionalDisplayInfo, RecoverySetsOption, IssuerKit, PaymentLedger} from './types.js';
  */
 
 /**
@@ -29,7 +32,7 @@ import { preparePaymentLedger } from './paymentLedger.js';
  *
  * @template {AssetKind} K
  * @param {IssuerRecord<K>} issuerRecord
- * @param {import('@agoric/zone').Zone} issuerZone
+ * @param {Zone} issuerZone
  * @param {RecoverySetsOption} recoverySetsState Omitted from issuerRecord
  *   because it was added in an upgrade.
  * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails in
@@ -97,7 +100,7 @@ const RECOVERY_SETS_STATE = 'recoverySetsState';
  * make a new one.
  *
  * @template {AssetKind} K
- * @param {import('@agoric/vat-data').Baggage} issuerBaggage
+ * @param {Baggage} issuerBaggage
  * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails in
  *   the middle of an atomic action (which btw should never happen), it
  *   potentially leaves its ledger in a corrupted state. If this function was
@@ -141,7 +144,7 @@ harden(upgradeIssuerKit);
 /**
  * Does baggage already have an issuerKit?
  *
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  */
 export const hasIssuer = baggage => baggage.has(INSTANCE_KEY);
 
@@ -181,7 +184,7 @@ export const hasIssuer = baggage => baggage.has(INSTANCE_KEY);
  *   basic fungible tokens.
  *
  *   `displayInfo` gives information to the UI on how to display the amount.
- * @param {import('@agoric/vat-data').Baggage} issuerBaggage
+ * @param {Baggage} issuerBaggage
  * @param {string} name
  * @param {K} [assetKind]
  * @param {AdditionalDisplayInfo} [displayInfo]
@@ -240,7 +243,7 @@ harden(makeDurableIssuerKit);
  *   basic fungible tokens.
  *
  *   `displayInfo` gives information to the UI on how to display the amount.
- * @param {import('@agoric/vat-data').Baggage} issuerBaggage
+ * @param {Baggage} issuerBaggage
  * @param {string} name
  * @param {K} [assetKind]
  * @param {AdditionalDisplayInfo} [displayInfo]
@@ -252,7 +255,7 @@ harden(makeDurableIssuerKit);
  *   anything else is corrupted by that corrupted state. See
  *   https://github.com/Agoric/agoric-sdk/issues/3434
  * @param {O} [options]
- * @returns {O['elementShape'] extends TypedPattern<infer T>
+ * @returns {O['elementShape'] extends TypedPattern<infer T extends Key>
  *     ? IssuerKit<K, T>
  *     : IssuerKit<K>}
  */
@@ -328,7 +331,7 @@ harden(prepareIssuerKit);
  *   anything else is corrupted by that corrupted state. See
  *   https://github.com/Agoric/agoric-sdk/issues/3434
  * @param {O} [options]
- * @returns {O['elementShape'] extends TypedPattern<infer T>
+ * @returns {O['elementShape'] extends TypedPattern<infer T extends Key>
  *     ? IssuerKit<K, T>
  *     : IssuerKit<K>}
  */

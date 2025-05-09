@@ -19,6 +19,7 @@ import { makeZcfTools } from './zcf-tools.js';
  * @import {NameHub} from '@agoric/vats';
  * @import {Remote} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
+ * @import {Pattern} from '@endo/patterns';
  * @import {CosmosInterchainService} from '../exos/exo-interfaces.js';
  */
 
@@ -37,6 +38,9 @@ import { makeZcfTools } from './zcf-tools.js';
  * @property {boolean} [publishAccountInfo] - Controls whether account
  *   information (address, channel identifiers for ICAs) should be automatically
  *   published to vstorage
+ * @property {Pattern} [chainInfoValueShape] - Overrides the default valueShape
+ *   for ChainHub's `chainInfos: MapStore`. Intended to support a legacy version
+ *   of ChainHub for FastUSDC.
  */
 
 /**
@@ -49,6 +53,8 @@ import { makeZcfTools } from './zcf-tools.js';
  * @param {Baggage} baggage
  * @param {OrchestrationPowers} remotePowers
  * @param {Marshaller} marshaller
+ * @param {object} [opts]
+ * @param {WithOrchestrationOpts['chainInfoValueShape']} [opts.chainInfoValueShape]
  * @internal
  */
 export const provideOrchestration = (
@@ -56,6 +62,7 @@ export const provideOrchestration = (
   baggage,
   remotePowers,
   marshaller,
+  opts = {},
 ) => {
   // separate zones
   const zones = (() => {
@@ -78,7 +85,9 @@ export const provideOrchestration = (
 
   const vowTools = prepareVowTools(zones.vows);
 
-  const chainHub = makeChainHub(zones.chainHub, agoricNames, vowTools);
+  const chainHub = makeChainHub(zones.chainHub, agoricNames, vowTools, {
+    chainInfoValueShape: opts.chainInfoValueShape,
+  });
 
   const zoeTools = makeZoeTools(zcf, vowTools);
 
@@ -213,11 +222,13 @@ export const withOrchestration =
   (contractFn, opts) => async (zcf, privateArgs, baggage) => {
     const { marshaller, ...allOrchPowers } = privateArgs;
     const { storageNode: _, ...requiredOrchPowers } = allOrchPowers;
+    const { publishAccountInfo, chainInfoValueShape } = opts ?? {};
     const { zone, ...tools } = provideOrchestration(
       zcf,
       baggage,
-      opts?.publishAccountInfo ? allOrchPowers : requiredOrchPowers,
+      publishAccountInfo ? allOrchPowers : requiredOrchPowers,
       marshaller,
+      { chainInfoValueShape },
     );
     return contractFn(zcf, privateArgs, zone, tools);
   };

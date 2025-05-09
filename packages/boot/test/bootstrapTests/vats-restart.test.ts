@@ -98,7 +98,7 @@ test.serial('make IBC callbacks before upgrade', async t => {
 });
 
 test.serial('run restart-vats proposal', async t => {
-  const { controller, buildProposal, evalProposal } = t.context;
+  const { buildProposal, evalProposal } = t.context;
 
   t.log('building proposal');
   await evalProposal(

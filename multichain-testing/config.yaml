@@ -31,10 +31,27 @@ chains:
       faucet: 8082
     resources:
       cpu: 1
-      memory: 3Gi
+      memory: 4Gi
   - id: cosmoshublocal
     name: cosmoshub
     numValidators: 1
+    genesis:
+      app_state:
+        staking:
+          params:
+            unbonding_time: '2m'
+        interchainaccounts:
+          host_genesis_state:
+            params:
+              host_enabled: true
+              allow_messages: ['*']
+        interchainquery:
+          host_port: 'icqhost'
+          params:
+            host_enabled: true
+            allow_queries:
+              - /cosmos.bank.v1beta1.Query/Balance
+              - /cosmos.bank.v1beta1.Query/AllBalances
     faucet:
       enabled: true
       type: starship
@@ -86,8 +103,8 @@ chains:
       enabled: true
       type: starship
       resources:
-        cpu: 200m
-        memory: 500Mi  # Increase memory
+        cpu: 400m
+        memory: 800Mi  # Increase memory
     ports:
       rest: 1317
       rpc: 26659
@@ -95,10 +112,20 @@ chains:
       faucet: 8079
     resources:
       cpu: 1
-      memory: 2Gi
+      memory: 3Gi
   - id: stridelocal
     name: stride
     numValidators: 1
+    genesis:
+      app_state:
+        staking:
+          params:
+            unbonding_time: '2m'
+        interchainaccounts:
+          host_genesis_state:
+            params:
+              host_enabled: true
+              allow_messages: ['*']
     ics:
       enabled: true
       provider: cosmoshublocal 
@@ -110,6 +137,31 @@ chains:
       rpc: 26653
       grpc: 9099
       faucet: 8089
+    assets:
+      - base: ustrd
+        description: "The native token of Stride Network."
+        name: Stride
+        display: strd
+        symbol: STRD
+        logo_URIs:
+          png: "https://raw.githubusercontent.com/cosmos/chain-registry/master/stride/images/strd.png"
+        denom_units:
+          - denom: ustrd
+            exponent: 0
+          - denom: strd
+            exponent: 6
+      - base: stuatom
+        description: "The LSD token of Atom on Stride Network."
+        name: "Stride Staked ATOM"
+        display: statom
+        symbol: stATOM
+        logo_URIs:
+          png: "https://raw.githubusercontent.com/cosmos/chain-registry/master/stride/images/statom.png"
+        denom_units:
+          - denom: stuatom
+            exponent: 0
+          - denom: statom
+            exponent: 6
 
 relayers:
   - name: stride-cosmoshub

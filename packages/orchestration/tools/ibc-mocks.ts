@@ -21,7 +21,7 @@ import type {
 } from '@agoric/vats';
 import { LOCALCHAIN_DEFAULT_ADDRESS } from '@agoric/vats/tools/fake-bridge.js';
 import { atob, btoa, decodeBase64, encodeBase64 } from '@endo/base64';
-import type { ChainAddress } from '../src/orchestration-api.js';
+import type { CosmosChainAddress, Denom } from '../src/orchestration-api.js';
 import { makeQueryPacket, makeTxPacket } from '../src/utils/packet.js';
 
 interface EncoderCommon<T> {
@@ -152,20 +152,78 @@ export function buildQueryPacketString(
   return btoa(makeQueryPacket(msgs.map(msg => toRequestQueryJson(msg, opts))));
 }
 
-type BuildVTransferEventParams = {
-  event?: VTransferIBCEvent['event'];
-  /* defaults to cosmos1AccAddress. set to `agoric1fakeLCAAddress` to simulate an outgoing transfer event */
-  sender?: ChainAddress['value'];
-  /*  defaults to agoric1fakeLCAAddress. set to a different value to simulate an outgoing transfer event */
-  receiver?: ChainAddress['value'];
-  target?: ChainAddress['value'];
+/**
+ * Fields that are common to every vtransfer IBC event.
+ */
+type BuildVTransferEventBaseParams = {
+  /**
+   * defaults to `cosmos1AccAddress` – set to `agoric1fakeLCAAddress` to
+   *  simulate an outgoing transfer.
+   */
+  sender?: CosmosChainAddress['value'] | string;
+
+  /**
+   * defaults to `agoric1fakeLCAAddress` – set differently to simulate
+   *  an outgoing transfer.
+   */
+  receiver?: CosmosChainAddress['value'] | string;
+
+  target?: CosmosChainAddress['value'] | string;
   amount?: bigint;
-  denom?: string;
+  denom?: Denom;
   destinationChannel?: IBCChannelID;
   sourceChannel?: IBCChannelID;
-  /* support bigint and string, to facilitate bootstrap testing */
+
+  /** supports `bigint` or `string` so tests can pass encoded numbers */
   sequence?: PacketSDKType['sequence'] | JsonSafe<PacketSDKType['sequence']>;
+  memo?: string;
+  failed?: boolean;
 };
+
+/**
+ * Parameters allowed for the ACK-carrying events.
+ */
+type VTransferAckParams = BuildVTransferEventBaseParams & {
+  event?: 'acknowledgementPacket' | 'writeAcknowledgement';
+  /**
+   * if present, helper encodes `{ error: acknowledgementError }`
+   *  instead of the success result
+   */
+  acknowledgementError?: string;
+  /** override the default `"agoric123"` relayer address */
+  relayer?: string;
+};
+
+/**
+ * Parameters allowed for a timeout event (no ack/relayer).
+ */
+type VTransferTimeoutParams = BuildVTransferEventBaseParams & {
+  event: 'timeoutPacket';
+  acknowledgementError?: never;
+  relayer?: never;
+};
+
+type VTransferParams = VTransferAckParams | VTransferTimeoutParams;
+
+/** helper to turn param object into correct return */
+type ExtractEvent<P> =
+  // event present?
+  P extends { event: infer Ev }
+    ? // undefined means “use default”
+      Ev extends undefined
+      ? 'acknowledgementPacket'
+      : Ev
+    : // no `event` entry, use default
+      'acknowledgementPacket';
+
+type BuildVTransferEventResult<P extends VTransferParams> = VTransferByEvent<
+  ExtractEvent<P>
+>;
+
+type VTransferByEvent<E extends VTransferIBCEvent['event']> = Extract<
+  VTransferIBCEvent,
+  { event: E }
+>;
 
 /**
  * `buildVTransferEvent` can be used with `transferBridge` to simulate incoming
@@ -189,45 +247,70 @@ type BuildVTransferEventParams = {
  *
  * XXX integrate vlocalchain and vtransfer ScopedBridgeManagers
  * in test supports.
- *
- * @param {{BuildVTransferEventParams}} args
  */
-export const buildVTransferEvent = ({
-  event = 'acknowledgementPacket' as const,
-  sender = 'cosmos1AccAddress',
-  receiver = LOCALCHAIN_DEFAULT_ADDRESS,
-  target = LOCALCHAIN_DEFAULT_ADDRESS,
-  amount = 10n,
-  denom = 'uatom',
-  destinationChannel = 'channel-5' as IBCChannelID,
-  sourceChannel = 'channel-405' as IBCChannelID,
-  sequence = 0n,
-}: BuildVTransferEventParams = {}): VTransferIBCEvent => ({
-  type: VTRANSFER_IBC_EVENT,
-  blockHeight: 0,
-  blockTime: 0,
-  event,
-  acknowledgement: btoa(JSON.stringify({ result: 'AQ==' })),
-  relayer: 'agoric123',
-  target,
-  packet: {
-    data: btoa(
+export function buildVTransferEvent<P extends VTransferParams>(
+  params: P,
+): BuildVTransferEventResult<P> {
+  const {
+    event = 'acknowledgementPacket',
+    sender = 'cosmos1AccAddress',
+    receiver = LOCALCHAIN_DEFAULT_ADDRESS,
+    target = LOCALCHAIN_DEFAULT_ADDRESS,
+    amount = 10n,
+    denom = 'uatom',
+    destinationChannel = 'channel-0',
+    sourceChannel = 'channel-405',
+    sequence = 0n,
+    memo = '',
+    relayer = 'agoric123',
+    acknowledgementError,
+  } = params satisfies VTransferParams;
+
+  const base = {
+    type: VTRANSFER_IBC_EVENT,
+    blockHeight: 0,
+    blockTime: 0,
+    event,
+    target,
+    packet: {
+      data: btoa(
+        JSON.stringify(
+          FungibleTokenPacketData.fromPartial({
+            amount: String(amount),
+            denom,
+            sender,
+            receiver,
+            memo,
+          }),
+        ),
+      ),
+      destination_channel: destinationChannel as IBCChannelID,
+      source_channel: sourceChannel as IBCChannelID,
+      destination_port: 'transfer',
+      source_port: 'transfer',
+      // @ts-expect-error – supports `bigint` or `string` so tests can pass encoded numbers
+      sequence,
+    } satisfies IBCPacket,
+  };
+
+  /** `timeoutPacket` */
+  if (event === 'timeoutPacket') {
+    return base as BuildVTransferEventResult<P>;
+  }
+
+  /** `acknowledgementPacket`, `writeAcknowledgement`*/
+  return {
+    ...base,
+    relayer,
+    acknowledgement: btoa(
       JSON.stringify(
-        FungibleTokenPacketData.fromPartial({
-          amount: String(amount),
-          denom,
-          sender,
-          receiver,
-        }),
+        acknowledgementError
+          ? { error: acknowledgementError }
+          : { result: 'AQ==' },
       ),
     ),
-    destination_channel: destinationChannel,
-    source_channel: sourceChannel,
-    destination_port: 'transfer',
-    source_port: 'transfer',
-    sequence,
-  } as IBCPacket,
-});
+  } as BuildVTransferEventResult<P>;
+}
 
 export function createMockAckMap(
   mockMap: Record<string, { msg: string; ack: string }>,

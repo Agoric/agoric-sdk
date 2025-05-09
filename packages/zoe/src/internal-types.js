@@ -2,6 +2,16 @@
 /// <reference types="@agoric/ertp/exported" />
 
 /**
+ * @import {RemotableObject, Passable} from '@endo/pass-style';
+ * @import {Pattern} from '@endo/patterns';
+ * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {IssuerOptionsRecord, IssuerRecord} from '@agoric/ertp';
+ * @import {Allocation, PaymentPKeywordRecord, UserSeat, Completion, ZoeIssuerRecord} from './types-index.js';
+ * @import {InvitationHandle, BrandKeywordRecord, AnyTerms} from './types.js';
+ */
+
+/**
  * @typedef {object} SeatData
  * @property {ProposalRecord} proposal
  * @property {Allocation} initialAllocation
@@ -19,7 +29,7 @@
 
 /**
  * @typedef WithdrawFacet
- * @property {(allocation:Allocation) => PaymentPKeywordRecord} withdrawPayments
+ * @property {(allocation: Allocation) => PaymentPKeywordRecord} withdrawPayments
  */
 
 /**
@@ -43,7 +53,7 @@
  * @param {WithdrawFacet} withdrawFacet
  * @param {ERef<ExitObj>} exitObj
  * @param {ERef<unknown>} [offerResult]
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  * @returns {ZoeSeatAdminKit}
  */
 
@@ -57,12 +67,12 @@
  * @typedef ZoeSeatAdminMethods
  * @property {(allocation: Allocation) => void} replaceAllocation
  * @property {ZoeSeatAdminExit} exit
- * @property {import('@agoric/swingset-vat').ShutdownWithFailure} fail called with the reason
+ * @property {ShutdownWithFailure} fail called with the reason
  * for calling fail on this seat, where reason is normally an instanceof Error.
  * @property {() => Subscriber<AmountKeywordRecord>} getExitSubscriber
  */
 /**
- * @typedef {import('@endo/marshal').RemotableObject & ZoeSeatAdminMethods} ZoeSeatAdmin
+ * @typedef {RemotableObject & ZoeSeatAdminMethods} ZoeSeatAdmin
  */
 
 /**
@@ -71,7 +81,7 @@
 
 /**
  * @typedef {object} HandleOfferResult
- * @property {Promise<import('@endo/marshal').Passable>} offerResultPromise
+ * @property {Promise<Passable>} offerResultPromise
  * @property {ExitObj} exitObj
  */
 
@@ -96,7 +106,7 @@
  * @property {() => string[]} getOfferFilter
  * @property {() => Installation} getInstallation
  * @property {(completion: Completion) => void} exitAllSeats
- * @property {import('@agoric/swingset-vat').ShutdownWithFailure} failAllSeats
+ * @property {ShutdownWithFailure} failAllSeats
  * @property {() => void} stopAcceptingOffers
  * @property {(string: string) => boolean} isBlocked
  * @property {(handleOfferObj: HandleOfferObj, publicFacet: unknown) => void} initDelayedState
@@ -128,13 +138,13 @@
  * @property {ZoeInstanceAdminMakeInvitation} makeInvitation
  * @property {<I extends Issuer>(issuerP: ERef<I>,
  *             keyword: Keyword
- *            ) => Promise<I extends Issuer<infer K, infer M> ? IssuerRecord<K, M> : never>} saveIssuer
+ *            ) => Promise<I extends Issuer<infer K, infer M> ? ZoeIssuerRecord<K, M> : never>} saveIssuer
  * @property {MakeZoeMint} makeZoeMint
  * @property {RegisterFeeMint} registerFeeMint
  * @property {MakeNoEscrowSeat} makeNoEscrowSeat
  * @property {ReplaceAllocations} replaceAllocations
  * @property {(completion: Completion) => void} exitAllSeats
- * @property {import('@agoric/swingset-vat').ShutdownWithFailure} failAllSeats
+ * @property {ShutdownWithFailure} failAllSeats
  * @property {(seatHandle: SeatHandle, completion: Completion) => void} exitSeat
  * @property {(seatHandle: SeatHandle, reason: Error) => void} failSeat
  * @property {() => void} stopAcceptingOffers
@@ -164,7 +174,7 @@
  * @param {Keyword} keyword
  * @param {AssetKind} [assetKind]
  * @param {AdditionalDisplayInfo} [displayInfo]
- * @param {import('@agoric/ertp').IssuerOptionsRecord} [options]
+ * @param {IssuerOptionsRecord} [options]
  * @returns {ZoeMint}
  */
 
@@ -256,7 +266,7 @@
  */
 
 /**
- * @typedef {Array<IssuerRecord>} IssuerRecords
+ * @typedef {Array<ZoeIssuerRecord>} IssuerRecords
  */
 
 /**
@@ -291,7 +301,7 @@
  * contract instance
  *
  * @param {Keyword} keyword
- * @param {IssuerRecord} issuerRecord
+ * @param {ZoeIssuerRecord} issuerRecord
  * @returns {void}
  */
 

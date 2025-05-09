@@ -22,9 +22,11 @@ import {
 } from './virtual-purse.js';
 
 /**
+ * @import {Amount, DisplayInfo, Issuer, IssuerKit, Payment} from '@agoric/ertp';
  * @import {Guarded} from '@endo/exo';
  * @import {RemotableObject} from '@endo/pass-style';
  * @import {BridgeMessage, BridgeBigInt} from '@agoric/cosmic-swingset/src/types.js';
+ * @import {VirtualPurse} from './virtual-purse.js';
  */
 
 const { VirtualPurseControllerI } = makeVirtualPurseKitIKit();
@@ -35,10 +37,6 @@ const BridgeChannelI = M.interface('BridgeChannel', {
   toBridge:
     getInterfaceGuardPayload(BridgeScopedManagerI).methodGuards.toBridge,
 });
-
-/**
- * @typedef {Awaited<ReturnType<ReturnType<typeof prepareVirtualPurse>>>} VirtualPurse
- */
 
 /**
  * @typedef {Guarded<{

@@ -2,6 +2,10 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
+/**
+ * @import {ZoeService} from '@agoric/zoe';
+ */
+
 const setupBasicMints = () => {
   const all = [
     makeIssuerKit('moola'),

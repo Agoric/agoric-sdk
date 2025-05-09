@@ -59,8 +59,8 @@ export function makeMessage(target, method, args = [], result = null) {
   return vatDeliverObject;
 }
 
-export function makeStartVat(vatParameters) {
-  return harden(['startVat', vatParameters]);
+export function makeStartVat(vatParametersCapData = kser(undefined)) {
+  return harden(['startVat', vatParametersCapData]);
 }
 
 export function makeBringOutYourDead() {

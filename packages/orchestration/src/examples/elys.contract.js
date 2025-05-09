@@ -105,6 +105,7 @@ harden(StakingTapStateShape);
  *   assetInfo?: [Denom, DenomDetail & { brandKey?: string }][];
  *   feeConfig: FeeConfigShape;
  *   allowedChains: string[];
+ *   storageNode: StorageNode;
  * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
@@ -183,7 +184,7 @@ const contract = async (
     chainHub,
   });
 
-  const creatorFacet = prepareChainHubAdmin(zone, chainHub);
+  
 
   registerChainsAndAssets(
     chainHub,
@@ -206,11 +207,22 @@ const contract = async (
     }),
   );
 
+  // set local account address in storage node
   const { when } = vowTools;
+
+  
+  
+  const address = await E(when(icaAndLocalAccount)).getAddress();
+  const creatorFacet = zone.exo('Elys Creator', undefined, {
+    getLocalAddress () { return address},
+    async prepareChainHubAdmin () { return prepareChainHubAdmin(zone, chainHub); },
+  });
+  // const storageNode = await E(privateArgs.storageNode).makeChildNode('address');
+  // await E(privateArgs.storageNode).setValue( JSON.stringify(address) );
 
   return {
     publicFacet: zone.exo('Public', interfaceTODO, {
-      getLocalAddress: () => E(when(icaAndLocalAccount)).getAddress(),
+      getLocalAddress: () => address,
     }),
     creatorFacet,
   };

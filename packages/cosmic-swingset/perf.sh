@@ -10,7 +10,7 @@ b64=$(echo $hex | xxd -r -p | base64 | tr '+/' '-_')
 # echo $b64
 
 # Query the bank balance of (potentially) an empty account
-server=http://localhost:1317
+server=http://localhost:1316
 url="$server/bank/balances/$addr?height=$height"
 #url="$server/agoric/swingset/egress/$b64"
 #url=$server/agoric/swingset/storage/data/activityhash

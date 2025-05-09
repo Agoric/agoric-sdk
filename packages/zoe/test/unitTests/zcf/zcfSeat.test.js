@@ -9,6 +9,10 @@ import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 import { setup } from '../setupBasicMints.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 
+/**
+ * @import {ZCF} from '@agoric/zoe';
+ */
+
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const contractRoot = `${dirname}/zcfTesterContract.js`;

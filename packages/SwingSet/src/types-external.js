@@ -1,10 +1,11 @@
-/** @import { ERef } from '@endo/far'; */
-
 export {};
 
 /**
  * @import {Guarded} from '@endo/exo';
+ * @import {ERef} from '@endo/far';
  * @import {Passable, RemotableObject} from '@endo/pass-style';
+ * @import {LimitedConsole} from '@agoric/internal/src/js-utils.js';
+ * @import {SlogProps, SlogDurationProps} from './controller/controller.js';
  */
 
 /* This file defines types that part of the external API of swingset. That
@@ -12,18 +13,30 @@ export {};
  * with, like VatAdminService. */
 
 /**
- * @typedef {'getExport' | 'nestedEvaluate' | 'endoZipBase64'} BundleFormat
+ * @template T
+ * @typedef {'Device' & { __deviceType__: T }} Device
+ */
+
+/** @typedef {<T>(target: Device<T>) => T} DProxy (approximately) */
+
+/**
+ * @typedef {(extraProps?: SlogDurationProps) => void} FinishSlogDuration
  */
 
 /**
  * @typedef {import('@endo/marshal').CapData<string>} SwingSetCapData
  */
 
+// TODO move Bundle types into Endo
 /**
+ * @typedef {'getExport' | 'nestedEvaluate' | 'endoZipBase64'} BundleFormat
  * @typedef { { moduleFormat: 'getExport', source: string, sourceMap?: string } } GetExportBundle
  * @typedef { { moduleFormat: 'nestedEvaluate', source: string, sourceMap?: string } } NestedEvaluateBundle
- * @typedef { EndoZipBase64Bundle | GetExportBundle | NestedEvaluateBundle } Bundle
- *
+ * @typedef { { moduleFormat: 'test' } } TestBundle
+ * @typedef { EndoZipBase64Bundle | GetExportBundle | NestedEvaluateBundle | TestBundle} Bundle
+ */
+
+/**
  * @typedef { 'local' | 'node-subprocess' | 'xsnap' | 'xs-worker' } ManagerType
  */
 
@@ -128,15 +141,9 @@ export {};
  * @typedef { Awaited<ReturnType<typeof import('@agoric/xsnap').xsnap>> } XSnap
  * @typedef { (dr: VatDeliveryResult) => void } SlogFinishDelivery
  * @typedef { (ksr: KernelSyscallResult, vsr: VatSyscallResult) => void } SlogFinishSyscall
- * @typedef { { write: ({}) => void,
- *              vatConsole: (vatID: string, origConsole: {}) => {},
- *              delivery: (vatID: string,
- *                         newCrankNum: BigInt, newDeliveryNum: BigInt,
- *                         kd: KernelDeliveryObject, vd: VatDeliveryObject,
- *                         replay?: boolean) => SlogFinishDelivery,
- *              syscall: (vatID: string,
- *                        ksc: KernelSyscallObject | undefined,
- *                        vsc: VatSyscallObject) => SlogFinishSyscall,
+ * @typedef { { write: (obj: SlogProps) => void,
+ *              startDuration:     (labels: readonly [startLabel: string, endLabel: string],
+ *                                  startProps: SlogDurationProps) => FinishSlogDuration,
  *              provideVatSlogger: (vatID: string,
  *                                  dynamic?: boolean,
  *                                  description?: string,
@@ -144,6 +151,20 @@ export {};
  *                                  vatSourceBundle?: unknown,
  *                                  managerType?: string,
  *                                  vatParameters?: unknown) => { vatSlog: VatSlog },
+ *              vatConsole: (vatID: string, origConsole: LimitedConsole) => LimitedConsole,
+ *              startup: (vatID: string) => () => void,
+ *              delivery: (vatID: string,
+ *                         newCrankNum: BigInt, newDeliveryNum: BigInt,
+ *                         kd: KernelDeliveryObject, vd: VatDeliveryObject,
+ *                         replay?: boolean) => SlogFinishDelivery,
+ *              syscall: (vatID: string,
+ *                        ksc: KernelSyscallObject | undefined,
+ *                        vsc: VatSyscallObject) => SlogFinishSyscall,
+ *              changeCList: (vatID: string,
+ *                            crankNum: BigInt,
+ *                            mode: 'import' | 'export' | 'drop',
+ *                            kernelSlot: string,
+ *                            vatSlot: string) => void,
  *              terminateVat: (vatID: string, shouldReject: boolean, info: SwingSetCapData) => void,
  *             } } KernelSlog
  * @typedef {{
@@ -376,7 +397,9 @@ export {};
  *
  * @typedef { { vatParameters?: object, upgradeMessage?: string } } VatUpgradeOptions
  * @typedef { { incarnationNumber: number } } VatUpgradeResults
- *
+ */
+
+/**
  * @callback ShutdownWithFailure
  * Called to shut something down because something went wrong, where the reason
  * is supposed to be an Error that describes what went wrong. Some valid
@@ -387,7 +410,9 @@ export {};
  *
  * @param {Error} reason
  * @returns {void}
- *
+ */
+
+/**
  * @typedef {object} VatAdminFacet
  * A powerful object corresponding with a vat
  * that can be used to upgrade it with new code or parameters,
@@ -405,8 +430,9 @@ export {};
  * in which the JS memory space is abandoned. The new image is launched with access to 'baggage'
  * and any durable storage reachable from it, and must fulfill all the obligations of the previous
  * incarnation.
- *
- *
+ */
+
+/**
  * @typedef {{ adminNode: Guarded<VatAdminFacet>, root: object }} CreateVatResults
  *
  * @typedef {object} VatAdminSvc
@@ -415,5 +441,4 @@ export {};
  * @property {(name: string) => ERef<BundleCap>} getNamedBundleCap
  * @property {(name: string) => ERef<BundleID>} getBundleIDByName
  * @property {(bundleCap: BundleCap, options?: DynamicVatOptions) => ERef<CreateVatResults>} createVat
- *
  */

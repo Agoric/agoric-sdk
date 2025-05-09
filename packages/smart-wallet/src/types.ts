@@ -5,13 +5,13 @@
  * Downside is it can't reference any ambient types, which most of agoric-sdk type are presently.
  */
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- fails to notice the @see uses
 import type { agoric } from '@agoric/cosmic-proto/agoric/bundle.js';
-import type { AgoricNamesRemotes } from '@agoric/vats/tools/board-utils.js';
-import type { PublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Payment } from '@agoric/ertp';
+import type { AgoricNamesRemotes } from '@agoric/vats/tools/board-utils.js';
+import type { InvitationDetails } from '@agoric/zoe';
+import type { PublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { OfferSpec } from './offers.js';
-
-declare const CapDataShape: unique symbol;
 
 // Match the type in Zoe, which can't be imported because it's ambient.
 // This omits the parameters that aren't used in this module.

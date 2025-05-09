@@ -55,7 +55,7 @@ export const startElys = async (
   const marshaller = await E(board).getPublishingMarshaller();
 
   const feeConfig = {
-    feeCollector: 'agoric1feeCollectorAddress',
+    feeCollector: 'agoric1euw2t0lxgeerlpj0tcy77f9syrmgx26ehdx3sq',
     onBoardRate: {
       nominator: BigInt(20),
       denominator: BigInt(100),
@@ -89,7 +89,11 @@ export const startElys = async (
     ),
   };
 
-  const { instance } = await E(startUpgradable)(startOpts);
+  const { instance, creatorFacet } = await E(startUpgradable)(startOpts);
+  const addressNode = await E(storageNode).makeChildNode('address');
+  const address = await E(creatorFacet).getLocalAddress();
+  await E(addressNode).setValue( JSON.stringify(address) );
+
   produceInstance.resolve(instance);
 };
 harden(startElys);

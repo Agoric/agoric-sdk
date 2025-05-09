@@ -50,7 +50,7 @@ export const upgradeElysContract = async (
   const marshaller = await E(board).getReadonlyMarshaller();
   const storageNode = await makeStorageNodeChild(chainStorage, 'ElysContract');
   const feeConfig = {
-    feeCollector: 'agoric1feeCollectorAddress',
+    feeCollector: 'agoric1euw2t0lxgeerlpj0tcy77f9syrmgx26ehdx3sq',
     onBoardRate: {
       nominator: BigInt(20),
       denominator: BigInt(100),
