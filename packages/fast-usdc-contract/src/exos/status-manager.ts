@@ -23,7 +23,6 @@ import type {
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
 import type { MapStore, SetStore } from '@agoric/store';
-import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
 import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
 import type { Zone } from '@agoric/zone';
 import { Fail, makeError, q } from '@endo/errors';
@@ -33,35 +32,13 @@ import { chainOfAccount } from '@agoric/orchestration/src/utils/address.js';
 import type { AccountId, CaipChainId } from '@agoric/orchestration';
 import { ForwardFailedTxShape, type ForwardFailedTx } from '../typeGuards.ts';
 import { type RouteHealth } from '../utils/route-health.ts';
-
-/** The string template is for developer visibility but not meant to ever be parsed. */
-type PendingTxKey = `pendingTx:${bigint}:${NobleAddress}`;
+import { makeSettlementMatching } from '../utils/settlement-matching.ts';
 
 interface StatusManagerPowers {
   log?: LogFn;
   marshaller: ERef<Marshaller>;
   routeHealth: RouteHealth;
 }
-
-/**
- * Create the key for the pendingTxs MapStore.
- *
- * The key is a composite but not meant to be parsable.
- * @param nfa
- * @param amount
- */
-const makePendingTxKey = (nfa: NobleAddress, amount: bigint): PendingTxKey =>
-  // amount can't contain colon
-  `pendingTx:${amount}:${nfa}`;
-
-/**
- * Get the key for the pendingTxs MapStore.
- * @param evidence
- */
-const pendingTxKeyOf = (evidence: CctpTxEvidence): PendingTxKey => {
-  const { amount, forwardingAddress } = evidence.tx;
-  return makePendingTxKey(forwardingAddress, amount);
-};
 
 export const stateShape = harden({
   pendingSettleTxs: M.remotable(),
@@ -82,15 +59,41 @@ export const prepareStatusManager = (
   { marshaller, routeHealth }: StatusManagerPowers,
 ) => {
   /**
-   * Keyed by a tuple of the Noble Forwarding Account and amount.
+   * Keyed by Noble Forwarding Account
+   *
+   * Transactions that are `Advanced`, `AdvanceFailed`, or `AdvanceSkipped`
+   * and are awaiting a mint.
    */
-  const pendingSettleTxs: MapStore<PendingTxKey, PendingTx[]> = zone.mapStore(
+  const pendingSettleTxs: MapStore<NobleAddress, PendingTx[]> = zone.mapStore(
     'PendingSettleTxs',
     {
       keyShape: M.string(),
       valueShape: M.arrayOf(PendingTxShape),
     },
   );
+
+  /**
+   * Create the settlement matching utility for the pending transactions.
+   * This provides optimized functions for adding and matching settlement transactions.
+   */
+  const { addPendingSettleTx, matchSettlement } =
+    makeSettlementMatching(pendingSettleTxs);
+
+  /**
+   * Migrate `pendingSettleTxs` to be keyed by NFA instead of the tuple of NFA
+   * and amount.
+   *
+   * Uses `zone.makeOnce` as a cheap abstraction for "only do this once".
+   */
+  zone.makeOnce('migrateToPendingSettleTxsByNFA', () => {
+    const current = [...pendingSettleTxs.values()]; // XXX copy necessary?
+    pendingSettleTxs.clear();
+    for (const txs of current) {
+      for (const tx of txs) {
+        addPendingSettleTx(tx);
+      }
+    }
+  });
 
   /**
    * Transactions seen *ever* by the contract.
@@ -191,11 +194,7 @@ export const prepareStatusManager = (
     }
     seenTxs.init(txHash, evidence.blockTimestamp);
 
-    appendToStoredArray(
-      pendingSettleTxs,
-      pendingTxKeyOf(evidence),
-      harden({ ...evidence, status }),
-    );
+    addPendingSettleTx({ ...evidence, status } as PendingTx);
     publishEvidence(txHash, evidence);
     if (status === PendingTxStatus.AdvanceSkipped) {
       publishTxnRecord(txHash, harden({ status, risksIdentified }));
@@ -216,9 +215,8 @@ export const prepareStatusManager = (
     { nfa, amount }: { nfa: NobleAddress; amount: bigint },
     status: PendingTxStatus,
   ): void {
-    const key = makePendingTxKey(nfa, amount);
-    pendingSettleTxs.has(key) || Fail`no advancing tx with ${{ nfa, amount }}`;
-    const pending = pendingSettleTxs.get(key);
+    pendingSettleTxs.has(nfa) || Fail`no advancing tx with ${{ nfa, amount }}`;
+    const pending = pendingSettleTxs.get(nfa);
     const ix = pending.findIndex(tx => tx.status === PendingTxStatus.Advancing);
     ix >= 0 || Fail`no advancing tx with ${{ nfa, amount }}`;
     const [prefix, tx, suffix] = [
@@ -227,7 +225,7 @@ export const prepareStatusManager = (
       pending.slice(ix + 1),
     ];
     const txpost = { ...tx, status };
-    pendingSettleTxs.set(key, harden([...prefix, txpost, ...suffix]));
+    pendingSettleTxs.set(nfa, harden([...prefix, txpost, ...suffix]));
     publishTxnRecord(tx.txHash, harden({ status }));
   }
 
@@ -248,12 +246,11 @@ export const prepareStatusManager = (
       hasBeenObserved: M.call(CctpTxEvidenceShape).returns(M.boolean()),
       deleteCompletedTxs: M.call().returns(M.undefined()),
       dequeueStatus: M.call(M.string(), M.bigint()).returns(
-        M.or(
-          {
+        M.arrayOf(
+          M.splitRecord({
             txHash: EvmHashShape,
             status: M.or(...Object.values(PendingTxStatus)),
-          },
-          M.undefined(),
+          }),
         ),
       ),
       disbursed: M.call(EvmHashShape, AmountKeywordRecordShape).returns(
@@ -390,35 +387,21 @@ export const prepareStatusManager = (
       },
 
       /**
-       * Remove and return the oldest pending settlement transaction that matches the given
-       * forwarding account and amount. Since multiple pending transactions may exist with
-       * identical (account, amount) pairs, we process them in FIFO order.
+       *  XXX rename dequeuePendingSettlement
+       * Find and match pending transactions for a settlement.
+       * This method uses the new settlement matching algorithm to find either
+       * a single transaction or a combination of transactions that sum to the
+       * settlement amount.
        *
-       * @param {bigint} nfa
-       * @param {NobleAddress} amount
-       * @returns {undefined} if no pending transactions exist for this address and amount combination.
+       * If a match is found, the matched transactions are removed from the pending
+       * transactions store and the first transaction's status and hash are returned.
+       *
+       * @param {NobleAddress} nfa - Noble forwarding address
+       * @param {bigint} amount - Amount to match
+       * @returns {PendingTx[]} - Status and hash of the first matched transaction, or undefined if no match
        */
-      dequeueStatus(
-        nfa: NobleAddress,
-        amount: bigint,
-      ): { txHash: EvmHash; status: PendingTxStatus } | undefined {
-        const key = makePendingTxKey(nfa, amount);
-        if (!pendingSettleTxs.has(key)) return undefined;
-        const pending = pendingSettleTxs.get(key);
-
-        if (pending.length === 0) {
-          return undefined;
-        }
-        // extract first item
-        const [{ status, txHash }, ...remaining] = pending;
-
-        if (remaining.length) {
-          pendingSettleTxs.set(key, harden(remaining));
-        } else {
-          pendingSettleTxs.delete(key);
-        }
-
-        return harden({ status, txHash });
+      dequeueStatus(nfa: NobleAddress, amount: bigint): PendingTx[] {
+        return matchSettlement(nfa, amount);
       },
 
       /**
@@ -523,11 +506,12 @@ export const prepareStatusManager = (
        * @param amount
        */
       lookupPending(nfa: NobleAddress, amount: bigint): PendingTx[] {
-        const key = makePendingTxKey(nfa, amount);
-        if (!pendingSettleTxs.has(key)) {
+        if (!pendingSettleTxs.has(nfa)) {
           return harden([]);
         }
-        return pendingSettleTxs.get(key);
+
+        const pendingTxs = pendingSettleTxs.get(nfa);
+        return pendingTxs.filter(tx => tx.tx.amount === amount);
       },
     },
     { stateShape },

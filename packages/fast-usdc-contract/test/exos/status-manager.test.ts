@@ -140,28 +140,33 @@ test('dequeueStatus removes entries from PendingTxs', t => {
   statusManager.advanceOutcome(e2.tx.forwardingAddress, e2.tx.amount, false);
   statusManager.skipAdvance({ ...e1, txHash: '0xtest1' }, []);
 
-  t.deepEqual(
-    statusManager.dequeueStatus(e1.tx.forwardingAddress, e1.tx.amount),
+  t.like(statusManager.dequeueStatus(e1.tx.forwardingAddress, e1.tx.amount), [
     {
       txHash: e1.txHash,
       status: PendingTxStatus.Advanced,
     },
-  );
+  ]);
 
   t.deepEqual(
     statusManager.dequeueStatus(e2.tx.forwardingAddress, e2.tx.amount),
-    {
-      txHash: e2.txHash,
-      status: PendingTxStatus.AdvanceFailed,
-    },
+    [
+      {
+        ...e2,
+        txHash: e2.txHash,
+        status: PendingTxStatus.AdvanceFailed,
+      },
+    ],
   );
 
   t.deepEqual(
     statusManager.dequeueStatus(e1.tx.forwardingAddress, e1.tx.amount),
-    {
-      txHash: '0xtest1',
-      status: PendingTxStatus.AdvanceSkipped,
-    },
+    [
+      {
+        ...e1,
+        txHash: '0xtest1',
+        status: PendingTxStatus.AdvanceSkipped,
+      },
+    ],
   );
 
   t.is(
@@ -240,9 +245,9 @@ test('dequeueStatus returns undefined when nothing is settleable', t => {
   const { statusManager } = t.context;
   const e1 = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
 
-  t.is(
+  t.deepEqual(
     statusManager.dequeueStatus(e1.tx.forwardingAddress, e1.tx.amount),
-    undefined,
+    [],
   );
 });
 
@@ -259,9 +264,11 @@ test('dequeueStatus returns first (earliest) matched entry', async t => {
       evidence.tx.forwardingAddress,
       evidence.tx.amount,
     ),
-    {
-      status: PendingTxStatus.Advancing,
-    },
+    [
+      {
+        status: PendingTxStatus.Advancing,
+      },
+    ],
     'can dequeue Tx at any stage',
   );
 
@@ -277,9 +284,11 @@ test('dequeueStatus returns first (earliest) matched entry', async t => {
       evidence.tx.forwardingAddress,
       evidence.tx.amount,
     ),
-    {
-      status: PendingTxStatus.Advanced,
-    },
+    [
+      {
+        status: PendingTxStatus.Advanced,
+      },
+    ],
   );
   const entries0 = statusManager.lookupPending(
     evidence.tx.forwardingAddress,
@@ -293,12 +302,12 @@ test('dequeueStatus returns first (earliest) matched entry', async t => {
   );
   t.is(entries1?.length, 0, 'settled entries are deleted');
 
-  t.is(
+  t.deepEqual(
     statusManager.dequeueStatus(
       evidence.tx.forwardingAddress,
       evidence.tx.amount,
     ),
-    undefined,
+    [],
     'No more matches to settle',
   );
 });

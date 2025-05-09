@@ -81,9 +81,11 @@ export const makeFakeBankBridge = (
           balances[address][denom] ||= 0n;
 
           if (type === 'VBANK_GRAB') {
-            balances[address][denom] = Nat(
-              currentBalance({ address, denom }) - BigInt(amount),
-            );
+            const remaining =
+              currentBalance({ address, denom }) - BigInt(amount);
+            remaining >= 0n ||
+              Fail`VBANK_GRAB of ${amount} would result in ${remaining} deficit`;
+            balances[address][denom] = Nat(remaining);
           } else {
             balances[address][denom] = Nat(
               currentBalance({ address, denom }) + BigInt(amount),
