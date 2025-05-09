@@ -110,6 +110,16 @@ harden(decodeEventPacket);
 const makeMintedEarlyKey = (addr: NobleAddress, amount: bigint): string =>
   `pendingTx:${JSON.stringify([addr, String(amount)])}`;
 
+/**
+ * @deprecated to be used only in the CCTP beta release
+ */
+const parseMintedEarlyKey = (
+  key: ReturnType<typeof makeMintedEarlyKey>,
+): { address: NobleAddress; amount: bigint } => {
+  const [address, amount] = JSON.parse(key.split(':')[1]);
+  return harden({ address, amount: BigInt(amount) });
+};
+
 /** @param {Brand<'nat'>} USDC */
 export const makeAdvanceDetailsShape = (USDC: Brand<'nat'>) =>
   harden({
@@ -180,6 +190,7 @@ export const prepareSettler = (
     {
       creator: M.interface('SettlerCreatorI', {
         monitorMintingDeposits: M.call().returns(M.any()),
+        remediateMintedEarly: M.call().returns(),
       }),
       tap: M.interface('SettlerTapI', {
         receiveUpcall: M.call(M.record()).returns(M.promise()),
@@ -250,6 +261,40 @@ export const prepareSettler = (
           );
           assert.typeof(registration, 'object');
           this.state.registration = registration;
+        },
+        /** @deprecated to be used only in the CCTP beta release */
+        remediateMintedEarly() {
+          const { self } = this.facets;
+          const { mintedEarly } = this.state;
+          console.log('remediateMintedEarly', [...mintedEarly.keys()]);
+          const batches = mintedEarly.entries();
+          for (const [key, count] of batches) {
+            const { address, amount } = parseMintedEarlyKey(key);
+            const allPending = statusManager.lookupPending(address, amount);
+            if (
+              allPending.some(
+                ({ status }) => status !== PendingTxStatus.Advanced,
+              )
+            ) {
+              log('🚨 pending txs included one not advanced', allPending);
+              continue;
+            }
+            // now COMMIT to disbursing all pending txs
+            for (let i = 0; i < count; i += 1) {
+              const pendingTxs = statusManager.matchAndDequeueSettlement(
+                address,
+                amount,
+              );
+
+              // Disburse the funds to the pool for the transaction
+              for (const p of pendingTxs) {
+                const fullValue = AmountMath.make(USDC, p.tx.amount);
+                void self.disburse(p.txHash, fullValue, p.aux.recipientAddress);
+              }
+              // Remove the minted early key
+              mintedEarly.delete(key);
+            }
+          }
         },
       },
       tap: {

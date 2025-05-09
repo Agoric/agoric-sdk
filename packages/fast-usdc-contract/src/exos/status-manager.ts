@@ -508,7 +508,6 @@ export const prepareStatusManager = (
       /**
        * Lookup all pending entries for a given address and amount
        *
-       * XXX only used in tests. should we remove?
        * @param nfa
        * @param amount
        */
