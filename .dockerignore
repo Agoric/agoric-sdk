@@ -20,6 +20,14 @@ packages/stat-logger
 **/*.egg-info
 **/swingset-kernel-state
 **/.cache
+**/.pnp.*
+**/.yarn/*
+!**/.yarn/patches
+!**/.yarn/plugins
+!**/.yarn/releases
+!**/.yarn/sdks
+!**/.yarn/versions
+**/.DS_Store
 **/_agstate
 .vagrant
 endo-sha.txt
