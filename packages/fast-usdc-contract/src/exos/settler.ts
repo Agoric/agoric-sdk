@@ -110,7 +110,9 @@ const makeMintedEarlyKey = (addr: NobleAddress, amount: bigint): string =>
 /**
  * Helper for migrating `mintedEarly` store
  */
-const parseMintedEarlyKey = (key: ReturnType<typeof makeMintedEarlyKey>) => {
+const parseMintedEarlyKey = (
+  key: ReturnType<typeof makeMintedEarlyKey>,
+): { address: NobleAddress; amount: bigint } => {
   const [address, amount] = JSON.parse(key.split(':')[1]);
   return harden({ address, amount: BigInt(amount) });
 };
@@ -187,6 +189,7 @@ export const prepareSettler = (
       creator: M.interface('SettlerCreatorI', {
         monitorMintingDeposits: M.call().returns(M.any()),
         migrateMintedEarly: M.call().returns(),
+        remediateMintedEarly: M.call().returns(),
       }),
       tap: M.interface('SettlerTapI', {
         receiveUpcall: M.call(M.record()).returns(M.promise()),
@@ -267,6 +270,36 @@ export const prepareSettler = (
             }
           }
           mintedEarly.clear();
+        },
+        remediateMintedEarly() {
+          const { self } = this.facets;
+          const { mintedEarly } = this.state;
+          console.log('remediateMintedEarly', [...mintedEarly.keys()]);
+          const batches = mintedEarly.entries();
+          for (const [key, count] of batches) {
+            const { address, amount } = parseMintedEarlyKey(key);
+            for (let i = 0; i < count; i += 1) {
+              const pendingTxs = statusManager.dequeueStatus(address, amount);
+              // Defensively verify the sum matches the sum of the parts
+              const sum = pendingTxs.reduce(
+                (acc, { tx }) => acc + tx.amount,
+                0n,
+              );
+              assert.equal(
+                amount,
+                sum,
+                `Sum of parts ${sum} must match expected ${amount}`,
+              );
+
+              // Disburse the funds to the pool for the transaction
+              for (const p of pendingTxs) {
+                const fullValue = AmountMath.make(USDC, p.tx.amount);
+                void self.disburse(p.txHash, fullValue, p.aux.recipientAddress);
+              }
+              // Remove the minted early key
+              mintedEarly.delete(key);
+            }
+          }
         },
       },
       tap: {
