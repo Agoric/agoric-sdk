@@ -40,7 +40,7 @@ test.before(async t => {
   sync.lp.resolve({ lp500 });
 });
 
-test.serial.failing('multiple advance amounts settled by one mint', async t => {
+test.serial('multiple advance amounts settled by one mint', async t => {
   const {
     bridges: { snapshot, since },
     evm: { cctp, txPub },
