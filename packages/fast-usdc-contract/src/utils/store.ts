@@ -113,3 +113,28 @@ export const asMultiset = <K extends Key>(mapStore: MapStore<K, number>) =>
       mapStore.clear();
     },
   });
+
+/**
+ * Insert `item` into `array`, keeping it **sorted** according to `compare`.
+ * Uses a simple linear scan – clearer than a binary search and plenty fast for
+ * small lists.
+ *
+ * Stable‑after: duplicates are inserted *after* existing equal elements.
+ *
+ * @template V - Type of array items
+ */
+export const insertIntoSortedArray = <V>(
+  array: V[],
+  item: V,
+  compare: (a: V, b: V) => number,
+): void => {
+  // linear scan to find index after any equal items
+  let i = array.length;
+  while (i > 0 && compare(item, array[i - 1]) < 0) {
+    i -= 1;
+  }
+
+  // insertion
+  array.splice(i, 0, item);
+};
+harden(insertIntoSortedArray);
