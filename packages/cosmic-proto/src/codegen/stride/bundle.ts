@@ -27,10 +27,21 @@ import * as _164 from './staketia/genesis.js';
 import * as _165 from './staketia/query.js';
 import * as _166 from './staketia/staketia.js';
 import * as _167 from './staketia/tx.js';
+import * as _223 from './epochs/query.rpc.Query.js';
+import * as _224 from './records/query.rpc.Query.js';
+import * as _225 from './stakedym/query.rpc.Query.js';
+import * as _226 from './stakeibc/query.rpc.Query.js';
+import * as _227 from './staketia/query.rpc.Query.js';
+import * as _228 from './stakedym/tx.rpc.msg.js';
+import * as _229 from './stakeibc/tx.rpc.msg.js';
+import * as _230 from './staketia/tx.rpc.msg.js';
+import * as _241 from './rpc.query.js';
+import * as _242 from './rpc.tx.js';
 export namespace stride {
   export const epochs = {
     ..._140,
     ..._141,
+    ..._223,
   };
   export const records = {
     ..._142,
@@ -38,12 +49,15 @@ export namespace stride {
     ..._144,
     ..._145,
     ..._146,
+    ..._224,
   };
   export const stakedym = {
     ..._147,
     ..._148,
     ..._149,
     ..._150,
+    ..._225,
+    ..._228,
   };
   export const stakeibc = {
     ..._151,
@@ -59,11 +73,19 @@ export namespace stride {
     ..._161,
     ..._162,
     ..._163,
+    ..._226,
+    ..._229,
   };
   export const staketia = {
     ..._164,
     ..._165,
     ..._166,
     ..._167,
+    ..._227,
+    ..._230,
+  };
+  export const ClientFactory = {
+    ..._241,
+    ..._242,
   };
 }
