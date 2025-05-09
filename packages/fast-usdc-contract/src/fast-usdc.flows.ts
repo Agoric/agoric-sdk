@@ -157,6 +157,11 @@ export const forwardFunds = async (
       });
     }
   } else {
+    // The user requested a destination that is not supported. No OpCo UIs would do this.
+    // If a user circumvents the UI and does this, it will not be forwarded and the
+    // minted funds will remain in the settlement account.
+    // Receiving the funds would require a contract upgrade that adds support for the destination
+    // and some way to reattempt skipped forwards.
     log(
       '⚠️ forward not attempted',
       'unsupported destination',
