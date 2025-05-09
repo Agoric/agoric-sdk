@@ -353,6 +353,16 @@ test.serial('With 250 available, 3 race to get ~100', async t => {
   await transmitVTransferEvent('acknowledgementPacket', -1); // Third racer's transfer
 
   await Promise.all([mint(sent1), mint(sent2), mint(sent3)]);
+
+  t.like(t.context.common.readTxnRecord(sent1).at(-1), {
+    status: 'DISBURSED',
+  });
+  t.like(t.context.common.readTxnRecord(sent2).at(-1), {
+    status: 'DISBURSED',
+  });
+  t.like(t.context.common.readTxnRecord(sent3).at(-1), {
+    status: 'ADVANCE_SKIPPED', // LP depleted
+  });
 });
 
 const mockAcks = {
