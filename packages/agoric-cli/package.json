@@ -75,7 +75,6 @@
     "chalk": "^5.2.0",
     "commander": "^12.1.0",
     "deterministic-json": "^1.0.5",
-    "esm": "agoric-labs/esm#Agoric-built",
     "inquirer": "^8.2.2",
     "opener": "^1.5.2",
     "tmp": "^0.2.1",

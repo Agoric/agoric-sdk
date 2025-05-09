@@ -2,15 +2,11 @@
 /* eslint-env node */
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/captp';
-import { search as readContainingPackageDescriptor } from '@endo/compartment-mapper';
 
-import createEsmRequire from 'esm';
 import { createRequire } from 'module';
 import path from 'path';
-import url from 'url';
 
 const require = createRequire(import.meta.url);
-const esmRequire = createEsmRequire(/** @type {NodeModule} */ ({}));
 
 const PATH_SEP_RE = new RegExp(`${path.sep.replace(/\\/g, '\\\\')}`, 'g');
 
@@ -133,31 +129,8 @@ export { bootPlugin } from ${JSON.stringify(absPath)};
       // Use a dynamic import to load the deploy script.
       // It is unconfined.
 
-      // Use Node.js ESM support if package.json of template says "type":
-      // "module".
-      const read = async location => fs.readFile(url.fileURLToPath(location));
-      const { packageDescriptorText } = await readContainingPackageDescriptor(
-        read,
-        url.pathToFileURL(moduleFile).href,
-      ).catch(cause => {
-        throw Error(
-          `Expected a package.json beside deploy script ${moduleFile}, ${cause}`,
-          { cause },
-        );
-      });
-      const packageDescriptor = JSON.parse(packageDescriptorText);
-      const nativeEsm = packageDescriptor.type === 'module';
-      console.log(
-        `Deploy script will run with ${
-          nativeEsm ? 'Node.js ESM' : 'standardthings/esm emulation'
-        }`,
-      );
-
       const modulePath = pathResolve(moduleFile);
-      let mainNS = await (nativeEsm && import(modulePath));
-      if (!mainNS) {
-        mainNS = esmRequire(modulePath);
-      }
+      const mainNS = await import(modulePath);
 
       const allEndowments = harden({
         home: bootP,

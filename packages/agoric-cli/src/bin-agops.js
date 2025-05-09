@@ -3,8 +3,6 @@
 // @ts-check
 // @jessie-check
 
-import '@endo/init/pre.js';
-
 import '@endo/init';
 
 import { E } from '@endo/far';
