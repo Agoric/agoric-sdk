@@ -461,18 +461,18 @@ const makeInterleaveScenario = test.macro({
     // Depending on `scenario: InterleaveScenario`, it fulfills or times out.
     t.is(getIndexByEUD(bobEud), -2, 'bobs tx is now second to last');
     if (bobFulfills) {
-      await transmitVTransferEvent('timeoutPacket', -2);
-      t.deepEqual(t.context.common.readTxnRecord(bobEv), [
-        { evidence: bobEv, status: 'OBSERVED' },
-        { status: 'ADVANCING' },
-        { status: 'ADVANCE_FAILED' },
-      ]);
-    } else {
       await transmitVTransferEvent('acknowledgementPacket', -2);
       t.deepEqual(t.context.common.readTxnRecord(bobEv), [
         { evidence: bobEv, status: 'OBSERVED' },
         { status: 'ADVANCING' },
         { status: 'ADVANCED' },
+      ]);
+    } else {
+      await transmitVTransferEvent('timeoutPacket', -2);
+      t.deepEqual(t.context.common.readTxnRecord(bobEv), [
+        { evidence: bobEv, status: 'OBSERVED' },
+        { status: 'ADVANCING' },
+        { status: 'ADVANCE_FAILED' },
       ]);
     }
 
@@ -505,19 +505,19 @@ const makeInterleaveScenario = test.macro({
     ]);
 
     if (bobFulfills) {
+      t.like(t.context.common.readTxnRecord(bobEv), [
+        { evidence: bobEv, status: 'OBSERVED' },
+        { status: 'ADVANCING' },
+        { status: 'ADVANCED' },
+        { status: 'DISBURSED' },
+      ]);
+    } else {
       t.deepEqual(t.context.common.readTxnRecord(bobEv), [
         { evidence: bobEv, status: 'OBSERVED' },
         { status: 'ADVANCING' },
         { status: 'ADVANCE_FAILED' },
         // consider acking the outgoing forward for bob, but not necessary for
         // the goal of this test
-      ]);
-    } else {
-      t.like(t.context.common.readTxnRecord(bobEv), [
-        { evidence: bobEv, status: 'OBSERVED' },
-        { status: 'ADVANCING' },
-        { status: 'ADVANCED' },
-        { status: 'DISBURSED' },
       ]);
     }
   },
