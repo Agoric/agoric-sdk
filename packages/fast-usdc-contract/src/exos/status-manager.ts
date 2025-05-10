@@ -6,7 +6,6 @@ import {
 } from '@agoric/fast-usdc/src/constants.js';
 import {
   CctpTxEvidenceShape,
-  EvmAddressShape,
   EvmHashShape,
   PendingTxShape,
 } from '@agoric/fast-usdc/src/type-guards.js';
@@ -23,15 +22,15 @@ import type {
   Marshaller,
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
+import type { AccountId, CaipChainId } from '@agoric/orchestration';
+import { chainOfAccount } from '@agoric/orchestration/src/utils/address.js';
 import type { MapStore, SetStore } from '@agoric/store';
+import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
 import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
 import type { Zone } from '@agoric/zone';
 import { Fail, makeError, q } from '@endo/errors';
 import { E, type ERef } from '@endo/far';
 import { M } from '@endo/patterns';
-import { chainOfAccount } from '@agoric/orchestration/src/utils/address.js';
-import type { AccountId, CaipChainId } from '@agoric/orchestration';
-import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
 import { ForwardFailedTxShape, type ForwardFailedTx } from '../typeGuards.ts';
 import { type RouteHealth } from '../utils/route-health.ts';
 import { makeSettlementMatching } from '../utils/settlement-matching.ts';
