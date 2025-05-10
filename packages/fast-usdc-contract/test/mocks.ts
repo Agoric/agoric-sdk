@@ -127,7 +127,7 @@ export const makeTestLogger = (logger: LogFn) => {
     logger(args);
   };
   const inspectLogs = (index?: number) =>
-    typeof index === 'number' ? logs[index] : logs;
+    typeof index === 'number' ? logs[index] : [...logs];
   return { log, inspectLogs };
 };
 export type TestLogger = ReturnType<typeof makeTestLogger>;
