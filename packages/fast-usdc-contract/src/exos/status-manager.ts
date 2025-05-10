@@ -73,7 +73,8 @@ export const prepareStatusManager = (
     },
   );
 
-  const { addPendingSettleTx } = makeSettlementMatcher();
+  const { addPendingSettleTx, matchAndDequeueSettlement } =
+    makeSettlementMatcher();
 
   /** metadata, like the `schemaVersion` of stores in this exo */
   const meta: MapStore<string, unknown> = zone.mapStore('Metadata', {
@@ -254,13 +255,12 @@ export const prepareStatusManager = (
       ),
       hasBeenObserved: M.call(CctpTxEvidenceShape).returns(M.boolean()),
       deleteCompletedTxs: M.call().returns(M.undefined()),
-      dequeueStatus: M.call(M.string(), M.bigint()).returns(
-        M.or(
-          {
+      matchAndDequeueSettlement: M.call(M.string(), M.bigint()).returns(
+        M.arrayOf(
+          M.splitRecord({
             txHash: EvmHashShape,
             status: M.or(...Object.values(PendingTxStatus)),
-          },
-          M.undefined(),
+          }),
         ),
       ),
       disbursed: M.call(EvmHashShape, AmountKeywordRecordShape).returns(
@@ -397,36 +397,20 @@ export const prepareStatusManager = (
       },
 
       /**
-       * Remove and return the oldest pending settlement transaction that matches the given
-       * forwarding account and amount. Since multiple pending transactions may exist with
-       * identical (account, amount) pairs, we process them in FIFO order.
+       * Find and match pending transactions for a settlement (mint).
        *
-       * @param {bigint} nfa
-       * @param {NobleAddress} amount
-       * @returns {undefined} if no pending transactions exist for this address and amount combination.
+       * If a match is found, the matched transactions are removed from
+       * `pendingSettleTxs`.
+       *
+       * @param {NobleAddress} nfa - Noble forwarding address
+       * @param {bigint} amount - Amount to match
+       * @returns {PendingTx[]} - Matched transactions or an empty array if none found
        */
-      dequeueStatus(
+      matchAndDequeueSettlement(
         nfa: NobleAddress,
         amount: bigint,
-      ): { txHash: EvmHash; status: PendingTxStatus } | undefined {
-        if (!pendingSettleTxs.has(nfa)) return undefined;
-        const allPending = pendingSettleTxs.get(nfa);
-        const idx = allPending.findIndex(tx => tx.tx.amount === amount);
-        if (idx < 0) {
-          return undefined;
-        }
-        // extract first exact match
-        const remaining = [...allPending]
-          .slice(0, idx)
-          .concat(allPending.slice(idx + 1));
-
-        if (remaining.length) {
-          pendingSettleTxs.set(nfa, harden(remaining));
-        } else {
-          pendingSettleTxs.delete(nfa);
-        }
-        const { status, txHash } = allPending[idx];
-        return harden({ status, txHash });
+      ): PendingTx[] {
+        return matchAndDequeueSettlement(pendingSettleTxs, nfa, amount);
       },
 
       /**
