@@ -458,6 +458,11 @@ export const prepareSettler = (
           void forwardFunds({ txHash, amount: fullValue, destination: dest });
         },
       },
+      // XXX the following handlers are from before refactoring to an async flow for `forwardFunds`.
+      // They must remain implemented for as long as any vow might settle and need their behavior.
+      // Once all possible such vows are settled, the methods could be removed but the handler
+      // facets must remain to satisfy the kind definition backward compatibility checker.
+      /* c8 ignore start */
       transferHandler: {
         onFulfilled(_result: unknown, txHash: EvmHash) {
           // update status manager, marking tx `FORWARDED` without fee split
@@ -514,6 +519,7 @@ export const prepareSettler = (
           statusManager.forwardFailed(txHash);
         },
       },
+      /* c8 ignore stop */
     },
     {
       stateShape,
