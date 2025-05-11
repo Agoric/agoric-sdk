@@ -79,15 +79,19 @@ export const makeFakeBankBridge = (
             Fail`invalid address ${address}`;
           balances[address] ||= {};
           balances[address][denom] ||= 0n;
+          const current = currentBalance({ address, denom });
 
           if (type === 'VBANK_GRAB') {
-            balances[address][denom] = Nat(
-              currentBalance({ address, denom }) - BigInt(amount),
-            );
+            // Check if there are insufficient funds
+            if (current < BigInt(amount)) {
+              throw Error(
+                // Mimic Cosmos SDK v0.47 behavior: if denom's current balance is 0, then render as empty string.
+                `cannot grab ${amount}${denom} coins: spendable balance ${current === 0n ? '' : current + denom} is smaller than ${amount}${denom}: insufficient funds`,
+              );
+            }
+            balances[address][denom] = Nat(current - BigInt(amount));
           } else {
-            balances[address][denom] = Nat(
-              currentBalance({ address, denom }) + BigInt(amount),
-            );
+            balances[address][denom] = Nat(current + BigInt(amount));
           }
 
           lastNonce += 1n;
