@@ -131,7 +131,7 @@ func initAppConfig() (string, interface{}) {
 	// FIXME: We may want a non-zero min gas price.
 	// For now, we set it to zero to reduce friction (the default "" fails
 	// startup, forcing each validator to set their own value).
-	srvCfg.MinGasPrices = "0uist"
+	srvCfg.MinGasPrices = "0ubld"
 
 	customAppConfig := CustomAppConfig{
 		Config:   *srvCfg,
