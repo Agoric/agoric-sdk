@@ -2,7 +2,7 @@
 export default /** @type {const} } */ ({
   agoric: {
     bech32Prefix: 'agoric',
-    chainId: 'agoric-3',
+    chainId: 'agoricdev-25',
     icqEnabled: false,
     namespace: 'cosmos',
     reference: 'agoric-3',
@@ -70,7 +70,7 @@ export default /** @type {const} } */ ({
   },
   cosmoshub: {
     bech32Prefix: 'cosmos',
-    chainId: 'cosmoshub-4',
+    chainId: 'provider',
     icqEnabled: false,
     namespace: 'cosmos',
     reference: 'cosmoshub-4',
@@ -120,7 +120,7 @@ export default /** @type {const} } */ ({
   },
   elys: {
     bech32Prefix: 'elys',
-    chainId: 'elys-1',
+    chainId: 'elysicstestnet-1',
     icqEnabled: false,
     namespace: 'cosmos',
     reference: 'elys-1',
@@ -170,7 +170,7 @@ export default /** @type {const} } */ ({
   },
   stride: {
     bech32Prefix: 'stride',
-    chainId: 'stride-1',
+    chainId: 'stride-internal-1',
     icqEnabled: false,
     namespace: 'cosmos',
     reference: 'stride-1',

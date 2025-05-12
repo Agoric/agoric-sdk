@@ -1,0 +1,17 @@
+{
+  "name": "startElys",
+  "script": "startElys.js",
+  "permit": "startElys-permit.json",
+  "bundles": [
+    {
+      "entrypoint": "@agoric/orchestration/src/examples/elys.contract.js",
+      "bundleID": "b1-42f1ec1d0fe4c54de4f3e4127fdbe185c74ce2a1b235908bbd57893cbdfe77068e88d6994bd08f44747e89068e5e8a99c4d53cdd39a6d9fa03c8ba396c600cf2",
+      "fileName": "/home/adarsh/.agoric/cache/b1-42f1ec1d0fe4c54de4f3e4127fdbe185c74ce2a1b235908bbd57893cbdfe77068e88d6994bd08f44747e89068e5e8a99c4d53cdd39a6d9fa03c8ba396c600cf2.json"
+    },
+    {
+      "entrypoint": "@agoric/orchestration/src/proposals/start-elys.js",
+      "bundleID": "b1-039e04dafa79c7d7f705b7512a357f0b28b0dc889cc07c99a61ab66bd4ec76d76ff17c11ba1dd1b3868f503e1fb27c33f763bac042667ef551bf5cf5615be896",
+      "fileName": "/home/adarsh/.agoric/cache/b1-039e04dafa79c7d7f705b7512a357f0b28b0dc889cc07c99a61ab66bd4ec76d76ff17c11ba1dd1b3868f503e1fb27c33f763bac042667ef551bf5cf5615be896.json"
+    }
+  ]
+}
