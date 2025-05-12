@@ -840,3 +840,63 @@ func Test_Module_Account(t *testing.T) {
 		t.Errorf("got IsAllowedMonitoringAccount missingAddr = false, want true")
 	}
 }
+
+
+
+func Test_Receive_Grab_InsufficientFunds(t *testing.T) {
+	tests := []struct {
+		name           string
+		initialBalance sdk.Coin
+	}{
+		{
+			name:           "only 100 available",
+			initialBalance: sdk.NewInt64Coin("ufoo", 100),
+		},
+		{
+			name:           "zero available",
+			initialBalance: sdk.NewInt64Coin("ufoo", 0),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// set up mockBank with the desired starting balance
+			bank := &mockBank{balances: map[string]sdk.Coins{
+				addr1: sdk.NewCoins(tc.initialBalance),
+			}}
+
+			// wire into keeper
+			keeper, ctx := makeTestKit(nil, bank)
+			handler := NewPortHandler(AppModule{}, keeper)
+			ctl := sdk.WrapSDKContext(ctx)
+
+			// attempt to grab 500ufoo
+			grabAmt := sdk.NewCoins(sdk.NewInt64Coin("ufoo", 500))
+			_, err := handler.Receive(ctl, fmt.Sprintf(`{
+							"type":"VBANK_GRAB",
+							"sender":"%s",
+							"amount":"500",
+							"denom":"ufoo"
+					}`, addr1))
+			if err == nil {
+				t.Fatal("expected insufficient-funds error, got nil")
+			}
+
+			expected := fmt.Sprintf(
+				"cannot grab %s coins: spendable balance %s is smaller than %s: %s",
+				grabAmt.Sort().String(),
+				tc.initialBalance.String(),
+				grabAmt.Sort().String(),
+				sdkerrors.ErrInsufficientFunds.Error(),
+			)
+
+			t.Logf("actual error: %q", err.Error())
+
+			got := err.Error()
+			if got != expected {
+				t.Errorf("wrong error message:\n  expected: %q\n  got:      %q",
+					expected, got)
+			}
+		})
+	}
+}
