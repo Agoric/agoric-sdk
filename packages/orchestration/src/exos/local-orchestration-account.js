@@ -172,6 +172,7 @@ export const prepareLocalOrchestrationAccountKit = (
       }),
       parseInboundTransferWatcher: M.interface('parseInboundTransferWatcher', {
         onFulfilled: M.call(M.any(), M.any()).returns(M.any()),
+        onRejected: M.call(M.or(M.string(), M.record())).returns(M.record()),
       }),
       invitationMakers: M.interface('invitationMakers', {
         CloseAccount: M.call().returns(M.promise()),
@@ -492,17 +493,33 @@ export const prepareLocalOrchestrationAccountKit = (
          * @param {QueryDenomHashResponse} localDenomHash
          * @param {Awaited<
          *   ReturnType<OrchestrationAccountCommon['parseInboundTransfer']>
-         * >} resultWithoutLocalDenom
+         * >} naiveResult
          */
-        onFulfilled(localDenomHash, resultWithoutLocalDenom) {
-          trace('parseInboundTransferWatcher', { localDenomHash, resultWithoutLocalDenom });
+        onFulfilled(localDenomHash, naiveResult) {
           const localDenom = `ibc/${localDenomHash.hash}`;
-          const { amount, ...rest } = resultWithoutLocalDenom;
+          const { amount, ...rest } = naiveResult;
           const { denom: _, ...amountRest } = amount;
           return harden({
             ...rest,
             amount: { ...amountRest, denom: localDenom },
           });
+        },
+        /**
+         * @param {unknown} reason
+         * @param {Awaited<
+         *   ReturnType<OrchestrationAccountCommon['parseInboundTransfer']>
+         * >} naiveResult
+         */
+        onRejected(reason, naiveResult) {
+          if (
+            reason instanceof Error &&
+            String(reason.message).includes('denomination trace not found')
+          ) {
+            // Looks like the trace was not found; The naive result is good enough.
+            return naiveResult;
+          }
+          // Propagate other errors upwards.
+          throw reason;
         },
       },
       holder: {
@@ -784,32 +801,32 @@ export const prepareLocalOrchestrationAccountKit = (
                 },
               });
 
+            /**
+             * @type {Denom}
+             */
+            let denomOrTrace;
+
             const prefix = `${packet.destination_port}/${packet.destination_channel}/`;
             trace('PREFIX', prefix);
             trace('TRANSFER_DENOM', transferDenom);
             if (transferDenom.startsWith(prefix)) {
-              /**
-               * Extract the denom from the packet data.
-               *
-               * @type {Denom}
-               */
-              const localDenom = transferDenom.slice(prefix.length);
-              trace('FOUND', localDenom);
-              return buildReturnValue(localDenom);
+              // Unwind, which may end up as a local denom.
+              denomOrTrace = transferDenom.slice(prefix.length);
+            } else {
+              // If the denom is not local, attach its source.
+              denomOrTrace = `${packet.source_port}/${packet.source_channel}/${transferDenom}`;
             }
 
-            // Find the local denom hash for the transferDenom.
-            const denomTrace = `${packet.source_port}/${packet.destination_channel}/${transferDenom}`;
-            trace('DENOM_TRACE', denomTrace);
+            // Find the local denom hash for the transferDenom, if there is one.
             return watch(
               E(localchain).query(
                 typedJson(
                   '/ibc.applications.transfer.v1.QueryDenomHashRequest',
-                  { trace: denomTrace },
+                  { trace: denomOrTrace },
                 ),
               ),
               this.facets.parseInboundTransferWatcher,
-              buildReturnValue('ibc/DENOM-HASH-QUERY-IN-PROGRESS'),
+              buildReturnValue(denomOrTrace),
             );
           });
         },

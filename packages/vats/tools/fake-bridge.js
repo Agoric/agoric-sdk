@@ -292,6 +292,17 @@ export const fakeLocalChainBridgeQueryHandler = message => {
         },
       };
     }
+    case '/ibc.applications.transfer.v1.QueryDenomHashRequest': {
+      console.log('MESSAGE_FAKE', message);
+      return {
+        error: '',
+        height: '1',
+        reply: {
+          '@type': '/ibc.applications.transfer.v1.QueryDenomHashResponse',
+          hash: '1234',
+        },
+      };
+    }
     // returns one empty object per message unless specified
     default:
       return {};
