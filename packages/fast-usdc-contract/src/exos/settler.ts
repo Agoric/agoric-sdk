@@ -190,7 +190,7 @@ export const prepareSettler = (
     {
       creator: M.interface('SettlerCreatorI', {
         monitorMintingDeposits: M.call().returns(M.any()),
-        remediateMintedEarly: M.call().returns(),
+        remediateMintedEarly: M.call(M.bigint()).returns(),
       }),
       tap: M.interface('SettlerTapI', {
         receiveUpcall: M.call(M.record()).returns(M.promise()),
@@ -263,13 +263,17 @@ export const prepareSettler = (
           this.state.registration = registration;
         },
         /** @deprecated to be used only in the CCTP beta release */
-        remediateMintedEarly() {
+        remediateMintedEarly(minUusdc: bigint): void {
           const { self } = this.facets;
           const { mintedEarly } = this.state;
-          console.log('remediateMintedEarly', [...mintedEarly.keys()]);
+          log('remediateMintedEarly', minUusdc, [...mintedEarly.keys()]);
           const batches = mintedEarly.entries();
           for (const [key, count] of batches) {
             const { address, amount } = parseMintedEarlyKey(key);
+            if (amount < minUusdc) {
+              log('skipping', key, 'less than', minUusdc);
+              continue;
+            }
             const allPending = statusManager.lookupPending(address, amount);
             if (
               allPending.some(
