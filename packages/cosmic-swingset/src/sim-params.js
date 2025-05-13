@@ -18,14 +18,17 @@ const makeQueueSize = (key, size) => ({ key, size });
 // Nothing bad happens if they diverge, but it makes for a truer simulation
 // experience if they don't.
 
+export const BeansPerXsnapComputron = 'xsnapComputron';
 export const BeansPerBlockComputeLimit = 'blockComputeLimit';
+export const BeansPerVatCreation = 'vatCreation';
+
 export const BeansPerFeeUnit = 'feeUnit';
 export const BeansPerInboundTx = 'inboundTx';
 export const BeansPerMessage = 'message';
 export const BeansPerMessageByte = 'messageByte';
 export const BeansPerMinFeeDebit = 'minFeeDebit';
-export const BeansPerVatCreation = 'vatCreation';
-export const BeansPerXsnapComputron = 'xsnapComputron';
+export const BeansPerStorageByte = 'storageByte';
+export const BeansPerSmartWalletProvision = 'smartWalletProvision';
 
 export const defaultBeansPerXsnapComputron = 100n;
 
@@ -40,25 +43,32 @@ export const defaultBeansPerVatCreation =
   300_000n * defaultBeansPerXsnapComputron;
 
 // Fees are denominated in this unit.
-export const defaultFeeUnitPrice = [makeCoin('uist', 1_000_000n)]; // $1
+export const defaultFeeUnitPrice = [makeCoin('ubld', 1_000_000n)]; // 1 BLD
 
 // TODO: create the cost model we want, and update these to be more principled.
-// These defaults currently make deploying an ag-solo cost less than $1.00.
-export const defaultBeansPerFeeUnit = 1_000_000_000_000n; // $1
-export const defaultBeansPerInboundTx = defaultBeansPerFeeUnit / 100n; // $0.01
-export const defaultBeansPerMessage = defaultBeansPerFeeUnit / 1_000n; // $0.001
-export const defaultBeansPerMessageByte = defaultBeansPerFeeUnit / 50_000n; // $0.0002
-export const defaultBeansPerMinFeeDebit = defaultBeansPerFeeUnit / 5n; // $0.2
+export const defaultBeansPerFeeUnit = 1_000_000_000_000n; // 1e12
+export const defaultBeansPerInboundTx = defaultBeansPerFeeUnit / 100n; // 10e9, ~$0.01
+export const defaultBeansPerMessage = defaultBeansPerFeeUnit / 1_000n; // 1e9, ~$0.001
+export const defaultBeansPerMessageByte = defaultBeansPerFeeUnit / 50_000n; // 20e6, ~$0.0002
+export const defaultBeansPerMinFeeDebit = defaultBeansPerFeeUnit / 5n; // 200e9, ~$0.2
+export const defaultBeansPerStorageByte = defaultBeansPerFeeUnit / 500n; // 2e9, ~$0.002
+export const defaultBeansPerSmartWalletProvision = defaultBeansPerFeeUnit; // 1e12, ~$1
 
 export const defaultBeansPerUnit = [
+  makeStringBeans(BeansPerXsnapComputron, defaultBeansPerXsnapComputron),
+  makeStringBeans(BeansPerBlockComputeLimit, defaultBeansPerBlockComputeLimit),
+  makeStringBeans(BeansPerVatCreation, defaultBeansPerVatCreation),
+
   makeStringBeans(BeansPerFeeUnit, defaultBeansPerFeeUnit),
   makeStringBeans(BeansPerInboundTx, defaultBeansPerInboundTx),
-  makeStringBeans(BeansPerBlockComputeLimit, defaultBeansPerBlockComputeLimit),
   makeStringBeans(BeansPerMessage, defaultBeansPerMessage),
   makeStringBeans(BeansPerMessageByte, defaultBeansPerMessageByte),
   makeStringBeans(BeansPerMinFeeDebit, defaultBeansPerMinFeeDebit),
-  makeStringBeans(BeansPerVatCreation, defaultBeansPerVatCreation),
-  makeStringBeans(BeansPerXsnapComputron, defaultBeansPerXsnapComputron),
+  makeStringBeans(BeansPerStorageByte, defaultBeansPerStorageByte),
+  makeStringBeans(
+    BeansPerSmartWalletProvision,
+    defaultBeansPerSmartWalletProvision,
+  ),
 ];
 
 const defaultBootstrapVatConfig =
