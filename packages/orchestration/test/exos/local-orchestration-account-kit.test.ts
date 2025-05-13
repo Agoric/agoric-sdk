@@ -542,9 +542,11 @@ test('parseInboundTransfer', async t => {
    * parseInboundTransfer should be able to handle incoming denom 'transfer/channel-1/ubld'
    * as a local denom.
    *
-   * Here's an example IBC packet we scrapped from multichain:
-   *  - { event: 'writeAcknowledgement', packet: { data: 'eyJhbW91bnQiOiIxMjUiLCJkZW5vbSI6InRyYW5zZmVyL2NoYW5uZWwtMS91YmxkIiwicmVjZWl2ZXIiOiJhZ29yaWMxMHJjaHBjNmFyZjVlNHhmMDYzODh5M21kdzc2M2pnZTZobng0Y3hxcWptend3dzRmMmQ4cnBxZjk4YW54N21lYXZmc2h5cXBxNHo2c2VhIiwic2VuZGVyIjoiY29zbW9zMXJzamR2aHpydDl0NnQwZnl5cnVseGpneHFlcHNtdnJmeXltNWh6In0=', destination_channel: 'channel-1', destination_port: 'transfer', sequence: '1', source_channel: 'channel-1', source_port: 'transfer', timeout_height: { revision_height: '0', revision_number: '0' }, timeout_timestamp: '14933241973593604096' }, relayer: '', target: 'agoric1udw356v6nyhagnnjgakh0dgeyvaten2urqqfd3888254xn3ssyjsmlny72', type: 'VTRANSFER_IBC_EVENT' }
-   *  - And packet.data decodes to: '{"amount":"125","denom":"transfer/channel-1/ubld","receiver":"agoric10rchpc6arf5e4xf06388y3mdw763jge6hnx4cxqqjmzwww4f2d8rpqf98anx7meavfshyqpq4z6sea","sender":"cosmos1rsjdvhzrt9t6t0fyyrulxjgxqepsmvrfyym5hz"}'
+   * Here's an example IBC packet we scraped from multichain:
+   * @example
+   *   { event: 'writeAcknowledgement',
+   *      packet: { data: 'eyJhbW91bnQiOiIxMjUiLCJkZW5vbSI6InRyYW5zZmVyL2NoYW5uZWwtMS91YmxkIiwicmVjZWl2ZXIiOiJhZ29yaWMxMHJjaHBjNmFyZjVlNHhmMDYzODh5M21kdzc2M2pnZTZobng0Y3hxcWptend3dzRmMmQ4cnBxZjk4YW54N21lYXZmc2h5cXBxNHo2c2VhIiwic2VuZGVyIjoiY29zbW9zMXJzamR2aHpydDl0NnQwZnl5cnVseGpneHFlcHNtdnJmeXltNWh6In0=', destination_channel: 'channel-1', destination_port: 'transfer', sequence: '1', source_channel: 'channel-1', source_port: 'transfer', timeout_height: { revision_height: '0', revision_number: '0' }, timeout_timestamp: '14933241973593604096' }, relayer: '', target: 'agoric1udw356v6nyhagnnjgakh0dgeyvaten2urqqfd3888254xn3ssyjsmlny72', type: 'VTRANSFER_IBC_EVENT' }
+   *   And packet.data decodes to: '{"amount":"125","denom":"transfer/channel-1/ubld","receiver":"agoric10rchpc6arf5e4xf06388y3mdw763jge6hnx4cxqqjmzwww4f2d8rpqf98anx7meavfshyqpq4z6sea","sender":"cosmos1rsjdvhzrt9t6t0fyyrulxjgxqepsmvrfyym5hz"}'
    */
   const bldResult = await VE(account).parseInboundTransfer(
     buildVTransferEvent({
@@ -557,7 +559,6 @@ test('parseInboundTransfer', async t => {
     }).packet,
   );
 
-  // Improve assertions here
   t.log(bldResult);
   t.like(bldResult, {
     amount: {
@@ -574,9 +575,11 @@ test('parseInboundTransfer', async t => {
    * And here we send uatom from CosmosHub to Agoric. The expectation is that parseInboundTransfer returns
    * a hash as amount.denom instead of 'transfer/channel-0/uatom'.
    *
-   * Here's an example IBC packet we scrapped from multichain:
-   * - { event: 'writeAcknowledgement', packet: { data: 'eyJhbW91bnQiOiI5OSIsImRlbm9tIjoidWF0b20iLCJyZWNlaXZlciI6ImFnb3JpYzEwcmNocDJreHhxMmVlcThrc2RjeDQ3bjI0bHZteWQ5am1zeXRmZGY2NWxncG5qN2dnbDd0cTZrbThhbng3bWVhdmZzaHlxcHEycmZ1YWQiLCJzZW5kZXIiOiJjb3Ntb3Mxbnhsd3h2OXN3NG55ejVkM2E0c2d0NTNlMHNxOHFzeGNsbHB1NmsifQ==', destination_channel: 'channel-0', destination_port: 'transfer', sequence: '1', source_channel: 'channel-1', source_port: 'transfer', timeout_height: { revision_height: '0', revision_number: '0' }, timeout_timestamp: '14933241973593604096' }, relayer: '', target: 'agoric14trrq9vusrmgxur2lf42lkdjxjedcz95k5a205qee0yy0l9sdtdstw3zja', type: 'VTRANSFER_IBC_EVENT' }
-   * - And packet.data decodes to: '{"amount":"99","denom":"uatom","receiver":"agoric10rchp2kxxq2eeq8ksdcx47n24lvmyd9jmsytfdf65lgpnj7ggl7tq6km8anx7meavfshyqpq2rfuad","sender":"cosmos1nxlwxv9sw4nyz5d3a4sgt53e0sq8qsxcllpu6k"}'
+   * Here's an example IBC packet we scraped from multichain:
+   * @example
+   *  { event: 'writeAcknowledgement',
+   *     packet: { data: 'eyJhbW91bnQiOiI5OSIsImRlbm9tIjoidWF0b20iLCJyZWNlaXZlciI6ImFnb3JpYzEwcmNocDJreHhxMmVlcThrc2RjeDQ3bjI0bHZteWQ5am1zeXRmZGY2NWxncG5qN2dnbDd0cTZrbThhbng3bWVhdmZzaHlxcHEycmZ1YWQiLCJzZW5kZXIiOiJjb3Ntb3Mxbnhsd3h2OXN3NG55ejVkM2E0c2d0NTNlMHNxOHFzeGNsbHB1NmsifQ==', destination_channel: 'channel-0', destination_port: 'transfer', sequence: '1', source_channel: 'channel-1', source_port: 'transfer', timeout_height: { revision_height: '0', revision_number: '0' }, timeout_timestamp: '14933241973593604096' }, relayer: '', target: 'agoric14trrq9vusrmgxur2lf42lkdjxjedcz95k5a205qee0yy0l9sdtdstw3zja', type: 'VTRANSFER_IBC_EVENT' }
+   *   And packet.data decodes to: '{"amount":"99","denom":"uatom","receiver":"agoric10rchp2kxxq2eeq8ksdcx47n24lvmyd9jmsytfdf65lgpnj7ggl7tq6km8anx7meavfshyqpq2rfuad","sender":"cosmos1nxlwxv9sw4nyz5d3a4sgt53e0sq8qsxcllpu6k"}'
    */
   const atomResult = await VE(account).parseInboundTransfer(
     buildVTransferEvent({

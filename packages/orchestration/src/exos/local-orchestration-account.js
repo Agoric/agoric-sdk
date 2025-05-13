@@ -172,7 +172,7 @@ export const prepareLocalOrchestrationAccountKit = (
       }),
       parseInboundTransferWatcher: M.interface('parseInboundTransferWatcher', {
         onFulfilled: M.call(M.record(), M.record()).returns(M.record()),
-        onRejected: M.call(M.error(), M.record()).returns(M.record()),
+        onRejected: M.call(M.any(), M.record()).returns(M.record()),
       }),
       invitationMakers: M.interface('invitationMakers', {
         CloseAccount: M.call().returns(M.promise()),
