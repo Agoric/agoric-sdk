@@ -223,7 +223,6 @@ export const prepareStatusManager = (
     { nfa, amount }: { nfa: NobleAddress; amount: bigint },
     status: PendingTxStatus,
   ): void {
-    pendingSettleTxs.has(nfa) || Fail`no advancing tx with ${{ nfa, amount }}`;
     const pending = pendingSettleTxs.get(nfa);
     const ix = pending.findIndex(
       tx => tx.status === PendingTxStatus.Advancing && tx.tx.amount === amount,

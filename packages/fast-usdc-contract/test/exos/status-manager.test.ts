@@ -199,16 +199,16 @@ test('cannot advanceOutcome without ADVANCING entry', t => {
   const e1 = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
   const advanceOutcomeFn = () =>
     statusManager.advanceOutcome(e1.tx.forwardingAddress, e1.tx.amount, true);
-  const expectedErrMsg =
-    'no advancing tx with {"amount":"[150000000n]","nfa":"noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd"}';
 
   t.throws(advanceOutcomeFn, {
-    message: expectedErrMsg,
+    message:
+      'key "noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd" not found in collection "PendingSettleTxs"',
   });
 
   statusManager.skipAdvance(e1, []);
   t.throws(advanceOutcomeFn, {
-    message: expectedErrMsg,
+    message:
+      'no advancing tx with {"amount":"[150000000n]","nfa":"noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd"}',
   });
 
   const e2 = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
