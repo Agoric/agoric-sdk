@@ -171,8 +171,8 @@ export const prepareLocalOrchestrationAccountKit = (
         ),
       }),
       parseInboundTransferWatcher: M.interface('parseInboundTransferWatcher', {
-        onFulfilled: M.call(M.any(), M.any()).returns(M.any()),
-        onRejected: M.call(M.or(M.string(), M.record())).returns(M.record()),
+        onFulfilled: M.call(M.record(), M.record()).returns(M.record()),
+        onRejected: M.call(M.error(), M.record()).returns(M.record()),
       }),
       invitationMakers: M.interface('invitationMakers', {
         CloseAccount: M.call().returns(M.promise()),
@@ -806,15 +806,14 @@ export const prepareLocalOrchestrationAccountKit = (
              */
             let denomOrTrace;
 
-            const prefix = `${packet.destination_port}/${packet.destination_channel}/`;
-            trace('PREFIX', prefix);
-            trace('TRANSFER_DENOM', transferDenom);
+            const prefix = `${packet.source_port}/${packet.source_channel}/`;
+            trace({ transferDenom, prefix });
             if (transferDenom.startsWith(prefix)) {
               // Unwind, which may end up as a local denom.
               denomOrTrace = transferDenom.slice(prefix.length);
             } else {
               // If the denom is not local, attach its source.
-              denomOrTrace = `${packet.source_port}/${packet.source_channel}/${transferDenom}`;
+              denomOrTrace = `${packet.destination_port}/${packet.destination_channel}/${transferDenom}`;
             }
 
             // Find the local denom hash for the transferDenom, if there is one.

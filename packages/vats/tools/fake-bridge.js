@@ -251,6 +251,8 @@ export const LOCALCHAIN_QUERY_ALL_BALANCES_RESPONSE = [
   },
 ];
 
+export const LOCALCHAIN_QUERY_DENOM_HASH_DEFAULT_VALUE = 'fakeDenomHash';
+
 /**
  * Used to mock responses from Cosmos Golang back to SwingSet for for
  * E(lca).query() and E(lca).queryMany().
@@ -293,13 +295,17 @@ export const fakeLocalChainBridgeQueryHandler = message => {
       };
     }
     case '/ibc.applications.transfer.v1.QueryDenomHashRequest': {
-      console.log('MESSAGE_FAKE', message);
+      // native agoric assets cause this query throw
+      if (message.trace === 'ubld') {
+        throw new Error('ubld denomination trace not found');
+      }
+
       return {
         error: '',
         height: '1',
         reply: {
           '@type': '/ibc.applications.transfer.v1.QueryDenomHashResponse',
-          hash: '1234',
+          hash: LOCALCHAIN_QUERY_DENOM_HASH_DEFAULT_VALUE,
         },
       };
     }

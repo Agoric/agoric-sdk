@@ -5,6 +5,7 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
 import {
   LOCALCHAIN_QUERY_ALL_BALANCES_RESPONSE,
+  LOCALCHAIN_QUERY_DENOM_HASH_DEFAULT_VALUE,
   SIMULATED_ERRORS,
 } from '@agoric/vats/tools/fake-bridge.js';
 import { heapVowE as VE } from '@agoric/vow/vat.js';
@@ -530,50 +531,73 @@ test('parseInboundTransfer', async t => {
   common.utils.populateChainHub();
   const makeTestLOAKit = prepareMakeTestLOAKit(t, common);
   const account = await makeTestLOAKit();
-  const {
-    mocks: { transferBridge },
-    bootstrap: { rootZone },
-  } = common;
 
   const { value: target } = await VE(account).getAddress();
-  const result = await VE(account).parseInboundTransfer(
-    buildVTransferEvent({ receiver: target }).packet,
+
+  /**
+   * Here we assume an account on CosmosHub that has BLD (funded by an Agoric account)
+   * sends some 'ibc/hash('transfer/channel-1/' + ubld)' back to Agoric. Where "transfer"
+   * is source port and "channel-1" is source channel for CosmosHub.
+   *
+   * parseInboundTransfer should be able to handle incoming denom 'transfer/channel-1/ubld'
+   * as a local denom.
+   *
+   * Here's an example IBC packet we scrapped from multichain:
+   *  - { event: 'writeAcknowledgement', packet: { data: 'eyJhbW91bnQiOiIxMjUiLCJkZW5vbSI6InRyYW5zZmVyL2NoYW5uZWwtMS91YmxkIiwicmVjZWl2ZXIiOiJhZ29yaWMxMHJjaHBjNmFyZjVlNHhmMDYzODh5M21kdzc2M2pnZTZobng0Y3hxcWptend3dzRmMmQ4cnBxZjk4YW54N21lYXZmc2h5cXBxNHo2c2VhIiwic2VuZGVyIjoiY29zbW9zMXJzamR2aHpydDl0NnQwZnl5cnVseGpneHFlcHNtdnJmeXltNWh6In0=', destination_channel: 'channel-1', destination_port: 'transfer', sequence: '1', source_channel: 'channel-1', source_port: 'transfer', timeout_height: { revision_height: '0', revision_number: '0' }, timeout_timestamp: '14933241973593604096' }, relayer: '', target: 'agoric1udw356v6nyhagnnjgakh0dgeyvaten2urqqfd3888254xn3ssyjsmlny72', type: 'VTRANSFER_IBC_EVENT' }
+   *  - And packet.data decodes to: '{"amount":"125","denom":"transfer/channel-1/ubld","receiver":"agoric10rchpc6arf5e4xf06388y3mdw763jge6hnx4cxqqjmzwww4f2d8rpqf98anx7meavfshyqpq4z6sea","sender":"cosmos1rsjdvhzrt9t6t0fyyrulxjgxqepsmvrfyym5hz"}'
+   */
+  const bldResult = await VE(account).parseInboundTransfer(
+    buildVTransferEvent({
+      receiver: target,
+      denom: 'transfer/channel-1/ubld',
+      amount: 33n,
+      destinationChannel: 'channel-0',
+      sequence: '6',
+      sourceChannel: 'channel-1',
+    }).packet,
   );
 
-  t.log(result);
-  t.pass();
+  // Improve assertions here
+  t.log(bldResult);
+  t.like(bldResult, {
+    amount: {
+      denom: 'ubld',
+      value: 33n,
+    },
+    extra: {
+      denom: 'transfer/channel-1/ubld',
+      amount: '33',
+    },
+  });
 
-  // let upcallCount = 0;
-  // const zone = rootZone.subZone('tap');
-  // const tap: TargetApp = zone.exo('tap', undefined, {
-  //   receiveUpcall: (obj: unknown) => {
-  //     upcallCount += 1;
-  //     t.log('receiveUpcall', obj);
-  //     return Promise.resolve();
-  //   },
-  // });
+  /**
+   * And here we send uatom from CosmosHub to Agoric. The expectation is that parseInboundTransfer returns
+   * a hash as amount.denom instead of 'transfer/channel-0/uatom'.
+   *
+   * Here's an example IBC packet we scrapped from multichain:
+   * - { event: 'writeAcknowledgement', packet: { data: 'eyJhbW91bnQiOiI5OSIsImRlbm9tIjoidWF0b20iLCJyZWNlaXZlciI6ImFnb3JpYzEwcmNocDJreHhxMmVlcThrc2RjeDQ3bjI0bHZteWQ5am1zeXRmZGY2NWxncG5qN2dnbDd0cTZrbThhbng3bWVhdmZzaHlxcHEycmZ1YWQiLCJzZW5kZXIiOiJjb3Ntb3Mxbnhsd3h2OXN3NG55ejVkM2E0c2d0NTNlMHNxOHFzeGNsbHB1NmsifQ==', destination_channel: 'channel-0', destination_port: 'transfer', sequence: '1', source_channel: 'channel-1', source_port: 'transfer', timeout_height: { revision_height: '0', revision_number: '0' }, timeout_timestamp: '14933241973593604096' }, relayer: '', target: 'agoric14trrq9vusrmgxur2lf42lkdjxjedcz95k5a205qee0yy0l9sdtdstw3zja', type: 'VTRANSFER_IBC_EVENT' }
+   * - And packet.data decodes to: '{"amount":"99","denom":"uatom","receiver":"agoric10rchp2kxxq2eeq8ksdcx47n24lvmyd9jmsytfdf65lgpnj7ggl7tq6km8anx7meavfshyqpq2rfuad","sender":"cosmos1nxlwxv9sw4nyz5d3a4sgt53e0sq8qsxcllpu6k"}'
+   */
+  const atomResult = await VE(account).parseInboundTransfer(
+    buildVTransferEvent({
+      receiver: target,
+      denom: 'uatom',
+      amount: 35n,
+      destinationChannel: 'channel-0',
+      sequence: '6',
+      sourceChannel: 'channel-1',
+    }).packet,
+  );
 
-  // const { value: target } = await VE(account).getAddress();
-  // // XXX let the PacketTools subscribeToTransfers complete before triggering it
-  // // again with monitorTransfers
-  // await eventLoopIteration();
-
-  // const appRegistration = await VE(account).monitorTransfers(tap);
-
-  // // simulate upcall from golang to VM
-  // const simulateIncomingTransfer = async () =>
-  //   VE(transferBridge).fromBridge(
-  //     buildVTransferEvent({
-  //       receiver: target,
-  //     }),
-  //   );
-
-  // await simulateIncomingTransfer();
-  // t.is(upcallCount, 1, 'first upcall received');
-  // await simulateIncomingTransfer();
-  // t.is(upcallCount, 2, 'second upcall received');
-
-  // await appRegistration.revoke();
-  // await simulateIncomingTransfer();
-  // t.is(upcallCount, 2, 'no more events after app is revoked');
+  t.log(atomResult);
+  t.like(atomResult, {
+    amount: {
+      denom: `ibc/${LOCALCHAIN_QUERY_DENOM_HASH_DEFAULT_VALUE}`,
+      value: 35n,
+    },
+    extra: {
+      denom: 'uatom',
+      amount: '35',
+    },
+  });
 });
