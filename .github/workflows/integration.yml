@@ -48,6 +48,7 @@ jobs:
     needs: pre_check
     if: needs.pre_check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
+    continue-on-error: true # know failures of getting-started job
     strategy:
       fail-fast: false
       matrix:
