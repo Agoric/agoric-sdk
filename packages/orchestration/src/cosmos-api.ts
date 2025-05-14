@@ -357,6 +357,15 @@ export interface LocalAccountMethods extends StakingAccountActions {
    * @param tap
    */
   monitorTransfers: (tap: TargetApp) => Promise<TargetRegistration>;
+  /**
+   * Parse an incoming transfer message and return its details.
+   */
+  parseInboundTransfer: (packet: Record<string, any>) => Promise<{
+    amount: DenomAmount;
+    fromAccount: AccountId;
+    toAccount: AccountId;
+    extra: Record<string, any>;
+  }>;
 }
 
 /**
