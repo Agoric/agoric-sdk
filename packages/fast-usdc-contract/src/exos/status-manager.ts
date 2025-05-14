@@ -206,8 +206,7 @@ export const prepareStatusManager = (
     publishEvidence(txHash, evidence);
     if (status === PendingTxStatus.AdvanceSkipped) {
       publishTxnRecord(txHash, harden({ status, risksIdentified }));
-    } else if (status !== PendingTxStatus.Observed) {
-      // publishEvidence publishes Observed
+    } else {
       publishTxnRecord(txHash, harden({ status }));
     }
   };
