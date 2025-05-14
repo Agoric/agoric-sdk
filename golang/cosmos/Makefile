@@ -109,7 +109,7 @@ proto-check-breaking:
 
 GOGO_PROTO_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/gogoproto)
 # GOOGLE_API_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/googleapis/googleapis)/google/api
-IBC_PROTO_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/ibc-go/v7)/proto/ibc/core
+IBC_PROTO_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/ibc-go/v8)/proto/ibc/core
 COSMOS_PROTO_PROTO_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/cosmos-proto)/proto/cosmos_proto
 COSMOS_SDK_PROTO_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/cosmos-sdk)/proto/cosmos
 COSMOS_SDK_AMINO_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/cosmos-sdk)/proto/amino
