@@ -927,8 +927,15 @@ test('not yet implemented', async t => {
 });
 
 test('executeEncodedTx', async t => {
+  const { inspectDibcBridge } = t.context.utils;
   const makeTestCOAKit = prepareMakeTestCOAKit(t, t.context);
   const account = await makeTestCOAKit();
+  {
+    const { bridgeDowncalls } = await inspectDibcBridge();
+    t.is(bridgeDowncalls.length, 2);
+    t.is(bridgeDowncalls[0].method, 'bindPort');
+    t.is(bridgeDowncalls[1].method, 'startChannelOpenInit');
+  }
 
   const delegateMsgSuccess = Any.toJSON(
     MsgDelegate.toProtoMsg({
@@ -954,11 +961,39 @@ test('executeEncodedTx', async t => {
   );
   t.is(
     await E(account).executeEncodedTx([delegateMsgSuccess], {
+      // note: specifies timeout height on remote chain via TxBody, which does not affect IBC layer
       timeoutHeight: 6n,
     }),
     'Ei0KKy9jb3Ntb3Muc3Rha2luZy52MWJldGExLk1zZ0RlbGVnYXRlUmVzcG9uc2U=', // cosmos.staking.v1beta1.MsgDelegateResponse
     'delegateMsgSuccess',
   );
+
+  t.log('setting custom timeout via relativeTimeoutNs...');
+  t.is(
+    await E(account).executeEncodedTx([delegateMsgSuccess], {
+      // sets a timeout at IBC layer, overriding `DEFAULT_PACKET_TIMEOUT_NS` (ibc.js) default
+      // in practice, we'd want to set something much higher than 5 nanoseconds
+      sendOpts: { relativeTimeoutNs: 5n },
+    }),
+    /**
+     * `relativeTimeoutNs` doesn't appear in the packet data, so we don't need to add a new proto msg mapping
+     * below, we'll confirm with bridge events
+     */
+    'Ei0KKy9jb3Ntb3Muc3Rha2luZy52MWJldGExLk1zZ0RlbGVnYXRlUmVzcG9uc2U=', // cosmos.staking.v1beta1.MsgDelegateResponse
+    'delegateMsgSuccess',
+  );
+
+  {
+    const { bridgeDowncalls } = await inspectDibcBridge();
+    t.is(bridgeDowncalls.length, 5);
+    // `DEFAULT_PACKET_TIMEOUT_NS` from `@agoric/vats/src/ibc.js`
+    const DEFAULT_PACKET_TIMEOUT_NS = 60n * 60n * 1_000_000_000n;
+    t.is(
+      (bridgeDowncalls[2] as IBCMethod<'sendPacket'>).relativeTimeoutNs,
+      DEFAULT_PACKET_TIMEOUT_NS,
+    );
+    t.is((bridgeDowncalls[4] as IBCMethod<'sendPacket'>).relativeTimeoutNs, 5n);
+  }
 });
 
 test(`depositForBurn via Noble to Base`, async t => {
