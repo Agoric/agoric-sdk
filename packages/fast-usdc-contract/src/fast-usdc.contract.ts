@@ -12,11 +12,12 @@ import {
   OrchestrationPowersShape,
   registerChainsAndAssets,
   withOrchestration,
-  type AccountId,
   type AmountArg,
+  type Bech32Address,
   type ChainInfo,
   type CosmosChainAddress,
   type Denom,
+  type DenomAmount,
   type DenomDetail,
   type IBCConnectionInfo,
   type OrchestrationAccount,
@@ -327,25 +328,36 @@ export const contract = async (
      * OpCo made those transfers from its own funds. This method is to be called
      * in a CoreEval to reimburse those payments.
      *
-     * @param recipient - The account ID of the recipient to reimburse.
-     * @param amount - The amount to reimburse, in the USDC brand.
+     * @param agoricRecipient - The Bech32 of the recipient (must be Agoric).
+     * @param amount - The amount to send, in the USDC brand.
      */
-    reimburseFailedForwards(
-      recipient: AccountId,
+    async sendFromSettlementAccount(
+      agoricRecipient: Bech32Address,
       amount: AmountArg,
-    ): Promise<void> {
-      trace(`Reimbursing ${amount} to ${recipient}`);
+    ): Promise<{ before: DenomAmount[]; after: DenomAmount[] }> {
+      trace(
+        `Sending ${quote(amount)} to ${agoricRecipient} from settlementAccount`,
+      );
+      const recipient = chainHub.resolveAccountId(agoricRecipient);
+      const before = await vowTools.when(E(settlementAccount).getBalances());
 
       return vowTools.when(
-        E(settlementAccount).transfer(recipient, amount),
-        value => {
+        E(settlementAccount).send(recipient, amount),
+        async () => {
           poolKit.external.publishPoolMetrics();
-          trace(`Reimbursed ${quote(amount)} to ${recipient}:`, value);
-          return undefined;
+          const after = await vowTools.when(E(settlementAccount).getBalances());
+          trace(
+            `Sent ${quote(amount)} to ${agoricRecipient}. settlementAccount:`,
+            {
+              before,
+              after,
+            },
+          );
+          return { before, after };
         },
         err => {
-          trace(`Failed to reimburse ${amount} to ${recipient}:`, err);
-          throw Fail`Reimbursement failed: ${err}`;
+          trace(`Failed to send ${amount} to ${agoricRecipient}:`, err);
+          throw Fail`Send failed: ${err}`;
         },
       );
     },
