@@ -13,7 +13,15 @@ import { type Zone } from '@agoric/zone';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
-import type { TransactionRecord } from '@agoric/fast-usdc/src/types.ts';
+import type {
+  CctpTxEvidence,
+  FeeConfig,
+  TransactionRecord,
+} from '@agoric/fast-usdc/src/types.ts';
+import {
+  makeFeeTools,
+  type RepayAmountKWR,
+} from '@agoric/fast-usdc/src/utils/fees.js';
 import { makeTestFeeConfig } from './mocks.js';
 
 export {
@@ -112,6 +120,20 @@ export const setupFastUsdcTest = async ({
     ) as TransactionRecord[];
   };
 
+  const { chainHub } = common.facadeServices;
+  const testFeeConfig = makeTestFeeConfig(usdc);
+
+  /** calculate fee split for evidence */
+  const splitFromEvidence = (
+    evidence: CctpTxEvidence,
+    feeConfig: FeeConfig = testFeeConfig,
+  ): RepayAmountKWR => {
+    return makeFeeTools(feeConfig).calculateSplit(
+      usdc.make(evidence.tx.amount),
+      chainHub.resolveAccountId(evidence.aux.recipientAddress),
+    );
+  };
+
   return {
     ...common,
     brands: {
@@ -119,8 +141,12 @@ export const setupFastUsdcTest = async ({
     },
     commonPrivateArgs: {
       ...common.commonPrivateArgs,
-      feeConfig: makeTestFeeConfig(usdc),
+      feeConfig: testFeeConfig,
       assetInfo,
+    },
+    utils: {
+      ...common.utils,
+      splitFromEvidence,
     },
     readTxnRecord,
   };
