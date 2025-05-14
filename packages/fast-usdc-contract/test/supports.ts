@@ -1,18 +1,4 @@
 import { makeIssuerKit } from '@agoric/ertp';
-import {
-  denomHash,
-  type CosmosChainInfo,
-  type Denom,
-} from '@agoric/orchestration';
-import { type DenomDetail } from '@agoric/orchestration/src/exos/chain-hub.js';
-import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
-import { setupOrchestrationTest } from '@agoric/orchestration/tools/contract-tests.ts';
-import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
-import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import { type Zone } from '@agoric/zone';
-import { makeDurableZone } from '@agoric/zone/durable.js';
-import { E } from '@endo/far';
-import type { ExecutionContext } from 'ava';
 import type {
   CctpTxEvidence,
   FeeConfig,
@@ -22,6 +8,21 @@ import {
   makeFeeTools,
   type RepayAmountKWR,
 } from '@agoric/fast-usdc/src/utils/fees.js';
+import {
+  denomHash,
+  type CosmosChainInfo,
+  type Denom,
+} from '@agoric/orchestration';
+import { type DenomDetail } from '@agoric/orchestration/src/exos/chain-hub.js';
+import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
+import { setupOrchestrationTest } from '@agoric/orchestration/tools/contract-tests.ts';
+import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
+import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
+import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
+import { type Zone } from '@agoric/zone';
+import { makeDurableZone } from '@agoric/zone/durable.js';
+import { E } from '@endo/far';
+import type { ExecutionContext } from 'ava';
 import { makeTestFeeConfig } from './mocks.js';
 
 export {
@@ -93,14 +94,14 @@ export const setupFastUsdcTest = async ({
   const { mint: _i, ...usdcSansMint } = usdc;
   await E(E(agoricNamesAdmin).lookupAdmin('vbankAsset')).update(
     uusdcOnAgoric,
-    /** @type {AssetInfo} */ harden({
+    harden({
       brand: usdc.brand,
       issuer: usdc.issuer,
       issuerName: 'USDC',
       denom: 'uusdc',
       proposedName: 'USDC',
-      displayInfo: { IOU: true },
-    }),
+      displayInfo: { assetKind: 'nat', IOU: true },
+    }) as AssetInfo,
   );
 
   const assetInfo: [Denom, DenomDetail & { brandKey?: string }][] = harden([

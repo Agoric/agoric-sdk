@@ -903,8 +903,7 @@ export const makeSwingsetHarness = ({
     xsnapComputron: computronCost,
   },
 } = {}) => {
-  /** @type {ReturnType<typeof computronCounter> | undefined} */
-  let policy;
+  let policy: ReturnType<typeof computronCounter> | undefined;
   let policyEnabled = false;
 
   const meter = harden({

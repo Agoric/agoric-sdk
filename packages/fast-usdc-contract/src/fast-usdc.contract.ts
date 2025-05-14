@@ -12,6 +12,9 @@ import {
   OrchestrationPowersShape,
   registerChainsAndAssets,
   withOrchestration,
+  type AccountId,
+  type AmountArg,
+  type ChainInfo,
   type CosmosChainAddress,
   type Denom,
   type DenomDetail,
@@ -24,7 +27,7 @@ import type { HostForGuest } from '@agoric/orchestration/src/facade.js';
 import { makeZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
-import { Fail } from '@endo/errors';
+import { Fail, quote } from '@endo/errors';
 import { E, type ERef } from '@endo/far';
 import { M } from '@endo/patterns';
 
@@ -318,12 +321,38 @@ export const contract = async (
     remediateUndetectedBatches(minUusdc: bigint): void {
       return settlerKit.creator.remediateMintedEarly(minUusdc);
     },
-    /** @type {typeof chainHub.updateChain} */
-    updateChain(chainName, chainInfo) {
+    /**
+     * Transactions that reached FAILED_FORWARD status before we had a retrier
+     * (and stored failed forwards) were terminal and required manual payment.
+     * OpCo made those transfers from its own funds. This method is to be called
+     * in a CoreEval to reimburse those payments.
+     *
+     * @param recipient - The account ID of the recipient to reimburse.
+     * @param amount - The amount to reimburse, in the USDC brand.
+     */
+    reimburseFailedForwards(
+      recipient: AccountId,
+      amount: AmountArg,
+    ): Promise<void> {
+      trace(`Reimbursing ${amount} to ${recipient}`);
+
+      return vowTools.when(
+        E(settlementAccount).transfer(recipient, amount),
+        value => {
+          poolKit.external.publishPoolMetrics();
+          trace(`Reimbursed ${quote(amount)} to ${recipient}:`, value);
+          return undefined;
+        },
+        err => {
+          trace(`Failed to reimburse ${amount} to ${recipient}:`, err);
+          throw Fail`Reimbursement failed: ${err}`;
+        },
+      );
+    },
+    updateChain(chainName: string, chainInfo: ChainInfo): void {
       return chainHub.updateChain(chainName, chainInfo);
     },
-    /** @type {typeof chainHub.registerChain} */
-    registerChain(chainName, chainInfo) {
+    registerChain(chainName: string, chainInfo: ChainInfo): void {
       return chainHub.registerChain(chainName, chainInfo);
     },
   });
