@@ -428,11 +428,7 @@ test.serial(
   },
 );
 
-/**
- * UNTIL https://github.com/Agoric/BytePitchPartnerEng/issues/51, we are skipping this
- * until the ticket above is done
- */
-test.skip('address hook - BLD for OSMO, receiver on Agoric', async t => {
+test.serial('address hook - BLD for OSMO, receiver on Agoric', async t => {
   const { wallets, vstorageClient, retryUntilCondition, useChain } = t.context;
   const { getRestEndpoint, chain: cosmosChain } = useChain('cosmoshub');
 
@@ -507,7 +503,7 @@ test.skip('address hook - BLD for OSMO, receiver on Agoric', async t => {
       const currentBalanceAmount = BigInt(balances[0]?.amount || 0);
       return currentBalanceAmount > balancesBeforeAmount;
     },
-    'Deposit reflected in localOrchAccount balance',
+    'Osmosis swap output reflected on Agoric receiver balance',
   );
   t.log(agoricReceiverBalances);
 
