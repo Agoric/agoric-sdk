@@ -22,7 +22,7 @@ const { entries } = Object;
  * @import {Vow} from '@agoric/vow';
  * @import {LocalOrchestrationAccountKit} from '../exos/local-orchestration-account.js';
  * @import {ZoeTools} from '../utils/zoe-tools.js';
- * @import {Orchestrator, OrchestrationFlow, ChainHub, CosmosChainInfo} from '../types.js';
+ * @import {Orchestrator, OrchestrationFlow, ChainHub, CosmosChainInfo, DenomAmount} from '../types.js';
  */
 
 const denomForBrand = async (orch, brand) => {
@@ -166,21 +166,18 @@ export const swapIt = async (
 harden(swapIt);
 
 /**
- * UNTIL https://github.com/Agoric/BytePitchPartnerEng/issues/51 is done, we
- * can't demonstrate this
- *
  * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} _orch
  * @param {object} ctx
  * @param {GuestInterface<ChainHub>} ctx.chainHub
  * @param {Promise<GuestInterface<LocalOrchestrationAccountKit['holder']>>} ctx.sharedLocalAccountP
- * @param {{ denom: string; amount: string }} transferInfo
+ * @param {DenomAmount} transferInfo
  * @param {SwapInfo} memoArgs
  */
 export const swapAnythingViaHook = async (
   _orch,
   { chainHub, sharedLocalAccountP },
-  { denom, amount },
+  { denom, value },
   memoArgs,
 ) => {
   mustMatch(
@@ -198,7 +195,7 @@ export const swapAnythingViaHook = async (
   );
 
   const { receiverAddr, destAddr } = memoArgs;
-  trace(`sending {${amount}} from osmosis to ${receiverAddr}`);
+  trace(`sending {${value}} from osmosis to ${receiverAddr}`);
 
   /**
    * @type {any} XXX methods returning vows
@@ -222,7 +219,7 @@ export const swapAnythingViaHook = async (
       encoding: 'bech32',
       chainId: /** @type {CosmosChainInfo} */ (osmosisChainInfo).chainId,
     },
-    { denom, value: BigInt(amount) },
+    { denom, value },
     { memo },
   );
 
