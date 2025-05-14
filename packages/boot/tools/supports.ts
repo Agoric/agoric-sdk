@@ -28,7 +28,10 @@ import { initSwingStore } from '@agoric/swing-store';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { makeSlogSender } from '@agoric/telemetry';
 import { TimeMath, type Timestamp } from '@agoric/time';
-import { fakeLocalChainBridgeTxMsgHandler } from '@agoric/vats/tools/fake-bridge.js';
+import {
+  fakeLocalChainBridgeQueryHandler,
+  fakeLocalChainBridgeTxMsgHandler,
+} from '@agoric/vats/tools/fake-bridge.js';
 import { Fail } from '@endo/errors';
 
 import type { Amount, Brand } from '@agoric/ertp';
@@ -678,6 +681,18 @@ export const makeSwingsetTestKit = async (
         return obj.messages.map(message =>
           fakeLocalChainBridgeTxMsgHandler(message, lcaSequenceNonce),
         );
+      }
+      case `${BridgeId.VLOCALCHAIN}:VLOCALCHAIN_QUERY_MANY`: {
+        console.warn(
+          'SwingsetTestKit bridgeOutbound faking VLOCALCHAIN_QUERY_MANY response for',
+          obj,
+        );
+        lcaSequenceNonce += 1;
+        const result = obj.messages.map(message =>
+          fakeLocalChainBridgeQueryHandler(message),
+        );
+        console.warn('      VLOCALCHAIN_QUERY_MANY result', result);
+        return result;
       }
       default: {
         throw Error(`FIXME missing support for ${bridgeId}: ${obj.type}`);
