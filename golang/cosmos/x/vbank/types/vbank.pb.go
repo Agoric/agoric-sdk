@@ -7,11 +7,12 @@ import (
 	fmt "fmt"
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
 	types "github.com/cosmos/cosmos-sdk/types"
+	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
-	_ "github.com/gogo/protobuf/gogoproto"
 	io "io"
 	math "math"
 	math_bits "math/bits"
+	sdkmath "cosmossdk.io/math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -34,7 +35,7 @@ type Params struct {
 	// per_epoch_reward_fraction is a fraction of the reward pool to distrubute
 	// once every reward epoch.  If less than zero, use approximately continuous
 	// per-block distribution.
-	PerEpochRewardFraction github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,2,opt,name=per_epoch_reward_fraction,json=perEpochRewardFraction,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"per_epoch_reward_fraction" yaml:"discrete_epoch_reward_fraction"`
+	PerEpochRewardFraction sdkmath.LegacyDec `protobuf:"bytes,2,opt,name=per_epoch_reward_fraction,json=perEpochRewardFraction,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"per_epoch_reward_fraction" yaml:"discrete_epoch_reward_fraction"`
 	// reward_smoothing_blocks is the number of blocks over which to distribute
 	// an epoch's rewards.  If zero, use the same value as
 	// reward_epoch_duration_blocks.

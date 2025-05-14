@@ -7,11 +7,12 @@ import (
 	fmt "fmt"
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
 	types "github.com/cosmos/cosmos-sdk/types"
+	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
-	_ "github.com/gogo/protobuf/gogoproto"
 	io "io"
 	math "math"
 	math_bits "math/bits"
+	sdkmath "cosmossdk.io/math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -298,7 +299,7 @@ type StringBeans struct {
 	// What the beans are for.
 	Key string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
 	// The actual bean value.
-	Beans github_com_cosmos_cosmos_sdk_types.Uint `protobuf:"bytes,2,opt,name=beans,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Uint" json:"beans"`
+	Beans sdkmath.Uint `protobuf:"bytes,2,opt,name=beans,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Uint" json:"beans"`
 }
 
 func (m *StringBeans) Reset()         { *m = StringBeans{} }
@@ -455,7 +456,7 @@ func (m *QueueSize) GetSize_() int32 {
 // zeroes survive "omitempty" JSON serialization.
 type UintMapEntry struct {
 	Key   string                                  `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
-	Value github_com_cosmos_cosmos_sdk_types.Uint `protobuf:"bytes,2,opt,name=value,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Uint" json:"value"`
+	Value sdkmath.Uint `protobuf:"bytes,2,opt,name=value,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Uint" json:"value"`
 }
 
 func (m *UintMapEntry) Reset()         { *m = UintMapEntry{} }

@@ -3,6 +3,7 @@ package keeper
 import (
 	"strings"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -32,7 +33,7 @@ func minCoins(a, b sdk.Coins) sdk.Coins {
 	return sdk.NewCoins(min...)
 }
 
-func mulCoins(a sdk.Coins, b sdk.Dec) sdk.Coins {
+func mulCoins(a sdk.Coins, b sdkmath.LegacyDec) sdk.Coins {
 	coins := make([]sdk.Coin, 0, len(a))
 	for _, coin := range a {
 		amount := b.MulInt(coin.Amount).TruncateInt()

@@ -75,6 +75,12 @@ type AppModule struct {
 	keeper Keeper
 }
 
+// IsAppModule implements the appmodule.AppModule interface.
+func (am AppModule) IsAppModule() {}
+
+// IsOnePerModuleType is a marker function just indicates that this is a one-per-module type.
+func (am AppModule) IsOnePerModuleType() {}
+
 // NewAppModule creates a new AppModule Object
 func NewAppModule(k Keeper) AppModule {
 	am := AppModule{
@@ -97,11 +103,11 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 
 func (AppModule) ConsensusVersion() uint64 { return 1 }
 
-func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
+func (am AppModule) BeginBlock(ctx sdk.Context) {
 	am.keeper.NewChangeBatch(ctx)
 }
 
-func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
+func (am AppModule) EndBlock(ctx sdk.Context) []abci.ValidatorUpdate {
 	am.keeper.FlushChangeEvents(ctx)
 	// Prevent Cosmos SDK internal errors.
 	return []abci.ValidatorUpdate{}

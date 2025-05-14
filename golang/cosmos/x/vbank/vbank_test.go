@@ -7,16 +7,18 @@ import (
 	"sort"
 	"testing"
 
+	"cosmossdk.io/log"
+	sdkmath "cosmossdk.io/math"
+	"cosmossdk.io/store"
+	storemetrics "cosmossdk.io/store/metrics"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
-	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
-	"github.com/cometbft/cometbft/libs/log"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	"github.com/cosmos/cosmos-sdk/store"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	dbm "github.com/cosmos/cosmos-db"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
@@ -219,7 +221,7 @@ func (b *mockBank) GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coin
 
 func (b *mockBank) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
 	b.record(fmt.Sprintf("GetBalance %s %s", addr, denom))
-	amount := sdk.ZeroInt()
+	amount := sdkmath.ZeroInt()
 	if balances, ok := b.balances[addr.String()]; ok {
 		amount = balances.AmountOf(denom)
 	}
@@ -254,15 +256,16 @@ func makeTestKit(account types.AccountKeeper, bank types.BankKeeper) (Keeper, sd
 		return nil
 	}
 
-	paramsTStoreKey := sdk.NewTransientStoreKey(paramstypes.TStoreKey)
-	paramsStoreKey := sdk.NewKVStoreKey(paramstypes.StoreKey)
+	paramsTStoreKey := storetypes.NewTransientStoreKey(paramstypes.TStoreKey)
+	paramsStoreKey := storetypes.NewKVStoreKey(paramstypes.StoreKey)
 	pk := paramskeeper.NewKeeper(cdc, encodingConfig.Amino, paramsStoreKey, paramsTStoreKey)
 
 	subspace := pk.Subspace(types.ModuleName)
 	keeper := NewKeeper(cdc, vbankStoreKey, subspace, account, bank, "feeCollectorName", pushAction)
 
 	db := dbm.NewMemDB()
-	ms := store.NewCommitMultiStore(db)
+	logger := log.NewNopLogger()
+	ms := store.NewCommitMultiStore(db, logger, storemetrics.NewNoOpMetrics())
 	ms.MountStoreWithDB(vbankStoreKey, storetypes.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(paramsStoreKey, storetypes.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(paramsTStoreKey, storetypes.StoreTypeTransient, db)
@@ -416,7 +419,7 @@ func Test_Receive_GiveToRewardDistributor(t *testing.T) {
 			feeDenom:      "yoctoquatloos",
 			wantMintCoins: "123456789123456789123456789yoctoquatloos",
 			wantRate: sdk.NewCoins(
-				sdk.NewCoin("yoctoquatloos", sdk.NewInt(123456789123456789).MulRaw(1000).AddRaw(124)),
+				sdk.NewCoin("yoctoquatloos", sdkmath.NewInt(123456789123456789).MulRaw(1000).AddRaw(124)),
 			),
 		},
 		{
@@ -427,7 +430,7 @@ func Test_Receive_GiveToRewardDistributor(t *testing.T) {
 			feeDenom:      "yoctoquatloos",
 			wantMintCoins: "123456789123456789123456789yoctoquatloos",
 			wantRate: sdk.NewCoins(
-				sdk.NewCoin("yoctoquatloos", sdk.NewInt(123456789123456789).MulRaw(1000).AddRaw(124)),
+				sdk.NewCoin("yoctoquatloos", sdkmath.NewInt(123456789123456789).MulRaw(1000).AddRaw(124)),
 			),
 		},
 	}
@@ -462,7 +465,7 @@ func Test_Receive_GiveToRewardDistributor(t *testing.T) {
 				t.Errorf("got error = %v", err)
 			}
 			state := keeper.GetState(ctx)
-			if !state.RewardBlockAmount.IsEqual(tt.wantRate) {
+			if !state.RewardBlockAmount.Equal(tt.wantRate) {
 				t.Errorf("got rate %v, want %v", state.RewardBlockAmount, tt.wantRate)
 			}
 		})
@@ -525,7 +528,7 @@ func Test_EndBlock_Events(t *testing.T) {
 	}
 	keeper, ctx := makeTestKit(acct, bank)
 	// Turn off rewards.
-	keeper.SetParams(ctx, types.Params{PerEpochRewardFraction: sdk.ZeroDec(), AllowedMonitoringAccounts: []string{"*"}})
+	keeper.SetParams(ctx, types.Params{PerEpochRewardFraction: sdkmath.LegacyZeroDec(), AllowedMonitoringAccounts: []string{"*"}})
 	msgsSent := []string{}
 	keeper.PushAction = func(ctx sdk.Context, action vm.Action) error {
 		bz, err := json.Marshal(action)
@@ -570,10 +573,14 @@ func Test_EndBlock_Events(t *testing.T) {
 			},
 		},
 	}
-	em := sdk.NewEventManagerWithHistory(events)
+	sdkEvents := make(sdk.Events, len(events))
+	for i, e := range events {
+		sdkEvents[i] = sdk.Event(e)
+	}
+	em := sdk.NewEventManagerWithHistory(sdkEvents)
 	ctx = ctx.WithEventManager(em)
 
-	updates := am.EndBlock(ctx, abci.RequestEndBlock{})
+	updates := am.EndBlock(ctx)
 	if len(updates) != 0 {
 		t.Errorf("EndBlock() got %+v, want empty", updates)
 	}
@@ -714,10 +721,10 @@ func Test_EndBlock_Rewards(t *testing.T) {
 			keeper.SetParams(ctx, types.Params{
 				RewardEpochDurationBlocks: 3,
 				RewardSmoothingBlocks:     1,
-				PerEpochRewardFraction:    sdk.OneDec(),
+				PerEpochRewardFraction:    sdkmath.LegacyOneDec(),
 			})
 
-			updates := am.EndBlock(ctx, abci.RequestEndBlock{})
+			updates := am.EndBlock(ctx)
 			if len(updates) != 0 {
 				t.Errorf("EndBlock() got %+v, want empty", updates)
 			}
@@ -727,7 +734,7 @@ func Test_EndBlock_Rewards(t *testing.T) {
 			}
 
 			state = keeper.GetState(ctx)
-			if !state.RewardPool.IsEqual(tt.wantPool) {
+			if !state.RewardPool.Equal(tt.wantPool) {
 				t.Errorf("got pool %v, want %v", state.RewardPool, tt.wantPool)
 			}
 

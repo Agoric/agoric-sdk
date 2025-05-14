@@ -30,6 +30,12 @@ var (
 type AppModuleBasic struct {
 }
 
+// IsAppModule implements the appmodule.AppModule interface.
+func (am AppModule) IsAppModule() {}
+
+// IsOnePerModuleType is a marker function just indicates that this is a one-per-module type.
+func (am AppModule) IsOnePerModuleType() {}
+
 func (AppModuleBasic) Name() string {
 	return ModuleName
 }
@@ -128,17 +134,17 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 
 func (AppModule) ConsensusVersion() uint64 { return 2 }
 
-func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
+func (am AppModule) BeginBlock(ctx sdk.Context) {
 	am.ensureControllerInited(ctx)
 
-	err := BeginBlock(ctx, req, am.keeper)
+	err := BeginBlock(ctx, am.keeper)
 	if err != nil {
 		fmt.Println("BeginBlock error:", err)
 	}
 }
 
-func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
-	valUpdate, err := EndBlock(ctx, req, am.keeper)
+func (am AppModule) EndBlock(ctx sdk.Context) []abci.ValidatorUpdate {
+	valUpdate, err := EndBlock(ctx, am.keeper)
 	if err != nil {
 		fmt.Println("EndBlock error:", err)
 	}

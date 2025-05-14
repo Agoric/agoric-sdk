@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	swingsetkeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -82,7 +83,11 @@ func isPrimaryUpgradeName(name string) bool {
 // upgrade plan name of this version have previously been applied.
 func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
 	for _, name := range upgradeNamesOfThisVersion {
-		if app.UpgradeKeeper.GetDoneHeight(ctx, name) != 0 {
+		height, err := app.UpgradeKeeper.GetDoneHeight(ctx, name)
+		if err != nil {
+			panic(fmt.Errorf("Error getting done height:", err))
+		}
+		if height != 0 {
 			return false
 		}
 	}
