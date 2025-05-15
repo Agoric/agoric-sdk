@@ -5,8 +5,8 @@
   "bundles": [
     {
       "entrypoint": "@agoric/orchestration/src/examples/elys.contract.js",
-      "bundleID": "b1-42f1ec1d0fe4c54de4f3e4127fdbe185c74ce2a1b235908bbd57893cbdfe77068e88d6994bd08f44747e89068e5e8a99c4d53cdd39a6d9fa03c8ba396c600cf2",
-      "fileName": "/home/adarsh/.agoric/cache/b1-42f1ec1d0fe4c54de4f3e4127fdbe185c74ce2a1b235908bbd57893cbdfe77068e88d6994bd08f44747e89068e5e8a99c4d53cdd39a6d9fa03c8ba396c600cf2.json"
+      "bundleID": "b1-e8757070250ee146430feaa37028364d186d7b8e7658c109934af159e957e2582b77315d04633e71fc476cdebca7edaf062011f3f8f613433e36b985f48947cb",
+      "fileName": "/home/adarsh/.agoric/cache/b1-e8757070250ee146430feaa37028364d186d7b8e7658c109934af159e957e2582b77315d04633e71fc476cdebca7edaf062011f3f8f613433e36b985f48947cb.json"
     },
     {
       "entrypoint": "@agoric/orchestration/src/proposals/start-elys.js",

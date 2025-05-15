@@ -7,7 +7,7 @@ const getManifestCall = harden([
   {
     installKeys: {
       ElysContract: {
-        bundleID: "b1-42f1ec1d0fe4c54de4f3e4127fdbe185c74ce2a1b235908bbd57893cbdfe77068e88d6994bd08f44747e89068e5e8a99c4d53cdd39a6d9fa03c8ba396c600cf2",
+        bundleID: "b1-e8757070250ee146430feaa37028364d186d7b8e7658c109934af159e957e2582b77315d04633e71fc476cdebca7edaf062011f3f8f613433e36b985f48947cb",
       },
     },
     options: {
@@ -58,28 +58,10 @@ const getManifestCall = harden([
           bech32Prefix: "agoric",
           chainId: "agoricdev-25",
           connections: {
-            "cosmoshub-4": {
-              client_id: "07-tendermint-18",
-              counterparty: {
-                client_id: "07-tendermint-18",
-                connection_id: "connection-224",
-              },
-              id: "connection-17",
-              state: 3,
-              transferChannel: {
-                channelId: "channel-25",
-                counterPartyChannelId: "channel-17",
-                counterPartyPortId: "transfer",
-                ordering: 0,
-                portId: "transfer",
-                state: 3,
-                version: "ics20-1",
-              },
-            },
-            "elys-1": {
+            "elysicstestnet-1": {
               client_id: "07-tendermint-16",
               counterparty: {
-                client_id: "07-tendermint-16",
+                client_id: "07-tendermint-17",
                 connection_id: "connection-10",
               },
               id: "connection-16",
@@ -94,10 +76,28 @@ const getManifestCall = harden([
                 version: "ics20-1",
               },
             },
-            "stride-1": {
+            provider: {
+              client_id: "07-tendermint-18",
+              counterparty: {
+                client_id: "07-tendermint-311",
+                connection_id: "connection-224",
+              },
+              id: "connection-17",
+              state: 3,
+              transferChannel: {
+                channelId: "channel-25",
+                counterPartyChannelId: "channel-388",
+                counterPartyPortId: "transfer",
+                ordering: 0,
+                portId: "transfer",
+                state: 3,
+                version: "ics20-1",
+              },
+            },
+            "stride-internal-1": {
               client_id: "07-tendermint-15",
               counterparty: {
-                client_id: "07-tendermint-15",
+                client_id: "07-tendermint-68",
                 connection_id: "connection-44",
               },
               id: "connection-15",
@@ -128,8 +128,8 @@ const getManifestCall = harden([
           bech32Prefix: "cosmos",
           chainId: "provider",
           connections: {
-            "agoric-3": {
-              client_id: "07-tendermint-18",
+            "agoricdev-25": {
+              client_id: "07-tendermint-311",
               counterparty: {
                 client_id: "07-tendermint-18",
                 connection_id: "connection-17",
@@ -137,7 +137,7 @@ const getManifestCall = harden([
               id: "connection-224",
               state: 3,
               transferChannel: {
-                channelId: "channel-17",
+                channelId: "channel-388",
                 counterPartyChannelId: "channel-25",
                 counterPartyPortId: "transfer",
                 ordering: 0,
@@ -146,7 +146,7 @@ const getManifestCall = harden([
                 version: "ics20-1",
               },
             },
-            "stride-1": {
+            "stride-internal-1": {
               client_id: "07-tendermint-317",
               counterparty: {
                 client_id: "07-tendermint-70",
@@ -180,8 +180,8 @@ const getManifestCall = harden([
           bech32Prefix: "elys",
           chainId: "elysicstestnet-1",
           connections: {
-            "agoric-3": {
-              client_id: "07-tendermint-16",
+            "agoricdev-25": {
+              client_id: "07-tendermint-17",
               counterparty: {
                 client_id: "07-tendermint-16",
                 connection_id: "connection-16",
@@ -198,7 +198,7 @@ const getManifestCall = harden([
                 version: "ics20-1",
               },
             },
-            "stride-1": {
+            "stride-internal-1": {
               client_id: "07-tendermint-19",
               counterparty: {
                 client_id: "07-tendermint-69",
@@ -232,8 +232,8 @@ const getManifestCall = harden([
           bech32Prefix: "stride",
           chainId: "stride-internal-1",
           connections: {
-            "agoric-3": {
-              client_id: "07-tendermint-15",
+            "agoricdev-25": {
+              client_id: "07-tendermint-68",
               counterparty: {
                 client_id: "07-tendermint-15",
                 connection_id: "connection-15",
@@ -250,25 +250,7 @@ const getManifestCall = harden([
                 version: "ics20-1",
               },
             },
-            "cosmoshub-4": {
-              client_id: "07-tendermint-70",
-              counterparty: {
-                client_id: "07-tendermint-317",
-                connection_id: "connection-225",
-              },
-              id: "connection-48",
-              state: 3,
-              transferChannel: {
-                channelId: "channel-62",
-                counterPartyChannelId: "channel-389",
-                counterPartyPortId: "transfer",
-                ordering: 0,
-                portId: "transfer",
-                state: 3,
-                version: "ics20-1",
-              },
-            },
-            "elys-1": {
+            "elysicstestnet-1": {
               client_id: "07-tendermint-69",
               counterparty: {
                 client_id: "07-tendermint-19",
@@ -279,6 +261,24 @@ const getManifestCall = harden([
               transferChannel: {
                 channelId: "channel-61",
                 counterPartyChannelId: "channel-12",
+                counterPartyPortId: "transfer",
+                ordering: 0,
+                portId: "transfer",
+                state: 3,
+                version: "ics20-1",
+              },
+            },
+            provider: {
+              client_id: "07-tendermint-70",
+              counterparty: {
+                client_id: "07-tendermint-317",
+                connection_id: "connection-225",
+              },
+              id: "connection-48",
+              state: 3,
+              transferChannel: {
+                channelId: "channel-62",
+                counterPartyChannelId: "channel-389",
                 counterPartyPortId: "transfer",
                 ordering: 0,
                 portId: "transfer",
@@ -297,6 +297,17 @@ const getManifestCall = harden([
               denom: "ustrd",
             },
           ],
+        },
+      },
+      feeConfig: {
+        feeCollector: "agoric1a659t9fem9vpux6anq8877jh0dz6dtzj7g06r7",
+        offBoardRate: {
+          denominator: "100",
+          nominator: "10",
+        },
+        onBoardRate: {
+          denominator: "100",
+          nominator: "20",
         },
       },
     },

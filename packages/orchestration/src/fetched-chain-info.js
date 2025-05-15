@@ -5,18 +5,18 @@ export default /** @type {const} } */ ({
     chainId: 'agoricdev-25',
     icqEnabled: false,
     namespace: 'cosmos',
-    reference: 'agoric-3',
+    reference: 'agoricdev-25',
     stakingTokens: [
       {
         denom: 'ubld',
       },
     ],
     connections: {
-      'elys-1': {
+      'elysicstestnet-1': {
         id: 'connection-16',
         client_id: '07-tendermint-16',
         counterparty: {
-          client_id: '07-tendermint-16',
+          client_id: '07-tendermint-17',
           connection_id: 'connection-10',
         },
         state: 3,
@@ -30,29 +30,29 @@ export default /** @type {const} } */ ({
           version: 'ics20-1',
         },
       },
-      'cosmoshub-4': {
+      'provider': {
         id: 'connection-17',
         client_id: '07-tendermint-18',
         counterparty: {
-          client_id: '07-tendermint-18',
+          client_id: '07-tendermint-311',
           connection_id: 'connection-224',
         },
         state: 3,
         transferChannel: {
           channelId: 'channel-25',
           portId: 'transfer',
-          counterPartyChannelId: 'channel-17',
+          counterPartyChannelId: 'channel-388',
           counterPartyPortId: 'transfer',
           ordering: 0,
           state: 3,
           version: 'ics20-1',
         },
       },
-      'stride-1': {
+      'stride-internal-1': {
         id: 'connection-15',
         client_id: '07-tendermint-15',
         counterparty: {
-          client_id: '07-tendermint-15',
+          client_id: '07-tendermint-68',
           connection_id: 'connection-44',
         },
         state: 3,
@@ -73,23 +73,23 @@ export default /** @type {const} } */ ({
     chainId: 'provider',
     icqEnabled: false,
     namespace: 'cosmos',
-    reference: 'cosmoshub-4',
+    reference: 'provider',
     stakingTokens: [
       {
         denom: 'uatom',
       },
     ],
     connections: {
-      'agoric-3': {
+      'agoricdev-25': {
         id: 'connection-224',
-        client_id: '07-tendermint-18',
+        client_id: '07-tendermint-311',
         counterparty: {
           client_id: '07-tendermint-18',
           connection_id: 'connection-17',
         },
         state: 3,
         transferChannel: {
-          channelId: 'channel-17',
+          channelId: 'channel-388',
           portId: 'transfer',
           counterPartyChannelId: 'channel-25',
           counterPartyPortId: 'transfer',
@@ -98,7 +98,7 @@ export default /** @type {const} } */ ({
           version: 'ics20-1',
         },
       },
-      'stride-1': {
+      'stride-internal-1': {
         id: 'connection-225',
         client_id: '07-tendermint-317',
         counterparty: {
@@ -123,14 +123,14 @@ export default /** @type {const} } */ ({
     chainId: 'elysicstestnet-1',
     icqEnabled: false,
     namespace: 'cosmos',
-    reference: 'elys-1',
+    reference: 'elysicstestnet-1',
     stakingTokens: [
       {
         denom: 'uelys',
       },
     ],
     connections: {
-      'stride-1': {
+      'stride-internal-1': {
         id: 'connection-11',
         client_id: '07-tendermint-19',
         counterparty: {
@@ -148,9 +148,9 @@ export default /** @type {const} } */ ({
           version: 'ics20-1',
         },
       },
-      'agoric-3': {
+      'agoricdev-25': {
         id: 'connection-10',
-        client_id: '07-tendermint-16',
+        client_id: '07-tendermint-17',
         counterparty: {
           client_id: '07-tendermint-16',
           connection_id: 'connection-16',
@@ -173,16 +173,16 @@ export default /** @type {const} } */ ({
     chainId: 'stride-internal-1',
     icqEnabled: false,
     namespace: 'cosmos',
-    reference: 'stride-1',
+    reference: 'stride-internal-1',
     stakingTokens: [
       {
         denom: 'ustrd',
       },
     ],
     connections: {
-      'agoric-3': {
+      'agoricdev-25': {
         id: 'connection-44',
-        client_id: '07-tendermint-15',
+        client_id: '07-tendermint-68',
         counterparty: {
           client_id: '07-tendermint-15',
           connection_id: 'connection-15',
@@ -198,7 +198,7 @@ export default /** @type {const} } */ ({
           version: 'ics20-1',
         },
       },
-      'elys-1': {
+      'elysicstestnet-1': {
         id: 'connection-46',
         client_id: '07-tendermint-69',
         counterparty: {
@@ -216,7 +216,7 @@ export default /** @type {const} } */ ({
           version: 'ics20-1',
         },
       },
-      'cosmoshub-4': {
+      'provider': {
         id: 'connection-48',
         client_id: '07-tendermint-70',
         counterparty: {

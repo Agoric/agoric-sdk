@@ -11,8 +11,8 @@ import {
 } from '@agoric/orchestration/src/proposals/start-elys.js';
 // import { minimalChainInfos } from '../tools/chainInfo.js';
 // import { minimalChainInfos } from '../../../boot/test/tools/chainInfo.js';
-import { assetOn } from '@agoric/orchestration/src/utils/asset.js';
-import { parseArgs } from 'node:util';
+// import { assetOn } from '@agoric/orchestration/src/utils/asset.js';
+// import { parseArgs } from 'node:util';
 
 /**
  * @import {ParseArgsConfig} from 'node:util'
@@ -34,6 +34,21 @@ export const minimalChainInfos = {
   cosmoshub: fetchedChainInfo.cosmoshub,
   stride: fetchedChainInfo.stride,
   elys: fetchedChainInfo.elys,
+};
+
+export const createFeeTestConfig = (feeCollector) => {
+  const feeConfig = {
+    feeCollector,
+    onBoardRate: {
+      nominator: BigInt(20),
+      denominator: BigInt(100),
+    }, // 20%
+    offBoardRate: {
+      nominator: BigInt(10),
+      denominator: BigInt(100),
+    }, // 10%
+  };
+  return feeConfig;
 };
 
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
@@ -133,9 +148,22 @@ export default async (homeP, endowments) => {
     if (typeof assetInfo !== 'string') return undefined;
     return JSON.parse(assetInfo);
   };
+  const feeConfig = createFeeTestConfig(
+      'agoric1a659t9fem9vpux6anq8877jh0dz6dtzj7g06r7',
+    );
+    const x = JSON.parse(
+      JSON.stringify(feeConfig, (key, value) =>
+        typeof value === 'bigint' ? value.toString() : value,
+      ),
+    )
   const opts = harden({
     chainInfo: parseChainInfo(),
     assetInfo: parseAssetInfo(),
+    feeConfig: JSON.parse(
+      JSON.stringify(feeConfig, (key, value) =>
+        typeof value === 'bigint' ? value.toString() : value,
+      ),
+    ),
   });
 
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
