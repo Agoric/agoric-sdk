@@ -774,3 +774,44 @@ test.serial('forward skipped due to invalid EUD', async t => {
 
 test.todo('mint while Advancing; still Disbursed');
 test.todo('test with rc2, settler-reference proposal');
+
+test.serial('sendFromSettlementAccount', async t => {
+  const io = t.context;
+  const queryClient = makeQueryClient(
+    await io.useChain('agoric').getRestEndpoint(),
+  );
+
+  const opts = {
+    destinationAddress: io.wallets['feeDest'],
+    principal: '123',
+  };
+
+  const { userForwardingAddr } =
+    t.context.encodeFastUsdcAddressHook('invalideud');
+
+  // Forward USDC to the settlement account, but with an invalid EUD
+  // so they sit there.
+  const mintResult = t.context.nobleTools.mockCctpMint(
+    BigInt(opts.principal) * 1_000_000n,
+    userForwardingAddr,
+  );
+  console.debug('mint result', mintResult);
+  const balancesBefore = await queryClient.queryBalance(
+    opts.destinationAddress,
+    io.usdcDenom,
+  );
+  t.log('build, run proposal to distribute fees', opts);
+  await io.deployBuilder(
+    '../packages/fast-usdc-deploy/src/reimburse-opco.build.js',
+    opts,
+  );
+
+  const { balance } = await io.retryUntilCondition(
+    () => queryClient.queryBalance(opts.destinationAddress, io.usdcDenom),
+    ({ balance }) => !!balance && BigInt(balance.amount) > 0n,
+    `funds received at ${opts.destinationAddress}`,
+  );
+  t.log('funds received', balance);
+  const prev = BigInt(balancesBefore!.balance!.amount! || 0n);
+  t.is(BigInt(balance!.amount), prev + BigInt(opts.principal) * 1_000_000n);
+});
