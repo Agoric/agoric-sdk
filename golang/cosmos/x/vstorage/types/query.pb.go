@@ -557,6 +557,7 @@ func _Query_Children_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+var Query_serviceDesc = _Query_serviceDesc
 var _Query_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "agoric.vstorage.Query",
 	HandlerType: (*QueryServer)(nil),
