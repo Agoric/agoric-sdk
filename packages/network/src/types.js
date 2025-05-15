@@ -79,10 +79,19 @@ export {};
  */
 
 /**
+ * @typedef {object} WellKnownSendOptions
+ * @property {bigint} [relativeTimeoutNs] timeout the packet if an ack is not received by this time
+ */
+
+/**
+ * @typedef {WellKnownSendOptions & Record<string, any>} SendOptions
+ */
+
+/**
  * @typedef {object} ConnectionI
  * @property {(
  *   packetBytes: Bytes,
- *   opts?: Record<string, any>,
+ *   opts?: SendOptions,
  * ) => PromiseVow<Bytes>} send
  *   Send a packet on the connection
  * @property {() => PromiseVow<void>} close Close both ends of the connection

@@ -22,7 +22,7 @@ test('CctpTxEvidenceShape', t => {
 test('PendingTxShape', t => {
   const specimen: CctpTxEvidence & { status: TxStatus } = harden({
     ...MockCctpTxEvidences.AGORIC_PLUS_OSMO(),
-    status: PendingTxStatus.Observed,
+    status: PendingTxStatus.Advancing,
   });
 
   t.notThrows(() => mustMatch(specimen, PendingTxShape));

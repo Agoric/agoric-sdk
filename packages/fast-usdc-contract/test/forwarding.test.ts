@@ -259,7 +259,7 @@ test.serial('partial completion', async t => {
   await mint(aliceEv);
   await transmitVTransferEvent('timeoutPacket', -1); // Alice forward fails
 
-  t.like(
+  t.deepEqual(
     t.context.common.readTxnRecord(aliceEv).at(-1),
     { status: 'FORWARD_FAILED' },
     'Alice forward failed initially',
@@ -269,7 +269,7 @@ test.serial('partial completion', async t => {
   const bobEv = await bob.sendFast(t, 2_000_000n, 'osmo1bob', true);
   await mint(bobEv);
   await transmitVTransferEvent('timeoutPacket', -1); // Bob forward fails
-  t.like(
+  t.deepEqual(
     t.context.common.readTxnRecord(bobEv).at(-1),
     { status: 'FORWARD_FAILED' },
     'Bob forward failed initially',
@@ -282,7 +282,7 @@ test.serial('partial completion', async t => {
 
   // 2. Alice's automatic retry succeeds
   await transmitVTransferEvent('acknowledgementPacket', -3); // past two are Bob's
-  t.like(
+  t.deepEqual(
     t.context.common.readTxnRecord(aliceEv).at(-1),
     { status: 'FORWARDED' },
     "Alice's auto retry succeeded",
@@ -290,7 +290,7 @@ test.serial('partial completion', async t => {
 
   // 3. Bob's is still failed
   await transmitVTransferEvent('timeoutPacket', -1);
-  t.like(
+  t.deepEqual(
     t.context.common.readTxnRecord(bobEv).at(-1),
     { status: 'FORWARD_FAILED' },
     "Bob's forward is still failed before Carol's tx",
@@ -305,7 +305,7 @@ test.serial('partial completion', async t => {
   await mint(carolEv);
   await transmitVTransferEvent('acknowledgementPacket', -1); // Carol forward succeeds
 
-  t.like(
+  t.deepEqual(
     t.context.common.readTxnRecord(carolEv).at(-1),
     { status: 'FORWARDED' },
     "Carol's forward succeeded",
@@ -331,7 +331,7 @@ test.serial('partial completion', async t => {
 
   // 6. Bob's retry succeeds
   await transmitVTransferEvent('acknowledgementPacket', -1);
-  t.like(
+  t.deepEqual(
     t.context.common.readTxnRecord(bobEv).at(-1),
     { status: 'FORWARDED' },
     "Bob's retry succeeded eventually",
@@ -362,7 +362,11 @@ const makeInterleaveScenario = test.macro({
       common: {
         commonPrivateArgs: { feeConfig },
         facadeServices: { chainHub },
-        utils: { transmitVTransferEvent, inspectLocalBridge },
+        utils: {
+          transmitVTransferEvent,
+          inspectLocalBridge,
+          splitFromEvidence,
+        },
       },
       mint,
     } = t.context;
@@ -461,18 +465,18 @@ const makeInterleaveScenario = test.macro({
     // Depending on `scenario: InterleaveScenario`, it fulfills or times out.
     t.is(getIndexByEUD(bobEud), -2, 'bobs tx is now second to last');
     if (bobFulfills) {
-      await transmitVTransferEvent('timeoutPacket', -2);
-      t.deepEqual(t.context.common.readTxnRecord(bobEv), [
-        { evidence: bobEv, status: 'OBSERVED' },
-        { status: 'ADVANCING' },
-        { status: 'ADVANCE_FAILED' },
-      ]);
-    } else {
       await transmitVTransferEvent('acknowledgementPacket', -2);
       t.deepEqual(t.context.common.readTxnRecord(bobEv), [
         { evidence: bobEv, status: 'OBSERVED' },
         { status: 'ADVANCING' },
         { status: 'ADVANCED' },
+      ]);
+    } else {
+      await transmitVTransferEvent('timeoutPacket', -2);
+      t.deepEqual(t.context.common.readTxnRecord(bobEv), [
+        { evidence: bobEv, status: 'OBSERVED' },
+        { status: 'ADVANCING' },
+        { status: 'ADVANCE_FAILED' },
       ]);
     }
 
@@ -497,27 +501,27 @@ const makeInterleaveScenario = test.macro({
     // alice and bob's mints arrive
     await mint(aliceEv);
     await mint(bobEv);
-    t.like(t.context.common.readTxnRecord(aliceEv), [
+    t.deepEqual(t.context.common.readTxnRecord(aliceEv), [
       { evidence: aliceEv, status: 'OBSERVED' },
       { status: 'ADVANCING' },
       { status: 'ADVANCED' },
-      { status: 'DISBURSED' },
+      { status: 'DISBURSED', split: splitFromEvidence(aliceEv) },
     ]);
 
     if (bobFulfills) {
       t.deepEqual(t.context.common.readTxnRecord(bobEv), [
         { evidence: bobEv, status: 'OBSERVED' },
         { status: 'ADVANCING' },
+        { status: 'ADVANCED' },
+        { status: 'DISBURSED', split: splitFromEvidence(bobEv) },
+      ]);
+    } else {
+      t.deepEqual(t.context.common.readTxnRecord(bobEv), [
+        { evidence: bobEv, status: 'OBSERVED' },
+        { status: 'ADVANCING' },
         { status: 'ADVANCE_FAILED' },
         // consider acking the outgoing forward for bob, but not necessary for
         // the goal of this test
-      ]);
-    } else {
-      t.like(t.context.common.readTxnRecord(bobEv), [
-        { evidence: bobEv, status: 'OBSERVED' },
-        { status: 'ADVANCING' },
-        { status: 'ADVANCED' },
-        { status: 'DISBURSED' },
       ]);
     }
   },

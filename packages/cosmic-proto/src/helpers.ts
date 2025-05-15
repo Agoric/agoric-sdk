@@ -27,6 +27,12 @@ import type {
   MsgTransferResponse,
 } from './codegen/ibc/applications/transfer/v1/tx.js';
 import type { JsonSafe } from './codegen/index.js';
+import type {
+  QueryDenomHashRequest,
+  QueryDenomHashResponse,
+  QueryDenomTraceRequest,
+  QueryDenomTraceResponse,
+} from './codegen/ibc/applications/transfer/v1/query.js';
 
 /**
  * The result of Any.toJSON(). Exported at top level as a convenience
@@ -48,6 +54,10 @@ export type Proto3Shape = {
   '/cosmos.staking.v1beta1.MsgUndelegateResponse': MsgUndelegateResponse;
   '/ibc.applications.transfer.v1.MsgTransfer': MsgTransfer;
   '/ibc.applications.transfer.v1.MsgTransferResponse': MsgTransferResponse;
+  '/ibc.applications.transfer.v1.QueryDenomHashRequest': QueryDenomHashRequest;
+  '/ibc.applications.transfer.v1.QueryDenomHashResponse': QueryDenomHashResponse;
+  '/ibc.applications.transfer.v1.QueryDenomTraceRequest': QueryDenomTraceRequest;
+  '/ibc.applications.transfer.v1.QueryDenomTraceResponse': QueryDenomTraceResponse;
   '/cosmos.auth.v1beta1.Bech32PrefixRequest': Bech32PrefixRequest;
   '/cosmos.auth.v1beta1.Bech32PrefixResponse': Bech32PrefixResponse;
 };

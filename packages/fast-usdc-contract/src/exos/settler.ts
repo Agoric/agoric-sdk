@@ -9,7 +9,10 @@
 
 import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
-import { CosmosChainAddressShape } from '@agoric/orchestration';
+import {
+  AccountIdArgShape,
+  CosmosChainAddressShape,
+} from '@agoric/orchestration';
 import { atob } from '@endo/base64';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
@@ -37,11 +40,13 @@ import type {
 } from '@agoric/fast-usdc/src/types.js';
 import type {
   AccountId,
+  AccountIdArg,
   Bech32Address,
   ChainHub,
   Denom,
   OrchestrationAccount,
 } from '@agoric/orchestration';
+import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { WithdrawToSeat } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { mustMatch, type MapStore } from '@agoric/store';
 import type { IBCChannelID, IBCPacket, VTransferIBCEvent } from '@agoric/vats';
@@ -105,10 +110,20 @@ harden(decodeEventPacket);
 const makeMintedEarlyKey = (addr: NobleAddress, amount: bigint): string =>
   `pendingTx:${JSON.stringify([addr, String(amount)])}`;
 
+/**
+ * @deprecated to be used only in the CCTP beta release
+ */
+const parseMintedEarlyKey = (
+  key: ReturnType<typeof makeMintedEarlyKey>,
+): { address: NobleAddress; amount: bigint } => {
+  const [address, amount] = JSON.parse(key.split(':')[1]);
+  return harden({ address, amount: BigInt(amount) });
+};
+
 /** @param {Brand<'nat'>} USDC */
 export const makeAdvanceDetailsShape = (USDC: Brand<'nat'>) =>
   harden({
-    destination: M.string(),
+    destination: AccountIdArgShape, // CosmosChainAddress for compatibility with older incarnations
     forwardingAddress: M.string(),
     fullAmount: makeNatAmountShape(USDC),
     txHash: EvmHashShape,
@@ -175,6 +190,7 @@ export const prepareSettler = (
     {
       creator: M.interface('SettlerCreatorI', {
         monitorMintingDeposits: M.call().returns(M.any()),
+        remediateMintedEarly: M.call(M.bigint()).returns(),
       }),
       tap: M.interface('SettlerTapI', {
         receiveUpcall: M.call(M.record()).returns(M.promise()),
@@ -246,6 +262,44 @@ export const prepareSettler = (
           assert.typeof(registration, 'object');
           this.state.registration = registration;
         },
+        /** @deprecated to be used only in the CCTP beta release */
+        remediateMintedEarly(minUusdc: bigint): void {
+          const { self } = this.facets;
+          const { mintedEarly } = this.state;
+          log('remediateMintedEarly', minUusdc, [...mintedEarly.keys()]);
+          const batches = mintedEarly.entries();
+          for (const [key, count] of batches) {
+            const { address, amount } = parseMintedEarlyKey(key);
+            if (amount < minUusdc) {
+              log('skipping', key, 'less than', minUusdc);
+              continue;
+            }
+            const allPending = statusManager.lookupPending(address, amount);
+            if (
+              allPending.some(
+                ({ status }) => status !== PendingTxStatus.Advanced,
+              )
+            ) {
+              log('🚨 pending txs included one not advanced', allPending);
+              continue;
+            }
+            // now COMMIT to disbursing all pending txs
+            for (let i = 0; i < count; i += 1) {
+              const pendingTxs = statusManager.matchAndDequeueSettlement(
+                address,
+                amount,
+              );
+
+              // Disburse the funds to the pool for the transaction
+              for (const p of pendingTxs) {
+                const fullValue = AmountMath.make(USDC, p.tx.amount);
+                void self.disburse(p.txHash, fullValue, p.aux.recipientAddress);
+              }
+              // Remove the minted early key
+              mintedEarly.delete(key);
+            }
+          }
+        },
       },
       tap: {
         async receiveUpcall(event: VTransferIBCEvent) {
@@ -270,29 +324,37 @@ export const prepareSettler = (
 
           const { nfa, amount, EUD } = decoded;
           const { self } = this.facets;
-          const found = statusManager.dequeueStatus(nfa, amount);
-          log('dequeued', found, 'for', nfa, amount);
-          const fullValue = AmountMath.make(USDC, amount);
+          const dequeued = statusManager.matchAndDequeueSettlement(nfa, amount);
 
-          switch (found?.status) {
-            case PendingTxStatus.Advanced:
-              return self.disburse(found.txHash, fullValue, EUD);
+          if (dequeued.length === 0) {
+            log('⚠️ tap: minted before observed', nfa, amount);
+            // XXX consider capturing in vstorage
+            // we would need a new key, as this does not have a txHash
+            self.addMintedEarly(nfa, AmountMath.make(USDC, amount));
+            return;
+          }
 
-            case PendingTxStatus.Advancing:
-              log('⚠️ tap: minted while advancing', nfa, amount);
-              self.addMintedEarly(nfa, fullValue);
-              return;
+          log('dequeued', dequeued, 'for', nfa, amount);
+          for (const found of dequeued) {
+            const fullValue = AmountMath.make(USDC, found.tx.amount);
+            switch (found.status) {
+              case PendingTxStatus.Advanced:
+                void self.disburse(found.txHash, fullValue, EUD);
+                break;
 
-            case PendingTxStatus.AdvanceSkipped:
-            case PendingTxStatus.AdvanceFailed:
-              return self.forward(found.txHash, fullValue, EUD);
+              case PendingTxStatus.Advancing:
+                log('⚠️ tap: minted while advancing', nfa, found.tx.amount);
+                self.addMintedEarly(nfa, fullValue);
+                break;
 
-            case undefined:
-            default:
-              log('⚠️ tap: minted before observed', nfa, amount);
-              // XXX consider capturing in vstorage
-              // we would need a new key, as this does not have a txHash
-              self.addMintedEarly(nfa, fullValue);
+              case PendingTxStatus.AdvanceSkipped:
+              case PendingTxStatus.AdvanceFailed:
+                self.forward(found.txHash, fullValue, EUD);
+                break;
+
+              default:
+                log('⚠️ unexpected status', found.status, 'for', found);
+            }
           }
         },
       },
@@ -302,12 +364,12 @@ export const prepareSettler = (
             txHash,
             forwardingAddress,
             fullAmount,
-            destination,
+            destination: destArg,
           }: {
             txHash: EvmHash;
             forwardingAddress: NobleAddress;
             fullAmount: Amount<'nat'>;
-            destination: AccountId;
+            destination: AccountIdArg;
           },
           success: boolean,
         ): void {
@@ -315,8 +377,11 @@ export const prepareSettler = (
           const { value: fullValue } = fullAmount;
           const key = makeMintedEarlyKey(forwardingAddress, fullValue);
 
+          const destination = coerceAccountId(destArg);
+
           if (mintedEarly.has(key)) {
             asMultiset(mintedEarly).remove(key);
+
             statusManager.advanceOutcomeForMintedEarly(txHash, success);
             if (success) {
               void this.facets.self.disburse(txHash, fullAmount, destination);
@@ -450,6 +515,11 @@ export const prepareSettler = (
           void forwardFunds({ txHash, amount: fullValue, destination: dest });
         },
       },
+      // XXX the following handlers are from before refactoring to an async flow for `forwardFunds`.
+      // They must remain implemented for as long as any vow might settle and need their behavior.
+      // Once all possible such vows are settled, the methods could be removed but the handler
+      // facets must remain to satisfy the kind definition backward compatibility checker.
+      /* c8 ignore start */
       transferHandler: {
         onFulfilled(_result: unknown, txHash: EvmHash) {
           // update status manager, marking tx `FORWARDED` without fee split
@@ -506,6 +576,7 @@ export const prepareSettler = (
           statusManager.forwardFailed(txHash);
         },
       },
+      /* c8 ignore stop */
     },
     {
       stateShape,

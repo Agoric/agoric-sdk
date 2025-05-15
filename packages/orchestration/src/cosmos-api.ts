@@ -18,7 +18,7 @@ import type {
   ResponseQuery,
 } from '@agoric/cosmic-proto/tendermint/abci/types.js';
 import type { Amount, Payment } from '@agoric/ertp/src/types.js';
-import type { Port } from '@agoric/network';
+import type { Port, SendOptions } from '@agoric/network';
 import type { TimerService } from '@agoric/time';
 import type {
   IBCChannelID,
@@ -266,12 +266,12 @@ export interface IcaAccountMethods {
   /**
    * Submit a transaction on behalf of the remote account for execution on the remote chain.
    * @param msgs - records for the transaction
-   * @param [opts] - optional parameters for the Tx, like `timeoutHeight` and `memo`
+   * @param [opts] - optional parameters for the Tx. use `opts.sendOpts.relativeTimeoutNs` to specify a timeout for the ICA tx packet
    * @returns acknowledgement string
    */
   executeEncodedTx: (
     msgs: AnyJson[],
-    opts?: Partial<Omit<TxBody, 'messages'>>,
+    opts?: Partial<Omit<TxBody, 'messages'>> & { sendOpts?: SendOptions },
   ) => Promise<string>;
   /**
    * Deactivates the ICA account by closing the ICA channel. The `Port` is
@@ -357,6 +357,15 @@ export interface LocalAccountMethods extends StakingAccountActions {
    * @param tap
    */
   monitorTransfers: (tap: TargetApp) => Promise<TargetRegistration>;
+  /**
+   * Parse an incoming transfer message and return its details.
+   */
+  parseInboundTransfer: (packet: Record<string, any>) => Promise<{
+    amount: DenomAmount;
+    fromAccount: AccountId;
+    toAccount: AccountId;
+    extra: Record<string, any>;
+  }>;
 }
 
 /**

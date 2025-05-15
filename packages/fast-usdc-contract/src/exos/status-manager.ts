@@ -23,45 +23,23 @@ import type {
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
 import type { MapStore, SetStore } from '@agoric/store';
-import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
 import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
 import type { Zone } from '@agoric/zone';
 import { Fail, makeError, q } from '@endo/errors';
 import { E, type ERef } from '@endo/far';
+import { Nat } from '@endo/nat';
 import { M } from '@endo/patterns';
 import { chainOfAccount } from '@agoric/orchestration/src/utils/address.js';
 import type { AccountId, CaipChainId } from '@agoric/orchestration';
 import { ForwardFailedTxShape, type ForwardFailedTx } from '../typeGuards.ts';
 import { type RouteHealth } from '../utils/route-health.ts';
-
-/** The string template is for developer visibility but not meant to ever be parsed. */
-type PendingTxKey = `pendingTx:${bigint}:${NobleAddress}`;
+import { makeSettlementMatcher } from '../utils/settlement-matcher.ts';
 
 interface StatusManagerPowers {
   log?: LogFn;
   marshaller: ERef<Marshaller>;
   routeHealth: RouteHealth;
 }
-
-/**
- * Create the key for the pendingTxs MapStore.
- *
- * The key is a composite but not meant to be parsable.
- * @param nfa
- * @param amount
- */
-const makePendingTxKey = (nfa: NobleAddress, amount: bigint): PendingTxKey =>
-  // amount can't contain colon
-  `pendingTx:${amount}:${nfa}`;
-
-/**
- * Get the key for the pendingTxs MapStore.
- * @param evidence
- */
-const pendingTxKeyOf = (evidence: CctpTxEvidence): PendingTxKey => {
-  const { amount, forwardingAddress } = evidence.tx;
-  return makePendingTxKey(forwardingAddress, amount);
-};
 
 export const stateShape = harden({
   pendingSettleTxs: M.remotable(),
@@ -82,15 +60,48 @@ export const prepareStatusManager = (
   { marshaller, routeHealth }: StatusManagerPowers,
 ) => {
   /**
-   * Keyed by a tuple of the Noble Forwarding Account and amount.
+   * Keyed by Noble Forwarding Account
+   *
+   * Transactions that are `Advanced`, `AdvanceFailed`, or `AdvanceSkipped`
+   * and are awaiting a mint.
    */
-  const pendingSettleTxs: MapStore<PendingTxKey, PendingTx[]> = zone.mapStore(
+  const pendingSettleTxs: MapStore<NobleAddress, PendingTx[]> = zone.mapStore(
     'PendingSettleTxs',
     {
       keyShape: M.string(),
       valueShape: M.arrayOf(PendingTxShape),
     },
   );
+
+  const { addPendingSettleTx, matchAndDequeueSettlement } =
+    makeSettlementMatcher();
+
+  /** metadata, like the `schemaVersion` of stores in this exo */
+  const meta: MapStore<string, unknown> = zone.mapStore('Metadata', {
+    keyShape: M.string(),
+  });
+
+  /**
+   * Ensure that zone data conforms with the current schema. Historical
+   * overview:
+   * * version 0 (implicit): PendingSettleTxs was a
+   *   MapStore<`pendingTx:${bigint}:${NobleAddress}`, PendingTx[]>
+   * * version 1 (current): PendingSettleTxs is a
+   *   MapStore<NobleAddress, PendingTx[]>
+   */
+  const schemaVersion = Nat(
+    meta.has('schemaVersion') ? meta.get('schemaVersion') : 0n,
+  );
+  if (schemaVersion < 1n) {
+    const oldValues = [...pendingSettleTxs.values()];
+    pendingSettleTxs.clear();
+    for (const txs of oldValues) {
+      for (const tx of txs) {
+        addPendingSettleTx(pendingSettleTxs, tx);
+      }
+    }
+    meta.init('schemaVersion', 1n);
+  }
 
   /**
    * Transactions seen *ever* by the contract.
@@ -191,16 +202,11 @@ export const prepareStatusManager = (
     }
     seenTxs.init(txHash, evidence.blockTimestamp);
 
-    appendToStoredArray(
-      pendingSettleTxs,
-      pendingTxKeyOf(evidence),
-      harden({ ...evidence, status }),
-    );
+    addPendingSettleTx(pendingSettleTxs, { ...evidence, status } as PendingTx);
     publishEvidence(txHash, evidence);
     if (status === PendingTxStatus.AdvanceSkipped) {
       publishTxnRecord(txHash, harden({ status, risksIdentified }));
-    } else if (status !== PendingTxStatus.Observed) {
-      // publishEvidence publishes Observed
+    } else {
       publishTxnRecord(txHash, harden({ status }));
     }
   };
@@ -216,10 +222,10 @@ export const prepareStatusManager = (
     { nfa, amount }: { nfa: NobleAddress; amount: bigint },
     status: PendingTxStatus,
   ): void {
-    const key = makePendingTxKey(nfa, amount);
-    pendingSettleTxs.has(key) || Fail`no advancing tx with ${{ nfa, amount }}`;
-    const pending = pendingSettleTxs.get(key);
-    const ix = pending.findIndex(tx => tx.status === PendingTxStatus.Advancing);
+    const pending = pendingSettleTxs.get(nfa);
+    const ix = pending.findIndex(
+      tx => tx.status === PendingTxStatus.Advancing && tx.tx.amount === amount,
+    );
     ix >= 0 || Fail`no advancing tx with ${{ nfa, amount }}`;
     const [prefix, tx, suffix] = [
       pending.slice(0, ix),
@@ -227,7 +233,7 @@ export const prepareStatusManager = (
       pending.slice(ix + 1),
     ];
     const txpost = { ...tx, status };
-    pendingSettleTxs.set(key, harden([...prefix, txpost, ...suffix]));
+    pendingSettleTxs.set(nfa, harden([...prefix, txpost, ...suffix]));
     publishTxnRecord(tx.txHash, harden({ status }));
   }
 
@@ -247,13 +253,12 @@ export const prepareStatusManager = (
       ),
       hasBeenObserved: M.call(CctpTxEvidenceShape).returns(M.boolean()),
       deleteCompletedTxs: M.call().returns(M.undefined()),
-      dequeueStatus: M.call(M.string(), M.bigint()).returns(
-        M.or(
-          {
+      matchAndDequeueSettlement: M.call(M.string(), M.bigint()).returns(
+        M.arrayOf(
+          M.splitRecord({
             txHash: EvmHashShape,
             status: M.or(...Object.values(PendingTxStatus)),
-          },
-          M.undefined(),
+          }),
         ),
       ),
       disbursed: M.call(EvmHashShape, AmountKeywordRecordShape).returns(
@@ -390,35 +395,20 @@ export const prepareStatusManager = (
       },
 
       /**
-       * Remove and return the oldest pending settlement transaction that matches the given
-       * forwarding account and amount. Since multiple pending transactions may exist with
-       * identical (account, amount) pairs, we process them in FIFO order.
+       * Find and match pending transactions for a settlement (mint).
        *
-       * @param {bigint} nfa
-       * @param {NobleAddress} amount
-       * @returns {undefined} if no pending transactions exist for this address and amount combination.
+       * If a match is found, the matched transactions are removed from
+       * `pendingSettleTxs`.
+       *
+       * @param {NobleAddress} nfa - Noble forwarding address
+       * @param {bigint} amount - Amount to match
+       * @returns {PendingTx[]} - Matched transactions or an empty array if none found
        */
-      dequeueStatus(
+      matchAndDequeueSettlement(
         nfa: NobleAddress,
         amount: bigint,
-      ): { txHash: EvmHash; status: PendingTxStatus } | undefined {
-        const key = makePendingTxKey(nfa, amount);
-        if (!pendingSettleTxs.has(key)) return undefined;
-        const pending = pendingSettleTxs.get(key);
-
-        if (pending.length === 0) {
-          return undefined;
-        }
-        // extract first item
-        const [{ status, txHash }, ...remaining] = pending;
-
-        if (remaining.length) {
-          pendingSettleTxs.set(key, harden(remaining));
-        } else {
-          pendingSettleTxs.delete(key);
-        }
-
-        return harden({ status, txHash });
+      ): PendingTx[] {
+        return matchAndDequeueSettlement(pendingSettleTxs, nfa, amount);
       },
 
       /**
@@ -518,16 +508,15 @@ export const prepareStatusManager = (
       /**
        * Lookup all pending entries for a given address and amount
        *
-       * XXX only used in tests. should we remove?
        * @param nfa
        * @param amount
        */
       lookupPending(nfa: NobleAddress, amount: bigint): PendingTx[] {
-        const key = makePendingTxKey(nfa, amount);
-        if (!pendingSettleTxs.has(key)) {
+        if (!pendingSettleTxs.has(nfa)) {
           return harden([]);
         }
-        return pendingSettleTxs.get(key);
+        const pendingTxs = pendingSettleTxs.get(nfa);
+        return harden(pendingTxs.filter(tx => tx.tx.amount === amount));
       },
     },
     { stateShape },

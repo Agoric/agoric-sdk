@@ -107,6 +107,24 @@ export const getBech32Prefix = address => {
 };
 
 /**
+ * Coerce an AccountIdArg into a plain AccountId. The latter is now preferred so
+ * this utility can be used to adapt legacy calls, in particular from vows
+ * outstanding from previous incarnations.
+ *
+ * @param {AccountIdArg} idArg CAIP-10 account ID or an unscoped on-chain
+ *   address
+ * @returns {AccountId} - The parsed account details.
+ */
+export const coerceAccountId = idArg => {
+  if (typeof idArg === 'string') {
+    return idArg;
+  }
+
+  return `cosmos:${idArg.chainId}:${idArg.value}`;
+};
+harden(coerceAccountId);
+
+/**
  * Parse an account ID into a structured format following CAIP-10 standards.
  *
  * @param {AccountIdArg} idArg CAIP-10 account ID or an unscoped on-chain

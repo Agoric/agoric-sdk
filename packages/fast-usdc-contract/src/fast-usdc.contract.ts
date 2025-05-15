@@ -315,6 +315,9 @@ export const contract = async (
     deleteCompletedTxs() {
       return statusManager.deleteCompletedTxs();
     },
+    remediateUndetectedBatches(minUusdc: bigint): void {
+      return settlerKit.creator.remediateMintedEarly(minUusdc);
+    },
     /** @type {typeof chainHub.updateChain} */
     updateChain(chainName, chainInfo) {
       return chainHub.updateChain(chainName, chainInfo);
