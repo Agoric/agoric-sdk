@@ -11,9 +11,9 @@ import (
 	"strings"
 
 	sdkmath "cosmossdk.io/math"
+	storetypes "cosmossdk.io/store/types"
 	metrics "github.com/armon/go-metrics"
 	db "github.com/cometbft/cometbft-db"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -52,7 +52,7 @@ type BatchingChangeManager struct {
 var _ ChangeManager = (*BatchingChangeManager)(nil)
 
 // 2 ** 256 - 1
-var MaxSDKInt = sdk.NewIntFromBigInt(new(big.Int).Sub(new(big.Int).Exp(big.NewInt(2), big.NewInt(256), nil), big.NewInt(1)))
+var MaxSDKInt = sdkmath.NewIntFromBigInt(new(big.Int).Sub(new(big.Int).Exp(big.NewInt(2), big.NewInt(256), nil), big.NewInt(1)))
 
 // Keeper maintains the link to data storage and exposes getter/setter methods
 // for the various parts of the state machine
@@ -164,7 +164,7 @@ func (k Keeper) ExportStorageFromPrefix(ctx sdk.Context, pathPrefix string) []*t
 	// entries will be exported. An alternative implementation would be to
 	// recursively list all children under the pathPrefix, and export them.
 
-	iterator := sdk.KVStorePrefixIterator(store, nil)
+	iterator := storetypes.KVStorePrefixIterator(store, nil)
 
 	exported := []*types.DataEntry{}
 	defer iterator.Close()
@@ -199,7 +199,7 @@ func (k Keeper) ImportStorage(ctx sdk.Context, entries []*types.DataEntry) {
 	}
 }
 
-func getEncodedKeysWithPrefixFromIterator(iterator sdk.Iterator, prefix string) [][]byte {
+func getEncodedKeysWithPrefixFromIterator(iterator storetypes.Iterator, prefix string) [][]byte {
 	keys := make([][]byte, 0)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -234,7 +234,7 @@ func (k Keeper) RemoveEntriesWithPrefix(ctx sdk.Context, pathPrefix string) {
 	// entries will be deleted. An alternative implementation would be to
 	// recursively list all children under the descendantPrefix, and delete them.
 
-	iterator := sdk.KVStorePrefixIterator(store, nil)
+	iterator := storetypes.KVStorePrefixIterator(store, nil)
 
 	keys := getEncodedKeysWithPrefixFromIterator(iterator, descendantPrefix)
 
@@ -295,7 +295,7 @@ func (k Keeper) getKeyIterator(ctx sdk.Context, path string) db.Iterator {
 	store := ctx.KVStore(k.storeKey)
 	keyPrefix := types.PathToChildrenPrefix(path)
 
-	return sdk.KVStorePrefixIterator(store, keyPrefix)
+	return storetypes.KVStorePrefixIterator(store, keyPrefix)
 }
 
 // GetChildren gets all vstorage child children at a given path
@@ -459,10 +459,10 @@ func (k Keeper) GetNoDataValue() []byte {
 func (k Keeper) GetIntValue(ctx sdk.Context, path string) (sdkmath.Int, error) {
 	indexEntry := k.GetEntry(ctx, path)
 	if !indexEntry.HasValue() {
-		return sdk.NewInt(0), nil
+		return sdkmath.NewInt(0), nil
 	}
 
-	index, ok := sdk.NewIntFromString(indexEntry.StringValue())
+	index, ok := sdkmath.NewIntFromString(indexEntry.StringValue())
 	if !ok {
 		return index, fmt.Errorf("couldn't parse %s as Int: %s", path, indexEntry.StringValue())
 	}
@@ -493,7 +493,7 @@ func (k Keeper) PushQueueItem(ctx sdk.Context, queuePath string, value string) e
 	if tail.GTE(MaxSDKInt) {
 		return errors.New(queuePath + " overflow")
 	}
-	nextTail := tail.Add(sdk.NewInt(1))
+	nextTail := tail.Add(sdkmath.NewInt(1))
 
 	// Set the vstorage corresponding to the queue entry for the current tail.
 	path := queuePath + "." + tail.String()

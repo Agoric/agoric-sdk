@@ -32,6 +32,12 @@ var (
 type AppModuleBasic struct {
 }
 
+// IsAppModule implements the appmodule.AppModule interface.
+func (am AppModule) IsAppModule() {}
+
+// IsOnePerModuleType is a marker function just indicates that this is a one-per-module type.
+func (am AppModule) IsOnePerModuleType() {}
+
 func (AppModuleBasic) Name() string {
 	return ModuleName
 }
@@ -94,12 +100,12 @@ func (AppModule) Name() string {
 func (AppModule) ConsensusVersion() uint64 { return 2 }
 
 // BeginBlock implements the AppModule interface
-func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
+func (am AppModule) BeginBlock(ctx sdk.Context) {
 }
 
 // EndBlock implements the AppModule interface
-func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
-	events := ctx.EventManager().GetABCIEventHistory()
+func (am AppModule) EndBlock(ctx sdk.Context) []abci.ValidatorUpdate {
+	events := ctx.EventManager().ABCIEventsHistory()
 	addressToUpdate := make(map[string]sdk.Coins, len(events)*2)
 
 	// records that we want to emit an balance update for the address

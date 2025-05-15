@@ -7,29 +7,30 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/log"
+	sdkmath "cosmossdk.io/math"
+	"cosmossdk.io/store"
+	storemetrics "cosmossdk.io/store/metrics"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vlocalchain"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vlocalchain/types"
-
-	"github.com/cometbft/cometbft/libs/log"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/store"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 
-	dbm "github.com/cometbft/cometbft-db"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/gogoproto/jsonpb"
 	"github.com/cosmos/gogoproto/proto"
 )
 
 var (
-	vlocalchainStoreKey = sdk.NewKVStoreKey(types.StoreKey)
+	vlocalchainStoreKey = storetypes.NewKVStoreKey(types.StoreKey)
 )
 
 const (
@@ -119,8 +120,8 @@ func (s *mockStaking) UnbondingDelegation(cctx context.Context, req *stakingtype
 			{
 				CreationHeight: 100,
 				CompletionTime: time.Now().UTC().Add(time.Hour * 24 * 7),
-				InitialBalance: sdk.NewInt(1000),
-				Balance:        sdk.NewInt(500),
+				InitialBalance: sdkmath.NewInt(1000),
+				Balance:        sdkmath.NewInt(500),
 			},
 		},
 	}
@@ -151,7 +152,8 @@ func makeTestKit(bank *mockBank, transfer *mockTransfer, staking *mockStaking, a
 	keeper := vlocalchain.NewKeeper(cdc, vlocalchainStoreKey, txRouter, queryRouter, accts)
 
 	db := dbm.NewMemDB()
-	ms := store.NewCommitMultiStore(db)
+	logger := log.NewNopLogger()
+	ms := store.NewCommitMultiStore(db, logger, storemetrics.NewNoOpMetrics())
 	ms.MountStoreWithDB(vlocalchainStoreKey, storetypes.StoreTypeIAVL, db)
 	err := ms.LoadLatestVersion()
 	if err != nil {
@@ -216,8 +218,8 @@ func TestQuery(t *testing.T) {
 	alreadyAddr := sdk.MustBech32ifyAddressBytes("cosmos", []byte("already"))
 	nonexistentAddr := sdk.MustBech32ifyAddressBytes("cosmos", []byte("nonexistent"))
 	bank := &mockBank{balances: map[string]sdk.Coins{
-		firstAddr:   []sdk.Coin{sdk.NewCoin("fresh", sdk.NewInt(123))},
-		alreadyAddr: []sdk.Coin{sdk.NewCoin("stale", sdk.NewInt(321))},
+		firstAddr:   []sdk.Coin{sdk.NewCoin("fresh", sdkmath.NewInt(123))},
+		alreadyAddr: []sdk.Coin{sdk.NewCoin("stale", sdkmath.NewInt(321))},
 	}}
 	transfer := &mockTransfer{}
 	staking := &mockStaking{}
@@ -286,7 +288,7 @@ func TestQuery(t *testing.T) {
 				t.Fatalf("unexpected error unmarshalling reply: %v: %v", ret, err)
 			}
 
-			if !pb.Balances.IsEqual(tc.expected) {
+			if !pb.Balances.Equal(tc.expected) {
 				t.Errorf("unexpected balance: expected %v, got %v", tc.expected, pb.Balances)
 			}
 		})
@@ -358,8 +360,8 @@ func TestQuery(t *testing.T) {
 func TestExecuteTx(t *testing.T) {
 	alreadyAddr := sdk.MustBech32ifyAddressBytes("cosmos", []byte("already"))
 	bank := &mockBank{balances: map[string]sdk.Coins{
-		firstAddr:   []sdk.Coin{sdk.NewCoin("fresh", sdk.NewInt(123))},
-		alreadyAddr: []sdk.Coin{sdk.NewCoin("stale", sdk.NewInt(321))},
+		firstAddr:   []sdk.Coin{sdk.NewCoin("fresh", sdkmath.NewInt(123))},
+		alreadyAddr: []sdk.Coin{sdk.NewCoin("stale", sdkmath.NewInt(321))},
 	}}
 	transfer := &mockTransfer{}
 	staking := &mockStaking{}

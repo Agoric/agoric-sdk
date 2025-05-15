@@ -7,14 +7,12 @@ import (
 	stdlog "log"
 	"math"
 
+	"cosmossdk.io/log"
 	sdkmath "cosmossdk.io/math"
-
-	"github.com/cometbft/cometbft/libs/log"
-
+	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -171,7 +169,7 @@ func (k Keeper) GetSmartWalletState(ctx sdk.Context, addr sdk.AccAddress) types.
 }
 
 func (k Keeper) InboundQueueLength(ctx sdk.Context) (int32, error) {
-	size := sdk.NewInt(0)
+	size := sdkmath.NewInt(0)
 
 	highPriorityQueueLength, err := k.vstorageKeeper.GetQueueLength(ctx, StoragePathHighPriorityQueue)
 	if err != nil {
@@ -323,8 +321,8 @@ func (k Keeper) ChargeBeans(
 	beansToDebit := nowOwing.Sub(remainderOwing)
 
 	// Convert the debit to coins.
-	beansPerFeeUnitDec := sdk.NewDecFromBigInt(beansPerUnit[types.BeansPerFeeUnit].BigInt())
-	beansToDebitDec := sdk.NewDecFromBigInt(beansToDebit.BigInt())
+	beansPerFeeUnitDec := sdkmath.LegacyNewDecFromBigInt(beansPerUnit[types.BeansPerFeeUnit].BigInt())
+	beansToDebitDec := sdkmath.LegacyNewDecFromBigInt(beansToDebit.BigInt())
 	feeUnitPrice := k.GetParams(ctx).FeeUnitPrice
 	feeDecCoins := sdk.NewDecCoinsFromCoins(feeUnitPrice...).MulDec(beansToDebitDec).QuoDec(beansPerFeeUnitDec)
 
@@ -485,7 +483,7 @@ func (k Keeper) SetMailbox(ctx sdk.Context, peer string, mailbox string) {
 	k.vstorageKeeper.LegacySetStorageAndNotify(ctx, agoric.NewKVEntry(path, mailbox))
 }
 
-func (k Keeper) GetSwingStore(ctx sdk.Context) sdk.KVStore {
+func (k Keeper) GetSwingStore(ctx sdk.Context) storetypes.KVStore {
 	store := ctx.KVStore(k.storeKey)
 	return prefix.NewStore(store, []byte(swingStoreKeyPrefix))
 }

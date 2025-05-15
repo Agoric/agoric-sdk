@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -51,7 +52,7 @@ func TestKeeper_DeserializeTxMessages(t *testing.T) {
 		&banktypes.MsgSend{
 			FromAddress: "cosmos1abc",
 			ToAddress:   "cosmos1xyz",
-			Amount:      sdk.NewCoins(sdk.NewCoin("stake", sdk.NewInt(100))),
+			Amount:      sdk.NewCoins(sdk.NewCoin("stake", sdkmath.NewInt(100))),
 		},
 	}
 
