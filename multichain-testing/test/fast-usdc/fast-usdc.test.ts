@@ -320,6 +320,9 @@ const advanceAndSettleScenario = test.macro({
       vstorageClient,
     } = t.context;
 
+    const { encumberedBalance: balanceBeforeBurn } =
+      await fastLPQ(vstorageClient).metrics();
+
     // EUD wallet on the specified chain
     const eudWallet = await createWallet(
       useChain(eudChain).chain.bech32_prefix,
@@ -403,8 +406,8 @@ const advanceAndSettleScenario = test.macro({
     await retryUntilCondition(
       () => fastLPQ(vstorageClient).metrics(),
       ({ encumberedBalance }) =>
-        encumberedBalance && isEmpty(encumberedBalance),
-      'encumberedBalance returns to 0',
+        AmountMath.isEqual(encumberedBalance, balanceBeforeBurn),
+      'encumberedBalance returns to original value',
     );
 
     // retry until status is reached
@@ -485,13 +488,6 @@ test.serial('Ethereum destination', async t => {
 
   // Verify disbursement succeeds
   nobleTools.mockCctpMint(mintAmt, userForwardingAddr);
-  await retryUntilCondition(
-    () => fastLPQ(vstorageClient).metrics(),
-    ({ encumberedBalance }) =>
-      AmountMath.isEqual(encumberedBalance, balanceBeforeBurn),
-    'encumberedBalance returns to original value',
-  );
-
   await retryUntilCondition(
     () => fastLPQ(vstorageClient).metrics(),
     ({ encumberedBalance }) =>
