@@ -157,6 +157,7 @@ export const upgradeEvmDests = async (
     await E(creatorFacet).registerChain(chainName, {
       ...info,
       // for backwards compatibility with `CosmosChainInfoShapeV1` which expects a `chainId`
+      // @ts-expect-error no longer expected
       chainId: `${info.namespace}:${info.reference}`,
     });
   }

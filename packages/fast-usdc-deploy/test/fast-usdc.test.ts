@@ -31,6 +31,7 @@ import {
   buildVTransferEvent,
 } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { Fail } from '@endo/errors';
+import type { ForwardInfo } from '@agoric/orchestration';
 import { configurations } from '../src/utils/deploy-config.js';
 import {
   makeWalletFactoryContext,
@@ -691,18 +692,18 @@ test.serial('minted before observed; forward path', async t => {
       destinationChannel: nobleToAgoricChannel,
       sequence: '4', // XXX brittle, abstract from tests
       amount: evidence.tx.amount,
-      memo: JSON.stringify(
-        /** @type {ForwardInfo} */
-        {
-          forward: {
-            receiver: recipientAddress,
-            port: 'transfer',
-            channel:
-              fetchedChainInfo.noble.connections['agoric-3'].transferChannel
-                .channelId,
-          },
+      memo: JSON.stringify({
+        forward: {
+          receiver: recipientAddress,
+          port: 'transfer',
+          channel:
+            fetchedChainInfo.noble.connections['agoric-3'].transferChannel
+              .channelId,
         },
-      ),
+      } as Omit<ForwardInfo, 'forward'> & {
+        // ignored in test
+        forward: Omit<ForwardInfo['forward'], 'timeout' | 'retries'>;
+      }),
     }),
   );
   await eventLoopIteration();
@@ -1003,18 +1004,18 @@ test.serial('forward timeout', async t => {
 
   // Simulate timeout of the outgoing forward transfer
   const firstForward = 6n; // XXX brittle, depends on IBC of previous tests
-  const forwardMemo = JSON.stringify(
-    /** @type {ForwardInfo} */
-    {
-      forward: {
-        receiver: recipientAddress,
-        port: 'transfer',
-        channel:
-          fetchedChainInfo.noble.connections['agoric-3'].transferChannel
-            .channelId,
-      },
+  const forwardMemo = JSON.stringify({
+    forward: {
+      receiver: recipientAddress,
+      port: 'transfer',
+      channel:
+        fetchedChainInfo.noble.connections['agoric-3'].transferChannel
+          .channelId,
     },
-  );
+  } as Omit<ForwardInfo, 'forward'> & {
+    // ignored in test
+    forward: Omit<ForwardInfo['forward'], 'timeout' | 'retries'>;
+  });
 
   const successfulForwardEvent = buildVTransferEvent({
     sender: settlementAccount,

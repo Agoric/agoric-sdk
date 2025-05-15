@@ -416,7 +416,6 @@ const addSTARsCollateral = async (
   t.log({ bridgeMessage });
 
   const { EV } = t.context.runUtils;
-  /** @type {ERef<import('@agoric/vats/src/types.js').BridgeHandler>} */
   const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(
     'coreEvalBridgeHandler',
   );
