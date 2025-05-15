@@ -147,6 +147,8 @@ test.serial('auto provision', async t => {
   console.log('ADDR', 'automaticallyProvisioned', address);
 
   await bankSend(address, `50000000${ATOM_DENOM}`);
+  // some bld is needed for auto-provisioning
+  await bankSend(address, `10000000ubld`, GOV1ADDR);
   // some ist is needed for opening a new vault
   await bankSend(address, `10000000uist`, GOV1ADDR);
   await waitUntilAccountFunded(
