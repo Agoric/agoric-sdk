@@ -129,6 +129,16 @@ test.serial(
   },
 );
 
+test.serial('manual provision', async t => {
+  // @ts-expect-error casting
+  const { vstorageKit } = t.context;
+
+  const { address } = await introduceAndProvision('manuallyProvisioned');
+  await checkUserProvisioned(address, vstorageKit);
+  t.log('manuallyProvisioned address:', address);
+  t.pass();
+});
+
 test.serial('auto provision', async t => {
   // @ts-expect-error casting
   const { vstorageKit } = t.context;
@@ -149,15 +159,5 @@ test.serial('auto provision', async t => {
 
   await openVault(address, '10.0', '20.0');
   await checkUserProvisioned(address, vstorageKit);
-  t.pass();
-});
-
-test.serial('manual provision', async t => {
-  // @ts-expect-error casting
-  const { vstorageKit } = t.context;
-
-  const { address } = await introduceAndProvision('manuallyProvisioned');
-  await checkUserProvisioned(address, vstorageKit);
-  t.log('manuallyProvisioned address:', address);
   t.pass();
 });

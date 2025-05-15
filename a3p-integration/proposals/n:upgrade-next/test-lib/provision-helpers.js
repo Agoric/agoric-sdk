@@ -15,12 +15,14 @@ const agd = makeAgd({ execFileSync }).withOpts({ keyringBackend: 'test' });
  * @param {string} wanted
  * @param {string} [from]
  */
-export const bankSend = (addr, wanted, from = VALIDATORADDR) => {
-  return agd.tx(['bank', 'send', from, addr, wanted], {
+export const bankSend = async (addr, wanted, from = VALIDATORADDR) => {
+  const result = await agd.tx(['bank', 'send', from, addr, wanted], {
     chainId: CHAINID,
     from,
     yes: true,
   });
+  console.log(`fund ${addr} with ${wanted}`, result.code === 0 || result);
+  return result;
 };
 
 export const provision = (name, address) =>
