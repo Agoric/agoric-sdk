@@ -10,6 +10,7 @@ import { configurations } from './deploy-config.js';
  * @typedef {{
  *   net?: string;
  *   oracle?: string[];
+ *   noOracle?: string;
  * }} FastUSDCOracleOpts
  */
 
@@ -19,6 +20,7 @@ const { keys } = Object;
 const options = {
   net: { type: 'string' },
   oracle: { type: 'string', multiple: true },
+  noOracle: { type: 'boolean' },
 };
 const oraclesUsage = 'use --oracle name:address ...';
 
@@ -27,16 +29,21 @@ export { options as parseArgsOracleOptions };
 export const parseOracleArgs = scriptArgs => {
   /** @type {{ values: FastUSDCOracleOpts }} */
   const {
-    values: { oracle: oracleArgs, net },
+    values: { oracle: oracleArgs, noOracle, net },
   } = parseArgs({ args: scriptArgs, options });
 
   if (net) {
     if (!(net in configurations)) {
       throw Error(`${net} not in ${keys(configurations)}`);
     }
-    return configurations[net].oracles;
+
+    if (noOracle) {
+      return harden(/** @type {Record<string, string>} */ ({}));
+    } else {
+      return configurations[net].oracles;
+    }
   }
-  if (!oracleArgs) throw Error(oraclesUsage);
+  if (!oracleArgs || noOracle) throw Error(oraclesUsage);
   return harden(
     Object.fromEntries(
       oracleArgs.map(arg => {
