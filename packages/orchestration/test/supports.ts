@@ -187,9 +187,9 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
 
     const lastMsgTransfer = b1.messages[0] as MsgTransfer;
     const base = {
-      receiver: lastMsgTransfer.receiver as Bech32Address,
-      sender: lastMsgTransfer.sender as Bech32Address,
-      target: lastMsgTransfer.sender as Bech32Address,
+      receiver: lastMsgTransfer.receiver,
+      sender: lastMsgTransfer.sender,
+      target: lastMsgTransfer.sender,
       sourceChannel: lastMsgTransfer.sourceChannel as IBCChannelID,
       sequence: ibcSequenceNonce,
       amount: BigInt(lastMsgTransfer.token.amount),
