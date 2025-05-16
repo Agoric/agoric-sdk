@@ -785,6 +785,8 @@ export const prepareLocalOrchestrationAccountKit = (
               amount,
             } = ftPacketData;
 
+            // XXX don't verify it's a real Bech32 because that makes our tests
+            // less legible (preventing readable words on the address string)
             /**
              * @param {string} address
              */

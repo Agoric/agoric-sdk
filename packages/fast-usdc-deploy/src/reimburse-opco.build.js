@@ -3,6 +3,7 @@ import { AmountMath } from '@agoric/ertp';
 import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import { Far } from '@endo/far';
 import { parseArgs } from 'node:util';
+import { assertBech32Address } from '@agoric/orchestration/src/utils/address.js';
 import { getManifestForReimburseOpCo } from './reimburse-opco.core.js';
 import { toExternalConfig } from './utils/config-marshal.js';
 
@@ -50,10 +51,10 @@ export default async (homeP, endowments) => {
     },
   });
   assert(destinationAddress && principal, usage);
+  assertBech32Address(destinationAddress);
 
   /** @type {ReimbursementTerms} */
   const feeTerms = {
-    // @ts-expect-error Bech32Address expected
     destinationAddress,
     principal: multiplyBy(unit, parseRatio(principal, USDC)),
   };
