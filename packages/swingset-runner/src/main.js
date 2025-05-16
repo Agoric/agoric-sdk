@@ -3,7 +3,7 @@ import fs from 'fs';
 import process from 'process';
 import repl from 'repl';
 import util from 'util';
-
+import inspector from 'inspector';
 import { makeStatLogger } from '@agoric/stat-logger';
 import {
   buildTimer,
@@ -144,9 +144,7 @@ function generateSwingsetBenchmarkConfig(
   // eslint-disable-next-line prefer-const
   let { benchmarkDriver, ...baseConfigOptions } = baseConfig;
   if (!benchmarkDriver) {
-    benchmarkDriver = {
-      sourceSpec: swingsetBenchmarkDriverPath,
-    };
+    benchmarkDriver = { sourceSpec: swingsetBenchmarkDriverPath };
   }
   const config = {
     ...baseConfigOptions,
@@ -156,11 +154,7 @@ function generateSwingsetBenchmarkConfig(
       benchmarkBootstrap: {
         sourceSpec: new URL('vat-benchmarkBootstrap.js', import.meta.url)
           .pathname,
-        parameters: {
-          config: {
-            bootstrap: baseConfig.bootstrap,
-          },
-        },
+        parameters: { config: { bootstrap: baseConfig.bootstrap } },
       },
       benchmarkDriver,
       ...baseConfig.vats,
@@ -180,12 +174,7 @@ function generateIndirectConfig(baseConfig) {
     vats: {
       launcher: {
         sourceSpec: new URL('vat-launcher.js', import.meta.url).pathname,
-        parameters: {
-          config: {
-            bootstrap: baseConfig.bootstrap,
-            vats: {},
-          },
-        },
+        parameters: { config: { bootstrap: baseConfig.bootstrap, vats: {} } },
       },
     },
   };
@@ -257,6 +246,12 @@ export async function main() {
   let activityHash = false;
   let emulateChain = false;
   let swingsetBenchmarkDriverPath = null;
+  /** @type {string | undefined} */
+  let profileFilePath;
+  /** @type {inspector.Session} */
+  let inspectorSession;
+
+  await null;
 
   while (argv[0] && argv[0].startsWith('-')) {
     const flag = argv.shift();
@@ -368,6 +363,24 @@ export async function main() {
       case '--sbench':
         swingsetBenchmarkDriverPath = argv.shift();
         break;
+      case '--profile':
+        profileFilePath = path.resolve(String(argv.shift()));
+        await new Promise(resolve => {
+          const parentDirectory = path.dirname(String(profileFilePath));
+          fs.access(parentDirectory, fs.constants.F_OK, err => {
+            if (err) {
+              console.warn(
+                `Directory "${parentDirectory}" does not exist, not initiating profiling`,
+              );
+              profileFilePath = undefined;
+            } else {
+              inspectorSession = new inspector.Session();
+              inspectorSession.connect();
+            }
+            resolve(null);
+          });
+        });
+        break;
       case '-v':
       case '--verbose':
         verbose = true;
@@ -431,30 +444,20 @@ export async function main() {
   }
 
   const timer = buildTimer();
-  config.devices = {
-    timer: {
-      sourceSpec: timer.srcPath,
-    },
-  };
-  const deviceEndowments = {
-    timer: { ...timer.endowments },
-  };
+  config.devices = { timer: { sourceSpec: timer.srcPath } };
+  const deviceEndowments = { timer: { ...timer.endowments } };
   if (config.loopboxSenders) {
     const { loopboxSrcPath, loopboxEndowments } = buildLoopbox('immediate');
     config.devices.loopbox = {
       sourceSpec: loopboxSrcPath,
-      parameters: {
-        senders: config.loopboxSenders,
-      },
+      parameters: { senders: config.loopboxSenders },
     };
     delete config.loopboxSenders;
     deviceEndowments.loopbox = { ...loopboxEndowments };
   }
   if (emulateChain) {
     const bridge = await initEmulatedChain(config, configPath);
-    config.devices.bridge = {
-      sourceSpec: bridge.srcPath,
-    };
+    config.devices.bridge = { sourceSpec: bridge.srcPath };
     deviceEndowments.bridge = { ...bridge.endowments };
   }
   if (!config.defaultManagerType) {
@@ -520,14 +523,8 @@ export async function main() {
   }
   let slogSender;
   if (teleslog || slogFile) {
-    const slogEnv = {
-      ...process.env,
-      SLOGFILE: slogFile,
-    };
-    const slogOpts = {
-      stateDir: dbDir,
-      env: slogEnv,
-    };
+    const slogEnv = { ...process.env, SLOGFILE: slogFile };
+    const slogOpts = { stateDir: dbDir, env: slogEnv };
     if (slogFile) {
       slogEnv.SLOGSENDER = '';
     }
@@ -654,7 +651,7 @@ export async function main() {
       cli.defineCommand('block', {
         help: 'Execute a block of <n> cranks, without commit',
         action: async requestedSteps => {
-          const steps = await runBlock(requestedSteps, false);
+          const steps = await runBlock(Number(requestedSteps), false);
           log(`executed ${steps} cranks in block`);
           cli.displayPrompt();
         },
@@ -662,7 +659,7 @@ export async function main() {
       cli.defineCommand('benchmark', {
         help: 'Run <n> rounds of the benchmark protocol',
         action: async rounds => {
-          const [steps, deltaT] = await runBenchmark(rounds);
+          const [steps, deltaT] = await runBenchmark(Number(rounds));
           log(`benchmark ${rounds} rounds, ${steps} cranks in ${deltaT} ns`);
           cli.displayPrompt();
         },
@@ -696,9 +693,7 @@ export async function main() {
   if (statLogger) {
     statLogger.close();
   }
-  if (slogSender) {
-    await slogSender.forceFlush();
-  }
+  if (slogSender) await slogSender.forceFlush?.();
   await controller.shutdown();
 
   function getCrankNumber() {
@@ -710,12 +705,35 @@ export async function main() {
     dumpStore(kernelStorage, dumpPath, rawMode);
   }
 
+  /**
+   * @param {string} method
+   * @returns {object}
+   */
+  function postToInspector(method) {
+    return new Promise((resolve, reject) => {
+      inspectorSession.post(method, (err, result) =>
+        err ? reject(err) : resolve(result),
+      );
+    });
+  }
+
+  /**
+   * @param {number} rounds
+   * @returns {Promise<[number, bigint]>}
+   */
   async function runBenchmark(rounds) {
     const cranksPre = getCrankNumber();
     const rawStatsPre = controller.getStats();
     let totalSteps = 0;
     let totalDeltaT = 0n;
+
     await null;
+
+    if (profileFilePath) {
+      await postToInspector('Profiler.enable');
+      await postToInspector('Profiler.start');
+    }
+
     for (let i = 0; i < rounds; i += 1) {
       const roundResult = controller.queueToVatRoot(
         config.bootstrap,
@@ -734,6 +752,11 @@ export async function main() {
       totalSteps += steps;
       totalDeltaT += deltaT;
     }
+
+    if (profileFilePath) {
+      const { profile } = await postToInspector('Profiler.stop');
+      fs.writeFileSync(profileFilePath, JSON.stringify(profile));
+    }
     const cranksPost = getCrankNumber();
     const rawStatsPost = controller.getStats();
     benchmarkStats = organizeBenchmarkStats(
@@ -746,6 +769,10 @@ export async function main() {
     return [totalSteps, totalDeltaT];
   }
 
+  /**
+   * @param {number} requestedSteps
+   * @param {boolean} doCommit
+   */
   async function runBlock(requestedSteps, doCommit) {
     const blockStartTime = readClock();
     let actualSteps = 0;
@@ -802,6 +829,7 @@ export async function main() {
     }
     if (statLogger) {
       blockNumber += 1;
+      /** @type {Array<bigint | number>} */
       let data = [blockNumber, actualSteps];
       if (logTimes) {
         data.push(blockEndTime - blockStartTime);
@@ -831,6 +859,11 @@ export async function main() {
     return actualSteps;
   }
 
+  /**
+   * @param {number} stepLimit
+   * @param {boolean} doCommit
+   * @returns {Promise<[number, bigint]>}
+   */
   async function runBatch(stepLimit, doCommit) {
     const startTime = readClock();
     let totalSteps = 0;
@@ -850,6 +883,10 @@ export async function main() {
     process.exit(1);
   }
 
+  /**
+   * @param {number} stepLimit
+   * @param {boolean} runInBlockMode
+   */
   async function commandRun(stepLimit, runInBlockMode) {
     if (doDumps) {
       kernelStateDump();
