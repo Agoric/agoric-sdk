@@ -4,8 +4,65 @@
 // Adapted from https://gist.github.com/0xpatrickdev/56e91f6318352832efa0977cfd98d188/550b9d70e5a859d25f43c0080c5ca6dd126d205a
 const formatUSDC = x => Number(x) / 1_000_000;
 
+// copied from chrome network tools. manually changed pageSize to 50
+const txsQueryBody = {
+  query: `
+    query TransactionsQuery(
+      $after: Cursor
+      $pageSize: Int
+      $statusFilter: FastUsdcTransactionStatus
+      $orderBy: [FastUsdcTransactionsOrderBy!]
+    ) {
+      _metadata {
+        lastProcessedHeight
+        indexerHealthy
+        lastProcessedTimestamp
+      }
+      fastUsdcTransactions(
+        first: $pageSize
+        after: $after
+        orderBy: $orderBy
+        filter: { status: { equalTo: $statusFilter } }
+      ) {
+        totalCount
+        pageInfo {
+          endCursor
+          hasNextPage
+        }
+        edges {
+          node {
+            id
+            sourceAddress
+            eud
+            usdcAmount
+            status
+            statusHeight
+            heightObserved
+            heightAdvanced
+            heightDisbursed
+            contractFee
+            poolFee
+            sourceBlockTimestamp
+            timeObserved
+            timeAdvanced
+            timeDisbursed
+            risksIdentified
+            sourceChainId
+          }
+        }
+      }
+    }
+  `,
+  variables: {
+    after: '',
+    pageSize: 50,
+    orderBy: ['TIME_OBSERVED_DESC'],
+    statusFilter: 'FORWARD_FAILED',
+  },
+  operationName: 'TransactionsQuery',
+};
+
 const run = async () => {
-  // copied from chrome network tools. manually changed pageSize to 50
   const txsRes = await fetch(
     'https://api.subquery.network/sq/agoric-labs/internal',
     {
@@ -13,7 +70,7 @@ const run = async () => {
         accept: 'application/graphql-response+json, application/json',
         'content-type': 'application/json',
       },
-      body: '{"query":"\\n  query TransactionsQuery(\\n    $after: Cursor\\n    $pageSize: Int\\n    $statusFilter: FastUsdcTransactionStatus\\n    $orderBy: [FastUsdcTransactionsOrderBy!]\\n  ) {\\n    \\n  _metadata {\\n    lastProcessedHeight\\n    indexerHealthy\\n    lastProcessedTimestamp\\n  }\\n\\n    fastUsdcTransactions(\\n      first: $pageSize\\n      after: $after\\n      orderBy: $orderBy\\n      filter: { status: { equalTo: $statusFilter } }\\n    ) {\\n      \\n  totalCount\\n  pageInfo {\\n    endCursor\\n    hasNextPage\\n  }\\n  edges {\\n    node {\\n      id\\n      sourceAddress\\n      eud\\n      usdcAmount\\n      status\\n      statusHeight\\n      heightObserved\\n      heightAdvanced\\n      heightDisbursed\\n      contractFee\\n      poolFee\\n      sourceBlockTimestamp\\n      timeObserved\\n      timeAdvanced\\n      timeDisbursed\\n      risksIdentified\\n      sourceChainId\\n    }\\n  }\\n\\n    }\\n  }\\n","variables":{"after":"","pageSize":50,"orderBy":["TIME_OBSERVED_DESC"],"statusFilter":"FORWARD_FAILED"},"operationName":"TransactionsQuery"}',
+      body: JSON.stringify(txsQueryBody),
       method: 'POST',
     },
   );
