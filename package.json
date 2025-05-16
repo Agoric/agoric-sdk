@@ -68,7 +68,7 @@
     "test": "yarn lerna run --no-bail test",
     "test:xs": "yarn workspaces run test:xs",
     "build": "yarn workspaces run build && scripts/agd-builder.sh stamp yarn-built",
-    "postinstall": "patch-package && scripts/agd-builder.sh stamp yarn-installed",
+    "postinstall": "patch-package && scripts/update-yarn-locks.sh && scripts/agd-builder.sh stamp yarn-installed",
     "build-ts": "tsc --build tsconfig.build.json",
     "build-xs-worker": "cd packages/xs-vat-worker && yarn build:xs-lin"
   },
