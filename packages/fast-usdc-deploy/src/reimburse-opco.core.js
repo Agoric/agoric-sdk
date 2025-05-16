@@ -1,4 +1,4 @@
-/** @file core eval module to collect fees. */
+/** @file core eval module to reimburse a manual intervention. */
 import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
 import { fromExternalConfig } from './utils/config-marshal.js';
@@ -22,6 +22,10 @@ const issUSDC = 'USDC'; // issuer name
 const trace = makeTracer('RUCF', true);
 
 /**
+ * Transactions that reached FAILED_FORWARD status before we had a retrier
+ * (and stored failed forwards) were terminal and required manual payment.
+ * OpCo made those transfers from its own funds. This will reimburse those payments.
+ *
  * @param {BootstrapPowers & FastUSDCCorePowers } permittedPowers
  * @param {{ options: LegibleCapData<{ terms: ReimbursementTerms}> }} config
  */
@@ -50,8 +54,6 @@ const permit = {
   consume: {
     fastUsdcKit: true,
     agoricNames: true,
-    namesByAddress: true,
-    zoe: true,
   },
 };
 
