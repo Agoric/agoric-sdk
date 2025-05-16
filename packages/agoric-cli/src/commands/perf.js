@@ -51,6 +51,7 @@ export const makePerfCommand = logger => {
       'address literal or name',
       normalizeAddress,
     )
+    .option('--verbose')
     .action(async function (opts) {
       const sharedOpts = perf.opts();
       logger.warn({ sharedOpts, opts });
@@ -102,7 +103,11 @@ export const makePerfCommand = logger => {
       if (sharedOpts.home) {
         cmd.push(`--home=${sharedOpts.home}`);
       }
-      execSwingsetTransaction(cmd, { from: opts.from, ...networkConfig });
+      execSwingsetTransaction(cmd, {
+        from: opts.from,
+        verbose: opts.verbose,
+        ...networkConfig,
+      });
     });
 
   return perf;
