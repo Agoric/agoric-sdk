@@ -1,3 +1,4 @@
+export * from './chain-storage-client.js';
 export * from './cli.js';
 export * from './network-config.js';
 export * from './rpc.js';
