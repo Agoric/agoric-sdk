@@ -261,6 +261,9 @@ export const contract = async (
     ): Promise<Invitation<OperatorOfferResult>> {
       return feedKit.creator.makeOperatorInvitation(operatorId);
     },
+    initOperator(operatorId: string): OperatorOfferResult['operator'] {
+      return feedKit.creator.initOperator(operatorId).operator;
+    },
     removeOperator(operatorId: string): void {
       return feedKit.creator.removeOperator(operatorId);
     },
