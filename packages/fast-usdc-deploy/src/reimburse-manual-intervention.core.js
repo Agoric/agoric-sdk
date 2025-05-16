@@ -29,8 +29,8 @@ const trace = makeTracer('RUCF', true);
  * @param {BootstrapPowers & FastUSDCCorePowers } permittedPowers
  * @param {{ options: LegibleCapData<{ terms: ReimbursementTerms}> }} config
  */
-export const reimburseOpCo = async (permittedPowers, config) => {
-  trace('reimburseOpCo...', config.options);
+export const reimburseManualIntervention = async (permittedPowers, config) => {
+  trace('reimburseManualIntervention...', config.options);
 
   const { agoricNames } = permittedPowers.consume;
   /** @type {Brand<'nat'>} */
@@ -47,7 +47,7 @@ export const reimburseOpCo = async (permittedPowers, config) => {
   );
   trace('done');
 };
-harden(reimburseOpCo);
+harden(reimburseManualIntervention);
 
 /** @satisfies {BootstrapManifestPermit} */
 const permit = {
@@ -59,8 +59,11 @@ const permit = {
 
 /**
  * @param {unknown} _utils
- * @param {Parameters<typeof reimburseOpCo>[1]} config
+ * @param {Parameters<typeof reimburseManualIntervention>[1]} config
  */
-export const getManifestForReimburseOpCo = (_utils, { options }) => {
-  return { manifest: { [reimburseOpCo.name]: permit }, options };
+export const getManifestForReimburseManualIntervention = (
+  _utils,
+  { options },
+) => {
+  return { manifest: { [reimburseManualIntervention.name]: permit }, options };
 };
