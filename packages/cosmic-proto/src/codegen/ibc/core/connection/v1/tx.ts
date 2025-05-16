@@ -61,6 +61,7 @@ export interface MsgConnectionOpenTry {
   /** Deprecated: this field is unused. Crossing hellos are no longer supported in core IBC. */
   /** @deprecated */
   previousConnectionId: string;
+  /** @deprecated */
   clientState?: Any;
   counterparty: Counterparty;
   delayPeriod: bigint;
@@ -72,11 +73,17 @@ export interface MsgConnectionOpenTry {
    */
   proofInit: Uint8Array;
   /** proof of client state included in message */
+  /** @deprecated */
   proofClient: Uint8Array;
   /** proof of client consensus state */
+  /** @deprecated */
   proofConsensus: Uint8Array;
+  /** @deprecated */
   consensusHeight: Height;
   signer: string;
+  /** optional proof data for host state machines that are unable to introspect their own consensus state */
+  /** @deprecated */
+  hostConsensusStateProof: Uint8Array;
 }
 export interface MsgConnectionOpenTryProtoMsg {
   typeUrl: '/ibc.core.connection.v1.MsgConnectionOpenTry';
@@ -90,16 +97,22 @@ export interface MsgConnectionOpenTrySDKType {
   client_id: string;
   /** @deprecated */
   previous_connection_id: string;
+  /** @deprecated */
   client_state?: AnySDKType;
   counterparty: CounterpartySDKType;
   delay_period: bigint;
   counterparty_versions: VersionSDKType[];
   proof_height: HeightSDKType;
   proof_init: Uint8Array;
+  /** @deprecated */
   proof_client: Uint8Array;
+  /** @deprecated */
   proof_consensus: Uint8Array;
+  /** @deprecated */
   consensus_height: HeightSDKType;
   signer: string;
+  /** @deprecated */
+  host_consensus_state_proof: Uint8Array;
 }
 /** MsgConnectionOpenTryResponse defines the Msg/ConnectionOpenTry response type. */
 export interface MsgConnectionOpenTryResponse {}
@@ -130,6 +143,8 @@ export interface MsgConnectionOpenAck {
   proofConsensus: Uint8Array;
   consensusHeight: Height;
   signer: string;
+  /** optional proof data for host state machines that are unable to introspect their own consensus state */
+  hostConsensusStateProof: Uint8Array;
 }
 export interface MsgConnectionOpenAckProtoMsg {
   typeUrl: '/ibc.core.connection.v1.MsgConnectionOpenAck';
@@ -150,6 +165,7 @@ export interface MsgConnectionOpenAckSDKType {
   proof_consensus: Uint8Array;
   consensus_height: HeightSDKType;
   signer: string;
+  host_consensus_state_proof: Uint8Array;
 }
 /** MsgConnectionOpenAckResponse defines the Msg/ConnectionOpenAck response type. */
 export interface MsgConnectionOpenAckResponse {}
@@ -403,6 +419,7 @@ function createBaseMsgConnectionOpenTry(): MsgConnectionOpenTry {
     proofConsensus: new Uint8Array(),
     consensusHeight: Height.fromPartial({}),
     signer: '',
+    hostConsensusStateProof: new Uint8Array(),
   };
 }
 export const MsgConnectionOpenTry = {
@@ -449,6 +466,9 @@ export const MsgConnectionOpenTry = {
     }
     if (message.signer !== '') {
       writer.uint32(98).string(message.signer);
+    }
+    if (message.hostConsensusStateProof.length !== 0) {
+      writer.uint32(106).bytes(message.hostConsensusStateProof);
     }
     return writer;
   },
@@ -501,6 +521,9 @@ export const MsgConnectionOpenTry = {
         case 12:
           message.signer = reader.string();
           break;
+        case 13:
+          message.hostConsensusStateProof = reader.bytes();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -542,6 +565,9 @@ export const MsgConnectionOpenTry = {
         ? Height.fromJSON(object.consensusHeight)
         : undefined,
       signer: isSet(object.signer) ? String(object.signer) : '',
+      hostConsensusStateProof: isSet(object.hostConsensusStateProof)
+        ? bytesFromBase64(object.hostConsensusStateProof)
+        : new Uint8Array(),
     };
   },
   toJSON(message: MsgConnectionOpenTry): JsonSafe<MsgConnectionOpenTry> {
@@ -591,6 +617,12 @@ export const MsgConnectionOpenTry = {
         ? Height.toJSON(message.consensusHeight)
         : undefined);
     message.signer !== undefined && (obj.signer = message.signer);
+    message.hostConsensusStateProof !== undefined &&
+      (obj.hostConsensusStateProof = base64FromBytes(
+        message.hostConsensusStateProof !== undefined
+          ? message.hostConsensusStateProof
+          : new Uint8Array(),
+      ));
     return obj;
   },
   fromPartial(object: Partial<MsgConnectionOpenTry>): MsgConnectionOpenTry {
@@ -623,6 +655,8 @@ export const MsgConnectionOpenTry = {
         ? Height.fromPartial(object.consensusHeight)
         : undefined;
     message.signer = object.signer ?? '';
+    message.hostConsensusStateProof =
+      object.hostConsensusStateProof ?? new Uint8Array();
     return message;
   },
   fromProtoMsg(message: MsgConnectionOpenTryProtoMsg): MsgConnectionOpenTry {
@@ -711,6 +745,7 @@ function createBaseMsgConnectionOpenAck(): MsgConnectionOpenAck {
     proofConsensus: new Uint8Array(),
     consensusHeight: Height.fromPartial({}),
     signer: '',
+    hostConsensusStateProof: new Uint8Array(),
   };
 }
 export const MsgConnectionOpenAck = {
@@ -748,6 +783,9 @@ export const MsgConnectionOpenAck = {
     }
     if (message.signer !== '') {
       writer.uint32(82).string(message.signer);
+    }
+    if (message.hostConsensusStateProof.length !== 0) {
+      writer.uint32(90).bytes(message.hostConsensusStateProof);
     }
     return writer;
   },
@@ -792,6 +830,9 @@ export const MsgConnectionOpenAck = {
         case 10:
           message.signer = reader.string();
           break;
+        case 11:
+          message.hostConsensusStateProof = reader.bytes();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -829,6 +870,9 @@ export const MsgConnectionOpenAck = {
         ? Height.fromJSON(object.consensusHeight)
         : undefined,
       signer: isSet(object.signer) ? String(object.signer) : '',
+      hostConsensusStateProof: isSet(object.hostConsensusStateProof)
+        ? bytesFromBase64(object.hostConsensusStateProof)
+        : new Uint8Array(),
     };
   },
   toJSON(message: MsgConnectionOpenAck): JsonSafe<MsgConnectionOpenAck> {
@@ -870,6 +914,12 @@ export const MsgConnectionOpenAck = {
         ? Height.toJSON(message.consensusHeight)
         : undefined);
     message.signer !== undefined && (obj.signer = message.signer);
+    message.hostConsensusStateProof !== undefined &&
+      (obj.hostConsensusStateProof = base64FromBytes(
+        message.hostConsensusStateProof !== undefined
+          ? message.hostConsensusStateProof
+          : new Uint8Array(),
+      ));
     return obj;
   },
   fromPartial(object: Partial<MsgConnectionOpenAck>): MsgConnectionOpenAck {
@@ -896,6 +946,8 @@ export const MsgConnectionOpenAck = {
         ? Height.fromPartial(object.consensusHeight)
         : undefined;
     message.signer = object.signer ?? '';
+    message.hostConsensusStateProof =
+      object.hostConsensusStateProof ?? new Uint8Array();
     return message;
   },
   fromProtoMsg(message: MsgConnectionOpenAckProtoMsg): MsgConnectionOpenAck {

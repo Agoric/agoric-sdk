@@ -10,6 +10,11 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
+	dbm "github.com/cometbft/cometbft-db"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto/secp256k1"
+	"github.com/cometbft/cometbft/libs/log"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/store"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -17,11 +22,6 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto/secp256k1"
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	dbm "github.com/tendermint/tm-db"
 )
 
 var (
@@ -560,32 +560,32 @@ func Test_EndBlock_Events(t *testing.T) {
 		{
 			Type: "coin_received",
 			Attributes: []abci.EventAttribute{
-				{Key: []byte("receiver"), Value: []byte(addr1)},
-				{Key: []byte("amount"), Value: []byte("500ubld,600urun,700ushmoo")},
+				{Key: "receiver", Value: addr1},
+				{Key: "amount", Value: "500ubld,600urun,700ushmoo"},
 			},
 		},
 		{
 			Type: "coin_spent",
 			Attributes: []abci.EventAttribute{
-				{Key: []byte("spender"), Value: []byte(addr2)},
-				{Key: []byte("amount"), Value: []byte("500ubld,600urun,700ushmoo")},
-				{Key: []byte("other"), Value: []byte(addr3)},
+				{Key: "spender", Value: addr2},
+				{Key: "amount", Value: "500ubld,600urun,700ushmoo"},
+				{Key: "other", Value: addr3},
 			},
 		},
 		{
 			Type: "something_else",
 			Attributes: []abci.EventAttribute{
-				{Key: []byte("receiver"), Value: []byte(addr4)},
-				{Key: []byte("spender"), Value: []byte(addr4)},
-				{Key: []byte("amount"), Value: []byte("500ubld,600urun,700ushmoo")},
+				{Key: "receiver", Value: addr4},
+				{Key: "spender", Value: addr4},
+				{Key: "amount", Value: "500ubld,600urun,700ushmoo"},
 			},
 		},
 		{
 			Type: "non_modaccount",
 			Attributes: []abci.EventAttribute{
-				{Key: []byte("receiver"), Value: []byte(addr3)},
-				{Key: []byte("spender"), Value: []byte(addr4)},
-				{Key: []byte("amount"), Value: []byte("100ubld")},
+				{Key: "receiver", Value: addr3},
+				{Key: "spender", Value: addr4},
+				{Key: "amount", Value: "100ubld"},
 			},
 		},
 	}

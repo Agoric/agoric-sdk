@@ -48,7 +48,7 @@ export interface MsgExecResponseSDKType {
 export interface MsgExec {
   grantee: string;
   /**
-   * Authorization Msg requests to execute. Each msg must implement Authorization interface
+   * Execute Msg.
    * The x/authz will try to find a grant matching (msg.signers[0], grantee, MsgTypeURL(msg))
    * triple and validate it.
    */
@@ -521,18 +521,7 @@ export const MsgRevokeResponse = {
     };
   },
 };
-export const Sdk_Msg_InterfaceDecoder = (
-  input: BinaryReader | Uint8Array,
-): Any => {
-  const reader =
-    input instanceof BinaryReader ? input : new BinaryReader(input);
-  const data = Any.decode(reader, reader.uint32());
-  switch (data.typeUrl) {
-    default:
-      return data;
-  }
-};
-export const Authz_Authorization_InterfaceDecoder = (
+export const Cosmos_basev1beta1Msg_InterfaceDecoder = (
   input: BinaryReader | Uint8Array,
 ): Any => {
   const reader =

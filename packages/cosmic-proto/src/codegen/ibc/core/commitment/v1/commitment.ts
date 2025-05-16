@@ -2,7 +2,7 @@
 import {
   CommitmentProof,
   type CommitmentProofSDKType,
-} from '../../../../proofs.js';
+} from '../../../../cosmos/ics23/v1/proofs.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';

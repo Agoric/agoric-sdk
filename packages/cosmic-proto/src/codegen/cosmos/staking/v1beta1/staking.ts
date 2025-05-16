@@ -10,6 +10,10 @@ import {
   type DurationSDKType,
 } from '../../../google/protobuf/duration.js';
 import { Coin, type CoinSDKType } from '../../base/v1beta1/coin.js';
+import {
+  ValidatorUpdate,
+  type ValidatorUpdateSDKType,
+} from '../../../tendermint/abci/types.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet, fromJsonTimestamp, fromTimestamp } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
@@ -58,6 +62,47 @@ export function bondStatusToJSON(object: BondStatus): string {
     case BondStatus.BOND_STATUS_BONDED:
       return 'BOND_STATUS_BONDED';
     case BondStatus.UNRECOGNIZED:
+    default:
+      return 'UNRECOGNIZED';
+  }
+}
+/** Infraction indicates the infraction a validator commited. */
+export enum Infraction {
+  /** INFRACTION_UNSPECIFIED - UNSPECIFIED defines an empty infraction. */
+  INFRACTION_UNSPECIFIED = 0,
+  /** INFRACTION_DOUBLE_SIGN - DOUBLE_SIGN defines a validator that double-signs a block. */
+  INFRACTION_DOUBLE_SIGN = 1,
+  /** INFRACTION_DOWNTIME - DOWNTIME defines a validator that missed signing too many blocks. */
+  INFRACTION_DOWNTIME = 2,
+  UNRECOGNIZED = -1,
+}
+export const InfractionSDKType = Infraction;
+export function infractionFromJSON(object: any): Infraction {
+  switch (object) {
+    case 0:
+    case 'INFRACTION_UNSPECIFIED':
+      return Infraction.INFRACTION_UNSPECIFIED;
+    case 1:
+    case 'INFRACTION_DOUBLE_SIGN':
+      return Infraction.INFRACTION_DOUBLE_SIGN;
+    case 2:
+    case 'INFRACTION_DOWNTIME':
+      return Infraction.INFRACTION_DOWNTIME;
+    case -1:
+    case 'UNRECOGNIZED':
+    default:
+      return Infraction.UNRECOGNIZED;
+  }
+}
+export function infractionToJSON(object: Infraction): string {
+  switch (object) {
+    case Infraction.INFRACTION_UNSPECIFIED:
+      return 'INFRACTION_UNSPECIFIED';
+    case Infraction.INFRACTION_DOUBLE_SIGN:
+      return 'INFRACTION_DOUBLE_SIGN';
+    case Infraction.INFRACTION_DOWNTIME:
+      return 'INFRACTION_DOWNTIME';
+    case Infraction.UNRECOGNIZED:
     default:
       return 'UNRECOGNIZED';
   }
@@ -189,6 +234,10 @@ export interface Validator {
    * Since: cosmos-sdk 0.46
    */
   minSelfDelegation: string;
+  /** strictly positive if this validator's unbonding has been stopped by external modules */
+  unbondingOnHoldRefCount: bigint;
+  /** list of unbonding ids, each uniquely identifing an unbonding of this validator */
+  unbondingIds: bigint[];
 }
 export interface ValidatorProtoMsg {
   typeUrl: '/cosmos.staking.v1beta1.Validator';
@@ -216,6 +265,8 @@ export interface ValidatorSDKType {
   unbonding_time: TimestampSDKType;
   commission: CommissionSDKType;
   min_self_delegation: string;
+  unbonding_on_hold_ref_count: bigint;
+  unbonding_ids: bigint[];
 }
 /** ValAddresses defines a repeated set of validator addresses. */
 export interface ValAddresses {
@@ -363,6 +414,10 @@ export interface UnbondingDelegationEntry {
   initialBalance: string;
   /** balance defines the tokens to receive at completion. */
   balance: string;
+  /** Incrementing id that uniquely identifies this entry */
+  unbondingId: bigint;
+  /** Strictly positive if this entry's unbonding has been stopped by external modules */
+  unbondingOnHoldRefCount: bigint;
 }
 export interface UnbondingDelegationEntryProtoMsg {
   typeUrl: '/cosmos.staking.v1beta1.UnbondingDelegationEntry';
@@ -374,6 +429,8 @@ export interface UnbondingDelegationEntrySDKType {
   completion_time: TimestampSDKType;
   initial_balance: string;
   balance: string;
+  unbonding_id: bigint;
+  unbonding_on_hold_ref_count: bigint;
 }
 /** RedelegationEntry defines a redelegation object with relevant metadata. */
 export interface RedelegationEntry {
@@ -385,6 +442,10 @@ export interface RedelegationEntry {
   initialBalance: string;
   /** shares_dst is the amount of destination-validator shares created by redelegation. */
   sharesDst: string;
+  /** Incrementing id that uniquely identifies this entry */
+  unbondingId: bigint;
+  /** Strictly positive if this entry's unbonding has been stopped by external modules */
+  unbondingOnHoldRefCount: bigint;
 }
 export interface RedelegationEntryProtoMsg {
   typeUrl: '/cosmos.staking.v1beta1.RedelegationEntry';
@@ -396,6 +457,8 @@ export interface RedelegationEntrySDKType {
   completion_time: TimestampSDKType;
   initial_balance: string;
   shares_dst: string;
+  unbonding_id: bigint;
+  unbonding_on_hold_ref_count: bigint;
 }
 /**
  * Redelegation contains the list of a particular delegator's redelegating bonds
@@ -425,7 +488,7 @@ export interface RedelegationSDKType {
   validator_dst_address: string;
   entries: RedelegationEntrySDKType[];
 }
-/** Params defines the parameters for the staking module. */
+/** Params defines the parameters for the x/staking module. */
 export interface Params {
   /** unbonding_time is the time duration of unbonding. */
   unbondingTime: Duration;
@@ -444,7 +507,7 @@ export interface ParamsProtoMsg {
   typeUrl: '/cosmos.staking.v1beta1.Params';
   value: Uint8Array;
 }
-/** Params defines the parameters for the staking module. */
+/** Params defines the parameters for the x/staking module. */
 export interface ParamsSDKType {
   unbonding_time: DurationSDKType;
   max_validators: number;
@@ -536,6 +599,24 @@ export interface PoolProtoMsg {
 export interface PoolSDKType {
   not_bonded_tokens: string;
   bonded_tokens: string;
+}
+/**
+ * ValidatorUpdates defines an array of abci.ValidatorUpdate objects.
+ * TODO: explore moving this to proto/cosmos/base to separate modules from tendermint dependence
+ */
+export interface ValidatorUpdates {
+  updates: ValidatorUpdate[];
+}
+export interface ValidatorUpdatesProtoMsg {
+  typeUrl: '/cosmos.staking.v1beta1.ValidatorUpdates';
+  value: Uint8Array;
+}
+/**
+ * ValidatorUpdates defines an array of abci.ValidatorUpdate objects.
+ * TODO: explore moving this to proto/cosmos/base to separate modules from tendermint dependence
+ */
+export interface ValidatorUpdatesSDKType {
+  updates: ValidatorUpdateSDKType[];
 }
 function createBaseHistoricalInfo(): HistoricalInfo {
   return {
@@ -923,6 +1004,8 @@ function createBaseValidator(): Validator {
     unbondingTime: Timestamp.fromPartial({}),
     commission: Commission.fromPartial({}),
     minSelfDelegation: '',
+    unbondingOnHoldRefCount: BigInt(0),
+    unbondingIds: [],
   };
 }
 export const Validator = {
@@ -975,6 +1058,14 @@ export const Validator = {
     if (message.minSelfDelegation !== '') {
       writer.uint32(90).string(message.minSelfDelegation);
     }
+    if (message.unbondingOnHoldRefCount !== BigInt(0)) {
+      writer.uint32(96).int64(message.unbondingOnHoldRefCount);
+    }
+    writer.uint32(106).fork();
+    for (const v of message.unbondingIds) {
+      writer.uint64(v);
+    }
+    writer.ldelim();
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Validator {
@@ -1023,6 +1114,19 @@ export const Validator = {
         case 11:
           message.minSelfDelegation = reader.string();
           break;
+        case 12:
+          message.unbondingOnHoldRefCount = reader.int64();
+          break;
+        case 13:
+          if ((tag & 7) === 2) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.unbondingIds.push(reader.uint64());
+            }
+          } else {
+            message.unbondingIds.push(reader.uint64());
+          }
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -1059,6 +1163,12 @@ export const Validator = {
       minSelfDelegation: isSet(object.minSelfDelegation)
         ? String(object.minSelfDelegation)
         : '',
+      unbondingOnHoldRefCount: isSet(object.unbondingOnHoldRefCount)
+        ? BigInt(object.unbondingOnHoldRefCount.toString())
+        : BigInt(0),
+      unbondingIds: Array.isArray(object?.unbondingIds)
+        ? object.unbondingIds.map((e: any) => BigInt(e.toString()))
+        : [],
     };
   },
   toJSON(message: Validator): JsonSafe<Validator> {
@@ -1089,6 +1199,17 @@ export const Validator = {
         : undefined);
     message.minSelfDelegation !== undefined &&
       (obj.minSelfDelegation = message.minSelfDelegation);
+    message.unbondingOnHoldRefCount !== undefined &&
+      (obj.unbondingOnHoldRefCount = (
+        message.unbondingOnHoldRefCount || BigInt(0)
+      ).toString());
+    if (message.unbondingIds) {
+      obj.unbondingIds = message.unbondingIds.map(e =>
+        (e || BigInt(0)).toString(),
+      );
+    } else {
+      obj.unbondingIds = [];
+    }
     return obj;
   },
   fromPartial(object: Partial<Validator>): Validator {
@@ -1119,6 +1240,13 @@ export const Validator = {
         ? Commission.fromPartial(object.commission)
         : undefined;
     message.minSelfDelegation = object.minSelfDelegation ?? '';
+    message.unbondingOnHoldRefCount =
+      object.unbondingOnHoldRefCount !== undefined &&
+      object.unbondingOnHoldRefCount !== null
+        ? BigInt(object.unbondingOnHoldRefCount.toString())
+        : BigInt(0);
+    message.unbondingIds =
+      object.unbondingIds?.map(e => BigInt(e.toString())) || [];
     return message;
   },
   fromProtoMsg(message: ValidatorProtoMsg): Validator {
@@ -1708,6 +1836,8 @@ function createBaseUnbondingDelegationEntry(): UnbondingDelegationEntry {
     completionTime: Timestamp.fromPartial({}),
     initialBalance: '',
     balance: '',
+    unbondingId: BigInt(0),
+    unbondingOnHoldRefCount: BigInt(0),
   };
 }
 export const UnbondingDelegationEntry = {
@@ -1730,6 +1860,12 @@ export const UnbondingDelegationEntry = {
     }
     if (message.balance !== '') {
       writer.uint32(34).string(message.balance);
+    }
+    if (message.unbondingId !== BigInt(0)) {
+      writer.uint32(40).uint64(message.unbondingId);
+    }
+    if (message.unbondingOnHoldRefCount !== BigInt(0)) {
+      writer.uint32(48).int64(message.unbondingOnHoldRefCount);
     }
     return writer;
   },
@@ -1756,6 +1892,12 @@ export const UnbondingDelegationEntry = {
         case 4:
           message.balance = reader.string();
           break;
+        case 5:
+          message.unbondingId = reader.uint64();
+          break;
+        case 6:
+          message.unbondingOnHoldRefCount = reader.int64();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -1775,6 +1917,12 @@ export const UnbondingDelegationEntry = {
         ? String(object.initialBalance)
         : '',
       balance: isSet(object.balance) ? String(object.balance) : '',
+      unbondingId: isSet(object.unbondingId)
+        ? BigInt(object.unbondingId.toString())
+        : BigInt(0),
+      unbondingOnHoldRefCount: isSet(object.unbondingOnHoldRefCount)
+        ? BigInt(object.unbondingOnHoldRefCount.toString())
+        : BigInt(0),
     };
   },
   toJSON(
@@ -1790,6 +1938,12 @@ export const UnbondingDelegationEntry = {
     message.initialBalance !== undefined &&
       (obj.initialBalance = message.initialBalance);
     message.balance !== undefined && (obj.balance = message.balance);
+    message.unbondingId !== undefined &&
+      (obj.unbondingId = (message.unbondingId || BigInt(0)).toString());
+    message.unbondingOnHoldRefCount !== undefined &&
+      (obj.unbondingOnHoldRefCount = (
+        message.unbondingOnHoldRefCount || BigInt(0)
+      ).toString());
     return obj;
   },
   fromPartial(
@@ -1806,6 +1960,15 @@ export const UnbondingDelegationEntry = {
         : undefined;
     message.initialBalance = object.initialBalance ?? '';
     message.balance = object.balance ?? '';
+    message.unbondingId =
+      object.unbondingId !== undefined && object.unbondingId !== null
+        ? BigInt(object.unbondingId.toString())
+        : BigInt(0);
+    message.unbondingOnHoldRefCount =
+      object.unbondingOnHoldRefCount !== undefined &&
+      object.unbondingOnHoldRefCount !== null
+        ? BigInt(object.unbondingOnHoldRefCount.toString())
+        : BigInt(0);
     return message;
   },
   fromProtoMsg(
@@ -1831,6 +1994,8 @@ function createBaseRedelegationEntry(): RedelegationEntry {
     completionTime: Timestamp.fromPartial({}),
     initialBalance: '',
     sharesDst: '',
+    unbondingId: BigInt(0),
+    unbondingOnHoldRefCount: BigInt(0),
   };
 }
 export const RedelegationEntry = {
@@ -1855,6 +2020,12 @@ export const RedelegationEntry = {
       writer
         .uint32(34)
         .string(Decimal.fromUserInput(message.sharesDst, 18).atomics);
+    }
+    if (message.unbondingId !== BigInt(0)) {
+      writer.uint32(40).uint64(message.unbondingId);
+    }
+    if (message.unbondingOnHoldRefCount !== BigInt(0)) {
+      writer.uint32(48).int64(message.unbondingOnHoldRefCount);
     }
     return writer;
   },
@@ -1881,6 +2052,12 @@ export const RedelegationEntry = {
             18,
           ).toString();
           break;
+        case 5:
+          message.unbondingId = reader.uint64();
+          break;
+        case 6:
+          message.unbondingOnHoldRefCount = reader.int64();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -1900,6 +2077,12 @@ export const RedelegationEntry = {
         ? String(object.initialBalance)
         : '',
       sharesDst: isSet(object.sharesDst) ? String(object.sharesDst) : '',
+      unbondingId: isSet(object.unbondingId)
+        ? BigInt(object.unbondingId.toString())
+        : BigInt(0),
+      unbondingOnHoldRefCount: isSet(object.unbondingOnHoldRefCount)
+        ? BigInt(object.unbondingOnHoldRefCount.toString())
+        : BigInt(0),
     };
   },
   toJSON(message: RedelegationEntry): JsonSafe<RedelegationEntry> {
@@ -1913,6 +2096,12 @@ export const RedelegationEntry = {
     message.initialBalance !== undefined &&
       (obj.initialBalance = message.initialBalance);
     message.sharesDst !== undefined && (obj.sharesDst = message.sharesDst);
+    message.unbondingId !== undefined &&
+      (obj.unbondingId = (message.unbondingId || BigInt(0)).toString());
+    message.unbondingOnHoldRefCount !== undefined &&
+      (obj.unbondingOnHoldRefCount = (
+        message.unbondingOnHoldRefCount || BigInt(0)
+      ).toString());
     return obj;
   },
   fromPartial(object: Partial<RedelegationEntry>): RedelegationEntry {
@@ -1927,6 +2116,15 @@ export const RedelegationEntry = {
         : undefined;
     message.initialBalance = object.initialBalance ?? '';
     message.sharesDst = object.sharesDst ?? '';
+    message.unbondingId =
+      object.unbondingId !== undefined && object.unbondingId !== null
+        ? BigInt(object.unbondingId.toString())
+        : BigInt(0);
+    message.unbondingOnHoldRefCount =
+      object.unbondingOnHoldRefCount !== undefined &&
+      object.unbondingOnHoldRefCount !== null
+        ? BigInt(object.unbondingOnHoldRefCount.toString())
+        : BigInt(0);
     return message;
   },
   fromProtoMsg(message: RedelegationEntryProtoMsg): RedelegationEntry {
@@ -2550,6 +2748,77 @@ export const Pool = {
     return {
       typeUrl: '/cosmos.staking.v1beta1.Pool',
       value: Pool.encode(message).finish(),
+    };
+  },
+};
+function createBaseValidatorUpdates(): ValidatorUpdates {
+  return {
+    updates: [],
+  };
+}
+export const ValidatorUpdates = {
+  typeUrl: '/cosmos.staking.v1beta1.ValidatorUpdates',
+  encode(
+    message: ValidatorUpdates,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    for (const v of message.updates) {
+      ValidatorUpdate.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+  decode(input: BinaryReader | Uint8Array, length?: number): ValidatorUpdates {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseValidatorUpdates();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.updates.push(ValidatorUpdate.decode(reader, reader.uint32()));
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): ValidatorUpdates {
+    return {
+      updates: Array.isArray(object?.updates)
+        ? object.updates.map((e: any) => ValidatorUpdate.fromJSON(e))
+        : [],
+    };
+  },
+  toJSON(message: ValidatorUpdates): JsonSafe<ValidatorUpdates> {
+    const obj: any = {};
+    if (message.updates) {
+      obj.updates = message.updates.map(e =>
+        e ? ValidatorUpdate.toJSON(e) : undefined,
+      );
+    } else {
+      obj.updates = [];
+    }
+    return obj;
+  },
+  fromPartial(object: Partial<ValidatorUpdates>): ValidatorUpdates {
+    const message = createBaseValidatorUpdates();
+    message.updates =
+      object.updates?.map(e => ValidatorUpdate.fromPartial(e)) || [];
+    return message;
+  },
+  fromProtoMsg(message: ValidatorUpdatesProtoMsg): ValidatorUpdates {
+    return ValidatorUpdates.decode(message.value);
+  },
+  toProto(message: ValidatorUpdates): Uint8Array {
+    return ValidatorUpdates.encode(message).finish();
+  },
+  toProtoMsg(message: ValidatorUpdates): ValidatorUpdatesProtoMsg {
+    return {
+      typeUrl: '/cosmos.staking.v1beta1.ValidatorUpdates',
+      value: ValidatorUpdates.encode(message).finish(),
     };
   },
 };
