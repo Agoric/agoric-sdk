@@ -44,7 +44,7 @@
     "access": "public"
   },
   "engines": {
-    "node": "^18.12 || ^20.9"
+    "node": "^18.12 || ^20.9 || ^22.11"
   },
   "typeCoverage": {
     "atLeast": 99.33
