@@ -4,12 +4,12 @@ import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import { Far } from '@endo/far';
 import { parseArgs } from 'node:util';
 import { assertBech32Address } from '@agoric/orchestration/src/utils/address.js';
-import { getManifestForReimburseOpCo } from './reimburse-opco.core.js';
+import { getManifestForReimburseManualIntervention } from './reimburse-manual-intervention.core.js';
 import { toExternalConfig } from './utils/config-marshal.js';
 
 /**
  * @import {CoreEvalBuilder, DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js'
- * @import {ReimbursementTerms} from './reimburse-opco.core.js'
+ * @import {ReimbursementTerms} from './reimburse-manual-intervention.core.js'
  */
 
 const usage = 'Use: --destinationAddress <address> --principal <amount>';
@@ -27,12 +27,12 @@ const unit = AmountMath.make(USDC, 10n ** USDC_DECIMALS);
  * @param {ReimbursementTerms} terms
  * @satisfies {CoreEvalBuilder}
  */
-const reimbursementProposalBuilder = async (_utils, terms) => {
+const manualInterventionProposalBuilder = async (_utils, terms) => {
   return harden({
-    sourceSpec: './reimburse-opco.core.js',
-    /** @type {[string, Parameters<typeof getManifestForReimburseOpCo>[1]]} */
+    sourceSpec: './reimburse-manual-intervention.core.js',
+    /** @type {[string, Parameters<typeof getManifestForReimburseManualIntervention>[1]]} */
     getManifestCall: [
-      getManifestForReimburseOpCo.name,
+      getManifestForReimburseManualIntervention.name,
       { options: toExternalConfig(harden({ terms }), xVatCtx) },
     ],
   });
@@ -58,7 +58,7 @@ export default async (homeP, endowments) => {
     destinationAddress,
     principal: multiplyBy(unit, parseRatio(principal, USDC)),
   };
-  await writeCoreEval('eval-reimburse-opco', utils =>
-    reimbursementProposalBuilder(utils, feeTerms),
+  await writeCoreEval('eval-reimburse-manual-intervention', utils =>
+    manualInterventionProposalBuilder(utils, feeTerms),
   );
 };

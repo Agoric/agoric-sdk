@@ -802,7 +802,7 @@ test.serial('sendFromSettlementAccount', async t => {
   );
   t.log('build, run proposal to distribute fees', opts);
   await io.deployBuilder(
-    '../packages/fast-usdc-deploy/src/reimburse-opco.build.js',
+    '../packages/fast-usdc-deploy/src/reimburse-manual-intervention.build.js',
     opts,
   );
 
