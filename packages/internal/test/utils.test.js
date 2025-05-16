@@ -6,7 +6,7 @@ import { Far } from '@endo/far';
 import { deepMapObject, makeMeasureSeconds } from '../src/js-utils.js';
 import {
   assertAllDefined,
-  attenuate,
+  deepPick,
   whileTrue,
   untilTrue,
   forever,
@@ -242,16 +242,16 @@ const { value: arbShallow } = fc.letrec(tie => ({
     const { foo, baz, deep } = specimen;
 
     t.is(
-      attenuate(specimen, true),
+      deepPick(specimen, true),
       specimen,
       'blanket permit must preserve identity',
     );
     t.is(
-      attenuate(specimen, 'ok'),
+      deepPick(specimen, 'ok'),
       specimen,
       'blanket string permit must preserve identity',
     );
-    const deepExtraction = attenuate(specimen, { deep: true });
+    const deepExtraction = deepPick(specimen, { deep: true });
     t.deepEqual(deepExtraction, { deep });
     t.is(
       deepExtraction.deep,
@@ -282,7 +282,7 @@ const { value: arbShallow } = fc.letrec(tie => ({
     };
     for (const [label, testCase] of Object.entries(cases)) {
       const { permit, attenuation: expected } = testCase;
-      const actual = attenuate(specimen, permit);
+      const actual = deepPick(specimen, permit);
       // eslint-disable-next-line ava/assertion-arguments
       t.deepEqual(actual, expected, label);
     }
@@ -293,7 +293,7 @@ const { value: arbShallow } = fc.letrec(tie => ({
     /** @type {any} */ ([arbGoodCase]),
     // @ts-expect-error TS2345 function signature
     async (t, { specimen, permit, attenuation }) => {
-      const actualAttenuation = attenuate(specimen, permit);
+      const actualAttenuation = deepPick(specimen, permit);
       t.deepEqual(actualAttenuation, attenuation);
     },
   );
@@ -309,7 +309,7 @@ const { value: arbShallow } = fc.letrec(tie => ({
     const deepClone = { ...deep };
 
     const marked = true;
-    const attenuation = attenuate(
+    const attenuation = deepPick(
       specimen,
       { foo: true, arr: true, empty: {}, deep: true },
       /** @type {any} */ (obj => Object.assign(obj, { marked })),
@@ -337,7 +337,7 @@ const { value: arbShallow } = fc.letrec(tie => ({
       const tag = Symbol('transformed');
 
       let mutationCallCount = 0;
-      const mutatedAttenuation = attenuate(specimen, permit, obj => {
+      const mutatedAttenuation = deepPick(specimen, permit, obj => {
         mutationCallCount += 1;
         obj[tag] = true;
         return obj;
@@ -356,7 +356,7 @@ const { value: arbShallow } = fc.letrec(tie => ({
       t.true(mutationOk, 'mutation must visit all attenuations');
 
       let replacementCallCount = 0;
-      const replacedAttenuation = attenuate(specimen, permit, _obj => {
+      const replacedAttenuation = deepPick(specimen, permit, _obj => {
         replacementCallCount += 1;
         return /** @type {any} */ ({ [tag]: replacementCallCount });
       });
@@ -376,7 +376,7 @@ const { value: arbShallow } = fc.letrec(tie => ({
     // @ts-expect-error TS2345 function signature
     async (t, { specimen, permit, problem: _problem }) => {
       // t.log({ specimen, permit, problem });
-      t.throws(() => attenuate(specimen, permit), {
+      t.throws(() => deepPick(specimen, permit), {
         message: /^invalid permit\b/,
       });
     },
@@ -388,7 +388,7 @@ const { value: arbShallow } = fc.letrec(tie => ({
     // @ts-expect-error TS2345 function signature
     async (t, { specimen, permit, problem: _problem }) => {
       // t.log({ specimen, permit, problem });
-      t.throws(() => attenuate(specimen, permit), {
+      t.throws(() => deepPick(specimen, permit), {
         message: /^specimen( at path .*)? must be an object for permit\b/,
       });
     },
@@ -400,7 +400,7 @@ const { value: arbShallow } = fc.letrec(tie => ({
     // @ts-expect-error TS2345 function signature
     async (t, { specimen, permit, problem: _problem }) => {
       // t.log({ specimen, permit, problem });
-      t.throws(() => attenuate(specimen, permit), {
+      t.throws(() => deepPick(specimen, permit), {
         message: /^specimen is missing path /,
       });
     },
