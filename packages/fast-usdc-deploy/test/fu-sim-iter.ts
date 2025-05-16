@@ -14,7 +14,8 @@ import type {
   PoolMetrics,
 } from '@agoric/fast-usdc';
 import { Offers } from '@agoric/fast-usdc/src/clientSupport.js';
-import { BridgeId } from '@agoric/internal';
+import type { OperatorKit } from '@aglocal/fast-usdc-contract/src/exos/operator-kit.js';
+import { BridgeId, type Remote } from '@agoric/internal';
 import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { CosmosChainAddress } from '@agoric/orchestration';
@@ -78,9 +79,33 @@ const makeOfferTxOracle = (
     },
   });
 };
+
+const makeDirectTxOracle = (ctx: WalletFactoryTestContext, name: string) => {
+  const {
+    runUtils: { EV },
+  } = ctx;
+  const operatorKit = makePromiseKit<Remote<OperatorKit['operator']>>();
+
+  return harden({
+    async provision() {
+      const { creatorFacet } =
+        await EV.vat('bootstrap').consumeItem('fastUsdcKit');
+      operatorKit.resolve(EV(creatorFacet).initOperator(name));
+    },
+    async claim() {
+      await operatorKit.promise;
+    },
+    async submit(evidence: CctpTxEvidence) {
+      const operator = await operatorKit.promise;
+      await EV(operator).submitEvidence(evidence);
+    },
+  });
+};
+
 type TxOracle = Pick<ReturnType<typeof makeOfferTxOracle>, 'submit'>;
 const oracleMakers = {
   offer: makeOfferTxOracle,
+  direct: makeDirectTxOracle,
 };
 
 const makeFastUsdcQuery = (ctx: WalletFactoryTestContext) => {
@@ -352,14 +377,16 @@ export const makeSimulation = (
       t.log('provision oracles');
       await Promise.all(oracles.map(o => o.provision()));
 
-      const materials = buildProposal(
-        '@aglocal/fast-usdc-deploy/src/add-operators.build.js',
-        ['--net', 'MAINNET'],
-      );
-      await evalProposal(materials);
+      if (oracleKind !== 'direct') {
+        const materials = buildProposal(
+          '@aglocal/fast-usdc-deploy/src/add-operators.build.js',
+          ['--net', 'MAINNET'],
+        );
+        await evalProposal(materials);
 
-      t.log('oracles accept invitations');
-      await Promise.all(oracles.map(o => o.claim()));
+        t.log('oracles accept invitations');
+        await Promise.all(oracles.map(o => o.claim()));
+      }
 
       await lpInit.deposit(6_000_000_000n, 0);
     },
