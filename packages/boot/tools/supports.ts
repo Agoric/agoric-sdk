@@ -746,14 +746,16 @@ export const makeSwingsetTestKit = async (
   const evalProposal = async (
     proposalP: ERef<Awaited<ReturnType<typeof buildProposal>>>,
   ) => {
-    const { EV } = runUtils;
+    const { EV, queueAndRun } = runUtils;
 
     const proposal = harden(await proposalP);
 
-    for await (const bundle of proposal.bundles) {
-      await controller.validateAndInstallBundle(bundle);
-    }
-    log('installed', proposal.bundles.length, 'bundles');
+    await queueAndRun(async () => {
+      for await (const bundle of proposal.bundles) {
+        await controller.validateAndInstallBundle(bundle);
+      }
+      log('installed', proposal.bundles.length, 'bundles');
+    }, true);
 
     log('executing proposal');
     const bridgeMessage = {
