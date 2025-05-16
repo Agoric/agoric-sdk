@@ -1,4 +1,4 @@
-/** @file core eval module to collect fees. */
+/** @file core eval module to reimburse a manual intervention. */
 import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
 import { fromExternalConfig } from './utils/config-marshal.js';
@@ -22,11 +22,15 @@ const issUSDC = 'USDC'; // issuer name
 const trace = makeTracer('RUCF', true);
 
 /**
+ * Transactions that reached FAILED_FORWARD status before we had a retrier
+ * (and stored failed forwards) were terminal and required manual payment.
+ * OpCo made those transfers from its own funds. This will reimburse those payments.
+ *
  * @param {BootstrapPowers & FastUSDCCorePowers } permittedPowers
  * @param {{ options: LegibleCapData<{ terms: ReimbursementTerms}> }} config
  */
-export const reimburseOpCo = async (permittedPowers, config) => {
-  trace('reimburseOpCo...', config.options);
+export const reimburseManualIntervention = async (permittedPowers, config) => {
+  trace('reimburseManualIntervention...', config.options);
 
   const { agoricNames } = permittedPowers.consume;
   /** @type {Brand<'nat'>} */
@@ -43,22 +47,23 @@ export const reimburseOpCo = async (permittedPowers, config) => {
   );
   trace('done');
 };
-harden(reimburseOpCo);
+harden(reimburseManualIntervention);
 
 /** @satisfies {BootstrapManifestPermit} */
 const permit = {
   consume: {
     fastUsdcKit: true,
     agoricNames: true,
-    namesByAddress: true,
-    zoe: true,
   },
 };
 
 /**
  * @param {unknown} _utils
- * @param {Parameters<typeof reimburseOpCo>[1]} config
+ * @param {Parameters<typeof reimburseManualIntervention>[1]} config
  */
-export const getManifestForReimburseOpCo = (_utils, { options }) => {
-  return { manifest: { [reimburseOpCo.name]: permit }, options };
+export const getManifestForReimburseManualIntervention = (
+  _utils,
+  { options },
+) => {
+  return { manifest: { [reimburseManualIntervention.name]: permit }, options };
 };
