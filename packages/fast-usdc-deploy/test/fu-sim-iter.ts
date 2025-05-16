@@ -14,7 +14,8 @@ import type {
   PoolMetrics,
 } from '@agoric/fast-usdc';
 import { Offers } from '@agoric/fast-usdc/src/clientSupport.js';
-import { BridgeId } from '@agoric/internal';
+import type { OperatorKit } from '@aglocal/fast-usdc-contract/src/exos/operator-kit.js';
+import { BridgeId, type Remote } from '@agoric/internal';
 import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { CosmosChainAddress } from '@agoric/orchestration';
@@ -48,7 +49,7 @@ const makeTxOracle = (
   return harden({
     async provision() {
       walletPK.resolve(wfd.provideSmartWallet(addr));
-      return walletPK.promise;
+      await walletPK.promise;
     },
     async claim() {
       const wallet = await walletPK.promise;
@@ -75,11 +76,33 @@ const makeTxOracle = (
         proposal: {},
       };
       await wallet.sendOffer(it);
-      return it;
     },
   });
 };
-type TxOracle = ReturnType<typeof makeTxOracle>;
+
+const makeDirectTxOracle = (ctx: WalletFactoryTestContext, name: string) => {
+  const {
+    runUtils: { EV },
+  } = ctx;
+  const operatorKit = makePromiseKit<Remote<OperatorKit['operator']>>();
+
+  return harden({
+    async provision() {
+      const { creatorFacet } =
+        await EV.vat('bootstrap').consumeItem('fastUsdcKit');
+      operatorKit.resolve(EV(creatorFacet).initOperator(name));
+    },
+    async claim() {
+      await operatorKit.promise;
+    },
+    async submit(evidence: CctpTxEvidence) {
+      const operator = await operatorKit.promise;
+      await EV(operator).submitEvidence(evidence);
+    },
+  });
+};
+
+type TxOracle = Pick<ReturnType<typeof makeTxOracle>, 'submit'>;
 
 const makeFastUsdcQuery = (ctx: WalletFactoryTestContext) => {
   const { storage } = ctx;
@@ -280,11 +303,16 @@ const makeIBCChannel = (
   });
 };
 
-export const makeSimulation = (ctx: WalletFactoryTestContext) => {
+export const makeSimulation = (
+  ctx: WalletFactoryTestContext,
+  directOracles: boolean = false,
+) => {
+  const makeOracle = directOracles ? makeDirectTxOracle : makeTxOracle;
+
   const cctp = makeCctp(ctx, nobleAgoricChannelId, 'channel-62');
   const toNoble = makeIBCChannel(ctx.bridgeUtils, 'channel-62');
   const oracles = Object.entries(configurations.MAINNET.oracles).map(
-    ([name, addr]) => makeTxOracle(ctx, name, addr),
+    ([name, addr]) => makeOracle(ctx, name, addr),
   );
 
   const fastQ = makeFastUsdcQuery(ctx);
@@ -299,11 +327,6 @@ export const makeSimulation = (ctx: WalletFactoryTestContext) => {
     oracles,
     lps,
     users,
-
-    async beforeDeploy(t: ExecutionContext) {
-      t.log('provision oracle smart wallets');
-      await Promise.all(oracles.map(o => o.provision()));
-    },
 
     async deployContract(context: WalletFactoryTestContext) {
       const {
@@ -325,16 +348,29 @@ export const makeSimulation = (ctx: WalletFactoryTestContext) => {
 
       const materials = buildProposal(
         '@aglocal/fast-usdc-deploy/src/start-fast-usdc.build.js',
-        ['--net', 'MAINNET'],
+        ['--net', 'MAINNET', '--noOracle'],
       );
       await evalProposal(materials);
       refreshAgoricNamesRemotes();
       return agoricNamesRemotes.instance.fastUsdc;
     },
 
-    async beforeIterations(t: ExecutionContext) {
-      t.log('oracles accept invitations');
-      await Promise.all(oracles.map(o => o.claim()));
+    async beforeIterations(t: ExecutionContext<WalletFactoryTestContext>) {
+      const { buildProposal, evalProposal } = t.context;
+
+      t.log('provision oracles');
+      await Promise.all(oracles.map(o => o.provision()));
+
+      if (!directOracles) {
+        const materials = buildProposal(
+          '@aglocal/fast-usdc-deploy/src/add-operators.build.js',
+          ['--net', 'MAINNET'],
+        );
+        await evalProposal(materials);
+
+        t.log('oracles accept invitations');
+        await Promise.all(oracles.map(o => o.claim()));
+      }
     },
 
     async iteration(t: ExecutionContext, iter: number) {

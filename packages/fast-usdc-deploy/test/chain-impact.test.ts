@@ -93,7 +93,8 @@ test.before(async t => {
   const writeStats = STATS_FILE
     ? (txt: string) => writeFile(STATS_FILE, txt)
     : undefined;
-  const sim = await makeSimulation(ctx);
+  const directOracles = false;
+  const sim = await makeSimulation(ctx, directOracles);
 
   const { log } = console;
   const doCoreEval = async (specifier: string) => {
@@ -167,17 +168,6 @@ test.serial('access relevant kernel stats after bootstrap', async t => {
   t.log('relevant kernel stats', relevant);
   t.truthy(relevant);
   observations.push({ id: 'post-boot', ...relevant });
-});
-
-test.serial('prep for contract deployment', async t => {
-  const { sim } = t.context;
-  await t.notThrowsAsync(sim.beforeDeploy(t));
-
-  const { controller, observations, storage } = t.context;
-  observations.push({
-    id: 'deploy-prep',
-    ...getResourceUsageStats(controller, storage.data),
-  });
 });
 
 test.serial('deploy contract', async t => {
