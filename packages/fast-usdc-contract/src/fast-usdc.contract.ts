@@ -323,10 +323,8 @@ export const contract = async (
       return settlerKit.creator.remediateMintedEarly(minUusdc);
     },
     /**
-     * Transactions that reached FAILED_FORWARD status before we had a retrier
-     * (and stored failed forwards) were terminal and required manual payment.
-     * OpCo made those transfers from its own funds. This method is to be called
-     * in a CoreEval to reimburse those payments.
+     * contract creator (e.g. chain governance) may send from the settlement
+     * account to, for example, reimburse manual intervention for FORWARD_FAILED
      *
      * @param agoricRecipient - The Bech32 of the recipient (must be Agoric).
      * @param amount - The amount to send, in the USDC brand.
@@ -339,12 +337,14 @@ export const contract = async (
         `Sending ${quote(amount)} to ${agoricRecipient} from settlementAccount`,
       );
       const recipient = chainHub.resolveAccountId(agoricRecipient);
+      // when: .send() on a local account such as the settlement account is prompt
       const before = await vowTools.when(E(settlementAccount).getBalances());
 
       return vowTools.when(
         E(settlementAccount).send(recipient, amount),
         async () => {
           poolKit.external.publishPoolMetrics();
+          // when: likewise .getBalances() on a local account
           const after = await vowTools.when(E(settlementAccount).getBalances());
           trace(
             `Sent ${quote(amount)} to ${agoricRecipient}. settlementAccount:`,
