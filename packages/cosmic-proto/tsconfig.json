@@ -1,4 +1,8 @@
 {
+    "compilerOptions": {
+        // XXX work around Telescope
+        "verbatimModuleSyntax": false,
+    },
     "extends": "../../tsconfig.json",
     "include": [
         "scripts",
