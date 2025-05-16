@@ -7,6 +7,7 @@ import {
   chainOfAccount,
   findAddressField,
   getBech32Prefix,
+  isBech32Address,
   makeICAChannelAddress,
   makeICQChannelAddress,
   parseAccountId,
@@ -224,6 +225,55 @@ test('extract CaipChainId from AccountIdArg', t => {
     },
   );
 });
+
+test('isBech32Address', t => {
+  // Valid Bech32 addresses
+  t.true(
+    isBech32Address('cosmos1vn6zl0924yj86jrp330wcwjclzdharljq03a8h'),
+    'valid cosmos address',
+  );
+  t.true(
+    isBech32Address('osmo1c584m4lq25h83yp6ag8hh4htjr92d954vklzja'),
+    'valid osmo address',
+  );
+  t.true(
+    isBech32Address('agoric13rj0cc0hm5ac2nt0sdup2l7gvkx4v9tyvgq3h2'),
+    'valid agoric address',
+  );
+
+  // Invalid Cosmos Bech32 addresses
+  t.false(
+    isBech32Address('17HzyHWNrdS7GpMArshSBLpJpcvrre93P6'),
+    'valid bitcoin address (bech32)',
+  );
+  t.false(isBech32Address(''), 'empty string');
+  t.false(
+    isBech32Address('cosmos1w3jhxapdwf94k2ww3s0nm5vr6a9x5s3j5s3zz'), // Invalid checksum
+    'invalid checksum',
+  );
+  t.false(
+    isBech32Address('cosmos1w3jhxapdwf94k2ww3s0nm5vr6a9x5s3j5s3zztx'), // Invalid character 'x'
+    'invalid character',
+  );
+  t.false(isBech32Address('notabech32address'), 'not a bech32 address string');
+  t.false(
+    isBech32Address('cosmos1w3jhxapdwf94k2ww3s0nm5vr6a9x5s3j5s3zzt1'), // '1' in data part
+    'separator in data part',
+  );
+  t.false(
+    isBech32Address('COSMOS1W3JHXAPDWF94K2WW3S0NM5VR6A9X5S3J5S3ZZT'), // Uppercase
+    'uppercase is invalid',
+  );
+  // @ts-expect-error testing non-string input
+  t.false(isBech32Address(null), 'null input');
+  // @ts-expect-error testing non-string input
+  t.false(isBech32Address(undefined), 'undefined input');
+  // @ts-expect-error testing non-string input
+  t.false(isBech32Address(12345), 'number input');
+  // @ts-expect-error testing non-string input
+  t.false(isBech32Address({}), 'object input');
+});
+
 const cctpFixture = [
   {
     accountId: 'eip155:58008:0x3dA3050208a3F2e0d04b33674aAa7b1A9F9B313C',
