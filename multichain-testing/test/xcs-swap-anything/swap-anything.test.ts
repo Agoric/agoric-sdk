@@ -45,10 +45,10 @@ test.before(async t => {
 
   await startContract(contractName, contractBuilder, commonBuilderOpts);
 
-  await setupXcsContracts(t);
-  await createOsmosisPool(t);
-  await setupXcsChannelLink(t, 'agoric', 'osmosis');
-  await setupXcsPrefix(t);
+  // await setupXcsContracts(t);
+  // await createOsmosisPool(t);
+  // await setupXcsChannelLink(t, 'agoric', 'osmosis');
+  // await setupXcsPrefix(t);
 
   // @ts-expect-error type
   t.context = { ...common, wallets, waitForBlock };
@@ -520,6 +520,90 @@ test.serial('address hook - BLD for OSMO, receiver on Agoric', async t => {
     expectedHash,
     'got expected ibc denom hash',
   );
+});
+
+test.serial.only('bad swapOut receiver, via addressHooks', async t => {
+  const { vstorageClient, useChain } = t.context;
+  const { getRestEndpoint, chain: cosmosChain } = useChain('cosmoshub');
+
+  const { address: cosmosHubAddr, client: cosmosHubClient } = await fundRemote(
+    t,
+    'cosmoshub',
+  );
+
+  const cosmosHubApiUrl = await getRestEndpoint();
+  const cosmosHubQueryClient = makeQueryClient(cosmosHubApiUrl);
+
+  const {
+    transferChannel: { counterPartyChannelId },
+  } = starshipChainInfo.agoric.connections[cosmosChain.chain_id];
+
+  const apiUrl = await useChain('agoric').getRestEndpoint();
+  const queryClient = makeQueryClient(apiUrl);
+
+  const { hash: bldDenomOnHub } = await cosmosHubQueryClient.queryDenom(
+    `transfer/${counterPartyChannelId}`,
+    'ubld',
+  );
+  t.log({ bldDenomOnHub, counterPartyChannelId });
+
+  const {
+    sharedLocalAccount: { value: baseAddress },
+  } = await vstorageClient.queryData('published.swap-anything');
+  t.log(baseAddress);
+
+  // local account balances
+  const localOrchAccountBalancesBefore =
+    await queryClient.queryBalances(baseAddress);
+  // sender balances
+  const senderBalancesBefore =
+    await cosmosHubQueryClient.queryBalances(cosmosHubAddr);
+
+  const { swapAddress } = await getXcsContractsAddress();
+
+  const orcContractReceiverAddress = encodeAddressHook(baseAddress, {
+    destAddr: swapAddress,
+    receiverAddr: 'noble/noble1foo', // bad receiver, should throw
+    outDenom: 'uosmo',
+  });
+
+  const transferArgs = makeIBCTransferMsg(
+    { denom: `ibc/${bldDenomOnHub}`, value: 125n },
+    { address: orcContractReceiverAddress, chainName: 'agoric' },
+    { address: cosmosHubAddr, chainName: 'cosmoshub' },
+    Date.now(),
+    useChain,
+  );
+  console.log('Transfer Args:', transferArgs);
+  // TODO #9200 `sendIbcTokens` does not support `memo`
+  // @ts-expect-error spread argument for concise code
+  const txRes = await cosmosHubClient.sendIbcTokens(...transferArgs);
+  if (txRes && txRes.code !== 0) {
+    console.error(txRes);
+    throw Error(`failed to ibc transfer funds to ibc/${bldDenomOnHub}`);
+  }
+  const { events: _events, ...txRest } = txRes;
+  console.log(txRest);
+  t.is(txRes.code, 0, `Transaction succeeded`);
+  t.log(`Funds transferred to ${orcContractReceiverAddress}`);
+
+  // local account balances
+  const localOrchAccountBalancesAfter =
+    await queryClient.queryBalances(baseAddress);
+  // sender balances
+  const senderBalancesAfter =
+    await cosmosHubQueryClient.queryBalances(cosmosHubAddr);
+
+  t.log(JSON.stringify({
+    localOrchAccountBalances: {
+      before: localOrchAccountBalancesBefore,
+      after: localOrchAccountBalancesAfter,
+    },
+    senderBalances: {
+      before: senderBalancesBefore,
+      after: senderBalancesAfter,
+    },
+  }, null, 2));
 });
 
 test.after(async t => {
