@@ -16,6 +16,7 @@ on:
           - orchestration-staking-hermes
           - orchestration-queries-go-relayer
           - orchestration-queries-hermes
+          - swap-on-osmosis
   workflow_call:
 
 jobs:
@@ -106,3 +107,15 @@ jobs:
       config: config.yaml
       test_command: yarn test:queries
       test_suite_name: orchestration-queries-hermes
+
+  swap-on-osmosis:
+    name: Swap on Osmosis XCS contract
+    if: |
+      github.event_name == 'workflow_call' ||
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'workflow_dispatch' && inputs.test_type == 'swap-on-osmosis')
+    uses: ./.github/workflows/multichain-e2e-template.yml
+    with:
+      config: config.xcs-swap-anything.yaml
+      test_command: yarn test:xcs
+      test_suite_name: swap-on-osmosis
