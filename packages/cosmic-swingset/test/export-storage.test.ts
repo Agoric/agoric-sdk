@@ -1,11 +1,13 @@
 import type { TestFn } from 'ava';
 import anyTest from 'ava';
+
+import { unpassableSymbolForName } from '@endo/pass-style';
 import { exportStorage } from '../src/export-storage.js';
 
 const test = anyTest as TestFn;
 
 // Export this binding when used by other modules.
-const TestDataKey = Symbol('TestDataKey');
+const TestDataKey = unpassableSymbolForName('TestDataKey');
 
 // Create a local alias, then
 //  - regex replace '\._\b' with '[_]'

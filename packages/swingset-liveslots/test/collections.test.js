@@ -25,8 +25,8 @@ const something = makeGenericRemotable('something');
 const somethingElse = makeGenericRemotable('something else');
 const somethingMissing = makeGenericRemotable('something missing');
 
-const symbolBozo = Symbol.for('bozo');
-const symbolKrusty = Symbol.for('krusty');
+const symbolBozo = passableSymbolForName('bozo');
+const symbolKrusty = passableSymbolForName('krusty');
 
 // prettier-ignore
 const primes = [
