@@ -255,12 +255,32 @@ const makeTestContext = async (t: ExecutionContext) => {
       { retryIntervalMs: 500, maxRetries: 20 },
     );
 
+  const { settlementAccount } = await vstorageClient.queryData(
+    `published.${contractName}`,
+  );
+  t.log('settlementAccount address', settlementAccount);
+  const encodeFastUsdcAddressHook = (EUD: string) => {
+    const recipientAddress = encodeAddressHook(settlementAccount, { EUD });
+
+    common.nobleTools.registerForwardingAcct(
+      nobleAgoricChannelId,
+      recipientAddress,
+    );
+    const { address, exists } = common.nobleTools.queryForwardingAddress(
+      nobleAgoricChannelId,
+      recipientAddress,
+    );
+    assert(exists);
+    return { recipientAddress, userForwardingAddr: address, exists };
+  };
+
   return {
     ...common,
     api,
     assertAmtForwarded,
     assertTxStatus,
     attest,
+    encodeFastUsdcAddressHook,
     feeUser,
     getUsdcDenom,
     lpUser,
@@ -295,11 +315,13 @@ const advanceAndSettleScenario = test.macro({
       getUsdcDenom,
       makeFakeEvidence,
       nobleTools,
-      nobleAgoricChannelId,
       retryUntilCondition,
       useChain,
       vstorageClient,
     } = t.context;
+
+    const { encumberedBalance: balanceBeforeBurn } =
+      await fastLPQ(vstorageClient).metrics();
 
     // EUD wallet on the specified chain
     const eudWallet = await createWallet(
@@ -308,22 +330,9 @@ const advanceAndSettleScenario = test.macro({
     const EUD = (await eudWallet.getAccounts())[0].address;
     t.log(`EUD wallet created: ${EUD}`);
 
-    // parameterize agoric address
-    const { settlementAccount } = await vstorageClient.queryData(
-      `published.${contractName}`,
-    );
-    t.log('settlementAccount address', settlementAccount);
-
-    const recipientAddress = encodeAddressHook(settlementAccount, { EUD });
-    t.log('recipientAddress', recipientAddress);
-
-    // provide forwarding address on noble
-    nobleTools.registerForwardingAcct(nobleAgoricChannelId, recipientAddress);
-
-    const { address: userForwardingAddr, exists } =
-      nobleTools.queryForwardingAddress(nobleAgoricChannelId, recipientAddress);
+    const { userForwardingAddr, recipientAddress } =
+      t.context.encodeFastUsdcAddressHook(EUD);
     t.log('got forwardingAddress', userForwardingAddr);
-    t.true(exists, 'registered forwarding account');
 
     const evidence = makeFakeEvidence(
       mintAmt,
@@ -397,8 +406,8 @@ const advanceAndSettleScenario = test.macro({
     await retryUntilCondition(
       () => fastLPQ(vstorageClient).metrics(),
       ({ encumberedBalance }) =>
-        encumberedBalance && isEmpty(encumberedBalance),
-      'encumberedBalance returns to 0',
+        AmountMath.isEqual(encumberedBalance, balanceBeforeBurn),
+      'encumberedBalance returns to original value',
     );
 
     // retry until status is reached
@@ -426,7 +435,6 @@ test.serial('Ethereum destination', async t => {
     attest,
     makeFakeEvidence,
     nobleTools,
-    nobleAgoricChannelId,
     retryUntilCondition,
     vstorageClient,
   } = t.context;
@@ -437,22 +445,8 @@ test.serial('Ethereum destination', async t => {
   const EUD: AccountId = 'eip155:1:0x1234567890123456789012345678901234567890';
   t.log(`Ethereum EUD: ${EUD}`);
 
-  // parameterize agoric address
-  const { settlementAccount } = await vstorageClient.queryData(
-    `published.${contractName}`,
-  );
-  t.log('settlementAccount address', settlementAccount);
-
-  const recipientAddress = encodeAddressHook(settlementAccount, { EUD });
-  t.log('recipientAddress', recipientAddress);
-
-  // provide forwarding address on noble
-  nobleTools.registerForwardingAcct(nobleAgoricChannelId, recipientAddress);
-
-  const { address: userForwardingAddr, exists } =
-    nobleTools.queryForwardingAddress(nobleAgoricChannelId, recipientAddress);
-  t.log('got forwardingAddress', userForwardingAddr);
-  t.true(exists, 'registered forwarding account');
+  const { recipientAddress, userForwardingAddr } =
+    t.context.encodeFastUsdcAddressHook(EUD);
 
   const evidence = makeFakeEvidence(
     mintAmt,
@@ -501,26 +495,12 @@ test.serial('Ethereum destination', async t => {
     'encumberedBalance returns to original value',
   );
 
-  await retryUntilCondition(
-    () => fastLPQ(vstorageClient).metrics(),
-    ({ encumberedBalance }) =>
-      AmountMath.isEqual(encumberedBalance, balanceBeforeBurn),
-    'encumberedBalance returns to original value',
-  );
-
   await assertTxStatus(evidence.txHash, 'DISBURSED');
 });
 
 test.serial('advance failed', async t => {
   const mintAmt = LP_DEPOSIT_AMOUNT / 10n;
-  const {
-    assertTxStatus,
-    attest,
-    makeFakeEvidence,
-    nobleTools,
-    nobleAgoricChannelId,
-    vstorageClient,
-  } = t.context;
+  const { assertTxStatus, attest, makeFakeEvidence, nobleTools } = t.context;
   const eudChain = 'unreachable';
 
   // EUD wallet on the specified chain
@@ -528,27 +508,8 @@ test.serial('advance failed', async t => {
   const EUD = (await eudWallet.getAccounts())[0].address;
   t.log(`EUD wallet created: ${EUD}`);
 
-  // parameterize agoric address
-  const { settlementAccount } = await vstorageClient.queryData(
-    `published.${contractName}`,
-  );
-  t.log('settlementAccount address', settlementAccount);
-
-  const recipientAddress = encodeAddressHook(settlementAccount, { EUD });
-  t.log('recipientAddress', recipientAddress);
-
-  // register forwarding address on noble
-  const txRes = nobleTools.registerForwardingAcct(
-    nobleAgoricChannelId,
-    recipientAddress,
-  );
-  t.is(txRes?.code, 0, 'registered forwarding account');
-
-  const { address: userForwardingAddr } = nobleTools.queryForwardingAddress(
-    nobleAgoricChannelId,
-    recipientAddress,
-  );
-  t.log('got forwardingAddress', userForwardingAddr);
+  const { recipientAddress, userForwardingAddr } =
+    t.context.encodeFastUsdcAddressHook(EUD);
 
   const evidence = makeFakeEvidence(
     mintAmt,
@@ -563,6 +524,8 @@ test.serial('advance failed', async t => {
   nobleTools.mockCctpMint(mintAmt, userForwardingAddr);
 
   await assertTxStatus(evidence.txHash, 'FORWARD_FAILED');
+
+  t.pass();
 });
 
 test.serial('lp withdraws', async t => {
@@ -670,9 +633,7 @@ test.serial('insufficient LP funds; forward path', async t => {
     attest,
     makeFakeEvidence,
     nobleTools,
-    nobleAgoricChannelId,
     useChain,
-    vstorageClient,
   } = t.context;
 
   // EUD wallet on the specified chain
@@ -680,27 +641,8 @@ test.serial('insufficient LP funds; forward path', async t => {
   const EUD = (await eudWallet.getAccounts())[0].address;
   t.log(`EUD wallet created: ${EUD}`);
 
-  // parameterize agoric address
-  const { settlementAccount } = await vstorageClient.queryData(
-    `published.${contractName}`,
-  );
-  t.log('settlementAccount address', settlementAccount);
-
-  const recipientAddress = encodeAddressHook(settlementAccount, { EUD });
-  t.log('recipientAddress', recipientAddress);
-
-  // register forwarding address on noble
-  const txRes = nobleTools.registerForwardingAcct(
-    nobleAgoricChannelId,
-    recipientAddress,
-  );
-  t.is(txRes?.code, 0, 'registered forwarding account');
-
-  const { address: userForwardingAddr } = nobleTools.queryForwardingAddress(
-    nobleAgoricChannelId,
-    recipientAddress,
-  );
-  t.log('got forwardingAddress', userForwardingAddr);
+  const { recipientAddress, userForwardingAddr } =
+    t.context.encodeFastUsdcAddressHook(EUD);
 
   const evidence = makeFakeEvidence(
     mintAmt,
@@ -722,6 +664,7 @@ test.serial('insufficient LP funds; forward path', async t => {
 
   await assertTxStatus(evidence.txHash, 'FORWARDED');
   await assertAmtForwarded(queryClient, EUD, eudChain, mintAmt);
+  t.pass();
 });
 
 test.serial('minted before observed; forward path', async t => {
@@ -733,9 +676,7 @@ test.serial('minted before observed; forward path', async t => {
     attest,
     makeFakeEvidence,
     nobleTools,
-    nobleAgoricChannelId,
     useChain,
-    vstorageClient,
   } = t.context;
 
   // EUD wallet on the specified chain
@@ -743,27 +684,8 @@ test.serial('minted before observed; forward path', async t => {
   const EUD = (await eudWallet.getAccounts())[0].address;
   t.log(`EUD wallet created: ${EUD}`);
 
-  // parameterize agoric address
-  const { settlementAccount } = await vstorageClient.queryData(
-    `published.${contractName}`,
-  );
-  t.log('settlementAccount address', settlementAccount);
-
-  const recipientAddress = encodeAddressHook(settlementAccount, { EUD });
-  t.log('recipientAddress', recipientAddress);
-
-  // register forwarding address on noble
-  const txRes = nobleTools.registerForwardingAcct(
-    nobleAgoricChannelId,
-    recipientAddress,
-  );
-  t.is(txRes?.code, 0, 'registered forwarding account');
-
-  const { address: userForwardingAddr } = nobleTools.queryForwardingAddress(
-    nobleAgoricChannelId,
-    recipientAddress,
-  );
-  t.log('got forwardingAddress', userForwardingAddr);
+  const { recipientAddress, userForwardingAddr } =
+    t.context.encodeFastUsdcAddressHook(EUD);
 
   const evidence = makeFakeEvidence(
     mintAmt,
@@ -785,6 +707,7 @@ test.serial('minted before observed; forward path', async t => {
 
   await assertTxStatus(evidence.txHash, 'FORWARDED');
   await assertAmtForwarded(queryClient, EUD, eudChain, mintAmt);
+  t.pass();
 });
 
 test.serial('forward skipped due to invalid EUD', async t => {
@@ -796,7 +719,6 @@ test.serial('forward skipped due to invalid EUD', async t => {
     getUsdcDenom,
     makeFakeEvidence,
     nobleTools,
-    nobleAgoricChannelId,
     vstorageClient,
   } = t.context;
 
@@ -820,21 +742,8 @@ test.serial('forward skipped due to invalid EUD', async t => {
     startingSettlementBalance?.denom,
   );
 
-  const recipientAddress = encodeAddressHook(settlementAccount, { EUD });
-  t.log('recipientAddress', recipientAddress);
-
-  // register forwarding address on noble
-  const txRes = nobleTools.registerForwardingAcct(
-    nobleAgoricChannelId,
-    recipientAddress,
-  );
-  t.is(txRes?.code, 0, 'registered forwarding account');
-
-  const { address: userForwardingAddr } = nobleTools.queryForwardingAddress(
-    nobleAgoricChannelId,
-    recipientAddress,
-  );
-  t.log('got forwardingAddress', userForwardingAddr);
+  const { recipientAddress, userForwardingAddr } =
+    t.context.encodeFastUsdcAddressHook(EUD);
 
   const evidence = makeFakeEvidence(
     mintAmt,
@@ -865,3 +774,44 @@ test.serial('forward skipped due to invalid EUD', async t => {
 
 test.todo('mint while Advancing; still Disbursed');
 test.todo('test with rc2, settler-reference proposal');
+
+test.serial('sendFromSettlementAccount', async t => {
+  const io = t.context;
+  const queryClient = makeQueryClient(
+    await io.useChain('agoric').getRestEndpoint(),
+  );
+
+  const opts = {
+    destinationAddress: io.wallets['feeDest'],
+    principal: '123',
+  };
+
+  const { userForwardingAddr } =
+    t.context.encodeFastUsdcAddressHook('invalideud');
+
+  // Forward USDC to the settlement account, but with an invalid EUD
+  // so they sit there.
+  const mintResult = t.context.nobleTools.mockCctpMint(
+    BigInt(opts.principal) * 1_000_000n,
+    userForwardingAddr,
+  );
+  console.debug('mint result', mintResult);
+  const balancesBefore = await queryClient.queryBalance(
+    opts.destinationAddress,
+    io.usdcDenom,
+  );
+  t.log('build, run proposal to distribute fees', opts);
+  await io.deployBuilder(
+    '../packages/fast-usdc-deploy/src/reimburse-opco.build.js',
+    opts,
+  );
+
+  const { balance } = await io.retryUntilCondition(
+    () => queryClient.queryBalance(opts.destinationAddress, io.usdcDenom),
+    ({ balance }) => !!balance && BigInt(balance.amount) > 0n,
+    `funds received at ${opts.destinationAddress}`,
+  );
+  t.log('funds received', balance);
+  const prev = BigInt(balancesBefore!.balance!.amount! || 0n);
+  t.is(BigInt(balance!.amount), prev + BigInt(opts.principal) * 1_000_000n);
+});

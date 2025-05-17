@@ -14,7 +14,7 @@ import {
 } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
 import { AmountMath } from '@agoric/ertp';
 import { makeRatio } from '@agoric/ertp/src/ratio.js';
-import type { CctpTxEvidence } from '@agoric/fast-usdc';
+import type { CctpTxEvidence, TransactionRecord } from '@agoric/fast-usdc';
 import { Offers } from '@agoric/fast-usdc/src/clientSupport.js';
 import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
 import { BridgeId, NonNullish } from '@agoric/internal';
@@ -31,15 +31,16 @@ import {
   buildVTransferEvent,
 } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { Fail } from '@endo/errors';
+import type { ForwardInfo } from '@agoric/orchestration';
 import { configurations } from '../src/utils/deploy-config.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
 } from './walletFactory.js';
 
-const DENOM_UNIT = 1n * 1_000_000n; // 1 million
+const DENOM_UNIT = 1n * 1_000_000n; // 6 decimal places
 
-const LIQUIDITY_POOL_SIZE = 500n * DENOM_UNIT; // 500 USDC
+const LIQUIDITY_POOL_SIZE = 1_000n * DENOM_UNIT; // $1,000 USDC
 
 const test: TestFn<
   WalletFactoryTestContext & {
@@ -49,6 +50,7 @@ const test: TestFn<
       ...extraArgs: unknown[]
     ) => Promise<void>;
     harness?: ReturnType<typeof makeSwingsetHarness>;
+    readTxnRecord({ txHash }: { txHash: string }): TransactionRecord[];
   }
 > = anyTest;
 
@@ -112,7 +114,12 @@ test.before('bootstrap', async t => {
     await eventLoopIteration();
   };
 
-  t.context = { ...ctx, attest, harness };
+  const readTxnRecord = ({ txHash }) =>
+    t.context.storage
+      .getValues(`published.fastUsdc.txns.${txHash}`)
+      .map(defaultSerializer.parse) as TransactionRecord[];
+
+  t.context = { ...ctx, attest, harness, readTxnRecord };
 });
 test.after.always(t => t.context.shutdown?.());
 
@@ -417,14 +424,120 @@ test.serial('deploy RC2; update Settler reference', async t => {
   await evalReleasedProposal('fast-usdc-rc2', 'eval-fast-usdc-settler-ref');
   const [vatDetails] = await getVatDetailsByName('fastUsdc');
   t.is(vatDetails.incarnation, 2);
+
+  // make some unsettled transactions that will settle after the upgrade
+
+  const { readPublished } = t.context;
+  const { runInbound } = t.context.bridgeUtils;
+  const { settlementAccount, poolAccount } = readPublished('fastUsdc');
+
+  // In particular a pair of close transactions that result in a single
+  // batched mint which was not handled correctly in this release.
+
+  const EUD = 'dydx1rc2anything'; // Unique EUD for this test
+  const evidence1Amount = 19_980_000n; // 19.98 USDC
+  const evidence2Amount = 29_980_000n; // 29.98 USDC
+
+  const evidence1 = {
+    ...MockCctpTxEvidences.AGORIC_PLUS_OSMO(
+      encodeAddressHook(settlementAccount, { EUD }),
+    ),
+    txHash: '0xRC2TestTxHash1000000000000000000000000000000000000000000000000',
+  } as CctpTxEvidence;
+  evidence1.tx.amount = evidence1Amount;
+  await t.context.attest(evidence1, 'submit-rc2-evidence-1');
+  t.deepEqual(t.context.readTxnRecord(evidence1), [
+    { evidence: evidence1, status: 'OBSERVED' },
+    { status: 'ADVANCING' },
+  ]);
+
+  const evidence2 = {
+    ...MockCctpTxEvidences.AGORIC_PLUS_OSMO(
+      encodeAddressHook(settlementAccount, { EUD }),
+    ),
+    txHash: '0xRC2TestTxHash2000000000000000000000000000000000000000000000000',
+  } as CctpTxEvidence;
+  evidence2.tx.amount = evidence2Amount;
+  await t.context.attest(evidence2, 'submit-rc2-evidence-2');
+  t.deepEqual(t.context.readTxnRecord(evidence2), [
+    { evidence: evidence2, status: 'OBSERVED' },
+    { status: 'ADVANCING' },
+  ]);
+
+  // simulate acknowledgement of outgoing forward transfer
+  await runInbound(
+    BridgeId.VTRANSFER,
+    buildVTransferEvent({
+      sender: poolAccount,
+      target: poolAccount,
+      sourceChannel: agoricToNobleChannel,
+      sequence: '1', // XXX brittle, abstract from tests
+    }),
+  );
+  await eventLoopIteration();
+  t.deepEqual(t.context.readTxnRecord(evidence1).at(-1), {
+    status: 'ADVANCED',
+  });
+  await runInbound(
+    BridgeId.VTRANSFER,
+    buildVTransferEvent({
+      sender: poolAccount,
+      target: poolAccount,
+      sourceChannel: agoricToNobleChannel,
+      sequence: '2', // XXX brittle, abstract from tests
+    }),
+  );
+  await eventLoopIteration();
+  t.deepEqual(t.context.readTxnRecord(evidence2).at(-1), {
+    status: 'ADVANCED',
+  });
+
+  // minted USDC arrives batched into one settlement transaction
+  // to the same destination address
+  const amount = evidence1Amount + evidence2Amount;
+  const sender = evidence1.tx.forwardingAddress;
+  await runInbound(
+    BridgeId.VTRANSFER,
+    buildVTransferEvent({
+      sequence: '1', // arbitrary; not used
+      amount,
+      denom: 'uusdc',
+      sender,
+      target: settlementAccount,
+      receiver: encodeAddressHook(settlementAccount, { EUD }),
+      sourceChannel: nobleToAgoricChannel,
+      destinationChannel: agoricToNobleChannel,
+    }),
+  );
+
+  // Logs should show:
+  // ⚠️ tap: minted before observed noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd 49960000n
+  await eventLoopIteration();
+
+  // transactions are not yet disbursed because there is no matching evidence
+  t.deepEqual(t.context.readTxnRecord(evidence1), [
+    { evidence: evidence1, status: 'OBSERVED' },
+    { status: 'ADVANCING' },
+    { status: 'ADVANCED' },
+  ]);
+  t.deepEqual(t.context.readTxnRecord(evidence2), [
+    { evidence: evidence2, status: 'OBSERVED' },
+    { status: 'ADVANCING' },
+    { status: 'ADVANCED' },
+  ]);
+  t.is(
+    readPublished('fastUsdc.poolMetrics').encumberedBalance.value,
+    evidence1Amount + evidence2Amount - 69_960n, // minus fees
+  );
 });
 
-test.serial('deploy HEAD; upgrade to support EVM destinations', async t => {
-  const { buildProposal, evalProposal, getVatDetailsByName } = t.context;
-  const materials = await buildProposal(
-    '@aglocal/fast-usdc-deploy/src/fast-usdc-evm-dests.build.js',
+test.serial('deploy CCTP beta', async t => {
+  const { buildProposal, evalProposal, getVatDetailsByName, readPublished } =
+    t.context;
+
+  await evalProposal(
+    buildProposal('@aglocal/fast-usdc-deploy/src/fast-usdc-evm-dests.build.js'),
   );
-  await evalProposal(materials);
   const [vatDetails] = await getVatDetailsByName('fastUsdc');
   t.is(vatDetails.incarnation, 3);
 
@@ -434,6 +547,15 @@ test.serial('deploy HEAD; upgrade to support EVM destinations', async t => {
     showValue: defaultSerializer.parse,
   };
   await documentStorageSchema(t, t.context.storage, doc);
+
+  // unmatched batch transactions from RC2 deployment are now disbursed
+  for (const txHash of [
+    '0xRC2TestTxHash1000000000000000000000000000000000000000000000000',
+    '0xRC2TestTxHash2000000000000000000000000000000000000000000000000',
+  ]) {
+    t.like(t.context.readTxnRecord({ txHash }).at(-1), { status: 'DISBURSED' });
+  }
+  t.is(readPublished('fastUsdc.poolMetrics').encumberedBalance.value, 0n);
 });
 
 test.serial('makes usdc advance', async t => {
@@ -464,12 +586,7 @@ test.serial('makes usdc advance', async t => {
     );
   harness?.resetRunPolicy();
 
-  const getTxStatus = txHash =>
-    storage
-      .getValues(`published.fastUsdc.txns.${txHash}`)
-      .map(defaultSerializer.parse);
-
-  t.deepEqual(getTxStatus(evidence.txHash), [
+  t.deepEqual(t.context.readTxnRecord(evidence), [
     { evidence, status: 'OBSERVED' }, // observation includes evidence observed
     { status: 'ADVANCING' },
   ]);
@@ -480,15 +597,23 @@ test.serial('makes usdc advance', async t => {
   t.deepEqual(actual, { incarnationNumber: 4 });
 
   const { runInbound } = t.context.bridgeUtils;
+  // simulate acknowledgement of outgoing forward transfer
   await runInbound(
     BridgeId.VTRANSFER,
     buildVTransferEvent({
       sender: poolAccount,
       target: poolAccount,
       sourceChannel: agoricToNobleChannel,
-      sequence: '1',
+      sequence: '3', // XXX brittle, abstract from tests
     }),
   );
+
+  await eventLoopIteration();
+  t.deepEqual(t.context.readTxnRecord(evidence), [
+    { evidence, status: 'OBSERVED' }, // observation includes evidence observed
+    { status: 'ADVANCING' },
+    { status: 'ADVANCED' },
+  ]);
 
   // in due course, minted USDC arrives
   await runInbound(
@@ -506,7 +631,7 @@ test.serial('makes usdc advance', async t => {
   );
 
   await eventLoopIteration();
-  t.like(getTxStatus(evidence.txHash), [
+  t.like(t.context.readTxnRecord(evidence), [
     { status: 'OBSERVED' },
     { status: 'ADVANCING' },
     { status: 'ADVANCED' },
@@ -539,7 +664,7 @@ test.serial('minted before observed; forward path', async t => {
   await bridgeUtils.runInbound(
     BridgeId.VTRANSFER,
     buildVTransferEvent({
-      sequence: '1',
+      sequence: '2', // XXX brittle, abstract from tests
       amount: evidence.tx.amount,
       denom: 'uusdc',
       sender: evidence.tx.forwardingAddress,
@@ -565,32 +690,27 @@ test.serial('minted before observed; forward path', async t => {
       receiver: nobleICA,
       sourceChannel: agoricToNobleChannel,
       destinationChannel: nobleToAgoricChannel,
-      sequence: '2',
+      sequence: '4', // XXX brittle, abstract from tests
       amount: evidence.tx.amount,
-      memo: JSON.stringify(
-        /** @type {ForwardInfo} */
-        {
-          forward: {
-            receiver: recipientAddress,
-            port: 'transfer',
-            channel:
-              fetchedChainInfo.noble.connections['agoric-3'].transferChannel
-                .channelId,
-          },
+      memo: JSON.stringify({
+        forward: {
+          receiver: recipientAddress,
+          port: 'transfer',
+          channel:
+            fetchedChainInfo.noble.connections['agoric-3'].transferChannel
+              .channelId,
         },
-      ),
+      } as Omit<ForwardInfo, 'forward'> & {
+        // ignored in test
+        forward: Omit<ForwardInfo['forward'], 'timeout' | 'retries'>;
+      }),
     }),
   );
   await eventLoopIteration();
 
-  const getTxStatus = txHash =>
-    storage
-      .getValues(`published.fastUsdc.txns.${txHash}`)
-      .map(defaultSerializer.parse);
-
   // Verify the transaction status was set to FORWARDED
   t.deepEqual(
-    getTxStatus(evidence.txHash),
+    t.context.readTxnRecord(evidence),
     [{ evidence, status: 'OBSERVED' }, { status: 'FORWARDED' }],
     'Transaction status should be FORWARDED when funds arrive before evidence',
   );
@@ -610,8 +730,9 @@ test.serial('distributes fees per BLD staker decision', async t => {
   t.is(((ContractFee - 16_000n) * 5n) / 10n, 8_000n);
 
   const cases = [
+    // XXX brittle, depends on all previous tests
     { dest: 'agoric1a', args: ['--fixedFees', '0.016'], rxd: '16000' },
-    { dest: 'agoric1b', args: ['--feePortion', '0.5'], rxd: '8000' },
+    { dest: 'agoric1b', args: ['--feePortion', '0.5'], rxd: '14996' },
   ];
   for (const { dest, args, rxd } of cases) {
     await wd.provideSmartWallet(dest);
@@ -664,7 +785,7 @@ test.serial('skips usdc advance when risks identified', async t => {
 });
 
 test.serial('Ethereum destination', async t => {
-  const { readPublished, storage, bridgeUtils } = t.context;
+  const { readPublished, bridgeUtils } = t.context;
 
   const { nobleICA, poolAccount, settlementAccount } =
     readPublished('fastUsdc');
@@ -706,7 +827,7 @@ test.serial('Ethereum destination', async t => {
   await bridgeUtils.runInbound(
     BridgeId.VTRANSFER,
     buildVTransferEvent({
-      sequence: '3',
+      sequence: '5', // XXX brittle, abstract from tests
       amount: evidence.tx.amount,
       denom: 'uusdc',
       sender: evidence.tx.forwardingAddress,
@@ -717,13 +838,8 @@ test.serial('Ethereum destination', async t => {
     }),
   );
 
-  const getTxStatus = txHash =>
-    storage
-      .getValues(`published.fastUsdc.txns.${txHash}`)
-      .map(defaultSerializer.parse);
-
   t.deepEqual(
-    getTxStatus(evidence.txHash),
+    t.context.readTxnRecord(evidence),
     [
       { evidence, status: 'OBSERVED' }, // observation includes evidence observed
       { status: 'ADVANCING' },
@@ -735,7 +851,7 @@ test.serial('Ethereum destination', async t => {
   await t.context.bridgeUtils.flushInboundQueue();
 
   t.like(
-    getTxStatus(evidence.txHash),
+    t.context.readTxnRecord(evidence),
     [
       { status: 'OBSERVED' },
       { status: 'ADVANCING' },
@@ -761,7 +877,7 @@ test.serial('Ethereum destination', async t => {
   );
 
   t.like(
-    getTxStatus(evidence.txHash),
+    t.context.readTxnRecord(evidence),
     [
       { status: 'OBSERVED' },
       { status: 'ADVANCING' },
@@ -831,12 +947,7 @@ test.serial('LP withdraws', async t => {
 // 1. Zoe contract tests can't verify the behavior works through incarnations
 // 2. Multichain tests integrate more than is relevant to this logic
 test.serial('forward timeout', async t => {
-  const { bridgeUtils, readPublished, storage } = t.context;
-
-  const getTxStatus = txHash =>
-    storage
-      .getValues(`published.fastUsdc.txns.${txHash}`)
-      .map(defaultSerializer.parse);
+  const { bridgeUtils, readPublished } = t.context;
 
   // Mock user data
   const EUD = 'cosmos1userforwardtimeout';
@@ -871,7 +982,7 @@ test.serial('forward timeout', async t => {
   t.log('USDC funds received in settlement account before evidence submission');
 
   t.throws(
-    () => getTxStatus(evidence.txHash),
+    () => t.context.readTxnRecord(evidence),
     undefined,
     'Transaction not in VSTORAGE before observation',
   );
@@ -884,27 +995,27 @@ test.serial('forward timeout', async t => {
   await eventLoopIteration(); // Allow contract to process evidence and initiate forward
 
   // Verify the transaction status was set to OBSERVED initially
-  const statuses = getTxStatus(evidence.txHash);
+  const statuses = t.context.readTxnRecord(evidence);
   t.deepEqual(
     statuses,
     [{ evidence, status: 'OBSERVED' }],
     'Transaction status should be OBSERVED initially',
   );
 
-  // Simulate timeout of the outgoing forward transfer (sequence '2' was used in previous test)
-  const firstForward = 4n; // XXX brittle, depends on IBC of previous tests
-  const forwardMemo = JSON.stringify(
-    /** @type {ForwardInfo} */
-    {
-      forward: {
-        receiver: recipientAddress,
-        port: 'transfer',
-        channel:
-          fetchedChainInfo.noble.connections['agoric-3'].transferChannel
-            .channelId,
-      },
+  // Simulate timeout of the outgoing forward transfer
+  const firstForward = 6n; // XXX brittle, depends on IBC of previous tests
+  const forwardMemo = JSON.stringify({
+    forward: {
+      receiver: recipientAddress,
+      port: 'transfer',
+      channel:
+        fetchedChainInfo.noble.connections['agoric-3'].transferChannel
+          .channelId,
     },
-  );
+  } as Omit<ForwardInfo, 'forward'> & {
+    // ignored in test
+    forward: Omit<ForwardInfo['forward'], 'timeout' | 'retries'>;
+  });
 
   const successfulForwardEvent = buildVTransferEvent({
     sender: settlementAccount,
@@ -929,7 +1040,7 @@ test.serial('forward timeout', async t => {
 
   // Verify the transaction status includes FORWARD_FAILED
   t.deepEqual(
-    getTxStatus(evidence.txHash),
+    t.context.readTxnRecord(evidence),
     [{ evidence, status: 'OBSERVED' }, { status: 'FORWARD_FAILED' }],
     'Transaction status should be FORWARD_FAILED after timeout',
   );
@@ -940,7 +1051,7 @@ test.serial('forward timeout', async t => {
 
   // Verify the transaction status is now FORWARDED
   t.deepEqual(
-    getTxStatus(evidence.txHash),
+    t.context.readTxnRecord(evidence),
     [
       { evidence, status: 'OBSERVED' },
       { status: 'FORWARD_FAILED' },

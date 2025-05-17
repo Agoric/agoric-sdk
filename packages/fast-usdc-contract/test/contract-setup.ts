@@ -177,7 +177,7 @@ export const makeTestContext = async (t: ExecutionContext) => {
   const accountsData = common.bootstrap.storage.data.get(ROOT_STORAGE_PATH);
   const { settlementAccount, poolAccount } = JSON.parse(
     JSON.parse(accountsData!).values[0],
-  );
+  ) as Record<string, string>;
   t.is(settlementAccount, 'agoric1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqc09z0g');
   t.is(poolAccount, 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht');
   const mint = async (e: CctpTxEvidence): Promise<NatAmount> => {

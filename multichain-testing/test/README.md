@@ -5,6 +5,8 @@ Runs agoric, cosmoshub, and osmosis with hermes relayers.
 ```sh
 # start starship with default configuration
 make start
+# or for Fast USDC
+make start FILE=config.fusdc.yaml
 ```
 
 ## Run Tests

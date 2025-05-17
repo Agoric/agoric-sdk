@@ -397,7 +397,7 @@ test('slow path: forward to EUD; remove pending tx', async t => {
       cctpTxEvidence.tx.amount,
     ),
     [],
-    'dequeueStatus entry removed from StatusManger',
+    'matchAndDequeueSettlement entry removed from StatusManger',
   );
   const { storage } = t.context;
   accounts.settlement.transferVResolver.resolve(undefined);
@@ -524,13 +524,12 @@ test('Settlement for unknown transaction (minted early)', async t => {
   t.like(tapLogs, [
     ['config', { sourceChannel: 'channel-21' }],
     ['upcall event'],
-    ['dequeued', undefined],
     ['⚠️ tap: minted before observed'],
   ]);
 
   t.log('Oracle operators eventually report...');
   const evidence = simulate.observeLate();
-  t.deepEqual(inspectLogs().slice(4), [
+  t.deepEqual(inspectLogs().slice(tapLogs.length), [
     [
       'matched minted early key, initiating forward',
       'noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd',
@@ -716,7 +715,7 @@ test('Settlement for Advancing transaction (advance succeeds)', async t => {
   t.like(inspectLogs(), [
     ['config', { sourceChannel: 'channel-21' }],
     ['upcall event'],
-    ['dequeued', { status: PendingTxStatus.Advancing }],
+    ['dequeued', [{ status: PendingTxStatus.Advancing }]],
     ['⚠️ tap: minted while advancing'],
   ]);
 
@@ -765,7 +764,7 @@ test('Settlement for Advancing transaction (advance fails)', async t => {
   t.like(inspectLogs(), [
     ['config', { sourceChannel: 'channel-21' }],
     ['upcall event'],
-    ['dequeued', { status: PendingTxStatus.Advancing }],
+    ['dequeued', [{ status: PendingTxStatus.Advancing }]],
     ['⚠️ tap: minted while advancing'],
   ]);
 
@@ -988,7 +987,7 @@ test('forward to agoric EUD', async t => {
       cctpTxEvidence.tx.amount,
     ),
     [],
-    'dequeueStatus entry removed from StatusManger',
+    'matchAndDequeueSettlement entry removed from StatusManger',
   );
   accounts.settlement.sendVResolver.resolve(undefined);
   await eventLoopIteration();
@@ -1051,7 +1050,7 @@ test('forward to Ethereum EUD', async t => {
       cctpTxEvidence.tx.amount,
     ),
     [],
-    'dequeueStatus entry removed from StatusManger',
+    'matchAndDequeueSettlement entry removed from StatusManger',
   );
   const { storage } = t.context;
 

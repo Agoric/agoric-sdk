@@ -732,17 +732,15 @@ export const adjustBalancesIfNotProvisioned = async (balances, address) => {
 
   const balancesAdjusted = [];
 
+  // provisioning currently costs 10 BLD and deposits 0.25 IST
   for (const { denom, amount } of balances) {
-    if (denom === 'uist') {
-      const startingAmount = (
-        parseInt(amount, 10) +
-        250000 -
-        1_000_000
-      ).toString(); // provision sends 250000uist to new accounts and 1 IST is charged
-      balancesAdjusted.push({ denom, amount: startingAmount });
-    } else {
-      balancesAdjusted.push({ denom, amount });
+    let newAmount = amount;
+    if (denom === 'ubld') {
+      newAmount = (BigInt(amount) - BigInt(10e6)).toString();
+    } else if (denom === 'uist') {
+      newAmount = (BigInt(amount) + BigInt(0.25e6)).toString();
     }
+    balancesAdjusted.push({ denom, amount: newAmount });
   }
 
   return balancesAdjusted;

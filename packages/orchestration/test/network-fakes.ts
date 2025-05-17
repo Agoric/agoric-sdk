@@ -172,13 +172,11 @@ export const makeFakeIBCBridge = (
    * accounts.
    * XXX teach this about IBCConnections and store sequence on a
    * per-channel basis.
-   * @type {bigint}
    */
   let ibcSequenceNonce = 0n;
   /**
    * The number of channels created. Currently used as a proxy to increment
    * fake account addresses and channels.
-   * @type {nubmer}
    */
   let channelCount = 0;
   let icaAccountCount = 0;
@@ -192,7 +190,6 @@ export const makeFakeIBCBridge = (
 
   /**
    * Packet byte string map of requests to responses
-   * @type {Record<string, string>}
    */
   let mockAckMap = defaultMockAckMap;
   let bridgeEvents: BridgeEvents = [];

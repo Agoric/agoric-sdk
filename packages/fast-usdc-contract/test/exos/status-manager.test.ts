@@ -129,7 +129,7 @@ test('isSeen checks if a tx has been processed', t => {
   t.true(statusManager.hasBeenObserved(e2));
 });
 
-test('dequeueStatus removes entries from PendingTxs', t => {
+test('matchAndDequeueSettlement removes entries from PendingTxs', t => {
   const { statusManager } = t.context;
   const e1 = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
   const e2 = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
@@ -141,27 +141,44 @@ test('dequeueStatus removes entries from PendingTxs', t => {
   statusManager.skipAdvance({ ...e1, txHash: '0xtest1' }, []);
 
   t.deepEqual(
-    statusManager.dequeueStatus(e1.tx.forwardingAddress, e1.tx.amount),
-    {
-      txHash: e1.txHash,
-      status: PendingTxStatus.Advanced,
-    },
+    statusManager.matchAndDequeueSettlement(
+      e1.tx.forwardingAddress,
+      e1.tx.amount,
+    ),
+    [
+      {
+        ...e1,
+        status: PendingTxStatus.Advanced,
+      },
+    ],
   );
 
   t.deepEqual(
-    statusManager.dequeueStatus(e2.tx.forwardingAddress, e2.tx.amount),
-    {
-      txHash: e2.txHash,
-      status: PendingTxStatus.AdvanceFailed,
-    },
+    statusManager.matchAndDequeueSettlement(
+      e2.tx.forwardingAddress,
+      e2.tx.amount,
+    ),
+    [
+      {
+        ...e2,
+        txHash: e2.txHash,
+        status: PendingTxStatus.AdvanceFailed,
+      },
+    ],
   );
 
   t.deepEqual(
-    statusManager.dequeueStatus(e1.tx.forwardingAddress, e1.tx.amount),
-    {
-      txHash: '0xtest1',
-      status: PendingTxStatus.AdvanceSkipped,
-    },
+    statusManager.matchAndDequeueSettlement(
+      e1.tx.forwardingAddress,
+      e1.tx.amount,
+    ),
+    [
+      {
+        ...e1,
+        txHash: '0xtest1',
+        status: PendingTxStatus.AdvanceSkipped,
+      },
+    ],
   );
 
   t.is(
@@ -182,16 +199,16 @@ test('cannot advanceOutcome without ADVANCING entry', t => {
   const e1 = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
   const advanceOutcomeFn = () =>
     statusManager.advanceOutcome(e1.tx.forwardingAddress, e1.tx.amount, true);
-  const expectedErrMsg =
-    'no advancing tx with {"amount":"[150000000n]","nfa":"noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd"}';
 
   t.throws(advanceOutcomeFn, {
-    message: expectedErrMsg,
+    message:
+      'key "noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd" not found in collection "PendingSettleTxs"',
   });
 
   statusManager.skipAdvance(e1, []);
   t.throws(advanceOutcomeFn, {
-    message: expectedErrMsg,
+    message:
+      'no advancing tx with {"amount":"[150000000n]","nfa":"noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd"}',
   });
 
   const e2 = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
@@ -236,17 +253,20 @@ test('advanceOutcome transitions to ADVANCED and ADVANCE_FAILED', async t => {
   ]);
 });
 
-test('dequeueStatus returns undefined when nothing is settleable', t => {
+test('matchAndDequeueSettlement returns undefined when nothing is settleable', t => {
   const { statusManager } = t.context;
   const e1 = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
 
-  t.is(
-    statusManager.dequeueStatus(e1.tx.forwardingAddress, e1.tx.amount),
-    undefined,
+  t.deepEqual(
+    statusManager.matchAndDequeueSettlement(
+      e1.tx.forwardingAddress,
+      e1.tx.amount,
+    ),
+    [],
   );
 });
 
-test('dequeueStatus returns first (earliest) matched entry', async t => {
+test('matchAndDequeueSettlement returns first (earliest) matched entry', async t => {
   const { statusManager } = t.context;
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
 
@@ -254,15 +274,41 @@ test('dequeueStatus returns first (earliest) matched entry', async t => {
   statusManager.advance(evidence);
   statusManager.advance({ ...evidence, txHash: '0xtest2' });
 
-  t.like(
-    statusManager.dequeueStatus(
+  t.is(
+    statusManager.lookupPending(
       evidence.tx.forwardingAddress,
       evidence.tx.amount,
-    ),
-    {
-      status: PendingTxStatus.Advancing,
-    },
+    ).length,
+    2,
+  );
+
+  // `matchAndDequeueSettlement` is called when a mint is arrived and we want
+  // to settle it
+  const dequeued0 = statusManager.matchAndDequeueSettlement(
+    evidence.tx.forwardingAddress,
+    evidence.tx.amount,
+  );
+  t.is(dequeued0.length, 1, 'returns a single match');
+  t.is(dequeued0[0].txHash, evidence.txHash, 'grabs first match');
+  // In the contract, when an ADVANCING transaction is dequeued from
+  // `pendingSettleTxs` it's added to `mintedEarly`. `Advancer` calls
+  // `settler.notifier.notifyAdvancingResult` which looks in `mintedEarly` for
+  // any "minted while advancing" txs and will .disburse() or .forward() based
+  // on the outcome.
+  // This test is not integrated with the Settler, but it demonstrates
+  // that `Advancing` txs can be dequeued with `matchAndDequeueSettlement`.
+  t.is(
+    dequeued0[0].status,
+    PendingTxStatus.Advancing,
     'can dequeue Tx at any stage',
+  );
+
+  t.is(
+    statusManager.lookupPending(
+      evidence.tx.forwardingAddress,
+      evidence.tx.amount,
+    ).length,
+    1,
   );
 
   statusManager.advanceOutcome(
@@ -271,34 +317,27 @@ test('dequeueStatus returns first (earliest) matched entry', async t => {
     true,
   );
 
-  // dequeue will return the first match
-  t.like(
-    statusManager.dequeueStatus(
-      evidence.tx.forwardingAddress,
-      evidence.tx.amount,
-    ),
-    {
-      status: PendingTxStatus.Advanced,
-    },
-  );
-  const entries0 = statusManager.lookupPending(
+  // second transaction is dequeued
+  const dequeued1 = statusManager.matchAndDequeueSettlement(
     evidence.tx.forwardingAddress,
     evidence.tx.amount,
   );
-  t.is(entries0.length, 0);
-
-  const entries1 = statusManager.lookupPending(
-    evidence.tx.forwardingAddress,
-    evidence.tx.amount,
-  );
-  t.is(entries1?.length, 0, 'settled entries are deleted');
+  t.is(dequeued1.length, 1);
+  t.is(dequeued1[0].status, PendingTxStatus.Advanced);
 
   t.is(
-    statusManager.dequeueStatus(
+    statusManager.lookupPending(
+      evidence.tx.forwardingAddress,
+      evidence.tx.amount,
+    ).length,
+    0,
+  );
+  t.deepEqual(
+    statusManager.matchAndDequeueSettlement(
       evidence.tx.forwardingAddress,
       evidence.tx.amount,
     ),
-    undefined,
+    [],
     'No more matches to settle',
   );
 });
@@ -329,7 +368,7 @@ test('StatusManagerKey logic handles addresses with hyphens', t => {
     true,
   );
 
-  statusManager.dequeueStatus(
+  statusManager.matchAndDequeueSettlement(
     evidence.tx.forwardingAddress,
     evidence.tx.amount,
   );

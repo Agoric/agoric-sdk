@@ -1,6 +1,6 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { makeScalarMapStore } from '@agoric/store';
-import { asMultiset } from '../../src/utils/store.ts';
+import { asMultiset, insertIntoSortedArray } from '../../src/utils/store.ts';
 
 test('add and get', t => {
   const mapStore = makeScalarMapStore();
@@ -143,4 +143,49 @@ test('remove with excessive count should return false', t => {
   t.notThrows(() => multiset.remove('apple', 3));
   t.is(multiset.count('apple'), 0);
   t.false(multiset.has('apple'));
+});
+
+test('insertIntoSortedArray creates sorted array (default desc)', t => {
+  const numbers = [3];
+  const sortDesc = (a, b) => b - a;
+
+  // Insert out of order; should remain descending
+  insertIntoSortedArray(numbers, 5, sortDesc); // [5, 3]
+  insertIntoSortedArray(numbers, 2, sortDesc); // [5, 3, 2]
+  insertIntoSortedArray(numbers, 3, sortDesc); // [5, 3, 3, 2]
+
+  t.deepEqual(numbers, [5, 3, 3, 2]);
+});
+
+test('insertIntoSortedArray with custom ascending comparator', t => {
+  const letters = [];
+  const asc = (a, b) => a.localeCompare(b);
+
+  // Insert letters deliberately out of order
+  insertIntoSortedArray(letters, 'c', asc);
+  insertIntoSortedArray(letters, 'a', asc);
+  insertIntoSortedArray(letters, 'b', asc);
+
+  t.deepEqual(letters, ['a', 'b', 'c']);
+});
+
+test('insertIntoSortedArray keeps duplicates stable-after equals', t => {
+  const txs = [];
+  const byValueDesc = (a, b) => b.val - a.val;
+
+  // Distinct objects that compare equal when val is the same
+  const tx1 = { val: 5, id: '0x10005' };
+  const tx2 = { val: 4, id: '0x20004' };
+  const tx3 = { val: 2, id: '0x30002' };
+  const tx4 = { val: 4, id: '0x40004' };
+
+  // insert first 3
+  for (const obj of [tx1, tx2, tx3]) {
+    insertIntoSortedArray(txs, obj, byValueDesc);
+  }
+
+  // Insert another 4 → should appear *after* existing equal object
+  insertIntoSortedArray(txs, tx4, byValueDesc);
+
+  t.deepEqual(txs, [tx1, tx2, tx4, tx3]);
 });
