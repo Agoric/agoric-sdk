@@ -13,6 +13,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/store"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -233,6 +234,24 @@ func (b *mockBank) MintCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) 
 
 func (b *mockBank) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
 	b.record(fmt.Sprintf("SendCoinsFromAccountToModule %s %s %s", senderAddr, recipientModule, amt))
+
+	// for each coin in the request, check spendable vs. requested
+	for _, coin := range amt {
+		// mimic GetBalance logic
+		have := b.balances[senderAddr.String()].AmountOf(coin.Denom)
+		spendable := sdk.NewCoin(coin.Denom, have)
+
+		if spendable.IsLT(coin) {
+			// wrap exactly like the real x/bank keeper
+			// https://github.com/agoric-labs/cosmos-sdk/blob/8b2b975304291c51991278734daa2ff5e57fcb83/x/bank/keeper/send.go#L252-L256
+			return sdkerrors.Wrapf(
+				sdkerrors.ErrInsufficientFunds,
+				"spendable balance %s is smaller than %s",
+				spendable, coin,
+			)
+		}
+	}
+
 	return nil
 }
 
@@ -819,5 +838,65 @@ func Test_Module_Account(t *testing.T) {
 	missingAddr := sdk.MustAccAddressFromBech32(addr2)
 	if keeper.IsAllowedMonitoringAccount(ctx, missingAddr) {
 		t.Errorf("got IsAllowedMonitoringAccount missingAddr = false, want true")
+	}
+}
+
+
+
+func Test_Receive_Grab_InsufficientFunds(t *testing.T) {
+	tests := []struct {
+		name           string
+		initialBalance sdk.Coin
+	}{
+		{
+			name:           "only 100 available",
+			initialBalance: sdk.NewInt64Coin("ufoo", 100),
+		},
+		{
+			name:           "zero available",
+			initialBalance: sdk.NewInt64Coin("ufoo", 0),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// set up mockBank with the desired starting balance
+			bank := &mockBank{balances: map[string]sdk.Coins{
+				addr1: sdk.NewCoins(tc.initialBalance),
+			}}
+
+			// wire into keeper
+			keeper, ctx := makeTestKit(nil, bank)
+			handler := NewPortHandler(AppModule{}, keeper)
+			ctl := sdk.WrapSDKContext(ctx)
+
+			// attempt to grab 500ufoo
+			grabAmt := sdk.NewCoins(sdk.NewInt64Coin("ufoo", 500))
+			_, err := handler.Receive(ctl, fmt.Sprintf(`{
+							"type":"VBANK_GRAB",
+							"sender":"%s",
+							"amount":"500",
+							"denom":"ufoo"
+					}`, addr1))
+			if err == nil {
+				t.Fatal("expected insufficient-funds error, got nil")
+			}
+
+			expected := fmt.Sprintf(
+				"cannot grab %s coins: spendable balance %s is smaller than %s: %s",
+				grabAmt.Sort().String(),
+				tc.initialBalance.String(),
+				grabAmt.Sort().String(),
+				sdkerrors.ErrInsufficientFunds.Error(),
+			)
+
+			t.Logf("actual error: %q", err.Error())
+
+			got := err.Error()
+			if got != expected {
+				t.Errorf("wrong error message:\n  expected: %q\n  got:      %q",
+					expected, got)
+			}
+		})
 	}
 }

@@ -3,9 +3,6 @@ package gaia
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
-	"strings"
-	"text/template"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	swingsetkeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
@@ -78,45 +75,30 @@ func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
 	return true
 }
 
-func buildProposalStepWithArgs(moduleName string, entrypoint string, extra any) (vm.CoreProposalStep, error) {
-	t := template.Must(template.New("").Parse(`{
-  "module": "{{.moduleName}}",
-  "entrypoint": "{{.entrypoint}}",
-  "args": {{.args}}
-}`))
-
-	var args []byte
-	var err error
-	if extra == nil {
-		// The specified entrypoint will be called with no extra arguments after powers.
-		args = []byte(`[]`)
-	} else if reflect.TypeOf(extra).Kind() == reflect.Map && reflect.TypeOf(extra).Key().Kind() == reflect.String {
-		// The specified entrypoint will be called with this options argument after powers.
-		args, err = json.Marshal([]any{extra})
-	} else if reflect.TypeOf(extra).Kind() == reflect.Slice {
-		// The specified entrypoint will be called with each of these arguments after powers.
-		args, err = json.Marshal(extra)
-	} else {
-		return nil, fmt.Errorf("proposal extra must be nil, array, or string map, not %v", extra)
-	}
+// buildProposalStepWithArgs returns a CoreProposal representing invocation of
+// the specified module-specific entry point with arbitrary Jsonable arguments
+// provided after core-eval powers.
+func buildProposalStepWithArgs(moduleName string, entrypoint string, args ...vm.Jsonable) (vm.CoreProposalStep, error) {
+	argsBz, err := json.Marshal(args)
 	if err != nil {
 		return nil, err
 	}
 
-	var result strings.Builder
-	err = t.Execute(&result, map[string]any{
-		"moduleName": moduleName,
-		"entrypoint": entrypoint,
-		"args":       string(args),
-	})
+	mea := struct {
+		Module     string          `json:"module"`
+		Entrypoint string          `json:"entrypoint"`
+		Args       json.RawMessage `json:"args"`
+	}{
+		Module:     moduleName,
+		Entrypoint: entrypoint,
+		Args:       argsBz,
+	}
+
+	jsonBz, err := json.Marshal(mea)
 	if err != nil {
 		return nil, err
 	}
-	jsonStr := result.String()
-	jsonBz := []byte(jsonStr)
-	if !json.Valid(jsonBz) {
-		return nil, fmt.Errorf("invalid JSON: %s", jsonStr)
-	}
+
 	proposal := vm.ArbitraryCoreProposal{Json: jsonBz}
 	return vm.CoreProposalStepForModules(proposal), nil
 }
@@ -131,81 +113,32 @@ func getVariantFromUpgradeName(upgradeName string) string {
 		return "DEVNET"
 	case "UNRELEASED_emerynet":
 		return "EMERYNET"
-		// Noupgrade for this version.
 	case "UNRELEASED_BASIC":
+		// Noupgrade for this version.
 		return ""
 	default:
 		return ""
 	}
 }
 
-func replaceElectorateCoreProposalStep(upgradeName string) (vm.CoreProposalStep, error) {
-	variant := getVariantFromUpgradeName(upgradeName)
+func buildProposalStepFromScript(targetUpgrade string, builderScript string) (vm.CoreProposalStep, error) {
+	variant := getVariantFromUpgradeName(targetUpgrade)
 
 	if variant == "" {
 		return nil, nil
 	}
 
 	return buildProposalStepWithArgs(
-		"@agoric/builders/scripts/inter-protocol/replace-electorate-core.js",
+		builderScript,
 		"defaultProposalBuilder",
-		map[string]any{
-			"variant": variant,
+		// Map iteration is randomised; use an anonymous struct instead.
+		struct {
+			Variant string `json:"variant"`
+		}{
+			Variant: variant,
 		},
 	)
 }
-
-func replacePriceFeedsCoreProposal(upgradeName string) (vm.CoreProposalStep, error) {
-	variant := getVariantFromUpgradeName(upgradeName)
-
-	if variant == "" {
-		return nil, nil
-	}
-
-	return buildProposalStepWithArgs(
-		"@agoric/builders/scripts/inter-protocol/updatePriceFeeds.js",
-		"defaultProposalBuilder",
-		map[string]any{
-			"variant": variant,
-		},
-	)
-}
-
-func terminateGovernorCoreProposal(upgradeName string) (vm.CoreProposalStep, error) {
-	// targets is a slice of "$boardID:$instanceKitLabel" strings.
-	var targets []string
-	switch getVariantFromUpgradeName(upgradeName) {
-		case "MAINNET":
-			targets = []string{"board052184:stkATOM-USD_price_feed"}
-		case "A3P_INTEGRATION":
-			targets = []string{"board04091:stATOM-USD_price_feed"}
-		default:
-			return nil, nil
-	}
-
-	return buildProposalStepWithArgs(
-		"@agoric/builders/scripts/vats/terminate-governor-instance.js",
-		// Request `defaultProposalBuilder(powers, targets)`.
-		"defaultProposalBuilder",
-		[]any{targets},
-	)
-}
-
-// func upgradeMintHolderCoreProposal(upgradeName string) (vm.CoreProposalStep, error) {
-// 	variant := getVariantFromUpgradeName(upgradeName)
-
-// 	if variant == "" {
-// 		return nil, nil
-// 	}
-
-// 	return buildProposalStepWithArgs(
-// 		"@agoric/builders/scripts/vats/upgrade-mintHolder.js",
-// 		"defaultProposalBuilder",
-// 		map[string]any{
-// 			"variant": variant,
-// 		},
-// 	)
-// }
 
 // unreleasedUpgradeHandler performs standard upgrade actions plus custom actions for the unreleased upgrade.
 func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
@@ -224,96 +157,51 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 				return module.VersionMap{}, fmt.Errorf("cannot run %s as first upgrade", plan.Name)
 			}
 
-			replaceElectorateStep, err := replaceElectorateCoreProposalStep(targetUpgrade)
-			if err != nil {
-				return nil, err
-			} else if replaceElectorateStep != nil {
-				CoreProposalSteps = append(CoreProposalSteps, replaceElectorateStep)
-			}
-
-			priceFeedUpdate, err := replacePriceFeedsCoreProposal(targetUpgrade)
-			if err != nil {
-				return nil, err
-			} else if priceFeedUpdate != nil {
-				CoreProposalSteps = append(CoreProposalSteps,
-					priceFeedUpdate,
-					// The following have a dependency onto the price feed proposal
-					vm.CoreProposalStepForModules(
-						"@agoric/builders/scripts/vats/add-auction.js",
-					),
-					vm.CoreProposalStepForModules(
-						"@agoric/builders/scripts/vats/upgradeVaults.js",
-					),
-				)
-			}
-
 			// Each CoreProposalStep runs sequentially, and can be constructed from
 			// one or more modules executing in parallel within the step.
 			CoreProposalSteps = append(CoreProposalSteps,
-				vm.CoreProposalStepForModules(
-					// Upgrade Zoe (no new ZCF needed).
-					"@agoric/builders/scripts/vats/upgrade-zoe.js",
-				),
-				// Revive KREAd characters
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/revive-kread.js",
-				),
-				vm.CoreProposalStepForModules(
-					// Upgrade to include a cleanup from https://github.com/Agoric/agoric-sdk/pull/10319
-					"@agoric/builders/scripts/smart-wallet/build-wallet-factory2-upgrade.js",
-				),
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/upgrade-board.js",
-				),
-			)
-
-			// Upgrade vats using Vows in Upgrade 18 in order to use a new liveslots that
-			// avoids a memory leak in watchPromise.
-			CoreProposalSteps = append(CoreProposalSteps,
+				// Orchestration vats: Fix memory leak in vow tools
+				// vat-ibc (included in orchestration): Accommodate string sequence numbers.
 				vm.CoreProposalStepForModules(
 					"@agoric/builders/scripts/vats/upgrade-orchestration.js",
 				),
+				// Register a new ZCF to be used for all future contract instances and upgrades
+				vm.CoreProposalStepForModules(
+					"@agoric/builders/scripts/vats/upgrade-zcf.js",
+				),
+				// because of #10794, we need to do at least a null upgrade of
+				// the walletFactory on every software upgrade
+				vm.CoreProposalStepForModules(
+					"@agoric/builders/scripts/smart-wallet/build-wallet-factory2-upgrade.js",
+				),
+				// vat-bank is slowly leaking, possibly because of the liveslots resolved promise leak
+				// (https://github.com/Agoric/agoric-sdk/issues/11118). Restart to pick up the fix.
+				vm.CoreProposalStepForModules(
+					"@agoric/builders/scripts/vats/upgrade-bank.js",
+				),
 			)
 
-			// CoreProposals for Upgrade 19. These should not be introduced
-			// before upgrade 18 is done because they would be run in n:upgrade-next
-			//
-			// upgradeMintHolderStep, err := upgradeMintHolderCoreProposal(targetUpgrade)
-			// if err != nil {
-			// 	return nil, err
-			// } else if upgradeMintHolderStep != nil {
-			// 	CoreProposalSteps = append(CoreProposalSteps, upgradeMintHolderStep)
-			// }
-			//
-			// CoreProposalSteps = append(CoreProposalSteps,
-			// 	vm.CoreProposalStepForModules(
-			// 		"@agoric/builders/scripts/inter-protocol/replace-feeDistributor.js",
-			// 	),
-			// 	vm.CoreProposalStepForModules(
-			// 		"@agoric/builders/scripts/vats/upgrade-paRegistry.js",
-			// 	),
-			// 	vm.CoreProposalStepForModules(
-			// 		"@agoric/builders/scripts/vats/upgrade-provisionPool.js",
-			// 	),
-			// 	vm.CoreProposalStepForModules(
-			// 		"@agoric/builders/scripts/vats/upgrade-bank.js",
-			// 	),
-			// 	vm.CoreProposalStepForModules(
-			// 		"@agoric/builders/scripts/vats/upgrade-agoricNames.js",
-			// 	),
-			// 	vm.CoreProposalStepForModules(
-			// 		"@agoric/builders/scripts/vats/upgrade-asset-reserve.js",
-			// 	),
-			// 	vm.CoreProposalStepForModules(
-			// 		"@agoric/builders/scripts/vats/upgrade-psm.js",
-			// 	),
-			// )
-
-			terminateOldGovernor, err := terminateGovernorCoreProposal(targetUpgrade)
-			if err != nil {
-				return nil, err
-			} else if terminateOldGovernor != nil {
-				CoreProposalSteps = append(CoreProposalSteps, terminateOldGovernor)
+			// terminationTargets is a slice of "$boardID:$instanceKitLabel" strings.
+			var terminationTargets []string
+			switch getVariantFromUpgradeName(targetUpgrade) {
+			case "MAINNET":
+				// v111 "zcf-b1-4522b-stkATOM-USD_price_feed"
+				terminationTargets = []string{"board052184:stkATOM-USD_price_feed"}
+			case "A3P_INTEGRATION":
+				terminationTargets = []string{"board04091:stATOM-USD_price_feed"}
+			}
+			if len(terminationTargets) > 0 {
+				args := []vm.Jsonable{terminationTargets}
+				terminationStep, err := buildProposalStepWithArgs(
+					"@agoric/vats/src/proposals/terminate-governed-instance.js",
+					// defaultProposalBuilder(powers, targets)
+					"defaultProposalBuilder",
+					args...,
+				)
+				if err != nil {
+					return module.VersionMap{}, err
+				}
+				CoreProposalSteps = append(CoreProposalSteps, terminationStep)
 			}
 		}
 
