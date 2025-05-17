@@ -1,4 +1,6 @@
 import test from 'ava';
+
+import { passableSymbolForName } from '@agoric/internal';
 import {
   assessFacetiousness,
   checkAndUpdateFacetiousness,
@@ -43,7 +45,7 @@ const brokenMixed2 = harden({
 });
 
 const brokenSymbolNamedFacet1 = harden({
-  [Symbol.for('resetter')]: {
+  [passableSymbolForName('resetter')]: {
     reset: ({ state }) => (state.count = 0),
   },
 });
@@ -52,13 +54,13 @@ const brokenSymbolNamedFacet2 = harden({
   incrementer: {
     increment: ({ state }) => (state.count += 1),
   },
-  [Symbol.for('resetter')]: {
+  [passableSymbolForName('resetter')]: {
     reset: ({ state }) => (state.count = 0),
   },
 });
 
 const brokenSymbolNamedFacet3 = harden({
-  [Symbol.for('resetter')]: {
+  [passableSymbolForName('resetter')]: {
     reset: ({ state }) => (state.count = 0),
   },
   incrementer: {

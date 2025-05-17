@@ -2,8 +2,9 @@
 import test from 'ava';
 
 import { Far } from '@endo/marshal';
-import { M } from '@agoric/store';
-import { makeCopyMap, makeCopySet } from '@endo/patterns';
+import { makeCopyMap, makeCopySet, M } from '@endo/patterns';
+import { passableSymbolForName } from '@agoric/internal';
+import { testFullOrderEQ } from '@agoric/internal/tools/ava-full-order-eq.js';
 import { makeFakeCollectionManager } from '../tools/fakeVirtualSupport.js';
 
 const {
@@ -25,8 +26,8 @@ const something = makeGenericRemotable('something');
 const somethingElse = makeGenericRemotable('something else');
 const somethingMissing = makeGenericRemotable('something missing');
 
-const symbolBozo = Symbol.for('bozo');
-const symbolKrusty = Symbol.for('krusty');
+const symbolBozo = passableSymbolForName('bozo');
+const symbolKrusty = passableSymbolForName('krusty');
 
 // prettier-ignore
 const primes = [
@@ -261,7 +262,7 @@ test('set snapshot', t => {
   const testStore = makeScalarBigSetStore('test set');
   const allThatStuff = stuff.map(entry => entry[0]);
   testStore.addAll(allThatStuff);
-  t.deepEqual(testStore.snapshot(), makeCopySet(allThatStuff));
+  testFullOrderEQ(t, testStore.snapshot(), makeCopySet(allThatStuff));
 });
 
 function exerciseMapAddAll(t, weak, testStore) {
@@ -302,7 +303,7 @@ test('weak map addAll', t => {
 test('map snapshot', t => {
   const testStore = makeScalarBigMapStore('test map');
   testStore.addAll(stuff);
-  t.deepEqual(testStore.snapshot(), makeCopyMap(stuff));
+  testFullOrderEQ(t, testStore.snapshot(), makeCopyMap(stuff));
 });
 
 test('constrain map key shape', t => {
@@ -685,11 +686,11 @@ test('map queries', t => {
     something,
     somethingElse,
   ]);
-  t.deepEqual(Array.from(testStore.keys(M.symbol())), [
+  testFullOrderEQ(t, Array.from(testStore.keys(M.symbol())), [
     symbolBozo,
     symbolKrusty,
   ]);
-  t.deepEqual(Array.from(testStore.keys(M.any())), [
+  testFullOrderEQ(t, Array.from(testStore.keys(M.any())), [
     false,
     true,
     -29,
@@ -706,7 +707,7 @@ test('map queries', t => {
     symbolKrusty,
     undefined,
   ]);
-  t.deepEqual(Array.from(testStore.keys(M.scalar())), [
+  testFullOrderEQ(t, Array.from(testStore.keys(M.scalar())), [
     false,
     true,
     -29,
@@ -799,7 +800,7 @@ test('map queries', t => {
     [-77n, 'bigint -77'],
     [1000n, 'bigint 1000'],
   ]);
-  t.deepEqual(Array.from(testStore.entries(M.string())), [
+  testFullOrderEQ(t, Array.from(testStore.entries(M.string())), [
     ['@#$@#$@#$@', 'string stuff'],
     ['hello', 'string hello'],
   ]);
@@ -817,11 +818,11 @@ test('map queries', t => {
     [something, 'remotable object "something"'],
     [somethingElse, 'remotable object "something else"'],
   ]);
-  t.deepEqual(Array.from(testStore.entries(M.symbol())), [
+  testFullOrderEQ(t, Array.from(testStore.entries(M.symbol())), [
     [symbolBozo, 'symbol bozo'],
     [symbolKrusty, 'symbol krusty'],
   ]);
-  t.deepEqual(Array.from(testStore.entries(M.any())), [
+  testFullOrderEQ(t, Array.from(testStore.entries(M.any())), [
     [false, 'boolean false'],
     [true, 'boolean true'],
     [-29, 'number -29'],
@@ -838,7 +839,7 @@ test('map queries', t => {
     [symbolKrusty, 'symbol krusty'],
     [undefined, 'singleton undefined'],
   ]);
-  t.deepEqual(Array.from(testStore.entries(M.scalar())), [
+  testFullOrderEQ(t, Array.from(testStore.entries(M.scalar())), [
     [false, 'boolean false'],
     [true, 'boolean true'],
     [-29, 'number -29'],
@@ -875,11 +876,11 @@ test('set queries', t => {
     something,
     somethingElse,
   ]);
-  t.deepEqual(Array.from(testStore.values(M.symbol())), [
+  testFullOrderEQ(t, Array.from(testStore.values(M.symbol())), [
     symbolBozo,
     symbolKrusty,
   ]);
-  t.deepEqual(Array.from(testStore.values(M.any())), [
+  testFullOrderEQ(t, Array.from(testStore.values(M.any())), [
     false,
     true,
     -29,
@@ -896,7 +897,7 @@ test('set queries', t => {
     symbolKrusty,
     undefined,
   ]);
-  t.deepEqual(Array.from(testStore.values(M.scalar())), [
+  testFullOrderEQ(t, Array.from(testStore.values(M.scalar())), [
     false,
     true,
     -29,
