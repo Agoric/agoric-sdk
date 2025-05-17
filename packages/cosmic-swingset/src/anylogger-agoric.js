@@ -4,68 +4,69 @@ import {
   getEnvironmentOption,
 } from '@endo/env-options';
 import anylogger from 'anylogger';
+import { defineName } from '@agoric/internal/src/js-utils.js';
 
-// Turn on debugging output with DEBUG=agoric
+/** @import {BaseLevels} from 'anylogger'; */
+/** @typedef {keyof BaseLevels} LogLevel; */
+
+const VAT_LOGGER_PREFIXES = Object.freeze([
+  'SwingSet:vat',
+  'SwingSet:ls', // "ls" for "liveslots"
+]);
 
 const DEBUG_LIST = getEnvironmentOptionsList('DEBUG');
 
-const isVatLogNameColon = nameColon =>
-  ['SwingSet:ls:', 'SwingSet:vat:'].some(sel => nameColon.startsWith(sel));
-
-// Turn on debugging output with DEBUG=agoric or DEBUG=agoric:${level}
-let selectedLevel =
-  DEBUG_LIST.length || getEnvironmentOption('DEBUG', 'unset') === 'unset'
+/**
+ * As documented in ../../../docs/env.md, the log level defaults to "log" when
+ * environment variable DEBUG is non-empty or unset, and to the quieter "info"
+ * when it is set to an empty string, but in either case is overridden if DEBUG
+ * is a comma-separated list that contains "agoric:none" or "agoric:${level}" or
+ * "agoric" (the last an alias for "agoric:debug").
+ *
+ * @type {string | undefined}
+ */
+let maxActiveLevel =
+  DEBUG_LIST.length > 0 || getEnvironmentOption('DEBUG', 'unset') === 'unset'
     ? 'log'
     : 'info';
 for (const selector of DEBUG_LIST) {
-  const parts = selector.split(':');
-  if (parts[0] !== 'agoric') {
-    continue;
-  }
-  if (parts.length > 1) {
-    selectedLevel = parts[1];
-  } else {
-    selectedLevel = 'debug';
+  const fullSelector = selector === 'agoric' ? 'agoric:debug' : selector;
+  const [_, detail] = fullSelector.match(/^agoric:(.*)/gs) || [];
+  if (detail) {
+    maxActiveLevel = detail === 'none' ? undefined : detail;
   }
 }
-const selectedCode = anylogger.levels[selectedLevel];
-const globalCode = selectedCode === undefined ? -Infinity : selectedCode;
+const maxActiveLevelCode = /** @type {number} */ (
+  (maxActiveLevel && anylogger.levels[maxActiveLevel]) ?? -Infinity
+);
 
 const oldExt = anylogger.ext;
 anylogger.ext = logger => {
-  const l = oldExt(logger);
-  l.enabledFor = lvl => globalCode >= anylogger.levels[lvl];
+  logger = oldExt(logger);
 
-  const prefix = l.name.replace(/:/g, ': ');
+  /** @type {(level: LogLevel) => boolean} */
+  const enabledFor = level => anylogger.levels[level] <= maxActiveLevelCode;
+  logger.enabledFor = enabledFor;
 
-  const nameColon = `${l.name}:`;
-  const logBelongsToVat = isVatLogNameColon(nameColon);
+  const nameColon = `${logger.name}:`;
+  const label = logger.name.replaceAll(':', ': ');
 
-  // If this is a vat log, then it is enabled by a selector in DEBUG_LIST.
-  const logMatchesSelector =
-    !logBelongsToVat ||
-    DEBUG_LIST.some(selector => {
-      const selectorColon = `${selector}:`;
-      return nameColon.startsWith(selectorColon);
-    });
+  // Vat logs are suppressed unless matched by a prefix in DEBUG_LIST.
+  const suppressed =
+    VAT_LOGGER_PREFIXES.some(prefix => nameColon.startsWith(`${prefix}:`)) &&
+    !DEBUG_LIST.some(prefix => nameColon.startsWith(`${prefix}:`));
 
-  for (const [level, code] of Object.entries(anylogger.levels)) {
-    if (logMatchesSelector && globalCode >= code) {
-      // Enable the printing with a prefix.
-      const doLog = l[level];
-      if (doLog) {
-        l[level] = (...args) => {
-          // Add a timestamp.
-          const now = new Date().toISOString();
-          doLog(`${now} ${prefix}:`, ...args);
-        };
-      } else {
-        l[level] = () => {};
-      }
-    } else {
-      // Disable printing.
-      l[level] = () => {};
-    }
+  const levels = /** @type {LogLevel[]} */ (Object.keys(anylogger.levels));
+  for (const level of levels) {
+    const impl = logger[level];
+    const disabled = !impl || suppressed || !enabledFor(level);
+    logger[level] = disabled
+      ? defineName(`dummy ${level}`, () => {})
+      : defineName(level, (...args) => {
+          // Prepend a timestamp and label.
+          const timestamp = new Date().toISOString();
+          impl(`${timestamp} ${label}:`, ...args);
+        });
   }
-  return l;
+  return logger;
 };

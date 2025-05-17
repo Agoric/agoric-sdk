@@ -274,7 +274,8 @@ const run = async () => {
     stdout: process.stdout,
     fsp,
     meta: {
-      resolve: metaResolve.resolve,
+      resolve: async (specifier, parent) =>
+        metaResolve.resolve(specifier, parent),
       url: import.meta.url,
       load: specifier => import(specifier),
     },

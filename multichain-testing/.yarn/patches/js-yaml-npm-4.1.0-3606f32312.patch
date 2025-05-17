@@ -1,0 +1,70 @@
+diff --git a/lib/exception.js b/lib/exception.js
+index 7f62daaef8bcdb8248da0fd65e7b2880a5c1cf92..4e85f6ac4164b932e738e5d21fdfe9497ccf93f7 100644
+--- a/lib/exception.js
++++ b/lib/exception.js
+@@ -26,7 +26,6 @@ function YAMLException(reason, mark) {
+   // Super constructor
+   Error.call(this);
+ 
+-  this.name = 'YAMLException';
+   this.reason = reason;
+   this.mark = mark;
+   this.message = formatError(this, false);
+@@ -37,19 +36,34 @@ function YAMLException(reason, mark) {
+     Error.captureStackTrace(this, this.constructor);
+   } else {
+     // FF, IE 10+ and Safari 6+. Fallback for others
+-    this.stack = (new Error()).stack || '';
++    this.stack = new Error().stack || "";
+   }
+ }
+ 
+-
+-// Inherit from Error
+-YAMLException.prototype = Object.create(Error.prototype);
+-YAMLException.prototype.constructor = YAMLException;
+-
+-
+-YAMLException.prototype.toString = function toString(compact) {
+-  return this.name + ': ' + formatError(this, compact);
+-};
+-
++function makeErrorish(errorConstructor, name) {
++  errorConstructor.prototype = Object.create(Error.prototype, {
++    constructor: {
++      value: errorConstructor,
++      writable: true,
++      enumerable: true,
++      configurable: true,
++    },
++    name: {
++      value: name,
++      writable: true,
++      enumerable: true,
++      configurable: true,
++    },
++    toString: {
++      value: function toString(compact) {
++        return this.name + ": " + formatError(this, compact);
++      },
++      writable: true,
++      enumerable: true,
++      configurable: true,
++    },
++  });
++}
++makeErrorish(YAMLException, "YAMLException");
+ 
+ module.exports = YAMLException;
+diff --git a/package.json b/package.json
+index 17574da805a18032a9b7c584e2e39d685ec043c8..326d6cc5ccadf805023c59d7eb596a117df1e648 100644
+--- a/package.json
++++ b/package.json
+@@ -62,5 +62,6 @@
+     "rollup-plugin-node-polyfills": "^0.2.1",
+     "rollup-plugin-terser": "^7.0.2",
+     "shelljs": "^0.8.4"
+-  }
++  },
++  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+ }

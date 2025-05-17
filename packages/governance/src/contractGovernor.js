@@ -9,6 +9,7 @@ import { prepareContractGovernorKit } from './contractGovernorKit.js';
 import { ParamChangesQuestionDetailsShape } from './typeGuards.js';
 
 /**
+ * @import {ContractMeta, Installation, Instance, Invitation, StandardTerms, ZCF} from '@agoric/zoe';
  * @import {GovernableStartFn, GovernorCreatorFacet, GovernorPublic, ParamChangeIssueDetails} from './types.js';
  */
 
@@ -62,6 +63,7 @@ export const validateQuestionFromCounter = async (
   electorate,
   voteCounter,
 ) => {
+  /** @type {Promise<any>} */
   const counterPublicP = E(zoe).getPublicFacet(voteCounter);
   const questionDetails = await E(counterPublicP).getDetails();
 

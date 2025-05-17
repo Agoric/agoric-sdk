@@ -147,6 +147,7 @@ export const makeAuctioneerParamManager = (publisherKit, zcf, initial) => {
   );
 };
 harden(makeAuctioneerParamManager);
+/** @typedef {ReturnType<typeof makeAuctioneerParams>} AuctionParamRecord */
 
 /**
  * @param {{ storageNode: ERef<StorageNode>; marshaller: ERef<Marshaller> }} caps

@@ -6,6 +6,7 @@ import { E } from '@endo/eventual-send';
 import { atomicTransfer } from '../contractSupport/index.js';
 
 /**
+ * @import {ContractMeta, Invitation, OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {ContractOf} from '../zoeService/utils.js';
  */
 

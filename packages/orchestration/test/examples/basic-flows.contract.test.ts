@@ -1,27 +1,24 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import type { TestFn } from 'ava';
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
-import { E, getInterfaceOf } from '@endo/far';
-import path from 'path';
+
 import { makeIssuerKit } from '@agoric/ertp';
+import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import {
-  type AmountUtils,
   withAmountUtils,
+  type AmountUtils,
 } from '@agoric/zoe/tools/test-utils.js';
+import { E, getInterfaceOf, type EReturn } from '@endo/far';
+import type { TestFn } from 'ava';
+import * as contractExports from '../../src/examples/basic-flows.contract.js';
 import { commonSetup } from '../supports.js';
 
-const dirname = path.dirname(new URL(import.meta.url).pathname);
-
 const contractName = 'basic-flows';
-const contractFile = `${dirname}/../../src/examples/${contractName}.contract.js`;
-type StartFn =
-  typeof import('../../src/examples/basic-flows.contract.js').start;
+type StartFn = typeof contractExports.start;
 
-type TestContext = Awaited<ReturnType<typeof commonSetup>> & {
+type TestContext = EReturn<typeof commonSetup> & {
   zoe: ZoeService;
   instance: Instance<StartFn>;
-  brands: Awaited<ReturnType<typeof commonSetup>>['brands'] & {
+  brands: EReturn<typeof commonSetup>['brands'] & {
     moolah: AmountUtils;
   };
 };
@@ -41,7 +38,7 @@ test.beforeEach(async t => {
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
 
   t.log('contract coreEval', contractName);
-  const installation = await bundleAndInstall(contractFile);
+  const installation = await bundleAndInstall(contractExports);
 
   const storageNode = await E(storage.rootNode).makeChildNode(contractName);
   const { instance } = await E(zoe).startInstance(
@@ -214,7 +211,7 @@ test('Deposit, Withdraw errors - LocalOrchAccount', async t => {
     });
     await t.throwsAsync(vt.when(E(withdrawSeat).getOfferResult()), {
       message:
-        'One or more withdrawals failed ["[RangeError: -10 is negative]"]',
+        /^One or more withdrawals failed \["\[Error: cannot grab 10uist coins: spendable balance (0uist)? is smaller than 10uist: insufficient funds\]"\]$/,
     });
     const payouts = await E(withdrawSeat).getPayouts();
     t.deepEqual((await ist.issuer.getAmountOf(payouts.Stable)).value, 0n);

@@ -2,6 +2,10 @@ import { assert, Fail } from '@endo/errors';
 import { insistCapData } from './capdata.js';
 
 /**
+ * @import {VatDeliveryResult} from './types.js';
+ */
+
+/**
  * @typedef {{
  * methargs: import('./types.js').SwingSetCapData, // of [method, args]
  * result: string | undefined | null,
@@ -32,7 +36,7 @@ export function insistMessage(message) {
 
 /**
  * @param {unknown} vdo
- * @returns {asserts vdo is import('./types').VatDeliveryObject}
+ * @returns {asserts vdo is import('./types.js').VatDeliveryObject}
  */
 
 export function insistVatDeliveryObject(vdo) {
@@ -114,7 +118,7 @@ export function insistVatDeliveryResult(vdr) {
 
 /**
  * @param {unknown} vso
- * @returns {asserts vso is import('./types').VatSyscallObject}
+ * @returns {asserts vso is import('./types.js').VatSyscallObject}
  */
 
 export function insistVatSyscallObject(vso) {
@@ -194,7 +198,7 @@ export function insistVatSyscallObject(vso) {
 
 /**
  * @param {unknown} vsr
- * @returns {asserts vsr is import('./types').VatSyscallResult}
+ * @returns {asserts vsr is import('./types.js').VatSyscallResult}
  */
 
 export function insistVatSyscallResult(vsr) {

@@ -2,19 +2,21 @@
 
 /// <reference types="@agoric/store/exported.js" />
 
-import { X, q, Fail, annotateError } from '@endo/errors';
+import { q, Fail, annotateError, X } from '@endo/errors';
 import { isPromise } from '@endo/promise-kit';
-import { mustMatch, M, keyEQ } from '@agoric/store';
+import { mustMatch, M, keyEQ } from '@endo/patterns';
 import { AmountMath } from './amountMath.js';
 import { preparePaymentKind } from './payment.js';
 import { preparePurseKind } from './purse.js';
-
 import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
 
 /**
- * @import {Amount, AssetKind, DisplayInfo, PaymentLedger, Payment, Brand, RecoverySetsOption, Purse, Issuer, Mint} from './types.js'
- * @import {ShutdownWithFailure} from '@agoric/swingset-vat'
+ * @import {Key, Pattern} from '@endo/patterns';
+ * @import {Zone} from '@agoric/base-zone';
  * @import {TypedPattern} from '@agoric/internal';
+ * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
+ * @import {AmountStore} from './amountStore.js';
+ * @import {Amount, AssetKind, DisplayInfo, PaymentLedger, Payment, Brand, RecoverySetsOption, Purse, Issuer, Mint} from './types.js';
  */
 
 /**
@@ -74,7 +76,7 @@ const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
  * minting and transfer authority originates here.
  *
  * @template {AssetKind} K
- * @param {import('@agoric/zone').Zone} issuerZone
+ * @param {Zone} issuerZone
  * @param {string} name
  * @param {K} assetKind
  * @param {DisplayInfo<K>} displayInfo
@@ -239,7 +241,7 @@ export const preparePaymentLedger = (
   /**
    * Used by the purse code to implement purse.deposit
    *
-   * @param {import('./amountStore.js').AmountStore} balanceStore
+   * @param {AmountStore} balanceStore
    * @param {Payment} srcPayment
    * @param {Pattern} [optAmountShape]
    * @returns {Amount}
@@ -273,7 +275,7 @@ export const preparePaymentLedger = (
   /**
    * Used by the purse code to implement purse.withdraw
    *
-   * @param {import('./amountStore.js').AmountStore} balanceStore
+   * @param {AmountStore} balanceStore
    * @param {Amount} amount - the amount to be withdrawn
    * @param {SetStore<Payment>} [recoverySet]
    * @returns {Payment}

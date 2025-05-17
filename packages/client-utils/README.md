@@ -15,6 +15,14 @@ This package will be used in several kinds of clients:
 
 As such the modules cannot assume they're running in Node. There are some ambient authorities in common in the above environments (e.g. `setTimeout`) but a further constraint is that these modules will not export ambient authority. Instead they will provide interfaces that are ergonomic for creating empowered objects in the client context.
 
+### Layering
+
+1. HTTP (fetch)
+2. RPC (fetch + cosmic-proto)
+3. vstorage - layer at which protobuf is involved (vstorage.js)
+4. marshalling (vstorage-kit.js)
+5. agoricNames / board (smart-wallet-kit.js)
+
 ## Related packages
 
 ### cli

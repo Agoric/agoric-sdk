@@ -1,6 +1,10 @@
 import { Far } from '@endo/marshal';
 
 /**
+ * @import {ContractStartFn} from '../../../src/contractFacet/types.js';
+ */
+
+/**
  * This is a a broken contact to test zoe's error handling
  *
  * @type {ContractStartFn}

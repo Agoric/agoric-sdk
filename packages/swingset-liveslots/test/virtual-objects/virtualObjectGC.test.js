@@ -3,6 +3,7 @@ import test from 'ava';
 
 import { Far } from '@endo/marshal';
 import { krefOf, kser, kslot } from '@agoric/kmarshal';
+import { avaRetry } from '@agoric/internal/tools/avaRetry.js';
 import {
   setupTestLiveslots,
   findSyscallsByType,
@@ -437,10 +438,10 @@ async function voLifeCycleTest1(t, isf) {
   await dispatchMessageSuccessfully('dropHeld');
   assertState(v, vref, false, 'erv');
 }
-test.serial('VO lifecycle 1 unfaceted', async t => {
+avaRetry(test.serial, 'VO lifecycle 1 unfaceted', async t => {
   await voLifeCycleTest1(t, false);
 });
-test.serial('VO lifecycle 1 faceted', async t => {
+avaRetry(test.serial, 'VO lifecycle 1 faceted', async t => {
   await voLifeCycleTest1(t, true);
 });
 
@@ -519,10 +520,10 @@ async function voLifeCycleTest2(t, isf) {
   t.deepEqual(findSyscallsByType(v.log, 'retireExports'), []);
 }
 
-test.serial('VO lifecycle 2 unfaceted', async t => {
+avaRetry(test.serial, 'VO lifecycle 2 unfaceted', async t => {
   await voLifeCycleTest2(t, false);
 });
-test.serial('VO lifecycle 2 faceted', async t => {
+avaRetry(test.serial, 'VO lifecycle 2 faceted', async t => {
   await voLifeCycleTest2(t, true);
 });
 
@@ -567,10 +568,10 @@ async function voLifeCycleTest3(t, isf) {
   t.deepEqual(findSyscallsByType(v.log, 'dropExports'), []);
   t.deepEqual(findSyscallsByType(v.log, 'retireExports'), []);
 }
-test.serial('VO lifecycle 3 unfaceted', async t => {
+avaRetry(test.serial, 'VO lifecycle 3 unfaceted', async t => {
   await voLifeCycleTest3(t, false);
 });
-test.serial('VO lifecycle 3 faceted', async t => {
+avaRetry(test.serial, 'VO lifecycle 3 faceted', async t => {
   await voLifeCycleTest3(t, true);
 });
 
@@ -600,10 +601,10 @@ async function voLifeCycleTest4(t, isf) {
   const expected = { type: 'retireExports', slots: [vref] };
   t.deepEqual(findSyscallsByType(v.log, 'retireExports'), [expected]);
 }
-test.serial('VO lifecycle 4 unfaceted', async t => {
+avaRetry(test.serial, 'VO lifecycle 4 unfaceted', async t => {
   await voLifeCycleTest4(t, false);
 });
-test.serial('VO lifecycle 4 faceted', async t => {
+avaRetry(test.serial, 'VO lifecycle 4 faceted', async t => {
   await voLifeCycleTest4(t, true);
 });
 
@@ -640,10 +641,10 @@ async function voLifeCycleTest5(t, isf) {
   t.deepEqual(findSyscallsByType(v.log, 'dropExports'), []);
   t.deepEqual(findSyscallsByType(v.log, 'retireExports'), []);
 }
-test.serial('VO lifecycle 5 unfaceted', async t => {
+avaRetry(test.serial, 'VO lifecycle 5 unfaceted', async t => {
   await voLifeCycleTest5(t, false);
 });
-test.serial('VO lifecycle 5 faceted', async t => {
+avaRetry(test.serial, 'VO lifecycle 5 faceted', async t => {
   await voLifeCycleTest5(t, true);
 });
 
@@ -689,10 +690,10 @@ async function voLifeCycleTest6(t, isf) {
   const expected = { type: 'retireExports', slots: [vref] };
   t.deepEqual(findSyscallsByType(v.log, 'retireExports'), [expected]);
 }
-test.serial('VO lifecycle 6 unfaceted', async t => {
+avaRetry(test.serial, 'VO lifecycle 6 unfaceted', async t => {
   await voLifeCycleTest6(t, false);
 });
-test.serial('VO lifecycle 6 faceted', async t => {
+avaRetry(test.serial, 'VO lifecycle 6 faceted', async t => {
   await voLifeCycleTest6(t, true);
 });
 
@@ -730,10 +731,10 @@ async function voLifeCycleTest7(t, isf) {
   const expected = { type: 'retireExports', slots: [vref] };
   t.deepEqual(findSyscallsByType(v.log, 'retireExports'), [expected]);
 }
-test.serial('VO lifecycle 7 unfaceted', async t => {
+avaRetry(test.serial, 'VO lifecycle 7 unfaceted', async t => {
   await voLifeCycleTest7(t, false);
 });
-test.serial('VO lifecycle 7 faceted', async t => {
+avaRetry(test.serial, 'VO lifecycle 7 faceted', async t => {
   await voLifeCycleTest7(t, true);
 });
 
@@ -779,15 +780,15 @@ async function voLifeCycleTest8(t, isf) {
   const expected = { type: 'retireExports', slots: [vref] };
   t.deepEqual(findSyscallsByType(v.log, 'retireExports'), [expected]);
 }
-test.serial('VO lifecycle 8 unfaceted', async t => {
+avaRetry(test.serial, 'VO lifecycle 8 unfaceted', async t => {
   await voLifeCycleTest8(t, false);
 });
-test.serial('VO lifecycle 8 faceted', async t => {
+avaRetry(test.serial, 'VO lifecycle 8 faceted', async t => {
   await voLifeCycleTest8(t, true);
 });
 
 // multifacet export test 1: no export
-test.serial('VO multifacet export 1', async t => {
+avaRetry(test.serial, 'VO multifacet export 1', async t => {
   const { v, dispatchMessageSuccessfully } = await setupTestLiveslots(
     t,
     buildRootObject,
@@ -808,7 +809,7 @@ test.serial('VO multifacet export 1', async t => {
 });
 
 // multifacet export test 2a: export A, drop A, retire A
-test.serial('VO multifacet export 2a', async t => {
+avaRetry(test.serial, 'VO multifacet export 2a', async t => {
   const { v, dispatchMessageSuccessfully, dispatchDropExports } =
     await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const vref = facetRef(true, thingVref(true, 2), '0');
@@ -836,7 +837,7 @@ test.serial('VO multifacet export 2a', async t => {
 });
 
 // multifacet export test 2b: export B, drop B, retire B
-test.serial('VO multifacet export 2b', async t => {
+avaRetry(test.serial, 'VO multifacet export 2b', async t => {
   const { v, dispatchMessageSuccessfully, dispatchDropExports } =
     await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const vref = facetRef(true, thingVref(true, 2), '1');
@@ -863,7 +864,7 @@ test.serial('VO multifacet export 2b', async t => {
 });
 
 // multifacet export test 3abba: export A, export B, drop B, drop A, retire
-test.serial('VO multifacet export 3abba', async t => {
+avaRetry(test.serial, 'VO multifacet export 3abba', async t => {
   const { v, dispatchMessageSuccessfully, dispatchDropExports } =
     await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const vrefA = facetRef(true, thingVref(true, 2), '0');
@@ -901,7 +902,7 @@ test.serial('VO multifacet export 3abba', async t => {
 });
 
 // multifacet export test 3abab: export A, export B, drop A, drop B, retire
-test.serial('VO multifacet export 3abab', async t => {
+avaRetry(test.serial, 'VO multifacet export 3abab', async t => {
   const { v, dispatchMessageSuccessfully, dispatchDropExports } =
     await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const vrefA = facetRef(true, thingVref(true, 2), '0');
@@ -938,7 +939,7 @@ test.serial('VO multifacet export 3abab', async t => {
   t.deepEqual(findSyscallsByType(v.log, 'retireExports'), [expected]);
 });
 
-test.serial('VO multifacet markers only', async t => {
+avaRetry(test.serial, 'VO multifacet markers only', async t => {
   const { v, dispatchMessageSuccessfully } = await setupTestLiveslots(
     t,
     buildRootObject,
@@ -993,10 +994,10 @@ async function voRefcountManagementTest1(t, isf) {
   t.is(fakestore.get(`vom.rc.${baseRef}`), undefined);
   assertState(v, vref, false, 'erv');
 }
-test.serial('VO refcount management 1 unfaceted', async t => {
+avaRetry(test.serial, 'VO refcount management 1 unfaceted', async t => {
   await voRefcountManagementTest1(t, false);
 });
-test.serial('VO refcount management 1 faceted', async t => {
+avaRetry(test.serial, 'VO refcount management 1 faceted', async t => {
   await voRefcountManagementTest1(t, true);
 });
 
@@ -1034,10 +1035,10 @@ async function voRefcountManagementTest2(t, isf) {
   t.is(fakestore.get(`vom.rc.${baseRef}`), undefined);
   assertState(v, vref, false, 'erv');
 }
-test.serial('VO refcount management 2 unfaceted', async t => {
+avaRetry(test.serial, 'VO refcount management 2 unfaceted', async t => {
   await voRefcountManagementTest2(t, false);
 });
-test.serial('VO refcount management 2 faceted', async t => {
+avaRetry(test.serial, 'VO refcount management 2 faceted', async t => {
   await voRefcountManagementTest2(t, true);
 });
 
@@ -1084,15 +1085,15 @@ async function voRefcountManagementTest3(t, isf) {
   t.is(fakestore.get(`vom.${holderVrefs[1]}`), undefined);
   t.is(fakestore.get(`vom.${holderVrefs[2]}`), undefined);
 }
-test.serial('VO refcount management 3 unfaceted', async t => {
+avaRetry(test.serial, 'VO refcount management 3 unfaceted', async t => {
   await voRefcountManagementTest3(t, false);
 });
-test.serial('VO refcount management 3 faceted', async t => {
+avaRetry(test.serial, 'VO refcount management 3 faceted', async t => {
   await voRefcountManagementTest3(t, true);
 });
 
 // prettier-ignore
-test.serial('presence refcount management 1', async t => {
+avaRetry(test.serial, 'presence refcount management 1', async t => {
   const { v, dispatchMessageSuccessfully } = await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const { fakestore } = v;
 
@@ -1131,7 +1132,7 @@ test.serial('presence refcount management 1', async t => {
 });
 
 // prettier-ignore
-test.serial('presence refcount management 2', async t => {
+avaRetry(test.serial, 'presence refcount management 2', async t => {
   const { v, dispatchMessageSuccessfully } = await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const { fakestore } = v;
 
@@ -1169,7 +1170,7 @@ test.serial('presence refcount management 2', async t => {
 });
 
 // prettier-ignore
-test.serial('remotable refcount management 1', async t => {
+avaRetry(test.serial, 'remotable refcount management 1', async t => {
   const { v, dispatchMessageSuccessfully } = await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const { fakestore } = v;
 
@@ -1212,7 +1213,7 @@ test.serial('remotable refcount management 1', async t => {
 });
 
 // prettier-ignore
-test.serial('remotable refcount management 2', async t => {
+avaRetry(test.serial, 'remotable refcount management 2', async t => {
   const { v, dispatchMessageSuccessfully } = await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const { fakestore } = v;
 
@@ -1255,15 +1256,15 @@ async function voWeakKeyGCTest(t, isf) {
   t.is(testHooks.countWeakKeysForCollection(aWeakSet), 0);
   t.is(fakestore.get(`vom.${baseRef}`), undefined);
 }
-test.serial('verify VO weak key GC unfaceted', async t => {
+avaRetry(test.serial, 'verify VO weak key GC unfaceted', async t => {
   await voWeakKeyGCTest(t, false);
 });
-test.serial('verify VO weak key GC faceted', async t => {
+avaRetry(test.serial, 'verify VO weak key GC faceted', async t => {
   await voWeakKeyGCTest(t, true);
 });
 
 // prettier-ignore
-test.serial('verify presence weak key GC', async t => {
+avaRetry(test.serial, 'verify presence weak key GC', async t => {
   const { v, dispatchMessageSuccessfully, dispatchRetireImports, testHooks } =
         await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const vref = 'o-5';
@@ -1314,7 +1315,7 @@ test.serial('verify presence weak key GC', async t => {
 // designate references to a non-VO.
 
 // prettier-ignore
-test.serial('VO holding non-VO', async t => {
+avaRetry(test.serial, 'VO holding non-VO', async t => {
   const { v, dispatchMessageSuccessfully, dispatchDropExports, dispatchRetireExports } =
         await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const { fakestore } = v;

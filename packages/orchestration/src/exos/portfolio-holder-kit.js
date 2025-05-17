@@ -12,6 +12,7 @@ const { fromEntries } = Object;
  * @import {MapStore} from '@agoric/store';
  * @import {VowTools} from '@agoric/vow';
  * @import {ResolvedPublicTopic} from '@agoric/zoe/src/contractSupport/topics.js';
+ * @import {Invitation, ZCF} from '@agoric/zoe';
  * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationAccount, OrchestrationAccountCommon, MakeCombineInvitationMakers} from '@agoric/orchestration';
  */

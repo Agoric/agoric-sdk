@@ -12,8 +12,8 @@ import { matchAmount, matchIter, matchRef } from '../../tools/supports.js';
 import type { buildRootObject as buildTestMintVat } from './vat-mint.js';
 
 const bfile = name => new URL(name, import.meta.url).pathname;
-const importSpec = spec =>
-  importMetaResolve(spec, import.meta.url).then(u => new URL(u).pathname);
+const importSpec = async spec =>
+  new URL(importMetaResolve(spec, import.meta.url)).pathname;
 
 const makeCallOutbound = t => (srcID, obj) => {
   t.log(`callOutbound(${srcID}, ${obj})`);
@@ -49,6 +49,7 @@ const makeScenario = async (
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
 
+  await c.run();
   const runUtils = makeRunUtils(c);
   return runUtils;
 };

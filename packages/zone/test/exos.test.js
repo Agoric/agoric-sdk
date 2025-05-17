@@ -1,3 +1,4 @@
+import { M } from '@endo/patterns';
 import {
   annihilate,
   getBaggage,
@@ -122,4 +123,81 @@ test.serial('vatData migrate to durableZone', t => {
   nextLife();
   const baggage2 = getBaggage();
   testSecondZoneIncarnation(t, makeDurableZone(baggage2));
+});
+
+test.serial('exoClass stateShape expansion', t => {
+  annihilate();
+
+  // See ../../swingset-liveslots/test/virtual-objects/state-shape.test.js
+  const stateShapeMismatch = { message: /stateShape mismatch/ };
+  const HolderI = M.interface('Holder', {
+    get: M.call().rest(M.arrayOf(M.string())).returns(M.record()),
+    set: M.call(M.record()).returns(),
+  });
+  const initHolder = fields => ({ ...fields });
+  const holderMethods = {
+    get(...fields) {
+      const { state } = this;
+      // We require fields to be explicit because they are currently defined on
+      // the state *prototype*.
+      return Object.fromEntries(
+        fields.flatMap(key => (key in state ? [[key, state[key]]] : [])),
+      );
+    },
+    set(fields) {
+      Object.assign(this.state, fields);
+    },
+  };
+  const prepareHolder = (zone, stateShape) =>
+    zone.exoClass('Holder', HolderI, initHolder, holderMethods, { stateShape });
+
+  const fields = ['foo', 'bar', 'baz']; // but "baz" is not initially present
+  const baggage1 = getBaggage();
+  const zone1 = makeDurableZone(baggage1);
+  const makeHolder1 = prepareHolder(zone1, {
+    foo: M.number(),
+    bar: M.number(),
+  });
+  const holder1 = makeHolder1({ foo: 0, bar: 1 });
+  t.deepEqual(holder1.get(...fields), { foo: 0, bar: 1 });
+  holder1.set({ foo: 2, bar: 2 });
+  t.deepEqual(holder1.get(...fields), { foo: 2, bar: 2 });
+  t.throws(() => makeHolder1({ foo: 0, bar: 1, baz: 2 }));
+  t.throws(() => makeHolder1({ foo: 0, bar: 'string' }));
+
+  nextLife();
+  t.throws(
+    () =>
+      prepareHolder(makeDurableZone(getBaggage()), {
+        foo: M.string(),
+        bar: M.number(),
+      }),
+    stateShapeMismatch,
+    'backwards-incompatible stateShape change',
+  );
+
+  nextLife();
+  t.throws(
+    () =>
+      prepareHolder(makeDurableZone(getBaggage()), {
+        foo: M.or(M.number(), M.string()),
+        bar: M.number(),
+        baz: M.or(undefined, M.number()),
+      }),
+    stateShapeMismatch,
+    'stateShape field value expansion (needs #7407)',
+  );
+
+  nextLife();
+  const baggage2 = getBaggage();
+  const zone2 = makeDurableZone(baggage2);
+  const makeHolder2 = prepareHolder(zone2, {
+    foo: M.number(),
+    bar: M.number(),
+    baz: M.or(undefined, M.number()),
+  });
+  const holder2 = makeHolder2({ foo: 0, bar: 1, baz: 2 });
+  t.deepEqual(holder2.get(...fields), { foo: 0, bar: 1, baz: 2 });
+  holder2.set({ foo: 2, bar: 2, baz: undefined });
+  t.deepEqual(holder2.get(...fields), { foo: 2, bar: 2, baz: undefined });
 });

@@ -9,7 +9,7 @@ import { makeUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 import { kser, kslot, makeError } from '@agoric/kmarshal';
 import { assertKnownOptions } from '../lib/assertOptions.js';
 import { foreverPolicy } from '../lib/runPolicies.js';
-import { makeVatManagerFactory } from './vat-loader/manager-factory.js';
+import { makeVatManagerMaker } from './vat-loader/manager-factory.js';
 import { makeVatWarehouse } from './vat-warehouse.js';
 import makeDeviceManager from './deviceManager.js';
 import makeKernelKeeper, {
@@ -99,6 +99,7 @@ export default function buildKernel(
     startSubprocessWorkerNode,
     startXSnap,
     writeSlogObject,
+    slogDuration,
     WeakRef,
     FinalizationRegistry,
     gcAndFinalize,
@@ -110,13 +111,13 @@ export default function buildKernel(
     warehousePolicy,
     overrideVatManagerOptions = {},
   } = kernelRuntimeOptions;
-  const logStartup = verbose ? console.debug : () => 0;
+  const logStartup = verbose ? console.debug : () => {};
+  if (verbose) kdebugEnable(true);
 
   const vatAdminRootKref = kernelStorage.kvStore.get('vatAdminRootKref');
 
-  /** @type { KernelSlog } */
   const kernelSlog = writeSlogObject
-    ? makeSlogger(slogCallbacks, writeSlogObject)
+    ? makeSlogger(slogCallbacks, writeSlogObject, slogDuration)
     : makeDummySlogger(slogCallbacks, makeConsole('disabled slogger'));
 
   const kernelKeeper = makeKernelKeeper(
@@ -167,10 +168,9 @@ export default function buildKernel(
   harden(testLog);
 
   function makeSourcedConsole(vatID) {
-    const origConsole = makeConsole(args => {
-      const source = args.shift();
-      return `${debugPrefix}SwingSet:${source}:${vatID}`;
-    });
+    const origConsole = makeConsole(
+      source => `${debugPrefix}SwingSet:${source}:${vatID}`,
+    );
     return kernelSlog.vatConsole(vatID, origConsole);
   }
 
@@ -561,6 +561,10 @@ export default function buildKernel(
    */
   async function processSend(vatID, target, msg) {
     insistMessage(msg);
+    // DEPRECATED: These counts are available as "crank-start"/"crank-finish"
+    // slog entries with crankType "delivery" (the latter count filtered on
+    // messageType "send") and "deliver"/"deliver-result" slog entries (the
+    // latter count filtered on dispatch "message").
     kernelKeeper.incStat('dispatches');
     kernelKeeper.incStat('dispatchDeliver');
 
@@ -591,6 +595,8 @@ export default function buildKernel(
     const { vatID, kpid } = message;
     insistVatID(vatID);
     insistKernelType('promise', kpid);
+    // DEPRECATED: This count is available as "crank-start"/"crank-finish"
+    // slog entries with crankType "delivery".
     kernelKeeper.incStat('dispatches');
     const vatInfo = vatWarehouse.lookup(vatID);
     if (!vatInfo) {
@@ -600,6 +606,8 @@ export default function buildKernel(
     const { meterID } = vatInfo;
 
     const p = kernelKeeper.getKernelPromise(kpid);
+    // DEPRECATED: This count is available as "deliver"/"deliver-result" slog
+    // entries with dispatch "notify".
     kernelKeeper.incStat('dispatchNotify');
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     if (p.state === 'unresolved') {
@@ -1344,14 +1352,15 @@ export default function buildKernel(
    * @returns {Promise<PolicyInput>}
    */
   async function processDeliveryMessage(message) {
+    const messageType = message.type;
     kdebug('');
     // prettier-ignore
     kdebug(`processQ crank ${kernelKeeper.getCrankNumber()} ${JSON.stringify(message)}`);
     kdebug(legibilizeMessage(message));
-    kernelSlog.write({
-      type: 'crank-start',
+    const finish = kernelSlog.startDuration(['crank-start', 'crank-finish'], {
       crankType: 'delivery',
       crankNum: kernelKeeper.getCrankNumber(),
+      messageType,
       message,
     });
     /** @type { PolicyInput } */
@@ -1453,12 +1462,8 @@ export default function buildKernel(
     const crankNum = kernelKeeper.getCrankNumber();
     kernelKeeper.incrementCrankNumber();
     const { crankhash, activityhash } = kernelKeeper.emitCrankHashes();
-    // kernelSlog.write({
-    //   type: 'kernel-stats',
-    //   stats: kernelKeeper.getStats(),
-    // });
-    kernelSlog.write({
-      type: 'crank-finish',
+    finish({
+      message: undefined,
       crankNum,
       crankhash,
       activityhash,
@@ -1496,14 +1501,15 @@ export default function buildKernel(
    * @returns {Promise<PolicyInput>}
    */
   async function processAcceptanceMessage(message) {
+    const messageType = message.type;
     kdebug('');
     // prettier-ignore
-    kdebug(`processAcceptanceQ crank ${kernelKeeper.getCrankNumber()} ${message.type}`);
+    kdebug(`processAcceptanceQ crank ${kernelKeeper.getCrankNumber()} ${messageType}`);
     // kdebug(legibilizeMessage(message));
-    kernelSlog.write({
-      type: 'crank-start',
+    const finish = kernelSlog.startDuration(['crank-start', 'crank-finish'], {
       crankType: 'routing',
       crankNum: kernelKeeper.getCrankNumber(),
+      messageType,
       message,
     });
     /** @type { PolicyInput } */
@@ -1540,8 +1546,8 @@ export default function buildKernel(
     const crankNum = kernelKeeper.getCrankNumber();
     kernelKeeper.incrementCrankNumber();
     const { crankhash, activityhash } = kernelKeeper.emitCrankHashes();
-    kernelSlog.write({
-      type: 'crank-finish',
+    finish({
+      message: undefined,
       crankNum,
       crankhash,
       activityhash,
@@ -1557,7 +1563,7 @@ export default function buildKernel(
     gcAndFinalize,
     meterControl: makeDummyMeterControl(),
   });
-  const vatManagerFactory = makeVatManagerFactory({
+  const makeVatManager = makeVatManagerMaker({
     allVatPowers,
     kernelKeeper,
     vatEndowments,
@@ -1652,7 +1658,7 @@ export default function buildKernel(
   }
 
   const vatLoader = makeVatLoader({
-    vatManagerFactory,
+    makeVatManager,
     kernelSlog,
     makeSourcedConsole,
     kernelKeeper,
@@ -1940,13 +1946,61 @@ export default function buildKernel(
     }
   }
 
-  function reapAllVats() {
+  /** @returns {Generator<VatID>} */
+  function* getAllVatIds() {
     for (const [_, vatID] of kernelKeeper.getStaticVats()) {
-      kernelKeeper.scheduleReap(vatID);
+      yield vatID;
     }
     for (const vatID of kernelKeeper.getDynamicVats()) {
-      kernelKeeper.scheduleReap(vatID);
+      yield vatID;
     }
+  }
+
+  function* getAllVatPosEntries() {
+    for (const vatID of getAllVatIds()) {
+      const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+      yield /** @type {const} */ ([
+        vatID,
+        vatKeeper.getTranscriptEndPosition(),
+      ]);
+    }
+  }
+
+  function reapAllVats(previousVatPos = {}) {
+    /** @type {Record<string, number>} */
+    const currentVatPos = {};
+
+    for (const [vatID, endPos] of getAllVatPosEntries()) {
+      const vatUsesTranscript = endPos !== 0;
+      if (!vatUsesTranscript) {
+        // The comms vat is a little special. It doesn't use a transcript,
+        // doesn't implement BOYD, and is created with a never reap threshold.
+        //
+        // Here we conflate a vat that doesn't use a transcript with a vat
+        // that cannot reap. We do not bother checking the vat options because
+        // in tests we would actually like to force reap normal vats that may
+        // have been configured with a never threshold.
+        continue;
+      } else if ((previousVatPos[vatID] ?? 0) < endPos) {
+        kernelKeeper.scheduleReap(vatID);
+        // We just added one delivery
+        currentVatPos[vatID] = endPos + 1;
+      } else {
+        currentVatPos[vatID] = endPos;
+      }
+    }
+
+    return harden(currentVatPos);
+  }
+
+  async function snapshotAllVats() {
+    const snapshottedVats = [];
+    await null;
+    for (const vatID of getAllVatIds()) {
+      const snapshotted = await vatWarehouse.maybeSaveSnapshot(vatID, 2);
+      if (snapshotted) snapshottedVats.push(vatID);
+    }
+    return harden(snapshottedVats);
   }
 
   async function step() {
@@ -2153,6 +2207,7 @@ export default function buildKernel(
     run,
     shutdown,
     reapAllVats,
+    snapshotAllVats,
     changeKernelOptions,
 
     // the rest are for testing and debugging
@@ -2163,6 +2218,11 @@ export default function buildKernel(
       ephemeral.log.push(`${str}`);
     },
 
+    /**
+     * Return a fresh stats snapshot.
+     *
+     * @returns {Record<string, number>}
+     */
     getStats() {
       return kernelKeeper.getStats();
     },

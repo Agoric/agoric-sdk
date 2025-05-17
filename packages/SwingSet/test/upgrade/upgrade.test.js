@@ -79,7 +79,7 @@ const makeConfigFromPaths = (bootstrapVatPath, options = {}) => {
  * Refcount incrementing should be manual,
  * see https://github.com/Agoric/agoric-sdk/issues/7213
  * @returns {Promise<{
- *   controller: Awaited<ReturnType<typeof makeSwingsetController>>,
+ *   controller: EReturn<typeof makeSwingsetController>,
  *   kvStore: KVStore,
  *   messageToVat: (vatName: string, method: string, ...args: unknown[]) => Promise<unknown>,
  *   messageToVatAndRetain: (vatName: string, method: string, ...args: unknown[]) => Promise<unknown>,

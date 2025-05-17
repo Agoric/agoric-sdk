@@ -1,33 +1,30 @@
-/* eslint-disable jsdoc/require-param */
-import { Fail } from '@endo/errors';
-import { NonNullish } from '@agoric/internal';
+import { type Amount } from '@agoric/ertp';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { SECONDS_PER_MINUTE } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
-import {
-  slotToBoardRemote,
-  unmarshalFromVstorage,
-} from '@agoric/internal/src/marshal.js';
+import { oracleBrandFeedName } from '@agoric/inter-protocol/src/proposals/utils.js';
+import { NonNullish } from '@agoric/internal';
+import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import {
   type FakeStorageKit,
   slotToRemotable,
 } from '@agoric/internal/src/storage-test-utils.js';
-import { oracleBrandFeedName } from '@agoric/inter-protocol/src/proposals/utils.js';
+import { Fail } from '@endo/errors';
 
-import {
-  type AgoricNamesRemotes,
-  boardSlottingMarshaller,
-} from '@agoric/vats/tools/board-utils.js';
+import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import type {
   CurrentWalletRecord,
   SmartWallet,
   UpdateRecord,
 } from '@agoric/smart-wallet/src/smartWallet.js';
-import type { WalletFactoryStartResult } from '@agoric/vats/src/core/startWalletFactory.js';
-import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
-import type { TimerService } from '@agoric/time';
 import type { OfferMaker } from '@agoric/smart-wallet/src/types.js';
 import type { RunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
-import { makeMarshal } from '@endo/marshal';
+import type { TimerService } from '@agoric/time';
+import type { WalletFactoryStartResult } from '@agoric/vats/src/core/startWalletFactory.js';
+import {
+  type AgoricNamesRemotes,
+  boardSlottingMarshaller,
+} from '@agoric/vats/tools/board-utils.js';
+import type { InvitationDetails } from '@agoric/zoe';
 import type { SwingsetTestKit } from './supports.js';
 
 // XXX SwingsetTestKit would simplify this
@@ -221,8 +218,6 @@ export const makeGovernanceDriver = async (
   const charterMembershipId = 'charterMembership';
   const committeeMembershipId = 'committeeMembership';
 
-  const { fromCapData } = makeMarshal(undefined, slotToBoardRemote);
-
   const chainTimerService: ERef<TimerService> =
     await EV.vat('bootstrap').consumeItem('chainTimerService');
 
@@ -311,8 +306,8 @@ export const makeGovernanceDriver = async (
         .getCurrentWalletRecord()
         // TODO: manage brands by object identity #10167
         .purses.find(p => p.brand.toString().includes('Invitation'));
-      // @ts-expect-error
-      const invitation = purse?.balance.value.find(
+      const invBalance = purse?.balance as Amount<'set', InvitationDetails>;
+      const invitation = invBalance.value.find(
         v => v.description === 'oracle invitation',
       );
       return invitation;

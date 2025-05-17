@@ -1,38 +1,30 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import {
-  eventLoopIteration,
-  inspectMapStore,
-} from '@agoric/internal/src/testing-utils.js';
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E } from '@endo/far';
-import path from 'path';
-import {
   MsgTransfer,
   MsgTransferResponse,
 } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import { inspectMapStore } from '@agoric/internal/src/testing-utils.js';
 import type { IBCMethod } from '@agoric/vats';
 import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
-import { protoMsgMocks, UNBOND_PERIOD_SECONDS } from '../ibc-mocks.js';
-import { commonSetup } from '../supports.js';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
+import { E } from '@endo/far';
+import * as contractExports from '../../src/examples/staking-combinations.contract.js';
 import {
   buildMsgResponseString,
-  buildVTransferEvent,
   parseOutgoingTxPacket,
 } from '../../tools/ibc-mocks.js';
+import { protoMsgMocks, UNBOND_PERIOD_SECONDS } from '../ibc-mocks.js';
+import { commonSetup } from '../supports.js';
 
-const dirname = path.dirname(new URL(import.meta.url).pathname);
-
-const contractFile = `${dirname}/../../src/examples/staking-combinations.contract.js`;
-type StartFn =
-  typeof import('@agoric/orchestration/src/examples/staking-combinations.contract.js').start;
+type StartFn = typeof contractExports.start;
 
 test('start', async t => {
   const {
     bootstrap: { timer, vowTools: vt },
     brands: { bld },
-    mocks: { ibcBridge, transferBridge },
-    utils: { inspectDibcBridge, pourPayment },
+    mocks: { ibcBridge },
+    utils: { inspectDibcBridge, pourPayment, transmitVTransferEvent },
     commonPrivateArgs,
   } = await commonSetup(t);
 
@@ -43,7 +35,7 @@ test('start', async t => {
     },
   });
   const installation: Installation<StartFn> =
-    await bundleAndInstall(contractFile);
+    await bundleAndInstall(contractExports);
 
   const { publicFacet, creatorFacet } = await E(zoe).startInstance(
     installation,
@@ -120,19 +112,8 @@ test('start', async t => {
     },
   );
 
-  // wait for targetApp to exist
-  await eventLoopIteration();
   // similar transfer ack
-  await E(transferBridge).fromBridge(
-    buildVTransferEvent({
-      receiver: 'cosmos1test',
-      sender: 'agoric1fakeLCAAddress',
-      amount: 100n,
-      denom: 'ubld',
-      sourceChannel: 'channel-5',
-      sequence: 1n,
-    }),
-  );
+  await transmitVTransferEvent('acknowledgementPacket');
 
   const depositAndDelegateResult = await vt.when(
     E(depositAndDelegateUserSeat).getOfferResult(),
@@ -228,9 +209,13 @@ test('start', async t => {
         },
       },
     );
+
+    // simulate a timeout of the outgoing ibc transfer packet
+    await transmitVTransferEvent('timeoutPacket');
+
     await t.throwsAsync(vt.when(E(seat).getOfferResult()), {
       message:
-        'ibc transfer failed "[Error: simulated unexpected MsgTransfer packet timeout]"',
+        'ibc transfer failed "[Error: transfer operation received timeout packet]"',
     });
     await vt.when(E(seat).hasExited());
     const payouts = await E(seat).getPayouts();

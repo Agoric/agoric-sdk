@@ -1,6 +1,6 @@
-import { Fail, q } from '@endo/errors';
-import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined } from '@agoric/internal';
+import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
 import {
   makeNotifierKit,
   makeStoredPublishKit,
@@ -8,32 +8,33 @@ import {
 } from '@agoric/notifier';
 import { makeLegacyMap } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
+import { Fail, q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
 
-import {
-  calculateMedian,
-  makeOnewayPriceAuthorityKit,
-} from '../contractSupport/index.js';
 import {
   addRatios,
   assertParsableNumber,
+  calculateMedian,
   ceilDivideBy,
   floorMultiplyBy,
+  makeOnewayPriceAuthorityKit,
+  makePriceQuoteIssuer,
   makeRatio,
   makeRatioFromAmounts,
   multiplyRatios,
   parseRatio,
   ratioGTE,
   ratiosSame,
-} from '../contractSupport/ratio.js';
+} from '../contractSupport/index.js';
 
 /**
  * @import {LegacyMap} from '@agoric/store'
  * @import {ContractOf} from '../zoeService/utils.js';
  * @import {PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {Invitation, ZCF, ZCFSeat} from '@agoric/zoe';
  */
+
 /** @typedef {bigint | number | string} ParsableNumber */
 /**
  * @typedef {Readonly<ParsableNumber | { data: ParsableNumber }>} OraclePriceSubmission
@@ -82,7 +83,7 @@ const start = async (zcf, privateArgs) => {
   const quoteMint =
     privateArgs.quoteMint ||
     // makeIssuerKit fails upgrade, this contract is for demo only
-    makeIssuerKit('quote', AssetKind.SET).mint;
+    makePriceQuoteIssuer().mint;
   const quoteIssuerRecord = await zcf.saveIssuer(
     E(quoteMint).getIssuer(),
     'Quote',
@@ -587,8 +588,10 @@ const start = async (zcf, privateArgs) => {
 
       // Obtain the oracle's publicFacet.
       assert(oracleInstance);
-      /** @type {import('./oracle.js').OracleContract['publicFacet']} */
-      const oracle = await E(zoe).getPublicFacet(oracleInstance);
+      const oracle =
+        /** @type {import('./oracle.js').OracleContract['publicFacet']} */ (
+          await E(zoe).getPublicFacet(oracleInstance)
+        );
       assert(records.has(record), 'Oracle record is already deleted');
 
       /** @type {import('@agoric/time').Timestamp} */

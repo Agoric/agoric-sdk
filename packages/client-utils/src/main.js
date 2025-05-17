@@ -8,4 +8,4 @@ export * from './vstorage-kit.js';
 export * from './wallet-utils.js';
 
 // eslint-disable-next-line import/export -- just types
-export * from './types.js';
+export * from './types-index.js';

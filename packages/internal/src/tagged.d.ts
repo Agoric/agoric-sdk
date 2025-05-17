@@ -1,4 +1,7 @@
-/** @file adapted from https://raw.githubusercontent.com/sindresorhus/type-fest/main/source/opaque.d.ts */
+/** @file adapted from https://raw.githubusercontent.com/sindresorhus/type-fest/main/source/tagged.d.ts */
+
+// different name to avoid confusion with pass-style "tagged"
+export { Tagged as TypeTag };
 
 declare const tag: unique symbol;
 

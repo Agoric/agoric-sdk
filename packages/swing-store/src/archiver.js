@@ -1,4 +1,5 @@
 import { finished as streamFinishedCallback, Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import { promisify } from 'node:util';
 import { createGzip } from 'node:zlib';
 import { withDeferredCleanup } from '@agoric/internal';
@@ -66,14 +67,11 @@ export const makeArchiveTranscript = (dirPath, powers) => {
         detachDescriptor: true,
       });
       addCleanup(() => removeCallback());
-      const writer = fs.createWriteStream('', { fd, flush: true });
-      const gzip = createGzip();
-      gzip.pipe(writer);
-      const reader = Readable.from(entries);
-      const destroyReader = promisify(reader.destroy.bind(reader));
-      addCleanup(() => destroyReader(null));
-      reader.pipe(gzip);
-      await streamFinished(gzip);
+      await pipeline(
+        entries,
+        createGzip(),
+        fs.createWriteStream('', { fd, flush: true }),
+      );
       fs.renameSync(tmpName, destPath);
     });
   };

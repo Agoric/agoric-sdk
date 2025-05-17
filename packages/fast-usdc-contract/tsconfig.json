@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "checkJs": false, // This package has only .ts source files so avoid checking imported .js files
+    "module": "NodeNext",
+    "moduleResolution": "nodenext",// Can override "bundler" because this package isn't published
+  },
+  "include": [
+    "scripts",
+    "src",
+    "test"
+  ],
+}

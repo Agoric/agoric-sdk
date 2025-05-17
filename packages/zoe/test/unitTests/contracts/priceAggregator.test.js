@@ -15,20 +15,20 @@ import { makeFakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
-import { makeZoeForTest } from '../../../tools/setup-zoe.js';
-import buildManualTimer from '../../../tools/manualTimer.js';
-import { start } from '../../../src/contracts/priceAggregator.js';
-
 import {
   addRatios,
   makeRatio,
   multiplyBy,
   multiplyRatios,
   parseRatio,
-} from '../../../src/contractSupport/ratio.js';
+} from '@agoric/ertp/src/ratio.js';
+import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
+import { makeZoeForTest } from '../../../tools/setup-zoe.js';
+import buildManualTimer from '../../../tools/manualTimer.js';
+import { start } from '../../../src/contracts/priceAggregator.js';
 
 /**
+ * @import {FeeIssuerConfig, ZoeService} from '@agoric/zoe';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  * @import {ZoeManualTimer} from '../../../tools/manualTimer.js';
  */

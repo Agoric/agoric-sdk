@@ -2,7 +2,7 @@
 
 import test from 'ava';
 
-import { GOV1ADDR, GOV2ADDR } from '@agoric/synthetic-chain';
+import { bankSend, GOV1ADDR, GOV2ADDR } from '@agoric/synthetic-chain';
 import {
   makeGovernanceDriver,
   runCommitteeElectionParamChange,
@@ -17,11 +17,35 @@ const governanceAddresses = [GOV4ADDR, GOV2ADDR, GOV1ADDR];
 const { getLastUpdate, readLatestHead } = agdWalletUtils;
 const governanceDriver = await makeGovernanceDriver(fetch, networkConfig);
 
+/**
+ * @typedef {{
+ *   current: { ChargingPeriod: Amount },
+ *  }} ChargingPeriodRecord
+ */
+
+test.before(async t => {
+  t.log('funding economic committee transactions');
+  await null;
+  for (const address of governanceAddresses) {
+    await bankSend(address, `${BigInt(100e6)}ubld`);
+  }
+});
+
 test.serial(
   'economic committee can make governance proposal and vote on it',
   async t => {
+    /** @type {ChargingPeriodRecord} */
+    // @ts-expect-error cast
+    const vaultFactoryParamsBefore = await readLatestHead(
+      'published.vaultFactory.governance',
+    );
+    const newChargingPeriod =
+      vaultFactoryParamsBefore.current.ChargingPeriod.value === 400n
+        ? 300n
+        : 400n;
+
     const params = {
-      ChargingPeriod: 400n,
+      ChargingPeriod: newChargingPeriod,
     };
     const instanceName = 'VaultFactory';
 
@@ -30,6 +54,43 @@ test.serial(
       governanceDriver,
       { instanceName, duration: 30, governanceAddresses, params },
       { getLastUpdate },
+    );
+
+    const questionUpdate = await getLastUpdate(governanceAddresses[0]);
+    t.log(questionUpdate);
+    t.like(questionUpdate, {
+      status: { numWantsSatisfied: 1 },
+    });
+
+    t.log('Voting on param change');
+    for (const address of governanceAddresses) {
+      const committeeInvitationForVoter =
+        await governanceDriver.getCommitteeInvitation(address);
+
+      await governanceDriver.voteOnProposedChanges(
+        address,
+        committeeInvitationForVoter[0],
+      );
+
+      const voteUpdate = await getLastUpdate(address);
+      t.log(`${address} voted`);
+      t.like(voteUpdate, {
+        status: { numWantsSatisfied: 1 },
+      });
+    }
+
+    await governanceDriver.waitForElection();
+
+    /** @type {ChargingPeriodRecord} */
+    // @ts-expect-error cast
+    const vaultFactoryParamsAfter = await readLatestHead(
+      'published.vaultFactory.governance',
+    );
+
+    t.is(
+      vaultFactoryParamsAfter.current.ChargingPeriod.value,
+      newChargingPeriod,
+      'vaultFactory governed parameters did not match',
     );
   },
 );
@@ -163,7 +224,6 @@ test.serial('Governance proposals history is visible', async t => {
    * the acceptance tests scalability
    */
   const expectedParametersChanges = [
-    ['PerAccountInitialAmount'], // z:acceptance/governance.test.js
     ['PerAccountInitialAmount'], // z:acceptance/governance.test.js
     ['ChargingPeriod'], // z:acceptance/governance.test.js
     ['DebtLimit'], // z:acceptance/vaults.test.js

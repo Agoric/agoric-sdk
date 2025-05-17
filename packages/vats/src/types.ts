@@ -1,10 +1,12 @@
+/* eslint-disable @typescript-eslint/no-unused-vars -- fails to notice the @see uses */
+import type { JsonSafe } from '@agoric/cosmic-proto';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
+import type { PacketSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
 import type { BridgeId, Remote } from '@agoric/internal';
 import type { Bytes } from '@agoric/network';
 import type { Guarded } from '@endo/exo';
-import type { PacketSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
-import type { LocalChainAccount } from './localchain.js';
 import type { TargetApp } from './bridge-target.js';
+import type { LocalChainAccount } from './localchain.js';
 
 export type Board = ReturnType<
   ReturnType<typeof import('./lib-board.js').prepareBoardKit>
@@ -137,7 +139,7 @@ export type IBCChannelID = `channel-${number}`;
 export type IBCConnectionID = `connection-${number}`;
 export type IBCChannelOrdering = 'ORDERED' | 'UNORDERED';
 
-export type IBCPacket = {
+export type IBCPacket = JsonSafe<{
   data: Bytes;
   source_channel: IBCChannelID;
   source_port: IBCPortID;
@@ -146,7 +148,7 @@ export type IBCPacket = {
   sequence?: PacketSDKType['sequence'];
   timeout_height?: PacketSDKType['timeout_height'];
   timeout_timestamp?: PacketSDKType['timeout_timestamp'];
-};
+}>;
 
 export type IBCCounterParty = {
   port_id: IBCPortID;
@@ -166,15 +168,16 @@ export type ConnectingInfo = {
 
 /** see [ibc_module.go](../../../golang/cosmos/x/vibc/types/ibc_module.go) */
 export type IBCBridgeEvent =
+  | 'writeAcknowledgement'
   | 'channelOpenInit'
   | 'channelOpenTry'
   | 'channelOpenAck'
   | 'channelOpenConfirm'
+  | 'channelCloseInit'
+  | 'channelCloseConfirm'
   | 'receivePacket'
   | 'acknowledgementPacket'
   | 'timeoutPacket'
-  | 'channelCloseInit'
-  | 'channelCloseConfirm'
   | 'sendPacket';
 
 type IBCPacketEvents = {
@@ -190,6 +193,11 @@ type IBCPacketEvents = {
     packet: IBCPacket;
     relayer: string; // chain address
   };
+  writeAcknowledgement: {
+    acknowledgement: Bytes;
+    packet: IBCPacket;
+    relayer: string; // chain address
+  };
   timeoutPacket: {
     packet: IBCPacket;
   };
@@ -198,11 +206,22 @@ type IBCPacketEvents = {
   sendPacket: { relativeTimeoutNs: bigint; packet: IBCPacket };
 };
 
-export type IBCEvent<E extends IBCBridgeEvent> = {
-  type: 'IBC_EVENT';
+/**
+ * ActionTypes as specified by `vibc` and `vtransfer`. This list is expected to
+ * grow as more IBC Applications modules are implemented.
+ */
+type IBCEventType = 'IBC_EVENT' | 'VTRANSFER_IBC_EVENT';
+
+export type IBCEvent<
+  E extends IBCBridgeEvent,
+  T extends IBCEventType = 'IBC_EVENT',
+> = {
+  type: T;
   blockHeight: number;
   blockTime: number;
   event: E;
+  /** e.g. the chain address of the LocalChainAccount */
+  target?: string;
 } & {
   [K in keyof IBCPacketEvents[E]]: IBCPacketEvents[E][K];
 };
@@ -233,8 +252,11 @@ type IBCMethodEvents = {
   timeoutExecuted: {
     packet: IBCPacket;
   };
-  // XXX why isn't this in receiver.go?
   initOpenExecuted: ChannelOpenAckDowncall;
+};
+
+type IBCMethodReturns = {
+  sendPacket: Required<IBCPacket>;
 };
 
 export type IBCMethod<M extends IBCDowncallMethod> = {
@@ -247,6 +269,9 @@ export type IBCMethod<M extends IBCDowncallMethod> = {
 export type IBCDowncall<M extends IBCDowncallMethod> = {
   [K in keyof IBCMethodEvents[M]]: IBCMethodEvents[M][K];
 };
+
+export type IBCDowncallReturn<M extends IBCDowncallMethod> =
+  M extends keyof IBCMethodReturns ? IBCMethodReturns[M] : void;
 
 export type IBCDowncallPacket<M extends IBCDowncallMethod> =
   IBCMethodEvents[M] extends { packet: infer P } ? P : never;
@@ -280,24 +305,12 @@ type SendPacketDownCall = {
  * This event is emitted when a FungibleTokenPacket is sent or received
  * by a target (e.g. a {@link LocalChainAccount}) that has a registered
  * {@link TargetApp}. It is passed through the `receiveUpcall` handler.
+ *
+ * For ICS-20 transfer (including `MsgTransfer`), the `packet.data` field is a
+ * {@link FungibleTokenPacketData} object, and you can use
+ * `JSON.parse(atob(packet.data))` to extract it.
  */
-export type VTransferIBCEvent = {
-  type: 'VTRANSFER_IBC_EVENT';
-  blockHeight: number;
-  blockTime: number;
-  /**
-   * Indicates the type of IBC packet event:
-   * - 'acknowledgementPacket': passive tap that communicates the result of an acknowledged packet
-   * - 'writeAcknowledgement': active tap where the receiver can return a write acknowledgement
-   */
-  event: 'acknowledgementPacket' | 'writeAcknowledgement';
-  acknowledgement: Bytes;
-  /**
-   * Use `JSON.parse(atob(packet.data))` to get a
-   * {@link FungibleTokenPacketData} object.
-   */
-  packet: IBCPacket;
-  relayer: string;
-  /** e.g. the chain address of the LocalChainAccount */
-  target: string;
-};
+export type VTransferIBCEvent =
+  | IBCEvent<'acknowledgementPacket', 'VTRANSFER_IBC_EVENT'>
+  | IBCEvent<'writeAcknowledgement', 'VTRANSFER_IBC_EVENT'>
+  | IBCEvent<'timeoutPacket', 'VTRANSFER_IBC_EVENT'>;

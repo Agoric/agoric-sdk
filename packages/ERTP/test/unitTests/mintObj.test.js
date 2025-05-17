@@ -7,6 +7,10 @@ import { defineDurableKind, makeKindHandle } from '@agoric/vat-data';
 import { makeIssuerKit, AssetKind, AmountMath } from '../../src/index.js';
 import { claim, combine } from '../../src/legacy-payment-helpers.js';
 
+/**
+ * @import {IssuerKit} from '../../src/types.js'
+ */
+
 test('mint.getIssuer', t => {
   const { mint, issuer } = makeIssuerKit('fungible');
   t.is(mint.getIssuer(), issuer);
@@ -24,13 +28,18 @@ test('mint.mintPayment default nat AssetKind', async t => {
   t.assert(AmountMath.isEqual(paymentBalance2, fungible1000));
 });
 
+/** @type {import('@agoric/internal').TypedPattern<string>} */
+const StringPattern = M.string();
+
 test('mint.mintPayment set w strings AssetKind', async t => {
   const { mint, issuer, brand } = makeIssuerKit(
     'items',
     AssetKind.SET,
     undefined,
     undefined,
-    { elementShape: M.string() },
+    {
+      elementShape: StringPattern,
+    },
   );
   const items1and2and4 = AmountMath.make(brand, harden(['1', '2', '4']));
   const payment1 = mint.mintPayment(items1and2and4);
@@ -110,11 +119,14 @@ test('mint.mintPayment set AssetKind with invites', async t => {
 // This test models ballet tickets
 test('non-fungible tokens example', async t => {
   t.plan(11);
+
   const {
     mint: balletTicketMint,
     issuer: balletTicketIssuer,
     brand,
-  } = makeIssuerKit('Agoric Ballet Opera tickets', AssetKind.SET);
+  } = /** @type {IssuerKit<'set', { seat: number; show: string; start: string }>} */ (
+    makeIssuerKit('Agoric Ballet Opera tickets', AssetKind.SET)
+  );
 
   const startDateString = new Date(2020, 1, 17, 20, 30).toISOString();
 

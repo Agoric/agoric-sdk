@@ -6,6 +6,7 @@ import { makeScalarStoreCoordinator } from './store.js';
 
 /**
  * @import {Passable, RemotableObject} from '@endo/pass-style';
+ * @import {Key, Pattern} from '@endo/patterns';
  */
 
 /**

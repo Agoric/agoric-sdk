@@ -116,7 +116,7 @@ const setupPurses = async createPurse => {
     harden({ decimalPlaces: 18 }),
   );
 
-  /** @type {IssuerRecord} */
+  /** @type {ZoeIssuerRecord} */
   const stableIssuerRecord = {
     issuer: stableKit.issuer,
     assetKind: AssetKind.NAT,

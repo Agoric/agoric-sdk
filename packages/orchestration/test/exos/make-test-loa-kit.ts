@@ -1,7 +1,6 @@
-/* eslint-disable jsdoc/require-param -- ts types */
 import { heapVowE as E } from '@agoric/vow/vat.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
-import { Far } from '@endo/far';
+import { Far, type EReturn } from '@endo/far';
 import type { ExecutionContext } from 'ava';
 import { prepareLocalOrchestrationAccountKit } from '../../src/exos/local-orchestration-account.js';
 import { commonSetup } from '../supports.js';
@@ -20,8 +19,7 @@ export const prepareMakeTestLOAKit = (
     bootstrap,
     commonPrivateArgs: { marshaller },
     facadeServices: { chainHub },
-    utils,
-  }: Awaited<ReturnType<typeof commonSetup>>,
+  }: EReturn<typeof commonSetup>,
   { zcf = Far('MockZCF', {}) } = {},
 ) => {
   const { timer, localchain, rootZone, vowTools } = bootstrap;

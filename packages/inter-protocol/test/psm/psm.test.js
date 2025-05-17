@@ -3,11 +3,6 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { split } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
-import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
-import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
-import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
-import mintHolderBundle from '@agoric/vats/bundles/bundle-mintHolder.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import {
   floorDivideBy,
@@ -16,19 +11,23 @@ import {
   natSafeMath as NatMath,
 } from '@agoric/zoe/src/contractSupport/index.js';
 
-import { NonNullish, makeTracer } from '@agoric/internal';
+import * as contractGovernor from '@agoric/governance/src/contractGovernor.js';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
+import { makeTracer, NonNullish } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { Stable } from '@agoric/internal/src/tokens.js';
 import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
 import {
   produceDiagnostics,
   produceStartUpgradable,
 } from '@agoric/vats/src/core/basic-behaviors.js';
-import { E, Far } from '@endo/far';
-import path from 'path';
 import { makeHeapZone } from '@agoric/zone';
-import { Stable } from '@agoric/internal/src/tokens.js';
+import { E, Far } from '@endo/far';
+import * as committee from '@agoric/governance/src/committee.js';
+import * as centralSupply from '@agoric/vats/src/centralSupply.js';
+import * as mintHolder from '@agoric/vats/src/mintHolder.js';
 import { makeAnchorAsset, startPSM } from '../../src/proposals/startPSM.js';
+import * as psmContract from '../../src/psm/psm.js';
 import {
   makeMockChainStorageRoot,
   mintRunPayment,
@@ -42,10 +41,6 @@ import { anchorAssets, chainStorageEntries } from './psm-storage-fixture.js';
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;
 
-const pathname = new URL(import.meta.url).pathname;
-const dirname = path.dirname(pathname);
-
-const psmRoot = `${dirname}/../../src/psm/psm.js`;
 const trace = makeTracer('TestPSM', false);
 
 const BASIS_POINTS = 10000n;
@@ -90,9 +85,7 @@ const minusAnchorFee = (anchor, anchorPerMinted) => {
 };
 
 const makeTestContext = async () => {
-  const bundleCache = await unsafeMakeBundleCache('bundles/');
-  const psmBundle = await bundleCache.load(psmRoot, 'psm');
-  const { zoe, feeMintAccessP } = await setUpZoeForTest();
+  const { bundleAndInstall, zoe, feeMintAccessP } = await setUpZoeForTest();
   const feeMintAccess = await feeMintAccessP;
 
   const mintedIssuer = await E(zoe).getFeeIssuer();
@@ -106,11 +99,11 @@ const makeTestContext = async () => {
   const anchor = withAmountUtils(makeIssuerKit('aUSD'));
 
   const installs = {
-    contractGovernor: await E(zoe).install(contractGovernorBundle),
-    committeeInstall: await E(zoe).install(committeeBundle),
-    psm: await E(zoe).install(psmBundle),
-    centralSupply: await E(zoe).install(centralSupplyBundle),
-    mintHolder: await E(zoe).install(mintHolderBundle),
+    contractGovernor: await bundleAndInstall(contractGovernor),
+    committeeInstall: await bundleAndInstall(committee),
+    psm: await bundleAndInstall(psmContract),
+    centralSupply: await bundleAndInstall(centralSupply),
+    mintHolder: await bundleAndInstall(mintHolder),
   };
 
   const board = makeFakeBoard();
@@ -136,7 +129,6 @@ const makeTestContext = async () => {
   );
 
   return {
-    bundles: { psmBundle },
     zoe: await zoe,
     feeMintAccess,
     economicCommitteeCreatorFacet: committeeCreator,
@@ -417,12 +409,12 @@ test('mix of trades: failures do not prevent later service', async t => {
     anchor,
     feeMintAccess,
     zoe,
-    installs: { centralSupply },
+    installs: { centralSupply: centralSupplyInstallation },
   } = t.context;
   const driver = await makePsmDriver(t);
 
   const ist100 = await mintRunPayment(scale6(500), {
-    centralSupply,
+    centralSupply: centralSupplyInstallation,
     feeMintAccess,
     zoe,
   });
@@ -680,13 +672,13 @@ test('wrong give wantMintedInvitation', async t => {
     minted,
     feeMintAccess,
     zoe,
-    installs: { centralSupply },
+    installs: { centralSupply: centralSupplyInstallation },
   } = t.context;
   const { publicFacet } = await makePsmDriver(t);
   const istValue = scale6(100);
   const giveIST = AmountMath.make(minted.brand, istValue);
   const istPayment = await mintRunPayment(istValue, {
-    centralSupply,
+    centralSupply: centralSupplyInstallation,
     feeMintAccess,
     zoe,
   });

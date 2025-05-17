@@ -94,6 +94,24 @@ index 7630baa..78ced77 100644
  
  		notifyOfPeerFailure() {
  			send({type: 'peer-failed'});
+diff --git a/node_modules/ava/lib/reporters/default.js b/node_modules/ava/lib/reporters/default.js
+index 804e285..8daf5ee 100644
+--- a/node_modules/ava/lib/reporters/default.js
++++ b/node_modules/ava/lib/reporters/default.js
+@@ -678,8 +678,11 @@ export default class Reporter {
+ 			this.lineWriter.writeLine(colors.todo(`${this.stats.todoTests} ${plur('test', this.stats.todoTests)} todo`));
+ 		}
+ 
+-		if (this.stats.unhandledRejections > 0) {
+-			this.lineWriter.writeLine(colors.error(`${this.stats.unhandledRejections} unhandled ${plur('rejection', this.stats.unhandledRejections)}`));
++		// AGORIC: TODO(#11028): unhandled exceptions patch should be accomplished in userspace.
++    if (this.stats.unhandledRejections > 0 || process.env.AGORIC_AVA_EXPECT_UNHANDLED_REJECTIONS) {
++			const expected = Number(process.env.AGORIC_AVA_EXPECT_UNHANDLED_REJECTIONS || 0)
++			const color = this.stats.unhandledRejections === expected ? 'skip' : 'error';
++			this.lineWriter.writeLine(colors[color](`${this.stats.unhandledRejections} unhandled ${plur('rejection', this.stats.unhandledRejections)} (AGORIC_AVA_EXPECT_UNHANDLED_REJECTIONS=${expected})`));
+ 		}
+ 
+ 		if (this.stats.uncaughtExceptions > 0) {
 diff --git a/node_modules/ava/lib/reporters/tap.js b/node_modules/ava/lib/reporters/tap.js
 index b1989a4..fa1617f 100644
 --- a/node_modules/ava/lib/reporters/tap.js
@@ -126,6 +144,34 @@ index b1989a4..fa1617f 100644
  			comment: evt.logs,
  			error: evt.err ? dumpError(evt.err) : null,
  			index: ++this.i,
+diff --git a/node_modules/ava/lib/run-status.js b/node_modules/ava/lib/run-status.js
+index 8471345..7433712 100644
+--- a/node_modules/ava/lib/run-status.js
++++ b/node_modules/ava/lib/run-status.js
+@@ -228,7 +228,7 @@ export default class RunStatus extends Emittery {
+ 			|| this.stats.sharedWorkerErrors > 0
+ 			|| this.stats.timeouts > 0
+ 			|| this.stats.uncaughtExceptions > 0
+-			|| this.stats.unhandledRejections > 0
++      // AGORIC: `unhandledRejections` are processed below.
+ 		) {
+ 			return 1;
+ 		}
+@@ -237,6 +237,14 @@ export default class RunStatus extends Emittery {
+ 			return 1;
+ 		}
+ 
++		// AGORIC: TODO(#11028): unhandled exceptions patch should be accomplished in userspace.
++		if (this.stats.unhandledRejections > 0 || process.env.AGORIC_AVA_EXPECT_UNHANDLED_REJECTIONS) {
++			const expected = Number(process.env.AGORIC_AVA_EXPECT_UNHANDLED_REJECTIONS || 0);
++			if (this.stats.unhandledRejections !== expected) {
++				return 1;
++			}
++		}
++
+ 		return 0;
+ 	}
+ 
 diff --git a/node_modules/ava/lib/worker/base.js b/node_modules/ava/lib/worker/base.js
 index cdd3c4a..4302a4a 100644
 --- a/node_modules/ava/lib/worker/base.js

@@ -1,7 +1,8 @@
 import { Fail } from '@endo/errors';
 import { Far } from '@endo/marshal';
+import { getMethodNames } from '@endo/eventual-send/utils.js';
 import { makeStoredPublisherKit } from '@agoric/notifier';
-import { getMethodNames, objectMap } from '@agoric/internal';
+import { objectMap } from '@agoric/internal';
 import { ignoreContext, prepareExo } from '@agoric/vat-data';
 import { M } from '@agoric/store';
 import { AmountShape, BrandShape } from '@agoric/ertp';
@@ -12,6 +13,7 @@ import { GovernorFacetShape } from './typeGuards.js';
 import { CONTRACT_ELECTORATE } from './contractGovernance/governParam.js';
 
 /**
+ * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
  * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn, GovernanceSubscriptionState, GovernanceTerms, GovernedApis, GovernedCreatorFacet, GovernedPublicFacet} from './types.js';
  * @import {Baggage} from '@agoric/vat-data';
  */

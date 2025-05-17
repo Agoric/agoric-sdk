@@ -5,10 +5,13 @@ import bundleSource from '@endo/bundle-source';
 
 import { kser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
+import { logLevels } from '@agoric/internal/src/js-utils.js';
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 import { extractMessage, ignore, vstr } from './vat-util.js';
 
 export { extractMessage, ignore, vstr };
+
+/** @import {LimitedConsole} from '@agoric/internal/src/js-utils.js'; */
 
 function compareArraysOfStrings(a, b) {
   a = a.join(' ');
@@ -136,14 +139,14 @@ export function makeRetireImports(...vrefs) {
   return vatDeliverObject;
 }
 
-function makeConsole(tag) {
+export const makeConsole = tag => {
   const log = anylogger(tag);
-  const cons = {};
-  for (const level of ['debug', 'log', 'info', 'warn', 'error']) {
-    cons[level] = log[level];
-  }
-  return harden(cons);
-}
+  const cons = /** @type {any} */ (
+    Object.fromEntries(logLevels.map(level => [level, log[level]]))
+  );
+  return /** @type {LimitedConsole} */ (harden(cons));
+};
+harden(makeConsole);
 
 export function makeKernelEndowments() {
   return {

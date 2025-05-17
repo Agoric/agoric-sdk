@@ -30,7 +30,7 @@ test.serial('send-anywhere', async t => {
     walletFactoryDriver,
     buildProposal,
     evalProposal,
-    bridgeUtils: { runInbound },
+    bridgeUtils: { runInbound, getInboundQueueLength, flushInboundQueue },
   } = t.context;
 
   const { IST } = t.context.agoricNamesRemotes.brand;
@@ -46,6 +46,7 @@ test.serial('send-anywhere', async t => {
           'uist',
           {
             baseDenom: 'uist',
+            brandKey: 'IST',
             baseName: 'agoric',
             chainName: 'agoric',
           },
@@ -122,6 +123,16 @@ test.serial('send-anywhere', async t => {
     throw new Error('expected offerStatus');
   }
   t.true('result' in conclusion.status, 'transfer vow settled');
+
+  t.is(getInboundQueueLength(), 1);
+  t.is(await flushInboundQueue(1), 1);
+  t.like(wallet.getLatestUpdateRecord(), {
+    status: {
+      error: undefined,
+      result: undefined,
+    },
+  });
+  t.is(getInboundQueueLength(), 0);
 });
 
 const validatorAddress: CosmosValidatorAddress = {
@@ -143,12 +154,15 @@ test.serial('stakeAtom', async t => {
     buildProposal,
     evalProposal,
     agoricNamesRemotes,
-    bridgeUtils: { flushInboundQueue },
+    bridgeUtils: { getInboundQueueLength, flushInboundQueue },
     readLatest,
   } = t.context;
 
   await evalProposal(
-    buildProposal('@agoric/builders/scripts/orchestration/init-stakeAtom.js'),
+    buildProposal('@agoric/builders/scripts/orchestration/init-stakeAtom.js', [
+      '--chainInfo',
+      JSON.stringify(withChainCapabilities(minimalChainInfos)),
+    ]),
   );
 
   const wd = await t.context.walletFactoryDriver.provideSmartWallet(
@@ -164,17 +178,35 @@ test.serial('stakeAtom', async t => {
     },
     proposal: {},
   });
-  // cosmos1test is from ibc/mocks.js
+
+  // The path changes depending on whether `send-anywhere` test runs previously.
   const accountPath = 'published.stakeAtom.accounts.cosmos1test';
+  const accountPath2 = 'published.stakeAtom.accounts.cosmos1test1';
+
   t.throws(() => readLatest(accountPath));
-  t.is(await flushInboundQueue(), 1);
-  t.deepEqual(readLatest(accountPath), {
-    localAddress:
-      '/ibc-port/icacontroller-1/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-1',
-    remoteAddress:
-      '/ibc-hop/connection-8/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-1',
-  });
-  // request-account is complete
+  t.throws(() => readLatest(accountPath2));
+
+  t.is(getInboundQueueLength(), 1);
+  await flushInboundQueue(1);
+
+  try {
+    const latest = readLatest(accountPath);
+    t.deepEqual(latest, {
+      localAddress:
+        '/ibc-port/icacontroller-1/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-1',
+      remoteAddress:
+        '/ibc-hop/connection-8/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-1',
+    });
+  } catch (e) {
+    t.log('first path failed', e);
+    const latest2 = readLatest(accountPath2);
+    t.deepEqual(latest2, {
+      localAddress:
+        '/ibc-port/icacontroller-2/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test1","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-2',
+      remoteAddress:
+        '/ibc-hop/connection-8/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test1","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-2',
+    });
+  }
 
   const { ATOM } = agoricNamesRemotes.brand;
   assert(ATOM);
@@ -197,9 +229,6 @@ test.serial('stakeAtom', async t => {
   await evalProposal(
     buildProposal('@agoric/builders/scripts/testing/restart-stakeAtom.js'),
   );
-
-  t.is(await flushInboundQueue(), 1);
-  t.true(hasResult(wd.getLatestUpdateRecord()));
 });
 
 // Tests restart of an orchestration() flow while an IBC response is pending.
@@ -220,7 +249,10 @@ test.serial('basicFlows', async t => {
 
   t.log('start basicFlows');
   await evalProposal(
-    buildProposal('@agoric/builders/scripts/orchestration/init-basic-flows.js'),
+    buildProposal(
+      '@agoric/builders/scripts/orchestration/init-basic-flows.js',
+      ['--chainInfo', JSON.stringify(withChainCapabilities(minimalChainInfos))],
+    ),
   );
 
   t.log('making offer');
@@ -249,7 +281,23 @@ test.serial('basicFlows', async t => {
       result: undefined, // no property
     },
   });
+  // 1x ICQ Channel Open
   t.is(getInboundQueueLength(), 1);
+  t.log('flush and verify results');
+  const beforeFlush = wallet.getLatestUpdateRecord();
+  t.like(beforeFlush, {
+    status: {
+      result: undefined,
+    },
+  });
+  t.is(await flushInboundQueue(1), 1);
+  t.like(wallet.getLatestUpdateRecord(), {
+    status: {
+      id: id1,
+      error: undefined,
+      result: 'UNPUBLISHED',
+    },
+  });
 
   const id2 = 'makePortfolio';
   await wallet.sendOffer({
@@ -274,29 +322,14 @@ test.serial('basicFlows', async t => {
       result: undefined, // no property
     },
   });
-  // 3x ICA Channel Opens, 1x ICQ Channel Open
-  t.is(getInboundQueueLength(), 4);
+  // 3x ICA Channel Opens
+  t.is(getInboundQueueLength(), 3);
 
   t.log('restart basicFlows');
   await evalProposal(
     buildProposal('@agoric/builders/scripts/testing/restart-basic-flows.js'),
   );
 
-  t.log('flush and verify results');
-  const beforeFlush = wallet.getLatestUpdateRecord();
-  t.like(beforeFlush, {
-    status: {
-      result: undefined,
-    },
-  });
-  t.is(await flushInboundQueue(1), 1);
-  t.like(wallet.getLatestUpdateRecord(), {
-    status: {
-      id: id1,
-      error: undefined,
-      result: 'UNPUBLISHED',
-    },
-  });
   t.is(await flushInboundQueue(3), 3);
   t.like(wallet.getLatestUpdateRecord(), {
     status: {

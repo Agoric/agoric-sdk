@@ -1,4 +1,9 @@
 /**
+ * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
+ * @import {DisplayInfo} from '@agoric/ertp';
+ */
+
+/**
  * @typedef {{
  *   brand: import('@agoric/internal/src/marshal.js').BoardRemote;
  *   denom: string;

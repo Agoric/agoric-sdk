@@ -10,6 +10,7 @@ const STORAGE_INSTANTIATED_KEY = 'IssuerStorageInstantiated';
 
 /**
  * @import {LegacyWeakMap, WeakMapStore} from '@agoric/store';
+ * @import {ZoeIssuerRecord} from '@agoric/zoe';
  */
 
 /**
@@ -18,12 +19,12 @@ const STORAGE_INSTANTIATED_KEY = 'IssuerStorageInstantiated';
  * @param {import('@agoric/vat-data').Baggage} zcfBaggage
  */
 export const provideIssuerStorage = zcfBaggage => {
-  /** @type {WeakMapStore<Brand,IssuerRecord>} */
+  /** @type {WeakMapStore<Brand, ZoeIssuerRecord>} */
   const brandToIssuerRecord = provideDurableWeakMapStore(
     zcfBaggage,
     'brandToIssuerRecord',
   );
-  /** @type {WeakMapStore<Issuer,IssuerRecord>} */
+  /** @type {WeakMapStore<Issuer, ZoeIssuerRecord>} */
   const issuerToIssuerRecord = provideDurableWeakMapStore(
     zcfBaggage,
     'issuerToIssuerRecord',
@@ -62,8 +63,8 @@ export const provideIssuerStorage = zcfBaggage => {
    * to add the issuer again in ZCF.
    *
    *
-   * @param {IssuerRecord} issuerRecord
-   * @returns {IssuerRecord}
+   * @param {ZoeIssuerRecord} issuerRecord
+   * @returns {ZoeIssuerRecord}
    */
   const storeIssuerRecord = issuerRecord => {
     assertInstantiated();
@@ -87,7 +88,7 @@ export const provideIssuerStorage = zcfBaggage => {
    * Otherwise, make and save the issuerRecord.
    *
    * @param {ERef<Issuer>} issuerP
-   * @returns {Promise<IssuerRecord>}
+   * @returns {Promise< ZoeIssuerRecord>}
    */
   const storeIssuer = async issuerP => {
     assertInstantiated();

@@ -15,7 +15,11 @@ import {
 import { makeTendermintRpcClient } from '../src/makeHttpClient.js';
 import { captureIO, replayIO, web1, web2 } from './net-access-fixture.js';
 
-/** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
+/**
+ * @import {EReturn} from '@endo/far';
+ */
+
+/** @type {import('ava').TestFn<EReturn<typeof makeTestContext>>} */
 const test = /** @type {any} */ (anyTest);
 
 const RECORDING = false;

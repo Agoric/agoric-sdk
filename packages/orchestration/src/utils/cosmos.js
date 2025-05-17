@@ -3,7 +3,7 @@ import { decodeBase64 } from '@endo/base64';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 
 /**
- * @import {CosmosDelegationResponse, CosmosValidatorAddress, DenomAmount} from '../types.js';
+ * @import {Bech32Address, CosmosDelegationResponse, CosmosValidatorAddress, DenomAmount} from '../types.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js'
  * @import {DelegationResponse} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
  */
@@ -75,7 +75,7 @@ export const toCosmosDelegationResponse = ({ chainId }, r) => ({
   delegator: {
     chainId,
     encoding: 'bech32',
-    value: r.delegation.delegatorAddress,
+    value: /** @type {Bech32Address} */ (r.delegation.delegatorAddress),
   },
   validator: toCosmosValidatorAddress(r.delegation, chainId),
   amount: toDenomAmount(r.balance),

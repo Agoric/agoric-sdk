@@ -1,9 +1,29 @@
 import test from '@endo/ses-ava/prepare-endo.js';
-import type { Denom, DenomDetail } from '@agoric/orchestration';
+import type {
+  CosmosChainInfo,
+  Denom,
+  DenomDetail,
+  IBCConnectionInfo,
+} from '@agoric/orchestration';
 import { makeAssetInfo } from '../../tools/asset-info.js';
+
+type MinChainInfo = {
+  [chainName: string]: Pick<CosmosChainInfo, 'bech32Prefix' | 'chainId'> & {
+    connections: Record<
+      string,
+      {
+        transferChannel: Pick<
+          IBCConnectionInfo['transferChannel'],
+          'channelId'
+        >;
+      }
+    >;
+  };
+};
 
 const minChainInfo = {
   agoric: {
+    bech32Prefix: 'agoric',
     chainId: 'agoriclocal',
     connections: {
       cosmoshublocal: {
@@ -19,6 +39,7 @@ const minChainInfo = {
     },
   },
   cosmoshub: {
+    bech32Prefix: 'cosmos',
     chainId: 'cosmoshublocal',
     connections: {
       agoriclocal: {
@@ -34,6 +55,7 @@ const minChainInfo = {
     },
   },
   osmosis: {
+    bech32Prefix: 'osmo',
     chainId: 'osmosislocal',
     connections: {
       agoriclocal: {
@@ -48,7 +70,7 @@ const minChainInfo = {
       },
     },
   },
-};
+} satisfies MinChainInfo;
 
 const minTokenMap = {
   agoric: ['ubld', 'uist'],

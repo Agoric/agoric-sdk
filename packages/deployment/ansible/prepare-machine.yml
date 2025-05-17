@@ -5,6 +5,6 @@
   gather_facts: yes
   strategy: free
   vars:
-    - NODEJS_VERSION: 18
+    - NODEJS_VERSION: 20
   roles:
     - prereq

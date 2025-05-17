@@ -14,6 +14,12 @@ import {
 } from '@agoric/ertp';
 
 /**
+ * @import {EReturn} from '@endo/far';
+ * @import {Key, Pattern} from '@endo/patterns';
+ * @import {Amount, Issuer, IssuerKit, Paymnent} from '@agoric/ertp';
+ */
+
+/**
  * @param {Pattern} [brandShape]
  * @param {Pattern} [amountShape]
  */
@@ -322,5 +328,7 @@ export const prepareVirtualPurse = zone => {
 
   return makeVirtualPurse;
 };
-
 harden(prepareVirtualPurse);
+/**
+ * @typedef {EReturn<ReturnType<typeof prepareVirtualPurse>>} VirtualPurse
+ */

@@ -11,7 +11,7 @@ mkdir -p "$NODE_V8_COVERAGE"
 export C8_OPTIONS="--clean=false"
 
 # XXX uses lerna when `yarn workspaces run` should work, but in v1 it always bails on missing script
-yarn lerna run test:c8
+yarn lerna run test:c8 --no-bail
 
 # report over all src and tools files, not just the ones that were loaded during tests
 yarn c8 report --all --include 'packages/*/{src,tools}' --reporter=html-spa --reports-dir=coverage/html

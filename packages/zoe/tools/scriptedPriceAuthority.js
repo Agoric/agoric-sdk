@@ -1,11 +1,12 @@
-import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { AmountMath } from '@agoric/ertp';
 import { observeNotifier } from '@agoric/notifier';
 import { TimeMath } from '@agoric/time';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 import {
-  natSafeMath,
   makeOnewayPriceAuthorityKit,
+  makePriceQuoteIssuer,
+  natSafeMath,
 } from '../src/contractSupport/index.js';
 
 /**
@@ -20,7 +21,7 @@ export function makeScriptedPriceAuthority(options) {
     timer,
     unitAmountIn = AmountMath.make(actualBrandIn, 1n),
     quoteInterval = 1n,
-    quoteIssuerKit = makeIssuerKit('quote', AssetKind.SET),
+    quoteIssuerKit = makePriceQuoteIssuer(),
   } = options;
   const { brand, issuer: quoteIssuer, mint: quoteMint } = quoteIssuerKit;
   let currentPrice = priceList[0];

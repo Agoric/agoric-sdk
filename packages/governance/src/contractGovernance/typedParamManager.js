@@ -5,6 +5,7 @@ import { CONTRACT_ELECTORATE } from './governParam.js';
 import { makeParamManagerBuilder } from './paramManager.js';
 
 /**
+ * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
  * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn, GovernanceSubscriptionState, GovernanceTerms, ParamManagerBase, ParamStateRecord, ParamValueForType, UpdateParams} from '../types.js';
  * @import {ParamType} from '../constants.js';
  */

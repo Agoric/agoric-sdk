@@ -1,5 +1,8 @@
 // @ts-check
+import { makeTracer } from '@agoric/internal';
 import assert from 'node:assert';
+
+const trace = makeTracer('Agd', false);
 
 const { freeze } = Object;
 
@@ -50,7 +53,7 @@ export const flags = record => {
  */
 
 /**
- * @param {{ execFileSync: ExecSync }} io
+ * @param {{ execFileSync: typeof import('node:child_process')['execFileSync'] }} io
  */
 export const makeAgd = ({ execFileSync }) => {
   /**
@@ -85,7 +88,7 @@ export const makeAgd = ({ execFileSync }) => {
      */
     const exec = (
       args,
-      opts = { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] },
+      opts = { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] },
     ) => execFileSync(kubectlBinary, [...binaryArgs(chainName), ...args], opts);
 
     const outJson = flags({ output: 'json' });
@@ -104,7 +107,7 @@ export const makeAgd = ({ execFileSync }) => {
         console.log(`$$$ ${chainToBinary[chainName]}`, ...args);
         const out = exec(args, {
           encoding: 'utf-8',
-          stdio: ['ignore', 'pipe', 'ignore'],
+          stdio: ['ignore', 'pipe', 'pipe'],
         });
 
         try {
@@ -148,6 +151,7 @@ export const makeAgd = ({ execFileSync }) => {
           ...keyringArgs,
           ...flags({ 'chain-id': chainId, from }),
           ...flags({
+            // Retained by Agoric fork of Cosmmos SDK.
             'broadcast-mode': broadcastMode,
             gas: 'auto',
             'gas-adjustment': '1.4',
@@ -156,13 +160,16 @@ export const makeAgd = ({ execFileSync }) => {
           ...(yes ? ['--yes'] : []),
           ...outJson,
         ];
-        console.log(`$$$ ${chainToBinary[chainName]}`, ...args);
-        const out = exec(args, { stdio: ['ignore', 'pipe', 'ignore'] });
+        trace(`$$$ ${chainToBinary[chainName]}`, ...args);
+        const out = exec(args, { stdio: ['ignore', 'pipe', 'pipe'] });
         try {
           // XXX approximate type
           /** @type {{ height: string, txhash: string, code: number, codespace: string, raw_log: string }} */
           const detail = JSON.parse(out);
+          trace('agd returned;', detail);
           if (detail.code !== 0) {
+            // FIXME we're getting: account sequence mismatch, expected 30, got 29: incorrect account sequence
+            // Does that mean `broadcast-mode: block` didn't work?
             throw Error(detail.raw_log);
           }
           return detail;
@@ -254,20 +261,20 @@ export const makeCopyFiles = (
       `exec -i ${podName} -c ${containerName} -- mkdir -p ${destDir}`.split(
         ' ',
       ),
-      { stdio: ['ignore', 'pipe', 'ignore'] },
+      { stdio: ['ignore', 'pipe', 'pipe'] },
     );
     for (const path of paths) {
       execFileSync(
         kubectlBinary,
         `cp ${path} ${podName}:${destDir}/ -c ${containerName}`.split(' '),
-        { stdio: ['ignore', 'pipe', 'ignore'] },
+        { stdio: ['ignore', 'pipe', 'pipe'] },
       );
       log(`Copied ${path} to ${destDir} in pod ${podName}`);
     }
     const lsOutput = execFileSync(
       kubectlBinary,
       `exec -i ${podName} -c ${containerName}  -- ls ${destDir}`.split(' '),
-      { stdio: ['ignore', 'pipe', 'ignore'], encoding: 'utf-8' },
+      { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf-8' },
     );
     log(`ls ${destDir}:\n${lsOutput}`);
     return lsOutput;

@@ -192,9 +192,10 @@ test('makeFakeStorageKit', async t => {
 
 test('makeFakeStorageKit sequence data', async t => {
   const rootPath = 'root';
-  const { rootNode, messages } = makeFakeStorageKit(rootPath, {
-    sequence: true,
-  });
+  const { rootNode, messages, updateNewCellBlockHeight, getValues } =
+    makeFakeStorageKit(rootPath, {
+      sequence: true,
+    });
 
   await t.throwsAsync(
     // @ts-expect-error
@@ -233,6 +234,7 @@ test('makeFakeStorageKit sequence data', async t => {
     [{ method: 'append', args: [[deepPath, 'foo']] }],
     'auto-sequence grandchild setValue message',
   );
+  t.deepEqual(getValues(deepPath), ['foo']);
   deepNode = childNode.makeChildNode('grandchild', { sequence: false });
   await deepNode.setValue('bar');
   t.deepEqual(
@@ -240,13 +242,15 @@ test('makeFakeStorageKit sequence data', async t => {
     [{ method: 'set', args: [[deepPath, 'bar']] }],
     'manual-single grandchild setValue message',
   );
+  t.throws(() => getValues(deepPath), { name: 'SyntaxError' });
   childNode = rootNode.makeChildNode('child', { sequence: false });
-  await childNode.setValue('bar');
+  await childNode.setValue(''); // Results in removal
   t.deepEqual(
     messages.slice(-1),
-    [{ method: 'set', args: [[childPath, 'bar']] }],
+    [{ method: 'set', args: [[childPath]] }],
     'manual-single child setValue message',
   );
+  t.throws(() => getValues(childPath), { message: /^no data at path/ });
   deepNode = childNode.makeChildNode('grandchild');
   await deepNode.setValue('baz');
   t.deepEqual(
@@ -261,6 +265,22 @@ test('makeFakeStorageKit sequence data', async t => {
     [{ method: 'append', args: [[deepPath, 'qux']] }],
     'manual-sequence grandchild setValue message',
   );
+  t.deepEqual(getValues(deepPath), ['baz', 'qux']);
+  await deepNode.setValue('');
+  t.deepEqual(
+    messages.slice(-1),
+    [{ method: 'append', args: [[deepPath, '']] }],
+    'manual-sequence grandchild setValue message',
+  );
+  t.deepEqual(getValues(deepPath), ['baz', 'qux', '']);
+  updateNewCellBlockHeight();
+  await deepNode.setValue('quz');
+  t.deepEqual(
+    messages.slice(-1),
+    [{ method: 'append', args: [[deepPath, 'quz']] }],
+    'manual-sequence grandchild setValue message',
+  );
+  t.deepEqual(getValues(deepPath), ['quz']);
 });
 
 const testUnmarshaller = test.macro((t, format) => {

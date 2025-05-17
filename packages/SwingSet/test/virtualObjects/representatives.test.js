@@ -442,13 +442,16 @@ test('virtual object gc', async t => {
   t.deepEqual(c.kpResolution(c.bootstrapResult), kser(undefined));
   const v = 'v6';
   const remainingVOs = {};
-  for (const key of enumeratePrefixedKeys(kernelStorage.kvStore, `${v}.vs.`)) {
+  for (const { key } of enumeratePrefixedKeys(
+    kernelStorage.kvStore,
+    `${v}.vs.`,
+  )) {
     remainingVOs[key] = kernelStorage.kvStore.get(key);
   }
   // prettier-ignore
   t.deepEqual(remainingVOs, {
     [`${v}.vs.baggageID`]: 'o+d6/1',
-    [`${v}.vs.idCounters`]: '{"exportID":11,"collectionID":5,"promiseID":8}',
+    [`${v}.vs.idCounters`]: '{"exportID":11,"collectionID":4,"promiseID":8}',
     [`${v}.vs.kindIDID`]: '1',
     [`${v}.vs.storeKindIDTable`]:
       '{"scalarMapStore":2,"scalarWeakMapStore":3,"scalarSetStore":4,"scalarWeakSetStore":5,"scalarDurableMapStore":6,"scalarDurableWeakMapStore":7,"scalarDurableSetStore":8,"scalarDurableWeakSetStore":9}',
@@ -457,23 +460,20 @@ test('virtual object gc', async t => {
     [`${v}.vs.vc.1.|schemata`]: vstr({ label: 'baggage', keyShape: M.string() }),
     [`${v}.vs.vc.2.|entryCount`]: '0',
     [`${v}.vs.vc.2.|nextOrdinal`]: '1',
-    [`${v}.vs.vc.2.|schemata`]: vstr({ label: 'promiseRegistrations', keyShape: M.scalar() }),
+    [`${v}.vs.vc.2.|schemata`]: vstr({ label: 'promiseWatcherByKind', keyShape: M.scalar() }),
     [`${v}.vs.vc.3.|entryCount`]: '0',
     [`${v}.vs.vc.3.|nextOrdinal`]: '1',
-    [`${v}.vs.vc.3.|schemata`]: vstr({ label: 'promiseWatcherByKind', keyShape: M.scalar() }),
-    [`${v}.vs.vc.4.|entryCount`]: '0',
-    [`${v}.vs.vc.4.|nextOrdinal`]: '1',
-    [`${v}.vs.vc.4.|schemata`]: vstr({ label: 'watchedPromises', keyShape: M.and(M.scalar(), M.string()) }),
+    [`${v}.vs.vc.3.|schemata`]: vstr({ label: 'watchedPromises', keyShape: M.and(M.scalar(), M.string()) }),
     [`${v}.vs.vom.es.o+v10/3`]: 'r',
     [`${v}.vs.vom.o+v10/2`]: `{"label":${vstr('thing #2')}}`,
     [`${v}.vs.vom.o+v10/3`]: `{"label":${vstr('thing #3')}}`,
     [`${v}.vs.vom.o+v10/8`]: `{"label":${vstr('thing #8')}}`,
     [`${v}.vs.vom.o+v10/9`]: `{"label":${vstr('thing #9')}}`,
     [`${v}.vs.vom.rc.o+d6/1`]: '1',
+    [`${v}.vs.vom.rc.o+d6/2`]: '1',
     [`${v}.vs.vom.rc.o+d6/3`]: '1',
-    [`${v}.vs.vom.rc.o+d6/4`]: '1',
     [`${v}.vs.vom.vkind.10.descriptor`]: '{"kindID":"10","tag":"thing"}',
-    [`${v}.vs.watchedPromiseTableID`]: 'o+d6/4',
-    [`${v}.vs.watcherTableID`]: 'o+d6/3',
+    [`${v}.vs.watchedPromiseTableID`]: 'o+d6/3',
+    [`${v}.vs.watcherTableID`]: 'o+d6/2',
   });
 });

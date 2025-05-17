@@ -19,6 +19,7 @@ import { UNPUBLISHED_RESULT } from './offers.js';
  * @import {PromiseWatcher} from '@agoric/swingset-liveslots';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {Vow, VowTools} from '@agoric/vow';
+ * @import {PaymentPKeywordRecord, Proposal, UserSeat, ZoeService} from '@agoric/zoe';
  */
 
 /**

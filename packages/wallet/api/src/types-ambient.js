@@ -161,11 +161,11 @@
 /**
  * @typedef {object} IssuerTable
  * @property {(brand: Brand) => boolean} hasByBrand
- * @property {(brand: Brand) => IssuerRecord} getByBrand
+ * @property {(brand: Brand) => ZoeIssuerRecord} getByBrand
  * @property {(issuer: Issuer) => boolean} hasByIssuer
- * @property {(issuer: Issuer) => IssuerRecord} getByIssuer
+ * @property {(issuer: Issuer) => ZoeIssuerRecord} getByIssuer
  * @property {(issuerP: ERef<Issuer>,
  *             addMeta?: (x: any) => any
- * ) => Promise<IssuerRecord>} initIssuer
- * @property {(issuerRecord: IssuerRecord) => void } initIssuerByRecord
+ * ) => Promise<ZoeIssuerRecord>} initIssuer
+ * @property {(issuerRecord: ZoeIssuerRecord) => void } initIssuerByRecord
  */

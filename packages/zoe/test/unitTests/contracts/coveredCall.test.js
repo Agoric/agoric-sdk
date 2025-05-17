@@ -15,6 +15,10 @@ import { setup } from '../setupBasicMints.js';
 import { setupNonFungible } from '../setupNonFungibleMints.js';
 import { assertAmountsEqual } from '../../zoeTestHelpers.js';
 
+/**
+ * @import {FeeIssuerConfig, InvitationDetails} from '@agoric/zoe';
+ */
+
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const coveredCallRoot = `${dirname}/../../../src/contracts/coveredCall.js`;
@@ -994,7 +998,7 @@ test('zoe - coveredCall non-fungible', async t => {
   // already escrowed.
 
   const invitationIssuer = await E(zoe).getInvitationIssuer();
-  /** @type {Payment<any>} */
+  /** @type {Payment<'set', InvitationDetails>} */
   const bobExclOption = await claim(
     E(invitationIssuer).makeEmptyPurse(),
     optionP,

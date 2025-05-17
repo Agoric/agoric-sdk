@@ -13,6 +13,7 @@ import {
 import { E, Far } from '@endo/far';
 import { isRemotable, makeMarshal } from '@endo/marshal';
 
+import { CapDataShape } from '@agoric/internal/src/marshal.js';
 import { crc6 } from './crc.js';
 
 /**
@@ -24,8 +25,6 @@ export const DEFAULT_CRC_DIGITS = 2;
 export const DEFAULT_PREFIX = 'board0';
 
 //#region Interface Guards
-// TODO import from Endo
-const CapDataShape = { body: M.string(), slots: M.array() };
 const MarshalI = M.interface('Marshaller', {
   toCapData: M.call(M.any()).returns(CapDataShape),
   serialize: M.call(M.any()).returns(CapDataShape),

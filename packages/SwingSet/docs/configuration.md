@@ -22,6 +22,7 @@ The configuration object takes this form:
 config = {
   defaultManagerType: MANAGERTYPESTRING?
   includeDevDependencies: BOOL?
+  defaultReapGCKrefs: NUMBER|'never'?
   defaultReapInterval: NUMBER|'never'?
   relaxDurabilityRules: BOOL?
   snapshotInitial: NUMBER?
@@ -38,15 +39,15 @@ config = {
       endowments: DATAOBJECT?
       creationOptions: {
         enablePipelining: BOOL?
-        name: STRING?
         enableDisavow: BOOL?
         managerType: MANAGERTYPESTRING?
-        metered: BOOL?
+        neverReap: BOOL?
+        nodeOptions: STRING[]?
+        reapGCKrefs: NUMBER|'never'?
         reapInterval: NUMBER|'never'?
         enableSetup: BOOL?
         critical: BOOL?
         useTranscript: BOOL?
-        virtualObjectCacheSize: NUMBER?
       }?
     }+
   }
@@ -126,13 +127,18 @@ creates bundles to include the SwingSet package's dev dependencies as well as
 its regular runtime depencies in any bundles that it creates.  Defaults to
 `false`.
 
-The `defaultReapInterval` property specifies the default frequency with which
-the kernel should prompt each vat (by delivering it a `bringOutYourDead`
-directive) to perform garbage collection and notify the kernel of any dropped or
-released references that result.  This should either be an integer, indicating
-the number of deliveries that should be made to the vat before reaping, or the
-string `'never'`, indicating that such activity should never happen.  If
-defaults (yes, the default has a default) to 1.
+The `defaultReapGCKrefs` property specifies the default count of krefs to be
+received by each vat in GC deliveries (dropImports/retireImports/retireExports)
+before the kernel should deliver a "bringOutYourDead" to trigger garbage
+collection. It should either be an integer, or the string `'never'` to indicate
+that such counts do not affect when to deliver a bringOutYourDead. It defaults
+to 20 (cf. `DEFAULT_GC_KREFS_PER_BOYD`).
+
+The `defaultReapInterval` property specifies the default count of deliveries to
+be received by each vat before the kernel should deliver a "bringOutYourDead" to
+trigger garbage collection. It should either be an integer, or the string
+`'never'` to indicate that such counts do not affect when to deliver a
+bringOutYourDead. It defaults to 1.
 
 The `relaxDurabilityRules` property, if `true`, allows vat code running inside
 this swingset to store non-durable references inside durable objects and stores
@@ -197,10 +203,6 @@ not yet supported.
 - `enablePipelining` specifies whether the vat should be launched with
   promise pipelining enabled.  Defaults to `false`.
 
-- `name` is an optional short label string used to identify the vat in log and
-  debug outputs.  If omitted, it defaults to the property name that was used for
-  the vat descriptor.
-
 - `enableDisavow`, if `true`, adds `vatPowers.disavow()`, which allows vat code
   to explicitly disavow interest in an imported Presence. This will trigger a
   `syscall.dropImports` of the associated object ID. By default, this
@@ -209,11 +211,17 @@ not yet supported.
 - `managerType` indicates what sort of vat worker to run the associated vat in.
   If omitted, it defaults to the swingset's default manager type.
 
-- `metered` specifies whether the vat should be have metering turned
-  on or not. Defaults to `false`.
+- `neverReap` disables automatic bringOutYourDead deliveries to this vat.
 
-- `reapInterval` specifies the reap interval for this particular vat.  It
-  defaults to the swingset's default reap interval.
+- `nodeOptions` is valid only with `managerType` `'node-subprocess'`, for which
+  it specifies additional command-line options to include when spawning (e.g.,
+  `['--inspect']` to support interactive debugging).
+
+- `reapGCKrefs` overrides the swingset's `defaultReapGCKrefs` for this
+  particular vat.
+
+- `reapInterval`, overrides the swingset's `defaultReapInterval` for this
+  particular vat.
 
 - `enableSetup` indicates that the vat module may use the older, lower
   level `setup()` API, which allows a vat to be defined independent of
@@ -229,10 +237,6 @@ not yet supported.
 - `useTranscript`, if `true`, says the vat should record a transcript of all
   deliveries made to it so that these can be replayed at a later time to
   reconstruct the internal state of the vat.  Defaults to `true`.
-
-- `virtualObjectCacheSize` tells the vat's virtual object manager how many
-  virtual objects should have their state kept live in memory at any given
-  time.  Defaults to an implementation defined value.
 
 ## Dynamic option setting
 
@@ -270,8 +274,6 @@ involved, dynamic options update is not available for statically configured
 vats, i.e., vats configured using the config object described above).
 
 Currently supported vat options that you can change this way are:
-
-- `virtualObjectCacheSize`
 
 - `reapInterval`
 

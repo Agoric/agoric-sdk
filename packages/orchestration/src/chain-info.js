@@ -1,21 +1,40 @@
+/**
+ * @file Info used to build a {@link ChainHub} and return chainInfo from the
+ *   {@link Orchestrator} via the {@link Chain} object.
+ *
+ *   Includes {@link BaseChainInfo} and {@link CosmosChainInfo}
+ */
+
 import { E } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
 import { HubName, normalizeConnectionInfo } from './exos/chain-hub.js';
 import fetchedChainInfo from './fetched-chain-info.js'; // Refresh with scripts/refresh-chain-info.ts
-import { CosmosAssetInfoShape, CosmosChainInfoShape } from './typeGuards.js';
-
-/** @import {Chain, CosmosAssetInfo, CosmosChainInfo, EthChainInfo, IBCConnectionInfo} from './types.js'; */
-/** @import {NameAdmin} from '@agoric/vats'; */
+import { ChainInfoShape, CosmosAssetInfoShape } from './typeGuards.js';
+import cctpChainInfo from './cctp-chain-info.js';
+import { withChainCapabilities } from './chain-capabilities.js';
 
 /**
- * Info used to build a {@link Chain} object - channel, connection, and denom
- * info.
- *
- * @typedef {CosmosChainInfo | EthChainInfo} ChainInfo
+ * @import {CosmosAssetInfo, CosmosChainInfo, IBCConnectionInfo} from './types.js';
+ * @import {NameAdmin} from '@agoric/vats';
+ * @import {ChainInfo} from './orchestration-api.ts';
  */
 
+/**
+ * Well-known namespaces supported by the Orchestration SDK
+ *
+ * @enum {(typeof KnownNamespace)[keyof typeof KnownNamespace]}
+ * @see {@link https://github.com/ChainAgnostic/CAIPs/blob/c599f7601d0ce83e6dd9f350c6c21d158d56fd6d/CAIPs/caip-2.md}
+ */
+export const KnownNamespace = /** @type {const} */ ({
+  cosmos: 'cosmos',
+  eip155: 'eip155',
+  solana: 'solana',
+});
+harden(KnownNamespace);
+
+const { noble: _n, ...restCctpChainInfo } = cctpChainInfo;
 const knownChains = /** @satisfies {Record<string, ChainInfo>} */ (
-  harden(fetchedChainInfo)
+  harden({ ...withChainCapabilities(fetchedChainInfo), ...restCctpChainInfo })
 );
 
 /**
@@ -45,7 +64,7 @@ export const registerChainAssets = async (agoricNamesAdmin, name, assets) => {
  *
  * @param {ERef<NameAdmin>} agoricNamesAdmin
  * @param {string} name
- * @param {CosmosChainInfo} chainInfo
+ * @param {ChainInfo} chainInfo
  * @param {(...messages: string[]) => void} [log]
  * @param {Set<string>} [handledConnections] connection keys that need not be
  *   updated
@@ -62,8 +81,11 @@ export const registerChain = async (
     HubName.ChainConnection,
   );
 
-  mustMatch(chainInfo, CosmosChainInfoShape);
-  const { connections = {}, ...vertex } = chainInfo;
+  mustMatch(chainInfo, ChainInfoShape);
+
+  /** @type {Record<string, IBCConnectionInfo>} */
+  const connections = /** @type {any} */ (chainInfo).connections || {};
+  const { connections: _, ...vertex } = /** @type {any} */ (chainInfo);
 
   const promises = [
     E(nameAdmin)
@@ -71,7 +93,9 @@ export const registerChain = async (
       .then(() => log(`registered agoricNames chain.${name}`)),
   ];
 
-  const { chainId } = chainInfo;
+  const { chainId } = /** @type {import('./types').CosmosChainInfo} */ (
+    chainInfo
+  );
   for (const [counterChainId, connInfo] of Object.entries(connections)) {
     const [key, connectionInfo] = normalizeConnectionInfo(
       chainId,
@@ -95,7 +119,9 @@ export const registerChain = async (
 };
 
 /**
- * Register all the chains that are known statically.
+ * Register all the chains that are known statically in `agoricNames`.
+ *
+ * Not active on or planned for mainnet.
  *
  * @param {ERef<import('@agoric/vats').NameHubKit['nameAdmin']>} agoricNamesAdmin
  * @param {(...messages: string[]) => void} [log]

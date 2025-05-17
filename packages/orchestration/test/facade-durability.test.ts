@@ -7,17 +7,21 @@ import fetchedChainInfo from '../src/fetched-chain-info.js'; // Refresh with scr
 import type { Chain } from '../src/orchestration-api.js';
 import { denomHash } from '../src/utils/denomHash.js';
 import { provideOrchestration } from '../src/utils/start-helper.js';
+import { provideFreshRootZone } from './durability.js';
 import { commonSetup } from './supports.js';
-import { provideDurableZone, provideFreshRootZone } from './durability.js';
 
 const test = anyTest;
 
 const mockChainInfo: CosmosChainInfo = harden({
+  bech32Prefix: 'mock',
   chainId: 'mock-1',
+  /** note: not specified in `CosmosChainInfo` */
+  ibcHooksEnabled: false,
   icaEnabled: false,
   icqEnabled: false,
+  namespace: 'cosmos',
+  reference: 'mock-1',
   pfmEnabled: false,
-  ibcHooksEnabled: false,
   stakingTokens: [{ denom: 'umock' }],
 });
 const mockChainConnection: IBCConnectionInfo = {
@@ -244,7 +248,12 @@ test('asset / denom info', async t => {
 
   await vt.when(handle());
 
-  chainHub.registerChain('anotherChain', mockChainInfo);
+  chainHub.registerChain('anotherChain', {
+    ...mockChainInfo,
+    chainId: 'anotherChain-1',
+    reference: 'anotherChain-1',
+    bech32Prefix: 'another',
+  });
   chainHub.registerConnection('agoric-3', 'anotherChain', mockChainConnection);
   chainHub.registerAsset('utoken2', {
     chainName: 'anotherChain',
@@ -252,13 +261,13 @@ test('asset / denom info', async t => {
     baseDenom: 'utoken2',
   });
 
-  const missingGetChain = orchestrate('missing getChain', {}, async orc => {
-    const actual = orc.getDenomInfo(
+  const missingGetChain = orchestrate('missing getChain', {}, async orc =>
+    orc.getDenomInfo(
       'utoken2',
       // @ts-expect-error 'mock' not a KnownChain
       'anotherChain',
-    );
-  });
+    ),
+  );
 
   await t.throwsAsync(vt.when(missingGetChain()), {
     message: 'use getChain("anotherChain") before getDenomInfo("utoken2")',

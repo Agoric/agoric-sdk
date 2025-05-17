@@ -2,7 +2,7 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 import { initSwingStore } from '@agoric/swing-store';
-import { kunser } from '@agoric/kmarshal';
+import { kslot, kunser } from '@agoric/kmarshal';
 
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 
@@ -43,41 +43,125 @@ test('reap all vats', async t => {
   const dynamicRoots = kunser(c.kpResolution(kpid));
   for (let i = 0; i < 3; i += 1) {
     for (let j = 0; j < i + 1; j += 1) {
-      c.queueToVatRoot(`staticDumbo${i + 1}`, 'doSomething', [
-        `staticDumbo${i + 1} #${j + 1}`,
-      ]);
+      c.queueToVatRoot(
+        `staticDumbo${i + 1}`,
+        'doSomething',
+        [`staticDumbo${i + 1} #${j + 1}`],
+        'none',
+      );
     }
   }
   for (let i = 0; i < 3; i += 1) {
     for (let j = 0; j < i + 1; j += 1) {
-      c.queueToVatObject(dynamicRoots[i], 'doSomething', [
-        `dynamicDumbo${i + 1} #${j + 1}`,
-      ]);
+      c.queueToVatObject(
+        dynamicRoots[i],
+        'doSomething',
+        [`dynamicDumbo${i + 1} #${j + 1}`],
+        'none',
+      );
     }
   }
   // Note: no call to c.run() here, so all the above messages are still enqueued
 
-  const dumpBefore = c.dump();
-  t.is(dumpBefore.acceptanceQueue.length, 12);
-  t.is(dumpBefore.reapQueue.length, 0);
-  t.is(dumpBefore.runQueue.length, 0);
+  const { activeVats } = c.getStatus();
+  t.log(activeVats.map(({ id, options }) => `${id}: ${options.name}`));
+  // As noted in kernel.js, the comms vat is not reapable.
+  const reapable = activeVats.flatMap(({ id, options }) =>
+    options.name === 'comms' ? [] : [id],
+  );
+  t.true(reapable.length >= 7); // bootstrap, staticDumbo{1,2,3}, dyn{1,2,3}
+  // We care about the dynamic vats.
+  const [dyn1, dyn2, dyn3] = reapable.slice(-3);
+
+  /**
+   * @param {{ reap?: string[], acceptanceLength?: number, runLength?: number }} [expectations]
+   */
+  const checkQueues = (expectations = {}) => {
+    const { reap = [], acceptanceLength = 0, runLength = 0 } = expectations;
+    const dump = c.dump();
+    t.is(dump.acceptanceQueue.length, acceptanceLength);
+    t.is(dump.runQueue.length, runLength);
+    t.is(dump.reapQueue.length, reap.length);
+    t.deepEqual(new Set(dump.reapQueue), new Set(reap));
+  };
+
+  checkQueues({ acceptanceLength: 12 });
 
   c.reapAllVats();
-  const dumpPreReap = c.dump();
-  t.is(dumpPreReap.acceptanceQueue.length, 12);
-  t.is(dumpPreReap.reapQueue.length, 11);
-  t.is(dumpBefore.runQueue.length, 0);
-  // prettier-ignore
-  const reapQueueReference =
-    new Set(['v1', 'v3', 'v6', 'v7', 'v8', 'v5', 'v2', 'v4', 'v9', 'v10', 'v11'])
-  const reapQueueActual = new Set(dumpPreReap.reapQueue);
-  t.deepEqual(reapQueueActual, reapQueueReference);
+  checkQueues({ reap: reapable, acceptanceLength: 12 });
 
   await c.run();
-  const dumpPostReap = c.dump();
-  t.is(dumpPostReap.acceptanceQueue.length, 0);
-  t.is(dumpPostReap.reapQueue.length, 0);
-  t.is(dumpBefore.runQueue.length, 0);
+  checkQueues();
 
-  t.pass();
+  // Create a chain of references
+
+  /** @type {string[]} */
+  const exportedPromises = [];
+  exportedPromises.push(
+    /** @type {string} */ (c.queueToVatRoot('bootstrap', 'getExport')),
+  );
+
+  for (let i = 0; i < 3; i += 1) {
+    const lastExported = /** @type {string} */ (exportedPromises.at(-1));
+    exportedPromises.push(
+      /** @type {string} */ (
+        c.queueToVatObject(dynamicRoots[i], 'makeHolder', [kslot(lastExported)])
+      ),
+    );
+  }
+  await c.run();
+
+  // Drop our interest in the intermediary promises without gaining an interest
+  // in their settlement
+  for (const p of exportedPromises.splice(0, exportedPromises.length - 1)) {
+    c.kpResolution(p, { incref: false });
+  }
+
+  // Workaround to trigger processRefcounts
+  c.queueToVatObject(dynamicRoots.at(-1), 'doSomething', ['ping'], 'none');
+
+  await c.run();
+  checkQueues();
+
+  const postMessagesReapPos = c.reapAllVats();
+  checkQueues({ reap: reapable });
+
+  await c.run();
+  checkQueues();
+
+  const postReapReapPos = c.reapAllVats(postMessagesReapPos);
+  // Verify that if there is nothing to do, vat positions don't change through reapAll
+  t.deepEqual(postReapReapPos, postMessagesReapPos);
+  checkQueues();
+
+  // Drop our interest in the last promise of the chain without gaining an
+  // interest in its settlement
+  c.kpResolution(exportedPromises.shift(), { incref: false });
+  // Workaround to trigger processRefcounts, making sure we only add activity to the vat retiring an export
+  c.queueToVatObject(dynamicRoots.at(-1), 'doSomething', ['ping'], 'none');
+  await c.run();
+  checkQueues();
+
+  // Continuously trigger reapAllVats for vats that have seen deliveries,
+  // asserting that for each round, the expected vat is reporting a reap.
+  // Because of our chained references, our GC shakes lose an object for
+  // each reap round.
+  let prevReapPos = postMessagesReapPos;
+  for (const vatID of [dyn3, dyn2, dyn1, c.vatNameToID('bootstrap')]) {
+    const { [vatID]: prevVatPos, ...prevOtherPos } = prevReapPos;
+    const newReapPos = c.reapAllVats(prevReapPos);
+    checkQueues({ reap: [vatID] });
+    const { [vatID]: newVatPos, ...newOtherPos } = newReapPos;
+    t.log(`vat ${vatID} reap pos prev ${prevVatPos}, new ${newVatPos}`);
+    t.deepEqual(newOtherPos, prevOtherPos);
+    prevReapPos = newReapPos;
+    await c.run();
+    checkQueues();
+  }
+
+  // Once the root of the chain of reference is collected, doing more reaping
+  // will not trigger any more activity.
+  const finalReapPos = c.reapAllVats(prevReapPos);
+  checkQueues();
+  t.deepEqual(finalReapPos, prevReapPos);
 });

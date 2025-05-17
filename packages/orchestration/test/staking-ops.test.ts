@@ -25,9 +25,11 @@ import { decodeBase64, encodeBase64 } from '@endo/base64';
 import { Far } from '@endo/far';
 import { Timestamp } from '@agoric/cosmic-proto/google/protobuf/timestamp.js';
 import { makeNameHubKit } from '@agoric/vats';
+import type { Invitation, ZCF } from '@agoric/zoe';
 import { prepareCosmosOrchestrationAccountKit } from '../src/exos/cosmos-orchestration-account.js';
 import type {
-  ChainAddress,
+  Bech32Address,
+  CosmosChainAddress,
   DenomAmount,
   IcaAccount,
   ICQConnection,
@@ -110,7 +112,7 @@ const dateToTimestamp = (date: Date): Timestamp => ({
 
 const makeScenario = () => {
   const mockAccount = (
-    addr = 'agoric1234',
+    addr = 'agoric1234' as Bech32Address,
     delegations = {} as Record<string, Coin>,
   ) => {
     const calls = [] as Array<{ msgs: AnyJson[] }>;
@@ -156,7 +158,7 @@ const makeScenario = () => {
       },
     };
 
-    const chainAddress: ChainAddress = harden({
+    const chainAddress: CosmosChainAddress = harden({
       value: addr,
       encoding: 'bech32',
       chainId: 'mock-1',

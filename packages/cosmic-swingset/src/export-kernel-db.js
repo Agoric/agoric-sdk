@@ -2,7 +2,8 @@
 // @ts-check
 // @jessie-check
 
-import '@endo/init/unsafe-fast.js';
+// This file functions as both an importable module and a standalone script.
+import './helpers/maybe-unsafe-lockdown.js';
 
 import os from 'os';
 import process from 'process';

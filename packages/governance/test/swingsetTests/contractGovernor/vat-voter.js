@@ -11,6 +11,10 @@ import {
 } from '../../../src/index.js';
 import { MALLEABLE_NUMBER } from './governedContract.js';
 
+/**
+ * @import {EReturn} from '@endo/far';
+ */
+
 const build = async (log, zoe) => {
   return Far('voter', {
     createVoter: async (name, invitation) => {
@@ -105,7 +109,7 @@ const build = async (log, zoe) => {
 };
 
 /**
- * @typedef {ReturnType<Awaited<ReturnType<typeof build>>['createVoter']>} EVatVoter
+ * @typedef {ReturnType<EReturn<typeof build>['createVoter']>} EVatVoter
  */
 
 /** @type {import('@agoric/swingset-vat/src/kernel/vat-loader/types.js').BuildRootObjectForTestVat} */

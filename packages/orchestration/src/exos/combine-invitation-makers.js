@@ -3,7 +3,7 @@ import {
   prepareGuardedAttenuator,
   makeSyncMethodCallback,
 } from '@agoric/internal/src/callback.js';
-import { getMethodNames } from '@agoric/internal';
+import { getStringMethodNames } from '@agoric/internal';
 
 /**
  * @import {InvitationMakers} from '@agoric/smart-wallet/src/types.js';
@@ -42,7 +42,9 @@ export const prepareCombineInvitationMakers = (zone, ...interfaceGuards) => {
     const overrides = {};
     for (const invMakers of invitationMakers) {
       // remove '__getInterfaceGuard__', '__getMethodNames__'
-      const names = getMethodNames(invMakers).filter(n => !n.startsWith('__'));
+      const names = getStringMethodNames(invMakers).filter(
+        n => !n.startsWith('__'),
+      );
       for (const key of names) {
         overrides[key] = makeSyncMethodCallback(invMakers, key);
       }

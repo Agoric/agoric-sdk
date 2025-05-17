@@ -1,0 +1,63 @@
+{
+  "@type": "/cosmos.params.v1beta1.ParameterChangeProposal",
+  "title": "Denominate swingset fees in BLD",
+  "description": "...",
+  "changes": [
+    {
+      "subspace": "swingset",
+      "key": "fee_unit_price",
+      "value": [
+        {
+          "denom": "ubld",
+          "amount": "1000000"
+        }
+      ]
+    },
+    {
+      "subspace": "swingset",
+      "key": "beans_per_unit",
+      "value": [
+        {
+          "key": "feeUnit",
+          "beans": "20000000000"
+        },
+        {
+          "key": "smartWalletProvision",
+          "beans": "200000000000"
+        },
+        {
+          "key": "blockComputeLimit",
+          "beans": "6500000000"
+        },
+        {
+          "key": "inboundTx",
+          "beans": "10000000000"
+        },
+        {
+          "key": "message",
+          "beans": "1000000000"
+        },
+        {
+          "key": "messageByte",
+          "beans": "20000000"
+        },
+        {
+          "key": "minFeeDebit",
+          "beans": "200000000000"
+        },
+        {
+          "key": "vatCreation",
+          "beans": "30000000"
+        },
+        {
+          "key": "xsnapComputron",
+          "beans": "100"
+        },
+        {
+          "key": "storageByte",
+          "beans": "20000000"
+        }
+      ]
+    }
+  ]
+}

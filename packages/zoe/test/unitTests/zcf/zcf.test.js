@@ -12,6 +12,10 @@ import buildManualTimer from '../../../tools/manualTimer.js';
 import { setupZCFTest } from './setupZcfTest.js';
 import { assertAmountsEqual } from '../../zoeTestHelpers.js';
 
+/**
+ * @import {ContractMeta, Invitation, OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
+ */
+
 test(`zcf.getZoeService`, async t => {
   const { zoe, zcf } = await setupZCFTest();
   const zoeService = await zcf.getZoeService();
@@ -592,53 +596,6 @@ test(`zcf.makeZCFMint - burnLosses - seat exited`, async t => {
   );
 });
 
-test('burnLosses - offer safety violation no staged allocation', async t => {
-  const { zcf } = await setupZCFTest();
-  const doubloonMint = await zcf.makeZCFMint('Doubloons');
-  const yenMint = await zcf.makeZCFMint('Yen');
-  const { brand: doubloonBrand } = doubloonMint.getIssuerRecord();
-  const { brand: yenBrand } = yenMint.getIssuerRecord();
-  const yenAmount = AmountMath.make(yenBrand, 100n);
-  const proposal = harden({
-    give: { DownPayment: yenAmount },
-    want: { Bonus: AmountMath.make(doubloonBrand, 1_000_000n) },
-  });
-  const { zcfSeat: mintSeat, userSeat: payoutSeat } = zcf.makeEmptySeatKit();
-  yenMint.mintGains(
-    harden({
-      Cost: yenAmount,
-    }),
-    mintSeat,
-  );
-  mintSeat.exit();
-  const payout = await E(payoutSeat).getPayout('Cost');
-  const payment = { DownPayment: payout };
-
-  const { zcfSeat } = await makeOffer(
-    zcf.getZoeService(),
-    zcf,
-    proposal,
-    payment,
-  );
-
-  zcfSeat.incrementBy({ SidePayment: AmountMath.make(yenBrand, 50n) });
-  const staged = zcfSeat.getStagedAllocation();
-
-  t.throws(
-    () =>
-      yenMint.burnLosses(
-        { DownPayment: AmountMath.make(yenBrand, 50n) },
-        zcfSeat,
-      ),
-    {
-      message:
-        /The allocation after burning losses .* for the zcfSeat was not offer safe/,
-    },
-  );
-  t.truthy(zcfSeat.hasStagedAllocation());
-  t.deepEqual(zcfSeat.getStagedAllocation().DownPayment, staged.DownPayment);
-});
-
 test(`zcf.makeZCFMint - displayInfo`, async t => {
   const { zcf } = await setupZCFTest();
   const zcfMint = await zcf.makeZCFMint(
@@ -694,15 +651,10 @@ test(`zcfSeat from zcf.makeEmptySeatKit - only these properties exist`, async t 
     'fail',
     'getAmountAllocated',
     'getCurrentAllocation',
-    'getStagedAllocation',
     'getSubscriber',
     'getProposal',
     'hasExited',
     'isOfferSafe',
-    'incrementBy',
-    'decrementBy',
-    'clear',
-    'hasStagedAllocation',
   ];
   const { zcf } = await setupZCFTest();
   const makeZCFSeat = () => zcf.makeEmptySeatKit().zcfSeat;
@@ -765,7 +717,7 @@ test(`zcfSeat.isOfferSafe from zcf.makeEmptySeatKit`, async t => {
  * @param {ZCFSeat} zcfSeat
  * @param {Keyword} gainsKeyword
  * @param {bigint} gainsValue
- * @returns {Promise<IssuerRecord>}
+ * @returns {Promise<ZoeIssuerRecord>}
  */
 const allocateEasy = async (
   zcf,
@@ -860,26 +812,6 @@ test(`zcfSeat.getAmountAllocated from zcf.makeEmptySeatKit`, async t => {
 
   t.throws(() => zcfSeat.getAmountAllocated('DoesNotExist'), {
     message: `A brand must be supplied when the keyword is not defined`,
-  });
-});
-
-test(`zcfSeat.incrementBy, decrementBy, zcf.reallocate from zcf.makeEmptySeatKit`, async t => {
-  const { zcf } = await setupZCFTest();
-  const { zcfSeat: zcfSeat1 } = zcf.makeEmptySeatKit();
-  const { zcfSeat: zcfSeat2 } = zcf.makeEmptySeatKit();
-
-  const issuerRecord1 = await allocateEasy(zcf, 'Stuff', zcfSeat1, 'A', 6n);
-  const six = AmountMath.make(issuerRecord1.brand, 6n);
-  zcfSeat1.decrementBy(harden({ A: six }));
-  zcfSeat2.incrementBy(harden({ B: six }));
-
-  zcf.reallocate(zcfSeat1, zcfSeat2);
-
-  t.deepEqual(zcfSeat1.getCurrentAllocation(), {
-    A: AmountMath.make(issuerRecord1.brand, 0n),
-  });
-  t.deepEqual(zcfSeat2.getCurrentAllocation(), {
-    B: AmountMath.make(issuerRecord1.brand, 6n),
   });
 });
 
@@ -998,176 +930,6 @@ test(`userSeat.getPayout() should throw from zcf.makeEmptySeatKit`, async t => {
     message:
       'In "getPayout" method of (ZoeUserSeat userSeat): Expected at least 1 arguments: []',
   });
-});
-
-test(`zcf.reallocate < 2 seats`, async t => {
-  const { zcf } = await setupZCFTest();
-  // @ts-expect-error deliberate invalid arguments for testing
-  t.throws(() => zcf.reallocate(), {
-    message:
-      'In "reallocate" method of (ZcfSeatManager seatManager): Expected at least 2 arguments: []',
-  });
-});
-
-test(`zcf.reallocate 3 seats, rights conserved`, async t => {
-  const { moolaKit, simoleanKit, moola, simoleans } = setup();
-  const { zoe, zcf } = await setupZCFTest({
-    Moola: moolaKit.issuer,
-    Simoleans: simoleanKit.issuer,
-  });
-
-  const { zcfSeat: zcfSeat1 } = await makeOffer(
-    zoe,
-    zcf,
-    harden({ want: { A: simoleans(2n) }, give: { B: moola(3n) } }),
-    harden({ B: moolaKit.mint.mintPayment(moola(3n)) }),
-  );
-  const { zcfSeat: zcfSeat2 } = await makeOffer(
-    zoe,
-    zcf,
-    harden({
-      want: { Whatever: moola(2n) },
-      give: { Whatever2: simoleans(2n) },
-    }),
-    harden({ Whatever2: simoleanKit.mint.mintPayment(simoleans(2n)) }),
-  );
-
-  const { zcfSeat: zcfSeat3 } = await makeOffer(
-    zoe,
-    zcf,
-    harden({
-      want: { Whatever: moola(1n) },
-    }),
-  );
-  zcfSeat1.decrementBy(harden({ B: moola(3n) }));
-  zcfSeat3.incrementBy(harden({ Whatever: moola(1n) }));
-  zcfSeat2.incrementBy(harden({ Whatever: moola(2n) }));
-
-  zcfSeat2.decrementBy(harden({ Whatever2: simoleans(2n) }));
-  zcfSeat1.incrementBy(harden({ A: simoleans(2n) }));
-
-  zcf.reallocate(zcfSeat1, zcfSeat2, zcfSeat3);
-  t.deepEqual(zcfSeat1.getCurrentAllocation(), {
-    A: simoleans(2n),
-    B: moola(0n),
-  });
-
-  t.deepEqual(zcfSeat2.getCurrentAllocation(), {
-    Whatever: moola(2n),
-    Whatever2: simoleans(0n),
-  });
-
-  t.deepEqual(zcfSeat3.getCurrentAllocation(), {
-    Whatever: moola(1n),
-  });
-});
-
-test(`zcf.reallocate 3 seats, some not staged`, async t => {
-  const { moolaKit, simoleanKit, moola, simoleans } = setup();
-  const { zoe, zcf } = await setupZCFTest({
-    Moola: moolaKit.issuer,
-    Simoleans: simoleanKit.issuer,
-  });
-
-  const { zcfSeat: zcfSeat1 } = await makeOffer(
-    zoe,
-    zcf,
-    harden({ want: { A: simoleans(2n) }, give: { B: moola(3n) } }),
-    harden({ B: moolaKit.mint.mintPayment(moola(3n)) }),
-  );
-  const { zcfSeat: zcfSeat2 } = await makeOffer(
-    zoe,
-    zcf,
-    harden({
-      want: { Whatever: moola(2n) },
-      give: { Whatever2: simoleans(2n) },
-    }),
-    harden({ Whatever2: simoleanKit.mint.mintPayment(simoleans(2n)) }),
-  );
-
-  const { zcfSeat: zcfSeat3 } = await makeOffer(
-    zoe,
-    zcf,
-    harden({
-      want: { Whatever: moola(1n) },
-    }),
-  );
-
-  zcfSeat1.incrementBy(
-    harden({
-      A: simoleans(100n),
-    }),
-  );
-
-  t.throws(() => zcf.reallocate(zcfSeat1, zcfSeat2, zcfSeat3), {
-    message:
-      'Reallocate failed because a seat had no staged allocation. Please add or subtract from the seat and then reallocate.',
-  });
-
-  t.deepEqual(zcfSeat1.getCurrentAllocation(), {
-    A: simoleans(0n),
-    B: moola(3n),
-  });
-  t.deepEqual(zcfSeat2.getCurrentAllocation(), {
-    Whatever: moola(0n),
-    Whatever2: simoleans(2n),
-  });
-  t.deepEqual(zcfSeat3.getCurrentAllocation(), { Whatever: moola(0n) });
-});
-
-test(`zcf.reallocate 3 seats, rights NOT conserved`, async t => {
-  const { moolaKit, simoleanKit, moola, simoleans } = setup();
-  const { zoe, zcf } = await setupZCFTest({
-    Moola: moolaKit.issuer,
-    Simoleans: simoleanKit.issuer,
-  });
-
-  const { zcfSeat: zcfSeat1 } = await makeOffer(
-    zoe,
-    zcf,
-    harden({ want: { A: simoleans(2n) }, give: { B: moola(3n) } }),
-    harden({ B: moolaKit.mint.mintPayment(moola(3n)) }),
-  );
-  const { zcfSeat: zcfSeat2 } = await makeOffer(
-    zoe,
-    zcf,
-    harden({
-      want: { Whatever: moola(2n) },
-      give: { Whatever2: simoleans(2n) },
-    }),
-    harden({ Whatever2: simoleanKit.mint.mintPayment(simoleans(2n)) }),
-  );
-
-  const { zcfSeat: zcfSeat3 } = await makeOffer(
-    zoe,
-    zcf,
-    harden({
-      want: { Whatever: moola(1n) },
-    }),
-  );
-
-  zcfSeat2.decrementBy(harden({ Whatever2: simoleans(2n) }));
-  // This does not conserve rights in the slightest
-  zcfSeat1.incrementBy(
-    harden({
-      A: simoleans(100n),
-    }),
-  );
-  zcfSeat3.incrementBy(harden({ Whatever: moola(1n) }));
-
-  t.throws(() => zcf.reallocate(zcfSeat1, zcfSeat2, zcfSeat3), {
-    message: /rights were not conserved for brand .*/,
-  });
-
-  t.deepEqual(zcfSeat1.getCurrentAllocation(), {
-    A: simoleans(0n),
-    B: moola(3n),
-  });
-  t.deepEqual(zcfSeat2.getCurrentAllocation(), {
-    Whatever: moola(0n),
-    Whatever2: simoleans(2n),
-  });
-  t.deepEqual(zcfSeat3.getCurrentAllocation(), { Whatever: moola(0n) });
 });
 
 test(`zcf.shutdown - userSeat exits`, async t => {

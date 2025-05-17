@@ -1,19 +1,24 @@
+import type { JsonSafe } from '@agoric/cosmic-proto';
 import type {
   QueryAllBalancesResponseSDKType,
   QueryBalanceResponseSDKType,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import type { QueryDelegationTotalRewardsResponseSDKType } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/query.js';
-import type { QueryValidatorsResponseSDKType } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
-import type { QueryDelegatorDelegationsResponseSDKType } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
-import type { QueryDelegatorUnbondingDelegationsResponseSDKType } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
+import type {
+  QueryDelegatorDelegationsResponseSDKType,
+  QueryDelegatorUnbondingDelegationsResponseSDKType,
+  QueryValidatorsResponseSDKType,
+} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
 import type { QueryDenomHashResponseSDKType } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/query.js';
-import type { QueryChannelResponseSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/query.js';
-import type { QueryChannelsResponseSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/query.js';
+import type {
+  QueryChannelResponseSDKType,
+  QueryChannelsResponseSDKType,
+} from '@agoric/cosmic-proto/ibc/core/channel/v1/query.js';
+import type { BlockSDKType } from '@agoric/cosmic-proto/tendermint/types/block.js';
 
-// TODO: export tendermint Block from @agoric/cosmic-proto
-type BlockHeaderPartial = {
-  height: number;
-  time: string;
+// XXX JsonSafe should handle
+export type BlockJson = JsonSafe<BlockSDKType> & {
+  header: JsonSafe<BlockSDKType['header']> & { time: string };
 };
 
 // TODO use telescope generated query client from @agoric/cosmic-proto
@@ -21,20 +26,31 @@ type BlockHeaderPartial = {
 // TODO: inject fetch
 export function makeQueryClient(apiUrl: string) {
   const query = async <T>(path: string): Promise<T> => {
-    try {
-      const res = await fetch(`${apiUrl}${path}`);
-      const json = await res.json();
-      return json as T;
-    } catch (err) {
-      console.error(err);
-      throw err;
-    }
+    const maxRetries = 5;
+    const retryDelayMS = 500;
+    return new Promise<T>((resolve, reject) => {
+      const doFetch = async retries => {
+        try {
+          const response = await fetch(`${apiUrl}${path}`);
+          const json = await response.json();
+          resolve(json as T);
+        } catch (err) {
+          if (retries === maxRetries) {
+            console.error(err);
+            reject(err);
+            return;
+          }
+          setTimeout(() => doFetch(retries + 1), retryDelayMS);
+        }
+      };
+      doFetch(0);
+    });
   };
 
   return {
     query,
     queryBlock: (height?: number) =>
-      query<{ block: { header: BlockHeaderPartial } }>(
+      query<{ block: BlockJson }>(
         `/cosmos/base/tendermint/v1beta1/blocks/${height || 'latest'}`,
       ),
     queryBalances: (address: string) =>

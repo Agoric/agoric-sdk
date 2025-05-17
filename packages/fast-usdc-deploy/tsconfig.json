@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {},
+  "include": [
+    "scripts",
+    "src",
+    "test"
+  ],
+  "exclude": ["test/bundles/"],
+}

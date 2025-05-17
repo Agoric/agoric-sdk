@@ -10,6 +10,7 @@ export {};
 /**
  * @import { ERef } from '@endo/far'
  * @import {Passable} from '@endo/pass-style'
+ * @import {Key, Pattern} from '@endo/patterns';
  */
 
 /**

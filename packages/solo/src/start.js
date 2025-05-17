@@ -9,15 +9,17 @@ import { promisify } from 'util';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 // import { createHash } from 'crypto';
 
-import createRequire from 'esm';
-
 import anylogger from 'anylogger';
 
 // import connect from 'lotion-connect';
 // import djson from 'deterministic-json';
 
 import { assert, Fail } from '@endo/errors';
-import { makeSlogSender, tryFlushSlogSender } from '@agoric/telemetry';
+import {
+  getTelemetryProviders,
+  makeSlogSender,
+  tryFlushSlogSender,
+} from '@agoric/telemetry';
 import {
   loadSwingsetConfigFile,
   buildCommand,
@@ -32,11 +34,11 @@ import {
   makeEphemeralMailboxStorage,
 } from '@agoric/swingset-vat';
 import { openSwingStore } from '@agoric/swing-store';
+import { unprefixedProperties } from '@agoric/internal/src/js-utils.js';
 import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 import {
   makeDefaultMeterProvider,
-  getTelemetryProviders,
   makeSlogCallbacks,
   exportKernelStats,
 } from '@agoric/cosmic-swingset/src/kernel-stats.js';
@@ -48,9 +50,6 @@ import { makeHTTPListener } from './web.js';
 import { connectToChain } from './chain-cosmos-sdk.js';
 
 const log = anylogger('start');
-
-// FIXME: Needed for legacy plugins.
-const esmRequire = createRequire(/** @type {any} */ ({}));
 
 let swingSetRunning = false;
 
@@ -134,7 +133,7 @@ const buildSwingset = async (
 
     // TODO: Detect the module type and use the appropriate loader, just like
     // `agoric deploy`.
-    return esmRequire(pluginFile);
+    return import(pluginFile);
   };
 
   const plugin = buildPlugin(pluginDir, importPlugin, queueThunkForKernel);
@@ -164,14 +163,9 @@ const buildSwingset = async (
     plugin: { ...plugin.endowments },
   };
 
-  const soloEnv = Object.fromEntries(
-    Object.entries(process.env)
-      .filter(([k]) => k.match(/^SOLO_/)) // narrow to SOLO_ prefixes. e.g. SOLO_SLOGFILE
-      .map(([k, v]) => [k.replace(/^SOLO_/, ''), v]), // Replace SOLO_ controls with chain version.
-  );
   const env = {
     ...process.env,
-    ...soloEnv,
+    ...unprefixedProperties(process.env, 'SOLO_'),
   };
   const { metricsProvider = makeDefaultMeterProvider() } =
     getTelemetryProviders({
@@ -364,7 +358,7 @@ const deployWallet = async ({ agWallet, deploys, hostport }) => {
   // This part only runs if there were wallet deploys to do.
   const resolvedDeploys = deploys.map(dep => path.resolve(agWallet, dep));
 
-  const resolvedUrl = await importMetaResolve(
+  const resolvedUrl = importMetaResolve(
     'agoric/src/entrypoint.js',
     import.meta.url,
   );
@@ -480,7 +474,7 @@ const start = async (basedir, argv) => {
   // Remove wallet traces.
   await unlink('html/wallet').catch(_ => {});
 
-  const packageUrl = await importMetaResolve(
+  const packageUrl = importMetaResolve(
     `${wallet}/package.json`,
     import.meta.url,
   );
@@ -495,7 +489,7 @@ const start = async (basedir, argv) => {
   );
 
   const agWallet = path.dirname(pjs);
-  const agWalletHtmlUrl = await importMetaResolve(htmlBasePath, packageUrl);
+  const agWalletHtmlUrl = importMetaResolve(htmlBasePath, packageUrl);
   const agWalletHtml = new URL(agWalletHtmlUrl).pathname;
 
   let hostport;

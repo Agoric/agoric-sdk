@@ -12,8 +12,8 @@ import {
 // so paths can be expresssed relative to this file and made absolute
 const bfile = name => new URL(name, import.meta.url).pathname;
 
-const importSpec = spec =>
-  importMetaResolve(spec, import.meta.url).then(u => new URL(u).pathname);
+const importSpec = async spec =>
+  new URL(importMetaResolve(spec, import.meta.url)).pathname;
 
 test('walletFactory service upgrade', async t => {
   /** @type {SwingSetConfig} */

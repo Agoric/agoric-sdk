@@ -46,7 +46,7 @@
 /**
  * @typedef {object} VaultFactoryCreatorFacet
  * @property {AddVaultType} addVaultType
- * @property {() => Allocation} getRewardAllocation
+ * @property {() => import('@agoric/zoe').Allocation} getRewardAllocation
  * @property {() => Promise<Invitation<string, never>>} makeCollectFeesInvitation
  * @property {() => import('@agoric/time').TimerWaker} makeLiquidationWaker
  * @property {() => import('@agoric/time').TimerWaker} makePriceLockWaker
@@ -96,7 +96,10 @@
 /**
  * @typedef {object} LiquidationStrategy
  * @property {() => KeywordKeywordRecord} keywordMapping
- * @property {(collateral: Amount, run: Amount) => Proposal} makeProposal
+ * @property {(
+ *   collateral: Amount,
+ *   run: Amount,
+ * ) => import('@agoric/zoe').Proposal} makeProposal
  * @property {(debt: Amount) => Promise<Invitation>} makeInvitation
  */
 

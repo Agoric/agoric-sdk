@@ -1,6 +1,6 @@
 {
   "extends": "../../tsconfig.json",
-  "compilerOptions": {},
+  "compilerOptions": {"skipLibCheck": false},
   "include": [
     "contractFacet.js",
     "scripts",

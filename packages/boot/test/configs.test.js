@@ -12,10 +12,9 @@ import { mustMatch } from '@agoric/store';
 import { loadSwingsetConfigFile, shape as ssShape } from '@agoric/swingset-vat';
 import { provideBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 
-const importConfig = configName =>
-  importMetaResolve(`@agoric/vm-config/${configName}`, import.meta.url).then(
-    u => new URL(u).pathname,
-  );
+const importConfig = async configName =>
+  new URL(importMetaResolve(`@agoric/vm-config/${configName}`, import.meta.url))
+    .pathname;
 
 const test =
   /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>}} */ (

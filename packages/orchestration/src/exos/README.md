@@ -114,6 +114,7 @@ classDiagram
       asContinuingOffer()
       deactivate()
       delegate()
+      depositForBurn()
       executeEncodedTx()
       getAddress()
       getBalance()

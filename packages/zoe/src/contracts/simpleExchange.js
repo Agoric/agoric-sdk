@@ -9,6 +9,10 @@ import {
 } from '../contractSupport/zoeHelpers.js';
 
 /**
+ * @import {ContractMeta, Invitation, OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
+ */
+
+/**
  * SimpleExchange is an exchange with a simple matching algorithm, which allows
  * an unlimited number of parties to create new orders or accept existing
  * orders. The notifier allows callers to find the current list of orders.

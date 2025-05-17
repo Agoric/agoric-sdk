@@ -13,6 +13,10 @@ The `agoric` software revision includes the vats necessary for building and test
 - vat-transfer
 - vat-orchestration
 
+## Resource Requirements
+
+The Kubernetes deployments in `config.yaml` and `config.fusdc.yaml` are configured to request approximately 6.5 CPU cores and 9.5 GiB of memory from the host machine. Make sure your local Kubernetes environment (Docker Desktop or similar) has sufficient resources allocated.
+
 ## Initial Setup
 
 Install the relevant dependencies:
@@ -37,6 +41,8 @@ You can start everything with a single command:
 
 ```sh
 make start
+# or for testing with Fast USDC
+make start FILE=config.fusdc.yaml
 ```
 
 This command will:
@@ -61,7 +67,7 @@ make wait-for-pods
 make port-forward
 
 # set up Agoric testing environment
-make fund-provision-pool override-chain-registry register-bank-assets
+make fund-provision-pool register-bank-assets
 ```
 
 If you get an error like "connection refused", you need to wait longer, until all the pods are Running.
@@ -92,13 +98,18 @@ kubectl logs hermes-agoric-cosmoshub-0 --container=relayer --follow
 kubectl logs hermes-osmosis-cosmoshub-0 --container=relayer --follow
 ```
 
+## Test Suites
+
+To run test suites, see [./test//README.md](./test//README.md)
+
 ## Running with Go Relayer
 
 ```sh
-# run tests with go-relayer configuration
+# start containers with go-relayer configuration
 make start FILE=config.go-relayer.yaml
 
-RELAYER_TYPE=go-relayer yarn test
+# run tests with go-relayer configuration
+RELAYER_TYPE=go-relayer yarn test:main
 ```
 
 ## Agoric Smart Wallet
@@ -117,6 +128,12 @@ make fund-wallet COIN=20000000ubld ADDR=$ADDR
 
 # provision the smart wallet
 make provision-smart-wallet ADDR=$ADDR
+```
+
+### Debugging Interchain Account Authorizations (ABCI code: 4)
+
+```bash
+kubectl exec -i noblelocal-genesis-0 -c validator -- nobled query interchain-accounts host params | jq
 ```
 
 ## Chain Registry

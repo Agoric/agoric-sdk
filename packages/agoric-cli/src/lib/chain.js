@@ -216,7 +216,7 @@ export const pollTx = async (txhash, opts) => {
         ...nodeArgs,
         ...outJson,
       ],
-      { stdio: ['ignore', 'pipe', 'ignore'] },
+      { stdio: ['ignore', 'pipe', 'pipe'] },
     );
     // XXX this type is defined in a .proto file somewhere
     /** @type {{ height: string, txhash: string, code: number, timestamp: string }} */

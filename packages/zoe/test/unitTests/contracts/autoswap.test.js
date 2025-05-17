@@ -111,6 +111,7 @@ test('autoSwap API interactions, no jig', async t => {
   const bobInstance = await E(zoe).getInstance(bobExclInvitation);
   const bobInstallation = await E(zoe).getInstallation(bobExclInvitation);
   t.is(bobInstallation, installation, `installation`);
+  /** @type {any} */
   const bobAutoswap = E(zoe).getPublicFacet(bobInstance);
 
   // Bob looks up how much he can get in simoleans for 3 moola

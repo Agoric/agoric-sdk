@@ -63,7 +63,7 @@ export const retryUntilCondition = async (
     setTimeout,
   },
 ) => {
-  console.log({ maxRetries, retryIntervalMs, message });
+  log({ maxRetries, retryIntervalMs, message });
 
   await null; // separate sync prologue
 
@@ -109,7 +109,7 @@ export const retryUntilCondition = async (
     }
 
     retries += 1;
-    console.log(
+    log(
       `Retry ${retries}/${maxRetries} - Waiting for ${retryIntervalMs}ms for ${message}...`,
     );
     await sleep(retryIntervalMs, { log, setTimeout });
@@ -120,14 +120,13 @@ export const retryUntilCondition = async (
 
 /**
  * @param {WaitUntilOptions} options
- * @returns {WaitUntilOptions & {log?: typeof console.log}}
+ * @returns {WaitUntilOptions}
  */
 const overrideDefaultOptions = options => {
   const defaultValues = {
     maxRetries: 6,
     retryIntervalMs: 3500,
     errorMessage: 'Error',
-    log: console.log,
   };
 
   return { ...defaultValues, ...options };
@@ -155,7 +154,7 @@ export const waitUntilContractDeployed = (
   ambientAuthority,
   options,
 ) => {
-  const { follow, setTimeout } = ambientAuthority;
+  const { log, follow, setTimeout } = ambientAuthority;
   const getInstances = makeGetInstances(follow);
   const { errorMessage, ...resolvedOptions } = overrideDefaultOptions(options);
 
@@ -163,7 +162,7 @@ export const waitUntilContractDeployed = (
     getInstances,
     instanceObject => Object.keys(instanceObject).includes(contractName),
     errorMessage,
-    { setTimeout, ...resolvedOptions },
+    { log, setTimeout, ...resolvedOptions },
   );
 };
 
@@ -192,7 +191,7 @@ const checkCosmosBalance = (balances, threshold) => {
  * @param {WaitUntilOptions} options
  */
 export const waitUntilAccountFunded = (destAcct, io, threshold, options) => {
-  const { query, setTimeout } = io;
+  const { log, query, setTimeout } = io;
   const queryCosmosBalance = makeQueryCosmosBalance(query);
   const { errorMessage, ...resolvedOptions } = overrideDefaultOptions(options);
 
@@ -200,7 +199,7 @@ export const waitUntilAccountFunded = (destAcct, io, threshold, options) => {
     async () => queryCosmosBalance(destAcct),
     balances => checkCosmosBalance(balances, threshold),
     errorMessage,
-    { setTimeout, ...resolvedOptions },
+    { log, setTimeout, ...resolvedOptions },
   );
 };
 
@@ -246,7 +245,7 @@ export const waitUntilOfferResult = (
   io,
   options,
 ) => {
-  const { follow, setTimeout } = io;
+  const { log, follow, setTimeout } = io;
   const queryWallet = makeQueryWallet(follow);
   const { errorMessage, ...resolvedOptions } = overrideDefaultOptions(options);
 
@@ -254,7 +253,7 @@ export const waitUntilOfferResult = (
     async () => queryWallet(addr),
     status => checkOfferState(status, waitForPayouts, offerId),
     errorMessage,
-    { reusePromise: true, setTimeout, ...resolvedOptions },
+    { log, reusePromise: true, setTimeout, ...resolvedOptions },
   );
 };
 
@@ -281,7 +280,7 @@ const checkForInvitation = update => {
  * @param {WaitUntilOptions} options
  */
 export const waitUntilInvitationReceived = (addr, io, options) => {
-  const { follow, setTimeout } = io;
+  const { log, follow, setTimeout } = io;
   const queryWallet = makeQueryWallet(follow);
   const { errorMessage, ...resolvedOptions } = overrideDefaultOptions(options);
 
@@ -289,7 +288,7 @@ export const waitUntilInvitationReceived = (addr, io, options) => {
     async () => queryWallet(addr),
     checkForInvitation,
     errorMessage,
-    { reusePromise: true, setTimeout, ...resolvedOptions },
+    { log, reusePromise: true, setTimeout, ...resolvedOptions },
   );
 };
 
@@ -318,7 +317,7 @@ const checkLiveOffers = (update, offerId) => {
  * @param {WaitUntilOptions} options
  */
 export const waitUntilOfferExited = async (addr, offerId, io, options) => {
-  const { follow, setTimeout } = io;
+  const { log, follow, setTimeout } = io;
   const queryWalletCurrent = makeQueryWalletCurrent(follow);
   const { errorMessage, ...resolvedOptions } = overrideDefaultOptions(options);
 
@@ -326,7 +325,7 @@ export const waitUntilOfferExited = async (addr, offerId, io, options) => {
     async () => queryWalletCurrent(addr),
     update => checkLiveOffers(update, offerId),
     errorMessage,
-    { setTimeout, ...resolvedOptions },
+    { log, setTimeout, ...resolvedOptions },
   );
 };
 

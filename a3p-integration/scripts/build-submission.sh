@@ -16,7 +16,7 @@ shift || true
 sdkroot=$(git rev-parse --show-toplevel)
 (
   cd "$sdkroot"
-  yarn agoric run "packages/builders/scripts/$builderScript" "$@"
+  npm exec agoric run -- --verbose "packages/builders/scripts/$builderScript" "$@"
 )
 
 # Create and populate the submission directory.

@@ -97,6 +97,11 @@ export const makeIBCTransferMsg = (
   if (!fee_tokens || !fee_tokens.length) {
     throw Error('no fee tokens in chain config for' + sender.chainName);
   }
+  if (fee_tokens.length > 1) {
+    console.warn(
+      `Multiple fee tokens found for ${sender.chainName}, using the first one`,
+    );
+  }
   const { high_gas_price, denom } = fee_tokens[0];
   if (!high_gas_price) throw Error('no high gas price in chain config');
   const fee = makeFeeObject({
@@ -126,7 +131,9 @@ export const createFundedWalletAndClient = async (
 ) => {
   const { chain, creditFromFaucet, getRpcEndpoint } = useChain(chainName);
   const wallet = await createWallet(chain.bech32_prefix, mnemonic);
-  const address = (await wallet.getAccounts())[0].address;
+  const accounts = await wallet.getAccounts();
+  assert.equal(accounts.length, 1, `expected one account on ${chainName}`);
+  const { address } = accounts[0];
   log(`Requesting faucet funds for ${address}`);
   await creditFromFaucet(address);
   // TODO use telescope generated rpc client from @agoric/cosmic-proto

@@ -111,7 +111,7 @@ export const callProperties = (builders, ...args) =>
   fromEntries(builders.map(fn => entries(fn(...args))).flat());
 
 /**
- * Attenuate `specimen` to only allow acccess to properties specified in
+ * Attenuate `specimen` to only allow access to properties specified in
  * `template`
  *
  * @param {true | string | Record<string, any>} template true or vat name string

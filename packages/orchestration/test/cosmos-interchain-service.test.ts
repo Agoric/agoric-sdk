@@ -1,4 +1,8 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+import { decodeBase64 } from '@endo/base64';
+import { getMethodNames } from '@endo/eventual-send/utils.js';
+import { matches } from '@endo/patterns';
 import { toRequestQueryJson } from '@agoric/cosmic-proto';
 import {
   QueryBalanceRequest,
@@ -9,18 +13,14 @@ import {
   MsgDelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
-import { matches } from '@endo/patterns';
-import { heapVowE as E } from '@agoric/vow/vat.js';
-import { decodeBase64 } from '@endo/base64';
-import type { LocalIbcAddress } from '@agoric/vats/tools/ibc-utils.js';
-import { getMethodNames } from '@agoric/internal';
-import type { Port } from '@agoric/network';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { IBCMethod } from '@agoric/vats';
-import { commonSetup } from './supports.js';
-import { ChainAddressShape } from '../src/typeGuards.js';
+import type { LocalIbcAddress } from '@agoric/vats/tools/ibc-utils.js';
+import { heapVowE as E } from '@agoric/vow/vat.js';
+import { CosmosChainAddressShape } from '../src/typeGuards.js';
 import { tryDecodeResponse } from '../src/utils/cosmos.js';
 import { buildChannelCloseConfirmEvent } from '../tools/ibc-mocks.js';
+import { commonSetup } from './supports.js';
 
 const CHAIN_ID = 'cosmoshub-99';
 const HOST_CONNECTION_ID = 'connection-0';
@@ -162,7 +162,7 @@ test.serial('makeAccount returns an IcaAccountKit', async t => {
     'IcaAccountKit returns a Port remotable',
   );
 
-  t.true(matches(chainAddr, ChainAddressShape));
+  t.true(matches(chainAddr, CosmosChainAddressShape));
   t.regex(chainAddr.value, /cosmos1test/);
 
   const delegateMsg = Any.toJSON(
@@ -275,7 +275,7 @@ test.serial(
     t.is(bridgeDowncalls0.length, 2, 'bridge received 2 downcalls');
 
     // get channelInfo from `channelOpenAck` event
-    const { event, ...channelInfo } = bridgeEvents0[0];
+    const { event: _, ...channelInfo } = bridgeEvents0[0];
     // simulate channel closing from remote chain
     await E(ibcBridge).fromBridge(buildChannelCloseConfirmEvent(channelInfo));
     await eventLoopIteration();

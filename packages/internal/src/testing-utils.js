@@ -28,7 +28,7 @@ const stringOrTag = value => {
 };
 /**
  * @param {MapStore} store
- * @returns {object} tree of the contents of the storeÂ
+ * @returns {object} tree of the contents of the store
  */
 export const inspectMapStore = store => {
   /** @type {Record<string, unknown>} */

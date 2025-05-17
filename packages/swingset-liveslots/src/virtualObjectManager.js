@@ -7,6 +7,7 @@ import { assertPattern, mustMatch } from '@agoric/store';
 import { defendPrototype, defendPrototypeKit } from '@endo/exo/tools.js';
 import { Far, passStyleOf } from '@endo/marshal';
 import { Nat } from '@endo/nat';
+import { kindOf } from '@endo/patterns';
 import { parseVatSlot, makeBaseRef } from './parseVatSlots.js';
 import { enumerateKeysWithPrefix } from './vatstore-iterators.js';
 import { makeCache } from './cache.js';
@@ -20,6 +21,8 @@ import {
  * @import {DefineKindOptions} from '@agoric/swingset-liveslots'
  * @import {ClassContextProvider, KitContextProvider} from '@endo/exo'
  * @import {ToCapData, FromCapData} from '@endo/marshal';
+ * @import {Pattern} from '@endo/patterns';
+ * @import {SwingSetCapData} from './types.js';
  */
 
 const {
@@ -241,12 +244,47 @@ const insistDurableCapdata = (vrm, what, capdata, valueFor) => {
   }
 };
 
-const insistSameCapData = (oldCD, newCD) => {
-  // NOTE: this assumes both were marshalled with the same format
-  // (e.g. smallcaps vs pre-smallcaps). To somewhat tolerate new
-  // formats, we'd need to `serialize(unserialize(oldCD))`.
+const isUndefinedPatt = patt =>
+  patt === undefined ||
+  (kindOf(patt) === 'match:kind' && patt.payload === 'undefined');
+
+/**
+ * Assert that a new stateShape either matches the old, or only differs in the
+ * addition of new clearly-optional top-level fields as conveyed by an
+ * [Endo `M.or`]{@link https://endojs.github.io/endo/interfaces/_endo_patterns.PatternMatchers.html#or}
+ * Pattern with at least one `undefined` alternative.
+ *
+ * @param {SwingSetCapData} oldCD
+ * @param {SwingSetCapData} newCD
+ * @param {{ newShape: Record<string, Pattern>, serialize: ToCapData<string>, unserialize: FromCapData<string> }} powers
+ */
+const insistCompatibleShapeCapData = (
+  oldCD,
+  newCD,
+  { newShape, serialize, unserialize },
+) => {
   if (oldCD.body !== newCD.body) {
-    Fail`durable Kind stateShape mismatch (body)`;
+    // Allow introduction of any clearly-optional new field at top level.
+    const oldShape =
+      unserialize(oldCD) ||
+      Fail`durable Kind stateShape mismatch (no old shape)`;
+    passStyleOf(oldShape) === 'copyRecord' ||
+      Fail`durable Kind stateShape mismatch (invalid old shape)`;
+    assertPattern(oldShape);
+    for (const [name, oldPatt] of Object.entries(oldShape)) {
+      // Assert presence and CapData shape, but save slots for their own clause.
+      (Object.hasOwn(newShape, name) &&
+        serialize(newShape[name]).body === serialize(oldPatt).body) ||
+        Fail`durable Kind stateShape mismatch (body ${name})`;
+    }
+    for (const [name, newPatt] of Object.entries(newShape)) {
+      if (Object.hasOwn(oldShape, name)) continue;
+      kindOf(newPatt) === 'match:or' ||
+        Fail`durable Kind stateShape mismatch (body new field ${name})`;
+      // @ts-expect-error A "match:or" pattern has a `payload` array of Patterns
+      newPatt.payload.some(patt => isUndefinedPatt(patt)) ||
+        Fail`durable Kind stateShape mismatch (body ${name})`;
+    }
   }
   if (oldCD.slots.length !== newCD.slots.length) {
     Fail`durable Kind stateShape mismatch (slots.length)`;
@@ -532,7 +570,7 @@ export const makeVirtualObjectManager = (
    *  tag: string,
    *  unfaceted?: boolean,
    *  facets?: string[],
-   *  stateShapeCapData?: import('./types.js').SwingSetCapData
+   *  stateShapeCapData?: SwingSetCapData
    * }} DurableKindDescriptor
    */
 
@@ -803,7 +841,11 @@ export const makeVirtualObjectManager = (
 
       const oldStateShapeSlots = oldShapeCD ? oldShapeCD.slots : [];
       if (oldShapeCD && !allowStateShapeChanges) {
-        insistSameCapData(oldShapeCD, newShapeCD);
+        insistCompatibleShapeCapData(oldShapeCD, newShapeCD, {
+          newShape: /** @type {Record<string, Pattern>} */ (stateShape),
+          serialize,
+          unserialize,
+        });
       }
       const newStateShapeSlots = newShapeCD.slots;
       vrm.updateReferenceCounts(oldStateShapeSlots, newStateShapeSlots);
@@ -859,9 +901,11 @@ export const makeVirtualObjectManager = (
           const baseRef = getBaseRef(this);
           const record = dataCache.get(baseRef);
           assert(record !== undefined);
-          const { valueMap, capdatas } = record;
+          const { capdatas, valueMap } = record;
           if (!valueMap.has(prop)) {
-            const value = harden(unserialize(capdatas[prop]));
+            const value = hasOwn(capdatas, prop)
+              ? harden(unserialize(capdatas[prop]))
+              : undefined;
             checkStatePropertyValue(value, prop);
             valueMap.set(prop, value);
           }
@@ -877,12 +921,19 @@ export const makeVirtualObjectManager = (
           }
           const record = dataCache.get(baseRef); // mutable
           assert(record !== undefined);
-          const oldSlots = record.capdatas[prop].slots;
+          const { capdatas, valueMap } = record;
+          const oldSlots = hasOwn(capdatas, prop) ? capdatas[prop].slots : [];
           const newSlots = capdata.slots;
           vrm.updateReferenceCounts(oldSlots, newSlots);
-          record.capdatas[prop] = capdata; // modify in place ..
-          record.valueMap.set(prop, value);
-          dataCache.set(baseRef, record); // .. but mark as dirty
+          // modify in place, but mark as dirty
+          defineProperty(capdatas, prop, {
+            value: capdata,
+            writable: true,
+            enumerable: true,
+            configurable: false,
+          });
+          valueMap.set(prop, value);
+          dataCache.set(baseRef, record);
         },
         enumerable: true,
         configurable: false,
@@ -1073,7 +1124,12 @@ export const makeVirtualObjectManager = (
         }
         // eslint-disable-next-line github/array-foreach
         valueCD.slots.forEach(vrm.addReachableVref);
-        capdatas[prop] = valueCD;
+        defineProperty(capdatas, prop, {
+          value: valueCD,
+          writable: true,
+          enumerable: true,
+          configurable: false,
+        });
         valueMap.set(prop, value);
       }
       // dataCache contents remain mutable: state setter modifies in-place

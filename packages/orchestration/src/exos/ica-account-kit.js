@@ -5,10 +5,10 @@ import { M } from '@endo/patterns';
 import { NonNullish, makeTracer } from '@agoric/internal';
 import { VowShape } from '@agoric/vow';
 import {
-  ChainAddressShape,
+  CosmosChainAddressShape,
   OutboundConnectionHandlerI,
   Proto3Shape,
-  TxBodyOptsShape,
+  ExecuteICATxOptsShape,
 } from '../typeGuards.js';
 import { findAddressField } from '../utils/address.js';
 import { makeTxPacket, parseTxPacket } from '../utils/packet.js';
@@ -16,12 +16,12 @@ import { makeTxPacket, parseTxPacket } from '../utils/packet.js';
 /**
  * @import {HostOf} from '@agoric/async-flow';
  * @import {Zone} from '@agoric/base-zone';
- * @import {Connection, Port} from '@agoric/network';
- * @import {Remote, Vow, VowTools} from '@agoric/vow';
+ * @import {Bytes, Connection, Port, SendOptions} from '@agoric/network';
+ * @import {Remote, Vow, PromiseVow, VowTools} from '@agoric/vow';
  * @import {AnyJson} from '@agoric/cosmic-proto';
  * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
  * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
- * @import {ChainAddress, IcaAccount} from '../types.js';
+ * @import {CosmosChainAddress, IcaAccount} from '../types.js';
  */
 
 const trace = makeTracer('IcaAccountKit');
@@ -29,13 +29,13 @@ const trace = makeTracer('IcaAccountKit');
 const UNPARSABLE_CHAIN_ADDRESS = 'UNPARSABLE_CHAIN_ADDRESS';
 
 export const IcaAccountI = M.interface('IcaAccount', {
-  getAddress: M.call().returns(ChainAddressShape),
+  getAddress: M.call().returns(CosmosChainAddressShape),
   getLocalAddress: M.call().returns(M.string()),
   getRemoteAddress: M.call().returns(M.string()),
   getPort: M.call().returns(M.remotable('Port')),
   executeTx: M.call(M.arrayOf(M.record())).returns(VowShape),
   executeEncodedTx: M.call(M.arrayOf(Proto3Shape))
-    .optional(TxBodyOptsShape)
+    .optional(ExecuteICATxOptsShape)
     .returns(VowShape),
   deactivate: M.call().returns(VowShape),
   reactivate: M.call().returns(VowShape),
@@ -51,7 +51,9 @@ export const IcaAccountI = M.interface('IcaAccount', {
  *   localAddress: LocalIbcAddress | undefined;
  *   requestedRemoteAddress: string;
  *   remoteAddress: RemoteIbcAddress | undefined;
- *   chainAddress: ChainAddress | undefined;
+ *   chainAddress:
+ *     | (CosmosChainAddress | { value: typeof UNPARSABLE_CHAIN_ADDRESS })
+ *     | undefined;
  *   isInitiatingClose: boolean;
  * }} State
  *   Internal to the IcaAccountKit exo
@@ -101,8 +103,9 @@ export const prepareIcaAccountKit = (zone, { watch, asVow }) =>
         },
       },
       account: {
-        /** @returns {ChainAddress} */
+        /** @returns {CosmosChainAddress} */
         getAddress() {
+          // @ts-expect-error value may be UNPARSABLE_CHAIN_ADDRESS
           return NonNullish(
             this.state.chainAddress,
             'ICA channel creation acknowledgement not yet received.',
@@ -130,20 +133,28 @@ export const prepareIcaAccountKit = (zone, { watch, asVow }) =>
          * Submit a transaction on behalf of the remote account for execution on
          * the remote chain.
          *
+         * Set `relativeTimeoutNs` to provide a timeout for the IBC packet.
+         *
+         * `TxBody` fields like `timeoutHeight` and `memo` can be set, but these
+         * typically do not affect IBC app protocols like PFM, ICA.
+         *
          * @param {AnyJson[]} msgs
-         * @param {Omit<TxBody, 'messages'>} [opts]
+         * @param {Partial<Omit<TxBody, 'messages'>> & {
+         *   sendOpts?: SendOptions;
+         * }} [opts]
          * @returns {Vow<string>} - base64 encoded bytes string. Can be decoded
          *   using the corresponding `Msg*Response` object.
          * @throws {Error} if packet fails to send or an error is returned
          */
-        executeEncodedTx(msgs, opts) {
+        executeEncodedTx(msgs, opts = {}) {
           return asVow(() => {
             const { connection } = this.state;
             if (!connection) {
               throw Fail`Account not available or deactivated.`;
             }
+            const { sendOpts, ...txBodyOpts } = opts;
             return watch(
-              E(connection).send(makeTxPacket(msgs, opts)),
+              E(connection).send(makeTxPacket(msgs, txBodyOpts), sendOpts),
               this.facets.parseTxPacketWatcher,
             );
           });

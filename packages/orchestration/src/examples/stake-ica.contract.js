@@ -17,10 +17,11 @@ const trace = makeTracer('StakeIca');
 /**
  * @import {Baggage} from '@agoric/vat-data';
  * @import {Remote} from '@agoric/internal';
+ * @import {CosmosChainInfo, CosmosInterchainService, Denom, DenomDetail} from '@agoric/orchestration';
+ * @import {ContractMeta, Invitation, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {IBCConnectionID, NameHub} from '@agoric/vats';
  * @import {TimerService} from '@agoric/time';
  * @import {ResolvedContinuingOfferResult} from '../utils/zoe-tools.js';
- * @import {ICQConnection, CosmosInterchainService, ChainHub} from '../types.js';
  */
 
 /** @type {ContractMeta<typeof start>} */

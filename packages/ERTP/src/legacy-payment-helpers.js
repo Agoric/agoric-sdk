@@ -7,6 +7,7 @@ import { AmountMath } from './amountMath.js';
 
 /**
  * @import {ERef} from '@endo/far';
+ * @import {Key, Pattern} from '@endo/patterns';
  * @import {Amount, AssetKind, Payment, Purse} from './types.js';
  */
 
@@ -25,11 +26,12 @@ import { AmountMath } from './amountMath.js';
  */
 
 /**
- * @template {Payment} P
- * @param {ERef<Purse>} recoveryPurse
- * @param {ERef<P>} srcPaymentP
+ * @template {AssetKind} K
+ * @template {Key} T type of values in set-like kind
+ * @param {ERef<Purse<K, T>>} recoveryPurse
+ * @param {ERef<Payment<K, T>>} srcPaymentP
  * @param {Pattern} [optAmountShape]
- * @returns {Promise<P>}
+ * @returns {Promise<Payment<K, T>>}
  */
 export const claim = async (
   recoveryPurse,
@@ -37,7 +39,6 @@ export const claim = async (
   optAmountShape = undefined,
 ) => {
   const srcPayment = await srcPaymentP;
-  // @ts-expect-error XXX could be instantiated with a different subtype
   return E.when(E(recoveryPurse).deposit(srcPayment, optAmountShape), amount =>
     E(recoveryPurse).withdraw(amount),
   );
@@ -53,10 +54,11 @@ harden(claim);
  * origin.
  *
  * @template {AssetKind} K
- * @param {ERef<Purse<K>>} recoveryPurse
- * @param {ERef<Payment<K>>[]} srcPaymentsPs
+ * @template {Key} T type of values in set-like kind
+ * @param {ERef<Purse<K, T>>} recoveryPurse
+ * @param {ERef<Payment<K, T>>[]} srcPaymentsPs
  * @param {Pattern} [optTotalAmount]
- * @returns {Promise<Payment<K>>}
+ * @returns {Promise<Payment<K, T>>}
  */
 export const combine = async (
   recoveryPurse,
@@ -69,7 +71,11 @@ export const combine = async (
     E(brandP).getDisplayInfo(),
     ...srcPaymentsPs,
   ]);
-  const emptyAmount = AmountMath.makeEmpty(brand, displayInfo.assetKind);
+
+  // XXX Brand lacks M
+  const emptyAmount = /** @type {Amount<K, T>} */ (
+    AmountMath.makeEmpty(brand, displayInfo.assetKind)
+  );
   const amountPs = srcPayments.map(srcPayment =>
     E(recoveryPurse).deposit(srcPayment),
   );

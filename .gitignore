@@ -36,6 +36,9 @@ typings/
 # Optional eslint cache
 .eslintcache
 
+# General cache (e.g. by node-fetch-cache
+.cache
+
 # Optional REPL history
 .node_repl_history
 

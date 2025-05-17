@@ -43,6 +43,7 @@ install:
 	$(CURDIR)/scripts/install.sh --config $(FILE) --name $(NAME) --version $(HELM_VERSION)
 
 delete:
+	-helm repo remove $(HELM_REPO)
 	-helm delete $(NAME)
 
 ###############################################################################
@@ -73,18 +74,13 @@ clean-kind:
 ###############################################################################
 ###                          Agoric Setup                                   ###
 ###############################################################################
-PROVISION_POOL_ADDR=agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346
 
 # add address
 add-address:
 	kubectl exec -i agoriclocal-genesis-0 -c validator -- agd keys add user1
 
 fund-provision-pool:
-	kubectl exec -i agoriclocal-genesis-0 -c validator -- agd tx bank send faucet $(PROVISION_POOL_ADDR) 1000000000uist -y -b block
-
-override-chain-registry:
-	scripts/fetch-starship-chain-info.ts && \
-	scripts/deploy-cli.ts src/revise-chain-info.builder.js
+	scripts/fund-provision-pool.ts
 
 register-bank-assets:
 	scripts/fetch-starship-chain-info.ts && \
@@ -113,5 +109,5 @@ wait-for-pods:
 	scripts/pod-readiness.ts
 
 .PHONY: start
-start: install wait-for-pods port-forward fund-provision-pool override-chain-registry register-bank-assets
+start: install wait-for-pods port-forward fund-provision-pool register-bank-assets
 

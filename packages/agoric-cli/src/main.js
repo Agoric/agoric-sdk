@@ -87,19 +87,6 @@ const main = async (progname, rawArgs, powers) => {
       return subMain(cosmosMain, ['cosmos', ...command], opts);
     });
 
-  const ibcSetup = path.join(
-    dirname,
-    '..',
-    'node_modules',
-    '.bin',
-    'ibc-setup',
-  );
-  program.command(
-    'ibc-setup <command...>',
-    'set up Inter Blockchain Communication',
-    { executableFile: ibcSetup },
-  );
-
   baseCmd('open')
     .description('launch the Agoric UI')
     .option(
@@ -184,21 +171,6 @@ const main = async (progname, rawArgs, powers) => {
       return subMain(setDefaultsMain, ['set-defaults', prog, configDir], opts);
     });
 
-  const ibcRelayer = path.join(
-    dirname,
-    '..',
-    'node_modules',
-    '.bin',
-    'ibc-relayer',
-  );
-  program.command(
-    'ibc-relayer',
-    'run an Inter Blockchain Communications relayer',
-    {
-      executableFile: ibcRelayer,
-    },
-  );
-
   baseCmd('install [force-sdk-version]')
     .description('install Dapp dependencies')
     .action(async (forceSdkVersion, _options, cmd) => {
@@ -210,17 +182,13 @@ const main = async (progname, rawArgs, powers) => {
   baseCmd('follow <path-spec...>')
     .description('follow an Agoric Casting leader')
     .option(
-      '--proof <strict | optimistic | none>',
-      'set proof mode',
+      '--proof <none>',
+      `set proof mode (currently only 'none' is supported)`,
       value => {
-        assert(
-          ['strict', 'optimistic', 'none'].includes(value),
-          X`--proof must be one of 'strict', 'optimistic', or 'none'`,
-          TypeError,
-        );
+        assert.equal(value, 'none', X`--proof can only be 'none'`, TypeError);
         return value;
       },
-      'optimistic',
+      'none',
     )
     .option(
       '--sleep <seconds>',

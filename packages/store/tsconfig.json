@@ -3,7 +3,6 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {},
   "include": [
-    "exported.js",
     "src/**/*.js",
     "test/**/*.js",
   ],

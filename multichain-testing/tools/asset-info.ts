@@ -1,17 +1,25 @@
 import {
   denomHash,
+  type ChainInfo,
   type CosmosChainInfo,
   type Denom,
   type DenomDetail,
 } from '@agoric/orchestration';
 import type { IBCChannelID } from '@agoric/vats';
+import { objectMap } from '@endo/patterns';
 
-export const makeDenomTools = (chainInfo: Record<string, CosmosChainInfo>) => {
+export const selectCosmosChainInfo = (
+  chainInfo: Record<string, ChainInfo>,
+): Record<string, CosmosChainInfo | undefined> =>
+  objectMap(chainInfo, info => ('bech32Prefix' in info ? info : undefined));
+
+export const makeDenomTools = (chainInfo: Record<string, ChainInfo>) => {
+  const cosmosChainInfo = selectCosmosChainInfo(chainInfo);
   const getTransferChannelId = (
     destChainId: string,
     fromChainName: string,
   ): IBCChannelID | undefined =>
-    chainInfo[fromChainName]?.connections?.[destChainId]?.transferChannel
+    cosmosChainInfo[fromChainName]?.connections?.[destChainId]?.transferChannel
       .channelId;
 
   const toDenomHash = (

@@ -9,7 +9,9 @@ import { cleanProposal } from '../../cleanProposal.js';
 import { burnInvitation } from './burnInvitation.js';
 import { makeInvitationQueryFns } from '../invitationQueries.js';
 
-import '../internal-types.js';
+/**
+ * @import {Offer} from '@agoric/zoe';
+ */
 
 export const makeOfferMethod = offerDataAccess => {
   /** @type {Offer} */
