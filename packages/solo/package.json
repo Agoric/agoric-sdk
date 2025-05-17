@@ -14,9 +14,9 @@
     "test:c8": "c8 --all $C8_OPTIONS ava",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
-    "lint": "run-s --continue-on-error lint:*",
-    "lint:types": "tsc",
-    "lint:eslint": "eslint ."
+    "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
+    "lint:types": "yarn run -T tsc",
+    "lint:eslint": "yarn run -T eslint ."
   },
   "keywords": [],
   "author": "Agoric",
@@ -24,8 +24,8 @@
   "dependencies": {
     "@agoric/access-token": "^0.4.21",
     "@agoric/cache": "^0.3.2",
-    "@agoric/cosmic-swingset": "^0.41.3",
     "@agoric/cosmic-proto": "^0.4.0",
+    "@agoric/cosmic-swingset": "^0.41.3",
     "@agoric/internal": "^0.3.2",
     "@agoric/notifier": "^0.6.2",
     "@agoric/spawner": "^0.6.8",
