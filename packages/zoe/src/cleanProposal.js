@@ -97,6 +97,7 @@ export const coerceAmountKeywordRecord = (
     getAssetKindByBrand,
   );
   assertKey(result);
+  // @ts-expect-error coerceAmountPatternKeywordRecord should be better typed
   return result;
 };
 
@@ -194,6 +195,7 @@ export const scaleAmount = (amount, multiples) => {
     throw Fail`multiples > 1 not yet implemented for non-fungibles: ${multiples} * ${amount}`;
   }
   assert(value >= 1n);
+  // @ts-expect-error I don't know
   return harden({ brand, value: natSafeMath.multiply(value, multiples) });
 };
 harden(scaleAmount);

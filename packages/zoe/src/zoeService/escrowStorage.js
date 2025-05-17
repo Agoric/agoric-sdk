@@ -1,5 +1,3 @@
-/// <reference path="./types.js" />
-
 import { q, Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { objectMap } from '@endo/patterns';

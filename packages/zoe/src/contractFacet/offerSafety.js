@@ -1,5 +1,5 @@
 import { AmountMath } from '@agoric/ertp';
-import { natSafeMath } from '../contractSupport/safeMath.js';
+import { natSafeMath } from '@agoric/ertp/src/safeMath.js';
 
 const { Fail } = assert;
 const { entries } = Object;
