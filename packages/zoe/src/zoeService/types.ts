@@ -211,13 +211,12 @@ export type UserSeat<OR = unknown> = {
    */
   hasExited: () => Promise<boolean>;
   /**
-   * returns 1 if the proposal's
-   * want clause was satisfied by the final allocation, otherwise 0. This is
-   * numeric to support a planned enhancement called "multiples" which will allow
-   * the return value to be any non-negative number. The promise will resolve
-   * after the seat has exited.
+   * Returns the number of times that the proposal's `want` clause was satisfied
+   * by the final allocation. If the `want` was not satisfied then it was
+   * satisfied `0` times. If the want was satisfied, then it was satisfied
+   * `>= 1` times. The promise will resolve after the seat has exited.
    */
-  numWantsSatisfied: () => Promise<0 | 1>;
+  numWantsSatisfied: () => Promise<number>;
   /**
    * return a promise for the final allocation. The promise will resolve after the
    * seat has exited.
