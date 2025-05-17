@@ -1,0 +1,149 @@
+syntax = "proto3";
+package cosmos.vesting.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmos_proto/cosmos.proto";
+import "cosmos/vesting/v1beta1/vesting.proto";
+
+import "cosmos/msg/v1/msg.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/x/auth/vesting/types";
+
+// Msg defines the bank Msg service.
+service Msg {
+  // CreateVestingAccount defines a method that enables creating a vesting
+  // account.
+  rpc CreateVestingAccount(MsgCreateVestingAccount) returns (MsgCreateVestingAccountResponse);
+  // CreatePermanentLockedAccount defines a method that enables creating a permanent
+  // locked account.
+  //
+  // Since: cosmos-sdk 0.46
+  rpc CreatePermanentLockedAccount(MsgCreatePermanentLockedAccount) returns (MsgCreatePermanentLockedAccountResponse);
+  // CreatePeriodicVestingAccount defines a method that enables creating a
+  // periodic vesting account.
+  //
+  // Since: cosmos-sdk 0.46
+  rpc CreatePeriodicVestingAccount(MsgCreatePeriodicVestingAccount) returns (MsgCreatePeriodicVestingAccountResponse);
+  // CreateClawbackVestingAccount defines a method that enables creating a
+  // vesting account that is subject to clawback.
+  rpc CreateClawbackVestingAccount(MsgCreateClawbackVestingAccount) returns (MsgCreateClawbackVestingAccountResponse);
+  // Clawback removes the unvested tokens from a ClawbackVestingAccount.
+  rpc Clawback(MsgClawback) returns (MsgClawbackResponse);
+  // ReturnGrants returns vesting grants to the funder.
+  rpc ReturnGrants(MsgReturnGrants) returns (MsgReturnGrantsResponse);
+}
+
+// MsgCreateVestingAccount defines a message that enables creating a vesting
+// account.
+message MsgCreateVestingAccount {
+  option (cosmos.msg.v1.signer) = "from_address";
+
+  option (gogoproto.equal) = true;
+
+  string   from_address                    = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string   to_address                      = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  repeated cosmos.base.v1beta1.Coin amount = 3
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+
+  // end of vesting as unix time (in seconds).
+  int64 end_time = 4;
+  bool  delayed  = 5;
+}
+
+// MsgCreateVestingAccountResponse defines the Msg/CreateVestingAccount response type.
+message MsgCreateVestingAccountResponse {}
+
+// MsgCreatePermanentLockedAccount defines a message that enables creating a permanent
+// locked account.
+//
+// Since: cosmos-sdk 0.46
+message MsgCreatePermanentLockedAccount {
+  option (gogoproto.equal) = true;
+
+  string   from_address                    = 1 [(gogoproto.moretags) = "yaml:\"from_address\""];
+  string   to_address                      = 2 [(gogoproto.moretags) = "yaml:\"to_address\""];
+  repeated cosmos.base.v1beta1.Coin amount = 3
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+}
+
+// MsgCreatePermanentLockedAccountResponse defines the Msg/CreatePermanentLockedAccount response type.
+//
+// Since: cosmos-sdk 0.46
+message MsgCreatePermanentLockedAccountResponse {}
+
+// MsgCreateVestingAccount defines a message that enables creating a vesting
+// account.
+//
+// Since: cosmos-sdk 0.46
+message MsgCreatePeriodicVestingAccount {
+  option (cosmos.msg.v1.signer) = "from_address";
+
+  option (gogoproto.equal) = false;
+
+  string          from_address    = 1;
+  string          to_address      = 2;
+  // start of vesting as unix time (in seconds).
+  int64           start_time      = 3;
+  repeated Period vesting_periods = 4 [(gogoproto.nullable) = false];
+  // If true, merge this new grant into an existing PeriodicVestingAccount,
+  // or create it if it does not exist. If false, creates a new account,
+  // or fails if an account already exists
+  bool merge = 5;
+}
+
+// MsgCreateVestingAccountResponse defines the Msg/CreatePeriodicVestingAccount
+// response type.
+//
+// Since: cosmos-sdk 0.46
+message MsgCreatePeriodicVestingAccountResponse {}
+
+// MsgCreateClawbackVestingAccount defines a message that enables creating a ClawbackVestingAccount.
+message MsgCreateClawbackVestingAccount {
+  option (gogoproto.equal) = false;
+
+  // Address of the account providing the funds, which must also sign the request.
+  string from_address = 1 [(gogoproto.moretags) = "yaml:\"from_address\""];
+  // Address of the account to receive the funds.
+  string to_address = 2 [(gogoproto.moretags) = "yaml:\"to_address\""];
+  // Start time of the vesting. Periods start relative to this time.
+  int64 start_time = 3 [(gogoproto.moretags) = "yaml:\"start_time\""];
+  // Unlocking events as a sequence of durations and amounts, starting relative to start_time.
+  repeated Period lockup_periods = 4 [(gogoproto.nullable) = false];
+  // Vesting events as a sequence of durations and amounts, starting relative to start_time.
+  repeated Period vesting_periods = 5 [(gogoproto.nullable) = false];
+  // If true, merge this new grant into an existing ClawbackVestingAccount,
+  // or create it if it does not exist. If false, creates a new account.
+  // New grants to an existing account must be from the same from_address.
+  bool merge = 6;
+}
+
+// MsgCreateClawbackVestingAccountResponse defines the MsgCreateClawbackVestingAccount response type.
+message MsgCreateClawbackVestingAccountResponse {}
+
+// MsgClawback defines a message that removes unvested tokens from a ClawbackVestingAccount.
+message MsgClawback {
+  // funder_address is the address which funded the account
+  string funder_address = 1;
+  // address is the address of the ClawbackVestingAccount to claw back from.
+  string address = 2;
+  // dest_address specifies where the clawed-back tokens should be transferred.
+  // If empty, the tokens will be transferred back to the original funder of the account.
+  string dest_address = 3;
+}
+
+// MsgClawbackResponse defines the MsgClawback response type.
+message MsgClawbackResponse {}
+
+// MsgReturnGrants defines a message for a grantee to return all granted assets,
+// including delegated, undelegated and unbonding, vested and unvested,
+// are transferred to the original funder of the account. Might not be complete if
+// some vested assets have been transferred out of the account. Currently only applies to
+// ClawbackVesting accounts.
+message MsgReturnGrants {
+  // address is the address of the grantee account returning the grant.
+  string address = 1;
+}
+
+// MsgReturnGrantsResponse defines the ReturnGrants response type.
+message MsgReturnGrantsResponse {}

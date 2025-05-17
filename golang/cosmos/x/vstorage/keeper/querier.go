@@ -3,6 +3,7 @@ package keeper
 import (
 	abci "github.com/tendermint/tendermint/abci/types"
 
+	sdkioerrors "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -20,7 +21,7 @@ const (
 // entry path with no extra data, and returns the path of that vstorage entry.
 func getVstorageEntryPath(urlPathSegments []string) (string, error) {
 	if len(urlPathSegments) != 1 || types.ValidatePath(urlPathSegments[0]) != nil {
-		return "", sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "invalid vstorage entry path")
+		return "", sdkioerrors.Wrap(sdkerrors.ErrInvalidRequest, "invalid vstorage entry path")
 	}
 	return urlPathSegments[0], nil
 }
@@ -51,7 +52,7 @@ func NewQuerier(keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier 
 			}
 			return queryChildren(ctx, entryPath, req, keeper, legacyQuerierCdc)
 		default:
-			return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "unknown vstorage query endpoint")
+			return nil, sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "unknown vstorage query path")
 		}
 	}
 }
@@ -60,12 +61,12 @@ func NewQuerier(keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier 
 func queryData(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) (res []byte, err error) {
 	entry := keeper.GetEntry(ctx, path)
 	if !entry.HasValue() {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrNotFound, "no data for vstorage path")
+		return nil, sdkioerrors.Wrap(sdkerrors.ErrNotFound, "no data for vstorage path")
 	}
 
 	bz, marshalErr := codec.MarshalJSONIndent(legacyQuerierCdc, types.Data{Value: entry.StringValue()})
 	if marshalErr != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, marshalErr.Error())
+		return nil, sdkioerrors.Wrap(sdkerrors.ErrJSONMarshal, marshalErr.Error())
 	}
 
 	return bz, nil
@@ -82,7 +83,7 @@ func queryChildren(ctx sdk.Context, path string, req abci.RequestQuery, keeper K
 
 	bz, err2 := codec.MarshalJSONIndent(legacyQuerierCdc, types.Children{Children: klist})
 	if err2 != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err2.Error())
+		return nil, sdkioerrors.Wrap(sdkerrors.ErrJSONMarshal, err2.Error())
 	}
 
 	return bz, nil

@@ -1,11 +1,10 @@
 // @ts-check
+import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 
 console.warn('start-game1-proposal.js module evaluating');
-
-const { Fail } = assert;
 
 // vstorage paths under published.*
 const BOARD_AUX = 'boardAux';
@@ -94,7 +93,7 @@ export const startGameContract = async permittedPowers => {
   console.log('game1 (re)installed');
 };
 
-/** @type { import("@agoric/vats/src/core/lib-boot").BootstrapManifest } */
+/** @type {import('@agoric/vats/src/core/lib-boot').BootstrapManifest} */
 const gameManifest = {
   [startGameContract.name]: {
     consume: {

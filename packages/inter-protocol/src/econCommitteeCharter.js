@@ -1,11 +1,10 @@
 // @jessie-check
+/// <reference types="@agoric/governance/exported" />
+/// <reference types="@agoric/zoe/exported" />
 
-import '@agoric/governance/exported.js';
 import { M, mustMatch } from '@agoric/store';
 import { TimestampShape } from '@agoric/time';
 import { prepareExo, provideDurableMapStore } from '@agoric/vat-data';
-import '@agoric/zoe/exported.js';
-import '@agoric/zoe/src/contracts/exported.js';
 import {
   InstallationShape,
   InstanceHandleShape,
@@ -26,7 +25,7 @@ export const INVITATION_MAKERS_DESC = 'charter member invitation';
  * @property {bigint} deadline
  * @property {Instance} instance
  * @property {Record<string, unknown>} params
- * @property {{ paramPath: { key: string } }} [path]
+ * @property {{ paramPath: unknown }} [path] paramPath is determined by contract
  */
 const ParamChangesOfferArgsShape = M.splitRecord(
   {
@@ -39,7 +38,7 @@ const ParamChangesOfferArgsShape = M.splitRecord(
   },
 );
 
-/** @type {ContractMeta} */
+/** @type {ContractMeta<typeof start>} */
 export const meta = {
   customTermsShape: {
     binaryVoteCounterInstallation: InstallationShape,
@@ -79,6 +78,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       const governor = instanceToGovernor.get(instance);
       return E(governor).voteOnParamChanges(counter, deadline, {
         ...path,
+        // @ts-expect-error XXX
         changes: params,
       });
     };

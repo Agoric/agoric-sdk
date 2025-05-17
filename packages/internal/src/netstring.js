@@ -1,5 +1,5 @@
-/* global Buffer */
-import { Fail } from '@agoric/assert';
+/* eslint-env node */
+import { Fail } from '@endo/errors';
 
 // adapted from 'netstring-stream', https://github.com/tlivings/netstring-stream/
 import { Transform } from 'stream';
@@ -20,11 +20,10 @@ export function encode(data) {
 // input is a sequence of strings, output is a byte pipe
 export function netstringEncoderStream() {
   /**
-   *
-   * @this {{ push: (b: Buffer) => void }}
    * @param {Buffer} chunk
    * @param {BufferEncoding} encoding
-   * @param {*} callback
+   * @param {any} callback
+   * @this {{ push: (b: Buffer) => void }}
    */
   function transform(chunk, encoding, callback) {
     if (!Buffer.isBuffer(chunk)) {
@@ -43,10 +42,13 @@ export function netstringEncoderStream() {
   return new Transform({ transform, writableObjectMode: true });
 }
 
-// Input is a Buffer containing zero or more netstrings and maybe some
-// leftover bytes. Output is zero or more decoded Buffers, one per netstring,
-// plus a Buffer of leftover bytes.
-//
+/**
+ * @param {Buffer} data containing zero or more netstrings and maybe some
+ *   leftover bytes
+ * @param {number} [optMaxChunkSize]
+ * @returns {{ leftover: Buffer; payloads: Buffer[] }} zero or more decoded
+ *   Buffers, one per netstring,
+ */
 export function decode(data, optMaxChunkSize) {
   // TODO: it would be more efficient to accumulate pending data in an array,
   // rather than doing a concat each time
@@ -81,15 +83,19 @@ export function decode(data, optMaxChunkSize) {
   return { leftover, payloads };
 }
 
+/**
+ * @param {number} [optMaxChunkSize]
+ * @returns {Transform}
+ */
 // input is a byte pipe, output is a sequence of Buffers
 export function netstringDecoderStream(optMaxChunkSize) {
+  /** @type {Buffer<ArrayBufferLike>} */
   let buffered = Buffer.from('');
   /**
-   *
-   * @this {{ push: (b: Buffer) => void }}
    * @param {Buffer} chunk
    * @param {BufferEncoding} encoding
-   * @param {*} callback
+   * @param {any} callback
+   * @this {{ push: (b: Buffer) => void }}
    */
   function transform(chunk, encoding, callback) {
     if (!Buffer.isBuffer(chunk)) {

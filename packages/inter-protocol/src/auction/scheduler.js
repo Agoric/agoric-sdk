@@ -1,6 +1,7 @@
+import { X, Fail, q, makeError } from '@endo/errors';
 import { E } from '@endo/eventual-send';
-import { TimeMath } from '@agoric/time';
 import { Far } from '@endo/marshal';
+import { TimeMath } from '@agoric/time';
 import { makeTracer } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 
@@ -10,8 +11,6 @@ import {
   nextDescendingStepTime,
   timeVsSchedule,
 } from './scheduleMath.js';
-
-const { details: X, Fail, quote: q } = assert;
 
 const trace = makeTracer('SCHED', true);
 
@@ -114,7 +113,7 @@ export const makeScheduler = async (
 
   const stepCancelToken = makeCancelToken();
 
-  /** @type {(typeof AuctionState)[keyof typeof AuctionState]} */
+  /** @type {AuctionState} */
   let auctionState = AuctionState.WAITING;
 
   /**
@@ -245,7 +244,6 @@ export const makeScheduler = async (
           try {
             setTimeMonotonically(time);
             auctionDriver.capturePrices();
-            // eslint-disable-next-line no-use-before-define
             return startAuction();
           } catch (e) {
             console.error(`⚠️ Auction threw ${e}. Caught in SchedulerWaker.`);
@@ -263,7 +261,7 @@ export const makeScheduler = async (
 
     if (!nextSchedule) {
       console.error(
-        assert.error(X`tried to start auction when none is scheduled`),
+        makeError(X`tried to start auction when none is scheduled`),
       );
       return;
     }

@@ -3,6 +3,11 @@ import { defineDurableHandle } from '@agoric/zoe/src/makeHandle.js';
 import { E } from '@endo/eventual-send';
 import { PositionShape, QuestionHandleShape } from './typeGuards.js';
 
+/**
+ * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
+ * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn, CompletedBallet, Position} from './types.js';
+ */
+
 const VoterI = M.interface('voter', {
   castBallotFor: M.call(QuestionHandleShape, M.arrayOf(PositionShape)).returns(
     M.promise(),

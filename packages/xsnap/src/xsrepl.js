@@ -1,21 +1,18 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
-/* global process */
+/* eslint-env node */
 /* We make exceptions for test code. This is a test utility. */
 /* eslint no-await-in-loop: ["off"] */
 
 import '@endo/init';
 
-/**
- * @template T
- * @typedef {import('./defer.js').Deferred<T>} Deferred
- */
 import * as childProcess from 'child_process';
 import fs from 'fs';
 import { tmpName } from 'tmp';
 import * as os from 'os';
 import * as readline from 'readline';
+import { makePromiseKit } from '@endo/promise-kit';
 import { xsnap } from './xsnap.js';
-import { defer } from './defer.js';
+
+/** @import {PromiseKit} from '@endo/promise-kit' */
 
 const decoder = new TextDecoder();
 
@@ -66,7 +63,9 @@ async function main() {
    * @returns {Promise<string>}
    */
   function ask(prompt) {
-    const { promise, resolve } = /** @type {Deferred<string>} */ (defer());
+    const { promise, resolve } = /** @type {PromiseKit<string>} */ (
+      makePromiseKit()
+    );
     rl.question(prompt, resolve);
     return promise;
   }

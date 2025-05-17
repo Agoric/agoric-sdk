@@ -1,5 +1,4 @@
-/* global clearTimeout setTimeout Buffer */
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
+/* global clearTimeout setTimeout */
 import path from 'path';
 import fs from 'fs';
 import url from 'url';
@@ -9,15 +8,22 @@ import { open as tempOpen } from 'temp';
 import WebSocket from 'ws';
 
 import anylogger from 'anylogger';
-import { makeNotifierKit } from '@agoric/notifier';
+import { decodeBase64, encodeBase64 } from '@endo/base64';
+import { Fail, makeError } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
 
-import { assert, Fail } from '@agoric/assert';
+import {
+  QueryDataRequest,
+  QueryDataResponse,
+} from '@agoric/cosmic-proto/vstorage/query.js';
+
+import { makeNotifierKit } from '@agoric/notifier';
 import {
   DEFAULT_BATCH_TIMEOUT_MS,
   makeBatchedDeliver,
 } from '@agoric/internal/src/batched-deliver.js';
 import { forever, whileTrue } from '@agoric/internal';
+import { decodeHex, encodeHex } from '@agoric/internal/src/hex.js';
 
 const console = anylogger('chain-cosmos-sdk');
 
@@ -161,7 +167,7 @@ export async function connectToChain(
   );
 
   // The helper address may not have a token balance, and instead uses a
-  // separate fee account, set up with something like:
+  // separate fee granter account, set up with something like:
   //
   // agd tx feegrant grant --period=5 --period-limit=200000uist \
   // $(cat cosmos-fee-account) $(cat ag-cosmos-helper-address)
@@ -173,7 +179,7 @@ export async function connectToChain(
   let lastGoodRpcHrefIndex = 0;
   async function retryRpcHref(tryOnce) {
     let rpcHrefIndex = lastGoodRpcHrefIndex;
-    // eslint-disable-next-line no-constant-condition
+
     for await (const _ of forever) {
       const thisRpcHref = rpcHrefs[rpcHrefIndex];
 
@@ -301,7 +307,8 @@ export async function connectToChain(
       const subscribeToTxHash = (txHash, cb) => {
         const txQuery = `tm.event = 'Tx' and tx.hash = '${txHash}'`;
 
-        const b64Hash = Buffer.from(txHash, 'hex').toString('base64');
+        const bufHash = decodeHex(txHash);
+        const b64Hash = encodeBase64(bufHash);
         const txSubscriptionId = sendRPC('subscribe', { query: txQuery });
         const queryId = sendRPC('tx', { hash: b64Hash });
         const cleanup = () => {
@@ -354,7 +361,8 @@ export async function connectToChain(
         const blockSubscriptionId = sendRPC('subscribe', { query: blockQuery });
         const txSubscriptionId = sendRPC('subscribe', { query: txQuery });
         const queryId = sendRPC('abci_query', {
-          path: `/custom/swingset/storage/${storagePath}`,
+          path: `/agoric.vstorage.Query/Data`,
+          data: encodeHex(QueryDataRequest.toProto({ path: storagePath })),
         });
 
         const cleanup = () => {
@@ -381,10 +389,8 @@ export async function connectToChain(
             // Decode the layers up to the actual storage value.
             const { value: b64JsonStorage, height: heightString } =
               obj.result.response;
-            const jsonStorage = Buffer.from(b64JsonStorage, 'base64').toString(
-              'utf8',
-            );
-            const { value: storageValue } = JSON.parse(jsonStorage);
+            const buf = decodeBase64(b64JsonStorage);
+            const { value: storageValue } = QueryDataResponse.decode(buf);
             guardedCb(BigInt(heightString), storageValue);
           } else if (
             obj.result &&
@@ -443,6 +449,7 @@ export async function connectToChain(
 
           // Find only the latest value in the events.
           let storageValue;
+          // eslint-disable-next-line github/array-foreach
           paths.forEach((key, i) => {
             if (key === storagePath) {
               storageValue = values[i];
@@ -653,7 +660,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
 
       // Use the feeAccount for any fees.
       if (feeAccountAddr) {
-        txArgs.push(`--fee-account=${feeAccountAddr}`);
+        txArgs.push(`--fee-granter=${feeAccountAddr}`);
       }
 
       // We just try a single delivery per block.
@@ -696,15 +703,13 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
             .then(txResult => {
               // The result had an error code (not 0 or undefined for success).
               if (txResult.code) {
-                // eslint-disable-next-line no-use-before-define
                 failedSend(
-                  assert.error(`Error in tx processing: ${txResult.log}`),
+                  makeError(`Error in tx processing: ${txResult.log}`),
                 );
               }
             })
             .catch(err =>
-              // eslint-disable-next-line no-use-before-define
-              failedSend(assert.error(`Error in tx processing: ${err}`)),
+              failedSend(makeError(`Error in tx processing: ${err}`)),
             );
 
           // We submitted the transaction to the mempool successfully.
@@ -786,7 +791,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
   };
 
   // Begin the sender when we get the first (empty) mailbox update.
-  mbNotifier.getUpdateSince().then(() => recurseEachSend());
+  void mbNotifier.getUpdateSince().then(() => recurseEachSend());
 
   async function deliver(newMessages, acknum) {
     let doSend = false;

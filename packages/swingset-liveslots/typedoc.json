@@ -5,6 +5,6 @@
     "entryPoints": [
         "src/index.js",
         "src/types.js",
-        "src/vatDataTypes.js",
+        "src/vatDataTypes.d.ts",
     ]
 }

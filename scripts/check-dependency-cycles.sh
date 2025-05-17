@@ -4,12 +4,17 @@ set -ueo pipefail
 
 MAX_EDGES=${1-0}
 
-CYCLIC_EDGE_COUNT=$(scripts/graph.sh | wc -l)
+graphout=$(scripts/graph.sh)
+if test -z "$graphout"; then
+  CYCLIC_EDGE_COUNT=0
+else
+  echo "$graphout"
+  CYCLIC_EDGE_COUNT=$(echo "$graphout" | wc -l)
+fi
 
-echo CYCLIC_EDGE_COUNT $CYCLIC_EDGE_COUNT
+echo CYCLIC_EDGE_COUNT "$CYCLIC_EDGE_COUNT"
 
-if [[ $CYCLIC_EDGE_COUNT -gt $MAX_EDGES ]];
-then
+if [[ $CYCLIC_EDGE_COUNT -gt $MAX_EDGES ]]; then
   echo Greater than MAX_EDGES "$MAX_EDGES"
   exit 1
 fi

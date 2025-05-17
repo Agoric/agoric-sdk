@@ -1,4 +1,8 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
+import { Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
+import { passStyleOf } from '@endo/pass-style';
+import { makePromiseKit } from '@endo/promise-kit';
+
 import { AssetKind } from '@agoric/ertp';
 import { assertPattern, mustMatch } from '@agoric/store';
 import {
@@ -9,11 +13,8 @@ import {
   prepareExoClass,
   provideDurableMapStore,
 } from '@agoric/vat-data';
-import { E } from '@endo/eventual-send';
-import { passStyleOf, Remotable } from '@endo/marshal';
-import { makePromiseKit } from '@endo/promise-kit';
-
 import { objectMap } from '@agoric/internal';
+
 import { cleanProposal } from '../cleanProposal.js';
 import { handlePKitWarning } from '../handleWarning.js';
 import { makeInstanceRecordStorage } from '../instanceRecordStorage.js';
@@ -26,13 +27,24 @@ import { createSeatManager } from './zcfSeat.js';
 
 import { HandleOfferI, InvitationHandleShape } from '../typeGuards.js';
 import { prepareZcMint } from './zcfMint.js';
+import { ZcfI } from './typeGuards.js';
 
-/// <reference path="../internal-types.js" />
-/// <reference path="./internal-types.js" />
+/**
+ * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {IssuerOptionsRecord} from '@agoric/ertp';
+ * @import {ZoeIssuerRecord, ZCFRegisterFeeMint, ContractStartFn, SetTestJig} from './types.js';
+ */
 
-/** @typedef {import('@agoric/ertp').IssuerOptionsRecord} IssuerOptionsRecord */
-
-const { Fail } = assert;
+/**
+ * @typedef ZCFZygote
+ * @property {(instanceAdminFromZoe: ERef<ZoeInstanceAdmin>,
+ *     instanceRecordFromZoe: InstanceRecord,
+ *     issuerStorageFromZoe: IssuerRecords,
+ *     privateArgs?: object,
+ * ) => Promise<ExecuteContractResult>} startContract
+ * @property {(privateArgs?: object) => void} restartContract
+ */
 
 /**
  * Make the ZCF vat in zygote-usable form. First, a generic ZCF is
@@ -42,9 +54,9 @@ const { Fail } = assert;
  * @param {VatPowers} powers
  * @param {ERef<ZoeService>} zoeService
  * @param {Issuer<'set'>} invitationIssuer
- * @param {TestJigSetter} testJigSetter
+ * @param {( {zcf}: {zcf: ZCF} ) => void} testJigSetter
  * @param {BundleCap} contractBundleCap
- * @param {import('@agoric/vat-data').Baggage} zcfBaggage
+ * @param {Baggage} zcfBaggage
  * @returns {Promise<ZCFZygote>}
  */
 export const makeZCFZygote = async (
@@ -78,7 +90,7 @@ export const makeZCFZygote = async (
 
   /** @type {ShutdownWithFailure} */
   const shutdownWithFailure = reason => {
-    E(zoeInstanceAdmin).failAllSeats(reason);
+    void E(zoeInstanceAdmin).failAllSeats(reason);
     seatManager.dropAllReferences();
     // https://github.com/Agoric/agoric-sdk/issues/3239
     powers.exitVatWithFailure(reason);
@@ -92,7 +104,7 @@ export const makeZCFZygote = async (
 
   /**
    * @param {string} keyword
-   * @param {IssuerRecord} issuerRecord
+   * @param {ZoeIssuerRecord} issuerRecord
    */
   const recordIssuer = (keyword, issuerRecord) => {
     getInstanceRecHolder().addIssuer(keyword, issuerRecord);
@@ -114,7 +126,7 @@ export const makeZCFZygote = async (
     const zcfSeat = seatManager.makeZCFSeat(seatData);
 
     const exiter = makeExiter(seatData.proposal, zcfSeat);
-    E(zoeInstanceAdmin)
+    void E(zoeInstanceAdmin)
       .makeNoEscrowSeat(initialAllocation, proposal, exiter, seatHandle)
       .then(userSeat => userSeatPromiseKit.resolve(userSeat));
 
@@ -238,7 +250,7 @@ export const makeZCFZygote = async (
     } else {
       bundle = contractBundleCap;
     }
-    return evalContractBundle(bundle);
+    return /** @type {any} */ (evalContractBundle(bundle));
   };
   // evaluate the contract (either the first version, or an upgrade)
   const bundleResult = await evaluateContract();
@@ -281,13 +293,8 @@ export const makeZCFZygote = async (
     ['canBeUpgraded', 'canUpgrade'].includes(meta.upgradability);
 
   /** @type {ZCF} */
-  // Using Remotable rather than Far because there are too many complications
-  // imposing checking wrappers: makeInvitation() and setJig() want to
-  // accept raw functions. assert cannot be a valid passable! (It's a function
-  // and has members.)
-  const zcf = Remotable('Alleged: zcf', undefined, {
+  const zcf = prepareExo(zcfBaggage, 'zcf', ZcfI, {
     atomicRearrange: transfers => seatManager.atomicRearrange(transfers),
-    reallocate: (...seats) => seatManager.reallocate(...seats),
     assertUniqueKeyword: kwd => getInstanceRecHolder().assertUniqueKeyword(kwd),
     saveIssuer: async (issuerP, keyword) => {
       // TODO: The checks of the keyword for uniqueness are
@@ -321,11 +328,12 @@ export const makeZCFZygote = async (
         customDetails,
         proposalShape,
       );
-      return invitationP;
+      // rely on the ZCF type signature
+      return /** @type {any} */ (invitationP);
     },
     // Shutdown the entire vat and give payouts
     shutdown: completion => {
-      E(zoeInstanceAdmin).exitAllSeats(completion);
+      void E(zoeInstanceAdmin).exitAllSeats(completion);
       seatManager.dropAllReferences();
       powers.exitVat(completion);
     },
@@ -414,6 +422,7 @@ export const makeZCFZygote = async (
       instanceRecHolder = makeInstanceRecord(instanceRecordFromZoe);
       instantiateIssuerStorage(issuerStorageFromZoe);
       zcfBaggage.init('instanceRecHolder', instanceRecHolder);
+      zcfBaggage.init('repairedContractCompletionWatcher', true);
 
       const { privateArgsShape } = meta;
       if (privateArgsShape) {
@@ -466,6 +475,17 @@ export const makeZCFZygote = async (
       instanceRecHolder = zcfBaggage.get('instanceRecHolder');
       initSeatMgrAndMintKind();
 
+      await null;
+      if (!zcfBaggage.has('repairedContractCompletionWatcher')) {
+        // We don't wait because it's a cross-vat call (to Zoe) that can't be
+        // completed during this vat's start-up
+        E(zoeInstanceAdmin)
+          .repairContractCompletionWatcher()
+          .catch(() => {});
+
+        zcfBaggage.init('repairedContractCompletionWatcher', true);
+      }
+
       const { privateArgsShape } = meta;
       if (privateArgsShape) {
         mustMatch(privateArgs, privateArgsShape, 'privateArgs');
@@ -479,9 +499,16 @@ export const makeZCFZygote = async (
           publicFacet = undefined,
           creatorInvitation = undefined,
         }) => {
-          const priorCreatorFacet = zcfBaggage.get('creatorFacet');
-          const priorPublicFacet = zcfBaggage.get('publicFacet');
-          const priorCreatorInvitation = zcfBaggage.get('creatorInvitation');
+          let priorCreatorFacet;
+          let priorPublicFacet;
+          let priorCreatorInvitation;
+          try {
+            priorCreatorFacet = zcfBaggage.get('creatorFacet');
+            priorPublicFacet = zcfBaggage.get('publicFacet');
+            priorCreatorInvitation = zcfBaggage.get('creatorInvitation');
+          } catch (e) {
+            Fail`restartContract failed: original contract facets were not durable (${e})`;
+          }
 
           (priorCreatorFacet === creatorFacet &&
             priorPublicFacet === publicFacet &&

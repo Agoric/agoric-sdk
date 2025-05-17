@@ -1,8 +1,8 @@
+import { assert } from '@endo/errors';
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
-import { assert } from '@agoric/assert';
 import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
 
 /**

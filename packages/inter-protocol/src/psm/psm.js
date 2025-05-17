@@ -1,9 +1,9 @@
 // @jessie-check
+/// <reference types="@agoric/governance/exported" />
+/// <reference types="@agoric/zoe/exported" />
 
-import '@agoric/governance/exported.js';
-import '@agoric/zoe/exported.js';
-import '@agoric/zoe/src/contracts/exported.js';
-
+import { Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 import { AmountMath, AmountShape, BrandShape, RatioShape } from '@agoric/ertp';
 import {
   CONTRACT_ELECTORATE,
@@ -14,7 +14,6 @@ import {
 import { StorageNodeShape } from '@agoric/internal';
 import { M, prepareExo, provide } from '@agoric/vat-data';
 import {
-  atomicRearrange,
   atomicTransfer,
   ceilMultiplyBy,
   floorDivideBy,
@@ -31,13 +30,10 @@ import {
   InstanceHandleShape,
   InvitationShape,
 } from '@agoric/zoe/src/typeGuards.js';
-import { E } from '@endo/eventual-send';
 
 import { mustMatch } from '@agoric/store';
 import { makeCollectFeesInvitation } from '../collectFees.js';
 import { makeNatAmountShape } from '../contractSupport.js';
-
-const { Fail } = assert;
 
 /**
  * @file The Parity Stability Module supports efficiently minting/burning a
@@ -45,6 +41,11 @@ const { Fail } = assert;
  *   thereby acts as an anchor to provide additional stability. For flexible
  *   economic policies, the fee percentage for trading into and out of the
  *   stable token are specified separately.
+ */
+
+/**
+ * @import {EReturn} from '@endo/far';
+ * @import {ContractMeta, FeeMintAccess, Installation} from '@agoric/zoe';
  */
 
 /**
@@ -62,7 +63,10 @@ const { Fail } = assert;
  *   given by this contract
  */
 
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+/**
+ * @import {TypedPattern} from '@agoric/internal';
+ * @import {Baggage} from '@agoric/vat-data'
+ */
 
 /** @type {ContractMeta} */
 export const meta = {
@@ -177,9 +181,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       E.when(E(privateArgs.storageNode).makeChildNode('metrics'), node =>
         makeRecorderKit(
           node,
-          /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<MetricsNotification>} */ (
-            M.any()
-          ),
+          /** @type {TypedPattern<MetricsNotification>} */ (M.any()),
         ),
       ),
   });
@@ -275,8 +277,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     const maxAnchor = floorMultiplyBy(afterFee, anchorPerMinted);
     AmountMath.isGTE(maxAnchor, wanted) ||
       Fail`wanted ${wanted} is more than ${given} minus fees ${fee}`;
-    atomicRearrange(
-      zcf,
+    zcf.atomicRearrange(
       harden([
         [seat, stage, { In: afterFee }, { Minted: afterFee }],
         [seat, feePool, { In: fee }, { Minted: fee }],
@@ -307,8 +308,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       Fail`wanted ${wanted} is more than ${given} minus fees ${fee}`;
     mintMinted(asStable);
     try {
-      atomicRearrange(
-        zcf,
+      zcf.atomicRearrange(
         harden([
           [seat, anchorPool, { In: given }, { Anchor: given }],
           [stage, seat, { Minted: afterFee }, { Out: afterFee }],
@@ -447,4 +447,4 @@ export const start = async (zcf, privateArgs, baggage) => {
 };
 harden(start);
 
-/** @typedef {Awaited<ReturnType<typeof start>>['publicFacet']} PsmPublicFacet */
+/** @typedef {EReturn<typeof start>['publicFacet']} PsmPublicFacet */

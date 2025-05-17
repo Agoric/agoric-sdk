@@ -2,12 +2,11 @@
 // Agoric wallet deployment script.
 // FIXME: This is just hacked together for the legacy wallet.
 
+import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
-import { Fail } from '@agoric/assert';
 import path from 'path';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 export default async function deployWallet(
   homePromise,
@@ -17,6 +16,7 @@ export default async function deployWallet(
   // console.log('have home', home);
   const {
     agoric: {
+      DISCONNECTED,
       agoricNames,
       bank,
       namesByAddress,
@@ -27,6 +27,11 @@ export default async function deployWallet(
     },
     local: { http, localTimerService, spawner, wallet: oldWallet, scratch },
   } = home;
+
+  if (DISCONNECTED) {
+    console.warn(DISCONNECTED);
+    return;
+  }
 
   let walletVat = await E(scratch).get('wallet/api');
   if (!walletVat) {

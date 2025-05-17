@@ -1,4 +1,3 @@
-/* eslint-disable consistent-return */
 /**
  * @file Vault Manager object manages vault-based debts for a collateral type.
  *
@@ -17,8 +16,10 @@
  *   liquidated. If the auction is unsuccessful, the liquidation may be
  *   reverted.
  */
-import '@agoric/zoe/exported.js';
+/// <reference types="@agoric/zoe/exported" />
 
+import { X, Fail, q, makeError } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 import {
   AmountMath,
   AmountShape,
@@ -38,7 +39,6 @@ import {
 } from '@agoric/vat-data';
 import { TransferPartShape } from '@agoric/zoe/src/contractSupport/atomicTransfer.js';
 import {
-  atomicRearrange,
   ceilMultiplyBy,
   floorDivideBy,
   getAmountIn,
@@ -51,8 +51,7 @@ import {
   TopicsRecordShape,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { PriceQuoteShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
-import { E } from '@endo/eventual-send';
-import { AuctionPFShape } from '../auction/auctioneer.js';
+import { multiplyBy } from '@agoric/ertp/src/ratio.js';
 import {
   checkDebtLimit,
   makeNatAmountShape,
@@ -64,13 +63,51 @@ import { calculateMinimumCollateralization, minimumPrice } from './math.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { Phase, prepareVault } from './vault.js';
 import { calculateDistributionPlan } from './proceeds.js';
+import { AuctionPFShape } from '../auction/auctioneer.js';
 
-const { details: X, Fail, quote: q } = assert;
+/**
+ * @import {MapStore, SetStore} from '@agoric/store';
+ * @import {EReturn} from '@endo/far';
+ * @import {ZCFMint} from '@agoric/zoe';
+ * @import {PriceQuote} from '@agoric/zoe/tools/types.js';
+ */
 
 const trace = makeTracer('VM');
 
-/** @typedef {import('./storeUtils.js').NormalizedDebt} NormalizedDebt */
-/** @typedef {import('@agoric/time').RelativeTime} RelativeTime */
+/**
+ * Watch a notifier that isn't expected to fail or finish unless the vat hosting
+ * the notifier is upgraded. This watcher supports that by providing a
+ * straightforward way to get a replacement if the notifier breaks.
+ *
+ * @template T notifier topic
+ * @template {any[]} [A=unknown[]] arbitrary arguments
+ * @param {ERef<LatestTopic<T>>} notifierP
+ * @param {import('@agoric/swingset-liveslots').PromiseWatcher<T, A>} watcher
+ * @param {A} args
+ */
+export const watchQuoteNotifier = async (notifierP, watcher, ...args) => {
+  await undefined;
+
+  let updateCount;
+  for (;;) {
+    let value;
+    try {
+      ({ value, updateCount } = await E(notifierP).getUpdateSince(updateCount));
+      watcher.onFulfilled && watcher.onFulfilled(value, ...args);
+    } catch (e) {
+      watcher.onRejected && watcher.onRejected(e, ...args);
+      break;
+    }
+    if (updateCount === undefined) {
+      watcher.onRejected &&
+        watcher.onRejected(Error('stream finished'), ...args);
+      break;
+    }
+  }
+};
+
+/** @import {NormalizedDebt} from './storeUtils.js' */
+/** @import {RelativeTime} from '@agoric/time' */
 
 // Metrics naming scheme: nouns are present values; past-participles are accumulative.
 /**
@@ -110,6 +147,7 @@ const trace = makeTracer('VM');
  *   interestRate: Ratio;
  *   latestInterestUpdate: Timestamp;
  * }} AssetState
+ *
  *
  * @typedef {{
  *   getChargingPeriod: () => RelativeTime;
@@ -170,14 +208,14 @@ const trace = makeTracer('VM');
  * @type {(brand: Brand) => {
  *   prioritizedVaults: ReturnType<typeof makePrioritizedVaults>;
  *   storedQuotesNotifier: import('@agoric/notifier').StoredNotifier<PriceQuote>;
- *   storedCollateralQuote: PriceQuote;
+ *   storedCollateralQuote: PriceQuote | null;
  * }}
  */
 // any b/c will be filled after start()
 const collateralEphemera = makeEphemeraProvider(() => /** @type {any} */ ({}));
 
 /**
- * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  * @param {{
  *   zcf: import('./vaultFactory.js').VaultFactoryZCF;
  *   marshaller: ERef<Marshaller>;
@@ -191,6 +229,7 @@ export const prepareVaultManagerKit = (
   { zcf, marshaller, makeRecorderKit, factoryPowers },
 ) => {
   const { priceAuthority, timerService, reservePublicFacet } = zcf.getTerms();
+  const watchedBrands = new Set();
 
   const makeVault = prepareVault(baggage, makeRecorderKit, zcf);
 
@@ -304,7 +343,7 @@ export const prepareVaultManagerKit = (
         getCollateralQuote: M.call().returns(PriceQuoteShape),
         getPublicFacet: M.call().returns(M.remotable('publicFacet')),
         lockOraclePrices: M.call().returns(PriceQuoteShape),
-        liquidateVaults: M.call(AuctionPFShape).returns(M.promise()),
+        liquidateVaults: M.call(M.eref(AuctionPFShape)).returns(M.promise()),
       }),
     },
     initState,
@@ -355,13 +394,7 @@ export const prepareVaultManagerKit = (
         start() {
           const { state, facets } = this;
           trace(state.collateralBrand, 'helper.start()', state.vaultCounter);
-          const {
-            collateralBrand,
-            collateralUnit,
-            debtBrand,
-            storageNode,
-            unsettledVaults,
-          } = state;
+          const { collateralBrand, unsettledVaults } = state;
 
           const ephemera = collateralEphemera(collateralBrand);
           ephemera.prioritizedVaults = makePrioritizedVaults(unsettledVaults);
@@ -384,40 +417,79 @@ export const prepareVaultManagerKit = (
                 ),
             fail: reason => {
               zcf.shutdownWithFailure(
-                assert.error(X`Unable to continue without a timer: ${reason}`),
+                makeError(X`Unable to continue without a timer: ${reason}`),
               );
             },
             finish: done => {
               zcf.shutdownWithFailure(
-                assert.error(X`Unable to continue without a timer: ${done}`),
+                makeError(X`Unable to continue without a timer: ${done}`),
               );
             },
           });
 
-          trace('helper.start() making quoteNotifier from', priceAuthority);
-          const quoteNotifier = E(priceAuthority).makeQuoteNotifier(
+          void facets.helper.ensureQuoteNotifierWatched();
+
+          trace('helper.start() done');
+        },
+        ensureQuoteNotifierWatched() {
+          const { state } = this;
+
+          const { collateralBrand, collateralUnit, debtBrand, storageNode } =
+            state;
+          if (watchedBrands.has(collateralBrand)) {
+            return;
+          }
+          watchedBrands.add(collateralBrand);
+
+          const ephemera = collateralEphemera(collateralBrand);
+
+          const quoteNotifierP = E(priceAuthority).makeQuoteNotifier(
             collateralUnit,
             debtBrand,
           );
-          ephemera.storedQuotesNotifier = makeStoredNotifier(
-            quoteNotifier,
-            E(storageNode).makeChildNode('quotes'),
-            marshaller,
+
+          void E.when(
+            quoteNotifierP,
+            quoteNotifier => {
+              // @ts-expect-error XXX quotes
+              ephemera.storedQuotesNotifier = makeStoredNotifier(
+                // @ts-expect-error XXX quotes
+                quoteNotifier,
+                E(storageNode).makeChildNode('quotes'),
+                marshaller,
+              );
+              trace(
+                'helper.start() awaiting observe storedQuotesNotifier',
+                collateralBrand,
+              );
+              // NB: upon restart, there may not be a price for a while. If manager
+              // operations are permitted, ones that depend on price information
+              // will throw. See https://github.com/Agoric/agoric-sdk/issues/4317
+              const quoteWatcher = harden({
+                onFulfilled(value) {
+                  trace('watcher updated price', value);
+                  ephemera.storedCollateralQuote = value;
+                },
+                onRejected() {
+                  // NOTE: drastic action, if the quoteNotifier fails, we don't know
+                  // the value of the asset, nor do we know how long we'll be in
+                  // ignorance. Best choice is to disable actions that require
+                  // prices and restart when we have a new price. If we restart the
+                  // notifier immediately, we'll trigger an infinite loop, so try
+                  // to restart each time we get a request.
+
+                  ephemera.storedCollateralQuote = null;
+                  watchedBrands.delete(collateralBrand);
+                },
+              });
+              void watchQuoteNotifier(quoteNotifier, quoteWatcher);
+            },
+            e => {
+              trace('makeQuoteNotifier failed, resetting', e);
+              ephemera.storedCollateralQuote = null;
+              watchedBrands.delete(collateralBrand);
+            },
           );
-          trace('helper.start() awaiting observe storedQuotesNotifier');
-          // NB: upon restart, there may not be a price for a while. If manager
-          // operations are permitted, ones the depend on price information will
-          // throw. See https://github.com/Agoric/agoric-sdk/issues/4317
-          void observeNotifier(quoteNotifier, {
-            updateState(value) {
-              trace('storing new quote', value.quoteAmount.value);
-              ephemera.storedCollateralQuote = value;
-            },
-            fail(reason) {
-              console.error('quoteNotifier failed to iterate', reason);
-            },
-          });
-          trace('helper.start() done');
         },
         /** @param {Timestamp} updateTime */
         async chargeAllVaults(updateTime) {
@@ -705,7 +777,7 @@ export const prepareVaultManagerKit = (
                   amounts,
                 ]),
             );
-            atomicRearrange(zcf, harden(transfers));
+            zcf.atomicRearrange(harden(transfers));
           }
 
           const { prioritizedVaults } = collateralEphemera(
@@ -785,10 +857,15 @@ export const prepareVaultManagerKit = (
          * @param {Amount<'nat'>} collateralAmount
          */
         maxDebtFor(collateralAmount) {
-          const { collateralBrand } = this.state;
+          const { state, facets } = this;
+          const { collateralBrand } = state;
           const { storedCollateralQuote } = collateralEphemera(collateralBrand);
-          if (!storedCollateralQuote)
-            throw Fail`maxDebtFor called before a collateral quote was available`;
+          if (!storedCollateralQuote) {
+            facets.helper.ensureQuoteNotifierWatched();
+
+            // it might take an arbitrary amount of time to get a new quote
+            throw Fail`maxDebtFor called before a collateral quote was available for ${collateralBrand}`;
+          }
           // use the lower price to prevent vault adjustments that put them imminently underwater
           const collateralPrice = minimumPrice(
             storedCollateralQuote,
@@ -937,8 +1014,9 @@ export const prepareVaultManagerKit = (
           );
           state.totalDebt = AmountMath.subtract(
             AmountMath.add(state.totalDebt, vault.getCurrentDebt()),
-            oldDebtNormalized,
+            multiplyBy(oldDebtNormalized, state.compoundedInterest),
           );
+
           void facets.helper.writeMetrics();
         },
       },
@@ -1025,11 +1103,17 @@ export const prepareVaultManagerKit = (
         },
 
         getCollateralQuote() {
+          const { state, facets } = this;
           const { storedCollateralQuote } = collateralEphemera(
-            this.state.collateralBrand,
+            state.collateralBrand,
           );
-          if (!storedCollateralQuote)
+          if (!storedCollateralQuote) {
+            facets.helper.ensureQuoteNotifierWatched();
+
+            // it might take an arbitrary amount of time to get a new quote
             throw Fail`getCollateralQuote called before a collateral quote was available`;
+          }
+
           return storedCollateralQuote;
         },
 
@@ -1042,8 +1126,13 @@ export const prepareVaultManagerKit = (
           const { storedCollateralQuote } = collateralEphemera(
             state.collateralBrand,
           );
-          if (!storedCollateralQuote)
-            throw Fail`lockOraclePrices called before a collateral quote was available`;
+          if (!storedCollateralQuote) {
+            facets.helper.ensureQuoteNotifierWatched();
+
+            // it might take an arbitrary amount of time to get a new quote
+            throw Fail`lockOraclePrices called before a collateral quote was available for ${state.collateralBrand}`;
+          }
+
           trace(
             `lockOraclePrices`,
             getAmountIn(storedCollateralQuote),
@@ -1074,6 +1163,15 @@ export const prepareVaultManagerKit = (
             // NB: this message should not log repeatedly.
             console.error(
               'Skipping liquidation because no quote is locked yet (may happen with new manager)',
+            );
+            return;
+          }
+
+          const { storedCollateralQuote: collateralQuoteBefore } =
+            collateralEphemera(this.state.collateralBrand);
+          if (!collateralQuoteBefore) {
+            console.error(
+              'Skipping liquidation because collateralQuote is missing',
             );
             return;
           }
@@ -1141,7 +1239,10 @@ export const prepareVaultManagerKit = (
             const { plan, vaultsInPlan } = helper.planProceedsDistribution(
               proceeds,
               totalDebt,
-              storedCollateralQuote,
+              // If a quote was available at the start of liquidation, but is no
+              // longer, using the earlier price is better than failing to
+              // distribute proceeds
+              storedCollateralQuote || collateralQuoteBefore,
               vaultData,
               totalCollateral,
             );
@@ -1207,7 +1308,7 @@ export const prepareVaultManagerKit = (
   return makeVaultManagerKit;
 };
 
-/** @typedef {Awaited<ReturnType<ReturnType<typeof prepareVaultManagerKit>>>} VaultManagerKit */
+/** @typedef {EReturn<EReturn<typeof prepareVaultManagerKit>>} VaultManagerKit */
 /**
  * @typedef {VaultManagerKit['self']} VaultManager Each VaultManager manages a
  *   single collateral type.

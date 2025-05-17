@@ -57,15 +57,12 @@ E(home.ibcport[0]).connect(remoteEndpoint, connectionHandler)
 
 The other side of `connect()` is a "listening port". These ports are waiting for inbound connections to be established.
 
-To get a listening port, you need a `NetworkInterface` object (such as the one on your `ag-solo` under `home.network`) and ask it to `bind()` to an endpoint. You can either provide a specific port name, or allow the API to allocate a random one for you. The endpoint specifies the type of connection that this port will be able to accept (IBC, TCP, etc), and some properties of that connection. `bind()` uses a "multiaddress" to encode this information.
+To get a listening port, you need a `NetworkInterface` object (such as the one on your `ag-solo` under `home.network`) and ask it for a port, via the `PortAllocator`.
 
 ```js
 // ask for a random allocation - ends with a slash
-E(home.network).bind('/ibc-port/')
-  .then(port => usePort(port));
-
-// or ask for a specific port name
-E(home.network).bind('/ibc-port/my-cool-port-name')
+E(home.network).getPortAllocator()
+  .then(portAllocator => E(portAllocator).allocateCustomIBCPort())
   .then(port => usePort(port));
 ```
 
@@ -147,7 +144,7 @@ Note that if you want to listen on this port again, you can just call `port.addL
 
 ### Closing the Port Entirely
 
-Removing a listener doesn't release the port address to make it available for other `bind()` requests.  You can call:
+Removing a listener doesn't release the port address to make it available for other `PortAllocator` requests.  You can call:
 
 ```js
 port.revoke();

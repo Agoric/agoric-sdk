@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package icq.v1;
+
+option go_package = "github.com/cosmos/ibc-apps/modules/async-icq/v8/types";
+
+import "gogoproto/gogo.proto";
+import "icq/v1/icq.proto";
+
+// GenesisState defines the interchain query genesis state
+message GenesisState {
+  string host_port = 1;
+  Params params = 4 [(gogoproto.nullable) = false];
+}

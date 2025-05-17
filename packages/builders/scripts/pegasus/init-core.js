@@ -1,6 +1,6 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').ProposalBuilder} */
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
 export const defaultProposalBuilder = async ({ publishRef, install }) =>
   harden({
     sourceSpec: '@agoric/pegasus/src/proposals/core-proposal.js',
@@ -9,7 +9,7 @@ export const defaultProposalBuilder = async ({ publishRef, install }) =>
       {
         pegasusRef: publishRef(
           install(
-            '@agoric/pegasus/src/pegasus.js',
+            '@agoric/pegasus/src/contract.js',
             '../bundles/bundle-pegasus.js',
           ),
         ),
@@ -17,7 +17,8 @@ export const defaultProposalBuilder = async ({ publishRef, install }) =>
     ],
   });
 
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
-  const { writeCoreProposal } = await makeHelpers(homeP, endowments);
-  await writeCoreProposal('gov-pegasus', defaultProposalBuilder);
+  const { writeCoreEval } = await makeHelpers(homeP, endowments);
+  await writeCoreEval('gov-pegasus', defaultProposalBuilder);
 };

@@ -9,10 +9,10 @@ import (
 	"path/filepath"
 	"regexp"
 
+	sdkioerrors "cosmossdk.io/errors"
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/tendermint/tendermint/libs/log"
 )
 
@@ -588,7 +588,7 @@ func (exportsHandler SwingStoreExportsHandler) InitiateExport(blockHeight uint64
 		} else if discardErr != nil {
 			// Safe to wrap error and use detailed error info since this error
 			// will not go back into swingset layers
-			err = sdkerrors.Wrapf(err, "failed to discard swing-store export after failing to process export: %+v", discardErr)
+			err = sdkioerrors.Wrapf(err, "failed to discard swing-store export after failing to process export: %+v", discardErr)
 		}
 	}()
 
@@ -751,10 +751,14 @@ func (exportsHandler SwingStoreExportsHandler) RestoreExport(provider SwingStore
 	}
 	defer os.RemoveAll(exportDir)
 
+	exportsHandler.logger.Info("creating swing-store restore", "exportDir", exportDir, "height", blockHeight)
+
 	err = WriteSwingStoreExportToDirectory(provider, exportDir)
 	if err != nil {
 		return err
 	}
+
+	exportsHandler.logger.Info("restoring swing-store", "exportDir", exportDir, "height", blockHeight)
 
 	action := &swingStoreRestoreExportAction{
 		Type:        swingStoreExportActionType,
@@ -772,7 +776,7 @@ func (exportsHandler SwingStoreExportsHandler) RestoreExport(provider SwingStore
 		return err
 	}
 
-	exportsHandler.logger.Info("restored swing-store export", "exportDir", exportDir, "height", blockHeight)
+	exportsHandler.logger.Info("restored swing-store", "exportDir", exportDir, "height", blockHeight)
 
 	return nil
 }
@@ -783,7 +787,18 @@ func (exportsHandler SwingStoreExportsHandler) RestoreExport(provider SwingStore
 // a jsonl-like file, before saving the export manifest linking these together.
 // The export manifest filename and overall export format is common with the JS
 // swing-store import/export logic.
-func WriteSwingStoreExportToDirectory(provider SwingStoreExportProvider, exportDir string) error {
+func WriteSwingStoreExportToDirectory(provider SwingStoreExportProvider, exportDir string) (err error) {
+	handleDeferError := func(fn func() error) {
+		deferError := fn()
+		if err == nil {
+			err = deferError
+		} else if deferError != nil {
+			// Safe to wrap error and use detailed error info since this error
+			// will not go back into swingset layers
+			err = sdkioerrors.Wrapf(err, "deferred error %+v", deferError)
+		}
+	}
+
 	manifest := exportManifest{
 		BlockHeight: provider.BlockHeight,
 	}
@@ -794,14 +809,14 @@ func WriteSwingStoreExportToDirectory(provider SwingStoreExportProvider, exportD
 	}
 
 	if exportDataReader != nil {
-		defer exportDataReader.Close()
+		defer handleDeferError(exportDataReader.Close)
 
 		manifest.Data = exportDataFilename
 		exportDataFile, err := os.OpenFile(filepath.Join(exportDir, exportDataFilename), os.O_CREATE|os.O_WRONLY, exportedFilesMode)
 		if err != nil {
 			return err
 		}
-		defer exportDataFile.Close()
+		defer handleDeferError(exportDataFile.Close)
 
 		err = agoric.EncodeKVEntryReaderToJsonl(exportDataReader, exportDataFile)
 		if err != nil {

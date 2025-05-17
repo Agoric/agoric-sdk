@@ -3,20 +3,20 @@
 # Configures the .vscode directory (which is .gitignored so that everyone can tailor it)
 
 die() {
-	echo "$*" >&2
-	exit 1
+  echo "$*" >&2
+  exit 1
 }
 
 # Run at the top level of the repository
-cd "$(git rev-parse --show-toplevel)" ||
-	die "Could not cd to top-level directory"
+cd "$(git rev-parse --show-toplevel)" \
+  || die "Could not cd to top-level directory"
 
-mkdir -p .vscode ||
-	die "Could not create .vscode/"
+mkdir -p .vscode \
+  || die "Could not create .vscode/"
 
 # General settings
 
-cat >.vscode/settings.json.new <<\EOF ||
+cat > .vscode/settings.json.new << \EOF || die "Could not write settings.json"
 {
   // Automatically format with Prettier on save
   "editor.formatOnSave": true,
@@ -34,6 +34,7 @@ cat >.vscode/settings.json.new <<\EOF ||
     { "rule": "prettier/*", "severity": "off" },
     // Error in CI but a common state while coding in IDE
     { "rule": "no-unused-vars", "severity": "warn" },
+    { "rule": "@typescript-eslint/no-unused-vars", "severity": "warn" },
     // Imports are auto-fixed on save
     { "rule": "import/newline-after-import", "severity": "off" },
     { "rule": "import/order", "severity": "off" },
@@ -42,9 +43,8 @@ cat >.vscode/settings.json.new <<\EOF ||
   "eslint.packageManager": "yarn"
 }
 EOF
-	die "Could not write settings.json"
 
-cat > .vscode/launch.json.new <<\EOF ||
+cat > .vscode/launch.json.new << \EOF || die "Could not write launch.json"
 {
     // Use IntelliSense to learn about possible attributes.
     // Hover to view descriptions of existing attributes.
@@ -82,20 +82,19 @@ cat > .vscode/launch.json.new <<\EOF ||
     ]
 }
 EOF
-	die "Could not write launch.json"
 
 for file in .vscode/launch.json .vscode/settings.json; do
-	printf "\nComparing %s\n" $file
-	if test -f $file; then
-		if git diff --no-index --quiet --exit-code $file $file.new; then
-			echo "Your existing configuration matches the recommendations."
-			rm $file.new
-		else
-			printf "The file %s.new has these changes:\n\n" $file
-			git --no-pager diff --no-index $file $file.new
-			printf "\n\nTo overwrite yours:\n\n  mv %s.new %s\n\n" $file $file
-		fi
-	else
-		mv $file.new $file
-	fi
+  printf "\nComparing %s\n" $file
+  if test -f $file; then
+    if git diff --no-index --quiet --exit-code $file $file.new; then
+      echo "Your existing configuration matches the recommendations."
+      rm $file.new
+    else
+      printf "The file %s.new has these changes:\n\n" $file
+      git --no-pager diff --no-index $file $file.new
+      printf "\n\nTo overwrite yours:\n\n  mv %s.new %s\n\n" $file $file
+    fi
+  else
+    mv $file.new $file
+  fi
 done

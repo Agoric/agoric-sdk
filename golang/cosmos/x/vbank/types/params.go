@@ -6,14 +6,18 @@ import (
 	yaml "gopkg.in/yaml.v2"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 )
+
+const AllowAllMonitoringAccountsPattern = "*"
 
 // Parameter keys
 var (
 	ParamStoreKeyRewardEpochDurationBlocks = []byte("reward_epoch_duration_blocks")
 	ParamStoreKeyRewardSmoothingBlocks     = []byte("reward_smoothing_blocks")
 	ParamStoreKeyPerEpochRewardFraction    = []byte("per_epoch_reward_fraction")
+	ParamStoreKeyAllowedMonitoringAccounts = []byte("allowed_monitoring_accounts")
 )
 
 // ParamKeyTable returns the parameter key table.
@@ -21,12 +25,14 @@ func ParamKeyTable() paramtypes.KeyTable {
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
 }
 
-// DefaultParams returns default distribution parameters
+// DefaultParams returns default parameters
 func DefaultParams() Params {
+	provisionAddress := authtypes.NewModuleAddress(ProvisionPoolName)
 	return Params{
 		RewardEpochDurationBlocks: 0,
 		RewardSmoothingBlocks:     1,
 		PerEpochRewardFraction:    sdk.OneDec(),
+		AllowedMonitoringAccounts: []string{provisionAddress.String()},
 	}
 }
 
@@ -67,12 +73,27 @@ func (p Params) RewardRate(pool sdk.Coins, blocks int64) sdk.Coins {
 	return sdk.NewCoins(coins...)
 }
 
+// IsAllowedMonitoringAccount checks to see if a given address is allowed to monitor its balance.
+func (p Params) IsAllowedMonitoringAccount(addr string) bool {
+	for _, pat := range p.AllowedMonitoringAccounts {
+		switch pat {
+		case AllowAllMonitoringAccountsPattern, addr:
+			// Got an AllowAll pattern or an exact match.
+			return true
+		}
+	}
+
+	// No match found.
+	return false
+}
+
 // ParamSetPairs returns the parameter set pairs.
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(ParamStoreKeyRewardEpochDurationBlocks, &p.RewardEpochDurationBlocks, validateRewardEpochDurationBlocks),
 		paramtypes.NewParamSetPair(ParamStoreKeyRewardSmoothingBlocks, &p.RewardSmoothingBlocks, validateRewardSmoothingBlocks),
 		paramtypes.NewParamSetPair(ParamStoreKeyPerEpochRewardFraction, &p.PerEpochRewardFraction, validatePerEpochRewardFraction),
+		paramtypes.NewParamSetPair(ParamStoreKeyAllowedMonitoringAccounts, &p.AllowedMonitoringAccounts, validateAllowedMonitoringAccounts),
 	}
 }
 
@@ -84,7 +105,12 @@ func (p Params) ValidateBasic() error {
 	if err := validatePerEpochRewardFraction(p.PerEpochRewardFraction); err != nil {
 		return err
 	}
-
+	if err := validateRewardSmoothingBlocks(p.RewardSmoothingBlocks); err != nil {
+		return err
+	}
+	if err := validateAllowedMonitoringAccounts(p.AllowedMonitoringAccounts); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -126,6 +152,21 @@ func validatePerEpochRewardFraction(i interface{}) error {
 
 	if v.GT(sdk.OneDec()) {
 		return fmt.Errorf("per epoch reward fraction must be less than or equal to one: %s", v)
+	}
+
+	return nil
+}
+
+func validateAllowedMonitoringAccounts(i interface{}) error {
+	v, ok := i.([]string)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+
+	for a, acc := range v {
+		if acc == "" {
+			return fmt.Errorf("allowed monitoring accounts element[%d] cannot be empty", a)
+		}
 	}
 
 	return nil

@@ -1,11 +1,13 @@
 /* global globalThis */
-/* eslint-disable no-use-before-define, jsdoc/require-returns-type */
+/* eslint-disable jsdoc/require-returns-type */
 
-import { assert, Fail } from '@agoric/assert';
+import { environmentOptionsListHas } from '@endo/env-options';
+import { assert, Fail, q, b } from '@endo/errors';
 import { assertPattern, mustMatch } from '@agoric/store';
 import { defendPrototype, defendPrototypeKit } from '@endo/exo/tools.js';
 import { Far, passStyleOf } from '@endo/marshal';
 import { Nat } from '@endo/nat';
+import { kindOf } from '@endo/patterns';
 import { parseVatSlot, makeBaseRef } from './parseVatSlots.js';
 import { enumerateKeysWithPrefix } from './vatstore-iterators.js';
 import { makeCache } from './cache.js';
@@ -14,26 +16,24 @@ import {
   checkAndUpdateFacetiousness,
 } from './facetiousness.js';
 
-/** @template T @typedef {import('@agoric/vat-data').DefineKindOptions<T>} DefineKindOptions */
+/**
+ * @import {DurableKindHandle} from '@agoric/swingset-liveslots'
+ * @import {DefineKindOptions} from '@agoric/swingset-liveslots'
+ * @import {ClassContextProvider, KitContextProvider} from '@endo/exo'
+ * @import {ToCapData, FromCapData} from '@endo/marshal';
+ * @import {Pattern} from '@endo/patterns';
+ * @import {SwingSetCapData} from './types.js';
+ */
 
-const { hasOwn, defineProperty, getOwnPropertyNames, entries } = Object;
+const {
+  hasOwn,
+  defineProperty,
+  getOwnPropertyNames,
+  values,
+  entries,
+  fromEntries,
+} = Object;
 const { ownKeys } = Reflect;
-const { quote: q } = assert;
-
-// See https://github.com/Agoric/agoric-sdk/issues/8005
-// Once agoric-sdk is upgraded to depend on endo post
-// https://github.com/endojs/endo/pull/1606 then remove this
-// definition of `b` and say instead
-// ```js
-//   const { quote: q, base: b } = assert;
-// ```
-const b = index => q(Number(index));
-
-// import { kdebug } from './kdebug.js';
-
-// TODO Use environment-options.js currently in ses/src after factoring it out
-// to a new package.
-const env = (globalThis.process || {}).env || {};
 
 // Turn on to give each exo instance its own toStringTag value which exposes
 // the SwingSet vref.
@@ -42,9 +42,7 @@ const env = (globalThis.process || {}).env || {};
 // confidential object-creation activity, so this must not be something
 // that unprivileged vat code (including unprivileged contracts) can do
 // for themselves.
-const LABEL_INSTANCES = (env.DEBUG || '')
-  .split(':')
-  .includes('label-instances');
+const LABEL_INSTANCES = environmentOptionsListHas('DEBUG', 'label-instances');
 
 // This file implements the "Virtual Objects" system, currently documented in
 // {@link https://github.com/Agoric/agoric-sdk/blob/master/packages/SwingSet/docs/virtual-objects.md})
@@ -139,39 +137,6 @@ const makeContextCache = (makeState, makeContext) => {
   const writeBacking = _baseRef => Fail`never called`;
   const deleteBacking = _baseRef => Fail`never called`;
   return makeCache(readBacking, writeBacking, deleteBacking);
-};
-
-/**
- * @typedef {import('@endo/exo/src/exo-tools.js').ContextProvider } ContextProvider
- */
-
-/**
- * @param {*} contextCache
- * @param {*} getSlotForVal
- * @returns {ContextProvider}
- */
-const makeContextProvider = (contextCache, getSlotForVal) =>
-  harden(rep => contextCache.get(getSlotForVal(rep)));
-
-const makeContextProviderKit = (contextCache, getSlotForVal, facetNames) => {
-  /** @type { Record<string, any> } */
-  const contextProviderKit = {};
-  for (const [index, name] of facetNames.entries()) {
-    contextProviderKit[name] = rep => {
-      const vref = getSlotForVal(rep);
-      const { baseRef, facet } = parseVatSlot(vref);
-
-      // Without this check, an attacker (with access to both cohort1.facetA
-      // and cohort2.facetB) could effectively forge access to cohort1.facetB
-      // and cohort2.facetA. They could not forge the identity of those two
-      // objects, but they could invoke all their equivalent methods, by using
-      // e.g. cohort1.facetA.foo.apply(cohort2.facetB, [...args])
-      Number(facet) === index || Fail`illegal cross-facet access`;
-
-      return harden(contextCache.get(baseRef));
-    };
-  }
-  return harden(contextProviderKit);
 };
 
 // The management of single Representatives (i.e. defineKind) is very similar
@@ -279,12 +244,47 @@ const insistDurableCapdata = (vrm, what, capdata, valueFor) => {
   }
 };
 
-const insistSameCapData = (oldCD, newCD) => {
-  // NOTE: this assumes both were marshalled with the same format
-  // (e.g. smallcaps vs pre-smallcaps). To somewhat tolerate new
-  // formats, we'd need to `serialize(unserialize(oldCD))`.
+const isUndefinedPatt = patt =>
+  patt === undefined ||
+  (kindOf(patt) === 'match:kind' && patt.payload === 'undefined');
+
+/**
+ * Assert that a new stateShape either matches the old, or only differs in the
+ * addition of new clearly-optional top-level fields as conveyed by an
+ * [Endo `M.or`]{@link https://endojs.github.io/endo/interfaces/_endo_patterns.PatternMatchers.html#or}
+ * Pattern with at least one `undefined` alternative.
+ *
+ * @param {SwingSetCapData} oldCD
+ * @param {SwingSetCapData} newCD
+ * @param {{ newShape: Record<string, Pattern>, serialize: ToCapData<string>, unserialize: FromCapData<string> }} powers
+ */
+const insistCompatibleShapeCapData = (
+  oldCD,
+  newCD,
+  { newShape, serialize, unserialize },
+) => {
   if (oldCD.body !== newCD.body) {
-    Fail`durable Kind stateShape mismatch (body)`;
+    // Allow introduction of any clearly-optional new field at top level.
+    const oldShape =
+      unserialize(oldCD) ||
+      Fail`durable Kind stateShape mismatch (no old shape)`;
+    passStyleOf(oldShape) === 'copyRecord' ||
+      Fail`durable Kind stateShape mismatch (invalid old shape)`;
+    assertPattern(oldShape);
+    for (const [name, oldPatt] of Object.entries(oldShape)) {
+      // Assert presence and CapData shape, but save slots for their own clause.
+      (Object.hasOwn(newShape, name) &&
+        serialize(newShape[name]).body === serialize(oldPatt).body) ||
+        Fail`durable Kind stateShape mismatch (body ${name})`;
+    }
+    for (const [name, newPatt] of Object.entries(newShape)) {
+      if (Object.hasOwn(oldShape, name)) continue;
+      kindOf(newPatt) === 'match:or' ||
+        Fail`durable Kind stateShape mismatch (body new field ${name})`;
+      // @ts-expect-error A "match:or" pattern has a `payload` array of Patterns
+      newPatt.payload.some(patt => isUndefinedPatt(patt)) ||
+        Fail`durable Kind stateShape mismatch (body ${name})`;
+    }
   }
   if (oldCD.slots.length !== newCD.slots.length) {
     Fail`durable Kind stateShape mismatch (slots.length)`;
@@ -310,8 +310,8 @@ const insistSameCapData = (oldCD, newCD) => {
  * @param {(slot: string) => object} requiredValForSlot
  * @param {*} registerValue  Function to register a new slot+value in liveSlot's
  *   various tables
- * @param {import('@endo/marshal').ToCapData<string>} serialize  Serializer for this vat
- * @param {import('@endo/marshal').FromCapData<string>} unserialize  Unserializer for this vat
+ * @param {ToCapData<string>} serialize  Serializer for this vat
+ * @param {FromCapData<string>} unserialize  Unserializer for this vat
  * @param {*} assertAcceptableSyscallCapdataSize  Function to check for oversized
  *   syscall params
  * @param {import('./types.js').LiveSlotsOptions} [liveSlotsOptions]
@@ -570,7 +570,7 @@ export const makeVirtualObjectManager = (
    *  tag: string,
    *  unfaceted?: boolean,
    *  facets?: string[],
-   *  stateShapeCapData?: import('./types.js').SwingSetCapData
+   *  stateShapeCapData?: SwingSetCapData
    * }} DurableKindDescriptor
    */
 
@@ -717,6 +717,8 @@ export const makeVirtualObjectManager = (
     const {
       finish = undefined,
       stateShape = undefined,
+      receiveAmplifier = undefined,
+      receiveInstanceTester = undefined,
       thisfulMethods = false,
     } = options;
     let {
@@ -763,10 +765,7 @@ export const makeVirtualObjectManager = (
           // actually carry the InterfaceGuardKit.
           //
           // Tolerating the old vat-data with the new types.
-          // at-expect-error here causes inconsistent reports, so
-          // doing the at-ts-ignore-error ritual instead.
-          // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
-          // @ts-ignore
+          // @ts-expect-error
           interfaceGuardKit = interfaceGuard;
           interfaceGuard = undefined;
           // The rest of the code from here makes no further compromise
@@ -804,6 +803,11 @@ export const makeVirtualObjectManager = (
       Fail`A stateShape must be a copyRecord: ${q(stateShape)}`;
     assertPattern(stateShape);
 
+    if (!multifaceted) {
+      receiveAmplifier === undefined ||
+        Fail`Only facets of an exo class kit can be amplified, not ${q(tag)}`;
+    }
+
     let facetNames;
 
     if (isDurable) {
@@ -837,7 +841,11 @@ export const makeVirtualObjectManager = (
 
       const oldStateShapeSlots = oldShapeCD ? oldShapeCD.slots : [];
       if (oldShapeCD && !allowStateShapeChanges) {
-        insistSameCapData(oldShapeCD, newShapeCD);
+        insistCompatibleShapeCapData(oldShapeCD, newShapeCD, {
+          newShape: /** @type {Record<string, Pattern>} */ (stateShape),
+          serialize,
+          unserialize,
+        });
       }
       const newStateShapeSlots = newShapeCD.slots;
       vrm.updateReferenceCounts(oldStateShapeSlots, newStateShapeSlots);
@@ -891,9 +899,13 @@ export const makeVirtualObjectManager = (
       return harden({
         get() {
           const baseRef = getBaseRef(this);
-          const { valueMap, capdatas } = dataCache.get(baseRef);
+          const record = dataCache.get(baseRef);
+          assert(record !== undefined);
+          const { capdatas, valueMap } = record;
           if (!valueMap.has(prop)) {
-            const value = harden(unserialize(capdatas[prop]));
+            const value = hasOwn(capdatas, prop)
+              ? harden(unserialize(capdatas[prop]))
+              : undefined;
             checkStatePropertyValue(value, prop);
             valueMap.set(prop, value);
           }
@@ -908,12 +920,20 @@ export const makeVirtualObjectManager = (
             insistDurableCapdata(vrm, prop, capdata, true);
           }
           const record = dataCache.get(baseRef); // mutable
-          const oldSlots = record.capdatas[prop].slots;
+          assert(record !== undefined);
+          const { capdatas, valueMap } = record;
+          const oldSlots = hasOwn(capdatas, prop) ? capdatas[prop].slots : [];
           const newSlots = capdata.slots;
           vrm.updateReferenceCounts(oldSlots, newSlots);
-          record.capdatas[prop] = capdata; // modify in place ..
-          record.valueMap.set(prop, value);
-          dataCache.set(baseRef, record); // .. but mark as dirty
+          // modify in place, but mark as dirty
+          defineProperty(capdatas, prop, {
+            value: capdata,
+            writable: true,
+            enumerable: true,
+            configurable: false,
+          });
+          valueMap.set(prop, value);
+          dataCache.set(baseRef, record);
         },
         enumerable: true,
         configurable: false,
@@ -931,7 +951,9 @@ export const makeVirtualObjectManager = (
     const makeState = baseRef => {
       const state = { __proto__: statePrototype };
       if (stateShape === undefined) {
-        for (const prop of ownKeys(dataCache.get(baseRef).capdatas)) {
+        const record = dataCache.get(baseRef);
+        assert(record !== undefined);
+        for (const prop of ownKeys(record.capdatas)) {
           assert(typeof prop === 'string');
           checkStateProperty(prop);
           defineProperty(state, prop, makeFieldDescriptor(prop));
@@ -981,24 +1003,67 @@ export const makeVirtualObjectManager = (
     // and into method-invocation time (which is not).
 
     let proto;
+    /** @type {ClassContextProvider | undefined} */
+    let contextProviderVar;
+    /** @type { Record<string, KitContextProvider> | undefined } */
+    let contextProviderKitVar;
+
     if (multifaceted) {
+      contextProviderKitVar = fromEntries(
+        facetNames.map((name, index) => [
+          name,
+          rep => {
+            const vref = getSlotForVal(rep);
+            if (vref === undefined) {
+              return undefined;
+            }
+            const { baseRef, facet } = parseVatSlot(vref);
+
+            // Without this check, an attacker (with access to both
+            // cohort1.facetA and cohort2.facetB)
+            // could effectively forge access to
+            // cohort1.facetB and cohort2.facetA.
+            // They could not forge the identity of those two
+            // objects, but they could invoke all their equivalent methods,
+            // by using e.g.
+            // cohort1.facetA.foo.apply(cohort2.facetB, [...args])
+            if (Number(facet) !== index) {
+              return undefined;
+            }
+
+            return harden(contextCache.get(baseRef));
+          },
+        ]),
+      );
+
       proto = defendPrototypeKit(
         tag,
-        makeContextProviderKit(contextCache, getSlotForVal, facetNames),
+        harden(contextProviderKitVar),
         behavior,
         thisfulMethods,
         interfaceGuardKit,
       );
     } else {
+      contextProviderVar = rep => {
+        const slot = getSlotForVal(rep);
+        if (slot === undefined) {
+          return undefined;
+        }
+        return harden(contextCache.get(slot));
+      };
       proto = defendPrototype(
         tag,
-        makeContextProvider(contextCache, getSlotForVal),
+        harden(contextProviderVar),
         behavior,
         thisfulMethods,
         interfaceGuard,
       );
     }
     harden(proto);
+
+    // All this to let typescript know that it won't vary during a closure
+    const contextProvider = contextProviderVar;
+    const contextProviderKit = contextProviderKitVar;
 
     // this builds new Representatives, both when creating a new instance and
     // for reanimating an existing one when the old rep gets GCed
@@ -1014,6 +1079,7 @@ export const makeVirtualObjectManager = (
     const deleteStoredVO = baseRef => {
       let doMoreGC = false;
       const record = dataCache.get(baseRef);
+      assert(record !== undefined);
       for (const valueCD of Object.values(record.capdatas)) {
         for (const vref of valueCD.slots) {
           doMoreGC = vrm.removeReachableVref(vref) || doMoreGC;
@@ -1058,7 +1124,12 @@ export const makeVirtualObjectManager = (
         }
         // eslint-disable-next-line github/array-foreach
         valueCD.slots.forEach(vrm.addReachableVref);
-        capdatas[prop] = valueCD;
+        defineProperty(capdatas, prop, {
+          value: valueCD,
+          writable: true,
+          enumerable: true,
+          configurable: false,
+        });
         valueMap.set(prop, value);
       }
       // dataCache contents remain mutable: state setter modifies in-place
@@ -1072,9 +1143,62 @@ export const makeVirtualObjectManager = (
         val = makeRepresentative(proto, baseRef);
       }
       registerValue(baseRef, val, multifaceted);
-      finish?.(contextCache.get(baseRef));
+      finish && finish(contextCache.get(baseRef));
       return val;
     };
+
+    if (receiveAmplifier) {
+      assert(contextProviderKit);
+
+      // Amplify a facet to a cohort
+      const amplify = exoFacet => {
+        for (const cp of values(contextProviderKit)) {
+          const context = cp(exoFacet);
+          if (context !== undefined) {
+            return context.facets;
+          }
+        }
+        throw Fail`Must be a facet of ${q(tag)}: ${exoFacet}`;
+      };
+      harden(amplify);
+      receiveAmplifier(amplify);
+    }
+
+    if (receiveInstanceTester) {
+      if (multifaceted) {
+        assert(contextProviderKit);
+
+        const isInstance = (exoFacet, facetName = undefined) => {
+          if (facetName === undefined) {
+            // Is exoFacet and instance of any facet of this class kit?
+            return values(contextProviderKit).some(
+              cp => cp(exoFacet) !== undefined,
+            );
+          }
+          // Is this exoFacet an instance of this specific facet column
+          // of this class kit?
+          assert.typeof(facetName, 'string');
+          const cp = contextProviderKit[facetName];
+          cp !== undefined ||
+            Fail`exo class kit ${q(tag)} has no facet named ${q(facetName)}`;
+          return cp(exoFacet) !== undefined;
+        };
+        harden(isInstance);
+        receiveInstanceTester(isInstance);
+      } else {
+        assert(contextProvider);
+        // Is this exo an instance of this class?
+        const isInstance = (exo, facetName = undefined) => {
+          facetName === undefined ||
+            Fail`facetName can only be used with an exo class kit: ${q(
+              tag,
+            )} has no facet ${q(facetName)}`;
+          return contextProvider(exo) !== undefined;
+        };
+        harden(isInstance);
+        receiveInstanceTester(isInstance);
+      }
+    }
 
     return makeNewInstance;
   };
@@ -1159,7 +1283,7 @@ export const makeVirtualObjectManager = (
   /**
    *
    * @param {string} tag
-   * @returns {import('@agoric/vat-data').DurableKindHandle}
+   * @returns {DurableKindHandle}
    */
   const makeKindHandle = tag => {
     assert(kindIDID, 'initializeKindHandleKind not called yet');
@@ -1170,9 +1294,9 @@ export const makeVirtualObjectManager = (
     nextInstanceIDs.set(kindID, nextInstanceID);
     saveDurableKindDescriptor(durableKindDescriptor);
     saveNextInstanceID(kindID);
-    /** @type {import('@agoric/vat-data').DurableKindHandle} */
-    // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620
-    // @ts-ignore cast
+    /** @type {DurableKindHandle} */
+
+    // @ts-expect-error cast
     const kindHandle = Far('kind', {});
     kindHandleToID.set(kindHandle, kindID);
     const kindIDvref = makeBaseRef(kindIDID, kindID, true);

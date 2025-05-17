@@ -1,6 +1,10 @@
 #! /bin/bash
+# When debugging this locally, you'll want to delete all the local tags it
+# generates, here and in your Endo checkout:
+#   git tag -d $(git tag -l)
+# That also deletes the remotes, but they will be restored on next fetch.
 
-thisdir=$(cd -- "$(dirname "$0")" >/dev/null && pwd)
+thisdir=$(cd -- "$(dirname "$0")" > /dev/null && pwd)
 
 set -ueo pipefail
 
@@ -25,7 +29,7 @@ runRegistry() {
     cd "$HOME"
     echo "Starting Verdaccio in background..."
     : > verdaccio.log
-    nohup npx verdaccio@^5.4.0 &>verdaccio.log &
+    nohup npx verdaccio@^5.4.0 &> verdaccio.log &
     echo $! > verdaccio.pid
 
     # Wait for `verdaccio` to boot
@@ -49,7 +53,9 @@ publish() {
   git config --global user.name "Agoric CI"
   git config --global user.email "noreply@agoric.com"
 
-  versions='{}'
+  VERSIONSHASH=$(echo '{}' | git hash-object -w --stdin)
+
+  # Usually endojs/endo and agoric/agoric-sdk
   for d in ${REGISTRY_PUBLISH_WORKSPACES-} "$thisdir/.."; do
     test -d "$d" || continue
 
@@ -58,7 +64,7 @@ publish() {
     test -n "$prior" || prior=$(git rev-parse HEAD)
     git checkout -B lerna-publish
 
-    echo "$versions" | "$thisdir/set-versions.sh" "$d"
+    (popd > /dev/null && git cat-file blob "$VERSIONSHASH") | "$thisdir/set-versions.sh" .
 
     yarn install
     yarn build
@@ -66,13 +72,31 @@ publish() {
 
     # Publish the packages to our local service.
     # without concurrency until https://github.com/Agoric/agoric-sdk/issues/8091
-    yarn lerna publish --concurrency 1 prerelease --exact \
-      --dist-tag="$DISTTAG" --preid=dev"-$(git rev-parse --short=7 HEAD)" \
-      --no-push --no-git-reset --no-git-tag-version --no-verify-access --yes
+    yarn lerna version --concurrency 1 prerelease --exact \
+      --preid=dev --no-push --no-git-tag-version --yes \
+      --no-private
 
-    versions=$("$thisdir/get-versions.sh" . | jq "$versions + .")
+    # Change any version prefices to an exact match, and merge our versions.
+    VERSIONSHASH=$(jq --slurpfile versions <(popd > /dev/null && git cat-file blob "$VERSIONSHASH") \
+      '[to_entries[] | { key: .key, value: (.value | sub("^[~^]"; "")) }]
+       | from_entries
+       | . + $versions[0]' \
+      <("$thisdir/get-versions.sh" .) \
+      | (popd > /dev/null && git hash-object -w --stdin))
 
     git commit -am "chore: update versions"
+
+    while ! yarn lerna publish from-package \
+      --dist-tag="$DISTTAG" --no-git-reset --no-verify-access --yes; do
+      echo 1>&2 "Retrying publish..."
+      sleep 5
+    done
+
+    git reset --hard HEAD
+
+    # Convention used in Endo
+    yarn lerna run clean:types
+
     git checkout "$prior"
     popd
   done
@@ -85,22 +109,24 @@ publish() {
 integrationTest() {
   # Install the Agoric CLI on this machine's $PATH.
   case $1 in
-  link-cli | link-cli/*)
-    yarn link-cli "$HOME/bin/agoric"
-    persistVar AGORIC_CMD "[\"$HOME/bin/agoric\"]"
-    ;;
-  */npm)
-    npm install -g "agoric@$DISTTAG"
-    persistVar AGORIC_CMD '["agoric"]'
-    ;;
-  */npx)
-    # Install on demand.
-    persistVar AGORIC_CMD "[\"npx\",\"agoric@$DISTTAG\"]"
-    ;;
-  *)
-    yarn global add "agoric@$DISTTAG"
-    persistVar AGORIC_CMD '["agoric"]'
-    ;;
+    link-cli | link-cli/*)
+      yarn link-cli "$HOME/bin/agoric"
+      persistVar AGORIC_CMD "[\"$HOME/bin/agoric\"]"
+      ;;
+    */npm)
+      # legacy-peer-deps to make npm 7+ work like <7:
+      # and yarn: https://github.com/yarnpkg/yarn/issues/1503#issuecomment-950095392
+      npm install --legacy-peer-deps -g "agoric@$DISTTAG"
+      persistVar AGORIC_CMD '["agoric"]'
+      ;;
+    */npx)
+      # Install on demand. "legacy-peer-deps" like above.
+      persistVar AGORIC_CMD "[\"npx\",\"--legacy-peer-deps\",\"agoric@$DISTTAG\"]"
+      ;;
+    *)
+      yarn global add "agoric@$DISTTAG"
+      persistVar AGORIC_CMD "[\"$(yarn global bin)/agoric\"]"
+      ;;
   esac
 
   test -z "${DISTTAG-}" || {
@@ -120,52 +146,52 @@ integrationTest() {
 
 export CI=true
 case ${1-} in
-ci)
-  runRegistry
-  publish "${2-manual}"
-  integrationTest "${2-manual}" "${3-main}"
-  ;;
+  ci)
+    runRegistry
+    publish "${2-manual}"
+    integrationTest "${2-manual}" "${3-main}"
+    ;;
 
-bg)
-  runRegistry
-  echo "Publish packages using '$0 publish'"
-  trap - EXIT
-  echo "HOME=$HOME"
-  echo "pid=$(cat "$HOME/verdaccio.pid")"
-  ;;
+  bg)
+    runRegistry
+    echo "Publish packages using '$0 publish'"
+    trap - EXIT
+    echo "HOME=$HOME"
+    echo "pid=$(cat "$HOME/verdaccio.pid")"
+    ;;
 
-bg-publish)
-  runRegistry
-  trap - EXIT
-  publish "${2-registry}"
+  bg-publish)
+    runRegistry
+    trap - EXIT
+    publish "${2-registry}"
 
-  # Git dirty check.
-  if [[ -n "$(git status --porcelain)" ]]; then
-    echo "Git status is dirty, aborting."
-    git status
-    exit 1
-  fi
-  ;;
+    # Git dirty check.
+    if [[ -n "$(git status --porcelain)" ]]; then
+      echo "Git status is dirty, aborting."
+      git status
+      exit 1
+    fi
+    ;;
 
-publish)
-  publish "${2-manual}"
-  echo "Run getting-started integration test with '$0 test'"
-  ;;
+  publish)
+    publish "${2-manual}"
+    echo "Run getting-started integration test with '$0 test'"
+    ;;
 
-test)
-  test -z "${REGISTRY_HOME-}" || export HOME="$REGISTRY_HOME"
-  test -z "${REGISTRY_DISTTAG-}" || export DISTTAG="$REGISTRY_DISTTAG"
-  integrationTest "${2-manual}" "${3-main}"
-  ;;
+  test)
+    test -z "${REGISTRY_HOME-}" || export HOME="$REGISTRY_HOME"
+    test -z "${REGISTRY_DISTTAG-}" || export DISTTAG="$REGISTRY_DISTTAG"
+    integrationTest "${2-manual}" "${3-main}"
+    ;;
 
-*)
-  runRegistry
-  echo "Publish packages using '$0 publish'"
-  # Kill `verdaccio` and remove HOME when the command shell exits
-  trap 'kill "$(cat "$HOME/verdaccio.pid")"; rm -rf "$HOME"' EXIT
-  if test $# -eq 0; then
-    set -- bash
-  fi
-  "$@"
-  ;;
+  *)
+    runRegistry
+    echo "Publish packages using '$0 publish'"
+    # Kill `verdaccio` and remove HOME when the command shell exits
+    trap 'kill "$(cat "$HOME/verdaccio.pid")"; rm -rf "$HOME"' EXIT
+    if test $# -eq 0; then
+      set -- bash
+    fi
+    "$@"
+    ;;
 esac

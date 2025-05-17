@@ -1,5 +1,5 @@
 import { Far, E } from '@endo/far';
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
 
 const NUM_SENSORS = 39;
@@ -43,6 +43,8 @@ export const buildRootObject = () => {
       vatAdmin = await E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
     },
 
+    nop: () => 0,
+
     getMarker: () => marker,
 
     getImportSensors: () => importSensors,
@@ -78,8 +80,16 @@ export const buildRootObject = () => {
       p1.catch(() => 'hush');
       const p2 = E(ulrikRoot).getEternalPromise();
       p2.catch(() => 'hush');
+      const p3 = E(ulrikRoot).getWatchedDecidedPromise();
 
-      return { version, data, p1, p2, retain, ...parameters };
+      // Create our own promises that capture the rejection data in a
+      // way that the test harness can read, because the originals
+      // will be GCed when the rejection notifications finish
+      // delivery.
+      const p1w = Promise.resolve().then(() => p1);
+      const p2w = Promise.resolve().then(() => p2);
+
+      return { version, data, p1, p2, p3, p1w, p2w, retain, ...parameters };
     },
 
     upgradeV2: async () => {
@@ -145,8 +155,17 @@ export const buildRootObject = () => {
       resolve(`message for your predecessor, don't freak out`);
 
       const newDur = await E(ulrikRoot).getNewDurandal();
+      const watcherResult = await E(ulrikRoot).getWatcherResult();
 
-      return { version, data, remoerr, newDur, upgradeResult, ...parameters };
+      return {
+        version,
+        data,
+        remoerr,
+        newDur,
+        upgradeResult,
+        watcherResult,
+        ...parameters,
+      };
     },
 
     buildV1WithLostKind: async () => {
@@ -264,6 +283,27 @@ export const buildRootObject = () => {
       const paramB = await E(root).getParameters();
 
       return [paramA, paramB];
+    },
+
+    buildV1WithVatParameters: async () => {
+      const bcap1 = await E(vatAdmin).getNamedBundleCap('ulrik1');
+      const vp1 = { number: 1, marker };
+      const options1 = { vatParameters: vp1 };
+      const res = await E(vatAdmin).createVat(bcap1, options1);
+      ulrikAdmin = res.adminNode;
+      ulrikRoot = res.root;
+      const param1 = await E(ulrikRoot).getParameters();
+      return param1;
+    },
+
+    upgradeV2WithVatParameters: async () => {
+      const bcap2 = await E(vatAdmin).getNamedBundleCap('ulrik2');
+      const vp2 = { number: 2, marker };
+      const options2 = { vatParameters: vp2 };
+      await E(ulrikAdmin).upgrade(bcap2, options2);
+      const param2 = await E(ulrikRoot).getParameters();
+
+      return param2;
     },
   });
 };

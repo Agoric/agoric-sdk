@@ -5,20 +5,20 @@
   "type": "module",
   "main": "./src/zoeService/zoe.js",
   "engines": {
-    "node": ">=14.15.0"
+    "node": "^18.12 || ^20.9"
   },
   "scripts": {
     "build": "yarn build:bundles",
     "build:bundles": "node scripts/build-bundles.js",
-    "prepack": "echo \"export {}; \" | cat - tools/types-ambient.js > tools/types.js && tsc --build --clean tsconfig.build.json",
-    "postpack": "git clean -f '*.d.ts*' tools/types.js",
+    "prepack": "tsc --build tsconfig.build.json",
+    "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
     "test": "ava --verbose",
-    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
-    "test:unit": "ava 'test/unitTests/**/test-*.js' -T 1m --verbose",
-    "test:swingset": "ava 'test/swingsetTests/**/test-*.js' -T 10m --verbose",
-    "test:xs": "yarn test:xs-unit",
-    "test:xs-unit": "ava-xs --verbose",
-    "test:xs-worker": "SWINGSET_WORKER_TYPE=xs-worker ava -c 2 'test/swingsetTests/**/test-*.js'",
+    "test:c8": "c8 --all $C8_OPTIONS ava",
+    "test:unit": "ava 'test/unitTests' -T 1m --verbose",
+    "test:swingset": "ava 'test/swingsetTests' -T 10m --verbose",
+    "test:xs": "yarn test:xs-worker",
+    "test:xs-unit": "exit 0",
+    "test:xs-worker": "SWINGSET_WORKER_TYPE=xs-worker ava -c 2 'test/swingsetTests'",
     "build-zcfBundle": "yarn build:bundles",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
@@ -43,7 +43,8 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.6.0",
+    "@endo/errors": "^1.2.10",
+    "@agoric/base-zone": "^0.1.0",
     "@agoric/ertp": "^0.16.2",
     "@agoric/internal": "^0.3.2",
     "@agoric/notifier": "^0.6.2",
@@ -52,25 +53,30 @@
     "@agoric/swingset-vat": "^0.32.2",
     "@agoric/time": "^0.3.2",
     "@agoric/vat-data": "^0.5.2",
-    "@endo/bundle-source": "^3.0.1",
-    "@endo/captp": "^4.0.1",
-    "@endo/eventual-send": "^1.0.1",
-    "@endo/far": "^1.0.1",
-    "@endo/import-bundle": "^1.0.1",
-    "@endo/marshal": "^1.0.1",
-    "@endo/nat": "^5.0.1",
-    "@endo/patterns": "^1.0.1",
-    "@endo/promise-kit": "^1.0.1",
+    "@agoric/vow": "^0.1.0",
+    "@agoric/zone": "^0.2.2",
+    "@endo/bundle-source": "^4.0.0",
+    "@endo/common": "^1.2.10",
+    "@endo/captp": "^4.4.5",
+    "@endo/eventual-send": "^1.3.1",
+    "@endo/exo": "^1.5.9",
+    "@endo/far": "^1.1.11",
+    "@endo/import-bundle": "^1.4.0",
+    "@endo/marshal": "^1.6.4",
+    "@endo/nat": "^5.1.0",
+    "@endo/pass-style": "^1.5.0",
+    "@endo/patterns": "^1.5.0",
+    "@endo/promise-kit": "^1.1.10",
     "yargs-parser": "^21.1.1"
   },
   "devDependencies": {
-    "@endo/init": "^1.0.1",
+    "@endo/init": "^1.1.9",
     "@agoric/kmarshal": "^0.1.0",
     "@agoric/vats": "^0.15.1",
     "ava": "^5.3.0",
-    "c8": "^7.13.0",
-    "import-meta-resolve": "^2.2.1",
-    "tsd": "^0.28.1"
+    "c8": "^10.1.3",
+    "import-meta-resolve": "^4.1.0",
+    "tsd": "^0.31.1"
   },
   "files": [
     "bundles/",
@@ -80,52 +86,9 @@
     "exported.js",
     "NEWS.md"
   ],
-  "ava-xs": {
-    "exclude": [
-      "# path/url/import.meta stuff",
-      "unitTests/contracts/",
-      "test/swingsetTests/privateArgs/test-privateArgs.js",
-      "test/swingsetTests/brokenContracts/test-crashingContract.js",
-      "test/swingsetTests/offerArgs/test-offerArgs.js",
-      "test/swingsetTests/makeKind/test-makeKind.js",
-      "test/swingsetTests/zoe/test-zoe.js",
-      "test/swingsetTests/runMint/test-runMint.js",
-      "test/unitTests/test-zoe.js",
-      "test/unitTests/test-scriptedOracle.js",
-      "test/unitTests/test-makeKind.js",
-      "test/unitTests/test-instanceStorage.js",
-      "test/unitTests/contractSupport/test-depositTo.js",
-      "test/unitTests/contractSupport/test-withdrawFrom.js",
-      "test/unitTests/contractSupport/test-offerTo.js",
-      "test/unitTests/zcf/test-zcfSeat.js",
-      "test/unitTests/zcf/test-zcfSeat-exit.js",
-      "test/unitTests/zcf/setupZcfTest.js",
-      "test/unitTests/zcf/test-feeMintAccess.js",
-      "# import.meta.url by way of setupZcfTest",
-      "test/unitTests/test-zoe.js",
-      "test/unitTests/test-zoe-startInstance.js",
-      "test/unitTests/test-blockedOffers.js",
-      "test/unitTests/zcf/test-reallocate-empty.js",
-      "test/unitTests/zcf/test-zoeHelpersWZcf.js",
-      "test/unitTests/zcf/test-reallocateForZCFMint.js",
-      "test/unitTests/zcf/test-atomicRearrange.js",
-      "test/unitTests/zcf/test-zcf.js",
-      "test/unitTests/zcf/test-allStagedSeatsUsed.js",
-      "# ManualTimer.setWakeup: no function",
-      "test/unitTests/test-fakePriceAuthority.js",
-      "test/unitTests/test-manualTimer.js",
-      "# hangs",
-      "test-makeKind.js",
-      "test/unitTests/test-scriptedOracle.js",
-      "test/unitTests/test-zoe.js",
-      "test/unitTests/zcf/test-allStagedSeatsUsed.js",
-      "# We use SWINGSET_WORKER_TYPE=xs ava to run these...",
-      "swingsetTests"
-    ]
-  },
   "ava": {
     "files": [
-      "test/**/test-*.js"
+      "test/**/*.test.*"
     ],
     "require": [
       "@endo/init/debug.js"
@@ -136,6 +99,6 @@
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 81.5
+    "atLeast": 84.69
   }
 }

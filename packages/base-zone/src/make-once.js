@@ -1,5 +1,5 @@
 // @ts-check
-const { Fail } = assert;
+import { Fail } from '@endo/errors';
 
 /** @param {string} label */
 const defaultLabelToKeys = label => harden([label]);
@@ -35,7 +35,7 @@ export const makeOnceKit = (debugName, stores, backingStore = undefined) => {
    * Ensure the wrapped function is only called once per incarnation.  It is
    * expected to update the backing store directly.
    *
-   * @template {(key: string, ...rest: unknown[]) => any} T
+   * @template {(key: string, ...rest: any[]) => any} T
    * @param {T} provider
    * @param {(label: string) => string[]} [labelToKeys]
    * @returns {T}

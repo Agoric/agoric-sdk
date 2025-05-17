@@ -1,13 +1,16 @@
-import '../src/types-ambient.js';
-
+import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
-// eslint-disable-next-line no-unused-vars
-import { Fail } from '@agoric/assert';
 // eslint-disable-next-line no-unused-vars -- used by typedef
 import { CONTRACT_ELECTORATE } from '../src/contractGovernance/governParam.js';
 import { makeApiInvocationPositions } from '../src/contractGovernance/governApi.js';
+
+/**
+ * @import {Passable, RemotableObject} from '@endo/pass-style';
+ * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
+ * @import {GovernableStartFn, ParamChangesSpec} from '../src/types.js';
+ */
 
 // @file a version of the contractGovernor.js contract simplified for testing.
 // It removes the electorate and doesn't try to support legibility.
@@ -71,7 +74,7 @@ export const start = async (zcf, privateArgs) => {
 
   /**
    * @param {string} apiMethodName
-   * @param {unknown[]} methodArgs
+   * @param {Passable[]} methodArgs
    */
   const invokeAPI = async (apiMethodName, methodArgs) => {
     const governedNames = await E(governedCF).getGovernedApiNames();

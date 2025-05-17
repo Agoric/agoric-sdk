@@ -1,7 +1,6 @@
 # Proposals
 
-These are code snippets that go into propoals to the BLDer DAO to start the Inter Protocol.
+These scripts are referenced by proposals to the BLDer DAO to run on the chain.
 
-One of the latest is `startPSM.js` so best to model after that. The style in `econ-behaviors.js` will be refactored to be like startPSM.
+See the documentation in .../deploy-script-support/README.md
 
-[syntax of the manifests](../../packages/vats/src/core/manifest.js)

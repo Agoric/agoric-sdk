@@ -33,7 +33,7 @@ $ inter bid list --from test-acct --all | jq
 }
 ```
 
-See also [test-inter-cli.js.md](https://github.com/Agoric/agoric-sdk/blob/master/packages/agoric-cli/test/snapshots/test-inter-cli.js.md) for exhaustive command options.
+See also [test-inter-cli.js.md](../../../agoric-cli/test/snapshots/inter-cli.test.js.md) for exhaustive command options.
 
 ## Installation
 
@@ -180,7 +180,7 @@ By default, `agops` tries to contact a local node. If you don't have one running
 ```
 $ inter liquidation status
 (Error#1)
-Error#1: cannot read data of published.agoricNames.brand: request to http://0.0.0.0:26657/abci_query?path=%22/custom/vstorage/data/published.agoricNames.brand%22&height=0 failed, reason: connect ECONNREFUSED 0.0.0.0:26657
+Error#1: cannot read data of published.agoricNames.brand: request to http://0.0.0.0:26657/abci_query?path=%22/agoric.vstorage.Query/Data%22&data=0x91857dab56&height=0 failed, reason: connect ECONNREFUSED 0.0.0.0:26657
 ```
 
 https://devnet.agoric.net/network-config has details such as `chainName`, `rpcAddrs`. To tell `agops` to use it:

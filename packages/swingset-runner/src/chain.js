@@ -1,10 +1,9 @@
+import { Fail, q } from '@endo/errors';
 import { buildBridge } from '@agoric/swingset-vat';
 import { BridgeId, VBankAccount } from '@agoric/internal';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
-
-const { Fail, quote: q } = assert;
 
 /**
  * Export any specified storage subtrees, then delete the ones marked to clear.
@@ -167,12 +166,15 @@ export async function initEmulatedChain(config, configPath) {
   const bootVat = config.vats[config.bootstrap];
   await null;
   if (coreProposals) {
-    const { bundles, code } = await extractCoreProposalBundles(
+    const { bundles, codeSteps } = await extractCoreProposalBundles(
       coreProposals,
       configPath,
     );
     config.bundles = { ...config.bundles, ...bundles };
-    bootVat.parameters = { ...bootVat.parameters, coreProposalCode: code };
+    bootVat.parameters = {
+      ...bootVat.parameters,
+      coreProposalCodeSteps: codeSteps,
+    };
   }
 
   const batchChainStorage = (method, args) =>

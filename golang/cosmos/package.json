@@ -5,9 +5,9 @@
   "parsers": {
     "js": "mjs"
   },
-  "main": "src/index.cjs",
+  "main": "index.cjs",
   "engines": {
-    "node": ">=14.15.0"
+    "node": "^18.12 || ^20.9"
   },
   "scripts": {
     "test": "exit 0",

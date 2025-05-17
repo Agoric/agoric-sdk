@@ -1,3 +1,4 @@
+import { q, Fail } from '@endo/errors';
 import { passStyleOf, assertRemotable, assertRecord } from '@endo/marshal';
 
 import { M, matches } from '@agoric/store';
@@ -6,28 +7,28 @@ import { setMathHelpers } from './mathHelpers/setMathHelpers.js';
 import { copySetMathHelpers } from './mathHelpers/copySetMathHelpers.js';
 import { copyBagMathHelpers } from './mathHelpers/copyBagMathHelpers.js';
 
-const { quote: q, Fail } = assert;
+/**
+ * @import {CopyBag, CopySet} from '@endo/patterns';
+ * @import {Amount, AmountValue, AssetValueForKind, Brand, CopyBagAmount, CopySetAmount, MathHelpers, NatAmount, NatValue, SetAmount, SetValue} from './types.js';
+ */
 
+// NB: AssetKind is both a constant for enumerated values and a type for those values.
 /**
  * Constants for the kinds of assets we support.
  *
- * @type {{
- *   NAT: 'nat';
- *   SET: 'set';
- *   COPY_SET: 'copySet';
- *   COPY_BAG: 'copyBag';
- * }}
+ * @enum {(typeof AssetKind)[keyof typeof AssetKind]}
  */
-const AssetKind = harden({
+export const AssetKind = /** @type {const} */ ({
   NAT: 'nat',
   SET: 'set',
   COPY_SET: 'copySet',
   COPY_BAG: 'copyBag',
 });
+harden(AssetKind);
 const assetKindNames = harden(Object.values(AssetKind).sort());
 
 /** @param {AssetKind} allegedAK */
-const assertAssetKind = allegedAK => {
+export const assertAssetKind = allegedAK => {
   assetKindNames.includes(allegedAK) ||
     Fail`The assetKind ${allegedAK} must be one of ${q(assetKindNames)}`;
 };
@@ -74,26 +75,19 @@ const helpers = {
   copyBag: copyBagMathHelpers,
 };
 
-/**
- * @template {AmountValue} V
- * @type {(value: V) => AssetKindForValue<V>}
- */
+/** @type {(value: unknown) => 'nat' | 'set' | 'copySet' | 'copyBag'} } */
 const assertValueGetAssetKind = value => {
   const passStyle = passStyleOf(value);
   if (passStyle === 'bigint') {
-    // @ts-expect-error cast
     return 'nat';
   }
   if (passStyle === 'copyArray') {
-    // @ts-expect-error cast
     return 'set';
   }
   if (matches(value, M.set())) {
-    // @ts-expect-error cast
     return 'copySet';
   }
   if (matches(value, M.bag())) {
-    // @ts-expect-error cast
     return 'copyBag';
   }
   // TODO This isn't quite the right error message, in case valuePassStyle
@@ -119,7 +113,9 @@ export const assertValueGetHelpers = value =>
   // @ts-expect-error cast
   helpers[assertValueGetAssetKind(value)];
 
-/** @type {(allegedBrand: Brand, brand?: Brand) => void} */
+/**
+ * @type {(allegedBrand: Brand<any>, brand?: Brand<any>) => void}
+ */
 const optionalBrandCheck = (allegedBrand, brand) => {
   if (brand !== undefined) {
     assertRemotable(brand, 'brand');
@@ -162,7 +158,7 @@ const checkLRAndGetHelpers = (leftAmount, rightAmount, brand = undefined) => {
  * @param {MathHelpers<AssetValueForKind<K>>} h
  * @param {Amount<K>} leftAmount
  * @param {Amount<K>} rightAmount
- * @returns {[K, K]}
+ * @returns {[AssetValueForKind<K>, AssetValueForKind<K>]}
  */
 const coerceLR = (h, leftAmount, rightAmount) => {
   // @ts-expect-error could be arbitrary subtype
@@ -195,30 +191,45 @@ const isGTE = (leftAmount, rightAmount, brand = undefined) => {
  * and payments. They can be used to represent things like currency, stock, and
  * the abstract right to participate in a particular exchange.
  */
-const AmountMath = {
+export const AmountMath = {
+  // TODO use overloading to handle when Brand has an AssetKind and when it doesn't.
+  // a AmountForValue utility could help DRY those cases.
   /**
    * Make an amount from a value by adding the brand.
    *
-   * @template {AssetKind} K
-   * @param {Brand<K>} brand
-   * @param {AssetValueForKind<K>} allegedValue
-   * @returns {Amount<K>}
+   * Does not verify that the Brand's AssetKind matches the value's.
+   *
+   * @template {Brand<any>} B
+   * @template {NatValue | CopySet | CopyBag | SetValue} V
+   * @param {B} brand
+   * @param {V} allegedValue
+   * @returns {B extends Brand<'nat'>
+   *     ? NatAmount
+   *     : V extends NatValue
+   *       ? NatAmount
+   *       : V extends CopySet
+   *         ? CopySetAmount<V['payload'][0]>
+   *         : V extends CopyBag
+   *           ? CopyBagAmount<V['payload'][0][0]>
+   *           : V extends SetValue
+   *             ? SetAmount<V[0]>
+   *             : never}
    */
-  // allegedValue has a conditional expression for type widening, to prevent V being bound to a a literal like 1n
   make: (brand, allegedValue) => {
     assertRemotable(brand, 'brand');
     const h = assertValueGetHelpers(allegedValue);
     const value = h.doCoerce(allegedValue);
+    // @ts-expect-error cast
     return harden({ brand, value });
   },
   /**
    * Make sure this amount is valid enough, and return a corresponding valid
    * amount if so.
    *
-   * @template {AssetKind} K
-   * @param {Brand<K>} brand
-   * @param {Amount<K>} allegedAmount
-   * @returns {Amount<K>}
+   * @template {Amount} A
+   * @param {Brand} brand
+   * @param {A} allegedAmount
+   * @returns {A}
    */
   coerce: (brand, allegedAmount) => {
     assertRemotable(brand, 'brand');
@@ -227,15 +238,16 @@ const AmountMath = {
     brand === allegedBrand ||
       Fail`The brand in the allegedAmount ${allegedAmount} in 'coerce' didn't match the specified brand ${brand}.`;
     // Will throw on inappropriate value
+    // @ts-expect-error cast
     return AmountMath.make(brand, allegedValue);
   },
   /**
    * Extract and return the value.
    *
-   * @template {AssetKind} K
-   * @param {Brand<K>} brand
-   * @param {Amount<K>} amount
-   * @returns {AssetValueForKind<K>}
+   * @template {Amount} A
+   * @param {Brand} brand
+   * @param {A} amount
+   * @returns {A['value']}
    */
   getValue: (brand, amount) => AmountMath.coerce(brand, amount).value,
   /**
@@ -244,29 +256,29 @@ const AmountMath = {
    *
    * @type {{
    *   (brand: Brand): Amount<'nat'>;
-   *   <K extends AssetKind>(brand: Brand, assetKind: K): Amount<K>;
+   *   <K extends AssetKind>(brand: Brand<K>, assetKind: K): Amount<K>;
    * }}
    */
   makeEmpty: (brand, assetKind = /** @type {const} */ ('nat')) => {
     assertRemotable(brand, 'brand');
     assertAssetKind(assetKind);
     const value = helpers[assetKind].doMakeEmpty();
+    // @ts-expect-error XXX narrowing from function overload
     return harden({ brand, value });
   },
   /**
    * Return the amount representing an empty amount, using another amount as the
    * template for the brand and assetKind.
    *
-   * @template {AssetKind} K
-   * @param {Amount<K>} amount
-   * @returns {Amount<K>}
+   * @template {Amount} A
+   * @param {A} amount
+   * @returns {A}
    */
   makeEmptyFromAmount: amount => {
     assertRecord(amount, 'amount');
     const { brand, value } = amount;
-    // @ts-expect-error cast
     const assetKind = assertValueGetAssetKind(value);
-    // @ts-expect-error cast (ignore b/c erroring in CI but not my IDE)
+    // @ts-expect-error different subtype
     return AmountMath.makeEmpty(brand, assetKind);
   },
   /**
@@ -289,10 +301,10 @@ const AmountMath = {
    * Returns true if the leftAmount equals the rightAmount. We assume that if
    * isGTE is true in both directions, isEqual is also true
    *
-   * @template {AssetKind} K
-   * @param {Amount<K>} leftAmount
-   * @param {Amount<K>} rightAmount
-   * @param {Brand<K>} [brand]
+   * @template {Amount} A
+   * @param {A} leftAmount
+   * @param {A} rightAmount
+   * @param {Brand} [brand]
    * @returns {boolean}
    */
   isEqual: (leftAmount, rightAmount, brand = undefined) => {
@@ -306,15 +318,16 @@ const AmountMath = {
    * amount, it usually means including all of the elements from both left and
    * right.
    *
-   * @template {AssetKind} K
-   * @param {Amount<K>} leftAmount
-   * @param {Amount<K>} rightAmount
-   * @param {Brand<K>} [brand]
-   * @returns {Amount<K>}
+   * @template {Amount} A
+   * @param {A} leftAmount
+   * @param {A} rightAmount
+   * @param {Brand} [brand]
+   * @returns {A}
    */
   add: (leftAmount, rightAmount, brand = undefined) => {
     const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
     const value = h.doAdd(...coerceLR(h, leftAmount, rightAmount));
+    // @ts-expect-error different subtype
     return harden({ brand: leftAmount.brand, value });
   },
   /**
@@ -324,59 +337,58 @@ const AmountMath = {
    * error. Because the left amount must include the right amount, this is NOT
    * equivalent to set subtraction.
    *
-   * @template {AssetKind} K
-   * @param {Amount<K>} leftAmount
-   * @param {Amount<K>} rightAmount
-   * @param {Brand<K>} [brand]
-   * @returns {Amount<K>}
+   * @template {Amount} L
+   * @template {Amount} R
+   * @param {L} leftAmount
+   * @param {R} rightAmount
+   * @param {Brand} [brand]
+   * @returns {L extends R ? L : never}
    */
   subtract: (leftAmount, rightAmount, brand = undefined) => {
     const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
     const value = h.doSubtract(...coerceLR(h, leftAmount, rightAmount));
+    // @ts-expect-error different subtype
     return harden({ brand: leftAmount.brand, value });
   },
   /**
    * Returns the min value between x and y using isGTE
    *
-   * @template {AssetKind} K
-   * @param {Amount<K>} x
-   * @param {Amount<K>} y
-   * @param {Brand<K>} [brand]
-   * @returns {Amount<K>}
+   * @template {Amount} A
+   * @param {A} x
+   * @param {A} y
+   * @param {Brand} [brand]
+   * @returns {A}
    */
   min: (x, y, brand = undefined) =>
     // eslint-disable-next-line no-nested-ternary
     isGTE(x, y, brand)
       ? y
       : isGTE(y, x, brand)
-      ? x
-      : Fail`${x} and ${y} are incomparable`,
+        ? x
+        : Fail`${x} and ${y} are incomparable`,
   /**
    * Returns the max value between x and y using isGTE
    *
-   * @template {AssetKind} K
-   * @param {Amount<K>} x
-   * @param {Amount<K>} y
-   * @param {Brand<K>} [brand]
-   * @returns {Amount<K>}
+   * @template {Amount} A
+   * @param {A} x
+   * @param {A} y
+   * @param {Brand} [brand]
+   * @returns {A}
    */
   max: (x, y, brand = undefined) =>
     // eslint-disable-next-line no-nested-ternary
     isGTE(x, y, brand)
       ? x
       : isGTE(y, x)
-      ? y
-      : Fail`${x} and ${y} are incomparable`,
+        ? y
+        : Fail`${x} and ${y} are incomparable`,
 };
 harden(AmountMath);
 
 /** @param {Amount} amount */
-const getAssetKind = amount => {
+export const getAssetKind = amount => {
   assertRecord(amount, 'amount');
   const { value } = amount;
-  // @ts-expect-error cast (ignore b/c erroring in CI but not my IDE)
   return assertValueGetAssetKind(value);
 };
 harden(getAssetKind);
-
-export { AmountMath, AssetKind, getAssetKind, assertAssetKind };

@@ -8,9 +8,14 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { prepareAssetReserveKit } from './assetReserveKit.js';
 
+/**
+ * @import {EReturn} from '@endo/far';
+ * @import {Allocation, ContractMeta, FeeMintAccess, Installation} from '@agoric/zoe';
+ */
+
 const trace = makeTracer('AR', true);
 
-/** @type {ContractMeta} */
+/** @type {ContractMeta<typeof start>} */
 export const meta = {
   upgradability: 'canUpgrade',
 };
@@ -23,7 +28,7 @@ harden(meta);
  * }} ShortfallReportingFacet
  */
 
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+/** @import {Baggage} from '@agoric/vat-data' */
 
 /**
  * Asset Reserve holds onto assets for the Inter Protocol, and can dispense it
@@ -57,22 +62,13 @@ export const start = async (zcf, privateArgs, baggage) => {
     privateArgs.marshaller,
   );
 
-  /** @type {() => Promise<ZCFMint<'nat'>>} */
-  const takeFeeMint = async () => {
-    if (baggage.has('feeMint')) {
-      return baggage.get('feeMint');
-    }
-
-    const feeMintTemp = await zcf.registerFeeMint(
-      'Fee',
-      privateArgs.feeMintAccess,
-    );
-    baggage.init('feeMint', feeMintTemp);
-    return feeMintTemp;
-  };
-  trace('awaiting takeFeeMint');
-  const feeMint = await takeFeeMint();
   const storageNode = await privateArgs.storageNode;
+
+  trace('awaiting feeMint');
+  const { feeMint } = await provideAll(baggage, {
+    feeMint: () => zcf.registerFeeMint('Fee', privateArgs.feeMintAccess),
+  });
+
   const makeAssetReserveKit = await prepareAssetReserveKit(baggage, {
     feeMint,
     makeRecorderKit,
@@ -127,8 +123,8 @@ harden(start);
  * @property {() => Promise<Invitation<ShortfallReporter>>} makeShortfallReportingInvitation
  */
 
-/** @typedef {Awaited<ReturnType<typeof start>>['publicFacet']} AssetReservePublicFacet */
+/** @typedef {EReturn<typeof start>['publicFacet']} AssetReservePublicFacet */
 /**
- * @typedef {Awaited<ReturnType<typeof start>>['creatorFacet']} AssetReserveCreatorFacet
+ * @typedef {EReturn<typeof start>['creatorFacet']} AssetReserveCreatorFacet
  *   the creator facet for the governor
  */

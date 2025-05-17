@@ -1,13 +1,17 @@
 // @jessie-check
 
+/// <reference types="@agoric/store/exported.js" />
+
 // XXX package factoring debt
-import '@agoric/notifier/exported.js';
-import '@agoric/store/exported.js';
 
 // Ensure this is a module.
 export {};
 
-/** @template T @typedef {import('@endo/far').ERef<T>} ERef */
+/**
+ * @import { ERef } from '@endo/far'
+ * @import {Passable} from '@endo/pass-style'
+ * @import {Key, Pattern} from '@endo/patterns';
+ */
 
 /**
  * @typedef {object} Updater

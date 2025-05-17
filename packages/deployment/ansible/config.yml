@@ -7,7 +7,6 @@
   vars:
     - service: ag-chain-cosmos
     - APPDIR: "{{lookup('pipe', 'pwd')}}/../.."
-    - HELPER_BINARY: "{{lookup('env', 'GOBIN') or ((lookup('env', 'GOPATH') or '/usr/local') + '/bin')}}/agd"
   roles:
     - stop
     - copy

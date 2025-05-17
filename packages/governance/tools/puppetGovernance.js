@@ -3,8 +3,13 @@ import { E } from '@endo/eventual-send';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { CONTRACT_ELECTORATE, ParamTypes } from '../src/index.js';
 
+/**
+ * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
+ * @import {GovernableStartFn} from '../src/types.js';
+ */
+
 const makeBundle = async sourceRoot => {
-  const url = await importMetaResolve(sourceRoot, import.meta.url);
+  const url = importMetaResolve(sourceRoot, import.meta.url);
   const path = new URL(url).pathname;
   const contractBundle = await bundleSource(path);
   return contractBundle;
@@ -23,7 +28,7 @@ const autoRefundBundleP = makeBundle(
  * @template {GovernableStartFn} T governed contract startfn
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<Installation<T>>} governedP
- * @param {import('@agoric/swingset-vat/src/vats/timer/vat-timer.js').TimerService} timer
+ * @param {import('@agoric/time').TimerService} timer
  * @param {{ [k: string]: any, governedParams?: Record<string, unknown>, governedApis?: string[] }} termsOfGoverned
  * @param {{}} privateArgsOfGoverned
  * @param {IssuerKeywordRecord} [issuerKeywordRecord]

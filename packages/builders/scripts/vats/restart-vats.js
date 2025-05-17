@@ -1,6 +1,6 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').ProposalBuilder} */
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
 export const defaultProposalBuilder = async () => {
   // An includelist isn't necessary because the collections are known to be complete (tested in test-vaults-upgrade.js)
   const skip = [
@@ -9,6 +9,8 @@ export const defaultProposalBuilder = async () => {
     'feeDistributor',
     // skip so vaultManager can have prices upon restart; these have been tested as restartable
     'scaledPriceAuthority-ATOM',
+    // If this is killed, and the above is left alive, quoteNotifier throws
+    'ATOM-USD_price_feed',
   ];
 
   return harden({
@@ -17,7 +19,8 @@ export const defaultProposalBuilder = async () => {
   });
 };
 
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
-  const { writeCoreProposal } = await makeHelpers(homeP, endowments);
-  await writeCoreProposal('restart-vats', defaultProposalBuilder);
+  const { writeCoreEval } = await makeHelpers(homeP, endowments);
+  await writeCoreEval('restart-vats', defaultProposalBuilder);
 };

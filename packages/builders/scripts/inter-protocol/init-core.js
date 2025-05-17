@@ -1,4 +1,4 @@
-/* global process */
+/* eslint-env node */
 /**
  * @file can be run with `agoric deploy` after a chain is running (depends on
  *   chain state) Only works with "local" chain and not sim-chain b/c it needs
@@ -125,7 +125,7 @@ export const mainProposalBuilder = async ({
 };
 
 // Build proposal for sim-chain etc.
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').ProposalBuilder} */
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
 export const defaultProposalBuilder = async (
   { publishRef, install },
   options = {},
@@ -184,17 +184,20 @@ export const defaultProposalBuilder = async (
   });
 };
 
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
-  const { writeCoreProposal } = await makeHelpers(homeP, endowments);
+  const { writeCoreEval } = await makeHelpers(homeP, endowments);
 
   const tool = await makeInstallCache(homeP, {
     loadBundle: spec => import(spec),
   });
   await Promise.all([
-    writeCoreProposal('gov-econ-committee', opts =>
+    writeCoreEval('gov-econ-committee', opts =>
+      // @ts-expect-error XXX makeInstallCache types
       committeeProposalBuilder({ ...opts, wrapInstall: tool.wrapInstall }),
     ),
-    writeCoreProposal('gov-amm-vaults-etc', opts =>
+    writeCoreEval('gov-amm-vaults-etc', opts =>
+      // @ts-expect-error XXX makeInstallCache types
       mainProposalBuilder({ ...opts, wrapInstall: tool.wrapInstall }),
     ),
   ]);

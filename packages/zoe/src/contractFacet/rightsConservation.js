@@ -1,8 +1,10 @@
+import { assert, Fail } from '@endo/errors';
 import { makeScalarMapStore } from '@agoric/store';
-import { assert, Fail } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
-import '../internal-types.js';
+/**
+ * @import {MapStore} from '@agoric/store';
+ */
 
 /**
  * Iterate over the amounts and sum, storing the sums in a
@@ -15,7 +17,7 @@ import '../internal-types.js';
 const sumByBrand = amounts => {
   /** @type {MapStore<Brand, Amount>} */
   const sumsByBrand = makeScalarMapStore('brand');
-  amounts.forEach(amount => {
+  for (const amount of amounts) {
     const { brand } = amount;
     if (!sumsByBrand.has(brand)) {
       sumsByBrand.init(brand, amount);
@@ -23,7 +25,7 @@ const sumByBrand = amounts => {
       const sumSoFar = sumsByBrand.get(brand);
       sumsByBrand.set(brand, AmountMath.add(sumSoFar, amount));
     }
-  });
+  }
   return sumsByBrand;
 };
 
@@ -73,11 +75,11 @@ const assertEqualPerBrand = (leftSumsByBrand, rightSumsByBrand) => {
     ...rightSumsByBrand.keys(),
   ]);
 
-  allBrands.forEach(brand => {
+  for (const brand of allBrands) {
     const { leftSum, rightSum } = getSums(brand);
     AmountMath.isEqual(leftSum, rightSum) ||
       Fail`rights were not conserved for brand ${brand} ${leftSum.value} != ${rightSum.value}`;
-  });
+  }
 };
 
 /**

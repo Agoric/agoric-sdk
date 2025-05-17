@@ -8,7 +8,7 @@ export {
   calcSecondaryRequired,
 } from './bondingCurves.js';
 
-export { natSafeMath } from './safeMath.js';
+export { natSafeMath } from '@agoric/ertp/src/safeMath.js';
 
 export { makeStateMachine } from './stateMachine.js';
 
@@ -34,26 +34,10 @@ export {
   offerTo,
 } from './zoeHelpers.js';
 
-export {
-  makeRatio,
-  makeRatioFromAmounts,
-  floorMultiplyBy,
-  floorDivideBy,
-  ceilMultiplyBy,
-  ceilDivideBy,
-  assertIsRatio,
-  invertRatio,
-  oneMinus,
-  addRatios,
-  multiplyRatios,
-  ratiosSame,
-  quantize,
-  ratioGTE,
-  subtractRatios,
-  ratioToNumber,
-} from './ratio.js';
+export * from '@agoric/ertp/src/ratio.js';
 
 export * from './durability.js';
+export * from './prepare-ownable.js';
 export * from './priceAuthority.js';
 export * from './priceQuote.js';
 export * from './statistics.js';

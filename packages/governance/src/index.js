@@ -1,8 +1,6 @@
-/// <reference path="../../network/exported.js" />
-/// <reference path="../../ERTP/exported.js" />
-/// <reference path="../../zoe/exported.js" />
-
-/// <reference path="./types-ambient.js" />
+/// <reference types="@agoric/internal/exported" />
+/// <reference types="@agoric/ertp/exported" />
+/// <reference types="@agoric/zoe/exported" />
 
 export {
   ChoiceMethod,

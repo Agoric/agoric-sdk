@@ -1,39 +1,31 @@
 // @ts-check
+import { Fail, makeError, q } from '@endo/errors';
 import { E } from '@endo/far';
 import { isObject, isPassableSymbol } from '@endo/marshal';
 import { getInterfaceMethodKeys } from '@endo/patterns';
 
-const { Fail, quote: q } = assert;
+/** @import {ERef} from '@endo/far' */
+/** @import {Callback, SyncCallback} from './types.js' */
 
 const { fromEntries } = Object;
 
 const { ownKeys: rawOwnKeys } = Reflect;
 const ownKeys =
-  /** @type {<T extends PropertyKey>(obj: {[K in T]?: unknown}) => T[]} */ (
+  /** @type {<T extends PropertyKey>(obj: { [K in T]?: unknown }) => T[]} */ (
     rawOwnKeys
   );
 
 /**
- * @template T
- * @typedef {(...args: Parameters<ReturnType<prepareAttenuator>>) => Farable<T>} MakeAttenuator
+ * @template {import('@endo/exo').Methods} T
+ * @typedef {(
+ *   ...args: Parameters<ReturnType<prepareAttenuator>>
+ * ) => import('@endo/exo').Farable<T>} MakeAttenuator
  */
-
-/**
- * @template {(...args: unknown[]) => any} I
- * @typedef {import('./types.js').Callback<I>} Callback
- */
-
-/**
- * @template {(...args: unknown[]) => any} I
- * @typedef {import('./types.js').SyncCallback<I>} SyncCallback
- */
-
-/** @template T @typedef {import('@endo/eventual-send').RemotableBrand<{}, T> & T} Farable */
 
 /**
  * @param {unknown} key
  * @returns {key is PropertyKey} FIXME: should be just `PropertyKey` but TS
- * complains it can't be used as an index type.
+ *   complains it can't be used as an index type.
  */
 const isPropertyKey = key => {
   switch (typeof key) {
@@ -49,7 +41,7 @@ const isPropertyKey = key => {
 /**
  * Synchronously call a callback.
  *
- * @template {(...args: unknown[]) => any} I
+ * @template {(...args: any[]) => any} I
  * @param {SyncCallback<I>} callback
  * @param {Parameters<I>} args
  * @returns {ReturnType<I>}
@@ -66,7 +58,7 @@ harden(callSync);
 /**
  * Eventual send to a callback.
  *
- * @template {(...args: unknown[]) => any} I
+ * @template {(...args: any[]) => any} I
  * @param {Callback<I>} callback
  * @param {Parameters<I>} args
  * @returns {Promise<Awaited<ReturnType<I>>>}
@@ -83,9 +75,9 @@ harden(callE);
 /**
  * Create a callback from a near function.
  *
- * @template {(...args: unknown[]) => any} I
+ * @template {(...args: any[]) => any} I
  * @template {(...args: [...B, ...Parameters<I>]) => ReturnType<I>} [T=I]
- * @template {unknown[]} [B=[]]
+ * @template {any[]} [B=[]]
  * @param {T} target
  * @param {B} bound
  * @returns {SyncCallback<I>}
@@ -102,11 +94,9 @@ harden(makeSyncFunctionCallback);
 /**
  * Create a callback from a potentially far function.
  *
- * @template {(...args: unknown[]) => any} I
- * @template {import('@endo/far').ERef<
- *   (...args: [...B, ...Parameters<I>]) => ReturnType<I>
- * >} [T=import('@endo/far').ERef<I>]
- * @template {unknown[]} [B=[]]
+ * @template {(...args: any[]) => any} I
+ * @template {ERef<(...args: [...B, ...Parameters<I>]) => ReturnType<I>>} [T=ERef<I>]
+ * @template {any[]} [B=[]]
  * @param {T} target
  * @param {B} bound
  * @returns {Callback<I>}
@@ -123,12 +113,12 @@ harden(makeFunctionCallback);
 /**
  * Create a callback from a near method.
  *
- * @template {(...args: unknown[]) => any} I
+ * @template {(...args: any[]) => any} I
  * @template {PropertyKey} P
  * @template {{
- *   [x in P]: (...args: [...B, ...Parameters<I>]) => ReturnType<I>
+ *   [x in P]: (...args: [...B, ...Parameters<I>]) => ReturnType<I>;
  * }} [T={ [x in P]: I }]
- * @template {unknown[]} [B=[]]
+ * @template {any[]} [B=[]]
  * @param {T} target
  * @param {P} methodName
  * @param {B} bound
@@ -149,12 +139,12 @@ harden(makeSyncMethodCallback);
 /**
  * Create a callback from a potentially far method.
  *
- * @template {(...args: unknown[]) => any} I
+ * @template {(...args: any[]) => any} I
  * @template {PropertyKey} P
- * @template {import('@endo/far').ERef<{
- *   [x in P]: (...args: [...B, ...Parameters<I>]) => ReturnType<I>
- * }>} [T=import('@endo/far').ERef<{ [x in P]: I }>]
- * @template {unknown[]} [B=[]]
+ * @template {ERef<{
+ *   [x in P]: (...args: [...B, ...Parameters<I>]) => ReturnType<I>;
+ * }>} [T=ERef<{ [x in P]: I }>]
+ * @template {any[]} [B=[]]
  * @param {T} target
  * @param {P} methodName
  * @param {B} bound
@@ -194,13 +184,14 @@ harden(isCallback);
  * Prepare an attenuator class whose methods can be redirected via callbacks.
  *
  * @template {PropertyKey} M
- * @param {import('@agoric/base-zone').Zone} zone The zone in which to allocate attenuators.
+ * @param {import('@agoric/base-zone').Zone} zone The zone in which to allocate
+ *   attenuators.
  * @param {M[]} methodNames Methods to forward.
  * @param {object} opts
  * @param {import('@endo/patterns').InterfaceGuard<{
- *  [K in M]: import('@endo/patterns').MethodGuard
- * }>} [opts.interfaceGuard] An interface guard for the
- * new attenuator.
+ *   [K in M]: import('@endo/patterns').MethodGuard;
+ * }>} [opts.interfaceGuard]
+ *   An interface guard for the new attenuator.
  * @param {string} [opts.tag] A tag for the new attenuator exoClass.
  */
 export const prepareAttenuator = (
@@ -209,9 +200,11 @@ export const prepareAttenuator = (
   { interfaceGuard, tag = 'Attenuator' } = {},
 ) => {
   /**
-   * @typedef {(this: any, ...args: unknown[]) => any} Method
-   * @typedef {{ [K in M]?: Callback<any> | null}} Overrides
-   * @typedef {{ [K in M]: (this: any, ...args: unknown[]) => any }} Methods
+   * @typedef {(this: any, ...args: any[]) => any} Method
+   *
+   * @typedef {{ [K in M]?: Callback<any> | null }} Overrides
+   *
+   * @typedef {{ [K in M]: (this: any, ...args: any[]) => any }} Methods
    */
   const methods = /** @type {Methods} */ (
     fromEntries(
@@ -229,9 +222,7 @@ export const prepareAttenuator = (
             // Support both synchronous and async callbacks.
             const cb = this.state.cbs[key];
             if (!cb) {
-              const err = assert.error(
-                `unimplemented ${q(tag)} method ${q(key)}`,
-              );
+              const err = makeError(`unimplemented ${q(tag)} method ${q(key)}`);
               if (this.state.isSync) {
                 throw err;
               }
@@ -253,14 +244,13 @@ export const prepareAttenuator = (
    * and/or individual method override callbacks.
    *
    * @param {object} opts
-   * @param {unknown} [opts.target] The target for any methods that
-   * weren't specified in `opts.overrides`.
+   * @param {unknown} [opts.target] The target for any methods that weren't
+   *   specified in `opts.overrides`.
    * @param {boolean} [opts.isSync=false] Whether the target should be treated
-   * as synchronously available.
-   * @param {Overrides} [opts.overrides] Set individual
-   * callbacks for methods (whose names must be defined in the
-   * `prepareAttenuator` or `prepareGuardedAttenuator` call).  Nullish overrides
-   * mean to throw.
+   *   as synchronously available.
+   * @param {Overrides} [opts.overrides] Set individual callbacks for methods
+   *   (whose names must be defined in the `prepareAttenuator` or
+   *   `prepareGuardedAttenuator` call). Nullish overrides mean to throw.
    */
   const makeAttenuator = zone.exoClass(
     tag,

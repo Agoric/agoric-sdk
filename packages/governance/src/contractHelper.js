@@ -1,16 +1,22 @@
+import { Fail } from '@endo/errors';
 import { Far } from '@endo/marshal';
+import { getMethodNames } from '@endo/eventual-send/utils.js';
 import { makeStoredPublisherKit } from '@agoric/notifier';
-import { getMethodNames, objectMap } from '@agoric/internal';
+import { objectMap } from '@agoric/internal';
 import { ignoreContext, prepareExo } from '@agoric/vat-data';
-import { keyEQ, M } from '@agoric/store';
+import { M } from '@agoric/store';
 import { AmountShape, BrandShape } from '@agoric/ertp';
 import { RelativeTimeRecordShape, TimestampRecordShape } from '@agoric/time';
 import { E } from '@endo/eventual-send';
-import { assertElectorateMatches } from './contractGovernance/paramManager.js';
 import { makeParamManagerFromTerms } from './contractGovernance/typedParamManager.js';
 import { GovernorFacetShape } from './typeGuards.js';
+import { CONTRACT_ELECTORATE } from './contractGovernance/governParam.js';
 
-const { Fail, quote: q } = assert;
+/**
+ * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
+ * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn, GovernanceSubscriptionState, GovernanceTerms, GovernedApis, GovernedCreatorFacet, GovernedPublicFacet} from './types.js';
+ * @import {Baggage} from '@agoric/vat-data';
+ */
 
 export const GOVERNANCE_STORAGE_KEY = 'governance';
 
@@ -31,22 +37,17 @@ const publicMixinAPI = harden({
 });
 
 /**
+ * Verify that the electorate is represented by a live invitation.
+ *
  * @param {ZCF<GovernanceTerms<{}> & {}>} zcf
  * @param {import('./contractGovernance/typedParamManager.js').TypedParamManager<any>} paramManager
  */
 export const validateElectorate = (zcf, paramManager) => {
-  const { governedParams } = zcf.getTerms();
-  return E.when(paramManager.getParams(), finishedParams => {
-    try {
-      keyEQ(governedParams, finishedParams) ||
-        Fail`The 'governedParams' term must be an object like ${q(
-          finishedParams,
-        )}, but was ${q(governedParams)}`;
-      assertElectorateMatches(paramManager, governedParams);
-    } catch (err) {
-      zcf.shutdownWithFailure(err);
-    }
-  });
+  const invitation = paramManager.getInternalParamValue(CONTRACT_ELECTORATE);
+  return E.when(
+    E(zcf.getInvitationIssuer()).isLive(invitation),
+    isLive => isLive || Fail`Electorate invitation is not live.`,
+  );
 };
 harden(validateElectorate);
 
@@ -183,7 +184,7 @@ const facetHelpers = (zcf, paramManager) => {
    * @see {makeVirtualGovernorFacet}
    *
    * @template CF
-   * @param {import('@agoric/vat-data').Baggage} baggage
+   * @param {Baggage} baggage
    * @param {CF} limitedCreatorFacet
    * @param {Record<string, (...any) => unknown>} [governedApis]
    */
@@ -192,6 +193,7 @@ const facetHelpers = (zcf, paramManager) => {
     limitedCreatorFacet,
     governedApis = {},
   ) => {
+    const farGovernedApis = Far('governedAPIs', { ...governedApis });
     const governorFacet = prepareExo(
       baggage,
       'governorFacet',
@@ -204,7 +206,7 @@ const facetHelpers = (zcf, paramManager) => {
         // The contract provides a facet with the APIs that can be invoked by
         // governance
         /** @type {() => GovernedApis} */
-        getGovernedApis: () => Far('governedAPIs', governedApis),
+        getGovernedApis: () => farGovernedApis,
         // The facet returned by getGovernedApis is Far, so we can't see what
         // methods it has. There's no clean way to have contracts specify the APIs
         // without also separately providing their names.
@@ -252,6 +254,7 @@ const facetHelpers = (zcf, paramManager) => {
  * @param {M} paramTypesMap
  * @param {ERef<StorageNode>} [storageNode]
  * @param {ERef<Marshaller>} [marshaller]
+ * @param {object} [overrides]
  */
 const handleParamGovernance = (
   zcf,
@@ -259,6 +262,7 @@ const handleParamGovernance = (
   paramTypesMap,
   storageNode,
   marshaller,
+  overrides,
 ) => {
   /** @type {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} */
   const publisherKit = makeStoredPublisherKit(
@@ -271,6 +275,7 @@ const handleParamGovernance = (
     zcf,
     { Electorate: initialPoserInvitation },
     paramTypesMap,
+    overrides,
   );
 
   return facetHelpers(zcf, paramManager);

@@ -1,6 +1,6 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
-/// <reference path="./types.js" />
+/// <reference path="./types-ambient.js" />
 
+import { Fail } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
@@ -15,7 +15,9 @@ import {
 import { makePayoffHandler } from './payoffHandler.js';
 import { Position } from './position.js';
 
-const { Fail } = assert;
+/**
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ */
 
 const PERCENT_BASE = 100n;
 const BASIS_POINTS = 10000n;
@@ -77,7 +79,7 @@ const start = zcf => {
     'strikePrice2 must be greater than strikePrice1',
   );
 
-  zcf.saveIssuer(zcf.getInvitationIssuer(), 'Options');
+  void zcf.saveIssuer(zcf.getInvitationIssuer(), 'Options');
 
   // We will create the two options early and allocate them to this seat.
   const { zcfSeat: collateralSeat } = zcf.makeEmptySeatKit();
@@ -100,6 +102,7 @@ const start = zcf => {
     const invitationIssuer = zcf.getInvitationIssuer();
     const payment = harden({ Option: option });
     const Option = await E(invitationIssuer).getAmountOf(option);
+    /** @type {any} */
     const spreadAmount = harden({
       Option,
     });

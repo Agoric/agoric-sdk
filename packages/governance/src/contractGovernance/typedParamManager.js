@@ -1,9 +1,14 @@
 import { E } from '@endo/eventual-send';
+import { Fail, q } from '@endo/errors';
 import { ParamTypes } from '../constants.js';
 import { CONTRACT_ELECTORATE } from './governParam.js';
 import { makeParamManagerBuilder } from './paramManager.js';
 
-const { Fail, quote: q } = assert;
+/**
+ * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
+ * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn, GovernanceSubscriptionState, GovernanceTerms, ParamManagerBase, ParamStateRecord, ParamValueForType, UpdateParams} from '../types.js';
+ * @import {ParamType} from '../constants.js';
+ */
 
 /**
  * @typedef {Record<Keyword, ParamType>} ParamTypesMap
@@ -137,6 +142,7 @@ harden(makeParamManagerSync);
  * @param {ZCF<GovernanceTerms<M>>} zcf
  * @param {I} invitations invitation objects, which must come from privateArgs
  * @param {M} paramTypesMap
+ * @param {object} [overrides]
  * @returns {TypedParamManager<M & {[K in keyof I]: 'invitation'}>}
  */
 export const makeParamManagerFromTerms = (
@@ -144,17 +150,23 @@ export const makeParamManagerFromTerms = (
   zcf,
   invitations,
   paramTypesMap,
+  overrides,
 ) => {
+  if (overrides) {
+    console.log('TPM ', { overrides });
+  }
+
   const { governedParams } = zcf.getTerms();
-  /** @type {Array<[Keyword, SyncSpecTuple | AsyncSpecTuple]>} */
+  /** @type {Array<[Keyword, (SyncSpecTuple | AsyncSpecTuple)]>} */
   const makerSpecEntries = Object.entries(paramTypesMap).map(
-    ([paramKey, paramType]) => [
-      paramKey,
-      /** @type {SyncSpecTuple} */ ([
-        paramType,
-        governedParams[paramKey].value,
-      ]),
-    ],
+    ([paramKey, paramType]) => {
+      const value =
+        overrides && overrides[paramKey]
+          ? overrides[paramKey]
+          : governedParams[paramKey].value;
+
+      return [paramKey, /** @type {SyncSpecTuple} */ ([paramType, value])];
+    },
   );
   // Every governed contract has an Electorate param that starts as `initialPoserInvitation` private arg
   for (const [name, invitation] of Object.entries(invitations)) {

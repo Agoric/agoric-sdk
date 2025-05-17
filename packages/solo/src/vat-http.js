@@ -1,11 +1,12 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
+import { Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
+import { makePromiseKit } from '@endo/promise-kit';
+import { Far } from '@endo/marshal';
+
+import { deepCopyJsonable } from '@agoric/internal/src/js-utils.js';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makeCache } from '@agoric/cache';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
-import { Fail } from '@agoric/assert';
 import { getReplHandler } from '@agoric/vats/src/repl.js';
-import { makePromiseKit } from '@endo/promise-kit';
 import { getCapTPHandler } from './captp.js';
 
 // This vat contains the HTTP request handler.
@@ -27,7 +28,6 @@ export function buildRootObject(vatPowers) {
 
   const lookup = async (...path) => {
     // Take a snapshot of the current home.
-    // eslint-disable-next-line no-use-before-define
     const root = replObjects.home;
 
     if (path.length === 1 && Array.isArray(path[0])) {
@@ -82,7 +82,7 @@ export function buildRootObject(vatPowers) {
     D(commandDevice).sendResponse(
       count,
       isException,
-      obj || JSON.parse(JSON.stringify(obj)),
+      obj || deepCopyJsonable(obj),
     );
 
   // Map an URL only to its latest handler.
@@ -186,7 +186,7 @@ export function buildRootObject(vatPowers) {
       // Launder the data, since the command device tends to pass device nodes
       // when there are empty objects, which screw things up for us.
       // Analysis is in https://github.com/Agoric/agoric-sdk/pull/1956
-      const obj = JSON.parse(JSON.stringify(rawObj));
+      const obj = deepCopyJsonable(rawObj);
       console.debug(
         `vat-http.inbound (from browser) ${count}`,
         JSON.stringify(obj, undefined, 2),

@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"testing"
 
+	sdkmath "cosmossdk.io/math"
 	swingtypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -210,11 +211,11 @@ func (msk mockSwingsetKeeper) IsHighPriorityAddress(ctx sdk.Context, addr sdk.Ac
 	return msk.isHighPriorityOwner, nil
 }
 
-func (msk mockSwingsetKeeper) GetBeansPerUnit(ctx sdk.Context) map[string]sdk.Uint {
+func (msk mockSwingsetKeeper) GetBeansPerUnit(ctx sdk.Context) map[string]sdkmath.Uint {
 	return nil
 }
 
-func (msk mockSwingsetKeeper) ChargeBeans(ctx sdk.Context, addr sdk.AccAddress, beans sdk.Uint) error {
+func (msk mockSwingsetKeeper) ChargeBeans(ctx sdk.Context, beansPerUnit map[string]sdkmath.Uint, addr sdk.AccAddress, beans sdkmath.Uint) error {
 	return fmt.Errorf("not implemented")
 }
 
@@ -222,6 +223,6 @@ func (msk mockSwingsetKeeper) GetSmartWalletState(ctx sdk.Context, addr sdk.AccA
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (msk mockSwingsetKeeper) ChargeForSmartWallet(ctx sdk.Context, addr sdk.AccAddress) error {
+func (msk mockSwingsetKeeper) ChargeForSmartWallet(ctx sdk.Context, beansPerUnit map[string]sdkmath.Uint, addr sdk.AccAddress) error {
 	return fmt.Errorf("not implemented")
 }

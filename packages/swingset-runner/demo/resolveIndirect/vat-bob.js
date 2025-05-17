@@ -16,7 +16,7 @@ export function buildRootObject() {
       return 'Hello!';
     },
     genPromise2() {
-      [p1, r1] = makePR();
+      void ([p1, r1] = makePR());
       return p1;
     },
     usePromise(pa) {

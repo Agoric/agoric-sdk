@@ -1,0 +1,37 @@
+name: Dump GH CI Stats
+
+on:
+  workflow_run: # This allows the workflow to be reused
+    workflows:
+      [
+        'Integration Tests',
+        'Test Golang',
+        'golangci-lint',
+        'Build release Docker Images',
+        'Test all Packages',
+        'Test Documentation',
+        'Manage integration check',
+        'after-merge.yml',
+      ]
+    types:
+      - completed
+
+jobs:
+  dump_ci_stats:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+
+      - name: Install GCP Monitoring/Metrics Client
+        run: yarn add @google-cloud/monitoring --ignore-workspace-root-check
+
+      - name: Run Final Job and Send Logs to GCP
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+        run: |
+          node .github/actions/dump-ci-stats-to-gcp-metrics.cjs ${{ github.event.workflow_run.id }}

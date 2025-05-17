@@ -11,7 +11,7 @@ export const makeSlogSender = async ({ env: { SLOGFILE } = {} } = {}) => {
 
   const slogSender = (slogObj, jsonObj = serializeSlogObj(slogObj)) => {
     // eslint-disable-next-line prefer-template
-    void stream.write(jsonObj + '\n');
+    stream.write(jsonObj + '\n').catch(() => {});
   };
 
   return Object.assign(slogSender, {

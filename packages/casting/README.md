@@ -13,7 +13,6 @@ An example of following an on-chain mailbox in code (using this package) is:
 ```js
 // First, obtain a Hardened JS environment via Endo.
 import '@endo/init/pre-remoting.js'; // needed only for the next line
-import '@agoric/casting/node-fetch-shim.js'; // needed for Node.js
 import '@endo/init';
 
 import {
@@ -42,7 +41,7 @@ The `followerOpts` argument in `makeFollower(leader, key, followerOpts)` provide
 - the `decode` option is a function to translate `buf: Uint8Array` into `data: string`
   - (default) - interpret buf as a utf-8 string, then `JSON.parse` it
 - the `unserializer` option can be
-  - (default) - release unserialized objects using `@agoric/marshal`'s `makeMarshal()`
+  - (default) - release unserialized objects using [@endo/marshal](https://www.npmjs.com/package/@endo/marshal)'s `makeMarshal()`
   - `null` - don't additionally unserialize data before releasing it
   - any unserializer object supporting `E(unserializer).fromCapData(data)`
 - the `crasher` option can be
@@ -65,8 +64,8 @@ The `followerOpts` argument in `makeFollower(leader, key, followerOpts)` provide
 
 This package currently depends on:
 - Hardened Javascript
-- `@agoric/notify` async iterable adapters to implement `iterateLatest`
-- `@endo/marshal` for default object unserialization
+- [@agoric/notifier](../notifier) async iterable adapters to implement `iterateLatest`
+- [@endo/marshal](https://www.npmjs.com/package/@endo/marshal) for default object unserialization
 - [CosmJS](https://github.com/cosmos/cosmjs) for proof verification, although [it does not yet support light client tracking of the validator set](https://github.com/cosmos/cosmjs/issues/492)
 - a bespoke follower of [WebSocket Tendermint events](https://docs.tendermint.com/master/tendermint-core/subscription.html#legacy-streaming-api)
 

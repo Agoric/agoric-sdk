@@ -1,6 +1,11 @@
 // @jessie-check
 
 import { M, matches, getInterfaceGuardPayload } from '@endo/patterns';
+/**
+ * @import {AmountValue, Ratio} from './types.js'
+ * @import {TypedPattern} from '@agoric/internal'
+ * @import {CopyBag, CopySet, Pattern} from '@endo/patterns';
+ */
 
 export const BrandShape = M.remotable('Brand');
 export const IssuerShape = M.remotable('Issuer');
@@ -71,15 +76,25 @@ const AmountValueShape = M.or(
   CopyBagValueShape,
 );
 
-export const AmountShape = harden({
-  brand: BrandShape,
-  value: AmountValueShape,
-});
+export const AmountShape = { brand: BrandShape, value: AmountValueShape };
+harden(AmountShape);
 
-export const RatioShape = harden({
-  numerator: AmountShape,
-  denominator: AmountShape,
-});
+/**
+ * To be used to guard an amount pattern argument, i.e., an argument which is a
+ * pattern that can be used to test amounts. Since amounts are keys, anywhere an
+ * amount pattern is expected, an amount can be provided and will match only
+ * that concrete amount, i.e., amounts that are `keyEQ` to that amount.
+ *
+ * The `AmountShape` guard above is an amount pattern. But not all amount
+ * patterns are like `AmountShape`. For example, `M.any()` is a valid amount
+ * pattern that will admit any amount, but is does not resemble the
+ * `AmountShape` pattern above.
+ */
+export const AmountPatternShape = M.pattern();
+
+/** @type {TypedPattern<Ratio>} */
+export const RatioShape = { numerator: AmountShape, denominator: AmountShape };
+harden(RatioShape);
 
 /**
  * Returns true if value is a Nat bigint.
@@ -140,13 +155,14 @@ export const DisplayInfoShape = M.splitRecord(
   },
 );
 
-export const IssuerKitShape = harden({
+export const IssuerKitShape = {
   brand: BrandShape,
   mint: MintShape,
   mintRecoveryPurse: PurseShape,
   issuer: IssuerShape,
   displayInfo: DisplayInfoShape,
-});
+};
+harden(IssuerKitShape);
 
 // //////////////////////// Interfaces /////////////////////////////////////////
 
@@ -177,7 +193,7 @@ export const makeIssuerInterfaces = (
     isLive: M.callWhen(M.await(PaymentShape)).returns(M.boolean()),
     getAmountOf: M.callWhen(M.await(PaymentShape)).returns(amountShape),
     burn: M.callWhen(M.await(PaymentShape))
-      .optional(M.pattern())
+      .optional(AmountPatternShape)
       .returns(amountShape),
   });
 
@@ -204,7 +220,9 @@ export const makeIssuerInterfaces = (
     // `srcPayment` is a remotable, leaving it
     // to this raw method to validate that this remotable is actually
     // a live payment of the correct brand with sufficient funds.
-    deposit: M.call(PaymentShape).optional(M.pattern()).returns(amountShape),
+    deposit: M.call(PaymentShape)
+      .optional(AmountPatternShape)
+      .returns(amountShape),
     getDepositFacet: M.call().returns(DepositFacetShape),
     withdraw: M.call(amountShape).returns(PaymentShape),
     getRecoverySet: M.call().returns(M.setOf(PaymentShape)),
@@ -215,10 +233,11 @@ export const makeIssuerInterfaces = (
     receive: getInterfaceGuardPayload(PurseI).methodGuards.deposit,
   });
 
-  const PurseIKit = harden({
+  const PurseIKit = {
     purse: PurseI,
     depositFacet: DepositFacetI,
-  });
+  };
+  harden(PurseIKit);
 
   return harden({
     IssuerI,

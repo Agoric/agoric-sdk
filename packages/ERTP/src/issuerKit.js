@@ -1,18 +1,22 @@
 // @jessie-check
 
-import { assert } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 import { assertPattern } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 
 import { AssetKind, assertAssetKind } from './amountMath.js';
 import { coerceDisplayInfo } from './displayInfo.js';
 import { preparePaymentLedger } from './paymentLedger.js';
 
-import './types-ambient.js';
-
-// TODO Why does TypeScript lose the `MapStore` typing of `Baggage` here, even
-// though it knows the correct type at the exporting `@agoric/vat-data`
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+/**
+ * @import {Key, Pattern} from '@endo/patterns';
+ * @import {Zone} from '@agoric/base-zone';
+ * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
+ * @import {TypedPattern} from '@agoric/internal';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {AdditionalDisplayInfo, RecoverySetsOption, IssuerKit, PaymentLedger} from './types.js';
+ */
 
 /**
  * @template {AssetKind} K
@@ -28,7 +32,9 @@ import './types-ambient.js';
  *
  * @template {AssetKind} K
  * @param {IssuerRecord<K>} issuerRecord
- * @param {Baggage} issuerBaggage
+ * @param {Zone} issuerZone
+ * @param {RecoverySetsOption} recoverySetsState Omitted from issuerRecord
+ *   because it was added in an upgrade.
  * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails in
  *   the middle of an atomic action (which btw should never happen), it
  *   potentially leaves its ledger in a corrupted state. If this function was
@@ -40,7 +46,8 @@ import './types-ambient.js';
  */
 const setupIssuerKit = (
   { name, assetKind, displayInfo, elementShape },
-  issuerBaggage,
+  issuerZone,
+  recoverySetsState,
   optShutdownWithFailure = undefined,
 ) => {
   assert.typeof(name, 'string');
@@ -58,13 +65,14 @@ const setupIssuerKit = (
 
   // Attenuate the powerful authority to mint and change balances
   /** @type {PaymentLedger<K>} */
-  // @ts-expect-error could be instantiated with different subtype of AssetKind
+  // @ts-expect-error could be instantiated with a different subtype
   const { issuer, mint, brand, mintRecoveryPurse } = preparePaymentLedger(
-    issuerBaggage,
+    issuerZone,
     name,
     assetKind,
     cleanDisplayInfo,
     elementShape,
+    recoverySetsState,
     optShutdownWithFailure,
   );
 
@@ -80,6 +88,12 @@ harden(setupIssuerKit);
 
 /** The key at which the issuer record is stored. */
 const INSTANCE_KEY = 'issuer';
+/**
+ * The key at which the issuerKit's `RecoverySetsOption` state is stored.
+ * Introduced by an upgrade, so may be absent on a predecessor incarnation. See
+ * `RecoverySetsOption` for defaulting behavior.
+ */
+const RECOVERY_SETS_STATE = 'recoverySetsState';
 
 /**
  * Used _only_ to upgrade a predecessor issuerKit. Use `makeDurableIssuerKit` to
@@ -94,14 +108,36 @@ const INSTANCE_KEY = 'issuer';
  *   unit of computation, like the enclosing vat, can be shutdown before
  *   anything else is corrupted by that corrupted state. See
  *   https://github.com/Agoric/agoric-sdk/issues/3434
+ * @param {RecoverySetsOption} [recoverySetsOption] Added in upgrade, so last
+ *   and optional. See `RecoverySetsOption` for defaulting behavior.
  * @returns {IssuerKit<K>}
  */
 export const upgradeIssuerKit = (
   issuerBaggage,
   optShutdownWithFailure = undefined,
+  recoverySetsOption = undefined,
 ) => {
   const issuerRecord = issuerBaggage.get(INSTANCE_KEY);
-  return setupIssuerKit(issuerRecord, issuerBaggage, optShutdownWithFailure);
+  const issuerZone = makeDurableZone(issuerBaggage);
+  const oldRecoverySetsState = issuerBaggage.has(RECOVERY_SETS_STATE)
+    ? issuerBaggage.get(RECOVERY_SETS_STATE)
+    : 'hasRecoverySets';
+  if (
+    oldRecoverySetsState === 'noRecoverySets' &&
+    recoverySetsOption === 'hasRecoverySets'
+  ) {
+    Fail`Cannot (yet?) upgrade from 'noRecoverySets' to 'hasRecoverySets'`;
+  }
+  // Extant sets are not currently deleted. If the new option is
+  // 'noRecoverySets', they won't be used but extant ones will remain. Future
+  // upgrades may make it possible to delete elements from them.
+  const recoverySetsState = recoverySetsOption || oldRecoverySetsState;
+  return setupIssuerKit(
+    issuerRecord,
+    issuerZone,
+    recoverySetsState,
+    optShutdownWithFailure,
+  );
 };
 harden(upgradeIssuerKit);
 
@@ -121,8 +157,14 @@ export const hasIssuer = baggage => baggage.has(INSTANCE_KEY);
  * typically, the amount of an invitation payment is a singleton set. Such a
  * payment is often referred to in the singular as "an invitation".)
  *
+ * `recoverySetsOption` added in upgrade. Note that `IssuerOptionsRecord` is
+ * never stored, so we never need to worry about inheriting one from a
+ * predecessor predating the introduction of recovery sets. See
+ * `RecoverySetsOption` for defaulting behavior.
+ *
  * @typedef {Partial<{
  *   elementShape: Pattern;
+ *   recoverySetsOption: RecoverySetsOption;
  * }>} IssuerOptionsRecord
  */
 
@@ -163,11 +205,24 @@ export const makeDurableIssuerKit = (
   assetKind = AssetKind.NAT,
   displayInfo = harden({}),
   optShutdownWithFailure = undefined,
-  { elementShape = undefined } = {},
+  { elementShape = undefined, recoverySetsOption = undefined } = {},
 ) => {
-  const issuerData = harden({ name, assetKind, displayInfo, elementShape });
+  const issuerData = harden({
+    name,
+    assetKind,
+    displayInfo,
+    elementShape,
+  });
   issuerBaggage.init(INSTANCE_KEY, issuerData);
-  return setupIssuerKit(issuerData, issuerBaggage, optShutdownWithFailure);
+  const issuerZone = makeDurableZone(issuerBaggage);
+  const recoverySetsState = recoverySetsOption || 'hasRecoverySets';
+  issuerBaggage.init(RECOVERY_SETS_STATE, recoverySetsState);
+  return setupIssuerKit(
+    issuerData,
+    issuerZone,
+    recoverySetsState,
+    optShutdownWithFailure,
+  );
 };
 harden(makeDurableIssuerKit);
 
@@ -175,6 +230,7 @@ harden(makeDurableIssuerKit);
  * Used to either revive a predecessor issuerKit, or to make a new durable one
  * if it is absent, and to place it in baggage for the next successor.
  *
+ * @template {IssuerOptionsRecord} O
  * @template {AssetKind} K The name becomes part of the brand in asset
  *   descriptions. The name is useful for debugging and double-checking
  *   assumptions, but should not be trusted wrt any external namespace. For
@@ -198,8 +254,10 @@ harden(makeDurableIssuerKit);
  *   unit of computation, like the enclosing vat, can be shutdown before
  *   anything else is corrupted by that corrupted state. See
  *   https://github.com/Agoric/agoric-sdk/issues/3434
- * @param {IssuerOptionsRecord} [options]
- * @returns {IssuerKit<K>}
+ * @param {O} [options]
+ * @returns {O['elementShape'] extends TypedPattern<infer T extends Key>
+ *     ? IssuerKit<K, T>
+ *     : IssuerKit<K>}
  */
 export const prepareIssuerKit = (
   issuerBaggage,
@@ -208,15 +266,23 @@ export const prepareIssuerKit = (
   assetKind = AssetKind.NAT,
   displayInfo = harden({}),
   optShutdownWithFailure = undefined,
+  // @ts-expect-error could have a different subtype of IssuerOptionsRecord
   options = {},
 ) => {
   if (hasIssuer(issuerBaggage)) {
-    const { elementShape: _ = undefined } = options;
-    const issuerKit = upgradeIssuerKit(issuerBaggage, optShutdownWithFailure);
+    const { elementShape: _ = undefined, recoverySetsOption = undefined } =
+      options;
+    const issuerKit = upgradeIssuerKit(
+      issuerBaggage,
+      optShutdownWithFailure,
+      recoverySetsOption,
+    );
 
     // TODO check consistency with name, assetKind, displayInfo, elementShape.
     // Consistency either means that these are the same, or that they differ
-    // in a direction we are prepared to upgrade.
+    // in a direction we are prepared to upgrade. Note that it is the
+    // responsibility of `upgradeIssuerKit` to check consistency of
+    // `recoverySetsOption`, so continue to not do that here.
 
     // @ts-expect-error Type parameter confusion.
     return issuerKit;
@@ -229,6 +295,7 @@ export const prepareIssuerKit = (
       optShutdownWithFailure,
       options,
     );
+    // @ts-expect-error cast to the type parameter
     return issuerKit;
   }
 };
@@ -243,21 +310,19 @@ harden(prepareIssuerKit);
  * Currently used for testing only. Should probably continue to be used for
  * testing only.
  *
- * @template {AssetKind} [K='nat'] The name becomes part of the brand in asset
+ * @template {AssetKind} [K='nat']
+ * @template {IssuerOptionsRecord} [O={}]
+ * @param {string} name The name becomes part of the brand in asset
  *   descriptions. The name is useful for debugging and double-checking
  *   assumptions, but should not be trusted wrt any external namespace. For
  *   example, anyone could create a new issuer kit with name 'BTC', but it is
  *   not bitcoin or even related. It is only the name according to that issuer
  *   and brand.
- *
- *   The assetKind will be used to import a specific mathHelpers from the
- *   mathHelpers library. For example, natMathHelpers, the default, is used for
- *   basic fungible tokens.
- *
- *   `displayInfo` gives information to the UI on how to display the amount.
- * @param {string} name
- * @param {K} [assetKind]
- * @param {AdditionalDisplayInfo} [displayInfo]
+ * @param {K} [assetKind] The assetKind will be used to import a specific
+ *   mathHelpers from the mathHelpers library. For example, natMathHelpers, the
+ *   default, is used for basic fungible tokens.
+ * @param {AdditionalDisplayInfo} [displayInfo] `displayInfo` gives information
+ *   to the UI on how to display the amount.
  * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails in
  *   the middle of an atomic action (which btw should never happen), it
  *   potentially leaves its ledger in a corrupted state. If this function was
@@ -265,8 +330,10 @@ harden(prepareIssuerKit);
  *   unit of computation, like the enclosing vat, can be shutdown before
  *   anything else is corrupted by that corrupted state. See
  *   https://github.com/Agoric/agoric-sdk/issues/3434
- * @param {IssuerOptionsRecord} [options]
- * @returns {IssuerKit<K>}
+ * @param {O} [options]
+ * @returns {O['elementShape'] extends TypedPattern<infer T extends Key>
+ *     ? IssuerKit<K, T>
+ *     : IssuerKit<K>}
  */
 export const makeIssuerKit = (
   name,
@@ -274,14 +341,16 @@ export const makeIssuerKit = (
   assetKind = AssetKind.NAT,
   displayInfo = harden({}),
   optShutdownWithFailure = undefined,
-  { elementShape = undefined } = {},
+  // @ts-expect-error O could be instantiated with a different subtype
+  { elementShape = undefined, recoverySetsOption = undefined } = {},
 ) =>
+  // @ts-expect-error cast
   makeDurableIssuerKit(
     makeScalarBigMapStore('dropped issuer kit', { durable: true }),
     name,
     assetKind,
     displayInfo,
     optShutdownWithFailure,
-    { elementShape },
+    { elementShape, recoverySetsOption },
   );
 harden(makeIssuerKit);

@@ -41,7 +41,7 @@ yourself).[^2]
 
 The first thing a benchmark should do is import The Benchmarkerator:
 ```
-import { bench } from '@agoric/benchmark';
+import { bench } from '@aglocal/benchmark';
 ```
 
 Note that this importation usually should be the very first thing you do, much
@@ -150,7 +150,7 @@ provides various information about the execution.  It has the properties:
 The benchmark that you define by incorporating The Benchmarkerator is a
 standalone Node executable.  You run it with the command:
 
-`node benchmark-yourbenchmarkname.js [OPTIONS...]`
+`tsx benchmark-yourbenchmarkname.js [OPTIONS...]`
 
 The supported command line options are:
 
@@ -175,6 +175,13 @@ VATIDs take the form of a "v" followed by decimal digits, e.g, "v9" or "v47".
 An optional `--` flag ends the options list.  Any remaining command line
 arguments after `--` are are passed to the benchmark itself in the
 `context.argv` array.
+
+Note that benchmarks are run with `tsx` rather than `node`.  This is because the
+benchmarking tools make use of TypeScript code that is part of our test
+infrastructure.  `tsx` actually runs `node`, but makes sure all the various
+magic environment voodoo is set up so that TypeScript code can also be
+executed.  If you do not have `tsx` in your environment, it can be installed
+from NPM.
 
 ## Results output
 

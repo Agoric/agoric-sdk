@@ -1,12 +1,14 @@
+import { Fail } from '@endo/errors';
 import { Far } from '@endo/marshal';
 import { bindAllMethods } from '@agoric/internal';
-import { buildManualTimer as build } from '@agoric/swingset-vat/tools/manual-timer.js';
+import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
 import { TimeMath } from '@agoric/time';
 
-import './types-ambient.js';
-import './internal-types.js';
-
-const { Fail } = assert;
+/**
+ * @import {TimerServiceCommon} from '@agoric/time';
+ * @import {RemotableObject} from '@endo/pass-style';
+ * @import {RemotableBrand} from '@endo/eventual-send';
+ */
 
 // we wrap SwingSet's buildManualTimer to accomodate the needs of
 // zoe's tests
@@ -19,6 +21,17 @@ const { Fail } = assert;
  */
 
 const nolog = (..._args) => {};
+
+/**
+ * @typedef {object} ManualTimerAdmin
+ * @property {(msg?: string) => void | Promise<void>} tick Advance the timer by one tick.
+ * DEPRECATED: use `await tickN(1)` instead.  `tick` function errors might be
+ * thrown synchronously, even though success is signaled by returning anything
+ * other than a rejected promise.
+ * @property {(nTimes: number, msg?: string) => Promise<void>} tickN
+ */
+
+/** @typedef {ReturnType<typeof buildManualTimer> & RemotableBrand<ManualTimerAdmin, TimerServiceCommon & ManualTimerAdmin> & ManualTimerAdmin} ZoeManualTimer */
 
 /**
  * A fake TimerService, for unit tests that do not use a real
@@ -55,10 +68,14 @@ const nolog = (..._args) => {};
  * @param {(...args: any[]) => void} [log]
  * @param {import('@agoric/time').Timestamp | bigint} [startValue=0n]
  * @param {ZoeManualTimerOptions} [options]
- * @returns {ManualTimer}
+ * @returns {ZoeManualTimer}
  */
 
-const buildManualTimer = (log = nolog, startValue = 0n, options = {}) => {
+export const buildZoeManualTimer = (
+  log = nolog,
+  startValue = 0n,
+  options = {},
+) => {
   const { timeStep = 1n, eventLoopIteration, ...buildOptions } = options;
   const optSuffix = msg => (msg ? `: ${msg}` : '');
   const callbacks = {
@@ -76,7 +93,7 @@ const buildManualTimer = (log = nolog, startValue = 0n, options = {}) => {
   assert.typeof(startValue, 'bigint');
   assert.typeof(timeStepValue, 'bigint');
 
-  const timerService = build({
+  const timerService = buildManualTimer({
     startTime: startValue,
     ...buildOptions,
     callbacks,
@@ -100,17 +117,13 @@ const buildManualTimer = (log = nolog, startValue = 0n, options = {}) => {
     }
   };
 
-  const setWakeup = (when, handler, cancelToken) => {
-    return timerService.setWakeup(when, handler, cancelToken);
-  };
-
   return Far('ManualTimer', {
     ...bindAllMethods(timerService),
     tick,
     tickN,
-    setWakeup,
   });
 };
-harden(buildManualTimer);
+harden(buildZoeManualTimer);
 
-export default buildManualTimer;
+// Default export is for backwards compatibility
+export default buildZoeManualTimer;

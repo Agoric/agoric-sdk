@@ -8,7 +8,7 @@ We support MacOS, Linux, and Windows Subsystem for Linux (WSL).
 
 For many of the packages here, JavaScript development tools suffice:
 
- - [node](https://nodejs.org/) 14.15.0 or higher
+ - [node](https://nodejs.org/) LTS
  - [yarn](https://classic.yarnpkg.com/en/docs/install) (`npm install -g yarn`)
 
 But to ensure contributions are compatible with all packages, you will
@@ -78,6 +78,8 @@ traversal of the parents, so `git bisect` will still work if we need it.
 We've also squashed follow-up commits manually (through an interactive rebase)
 after a PR had been approved and tests were passing, then landed the stack with
 "Rebase and merge" or "Create merge commit".
+
+For details on authoring, merging, and reviewing PRs, see [Pull Requests Guidelines](https://github.com/Agoric/agoric-sdk/wiki/GitHub-Pull-Requests).
 
 [CC]: https://www.conventionalcommits.org/en/v1.0.0/
 

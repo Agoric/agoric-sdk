@@ -1,8 +1,6 @@
 import { makeMarshal } from '@endo/marshal';
 import { Far } from '@endo/far';
 
-/* eslint-disable no-use-before-define */
-
 function fakeSTV(slot, iface = 'Remotable') {
   return Far(iface, {
     getSlot: () => slot,

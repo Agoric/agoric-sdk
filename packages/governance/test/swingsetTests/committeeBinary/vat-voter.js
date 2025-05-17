@@ -1,9 +1,13 @@
-import { makeNotifierFromSubscriber, observeNotifier } from '@agoric/notifier';
-import { keyEQ } from '@agoric/store';
+import { q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
-const { quote: q } = assert;
+import { makeNotifierFromSubscriber, observeNotifier } from '@agoric/notifier';
+import { keyEQ } from '@agoric/store';
+
+/**
+ * @import {CommitteeElectoratePublic, Issue} from '../../../src/types.js';
+ */
 
 /**
  * @param {(msg: any)=> void} log
@@ -69,6 +73,7 @@ const build = async (log, zoe) => {
       });
     },
     createMultiVoter: async (name, invitation, choices) => {
+      /** @type {any} */
       const electorateInstance = await E(zoe).getInstance(invitation);
       /** @type {Promise<CommitteeElectoratePublic>} electoratePublicFacet */
       const electoratePublicFacet = E(zoe).getPublicFacet(electorateInstance);

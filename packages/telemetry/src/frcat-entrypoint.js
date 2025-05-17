@@ -1,11 +1,11 @@
 #! /usr/bin/env node
-/* global process */
+/* eslint-env node */
 // frcat - print out the contents of a flight recorder
 // NOTE: this only works on inactive recorder files where the writer has terminated
 
 import '@endo/init';
 
-import { makeMemoryMappedCircularBuffer } from './flight-recorder.js';
+import { makeSimpleCircularBuffer } from './flight-recorder.js';
 
 const main = async () => {
   const files = process.argv.slice(2);
@@ -14,7 +14,7 @@ const main = async () => {
   }
 
   for await (const file of files) {
-    const { readCircBuf } = await makeMemoryMappedCircularBuffer({
+    const { readCircBuf } = await makeSimpleCircularBuffer({
       circularBufferFilename: file,
       circularBufferSize: 0,
     });

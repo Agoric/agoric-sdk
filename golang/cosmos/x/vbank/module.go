@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	stdlog "log"
 
-	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
@@ -60,10 +59,6 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 	return ValidateGenesis(&data)
 }
 
-// Register rest routes
-func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Router) {
-}
-
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
 	_ = types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
 }
@@ -96,7 +91,7 @@ func (AppModule) Name() string {
 	return ModuleName
 }
 
-func (AppModule) ConsensusVersion() uint64 { return 1 }
+func (AppModule) ConsensusVersion() uint64 { return 2 }
 
 // BeginBlock implements the AppModule interface
 func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
@@ -162,7 +157,7 @@ NextEvent:
 	addressToUpdate = make(map[string]sdk.Coins, len(addressToUpdate))
 	for addr, denoms := range unfilteredAddresses {
 		accAddr, err := sdk.AccAddressFromBech32(addr)
-		if err == nil && am.keeper.IsModuleAccount(ctx, accAddr) {
+		if err == nil && am.keeper.IsAllowedMonitoringAccount(ctx, accAddr) {
 			// Pass through the module account.
 			addressToUpdate[addr] = denoms
 		}
@@ -209,6 +204,12 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	tx := &types.UnimplementedMsgServer{}
 	types.RegisterMsgServer(cfg.MsgServer(), tx)
 	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
+
+	m := keeper.NewMigrator(am.keeper)
+	err := cfg.RegisterMigration(types.ModuleName, 1, m.Migrate1to2)
+	if err != nil {
+		panic(err)
+	}
 }
 
 // InitGenesis performs genesis initialization for the ibc-transfer module. It returns

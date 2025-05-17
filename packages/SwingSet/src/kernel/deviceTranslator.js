@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 import { insistMessage } from '../lib/message.js';
 import { insistKernelType } from './parseKernelSlots.js';
 import { insistVatType, parseVatSlot } from '../lib/parseVatSlots.js';
@@ -69,7 +69,7 @@ function makeDRTranslator(deviceID, kernelKeeper) {
  *
  * @param {string} deviceID
  * @param {string} deviceName
- * @param {*} kernelKeeper
+ * @param {KernelKeeper} kernelKeeper
  * @returns {(dsc: DeviceSyscallObject) => KernelSyscallObject}
  */
 export function makeDSTranslator(deviceID, deviceName, kernelKeeper) {

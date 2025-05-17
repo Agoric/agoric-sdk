@@ -13,6 +13,11 @@ entirely at the ERTP level.
 
 - `feeCollectorName`: the module which handles fee distribution to stakers.
 - `reward_epoch_duration_blocks`: the duration (in blocks) over which fees should be given to the fee collector.
+- `per_epoch_reward_fraction`: a decimal of how much of the `GiveawayPool` is paid as validator rewards per epoch
+- `allowed_monitoring_accounts`: an array of account addresses that can be
+  monitored for sends and receives, defaulting to
+  `[authtypes.NewModuleAddress(types.ProvisionPoolName)]`.  An element of `"*"`
+  will permit any address.
 
 ## State
 
@@ -22,7 +27,7 @@ The Vbank module maintains no significant state, but will access stored state th
 
 Purse operations which change the balance result in a downcall to this module to update the underlying account. A downcall is also made to query the account balance.
 
-Upon an `EndBlock()` call, the module will scan the block for all `MsgSend` and `MsgMultiSend` events (see `cosmos-sdk/x/bank/spec/04_events.md`) and perform a `VBANK_BALANCE_UPDATE` upcall for all denominations held in *only the mentioned module accounts*.
+Upon an `EndBlock()` call, the module will scan the block for all `MsgSend` and `MsgMultiSend` events (see `cosmos-sdk/x/bank/spec/04_events.md`) and perform a `VBANK_BALANCE_UPDATE` upcall for all denominations held in *only in the allowed_monitoring_accounts*.
 
 The following fields are common to the Vbank messages:
 - `"address"`, `"recipient"`, `"sender"`: account address as a bech32-encoded string

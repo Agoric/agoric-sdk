@@ -10,7 +10,11 @@ import {
   setDisjointUnion,
   setDisjointSubtract,
 } from '@agoric/store';
-import '../types-ambient.js';
+
+/**
+ * @import {MathHelpers} from '../types.js'
+ * @import {CopySet} from '@endo/patterns'
+ */
 
 /** @type {CopySet} */
 const empty = makeCopySet([]);

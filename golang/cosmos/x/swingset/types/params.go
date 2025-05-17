@@ -5,6 +5,7 @@ import (
 
 	yaml "gopkg.in/yaml.v2"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 )
@@ -16,9 +17,10 @@ var (
 	ParamStoreKeyFeeUnitPrice       = []byte("fee_unit_price")
 	ParamStoreKeyPowerFlagFees      = []byte("power_flag_fees")
 	ParamStoreKeyQueueMax           = []byte("queue_max")
+	ParamStoreKeyVatCleanupBudget   = []byte("vat_cleanup_budget")
 )
 
-func NewStringBeans(key string, beans sdk.Uint) StringBeans {
+func NewStringBeans(key string, beans sdkmath.Uint) StringBeans {
 	return StringBeans{
 		Key:   key,
 		Beans: beans,
@@ -52,6 +54,7 @@ func DefaultParams() Params {
 		FeeUnitPrice:       DefaultFeeUnitPrice,
 		PowerFlagFees:      DefaultPowerFlagFees,
 		QueueMax:           DefaultQueueMax,
+		VatCleanupBudget:   DefaultVatCleanupBudget,
 	}
 }
 
@@ -68,6 +71,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(ParamStoreKeyBootstrapVatConfig, &p.BootstrapVatConfig, validateBootstrapVatConfig),
 		paramtypes.NewParamSetPair(ParamStoreKeyPowerFlagFees, &p.PowerFlagFees, validatePowerFlagFees),
 		paramtypes.NewParamSetPair(ParamStoreKeyQueueMax, &p.QueueMax, validateQueueMax),
+		paramtypes.NewParamSetPair(ParamStoreKeyVatCleanupBudget, &p.VatCleanupBudget, validateVatCleanupBudget),
 	}
 }
 
@@ -86,6 +90,9 @@ func (p Params) ValidateBasic() error {
 		return err
 	}
 	if err := validateQueueMax(p.QueueMax); err != nil {
+		return err
+	}
+	if err := validateVatCleanupBudget(p.VatCleanupBudget); err != nil {
 		return err
 	}
 
@@ -164,20 +171,42 @@ func validateQueueMax(i interface{}) error {
 	return nil
 }
 
+func validateVatCleanupBudget(i interface{}) error {
+	entries, ok := i.([]UintMapEntry)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+	hasDefault := false
+	for _, entry := range entries {
+		if entry.Key == VatCleanupDefault {
+			hasDefault = true
+			break
+		}
+	}
+	if len(entries) > 0 && !hasDefault {
+		return fmt.Errorf("`default` must be present in a non-empty vat cleanup budget")
+	}
+	return nil
+}
+
 // UpdateParams appends any missing params, configuring them to their defaults,
 // then returning the updated params or an error. Existing params are not
 // modified, regardless of their value, and they are not removed if they no
 // longer appear in the defaults.
 func UpdateParams(params Params) (Params, error) {
-	newBpu, err := appendMissingDefaultBeansPerUnit(params.BeansPerUnit, DefaultBeansPerUnit())
+	newBpu, err := appendMissingDefaults(params.BeansPerUnit, DefaultBeansPerUnit())
 	if err != nil {
 		return params, err
 	}
-	newPff, err := appendMissingDefaultPowerFlagFees(params.PowerFlagFees, DefaultPowerFlagFees)
+	newPff, err := appendMissingDefaults(params.PowerFlagFees, DefaultPowerFlagFees)
 	if err != nil {
 		return params, err
 	}
-	newQm, err := appendMissingDefaultQueueSize(params.QueueMax, DefaultQueueMax)
+	newQm, err := appendMissingDefaults(params.QueueMax, DefaultQueueMax)
+	if err != nil {
+		return params, err
+	}
+	newVcb, err := appendMissingDefaults(params.VatCleanupBudget, DefaultVatCleanupBudget)
 	if err != nil {
 		return params, err
 	}
@@ -185,55 +214,37 @@ func UpdateParams(params Params) (Params, error) {
 	params.BeansPerUnit = newBpu
 	params.PowerFlagFees = newPff
 	params.QueueMax = newQm
+	params.VatCleanupBudget = newVcb
 	return params, nil
 }
 
-// appendMissingDefaultBeansPerUnit appends the default beans per unit entries
-// not in the list of bean costs already, returning the possibly-updated list,
-// or an error.
-func appendMissingDefaultBeansPerUnit(bpu []StringBeans, defaultBpu []StringBeans) ([]StringBeans, error) {
-	existingBpu := make(map[string]struct{}, len(bpu))
-	for _, ob := range bpu {
-		existingBpu[ob.Key] = struct{}{}
+// appendMissingDefaults appends to an input list any missing entries with their
+// respective default values and returns the result.
+func appendMissingDefaults[Entry StringBeans | PowerFlagFee | QueueSize | UintMapEntry](entries []Entry, defaults []Entry) ([]Entry, error) {
+	getKey := func(entry any) string {
+		switch e := entry.(type) {
+		case StringBeans:
+			return e.Key
+		case PowerFlagFee:
+			return e.PowerFlag
+		case QueueSize:
+			return e.Key
+		case UintMapEntry:
+			return e.Key
+		}
+		panic("unreachable")
 	}
 
-	for _, b := range defaultBpu {
-		if _, exists := existingBpu[b.Key]; !exists {
-			bpu = append(bpu, b)
+	existingKeys := make(map[string]bool, len(entries))
+	for _, entry := range entries {
+		existingKeys[getKey(entry)] = true
+	}
+
+	for _, defaultEntry := range defaults {
+		if exists := existingKeys[getKey(defaultEntry)]; !exists {
+			entries = append(entries, defaultEntry)
 		}
 	}
-	return bpu, nil
-}
 
-// appendMissingDefaultPowerFlagFees appends the default power flag fee entries
-// not in the list of power flags already, returning the possibly-updated list,
-// or an error.
-func appendMissingDefaultPowerFlagFees(pff []PowerFlagFee, defaultPff []PowerFlagFee) ([]PowerFlagFee, error) {
-	existingPff := make(map[string]struct{}, len(pff))
-	for _, of := range pff {
-		existingPff[of.PowerFlag] = struct{}{}
-	}
-
-	for _, f := range defaultPff {
-		if _, exists := existingPff[f.PowerFlag]; !exists {
-			pff = append(pff, f)
-		}
-	}
-	return pff, nil
-}
-
-// appendMissingDefaultQueueSize appends the default queue size entries not in
-// the list of sizes already, returning the possibly-updated list, or an error.
-func appendMissingDefaultQueueSize(qs []QueueSize, defaultQs []QueueSize) ([]QueueSize, error) {
-	existingQs := make(map[string]struct{}, len(qs))
-	for _, os := range qs {
-		existingQs[os.Key] = struct{}{}
-	}
-
-	for _, s := range defaultQs {
-		if _, exists := existingQs[s.Key]; !exists {
-			qs = append(qs, s)
-		}
-	}
-	return qs, nil
+	return entries, nil
 }

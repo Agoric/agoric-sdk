@@ -1,11 +1,13 @@
 /**
  * Kernel's keeper of persistent state for a vat.
  */
-import { Nat, isNat } from '@endo/nat';
-import { assert, q, Fail } from '@agoric/assert';
+import { Nat } from '@endo/nat';
+import { assert, q, Fail } from '@endo/errors';
+import { isObject } from '@endo/marshal';
 import { parseKernelSlot } from '../parseKernelSlots.js';
 import { makeVatSlot, parseVatSlot } from '../../lib/parseVatSlots.js';
 import { insistVatID } from '../../lib/id.js';
+import { insistCapData } from '../../lib/capdata.js';
 import { kdebug } from '../../lib/kdebug.js';
 import {
   parseReachableAndVatSlot,
@@ -18,11 +20,13 @@ import { enumeratePrefixedKeys } from './storageHelper.js';
  * @typedef { import('../../types-external.js').SnapStore } SnapStore
  * @typedef { import('../../types-external.js').SourceOfBundle } SourceOfBundle
  * @typedef { import('../../types-external.js').TranscriptStore } TranscriptStore
+ * @typedef { import('../../types-internal.js').Dirt } Dirt
  * @typedef { import('../../types-internal.js').VatManager } VatManager
+ * @typedef { import('../../types-internal.js').ReapDirtThreshold } ReapDirtThreshold
  * @typedef { import('../../types-internal.js').RecordedVatOptions } RecordedVatOptions
  * @typedef { import('../../types-internal.js').TranscriptEntry } TranscriptEntry
- * @typedef {import('../../types-internal.js').TranscriptDeliverySaveSnapshot} TDSaveSnapshot
- * @typedef {import('../../types-internal.js').TranscriptDeliveryLoadSnapshot} TDLoadSnapshot
+ * @import {TranscriptDeliverySaveSnapshot} from '../../types-internal.js'
+ * @import {TranscriptDeliveryLoadSnapshot} from '../../types-internal.js'
  */
 
 // makeVatKeeper is a pure function: all state is kept in the argument object
@@ -32,65 +36,108 @@ const FIRST_OBJECT_ID = 50n;
 const FIRST_PROMISE_ID = 60n;
 const FIRST_DEVICE_ID = 70n;
 
+// TODO: we export this from vatKeeper.js, and import it from
+// kernelKeeper.js, because both files need it, and we want to avoid
+// an import cycle (kernelKeeper imports other things from vatKeeper),
+// but it really wants to live in kernelKeeper not vatKeeper
+export const DEFAULT_REAP_DIRT_THRESHOLD_KEY =
+  'kernel.defaultReapDirtThreshold';
+
+const isBundleSource = source => {
+  return (
+    isObject(source) &&
+    (isObject(source.bundle) ||
+      typeof source.bundleName === 'string' ||
+      typeof source.bundleID === 'string')
+  );
+};
+
 /**
  * Establish a vat's state.
  *
  * @param {*} kvStore  The key-value store in which the persistent state will be kept
  * @param {*} transcriptStore  Accompanying transcript store
  * @param {string} vatID The vat ID string of the vat in question
- * TODO: consider making this part of makeVatKeeper
+ * @param {SourceOfBundle} source
+ * @param {RecordedVatOptions} options
  */
-export function initializeVatState(kvStore, transcriptStore, vatID) {
+export function initializeVatState(
+  kvStore,
+  transcriptStore,
+  vatID,
+  source,
+  options,
+) {
+  assert(isBundleSource(source), `vat ${vatID} source has wrong shape`);
+  assert(
+    isObject(options) && isObject(options.workerOptions),
+    `vat ${vatID} options is missing workerOptions`,
+  );
+
   kvStore.set(`${vatID}.o.nextID`, `${FIRST_OBJECT_ID}`);
   kvStore.set(`${vatID}.p.nextID`, `${FIRST_PROMISE_ID}`);
   kvStore.set(`${vatID}.d.nextID`, `${FIRST_DEVICE_ID}`);
+  kvStore.set(`${vatID}.reapDirt`, JSON.stringify({}));
+  kvStore.set(`${vatID}.source`, JSON.stringify(source));
+  kvStore.set(`${vatID}.options`, JSON.stringify(options));
   transcriptStore.initTranscript(vatID);
 }
 
 /**
- * Produce a vat keeper for a vat.
+ * @typedef {object} VatKeeperPowers
+ * @property {TranscriptStore} transcriptStore  Accompanying transcript store, for the transcripts
+ * @property {KernelSlog} kernelSlog
+ * @property {*} addKernelObject  Kernel function to add a new object to the kernel's mapping tables.
+ * @property {*} addKernelPromiseForVat  Kernel function to add a new promise to the kernel's mapping tables.
+ * @property {(kernelSlot: string) => boolean} kernelObjectExists
+ * @property {*} incrementRefCount
+ * @property {*} decrementRefCount
+ * @property {(kernelSlot: string) => {reachable: number, recognizable: number}} getObjectRefCount
+ * @property {(kernelSlot: string, o: { reachable: number, recognizable: number }) => void} setObjectRefCount
+ * @property {(vatID: string, kernelSlot: string) => {isReachable: boolean, vatSlot: string}} getReachableAndVatSlot
+ * @property {(kernelSlot: string) => void} addMaybeFreeKref
+ * @property {*} incStat
+ * @property {*} decStat
+ * @property {*} getCrankNumber
+ * @property {*} scheduleReap
+ * @property {SnapStore} snapStore
+ */
+
+/**
+ * Produce a "vat keeper" for the kernel state of a vat.
  *
- * @param {KVStore} kvStore  The keyValue store in which the persistent state will be kept
- * @param {TranscriptStore} transcriptStore  Accompanying transcript store, for the transcripts
- * @param {*} kernelSlog
  * @param {string} vatID  The vat ID string of the vat in question
- * @param {*} addKernelObject  Kernel function to add a new object to the kernel's
- * mapping tables.
- * @param {*} addKernelPromiseForVat  Kernel function to add a new promise to the
- * kernel's mapping tables.
- * @param {(kernelSlot: string) => boolean} kernelObjectExists
- * @param {*} incrementRefCount
- * @param {*} decrementRefCount
- * @param {(kernelSlot: string) => {reachable: number, recognizable: number}} getObjectRefCount
- * @param {(kernelSlot: string, o: { reachable: number, recognizable: number }) => void} setObjectRefCount
- * @param {(vatID: string, kernelSlot: string) => {isReachable: boolean, vatSlot: string}} getReachableAndVatSlot
- * @param {(kernelSlot: string) => void} addMaybeFreeKref
- * @param {*} incStat
- * @param {*} decStat
- * @param {*} getCrankNumber
- * @param {SnapStore} [snapStore]
- * returns an object to hold and access the kernel's state for the given vat
+ * @param {KVStore} kvStore  The keyValue store in which the persistent state will be kept
+ * @param {VatKeeperPowers} powers
  */
 export function makeVatKeeper(
-  kvStore,
-  transcriptStore,
-  kernelSlog,
   vatID,
-  addKernelObject,
-  addKernelPromiseForVat,
-  kernelObjectExists,
-  incrementRefCount,
-  decrementRefCount,
-  getObjectRefCount,
-  setObjectRefCount,
-  getReachableAndVatSlot,
-  addMaybeFreeKref,
-  incStat,
-  decStat,
-  getCrankNumber,
-  snapStore = undefined,
+  kvStore,
+  {
+    transcriptStore,
+    kernelSlog,
+    addKernelObject,
+    addKernelPromiseForVat,
+    kernelObjectExists,
+    incrementRefCount,
+    decrementRefCount,
+    getObjectRefCount,
+    setObjectRefCount,
+    getReachableAndVatSlot,
+    addMaybeFreeKref,
+    incStat,
+    decStat,
+    getCrankNumber,
+    scheduleReap,
+    snapStore,
+  },
 ) {
   insistVatID(vatID);
+
+  // note: calling makeVatKeeper() does not change the DB. Any
+  // initialization or upgrade must be complete before it is
+  // called. Only the methods returned by makeVatKeeper() will change
+  // the DB.
 
   function getRequired(key) {
     const value = kvStore.get(key);
@@ -99,6 +146,8 @@ export function makeVatKeeper(
     }
     return value;
   }
+
+  const reapDirtKey = `${vatID}.reapDirt`;
 
   /**
    * @param {SourceOfBundle} source
@@ -125,43 +174,107 @@ export function makeVatKeeper(
 
   function getOptions() {
     /** @type { RecordedVatOptions } */
-    const options = JSON.parse(kvStore.get(`${vatID}.options`) || '{}');
+    const options = JSON.parse(getRequired(`${vatID}.options`));
     return harden(options);
   }
 
-  function initializeReapCountdown(count) {
-    count === 'never' || isNat(count) || Fail`bad reapCountdown ${count}`;
-    kvStore.set(`${vatID}.reapInterval`, `${count}`);
-    kvStore.set(`${vatID}.reapCountdown`, `${count}`);
-  }
-
-  function updateReapInterval(reapInterval) {
-    reapInterval === 'never' ||
-      isNat(reapInterval) ||
-      Fail`bad reapInterval ${reapInterval}`;
-    kvStore.set(`${vatID}.reapInterval`, `${reapInterval}`);
-    if (reapInterval === 'never') {
-      kvStore.set(`${vatID}.reapCountdown`, 'never');
+  /**
+   * @param {SwingSetCapData} newVPCD
+   */
+  function setVatParameters(newVPCD) {
+    insistCapData(newVPCD);
+    const key = `${vatID}.vatParameters`;
+    // increment-before-decrement to minimize spurious rc=0 checks
+    for (const kref of newVPCD.slots) {
+      incrementRefCount(kref, `${vatID}.vatParameters`);
     }
+    const old = kvStore.get(key) || '{"slots":[]}';
+    for (const kref of JSON.parse(old).slots) {
+      decrementRefCount(kref, `${vatID}.vatParameters`);
+    }
+    kvStore.set(key, JSON.stringify(newVPCD));
   }
 
-  function countdownToReap() {
-    const rawCount = getRequired(`${vatID}.reapCountdown`);
-    if (rawCount === 'never') {
-      return false;
-    } else {
-      const count = Number.parseInt(rawCount, 10);
-      if (count === 1) {
-        kvStore.set(
-          `${vatID}.reapCountdown`,
-          getRequired(`${vatID}.reapInterval`),
-        );
-        return true;
-      } else {
-        kvStore.set(`${vatID}.reapCountdown`, `${count - 1}`);
-        return false;
+  /**
+   * @returns {SwingSetCapData | undefined} vpcd
+   */
+  function getVatParameters() {
+    const key = `${vatID}.vatParameters`;
+    const old = kvStore.get(key);
+    if (old) {
+      return JSON.parse(old);
+    }
+    return undefined;
+  }
+
+  // This is named "addDirt" because it should increment all dirt
+  // counters (both for reap/BOYD and for heap snapshotting). We don't
+  // have `heapSnapshotDirt` yet, but when we do, it should get
+  // incremented here.
+
+  /**
+   * Add some "dirt" to the vat, possibly triggering a reap/BOYD.
+   *
+   * @param {Dirt} moreDirt
+   */
+  function addDirt(moreDirt) {
+    assert.typeof(moreDirt, 'object');
+    const reapDirt = JSON.parse(getRequired(reapDirtKey));
+    const thresholds = {
+      ...JSON.parse(getRequired(DEFAULT_REAP_DIRT_THRESHOLD_KEY)),
+      ...JSON.parse(getRequired(`${vatID}.options`)).reapDirtThreshold,
+    };
+    let reap = false;
+    for (const key of Object.keys(moreDirt)) {
+      const threshold = thresholds[key];
+      // Don't accumulate dirt if it can't eventually trigger a
+      // BOYD. This is mainly to keep comms from counting upwards
+      // forever. TODO revisit this when we add heapSnapshotDirt,
+      // maybe check both thresholds and accumulate the dirt if either
+      // one is non-'never'.
+      if (threshold && threshold !== 'never') {
+        const oldDirt = reapDirt[key] || 0;
+        // The 'moreDirt' value might be Number or BigInt (eg
+        // .computrons). We coerce to Number so we can JSON-stringify.
+        const newDirt = oldDirt + Number(moreDirt[key]);
+        reapDirt[key] = newDirt;
+        if (newDirt >= threshold) {
+          reap = true;
+        }
       }
     }
+    if (!thresholds.never) {
+      kvStore.set(reapDirtKey, JSON.stringify(reapDirt));
+      if (reap) {
+        scheduleReap(vatID);
+      }
+    }
+  }
+
+  function getReapDirt() {
+    return JSON.parse(getRequired(reapDirtKey));
+  }
+
+  function clearReapDirt() {
+    // This is only called after a BOYD, so it should only clear the
+    // reap/BOYD counters. If/when we add heap-snapshot counters,
+    // those should get cleared in a separate clearHeapSnapshotDirt()
+    // function.
+    const reapDirt = {};
+    kvStore.set(reapDirtKey, JSON.stringify(reapDirt));
+  }
+
+  function getReapDirtThreshold() {
+    return getOptions().reapDirtThreshold;
+  }
+
+  /**
+   * @param {ReapDirtThreshold} reapDirtThreshold
+   */
+  function setReapDirtThreshold(reapDirtThreshold) {
+    assert.typeof(reapDirtThreshold, 'object');
+    const options = { ...getOptions(), reapDirtThreshold };
+    kvStore.set(`${vatID}.options`, JSON.stringify(options));
   }
 
   function nextDeliveryNum() {
@@ -298,15 +411,13 @@ export function makeVatKeeper(
         // update any necessary refcounts consistently
         kvStore.set(kernelKey, buildReachableAndVatSlot(false, vatSlot));
         kvStore.set(vatKey, kernelSlot);
-        if (kernelSlog) {
-          kernelSlog.changeCList(
-            vatID,
-            getCrankNumber(),
-            'export',
-            kernelSlot,
-            vatSlot,
-          );
-        }
+        kernelSlog.changeCList(
+          vatID,
+          getCrankNumber(),
+          'export',
+          kernelSlot,
+          vatSlot,
+        );
         kdebug(`Add mapping v->k ${kernelKey}<=>${vatKey}`);
       } else {
         // the vat didn't allocate it, and the kernel didn't allocate it
@@ -373,15 +484,13 @@ export function makeVatKeeper(
       incStat('clistEntries');
       kvStore.set(vatKey, kernelSlot);
       kvStore.set(kernelKey, buildReachableAndVatSlot(false, vatSlot));
-      if (kernelSlog) {
-        kernelSlog.changeCList(
-          vatID,
-          getCrankNumber(),
-          'import',
-          kernelSlot,
-          vatSlot,
-        );
-      }
+      kernelSlog.changeCList(
+        vatID,
+        getCrankNumber(),
+        'import',
+        kernelSlot,
+        vatSlot,
+      );
       kdebug(`Add mapping k->v ${kernelKey}<=>${vatKey}`);
     }
 
@@ -424,15 +533,13 @@ export function makeVatKeeper(
     const vatKey = `${vatID}.c.${vatSlot}`;
     assert(kvStore.has(kernelKey));
     kdebug(`Delete mapping ${kernelKey}<=>${vatKey}`);
-    if (kernelSlog) {
-      kernelSlog.changeCList(
-        vatID,
-        getCrankNumber(),
-        'drop',
-        kernelSlot,
-        vatSlot,
-      );
-    }
+    kernelSlog.changeCList(
+      vatID,
+      getCrankNumber(),
+      'drop',
+      kernelSlot,
+      vatSlot,
+    );
     const isExport = allocatedByVat;
     // We tolerate the object kref not being present in the kernel object
     // table, either because we're being called during the translation of
@@ -487,6 +594,7 @@ export function makeVatKeeper(
       deliveryNum += 1;
     }
   }
+  harden(getTranscript);
 
   /**
    * Append an entry to the vat's transcript.
@@ -563,46 +671,61 @@ export function makeVatKeeper(
       restartWorker,
     );
 
-    const {
-      hash: snapshotID,
-      uncompressedSize,
-      dbSaveSeconds,
-      compressedSize,
-      compressSeconds,
-    } = info;
+    const { hash: snapshotID } = info;
 
     // push a save-snapshot transcript entry
     addToTranscript(makeSaveSnapshotItem(snapshotID));
 
     // then start a new transcript span
-    transcriptStore.rolloverSpan(vatID);
+    await transcriptStore.rolloverSpan(vatID);
 
     // then push a load-snapshot entry, so that the current span
     // always starts with an initialize-worker or load-snapshot
     // pseudo-delivery
     addToTranscript(makeLoadSnapshotItem(snapshotID));
-
-    kernelSlog.write({
-      type: 'heap-snapshot-save',
-      vatID,
-      snapshotID,
-      uncompressedSize,
-      dbSaveSeconds,
-      compressedSize,
-      compressSeconds,
-      endPosition,
-      restartWorker,
-    });
   }
 
-  function deleteSnapshotsAndTranscript() {
-    if (snapStore) {
-      snapStore.deleteVatSnapshots(vatID);
+  /**
+   * Perform some (possibly-limited) cleanup work for a vat. Returns
+   * 'done' (where false means "please call me again", and true means
+   * "you can delete the vatID now"), and a count of how much work was
+   * done (so the runPolicy can decide when to stop).
+   *
+   * @param {number} [budget]
+   * @returns {{ done: boolean, cleanups: number }}
+   *
+   */
+  function deleteSnapshots(budget = undefined) {
+    // Each budget=1 allows us to delete one snapshot entry.
+    if (!snapStore) {
+      return { done: true, cleanups: 0 };
     }
-    transcriptStore.deleteVatTranscripts(vatID);
+    // initially uses 2+2*budget DB statements, then just 1 when done
+    return snapStore.deleteVatSnapshots(vatID, budget);
   }
 
-  function beginNewIncarnation() {
+  /**
+   * Perform some (possibly-limited) cleanup work for a vat. Returns
+   * 'done' (where false means "please call me again", and true means
+   * "you can delete the vatID now"), and a count of how much work was
+   * done (so the runPolicy can decide when to stop).
+   *
+   * @param {number} [budget]
+   * @returns {{ done: boolean, cleanups: number }}
+   *
+   */
+  function deleteTranscripts(budget = undefined) {
+    // Each budget=1 allows us to delete one transcript span and any
+    // transcript items associated with that span. Some nodes will
+    // have historical transcript items, some will not. Using budget=5
+    // and snapshotInterval=200 means we delete 5 span records and
+    // maybe 1000 span items.
+
+    // initially uses 2+3*budget DB statements, then just 1 when done
+    return transcriptStore.deleteVatTranscripts(vatID, budget);
+  }
+
+  async function beginNewIncarnation() {
     if (snapStore) {
       snapStore.stopUsingLastSnapshot(vatID);
     }
@@ -638,11 +761,13 @@ export function makeVatKeeper(
   function dumpState() {
     const res = [];
     const prefix = `${vatID}.c.`;
-    for (const k of enumeratePrefixedKeys(kvStore, prefix)) {
-      const slot = k.slice(prefix.length);
+    for (const { key, suffix: slot } of enumeratePrefixedKeys(
+      kvStore,
+      prefix,
+    )) {
       if (!slot.startsWith('k')) {
         const vatSlot = slot;
-        const kernelSlot = kvStore.get(k) || Fail`getNextKey ensures get`;
+        const kernelSlot = kvStore.get(key) || Fail`getNextKey ensures get`;
         /** @type { [string, string, string] } */
         const item = [kernelSlot, vatID, vatSlot];
         res.push(item);
@@ -655,9 +780,13 @@ export function makeVatKeeper(
     setSourceAndOptions,
     getSourceAndOptions,
     getOptions,
-    initializeReapCountdown,
-    countdownToReap,
-    updateReapInterval,
+    setVatParameters,
+    getVatParameters,
+    addDirt,
+    getReapDirt,
+    clearReapDirt,
+    getReapDirtThreshold,
+    setReapDirtThreshold,
     nextDeliveryNum,
     getIncarnationNumber,
     importsKernelSlot,
@@ -679,7 +808,8 @@ export function makeVatKeeper(
     dumpState,
     saveSnapshot,
     getSnapshotInfo,
-    deleteSnapshotsAndTranscript,
+    deleteSnapshots,
+    deleteTranscripts,
     beginNewIncarnation,
   });
 }

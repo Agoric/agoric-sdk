@@ -5,6 +5,10 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
+/**
+ * @import {CloseVoting} from './types.js';
+ */
+
 /** @type {CloseVoting} */
 export const scheduleClose = (closingRule, closeVoting) => {
   const { timer, deadline } = closingRule;

@@ -10,11 +10,11 @@ Like all `@agoric` packages it follows Semantic Versioning. Unlike the others, i
 
 # Design
 
-It is meant to be a home for modules that have no Agoric-specific dependencies themselves. It does depend on a these other @agoric packages but they are all destined to migrate out of the repo,
+It is meant to be a home for modules that have no dependencies on other packages in this repository, except for the following packages that do not theirselves depend upon any other @agoric packages and may be destined for migration elsewhere:
 
-- base-zone
-- store
-- assert
+- [base-zone](../base-zone)
+- [store](../store)
+- [cosmic-proto](../cosmic-proto)
 
 This package may not take dependencies on any others in this repository.
 

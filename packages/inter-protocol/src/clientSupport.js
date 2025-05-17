@@ -1,9 +1,14 @@
 // @ts-check
 
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined } from '@agoric/internal';
-import { parseRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { parseRatio } from '@agoric/ertp/src/ratio.js';
+
+/**
+ * @import {Amount, Brand, Payment, Purse} from '@agoric/ertp';
+ * @import {Proposal} from '@agoric/zoe';
+ */
 
 // XXX support other decimal places
 const COSMOS_UNIT = 1_000_000n;
@@ -19,7 +24,7 @@ const scaleDecimals = num => BigInt(num * Number(COSMOS_UNIT));
  *   import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes,
  *   'brand'
  * >} agoricNames
- * @param {| { giveMinted?: number; wantMinted?: number }
+ * @param {{ giveMinted?: number; wantMinted?: number }
  *   | {
  *       collateralBrandKey: string;
  *       giveCollateral?: number;
@@ -180,7 +185,7 @@ export const lookupOfferIdForVault = async (vaultId, currentP) => {
  *   string,
  *   import('@agoric/internal/src/marshal.js').BoardRemote
  * >} brands
- * @param {| { wantMinted: number; giveMinted?: undefined }
+ * @param {{ wantMinted: number; giveMinted?: undefined }
  *   | { giveMinted: number; wantMinted?: undefined }} opts
  * @param {number} [fee]
  * @param {string} [anchor]

@@ -5,6 +5,7 @@ import (
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
 
+	sdkioerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
@@ -29,7 +30,7 @@ func NewHandler(k Keeper) sdk.Handler {
 
 		default:
 			errMsg := fmt.Sprintf("Unrecognized swingset Msg type: %T", msg)
-			return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, errMsg)
+			return nil, sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, errMsg)
 		}
 	}
 }

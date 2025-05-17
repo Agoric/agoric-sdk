@@ -11,7 +11,6 @@ export function buildRootObject() {
   async function runTests(phase) {
     testLog = [];
     doneP = makePromiseKit();
-    // eslint-disable-next-line no-use-before-define
     await E(testVatRoot).runTests(self, phase);
     await doneP.promise;
     return testLog;

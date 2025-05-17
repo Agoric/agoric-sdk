@@ -9,19 +9,21 @@ set -xueo pipefail
 
 cache_bust=true
 case $1 in
---no-cache-bust) cache_bust=false; shift ;;
+  --no-cache-bust)
+    cache_bust=false
+    shift
+    ;;
 esac
 
 WORKDIR=${1:-.}
 cd -- "$WORKDIR" 1>&2
 
 # Install and build the source directory.
+corepack enable
 yarn install 1>&2
 yarn build 1>&2
 
-yarn lerna run build:types 1>&2
-
-yarn --silent workspaces info | jq -r '.[].location' | while read -r dir; do
+npm query .workspace | jq -r '.[].location' | while read -r dir; do
   # Skip private packages.
   echo "dir=$dir" 1>&2
   test "$(jq .private < "$dir/package.json")" != true || continue
@@ -33,7 +35,7 @@ yarn --silent workspaces info | jq -r '.[].location' | while read -r dir; do
   name=$(jq -r .name < package.json)
   version=$(jq -r .version < package.json)
   stem=$(echo "$name" | sed -e 's!^@!!; s!/!-!g;')
-  file="$(pwd)/${stem}-v${version}.tgz"
+  file="$(pwd)/package.tgz"
 
   # Clean up.
   rm -f "${stem}"-v*.tgz
@@ -52,7 +54,7 @@ yarn --silent workspaces info | jq -r '.[].location' | while read -r dir; do
 
   # Write out the version entry.
   jq -n --arg name "$name" --arg file "$dst" \
-      '{ key: $name, value: ("file:" + $file) }'
+    '{ key: $name, value: ("file:" + $file) }'
 
   popd 1>&2
   ##################

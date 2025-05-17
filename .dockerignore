@@ -1,22 +1,37 @@
 **/node_modules
 **/.git
 docker
+a3p-integration
+coverage
 packages/cosmic-swingset/t[0-9]
 packages/cosmic-swingset/t[0-9].*
 golang/cosmos/build
+a3p-integration
 packages/deployment
 packages/swingset-runner
 packages/stat-logger
 **/deployment.json
 **/vars.tf
 **/*.log
+**/dist
 **/build
 **/bundles
 **/__pycache__
 **/*.egg-info
 **/swingset-kernel-state
+**/.cache
+**/.pnp.*
+**/.yarn/*
+!**/.yarn/patches
+!**/.yarn/plugins
+!**/.yarn/releases
+!**/.yarn/sdks
+!**/.yarn/versions
+**/.DS_Store
 **/_agstate
 .vagrant
+endo-sha.txt
+packages/xsnap/build.config.env
 # When changing/adding entries here, make sure to search the whole project for
 # `@@AGORIC_DOCKER_SUBMODULES@@`
 packages/xsnap/moddable

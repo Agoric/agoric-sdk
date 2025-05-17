@@ -1,7 +1,7 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
-import { keyEQ, makeExo, makeScalarMapStore } from '@agoric/store';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
+import { keyEQ, makeExo, makeScalarMapStore } from '@agoric/store';
 import {
   buildQuestion,
   ChoiceMethod,
@@ -18,7 +18,11 @@ import {
 import { makeQuorumCounter } from './quorumCounter.js';
 import { breakTie } from './breakTie.js';
 
-const { Fail } = assert;
+/**
+ * @import {MapStore} from '@agoric/swingset-liveslots';
+ * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
+ * @import {QuestionSpec, BuildMultiVoteCounter, MultiOutcomeRecord, Position, VoteStatistics} from './types.js';
+ */
 
 const validateQuestionSpec = questionSpec => {
   coerceQuestionSpec(questionSpec);
@@ -97,7 +101,7 @@ const makeMultiCandidateVoteCounter = (
         outcome: 'fail',
         reason: 'No quorum',
       };
-      E(publisher).publish(voteOutcome);
+      void E(publisher).publish(voteOutcome);
       return;
     }
 
@@ -140,7 +144,7 @@ const makeMultiCandidateVoteCounter = (
       outcomePromise.resolve(untiedPositions.concat(tieWinners));
     }
 
-    E.when(outcomePromise.promise, winPositions => {
+    void E.when(outcomePromise.promise, winPositions => {
       /** @type { MultiOutcomeRecord } */
       const voteOutcome = {
         question: details.questionHandle,

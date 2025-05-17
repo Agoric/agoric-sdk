@@ -28,7 +28,7 @@ export function buildRootObject(vatPowers, _vatParams, zoeBaggage) {
 
       const vatAdminSvc = await adminVat;
 
-      /** @type {ZCFSpec} */
+      /** @type {import('@agoric/zoe').ZCFSpec} */
       const zcfSpec = { name: zcfBundleName };
 
       zoeBaggage.init(
@@ -52,3 +52,5 @@ export function buildRootObject(vatPowers, _vatParams, zoeBaggage) {
     getZoeConfigFacet: () => zoeConfigFacet,
   });
 }
+
+/** @typedef {ReturnType<typeof buildRootObject>} ZoeVat */

@@ -1,11 +1,10 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 
 import { makePrintLog } from './printLog.js';
 
-/* eslint-disable import/no-unresolved, import/extensions */
 import automaticRefundBundle from './bundle-automaticRefund.js';
 import coveredCallBundle from './bundle-coveredCall.js';
 import secondPriceAuctionBundle from './bundle-secondPriceAuction.js';
@@ -15,7 +14,6 @@ import autoswapBundle from './bundle-autoswap.js';
 import sellItemsBundle from './bundle-sellItems.js';
 import mintAndSellNFTBundle from './bundle-mintAndSellNFT.js';
 import otcDeskBundle from './bundle-otcDesk.js';
-/* eslint-enable import/no-unresolved, import/extensions */
 
 const setupBasicMints = () => {
   const all = [
@@ -35,7 +33,7 @@ const setupBasicMints = () => {
 };
 
 const makeVats = (log, vats, zoe, installations, startingValues) => {
-  const timer = buildManualTimer(log);
+  const timer = buildZoeManualTimer(log);
   const { mints, issuers, brands } = setupBasicMints();
   const makePayments = values =>
     mints.map((mint, i) =>

@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"strings"
 
+	sdkioerrors "cosmossdk.io/errors"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 )
 
 const (
@@ -14,15 +15,15 @@ const (
 )
 
 var (
-	_ govtypes.Content = &CoreEvalProposal{}
+	_ govv1beta1.Content = &CoreEvalProposal{}
 )
 
 func init() {
-	govtypes.RegisterProposalType(ProposalTypeCoreEval)
+	govv1beta1.RegisterProposalType(ProposalTypeCoreEval)
 }
 
 // NewCoreEvalProposal creates a new core eval proposal.
-func NewCoreEvalProposal(title, description string, evals []CoreEval) govtypes.Content {
+func NewCoreEvalProposal(title, description string, evals []CoreEval) govv1beta1.Content {
 	return &CoreEvalProposal{
 		Title:       title,
 		Description: description,
@@ -44,17 +45,17 @@ func (cep *CoreEvalProposal) ProposalType() string { return ProposalTypeCoreEval
 
 // ValidateBasic runs basic stateless validity checks
 func (cep *CoreEvalProposal) ValidateBasic() error {
-	err := govtypes.ValidateAbstract(cep)
+	err := govv1beta1.ValidateAbstract(cep)
 	if err != nil {
 		return err
 	}
 
 	if len(cep.Evals) == 0 {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "no core evals provided")
+		return sdkioerrors.Wrap(sdkerrors.ErrInvalidRequest, "no core evals provided")
 	}
 	for i, eval := range cep.Evals {
 		if err := eval.ValidateBasic(); err != nil {
-			return sdkerrors.Wrapf(err, "invalid core eval %d", i)
+			return sdkioerrors.Wrapf(err, "invalid core eval %d", i)
 		}
 	}
 
@@ -67,12 +68,12 @@ func (ce CoreEval) ValidateBasic() error {
 	var rm json.RawMessage
 	err := json.Unmarshal([]byte(ce.JsonPermits), &rm)
 	if err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "invalid permit.json: %s", err.Error())
+		return sdkioerrors.Wrapf(sdkerrors.ErrInvalidRequest, "invalid permit.json: %s", err.Error())
 	}
 
 	// Ensure jscode is not empty.
 	if len(strings.TrimSpace(ce.JsCode)) == 0 {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "no code.js provided")
+		return sdkioerrors.Wrap(sdkerrors.ErrInvalidRequest, "no code.js provided")
 	}
 	return nil
 }

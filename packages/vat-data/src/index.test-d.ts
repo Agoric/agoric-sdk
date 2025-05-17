@@ -1,4 +1,3 @@
-/* eslint-disable no-use-before-define */
 import { expectType } from 'tsd';
 import type {
   KindFacets,
@@ -6,7 +5,7 @@ import type {
   KindFacet,
   FunctionsPlusContext,
 } from '@agoric/swingset-liveslots';
-import { VirtualObjectManager } from '@agoric/swingset-liveslots/src/virtualObjectManager.js';
+import type { VirtualObjectManager } from '@agoric/swingset-liveslots/src/virtualObjectManager.js';
 import {
   defineKind,
   defineKindMulti,
@@ -14,7 +13,7 @@ import {
   defineDurableKind,
   partialAssign,
   watchPromise,
-} from '.';
+} from './index.js';
 
 // for use in assignments below
 const anyVal = null as any;

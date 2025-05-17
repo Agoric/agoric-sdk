@@ -1,0 +1,30 @@
+#! false node --ignore-this-line
+/* global E */
+
+/// <reference types="@agoric/vats/src/core/core-eval-env"/>
+/// <reference types="@agoric/vats/src/core/types-ambient"/>
+
+/**
+ * Write a value to chain storage
+ *
+ * see ../core-eval.test.js
+ *
+ * @param {BootstrapPowers} powers
+ */
+const writeIt = async powers => {
+  const nodePath = '{{NODE_PATH}}';
+  const nodeValue = '{{NODE_VALUE}}';
+  const {
+    consume: { chainStorage },
+  } = powers;
+
+  let node = chainStorage;
+
+  for (const nodeName of nodePath.split('.')) {
+    node = E(node).makeChildNode(nodeName);
+  }
+
+  await E(node).setValue(nodeValue);
+};
+
+writeIt;

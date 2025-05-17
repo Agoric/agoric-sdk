@@ -1,4 +1,4 @@
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 
 export function parseReachableAndVatSlot(value) {
   typeof value === 'string' || Fail`non-string value: ${value}`;

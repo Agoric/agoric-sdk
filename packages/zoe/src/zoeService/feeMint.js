@@ -11,9 +11,14 @@ import {
   provide,
   prepareExoClassKit,
 } from '@agoric/vat-data';
+import { Fail, q } from '@endo/errors';
 import { FeeMintAccessShape } from '../typeGuards.js';
 
-const { Fail, quote: q } = assert;
+/**
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
+ * @import {FeeIssuerConfig} from './types.js';
+ */
 
 /** @deprecated Redundant. Just omit it. */
 const FEE_MINT_KIT = 'FeeMintKit';
@@ -27,7 +32,7 @@ export const defaultFeeIssuerConfig = harden(
 );
 
 /**
- * @param {import('@agoric/vat-data').Baggage} zoeBaggage
+ * @param {Baggage} zoeBaggage
  * @param {FeeIssuerConfig} feeIssuerConfig
  * @param {ShutdownWithFailure} shutdownZoeVat
  */

@@ -1,14 +1,16 @@
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
-import { q, Fail } from '@agoric/assert';
-import { objectMap } from '@agoric/internal';
+import { q, Fail } from '@endo/errors';
+import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
 import { provideDurableWeakMapStore } from '@agoric/vat-data';
 
 /// <reference path="./types.js" />
-import './internal-types.js';
 
 import { cleanKeywords } from '../cleanProposal.js';
-import { arrayToObj } from '../objArrayConversion.js';
+
+/**
+ * @import {WeakMapStore} from '@agoric/store';
+ */
 
 /**
  * Store the pool purses whose purpose is to escrow assets, with one
@@ -17,7 +19,7 @@ import { arrayToObj } from '../objArrayConversion.js';
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
 export const provideEscrowStorage = baggage => {
-  /** @type {WeakMapStore<Brand, ERef<Purse>>} */
+  /** @type {WeakMapStore<Brand, Purse>} */
   const brandToPurse = provideDurableWeakMapStore(baggage, 'brandToPurse');
 
   /** @type {CreatePurse} */
@@ -76,50 +78,44 @@ export const provideEscrowStorage = baggage => {
   const depositPayments = async (proposal, payments) => {
     const { give, want } = proposal;
     const giveKeywords = Object.keys(give);
-    const wantKeywords = Object.keys(want);
     const paymentKeywords = cleanKeywords(payments);
 
     // Assert that all of the payment keywords are present in the give
     // keywords. Proposal.give keywords that do not have matching payments will
     // be caught in the deposit step.
-    paymentKeywords.forEach(keyword => {
+    for (const keyword of paymentKeywords) {
       giveKeywords.includes(keyword) ||
         Fail`The ${q(
           keyword,
         )} keyword in the paymentKeywordRecord was not a keyword in proposal.give, which had keywords: ${q(
           giveKeywords,
         )}`;
-    });
+    }
 
-    const proposalKeywords = harden([...giveKeywords, ...wantKeywords]);
-
-    // If any of these deposits hang or fail, then depositPayments
+    // If any of these deposits hang or fail, then this `await` also
     // hangs or fails, the offer does not succeed, and any funds that
     // were deposited into the pool purses are lost. We have a ticket
     // for giving the user a refund of what was already deposited, and
     // offer safety and payout liveness are still meaningful as long
     // as issuers are well-behaved. For more, see
     // https://github.com/Agoric/agoric-sdk/issues/1271
-    const amountsDeposited = await Promise.all(
-      giveKeywords.map(keyword => {
-        payments[keyword] !== undefined ||
-          Fail`The ${q(
-            keyword,
-          )} keyword in proposal.give did not have an associated payment in the paymentKeywordRecord, which had keywords: ${q(
-            paymentKeywords,
-          )}`;
-        return doDepositPayment(payments[keyword], give[keyword]);
-      }),
-    );
+    const depositPs = objectMap(give, (amount, keyword) => {
+      payments[keyword] !== undefined ||
+        Fail`The ${q(
+          keyword,
+        )} keyword in proposal.give did not have an associated payment in the paymentKeywordRecord, which had keywords: ${q(
+          paymentKeywords,
+        )}`;
+      return doDepositPayment(payments[keyword], amount);
+    });
+    const deposits = await deeplyFulfilledObject(depositPs);
 
-    const emptyAmountsForWantKeywords = wantKeywords.map(keyword =>
-      AmountMath.makeEmptyFromAmount(want[keyword]),
-    );
-
-    const initialAllocation = arrayToObj(
-      [...amountsDeposited, ...emptyAmountsForWantKeywords],
-      proposalKeywords,
-    );
+    const initialAllocation = harden({
+      ...objectMap(want, amount => AmountMath.makeEmptyFromAmount(amount)),
+      // Deposits should win in case of overlapping give/want keywords
+      // (which are not allowed as of 2024-01).
+      ...deposits,
+    });
 
     return initialAllocation;
   };

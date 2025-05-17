@@ -1,0 +1,54 @@
+// Copyright 2024 Circle Internet Group, Inc.  All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package circle.cctp.v1;
+
+import "circle/cctp/v1/attester.proto";
+import "circle/cctp/v1/burning_and_minting_paused.proto";
+import "circle/cctp/v1/max_message_body_size.proto";
+import "circle/cctp/v1/nonce.proto";
+import "circle/cctp/v1/per_message_burn_limit.proto";
+import "circle/cctp/v1/remote_token_messenger.proto";
+import "circle/cctp/v1/sending_and_receiving_messages_paused.proto";
+import "circle/cctp/v1/signature_threshold.proto";
+import "circle/cctp/v1/token_pair.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/circlefin/noble-cctp/x/cctp/types";
+
+// GenesisState defines the cctp module's genesis state.
+message GenesisState {
+  reserved 1;
+  reserved "params";
+
+  string owner = 2;
+  string attester_manager = 3;
+  string pauser = 4;
+  string token_controller = 5;
+
+  repeated Attester attester_list = 6 [(gogoproto.nullable) = false];
+  repeated PerMessageBurnLimit per_message_burn_limit_list = 7 [(gogoproto.nullable) = false];
+  BurningAndMintingPaused burning_and_minting_paused = 8;
+  SendingAndReceivingMessagesPaused sending_and_receiving_messages_paused = 9;
+  MaxMessageBodySize max_message_body_size = 10;
+  Nonce next_available_nonce = 11;
+  SignatureThreshold signature_threshold = 12;
+  repeated TokenPair token_pair_list = 13 [(gogoproto.nullable) = false];
+  repeated Nonce used_nonces_list = 14 [(gogoproto.nullable) = false];
+  repeated RemoteTokenMessenger token_messenger_list = 15 [(gogoproto.nullable) = false];
+}

@@ -2,7 +2,7 @@
 
 Inter Protocol is subject to two forms of governance. Like the entire chain, it's subject to BLDer DAO governance. This is sometimes called the "big hammer" because the DAO can approve running any code in the core ("core eval").
 
-There is also governance by an configurable electorate using a contract governor (see `@agoric/governance`). The _governor_ contract allows the electorate to execute governed API methods or set governed parameters of the _governed_ contract. In the conventional configuration of the Inter Protocol contracts there is electorate, which is called the "Economic Committee".
+There is also governance by an configurable electorate using a contract governor (see [@agoric/governance](../../governance)). The _governor_ contract allows the electorate to execute governed API methods or set governed parameters of the _governed_ contract. In the conventional configuration of the Inter Protocol contracts there is electorate, which is called the "Economic Committee".
 
 The *Economic Committee* (EC) can enact proposals through contracts governed by their charter. A contract is put under EC governance by adding its governance facet to the EC charter creatorFacet. At the time of writing, governed contracts include:
 

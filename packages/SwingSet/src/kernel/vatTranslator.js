@@ -1,4 +1,4 @@
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 import { insistMessage } from '../lib/message.js';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots.js';
 import { insistVatType, parseVatSlot } from '../lib/parseVatSlots.js';
@@ -14,18 +14,18 @@ export function assertValidVatstoreKey(key) {
 }
 
 /**
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryMessage} VatDeliveryMessage
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryNotify} VatDeliveryNotify
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryDropExports} VatDeliveryDropExports
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryRetireExports} VatDeliveryRetireExports
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryRetireImports} VatDeliveryRetireImports
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryChangeVatOptions} VatDeliveryChangeVatOptions
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryStartVat} VatDeliveryStartVat
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryStopVat} VatDeliveryStopVat
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryBringOutYourDead} VatDeliveryBringOutYourDead
+ * @import {VatDeliveryObject} from '@agoric/swingset-liveslots'
+ * @import {VatDeliveryMessage} from '@agoric/swingset-liveslots'
+ * @import {VatDeliveryNotify} from '@agoric/swingset-liveslots'
+ * @import {VatDeliveryDropExports} from '@agoric/swingset-liveslots'
+ * @import {VatDeliveryRetireExports} from '@agoric/swingset-liveslots'
+ * @import {VatDeliveryRetireImports} from '@agoric/swingset-liveslots'
+ * @import {VatDeliveryChangeVatOptions} from '@agoric/swingset-liveslots'
+ * @import {VatDeliveryStartVat} from '@agoric/swingset-liveslots'
+ * @import {VatDeliveryStopVat} from '@agoric/swingset-liveslots'
+ * @import {VatDeliveryBringOutYourDead} from '@agoric/swingset-liveslots'
  *
- * @typedef {import('@agoric/swingset-liveslots').VatOneResolution} VatOneResolution
+ * @import {VatOneResolution} from '@agoric/swingset-liveslots'
  *
  */
 
@@ -50,6 +50,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
       parseVatSlot(targetSlot).allocatedByVat || Fail`deliver() to wrong vat`;
     } else if (type === 'promise') {
       const p = kernelKeeper.getKernelPromise(target);
+      assert(p.state === 'unresolved');
       p.decider === vatID || Fail`wrong decider`;
     }
     const inputSlots = msg.methargs.slots.map(slot =>
@@ -59,7 +60,9 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     if (msg.result) {
       insistKernelType('promise', msg.result);
       const p = kernelKeeper.getKernelPromise(msg.result);
-      p.state === 'unresolved' || Fail`result ${msg.result} already resolved`;
+      if (p.state !== 'unresolved') {
+        throw Fail`result ${msg.result} already resolved`;
+      }
       !p.decider || Fail`result ${msg.result} already has decider ${p.decider}`;
       resultSlot = vatKeeper.mapKernelSlotToVatSlot(msg.result);
       insistVatType('promise', resultSlot);
@@ -262,9 +265,9 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
   return kernelDeliveryToVatDelivery;
 }
 /**
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallResult} VatSyscallResult
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallResultOk} VatSyscallResultOk
+ * @import {VatSyscallObject} from '@agoric/swingset-liveslots'
+ * @import {VatSyscallResult} from '@agoric/swingset-liveslots'
+ * @import {VatSyscallResultOk} from '@agoric/swingset-liveslots'
  */
 
 /**
@@ -318,8 +321,9 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
       // In the case of non-pipelining vats these checks are redundant since
       // we're guaranteed to have a promise newly allocated by the vat.
       const p = kernelKeeper.getKernelPromise(result);
-      p.state === 'unresolved' ||
-        Fail`send() result ${result} is already resolved`;
+      if (p.state !== 'unresolved') {
+        throw Fail`send() result ${result} is already resolved`;
+      }
       p.decider === vatID ||
         Fail`send() result ${result} is decided by ${p.decider} not ${vatID}`;
       kernelKeeper.clearDecider(result);
@@ -481,9 +485,6 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
       assert.equal(allocatedByVat, true); // abandon *exports*, not imports
       // kref must already be in the clist
       const kref = mapVatSlotToKernelSlot(vref, gcSyscallMapOpts);
-      // note that this is effectful and also performed outside of a syscall
-      // by processUpgradeVat in {@link ./kernel.js}
-      vatKeeper.deleteCListEntry(kref, vref);
       return kref;
     });
     kdebug(`syscall[${vatID}].abandonExports(${krefs.join(' ')})`);

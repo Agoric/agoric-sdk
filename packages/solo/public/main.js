@@ -1,5 +1,4 @@
 /* global setTimeout */
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 // NOTE: Runs outside SES
 
 /* global WebSocket fetch document window walletFrame localStorage */
@@ -238,7 +237,6 @@ function run() {
     }
     call({ type: 'getHighestHistory' })
       .then(res => {
-        // eslint-disable-next-line no-use-before-define
         setNextHistNum(res.highestHistory + 1);
         // console.debug(`nextHistNum is now ${nextHistNum}`, res);
       })

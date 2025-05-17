@@ -1,39 +1,32 @@
-#! /usr/bin/perl
-use warnings;
-use strict;
+#! /bin/bash
+set -ueo pipefail
 
-my $difftarget = $ARGV[0] || 'HEAD';
-
-open(my $fh, "git diff $difftarget|") or die "cannot get diff from $difftarget: $!";
-my $cllines;
-my $lookingForCurrentVersion = 0;
-my $bumpOnly = 0;
-my $line;
-
-print "## Packages that have NEWS.md updates\n\n\`\`\`diff\n";
-
-while ($line = <$fh>) {
-  if ($line =~ /^--- a\/(.*)\/CHANGELOG.md/) {
-    $cllines = $line;
-    $lookingForCurrentVersion = 1;
-  } elsif ($cllines) {
-    #print "$line";
-    if ($line =~ /^diff /) {
-      # Found the next file.
-      if ($cllines) {
-        print $cllines;
-      }
-      $cllines = '';
-    } elsif ($line =~ /^\+\*\*Note:\*\* Version bump only for package/) {
-      $cllines = '';
-    } else {
-      $cllines .= $line;
+git diff "${1:-HEAD^}" '*/**/CHANGELOG.md' \
+  | awk -v ignore='+**Note:** Version bump only for package ' '
+    BEGIN {
+      # Print the header.
+      print "## Packages that have NEWS.md updates";
+      print "";
+      print "```diff";
     }
-  }
-}
-
-if ($cllines) {
-  print $cllines;
-}
-
-print "\`\`\`\n";
+    /^diff / {
+      # New file; flush the buffer (if relevant) and stop buffering.
+      if (active) printf "%s", buf;
+      active = 0;
+    }
+    /^--- / {
+      # File name "a"; start buffering.
+      active = 1;
+      buf = "";
+    }
+    active {
+      # Buffer this line, but deactivate upon seeing the ignore prefix.
+      buf = buf $0 "\n";
+      if (substr($0, 1, length(ignore)) == ignore) active = 0;
+    }
+    END {
+      # Flush the buffer (if relevant) and print the footer.
+      if (active) printf "%s", buf;
+      print "```";
+    }
+  '

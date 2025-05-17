@@ -1,36 +1,19 @@
+import { Fail, q } from '@endo/errors';
 import { Far } from '@endo/marshal';
-import { M, matches } from '@endo/patterns';
+import { isCopyMap, isCopySet } from '@endo/patterns';
 
-/** @typedef {import('@endo/marshal').RankCompare} RankCompare */
-
-const { Fail, quote: q } = assert;
-
-// TODO: Undate `@endo/patterns` to export the original, and delete the
-// reimplementation here.
 /**
- * Should behave identically to the one in `@endo/patterns`, but reimplemented
- * for now because `@endo/patterns` forgot to export this one. This one is
- * simple enough that I prefer a reimplementation to a deep import.
- *
- * @param {Passable} s
- * @returns {s is CopySet}
+ * @import {RankCompare} from '@endo/marshal';
+ * @import {MapStore, WeakMapStore} from '../types.js';
+ * @import {Passable} from '@endo/pass-style';
+ * @import {Key} from '@endo/patterns';
  */
-export const isCopySet = s => matches(s, M.set());
 
-// TODO: Undate `@endo/patterns` to export the original, and delete the
-// reimplementation here.
-/**
- * Should behave identically to the one in `@endo/patterns`, but reimplemented
- * for now because `@endo/patterns` forgot to export this one. This one is
- * simple enough that I prefer a reimplementation to a deep import.
- *
- * @param {Passable} m
- * @returns {m is CopyMap}
- */
-export const isCopyMap = m => matches(m, M.map());
+export { isCopyMap, isCopySet };
 
 /**
- * @template K,V
+ * @template {Key} K
+ * @template {Passable} V
  * @typedef {object} CurrentKeysKit
  * @property {(k: K, v?: V) => void} assertUpdateOnAdd
  * @property {(k: K) => void} assertUpdateOnDelete
@@ -38,7 +21,8 @@ export const isCopyMap = m => matches(m, M.map());
  */
 
 /**
- * @template K,V
+ * @template {Key} K
+ * @template {Passable} V
  * @param {() => Iterable<K>} getRawKeys
  * @param {(k: K) => boolean} checkHas
  * @param {RankCompare} compare
@@ -113,7 +97,8 @@ harden(makeCurrentKeysKit);
  * already is one, return that. Otherwise, call `makeValue(key)`, remember it as
  * the value for that key, and return it.
  *
- * @template K,V
+ * @template {Key} K
+ * @template {Passable} V
  * @param {WeakMapStore<K, V>} mapStore
  * @param {K} key
  * @param {(key: K) => V} makeValue
@@ -138,8 +123,8 @@ harden(provideLazy);
  * termination to happen after the make completes and before it reaches durable
  * storage.
  *
- * @template K
- * @template V
+ * @template {Key} K
+ * @template {Passable} V
  * @param {WeakMapStore<K, V>} store
  */
 export const makeAtomicProvider = store => {
@@ -189,13 +174,14 @@ export const makeAtomicProvider = store => {
 };
 harden(makeAtomicProvider);
 /**
- * @template K
- * @template V
+ * @template {Key} K
+ * @template {Passable} V
  * @typedef {ReturnType<typeof makeAtomicProvider<K, V>>} AtomicProvider<K, V>
  */
 
 /**
- * @template K, V
+ * @template {Key} K
+ * @template {Passable} V
  * @param {MapStore<K, V[]>} mapStore
  * @param {K} key
  * @param {V} item

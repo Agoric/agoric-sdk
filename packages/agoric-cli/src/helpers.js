@@ -1,7 +1,10 @@
-/* global process */
+/* eslint-env node */
 // @ts-check
 
-/** @typedef {import('child_process').ChildProcess} ChildProcess */
+/** @import { ChildProcess } from 'child_process' */
+
+// Backwards compatibility
+export { fetchEnvNetworkConfig as getNetworkConfig } from '@agoric/client-utils';
 
 export const getSDKBinaries = ({
   jsPfx = '../..',
@@ -40,11 +43,12 @@ export const makePspawn = ({
    *
    * @param {string} cmd command name to run
    * @param {Array<string>} cargs arguments to the command
-   * @param {object} param2
-   * @param {string} [param2.cwd]
-   * @param {string | [string, string, string]} [param2.stdio] standard IO
+   * @param {object} [opts]
+   * @param {string} [opts.cwd]
+   * @param {string | [string, string, string]} [opts.stdio] standard IO
    * specification
-   * @param {Record<string, string | undefined>} [param2.env] environment
+   * @param {Record<string, string | undefined>} [opts.env] environment
+   * @param {boolean} [opts.detached] whether the child process should be detached
    * @returns {Promise<number> & { childProcess: ChildProcess }}} promise for
    * exit status. The return result has a `childProcess` property to obtain
    * control over the running process

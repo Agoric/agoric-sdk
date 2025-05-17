@@ -1,16 +1,19 @@
+import { assert } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import bundleSource from '@endo/bundle-source';
-import { assert } from '@agoric/assert';
 
 import path from 'path';
 
 import { makeZoeKitForTest } from '../../../tools/setup-zoe.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const contractRoot = `${dirname}/zcfTesterContract.js`;
+
+/**
+ * @import {ContractMeta, Invitation, OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
+ */
 
 /**
  * Test setup utility

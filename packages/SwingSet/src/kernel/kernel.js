@@ -1,14 +1,20 @@
-import { assert, Fail } from '@agoric/assert';
+/* global globalThis */
+
+import { assert, Fail } from '@endo/errors';
 import { isNat } from '@endo/nat';
+import { mustMatch, M } from '@endo/patterns';
 import { importBundle } from '@endo/import-bundle';
+import { objectMetaMap, PromiseAllOrErrors } from '@agoric/internal';
 import { makeUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 import { kser, kslot, makeError } from '@agoric/kmarshal';
 import { assertKnownOptions } from '../lib/assertOptions.js';
 import { foreverPolicy } from '../lib/runPolicies.js';
-import { makeVatManagerFactory } from './vat-loader/manager-factory.js';
+import { makeVatManagerMaker } from './vat-loader/manager-factory.js';
 import { makeVatWarehouse } from './vat-warehouse.js';
 import makeDeviceManager from './deviceManager.js';
-import makeKernelKeeper from './state/kernelKeeper.js';
+import makeKernelKeeper, {
+  CURRENT_SCHEMA_VERSION,
+} from './state/kernelKeeper.js';
 import {
   kdebug,
   kdebugEnable,
@@ -34,10 +40,8 @@ import { notifyTermination } from './notifyTermination.js';
 import { makeVatAdminHooks } from './vat-admin-hooks.js';
 
 /**
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryResult} VatDeliveryResult
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallResult} VatSyscallResult
+ * @import {MeterConsumption, VatDeliveryObject, VatDeliveryResult, VatSyscallObject, VatSyscallResult} from '@agoric/swingset-liveslots';
+ * @import {PolicyInputCleanupCounts} from '../types-external.js';
  */
 
 function abbreviateReplacer(_, arg) {
@@ -54,7 +58,7 @@ function abbreviateReplacer(_, arg) {
 /**
  * Provide the kref of a vat's root object, as if it had been exported.
  *
- * @param {*} kernelKeeper  Kernel keeper managing persistent kernel state.
+ * @param {KernelKeeper} kernelKeeper  Kernel keeper managing persistent kernel state.
  * @param {string} vatID  Vat ID of the vat whose root kref is sought.
  *
  * @returns {string} the kref of the root object of the given vat.
@@ -95,6 +99,7 @@ export default function buildKernel(
     startSubprocessWorkerNode,
     startXSnap,
     writeSlogObject,
+    slogDuration,
     WeakRef,
     FinalizationRegistry,
     gcAndFinalize,
@@ -106,16 +111,20 @@ export default function buildKernel(
     warehousePolicy,
     overrideVatManagerOptions = {},
   } = kernelRuntimeOptions;
-  const logStartup = verbose ? console.debug : () => 0;
+  const logStartup = verbose ? console.debug : () => {};
+  if (verbose) kdebugEnable(true);
 
   const vatAdminRootKref = kernelStorage.kvStore.get('vatAdminRootKref');
 
-  /** @type { KernelSlog } */
   const kernelSlog = writeSlogObject
-    ? makeSlogger(slogCallbacks, writeSlogObject)
+    ? makeSlogger(slogCallbacks, writeSlogObject, slogDuration)
     : makeDummySlogger(slogCallbacks, makeConsole('disabled slogger'));
 
-  const kernelKeeper = makeKernelKeeper(kernelStorage, kernelSlog);
+  const kernelKeeper = makeKernelKeeper(
+    kernelStorage,
+    CURRENT_SCHEMA_VERSION,
+    kernelSlog,
+  );
 
   /** @type {ReturnType<makeVatWarehouse>} */
   let vatWarehouse;
@@ -159,10 +168,9 @@ export default function buildKernel(
   harden(testLog);
 
   function makeSourcedConsole(vatID) {
-    const origConsole = makeConsole(args => {
-      const source = args.shift();
-      return `${debugPrefix}SwingSet:${source}:${vatID}`;
-    });
+    const origConsole = makeConsole(
+      source => `${debugPrefix}SwingSet:${source}:${vatID}`,
+    );
     return kernelSlog.vatConsole(vatID, origConsole);
   }
 
@@ -205,6 +213,10 @@ export default function buildKernel(
     const deviceID = kernelKeeper.getDeviceIDForName(name);
     insistDeviceID(deviceID);
     return deviceID;
+  }
+
+  function injectQueuedUpgradeEvents() {
+    kernelKeeper.injectQueuedUpgradeEvents();
   }
 
   function addImport(forVatID, what) {
@@ -254,9 +266,13 @@ export default function buildKernel(
    * @param {SwingSetCapData} info
    */
   async function terminateVat(vatID, shouldReject, info) {
-    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-    const critical = vatKeeper.getOptions().critical;
+    console.log(`kernel terminating vat ${vatID} (failure=${shouldReject})`);
     insistCapData(info);
+    // Note that it's important for much of this work to happen within the
+    // synchronous prelude. For details, see
+    // https://github.com/Agoric/agoric-sdk/pull/10055#discussion_r1754918394
+    let critical = false;
+    const deferred = [];
     // ISSUE: terminate stuff in its own crank like creation?
     // TODO: if a static vat terminates, panic the kernel?
     // TODO: guard against somebody telling vatAdmin to kill a vat twice
@@ -266,12 +282,25 @@ export default function buildKernel(
     // check will report 'false'. That's fine, there's no state to
     // clean up.
     if (kernelKeeper.vatIsAlive(vatID)) {
-      // Reject all promises decided by the vat, making sure to capture the list
-      // of kpids before that data is deleted.
-      const deadPromises = [...kernelKeeper.enumeratePromisesByDecider(vatID)];
-      kernelKeeper.cleanupAfterTerminatedVat(vatID);
-      for (const kpid of deadPromises) {
-        resolveToError(kpid, makeError('vat terminated'), vatID);
+      // If there was no vat state, we can't make a vatKeeper to ask for
+      // options. For now, pretend the vat was non-critical. This will fail
+      // to panic the kernel for startVat failures in critical vats
+      // (#9157). The fix will add .critical to CrankResults, populated by a
+      // getOptions query in deliveryCrankResults() or copied from
+      // dynamicOptions in processCreateVat.
+      const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+      critical = vatKeeper.getOptions().critical;
+
+      // remove vatID from the list of live vats, and mark for
+      // deletion (which will happen later, in vat-cleanup events)
+      kernelKeeper.deleteVatID(vatID);
+      kernelKeeper.markVatAsTerminated(vatID);
+      deferred.push(kernelKeeper.removeVatFromSwingStoreExports(vatID));
+
+      // Reject all promises decided by the vat
+      const errdata = makeError('vat terminated');
+      for (const [kpid, _p] of kernelKeeper.enumeratePromisesByDecider(vatID)) {
+        resolveToError(kpid, errdata, vatID);
       }
     }
     if (critical) {
@@ -284,9 +313,7 @@ export default function buildKernel(
       // it's going to be a small cost compared to the trouble you're probably
       // already in anyway if this happens.
       panic(`critical vat ${vatID} failed`, Error(info.body));
-      return;
-    }
-    if (vatAdminRootKref) {
+    } else if (vatAdminRootKref) {
       // static vat termination can happen before vat admin vat exists
       notifyTermination(
         vatID,
@@ -301,8 +328,11 @@ export default function buildKernel(
       );
     }
 
-    // worker needs to be stopped, if any
-    await vatWarehouse.stopWorker(vatID);
+    // worker, if present, needs to be stopped
+    // (note that this only applies to ephemeral vats)
+    deferred.push(vatWarehouse.stopWorker(vatID));
+
+    await PromiseAllOrErrors(deferred);
   }
 
   function notifyMeterThreshold(meterID) {
@@ -357,8 +387,8 @@ export default function buildKernel(
 
   /**
    *
-   * @typedef { import('@agoric/swingset-liveslots').MeterConsumption } MeterConsumption
    * @typedef { import('../types-internal.js').MeterID } MeterID
+   * @typedef { import('../types-internal.js').Dirt } Dirt
    *
    *  Any delivery crank (send, notify, start-vat.. anything which is allowed
    *  to make vat delivery) emits one of these status events if a delivery
@@ -371,13 +401,15 @@ export default function buildKernel(
    *    illegalSyscall: { vatID: VatID, info: SwingSetCapData } | undefined,
    *    vatRequestedTermination: { reject: boolean, info: SwingSetCapData } | undefined,
    *  } } DeliveryStatus
+   * @import {PolicyInputCleanupCounts} from '../types-external.js';
    * @typedef { {
    *    abort?: boolean, // changes should be discarded, not committed
    *    consumeMessage?: boolean, // discard the aborted delivery
    *    didDelivery?: VatID, // we made a delivery to a vat, for run policy and save-snapshot
-   *    computrons?: BigInt, // computron count for run policy
+   *    computrons?: bigint, // computron count for run policy
+   *    cleanups?: PolicyInputCleanupCounts, // cleanup budget spent
    *    meterID?: string, // deduct those computrons from a meter
-   *    decrementReapCount?: { vatID: VatID }, // the reap counter should decrement
+   *    measureDirt?: { vatID: VatID, dirt: Dirt }, // dirt counters should increment
    *    terminate?: { vatID: VatID, reject: boolean, info: SwingSetCapData }, // terminate vat, notify vat-admin
    *    vatAdminMethargs?: RawMethargs, // methargs to notify vat-admin about create/upgrade results
    * } } CrankResults
@@ -444,16 +476,17 @@ export default function buildKernel(
    * event handler.
    *
    * Two flags influence this:
-   *  `decrementReapCount` is used for deliveries that run userspace code
+   *  `measureDirt` is used for non-BOYD deliveries
    *  `meterID` means we should check a meter
    *
    * @param {VatID} vatID
    * @param {DeliveryStatus} status
-   * @param {boolean} decrementReapCount
+   * @param {boolean} measureDirt
    * @param {MeterID} [meterID]
+   * @param {number} [gcKrefs]
    * @returns {CrankResults}
    */
-  function deliveryCrankResults(vatID, status, decrementReapCount, meterID) {
+  function deliveryCrankResults(vatID, status, measureDirt, meterID, gcKrefs) {
     let meterUnderrun = false;
     let computrons;
     if (status.metering?.compute) {
@@ -497,8 +530,16 @@ export default function buildKernel(
       results.terminate = { vatID, ...status.vatRequestedTermination };
     }
 
-    if (decrementReapCount && !(results.abort || results.terminate)) {
-      results.decrementReapCount = { vatID };
+    if (measureDirt && !(results.abort || results.terminate)) {
+      const dirt = { deliveries: 1 };
+      if (computrons) {
+        // this is BigInt, but we use plain Number in Dirt records
+        dirt.computrons = Number(computrons);
+      }
+      if (gcKrefs) {
+        dirt.gcKrefs = gcKrefs;
+      }
+      results.measureDirt = { vatID, dirt };
     }
 
     // We leave results.consumeMessage up to the caller.  Send failures
@@ -520,6 +561,10 @@ export default function buildKernel(
    */
   async function processSend(vatID, target, msg) {
     insistMessage(msg);
+    // DEPRECATED: These counts are available as "crank-start"/"crank-finish"
+    // slog entries with crankType "delivery" (the latter count filtered on
+    // messageType "send") and "deliver"/"deliver-result" slog entries (the
+    // latter count filtered on dispatch "message").
     kernelKeeper.incStat('dispatches');
     kernelKeeper.incStat('dispatchDeliver');
 
@@ -537,7 +582,8 @@ export default function buildKernel(
     }
 
     const status = await deliverAndLogToVat(vatID, kd, vd);
-    return deliveryCrankResults(vatID, status, true, meterID);
+    const gcKrefs = undefined; // TODO maybe increase by number of vrefs in args?
+    return deliveryCrankResults(vatID, status, true, meterID, gcKrefs);
   }
 
   /**
@@ -549,6 +595,8 @@ export default function buildKernel(
     const { vatID, kpid } = message;
     insistVatID(vatID);
     insistKernelType('promise', kpid);
+    // DEPRECATED: This count is available as "crank-start"/"crank-finish"
+    // slog entries with crankType "delivery".
     kernelKeeper.incStat('dispatches');
     const vatInfo = vatWarehouse.lookup(vatID);
     if (!vatInfo) {
@@ -558,9 +606,13 @@ export default function buildKernel(
     const { meterID } = vatInfo;
 
     const p = kernelKeeper.getKernelPromise(kpid);
+    // DEPRECATED: This count is available as "deliver"/"deliver-result" slog
+    // entries with dispatch "notify".
     kernelKeeper.incStat('dispatchNotify');
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-    p.state !== 'unresolved' || Fail`spurious notification ${kpid}`;
+    if (p.state === 'unresolved') {
+      throw Fail`spurious notification ${kpid}`;
+    }
     /** @type { KernelDeliveryOneNotify[] } */
     const resolutions = [];
     if (!vatKeeper.hasCListEntry(kpid)) {
@@ -575,7 +627,9 @@ export default function buildKernel(
       return NO_DELIVERY_CRANK_RESULTS;
     }
     for (const toResolve of targets) {
-      const { state, data } = kernelKeeper.getKernelPromise(toResolve);
+      const tp = kernelKeeper.getKernelPromise(toResolve);
+      assert(tp.state !== 'unresolved');
+      const { state, data } = tp;
       resolutions.push([toResolve, { state, data }]);
     }
     /** @type { KernelDeliveryNotify } */
@@ -583,7 +637,8 @@ export default function buildKernel(
     const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
     vatKeeper.deleteCListEntriesForKernelSlots(targets);
     const status = await deliverAndLogToVat(vatID, kd, vd);
-    return deliveryCrankResults(vatID, status, true, meterID);
+    const gcKrefs = undefined; // TODO maybe increase by number of vrefs in args?
+    return deliveryCrankResults(vatID, status, true, meterID, gcKrefs);
   }
 
   /**
@@ -611,7 +666,9 @@ export default function buildKernel(
     }
     const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
     const status = await deliverAndLogToVat(vatID, kd, vd);
-    return deliveryCrankResults(vatID, status, false); // no meterID
+    const meterID = undefined; // no meterID
+    const gcKrefs = krefs.length;
+    return deliveryCrankResults(vatID, status, true, meterID, gcKrefs);
   }
 
   /**
@@ -630,7 +687,51 @@ export default function buildKernel(
     const kd = harden([type]);
     const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
     const status = await deliverAndLogToVat(vatID, kd, vd);
-    return deliveryCrankResults(vatID, status, false); // no meter
+    // no gcKrefs, BOYD clears them anyways
+    return deliveryCrankResults(vatID, status, false); // no meter, BOYD clears dirt
+  }
+
+  /**
+   * Perform a small (budget-limited) amount of dead-vat cleanup work.
+   *
+   * @param {RunQueueEventCleanupTerminatedVat} message
+   *     'message' is the run-queue cleanup action, which includes a
+   *     vatID and budget.  The budget contains work limits for each
+   *     phase of cleanup (perhaps Infinity to allow unlimited
+   *     work). Cleanup should not touch more than maybe 5*limit DB
+   *     rows.
+   * @returns {Promise<CrankResults>}
+   */
+  async function processCleanupTerminatedVat(message) {
+    const { vatID, budget } = message;
+    const { done, work } = kernelKeeper.cleanupAfterTerminatedVat(
+      vatID,
+      budget,
+    );
+    const zeroFreeWorkCounts = objectMetaMap(work, desc =>
+      desc.value ? desc : undefined,
+    );
+    kernelSlog.write({ type: 'vat-cleanup', vatID, work: zeroFreeWorkCounts });
+
+    /** @type {PolicyInputCleanupCounts} */
+    const cleanups = {
+      total:
+        work.exports +
+        work.imports +
+        work.promises +
+        work.kv +
+        work.snapshots +
+        work.transcripts,
+      ...work,
+    };
+    if (done) {
+      kernelKeeper.forgetTerminatedVat(vatID);
+      kernelSlog.write({ type: 'vat-cleanup-complete', vatID });
+    }
+    // We don't perform any deliveries here, so there are no computrons to
+    // report, but we do tell the runPolicy know how much kernel-side DB
+    // work we did, so it can decide how much was too much.
+    return harden({ computrons: 0n, cleanups });
   }
 
   /**
@@ -659,6 +760,8 @@ export default function buildKernel(
       kdebug(`vat ${vatID} terminated before startVat delivered`);
       return NO_DELIVERY_CRANK_RESULTS;
     }
+    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+    vatKeeper.setVatParameters(vatParameters);
     const { meterID } = vatInfo;
     /** @type { KernelDeliveryStartVat } */
     const kd = harden(['startVat', vatParameters]);
@@ -671,8 +774,9 @@ export default function buildKernel(
     const status = await deliverAndLogToVat(vatID, kd, vd);
     // note: if deliveryCrankResults() learns to suspend vats,
     // startVat errors should still terminate them
+    const gcKrefs = undefined; // TODO maybe increase by number of vrefs in args?
     const results = harden({
-      ...deliveryCrankResults(vatID, status, true, meterID),
+      ...deliveryCrankResults(vatID, status, true, meterID, gcKrefs),
       consumeMessage: true,
     });
     return results;
@@ -737,9 +841,17 @@ export default function buildKernel(
   function setKernelVatOption(vatID, option, value) {
     switch (option) {
       case 'reapInterval': {
+        // This still controls reapDirtThreshold.deliveries, and we do not
+        // yet offer controls for the other limits (gcKrefs or computrons).
         if (value === 'never' || isNat(value)) {
           const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-          vatKeeper.updateReapInterval(value);
+          const threshold = { ...vatKeeper.getReapDirtThreshold() };
+          if (value === 'never') {
+            threshold.deliveries = value;
+          } else {
+            threshold.deliveries = Number(value);
+          }
+          vatKeeper.setReapDirtThreshold(threshold);
         } else {
           console.log(`WARNING: invalid reapInterval value`, value);
         }
@@ -822,6 +934,10 @@ export default function buildKernel(
     );
     const disconnectionCapData = kser(disconnectionObject);
 
+    console.log(
+      `attempting to upgrade vat ${vatID} from incarnation ${oldIncarnation} to source ${bundleID}`,
+    );
+
     /**
      * Terminate the vat and translate internal-delivery results into
      * abort-without-termination results for the upgrade delivery.
@@ -863,7 +979,7 @@ export default function buildKernel(
     // basically reverting 1cfbeaa3c925d0f8502edfb313ecb12a1cab5eac
     // and then ultimately moved to the kernel in a MUCH diminished form
     // (see #5342 and #6650, and testUpgrade in
-    // {@link ../../test/upgrade/test-upgrade.js}).
+    // {@link ../../test/upgrade/upgrade.test.js}).
     // We hope to eventually add back correct sophisticated logic
     // by e.g. having liveslots sweep the database when restoring a vat.
 
@@ -899,9 +1015,30 @@ export default function buildKernel(
       return results;
     }
 
-    // reject all promises for which the vat was decider
-    for (const kpid of kernelKeeper.enumeratePromisesByDecider(vatID)) {
-      resolveToError(kpid, disconnectionCapData, vatID);
+    // We are homesick for a future in which most promises are
+    // durable, and vats do not need to subscribe to their own
+    // promises to make promise-watchers work. In that world, vats
+    // somehow mark the non-durable promises, which we must
+    // reject/disconnect on their behalf during upgrade.
+    //
+    // To handle the present reality, without durable promises, we
+    // pretend that all promises are so marked.
+
+    // reject all ephemeral promises for which the vat was decider
+    for (const [kpid, p] of kernelKeeper.enumeratePromisesByDecider(vatID)) {
+      const isEphemeral = true; // future vats will mark these explicitly
+      const selfSubscribed =
+        p.state === 'unresolved' && p.subscribers.includes(vatID);
+      if (isEphemeral) {
+        resolveToError(kpid, disconnectionCapData, vatID);
+        if (!selfSubscribed) {
+          // If the vat was subscribed to its own promise, the
+          // resolveToError will enqueue a dispatch.notify, whose delivery
+          // will delete the c-list entry. If it is *not* subscribed, we
+          // should delete the c-list entry now, because nobody else will.
+          vatKeeper.deleteCListEntriesForKernelSlots([kpid]);
+        }
+      }
     }
 
     // simulate an abandonExports syscall from the vat,
@@ -909,10 +1046,7 @@ export default function buildKernel(
     const abandonedObjects = [
       ...kernelKeeper.enumerateNonDurableObjectExports(vatID),
     ];
-    for (const { kref, vref } of abandonedObjects) {
-      /** @see translateAbandonExports in {@link ./vatTranslator.js} */
-      vatKeeper.deleteCListEntry(kref, vref);
-      /** @see abandonExports in {@link ./kernelSyscall.js} */
+    for (const { kref } of abandonedObjects) {
       kernelKeeper.orphanKernelObject(kref, vatID);
     }
 
@@ -928,6 +1062,7 @@ export default function buildKernel(
     });
     const vatOptions = harden({ ...origOptions, workerOptions });
     vatKeeper.setSourceAndOptions(source, vatOptions);
+    vatKeeper.setVatParameters(vatParameters);
     // TODO: decref the bundleID once setSourceAndOptions increfs it
 
     // pause, take a deep breath, appreciate this moment of silence
@@ -949,7 +1084,14 @@ export default function buildKernel(
       startVatKD,
       startVatVD,
     );
-    const startVatResults = deliveryCrankResults(vatID, startVatStatus, false);
+    const gcKrefs = undefined; // TODO maybe increase by number of vrefs in args?
+    const startVatResults = deliveryCrankResults(
+      vatID,
+      startVatStatus,
+      true,
+      meterID,
+      gcKrefs,
+    );
     computrons = addComputrons(computrons, startVatResults.computrons);
 
     if (startVatResults.terminate) {
@@ -994,7 +1136,6 @@ export default function buildKernel(
     } else if (message.type === 'changeVatOptions') {
       // prettier-ignore
       return `changeVatOptions ${message.vatID} options: ${JSON.stringify(message.options)}`;
-      // eslint-disable-next-line no-use-before-define
     } else if (gcMessages.includes(message.type)) {
       // prettier-ignore
       return `${message.type} ${message.vatID} ${message.krefs.map(e=>`@${e}`).join(' ')}`;
@@ -1086,6 +1227,7 @@ export default function buildKernel(
         }
       }
       default:
+        // @ts-expect-error
         throw Fail`unknown promise resolution '${kp.state}'`;
     }
   }
@@ -1123,6 +1265,7 @@ export default function buildKernel(
    * @typedef { import('../types-internal.js').RunQueueEventRetireImports } RunQueueEventRetireImports
    * @typedef { import('../types-internal.js').RunQueueEventNegatedGCAction } RunQueueEventNegatedGCAction
    * @typedef { import('../types-internal.js').RunQueueEventBringOutYourDead } RunQueueEventBringOutYourDead
+   * @typedef { import('../types-internal.js').RunQueueEventCleanupTerminatedVat } RunQueueEventCleanupTerminatedVat
    * @typedef { import('../types-internal.js').RunQueueEvent } RunQueueEvent
    */
 
@@ -1190,6 +1333,8 @@ export default function buildKernel(
     } else if (message.type === 'negated-gc-action') {
       // processGCActionSet pruned some negated actions, but had no GC
       // action to perform. Record the DB changes in their own crank.
+    } else if (message.type === 'cleanup-terminated-vat') {
+      deliverP = processCleanupTerminatedVat(message);
     } else if (gcMessages.includes(message.type)) {
       deliverP = processGCMessage(message);
     } else {
@@ -1207,14 +1352,15 @@ export default function buildKernel(
    * @returns {Promise<PolicyInput>}
    */
   async function processDeliveryMessage(message) {
+    const messageType = message.type;
     kdebug('');
     // prettier-ignore
     kdebug(`processQ crank ${kernelKeeper.getCrankNumber()} ${JSON.stringify(message)}`);
     kdebug(legibilizeMessage(message));
-    kernelSlog.write({
-      type: 'crank-start',
+    const finish = kernelSlog.startDuration(['crank-start', 'crank-finish'], {
       crankType: 'delivery',
       crankNum: kernelKeeper.getCrankNumber(),
+      messageType,
       message,
     });
     /** @type { PolicyInput } */
@@ -1240,18 +1386,13 @@ export default function buildKernel(
     const crankResults = await deliverRunQueueEvent(message);
     // { abort/commit, deduct, terminate+notify, consumeMessage }
 
-    if (crankResults.didDelivery) {
-      if (message.type === 'create-vat') {
-        // TODO: create-vat now gets metering, at least for the
-        // dispatch.startVat . We should probably tell the policy about
-        // the creation too since there's extra overhead (we're
-        // launching a new child process, at least, although that
-        // sometimes happens randomly because of vat eviction policy
-        // which should not affect the in-consensus policyInput)
-        policyInput = ['create-vat', {}];
-      } else {
-        policyInput = ['crank', {}];
-      }
+    if (message.type === 'cleanup-terminated-vat') {
+      const { cleanups } = crankResults;
+      assert(cleanups !== undefined);
+      policyInput = ['cleanup', { cleanups }];
+    } else if (crankResults.didDelivery) {
+      const tag = message.type === 'create-vat' ? 'create-vat' : 'crank';
+      policyInput = [tag, {}];
     }
 
     // Deliveries cause syscalls, syscalls might cause errors
@@ -1290,13 +1431,11 @@ export default function buildKernel(
         }
       }
     }
-    if (crankResults.decrementReapCount) {
+    if (crankResults.measureDirt) {
       // deliveries cause garbage, garbage needs collection
-      const { vatID } = crankResults.decrementReapCount;
+      const { vatID, dirt } = crankResults.measureDirt;
       const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-      if (vatKeeper.countdownToReap()) {
-        kernelKeeper.scheduleReap(vatID);
-      }
+      vatKeeper.addDirt(dirt); // might schedule a reap for that vat
     }
 
     // Vat termination (during delivery) is triggered by an illegal
@@ -1323,12 +1462,8 @@ export default function buildKernel(
     const crankNum = kernelKeeper.getCrankNumber();
     kernelKeeper.incrementCrankNumber();
     const { crankhash, activityhash } = kernelKeeper.emitCrankHashes();
-    // kernelSlog.write({
-    //   type: 'kernel-stats',
-    //   stats: kernelKeeper.getStats(),
-    // });
-    kernelSlog.write({
-      type: 'crank-finish',
+    finish({
+      message: undefined,
       crankNum,
       crankhash,
       activityhash,
@@ -1366,14 +1501,15 @@ export default function buildKernel(
    * @returns {Promise<PolicyInput>}
    */
   async function processAcceptanceMessage(message) {
+    const messageType = message.type;
     kdebug('');
     // prettier-ignore
-    kdebug(`processAcceptanceQ crank ${kernelKeeper.getCrankNumber()} ${message.type}`);
+    kdebug(`processAcceptanceQ crank ${kernelKeeper.getCrankNumber()} ${messageType}`);
     // kdebug(legibilizeMessage(message));
-    kernelSlog.write({
-      type: 'crank-start',
+    const finish = kernelSlog.startDuration(['crank-start', 'crank-finish'], {
       crankType: 'routing',
       crankNum: kernelKeeper.getCrankNumber(),
+      messageType,
       message,
     });
     /** @type { PolicyInput } */
@@ -1410,8 +1546,8 @@ export default function buildKernel(
     const crankNum = kernelKeeper.getCrankNumber();
     kernelKeeper.incrementCrankNumber();
     const { crankhash, activityhash } = kernelKeeper.emitCrankHashes();
-    kernelSlog.write({
-      type: 'crank-finish',
+    finish({
+      message: undefined,
       crankNum,
       crankhash,
       activityhash,
@@ -1427,7 +1563,7 @@ export default function buildKernel(
     gcAndFinalize,
     meterControl: makeDummyMeterControl(),
   });
-  const vatManagerFactory = makeVatManagerFactory({
+  const makeVatManager = makeVatManagerMaker({
     allVatPowers,
     kernelKeeper,
     vatEndowments,
@@ -1522,7 +1658,7 @@ export default function buildKernel(
   }
 
   const vatLoader = makeVatLoader({
-    vatManagerFactory,
+    makeVatManager,
     kernelSlog,
     makeSourcedConsole,
     kernelKeeper,
@@ -1570,10 +1706,14 @@ export default function buildKernel(
       'bundleID',
       'enablePipelining',
       'reapInterval',
+      'reapGCKrefs',
+      'neverReap',
     ]);
     const {
       bundleID = 'b1-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
       reapInterval = 'never',
+      reapGCKrefs = 'never',
+      neverReap = false,
       enablePipelining,
     } = creationOptions;
     const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
@@ -1585,6 +1725,8 @@ export default function buildKernel(
     const options = {
       name,
       reapInterval,
+      reapGCKrefs,
+      neverReap,
       enablePipelining,
       managerType,
     };
@@ -1615,7 +1757,6 @@ export default function buildKernel(
       throw Error('kernel.start already called');
     }
     started = true;
-    kernelKeeper.getInitialized() || Fail`kernel not initialized`;
 
     kernelKeeper.loadStats();
 
@@ -1649,7 +1790,12 @@ export default function buildKernel(
       assert(bundle);
       const NS = await importBundle(bundle, {
         filePrefix: `dev-${name}/...`,
-        endowments: harden({ ...vatEndowments, console: devConsole, assert }),
+        endowments: harden({
+          ...vatEndowments,
+          console: devConsole,
+          // See https://github.com/Agoric/agoric-sdk/issues/9515
+          assert: globalThis.assert,
+        }),
       });
 
       if (deviceEndowments[name] || unendowed) {
@@ -1701,16 +1847,39 @@ export default function buildKernel(
     }
   }
 
+  // match return value of runPolicy.allowCleanup, which is
+  // PolicyOutputCleanupBudget | true | false
+  const allowCleanupShape = M.or(
+    // 'false' will prohibit cleanup
+    false,
+    // 'true' will allow unlimited cleanup
+    true,
+    // otherwise allow cleanup, optionally with a limiting budget
+    M.splitRecord(
+      { default: M.number() },
+      {
+        exports: M.number(),
+        imports: M.number(),
+        promises: M.number(),
+        kv: M.number(),
+        snapshots: M.number(),
+        transcripts: M.number(),
+      },
+      M.record(),
+    ),
+  );
+
   /**
    * Pulls the next message from the highest-priority queue and returns it
    * along with a corresponding processor.
    *
+   * @param {RunPolicy} [policy] - a RunPolicy to limit the work being done
    * @returns {{
    *   message: RunQueueEvent | undefined,
    *   processor: (message: RunQueueEvent) => Promise<PolicyInput>,
    * }}
    */
-  function getNextMessageAndProcessor() {
+  function getNextMessageAndProcessor(policy) {
     const acceptanceMessage = kernelKeeper.getNextAcceptanceQueueMsg();
     if (acceptanceMessage) {
       return {
@@ -1718,7 +1887,12 @@ export default function buildKernel(
         processor: processAcceptanceMessage,
       };
     }
+    // Absent specific configuration, allow unlimited cleanup.
+    const allowCleanup = policy?.allowCleanup?.() ?? true;
+    mustMatch(harden(allowCleanup), allowCleanupShape);
+
     const message =
+      kernelKeeper.nextCleanupTerminatedVatAction(allowCleanup) ||
       processGCActionSet(kernelKeeper) ||
       kernelKeeper.nextReapAction() ||
       kernelKeeper.getNextRunQueueMsg();
@@ -1726,14 +1900,36 @@ export default function buildKernel(
   }
 
   function changeKernelOptions(options) {
-    assertKnownOptions(options, ['defaultReapInterval', 'snapshotInterval']);
+    assertKnownOptions(options, [
+      'defaultReapInterval',
+      'defaultReapGCKrefs',
+      'snapshotInterval',
+    ]);
     kernelKeeper.startCrank();
     try {
       for (const option of Object.getOwnPropertyNames(options)) {
         const value = options[option];
         switch (option) {
           case 'defaultReapInterval': {
-            kernelKeeper.setDefaultReapInterval(value);
+            assert(
+              (typeof value === 'number' && value > 0) || value === 'never',
+              `defaultReapInterval ${value} must be a positive number or "never"`,
+            );
+            kernelKeeper.setDefaultReapDirtThreshold({
+              ...kernelKeeper.getDefaultReapDirtThreshold(),
+              deliveries: value,
+            });
+            break;
+          }
+          case 'defaultReapGCKrefs': {
+            assert(
+              (typeof value === 'number' && value > 0) || value === 'never',
+              `defaultReapGCKrefs ${value} must be a positive number or "never"`,
+            );
+            kernelKeeper.setDefaultReapDirtThreshold({
+              ...kernelKeeper.getDefaultReapDirtThreshold(),
+              gcKrefs: value,
+            });
             break;
           }
           case 'snapshotInterval': {
@@ -1750,13 +1946,61 @@ export default function buildKernel(
     }
   }
 
-  function reapAllVats() {
+  /** @returns {Generator<VatID>} */
+  function* getAllVatIds() {
     for (const [_, vatID] of kernelKeeper.getStaticVats()) {
-      kernelKeeper.scheduleReap(vatID);
+      yield vatID;
     }
     for (const vatID of kernelKeeper.getDynamicVats()) {
-      kernelKeeper.scheduleReap(vatID);
+      yield vatID;
     }
+  }
+
+  function* getAllVatPosEntries() {
+    for (const vatID of getAllVatIds()) {
+      const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+      yield /** @type {const} */ ([
+        vatID,
+        vatKeeper.getTranscriptEndPosition(),
+      ]);
+    }
+  }
+
+  function reapAllVats(previousVatPos = {}) {
+    /** @type {Record<string, number>} */
+    const currentVatPos = {};
+
+    for (const [vatID, endPos] of getAllVatPosEntries()) {
+      const vatUsesTranscript = endPos !== 0;
+      if (!vatUsesTranscript) {
+        // The comms vat is a little special. It doesn't use a transcript,
+        // doesn't implement BOYD, and is created with a never reap threshold.
+        //
+        // Here we conflate a vat that doesn't use a transcript with a vat
+        // that cannot reap. We do not bother checking the vat options because
+        // in tests we would actually like to force reap normal vats that may
+        // have been configured with a never threshold.
+        continue;
+      } else if ((previousVatPos[vatID] ?? 0) < endPos) {
+        kernelKeeper.scheduleReap(vatID);
+        // We just added one delivery
+        currentVatPos[vatID] = endPos + 1;
+      } else {
+        currentVatPos[vatID] = endPos;
+      }
+    }
+
+    return harden(currentVatPos);
+  }
+
+  async function snapshotAllVats() {
+    const snapshottedVats = [];
+    await null;
+    for (const vatID of getAllVatIds()) {
+      const snapshotted = await vatWarehouse.maybeSaveSnapshot(vatID, 2);
+      if (snapshotted) snapshottedVats.push(vatID);
+    }
+    return harden(snapshottedVats);
   }
 
   async function step() {
@@ -1806,7 +2050,7 @@ export default function buildKernel(
       kernelKeeper.startCrank();
       try {
         kernelKeeper.establishCrankSavepoint('start');
-        const { processor, message } = getNextMessageAndProcessor();
+        const { processor, message } = getNextMessageAndProcessor(policy);
         if (!message) {
           break;
         }
@@ -1828,6 +2072,13 @@ export default function buildKernel(
           case 'crank-failed':
             policyOutput = policy.crankFailed(policyInput[1]);
             break;
+          case 'cleanup': {
+            // Give the policy a chance to interrupt kernel execution,
+            // but default to continuing.
+            const { didCleanup } = policy;
+            policyOutput = didCleanup ? didCleanup(policyInput[1]) : true;
+            break;
+          }
           case 'none':
             policyOutput = policy.emptyCrank();
             break;
@@ -1872,7 +2123,7 @@ export default function buildKernel(
           );
         } else {
           // this should only happen during unit tests that are too lazy to
-          // build a complete kernel: test/bundles/test-bundles-kernel.js
+          // build a complete kernel: test/bundles/bundles-kernel.test.js
           console.log(`installBundle cannot notify, missing vatAdminRootKref`);
         }
       } finally {
@@ -1919,6 +2170,7 @@ export default function buildKernel(
         return p.data;
       }
       default: {
+        // @ts-expect-error
         throw Fail`invalid state for ${kpid}: ${p.state}`;
       }
     }
@@ -1937,6 +2189,16 @@ export default function buildKernel(
     hooks[hookName] = hook;
   }
 
+  function terminateVatExternally(vatID, reasonCD) {
+    assert(started, 'must do kernel.start() before terminateVatExternally()');
+    insistCapData(reasonCD);
+    assert(reasonCD.slots.length === 0, 'no slots allowed in reason');
+    // this fires a promise when worker is dead, mostly for tests, so don't
+    // give it to external callers
+    void terminateVat(vatID, true, reasonCD);
+    console.log(`scheduled vatID ${vatID} for termination`);
+  }
+
   const kernel = harden({
     // these are meant for the controller
     installBundle,
@@ -1945,6 +2207,7 @@ export default function buildKernel(
     run,
     shutdown,
     reapAllVats,
+    snapshotAllVats,
     changeKernelOptions,
 
     // the rest are for testing and debugging
@@ -1955,6 +2218,11 @@ export default function buildKernel(
       ephemeral.log.push(`${str}`);
     },
 
+    /**
+     * Return a fresh stats snapshot.
+     *
+     * @returns {Record<string, number>}
+     */
     getStats() {
       return kernelKeeper.getStats();
     },
@@ -2007,11 +2275,13 @@ export default function buildKernel(
     pinObject,
     vatNameToID,
     deviceNameToID,
+    injectQueuedUpgradeEvents,
     queueToKref,
     kpRegisterInterest,
     kpStatus,
     kpResolution,
     addDeviceHook,
+    terminateVatExternally,
   });
 
   return kernel;

@@ -1,21 +1,37 @@
-/* eslint-disable no-use-before-define */
-
+import { assert, Fail } from '@endo/errors';
 import { makeMarshal } from '@endo/marshal';
 import { Far } from '@endo/far';
-import { assert, Fail } from '@agoric/assert';
 import { kser, kunser } from '@agoric/kmarshal';
 import { assertKnownOptions } from '../lib/assertOptions.js';
 import { insistVatID } from '../lib/id.js';
 import { makeVatSlot } from '../lib/parseVatSlots.js';
 import { insistStorageAPI } from '../lib/storageAPI.js';
 import { makeVatOptionRecorder } from '../lib/recordVatOptions.js';
-import makeKernelKeeper from '../kernel/state/kernelKeeper.js';
+import makeKernelKeeper, {
+  DEFAULT_DELIVERIES_PER_BOYD,
+  DEFAULT_GC_KREFS_PER_BOYD,
+} from '../kernel/state/kernelKeeper.js';
 import { exportRootObject } from '../kernel/kernel.js';
 import { makeKernelQueueHandler } from '../kernel/kernelQueue.js';
+
+/**
+ * @typedef { import('../types-external.js').SwingSetKernelConfig } SwingSetKernelConfig
+ * @typedef { import('../types-external.js').SwingStoreKernelStorage } SwingStoreKernelStorage
+ * @typedef { import('../types-internal.js').InternalKernelOptions } InternalKernelOptions
+ * @typedef { import('../types-internal.js').ReapDirtThreshold } ReapDirtThreshold
+ */
 
 function makeVatRootObjectSlot() {
   return makeVatSlot('object', true, 0);
 }
+
+/**
+ * @param {SwingSetKernelConfig} config
+ * @param {SwingStoreKernelStorage} kernelStorage
+ * @param {*} [options]
+ * @returns {Promise<string | undefined>} KPID of the bootstrap message
+ *                                        result promise
+ */
 
 export async function initializeKernel(config, kernelStorage, options = {}) {
   const {
@@ -25,22 +41,27 @@ export async function initializeKernel(config, kernelStorage, options = {}) {
   const logStartup = verbose ? console.debug : () => 0;
   insistStorageAPI(kernelStorage.kvStore);
 
-  const kernelSlog = null;
-  const kernelKeeper = makeKernelKeeper(kernelStorage, kernelSlog);
+  const kernelKeeper = makeKernelKeeper(kernelStorage, 'uninitialized');
   const optionRecorder = makeVatOptionRecorder(kernelKeeper, bundleHandler);
 
-  const wasInitialized = kernelKeeper.getInitialized();
-  assert(!wasInitialized);
   const {
     defaultManagerType,
-    defaultReapInterval,
+    defaultReapInterval = DEFAULT_DELIVERIES_PER_BOYD,
+    defaultReapGCKrefs = DEFAULT_GC_KREFS_PER_BOYD,
     relaxDurabilityRules,
     snapshotInitial,
     snapshotInterval,
   } = config;
+  /** @type { ReapDirtThreshold } */
+  const defaultReapDirtThreshold = {
+    deliveries: defaultReapInterval,
+    gcKrefs: defaultReapGCKrefs,
+    computrons: 'never', // TODO no knob?
+  };
+  /** @type { InternalKernelOptions } */
   const kernelOptions = {
     defaultManagerType,
-    defaultReapInterval,
+    defaultReapDirtThreshold,
     relaxDurabilityRules,
     snapshotInitial,
     snapshotInterval,
@@ -49,7 +70,7 @@ export async function initializeKernel(config, kernelStorage, options = {}) {
 
   for (const id of Object.keys(config.idToBundle || {})) {
     const bundle = config.idToBundle[id];
-    assert.equal(bundle.moduleFormat, 'endoZipBase64');
+    assert(bundle.moduleFormat === 'endoZipBase64');
     if (!kernelKeeper.hasBundle(id)) {
       kernelKeeper.addBundle(id, bundle);
     }
@@ -64,7 +85,7 @@ export async function initializeKernel(config, kernelStorage, options = {}) {
 
   // generate the genesis vats
   await null;
-  if (config.vats) {
+  if (config.vats && Object.keys(config.vats).length) {
     for (const name of Object.keys(config.vats)) {
       const {
         bundleID,
@@ -79,13 +100,14 @@ export async function initializeKernel(config, kernelStorage, options = {}) {
       // the VatManager, since it isn't available until the bundle is evaluated
       assertKnownOptions(creationOptions, [
         'enablePipelining',
-        'metered',
         'managerType',
         'enableDisavow',
         'enableSetup',
         'useTranscript',
         'critical',
         'reapInterval',
+        'reapGCKrefs',
+        'neverReap',
         'nodeOptions',
       ]);
       const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
@@ -210,8 +232,9 @@ export async function initializeKernel(config, kernelStorage, options = {}) {
       serializeBodyFormat: 'smallcaps',
       // TODO Temporary hack.
       // See https://github.com/Agoric/agoric-sdk/issues/2780
-      errorIdNum: 60000,
+      errorIdNum: 60_000,
     });
+    // @ts-expect-error xxx
     const args = kunser(m.serialize(harden([vatObj0s, deviceObj0s])));
     const rootKref = exportRootObject(kernelKeeper, bootstrapVatID);
     const resultKpid = queueToKref(rootKref, 'bootstrap', args, 'panic');

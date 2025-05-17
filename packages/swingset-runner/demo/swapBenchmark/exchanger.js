@@ -7,8 +7,6 @@ import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { showPurseBalance, setupPurses } from './helpers.js';
 import { makePrintLog } from './printLog.js';
 
-import '@agoric/zoe/exported.js';
-
 const log = makePrintLog();
 
 /**

@@ -2,10 +2,20 @@
 const t = 'makeCoreProposalBehavior';
 
 /**
+ * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
+ */
+
+/**
  * TODO import these from @agoric/vats when the types are better managed
  *
  * @typedef {*} ChainBootstrapSpace
  * @typedef {*} BootstrapPowers
+ */
+
+/**
+ * @import {ManifestBundleRef} from './externalTypes.js'
+ * @typedef {[methodName: string, ...args: unknown[]]} FlatMethargs
+ * @typedef {Record<string, Record<string, unknown>>} Manifest
  */
 
 /**
@@ -14,7 +24,7 @@ const t = 'makeCoreProposalBehavior';
  * They are merged with all of the manifest getter's permits to produce the
  * total permits needed by the resulting core proposal (such as might be---and
  * generally are---written into a *-permit.json file).
- * @see {@link ./writeCoreProposal.js}
+ * @see {@link ./writeCoreEvalParts.js}
  */
 export const permits = {
   consume: { agoricNamesAdmin: t, vatAdminSvc: t, zoe: t },
@@ -30,22 +40,22 @@ export const permits = {
  * for catching bugs.  Thus, this maker must not reference any other modules or
  * definitions.
  *
- * @param {object} opts
- * @param {import('./externalTypes.js').ManifestBundleRef} opts.manifestBundleRef
- * @param {[methodName: string, ...args: unknown[]]} opts.getManifestCall
- * @param {Record<string, Record<string, unknown>>} [opts.overrideManifest]
- * @param {typeof import('@endo/far').E} opts.E
- * @param {(...args: unknown[]) => void} [opts.log]
- * @param {(ref: import('./externalTypes.js').ManifestBundleRef) => Promise<import('@agoric/zoe/src/zoeService/utils.js').Installation<unknown>>} [opts.restoreRef]
+ * @param {object} inputs
+ * @param {ManifestBundleRef} inputs.manifestBundleRef
+ * @param {FlatMethargs} inputs.getManifestCall
+ * @param {Manifest} [inputs.customManifest]
+ * @param {typeof import('@endo/far').E} inputs.E
+ * @param {(...args: unknown[]) => void} [inputs.log]
+ * @param {(ref: import('./externalTypes.js').ManifestBundleRef) => Promise<import('@agoric/zoe/src/zoeService/utils.js').Installation<unknown>>} [inputs.customRestoreRef]
  * @returns {(vatPowers: unknown) => Promise<unknown>}
  */
 export const makeCoreProposalBehavior = ({
   manifestBundleRef,
   getManifestCall: [manifestGetterName, ...manifestGetterArgs],
-  overrideManifest,
+  customManifest,
   E,
   log = console.info,
-  restoreRef: overrideRestoreRef,
+  customRestoreRef,
 }) => {
   const { entries, fromEntries } = Object;
 
@@ -96,7 +106,7 @@ export const makeCoreProposalBehavior = ({
     // HOWEVER, do note that this function is invoked with at least the *union* of powers
     // required by individual moduleBehaviors declared by the manifest getter, which is
     // necessary so it can use `runModuleBehaviors` to provide the appropriate subset to
-    // each one (see ./writeCoreProposal.js).
+    // each one (see ./writeCoreEvalParts.js).
     // Handle `powers` with the requisite care.
     const {
       consume: { vatAdminSvc, zoe, agoricNamesAdmin },
@@ -136,7 +146,7 @@ export const makeCoreProposalBehavior = ({
       manifestGetterName,
       bundleExports: Object.keys(proposalNS),
     });
-    const restoreRef = overrideRestoreRef || makeRestoreRef(vatAdminSvc, zoe);
+    const restoreRef = customRestoreRef || makeRestoreRef(vatAdminSvc, zoe);
     const {
       manifest,
       options: rawOptions,
@@ -152,20 +162,24 @@ export const makeCoreProposalBehavior = ({
     );
 
     // Publish the installations for our dependencies.
-    const installAdmin = E(agoricNamesAdmin).lookupAdmin('installation');
-    await Promise.all(
-      entries(installations || {}).map(([key, value]) => {
-        produceInstallations[key].resolve(value);
-        return E(installAdmin).update(key, value);
-      }),
-    );
+    const installationEntries = entries(installations || {});
+    if (installationEntries.length > 0) {
+      const installAdmin = E(agoricNamesAdmin).lookupAdmin('installation');
+      await Promise.all(
+        installationEntries.map(([key, value]) => {
+          produceInstallations[key].reset();
+          produceInstallations[key].resolve(value);
+          return E(installAdmin).update(key, value);
+        }),
+      );
+    }
 
     // Evaluate the manifest.
     return runModuleBehaviors({
       // Remember that `powers` may be arbitrarily broad.
       allPowers: powers,
       behaviors: proposalNS,
-      manifest: overrideManifest || manifest,
+      manifest: customManifest || manifest,
       makeConfig: (name, _permit) => {
         log('coreProposal:', name);
         return { options };
@@ -176,18 +190,28 @@ export const makeCoreProposalBehavior = ({
   return coreProposalBehavior;
 };
 
-export const makeEnactCoreProposalsFromBundleRef =
-  ({ makeCoreProposalArgs, E }) =>
-  async powers => {
+/**
+ * @param {object} inputs
+ * @param {Array<{ ref: ManifestBundleRef, call: FlatMethargs, customManifest?: Manifest }>} inputs.metadataRecords
+ * @param {typeof import('@endo/far').E} inputs.E
+ */
+export const makeEnactCoreProposalsFromBundleRef = ({ metadataRecords, E }) => {
+  /**
+   * @param {ChainBootstrapSpace & BootstrapPowers & { evaluateBundleCap: any }} powers
+   * @returns {Promise<void>}
+   */
+  const enactCoreProposals = async powers => {
     await Promise.all(
-      makeCoreProposalArgs.map(async ({ ref, call, overrideManifest }) => {
+      metadataRecords.map(async ({ ref, call, customManifest }) => {
         const coreProposalBehavior = makeCoreProposalBehavior({
           manifestBundleRef: ref,
           getManifestCall: call,
-          overrideManifest,
+          customManifest,
           E,
         });
         return coreProposalBehavior(powers);
       }),
     );
   };
+  return enactCoreProposals;
+};

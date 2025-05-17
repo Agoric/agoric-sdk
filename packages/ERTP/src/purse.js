@@ -1,45 +1,73 @@
-import { M } from '@agoric/store';
-import { prepareExoClassKit, makeScalarBigSetStore } from '@agoric/vat-data';
+import { Fail } from '@endo/errors';
+import { M, makeCopySet } from '@agoric/store';
 import { AmountMath } from './amountMath.js';
 import { makeTransientNotifierKit } from './transientNotifier.js';
+import { makeAmountStore } from './amountStore.js';
 
-// TODO `InterfaceGuard` type parameter
-/** @typedef {import('@endo/patterns').InterfaceGuard} InterfaceGuard */
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+/** @import {AssetKind, RecoverySetsOption, Brand, Payment} from './types.js' */
 
-const { Fail } = assert;
+const EMPTY_COPY_SET = makeCopySet([]);
 
+// TODO Type InterfaceGuard better than InterfaceGuard<any>
 /**
- * @param {Baggage} issuerBaggage
+ * @param {import('@agoric/zone').Zone} issuerZone
  * @param {string} name
  * @param {AssetKind} assetKind
  * @param {Brand} brand
  * @param {{
- *   purse: InterfaceGuard;
- *   depositFacet: InterfaceGuard;
+ *   purse: import('@endo/patterns').InterfaceGuard<any>;
+ *   depositFacet: import('@endo/patterns').InterfaceGuard<any>;
  * }} PurseIKit
  * @param {{
  *   depositInternal: any;
  *   withdrawInternal: any;
  * }} purseMethods
+ * @param {RecoverySetsOption} recoverySetsState
+ * @param {WeakMapStore<Payment, SetStore<Payment>>} paymentRecoverySets
  */
 export const preparePurseKind = (
-  issuerBaggage,
+  issuerZone,
   name,
   assetKind,
   brand,
   PurseIKit,
   purseMethods,
+  recoverySetsState,
+  paymentRecoverySets,
 ) => {
   const amountShape = brand.getAmountShape();
 
   // Note: Virtual for high cardinality, but *not* durable, and so
   // broken across an upgrade.
+  // TODO propagate zonifying to notifiers, maybe?
   const { provideNotifier, update: updateBalance } = makeTransientNotifierKit();
 
-  const updatePurseBalance = (state, newPurseBalance, purse) => {
-    state.currentBalance = newPurseBalance;
-    updateBalance(purse, purse.getCurrentAmount());
+  /**
+   * If `recoverySetsState === 'hasRecoverySets'` (the normal state), then just
+   * return `state.recoverySet`.
+   *
+   * If `recoverySetsState === 'noRecoverySets'`, return `undefined`. Callers
+   * must be aware that the `undefined` return happens iff `recoverySetsState
+   * === 'noRecoverySets'`, and to avoid storing or retrieving anything from the
+   * actual recovery set.
+   *
+   * @param {{ recoverySet: SetStore<Payment> }} state
+   * @returns {SetStore<Payment> | undefined}
+   */
+  const maybeRecoverySet = state => {
+    const { recoverySet } = state;
+    if (recoverySetsState === 'hasRecoverySets') {
+      return recoverySet;
+    } else {
+      recoverySetsState === 'noRecoverySets' ||
+        Fail`recoverSetsState must be noRecoverySets if it isn't hasRecoverSets`;
+      paymentRecoverySets !== undefined ||
+        Fail`paymentRecoverySets must always be defined`;
+      recoverySet.getSize() === 0 ||
+        Fail`With noRecoverySets, recoverySet must be empty`;
+
+      return undefined;
+    }
   };
 
   // - This kind is a pair of purse and depositFacet that have a 1:1
@@ -49,17 +77,14 @@ export const preparePurseKind = (
   //   that created depositFacet as needed. But this approach ensures a constant
   //   identity for the facet and exercises the multi-faceted object style.
   const { depositInternal, withdrawInternal } = purseMethods;
-  const makePurseKit = prepareExoClassKit(
-    issuerBaggage,
+  const makePurseKit = issuerZone.exoClassKit(
     `${name} Purse`,
     PurseIKit,
     () => {
       const currentBalance = AmountMath.makeEmpty(brand, assetKind);
 
       /** @type {SetStore<Payment>} */
-      const recoverySet = makeScalarBigSetStore('recovery set', {
-        durable: true,
-      });
+      const recoverySet = issuerZone.detached().setStore('recovery set');
 
       return {
         currentBalance,
@@ -72,28 +97,36 @@ export const preparePurseKind = (
           // PurseI does *not* delay `deposit` until `srcPayment` is fulfulled.
           // See the comments on PurseI.deposit in typeGuards.js
           const { state } = this;
+          const { purse } = this.facets;
+          const balanceStore = makeAmountStore(state, 'currentBalance');
           // Note COMMIT POINT within deposit.
-          return depositInternal(
-            state.currentBalance,
-            newPurseBalance =>
-              updatePurseBalance(state, newPurseBalance, this.facets.purse),
+          const srcPaymentBalance = depositInternal(
+            balanceStore,
             srcPayment,
             optAmountShape,
           );
+          updateBalance(purse, balanceStore.getAmount());
+          return srcPaymentBalance;
         },
         withdraw(amount) {
           const { state } = this;
+          const { purse } = this.facets;
+
+          const optRecoverySet = maybeRecoverySet(state);
+          const balanceStore = makeAmountStore(state, 'currentBalance');
           // Note COMMIT POINT within withdraw.
-          return withdrawInternal(
-            state.currentBalance,
-            newPurseBalance =>
-              updatePurseBalance(state, newPurseBalance, this.facets.purse),
+          const payment = withdrawInternal(
+            balanceStore,
             amount,
-            state.recoverySet,
+            optRecoverySet,
           );
+          updateBalance(purse, balanceStore.getAmount());
+          return payment;
         },
         getCurrentAmount() {
-          return this.state.currentBalance;
+          const { state } = this;
+          const balanceStore = makeAmountStore(state, 'currentBalance');
+          return balanceStore.getAmount();
         },
         getCurrentAmountNotifier() {
           return provideNotifier(this.facets.purse);
@@ -101,24 +134,33 @@ export const preparePurseKind = (
         getAllegedBrand() {
           return brand;
         },
-        // eslint-disable-next-line no-use-before-define
+
         getDepositFacet() {
           return this.facets.depositFacet;
         },
 
         getRecoverySet() {
-          return this.state.recoverySet.snapshot();
+          const { state } = this;
+          const optRecoverySet = maybeRecoverySet(state);
+          if (optRecoverySet === undefined) {
+            return EMPTY_COPY_SET;
+          }
+          return optRecoverySet.snapshot();
         },
         recoverAll() {
           const { state, facets } = this;
           let amount = AmountMath.makeEmpty(brand, assetKind);
-          for (const payment of state.recoverySet.keys()) {
+          const optRecoverySet = maybeRecoverySet(state);
+          if (optRecoverySet === undefined) {
+            return amount; // empty at this time
+          }
+          for (const payment of optRecoverySet.keys()) {
             // This does cause deletions from the set while iterating,
             // but this special case is allowed.
             const delta = facets.purse.deposit(payment);
             amount = AmountMath.add(amount, delta, brand);
           }
-          state.recoverySet.getSize() === 0 ||
+          optRecoverySet.getSize() === 0 ||
             Fail`internal: Remaining unrecovered payments: ${facets.purse.getRecoverySet()}`;
           return amount;
         },

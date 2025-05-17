@@ -8,9 +8,9 @@
   "scripts": {
     "build": "exit 0",
     "prepack": "tsc --build tsconfig.build.json",
-    "postpack": "git clean -f '*.d.ts*'",
+    "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
     "test": "ava",
-    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
+    "test:c8": "c8 --all $C8_OPTIONS ava",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
@@ -19,6 +19,7 @@
   },
   "exports": {
     ".": "./src/index.js",
+    "./zone-helpers.js": "./zone-helpers.js",
     "./heap.js": "./heap.js",
     "./tools/*": "./tools/*"
   },
@@ -27,24 +28,27 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/store": "^0.9.2",
-    "@endo/exo": "^1.0.1",
-    "@endo/far": "^1.0.1",
-    "@endo/pass-style": "^1.0.1",
-    "@endo/patterns": "^1.0.1"
+    "@endo/common": "^1.2.10",
+    "@endo/errors": "^1.2.10",
+    "@endo/exo": "^1.5.9",
+    "@endo/far": "^1.1.11",
+    "@endo/pass-style": "^1.5.0",
+    "@endo/patterns": "^1.5.0"
   },
   "devDependencies": {
-    "@endo/init": "^1.0.1",
+    "@endo/init": "^1.1.9",
+    "@endo/ses-ava": "^1.2.10",
     "ava": "^5.3.0"
   },
   "publishConfig": {
     "access": "public"
   },
   "engines": {
-    "node": ">=14.15.0"
+    "node": "^18.12 || ^20.9"
   },
   "ava": {
     "files": [
-      "test/**/test-*.js"
+      "test/**/*.test.*"
     ],
     "require": [
       "@endo/init/debug.js"
@@ -53,6 +57,6 @@
     "workerThreads": false
   },
   "typeCoverage": {
-    "atLeast": 86.48
+    "atLeast": 91.4
   }
 }

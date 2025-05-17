@@ -1,0 +1,33 @@
+/* global E */
+
+/// <reference types="@agoric/vats/src/core/core-eval-env"/>
+/// <reference types="@agoric/vats/src/core/types-ambient"/>
+
+/**
+ * The primary purpose of this script is to access the depositFacet of a given address
+ * via the namesByAddress and then send a payment to it.
+ *
+ * The {{ADDRESS}} placeholder should be replaced with the desired address before use.
+ *
+ * The payment in this case is an invitation to add collateral to the reserve. 
+ * However, the use of the reserve is incidental and simply provides an easy payment to construct.
+ *
+ * see a3p-integration/proposals/z:acceptance/wallet.test.js
+ *
+ * @param {BootstrapPowers} powers
+ */
+const sendIt = async powers => {
+  const addr = '{{ADDRESS}}';
+  const {
+    consume: { namesByAddress, zoe },
+    instance: {
+      consume: { reserve },
+    },
+  } = powers;
+  const pf = E(zoe).getPublicFacet(reserve);
+  const anInvitation = await E(pf).makeAddCollateralInvitation();
+  const addressDepositFacet = E(namesByAddress).lookup(addr, 'depositFacet');
+  await E(addressDepositFacet).receive(anInvitation);
+};
+
+sendIt;

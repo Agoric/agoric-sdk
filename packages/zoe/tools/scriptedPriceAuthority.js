@@ -1,13 +1,17 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
-import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { AmountMath } from '@agoric/ertp';
 import { observeNotifier } from '@agoric/notifier';
 import { TimeMath } from '@agoric/time';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 import {
-  natSafeMath,
   makeOnewayPriceAuthorityKit,
+  makePriceQuoteIssuer,
+  natSafeMath,
 } from '../src/contractSupport/index.js';
+
+/**
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ */
 
 export function makeScriptedPriceAuthority(options) {
   const {
@@ -17,7 +21,7 @@ export function makeScriptedPriceAuthority(options) {
     timer,
     unitAmountIn = AmountMath.make(actualBrandIn, 1n),
     quoteInterval = 1n,
-    quoteIssuerKit = makeIssuerKit('quote', AssetKind.SET),
+    quoteIssuerKit = makePriceQuoteIssuer(),
   } = options;
   const { brand, issuer: quoteIssuer, mint: quoteMint } = quoteIssuerKit;
   let currentPrice = priceList[0];
@@ -87,10 +91,10 @@ export function makeScriptedPriceAuthority(options) {
       currentPrice =
         priceList[Number(Number(t / quoteInterval) % priceList.length)];
 
-      fireTriggers(createQuote);
+      void fireTriggers(createQuote);
     },
   });
-  observeNotifier(notifier, priceObserver);
+  void observeNotifier(notifier, priceObserver);
 
   return priceAuthority;
 }

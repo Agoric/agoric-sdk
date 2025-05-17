@@ -25,6 +25,14 @@ export function buildRootObject() {
       return n;
     },
 
+    async byNameWithOptions(bundleName, opts) {
+      const { root } = await E(admin).createVatByName(bundleName, {
+        ...options,
+        ...opts,
+      });
+      return root;
+    },
+
     async byNamedBundleCap(name) {
       const bcap = await E(admin).getNamedBundleCap(name);
       const { root } = await E(admin).createVat(bcap, options);

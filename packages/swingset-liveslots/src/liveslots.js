@@ -1,11 +1,7 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
-import {
-  Remotable,
-  passStyleOf,
-  getInterfaceOf,
-  makeMarshal,
-} from '@endo/marshal';
-import { assert, Fail } from '@agoric/assert';
+import { annotateError, assert, Fail, makeError, X } from '@endo/errors';
+import { passStyleOf } from '@endo/pass-style';
+import { PassStyleOfEndowmentSymbol } from '@endo/pass-style/endow.js';
+import { Remotable, getInterfaceOf, makeMarshal } from '@endo/marshal';
 import { isPromise } from '@endo/promise-kit';
 import { E, HandledPromise } from '@endo/eventual-send';
 import { insistVatType, makeVatSlot, parseVatSlot } from './parseVatSlots.js';
@@ -16,11 +12,12 @@ import { makeVirtualReferenceManager } from './virtualReferences.js';
 import { makeVirtualObjectManager } from './virtualObjectManager.js';
 import { makeCollectionManager } from './collectionManager.js';
 import { makeWatchedPromiseManager } from './watchedPromises.js';
+import { makeBOYDKit } from './boyd-gc.js';
+
+/** @import {LimitedConsole} from '@agoric/internal/src/js-utils.js'; */
 
 const SYSCALL_CAPDATA_BODY_SIZE_LIMIT = 10_000_000;
 const SYSCALL_CAPDATA_SLOTS_LENGTH_LIMIT = 10_000;
-
-const { details: X } = assert;
 
 // 'makeLiveSlots' is a dispatcher which uses javascript Maps to keep track
 // of local objects which have been exported. These cannot be persisted
@@ -37,7 +34,7 @@ const { details: X } = assert;
  * @param {import('./types.js').LiveSlotsOptions} liveSlotsOptions
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent, gcAndFinalize,
  *                      meterControl }
- * @param {Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>} console
+ * @param {LimitedConsole} console
  * @param {*} buildVatNamespace
  *
  * @returns {*} { dispatch }
@@ -160,62 +157,14 @@ function build(
     const { type, allocatedByVat, virtual, durable } = parseVatSlot(vref);
     if (type === 'object' && allocatedByVat) {
       if (virtual || durable) {
-        // eslint-disable-next-line no-use-before-define
         vrm.setExportStatus(vref, 'reachable');
       } else {
-        // eslint-disable-next-line no-use-before-define
         const remotable = requiredValForSlot(vref);
         exportedRemotables.add(remotable);
         kernelRecognizableRemotables.add(vref);
       }
     }
   }
-
-  /*
-    Imports are in one of 5 states: UNKNOWN, REACHABLE, UNREACHABLE,
-    COLLECTED, FINALIZED. Note that there's no actual state machine with those
-    values, and we can't observe all of the transitions from JavaScript, but
-    we can describe what operations could cause a transition, and what our
-    observations allow us to deduce about the state:
-
-    * UNKNOWN moves to REACHABLE when a crank introduces a new import
-    * userspace holds a reference only in REACHABLE
-    * REACHABLE moves to UNREACHABLE only during a userspace crank
-    * UNREACHABLE moves to COLLECTED when GC runs, which queues the finalizer
-    * COLLECTED moves to FINALIZED when a new turn runs the finalizer
-    * liveslots moves from FINALIZED to UNKNOWN by syscalling dropImports
-
-    convertSlotToVal either imports a vref for the first time, or
-    re-introduces a previously-seen vref. It transitions from:
-
-    * UNKNOWN to REACHABLE by creating a new Presence
-    * UNREACHABLE to REACHABLE by re-using the old Presence that userspace
-      forgot about
-    * COLLECTED/FINALIZED to REACHABLE by creating a new Presence
-
-    Our tracking tables hold data that depends on the current state:
-
-    * slotToVal holds a WeakRef in [REACHABLE, UNREACHABLE, COLLECTED]
-    * that WeakRef .deref()s into something in [REACHABLE, UNREACHABLE]
-    * deadSet holds the vref only in FINALIZED
-    * re-introduction must ensure the vref is not in the deadSet
-
-    Each state thus has a set of perhaps-measurable properties:
-
-    * UNKNOWN: slotToVal[baseRef] is missing, baseRef not in deadSet
-    * REACHABLE: slotToVal has live weakref, userspace can reach
-    * UNREACHABLE: slotToVal has live weakref, userspace cannot reach
-    * COLLECTED: slotToVal[baseRef] has dead weakref
-    * FINALIZED: slotToVal[baseRef] is missing, baseRef is in deadSet
-
-    Our finalizer callback is queued by the engine's transition from
-    UNREACHABLE to COLLECTED, but the baseRef might be re-introduced before the
-    callback has a chance to run. There might even be multiple copies of the
-    finalizer callback queued. So the callback must deduce the current state
-    and only perform cleanup (i.e. delete the slotToVal entry and add the
-    baseRef to the deadSet) in the COLLECTED state.
-
-  */
 
   function finalizeDroppedObject(baseRef) {
     // TODO: Ideally this function should assert that it is not metered.  This
@@ -234,120 +183,11 @@ function build(
 
     if (wr && !wr.deref()) {
       // we're in the COLLECTED state, or FINALIZED after a re-introduction
-      // eslint-disable-next-line no-use-before-define
       addToPossiblyDeadSet(baseRef);
       slotToVal.delete(baseRef);
     }
   }
   const vreffedObjectRegistry = new FinalizationRegistry(finalizeDroppedObject);
-
-  async function scanForDeadObjects() {
-    // `possiblyDeadSet` accumulates vrefs which have lost a supporting
-    // pillar (in-memory, export, or virtualized data refcount) since the
-    // last call to scanForDeadObjects. The vref might still be supported
-    // by a remaining pillar, or the pillar which was dropped might be back
-    // (e.g., given a new in-memory manifestation).
-
-    const importsToDrop = new Set();
-    const importsToRetire = new Set();
-    const exportsToRetire = new Set();
-    let doMore;
-    await null;
-    do {
-      doMore = false;
-
-      await gcTools.gcAndFinalize();
-
-      // possiblyDeadSet contains a baseref for everything (Presences,
-      // Remotables, Representatives) that might have lost a
-      // pillar. The object might still be supported by other pillars,
-      // and the lost pillar might have been reinstantiated by the
-      // time we get here. The first step is to filter this down to a
-      // list of definitely dead baserefs.
-
-      const deadSet = new Set();
-
-      for (const baseRef of possiblyDeadSet) {
-        // eslint-disable-next-line no-use-before-define
-        if (slotToVal.has(baseRef)) {
-          continue; // RAM pillar remains
-        }
-        const { virtual, durable, type } = parseVatSlot(baseRef);
-        assert(type === 'object', `unprepared to track ${type}`);
-        if (virtual || durable) {
-          // eslint-disable-next-line no-use-before-define
-          if (vrm.isVirtualObjectReachable(baseRef)) {
-            continue; // vdata or export pillar remains
-          }
-        }
-        deadSet.add(baseRef);
-      }
-      possiblyDeadSet.clear();
-
-      // deadSet now contains objects which are certainly dead
-
-      // possiblyRetiredSet holds (a subset of??) baserefs which have
-      // lost a recognizer recently. TODO recheck this
-
-      for (const vref of possiblyRetiredSet) {
-        // eslint-disable-next-line no-use-before-define
-        if (!getValForSlot(vref) && !deadSet.has(vref)) {
-          // Don't retire things that haven't yet made the transition to dead,
-          // i.e., always drop before retiring
-          // eslint-disable-next-line no-use-before-define
-          if (!vrm.isVrefRecognizable(vref)) {
-            importsToRetire.add(vref);
-          }
-        }
-      }
-      possiblyRetiredSet.clear();
-
-      const deadBaseRefs = Array.from(deadSet);
-      deadBaseRefs.sort();
-      for (const baseRef of deadBaseRefs) {
-        const { virtual, durable, allocatedByVat, type } =
-          parseVatSlot(baseRef);
-        type === 'object' || Fail`unprepared to track ${type}`;
-        if (virtual || durable) {
-          // Representative: send nothing, but perform refcount checking
-          // eslint-disable-next-line no-use-before-define
-          const [gcAgain, retirees] = vrm.deleteVirtualObject(baseRef);
-          if (retirees) {
-            retirees.map(retiree => exportsToRetire.add(retiree));
-          }
-          doMore = doMore || gcAgain;
-        } else if (allocatedByVat) {
-          // Remotable: send retireExport
-          // for remotables, vref === baseRef
-          if (kernelRecognizableRemotables.has(baseRef)) {
-            kernelRecognizableRemotables.delete(baseRef);
-            exportsToRetire.add(baseRef);
-          }
-        } else {
-          // Presence: send dropImport unless reachable by VOM
-          // eslint-disable-next-line no-lonely-if, no-use-before-define
-          if (!vrm.isPresenceReachable(baseRef)) {
-            importsToDrop.add(baseRef);
-            // eslint-disable-next-line no-use-before-define
-            if (!vrm.isVrefRecognizable(baseRef)) {
-              // for presences, baseRef === vref
-              importsToRetire.add(baseRef);
-            }
-          }
-        }
-      }
-    } while (possiblyDeadSet.size > 0 || possiblyRetiredSet.size > 0 || doMore);
-
-    if (importsToDrop.size) {
-      syscall.dropImports(Array.from(importsToDrop).sort());
-    }
-    if (importsToRetire.size) {
-      syscall.retireImports(Array.from(importsToRetire).sort());
-    }
-    if (exportsToRetire.size) {
-      syscall.retireExports(Array.from(exportsToRetire).sort());
-    }
-  }
 
   /**
    * Remember disavowed Presences which will kill the vat if you try to talk
@@ -368,11 +208,9 @@ function build(
         // Support: o~.[prop](...args) remote method invocation
         lsdebug(`makeImportedPresence handler.applyMethod (${slot})`);
         if (disavowedPresences.has(o)) {
-          // eslint-disable-next-line no-use-before-define
           exitVatWithFailure(disavowalError);
           throw disavowalError;
         }
-        // eslint-disable-next-line no-use-before-define
         return queueMessage(slot, prop, args, returnedP);
       },
       applyFunction(o, args, returnedP) {
@@ -381,7 +219,6 @@ function build(
       get(o, prop) {
         lsdebug(`makeImportedPresence handler.get (${slot})`);
         if (disavowedPresences.has(o)) {
-          // eslint-disable-next-line no-use-before-define
           exitVatWithFailure(disavowalError);
           throw disavowalError;
         }
@@ -453,7 +290,6 @@ function build(
           console.error(`mIPromise handler called after resolution`);
           Fail`mIPromise handler called after resolution`;
         }
-        // eslint-disable-next-line no-use-before-define
         return queueMessage(vpid, prop, args, returnedP);
       },
       get(p, prop) {
@@ -506,17 +342,14 @@ function build(
   // use a slot from the corresponding allocateX
 
   function allocateExportID() {
-    // eslint-disable-next-line no-use-before-define
     return vrm.allocateNextID('exportID');
   }
 
   function allocateCollectionID() {
-    // eslint-disable-next-line no-use-before-define
     return vrm.allocateNextID('collectionID');
   }
 
   function allocatePromiseID() {
-    // eslint-disable-next-line no-use-before-define
     const promiseID = vrm.allocateNextID('promiseID');
     return makeVatSlot('promise', true, promiseID);
   }
@@ -544,10 +377,8 @@ function build(
       // do a syscall.resolve when it fires. The caller must finish
       // doing their syscall before this turn finishes, to ensure the
       // kernel isn't surprised by a spurious resolution.
-      // eslint-disable-next-line no-use-before-define
       const p = requiredValForSlot(vpid);
       // if (!knownResolutions.has(p)) { // TODO really?
-      // eslint-disable-next-line no-use-before-define
       followForKernel(vpid, p);
       return true;
     }
@@ -559,20 +390,18 @@ function build(
     return makeVatSlot('object', true, exportID);
   }
 
-  // eslint-disable-next-line no-use-before-define
   const m = makeMarshal(convertValToSlot, convertSlotToVal, {
     marshalName: `liveSlots:${forVatID}`,
     serializeBodyFormat: 'smallcaps',
     // TODO Temporary hack.
     // See https://github.com/Agoric/agoric-sdk/issues/2780
-    errorIdNum: 70000,
+    errorIdNum: 70_000,
     marshalSaveError: err =>
       // By sending this to `console.warn`, under cosmic-swingset this is
       // controlled by the `console` option given to makeLiveSlots.
       console.warn('Logging sent error stack', err),
   });
   const unmeteredUnserialize = meterControl.unmetered(m.unserialize);
-  // eslint-disable-next-line no-use-before-define
   const unmeteredConvertSlotToVal = meterControl.unmetered(convertSlotToVal);
 
   function getSlotForVal(val) {
@@ -617,7 +446,6 @@ function build(
     allocateExportID,
     getSlotForVal,
     requiredValForSlot,
-    // eslint-disable-next-line no-use-before-define
     registerValue,
     m.serialize,
     unmeteredUnserialize,
@@ -630,10 +458,8 @@ function build(
     vrm,
     allocateExportID,
     allocateCollectionID,
-    // eslint-disable-next-line no-use-before-define
     convertValToSlot,
     unmeteredConvertSlotToVal,
-    // eslint-disable-next-line no-use-before-define
     registerValue,
     m.serialize,
     unmeteredUnserialize,
@@ -645,7 +471,6 @@ function build(
     vrm,
     vom,
     collectionManager,
-    // eslint-disable-next-line no-use-before-define
     convertValToSlot,
     convertSlotToVal: unmeteredConvertSlotToVal,
     maybeExportPromise,
@@ -675,7 +500,6 @@ function build(
         slot = allocatePromiseID();
       } else {
         if (disavowedPresences.has(val)) {
-          // eslint-disable-next-line no-use-before-define
           exitVatWithFailure(disavowalError);
           throw disavowalError; // cannot reference a disavowed object
         }
@@ -749,39 +573,50 @@ function build(
       try {
         val = vrm.reanimate(baseRef);
       } catch (err) {
-        const wrappedError = assert.error(X`failed to reanimate ${iface}`);
-        assert.note(wrappedError, X`Original error: ${err}`);
+        const wrappedError = makeError(X`failed to reanimate ${iface}`);
+        annotateError(wrappedError, X`Original error: ${err}`);
         throw wrappedError;
       }
       if (facet !== undefined) {
         result = vrm.getFacet(id, val, facet);
       }
-    } else {
+    } else if (type === 'object') {
+      // Note: an abandonned (e.g. by an upgrade) exported ephemeral or virtual
+      // object would appear as an import if re-introduced. In the future we
+      // may need to change that if we want to keep recognizing such references
+      // In that case we'd need to create an imported presence for these
+      // unknown vrefs allocated by the vat.
+      // See https://github.com/Agoric/agoric-sdk/issues/9746
       !allocatedByVat || Fail`I don't remember allocating ${slot}`;
-      if (type === 'object') {
-        // this is a new import value
-        val = makeImportedPresence(slot, iface);
-      } else if (type === 'promise') {
-        const pRec = makePipelinablePromise(slot);
-        importedVPIDs.set(slot, pRec);
-        val = pRec.promise;
-        // ideally we'd wait until .then is called on p before subscribing,
-        // but the current Promise API doesn't give us a way to discover
-        // this, so we must subscribe right away. If we were using Vows or
-        // some other then-able, we could just hook then() to notify us.
-        if (importedPromises) {
-          // leave the subscribe() up to dispatch.notify()
-          importedPromises.add(slot);
-        } else {
-          // probably in dispatch.deliver(), so subscribe now
-          syscall.subscribe(slot);
-        }
-      } else if (type === 'device') {
-        val = makeDeviceNode(slot, iface);
-        importedDevices.add(val);
+      // this is a new import value
+      val = makeImportedPresence(slot, iface);
+    } else if (type === 'promise') {
+      // We unconditionally create a promise record, even if the promise looks
+      // like it was allocated by us. This can happen when re-importing a
+      // promise created by the previous incarnation. We may or may not have
+      // been the decider of the promise. If we were, the kernel will be
+      // rejecting the promise on our behalf. We may have previously been
+      // subscribed to that promise, but subscription is idempotent.
+      const pRec = makePipelinablePromise(slot);
+      importedVPIDs.set(slot, pRec);
+      val = pRec.promise;
+      // ideally we'd wait until .then is called on p before subscribing,
+      // but the current Promise API doesn't give us a way to discover
+      // this, so we must subscribe right away. If we were using Vows or
+      // some other then-able, we could just hook then() to notify us.
+      if (importedPromises) {
+        // leave the subscribe() up to dispatch.notify()
+        importedPromises.add(slot);
       } else {
-        Fail`unrecognized slot type '${type}'`;
+        // probably in dispatch.deliver(), so subscribe now
+        syscall.subscribe(slot);
       }
+    } else if (type === 'device') {
+      !allocatedByVat || Fail`unexpected device ${slot} allocated by vat`;
+      val = makeDeviceNode(slot, iface);
+      importedDevices.add(val);
+    } else {
+      Fail`unrecognized slot type '${type}'`;
     }
     registerValue(baseRef, val, facet !== undefined);
     if (!result) {
@@ -794,7 +629,25 @@ function build(
     meterControl.assertNotMetered();
     const { type } = parseVatSlot(slot);
     type === 'promise' || Fail`revivePromise called on non-promise ${slot}`;
-    !getValForSlot(slot) || Fail`revivePromise called on pre-existing ${slot}`;
+    const val = getValForSlot(slot);
+    if (val) {
+      // revivePromise is only called by loadWatchedPromiseTable, which runs
+      // after buildRootObject(), which is given the deserialized vatParameters.
+      // The only way revivePromise() might encounter a pre-existing vpid is if
+      // these vatParameters include a promise that the previous incarnation
+      // watched, but that `buildRootObject` in the new incarnation didn't
+      // explicitly watch again. This can be either a previously imported
+      // promise, or a promise the previous incarnation exported, regardless of
+      // who the decider now is.
+      //
+      // In that case convertSlotToVal() has already deserialized the vpid, but
+      // since `buildRootObject` didn't explicitely call watchPromise on it, no
+      // registration exists so loadWatchedPromiseTable attempts to revive the
+      // promise.
+      return val;
+    }
+    // NOTE: it is important that this code not do anything *more*
+    // than what convertSlotToVal(vpid) would do
     const pRec = makePipelinablePromise(slot);
     importedVPIDs.set(slot, pRec);
     const p = pRec.promise;
@@ -816,7 +669,6 @@ function build(
           const priorResolution = knownResolutions.get(p);
           if (priorResolution && !doneResolutions.has(slot)) {
             const [priorRejected, priorRes] = priorResolution;
-            // eslint-disable-next-line no-use-before-define
             collect(slot, priorRejected, priorRes);
           }
         }
@@ -945,6 +797,7 @@ function build(
       for (const resolution of resolutions) {
         const [xvpid] = resolution;
         maybeNewVPIDs.delete(xvpid);
+        unregisterUnreferencedVPID(xvpid);
       }
     }
     for (const newVPID of Array.from(maybeNewVPIDs).sort()) {
@@ -1102,7 +955,6 @@ function build(
       }
       // in both cases, we are now the decider, so treat it like an
       // exported promise
-      // eslint-disable-next-line no-use-before-define
       followForKernel(resultVPID, p);
     }
   }
@@ -1161,14 +1013,13 @@ function build(
       for (const resolution of resolutions) {
         const [xvpid] = resolution;
         maybeNewVPIDs.delete(xvpid);
+        unregisterUnreferencedVPID(xvpid);
       }
       // track everything that's left
       for (const newVPID of Array.from(maybeNewVPIDs).sort()) {
         maybeExportPromise(newVPID);
       }
 
-      // only the primary can possibly be newly resolved
-      unregisterUnreferencedVPID(vpid);
       exportedVPIDs.delete(vpid);
     }
 
@@ -1343,6 +1194,7 @@ function build(
   const inescapableGlobalProperties = harden({
     WeakMap: vom.VirtualObjectAwareWeakMap,
     WeakSet: vom.VirtualObjectAwareWeakSet,
+    [PassStyleOfEndowmentSymbol]: passStyleOf,
   });
 
   function getRetentionStats() {
@@ -1378,7 +1230,6 @@ function build(
     possiblyRetiredSet,
     slotToVal,
     valToSlot,
-    // eslint-disable-next-line no-use-before-define
     afterDispatchActions,
   });
 
@@ -1470,7 +1321,7 @@ function build(
 
   /**
    * @param {import('./types.js').VatDeliveryObject} delivery
-   * @returns {void | Promise<void>}
+   * @returns {undefined | ReturnType<startVat>}
    */
   function dispatchToUserspace(delivery) {
     let result;
@@ -1522,16 +1373,15 @@ function build(
   // metered
   const unmeteredDispatch = meterControl.unmetered(dispatchToUserspace);
 
-  async function bringOutYourDead() {
-    await scanForDeadObjects();
-    // Now flush all the vatstore changes (deletions and refcounts) we
-    // made. dispatch() calls afterDispatchActions() automatically for
-    // most methods, but not bringOutYourDead().
-    // eslint-disable-next-line no-use-before-define
-    afterDispatchActions();
-    // XXX TODO: make this conditional on a config setting
-    return getRetentionStats();
-  }
+  const { scanForDeadObjects } = makeBOYDKit({
+    gcTools,
+    slotToVal,
+    vrm,
+    kernelRecognizableRemotables,
+    syscall,
+    possiblyDeadSet,
+    possiblyRetiredSet,
+  });
 
   /**
    * @param { import('./types.js').SwingSetCapData } _disconnectObjectCapData
@@ -1550,6 +1400,16 @@ function build(
     collectionManager.flushSchemaCache();
     vom.flushStateCache();
   }
+
+  const bringOutYourDead = async () => {
+    await scanForDeadObjects();
+    // Now flush all the vatstore changes (deletions and refcounts) we
+    // made. dispatch() calls afterDispatchActions() automatically for
+    // most methods, but not bringOutYourDead().
+    afterDispatchActions();
+    // XXX TODO: make this conditional on a config setting
+    return getRetentionStats();
+  };
 
   /**
    * This 'dispatch' function is the entry point for the vat as a whole: the
@@ -1597,12 +1457,10 @@ function build(
     } else if (delivery[0] === 'stopVat') {
       return meterControl.runWithoutMeteringAsync(() => stopVat(delivery[1]));
     } else {
-      let complete = false;
       // Start user code running, record any internal liveslots errors. We do
       // *not* directly wait for the userspace function to complete, nor for
       // any promise it returns to fire.
       const p = Promise.resolve(delivery).then(unmeteredDispatch);
-      void p.finally(() => (complete = true));
 
       // Instead, we wait for userspace to become idle by draining the
       // promise queue. We clean up and then examine/return 'p' so any
@@ -1613,10 +1471,11 @@ function build(
       return gcTools.waitUntilQuiescent().then(() => {
         afterDispatchActions();
         // eslint-disable-next-line prefer-promise-reject-errors
-        return complete ? p : Promise.reject('buildRootObject unresolved');
+        return Promise.race([p, Promise.reject('buildRootObject unresolved')]);
         // the only delivery that pays attention to a user-provided
         // Promise is startVat, so the error message is specialized to
-        // the only user problem that could cause complete===false
+        // the only user problem that could cause the promise to not be
+        // settled.
       });
     }
   }
@@ -1639,7 +1498,7 @@ function build(
  * @param {*} vatPowers
  * @param {import('./types.js').LiveSlotsOptions} liveSlotsOptions
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
- * @param {Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>} [liveSlotsConsole]
+ * @param {LimitedConsole} [liveSlotsConsole]
  * @param {*} [buildVatNamespace]
  *
  * @returns {*} { dispatch }

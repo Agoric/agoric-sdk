@@ -10,30 +10,20 @@ inputs:
     description: 'token for datadog'
     required: false
     default: ''
-  datadog-site:
-    description: 'site for datadog'
+  gcp-credentials:
+    description: 'gcp'
     required: false
-    default: 'us3.datadoghq.com'
+    default: ''
 
 runs:
   using: composite
   steps:
-    - name: upload tests
+    - name: collect coverage
       shell: bash
       if: ${{ github.repository_owner == 'agoric' }} && (success() || failure())
-      env:
-        DD_ENV: ci
-        DATADOG_SITE: ${{ inputs.datadog-site }}
       continue-on-error: true
       run: |
-        ./scripts/ci-collect-testruns.sh
-        if [ "${{ inputs.datadog-token }}" != "" ]; then
-          export DATADOG_API_KEY="${{ inputs.datadog-token }}"
-          export DD_ENV="ci"
-          export DD_SITE="${{ inputs.datadog-site }}"
-
-          timeout 15 npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
-        fi
+        ./scripts/ci/collect-testruns.sh
     - name: upload coverage prepare
       shell: bash
       id: coverage-prep
@@ -48,7 +38,14 @@ runs:
         fi
     - name: Upload coverage reports to Codecov
       if: ${{ github.repository_owner == 'agoric' }} && ${{ steps.coverage-prep.outputs.skip == 'false' }} && (success() || failure())
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       continue-on-error: true
       with:
         token: ${{ inputs.codecov-token }}
+    - name: Send test results to GCP
+      shell: bash
+      if: ${{ inputs.gcp-credentials }}
+      env:
+        GCP_CREDENTIALS: ${{ inputs.gcp-credentials }}
+      run: |
+        node .github/actions/ci-test-result.cjs ./packages/*/_testoutput.txt

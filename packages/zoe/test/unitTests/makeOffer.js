@@ -1,5 +1,10 @@
+import { assert } from '@endo/errors';
 import { E } from '@endo/eventual-send';
-import { assert } from '@agoric/assert';
+
+/**
+ * @import {PaymentPKeywordRecord, Proposal, UserSeat, ZoeService } from '@agoric/zoe';
+ * @import {Pattern} from '@endo/patterns';
+ */
 
 /**
  * @param {ERef<ZoeService>} zoe

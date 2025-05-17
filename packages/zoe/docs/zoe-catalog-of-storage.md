@@ -1,5 +1,7 @@
 # Catalog of Zoe Maps/WeakMaps/Stores
 
+Stores are provided by [@agoric/store](../../store) and [@agoric/vat-data](../../vat-data).
+
 ## Zoe Service (one per chain)
 
 ### installations - native WeakSet
@@ -185,8 +187,8 @@ seats.
 
 ### sumsByBrand - Store from `@agoric/store`
 
-Two of these are created in every call to `zcf.reallocate`, and then
-are immediately dropped.
+One of these is created in every call to `zcf.atomicRearrange`, and then
+is immediately dropped.
 
 **Expected cardinality**: One key per brand of allocation reallocated over.
 

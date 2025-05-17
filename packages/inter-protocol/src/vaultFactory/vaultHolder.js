@@ -1,10 +1,13 @@
 /** @file Use-object for the owner of a vault */
+import { Fail } from '@endo/errors';
 import { AmountShape } from '@agoric/ertp';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 
-const { Fail } = assert;
+/**
+ * @import {Key, Pattern} from '@endo/patterns';
+ */
 
 /**
  * @typedef {{
@@ -29,7 +32,7 @@ const PUBLIC_TOPICS = {
 };
 
 /**
- * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
  */
 export const prepareVaultHolder = (baggage, makeRecorderKit) => {
@@ -52,6 +55,7 @@ export const prepareVaultHolder = (baggage, makeRecorderKit) => {
      */
     (vault, storageNode) => {
       // must be the fully synchronous maker because the kit is held in durable state
+      // @ts-expect-error XXX Patterns
       const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.vault[1]);
 
       return { topicKit, vault };

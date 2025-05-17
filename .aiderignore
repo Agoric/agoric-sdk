@@ -1,0 +1,7 @@
+# circular symlink
+a3p-integration/agoric-sdk
+
+# git subrepos
+moddable
+xsnap-native
+

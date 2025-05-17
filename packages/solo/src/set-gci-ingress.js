@@ -58,7 +58,9 @@ export default function setGCIIngress(basedir, GCI, rpcAddresses, chainID) {
     }
   };
 
-  JSON.parse(fs.readFileSync(fn)).forEach(add);
+  for (const conn of JSON.parse(fs.readFileSync(fn))) {
+    add(conn);
+  }
   const newconn = {
     type: 'chain-cosmos-sdk',
     chainID,
@@ -68,9 +70,8 @@ export default function setGCIIngress(basedir, GCI, rpcAddresses, chainID) {
   };
   add(newconn);
   const connections = [];
-  // eslint-disable-next-line no-unused-vars
-  Object.entries(connsByType).forEach(([type, conns]) =>
-    connections.push(...conns),
-  );
+  for (const conns of Object.values(connsByType)) {
+    connections.push(...conns);
+  }
   fs.writeFileSync(fn, `${JSON.stringify(connections, undefined, 2)}\n`);
 }

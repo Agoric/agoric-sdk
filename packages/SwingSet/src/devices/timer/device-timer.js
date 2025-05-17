@@ -23,7 +23,7 @@
  */
 
 import { Nat } from '@endo/nat';
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 import { Far } from '@endo/far';
 
 // Since we use harden when saving the state, we need to copy the arrays so they
@@ -223,6 +223,7 @@ export function buildRootDeviceNode(tools) {
   // The latest time poll() was called. This might be a block height or it
   // might be a time from Date.now(). The current time is not reflected back
   // to the user.
+  /** @type {bigint} */
   let lastPolled = restart ? restart.lastPolled : 0n;
   let nextRepeater = restart ? restart.nextRepeater : 0;
 
@@ -311,6 +312,7 @@ export function buildRootDeviceNode(tools) {
     },
   });
 }
+/** @typedef {import('../../types-external.js').Device<ReturnType<typeof buildRootDeviceNode>>} TimerDevice */
 
 // exported for testing. Only buildRootDeviceNode is intended for production
 // use.

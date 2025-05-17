@@ -1,6 +1,6 @@
 // @ts-nocheck
-/* eslint-disable no-empty,no-nested-ternary,no-use-before-define */
-/* eslint-enable @endo/no-polymorphic-call */
+/* eslint-disable no-nested-ternary */
+
 /* global globalThis */
 // Adapted from object-inspect@1.12.0 https://github.com/inspect-js/object-inspect
 /*
@@ -235,15 +235,15 @@ function inspect0(obj, opts = {}, depth = 0, circular = new Set()) {
     !isPlainObject && toStringTag && Object(obj) === obj && toStringTag in obj
       ? $slice.call(toStr(obj), 8, -1)
       : protoTag
-      ? 'Object'
-      : '';
+        ? 'Object'
+        : '';
   const protoConstructor = objProto && objProto.constructor;
   const constructorTag =
     isPlainObject || typeof protoConstructor !== 'function'
       ? ''
       : protoConstructor.name
-      ? `${protoConstructor.name} `
-      : '';
+        ? `${protoConstructor.name} `
+        : '';
   const tag =
     constructorTag +
     (stringTag || protoTag

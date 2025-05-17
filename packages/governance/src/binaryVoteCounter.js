@@ -1,7 +1,7 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
+import { Fail } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
-import { makeExo, keyEQ, makeScalarMapStore } from '@agoric/store';
 import { E } from '@endo/eventual-send';
+import { makeExo, keyEQ, makeScalarMapStore } from '@agoric/store';
 
 import {
   buildQuestion,
@@ -17,7 +17,11 @@ import {
 } from './typeGuards.js';
 import { makeQuorumCounter } from './quorumCounter.js';
 
-const { Fail } = assert;
+/**
+ * @import {MapStore} from '@agoric/swingset-liveslots';
+ * @import {ZCF} from '@agoric/zoe';
+ * @import {BuildVoteCounter, OutcomeRecord, Position, QuestionSpec, VoteStatistics} from './types.js';
+ */
 
 const validateBinaryQuestionSpec = questionSpec => {
   coerceQuestionSpec(questionSpec);
@@ -110,7 +114,7 @@ const makeBinaryVoteCounter = (
         outcome: 'fail',
         reason: 'No quorum',
       };
-      E(publisher).publish(voteOutcome);
+      void E(publisher).publish(voteOutcome);
       return;
     }
 
@@ -123,7 +127,7 @@ const makeBinaryVoteCounter = (
     }
 
     // XXX if we should distinguish ties, publish should be called in if above
-    E.when(outcomePromise.promise, position => {
+    void E.when(outcomePromise.promise, position => {
       /** @type {OutcomeRecord} */
       const voteOutcome = {
         question: details.questionHandle,

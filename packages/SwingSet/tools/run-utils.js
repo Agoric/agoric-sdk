@@ -1,45 +1,41 @@
-import { Fail, q } from '@agoric/assert';
+import { Fail, q } from '@endo/errors';
 import { kunser } from '@agoric/kmarshal';
 import { makeQueue } from '@endo/stream';
 
-const sink = () => {};
+/**
+ * @import { ERef } from '@endo/far'
+ * @import { RunPolicy } from '../src/types-external.js'
+ */
+
+/** @typedef {{ provideRunPolicy: () => RunPolicy | undefined }} RunHarness */
 
 /**
  * @param {import('../src/controller/controller.js').SwingsetController} controller
- * @param {(...args: any[]) => void} [log]
+ * @param {RunHarness} [harness]
  */
-export const makeRunUtils = (controller, log = (..._) => {}) => {
-  let cranksRun = 0;
-
+export const makeRunUtils = (controller, harness) => {
   const mutex = makeQueue();
+  mutex.put('dummy result'); // so the first `await mutex.get()` doesn't hang
 
-  mutex.put(controller.run());
+  const logRunFailure = reason =>
+    console.log('controller.run() failure', reason);
 
   /**
-   * @template {() => any} T
-   * @param {T} thunk
-   * @returns {Promise<ReturnType<T>>}
+   * Wait for exclusive access to the controller, then before relinquishing that access,
+   * enqueue and process a delivery and return the result.
+   *
+   * @param {() => ERef<void | ReturnType<typeof controller['queueToVatObject']>>} deliveryThunk
+   * function for enqueueing a delivery and returning the result kpid (if any)
+   * @param {boolean} [voidResult] whether to ignore the result
+   * @returns {Promise<any>}
    */
-  const runThunk = async thunk => {
-    // this promise for the last lock may fail
-    // sink because the result will resolve for the previous runMethod return
-    await mutex.get().catch(sink);
-
-    const thunkResult = await thunk();
-
-    const result = controller.run().then(cranks => {
-      cranksRun += cranks;
-      log(`kernel ran ${cranks} cranks`);
-      return thunkResult;
-    });
-    mutex.put(result.then(sink, sink));
-    return result;
-  };
-
   const queueAndRun = async (deliveryThunk, voidResult = false) => {
-    log('queueAndRun at', cranksRun);
-
-    const kpid = await runThunk(deliveryThunk);
+    await mutex.get();
+    const kpid = await deliveryThunk();
+    const runPolicy = harness && harness.provideRunPolicy();
+    const runResultP = controller.run(runPolicy);
+    mutex.put(runResultP.catch(logRunFailure));
+    await runResultP;
 
     if (voidResult) {
       return undefined;
@@ -58,10 +54,25 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
   };
 
   /**
-   * @typedef {import('@endo/eventual-send').EProxy & {
-   *  sendOnly: (presence: unknown) => Record<string, (...args: any) => void>;
-   *  vat: (name: string) => Record<string, (...args: any) => Promise<any>>;
-   * }} EVProxy
+   * @typedef EVProxyMethods
+   * @property {(presence: unknown) => Record<string, (...args: any) => Promise<void>>} sendOnly
+   *   Returns a "methods proxy" for the presence that ignores the results of
+   *   each method invocation.
+   * @property {(name: string) => Record<string, (...args: any) => Promise<any>>} vat
+   *   Returns a "methods proxy" for the root object of the specified vat.
+   *   So e.g. `EV.vat('foo').m(0)` becomes
+   *   `controller.queueToVatRoot('foo', 'm', [0])`.
+   * @property {(presence: unknown) => Record<string, Promise<any>>} get
+   *   Returns a "values proxy" for the presence for which each requested
+   *   property manifests as a promise.
+   */
+  /**
+   * @typedef {import('@endo/eventual-send').EProxy & EVProxyMethods} EVProxy
+   *   Given a presence, return a "methods proxy" for which each requested
+   *   property manifests as a method that forwards its invocation through the
+   *   controller to the presence as an invocation of an identically-named method
+   *   with identical arguments (modulo passable translation).
+   *   So e.g. `EV(x).m(0)` becomes `controller.queueToVatObject(x, 'm', [0])`.
    */
 
   // IMPORTANT WARNING TO USERS OF `EV`
@@ -108,54 +119,41 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
   // promise that can remain pending indefinitely, possibly to be settled by a
   // future message delivery.
 
-  /** @type {EVProxy} */
-  // @ts-expect-error cast, approximate
-  const EV = Object.assign(
-    presence =>
-      new Proxy(harden({}), {
-        get: (_t, method, _rx) => {
-          const boundMethod = (...args) =>
-            queueAndRun(() =>
-              controller.queueToVatObject(presence, method, args),
-            );
-          return harden(boundMethod);
-        },
-      }),
-    {
-      vat: vatName =>
-        new Proxy(harden({}), {
-          get: (_t, method, _rx) => {
-            const boundMethod = (...args) =>
-              queueAndRun(() =>
-                controller.queueToVatRoot(vatName, method, args),
-              );
-            return harden(boundMethod);
-          },
-        }),
-      sendOnly: presence =>
-        new Proxy(harden({}), {
-          get: (_t, method, _rx) => {
-            const boundMethod = (...args) =>
-              queueAndRun(
-                () => controller.queueToVatObject(presence, method, args),
-                true,
-              );
-            return harden(boundMethod);
-          },
-        }),
-      get: presence =>
-        new Proxy(harden({}), {
-          get: (_t, pathElement, _rx) =>
-            queueAndRun(() =>
-              controller.queueToVatRoot('bootstrap', 'awaitVatObject', [
-                presence,
-                [pathElement],
-              ]),
-            ),
-        }),
-    },
+  /**
+   * @template {(typeof controller.queueToVatObject) | (typeof controller.queueToVatRoot)} T
+   * @param {T} invoker
+   * @param {Parameters<T>[0]} target
+   * @param {boolean} [voidResult]
+   */
+  const makeMethodsProxy = (invoker, target, voidResult = false) =>
+    new Proxy(harden({}), {
+      get: (_t, method, _rx) => {
+        const resultPolicy = voidResult ? 'none' : undefined;
+        const boundMethod = (...args) =>
+          queueAndRun(
+            () => invoker(target, method, args, resultPolicy),
+            voidResult,
+          );
+        return harden(boundMethod);
+      },
+    });
+
+  const EV = /** @type {EVProxy} */ (
+    Object.assign(
+      presence => makeMethodsProxy(controller.queueToVatObject, presence),
+      {
+        vat: vatName => makeMethodsProxy(controller.queueToVatRoot, vatName),
+        sendOnly: presence =>
+          makeMethodsProxy(controller.queueToVatObject, presence, true),
+        get: presence =>
+          new Proxy(harden({}), {
+            get: (_t, key, _rx) =>
+              EV.vat('bootstrap').awaitVatObject(presence, [key]),
+          }),
+      },
+    )
   );
-  return harden({ runThunk, EV });
+  return harden({ queueAndRun, EV });
 };
 
 /**

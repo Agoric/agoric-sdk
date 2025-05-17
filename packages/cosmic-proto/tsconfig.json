@@ -1,12 +1,8 @@
 {
-  "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "noEmit": false,
-    "declaration": true,
-    "allowSyntheticDefaultImports": true,
-    "outDir": "dist"
-  },
-  "include": [
-    "gen/**/*.ts"
-  ]
+    "extends": "../../tsconfig.json",
+    "include": [
+        "scripts",
+        "src",
+        "test"
+    ]
 }

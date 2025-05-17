@@ -1,11 +1,10 @@
 // @ts-check
 
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 
 import { makeScalarWeakMapStore } from '@agoric/store';
 
-import '../exported.js';
 import './internal-types.js';
 
 /**
@@ -21,9 +20,9 @@ import './internal-types.js';
  * remote calls to get the brand and AmountMath and save them.
  */
 const makeIssuerTable = () => {
-  /** @type {WeakMapStore<Brand,IssuerRecord>} */
+  /** @type {WeakMapStore<Brand, ZoeIssuerRecord>} */
   const brandToIssuerRecord = makeScalarWeakMapStore('brand');
-  /** @type {WeakMapStore<Issuer,IssuerRecord>} */
+  /** @type {WeakMapStore<Issuer, ZoeIssuerRecord>} */
   const issuerToIssuerRecord = makeScalarWeakMapStore('issuer');
 
   /** @type {IssuerTable} */

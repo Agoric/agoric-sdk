@@ -1,0 +1,36 @@
+diff --git a/src/util/minimal.js b/src/util/minimal.js
+index 3c406dee753b5c6fb29dda2e64d4482e754e7873..564e5dadaa50e4ad05fc18b767ee276c99e9f0f9 100644
+--- a/src/util/minimal.js
++++ b/src/util/minimal.js
+@@ -280,7 +280,30 @@ function newError(name) {
+             merge(this, properties);
+     }
+ 
+-    (CustomError.prototype = Object.create(Error.prototype)).constructor = CustomError;
++    CustomError.prototype = Object.create(Error.prototype, {
++        constructor: {
++            value: CustomError,
++            writable: true,
++            enumerable: false,
++            configurable: true,
++        },
++        name: {
++            get() { return name; },
++            set: undefined,
++            enumerable: false,
++            // configurable: false would accurately preserve the behavior of
++            // the original, but I'm guessing that was not intentional.
++            // For an actual error subclass, this property would
++            // be configurable.
++            configurable: true,
++        },
++        toString: {
++            value() { return this.name + ": " + this.message; },
++            writable: true,
++            enumerable: false,
++            configurable: true,
++        },
++    });
+ 
+     Object.defineProperty(CustomError.prototype, "name", { get: function() { return name; } });
+ 

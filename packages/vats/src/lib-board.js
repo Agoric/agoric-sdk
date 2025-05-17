@@ -3,7 +3,7 @@
  * @see prepareBoardKit()
  */
 
-import { assert, Fail, q } from '@agoric/assert';
+import { assert, Fail, q } from '@endo/errors';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import { M, makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
 import {
@@ -11,16 +11,20 @@ import {
   prepareRecorder,
 } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { E, Far } from '@endo/far';
-import { makeMarshal } from '@endo/marshal';
+import { isRemotable, makeMarshal } from '@endo/marshal';
 
+import { CapDataShape } from '@agoric/internal/src/marshal.js';
 import { crc6 } from './crc.js';
+
+/**
+ * @import {RemotableObject} from '@endo/pass-style';
+ * @import {Key} from '@endo/patterns';
+ */
 
 export const DEFAULT_CRC_DIGITS = 2;
 export const DEFAULT_PREFIX = 'board0';
 
 //#region Interface Guards
-// TODO import from Endo
-const CapDataShape = { body: M.string(), slots: M.array() };
 const MarshalI = M.interface('Marshaller', {
   toCapData: M.call(M.any()).returns(CapDataShape),
   serialize: M.call(M.any()).returns(CapDataShape),
@@ -75,10 +79,6 @@ const calcCrc = (data, crcDigits) => {
 /**
  * @typedef {ReturnType<typeof initDurableBoardState>} BoardState // TODO: use
  *   Key from @agoric/store when available
- * @see {prepareExoClassKit}
- * @see {@link ../../SwingSet/docs/virtual-objects.md|SwingSet Virtual Objects} Hoisting this function makes defining the state type concise.
- *
- * @typedef {import('@endo/marshal').Passable} Key
  */
 
 // TODO consider tightening initSequence to bigint only
@@ -98,13 +98,13 @@ const initDurableBoardState = (
   const immutable = { prefix, crcDigits };
 
   const lastSequence = BigInt(initSequence);
-  /** @type {MapStore<BoardId, Key>} */
+  /** @type {MapStore<BoardId, RemotableObject>} */
   const idToVal = makeScalarBigMapStore('idToVal', {
     durable: true,
     keyShape: IdShape,
     valueShape: ValShape,
   });
-  /** @type {MapStore<Key, BoardId>} */
+  /** @type {MapStore<RemotableObject, BoardId>} */
   const valToId = makeScalarBigMapStore('valToId', {
     durable: true,
     keyShape: ValShape,
@@ -126,11 +126,14 @@ const initDurableBoardState = (
 // transient marshallers that get GCed when the function completes.
 
 /**
- * @param {Key} value
+ * @param {RemotableObject} value
  * @param {BoardState} state
  */
 const getId = (value, state) => {
   const { idToVal, valToId, prefix, crcDigits } = state;
+  if (!isRemotable(value)) {
+    Fail`Board cannot create id for non-remotable`;
+  }
 
   if (valToId.has(value)) {
     return valToId.get(value);
@@ -184,7 +187,7 @@ const makeSlotToVal = state => {
   /**
    * @param {BoardId} slot
    * @param {string} iface
-   * @returns {unknown}
+   * @returns {any}
    */
   const slotToVal = (slot, iface) => {
     if (slot !== null) {
@@ -263,8 +266,7 @@ export const prepareBoardKit = baggage => {
          * `value` for its entire lifetime. For a well-known board, this is
          * essentially forever.
          *
-         * @param {Key} value
-         * @throws if `value` is not a Key in the @agoric/store sense
+         * @param {RemotableObject} value
          */
         getId(value) {
           return getId(value, this.state);
@@ -294,13 +296,14 @@ export const prepareBoardKit = baggage => {
             return board;
           }
           const [first, ...rest] = path;
+          /** @type {any} */
           const firstValue = board.getValue(/** @type {BoardId} */ (first));
           if (rest.length === 0) {
             return firstValue;
           }
           return E(firstValue).lookup(...rest);
         },
-        /** @param {Key} val */
+        /** @param {RemotableObject} val */
         has(val) {
           const { state } = this;
           return state.valToId.has(val);

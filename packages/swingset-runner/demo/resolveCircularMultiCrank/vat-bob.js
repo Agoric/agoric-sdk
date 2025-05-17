@@ -15,11 +15,11 @@ export function buildRootObject() {
   let rY;
   return Far('root', {
     genPromiseX() {
-      [pX, rX] = makePR();
+      void ([pX, rX] = makePR());
       return pX;
     },
     genPromiseY() {
-      [pY, rY] = makePR();
+      void ([pY, rY] = makePR());
       return pY;
     },
     resPromiseX(v) {

@@ -1,10 +1,15 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { insistKernelType } from './parseKernelSlots.js';
 import { insistVatID } from '../lib/id.js';
 
+/** @import {TotalMap} from '@agoric/internal'; */
+
 /**
+ * @typedef {`v${number}`} VatID
+ * @typedef {`ko${number}`} KOID
  * @typedef {'dropExport'  | 'retireExport'  | 'retireImport'}  GCActionType
  * @typedef {'dropExports' | 'retireExports' | 'retireImports'} GCQueueEventType
+ * @typedef {`${VatID} ${GCActionType} ${KOID}`} GCActionString
  */
 
 /**
@@ -16,17 +21,23 @@ const actionTypePriorities = ['dropExport', 'retireExport', 'retireImport'];
 
 /**
  * A mapping of GC action type to queue event type.
- *
- * @type {Map<GCActionType, GCQueueEventType>}
  */
-const queueTypeFromActionType = new Map([
-  ['dropExport', 'dropExports'],
-  ['retireExport', 'retireExports'],
-  ['retireImport', 'retireImports'],
-]);
+const queueTypeFromActionType =
+  /** @type {TotalMap<GCActionType, GCQueueEventType>} */ (
+    new Map([
+      ['dropExport', 'dropExports'],
+      ['retireExport', 'retireExports'],
+      ['retireImport', 'retireImports'],
+    ])
+  );
 
+/**
+ * @param {GCActionString} s
+ */
 function parseAction(s) {
-  const [vatID, type, kref] = s.split(' ');
+  const [vatID, type, kref] = /** @type {[VatID, GCActionType, KOID]} */ (
+    s.split(' ')
+  );
   insistVatID(vatID);
   queueTypeFromActionType.has(type) || Fail`unknown type ${type}`;
   insistKernelType('object', kref);
@@ -34,7 +45,7 @@ function parseAction(s) {
 }
 
 /**
- * @param {*} kernelKeeper
+ * @param {KernelKeeper} kernelKeeper
  * @returns {import('../types-internal.js').RunQueueEvent | undefined}
  */
 export function processGCActionSet(kernelKeeper) {
@@ -62,18 +73,22 @@ export function processGCActionSet(kernelKeeper) {
   // we must bypass the action as redundant (since it's an error to delete
   // the same c-list entry twice).
 
-  // This `filterAction` function looks at each queued GC Action and decides
-  // whether the current state of the c-lsits and reference counts warrants
-  // permits the action to run, or if it should be negated/bypassed.
-
-  function filterAction(vatKeeper, action, type, kref) {
+  /**
+   * Inspect a queued GC action and decide whether the current state of c-lists
+   * and reference counts warrants processing it, or if it should instead be
+   * negated/bypassed.
+   *
+   * @param {import('../types-external.js').VatKeeper} vatKeeper
+   * @param {GCActionType} type
+   * @param {KOID} kref
+   */
+  function shouldProcessAction(vatKeeper, type, kref) {
     const hasCList = vatKeeper.hasCListEntry(kref);
     const isReachable = hasCList ? vatKeeper.getReachableFlag(kref) : undefined;
     const exists = kernelKeeper.kernelObjectExists(kref);
-    // @ts-expect-error xxx
     const { reachable, recognizable } = exists
       ? kernelKeeper.getObjectRefCount(kref)
-      : {};
+      : { reachable: 0, recognizable: 0 };
 
     if (type === 'dropExport') {
       if (!exists) return false; // already, shouldn't happen
@@ -107,12 +122,16 @@ export function processGCActionSet(kernelKeeper) {
   // may need to change to support that, to ensure that `dropExport` and
   // `retireExport` can both be delivered.
 
-  function filterActions(vatID, groupedActions) {
+  /**
+   * @param {VatID} vatID
+   * @param {GCActionString[]} groupedActions
+   */
+  function krefsToProcess(vatID, groupedActions) {
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const krefs = [];
     for (const action of groupedActions) {
       const { type, kref } = parseAction(action);
-      if (filterAction(vatKeeper, action, type, kref)) {
+      if (shouldProcessAction(vatKeeper, type, kref)) {
         krefs.push(kref);
       }
       allActionsSet.delete(action);
@@ -121,49 +140,50 @@ export function processGCActionSet(kernelKeeper) {
     return krefs;
   }
 
-  const grouped = new Map(); // grouped.get(vatID).get(type) = krefs to process
+  /** @type {TotalMap<VatID, TotalMap<GCActionType, GCActionString[]>>} */
+  const actionsByVat = new Map();
   for (const action of allActionsSet) {
     const { vatID, type } = parseAction(action);
-    if (!grouped.has(vatID)) {
-      grouped.set(vatID, new Map());
+    if (!actionsByVat.has(vatID)) {
+      actionsByVat.set(vatID, new Map());
     }
-    const forVat = grouped.get(vatID);
-    if (!forVat.has(type)) {
-      forVat.set(type, []);
+    const actionsForVatByType = actionsByVat.get(vatID);
+    if (!actionsForVatByType.has(type)) {
+      actionsForVatByType.set(type, []);
     }
-    forVat.get(type).push(action);
+    actionsForVatByType.get(type).push(action);
   }
 
-  const vatIDs = Array.from(grouped.keys());
+  const vatIDs = Array.from(actionsByVat.keys());
   vatIDs.sort();
   for (const vatID of vatIDs) {
-    const forVat = grouped.get(vatID);
+    const actionsForVatByType = actionsByVat.get(vatID);
     // find the highest-priority type of work to do within this vat
     for (const type of actionTypePriorities) {
-      if (forVat.has(type)) {
-        const actions = forVat.get(type);
-        const krefs = filterActions(vatID, actions);
+      if (actionsForVatByType.has(type)) {
+        const actions = actionsForVatByType.get(type);
+        const krefs = krefsToProcess(vatID, actions);
         if (krefs.length) {
           // at last, we act
           krefs.sort();
           // remove the work we're about to do from the durable set
           kernelKeeper.setGCActions(allActionsSet);
-          const queueType = /** @type {GCQueueEventType} */ (
-            queueTypeFromActionType.get(type)
-          );
+          const queueType = queueTypeFromActionType.get(type);
           return harden({ type: queueType, vatID, krefs });
         }
       }
     }
   }
+
   if (actionSetUpdated) {
     // remove negated items from the durable set
     kernelKeeper.setGCActions(allActionsSet);
-    // return a special gc-nop event to tell kernel to record our
+    // return a special event to tell kernel to record our
     // DB changes in their own crank
     return harden({ type: 'negated-gc-action', vatID: undefined });
-  } else {
-    return undefined; // no GC work to do and no DB changes
   }
+
+  // no GC work to do and no DB changes
+  return undefined;
 }
 harden(processGCActionSet);

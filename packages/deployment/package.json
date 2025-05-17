@@ -1,5 +1,5 @@
 {
-  "name": "@agoric/deployment",
+  "name": "@aglocal/deployment",
   "version": "3.0.0",
   "description": "Set up Agoric public chain nodes",
   "type": "module",
@@ -19,24 +19,19 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/assert": "^0.6.0",
-    "@endo/init": "^1.0.1",
-    "@endo/marshal": "^1.0.1",
-    "better-sqlite3": "^9.1.1",
+    "@endo/errors": "^1.2.10",
+    "@endo/init": "^1.1.9",
+    "@endo/marshal": "^1.6.4",
     "chalk": "^5.2.0",
     "deterministic-json": "^1.0.5",
     "inquirer": "^8.2.2",
     "minimist": "^1.2.0",
-    "node-fetch": "^2.6.0",
     "temp": "^0.9.0"
-  },
-  "publishConfig": {
-    "access": "public"
   },
   "devDependencies": {
     "readline-transform": "^1.0.0"
   },
   "typeCoverage": {
-    "atLeast": 61.49
+    "atLeast": 50.83
   }
 }

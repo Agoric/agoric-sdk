@@ -1,5 +1,5 @@
 {
-  "name": "@agoric/benchmark",
+  "name": "@aglocal/benchmark",
   "version": "0.1.0",
   "private": true,
   "description": "Benchmark support",
@@ -22,14 +22,14 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/assert": "^0.6.0",
-    "@agoric/boot": "^0.1.0",
+    "@aglocal/boot": "^0.1.0",
     "@agoric/cosmic-swingset": "^0.41.3",
-    "@agoric/internal": "^0.3.2",
     "@agoric/inter-protocol": "^0.16.1",
+    "@agoric/internal": "^0.3.2",
     "@agoric/vats": "^0.15.1",
     "@agoric/zoe": "^0.26.2",
-    "@endo/init": "^1.0.1"
+    "@endo/errors": "^1.2.10",
+    "@endo/init": "^1.1.9"
   },
   "devDependencies": {},
   "files": [
@@ -40,27 +40,5 @@
     "*.json",
     "globals.d.ts",
     "exported.js"
-  ],
-  "engines": {
-    "node": ">=14.15.0"
-  },
-  "ava": {
-    "extensions": {
-      "js": true,
-      "ts": "module"
-    },
-    "files": [
-      "test/**/test-*.js",
-      "test/**/test-*.ts"
-    ],
-    "nodeArguments": [
-      "--loader=tsx",
-      "--no-warnings"
-    ],
-    "require": [
-      "@endo/init/debug.js"
-    ],
-    "timeout": "20m",
-    "workerThreads": false
-  }
+  ]
 }

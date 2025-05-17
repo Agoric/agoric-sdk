@@ -1,9 +1,9 @@
-/* global process */
+/* eslint-env node */
 import fs from 'fs';
 import path from 'path';
 
-import { assert, Fail } from '@agoric/assert';
-import { makeTracer } from '@agoric/internal';
+import { assert, b, Fail } from '@endo/errors';
+import { deepCopyJsonable, makeTracer } from '@agoric/internal';
 import { mustMatch } from '@agoric/store';
 import bundleSource from '@endo/bundle-source';
 import { resolve as resolveModuleSpecifier } from 'import-meta-resolve';
@@ -86,16 +86,6 @@ export async function buildKernelBundles() {
   return harden({ kernel: kernelBundle, ...vdBundles });
 }
 
-function byName(a, b) {
-  if (a.name < b.name) {
-    return -1;
-  }
-  if (a.name > b.name) {
-    return 1;
-  }
-  return 0;
-}
-
 /**
  * Scan a directory for files defining the vats to bootstrap for a swingset, and
  * produce a swingset config object for what was found there.  Looks for files
@@ -126,18 +116,18 @@ export function loadBasedir(basedir, options = {}) {
   const { includeDevDependencies = false, bundleFormat = undefined } = options;
   /** @type { SwingSetConfigDescriptor } */
   const vats = {};
-  const subs = fs.readdirSync(basedir, { withFileTypes: true });
-  subs.sort(byName);
-  for (const dirent of subs) {
-    if (
-      dirent.name.startsWith('vat-') &&
-      dirent.name.endsWith('.js') &&
-      dirent.isFile()
-    ) {
-      const name = dirent.name.slice('vat-'.length, -'.js'.length);
-      const vatSourcePath = path.resolve(basedir, dirent.name);
-      vats[name] = { sourceSpec: vatSourcePath, parameters: {} };
-    }
+  const rVatName = /^vat-(.*)\.js$/s;
+  const files = fs.readdirSync(basedir, { withFileTypes: true });
+  const vatFiles = files.flatMap(dirent => {
+    const file = dirent.name;
+    const m = rVatName.exec(file);
+    return m && dirent.isFile() ? [{ file, label: m[1] }] : [];
+  });
+  // eslint-disable-next-line no-shadow,no-nested-ternary
+  vatFiles.sort((a, b) => (a.label < b.label ? -1 : a.label > b.label ? 1 : 0));
+  for (const { file, label } of vatFiles) {
+    const vatSourcePath = path.resolve(basedir, file);
+    vats[label] = { sourceSpec: vatSourcePath, parameters: {} };
   }
   /** @type {string | void} */
   let bootstrapPath = path.resolve(basedir, 'bootstrap.js');
@@ -185,37 +175,42 @@ async function resolveSpecFromConfig(referrer, specPath) {
 }
 
 /**
- * For each entry in a config descriptor (i.e, `vats`, `bundles`, etc), convert
- * it to normal form: resolve each pathname to a context-insensitive absolute
- * path and make sure it has a `parameters` property if it's supposed to.
+ * Convert each entry in a config descriptor group (`vats`/`bundles`/etc.) to
+ * normal form: resolve each pathname to a context-insensitive absolute path and
+ * run any other appropriate fixup.
  *
- * @param {SwingSetConfigDescriptor | void} desc  The config descriptor to be normalized.
- * @param {string} referrer  The pathname of the file or directory in which the
- * config file was found
- * @param {boolean} expectParameters `true` if the entries should have parameters (for
- *    example, `true` for `vats` but `false` for bundles).
+ * @param {SwingSetConfig} config
+ * @param {'vats' | 'bundles' | 'devices'} groupName
+ * @param {string | undefined} configPath of the containing config file
+ * @param {string} referrer URL
+ * @param {(entry: SwingSetConfigProperties, name?: string) => void} [fixupEntry]
+ *   A function to call on each entry to e.g. add defaults for missing fields
+ *   such as vat `parameters`.
  */
-async function normalizeConfigDescriptor(desc, referrer, expectParameters) {
-  const normalizeSpec = async (entry, key) => {
-    return resolveSpecFromConfig(referrer, entry[key]).then(spec => {
-      fs.existsSync(spec) ||
-        Fail`spec for ${entry[key]} does not exist: ${spec}`;
-      entry[key] = spec;
-    });
+async function normalizeConfigDescriptor(
+  config,
+  groupName,
+  configPath,
+  referrer,
+  fixupEntry,
+) {
+  const normalizeSpec = async (entry, specKey, name) => {
+    const sourcePath = await resolveSpecFromConfig(referrer, entry[specKey]);
+    fs.existsSync(sourcePath) ||
+      Fail`${sourcePath} for ${b(groupName)}[${name}].${b(specKey)} in ${configPath} config file does not exist`;
+    entry[specKey] = sourcePath;
   };
 
   const jobs = [];
+  const desc = config[groupName];
   if (desc) {
-    for (const name of Object.keys(desc)) {
-      const entry = desc[name];
+    for (const [name, entry] of Object.entries(desc)) {
+      fixupEntry?.(entry, name);
       if ('sourceSpec' in entry) {
-        jobs.push(normalizeSpec(entry, 'sourceSpec'));
+        jobs.push(normalizeSpec(entry, 'sourceSpec', name));
       }
       if ('bundleSpec' in entry) {
-        jobs.push(normalizeSpec(entry, 'bundleSpec'));
-      }
-      if (expectParameters && !entry.parameters) {
-        entry.parameters = {};
+        jobs.push(normalizeSpec(entry, 'bundleSpec', name));
       }
     }
   }
@@ -223,27 +218,41 @@ async function normalizeConfigDescriptor(desc, referrer, expectParameters) {
 }
 
 /**
- * Read and parse a swingset config file and return it in normalized form.
+ * @param {SwingSetConfig} config
+ * @param {string} [configPath]
+ * @returns {Promise<void>}
+ * @throws {Error} if the config is invalid
+ */
+export async function normalizeConfig(config, configPath) {
+  const base = `file://${process.cwd()}/`;
+  const referrer = configPath
+    ? new URL(configPath, base).href
+    : new URL(base).href;
+  const fixupVat = vat => (vat.parameters ||= {});
+  await Promise.all([
+    normalizeConfigDescriptor(config, 'vats', configPath, referrer, fixupVat),
+    normalizeConfigDescriptor(config, 'bundles', configPath, referrer),
+    // TODO: represent devices
+    // normalizeConfigDescriptor(config, 'devices', configPath, referrer),
+  ]);
+  config.bootstrap ||
+    Fail`no designated bootstrap vat in ${configPath} config file`;
+  (config.vats && config.vats[/** @type {string} */ (config.bootstrap)]) ||
+    Fail`bootstrap vat ${config.bootstrap} not found in ${configPath} config file`;
+}
+
+/**
+ * Read and normalize a swingset config file.
  *
- * @param {string} configPath  Path to the config file to be processed
- *
- * @returns {Promise<SwingSetConfig | null>} the contained config object, in normalized form, or null if the
- *    requested config file did not exist.
- *
- * @throws {Error} if the file existed but was inaccessible, malformed, or otherwise
- *    invalid.
+ * @param {string} configPath
+ * @returns {Promise<SwingSetConfig | null>} the normalized config,
+ *   or null if the file did not exist
  */
 export async function loadSwingsetConfigFile(configPath) {
   await null;
   try {
     const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-    const referrer = new URL(configPath, `file://${process.cwd()}/`).toString();
-    await normalizeConfigDescriptor(config.vats, referrer, true);
-    await normalizeConfigDescriptor(config.bundles, referrer, false);
-    // await normalizeConfigDescriptor(config.devices, referrer, true); // TODO: represent devices
-    config.bootstrap || Fail`no designated bootstrap vat in ${configPath}`;
-    (config.vats && config.vats[config.bootstrap]) ||
-      Fail`bootstrap vat ${config.bootstrap} not found in ${configPath}`;
+    await normalizeConfig(config, configPath);
     return config;
   } catch (e) {
     console.error(`failed to load ${configPath}`);
@@ -256,7 +265,10 @@ export async function loadSwingsetConfigFile(configPath) {
 }
 
 export function swingsetIsInitialized(kernelStorage) {
-  return !!kernelStorage.kvStore.get('initialized');
+  return !!(
+    kernelStorage.kvStore.get('version') ||
+    kernelStorage.kvStore.get('initialized')
+  );
 }
 
 /**
@@ -311,7 +323,7 @@ export async function initializeSwingset(
   } = runtimeOptions;
 
   // copy config so we can safely mess with it even if it's shared or hardened
-  config = JSON.parse(JSON.stringify(config));
+  config = deepCopyJsonable(config);
   if (!config.bundles) {
     config.bundles = {};
   }
@@ -397,7 +409,7 @@ export async function initializeSwingset(
         enableSetup: true,
         managerType: 'local',
         useTranscript: false,
-        reapInterval: 'never',
+        neverReap: true,
       },
     };
   }
@@ -430,26 +442,24 @@ export async function initializeSwingset(
    * The host application gives us
    * config.[vats|devices].NAME.[bundle|bundleSpec|sourceSpec|bundleName] .
    * The 'bundleName' option points into
-   * config.bundles.BUNDLENAME.[bundle|bundleSpec|sourceSpec] , which can
+   * config.bundles.BUNDLENAME.[bundle|bundleSpec|sourceSpec], which can
    * also include arbitrary named bundles that will be made available to
-   * E(vatAdminService).getNamedBundleCap(bundleName) ,and temporarily as
+   * E(vatAdminService).getNamedBundleCap(bundleName), and temporarily as
    * E(vatAdminService).createVatByName(bundleName)
    *
    * The 'kconfig' we pass through to initializeKernel has
    * kconfig.[vats|devices].NAME.bundleID and
-   * kconfig.namedBundleIDs.BUNDLENAME=bundleID , which both point into
+   * kconfig.namedBundleIDs.BUNDLENAME=bundleID, which both point into
    * kconfig.idToBundle.BUNDLEID=bundle
    *
-   * @param {SwingSetConfigProperties | { bundleName: string }} desc
+   * @param {SwingSetConfigProperties} desc
    * @param {Record<string, *>} [nameToBundle]
    */
   async function getBundle(desc, nameToBundle) {
     trace(
       'getBundle',
       Object.keys(desc),
-      // @ts-expect-error optional
       desc.moduleFormat,
-      // @ts-expect-error optional
       desc.endoZipBase64Sha512 || desc.sourceSpec,
     );
 
@@ -477,8 +487,9 @@ export async function initializeSwingset(
     throw Error(`unknown mode in desc`, desc);
   }
 
-  // fires with BundleWithID: { ...bundle, id }
   /**
+   * Returns a bundle record with an "id" property from an input that might be missing it.
+   *
    * @param {EndoZipBase64Bundle & {id?: string}} bundle
    * @returns {Promise<EndoZipBase64Bundle & {id: string}>} bundle
    */
@@ -496,11 +507,9 @@ export async function initializeSwingset(
     };
   }
 
-  // fires with BundleWithID: { ...bundle, id }
-
   /**
    *
-   * @param {(SwingSetConfigProperties | { bundleName: string }) & {bundleID?: string }} desc
+   * @param {SwingSetConfigProperties & {bundleID?: string}} desc
    * @param {Record<string, EndoZipBase64Bundle>} [nameToBundle]
    */
   async function processDesc(desc, nameToBundle) {
@@ -514,14 +523,14 @@ export async function initializeSwingset(
     modes.length === 1 ||
       Fail`need =1 of bundle/bundleSpec/sourceSpec/bundleName, got ${modes}`;
     const mode = modes[0];
-    return getBundle(desc, nameToBundle)
-      .then(addBundleID)
-      .then(bundleWithID => {
-        // replace original .sourceSpec/etc with a uniform .bundleID
-        delete desc[mode];
-        desc.bundleID = bundleWithID.id;
-        return bundleWithID;
-      });
+
+    // Remove the original mode in favor of a uniform "bundleID" property.
+    const bundle = await getBundle(desc, nameToBundle);
+    const bundleWithID = await addBundleID(bundle);
+    delete desc[mode];
+    desc.bundleID = bundleWithID.id;
+
+    return bundleWithID;
   }
 
   /**

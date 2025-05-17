@@ -1,4 +1,3 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 
@@ -44,7 +43,7 @@ export const scheduleLiquidation = (zcf, configWithBorrower) => {
       const currentCollateral = collateralSeat.getAmountAllocated('Collateral');
       if (AmountMath.isEqual(amountIn, currentCollateral)) {
         liquidationPromiseKit.resolve(priceQuote);
-        liquidate(zcf, configWithBorrower);
+        void liquidate(zcf, configWithBorrower);
       }
     })
     .catch(err => {

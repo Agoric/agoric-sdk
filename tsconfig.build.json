@@ -25,7 +25,6 @@
         "**/dist",
         "**/docs",
         "**/*.umd.js",
-        "**/proposals",
         "**/scripts",
         "**/test"
     ],

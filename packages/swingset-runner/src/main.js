@@ -49,7 +49,7 @@ FLAGS may be:
   --initonly       - initialize the swingset but exit without running it
   --sqlite         - runs using Sqlite3 as the data store (default)
   --memdb          - runs using the non-persistent in-memory data store
-  --usexs          - run vats using the the XS engine
+  --usexs          - run vats using the XS engine
   --usebundlecache - cache bundles created by swingset loader
   --dbdir DIR      - specify where the data store should go (default BASEDIR)
   --blockmode      - run in block mode (checkpoint every BLOCKSIZE blocks)
@@ -219,8 +219,6 @@ function generateIndirectConfig(baseConfig) {
   }
   return config;
 }
-
-/* eslint-disable no-use-before-define */
 
 /**
  * Command line utility to run a swingset for development and testing purposes.

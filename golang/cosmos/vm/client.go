@@ -12,8 +12,8 @@ const ReceiveMessageMethod = "agvm.ReceiveMessage"
 
 // Message is what we send to the VM.
 type Message struct {
-	Port int
-	Data string
+	Port       int
+	Data       string
 	NeedsReply bool
 }
 
@@ -24,7 +24,9 @@ var _ rpc.ClientCodec = (*ClientCodec)(nil)
 // runtime and the VM in the single-process dual-runtime configuration.
 //
 // We expect to call it via the legacy API with signature:
-//    sendToController func(needsReply bool, msg string) (string, error)
+//
+//	sendToController func(needsReply bool, msg string) (string, error)
+//
 // where msg and the returned string are JSON-encoded values.
 //
 // Note that the net/rpc framework cannot express a call that does not expect a
@@ -32,22 +34,22 @@ var _ rpc.ClientCodec = (*ClientCodec)(nil)
 // having the WriteRequest() method fabricate a Receive() call to clear the rpc
 // state.
 type ClientCodec struct {
-	ctx context.Context
-	send func(port, rPort int, msg string)
-	outbound map[int]rpc.Request
-	inbound chan *rpc.Response
-	replies map[uint64]string
+	ctx         context.Context
+	send        func(port, rPort int, msg string)
+	outbound    map[int]rpc.Request
+	inbound     chan *rpc.Response
+	replies     map[uint64]string
 	replyToRead uint64
 }
 
 // NewClientCodec creates a new ClientCodec.
 func NewClientCodec(ctx context.Context, send func(int, int, string)) *ClientCodec {
 	return &ClientCodec{
-		ctx: ctx,
-		send: send,
+		ctx:      ctx,
+		send:     send,
 		outbound: make(map[int]rpc.Request),
-		inbound: make(chan *rpc.Response),
-		replies: make(map[uint64]string),
+		inbound:  make(chan *rpc.Response),
+		replies:  make(map[uint64]string),
 	}
 }
 
@@ -97,7 +99,7 @@ func (cc *ClientCodec) Receive(rPort int, isError bool, data string) error {
 	delete(cc.outbound, rPort)
 	resp := &rpc.Response{
 		ServiceMethod: outb.ServiceMethod,
-		Seq: outb.Seq,
+		Seq:           outb.Seq,
 	}
 	if isError {
 		resp.Error = data

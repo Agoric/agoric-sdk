@@ -3,9 +3,7 @@ import process from 'process';
 import Readlines from 'n-readlines';
 import yargs from 'yargs';
 
-import { Fail } from '@agoric/assert';
-
-/* eslint-disable no-use-before-define */
+import { Fail } from '@endo/errors';
 
 function usage() {
   console.error('usage message goes here');
@@ -25,6 +23,7 @@ export function main() {
     .default('out', undefined, '<STDOUT>')
     .describe('out', 'File to output to')
     .string('annotations')
+    .alias('annotations', 'annot')
     .describe('annotations', 'Annotations file')
     .boolean('summarize')
     .describe('summarize', 'Output summary report at end')
@@ -47,9 +46,27 @@ export function main() {
       'usesloggertags',
       'Display slogger events using full slogger tags',
     )
+    .boolean('timing')
+    .describe(
+      'timing',
+      'Show execution time information in crank and syscall summaries',
+    )
+    .boolean('nonoise')
+    .describe(
+      'nonoise',
+      `Skip displaying lines not normally useful for debugging`,
+    )
+    .boolean('novatstore')
+    .describe(
+      'novatstore',
+      'Skip displaying lines describing vatstore operations',
+    )
     .number('bigwidth')
     .default('bigwidth', 200)
-    .describe('bigwidth', 'Width above which large values display as <BIG>')
+    .describe(
+      'bigwidth',
+      'Length above which long value strings display as "<BIG>"',
+    )
     .strict()
     .usage('$0 [OPTIONS...] SLOGFILE')
     .version(false)
@@ -120,13 +137,19 @@ export function main() {
   }
 
   const summary = {};
-  let currentCrank = 0;
+  let inCrank = false;
+  let startEntry;
   let currentVat;
   let currentSyscallName;
+  let currentSyscallString;
   let importKernelStartTime = 0;
   let bundleKernelStartTime = 0;
   let kernelInitStartTime = 0;
   let crankStartTime = 0;
+  let crankTotalSyscallTime = 0;
+  let crankSyscallCount = 0;
+  const crankReportItems = [];
+  let syscallStartTime = 0;
   let vatStartupStartTime = 0;
   let vatStartupVat;
   let replayTranscriptStartTime = 0;
@@ -145,6 +168,31 @@ export function main() {
   const crankLabels = new Map();
   const kernelRefs = new Map();
   const vatRefs = new Map();
+
+  function p(str) {
+    if (inCrank) {
+      crankReportItems.push(str);
+    } else {
+      out.write(str);
+      out.write('\n');
+    }
+  }
+
+  function ptime(t) {
+    return `${(t * 1000_000).toFixed(0)}µs`;
+  }
+
+  function pct(n) {
+    return `${(n * 100).toFixed(2)}%`;
+  }
+
+  function outputCrankReport() {
+    !inCrank || Fail`outputCrankReport called from inside crank`;
+    if (crankReportItems.length > 0) {
+      p(crankReportItems.join('\n'));
+      crankReportItems.length = 0;
+    }
+  }
 
   if (argv.annotations) {
     let annotations;
@@ -190,10 +238,11 @@ export function main() {
   }
 
   if (argv.crankbreaks) {
-    p('// crank 0');
+    p('// startup');
   }
   let line = lines.next();
   let lineNumber = 0;
+  let skipCrank = -1;
   while (line) {
     lineNumber += 1;
     let entry;
@@ -204,28 +253,25 @@ export function main() {
       throw err;
     }
     const type = entry.type;
-    if (entry.crankNum && entry.crankNum !== currentCrank) {
-      currentCrank = entry.crankNum;
-      currentVat = entry.vatID;
-      if (argv.crankbreaks) {
-        p('');
-        const crankLabel = crankLabels.get(`${currentCrank}`);
-        const crankTag = crankLabel ? ` --- ${crankLabel}` : '';
-        // prettier-ignore
-        p(`// crank ${currentCrank}: ${entry.vatID} ${vatLabel(entry)}${crankTag}`);
+    if (type === 'crank-start') {
+      if (entry.crankType === 'routing' && argv.nonoise) {
+        skipCrank = entry.crankNum;
       }
+      startEntry = entry;
     }
     if (summary[type]) {
       summary[type] += 1;
     } else {
       summary[type] = 1;
     }
-    const handler = handlers[type] || defaultHandler;
-    try {
-      handler(entry);
-    } catch (err) {
-      p(`// handler problem on line ${lineNumber}`);
-      throw err;
+    if (entry.crankNum !== skipCrank) {
+      const handler = handlers[type] || defaultHandler;
+      try {
+        handler(entry);
+      } catch (err) {
+        p(`// handler problem on line ${lineNumber}`);
+        throw err;
+      }
     }
     line = lines.next();
   }
@@ -241,17 +287,12 @@ export function main() {
     }
   }
 
-  function p(str) {
-    out.write(str);
-    out.write('\n');
-  }
-
   function defaultHandler(entry) {
     p(`@ ${entry.type}: ${JSON.stringify(entry)}`);
   }
 
-  function vatLabel(entry) {
-    return vatNames.get(entry.vatID) || '<no name>';
+  function vatLabel(vatID) {
+    return vatNames.get(vatID) || '<no name>';
   }
 
   function handleSloggerConfused(_entry) {}
@@ -268,7 +309,7 @@ export function main() {
       vatNames.set(entry.vatID, entry.name);
     }
     // prettier-ignore
-    p(`create-vat: ${entry.vatID} ${vatLabel(entry)} ${entry.dynamic ? 'dynamic' : 'static'} ${entry.description}`);
+    p(`create-vat: ${entry.vatID} ${vatLabel(entry.vatID)} ${entry.dynamic ? 'dynamic' : 'static'} "${entry.description}"`);
   }
 
   function pref(ref, ks = kernelSpace) {
@@ -282,64 +323,162 @@ export function main() {
     return name ? `<${name}>` : `@${ref}`;
   }
 
-  function legibilizeValue(val, slots) {
-    let result = '';
-    if (Array.isArray(val)) {
-      result = '[';
-      for (const elem of val) {
-        if (result.length !== 1) {
-          result += ', ';
+  function legibilizeValue(val, slots, smallcaps) {
+    let result;
+    try {
+      if (Array.isArray(val)) {
+        result = '[';
+        for (const elem of val) {
+          if (result.length !== 1) {
+            result += ', ';
+          }
+          result += legibilizeValue(elem, slots, smallcaps);
         }
-        result += legibilizeValue(elem, slots);
-      }
-      result += ']';
-    } else if (val && typeof val === 'object' && val.constructor === Object) {
-      const qClass = val['@qclass'];
-      if (qClass) {
-        switch (qClass) {
-          case 'undefined':
-          case 'NaN':
-          case 'Infinity':
-          case '-Infinity':
-            result = qClass;
-            break;
-          case 'bigint':
-            result = val.digits;
-            break;
-          case 'slot':
-            result = pref(slots[val.index]);
-            break;
-          case 'symbol':
-            result = `[${val.name}]`;
-            break;
-          case 'error':
-            result = `new ${val.name}('${val.message}')`;
-            break;
-          default:
-            Fail`unknown qClass ${qClass} in legibilizeValue`;
+        result += ']';
+      } else if (val && typeof val === 'object' && val.constructor === Object) {
+        const qClass = val['@qclass'];
+        if (qClass && !smallcaps) {
+          switch (qClass) {
+            case 'undefined':
+            case 'NaN':
+            case 'Infinity':
+            case '-Infinity':
+              result = qClass;
+              break;
+            case 'bigint':
+              result = val.digits;
+              break;
+            case 'slot':
+              result = pref(slots[val.index]);
+              break;
+            case 'symbol':
+              result = `[${val.name}]`;
+              break;
+            case '@@asyncIterator':
+              result = `[Symbol.asyncIterator]`;
+              break;
+            case 'error':
+              result = `new ${val.name}('${val.message}')`;
+              break;
+            default:
+              Fail`unknown qClass ${qClass} in legibilizeValue`;
+              break;
+          }
         }
-      } else {
         result = '{';
         for (const prop of Object.getOwnPropertyNames(val)) {
           if (result.length !== 1) {
             result += ', ';
           }
-          result += `${String(prop)}: ${legibilizeValue(val[prop], slots)}`;
+          // prettier-ignore
+          result += `${String(prop)}: ${legibilizeValue(val[prop], slots, smallcaps)}`;
         }
         result += '}';
+      } else if (val && typeof val === 'string' && smallcaps) {
+        const prefix = val.charAt(0);
+        const rest = val.substring(1);
+        switch (prefix) {
+          case '!':
+            result = `"${rest}"`;
+            break;
+          case '%':
+            result = `[${rest}]`;
+            break;
+          case '#':
+          case '+':
+          case '-':
+            result = rest;
+            break;
+          case '$':
+          case '&': {
+            const end = rest.indexOf('.');
+            const idx = Number(rest.slice(0, end < 0 ? rest.length : end));
+            result = pref(slots[idx]);
+            break;
+          }
+          default:
+            result = JSON.stringify(val) || '<unintelligible value>';
+            break;
+        }
+      } else {
+        result = JSON.stringify(val) || '<unintelligible value>';
       }
-    } else {
-      result = JSON.stringify(val);
+    } catch {
+      result = '<unintelligible value>';
     }
     return result.length > bigWidth ? '<BIG>' : result;
   }
 
-  function legibilizeMessageArgs(args) {
+  function legibilizeMethod(method, smallcaps) {
     try {
-      return JSON.parse(args.body).map(arg => legibilizeValue(arg, args.slots));
-    } catch (e) {
-      console.error(e);
-      return [args];
+      if (typeof method === 'string') {
+        if (!smallcaps) {
+          return method;
+        }
+        const prefix = method.charAt(0);
+        const rest = method.substring(1);
+        switch (prefix) {
+          case '%':
+            return `[${rest}]`;
+          case '#':
+            if (rest === 'undefined') {
+              return '<funcall>';
+            } else {
+              return '<unintelligible method>';
+            }
+          case '!':
+            return rest;
+          case '+':
+          case '-':
+          case '$':
+          case '&':
+            return '<unintelligible method>';
+          default:
+            return method;
+        }
+      } else if (typeof method === 'symbol') {
+        return `[${method.toString()}]`;
+      } else if (method === undefined) {
+        return '<funcall>';
+      } else if (typeof method === 'object') {
+        if (smallcaps) {
+          return '<unintelligible method>';
+        }
+        const qclass = method['@qclass'];
+        if (qclass === 'undefined') {
+          return '<funcall>';
+        } else if (qclass === 'symbol') {
+          return `[${method.name}]`;
+        } else if (qclass === '@@asyncIterator') {
+          return `[Symbol.asyncIterator]`;
+        } else {
+          return '<invalid method type>';
+        }
+      } else {
+        return '<unintelligible method>';
+      }
+    } catch {
+      return '<unintelligible method>';
+    }
+  }
+
+  function legibilizeMessageArgs(methargsCapdata) {
+    try {
+      let smallcaps = false;
+      let bodyString = methargsCapdata.body;
+      if (bodyString.charAt(0) === '#') {
+        smallcaps = true;
+        bodyString = bodyString.substring(1);
+      }
+      const methargs = JSON.parse(bodyString);
+      const [method, args] = methargs;
+      const methodStr = legibilizeMethod(method, smallcaps);
+      const argsStrs = args.map(arg =>
+        legibilizeValue(arg, methargsCapdata.slots, smallcaps),
+      );
+      return [methodStr, argsStrs.join(', ')];
+    } catch {
+      return '<unintelligible message args>';
     }
   }
 
@@ -348,12 +487,36 @@ export function main() {
     return [method.replaceAll('"', ''), args.join(', ')];
   }
 
-  function pargs(args) {
-    return legibilizeMessageArgs(args).join(', ');
+  function legibilizeCallArgs(argsCapdata) {
+    try {
+      let smallcaps = false;
+      let bodyString = argsCapdata.body;
+      if (bodyString.charAt(0) === '#') {
+        smallcaps = true;
+        bodyString = bodyString.substring(1);
+      }
+      const args = JSON.parse(bodyString);
+      const argsStrs = args.map(arg =>
+        legibilizeValue(arg, argsCapdata.slots, smallcaps),
+      );
+      return argsStrs;
+    } catch {
+      return '<unintelligible call args>';
+    }
+  }
+
+  function pcallargs(args) {
+    return legibilizeCallArgs(args).join(', ');
   }
 
   function pdata(data) {
-    return legibilizeValue(JSON.parse(data.body), data.slots);
+    let smallcaps = false;
+    let bodyString = data.body;
+    if (bodyString.charAt(0) === '#') {
+      smallcaps = true;
+      bodyString = bodyString.substring(1);
+    }
+    return legibilizeValue(JSON.parse(bodyString), data.slots, smallcaps);
   }
 
   function doDeliverMessage(delivery, prefix = '') {
@@ -367,6 +530,7 @@ export function main() {
   function doDeliverNotify(delivery, prefix = '') {
     const resolutions = delivery[1];
     let idx = 0;
+    const single = resolutions.length === 1;
     for (const resolution of resolutions) {
       const [target, value] = resolution;
       let state;
@@ -396,7 +560,11 @@ export function main() {
       switch (state) {
         case 'fulfilled':
         case 'rejected':
-          p(`${prefix}${tag}: ${idx} ${pref(target)} := ${pdata(data)}`);
+          if (single) {
+            p(`${prefix}${tag}: ${pref(target)} := ${pdata(data)}`);
+          } else {
+            p(`${prefix}${tag}: ${idx} ${pref(target)} := ${pdata(data)}`);
+          }
           break;
         default:
           p(`notify: unknown state "${state}"`);
@@ -404,6 +572,11 @@ export function main() {
       }
       idx += 1;
     }
+  }
+
+  function doDeliverStartVat(delivery, prefix = '') {
+    // prettier-ignore
+    p(`${prefix}startVat: ${pdata(delivery[1])}`);
   }
 
   function doDeliverDropRetire(delivery, prefix = '') {
@@ -423,6 +596,9 @@ export function main() {
       case 'retireExports':
       case 'retireImports':
         doDeliverDropRetire(delivery, prefix);
+        break;
+      case 'startVat':
+        doDeliverStartVat(delivery, prefix);
         break;
       default:
         p(`deliver: unknown deliver type "${delivery[0]}"`);
@@ -454,66 +630,75 @@ export function main() {
       result = entry[3];
     }
     const [method, args] = pmethargs(methargs);
-    p(`${tag}: ${pref(target)} <- ${method}(${args}): ${pref(result)}`);
+    return `${tag}: ${pref(target)} <- ${method}(${args}): ${pref(result)}`;
   }
 
   function doSyscallResolve(tag, entry) {
     let idx = 0;
     const resolutions = kernelSpace ? entry[2] : entry[1];
+    const single = resolutions.length === 1;
+    const resultElems = [];
     for (const resolution of resolutions) {
       const [target, rejected, value] = resolution;
       const rejTag = rejected ? 'reject' : 'fulfill';
-      p(`${tag} ${idx} ${rejTag}: ${pref(target)} = ${pdata(value)}`);
+      if (single) {
+        resultElems.push(
+          `${tag} ${rejTag}: ${pref(target)} := ${pdata(value)}`,
+        );
+      } else {
+        resultElems.push(
+          `${tag} ${idx} ${rejTag}: ${pref(target)} := ${pdata(value)}`,
+        );
+      }
       idx += 1;
     }
+    return resultElems.join('\n');
   }
 
   function doSyscallInvoke(tag, entry) {
-    p(`${tag}: ${pref(entry[1])}.${entry[2]}(${pargs(entry[3])})`);
+    return `${tag}: ${pref(entry[1])}.${entry[2]}(${pcallargs(entry[3])})`;
   }
 
   function doSyscallSubscribe(tag, entry) {
-    p(`${tag}: ${pref(kernelSpace ? entry[2] : entry[1])}`);
+    return `${tag}: ${pref(kernelSpace ? entry[2] : entry[1])}`;
   }
 
   function doSyscallVatstoreDeleteOrGet(tag, entry) {
     const key = kernelSpace ? entry[2] : entry[1];
-    p(`${tag}: '${key}' (${pref(key, false)})`);
+    return `${tag}: '${key}'`;
   }
 
-  function doSyscallVatstoreGetAfter(tag, entry) {
+  function doSyscallVatstoreGetNextKey(tag, entry) {
     const priorKey = kernelSpace ? entry[2] : entry[1];
-    const lowerBound = kernelSpace ? entry[3] : entry[2];
-    const upperBound = kernelSpace ? entry[4] : entry[3];
-    p(`${tag}: '${priorKey}' '${lowerBound}' .. '${upperBound}'`);
+    return `${tag}: '${priorKey}'`;
   }
 
   function doSyscallVatstoreSet(tag, entry) {
     const key = kernelSpace ? entry[2] : entry[1];
     const value = kernelSpace ? entry[3] : entry[2];
     /*
-    const data = JSON.parse(value);
-    if (key.startsWith('ws')) {
+      const data = JSON.parse(value);
+      if (key.startsWith('ws')) {
       p(`${tag}: '${key}' (${pref(key, false)}) = ${pdata(data)}`);
-    } else {
+      } else {
       const interp = {};
       for (const [id, val] of Object.entries(data)) {
-        interp[id] = pdata(val);
+      interp[id] = pdata(val);
       }
       p(`${tag}: '${key}' (${pref(key, false)}) = ${JSON.stringify(interp)}`);
-    }
+      }
     */
-    p(`${tag}: ${key} := '${value}'`);
+    return `${tag}: '${key}' := '${value}'`;
   }
 
   function doSyscallDropRetire(tag, entry) {
-    p(`send-${tag}: [${entry[1].map(r => pref(r)).join(' ')}]`);
+    return `send-${tag}: [${entry[1].map(r => pref(r)).join(' ')}]`;
   }
 
   function doSyscallExit(tag, entry) {
     const failure = kernelSpace ? entry[2] : entry[1];
     const value = kernelSpace ? entry[3] : entry[2];
-    p(`${tag}: (${failure ? 'failure' : 'success'}) ${pdata(value)}`);
+    return `${tag}: (${failure ? 'failure' : 'success'}) ${pdata(value)}`;
   }
 
   function doSyscall(syscall) {
@@ -521,38 +706,28 @@ export function main() {
     const tag = terse ? currentSyscallName : `syscall ${currentSyscallName}`;
     switch (currentSyscallName) {
       case 'exit':
-        doSyscallExit(tag, syscall);
-        break;
+        return doSyscallExit(tag, syscall);
       case 'resolve':
-        doSyscallResolve(tag, syscall);
-        break;
+        return doSyscallResolve(tag, syscall);
       case 'invoke':
-        doSyscallInvoke(tag, syscall);
-        break;
+        return doSyscallInvoke(tag, syscall);
       case 'send':
-        doSyscallSend(tag, syscall);
-        break;
+        return doSyscallSend(tag, syscall);
       case 'subscribe':
-        doSyscallSubscribe(tag, syscall);
-        break;
+        return doSyscallSubscribe(tag, syscall);
       case 'vatstoreDelete':
       case 'vatstoreGet':
-        doSyscallVatstoreDeleteOrGet(tag, syscall);
-        break;
+        return doSyscallVatstoreDeleteOrGet(tag, syscall);
       case 'vatstoreSet':
-        doSyscallVatstoreSet(tag, syscall);
-        break;
-      case 'vatstoreGetAfter':
-        doSyscallVatstoreGetAfter(tag, syscall);
-        break;
+        return doSyscallVatstoreSet(tag, syscall);
+      case 'vatstoreGetNextKey':
+        return doSyscallVatstoreGetNextKey(tag, syscall);
       case 'dropImports':
       case 'retireExports':
       case 'retireImports':
-        doSyscallDropRetire(tag, syscall);
-        break;
+        return doSyscallDropRetire(tag, syscall);
       default:
-        p(`syscall: unknown syscall ${currentSyscallName}`);
-        break;
+        return `syscall: unknown syscall ${currentSyscallName}`;
     }
   }
 
@@ -570,16 +745,60 @@ export function main() {
   }
 
   function handleImportKernelFinish(entry) {
-    p(`kernel-import: ${entry.time - importKernelStartTime}`);
+    p(`kernel-import: ${ptime(entry.time - importKernelStartTime)}`);
   }
 
   function handleCrankStart(entry) {
-    p(`crank-start: ${entry.crankType} crank ${entry.crankNum}`);
+    inCrank = true;
+    if (!argv.nonoise) {
+      p(`crank-start: ${entry.crankType} crank ${entry.crankNum}`);
+    }
+    currentVat = entry.vatID || entry.message.vatID;
     crankStartTime = entry.time;
+    crankTotalSyscallTime = 0;
+    crankSyscallCount = 0;
   }
 
   function handleCrankFinish(entry) {
-    p(`crank-finish: ${entry.time - crankStartTime} crank ${entry.crankNum}`);
+    const crankTime = entry.time - crankStartTime;
+    if (!argv.nonoise) {
+      p(`crank-finish: ${ptime(crankTime)} crank ${entry.crankNum}`);
+    }
+    inCrank = false;
+    if (entry.crankNum !== skipCrank) {
+      if (argv.crankbreaks) {
+        let timingStr = '';
+        if (argv.timing) {
+          const total = crankTime;
+          const local = crankTime - crankTotalSyscallTime;
+          const localFraction = local / total;
+          const syscall = crankTotalSyscallTime;
+          const syscallFraction = syscall / total;
+          // prettier-ignore
+          timingStr = ` [total:${ptime(total)} local:${ptime(local)} ${pct(localFraction)} syscall:${ptime(syscall)} ${pct(syscallFraction)}] ${crankSyscallCount} syscalls`;
+        }
+        p('');
+        if (startEntry.crankType === 'routing') {
+          if (argv.timing) {
+            timingStr = ` ${ptime(crankTime)}`;
+          }
+          p(`// crank ${startEntry.crankNum}: routing${timingStr}`);
+        } else {
+          let vatName;
+          if (startEntry.message.type === 'create-vat') {
+            vatName = startEntry.message?.dynamicOptions?.name;
+          }
+          if (!vatName) {
+            vatName = vatLabel(currentVat);
+          }
+          const crankLabel = crankLabels.get(`${startEntry.crankNum}`);
+          const crankTag = crankLabel ? ` --- ${crankLabel}` : '';
+          // prettier-ignore
+          p(`// crank ${startEntry.crankNum}: ${currentVat} ${vatName}${crankTag}${timingStr}`);
+        }
+      }
+    }
+    outputCrankReport();
   }
 
   function handleBundleKernelStart(entry) {
@@ -587,7 +806,7 @@ export function main() {
   }
 
   function handleBundleKernelFinish(entry) {
-    p(`bundle-kernel: ${entry.time - bundleKernelStartTime}`);
+    p(`bundle-kernel: ${ptime(entry.time - bundleKernelStartTime)}`);
   }
 
   function handleKernelInitStart(entry) {
@@ -595,7 +814,7 @@ export function main() {
   }
 
   function handleKernelInitFinish(entry) {
-    p(`kernel-init: ${entry.time - kernelInitStartTime}`);
+    p(`kernel-init: ${ptime(entry.time - kernelInitStartTime)}`);
   }
 
   function handleVatStartupStart(entry) {
@@ -608,7 +827,7 @@ export function main() {
     if (entry.vatID !== vatStartupVat) {
       p(`vat-startup-finish vat ${entry.vatID} doesn't match vat-startup-start vat ${vatStartupVat}`);
     } else {
-      p(`vat-startup: ${entry.vatID} ${entry.time - vatStartupStartTime}`);
+      p(`vat-startup: ${entry.vatID} ${ptime(entry.time - vatStartupStartTime)}`);
     }
   }
 
@@ -623,7 +842,7 @@ export function main() {
     if (entry.vatID !== replayTranscriptVat) {
       p(`replay-transcript-finish vat ${entry.vatID} doesn't match replay-transcript-start vat ${replayTranscriptVat}`);
     } else {
-      p(`replay-transcript-finish: ${entry.vatID} ${entry.time - replayTranscriptStartTime}`);
+      p(`replay-transcript-finish: ${entry.vatID} ${ptime(entry.time - replayTranscriptStartTime)}`);
     }
   }
 
@@ -638,7 +857,7 @@ export function main() {
     if (entry.vatID !== replayVat) {
       p(`finish-replay vat ${entry.vatID} doesn't match start-replay vat ${replayVat}`);
     } else {
-      p(`finish-replay ${entry.vatID} ${entry.time - replayStartTime}`);
+      p(`finish-replay ${entry.vatID} ${ptime(entry.time - replayStartTime)}`);
     }
   }
 
@@ -652,7 +871,7 @@ export function main() {
     if (entry.blockTime !== cosmicSwingsetBootstrapBlockStartBlockTime) {
       p(`cosmic-swingset-bootstrap-block-finish time ${entry.blockTime} doesn't match cosmic-swingset-bootstrap-block-start time ${cosmicSwingsetBootstrapBlockStartBlockTime}`);
     } else {
-      p(`cosmic-swingset-bootstrap-block: ${entry.time - cosmicSwingsetBootstrapBlockStartTime}`);
+      p(`cosmic-swingset-bootstrap-block: ${ptime(entry.time - cosmicSwingsetBootstrapBlockStartTime)}`);
     }
   }
 
@@ -682,7 +901,7 @@ export function main() {
     } else if (entry.blockHeight !== cosmicSwingsetBlockHeight) {
       p(`cosmic-swingset-end-block-finish height ${entry.blockHeight} doesn't match cosmic-swingset-begin-block height ${cosmicSwingsetBlockHeight}`);
     } else {
-      p(`cosmic-swingset-end-block:  ${entry.blockHeight} ${entry.blockTime} ${cosmicSwingsetEndBlockStartTime - cosmicSwingsetBeginBlockTime}+${entry.time - cosmicSwingsetEndBlockStartTime}`);
+      p(`cosmic-swingset-end-block:  ${entry.blockHeight} ${entry.blockTime} ${ptime(cosmicSwingsetEndBlockStartTime - cosmicSwingsetBeginBlockTime)}+${ptime(entry.time - cosmicSwingsetEndBlockStartTime)}`);
     }
   }
 
@@ -709,7 +928,7 @@ export function main() {
     } else if (entry.blockHeight !== cosmicSwingsetBlockHeight) {
       p(`cosmic-swingset-commit-block-finish height ${entry.blockHeight} doesn't match cosmic-swingset-begin-block height ${cosmicSwingsetBlockHeight}`);
     } else {
-      p(`cosmic-swingset-commit-block:  ${entry.blockHeight} ${entry.blockTime} ${cosmicSwingsetCommitBlockStartTime - cosmicSwingsetBeginBlockTime}+${entry.time - cosmicSwingsetCommitBlockStartTime}`);
+      p(`cosmic-swingset-commit-block:  ${entry.blockHeight} ${entry.blockTime} ${cosmicSwingsetCommitBlockStartTime - cosmicSwingsetBeginBlockTime}+${ptime(entry.time - cosmicSwingsetCommitBlockStartTime)}`);
     }
   }
 
@@ -722,41 +941,67 @@ export function main() {
   }
 
   function handleSyscall(entry) {
-    doSyscall(kernelSpace ? entry.ksc : entry.vsc);
+    syscallStartTime = entry.time;
+    crankSyscallCount += 1;
+    currentSyscallString = doSyscall(kernelSpace ? entry.ksc : entry.vsc);
   }
 
   function handleSyscallResult(entry) {
+    const syscallTime = entry.time - syscallStartTime;
+    crankTotalSyscallTime += syscallTime;
     const [status, value] = kernelSpace ? entry.ksr : entry.vsr;
     const tag = terse ? 'result' : `syscall-result ${currentSyscallName}`;
     if (status !== 'ok') {
       p(`${tag}: ${status} ${value}`);
     }
+    let toPrint;
     switch (currentSyscallName) {
       case 'exit':
       case 'resolve':
       case 'send':
-      case 'subscribe':
-      case 'vatstoreDelete':
-      case 'vatstoreSet':
       case 'dropImports':
       case 'retireExports':
       case 'retireImports':
         if (value !== null) {
-          p(`${tag}: unexpected value ${value}`);
+          toPrint = `${currentSyscallString}: unexpected result ${value}`;
+        } else {
+          toPrint = currentSyscallString;
+        }
+        break;
+      case 'subscribe':
+        if (value !== null) {
+          toPrint = `${currentSyscallString}: unexpected result ${value}`;
+        } else if (!argv.nonoise) {
+          toPrint = currentSyscallString;
+        }
+        break;
+      case 'vatstoreDelete':
+      case 'vatstoreSet':
+        if (value !== null) {
+          toPrint = `${currentSyscallString}: unexpected result ${value}`;
+        } else if (!argv.vatstore) {
+          toPrint = currentSyscallString;
         }
         break;
       case 'invoke':
-        p(`${tag}: ${pdata(value)}`);
+        toPrint = `${currentSyscallString}: ${pdata(value)}`;
         break;
       case 'vatstoreGet':
-        p(`${tag}: '${value}'`);
-        break;
-      case 'vatstoreGetAfter':
-        p(`${tag}: ${value[0]}, ${value[1]}`);
+      case 'vatstoreGetNextKey':
+        if (!argv.novatstore) {
+          toPrint = `${currentSyscallString} : '${value}'`;
+        }
         break;
       default:
-        p(`syscall-result missing start of syscall`);
+        toPrint = `syscall-result missing start of syscall`;
         break;
+    }
+    if (toPrint) {
+      if (argv.timing) {
+        p(`${toPrint} (${ptime(syscallTime)})`);
+      } else {
+        p(toPrint);
+      }
     }
   }
 
@@ -767,7 +1012,8 @@ export function main() {
   }
 
   function handleCList(entry) {
-    if (argv.clist) {
+    currentVat = currentVat || entry.vatID;
+    if (argv.clist && !argv.nonoise) {
       const { mode, vatID, kobj, vobj } = entry;
       const tag = terse ? mode : `clist ${mode}`;
       p(`${tag}: ${vatID}:${pref(vobj, false)} :: ${pref(kobj, true)}`);

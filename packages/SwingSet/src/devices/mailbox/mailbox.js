@@ -64,14 +64,30 @@
 
 */
 
+import { Fail } from '@endo/errors';
 import { Nat } from '@endo/nat';
-
-import { Fail } from '@agoric/assert';
 
 // This Map-based mailboxState object is a good starting point, but we may
 // replace it with one that tracks which parts of the state have been
 // modified, to build more efficient Merkle proofs.
 
+/**
+ * @typedef {object} Mailbox
+ * @property {bigint} ack
+ * @property {Map<bigint, unknown>} outbox
+ */
+
+/**
+ * @typedef {object} MailboxExport
+ * @property {number} ack
+ * @property {Array<[number, unknown]>} outbox
+ */
+
+/**
+ * @param {MailboxExport} data
+ * @param {Partial<Mailbox>} [inout]
+ * @returns {Mailbox}
+ */
 export function importMailbox(data, inout = {}) {
   const outbox = new Map();
   for (const m of data.outbox) {
@@ -79,10 +95,15 @@ export function importMailbox(data, inout = {}) {
   }
   inout.ack = Nat(data.ack);
   inout.outbox = outbox;
-  return inout;
+  return /** @type {Mailbox} */ (inout);
 }
 
+/**
+ * @param {Mailbox} inout
+ * @returns {MailboxExport}
+ */
 export function exportMailbox(inout) {
+  /** @type {MailboxExport['outbox']} */
   const messages = [];
   for (const [msgnum, body] of inout.outbox) {
     messages.push([Number(msgnum), body]);
@@ -94,64 +115,75 @@ export function exportMailbox(inout) {
   };
 }
 
-export function buildMailboxStateMap(state = harden(new Map())) {
-  function getOrCreatePeer(peer) {
-    if (!state.has(peer)) {
-      const inout = {
-        outbox: harden(new Map()),
-        ack: 0n,
-      };
-      state.set(peer, inout);
-    }
-    return state.get(peer);
+/**
+ * @param {Map<string, Mailbox>} state
+ */
+export function exportMailboxData(state) {
+  /** @type {Record<string, {inboundAck: MailboxExport['ack'], outbox: MailboxExport['outbox']}>} */
+  const data = {};
+  for (const [peer, inout] of state.entries()) {
+    const exported = exportMailbox(inout);
+    data[peer] = {
+      inboundAck: exported.ack,
+      outbox: exported.outbox,
+    };
   }
+  return harden(data);
+}
 
+function getOrCreatePeer(state, peer) {
+  if (!state.has(peer)) {
+    const inout = {
+      outbox: harden(new Map()),
+      ack: 0n,
+    };
+    state.set(peer, inout);
+  }
+  return state.get(peer);
+}
+
+/**
+ * @param {ReturnType<exportMailboxData>} data
+ * @returns {Map<string, Mailbox>}
+ */
+export function makeEphemeralMailboxStorage(data) {
+  const state = harden(new Map());
+  for (const peer of Object.getOwnPropertyNames(data)) {
+    const inout = getOrCreatePeer(state, peer);
+    const d = data[peer];
+    importMailbox(
+      {
+        ack: d.inboundAck,
+        outbox: d.outbox,
+      },
+      inout,
+    );
+  }
+  return state;
+}
+
+/**
+ * @template [T=unknown]
+ * @param {Pick<Map<string, T>, 'has' | 'get'> & {set: (key: string, value: T) => void}} [state]
+ */
+export function buildMailboxStateMap(state = harden(new Map())) {
   function add(peer, msgnum, body) {
-    getOrCreatePeer(`${peer}`).outbox.set(Nat(msgnum), `${body}`);
+    getOrCreatePeer(state, `${peer}`).outbox.set(Nat(msgnum), `${body}`);
   }
 
   function remove(peer, msgnum) {
-    const messages = getOrCreatePeer(`${peer}`).outbox;
+    const messages = getOrCreatePeer(state, `${peer}`).outbox;
     messages.delete(Nat(msgnum));
   }
 
   function setAcknum(peer, msgnum) {
-    getOrCreatePeer(`${peer}`).ack = Nat(msgnum);
-  }
-
-  function exportToData() {
-    const data = {};
-    for (const [peer, inout] of state.entries()) {
-      const exported = exportMailbox(inout);
-      data[peer] = {
-        inboundAck: exported.ack,
-        outbox: exported.outbox,
-      };
-    }
-    return harden(data);
-  }
-
-  function populateFromData(data) {
-    !state.size || Fail`cannot populateFromData: outbox is not empty`;
-    for (const peer of Object.getOwnPropertyNames(data)) {
-      const inout = getOrCreatePeer(peer);
-      const d = data[peer];
-      importMailbox(
-        {
-          ack: d.inboundAck,
-          outbox: d.outbox,
-        },
-        inout,
-      );
-    }
+    getOrCreatePeer(state, `${peer}`).ack = Nat(msgnum);
   }
 
   return harden({
     add,
     remove,
     setAcknum,
-    exportToData,
-    populateFromData,
   });
 }
 

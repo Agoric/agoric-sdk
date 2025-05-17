@@ -6,8 +6,11 @@ import {
 import { TimeMath, RelativeTimeRecordShape } from '@agoric/time';
 import { M } from '@agoric/store';
 
-/** @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager.js').AsyncSpecTuple} AsyncSpecTuple */
-/** @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager.js').SyncSpecTuple} SyncSpecTuple */
+/**
+ * @import {AsyncSpecTuple} from '@agoric/governance/src/contractGovernance/typedParamManager.js';
+ * @import {SyncSpecTuple} from '@agoric/governance/src/contractGovernance/typedParamManager.js';
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ */
 
 // TODO duplicated with zoe/src/TypeGuards.js
 export const InvitationShape = M.remotable('Invitation');
@@ -144,6 +147,7 @@ export const makeAuctioneerParamManager = (publisherKit, zcf, initial) => {
   );
 };
 harden(makeAuctioneerParamManager);
+/** @typedef {ReturnType<typeof makeAuctioneerParams>} AuctionParamRecord */
 
 /**
  * @param {{ storageNode: ERef<StorageNode>; marshaller: ERef<Marshaller> }} caps

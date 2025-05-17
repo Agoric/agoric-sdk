@@ -1,3 +1,4 @@
+import { Fail, q } from '@endo/errors';
 import { E, Far } from '@endo/far';
 import { makeHeapZone } from '@agoric/zone';
 import {
@@ -7,10 +8,12 @@ import {
 } from './utils.js';
 import { makePromiseSpace } from './promise-space.js';
 
-const { Fail, quote: q } = assert;
+/**
+ * @import {EReturn} from '@endo/far';
+ */
 
 /**
- * @typedef {| true
+ * @typedef {true
  *   | string
  *   | { [key: string]: BootstrapManifestPermit | undefined }} BootstrapManifestPermit
  */
@@ -48,7 +51,7 @@ const setDiff = (a, b) => a.filter(x => !b.includes(x));
 /**
  * @param {import('@agoric/swingset-vat').VatPowers & {
  *   D: DProxy;
- *   logger: (msg) => void;
+ *   logger?: typeof console.log;
  * }} vatPowers
  * @param {Record<string, unknown>} vatParameters
  * @param {BootstrapManifest} bootManifest
@@ -98,8 +101,8 @@ export const makeBootstrap = (
     );
 
     const namesVat = namedVat.consume.agoricNames;
-    const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
-      await E(namesVat).getNameHubKit();
+    const nameHubKit = await E(namesVat).getNameHubKit();
+    const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } = nameHubKit;
     const spaces = await makeWellKnownSpaces(agoricNamesAdmin, log);
     produce.agoricNames.resolve(agoricNames);
     produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
@@ -107,7 +110,6 @@ export const makeBootstrap = (
 
     const runBehaviors = manifest => {
       return runModuleBehaviors({
-        // eslint-disable-next-line no-use-before-define
         allPowers,
         behaviors,
         manifest,
@@ -136,21 +138,12 @@ export const makeBootstrap = (
 
     await runBehaviors(bootManifest);
 
-    const { coreProposalCode } = vatParameters;
-    if (!coreProposalCode) {
+    /** @type {{ coreProposalCodeSteps?: string[] }} */
+    const { coreProposalCodeSteps } = vatParameters;
+    if (!coreProposalCodeSteps) {
       return;
     }
 
-    // Start the governance from the core proposals.
-    const coreEvalMessage = {
-      type: 'CORE_EVAL',
-      evals: [
-        {
-          json_permits: 'true',
-          js_code: coreProposalCode,
-        },
-      ],
-    };
     /**
      * @type {{
      *   coreEvalBridgeHandler: Promise<import('../types.js').BridgeHandler>;
@@ -158,7 +151,20 @@ export const makeBootstrap = (
      */
     // @ts-expect-error cast
     const { coreEvalBridgeHandler } = consume;
-    await E(coreEvalBridgeHandler).fromBridge(coreEvalMessage);
+
+    // Start the governance from the core proposals.
+    for await (const coreProposalCode of coreProposalCodeSteps) {
+      const coreEvalMessage = {
+        type: 'CORE_EVAL',
+        evals: [
+          {
+            json_permits: 'true',
+            js_code: coreProposalCode,
+          },
+        ],
+      };
+      await E(coreEvalBridgeHandler).fromBridge(coreEvalMessage);
+    }
   };
 
   // For testing supports
@@ -184,6 +190,7 @@ export const makeBootstrap = (
         throw e;
       });
     },
+    /** @param {string} name } */
     consumeItem: name => {
       assert.typeof(name, 'string');
       return consume[name];
@@ -192,6 +199,7 @@ export const makeBootstrap = (
       assert.typeof(name, 'string');
       produce[name].resolve(resolution);
     },
+    /** @param {string} name } */
     resetItem: name => {
       assert.typeof(name, 'string');
       produce[name].reset();
@@ -213,4 +221,4 @@ export const makeBootstrap = (
     //#endregion
   });
 };
-/** @typedef {Awaited<ReturnType<typeof makeBootstrap>>} BootstrapRootObject */
+/** @typedef {EReturn<typeof makeBootstrap>} BootstrapRootObject */

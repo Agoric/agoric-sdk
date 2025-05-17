@@ -3,8 +3,6 @@
 import { makeNotifierFromSubscriber, makePublishKit } from '@agoric/notifier';
 import { Far } from '@endo/marshal';
 
-import '@agoric/zoe/exported.js';
-
 export const start = zcf => {
   const { subscriber, publisher } = makePublishKit();
   const notifier = makeNotifierFromSubscriber(subscriber);

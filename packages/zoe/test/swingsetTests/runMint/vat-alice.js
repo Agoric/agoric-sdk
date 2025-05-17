@@ -2,6 +2,10 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
 /**
+ * @import {ZoeService} from '@agoric/zoe';
+ */
+
+/**
  * @param {*} log
  * @param {ZoeService} zoe
  * @param {*} installations
@@ -14,7 +18,7 @@ const build = async (log, zoe, installations, feeMintAccess) => {
       const { instance } = await E(zoe).startInstance(
         installations.offerArgsUsageContract,
         harden({
-          RUN: E(zoe).getFeeIssuer(),
+          RUN: await E(zoe).getFeeIssuer(),
         }),
         undefined,
       );

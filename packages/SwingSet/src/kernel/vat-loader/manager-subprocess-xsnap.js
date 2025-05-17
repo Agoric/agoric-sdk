@@ -1,5 +1,5 @@
 import { synchronizedTee } from '@agoric/internal';
-import { assert, Fail, q } from '@agoric/assert';
+import { assert, Fail, q } from '@endo/errors';
 import { ExitCode } from '@agoric/xsnap/api.js';
 import { makeManagerKit } from './manager-helper.js';
 
@@ -11,12 +11,12 @@ import {
 /// <reference path="../../types-ambient.js" />
 
 /**
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryResult} VatDeliveryResult
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallResult} VatSyscallResult
- * @typedef {import('@agoric/swingset-liveslots').LiveSlotsOptions} LiveSlotsOptions
- * @typedef {import('../../types-internal.js').VatManagerFactory} VatManagerFactory
+ * @import {VatDeliveryObject} from '@agoric/swingset-liveslots'
+ * @import {VatDeliveryResult} from '@agoric/swingset-liveslots'
+ * @import {VatSyscallObject} from '@agoric/swingset-liveslots'
+ * @import {VatSyscallResult} from '@agoric/swingset-liveslots'
+ * @import {LiveSlotsOptions} from '@agoric/swingset-liveslots'
+ * @import {VatManagerFactory} from '../../types-internal.js'
  */
 
 // eslint-disable-next-line no-unused-vars
@@ -128,8 +128,10 @@ export function makeXsSubprocessFactory({
 
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const snapshotInfo = vatKeeper.getSnapshotInfo();
+    let uncompressedSizeLoaded = null;
     if (snapshotInfo) {
       kernelSlog.write({ type: 'heap-snapshot-load', vatID, ...snapshotInfo });
+      uncompressedSizeLoaded = snapshotInfo.uncompressedSize;
     }
 
     // `startXSnap` adds `nameDisplayArg` as a dummy argument so that 'ps'
@@ -214,8 +216,8 @@ export function makeXsSubprocessFactory({
       parentLog(vatID, `deliverDone`, result.reply[0], result.reply.length);
       // Attach the meterUsage to the deliver result.
       /** @type { VatDeliveryResult } */
-      // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
-      // @ts-ignore I don't know how to appease tsc
+
+      // @ts-expect-error I don't know how to appease tsc
       const deliverResult = harden([
         result.reply[0], // 'ok' or 'error'
         result.reply[1] || null, // results or problem or null
@@ -240,9 +242,31 @@ export function makeXsSubprocessFactory({
     async function makeSnapshot(snapPos, snapStore, restartWorker) {
       const snapshotDescription = `${vatID}-${snapPos}`;
       const snapshotStream = worker.makeSnapshotStream(snapshotDescription);
+      const saveSnapshot = async saveStream => {
+        const results = await snapStore.saveSnapshot(
+          vatID,
+          snapPos,
+          saveStream,
+        );
+        const { hash: snapshotID, ...metrics } = results;
+        const uncompressedSizeDelta =
+          uncompressedSizeLoaded &&
+          metrics.uncompressedSize - uncompressedSizeLoaded;
+        uncompressedSizeLoaded = results.uncompressedSize;
+        kernelSlog.write({
+          type: 'heap-snapshot-save',
+          vatID,
+          snapshotID,
+          endPosition: snapPos,
+          ...metrics,
+          uncompressedSizeDelta,
+          restartWorker,
+        });
+        return results;
+      };
 
       if (!restartWorker) {
-        return snapStore.saveSnapshot(vatID, snapPos, snapshotStream);
+        return saveSnapshot(snapshotStream);
       }
 
       /** @type {AsyncGenerator<Uint8Array, void, void>[]} */
@@ -268,11 +292,11 @@ export function makeXsSubprocessFactory({
             snapshotDescription,
           },
         }),
-        snapStore.saveSnapshot(vatID, snapPos, snapStoreSaveStream),
+        saveSnapshot(snapStoreSaveStream),
       ]);
       await closeP;
 
-      /** @type {Partial<import('@agoric/swing-store/src/snapStore.js').SnapshotInfo>} */
+      /** @type {Partial<import('@agoric/swing-store').SnapshotInfo>} */
       const reloadSnapshotInfo = {
         snapPos,
         hash: snapshotResults.hash,

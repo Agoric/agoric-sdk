@@ -1,10 +1,11 @@
 // @jessie-check
 
+import { Fail, q } from '@endo/errors';
 import { AmountMath } from '@agoric/ertp';
 import { M } from '@agoric/store';
 import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/index.js';
 
-const { Fail, quote: q } = assert;
+/** @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js'; */
 
 export const amountPattern = harden({ brand: M.remotable(), value: M.any() });
 export const ratioPattern = harden({
@@ -19,11 +20,11 @@ export const ratioPattern = harden({
  * proposal. We use two Amounts because an Amount cannot represent a negative
  * number (so we use a "loss" that will be subtracted).
  *
- * @template {AssetKind} K
- * @param {Amount<K>} base
- * @param {Amount<K>} gain
- * @param {Amount<K>} loss
- * @returns {Amount<K>}
+ * @template {Amount} A
+ * @param {A} base
+ * @param {A} gain
+ * @param {A} loss
+ * @returns {A}
  */
 export const addSubtract = (base, gain, loss) =>
   AmountMath.subtract(AmountMath.add(base, gain), loss);
@@ -66,8 +67,13 @@ export const allEmpty = amounts => {
  * @param {Amount<'nat'>} totalDebt
  * @param {Amount<'nat'>} toMint
  * @throws if minting would exceed total debt
+ *
+ *   Note: Succeeds regardless of debtLimit if toMint is empty.
  */
 export const checkDebtLimit = (debtLimit, totalDebt, toMint) => {
+  if (AmountMath.isEmpty(toMint)) {
+    return;
+  }
   const debtPost = AmountMath.add(totalDebt, toMint);
   AmountMath.isGTE(debtLimit, debtPost) ||
     Fail`Minting ${q(toMint)} past ${q(
@@ -77,14 +83,14 @@ export const checkDebtLimit = (debtLimit, totalDebt, toMint) => {
 
 /**
  * @template T
- * @typedef {object} MetricsPublisherKit<T>
+ * @typedef {object} MetricsPublisherKit
  * @property {IterationObserver<T>} metricsPublication
  * @property {StoredSubscription<T>} metricsSubscription
  */
 
 /**
  * @template T
- * @typedef {object} MetricsPublishKit<T>
+ * @typedef {object} MetricsPublishKit
  * @property {Publisher<T>} metricsPublisher
  * @property {StoredSubscriber<T>} metricsSubscriber
  */

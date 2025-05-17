@@ -9,11 +9,9 @@ import '@endo/init';
 import { main } from './slogulator.js';
 
 process.exitCode = 1;
-main().then(
-  () => {
-    process.exitCode = 0;
-  },
-  error => {
-    console.error(error);
-  },
-);
+try {
+  main();
+  process.exitCode = 0;
+} catch (error) {
+  console.error(error);
+}

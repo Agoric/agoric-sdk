@@ -1,10 +1,15 @@
 // @jessie-check
 
-import { mustMatch } from '@agoric/store';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
+import { mustMatch } from '@agoric/store';
 import { AmountMath } from './amountMath.js';
 
-const { Fail } = assert;
+/**
+ * @import {ERef} from '@endo/far';
+ * @import {Key, Pattern} from '@endo/patterns';
+ * @import {Amount, AssetKind, Payment, Purse} from './types.js';
+ */
 
 /**
  * @file This file contains safer helper function alternatives to the similarly
@@ -22,10 +27,11 @@ const { Fail } = assert;
 
 /**
  * @template {AssetKind} K
- * @param {ERef<Purse<K>>} recoveryPurse
- * @param {ERef<Payment<K>>} srcPaymentP
+ * @template {Key} T type of values in set-like kind
+ * @param {ERef<Purse<K, T>>} recoveryPurse
+ * @param {ERef<Payment<K, T>>} srcPaymentP
  * @param {Pattern} [optAmountShape]
- * @returns {Promise<Payment<K>>}
+ * @returns {Promise<Payment<K, T>>}
  */
 export const claim = async (
   recoveryPurse,
@@ -48,10 +54,11 @@ harden(claim);
  * origin.
  *
  * @template {AssetKind} K
- * @param {ERef<Purse<K>>} recoveryPurse
- * @param {ERef<Payment<K>>[]} srcPaymentsPs
+ * @template {Key} T type of values in set-like kind
+ * @param {ERef<Purse<K, T>>} recoveryPurse
+ * @param {ERef<Payment<K, T>>[]} srcPaymentsPs
  * @param {Pattern} [optTotalAmount]
- * @returns {Promise<Payment<K>>}
+ * @returns {Promise<Payment<K, T>>}
  */
 export const combine = async (
   recoveryPurse,
@@ -64,7 +71,11 @@ export const combine = async (
     E(brandP).getDisplayInfo(),
     ...srcPaymentsPs,
   ]);
-  const emptyAmount = AmountMath.makeEmpty(brand, displayInfo.assetKind);
+
+  // XXX Brand lacks M
+  const emptyAmount = /** @type {Amount<K, T>} */ (
+    AmountMath.makeEmpty(brand, displayInfo.assetKind)
+  );
   const amountPs = srcPayments.map(srcPayment =>
     E(recoveryPurse).deposit(srcPayment),
   );

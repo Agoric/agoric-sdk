@@ -1,19 +1,27 @@
 // @ts-check
 
-import { Fail, NonNullish } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
-import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
+import {
+  deeplyFulfilledObject,
+  makeTracer,
+  NonNullish,
+} from '@agoric/internal';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { mustMatch } from '@agoric/store';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import { PaymentPKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 import { scale6, withAmountUtils } from '../../supports.js';
+
+/**
+ * @import {FeeMintAccess} from '@agoric/zoe';
+ */
 
 const trace = makeTracer('BootPSMUpg');
 
@@ -24,11 +32,11 @@ const anchor = withAmountUtils(makeIssuerKit('bucks'));
 const firstGive = anchor.units(21);
 const secondGive = anchor.units(3);
 
-/** @typedef {import('../../../src/psm/psm.js').start} PsmSF */
+/** @import {start as PsmSF} from '../../../src/psm/psm.js' */
 
 export const buildRootObject = async () => {
   const storageKit = makeFakeStorageKit('psmUpgradeTest');
-  const timer = buildManualTimer();
+  const timer = buildZoeManualTimer();
   const marshaller = makeFakeBoard().getReadonlyMarshaller();
 
   const { promise: committeeCreator, ...ccPK } = makePromiseKit();
@@ -215,6 +223,7 @@ export const buildRootObject = async () => {
       governorFacets = await E(zoeService).startInstance(
         NonNullish(installations.puppetContractGovernor),
         undefined,
+        // @ts-expect-error XXX timer
         governorTerms,
         {
           governed: {

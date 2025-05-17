@@ -1,0 +1,50 @@
+{
+  "agoricProposal": {
+    "releaseNotes": false,
+    "sdkImageTag": "unreleased",
+    "planName": "UNRELEASED_A3P_INTEGRATION",
+    "upgradeInfo": {
+      "coreProposals": []
+    },
+    "type": "Software Upgrade Proposal",
+    "sdk-generate": [
+      "testing/add-USD-LEMONS.js test/generated/addUsdLemons",
+      "../../vats/src/proposals/terminate-governed-instance.js test/generated/terminate-price-feed board02963:ATOM-USD_price_feed"
+    ]
+  },
+  "type": "module",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@agoric/client-utils": "dev",
+    "@agoric/ertp": "dev",
+    "@agoric/internal": "dev",
+    "@agoric/synthetic-chain": "patch:@agoric/synthetic-chain@npm%3A0.5.6#~/.yarn/patches/@agoric-synthetic-chain-npm-0.5.6-c322148be2.patch",
+    "@agoric/zoe": "dev",
+    "@endo/errors": "^1.2.10",
+    "@endo/init": "^1.1.9",
+    "@endo/marshal": "^1.6.4",
+    "agoric": "dev",
+    "ava": "^5.3.1",
+    "execa": "9.1.0"
+  },
+  "ava": {
+    "concurrency": 1,
+    "timeout": "2m",
+    "files": [
+      "!submission"
+    ]
+  },
+  "scripts": {
+    "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops"
+  },
+  "packageManager": "yarn@4.9.1",
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.6.3"
+  },
+  "resolutions": {
+    "protobufjs@npm:^6.8.8": "patch:protobufjs@npm%3A6.11.4#~/.yarn/patches/protobufjs-npm-6.11.4-af11968b80.patch",
+    "axios@npm:^1.6.0": "patch:axios@npm%3A1.7.7#~/.yarn/patches/axios-npm-1.7.7-cfbedc233d.patch"
+  }
+}

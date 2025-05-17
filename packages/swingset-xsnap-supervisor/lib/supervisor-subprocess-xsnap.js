@@ -1,12 +1,12 @@
 /* global globalThis WeakRef FinalizationRegistry */
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 import { importBundle } from '@endo/import-bundle';
 import {
   makeLiveSlots,
   insistVatDeliveryObject,
   insistVatSyscallResult,
 } from '@agoric/swingset-liveslots';
-// import '../../types-ambient.js';
+
 // grumble... waitUntilQuiescent is exported and closes over ambient authority
 import { waitUntilQuiescent } from './waitUntilQuiescent.js';
 import { makeGcAndFinalize } from './gc-and-finalize.js';
@@ -18,13 +18,13 @@ import {
 } from './supervisor-helper.js';
 
 /**
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryResult} VatDeliveryResult
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallResult} VatSyscallResult
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallHandler} VatSyscallHandler
- * @typedef {import('@agoric/swingset-liveslots').LiveSlotsOptions} LiveSlotsOptions
- * @typedef {import('@agoric/swingset-liveslots').MeterControl} MeterControl
+ * @import {VatDeliveryObject} from '@agoric/swingset-liveslots'
+ * @import {VatDeliveryResult} from '@agoric/swingset-liveslots'
+ * @import {VatSyscallObject} from '@agoric/swingset-liveslots'
+ * @import {VatSyscallResult} from '@agoric/swingset-liveslots'
+ * @import {VatSyscallHandler} from '@agoric/swingset-liveslots'
+ * @import {LiveSlotsOptions} from '@agoric/swingset-liveslots'
+ * @import {MeterControl} from '@agoric/swingset-liveslots'
  */
 
 const encoder = new TextEncoder();
@@ -32,7 +32,6 @@ const decoder = new TextDecoder();
 
 // eslint-disable-next-line no-unused-vars
 function workerLog(first, ...args) {
-  // eslint-disable-next-line
   // console.log(`---worker: ${first}`, ...args);
 }
 
@@ -101,11 +100,11 @@ const meterControl = makeMeterControl();
 /**
  * Wrap byte-level protocols with tagged array codec.
  *
- * @param {(cmd: ArrayBuffer) => ArrayBuffer} issueCommand as from xsnap
+ * @param {(cmd: ArrayBufferLike) => ArrayBuffer} issueCommand as from xsnap
  * @typedef { [unknown, ...unknown[]] } Tagged tagged array
  */
 function managerPort(issueCommand) {
-  /** @type { (item: Tagged) => ArrayBuffer } */
+  /** @type { (item: Tagged) => ArrayBufferLike } */
   const encode = item => {
     let txt;
     try {
@@ -256,7 +255,8 @@ function makeWorker(port) {
 
     const workerEndowments = {
       console: makeVatConsole(makeLogMaker('vat')),
-      assert,
+      // See https://github.com/Agoric/agoric-sdk/issues/9515
+      assert: globalThis.assert,
       // bootstrap provides HandledPromise
       HandledPromise: globalThis.HandledPromise,
       TextEncoder,

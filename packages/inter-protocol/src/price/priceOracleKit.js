@@ -1,10 +1,14 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { makeTracer } from '@agoric/internal';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
 
 const trace = makeTracer('OrKit', true);
 
 export const INVITATION_MAKERS_DESC = 'oracle invitation';
+
+/**
+ * @import {EReturn} from '@endo/far';
+ */
 
 /**
  * @typedef {{
@@ -122,4 +126,4 @@ export const prepareOracleAdminKit = baggage =>
     },
   );
 
-/** @typedef {ReturnType<ReturnType<typeof prepareOracleAdminKit>>} OracleKit */
+/** @typedef {EReturn<EReturn<typeof prepareOracleAdminKit>>} OracleKit */

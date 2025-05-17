@@ -1,4 +1,5 @@
-import { provide, prepareExoClass, M } from '@agoric/vat-data';
+import { q, Fail } from '@endo/errors';
+import { prepareExoClass, M } from '@agoric/vat-data';
 import { assertKeywordName } from './cleanProposal.js';
 import {
   BrandKeywordRecordShape,
@@ -10,9 +11,12 @@ import {
   TermsShape,
 } from './typeGuards.js';
 
-const { ownKeys } = Reflect;
+/**
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {InstanceRecord} from './zoeService/utils.js';
+ */
 
-const { quote: q, Fail } = assert;
+const { ownKeys } = Reflect;
 
 /**
  * The InstanceRecord stores the installation, customTerms, issuers,
@@ -25,12 +29,10 @@ const { quote: q, Fail } = assert;
  */
 
 /**
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  * @returns {(ir: InstanceRecord) => InstanceState}
  */
 export const makeInstanceRecordStorage = baggage => {
-  provide(baggage, 'instanceRecord', () => undefined);
-
   const assertInstantiated = instanceRecord => {
     instanceRecord !== 'undefined' ||
       Fail`instanceRecord has not been instantiated`;
@@ -50,8 +52,10 @@ export const makeInstanceRecordStorage = baggage => {
     baggage,
     'InstanceRecord',
     InstanceRecordI,
-    record => harden({ instanceRecord: record }),
+    /** @type {(ir: InstanceRecord) => {instanceRecord: InstanceRecord}} */
+    ir => harden({ instanceRecord: ir }),
     {
+      /** @type {(keyword: Keyword, issuerRecord: ZoeIssuerRecord) => void} */
       addIssuer(keyword, issuerRecord) {
         const { state } = this;
         !ownKeys(issuerRecord).includes(keyword) ||

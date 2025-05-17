@@ -1,4 +1,5 @@
-/* global process setTimeout clearTimeout setInterval clearInterval */
+// @ts-check
+/* eslint-env node */
 
 import fs from 'fs';
 import path from 'path';
@@ -10,42 +11,80 @@ import { spawn } from 'child_process';
 
 import { makePspawn } from '../src/helpers.js';
 
-const TIMEOUT_SECONDS = 20 * 60;
+const RETRY_BLOCKHEIGHT_SECONDS = 3;
+const SOCKET_TIMEOUT_SECONDS = 2;
+
+// TODO: Set this to `true` when `agoric install $DISTTAG` properly updates the
+// getting-started workflow's dependencies to current `@endo/*` and Agoric SDK
+// from the local registry.
+const AGORIC_INSTALL_DISTTAG = false;
 
 const dirname = new URL('./', import.meta.url).pathname;
 
-// To keep in sync with https://agoric.com/documentation/getting-started/
+// To keep in sync with https://docs.agoric.com/guides/getting-started/
 
 // Note that we currently only test:
 // agoric init dapp-foo
-// agoric install
-// agoric start --reset
-// agoric deploy ./contract/deploy.js ./api/deploy.js
-// (For simple-exchange and autoswap, the above also makes and accepts offers)
-// cd ui && yarn install
-// cd ui && yarn start
+// yarn install (or agoric install $DISTTAG)
+// yarn start:docker
+// yarn start:contract
+// yarn start:ui
 
+/**
+ * @param {string} url
+ * @returns {Promise<bigint>}
+ */
+const getLatestBlockHeight = url =>
+  new Promise((resolve, reject) => {
+    const req = request(url, res => {
+      if (!res) {
+        reject(Error('no result'));
+        return;
+      }
+      const bodyChunks = [];
+      res
+        .on('data', chunk => bodyChunks.push(chunk))
+        .on('end', () => {
+          const body = Buffer.concat(bodyChunks).toString('utf8');
+          const { statusCode = 0 } = res;
+          if (statusCode >= 200 && statusCode < 300) {
+            const { result: { sync_info: sync = {} } = {} } = JSON.parse(body);
+            if (sync.catching_up === false) {
+              resolve(BigInt(sync.latest_block_height));
+              return;
+            }
+          }
+          reject(Error(`Cannot get block height: ${statusCode} ${body}`));
+        });
+    });
+    req.setTimeout(SOCKET_TIMEOUT_SECONDS * 1_000);
+    req.on('error', reject);
+    req.end();
+  });
+
+/**
+ * Test the "getting started" workflow. Note that this function may be imported
+ * by external repositories.
+ *
+ * @param {import('ava').ExecutionContext} t
+ * @param {{ init?: string[], install?: string[] }} [options]
+ */
 export const gettingStartedWorkflowTest = async (t, options = {}) => {
-  const {
-    init: initOptions = [],
-    install: installOptions = [],
-    start: startOptions = [],
-    testUnsafePlugins = false,
-  } = options;
-  // FIXME: Do a search for an unused port or allow specification.
-  const PORT = '7999';
-  process.env.PORT = PORT;
-
+  const { init: initOptions = [], install: installOptions = [] } = options;
   const pspawn = makePspawn({ spawn });
 
   // Kill an entire process group.
   const pkill = (cp, signal = 'SIGINT') => process.kill(-cp.pid, signal);
 
+  /** @param {Parameters<typeof pspawn>} args */
   function pspawnStdout(...args) {
     const ps = pspawn(...args);
-    ps.childProcess.stdout.on('data', chunk => {
-      process.stdout.write(chunk);
-    });
+    const { stdout } = ps.childProcess;
+    if (stdout) {
+      stdout.on('data', chunk => {
+        process.stdout.write(chunk);
+      });
+    }
     // ps.childProcess.unref();
     return ps;
   }
@@ -61,12 +100,19 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
   const { AGORIC_CMD = JSON.stringify(defaultAgoricCmd()) } = process.env;
   const agoricCmd = JSON.parse(AGORIC_CMD);
   function myMain(args, opts = {}) {
-    // console.error('running agoric-cli', ...extraArgs, ...args);
     return pspawnStdout(agoricCmd[0], [...agoricCmd.slice(1), ...args], {
       stdio: ['ignore', 'pipe', 'inherit'],
-      env: { ...process.env, DEBUG: 'agoric' },
+      env: { ...process.env, DEBUG: 'agoric:debug' },
       detached: true,
       ...opts,
+    });
+  }
+
+  function yarn(args) {
+    return pspawnStdout('yarn', args, {
+      stdio: ['ignore', 'pipe', 'inherit'],
+      env: { ...process.env },
+      detached: true,
     });
   }
 
@@ -83,7 +129,7 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
       try {
         f();
       } catch (e) {
-        // console.log(e);
+        console.log(e);
       }
     }
     if (sig) {
@@ -111,110 +157,60 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
     );
     process.chdir('dapp-foo');
 
-    // ==============
-    // agoric install
-    if (process.env.AGORIC_INSTALL_OPTIONS) {
+    if (AGORIC_INSTALL_DISTTAG && process.env.AGORIC_INSTALL_OPTIONS) {
+      // ==============
+      // agoric install $DISTTAG
       const opts = JSON.parse(process.env.AGORIC_INSTALL_OPTIONS);
       installOptions.push(...opts);
+      t.is(
+        await myMain(['install', ...installOptions]),
+        0,
+        'agoric install works',
+      );
+    } else {
+      // ==============
+      // yarn install
+      t.is(await yarn(['install', ...installOptions]), 0, 'yarn install works');
     }
-    t.is(await myMain(['install', ...installOptions]), 0, 'install works');
 
     // ==============
-    // agoric start --reset
-    const startResult = makePromiseKit();
+    // yarn start:docker
+    t.is(await yarn(['start:docker']), 0, 'yarn start:docker works');
 
-    if (process.env.AGORIC_START_OPTIONS) {
-      const opts = JSON.parse(process.env.AGORIC_START_OPTIONS);
-      startOptions.push(...opts);
-    }
-
-    // TODO: Allow this to work even if the port is already used.
-    const startP = myMain(['start', '--reset', ...startOptions]);
-    finalizers.push(() => pkill(startP.childProcess, 'SIGINT'));
-
-    let stdoutStr = '';
-    if (startP.childProcess.stdout) {
-      startP.childProcess.stdout.on('data', chunk => {
-        // console.log('stdout:', chunk.toString());
-        stdoutStr += chunk.toString();
-        if (stdoutStr.match(/(^|:\s+)swingset running$/m)) {
-          startResult.resolve(true);
+    // ==============
+    // wait for the chain to start
+    let lastKnownBlockHeight = 2n;
+    for (;;) {
+      try {
+        const currentHeight = await getLatestBlockHeight(
+          'http://localhost:26657/status',
+        );
+        if (currentHeight > lastKnownBlockHeight) {
+          const earlierHeight = lastKnownBlockHeight;
+          lastKnownBlockHeight = currentHeight;
+          if (earlierHeight > 2n && currentHeight > earlierHeight) {
+            // We've had at least 3 blocks produced.
+            break;
+          }
         }
-      });
-    }
-    startP.childProcess.on('close', code =>
-      startResult.reject(Error(`early termination: ${code}`)),
-    );
-
-    const timeout = setTimeout(
-      startResult.reject,
-      TIMEOUT_SECONDS * 1000,
-      'timeout',
-    );
-    t.is(await startResult.promise, true, `swingset running before timeout`);
-    clearTimeout(timeout);
-
-    const openP = myMain(['open', '--no-browser'], {
-      stdio: ['ignore', 'pipe', 'inherit'],
-    });
-    t.is(await openP, 0, `open --no-browser exits successfully`);
-
-    const testDeploy = async (deployCmd, opts = {}) => {
-      const deployResult = makePromiseKit();
-      const deployP = myMain(
-        ['deploy', `--hostport=127.0.0.1:${PORT}`, ...deployCmd],
-        {
-          stdio: [opts.stdin ? 'pipe' : 'ignore', 'pipe', 'inherit'],
-        },
-      );
-
-      if (opts.stdin) {
-        // Write the input to stdin.
-        deployP.childProcess.stdin.write(opts.stdin);
-        deployP.childProcess.stdin.end();
+      } catch (e) {
+        console.error((e && e.message) || e);
       }
 
-      finalizers.push(() => pkill(deployP.childProcess, 'SIGINT'));
-      const to = setTimeout(
-        deployResult.resolve,
-        TIMEOUT_SECONDS * 1000,
-        'timeout',
+      // Wait a bit and try again.
+      await new Promise(resolve =>
+        setTimeout(resolve, RETRY_BLOCKHEIGHT_SECONDS * 1_000),
       );
-      const done = await Promise.race([deployResult.promise, deployP]);
-      t.is(done, 0, `deploy ${deployCmd.join(' ')} successful before timeout`);
-      clearTimeout(to);
-    };
-
-    // ==============
-    // agoric deploy ./contract/deploy.js ./api/deploy.js
-    await testDeploy(['./contract/deploy.js', './api/deploy.js']);
-
-    for (const [suffix, code] of [
-      ['/notthere', 404],
-      ['', 200],
-    ]) {
-      let urlResolve;
-      const url = `http://127.0.0.1:${PORT}${suffix}`;
-      const urlP = new Promise(resolve => (urlResolve = resolve));
-      const urlReq = request(url, res => urlResolve(res.statusCode));
-      urlReq.setTimeout(2000);
-      urlReq.on('error', err => urlResolve(`Cannot connect to ${url}: ${err}`));
-      urlReq.end();
-      const urlTimeout = setTimeout(urlResolve, 3000, 'timeout');
-      const urlDone = await urlP;
-      clearTimeout(urlTimeout);
-      t.is(urlDone, code, `${url} gave status ${code}`);
     }
 
     // ==============
-    // cd ui && yarn start
-    const uiStartP = pspawn(`yarn`, ['start'], {
-      stdio: ['ignore', 'inherit', 'inherit'],
-      cwd: 'ui',
-      env: { ...process.env, PORT: '3000' },
-      detached: true,
-    });
-    finalizers.push(() => pkill(uiStartP.childProcess, 'SIGINT'));
+    // yarn start:contract
+    t.is(await yarn(['start:contract']), 0, 'yarn start:contract works');
+
+    // ==============
+    // yarn start:ui
+    const startUiP = yarn(['start:ui']);
+    finalizers.push(() => pkill(startUiP.childProcess, 'SIGINT'));
     const uiListening = makePromiseKit();
     let retries = 0;
     const ival = setInterval(() => {
@@ -230,12 +226,12 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
           return;
         }
 
-        const req = request('http://localhost:3000/', _res => {
+        const req = request('http://localhost:5173/', _res => {
           resolve('listening');
         });
-        req.setTimeout(2000);
+        req.setTimeout(SOCKET_TIMEOUT_SECONDS * 1_000);
         req.on('error', err => {
-          if (err.code !== 'ECONNREFUSED') {
+          if (!('code' in err) || err.code !== 'ECONNREFUSED') {
             resolve(`Cannot connect to UI server: ${err}`);
           }
         });
@@ -245,20 +241,11 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
       }
     }, 3000);
     t.is(
-      await Promise.race([uiStartP, uiListening.promise]),
+      await Promise.race([startUiP, uiListening.promise]),
       'listening',
-      `cd ui && yarn start succeeded`,
+      `yarn start:ui succeeded`,
     );
     clearInterval(ival);
-
-    // Test that the Node.js `-r esm`-dependent plugin works.
-    await (testUnsafePlugins &&
-      testDeploy(
-        ['--allow-unsafe-plugins', `${dirname}/resm-plugin/deploy.js`],
-        { stdin: 'yes\n' },
-      ));
-
-    // TODO: When it exists, Test that the Node.js native ESM plugin works.
   } finally {
     runFinalizers();
     process.off('SIGINT', runFinalizers);

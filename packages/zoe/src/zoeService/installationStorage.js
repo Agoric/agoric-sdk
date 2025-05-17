@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/prefer-ts-expect-error -- accomodate different type search depths */
-import { assert } from '@agoric/assert';
+import { Fail, q } from '@endo/errors';
 import {
   M,
   prepareExo,
@@ -8,15 +7,15 @@ import {
 } from '@agoric/vat-data';
 import {
   InstallationShape,
-  InstanceHandleShape,
   UnwrappedInstallationShape,
 } from '../typeGuards.js';
 
-const { Fail, quote: q } = assert;
-
-/** @typedef { import('@agoric/swingset-vat').BundleCap} BundleCap */
-/** @typedef { import('@agoric/swingset-vat').BundleID} BundleID */
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+/**
+ * @import {Baggage} from '@agoric/swingset-liveslots';
+ * @import {WeakMapStore} from '@agoric/store';
+ * @import {BundleID, BundleCap} from '@agoric/swingset-vat';
+ * @import {SourceBundle} from '@agoric/zoe';
+ */
 
 /**
  * @param {GetBundleCapForID} getBundleCapForID
@@ -39,7 +38,7 @@ export const makeInstallationStorage = (getBundleCapForID, zoeBaggage) => {
     zoeBaggage,
     'BundleIDInstallation',
     bundleLabel => ({ bundleLabel }),
-    // @ts-ignore cast without StartFunction property
+    // @ts-expect-error cast without StartFunction property
     {
       getBundle: _context => Fail`bundleID-based Installation`,
       getBundleLabel: ({ state: { bundleLabel } }) => bundleLabel,
@@ -51,7 +50,7 @@ export const makeInstallationStorage = (getBundleCapForID, zoeBaggage) => {
     zoeBaggage,
     'BundleInstallation',
     (bundle, bundleLabel) => ({ bundle, bundleLabel }),
-    // @ts-ignore cast without StartFunction property
+    // @ts-expect-error cast without StartFunction property
     {
       getBundle: ({ state: { bundle } }) => bundle,
       getBundleLabel: ({ state: { bundleLabel } }) => bundleLabel,
@@ -80,10 +79,7 @@ export const makeInstallationStorage = (getBundleCapForID, zoeBaggage) => {
 
   const InstallationStorageI = M.interface('InstallationStorage', {
     installBundle: M.call(
-      M.or(
-        InstanceHandleShape,
-        M.recordOf(M.string(), M.string({ stringLengthLimit: Infinity })),
-      ),
+      M.recordOf(M.string(), M.string({ stringLengthLimit: Infinity })),
     )
       .optional(M.string())
       .returns(M.promise()),
@@ -104,7 +100,6 @@ export const makeInstallationStorage = (getBundleCapForID, zoeBaggage) => {
     InstallationStorageI,
     {
       async installBundle(allegedBundle, bundleLabel) {
-        // @ts-expect-error TS doesn't understand context
         const { self } = this;
         // Bundle is a very open-ended type and we must decide here whether to
         // treat it as either a HashBundle or SourceBundle. So we have to
@@ -152,7 +147,6 @@ export const makeInstallationStorage = (getBundleCapForID, zoeBaggage) => {
         }
       },
       async getBundleIDFromInstallation(allegedInstallation) {
-        // @ts-expect-error TS doesn't understand context
         const { self } = this;
         const { bundleID } = await self.unwrapInstallation(allegedInstallation);
         // AWAIT

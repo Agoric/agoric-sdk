@@ -1,3 +1,4 @@
+import { q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
@@ -10,7 +11,9 @@ import {
 } from '../../../src/index.js';
 import { MALLEABLE_NUMBER } from './governedContract.js';
 
-const { quote: q } = assert;
+/**
+ * @import {EReturn} from '@endo/far';
+ */
 
 const build = async (log, zoe) => {
   return Far('voter', {
@@ -106,7 +109,7 @@ const build = async (log, zoe) => {
 };
 
 /**
- * @typedef {ReturnType<Awaited<ReturnType<typeof build>>['createVoter']>} EVatVoter
+ * @typedef {ReturnType<EReturn<typeof build>['createVoter']>} EVatVoter
  */
 
 /** @type {import('@agoric/swingset-vat/src/kernel/vat-loader/types.js').BuildRootObjectForTestVat} */

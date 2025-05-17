@@ -9,9 +9,9 @@
     "build": "yarn build:bundles",
     "build:bundles": "node scripts/build-bundles.js",
     "prepack": "tsc --build tsconfig.build.json",
-    "postpack": "git clean -f '*.d.ts*'",
+    "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
     "test": "ava",
-    "test:c8": "c8 $C8_OPTIONS ava",
+    "test:c8": "c8 --all $C8_OPTIONS ava",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
@@ -22,7 +22,8 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/assert": "^0.6.0",
+    "@endo/errors": "^1.2.10",
+    "@agoric/cosmic-proto": "^0.4.0",
     "@agoric/ertp": "^0.16.2",
     "@agoric/governance": "^0.10.3",
     "@agoric/internal": "^0.3.2",
@@ -32,42 +33,42 @@
     "@agoric/swingset-vat": "^0.32.2",
     "@agoric/time": "^0.3.2",
     "@agoric/vat-data": "^0.5.2",
+    "@agoric/vow": "^0.1.0",
     "@agoric/zoe": "^0.26.2",
     "@agoric/zone": "^0.2.2",
-    "@endo/far": "^1.0.1",
-    "@endo/import-bundle": "^1.0.1",
-    "@endo/marshal": "^1.0.1",
-    "@endo/nat": "^5.0.1",
-    "@endo/patterns": "^1.0.1",
-    "@endo/promise-kit": "^1.0.1",
-    "import-meta-resolve": "^2.2.1",
-    "jessie.js": "^0.3.2"
+    "@endo/far": "^1.1.11",
+    "@endo/import-bundle": "^1.4.0",
+    "@endo/marshal": "^1.6.4",
+    "@endo/nat": "^5.1.0",
+    "@endo/pass-style": "^1.5.0",
+    "@endo/patterns": "^1.5.0",
+    "@endo/promise-kit": "^1.1.10",
+    "import-meta-resolve": "^4.1.0",
+    "jessie.js": "^0.3.4"
   },
   "devDependencies": {
     "@agoric/swingset-liveslots": "^0.10.2",
-    "@endo/bundle-source": "^3.0.1",
-    "@endo/init": "^1.0.1",
+    "@endo/bundle-source": "^4.0.0",
+    "@endo/init": "^1.1.9",
     "ava": "^5.3.0",
-    "c8": "^7.13.0"
+    "c8": "^10.1.3"
   },
   "files": [
     "CHANGELOG.md",
     "src/",
     "scripts/",
     "tools/",
-    "*.json",
-    "globals.d.ts",
-    "exported.js"
+    "index.*"
   ],
   "publishConfig": {
     "access": "public"
   },
   "engines": {
-    "node": ">=14.15.0"
+    "node": "^18.12 || ^20.9"
   },
   "ava": {
     "files": [
-      "test/**/test-*.js"
+      "test/**/*.test.*"
     ],
     "require": [
       "@endo/init/debug.js"
@@ -76,6 +77,6 @@
     "workerThreads": false
   },
   "typeCoverage": {
-    "atLeast": 90.88
+    "atLeast": 90.49
   }
 }

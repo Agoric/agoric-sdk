@@ -1,5 +1,9 @@
+/* global globalThis */
+
 import { isPromise } from '@endo/promise-kit';
-import { E, Far } from '@endo/far';
+import { Far } from '@endo/far';
+import { heapVowE as E } from '@agoric/vow/vat.js';
+import * as vowExports from '@agoric/vow/vat.js';
 import * as farExports from '@endo/far';
 
 import { Nat } from '@endo/nat';
@@ -14,7 +18,6 @@ const UNJSONABLES = new Map([
 // A REPL-specific data dump-to-string.  This specifically is *not* JSON, but its
 // output is unambiguous (even though it cannot be round-tripped).
 export const dump = (value, spaces = 0) =>
-  // eslint-disable-next-line no-use-before-define
   dump0(value, spaces, new WeakSet(), 0);
 
 function dump0(value, spaces, inProgress, depth) {
@@ -190,7 +193,10 @@ export function getReplHandler(replObjects, send) {
 
   const endowments = {
     ...farExports,
-    assert,
+    ...vowExports,
+    E,
+    // See https://github.com/Agoric/agoric-sdk/issues/9515
+    assert: globalThis.assert,
     console: replConsole,
     commands,
     history,
@@ -227,7 +233,7 @@ export function getReplHandler(replObjects, send) {
       commands[histnum] = body;
 
       // Need this concatenation to bypass direct eval test in realms-shim.
-      // eslint-disable-next-line no-useless-concat
+
       consoleOffset = histnum * 2;
       consoleRegions[consoleOffset] = [];
       consoleRegions[consoleOffset + 1] = [];

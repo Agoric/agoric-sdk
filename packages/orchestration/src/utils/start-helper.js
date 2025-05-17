@@ -1,0 +1,235 @@
+import { prepareAsyncFlowTools } from '@agoric/async-flow';
+import { prepareVowTools } from '@agoric/vow';
+import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
+import { makeDurableZone } from '@agoric/zone/durable.js';
+import { makeChainHub } from '../exos/chain-hub.js';
+import { prepareCosmosOrchestrationAccount } from '../exos/cosmos-orchestration-account.js';
+import { prepareLocalChainFacade } from '../exos/local-chain-facade.js';
+import { prepareLocalOrchestrationAccountKit } from '../exos/local-orchestration-account.js';
+import { prepareOrchestrator } from '../exos/orchestrator.js';
+import { prepareRemoteChainFacade } from '../exos/remote-chain-facade.js';
+import { makeOrchestrationFacade } from '../facade.js';
+import { makeZoeTools } from './zoe-tools.js';
+import { makeZcfTools } from './zcf-tools.js';
+
+/**
+ * @import {LocalChain} from '@agoric/vats/src/localchain.js';
+ * @import {TimerService} from '@agoric/time';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {NameHub} from '@agoric/vats';
+ * @import {Remote} from '@agoric/vow';
+ * @import {Zone} from '@agoric/zone';
+ * @import {Pattern} from '@endo/patterns';
+ * @import {CosmosInterchainService} from '../exos/exo-interfaces.js';
+ */
+
+/**
+ * @typedef {{
+ *   localchain: Remote<LocalChain>;
+ *   orchestrationService: Remote<CosmosInterchainService>;
+ *   storageNode?: Remote<StorageNode>;
+ *   timerService: Remote<TimerService>;
+ *   agoricNames: Remote<NameHub>;
+ * }} OrchestrationPowers
+ */
+
+/**
+ * @typedef {object} WithOrchestrationOpts
+ * @property {boolean} [publishAccountInfo] - Controls whether account
+ *   information (address, channel identifiers for ICAs) should be automatically
+ *   published to vstorage
+ * @property {Pattern} [chainInfoValueShape] - Overrides the default valueShape
+ *   for ChainHub's `chainInfos: MapStore`. Intended to support a legacy version
+ *   of ChainHub for FastUSDC.
+ */
+
+/**
+ * Helper that a contract start function can use to set up the objects needed
+ * for orchestration.
+ *
+ * TODO strip problematic operations from ZCF (e.g., getPayouts)
+ *
+ * @param {ZCF} zcf
+ * @param {Baggage} baggage
+ * @param {OrchestrationPowers} remotePowers
+ * @param {Marshaller} marshaller
+ * @param {object} [opts]
+ * @param {WithOrchestrationOpts['chainInfoValueShape']} [opts.chainInfoValueShape]
+ * @internal
+ */
+export const provideOrchestration = (
+  zcf,
+  baggage,
+  remotePowers,
+  marshaller,
+  opts = {},
+) => {
+  // separate zones
+  const zones = (() => {
+    const zone = makeDurableZone(baggage);
+    return {
+      /** system names for async flow */
+      asyncFlow: zone.subZone('asyncFlow'),
+      /** system names for orchestration implementation */
+      orchestration: zone.subZone('orchestration'),
+      /** system names for chainHub */
+      chainHub: zone.subZone('chainHub'),
+      /** system names for vows */
+      vows: zone.subZone('vows'),
+      /** contract-provided names, and subzones */
+      contract: zone.subZone('contract'),
+    };
+  })();
+
+  const { agoricNames, timerService, localchain } = remotePowers;
+
+  const vowTools = prepareVowTools(zones.vows);
+
+  const chainHub = makeChainHub(zones.chainHub, agoricNames, vowTools, {
+    chainInfoValueShape: opts.chainInfoValueShape,
+  });
+
+  const zoeTools = makeZoeTools(zcf, vowTools);
+
+  const zcfTools = makeZcfTools(zcf, vowTools);
+
+  const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
+  const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
+    zones.orchestration,
+    {
+      makeRecorderKit,
+      zcf,
+      timerService,
+      vowTools,
+      chainHub,
+      localchain,
+      zoeTools,
+    },
+  );
+
+  const asyncFlowTools = prepareAsyncFlowTools(zones.asyncFlow, {
+    vowTools,
+  });
+
+  const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
+    zones.orchestration,
+    {
+      chainHub,
+      makeRecorderKit,
+      timerService,
+      vowTools,
+      zcf,
+    },
+  );
+
+  const makeRemoteChainFacade = prepareRemoteChainFacade(zones.orchestration, {
+    makeCosmosOrchestrationAccount,
+    orchestration: remotePowers.orchestrationService,
+    storageNode: remotePowers.storageNode,
+    timer: remotePowers.timerService,
+    vowTools,
+  });
+
+  const makeLocalChainFacade = prepareLocalChainFacade(zones.orchestration, {
+    makeLocalOrchestrationAccountKit,
+    localchain: remotePowers.localchain,
+    // FIXME what path?
+    storageNode: remotePowers.storageNode,
+    agoricNames,
+    orchestration: remotePowers.orchestrationService,
+    timer: remotePowers.timerService,
+    vowTools,
+  });
+
+  const makeOrchestrator = prepareOrchestrator(zones.orchestration, {
+    chainHub,
+    makeLocalChainFacade,
+    makeRemoteChainFacade,
+    vowTools,
+  });
+
+  /**
+   * Create orchestrate functions in a specific zone, instead of the default
+   * `contract.orchestration` zone. This is used for modules that add their own
+   * orchestration functions (e.g., a Portfolio with orchestration flows for
+   * continuing offers)
+   *
+   * @param {Zone} zone
+   */
+  const makeOrchestrateKit = zone =>
+    makeOrchestrationFacade({
+      zone,
+      zcf,
+      makeOrchestrator,
+      asyncFlowTools,
+      vowTools,
+      ...remotePowers,
+    });
+
+  // Create orchestrate functions for the default `contract.orchestration` zone
+  const defaultOrchestrateKit = makeOrchestrateKit(
+    zones.contract.subZone('orchestration'),
+  );
+
+  zcf.setTestJig(() => ({
+    baggage,
+    chainHub,
+  }));
+
+  return {
+    ...defaultOrchestrateKit,
+    makeOrchestrateKit,
+    baggage,
+    chainHub,
+    vowTools,
+    asyncFlowTools,
+    zcfTools,
+    zoeTools,
+    zone: zones.contract,
+  };
+};
+harden(provideOrchestration);
+
+/** @typedef {Omit<ReturnType<typeof provideOrchestration>, 'zone'>} OrchestrationTools */
+
+/**
+ * Simplifies contract functions for Orchestration by wrapping a simpler
+ * function with all the tools it needs in order to use Orchestration.
+ *
+ * @example
+ *
+ * ```js
+ * const contract = (zcf, privateArgs, zone, tools) => { ... };
+ * export const start = withOrchestration(contract);
+ * ```
+ *
+ * @template {Record<string, unknown>} CT
+ * @template {OrchestrationPowers & {
+ *   marshaller: Marshaller;
+ * }} PA
+ * @template R
+ * @param {(
+ *   zcf: ZCF<CT>,
+ *   privateArgs: PA,
+ *   zone: Zone,
+ *   tools: OrchestrationTools,
+ * ) => Promise<R>} contractFn
+ * @param {WithOrchestrationOpts} [opts]
+ * @returns {(zcf: ZCF<CT>, privateArgs: PA, baggage: Baggage) => Promise<R>} a
+ *   Zoe start function
+ */
+export const withOrchestration =
+  (contractFn, opts) => async (zcf, privateArgs, baggage) => {
+    const { marshaller, ...allOrchPowers } = privateArgs;
+    const { storageNode: _, ...requiredOrchPowers } = allOrchPowers;
+    const { publishAccountInfo, chainInfoValueShape } = opts ?? {};
+    const { zone, ...tools } = provideOrchestration(
+      zcf,
+      baggage,
+      publishAccountInfo ? allOrchPowers : requiredOrchPowers,
+      marshaller,
+      { chainInfoValueShape },
+    );
+    return contractFn(zcf, privateArgs, zone, tools);
+  };
+harden(withOrchestration);

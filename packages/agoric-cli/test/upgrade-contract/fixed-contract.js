@@ -1,7 +1,7 @@
 import { AmountMath } from '@agoric/ertp';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
-/** @type {ContractMeta} */
+/** @type {ContractMeta<typeof start>} */
 export const meta = {
   upgradability: 'canUpgrade',
 };

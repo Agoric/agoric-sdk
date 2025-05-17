@@ -1,0 +1,108 @@
+name: Multichain E2E Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Select which test to run'
+        type: choice
+        required: true
+        options:
+          - fast-usdc-go-relayer
+          - fast-usdc-hermes
+          - orchestration-api-go-relayer
+          - orchestration-api-hermes
+          - orchestration-staking-go-relayer
+          - orchestration-staking-hermes
+          - orchestration-queries-go-relayer
+          - orchestration-queries-hermes
+  workflow_call:
+
+jobs:
+  orchestration-api-hermes:
+    name: Orchestration API - Hermes
+    if: |
+      github.event_name == 'workflow_call' ||
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'workflow_dispatch' && inputs.test_type == 'orchestration-api-hermes')
+    uses: ./.github/workflows/multichain-e2e-template.yml
+    with:
+      config: config.yaml
+      test_command: yarn test:main
+      test_suite_name: orchestration-api-hermes
+
+  fast-usdc-hermes:
+    name: Fast USDC - Hermes
+    if: |
+      github.event_name == 'workflow_call' ||
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'workflow_dispatch' && inputs.test_type == 'fast-usdc-hermes')
+    uses: ./.github/workflows/multichain-e2e-template.yml
+    with:
+      config: config.fusdc.yaml
+      test_command: yarn test:fast-usdc
+      test_suite_name: fast-usdc-hermes
+
+  orchestration-api-go-relayer:
+    name: Orchestration API - Go Relayer
+    # run on dispatch only
+    if: github.event_name == 'workflow_dispatch' && inputs.test_type == 'orchestration-api-go-relayer'
+    uses: ./.github/workflows/multichain-e2e-template.yml
+    with:
+      config: config.go-relayer.yaml
+      test_command: RELAYER_TYPE=go-relayer yarn test:main
+      test_suite_name: orchestration-api-go-relayer
+
+  fast-usdc-go-relayer:
+    name: Fast USDC - Go Relayer
+    # run on dispatch only
+    if: github.event_name == 'workflow_dispatch' && inputs.test_type == 'fast-usdc-go-relayer'
+    uses: ./.github/workflows/multichain-e2e-template.yml
+    with:
+      config: config.fusdc.go-relayer.yaml
+      test_command: RELAYER_TYPE=go-relayer yarn test:fast-usdc
+      test_suite_name: fast-usdc-api-go-relayer
+
+  orchestration-staking-go-relayer:
+    name: Orchestration Staking - Go Relayer
+    # run on dispatch only
+    if: github.event_name == 'workflow_dispatch' && inputs.test_type == 'orchestration-staking-go-relayer'
+    uses: ./.github/workflows/multichain-e2e-template.yml
+    with:
+      config: config.go-relayer.yaml
+      test_command: RELAYER_TYPE=go-relayer yarn test:staking
+      test_suite_name: orchestration-staking-go-relayer
+
+  orchestration-staking-hermes:
+    name: Orchestration Staking - Hermes
+    if: |
+      github.event_name == 'workflow_call' ||
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'workflow_dispatch' && inputs.test_type == 'orchestration-staking-hermes')
+    uses: ./.github/workflows/multichain-e2e-template.yml
+    with:
+      config: config.yaml
+      test_command: yarn test:staking
+      test_suite_name: orchestration-staking-hermes
+
+  orchestration-queries-go-relayer:
+    name: Orchestration Queries - Go Relayer
+    # run on dispatch only
+    if: github.event_name == 'workflow_dispatch' && inputs.test_type == 'orchestration-queries-go-relayer'
+    uses: ./.github/workflows/multichain-e2e-template.yml
+    with:
+      config: config.go-relayer.yaml
+      test_command: RELAYER_TYPE=go-relayer yarn test:queries
+      test_suite_name: orchestration-queries-go-relayer
+
+  orchestration-queries-hermes:
+    name: Orchestration Queries - Hermes
+    if: |
+      github.event_name == 'workflow_call' ||
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'workflow_dispatch' && inputs.test_type == 'orchestration-queries-hermes')
+    uses: ./.github/workflows/multichain-e2e-template.yml
+    with:
+      config: config.yaml
+      test_command: yarn test:queries
+      test_suite_name: orchestration-queries-hermes

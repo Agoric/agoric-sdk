@@ -1,5 +1,4 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
-/* global process setTimeout */
+/* eslint-env node */
 import chalk from 'chalk';
 import { createHash } from 'crypto';
 import path from 'path';
@@ -71,10 +70,10 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   const pspawnEnv = { ...process.env };
   if (opts.verbose > 1) {
     // Loudly verbose logs (nondeterministic).
-    pspawnEnv.DEBUG = 'agoric,SwingSet:vat,SwingSet:ls';
+    pspawnEnv.DEBUG = 'agoric:debug,SwingSet:vat,SwingSet:ls';
   } else if (opts.verbose) {
     // Verbose vat logs (nondeterministic).
-    pspawnEnv.DEBUG = 'SwingSet:vat,SwingSet:ls';
+    pspawnEnv.DEBUG = 'agoric:info,SwingSet:vat,SwingSet:ls';
   }
 
   const pspawn = makePspawn({ env: pspawnEnv, spawn, log, chalk });
@@ -184,7 +183,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
     await null;
     if (popts.reset) {
-      rmVerbose(serverDir);
+      await rmVerbose(serverDir);
     }
 
     if (!opts.dockerTag) {
@@ -274,16 +273,16 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
     const serverDir = `${SERVERS_ROOT_DIR}/${profileName}-${portNum}`;
     if (popts.reset) {
-      rmVerbose(serverDir);
+      await rmVerbose(serverDir);
     }
 
+    /** @type {(args: string[], spawnOpts?: Parameters<typeof pspawn>[2], dockerArgs?: string[]) => ReturnType<pspawn>} */
     let chainSpawn;
     if (!popts.dockerTag) {
-      chainSpawn = (args, spawnOpts = undefined) => {
-        return pspawn(cosmosChain, [...args, `--home=${serverDir}`], spawnOpts);
-      };
+      chainSpawn = (args, spawnOpts) =>
+        pspawn(cosmosChain, [...args, `--home=${serverDir}`], spawnOpts);
     } else {
-      chainSpawn = (args, spawnOpts = undefined, dockerArgs = []) =>
+      chainSpawn = (args, spawnOpts, dockerArgs = []) =>
         pspawn(
           'docker',
           [
@@ -334,7 +333,6 @@ export default async function startMain(progname, rawArgs, powers, opts) {
         }
       }
       addrs[keyName] = statusOut[1].trimRight();
-      /* eslint-enable no-await-in-loop */
     }
 
     const genesisFile = `${serverDir}/config/genesis.json`;
@@ -481,15 +479,15 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     }
 
     if (popts.reset) {
-      rmVerbose(serverDir);
+      await rmVerbose(serverDir);
     }
 
+    /** @type {(args: string[], spawnOpts?: Parameters<typeof pspawn>[2], dockerArgs?: string[]) => ReturnType<pspawn>} */
     let soloSpawn;
     if (!popts.dockerTag) {
-      soloSpawn = (args, spawnOpts = undefined) =>
-        pspawn(agSolo, args, spawnOpts);
+      soloSpawn = (args, spawnOpts) => pspawn(agSolo, args, spawnOpts);
     } else {
-      soloSpawn = (args, spawnOpts = undefined, dockerArgs = []) =>
+      soloSpawn = (args, spawnOpts, dockerArgs = []) =>
         pspawn(
           'docker',
           [
@@ -704,7 +702,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     const serverDir = `${SERVERS_ROOT_DIR}/${profileName}-${port}`;
 
     if (popts.reset) {
-      rmVerbose(serverDir);
+      await rmVerbose(serverDir);
     }
 
     const setupRun = (...bonusArgs) =>
@@ -731,7 +729,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
     await null;
     if (popts.reset) {
-      rmVerbose(serverDir);
+      await rmVerbose(serverDir);
     }
 
     const setupRun = (...bonusArgs) =>

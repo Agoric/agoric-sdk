@@ -1,4 +1,4 @@
-import { assert, NonNullish } from '@agoric/assert';
+import { assert, Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { M, getInterfaceGuardPayload } from '@endo/patterns';
@@ -9,9 +9,7 @@ import {
   prepareGuardedAttenuator,
 } from '@agoric/internal/src/callback.js';
 import { makeHeapZone } from '@agoric/zone';
-import { deeplyFulfilled } from '@endo/marshal';
-
-const { Fail, quote: q } = assert;
+import { deeplyFulfilledObject, NonNullish } from '@agoric/internal';
 
 const KeyShape = M.string();
 const PathShape = M.arrayOf(KeyShape);
@@ -118,7 +116,7 @@ const updated = (updateCallback, hub, _newValue = undefined) => {
   }
 
   // wait for values to settle before writing
-  return E.when(deeplyFulfilled(hub.entries()), settledEntries =>
+  return E.when(deeplyFulfilledObject(hub.entries()), settledEntries =>
     E(updateCallback).write(settledEntries),
   );
 };
@@ -215,8 +213,8 @@ export const prepareNameHubKit = zone => {
           if (keyToAdmin.has(key)) {
             const childAdmin = keyToAdmin.get(key);
             /** @type {import('./types.js').NameHub} */
-            // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
-            // @ts-ignore if an admin is present, it should be a namehub
+
+            // @ts-expect-error if an admin is present, it should be a namehub
             const childHub = keyToValue.get(key);
             return { nameHub: childHub, nameAdmin: childAdmin };
           }
@@ -337,7 +335,7 @@ export const prepareNameHubKit = zone => {
             if (pmap.has(key)) {
               // Reject only if already exists.
               const old = NonNullish(pmap.get(key));
-              old.reject(Error(`Value has been deleted`));
+              old.reject(Error(`Value for ${key} has been deleted`));
               // Silence unhandled rejections.
               void old.promise.catch(_ => {});
             }

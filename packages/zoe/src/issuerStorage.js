@@ -1,13 +1,17 @@
-import { provideDurableWeakMapStore } from '@agoric/vat-data';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
+import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
+import { provideDurableWeakMapStore } from '@agoric/vat-data';
 
-import { arrayToObj } from './objArrayConversion.js';
 import { cleanKeywords } from './cleanProposal.js';
 import { makeIssuerRecord } from './issuerRecord.js';
 
-const { Fail } = assert;
-
 const STORAGE_INSTANTIATED_KEY = 'IssuerStorageInstantiated';
+
+/**
+ * @import {LegacyWeakMap, WeakMapStore} from '@agoric/store';
+ * @import {ZoeIssuerRecord} from '@agoric/zoe';
+ */
 
 /**
  * Make the Issuer Storage.
@@ -15,12 +19,12 @@ const STORAGE_INSTANTIATED_KEY = 'IssuerStorageInstantiated';
  * @param {import('@agoric/vat-data').Baggage} zcfBaggage
  */
 export const provideIssuerStorage = zcfBaggage => {
-  /** @type {WeakMapStore<Brand,IssuerRecord>} */
+  /** @type {WeakMapStore<Brand, ZoeIssuerRecord>} */
   const brandToIssuerRecord = provideDurableWeakMapStore(
     zcfBaggage,
     'brandToIssuerRecord',
   );
-  /** @type {WeakMapStore<Issuer,IssuerRecord>} */
+  /** @type {WeakMapStore<Issuer, ZoeIssuerRecord>} */
   const issuerToIssuerRecord = provideDurableWeakMapStore(
     zcfBaggage,
     'issuerToIssuerRecord',
@@ -59,8 +63,8 @@ export const provideIssuerStorage = zcfBaggage => {
    * to add the issuer again in ZCF.
    *
    *
-   * @param {IssuerRecord} issuerRecord
-   * @returns {IssuerRecord}
+   * @param {ZoeIssuerRecord} issuerRecord
+   * @returns {ZoeIssuerRecord}
    */
   const storeIssuerRecord = issuerRecord => {
     assertInstantiated();
@@ -84,7 +88,7 @@ export const provideIssuerStorage = zcfBaggage => {
    * Otherwise, make and save the issuerRecord.
    *
    * @param {ERef<Issuer>} issuerP
-   * @returns {Promise<IssuerRecord>}
+   * @returns {Promise< ZoeIssuerRecord>}
    */
   const storeIssuer = async issuerP => {
     assertInstantiated();
@@ -124,11 +128,6 @@ export const provideIssuerStorage = zcfBaggage => {
     return getByBrand(brand);
   };
 
-  const storeIssuers = issuers => {
-    assertInstantiated();
-    return Promise.all(issuers.map(storeIssuer));
-  };
-
   /** @type {GetAssetKindByBrand} */
   const getAssetKindByBrand = brand => {
     assertInstantiated();
@@ -143,28 +142,14 @@ export const provideIssuerStorage = zcfBaggage => {
    */
   const storeIssuerKeywordRecord = async uncleanIssuerKeywordRecord => {
     assertInstantiated();
-    const keywords = cleanKeywords(uncleanIssuerKeywordRecord);
-    const issuerPs = keywords.map(
-      keyword => uncleanIssuerKeywordRecord[keyword],
+    cleanKeywords(uncleanIssuerKeywordRecord);
+    const issuerRecordPs = objectMap(uncleanIssuerKeywordRecord, issuerP =>
+      storeIssuer(issuerP),
     );
-    // The issuers may not have been seen before, so we must wait for the
-    // issuer records to be available synchronously
-    const issuerRecords = await storeIssuers(issuerPs);
-    // AWAIT ///
-
-    const issuers = arrayToObj(
-      issuerRecords.map(record => record.issuer),
-      keywords,
-    );
-    const brands = arrayToObj(
-      issuerRecords.map(record => record.brand),
-      keywords,
-    );
-
-    return harden({
-      issuers,
-      brands,
-    });
+    const issuerRecords = await deeplyFulfilledObject(issuerRecordPs);
+    const issuers = objectMap(issuerRecords, ({ issuer }) => issuer);
+    const brands = objectMap(issuerRecords, ({ brand }) => brand);
+    return harden({ issuers, brands });
   };
 
   /**
@@ -189,7 +174,10 @@ export const provideIssuerStorage = zcfBaggage => {
     return brandToIssuerRecord.get(brand).issuer;
   };
 
-  /** @type {IssuerStorageGetIssuerRecords} */
+  /**
+   * @param {Issuer[]} issuers
+   * @returns {IssuerRecords}
+   */
   const getIssuerRecords = issuers => {
     assertInstantiated();
     return issuers.map(issuerToIssuerRecord.get);
@@ -199,7 +187,9 @@ export const provideIssuerStorage = zcfBaggage => {
     if (!zcfBaggage.has(STORAGE_INSTANTIATED_KEY)) {
       zcfBaggage.init(STORAGE_INSTANTIATED_KEY, true);
       instantiated = true;
-      issuerRecords.forEach(storeIssuerRecord);
+      for (const record of issuerRecords) {
+        storeIssuerRecord(record);
+      }
     }
   };
 

@@ -1,6 +1,6 @@
 // @jessie-check
 
-import '@agoric/zoe/exported.js';
+/// <reference types="@agoric/zoe/exported" />
 
 import { makeTracer } from '@agoric/internal';
 import { prepareVaultHolder } from './vaultHolder.js';
@@ -8,10 +8,14 @@ import { prepareVaultHolder } from './vaultHolder.js';
 const trace = makeTracer('VK', true);
 
 /**
+ * @import {EReturn} from '@endo/far';
+ */
+
+/**
  * Wrap the VaultHolder duration object in a record suitable for the result of
  * an invitation.
  *
- * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
  */
 export const prepareVaultKit = (baggage, makeRecorderKit) => {
@@ -44,4 +48,4 @@ export const prepareVaultKit = (baggage, makeRecorderKit) => {
   return makeVaultKit;
 };
 
-/** @typedef {ReturnType<ReturnType<typeof prepareVaultKit>>} VaultKit */
+/** @typedef {EReturn<EReturn<typeof prepareVaultKit>>} VaultKit */

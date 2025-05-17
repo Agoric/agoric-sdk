@@ -37,22 +37,22 @@ var agdServer *vm.AgdServer
 
 // ConnectVMClientCodec creates an RPC client codec and a sender to the
 // in-process implementation of the VM.
-func ConnectVMClientCodec(ctx context.Context, nodePort int, sendFunc func(int, int, string)) (*vm.ClientCodec, daemoncmd.Sender) {
-	vmClientCodec = vm.NewClientCodec(context.Background(), sendFunc)
+func ConnectVMClientCodec(ctx context.Context, nodePort int, sendFunc func(int, int, string)) (*vm.ClientCodec, vm.Sender) {
+	vmClientCodec = vm.NewClientCodec(ctx, sendFunc)
 	vmClient := rpc.NewClientWithCodec(vmClientCodec)
 
-	sendToNode := func(ctx context.Context, needReply bool, str string) (string, error) {
-		if str == "shutdown" {
+	var sendToNode vm.Sender = func(ctx context.Context, needReply bool, jsonRequest string) (jsonReply string, err error) {
+		if jsonRequest == "shutdown" {
 			return "", vmClientCodec.Close()
 		}
 
 		msg := vm.Message{
-			Port: nodePort,
+			Port:       nodePort,
 			NeedsReply: needReply,
-			Data: str,
+			Data:       jsonRequest,
 		}
 		var reply string
-		err := vmClient.Call(vm.ReceiveMessageMethod, msg, &reply)
+		err = vmClient.Call(vm.ReceiveMessageMethod, msg, &reply)
 		return reply, err
 	}
 
@@ -72,7 +72,7 @@ func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) 
 		panic(err)
 	}
 
-	var sendToNode daemoncmd.Sender
+	var sendToNode vm.Sender
 
 	sendFunc := func(port int, reply int, str string) {
 		C.invokeSendFunc(toNode, C.int(port), C.int(reply), C.CString(str))
@@ -83,7 +83,6 @@ func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) 
 		int(nodePort),
 		sendFunc,
 	)
-	agdServer = vm.NewAgdServer()
 
 	args := make([]string, len(cosmosArgs))
 	for i, s := range cosmosArgs {
@@ -96,7 +95,8 @@ func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) 
 		// We run in the background, but exit when the job is over.
 		// swingset.SendToNode("hello from Initial Go!")
 		exitCode := 0
-		daemoncmd.OnStartHook = func(logger log.Logger, appOpts servertypes.AppOptions) error {
+		daemoncmd.OnStartHook = func(srv *vm.AgdServer, logger log.Logger, appOpts servertypes.AppOptions) error {
+			agdServer = srv
 			// We tried running start, which should never exit, so exit with non-zero
 			// code if we ever stop.
 			exitCode = 99
@@ -130,11 +130,11 @@ func SendToGo(port C.int, msg C.Body) C.Body {
 	// fmt.Fprintln(os.Stderr, "Send to Go", msgStr)
 	var respStr string
 	message := &vm.Message{
-		Port: int(port),
+		Port:       int(port),
 		NeedsReply: true,
-		Data: msgStr,
+		Data:       msgStr,
 	}
-	
+
 	err := agdServer.ReceiveMessage(message, &respStr)
 	if err == nil {
 		return C.CString(respStr)

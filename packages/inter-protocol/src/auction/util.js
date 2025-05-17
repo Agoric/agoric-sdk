@@ -8,14 +8,20 @@ import {
 import { Far } from '@endo/marshal';
 
 /**
+ * @import {Key, Pattern} from '@endo/patterns';
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ */
+
+/**
  * Constants for Auction State.
  *
- * @type {{ ACTIVE: 'active'; WAITING: 'waiting' }}
+ * @enum {(typeof AuctionState)[keyof typeof AuctionState]}
  */
-export const AuctionState = {
+export const AuctionState = /** @type {const} */ ({
   ACTIVE: 'active',
   WAITING: 'waiting',
-};
+});
+harden(AuctionState);
 
 /**
  * @param {{ brand: Brand; value: Pattern }} numeratorAmountShape

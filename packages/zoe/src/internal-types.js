@@ -1,4 +1,15 @@
 // @jessie-check
+/// <reference types="@agoric/ertp/exported" />
+
+/**
+ * @import {RemotableObject, Passable} from '@endo/pass-style';
+ * @import {Pattern} from '@endo/patterns';
+ * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {IssuerOptionsRecord, IssuerRecord} from '@agoric/ertp';
+ * @import {Allocation, PaymentPKeywordRecord, UserSeat, Completion, ZoeIssuerRecord} from './types-index.js';
+ * @import {InvitationHandle, BrandKeywordRecord, AnyTerms} from './types.js';
+ */
 
 /**
  * @typedef {object} SeatData
@@ -18,7 +29,7 @@
 
 /**
  * @typedef WithdrawFacet
- * @property {(allocation:Allocation) => PaymentPKeywordRecord} withdrawPayments
+ * @property {(allocation: Allocation) => PaymentPKeywordRecord} withdrawPayments
  */
 
 /**
@@ -42,7 +53,7 @@
  * @param {WithdrawFacet} withdrawFacet
  * @param {ERef<ExitObj>} exitObj
  * @param {ERef<unknown>} [offerResult]
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  * @returns {ZoeSeatAdminKit}
  */
 
@@ -53,12 +64,15 @@
  */
 
 /**
- * @typedef {object} ZoeSeatAdmin
+ * @typedef ZoeSeatAdminMethods
  * @property {(allocation: Allocation) => void} replaceAllocation
  * @property {ZoeSeatAdminExit} exit
  * @property {ShutdownWithFailure} fail called with the reason
  * for calling fail on this seat, where reason is normally an instanceof Error.
  * @property {() => Subscriber<AmountKeywordRecord>} getExitSubscriber
+ */
+/**
+ * @typedef {RemotableObject & ZoeSeatAdminMethods} ZoeSeatAdmin
  */
 
 /**
@@ -67,7 +81,7 @@
 
 /**
  * @typedef {object} HandleOfferResult
- * @property {Promise<unknown>} offerResultPromise
+ * @property {Promise<Passable>} offerResultPromise
  * @property {ExitObj} exitObj
  */
 
@@ -122,9 +136,9 @@
 /**
  * @typedef {object} ZoeInstanceAdmin
  * @property {ZoeInstanceAdminMakeInvitation} makeInvitation
- * @property {(issuerP: ERef<Issuer>,
+ * @property {<I extends Issuer>(issuerP: ERef<I>,
  *             keyword: Keyword
- *            ) => Promise<IssuerRecord>} saveIssuer
+ *            ) => Promise<I extends Issuer<infer K, infer M> ? ZoeIssuerRecord<K, M> : never>} saveIssuer
  * @property {MakeZoeMint} makeZoeMint
  * @property {RegisterFeeMint} registerFeeMint
  * @property {MakeNoEscrowSeat} makeNoEscrowSeat
@@ -137,6 +151,7 @@
  * @property {(strings: Array<string>) => void} setOfferFilter
  * @property {() => Array<string>} getOfferFilter
  * @property {(seatHandle: SeatHandle) => Subscriber<AmountKeywordRecord>} getExitSubscriber
+ * @property {() => void} repairContractCompletionWatcher
  */
 
 /**
@@ -251,7 +266,7 @@
  */
 
 /**
- * @typedef {Array<IssuerRecord>} IssuerRecords
+ * @typedef {Array<ZoeIssuerRecord>} IssuerRecords
  */
 
 /**
@@ -271,7 +286,6 @@
 /**
  * @typedef {object} ZcfSeatManager
  * @property {MakeZCFSeat} makeZCFSeat
- * @property {Reallocate} reallocate
  * @property {DropAllReferences} dropAllReferences
  */
 
@@ -281,67 +295,23 @@
  */
 
 /**
- * @callback CreateSeatManager
- *
- * The SeatManager holds the active zcfSeats and can reallocate and
- * make new zcfSeats.
- *
- * @param {ERef<ZoeInstanceAdmin>} zoeInstanceAdmin
- * @param {GetAssetKindByBrand} getAssetKindByBrand
- * @param {ShutdownWithFailure} shutdownWithFailure
- * @param {import('@agoric/vat-data').Baggage} zcfBaggage
- * @returns {{ seatManager: ZcfSeatManager, zcfMintReallocator: ZcfMintReallocator }}
- */
-
-/**
  * @callback InstanceStateAddIssuer
  *
  * Add an issuer and its keyword to the instanceRecord for the
  * contract instance
  *
  * @param {Keyword} keyword
- * @param {IssuerRecord} issuerRecord
+ * @param {ZoeIssuerRecord} issuerRecord
  * @returns {void}
- */
-
-/**
- * @callback InstanceStateGetTerms
- * @returns {AnyTerms}
- */
-
-/**
- * @callback InstanceStateGetInstallation
- * @returns {Installation}
- */
-
-/**
- * @callback InstanceRecordGetIssuers
- * @returns {IssuerKeywordRecord}
- */
-
-/**
- * @callback InstanceRecordGetBrands
- * @returns {BrandKeywordRecord}
  */
 
 /**
  * @typedef {object} InstanceState
  * @property {InstanceStateAddIssuer} addIssuer
- * @property {GetInstanceRecord} getInstanceRecord
- * @property {InstanceStateGetTerms} getTerms
- * @property {InstanceStateGetInstallation} getInstallation
- * @property {InstanceRecordGetIssuers} getIssuers
- * @property {InstanceRecordGetBrands} getBrands
+ * @property {() => InstanceRecord} getInstanceRecord
+ * @property {() => AnyTerms} getTerms
+ * @property {() => Installation} getInstallation
+ * @property {() => IssuerKeywordRecord} getIssuers
+ * @property {() => BrandKeywordRecord} getBrands
  * @property {(keyword: Keyword) => void} assertUniqueKeyword
- */
-
-/**
- * @callback GetInstanceRecord
- * @returns {InstanceRecord}
- */
-
-/**
- * @callback IssuerStorageGetIssuerRecords
- * @param {Issuer[]} issuers
- * @returns {IssuerRecords}
  */

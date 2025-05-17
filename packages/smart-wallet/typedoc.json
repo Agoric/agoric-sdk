@@ -1,0 +1,12 @@
+{
+    "extends": [
+        "../../typedoc.base.json"
+    ],
+    "entryPoints": [
+        "src/invitations.js",
+        "src/offers.js",
+        "src/smartWallet.js",
+        "src/types.d.ts",
+        "src/walletFactory.js",
+    ]
+}

@@ -1,5 +1,3 @@
-// eslint-disable-next-line import/order
-
 import { Far } from '@endo/marshal';
 import { M } from '@agoric/store';
 import { kslot, kser } from '@agoric/kmarshal';
@@ -11,8 +9,8 @@ import { parseVatSlot } from '../src/parseVatSlots.js';
 let aWeakMapStore;
 let aWeakSetStore;
 
-export const mainHolderIdx = 5;
-export const mainHeldIdx = 6;
+export const mainHolderIdx = 4;
+export const mainHeldIdx = 5;
 
 export function buildRootObject(vatPowers) {
   const { VatData } = vatPowers;
@@ -168,6 +166,7 @@ export function* enumerateKeysWithPrefix(fakestore, prefix) {
     }
   }
 }
+harden(enumerateKeysWithPrefix);
 
 export function recognizersOf(v, baseref) {
   // the | is followed by the collectionID that can recognize baseref

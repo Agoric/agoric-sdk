@@ -1,4 +1,4 @@
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import { buildSerializationTools } from '../lib/deviceTools.js';
 
 /*
@@ -103,6 +103,7 @@ export function buildDevice(tools, endowments) {
 
   const dispatch = {
     invoke: (dnid, method, argsCapdata) => {
+      /** @type {any} */
       const args = unserialize(argsCapdata);
 
       if (dnid === ROOT) {

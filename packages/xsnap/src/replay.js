@@ -13,6 +13,7 @@ import osPowers from 'os';
 import fsPowers from 'fs';
 import { Readable } from 'stream';
 import { tmpName as tmpNamePower } from 'tmp';
+import { fileURLToPath } from 'url';
 import { makeQueue } from '@endo/stream';
 import { xsnap, DEFAULT_CRANK_METERING_LIMIT } from './xsnap.js';
 
@@ -38,7 +39,9 @@ function makeSyncStorage(path, { writeFileSync }) {
     file: fn => {
       /** @param {Uint8Array} data */
       const put = data =>
-        writeFileSync(new URL(fn, base).pathname, data, { flag: 'wx' });
+        writeFileSync(fileURLToPath(new URL(fn, base)), data, {
+          flag: 'wx',
+        });
 
       return freeze({
         put,
@@ -60,14 +63,18 @@ function makeSyncAccess(path, { readdirSync, readFileSync }) {
   const base = new URL(path, 'file://');
   /** @param {string} fn */
   const file = fn => {
-    const fullname = new URL(fn, base).pathname;
+    const fullname = fileURLToPath(new URL(fn, base));
 
     return freeze({
       getData: () => readFileSync(fullname),
       getText: () => readFileSync(fullname, 'utf-8'),
     });
   };
-  return freeze({ path, file, readdir: () => readdirSync(base.pathname) });
+  return freeze({
+    path,
+    file,
+    readdir: () => readdirSync(fileURLToPath(base)),
+  });
 }
 
 /**
@@ -319,8 +326,8 @@ export async function main(
   await replayXSnap(options, folders, { readdirSync, readFileSync });
 }
 
-/* global process */
-if (process.argv[1] === new URL(import.meta.url).pathname) {
+/* eslint-env node */
+if (process.argv[1] === fileURLToPath(new URL(import.meta.url))) {
   main([...process.argv.slice(2)], {
     spawn: childProcessPowers.spawn,
     fs: { ...fsPowers, ...fsPowers.promises },

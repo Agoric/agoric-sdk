@@ -1,8 +1,11 @@
+import { Fail } from '@endo/errors';
+import { E } from '@endo/far';
 import { WalletName } from '@agoric/internal';
 import { getCopyMapEntries, makeCopyMap } from '@agoric/store';
-import { E } from '@endo/far';
+import { assertPathSegment } from '@agoric/internal/src/lib-chainStorage.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 
-const { Fail } = assert;
+/** @import {CopyMap} from '@endo/patterns'; */
 
 /**
  * @param {ERef<import('@agoric/vats').NameAdmin>} nameAdmin
@@ -98,9 +101,9 @@ const provideWhen = async (store, key, make) => {
 };
 
 /**
- * @param {{
+ * @param {Promise<{
  *   scratch: ERef<import('@agoric/internal/src/scratch.js').ScratchPad>;
- * }} homeP
+ * }>} homeP
  * @param {object} opts
  * @param {(specifier: string) => Promise<{ default: Bundle }>} opts.loadBundle
  * @param {string} [opts.installCacheKey]
@@ -162,3 +165,29 @@ export const oracleBrandFeedName = (inBrandName, outBrandName) =>
 
 export const scaledPriceFeedName = issuerName =>
   `scaledPriceAuthority-${issuerName}`;
+
+/** @type {(name: string) => string} */
+export const sanitizePathSegment = name => {
+  const candidate = name.replace(/ /g, '_');
+  assertPathSegment(candidate);
+  return candidate;
+};
+
+/**
+ * Idempotently provide an empty MapStore for the `retiredContractInstances`
+ * value in promise space
+ *
+ * @param {Promise<MapStore>} consume
+ * @param {Producer<MapStore>} produce
+ * @returns {Promise<MapStore>}
+ */
+export const provideRetiredInstances = async (consume, produce) => {
+  // Promise space has no way to look for an existing value other than awaiting a promise,
+  // but it does allow extra production so it's safe to do this redundantly.
+  produce.resolve(
+    makeScalarBigMapStore('retiredContractInstances', {
+      durable: true,
+    }),
+  );
+  return consume;
+};

@@ -1,28 +1,30 @@
 // @jessie-check
 
-/* eslint-disable no-use-before-define */
+/// <reference types="@agoric/store/exported.js" />
+
+import { q, Fail, annotateError, X } from '@endo/errors';
 import { isPromise } from '@endo/promise-kit';
-import { mustMatch, M, keyEQ } from '@agoric/store';
-import {
-  provideDurableWeakMapStore,
-  prepareExo,
-  provide,
-} from '@agoric/vat-data';
+import { mustMatch, M, keyEQ } from '@endo/patterns';
 import { AmountMath } from './amountMath.js';
 import { preparePaymentKind } from './payment.js';
 import { preparePurseKind } from './purse.js';
-
-import '@agoric/store/exported.js';
 import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
 
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
-
-const { details: X, quote: q, Fail } = assert;
+/**
+ * @import {Key, Pattern} from '@endo/patterns';
+ * @import {Zone} from '@agoric/base-zone';
+ * @import {TypedPattern} from '@agoric/internal';
+ * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
+ * @import {AmountStore} from './amountStore.js';
+ * @import {Amount, AssetKind, DisplayInfo, PaymentLedger, Payment, Brand, RecoverySetsOption, Purse, Issuer, Mint} from './types.js';
+ */
 
 /**
+ * @template {AssetKind} K
  * @param {Brand} brand
- * @param {AssetKind} assetKind
+ * @param {K} assetKind
  * @param {Pattern} elementShape
+ * @returns {TypedPattern<Amount<K>>}
  */
 const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
   let valueShape;
@@ -74,25 +76,27 @@ const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
  * minting and transfer authority originates here.
  *
  * @template {AssetKind} K
- * @param {Baggage} issuerBaggage
+ * @param {Zone} issuerZone
  * @param {string} name
  * @param {K} assetKind
  * @param {DisplayInfo<K>} displayInfo
  * @param {Pattern} elementShape
+ * @param {RecoverySetsOption} recoverySetsState
  * @param {ShutdownWithFailure} [optShutdownWithFailure]
  * @returns {PaymentLedger<K>}
  */
 export const preparePaymentLedger = (
-  issuerBaggage,
+  issuerZone,
   name,
   assetKind,
   displayInfo,
   elementShape,
+  recoverySetsState,
   optShutdownWithFailure = undefined,
 ) => {
   /** @type {Brand<K>} */
   // @ts-expect-error XXX callWhen
-  const brand = prepareExo(issuerBaggage, `${name} brand`, BrandI, {
+  const brand = issuerZone.exo(`${name} brand`, BrandI, {
     isMyIssuer(allegedIssuer) {
       // BrandI delays calling this method until `allegedIssuer` is a Remotable
       return allegedIssuer === issuer;
@@ -121,7 +125,7 @@ export const preparePaymentLedger = (
     amountShape,
   );
 
-  const makePayment = preparePaymentKind(issuerBaggage, name, brand, PaymentI);
+  const makePayment = preparePaymentKind(issuerZone, name, brand, PaymentI);
 
   /** @type {ShutdownWithFailure} */
   const shutdownLedgerWithFailure = reason => {
@@ -131,7 +135,7 @@ export const preparePaymentLedger = (
       try {
         optShutdownWithFailure(reason);
       } catch (errInShutdown) {
-        assert.note(errInShutdown, X`Caused by: ${reason}`);
+        annotateError(errInShutdown, X`Caused by: ${reason}`);
         throw errInShutdown;
       }
     }
@@ -139,18 +143,16 @@ export const preparePaymentLedger = (
   };
 
   /** @type {WeakMapStore<Payment, Amount>} */
-  const paymentLedger = provideDurableWeakMapStore(
-    issuerBaggage,
-    'paymentLedger',
-    { valueShape: amountShape },
-  );
+  const paymentLedger = issuerZone.weakMapStore('paymentLedger', {
+    valueShape: amountShape,
+  });
 
   /**
-   * A withdrawn live payment is associated with the recovery set of the purse
-   * it was withdrawn from. Let's call these "recoverable" payments. All
-   * recoverable payments are live, but not all live payments are recoverable.
-   * We do the bookkeeping for payment recovery with this weakmap from
-   * recoverable payments to the recovery set they are in. A bunch of
+   * A (non-empty) withdrawn live payment is associated with the recovery set of
+   * the purse it was withdrawn from. Let's call these "recoverable" payments.
+   * All recoverable payments are live, but not all live payments are
+   * recoverable. We do the bookkeeping for payment recovery with this weakmap
+   * from recoverable payments to the recovery set they are in. A bunch of
    * interesting invariants here:
    *
    * - Every payment that is a key in the outer `paymentRecoverySets` weakMap is
@@ -162,12 +164,12 @@ export const preparePaymentLedger = (
    * - A purse's recovery set only contains payments withdrawn from that purse and
    *   not yet consumed.
    *
+   * If `recoverySetsState === 'noRecoverySets'`, then nothing should ever be
+   * added to this WeakStore.
+   *
    * @type {WeakMapStore<Payment, SetStore<Payment>>}
    */
-  const paymentRecoverySets = provideDurableWeakMapStore(
-    issuerBaggage,
-    'paymentRecoverySets',
-  );
+  const paymentRecoverySets = issuerZone.weakMapStore('paymentRecoverySets');
 
   /**
    * To maintain the invariants listed in the `paymentRecoverySets` comment,
@@ -178,7 +180,11 @@ export const preparePaymentLedger = (
    * @param {SetStore<Payment>} [optRecoverySet]
    */
   const initPayment = (payment, amount, optRecoverySet = undefined) => {
-    if (optRecoverySet !== undefined) {
+    if (recoverySetsState === 'noRecoverySets') {
+      optRecoverySet === undefined ||
+        Fail`when recoverSetsState === 'noRecoverySets', optRecoverySet must be empty`;
+    }
+    if (optRecoverySet !== undefined && !AmountMath.isEmpty(amount)) {
       optRecoverySet.add(payment);
       paymentRecoverySets.init(payment, optRecoverySet);
     }
@@ -200,10 +206,6 @@ export const preparePaymentLedger = (
     }
   };
 
-  /** @type {(left: Amount, right: Amount) => Amount} */
-  const add = (left, right) => AmountMath.add(left, right, brand);
-  /** @type {(left: Amount, right: Amount) => Amount} */
-  const subtract = (left, right) => AmountMath.subtract(left, right, brand);
   /** @type {(allegedAmount: Amount) => Amount} */
   const coerce = allegedAmount => AmountMath.coerce(brand, allegedAmount);
   /** @type {(left: Amount, right: Amount) => boolean} */
@@ -239,17 +241,13 @@ export const preparePaymentLedger = (
   /**
    * Used by the purse code to implement purse.deposit
    *
-   * @param {Amount} currentBalance - the current balance of the purse before a
-   *   deposit
-   * @param {(newPurseBalance: Amount) => void} updatePurseBalance - commit the
-   *   purse balance
+   * @param {AmountStore} balanceStore
    * @param {Payment} srcPayment
    * @param {Pattern} [optAmountShape]
    * @returns {Amount}
    */
   const depositInternal = (
-    currentBalance,
-    updatePurseBalance,
+    balanceStore,
     srcPayment,
     optAmountShape = undefined,
   ) => {
@@ -261,13 +259,12 @@ export const preparePaymentLedger = (
     assertLivePayment(srcPayment);
     const srcPaymentBalance = paymentLedger.get(srcPayment);
     assertAmountConsistent(srcPaymentBalance, optAmountShape);
-    const newPurseBalance = add(srcPaymentBalance, currentBalance);
     try {
       // COMMIT POINT
       // Move the assets in `srcPayment` into this purse, using up the
       // source payment, such that total assets are conserved.
       deletePayment(srcPayment);
-      updatePurseBalance(newPurseBalance);
+      balanceStore.increment(srcPaymentBalance);
     } catch (err) {
       shutdownLedgerWithFailure(err);
       throw err;
@@ -278,30 +275,19 @@ export const preparePaymentLedger = (
   /**
    * Used by the purse code to implement purse.withdraw
    *
-   * @param {Amount} currentBalance - the current balance of the purse before a
-   *   withdrawal
-   * @param {(newPurseBalance: Amount) => void} updatePurseBalance - commit the
-   *   purse balance
+   * @param {AmountStore} balanceStore
    * @param {Amount} amount - the amount to be withdrawn
-   * @param {SetStore<Payment>} recoverySet
+   * @param {SetStore<Payment>} [recoverySet]
    * @returns {Payment}
    */
-  const withdrawInternal = (
-    currentBalance,
-    updatePurseBalance,
-    amount,
-    recoverySet,
-  ) => {
+  const withdrawInternal = (balanceStore, amount, recoverySet = undefined) => {
     amount = coerce(amount);
-    AmountMath.isGTE(currentBalance, amount) ||
-      Fail`Withdrawal of ${amount} failed because the purse only contained ${currentBalance}`;
-    const newPurseBalance = subtract(currentBalance, amount);
-
     const payment = makePayment();
+    // COMMIT POINT Move the withdrawn assets from this purse into
+    // payment. Total assets must remain conserved.
+    balanceStore.decrement(amount) ||
+      Fail`Withdrawal of ${amount} failed because the purse only contained ${balanceStore.getAmount()}`;
     try {
-      // COMMIT POINT Move the withdrawn assets from this purse into
-      // payment. Total assets must remain conserved.
-      updatePurseBalance(newPurseBalance);
       initPayment(payment, amount, recoverySet);
     } catch (err) {
       shutdownLedgerWithFailure(err);
@@ -311,9 +297,9 @@ export const preparePaymentLedger = (
   };
 
   /** @type {() => Purse<K>} */
-  // @ts-expect-error type parameter confusion
+  // @ts-expect-error XXX amount kinds
   const makeEmptyPurse = preparePurseKind(
-    issuerBaggage,
+    issuerZone,
     name,
     assetKind,
     brand,
@@ -322,11 +308,13 @@ export const preparePaymentLedger = (
       depositInternal,
       withdrawInternal,
     }),
+    recoverySetsState,
+    paymentRecoverySets,
   );
 
   /** @type {Issuer<K>} */
-  // @ts-expect-error cast due to callWhen discrepancy
-  const issuer = prepareExo(issuerBaggage, `${name} issuer`, IssuerI, {
+  // @ts-expect-error XXX callWhen
+  const issuer = issuerZone.exo(`${name} issuer`, IssuerI, {
     getBrand() {
       return brand;
     },
@@ -379,20 +367,17 @@ export const preparePaymentLedger = (
    * Because the `mintRecoveryPurse` is placed in baggage, even if the caller of
    * `makeIssuerKit` drops it on the floor, it can still be recovered in an
    * emergency upgrade.
-   *
-   * @type {Purse<K>}
    */
-  const mintRecoveryPurse = provide(issuerBaggage, 'mintRecoveryPurse', () =>
-    makeEmptyPurse(),
+  const mintRecoveryPurse = /** @type {Purse<K>} */ (
+    issuerZone.makeOnce('mintRecoveryPurse', () => makeEmptyPurse())
   );
 
   /** @type {Mint<K>} */
-  const mint = prepareExo(issuerBaggage, `${name} mint`, MintI, {
+  const mint = issuerZone.exo(`${name} mint`, MintI, {
     getIssuer() {
       return issuer;
     },
     mintPayment(newAmount) {
-      // @ts-expect-error checked cast
       newAmount = coerce(newAmount);
       mustMatch(newAmount, amountShape, 'minted amount');
       // `rawPayment` is not associated with any recovery set, and

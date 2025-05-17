@@ -1,5 +1,7 @@
-import { q, Fail } from '@agoric/assert';
-import '../types.js';
+/** @import {LegacyWeakMap} from '../types.js'; */
+
+// TODO, once migrated to endo, import from @endo/errors instead
+import { Fail, q } from '@endo/errors';
 
 /**
  * See doccomment in the closely related `legacyMap.js` module.

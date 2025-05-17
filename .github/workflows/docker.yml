@@ -6,11 +6,13 @@ on:
       # $default-branch
       - master
       - 'release-*'
+      - 'dev-*'
     tags:
       - '@agoric/sdk@*'
   workflow_dispatch:
 env:
   REGISTRY: ghcr.io
+  DOCKER_PLATFORMS: linux/amd64,linux/arm64/v8
 
 jobs:
   snapshot:
@@ -32,23 +34,35 @@ jobs:
           SNAPSHOT_TAG="${TIMESTAMP}-${SHORT_SHA}"
           echo "tag=$SNAPSHOT_TAG" >> $GITHUB_OUTPUT
 
-  docker-parallel-build:
-    needs: snapshot
-    runs-on: ubuntu-latest
+  docker-sdk:
     permissions:
+      # allow issuing OIDC tokens for this workflow run
+      id-token: write
+      # allow at least reading the repo contents, add other permissions if necessary
       contents: read
+      # to push the resulting images
       packages: write
-    strategy:
-      matrix:
-        platform:
-          - linux/amd64
-          - linux/arm64/v8
+    needs: snapshot
+    runs-on: 'depot-ubuntu-22.04-16' # ubuntu-latest
+    outputs:
+      tag: '${{ steps.docker-tags.outputs.tags }}'
+      tags: '${{ steps.docker-tags.outputs.tags }} ${{ needs.snapshot.outputs.tag }}'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      - uses: depot/setup-action@v1
+        with:
+          oidc: true # to set DEPOT_TOKEN for later steps
+      - run: depot configure-docker
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        # see https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
+        with:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ${{ env.REGISTRY }}
       - name: Save BUILD_TAG
         run: |
-          ARCH=$(echo '${{ matrix.platform }}' | tr / _)
-          echo "BUILD_TAG=${{ needs.snapshot.outputs.tag }}-$ARCH" >> $GITHUB_ENV
+          echo "BUILD_TAG=${{ needs.snapshot.outputs.tag }}" >> $GITHUB_ENV
       - name: Save GIT_REVISION
         run: echo "GIT_REVISION=$(git rev-parse HEAD)" >> $GITHUB_ENV
       - name: Save GIT_COMMIT
@@ -56,85 +70,14 @@ jobs:
       - name: Save commit hash, url of submodules to environment
         run: |
           node packages/xsnap/src/build.js --show-env >> $GITHUB_ENV
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-        with:
-          buildkitd-flags: --debug
-      - name: Login to Docker Registry
-        uses: docker/login-action@v2
-        with:
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-          registry: ${{ env.REGISTRY }}
       - name: Build and Push ssh-node
-        uses: docker/build-push-action@v4
+        uses: depot/build-push-action@v1
         with:
           file: packages/deployment/Dockerfile.ssh-node
           context: packages/deployment/docker
-          platforms: ${{ matrix.platform }}
+          platforms: ${{ env.DOCKER_PLATFORMS }}
           push: true
           tags: '${{ env.REGISTRY }}/agoric/ssh-node:${{ env.BUILD_TAG }}'
-      - name: Build and Push sdk
-        uses: docker/build-push-action@v4
-        with:
-          file: packages/deployment/Dockerfile.sdk
-          context: ./
-          platforms: ${{ matrix.platform }}
-          push: true
-          tags: '${{ env.REGISTRY }}/agoric/agoric-sdk:${{ env.BUILD_TAG }}'
-          # When changing/adding entries here, make sure to search the whole
-          # project for `@@AGORIC_DOCKER_SUBMODULES@@`
-          build-args: |
-            GIT_COMMIT=${{env.GIT_COMMIT}}
-            MODDABLE_COMMIT_HASH=${{env.MODDABLE_COMMIT_HASH}}
-            MODDABLE_URL=${{env.MODDABLE_URL}}
-            XSNAP_NATIVE_COMMIT_HASH=${{env.XSNAP_NATIVE_COMMIT_HASH}}
-            XSNAP_NATIVE_URL=${{env.XSNAP_NATIVE_URL}}
-            GIT_REVISION=${{env.GIT_REVISION}}
-      - name: Build and Push setup
-        uses: docker/build-push-action@v4
-        with:
-          file: packages/deployment/Dockerfile
-          context: packages/deployment
-          platforms: ${{ matrix.platform }}
-          tags: '${{ env.REGISTRY }}/agoric/cosmic-swingset-setup:${{ env.BUILD_TAG }}'
-          push: true
-          build-args: |
-            TAG=${{ env.BUILD_TAG }}
-      - name: notify on failure
-        if: failure()
-        uses: ./.github/actions/notify-status
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
-
-  # Publish the build's multiarch images to Docker Registry.
-  docker-sdk:
-    needs: [docker-parallel-build, snapshot]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    outputs:
-      tag: '${{ steps.docker-tags.outputs.tags }}'
-      tags: '${{ steps.docker-tags.outputs.tags }} ${{ needs.snapshot.outputs.tag }}'
-    steps:
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-        with:
-          buildkitd-flags: --debug
-      - name: Login to Docker Registry
-        uses: docker/login-action@v2
-        with:
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-          registry: ${{ env.REGISTRY }}
       - name: Compute tags
         id: docker-tags
         run: |
@@ -146,6 +89,10 @@ jobs:
                 release-*)
                   # A pre-release.
                   DOCKER_TAGS=${GITHUB_REF_NAME#release-}-dev
+                  ;;
+                dev-*)
+                  # A pre-release while our release branch is straying from master
+                  DOCKER_TAGS=${GITHUB_REF_NAME#dev-}-dev
                   ;;
                 master)
                   # A trunk dev release.
@@ -163,67 +110,44 @@ jobs:
               DOCKER_TAGS="latest $SDK_TAG"
               ;;
           esac
+          DOCKER_TAGS="$DOCKER_TAGS $BUILD_TAG"
           echo "tags=$DOCKER_TAGS" >> $GITHUB_OUTPUT
-
-      - name: Push SDK multiarch
-        run: |
-          set -ex
-          for IMAGE in agoric/agoric-sdk agoric/ssh-node agoric/cosmic-swingset-setup; do
-            for TAG in ${{ steps.docker-tags.outputs.tags }} ${{ needs.snapshot.outputs.tag }}; do
-              sources=
-              for ARCH in linux/amd64 linux/arm64/v8; do
-                uarch=$(echo "$ARCH" | tr / _)
-                BUILD_TAG="${{ needs.snapshot.outputs.tag }}-$uarch"
-                sources="$sources $REGISTRY/$IMAGE:$BUILD_TAG"
-              done
-              docker buildx imagetools create --tag "$REGISTRY/$IMAGE:$TAG"$sources
-            done
-          done
-
-  # This is currently needed for the relayer integration test framework.
-  # It just runs agoric/agoric-sdk with a "single-node" argument.
-  docker-ibc-alpha:
-    needs: [docker-sdk, snapshot]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    if: ${{ needs.docker-sdk.outputs.tag }} != dev
-    steps:
-      - uses: actions/checkout@v3
-      - name: Save SDK_TAG
-        run: echo "SDK_TAG=${{ needs.snapshot.outputs.tag }}" >> $GITHUB_ENV
       - name: Prefix tags
         id: prefix-tags
         run: |
           IMAGE="$REGISTRY/agoric/agoric-sdk"
-          for TAG in ibc-alpha; do
+          for TAG in ${{ steps.docker-tags.outputs.tags }}; do
             PREFIXED="$PREFIXED$sep$IMAGE:$TAG"
             sep=,
           done
           echo "tags=$PREFIXED" >> $GITHUB_OUTPUT
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+      - name: Build and Push sdk
+        uses: depot/build-push-action@v1
         with:
-          buildkitd-flags: --debug
-      - name: Login to Docker Registry
-        uses: docker/login-action@v2
-        with:
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-          registry: ${{ env.REGISTRY }}
-      - name: Build and Push
-        uses: docker/build-push-action@v4
-        with:
-          file: packages/deployment/Dockerfile.ibc-alpha
-          context: packages/deployment/docker
-          platforms: linux/amd64,linux/arm64/v8
+          file: packages/deployment/Dockerfile.sdk
+          context: ./
+          platforms: ${{ env.DOCKER_PLATFORMS }}
           push: true
           tags: '${{ steps.prefix-tags.outputs.tags }}'
+          # When changing/adding entries here, make sure to search the whole
+          # project for `@@AGORIC_DOCKER_SUBMODULES@@`
           build-args: |
-            SDK_TAG=${{env.SDK_TAG}}
+            GIT_COMMIT=${{env.GIT_COMMIT}}
+            MODDABLE_COMMIT_HASH=${{env.MODDABLE_COMMIT_HASH}}
+            MODDABLE_URL=${{env.MODDABLE_URL}}
+            XSNAP_NATIVE_COMMIT_HASH=${{env.XSNAP_NATIVE_COMMIT_HASH}}
+            XSNAP_NATIVE_URL=${{env.XSNAP_NATIVE_URL}}
+            GIT_REVISION=${{env.GIT_REVISION}}
+      - name: Build and Push setup
+        uses: depot/build-push-action@v1
+        with:
+          file: packages/deployment/Dockerfile
+          context: packages/deployment
+          platforms: ${{ env.DOCKER_PLATFORMS }}
+          tags: '${{ env.REGISTRY }}/agoric/cosmic-swingset-setup:${{ env.BUILD_TAG }}'
+          push: true
+          build-args: |
+            TAG=${{ env.BUILD_TAG }}
       - name: notify on failure
         if: failure()
         uses: ./.github/actions/notify-status
@@ -235,12 +159,16 @@ jobs:
 
   docker-solo:
     needs: [docker-sdk, snapshot]
-    runs-on: ubuntu-latest
+    runs-on: 'depot-ubuntu-22.04-16' # ubuntu-latest
     permissions:
+      # allow issuing OIDC tokens for this workflow run
+      id-token: write
+      # allow at least reading the repo contents, add other permissions if necessary
       contents: read
+      # to push the resulting images
       packages: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Save SDK_TAG
         run: echo "SDK_TAG=${{ needs.snapshot.outputs.tag }}" >> $GITHUB_ENV
       - name: Prefix tags
@@ -252,24 +180,22 @@ jobs:
             sep=,
           done
           echo "tags=$PREFIXED" >> $GITHUB_OUTPUT
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+      - uses: depot/setup-action@v1
         with:
-          buildkitd-flags: --debug
+          oidc: true # to set DEPOT_TOKEN for later steps
+      - run: depot configure-docker
       - name: Login to Docker Registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
           registry: ${{ env.REGISTRY }}
       - name: Build and Push
-        uses: docker/build-push-action@v4
+        uses: depot/build-push-action@v1
         with:
           file: packages/solo/Dockerfile
           context: packages/solo
-          platforms: linux/amd64,linux/arm64/v8
+          platforms: ${{ env.DOCKER_PLATFORMS }}
           push: true
           tags: '${{ steps.prefix-tags.outputs.tags }}'
           build-args: |

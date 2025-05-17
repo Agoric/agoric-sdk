@@ -1,5 +1,6 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { Far } from '@endo/far';
+import { deepCopyJsonable } from '@agoric/internal/src/js-utils.js';
 
 function sanitize(data) {
   if (data === undefined) {
@@ -8,7 +9,7 @@ function sanitize(data) {
   if (data instanceof Error) {
     data = data.stack;
   }
-  return JSON.parse(JSON.stringify(data));
+  return deepCopyJsonable(data);
 }
 
 /**
@@ -32,7 +33,7 @@ export function buildRootDeviceNode(tools) {
 
   function inboundCallback(...args) {
     inboundHandler || Fail`inboundHandler not yet registered`;
-    const safeArgs = JSON.parse(JSON.stringify(args));
+    const safeArgs = deepCopyJsonable(args);
     try {
       SO(inboundHandler).inbound(...harden(safeArgs));
     } catch (e) {
@@ -61,3 +62,5 @@ export function buildRootDeviceNode(tools) {
     },
   });
 }
+
+/** @typedef {import('../../types-external.js').Device<ReturnType<typeof buildRootDeviceNode>>} BridgeDevice */

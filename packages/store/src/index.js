@@ -1,3 +1,18 @@
+/**
+ * @import {MustMatch} from '@agoric/internal';
+ */
+import { mustMatch as typelessMustMatch } from '@endo/patterns';
+
+export { makeScalarWeakSetStore } from './stores/scalarWeakSetStore.js';
+export { makeScalarSetStore } from './stores/scalarSetStore.js';
+export { makeScalarWeakMapStore } from './stores/scalarWeakMapStore.js';
+export { makeScalarMapStore } from './stores/scalarMapStore.js';
+
+export { provideLazy } from './stores/store-utils.js';
+
+// /////////////////////// Deprecated Re-exports ///////////////////////////////
+// Importers should import directly from the packages shown below
+
 export {
   isKey,
   assertKey,
@@ -41,8 +56,14 @@ export {
   isPattern,
   assertPattern,
   matches,
-  mustMatch,
+  isCopySet,
+  isCopyMap,
 } from '@endo/patterns';
+
+// XXX @agoric/store should not depend on @agoric/internal
+// TODO move to Endo
+/** @type {MustMatch} */
+export const mustMatch = typelessMustMatch;
 
 export {
   initEmpty,
@@ -51,14 +72,9 @@ export {
   makeExo,
 } from '@endo/exo';
 
-export { makeScalarWeakSetStore } from './stores/scalarWeakSetStore.js';
-export { makeScalarSetStore } from './stores/scalarSetStore.js';
-export { makeScalarWeakMapStore } from './stores/scalarWeakMapStore.js';
-export { makeScalarMapStore } from './stores/scalarMapStore.js';
-
-export { provideLazy, isCopyMap, isCopySet } from './stores/store-utils.js';
-
 // /////////////////////// Deprecated Legacy ///////////////////////////////////
 
 export { makeLegacyMap } from './legacy/legacyMap.js';
 export { makeLegacyWeakMap } from './legacy/legacyWeakMap.js';
+// eslint-disable-next-line import/export
+export * from './types.js';

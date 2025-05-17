@@ -1,19 +1,15 @@
 // @jessie-check
 
+import { Fail } from '@endo/errors';
 import { AmountMath } from '@agoric/ertp';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
-import {
-  makeRatio,
-  multiplyRatios,
-  quantize,
-} from '@agoric/zoe/src/contractSupport/ratio.js';
-import { Fail } from '@agoric/assert';
+import { makeRatio, multiplyRatios, quantize } from '@agoric/ertp/src/ratio.js';
 import { TimeMath } from '@agoric/time';
 
 /**
- * @typedef {import('@agoric/time').Timestamp} Timestamp
- *
- * @typedef {import('@agoric/time').RelativeTime} RelativeTime
+ * @import {Timestamp} from '@agoric/time'
+ * @import {RelativeTime} from '@agoric/time'
+ * @import {AdminFacet, InvitationAmount, ZCFMint} from '@agoric/zoe';
  */
 
 export const SECONDS_PER_YEAR = 60n * 60n * 24n * 365n;
@@ -198,7 +194,7 @@ export const chargeInterest = (powers, params, prior, accruedUntil) => {
   }
 
   // NB: This method of inferring the compounded rate from the ratio of debts
-  // acrrued suffers slightly from the integer nature of debts. However in
+  // accrued suffers slightly from the integer nature of debts. However in
   // testing with small numbers there's 5 digits of precision, and with large
   // numbers the ratios tend towards ample precision.
   // TODO adopt banker's rounding https://github.com/Agoric/agoric-sdk/issues/4573

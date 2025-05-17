@@ -4,21 +4,17 @@ import fs from 'node:fs';
 import '@endo/init/pre-bundle-source.js';
 import '@endo/init';
 
-// XXX The following four imports are present only to make `tsc` shut up.  They do no actual work.
-import '@agoric/vats/exported.js';
-import '@agoric/inter-protocol/exported.js';
-import '@agoric/zoe/exported.js';
 import '@agoric/cosmic-swingset/src/launch-chain.js';
 
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
-import { makeSwingsetTestKit } from '@agoric/boot/tools/supports.ts';
+import { makeSwingsetTestKit } from '@aglocal/boot/tools/supports.js';
 import {
   makeWalletFactoryDriver,
   makeGovernanceDriver,
-} from '@agoric/boot/tools/drivers.ts';
-import { makeLiquidationTestKit } from '@agoric/boot/tools/liquidation.ts';
+} from '@aglocal/boot/tools/drivers.js';
+import { makeLiquidationTestKit } from '@aglocal/boot/tools/liquidation.js';
 
 // When I was a child my family took a lot of roadtrips around California to go
 // camping and backpacking and so on.  It was not uncommon in those days (nor is
@@ -48,7 +44,7 @@ import { makeLiquidationTestKit } from '@agoric/boot/tools/liquidation.ts';
  * @typedef {{
  *    options: Record<string, string>,
  *    argv: string[],
- *    actors: Record<string, import('@agoric/boot/tools/drivers.ts').SmartWalletDriver>,
+ *    actors: Record<string, import('@aglocal/boot/tools/drivers.ts').SmartWalletDriver>,
  *    tools: Record<string, unknown>,
  *    title?: string,
  *    rounds?: number,
@@ -447,7 +443,7 @@ const printBenchmarkStats = stats => {
   const dc1 = `${''.padEnd(wc1, '-')}`;
 
   const wc2 = 6;
-  const hc2 = `${'Delta'.padStart(wc2)}`;
+  const hc2 = `${'Total'.padStart(wc2)}`;
   const dc2 = ` ${''.padStart(wc2 - 1, '-')}`;
 
   const wc3 = 10;
@@ -480,15 +476,21 @@ const printBenchmarkStats = stats => {
   const hg4 = `${'Delta'.padStart(wg4)}`;
   const dg4 = ` ${''.padStart(wg4 - 1, '-')}`;
 
+  const wg5 = 9;
+  const hg5 = `${'PerRound'.padStart(wg5)}`;
+  const dg5 = ` ${''.padStart(wg5 - 1, '-')}`;
+
   log(``);
-  log(`${hg1} ${hg2} ${hg3} ${hg4}`);
-  log(`${dg1} ${dg2} ${dg3} ${dg4}`);
+  log(`${hg1} ${hg2} ${hg3} ${hg4} ${hg5}`);
+  log(`${dg1} ${dg2} ${dg3} ${dg4} ${dg5}`);
   for (const [key, entry] of Object.entries(stats.gauges)) {
     const col1 = `${key.padEnd(wg1)}`;
     const col2 = `${String(entry.start).padStart(wg2)}`;
     const col3 = `${String(entry.end).padStart(wg3)}`;
-    const col4 = `${String(entry.end - entry.start).padStart(wg4)}`;
-    log(`${col1} ${col2} ${col3} ${col4}`);
+    const delta = entry.end - entry.start;
+    const col4 = `${String(delta).padStart(wg4)}`;
+    const col5 = `${pn(delta / stats.rounds).padStart(wg5)}`;
+    log(`${col1} ${col2} ${col3} ${col4} ${col5}`);
   }
 };
 
@@ -547,6 +549,13 @@ const organizeRoundsStats = (rounds, perRoundStats) => {
 export const makeBenchmarkerator = async () => {
   const benchmarks = new Map();
 
+  if (slogFile) {
+    // Kernel slogger will append to the slog file if it already exists, but
+    // here we don't want that because repeat runs would result in confusing
+    // slog output due to crank numbers, vat IDs, krefs, and vrefs all resetting
+    // with each run.
+    fs.unlinkSync(slogFile);
+  }
   const setupStartTime = readClock();
   const swingsetTestKit = await makeSwingsetTestKit(console.log, undefined, {
     defaultManagerType,
@@ -688,12 +697,13 @@ export const makeBenchmarkerator = async () => {
       benchmarkContext.title = title;
       const rounds = commandLineRounds || benchmark.rounds || 1;
       benchmarkContext.rounds = rounds;
-      log(`Benchmark "${title}" setup:`);
-      benchmarkContext.config = await (benchmark.setup
-        ? benchmark.setup(benchmarkContext)
-        : {});
-      log(`Benchmark "${title}" setup complete`);
-      log(`------------------------------------------------------------------`);
+      if (benchmark.setup) {
+        log(`Benchmark "${title}" setup:`);
+        benchmarkContext.config = await benchmark.setup(benchmarkContext);
+      } else {
+        log(`Benchmark "${title}" no setup function configured`);
+      }
+      log('-'.repeat(70));
       const perRoundStats = [];
       for (let round = 1; round <= rounds; round += 1) {
         if (benchmark.setupRound) {
@@ -704,26 +714,30 @@ export const makeBenchmarkerator = async () => {
           time: readClock(),
           cranks: getCrankNumber(),
         };
-        log(`Benchmark "${title}" round ${round}:`);
+        log(`Benchmark "${title}" round ${round} start crank ${start.cranks}`);
         await benchmark.executeRound(benchmarkContext, round);
         const end = {
           rawStats: controller.getStats(),
           time: readClock(),
           cranks: getCrankNumber(),
         };
+        log(`Benchmark "${title}" round ${round} end crank ${end.cranks - 1}`);
+        log('-'.repeat(70));
         perRoundStats.push({ start, end });
         if (benchmark.finishRound) {
           await benchmark.finishRound(benchmarkContext, round);
         }
       }
       const benchmarkStats = organizeRoundsStats(rounds, perRoundStats);
-      log('-'.repeat(70));
       log(`Benchmark "${title}" stats:`);
       printBenchmarkStats(benchmarkStats);
       benchmarkReport[title] = benchmarkStats;
       log('-'.repeat(70));
       if (benchmark.finish) {
+        log(`Benchmark "${title}" setup:`);
         await benchmark.finish(benchmarkContext);
+      } else {
+        log(`Benchmark "${title}" no finish function configured`);
       }
     }
     await eventLoopIteration();

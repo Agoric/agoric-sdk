@@ -1,18 +1,26 @@
-/// <reference types="ses"/>
+/// <reference types="ses" />
 
+import { X, q, Fail, makeError } from '@endo/errors';
 import { E, Far } from '@endo/far';
 import * as tendermint34 from '@cosmjs/tendermint-rpc';
 import * as stargateStar from '@cosmjs/stargate';
 
 import { isStreamCell } from '@agoric/internal/src/lib-chainStorage.js';
-
 import { MAKE_DEFAULT_DECODER, MAKE_DEFAULT_UNSERIALIZER } from './defaults.js';
 import { makeCastingSpec } from './casting-spec.js';
 import { makeLeader as defaultMakeLeader } from './leader-netconfig.js';
 
+// A lot of cosmjs classes end up hardened through instances shared by this
+// package so preemptively harden them all.
+// However we cannot directly harden a module namespace object (exotic behavior
+// for bindings) so spread the namespace instead
+harden({
+  tendermint34: { ...tendermint34 },
+  stargateStar: { ...stargateStar },
+});
+
 const { QueryClient } = stargateStar;
 const { Tendermint34Client } = tendermint34;
-const { details: X, quote: q, Fail } = assert;
 const textDecoder = new TextDecoder();
 
 /** @template T @typedef {import('./types.js').Follower<import('./types.js').ValueFollowerElement<T>>} ValueFollower */
@@ -84,6 +92,10 @@ const collectSingle = values => {
   return head[0];
 };
 
+// NB: 'none' is the only value that works. We've left the other cases
+// in anticipation of the ecosystem providing JS proofs again.
+// See https://github.com/cosmos/cosmjs/issues/1618#issuecomment-2574934505
+// and https://github.com/cosmos/ics23/pull/353?email_source=slack
 // Coordinate with switch/case of tryGetDataAtHeight.
 const proofs = ['strict', 'none', 'optimistic'];
 
@@ -102,7 +114,7 @@ export const makeCosmjsFollower = (
   const {
     decode = MAKE_DEFAULT_DECODER(),
     unserializer = MAKE_DEFAULT_UNSERIALIZER(),
-    proof = 'optimistic',
+    proof = 'none',
     crasher = null,
   } = options;
 
@@ -209,14 +221,20 @@ export const makeCosmjsFollower = (
   };
 
   /**
+   * @deprecated no longer supported https://github.com/cosmos/cosmjs/pull/1623
    * @param {number} [height]
    * @returns {Promise<QueryStoreResponse>}
    */
   const getProvenDataAtHeight = async height => {
-    return retryGetPrefixedData(async (endpoint, storeName, storeSubkey) => {
-      const queryClient = await provideQueryClient(endpoint);
-      return E(queryClient).queryStoreVerified(storeName, storeSubkey, height);
-    });
+    console.error(
+      'getProvenDataAtHeight',
+      height,
+      'is no longer supported; use',
+      { proof: 'none' },
+    );
+    throw makeError(
+      X`Verified queries are no longer supported; use { proof: 'none' }`,
+    );
   };
 
   /**
@@ -255,7 +273,7 @@ export const makeCosmjsFollower = (
           return;
         }
         crash(
-          assert.error(
+          makeError(
             X`Alleged value ${alleged.value} did not match proof ${proven.value}`,
           ),
         );
@@ -357,6 +375,7 @@ export const makeCosmjsFollower = (
       );
     }
   }
+  harden(allValuesFromCell);
 
   /**
    * @param {import('./types.js').StreamCell<T>} streamCell
@@ -372,6 +391,7 @@ export const makeCosmjsFollower = (
       );
     }
   }
+  harden(reverseValuesFromCell);
 
   /**
    * @param {import('./types.js').StreamCell<T>} streamCell
@@ -389,6 +409,7 @@ export const makeCosmjsFollower = (
       );
     }
   }
+  harden(lastValueFromCell);
 
   /**
    * @yields {ValueFollowerElement<T>}
@@ -434,6 +455,7 @@ export const makeCosmjsFollower = (
       lastValue = latest.value;
     }
   }
+  harden(getLatestIterable);
 
   /**
    * @param {number} [cursorBlockHeight]
@@ -552,6 +574,7 @@ export const makeCosmjsFollower = (
       cursorData = currentData;
     }
   }
+  harden(getEachIterableAtHeight);
 
   /**
    * @param {number} [cursorBlockHeight]
@@ -575,6 +598,7 @@ export const makeCosmjsFollower = (
       cursorBlockHeight = cursorStreamCell.blockHeight - 1;
     }
   }
+  harden(getReverseIterableAtHeight);
 
   /** @type {ValueFollower<T>} */
   return Far('chain follower', {

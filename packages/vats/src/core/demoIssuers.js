@@ -1,15 +1,18 @@
+import { Fail, q } from '@endo/errors';
+import { Nat } from '@endo/nat';
+import { E, Far } from '@endo/far';
+
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { split, splitMany } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import {
   makeRatio,
   natSafeMath,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { E, Far } from '@endo/far';
-import { Nat } from '@endo/nat';
 import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
 import { Stake, Stable } from '@agoric/internal/src/tokens.js';
 
-const { Fail, quote: q } = assert;
+/** @import {FeeMintAccess, Installation} from '@agoric/zoe' */
+
 const { multiply, floorDivide } = natSafeMath;
 const { entries, fromEntries, keys, values } = Object;
 
@@ -209,7 +212,7 @@ const mintRunPayment = async (
 
 /**
  * @param {string} name
- * @param {MintsVat} mints
+ * @param {ERef<MintsVat>} mints
  */
 const provideCoin = async (name, mints) => {
   return E(mints).provideIssuerKit(name, AssetKind.NAT, {
@@ -218,8 +221,7 @@ const provideCoin = async (name, mints) => {
 };
 
 /**
- * @param {BootstrapSpace & { consume: { loadVat: VatLoader<MintsVat> } }} powers
- *   TODO: sync this type with end-user docs?
+ * @param {BootstrapSpace} powers TODO: sync this type with end-user docs?
  *
  * @typedef {{
  *   issuer: ERef<Issuer>;

@@ -3,6 +3,6 @@ import { makeMeasureSeconds } from '@agoric/internal';
 
 export function makeSnapStoreIO() {
   return {
-    measureSeconds: makeMeasureSeconds(performance.now),
+    measureSeconds: makeMeasureSeconds(performance.now.bind(performance)),
   };
 }

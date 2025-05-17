@@ -1,67 +1,75 @@
 import { AmountMath } from '@agoric/ertp';
 import { mustMatch } from '@agoric/store';
-import { InvitationHandleShape } from '@agoric/zoe/src/typeGuards.js';
+import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { shape } from './typeGuards.js';
-
-// Ambient types. Needed only for dev but this does a runtime import.
-import '@agoric/zoe/exported.js';
-
-const { Fail } = assert;
 
 // A safety limit
 const MAX_PIPE_LENGTH = 2;
 
 /**
- * @typedef {AgoricContractInvitationSpec | ContractInvitationSpec | PurseInvitationSpec | ContinuingInvitationSpec} InvitationSpec
- * Specify how to produce an invitation. See each type in the union for details.
+ * @typedef {AgoricContractInvitationSpec
+ *   | ContractInvitationSpec
+ *   | PurseInvitationSpec
+ *   | ContinuingInvitationSpec} InvitationSpec
+ *   Specify how to produce an invitation. See each type in the union for details.
  */
 
 /**
  * @typedef {{
- * source: 'agoricContract',
- * instancePath: string[],
- * callPipe: Array<[methodName: string, methodArgs?: any[]]>,
+ *   source: 'agoricContract';
+ *   instancePath: string[];
+ *   callPipe: [methodName: string, methodArgs?: any[]][];
  * }} AgoricContractInvitationSpec
- * source of invitation is a chain of calls starting with an agoricName
+ *   source of invitation is a chain of calls starting with an agoricName
+ *
  *   - the start of the pipe is a lookup of instancePath within agoricNames
  *   - each entry in the callPipe executes a call on the preceding result
  *   - the end of the pipe is expected to return an Invitation
  *
- * @typedef {{
- * source: 'contract',
- * instance: Instance,
- * publicInvitationMaker: string,
- * invitationArgs?: any[],
- * }} ContractInvitationSpec
- * source is a contract (in which case this takes an Instance to look up in zoe)
  *
  * @typedef {{
- * source: 'purse',
- * instance: Instance,
- * description: string,
+ *   source: 'contract';
+ *   instance: Instance;
+ *   publicInvitationMaker: string;
+ *   invitationArgs?: any[];
+ * }} ContractInvitationSpec
+ *   source is a contract (in which case this takes an Instance to look up in zoe)
+ *
+ * @typedef {{
+ *   source: 'purse';
+ *   instance: Instance;
+ *   description: string;
  * }} PurseInvitationSpec
- * the invitation is already in your Zoe "invitation" purse so we need to query it
+ *   the invitation is already in your Zoe "invitation" purse so we need to query
+ *   it
+ *
  *   - use the find/query invitation by kvs thing
  *
+ *
  * @typedef {{
- * source: 'continuing',
- * previousOffer: import('./offers.js').OfferId,
- * invitationMakerName: string,
- * invitationArgs?: any[],
+ *   source: 'continuing';
+ *   previousOffer: import('./offers.js').OfferId;
+ *   invitationMakerName: string;
+ *   invitationArgs?: any[];
  * }} ContinuingInvitationSpec
- * continuing invitation in which the offer result from a previous invitation had an `invitationMakers` property
+ *   continuing invitation in which the offer result from a previous invitation
+ *   had an `invitationMakers` property
  */
 
 /**
- * @typedef {Pick<InvitationDetails, 'description' | 'instance'>} InvitationsPurseQuery
+ * @typedef {Pick<
+ *   import('@agoric/zoe').InvitationDetails,
+ *   'description' | 'instance'
+ * >} InvitationsPurseQuery
  */
 
 /**
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<import('@agoric/vats').NameHub>} agoricNames
  * @param {Brand<'set'>} invitationBrand
- * @param {Purse<'set'>} invitationsPurse
+ * @param {Purse<'set', import('@agoric/zoe').InvitationDetails>} invitationsPurse
  * @param {(fromOfferId: string) => import('./types.js').InvitationMakers} getInvitationContinuation
  */
 export const makeInvitationsHelper = (
@@ -87,7 +95,7 @@ export const makeInvitationsHelper = (
       }
 
       const invitation = await eref;
-      mustMatch(invitation, InvitationHandleShape);
+      mustMatch(invitation, InvitationShape);
       return invitation;
     },
     /** @type {(spec: ContractInvitationSpec) => Promise<Invitation>} */
@@ -103,9 +111,7 @@ export const makeInvitationsHelper = (
       mustMatch(spec, shape.PurseInvitationSpec);
 
       const { instance, description } = spec;
-      // @ts-expect-error TS thinks it's always true. I'm doubtful.
       (instance && description) || Fail`missing instance or description`;
-      /** @type {Amount<'set'>} */
       const purseAmount = await E(invitationsPurse).getCurrentAmount();
       const invitations = AmountMath.getValue(invitationBrand, purseAmount);
 

@@ -1,4 +1,4 @@
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import { kser, kunser } from '@agoric/kmarshal';
 import { insistVatID } from '../lib/id.js';
 
@@ -94,6 +94,9 @@ export function makeVatAdminHooks(tools) {
       // we don't need to incrementRefCount because if terminateVat sends
       // 'reason' to vat-admin, it uses notifyTermination / queueToKref /
       // doSend, and doSend() does its own incref
+      // FIXME: This assumes that most work of terminateVat happens in the
+      // synchronous prelude, which should be made more obvious. For details,
+      // see https://github.com/Agoric/agoric-sdk/pull/10055#discussion_r1754918394
       void terminateVat(vatID, true, marshalledReason);
       // TODO: terminateVat is async, result doesn't fire until worker
       // is dead. To fix this we'll probably need to move termination

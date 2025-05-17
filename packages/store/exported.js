@@ -1,1 +1,1 @@
-import './src/types.js';
+// Dummy file for .d.ts twin to declare ambients

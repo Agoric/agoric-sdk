@@ -7,11 +7,14 @@ import (
 	stdlog "log"
 	"math"
 
+	sdkmath "cosmossdk.io/math"
+
 	"github.com/tendermint/tendermint/libs/log"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -48,28 +51,9 @@ const (
 	swingStoreKeyPrefix = "swingStore."
 )
 
-// Contextual information about the message source of an action on an inbound queue.
-// This context should be unique per inboundQueueRecord.
-type actionContext struct {
-	// The block height in which the corresponding action was enqueued
-	BlockHeight int64 `json:"blockHeight"`
-	// The hash of the cosmos transaction that included the message
-	// If the action didn't result from a transaction message, a substitute value
-	// may be used. For example the VBANK_BALANCE_UPDATE actions use `x/vbank`.
-	TxHash string `json:"txHash"`
-	// The index of the message within the transaction. If the action didn't
-	// result from a cosmos transaction, a number should be chosen to make the
-	// actionContext unique. (for example a counter per block and source module).
-	MsgIdx int `json:"msgIdx"`
-}
-type inboundQueueRecord struct {
-	Action  vm.Jsonable   `json:"action"`
-	Context actionContext `json:"context"`
-}
-
 // Keeper maintains the link to data vstorage and exposes getter/setter methods for the various parts of the state machine
 type Keeper struct {
-	storeKey   sdk.StoreKey
+	storeKey   storetypes.StoreKey
 	cdc        codec.Codec
 	paramSpace paramtypes.Subspace
 
@@ -87,7 +71,7 @@ var _ ante.SwingsetKeeper = &Keeper{}
 
 // NewKeeper creates a new IBC transfer Keeper instance
 func NewKeeper(
-	cdc codec.Codec, key sdk.StoreKey, paramSpace paramtypes.Subspace,
+	cdc codec.Codec, key storetypes.StoreKey, paramSpace paramtypes.Subspace,
 	accountKeeper types.AccountKeeper, bankKeeper bankkeeper.Keeper,
 	vstorageKeeper vstoragekeeper.Keeper, feeCollectorName string,
 	callToController func(ctx sdk.Context, str string) (string, error),
@@ -110,6 +94,16 @@ func NewKeeper(
 	}
 }
 
+func populateAction(ctx sdk.Context, action vm.Action) (vm.Action, error) {
+	action = vm.PopulateAction(ctx, action)
+	ah := action.GetActionHeader()
+	if len(ah.Type) == 0 {
+		return nil, fmt.Errorf("action %q cannot have an empty ActionHeader.Type", action)
+	}
+
+	return action, nil
+}
+
 // pushAction appends an action to the controller's specified inbound queue.
 // The queue is kept in the kvstore so that changes are properly reverted if the
 // kvstore is rolled back.  By the time the block manager runs, it can commit
@@ -118,22 +112,27 @@ func NewKeeper(
 //
 // The inbound queue's format is documented by `makeChainQueue` in
 // `packages/cosmic-swingset/src/helpers/make-queue.js`.
-func (k Keeper) pushAction(ctx sdk.Context, inboundQueuePath string, action vm.Jsonable) error {
+func (k Keeper) pushAction(ctx sdk.Context, inboundQueuePath string, action vm.Action) error {
+	action, err := populateAction(ctx, action)
+	if err != nil {
+		return err
+	}
 	txHash, txHashOk := ctx.Context().Value(baseapp.TxHashContextKey).(string)
 	if !txHashOk {
 		txHash = "unknown"
 	}
 	msgIdx, msgIdxOk := ctx.Context().Value(baseapp.TxMsgIdxContextKey).(int)
 	if !txHashOk || !msgIdxOk {
-		switch action.(type) {
-		case *coreEvalAction:
-			// This is expected for CORE_EVAL since it's not in a transaction
-			// (deferred by governance to a BeginBlocker).
-		default:
-			stdlog.Printf("error while extracting context for action %q\n", action)
-		}
+		stdlog.Printf("error while extracting context for action %q\n", action)
 	}
-	record := inboundQueueRecord{Action: action, Context: actionContext{BlockHeight: ctx.BlockHeight(), TxHash: txHash, MsgIdx: msgIdx}}
+	record := types.InboundQueueRecord{
+		Action: action,
+		Context: types.ActionContext{
+			BlockHeight: ctx.BlockHeight(),
+			TxHash:      txHash,
+			MsgIdx:      msgIdx,
+		},
+	}
 	bz, err := json.Marshal(record)
 	if err != nil {
 		return err
@@ -143,12 +142,12 @@ func (k Keeper) pushAction(ctx sdk.Context, inboundQueuePath string, action vm.J
 }
 
 // PushAction appends an action to the controller's actionQueue.
-func (k Keeper) PushAction(ctx sdk.Context, action vm.Jsonable) error {
+func (k Keeper) PushAction(ctx sdk.Context, action vm.Action) error {
 	return k.pushAction(ctx, StoragePathActionQueue, action)
 }
 
 // PushAction appends an action to the controller's highPriorityQueue.
-func (k Keeper) PushHighPriorityAction(ctx sdk.Context, action vm.Jsonable) error {
+func (k Keeper) PushHighPriorityAction(ctx sdk.Context, action vm.Action) error {
 	return k.pushAction(ctx, StoragePathHighPriorityQueue, action)
 }
 
@@ -234,7 +233,11 @@ func (k Keeper) UpdateQueueAllowed(ctx sdk.Context) error {
 // until the response.  It is orthogonal to PushAction, and should only be used
 // by SwingSet to perform block lifecycle events (BEGIN_BLOCK, END_BLOCK,
 // COMMIT_BLOCK).
-func (k Keeper) BlockingSend(ctx sdk.Context, action vm.Jsonable) (string, error) {
+func (k Keeper) BlockingSend(ctx sdk.Context, action vm.Action) (string, error) {
+	action, err := populateAction(ctx, action)
+	if err != nil {
+		return "", err
+	}
 	bz, err := json.Marshal(action)
 	if err != nil {
 		return "", err
@@ -243,7 +246,10 @@ func (k Keeper) BlockingSend(ctx sdk.Context, action vm.Jsonable) (string, error
 }
 
 func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {
-	k.paramSpace.GetParamSet(ctx, &params)
+	// Note the use of "IfExists"...
+	// migration fills in missing data with defaults,
+	// so it is the only consumer that should ever see a nil pair.
+	k.paramSpace.GetParamSetIfExists(ctx, &params)
 	return params
 }
 
@@ -267,9 +273,9 @@ func (k Keeper) SetState(ctx sdk.Context, state types.State) {
 
 // GetBeansPerUnit returns a map taken from the current SwingSet parameters from
 // a unit (key) string to an unsigned integer amount of beans.
-func (k Keeper) GetBeansPerUnit(ctx sdk.Context) map[string]sdk.Uint {
+func (k Keeper) GetBeansPerUnit(ctx sdk.Context) map[string]sdkmath.Uint {
 	params := k.GetParams(ctx)
-	beansPerUnit := make(map[string]sdk.Uint, len(params.BeansPerUnit))
+	beansPerUnit := make(map[string]sdkmath.Uint, len(params.BeansPerUnit))
 	for _, bpu := range params.BeansPerUnit {
 		beansPerUnit[bpu.Key] = bpu.Beans
 	}
@@ -282,18 +288,18 @@ func getBeansOwingPathForAddress(addr sdk.AccAddress) string {
 
 // GetBeansOwing returns the number of beans that the given address owes to
 // the FeeAccount but has not yet paid.
-func (k Keeper) GetBeansOwing(ctx sdk.Context, addr sdk.AccAddress) sdk.Uint {
+func (k Keeper) GetBeansOwing(ctx sdk.Context, addr sdk.AccAddress) sdkmath.Uint {
 	path := getBeansOwingPathForAddress(addr)
 	entry := k.vstorageKeeper.GetEntry(ctx, path)
 	if !entry.HasValue() {
-		return sdk.ZeroUint()
+		return sdkmath.ZeroUint()
 	}
-	return sdk.NewUintFromString(entry.StringValue())
+	return sdkmath.NewUintFromString(entry.StringValue())
 }
 
 // SetBeansOwing sets the number of beans that the given address owes to the
 // feeCollector but has not yet paid.
-func (k Keeper) SetBeansOwing(ctx sdk.Context, addr sdk.AccAddress, beans sdk.Uint) {
+func (k Keeper) SetBeansOwing(ctx sdk.Context, addr sdk.AccAddress, beans sdkmath.Uint) {
 	path := getBeansOwingPathForAddress(addr)
 	k.vstorageKeeper.SetStorage(ctx, agoric.NewKVEntry(path, beans.String()))
 }
@@ -301,9 +307,12 @@ func (k Keeper) SetBeansOwing(ctx sdk.Context, addr sdk.AccAddress, beans sdk.Ui
 // ChargeBeans charges the given address the given number of beans.  It divides
 // the beans into the number to debit immediately vs. the number to store in the
 // beansOwing.
-func (k Keeper) ChargeBeans(ctx sdk.Context, addr sdk.AccAddress, beans sdk.Uint) error {
-	beansPerUnit := k.GetBeansPerUnit(ctx)
-
+func (k Keeper) ChargeBeans(
+	ctx sdk.Context,
+	beansPerUnit map[string]sdkmath.Uint,
+	addr sdk.AccAddress,
+	beans sdkmath.Uint,
+) error {
 	wasOwing := k.GetBeansOwing(ctx, addr)
 	nowOwing := wasOwing.Add(beans)
 
@@ -336,10 +345,13 @@ func (k Keeper) ChargeBeans(ctx sdk.Context, addr sdk.AccAddress, beans sdk.Uint
 }
 
 // ChargeForSmartWallet charges the fee for provisioning a smart wallet.
-func (k Keeper) ChargeForSmartWallet(ctx sdk.Context, addr sdk.AccAddress) error {
-	beansPerUnit := k.GetBeansPerUnit(ctx)
+func (k Keeper) ChargeForSmartWallet(
+	ctx sdk.Context,
+	beansPerUnit map[string]sdkmath.Uint,
+	addr sdk.AccAddress,
+) error {
 	beans := beansPerUnit[types.BeansPerSmartWalletProvision]
-	err := k.ChargeBeans(ctx, addr, beans)
+	err := k.ChargeBeans(ctx, beansPerUnit, addr, beans)
 	if err != nil {
 		return err
 	}
@@ -368,17 +380,13 @@ func makeFeeMenu(powerFlagFees []types.PowerFlagFee) map[string]sdk.Coins {
 
 var privilegedProvisioningCoins sdk.Coins = sdk.NewCoins(sdk.NewInt64Coin("provisionpass", 1))
 
-func calculateFees(balances sdk.Coins, submitter, addr sdk.AccAddress, powerFlags []string, powerFlagFees []types.PowerFlagFee) (sdk.Coins, error) {
+func calculateFees(balances sdk.Coins, powerFlags []string, powerFlagFees []types.PowerFlagFee) (sdk.Coins, error) {
 	fees := sdk.NewCoins()
 
 	// See if we have the balance needed for privileged provisioning.
 	if balances.IsAllGTE(privilegedProvisioningCoins) {
 		// We do, and notably we don't deduct anything from the submitter.
 		return fees, nil
-	}
-
-	if !submitter.Equals(addr) {
-		return nil, fmt.Errorf("submitter is not the same as target address for fee-based provisioning")
 	}
 
 	if len(powerFlags) == 0 {
@@ -400,9 +408,9 @@ func calculateFees(balances sdk.Coins, submitter, addr sdk.AccAddress, powerFlag
 	return fees, nil
 }
 
-func (k Keeper) ChargeForProvisioning(ctx sdk.Context, submitter, addr sdk.AccAddress, powerFlags []string) error {
+func (k Keeper) ChargeForProvisioning(ctx sdk.Context, submitter sdk.AccAddress, powerFlags []string) error {
 	balances := k.bankKeeper.GetAllBalances(ctx, submitter)
-	fees, err := calculateFees(balances, submitter, addr, powerFlags, k.GetParams(ctx).PowerFlagFees)
+	fees, err := calculateFees(balances, powerFlags, k.GetParams(ctx).PowerFlagFees)
 	if err != nil {
 		return err
 	}

@@ -1,10 +1,7 @@
 // @ts-nocheck
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
 
 import path from 'path';
-
-import '../../../../exported.js';
 
 import { E } from '@endo/eventual-send';
 import bundleSource from '@endo/bundle-source';
@@ -14,11 +11,10 @@ import { setupZCFTest } from '../../zcf/setupZcfTest.js';
 import { makeRatio } from '../../../../src/contractSupport/index.js';
 import { assertAmountsEqual } from '../../../zoeTestHelpers.js';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 /**
- * @param {import("ava").ExecutionContext<unknown>} t
+ * @param {import('ava').ExecutionContext<unknown>} t
  * @param {UserSeat} seat
  * @param {Keyword} keyword
  * @param {IssuerKit} kit
@@ -40,7 +36,7 @@ export const checkPayout = async (
 };
 
 /**
- * @param {import("ava").ExecutionContext<unknown>} t
+ * @param {import('ava').ExecutionContext<unknown>} t
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<Invitation>} invitation
  * @param {string} expected
@@ -51,7 +47,7 @@ export const checkDescription = async (t, zoe, invitation, expected) => {
 };
 
 /**
- * @param {import("ava").ExecutionContext<unknown>} t
+ * @param {import('ava').ExecutionContext<unknown>} t
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<Invitation>} invitation
  * @param {InvitationDetails} expectedNullHandle expected invitation
@@ -83,7 +79,7 @@ export const checkPayouts = async (
       const kit = kitKeywordRecord[keyword];
       const amount = await kit.issuer.getAmountOf(paymentP);
       const expected = expectedKeywordRecord[keyword];
-      assertAmountsEqual(t, amount, expected);
+      await assertAmountsEqual(t, amount, expected);
       t.truthy(
         AmountMath.isEqual(amount, expected),
         `amount value: ${amount.value}, expected value: ${expected.value}, message: ${message}`,
@@ -147,7 +143,7 @@ export const makeSeatKit = async (zcf, proposal, payments) => {
 
 /**
  * @callback PerformAddCollateral
- * @param {import("ava").ExecutionContext<unknown>} t
+ * @param {import('ava').ExecutionContext<unknown>} t
  * @param {ZoeService} zoe
  * @param {IssuerKit} collateralKit
  * @param {IssuerKit} loanKit

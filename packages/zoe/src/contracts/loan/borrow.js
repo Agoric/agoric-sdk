@@ -1,4 +1,4 @@
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
@@ -37,7 +37,12 @@ export const makeBorrowInvitation = (zcf, config) => {
       want: { Loan: null },
     });
 
-    const collateralGiven = borrowerSeat.getAmountAllocated('Collateral');
+    const collateralGiven = borrowerSeat.getAmountAllocated(
+      'Collateral',
+      /** @type {Brand<'nat'>} */ (
+        borrowerSeat.getProposal().give.Collateral.brand
+      ),
+    );
     const loanWanted = borrowerSeat.getProposal().want.Loan;
     const loanBrand = zcf.getTerms().brands.Loan;
 

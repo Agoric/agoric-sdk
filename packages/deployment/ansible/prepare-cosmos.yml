@@ -7,7 +7,6 @@
   vars:
     - service: ag-chain-cosmos
     - CHAIN_NAME: "{{ lookup('file', SETUP_HOME + '/' + service + '/chain-name.txt') }}"
-    - HELPER_BINARY: "{{lookup('env', 'GOBIN') or ((lookup('env', 'GOPATH') or '/usr/local') + '/bin')}}/agd"
     - APPDIR: "{{lookup('pipe', 'pwd')}}/../.."
   roles:
     - copy

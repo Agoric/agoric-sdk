@@ -1,9 +1,11 @@
-import { createWriteStream } from 'node:fs';
 import { open } from 'node:fs/promises';
-import { makeAggregateError } from '../utils.js';
+import process from 'node:process';
+import { promisify } from 'node:util';
 
 /**
- * @param {import("fs").ReadStream | import("fs").WriteStream} stream
+ * @param {import('fs').ReadStream
+ *   | import('fs').WriteStream
+ *   | import('net').Socket} stream
  * @returns {Promise<void>}
  */
 export const fsStreamReady = stream =>
@@ -19,13 +21,13 @@ export const fsStreamReady = stream =>
     }
 
     const onReady = () => {
-      cleanup(); // eslint-disable-line no-use-before-define
+      cleanup();
       resolve();
     };
 
     /** @param {Error} err */
     const onError = err => {
-      cleanup(); // eslint-disable-line no-use-before-define
+      cleanup();
       reject(err);
     };
 
@@ -38,10 +40,6 @@ export const fsStreamReady = stream =>
     stream.on('error', onError);
   });
 
-const noPath = /** @type {import('fs').PathLike} */ (
-  /** @type {unknown} */ (undefined)
-);
-
 /** @typedef {NonNullable<Awaited<ReturnType<typeof makeFsStreamWriter>>>} FsStreamWriter */
 /** @param {string | undefined | null} filePath */
 export const makeFsStreamWriter = async filePath => {
@@ -49,45 +47,55 @@ export const makeFsStreamWriter = async filePath => {
     return undefined;
   }
 
-  const handle = await open(filePath, 'a');
-
-  const stream = createWriteStream(noPath, { fd: handle.fd });
+  const useStdout = filePath === '-';
+  const { handle, stream } = await (async () => {
+    if (useStdout) {
+      return { handle: undefined, stream: process.stdout };
+    }
+    const fh = await open(filePath, 'a');
+    return { handle: fh, stream: fh.createWriteStream({ flush: true }) };
+  })();
   await fsStreamReady(stream);
+  const writeAsync = promisify(stream.write.bind(stream));
+  const closeAsync =
+    useStdout || !(/** @type {any} */ (stream).close)
+      ? undefined
+      : promisify(
+          /** @type {import('fs').WriteStream} */ (stream).close.bind(stream),
+        );
 
   let flushed = Promise.resolve();
   let closed = false;
 
-  const write = async data => {
-    if (closed) {
-      throw Error('Stream closed');
-    }
-
-    /** @type {Promise<void>} */
-    const written = new Promise((resolve, reject) => {
-      stream.write(data, err => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve();
-        }
-      });
-    });
+  const updateFlushed = p => {
     flushed = flushed.then(
-      () => written,
-      async err =>
-        Promise.reject(
-          written.then(
-            () => err,
-            writtenError => makeAggregateError([err, writtenError]),
-          ),
+      () => p,
+      err =>
+        p.then(
+          () => Promise.reject(err),
+          pError =>
+            Promise.reject(
+              pError !== err ? AggregateError([err, pError]) : err,
+            ),
         ),
     );
-    return written;
+    flushed.catch(() => {});
+  };
+
+  const write = async data => {
+    const written = closed
+      ? Promise.reject(Error('Stream closed'))
+      : writeAsync(data);
+    updateFlushed(written);
+    const waitForDrain = await written;
+    if (waitForDrain) {
+      await new Promise(resolve => stream.once('drain', resolve));
+    }
   };
 
   const flush = async () => {
     await flushed;
-    await handle.sync().catch(err => {
+    await handle?.sync().catch(err => {
       if (err.code === 'EINVAL') {
         return;
       }
@@ -96,10 +104,13 @@ export const makeFsStreamWriter = async filePath => {
   };
 
   const close = async () => {
+    // TODO: Consider creating a single Error here to use a write rejection
     closed = true;
     await flush();
-    stream.close();
+    await closeAsync?.();
   };
+
+  stream.on('error', err => updateFlushed(Promise.reject(err)));
 
   return harden({ write, flush, close });
 };

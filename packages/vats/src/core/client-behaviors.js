@@ -5,8 +5,6 @@ import { deeplyFulfilledObject } from '@agoric/internal';
 import { registerNetworkProtocols } from '../proposals/network-proposal.js';
 import { makeVatsFromBundles } from './basic-behaviors.js';
 
-const { Fail } = assert;
-
 const PROVISIONER_INDEX = 1;
 
 function makeVattpFrom(vats) {
@@ -87,6 +85,7 @@ async function createLocalBundle(vats, devices, vatAdminSvc, vatPowers) {
  *   BootstrapSpace & {
  *     vatParameters: BootstrapVatParams;
  *     vats: SwingsetVats & SoloVats;
+ *     zone: import('@agoric/base-zone').Zone;
  *   }} powers
  */
 export const startClient = async ({
@@ -136,7 +135,13 @@ export const startClient = async ({
   }
 
   const addChainPresences = async () => {
-    FIXME_GCI || Fail`client must be given GCI`;
+    if (!FIXME_GCI) {
+      chainBundle = {
+        DISCONNECTED: `Chain is disconnected: no GCI provided`,
+      };
+      void updatePresences();
+      return;
+    }
     await addRemote(FIXME_GCI);
     // addEgress(..., index, ...) is called in vat-provisioning.
     const chainProvider = E(vats.comms).addIngress(

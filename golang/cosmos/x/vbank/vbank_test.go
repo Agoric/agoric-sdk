@@ -13,6 +13,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/store"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -71,7 +72,7 @@ func newBalances(opts ...balancesOption) balances {
 	return bal
 }
 
-func validateBalanceUpdate(vbu vbankBalanceUpdate) error {
+func validateBalanceUpdate(vbu VbankBalanceUpdate) error {
 	if vbu.Type != "VBANK_BALANCE_UPDATE" {
 		return fmt.Errorf("bad balance update type: %s", vbu.Type)
 	}
@@ -89,7 +90,7 @@ func decodeBalances(encoded []byte) (balances, uint64, error) {
 	if encoded == nil {
 		return nil, 0, nil
 	}
-	balanceUpdate := vbankBalanceUpdate{}
+	balanceUpdate := VbankBalanceUpdate{}
 	err := json.Unmarshal(encoded, &balanceUpdate)
 	if err != nil {
 		return nil, 0, err
@@ -233,6 +234,24 @@ func (b *mockBank) MintCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) 
 
 func (b *mockBank) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
 	b.record(fmt.Sprintf("SendCoinsFromAccountToModule %s %s %s", senderAddr, recipientModule, amt))
+
+	// for each coin in the request, check spendable vs. requested
+	for _, coin := range amt {
+		// mimic GetBalance logic
+		have := b.balances[senderAddr.String()].AmountOf(coin.Denom)
+		spendable := sdk.NewCoin(coin.Denom, have)
+
+		if spendable.IsLT(coin) {
+			// wrap exactly like the real x/bank keeper
+			// https://github.com/agoric-labs/cosmos-sdk/blob/8b2b975304291c51991278734daa2ff5e57fcb83/x/bank/keeper/send.go#L252-L256
+			return sdkerrors.Wrapf(
+				sdkerrors.ErrInsufficientFunds,
+				"spendable balance %s is smaller than %s",
+				spendable, coin,
+			)
+		}
+	}
+
 	return nil
 }
 
@@ -250,7 +269,7 @@ func (b *mockBank) SendCoinsFromModuleToModule(ctx sdk.Context, senderModule, re
 func makeTestKit(account types.AccountKeeper, bank types.BankKeeper) (Keeper, sdk.Context) {
 	encodingConfig := params.MakeEncodingConfig()
 	cdc := encodingConfig.Marshaler
-	pushAction := func(ctx sdk.Context, action vm.Jsonable) error {
+	pushAction := func(ctx sdk.Context, action vm.Action) error {
 		return nil
 	}
 
@@ -263,9 +282,9 @@ func makeTestKit(account types.AccountKeeper, bank types.BankKeeper) (Keeper, sd
 
 	db := dbm.NewMemDB()
 	ms := store.NewCommitMultiStore(db)
-	ms.MountStoreWithDB(vbankStoreKey, sdk.StoreTypeIAVL, db)
-	ms.MountStoreWithDB(paramsStoreKey, sdk.StoreTypeIAVL, db)
-	ms.MountStoreWithDB(paramsTStoreKey, sdk.StoreTypeTransient, db)
+	ms.MountStoreWithDB(vbankStoreKey, storetypes.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(paramsStoreKey, storetypes.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(paramsTStoreKey, storetypes.StoreTypeTransient, db)
 	err := ms.LoadLatestVersion()
 	if err != nil {
 		panic(err)
@@ -439,6 +458,7 @@ func Test_Receive_GiveToRewardDistributor(t *testing.T) {
 			params := types.DefaultParams()
 			params.RewardEpochDurationBlocks = 0
 			params.RewardSmoothingBlocks = tt.duration
+			params.AllowedMonitoringAccounts = []string{"*"}
 
 			keeper.SetParams(ctx, params)
 			keeper.SetState(ctx, types.State{RewardPool: tt.rewardPool})
@@ -517,16 +537,16 @@ func Test_EndBlock_Events(t *testing.T) {
 	}}
 	acct := &mockAuthKeeper{
 		accounts: map[string]authtypes.AccountI{
-			addr1: &authtypes.ModuleAccount{BaseAccount: &authtypes.BaseAccount{ Address: addr1 }},
-			addr2: &authtypes.ModuleAccount{BaseAccount: &authtypes.BaseAccount{ Address: addr2 }},
-			addr3: &authtypes.BaseAccount{ Address: addr3 },
+			addr1: &authtypes.ModuleAccount{BaseAccount: &authtypes.BaseAccount{Address: addr1}},
+			addr2: &authtypes.ModuleAccount{BaseAccount: &authtypes.BaseAccount{Address: addr2}},
+			addr3: &authtypes.BaseAccount{Address: addr3},
 		},
 	}
 	keeper, ctx := makeTestKit(acct, bank)
 	// Turn off rewards.
-	keeper.SetParams(ctx, types.Params{PerEpochRewardFraction: sdk.ZeroDec()})
+	keeper.SetParams(ctx, types.Params{PerEpochRewardFraction: sdk.ZeroDec(), AllowedMonitoringAccounts: []string{"*"}})
 	msgsSent := []string{}
-	keeper.PushAction = func(ctx sdk.Context, action vm.Jsonable) error {
+	keeper.PushAction = func(ctx sdk.Context, action vm.Action) error {
 		bz, err := json.Marshal(action)
 		if err != nil {
 			return err
@@ -630,7 +650,7 @@ func Test_EndBlock_Rewards(t *testing.T) {
 	}
 	keeper, ctx := makeTestKit(nil, bank)
 	msgsSent := []string{}
-	keeper.PushAction = func(ctx sdk.Context, action vm.Jsonable) error {
+	keeper.PushAction = func(ctx sdk.Context, action vm.Action) error {
 		bz, err := json.Marshal(action)
 		if err != nil {
 			return err
@@ -746,7 +766,7 @@ func Test_EndBlock_Rewards(t *testing.T) {
 	}
 }
 
-type mockAuthKeeper struct{
+type mockAuthKeeper struct {
 	accounts map[string]authtypes.AccountI
 	modAddrs map[string]string
 }
@@ -754,11 +774,11 @@ type mockAuthKeeper struct{
 func (ma mockAuthKeeper) GetModuleAccount(ctx sdk.Context, name string) authtypes.ModuleAccountI {
 	addr, ok := ma.modAddrs[name]
 	if !ok {
-			return nil
+		return nil
 	}
 	acct, ok := ma.accounts[addr]
 	if !ok {
-			panic("missing module account")
+		panic("missing module account")
 	}
 	return acct.(authtypes.ModuleAccountI)
 }
@@ -778,7 +798,7 @@ func Test_Module_Account(t *testing.T) {
 	acct := &mockAuthKeeper{
 		accounts: map[string]authtypes.AccountI{
 			moduleBech32: authtypes.NewEmptyModuleAccount("vbank/reserve"),
-			addr1: authtypes.NewBaseAccountWithAddress(sdk.MustAccAddressFromBech32(addr1)),
+			addr1:        authtypes.NewBaseAccountWithAddress(sdk.MustAccAddressFromBech32(addr1)),
 		},
 		modAddrs: map[string]string{
 			"vbank/reserve": moduleBech32,
@@ -804,15 +824,79 @@ func Test_Module_Account(t *testing.T) {
 	}
 
 	modAddr := sdk.MustAccAddressFromBech32(moduleBech32)
-	if !keeper.IsModuleAccount(ctx, modAddr) {
-		t.Errorf("got IsModuleAccount modAddr = false, want true")
+	if keeper.IsAllowedMonitoringAccount(ctx, modAddr) {
+		t.Errorf("got IsAllowedMonitoringAccount modAddr = true, want false")
+	}
+	provisionPool := authtypes.NewModuleAddress("vbank/provision")
+	if !keeper.IsAllowedMonitoringAccount(ctx, provisionPool) {
+		t.Errorf("got IsAllowedMonitoringAccount provisionPool = false, want true")
 	}
 	notModAddr := sdk.MustAccAddressFromBech32(addr1)
-	if keeper.IsModuleAccount(ctx, notModAddr) {
-		t.Errorf("got IsModuleAccount notModAddr = true, want false")
+	if keeper.IsAllowedMonitoringAccount(ctx, notModAddr) {
+		t.Errorf("got IsAllowedMonitoringAccount notModAddr = true, want false")
 	}
 	missingAddr := sdk.MustAccAddressFromBech32(addr2)
-	if keeper.IsModuleAccount(ctx, missingAddr) {
-		t.Errorf("got IsModuleAccount missingAddr = false, want true")
+	if keeper.IsAllowedMonitoringAccount(ctx, missingAddr) {
+		t.Errorf("got IsAllowedMonitoringAccount missingAddr = false, want true")
+	}
+}
+
+
+
+func Test_Receive_Grab_InsufficientFunds(t *testing.T) {
+	tests := []struct {
+		name           string
+		initialBalance sdk.Coin
+	}{
+		{
+			name:           "only 100 available",
+			initialBalance: sdk.NewInt64Coin("ufoo", 100),
+		},
+		{
+			name:           "zero available",
+			initialBalance: sdk.NewInt64Coin("ufoo", 0),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// set up mockBank with the desired starting balance
+			bank := &mockBank{balances: map[string]sdk.Coins{
+				addr1: sdk.NewCoins(tc.initialBalance),
+			}}
+
+			// wire into keeper
+			keeper, ctx := makeTestKit(nil, bank)
+			handler := NewPortHandler(AppModule{}, keeper)
+			ctl := sdk.WrapSDKContext(ctx)
+
+			// attempt to grab 500ufoo
+			grabAmt := sdk.NewCoins(sdk.NewInt64Coin("ufoo", 500))
+			_, err := handler.Receive(ctl, fmt.Sprintf(`{
+							"type":"VBANK_GRAB",
+							"sender":"%s",
+							"amount":"500",
+							"denom":"ufoo"
+					}`, addr1))
+			if err == nil {
+				t.Fatal("expected insufficient-funds error, got nil")
+			}
+
+			expected := fmt.Sprintf(
+				"cannot grab %s coins: spendable balance %s is smaller than %s: %s",
+				grabAmt.Sort().String(),
+				tc.initialBalance.String(),
+				grabAmt.Sort().String(),
+				sdkerrors.ErrInsufficientFunds.Error(),
+			)
+
+			t.Logf("actual error: %q", err.Error())
+
+			got := err.Error()
+			if got != expected {
+				t.Errorf("wrong error message:\n  expected: %q\n  got:      %q",
+					expected, got)
+			}
+		})
 	}
 }

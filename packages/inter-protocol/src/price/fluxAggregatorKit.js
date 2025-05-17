@@ -18,21 +18,23 @@ import { Far } from '@endo/marshal';
 import { prepareOracleAdminKit } from './priceOracleKit.js';
 import { prepareRoundsManagerKit } from './roundsManager.js';
 
+/**
+ * @import {EReturn} from '@endo/far';
+ * @import {TypedPattern} from '@agoric/internal';
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ */
+
 const trace = makeTracer('FlxAgg', true);
 
 export const INVITATION_MAKERS_DESC = 'oracle invitation';
 
 /**
- * @typedef {import('@agoric/vat-data').Baggage} Baggage
- *
- * @typedef {import('@agoric/time').Timestamp} Timestamp
- *
- * @typedef {import('@agoric/time').RelativeTime} RelativeTime // TODO: use
+ * @import {Baggage} from '@agoric/vat-data'
+ * @import {Timestamp} from '@agoric/time'
+ * @import {RelativeTime} from '@agoric/time'
  *   RelativeTime, not RelativeTimeValue
- *
- * @typedef {import('@agoric/time').RelativeTimeValue} RelativeTimeValue
- *
- * @typedef {import('@agoric/time').TimerService} TimerService
+ * @import {RelativeTimeValue} from '@agoric/time'
+ * @import {TimerService} from '@agoric/time'
  */
 
 /** @type {(quote: PriceQuote) => PriceDescription} */
@@ -129,7 +131,6 @@ export const prepareFluxAggregatorKit = async (
   const makeOracleAdminKit = prepareOracleAdminKit(baggage);
 
   const makeRecorderKit = defineRecorderKit({
-    // @ts-expect-error XXX
     makeDurablePublishKit,
     makeRecorder,
   });
@@ -146,18 +147,14 @@ export const prepareFluxAggregatorKit = async (
     priceKit: () =>
       makeRecorderKit(
         storageNode,
-        /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<PriceDescription>} */ (
-          M.any()
-        ),
+        /** @type {TypedPattern<PriceDescription>} */ (M.any()),
       ),
     latestRoundKit: () =>
       E.when(E(storageNode).makeChildNode('latestRound'), node =>
         makeRecorderKit(
           node,
           /**
-           * @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<
-           *     import('./roundsManager.js').LatestRound
-           *   >}
+           * @type {TypedPattern<import('./roundsManager.js').LatestRound>}
            */ (M.any()),
         ),
       ),
@@ -374,4 +371,4 @@ export const prepareFluxAggregatorKit = async (
   return makeFluxAggregatorKit;
 };
 harden(prepareFluxAggregatorKit);
-/** @typedef {ReturnType<Awaited<ReturnType<typeof prepareFluxAggregatorKit>>>} FluxAggregatorKit */
+/** @typedef {EReturn<EReturn<typeof prepareFluxAggregatorKit>>} FluxAggregatorKit */

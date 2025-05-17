@@ -1,138 +1,147 @@
-[
-  "@agoric/builders/scripts/vats/init-core.js",
-  "@agoric/builders/scripts/vats/init-network.js",
-  {
-    "module": "@agoric/builders/scripts/inter-protocol/init-core.js",
-    "entrypoint": "defaultProposalBuilder",
-    "args": [
+{
+  "steps": [
+    [
+      "@agoric/builders/scripts/vats/init-core.js"
+    ],
+    [
+      "@agoric/builders/scripts/vats/init-network.js",
+      "@agoric/builders/scripts/vats/init-localchain.js",
+      "@agoric/builders/scripts/vats/init-transfer.js"       
+    ],
+    [
       {
-        "econCommitteeOptions": {
-          "committeeSize": 1
-        },
-        "minInitialPoolLiquidity": "0"
+        "module": "@agoric/builders/scripts/inter-protocol/init-core.js",
+        "entrypoint": "defaultProposalBuilder",
+        "args": [
+          {
+            "econCommitteeOptions": {
+              "committeeSize": 1
+            },
+            "minInitialPoolLiquidity": "0"
+          }
+        ]
+      },
+      {
+        "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
+        "entrypoint": "defaultProposalBuilder",
+        "args": [
+          {
+            "interchainAssetOptions": {
+              "denom": "ibc/toyatom",
+              "decimalPlaces": 4,
+              "keyword": "ATOM",
+              "oracleBrand": "ATOM",
+              "proposedName": "ATOM"
+            }
+          }
+        ]
+      },
+      {
+        "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
+        "entrypoint": "psmProposalBuilder",
+        "args": [
+          {
+            "anchorOptions": {
+              "denom": "ibc/toyusdc",
+              "decimalPlaces": 6,
+              "keyword": "USDC_axl",
+              "proposedName": "USD Coin"
+            }
+          }
+        ]
+      },
+      {
+        "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
+        "entrypoint": "psmProposalBuilder",
+        "args": [
+          {
+            "anchorOptions": {
+              "denom": "ibc/usdc5678",
+              "decimalPlaces": 6,
+              "keyword": "USDC_grv",
+              "proposedName": "USC Coin"
+            }
+          }
+        ]
+      },
+      {
+        "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
+        "entrypoint": "psmProposalBuilder",
+        "args": [
+          {
+            "anchorOptions": {
+              "denom": "ibc/usdt1234",
+              "decimalPlaces": 6,
+              "keyword": "USDT_axl",
+              "proposedName": "Tether USD"
+            }
+          }
+        ]
+      },
+      {
+        "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
+        "entrypoint": "psmProposalBuilder",
+        "args": [
+          {
+            "anchorOptions": {
+              "denom": "ibc/toyollie",
+              "decimalPlaces": 6,
+              "keyword": "USDT_grv",
+              "proposedName": "Tether USD"
+            }
+          }
+        ]
+      },
+      {
+        "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
+        "entrypoint": "psmProposalBuilder",
+        "args": [
+          {
+            "anchorOptions": {
+              "denom": "ibc/toyellie",
+              "decimalPlaces": 6,
+              "keyword": "AUSD",
+              "proposedName": "Anchor USD"
+            }
+          }
+        ]
+      },
+      {
+        "module": "@agoric/builders/scripts/inter-protocol/price-feed-core.js",
+        "entrypoint": "defaultProposalBuilder",
+        "args": [
+          {
+            "AGORIC_INSTANCE_NAME": "ATOM-USD price feed",
+            "oracleAddresses": [
+              "@PRIMARY_ADDRESS@",
+              "agoric1dy0yegdsev4xvce3dx7zrz2ad9pesf5svzud6y"
+            ],
+            "IN_BRAND_LOOKUP": [
+              "agoricNames",
+              "oracleBrand",
+              "ATOM"
+            ],
+            "IN_BRAND_DECIMALS": 6,
+            "OUT_BRAND_LOOKUP": [
+              "agoricNames",
+              "oracleBrand",
+              "USD"
+            ],
+            "OUT_BRAND_DECIMALS": 4
+          }
+        ]
+      },
+      {
+        "module": "@agoric/builders/scripts/inter-protocol/invite-committee-core.js",
+        "entrypoint": "defaultProposalBuilder",
+        "args": [
+          {
+            "voterAddresses": {
+              "someone": "@PRIMARY_ADDRESS@"
+            }
+          }
+        ]
       }
     ]
-  },
-  "@agoric/builders/scripts/pegasus/init-core.js",
-  {
-    "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
-    "entrypoint": "defaultProposalBuilder",
-    "args": [
-      {
-        "interchainAssetOptions": {
-          "denom": "ibc/toyatom",
-          "decimalPlaces": 4,
-          "keyword": "ATOM",
-          "oracleBrand": "ATOM",
-          "proposedName": "ATOM"
-        }
-      }
-    ]
-  },
-  {
-    "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
-    "entrypoint": "psmProposalBuilder",
-    "args": [
-      {
-        "anchorOptions": {
-          "denom": "ibc/toyusdc",
-          "decimalPlaces": 6,
-          "keyword": "USDC_axl",
-          "proposedName": "USD Coin"
-        }
-      }
-    ]
-  },
-  {
-    "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
-    "entrypoint": "psmProposalBuilder",
-    "args": [
-      {
-        "anchorOptions": {
-          "denom": "ibc/usdc5678",
-          "decimalPlaces": 6,
-          "keyword": "USDC_grv",
-          "proposedName": "USC Coin"
-        }
-      }
-    ]
-  },
-  {
-    "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
-    "entrypoint": "psmProposalBuilder",
-    "args": [
-      {
-        "anchorOptions": {
-          "denom": "ibc/usdt1234",
-          "decimalPlaces": 6,
-          "keyword": "USDT_axl",
-          "proposedName": "Tether USD"
-        }
-      }
-    ]
-  },
-  {
-    "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
-    "entrypoint": "psmProposalBuilder",
-    "args": [
-      {
-        "anchorOptions": {
-          "denom": "ibc/toyollie",
-          "decimalPlaces": 6,
-          "keyword": "USDT_grv",
-          "proposedName": "Tether USD"
-        }
-      }
-    ]
-  },
-  {
-    "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
-    "entrypoint": "psmProposalBuilder",
-    "args": [
-      {
-        "anchorOptions": {
-          "denom": "ibc/toyellie",
-          "decimalPlaces": 6,
-          "keyword": "AUSD",
-          "proposedName": "Anchor USD"
-        }
-      }
-    ]
-  },
-  {
-    "module": "@agoric/builders/scripts/inter-protocol/price-feed-core.js",
-    "entrypoint": "defaultProposalBuilder",
-    "args": [
-      {
-        "AGORIC_INSTANCE_NAME": "ATOM-USD price feed",
-        "oracleAddresses": [
-          "@PRIMARY_ADDRESS@",
-          "agoric1dy0yegdsev4xvce3dx7zrz2ad9pesf5svzud6y"
-        ],
-        "IN_BRAND_LOOKUP": [
-          "agoricNames",
-          "oracleBrand",
-          "ATOM"
-        ],
-        "IN_BRAND_DECIMALS": 6,
-        "OUT_BRAND_LOOKUP": [
-          "agoricNames",
-          "oracleBrand",
-          "USD"
-        ],
-        "OUT_BRAND_DECIMALS": 4
-      }
-    ]
-  },
-  {
-    "module": "@agoric/builders/scripts/inter-protocol/invite-committee-core.js",
-    "entrypoint": "defaultProposalBuilder",
-    "args": [
-      {
-        "voterAddresses": {
-          "someone": "@PRIMARY_ADDRESS@"
-        }
-      }
-    ]
-  }
-]
+  ]
+}

@@ -1,5 +1,5 @@
 // @ts-check
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 
 /**
  * @typedef {{
@@ -15,6 +15,7 @@ import { Fail } from '@agoric/assert';
  * @param {string} key
  */
 export function getKeyType(key) {
+  typeof key === 'string' || Fail`key must be a string`;
   if (key.startsWith('local.')) {
     return 'local';
   } else if (key.startsWith('host.')) {
@@ -26,7 +27,7 @@ export function getKeyType(key) {
 /**
  * @param {object} db  The SQLite database connection.
  * @param {() => void} ensureTxn  Called before mutating methods to establish a DB transaction
- * @param {(...args: string[]) => void} trace  Called after sets/gets to record a debug log
+ * @param {(...args: string[]) => void} trace  Called after set/delete to record a debug log
  * @returns { KVStore }
  */
 

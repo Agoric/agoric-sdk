@@ -1,5 +1,4 @@
 // @jessie-check
-// @ts-check
 
 import {
   handleParamGovernance,
@@ -12,7 +11,18 @@ import { prepareExo } from '@agoric/vat-data';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/topics.js';
-import { prepareProvisionPoolKit } from './provisionPoolKit.js';
+import { makeDurableZone } from '@agoric/zone/durable.js';
+import {
+  prepareBridgeProvisionTool,
+  prepareProvisionPoolKit,
+} from './provisionPoolKit.js';
+
+/**
+ * @import {Marshal} from '@endo/marshal';
+ * @import {Amount, Brand, Payment, Purse} from '@agoric/ertp';
+ * @import {ContractMeta, Invitation, StandardTerms, ZCF} from '@agoric/zoe';
+ * @import {GovernanceTerms} from '@agoric/governance/src/types.js';
+ */
 
 /** @type {ContractMeta} */
 export const meta = {
@@ -45,8 +55,9 @@ harden(meta);
  *   >;
  *   initialPoserInvitation: Invitation;
  *   storageNode: StorageNode;
- *   marshaller: Marshaller;
+ *   marshaller: Marshal<any>;
  *   metricsOverride?: import('./provisionPoolKit.js').MetricsNotification;
+ *   governedParamOverrides?: Record<string, Amount | undefined>;
  * }} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
@@ -68,13 +79,18 @@ export const start = async (zcf, privateArgs, baggage) => {
       },
       privateArgs.storageNode,
       privateArgs.marshaller,
+      privateArgs.governedParamOverrides,
     );
 
-  const makeProvisionPoolKit = prepareProvisionPoolKit(baggage, {
+  const zone = makeDurableZone(baggage);
+
+  const makeBridgeProvisionTool = prepareBridgeProvisionTool(zone);
+  const makeProvisionPoolKit = prepareProvisionPoolKit(zone, {
     makeRecorderKit,
     params,
     poolBank,
     zcf,
+    makeBridgeProvisionTool,
   });
 
   const provisionPoolKit = await provideSingleton(
@@ -84,6 +100,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       makeProvisionPoolKit({
         // XXX governance can change the brand of the amount but should only be able to change the value
         // NB: changing the brand will break this pool
+        // @ts-expect-error XXX Brand AssetKind
         poolBrand: params.getPerAccountInitialAmount().brand,
         storageNode: privateArgs.storageNode,
       }),

@@ -1,3 +1,4 @@
+import { Fail, q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { keyEQ } from '@agoric/store';
@@ -9,7 +10,11 @@ import {
   coerceQuestionSpec,
 } from '../question.js';
 
-const { Fail, quote: q } = assert;
+/**
+ * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
+ * @import {Passable, RemotableObject} from '@endo/pass-style';
+ * @import {Position, ApiGovernor, ApiInvocationIssue, PoserFacet, VoteOnApiInvocation, GovernedApis} from '../types.js';
+ */
 
 /**
  * Make a pair of positions for a question about whether to invoke an API. If
@@ -17,7 +22,7 @@ const { Fail, quote: q } = assert;
  * arguments that were provided.
  *
  * @param {string} apiMethodName
- * @param {unknown[]} methodArgs
+ * @param {Passable[]} methodArgs
  */
 const makeApiInvocationPositions = (apiMethodName, methodArgs) => {
   const positive = harden({ apiMethodName, methodArgs });
@@ -28,15 +33,15 @@ const makeApiInvocationPositions = (apiMethodName, methodArgs) => {
 /**
  * manage contracts that allow governance to invoke functions.
  *
- * @param {ERef<{ [methodName: string]: (...args: any) => unknown }>} governedApis
- * @param {Array<string | symbol>} governedNames names of the governed API methods
+ * @param {() => ERef<GovernedApis>} getGovernedApis
+ * @param {() => Promise<Array<string | symbol>>} getGovernedNames names of the governed API methods
  * @param {ERef<import('@agoric/time').TimerService>} timer
  * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
  * @returns {ApiGovernor}
  */
 const setupApiGovernance = (
-  governedApis,
-  governedNames,
+  getGovernedApis,
+  getGovernedNames,
   timer,
   getUpdatedPoserFacet,
 ) => {
@@ -50,6 +55,7 @@ const setupApiGovernance = (
     voteCounterInstallation,
     deadline,
   ) => {
+    const governedNames = await getGovernedNames();
     governedNames.includes(apiMethodName) ||
       Fail`${apiMethodName} is not a governed API.`;
 
@@ -89,8 +95,10 @@ const setupApiGovernance = (
     const outcomeOfUpdate = E(counterPublicFacet)
       .getOutcome()
       .then(
-        /** @type {(outcome: Position) => ERef<Position>} */
-        outcome => {
+        /** @type {(outcome: Position) => Promise<Position>} */
+        async outcome => {
+          await null;
+
           if (keyEQ(positive, outcome)) {
             keyEQ(outcome, harden({ apiMethodName, methodArgs })) ||
               Fail`The question's method name (${q(
@@ -98,6 +106,7 @@ const setupApiGovernance = (
               )}) and args (${methodArgs}) didn't match the outcome ${outcome}`;
 
             // E(remote)[name](args) invokes the method named 'name' on remote.
+            const governedApis = await getGovernedApis();
             return E(governedApis)
               [apiMethodName](...methodArgs)
               .then(() => {

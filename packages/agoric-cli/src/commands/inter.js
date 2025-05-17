@@ -4,26 +4,19 @@
  */
 
 // @ts-check
-import { CommanderError, InvalidArgumentError } from 'commander';
-// TODO: should get M from endo https://github.com/Agoric/agoric-sdk/issues/7090
+import { fetchEnvNetworkConfig, makeWalletUtils } from '@agoric/client-utils';
 import { makeOfferSpecShape } from '@agoric/inter-protocol/src/auction/auctionBook.js';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { objectMap } from '@agoric/internal';
-import { M, matches } from '@agoric/store';
-
+import { M, matches } from '@endo/patterns';
+import { CommanderError, InvalidArgumentError } from 'commander';
 import { normalizeAddressWithOptions, pollBlocks } from '../lib/chain.js';
 import {
   asBoardRemote,
   bigintReplacer,
   makeAmountFormatter,
 } from '../lib/format.js';
-import { getNetworkConfig } from '../lib/rpc.js';
-import {
-  getCurrent,
-  makeWalletUtils,
-  outputActionAndHint,
-  sendAction,
-} from '../lib/wallet.js';
+import { getCurrent, outputActionAndHint, sendAction } from '../lib/wallet.js';
 
 const { values } = Object;
 
@@ -33,16 +26,16 @@ const bidInvitationShape = harden({
   callPipe: [['makeBidInvitation', M.any()]],
 });
 
-/** @typedef {import('@agoric/vats/tools/board-utils.js').VBankAssetDetail } AssetDescriptor */
-/** @typedef {import('@agoric/smart-wallet/src/smartWallet.js').TryExitOfferAction } TryExitOfferAction */
-/** @typedef {import('@agoric/inter-protocol/src/auction/auctionBook.js').OfferSpec}  BidSpec */
-/** @typedef {import('@agoric/inter-protocol/src/auction/scheduler.js').ScheduleNotification} ScheduleNotification */
-/** @typedef {import('@agoric/inter-protocol/src/auction/auctionBook.js').BookDataNotification} BookDataNotification */
+/** @import {VBankAssetDetail} from '@agoric/vats/tools/board-utils.js'; */
+/** @import {TryExitOfferAction} from '@agoric/smart-wallet/src/smartWallet.js'; */
+/** @import {OfferSpec as BidSpec} from '@agoric/inter-protocol/src/auction/auctionBook.js' */
+/** @import {ScheduleNotification} from '@agoric/inter-protocol/src/auction/scheduler.js' */
+/** @import {BookDataNotification} from '@agoric/inter-protocol/src/auction/auctionBook.js' */
 
 /**
  * Format amounts, prices etc. based on brand board Ids, displayInfo
  *
- * @param {AssetDescriptor[]} assets
+ * @param {VBankAssetDetail[]} assets
  */
 const makeFormatters = assets => {
   const r4 = x => Math.round(x * 10_000) / 10_000;
@@ -102,7 +95,7 @@ const makeFormatters = assets => {
  * Dynamic check that an OfferStatus is also a BidSpec.
  *
  * @param {import('@agoric/smart-wallet/src/offers.js').OfferStatus} offerStatus
- * @param {import('../lib/wallet.js').AgoricNamesRemotes} agoricNames
+ * @param {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} agoricNames
  * @param {typeof console.warn} warn
  * returns null if offerStatus is not a BidSpec
  */
@@ -138,7 +131,7 @@ const coerceBid = (offerStatus, agoricNames, warn) => {
  *
  * @param {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
  *         { offerArgs: BidSpec}} bid
- * @param {import('agoric/src/lib/format.js').AssetDescriptor[]} assets
+ * @param {VBankAssetDetail[]} assets
  */
 export const fmtBid = (bid, assets) => {
   const fmt = makeFormatters(assets);
@@ -218,6 +211,8 @@ export const makeInterCommand = (
     try {
       return rawExec(file, args, ...opts);
     } catch (err) {
+      // InvalidArgumentError is a class constructor, and so
+      // must be invoked with `new`.
       throw new InvalidArgumentError(
         `${err.message}: is ${file} in your $PATH?`,
       );
@@ -236,9 +231,11 @@ export const makeInterCommand = (
     try {
       // XXX pass fetch to getNetworkConfig() explicitly
       // await null above makes this await safe
-      const networkConfig = await getNetworkConfig(env);
-      return makeWalletUtils({ fetch, execFileSync, delay }, networkConfig);
+      const networkConfig = await fetchEnvNetworkConfig({ env, fetch });
+      return makeWalletUtils({ fetch, delay }, networkConfig);
     } catch (err) {
+      // CommanderError is a class constructor, and so
+      // must be invoked with `new`.
       throw new CommanderError(1, 'RPC_FAIL', err.message);
     }
   };
@@ -283,14 +280,12 @@ inter auction status
          * }}
          */ opts,
       ) => {
-        const { agoricNames, readLatestHead } = await tryMakeUtils();
+        const { agoricNames, readPublished } = await tryMakeUtils();
 
-        /** @type { [ScheduleNotification, BookDataNotification, *] } */
-        // @ts-expect-error dynamic cast
         const [schedule, book, { current: params }] = await Promise.all([
-          readLatestHead(`published.auction.schedule`),
-          readLatestHead(`published.auction.book${opts.book}`),
-          readLatestHead(`published.auction.governance`),
+          readPublished('auction.schedule'),
+          readPublished(`auction.book${opts.book}`),
+          readPublished('auction.governance'),
         ]);
 
         const fmt = makeFormatters(Object.values(agoricNames.vbankAsset));
@@ -330,7 +325,7 @@ inter auction status
    * @param {string} from
    * @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
    * @param {Awaited<ReturnType<tryMakeUtils>>} tools
-   * @param {boolean?} dryRun
+   * @param {boolean | undefined} dryRun
    */
   const placeBid = async (from, offer, tools, dryRun = false) => {
     const { networkConfig, agoricNames, pollOffer } = tools;
@@ -431,6 +426,8 @@ inter auction status
   const parsePercent = v => {
     const p = Number(v);
     if (!(p >= -100 && p <= 100)) {
+      // InvalidArgumentError is a class constructor, and so
+      // must be invoked with `new`.
       throw new InvalidArgumentError('must be between -100 and 100');
     }
     return p / 100;
@@ -493,11 +490,13 @@ inter auction status
           return;
         }
 
-        const { networkConfig, readLatestHead } = await tryMakeUtils();
+        const { networkConfig, readPublished } = await tryMakeUtils();
 
-        const current = await getCurrent(from, { readLatestHead });
+        const current = await getCurrent(from, { readPublished });
         const liveIds = current.liveOffers.map(([i, _s]) => i);
         if (!liveIds.includes(id)) {
+          // InvalidArgumentError is a class constructor, and so
+          // must be invoked with `new`.
           throw new InvalidArgumentError(
             `${id} not in live offer ids: ${liveIds}`,
           );
@@ -518,7 +517,7 @@ inter auction status
         show({ timestamp, height, offerId: id, txhash });
 
         const checkGone = async blockInfo => {
-          const pollResult = await getCurrent(from, { readLatestHead });
+          const pollResult = await getCurrent(from, { readPublished });
           const found = pollResult.liveOffers.find(([i, _]) => i === id);
           if (found) throw Error('retry');
           return blockInfo;
@@ -560,11 +559,11 @@ $ inter bid list --from my-acct
        * }} opts
        */
       async opts => {
-        const { agoricNames, readLatestHead, storedWalletState } =
+        const { agoricNames, readPublished, storedWalletState } =
           await tryMakeUtils();
 
         const [current, state] = await Promise.all([
-          getCurrent(opts.from, { readLatestHead }),
+          getCurrent(opts.from, { readPublished }),
           storedWalletState(opts.from),
         ]);
         const entries = opts.all

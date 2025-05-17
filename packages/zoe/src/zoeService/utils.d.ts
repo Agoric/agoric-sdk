@@ -1,42 +1,37 @@
-import type { Callable } from '@agoric/internal/src/utils.js';
-import type { VatUpgradeResults } from '@agoric/swingset-vat';
+import type { Issuer } from '@agoric/ertp/src/types.js';
+import type { TagContainer } from '@agoric/internal/src/tagged.js';
 import type { Baggage } from '@agoric/swingset-liveslots';
-
-import type { IssuerKeywordRecord, Payment } from './types.js';
+import type { VatUpgradeResults } from '@agoric/swingset-vat';
+import type { RemotableObject } from '@endo/marshal';
+import type { FarRef } from '@endo/far';
+import type { AnyTerms, Handle, Keyword, ZCF } from '../types-index.js';
 
 // XXX https://github.com/Agoric/agoric-sdk/issues/4565
 type SourceBundle = Record<string, any>;
 
-type ContractFacet<T extends {} = {}> = {
-  readonly [P in keyof T]: T[P] extends Callable ? T[P] : never;
-};
-
 /**
  * Installation of a contract, typed by its start function.
  */
-declare const StartFunction: unique symbol;
-export type Installation<SF> = {
-  getBundle: () => SourceBundle;
-  getBundleLabel: () => string;
-  // because TS is structural, without this the generic is ignored
-  [StartFunction]: SF;
-};
-export type Instance<SF> = Handle<'Instance'> & {
-  // because TS is structural, without this the generic is ignored
-  [StartFunction]: SF;
-};
+export type Installation<SF extends ContractStartFunction | unknown> =
+  TagContainer<SF> &
+    RemotableObject & {
+      getBundle: () => SourceBundle;
+      getBundleLabel: () => string;
+    };
 
-export type InstallationStart<I> = I extends Installation<infer SF>
-  ? SF
-  : never;
+export type Instance<SF extends ContractStartFunction | unknown> =
+  TagContainer<SF> & RemotableObject & Handle<'Instance'>;
 
-type ContractStartFunction = (
-  zcf?: ZCF,
-  privateArgs?: {},
+export type InstallationStart<I> =
+  I extends Installation<infer SF> ? SF : never;
+
+export type ContractStartFunction = (
+  zcf?: ZCF<any>,
+  privateArgs?: object,
   baggage?: Baggage,
-) => ERef<{ creatorFacet?: {}; publicFacet?: {} }>;
+) => ERef<{ creatorFacet?: object; publicFacet?: object }>;
 
-export type AdminFacet<SF extends ContractStartFunction> = {
+export type AdminFacet<SF extends ContractStartFunction> = FarRef<{
   // Completion, which is currently any
   getVatShutdownPromise: () => Promise<any>;
   upgradeContract: Parameters<SF>[1] extends undefined
@@ -48,48 +43,40 @@ export type AdminFacet<SF extends ContractStartFunction> = {
   restartContract: Parameters<SF>[1] extends undefined
     ? () => Promise<VatUpgradeResults>
     : (newPrivateArgs: Parameters<SF>[1]) => Promise<VatUpgradeResults>;
-};
+  terminateContract: (Error) => void;
+}>;
 
-type StartParams<SF> = SF extends ContractStartFunction
+export type StartParams<SF> = SF extends ContractStartFunction
   ? Parameters<SF>[1] extends undefined
     ? {
-        terms: ReturnType<Parameters<SF>[0]['getTerms']>;
+        terms: ReturnType<ZcfOf<SF>['getTerms']>;
       }
     : {
-        terms: ReturnType<Parameters<SF>[0]['getTerms']>;
+        terms: ReturnType<ZcfOf<SF>['getTerms']>;
         privateArgs: Parameters<SF>[1];
       }
   : never;
 
-type StartResult<S> = S extends (...args: any) => Promise<infer U>
-  ? U
-  : ReturnType<S>;
+type StartResult<S extends (...args: any) => any> = Awaited<ReturnType<S>>;
+type ZcfOf<SF extends ContractStartFunction> = Parameters<SF>[0] extends ZCF
+  ? Parameters<SF>[0]
+  : ZCF<any>;
 
 /**
+ * @deprecated use the SF to pass the type
+ *
  * Convenience record for contract start function, merging its result with params.
  */
-export type ContractOf<S> = StartParams<S> & StartResult<S>;
-
-type StartContractInstance<C> = (
-  installation: Installation<C>,
-  issuerKeywordRecord?: IssuerKeywordRecord,
-  terms?: object,
-  privateArgs?: object,
-) => Promise<{
-  creatorFacet: C['creatorFacet'];
-  publicFacet: C['publicFacet'];
-  instance: Instance;
-  creatorInvitation: C['creatorInvitation'];
-  adminFacet: AdminFacet<any>;
-}>;
+export type ContractOf<S extends (...args: any) => any> = StartParams<S> &
+  StartResult<S>;
 
 /** The result of `startInstance` */
-export type StartedInstanceKit<SF> = {
+export type StartedInstanceKit<SF extends ContractStartFunction> = {
   instance: Instance<SF>;
   adminFacet: AdminFacet<SF>;
   // theses are empty by default. the return type will override
-  creatorFacet: {};
-  publicFacet: {};
+  creatorFacet: object;
+  publicFacet: object;
 } & (SF extends ContractStartFunction
   ? // override if the start function specfies the types
     Awaited<ReturnType<SF>>
@@ -112,23 +99,37 @@ export type StartedInstanceKit<SF> = {
  * the creator facet, public facet, and creator invitation as defined
  * by the contract.
  */
+// XXX SF should extend ContractStartFunction but doing that triggers a bunch of tech debt type errors
 export type StartInstance = <SF>(
   installation: Installation<SF> | PromiseLike<Installation<SF>>,
-  issuerKeywordRecord?: IssuerKeywordRecord,
+  issuerKeywordRecord?: Record<Keyword, Issuer<any>>,
   // 'brands' and 'issuers' need not be passed in; Zoe provides them as StandardTerms
   terms?: Omit<StartParams<SF>['terms'], 'brands' | 'issuers'>,
+  // @ts-expect-error XXX
   privateArgs?: Parameters<SF>[1],
   label?: string,
+  // @ts-expect-error XXX
 ) => Promise<StartedInstanceKit<SF>>;
 
+// XXX SF should extend ContractStartFunction but doing that triggers a bunch of tech debt type errors
 export type GetPublicFacet = <SF>(
   instance: Instance<SF> | PromiseLike<Instance<SF>>,
+  // @ts-expect-error XXX
 ) => Promise<StartResult<SF>['publicFacet']>;
 
 export type GetTerms = <SF>(instance: Instance<SF>) => Promise<
   // only type if 'terms' info is available
-  StartParams<SF>['terms'] extends {}
+  StartParams<SF>['terms'] extends object
     ? StartParams<SF>['terms']
     : // XXX returning `any` in this case
       any
 >;
+
+export type InstanceRecord = {
+  installation: Installation<any>;
+  instance: Instance<any>;
+  /**
+   * - contract parameters
+   */
+  terms: AnyTerms;
+};

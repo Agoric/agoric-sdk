@@ -1,23 +1,23 @@
-import { assert, Fail, quote as q } from '@agoric/assert';
+import { assert, Fail, q } from '@endo/errors';
 import { isNat } from '@endo/nat';
 import { makeVatTranslators } from './vatTranslator.js';
 import { insistVatDeliveryResult } from '../lib/message.js';
 import djson from '../lib/djson.js';
 
 /**
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryResult} VatDeliveryResult
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallResult} VatSyscallResult
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallHandler} VatSyscallHandler
- * @typedef {import('../types-external.js').KernelDeliveryObject} KernelDeliveryObject
- * @typedef {import('../types-internal.js').VatManager} VatManager
- * @typedef {import('../types-internal.js').VatID} VatID
- * @typedef {import('../types-internal.js').TranscriptDeliveryInitializeWorkerOptions} TDInitializeWorkerOptions
- * @typedef {import('../types-internal.js').TranscriptDeliveryInitializeWorker} TDInitializeWorker
- * @typedef {import('../types-internal.js').TranscriptDeliveryShutdownWorker} TDShutdownWorker
- * @typedef {import('../types-internal.js').TranscriptDeliveryResults} TranscriptDeliveryResults
- * @typedef {import('../types-internal.js').TranscriptEntry} TranscriptEntry
+ * @import {VatDeliveryObject} from '@agoric/swingset-liveslots'
+ * @import {VatDeliveryResult} from '@agoric/swingset-liveslots'
+ * @import {VatSyscallObject} from '@agoric/swingset-liveslots'
+ * @import {VatSyscallResult} from '@agoric/swingset-liveslots'
+ * @import {VatSyscallHandler} from '@agoric/swingset-liveslots'
+ * @import {KernelDeliveryObject} from '../types-external.js'
+ * @import {VatManager} from '../types-internal.js'
+ * @import {VatID} from '../types-internal.js'
+ * @import {TranscriptDeliveryInitializeWorkerOptions} from '../types-internal.js'
+ * @import {TranscriptDeliveryInitializeWorker} from '../types-internal.js'
+ * @import {TranscriptDeliveryShutdownWorker} from '../types-internal.js'
+ * @import {TranscriptDeliveryResults} from '../types-internal.js'
+ * @import {TranscriptEntry} from '../types-internal.js'
  * @typedef {{ body: string, slots: unknown[] }} Capdata
  * @typedef { [unknown, ...unknown[]] } Tagged
  * @typedef { { moduleFormat: string }} Bundle
@@ -97,6 +97,7 @@ export function makeSyscallSimulator(
   deliveryNum,
   transcriptEntry,
 ) {
+  const context = `anachrophobia in ${vatID} delivery d${deliveryNum}`;
   const syscallsExpected = [...transcriptEntry.sc]; // copy
   const syscallsMade = [];
   // syscallStatus's length will be max(syscallsExpected,
@@ -107,31 +108,36 @@ export function makeSyscallSimulator(
   let replayError; // sticky
 
   const explain = () => {
-    console.log(`anachrophobia strikes ${vatID} on delivery ${deliveryNum}`);
+    console.log(
+      `anachrophobia strikes ${vatID} delivery d${deliveryNum} syscalls`,
+    );
     for (const [idx, status] of syscallStatus.entries()) {
       const expected = syscallsExpected[idx];
       const got = syscallsMade[idx];
       switch (status) {
         case 'ok': {
-          console.log(`sc[${idx}]: ok: ${djson.stringify(got)}`);
+          console.log(`sc${idx}: ok: ${djson.stringify(got)}`);
           break;
         }
         case 'wrong': {
-          console.log(`sc[${idx}]: wrong`);
-          console.log(`  expected: ${djson.stringify(expected.s)}`);
-          console.log(`  got     : ${djson.stringify(got)}`);
+          console.log(
+            `
+sc${idx}: WRONG
+  expected: ${djson.stringify(expected.s)}
+  got     : ${djson.stringify(got)}`.trimStart(),
+          );
           break;
         }
         case 'extra': {
-          console.log(`sc[${idx}]: extra: ${djson.stringify(got)}`);
+          console.log(`sc${idx}: EXTRA: ${djson.stringify(got)}`);
           break;
         }
         case 'missing': {
-          console.log(`sc[${idx}]: missing: ${djson.stringify(expected.s)}`);
+          console.log(`sc${idx}: MISSING: ${djson.stringify(expected.s)}`);
           break;
         }
         default:
-          Fail`bad ${status}`;
+          Fail`sc${idx}: bad status ${status}`;
       }
     }
   };
@@ -140,16 +146,16 @@ export function makeSyscallSimulator(
     // slog entries have no kernel-translated kso/ksr
     const finish = kernelSlog.syscall(vatID, undefined, vso);
     const expected = syscallsExpected[syscallsMade.length];
-    syscallsMade.push(vso);
+    const idx = syscallsMade.push(vso) - 1;
     if (!expected) {
       syscallStatus.push('extra');
-      const error = Error(`anachrophobia in ${vatID}: extra syscall`);
+      const error = Error(`${context}: extra syscall at index sc${idx}`);
       replayError ||= error;
       throw error;
     }
     if (!syscallsAreIdentical(expected.s, vso)) {
       syscallStatus.push('wrong');
-      const error = Error(`anachrophobia in ${vatID}: wrong syscall`);
+      const error = Error(`${context}: wrong syscall at index sc${idx}`);
       replayError ||= error;
       throw error;
     }
@@ -159,12 +165,14 @@ export function makeSyscallSimulator(
   };
 
   const finishSimulation = () => {
-    if (syscallsMade.length < syscallsExpected.length) {
-      const missing = syscallsExpected.length - syscallsMade.length;
+    const missing = syscallsExpected.length - syscallsMade.length;
+    if (missing > 0) {
       for (let i = 0; i < missing; i += 1) {
         syscallStatus.push('missing');
       }
-      const error = Error(`anachrophobia in ${vatID}: missing syscalls`);
+      const error = Error(
+        `${context}: missing ${missing} syscall(s) at index sc${syscallsMade.length}`,
+      );
       replayError ||= error;
     }
 
@@ -291,7 +299,10 @@ export function makeVatWarehouse({
    */
   async function replayTranscript(vatID, vatKeeper, manager) {
     const total = vatKeeper.transcriptSize();
-    kernelSlog.write({ type: 'start-replay', vatID, deliveries: total });
+    const finish = kernelSlog.startDuration(['start-replay', 'finish-replay'], {
+      vatID,
+      deliveries: total,
+    });
     let first = true;
     for await (const [deliveryNum, te] of vatKeeper.getTranscript()) {
       // if (deliveryNum % 100 === 0) {
@@ -318,7 +329,7 @@ export function makeVatWarehouse({
       finishSlog(status);
       sim.finishSimulation(); // will throw if syscalls did not match
     }
-    kernelSlog.write({ type: 'finish-replay', vatID });
+    finish({ deliveries: undefined });
   }
 
   /**
@@ -344,7 +355,7 @@ export function makeVatWarehouse({
     // initialize-worker event, to represent the vatLoader.create()
     // we're about to do
     if (options.useTranscript && vatKeeper.transcriptSize() === 0) {
-      /** @type { TDInitializeWorkerOptions } */
+      /** @type { TranscriptDeliveryInitializeWorkerOptions } */
       const initOpts = { source: {}, workerOptions: options.workerOptions };
       // if the vat is somehow using a full bundle, we don't want that
       // in the transcript: we only record bundleIDs
@@ -389,7 +400,6 @@ export function makeVatWarehouse({
     //   entriesReplayed, // retval of replayTranscript() above
     // );
     ephemeral.vats.set(vatID, result);
-    // eslint-disable-next-line no-use-before-define
     await applyAvailabilityPolicy(vatID);
     return result;
   }
@@ -544,6 +554,10 @@ export function makeVatWarehouse({
       vatKeeper.addToTranscript(getTranscriptEntry(vd, deliveryResult));
     }
 
+    if (kd[0] === 'bringOutYourDead') {
+      vatKeeper.clearReapDirt(); // BOYD zeros out the when-to-BOYD counters
+    }
+
     // TODO: if per-vat policy decides it wants a BOYD or heap snapshot,
     // now is the time to do it, or to ask the kernel to schedule it
 
@@ -552,18 +566,20 @@ export function makeVatWarehouse({
 
   /**
    * Save a heap snapshot for the given vatID, if the snapshotInterval
-   * is satisified
+   * is satisfied or a lower explicit delivery count has been reached.
    *
    * @param {VatID} vatID
+   * @param {number} [minDeliveryCount]
    */
-  async function maybeSaveSnapshot(vatID) {
-    const recreate = true; // PANIC in the failure case
-    const { manager } = await ensureVatOnline(vatID, recreate);
-    if (!manager.makeSnapshot) {
-      return false; // worker cannot make snapshots
+  async function maybeSaveSnapshot(vatID, minDeliveryCount = snapshotInterval) {
+    kernelKeeper.vatIsAlive(vatID) || Fail`${q(vatID)}: not alive`;
+    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+    const vatOptions = vatKeeper.getOptions();
+
+    if (!vatOptions.useTranscript) {
+      return false;
     }
 
-    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     let reason;
 
     const hasSnapshot = !!vatKeeper.getSnapshotInfo();
@@ -572,13 +588,19 @@ export function makeVatWarehouse({
     if (!hasSnapshot && deliveriesInSpan >= snapshotInitial) {
       // begin snapshot after 'snapshotInitial' deliveries in an incarnation
       reason = { snapshotInitial };
-    } else if (deliveriesInSpan >= snapshotInterval) {
+    } else if (deliveriesInSpan >= minDeliveryCount) {
       // begin snapshot after 'snapshotInterval' deliveries in a span
-      reason = { snapshotInterval };
+      reason = { snapshotInterval: minDeliveryCount };
     }
     // console.log('maybeSaveSnapshot: reason:', reason);
     if (!reason) {
       return false; // not time to make a snapshot
+    }
+
+    const recreate = true; // PANIC in the failure case
+    const { manager } = await ensureVatOnline(vatID, recreate);
+    if (!manager.makeSnapshot) {
+      return false; // worker cannot make snapshots
     }
 
     // always do a bringOutYourDead just before a snapshot, to shake
@@ -592,7 +614,6 @@ export function makeVatWarehouse({
     //
     /** @type { KernelDeliveryObject } */
     const kd = harden(['bringOutYourDead']);
-    // eslint-disable-next-line no-use-before-define
     const vd = kernelDeliveryToVatDelivery(vatID, kd);
     const vs = kernelSlog.provideVatSlogger(vatID).vatSlog;
     await deliverToVat(vatID, kd, vd, vs);

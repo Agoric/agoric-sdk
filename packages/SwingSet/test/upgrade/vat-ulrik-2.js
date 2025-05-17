@@ -1,5 +1,5 @@
 import { Far, E } from '@endo/far';
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import { initEmpty } from '@agoric/store';
 import { defineDurableKind, defineDurableKindMulti } from '@agoric/vat-data';
 
@@ -61,6 +61,18 @@ export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
     }
   }
 
+  const watcherHandle = baggage.get('wh');
+  const initWatcher = () => harden({ result: ['unresolved'] });
+  const watcherMethods = {
+    onFulfilled: ({ state }, data) =>
+      (state.result = harden(['fulfill', data])),
+    onRejected: ({ state }, reason) =>
+      (state.result = harden(['reject', reason])),
+    getResult: ({ state }) => state.result,
+  };
+  defineDurableKind(watcherHandle, initWatcher, watcherMethods);
+  const watcher = baggage.get('watcher');
+
   const root = Far('root', {
     getVersion: () => 'v2',
     getParameters: () => vatParameters,
@@ -89,6 +101,7 @@ export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
       return E(handler).ping(`ping ${counter}`);
     },
     getNewDurandal: () => newDur,
+    getWatcherResult: () => watcher.getResult(),
   });
   // buildRootObject() is allowed to return a Promise, as long as it fulfills
   // promptly (we added this in #5246 to allow ZCF to use the async

@@ -1,6 +1,6 @@
 // @jessie-check
 
-/// <reference types="ses"/>
+/// <reference types="ses" />
 export {
   M,
   makeScalarMapStore,
@@ -42,12 +42,15 @@ export {
   prepareSingleton,
 } from './exo-utils.js';
 
-/** @typedef {import('@agoric/swingset-liveslots').DurableKindHandle} DurableKindHandle */
-/** @template T @typedef {import('@agoric/swingset-liveslots').DefineKindOptions<T>} DefineKindOptions */
-
+// TODO re-export these
+/**
+ * @template T @typedef
+ *   {import('@agoric/swingset-liveslots').DefineKindOptions<T>}
+ *   DefineKindOptions
+ */
 // Copy this type because aliasing it by `import('@agoric/swingset-liveslots').Baggage`
 // causes this error in typedoc: Expected a symbol for node with kind Identifier
-/** @typedef {MapStore<string, any>} Baggage */
+/** @typedef {import('@agoric/swingset-liveslots').MapStore<string, any>} Baggage */
 
 // //////////////////////////// deprecated /////////////////////////////////////
 

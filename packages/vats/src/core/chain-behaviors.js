@@ -1,4 +1,10 @@
 /* global globalThis */
+import { Fail } from '@endo/errors';
+import * as farExports from '@endo/far';
+import { E, Far } from '@endo/far';
+import { importBundle } from '@endo/import-bundle';
+import { makePromiseKit } from '@endo/promise-kit';
+
 import { allValues, BridgeId as BRIDGE_ID } from '@agoric/internal';
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import { makePrioritySendersManager } from '@agoric/internal/src/priority-senders.js';
@@ -9,15 +15,15 @@ import {
 } from '@agoric/notifier';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { prepareRecorderKit } from '@agoric/zoe/src/contractSupport/recorder.js';
-import * as farExports from '@endo/far';
-import { E, Far } from '@endo/far';
-import { importBundle } from '@endo/import-bundle';
-import { makePromiseKit } from '@endo/promise-kit';
 import { PowerFlags } from '../walletFlags.js';
 import { BASIC_BOOTSTRAP_PERMITS } from './basic-behaviors.js';
 import { agoricNamesReserved, callProperties, extractPowers } from './utils.js';
+import { makeScopedBridge } from '../bridge.js';
 
-const { Fail } = assert;
+/**
+ * @import {BridgeMessage} from '@agoric/cosmic-swingset/src/types.js';
+ */
+
 const { keys } = Object;
 
 /**
@@ -39,7 +45,8 @@ export const bridgeCoreEval = async allPowers => {
   const endowments = {
     VatData: globalThis.VatData,
     console,
-    assert,
+    // See https://github.com/Agoric/agoric-sdk/issues/9515
+    assert: globalThis.assert,
     Base64: globalThis.Base64, // Present only on XSnap
     URL: globalThis.URL, // Absent only on XSnap
   };
@@ -54,16 +61,10 @@ export const bridgeCoreEval = async allPowers => {
 
   // Register a coreEval handler over the bridge.
   const handler = Far('coreHandler', {
+    /** @param {BridgeMessage} obj */
     async fromBridge(obj) {
       switch (obj.type) {
         case 'CORE_EVAL': {
-          /**
-           * Type defined by
-           * `agoric-sdk/golang/cosmos/proto/agoric/swingset/swingset.proto`
-           * CoreEval.
-           *
-           * @type {{ evals: { json_permits: string; js_code: string }[] }}
-           */
           const { evals } = obj;
           return Promise.all(
             evals.map(({ json_permits: jsonPermit, js_code: code }) =>
@@ -109,14 +110,12 @@ export const bridgeCoreEval = async allPowers => {
     // Not running with a bridge.
     return;
   }
-  await E(bridgeManager).register(BRIDGE_ID.CORE, handler);
+  await makeScopedBridge(bridgeManager, BRIDGE_ID.CORE, handler);
 };
 harden(bridgeCoreEval);
 
 /**
- * @param {BootstrapPowers & {
- *   consume: { loadCriticalVat: ERef<VatLoader<ProvisioningVat>> };
- * }} powers
+ * @param {BootstrapPowers} powers
  */
 export const makeProvisioner = async ({
   consume: { clientCreator, loadCriticalVat },
@@ -156,6 +155,7 @@ export const bridgeProvisioner = async ({
   // Register a provisioning handler over the bridge.
   const handler = provisioning
     ? Far('provisioningHandler', {
+        /** @param {BridgeMessage} obj */
         async fromBridge(obj) {
           switch (obj.type) {
             case 'PLEASE_PROVISION': {
@@ -308,10 +308,7 @@ export const startTimerService = async ({
 harden(startTimerService);
 
 /**
- * @param {BootDevices<ChainDevices> &
- *   BootstrapSpace & {
- *     consume: { loadCriticalVat: ERef<VatLoader<ChainStorageVat>> };
- *   }} powers
+ * @param {BootDevices<ChainDevices> & BootstrapSpace} powers
  */
 export const makeBridgeManager = async ({
   consume: { loadCriticalVat },
@@ -337,19 +334,19 @@ export const makeBridgeManager = async ({
   const bridgeManager = E(vat).provideManagerForBridge(bridge);
   bridgeManagerP.resolve(bridgeManager);
   provisionBridgeManager.resolve(
-    E(bridgeManager).register(BRIDGE_ID.PROVISION),
+    makeScopedBridge(bridgeManager, BRIDGE_ID.PROVISION),
   );
   provisionWalletBridgeManager.resolve(
-    E(bridgeManager).register(BRIDGE_ID.PROVISION_SMART_WALLET),
+    makeScopedBridge(bridgeManager, BRIDGE_ID.PROVISION_SMART_WALLET),
   );
-  walletBridgeManager.resolve(E(bridgeManager).register(BRIDGE_ID.WALLET));
+  walletBridgeManager.resolve(
+    makeScopedBridge(bridgeManager, BRIDGE_ID.WALLET),
+  );
 };
 harden(makeBridgeManager);
 
 /**
- * @param {BootstrapSpace & {
- *   consume: { loadCriticalVat: ERef<VatLoader<ChainStorageVat>> };
- * }} powers
+ * @param {BootstrapSpace} powers
  */
 export const makeChainStorage = async ({
   consume: { loadCriticalVat, bridgeManager: bridgeManagerP },
@@ -362,12 +359,14 @@ export const makeChainStorage = async ({
   if (!bridgeManager) {
     console.warn('Cannot support chainStorage without an actual chain.');
     chainStorageP.resolve(null);
-    // @ts-expect-error expects value or undefined
-    storageBridgeManagerP.resolve(null);
+    storageBridgeManagerP.resolve(undefined);
     return;
   }
 
-  const storageBridgeManager = E(bridgeManager).register(BRIDGE_ID.STORAGE);
+  const storageBridgeManager = makeScopedBridge(
+    bridgeManager,
+    BRIDGE_ID.STORAGE,
+  );
   storageBridgeManagerP.resolve(storageBridgeManager);
 
   const vat = E(loadCriticalVat)('bridge');
@@ -380,9 +379,7 @@ export const makeChainStorage = async ({
 };
 
 /**
- * @param {BootstrapSpace & {
- *   consume: { loadCriticalVat: ERef<VatLoader<ChainStorageVat>> };
- * }} powers
+ * @param {BootstrapSpace} powers
  */
 export const produceHighPrioritySendersManager = async ({
   consume: { loadCriticalVat, storageBridgeManager: storageBridgeManagerP },
@@ -442,7 +439,7 @@ export const publishAgoricNamesToChainStorage = async ({
 };
 
 /**
- * @deprecated use reflectAgoricNamesToChainStorage
+ * @deprecated use publishAgoricNamesToChainStorage
  * @param {BootstrapPowers} powers
  * @param {{
  *   options?: {

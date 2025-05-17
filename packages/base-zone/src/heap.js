@@ -1,8 +1,7 @@
 // @ts-check
 // @jessie-check
-/// <reference path="./store-types.d.ts" />
 
-import { Far } from '@endo/far';
+import { Far, isPassable } from '@endo/pass-style';
 import { makeExo, defineExoClass, defineExoClassKit } from '@endo/exo';
 import {
   makeScalarMapStore,
@@ -13,7 +12,7 @@ import {
 
 import { makeOnceKit } from './make-once.js';
 import { agoricVatDataKeys as keys } from './keys.js';
-import { isPassable } from './is-passable.js';
+import { watchPromise } from './watch-promise.js';
 
 /**
  * @type {import('./types.js').Stores}
@@ -51,6 +50,7 @@ export const makeHeapZone = (baseLabel = 'heapZone') => {
     subZone: wrapProvider(makeSubZone),
 
     makeOnce,
+    watchPromise,
     detached: detachedHeapStores.detached,
     isStorable: detachedHeapStores.isStorable,
 

@@ -1,11 +1,8 @@
 // This file can contain .js-specific Typescript compiler config.
 {
   "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "allowSyntheticDefaultImports": true,
-  },
+  "compilerOptions": {},
   "include": [
-    "exported.js",
     "src/**/*.js",
     "test/**/*.js",
   ],

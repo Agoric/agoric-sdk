@@ -1,4 +1,4 @@
-import { Fail, q } from '@agoric/assert';
+import { Fail, q } from '@endo/errors';
 
 /**
  * @typedef { import('./snapStore.js').SnapStoreInternal } SnapStoreInternal
@@ -6,6 +6,9 @@ import { Fail, q } from '@agoric/assert';
  * @typedef { import('./bundleStore.js').BundleStoreInternal } BundleStoreInternal
  *
  * @typedef {{
+ *    dirPath: string | null,
+ *    db: ReturnType<import('better-sqlite3')>,
+ *    kvStore: import('./kvStore.js').KVStore,
  *    transcriptStore: TranscriptStoreInternal,
  *    snapStore: SnapStoreInternal,
  *    bundleStore: BundleStoreInternal,

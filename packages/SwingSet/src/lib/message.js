@@ -1,5 +1,9 @@
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 import { insistCapData } from './capdata.js';
+
+/**
+ * @import {VatSyscallObject, VatSyscallResult, VatDeliveryResult} from '@agoric/swingset-liveslots';
+ */
 
 /**
  * Assert function to ensure that something expected to be a message object

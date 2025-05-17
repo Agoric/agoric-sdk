@@ -4,8 +4,9 @@
  * UNKNOWN is an escape hatch for types we haven't added yet. If you are
  * developing a new contract and use UNKNOWN, please also file an issue to ask
  * us to support the new type.
+ * @enum {typeof ParamType[keyof typeof ParamType]}
  */
-export const ParamTypes = /** @type {const} */ ({
+export const ParamType = /** @type {const} */ ({
   AMOUNT: 'amount',
   BRAND: 'brand',
   INSTALLATION: 'installation',
@@ -19,6 +20,8 @@ export const ParamTypes = /** @type {const} */ ({
   RELATIVE_TIME: 'relativeTime',
   UNKNOWN: 'unknown',
 });
+harden(ParamType);
 
-harden(ParamTypes);
-/** @typedef {typeof ParamTypes[keyof typeof ParamTypes]} ParamType */
+// For backwards compatibility
+// Shallow copy to work around TS d.ts defining an empty namespace instead of an object
+export const ParamTypes = { ...ParamType };

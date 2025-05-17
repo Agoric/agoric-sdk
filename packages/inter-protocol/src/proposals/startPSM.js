@@ -1,11 +1,12 @@
 // @jessie-check
 
 import { makeMap } from 'jessie.js';
+import { X } from '@endo/errors';
+import { E } from '@endo/far';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
-import { E } from '@endo/far';
 import {
   makeHistoryReviver,
   makeBoardRemote,
@@ -23,12 +24,11 @@ import {
   inviteToEconCharter,
 } from './committee-proposal.js';
 
-/** @typedef {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifest} BootstrapManifest */
-/** @typedef {import('../psm/psm.js').MetricsNotification} MetricsNotification */
-/** @typedef {import('./econ-behaviors.js').EconomyBootstrapPowers} EconomyBootstrapPowers */
+/** @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js' */
+/** @import {MetricsNotification} from '../psm/psm.js' */
+/** @import {EconomyBootstrapPowers} from './econ-behaviors.js' */
 
 const BASIS_POINTS = 10000n;
-const { details: X } = assert;
 
 export { inviteCommitteeMembers, startEconCharter, inviteToEconCharter };
 
@@ -347,22 +347,27 @@ export const makeAnchorAsset = async (
     }),
   );
 
-  const { creatorFacet: mint, publicFacet: issuer } = /**
-   * @type {{
+  /**
+   * @typedef {{
    *   creatorFacet: ERef<Mint<'nat'>>;
    *   publicFacet: ERef<Issuer<'nat'>>;
-   * }}
-   */ (
-    await E(startUpgradable)({
-      installation: mintHolder,
-      label: keyword,
-      terms,
-    })
-  );
+   * }} PsmKit
+   */
+
+  const { creatorFacet: mint, publicFacet: issuer } =
+    /** @type {PsmKit} */
+    (
+      await E(startUpgradable)({
+        installation: mintHolder,
+        label: keyword,
+        terms,
+      })
+    );
 
   const brand = await E(issuer).getBrand();
   const kit = harden({ mint, issuer, brand });
 
+  // @ts-expect-error XXX AssetIssuerKit
   testFirstAnchorKit.resolve(kit);
 
   const toSlotReviver = makeHistoryReviver(
@@ -397,13 +402,14 @@ export const makeAnchorAsset = async (
       denom,
       keyword,
       proposedName,
+      // @ts-expect-error XXX AssetIssuerKit
       kit, // with mint
     ),
   ]);
 };
 harden(makeAnchorAsset);
 
-/** @typedef {import('./econ-behaviors.js').EconomyBootstrapSpace} EconomyBootstrapSpace */
+/** @import {EconomyBootstrapSpace} from './econ-behaviors.js' */
 
 export const INVITE_PSM_COMMITTEE_MANIFEST = harden(
   /** @type {BootstrapManifest} */ ({

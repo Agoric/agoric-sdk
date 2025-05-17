@@ -1,5 +1,5 @@
 import { Nat } from '@endo/nat';
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import { kunser } from '@agoric/kmarshal';
 import { buildSerializationTools } from '../lib/deviceTools.js';
 import { insistVatID } from '../../lib/id.js';
@@ -82,6 +82,7 @@ bundleID before submitting to the kernel), or (temporarily) a full bundle.
  * @typedef { string } VatID
  * @typedef { string } UpgradeID
  * @typedef {{
+ *  changeOptions: (vatID: string, options: {}) => void;
  *  createMeter: (remaining: bigint, threshold: bigint) => MeterID
  *  createUnlimitedMeter: () => MeterID
  *  addMeterRemaining: (meterID: MeterID, delta: bigint) => void
@@ -89,7 +90,8 @@ bundleID before submitting to the kernel), or (temporarily) a full bundle.
  *  getMeter: (meterID: MeterID) => { remaining: bigint, threshold: bigint }
  *  createByBundle: (bundle: Bundle, options: {}) => VatID
  *  createByBundleID: (bundleID: BundleID, options: {}) => VatID
- *  upgradeVat: (bundleID: BundleID, vatParameters: {}) => UpgradeID
+ *  getBundleIDByName: (name: string) => string;
+ *  upgradeVat: (vatID: string, bundleID: BundleID, _vatParameters: unknown, upgradeMessage: string) => UpgradeID;
  *  terminateWithFailure: (vatID: VatID, reason: {}) => void
  *  getBundleCap: (bundleID: BundleID) => BundleCap
  *  getNamedBundleCap: (name: string) => BundleCap
@@ -156,6 +158,7 @@ export function buildDevice(tools, endowments) {
 
         // D(devices.vatAdmin).createMeter(remaining, threshold) -> meterID
         if (method === 'createMeter') {
+          /** @type {any} */
           const args = unserialize(argsCapdata);
           const [remaining, threshold] = args;
           assert.typeof(remaining, 'bigint', 'createMeter() remaining');
@@ -172,6 +175,7 @@ export function buildDevice(tools, endowments) {
 
         // D(devices.vatAdmin).addMeterRemaining(meterID, delta)
         if (method === 'addMeterRemaining') {
+          /** @type {any} */
           const args = unserialize(argsCapdata);
           const [meterID, delta] = args;
           assert.typeof(meterID, 'string', 'addMeterRemaining() meterID');
@@ -182,6 +186,7 @@ export function buildDevice(tools, endowments) {
 
         // D(devices.vatAdmin).setMeterThreshold(meterID, threshold)
         if (method === 'setMeterThreshold') {
+          /** @type {any} */
           const args = unserialize(argsCapdata);
           const [meterID, threshold] = args;
           assert.typeof(meterID, 'string', 'setMeterThreshold() meterID');
@@ -192,6 +197,7 @@ export function buildDevice(tools, endowments) {
 
         // D(devices.vatAdmin).getMeter(meterID) -> { remaining, threshold }
         if (method === 'getMeter') {
+          /** @type {any} */
           const args = unserialize(argsCapdata);
           const [meterID] = args;
           assert.typeof(meterID, 'string', 'getMeter() meterID');
@@ -265,6 +271,7 @@ export function buildDevice(tools, endowments) {
         // D(devices.bundle).getBundleCap(id) -> bundlecap
         if (method === 'getBundleCap') {
           const args = unserialize(argsCapdata);
+          /** @type {any} */
           const [bundleID] = args;
           assert.typeof(bundleID, 'string', 'getBundleCap() bundleID');
           assert(bundleIDRE.test(bundleID), 'getBundleCap() not a bundleID');
@@ -273,6 +280,7 @@ export function buildDevice(tools, endowments) {
         // D(devices.bundle).getNamedBundleCap(name) -> bundlecap
         if (method === 'getNamedBundleCap') {
           const args = unserialize(argsCapdata);
+          /** @type {any} */
           const [name] = args;
           assert.typeof(name, 'string', 'getNamedBundleCap() name');
           let bundleID;
@@ -287,6 +295,7 @@ export function buildDevice(tools, endowments) {
         // D(devices.bundle).getBundleIDByName(name) -> id
         if (method === 'getBundleIDByName') {
           const args = unserialize(argsCapdata);
+          /** @type {any} */
           const [name] = args;
           assert.typeof(name, 'string', 'getBundleIDByName() name');
           let bundleID;

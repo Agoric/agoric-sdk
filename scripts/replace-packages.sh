@@ -13,8 +13,9 @@ DSTDIR=${2-$PWD/node_modules}
 # Install and build the source directory.
 pushd "$SRCDIR"
 yarn install
-yarn build
-yarn --silent workspaces info | jq -r '.[].location' | while read -r dir; do
+npm run build
+
+npm query .workspace | jq -r '.[].location' | while read -r dir; do
   # Skip private packages.
   test "$(jq .private < "$dir/package.json")" != true || continue
 
@@ -23,7 +24,7 @@ yarn --silent workspaces info | jq -r '.[].location' | while read -r dir; do
   name=$(jq -r .name < package.json)
   stem=$(echo "$name" | sed -e 's!^@!!; s!/!-!g;')
   rm -f "${stem}"-*.tgz
-  yarn pack
+  npm pack
   tar -xvf "${stem}"-*.tgz
 
   # Replace the destination package.

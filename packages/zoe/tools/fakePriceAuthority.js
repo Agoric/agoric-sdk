@@ -1,18 +1,24 @@
-import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
-import { makePromiseKit } from '@endo/promise-kit';
-import {
-  makeNotifierKit,
-  makeNotifierFromAsyncIterable,
-} from '@agoric/notifier';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { makePromiseKit } from '@endo/promise-kit';
+
+import { AmountMath } from '@agoric/ertp';
+import {
+  makeNotifierFromAsyncIterable,
+  makeNotifierKit,
+} from '@agoric/notifier';
 import { TimeMath } from '@agoric/time';
 
-import { natSafeMath } from '../src/contractSupport/index.js';
+import {
+  makePriceQuoteIssuer,
+  natSafeMath,
+} from '../src/contractSupport/index.js';
 
-import './types-ambient.js';
+/**
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ */
 
-const { Fail } = assert;
 const { coerceRelativeTimeRecord } = TimeMath;
 
 // 'if (a >= b)' becomes 'if (timestampGTE(a,b))'
@@ -26,9 +32,9 @@ const timestampLTE = (a, b) => TimeMath.compareAbs(a, b) <= 0;
  * @property {Brand<'nat'>} actualBrandOut
  * @property {Array<number>} [priceList]
  * @property {Array<[number, number]>} [tradeList]
- * @property {ERef<import('@agoric/time').TimerService>} timer
+ * @property {import('@agoric/time').TimerService} timer
  * @property {import('@agoric/time').RelativeTime} [quoteInterval]
- * @property {ERef<Mint<'set'>>} [quoteMint]
+ * @property {ERef<Mint<'set', PriceDescription>>} [quoteMint]
  * @property {Amount<'nat'>} [unitAmountIn]
  */
 
@@ -48,7 +54,7 @@ export async function makeFakePriceAuthority(options) {
     timer,
     unitAmountIn = AmountMath.make(actualBrandIn, 1n),
     quoteInterval = 1n,
-    quoteMint = makeIssuerKit('quote', AssetKind.SET).mint,
+    quoteMint = makePriceQuoteIssuer().mint,
   } = options;
 
   tradeList ||
@@ -115,16 +121,19 @@ export async function makeFakePriceAuthority(options) {
       natSafeMath.multiply(amountIn.value, tradeValueOut),
       tradeValueIn,
     );
+    /** @type {Amount<'set', PriceDescription>} */
     const quoteAmount = AmountMath.make(
       quoteBrand,
-      harden([
-        {
-          amountIn,
-          amountOut: AmountMath.make(actualBrandOut, valueOut),
-          timer,
-          timestamp: quoteTime,
-        },
-      ]),
+      /** @type {[PriceDescription]} */ (
+        harden([
+          {
+            amountIn,
+            amountOut: AmountMath.make(actualBrandOut, valueOut),
+            timer,
+            timestamp: quoteTime,
+          },
+        ])
+      ),
     );
     const quote = harden({
       quotePayment: E(quoteMint).mintPayment(quoteAmount),
@@ -259,6 +268,7 @@ export async function makeFakePriceAuthority(options) {
       record = await ticker.getUpdateSince(record.updateCount);
     }
   }
+  harden(generateQuotes);
 
   /** @type {PriceAuthority} */
   const priceAuthority = Far('fake price authority', {

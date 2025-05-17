@@ -1,6 +1,10 @@
 // @ts-check
 
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
+
+/**
+ * @import {KVStore} from '@agoric/swing-store';
+ */
 
 /**
  * Iterate over keys with a given prefix, in lexicographic order,
@@ -9,7 +13,8 @@ import { Fail } from '@agoric/assert';
  * @param {KVStore} kvStore
  * @param {string} prefix
  * @param {string} [exclusiveEnd]
- * @yields {string} the next key with the prefix that is not >= exclusiveEnd
+ * @yields {{key: string; suffix: string}} the next `key` with the prefix that is not >= exclusiveEnd
+ * and the `suffix` which is obtained by stripping the supplied prefix from the key
  */
 export function* enumeratePrefixedKeys(kvStore, prefix, exclusiveEnd) {
   /** @type {string | undefined} */
@@ -22,11 +27,15 @@ export function* enumeratePrefixedKeys(kvStore, prefix, exclusiveEnd) {
     if (exclusiveEnd && key >= exclusiveEnd) {
       break;
     }
-    yield key;
+    yield { key, suffix: key.slice(prefix.length) };
   }
 }
+harden(enumeratePrefixedKeys);
 
-// NOTE: awkward naming: the thing that returns a stream of keys is named
+/**
+ * @param {KVStore} kvStore
+ * @param {string} prefix
+ */ // NOTE: awkward naming: the thing that returns a stream of keys is named
 // "enumerate..." while the thing that returns a stream of values is named
 // "get..."
 function* enumerateNumericPrefixedKeys(kvStore, prefix) {
@@ -42,13 +51,23 @@ function* enumerateNumericPrefixedKeys(kvStore, prefix) {
     }
   }
 }
+harden(enumerateNumericPrefixedKeys);
 
+/**
+ * @param {KVStore} kvStore
+ * @param {string} prefix
+ */
 export function* getPrefixedValues(kvStore, prefix) {
   for (const key of enumerateNumericPrefixedKeys(kvStore, prefix)) {
     yield kvStore.get(key) || Fail`enumerate ensures get`;
   }
 }
+harden(getPrefixedValues);
 
+/**
+ * @param {KVStore} kvStore
+ * @param {string} prefix
+ */
 export function deletePrefixedKeys(kvStore, prefix) {
   // this is kind of like a deleteRange() would be, but can be implemented
   // efficiently without backend DB support because it only looks at numeric

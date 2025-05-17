@@ -3,6 +3,7 @@ package keeper
 import (
 	abci "github.com/tendermint/tendermint/abci/types"
 
+	sdkioerrors "cosmossdk.io/errors"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -23,7 +24,7 @@ func NewQuerier(k Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
 			return queryState(ctx, path[1:], req, k, legacyQuerierCdc)
 
 		default:
-			return nil, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unknown query path: %s", path[0])
+			return nil, sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unknown vbank query path")
 		}
 	}
 }
@@ -33,7 +34,7 @@ func queryParams(ctx sdk.Context, _ []string, _ abci.RequestQuery, k Keeper, leg
 
 	res, err := codec.MarshalJSONIndent(legacyQuerierCdc, params)
 	if err != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
+		return nil, sdkioerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
 
 	return res, nil
@@ -44,7 +45,7 @@ func queryState(ctx sdk.Context, _ []string, _ abci.RequestQuery, k Keeper, lega
 
 	res, err := codec.MarshalJSONIndent(legacyQuerierCdc, state)
 	if err != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
+		return nil, sdkioerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
 
 	return res, nil

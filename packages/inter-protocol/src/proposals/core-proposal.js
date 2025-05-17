@@ -5,10 +5,8 @@ import * as econBehaviors from './econ-behaviors.js';
 import { ECON_COMMITTEE_MANIFEST } from './startEconCommittee.js';
 
 export * from './econ-behaviors.js';
-// @ts-expect-error Module './econ-behaviors.js' has already exported a member
-// named 'EconomyBootstrapPowers'.
-export * from './startPSM.js'; // eslint-disable-line import/export
-export * from './startEconCommittee.js'; // eslint-disable-line import/export
+export * from './startPSM.js';
+export * from './startEconCommittee.js';
 
 // XXX all the startInstance() should use startUpgradable()
 // or startGovernedUpgradeable() but that would
@@ -29,7 +27,7 @@ export const storeInterContractStartKits = async ({
   },
 }) => {
   /**
-   * @param {Promise<MapStore<string, { instance: Instance }>>} storeP
+   * @param {Promise<MapStore<Instance, { instance: Instance }>>} storeP
    * @param {Promise<{ instance: Instance }>[]} kitPs
    */
   const storeAll = async (storeP, kitPs) => {

@@ -1,5 +1,4 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
-/// <reference path="./types.js" />
+/// <reference path="./types-ambient.js" />
 
 import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
@@ -40,7 +39,7 @@ function makePayoffHandler(zcf, seatPromiseKits, collateralSeat) {
   }
 
   function reallocateToSeat(seatPromise, seatPortion) {
-    E.when(seatPromise, seat => {
+    void E.when(seatPromise, seat => {
       atomicTransfer(zcf, collateralSeat, seat, { Collateral: seatPortion });
       seat.exit();
       seatsExited += 1;

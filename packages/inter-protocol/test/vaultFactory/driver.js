@@ -1,27 +1,28 @@
-import '@agoric/zoe/exported.js';
-
-import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { allValues, makeTracer, objectMap } from '@agoric/internal';
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { allValues, makeTracer, NonNullish, objectMap } from '@agoric/internal';
 import { makeNotifierFromSubscriber } from '@agoric/notifier';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import {
   ceilMultiplyBy,
+  makePriceQuoteIssuer,
+  makeRatio,
   makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
 
-import { NonNullish } from '@agoric/assert';
 import { eventLoopIteration } from '@agoric/notifier/tools/testSupports.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data/src/index.js';
+import { providePriceAuthorityRegistry } from '@agoric/vats/src/priceAuthorityRegistry.js';
+
 import {
   setupReserve,
   startAuctioneer,
   startVaultFactory,
 } from '../../src/proposals/econ-behaviors.js';
 import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
-import '../../src/vaultFactory/types.js';
 import {
   installPuppetGovernance,
   setupBootstrap,
@@ -29,7 +30,11 @@ import {
   withAmountUtils,
 } from '../supports.js';
 
-/** @typedef {import('../../src/vaultFactory/vaultFactory.js').VaultFactoryContract} VFC */
+/**
+ * @import {PriceDescription} from '@agoric/zoe/tools/types.js';
+ * @import {VaultFactoryContract as VFC} from '../../src/vaultFactory/vaultFactory.js';
+ * @import {AmountUtils} from '@agoric/zoe/tools/test-utils.js';
+ */
 
 const trace = makeTracer('VFDriver');
 
@@ -56,7 +61,7 @@ const contractRoots = {
 /**
  * dL: 1M, lM: 105%, lP: 10%, iR: 100, lF: 500, lP: 0%
  *
- * @param {import('../supports.js').AmountUtils} debt
+ * @param {AmountUtils} debt
  */
 const defaultParamValues = debt =>
   harden({
@@ -74,7 +79,7 @@ const defaultParamValues = debt =>
 
 /**
  * @typedef {{
- *   aeth: IssuerKit & import('../supports.js').AmountUtils;
+ *   aeth: IssuerKit & AmountUtils;
  *   aethInitialLiquidity: Amount<'nat'>;
  *   consume: import('../../src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume'];
  *   puppetGovernors: {
@@ -89,11 +94,11 @@ const defaultParamValues = debt =>
  *   installation: Record<string, any>;
  *   interestTiming: any;
  *   minInitialDebt: bigint;
- *   reserveCreatorFacet: ERef<AssetReserveCreatorFacet>;
+ *   reserveCreatorFacet: ERef<AssetReserveLimitedCreatorFacet>;
  *   rates: any;
- *   run: IssuerKit & import('../supports.js').AmountUtils;
+ *   run: IssuerKit & AmountUtils;
  *   stableInitialLiquidity: Amount<'nat'>;
- *   timer: ReturnType<typeof buildManualTimer>;
+ *   timer: ReturnType<typeof buildZoeManualTimer>;
  *   zoe: ZoeService;
  * }} DriverContext
  */
@@ -139,7 +144,10 @@ export const makeDriverContext = async ({
     aethInitialLiquidity: AmountMath.make(aeth.brand, 900_000_000n),
   };
   const frozenCtx = await deeplyFulfilled(harden(contextPs));
+  /* eslint-disable @typescript-eslint/ban-ts-comment */
+  // @ts-ignore Local tsc sees this as an error but typedoc does not
   return { ...frozenCtx, bundleCache, run, aeth };
+  /* eslint-enable @typescript-eslint/ban-ts-comment */
 };
 
 /** @param {import('ava').ExecutionContext<DriverContext>} t */
@@ -207,7 +215,7 @@ const getRunFromFaucet = async (t, amt) => {
  * @param {Amount} priceBase
  */
 const setupServices = async (t, initialPrice, priceBase) => {
-  const timer = buildManualTimer(t.log);
+  const timer = buildZoeManualTimer(t.log, 0n, { timeStep: 60n * 60n });
   const { zoe, run, aeth, interestTiming, minInitialDebt, rates } = t.context;
   t.context.timer = timer;
 
@@ -215,15 +223,27 @@ const setupServices = async (t, initialPrice, priceBase) => {
   const { consume, produce } = space;
   t.context.consume = consume;
 
-  // Cheesy hack for easy use of manual price authority
-  const priceAuthority = makeManualPriceAuthority({
+  // priceAuthorityReg is the registry, which contains and multiplexes multiple
+  // individual priceAuthorities, including aethManualPA.
+  // priceAuthorityAdmin supports registering more individual priceAuthorities
+  // with the registry.
+  const aethManualPA = makeManualPriceAuthority({
     actualBrandIn: aeth.brand,
     actualBrandOut: run.brand,
     initialPrice: makeRatioFromAmounts(initialPrice, priceBase),
     timer,
-    quoteIssuerKit: makeIssuerKit('quote', AssetKind.SET),
+    quoteIssuerKit: makePriceQuoteIssuer(),
   });
-  produce.priceAuthority.resolve(priceAuthority);
+  const baggage = makeScalarBigMapStore('baggage');
+  const { priceAuthority: priceAuthorityReg, adminFacet: priceAuthorityAdmin } =
+    providePriceAuthorityRegistry(baggage);
+  await E(priceAuthorityAdmin).registerPriceAuthority(
+    aethManualPA,
+    aeth.brand,
+    run.brand,
+  );
+
+  produce.priceAuthority.resolve(priceAuthorityReg);
 
   const {
     installation: { produce: iProduce },
@@ -276,6 +296,7 @@ const setupServices = async (t, initialPrice, priceBase) => {
 
   return {
     zoe,
+    timer,
     governor: {
       governorInstance,
       governorPublicFacet: E(zoe).getPublicFacet(governorInstance),
@@ -288,7 +309,9 @@ const setupServices = async (t, initialPrice, priceBase) => {
       vfPublic,
       aethVaultManager,
     },
-    priceAuthority,
+    priceAuthority: priceAuthorityReg,
+    priceAuthorityAdmin,
+    aethManualPA,
   };
 };
 
@@ -307,7 +330,7 @@ export const makeManagerDriver = async (
   const { zoe, aeth, run } = t.context;
   const {
     vaultFactory: { lender, vaultFactory, vfPublic },
-    priceAuthority,
+    aethManualPA,
     timer,
   } = services;
   const publicTopics = await E(lender).getPublicTopics();
@@ -315,6 +338,10 @@ export const makeManagerDriver = async (
     publicTopics.asset.subscriber,
   );
   let managerNotification = await E(managerNotifier).getUpdateSince();
+  const metricsNotifier = await makeNotifierFromSubscriber(
+    publicTopics.metrics.subscriber,
+  );
+  let metricsNotification = await E(metricsNotifier).getUpdateSince();
 
   /** @type {UserSeat} */
   let currentSeat;
@@ -351,7 +378,7 @@ export const makeManagerDriver = async (
       notification: () => notification,
       /**
        * @param {bigint} collValue
-       * @param {import('../supports.js').AmountUtils} collUtils
+       * @param {AmountUtils} collUtils
        * @param {bigint} [mintedValue]
        */
       giveCollateral: async (collValue, collUtils, mintedValue = 0n) => {
@@ -372,7 +399,7 @@ export const makeManagerDriver = async (
       },
       /**
        * @param {bigint} mintedValue
-       * @param {import('../supports.js').AmountUtils} collUtils
+       * @param {AmountUtils} collUtils
        * @param {bigint} [collValue]
        */
       giveMinted: async (mintedValue, collUtils, collValue = 0n) => {
@@ -450,6 +477,22 @@ export const makeManagerDriver = async (
     addVaultType: async keyword => {
       /** @type {IssuerKit<'nat'>} */
       const kit = makeIssuerKit(keyword.toLowerCase());
+
+      // for now, this priceAuthority never reports prices, but having one is
+      // sufficient to get a vaultManager running.
+      const pa = makeManualPriceAuthority({
+        actualBrandIn: kit.brand,
+        actualBrandOut: run.brand,
+        timer,
+        initialPrice: makeRatio(100n, run.brand, 100n, kit.brand),
+      });
+
+      await services.priceAuthorityAdmin.registerPriceAuthority(
+        pa,
+        kit.brand,
+        run.brand,
+      );
+
       const manager = await E(vaultFactory).addVaultType(
         kit.issuer,
         keyword,
@@ -477,7 +520,7 @@ export const makeManagerDriver = async (
       });
     },
     /** @param {Amount<'nat'>} p */
-    setPrice: p => priceAuthority.setPrice(makeRatioFromAmounts(p, priceBase)),
+    setPrice: p => aethManualPA.setPrice(makeRatioFromAmounts(p, priceBase)),
     // XXX the paramPath should be implied by the object `setGovernedParam` is being called on.
     // e.g. the manager driver should know the paramPath is `{ key: { collateralBrand: aeth.brand } }`
     // and the director driver should `{ key: 'governedParams }`
@@ -522,6 +565,21 @@ export const makeManagerDriver = async (
       }
       return managerNotification;
     },
+    /**
+     * @param {object} [likeExpected]
+     * @param {AT_NEXT | number} [optSince] AT_NEXT is an alias for updateCount
+     *   of the last update, forcing to wait for another
+     */
+    metricsNotified: async (likeExpected, optSince) => {
+      metricsNotification = await E(metricsNotifier).getUpdateSince(
+        optSince === AT_NEXT ? metricsNotification.updateCount : optSince,
+      );
+      trace(t, 'metrics notifier', metricsNotification);
+      if (likeExpected) {
+        t.like(metricsNotification.value, likeExpected);
+      }
+      return managerNotification;
+    },
     checkReserveAllocation: async stableValue => {
       const { reserveCreatorFacet } = t.context;
       const reserveAllocations = await E(reserveCreatorFacet).getAllocations();
@@ -545,13 +603,11 @@ export const makeAuctioneerDriver = async t => {
     auctioneerKit,
     advanceTimerByStartFrequency: async () => {
       trace('advanceTimerByStartFrequency');
-      // @ts-expect-error ManualTimer debt https://github.com/Agoric/agoric-sdk/issues/7747
       await t.context.timer.advanceBy(BigInt(startFrequency));
       await eventLoopIteration();
     },
     induceTimequake: async () => {
       trace('induceTimequake');
-      // @ts-expect-error ManualTimer debt https://github.com/Agoric/agoric-sdk/issues/7747
       await t.context.timer.advanceBy(BigInt(startFrequency) * 10n);
       await eventLoopIteration();
     },

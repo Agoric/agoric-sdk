@@ -5,7 +5,6 @@ import { makeTracer } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import { makeScalarMapStore } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
-import { atomicRearrange } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 
 import { AUCTION_START_DELAY, PRICE_LOCK_PERIOD } from '../auction/params.js';
@@ -13,10 +12,11 @@ import { makeCancelTokenMaker } from '../auction/util.js';
 
 const trace = makeTracer('LIQ');
 
-/** @typedef {import('@agoric/time').TimerService} TimerService */
-/** @typedef {import('@agoric/time').TimerWaker} TimerWaker */
-/** @typedef {import('@agoric/time').CancelToken} CancelToken */
-/** @typedef {import('@agoric/time').RelativeTimeRecord} RelativeTimeRecord */
+/**
+ * @import {MapStore, SetStore} from '@agoric/store';
+ * @import {RelativeTimeRecord, TimerService, TimerWaker} from '@agoric/time';
+ * @import {PriceQuote} from '@agoric/zoe/tools/types.js';
+ */
 
 const makeCancelToken = makeCancelTokenMaker('liq');
 
@@ -301,7 +301,7 @@ export const getLiquidatableVaults = (
   }
 
   if (transfers.length > 0) {
-    atomicRearrange(zcf, harden(transfers));
+    zcf.atomicRearrange(harden(transfers));
   }
 
   return { vaultData, totalDebt, totalCollateral, liqSeat };

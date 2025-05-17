@@ -20,10 +20,9 @@ export const calcWinnerAndClose = (zcf, sellSeat, bidSeats) => {
   let highestBidSeat = bidSeats[0];
   let activeBidsCount = 0n;
 
-  bidSeats.forEach(bidSeat => {
+  for (const bidSeat of bidSeats) {
     if (!bidSeat.hasExited()) {
       activeBidsCount += 1n;
-      /** @type {Amount<'nat'>} */
       const bid = bidSeat.getAmountAllocated('Bid', bidBrand);
       // If the bid is greater than the highestBid, it's the new highestBid
       if (AmountMath.isGTE(bid, highestBid, bidBrand)) {
@@ -36,7 +35,7 @@ export const calcWinnerAndClose = (zcf, sellSeat, bidSeats) => {
         secondHighestBid = bid;
       }
     }
-  });
+  }
 
   if (activeBidsCount === 0n) {
     throw sellSeat.fail(Error(`Could not close auction. No bids were active`));
@@ -60,10 +59,10 @@ export const calcWinnerAndClose = (zcf, sellSeat, bidSeats) => {
   );
 
   sellSeat.exit();
-  bidSeats.forEach(bidSeat => {
+  for (const bidSeat of bidSeats) {
     if (!bidSeat.hasExited()) {
       bidSeat.exit();
     }
-  });
+  }
   zcf.shutdown('Auction closed.');
 };

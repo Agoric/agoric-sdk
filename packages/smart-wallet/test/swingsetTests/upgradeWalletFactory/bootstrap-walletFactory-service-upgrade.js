@@ -1,15 +1,19 @@
 // @ts-check
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { makeNameHubKit } from '@agoric/vats';
 import { makeAgoricNamesAccess } from '@agoric/vats/src/core/utils.js';
+import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import { makeFakeBankKit } from '@agoric/vats/tools/bank-utils.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
+
+/**
+ * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
+ */
 
 const trace = makeTracer('BootWFUpg', false);
 
@@ -20,7 +24,7 @@ const walletAddr = 'agoric1whatever';
 const moolaKit = makeIssuerKit('moola');
 
 export const buildRootObject = async () => {
-  const { bank, addAsset } = makeFakeBankKit([]);
+  const { bankManager } = await makeFakeBankManagerKit();
   const storageKit = makeFakeStorageKit('walletFactoryUpgradeTest');
   const statusPath = `walletFactoryUpgradeTest.${walletAddr}`;
   const currentPath = `${statusPath}.current`;
@@ -39,6 +43,8 @@ export const buildRootObject = async () => {
   let creatorFacet;
   /** @type {import('../../../src/smartWallet.js').SmartWallet} */
   let wallet;
+
+  const bank = await E(bankManager).getBankForAddress(walletAddr);
 
   // for startInstance
   /** @type {Installation<import('../../../src/walletFactory.js').start>} */
@@ -104,7 +110,7 @@ export const buildRootObject = async () => {
       ).storagePath;
       currentStoragePath === currentPath || Fail`bad storage path`;
 
-      addAsset('umoola', 'moola', 'moola', moolaKit);
+      await E(bankManager).addAsset('umoola', 'moola', 'moola', moolaKit);
       const depositFacet = E(wallet).getDepositFacet();
       const payment = moolaKit.mint.mintPayment(
         AmountMath.make(moolaKit.brand, 100n),

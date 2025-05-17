@@ -10,12 +10,13 @@ import {
   bagUnion,
   bagDisjointSubtract,
 } from '@agoric/store';
-import '../types-ambient.js';
 
-/** @type {CopyBag} */
+/** @import {MathHelpers} from '../types.js' */
+
+/** @type {import('@endo/patterns').CopyBag} */
 const empty = makeCopyBag([]);
 
-/** @type {MathHelpers<CopyBag>} */
+/** @type {MathHelpers<import('@endo/patterns').CopyBag>} */
 export const copyBagMathHelpers = harden({
   doCoerce: bag => {
     mustMatch(bag, M.bag(), 'bag of amount');

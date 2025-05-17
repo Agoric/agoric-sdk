@@ -1,3 +1,4 @@
+import { Fail, q } from '@endo/errors';
 import { Stable, Stake } from '@agoric/internal/src/tokens.js';
 import { WalletName } from '@agoric/internal';
 import { E, Far } from '@endo/far';
@@ -7,11 +8,13 @@ import { keyEQ } from '@agoric/store';
 import { makeNameHubKit } from '../nameHub.js';
 import { makeLogHooks, makePromiseSpace } from './promise-space.js';
 
+import './types-ambient.js';
+
 const { entries, fromEntries, keys } = Object;
-const { Fail, quote: q } = assert;
 
 /**
- * We reserve these keys in name hubs.
+ * Used in bootstrap to reserve names in the agoricNames namespace before any
+ * other proposals.
  *
  * @type {{
  *   [P in keyof WellKnownName]: { [P2 in WellKnownName[P]]: string };
@@ -54,6 +57,8 @@ export const agoricNamesReserved = harden({
     econCommitteeCharter: 'Charter for Econ Governance questions',
     priceAggregator: 'simple price aggregator',
     scaledPriceAuthority: 'scaled price authority',
+    stakeAtom: 'example ATOM staking contract',
+    stakeBld: 'example BLD staking contract',
   },
   instance: {
     economicCommittee: 'Economic Committee',
@@ -67,6 +72,8 @@ export const agoricNamesReserved = harden({
     econCommitteeCharter: 'Charter for Econ Governance questions',
     provisionPool: 'Account Provision Pool',
     walletFactory: 'Smart Wallet Factory',
+    stakeAtom: 'example ATOM staking contract',
+    stakeBld: 'example BLD staking contract',
   },
   oracleBrand: {
     USD: 'US Dollar',
@@ -104,7 +111,7 @@ export const callProperties = (builders, ...args) =>
   fromEntries(builders.map(fn => entries(fn(...args))).flat());
 
 /**
- * Attenuate `specimen` to only allow acccess to properties specified in
+ * Attenuate `specimen` to only allow access to properties specified in
  * `template`
  *
  * @param {true | string | Record<string, any>} template true or vat name string
@@ -178,20 +185,20 @@ export const runModuleBehaviors = ({
   makeConfig,
 }) => {
   return Promise.all(
-    entries(manifest).map(([name, permit]) =>
-      Promise.resolve().then(() => {
-        const behavior = behaviors[name];
-        assert(behavior, `${name} not in ${Object.keys(behaviors).join(',')}`);
-        assert.typeof(
-          behavior,
-          'function',
-          `behaviors[${name}] is not a function; got ${behavior}`,
+    entries(manifest).map(async ([name, permit]) => {
+      await null;
+      const behavior = behaviors[name];
+      if (typeof behavior !== 'function') {
+        const behaviorKeys = Reflect.ownKeys(behaviors).map(key =>
+          typeof key === 'string' ? JSON.stringify(key) : String(key),
         );
-        const powers = extractPowers(permit, allPowers);
-        const config = harden(makeConfig(name, permit));
-        return behavior.call(behaviors, powers, config);
-      }),
-    ),
+        const keysStr = `[${behaviorKeys.join(', ')}]`;
+        throw Fail`${q(name)} is not a function in ${keysStr}: ${behavior}`;
+      }
+      const powers = extractPowers(permit, allPowers);
+      const config = harden(makeConfig(name, permit));
+      return Reflect.apply(behavior, behaviors, [powers, config]);
+    }),
   );
 };
 harden(runModuleBehaviors);
@@ -311,16 +318,15 @@ export const makeMyAddressNameAdminKit = address => {
   return { nameHub, myAddressNameAdmin };
 };
 
+/** @typedef {MapStore<string, CreateVatResults>} VatStore */
+
 /**
  * @param {ERef<ReturnType<Awaited<VatAdminVat>['createVatAdminService']>>} svc
  * @param {unknown} criticalVatKey
  * @param {(...args: any) => void} [log]
  * @param {string} [label]
- *
- * @typedef {import('@agoric/swingset-vat').CreateVatResults} CreateVatResults
+ * @import {CreateVatResults} from '@agoric/swingset-vat'
  *   as from createVatByName
- *
- * @typedef {MapStore<string, CreateVatResults>} VatStore
  */
 export const makeVatSpace = (
   svc,

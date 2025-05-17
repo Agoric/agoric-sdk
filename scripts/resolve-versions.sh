@@ -8,12 +8,12 @@ set -ueo pipefail
 
 DIR=$(dirname -- "${BASH_SOURCE[0]}")
 
-cd -- "$DIR/.."
+cd -- "${1-$DIR/..}"
 
 override=$(jq 'to_entries | map({ key: ("**/" + .key), value: .value }) | from_entries')
 
 PACKAGEJSONHASH=$(
-  jq --arg override "$override" '. * { resolutions: ($override | fromjson) }' package.json |
-  git hash-object -w --stdin
+  jq --arg override "$override" '. * { resolutions: ($override | fromjson) }' package.json \
+    | git hash-object -w --stdin
 )
 git cat-file blob "$PACKAGEJSONHASH" > package.json

@@ -1,8 +1,7 @@
 // eslint-disable-next-line import/order
 import { test } from './prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import { makeMarshal } from '@endo/marshal';
 import { initSwingStore } from '@agoric/swing-store';
 import { initializeSwingset, makeSwingsetController } from '../src/index.js';
@@ -104,7 +103,7 @@ const extractLog = capdata => stupidM.unserialize(capdata);
 //   8 - Collect log messages from the test vat until it sends the `testComplete()` message
 //   9 - Call `logCheck` with the sequence of log messages sent during the 'after' phase
 //
-// The SwingSet test `vo-test-harness/test-dvo-test-harness.js` and the
+// The SwingSet test `vo-test-harness/dvo-test-harness.test.js` and the
 // accompanying vat definition `vo-test-harness/vat-dvo-test-test.js` form a
 // test of the durable VO test harness itself, but can be used as a simple
 // example of how to set things up.

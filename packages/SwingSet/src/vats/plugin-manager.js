@@ -5,11 +5,10 @@ import { HandledPromise } from '@endo/eventual-send';
 import { Remotable } from '@endo/marshal';
 import { Far, E } from '@endo/far';
 
-import '@agoric/store/exported.js';
-
 /**
- * @template T
- * @typedef {T | PromiseLike<T>} ERef
+ * @import {ERef} from '@endo/far';
+ * @import {MapStore} from '@agoric/store';
+ * @import {Device, DProxy} from '@agoric/swingset-vat/src/types-external.js';
  */
 
 /** @type {{ onReset: (firstTime: Promise<boolean>) => void}} */
@@ -17,13 +16,6 @@ const DEFAULT_RESETTER = Far('resetter', { onReset: _ => {} });
 
 /** @type {{ walk: (pluginRootP: any) => any }} */
 const DEFAULT_WALKER = Far('walker', { walk: pluginRootP => pluginRootP });
-
-/**
- * @template T
- * @typedef {'Device' & { __deviceType__: T }} Device
- */
-
-/** @typedef {<T>(target: Device<T>) => T} DProxy (approximately) */
 
 /**
  * @callback LoadPlugin
@@ -178,7 +170,7 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
          */
         makeStableForwarder(walker = DEFAULT_WALKER) {
           let pr;
-          // eslint-disable-next-line no-new
+
           void new HandledPromise((_resolve, _reject, resolveWithPresence) => {
             // Use Remotable rather than Far to make a remote from a presence
             pr = Remotable(

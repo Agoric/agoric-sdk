@@ -1,9 +1,7 @@
-/* eslint-disable no-use-before-define */
-
+import { assert } from '@endo/errors';
 import { Far, E, passStyleOf } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Nat } from '@endo/nat';
-import { assert } from '@agoric/assert';
 import {
   provideKindHandle,
   provideDurableMapStore,
@@ -15,26 +13,35 @@ import {
 import { makeScalarWeakMapStore } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
 
+/**
+ * @import {LegacyWeakMap, WeakMapStore} from '@agoric/store';
+ * @import {Baggage, MapStore} from '@agoric/swingset-liveslots';
+ * @import {Passable, RemotableObject} from '@endo/pass-style';
+ * @import {Key} from '@endo/patterns';
+ * @import {TimerDevice} from '../../devices/timer/device-timer.js';
+ * @import {DProxy} from '../../types-external.js';
+ */
+
 // This consumes O(N) RAM only for outstanding promises, via wakeAt(),
 // delay(), and Notifiers/Iterators (for each actively-waiting
 // client). Everything else should remain in the DB.
 
 /**
- * @typedef {import('@agoric/time').Timestamp} Timestamp
- * @typedef {import('@agoric/time').TimestampRecord} TimestampRecord
- * @typedef {import('@agoric/time').TimestampValue} TimestampValue
- * @typedef {import('@agoric/time').RelativeTime} RelativeTime
- * @typedef {import('@agoric/time').RelativeTimeValue} RelativeTimeValue
- * @typedef {import('@agoric/time').TimerService} TimerService
+ * @import {Timestamp} from '@agoric/time';
+ * @import {TimestampRecord} from '@agoric/time';
+ * @import {TimestampValue} from '@agoric/time';
+ * @import {RelativeTime} from '@agoric/time';
+ * @import {RelativeTimeValue} from '@agoric/time';
+ * @import {TimerService} from '@agoric/time';
  *
  * @typedef {object} Handler
  * Handler is a user-provided Far object with .wake(time) used for callbacks
  * @property {(scheduled: Timestamp) => unknown} wake
  *
- * @typedef {unknown} CancelToken
+ * @typedef {Key} CancelToken
  * CancelToken must be pass-by-reference and durable, either local or remote
  *
- * @typedef {{
+ * @typedef {RemotableObject & {
  *  scheduleYourself: () => void,
  *  fired: (now: TimestampValue) => void,
  *  cancel: () => void,
@@ -42,7 +49,7 @@ import { TimeMath } from '@agoric/time';
  *
  * @typedef {MapStore<TimestampValue, Event[]>} Schedule
  *
- * @typedef {{ cancel: () => void }} Cancellable
+ * @typedef {RemotableObject & { cancel: () => void }} Cancellable
  *
  * @typedef {WeakMapStore<CancelToken, Cancellable[]>} CancelTable
  *
@@ -232,9 +239,17 @@ const measureInterval = (start, interval, now) => {
   return { latest, next };
 };
 
+/**
+ * @param {{
+ *   D: DProxy;
+ * }} vatPowers
+ * @param {{}} _vatParameters
+ * @param {Baggage} baggage
+ */
 export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
   const { D } = vatPowers;
 
+  /** @type {TimerDevice} */
   let timerDevice;
   const insistDevice = () => {
     assert(timerDevice, 'TimerService used before createTimerService()');
@@ -450,9 +465,6 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
     },
   };
 
-  /**
-   * @returns { PromiseEvent }
-   */
   const makePromiseEvent = prepareKind(
     baggage,
     'promiseEvent',
@@ -943,7 +955,7 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
    * device, but we don't prohibit it from being called again (to
    * replace the device), just in case that's useful someday
    *
-   * @param {unknown} timerNode
+   * @param {TimerDevice} timerNode
    * @returns {TimerService}
    */
   const createTimerService = timerNode => {

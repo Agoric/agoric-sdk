@@ -1,4 +1,4 @@
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 import { assertKnownOptions } from '../../lib/assertOptions.js';
 import { makeVatSlot } from '../../lib/parseVatSlots.js';
 
@@ -9,13 +9,13 @@ export function makeVatRootObjectSlot() {
 export function makeVatLoader(stuff) {
   const {
     overrideVatManagerOptions = {},
-    vatManagerFactory,
+    makeVatManager,
     kernelSlog,
     makeSourcedConsole,
     kernelKeeper,
   } = stuff;
 
-  /** @typedef {import('../../types-internal.js').VatManager} VatManager */
+  /** @import {VatManager} from '../../types-internal.js' */
 
   const allowedOptions = [
     'name',
@@ -26,7 +26,7 @@ export function makeVatLoader(stuff) {
     'enablePipelining',
     'useTranscript',
     'critical',
-    'reapInterval',
+    'reapDirtThreshold',
   ];
 
   /**
@@ -127,7 +127,7 @@ export function makeVatLoader(stuff) {
     };
 
     const finish = starting && kernelSlog.startup(vatID);
-    const manager = await vatManagerFactory(vatID, {
+    const manager = await makeVatManager(vatID, {
       managerOptions,
       liveSlotsOptions,
     });
@@ -150,7 +150,7 @@ export function makeVatLoader(stuff) {
       ...overrideVatManagerOptions,
     };
     const liveSlotsOptions = {};
-    const manager = await vatManagerFactory(vatID, {
+    const manager = await makeVatManager(vatID, {
       managerOptions,
       liveSlotsOptions,
     });

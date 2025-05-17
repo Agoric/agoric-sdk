@@ -81,7 +81,12 @@ export const DEFAULT_RPC_PORT = 26657;
 export const DEFAULT_PROM_PORT = 26660;
 export const DEFAULT_API_PORT = 1317;
 
-// Rewrite the app.toml.
+/**
+ * Rewrite the app.toml.
+ *
+ * @param {{ appToml: string, enableCors?: boolean, exportMetrics?: boolean, portNum?: string, chainId?: string, enableRosetta?: boolean, rosettaPort?: string }} input
+ * @returns {string} toml
+ */
 export function finishCosmosApp({
   appToml,
   enableCors,
@@ -92,6 +97,8 @@ export function finishCosmosApp({
   rosettaPort = `${DEFAULT_ROSETTA_PORT}`,
 }) {
   const rpcPort = Number(portNum);
+  // TODO: Use an accurate narrow type.
+  /** @type {Record<string, any>} */
   const app = TOML.parse(appToml);
 
   if (enableCors) {
@@ -138,7 +145,12 @@ export function finishCosmosApp({
   return TOML.stringify(app);
 }
 
-// Rewrite the config.toml.
+/**
+ * Rewrite the config.toml.
+ *
+ * @param {{ configToml: string, enableCors?: boolean, exportMetrics?: boolean, portNum?: string, persistentPeers?: string, seeds?: string, unconditionalPeerIds?: string }} input
+ * @returns {string} toml
+ */
 export function finishTendermintConfig({
   configToml,
   enableCors,
@@ -151,6 +163,8 @@ export function finishTendermintConfig({
   const rpcPort = Number(portNum);
 
   // Adjust the config.toml.
+  // TODO: Use an accurate narrow type.
+  /** @type {Record<string, any>} */
   const config = TOML.parse(configToml);
 
   config.proxy_app = 'kvstore';
@@ -189,7 +203,12 @@ export function finishTendermintConfig({
   return TOML.stringify(config);
 }
 
-// Rewrite/import the genesis.json.
+/**
+ * Rewrite/import the genesis.json.
+ *
+ * @param {{ genesisJson: string, exportedGenesisJson?: string }} input
+ * @returns {string} json
+ */
 export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
   const genesis = JSON.parse(genesisJson);
   const exported = exportedGenesisJson ? JSON.parse(exportedGenesisJson) : {};

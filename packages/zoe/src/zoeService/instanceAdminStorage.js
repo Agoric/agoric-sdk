@@ -1,4 +1,3 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import {
   canBeDurable,
   makeScalarBigSetStore,
@@ -9,6 +8,7 @@ import {
   provide,
 } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
+import { q, Fail } from '@endo/errors';
 import { defineDurableHandle } from '../makeHandle.js';
 import {
   BrandKeywordRecordShape,
@@ -18,7 +18,9 @@ import {
 } from '../typeGuards.js';
 import { makeZoeSeatAdminFactory } from './zoeSeat.js';
 
-const { quote: q, Fail } = assert;
+/**
+ * @import {WeakMapStore} from '@agoric/store';
+ */
 
 /**
  * @file Two objects are defined here, both called InstanceAdminSomething.
@@ -139,15 +141,15 @@ const makeInstanceAdminBehavior = (zoeBaggage, makeZoeSeatAdminKit) => {
     },
     exitAllSeats: ({ state }, completion) => {
       state.acceptingOffers = false;
-      Array.from(state.zoeSeatAdmins.keys()).forEach(zoeSeatAdmin =>
-        zoeSeatAdmin.exit(completion),
-      );
+      for (const zoeSeatAdmin of state.zoeSeatAdmins.keys()) {
+        zoeSeatAdmin.exit(completion);
+      }
     },
     failAllSeats: ({ state }, reason) => {
       state.acceptingOffers = false;
-      Array.from(state.zoeSeatAdmins.keys()).forEach(zoeSeatAdmin =>
-        zoeSeatAdmin.fail(reason),
-      );
+      for (const zoeSeatAdmin of state.zoeSeatAdmins.keys()) {
+        zoeSeatAdmin.fail(reason);
+      }
     },
     stopAcceptingOffers: ({ state }) => {
       state.acceptingOffers = false;
@@ -178,7 +180,7 @@ const makeInstanceAdminBehavior = (zoeBaggage, makeZoeSeatAdminKit) => {
 
       state.zoeSeatAdmins.add(zoeSeatAdmin);
       state.handleOfferObj || Fail`incomplete setup of zoe seat`;
-      E.when(
+      void E.when(
         E(state.handleOfferObj).handleOffer(invitationHandle, seatData),
         /** @param {HandleOfferResult} result */
         result => zoeSeatAdmin.resolveExitAndResult(result),

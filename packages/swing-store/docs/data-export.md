@@ -188,13 +188,13 @@ Once the new SwingStore is fully populated with the previously-exported data, th
 
 Some of the data maintained by SwingStore is not strictly necessary for kernel execution, at least under normal circumstances. For example, once a vat worker performs a heap snapshot, we no longer need the transcript entries from before the snapshot was taken, since vat replay will start from the snapshot point. We split each vat's transcript into "spans", delimited by heap snapshot events, and the "current span" is the most recent one (still growing), whereas the "historical spans" are all closed and immutable. Likewise, we only really need the most recent heap snapshot for each vat: older snapshots might be interesting for experiments that replay old transcripts with different versions of the XS engine, but no normal kernel will ever need them.
 
-Most validators would prefer to prune this data, to reduce their storage needs. But we can imagine some [extreme upgrade scenarios](https://github.com/Agoric/agoric-sdk/issues/1691) that would require access to these historical transcript spans. Our compromise is to record *validation data* for these historical spans in the export data, but omit the spans themselves from the export artifacts. Validators can delete the old spans at will, and if we ever need them in the future, we can add code that will fetch copies from an archive service, validate them against the export data hashes, and re-insert the relevant entries into the SwingStore.
+Most blockchain validator nodes would prefer to prune this data, to reduce their storage needs. But we can imagine some [extreme upgrade scenarios](https://github.com/Agoric/agoric-sdk/issues/1691) that would require access to these historical transcript spans. Our compromise is to record *validation data* for these historical spans in the export data, but omit the spans themselves from the export artifacts. Validators can delete the old spans at will, and if we ever need them in the future, we can add code that will fetch copies from an archive service, validate them against the export data hashes, and re-insert the relevant entries into the SwingStore.
 
 Likewise, each time a heap snapshot is recorded, we cease to need any previous snapshot. And again, as a hedge against even more drastic recovery scenarios, we strike a compromise between minimizing retained data and the ability to validate old snapshots, by retaining only their hashes.
 
-As a result, for each active vat, the first-stage Export Data contains a record for every old transcript span, plus one for the current span. It also contains a record for every old heap snapshot, plus one for the most recent heap snapshot, plus a `.current` record that points to the most recent snapshot. However the exported artifacts may or may not include blobs for the old transcript spans, or for the old heap snapshots.
+As a result, for each active vat, the first-stage Export Data contains a record for every old heap snapshot, plus one for the most recent heap snapshot, plus a `.current` record that points to the most recent snapshot. It also contains a record for every old transcript span, plus one for the current span. However the exported artifacts may or may not include blobs for the old heap snapshots, or for the old transcript spans.
 
-The `openSwingStore()` function has an option named `keepTranscripts` (which defaults to `true`), which causes the transcriptStore to retain the old transcript items. A second option named `keepSnapshots` (which defaults to `false`) causes the snapStore to retain the old heap snapshots. Opening the swingStore with a `false` option does not necessarily delete the old items immediately, but they'll probably get deleted the next time the kernel triggers a heap snapshot or transcript-span rollover. Validators who care about minimizing their disk usage will want to set both to `false`. In the future, we will arrange the SwingStore SQLite tables to provide easy `sqlite3` CLI commands that will delete the old data, so validators can also periodically use the CLI command to prune it.
+The `openSwingStore()` function has an option named `keepSnapshots` (which defaults to `false`), which causes the snapStore to retain the old heap snapshots. A second option named `keepTranscripts` (which defaults to `true`) causes the transcriptStore to retain the old transcript items. Opening the swingStore with a `false` option does not necessarily delete the old items immediately, but they may get deleted the next time the kernel triggers a heap snapshot or transcript-span rollover. Hosts who care about minimizing their disk usage will want to set both to `false`. In the future, we will arrange the SwingStore SQLite tables to provide easy `sqlite3` CLI commands that will delete the old data, for use in periodic pruning.
 
 When exporting, the `makeSwingStoreExporter()` function takes an `artifactMode` option (in an options bag). This serves to both limit, and provide some minimal guarantees about, the set of artifacts that will be provided in the export. The defined values of `artifactMode` each build upon the previous one:
 
@@ -218,9 +218,9 @@ While `importSwingStore()`'s options bag accepts the same options as `openSwingS
 So, to avoid pruning current-incarnation historical transcript spans when exporting from one swingstore to another, you must set (or avoid overriding) the following options along the way:
 
 * the original swingstore must not be opened with `{ keepTranscripts: false }`, otherwise the old spans will be pruned immediately
-* the export must use `makeSwingStoreExporter(dirpath, { artifactMode: 'replay'})`, otherwise the export will omit the old spans
-* the import must use `importSwingStore(exporter, dirPath, { artifactMode: 'replay'})`, otherwise the import will ignore the old spans
-  * subsequent `openSwingStore` calls must not use `keepTranscripts: false`, otherwise the new swingstore will prune historical spans as new ones are created (during `rolloverSpan`).
+* the export must use `makeSwingStoreExporter(dirpath, { artifactMode: 'replay' })`, otherwise the export will omit the old spans
+* the import must use `importSwingStore(exporter, dirPath, { artifactMode: 'replay' })`, otherwise the import will ignore the old spans
+  * subsequent `openSwingStore` calls must not use `keepTranscripts: false`, otherwise the new swingstore will prune historical spans they are replaced during `rolloverSpan`.
 
 ## Implementation Details
 
@@ -229,7 +229,7 @@ SwingStore contains components to accommodate all the various kinds of state tha
 * `kvStore`, a general-purpose string/string key-value table
 * `transcriptStore`: append-only vat deliveries, broken into "spans", delimited by heap snapshot events
 * `snapshotStore`: binary blobs containing JS engine heap state, to limit transcript replay depth
-* `bundleStore`: code bundles that can be imported with `@endo/import-bundle`
+* `bundleStore`: code bundles that can be imported with [@endo/import-bundle](https://www.npmjs.com/package/@endo/import-bundle)
 
 Currently, the SwingStore treats transcript spans, heap snapshots, and bundles as export artifacts, with hashes recorded in the export data for validation (and to remember exactly which artifacts are necessary). The `kvStore` is copied one-to-one into the export data (i.e. we keep a full shadow copy in IAVL), because that is the fastest way to ensure the `kvStore` data is fully available and validated.
 

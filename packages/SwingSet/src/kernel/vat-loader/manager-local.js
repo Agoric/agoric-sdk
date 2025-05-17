@@ -1,6 +1,6 @@
 /* global globalThis */
 
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 import { importBundle } from '@endo/import-bundle';
 import { makeLiveSlots } from '@agoric/swingset-liveslots';
 import { makeManagerKit } from './manager-helper.js';
@@ -74,7 +74,8 @@ export function makeLocalVatManagerFactory({
     const workerEndowments = harden({
       ...vatEndowments,
       console: makeVatConsole(makeLogMaker('vat')),
-      assert,
+      // See https://github.com/Agoric/agoric-sdk/issues/9515
+      assert: globalThis.assert,
       TextEncoder,
       TextDecoder,
       Base64: globalThis.Base64, // Available only on XSnap

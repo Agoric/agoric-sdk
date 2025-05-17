@@ -1,10 +1,13 @@
 // @jessie-check
 
-import { AmountMath } from '@agoric/ertp';
+import { Fail } from '@endo/errors';
 import { Nat } from '@endo/nat';
 import { E } from '@endo/eventual-send';
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 
-const { Fail } = assert;
+/**
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ */
 
 // PriceAuthorities return quotes as a pair of an amount and a payment, both
 // with the same value. The underlying amount wraps amountIn, amountOut, timer
@@ -36,3 +39,8 @@ export const unitAmount = async brand => {
   return AmountMath.make(brand, 10n ** Nat(decimalPlaces));
 };
 harden(unitAmount);
+
+export const makePriceQuoteIssuer = () =>
+  /** @type {IssuerKit<'set', PriceDescription>} */ (
+    makeIssuerKit('quote', AssetKind.SET)
+  );

@@ -3,12 +3,16 @@ import { provide } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
 
 /**
+ * @import {MapStore} from '@agoric/swingset-liveslots';
+ */
+
+/**
  * SCALE: Only for low cardinality provisioning. Every value from init() will
  * remain in the map for the lifetime of the heap. If a key object is GCed, its
  * representative also remains.
  *
  * @template {{}} E Ephemeral state
- * @template {{}} [K=any] key on which to provision
+ * @template {WeakKey} K key on which to provision
  * @param {(key: K) => E} init
  */
 export const makeEphemeraProvider = init => {
@@ -36,7 +40,7 @@ harden(makeEphemeraProvider);
  * Provide an empty ZCF seat.
  *
  * @param {ZCF} zcf
- * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  * @param {string} name
  * @returns {ZCFSeat}
  */

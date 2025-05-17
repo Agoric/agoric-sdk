@@ -1,4 +1,4 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 
 /** @typedef {'counter' | 'gauge'} KernelStatsMetricType */
 /**
@@ -70,10 +70,9 @@ export const makeKernelStats = kernelStatsMetrics => {
   Object.freeze(allStatsKeys);
 
   const pickStats = (stat, gauge = false) => {
-    assert(
-      kernelConsensusStats && kernelLocalStats,
-      'Kernel stats not initialized',
-    );
+    if (!kernelConsensusStats || !kernelLocalStats) {
+      throw Fail`Kernel stats not initialized`;
+    }
     const metricType = allStatsKeys[stat];
     if (gauge) {
       metricType === 'gauge' || Fail`Invalid kernel gauge stat ${stat}`;
@@ -116,7 +115,12 @@ export const makeKernelStats = kernelStatsMetrics => {
     kernelStats[downStat] += delta;
   };
 
-  /** @param {boolean | undefined} [consensusOnly] */
+  /**
+   * Return a fresh snapshot, with or without local stats.
+   *
+   * @param {boolean | undefined} [consensusOnly]
+   * @returns {Record<string, number>}
+   */
   const getStats = consensusOnly => {
     return {
       ...(consensusOnly ? {} : kernelLocalStats),
@@ -130,10 +134,9 @@ export const makeKernelStats = kernelStatsMetrics => {
   };
 
   const getSerializedStats = () => {
-    assert(
-      kernelConsensusStats && kernelLocalStats,
-      'Kernel stats not initialized',
-    );
+    if (!kernelConsensusStats || !kernelLocalStats) {
+      throw Fail`Kernel stats not initialized`;
+    }
 
     return {
       consensusStats: JSON.stringify(kernelConsensusStats),

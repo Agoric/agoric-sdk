@@ -1,25 +1,25 @@
-import '@agoric/governance/exported.js';
-import '@agoric/zoe/exported.js';
-import '@agoric/zoe/src/contracts/exported.js';
+/// <reference types="@agoric/internal/exported" />
+/// <reference types="@agoric/governance/exported" />
+/// <reference types="@agoric/zoe/exported" />
 
-import { AmountMath } from '@agoric/ertp';
+import { Fail } from '@endo/errors';
+import { E } from '@endo/captp';
+import { AmountMath, RatioShape } from '@agoric/ertp';
 import { mustMatch } from '@agoric/store';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
 
 import { assertAllDefined, makeTracer } from '@agoric/internal';
 import {
-  atomicRearrange,
   ceilMultiplyBy,
-  floorDivideBy,
   makeRatioFromAmounts,
   makeRecorderTopic,
   multiplyRatios,
   ratioGTE,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { E } from '@endo/captp';
 import { observeNotifier } from '@agoric/notifier';
 
 import { makeNatAmountShape } from '../contractSupport.js';
+import { amountsToSettle } from './auctionMath.js';
 import { preparePriceBook, prepareScaledBidBook } from './offerBook.js';
 import {
   isScaledBidPriceHigher,
@@ -27,10 +27,16 @@ import {
   priceFrom,
 } from './util.js';
 
-const { Fail } = assert;
+/**
+ * @import {EReturn} from '@endo/far';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {PriceAuthority} from '@agoric/zoe/tools/types.js';
+ * @import {TypedPattern} from '@agoric/internal';
+ */
+
 const { makeEmpty } = AmountMath;
 
-const DEFAULT_DECIMALS = 9;
+const QUOTE_SCALE = 10n ** 9n;
 
 /**
  * @file The book represents the collateral-specific state of an ongoing
@@ -88,8 +94,6 @@ export const makeOfferSpecShape = (bidBrand, collateralBrand) => {
   );
 };
 
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
-
 /**
  * @typedef {object} BookDataNotification
  * @property {Ratio | null} startPrice identifies the priceAuthority and price
@@ -115,6 +119,8 @@ export const makeOfferSpecShape = (bidBrand, collateralBrand) => {
 export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
   const makeScaledBidBook = prepareScaledBidBook(baggage);
   const makePriceBook = preparePriceBook(baggage);
+  // Brands that have or are making active quoteNotifier Observers
+  const observedBrands = new Set();
 
   const AuctionBookStateShape = harden({
     collateralBrand: M.any(),
@@ -124,7 +130,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
     bidHoldingSeat: M.any(),
     bidAmountShape: M.any(),
     priceAuthority: M.any(),
-    updatingOracleQuote: M.any(),
+    updatingOracleQuote: M.or(RatioShape, M.null()),
     bookDataKit: M.any(),
     priceBook: M.any(),
     scaledBidBook: M.any(),
@@ -147,11 +153,6 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
      */
     (bidBrand, collateralBrand, pAuthority, node) => {
       assertAllDefined({ bidBrand, collateralBrand, pAuthority });
-      const zeroBid = makeEmpty(bidBrand);
-      const zeroRatio = makeRatioFromAmounts(
-        zeroBid,
-        AmountMath.make(collateralBrand, 1n),
-      );
 
       // these don't have to be durable, since we're currently assuming that upgrade
       // from a quiescent state is sufficient. When the auction is quiescent, there
@@ -174,9 +175,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
 
       const bookDataKit = makeRecorderKit(
         node,
-        /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<BookDataNotification>} */ (
-          M.any()
-        ),
+        /** @type {TypedPattern<BookDataNotification>} */ (M.any()),
       );
 
       return {
@@ -188,7 +187,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
         bidAmountShape,
 
         priceAuthority: pAuthority,
-        updatingOracleQuote: zeroRatio,
+        updatingOracleQuote: /** @type {Ratio | null} */ (null),
 
         bookDataKit,
 
@@ -285,46 +284,36 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             return makeEmpty(collateralBrand);
           }
 
-          /** @type {Amount<'nat'>} */
-          const initialCollateralTarget = AmountMath.min(
-            collateralWanted,
-            collateralAvailable,
-          );
-
           const { curAuctionPrice, bidHoldingSeat, remainingProceedsGoal } =
             this.state;
           curAuctionPrice !== null ||
             Fail`auctionPrice must be set before each round`;
           assert(curAuctionPrice);
 
-          const proceedsNeeded = ceilMultiplyBy(
-            initialCollateralTarget,
-            curAuctionPrice,
-          );
-          if (AmountMath.isEmpty(proceedsNeeded)) {
+          const { proceedsExpected, proceedsTarget, collateralTarget } =
+            amountsToSettle(
+              {
+                bidAlloc,
+                collateralWanted,
+                collateralAvailable,
+                curAuctionPrice,
+                remainingProceedsGoal,
+              },
+              trace,
+            );
+
+          if (proceedsExpected === null) {
             seat.fail(Error('price fell to zero'));
             return makeEmpty(collateralBrand);
           }
 
-          const minProceedsTarget = AmountMath.min(proceedsNeeded, bidAlloc);
-          const proceedsLimit = remainingProceedsGoal
-            ? AmountMath.min(remainingProceedsGoal, minProceedsTarget)
-            : minProceedsTarget;
-          const isRaiseLimited =
-            remainingProceedsGoal ||
-            !AmountMath.isGTE(proceedsLimit, proceedsNeeded);
-
-          const [proceedsTarget, collateralTarget] = isRaiseLimited
-            ? [proceedsLimit, floorDivideBy(proceedsLimit, curAuctionPrice)]
-            : [minProceedsTarget, initialCollateralTarget];
-
+          // check that the requested amount could be satisfied
           const { Collateral } = seat.getProposal().want;
           if (Collateral && AmountMath.isGTE(Collateral, collateralTarget)) {
             seat.exit('unable to satisfy want');
           }
 
-          atomicRearrange(
-            zcf,
+          zcf.atomicRearrange(
             harden([
               [collateralSeat, seat, { Collateral: collateralTarget }],
               [seat, bidHoldingSeat, { Bid: proceedsTarget }],
@@ -338,7 +327,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             );
           }
 
-          trace('settle', {
+          trace('settled', {
             collateralTarget,
             proceedsTarget,
             remainingProceedsGoal: this.state.remainingProceedsGoal,
@@ -468,6 +457,62 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           });
           return state.bookDataKit.recorder.write(bookData);
         },
+        // Ensure that there is an observer monitoring the quoteNotifier. We
+        // assume that all failure modes for quoteNotifier eventually lead to
+        // fail or finish.
+        ensureQuoteNotifierObserved() {
+          const { state, facets } = this;
+          const { collateralBrand, bidBrand, priceAuthority } = state;
+
+          if (observedBrands.has(collateralBrand)) {
+            return;
+          }
+          observedBrands.add(collateralBrand);
+          trace('observing');
+
+          const quoteNotifierP = E(priceAuthority).makeQuoteNotifier(
+            AmountMath.make(collateralBrand, QUOTE_SCALE),
+            bidBrand,
+          );
+
+          void E.when(
+            quoteNotifierP,
+            quoteNotifier =>
+              observeNotifier(quoteNotifier, {
+                updateState: quote => {
+                  trace(
+                    `BOOK notifier ${priceFrom(quote).numerator.value}/${
+                      priceFrom(quote).denominator.value
+                    }`,
+                  );
+                  state.updatingOracleQuote = priceFrom(quote);
+                },
+                fail: reason => {
+                  trace(
+                    `Failure from quoteNotifier (${reason}) setting to null`,
+                  );
+                  // lack of quote will trigger restart
+                  state.updatingOracleQuote = null;
+                  observedBrands.delete(collateralBrand);
+                },
+                finish: done => {
+                  trace(
+                    `quoteNotifier invoked finish(${done}). setting quote to null`,
+                  );
+                  // lack of quote will trigger restart
+                  state.updatingOracleQuote = null;
+                  observedBrands.delete(collateralBrand);
+                },
+              }),
+            e => {
+              trace('makeQuoteNotifier failed, resetting', e);
+              state.updatingOracleQuote = null;
+              observedBrands.delete(collateralBrand);
+            },
+          );
+
+          void facets.helper.publishBookData();
+        },
       },
       self: {
         /**
@@ -539,8 +584,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             state.startProceedsGoal = nextProceedsGoal;
           }
 
-          atomicRearrange(
-            zcf,
+          zcf.atomicRearrange(
             harden([[sourceSeat, collateralSeat, { Collateral: assetAmount }]]),
           );
 
@@ -572,20 +616,14 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           const pricedOffers = priceBook.offersAbove(curAuctionPrice);
           const scaledBidOffers = scaledBidBook.offersAbove(reduction);
 
-          const compareValues = (v1, v2) => {
-            if (v1 < v2) {
-              return -1;
-            } else if (v1 === v2) {
-              return 0;
-            } else {
-              return 1;
-            }
-          };
-          trace(`settling`, pricedOffers.length, scaledBidOffers.length);
           // requested price or BidScaling gives no priority beyond specifying which
           // round the order will be serviced in.
           const prioritizedOffers = [...pricedOffers, ...scaledBidOffers].sort(
-            (a, b) => compareValues(a[1].seqNum, b[1].seqNum),
+            (a, b) => Number(a[1].seqNum - b[1].seqNum),
+          );
+
+          trace(
+            `settling ${prioritizedOffers.length} offers at ${curAuctionPrice} (priced ${pricedOffers.length}, scaled ${scaledBidOffers.length}) `,
           );
 
           const { remainingProceedsGoal } = state;
@@ -630,6 +668,13 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           const { facets, state } = this;
 
           trace(`capturing oracle price `, state.updatingOracleQuote);
+          if (!state.updatingOracleQuote) {
+            // if the price feed has died (or hasn't been started for this
+            // incarnation), (re)start it.
+            facets.helper.ensureQuoteNotifierObserved();
+            return;
+          }
+
           state.capturedPriceForRound = state.updatingOracleQuote;
           void facets.helper.publishBookData();
         },
@@ -729,37 +774,8 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
       finish: ({ state, facets }) => {
         const { collateralBrand, bidBrand, priceAuthority } = state;
         assertAllDefined({ collateralBrand, bidBrand, priceAuthority });
-        void E.when(
-          E(collateralBrand).getDisplayInfo(),
-          ({ decimalPlaces = DEFAULT_DECIMALS }) => {
-            // TODO(#6946) use this to keep a current price that can be published in state.
-            const quoteNotifier = E(priceAuthority).makeQuoteNotifier(
-              AmountMath.make(collateralBrand, 10n ** BigInt(decimalPlaces)),
-              bidBrand,
-            );
-            void observeNotifier(quoteNotifier, {
-              updateState: quote => {
-                trace(
-                  `BOOK notifier ${priceFrom(quote).numerator.value}/${
-                    priceFrom(quote).denominator.value
-                  }`,
-                );
-                state.updatingOracleQuote = priceFrom(quote);
-              },
-              fail: reason => {
-                throw Error(
-                  `auction observer of ${collateralBrand} failed: ${reason}`,
-                );
-              },
-              finish: done => {
-                throw Error(
-                  `auction observer for ${collateralBrand} died: ${done}`,
-                );
-              },
-            });
-          },
-        );
-        void facets.helper.publishBookData();
+
+        facets.helper.ensureQuoteNotifierObserved();
       },
       stateShape: AuctionBookStateShape,
     },
@@ -775,4 +791,4 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
 };
 harden(prepareAuctionBook);
 
-/** @typedef {ReturnType<ReturnType<typeof prepareAuctionBook>>} AuctionBook */
+/** @typedef {EReturn<EReturn<typeof prepareAuctionBook>>} AuctionBook */

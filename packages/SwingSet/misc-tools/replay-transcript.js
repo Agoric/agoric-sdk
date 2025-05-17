@@ -1,7 +1,7 @@
 // @ts-check
 
 /* global WeakRef FinalizationRegistry */
-/* eslint-disable no-constant-condition */
+
 import fs from 'fs';
 import '@agoric/internal/src/install-ses-debug.js';
 
@@ -29,6 +29,10 @@ import { makeXsSubprocessFactory } from '../src/kernel/vat-loader/manager-subpro
 import { makeLocalVatManagerFactory } from '../src/kernel/vat-loader/manager-local.js';
 import { makeSyscallSimulator } from '../src/kernel/vat-warehouse.js';
 import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
+
+/**
+ * @import {SnapStore} from '@agoric/swing-store';
+ */
 
 const finished = promisify(finishedCallback);
 
@@ -213,7 +217,8 @@ async function replay(transcriptFile) {
   let cleanupSnapStore;
 
   if (argv.useCustomSnapStore) {
-    snapStore = /** @type {SnapStore} */ ({
+    snapStore = {
+      // @ts-expect-error missing methods and saveSnapshot return is missing field of SnapshotResult
       async saveSnapshot(_vatID, snapPos, snapshotStream) {
         const snapFile = `${vatID}-${snapPos}-${
           saveSnapshotID || 'unknown'
@@ -238,7 +243,7 @@ async function replay(transcriptFile) {
         const snapFile = `${vatID}-${loadSnapshotID}.xss`;
         yield* fs.createReadStream(snapFile);
       },
-    });
+    };
   } else {
     const tmpDb = tmpDirSync({
       prefix: `ag-replay-${transcriptFile}`,

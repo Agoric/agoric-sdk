@@ -1,10 +1,10 @@
 // @ts-check
-/* global process */
+/* eslint-env node */
 import fs from 'fs';
 import path from 'path';
 import { execFileSync } from 'child_process';
 
-import { assert, details as X } from '@agoric/assert';
+import { assert, X } from '@endo/errors';
 import anylogger from 'anylogger';
 import { HELPER } from './chain-cosmos-sdk.js';
 
@@ -12,8 +12,7 @@ const console = anylogger('ag-solo:init');
 
 const DEFAULT_WALLET = '@agoric/wallet';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 /**
  * @param {string} basedir

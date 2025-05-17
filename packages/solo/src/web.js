@@ -172,7 +172,7 @@ export async function makeHTTPListener(
     app.use('/wallet', express.static(walletHtmlDir));
 
     // Default non-bridge GETs to /wallet/index.html for history routing.
-    app.get('/wallet/*', (_, res) =>
+    app.get('/wallet/:slug', (_, res) =>
       res.sendFile(path.resolve(walletHtmlDir, 'index.html')),
     );
   }
@@ -218,7 +218,7 @@ export async function makeHTTPListener(
   };
 
   // accept POST messages as commands.
-  app.post('*', async (req, res) => {
+  app.post(':path', async (req, res) => {
     const valid = await validateAccessToken(req);
     if (!valid) {
       res.json({ ok: false, rej: 'Unauthorized' });
@@ -306,14 +306,14 @@ export async function makeHTTPListener(
   server.listen(port, host, () => log.info('Listening on', `${host}:${port}`));
 
   const pingInterval = setInterval(function ping() {
-    wss.clients.forEach(ws => {
+    for (const ws of wss.clients) {
       if (!ws.isAlive) {
         ws.terminate();
         return;
       }
       ws.isAlive = false;
       ws.ping(() => {});
-    });
+    }
   }, 30000);
 
   wss.on('close', () => clearInterval(pingInterval));
@@ -370,7 +370,6 @@ export async function makeHTTPListener(
           return;
         }
 
-        // eslint-disable-next-line no-use-before-define
         sendJSON({ ...res, meta });
       } catch (error) {
         inboundCommand(

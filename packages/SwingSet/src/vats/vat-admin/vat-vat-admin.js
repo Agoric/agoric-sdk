@@ -5,10 +5,11 @@
  * must ensure that only data goes in and out. It's also responsible for turning
  * device affordances into objects that can be used by code in other vats.
  */
+import { Nat, isNat } from '@endo/nat';
+import { q, Fail } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
 // import { makeNotifierKit } from '@agoric/notifier'; // XXX RESTORE
 import { Far, E, passStyleOf } from '@endo/far';
-import { Nat, isNat } from '@endo/nat';
 import {
   provide,
   makeScalarBigMapStore,
@@ -17,7 +18,11 @@ import {
   prepareSingleton,
 } from '@agoric/vat-data';
 
-const { quote: q, Fail } = assert;
+/**
+ * @import {VatAdminRootDeviceNode} from '../../devices/vat-admin/device-vat-admin.js';
+ * @import {DProxy} from'../../types-external.js';
+ * @import {Baggage} from '@agoric/vat-data';
+ */
 
 const managerTypes = ['local', 'node-subprocess', 'xsnap', 'xs-worker']; // xs-worker is alias
 
@@ -26,14 +31,25 @@ function producePRR() {
   return /** @type {const} */ ([promise, { resolve, reject }]);
 }
 
+/**
+ * Build root object of the bootstrap vat.
+ *
+ * @param {VatPowers & {
+ *   D: DProxy;
+ * }} vatPowers
+ * @param {never} _vatParameters
+ * @param {Baggage} baggage
+ */
 export function buildRootObject(vatPowers, _vatParameters, baggage) {
   const criticalVatKey = prepareSingleton(baggage, 'criticalVatKey', {});
 
   const { D } = vatPowers;
   const pendingVatCreations = new Map(); // vatID -> { resolve, reject } for promise
-  const pendingBundles = new Map(); // bundleID -> Promise<BundleCap>
+  /** @type {Map<BundleID, PromiseKit<BundleCap>>} */
+  const pendingBundles = new Map();
   const pendingUpgrades = new Map(); // upgradeID -> Promise<UpgradeResults>
 
+  /** @type {import('../../types-external.js').Device<VatAdminRootDeviceNode>} */
   let vatAdminDev;
 
   const runningVats = new Map(); // vatID -> [doneP, { resolve, reject }]
@@ -84,7 +100,6 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
       // getNotifier: ({ state }) => state.notifier, // XXX RESTORE
       getNotifier: ({ _self }) => Fail`not implemented, see #7234`, // XXX TEMP
     },
-    // eslint-disable-next-line no-use-before-define
     { finish: finishMeter },
   );
 
@@ -104,18 +119,15 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
       // getNotifier: ({ state }) => state.notifier, // will never fire // XXX RESTORE
       getNotifier: ({ _self }) => Fail`not implemented, see #7234`, // XXX TEMP
     },
-    // eslint-disable-next-line no-use-before-define
     { finish: finishMeter },
   );
 
   function finishMeter({ state, self }) {
-    // eslint-disable-next-line no-use-before-define
     meterByID.init(
       state.meterID,
       // harden({ meter: self, updater: state.updater }), // XXX RESTORE
       harden({ meter: self }), // XXX TEMP
     );
-    // eslint-disable-next-line no-use-before-define
     meterIDByMeter.set(self, state.meterID);
   }
 
@@ -174,7 +186,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
 
   function pauseService() {
     if (!quiescentP) {
-      [quiescentP, quiescentRR] = producePRR();
+      void ([quiescentP, quiescentRR] = producePRR());
     }
     checkForQuiescence();
     return quiescentP;
@@ -201,7 +213,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
         console.log(`bundle ${bundleID} missing, hoping for reinstall`);
         return;
       }
-      pendingBundles.get(bundleID).resolve(bundlecap);
+      pendingBundles.get(bundleID)?.resolve(bundlecap);
       pendingBundles.delete(bundleID);
       checkForQuiescence();
     }
@@ -318,9 +330,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
     noteRunningVat(vatID);
 
     const adminNode = makeAdminNode(vatID);
-    return E.when(pendingP, root => {
-      return { adminNode, root };
-    });
+    return E.when(pendingP, root => harden({ adminNode, root }));
   }
 
   function getCriticalVatKey() {
@@ -421,8 +431,9 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
       if (!pendingBundles.has(bundleID)) {
         pendingBundles.set(bundleID, makePromiseKit());
       }
-      return pendingBundles.get(bundleID).promise;
+      return pendingBundles.get(bundleID)?.promise;
     },
+    /** @type {(bundleID: BundleID) => BundleCap} */
     getBundleCap(bundleID) {
       const bundlecap = D(vatAdminDev).getBundleCap(bundleID);
       if (bundlecap) {

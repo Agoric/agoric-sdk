@@ -1,15 +1,16 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import {
   SECONDS_PER_HOUR,
   SECONDS_PER_MINUTE,
 } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import {
-  AgoricNamesRemotes,
+  type AgoricNamesRemotes,
   makeAgoricNamesRemotesFromFakeStorage,
 } from '@agoric/vats/tools/board-utils.js';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import type { ExecutionContext } from 'ava';
-import { type SwingsetTestKit, makeSwingsetTestKit } from './supports.ts';
+import { insistManagerType, makeSwingsetHarness } from './supports.js';
+import { type SwingsetTestKit, makeSwingsetTestKit } from './supports.js';
 import {
   type GovernanceDriver,
   type PriceFeedDriver,
@@ -17,7 +18,7 @@ import {
   makeGovernanceDriver,
   makePriceFeedDriver,
   makeWalletFactoryDriver,
-} from './drivers.ts';
+} from './drivers.js';
 
 export type LiquidationSetup = {
   vaults: {
@@ -51,6 +52,17 @@ export type LiquidationSetup = {
       debt: number;
     };
   };
+};
+
+// TODO read from the config file
+export const atomConfig = {
+  oracleAddresses: [
+    'agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr',
+    'agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8',
+    'agoric144rrhh4m09mh7aaffhm6xy223ym76gve2x7y78',
+    'agoric19d6gnr9fyp6hev4tlrg87zjrzsd5gzr5qlfq2p',
+    'agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj',
+  ],
 };
 
 export const scale6 = x => BigInt(Math.round(x * 1_000_000));
@@ -94,8 +106,8 @@ export const makeLiquidationTestKit = async ({
     managerIndex: number;
     price: number;
   }) => {
-    const managerPath = `published.vaultFactory.managers.manager${managerIndex}`;
-    const { advanceTimeBy, readLatest } = swingsetTestKit;
+    const managerPath = `vaultFactory.managers.manager${managerIndex}`;
+    const { advanceTimeBy, readPublished } = swingsetTestKit;
 
     await null;
     if (!priceFeedDrivers[collateralBrandKey]) {
@@ -103,14 +115,7 @@ export const makeLiquidationTestKit = async ({
         collateralBrandKey,
         agoricNamesRemotes,
         walletFactoryDriver,
-        // TODO read from the config file
-        [
-          'agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr',
-          'agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8',
-          'agoric144rrhh4m09mh7aaffhm6xy223ym76gve2x7y78',
-          'agoric19d6gnr9fyp6hev4tlrg87zjrzsd5gzr5qlfq2p',
-          'agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj',
-        ],
+        atomConfig.oracleAddresses,
       );
     }
 
@@ -149,7 +154,7 @@ export const makeLiquidationTestKit = async ({
     );
 
     // confirm Relevant Governance Parameter Assumptions
-    t.like(readLatest(`${managerPath}.governance`), {
+    t.like(readPublished(`${managerPath}.governance`), {
       current: {
         DebtLimit: { value: { value: DebtLimitValue } },
         InterestRate: {
@@ -174,7 +179,7 @@ export const makeLiquidationTestKit = async ({
         },
       },
     });
-    t.like(readLatest('published.auction.governance'), {
+    t.like(readPublished('auction.governance'), {
       current: {
         AuctionStartDelay: { type: 'relativeTime', value: { relValue: 2n } },
         ClockStep: {
@@ -202,10 +207,10 @@ export const makeLiquidationTestKit = async ({
       vaultIndex: number,
       partial: Record<string, any>,
     ) {
-      const { readLatest } = swingsetTestKit;
+      const { readPublished } = swingsetTestKit;
 
-      const notification = readLatest(
-        `published.vaultFactory.managers.manager${managerIndex}.vaults.vault${vaultIndex}`,
+      const notification = readPublished(
+        `vaultFactory.managers.manager${managerIndex}.vaults.vault${vaultIndex}`,
       );
       t.like(notification, partial);
     },
@@ -256,6 +261,7 @@ export const makeLiquidationTestKit = async ({
     collateralBrandKey: string,
     buyerWalletAddress: string,
     setup: LiquidationSetup,
+    base = 0, // number of bids made before
   ) => {
     const buyer =
       await walletFactoryDriver.provideSmartWallet(buyerWalletAddress);
@@ -275,23 +281,20 @@ export const makeLiquidationTestKit = async ({
     const maxBuy = `10000${collateralBrandKey}`;
 
     for (let i = 0; i < setup.bids.length; i += 1) {
-      const offerId = `${collateralBrandKey}-bid${i + 1}`;
+      const offerId = `${collateralBrandKey}-bid${i + 1 + base}`;
       // bids are long-lasting offers so we can't wait here for completion
       await buyer.sendOfferMaker(Offers.auction.Bid, {
         offerId,
         ...setup.bids[i],
         maxBuy,
       });
-      t.like(
-        swingsetTestKit.readLatest(`published.wallet.${buyerWalletAddress}`),
-        {
-          status: {
-            id: offerId,
-            result: 'Your bid has been accepted',
-            payouts: undefined,
-          },
+      t.like(swingsetTestKit.readPublished(`wallet.${buyerWalletAddress}`), {
+        status: {
+          id: offerId,
+          result: 'Your bid has been accepted',
+          payouts: undefined,
         },
-      );
+      });
     }
   };
 
@@ -303,8 +306,29 @@ export const makeLiquidationTestKit = async ({
   };
 };
 
-export const makeLiquidationTestContext = async t => {
-  const swingsetTestKit = await makeSwingsetTestKit(t.log, 'bundles/vaults');
+// asserts x is type doesn't work when using arrow functions
+// https://github.com/microsoft/TypeScript/issues/34523
+function assertManagerType(specimen: string): asserts specimen is ManagerType {
+  insistManagerType(specimen);
+}
+
+export const makeLiquidationTestContext = async (
+  t,
+  io: { env?: Record<string, string | undefined> } = {},
+) => {
+  const { env = {} } = io;
+  const {
+    SLOGFILE: slogFile,
+    SWINGSET_WORKER_TYPE: defaultManagerType = 'local',
+  } = env;
+  assertManagerType(defaultManagerType);
+  const harness =
+    defaultManagerType === 'xsnap' ? makeSwingsetHarness() : undefined;
+  const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
+    slogFile,
+    defaultManagerType,
+    harness,
+  });
   console.time('DefaultTestContext');
 
   const { runUtils, storage } = swingsetTestKit;
@@ -361,6 +385,7 @@ export const makeLiquidationTestContext = async t => {
     refreshAgoricNamesRemotes,
     walletFactoryDriver,
     governanceDriver,
+    harness,
   };
 };
 
@@ -391,7 +416,6 @@ const addSTARsCollateral = async (
   t.log({ bridgeMessage });
 
   const { EV } = t.context.runUtils;
-  /** @type {ERef<import('@agoric/vats/src/types.js').BridgeHandler>} */
   const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(
     'coreEvalBridgeHandler',
   );

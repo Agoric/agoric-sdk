@@ -7,6 +7,7 @@ on:
       # $default-branch
       - master
       - 'release-*'
+      - 'dev-*'
   workflow_dispatch:
 
 jobs:
@@ -15,9 +16,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ['16.x', '18.x']
+        node-version: ['node-new', 'node-old']
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'true'
       - uses: ./.github/actions/restore-node
@@ -35,15 +36,11 @@ jobs:
   dev-canary:
     needs: build
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # note: only use one node-version
-        node-version: ['18.x']
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 'node-new'
 
       # Adapted from https://johnny.sh/notes/publish-canary-lerna-cicd/
       - name: configure NPM token
@@ -60,6 +57,10 @@ jobs:
               # A pre-release.
               TAG=${GITHUB_REF_NAME#release-}-dev
               ;;
+            dev-*)
+              # A pre-release while our release branch is straying from master
+              TAG=${GITHUB_REF_NAME#dev-}-dev
+              ;;
             master)
               # A trunk dev release.
               TAG=dev
@@ -69,10 +70,14 @@ jobs:
               TAG=other-dev
               ;;
           esac
+          # Prevent `lerna publish` from failing due to uncommitted changes.
+          git stash || true
           # without concurrency until https://github.com/Agoric/agoric-sdk/issues/8091
           yarn lerna publish --concurrency 1 --conventional-prerelease --canary --exact \
             --dist-tag=$TAG --preid=$TAG-$(git rev-parse --short=7 HEAD) \
             --no-push --no-verify-access --yes
+          # restore any stashed changes for caching
+          git stash pop || true
       - name: notify on failure
         if: failure()
         uses: ./.github/actions/notify-status
@@ -80,26 +85,21 @@ jobs:
           from: ${{ secrets.NOTIFY_EMAIL_FROM }}
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   coverage:
     needs: build
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # note: only use one node-version
-        node-version: ['18.x']
     if: ${{github.event_name == 'push' }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 'node-new'
 
-      - name: generate coverage for all tests
-        run: 'yarn test:c8-all || :'
-      - name: generate coverage/html reports
-        run: mkdir -p coverage/tmp && yarn c8 report --reporter=html-spa --reports-dir=coverage/html --temp-directory=coverage/tmp
-      - uses: actions/upload-artifact@v3
+      - name: generate test coverage report
+        run: ./scripts/ci/generate-test-coverage-report.sh
+      - uses: actions/upload-artifact@v4
         with:
           name: coverage
           path: coverage
@@ -128,22 +128,18 @@ jobs:
   benchmark:
     needs: build
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # note: only use one node-version
-        node-version: ['18.x']
     if: ${{github.event_name == 'push'}}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 'node-new'
 
       - name: benchmark changes
         env:
           AUTOBENCH_METRICS_URL: ${{ secrets.AUTOBENCH_METRICS_URL }}
         run: cd packages/swingset-runner && yarn ci:autobench
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: benchmarkstats.json
           path: packages/swingset-runner/benchstats*.json

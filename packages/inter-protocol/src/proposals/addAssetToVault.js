@@ -1,12 +1,13 @@
 // @jessie-check
 // @ts-check
 
+import { q } from '@endo/errors';
 import { ToFarFunction } from '@endo/captp';
 import { Far } from '@endo/marshal';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
-import { parseRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { parseRatio } from '@agoric/ertp/src/ratio.js';
 import { E } from '@endo/far';
 import { Stable } from '@agoric/internal/src/tokens.js';
 import { TimeMath } from '@agoric/time/src/timeMath.js';
@@ -19,8 +20,6 @@ import {
 } from './utils.js';
 
 export * from './startPSM.js';
-
-const { quote: q } = assert;
 
 /**
  * @typedef {object} InterchainAssetOptions
@@ -35,7 +34,7 @@ const { quote: q } = assert;
  * @property {number} [initialPrice]
  */
 
-/** @typedef {import('./econ-behaviors.js').EconomyBootstrapPowers} EconomyBootstrapPowers */
+/** @import {EconomyBootstrapPowers} from './econ-behaviors.js' */
 
 /**
  * @param {BootstrapPowers} powers
@@ -57,7 +56,7 @@ export const publishInterchainAssetFromBoardId = async (
   assert.typeof(issuerBoardId, 'string');
   assert.typeof(issuerName, 'string');
 
-  const issuer = await E(board).getValue(issuerBoardId);
+  const issuer = /** @type {Issuer} */ (await E(board).getValue(issuerBoardId));
   const brand = await E(issuer).getBrand();
 
   return Promise.all([
@@ -113,7 +112,7 @@ export const publishInterchainAssetFromBank = async (
   });
 
   const brand = await E(issuer).getBrand();
-  const kit = { mint, issuer, brand };
+  const kit = /** @type {IssuerKit<'nat'>} */ ({ mint, issuer, brand });
 
   await E(E.get(reserveKit).creatorFacet).addIssuer(issuer, keyword);
 
@@ -130,7 +129,7 @@ export const publishInterchainAssetFromBank = async (
  * @param {object} config.options
  * @param {InterchainAssetOptions} config.options.interchainAssetOptions
  */
-export const registerScaledPriceAuthority = async (
+export const startScaledPriceAuthority = async (
   {
     consume: {
       agoricNamesAdmin,
@@ -138,7 +137,6 @@ export const registerScaledPriceAuthority = async (
       priceAuthorityAdmin,
       priceAuthority,
     },
-    instance: { produce: produceInstance },
   },
   { options: { interchainAssetOptions } },
 ) => {
@@ -171,8 +169,9 @@ export const registerScaledPriceAuthority = async (
     ]),
   ]);
 
+  // TODO get unit amounts elsewhere https://github.com/Agoric/agoric-sdk/issues/10235
   // We need "unit amounts" of each brand in order to get the ratios right.  You
-  // can ignore decimalPlaces when adding and subtracting a brand with itself,
+  // can ignore unit amounts when adding and subtracting a brand with itself,
   // but not when creating ratios.
   const getDecimalP = async brand => {
     const displayInfo = E(brand).getDisplayInfo();
@@ -230,6 +229,25 @@ export const registerScaledPriceAuthority = async (
     stableBrand,
     true, // force
   );
+
+  return spaKit;
+};
+
+/**
+ * @param {BootstrapPowers} powers
+ * @param {object} config
+ * @param {object} config.options
+ */
+export const registerScaledPriceAuthority = async (powers, { options }) => {
+  const {
+    instance: { produce: produceInstance },
+  } = powers;
+
+  const { keyword, issuerName = keyword } = options.interchainAssetOptions;
+
+  const spaKit = await startScaledPriceAuthority(powers, { options });
+
+  const label = scaledPriceFeedName(issuerName);
 
   // publish into agoricNames so that others can await its presence.
   // This must stay after registerPriceAuthority above so it's evidence of registration.

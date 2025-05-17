@@ -7,21 +7,24 @@ TERRAFORM_VERSION=0.11.14
 uname_s=$(uname -s | tr '[:upper:]' '[:lower:]')
 
 case $uname_s in
-*) TERRAFORM_OS=$uname_s ;;
+  *) TERRAFORM_OS=$uname_s ;;
 esac
 
 uname_m=$(uname -m)
 case $uname_m in
-x86_64) TERRAFORM_ARCH=amd64 ;;
-aarch64 | arm64) TERRAFORM_ARCH=arm ;;
-*) TERRAFORM_ARCH=$uname_m ;;
+  x86_64) TERRAFORM_ARCH=amd64 ;;
+  aarch64 | arm64) TERRAFORM_ARCH=arm ;;
+  *) TERRAFORM_ARCH=$uname_m ;;
 esac
 
 TERRAFORM_RELEASE=terraform_${TERRAFORM_VERSION}_${TERRAFORM_OS}_${TERRAFORM_ARCH}
 TERRAFORM_URL=https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/${TERRAFORM_RELEASE}.zip
 
 # Extract, then delete temporary file.
-[ -f /usr/local/bin/terraform ] && (/usr/local/bin/terraform -version; true) | head -1 | grep -q "v$TERRAFORM_VERSION" || (
+[ -f /usr/local/bin/terraform ] && (
+  /usr/local/bin/terraform -version
+  true
+) | head -1 | grep -q "v$TERRAFORM_VERSION" || (
   trap 'echo "Removing $terraform_zip"; rm -f "$terraform_zip"' EXIT
   terraform_zip=$(mktemp -t terraformXXXXXX)
   curl "$TERRAFORM_URL" > "$terraform_zip"
@@ -53,12 +56,13 @@ esac
 
 # Install Ansible.
 if test -d /etc/apt; then
-  dpkg-query -W ansible rsync curl sudo gnupg2 jq libbsd-dev >/dev/null || {
+  dpkg-query -W ansible rsync curl sudo gnupg2 jq libbsd-dev > /dev/null || {
     echo "deb http://ppa.launchpad.net/ansible/ansible/ubuntu $VERSION_CODENAME main" > /etc/apt/sources.list.d/ansible.list
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367
     apt-get update --allow-releaseinfo-change -y
     apt-get install -y rsync curl sudo gnupg2 jq libbsd-dev
-    if apt-get install -y ansible; then : # success
+    if apt-get install -y ansible; then
+      : # success
     else
       # Failed to install Ansible, try workaround based on
       # https://github.com/ansible-community/ppa/issues/77#issuecomment-1802847056
@@ -68,7 +72,7 @@ if test -d /etc/apt; then
     apt-get clean -y
   }
 elif test "$uname_s" == darwin; then
-  brew list ansible rsync curl gnupg2 jq >/dev/null || {
+  brew list ansible rsync curl gnupg2 jq > /dev/null || {
     brew update
     brew install ansible rsync curl gnupg2 jq
     brew cleanup

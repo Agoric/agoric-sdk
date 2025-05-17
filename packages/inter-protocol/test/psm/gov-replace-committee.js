@@ -1,12 +1,12 @@
 /* global E */
 // @ts-check
-/// <reference types="@agoric/vats/src/core/core-eval-env"/>
+/// <reference types="@agoric/vats/src/core/core-eval-env" />
 /**
  * @file Script to replace the econ governance committee in a SwingSet Core Eval
  *   (aka big hammer)
  */
 
-const { Fail } = assert;
+import { Fail } from '@endo/errors';
 
 const runConfig = {
   committeeName: 'Economic Committee',

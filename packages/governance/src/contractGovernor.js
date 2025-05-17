@@ -1,5 +1,6 @@
-import { mustMatch } from '@agoric/store';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
+import { mustMatch } from '@agoric/store';
 
 import { makeTracer } from '@agoric/internal';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
@@ -7,11 +8,14 @@ import { CONTRACT_ELECTORATE } from './contractGovernance/governParam.js';
 import { prepareContractGovernorKit } from './contractGovernorKit.js';
 import { ParamChangesQuestionDetailsShape } from './typeGuards.js';
 
-const { Fail } = assert;
+/**
+ * @import {ContractMeta, Installation, Instance, Invitation, StandardTerms, ZCF} from '@agoric/zoe';
+ * @import {GovernableStartFn, GovernorCreatorFacet, GovernorPublic, ParamChangeIssueDetails} from './types.js';
+ */
 
 const trace = makeTracer('CGov', false);
 
-/** @type {ContractMeta} */
+/** @type {ContractMeta<typeof start>} */
 export const meta = {
   upgradability: 'canUpgrade',
 };
@@ -59,6 +63,7 @@ export const validateQuestionFromCounter = async (
   electorate,
   voteCounter,
 ) => {
+  /** @type {Promise<any>} */
   const counterPublicP = E(zoe).getPublicFacet(voteCounter);
   const questionDetails = await E(counterPublicP).getDetails();
 
@@ -189,8 +194,8 @@ export const start = async (zcf, privateArgs, baggage) => {
       const startedInstanceKit = await E(zoe).startInstance(
         governedContractInstallation,
         governedIssuerKeywordRecord,
-        // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- the build config doesn't expect an error here
-        // @ts-ignore XXX governance types https://github.com/Agoric/agoric-sdk/issues/7178
+
+        // @ts-expect-error XXX governance types https://github.com/Agoric/agoric-sdk/issues/7178
         augmentedTerms,
         privateArgs.governed,
         governedContractLabel,

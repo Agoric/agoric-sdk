@@ -1,4 +1,4 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { StorageNodeShape } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import {
@@ -8,6 +8,10 @@ import {
 import { mustMatch } from '@agoric/store';
 import { M, makeScalarBigMapStore, prepareExoClass } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
+
+/**
+ * @import {TypedPattern} from '@agoric/internal';
+ */
 
 /**
  * Recorders support publishing data to vstorage.
@@ -39,7 +43,7 @@ import { E } from '@endo/eventual-send';
 /**
  * Wrap a Publisher to record all the values to chain storage.
  *
- * @param {import('@agoric/zoe').Baggage} baggage
+ * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {ERef<Marshaller>} marshaller
  */
 export const prepareRecorder = (baggage, marshaller) => {
@@ -56,12 +60,12 @@ export const prepareRecorder = (baggage, marshaller) => {
      * @template T
      * @param {PublishKit<T>['publisher']} publisher
      * @param {Awaited<import('@endo/far').FarRef<StorageNode>>} storageNode
-     * @param {TypedMatcher<T>} [valueShape]
+     * @param {TypedPattern<any>} [valueShape]
      */
     (
       publisher,
       storageNode,
-      valueShape = /** @type {TypedMatcher<any>} */ (M.any()),
+      valueShape = /** @type {TypedPattern<any>} */ (M.any()),
     ) => {
       return {
         closed: false,
@@ -94,7 +98,7 @@ export const prepareRecorder = (baggage, marshaller) => {
       /**
        * Marshalls before writing to storage or publisher to help ensure the two streams match.
        *
-       * @param {unknown} value
+       * @param {any} value
        * @returns {Promise<void>}
        */
       async write(value) {
@@ -111,7 +115,7 @@ export const prepareRecorder = (baggage, marshaller) => {
       /**
        * Like `write` but prevents future writes and terminates the publisher.
        *
-       * @param {unknown} value
+       * @param {any} value
        * @returns {Promise<void>}
        */
       async writeFinal(value) {
@@ -122,7 +126,7 @@ export const prepareRecorder = (baggage, marshaller) => {
         const serialized = JSON.stringify(encoded);
         await E(storageNode).setValue(serialized);
 
-        // below here differs from writeFinal()
+        // below here differs from write()
         this.state.closed = true;
         return publisher.finish(value);
       },
@@ -145,7 +149,7 @@ export const defineRecorderKit = ({ makeRecorder, makeDurablePublishKit }) => {
   /**
    * @template T
    * @param {StorageNode | Awaited<import('@endo/far').FarRef<StorageNode>>} storageNode
-   * @param {TypedMatcher<T>} [valueShape]
+   * @param {TypedPattern<T>} [valueShape]
    * @returns {RecorderKit<T>}
    */
   const makeRecorderKit = (storageNode, valueShape) => {
@@ -174,7 +178,7 @@ export const defineERecorderKit = ({ makeRecorder, makeDurablePublishKit }) => {
   /**
    * @template T
    * @param {ERef<StorageNode>} storageNodeP
-   * @param {TypedMatcher<T>} [valueShape]
+   * @param {TypedPattern<T>} [valueShape]
    * @returns {EventualRecorderKit<T>}
    */
   const makeERecorderKit = (storageNodeP, valueShape) => {
@@ -259,18 +263,8 @@ export const prepareMockRecorderKitMakers = () => {
   };
 };
 
-/**
- * Stop-gap until https://github.com/Agoric/agoric-sdk/issues/6160
- * explictly specify the type that the Pattern will verify through a match.
- *
- * This is a Pattern but since that's `any`, including in the typedef turns the
- * whole thing to `any`.
- *
- * @template T
- * @typedef {{ validatedType?: T }} TypedMatcher
- */
-
-/**
- * @template {TypedMatcher<any>} TM
- * @typedef {TM extends TypedMatcher<infer T> ? T : never} MatchedType
- */
+export const RecorderKitShape = {
+  recorder: M.remotable(),
+  subscriber: M.remotable(),
+};
+harden(RecorderKitShape);

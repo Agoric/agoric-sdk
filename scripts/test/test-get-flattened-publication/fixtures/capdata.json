@@ -1,4 +1,0 @@
-{
-  "slots": ["slot-ignored", "slot-bar", "slot-baz"],
-  "body":"{\"json\":{\"booleans\":[false,true],\"null\":null,\"strings\":[\"\"],\"numbers\":[0]},\"non-json\":{\"bigint\":{\"@qclass\":\"bigint\",\"digits\":\"0\"},\"slotref\":{\"@qclass\":\"slot\",\"index\":1,\"iface\":\"Alleged: Bar brand\"},\"slotreref\":{\"@qclass\":\"slot\",\"index\":1},\"slotref3\":{\"@qclass\":\"slot\",\"index\":2,\"iface\":\"Alleged: Non-brand type\"}}}"
-}

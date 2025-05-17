@@ -2,9 +2,9 @@
 // no-lonely-if is a stupid rule that really should be disabled globally
 /* eslint-disable no-lonely-if */
 
-import { assert } from '@agoric/assert';
-import { initEmpty, M } from '@agoric/store';
+import { Fail, assert } from '@endo/errors';
 import { E } from '@endo/eventual-send';
+import { initEmpty, M } from '@agoric/store';
 import { parseVatSlot } from './parseVatSlots.js';
 
 /**
@@ -36,13 +36,12 @@ export function makeWatchedPromiseManager({
   const { defineDurableKind } = vom;
 
   /**
-   * virtual Store (not durable) mapping vpid to Promise objects, to
-   * maintain the slotToVal registration until resolution. Without
-   * this, slotToVal would forget local Promises that aren't exported.
+   * Track promises watched in `buildRootObject` so `loadWatchedPromiseTable`
+   * can differentiate them from promises watched in a previous incarnation.
    *
-   * @type {MapStore<string, Promise<unknown>>}
+   * @type {Set<string> | null}
    */
-  let promiseRegistrations;
+  let buildRootObjectWatchedPromiseRefs;
 
   /**
    * watched promises by vpid: each entry is an array of watches on the
@@ -60,7 +59,7 @@ export function makeWatchedPromiseManager({
   let promiseWatcherByKindTable;
 
   function preparePromiseWatcherTables() {
-    promiseRegistrations = makeScalarBigMapStore('promiseRegistrations');
+    buildRootObjectWatchedPromiseRefs = new Set();
     let watcherTableID = syscall.vatstoreGet('watcherTableID');
     if (watcherTableID) {
       promiseWatcherByKindTable = convertSlotToVal(watcherTableID);
@@ -105,7 +104,7 @@ export function makeWatchedPromiseManager({
     function settle(value, wasFulfilled) {
       const watches = watchedPromiseTable.get(vpid);
       watchedPromiseTable.delete(vpid);
-      promiseRegistrations.delete(vpid);
+      buildRootObjectWatchedPromiseRefs?.delete(vpid);
       for (const watch of watches) {
         const [watcher, ...args] = watch;
         void Promise.resolve().then(() => {
@@ -139,10 +138,16 @@ export function makeWatchedPromiseManager({
    */
   function loadWatchedPromiseTable(revivePromise) {
     for (const vpid of watchedPromiseTable.keys()) {
+      if (buildRootObjectWatchedPromiseRefs?.has(vpid)) {
+        // We're only interested in reconnecting the promises from the previous
+        // incarnation. Any promise watched during buildRootObject would have
+        // already created a registration.
+        continue;
+      }
       const p = revivePromise(vpid);
-      promiseRegistrations.init(vpid, p);
       pseudoThen(p, vpid);
     }
+    buildRootObjectWatchedPromiseRefs = null;
   }
 
   /**
@@ -156,9 +161,15 @@ export function makeWatchedPromiseManager({
   function providePromiseWatcher(
     kindHandle,
     // @ts-expect-error xxx rest params in typedef
-    fulfillHandler = _value => {},
+    fulfillHandler = _value => {
+      // It's fine to not pass the value through since promise watchers are not chainable
+    },
     // @ts-expect-error xxx rest params in typedef
-    rejectHandler = _reason => {},
+    rejectHandler = reason => {
+      // Replicate the unhandled rejection that would have happened if the
+      // watcher had not implemented an `onRejected` method. See `settle` above
+      throw reason;
+    },
   ) {
     assert.typeof(fulfillHandler, 'function');
     assert.typeof(rejectHandler, 'function');
@@ -198,7 +209,10 @@ export function makeWatchedPromiseManager({
       const watcherVref = convertValToSlot(watcher);
       assert(watcherVref, 'invalid watcher');
       const { virtual, durable } = parseVatSlot(watcherVref);
-      assert(virtual || durable, 'promise watcher must be a virtual object');
+      virtual ||
+        durable ||
+        // separate line so easy to breakpoint on
+        Fail`promise watcher must be a virtual object`;
       if (watcher.onFulfilled) {
         assert.typeof(watcher.onFulfilled, 'function');
       }
@@ -220,13 +234,21 @@ export function makeWatchedPromiseManager({
       } else {
         watchedPromiseTable.init(vpid, harden([[watcher, ...args]]));
 
+        buildRootObjectWatchedPromiseRefs?.add(vpid);
+
+        // To avoid triggering
+        // https://github.com/Agoric/agoric-sdk/issues/10757 and
+        // preventing slotToVal cleanup, the `pseudoThen()` should
+        // precede `maybeExportPromise()`. This isn't foolproof, but
+        // does mitigate in advance of a proper fix. See #10756 for
+        // details of this particular mitigation, and #10757 for the
+        // deeper bug.
+        pseudoThen(p, vpid);
+
         // Ensure that this vat's promises are rejected at termination.
         if (maybeExportPromise(vpid)) {
           syscall.subscribe(vpid);
         }
-
-        promiseRegistrations.init(vpid, p);
-        pseudoThen(p, vpid);
       }
     });
   }

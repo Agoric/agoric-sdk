@@ -1,12 +1,17 @@
 // @ts-check
+import { Fail, q } from '@endo/errors';
+import { HandledPromise } from '@endo/eventual-send'; // TODO: convince tsc this isn't needed
+
 import { makeScalarMapStore } from '@agoric/store';
 import { Far, makeMarshal, Remotable } from '@endo/marshal';
-import { HandledPromise } from '@endo/eventual-send'; // TODO: convince tsc this isn't needed
 import { DEFAULT_PREFIX } from '@agoric/vats/src/lib-board.js';
 
-const { Fail, quote: q } = assert;
-
-/** @typedef {import('@agoric/vats/src/lib-board.js').BoardId} BoardId */
+/**
+ * @import {PassableCap, RemotableObject} from '@endo/marshal';
+ * @import {Key} from '@endo/patterns';
+ * @import {MapStore} from '@agoric/swingset-liveslots';
+ * @import {BoardId} from '@agoric/vats/src/lib-board.js';
+ */
 
 /**
  * ID from a board made with { prefix: DEFAULT_PREFIX }
@@ -19,11 +24,10 @@ const isDefaultBoardId = specimen => {
 };
 
 /**
- * When marshaling a purse, payment, etc. we partition the slots
- * using prefixes.
+ * When marshaling a purse, payment, etc. we partition the slots using prefixes.
  *
- * @template {Record<string, IdTable<*,*>>} T
- * @typedef {`${string & keyof T}:${Digits}`} WalletSlot<T>
+ * @template {Record<string, IdTable<any, any>>} T
+ * @typedef {`${string & keyof T}:${Digits}`} WalletSlot
  */
 /**
  * @template {string} K
@@ -31,7 +35,7 @@ const isDefaultBoardId = specimen => {
  */
 
 /**
- * @template {Record<string, IdTable<*,*>>} T
+ * @template {Record<string, IdTable<any, any>>} T
  * @param {T} _tables
  * @param {string & keyof T} kind
  * @param {number} id
@@ -43,10 +47,10 @@ const makeWalletSlot = (_tables, kind, id) => {
 };
 
 /**
- * @template {Record<string, IdTable<*,*>>} T
+ * @template {Record<string, IdTable<any, any>>} T
  * @param {T} record
  * @param {(value: string, index: number, obj: string[]) => boolean} predicate
- * @returns {string & keyof T | undefined}
+ * @returns {(string & keyof T) | undefined}
  */
 const findKey = (record, predicate) => {
   const key = Object.keys(record).find(predicate);
@@ -54,10 +58,10 @@ const findKey = (record, predicate) => {
 };
 
 /**
- * @template {Record<string, IdTable<*,*>>} T
+ * @template {Record<string, IdTable<any, any>>} T
  * @param {T} tables
  * @param {string} slot
- * @returns {{ kind: undefined | string & keyof T, id: number }}
+ * @returns {{ kind: undefined | (string & keyof T); id: number }}
  */
 const parseWalletSlot = (tables, slot) => {
   const kind = findKey(tables, k => slot.startsWith(`${k}:`));
@@ -66,32 +70,30 @@ const parseWalletSlot = (tables, slot) => {
 };
 
 /**
- * Since KindSlots always include a colon and BoardIds never do,
- * we an mix them without confusion.
+ * Since KindSlots always include a colon and BoardIds never do, we an mix them
+ * without confusion.
  *
- * @template {Record<string, IdTable<*,*>>} T
- * @typedef {WalletSlot<T> | BoardId} MixedSlot<T>
+ * @template {Record<string, IdTable<any, any>>} T
+ * @typedef {WalletSlot<T> | BoardId} MixedSlot
  */
 /**
- * @typedef {`1` | `12` | `123`} Digits - 1 or more digits.
- * NOTE: the typescript definition here is more restrictive than
- * actual usage.
+ * @typedef {`1` | `12` | `123`} Digits - 1 or more digits. NOTE: the typescript
+ *   definition here is more restrictive than actual usage.
  */
 
 /**
- * @template Slot
- * @template Val
- *
+ * @template {Key} Slot
+ * @template {PassableCap} Val
  * @typedef {{
- *   bySlot: MapStore<Slot, Val>,
- *   byVal: MapStore<Val, Slot>,
+ *   bySlot: MapStore<Slot, Val>;
+ *   byVal: MapStore<Val, Slot>;
  * }} IdTable<Value>
  */
 
 /**
- * @template Slot
- * @template Val
- * @param {IdTable<Slot, Val>} table
+ * @template {Key} Slot
+ * @template {PassableCap} Val
+ * @param {IdTable<Slot, PassableCap>} table
  * @param {Slot} slot
  * @param {Val} val
  */
@@ -101,17 +103,20 @@ const initSlotVal = (table, slot, val) => {
 };
 
 /**
- * Make context for exporting wallet data where brands etc. can be recognized by boardId.
- * Export for use outside the smart wallet.
+ * Make context for exporting wallet data where brands etc. can be recognized by
+ * boardId. Export for use outside the smart wallet.
  *
  * When serializing wallet state for, there's a tension between
  *
- *  - keeping purses etc. closely held
- *  - recognizing identity of brands also referenced in the state of contracts such as the AMM
+ * - keeping purses etc. closely held
+ * - recognizing identity of brands also referenced in the state of contracts such
+ *   as the AMM
  *
- * `makeMarshal()` is parameterized by the type of slots. Here we use a disjoint union of
- *   - board ids for widely shared objects
- *   - kind:seq ids for closely held objects; for example purse:123
+ * `makeMarshal()` is parameterized by the type of slots. Here we use a disjoint
+ * union of
+ *
+ * - board ids for widely shared objects
+ * - kind:seq ids for closely held objects; for example purse:123
  */
 export const makeExportContext = () => {
   const walletObjects = {
@@ -126,27 +131,26 @@ export const makeExportContext = () => {
       byVal: makeScalarMapStore(),
     },
     // TODO: offer, contact, dapp
-    /** @type {IdTable<number, unknown>} */
+    /** @type {IdTable<number, PassableCap>} */
     unknown: {
       bySlot: makeScalarMapStore(),
       byVal: makeScalarMapStore(),
     },
   };
-  /** @type {IdTable<BoardId, unknown>} */
+  /** @type {IdTable<BoardId, PassableCap>} */
   const boardObjects = {
     bySlot: makeScalarMapStore(),
     byVal: makeScalarMapStore(),
   };
 
   /**
-   * Look up the slot in mappings from published data
-   * else try walletObjects that we have seen.
-   *
-   * @throws if not found (a slotToVal function typically
-   *         conjures a new identity)
+   * Look up the slot in mappings from published data else try walletObjects
+   * that we have seen.
    *
    * @param {MixedSlot<typeof walletObjects>} slot
    * @param {string} _iface
+   * @throws if not found (a slotToVal function typically conjures a new
+   *   identity)
    */
   const slotToVal = (slot, _iface) => {
     if (isDefaultBoardId(slot) && boardObjects.bySlot.has(slot)) {
@@ -161,7 +165,7 @@ export const makeExportContext = () => {
   let unknownNonce = 0;
 
   /**
-   * @param {unknown} val
+   * @param {PassableCap} val
    * @returns {MixedSlot<typeof walletObjects>}
    */
   const valToSlot = val => {
@@ -181,7 +185,7 @@ export const makeExportContext = () => {
   };
 
   /**
-   * @template V
+   * @template {PassableCap} V
    * @param {string & keyof typeof walletObjects} kind
    * @param {IdTable<number, V>} table
    */
@@ -208,14 +212,14 @@ export const makeExportContext = () => {
     purseEntries: walletObjects.purse.bySlot.entries,
     /**
      * @param {BoardId} id
-     * @param {unknown} val
+     * @param {RemotableObject} val
      */
     initBoardId: (id, val) => {
       initSlotVal(boardObjects, id, val);
     },
     /**
      * @param {BoardId} id
-     * @param {unknown} val
+     * @param {RemotableObject} val
      */
     ensureBoardId: (id, val) => {
       if (boardObjects.byVal.has(val)) {
@@ -235,38 +239,38 @@ const defaultMakePresence = iface => {
 };
 
 /**
- * Make context for marshalling wallet or board data.
- * To be imported into the client, which never exports objects.
+ * Make context for marshalling wallet or board data. To be imported into the
+ * client, which never exports objects.
  *
- * @param {(iface: string) => unknown} [makePresence]
+ * @param {(iface: string) => PassableCap} [makePresence]
  */
 export const makeImportContext = (makePresence = defaultMakePresence) => {
   const walletObjects = {
-    /** @type {IdTable<number, unknown>} */
+    /** @type {IdTable<number, PassableCap>} */
     purse: {
       bySlot: makeScalarMapStore(),
       byVal: makeScalarMapStore(),
     },
-    /** @type {IdTable<number, unknown>} */
+    /** @type {IdTable<number, PassableCap>} */
     payment: {
       bySlot: makeScalarMapStore(),
       byVal: makeScalarMapStore(),
     },
-    /** @type {IdTable<number, unknown>} */
+    /** @type {IdTable<number, PassableCap>} */
     unknown: {
       bySlot: makeScalarMapStore(),
       byVal: makeScalarMapStore(),
     },
   };
-  /** @type {IdTable<BoardId, unknown>} */
+  /** @type {IdTable<BoardId, PassableCap>} */
   const boardObjects = {
     bySlot: makeScalarMapStore(),
     byVal: makeScalarMapStore(),
   };
 
   /**
-   * @template Slot
-   * @template Val
+   * @template {Key} Slot
+   * @template {PassableCap} Val
    * @param {IdTable<Slot, Val>} table
    * @param {Slot} slot
    * @param {string} iface
@@ -308,7 +312,7 @@ export const makeImportContext = (makePresence = defaultMakePresence) => {
 
   const valToSlot = {
     fromBoard: val => boardObjects.byVal.get(val),
-    /** @param {unknown} val */
+    /** @param {PassableCap} val */
     fromMyWallet: val => {
       const kind = findKey(walletObjects, k => walletObjects[k].byVal.has(val));
       if (kind === undefined) {
@@ -334,14 +338,14 @@ export const makeImportContext = (makePresence = defaultMakePresence) => {
   return harden({
     /**
      * @param {BoardId} id
-     * @param {unknown} val
+     * @param {PassableCap} val
      */
     initBoardId: (id, val) => {
       initSlotVal(boardObjects, id, val);
     },
     /**
      * @param {BoardId} id
-     * @param {unknown} val
+     * @param {PassableCap} val
      */
     ensureBoardId: (id, val) => {
       if (boardObjects.byVal.has(val)) {
@@ -359,13 +363,17 @@ export const makeImportContext = (makePresence = defaultMakePresence) => {
 /**
  * @param {string} iface
  * @param {{
- *   applyMethod: (target: unknown, method: string | symbol, args: unknown[]) => void,
- *   applyFunction: (target: unknown, args: unknown[]) => void,
+ *   applyMethod: (
+ *     target: unknown,
+ *     method: string | symbol,
+ *     args: unknown[],
+ *   ) => void;
+ *   applyFunction: (target: unknown, args: unknown[]) => void;
  * }} handler
  */
 const makePresence = (iface, handler) => {
   let obj;
-  // eslint-disable-next-line no-new
+
   void new HandledPromise((resolve, reject, resolveWithPresence) => {
     obj = resolveWithPresence(handler);
   });

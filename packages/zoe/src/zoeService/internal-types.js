@@ -1,4 +1,10 @@
 // @jessie-check
+/// <reference types="@agoric/zoe/exported" />
+
+/**
+ * @import {FeeMintAccess, GetBrands, GetBundleIDFromInstallation, GetIssuers, InstallBundle, InstallBundleID, SourceBundle} from './types.js';
+ * @import {InstanceRecord} from './utils.js';
+ */
 
 /**
  * Create a purse for a new issuer
@@ -76,13 +82,13 @@
 
 /**
  * @typedef {object} ZoeInstanceStorageManager
- * @property {InstanceStateGetTerms} getTerms
- * @property {InstanceRecordGetIssuers} getIssuers
- * @property {InstanceRecordGetBrands} getBrands
+ * @property {() => AnyTerms} getTerms
+ * @property {() => IssuerKeywordRecord} getIssuers
+ * @property {() => BrandKeywordRecord} getBrands
  * @property {ZCF['saveIssuer']} saveIssuer
  * @property {MakeZoeMint} makeZoeMint
  * @property {RegisterFeeMint} registerFeeMint
- * @property {GetInstanceRecord} getInstanceRecord
+ * @property {() => InstanceRecord} getInstanceRecord
  * @property {GetIssuerRecords} getIssuerRecords
  * @property {InitInstanceAdmin} initInstanceAdmin
  * @property {DeleteInstanceAdmin} deleteInstanceAdmin
@@ -99,7 +105,6 @@
  * instance-specific terms
  *
  * @callback MakeZoeInstanceStorageManager
- * @param {import('@agoric/vat-data').Baggage} instanceBaggage
  * @param {Installation} installation
  * @param {object} customTerms
  * @param {IssuerKeywordRecord} uncleanIssuerKeywordRecord
@@ -116,12 +121,6 @@
  */
 
 /**
- * @callback GetProposalShapeForInvitation
- * @param {InvitationHandle} invitationHandle
- * @returns {Pattern | undefined}
- */
-
-/**
  * @typedef ZoeStorageManager
  * @property {MakeZoeInstanceStorageManager} makeZoeInstanceStorageManager
  * @property {GetAssetKindByBrand} getAssetKindByBrand
@@ -134,12 +133,12 @@
  * @property {GetBrands} getBrands
  * @property {GetIssuers} getIssuers
  * @property {import('./utils.js').GetTerms} getTerms
- * @property {GetOfferFilter} getOfferFilter
- * @property {SetOfferFilter} setOfferFilter
- * @property {GetInstallationForInstance} getInstallationForInstance
+ * @property {(instance: import('./utils.js').Instance<any>) => string[]} getOfferFilter
+ * @property {(instance: Instance, strings: string[]) => any} setOfferFilter
+ * @property {(instance: import('./utils.js').Instance<any>) => Promise<Installation>} getInstallationForInstance
  * @property {GetInstanceAdmin} getInstanceAdmin
  * @property {UnwrapInstallation} unwrapInstallation
- * @property {GetProposalShapeForInvitation} getProposalShapeForInvitation
+ * @property {(invitationHandle: InvitationHandle) => import('@endo/patterns').Pattern | undefined} getProposalShapeForInvitation
  */
 
 /**

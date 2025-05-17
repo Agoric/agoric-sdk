@@ -25,18 +25,17 @@
     "eslint-config.*"
   ],
   "peerDependencies": {
-    "@endo/eslint-plugin": "^2.0.0",
-    "@jessie.js/eslint-plugin": "^0.4.0",
-    "@typescript-eslint/eslint-plugin": "^6.13.2",
-    "@typescript-eslint/parser": "^6.13.2",
-    "eslint": "^8.47.0",
+    "@endo/eslint-plugin": "^2.3.0",
+    "@jessie.js/eslint-plugin": "^0.4.2",
+    "typescript-eslint": "^8.17.0",
+    "eslint": "^9.0.0",
     "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-plugin-github": "^4.10.0",
+    "eslint-plugin-github": "^5.1.4",
     "eslint-config-jessie": "^0.0.6",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-import": "^2.25.3",
-    "eslint-plugin-jsdoc": "^40.1.0",
+    "eslint-plugin-jsdoc": "^46.4.3",
     "eslint-plugin-prettier": "^5.0.0",
-    "prettier": "^3.0.3"
+    "prettier": "^3.4.2"
   }
 }

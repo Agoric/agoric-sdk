@@ -1,7 +1,9 @@
 // @ts-check
 // @jessie-check
 
-import { Far } from '@endo/far';
+import { Fail } from '@endo/errors';
+import { Far, isPassable } from '@endo/pass-style';
+
 import {
   canBeDurable,
   makeScalarMapStore,
@@ -12,15 +14,14 @@ import {
   provideDurableSetStore,
   provideDurableWeakMapStore,
   provideDurableWeakSetStore,
+  watchPromise,
 } from '@agoric/vat-data';
 
-import {
-  agoricVatDataKeys as keys,
-  isPassable,
-  makeOnceKit,
-} from '@agoric/base-zone';
+import { agoricVatDataKeys as keys, makeOnceKit } from '@agoric/base-zone';
 
-const { Fail } = assert;
+/**
+ * @import {Zone} from './index.js';
+ */
 
 /**
  * A variant of `canBeDurable` that returns `false` instead of ever throwing.
@@ -35,25 +36,24 @@ harden(isStorable);
  * @param {() => import('@agoric/vat-data').Baggage} getBaggage
  */
 const attachDurableStores = getBaggage => {
-  /** @type {import('.').Zone['mapStore']} */
+  /** @type {Zone['mapStore']} */
   const mapStore = (label, options) => {
     const baggage = getBaggage();
     const ret = provideDurableMapStore(baggage, label, options);
     return ret;
   };
-  /** @type {import('.').Zone['setStore']} */
+  /** @type {Zone['setStore']} */
   const setStore = (label, options) =>
     provideDurableSetStore(getBaggage(), label, options);
-  /** @type {import('.').Zone['weakSetStore']} */
+  /** @type {Zone['weakSetStore']} */
   const weakSetStore = (label, options) =>
     provideDurableWeakSetStore(getBaggage(), label, options);
-  /** @type {import('.').Zone['weakMapStore']} */
+  /** @type {Zone['weakMapStore']} */
   const weakMapStore = (label, options) =>
     provideDurableWeakMapStore(getBaggage(), label, options);
 
-  /** @type {import('.').Stores} */
+  /** @type {import('./index.js').Stores} */
   return Far('durableStores', {
-    // eslint-disable-next-line no-use-before-define
     detached: () => detachedDurableStores,
     isStorable,
     mapStore,
@@ -63,7 +63,7 @@ const attachDurableStores = getBaggage => {
   });
 };
 
-/** @type {import('.').Stores} */
+/** @type {import('./index.js').Stores} */
 const detachedDurableStores = attachDurableStores(() =>
   makeScalarMapStore('detached'),
 );
@@ -73,7 +73,7 @@ const detachedDurableStores = attachDurableStores(() =>
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {string} [baseLabel]
- * @returns {import('.').Zone}
+ * @returns {Zone}
  */
 export const makeDurableZone = (baggage, baseLabel = 'durableZone') => {
   baggage || Fail`baggage required`;
@@ -86,21 +86,20 @@ export const makeDurableZone = (baggage, baseLabel = 'durableZone') => {
     baggage,
   );
 
-  /** @type {import('.').Zone['exoClass']} */
+  /** @type {Zone['exoClass']} */
   const exoClass = (...args) => prepareExoClass(baggage, ...args);
-  /** @type {import('.').Zone['exoClassKit']} */
-  // @ts-ignore This type check regressed inexplicably with the release
-  // following after @endo/exo@0.2.6.
-  // The lint error does not occur in local lint, but does in integration with
-  // @agoric/vats, so can not be suppressed with ts-expect-error.
+  /** @type {Zone['exoClassKit']} */
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- happens only integrating with Endo master
+  // @ts-ignore FIXME in Endo
   const exoClassKit = (...args) => prepareExoClassKit(baggage, ...args);
-  /** @type {import('.').Zone['exo']} */
+  /** @type {Zone['exo']} */
   const exo = (...args) => prepareExo(baggage, ...args);
 
   const subZoneStore = wrapProvider(attachedStores.mapStore, keys.zone);
 
-  /** @type {import('.').Zone['subZone']} */
+  /** @type {Zone['subZone']} */
   const subZone = (label, options = {}) => {
+    /** @type {import('@agoric/swingset-liveslots').Baggage} */
     const subBaggage = subZoneStore(label, options);
     return makeDurableZone(subBaggage, `${baseLabel}.${label}`);
   };
@@ -112,6 +111,7 @@ export const makeDurableZone = (baggage, baseLabel = 'durableZone') => {
     subZone,
 
     makeOnce,
+    watchPromise,
     detached: attachedStores.detached,
     isStorable: attachedStores.isStorable,
 

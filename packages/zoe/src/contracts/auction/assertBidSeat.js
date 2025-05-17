@@ -1,4 +1,4 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { AmountMath } from '@agoric/ertp';
 
 export const assertBidSeat = (zcf, sellSeat, bidSeat) => {

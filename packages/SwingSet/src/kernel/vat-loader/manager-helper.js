@@ -1,4 +1,4 @@
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import '../../types-ambient.js';
 import {
   insistVatDeliveryResult,
@@ -6,12 +6,12 @@ import {
 } from '../../lib/message.js';
 
 /**
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryResult} VatDeliveryResult
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallResult} VatSyscallResult
- * @typedef {import('../../types-internal.js').VatManager} VatManager
- * @typedef {import('../../types-internal.js').MakeSnapshot} MakeSnapshot
+ * @import {VatDeliveryObject} from '@agoric/swingset-liveslots'
+ * @import {VatDeliveryResult} from '@agoric/swingset-liveslots'
+ * @import {VatSyscallObject} from '@agoric/swingset-liveslots'
+ * @import {VatSyscallResult} from '@agoric/swingset-liveslots'
+ * @import {VatManager} from '../../types-internal.js'
+ * @import {MakeSnapshot} from '../../types-internal.js'
  */
 
 // We use vat-centric terminology here, so "inbound" means "into a vat",

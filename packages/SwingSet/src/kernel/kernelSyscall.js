@@ -1,6 +1,4 @@
-/* eslint-disable @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
-
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 import { insistKernelType } from './parseKernelSlots.js';
 import { insistCapData } from '../lib/capdata.js';
 import { insistDeviceID, insistVatID } from '../lib/id.js';
@@ -180,24 +178,13 @@ export function makeKernelSyscallHandler(tools) {
 
   function retireExports(koids) {
     Array.isArray(koids) || Fail`retireExports given non-Array ${koids}`;
-    const newActions = [];
-    for (const koid of koids) {
-      const importers = kernelKeeper.getImporters(koid);
-      for (const vatID of importers) {
-        newActions.push(`${vatID} retireImport ${koid}`);
-      }
-      // TODO: decref and delete any #2069 auxdata
-      kernelKeeper.deleteKernelObject(koid);
-    }
-    kernelKeeper.addGCActions(newActions);
+    kernelKeeper.retireKernelObjects(koids);
     return OKNULL;
   }
 
   function abandonExports(vatID, koids) {
     Array.isArray(koids) || Fail`abandonExports given non-Array ${koids}`;
     for (const koid of koids) {
-      // note that this is effectful and also performed outside of a syscall
-      // by processUpgradeVat in {@link ./kernel.js}
       kernelKeeper.orphanKernelObject(koid, vatID);
     }
     return OKNULL;

@@ -1,13 +1,15 @@
-/// <reference types="ses"/>
+/// <reference types="ses" />
 
-import { canBeDurable, prepareExoClassKit } from '@agoric/vat-data';
+import { Fail, q } from '@endo/errors';
 import { E, Far } from '@endo/far';
-import { M, getInterfaceGuardPayload } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
+import { M, getInterfaceGuardPayload } from '@endo/patterns';
+import { canBeDurable, prepareExoClassKit } from '@agoric/vat-data';
 
-import './types-ambient.js';
-
-const { Fail, quote: q } = assert;
+/**
+ * @import {ERef} from '@endo/far';
+ * @import {DurablePublishKitState, DurablePublishKitValueDurability, LatestTopic, Notifier, NotifierRecord, PublicationRecord, Publisher, PublishKit, Subscriber, UpdateRecord} from '../src/types.js';
+ */
 
 const sink = () => {};
 const makeQuietRejection = reason => {
@@ -16,7 +18,7 @@ const makeQuietRejection = reason => {
   return rejection;
 };
 const tooFarRejection = makeQuietRejection(
-  harden(new Error('Cannot read past end of iteration.')),
+  harden(Error('Cannot read past end of iteration.')),
 );
 
 export const PublisherI = M.interface('Publisher', {
@@ -400,15 +402,13 @@ const advanceDurablePublishKit = (context, value, targetStatus = 'live') => {
 /**
  * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  * @param {string} kindName
+ * @returns {<T>(options?: Parameters<typeof initDurablePublishKitState>[0]) => PublishKit<T>}
  */
 export const prepareDurablePublishKit = (baggage, kindName) => {
   // TODO: Once we unify with makePublishKit, we will use a Zone-compatible weak
   // map for memoization.
   const makeMemoizedUpdateRecord = makeUpdateRecordFromPublicationRecord;
 
-  /**
-   * @returns {() => PublishKit<*>}
-   */
   return prepareExoClassKit(
     baggage,
     kindName,

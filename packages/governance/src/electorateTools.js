@@ -3,6 +3,12 @@ import { E } from '@endo/eventual-send';
 import { deeplyFulfilled, Far } from '@endo/marshal';
 
 /**
+ * @import {MapStore} from '@agoric/swingset-liveslots';
+ * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
+ * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn} from './types.js';
+ */
+
+/**
  * @typedef {object} QuestionRecord
  * @property {ERef<VoteCounterCreatorFacet>} voteCap
  * @property {VoteCounterPublicFacet} publicFacet
@@ -61,12 +67,14 @@ const startCounter = async (
 
 /** @param {MapStore<Handle<'Question'>, QuestionRecord>} questionStore */
 const getOpenQuestions = async questionStore => {
+  /** @type {[Promise<boolean>, Handle<'Question'>][]} */
   const isOpenPQuestions = [...questionStore.entries()].map(
     ([key, { publicFacet }]) => {
       return [E(publicFacet).isOpen(), key];
     },
   );
 
+  /** @type {[boolean, Handle<'Question'>][]} */
   const isOpenQuestions = await deeplyFulfilled(harden(isOpenPQuestions));
   return isOpenQuestions
     .filter(([open, _key]) => open)

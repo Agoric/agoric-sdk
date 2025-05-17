@@ -2,9 +2,13 @@ package vm
 
 import (
 	"context"
+	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
+
+// Sender makes a request of our associated VM.
+type Sender func(ctx context.Context, needReply bool, jsonRequest string) (jsonReply string, err error)
 
 type ControllerAdmissionMsg interface {
 	sdk.Msg
@@ -20,50 +24,26 @@ type ControllerAdmissionMsg interface {
 	IsHighPriority(sdk.Context, interface{}) (bool, error)
 }
 
-// Jsonable is a value, j, that can be passed through json.Marshal(j).
-type Jsonable interface{}
-
-// ActionPusher enqueues data for later consumption by the controller.
-type ActionPusher func(ctx sdk.Context, action Jsonable) error
-
-var wrappedEmptySDKContext = sdk.WrapSDKContext(
-	sdk.Context{}.WithContext(context.Background()),
-)
-var controllerContext context.Context = wrappedEmptySDKContext
-
 type PortHandler interface {
 	Receive(context.Context, string) (string, error)
 }
 
-var portToHandler = make(map[int]PortHandler)
-var portToName = make(map[int]string)
-var nameToPort = make(map[string]int)
-var lastPort = 0
-
-func SetControllerContext(ctx sdk.Context) func() {
-	// We are only called by the controller, so we assume that it is billing its
-	// own meter usage.
-	controllerContext = sdk.WrapSDKContext(ctx.WithGasMeter(sdk.NewInfiniteGasMeter()))
-	return func() {
-		controllerContext = wrappedEmptySDKContext
-	}
+type protectedPortHandler struct {
+	inner PortHandler
 }
 
-func GetPort(name string) int {
-	return nameToPort[name]
+func (h protectedPortHandler) Receive(ctx context.Context, str string) (ret string, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			// Propagate just the string, not the error stack or we will invite
+			// nondeterminism.
+			err = fmt.Errorf("panic: %s", r)
+		}
+	}()
+	ret, err = h.inner.Receive(ctx, str)
+	return
 }
 
-func RegisterPortHandler(name string, portHandler PortHandler) int {
-	lastPort++
-	portToHandler[lastPort] = portHandler
-	portToName[lastPort] = name
-	nameToPort[name] = lastPort
-	return lastPort
-}
-func UnregisterPortHandler(portNum int) error {
-	delete(portToHandler, portNum)
-	name := portToName[portNum]
-	delete(portToName, portNum)
-	delete(nameToPort, name)
-	return nil
+func NewProtectedPortHandler(inner PortHandler) PortHandler {
+	return protectedPortHandler{inner}
 }

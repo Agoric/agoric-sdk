@@ -70,7 +70,8 @@ export function legibilizeValue(val, slots, smallcaps) {
           return rest;
         case '$':
         case '&': {
-          const idx = Number(rest.slice(0, rest.indexOf('.')));
+          const end = rest.indexOf('.');
+          const idx = Number(rest.slice(0, end < 0 ? rest.length : end));
           return `@${slots[idx]}`;
         }
         default:

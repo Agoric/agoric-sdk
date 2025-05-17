@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details as X, Fail } from '@agoric/assert';
+import { assert, X, Fail, makeError } from '@endo/errors';
 import { makeLegacyWeakMap, makeLegacyMap } from '@agoric/store';
 import { E, Far } from '@endo/far';
 import {
@@ -9,13 +9,14 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeSubscriptionKit } from '@agoric/notifier';
 
-import '@agoric/network/exported.js';
-import '@agoric/zoe/exported.js';
-
-import '../exported.js';
 import { IBCSourceTraceDenomTransformer } from './ibc-trace.js';
 import { ICS20TransferProtocol } from './ics20.js';
 import { makeCourierMaker, getCourierPK } from './courier.js';
+
+/**
+ * @import {CloseReason, Connection} from '@agoric/network';
+ * @import {Remote} from '@agoric/vow';
+ */
 
 const DEFAULT_DENOM_TRANSFORMER = IBCSourceTraceDenomTransformer;
 const DEFAULT_TRANSFER_PROTOCOL = ICS20TransferProtocol;
@@ -29,13 +30,15 @@ const TRANSFER_PROPOSAL_SHAPE = {
 /**
  * Make a Pegasus public API.
  *
- * @param {ZCF} zcf the Zoe Contract Facet
- * @param {ERef<BoardDepositFacet>} board where to find depositFacets by boardID
- * @param {ERef<NameHub>} namesByAddress where to find depositFacets by bech32
+ * @param {object} powers
+ * @param {ZCF} powers.zcf the Zoe Contract Facet
+ * @param {Remote<BoardDepositFacet>} powers.board where to find depositFacets by boardID
+ * @param {Remote<NameHub>} powers.namesByAddress where to find depositFacets by bech32
+ * @param {ReturnType<import('@agoric/vow').prepareVowTools>['when']} powers.when
  *
- * @typedef {import('@agoric/vats').NameHub} NameHub
+ * @import {NameHub} from '@agoric/vats'
  */
-const makePegasus = (zcf, board, namesByAddress) => {
+export const makePegasus = ({ zcf, board, namesByAddress, when }) => {
   /**
    * @typedef {object} LocalDenomState
    * @property {string} localAddr
@@ -60,7 +63,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
   };
 
   /**
-   * @type {LegacyWeakMap<Peg, LocalDenomState>}
+   * @type {LegacyWeakMap<Remote<Peg>, LocalDenomState>}
    */
   // Legacy because Mappings mix functions and data
   const pegToDenomState = makeLegacyWeakMap('Peg');
@@ -103,8 +106,8 @@ const makePegasus = (zcf, board, namesByAddress) => {
    * @param {object} param0
    * @param {ReturnType<typeof makeCourierMaker>} param0.makeCourier
    * @param {LocalDenomState} param0.localDenomState
-   * @param {ERef<TransferProtocol>} param0.transferProtocol
-   * @param {ERef<DenomTransformer>} param0.denomTransformer
+   * @param {Remote<TransferProtocol>} param0.transferProtocol
+   * @param {Remote<DenomTransformer>} param0.denomTransformer
    * @returns {PegasusConnectionActions}
    */
   const makePegasusConnectionActions = ({
@@ -144,7 +147,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
         // handled it correctly and that flow doesn't need to trigger an
         // additional UnhandledRejectionWarning in our vat.
         promise.catch(() => {});
-        reject(assert.error(X`${receiveDenom} is temporarily unavailable`));
+        reject(makeError(X`${receiveDenom} is temporarily unavailable`));
 
         // Allow new transfers to be initiated after this rejection.
         receiveDenomToCourierPK.delete(receiveDenom);
@@ -190,6 +193,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
             zcfMint.mintGains(harden(amounts), zcfSeat);
           },
           transferProtocol,
+          when,
         });
 
         const courierPK = getCourierPK(receiveDenom, receiveDenomToCourierPK);
@@ -282,6 +286,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
               transferSeat,
             ),
           transferProtocol,
+          when,
         });
 
         const { receiveDenomToCourierPK } = localDenomState;
@@ -315,8 +320,8 @@ const makePegasus = (zcf, board, namesByAddress) => {
     /**
      * Return a handler that can be used with the Network API.
      *
-     * @param {ERef<TransferProtocol>} [transferProtocol]
-     * @param {ERef<DenomTransformer>} [denomTransformer]
+     * @param {Remote<TransferProtocol>} [transferProtocol]
+     * @param {Remote<DenomTransformer>} [denomTransformer]
      * @returns {PegasusConnectionKit}
      */
     makePegasusConnectionKit(
@@ -324,7 +329,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
       denomTransformer = DEFAULT_DENOM_TRANSFORMER,
     ) {
       /**
-       * @type {LegacyWeakMap<Connection, LocalDenomState>}
+       * @type {LegacyWeakMap<Remote<Connection>, LocalDenomState>}
        */
       // Legacy because the value contains a JS Set
       const connectionToLocalDenomState = makeLegacyWeakMap('Connection');
@@ -356,7 +361,6 @@ const makePegasus = (zcf, board, namesByAddress) => {
             receiveDenomPublication,
             remoteDenomSubscription,
             abort: reason => {
-              // eslint-disable-next-line no-use-before-define
               actions.abort(reason);
             },
           };
@@ -422,7 +426,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
             abort,
           } = connectionToLocalDenomState.get(c);
           connectionToLocalDenomState.delete(c);
-          const err = assert.error(X`pegasusConnectionHandler closed`);
+          const err = makeError(X`pegasusConnectionHandler closed`);
           receiveDenomPublication.fail(err);
           /** @type {PegasusConnection} */
           const state = harden({
@@ -454,7 +458,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
     /**
      * Create a Zoe invitation to transfer assets over network to a deposit address.
      *
-     * @param {ERef<Peg>} pegP the peg over which to transfer
+     * @param {Remote<Peg>} pegP the peg over which to transfer
      * @param {DepositAddress} depositAddress the remote receiver's address
      * @param {string} [memo] the memo to attach to ics transfer packet
      * @param {SenderOptions} [opts] additional sender options
@@ -489,22 +493,8 @@ const makePegasus = (zcf, board, namesByAddress) => {
     },
   });
 };
+harden(makePegasus);
 
 /**
  * @typedef {ReturnType<typeof makePegasus>} Pegasus
  */
-
-/**
- * @param {ZCF<{board: ERef<BoardDepositFacet>, namesByAddress: ERef<import('@agoric/vats').NameHub>}>} zcf
- */
-const start = zcf => {
-  const { board, namesByAddress } = zcf.getTerms();
-
-  return {
-    publicFacet: makePegasus(zcf, board, namesByAddress),
-  };
-};
-
-harden(start);
-harden(makePegasus);
-export { start, makePegasus };

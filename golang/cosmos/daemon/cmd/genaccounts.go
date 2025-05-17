@@ -10,6 +10,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/server"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -27,14 +28,14 @@ const (
 )
 
 // AddGenesisAccountCmd returns add-genesis-account cobra Command.
-func AddGenesisAccountCmd(defaultNodeHome string) *cobra.Command {
+func AddGenesisAccountCmd(cdc codec.Codec, defaultNodeHome string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "add-genesis-account [address_or_key_name] [coin][,[coin]]",
+		Use:   "add-genesis-account <address_or_key_name> <coin>[,...]",
 		Short: "Add a genesis account to genesis.json",
-		Long: `Add a genesis account to genesis.json. The provided account must specify
-the account address or key name and a list of initial coins. If a key name is given,
-the address will be looked up in the local Keybase. The list of initial tokens must
-contain valid denominations. Accounts may optionally be supplied with vesting parameters.
+		Long: `Add a genesis account to genesis.json.
+If the address is specified by name, it will be looked up in the local Keybase.
+The comma-separated list of initial tokens must contain valid denominations.
+Accounts may optionally be supplied with vesting parameters.
 `,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -54,17 +55,20 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 				}
 
 				// attempt to lookup address from Keybase if no address was provided
-				kb, err := keyring.New(sdk.KeyringServiceName(), keyringBackend, clientCtx.KeyringDir, inBuf)
+				kb, err := keyring.New(sdk.KeyringServiceName(), keyringBackend, clientCtx.KeyringDir, inBuf, cdc)
 				if err != nil {
 					return err
 				}
 
 				info, err := kb.Key(args[0])
 				if err != nil {
-					return fmt.Errorf("failed to get address from Keybase: %s", err)
+					return fmt.Errorf("failed to get key from Keybase: %s", err)
 				}
 
-				addr = info.GetAddress()
+				addr, err = info.GetAddress()
+				if err != nil {
+					return fmt.Errorf("failed to get address from Keybase: %s", err)
+				}
 			}
 
 			coins, err := sdk.ParseCoinsNormalized(args[1])

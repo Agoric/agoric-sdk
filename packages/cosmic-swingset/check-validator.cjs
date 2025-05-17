@@ -1,7 +1,7 @@
 #! /usr/bin/env node
+/* eslint-env node */
 // @jessie-check
 
-/* global process require Buffer */
 // check-validator - Find if there is a validator that matches the current ag-chain-cosmos
 // Michael FIG <mfig@agoric.com>, 2021-06-25
 const oper = process.argv[2];
@@ -22,8 +22,8 @@ if (ret.error) {
 if (ret.stderr) {
   process.stderr.write(ret.stderr);
 }
-if (ret.code) {
-  process.exit(ret.code);
+if (ret.status) {
+  process.exit(ret.status);
 }
 
 const output = ret.stdout.toString('utf-8');

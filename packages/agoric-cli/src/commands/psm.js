@@ -1,11 +1,18 @@
 // @ts-check
 /* eslint-disable func-names */
-/* global fetch, process */
-import { Command } from 'commander';
+/* eslint-env node */
+import {
+  fetchEnvNetworkConfig,
+  makeAgoricNames,
+  makeVstorageKit,
+  storageHelper,
+} from '@agoric/client-utils';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
+import { Command } from 'commander';
 import { asPercent } from '../lib/format.js';
-import { makeRpcUtils, storageHelper } from '../lib/rpc.js';
 import { outputExecuteOfferAction } from '../lib/wallet.js';
+
+const networkConfig = await fetchEnvNetworkConfig({ env: process.env, fetch });
 
 // Adapted from https://gist.github.com/dckc/8b5b2f16395cb4d7f2ff340e0bc6b610#file-psm-tool
 
@@ -60,13 +67,14 @@ export const makePsmCommand = logger => {
   );
 
   const rpcTools = async () => {
-    const utils = await makeRpcUtils({ fetch });
+    const vsk = await makeVstorageKit({ fetch }, networkConfig);
+    const agoricNames = await makeAgoricNames(vsk.fromBoard, vsk.vstorage);
 
     const lookupPsmInstance = ([minted, anchor]) => {
       const name = `psm-${minted}-${anchor}`;
-      const instance = utils.agoricNames.instance[name];
+      const instance = agoricNames.instance[name];
       if (!instance) {
-        logger.debug('known instances:', utils.agoricNames.instance);
+        logger.debug('known instances:', agoricNames.instance);
         throw Error(`Unknown instance ${name}`);
       }
       return instance;
@@ -77,20 +85,19 @@ export const makePsmCommand = logger => {
      * @param {[Minted: string, Anchor: string]} pair
      */
     const getGovernanceState = async ([Minted, Anchor]) => {
-      const govContent = await utils.vstorage.readLatest(
+      const govContent = await vsk.vstorage.readLatest(
         `published.psm.${Minted}.${Anchor}.governance`,
       );
       assert(govContent, 'no gov content');
       const { current: governance } = last(
-        storageHelper.unserializeTxt(govContent, utils.fromBoard),
+        storageHelper.unserializeTxt(govContent, vsk.fromBoard),
       );
-      const { [`psm.${Minted}.${Anchor}`]: instance } =
-        utils.agoricNames.instance;
+      const { [`psm.${Minted}.${Anchor}`]: instance } = agoricNames.instance;
 
       return { instance, governance };
     };
 
-    return { ...utils, lookupPsmInstance, getGovernanceState };
+    return { ...vsk, agoricNames, lookupPsmInstance, getGovernanceState };
   };
 
   psm

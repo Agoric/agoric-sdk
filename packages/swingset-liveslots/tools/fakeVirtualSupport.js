@@ -1,7 +1,7 @@
 /* global globalThis */
 /* eslint-disable max-classes-per-file */
+import { assert, Fail } from '@endo/errors';
 import { makeMarshal } from '@endo/marshal';
-import { assert } from '@agoric/assert';
 import { isPromise } from '@endo/promise-kit';
 
 import { parseVatSlot } from '../src/parseVatSlots.js';
@@ -9,8 +9,6 @@ import { makeVirtualReferenceManager } from '../src/virtualReferences.js';
 import { makeWatchedPromiseManager } from '../src/watchedPromises.js';
 import { makeFakeVirtualObjectManager } from './fakeVirtualObjectManager.js';
 import { makeFakeCollectionManager } from './fakeCollectionManager.js';
-
-const { Fail } = assert;
 
 const {
   WeakRef: RealWeakRef,
@@ -30,12 +28,14 @@ class FakeFinalizationRegistry {
 }
 
 class FakeWeakRef {
+  #target;
+
   constructor(target) {
-    this.target = target;
+    this.#target = target;
   }
 
   deref() {
-    return this.target; // strong ref
+    return this.#target; // strong ref
   }
 }
 
@@ -43,6 +43,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
   let vrm;
   function setVrm(vrmToUse) {
     assert(!vrm, 'vrm already configured');
+    vrmToUse.initializeIDCounters();
     vrm = vrmToUse;
   }
 
@@ -176,6 +177,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
   // and the WeakRef may or may not contain the target value. Use
   // options={weak:true} to match that behavior, or the default weak:false to
   // keep strong references.
+  const WeakRefForSlot = weak ? RealWeakRef : FakeWeakRef;
   const valToSlot = new WeakMap();
   const slotToVal = new Map();
 
@@ -185,7 +187,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
 
   function getValForSlot(slot) {
     const d = slotToVal.get(slot);
-    return d && (weak ? d.deref() : d);
+    return d && d.deref();
   }
 
   function requiredValForSlot(slot) {
@@ -195,7 +197,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
   }
 
   function setValForSlot(slot, val) {
-    slotToVal.set(slot, weak ? new RealWeakRef(val) : val);
+    slotToVal.set(slot, new WeakRefForSlot(val));
   }
 
   function convertValToSlot(val) {
@@ -232,7 +234,6 @@ export function makeFakeLiveSlotsStuff(options = {}) {
         assert.fail('fake liveSlots stuff configured without vrm');
       }
     }
-    // eslint-disable-next-line no-use-before-define
     registerEntry(baseRef, val, facet !== undefined);
     if (!result) {
       result = val;
@@ -242,6 +243,9 @@ export function makeFakeLiveSlotsStuff(options = {}) {
 
   const marshal = makeMarshal(convertValToSlot, convertSlotToVal, {
     serializeBodyFormat: 'smallcaps',
+    marshalName: 'fakeLiveSlots',
+    errorIdNum: 80_000,
+    marshalSaveError: _err => {},
   });
 
   function registerEntry(baseRef, val, valIsCohort) {
@@ -274,6 +278,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
   return {
     syscall,
     allocateExportID,
+    allocatePromiseID,
     allocateCollectionID,
     getSlotForVal,
     requiredValForSlot,
@@ -338,7 +343,7 @@ export function makeFakeWatchedPromiseManager(
  * @param {object} [options]
  * @param {number} [options.cacheSize]
  * @param {boolean} [options.relaxDurabilityRules]
- * @param {Map<any, any>} [options.fakeStore]
+ * @param {Map<string, string>} [options.fakeStore]
  * @param {WeakMapConstructor} [options.WeakMap]
  * @param {WeakSetConstructor} [options.WeakSet]
  * @param {boolean} [options.weak]

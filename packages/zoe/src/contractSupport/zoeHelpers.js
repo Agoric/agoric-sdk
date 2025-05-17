@@ -1,15 +1,18 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
-import { mustMatch, keyEQ } from '@agoric/store';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
+import { mustMatch, keyEQ } from '@agoric/store';
 import { AssetKind } from '@agoric/ertp';
 import { fromUniqueEntries } from '@agoric/internal';
 import { satisfiesWant } from '../contractFacet/offerSafety.js';
 import { atomicTransfer, fromOnly, toOnly } from './atomicTransfer.js';
 
-export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
+/**
+ * @import {Pattern} from '@endo/patterns';
+ * @import {ContractMeta, Invitation, Proposal, ZCF, ZCFSeat} from '@agoric/zoe';
+ */
 
-const { Fail } = assert;
+export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
 
 const getKeysSorted = obj => harden(Reflect.ownKeys(obj || {}).sort());
 
@@ -38,12 +41,12 @@ export const assertIssuerKeywords = (zcf, expected) => {
  * false and 1 for true. When multiples are introduced, any
  * positive return value will mean true.
  *
- * @param {ZCF} zcf
+ * @param {any} _ignored no longer used.
  * @param {ZcfSeatPartial} seat
  * @param {AmountKeywordRecord} update
  * @returns {0|1}
  */
-export const satisfies = (zcf, seat, update) => {
+export const satisfies = (_ignored, seat, update) => {
   const currentAllocation = seat.getCurrentAllocation();
   const newAllocation = { ...currentAllocation, ...update };
   const proposal = seat.getProposal();
@@ -137,11 +140,10 @@ export const assertProposalShape = (seat, expected) => {
   !Array.isArray(expected) || Fail`Expected must be an non-array object`;
   const assertValuesNull = e => {
     if (e !== undefined) {
-      Object.values(e).forEach(
-        value =>
-          value === null ||
-          Fail`The value of the expected record must be null but was ${value}`,
-      );
+      for (const value of Object.values(e)) {
+        value === null ||
+          Fail`The value of the expected record must be null but was ${value}`;
+      }
     }
   };
 
@@ -365,7 +367,7 @@ export const offerTo = async (
     depositedPromiseKit.resolve(mappedAmounts);
   };
 
-  E(userSeatPromise).getPayouts().then(doDeposit);
+  void E(userSeatPromise).getPayouts().then(doDeposit);
 
   // TODO rename return key; userSeatPromise is a remote UserSeat
   return harden({ userSeatPromise, deposited: depositedPromiseKit.promise });

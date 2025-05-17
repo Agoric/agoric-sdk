@@ -1,0 +1,33 @@
+{
+  arrowParens: 'avoid',
+  overrides: [
+    {
+      // opt into prettier-plugin-jsdoc
+      files: [
+        'packages/ERTP/**/*.js',
+        'packages/inter-protocol/**/*.js',
+        'packages/internal/**/*.js',
+        'packages/orchestration/**/*.js',
+        'packages/store/**/*.js',
+        'packages/smart-wallet/**/*.js',
+        'packages/vats/**/*.js',
+        'packages/vat-data/**/*.js',
+      ],
+      options: {
+        plugins: ['prettier-plugin-jsdoc'],
+        jsdocAddDefaultToDescription: false,
+        jsdocCommentLineStrategy: 'keep',
+        jsdocCapitalizeDescription: false,
+        tsdoc: true,
+      },
+    },
+    {
+      // shell formatting
+      files: ['*.sh'],
+      options: {
+        plugins: ['prettier-plugin-sh'],
+      },
+    },
+  ],
+  singleQuote: true,
+}

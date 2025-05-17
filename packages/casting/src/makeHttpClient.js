@@ -4,7 +4,7 @@ const { freeze } = Object;
 
 const filterBadStatus = res => {
   if (res.status >= 400) {
-    throw new Error(`Bad status on response: ${res.status}`);
+    throw Error(`Bad status on response: ${res.status}`);
   }
   return res;
 };
@@ -25,7 +25,7 @@ const filterBadStatus = res => {
  * @param {typeof window.fetch} fetch
  * @returns {import('@cosmjs/tendermint-rpc').RpcClient}
  */
-export const makeHttpClient = (url, fetch) => {
+export const makeTendermintRpcClient = (url, fetch) => {
   const headers = {}; // XXX needed?
 
   // based on cosmjs 0.30.1:
@@ -44,7 +44,6 @@ export const makeHttpClient = (url, fetch) => {
         method: 'POST',
         body: request ? JSON.stringify(request) : undefined,
         headers: {
-          // eslint-disable-next-line @typescript-eslint/naming-convention
           'Content-Type': 'application/json',
           ...headers,
         },
@@ -55,3 +54,6 @@ export const makeHttpClient = (url, fetch) => {
     },
   });
 };
+
+/** @deprecated use makeTendermintRpcClient */
+export const makeHttpClient = makeTendermintRpcClient;

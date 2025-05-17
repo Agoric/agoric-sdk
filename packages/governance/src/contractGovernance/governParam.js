@@ -1,3 +1,4 @@
+import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled, Far } from '@endo/marshal';
 import { mustMatch, keyEQ } from '@agoric/store';
@@ -10,7 +11,10 @@ import {
 } from '../question.js';
 import { ParamChangesQuestionDetailsShape } from '../typeGuards.js';
 
-const { Fail } = assert;
+/**
+ * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
+ * @import {ParamValue, ParamChangePositions, QuestionSpec, ChangeParamsPosition, ParamChangeIssue, ParamGovernor, ParamManagerRetriever, PoserFacet, VoteOnParamChanges} from '../types.js';
+ */
 
 /**
  * The electorate that governs changes to the contract's parameters. It must be
@@ -52,14 +56,14 @@ const assertBallotConcernsParam = (paramSpec, questionSpec) => {
 };
 
 /**
- * @param {ERef<ParamManagerRetriever>} paramManagerRetriever
+ * @param {() => ERef<ParamManagerRetriever>} paramManagerRetrieverAccessor
  * @param {Instance} contractInstance
  * @param {import('@agoric/time').TimerService} timer
  * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
  * @returns {ParamGovernor}
  */
 const setupParamGovernance = (
-  paramManagerRetriever,
+  paramManagerRetrieverAccessor,
   contractInstance,
   timer,
   getUpdatedPoserFacet,
@@ -73,7 +77,9 @@ const setupParamGovernance = (
     deadline,
     paramSpec,
   ) => {
+    const paramManagerRetriever = paramManagerRetrieverAccessor();
     const paramMgr = await E(paramManagerRetriever).get(paramSpec.paramPath);
+    /** @type {import('@endo/marshal').Passable} */
     const changePs = {};
     for (const name of Object.keys(paramSpec.changes)) {
       const proposedValue = E(paramMgr).getVisibleValue(

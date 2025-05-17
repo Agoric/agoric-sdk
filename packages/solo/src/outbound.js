@@ -1,7 +1,7 @@
-/* global process */
+/* eslint-env node */
 import anylogger from 'anylogger';
-
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
+import { exportMailboxData } from '@agoric/swingset-vat';
 
 // Limit the debug log length.
 const SOLO_MAX_DEBUG_LENGTH =
@@ -22,8 +22,8 @@ const log = anylogger('outbound');
  */
 const knownTargets = new Map();
 
-export function deliver(mbs) {
-  const data = mbs.exportToData();
+export function deliver(mailboxStorage) {
+  const data = exportMailboxData(mailboxStorage);
   log.debug(`deliver`, data);
   for (const target of Object.getOwnPropertyNames(data)) {
     if (!knownTargets.has(target)) {
@@ -33,7 +33,7 @@ export function deliver(mbs) {
     }
     const t = knownTargets.get(target);
     const newMessages = [];
-    data[target].outbox.forEach(m => {
+    for (const m of data[target].outbox) {
       const [msgnum, body] = m;
       if (msgnum > t.highestSent) {
         log.debug(
@@ -44,7 +44,7 @@ export function deliver(mbs) {
         );
         newMessages.push(m);
       }
-    });
+    }
     newMessages.sort((a, b) => a[0] - b[0]);
     // console.debug(` ${newMessages.length} new messages`);
     const acknum = data[target].inboundAck;

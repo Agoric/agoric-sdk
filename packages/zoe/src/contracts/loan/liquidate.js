@@ -3,6 +3,10 @@ import { AmountMath } from '@agoric/ertp';
 
 import { offerTo } from '../../contractSupport/zoeHelpers.js';
 
+/**
+ * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
+ */
+
 export const doLiquidation = async (
   zcf,
   collateralSeat,

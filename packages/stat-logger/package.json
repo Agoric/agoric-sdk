@@ -15,6 +15,9 @@
     "lint-fix": "yarn lint:eslint --fix",
     "lint:eslint": "eslint ."
   },
+  "dependencies": {
+    "@endo/errors": "^1.2.10"
+  },
   "peerDependencies": {
     "canvas": "^2.6.1",
     "vega": "^5.22.1",
@@ -35,6 +38,6 @@
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 62.06
+    "atLeast": 63.11
   }
 }

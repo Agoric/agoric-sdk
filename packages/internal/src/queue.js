@@ -1,11 +1,10 @@
 // @jessie-check
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 
 import { makePromiseKit } from '@endo/promise-kit';
 
 /**
- * Return a function that can wrap an async or sync method, but
- * ensures only one of them (in order) is running at a time.
+ * Return a function that can wrap an async or sync method, but ensures only one
+ * of them (in order) is running at a time.
  */
 export const makeWithQueue = () => {
   const queue = [];
@@ -31,14 +30,13 @@ export const makeWithQueue = () => {
   };
 
   /**
-   * @template {any[]} T
-   * @template R
-   * @param {(...args: T) => Promise<R>} inner
+   * @template {(...args: any[]) => any} T
+   * @param {T} inner
    */
   return function withQueue(inner) {
     /**
-     * @param {T} args
-     * @returns {Promise<R>}
+     * @param {Parameters<T>} args
+     * @returns {Promise<Awaited<ReturnType<T>>>}
      */
     return function queueCall(...args) {
       // Curry the arguments into the inner function, and

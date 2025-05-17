@@ -1,5 +1,5 @@
 #! /usr/bin/env node
-/* global setTimeout */
+/* eslint-env node */
 import '@endo/init';
 
 import fs from 'fs';
@@ -11,7 +11,8 @@ import { makeSlogSender } from './make-slog-sender.js';
 
 const LINE_COUNT_TO_FLUSH = 10000;
 const ELAPSED_MS_TO_FLUSH = 3000;
-const MAX_LINE_COUNT_PER_PERIOD = 1000;
+const MAX_LINE_COUNT_PER_PERIOD = 10000;
+const MAX_BLOCKS_PER_PERIOD = 10;
 const PROCESSING_PERIOD = 1000;
 
 async function run() {
@@ -29,7 +30,7 @@ async function run() {
     return;
   }
 
-  const [slogFile] = args;
+  const slogFile = args[0] === '-' ? undefined : args[0];
   const slogSender = await makeSlogSender({
     serviceName,
     stateDir: '.',
@@ -56,14 +57,21 @@ async function run() {
   const lines = readline.createInterface({ input: slogF });
   const slogFileName = slogFile || '*stdin*';
 
-  const progressFileName = `${slogFileName}.ingest-progress`;
-  if (!fs.existsSync(progressFileName)) {
-    const progress = { virtualTimeOffset: 0, lastSlogTime: 0 };
-    fs.writeFileSync(progressFileName, JSON.stringify(progress));
+  const progressFileName = slogFile && `${slogFileName}.ingest-progress`;
+  const progress = { virtualTimeOffset: 0, lastSlogTime: 0 };
+  if (progressFileName) {
+    if (!fs.existsSync(progressFileName)) {
+      fs.writeFileSync(progressFileName, JSON.stringify(progress));
+    } else {
+      Object.assign(
+        progress,
+        JSON.parse(fs.readFileSync(progressFileName).toString()),
+      );
+    }
   }
-  const progress = JSON.parse(fs.readFileSync(progressFileName).toString());
 
   let linesProcessedThisPeriod = 0;
+  let blocksInThisPeriod = 0;
   let startOfLastPeriod = 0;
 
   let lastTime = Date.now();
@@ -74,11 +82,13 @@ async function run() {
     if (!flush) {
       return;
     }
-    await slogSender.forceFlush();
-    fs.writeFileSync(progressFileName, JSON.stringify(progress));
+    await slogSender.forceFlush?.();
+    if (progressFileName) {
+      fs.writeFileSync(progressFileName, JSON.stringify(progress));
+    }
   };
 
-  console.log(`parsing`, slogFileName);
+  console.warn(`parsing`, slogFileName);
 
   let update = false;
   const maybeUpdateStats = async now => {
@@ -106,9 +116,14 @@ async function run() {
       continue;
     }
 
+    const isAfterCommit = obj.type === 'cosmic-swingset-after-commit-stats';
+
     // Maybe wait for the next period to process a bunch of lines.
     let maybeWait;
-    if (linesProcessedThisPeriod >= MAX_LINE_COUNT_PER_PERIOD) {
+    if (
+      linesProcessedThisPeriod >= MAX_LINE_COUNT_PER_PERIOD ||
+      blocksInThisPeriod >= MAX_BLOCKS_PER_PERIOD
+    ) {
       const delayMS = PROCESSING_PERIOD - (now - startOfLastPeriod);
       maybeWait = new Promise(resolve => setTimeout(resolve, delayMS));
     }
@@ -118,8 +133,8 @@ async function run() {
     if (now - startOfLastPeriod >= PROCESSING_PERIOD) {
       startOfLastPeriod = now;
       linesProcessedThisPeriod = 0;
+      blocksInThisPeriod = 0;
     }
-    linesProcessedThisPeriod += 1;
 
     if (progress.virtualTimeOffset) {
       const virtualTime = obj.time + progress.virtualTimeOffset;
@@ -133,10 +148,17 @@ async function run() {
       // Use the original.
       slogSender(obj);
     }
+
+    linesProcessedThisPeriod += 1;
+    if (isAfterCommit) {
+      blocksInThisPeriod += 1;
+      lastTime = Date.now();
+      await stats(true);
+    }
   }
 
   await stats(true);
-  console.log(
+  console.warn(
     `done parsing`,
     slogFileName,
     `(${lineCount} lines, ${byteCount} bytes)`,

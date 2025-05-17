@@ -44,9 +44,10 @@ func (app *GaiaApp) ExportAppStateAndValidators(
 	}, err
 }
 
-// prepare for fresh start at zero height
-// NOTE zero height genesis is a temporary feature which will be deprecated
-//      in favour of export at a block height
+// prepForZeroHeightGenesis prepares for a fresh start at zero height.
+//
+// NOTE: Zero height genesis is a temporary feature which will be deprecated
+// in favour of export at a block height.
 func (app *GaiaApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs []string) {
 	applyAllowedAddrs := false
 
@@ -106,7 +107,9 @@ func (app *GaiaApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs [
 		feePool.CommunityPool = feePool.CommunityPool.Add(scraps...)
 		app.DistrKeeper.SetFeePool(ctx, feePool)
 
-		app.DistrKeeper.Hooks().AfterValidatorCreated(ctx, val.GetOperator())
+		if err := app.DistrKeeper.Hooks().AfterValidatorCreated(ctx, val.GetOperator()); err != nil {
+			panic(err)
+		}
 		return false
 	})
 
@@ -120,8 +123,12 @@ func (app *GaiaApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs [
 		if err != nil {
 			panic(err)
 		}
-		app.DistrKeeper.Hooks().BeforeDelegationCreated(ctx, delAddr, valAddr)
-		app.DistrKeeper.Hooks().AfterDelegationModified(ctx, delAddr, valAddr)
+		if err := app.DistrKeeper.Hooks().BeforeDelegationCreated(ctx, delAddr, valAddr); err != nil {
+			panic(err)
+		}
+		if err := app.DistrKeeper.Hooks().AfterDelegationModified(ctx, delAddr, valAddr); err != nil {
+			panic(err)
+		}
 	}
 
 	// reset context height

@@ -1,17 +1,21 @@
 // @ts-check
-/* eslint-disable func-names */
+/* eslint-env node */
+import {
+  fetchEnvNetworkConfig,
+  makeAgoricNames,
+  makeVstorageKit,
+} from '@agoric/client-utils';
+import { Fail } from '@endo/errors';
 import { InvalidArgumentError } from 'commander';
-import { makeRpcUtils } from '../lib/rpc.js';
 import { outputActionAndHint } from '../lib/wallet.js';
 
-const { Fail } = assert;
-
-/** @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager.js').ParamTypesMap} ParamTypesMap */
-
 /**
- * @template {ParamStateRecord} M
- * @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager.js').ParamTypesMapFromRecord<M>} ParamTypesMapFromRecord
+ * @import {ParamTypesMap, ParamTypesMapFromRecord} from '@agoric/governance/src/contractGovernance/typedParamManager.js'
+ * @import {AuctionParamRecord} from '@agoric/inter-protocol/src/auction/params.js';
+ * @import {ParamValueForType} from '@agoric/governance/src/types.js'
  */
+
+const networkConfig = await fetchEnvNetworkConfig({ env: process.env, fetch });
 
 /**
  * @template {ParamTypesMap} M
@@ -20,7 +24,6 @@ const { Fail } = assert;
  * }} ParamValues
  */
 
-/** @typedef {ReturnType<import('@agoric/inter-protocol/src/auction/params.js').makeAuctioneerParams>} AuctionParamRecord */
 /** @typedef {ParamValues<ParamTypesMapFromRecord<AuctionParamRecord>>} AuctionParams */
 
 /**
@@ -62,11 +65,6 @@ export const makeAuctionCommand = (
       'descending clock step size',
       BigInt,
     )
-    .option(
-      '--discount-step <integer>',
-      'proposed value (basis points)',
-      BigInt,
-    )
     .requiredOption(
       '--charterAcceptOfferId <string>',
       'offer that had continuing invitation result',
@@ -94,13 +92,13 @@ export const makeAuctionCommand = (
        * }} opts
        */
       async opts => {
-        const { agoricNames, readLatestHead } = await makeRpcUtils({ fetch });
-
-        /** @type {{ current: AuctionParamRecord }} */
-        // @ts-expect-error XXX should runtime check?
-        const { current } = await readLatestHead(
-          `published.auction.governance`,
+        const { readPublished, ...vsk } = makeVstorageKit(
+          { fetch },
+          networkConfig,
         );
+        const agoricNames = await makeAgoricNames(vsk.fromBoard, vsk.vstorage);
+
+        const { current } = await readPublished(`auction.governance`);
 
         const {
           AuctionStartDelay: {
@@ -133,6 +131,8 @@ export const makeAuctionCommand = (
         };
 
         if (Object.keys(params).length === 0) {
+          // InvalidArgumentError is a class constructor, and so
+          // must be invoked with `new`.
           throw new InvalidArgumentError(`no parameters given`);
         }
 

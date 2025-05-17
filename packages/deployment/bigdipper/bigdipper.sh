@@ -5,10 +5,10 @@
 trap 'kill $(jobs -p) 2>/dev/null' EXIT
 
 NETWORK_URL=${1-"https://testnet.agoric.com"}
-ncf=`curl -Ss "$NETWORK_URL/network-config"`
-cn=`echo "$ncf" | jq -r '.chainName'`
+ncf=$(curl -Ss "$NETWORK_URL/network-config")
+cn=$(echo "$ncf" | jq -r '.chainName')
 
-origRpcAddrs=( $(echo $ncf | jq -r '.rpcAddrs | join(" ")' ) )
+origRpcAddrs=($(echo $ncf | jq -r '.rpcAddrs | join(" ")'))
 
 # Begin detecting errors.
 set -e
@@ -16,9 +16,9 @@ set -e
 rpcAddrs=(${origRpcAddrs[@]})
 rp=
 while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
-  r=$(( $RANDOM % ${#rpcAddrs[@]} ))
+  r=$(($RANDOM % ${#rpcAddrs[@]}))
   selected=${rpcAddrs[$r]}
-  rpcAddrs=( ${rpcAddrs[@]/$selected} )
+  rpcAddrs=(${rpcAddrs[@]/$selected/})
 
   ping="curl -s http://$selected/status"
   if $ping > /dev/null; then
@@ -35,17 +35,17 @@ if test -z "$rp"; then
 fi
 
 # Network name vs. database name.
-nn=`echo "$cn" | sed -e 's/-[0-9].*//'`
-db=`echo "$cn" | sed -e 's/\./-/g'`
+nn=$(echo "$cn" | sed -e 's/-[0-9].*//')
+db=$(echo "$cn" | sed -e 's/\./-/g')
 
 export MONGO_URL=mongodb://localhost:27017/"$db"
-GTM=`cat google-tag-manager.txt || true`
+GTM=$(cat google-tag-manager.txt || true)
 
-api=`echo "$rp" | sed -e 's/\:.*/:1317/'`
+api=$(echo "$rp" | sed -e 's/\:.*/:1317/')
 
 test -d "portal-$cn" && ln -sfT "portal-$cn" "portal-$nn"
 cd "portal-$nn"
-export METEOR_SETTINGS=`sed -e "s/@GTM@/$GTM/; s/@CHAIN_NAME@/$cn/; s!@NETWORK_URL@!$NETWORK_URL!; s/@RPC@/$rp/; s/@API@/$api/;" settings.json`
+export METEOR_SETTINGS=$(sed -e "s/@GTM@/$GTM/; s/@CHAIN_NAME@/$cn/; s!@NETWORK_URL@!$NETWORK_URL!; s/@RPC@/$rp/; s/@API@/$api/;" settings.json)
 
 /usr/bin/node main.js &
 
@@ -53,7 +53,7 @@ export METEOR_SETTINGS=`sed -e "s/@GTM@/$GTM/; s/@CHAIN_NAME@/$cn/; s!@NETWORK_U
 # Systemd restarts us and we refresh our parameters.
 {
   while $ping > /dev/null; do
-    newcn=`curl -Ss "$NETWORK_URL/network-config" | jq -r .chainName`
+    newcn=$(curl -Ss "$NETWORK_URL/network-config" | jq -r .chainName)
     test "$cn" == "$newcn" || break
     sleep 30
   done

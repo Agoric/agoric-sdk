@@ -1,8 +1,11 @@
-import '@agoric/zoe/exported.js';
-
-import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { makeNotifierFromSubscriber } from '@agoric/notifier';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data/src/index.js';
+import { providePriceAuthorityRegistry } from '@agoric/vats/src/priceAuthorityRegistry.js';
+import {
+  makePriceQuoteIssuer,
+  makeRatio,
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
 
 import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority.js';
@@ -12,20 +15,25 @@ import {
   setupReserve,
   startAuctioneer,
 } from '../../src/proposals/econ-behaviors.js';
-import '../../src/vaultFactory/types.js';
+import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
 import {
   installPuppetGovernance,
   produceInstallations,
   setupBootstrap,
 } from '../supports.js';
-import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
 
 export const BASIS_POINTS = 10000n;
 
 /**
+ * @import {AmountUtils} from '@agoric/zoe/tools/test-utils.js';
+ * @import {IssuerKit} from '@agoric/ertp';
+ * @import {PriceDescription} from '@agoric/zoe/tools/types.js';
+ */
+
+/**
  * @typedef {Record<string, any> & {
- *   aeth: IssuerKit & import('../supports.js').AmountUtils;
- *   run: IssuerKit & import('../supports.js').AmountUtils;
+ *   aeth: IssuerKit & AmountUtils;
+ *   run: IssuerKit & AmountUtils;
  *   bundleCache: Awaited<
  *     ReturnType<
  *       typeof import('@agoric/swingset-vat/tools/bundleTool.js').unsafeMakeBundleCache
@@ -94,10 +102,15 @@ export const setupElectorateReserveAndAuction = async (
 
   await startEconomicCommittee(space, electorateTerms);
   await setupReserve(space);
-  const quoteIssuerKit = makeIssuerKit('quote', AssetKind.SET);
+  const quoteIssuerKit = makePriceQuoteIssuer();
 
-  // Cheesy hack for easy use of manual price authority
-  const pa = Array.isArray(priceOrList)
+  // priceAuthorityReg is the registry, which contains and multiplexes multiple
+  // individual priceAuthorities, including aethPriceAuthority.
+  // priceAuthorityAdmin supports registering more individual priceAuthorities
+  // with the registry.
+  /** @type {import('@agoric/zoe/tools/manualPriceAuthority.js').ManualPriceAuthority} */
+  // @ts-expect-error scriptedPriceAuthority doesn't actually match this, but manualPriceAuthority does
+  const aethTestPriceAuthority = Array.isArray(priceOrList)
     ? makeScriptedPriceAuthority({
         actualBrandIn: aeth.brand,
         actualBrandOut: run.brand,
@@ -114,7 +127,16 @@ export const setupElectorateReserveAndAuction = async (
         timer,
         quoteIssuerKit,
       });
-  space.produce.priceAuthority.resolve(pa);
+  const baggage = makeScalarBigMapStore('baggage');
+  const { priceAuthority: priceAuthorityReg, adminFacet: priceAuthorityAdmin } =
+    providePriceAuthorityRegistry(baggage);
+  await E(priceAuthorityAdmin).registerPriceAuthority(
+    aethTestPriceAuthority,
+    aeth.brand,
+    run.brand,
+  );
+
+  space.produce.priceAuthority.resolve(priceAuthorityReg);
 
   const auctionParams = {
     StartFrequency,
@@ -127,7 +149,12 @@ export const setupElectorateReserveAndAuction = async (
   };
 
   await startAuctioneer(space, { auctionParams });
-  return { space };
+  return {
+    space,
+    priceAuthority: priceAuthorityReg,
+    priceAuthorityAdmin,
+    aethTestPriceAuthority,
+  };
 };
 
 /**

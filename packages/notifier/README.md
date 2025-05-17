@@ -182,7 +182,7 @@ time of calling `fork()`.
 Carol's code is like Bob's except lower level, using the ForkableAsyncIterable interface directly.
 
 ```js
-import { makePromiseKit } from '@agoric/promiseKit';
+import { makePromiseKit } from '@endo/promise-kit';
 
 const subscriptionIterator = subscription[Symbol.asyncIterator]();
 const { promise: afterA, resolve: afterAResolve } = makePromiseKit();

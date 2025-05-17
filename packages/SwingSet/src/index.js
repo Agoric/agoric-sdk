@@ -8,11 +8,14 @@ export {
   buildKernelBundles,
   loadBasedir,
   loadSwingsetConfigFile,
+  normalizeConfig,
 } from './controller/initializeSwingset.js';
-
+export { upgradeSwingset } from './controller/upgradeSwingset.js';
 export {
   buildMailboxStateMap,
   buildMailbox,
+  exportMailboxData,
+  makeEphemeralMailboxStorage,
 } from './devices/mailbox/mailbox.js';
 export { buildTimer } from './devices/timer/timer.js';
 export { buildBridge } from './devices/bridge/bridge.js';

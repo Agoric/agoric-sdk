@@ -31,7 +31,7 @@ export const makeLogHooks = log =>
  * Note: caller is responsible for synchronization in case of onResolve() called
  * with a promise.
  *
- * @param {MapStore<string, Passable>} store
+ * @param {MapStore<string, import('@endo/marshal').Passable>} store
  * @param {typeof console.log} [log]
  * @returns {PromiseSpaceHooks}
  */
@@ -50,10 +50,10 @@ export const makeStoreHooks = (store, log = noop) => {
       return;
     }
     if (store.has(name)) {
-      console.warn('cannot save duplicate:', name);
-      return;
+      store.set(name, value);
+    } else {
+      store.init(name, value);
     }
-    store.init(name, value);
   };
 
   return harden({
@@ -76,7 +76,7 @@ export const makeStoreHooks = (store, log = noop) => {
  * Note: repeated resolve()s without an intervening reset() are noops.
  *
  * @template {Record<string, unknown>} [T=Record<string, unknown>]
- * @param {| ({ log?: typeof console.log } & (
+ * @param {({ log?: typeof console.log } & (
  *       | { hooks?: PromiseSpaceHooks }
  *       | { store: MapStore<string, any> }
  *     ))
@@ -143,7 +143,9 @@ export const makePromiseSpace = (optsOrLog = {}) => {
       old.pk.reject(reason);
     };
     const reset = (reason = undefined) => {
-      onReset(name);
+      if (!nameToState.has(name)) {
+        return;
+      }
       const old = provideState(name);
       if (!old.isSettling) {
         // we haven't produced a value yet, and there might be
@@ -157,7 +159,9 @@ export const makePromiseSpace = (optsOrLog = {}) => {
         // value through the replacement promise
         reject(reason);
       }
+
       // delete the state, so new callers will get a new promise kit
+      onReset(name);
       nameToState.delete(name);
       remaining.delete(name);
     };

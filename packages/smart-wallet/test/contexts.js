@@ -3,6 +3,7 @@ import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js'
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
 import path from 'path';
+import { makeScopedBridge } from '@agoric/vats';
 import { withAmountUtils } from './supports.js';
 
 /**
@@ -39,15 +40,20 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   );
   const bridgeManager = await consume.bridgeManager;
   const walletBridgeManager = await (bridgeManager &&
-    E(bridgeManager).register(BridgeId.WALLET));
-  const walletFactory = await E(zoe).startInstance(
-    installation,
-    {},
-    {
+    makeScopedBridge(bridgeManager, BridgeId.WALLET));
+
+  const customTerms = await deeplyFulfilledObject(
+    harden({
       agoricNames,
       board: consume.board,
       assetPublisher,
-    },
+    }),
+  );
+
+  const walletFactory = await E(zoe).startInstance(
+    installation,
+    {},
+    customTerms,
     { storageNode, walletBridgeManager },
   );
 
@@ -62,7 +68,6 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   };
 
   const anchor = withAmountUtils(
-    // @ts-expect-error incomplete typedef
     await deeplyFulfilledObject(consume.testFirstAnchorKit),
   );
 

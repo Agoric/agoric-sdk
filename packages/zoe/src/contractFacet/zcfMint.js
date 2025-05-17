@@ -1,24 +1,21 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
+import { Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 import { prepareExoClass } from '@agoric/vat-data';
-import { E } from '@endo/eventual-send';
 
 import { coerceAmountKeywordRecord } from '../cleanProposal.js';
 import { assertFullIssuerRecord, makeIssuerRecord } from '../issuerRecord.js';
 import { addToAllocation, subtractFromAllocation } from './allocationMath.js';
-
-import '../internal-types.js';
-import { ZcfMintI } from '../typeGuards.js';
-import './internal-types.js';
-import './types-ambient.js';
-
-const { Fail } = assert;
+import { ZcfMintI } from './typeGuards.js';
 
 /**
- * @template {AssetKind} K
+ * @import {ZCFMint, ZCFSeat} from '@agoric/zoe';
+ */
+
+/**
  * @param {AmountKeywordRecord} amr
- * @param {IssuerRecord<K>} issuerRecord
- * @returns {Amount<K>}
+ * @param {ZoeIssuerRecord} issuerRecord
+ * @returns {Amount}
  */
 export const sumAmountKeywordRecord = (amr, issuerRecord) => {
   const empty = AmountMath.makeEmpty(
@@ -34,7 +31,7 @@ export const sumAmountKeywordRecord = (amr, issuerRecord) => {
 
 /**
  * @param {import('@agoric/vat-data').Baggage} zcfBaggage
- * @param {{ (keyword: string, issuerRecord: IssuerRecord): void }} recordIssuer
+ * @param {{ (keyword: string, issuerRecord: ZoeIssuerRecord): void }} recordIssuer
  * @param {GetAssetKindByBrand} getAssetKindByBrand
  * @param {(exit?: undefined) => { zcfSeat: any; userSeat: Promise<UserSeat> }} makeEmptySeatKit
  * @param {ZcfMintReallocator} reallocator
@@ -54,7 +51,7 @@ export const prepareZcMint = (
      * @template {AssetKind} [K=AssetKind]
      * @param {string} keyword
      * @param {ZoeMint<K>} zoeMint
-     * @param {Required<IssuerRecord<K>>} issuerRecord
+     * @param {Required<ZoeIssuerRecord<K>>} issuerRecord
      */
     (keyword, zoeMint, issuerRecord) => {
       const {
@@ -90,24 +87,18 @@ export const prepareZcMint = (
           gains,
         );
 
-        // Increment the stagedAllocation if it exists so that the
-        // stagedAllocation is kept up to the currentAllocation
-        if (zcfSeat.hasStagedAllocation()) {
-          zcfSeat.incrementBy(gains);
-        }
-
         // Offer safety should never be able to be violated here, as
         // we are adding assets. However, we keep this check so that
         // all reallocations are covered by offer safety checks, and
         // that any bug within Zoe that may affect this is caught.
         zcfSeat.isOfferSafe(allocationPlusGains) ||
           Fail`The allocation after minting gains ${allocationPlusGains} for the zcfSeat was not offer safe`;
-        // No effects above, apart from incrementBy. Note COMMIT POINT within
+        // No effects above, Note COMMIT POINT within
         // reallocator.reallocate(). The following two steps *should* be
         // committed atomically, but it is not a disaster if they are
         // not. If we minted only, no one would ever get those
         // invisibly-minted assets.
-        E(zoeMint).mintAndEscrow(totalToMint);
+        void E(zoeMint).mintAndEscrow(totalToMint);
         reallocator.reallocate(zcfSeat, allocationPlusGains);
         return zcfSeat;
       },
@@ -132,19 +123,13 @@ export const prepareZcMint = (
         zcfSeat.isOfferSafe(allocationMinusLosses) ||
           Fail`The allocation after burning losses ${allocationMinusLosses} for the zcfSeat was not offer safe`;
 
-        // Decrement the stagedAllocation if it exists so that the
-        // stagedAllocation is kept up to the currentAllocation
-        if (zcfSeat.hasStagedAllocation()) {
-          zcfSeat.decrementBy(losses);
-        }
-
-        // No effects above, apart from decrementBy. Note COMMIT POINT within
+        // No effects above, Note COMMIT POINT within
         // reallocator.reallocate(). The following two steps *should* be
         // committed atomically, but it is not a disaster if they are
         // not. If we only commit the allocationMinusLosses no one would
         // ever get the unburned assets.
         reallocator.reallocate(zcfSeat, allocationMinusLosses);
-        E(zoeMint).withdrawAndBurn(totalToBurn);
+        void E(zoeMint).withdrawAndBurn(totalToBurn);
       },
     },
   );

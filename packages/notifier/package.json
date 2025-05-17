@@ -5,14 +5,14 @@
   "type": "module",
   "main": "src/index.js",
   "engines": {
-    "node": ">=14.15.0"
+    "node": "^18.12 || ^20.9"
   },
   "scripts": {
     "build": "exit 0",
-    "prepack": "echo \"export {}; \" | cat - src/types-ambient.js > src/types.js && tsc --build --clean tsconfig.build.json",
-    "postpack": "git clean -f '*.d.ts*' src/types.js",
+    "prepack": "tsc --build tsconfig.build.json",
+    "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
     "test": "ava",
-    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
+    "test:c8": "c8 --all $C8_OPTIONS ava",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
@@ -33,23 +33,23 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.6.0",
+    "@endo/errors": "^1.2.10",
     "@agoric/internal": "^0.3.2",
     "@agoric/vat-data": "^0.5.2",
-    "@endo/far": "^1.0.1",
-    "@endo/marshal": "^1.0.1",
-    "@endo/patterns": "^1.0.1",
-    "@endo/promise-kit": "^1.0.1"
+    "@endo/far": "^1.1.11",
+    "@endo/marshal": "^1.6.4",
+    "@endo/patterns": "^1.5.0",
+    "@endo/promise-kit": "^1.1.10"
   },
   "devDependencies": {
     "@agoric/kmarshal": "^0.1.0",
     "@agoric/swingset-liveslots": "^0.10.2",
     "@agoric/swing-store": "^0.9.1",
     "@agoric/swingset-vat": "^0.32.2",
-    "@endo/init": "^1.0.1",
-    "@endo/ses-ava": "^1.0.1",
+    "@endo/init": "^1.1.9",
+    "@endo/ses-ava": "^1.2.10",
     "ava": "^5.3.0",
-    "c8": "^7.13.0"
+    "c8": "^10.1.3"
   },
   "exports": {
     ".": "./src/index.js",
@@ -68,7 +68,7 @@
   },
   "ava": {
     "files": [
-      "test/**/test-*.js"
+      "test/**/*.test.*"
     ],
     "require": [
       "@endo/init/debug.js"
@@ -76,6 +76,6 @@
     "timeout": "2m"
   },
   "typeCoverage": {
-    "atLeast": 89.74
+    "atLeast": 90.9
   }
 }

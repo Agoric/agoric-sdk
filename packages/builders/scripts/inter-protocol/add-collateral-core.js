@@ -1,11 +1,11 @@
-/* global process */
+/* eslint-env node */
 import { makeHelpers } from '@agoric/deploy-script-support';
 
 import { getManifestForAddAssetToVault } from '@agoric/inter-protocol/src/proposals/addAssetToVault.js';
 import { getManifestForPsm } from '@agoric/inter-protocol/src/proposals/startPSM.js';
 import { makeInstallCache } from '@agoric/inter-protocol/src/proposals/utils.js';
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').ProposalBuilder} */
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
 export const defaultProposalBuilder = async (
   { publishRef, install: install0, wrapInstall },
   {
@@ -62,7 +62,7 @@ export const defaultProposalBuilder = async (
   });
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').ProposalBuilder} */
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
 export const psmProposalBuilder = async (
   { publishRef, install: install0, wrapInstall },
   { anchorOptions = /** @type {object} */ ({}) } = {},
@@ -103,15 +103,20 @@ export const psmProposalBuilder = async (
   });
 };
 
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
-  const { writeCoreProposal } = await makeHelpers(homeP, endowments);
+  const { writeCoreEval } = await makeHelpers(homeP, endowments);
 
   const tool = await makeInstallCache(homeP, {
     loadBundle: spec => import(spec),
   });
 
-  await writeCoreProposal('gov-add-collateral', defaultProposalBuilder);
-  await writeCoreProposal('gov-start-psm', opts =>
-    psmProposalBuilder({ ...opts, wrapInstall: tool.wrapInstall }),
+  await writeCoreEval('gov-add-collateral', defaultProposalBuilder);
+  await writeCoreEval('gov-start-psm', opts =>
+    psmProposalBuilder({
+      ...opts,
+      // @ts-expect-error XXX makeInstallCache types
+      wrapInstall: tool.wrapInstall,
+    }),
   );
 };

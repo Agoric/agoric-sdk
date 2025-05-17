@@ -2,8 +2,8 @@ import { makeHelpers } from '@agoric/deploy-script-support';
 import { defaultProposalBuilder as vaultProposalBuilder } from './add-collateral-core.js';
 import { defaultProposalBuilder as oraclesProposalBuilder } from './price-feed-core.js';
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').ProposalBuilder} */
-export const starsVaultProposalBuilder = async powers => {
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+const starsVaultProposalBuilder = async powers => {
   return vaultProposalBuilder(powers, {
     interchainAssetOptions: {
       // Values for the Stargaze token on Osmosis
@@ -17,8 +17,8 @@ export const starsVaultProposalBuilder = async powers => {
   });
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').ProposalBuilder} */
-export const starsOraclesProposalBuilder = async powers => {
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+const starsOraclesProposalBuilder = async powers => {
   return oraclesProposalBuilder(powers, {
     AGORIC_INSTANCE_NAME: `STARS-USD price feed`,
     IN_BRAND_LOOKUP: ['agoricNames', 'oracleBrand', 'STARS'],
@@ -36,8 +36,9 @@ export const starsOraclesProposalBuilder = async powers => {
   });
 };
 
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
-  const { writeCoreProposal } = await makeHelpers(homeP, endowments);
-  await writeCoreProposal('add-STARS', starsVaultProposalBuilder);
-  await writeCoreProposal('add-STARS-oracles', starsOraclesProposalBuilder);
+  const { writeCoreEval } = await makeHelpers(homeP, endowments);
+  await writeCoreEval('add-STARS', starsVaultProposalBuilder);
+  await writeCoreEval('add-STARS-oracles', starsOraclesProposalBuilder);
 };

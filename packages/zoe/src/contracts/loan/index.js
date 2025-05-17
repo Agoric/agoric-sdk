@@ -7,6 +7,10 @@ import {
 import { makeLendInvitation } from './lend.js';
 
 /**
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ */
+
+/**
  * Add collateral of a particular brand and get a loan of another
  * brand. Collateral (also known as margin) must be greater than the
  * loan value, at an amount set by the Maintenance Margin Requirement

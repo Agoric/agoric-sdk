@@ -1,7 +1,7 @@
-import { Fail, q } from '@agoric/assert';
+import { Fail, q } from '@endo/errors';
 import { AmountMath } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
-import { TimeMath } from '@agoric/time';
+import { TimeMath, TimestampShape } from '@agoric/time';
 import { M, makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
 import {
   calculateMedian,
@@ -14,11 +14,10 @@ import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 
 const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
 
-/** @typedef {import('./priceOracleKit.js').OracleStatus} OracleStatus */
 /**
- * @typedef {import('@agoric/time').Timestamp} Timestamp
- *
- * @typedef {import('@agoric/time').TimerService} TimerService
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {Timestamp, TimerService} from '@agoric/time'
+ * @import {OracleStatus} from './priceOracleKit.js'
  */
 
 /** @type {string} */
@@ -27,7 +26,7 @@ const V3_NO_DATA_ERROR = 'No data present';
 /** @type {bigint} */
 export const ROUND_MAX = BigInt(2 ** 32 - 1);
 
-const trace = makeTracer('RoundsM', false);
+const trace = makeTracer('RoundsM', true);
 
 /** @param {bigint} roundId */
 const validRoundId = roundId => {
@@ -63,7 +62,7 @@ const validRoundId = roundId => {
  * @property {number} roundTimeout
  */
 
-/** @typedef {IssuerKit<'set'>} QuoteKit */
+/** @typedef {IssuerKit<'set', PriceDescription>} QuoteKit */
 
 /**
  * @typedef {Readonly<
@@ -77,6 +76,7 @@ const validRoundId = roundId => {
  *   }
  * >} HeldParams
  *
+ *
  * @typedef {Readonly<
  *   HeldParams & {
  *     details: MapStore<bigint, RoundDetails>;
@@ -84,6 +84,7 @@ const validRoundId = roundId => {
  *     unitIn: bigint;
  *   }
  * >} ImmutableState
+ *
  *
  * @typedef {{
  *   lastValueOutForUnitIn: bigint?;
@@ -98,21 +99,25 @@ export const prepareRoundsManagerKit = baggage =>
     'RoundsManager',
     {
       helper: UnguardedHelperI,
-      contract: M.interface(
-        'contract',
-        {
-          authenticateQuote: M.call().rest(M.any()).returns(M.any()),
-          makeCreateQuote: M.call().rest(M.any()).returns(M.any()),
-          eligibleForSpecificRound: M.call().rest(M.any()).returns(M.boolean()),
-          getRoundData: M.call().rest(M.any()).returns(M.promise()),
-          getRoundStatus: M.call().rest(M.any()).returns(M.record()),
-          oracleRoundStateSuggestRound: M.call()
-            .rest(M.any())
-            .returns(M.record()),
-        },
-        // TODO(6571) stop sloppy
-        { sloppy: true },
-      ),
+      contract: M.interface('contract', {
+        authenticateQuote: M.call([M.record()]).returns(M.any()),
+        makeCreateQuote: M.call()
+          .optional({
+            overrideValueOut: M.number(),
+            timestamp: TimestampShape,
+          })
+          .returns(M.any()),
+        eligibleForSpecificRound: M.call(
+          M.any(),
+          M.bigint(),
+          TimestampShape,
+        ).returns(M.boolean()),
+        getRoundData: M.call(M.any()).returns(M.promise()),
+        getRoundStatus: M.call(M.bigint()).returns(M.record()),
+        oracleRoundStateSuggestRound: M.call(M.any(), TimestampShape).returns(
+          M.record(),
+        ),
+      }),
       oracle: M.interface('oracle', {
         handlePush: M.call(M.record(), M.record()).returns(M.promise()),
       }),
@@ -167,10 +172,13 @@ export const prepareRoundsManagerKit = baggage =>
         rounds,
         unitIn,
       };
+
+      const roundId = 0n;
+
       return {
         ...immutable,
         lastValueOutForUnitIn: null,
-        reportingRoundId: 0n,
+        reportingRoundId: roundId,
       };
     },
     {
@@ -434,8 +442,10 @@ export const prepareRoundsManagerKit = baggage =>
             );
           }
 
-          if (status.lastReportedRound >= roundId)
+          if (status.lastReportedRound >= roundId) {
             return 'cannot report on previous rounds';
+          }
+
           if (
             roundId !== reportingRoundId &&
             roundId !== add(reportingRoundId, 1) &&
@@ -593,8 +603,8 @@ export const prepareRoundsManagerKit = baggage =>
 
         /**
          * a method to provide all current info oracleStatuses need. Intended
-         * only only to be callable by oracleStatuses. Not for use by contracts
-         * to read state.
+         * only to be callable by oracleStatuses. Not for use by contracts to
+         * read state.
          *
          * @param {OracleStatus} status
          * @param {Timestamp} blockTimestamp
@@ -719,6 +729,52 @@ export const prepareRoundsManagerKit = baggage =>
 
           return settledStatus;
         },
+      },
+    },
+    {
+      finish: ({ state }) => {
+        const { details, rounds, timerPresence } = state;
+        // Zero is treated as special as roundId and in times. It's hard to
+        // avoid on restart and in tests, so make 1 the minimum
+
+        const firstRound = 1n;
+        state.reportingRoundId = firstRound;
+        details.init(
+          firstRound,
+          harden({
+            submissions: [],
+            maxSubmissions: state.maxSubmissionCount,
+            minSubmissions: state.minSubmissionCount,
+            roundTimeout: state.timeout,
+          }),
+        );
+
+        // Cannot await in first crank. Fail if no timestamp available
+        void E.when(
+          E(timerPresence).getCurrentTimestamp(),
+          nowMaybe => {
+            const now =
+              TimeMath.compareAbs(nowMaybe, 1n) < 0
+                ? TimeMath.coerceTimestampRecord(1n, nowMaybe.timerBrand)
+                : nowMaybe;
+
+            const round = harden({
+              answer: 0n,
+              startedAt: now,
+              updatedAt: 0n,
+              answeredInRound: 0n,
+            });
+            rounds.init(firstRound, round);
+
+            // In case this is a replacement priceFeed, set roundId in vstorage.
+            void state.latestRoundPublisher.write({
+              roundId: firstRound,
+              startedAt: round.startedAt,
+              startedBy: 'uninitialized',
+            });
+          },
+          reason => Fail`need a timestamp to start roundsManager ${reason}`,
+        );
       },
     },
   );

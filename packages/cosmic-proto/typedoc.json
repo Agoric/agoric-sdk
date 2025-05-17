@@ -1,0 +1,9 @@
+{
+    "extends": [
+        "../../typedoc.base.json"
+    ],
+    "entryPoints": [
+        "src/*.js",
+	      "src/helpers.ts"
+    ]
+}

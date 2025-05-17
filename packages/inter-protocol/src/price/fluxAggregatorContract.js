@@ -13,9 +13,8 @@ import { prepareFluxAggregatorKit } from './fluxAggregatorKit.js';
 
 const trace = makeTracer('FluxAgg', false);
 /**
- * @typedef {import('@agoric/vat-data').Baggage} Baggage
- *
- * @typedef {import('@agoric/time').TimerService} TimerService
+ * @import {Baggage} from '@agoric/vat-data'
+ * @import {TimerService} from '@agoric/time'
  */
 
 /** @type {ContractMeta} */
@@ -68,12 +67,14 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   // xxx uses contract baggage as issuerBagage, assumes one issuer in this contract
   /** @type {import('./roundsManager.js').QuoteKit} */
+  // @ts-expect-error cast
   const quoteIssuerKit = prepareIssuerKit(
     baggage,
     'quote',
     'set',
     undefined,
     undefined,
+    { recoverySetsOption: 'noRecoverySets' },
   );
 
   const {
@@ -194,3 +195,5 @@ export const start = async (zcf, privateArgs, baggage) => {
   });
 };
 harden(start);
+
+/** @typedef {typeof start} FluxStartFn */

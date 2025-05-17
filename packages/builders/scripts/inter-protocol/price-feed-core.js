@@ -1,7 +1,7 @@
-/* global process */
+/* eslint-env node */
 import { makeHelpers } from '@agoric/deploy-script-support';
 
-const DEFAULT_CONTRACT_TERMS = {
+export const DEFAULT_CONTRACT_TERMS = {
   POLL_INTERVAL: 30n,
   maxSubmissionCount: 1000,
   minSubmissionCount: 2,
@@ -11,7 +11,7 @@ const DEFAULT_CONTRACT_TERMS = {
   maxSubmissionValue: 2n ** 256n,
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').ProposalBuilder} */
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
 export const defaultProposalBuilder = async (
   { publishRef, install },
   options = {},
@@ -84,7 +84,7 @@ export const createGov = async (homeP, endowments) => {
 
   const oracleAddresses = ORACLE_ADDRESSES.split(',');
 
-  const { writeCoreProposal } = await makeHelpers(homeP, endowments);
+  const { writeCoreEval } = await makeHelpers(homeP, endowments);
 
   const inLookup = JSON.parse(IN_BRAND_LOOKUP);
   const outLookup = JSON.parse(OUT_BRAND_LOOKUP);
@@ -98,7 +98,7 @@ export const createGov = async (homeP, endowments) => {
       brandIn: lookup(inLookup).catch(() => undefined),
       brandOut: lookup(outLookup).catch(() => undefined),
     });
-  await writeCoreProposal('gov-price-feed', proposalBuilder); // gov-price-feed.js gov-price-feed-permit.json
+  await writeCoreEval('gov-price-feed', proposalBuilder); // gov-price-feed.js gov-price-feed-permit.json
 };
 
 export default createGov;

@@ -1,16 +1,13 @@
 {
   "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "allowSyntheticDefaultImports": true,
-    "maxNodeModuleJsDepth": 2,
-  },
+  "compilerOptions": {"skipLibCheck": false},
   "include": [
     "contractFacet.js",
-    "scripts/**/*.js",
+    "scripts",
+    // XXX we need both globs or tsc will ignore the .d.ts twin
     "src/**/*.js",
     "src/**/*.ts",
-    "test/**/*.js",
-    "test/**/*.ts",
-    "tools/**/*.js",
+    "test",
+    "tools",
   ],
 }

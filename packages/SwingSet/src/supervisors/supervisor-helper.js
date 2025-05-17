@@ -5,10 +5,10 @@ import {
 import '../types-ambient.js';
 
 /**
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryResult} VatDeliveryResult
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallHandler} VatSyscallHandler
+ * @import {VatDeliveryObject} from '@agoric/swingset-liveslots'
+ * @import {VatDeliveryResult} from '@agoric/swingset-liveslots'
+ * @import {VatSyscallObject} from '@agoric/swingset-liveslots'
+ * @import {VatSyscallHandler} from '@agoric/swingset-liveslots'
  * @typedef {import('@endo/marshal').CapData<string>} SwingSetCapData
  * @typedef { (delivery: VatDeliveryObject) => (VatDeliveryResult | Promise<VatDeliveryResult>) } VatDispatcherSyncAsync
  * @typedef { (delivery: VatDeliveryObject) => Promise<VatDeliveryResult> } VatDispatcher
@@ -32,16 +32,15 @@ function makeSupervisorDispatch(dispatch) {
   async function dispatchToVat(delivery) {
     // the (low-level) vat is responsible for giving up agency, but we still
     // protect against exceptions
-    return Promise.resolve(delivery)
-      .then(dispatch)
-      .then(
-        res => harden(['ok', res, null]),
-        err => {
-          // TODO react more thoughtfully, maybe terminate the vat
-          console.warn(`error during vat dispatch() of ${delivery}`, err);
-          return harden(['error', `${err}`, null]);
-        },
-      );
+    await null;
+    try {
+      const res = await dispatch(delivery);
+      return harden(['ok', res, null]);
+    } catch (err) {
+      // TODO react more thoughtfully, maybe terminate the vat
+      console.warn(`error during vat dispatch() of ${delivery}`, err);
+      return harden(['error', `${err}`, null]);
+    }
   }
 
   return harden(dispatchToVat);

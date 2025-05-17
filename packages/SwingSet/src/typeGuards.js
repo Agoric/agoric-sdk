@@ -10,37 +10,40 @@ export const ManagerType = M.or(
 
 const Bundle = M.splitRecord({ moduleType: M.string() });
 
-const SwingsetConfigOptions = harden({
+const VatConfigOptions = harden({
   creationOptions: M.splitRecord({}, { critical: M.boolean() }),
   parameters: M.recordOf(M.string(), M.any()),
 });
 
-const SwingSetConfigProperties = M.or(
-  M.splitRecord({ sourceSpec: M.string() }, SwingsetConfigOptions),
-  M.splitRecord({ bundleSpec: M.string() }, SwingsetConfigOptions),
-  M.splitRecord({ bundle: Bundle }, SwingsetConfigOptions),
-);
-const SwingSetConfigDescriptor = M.recordOf(
-  M.string(),
-  SwingSetConfigProperties,
-);
+const makeSwingSetConfigProperties = (required = {}, optional = {}, rest) =>
+  M.or(
+    M.splitRecord({ sourceSpec: M.string(), ...required }, optional, rest),
+    M.splitRecord({ bundleSpec: M.string(), ...required }, optional, rest),
+    M.splitRecord({ bundle: Bundle, ...required }, optional, rest),
+  );
+const makeSwingSetConfigDescriptor = (required, optional, rest) =>
+  M.recordOf(
+    M.string(),
+    makeSwingSetConfigProperties(required, optional, rest),
+  );
 
 /**
  * NOTE: this pattern suffices for PSM bootstrap,
  * but does not cover the whole SwingSet config syntax.
  *
  * {@link ./docs/configuration.md}
- * TODO: move this to swingset?
  *
  * @see SwingSetConfig
  * in ./types-external.js
  */
-export const SwingSetConfig = M.and(
-  M.splitRecord({}, { defaultManagerType: ManagerType }),
-  M.splitRecord({}, { includeDevDependencies: M.boolean() }),
-  M.splitRecord({}, { defaultReapInterval: M.number() }), // not in type decl
-  M.splitRecord({}, { snapshotInterval: M.number() }),
-  M.splitRecord({}, { vats: SwingSetConfigDescriptor }),
-  M.splitRecord({}, { bootstrap: M.string() }),
-  M.splitRecord({}, { bundles: SwingSetConfigDescriptor }),
+export const SwingSetConfig = M.splitRecord(
+  { vats: makeSwingSetConfigDescriptor(undefined, VatConfigOptions) },
+  {
+    defaultManagerType: ManagerType,
+    includeDevDependencies: M.boolean(),
+    defaultReapInterval: M.number(),
+    snapshotInterval: M.number(),
+    bootstrap: M.string(),
+    bundles: makeSwingSetConfigDescriptor(undefined, undefined, {}),
+  },
 );

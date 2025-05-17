@@ -1,10 +1,16 @@
 // @ts-check
-import { details as X } from '@agoric/assert';
+import { X } from '@endo/errors';
 
 import { AmountMath } from '@agoric/ertp';
 import { WalletName } from '@agoric/internal';
 import { E, Far } from '@endo/far';
 import { makeOncePromiseKit } from './once-promise-kit.js';
+
+/**
+ * @import {DepositFacet} from '@agoric/ertp/src/types.js'
+ * @import {Connection} from '@agoric/network';
+ * @import {Remote} from '@agoric/vow';
+ */
 
 /**
  * Create or return an existing courier promise kit.
@@ -29,18 +35,19 @@ export const getCourierPK = (key, keyToCourierPK) => {
 /**
  * Create the [send, receive] pair.
  *
- * @typedef {import('@agoric/vats').NameHub} NameHub
+ * @import {NameHub} from '@agoric/vats'
  *
  * @typedef {object} CourierArgs
  * @property {ZCF} zcf
- * @property {ERef<BoardDepositFacet>} board
- * @property {ERef<NameHub>} namesByAddress
+ * @property {Remote<BoardDepositFacet>} board
+ * @property {Remote<NameHub>} namesByAddress
  * @property {Denom} sendDenom
  * @property {Brand} localBrand
  * @property {(zcfSeat: ZCFSeat, amounts: AmountKeywordRecord) => void} retain
  * @property {(zcfSeat: ZCFSeat, amounts: AmountKeywordRecord) => void} redeem
- * @property {ERef<TransferProtocol>} transferProtocol
- * @param {ERef<Connection>} connection
+ * @property {Remote<TransferProtocol>} transferProtocol
+ * @property {ReturnType<import('@agoric/vow').prepareVowTools>['when']} when
+ * @param {Remote<Connection>} connection
  * @returns {(args: CourierArgs) => Courier}
  */
 export const makeCourierMaker =
@@ -54,6 +61,7 @@ export const makeCourierMaker =
     retain,
     redeem,
     transferProtocol,
+    when,
   }) => {
     /** @type {Sender} */
     const send = async (zcfSeat, depositAddress, memo, opts) => {
@@ -71,8 +79,7 @@ export const makeCourierMaker =
         retain(zcfSeat, { Transfer: amount });
 
         // The payment is already escrowed, and proposed to retain, so try sending.
-        return E(connection)
-          .send(transferPacket)
+        return when(E(connection).send(transferPacket))
           .then(ack => E(transferProtocol).assertTransferPacketAck(ack))
           .then(
             _ => zcfSeat.exit(),

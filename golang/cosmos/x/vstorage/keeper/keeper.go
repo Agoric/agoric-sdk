@@ -10,6 +10,10 @@ import (
 	"strconv"
 	"strings"
 
+	sdkmath "cosmossdk.io/math"
+	metrics "github.com/armon/go-metrics"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	db "github.com/tendermint/tm-db"
 
@@ -20,8 +24,8 @@ import (
 // StreamCell is an envelope representing a sequence of values written at a path in a single block.
 // It is persisted to storage as a { "blockHeight": "<digits>", "values": ["...", ...] } JSON text
 // that off-chain consumers rely upon.
-// Many of those consumers *also* rely upon the strings of "values" being valid JSON text
-// (cf. scripts/get-flattened-publication.sh), but we do not enforce that in this package.
+// Many of those consumers *also* rely upon the strings of "values" being valid JSON text,
+// but we do not enforce that in this package.
 type StreamCell struct {
 	BlockHeight string   `json:"blockHeight"`
 	Values      []string `json:"values"`
@@ -50,19 +54,11 @@ var _ ChangeManager = (*BatchingChangeManager)(nil)
 // 2 ** 256 - 1
 var MaxSDKInt = sdk.NewIntFromBigInt(new(big.Int).Sub(new(big.Int).Exp(big.NewInt(2), big.NewInt(256), nil), big.NewInt(1)))
 
-// TODO: Use bytes.CutPrefix once we can rely upon go >= 1.20.
-func cutPrefix(s, prefix []byte) (after []byte, found bool) {
-	if !bytes.HasPrefix(s, prefix) {
-		return s, false
-	}
-	return s[len(prefix):], true
-}
-
 // Keeper maintains the link to data storage and exposes getter/setter methods
 // for the various parts of the state machine
 type Keeper struct {
 	changeManager ChangeManager
-	storeKey      sdk.StoreKey
+	storeKey      storetypes.StoreKey
 }
 
 func (bcm *BatchingChangeManager) Track(ctx sdk.Context, k Keeper, entry agoric.KVEntry, isLegacy bool) {
@@ -116,10 +112,31 @@ func NewBatchingChangeManager() *BatchingChangeManager {
 	return &bcm
 }
 
-func NewKeeper(storeKey sdk.StoreKey) Keeper {
+func NewKeeper(storeKey storetypes.StoreKey) Keeper {
 	return Keeper{
 		storeKey:      storeKey,
 		changeManager: NewBatchingChangeManager(),
+	}
+}
+
+// size_increase and size_decrease metrics represent total writes and deletes *issued*
+// respectively, which may differ from the total number of bytes committed/freed
+// to/from the store due to the store's internal implementation.
+var MetricKeyStoreSizeIncrease = []string{"store", "size_increase"}
+var MetricKeyStoreSizeDecrease = []string{"store", "size_decrease"}
+const MetricLabelStoreKey = "storeKey"
+
+// reportStoreSizeMetrics exports store size increase/decrease metrics
+// when Cosmos telemetry is enabled.
+func (k Keeper) reportStoreSizeMetrics(increase int, decrease int) {
+	metricsLabel := []metrics.Label{
+		telemetry.NewLabel(MetricLabelStoreKey, k.storeKey.Name()),
+	}
+	if increase > 0 {
+		telemetry.IncrCounterWithLabels(MetricKeyStoreSizeIncrease, float32(increase), metricsLabel)
+	}
+	if decrease > 0 {
+		telemetry.IncrCounterWithLabels(MetricKeyStoreSizeDecrease, float32(decrease), metricsLabel)
 	}
 }
 
@@ -162,7 +179,7 @@ func (k Keeper) ExportStorageFromPrefix(ctx sdk.Context, pathPrefix string) []*t
 		if !strings.HasPrefix(path, pathPrefix) {
 			continue
 		}
-		value, hasPrefix := cutPrefix(rawValue, types.EncodedDataPrefix)
+		value, hasPrefix := bytes.CutPrefix(rawValue, types.EncodedDataPrefix)
 		if !hasPrefix {
 			panic(fmt.Errorf("value at path %q starts with unexpected prefix", path))
 		}
@@ -221,6 +238,8 @@ func (k Keeper) RemoveEntriesWithPrefix(ctx sdk.Context, pathPrefix string) {
 	keys := getEncodedKeysWithPrefixFromIterator(iterator, descendantPrefix)
 
 	for _, key := range keys {
+		rawValue := store.Get(key)
+		k.reportStoreSizeMetrics(0, len(key) + len(rawValue))
 		store.Delete(key)
 	}
 
@@ -264,7 +283,7 @@ func (k Keeper) GetEntry(ctx sdk.Context, path string) agoric.KVEntry {
 	if bytes.Equal(rawValue, types.EncodedNoDataValue) {
 		return agoric.NewKVEntryWithNoValue(path)
 	}
-	value, hasPrefix := cutPrefix(rawValue, types.EncodedDataPrefix)
+	value, hasPrefix := bytes.CutPrefix(rawValue, types.EncodedDataPrefix)
 	if !hasPrefix {
 		panic(fmt.Errorf("value at path %q starts with unexpected prefix", path))
 	}
@@ -372,18 +391,23 @@ func (k Keeper) SetStorage(ctx sdk.Context, entry agoric.KVEntry) {
 	store := ctx.KVStore(k.storeKey)
 	path := entry.Key()
 	encodedKey := types.PathToEncodedKey(path)
+	oldRawValue := store.Get(encodedKey)
 
 	if !entry.HasValue() {
 		if !k.HasChildren(ctx, path) {
 			// We have no children, can delete.
+			k.reportStoreSizeMetrics(0, len(encodedKey) + len(oldRawValue))
 			store.Delete(encodedKey)
 		} else {
+			// We have children, mark as an empty placeholder without deleting.
+			k.reportStoreSizeMetrics(len(types.EncodedNoDataValue), len(oldRawValue))
 			store.Set(encodedKey, types.EncodedNoDataValue)
 		}
 	} else {
 		// Update the value.
-		bz := bytes.Join([][]byte{types.EncodedDataPrefix, []byte(entry.StringValue())}, []byte{})
-		store.Set(encodedKey, bz)
+		newRawValue := bytes.Join([][]byte{types.EncodedDataPrefix, []byte(entry.StringValue())}, []byte{})
+		k.reportStoreSizeMetrics(len(newRawValue), len(oldRawValue))
+		store.Set(encodedKey, newRawValue)
 	}
 
 	// Update our other parent children.
@@ -396,7 +420,9 @@ func (k Keeper) SetStorage(ctx sdk.Context, entry agoric.KVEntry) {
 				// this and further ancestors are needed, skip out
 				break
 			}
-			store.Delete(types.PathToEncodedKey(ancestor))
+			encodedAncestor := types.PathToEncodedKey(ancestor)
+			k.reportStoreSizeMetrics(0, len(encodedAncestor) + len(types.EncodedNoDataValue))
+			store.Delete(encodedAncestor)
 		}
 	} else {
 		// add placeholders as needed
@@ -406,7 +432,9 @@ func (k Keeper) SetStorage(ctx sdk.Context, entry agoric.KVEntry) {
 				// The ancestor exists, implying all further ancestors exist, so we can break.
 				break
 			}
-			store.Set(types.PathToEncodedKey(ancestor), types.EncodedNoDataValue)
+			encodedAncestor := types.PathToEncodedKey(ancestor)
+			k.reportStoreSizeMetrics(len(encodedAncestor) + len(types.EncodedNoDataValue), 0)
+			store.Set(encodedAncestor, types.EncodedNoDataValue)
 		}
 	}
 }
@@ -427,7 +455,7 @@ func (k Keeper) GetNoDataValue() []byte {
 	return types.EncodedNoDataValue
 }
 
-func (k Keeper) getIntValue(ctx sdk.Context, path string) (sdk.Int, error) {
+func (k Keeper) GetIntValue(ctx sdk.Context, path string) (sdkmath.Int, error) {
 	indexEntry := k.GetEntry(ctx, path)
 	if !indexEntry.HasValue() {
 		return sdk.NewInt(0), nil
@@ -440,14 +468,14 @@ func (k Keeper) getIntValue(ctx sdk.Context, path string) (sdk.Int, error) {
 	return index, nil
 }
 
-func (k Keeper) GetQueueLength(ctx sdk.Context, queuePath string) (sdk.Int, error) {
-	head, err := k.getIntValue(ctx, queuePath+".head")
+func (k Keeper) GetQueueLength(ctx sdk.Context, queuePath string) (sdkmath.Int, error) {
+	head, err := k.GetIntValue(ctx, queuePath+".head")
 	if err != nil {
-		return sdk.NewInt(0), err
+		return sdkmath.NewInt(0), err
 	}
-	tail, err := k.getIntValue(ctx, queuePath+".tail")
+	tail, err := k.GetIntValue(ctx, queuePath+".tail")
 	if err != nil {
-		return sdk.NewInt(0), err
+		return sdkmath.NewInt(0), err
 	}
 	// The tail index is exclusive
 	return tail.Sub(head), nil
@@ -456,12 +484,12 @@ func (k Keeper) GetQueueLength(ctx sdk.Context, queuePath string) (sdk.Int, erro
 func (k Keeper) PushQueueItem(ctx sdk.Context, queuePath string, value string) error {
 	// Get the current queue tail, defaulting to zero if its vstorage doesn't exist.
 	// The `tail` is the value of the next index to be inserted
-	tail, err := k.getIntValue(ctx, queuePath+".tail")
+	tail, err := k.GetIntValue(ctx, queuePath+".tail")
 	if err != nil {
 		return err
 	}
 
-	if tail.Equal(MaxSDKInt) {
+	if tail.GTE(MaxSDKInt) {
 		return errors.New(queuePath + " overflow")
 	}
 	nextTail := tail.Add(sdk.NewInt(1))

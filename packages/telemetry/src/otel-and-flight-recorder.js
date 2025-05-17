@@ -1,6 +1,9 @@
-import { NonNullish } from '@agoric/assert';
+import { NonNullish } from '@agoric/internal';
 import { makeSlogSender as makeSlogSenderFromEnv } from './make-slog-sender.js';
 
+/**
+ * @param {import('./index.js').MakeSlogSenderOptions} opts
+ */
 export const makeSlogSender = async opts => {
   const { SLOGFILE: _1, SLOGSENDER: _2, ...otherEnv } = opts.env || {};
 

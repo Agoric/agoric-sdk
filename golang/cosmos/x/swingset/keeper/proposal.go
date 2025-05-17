@@ -1,26 +1,32 @@
 package keeper
 
 import (
+	"context"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
+	"github.com/cosmos/cosmos-sdk/baseapp"
 )
 
 type coreEvalAction struct {
-	Type        string           `json:"type"` // CORE_EVAL
-	Evals       []types.CoreEval `json:"evals"`
-	BlockHeight int64            `json:"blockHeight"`
-	BlockTime   int64            `json:"blockTime"`
+	*vm.ActionHeader `actionType:"CORE_EVAL"`
+	Evals            []types.CoreEval `json:"evals"`
 }
 
 // CoreEvalProposal tells SwingSet to evaluate the given JS code.
 func (k Keeper) CoreEvalProposal(ctx sdk.Context, p *types.CoreEvalProposal) error {
-	action := &coreEvalAction{
-		Type:        "CORE_EVAL",
-		Evals:       p.Evals,
-		BlockHeight: ctx.BlockHeight(),
-		BlockTime:   ctx.BlockTime().Unix(),
+	action := coreEvalAction{
+		Evals: p.Evals,
 	}
 
+	// While the CoreEvalProposal was originally created by a transaction, by the time it
+	// passes by governance, we no longer have its provenance information, so we need to
+	// synthesize unique context information.
+	// We use a fixed placeholder value for the txHash context. We use `0` for the message
+	// index which assumes there is a single proposal per block.
+	ctx = ctx.WithContext(context.WithValue(ctx.Context(), baseapp.TxHashContextKey, "x/gov"))
+	ctx = ctx.WithContext(context.WithValue(ctx.Context(), baseapp.TxMsgIdxContextKey, 0))
 	return k.PushHighPriorityAction(ctx, action)
 }

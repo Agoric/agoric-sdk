@@ -1,15 +1,17 @@
-import { assert, q, Fail } from '@agoric/assert';
+import { assert, q, Fail } from '@endo/errors';
 import { AmountMath, getAssetKind } from '@agoric/ertp';
+import { objectMap } from '@agoric/internal';
 import { assertRecord } from '@endo/marshal';
 import { assertKey, assertPattern, mustMatch, isKey } from '@agoric/store';
 import { FullProposalShape } from './typeGuards.js';
-import { arrayToObj } from './objArrayConversion.js';
-
-import './internal-types.js';
 
 const { ownKeys } = Reflect;
 
 export const MAX_KEYWORD_LENGTH = 100;
+
+/**
+ * @import {ExitRule, Proposal, ProposalRecord} from '@agoric/zoe';
+ */
 
 const firstCapASCII = /^[A-Z][a-zA-Z0-9_$]*$/;
 
@@ -47,7 +49,9 @@ export const cleanKeywords = uncleanKeywordRecord => {
 
   // Assert all names are ascii identifiers starting with
   // an upper case letter.
-  keywords.forEach(assertKeywordName);
+  for (const keyword of keywords) {
+    assertKeywordName(keyword);
+  }
 
   return /** @type {string[]} */ (keywords);
 };
@@ -56,12 +60,11 @@ export const coerceAmountPatternKeywordRecord = (
   allegedAmountKeywordRecord,
   getAssetKindByBrand,
 ) => {
-  const keywords = cleanKeywords(allegedAmountKeywordRecord);
-
-  const amounts = Object.values(allegedAmountKeywordRecord);
-  // Check that each value can be coerced using the AmountMath
-  // indicated by brand. `AmountMath.coerce` throws if coercion fails.
-  const coercedAmounts = amounts.map(amount => {
+  cleanKeywords(allegedAmountKeywordRecord);
+  // FIXME objectMap should constrain the mapping function by the record's type
+  return objectMap(allegedAmountKeywordRecord, amount => {
+    // Check that each value can be coerced using the AmountMath
+    // indicated by brand. `AmountMath.coerce` throws if coercion fails.
     if (isKey(amount)) {
       const brandAssetKind = getAssetKindByBrand(amount.brand);
       const assetKind = getAssetKind(amount);
@@ -75,11 +78,14 @@ export const coerceAmountPatternKeywordRecord = (
       return amount;
     }
   });
-
-  // Recreate the amountKeywordRecord with coercedAmounts.
-  return harden(arrayToObj(coercedAmounts, keywords));
 };
 
+/**
+ *
+ * @param {unknown} allegedAmountKeywordRecord
+ * @param {*} getAssetKindByBrand
+ * @returns {AmountKeywordRecord}
+ */
 export const coerceAmountKeywordRecord = (
   allegedAmountKeywordRecord,
   getAssetKindByBrand,
@@ -89,6 +95,7 @@ export const coerceAmountKeywordRecord = (
     getAssetKindByBrand,
   );
   assertKey(result);
+  // @ts-expect-error checked cast
   return result;
 };
 

@@ -2,10 +2,10 @@
 import { createHash } from 'crypto';
 import { Readable } from 'stream';
 import { Buffer } from 'buffer';
+import { Fail, q } from '@endo/errors';
 import { encodeBase64, decodeBase64 } from '@endo/base64';
 import { checkBundle } from '@endo/check-bundle/lite.js';
 import { Nat } from '@endo/nat';
-import { Fail, q } from '@agoric/assert';
 import { createSHA256 } from './hasher.js';
 
 /**
@@ -42,7 +42,7 @@ import { createSHA256 } from './hasher.js';
  *
  */
 
-function bundleIDFromName(name) {
+export const bundleIDFromName = name => {
   typeof name === 'string' || Fail`artifact name must be a string`;
   const [tag, ...pieces] = name.split('.');
   if (tag !== 'bundle' || pieces.length !== 1) {
@@ -52,7 +52,8 @@ function bundleIDFromName(name) {
   }
   const bundleID = pieces[0];
   return bundleID;
-}
+};
+harden(bundleIDFromName);
 
 /**
  * @param {*} db
@@ -267,6 +268,7 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
     const rawBundle = row.bundle || Fail`bundle ${q(bundleID)} pruned`;
     yield* Readable.from(Buffer.from(rawBundle));
   }
+  harden(exportBundle);
 
   const sqlGetBundleIDs = db.prepare(`
     SELECT bundleID
@@ -286,12 +288,14 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
       yield [bundleArtifactName(bundleID), bundleID];
     }
   }
+  harden(getExportRecords);
 
   async function* getArtifactNames() {
     for (const bundleID of sqlGetBundleIDs.iterate()) {
       yield bundleArtifactName(bundleID);
     }
   }
+  harden(getArtifactNames);
 
   function computeSha512(bytes) {
     const hash = createHash('sha512');
@@ -364,6 +368,7 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
   function* getBundleIDs() {
     yield* sqlListBundleIDs.iterate();
   }
+  harden(getBundleIDs);
 
   return harden({
     importBundleRecord,

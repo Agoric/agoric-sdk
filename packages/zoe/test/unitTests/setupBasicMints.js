@@ -3,6 +3,10 @@ import { makeScalarMapStore } from '@agoric/store';
 import { makeZoeForTest } from '../../tools/setup-zoe.js';
 import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
 
+/**
+ * @import {MapStore} from '@agoric/swingset-liveslots';
+ */
+
 export const setup = () => {
   const moolaKit = makeIssuerKit('moola');
   const simoleanKit = makeIssuerKit('simoleans');
@@ -22,7 +26,7 @@ export const setup = () => {
   const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
   const zoe = makeZoeForTest(fakeVatAdmin);
 
-  /** @type {<K extends AssetKind>(brand: Brand<K>) => (value: any) => Amount<K>} */
+  /** @type {(brand: Brand<'nat'>) => (value: bigint) => Amount<'nat'>} */
   const makeSimpleMake = brand => value => AmountMath.make(brand, value);
 
   const result = {

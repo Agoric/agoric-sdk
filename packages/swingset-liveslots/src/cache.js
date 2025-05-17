@@ -1,10 +1,10 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 
 /**
  * @template V
  * @callback CacheGet
  * @param {string} key
- * @returns {V}
+ * @returns {V | undefined}
  */
 
 /**
@@ -62,6 +62,7 @@ import { Fail } from '@agoric/assert';
 export function makeCache(readBacking, writeBacking, deleteBacking) {
   const stash = new Map();
   const dirtyKeys = new Set();
+  /** @type {Cache<V>} */
   const cache = {
     get: key => {
       assert.typeof(key, 'string');

@@ -11,17 +11,17 @@ FAUCET_ADDRESS="127.0.0.1"
 FAUCET_PORT=7000
 
 python3 ./scripts/faucet.py --chain-id "${CHAIN_ID}" \
-                            --chain-data "${KEYRING_DIR}" \
-                            --wallet "${FAUCET_WALLET}" \
-                            --rpc "${CHAIN_RPC_NODE}" \
-                            --faucet-address "${FAUCET_ADDRESS}" \
-                            --faucet-port "${FAUCET_PORT}" &
+  --chain-data "${KEYRING_DIR}" \
+  --wallet "${FAUCET_WALLET}" \
+  --rpc "${CHAIN_RPC_NODE}" \
+  --faucet-address "${FAUCET_ADDRESS}" \
+  --faucet-port "${FAUCET_PORT}" &
 
 echo "check rosetta-cli is installed"
-if [ ! -x ./bin/rosetta-cli ]; then 
-    # Installs rosetta-cli into the local ./bin directory
-	# https://github.com/coinbase/rosetta-cli#installation
-    curl -sSfL https://raw.githubusercontent.com/coinbase/rosetta-cli/v0.10.3/scripts/install.sh | sh -s
+if [ ! -x ./bin/rosetta-cli ]; then
+  # Installs rosetta-cli into the local ./bin directory
+  # https://github.com/coinbase/rosetta-cli#installation
+  curl -sSfL https://raw.githubusercontent.com/coinbase/rosetta-cli/v0.10.3/scripts/install.sh | sh -s
 fi
 
 echo "checking data API"

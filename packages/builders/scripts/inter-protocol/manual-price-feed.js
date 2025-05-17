@@ -48,6 +48,7 @@ export default async function priceAuthorityFromNotifier(
 
   if (!aggregatorInstance) {
     console.log('Autodetecting aggregator instance...');
+    // @ts-expect-error inspecific Home type
     const purse = E(home.wallet).getPurse('Default Zoe invite purse');
     const { value } = await E(purse).getCurrentAmount();
     const invitations = value.filter(
@@ -81,6 +82,7 @@ export default async function priceAuthorityFromNotifier(
   };
 
   console.log('Getting wallet bridge...');
+  // @ts-expect-error inspecific Home type
   const bridge = await E(home.wallet).getBridge();
 
   // Consume an aggregator invitation for this instance.
@@ -94,6 +96,7 @@ export default async function priceAuthorityFromNotifier(
       () => {},
     );
 
+  // @ts-expect-error inspecific Home type
   const walletAdmin = E(home.wallet).getAdminFacet();
 
   console.log('=====================================================');
@@ -111,6 +114,7 @@ export default async function priceAuthorityFromNotifier(
         const orKey = `offerResult ${id}`;
         await E(home.scratch).set(
           orKey,
+          // @ts-expect-error inspecific Home type
           E(home.wallet).lookup('offerResult', id),
         );
         console.log(

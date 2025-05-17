@@ -34,14 +34,14 @@ func NewPortHandler(am AppModule, keeper Keeper) portHandler {
 	}
 }
 
-type vbankSingleBalanceUpdate struct {
+type VbankSingleBalanceUpdate struct {
 	Address string `json:"address"`
 	Denom   string `json:"denom"`
 	Amount  string `json:"amount"`
 }
 
 // Make vbankManyBalanceUpdates sortable
-type vbankManyBalanceUpdates []vbankSingleBalanceUpdate
+type vbankManyBalanceUpdates []VbankSingleBalanceUpdate
 
 var _ sort.Interface = vbankManyBalanceUpdates{}
 
@@ -67,26 +67,25 @@ func (vbu vbankManyBalanceUpdates) Swap(i int, j int) {
 	vbu[i], vbu[j] = vbu[j], vbu[i]
 }
 
-type vbankBalanceUpdate struct {
-	Nonce   uint64                  `json:"nonce"`
-	Type    string                  `json:"type"`
-	Updated vbankManyBalanceUpdates `json:"updated"`
+type VbankBalanceUpdate struct {
+	*vm.ActionHeader `actionType:"VBANK_BALANCE_UPDATE"`
+	Nonce            uint64                  `json:"nonce"`
+	Updated          vbankManyBalanceUpdates `json:"updated"`
 }
 
 // getBalanceUpdate returns a bridge message containing the current bank balance
 // for the given addresses each for the specified denominations. Coins are used
 // only to track the set of denoms, not for the particular nonzero amounts.
-func getBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToUpdate map[string]sdk.Coins) vm.Jsonable {
+func getBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToUpdate map[string]sdk.Coins) vm.Action {
 	nentries := len(addressToUpdate)
 	if nentries == 0 {
 		return nil
 	}
 
 	nonce := keeper.GetNextSequence(ctx)
-	event := vbankBalanceUpdate{
-		Type:    "VBANK_BALANCE_UPDATE",
+	event := VbankBalanceUpdate{
 		Nonce:   nonce,
-		Updated: make([]vbankSingleBalanceUpdate, 0, nentries),
+		Updated: make([]VbankSingleBalanceUpdate, 0, nentries),
 	}
 
 	// Note that Golang randomises the order of iteration, so we have to sort
@@ -100,7 +99,7 @@ func getBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToUpdate map[string
 		for _, coin := range coins {
 			// generate an update even when the current balance is zero
 			balance := keeper.GetBalance(ctx, account, coin.Denom)
-			update := vbankSingleBalanceUpdate{
+			update := VbankSingleBalanceUpdate{
 				Address: address,
 				Denom:   coin.Denom,
 				Amount:  balance.Amount.String(),
@@ -111,7 +110,9 @@ func getBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToUpdate map[string
 
 	// Ensure we have a deterministic order of updates.
 	sort.Sort(event.Updated)
-	return event
+
+	// Populate the event default fields (even though event does not embed vm.ActionHeader)
+	return vm.PopulateAction(ctx, event)
 }
 
 func marshal(event vm.Jsonable) ([]byte, error) {
@@ -143,11 +144,9 @@ func (ch portHandler) Receive(cctx context.Context, str string) (ret string, err
 		}
 		coin := keeper.GetBalance(ctx, addr, msg.Denom)
 		packet := coin.Amount.String()
+		bytes, err := json.Marshal(&packet)
 		if err == nil {
-			bytes, err := json.Marshal(&packet)
-			if err == nil {
-				ret = string(bytes)
-			}
+			ret = string(bytes)
 		}
 
 	case "VBANK_GRAB":
@@ -215,9 +214,6 @@ func (ch portHandler) Receive(cctx context.Context, str string) (ret string, err
 		if err := keeper.StoreRewardCoins(ctx, coins); err != nil {
 			return "", fmt.Errorf("cannot store reward %s coins: %s", coins.Sort().String(), err)
 		}
-		if err != nil {
-			return "", err
-		}
 		state := keeper.GetState(ctx)
 		state.RewardPool = state.RewardPool.Add(coins...)
 		keeper.SetState(ctx, state)
@@ -243,7 +239,7 @@ func (ch portHandler) Receive(cctx context.Context, str string) (ret string, err
 	return
 }
 
-func (am AppModule) PushAction(ctx sdk.Context, action vm.Jsonable) error {
+func (am AppModule) PushAction(ctx sdk.Context, action vm.Action) error {
 	// vbank actions are not triggered by a swingset message in a transaction, so we need to
 	// synthesize unique context information.
 	// We use a fixed placeholder value for the txHash context, and can simply use `0` for the

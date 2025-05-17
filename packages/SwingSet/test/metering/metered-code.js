@@ -18,7 +18,7 @@ export function meterMe(log2, explode = 'no') {
   }
   try {
     if (explode === 'compute') {
-      // eslint-disable-next-line no-constant-condition, no-empty
+      // eslint-disable-next-line no-empty
       while (true) {}
     } else if (explode === 'stack') {
       delveForeverIntoTheRecursiveDepths();

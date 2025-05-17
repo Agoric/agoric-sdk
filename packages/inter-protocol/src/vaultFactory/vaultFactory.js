@@ -1,8 +1,6 @@
 // @jessie-check
-
-import '@agoric/governance/exported.js';
-import '@agoric/zoe/exported.js';
-import '@agoric/zoe/src/contracts/exported.js';
+/// <reference types="@agoric/governance/exported" />
+/// <reference types="@agoric/zoe/exported" />
 
 // The vaultFactory owns a number of VaultManagers and a mint for Minted.
 //
@@ -31,12 +29,17 @@ import { InvitationShape } from '../auction/params.js';
 import { SHORTFALL_INVITATION_KEY, vaultDirectorParamTypes } from './params.js';
 import { provideDirector } from './vaultDirector.js';
 
+/**
+ * @import {ContractMeta, FeeMintAccess, HandleOffer, Invitation, OfferHandler, TransferPart, ZCF, ZCFMint, ZCFSeat} from '@agoric/zoe';
+ * @import {ContractOf} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ */
+
 const trace = makeTracer('VF', true);
 
 /**
  * @typedef {ZCF<
- *   GovernanceTerms<import('./params.js').VaultDirectorParams> & {
- *     auctioneerPublicFacet: import('../auction/auctioneer.js').AuctioneerPublicFacet;
+ *   GovernanceTerms<import('./params').VaultDirectorParams> & {
  *     priceAuthority: ERef<PriceAuthority>;
  *     reservePublicFacet: AssetReservePublicFacet;
  *     timerService: import('@agoric/time').TimerService;
@@ -70,8 +73,14 @@ harden(meta);
  *   initialShortfallInvitation: Invitation;
  *   storageNode: ERef<StorageNode>;
  *   marshaller: ERef<Marshaller>;
+ *   auctioneerInstance: Instance<import('../auction/auctioneer.js').start>;
+ *   managerParams: Record<
+ *     string,
+ *     import('./params.js').VaultManagerParamOverrides
+ *   >;
+ *   directorParamOverrides: [object];
  * }} privateArgs
- * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
   trace('prepare start', privateArgs, [...baggage.keys()]);
@@ -80,6 +89,9 @@ export const start = async (zcf, privateArgs, baggage) => {
     initialShortfallInvitation,
     marshaller,
     storageNode,
+    auctioneerInstance,
+    managerParams,
+    directorParamOverrides,
   } = privateArgs;
 
   trace('awaiting debtMint');
@@ -91,7 +103,10 @@ export const start = async (zcf, privateArgs, baggage) => {
     mintedIssuerRecord: debtMint.getIssuerRecord(),
   }));
 
-  const { timerService, auctioneerPublicFacet } = zcf.getTerms();
+  const { timerService } = zcf.getTerms();
+
+  const zoe = zcf.getZoeService();
+  const auctioneerPublicFacet = E(zoe).getPublicFacet(auctioneerInstance);
 
   const { makeRecorderKit, makeERecorderKit } = prepareRecorderKitMakers(
     baggage,
@@ -108,7 +123,6 @@ export const start = async (zcf, privateArgs, baggage) => {
     marshaller,
   );
   /** a powerful object; can modify the invitation */
-  trace('awaiting makeParamManagerFromTerms');
   const vaultDirectorParamManager = await makeParamManagerFromTerms(
     {
       publisher: governanceSubscriptionKit.publication,
@@ -120,6 +134,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       [SHORTFALL_INVITATION_KEY]: initialShortfallInvitation,
     },
     vaultDirectorParamTypes,
+    directorParamOverrides,
   );
 
   const director = provideDirector(
@@ -134,6 +149,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     marshaller,
     makeRecorderKit,
     makeERecorderKit,
+    managerParams,
   );
 
   // cannot await because it would make remote calls during vat restart

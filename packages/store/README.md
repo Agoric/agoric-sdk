@@ -22,36 +22,6 @@ Store adds some additional functionality on top of Map.
 
 See `makeScalarWeakMapStore` for the wrapper around JavaScript's WeakMap abstraction.
 
-# External Store
+---
 
-An External Store is defined by its maker function, and provides abstractions
-that are compatible with large, synchronous secondary storage that can be paged
-in and out of local memory.
-
-```js
-import { makeExternalStore } from '@agoric/store';
-
-// Here is us defining an instance store for 'hello' objects.
-const estore = makeExternalStore((msg = 'Hello') => ({
-  hello(nickname) {
-    return `${msg}, ${nickname}!`;
-  },
-}));
-
-const h = estore.makeInstance('Hi');
-h.hello('friend') === 'Hi, friend!';
-const wm = estore.makeWeakMap('Hello object');
-wm.init(h, 'data');
-// ... time passes and h is paged out and reloaded.
-wm.get(h) === 'data';
-wm.set(h, 'new-data');
-// ... time passes and h is paged out and reloaded.
-map.delete(h);
-```
-
-Note that when you import and use the `makeExternalStore` function, the platform
-you are running on may rewrite your code to use a more scalable implementation
-of that function.  If it is not rewritten, then `makeExternalStore` will use
-`makeMemoryExternalStore`, a full-featured, though in-memory-only
-implementation.  If you don't desire rewriting, then use
-`makeMemoryExternalStore` directly.
+Be aware that both `@agoric/base-zone` and this package `@agoric/store` will move from the agoric-sdk repository to the endo repository and likely renamed `@endo/zone` and `@endo/store`. At that time, we will first deprecate the versions here, then replace them with deprecated stubs that reexport from their new home. We hope to eventually remove even these stubs, depending on the compat cost at that time.

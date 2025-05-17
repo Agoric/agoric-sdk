@@ -13,7 +13,7 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
-    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
+    "test:c8": "c8 --all $C8_OPTIONS ava",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
@@ -21,9 +21,9 @@
     "lint:eslint": "eslint ."
   },
   "dependencies": {
-    "@endo/far": "^1.0.1",
-    "@endo/marshal": "^1.0.1",
-    "@agoric/assert": "^0.6.0"
+    "@endo/far": "^1.1.11",
+    "@endo/marshal": "^1.6.4",
+    "@endo/errors": "^1.2.10"
   },
   "devDependencies": {
     "ava": "^5.3.0"
@@ -33,7 +33,7 @@
   },
   "ava": {
     "files": [
-      "test/**/test-*.js"
+      "test/**/*.test.*"
     ],
     "require": [
       "@endo/init/debug.js"

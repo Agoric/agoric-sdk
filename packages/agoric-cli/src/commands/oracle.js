@@ -1,44 +1,59 @@
 // @ts-check
 /* eslint-disable func-names */
-/* global fetch, setTimeout, process */
-import { Fail } from '@agoric/assert';
+/* eslint-env node */
+import {
+  fetchEnvNetworkConfig,
+  makeAgoricNames,
+  makeVstorageKit,
+  makeWalletUtils,
+  storageHelper,
+} from '@agoric/client-utils';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
+import { oracleBrandFeedName } from '@agoric/inter-protocol/src/proposals/utils.js';
+import { Fail } from '@endo/errors';
 import { Nat } from '@endo/nat';
 import { Command } from 'commander';
-import * as cp from 'child_process';
 import { inspect } from 'util';
-import { oracleBrandFeedName } from '@agoric/inter-protocol/src/proposals/utils.js';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
-import { getNetworkConfig, makeRpcUtils, storageHelper } from '../lib/rpc.js';
+import { bigintReplacer } from '../lib/format.js';
 import {
   getCurrent,
-  makeWalletUtils,
   outputAction,
   sendAction,
   sendHint,
 } from '../lib/wallet.js';
-import { bigintReplacer } from '../lib/format.js';
+
+/** @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js'; */
 
 // XXX support other decimal places
 const COSMOS_UNIT = 1_000_000n;
-const scaleDecimals = num => BigInt(num * Number(COSMOS_UNIT));
+/** @param {number} num */
+const scaleDecimals = num => BigInt(Math.round(num * Number(COSMOS_UNIT)));
 
 /**
- * @param {import('anylogger').Logger} logger
+ * Prints JSON output to stdout and diagnostic info (like logs) to stderr
+ *
  * @param {{
- *   delay?: (ms: number) => Promise<void>,
- *   execFileSync?: typeof import('child_process').execFileSync,
- *   env?: Record<string, string | undefined>,
- *   stdout?: Pick<import('stream').Writable,'write'>,
- * }} [io]
+ *   createCommand: typeof import('commander').createCommand,
+ *   env: Partial<Record<string, string>>,
+ *   execFileSync: typeof import('child_process').execFileSync,
+ *   now: () => number,
+ *   setTimeout: typeof setTimeout,
+ *   stderr: Pick<import('stream').Writable,'write'>,
+ *   stdout: Pick<import('stream').Writable,'write'>,
+ * }} process
+ * @param {import('anylogger').Logger} [logger]
  */
-export const makeOracleCommand = (logger, io = {}) => {
-  const {
-    delay = ms => new Promise(resolve => setTimeout(resolve, ms)),
-    execFileSync = cp.execFileSync,
-    env = process.env,
-    stdout = process.stdout,
-  } = io;
+export const makeOracleCommand = (
+  { env, execFileSync, setTimeout, stderr, stdout },
+  logger,
+) => {
+  /**
+   * @param {number} ms
+   * @returns {Promise<void>}
+   */
+  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
   const oracle = new Command('oracle')
     .description('Oracle commands')
     .usage(
@@ -78,20 +93,24 @@ export const makeOracleCommand = (logger, io = {}) => {
 
   const rpcTools = async () => {
     // XXX pass fetch to getNetworkConfig() explicitly
-    const networkConfig = await getNetworkConfig(env);
-    const utils = await makeRpcUtils({ fetch });
+    const networkConfig = await fetchEnvNetworkConfig({
+      env: process.env,
+      fetch,
+    });
+    const vsk = makeVstorageKit({ fetch }, networkConfig);
+    const agoricNames = await makeAgoricNames(vsk.fromBoard, vsk.vstorage);
 
     const lookupPriceAggregatorInstance = ([brandIn, brandOut]) => {
       const name = oracleBrandFeedName(brandIn, brandOut);
-      const instance = utils.agoricNames.instance[name];
+      const instance = agoricNames.instance[name];
       if (!instance) {
-        logger.debug('known instances:', utils.agoricNames.instance);
+        logger && logger.debug('known instances:', agoricNames.instance);
         throw Error(`Unknown instance ${name}`);
       }
       return instance;
     };
 
-    return { ...utils, networkConfig, lookupPriceAggregatorInstance };
+    return { ...vsk, networkConfig, lookupPriceAggregatorInstance };
   };
 
   oracle
@@ -124,12 +143,15 @@ export const makeOracleCommand = (logger, io = {}) => {
         proposal: {},
       };
 
-      outputAction({
-        method: 'executeOffer',
-        offer,
-      });
+      outputAction(
+        {
+          method: 'executeOffer',
+          offer,
+        },
+        stdout,
+      );
 
-      console.warn(sendHint);
+      stderr.write(sendHint);
     });
 
   oracle
@@ -159,16 +181,19 @@ export const makeOracleCommand = (logger, io = {}) => {
         opts.oracleAdminAcceptOfferId,
       );
 
-      outputAction({
-        method: 'executeOffer',
-        offer,
-      });
+      outputAction(
+        {
+          method: 'executeOffer',
+          offer,
+        },
+        stdout,
+      );
 
-      console.warn(sendHint);
+      stderr.write(sendHint);
     });
 
-  const findOracleCap = async (instance, from, readLatestHead) => {
-    const current = await getCurrent(from, { readLatestHead });
+  const findOracleCap = async (instance, from, readPublished) => {
+    const current = await getCurrent(from, { readPublished });
 
     const { offerToUsedInvitation: entries } = /** @type {any} */ (current);
     Array.isArray(entries) || Fail`entries must be an array: ${entries}`;
@@ -196,11 +221,10 @@ export const makeOracleCommand = (logger, io = {}) => {
       s => s.split('.'),
     )
     .action(async opts => {
-      const { readLatestHead, lookupPriceAggregatorInstance } =
-        await rpcTools();
+      const { readPublished, lookupPriceAggregatorInstance } = await rpcTools();
       const instance = lookupPriceAggregatorInstance(opts.pair);
 
-      const offerId = await findOracleCap(instance, opts.from, readLatestHead);
+      const offerId = await findOracleCap(instance, opts.from, readPublished);
       if (!offerId) {
         console.error('No continuing ids found');
       }
@@ -261,22 +285,22 @@ export const makeOracleCommand = (logger, io = {}) => {
          * }}
          */ { pair, keys, price },
       ) => {
-        const { readLatestHead, networkConfig, lookupPriceAggregatorInstance } =
-          await rpcTools();
-        const wutil = await makeWalletUtils(
-          { fetch, execFileSync, delay },
+        const {
+          readLatestHead,
+          readPublished,
           networkConfig,
-        );
+          lookupPriceAggregatorInstance,
+        } = await rpcTools();
+        const wutil = await makeWalletUtils({ fetch, delay }, networkConfig);
         const unitPrice = scaleDecimals(price);
 
-        console.error(`${pair[0]}-${pair[1]}_price_feed: before setPrice`);
+        const feedPath = `published.priceFeed.${pair[0]}-${pair[1]}_price_feed`;
 
         const readPrice = () =>
           /** @type {Promise<PriceDescription>} */ (
-            readLatestHead(
-              `published.priceFeed.${pair[0]}-${pair[1]}_price_feed`,
-            ).catch(err => {
-              console.warn(`cannot get ${pair[0]}-${pair[1]}_price_feed`, err);
+            readLatestHead(feedPath).catch(() => {
+              const viewer = `https://vstorage.agoric.net/#${networkConfig.rpcAddrs[0]}|published,published.priceFeed|${feedPath}`;
+              stderr.write(`no existing price data; see ${viewer}`);
               return undefined;
             })
           );
@@ -295,43 +319,61 @@ export const makeOracleCommand = (logger, io = {}) => {
           show(fmtFeed(before));
         }
 
-        console.error(
-          'Choose lead oracle operator order based on latestRound...',
-        );
         const keyOrder = keys.map(normalizeAddress);
-        const latestRoundP = readLatestHead(
-          `published.priceFeed.${pair[0]}-${pair[1]}_price_feed.latestRound`,
-        );
-        await Promise.race([
-          delay(5000),
-          latestRoundP.then(round => {
-            // @ts-expect-error XXX get type from contract
-            const { roundId, startedAt, startedBy } = round;
-            show({
-              startedAt: fmtSecs(startedAt.absValue),
-              roundId,
-              startedBy,
-            });
-            if (startedBy === keyOrder[0]) {
-              keyOrder.reverse();
-            }
-          }),
-        ]).catch(err => {
-          console.warn(err);
-        });
+        if (before) {
+          console.error(
+            'Choose lead oracle operator order based on latestRound...',
+          );
+
+          const latestRoundP =
+            /** @type {Promise<{roundId: number, startedAt: import('@agoric/time').TimestampRecord, startedBy: string}>} */ (
+              readLatestHead(
+                `published.priceFeed.${pair[0]}-${pair[1]}_price_feed.latestRound`,
+              )
+            );
+          await Promise.race([
+            delay(5000),
+            latestRoundP.then(round => {
+              const { roundId, startedAt, startedBy } = round;
+              show({
+                startedAt: fmtSecs(startedAt.absValue),
+                roundId,
+                startedBy,
+              });
+              if (startedBy === keyOrder[0]) {
+                keyOrder.reverse();
+              }
+            }),
+          ]).catch(err => {
+            stderr.write(err);
+          });
+        }
 
         const instance = lookupPriceAggregatorInstance(pair);
+        const adminOfferIds = {};
+        for await (const from of keyOrder) {
+          adminOfferIds[from] = await findOracleCap(
+            instance,
+            from,
+            readPublished,
+          );
+          if (!adminOfferIds[from]) {
+            console.error(
+              `Failed to find an offer accepting oracle invitation for ${from}. Accept and try again:`,
+            );
+            console.error(
+              `    agops oracle accept > accept.json; agoric wallet send --from ${from} --offer accept.json`,
+            );
+          }
+        }
+        assert(
+          Object.values(adminOfferIds).every(x => x),
+          'Missing oracle admin offer ids',
+        );
 
         console.error('pushPrice from each:', keyOrder);
         for await (const from of keyOrder) {
-          const oracleAdminAcceptOfferId = await findOracleCap(
-            instance,
-            from,
-            readLatestHead,
-          );
-          if (!oracleAdminAcceptOfferId) {
-            throw Error(`no oracle invitation found: ${from}`);
-          }
+          const oracleAdminAcceptOfferId = adminOfferIds[from];
           show({ from, oracleAdminAcceptOfferId });
           const offerId = `pushPrice-${Date.now()}`;
           const offer = Offers.fluxAggregator.PushPrice(

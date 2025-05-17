@@ -14,8 +14,8 @@ export function buildRootObject() {
   return Far('root', {
     init() {
       let p;
-      // eslint-disable-next-line prefer-const
-      [p, r] = makePR();
+
+      void ([p, r] = makePR());
       return p;
     },
     gen() {

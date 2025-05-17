@@ -3,7 +3,7 @@ description: 'Set up Node.js environment and restore cached built files'
 
 inputs:
   node-version:
-    description: 'The version of Node.js to use'
+    description: 'The version or semantic name (node-old, node-new and xs supported) of Node.js to use'
     required: true
   path:
     description: 'The relative path to the agoric-sdk directory'
@@ -11,6 +11,10 @@ inputs:
     default: '.'
   keep-endo:
     description: 'Keep Endo repository after installing from it'
+    required: false
+    default: 'false'
+  ignore-endo-branch:
+    description: 'Ignore external Endo branch configuration'
     required: false
     default: 'false'
   xsnap-random-init:
@@ -27,26 +31,52 @@ runs:
   using: composite
   steps:
     - name: set default environment variables
-      run: echo ESM_DISABLE_CACHE=true >> $GITHUB_ENV
       shell: bash
-    - uses: actions/checkout@v3
+      run: echo ESM_DISABLE_CACHE=true >> $GITHUB_ENV
+
+    - id: set-node-version
+      name: Set correct node version
+      shell: bash
+      run: |
+        set -o xtrace
+
+        VERSION_IDENTIFIER="${{ inputs.node-version }}"
+        OUTPUT_NODE_VERSION="$VERSION_IDENTIFIER"
+
+        if test "$VERSION_IDENTIFIER" == "node-new"
+        then
+          OUTPUT_NODE_VERSION="20"
+        else
+          if test "$VERSION_IDENTIFIER" == "node-old" || test "$VERSION_IDENTIFIER" == "xs"
+          then
+            OUTPUT_NODE_VERSION="18"
+          fi
+        fi
+
+        echo "NODE_VERSION=$OUTPUT_NODE_VERSION" >> "$GITHUB_OUTPUT"
+
+    - uses: actions/checkout@v4
       with:
         clean: false
         submodules: 'true'
         persist-credentials: false
         path: ${{ inputs.path }}
-    # Select a branch on Endo to test against by adding text to the body of the
-    # pull request. For example: #endo-branch: some-pr-branch
-    # The default is '*NOPE*' to indicate not to check out Endo, just use
-    # the published NPM packages.
+
+    # Select an Endo target against which to test, defaulting to 'NOPE' for use
+    # of internally-referenced NPM packages but allowing overrides in the pull
+    # request description for referencing a branch of the
+    # [endo repository](https://github.com/endojs/endo) using lines like
+    # `#endo-branch: rank-strings-by-codepoint`
     - name: Get the appropriate Endo branch
       id: endo-branch
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
       with:
         result-encoding: string
         script: |-
           let branch = 'NOPE';
-          if (context.eventName === 'schedule') {
+          if (${{ inputs.ignore-endo-branch }}) {
+            // Skip any override directive.
+          } else if (context.eventName === 'schedule') {
             branch = 'master';
           } else if (context.payload.pull_request) {
             const { body } = context.payload.pull_request;
@@ -56,32 +86,14 @@ runs:
               branch = result[1];
             }
           }
-          console.log(branch);
+          console.log('Endo override branch: ' + branch);
           return branch;
-    - name: check out Endo if necessary
-      id: endo-checkout
-      uses: actions/checkout@v3
-      with:
-        repository: agoric/endo
-        path: ./replacement-endo
-        ref: ${{ steps.endo-branch.outputs.result }}
-        clean: 'false'
-        submodules: 'true'
-        persist-credentials: false
-      if: steps.endo-branch.outputs.result != 'NOPE'
-    - name: Move Endo checkout outside the working directory
-      id: endo-sha
-      run: |-
-        set -e
-        if test -e ./replacement-endo; then
-          mv ./replacement-endo ~/endo
-          echo "sha=$(cd ~/endo && git rev-parse HEAD)" >> $GITHUB_OUTPUT
-        else
-          echo "sha=NOPE" >> $GITHUB_OUTPUT
-        fi
-      shell: bash
+
     - name: merge endo integration branch
       id: endo-integration-merge
+      if: steps.endo-branch.outputs.result != 'NOPE'
+      working-directory: ${{ inputs.path }}
+      shell: bash
       run: |-
         set -e
         git ls-remote --exit-code --heads origin "refs/heads/integration-endo-${{ steps.endo-branch.outputs.result }}" || exit 0
@@ -89,70 +101,124 @@ runs:
         git config user.name github-actions
         git config user.email github-actions@github.com
         git merge --commit --no-edit origin/integration-endo-${{ steps.endo-branch.outputs.result }}
-      shell: bash
-      working-directory: ${{ inputs.path }}
+
+    - name: check out Endo if necessary
+      id: endo-checkout
       if: steps.endo-branch.outputs.result != 'NOPE'
-    - name: Reconfigure git to use HTTP authentication
-      run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/
-      shell: bash
-    - uses: actions/setup-node@v3
+      uses: actions/checkout@v4
       with:
-        node-version: ${{ inputs.node-version }}
+        repository: endojs/endo
+        path: ./replacement-endo
+        ref: ${{ steps.endo-branch.outputs.result }}
+        clean: 'false'
+        submodules: 'true'
+        persist-credentials: false
+
+    - name: Move Endo checkout outside the working directory
+      id: endo-sha
+      shell: bash
+      run: |-
+        set -ex
+        if test -e ./replacement-endo; then
+          mv ./replacement-endo ~/endo
+          sha=$(cd ~/endo && git rev-parse HEAD)
+        else
+          sha=NOPE
+        fi
+        echo "sha=$sha" >> $GITHUB_OUTPUT
+        cd "${{ inputs.path }}"
+        echo "$sha" > endo-sha.txt
+
+    - name: Reconfigure git to use HTTP authentication
+      shell: bash
+      run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/
+
+    # Before setup-node because that action runs `yarn cache dir`. See https://github.com/actions/setup-node/issues/480#issuecomment-1915448139
+    - run: corepack enable
+      shell: bash
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: ${{ steps.set-node-version.outputs.NODE_VERSION }}
         cache: yarn
-        cache-dependency-path: ${{ inputs.path }}/yarn.lock
+        cache-dependency-path: |
+          ${{ inputs.path }}/yarn.lock
+          ${{ inputs.path }}/endo-sha.txt
+
     - uses: kenchan0130/actions-system-info@master
       id: system-info
+
     - name: restore built files
       id: built
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ${{ inputs.path }}
-        key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-node-${{ inputs.node-version }}-built-${{ inputs.xsnap-random-init }}-${{ github.sha }}-${{ steps.endo-sha.outputs.sha }}
+        key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-node-${{ steps.set-node-version.outputs.NODE_VERSION }}-built-${{ inputs.xsnap-random-init }}-${{ github.sha }}-${{ steps.endo-sha.outputs.sha }}
+
     # This and the git diff below are to detect if `yarn install` results in a
     # change to the lock file.
     - name: yarn install
+      if: steps.built.outputs.cache-hit != 'true'
       working-directory: ${{ inputs.path }}
+      shell: bash
       run: |-
-        set -e
+        set -ex
         if test "${{ inputs.xsnap-random-init }}" != 0 && test -d /etc/apt; then
           # Need libbsd-dev, as it's referenced in xsnapPlatform.h
           sudo apt-get update
           sudo apt-get install libbsd-dev
         fi
+
+        # Preserve the original package.json to restore it after Endo replacements.
+        cp -a package.json package.json.orig
+
         # Replace the Endo packages with the ones built from the checked-out branch.
         if test -e ~/endo; then
           scripts/get-packed-versions.sh ~/endo | scripts/resolve-versions.sh
         fi
         yarn install
-        mkdir -p node_modules/.cache/agoric
-        date > node_modules/.cache/agoric/yarn-installed
+
+        # Verify there are no warnings about the applied patches.
+        # This isn't strictly necessary but it avoids distracting messages for developers.
+        if yarn patch-package 2>&1 | tee /dev/stderr | grep -qi "warning"; then
+          echo "Error: 'warning' detected applying patches. Please address the warnings before proceeding."
+          echo "If the patch applied cleanly and all tests pass, you can forward a patch with 'yarn patch-package'."
+          exit 1
+        fi
+
+        # In the event that the package.json has been modified by Endo
+        # replacements, we need to have a yarn-installed timestamp that
+        # corresponds to the unmodified package.json.  As long as we don't
+        # explicitly `yarn install` anywhere other than in this action and in
+        # the bin/agd script, we should be able to reuse even Endo-overridden
+        # built caches successfully.
+        mv package.json.orig package.json
+
         if test -e ~/endo; then
           # Stage the redirected `yarn install` consequences.
           git add package.json yarn.lock
           ${{ inputs.keep-endo }} || rm -rf ~/endo
         fi
-      shell: bash
-      if: steps.built.outputs.cache-hit != 'true'
+
     - name: yarn build
+      if: steps.built.outputs.cache-hit != 'true'
       working-directory: ${{ inputs.path }}
+      env:
+        XSNAP_RANDOM_INIT: ${{ inputs.xsnap-random-init }}
+      shell: bash
       run: |-
-        set -e
+        set -ex
         yarn build
         mkdir -p node_modules/.cache/agoric
         date > node_modules/.cache/agoric/yarn-built
-      shell: bash
-      if: steps.built.outputs.cache-hit != 'true'
+
+    - name: Validate Git Tree Cleanliness
+      uses: pyTooling/Actions/with-post-step@v1.0.7
+      with:
+        main: |
+          bash "$SRC/.github/actions/restore-node/check-git-status.sh" "$SRC" "$IGNORE_DIRTY_YARN_LOCK"
+        post: |
+          bash "$SRC/.github/actions/restore-node/check-git-status.sh" "$SRC" "$IGNORE_DIRTY_YARN_LOCK"
       env:
-        XSNAP_RANDOM_INIT: ${{ inputs.xsnap-random-init }}
-    - name: git dirty check
-      working-directory: ${{ inputs.path }}
-      run: |-
-        set -x
-        # In case of Endo override, ignore matching index and worktree.
-        # (First column is non-space, second column is space, followed by separator.)
-        if [ -n "$(git status --porcelain | grep -Eve '^[^ ]  '; true)" ]; then
-          git status
-          echo "Unexpected dirty git status" 1>&2
-          exit 1
-        fi
-      shell: bash
+        SRC: ${{ inputs.path }}
+        IGNORE_DIRTY_YARN_LOCK: ${{ steps.endo-branch.outputs.result != 'NOPE' }}

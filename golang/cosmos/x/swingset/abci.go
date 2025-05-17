@@ -10,38 +10,34 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 
+	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 )
 
 type beginBlockAction struct {
-	Type        string       `json:"type"`
-	BlockHeight int64        `json:"blockHeight"`
-	BlockTime   int64        `json:"blockTime"`
-	ChainID     string       `json:"chainID"`
-	Params      types.Params `json:"params"`
+	*vm.ActionHeader `actionType:"BEGIN_BLOCK"`
+	ChainID          string       `json:"chainID"`
+	Params           types.Params `json:"params"`
 }
 
 type endBlockAction struct {
-	Type        string `json:"type"`
-	BlockHeight int64  `json:"blockHeight"`
-	BlockTime   int64  `json:"blockTime"`
+	*vm.ActionHeader `actionType:"END_BLOCK"`
 }
 
 type commitBlockAction struct {
-	Type        string `json:"type"`
-	BlockHeight int64  `json:"blockHeight"`
-	BlockTime   int64  `json:"blockTime"`
+	*vm.ActionHeader `actionType:"COMMIT_BLOCK"`
+}
+
+type afterCommitBlockAction struct {
+	*vm.ActionHeader `actionType:"AFTER_COMMIT_BLOCK"`
 }
 
 func BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock, keeper Keeper) error {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyBeginBlocker)
 
-	action := &beginBlockAction{
-		Type:        "BEGIN_BLOCK",
-		BlockHeight: ctx.BlockHeight(),
-		BlockTime:   ctx.BlockTime().Unix(),
-		ChainID:     ctx.ChainID(),
-		Params:      keeper.GetParams(ctx),
+	action := beginBlockAction{
+		ChainID: ctx.ChainID(),
+		Params:  keeper.GetParams(ctx),
 	}
 	_, err := keeper.BlockingSend(ctx, action)
 	// fmt.Fprintf(os.Stderr, "BEGIN_BLOCK Returned from SwingSet: %s, %v\n", out, err)
@@ -60,11 +56,7 @@ var endBlockTime int64
 func EndBlock(ctx sdk.Context, req abci.RequestEndBlock, keeper Keeper) ([]abci.ValidatorUpdate, error) {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyEndBlocker)
 
-	action := &endBlockAction{
-		Type:        "END_BLOCK",
-		BlockHeight: ctx.BlockHeight(),
-		BlockTime:   ctx.BlockTime().Unix(),
-	}
+	action := endBlockAction{}
 	_, err := keeper.BlockingSend(ctx, action)
 
 	// fmt.Fprintf(os.Stderr, "END_BLOCK Returned from SwingSet: %s, %v\n", out, err)
@@ -81,15 +73,18 @@ func EndBlock(ctx sdk.Context, req abci.RequestEndBlock, keeper Keeper) ([]abci.
 	return []abci.ValidatorUpdate{}, nil
 }
 
+func getEndBlockContext() sdk.Context {
+	return sdk.Context{}.
+		WithContext(context.Background()).
+		WithBlockHeight(endBlockHeight).
+		WithBlockTime(time.Unix(endBlockTime, 0))
+}
+
 func CommitBlock(keeper Keeper) error {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), "commit_blocker")
 
-	action := &commitBlockAction{
-		Type:        "COMMIT_BLOCK",
-		BlockHeight: endBlockHeight,
-		BlockTime:   endBlockTime,
-	}
-	_, err := keeper.BlockingSend(sdk.Context{}.WithContext(context.Background()), action)
+	action := commitBlockAction{}
+	_, err := keeper.BlockingSend(getEndBlockContext(), action)
 
 	// fmt.Fprintf(os.Stderr, "COMMIT_BLOCK Returned from SwingSet: %s, %v\n", out, err)
 	if err != nil {
@@ -103,12 +98,8 @@ func CommitBlock(keeper Keeper) error {
 func AfterCommitBlock(keeper Keeper) error {
 	// defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), "commit_blocker")
 
-	action := &commitBlockAction{
-		Type:        "AFTER_COMMIT_BLOCK",
-		BlockHeight: endBlockHeight,
-		BlockTime:   endBlockTime,
-	}
-	_, err := keeper.BlockingSend(sdk.Context{}.WithContext(context.Background()), action)
+	action := afterCommitBlockAction{}
+	_, err := keeper.BlockingSend(getEndBlockContext(), action)
 
 	// fmt.Fprintf(os.Stderr, "AFTER_COMMIT_BLOCK Returned from SwingSet: %s, %v\n", out, err)
 	if err != nil {

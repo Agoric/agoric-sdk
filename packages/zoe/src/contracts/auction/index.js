@@ -1,4 +1,4 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
+import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { mustMatch } from '@endo/patterns';
 import { Far } from '@endo/marshal';
@@ -13,8 +13,6 @@ import {
 import * as secondPriceLogic from './secondPriceLogic.js';
 import * as firstPriceLogic from './firstPriceLogic.js';
 import { assertBidSeat } from './assertBidSeat.js';
-
-const { Fail } = assert;
 
 const FIRST_PRICE = 'first-price';
 const SECOND_PRICE = 'second-price';
@@ -127,8 +125,7 @@ const start = zcf => {
       });
       assertBidSeat(zcf, sellSeat, seat);
 
-      // XXX await make function hanging
-      startWakeupTimerIfNeeded();
+      void startWakeupTimerIfNeeded();
 
       bidSeats.push(seat);
       return defaultAcceptanceMsg;

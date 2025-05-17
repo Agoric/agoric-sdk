@@ -63,8 +63,6 @@ export const ensureOracleBrands = async (
     },
   },
 ) => {
-  trace('ensureOracleBrands');
-
   const updateFreshBrand = async (brand, name, decimals) => {
     let b = await brand;
     if (!b) {
@@ -93,6 +91,7 @@ export const ensureOracleBrands = async (
  *       contractTerms: import('@agoric/inter-protocol/src/price/fluxAggregatorKit.js').ChainlinkConfig;
  *       IN_BRAND_NAME: string;
  *       OUT_BRAND_NAME: string;
+ *       priceAggregatorRef: Installation;
  *     };
  *   };
  * }} config
@@ -111,6 +110,7 @@ export const createPriceFeed = async (
       priceAuthority,
       priceAuthorityAdmin,
       startGovernedUpgradable,
+      zoe,
     },
     instance: { produce: produceInstance },
   },
@@ -122,38 +122,62 @@ export const createPriceFeed = async (
         contractTerms,
         IN_BRAND_NAME,
         OUT_BRAND_NAME,
+        priceAggregatorRef,
       },
     },
   },
 ) => {
-  trace('createPriceFeed');
+  trace('createPriceFeed', AGORIC_INSTANCE_NAME);
   const STORAGE_PATH = 'priceFeed';
 
   void E(client).assignBundle([_addr => ({ priceAuthority })]);
 
-  const timer = await chainTimerService;
+  let installationP;
+  await null;
+  if (priceAggregatorRef) {
+    const bundleID = await E.get(priceAggregatorRef).bundleID;
+    if (bundleID) {
+      installationP = E(zoe).installBundleID(bundleID);
+      await E.when(
+        installationP,
+        installation =>
+          E(E(agoricNamesAdmin).lookupAdmin('installation')).update(
+            'priceAggregator',
+            installation,
+          ),
+        err =>
+          console.error(
+            `🚨 failed to update priceAggregator installation for ${AGORIC_INSTANCE_NAME}`,
+            err,
+          ),
+      );
+    }
+  }
+  if (!installationP) {
+    installationP = E.get(
+      reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('installation'), [
+        'priceAggregator',
+      ]),
+    )[0];
+    console.error(
+      '🚨 failed to install new fluxAggregator bundle, reusing previous one.',
+    );
+  }
 
   /**
-   * Values come from economy-template.json, which at this writing had IN:ATOM,
-   * OUT:USD
-   *
    * @type {[
    *   [Brand<'nat'>, Brand<'nat'>],
-   *   [
-   *     Installation<
-   *       import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js')['start]
-   *     >,
-   *   ],
+   *   Installation<import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js')['start]>,
+   *   Timer,
    * ]}
    */
-  const [[brandIn, brandOut], [priceAggregator]] = await Promise.all([
+  const [[brandIn, brandOut], installation, timer] = await Promise.all([
     reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('oracleBrand'), [
       IN_BRAND_NAME,
       OUT_BRAND_NAME,
     ]),
-    reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('installation'), [
-      'priceAggregator',
-    ]),
+    installationP,
+    chainTimerService,
   ]);
 
   const unitAmountIn = await unitAmount(brandIn);
@@ -165,14 +189,11 @@ export const createPriceFeed = async (
     timer,
     unitAmountIn,
   });
-  trace('got terms');
-
   const label = sanitizePathSegment(AGORIC_INSTANCE_NAME);
 
   const storageNode = await makeStorageNodeChild(chainStorage, STORAGE_PATH);
   const marshaller = await E(board).getReadonlyMarshaller();
 
-  trace('awaiting startInstance');
   const faKit = await E(startGovernedUpgradable)({
     governedParams: {},
     privateArgs: {
@@ -183,7 +204,7 @@ export const createPriceFeed = async (
     },
     terms,
     label,
-    installation: priceAggregator,
+    installation,
   });
 
   // Publish price feed in home.priceAuthority.
@@ -203,9 +224,11 @@ export const createPriceFeed = async (
     .catch(err =>
       console.error(`🚨 failed to update ${AGORIC_INSTANCE_NAME}`, err),
     );
+
   // being after the above awaits means that when this resolves, the consumer
   // gets notified that the authority is in the registry and its instance is in
-  // agoricNames.
+  // agoricNames. reset() in case we're replacing an existing feed.
+  produceInstance[AGORIC_INSTANCE_NAME].reset();
   produceInstance[AGORIC_INSTANCE_NAME].resolve(faKit.instance);
 
   E(E.get(econCharterKit).creatorFacet).addInstance(
@@ -213,7 +236,6 @@ export const createPriceFeed = async (
     faKit.governorCreatorFacet,
     AGORIC_INSTANCE_NAME,
   );
-  trace('registered', AGORIC_INSTANCE_NAME, faKit.instance);
 
   /**
    * Initialize a new oracle and send an invitation to administer it.
@@ -262,6 +284,7 @@ export const getManifestForPriceFeed = async (
         priceAuthority: t,
         priceAuthorityAdmin: t,
         startGovernedUpgradable: t,
+        zoe: t,
       },
       instance: {
         produce: t,

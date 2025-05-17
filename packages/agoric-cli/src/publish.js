@@ -1,6 +1,7 @@
 // @ts-check
-/// <reference types="ses"/>
+/// <reference types="ses" />
 
+import { X, q, Fail } from '@endo/errors';
 import { E } from '@endo/far';
 
 import {
@@ -14,7 +15,6 @@ import { defaultRegistryTypes } from '@cosmjs/stargate';
 import { stringToPath } from '@cosmjs/crypto';
 import { Decimal } from '@cosmjs/math';
 import { fromBech32 } from '@cosmjs/encoding';
-
 import { MsgInstallBundle } from '@agoric/cosmic-proto/swingset/msgs.js';
 
 // https://github.com/Agoric/agoric-sdk/blob/master/golang/cosmos/daemon/main.go
@@ -38,6 +38,7 @@ const Agoric = {
 const hdPath = (coinType = 118, account = 0) =>
   stringToPath(`m/44'/${coinType}'/${account}'/0/0`);
 
+// @ts-expect-error difference in private property _push
 const registry = new Registry([
   ...defaultRegistryTypes,
   [Agoric.proto.swingset.InstallBundle.typeUrl, MsgInstallBundle],
@@ -82,8 +83,6 @@ const registry = new Registry([
  * @typedef {SourceBundle | HashBundle} Bundle
  */
 
-const { details: X, quote: q, Fail } = assert;
-
 /**
  * @template T
  * @param {Array<T>} array
@@ -96,7 +95,6 @@ const choose = (array, randomNumber) => {
   return array[index];
 };
 
-// eslint-disable-next-line jsdoc/require-returns-check
 /**
  * @param {unknown} connectionSpec
  * @returns {asserts connectionSpec is HttpConnectionSpec}
@@ -124,7 +122,6 @@ const assertHttpConnectionSpec = connectionSpec => {
     Fail`Expected integer "port" on "http" type connectionSpec, ${connectionSpec}`;
 };
 
-// eslint-disable-next-line jsdoc/require-returns-check
 /**
  * @param {unknown} connectionSpec
  * @returns {asserts connectionSpec is CosmosConnectionSpec}

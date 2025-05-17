@@ -1,7 +1,6 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
-import { Fail, q } from '@agoric/assert';
-import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined } from '@agoric/internal';
+import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
 import {
   makeNotifierKit,
   makeStoredPublishKit,
@@ -9,29 +8,32 @@ import {
 } from '@agoric/notifier';
 import { makeLegacyMap } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
+import { Fail, q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
 
-import '../../tools/types-ambient.js';
-import {
-  calculateMedian,
-  makeOnewayPriceAuthorityKit,
-} from '../contractSupport/index.js';
 import {
   addRatios,
   assertParsableNumber,
+  calculateMedian,
   ceilDivideBy,
   floorMultiplyBy,
+  makeOnewayPriceAuthorityKit,
+  makePriceQuoteIssuer,
   makeRatio,
   makeRatioFromAmounts,
   multiplyRatios,
   parseRatio,
   ratioGTE,
   ratiosSame,
-} from '../contractSupport/ratio.js';
+} from '../contractSupport/index.js';
 
-/// <reference path="../../../ERTP/exported.js" />
+/**
+ * @import {LegacyMap} from '@agoric/store'
+ * @import {ContractOf} from '../zoeService/utils.js';
+ * @import {PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {Invitation, ZCF, ZCFSeat} from '@agoric/zoe';
+ */
 
 /** @typedef {bigint | number | string} ParsableNumber */
 /**
@@ -59,7 +61,7 @@ const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
  * }>} zcf
  * @param {{
  * marshaller: Marshaller,
- * quoteMint?: ERef<Mint<'set'>>,
+ * quoteMint?: ERef<Mint<'set', PriceDescription>>,
  * storageNode: ERef<StorageNode>,
  * }} privateArgs
  */
@@ -77,12 +79,11 @@ const start = async (zcf, privateArgs) => {
   const { marshaller, storageNode } = privateArgs;
   assertAllDefined({ marshaller, storageNode });
 
+  /** @type {ERef<Mint<'set', PriceDescription>>} */
   const quoteMint =
     privateArgs.quoteMint ||
     // makeIssuerKit fails upgrade, this contract is for demo only
-    makeIssuerKit('quote', AssetKind.SET).mint;
-  /** @type {IssuerRecord<'set'>} */
-  // xxx saveIssuer not generic
+    makePriceQuoteIssuer().mint;
   const quoteIssuerRecord = await zcf.saveIssuer(
     E(quoteMint).getIssuer(),
     'Quote',
@@ -100,8 +101,6 @@ const start = async (zcf, privateArgs) => {
    * @param {PriceQuoteValue} quote
    */
   const authenticateQuote = async quote => {
-    /** @type {Amount<'set'>} */
-    // xxx type should be inferred from brand and value
     const quoteAmount = AmountMath.make(quoteKit.brand, harden(quote));
     const quotePayment = await E(quoteKit.mint).mintPayment(quoteAmount);
     return harden({ quoteAmount, quotePayment });
@@ -147,20 +146,19 @@ const start = async (zcf, privateArgs) => {
     async wake(timestamp) {
       // Run all the queriers.
       const querierPs = [];
-      oracleRecords.forEach(({ querier }) => {
+      for (const { querier } of oracleRecords) {
         if (querier) {
           querierPs.push(querier(timestamp));
         }
-      });
+      }
       if (!querierPs.length) {
         // Only have push results, so publish them.
-        // eslint-disable-next-line no-use-before-define
         querierPs.push(updateQuote(timestamp));
       }
       await Promise.all(querierPs).catch(console.error);
     },
   });
-  E(repeaterP).schedule(waker);
+  void E(repeaterP).schedule(waker);
 
   /**
    * @param {object} param0
@@ -232,17 +230,20 @@ const start = async (zcf, privateArgs) => {
     });
 
   // for each new quote from the priceAuthority, publish it to off-chain storage
-  observeNotifier(priceAuthority.makeQuoteNotifier(unitAmountIn, brandOut), {
-    updateState: quote => {
-      publisher.publish(priceDescriptionFromQuote(quote));
+  void observeNotifier(
+    priceAuthority.makeQuoteNotifier(unitAmountIn, brandOut),
+    {
+      updateState: quote => {
+        publisher.publish(priceDescriptionFromQuote(quote));
+      },
+      fail: reason => {
+        throw Error(`priceAuthority observer failed: ${reason}`);
+      },
+      finish: done => {
+        throw Error(`priceAuthority observer died: ${done}`);
+      },
     },
-    fail: reason => {
-      throw Error(`priceAuthority observer failed: ${reason}`);
-    },
-    finish: done => {
-      throw Error(`priceAuthority observer died: ${done}`);
-    },
-  });
+  );
 
   /**
    * @param {Ratio} r
@@ -389,7 +390,7 @@ const start = async (zcf, privateArgs) => {
         return;
       }
       // Queue the next update.
-      E(oracleNotifier).getUpdateSince(updateCount).then(recurse);
+      void E(oracleNotifier).getUpdateSince(updateCount).then(recurse);
 
       // See if we have associated parameters or just a raw value.
       /** @type {Ratio | undefined} */
@@ -425,7 +426,7 @@ const start = async (zcf, privateArgs) => {
     };
 
     // Start the notifier.
-    E(oracleNotifier).getUpdateSince().then(recurse);
+    void E(oracleNotifier).getUpdateSince().then(recurse);
   };
 
   const creatorFacet = Far('PriceAggregatorCreatorFacet', {
@@ -464,7 +465,7 @@ const start = async (zcf, privateArgs) => {
             assertParsableNumber(price);
             return zcf.makeInvitation(cSeat => {
               cSeat.exit();
-              admin.pushResult(price);
+              void admin.pushResult(price);
             }, 'PushPrice');
           },
         });
@@ -587,8 +588,10 @@ const start = async (zcf, privateArgs) => {
 
       // Obtain the oracle's publicFacet.
       assert(oracleInstance);
-      /** @type {import('./oracle.js').OracleContract['publicFacet']} */
-      const oracle = await E(zoe).getPublicFacet(oracleInstance);
+      const oracle =
+        /** @type {import('./oracle.js').OracleContract['publicFacet']} */ (
+          await E(zoe).getPublicFacet(oracleInstance)
+        );
       assert(records.has(record), 'Oracle record is already deleted');
 
       /** @type {import('@agoric/time').Timestamp} */

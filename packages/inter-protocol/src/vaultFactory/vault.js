@@ -1,3 +1,4 @@
+import { q, Fail } from '@endo/errors';
 import { AmountMath, AmountShape } from '@agoric/ertp';
 import { StorageNodeShape, makeTracer } from '@agoric/internal';
 import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
@@ -13,13 +14,13 @@ import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
 import { calculateDebtCosts } from './math.js';
 import { prepareVaultKit } from './vaultKit.js';
 
-import '@agoric/zoe/exported.js';
-
-const { quote: q, Fail } = assert;
-
 const trace = makeTracer('Vault', true);
 
-/** @typedef {import('./storeUtils.js').NormalizedDebt} NormalizedDebt */
+/**
+ * @import {EReturn} from '@endo/far';
+ * @import {Brand} from '@agoric/ertp/src/types.js';
+ * @import {NormalizedDebt} from './storeUtils.js';
+ */
 
 /**
  * @file This has most of the logic for a Vault, to borrow Minted against
@@ -52,6 +53,8 @@ const trace = makeTracer('Vault', true);
  * - CLOSED - vault was closed by the user and all assets have been paid out
  * - LIQUIDATED - vault was closed by the manager, with remaining assets paid to
  *   owner
+ *
+ * @enum {(typeof Phase)[keyof typeof Phase]}
  */
 export const Phase = /** @type {const} */ ({
   ACTIVE: 'active',
@@ -60,9 +63,10 @@ export const Phase = /** @type {const} */ ({
   LIQUIDATED: 'liquidated',
   TRANSFER: 'transfer',
 });
+harden(Phase);
 
 /**
- * @typedef {Phase[keyof Omit<typeof Phase, 'TRANSFER'>]} VaultPhase
+ * @typedef {Exclude<Phase, 'transfer'>} VaultPhase
  * @type {{ [K in VaultPhase]: VaultPhase[] }}
  */
 const validTransitions = {
@@ -73,13 +77,11 @@ const validTransitions = {
 };
 
 /**
- * @typedef {Phase[keyof typeof Phase]} HolderPhase
- *
  * @typedef {object} VaultNotification
  * @property {Amount<'nat'>} locked Amount of Collateral locked
  * @property {{ debt: Amount<'nat'>; interest: Ratio }} debtSnapshot 'debt' at
  *   the point the compounded interest was 'interest'
- * @property {HolderPhase} vaultState
+ * @property {Phase} vaultState
  */
 
 // XXX masks typedef from types.js, but using that causes circular def problems
@@ -87,7 +89,7 @@ const validTransitions = {
  * @typedef {object} VaultManager
  * @property {() => Subscriber<import('./vaultManager.js').AssetState>} getAssetSubscriber
  * @property {(collateralAmount: Amount) => Amount<'nat'>} maxDebtFor
- * @property {() => Brand} getCollateralBrand
+ * @property {() => Brand<'nat'>} getCollateralBrand
  * @property {(base: string) => string} scopeDescription
  * @property {() => Brand<'nat'>} getDebtBrand
  * @property {MintAndTransfer} mintAndTransfer
@@ -152,7 +154,7 @@ const VaultStateShape = harden({
 });
 
 /**
- * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
  * @param {ZCF} zcf
  */
@@ -300,13 +302,20 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
           );
         },
 
-        /** @param {ZCFSeat} seat */
+        /**
+         * @param {ZCFSeat} seat
+         * @returns {Amount<'nat'>}
+         */
         getCollateralAllocated(seat) {
           return seat.getAmountAllocated(
             'Collateral',
             this.facets.helper.collateralBrand(),
           );
         },
+        /**
+         * @param {ZCFSeat} seat
+         * @returns {Amount<'nat'>}
+         */
         getMintedAllocated(seat) {
           return seat.getAmountAllocated(
             'Minted',
@@ -334,7 +343,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
             )} for ${q(collateralAmount)} collateral`;
         },
 
-        /** @param {HolderPhase} newPhase */
+        /** @param {Phase} newPhase */
         getStateSnapshot(newPhase) {
           const { state, facets } = this;
 
@@ -584,7 +593,6 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
           helper.assertCloseable();
           seat.exit();
 
-          // eslint-disable-next-line no-use-before-define
           const vaultKit = makeVaultKit(self, state.storageNode);
           state.outerUpdater = vaultKit.vaultUpdater;
           helper.updateUiState();
@@ -777,7 +785,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
           );
         },
 
-        /** @returns {Promise<Invitation>} */
+        /** @returns {Promise<Invitation<VaultKit>>} */
         makeTransferInvitation() {
           const { state, facets } = this;
           const { outerUpdater } = state;
@@ -867,4 +875,4 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
   return maker;
 };
 
-/** @typedef {ReturnType<ReturnType<typeof prepareVault>>['self']} Vault */
+/** @typedef {EReturn<EReturn<typeof prepareVault>>['self']} Vault */

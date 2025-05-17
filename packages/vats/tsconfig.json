@@ -1,15 +1,13 @@
 {
   "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "allowSyntheticDefaultImports": true,
-    "maxNodeModuleJsDepth": 1,
-  },
+  "compilerOptions": {},
   "include": [
     "*.js",
-    "scripts/**/*.js",
+    "scripts",
+    // XXX we need both globs or tsc will ignore the .d.ts twin
     "src/**/*.js",
-    "src/**/*.d.ts",
-    "test/**/*.js",
-    "tools/**/*.js",
+    "src/**/*.ts",
+    "test",
+    "tools",
   ],
 }

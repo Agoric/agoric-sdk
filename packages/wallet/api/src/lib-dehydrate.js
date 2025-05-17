@@ -1,8 +1,8 @@
 // @ts-check
 
+import { assert, Fail, q } from '@endo/errors';
 import { makeMarshal, mapIterable } from '@endo/marshal';
 import { makeLegacyMap, makeScalarMapStore } from '@agoric/store';
-import { assert, Fail, q } from '@agoric/assert';
 
 /**
  * @typedef {string[]} Path
@@ -54,7 +54,6 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
     if (!isPath(strongname)) {
       return strongname;
     }
-    // eslint-disable-next-line no-use-before-define
     const { valToPetname: rootToPetname } = edgeMapping;
     const petname = rootToPetname.get(strongname[0]);
     assert(!isPath(petname));
@@ -73,7 +72,6 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
 
     // A strong path must have a root name we have mapped.
     const path = [...strongname];
-    // eslint-disable-next-line no-use-before-define
     const { petnameToVal: petnameToRoot } = edgeMapping;
     if (!petnameToRoot.has(path[0])) {
       // Avoid asserting, which fills up the logs.
@@ -86,10 +84,9 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
   };
 
   /**
-   * @template T
    * @param {string} kind
    * @param {{ useLegacyMap?: boolean }} [legacyOptions]
-   * @returns {Mapping<T>}
+   * @returns {Mapping<any>}
    */
   const makeMapping = (kind, { useLegacyMap = false } = {}) => {
     typeof kind === 'string' || `kind ${kind} must be a string`;
@@ -97,9 +94,9 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
     // These are actually either a LegacyMap or a MapStore depending on
     // useLegacyMap. Fortunately, the LegacyMap type is approximately the
     // intersection of these, so we can just use it.
-    /** @type {LegacyMap<T, string>} */
+    /** @type {LegacyMap<any, string>} */
     const rawValToPetname = makeMap('value');
-    /** @type {LegacyMap<T, string | Path>} */
+    /** @type {LegacyMap<any, string | Path>} */
     const valToPetname = {
       ...rawValToPetname,
       set(key, val) {
@@ -121,9 +118,9 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
         return mapIterable(rawValToPetname.values(), val => explode(val));
       },
     };
-    /** @type {MapStore<string, T>} */
+    /** @type {MapStore<string, any>} */
     const rawPetnameToVal = makeScalarMapStore('petname');
-    /** @type {MapStore<Path | string, T>} */
+    /** @type {MapStore<Path | string, any>} */
     const petnameToVal = {
       ...rawPetnameToVal,
       init(key, val) {
@@ -164,11 +161,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
     const addPath = (path, val) => {
       isPath(path) || Fail`path ${q(path)} must be an array of strings`;
 
-      if (
-        !valToPetname.has(val) &&
-        // eslint-disable-next-line no-use-before-define
-        edgeMapping.valToPetname.has(path[0])
-      ) {
+      if (!valToPetname.has(val) && edgeMapping.valToPetname.has(path[0])) {
         // We have a petname for the root of the path, so use it as our
         // strongname.
         valToPetname.init(val, path);
@@ -270,7 +263,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
       petnameToVal.delete(petname);
       valToPetname.delete(val);
     };
-    /** @type {Mapping<T>} */
+    /** @type {Mapping<any>} */
     const mapping = harden({
       implode,
       explode,
@@ -340,7 +333,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
       marshalName: 'hydration',
       // TODO Temporary hack.
       // See https://github.com/Agoric/agoric-sdk/issues/2780
-      errorIdNum: 30000,
+      errorIdNum: 30_000,
       serializeBodyFormat: 'smallcaps',
     },
   );

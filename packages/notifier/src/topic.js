@@ -1,7 +1,10 @@
 // @jessie-check
 
 import { Far } from '@endo/far';
-import './types-ambient.js';
+
+/**
+ * @import {EachTopic, LatestTopic} from '../src/types.js';
+ */
 
 /**
  * @deprecated A pinned-history topic preserves all of its published values in
@@ -9,7 +12,7 @@ import './types-ambient.js';
  *
  * @template T
  * @param {EachTopic<T> & LatestTopic<T>} topic needs to be near in order to
- * preserve subscription timings.  TODO: drop LatestTopic<T> requirement
+ * preserve subscription timings.  TODO: drop `LatestTopic<T>` requirement
  * @returns {EachTopic<T> & LatestTopic<T>}
  */
 export const makePinnedHistoryTopic = topic => {

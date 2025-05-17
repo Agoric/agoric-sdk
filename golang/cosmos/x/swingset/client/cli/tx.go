@@ -13,7 +13,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	govcli "github.com/cosmos/cosmos-sdk/x/gov/client/cli"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -44,11 +44,18 @@ func GetTxCmd(storeKey string) *cobra.Command {
 }
 
 // GetCmdDeliver is the CLI command for sending a DeliverInbound transaction
+// containing mailbox messages.
 func GetCmdDeliver() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "deliver [json string]",
-		Short: "deliver inbound messages",
-		Args:  cobra.ExactArgs(1),
+		Use:   "deliver {<messages JSON> | @- | @<file>}",
+		Short: "send mailbox messages",
+		Long: `send mailbox messages.
+The argument indicates how to read input JSON ("@-" for standard input,
+"@..." for a file path, and otherwise directly as in "deliver '[...]'").
+Input must represent an array in which the first element is an array of
+[messageNum: integer, messageBody: string] pairs and the second element
+is an "Ack" integer.`,
+		Args: cobra.ExactArgs(1),
 
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cctx, err := client.GetClientTxContext(cmd)
@@ -91,7 +98,14 @@ func GetCmdDeliver() *cobra.Command {
 // InstallBundle message in a transaction.
 func GetCmdInstallBundle() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:  "install-bundle <JSON>/@<FILE>/-",
+		Use:   "install-bundle {<bundle JSON> | @- | @<file>}",
+		Short: "install a bundle",
+		Long: `install a bundle.
+The argument indicates how to read input JSON ("@-" for standard input,
+"@..." for a file path, and otherwise directly as in
+"install-bundle '{...}'").
+Input should be endoZipBase64 JSON, but this is not verified.
+https://github.com/endojs/endo/tree/master/packages/bundle-source`,
 		Args: cobra.ExactArgs(1),
 
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -147,7 +161,7 @@ func GetCmdInstallBundle() *cobra.Command {
 // GetCmdProvision is the CLI command for sending a Provision transaction
 func GetCmdProvisionOne() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "provision-one [nickname] [address] [power-flags]",
+		Use:   "provision-one <nickname> <address> [<power-flag>[,...]]",
 		Short: "provision a single address",
 		Args:  cobra.RangeArgs(2, 3),
 
@@ -185,7 +199,7 @@ func GetCmdProvisionOne() *cobra.Command {
 // GetCmdWalletAction is the CLI command for sending a WalletAction or WalletSpendAction transaction
 func GetCmdWalletAction() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "wallet-action [json string]",
+		Use:   "wallet-action <action JSON>",
 		Short: "perform a wallet action",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -220,16 +234,18 @@ func GetCmdWalletAction() *cobra.Command {
 	return cmd
 }
 
+// NewCmdSubmitCoreEvalProposal is the CLI command for submitting a "CoreEval"
+// governance proposal via `agd tx gov submit-proposal swingset-core-eval ...`.
 func NewCmdSubmitCoreEvalProposal() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "swingset-core-eval [[permit.json] [code.js]]...",
+		Use:   "swingset-core-eval <permit.json code.js>...",
 		Args:  cobra.MinimumNArgs(2),
 		Short: "Submit a proposal to evaluate code in the SwingSet core",
 		Long: `Submit a SwingSet evaluate core Compartment code proposal along with an initial deposit.
 Specify at least one pair of permit.json and code.js files`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args)%2 != 0 {
-				return fmt.Errorf("must specify an even number of permit.json and code.js files")
+				return fmt.Errorf("must specify paired permit.json and code.js files")
 			}
 
 			clientCtx, err := client.GetClientTxContext(cmd)
@@ -237,11 +253,13 @@ Specify at least one pair of permit.json and code.js files`,
 				return err
 			}
 
+			//nolint:staticcheck // Agoric is still using the legacy proposal shape
 			title, err := cmd.Flags().GetString(govcli.FlagTitle)
 			if err != nil {
 				return err
 			}
 
+			//nolint:staticcheck // Agoric is still using the legacy proposal shape
 			description, err := cmd.Flags().GetString(govcli.FlagDescription)
 			if err != nil {
 				return err
@@ -286,7 +304,7 @@ Specify at least one pair of permit.json and code.js files`,
 				return err
 			}
 
-			msg, err := govtypes.NewMsgSubmitProposal(content, deposit, from)
+			msg, err := govv1beta1.NewMsgSubmitProposal(content, deposit, from)
 			if err != nil {
 				return err
 			}
@@ -299,7 +317,9 @@ Specify at least one pair of permit.json and code.js files`,
 		},
 	}
 
+	//nolint:staticcheck // Agoric is still using the legacy proposal shape
 	cmd.Flags().String(govcli.FlagTitle, "", "title of proposal")
+	//nolint:staticcheck // Agoric is still using the legacy proposal shape
 	cmd.Flags().String(govcli.FlagDescription, "", "description of proposal")
 	cmd.Flags().String(govcli.FlagDeposit, "", "deposit for proposal")
 

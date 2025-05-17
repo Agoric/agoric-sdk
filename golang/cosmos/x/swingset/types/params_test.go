@@ -80,7 +80,7 @@ func TestAddStorageBeanCost(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := appendMissingDefaultBeansPerUnit(tt.in, []StringBeans{defaultStorageCost})
+			got, err := appendMissingDefaults(tt.in, []StringBeans{defaultStorageCost})
 			if err != nil {
 				t.Errorf("got error %v", err)
 			} else if !reflect.DeepEqual(got, tt.want) {
@@ -90,27 +90,93 @@ func TestAddStorageBeanCost(t *testing.T) {
 	}
 }
 
-func TestUpdateParams(t *testing.T) {
-
+func TestUpdateParamsFromEmpty(t *testing.T) {
 	in := Params{
-		BeansPerUnit:       []beans{},
-		BootstrapVatConfig: "baz",
+		BeansPerUnit:       nil,
+		BootstrapVatConfig: "",
 		FeeUnitPrice:       sdk.NewCoins(sdk.NewInt64Coin("denom", 789)),
-		PowerFlagFees:      []PowerFlagFee{},
-		QueueMax:           []QueueSize{},
+		PowerFlagFees:      nil,
+		QueueMax:           nil,
+		VatCleanupBudget:   nil,
 	}
 	want := Params{
 		BeansPerUnit:       DefaultBeansPerUnit(),
-		BootstrapVatConfig: "baz",
+		BootstrapVatConfig: "",
 		FeeUnitPrice:       sdk.NewCoins(sdk.NewInt64Coin("denom", 789)),
 		PowerFlagFees:      DefaultPowerFlagFees,
 		QueueMax:           DefaultQueueMax,
+		VatCleanupBudget:   DefaultVatCleanupBudget,
 	}
 	got, err := UpdateParams(in)
 	if err != nil {
 		t.Fatalf("UpdateParam error %v", err)
 	}
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %v, want %v", got, want)
+		t.Errorf("GOT\n%v\nWANTED\n%v", got, want)
+	}
+}
+
+func TestUpdateParamsFromExisting(t *testing.T) {
+	defaultBeansPerUnit := DefaultBeansPerUnit()
+	customBeansPerUnit := NewStringBeans("foo", sdk.NewUint(1))
+	customPowerFlagFee := NewPowerFlagFee("bar", sdk.NewCoins(sdk.NewInt64Coin("baz", 2)))
+	customQueueSize := NewQueueSize("qux", int32(3))
+	customVatCleanup := UintMapEntry{"corge", sdk.NewUint(4)}
+	in := Params{
+		BeansPerUnit:       append([]StringBeans{customBeansPerUnit}, defaultBeansPerUnit[2:4]...),
+		BootstrapVatConfig: "",
+		FeeUnitPrice:       sdk.NewCoins(sdk.NewInt64Coin("denom", 789)),
+		PowerFlagFees:      []PowerFlagFee{customPowerFlagFee},
+		QueueMax:           []QueueSize{NewQueueSize(QueueInbound, int32(10)), customQueueSize},
+		VatCleanupBudget:   []UintMapEntry{customVatCleanup, UintMapEntry{VatCleanupDefault, sdk.NewUint(10)}},
+	}
+	want := Params{
+		BeansPerUnit:       append(append(in.BeansPerUnit, defaultBeansPerUnit[0:2]...), defaultBeansPerUnit[4:]...),
+		BootstrapVatConfig: in.BootstrapVatConfig,
+		FeeUnitPrice:       in.FeeUnitPrice,
+		PowerFlagFees:      append(in.PowerFlagFees, DefaultPowerFlagFees...),
+		QueueMax:           in.QueueMax,
+		VatCleanupBudget:   append(in.VatCleanupBudget, DefaultVatCleanupBudget[1:]...),
+	}
+	got, err := UpdateParams(in)
+	if err != nil {
+		t.Fatalf("UpdateParam error %v", err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("GOT\n%v\nWANTED\n%v", got, want)
+	}
+}
+
+func TestValidateParams(t *testing.T) {
+	params := Params{
+		BeansPerUnit:       DefaultBeansPerUnit(),
+		BootstrapVatConfig: "foo",
+		FeeUnitPrice:       sdk.NewCoins(sdk.NewInt64Coin("denom", 789)),
+		PowerFlagFees:      DefaultPowerFlagFees,
+		QueueMax:           DefaultQueueMax,
+		VatCleanupBudget:   DefaultVatCleanupBudget,
+	}
+	err := params.ValidateBasic()
+	if err != nil {
+		t.Errorf("unexpected ValidateBasic() error with default params: %v", err)
+	}
+
+	customVatCleanup := UintMapEntry{"corge", sdk.NewUint(4)}
+	params.VatCleanupBudget = append(params.VatCleanupBudget, customVatCleanup)
+	err = params.ValidateBasic()
+	if err != nil {
+		t.Errorf("unexpected ValidateBasic() error with extended params: %v", err)
+	}
+
+	params.VatCleanupBudget = params.VatCleanupBudget[1:]
+	err = params.ValidateBasic()
+	if err == nil {
+		t.Errorf("ValidateBasic() failed to reject VatCleanupBudget with missing `default` %v", params.VatCleanupBudget)
+	}
+
+	params.VatCleanupBudget = []UintMapEntry{}
+	err = params.ValidateBasic()
+	if err != nil {
+		t.Errorf("unexpected ValidateBasic() error with empty VatCleanupBudget: %v", params.VatCleanupBudget)
 	}
 }

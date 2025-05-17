@@ -18,24 +18,8 @@ jobs:
   wait-integration-pre-checks:
     runs-on: ubuntu-latest
     steps:
-      - name: Create integration-test-result check
-        id: create-check
-        if: always()
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const head_sha = context.eventName === 'pull_request' ?
-            context.payload.pull_request.head.sha : context.sha
-            const res = await github.rest.checks.create({
-              ...context.repo,
-              head_sha,
-              name: "integration-test-result",
-            })
-            core.debug('check create response: ${JSON.stringify(res, null, 2)}')
-            console.log('created integration-test-result', res.data.html_url)
-            return res.data.id
-    outputs:
-      run_id: ${{ steps.create-check.outputs.result }}
+      - shell: bash
+        run: echo "TODO remove this vestigial job"
 
   merge-strategy:
     runs-on: ubuntu-latest
@@ -69,15 +53,20 @@ jobs:
       ) &&
       !contains(github.event.pull_request.labels.*.name, 'bypass:linear-history')
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - shell: bash
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_LABEL: ${{ github.event.pull_request.head.label }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BASE_LABEL: ${{ github.event.pull_request.base.label }}
         run: |
-          merge_commits=$(git rev-list --merges "origin/$GITHUB_BASE_REF".."origin/$GITHUB_HEAD_REF")
+          merge_commits=$(git rev-list --merges "$BASE_SHA".."$HEAD_SHA")
 
           if [ -n "$merge_commits" ]; then
-            echo "Error: merge commits found in $GITHUB_BASE_REF..$GITHUB_HEAD_REF"
+            echo "Error: merge commits found in $BASE_LABEL..$HEAD_LABEL"
 
             for merge_commit in $merge_commits; do
               echo "$merge_commit"
@@ -87,15 +76,45 @@ jobs:
           fi
 
           fixup_commits=
-          for commit in $(git rev-list $GITHUB_BASE_REF..$GITHUB_HEAD_REF); do
-            case $(git show --pretty=format:%s -s $commit) in fixup\!*|squash\!*)
+          for commit in $(git rev-list $BASE_SHA..$HEAD_SHA); do
+            case $(git show --pretty=format:%s -s $commit) in fixup\!*|squash\!*|amend\!*)
               fixup_commits="$fixup_commits\n$commit"
               ;;
             esac
           done
 
           if [ -n "$fixup_commits" ]; then
-            echo "Error: fixup/squash commits found in $GITHUB_BASE_REF..$GITHUB_HEAD_REF"
+            echo "Error: fixup/squash/amend commits found in $BASE_LABEL..$HEAD_LABEL"
             echo -e "$fixup_commits"
+            exit 1
+          fi
+
+  no-fixup-commits:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.base.ref == 'master' && 
+      contains(github.event.pull_request.labels.*.name, 'automerge:rebase') &&
+      !contains(github.event.pull_request.labels.*.name, 'bypass:linear-history')
+
+    env:
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      BASE_SHA: ${{ github.event.pull_request.base.sha }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check for fixup commits
+        id: fixup-commits
+        run: |
+          if ! git merge-base --is-ancestor "$BASE_SHA" "$HEAD_SHA"; then
+             echo "PR is not up to date with target branch, skipping fixup commit check"
+          elif [[ $(git rev-list "$BASE_SHA".."$HEAD_SHA" --grep="^\(fixup\|amend\|squash\)! " | wc -l) -eq 0 ]]; then
+            echo "No fixup/amend/squash commits found in commit history"
+          else
+            echo "fixup/amend/squash commits found in commit history"
             exit 1
           fi

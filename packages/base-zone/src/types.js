@@ -1,5 +1,16 @@
 // eslint-disable-next-line no-unused-vars
 import { makeExo, defineExoClass, defineExoClassKit } from '@endo/exo';
+// eslint-disable-next-line no-unused-vars
+import { watchPromise } from './watch-promise.js';
+
+// Ensure this is a module.
+export {};
+
+/**
+ * @import {MapStore, SetStore, StoreOptions, WeakMapStore, WeakSetStore} from '@agoric/store';
+ * @import {Key} from '@endo/patterns';
+ * @import {Passable} from '@endo/pass-style';
+ */
 
 /** @typedef {'exoClass' | 'exoClassKit' | 'exo' | 'store' | 'zone'} KeyCategories */
 /** @typedef {Record<KeyCategories, (label: string) => string[]>} KeyMakers */
@@ -16,15 +27,16 @@ import { makeExo, defineExoClass, defineExoClassKit } from '@endo/exo';
  * @property {typeof defineExoClassKit} exoClassKit create a "kit" maker function that can be used to create a record of exo-objects sharing the same state
  * @property {<T>(key: string, maker: (key: string) => T) => T} makeOnce create or retrieve a singleton object bound to this zone
  * @property {(label: string, options?: StoreOptions) => Zone} subZone create a new Zone that can be passed to untrusted consumers without exposing the storage of the parent zone
+ * @property {typeof watchPromise} watchPromise register a promise watcher created by this zone
  */
 
 /**
  * @typedef {object} Stores
  * @property {() => Stores} detached obtain store providers which are detached (the stores are anonymous rather than bound to `label` in the zone)
  * @property {(specimen: unknown) => boolean} isStorable return true if the specimen can be stored in the zone, whether as exo-object state or in a store
- * @property {<K,V>(label: string, options?: StoreOptions) => MapStore<K, V>} mapStore provide a Map-like store named `label` in the zone
+ * @property {<K, V>(label: string, options?: StoreOptions) => MapStore<K, V>} mapStore provide a Map-like store named `label` in the zone
  * @property {<K>(label: string, options?: StoreOptions) => SetStore<K>} setStore provide a Set-like store named `label` in the zone
- * @property {<K,V>(
+ * @property {<K, V>(
  *   label: string, options?: StoreOptions) => WeakMapStore<K, V>
  * } weakMapStore provide a WeakMap-like store named `label` in the zone
  * @property {<K>(

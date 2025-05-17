@@ -2,7 +2,11 @@ import { E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { observeIteration, observeIterator } from '../src/index.js';
 
-import '../src/types-ambient.js';
+/**
+ * @import {ERef} from '@endo/far';
+ * @import {BaseNotifier, ForkableAsyncIterator, IterationObserver, Notifier, StoredFacet, Subscription} from '../src/types.js';
+ * @import {PromiseKit} from '@endo/promise-kit';
+ */
 
 export const invertPromiseSettlement = promise =>
   promise.then(
@@ -21,9 +25,10 @@ export const delayByTurns = async turnCount => {
   }
 };
 
-/** @typedef {import('@endo/marshal').Passable} Passable */
-
-/** @typedef {import('ava').Assertions} Assertions */
+/**
+ * @import { Passable } from '@endo/marshal'
+ * @import { Assertions} from 'ava'
+ */
 
 const obj = harden({});
 const unresP = new Promise(_ => {});
@@ -60,7 +65,7 @@ const refReason = Error('bar');
  *
  * @param {boolean} fails Does the returned async iterable finish successfully
  * or fail?
- * @returns {AsyncIterable<Passable>}
+ * @returns {AsyncIterable<any>}
  */
 const makeTestIterable = fails => {
   return harden({
@@ -246,7 +251,7 @@ export const paula = iterationObserver => {
  * See the Alice example  in the README
  *
  * @param {AsyncIterable<Passable>} asyncIterable
- * @returns {Promise<Passable[]>}
+ * @returns {Promise<any[]>}
  */
 export const alice = async asyncIterable => {
   const log = [];

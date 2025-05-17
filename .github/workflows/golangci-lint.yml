@@ -7,6 +7,7 @@ on:
       # $default-branch
       - master
       - 'release-*'
+      - 'dev-*'
   pull_request:
   merge_group:
 permissions:
@@ -17,11 +18,14 @@ jobs:
   golangci:
     name: golangci-lint
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        mode: [no-failure]
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: '>=1.20'
+          go-version: '1.22'
           cache: false
           check-latest: true
         # https://github.com/golangci/golangci-lint/issues/3862#issuecomment-1572973588
@@ -31,6 +35,8 @@ jobs:
         with:
           version: latest
           args: --timeout=3m
+            ${{ matrix.mode == 'no-deprecations' && '--exclude=^SA1019' || '' }}
+            ${{ matrix.mode == 'no-failure' && '--issues-exit-code=0' || '' }}
           # for pull requests, show only new issues
           # Too bad it's incompatible with working-directory.
           # only-new-issues: true

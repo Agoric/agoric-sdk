@@ -24,6 +24,8 @@ type (
 	Keeper                   = keeper.Keeper
 	SwingStoreExportsHandler = keeper.SwingStoreExportsHandler
 	ExtensionSnapshotter     = keeper.ExtensionSnapshotter
+	ActionContext            = types.ActionContext
+	InboundQueueRecord       = types.InboundQueueRecord
 	Egress                   = types.Egress
 	MsgDeliverInbound        = types.MsgDeliverInbound
 	MsgProvision             = types.MsgProvision

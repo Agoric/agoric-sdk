@@ -1,18 +1,18 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 /* avaXS - ava style test runner for XS
 
 Usage:
 
-  node avaXS.js [--debug] test-*.js
+  node avaXS.js [--debug] *.test.js
 
 */
 
 import '@endo/init';
 
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { tmpName } from 'tmp';
 
-import { assert, q, Fail } from '@agoric/assert';
+import { assert, q, Fail } from '@endo/errors';
 import { getDebugLockdownBundle } from '@agoric/xsnap-lockdown';
 import { xsnap } from './xsnap.js';
 
@@ -22,7 +22,7 @@ const avaHandler = `./avaHandler.cjs`;
 
 /** @type { (ref: string, readFile: typeof import('fs').promises.readFile ) => Promise<string> } */
 const asset = (ref, readFile) =>
-  readFile(new URL(ref, import.meta.url).pathname, 'utf8');
+  readFile(fileURLToPath(new URL(ref, import.meta.url)), 'utf8');
 
 /**
  * When we bundle test scripts, we leave these externals
@@ -112,7 +112,7 @@ async function runTestScript(
   /**
    * Handle callback "command" from xsnap subprocess.
    *
-   * @type { (msg: ArrayBuffer) => Promise<ArrayBuffer> }
+   * @type { (msg: ArrayBuffer) => Promise<Uint8Array<ArrayBufferLike>> }
    */
   async function handleCommand(message) {
     /**
@@ -385,7 +385,9 @@ export async function main(
 
     stats.total += results.total;
     stats.pass += results.pass;
-    results.fail.forEach(info => stats.fail.push(info));
+    for (const info of results.fail) {
+      stats.fail.push(info);
+    }
   }
 
   console.log(stats.pass, 'tests passed');

@@ -49,8 +49,8 @@ Affects: agoric (CLI), ag-chain-cosmos, ag-solo
 
 Purpose: to change the meaning of `console.log` and other console methods
 
-Description: uses `anylogger` to change whether the following methods (in order
-of increasing severity) are active for a given context:
+Description: uses `anylogger` to change whether the following methods are active
+for a given context, in order of increasing severity:
 
 1. `console.debug`
 2. `console.log`
@@ -58,22 +58,66 @@ of increasing severity) are active for a given context:
 4. `console.warn`
 5. `console.error`
 
-If not set, then default (`console.info` and above) logging is enabled.
+If `$DEBUG` is unset or non-empty, then default (`console.log` and above) logging is enabled.  (`console.debug` logging is disabled.)
+
+If `$DEBUG` is set to an empty string, then quiet (`console.info` and above) logging is enabled.
 (`console.log` and `console.debug` logging is disabled.)
 
-If set to an empty string, or running in `ag-chain-cosmos start` mode, don't
-print any logs.  This is part of "consensus mode."
+Otherwise, set to a comma-separated list of strings.
 
-If set to a value that contains the substring `agoric`, then print all console
-messages for the entire SDK.
+If one of those strings is
+- `agoric:${level}`, then don't print `agoric-sdk` console messages below `${level}`.
+- `agoric:none`, then silence all `agoric-sdk` console messages.
+- `agoric` (an alias for `agoric:debug`) print all `agoric-sdk` console messages.
+- `track-turns`, then log errors at the top of the event-loop that may otherwise be unreported. See also the TRACK_TURNS environment variable below.
+- `label-instances`, then log exo instances with a unique label per instance. HAZARD This causes an information leak in the messages of thrown errors, which are available even to code without access to the console. Use with care.
 
-Otherwise, set to a comma-separated list of prefixes, where each prefix is the
-context given to `makeConsole`.  For example:
+For each of those strings beginning with a prefix recognized as indicating what
+console messages to enable, pass it to `makeConsole`. For example:
 
 - `DEBUG=SwingSet:ls` enable all console messages for liveslots, regardless of vat.
 - `DEBUG=SwingSet:ls:v13` enable for liveslots in vat 13.
 - `DEBUG=SwingSet:vat` enable for user code, regardless of vat.
 - `DEBUG=SwingSet:vat,SwingSet:ls` enable for liveslots and user code, all vats
+
+## ENDO_DELIVERY_BREAKPOINTS
+
+The value of this option should be a JSON string identifying for which
+eventual-send message deliveries should a JS `debugger;` statement be executed.
+The format of the JSON string is
+```json
+{
+  <class-like>: {
+    <method-like>: <countdown>,
+    <method-like>: <countdown>,
+    ...
+  },
+  <class-like>: {
+    <method-like>: <countdown>
+    ...
+  },
+  ...
+}
+```
+Where
+- `<class-like>` is either `"*"` or an alleged string tag of the receiving
+   remotable (exo or far) object
+- `<method-like>` is either `"*"` or a method name. There is not yet a syntax for symbols to name symbol-named methods, but there may eventually be.
+- `<countdown>` is either `"*"` or a non-negative integer saying how many occurrences to ignore before breakpointing.
+
+When the program is run under a debugger, it will breakpoint when the JS
+`debugger;` statement is executed. When run normally without a debugger, the
+`debugger;` statement will have no effect. The `debugger;` statement
+is executed *before* the method is entered.
+
+See https://github.com/endojs/endo/blob/master/packages/pass-style/test/prepare-breakpoints.js for an example.
+
+## ENDO_SEND_BREAKPOINTS
+
+The value of this option is a JSON string identifying for which eventual sends
+should a JS `debugger;` statement be executed. The format is the same as
+shown for `ENDO_DELIVERY_BREAKPOINTS` above, but the breakpoint happens
+when and where the message is sent, rather than when and where it is delivered.
 
 ## END_BLOCK_SPIN_MS
 
@@ -97,65 +141,32 @@ Description: When nonempty, create pretend prepopulated tokens like "moola" and
 
 Lifetime: until chain is mature enough not to need any pretend tokens
 
+## LOCKDOWN_*
+
+For the environment variables beginning with `LOCKDOWN_` , see [`lockdown` Options](https://github.com/endojs/endo/blob/master/packages/ses/docs/lockdown.md).
+
+## ONLY_WELL_FORMED_STRINGS_PASSABLE
+
+As part of the OCapN standards process, we have agreed that only so-called
+"well formed" unicode strings should be considered `Passable`. However, we are
+not yet confident about the performance impact of enforcing this ban, so it
+is `"disabled"` by default for now. To turn it on, set this option to `"enabled"`.
+See https://github.com/endojs/endo/blob/master/packages/pass-style/NEWS.md#v130-2024-03-19 for more explanation.
+
 ## OTEL_EXPORTER_PROMETHEUS_PORT
 
 Affects: cosmic-swingset
 
 Purpose: enabling Prometheus metrics exports
 
-Description: When either is set, these are the host IP and port number to use
-for the Prometheus scrape endpoint to export telemetry.
+Description: When set, metrics will be exposed in the [Prometheus text-based
+format](https://prometheus.io/docs/instrumenting/exposition_formats/#text-based-format)
+via HTTP on this port (or the default port 9464 when the value is not a number)
+for the host specified by `OTEL_EXPORTER_PROMETHEUS_HOST` (or default host
+0.0.0.0) at default path "/metrics". See also
+[README-telemetry.md](../packages/cosmic-swingset/README-telemetry.md#agoric-vm-swingset-metrics).
 
 Lifetime: until we decide not to support Prometheus for metrics export
-
-## SOLO_BRIDGE_TARGET
-
-Affects: solo
-
-This enables a proxy so that the solo bridge interface (/wallet-bridge.html) is backed by the smart wallet (/wallet/bridge.html). Dapps designed for the solo bridge can enable this until they connect to the smart wallet directly.
-
-```sh
-BRIDGE_TARGET=http://localhost:3001 make BASE_PORT=8002 scenario3-run
-```
-
-Lifetime: smart wallet transition period
-
-## SOLO_MNEMONIC
-
-Affects: solo init
-
-Seed phrase for HD key derivation.
-
-## SOLO_OTEL_EXPORTER_PROMETHEUS_PORT
-
-Affects: solo
-
-Same as `OTEL_EXPORTER_PROMETHEUS_PORT`, but for solo instead of chain.
-
-Lifetime: ?
-
-## SOLO_SLOGFILE
-
-Same as `SLOGFILE`, but for solo instead of chain.
-
-Lifetime: ?
-
-## SOLO_SLOGSENDER
-
-Same as `SLOGSENDER`, but for solo instead of chain.
-
-Lifetime: ?
-
-## SOLO_MAX_DEBUG_LENGTH
-
-Affects: solo
-
-Purpose: reduce the size of each individual `console.debug` output
-
-Description: defaults to no limit, set to a decimal byte count to reduce the
-output
-
-Lifetime: Until CI no longer balks on long output, or our source bundles aren't delivered via messages to the sim-chain
 
 ## SLOGFILE
 
@@ -175,11 +186,13 @@ Affects: cosmic-swingset
 Purpose: intercept the SwingSet LOG file in realtime
 
 Description: when nonempty, use the value as a list of module specifiers
-separated by commas `,`.  The modules will be loaded by
-`@agoric/telemetry/src/make-slog-sender.js`, via `import(moduleSpec)`, and
-their exported `makeSlogSender` function called to create an aggregate
-`slogSender`. Every time a SLOG object is written by SwingSet, each module's
-`slogSender(slogObject)` will be called.
+separated by commas `,`.  `@agoric/telemetry/src/make-slog-sender.js` export
+`makeSlogSender` loads each module via dynamic `import` and calls its exported
+`makeSlogSender` function to construct a slogSender that will be called with
+each new slog entry (fanning such objects out to each module). Prefixing a
+module specifier with `-` causes it to be excluded, and can be used to suppress
+otherwise automatic use of modules for e.g. writing slogfiles and exporting
+Prometheus metrics.
 
 The default is `'@agoric/telemetry/src/flight-recorder.js'`, which writes to an
 mmap'ed circular buffer.
@@ -196,6 +209,13 @@ sub-process which receives all SLOG events over an IPC connection.
 
 The default is `'self'`.
 
+## SLOGSENDER_AGENT_*
+
+A `SLOGSENDER_AGENT_` prefix may be used to set variables in the environment of
+slog sender modules. The name prefix is stripped, allowing slog senders to see a
+different value for e.g.
+[`OTEL_EXPORTER_PROMETHEUS_PORT`](#otel_exporter_prometheus_port).
+
 ## SLOGSENDER_FAIL_ON_ERROR
 
 Affects: cosmic-swingset
@@ -208,6 +228,66 @@ validate during tests that complex slog senders like the otel converter do not
 have any unexpected errors.
 
 The default is `undefined`.
+
+## SOLO_BRIDGE_TARGET
+
+Affects: solo
+
+This enables a proxy so that the solo bridge interface (/wallet-bridge.html) is backed by the smart wallet (/wallet/bridge.html). Dapps designed for the solo bridge can enable this until they connect to the smart wallet directly.
+
+```sh
+BRIDGE_TARGET=http://localhost:3001 make BASE_PORT=8002 scenario3-run
+```
+
+Lifetime: smart wallet transition period
+
+## SOLO_MAX_DEBUG_LENGTH
+
+Affects: solo
+
+Purpose: reduce the size of each individual `console.debug` output
+
+Description: defaults to no limit, set to a decimal byte count to reduce the
+output
+
+Lifetime: Until CI no longer balks on long output, or our source bundles aren't delivered via messages to the sim-chain
+
+## SOLO_MNEMONIC
+
+Affects: solo init
+
+Seed phrase for HD key derivation.
+
+## SOLO_OTEL_EXPORTER_PROMETHEUS_PORT
+
+Affects: solo
+
+Same as [`OTEL_EXPORTER_PROMETHEUS_PORT`](#otel_exporter_prometheus_port), but
+for solo instead of chain.
+
+Lifetime: ?
+
+## SOLO_SLOGFILE
+
+Affects: solo
+
+Same as [`SLOGFILE`](#slogfile), but for solo instead of chain.
+
+Lifetime: ?
+
+## SOLO_SLOGSENDER
+
+Affects: solo
+
+Same as [`SLOGSENDER`](#slogsender), but for solo instead of chain.
+
+Lifetime: ?
+
+## SOLO_*
+
+A `SOLO` prefix may be used to set variables used only by solo processes. The
+name prefix is stripped, allowing such variables to be set in a shell
+environment without affecting cosmic-swingset.
 
 ## SWINGSET_WORKER_TYPE
 
@@ -238,3 +318,8 @@ records individually. `config.defaultManagerType` has a higher priority so that
 tests which require a specific worker (e.g. which exercise XS heap snapshots,
 or metering) can override the env var, so they won't break under `yarn
 test:xs`.
+
+## TRACK_TURNS
+
+Log the deep causality stack behind logged errors if possible. See also the
+`DEBUG` setting `DEBUG=track-turns` above.

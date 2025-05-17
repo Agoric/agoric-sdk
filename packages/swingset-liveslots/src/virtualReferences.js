@@ -1,6 +1,6 @@
-/* eslint-disable no-use-before-define, jsdoc/require-returns-type */
+/* eslint-disable jsdoc/require-returns-type */
 
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 import { Nat } from '@endo/nat';
 import { parseVatSlot } from './parseVatSlots.js';
 import {
@@ -290,7 +290,10 @@ export function makeVirtualReferenceManager(
    */
   function isDurable(vref) {
     const { type, id, virtual, durable, allocatedByVat } = parseVatSlot(vref);
-    if (relaxDurabilityRules) {
+    if (type === 'promise') {
+      // promises are not durable even if `relaxDurabilityRules === true`
+      return false;
+    } else if (relaxDurabilityRules) {
       // we'll pretend an object is durable if running with relaxed rules
       return true;
     } else if (type === 'device') {
@@ -497,26 +500,51 @@ export function makeVirtualReferenceManager(
   }
 
   /**
-   * A vref is "recognizable" when it is used as the key of a weak Map
-   * or Set: that Map/Set can be used to query whether a future
-   * specimen matches the original or not, without holding onto the
-   * original.
+   * A vref is "recognizable" when it is used as the key of a weak
+   * collection, like a virtual/durable WeakMapStore or WeakSetStore,
+   * or the ephemeral voAwareWeakMap/Set that we impose upon userspace
+   * as "WeakMap/WeakSet". The collection can be used to query whether
+   * a future specimen matches the original or not, without holding
+   * onto the original.
    *
-   * This 'vrefRecognizers' is a Map from those vrefs to the set of
-   * recognizing weak collections, for virtual keys and non-virtual
-   * collections. Specifically, the vrefs correspond to imported
-   * Presences or virtual-object Representatives (Remotables do not
-   * participate: they are keyed by the actual Remotable object, not
-   * its vref). The collections are either a VirtualObjectAwareWeakMap
-   * or a VirtualObjectAwareWeakSet. We remove the entry when the key
-   * is removed from the collection, and when the entire collection is
-   * deleted.
+   * We need "recognition records" to map from the vref to the
+   * collection that can recognize it. When the vref is retired, we
+   * use the record to find all the collections from which we need to
+   * delete entries, so we can release the matching values. This might
+   * happen because the vref was for a Presence and the kernel just
+   * told us the upstream vat has deleted it (dispatch.retireImports),
+   * or because it was for a locally-managed object (an ephemeral
+   * Remotable or a virtual/durable Representative) and we decided to
+   * delete it.
    *
-   * It is critical that each collection have exactly one recognizer that is
-   * unique to that collection, because the recognizers themselves will be
-   * tracked by their object identities, but the recognizer cannot be the
-   * collection itself else it would prevent the collection from being garbage
-   * collected.
+   * The virtual/durable collections track their "recognition records"
+   * in the vatstore, in keys like "vom.ir.${vref}|${collectionID}".
+   * These records do not contribute to our RAM usage.
+   *
+   * voAwareWeakMap and voAwareWeakSet store their recognition records
+   * in RAM, using this Map named 'vrefRecognizers'. Each key is a
+   * vref, and the value is a Set of recognizers. Each recognizer is
+   * the internal 'virtualObjectMap' in which the collection maps from
+   * vref to value. These in-RAM collections only use virtualObjectMap
+   * to track Presence-style (imports) and Representative-style
+   * (virtual/durable) vrefs: any Remotable-style keys are stored in
+   * the collection's internal (real) WeakMap under the Remotable
+   * object itself (because the engine handles the bookkeeping, and
+   * there is no virtual data in the value that we need to clean up at
+   * deletion time).
+   *
+   * Each voAwareWeakMap/Set must have a distinct recognizer, so we
+   * can remove the key from the right ones. The recognizer is held
+   * strongly by the recognition record, so it must not be the
+   * voAwareWeakMap/Set itself (which would inhibit GC).
+   *
+   * When an individual entry is deleted from the weak collection, we
+   * must also delete the recognition record. When the collection
+   * itself is deleted (i.e. because nothing was referencing it), we
+   * must both delete all recognition records and also notify the
+   * kernel about any Presence-style vrefs that we can no longer
+   * recognize (syscall.retireImports). The kernel doesn't care about
+   * Remotable- or Representative- style vrefs, only the imports.
    *
    * TODO: all the "recognizers" in principle could be, and probably should be,
    * reduced to deleter functions.  However, since the VirtualObjectAware
@@ -532,14 +560,24 @@ export function makeVirtualReferenceManager(
   /** @type {Map<string, Set<Recognizer>>} */
   const vrefRecognizers = new Map();
 
+  /**
+   * @param {*} value  The vref-bearing object used as the collection key
+   * @param {string|Recognizer} recognizer  The collectionID or virtualObjectMap for the collection
+   * @param {boolean} [recognizerIsVirtual]  true for virtual/durable Stores, false for voAwareWeakMap/Set
+   */
   function addRecognizableValue(value, recognizer, recognizerIsVirtual) {
     const vref = getSlotForVal(value);
     if (vref) {
       const { type, allocatedByVat, virtual, durable } = parseVatSlot(vref);
-      if (type === 'object' && (!allocatedByVat || virtual || durable)) {
+      if (type === 'object') {
+        // recognizerSet (voAwareWeakMap/Set) doesn't track Remotables
+        const notRemotable = !allocatedByVat || virtual || durable;
+
         if (recognizerIsVirtual) {
+          assert.typeof(recognizer, 'string');
           syscall.vatstoreSet(`vom.ir.${vref}|${recognizer}`, '1');
-        } else {
+        } else if (notRemotable) {
+          assert.typeof(recognizer, 'object');
           let recognizerSet = vrefRecognizers.get(vref);
           if (!recognizerSet) {
             recognizerSet = new Set();
@@ -551,18 +589,33 @@ export function makeVirtualReferenceManager(
     }
   }
 
+  /**
+   * @param {string} vref  The vref or the object used as the collection key
+   * @param {string|Recognizer} recognizer  The collectionID or virtualObjectMap for the collection
+   * @param {boolean} [recognizerIsVirtual]  true for virtual/durable Stores, false for voAwareWeakMap/Set
+   */
   function removeRecognizableVref(vref, recognizer, recognizerIsVirtual) {
     const { type, allocatedByVat, virtual, durable } = parseVatSlot(vref);
-    if (type === 'object' && (!allocatedByVat || virtual || durable)) {
+    if (type === 'object') {
+      // addToPossiblyDeadSet only needs Presence-style vrefs
+      const isPresence = !allocatedByVat;
+      // recognizerSet (voAwareWeakMap/Set) doesn't track Remotables
+      const notRemotable = !allocatedByVat || virtual || durable;
+
       if (recognizerIsVirtual) {
+        assert.typeof(recognizer, 'string');
         syscall.vatstoreDelete(`vom.ir.${vref}|${recognizer}`);
-      } else {
+        if (isPresence) {
+          addToPossiblyRetiredSet(vref);
+        }
+      } else if (notRemotable) {
+        assert.typeof(recognizer, 'object');
         const recognizerSet = vrefRecognizers.get(vref);
         assert(recognizerSet && recognizerSet.has(recognizer));
         recognizerSet.delete(recognizer);
         if (recognizerSet.size === 0) {
           vrefRecognizers.delete(vref);
-          if (!allocatedByVat) {
+          if (isPresence) {
             addToPossiblyRetiredSet(vref);
           }
         }
@@ -570,6 +623,11 @@ export function makeVirtualReferenceManager(
     }
   }
 
+  /**
+   * @param {*} value  The vref-bearing object used as the collection key
+   * @param {string|Recognizer} recognizer  The collectionID or virtualObjectMap for the collection
+   * @param {boolean} [recognizerIsVirtual]  true for virtual/durable Stores, false for voAwareWeakMap/Set
+   */
   function removeRecognizableValue(value, recognizer, recognizerIsVirtual) {
     const vref = getSlotForVal(value);
     if (vref) {

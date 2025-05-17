@@ -10,6 +10,11 @@ import { makePriceAuthorityTransform } from '../contractSupport/priceAuthorityTr
 import { provideQuoteMint } from '../contractSupport/priceAuthorityQuoteMint.js';
 
 /**
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {ZCF} from '@agoric/zoe';
+ */
+
+/**
  * @typedef {object} ScaledPriceAuthorityOpts
  * @property {ERef<PriceAuthority>} sourcePriceAuthority
  * @property {Ratio} scaleIn - sourceAmountIn:targetAmountIn
@@ -48,7 +53,9 @@ export const prepare = async (zcf, privateArgs, baggage) => {
 
   const priceAuthority = makePriceAuthorityTransform({
     quoteMint,
-    sourcePriceAuthority,
+    // If the priceAuthority is overridden in privateArgs, use that version
+    sourcePriceAuthority:
+      privateArgs?.newPriceAuthority || sourcePriceAuthority,
     sourceBrandIn,
     sourceBrandOut,
     actualBrandIn,

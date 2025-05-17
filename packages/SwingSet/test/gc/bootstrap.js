@@ -23,5 +23,10 @@ export function buildRootObject() {
     async makeInvitation0() {
       await E(target).makeInvitationTarget(zoe);
     },
+
+    // for #9939
+    async storePresenceInWeakSet() {
+      await E(target).store(A);
+    },
   });
 }

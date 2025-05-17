@@ -1,20 +1,23 @@
-import { M } from '@agoric/store';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { isPromise } from '@endo/promise-kit';
+import { getInterfaceGuardPayload } from '@endo/patterns';
 
+import { M } from '@agoric/store';
 import {
+  AmountPatternShape,
   AmountShape,
   BrandShape,
   DepositFacetShape,
   NotifierShape,
   PaymentShape,
-} from '@agoric/ertp/src/typeGuards.js';
+} from '@agoric/ertp';
 
-import '@agoric/ertp/exported.js';
-import '@agoric/notifier/exported.js';
-import { getInterfaceGuardPayload } from '@endo/patterns';
-
-const { Fail } = assert;
+/**
+ * @import {EReturn} from '@endo/far';
+ * @import {Key, Pattern} from '@endo/patterns';
+ * @import {Amount, Issuer, IssuerKit, Paymnent} from '@agoric/ertp';
+ */
 
 /**
  * @param {Pattern} [brandShape]
@@ -39,7 +42,7 @@ export const makeVirtualPurseKitIKit = (
     // to this raw method to validate that this remotable is actually
     // a live payment of the correct brand with sufficient funds.
     deposit: M.callWhen(PaymentShape)
-      .optional(M.pattern())
+      .optional(AmountPatternShape)
       .returns(amountShape),
     getDepositFacet: M.callWhen().returns(DepositFacetShape),
     withdraw: M.callWhen(amountShape).returns(PaymentShape),
@@ -52,7 +55,9 @@ export const makeVirtualPurseKitIKit = (
   });
 
   const RetainRedeemI = M.interface('RetainRedeem', {
-    retain: M.callWhen(PaymentShape).optional(amountShape).returns(amountShape),
+    retain: M.callWhen(PaymentShape)
+      .optional(AmountPatternShape)
+      .returns(amountShape),
     redeem: M.callWhen(amountShape).returns(PaymentShape),
   });
 
@@ -60,7 +65,7 @@ export const makeVirtualPurseKitIKit = (
     retain: getInterfaceGuardPayload(RetainRedeemI).methodGuards.retain,
     redeem: getInterfaceGuardPayload(RetainRedeemI).methodGuards.redeem,
     recoverableClaim: M.callWhen(M.await(PaymentShape))
-      .optional(amountShape)
+      .optional(AmountPatternShape)
       .returns(PaymentShape),
   });
 
@@ -81,13 +86,15 @@ export const makeVirtualPurseKitIKit = (
   return { VirtualPurseIKit, VirtualPurseControllerI };
 };
 
-/**
- * @template T
- * @typedef {import('@endo/far').EOnly<T>} EOnly
- */
+/** @import {EOnly} from '@endo/far'; */
 
-/** @typedef {(pmt: Payment, optAmountShape?: Pattern) => Promise<Amount>} Retain */
-/** @typedef {(amt: Amount) => Promise<Payment>} Redeem */
+/**
+ * @typedef {(
+ *   pmt: Payment<'nat'>,
+ *   optAmountShape?: Pattern,
+ * ) => Promise<Amount>} Retain
+ */
+/** @typedef {(amt: Amount<'nat'>) => Promise<Payment<'nat'>>} Redeem */
 
 /**
  * @typedef {object} VirtualPurseController The object that determines the
@@ -111,8 +118,15 @@ const prepareVirtualPurseKit = zone =>
     makeVirtualPurseKitIKit().VirtualPurseIKit,
     /**
      * @param {ERef<VirtualPurseController>} vpc
-     * @param {{ issuer: ERef<Issuer>; brand: Brand; mint?: ERef<Mint> }} issuerKit
-     * @param {{ recoveryPurse: ERef<Purse>; escrowPurse?: ERef<Purse> }} purses
+     * @param {{
+     *   issuer: ERef<Issuer>;
+     *   brand: Brand;
+     *   mint?: ERef<Mint<'nat'>>;
+     * }} issuerKit
+     * @param {{
+     *   recoveryPurse: ERef<Purse<'nat'>>;
+     *   escrowPurse?: ERef<Purse<'nat'>>;
+     * }} purses
      */
     (vpc, issuerKit, purses) => ({
       vpc,
@@ -129,8 +143,9 @@ const prepareVirtualPurseKit = zone =>
          * this on the `retain` operations (since we are just burning the
          * payment or depositing it directly in the `escrowPurse`).
          *
-         * @param {ERef<Payment>} payment
-         * @param {Amount} [optAmountShape]
+         * @param {ERef<Payment<'nat'>>} payment
+         * @param {Amount<'nat'>} [optAmountShape]
+         * @returns {Promise<Payment<'nat'>>}
          */
         async recoverableClaim(payment, optAmountShape) {
           const {
@@ -240,6 +255,7 @@ const prepareVirtualPurseKit = zone =>
         getDepositFacet() {
           return this.facets.depositFacet;
         },
+        /** @type {(amount: Amount<'nat'>) => Promise<Payment<'nat'>>} */
         async withdraw(amount) {
           // Both ensure that the amount exists, and have the other side "send" it
           // to us.  If this fails, the balance is not affected and the withdraw
@@ -273,10 +289,10 @@ export const prepareVirtualPurse = zone => {
    * @param {ERef<VirtualPurseController>} vpc the controller that represents
    *   the "other side" of this purse.
    * @param {{
-   *   issuer: ERef<Issuer>;
-   *   brand: Brand;
-   *   mint?: ERef<Mint>;
-   *   escrowPurse?: ERef<Purse>;
+   *   issuer: ERef<Issuer<'nat'>>;
+   *   brand: Brand<'nat'>;
+   *   mint?: ERef<Mint<'nat'>>;
+   *   escrowPurse?: ERef<Purse<'nat'>>;
    * }} params
    *   the contents of the issuer kit for "us".
    *
@@ -285,9 +301,9 @@ export const prepareVirtualPurse = zone => {
    *   general, but escrow doesn't support the case where the "other side" is
    *   also minting assets... our escrow purse may not have enough assets in it
    *   to redeem the ones that are sent from the "other side".
-   * @returns {Promise<Awaited<EOnly<Purse>>>} This is not just a Purse because
-   *   it plays fast-and-loose with the synchronous Purse interface. So, the
-   *   consumer of this result must only interact with the virtual purse via
+   * @returns {Promise<Awaited<EOnly<Purse<'nat'>>>>} This is not just a Purse
+   *   because it plays fast-and-loose with the synchronous Purse interface. So,
+   *   the consumer of this result must only interact with the virtual purse via
    *   eventual-send (to conceal the methods that are returning promises instead
    *   of synchronously).
    */
@@ -306,10 +322,13 @@ export const prepareVirtualPurse = zone => {
       recoveryPurse,
       escrowPurse,
     }).purse;
+    // @ts-expect-error XXX
     return vpurse;
   };
 
   return makeVirtualPurse;
 };
-
 harden(prepareVirtualPurse);
+/**
+ * @typedef {EReturn<ReturnType<typeof prepareVirtualPurse>>} VirtualPurse
+ */

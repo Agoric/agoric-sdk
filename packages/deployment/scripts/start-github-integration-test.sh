@@ -7,8 +7,8 @@ set -ueo pipefail
 GITREF=${1-master}
 
 test -n "$GITHUB_TOKEN" || {
-    echo "GITHUB_TOKEN must be set"
-    exit 1
+  echo "GITHUB_TOKEN must be set"
+  exit 1
 }
 
 curl -XPOST "-HAuthorization: Bearer $GITHUB_TOKEN" \

@@ -1,6 +1,5 @@
 // @ts-check
 
-/// <reference types="../../time/src/types.js" />
 /// <reference path="../../zoe/exported.js" />
 
 import { E } from '@endo/far';
@@ -18,9 +17,10 @@ import { makeSaveIssuer } from './saveIssuer.js';
 import { makeGetBundlerMaker } from './getBundlerMaker.js';
 import { assertOfferResult } from './assertOfferResult.js';
 import { installInPieces } from './installInPieces.js';
-import { makeWriteCoreProposal } from './writeCoreProposal.js';
+import { makeWriteCoreEval } from './writeCoreEvalParts.js';
 
 export * from '@agoric/internal/src/node/createBundles.js';
+export { parseScriptArgs } from './parseCoreEvalArgs.js';
 
 // These are also hard-coded in lib-wallet.js.
 // TODO: Add methods to the wallet to access these without hard-coding
@@ -53,6 +53,10 @@ const makeLazyObject = sourceObject => {
   return /** @type {T} */ (lazyObject);
 };
 
+/**
+ * @param {Promise<import('./externalTypes.js').CommonHome | import('./externalTypes.js').AgSoloHome>} homePromise
+ * @param {import('./externalTypes.js').DeployScriptEndownments} endowments
+ */
 export const makeHelpers = async (homePromise, endowments) => {
   // Endowments provided via `agoric run` or `agoric deploy`.
   const {
@@ -85,6 +89,7 @@ export const makeHelpers = async (homePromise, endowments) => {
       return E(deps.walletAdmin).getIssuerManager();
     },
     get offerAndFind() {
+      assert('wallet' in deps.home, 'expected AgSolo home');
       return makeOfferAndFindInvitationAmount(
         deps.walletAdmin,
         deps.home.zoe,
@@ -92,6 +97,7 @@ export const makeHelpers = async (homePromise, endowments) => {
       );
     },
     get walletAdmin() {
+      assert('wallet' in deps.home, 'expected AgSolo home');
       return E(deps.home.wallet).getAdminFacet();
     },
     get zoeInvitationPurse() {
@@ -111,6 +117,7 @@ export const makeHelpers = async (homePromise, endowments) => {
       return deps.offerAndFind.findInvitationAmount;
     },
     get install() {
+      assert('wallet' in deps.home, 'expected AgSolo home');
       return makeInstall(
         bundleSource,
         deps.home.zoe,
@@ -128,6 +135,7 @@ export const makeHelpers = async (homePromise, endowments) => {
       return makeSaveIssuer(deps.walletAdmin, deps.issuerManager);
     },
     get startInstance() {
+      assert('wallet' in deps.home, 'expected AgSolo home');
       return makeStartInstance(
         deps.issuerManager,
         deps.instanceManager,
@@ -138,8 +146,16 @@ export const makeHelpers = async (homePromise, endowments) => {
     get getBundlerMaker() {
       return makeGetBundlerMaker(homePromise, { bundleSource, lookup });
     },
+    /** @returns {import('./writeCoreEvalParts.js').WriteCoreEval} */
+    get writeCoreEval() {
+      return makeWriteCoreEval(homePromise, endowments, {
+        getBundleSpec: deps.cacheAndGetBundleSpec,
+        getBundlerMaker: helpers.getBundlerMaker,
+      });
+    },
+    /** @deprecated use writeCoreEval */
     get writeCoreProposal() {
-      return makeWriteCoreProposal(homePromise, endowments, {
+      return makeWriteCoreEval(homePromise, endowments, {
         getBundleSpec: deps.cacheAndGetBundleSpec,
         getBundlerMaker: helpers.getBundlerMaker,
       });

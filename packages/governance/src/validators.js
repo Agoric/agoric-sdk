@@ -1,6 +1,9 @@
+import { Fail, q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 
-const { Fail, quote: q } = assert;
+/**
+ * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn, AssertContractGovernance, AssertContractElectorate} from './types.js';
+ */
 
 /**
  * Assert that the governed contract was started by the governor. Throws if
@@ -24,6 +27,7 @@ const assertContractGovernance = async (
     await Promise.all([allegedGovernedTermsP, realGovernedP]);
 
   assert(
+    // @ts-expect-error XXX types
     allegedGovernor === realGovernorInstance,
     'The alleged governor did not match the governor retrieved from the governed contract',
   );

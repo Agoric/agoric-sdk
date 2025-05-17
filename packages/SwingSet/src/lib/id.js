@@ -1,6 +1,6 @@
 import { Nat } from '@endo/nat';
 
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 
 // Vats are identified by an integer index, which (for typechecking purposes)
 // is encoded as `vNN`. Devices are similarly identified as `dNN`. Both have

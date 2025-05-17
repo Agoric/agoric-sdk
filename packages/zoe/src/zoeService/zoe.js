@@ -1,5 +1,4 @@
 // @jessie-check
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 
 /**
  * Zoe uses ERTP, the Electronic Rights Transfer Protocol
@@ -11,14 +10,15 @@
  * validate that.
  */
 
-/// <reference path="../../../ERTP/exported.js" />
-/// <reference path="../../../store/exported.js" />
+/// <reference types="@agoric/internal/exported" />
+/// <reference types="@agoric/notifier/exported.js" />
 /// <reference path="../internal-types.js" />
 
+import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { M } from '@endo/patterns';
 import { makeScalarBigMapStore, prepareExo } from '@agoric/vat-data';
-import { M } from '@agoric/store';
 
 import { makeZoeStorageManager } from './zoeStorageManager.js';
 import { makeStartInstance } from './startInstance.js';
@@ -28,9 +28,11 @@ import { getZcfBundleCap } from './createZCFVat.js';
 import { defaultFeeIssuerConfig, prepareFeeMint } from './feeMint.js';
 import { ZoeServiceI } from '../typeGuards.js';
 
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
-
-const { Fail } = assert;
+/**
+ * @import {VatAdminSvc, ShutdownWithFailure} from '@agoric/swingset-vat';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {FeeIssuerConfig, FeeMintAccess, ZCFSpec, ZoeService} from './types.js';
+ */
 
 /**
  * Create a durable instance of Zoe.
@@ -57,13 +59,18 @@ const makeDurableZoeKit = ({
   let zcfBundleCap;
 
   const saveBundleCap = () => {
-    E.when(
+    void E.when(
       Promise.all([vatAdminSvc, getZcfBundleCap(zcfSpec, vatAdminSvc)]),
       ([vatAdminService, bundleCap]) => {
         zcfBundleCap = bundleCap;
 
-        zoeBaggage.init('vatAdminSvc', vatAdminService);
-        zoeBaggage.init('zcfBundleCap', zcfBundleCap);
+        if (!zoeBaggage.has('vatAdminSvc')) {
+          zoeBaggage.init('vatAdminSvc', vatAdminService);
+          zoeBaggage.init('zcfBundleCap', zcfBundleCap);
+        } else {
+          zoeBaggage.set('vatAdminSvc', vatAdminService);
+          zoeBaggage.set('zcfBundleCap', zcfBundleCap);
+        }
       },
     );
   };
@@ -122,9 +129,7 @@ const makeDurableZoeKit = ({
         name,
         vatParameters: {
           contractBundleCap,
-          // eslint-disable-next-line no-use-before-define
           zoeService,
-          // eslint-disable-next-line no-use-before-define
           invitationIssuer: invitationIssuerAccess.getInvitationIssuer(),
         },
       }),
@@ -176,71 +181,76 @@ const makeDurableZoeKit = ({
 
   const zoeConfigFacet = prepareExo(zoeBaggage, 'ZoeConfigFacet', ZoeConfigI, {
     updateZcfBundleId(bundleId) {
-      E.when(
+      void E.when(
         getZcfBundleCap({ id: bundleId }, vatAdminSvc),
         bundleCap => {
           zcfBundleCap = bundleCap;
+          zoeBaggage.set('zcfBundleCap', zcfBundleCap);
         },
         e => {
-          console.error(`'🚨 unable to update ZCF Bundle: `, e);
+          console.error('🚨 unable to update ZCF Bundle: ', e);
           throw e;
         },
       );
     },
   });
 
-  /** @type {ZoeService} */
-  const zoeService = prepareExo(zoeBaggage, 'ZoeService', ZoeServiceI, {
-    install(bundleId, bundleLabel) {
-      return dataAccess.installBundle(bundleId, bundleLabel);
-    },
-    installBundleID(bundleId, bundleLabel) {
-      return dataAccess.installBundleID(bundleId, bundleLabel);
-    },
-    startInstance,
-    offer,
+  const zoeService = prepareExo(
+    zoeBaggage,
+    'ZoeService',
+    ZoeServiceI,
+    /** @type {ZoeService} */ ({
+      install(bundleId, bundleLabel) {
+        return dataAccess.installBundle(bundleId, bundleLabel);
+      },
+      installBundleID(bundleId, bundleLabel) {
+        return dataAccess.installBundleID(bundleId, bundleLabel);
+      },
+      startInstance,
+      offer,
 
-    // The functions below are getters only and have no impact on
-    // state within Zoe
-    getOfferFilter(instance) {
-      return dataAccess.getOfferFilter(instance);
-    },
-    async getInvitationIssuer() {
-      return dataAccess.getInvitationIssuer();
-    },
-    async getFeeIssuer() {
-      return feeMintKit.feeMint.getFeeIssuer();
-    },
+      // The functions below are getters only and have no impact on
+      // state within Zoe
+      getOfferFilter(instance) {
+        return dataAccess.getOfferFilter(instance);
+      },
+      async getInvitationIssuer() {
+        return dataAccess.getInvitationIssuer();
+      },
+      async getFeeIssuer() {
+        return feeMintKit.feeMint.getFeeIssuer();
+      },
 
-    getBrands(instance) {
-      return dataAccess.getBrands(instance);
-    },
-    getIssuers(instance) {
-      return dataAccess.getIssuers(instance);
-    },
-    getPublicFacet(instance) {
-      return dataAccess.getPublicFacet(instance);
-    },
-    getTerms(instance) {
-      return dataAccess.getTerms(instance);
-    },
-    getInstallationForInstance(instance) {
-      return dataAccess.getInstallation(instance);
-    },
-    getBundleIDFromInstallation(installation) {
-      return dataAccess.getBundleIDFromInstallation(installation);
-    },
-    getInstallation,
+      getBrands(instance) {
+        return dataAccess.getBrands(instance);
+      },
+      getIssuers(instance) {
+        return dataAccess.getIssuers(instance);
+      },
+      getPublicFacet(instance) {
+        return dataAccess.getPublicFacet(instance);
+      },
+      getTerms(instance) {
+        return dataAccess.getTerms(instance);
+      },
+      getInstallationForInstance(instance) {
+        return dataAccess.getInstallation(instance);
+      },
+      getBundleIDFromInstallation(installation) {
+        return dataAccess.getBundleIDFromInstallation(installation);
+      },
+      getInstallation,
 
-    getInstance(invitation) {
-      return getInstance(invitation);
-    },
-    getConfiguration,
-    getInvitationDetails,
-    getProposalShapeForInvitation(invitation) {
-      return dataAccess.getProposalShapeForInvitation(invitation);
-    },
-  });
+      getInstance(invitation) {
+        return getInstance(invitation);
+      },
+      getConfiguration,
+      getInvitationDetails,
+      getProposalShapeForInvitation(invitation) {
+        return dataAccess.getProposalShapeForInvitation(invitation);
+      },
+    }),
+  );
 
   return harden({
     zoeService,
@@ -283,3 +293,6 @@ export { makeDurableZoeKit, makeZoeKit };
 /**
  * @typedef {ReturnType<typeof makeDurableZoeKit>} ZoeKit
  */
+
+// eslint-disable-next-line import/export -- no named value exports; only types
+export * from '../types-index.js';

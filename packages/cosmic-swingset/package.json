@@ -11,7 +11,7 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
-    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
+    "test:c8": "c8 --all $C8_OPTIONS ava",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
@@ -22,7 +22,6 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/assert": "^0.6.0",
     "@agoric/builders": "^0.1.0",
     "@agoric/cosmos": "^0.34.1",
     "@agoric/deploy-script-support": "^0.10.3",
@@ -32,34 +31,49 @@
     "@agoric/swingset-vat": "^0.32.2",
     "@agoric/telemetry": "^0.6.2",
     "@agoric/vm-config": "^0.1.0",
-    "@endo/bundle-source": "^3.0.1",
-    "@endo/far": "^1.0.1",
-    "@endo/import-bundle": "^1.0.1",
-    "@endo/init": "^1.0.1",
-    "@endo/marshal": "^1.0.1",
-    "@endo/nat": "^5.0.1",
-    "@endo/promise-kit": "^1.0.1",
+    "@endo/bundle-source": "^4.0.0",
+    "@endo/env-options": "^1.1.8",
+    "@endo/errors": "^1.2.10",
+    "@endo/eventual-send": "^1.3.1",
+    "@endo/import-bundle": "^1.4.0",
+    "@endo/init": "^1.1.9",
+    "@endo/far": "^1.1.11",
+    "@endo/marshal": "^1.6.4",
+    "@endo/nat": "^5.1.0",
+    "@endo/patterns": "^1.5.0",
+    "@endo/promise-kit": "^1.1.10",
     "@iarna/toml": "^2.2.3",
-    "@opentelemetry/sdk-metrics": "~1.9.0",
-    "@opentelemetry/api": "~1.3.0",
+    "@opentelemetry/api": "~1.9.0",
+    "@opentelemetry/sdk-metrics": "~1.30.1",
     "anylogger": "^0.21.0",
     "deterministic-json": "^1.0.5",
-    "import-meta-resolve": "^2.2.1",
+    "import-meta-resolve": "^4.1.0",
+    "ses": "^1.12.0",
     "tmp": "^0.2.1"
   },
   "devDependencies": {
+    "@agoric/kmarshal": "^0.1.0",
     "ava": "^5.3.0",
-    "c8": "^7.13.0"
+    "better-sqlite3": "^10.1.0",
+    "c8": "^10.1.3"
   },
   "publishConfig": {
     "access": "public"
   },
   "engines": {
-    "node": ">=14.15.0"
+    "node": "^18.12 || ^20.9"
   },
   "ava": {
+    "extensions": {
+      "js": true,
+      "ts": "module"
+    },
     "files": [
-      "test/**/test-*.js"
+      "test/**/*.test.*"
+    ],
+    "nodeArguments": [
+      "--import=ts-blank-space/register",
+      "--no-warnings"
     ],
     "require": [
       "@endo/init/debug.js"
@@ -67,6 +81,6 @@
     "timeout": "20m"
   },
   "typeCoverage": {
-    "atLeast": 79.4
+    "atLeast": 86.88
   }
 }

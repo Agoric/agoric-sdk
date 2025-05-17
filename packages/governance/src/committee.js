@@ -1,6 +1,5 @@
 import { makeStoredPublishKit } from '@agoric/notifier';
 import { M } from '@agoric/store';
-import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 
 import { StorageNodeShape } from '@agoric/internal';
@@ -16,7 +15,11 @@ import { QuorumRule } from './question.js';
 import { ElectorateCreatorI, ElectoratePublicI } from './typeGuards.js';
 import { prepareVoterKit } from './voterKit.js';
 
-const { ceilDivide } = natSafeMath;
+/**
+ * @import {MapStore} from '@agoric/swingset-liveslots';
+ * @import {ContractMeta, Invitation, ZCF} from '@agoric/zoe';
+ * @import {ElectorateCreatorFacet, CommitteeElectoratePublic, QuestionDetails, OutcomeRecord, AddQuestion} from './types.js';
+ */
 
 /**
  * @typedef { ElectorateCreatorFacet & {
@@ -24,7 +27,7 @@ const { ceilDivide } = natSafeMath;
  * }} CommitteeElectorateCreatorFacet
  */
 
-/** @type {ContractMeta} */
+/** @type {ContractMeta<typeof start>} */
 export const meta = {
   privateArgsShape: {
     storageNode: StorageNodeShape,
@@ -135,7 +138,7 @@ export const start = (zcf, privateArgs, baggage) => {
         const quorumThreshold = quorumRule => {
           switch (quorumRule) {
             case QuorumRule.MAJORITY:
-              return ceilDivide(committeeSize, 2);
+              return Math.ceil((committeeSize + 1) / 2);
             case QuorumRule.ALL:
               return committeeSize;
             case QuorumRule.NO_QUORUM:

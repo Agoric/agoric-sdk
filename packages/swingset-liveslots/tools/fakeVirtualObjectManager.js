@@ -23,6 +23,7 @@ export function makeFakeVirtualObjectManager(vrm, fakeStuff) {
     VirtualObjectAwareWeakSet,
     flushStateCache,
     canBeDurable,
+    insistAllDurableKindsReconnected,
   } = makeVirtualObjectManager(
     fakeStuff.syscall,
     vrm,
@@ -43,6 +44,7 @@ export function makeFakeVirtualObjectManager(vrm, fakeStuff) {
     defineDurableKindMulti,
     makeKindHandle,
     canBeDurable,
+    insistAllDurableKindsReconnected,
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
   };

@@ -2,5 +2,7 @@
     "extends": [
         "./tsconfig.json",
         "../../tsconfig-build-options.json"
-    ]
+    ],
+    // FIXME: https://github.com/Agoric/agoric-sdk/issues/10351
+    "exclude": ["tools/bootstrap-chain-reflective.js"]
 }

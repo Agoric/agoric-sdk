@@ -1,34 +1,59 @@
 export {};
 
+/**
+ * @import {Guarded} from '@endo/exo';
+ * @import {ERef} from '@endo/far';
+ * @import {Passable, RemotableObject} from '@endo/pass-style';
+ * @import {LimitedConsole} from '@agoric/internal/src/js-utils.js';
+ * @import {SlogProps, SlogDurationProps} from './controller/controller.js';
+ */
+
 /* This file defines types that part of the external API of swingset. That
  * includes standard services which user-provided vat code might interact
  * with, like VatAdminService. */
 
 /**
- * @typedef {'getExport' | 'nestedEvaluate' | 'endoZipBase64'} BundleFormat
+ * @template T
+ * @typedef {'Device' & { __deviceType__: T }} Device
+ */
+
+/** @typedef {<T>(target: Device<T>) => T} DProxy (approximately) */
+
+/**
+ * @typedef {(extraProps?: SlogDurationProps) => void} FinishSlogDuration
  */
 
 /**
  * @typedef {import('@endo/marshal').CapData<string>} SwingSetCapData
  */
 
+// TODO move Bundle types into Endo
 /**
+ * @typedef {'getExport' | 'nestedEvaluate' | 'endoZipBase64'} BundleFormat
  * @typedef { { moduleFormat: 'getExport', source: string, sourceMap?: string } } GetExportBundle
  * @typedef { { moduleFormat: 'nestedEvaluate', source: string, sourceMap?: string } } NestedEvaluateBundle
- * @typedef { EndoZipBase64Bundle | GetExportBundle | NestedEvaluateBundle } Bundle
- *
- * @typedef { 'local' | 'node-subprocess' | 'xsnap' | 'xs-worker' } ManagerType
+ * @typedef { { moduleFormat: 'test' } } TestBundle
+ * @typedef { EndoZipBase64Bundle | GetExportBundle | NestedEvaluateBundle | TestBundle} Bundle
  */
 
 /**
- * @typedef {{
- *   defaultManagerType?: ManagerType,
- *   defaultReapInterval?: number | 'never',
- *   relaxDurabilityRules?: boolean,
- *   snapshotInitial?: number,
- *   snapshotInterval?: number,
- *   pinBootstrapRoot?: boolean,
- * }} KernelOptions
+ * @typedef { 'local' | 'node-subprocess' | 'xsnap' | 'xs-worker' } ManagerType
+ *   The type of worker for hosting a vat.
+ *   - **local**: a Compartment in the SwingSet Node.js process
+ *   - **node-subprocess**: a child process using the same Node.js executable
+ *      (`process.execPath`)
+ *   - **xsnap** or **xs-worker**: an {@link @agoric/xsnap! @agoric/xsnap} worker
+ */
+
+/**
+ * @typedef {object} KernelOptions
+ * @property {ManagerType} [defaultManagerType]
+ * @property {number | 'never'} [defaultReapGCKrefs]
+ * @property {number | 'never'} [defaultReapInterval]
+ * @property {boolean} [relaxDurabilityRules]
+ * @property {number} [snapshotInitial]
+ * @property {number} [snapshotInterval]
+ * @property {boolean} [pinBootstrapRoot]
  */
 
 /**
@@ -60,7 +85,6 @@ export {};
  * @typedef { import('@agoric/swingset-liveslots').Message } Message
  *
  * @typedef { 'none' | 'ignore' | 'logAlways' | 'logFailure' | 'panic' } ResolutionPolicy
- * @typedef {import('@agoric/internal/src/upgrade-api.js').DisconnectionObject} DisconnectionObject
  *
  * @typedef { import('@agoric/swingset-liveslots').VatDeliveryObject } VatDeliveryObject
  * @typedef { import('@agoric/swingset-liveslots').VatDeliveryResult } VatDeliveryResult
@@ -118,12 +142,22 @@ export {};
  *
  * @typedef { { transcriptCount: number } } VatStats
  * @typedef { ReturnType<typeof import('./kernel/state/vatKeeper.js').makeVatKeeper> } VatKeeper
- * @typedef { ReturnType<typeof import('./kernel/state/kernelKeeper.js').default> } KernelKeeper
+ * @typedef { import('./kernel/state/kernelKeeper.js').KernelKeeper } KernelKeeper
  * @typedef { Awaited<ReturnType<typeof import('@agoric/xsnap').xsnap>> } XSnap
  * @typedef { (dr: VatDeliveryResult) => void } SlogFinishDelivery
  * @typedef { (ksr: KernelSyscallResult, vsr: VatSyscallResult) => void } SlogFinishSyscall
- * @typedef { { write: ({}) => void,
- *              vatConsole: (vatID: string, origConsole: {}) => {},
+ * @typedef { { write: (obj: SlogProps) => void,
+ *              startDuration:     (labels: readonly [startLabel: string, endLabel: string],
+ *                                  startProps: SlogDurationProps) => FinishSlogDuration,
+ *              provideVatSlogger: (vatID: string,
+ *                                  dynamic?: boolean,
+ *                                  description?: string,
+ *                                  name?: string,
+ *                                  vatSourceBundle?: unknown,
+ *                                  managerType?: string,
+ *                                  vatParameters?: unknown) => { vatSlog: VatSlog },
+ *              vatConsole: (vatID: string, origConsole: LimitedConsole) => LimitedConsole,
+ *              startup: (vatID: string) => () => void,
  *              delivery: (vatID: string,
  *                         newCrankNum: BigInt, newDeliveryNum: BigInt,
  *                         kd: KernelDeliveryObject, vd: VatDeliveryObject,
@@ -131,41 +165,40 @@ export {};
  *              syscall: (vatID: string,
  *                        ksc: KernelSyscallObject | undefined,
  *                        vsc: VatSyscallObject) => SlogFinishSyscall,
- *              provideVatSlogger: (vatID: string,
- *                                  dynamic?: boolean,
- *                                  description?: string,
- *                                  name?: string,
- *                                  vatSourceBundle?: *,
- *                                  managerType?: string,
- *                                  vatParameters?: *) => VatSlog,
+ *              changeCList: (vatID: string,
+ *                            crankNum: BigInt,
+ *                            mode: 'import' | 'export' | 'drop',
+ *                            kernelSlot: string,
+ *                            vatSlot: string) => void,
  *              terminateVat: (vatID: string, shouldReject: boolean, info: SwingSetCapData) => void,
  *             } } KernelSlog
- * @typedef { * } VatSlog
+ * @typedef {{
+ *   delivery: (crankNum: bigint, deliveryNum: bigint, kd: KernelDeliveryObject, vd: VatDeliveryObject) => SlogFinishDelivery,
+ * }} VatSlog
  *
  * @typedef { () => Promise<void> } WaitUntilQuiescent
  */
 
 /**
+ * @typedef {{ bundle: Bundle }} BundleRef a bundle object
+ * @typedef {{ bundleName: string }} BundleName a name identifying a property in the `bundles` of a SwingSetOptions object
+ * @typedef {{ bundleSpec: string }} BundleSpec a path to a bundle file
+ * @typedef {{ sourceSpec: string }} SourceSpec a package specifier such as "@agoric/swingset-vat/tools/vat-puppet.js"
+ *
  * @typedef {{
- *   sourceSpec: string // path to pre-bundled root
- * }} SourceSpec
- * @typedef {{
- *   bundleSpec: string // path to bundled code
- * }} BundleSpec
- * @typedef {{
- *   bundle: Bundle
- * }} BundleRef
- * @typedef {{
- *   bundleName: string
- * }} BundleName
- * @typedef {(SourceSpec | BundleSpec | BundleRef | BundleName ) & {
- *   creationOptions?: Record<string, any>,
+ *   bundleID?: BundleID,
+ *   creationOptions?: StaticVatOptions,
  *   parameters?: Record<string, any>,
- * }} SwingSetConfigProperties
+ * }} VatConfigOptions
+ */
+/**
+ * @template [Fields=object]
+ * @typedef {(SourceSpec | BundleSpec | BundleName | BundleRef) & Fields} SwingSetConfigProperties
  */
 
 /**
- * @typedef {Record<string, SwingSetConfigProperties>} SwingSetConfigDescriptor
+ * @template [Fields=object]
+ * @typedef {Record<string, SwingSetConfigProperties<Fields>>} SwingSetConfigDescriptor
  * Where the property name is the name of the vat.  Note that
  * the `bootstrap` property names the vat that should be used as the bootstrap vat.  Although a swingset
  * configuration can designate any vat as its bootstrap vat, `loadBasedir` will always look for a file named
@@ -179,11 +212,11 @@ export {};
  * `devDependencies` of the surrounding `package.json` should be accessible to
  * bundles.
  * @property {string} [bundleCachePath] if present, SwingSet will use a bundle cache at this path
- * @property {SwingSetConfigDescriptor} vats
+ * @property {SwingSetConfigDescriptor<VatConfigOptions>} vats
  * @property {SwingSetConfigDescriptor} [bundles]
  * @property {BundleFormat} [bundleFormat] the bundle source / import bundle
  * format.
- * @property {*} [devices]
+ * @property {any} [devices]
  */
 /**
  * @typedef {KernelOptions & SwingSetOptions} SwingSetConfig a swingset config object
@@ -197,7 +230,7 @@ export {};
  */
 
 /**
- * @typedef {{ bundleName: string} | { bundle: Bundle } | { bundleID: BundleID } } SourceOfBundle
+ * @typedef {BundleName | BundleRef | {bundleID: BundleID}} SourceOfBundle
  */
 /**
  * @typedef { import('@agoric/swing-store').KVStore } KVStore
@@ -210,34 +243,84 @@ export {};
  */
 
 /**
+ * PolicyInput is used internally within kernel.js, returned by each
+ * message processor, and used to decide which of the host's runPolicy
+ * methods to invoke. The 'details' portion of PolicyInput is passed
+ * as an argument to those methods, so those types are
+ * externally-visible.
+ *
+ * @typedef { { exports: number,
+ *              imports: number,
+ *              promises: number,
+ *              kv: number,
+ *              snapshots: number,
+ *              transcripts: number,
+ *            } } CleanupWork
+ *
+ * @typedef { { total: number } & CleanupWork } PolicyInputCleanupCounts
+ * @typedef { { cleanups: PolicyInputCleanupCounts, computrons?: bigint } } PolicyInputCleanupDetails
  * @typedef { { computrons?: bigint } } PolicyInputDetails
+ *
  * @typedef { [tag: 'none', details: PolicyInputDetails ] } PolicyInputNone
  * @typedef { [tag: 'create-vat', details: PolicyInputDetails  ]} PolicyInputCreateVat
  * @typedef { [tag: 'crank', details: PolicyInputDetails ] } PolicyInputCrankComplete
  * @typedef { [tag: 'crank-failed', details: PolicyInputDetails ]} PolicyInputCrankFailed
- * @typedef { PolicyInputNone | PolicyInputCreateVat | PolicyInputCrankComplete | PolicyInputCrankFailed } PolicyInput
- * @typedef { boolean } PolicyOutput
- * @typedef { { vatCreated: (details: {}) => PolicyOutput,
+ * @typedef { [tag: 'cleanup', details: PolicyInputCleanupDetails] } PolicyInputCleanup
+ *
+ * @typedef { PolicyInputNone | PolicyInputCreateVat | PolicyInputCrankComplete |
+ *            PolicyInputCrankFailed | PolicyInputCleanup } PolicyInput
+ *
+ * CleanupBudget is the internal record used to limit the slow
+ * deletion of terminated vats. Each property limits the number of
+ * deletions per 'cleanup-terminated-vat' run-queue event, for a
+ * specific phase (imports, exports, snapshots, etc). It must always
+ * have a 'default' property, which is used for phases that aren't
+ * otherwise specified.
+ *
+ * @typedef { { default: number } & Partial<CleanupWork> } CleanupBudget
+ *
+ * PolicyOutputCleanupBudget is the return value of
+ * runPolicy.allowCleanup(), and tells the kernel how much it is
+ * allowed to clean up. It is either a CleanupBudget, or 'true' to
+ * allow unlimited cleanup, or 'false' to forbid any cleanup.
+ *
+ * @typedef {CleanupBudget | true | false} PolicyOutputCleanupBudget
+ *
+ * PolicyOutput is the boolean returned by all the other runPolicy
+ * methods, where 'true' means "keep going", and 'false' means "stop
+ * now".
+ *
+ * @typedef {boolean} PolicyOutput
+ *
+ * @typedef { {
+ *              allowCleanup?: () => boolean | PolicyOutputCleanupBudget,
+ *              vatCreated: (details: {}) => PolicyOutput,
  *              crankComplete: (details: { computrons?: bigint }) => PolicyOutput,
  *              crankFailed: (details: {}) => PolicyOutput,
  *              emptyCrank: () => PolicyOutput,
+ *              didCleanup?: (details: PolicyInputCleanupDetails) => PolicyOutput,
  *             } } RunPolicy
- *
+ */
+
+/**
  * @typedef {object} VatWarehousePolicy
  * @property { number } [maxVatsOnline]     Limit the number of simultaneous workers
  * @property { boolean } [restartWorkerOnSnapshot]     Reload worker immediately upon snapshot creation
  */
 
 /**
+ * @typedef { import('./devices/mailbox/mailbox.js').Mailbox } Mailbox
+ */
+/**
+ * @typedef { import('./devices/mailbox/mailbox.js').MailboxExport } MailboxExport
+ */
+
+/**
  * Vat Creation and Management
  *
  * @typedef { string } BundleID
- * @typedef {*} BundleCap
+ * @typedef { any } BundleCap
  * @typedef { { moduleFormat: 'endoZipBase64', endoZipBase64: string, endoZipBase64Sha512: string } } EndoZipBase64Bundle
- *
- * @typedef { unknown } Meter
- *
- * E(vatAdminService).createVat(bundle, options: DynamicVatOptions)
  */
 
 /**
@@ -263,8 +346,6 @@ export {};
  * types are then defined as amendments to this base type.
  *
  * @typedef { object } BaseVatOptions
- * @property { string } name
- * @property { * } [vatParameters]
  * @property { boolean } [enableSetup]
  *           If true, permits the vat to construct itself using the
  *           `setup()` API, which bypasses the imposition of LiveSlots but
@@ -283,19 +364,25 @@ export {};
  *            outbound syscalls so that the vat's internal state can be
  *            reconstructed via replay.  If false, no such record is kept.
  *            Defaults to true.
+ * @property { ManagerType } [managerType]
+ * @property { boolean } [neverReap]
+ *            If true, disables automatic bringOutYourDead deliveries to a vat.
+ *            Defaults to false.
  * @property { number | 'never' } [reapInterval]
- *            The interval (measured in number of deliveries to the vat)
- *            after which the kernel will deliver the 'bringOutYourDead'
- *            directive to the vat.  If the value is 'never',
- *            'bringOutYourDead' will never be delivered and the vat will
- *            be responsible for internally managing (in a deterministic
- *            manner) any visible effects of garbage collection.  Defaults
- *            to the kernel's configured 'defaultReapInterval' value.
+ *            Trigger a bringOutYourDead after the vat has received
+ *            this many deliveries. If the value is 'never',
+ *            'bringOutYourDead' will not be triggered by a delivery
+ *            count (but might be triggered for other reasons).
+ * @property { number | 'never' } [reapGCKrefs]
+ *            Trigger a bringOutYourDead when the vat has been given
+ *            this many krefs in GC deliveries (dropImports,
+ *            retireImports, retireExports). If the value is 'never',
+ *            GC deliveries and their krefs are not treated specially.
  * @property { boolean } [critical]
  */
 
 /**
- * @typedef { { meter?: Meter } } OptMeter
+ * @typedef { { meter?: unknown } } OptMeter
  *        If a meter is provided, the new dynamic vat is limited to a fixed
  *        amount of computation and allocation that can occur during any
  *        given crank. Peak stack frames are limited as well. In addition,
@@ -305,18 +392,19 @@ export {};
  *        terminated. If undefined, the vat is unmetered. Static vats
  *        cannot be metered.
  *
- * @typedef { { managerType?: ManagerType } } OptManagerType
- * @typedef { BaseVatOptions & OptMeter & OptManagerType } DynamicVatOptions
+ * @typedef { BaseVatOptions & { name: string, vatParameters?: object } & OptMeter } DynamicVatOptions
  *
  * config.vats[name].creationOptions: StaticVatOptions
  *
  * @typedef { { enableDisavow?: boolean } } OptEnableDisavow
  * @typedef { { nodeOptions?: string[] } } OptNodeOptions
- * @typedef { BaseVatOptions & OptManagerType & OptEnableDisavow & OptNodeOptions } StaticVatOptions
+ * @typedef { BaseVatOptions & OptEnableDisavow & OptNodeOptions } StaticVatOptions
  *
  * @typedef { { vatParameters?: object, upgradeMessage?: string } } VatUpgradeOptions
  * @typedef { { incarnationNumber: number } } VatUpgradeResults
- *
+ */
+
+/**
  * @callback ShutdownWithFailure
  * Called to shut something down because something went wrong, where the reason
  * is supposed to be an Error that describes what went wrong. Some valid
@@ -327,7 +415,9 @@ export {};
  *
  * @param {Error} reason
  * @returns {void}
- *
+ */
+
+/**
  * @typedef {object} VatAdminFacet
  * A powerful object corresponding with a vat
  * that can be used to upgrade it with new code or parameters,
@@ -345,17 +435,15 @@ export {};
  * in which the JS memory space is abandoned. The new image is launched with access to 'baggage'
  * and any durable storage reachable from it, and must fulfill all the obligations of the previous
  * incarnation.
- *
- *
- * @typedef {object} CreateVatResults
- * @property {object} root
- * @property {VatAdminFacet} adminNode
+ */
+
+/**
+ * @typedef {{ adminNode: Guarded<VatAdminFacet>, root: object }} CreateVatResults
  *
  * @typedef {object} VatAdminSvc
- * @property {(id: BundleID) => import('@endo/far').ERef<BundleCap>} waitForBundleCap
- * @property {(id: BundleID) => import('@endo/far').ERef<BundleCap>} getBundleCap
- * @property {(name: string) => import('@endo/far').ERef<BundleCap>} getNamedBundleCap
- * @property {(name: string) => import('@endo/far').ERef<BundleID>} getBundleIDByName
- * @property {(bundleCap: BundleCap, options?: DynamicVatOptions) => import('@endo/far').ERef<CreateVatResults>} createVat
- *
+ * @property {(id: BundleID) => ERef<BundleCap>} waitForBundleCap
+ * @property {(id: BundleID) => ERef<BundleCap>} getBundleCap
+ * @property {(name: string) => ERef<BundleCap>} getNamedBundleCap
+ * @property {(name: string) => ERef<BundleID>} getBundleIDByName
+ * @property {(bundleCap: BundleCap, options?: DynamicVatOptions) => ERef<CreateVatResults>} createVat
  */

@@ -1,11 +1,15 @@
-/// <reference types="ses"/>
+/// <reference types="ses" />
 
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import { E, Far } from '@endo/far';
 
-import './types-ambient.js';
 import { makePublishKit } from './publish-kit.js';
 import { subscribeLatest } from './subscribe.js';
+
+/**
+ * @import {Remote} from '@agoric/internal';
+ * @import {LatestTopic, Notifier, NotifierRecord, PublishKit, Subscriber, UpdateRecord} from './types.js';
+ */
 
 /**
  * @template T
@@ -38,7 +42,7 @@ export const makeNotifier = sharableInternalsP => {
 
 /**
  * @template T
- * @param {ERef<Subscriber<T>>} subscriber
+ * @param {ERef<Subscriber<T>> | Remote<Subscriber<T>>} subscriber
  * @returns {Notifier<T>}
  */
 export const makeNotifierFromSubscriber = subscriber => {

@@ -13,12 +13,20 @@ import { SubscriberShape } from '@agoric/notifier';
 import { M } from '@agoric/store';
 import { TimestampShape } from '@agoric/time';
 
+/**
+ * @import {TypedPattern} from '@agoric/internal';
+ * @import {AfterDeadlineExitRule, ZoeIssuerRecord} from '@agoric/zoe';
+ */
+
 // keywords have an initial cap
 export const KeywordShape = M.string();
 
+/** @type {TypedPattern<InvitationHandle>} */
 export const InvitationHandleShape = M.remotable('InvitationHandle');
+/** @type {TypedPattern<Invitation>} */
 export const InvitationShape = M.remotable('Invitation');
 export const InstanceHandleShape = M.remotable('InstanceHandle');
+/** @type {TypedPattern<Installation>} */
 export const InstallationShape = M.remotable('Installation');
 export const SeatShape = M.remotable('Seat');
 
@@ -38,6 +46,7 @@ export const IssuerPKeywordRecordShape = M.recordOf(
 );
 export const BrandKeywordRecordShape = M.recordOf(KeywordShape, BrandShape);
 
+/** @type {TypedPattern<ZoeIssuerRecord>} */
 export const IssuerRecordShape = M.splitRecord(
   {
     brand: BrandShape,
@@ -47,16 +56,18 @@ export const IssuerRecordShape = M.splitRecord(
   { displayInfo: DisplayInfoShape },
 );
 
-export const TermsShape = harden({
+export const TermsShape = {
   issuers: IssuerKeywordRecordShape,
   brands: BrandKeywordRecordShape,
-});
+};
+harden(TermsShape);
 
-export const InstanceRecordShape = harden({
+export const InstanceRecordShape = {
   installation: InstallationShape,
   instance: InstanceHandleShape,
   terms: M.splitRecord(TermsShape),
-});
+};
+harden(InstanceRecordShape);
 
 export const HandleI = M.interface('Handle', {});
 
@@ -68,7 +79,7 @@ export const TimerShape = makeHandleShape('timer');
  *
  * @see {ProposalRecord} type
  */
-export const FullProposalShape = harden({
+export const FullProposalShape = {
   want: AmountPatternKeywordRecordShape,
   give: AmountKeywordRecordShape,
   // To accept only one, we could use M.or rather than M.splitRecord,
@@ -86,7 +97,9 @@ export const FullProposalShape = harden({
     },
     {},
   ),
-});
+};
+harden(FullProposalShape);
+
 /** @see {Proposal} type */
 export const ProposalShape = M.splitRecord({}, FullProposalShape, {});
 
@@ -100,25 +113,29 @@ export const isOnDemandExitRule = exit => {
   const [exitKey] = Object.keys(exit);
   return exitKey === 'onDemand';
 };
+harden(isOnDemandExitRule);
 
 /**
- * @param {ExitRule} exit
+ * @param {import('./types-index').ExitRule} exit
  * @returns {exit is WaivedExitRule}
  */
 export const isWaivedExitRule = exit => {
   const [exitKey] = Object.keys(exit);
   return exitKey === 'waived';
 };
+harden(isWaivedExitRule);
 
 /**
- * @param {ExitRule} exit
+ * @param {import('./types-index').ExitRule} exit
  * @returns {exit is AfterDeadlineExitRule}
  */
 export const isAfterDeadlineExitRule = exit => {
   const [exitKey] = Object.keys(exit);
   return exitKey === 'afterDeadline';
 };
+harden(isAfterDeadlineExitRule);
 
+/** @type {TypedPattern<import('./types-index').InvitationDetails>} */
 export const InvitationElementShape = M.splitRecord({
   description: M.string(),
   handle: InvitationHandleShape,
@@ -130,29 +147,16 @@ export const OfferHandlerI = M.interface('OfferHandler', {
   handle: M.call(SeatShape).optional(M.any()).returns(M.any()),
 });
 
-export const SeatHandleAllocationsShape = M.arrayOf(
-  harden({
-    seatHandle: SeatShape,
-    allocation: AmountKeywordRecordShape,
-  }),
-);
+export const SeatHandleAllocationsShape = M.arrayOf({
+  seatHandle: SeatShape,
+  allocation: AmountKeywordRecordShape,
+});
 
 export const ZoeMintShape = M.remotable('ZoeMint');
 export const ZoeMintI = M.interface('ZoeMint', {
   getIssuerRecord: M.call().returns(IssuerRecordShape),
   mintAndEscrow: M.call(AmountShape).returns(),
   withdrawAndBurn: M.call(AmountShape).returns(),
-});
-
-export const ZcfMintI = M.interface('ZcfMint', {
-  getIssuerRecord: M.call().returns(IssuerRecordShape),
-  mintGains: M.call(AmountKeywordRecordShape)
-    .optional(M.remotable('zcfSeat'))
-    .returns(M.remotable('zcfSeat')),
-  burnLosses: M.call(
-    AmountKeywordRecordShape,
-    M.remotable('zcfSeat'),
-  ).returns(),
 });
 
 export const FeeMintAccessShape = M.remotable('FeeMintAccess');
@@ -184,7 +188,7 @@ export const InstanceAdminI = M.interface('InstanceAdmin', {
     .optional(
       AssetKindShape,
       DisplayInfoShape,
-      M.splitRecord(harden({}), harden({ elementShape: M.pattern() })),
+      M.splitRecord({}, { elementShape: M.pattern() }),
     )
     .returns(M.remotable('zoeMint')),
   registerFeeMint: M.call(KeywordShape, FeeMintAccessShape).returns(
@@ -196,9 +200,10 @@ export const InstanceAdminI = M.interface('InstanceAdmin', {
   getOfferFilter: M.call().returns(M.arrayOf(M.string())),
   getExitSubscriber: M.call(SeatShape).returns(SubscriberShape),
   isBlocked: M.call(M.string()).returns(M.boolean()),
+  repairContractCompletionWatcher: M.call().returns(),
 });
 
-export const InstanceStorageManagerIKit = harden({
+export const InstanceStorageManagerIKit = {
   instanceStorageManager: M.interface('InstanceStorageManager', {
     getTerms: M.call().returns(M.splitRecord(TermsShape)),
     getIssuers: M.call().returns(IssuerKeywordRecordShape),
@@ -211,7 +216,7 @@ export const InstanceStorageManagerIKit = harden({
       .optional(
         AssetKindShape,
         DisplayInfoShape,
-        M.splitRecord(harden({}), harden({ elementShape: M.pattern() })),
+        M.splitRecord({}, { elementShape: M.pattern() }),
       )
       .returns(M.eref(ZoeMintShape)),
     registerFeeMint: M.call(KeywordShape, FeeMintAccessShape).returns(
@@ -243,7 +248,8 @@ export const InstanceStorageManagerIKit = harden({
       M.remotable('adminNode'),
     ).returns(ZoeMintShape),
   }),
-});
+};
+harden(InstanceStorageManagerIKit);
 
 export const BundleCapShape = M.remotable('bundleCap');
 export const BundleShape = M.and(
@@ -252,18 +258,16 @@ export const BundleShape = M.and(
 );
 
 export const UnwrappedInstallationShape = M.splitRecord(
-  harden({
-    installation: InstallationShape,
-  }),
-  harden({
+  { installation: InstallationShape },
+  {
     bundle: M.recordOf(M.string(), M.string({ stringLengthLimit: Infinity })),
     bundleCap: BundleCapShape,
     bundleID: M.string(),
-  }),
-  harden({}),
+  },
+  {},
 );
 
-export const ZoeStorageManagerIKit = harden({
+export const ZoeStorageManagerIKit = {
   zoeServiceDataAccess: M.interface('ZoeService dataAccess', {
     getTerms: M.call(InstanceHandleShape).returns(M.splitRecord(TermsShape)),
     getIssuers: M.call(InstanceHandleShape).returns(IssuerKeywordRecordShape),
@@ -276,7 +280,7 @@ export const ZoeStorageManagerIKit = harden({
     getBundleIDFromInstallation: M.call(InstallationShape).returns(
       M.eref(M.string()),
     ),
-    installBundle: M.call(M.or(InstanceHandleShape, BundleShape))
+    installBundle: M.call(BundleShape)
       .optional(M.string())
       .returns(M.promise()),
     installBundleID: M.call(M.string())
@@ -306,11 +310,10 @@ export const ZoeStorageManagerIKit = harden({
   }),
   startInstanceAccess: M.interface('ZoeStorage startInstance access', {
     makeZoeInstanceStorageManager: M.call(
-      M.any(),
       InstallationShape,
       M.any(),
       IssuerPKeywordRecordShape,
-      M.or(InstanceHandleShape, BundleShape),
+      InstanceHandleShape,
       M.or(BundleCapShape, BundleShape),
       M.string(),
     ).returns(M.promise()),
@@ -321,7 +324,8 @@ export const ZoeStorageManagerIKit = harden({
   invitationIssuerAccess: M.interface('ZoeStorage invitationIssuer', {
     getInvitationIssuer: M.call().returns(IssuerShape),
   }),
-});
+};
+harden(ZoeStorageManagerIKit);
 
 export const ZoeServiceI = M.interface('ZoeService', {
   install: M.call(M.any()).optional(M.string()).returns(M.promise()),
@@ -351,7 +355,7 @@ export const ZoeServiceI = M.interface('ZoeService', {
   getInstallationForInstance: M.callWhen(M.await(InstanceHandleShape)).returns(
     M.eref(M.remotable('Installation')),
   ),
-  getBundleIDFromInstallation: M.call(InstallationShape).returns(
+  getBundleIDFromInstallation: M.callWhen(M.await(InstallationShape)).returns(
     M.eref(M.string()),
   ),
 
@@ -366,7 +370,7 @@ export const ZoeServiceI = M.interface('ZoeService', {
   }),
   getInvitationDetails: M.call(M.eref(InvitationShape)).returns(M.any()),
   getProposalShapeForInvitation: M.call(InvitationHandleShape).returns(
-    M.opt(ProposalShape),
+    M.opt(M.pattern()),
   ),
 });
 
@@ -374,6 +378,7 @@ export const AdminFacetI = M.interface('ZcfAdminFacet', {
   getVatShutdownPromise: M.call().returns(M.promise()),
   restartContract: M.call().optional(M.any()).returns(M.promise()),
   upgradeContract: M.call(M.string()).optional(M.any()).returns(M.promise()),
+  terminateContract: M.call(M.error()).returns(M.promise()),
 });
 
 export const SeatDataShape = M.splitRecord(
@@ -394,7 +399,8 @@ export const HandleOfferI = M.interface('HandleOffer', {
   }),
 });
 
-export const PriceQuoteShape = harden({
+export const PriceQuoteShape = {
   quoteAmount: AmountShape,
   quotePayment: M.eref(PaymentShape),
-});
+};
+harden(PriceQuoteShape);

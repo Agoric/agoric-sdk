@@ -2,8 +2,8 @@
 
 This directory contains two Agoric Wallet pieces:
 
-- `api` - the legacy "off-chain" wallet used by `@agoric/solo`
-- `ui` - the `@agoric/smart-wallet` user interface
+- `api` - the legacy "off-chain" wallet used by [@agoric/solo](../solo)
+- `ui` - the [@agoric/smart-wallet](../smart-wallet) user interface
 
 The smart wallet has not yet subsumed all the features of the off-chain wallet.  Until it does, we require the `api` directory.
 

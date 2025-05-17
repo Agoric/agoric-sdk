@@ -8,9 +8,9 @@
   "scripts": {
     "build": "exit 0",
     "prepack": "tsc --build tsconfig.build.json",
-    "postpack": "git clean -f '*.d.ts*'",
+    "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
     "test": "ava",
-    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
+    "test:c8": "c8 --all $C8_OPTIONS ava",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
@@ -29,23 +29,24 @@
   "dependencies": {
     "@agoric/base-zone": "^0.1.0",
     "@agoric/vat-data": "^0.5.2",
-    "@endo/far": "^1.0.1",
-    "@endo/pass-style": "^1.0.1"
+    "@endo/errors": "^1.2.10",
+    "@endo/far": "^1.1.11",
+    "@endo/pass-style": "^1.5.0"
   },
   "devDependencies": {
-    "@agoric/swingset-liveslots": "^0.10.2",
-    "@endo/patterns": "^1.0.1",
+    "@agoric/swingset-vat": "^0.32.2",
+    "@endo/patterns": "^1.5.0",
     "ava": "^5.3.0"
   },
   "publishConfig": {
     "access": "public"
   },
   "engines": {
-    "node": ">=14.15.0"
+    "node": "^18.12 || ^20.9"
   },
   "ava": {
     "files": [
-      "test/**/test-*.js"
+      "test/**/*.test.*"
     ],
     "require": [
       "@endo/init/debug.js"
@@ -54,6 +55,6 @@
     "workerThreads": false
   },
   "typeCoverage": {
-    "atLeast": 96.33
+    "atLeast": 94
   }
 }

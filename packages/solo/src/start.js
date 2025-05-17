@@ -1,5 +1,5 @@
 // @ts-check
-/* global process setTimeout */
+/* eslint-env node */
 import fs from 'fs';
 import url from 'url';
 import path from 'path';
@@ -9,15 +9,17 @@ import { promisify } from 'util';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 // import { createHash } from 'crypto';
 
-import createRequire from 'esm';
-
 import anylogger from 'anylogger';
 
 // import connect from 'lotion-connect';
 // import djson from 'deterministic-json';
 
-import { assert, Fail } from '@agoric/assert';
-import { makeSlogSender, tryFlushSlogSender } from '@agoric/telemetry';
+import { assert, Fail } from '@endo/errors';
+import {
+  getTelemetryProviders,
+  makeSlogSender,
+  tryFlushSlogSender,
+} from '@agoric/telemetry';
 import {
   loadSwingsetConfigFile,
   buildCommand,
@@ -28,27 +30,26 @@ import {
   buildMailbox,
   buildPlugin,
   buildTimer,
+  exportMailboxData,
+  makeEphemeralMailboxStorage,
 } from '@agoric/swingset-vat';
 import { openSwingStore } from '@agoric/swing-store';
+import { unprefixedProperties } from '@agoric/internal/src/js-utils.js';
 import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 import {
   makeDefaultMeterProvider,
-  getTelemetryProviders,
   makeSlogCallbacks,
   exportKernelStats,
 } from '@agoric/cosmic-swingset/src/kernel-stats.js';
 
 import { deliver, addDeliveryTarget } from './outbound.js';
-import { connectToPipe } from './pipe.js';
+// import { connectToPipe } from './pipe.js';
 import { makeHTTPListener } from './web.js';
 
 import { connectToChain } from './chain-cosmos-sdk.js';
 
 const log = anylogger('start');
-
-// FIXME: Needed for legacy plugins.
-const esmRequire = createRequire(/** @type {any} */ ({}));
 
 let swingSetRunning = false;
 
@@ -110,15 +111,14 @@ const buildSwingset = async (
     fs.readFileSync(mailboxStateFile, 'utf8'),
   );
 
-  const mbs = buildMailboxStateMap();
-  mbs.populateFromData(initialMailboxState);
+  const mailboxStorage = makeEphemeralMailboxStorage(initialMailboxState);
+  const mbs = buildMailboxStateMap(mailboxStorage);
   const mb = buildMailbox(mbs);
   const cm = buildCommand(broadcast);
   const timer = buildTimer();
   const withInputQueue = makeWithQueue();
   const queueThunkForKernel = withInputQueue(async thunk => {
     thunk();
-    // eslint-disable-next-line no-use-before-define
     await processKernel();
   });
 
@@ -133,7 +133,7 @@ const buildSwingset = async (
 
     // TODO: Detect the module type and use the appropriate loader, just like
     // `agoric deploy`.
-    return esmRequire(pluginFile);
+    return import(pluginFile);
   };
 
   const plugin = buildPlugin(pluginDir, importPlugin, queueThunkForKernel);
@@ -163,14 +163,9 @@ const buildSwingset = async (
     plugin: { ...plugin.endowments },
   };
 
-  const soloEnv = Object.fromEntries(
-    Object.entries(process.env)
-      .filter(([k]) => k.match(/^SOLO_/)) // narrow to SOLO_ prefixes. e.g. SOLO_SLOGFILE
-      .map(([k, v]) => [k.replace(/^SOLO_/, ''), v]), // Replace SOLO_ controls with chain version.
-  );
   const env = {
     ...process.env,
-    ...soloEnv,
+    ...unprefixedProperties(process.env, 'SOLO_'),
   };
   const { metricsProvider = makeDefaultMeterProvider() } =
     getTelemetryProviders({
@@ -235,13 +230,13 @@ const buildSwingset = async (
   });
 
   async function saveState() {
-    const ms = JSON.stringify(mbs.exportToData());
+    const ms = JSON.stringify(exportMailboxData(mailboxStorage));
     await atomicReplaceFile(mailboxStateFile, ms);
     await hostStorage.commit();
   }
 
   function deliverOutbound() {
-    deliver(mbs);
+    deliver(mailboxStorage);
   }
 
   const policy = neverStop();
@@ -363,7 +358,7 @@ const deployWallet = async ({ agWallet, deploys, hostport }) => {
   // This part only runs if there were wallet deploys to do.
   const resolvedDeploys = deploys.map(dep => path.resolve(agWallet, dep));
 
-  const resolvedUrl = await importMetaResolve(
+  const resolvedUrl = importMetaResolve(
     'agoric/src/entrypoint.js',
     import.meta.url,
   );
@@ -371,10 +366,13 @@ const deployWallet = async ({ agWallet, deploys, hostport }) => {
 
   // Use the same verbosity as our caller did for us.
   let verbosity;
-  if (process.env.DEBUG === undefined) {
-    verbosity = [];
-  } else if (process.env.DEBUG.includes('agoric')) {
+  const DEBUG_LIST = (process.env.DEBUG || '').split(',');
+  if (
+    DEBUG_LIST.find(selector => ['agoric:debug', 'agoric'].includes(selector))
+  ) {
     verbosity = ['-vv'];
+  } else if (DEBUG_LIST.includes('agoric:info') || process.env.DEBUG === '') {
+    verbosity = [];
   } else {
     verbosity = ['-v'];
   }
@@ -471,12 +469,12 @@ const start = async (basedir, argv) => {
 
   // Start timer here!
   startTimer(800);
-  resetOutdatedState();
+  await resetOutdatedState();
 
   // Remove wallet traces.
   await unlink('html/wallet').catch(_ => {});
 
-  const packageUrl = await importMetaResolve(
+  const packageUrl = importMetaResolve(
     `${wallet}/package.json`,
     import.meta.url,
   );
@@ -491,7 +489,7 @@ const start = async (basedir, argv) => {
   );
 
   const agWallet = path.dirname(pjs);
-  const agWalletHtmlUrl = await importMetaResolve(htmlBasePath, packageUrl);
+  const agWalletHtmlUrl = importMetaResolve(htmlBasePath, packageUrl);
   const agWalletHtml = new URL(agWalletHtmlUrl).pathname;
 
   let hostport;
@@ -515,16 +513,6 @@ const start = async (basedir, argv) => {
             addDeliveryTarget(c.GCI, deliverator);
           }
           break;
-        case 'fake-chain': {
-          log(`adding follower/sender for fake chain ${c.GCI}`);
-          const deliverator = await connectToPipe({
-            method: 'connectToFakeChain',
-            args: [basedir, c.GCI, c.fakeDelay],
-            deliverInboundToMbx,
-          });
-          addDeliveryTarget(c.GCI, deliverator);
-          break;
-        }
         case 'http': {
           log(`adding HTTP/WS listener on ${c.host}:${c.port}`);
           !broadcastJSON || Fail`duplicate type=http in connections.json`;

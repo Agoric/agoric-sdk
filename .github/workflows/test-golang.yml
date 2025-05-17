@@ -15,10 +15,10 @@ jobs:
   gotest:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-golang
         with:
-          go-version: '1.20'
+          go-version: '1.22'
       - name: go test
         run: cd golang/cosmos && go test -coverprofile=coverage.txt -covermode=atomic ./...
       - uses: ./.github/actions/post-test

@@ -1,11 +1,12 @@
-/* global process */
+/* eslint-env node */
 // Use modules not prefixed with `node:` since some deploy scripts may
 // still be running in esm emulation
 import path from 'path';
 import { spawnSync } from 'child_process';
 import { createRequire } from 'module';
 
-const { Fail, quote: q } = assert;
+import { Fail, q } from '@endo/errors';
+
 const BUNDLE_SOURCE_PROGRAM = 'bundle-source';
 const req = createRequire(import.meta.url);
 
@@ -23,7 +24,8 @@ export const createBundlesFromAbsolute = async sourceBundles => {
     }
     const bundle = match[1];
 
-    const args = cacheToArgs.get(cache) || ['--to', cache];
+    const args = cacheToArgs.get(cache) || ['--cache-js', cache];
+    args.push('--elide-comments');
     args.push(srcPath, bundle);
     cacheToArgs.set(cache, args);
   }

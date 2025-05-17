@@ -53,7 +53,7 @@ func GetCmdQueryParams(queryRoute string) *cobra.Command {
 
 func GetCmdGetEgress(queryRoute string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "egress [account]",
+		Use:   "egress <account>",
 		Short: "get egress info for account",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -86,7 +86,7 @@ func GetCmdGetEgress(queryRoute string) *cobra.Command {
 // GetCmdMailbox queries information about a mailbox
 func GetCmdMailbox(queryRoute string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "mailbox [peer]",
+		Use:   "mailbox <peer>",
 		Short: "get mailbox for peer",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

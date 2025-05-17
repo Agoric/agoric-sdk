@@ -6,9 +6,35 @@ import { canBeDurable, provideDurableWeakMapStore } from '@agoric/vat-data';
 
 import { defineDurableHandle } from '../makeHandle.js';
 
+/**
+ * @import {LegacyWeakMap, WeakMapStore} from '@agoric/store';
+ * @import {MapStore} from '@agoric/swingset-liveslots';
+ */
+
+/**
+ * The following should work. But for some reason, @endo/errors does
+ * not export the type `Details`.
+ * See https://github.com/endojs/endo/issues/2339
+ *
+ * at-import {Details} from '@endo/errors'
+ *
+ * In the meantime...
+ *
+ * @typedef {string | {}} Details
+ */
+
+/**
+ * @import {RemotableBrand} from '@endo/eventual-send';
+ * @import {RemotableObject} from '@endo/pass-style';
+ */
+
+/**
+ * @typedef {RemotableBrand & RemotableObject & OfferHandler} PassableOfferHandler
+ */
+
 export const makeOfferHandlerStorage = zcfBaggage => {
   const makeInvitationHandle = defineDurableHandle(zcfBaggage, 'Invitation');
-  /** @type {WeakMapStore<InvitationHandle, OfferHandler>} */
+  /** @type {WeakMapStore<InvitationHandle, PassableOfferHandler>} */
 
   // ZCF needs to ephemerally hold on to ephemeral handlers, and durably hold
   // onto handlers that are intended to be durable. We keep two stores and store
@@ -18,13 +44,12 @@ export const makeOfferHandlerStorage = zcfBaggage => {
   const invitationHandleToEphemeralHandler = makeScalarWeakMapStore(
     'invitationHandleToEphemeralHandler',
   );
-  /** @type {WeakMapStore<InvitationHandle, OfferHandler>} */
+  /** @type {WeakMapStore<InvitationHandle, PassableOfferHandler>} */
   const invitationHandleToDurableHandler = provideDurableWeakMapStore(
     zcfBaggage,
     'invitationHandleToDurableHandler',
   );
 
-  /** @type {(offerHandler: OfferHandler) => InvitationHandle} */
   const storeOfferHandler = offerHandler => {
     if (typeof offerHandler === 'function') {
       offerHandler = ToFarFunction('offerHandler', offerHandler);

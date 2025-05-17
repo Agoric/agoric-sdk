@@ -3,6 +3,10 @@ import { Far } from '@endo/marshal';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import buildManualTimer from '../../../tools/manualTimer.js';
 
+/**
+ * @import {ZoeService} from '@agoric/zoe';
+ */
+
 const setupBasicMints = () => {
   const all = [
     makeIssuerKit('moola'),
@@ -51,6 +55,7 @@ const makeVats = (log, vats, zoe, installations, startingValues) => {
     aliceP,
     bobP,
   };
+  let logMessage = 'alice and bob';
 
   if (carolValues) {
     const carolP = E(vats.carol).build(
@@ -61,6 +66,7 @@ const makeVats = (log, vats, zoe, installations, startingValues) => {
       timer,
     );
     result.carolP = carolP;
+    logMessage = 'alice, bob, and carol';
   }
 
   if (daveValues) {
@@ -72,9 +78,10 @@ const makeVats = (log, vats, zoe, installations, startingValues) => {
       timer,
     );
     result.daveP = daveP;
+    logMessage = 'alice, bob, carol and dave';
   }
 
-  log(`=> alice, bob, carol and dave are set up`);
+  log(`=> ${logMessage} are set up`);
   return harden(result);
 };
 

@@ -1,6 +1,6 @@
 // @jessie-check
 
-/// <reference types="ses"/>
+/// <reference types="ses" />
 
 import { E, Far } from '@endo/far';
 import { subscribeEach } from './subscribe.js';
@@ -8,7 +8,9 @@ import { makePublishKit } from './publish-kit.js';
 
 import { makePinnedHistoryTopic } from './topic.js';
 
-import './types-ambient.js';
+/**
+ * @import {EachTopic, IterationObserver, LatestTopic, Notifier, NotifierRecord, SubscriptionRecord, Publisher, PublishKit, StoredPublishKit, StoredSubscription, StoredSubscriber, Subscriber, Subscription, UpdateRecord} from '../src/types.js';
+ */
 
 /**
  * @template T

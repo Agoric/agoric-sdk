@@ -1,6 +1,6 @@
 import sqlite3 from 'better-sqlite3';
 
-import { Fail, q } from '@agoric/assert';
+import { Fail, q } from '@endo/errors';
 
 import { dbFileInDirectory } from './util.js';
 import { getKeyType } from './kvStore.js';
@@ -13,11 +13,7 @@ import { validateArtifactMode } from './internal.js';
 
 /**
  * @template T
- *  @typedef  { Iterable<T> | AsyncIterable<T> } AnyIterable<T>
- */
-/**
- * @template T
- *  @typedef  { IterableIterator<T> | AsyncIterableIterator<T> } AnyIterableIterator<T>
+ * @typedef  { Iterable<T> | AsyncIterable<T> } AnyIterable
  */
 
 /**
@@ -41,7 +37,7 @@ import { validateArtifactMode } from './internal.js';
  * Retrieve a value from the "host" portion of the kvStore, just like
  * hostStorage.hostKVStore.get() would do.
  *
- * @property {() => AnyIterableIterator<KVPair>} getExportData
+ * @property {() => AnyIterable<KVPair>} getExportData
  *
  * Get a full copy of the first-stage export data (key-value pairs) from the
  * swingStore. This represents both the contents of the KVStore (excluding host
@@ -56,7 +52,7 @@ import { validateArtifactMode } from './internal.js';
  * - transcript.${vatID}.${startPos} = ${{ vatID, startPos, endPos, hash }}
  * - transcript.${vatID}.current = ${{ vatID, startPos, endPos, hash }}
  *
- * @property {() => AnyIterableIterator<string>} getArtifactNames
+ * @property {() => AnyIterable<string>} getArtifactNames
  *
  * Get a list of name of artifacts available from the swingStore.  A name
  * returned by this method guarantees that a call to `getArtifact` on the same
@@ -69,7 +65,7 @@ import { validateArtifactMode } from './internal.js';
  * - snapshot.${vatID}.${snapPos}
  * - bundle.${bundleID}
  *
- * @property {(name: string) => AnyIterableIterator<Uint8Array>} getArtifact
+ * @property {(name: string) => AnyIterable<Uint8Array>} getArtifact
  *
  * Retrieve an artifact by name as a sequence of binary chunks.  May throw if
  * the artifact is not available, which can occur if the artifact is historical
@@ -111,12 +107,6 @@ export function makeSwingStoreExporter(dirPath, options = {}) {
   const bundleStore = makeBundleStore(db, ensureTxn);
   const transcriptStore = makeTranscriptStore(db, ensureTxn, () => {});
 
-  if (artifactMode !== 'debug') {
-    // throw early if this DB will not be able to create all the desired artifacts
-    const internal = { snapStore, bundleStore, transcriptStore };
-    assertComplete(internal, artifactMode);
-  }
-
   const sqlKVGet = db.prepare(`
     SELECT value
     FROM kvStore
@@ -139,11 +129,12 @@ export function makeSwingStoreExporter(dirPath, options = {}) {
    * section
    */
   function getHostKV(key) {
-    typeof key === 'string' || Fail`key must be a string`;
     getKeyType(key) === 'host' || Fail`getHostKV requires host keys`;
+    // @ts-expect-error unknown
     return sqlKVGet.get(key);
   }
 
+  /** @type {any} */
   const sqlGetAllKVData = db.prepare(`
     SELECT key, value
     FROM kvStore
@@ -164,15 +155,26 @@ export function makeSwingStoreExporter(dirPath, options = {}) {
     yield* transcriptStore.getExportRecords(true);
     yield* bundleStore.getExportRecords();
   }
+  harden(getExportData);
 
-  /**
-   * @returns {AsyncIterableIterator<string>}
-   * @yields {string}
-   */
-  async function* getArtifactNames() {
+  /** @yields {string} */
+  async function* generateArtifactNames() {
     yield* snapStore.getArtifactNames(artifactMode);
     yield* transcriptStore.getArtifactNames(artifactMode);
     yield* bundleStore.getArtifactNames();
+  }
+  harden(generateArtifactNames);
+
+  /**
+   * @returns {AsyncIterableIterator<string>}
+   */
+  function getArtifactNames() {
+    if (artifactMode !== 'debug') {
+      // synchronously throw if this DB will not be able to yield all the desired artifacts
+      const internal = { dirPath, snapStore, bundleStore, transcriptStore };
+      assertComplete(internal, artifactMode);
+    }
+    return generateArtifactNames();
   }
 
   /**

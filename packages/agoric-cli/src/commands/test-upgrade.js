@@ -1,11 +1,11 @@
 // @ts-check
-/* global process */
-import { Fail } from '@agoric/assert';
+/* eslint-env node */
+import { fetchEnvNetworkConfig, makeWalletUtils } from '@agoric/client-utils';
+import { Fail } from '@endo/errors';
 import { CommanderError } from 'commander';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
 import { bigintReplacer } from '../lib/format.js';
-import { getNetworkConfig } from '../lib/rpc.js';
-import { makeWalletUtils, sendAction } from '../lib/wallet.js';
+import { sendAction } from '../lib/wallet.js';
 
 /**
  * Make commands for testing.
@@ -38,9 +38,11 @@ export const makeTestCommand = (
     try {
       // XXX pass fetch to getNetworkConfig() explicitly
       // await null above makes this await safe
-      const networkConfig = await getNetworkConfig(env);
-      return makeWalletUtils({ fetch, execFileSync, delay }, networkConfig);
+      const networkConfig = await fetchEnvNetworkConfig({ env, fetch });
+      return makeWalletUtils({ fetch, delay }, networkConfig);
     } catch (err) {
+      // CommanderError is a class constructor, and so
+      // must be invoked with `new`.
       throw new CommanderError(1, 'RPC_FAIL', err.message);
     }
   };

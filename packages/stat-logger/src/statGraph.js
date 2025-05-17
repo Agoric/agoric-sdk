@@ -1,8 +1,8 @@
-/* global process */
+/* eslint-env node */
 import fs from 'fs';
 import path from 'path';
 
-const { Fail } = assert;
+import { Fail } from '@endo/errors';
 
 function scanMax(filePath, fields) {
   const lines = fs.readFileSync(filePath, { encoding: 'utf8' }).split('\n');
@@ -175,7 +175,6 @@ export async function renderGraph(spec, outputPath, type = 'png') {
   // NOTE: If this import expression fails, you need to install the
   // peerDependencies.
   // Dynamic version of `import * as vega from 'vega';`
-  // eslint-disable-next-line import/no-unresolved
   const vega = await import('vega');
 
   const view = new vega.View(vega.parse(spec, null), {

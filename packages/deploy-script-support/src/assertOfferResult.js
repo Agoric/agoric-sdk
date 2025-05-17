@@ -1,6 +1,10 @@
 // @ts-check
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
+
+/**
+ * @import {InvitationDetails, PaymentPKeywordRecord, Proposal, UserSeat} from '@agoric/zoe';
+ */
 
 /**
  * @param {ERef<UserSeat>} seat

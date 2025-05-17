@@ -1,6 +1,5 @@
 #! /usr/bin/env node
-/* global setInterval */
-
+/* eslint-env node */
 import '@endo/init';
 
 import fs from 'fs';
@@ -9,7 +8,6 @@ import temp from 'temp';
 import process from 'process';
 import { exec, spawn } from 'child_process';
 import inquirer from 'inquirer';
-import fetch from 'node-fetch';
 
 import { running } from './run.js';
 import { setup } from './setup.js';
@@ -22,7 +20,7 @@ deploy(process.argv[1], process.argv.splice(2), {
   rd: files.reading(fs, path),
   wr: files.writing(fs, path, temp),
   setup: setup({ resolve: path.resolve, env: process.env, setInterval }),
-  running: running(process, { exec, process, spawn }),
+  running: running(process, { exec, spawn }),
   inquirer,
   fetch,
 }).then(

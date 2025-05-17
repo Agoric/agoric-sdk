@@ -4,14 +4,14 @@
 
 ERTP can be thought of as a protocol and an implementation. There
 could be multiple different implementations of the protocol, but for
-now, we just have one (@agoric/ertp) whose types specify the protocol.
+now, we just have one ([@agoric/ertp](..)) whose types specify the protocol.
 The distinction between protocol and implementation becomes important
 because when Zoe escrows assets for use in contracts, it does not
-verify that the assets were made using the latest @agoric/ertp
+verify that the assets were made using the latest `@agoric/ertp`
 implementation. This means that the issuers and brands of assets that
 users escrow may misbehave.
 
-Zoe specifically uses the @agoric/ertp implementation for contract invitations. 
+Zoe specifically uses the `@agoric/ertp` implementation for contract invitations. 
 
 For every new brand of token, there is:
 * A mint - this is the only object with the ability to mint tokens. To mint, call `mint.mintPayment`. 

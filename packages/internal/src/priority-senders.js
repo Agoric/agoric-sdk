@@ -1,6 +1,8 @@
+import { Fail, q } from '@endo/errors';
 import { E, Far } from '@endo/far';
 
-const { Fail, quote: q } = assert;
+/** @import {ERef} from '@endo/far'; */
+/** @import {StorageNode} from './lib-chainStorage.js'; */
 
 const PRIORITY_SENDERS_NAMESPACE_RE = /^[a-zA-Z0-9_-]{1,50}$/;
 
@@ -20,9 +22,13 @@ harden(normalizeSenderNamespace);
  */
 export const makePrioritySendersManager = sendersNode => {
   /**
-   * address to tuple with storage node and set of namespaces that requested priority
+   * address to tuple with storage node and set of namespaces that requested
+   * priority
    *
-   * @type {Map<string, readonly [node: StorageNode, namespaces: Set<string>]>}
+   * @type {Map<
+   *   string,
+   *   readonly [node: StorageNode, namespaces: Set<string>]
+   * >}
    */
   const addressRecords = new Map();
 
@@ -47,7 +53,7 @@ export const makePrioritySendersManager = sendersNode => {
     const node = await E(sendersNode).makeChildNode(address, {
       sequence: false,
     });
-    /** @type {readonly [ node: StorageNode, namespaces: Set<string> ]} */
+    /** @type {readonly [node: StorageNode, namespaces: Set<string>]} */
     const r = [node, new Set()];
     addressRecords.set(address, r);
     return r;

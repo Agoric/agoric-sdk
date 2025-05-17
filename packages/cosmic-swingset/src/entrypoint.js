@@ -18,9 +18,9 @@ import main from './chain-main.js';
 const log = anylogger('ag-chain-cosmos');
 
 main(process.argv[1], process.argv.splice(2), {
-  path,
-  homedir: os.homedir(),
   env: process.env,
+  homedir: os.homedir(),
+  path,
   agcc,
 }).then(
   _res => 0,

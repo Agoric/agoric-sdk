@@ -6,6 +6,7 @@ import (
 
 	abci "github.com/tendermint/tendermint/abci/types"
 
+	sdkioerrors "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -31,12 +32,12 @@ func NewQuerier(keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier 
 		switch queryType {
 		case QueryEgress:
 			if len(path) < 2 || path[1] == "" {
-				return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "missing egress address")
+				return nil, sdkioerrors.Wrap(sdkerrors.ErrInvalidRequest, "missing egress address")
 			}
 			return queryEgress(ctx, path[1], req, keeper, legacyQuerierCdc)
 		case QueryMailbox:
 			if len(path) < 2 || path[1] == "" {
-				return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "missing mailbox peer")
+				return nil, sdkioerrors.Wrap(sdkerrors.ErrInvalidRequest, "missing mailbox peer")
 			}
 			return queryMailbox(ctx, path[1], req, keeper, legacyQuerierCdc)
 		case LegacyQueryStorage:
@@ -44,7 +45,7 @@ func NewQuerier(keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier 
 		case LegacyQueryKeys:
 			return legacyQueryKeys(ctx, strings.Join(path[1:], "/"), req, keeper, legacyQuerierCdc)
 		default:
-			return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "unknown swingset query endpoint")
+			return nil, sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "unknown swingset query path")
 		}
 	}
 }
@@ -53,17 +54,17 @@ func NewQuerier(keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier 
 func queryEgress(ctx sdk.Context, bech32 string, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
 	acc, err := sdk.AccAddressFromBech32(bech32)
 	if err != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, err.Error())
+		return nil, sdkioerrors.Wrap(sdkerrors.ErrInvalidRequest, err.Error())
 	}
 
 	egress := keeper.GetEgress(ctx, acc)
 	if egress.Peer.Empty() {
-		return []byte{}, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, fmt.Sprintf("egress %s not found", bech32))
+		return []byte{}, sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, fmt.Sprintf("egress %s not found", bech32))
 	}
 
 	bz, err := codec.MarshalJSONIndent(legacyQuerierCdc, egress)
 	if err != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
+		return nil, sdkioerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
 
 	return bz, nil
@@ -74,12 +75,12 @@ func queryMailbox(ctx sdk.Context, peer string, req abci.RequestQuery, keeper Ke
 	value := keeper.GetMailbox(ctx, peer)
 
 	if value == "" {
-		return []byte{}, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "could not get peer mailbox")
+		return []byte{}, sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "could not get peer mailbox")
 	}
 
 	bz, err2 := codec.MarshalJSONIndent(legacyQuerierCdc, vstoragetypes.Data{Value: value})
 	if err2 != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err2.Error())
+		return nil, sdkioerrors.Wrap(sdkerrors.ErrJSONMarshal, err2.Error())
 	}
 
 	return bz, nil
@@ -89,12 +90,12 @@ func queryMailbox(ctx sdk.Context, peer string, req abci.RequestQuery, keeper Ke
 func legacyQueryStorage(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) (res []byte, err error) {
 	entry := keeper.vstorageKeeper.GetEntry(ctx, path)
 	if !entry.HasValue() {
-		return []byte{}, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "could not get swingset %+v", path)
+		return []byte{}, sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "could not get swingset %+v", path)
 	}
 
 	bz, err2 := codec.MarshalJSONIndent(legacyQuerierCdc, vstoragetypes.Data{Value: entry.StringValue()})
 	if err2 != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err2.Error())
+		return nil, sdkioerrors.Wrap(sdkerrors.ErrJSONMarshal, err2.Error())
 	}
 
 	return bz, nil
@@ -111,7 +112,7 @@ func legacyQueryKeys(ctx sdk.Context, path string, req abci.RequestQuery, keeper
 
 	bz, err2 := codec.MarshalJSONIndent(legacyQuerierCdc, vstoragetypes.Children{Children: chlist})
 	if err2 != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err2.Error())
+		return nil, sdkioerrors.Wrap(sdkerrors.ErrJSONMarshal, err2.Error())
 	}
 
 	return bz, nil

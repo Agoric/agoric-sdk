@@ -15,9 +15,9 @@ import {
   makeRatio,
   multiplyBy,
   multiplyRatios,
-} from '@agoric/zoe/src/contractSupport/ratio.js';
+} from '@agoric/ertp/src/ratio.js';
 import { makeFakePriceAuthority } from '@agoric/zoe/tools/fakePriceAuthority.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
@@ -34,7 +34,7 @@ const marshaller = makeFakeMarshaller();
 /**
  * @param {ZCF} zcf
  * @param {{ feeMintAccess: FeeMintAccess }} privateArgs
- * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  */
 export async function start(zcf, privateArgs, baggage) {
   console.log(`contract started`);
@@ -63,7 +63,7 @@ export async function start(zcf, privateArgs, baggage) {
 
   const { subscriber: assetSubscriber } = makePublishKit();
 
-  const timer = buildManualTimer(console.log, 0n, { timeStep: DAY });
+  const timer = buildZoeManualTimer(console.log, 0n, { timeStep: DAY });
   const options = {
     actualBrandIn: collateralBrand,
     actualBrandOut: stableBrand,

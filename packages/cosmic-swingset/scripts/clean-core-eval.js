@@ -1,5 +1,6 @@
 #! /usr/bin/env node
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
+/* global globalThis */
+/* eslint-env node */
 import '@endo/init/debug.js';
 import * as farExports from '@endo/far';
 import { isEntrypoint } from '../src/helpers/is-entrypoint.js';
@@ -13,7 +14,8 @@ export const compartmentEvaluate = code => {
   const globals = harden({
     ...modules,
     ...farExports,
-    assert,
+    // See https://github.com/Agoric/agoric-sdk/issues/9515
+    assert: globalThis.assert,
     console: {
       // Ensure we don't pollute stdout.
       debug: console.warn,
@@ -61,17 +63,13 @@ export const main = async (argv, { readFile, stdout }) => {
 };
 
 if (isEntrypoint(import.meta.url)) {
-  /* global process */
-  void farExports.E.when(
-    import('fs/promises'),
-    fsp =>
-      main([...process.argv], {
-        readFile: fsp.readFile,
-        stdout: process.stdout,
-      }),
-    err => {
-      process.exitCode = 1;
-      console.error(err);
-    },
-  );
+  void farExports.E.when(import('fs/promises'), fsp =>
+    main([...process.argv], {
+      readFile: fsp.readFile,
+      stdout: process.stdout,
+    }),
+  ).catch(err => {
+    process.exitCode = 1;
+    console.error(err);
+  });
 }

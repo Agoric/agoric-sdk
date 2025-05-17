@@ -6,6 +6,13 @@ import { E, Far } from '@endo/far';
 import { observeNotifier } from './asyncIterableAdaptor.js';
 
 /**
+ * @import {ERef} from '@endo/far';
+ * @import {BaseNotifier, Notifier} from './types.js';
+ * @import {Marshaller, StoredFacet, StorageNode, Unserializer} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {PassableCap, RemotableObject} from '@endo/pass-style';
+ */
+
+/**
  * @template T
  * @typedef {BaseNotifier<T> & Omit<StoredFacet, 'getStoreKey'>} StoredNotifier
  */
@@ -19,7 +26,7 @@ import { observeNotifier } from './asyncIterableAdaptor.js';
  * the iteration themselves, or obtain information to subscribe to the stored
  * data out-of-band.
  *
- * @template T
+ * @template {PassableCap} T
  * @param {ERef<Notifier<T>>} notifier
  * @param {ERef<StorageNode>} storageNode
  * @param {ERef<Marshaller>} marshaller

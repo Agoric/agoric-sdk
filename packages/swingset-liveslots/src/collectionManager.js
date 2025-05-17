@@ -1,10 +1,9 @@
-import { assert, q, Fail } from '@agoric/assert';
+import { assert, q, Fail } from '@endo/errors';
 import { Far, passStyleOf } from '@endo/far';
 import {
   zeroPad,
   makeEncodePassable,
   makeDecodePassable,
-  isEncodedRemotable,
   compareRank,
 } from '@endo/marshal';
 import {
@@ -25,6 +24,11 @@ import {
   enumerateKeysWithPrefix,
 } from './vatstore-iterators.js';
 import { makeCache } from './cache.js';
+
+/**
+ * @import {ToCapData, FromCapData} from '@endo/marshal';
+ * @import {Pattern} from '@endo/patterns';
+ */
 
 // XXX TODO: The following key length limit was put in place due to limitations
 // in LMDB.  With the move away from LMDB, it is no longer relevant, but I'm
@@ -61,6 +65,12 @@ function failNotIterable(value) {
 function prefixc(collectionID, dbEntryKey) {
   return `vc.${collectionID}.${dbEntryKey}`;
 }
+
+export const collectionMetaKeys = new Set([
+  '|entryCount',
+  '|nextOrdinal',
+  '|schemata',
+]);
 
 /**
  * @typedef {object} SchemaCacheValue
@@ -112,8 +122,8 @@ function makeSchemaCache(syscall, unserialize) {
  * @param {(val: any) => string | undefined} convertValToSlot
  * @param {*} convertSlotToVal
  * @param {*} registerValue
- * @param {import('@endo/marshal').ToCapData<string>} serialize
- * @param {import('@endo/marshal').FromCapData<string>} unserialize
+ * @param {ToCapData<string>} serialize
+ * @param {FromCapData<string>} unserialize
  * @param {(capDatas: any) => void} assertAcceptableSyscallCapdataSize
  */
 export function makeCollectionManager(
@@ -137,56 +147,48 @@ export function makeCollectionManager(
     scalarMapStore: {
       hasWeakKeys: false,
       kindID: 0,
-      // eslint-disable-next-line no-use-before-define
       reanimator: reanimateMapStore,
       durable: false,
     },
     scalarWeakMapStore: {
       hasWeakKeys: true,
       kindID: 0,
-      // eslint-disable-next-line no-use-before-define
       reanimator: reanimateWeakMapStore,
       durable: false,
     },
     scalarSetStore: {
       hasWeakKeys: false,
       kindID: 0,
-      // eslint-disable-next-line no-use-before-define
       reanimator: reanimateSetStore,
       durable: false,
     },
     scalarWeakSetStore: {
       hasWeakKeys: true,
       kindID: 0,
-      // eslint-disable-next-line no-use-before-define
       reanimator: reanimateWeakSetStore,
       durable: false,
     },
     scalarDurableMapStore: {
       hasWeakKeys: false,
       kindID: 0,
-      // eslint-disable-next-line no-use-before-define
       reanimator: reanimateMapStore,
       durable: true,
     },
     scalarDurableWeakMapStore: {
       hasWeakKeys: true,
       kindID: 0,
-      // eslint-disable-next-line no-use-before-define
       reanimator: reanimateWeakMapStore,
       durable: true,
     },
     scalarDurableSetStore: {
       hasWeakKeys: false,
       kindID: 0,
-      // eslint-disable-next-line no-use-before-define
       reanimator: reanimateSetStore,
       durable: true,
     },
     scalarDurableWeakSetStore: {
       hasWeakKeys: true,
       kindID: 0,
-      // eslint-disable-next-line no-use-before-define
       reanimator: reanimateWeakSetStore,
       durable: true,
     },
@@ -209,7 +211,6 @@ export function makeCollectionManager(
       vrm.registerKind(
         kindID,
         storeKindInfo[kind].reanimator,
-        // eslint-disable-next-line no-use-before-define
         deleteCollection,
         storeKindInfo[kind].durable,
       );
@@ -255,7 +256,11 @@ export function makeCollectionManager(
     const kindInfo = storeKindInfo[kindName];
     kindInfo || Fail`unknown collection kind ${kindName}`;
     const { hasWeakKeys, durable } = kindInfo;
-    const getSchema = () => schemaCache.get(collectionID);
+    const getSchema = () => {
+      const result = schemaCache.get(collectionID);
+      assert(result !== undefined);
+      return result;
+    };
     const dbKeyPrefix = `vc.${collectionID}.`;
     let currentGenerationNumber = 0;
 
@@ -285,8 +290,21 @@ export function makeCollectionManager(
       return `${dbKeyPrefix}${dbEntryKey}`;
     }
 
+    // A "vref" is a string like "o-4" or "o+d44/2:0"
+    // An "EncodedKey" is the output of encode-passable:
+    // * strings become `s${string}`, like "foo" -> "sfoo"
+    // * small positive BigInts become `p${len}:${digits}`, like 47n -> "p2:47"
+    // * refs are assigned an "ordinal" and use `r${fixedLengthOrdinal}:${vref}`
+    //   * e.g. vref(o-4) becomes "r0000000001:o-4"
+    // A "DBKey" is used to index the vatstore. DBKeys for collection
+    // entries join a collection prefix and an EncodedKey. Some
+    // possible DBKeys for entries of collection "5", using collection
+    // prefix "vc.5.", are:
+    // * "foo" -> "vc.5.sfoo"
+    // * 47n -> "vc.5.p2:47"
+    // * vref(o-4) -> "vc.5.r0000000001:o-4"
+
     const encodeRemotable = remotable => {
-      // eslint-disable-next-line no-use-before-define
       const ordinal = getOrdinal(remotable);
       ordinal !== undefined || Fail`no ordinal for ${remotable}`;
       const ordinalTag = zeroPad(ordinal, BIGINT_TAG_LEN);
@@ -300,10 +318,11 @@ export function makeCollectionManager(
     // the resulting function will encode only `Key` arguments.
     const encodeKey = makeEncodePassable({ encodeRemotable });
 
-    const vrefFromDBKey = dbKey => dbKey.substring(BIGINT_TAG_LEN + 2);
+    const vrefFromEncodedKey = encodedKey =>
+      encodedKey.substring(1 + BIGINT_TAG_LEN + 1);
 
     const decodeRemotable = encodedKey =>
-      convertSlotToVal(vrefFromDBKey(encodedKey));
+      convertSlotToVal(vrefFromEncodedKey(encodedKey));
 
     // `makeDecodePassable` has three named options:
     // `decodeRemotable`, `decodeError`, and `decodePromise`.
@@ -339,8 +358,14 @@ export function makeCollectionManager(
     }
 
     function dbKeyToKey(dbKey) {
+      // convert e.g. vc.5.r0000000001:o+v10/1 to r0000000001:o+v10/1
       const dbEntryKey = dbKey.substring(dbKeyPrefix.length);
       return decodeKey(dbEntryKey);
+    }
+
+    function dbKeyToEncodedKey(dbKey) {
+      assert(dbKey.startsWith(dbKeyPrefix), dbKey);
+      return dbKey.substring(dbKeyPrefix.length);
     }
 
     function has(key) {
@@ -518,7 +543,7 @@ export function makeCollectionManager(
           yield [yieldKeys ? key : undefined, yieldValues ? value : undefined];
         }
       }
-
+      harden(iter);
       return iter();
     }
 
@@ -528,6 +553,7 @@ export function makeCollectionManager(
           yield entry[0];
         }
       }
+      harden(iter);
       return iter();
     }
 
@@ -544,40 +570,58 @@ export function makeCollectionManager(
      */
     function clearInternalFull() {
       let doMoreGC = false;
-      const [coverStart, coverEnd] = getRankCover(M.any(), encodeKey);
-      const start = prefix(coverStart);
-      const end = prefix(coverEnd);
 
-      // this yields all keys for which (start <= key < end)
-      for (const dbKey of enumerateKeysStartEnd(syscall, start, end)) {
-        const value = JSON.parse(syscall.vatstoreGet(dbKey));
-        doMoreGC =
-          value.slots.map(vrm.removeReachableVref).some(b => b) || doMoreGC;
-        syscall.vatstoreDelete(dbKey);
-        if (isEncodedRemotable(dbKey)) {
-          const keyVref = vrefFromDBKey(dbKey);
+      // visit every DB entry associated with the collection, which
+      // (due to sorting) will be collection entries first, and then a
+      // mixture of ordinal-assignment mappings and size-independent
+      // metadata (both of which start with "|").
+      for (const dbKey of enumerateKeysWithPrefix(syscall, dbKeyPrefix)) {
+        const encodedKey = dbKeyToEncodedKey(dbKey);
+
+        // preserve general metadata ("|entryCount" and friends are
+        // cleared by our caller)
+        if (collectionMetaKeys.has(encodedKey)) continue;
+
+        if (encodedKey.startsWith('|')) {
+          // ordinal assignment; decref or de-recognize its vref
+          const keyVref = encodedKey.substring(1);
+          parseVatSlot(keyVref);
           if (hasWeakKeys) {
             vrm.removeRecognizableVref(keyVref, `${collectionID}`, true);
           } else {
             doMoreGC = vrm.removeReachableVref(keyVref) || doMoreGC;
           }
-          syscall.vatstoreDelete(prefix(`|${keyVref}`));
+        } else {
+          // a collection entry; decref slots from its value
+          const value = JSON.parse(syscall.vatstoreGet(dbKey));
+          doMoreGC =
+            value.slots.map(vrm.removeReachableVref).some(b => b) || doMoreGC;
         }
+
+        // in either case, delete the DB entry
+        syscall.vatstoreDelete(dbKey);
       }
+
       return doMoreGC;
     }
 
     function clearInternal(isDeleting, keyPatt, valuePatt) {
       let doMoreGC = false;
-      if (isDeleting || (matchAny(keyPatt) && matchAny(valuePatt))) {
+      if (isDeleting) {
         doMoreGC = clearInternalFull();
+        // |entryCount will be deleted along with metadata keys
+      } else if (matchAny(keyPatt) && matchAny(valuePatt)) {
+        doMoreGC = clearInternalFull();
+        if (!hasWeakKeys) {
+          syscall.vatstoreSet(prefix('|entryCount'), '0');
+        }
       } else {
+        let numDeleted = 0;
         for (const k of keys(keyPatt, valuePatt)) {
+          numDeleted += 1;
           doMoreGC = deleteInternal(k) || doMoreGC;
         }
-      }
-      if (!hasWeakKeys && !isDeleting) {
-        syscall.vatstoreSet(prefix('|entryCount'), '0');
+        updateEntryCount(-numDeleted);
       }
       return doMoreGC;
     }
@@ -592,6 +636,7 @@ export function makeCollectionManager(
           yield entry[1];
         }
       }
+      harden(iter);
       return iter();
     }
 
@@ -601,12 +646,13 @@ export function makeCollectionManager(
           yield entry;
         }
       }
+      harden(iter);
       return iter();
     }
 
     function countEntries(keyPatt, valuePatt) {
       let count = 0;
-      // eslint-disable-next-line no-use-before-define, no-unused-vars
+      // eslint-disable-next-line no-unused-vars
       for (const k of keys(keyPatt, valuePatt)) {
         count += 1;
       }
@@ -746,7 +792,9 @@ export function makeCollectionManager(
     const collection = summonCollectionInternal(false, collectionID, kindName);
 
     let doMoreGC = collection.clearInternal(true);
-    const { schemataCapData } = schemaCache.get(collectionID);
+    const record = schemaCache.get(collectionID);
+    assert(record !== undefined);
+    const { schemataCapData } = record;
     doMoreGC =
       schemataCapData.slots.map(vrm.removeReachableVref).some(b => b) ||
       doMoreGC;

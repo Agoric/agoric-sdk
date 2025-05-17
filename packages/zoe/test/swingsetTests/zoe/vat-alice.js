@@ -1,6 +1,6 @@
+import { assert, X } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
 import { showPurseBalance, setupIssuers } from '../helpers.js';
@@ -540,6 +540,31 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
   };
 
+  const doShutdownAutoswap = async () => {
+    const issuerKeywordRecord = harden({
+      Central: moolaIssuer,
+      Secondary: simoleanIssuer,
+    });
+    const { publicFacet, adminFacet } = await E(zoe).startInstance(
+      installations.autoswap,
+      issuerKeywordRecord,
+    );
+
+    console.log(' ALICE terminating autoswap');
+    await E(adminFacet).terminateContract(Error('end of the line'));
+
+    try {
+      const poolAmountsPre = await E(publicFacet).getPoolAllocation();
+      console.log('ALICE', poolAmountsPre);
+    } catch (e) {
+      console.log('ALICE caught', e.message, e);
+      log(e.message);
+    }
+
+    await showPurseBalance(moolaPurseP, 'aliceMoolaPurse', log);
+    await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
+  };
+
   return Far('build', {
     startTest: async (testName, bobP, carolP, daveP) => {
       switch (testName) {
@@ -575,6 +600,9 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         }
         case 'badTimer': {
           return doBadTimer();
+        }
+        case 'shutdownAutoswap': {
+          return doShutdownAutoswap();
         }
         default: {
           assert.fail(X`testName ${testName} not recognized`);

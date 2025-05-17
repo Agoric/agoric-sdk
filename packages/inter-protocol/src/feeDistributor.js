@@ -9,7 +9,7 @@ import { KeywordShape } from '@agoric/zoe/src/typeGuards.js';
 
 const KeywordSharesShape = M.recordOf(KeywordShape, M.nat());
 
-/** @type {ContractMeta} */
+/** @type {ContractMeta<typeof start>} */
 export const meta = {
   customTermsShape: {
     keywordShares: KeywordSharesShape,
@@ -20,9 +20,8 @@ export const meta = {
 harden(meta);
 
 /**
- * @typedef {import('@agoric/time').RelativeTime} RelativeTime
- *
- * @typedef {import('@agoric/time').TimerService} TimerService
+ * @import {RelativeTime} from '@agoric/time'
+ * @import {TimerService} from '@agoric/time'
  */
 
 /**
@@ -268,7 +267,11 @@ export const makeFeeDistributor = (feeIssuer, terms) => {
       return periodicCollector;
     },
 
-    /** @param {import('@endo/far').EOnly<DepositFacet>} depositFacet */
+    /**
+     * @param {import('@endo/far').EOnly<
+     *   import('@agoric/ertp/src/types.js').DepositFacet
+     * >} depositFacet
+     */
     makeDepositFacetDestination: depositFacet => {
       return Far(`DepositFacetDestination`, {
         pushPayment: async (payment, _issuer) => {

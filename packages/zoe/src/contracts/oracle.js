@@ -1,10 +1,14 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 
 import { E } from '@endo/eventual-send';
 import { atomicTransfer } from '../contractSupport/index.js';
+
+/**
+ * @import {ContractMeta, Invitation, OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {ContractOf} from '../zoeService/utils.js';
+ */
 
 /**
  * This contract provides oracle queries for a fee or for free.
@@ -71,7 +75,7 @@ const start = async zcf => {
           Fail`Oracle required a fee but the query had none`;
         return reply;
       } catch (e) {
-        E(handler).onError(query, e);
+        void E(handler).onError(query, e);
         throw e;
       }
     },
@@ -87,10 +91,10 @@ const start = async zcf => {
             atomicTransfer(zcf, querySeat, feeSeat, { Fee: requiredFee });
           }
           querySeat.exit();
-          E(handler).onReply(query, reply, requiredFee);
+          void E(handler).onReply(query, reply, requiredFee);
           return reply;
         } catch (e) {
-          E(handler).onError(query, e);
+          void E(handler).onError(query, e);
           throw e;
         }
       };

@@ -3,6 +3,10 @@ import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 
 import { QuestionI, QuestionSpecShape } from './typeGuards.js';
 
+/**
+ * @import {BuildQuestion, PositionIncluded, Question, QuestionSpec} from './types.js';
+ */
+
 // Topics being voted on are 'Questions'. Before a Question is known to a
 // electorate, the parameters can be described with a QuestionSpec. Once the
 // question has been presented to an Electorate, there is a QuestionDetails

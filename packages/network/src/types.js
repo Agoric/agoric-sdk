@@ -1,7 +1,22 @@
+// @ts-check
+
+// Ensure this is a module.
+export {};
+
 /**
- * @typedef {string | Buffer | ArrayBuffer} Data
- *
- * @typedef {string} Bytes
+ * @import {Passable, RemotableObject} from '@endo/pass-style';
+ * @import {PromiseVow, Remote} from '@agoric/vow';
+ */
+
+/**
+ * @template {import('@endo/exo').Methods} M
+ * @template {(...args: any[]) => any} I
+ * @typedef {M & ThisType<{ self: import('@endo/exo').Guarded<M>, state: ReturnType<I> }>} ExoClassMethods
+ * Rearrange the exo types to make a cast of the methods (M) and init function (I) to a specific type.
+ */
+
+/**
+ * @typedef {string} Bytes Each character code carries 8-bit octets.  Eventually we want to use passable Uint8Arrays.
  */
 
 /**
@@ -10,13 +25,16 @@
  */
 
 /**
- * @typedef {object} Closable A closable object
- * @property {() => Promise<void>} close Terminate the object
+ * @typedef {object} ClosableI A closable object
+ * @property {() => PromiseVow<void>} close Terminate the object
+ */
+/**
+ * @typedef {RemotableObject & ClosableI} Closable
  */
 
 /**
  * @typedef {object} Protocol The network Protocol
- * @property {(prefix: Endpoint) => Promise<Port>} bind Claim a port, or if
+ * @property {(prefix: Endpoint) => PromiseVow<Port>} bindPort Claim a port, or if
  *   ending in ENDPOINT_SEPARATOR, a fresh name
  */
 
@@ -24,77 +42,88 @@
  * @typedef {object} Port A port that has been bound to a protocol
  * @property {() => Endpoint} getLocalAddress Get the locally bound name of this
  *   port
- * @property {(acceptHandler: ListenHandler) => Promise<void>} addListener
+ * @property {(acceptHandler: Remote<ListenHandler>) => PromiseVow<void>} addListener
  *   Begin accepting incoming connections
  * @property {(
  *   remote: Endpoint,
- *   connectionHandler?: ConnectionHandler,
- * ) => Promise<Connection>} connect
+ *   connectionHandler?: Remote<ConnectionHandler>,
+ * ) => PromiseVow<Connection>} connect
  *   Make an outbound connection
- * @property {(acceptHandler: ListenHandler) => Promise<void>} removeListener
+ * @property {(acceptHandler: Remote<ListenHandler>) => PromiseVow<void>} removeListener
  *   Remove the currently-bound listener
- * @property {() => void} revoke Deallocate the port entirely, removing all
+ * @property {() => PromiseVow<void>} revoke Deallocate the port entirely, removing all
  *   listeners and closing all active connections
  */
 
 /**
  * @typedef {object} ListenHandler A handler for incoming connections
- * @property {(port: Port, l: ListenHandler) => Promise<void>} [onListen] The
- *   listener has been registered
+ * @property {(port: Remote<Port>, l: Remote<ListenHandler>) => PromiseVow<void>} [onListen] The listener has been registered
  * @property {(
- *   port: Port,
+ *   port: Remote<Port>,
  *   localAddr: Endpoint,
  *   remoteAddr: Endpoint,
- *   l: ListenHandler,
- * ) => Promise<ConnectionHandler>} onAccept
+ *   l: Remote<ListenHandler>,
+ * ) => PromiseVow<Remote<ConnectionHandler>>} onAccept
  *   A new connection is incoming
  * @property {(
- *   port: Port,
+ *   port: Remote<Port>,
  *   localAddr: Endpoint,
  *   remoteAddr: Endpoint,
- *   l: ListenHandler,
- * ) => Promise<void>} [onReject]
+ *   l: Remote<ListenHandler>,
+ * ) => PromiseVow<void>} [onReject]
  *   The connection was rejected
- * @property {(port: Port, rej: any, l: ListenHandler) => Promise<void>} [onError]
+ * @property {(port: Remote<Port>, rej: any, l: Remote<ListenHandler>) => PromiseVow<void>} [onError]
  *   There was an error while listening
- * @property {(port: Port, l: ListenHandler) => Promise<void>} [onRemove] The
+ * @property {(port: Remote<Port>, l: Remote<ListenHandler>) => PromiseVow<void>} [onRemove] The
  *   listener has been removed
  */
 
 /**
- * @typedef {object} Connection
+ * @typedef {object} WellKnownSendOptions
+ * @property {bigint} [relativeTimeoutNs] timeout the packet if an ack is not received by this time
+ */
+
+/**
+ * @typedef {WellKnownSendOptions & Record<string, any>} SendOptions
+ */
+
+/**
+ * @typedef {object} ConnectionI
  * @property {(
- *   packetBytes: Data,
- *   opts?: Record<string, any>,
- * ) => Promise<Bytes>} send
+ *   packetBytes: Bytes,
+ *   opts?: SendOptions,
+ * ) => PromiseVow<Bytes>} send
  *   Send a packet on the connection
- * @property {() => Promise<void>} close Close both ends of the connection
+ * @property {() => PromiseVow<void>} close Close both ends of the connection
  * @property {() => Endpoint} getLocalAddress Get the locally bound name of this
  *   connection
  * @property {() => Endpoint} getRemoteAddress Get the name of the counterparty
+ */
+/**
+ * @typedef {RemotableObject & ConnectionI} Connection
  */
 
 /**
  * @typedef {object} ConnectionHandler A handler for a given Connection
  * @property {(
- *   connection: Connection,
+ *   connection: Remote<Connection>,
  *   localAddr: Endpoint,
  *   remoteAddr: Endpoint,
- *   c: ConnectionHandler,
- * ) => void} [onOpen]
+ *   c: Remote<ConnectionHandler>,
+ * ) => PromiseVow<void>} [onOpen]
  *   The connection has been opened
  * @property {(
- *   connection: Connection,
- *   packetBytes: Bytes,
- *   c: ConnectionHandler,
+ *   connection: Remote<Connection>,
+ *   ack: Bytes,
+ *   c: Remote<ConnectionHandler>,
  *   opts?: Record<string, any>,
- * ) => Promise<Data>} [onReceive]
+ * ) => PromiseVow<Bytes>} [onReceive]
  *   The connection received a packet
  * @property {(
- *   connection: Connection,
+ *   connection: Remote<Connection>,
  *   reason?: CloseReason,
- *   c?: ConnectionHandler,
- * ) => Promise<void>} [onClose]
+ *   c?: Remote<ConnectionHandler>,
+ * ) => PromiseVow<void>} [onClose]
  *   The connection has been closed
  *
  * @typedef {any | null} CloseReason The reason a connection was closed
@@ -102,7 +131,7 @@
 
 /**
  * @typedef {object} AttemptDescription
- * @property {ConnectionHandler} handler
+ * @property {Remote<ConnectionHandler>} handler
  * @property {Endpoint} [remoteAddress]
  * @property {Endpoint} [localAddress]
  */
@@ -110,73 +139,73 @@
 /**
  * @typedef {object} ProtocolHandler A handler for things the protocol
  *   implementation will invoke
- * @property {(protocol: ProtocolImpl, p: ProtocolHandler) => Promise<void>} onCreate
+ * @property {(protocol: Remote<ProtocolImpl>, p: Remote<ProtocolHandler>) => PromiseVow<void>} onCreate
  *   This protocol is created
- * @property {(localAddr: Endpoint, p: ProtocolHandler) => Promise<string>} generatePortID
+ * @property {(localAddr: Endpoint, p: Remote<ProtocolHandler>) => PromiseVow<string>} generatePortID
  *   Create a fresh port identifier for this protocol
  * @property {(
- *   port: Port,
+ *   port: Remote<Port>,
  *   localAddr: Endpoint,
- *   p: ProtocolHandler,
- * ) => Promise<void>} onBind
+ *   p: Remote<ProtocolHandler>,
+ * ) => PromiseVow<void>} onBind
  *   A port will be bound
  * @property {(
- *   port: Port,
+ *   port: Remote<Port>,
  *   localAddr: Endpoint,
- *   listenHandler: ListenHandler,
- *   p: ProtocolHandler,
- * ) => Promise<void>} onListen
+ *   listenHandler: Remote<ListenHandler>,
+ *   p: Remote<ProtocolHandler>,
+ * ) => PromiseVow<void>} onListen
  *   A port was listening
  * @property {(
- *   port: Port,
+ *   port: Remote<Port>,
  *   localAddr: Endpoint,
- *   listenHandler: ListenHandler,
- *   p: ProtocolHandler,
- * ) => Promise<void>} onListenRemove
+ *   listenHandler: Remote<ListenHandler>,
+ *   p: Remote<ProtocolHandler>,
+ * ) => PromiseVow<void>} onListenRemove
  *   A port listener has been reset
  * @property {(
- *   port: Port,
+ *   port: Remote<Port>,
  *   localAddr: Endpoint,
  *   remote: Endpoint,
- *   p: ProtocolHandler,
- * ) => Promise<Endpoint>} [onInstantiate]
+ *   p: Remote<ProtocolHandler>,
+ * ) => PromiseVow<Endpoint>} [onInstantiate]
  *   Return unique suffix for local address
  * @property {(
- *   port: Port,
+ *   port: Remote<Port>,
  *   localAddr: Endpoint,
  *   remote: Endpoint,
- *   c: ConnectionHandler,
- *   p: ProtocolHandler,
- * ) => Promise<AttemptDescription>} onConnect
+ *   c: Remote<ConnectionHandler>,
+ *   p: Remote<ProtocolHandler>,
+ * ) => PromiseVow<AttemptDescription>} onConnect
  *   A port initiates an outbound connection
  * @property {(
- *   port: Port,
+ *   port: Remote<Port>,
  *   localAddr: Endpoint,
- *   p: ProtocolHandler,
- * ) => Promise<void>} onRevoke
+ *   p: Remote<ProtocolHandler>,
+ * ) => PromiseVow<void>} onRevoke
  *   The port is being completely destroyed
  *
  * @typedef {object} InboundAttempt An inbound connection attempt
- * @property {(desc: AttemptDescription) => Promise<Connection>} accept
+ * @property {(desc: AttemptDescription) => PromiseVow<Connection>} accept
  *   Establish the connection
  * @property {() => Endpoint} getLocalAddress Return the local address for this
  *   attempt
  * @property {() => Endpoint} getRemoteAddress Return the remote address for
  *   this attempt
- * @property {() => Promise<void>} close Abort the attempt
+ * @property {() => PromiseVow<void>} close Abort the attempt
  *
  * @typedef {object} ProtocolImpl Things the protocol can do for us
- * @property {(prefix: Endpoint) => Promise<Port>} bind Claim a port, or if
+ * @property {(prefix: Endpoint) => PromiseVow<Remote<Port>>} bindPort Claim a port, or if
  *   ending in ENDPOINT_SEPARATOR, a fresh name
  * @property {(
  *   listenAddr: Endpoint,
  *   remoteAddr: Endpoint,
- * ) => Promise<InboundAttempt>} inbound
+ * ) => PromiseVow<InboundAttempt>} inbound
  *   Make an attempt to connect into this protocol
  * @property {(
- *   port: Port,
+ *   port: Remote<Port>,
  *   remoteAddr: Endpoint,
- *   connectionHandler: ConnectionHandler,
- * ) => Promise<Connection>} outbound
+ *   connectionHandler: Remote<ConnectionHandler>,
+ * ) => PromiseVow<Connection>} outbound
  *   Create an outbound connection
  */

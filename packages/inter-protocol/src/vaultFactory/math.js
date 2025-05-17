@@ -12,9 +12,11 @@ import {
   ceilMultiplyBy,
   floorDivideBy,
   ratioGTE,
-} from '@agoric/zoe/src/contractSupport/ratio.js';
+} from '@agoric/ertp/src/ratio.js';
 import { priceFrom } from '../auction/util.js';
 import { addSubtract } from '../contractSupport.js';
+
+/** @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js'; */
 
 /**
  * Calculate the minimum collateralization given the liquidation margin and the
