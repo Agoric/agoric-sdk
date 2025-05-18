@@ -3,7 +3,6 @@ import fs from 'fs';
 import process from 'process';
 import repl from 'repl';
 import util from 'util';
-import inspector from 'inspector';
 import { makeStatLogger } from '@agoric/stat-logger';
 import {
   buildTimer,
@@ -247,9 +246,21 @@ export async function main() {
   let emulateChain = false;
   let swingsetBenchmarkDriverPath = null;
   /** @type {string | undefined} */
-  let profileFilePath;
-  /** @type {inspector.Session} */
+  let cpuProfileFilePath;
+  /** @type {string | undefined} */
+  let heapProfileFilePath;
+  /** @type {import('inspector').Session | undefined} */
   let inspectorSession;
+
+  const initializeInspectorSession = () =>
+    import('inspector')
+      .then(({ Session }) => {
+        inspectorSession = new Session();
+        inspectorSession.connect();
+      })
+      .catch(err =>
+        console.error('Inspector initializtion failed due to error: ', err),
+      );
 
   await null;
 
@@ -363,23 +374,41 @@ export async function main() {
       case '--sbench':
         swingsetBenchmarkDriverPath = argv.shift();
         break;
-      case '--profile':
-        profileFilePath = path.resolve(String(argv.shift()));
+      case '--cpu-profile-output':
+        cpuProfileFilePath = path.resolve(String(argv.shift()));
         await new Promise(resolve => {
-          const parentDirectory = path.dirname(String(profileFilePath));
+          const parentDirectory = path.dirname(String(cpuProfileFilePath));
           fs.access(parentDirectory, fs.constants.F_OK, err => {
             if (err) {
               console.warn(
-                `Directory "${parentDirectory}" does not exist, not initiating profiling`,
+                `Directory "${parentDirectory}" does not exist, not initiating cpu profiling`,
               );
-              profileFilePath = undefined;
-            } else {
-              inspectorSession = new inspector.Session();
-              inspectorSession.connect();
+              cpuProfileFilePath = undefined;
             }
             resolve(null);
           });
         });
+
+        if (cpuProfileFilePath && !inspectorSession)
+          await initializeInspectorSession();
+        break;
+      case '--heap-profile-output':
+        heapProfileFilePath = path.resolve(String(argv.shift()));
+        await new Promise(resolve => {
+          const parentDirectory = path.dirname(String(heapProfileFilePath));
+          fs.access(parentDirectory, fs.constants.F_OK, err => {
+            if (err) {
+              console.warn(
+                `Directory "${parentDirectory}" does not exist, not initiating heap profiling`,
+              );
+              heapProfileFilePath = undefined;
+            }
+            resolve(null);
+          });
+        });
+
+        if (heapProfileFilePath && !inspectorSession)
+          await initializeInspectorSession();
         break;
       case '-v':
       case '--verbose':
@@ -711,7 +740,7 @@ export async function main() {
    */
   function postToInspector(method) {
     return new Promise((resolve, reject) => {
-      inspectorSession.post(method, (err, result) =>
+      inspectorSession?.post(method, (err, result) =>
         err ? reject(err) : resolve(result),
       );
     });
@@ -729,9 +758,14 @@ export async function main() {
 
     await null;
 
-    if (profileFilePath) {
+    if (cpuProfileFilePath) {
       await postToInspector('Profiler.enable');
       await postToInspector('Profiler.start');
+    }
+
+    if (heapProfileFilePath) {
+      await postToInspector('HeapProfiler.enable');
+      await postToInspector('HeapProfiler.startSampling');
     }
 
     for (let i = 0; i < rounds; i += 1) {
@@ -753,10 +787,18 @@ export async function main() {
       totalDeltaT += deltaT;
     }
 
-    if (profileFilePath) {
+    if (cpuProfileFilePath) {
       const { profile } = await postToInspector('Profiler.stop');
-      fs.writeFileSync(profileFilePath, JSON.stringify(profile));
+      fs.writeFileSync(cpuProfileFilePath, JSON.stringify(profile));
+      await postToInspector('Profiler.disable');
     }
+
+    if (heapProfileFilePath) {
+      const { profile } = await postToInspector('HeapProfiler.stopSampling');
+      fs.writeFileSync(heapProfileFilePath, JSON.stringify(profile));
+      await postToInspector('HeapProfiler.disable');
+    }
+
     const cranksPost = getCrankNumber();
     const rawStatsPost = controller.getStats();
     benchmarkStats = organizeBenchmarkStats(
