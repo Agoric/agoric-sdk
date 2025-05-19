@@ -5,7 +5,7 @@
   "type": "module",
   "main": "src/index.js",
   "engines": {
-    "node": "^18.12 || ^20.9"
+    "node": "^18.12 || ^20.9 || ^22.11"
   },
   "bin": {
     "vat": "bin/vat"
