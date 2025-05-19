@@ -3,7 +3,7 @@ import type { TestFn } from 'ava';
 import { AmountMath } from '@agoric/ertp';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { makeBlockTool, makeDoOffer } from '../../tools/e2e-tools.js';
-import { commonSetup, type SetupContextWithWallets } from '../support.js';
+import { commonSetup } from '../support.js';
 import { makeQueryClient } from '../../tools/query.js';
 import starshipChainInfo from '../../starship-chain-info.js';
 import {
@@ -13,24 +13,29 @@ import {
 import { makeHttpClient } from '../../tools/makeHttpClient.js';
 import type { OfferStatus } from '@agoric/smart-wallet/src/offers.js';
 import {
-  fundRemote,
-  setupXcsContracts,
-  createOsmosisPool,
-  setupXcsChannelLink,
-  setupXcsPrefix,
-  getXcsContractsAddress,
-  getXcsState,
-  getPoolRoute,
-  getPool,
+  osmosisSwapTools,
+  type SetupOsmosisContextWithCommon,
 } from './helpers.js';
 
-const test = anyTest as TestFn<SetupContextWithWallets>;
+const test = anyTest as TestFn<SetupOsmosisContextWithCommon>;
 
 const accounts = ['agoricSender', 'agoricReceiver'];
 
 const contractName = 'swapAnything';
 const contractBuilder =
   '../packages/builders/scripts/testing/init-swap-anything.js';
+
+const prefixList = [
+  { chain: 'agoric', prefix: 'agoric' },
+  { chain: 'osmosis', prefix: 'osmo' },
+  { chain: 'cosmoshub', prefix: 'cosmos' },
+];
+
+const channelList = [
+  { primary: 'osmosis', counterParty: 'agoric' },
+  { primary: 'osmosis', counterParty: 'cosmoshub' },
+  { primary: 'agoric', counterParty: 'cosmoshub' },
+];
 
 test.before(async t => {
   const { setupTestKeys, ...common } = await commonSetup(t);
@@ -45,24 +50,35 @@ test.before(async t => {
 
   await startContract(contractName, contractBuilder, commonBuilderOpts);
 
-  await setupXcsContracts(t);
-  await createOsmosisPool(t);
-  await setupXcsChannelLink(t, 'agoric', 'osmosis');
-  await setupXcsPrefix(t);
-
   // @ts-expect-error type
   t.context = { ...common, wallets, waitForBlock };
+
+  const swapTools = await osmosisSwapTools(t);
+  const { setupXcsContracts, setupXcsState, setupNewPool } = swapTools;
+
+  await setupXcsContracts();
+  await setupXcsState(prefixList, channelList);
+  await setupNewPool();
+
+  t.context = { ...t.context, ...swapTools };
 });
 
 test.serial('test osmosis xcs state', async t => {
-  const { useChain } = t.context;
+  const { useChain, getContractsInfo, getXcsState, getPoolRoute, getPools } =
+    t.context;
 
   // verify if Osmosis XCS contracts were instantiated
-  const { registryAddress, swaprouterAddress, swapAddress } =
-    await getXcsContractsAddress();
-  t.assert(registryAddress, 'crosschain_registry contract address not found');
-  t.assert(swaprouterAddress, 'swaprouter contract address not found');
-  t.assert(swapAddress, 'crosschain_swaps contract address not found');
+  const { swaprouter, crosschain_registry, crosschain_swaps } =
+    await getContractsInfo();
+  t.assert(swaprouter.address, 'swaprouter contract address not found');
+  t.assert(
+    crosschain_registry.address,
+    'crosschain_registry contract address not found',
+  );
+  t.assert(
+    crosschain_swaps.address,
+    'crosschain_swaps contract address not found',
+  );
 
   // verify if Osmosis XCS State was modified
   const agoricChainId = useChain('agoric').chain.chain_id;
@@ -70,17 +86,17 @@ test.serial('test osmosis xcs state', async t => {
     transferChannel: { channelId },
   } = starshipChainInfo.osmosis.connections[agoricChainId];
 
-  const { channelData, prefixData: osmosisPrefix } = await getXcsState();
+  const { channel, prefix } = await getXcsState();
 
-  t.is(osmosisPrefix, 'osmo');
-  t.is(channelData, channelId);
+  t.is(prefix, 'osmo');
+  t.is(channel, channelId);
 
-  const { pool_id, token_out_denom } = await getPoolRoute();
-  t.is(token_out_denom, 'uosmo');
+  // Verify if Pool was succefuly created
+  const pool_route = await getPoolRoute('agoric', 'ubld');
+  t.is(pool_route[0].token_out_denom, 'uosmo');
 
-  // verify if Osmosis pool was created
-  const pool = await getPool(pool_id);
-  t.assert(pool);
+  const { numPools } = await getPools();
+  t.assert(numPools > 0n, 'No Osmosis Pool found');
 });
 
 test.serial('BLD for OSMO, receiver on Agoric', async t => {
@@ -90,6 +106,7 @@ test.serial('BLD for OSMO, receiver on Agoric', async t => {
     vstorageClient,
     retryUntilCondition,
     useChain,
+    getContractsInfo,
   } = t.context;
 
   // Provision the Agoric smart wallet
@@ -106,7 +123,7 @@ test.serial('BLD for OSMO, receiver on Agoric', async t => {
     transferChannel: { channelId },
   } = starshipChainInfo.agoric.connections[osmosisChainId];
 
-  const { swapAddress } = await getXcsContractsAddress();
+  const { crosschain_swaps } = await getContractsInfo();
 
   const doOffer = makeDoOffer(wdUser);
 
@@ -132,7 +149,7 @@ test.serial('BLD for OSMO, receiver on Agoric', async t => {
     },
     offerArgs: {
       // TODO: get the contract address dynamically
-      destAddr: swapAddress,
+      destAddr: crosschain_swaps.address,
       receiverAddr: wallets.agoricReceiver,
       outDenom: 'uosmo',
       slippage: { slippagePercentage: '20', windowSeconds: 10 },
@@ -174,6 +191,7 @@ test.serial('OSMO for BLD, receiver on Agoric', async t => {
     vstorageClient,
     retryUntilCondition,
     useChain,
+    getContractsInfo,
   } = t.context;
 
   // Provision the Agoric smart wallet
@@ -184,7 +202,7 @@ test.serial('OSMO for BLD, receiver on Agoric', async t => {
   });
   t.log(`Provisioned Agoric smart wallet for ${agoricAddr}`);
 
-  const { swapAddress } = await getXcsContractsAddress();
+  const { crosschain_swaps } = await getContractsInfo();
 
   const doOffer = makeDoOffer(wdUser);
 
@@ -224,7 +242,7 @@ test.serial('OSMO for BLD, receiver on Agoric', async t => {
     },
     offerArgs: {
       // TODO: get the contract address dynamically
-      destAddr: swapAddress,
+      destAddr: crosschain_swaps.address,
       receiverAddr: wallets.agoricReceiver,
       outDenom: `ibc/${outDenomHash}`,
       slippage: { slippagePercentage: '20', windowSeconds: 10 },
@@ -259,22 +277,21 @@ test.serial('BLD for OSMO, receiver on CosmosHub', async t => {
     vstorageClient,
     retryUntilCondition,
     useChain,
+    getContractsInfo,
   } = t.context;
 
-  const { client, address } = await createFundedWalletAndClient(
+  const { client, address: cosmosAddress } = await createFundedWalletAndClient(
     t.log,
     'cosmoshub',
     useChain,
   );
 
   const balancesResult = await retryUntilCondition(
-    () => client.getAllBalances(address),
+    () => client.getAllBalances(cosmosAddress),
     coins => !!coins?.length,
-    `Faucet balances found for ${address}`,
+    `Faucet balances found for ${cosmosAddress}`,
   );
   console.log('Balances:', balancesResult);
-
-  await setupXcsChannelLink(t, 'osmosis', 'cosmoshub');
 
   // Provision the Agoric smart wallet
   const agoricAddr = wallets.agoricSender;
@@ -284,7 +301,7 @@ test.serial('BLD for OSMO, receiver on CosmosHub', async t => {
   });
   t.log(`Provisioned Agoric smart wallet for ${agoricAddr}`);
 
-  const { swapAddress } = await getXcsContractsAddress();
+  const { crosschain_swaps } = await getContractsInfo();
 
   const doOffer = makeDoOffer(wdUser);
 
@@ -303,8 +320,8 @@ test.serial('BLD for OSMO, receiver on CosmosHub', async t => {
     },
     offerArgs: {
       // TODO: get the contract address dynamically
-      destAddr: swapAddress,
-      receiverAddr: address,
+      destAddr: crosschain_swaps.address,
+      receiverAddr: cosmosAddress,
       outDenom: 'uosmo',
       slippage: { slippagePercentage: '20', windowSeconds: 10 },
       onFailedDelivery: 'do_nothing',
@@ -313,9 +330,9 @@ test.serial('BLD for OSMO, receiver on CosmosHub', async t => {
   });
 
   const balancesResultAfter = await retryUntilCondition(
-    () => client.getAllBalances(address),
+    () => client.getAllBalances(cosmosAddress),
     coins => coins?.length > 1,
-    `Faucet balances found for ${address}`,
+    `Faucet balances found for ${cosmosAddress}`,
   );
   console.log('Balances:', balancesResultAfter);
 
@@ -351,6 +368,7 @@ test.serial(
       vstorageClient,
       retryUntilCondition,
       useChain,
+      getContractsInfo,
     } = t.context;
 
     // Provision the Agoric smart wallet
@@ -374,7 +392,7 @@ test.serial(
       'ubld',
     );
 
-    const { swapAddress } = await getXcsContractsAddress();
+    const { crosschain_swaps } = await getContractsInfo();
 
     // Send swap offer
     const makeAccountOfferId = `swap-ubld-uosmo-${Date.now()}`;
@@ -386,7 +404,7 @@ test.serial(
         callPipe: [['makeSwapInvitation']],
       },
       offerArgs: {
-        destAddr: swapAddress,
+        destAddr: crosschain_swaps.address,
         receiverAddr: 'noble/noble1foo', // bad swap receiver
         outDenom: 'uosmo',
         slippage: { slippagePercentage: '20', windowSeconds: 10 },
