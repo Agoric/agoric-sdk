@@ -38,6 +38,11 @@ export {};
 
 /**
  * @typedef { 'local' | 'node-subprocess' | 'xsnap' | 'xs-worker' } ManagerType
+ *   The type of worker for hosting a vat.
+ *   - **local**: a Compartment in the SwingSet Node.js process
+ *   - **node-subprocess**: a child process using the same Node.js executable
+ *      (`process.execPath`)
+ *   - **xsnap** or **xs-worker**: an {@link @agoric/xsnap! @agoric/xsnap} worker
  */
 
 /**

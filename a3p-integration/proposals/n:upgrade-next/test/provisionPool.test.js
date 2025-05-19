@@ -129,6 +129,16 @@ test.serial(
   },
 );
 
+test.serial('manual provision', async t => {
+  // @ts-expect-error casting
+  const { vstorageKit } = t.context;
+
+  const { address } = await introduceAndProvision('manuallyProvisioned');
+  await checkUserProvisioned(address, vstorageKit);
+  t.log('manuallyProvisioned address:', address);
+  t.pass();
+});
+
 test.serial('auto provision', async t => {
   // @ts-expect-error casting
   const { vstorageKit } = t.context;
@@ -137,6 +147,8 @@ test.serial('auto provision', async t => {
   console.log('ADDR', 'automaticallyProvisioned', address);
 
   await bankSend(address, `50000000${ATOM_DENOM}`);
+  // some bld is needed for auto-provisioning
+  await bankSend(address, `10000000ubld`, GOV1ADDR);
   // some ist is needed for opening a new vault
   await bankSend(address, `10000000uist`, GOV1ADDR);
   await waitUntilAccountFunded(
@@ -149,15 +161,5 @@ test.serial('auto provision', async t => {
 
   await openVault(address, '10.0', '20.0');
   await checkUserProvisioned(address, vstorageKit);
-  t.pass();
-});
-
-test.serial('manual provision', async t => {
-  // @ts-expect-error casting
-  const { vstorageKit } = t.context;
-
-  const { address } = await introduceAndProvision('manuallyProvisioned');
-  await checkUserProvisioned(address, vstorageKit);
-  t.log('manuallyProvisioned address:', address);
   t.pass();
 });

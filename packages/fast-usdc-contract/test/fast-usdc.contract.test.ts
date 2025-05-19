@@ -72,6 +72,7 @@ test('initial baggage', async t => {
   t.snapshot(tree, 'contract baggage after start');
 });
 
+// Runs after all the serial tests
 test('used baggage', async t => {
   const { startKit } = t.context;
 
@@ -766,4 +767,38 @@ test.serial('mint received while ADVANCING', async t => {
     { status: 'ADVANCED' },
     { split, status: 'DISBURSED' },
   ]);
+});
+
+// The bridge messages are all mocked so this isn't testing real balances,
+// but at least it tests that the call resolves and returns the right shape.
+test.serial('sendFromSettlementAccount', async t => {
+  const {
+    startKit: { creatorFacet },
+    common: {
+      brands: { usdc },
+    },
+  } = t.context;
+
+  const recipient = 'cosmos:agoric-3:agoric1recipient123';
+  const amount = usdc.units(1_000);
+
+  // Perform the reimbursement
+  const balances = await E(creatorFacet).sendFromSettlementAccount(
+    recipient,
+    amount,
+  );
+  t.deepEqual(
+    balances,
+    {
+      before: [
+        { denom: 'ubld', value: 10n },
+        { denom: 'uist', value: 10n },
+      ],
+      after: [
+        { denom: 'ubld', value: 10n },
+        { denom: 'uist', value: 10n },
+      ],
+    },
+    'reimbursement has mocked data in the right shape',
+  );
 });

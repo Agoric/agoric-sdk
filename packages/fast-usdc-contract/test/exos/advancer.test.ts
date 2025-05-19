@@ -5,7 +5,7 @@ import {
   encodeAddressHook,
 } from '@agoric/cosmic-proto/address-hooks.js';
 import type { NatAmount } from '@agoric/ertp';
-import { PendingTxStatus } from '@agoric/fast-usdc/src/constants.js';
+import { TxStatus } from '@agoric/fast-usdc/src/constants.js';
 import { CctpTxEvidenceShape } from '@agoric/fast-usdc/src/type-guards.js';
 import type {
   CctpTxEvidence,
@@ -277,10 +277,7 @@ test('updates status to ADVANCING in happy path', async t => {
 
   t.deepEqual(
     storage.getDeserialized(`orchtest.txns.${evidence.txHash}`),
-    [
-      { evidence, status: PendingTxStatus.Observed },
-      { status: PendingTxStatus.Advancing },
-    ],
+    [{ evidence, status: TxStatus.Observed }, { status: TxStatus.Advancing }],
     'ADVANCED status in happy path',
   );
 
@@ -350,12 +347,12 @@ test('updates status to ADVANCE_SKIPPED on insufficient pool funds', async t => 
   t.deepEqual(
     storage.getDeserialized(`orchtest.txns.${evidence.txHash}`),
     [
-      { evidence, status: PendingTxStatus.Observed },
+      { evidence, status: TxStatus.Observed },
       {
         risksIdentified: [
           'Cannot borrow. Requested {"brand":"[Alleged: USDC brand]","value":"[293999999n]"} must be less than pool balance {"brand":"[Alleged: USDC brand]","value":"[1n]"}.',
         ],
-        status: 'ADVANCE_SKIPPED',
+        status: TxStatus.AdvanceSkipped,
       },
     ],
     'ADVANCE_SKIPPED status on insufficient pool funds',
@@ -388,10 +385,10 @@ test('updates status to ADVANCE_SKIPPED if coerceCosmosAddress fails', async t =
   t.deepEqual(
     storage.getDeserialized(`orchtest.txns.${evidence.txHash}`),
     [
-      { evidence, status: PendingTxStatus.Observed },
+      { evidence, status: TxStatus.Observed },
       {
         risksIdentified: ['Chain info not found for bech32Prefix "random"'],
-        status: 'ADVANCE_SKIPPED',
+        status: TxStatus.AdvanceSkipped,
       },
     ],
     'ADVANCE_SKIPPED status on coerceCosmosAddress failure',
@@ -426,10 +423,7 @@ test('recovery behavior if Advance Fails (ADVANCE_FAILED)', async t => {
 
   t.deepEqual(
     storage.getDeserialized(`orchtest.txns.${evidence.txHash}`),
-    [
-      { evidence, status: PendingTxStatus.Observed },
-      { status: PendingTxStatus.Advancing },
-    ],
+    [{ evidence, status: TxStatus.Observed }, { status: TxStatus.Advancing }],
     'tx is Advancing',
   );
 
@@ -597,10 +591,10 @@ test('updates status to ADVANCE_SKIPPED if pre-condition checks fail', async t =
   t.deepEqual(
     storage.getDeserialized(`orchtest.txns.${evidence.txHash}`),
     [
-      { evidence, status: PendingTxStatus.Observed },
+      { evidence, status: TxStatus.Observed },
       {
         risksIdentified: ['query: {} - Must have missing properties ["EUD"]'],
-        status: 'ADVANCE_SKIPPED',
+        status: TxStatus.AdvanceSkipped,
       },
     ],
     'tx is recorded as ADVANCE_SKIPPED',
@@ -657,9 +651,9 @@ test('updates status to ADVANCE_SKIPPED if risks identified', async t => {
   t.deepEqual(
     storage.getDeserialized(`orchtest.txns.${evidence.txHash}`),
     [
-      { evidence, status: PendingTxStatus.Observed },
+      { evidence, status: TxStatus.Observed },
       {
-        status: PendingTxStatus.AdvanceSkipped,
+        status: TxStatus.AdvanceSkipped,
         risksIdentified: ['TOO_LARGE_AMOUNT'],
       },
     ],
@@ -1277,10 +1271,7 @@ const transferFails = test.macro(async (t, { evidence, EUD }: To) => {
 
   t.deepEqual(
     t.context.readTxnRecord(evidence),
-    [
-      { evidence, status: PendingTxStatus.Observed },
-      { status: PendingTxStatus.Advancing },
-    ],
+    [{ evidence, status: TxStatus.Observed }, { status: TxStatus.Advancing }],
     'tx is Advancing',
   );
 
