@@ -2,7 +2,7 @@ import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
 import { AmountMath } from '@agoric/ertp';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
-import { makeDoOffer } from '../../tools/e2e-tools.js';
+import { makeBlockTool, makeDoOffer } from '../../tools/e2e-tools.js';
 import { commonSetup } from '../support.js';
 import { makeQueryClient } from '../../tools/query.js';
 import starshipChainInfo from '../../starship-chain-info.js';
