@@ -1,5 +1,6 @@
 // @ts-check
 import { Fail } from '@endo/errors';
+import { LRUCache } from 'lru-cache';
 
 /**
  * @typedef {{
@@ -10,6 +11,10 @@ import { Fail } from '@endo/errors';
  *   delete: (key: string) => void,
  * }} KVStore
  */
+
+const cache = /** @type {LRUCache<string, string>} */ (
+  new LRUCache({ max: 100 })
+);
 
 /**
  * @param {string} key
@@ -59,7 +64,12 @@ export function makeKVStore(db, ensureTxn, trace) {
    */
   function get(key) {
     typeof key === 'string' || Fail`key must be a string`;
-    return sqlKVGet.get(key);
+    let value = cache.get(key);
+    if (value === undefined) {
+      value = sqlKVGet.get(key);
+      cache.set(key, value);
+    }
+    return value;
   }
 
   const sqlKVGetNextKey = db.prepare(`
@@ -138,6 +148,7 @@ export function makeKVStore(db, ensureTxn, trace) {
     // The transaction's overall success will be awaited during commit
     ensureTxn();
     sqlKVSet.run(key, value);
+    cache.set(key, value);
     trace('set', key, value);
   }
 
@@ -158,6 +169,7 @@ export function makeKVStore(db, ensureTxn, trace) {
     typeof key === 'string' || Fail`key must be a string`;
     ensureTxn();
     sqlKVDel.run(key);
+    cache.delete(key);
     trace('del', key);
   }
 

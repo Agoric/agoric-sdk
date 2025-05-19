@@ -27,7 +27,8 @@
     "@endo/check-bundle": "^1.0.14",
     "@endo/errors": "^1.2.10",
     "@endo/nat": "^5.1.0",
-    "better-sqlite3": "^10.1.0"
+    "better-sqlite3": "^10.1.0",
+    "lru-cache": "11.1.0"
   },
   "devDependencies": {
     "@endo/init": "^1.1.9",
