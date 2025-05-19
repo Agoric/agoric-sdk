@@ -783,7 +783,7 @@ test.serial('sendFromSettlementAccount', async t => {
 
   const opts = {
     destinationAddress: io.wallets['feeDest'],
-    principal: '123',
+    principal: '1232869579', // truncation of real value to not exceed available funds
   };
 
   const { userForwardingAddr } =
@@ -813,5 +813,5 @@ test.serial('sendFromSettlementAccount', async t => {
   );
   t.log('funds received', balance);
   const prev = BigInt(balancesBefore!.balance!.amount! || 0n);
-  t.is(BigInt(balance!.amount), prev + BigInt(opts.principal) * 1_000_000n);
+  t.is(BigInt(balance!.amount), prev + BigInt(opts.principal));
 });

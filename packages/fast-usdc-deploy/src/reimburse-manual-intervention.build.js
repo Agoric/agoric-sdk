@@ -1,6 +1,5 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { AmountMath } from '@agoric/ertp';
-import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import { Far } from '@endo/far';
 import { parseArgs } from 'node:util';
 import { assertBech32Address } from '@agoric/orchestration/src/utils/address.js';
@@ -19,8 +18,6 @@ const xVatCtx = /** @type {const} */ ({
   USDC: Far('USDC Brand'),
 });
 const { USDC } = xVatCtx;
-const USDC_DECIMALS = 6n;
-const unit = AmountMath.make(USDC, 10n ** USDC_DECIMALS);
 
 /**
  * @param {unknown} _utils
@@ -47,16 +44,22 @@ export default async (homeP, endowments) => {
     args: endowments.scriptArgs,
     options: {
       destinationAddress: { type: 'string' },
+      /** in uusdc */
       principal: { type: 'string' },
     },
   });
   assert(destinationAddress && principal, usage);
+  assert.equal(
+    principal,
+    String(BigInt(principal)),
+    'principal must be an integer',
+  );
   assertBech32Address(destinationAddress);
 
   /** @type {ReimbursementTerms} */
   const feeTerms = {
     destinationAddress,
-    principal: multiplyBy(unit, parseRatio(principal, USDC)),
+    principal: AmountMath.make(USDC, BigInt(principal)),
   };
   await writeCoreEval('eval-reimburse-manual-intervention', utils =>
     manualInterventionProposalBuilder(utils, feeTerms),
