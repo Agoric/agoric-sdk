@@ -44,6 +44,7 @@
     "@chain-registry/client@^1.47.4": "patch:@chain-registry/client@npm%3A1.47.4#~/.yarn/patches/@chain-registry-client-npm-1.47.4-e1f663239f.patch",
     "@cosmjs/stargate@npm:0.32.3": "npm:0.33.0",
     "@cosmology/telescope@npm:^1.12.8": "patch:@cosmology/telescope@npm%3A1.12.8#~/.yarn/patches/@cosmology-telescope-npm-1.12.8-7446d2080c.patch",
+    "@endo/import-bundle@npm:^1.4.0": "patch:@endo/import-bundle@npm%3A1.4.0#~/.yarn/patches/@endo+import-bundle+1.4.0.patch",
     "@lerna/conventional-commits@npm:5.6.2": "patch:@lerna/conventional-commits@npm%3A5.6.2#~/.yarn/patches/@lerna-conventional-commits-npm-5.6.2-a373ba4bc0.patch",
     "@lerna/version@npm:5.6.2": "patch:@lerna/version@npm%3A5.6.2#~/.yarn/patches/@lerna-version-npm-5.6.2-ce2d9cb2f5.patch",
     "ava@npm:^5.3.0": "patch:ava@npm%3A5.3.1#~/.yarn/patches/ava-npm-5.3.1-d83c0bdc77.patch",

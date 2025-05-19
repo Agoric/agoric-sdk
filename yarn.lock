@@ -3480,7 +3480,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/import-bundle@npm:^1.4.0":
+"@endo/import-bundle@npm:1.4.0":
   version: 1.4.0
   resolution: "@endo/import-bundle@npm:1.4.0"
   dependencies:
@@ -3490,6 +3490,19 @@ __metadata:
     "@endo/where": "npm:^1.0.9"
     ses: "npm:^1.12.0"
   checksum: 10c0/3df96be56b19587abdabd390f31aff81b6f48c4dd867238d79b2c9f3b84cd9f787b4aeddc38250df001c83ba85df33776dc541ca2cab18bb1dfddd6ac3a1d339
+  languageName: node
+  linkType: hard
+
+"@endo/import-bundle@patch:@endo/import-bundle@npm%3A1.4.0#~/.yarn/patches/@endo+import-bundle+1.4.0.patch":
+  version: 1.4.0
+  resolution: "@endo/import-bundle@patch:@endo/import-bundle@npm%3A1.4.0#~/.yarn/patches/@endo+import-bundle+1.4.0.patch::version=1.4.0&hash=6ff82f"
+  dependencies:
+    "@endo/base64": "npm:^1.0.9"
+    "@endo/compartment-mapper": "npm:^1.6.0"
+    "@endo/errors": "npm:^1.2.10"
+    "@endo/where": "npm:^1.0.9"
+    ses: "npm:^1.12.0"
+  checksum: 10c0/e12318b764d99f94cf051567d0006f9b512fb18e42b2cd479e332da6221eb55bb3a3da11f53d4ca77cb455854234b215d5e523684292ce802d93dba39df05987
   languageName: node
   linkType: hard
 
