@@ -18,7 +18,7 @@ import { objectMap } from '@agoric/internal';
  * @callback Send
  * @param {unknown} target
  * @param {string} method
- * @param {...unknown[]} args
+ * @param {...unknown} args
  * @returns {any}
  */
 
