@@ -98,10 +98,13 @@ tail-slog:
 ###                          Osmosis Setup                                   ###
 ###############################################################################
 osmosis-xcs-setup:
-	$(CURDIR)/scripts/setup-xcs.sh
+	$(CURDIR)/scripts/setup-xcs.sh main
 
 create-osmosis-pool:
 	$(CURDIR)/scripts/create-osmosis-pool.sh
+
+create-atom-osmo-pool:
+	$(CURDIR)/scripts/create-atom-osmo-pool.sh uatom 250000 1 uosmo 250000 1
 
 ###############################################################################
 ###                           Start All                                     ###

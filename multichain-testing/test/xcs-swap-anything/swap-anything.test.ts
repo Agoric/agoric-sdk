@@ -24,7 +24,9 @@ import {
   getPool,
 } from './helpers.js';
 
-const test = anyTest as TestFn<SetupContextWithWallets>;
+const test = anyTest as TestFn<
+  SetupContextWithWallets & { waitForBlock: (blocks: number) => Promise<void> }
+>;
 
 const accounts = ['agoricSender', 'agoricReceiver'];
 
@@ -45,12 +47,11 @@ test.before(async t => {
 
   await startContract(contractName, contractBuilder, commonBuilderOpts);
 
-  // await setupXcsContracts(t);
-  // await createOsmosisPool(t);
-  // await setupXcsChannelLink(t, 'agoric', 'osmosis');
-  // await setupXcsPrefix(t);
+  await setupXcsContracts(t);
+  await createOsmosisPool(t);
+  await setupXcsChannelLink(t, 'agoric', 'osmosis');
+  await setupXcsPrefix(t);
 
-  // @ts-expect-error type
   t.context = { ...common, wallets, waitForBlock };
 });
 
@@ -522,8 +523,8 @@ test.serial('address hook - BLD for OSMO, receiver on Agoric', async t => {
   );
 });
 
-test.serial.only('bad swapOut receiver, via addressHooks', async t => {
-  const { vstorageClient, useChain } = t.context;
+test.serial('bad swapOut receiver, via addressHooks', async t => {
+  const { vstorageClient, useChain, waitForBlock } = t.context;
   const { getRestEndpoint, chain: cosmosChain } = useChain('cosmoshub');
 
   const { address: cosmosHubAddr, client: cosmosHubClient } = await fundRemote(
@@ -587,6 +588,8 @@ test.serial.only('bad swapOut receiver, via addressHooks', async t => {
   t.is(txRes.code, 0, `Transaction succeeded`);
   t.log(`Funds transferred to ${orcContractReceiverAddress}`);
 
+  await waitForBlock(2);
+
   // local account balances
   const localOrchAccountBalancesAfter =
     await queryClient.queryBalances(baseAddress);
@@ -594,16 +597,26 @@ test.serial.only('bad swapOut receiver, via addressHooks', async t => {
   const senderBalancesAfter =
     await cosmosHubQueryClient.queryBalances(cosmosHubAddr);
 
-  t.log(JSON.stringify({
-    localOrchAccountBalances: {
-      before: localOrchAccountBalancesBefore,
-      after: localOrchAccountBalancesAfter,
-    },
-    senderBalances: {
-      before: senderBalancesBefore,
-      after: senderBalancesAfter,
-    },
-  }, null, 2));
+  t.log(
+    JSON.stringify(
+      {
+        localOrchAccountBalances: {
+          before: localOrchAccountBalancesBefore,
+          after: localOrchAccountBalancesAfter,
+        },
+        senderBalances: {
+          before: senderBalancesBefore,
+          after: senderBalancesAfter,
+        },
+      },
+      null,
+      2,
+    ),
+  );
+});
+
+test.serial('experiment xcs generated pfm to unwind before swap', async t => {
+  // WIP
 });
 
 test.after(async t => {
