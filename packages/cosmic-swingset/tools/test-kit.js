@@ -1,7 +1,9 @@
 /* eslint-env node */
 
+import childProcessAmbient from 'node:child_process';
 import fs from 'node:fs';
 import * as fsPromises from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import nativePath from 'node:path';
 
 import tmp from 'tmp';
@@ -33,6 +35,8 @@ import { makeQueue } from '../src/helpers/make-queue.js';
 
 const tmpDir = makeTempDirFactory(tmp);
 
+const outboundMessages = new Map();
+
 /**
  * @template T
  * @typedef {(input: T) => T} Replacer
@@ -62,6 +66,7 @@ export const defaultInitMessage = harden({
       swingsetPort: 0,
       vbankPort: 0,
       vibcPort: 0,
+      vtransferPort: 0,
     })
       .sort(() => Math.random() - 0.5)
       .map(([name, _zero], i) => [name, i + 1]),
@@ -123,6 +128,9 @@ const baseConfig = harden({
 export const makeDefaultReceiveBridgeSend =
   (storageKit = makeFakeStorageKit('')) =>
   (bridgeId, obj) => {
+    if (!outboundMessages.has(bridgeId)) outboundMessages.set(bridgeId, []);
+    outboundMessages.get(bridgeId).push(obj);
+
     const bridgeType = `${bridgeId}:${obj.type}`;
     let lastBankNonce = 0n;
     const { toStorage } = storageKit;
@@ -154,10 +162,124 @@ export const makeDefaultReceiveBridgeSend =
       }
       case `${BridgeId.DIBC}:IBC_METHOD`:
         return String(undefined);
+      case `${BridgeId.VTRANSFER}:BRIDGE_TARGET_REGISTER`:
+        return String(undefined);
+      case `${BridgeId.VTRANSFER}:IBC_METHOD`:
+        return String(undefined);
       default:
         break;
     }
   };
+
+/**
+ * Creates a function that can build and extract proposal data from package scripts.
+ *
+ * @param {object} powers
+ * @param {Pick<typeof import('node:child_process'), 'execFileSync'>} powers.childProcess
+ * @param {typeof import('node:fs/promises')} powers.fs
+ * @param {typeof import('node:path')} powers.path
+ * @param {string} resolveBase
+ */
+export const makeProposalExtractor = (
+  { childProcess, fs: { readFile }, path: { join } },
+  resolveBase = import.meta.url,
+) => {
+  const importSpec = createRequire(resolveBase).resolve;
+
+  /**
+   * @param {string} agoricRunOutput
+   */
+  const parseProposalParts = agoricRunOutput => {
+    const evals = [
+      ...agoricRunOutput.matchAll(
+        /swingset-core-eval (?<permit>\S+) (?<script>\S+)/g,
+      ),
+    ].map(m => {
+      if (!m.groups) throw Fail`Invalid proposal output ${m[0]}`;
+      const { permit, script } = m.groups;
+      return { permit, script };
+    });
+    evals.length ||
+      Fail`No swingset-core-eval found in proposal output: ${agoricRunOutput}`;
+
+    const bundles = [
+      ...agoricRunOutput.matchAll(/swingset install-bundle @([^\n]+)/g),
+    ].map(([, bundle]) => bundle);
+    bundles.length ||
+      Fail`No bundles found in proposal output: ${agoricRunOutput}`;
+
+    return { evals, bundles };
+  };
+
+  /**
+   * @param {string} filePath
+   */
+  const readJSONFile = filePath =>
+    readFile(filePath, 'utf8').then(file => harden(JSON.parse(file)));
+
+  /**
+   * @param {string} builderPath
+   * @param {Array<string>} [args]
+   */
+  const buildAndExtract = async (builderPath, args = []) => {
+    const [builtDir, cleanup] = tmpDir('agoric-proposal');
+
+    /**
+     * @param {string} fileName
+     */
+    const readPkgFile = fileName => readFile(join(builtDir, fileName), 'utf8');
+
+    await null;
+    try {
+      const scriptPath = importSpec(builderPath);
+
+      console.info('running package script:', scriptPath);
+      const agoricRunOutput = childProcess.execFileSync(
+        importSpec('agoric/src/entrypoint.js'),
+        ['run', scriptPath, ...args],
+        { cwd: builtDir },
+      );
+      const built = parseProposalParts(agoricRunOutput.toString());
+
+      const evalsP = Promise.all(
+        built.evals.map(async ({ permit, script }) => {
+          const [permits, code] = await Promise.all(
+            [permit, script].map(path => readPkgFile(path)),
+          );
+          return /** @type {import('@agoric/cosmic-proto/swingset/swingset.js').CoreEvalSDKType} */ ({
+            json_permits: permits,
+            js_code: code,
+          });
+        }),
+      );
+
+      const bundlesP = Promise.all(
+        built.bundles.map(
+          async path =>
+            /** @type {Promise<EndoZipBase64Bundle>} */ (readJSONFile(path)),
+        ),
+      );
+
+      const [evals, bundles] = await Promise.all([evalsP, bundlesP]);
+      return { evals, bundles };
+    } finally {
+      // Defer `cleanup` and ignore any exception; spurious test failures would
+      // be worse than the minor inconvenience of manual temp dir removal.
+      const cleanupP = Promise.resolve().then(cleanup);
+      cleanupP.catch(err => {
+        console.error(err);
+        throw err; // unhandled rejection
+      });
+    }
+  };
+  return buildAndExtract;
+};
+
+const buildProposal = makeProposalExtractor({
+  childProcess: childProcessAmbient,
+  fs: fsPromises,
+  path: nativePath,
+});
 
 /**
  * Start a SwingSet kernel to be used by tests and benchmarks, returning objects
@@ -441,6 +563,38 @@ export const makeCosmicSwingsetTestKit = async (
     pushQueueRecord(action, queue);
   };
 
+  /**
+   * @param {Awaited<ReturnType<typeof buildProposal>>} proposal
+   */
+  const evaluateProposal = async ({ bundles: proposalBundles, evals }) => {
+    await Promise.resolve();
+
+    for (const bundle of proposalBundles) await installBundle(bundle);
+    pushQueueRecord(
+      {
+        evals,
+        type: QueuedActionType.CORE_EVAL,
+      },
+      highPriorityQueue,
+    );
+
+    return runNextBlock();
+  };
+
+  /**
+   * @param {EndoZipBase64Bundle} bundle
+   */
+  const installBundle = bundle => {
+    pushQueueRecord(
+      {
+        bundle: JSON.stringify(bundle),
+        type: QueuedActionType.INSTALL_BUNDLE,
+      },
+      highPriorityQueue,
+    );
+    return runNextBlock();
+  };
+
   return {
     // SwingSet-oriented references.
     actionQueue,
@@ -449,14 +603,21 @@ export const makeCosmicSwingsetTestKit = async (
     swingStore,
 
     // Controller-oriented helpers.
-    controller,
     bridgeInbound,
-    timer,
-    queueAndRun,
+    controller,
     EV,
+    /**
+     * @param {string} bridgeId
+     */
+    getOutboundMessages: bridgeId => [...outboundMessages.get(bridgeId)],
+    queueAndRun,
+    timer,
 
     // Functions specific to this kit.
+    buildProposal,
+    evaluateProposal,
     getLastBlockInfo,
+    installBundle,
     pushQueueRecord,
     pushCoreEval,
     runNextBlock,
