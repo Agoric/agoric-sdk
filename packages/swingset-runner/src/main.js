@@ -736,11 +736,12 @@ export async function main() {
 
   /**
    * @param {string} method
+   * @param {Partial<{samplingInterval: number}>} [parameters]
    * @returns {object}
    */
-  function postToInspector(method) {
+  function postToInspector(method, parameters = {}) {
     return new Promise((resolve, reject) => {
-      inspectorSession?.post(method, (err, result) =>
+      inspectorSession?.post(method, parameters, (err, result) =>
         err ? reject(err) : resolve(result),
       );
     });
@@ -765,7 +766,9 @@ export async function main() {
 
     if (heapProfileFilePath) {
       await postToInspector('HeapProfiler.enable');
-      await postToInspector('HeapProfiler.startSampling');
+      await postToInspector('HeapProfiler.startSampling', {
+        samplingInterval: 1024,
+      });
     }
 
     for (let i = 0; i < rounds; i += 1) {
