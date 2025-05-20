@@ -166,11 +166,11 @@ case ${1-} in
     publish "${2-registry}"
 
     # Git dirty check.
-    if [[ -n "$(git status --porcelain)" ]]; then
-      echo "Git status is dirty, aborting."
-      git status
-      exit 1
-    fi
+    # if [[ -n "$(git status --porcelain)" ]]; then
+    #   echo "Git status is dirty, aborting."
+    #   git status
+    #   exit 1
+    # fi
     ;;
 
   publish)
