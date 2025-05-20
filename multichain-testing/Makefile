@@ -5,7 +5,7 @@ FILE = config.yaml
 
 HELM_REPO = starship
 HELM_CHART = devnet
-HELM_VERSION = v0.2.20
+HELM_VERSION = v1.7.0
 
 ###############################################################################
 ###                              All commands                               ###
