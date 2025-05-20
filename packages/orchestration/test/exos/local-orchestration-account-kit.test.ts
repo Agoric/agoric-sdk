@@ -306,6 +306,28 @@ test('transfer', async t => {
   await t.throwsAsync(pfmTimeoutTransferP, {
     message: `ICS20-1 transfer error "${ackErrorMsg}"`,
   });
+
+  t.log('Transfer handles multi-hop transfers with memo for the destination');
+  await t.notThrowsAsync(
+    doTransfer(aDenomAmount, dydxDest, {
+      memo: JSON.stringify({
+        wasm: { contract: 'osmosis4829219', msg: { osmosis_swap: 'XCS' } },
+      }),
+    }),
+  );
+  t.is(latestTxMsg().receiver, PFM_RECEIVER, 'defaults to "pfm" receiver');
+  t.deepEqual(JSON.parse(latestTxMsg().memo), {
+    forward: {
+      receiver: 'dydx1test',
+      port: 'transfer',
+      channel: 'channel-33',
+      retries: 3,
+      timeout: '10m',
+      next: JSON.stringify({
+        wasm: { contract: 'osmosis4829219', msg: { osmosis_swap: 'XCS' } },
+      }),
+    },
+  });
 });
 
 test('monitor transfers', async t => {
