@@ -83,25 +83,40 @@ jobs:
         working-directory: ./agoric-sdk/multichain-testing
 
       - name: docker build (sdk)
-        # Produces local ghcr.io/agoric/agoric-sdk:dev used in the following test.
+        # Produces local ghcr.io/agoric/agoric-sdk:dev used in Kind.
         run: |
           make docker-build-sdk TAG=dev
         working-directory: ./agoric-sdk/packages/deployment
 
+      - name: Setup kind cluster
+        uses: helm/kind-action@v1.8.0
+        with:
+          cluster_name: kind-starship
+
+      - name: Prepare kind for Starship
+        run: |
+          set -ex
+          # Preload local Docker image into kind cluster.
+          kind load docker-image --name kind-starship ghcr.io/agoric/agoric-sdk:dev
+
+          # Get kind kubeconfig
+          KIND_KUBECONFIG="$HOME/kind-kubeconfig"
+          touch "$KIND_KUBECONFIG"
+          chmod go= "$KIND_KUBECONFIG"
+          kind get kubeconfig --name kind-starship > "$KIND_KUBECONFIG"
+          echo "KUBECONFIG=$KIND_KUBECONFIG" >> $GITHUB_ENV
+
       - name: Setup Starship Infrastructure
         id: starship-infra
-        # in lieu of cosmology-tech/starship-action@0.3.0
-        # (see local .github/actions/starship-action/README.md)
-        uses: ./agoric-sdk/.github/actions/starship-action
+        # `inputs.name` is fixed in this commit (hyperweb-io/starship-action#43).
+        # TODO: Adopt an official tag of `starship-action` when it is released
+        uses: hyperweb-io/starship-action@d854f77ccefe7fc3dfe05b0500931ff2563d1406
+        timeout-minutes: 20
         with:
-          values: ./agoric-sdk/multichain-testing/${{ inputs.config }}
-          port-forward: true
-          version: 0.2.20
+          config: ./agoric-sdk/multichain-testing/${{ inputs.config }}
           timeout: 20m # Usually 13min
-          # Load the locally-built dev Docker image for the chain into kind.
-          load-docker-images: ghcr.io/agoric/agoric-sdk:dev
+          kubeconfig: ${{ env.KUBECONFIG }}
           namespace: ${{ env.NAMESPACE }}
-          repo: https://hyperweb-io.github.io/starship
 
       - name: Fund Provision Pool
         run: |
