@@ -22,6 +22,7 @@ import {
   getXcsState,
   getPoolRoute,
   getPool,
+  createAtomOsmoPool,
 } from './helpers.js';
 
 const test = anyTest as TestFn<
@@ -49,7 +50,10 @@ test.before(async t => {
 
   await setupXcsContracts(t);
   await createOsmosisPool(t);
+  await createAtomOsmoPool(t);
   await setupXcsChannelLink(t, 'agoric', 'osmosis');
+  await setupXcsChannelLink(t, 'agoric', 'cosmoshub');
+  await setupXcsChannelLink(t, 'cosmoshub', 'osmosis');
   await setupXcsPrefix(t);
 
   t.context = { ...common, wallets, waitForBlock };
@@ -613,10 +617,6 @@ test.serial('bad swapOut receiver, via addressHooks', async t => {
       2,
     ),
   );
-});
-
-test.serial('experiment xcs generated pfm to unwind before swap', async t => {
-  // WIP
 });
 
 test.after(async t => {

@@ -111,6 +111,34 @@ export const createOsmosisPool = async t => {
   }
 };
 
+export const createAtomOsmoPool = async t => {
+  console.log('Creating Osmosis Pool ...');
+  const tokenInDenom = 'uatom';
+  const tokenInAmount = '250000';
+  const tokenInWeight = '1';
+  const tokenOutDenom = 'uosmo';
+  const tokenOutAmount = '250000';
+  const tokenOutWeight = '1';
+  try {
+    const scriptPath = path.resolve(
+      dirname,
+      '../../scripts/create-atom-osmo-pool.sh',
+    );
+    const { stdout } = await execa(scriptPath, [
+      tokenInDenom,
+      tokenInAmount,
+      tokenInWeight,
+      tokenOutDenom,
+      tokenOutAmount,
+      tokenOutWeight,
+    ]);
+    console.log('create-osmosis-pool  script output:', stdout);
+  } catch (error) {
+    t.fail(`create-osmosis-pool failed with error: ${error}`);
+  }
+};
+
+
 export const setupXcsChannelLink = async (t, chainA, chainB) => {
   console.log('Setting XCS Channel Links ...');
   try {
