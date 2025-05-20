@@ -619,6 +619,87 @@ test.serial('bad swapOut receiver, via addressHooks', async t => {
   );
 });
 
+test.serial('native ATOM for Osmo using PFM, receiver on Agoric', async t => {
+  const { wallets, vstorageClient, retryUntilCondition, useChain } = t.context;
+
+  const { client: cosmosHubClient, address: cosmosHubAddr } = await createFundedWalletAndClient(
+    t.log,
+    'cosmoshub',
+    useChain,
+  );
+ 
+  const apiUrl = await useChain('agoric').getRestEndpoint();
+  const queryClient = makeQueryClient(apiUrl);
+
+  const { balances: balancesBefore } = await queryClient.queryBalances(
+    wallets.agoricReceiver,
+  );
+
+  const {
+    sharedLocalAccount: { value: baseAddress },
+  } = await vstorageClient.queryData('published.swap-anything');
+  t.log(baseAddress);
+
+  const { swapAddress } = await getXcsContractsAddress();
+
+  const orcContractReceiverAddress = encodeAddressHook(baseAddress, {
+    destAddr: swapAddress,
+    receiverAddr: wallets.agoricReceiver,
+    outDenom: 'uosmo',
+  });
+
+  const transferArgs = makeIBCTransferMsg(
+    { denom: `uatom`, value: 125n },
+    { address: orcContractReceiverAddress, chainName: 'agoric' },
+    { address: cosmosHubAddr, chainName: 'cosmoshub' },
+    Date.now(),
+    useChain,
+  );
+  console.log('Transfer Args:', transferArgs);
+  // TODO #9200 `sendIbcTokens` does not support `memo`
+  // @ts-expect-error spread argument for concise code
+  const txRes = await cosmosHubClient.sendIbcTokens(...transferArgs);
+  if (txRes && txRes.code !== 0) {
+    console.error(txRes);
+    throw Error(`failed to ibc transfer funds to ${orcContractReceiverAddress}`);
+  }
+  const { events: _events, ...txRest } = txRes;
+  console.log(txRest);
+  t.is(txRes.code, 0, `Transaction succeeded`);
+  t.log(`Funds transferred to ${orcContractReceiverAddress}`);
+
+  const osmosisChainId = useChain('osmosis').chain.chain_id;
+
+  const {
+    transferChannel: { channelId },
+  } = starshipChainInfo.agoric.connections[osmosisChainId];
+
+  const { balances: agoricReceiverBalances } = await retryUntilCondition(
+    () => queryClient.queryBalances(wallets.agoricReceiver),
+    ({ balances }) => {
+      const balancesBeforeAmount = BigInt(balancesBefore[0]?.amount || 0);
+      const currentBalanceAmount = BigInt(balances[0]?.amount || 0);
+      return currentBalanceAmount > balancesBeforeAmount;
+    },
+    'Osmosis swap output reflected on Agoric receiver balance',
+  );
+  t.log(agoricReceiverBalances);
+
+  const { hash: expectedHash } = await queryClient.queryDenom(
+    `transfer/${channelId}`,
+    'uosmo',
+  );
+
+  t.log('Expected denom hash:', expectedHash);
+
+  t.regex(agoricReceiverBalances[0]?.denom, /^ibc/);
+  t.is(
+    agoricReceiverBalances[0]?.denom.split('ibc/')[1],
+    expectedHash,
+    'got expected ibc denom hash',
+  );
+});
+
 test.after(async t => {
   const { deleteTestKeys } = t.context;
   deleteTestKeys(accounts);
