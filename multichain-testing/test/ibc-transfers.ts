@@ -4,9 +4,9 @@ import type { TestFn, ExecutionContext } from 'ava';
 import { commonSetup, type SetupContext } from './support.js';
 import { createWallet, generateMnemonic } from '../tools/wallet.js';
 import { makeQueryClient } from '../tools/query.js';
-import { makeAgd, type Agd } from '../tools/agd-lib.js';
+import { makeAgd, type Agd } from '../tools/chaind-lib.js';
 import starshipChainInfo from '../starship-chain-info.js';
-import type { ForwardInfo } from '@agoric/orchestration';
+import type { CosmosChainAddress, ForwardInfo } from '@agoric/orchestration';
 import { sleep } from '../tools/sleep.js';
 import { objectMap } from '@endo/patterns';
 
@@ -16,20 +16,14 @@ test.before(async t => {
   t.context = await commonSetup(t);
 });
 
-const queryStrings = {
+const txEventQuery = /** @type {const} */ {
   msgReceivePacket: {
-    agoric: ['--events', 'message.action=/ibc.core.channel.v1.MsgRecvPacket'],
-    cosmos: ['--query', "message.action='/ibc.core.channel.v1.MsgRecvPacket'"],
+    event: 'message.action',
+    value: '/ibc.core.channel.v1.MsgRecvPacket',
   },
   msgAcknowledgement: {
-    agoric: [
-      '--events',
-      'message.action=/ibc.core.channel.v1.MsgAcknowledgement',
-    ],
-    cosmos: [
-      '--query',
-      "message.action='/ibc.core.channel.v1.MsgAcknowledgement'",
-    ],
+    event: 'message.action',
+    value: '/ibc.core.channel.v1.MsgAcknowledgement',
   },
 };
 
@@ -135,16 +129,8 @@ type QueryRes = { total_count: string; txs: object[] };
 const queryPackets = async (binaries: Record<string, Agd>) => {
   const results: Record<string, { recvs: QueryRes; acks: QueryRes }> = {};
   for (const [name, chaind] of Object.entries(binaries)) {
-    // perhaps the different is pre/post v0.50 queries?
-    const queryType = name === 'agd' ? 'agoric' : 'cosmos';
-    const recvs = await chaind.query([
-      'txs',
-      ...queryStrings.msgReceivePacket[queryType],
-    ]);
-    const acks = await chaind.query([
-      'txs',
-      ...queryStrings.msgAcknowledgement[queryType],
-    ]);
+    const recvs = await chaind.queryTxsByEvents(txEventQuery.msgReceivePacket);
+    const acks = await chaind.queryTxsByEvents(txEventQuery.msgAcknowledgement);
     results[name] = {
       recvs,
       acks,
@@ -242,7 +228,7 @@ test('pfm: osmosis -> agoric -> cosmoshub', async t => {
     forward: {
       channel: agoricToCosmos.channelId,
       port: 'transfer',
-      receiver: cosmosAddr,
+      receiver: cosmosAddr as CosmosChainAddress['value'],
       retries: 2,
       timeout: '1m',
     },
