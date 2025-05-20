@@ -79,7 +79,7 @@ jobs:
         with:
           result-encoding: string
           script: |
-            let branch = 'rs-node-22';
+            let branch = 'rs-make-offer-up-compatible-with-node-22';
             if (context.payload.pull_request) {
               const { body } = context.payload.pull_request;
               const regex = /^\#getting-started-branch:\s+(\S+)/m;
@@ -89,7 +89,7 @@ jobs:
               }
             }
             console.log('getting-started dapp branch: ' + branch);
-            return "rs-node-22";
+            return "rs-make-offer-up-compatible-with-node-22";
 
       - name: Start local NPM registry
         if: ${{ startsWith(matrix.cli, 'registry') }}
