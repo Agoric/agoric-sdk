@@ -379,8 +379,13 @@ export const prepareLocalOrchestrationAccountKit = (
             memo = opts.memo;
           }
           if (forwardInfo) {
-            // forward memo takes precedence
-            memo = JSON.stringify(forwardInfo);
+            // pass opts.memo as forward.next, if present
+            memo = JSON.stringify({
+              forward: {
+                ...forwardInfo.forward,
+                next: memo,
+              },
+            });
           }
           const transferMsg = typedJson(
             '/ibc.applications.transfer.v1.MsgTransfer',
