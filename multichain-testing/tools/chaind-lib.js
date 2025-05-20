@@ -17,6 +17,10 @@ const chainToBinary = {
   noble: 'nobled',
 };
 
+/**
+ * @param {string} chainName
+ * @returns {string[]} - e.g. ['exec', '-i', 'agoriclocal-genesis-0', '-c', 'validator', '--tty=false', '--', 'agd']
+ */
 const binaryArgs = (chainName = 'agoric') => [
   'exec',
   '-i',
@@ -95,8 +99,111 @@ export const makeAgd = ({ execFileSync }) => {
 
     const outJson = flags({ output: 'json' });
 
+    /** @type {Record<string, any> | undefined} */
+    let version;
+
+    /** @type {((ev: EventQuery | EventQuery[]) => string[]) | undefined} */
+    let buildEventQueryArgs;
+
     const ro = freeze({
       status: async () => JSON.parse(exec([...nodeArgs, 'status'])),
+      version: async () => {
+        if (version) {
+          return version;
+        }
+
+        // TODO: This nonsense is because some appds write version to stderr!
+        const kubectlArgs = binaryArgs(chainName);
+        const appd = kubectlArgs.pop();
+        const args = [
+          `/bin/sh`,
+          `-c`,
+          `exec ${appd} version --long --output json 2>&1`,
+        ];
+
+        console.log(`$$$`, ...args);
+        const out = execFileSync(kubectlBinary, [...kubectlArgs, ...args], {
+          encoding: 'utf-8',
+          stdio: ['ignore', 'pipe', 'pipe'],
+        });
+        const splitOutput = out.split('\n');
+        const lastLine = splitOutput.at(-1) || splitOutput.at(-2);
+
+        try {
+          assert(lastLine, 'no last line');
+          version = JSON.parse(lastLine);
+          return version;
+        } catch (e) {
+          console.error(chainName, 'version failed:', e);
+          console.info('output:', out);
+          throw e;
+        }
+      },
+      /**
+       *
+       * @param {[EventQuery, ...EventQuery[]]} eventQueries
+       * @returns {Promise<any>}
+       */
+      queryTxsByEvents: async (...eventQueries) => {
+        const doQuery = () => {
+          assert(buildEventQueryArgs, 'buildEventQueryArgs not set');
+          return ro.query([
+            'txs',
+            ...eventQueries.flatMap(buildEventQueryArgs),
+          ]);
+        };
+
+        if (buildEventQueryArgs) {
+          return doQuery();
+        }
+
+        // Default to v0.50: chaind txs --query "<QUERY>"
+        buildEventQueryArgs = evs => {
+          const evqArr = Array.isArray(evs) ? evs : [evs];
+          return [
+            '--query',
+            evqArr
+              .map(({ event, condition, value }) => {
+                if (condition !== undefined) {
+                  assert.equal(
+                    condition,
+                    '=',
+                    `condition: ${condition} unimplemented; only "=" supported`,
+                  );
+                }
+                return `${event}='${value}'`;
+              })
+              .join(' AND '),
+          ];
+        };
+
+        // Extract version from: chaind version --long -ojson
+        const version = await ro.version();
+        assert(version, `no ${chainName} version`);
+        if (version.cosmos_sdk_version.match(/^v0\.[0-4]?[0-9]\./)) {
+          // Pre v0.50.0.
+          buildEventQueryArgs = evs => {
+            const evqArr = Array.isArray(evs) ? evs : [evs];
+            return [
+              '--events',
+              evqArr
+                .map(({ event, condition, value }) => {
+                  if (condition !== undefined) {
+                    assert.equal(
+                      condition,
+                      '=',
+                      `condition: ${condition} unimplemented; only "=" supported`,
+                    );
+                  }
+                  return `${event}=${value}`;
+                })
+                .join('&'),
+            ];
+          };
+        }
+
+        return doQuery();
+      },
       /**
        * @param {| [kind: 'gov', domain: string, ...rest: any]
        *         | [kind: 'tx', txhash: string]
