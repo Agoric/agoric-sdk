@@ -51,7 +51,6 @@
     "@endo/pass-style": "^1.5.0",
     "@endo/patterns": "^1.5.0",
     "@endo/promise-kit": "^1.1.10",
-    "@endo/ses-ava": "^1.2.10",
     "@endo/stream": "^1.2.10",
     "@endo/zip": "^1.0.9",
     "ansi-styles": "^6.2.1",

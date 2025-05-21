@@ -1,4 +1,4 @@
-import { test } from './prepare-test-env-ava.js';
+import test from 'ava';
 
 // eslint-disable-next-line import/order
 import { E } from '@endo/far';

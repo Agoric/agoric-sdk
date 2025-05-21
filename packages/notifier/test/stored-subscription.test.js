@@ -1,5 +1,5 @@
 // eslint-disable-next-line import/order
-import { test } from './prepare-test-env-ava.js';
+import test from 'ava';
 
 import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';

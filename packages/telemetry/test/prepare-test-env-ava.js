@@ -1,4 +1,8 @@
-import { wrapTest } from '@endo/ses-ava';
-import rawTest from 'ava';
+/**
+ * Like prepare-test-env but also exports the AVA `test` function for
+ * compatibility with earlier uses of @endo/ses-ava.
+ */
 
-export const test = wrapTest(rawTest);
+import test from 'ava';
+
+export { test };

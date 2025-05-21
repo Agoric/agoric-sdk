@@ -1,4 +1,4 @@
-import { test } from './prepare-test-env-ava.js';
+import test from 'ava';
 
 import { makeHeapZone } from '../heap.js';
 import { testMakeOnce } from '../tools/testers.js';
