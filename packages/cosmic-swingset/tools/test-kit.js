@@ -152,7 +152,8 @@ export const makeDefaultReceiveBridgeSend =
         );
         return !moduleDescriptor ? String(undefined) : moduleDescriptor.address;
       }
-      case `${BridgeId.BANK}:VBANK_GIVE`: {
+      case `${BridgeId.BANK}:VBANK_GIVE`:
+      case `${BridgeId.BANK}:VBANK_GRAB`: {
         lastBankNonce += 1n;
         return harden({
           nonce: `${lastBankNonce}`,
@@ -160,15 +161,11 @@ export const makeDefaultReceiveBridgeSend =
           updated: [],
         });
       }
-      case `${BridgeId.DIBC}:IBC_METHOD`:
-        return String(undefined);
-      case `${BridgeId.VTRANSFER}:BRIDGE_TARGET_REGISTER`:
-        return String(undefined);
-      case `${BridgeId.VTRANSFER}:IBC_METHOD`:
-        return String(undefined);
       default:
         break;
     }
+
+    return String(undefined);
   };
 
 /**
