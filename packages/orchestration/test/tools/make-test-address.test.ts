@@ -1,4 +1,4 @@
-import test from '@endo/ses-ava/prepare-endo.js';
+import test from 'ava';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { makeTestAddress } from '../../tools/make-test-address.js';
 

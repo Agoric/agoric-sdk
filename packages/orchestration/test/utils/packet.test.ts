@@ -1,4 +1,4 @@
-import test from '@endo/ses-ava/prepare-endo.js';
+import test from 'ava';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import {
   QueryBalanceRequest,
@@ -29,7 +29,7 @@ test('makeTxPacket', t => {
     '{"type":1,"data":"ChcKCy9mb28uYmFyLnYxEggKBgoEc2VudBIFaGVsbG8YkE4=","memo":""}',
     'accepts options for TxBody',
   );
-  t.deepEqual(
+  t.is(
     makeTxPacket([
       // @ts-expect-error missing value field
       {

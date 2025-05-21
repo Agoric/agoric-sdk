@@ -1,8 +1,7 @@
 // Modeled on test-heap-classes.js
 
-import { test } from './prepare-test-env-ava.js';
+import test from 'ava';
 
-// eslint-disable-next-line import/order
 import { M } from '@endo/patterns';
 import { makeHeapZone } from '../src/heap.js';
 import { prepareAttenuatorMaker } from '../src/prepare-attenuator.js';

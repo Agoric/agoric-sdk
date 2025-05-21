@@ -1,5 +1,5 @@
 import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
-import test from '@endo/ses-ava/prepare-endo.js';
+import test from 'ava';
 
 import { typedJson } from '@agoric/cosmic-proto';
 import { makeNameHubKit } from '@agoric/vats';

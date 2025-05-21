@@ -1,5 +1,5 @@
 /* global setTimeout */
-import { test } from './prepare-test-env-ava.js';
+import test from 'ava';
 
 import { getTelemetryProviders } from '../src/index.js';
 

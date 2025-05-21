@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { promisify } from 'node:util';
 import tmp from 'tmp';
-import { test } from './prepare-test-env-ava.js';
+import test from 'ava';
 
 import {
   makeSimpleCircularBuffer,

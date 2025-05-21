@@ -3,7 +3,7 @@
 import './lockdown.js';
 
 import { makeMarshal } from '@endo/marshal';
-import { test } from './prepare-test-env-ava.js';
+import test from 'ava';
 
 import {
   iterateLatest,

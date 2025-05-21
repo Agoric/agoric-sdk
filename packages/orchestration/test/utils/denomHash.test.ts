@@ -1,4 +1,4 @@
-import test from '@endo/ses-ava/prepare-endo.js';
+import test from 'ava';
 
 import bundleSource from '@endo/bundle-source';
 import { importBundle } from '@endo/import-bundle';

@@ -1,6 +1,6 @@
 // From https://github.com/Agoric/agoric-sdk/pull/6903#discussion_r1098067133
 
-import { test } from './prepare-test-env-ava.js';
+import test from 'ava';
 
 // eslint-disable-next-line import/order
 import { M, makeScalarMapStore } from '@agoric/store';
