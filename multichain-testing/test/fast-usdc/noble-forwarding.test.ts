@@ -1,10 +1,12 @@
 import anyTest from '@endo/ses-ava/prepare-endo.js';
+
+import type { IBCConnectionInfo } from '@agoric/orchestration';
+import { assertBech32Address } from '@agoric/orchestration/src/utils/address.js';
 import type { TestFn } from 'ava';
-import { commonSetup, type SetupContext } from '../support.js';
-import { createWallet } from '../../tools/wallet.js';
-import type { Bech32Address, IBCConnectionInfo } from '@agoric/orchestration';
-import { makeQueryClient } from '../../tools/query.js';
 import starshipChainInfo from '../../starship-chain-info.js';
+import { makeQueryClient } from '../../tools/query.js';
+import { createWallet } from '../../tools/wallet.js';
+import { commonSetup, type SetupContext } from '../support.js';
 
 const test = anyTest as TestFn<SetupContext>;
 
@@ -14,8 +16,8 @@ test('noble forwarding', async t => {
   });
 
   const agoricWallet = await createWallet('agoric');
-  const agoricAddr = (await agoricWallet.getAccounts())[0]
-    .address as Bech32Address;
+  const agoricAddr = (await agoricWallet.getAccounts())[0].address;
+  assertBech32Address(agoricAddr);
   t.log('Made agoric wallet:', agoricAddr);
 
   const nobleChainId = useChain('noble').chain.chain_id;
