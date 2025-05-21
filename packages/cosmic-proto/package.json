@@ -154,8 +154,8 @@
     "prepare": "npm run build",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
-    "lint:types": "tsc",
-    "lint:eslint": "eslint .",
+    "lint:eslint": "yarn run -T eslint .",
+    "lint:types": "yarn run -T tsc",
     "test": "ava",
     "test:xs": "exit 0",
     "test:live": "yarn build && scripts/test-live.js"
