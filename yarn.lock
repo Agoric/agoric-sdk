@@ -1728,15 +1728,6 @@
   dependencies:
     ses "^1.12.0"
 
-"@endo/ses-ava@^1.2.10":
-  version "1.2.10"
-  resolved "https://registry.yarnpkg.com/@endo/ses-ava/-/ses-ava-1.2.10.tgz#a6c01e23939a56d3b52dc279a80027b89dd96669"
-  integrity sha512-s6M1g3nYSsYnqJVONGinv3wjuXR8LWRxQ/V3NbXCZtBvIwLkfNgy6N8UBQph+Murh70F89nDc+JYhBkcGfVjxQ==
-  dependencies:
-    "@endo/env-options" "^1.1.8"
-    "@endo/init" "^1.1.9"
-    ses "^1.12.0"
-
 "@endo/stream-node@^1.1.10":
   version "1.1.10"
   resolved "https://registry.yarnpkg.com/@endo/stream-node/-/stream-node-1.1.10.tgz#b7a75b7d9216670acba68ed134beb69ae53e6981"

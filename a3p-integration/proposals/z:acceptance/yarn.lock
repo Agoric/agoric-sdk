@@ -320,7 +320,6 @@ __metadata:
     "@endo/pass-style": "npm:^1.5.0"
     "@endo/patterns": "npm:^1.5.0"
     "@endo/promise-kit": "npm:^1.1.10"
-    "@endo/ses-ava": "npm:^1.2.10"
     "@endo/stream": "npm:^1.2.10"
     "@endo/zip": "npm:^1.0.9"
     ansi-styles: "npm:^6.2.1"
@@ -983,19 +982,6 @@ __metadata:
   dependencies:
     ses: "npm:^1.12.0"
   checksum: 10c0/39d2d8073484c81a2fc02ce7d40402152953b2f4e33ae4f6429c92c06f766afab9e2af68adb393a8507997e572a0f826436844cb2b61f2f227d48340d0c4bfb2
-  languageName: node
-  linkType: hard
-
-"@endo/ses-ava@npm:^1.2.10":
-  version: 1.2.10
-  resolution: "@endo/ses-ava@npm:1.2.10"
-  dependencies:
-    "@endo/env-options": "npm:^1.1.8"
-    "@endo/init": "npm:^1.1.9"
-    ses: "npm:^1.12.0"
-  peerDependencies:
-    ava: ^5.3.0 || ^6.1.2
-  checksum: 10c0/27e31489db71fb966c7cc78b61912ff764ff20965eb78d6cae7fdb979cafc820176aad03133a10002fe13b4969b74c9b262889c545d2a81537e713cd6196a850
   languageName: node
   linkType: hard
 
