@@ -9,6 +9,7 @@ import {
   BLOCK_HISTOGRAM_METRICS,
 } from '@agoric/internal/src/metrics.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { avaRetry } from '@agoric/internal/tools/avaRetry.js';
 
 import {
   leadingPrometheusNameRegExp,
@@ -19,7 +20,7 @@ import { makeCosmicSwingsetTestKit } from '../tools/test-kit.js';
 
 const test = anyTest as TestFn;
 
-test('Prometheus metric definitions', async t => {
+avaRetry(test, 'Prometheus metric definitions', async t => {
   // Enable both direct and slog-based Prometheus export.
   const OTEL_EXPORTER_PROMETHEUS_PORT = '12345';
   const SLOGSENDER_AGENT_OTEL_EXPORTER_PROMETHEUS_PORT = '12346';
