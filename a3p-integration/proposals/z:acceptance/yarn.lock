@@ -9,7 +9,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/access-token@portal:../../agoric-sdk/packages/access-token::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
-    "@agoric/internal": "npm:^0.3.2"
+    "@agoric/internal": "workspace:*"
     n-readlines: "npm:^1.0.0"
     proper-lockfile: "npm:^4.1.2"
     tmp: "npm:^0.2.1"
@@ -20,7 +20,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/base-zone@portal:../../agoric-sdk/packages/base-zone::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
-    "@agoric/store": "npm:^0.9.2"
+    "@agoric/store": "workspace:*"
     "@endo/common": "npm:^1.2.10"
     "@endo/errors": "npm:^1.2.10"
     "@endo/exo": "npm:^1.5.9"
@@ -34,10 +34,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/cache@portal:../../agoric-sdk/packages/cache::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
-    "@agoric/internal": "npm:^0.3.2"
-    "@agoric/notifier": "npm:^0.6.2"
-    "@agoric/store": "npm:^0.9.2"
-    "@agoric/vat-data": "npm:^0.5.2"
+    "@agoric/internal": "workspace:*"
+    "@agoric/notifier": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/vat-data": "workspace:*"
     "@endo/far": "npm:^1.1.11"
     "@endo/marshal": "npm:^1.6.4"
   languageName: node
@@ -47,9 +47,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/casting@portal:../../agoric-sdk/packages/casting::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
-    "@agoric/internal": "npm:^0.3.2"
-    "@agoric/notifier": "npm:^0.6.2"
-    "@agoric/store": "npm:^0.9.2"
+    "@agoric/internal": "workspace:*"
+    "@agoric/notifier": "workspace:*"
+    "@agoric/store": "workspace:*"
     "@cosmjs/encoding": "npm:^0.33.0"
     "@cosmjs/proto-signing": "npm:^0.33.0"
     "@cosmjs/stargate": "npm:^0.33.0"
@@ -67,12 +67,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/client-utils@portal:../../agoric-sdk/packages/client-utils::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
-    "@agoric/casting": "npm:^0.4.2"
-    "@agoric/cosmic-proto": "npm:^0.4.0"
-    "@agoric/ertp": "npm:^0.16.2"
-    "@agoric/internal": "npm:^0.3.2"
-    "@agoric/smart-wallet": "npm:^0.5.3"
-    "@agoric/vats": "npm:^0.15.1"
+    "@agoric/casting": "workspace:*"
+    "@agoric/cosmic-proto": "workspace:*"
+    "@agoric/ertp": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/smart-wallet": "workspace:*"
+    "@agoric/vats": "workspace:*"
     "@cosmjs/stargate": "npm:^0.33.0"
     "@cosmjs/tendermint-rpc": "npm:^0.33.0"
     "@endo/base64": "npm:^1.0.9"
@@ -100,10 +100,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/ertp@portal:../../agoric-sdk/packages/ERTP::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
-    "@agoric/notifier": "npm:^0.6.2"
-    "@agoric/store": "npm:^0.9.2"
-    "@agoric/vat-data": "npm:^0.5.2"
-    "@agoric/zone": "npm:^0.2.2"
+    "@agoric/notifier": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/vat-data": "workspace:*"
+    "@agoric/zone": "workspace:*"
     "@endo/errors": "npm:^1.2.10"
     "@endo/eventual-send": "npm:^1.3.1"
     "@endo/far": "npm:^1.1.11"
@@ -118,13 +118,13 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/governance@portal:../../agoric-sdk/packages/governance::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
-    "@agoric/ertp": "npm:^0.16.2"
-    "@agoric/internal": "npm:^0.3.2"
-    "@agoric/notifier": "npm:^0.6.2"
-    "@agoric/store": "npm:^0.9.2"
-    "@agoric/time": "npm:^0.3.2"
-    "@agoric/vat-data": "npm:^0.5.2"
-    "@agoric/zoe": "npm:^0.26.2"
+    "@agoric/ertp": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/notifier": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/time": "workspace:*"
+    "@agoric/vat-data": "workspace:*"
+    "@agoric/zoe": "workspace:*"
     "@endo/bundle-source": "npm:^4.0.0"
     "@endo/captp": "npm:^4.4.5"
     "@endo/errors": "npm:^1.2.10"
@@ -141,16 +141,16 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/inter-protocol@portal:../../agoric-sdk/packages/inter-protocol::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
-    "@agoric/ertp": "npm:^0.16.2"
-    "@agoric/governance": "npm:^0.10.3"
-    "@agoric/internal": "npm:^0.3.2"
-    "@agoric/notifier": "npm:^0.6.2"
-    "@agoric/store": "npm:^0.9.2"
-    "@agoric/time": "npm:^0.3.2"
-    "@agoric/vat-data": "npm:^0.5.2"
-    "@agoric/vats": "npm:^0.15.1"
-    "@agoric/zoe": "npm:^0.26.2"
-    "@agoric/zone": "npm:^0.2.2"
+    "@agoric/ertp": "workspace:*"
+    "@agoric/governance": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/notifier": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/time": "workspace:*"
+    "@agoric/vat-data": "workspace:*"
+    "@agoric/vats": "workspace:*"
+    "@agoric/zoe": "workspace:*"
+    "@agoric/zone": "workspace:*"
     "@endo/captp": "npm:^4.4.5"
     "@endo/errors": "npm:^1.2.10"
     "@endo/eventual-send": "npm:^1.3.1"
@@ -166,7 +166,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/internal@portal:../../agoric-sdk/packages/internal::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
-    "@agoric/base-zone": "npm:^0.1.0"
+    "@agoric/base-zone": "workspace:*"
     "@endo/common": "npm:^1.2.10"
     "@endo/compartment-mapper": "npm:^1.6.0"
     "@endo/errors": "npm:^1.2.10"
@@ -198,9 +198,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/network@portal:../../agoric-sdk/packages/network::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
-    "@agoric/internal": "npm:^0.3.2"
-    "@agoric/store": "npm:^0.9.2"
-    "@agoric/vat-data": "npm:^0.5.2"
+    "@agoric/internal": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/vat-data": "workspace:*"
     "@endo/base64": "npm:^1.0.9"
     "@endo/errors": "npm:^1.2.10"
     "@endo/far": "npm:^1.1.11"
@@ -214,8 +214,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/notifier@portal:../../agoric-sdk/packages/notifier::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
-    "@agoric/internal": "npm:^0.3.2"
-    "@agoric/vat-data": "npm:^0.5.2"
+    "@agoric/internal": "workspace:*"
+    "@agoric/vat-data": "workspace:*"
     "@endo/errors": "npm:^1.2.10"
     "@endo/far": "npm:^1.1.11"
     "@endo/marshal": "npm:^1.6.4"
@@ -228,15 +228,15 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/smart-wallet@portal:../../agoric-sdk/packages/smart-wallet::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
-    "@agoric/ertp": "npm:^0.16.2"
-    "@agoric/internal": "npm:^0.3.2"
-    "@agoric/notifier": "npm:^0.6.2"
-    "@agoric/store": "npm:^0.9.2"
-    "@agoric/vat-data": "npm:^0.5.2"
-    "@agoric/vats": "npm:^0.15.1"
-    "@agoric/vow": "npm:^0.1.0"
-    "@agoric/zoe": "npm:^0.26.2"
-    "@agoric/zone": "npm:^0.2.2"
+    "@agoric/ertp": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/notifier": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/vat-data": "workspace:*"
+    "@agoric/vats": "workspace:*"
+    "@agoric/vow": "workspace:*"
+    "@agoric/zoe": "workspace:*"
+    "@agoric/zone": "workspace:*"
     "@endo/errors": "npm:^1.2.10"
     "@endo/eventual-send": "npm:^1.3.1"
     "@endo/far": "npm:^1.1.11"
@@ -262,7 +262,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/swing-store@portal:../../agoric-sdk/packages/swing-store::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
-    "@agoric/internal": "npm:^0.3.2"
+    "@agoric/internal": "workspace:*"
     "@endo/base64": "npm:^1.0.9"
     "@endo/bundle-source": "npm:^4.0.0"
     "@endo/check-bundle": "npm:^1.0.14"
@@ -276,8 +276,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/swingset-liveslots@portal:../../agoric-sdk/packages/swingset-liveslots::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
-    "@agoric/internal": "npm:^0.3.2"
-    "@agoric/store": "npm:^0.9.2"
+    "@agoric/internal": "workspace:*"
+    "@agoric/store": "workspace:*"
     "@endo/env-options": "npm:^1.1.8"
     "@endo/errors": "npm:^1.2.10"
     "@endo/eventual-send": "npm:^1.3.1"
@@ -296,15 +296,15 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/swingset-vat@portal:../../agoric-sdk/packages/SwingSet::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
-    "@agoric/internal": "npm:^0.3.2"
-    "@agoric/kmarshal": "npm:^0.1.0"
-    "@agoric/store": "npm:^0.9.2"
-    "@agoric/swing-store": "npm:^0.9.1"
-    "@agoric/swingset-liveslots": "npm:^0.10.2"
-    "@agoric/swingset-xsnap-supervisor": "npm:^0.10.2"
-    "@agoric/time": "npm:^0.3.2"
-    "@agoric/vat-data": "npm:^0.5.2"
-    "@agoric/xsnap-lockdown": "npm:^0.14.0"
+    "@agoric/internal": "workspace:*"
+    "@agoric/kmarshal": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/swing-store": "workspace:*"
+    "@agoric/swingset-liveslots": "workspace:*"
+    "@agoric/swingset-xsnap-supervisor": "workspace:*"
+    "@agoric/time": "workspace:*"
+    "@agoric/vat-data": "workspace:*"
+    "@agoric/xsnap-lockdown": "workspace:*"
     "@endo/base64": "npm:^1.0.9"
     "@endo/bundle-source": "npm:^4.0.0"
     "@endo/captp": "npm:^4.4.5"
@@ -332,7 +332,7 @@ __metadata:
     tmp: "npm:^0.2.1"
     yargs-parser: "npm:^21.1.1"
   peerDependencies:
-    "@agoric/xsnap": ^0.14.2
+    "@agoric/xsnap": "workspace:*"
     ava: ^5.3.0
   bin:
     vat: bin/vat
@@ -343,7 +343,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/swingset-xsnap-supervisor@portal:../../agoric-sdk/packages/swingset-xsnap-supervisor::locator=root-workspace-0b6124%40workspace%3A."
   peerDependencies:
-    "@agoric/swingset-liveslots": ^0.10.2
+    "@agoric/swingset-liveslots": "workspace:*"
     "@endo/errors": ^1.2.10
     "@endo/import-bundle": ^1.4.0
     "@endo/promise-kit": ^1.1.10
@@ -388,7 +388,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/time@portal:../../agoric-sdk/packages/time::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
-    "@agoric/store": "npm:^0.9.2"
+    "@agoric/store": "workspace:*"
     "@endo/errors": "npm:^1.2.10"
     "@endo/nat": "npm:^5.1.0"
     "@endo/patterns": "npm:^1.5.0"
@@ -399,9 +399,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/vat-data@portal:../../agoric-sdk/packages/vat-data::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
-    "@agoric/base-zone": "npm:^0.1.0"
-    "@agoric/store": "npm:^0.9.2"
-    "@agoric/swingset-liveslots": "npm:^0.10.2"
+    "@agoric/base-zone": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/swingset-liveslots": "workspace:*"
     "@endo/errors": "npm:^1.2.10"
     "@endo/exo": "npm:^1.5.9"
     "@endo/patterns": "npm:^1.5.0"
@@ -412,19 +412,19 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/vats@portal:../../agoric-sdk/packages/vats::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
-    "@agoric/cosmic-proto": "npm:^0.4.0"
-    "@agoric/ertp": "npm:^0.16.2"
-    "@agoric/governance": "npm:^0.10.3"
-    "@agoric/internal": "npm:^0.3.2"
-    "@agoric/network": "npm:^0.1.0"
-    "@agoric/notifier": "npm:^0.6.2"
-    "@agoric/store": "npm:^0.9.2"
-    "@agoric/swingset-vat": "npm:^0.32.2"
-    "@agoric/time": "npm:^0.3.2"
-    "@agoric/vat-data": "npm:^0.5.2"
-    "@agoric/vow": "npm:^0.1.0"
-    "@agoric/zoe": "npm:^0.26.2"
-    "@agoric/zone": "npm:^0.2.2"
+    "@agoric/cosmic-proto": "workspace:*"
+    "@agoric/ertp": "workspace:*"
+    "@agoric/governance": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/network": "workspace:*"
+    "@agoric/notifier": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/swingset-vat": "workspace:*"
+    "@agoric/time": "workspace:*"
+    "@agoric/vat-data": "workspace:*"
+    "@agoric/vow": "workspace:*"
+    "@agoric/zoe": "workspace:*"
+    "@agoric/zone": "workspace:*"
     "@endo/errors": "npm:^1.2.10"
     "@endo/far": "npm:^1.1.11"
     "@endo/import-bundle": "npm:^1.4.0"
@@ -442,8 +442,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/vow@portal:../../agoric-sdk/packages/vow::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
-    "@agoric/base-zone": "npm:^0.1.0"
-    "@agoric/internal": "npm:^0.3.2"
+    "@agoric/base-zone": "workspace:*"
+    "@agoric/internal": "workspace:*"
     "@endo/env-options": "npm:^1.1.8"
     "@endo/errors": "npm:^1.2.10"
     "@endo/eventual-send": "npm:^1.3.1"
@@ -463,17 +463,17 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/zoe@portal:../../agoric-sdk/packages/zoe::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
-    "@agoric/base-zone": "npm:^0.1.0"
-    "@agoric/ertp": "npm:^0.16.2"
-    "@agoric/internal": "npm:^0.3.2"
-    "@agoric/notifier": "npm:^0.6.2"
-    "@agoric/store": "npm:^0.9.2"
-    "@agoric/swingset-liveslots": "npm:^0.10.2"
-    "@agoric/swingset-vat": "npm:^0.32.2"
-    "@agoric/time": "npm:^0.3.2"
-    "@agoric/vat-data": "npm:^0.5.2"
-    "@agoric/vow": "npm:^0.1.0"
-    "@agoric/zone": "npm:^0.2.2"
+    "@agoric/base-zone": "workspace:*"
+    "@agoric/ertp": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/notifier": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/swingset-liveslots": "workspace:*"
+    "@agoric/swingset-vat": "workspace:*"
+    "@agoric/time": "workspace:*"
+    "@agoric/vat-data": "workspace:*"
+    "@agoric/vow": "workspace:*"
+    "@agoric/zone": "workspace:*"
     "@endo/bundle-source": "npm:^4.0.0"
     "@endo/captp": "npm:^4.4.5"
     "@endo/common": "npm:^1.2.10"
@@ -495,8 +495,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/zone@portal:../../agoric-sdk/packages/zone::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
-    "@agoric/base-zone": "npm:^0.1.0"
-    "@agoric/vat-data": "npm:^0.5.2"
+    "@agoric/base-zone": "workspace:*"
+    "@agoric/vat-data": "workspace:*"
     "@endo/errors": "npm:^1.2.10"
     "@endo/far": "npm:^1.1.11"
     "@endo/pass-style": "npm:^1.5.0"
@@ -1385,22 +1385,22 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "agoric@portal:../../agoric-sdk/packages/agoric-cli::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
-    "@agoric/access-token": "npm:^0.4.21"
-    "@agoric/cache": "npm:^0.3.2"
-    "@agoric/casting": "npm:^0.4.2"
-    "@agoric/client-utils": "npm:^0.1.0"
-    "@agoric/cosmic-proto": "npm:^0.4.0"
-    "@agoric/ertp": "npm:^0.16.2"
-    "@agoric/governance": "npm:^0.10.3"
-    "@agoric/inter-protocol": "npm:^0.16.1"
-    "@agoric/internal": "npm:^0.3.2"
-    "@agoric/network": "npm:^0.1.0"
-    "@agoric/smart-wallet": "npm:^0.5.3"
-    "@agoric/store": "npm:^0.9.2"
-    "@agoric/swingset-vat": "npm:^0.32.2"
-    "@agoric/vats": "npm:^0.15.1"
-    "@agoric/zoe": "npm:^0.26.2"
-    "@agoric/zone": "npm:^0.2.2"
+    "@agoric/access-token": "workspace:*"
+    "@agoric/cache": "workspace:*"
+    "@agoric/casting": "workspace:*"
+    "@agoric/client-utils": "workspace:*"
+    "@agoric/cosmic-proto": "workspace:*"
+    "@agoric/ertp": "workspace:*"
+    "@agoric/governance": "workspace:*"
+    "@agoric/inter-protocol": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/network": "workspace:*"
+    "@agoric/smart-wallet": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/swingset-vat": "workspace:*"
+    "@agoric/vats": "workspace:*"
+    "@agoric/zoe": "workspace:*"
+    "@agoric/zone": "workspace:*"
     "@cosmjs/crypto": "npm:^0.33.0"
     "@cosmjs/encoding": "npm:^0.33.0"
     "@cosmjs/math": "npm:^0.33.0"
