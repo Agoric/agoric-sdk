@@ -30,6 +30,7 @@
     "@agoric/swing-store": "^0.9.1",
     "@agoric/swingset-vat": "^0.32.2",
     "@agoric/telemetry": "^0.6.2",
+    "@agoric/time": "^0.3.2",
     "@agoric/vm-config": "^0.1.0",
     "@endo/bundle-source": "^4.0.0",
     "@endo/env-options": "^1.1.8",

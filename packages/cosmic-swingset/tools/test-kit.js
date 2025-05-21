@@ -20,6 +20,7 @@ import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 import { initSwingStore } from '@agoric/swing-store';
+import { TimeMath } from '@agoric/time';
 import {
   extractPortNums,
   makeLaunchChain,
@@ -458,6 +459,15 @@ export const makeCosmicSwingsetTestKit = async (
   await blockingSend(initMessage);
 
   /**
+   * @param {import('@agoric/time').TimestampValue} shift
+   */
+  const advanceTimeBy = async shift => {
+    const { blockTime } = getLastBlockInfo();
+    shift = TimeMath.absValue(shift);
+    await runNextBlock({ blockTime: blockTime + Number(shift) });
+  };
+
+  /**
    * @returns {BlockInfo}
    */
   const getLastBlockInfo = () => ({
@@ -529,6 +539,7 @@ export const makeCosmicSwingsetTestKit = async (
       },
     });
   };
+
   /**
    * @param {string} fnText must evaluate to a function that will be invoked in
    *   a core eval compartment with a "powers" argument as attenuated by
@@ -611,6 +622,7 @@ export const makeCosmicSwingsetTestKit = async (
     timer,
 
     // Functions specific to this kit.
+    advanceTimeBy,
     buildProposal,
     evaluateProposal,
     getLastBlockInfo,
