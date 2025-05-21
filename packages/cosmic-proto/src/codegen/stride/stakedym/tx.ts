@@ -9,8 +9,9 @@ import {
 } from './stakedym.js';
 import { Coin, type CoinSDKType } from '../../cosmos/base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
-import { isSet, Decimal } from '../../helpers.js';
+import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
+import { Decimal } from '../../decimals.js';
 export enum OverwritableRecordType {
   RECORD_TYPE_DELEGATION = 0,
   RECORD_TYPE_UNBONDING = 1,

@@ -1,24 +1,26 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
+import { PendingTxStatus, TxStatus } from '@agoric/fast-usdc/src/constants.js';
+import type { CctpTxEvidence } from '@agoric/fast-usdc/src/types.js';
+import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
 import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { EReturn } from '@endo/far';
-import { PendingTxStatus } from '@agoric/fast-usdc/src/constants.js';
-import type { CctpTxEvidence } from '@agoric/fast-usdc/src/types.js';
-import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
 import {
   prepareStatusManager,
   stateShape,
   type StatusManager,
 } from '../../src/exos/status-manager.ts';
-import { commonSetup, provideDurableZone } from '../supports.js';
+import type { ForwardFailedTx } from '../../src/typeGuards.ts';
+import { makeRouteHealth } from '../../src/utils/route-health.ts';
+import { provideDurableZone, setupFastUsdcTest } from '../supports.js';
 
-type Common = EReturn<typeof commonSetup>;
+type Common = EReturn<typeof setupFastUsdcTest>;
 type TestContext = {
   statusManager: StatusManager;
   storage: Common['bootstrap']['storage'];
-};
+} & Common;
 
 const test = anyTest as TestFn<TestContext>;
 
@@ -27,17 +29,18 @@ test('stateShape', t => {
 });
 
 test.beforeEach(async t => {
-  const common = await commonSetup(t);
+  const common = await setupFastUsdcTest(t);
   const zone = provideDurableZone('status-test');
   const txnsNode = common.commonPrivateArgs.storageNode.makeChildNode('txns');
   const statusManager = prepareStatusManager(
     zone.subZone('status-manager'),
     txnsNode,
-    { marshaller: defaultMarshaller },
+    { marshaller: defaultMarshaller, routeHealth: makeRouteHealth(1) },
   );
   t.context = {
     statusManager,
     storage: common.bootstrap.storage,
+    ...common,
   };
 });
 
@@ -63,7 +66,7 @@ test('ADVANCED transactions are published to vstorage', async t => {
   await eventLoopIteration();
 
   const { storage } = t.context;
-  t.deepEqual(storage.getDeserialized(`fun.txns.${evidence.txHash}`), [
+  t.deepEqual(storage.getDeserialized(`orchtest.txns.${evidence.txHash}`), [
     { evidence, status: 'OBSERVED' },
     { status: 'ADVANCING' },
   ]);
@@ -91,7 +94,7 @@ test('ADVANCE_SKIPPED transactions are published to vstorage', async t => {
   await eventLoopIteration();
 
   const { storage } = t.context;
-  t.deepEqual(storage.getDeserialized(`fun.txns.${evidence.txHash}`), [
+  t.deepEqual(storage.getDeserialized(`orchtest.txns.${evidence.txHash}`), [
     { evidence, status: 'OBSERVED' },
     { status: 'ADVANCE_SKIPPED', risksIdentified: ['RISK1'] },
   ]);
@@ -126,7 +129,7 @@ test('isSeen checks if a tx has been processed', t => {
   t.true(statusManager.hasBeenObserved(e2));
 });
 
-test('dequeueStatus removes entries from PendingTxs', t => {
+test('matchAndDequeueSettlement removes entries from PendingTxs', t => {
   const { statusManager } = t.context;
   const e1 = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
   const e2 = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
@@ -138,27 +141,44 @@ test('dequeueStatus removes entries from PendingTxs', t => {
   statusManager.skipAdvance({ ...e1, txHash: '0xtest1' }, []);
 
   t.deepEqual(
-    statusManager.dequeueStatus(e1.tx.forwardingAddress, e1.tx.amount),
-    {
-      txHash: e1.txHash,
-      status: PendingTxStatus.Advanced,
-    },
+    statusManager.matchAndDequeueSettlement(
+      e1.tx.forwardingAddress,
+      e1.tx.amount,
+    ),
+    [
+      {
+        ...e1,
+        status: PendingTxStatus.Advanced,
+      },
+    ],
   );
 
   t.deepEqual(
-    statusManager.dequeueStatus(e2.tx.forwardingAddress, e2.tx.amount),
-    {
-      txHash: e2.txHash,
-      status: PendingTxStatus.AdvanceFailed,
-    },
+    statusManager.matchAndDequeueSettlement(
+      e2.tx.forwardingAddress,
+      e2.tx.amount,
+    ),
+    [
+      {
+        ...e2,
+        txHash: e2.txHash,
+        status: PendingTxStatus.AdvanceFailed,
+      },
+    ],
   );
 
   t.deepEqual(
-    statusManager.dequeueStatus(e1.tx.forwardingAddress, e1.tx.amount),
-    {
-      txHash: '0xtest1',
-      status: PendingTxStatus.AdvanceSkipped,
-    },
+    statusManager.matchAndDequeueSettlement(
+      e1.tx.forwardingAddress,
+      e1.tx.amount,
+    ),
+    [
+      {
+        ...e1,
+        txHash: '0xtest1',
+        status: PendingTxStatus.AdvanceSkipped,
+      },
+    ],
   );
 
   t.is(
@@ -179,16 +199,16 @@ test('cannot advanceOutcome without ADVANCING entry', t => {
   const e1 = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
   const advanceOutcomeFn = () =>
     statusManager.advanceOutcome(e1.tx.forwardingAddress, e1.tx.amount, true);
-  const expectedErrMsg =
-    'no advancing tx with {"amount":"[150000000n]","nfa":"noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd"}';
 
   t.throws(advanceOutcomeFn, {
-    message: expectedErrMsg,
+    message:
+      'key "noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd" not found in collection "PendingSettleTxs"',
   });
 
   statusManager.skipAdvance(e1, []);
   t.throws(advanceOutcomeFn, {
-    message: expectedErrMsg,
+    message:
+      'no advancing tx with {"amount":"[150000000n]","nfa":"noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd"}',
   });
 
   const e2 = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
@@ -212,7 +232,7 @@ test('advanceOutcome transitions to ADVANCED and ADVANCE_FAILED', async t => {
     },
   ]);
   await eventLoopIteration();
-  t.deepEqual(storage.getDeserialized(`fun.txns.${e1.txHash}`), [
+  t.deepEqual(storage.getDeserialized(`orchtest.txns.${e1.txHash}`), [
     { evidence: e1, status: 'OBSERVED' },
     { status: 'ADVANCING' },
     { status: 'ADVANCED' },
@@ -226,24 +246,27 @@ test('advanceOutcome transitions to ADVANCED and ADVANCE_FAILED', async t => {
     },
   ]);
   await eventLoopIteration();
-  t.deepEqual(storage.getDeserialized(`fun.txns.${e2.txHash}`), [
+  t.deepEqual(storage.getDeserialized(`orchtest.txns.${e2.txHash}`), [
     { evidence: e2, status: 'OBSERVED' },
     { status: 'ADVANCING' },
     { status: 'ADVANCE_FAILED' },
   ]);
 });
 
-test('dequeueStatus returns undefined when nothing is settleable', t => {
+test('matchAndDequeueSettlement returns undefined when nothing is settleable', t => {
   const { statusManager } = t.context;
   const e1 = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
 
-  t.is(
-    statusManager.dequeueStatus(e1.tx.forwardingAddress, e1.tx.amount),
-    undefined,
+  t.deepEqual(
+    statusManager.matchAndDequeueSettlement(
+      e1.tx.forwardingAddress,
+      e1.tx.amount,
+    ),
+    [],
   );
 });
 
-test('dequeueStatus returns first (earliest) matched entry', async t => {
+test('matchAndDequeueSettlement returns first (earliest) matched entry', async t => {
   const { statusManager } = t.context;
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
 
@@ -251,15 +274,41 @@ test('dequeueStatus returns first (earliest) matched entry', async t => {
   statusManager.advance(evidence);
   statusManager.advance({ ...evidence, txHash: '0xtest2' });
 
-  t.like(
-    statusManager.dequeueStatus(
+  t.is(
+    statusManager.lookupPending(
       evidence.tx.forwardingAddress,
       evidence.tx.amount,
-    ),
-    {
-      status: PendingTxStatus.Advancing,
-    },
+    ).length,
+    2,
+  );
+
+  // `matchAndDequeueSettlement` is called when a mint is arrived and we want
+  // to settle it
+  const dequeued0 = statusManager.matchAndDequeueSettlement(
+    evidence.tx.forwardingAddress,
+    evidence.tx.amount,
+  );
+  t.is(dequeued0.length, 1, 'returns a single match');
+  t.is(dequeued0[0].txHash, evidence.txHash, 'grabs first match');
+  // In the contract, when an ADVANCING transaction is dequeued from
+  // `pendingSettleTxs` it's added to `mintedEarly`. `Advancer` calls
+  // `settler.notifier.notifyAdvancingResult` which looks in `mintedEarly` for
+  // any "minted while advancing" txs and will .disburse() or .forward() based
+  // on the outcome.
+  // This test is not integrated with the Settler, but it demonstrates
+  // that `Advancing` txs can be dequeued with `matchAndDequeueSettlement`.
+  t.is(
+    dequeued0[0].status,
+    PendingTxStatus.Advancing,
     'can dequeue Tx at any stage',
+  );
+
+  t.is(
+    statusManager.lookupPending(
+      evidence.tx.forwardingAddress,
+      evidence.tx.amount,
+    ).length,
+    1,
   );
 
   statusManager.advanceOutcome(
@@ -268,34 +317,27 @@ test('dequeueStatus returns first (earliest) matched entry', async t => {
     true,
   );
 
-  // dequeue will return the first match
-  t.like(
-    statusManager.dequeueStatus(
-      evidence.tx.forwardingAddress,
-      evidence.tx.amount,
-    ),
-    {
-      status: PendingTxStatus.Advanced,
-    },
-  );
-  const entries0 = statusManager.lookupPending(
+  // second transaction is dequeued
+  const dequeued1 = statusManager.matchAndDequeueSettlement(
     evidence.tx.forwardingAddress,
     evidence.tx.amount,
   );
-  t.is(entries0.length, 0);
-
-  const entries1 = statusManager.lookupPending(
-    evidence.tx.forwardingAddress,
-    evidence.tx.amount,
-  );
-  t.is(entries1?.length, 0, 'settled entries are deleted');
+  t.is(dequeued1.length, 1);
+  t.is(dequeued1[0].status, PendingTxStatus.Advanced);
 
   t.is(
-    statusManager.dequeueStatus(
+    statusManager.lookupPending(
+      evidence.tx.forwardingAddress,
+      evidence.tx.amount,
+    ).length,
+    0,
+  );
+  t.deepEqual(
+    statusManager.matchAndDequeueSettlement(
       evidence.tx.forwardingAddress,
       evidence.tx.amount,
     ),
-    undefined,
+    [],
     'No more matches to settle',
   );
 });
@@ -326,7 +368,7 @@ test('StatusManagerKey logic handles addresses with hyphens', t => {
     true,
   );
 
-  statusManager.dequeueStatus(
+  statusManager.matchAndDequeueSettlement(
     evidence.tx.forwardingAddress,
     evidence.tx.amount,
   );
@@ -335,6 +377,117 @@ test('StatusManagerKey logic handles addresses with hyphens', t => {
     evidence.tx.amount,
   );
   t.is(remainingEntries.length, 0, 'Entry should be dequeued from pending');
+});
+
+test('forwardFailed with retry details stores tx for getForwardsToRetry', async t => {
+  const { statusManager, storage } = t.context;
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  const { txHash } = evidence;
+  const destination = 'cosmos:osmosis-1:osmo1testdestinationaddr';
+
+  const failedTx: ForwardFailedTx = {
+    txHash,
+    destination,
+    amount: 100n,
+  };
+
+  statusManager.forwardFailed(txHash, failedTx);
+  await eventLoopIteration();
+
+  // Check vstorage for FORWARD_FAILED status
+  const storedRecords = storage.getDeserialized(`orchtest.txns.${txHash}`);
+  t.true(
+    storedRecords.some(
+      (record: any) => record.status === TxStatus.ForwardFailed,
+    ),
+    'FORWARD_FAILED status should be published',
+  );
+
+  // Check getForwardsToRetry
+  const failedForwards = statusManager.getForwardsToRetry('cosmos:osmosis-1');
+  t.is(failedForwards.length, 1, 'Should retrieve one failed forward');
+  t.deepEqual(
+    failedForwards[0],
+    { ...failedTx, chainId: 'cosmos:osmosis-1' },
+    'Retrieved failed forward should match input',
+  );
+});
+
+test('forwardFailed without retry details does not store tx for getForwardsToRetry', async t => {
+  const { statusManager, storage } = t.context;
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  const { txHash } = evidence;
+
+  statusManager.forwardFailed(txHash); // No ForwardFailedTx provided
+  await eventLoopIteration();
+
+  // Check vstorage for FORWARD_FAILED status
+  const storedRecords = storage.getDeserialized(`orchtest.txns.${txHash}`);
+  t.true(
+    storedRecords.some(
+      (record: any) => record.status === TxStatus.ForwardFailed,
+    ),
+    'FORWARD_FAILED status should be published',
+  );
+
+  // Check getForwardsToRetry - should be empty
+  const failedForwards = [
+    ...statusManager.getForwardsToRetry('cosmos:osmosis-1'),
+  ];
+  t.is(
+    failedForwards.length,
+    0,
+    'Should not retrieve failed forward when no details provided',
+  );
+});
+
+test('forwardFailed with retry details is idempotent for storage', t => {
+  const { statusManager } = t.context;
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
+  const { txHash } = evidence;
+  const destination = 'cosmos:dydx-mainnet-1:dydx1testdest';
+
+  const failedTx: ForwardFailedTx = {
+    txHash,
+    destination,
+    amount: 100n,
+  };
+
+  statusManager.forwardFailed(txHash, failedTx);
+  // Call again with the same details
+  statusManager.forwardFailed(txHash, failedTx);
+
+  // Check getForwardsToRetry
+  const failedForwards = [
+    ...statusManager.getForwardsToRetry('cosmos:dydx-mainnet-1'),
+  ];
+  t.is(
+    failedForwards.length,
+    1,
+    'Should retrieve only one failed forward despite multiple calls',
+  );
+  t.deepEqual(
+    failedForwards[0],
+    { ...failedTx, chainId: 'cosmos:dydx-mainnet-1' },
+    'Retrieved failed forward should match input',
+  );
+});
+
+test('forwardFailed throws if txHash mismatches in ForwardFailedTx', t => {
+  const { statusManager } = t.context;
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  const { txHash } = evidence;
+  const destination = 'cosmos:osmosis-1:osmo1testdestinationaddr';
+
+  const failedTx: ForwardFailedTx = {
+    txHash: '0xDifferentHash', // Mismatched hash
+    destination,
+    amount: 100n,
+  };
+
+  t.throws(() => statusManager.forwardFailed(txHash, failedTx), {
+    message: 'txHash mismatch in forwardFailed',
+  });
 });
 
 test.todo('ADVANCE_FAILED -> FORWARDED transition');

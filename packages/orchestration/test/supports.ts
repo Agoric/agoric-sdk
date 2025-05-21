@@ -24,6 +24,7 @@ import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
+import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import { withChainCapabilities } from '../src/chain-capabilities.js';
 import { registerKnownChains } from '../src/chain-info.js';
 import type { Bech32Address } from '../src/cosmos-api.js';
@@ -72,25 +73,25 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
   await makeWellKnownSpaces(agoricNamesAdmin, t.log, ['vbankAsset']);
   await E(E(agoricNamesAdmin).lookupAdmin('vbankAsset')).update(
     'uist',
-    /** @type {AssetInfo} */ harden({
+    harden({
       brand: ist.brand,
       issuer: ist.issuer,
       issuerName: 'IST',
       denom: 'uist',
       proposedName: 'IST',
-      displayInfo: { IOU: true },
-    }),
+      displayInfo: { assetKind: 'nat', IOU: true },
+    }) as AssetInfo,
   );
   await E(E(agoricNamesAdmin).lookupAdmin('vbankAsset')).update(
     'ubld',
-    /** @type {AssetInfo} */ harden({
+    harden({
       brand: bld.brand,
       issuer: bld.issuer,
       issuerName: 'BLD',
       denom: 'ubld',
       proposedName: 'BLD',
-      displayInfo: { IOU: true },
-    }),
+      displayInfo: { assetKind: 'nat', IOU: true },
+    }) as AssetInfo,
   );
 
   const vowTools = prepareSwingsetVowTools(rootZone.subZone('vows'));

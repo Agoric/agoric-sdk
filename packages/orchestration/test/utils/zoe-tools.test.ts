@@ -328,9 +328,22 @@ test('withdraw (withdrawToSeat) from LCA with insufficient balance', async t => 
     brands: { ist, bld },
     contractKit,
     zoe,
+    utils: { pourPayment },
   } = t.context;
   const publicFacet = await E(zoe).getPublicFacet(contractKit.instance);
   const vt = bootstrap.vowTools;
+
+  {
+    // put some money in account, less than we will request
+    const fiveStake = bld.make(5n);
+    const BLD = await pourPayment(fiveStake);
+    const depositSeat = await E(zoe).offer(
+      E(publicFacet).makeDepositInvitation(),
+      { give: { BLD: fiveStake } },
+      { BLD },
+    );
+    await vt.when(E(depositSeat).getOfferResult());
+  }
 
   const tenStable = ist.make(10n);
   const tenStake = bld.make(10n);
@@ -341,7 +354,7 @@ test('withdraw (withdrawToSeat) from LCA with insufficient balance', async t => 
 
   await t.throwsAsync(vt.when(E(userSeat).getOfferResult()), {
     message:
-      'One or more withdrawals failed ["[RangeError: -10 is negative]","[RangeError: -10 is negative]"]',
+      /^One or more withdrawals failed \["\[Error: cannot grab 10ubld coins: spendable balance 5ubld is smaller than 10ubld: insufficient funds\]","\[Error: cannot grab 10uist coins: spendable balance (0uist)? is smaller than 10uist: insufficient funds\]"\]$/,
   });
 });
 

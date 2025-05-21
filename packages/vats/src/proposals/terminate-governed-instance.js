@@ -183,6 +183,7 @@ export const terminateGoverned = async (
     );
     Fail`termination(s) failed: ${terminationProblems}`;
   }
+  console.log('terminate-governed-instance succeeded', targetSpecifiers);
 };
 harden(terminateGoverned);
 

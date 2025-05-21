@@ -128,7 +128,6 @@ RUN ln -s /usr/src/agoric-sdk/golang/cosmos/build/agd /usr/local/bin/
 RUN ln -s /usr/src/agoric-sdk/packages/cosmic-swingset/bin/ag-chain-cosmos /usr/local/bin/
 RUN ln -s /usr/src/agoric-sdk/packages/solo/bin/ag-solo /usr/local/bin/
 RUN ln -s /usr/src/agoric-sdk/packages/agoric-cli/bin/agoric /usr/local/bin/
-COPY --link . lib/ag-solo/
 
 ARG GIT_REVISION=unknown
 RUN echo "$GIT_REVISION" > /usr/src/agoric-sdk/packages/solo/public/git-revision.txt
@@ -138,7 +137,6 @@ RUN ln -sf /data /agoric
 RUN ln -sf /data/solo /usr/src/agoric-sdk/packages/cosmic-swingset/solo
 RUN ln -sf /data/chains /usr/src/agoric-sdk/packages/cosmic-swingset/chains
 
-COPY --link scripts agoric-sdk/scripts
 RUN /usr/src/agoric-sdk/scripts/smoketest-binaries.sh
 
 # By default, run the daemon with specified arguments.

@@ -2,7 +2,8 @@
 import { Validator, type ValidatorSDKType } from './validator.js';
 import { Coin, type CoinSDKType } from '../../cosmos/base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
-import { Decimal, isSet } from '../../helpers.js';
+import { Decimal } from '../../decimals.js';
+import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
 export enum AuthzPermissionChange {
   /** GRANT - Grant the address trade permissions */

@@ -7,22 +7,17 @@
  */
 
 import type { HostInterface } from '@agoric/async-flow';
-import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import type { Amount, Brand, NatAmount } from '@agoric/ertp';
-import { AmountMath } from '@agoric/ertp';
 import {
-  AddressHookShape,
   EvidenceWithRiskShape,
   EvmHashShape,
 } from '@agoric/fast-usdc/src/type-guards.js';
 import type {
   EvidenceWithRisk,
   EvmHash,
-  FeeConfig,
   LogFn,
   NobleAddress,
 } from '@agoric/fast-usdc/src/types.js';
-import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
 import type { TypedPattern } from '@agoric/internal';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
 import type {
@@ -32,17 +27,18 @@ import type {
   OrchestrationAccount,
 } from '@agoric/orchestration';
 import {
+  AccountIdArgShape,
   AnyNatAmountShape,
   CosmosChainAddressShape,
 } from '@agoric/orchestration';
+import type { HostForGuest } from '@agoric/orchestration/src/facade.js';
 import type { AccountId } from '@agoric/orchestration/src/orchestration-api.js';
 import {
-  chainOfAccount,
-  parseAccountId,
+  coerceAccountId,
   parseAccountIdArg,
 } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import { M, mustMatch } from '@agoric/store';
+import { M } from '@agoric/store';
 import { pickFacet } from '@agoric/vat-data';
 import type { VowTools } from '@agoric/vow';
 import { VowShape } from '@agoric/vow';
@@ -50,14 +46,15 @@ import type { ZCF, ZCFSeat } from '@agoric/zoe/src/zoeService/zoe.js';
 import type { Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
+import { type advanceFunds as advanceFundsT } from '../fast-usdc.flows.ts';
 import { makeSupportsCctp } from '../utils/cctp.ts';
 import type { LiquidityPoolKit } from './liquidity-pool.js';
 import type { SettlerKit } from './settler.js';
 import type { StatusManager } from './status-manager.js';
 
 interface AdvancerKitPowers {
-  chainHub: ChainHub;
-  feeConfig: FeeConfig;
+  advanceFunds: HostForGuest<typeof advanceFundsT>;
+  chainHub: Pick<ChainHub, 'getChainInfoByChainId'>;
   getNobleICA: () => OrchestrationAccount<{ chainId: 'noble-1' }>;
   log?: LogFn;
   statusManager: StatusManager;
@@ -75,11 +72,18 @@ interface AdvancerVowCtx {
   txHash: EvmHash;
 }
 
-const AdvancerVowCtxShape: TypedPattern<AdvancerVowCtx> = M.splitRecord(
+/**
+ * @deprecated from before the adoption of CAIP-10
+ */
+type OldAdvancerVowCtx = Omit<AdvancerVowCtx, 'destination'> & {
+  destination: AccountId | CosmosChainAddress;
+};
+
+const AdvancerVowCtxShape: TypedPattern<OldAdvancerVowCtx> = M.splitRecord(
   {
     fullAmount: AnyNatAmountShape,
     advanceAmount: AnyNatAmountShape,
-    destination: M.string(), // AccountId
+    destination: AccountIdArgShape, // AccountId is preferred
     forwardingAddress: M.string(),
     txHash: EvmHashShape,
   },
@@ -137,27 +141,22 @@ export const stateShape = harden({
 export const prepareAdvancerKit = (
   zone: Zone,
   {
+    advanceFunds,
     chainHub,
-    feeConfig,
     getNobleICA,
     log = makeTracer('Advancer', true),
     statusManager,
     usdc,
-    vowTools: { asVow, watch, when },
+    vowTools: { asVow, watch },
     zcf,
-    zoeTools: { localTransfer, withdrawToSeat },
+    zoeTools: { withdrawToSeat },
   }: AdvancerKitPowers,
 ) => {
   assertAllDefined({
     chainHub,
-    feeConfig,
     statusManager,
     watch,
-    when,
   });
-  const feeTools = makeFeeTools(feeConfig);
-  const toAmount = (value: bigint) => AmountMath.make(usdc.brand, value);
-
   const supportsCctp = makeSupportsCctp(chainHub);
 
   return zone.exoClassKit(
@@ -190,86 +189,29 @@ export const prepareAdvancerKit = (
          * @param {EvidenceWithRisk} evidenceWithRisk
          */
         handleTransactionEvent({ evidence, risk }: EvidenceWithRisk) {
-          try {
-            if (statusManager.hasBeenObserved(evidence)) {
-              log('txHash already seen:', evidence.txHash);
-              return;
-            }
-
-            if (risk.risksIdentified?.length) {
-              log('risks identified, skipping advance');
-              statusManager.skipAdvance(evidence, risk.risksIdentified);
-              return;
-            }
-            const { settlementAddress } = this.state;
-            const { recipientAddress } = evidence.aux;
-            const decoded = decodeAddressHook(recipientAddress);
-            mustMatch(decoded, AddressHookShape);
-            if (decoded.baseAddress !== settlementAddress.value) {
-              throw Fail`⚠️ baseAddress of address hook ${q(decoded.baseAddress)} does not match the expected address ${q(settlementAddress.value)}`;
-            }
-            const { EUD } = decoded.query;
-            log(`decoded EUD: ${EUD}`);
-
-            // throws if it's neither CAIP-10 nor bare bech32.
-            const destination = chainHub.resolveAccountId(EUD);
-            const accountId = parseAccountId(destination);
-
-            // Dest must be a Cosmos account or support CCTP
-            if (
-              !(accountId.namespace === 'cosmos' || supportsCctp(destination))
-            ) {
-              const destChain = chainOfAccount(destination);
-              statusManager.skipAdvance(evidence, [
-                `Transfer to ${destChain} not supported.`,
-              ]);
-            }
-
-            const fullAmount = toAmount(evidence.tx.amount);
-            const { borrower, notifier, poolAccount } = this.state;
-            // do not advance if we've already received a mint/settlement
-            const mintedEarly = notifier.checkMintedEarly(
-              evidence,
-              destination,
-            );
-            if (mintedEarly) return;
-
-            // throws if requested does not exceed fees
-            const advanceAmount = feeTools.calculateAdvance(
-              fullAmount,
-              destination,
-            );
-
-            const { zcfSeat: tmpSeat } = zcf.makeEmptySeatKit();
-            // throws if the pool has insufficient funds
-            borrower.borrow(tmpSeat, advanceAmount);
-
-            // this cannot throw since `.isSeen()` is called in the same turn
-            statusManager.advance(evidence);
-
-            const depositV = localTransfer(
-              tmpSeat,
-              // @ts-expect-error LocalAccountMethods vs OrchestrationAccount
-              poolAccount,
-              harden({ USDC: advanceAmount }),
-            );
-            // WARNING: this must never reject, see handler @throws {never} below
-            // void not enforced by linter until #10627 no-floating-vows
-            void watch(depositV, this.facets.depositHandler, {
-              advanceAmount,
-              destination,
-              forwardingAddress: evidence.tx.forwardingAddress,
-              fullAmount,
-              tmpSeat,
-              txHash: evidence.txHash,
-            });
-          } catch (error) {
-            log('Advancer error:', error);
-            statusManager.skipAdvance(evidence, [(error as Error).message]);
-          }
+          const { notifier, borrower, poolAccount, settlementAddress } =
+            this.state;
+          // This function returns a Vow that does its own error handling.
+          void advanceFunds(
+            harden({ evidence, risk }),
+            harden({
+              notifier,
+              borrower,
+              // XXX asyncFlow membrane types
+              poolAccount: poolAccount as unknown as OrchestrationAccount<{
+                chainId: 'agoric-any';
+              }>,
+              settlementAddress,
+            }),
+          );
         },
       },
 
+      // XXX the following handlers are from before refactoring to an async flow for `advanceFunds`.
+      // They must remain implemented for as long as any vow might settle and need their behavior.
+      // Once all possible such vows are settled, the methods could be removed but the handler
+      // facets must remain to satisfy the kind definition backward compatibility checker.
+      /* c8 ignore start */
       depositHandler: {
         /**
          * @param result
@@ -278,17 +220,20 @@ export const prepareAdvancerKit = (
          */
         onFulfilled(
           result: undefined,
-          ctx: AdvancerVowCtx & { tmpSeat: ZCFSeat },
+          ctx: OldAdvancerVowCtx & { tmpSeat: ZCFSeat },
         ) {
           return asVow(() => {
             const { poolAccount, settlementAddress } = this.state;
             const { tmpSeat, ...vowContext } = ctx;
-            const { destination, advanceAmount } = vowContext;
+            const { advanceAmount } = vowContext;
             tmpSeat.exit();
             const amount = harden({
               denom: usdc.denom,
               value: advanceAmount.value,
             });
+
+            // Backwards compatibility with vows that fulfill using the old object form
+            const destination = coerceAccountId(vowContext.destination);
 
             const intermediateRecipient = getNobleICA().getAddress();
 
@@ -327,7 +272,7 @@ export const prepareAdvancerKit = (
          * notify of Advancing failure.
          *
          * @param {Error} error
-         * @param {AdvancerVowCtx & { tmpSeat: ZCFSeat }} ctx
+         * @param {OldAdvancerVowCtx & { tmpSeat: ZCFSeat }} ctx
          * @throws {never} WARNING: this function must not throw, because user funds are at risk
          */
         onRejected(
@@ -336,7 +281,7 @@ export const prepareAdvancerKit = (
             tmpSeat,
             advanceAmount,
             ...restCtx
-          }: AdvancerVowCtx & { tmpSeat: ZCFSeat },
+          }: OldAdvancerVowCtx & { tmpSeat: ZCFSeat },
         ) {
           log(
             '⚠️ deposit to localOrchAccount failed, attempting to return payment to LP',
@@ -355,7 +300,7 @@ export const prepareAdvancerKit = (
       transferHandler: {
         /**
          * @param {undefined} result
-         * @param {AdvancerVowCtx} ctx
+         * @param {OldAdvancerVowCtx} ctx
          * @throws {never} WARNING: this function must not throw, because user funds are at risk
          */
         onFulfilled(result: undefined, ctx: AdvancerVowCtx) {
@@ -386,18 +331,19 @@ export const prepareAdvancerKit = (
       },
       transferCctpHandler: {
         /**
-         * @param {undefined} result
-         * @param {AdvancerVowCtx} ctx
+         * @param result
+         * @param ctx
          * @throws {never} WARNING: this function must not throw, because user funds are at risk
          */
-        onFulfilled(result: undefined, ctx: AdvancerVowCtx) {
-          const { advanceAmount, destination } = ctx;
+        onFulfilled(result: undefined, ctx: OldAdvancerVowCtx) {
+          const { advanceAmount } = ctx;
           // assets are on noble, transfer to dest.
           const intermediaryAccount = getNobleICA();
           const amount = harden({
             denom: usdc.denom,
             value: advanceAmount.value,
           });
+          const destination = coerceAccountId(ctx.destination);
           const burn = intermediaryAccount.depositForBurn(destination, amount);
           return watch(burn, this.facets.transferHandler, ctx);
         },
@@ -409,10 +355,6 @@ export const prepareAdvancerKit = (
       withdrawHandler: {
         /**
          *
-         * @param {undefined} result
-         * @param ctx
-         * @param ctx.advanceAmount
-         * @param ctx.tmpReturnSeat
          * @throws {never} WARNING: this function must not throw, because user funds are at risk
          */
         onFulfilled(
@@ -435,10 +377,6 @@ export const prepareAdvancerKit = (
           }
         },
         /**
-         * @param {Error} error
-         * @param ctx
-         * @param ctx.advanceAmount
-         * @param ctx.tmpReturnSeat
          * @throws {never} WARNING: this function must not throw, because user funds are at risk
          */
         onRejected(
@@ -457,6 +395,7 @@ export const prepareAdvancerKit = (
           tmpReturnSeat.exit();
         },
       },
+      /* c8 ignore stop */
     },
     {
       stateShape,

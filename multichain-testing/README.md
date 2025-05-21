@@ -41,6 +41,8 @@ You can start everything with a single command:
 
 ```sh
 make start
+# or for testing with Fast USDC
+make start FILE=config.fusdc.yaml
 ```
 
 This command will:
@@ -65,7 +67,7 @@ make wait-for-pods
 make port-forward
 
 # set up Agoric testing environment
-make fund-provision-pool override-chain-registry register-bank-assets
+make fund-provision-pool register-bank-assets
 ```
 
 If you get an error like "connection refused", you need to wait longer, until all the pods are Running.

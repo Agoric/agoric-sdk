@@ -16,8 +16,7 @@ test('portfolio holder kit behaviors', async t => {
    * mock zcf that echos back the offer description
    */
   const mockZcf = Far('MockZCF', {
-    /** @type {ZCF['makeInvitation']} */
-    makeInvitation: (offerHandler, description, ..._rest) => {
+    makeInvitation: (offerHandler: OfferHandler, description: string) => {
       t.is(typeof offerHandler, 'function');
       const p = new Promise(resolve => resolve(description));
       return p;

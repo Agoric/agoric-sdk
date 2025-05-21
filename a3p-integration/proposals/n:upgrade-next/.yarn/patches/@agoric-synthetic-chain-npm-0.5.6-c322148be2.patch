@@ -1,0 +1,80 @@
+diff --git a/dist/lib/index.js b/dist/lib/index.js
+index 158b72a3eaeb8becb43151740f1bcddc121014ab..c29c81371ba04b9dafd52b31b30388a656ea6a51 100644
+--- a/dist/lib/index.js
++++ b/dist/lib/index.js
+@@ -35,11 +35,14 @@ var SDK_ROOT = process.env.AGORIC_SDK || "/usr/src/agoric-sdk";
+ // src/lib/cliHelper.ts
+ import { $, execaCommand } from "execa";
+ var executeCommand = async (command, params, options = {}) => {
+-  const { stdout } = await execaCommand(
+-    `${command} ${params.join(" ")}`,
+-    options
+-  );
+-  return stdout;
++  const invocation = `${command} ${params.join(" ")}`;
++  console.warn('# invoking:', invocation);
++  const result = await execaCommand(invocation, options);
++  if (!options.stderr) {
++    const { stderr } = result;
++    if (stderr) console.warn(stderr);
++  }
++  return result.stdout;
+ };
+ var agd = {
+   query: async (...params) => {
+@@ -203,7 +206,17 @@ var makeAgd = ({
+       );
+     }
+     const nodeArgs = [...rpcAddrs ? [`--node`, rpcAddrs[0]] : []];
+-    const exec = (args, opts) => execFileSync2(agdBinary, args, opts).toString();
++    const exec = (args, opts) => {
++      console.warn(
++        '# invoking agd:',
++        ...[agdBinary, ...args].map(arg =>
++          arg.match(/[^a-zA-Z0-9,._+:@%/-]/)
++            ? `'${arg.replaceAll(`'`, `'\\''`)}'`
++            : arg,
++        ),
++      );
++      return execFileSync2(agdBinary, args, opts).toString();
++    };
+     const outJson = ["--output", "json"];
+     const ro = freeze({
+       status: async () => JSON.parse(exec([...nodeArgs, "status"])),
+@@ -397,7 +410,7 @@ var executeOffer = async (address, offerPromise) => {
+   const offerPath = await mkTemp("agops.XXX");
+   const offer = await offerPromise;
+   await fsp.writeFile(offerPath, offer);
+-  await agops.perf(
++  const stdout = await agops.perf(
+     "satisfaction",
+     "--from",
+     address,
+@@ -405,6 +418,7 @@ var executeOffer = async (address, offerPromise) => {
+     offerPath,
+     "--keyring-backend=test"
+   );
++  console.warn(stdout);
+ };
+ var getUser = async (user) => {
+   return agd.keys("show", user, "-a", "--keyring-backend=test");
+@@ -920,8 +934,8 @@ var flags = (record) => {
+   return Object.entries(record).map(([k, v]) => [`--${k}`, v]).flat();
+ };
+ var txAbbr = (tx) => {
+-  const { txhash, code, height, gas_used } = tx;
+-  return { txhash, code, height, gas_used };
++  const { txhash, codespace, code, height, gas_used } = tx;
++  return { txhash, codespace, code, height, gas_used };
+ };
+ var loadedBundleIds = (swingstore) => {
+   const ids = swingstore`SELECT bundleID FROM bundles`.map(
+@@ -1205,7 +1219,7 @@ var passCoreEvalProposal = async (bundleInfos, coreEvalConfig = {}) => {
+           ["swingset", "install-bundle", `@${bundleRd}`],
+           { from, chainId, yes: true }
+         );
+-        console.log(txAbbr(result));
++        console.log(result.code === 0 ? txAbbr(result) : result);
+         assert4.equal(result.code, 0);
+         const info = await getContractInfo("bundles", { agoric: agoric2, prefix: "" });
+         console.log(info);

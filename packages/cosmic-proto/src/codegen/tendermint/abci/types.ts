@@ -11,13 +11,9 @@ import {
   type TimestampSDKType,
 } from '../../google/protobuf/timestamp.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
-import {
-  isSet,
-  bytesFromBase64,
-  base64FromBytes,
-  fromJsonTimestamp,
-  fromTimestamp,
-} from '../../helpers.js';
+import { isSet, fromJsonTimestamp, fromTimestamp } from '../../helpers.js';
+import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
+import { encodeBase64 as base64FromBytes } from '@endo/base64';
 import { type JsonSafe } from '../../json-safe.js';
 export enum CheckTxType {
   NEW = 0,

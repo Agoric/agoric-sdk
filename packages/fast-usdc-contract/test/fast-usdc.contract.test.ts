@@ -1,6 +1,14 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
+import {
+  MsgDepositForBurn,
+  MsgDepositForBurnResponse,
+} from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
+import {
+  MsgTransfer,
+  MsgTransferResponse,
+} from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.js';
 import { PoolMetricsShape } from '@agoric/fast-usdc/src/type-guards.js';
@@ -9,16 +17,19 @@ import {
   eventLoopIteration,
   inspectMapStore,
 } from '@agoric/internal/src/testing-utils.js';
-import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
+import { leftPadEthAddressTo32Bytes } from '@agoric/orchestration/src/utils/address.js';
+import {
+  buildMsgErrorString,
+  buildMsgResponseString,
+  buildTxPacketString,
+} from '@agoric/orchestration/tools/ibc-mocks.ts';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import type { Installation } from '@agoric/zoe/src/zoeService/utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, type EReturn } from '@endo/far';
 import { matches } from '@endo/patterns';
-import type { FastUsdcSF } from '../src/fast-usdc.contract.ts';
-import { commonSetup, uusdcOnAgoric } from './supports.js';
-
 import * as contractExports from '../src/fast-usdc.contract.js';
+import type { FastUsdcSF } from '../src/fast-usdc.contract.ts';
 import {
   makeCustomer,
   makeLP,
@@ -26,6 +37,7 @@ import {
   makeTestContext,
   purseOf,
 } from './contract-setup.ts';
+import { setupFastUsdcTest, uusdcOnAgoric } from './supports.js';
 
 const test = anyTest as TestFn<EReturn<typeof makeTestContext>>;
 test.before(async t => (t.context = await makeTestContext(t)));
@@ -35,7 +47,7 @@ test('initial baggage', async t => {
   const {
     brands: { usdc },
     commonPrivateArgs,
-  } = await commonSetup(t);
+  } = await setupFastUsdcTest(t);
 
   let contractBaggage;
   const setJig = ({ baggage }) => {
@@ -50,6 +62,9 @@ test('initial baggage', async t => {
     installation,
     { USDC: usdc.issuer },
     { usdcDenom: uusdcOnAgoric },
+    // @ts-expect-error XXX contract expecting CosmosChainInfo with bech32
+    // prefix but the Orchestration setup doesn't have it. The tests pass anyway
+    // so we elide this infidelity to production.
     commonPrivateArgs,
   );
 
@@ -57,6 +72,7 @@ test('initial baggage', async t => {
   t.snapshot(tree, 'contract baggage after start');
 });
 
+// Runs after all the serial tests
 test('used baggage', async t => {
   const { startKit } = t.context;
 
@@ -138,7 +154,7 @@ test.serial('Contract skips advance when risks identified', async t => {
     common: {
       commonPrivateArgs: { feeConfig },
       facadeServices: { chainHub },
-      utils: { transmitTransferAck },
+      utils: { transmitVTransferEvent },
     },
     evm: { cctp, txPub },
     bridges: { snapshot, since },
@@ -155,19 +171,19 @@ test.serial('Contract skips advance when risks identified', async t => {
   const sent = await custEmpty.sendFast(t, 1_000_000n, 'osmo123', true);
   const bridgeTraffic = since(bridgePos);
   await mint(sent);
-  custEmpty.checkSent(t, bridgeTraffic, 'forward');
+  custEmpty.checkSent(t, bridgeTraffic, { forward: true });
   t.log('No advancement, just settlement');
-  await transmitTransferAck(); // ack IBC transfer for forward
+  // ack IBC transfer for forward
+  await transmitVTransferEvent('acknowledgementPacket', -1);
 });
 
 test.serial('STORY01: advancing happy path for 100 USDC', async t => {
   const {
     common: {
-      bootstrap: { storage },
       brands: { usdc },
       commonPrivateArgs: { feeConfig },
       facadeServices: { chainHub },
-      utils: { inspectBankBridge, transmitTransferAck },
+      utils: { inspectBankBridge, transmitVTransferEvent },
     },
     evm: { cctp, txPub },
     startKit: { metricsSub },
@@ -184,16 +200,14 @@ test.serial('STORY01: advancing happy path for 100 USDC', async t => {
 
   const bridgePos = snapshot();
   const sent1 = await cust1.sendFast(t, 108_000_000n, 'osmo1234advanceHappy');
-  await transmitTransferAck(); // ack IBC transfer for advance
+  // ack IBC transfer for advance
+  await transmitVTransferEvent('acknowledgementPacket', -1);
   const expectedTransitions = [
     { evidence: sent1, status: 'OBSERVED' },
     { status: 'ADVANCING' },
     { status: 'ADVANCED' },
   ];
-  t.deepEqual(
-    storage.getDeserialized(`fun.txns.${sent1.txHash}`),
-    expectedTransitions,
-  );
+  t.deepEqual(t.context.common.readTxnRecord(sent1), expectedTransitions);
 
   const { calculateAdvance, calculateSplit } = makeFeeTools(feeConfig);
   const expectedAdvance = calculateAdvance(
@@ -267,16 +281,11 @@ test.serial('STORY01: advancing happy path for 100 USDC', async t => {
     'metrics after advancing',
   );
 
-  t.deepEqual(storage.getDeserialized(`fun.txns.${sent1.txHash}`), [
+  t.deepEqual(t.context.common.readTxnRecord(sent1), [
     ...expectedTransitions,
     { split, status: 'DISBURSED' },
   ]);
 });
-
-// most likely in exo unit tests
-test.todo(
-  'C21 - Contract MUST log / timestamp each step in the transaction flow',
-);
 
 test.serial('STORY03: see accounting metrics', async t => {
   const {
@@ -287,8 +296,6 @@ test.serial('STORY03: see accounting metrics', async t => {
   t.log(metrics);
   t.true(matches(metrics, PoolMetricsShape));
 });
-test.todo('document metrics storage schema');
-test.todo('get metrics from vstorage');
 
 test.serial('STORY05: LP collects fees on 100 USDC', async t => {
   const {
@@ -316,7 +323,7 @@ test.serial('With 250 available, 3 race to get ~100', async t => {
     common: {
       commonPrivateArgs: { feeConfig },
       facadeServices: { chainHub },
-      utils: { transmitTransferAck },
+      utils: { transmitVTransferEvent },
     },
     startKit: { metricsSub },
     mint,
@@ -336,13 +343,132 @@ test.serial('With 250 available, 3 race to get ~100', async t => {
     cust.racer2.sendFast(t, 120_000_000n, 'osmo1234b'),
     cust.racer3.sendFast(t, 125_000_000n, 'osmo1234c'),
   ]);
+
   cust.racer1.checkSent(t, since(bridgePos));
   cust.racer2.checkSent(t, since(bridgePos));
   // TODO/WIP: cust.racer3.checkSent(t, since(bridgePos), 'forward - LP depleted');
-  await transmitTransferAck();
-  await transmitTransferAck();
-  await transmitTransferAck();
+
+  // Ack all three transfers using their index relative to the end
+  await transmitVTransferEvent('acknowledgementPacket', -3); // First racer's transfer
+  await transmitVTransferEvent('acknowledgementPacket', -2); // Second racer's transfer
+  await transmitVTransferEvent('acknowledgementPacket', -1); // Third racer's transfer
+
   await Promise.all([mint(sent1), mint(sent2), mint(sent3)]);
+});
+
+const mockAcks = {
+  cctpAdvanceFails: {
+    msg: buildTxPacketString([
+      MsgDepositForBurn.toProtoMsg({
+        amount: '117599',
+        burnToken: 'uusdc',
+        from: 'noble1test',
+        destinationDomain: 0,
+        mintRecipient: leftPadEthAddressTo32Bytes(
+          '0x1234567890123456789012345678901234567890',
+        ),
+      }),
+    ]),
+    ack: buildMsgErrorString('intentional depositForBurn failure'),
+  },
+
+  transferBackFromNoble: {
+    msg: buildTxPacketString([
+      MsgTransfer.toProtoMsg({
+        sourcePort: 'transfer',
+        sourceChannel: 'channel-21',
+        token: {
+          denom:
+            'ibc/FE98AAD68F02F03565E9FA39A5E627946699B2B07115889ED812D8BA639576A9',
+          amount: '117599',
+        },
+        sender: 'noble1test',
+        receiver: 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht',
+        timeoutHeight: { revisionHeight: 0n, revisionNumber: 0n },
+        timeoutTimestamp: 300000000000n,
+        memo: '',
+      }),
+    ]),
+    ack: buildMsgResponseString(MsgTransferResponse, {}),
+  },
+
+  cctpForward: {
+    msg0: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ21JS0lTOWphWEpqYkdVdVkyTjBjQzUyTVM1TmMyZEVaWEJ2YzJsMFJtOXlRblZ5YmhJOUNncHViMkpzWlRGMFpYTjBFZ1l4TWpBd01EQWlJQUFBQUFBQUFBQUFBQUFBQUJJMFZuaVFFalJXZUpBU05GWjRrQkkwVm5pUUtnVjFkWE5rWXc9PSIsIm1lbW8iOiIifQ==',
+    msg: buildTxPacketString([
+      MsgDepositForBurn.toProtoMsg({
+        from: 'noble1test',
+        amount: '120000',
+        burnToken: 'uusdc',
+        destinationDomain: 0,
+        mintRecipient: leftPadEthAddressTo32Bytes(
+          '0x1234567890123456789012345678901234567890',
+        ),
+      }),
+    ]),
+    ack: buildMsgResponseString(MsgDepositForBurnResponse, {}),
+  },
+};
+
+test.serial('repay liquidity pool on depositForBurn failure', async t => {
+  const {
+    startKit: { metricsSub },
+    common: {
+      commonPrivateArgs: { feeConfig },
+      facadeServices: { chainHub },
+      utils: { transmitVTransferEvent },
+      mocks: { ibcBridge },
+    },
+    evm: { cctp, txPub },
+    bridges: { snapshot, since },
+    mint,
+  } = t.context;
+
+  for (const { msg, ack } of Object.values(mockAcks)) {
+    ibcBridge.addMockAck(msg, ack);
+  }
+
+  const custEth = makeCustomer(
+    'Esther',
+    cctp,
+    txPub.publisher,
+    feeConfig,
+    chainHub,
+  );
+
+  await eventLoopIteration();
+  const {
+    value: { encumberedBalance: encPre },
+  } = await E(metricsSub).getUpdateSince();
+  t.log('encumbered balance before', encPre);
+
+  const bridgePos = snapshot();
+  const EUD = 'eip155:1:0x1234567890123456789012345678901234567890';
+  const sent1 = await custEth.sendFast(t, 120_000n, EUD);
+  // ack IBC transfer to noble
+  await transmitVTransferEvent('acknowledgementPacket', -1);
+
+  custEth.checkSent(t, since(bridgePos), { route: 'cctp' }); // send attempted
+  await eventLoopIteration();
+  // XXX how to decode last ibcBridge downcall to check EUD, amount?
+
+  await mint(sent1);
+
+  await eventLoopIteration();
+  const {
+    value: { encumberedBalance: encPost },
+  } = await E(metricsSub).getUpdateSince();
+  t.log('encumbered balance after', encPost);
+  t.deepEqual(encPre, encPost);
+
+  // ack forward
+  await transmitVTransferEvent('acknowledgementPacket', -1);
+
+  t.deepEqual(t.context.common.readTxnRecord(sent1), [
+    { evidence: sent1, status: 'OBSERVED' },
+    { status: 'ADVANCING' },
+    { status: 'ADVANCE_FAILED' },
+    { status: 'FORWARDED' },
+  ]);
 });
 
 test.serial('STORY05(cont): LPs withdraw all liquidity', async t => {
@@ -365,7 +491,6 @@ test.serial('withdraw all liquidity while ADVANCING', async t => {
       commonPrivateArgs: { feeConfig },
       utils,
       brands: { usdc },
-      bootstrap: { storage },
       facadeServices: { chainHub },
     },
     evm: { cctp, txPub },
@@ -393,8 +518,10 @@ test.serial('withdraw all liquidity while ADVANCING', async t => {
 
   // 4. Bob's advance is settled
   await mint(sent);
-  await utils.transmitTransferAck();
-  t.like(storage.getDeserialized(`fun.txns.${sent.txHash}`), [
+  // Ack Bob's advance transfer (it was the last one)
+  await utils.transmitVTransferEvent('acknowledgementPacket', -1);
+
+  t.like(t.context.common.readTxnRecord(sent), [
     { evidence: sent, status: 'OBSERVED' },
     { status: 'ADVANCING' },
     { status: 'ADVANCED' },
@@ -474,7 +601,7 @@ test.serial('C20 - Contract MUST function with an empty pool', async t => {
     common: {
       commonPrivateArgs: { feeConfig },
       facadeServices: { chainHub },
-      utils: { transmitTransferAck },
+      utils: { transmitVTransferEvent },
     },
     evm: { cctp, txPub },
     bridges: { snapshot, since },
@@ -491,9 +618,10 @@ test.serial('C20 - Contract MUST function with an empty pool', async t => {
   const sent = await custEmpty.sendFast(t, 150_000_000n, 'osmo123');
   const bridgeTraffic = since(bridgePos);
   await mint(sent);
-  custEmpty.checkSent(t, bridgeTraffic, 'forward');
+  custEmpty.checkSent(t, bridgeTraffic, { forward: true });
   t.log('No advancement, just settlement');
-  await transmitTransferAck(); // ack IBC transfer for forward
+  // ack IBC transfer for forward
+  await transmitVTransferEvent('acknowledgementPacket', -1);
 });
 
 test.serial('Settlement for unknown transaction (operator down)', async t => {
@@ -502,11 +630,9 @@ test.serial('Settlement for unknown transaction (operator down)', async t => {
     bridges: { snapshot, since },
     evm: { cctp, txPub },
     common: {
-      bootstrap: { storage },
       commonPrivateArgs: { feeConfig },
       facadeServices: { chainHub },
-      mocks: { transferBridge },
-      utils: { transmitTransferAck },
+      utils: { transmitVTransferEvent },
     },
     mint,
     addresses,
@@ -549,8 +675,8 @@ test.serial('Settlement for unknown transaction (operator down)', async t => {
     '20 USDC arrive at the settlement account',
   );
 
-  await transmitTransferAck();
-  t.deepEqual(bridgeTraffic.local, [], 'no IBC transfers');
+  // No ack needed here as the first sendFast didn't trigger an IBC transfer (operators were down)
+  t.deepEqual(bridgeTraffic.local, [], 'no IBC transfers initially');
 
   // activate oracles and submit evidence; expect Settler to forward (slow path)
   // 'C12 - Contract MUST only pay back the Pool (fees) only if they started the advance before USDC is minted',
@@ -583,21 +709,10 @@ test.serial('Settlement for unknown transaction (operator down)', async t => {
   const forwardInfo = JSON.parse(outgoingForwardMessage.memo).forward;
   t.is(forwardInfo.receiver, EUD, 'receiver is osmo10tt0');
 
-  // in lieu of transmitTransferAck so we can set a nonce that matches our initial Advance
-  await E(transferBridge).fromBridge(
-    buildVTransferEvent({
-      receiver: outgoingForwardMessage.receiver,
-      sender: outgoingForwardMessage.sender,
-      target: outgoingForwardMessage.sender,
-      sourceChannel: outgoingForwardMessage.sourceChannel,
-      sequence: BigInt(nonce),
-      denom: outgoingForwardMessage.token.denom,
-      amount: BigInt(outgoingForwardMessage.token.amount),
-    }),
-  );
-  await eventLoopIteration();
+  // Ack the forwarded transfer (it was the last one)
+  await transmitVTransferEvent('acknowledgementPacket', -1);
 
-  t.deepEqual(storage.getDeserialized(`fun.txns.${sent.txHash}`), [
+  t.deepEqual(t.context.common.readTxnRecord(sent), [
     { evidence: sent, status: 'OBSERVED' },
     { status: 'FORWARDED' },
   ]);
@@ -611,7 +726,6 @@ test.serial('mint received while ADVANCING', async t => {
       commonPrivateArgs: { feeConfig },
       utils,
       brands: { usdc },
-      bootstrap: { storage },
       facadeServices: { chainHub },
     },
     evm: { cctp, txPub },
@@ -640,13 +754,14 @@ test.serial('mint received while ADVANCING', async t => {
 
   await mint(sent);
   // mint received before Advance transfer settles
-  await utils.transmitTransferAck();
+  // Ack the advance transfer (it was the last one)
+  await utils.transmitVTransferEvent('acknowledgementPacket', -1);
 
   const split = makeFeeTools(feeConfig).calculateSplit(
     usdc.make(5_000_000n),
     chainHub.resolveAccountId(sent.aux.recipientAddress),
   );
-  t.deepEqual(storage.getDeserialized(`fun.txns.${sent.txHash}`), [
+  t.deepEqual(t.context.common.readTxnRecord(sent), [
     { evidence: sent, status: 'OBSERVED' },
     { status: 'ADVANCING' },
     { status: 'ADVANCED' },
@@ -654,6 +769,36 @@ test.serial('mint received while ADVANCING', async t => {
   ]);
 });
 
-test.todo(
-  'fee levels MUST be visible to external parties - i.e., written to public storage',
-);
+// The bridge messages are all mocked so this isn't testing real balances,
+// but at least it tests that the call resolves and returns the right shape.
+test.serial('sendFromSettlementAccount', async t => {
+  const {
+    startKit: { creatorFacet },
+    common: {
+      brands: { usdc },
+    },
+  } = t.context;
+
+  const recipient = 'cosmos:agoric-3:agoric1recipient123';
+  const amount = usdc.units(1_000);
+
+  // Perform the reimbursement
+  const balances = await E(creatorFacet).sendFromSettlementAccount(
+    recipient,
+    amount,
+  );
+  t.deepEqual(
+    balances,
+    {
+      before: [
+        { denom: 'ubld', value: 10n },
+        { denom: 'uist', value: 10n },
+      ],
+      after: [
+        { denom: 'ubld', value: 10n },
+        { denom: 'uist', value: 10n },
+      ],
+    },
+    'reimbursement has mocked data in the right shape',
+  );
+});

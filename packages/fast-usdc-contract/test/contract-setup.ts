@@ -1,4 +1,8 @@
 import {
+  decodeAddressHook,
+  encodeAddressHook,
+} from '@agoric/cosmic-proto/address-hooks.js';
+import {
   type Amount,
   AmountMath,
   type Issuer,
@@ -7,13 +11,17 @@ import {
   type Purse,
 } from '@agoric/ertp';
 import { divideBy, multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
+import { AddressHookShape } from '@agoric/fast-usdc/src/type-guards.js';
 import type {
   CctpTxEvidence,
   FeeConfig,
   PoolMetrics,
 } from '@agoric/fast-usdc/src/types.ts';
+import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
+import { mustMatch } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
+  type Publisher,
   type Subscriber,
   makePublishKit,
   observeIteration,
@@ -25,6 +33,7 @@ import type {
   CosmosChainInfo,
 } from '@agoric/orchestration';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
+import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.ts';
 import { heapVowE as VE } from '@agoric/vow';
 import type { Invitation, ZoeService } from '@agoric/zoe';
@@ -36,16 +45,11 @@ import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, type ERef, type EReturn } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import type { ExecutionContext } from 'ava';
-import {
-  encodeAddressHook,
-  decodeAddressHook,
-} from '@agoric/cosmic-proto/address-hooks.js';
-import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
 import type { OperatorOfferResult } from '../src/exos/transaction-feed.ts';
-import * as contractExports from '../src/fast-usdc.contract.ts';
 import type { FastUsdcSF } from '../src/fast-usdc.contract.ts';
+import * as contractExports from '../src/fast-usdc.contract.ts';
 import { MockCctpTxEvidences } from './fixtures.ts';
-import { commonSetup, uusdcOnAgoric } from './supports.ts';
+import { setupFastUsdcTest, uusdcOnAgoric } from './supports.ts';
 
 type FucContext = EReturn<typeof makeTestContext>;
 
@@ -76,7 +80,7 @@ export const operatorQty = 3;
 
 const startContract = async (
   common: Pick<
-    EReturn<typeof commonSetup>,
+    EReturn<typeof setupFastUsdcTest>,
     'brands' | 'commonPrivateArgs' | 'utils'
   >,
 ) => {
@@ -98,6 +102,9 @@ const startContract = async (
     installation,
     { USDC: usdc.issuer },
     { usdcDenom: uusdcOnAgoric },
+    // @ts-expect-error XXX contract expecting CosmosChainInfo with bech32
+    // prefix but the Orchestration setup doesn't have it. The tests pass anyway
+    // so we elide this infidelity to production.
     commonPrivateArgs,
   );
 
@@ -131,7 +138,7 @@ const startContract = async (
   };
 };
 export const makeTestContext = async (t: ExecutionContext) => {
-  const common = await commonSetup(t);
+  const common = await setupFastUsdcTest(t);
   await E(common.mocks.ibcBridge).setAddressPrefix('noble');
 
   const startKit = await startContract(common);
@@ -167,10 +174,10 @@ export const makeTestContext = async (t: ExecutionContext) => {
     return E(purse).deposit(pmt);
   };
 
-  const accountsData = common.bootstrap.storage.data.get('fun');
+  const accountsData = common.bootstrap.storage.data.get(ROOT_STORAGE_PATH);
   const { settlementAccount, poolAccount } = JSON.parse(
     JSON.parse(accountsData!).values[0],
-  );
+  ) as Record<string, string>;
   t.is(settlementAccount, 'agoric1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqc09z0g');
   t.is(poolAccount, 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht');
   const mint = async (e: CctpTxEvidence): Promise<NatAmount> => {
@@ -413,7 +420,7 @@ export const makeCustomer = (
       nonceOverride?: number,
     ) => {
       const { storage } = t.context.common.bootstrap;
-      const accountsData = storage.data.get('fun');
+      const accountsData = storage.data.get(ROOT_STORAGE_PATH);
       const { settlementAccount } = JSON.parse(
         JSON.parse(accountsData!).values[0],
       );
@@ -427,14 +434,18 @@ export const makeCustomer = (
       await eventLoopIteration();
       return tx;
     },
+
     checkSent: (
       t: ExecutionContext<FucContext>,
       { bank = [] as any[], local = [] as any[] } = {},
-      forward?: unknown,
+      { forward = false, route = 'pfm' as 'pfm' | 'cctp' } = {},
     ) => {
       const next = sent.shift();
       if (!next) throw t.fail('nothing sent');
       const { evidence } = next;
+      const decoded = decodeAddressHook(evidence.aux.recipientAddress);
+      mustMatch(decoded, AddressHookShape);
+      const { EUD } = decoded.query;
 
       // C3 - Contract MUST calculate AdvanceAmount by ...
       // Mostly, see unit tests for calculateAdvance, calculateSplit
@@ -442,7 +453,7 @@ export const makeCustomer = (
         ? { value: evidence.tx.amount }
         : feeTools.calculateAdvance(
             AmountMath.make(USDC, evidence.tx.amount),
-            chainHub.resolveAccountId(evidence.aux.recipientAddress),
+            chainHub.resolveAccountId(EUD),
           );
 
       if (forward) {
@@ -450,20 +461,19 @@ export const makeCustomer = (
         t.deepEqual(bank, []); // no vbank GIVE / GRAB
       }
 
-      const { EUD } = decodeAddressHook(evidence.aux.recipientAddress).query;
-
       const myMsg = local.find(lm => {
         if (lm.type !== 'VLOCALCHAIN_EXECUTE_TX') return false;
-        const [ibcTransferMsg] = lm.messages;
-        // support advances to noble + other chains
-        const receiver =
-          ibcTransferMsg.receiver === 'noble1test' // intermediateRecipient value
-            ? JSON.parse(ibcTransferMsg.memo).forward.receiver
-            : ibcTransferMsg.receiver;
-        return (
-          ibcTransferMsg['@type'] ===
-            '/ibc.applications.transfer.v1.MsgTransfer' && receiver === EUD
-        );
+        const [{ '@type': msgTy, receiver, memo }] = lm.messages;
+        if (msgTy !== '/ibc.applications.transfer.v1.MsgTransfer') return false;
+        if (route === 'pfm') {
+          return JSON.parse(memo).forward.receiver === EUD;
+        } else if (cctp) {
+          const intermediate = 'noble1test';
+          return receiver === intermediate;
+        } else {
+          // XXX support transfers to agoric?
+          return receiver === EUD;
+        }
       });
       if (!myMsg) {
         if (forward) return;
@@ -481,25 +491,14 @@ export const makeCustomer = (
         'C4',
       );
       t.log(who, 'sees', ibcTransferMsg.token, 'sending to', EUD);
-      if (!(EUD as string).startsWith('noble')) {
-        t.like(
-          JSON.parse(ibcTransferMsg.memo),
-          {
-            forward: {
-              receiver: EUD,
-            },
-          },
-          'PFM receiver is EUD',
-        );
-      } else {
-        t.like(ibcTransferMsg, { receiver: EUD });
-      }
       t.is(
         ibcTransferMsg.sourceChannel,
         fetchedChainInfo.agoric.connections['noble-1'].transferChannel
           .channelId,
         'expect routing through Noble',
       );
+      // XXX for cctp: caller should check EUD, amount in IBC bridge
+      return next;
     },
   });
   return me;

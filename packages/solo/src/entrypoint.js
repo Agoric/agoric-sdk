@@ -1,10 +1,5 @@
 #! /usr/bin/env node
 
-import '@endo/init/pre-bundle-source.js';
-
-// Needed for legacy plugin support (dapp-oracle, for one).
-import 'esm';
-
 // we need to enable Math.random as a workaround for 'brace-expansion' module
 // (dep chain: temp->glob->minimatch->brace-expansion)
 import '@endo/init/legacy.js';

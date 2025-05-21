@@ -45,7 +45,7 @@ runs:
 
         if test "$VERSION_IDENTIFIER" == "node-new"
         then
-          OUTPUT_NODE_VERSION="20"
+          OUTPUT_NODE_VERSION="22"
         else
           if test "$VERSION_IDENTIFIER" == "node-old" || test "$VERSION_IDENTIFIER" == "xs"
           then

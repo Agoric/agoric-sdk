@@ -211,7 +211,7 @@ test('Deposit, Withdraw errors - LocalOrchAccount', async t => {
     });
     await t.throwsAsync(vt.when(E(withdrawSeat).getOfferResult()), {
       message:
-        'One or more withdrawals failed ["[RangeError: -10 is negative]"]',
+        /^One or more withdrawals failed \["\[Error: cannot grab 10uist coins: spendable balance (0uist)? is smaller than 10uist: insufficient funds\]"\]$/,
     });
     const payouts = await E(withdrawSeat).getPayouts();
     t.deepEqual((await ist.issuer.getAmountOf(payouts.Stable)).value, 0n);

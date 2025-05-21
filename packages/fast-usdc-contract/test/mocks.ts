@@ -33,6 +33,14 @@ export const prepareMockOrchAccounts = (
   const intermediateAccountDepositForBurnPK = makePromiseKit<void>();
 
   const mockedPoolAccount = zone.exo('Mock Pool LocalOrchAccount', undefined, {
+    getAddress() {
+      const addr: CosmosChainAddress = {
+        chainId: 'agoric-3',
+        encoding: 'bech32',
+        value: 'agoric1mockPoolAccount',
+      };
+      return addr;
+    },
     transfer(destination: CosmosChainAddress, amount: DenomAmount) {
       log('PoolAccount.transfer() called with', destination, amount);
       return poolAccountTransferPK.promise;
@@ -119,7 +127,7 @@ export const makeTestLogger = (logger: LogFn) => {
     logger(args);
   };
   const inspectLogs = (index?: number) =>
-    typeof index === 'number' ? logs[index] : logs;
+    typeof index === 'number' ? logs[index] : [...logs];
   return { log, inspectLogs };
 };
 export type TestLogger = ReturnType<typeof makeTestLogger>;

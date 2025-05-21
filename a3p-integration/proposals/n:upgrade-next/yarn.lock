@@ -368,7 +368,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@agoric/synthetic-chain@npm:^0.5.6":
+"@agoric/synthetic-chain@npm:0.5.6":
   version: 0.5.6
   resolution: "@agoric/synthetic-chain@npm:0.5.6"
   dependencies:
@@ -382,6 +382,23 @@ __metadata:
   bin:
     synthetic-chain: dist/cli/cli.js
   checksum: 10c0/dc4832319caaa819c07ceb8f141f64b53a9abd1909414d54c2664070c00c5cc385f590a5fabda2521adb7aa54d0fb5c8756146013c34632db2c372a24ea7b6de
+  languageName: node
+  linkType: hard
+
+"@agoric/synthetic-chain@patch:@agoric/synthetic-chain@npm%3A0.5.6#~/.yarn/patches/@agoric-synthetic-chain-npm-0.5.6-c322148be2.patch":
+  version: 0.5.6
+  resolution: "@agoric/synthetic-chain@patch:@agoric/synthetic-chain@npm%3A0.5.6#~/.yarn/patches/@agoric-synthetic-chain-npm-0.5.6-c322148be2.patch::version=0.5.6&hash=e1b2af"
+  dependencies:
+    "@endo/zip": "npm:^1.0.9"
+    better-sqlite3: "npm:^11.8.1"
+    chalk: "npm:^5.4.1"
+    cosmjs-types: "npm:^0.9.0"
+    execa: "npm:^9.5.2"
+    glob: "npm:^11.0.1"
+    tmp: "npm:0.2.3"
+  bin:
+    synthetic-chain: dist/cli/cli.js
+  checksum: 10c0/84608d47f17d9e63cde09c0bcb6f14cf97096731f7aca3167cd3be9636f6d76ded30b701e6f6c9caf73309b737832117d59ea428f9fb1921b3404ce53111ccb6
   languageName: node
   linkType: hard
 
@@ -5146,7 +5163,7 @@ __metadata:
     "@agoric/client-utils": "npm:dev"
     "@agoric/ertp": "npm:dev"
     "@agoric/internal": "npm:dev"
-    "@agoric/synthetic-chain": "npm:^0.5.6"
+    "@agoric/synthetic-chain": "patch:@agoric/synthetic-chain@npm%3A0.5.6#~/.yarn/patches/@agoric-synthetic-chain-npm-0.5.6-c322148be2.patch"
     "@agoric/zoe": "npm:dev"
     "@endo/errors": "npm:^1.2.10"
     "@endo/init": "npm:^1.1.9"

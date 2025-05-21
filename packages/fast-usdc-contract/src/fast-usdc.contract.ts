@@ -12,8 +12,12 @@ import {
   OrchestrationPowersShape,
   registerChainsAndAssets,
   withOrchestration,
+  type AmountArg,
+  type Bech32Address,
+  type ChainInfo,
   type CosmosChainAddress,
   type Denom,
+  type DenomAmount,
   type DenomDetail,
   type IBCConnectionInfo,
   type OrchestrationAccount,
@@ -24,7 +28,7 @@ import type { HostForGuest } from '@agoric/orchestration/src/facade.js';
 import { makeZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
-import { Fail } from '@endo/errors';
+import { Fail, quote } from '@endo/errors';
 import { E, type ERef } from '@endo/far';
 import { M } from '@endo/patterns';
 
@@ -50,8 +54,13 @@ import type { OperatorOfferResult } from './exos/transaction-feed.ts';
 import { prepareTransactionFeedKit } from './exos/transaction-feed.ts';
 import * as flows from './fast-usdc.flows.ts';
 import { makeSupportsCctp } from './utils/cctp.ts';
+import { startForwardRetrier } from './utils/forward-retrier.ts';
+import { makeRouteHealth } from './utils/route-health.ts';
 
 const trace = makeTracer('FastUsdc');
+
+// With a 10 minute timeout this means retry for up to an hour.
+const MAX_ROUTE_FAILURES = 6;
 
 const TXNS_NODE = 'txns';
 const FEE_NODE = 'feeConfig';
@@ -115,10 +124,12 @@ export const contract = async (
     marshaller,
   );
 
+  const routeHealth = makeRouteHealth(MAX_ROUTE_FAILURES);
+
   const statusManager = prepareStatusManager(
     zone,
     E(storageNode).makeChildNode(TXNS_NODE),
-    { marshaller },
+    { marshaller, routeHealth },
   );
 
   const { USDC } = terms.brands;
@@ -193,9 +204,37 @@ export const contract = async (
   });
 
   const zoeTools = makeZoeTools(zcf, vowTools);
+  const { advanceFunds } = orchestrateAll(
+    // @ts-expect-error flow membrance type debt
+    { advanceFunds: flows.advanceFunds },
+    {
+      // UNTIL #11309 as above
+      chainHubTools: {
+        getChainInfoByChainId: chainHub.getChainInfoByChainId.bind(chainHub),
+        resolveAccountId: chainHub.resolveAccountId.bind(chainHub),
+      },
+      feeConfig,
+      getNobleICA,
+      log: makeTracer('AdvanceFunds'),
+      settlementAccount: settleAccountV,
+      statusManager,
+      usdc: harden({
+        brand: terms.brands.USDC,
+        denom: terms.usdcDenom,
+      }),
+      zcfTools: harden({
+        makeEmptyZCFSeat: () => {
+          const { zcfSeat } = zcf.makeEmptySeatKit();
+          return zcfSeat;
+        },
+      }),
+      zoeTools,
+    },
+  ) as { advanceFunds: HostForGuest<typeof flows.advanceFunds> };
+
   const makeAdvancer = prepareAdvancer(zone, {
+    advanceFunds,
     chainHub,
-    feeConfig,
     getNobleICA,
     usdc: harden({
       brand: terms.brands.USDC,
@@ -280,12 +319,52 @@ export const contract = async (
     deleteCompletedTxs() {
       return statusManager.deleteCompletedTxs();
     },
-    /** @type {typeof chainHub.updateChain} */
-    updateChain(chainName, chainInfo) {
+    remediateUndetectedBatches(minUusdc: bigint): void {
+      return settlerKit.creator.remediateMintedEarly(minUusdc);
+    },
+    /**
+     * Transactions that reached FAILED_FORWARD status before we had a retrier
+     * (and stored failed forwards) were terminal and required manual payment.
+     * OpCo made those transfers from its own funds. This method is to be called
+     * in a CoreEval to reimburse those payments.
+     *
+     * @param agoricRecipient - The Bech32 of the recipient (must be Agoric).
+     * @param amount - The amount to send, in the USDC brand.
+     */
+    async sendFromSettlementAccount(
+      agoricRecipient: Bech32Address,
+      amount: AmountArg,
+    ): Promise<{ before: DenomAmount[]; after: DenomAmount[] }> {
+      trace(
+        `Sending ${quote(amount)} to ${agoricRecipient} from settlementAccount`,
+      );
+      const recipient = chainHub.resolveAccountId(agoricRecipient);
+      const before = await vowTools.when(E(settlementAccount).getBalances());
+
+      return vowTools.when(
+        E(settlementAccount).send(recipient, amount),
+        async () => {
+          poolKit.external.publishPoolMetrics();
+          const after = await vowTools.when(E(settlementAccount).getBalances());
+          trace(
+            `Sent ${quote(amount)} to ${agoricRecipient}. settlementAccount:`,
+            {
+              before,
+              after,
+            },
+          );
+          return { before, after };
+        },
+        err => {
+          trace(`Failed to send ${amount} to ${agoricRecipient}:`, err);
+          throw Fail`Send failed: ${err}`;
+        },
+      );
+    },
+    updateChain(chainName: string, chainInfo: ChainInfo): void {
       return chainHub.updateChain(chainName, chainInfo);
     },
-    /** @type {typeof chainHub.registerChain} */
-    registerChain(chainName, chainInfo) {
+    registerChain(chainName: string, chainInfo: ChainInfo): void {
       return chainHub.registerChain(chainName, chainInfo);
     },
   });
@@ -386,6 +465,14 @@ export const contract = async (
   });
 
   await settlerKit.creator.monitorMintingDeposits();
+
+  startForwardRetrier({
+    forwardFunds,
+    getForwardsToRetry: statusManager.getForwardsToRetry.bind(statusManager),
+    log: trace,
+    routeHealth,
+    USDC,
+  });
 
   return harden({ creatorFacet, publicFacet });
 };

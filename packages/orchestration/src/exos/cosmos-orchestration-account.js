@@ -55,7 +55,7 @@ import {
   DenomAmountShape,
   IBCTransferOptionsShape,
   Proto3Shape,
-  TxBodyOptsShape,
+  ExecuteICATxOptsShape,
 } from '../typeGuards.js';
 import { coerceCoin, coerceDenom } from '../utils/amounts.js';
 import {
@@ -160,7 +160,7 @@ export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
   deactivate: M.call().returns(VowShape),
   reactivate: M.call().returns(VowShape),
   executeEncodedTx: M.call(M.arrayOf(Proto3Shape))
-    .optional(TxBodyOptsShape)
+    .optional(ExecuteICATxOptsShape)
     .returns(VowShape),
 });
 

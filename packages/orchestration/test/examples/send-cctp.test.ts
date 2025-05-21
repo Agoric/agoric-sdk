@@ -7,6 +7,7 @@ import type { IBCMethod } from '@agoric/vats';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { E } from '@endo/far';
+import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import type {
   CosmosChainInfo,
   IBCConnectionInfo,
@@ -111,14 +112,14 @@ const registerUSDC = async ({ bankManager, agoricNamesAdmin }) => {
   });
   await E(E(agoricNamesAdmin).lookupAdmin('vbankAsset')).update(
     denom,
-    /** @type {AssetInfo} */ harden({
+    harden({
       brand,
       issuer,
       issuerName,
       denom,
       proposedName,
-      displayInfo: { IOU: true },
-    }),
+      displayInfo: { assetKind: 'nat', IOU: true },
+    }) as AssetInfo,
   );
 
   return harden({ ...usdcKit, denom });
