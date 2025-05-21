@@ -4,10 +4,10 @@
 
 ## Script used to install the helm chart for the devnet from a config file
 ## Usage:
-## ./scripts/install.sh --coinfig <config_file>
+## ./scripts/install.sh --config <config_file>
 ## Options:
 ## -c|--config: config file to use (default: config.yaml)
-## -v|--version: helm chart version (default: 0.1.43)
+## -v|--version: helm chart version (default: v0.2.6)
 
 set -euo pipefail
 
@@ -27,7 +27,7 @@ NAMESPACE=""
 HELM_REPO="starship"
 HELM_CHART="starship/devnet"
 HELM_REPO_URL="https://hyperweb-io.github.io/starship/"
-HELM_CHART_VERSION="0.2.20"
+HELM_CHART_VERSION="v0.2.6"
 HELM_NAME="agoric-multichain-testing"
 
 # check_helm function verifies the helm binary is installed
