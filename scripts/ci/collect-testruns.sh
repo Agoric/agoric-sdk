@@ -6,7 +6,7 @@ for cov in ./packages/**/coverage; do
   # skip if unable to expand if there are no test files
   if [[ $cov != "./packages/**/coverage" ]]; then
     echo "processing $pkg"
-    (cd "$cov/../" && yarn run c8 report --reporter=lcov && find coverage -name "*.json" -delete)
+    (cd "$cov/../" && yarn run -T c8 report --reporter=lcov && find coverage -name "*.json" -delete)
   fi
 done
 
