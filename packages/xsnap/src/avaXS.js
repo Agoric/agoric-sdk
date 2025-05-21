@@ -33,7 +33,6 @@ const asset = (ref, readFile) =>
 const externals = [
   'ava',
   'ses',
-  '@endo/ses-ava',
   '@endo/bundle-source',
   '@endo/init',
   '@endo/init/debug.js',

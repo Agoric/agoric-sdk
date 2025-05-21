@@ -49,8 +49,6 @@ const testRequire = function require(specifier) {
           dirname: s => s.substring(0, s.lastIndexOf('/')),
         },
       };
-    case '@endo/ses-ava':
-      return { wrapTest: test => test };
     case '@endo/init':
     case '@endo/init/debug.js':
     case '@endo/init/pre.js':
