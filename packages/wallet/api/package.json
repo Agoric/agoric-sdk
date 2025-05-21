@@ -14,7 +14,7 @@
     "lint:eslint": "yarn run -T eslint ."
   },
   "devDependencies": {
-    "@agoric/vats": "^0.15.1",
+    "@agoric/vats": "workspace:*",
     "@endo/bundle-source": "^4.0.0",
     "@endo/far": "^1.1.11",
     "@endo/init": "^1.1.9",

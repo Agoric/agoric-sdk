@@ -21,7 +21,7 @@
     "lint:eslint": "yarn run -T eslint ."
   },
   "dependencies": {
-    "@agoric/internal": "^0.3.2",
+    "@agoric/internal": "workspace:*",
     "@endo/base64": "^1.0.9",
     "@endo/bundle-source": "^4.0.0",
     "@endo/check-bundle": "^1.0.14",

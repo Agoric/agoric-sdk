@@ -21,9 +21,9 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/internal": "^0.3.2",
-    "@agoric/store": "^0.9.2",
-    "@agoric/vat-data": "^0.5.2",
+    "@agoric/internal": "workspace:*",
+    "@agoric/store": "workspace:*",
+    "@agoric/vat-data": "workspace:*",
     "@endo/base64": "^1.0.9",
     "@endo/errors": "^1.2.10",
     "@endo/far": "^1.1.11",
@@ -32,10 +32,10 @@
     "@endo/promise-kit": "^1.1.10"
   },
   "devDependencies": {
-    "@agoric/swingset-liveslots": "^0.10.2",
-    "@agoric/swingset-vat": "^0.32.2",
-    "@agoric/vow": "^0.1.0",
-    "@agoric/zone": "^0.2.2",
+    "@agoric/swingset-liveslots": "workspace:*",
+    "@agoric/swingset-vat": "workspace:*",
+    "@agoric/vow": "workspace:*",
+    "@agoric/zone": "workspace:*",
     "@endo/bundle-source": "^4.0.0",
     "ava": "^5.3.0",
     "c8": "^10.1.3"

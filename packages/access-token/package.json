@@ -18,7 +18,7 @@
     "lint:types": "yarn run -T tsc"
   },
   "dependencies": {
-    "@agoric/internal": "^0.3.2",
+    "@agoric/internal": "workspace:*",
     "n-readlines": "^1.0.0",
     "proper-lockfile": "^4.1.2",
     "tmp": "^0.2.1"
