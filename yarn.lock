@@ -1240,6 +1240,7 @@ __metadata:
     "@agoric/swingset-xsnap-supervisor": "workspace:*"
     "@agoric/time": "workspace:*"
     "@agoric/vat-data": "workspace:*"
+    "@agoric/xsnap": "workspace:*"
     "@agoric/xsnap-lockdown": "workspace:*"
     "@endo/base64": "npm:^1.0.12"
     "@endo/bundle-source": "npm:^4.1.2"
@@ -1497,7 +1498,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/xsnap@workspace:packages/xsnap":
+"@agoric/xsnap@workspace:*, @agoric/xsnap@workspace:packages/xsnap":
   version: 0.0.0-use.local
   resolution: "@agoric/xsnap@workspace:packages/xsnap"
   dependencies:
