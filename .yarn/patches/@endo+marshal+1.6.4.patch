@@ -1,0 +1,62 @@
+diff --git a/package.json b/package.json
+index 1263928..59a9afc 100644
+--- a/package.json
++++ b/package.json
+@@ -48,1 +48,2 @@     "@endo/pass-style": "^1.5.0",
+-    "@endo/promise-kit": "^1.1.10"
++    "@endo/promise-kit": "^1.1.10",
++    "lru-cache": "11.1.0"
+diff --git a/src/marshal.js b/src/marshal.js
+index 1263928..59a9afc 100644
+--- a/src/marshal.js
++++ b/src/marshal.js
+@@ -13,0 +13,1 @@ import { objectMap } from '@endo/common/object-map.js';
++import LRUCache from 'lru-cache';
+diff --git a/src/marshal.js b/src/marshal.js
+index 1263928..59a9afc 100644
+--- a/src/marshal.js
++++ b/src/marshal.js
+@@ -39,0 +39,1 @@ const defaultSlotToValFn = (x, _) => x;
++const cache = new LRUCache({ max: 100 });
+diff --git a/src/marshal.js b/src/marshal.js
+index 1263928..59a9afc 100644
+--- a/src/marshal.js
++++ b/src/marshal.js
+@@ -78,0 +78,3 @@   const toCapData = root => {
++    const cacheValue = cache.get(root);
++    if (cacheValue !== undefined) return harden(cacheValue);
++    /** @type {Array<Slot>} */
+diff --git a/src/marshal.js b/src/marshal.js
+index 1263928..59a9afc 100644
+--- a/src/marshal.js
++++ b/src/marshal.js
+@@ -187,4 +187,6 @@       const body = JSON.stringify(encoded);
+-      return harden({
+-        body,
+-        slots,
+-      });
++      const value = {
++        body,
++        slots,
++      };
++      cache.set(root, value);
++      return harden(value);
+diff --git a/src/marshal.js b/src/marshal.js
+index 1263928..59a9afc 100644
+--- a/src/marshal.js
++++ b/src/marshal.js
+@@ -230,6 +230,8 @@       const smallcapsBody = JSON.stringify(encoded);
+-      return harden({
+-        // Valid JSON cannot begin with a '#', so this is a valid signal
+-        // indicating smallcaps format.
+-        body: `#${smallcapsBody}`,
+-        slots,
+-      });
++      const value = {
++        // Valid JSON cannot begin with a '#', so this is a valid signal
++        // indicating smallcaps format.
++        body: `#${smallcapsBody}`,
++        slots,
++      };
++      cache.set(root, value);
++      return harden(value);

@@ -1,0 +1,6 @@
+diff --git a/src/patterns/patternMatchers.js b/src/patterns/patternMatchers.js
+index 1263928..59a9afc 100644
+--- a/src/patterns/patternMatchers.js
++++ b/src/patterns/patternMatchers.js
+@@ -586,0 +586,1 @@   const mustMatch = (specimen, patt, label = undefined) => {
++    return;

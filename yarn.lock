@@ -3478,7 +3478,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/marshal@npm:^1.6.4":
+"@endo/marshal@npm:1.6.4":
   version: 1.6.4
   resolution: "@endo/marshal@npm:1.6.4"
   dependencies:
@@ -3489,6 +3489,20 @@ __metadata:
     "@endo/pass-style": "npm:^1.5.0"
     "@endo/promise-kit": "npm:^1.1.10"
   checksum: 10c0/8861ea7170b3e30332b1824877cdfc3d4139c9cb024eef17a831068fd27e9c6d093a1540eedc7a6868ecf508e35833e91ad5d6e7a575cfaff70039cf2e7038b3
+  languageName: node
+  linkType: hard
+
+"@endo/marshal@patch:@endo/marshal@npm%3A1.6.4#~/.yarn/patches/@endo+marshal+1.6.4.patch":
+  version: 1.6.4
+  resolution: "@endo/marshal@patch:@endo/marshal@npm%3A1.6.4#~/.yarn/patches/@endo+marshal+1.6.4.patch::version=1.6.4&hash=5ffda8"
+  dependencies:
+    "@endo/common": "npm:^1.2.10"
+    "@endo/errors": "npm:^1.2.10"
+    "@endo/eventual-send": "npm:^1.3.1"
+    "@endo/nat": "npm:^5.1.0"
+    "@endo/pass-style": "npm:^1.5.0"
+    "@endo/promise-kit": "npm:^1.1.10"
+  checksum: 10c0/4451b67c6a347476de1abde1ead1918384a45c66165093848f26f9b55ed18574be49dc0cfd05ba74472db5f2e5b2f2a60a5fed70fa49270017074d332cf3220b
   languageName: node
   linkType: hard
 
@@ -3536,7 +3550,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/patterns@npm:^1.5.0":
+"@endo/patterns@npm:1.5.0":
   version: 1.5.0
   resolution: "@endo/patterns@npm:1.5.0"
   dependencies:
@@ -3547,6 +3561,20 @@ __metadata:
     "@endo/pass-style": "npm:^1.5.0"
     "@endo/promise-kit": "npm:^1.1.10"
   checksum: 10c0/1b578932296db18e2c9eb89e71ddfd47cc28a8b95351e6b6419c927283f2cdfb44815266c7be1cd4791ba4fb99323707c6dc404edb920dba62a0d2b74450e82f
+  languageName: node
+  linkType: hard
+
+"@endo/patterns@patch:@endo/patterns@npm%3A1.5.0#~/.yarn/patches/@endo+patterns+1.5.0.patch":
+  version: 1.5.0
+  resolution: "@endo/patterns@patch:@endo/patterns@npm%3A1.5.0#~/.yarn/patches/@endo+patterns+1.5.0.patch::version=1.5.0&hash=1bc5e4"
+  dependencies:
+    "@endo/common": "npm:^1.2.10"
+    "@endo/errors": "npm:^1.2.10"
+    "@endo/eventual-send": "npm:^1.3.1"
+    "@endo/marshal": "npm:^1.6.4"
+    "@endo/pass-style": "npm:^1.5.0"
+    "@endo/promise-kit": "npm:^1.1.10"
+  checksum: 10c0/3bb795c7495795173db4875fd4cbad98f2367a8a548e7dee487c37df6b7c520aca75871d12d96ebcf1431747630287e044bf742faeadd9f119ff9558400298b5
   languageName: node
   linkType: hard
 
