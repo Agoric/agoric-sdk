@@ -498,7 +498,6 @@ export const osmosisSwapTools = async t => {
     tokensAmount: string = '1000000',
   ) => {
     const clientRegistry = osmosisClient.registry;
-    //@ts-expect-error multiple instances of the same package
     osmosis.gamm.poolmodels.balancer.v1beta1.load(clientRegistry);
 
     const MsgCreateBalancerPool =
