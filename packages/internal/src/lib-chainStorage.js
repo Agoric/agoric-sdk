@@ -8,11 +8,11 @@ import * as cb from './callback.js';
 
 /**
  * @import {ERef} from '@endo/far';
- * @import {Passable} from '@endo/marshal';
+ * @import {Marshal, Passable} from '@endo/marshal';
  * @import {Remote, ERemote, TypedPattern} from './types.js';
  */
 
-/** @typedef {ReturnType<typeof import('@endo/marshal').makeMarshal>} Marshaller */
+/** @typedef {Marshal<unknown>} Marshaller */
 /** @typedef {Pick<Marshaller, 'fromCapData'>} Unserializer */
 
 /**
