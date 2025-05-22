@@ -1070,6 +1070,7 @@ __metadata:
     "@endo/init": "npm:^1.1.9"
     "@endo/lockdown": "npm:^1.0.15"
     "@endo/marshal": "npm:^1.6.4"
+    "@endo/promise-kit": "npm:^1.1.10"
     "@endo/ses-ava": "npm:^1.2.10"
     "@endo/stream": "npm:^1.2.10"
     "@opentelemetry/api": "npm:~1.9.0"
