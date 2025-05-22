@@ -6,19 +6,19 @@ import { isStreamCell } from '../lib-chainStorage.js';
 import { assertCapData } from './cap-data.js';
 
 /**
- * @import {CapData} from '@endo/marshal';
+ * @import {RemotableObject} from '@endo/pass-style';
+ * @import {CapData, FromCapData, ConvertValToSlot, Marshal} from '@endo/marshal';
  */
 
 /**
- * Should be a union with Remotable, but that's `any`, making this type
- * meaningless
- *
- * @typedef {{ getBoardId: () => string | null }} BoardRemote
+ * @template [BoardId=(string | null)]
+ * @typedef {{ getBoardId: () => BoardId } & RemotableObject} BoardRemote
  */
 
 /**
- * @param {{ boardId: string | null; iface?: string }} slotInfo
- * @returns {BoardRemote}
+ * @template [BoardId=(string | null)]
+ * @param {{ boardId: BoardId; iface?: string }} slotInfo
+ * @returns {BoardRemote<BoardId>}
  */
 export const makeBoardRemote = ({ boardId, iface }) => {
   const nonalleged = iface ? iface.replace(/^Alleged: /, '') : '';
@@ -26,13 +26,17 @@ export const makeBoardRemote = ({ boardId, iface }) => {
 };
 
 /**
- * @param {string} boardId
+ * @template [BoardId=string]
+ * @param {BoardId} boardId
  * @param {string} iface
  */
 export const slotToBoardRemote = (boardId, iface) =>
   makeBoardRemote({ boardId, iface });
 
-/** @param {BoardRemote | object} val */
+/**
+ * @param {BoardRemote<any> | object} val
+ * @returns {val extends BoardRemote<infer BoardId> ? BoardId : never}
+ */
 const boardValToSlot = val => {
   if ('getBoardId' in val) {
     return val.getBoardId();
@@ -45,16 +49,18 @@ const boardValToSlot = val => {
  * allows the caller to pick their slots. The deserializer is configurable: the
  * default cannot handle Remotable-bearing data.
  *
- * @param {(slot: string, iface: string) => any} [slotToVal]
- * @returns {Omit<
- *   import('@endo/marshal').Marshal<string | null>,
- *   'serialize' | 'unserialize'
- * >}
+ * @template [BoardId=(string | null)]
+ * @param {(slot: BoardId, iface: string) => any} [slotToVal]
+ * @returns {Omit<Marshal<BoardId>, 'serialize' | 'unserialize'>}
  */
 export const boardSlottingMarshaller = (slotToVal = undefined) => {
-  return makeMarshal(boardValToSlot, slotToVal, {
-    serializeBodyFormat: 'smallcaps',
-  });
+  return makeMarshal(
+    /** @type {ConvertValToSlot<BoardId>} */ (boardValToSlot),
+    slotToVal,
+    {
+      serializeBodyFormat: 'smallcaps',
+    },
+  );
 };
 
 /**
@@ -62,9 +68,7 @@ export const boardSlottingMarshaller = (slotToVal = undefined) => {
  *
  * @param {Map<string, string>} data
  * @param {string} key
- * @param {ReturnType<
- *   typeof import('@endo/marshal').makeMarshal
- * >['fromCapData']} fromCapData
+ * @param {FromCapData<string>} fromCapData
  * @param {number} index index of the desired value in a deserialized stream
  *   cell
  * @returns {any}

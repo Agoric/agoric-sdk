@@ -51,7 +51,7 @@ export const makeWalletFactoryDriver = async (
     'namesByAddressAdmin',
   );
 
-  const marshaller = boardSlottingMarshaller(slotToRemotable);
+  const marshaller: Marshaller = boardSlottingMarshaller(slotToRemotable);
 
   const makeWalletDriver = (
     walletAddress: string,
