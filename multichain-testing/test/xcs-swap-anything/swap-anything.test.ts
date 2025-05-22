@@ -2,7 +2,7 @@ import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
 import { AmountMath } from '@agoric/ertp';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
-import { makeBlockTool, makeDoOffer } from '../../tools/e2e-tools.js';
+import { makeDoOffer } from '../../tools/e2e-tools.js';
 import { commonSetup } from '../support.js';
 import { makeQueryClient } from '../../tools/query.js';
 import starshipChainInfo from '../../starship-chain-info.js';
@@ -10,7 +10,6 @@ import {
   createFundedWalletAndClient,
   makeIBCTransferMsg,
 } from '../../tools/ibc-transfer.js';
-import { makeHttpClient } from '../../tools/makeHttpClient.js';
 import type { OfferStatus } from '@agoric/smart-wallet/src/offers.js';
 import {
   osmosisSwapTools,
@@ -48,18 +47,14 @@ const osmosisPoolList: OsmosisPool[] = [
 test.before(async t => {
   const { setupTestKeys, ...common } = await commonSetup(t);
   const { commonBuilderOpts, deleteTestKeys, startContract } = common;
-  const { waitForBlock } = makeBlockTool({
-    rpc: makeHttpClient('http://localhost:26657', fetch),
-    delay: ms => new Promise(resolve => setTimeout(resolve, ms)),
-  });
   await deleteTestKeys(accounts).catch();
   const wallets = await setupTestKeys(accounts);
   console.log('WALLETS', wallets);
 
   await startContract(contractName, contractBuilder, commonBuilderOpts);
 
-  // @ts-expect-error type
-  t.context = { ...common, wallets, waitForBlock };
+  //@ts-expect-error missing swap tools
+  t.context = { ...common, wallets };
 
   const swapTools = await osmosisSwapTools(t);
   const { setupXcsContracts, setupXcsState, setupOsmosisPools } = swapTools;
@@ -90,9 +85,7 @@ test.serial('test osmosis xcs state', async t => {
 
   // verify if Osmosis XCS State was modified
   const chainId = useChain('osmosis').chain.chain_id;
-  const {
-    transferChannel,
-  } = starshipChainInfo.agoric.connections[chainId];
+  const { transferChannel } = starshipChainInfo.agoric.connections[chainId];
 
   const { channelId, prefix } = await getXcsState(channelList[0]);
 
@@ -108,7 +101,7 @@ test.serial('test osmosis xcs state', async t => {
   t.assert(pools, 'No Osmosis Pool found');
 });
 
-test.only('BLD for OSMO, receiver on Agoric', async t => {
+test.serial('BLD for OSMO, receiver on Agoric', async t => {
   const {
     wallets,
     provisionSmartWallet,
@@ -509,8 +502,6 @@ test.serial('address hook - BLD for OSMO, receiver on Agoric', async t => {
   const { balances: agoricReceiverBalances } = await retryUntilCondition(
     () => queryClient.queryBalances(wallets.agoricReceiver),
     ({ balances }) => {
-      console.log('LOG LOOP balances ', balances);
-
       const balancesBeforeAmount = BigInt(balancesBefore[0]?.amount || 0);
       const currentBalanceAmount = BigInt(balances[0]?.amount || 0);
       return currentBalanceAmount > balancesBeforeAmount;
@@ -537,7 +528,7 @@ test.serial('bad swapOut receiver, via addressHooks', async t => {
     fundRemote,
     getDenomHash,
     getContractsInfo,
-    waitForBlock,
+    retryUntilCondition,
   } = t.context;
 
   const { address: cosmosHubAddr, client: cosmosHubClient } = await fundRemote(
@@ -595,7 +586,13 @@ test.serial('bad swapOut receiver, via addressHooks', async t => {
   t.log(`Funds transferred to ${orcContractReceiverAddress}`);
 
   // TODO; consider replacing with waitforcondition (baseAddress balance)
-  await waitForBlock(2);
+  await retryUntilCondition(
+    () => queryClient.queryBalances(baseAddress),
+    ({ balances }) => {
+      return balances.length > 0;
+    },
+    'swap-anything balance reflected transferred tokens',
+  );
 
   // local account balances
   const localOrchAccountBalancesAfter =
