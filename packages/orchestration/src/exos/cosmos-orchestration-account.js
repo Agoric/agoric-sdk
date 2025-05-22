@@ -98,6 +98,31 @@ const { Vow$ } = NetworkShape; // TODO #9611
  */
 
 /**
+ * Decodes the reply from the result of an InterChainQuery.
+ *
+ * @template R - response type returned by `codec.decode()`
+ * @param {{
+ *   typeUrl: string;
+ *   decode(input: Uint8Array, length?: number): R;
+ * }} codec
+ * @param {JsonSafe<ResponseQuery>} result
+ * @returns {R} returned by `codec.decode(...)`
+ */
+const decodeIcqResult = (codec, result) => {
+  try {
+    // We prefer the key over the value, for backwards compatibility.
+    const bytes = decodeBase64(result.key || result.value);
+    return codec.decode(bytes);
+  } catch (cause) {
+    throw makeError(
+      `Failed to parse ${codec.typeUrl} from result ${q(result)}`,
+      undefined,
+      { cause },
+    );
+  }
+};
+
+/**
  * @private
  * @typedef {{
  *   account: IcaAccount;
@@ -375,10 +400,7 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @param {JsonSafe<ResponseQuery>[]} results
          */
         onFulfilled([result]) {
-          if (!result?.key) throw Fail`Error parsing result ${result}`;
-          const { balance } = QueryBalanceResponse.decode(
-            decodeBase64(result.key),
-          );
+          const { balance } = decodeIcqResult(QueryBalanceResponse, result);
           if (!balance) throw Fail`Result lacked balance key: ${result}`;
           return harden(toDenomAmount(balance));
         },
@@ -389,9 +411,9 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @returns {CosmosDelegationResponse}
          */
         onFulfilled([result]) {
-          if (!result?.key) throw Fail`Error parsing result ${result}`;
-          const { delegationResponse } = QueryDelegationResponse.decode(
-            decodeBase64(result.key),
+          const { delegationResponse } = decodeIcqResult(
+            QueryDelegationResponse,
+            result,
           );
           if (!delegationResponse)
             throw Fail`Result lacked delegationResponse key: ${result}`;
@@ -407,9 +429,10 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @returns {CosmosDelegationResponse[]}
          */
         onFulfilled([result]) {
-          if (!result?.key) throw Fail`Error parsing result ${result}`;
-          const { delegationResponses } =
-            QueryDelegatorDelegationsResponse.decode(decodeBase64(result.key));
+          const { delegationResponses } = decodeIcqResult(
+            QueryDelegatorDelegationsResponse,
+            result,
+          );
           if (!delegationResponses)
             throw Fail`Result lacked delegationResponses key: ${result}`;
           const { chainAddress } = this.state;
@@ -425,9 +448,9 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @param {JsonSafe<ResponseQuery>[]} results
          */
         onFulfilled([result]) {
-          if (!result?.key) throw Fail`Error parsing result ${result}`;
-          const { unbond } = QueryUnbondingDelegationResponse.decode(
-            decodeBase64(result.key),
+          const { unbond } = decodeIcqResult(
+            QueryUnbondingDelegationResponse,
+            result,
           );
           if (!unbond) throw Fail`Result lacked unbond key: ${result}`;
           return harden(unbond);
@@ -438,11 +461,10 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @param {JsonSafe<ResponseQuery>[]} results
          */
         onFulfilled([result]) {
-          if (!result?.key) throw Fail`Error parsing result ${result}`;
-          const { unbondingResponses } =
-            QueryDelegatorUnbondingDelegationsResponse.decode(
-              decodeBase64(result.key),
-            );
+          const { unbondingResponses } = decodeIcqResult(
+            QueryDelegatorUnbondingDelegationsResponse,
+            result,
+          );
           if (!unbondingResponses)
             throw Fail`Result lacked unbondingResponses key: ${result}`;
           return harden(unbondingResponses);
@@ -453,9 +475,9 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @param {JsonSafe<ResponseQuery>[]} results
          */
         onFulfilled([result]) {
-          if (!result?.key) throw Fail`Error parsing result ${result}`;
-          const { redelegationResponses } = QueryRedelegationsResponse.decode(
-            decodeBase64(result.key),
+          const { redelegationResponses } = decodeIcqResult(
+            QueryRedelegationsResponse,
+            result,
           );
           if (!redelegationResponses)
             throw Fail`Result lacked redelegationResponses key: ${result}`;
@@ -467,9 +489,9 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @param {JsonSafe<ResponseQuery>[]} results
          */
         onFulfilled([result]) {
-          if (!result?.key) throw Fail`Error parsing result ${result}`;
-          const { redelegationResponses } = QueryRedelegationsResponse.decode(
-            decodeBase64(result.key),
+          const { redelegationResponses } = decodeIcqResult(
+            QueryRedelegationsResponse,
+            result,
           );
           if (!redelegationResponses)
             throw Fail`Result lacked redelegationResponses key: ${result}`;
@@ -481,9 +503,9 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @param {JsonSafe<ResponseQuery>[]} results
          */
         onFulfilled([result]) {
-          if (!result?.key) throw Fail`Error parsing result ${result}`;
-          const { rewards } = QueryDelegationRewardsResponse.decode(
-            decodeBase64(result.key),
+          const { rewards } = decodeIcqResult(
+            QueryDelegationRewardsResponse,
+            result,
           );
           if (!rewards) throw Fail`Result lacked rewards key: ${result}`;
           return harden(rewards.map(toTruncatedDenomAmount));
@@ -495,9 +517,9 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @returns {CosmosRewardsResponse}
          */
         onFulfilled([result]) {
-          if (!result?.key) throw Fail`Error parsing result ${result}`;
-          const { rewards, total } = QueryDelegationTotalRewardsResponse.decode(
-            decodeBase64(result.key),
+          const { rewards, total } = decodeIcqResult(
+            QueryDelegationTotalRewardsResponse,
+            result,
           );
           if (!rewards || !total)
             throw Fail`Result lacked rewards or total key: ${result}`;
@@ -516,20 +538,10 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @param {JsonSafe<ResponseQuery>[]} results
          */
         onFulfilled([result]) {
-          let response;
-          try {
-            response = QueryAllBalancesResponse.decode(
-              // note: an empty string for result.key is a valid result
-              decodeBase64(result.key),
-            );
-          } catch (cause) {
-            throw makeError(
-              `Error parsing QueryAllBalances result ${q(result)}`,
-              undefined,
-              { cause },
-            );
-          }
-          const { balances } = response;
+          const { balances } = decodeIcqResult(
+            QueryAllBalancesResponse,
+            result,
+          );
           if (!balances) throw Fail`Result lacked balances key: ${q(result)}`;
           return harden(balances.map(coin => toDenomAmount(coin)));
         },
