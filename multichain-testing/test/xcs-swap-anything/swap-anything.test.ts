@@ -1,8 +1,7 @@
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
 import { AmountMath } from '@agoric/ertp';
-import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
-import { makeBlockTool, makeDoOffer } from '../../tools/e2e-tools.js';
+import { makeDoOffer } from '../../tools/e2e-tools.js';
 import { commonSetup } from '../support.js';
 import { makeQueryClient } from '../../tools/query.js';
 import starshipChainInfo from '../../starship-chain-info.js';
@@ -16,8 +15,10 @@ import {
   type Prefix,
   type Channel,
   type SetupOsmosisContextWithCommon,
-  type OsmosisPool,
+  type Pair,
 } from './helpers.js';
+import type { Pool } from 'osmojs/osmosis/gamm/v1beta1/balancerPool.js';
+import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 
 const test = anyTest as TestFn<SetupOsmosisContextWithCommon>;
 
@@ -39,9 +40,19 @@ const channelList: Channel[] = [
   { primary: 'cosmoshub', counterParty: 'osmosis' },
 ];
 
-const osmosisPoolList: OsmosisPool[] = [
-  { issuingChain: 'agoric', issuingDenom: 'ubld' },
-  { issuingChain: 'cosmoshub', issuingDenom: 'uatom' },
+const osmosisPoolList: Pair[] = [
+  {
+    tokenA: { chain: 'agoric', denom: 'ubld', amount: '10000000' },
+    tokenB: { chain: 'osmosis', denom: 'uosmo', amount: '10000000' },
+  },
+  {
+    tokenA: { chain: 'cosmoshub', denom: 'uatom', amount: '10000000' },
+    tokenB: { chain: 'osmosis', denom: 'uosmo', amount: '10000000' },
+  },
+  {
+    tokenA: { chain: 'cosmoshub', denom: 'uatom', amount: '10000000' },
+    tokenB: { chain: 'agoric', denom: 'ubld', amount: '10000000' },
+  },
 ];
 
 test.before(async t => {
@@ -57,18 +68,25 @@ test.before(async t => {
   t.context = { ...common, wallets };
 
   const swapTools = await osmosisSwapTools(t);
-  const { setupXcsContracts, setupXcsState, setupOsmosisPools } = swapTools;
+  const { setupXcsContracts, setupXcsState, setupPoolsInBatch } = swapTools;
 
   await setupXcsContracts();
   await setupXcsState(prefixList, channelList);
-  await setupOsmosisPools(osmosisPoolList);
+  await setupPoolsInBatch(osmosisPoolList);
 
   t.context = { ...t.context, ...swapTools };
 });
 
 test.serial('test osmosis xcs state', async t => {
-  const { useChain, getContractsInfo, getXcsState, getPoolRoute, getPools } =
-    t.context;
+  const {
+    useChain,
+    getContractsInfo,
+    getXcsState,
+    getPoolRoute,
+    getPools,
+    getPool,
+    getDenomHash,
+  } = t.context;
 
   // verify if Osmosis XCS contracts were instantiated
   const { swaprouter, crosschain_registry, crosschain_swaps } =
@@ -93,12 +111,40 @@ test.serial('test osmosis xcs state', async t => {
   t.is(channelId, transferChannel.channelId);
 
   // Verify if Pool was succefuly created
-  const pool_route = await getPoolRoute(osmosisPoolList[0]);
+  const pool_route = await getPoolRoute(
+    { chain: 'agoric', denom: 'ubld' },
+    { chain: 'osmosis', denom: 'uosmo' },
+  );
   t.is(pool_route[0].token_out_denom, 'uosmo');
 
-  // TODO: fix this assertion
-  const pools = await getPools();
-  t.assert(pools, 'No Osmosis Pool found');
+  const { numPools } = await getPools();
+  t.assert(numPools > 0n, 'No Osmosis Pool found');
+
+  // Check non-native pool
+  const { tokenA, tokenB } = osmosisPoolList[2];
+  const nonNativeRoute = await getPoolRoute(tokenA, tokenB);
+  console.log('ME', nonNativeRoute);
+  t.log(nonNativeRoute);
+  const [pool, chainADenomHash, chainBDenomHash] = await Promise.all([
+    getPool(BigInt(nonNativeRoute[0].pool_id)),
+    getDenomHash('osmosis', tokenA.chain, tokenA.denom),
+    getDenomHash('osmosis', tokenB.chain, tokenB.denom),
+  ]);
+  t.log(pool);
+
+  t.is(nonNativeRoute[0].token_out_denom, `ibc/${chainBDenomHash}`);
+
+  const myPool = pool.pool as Pool;
+  t.truthy(
+    myPool.poolAssets.find(
+      ({ token }) => token.denom === `ibc/${chainADenomHash}`,
+    ),
+  );
+  t.truthy(
+    myPool.poolAssets.find(
+      ({ token }) => token.denom === `ibc/${chainBDenomHash}`,
+    ),
+  );
 });
 
 test.serial('BLD for OSMO, receiver on Agoric', async t => {
@@ -189,6 +235,7 @@ test.serial('BLD for OSMO, receiver on Agoric', async t => {
   );
 });
 
+// FLAKE: fails when run in isolation (.only)
 test.serial('OSMO for BLD, receiver on Agoric', async t => {
   const {
     wallets,
