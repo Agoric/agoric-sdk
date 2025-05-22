@@ -260,14 +260,10 @@ export async function main() {
   let samplingInterval;
 
   const initializeInspectorSession = () =>
-    import('inspector')
-      .then(({ Session }) => {
-        inspectorSession = new Session();
-        inspectorSession.connect();
-      })
-      .catch(err =>
-        console.error('Inspector initializtion failed due to error: ', err),
-      );
+    import('inspector').then(({ Session }) => {
+      inspectorSession = new Session();
+      inspectorSession.connect();
+    });
 
   await null;
 
@@ -397,7 +393,10 @@ export async function main() {
         });
 
         if (cpuProfileFilePath && !inspectorSession)
-          await initializeInspectorSession();
+          await initializeInspectorSession().catch(err => {
+            console.error('Inspector initializtion failed due to error: ', err);
+            cpuProfileFilePath = undefined;
+          });
         break;
       case '--heap-profile-output':
         heapProfileFilePath = path.resolve(String(argv.shift()));
@@ -415,7 +414,10 @@ export async function main() {
         });
 
         if (heapProfileFilePath && !inspectorSession)
-          await initializeInspectorSession();
+          await initializeInspectorSession().catch(err => {
+            console.error('Inspector initializtion failed due to error: ', err);
+            heapProfileFilePath = undefined;
+          });
         break;
       case '--heap-sampling-interval':
         samplingInterval = Number(argv.shift());
@@ -755,11 +757,11 @@ export async function main() {
    * @returns {object}
    */
   function postToInspector(method, parameters = {}) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) =>
       inspectorSession?.post(method, parameters, (err, result) =>
         err ? reject(err) : resolve(result),
-      );
-    });
+      ),
+    );
   }
 
   /**
