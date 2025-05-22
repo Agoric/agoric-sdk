@@ -261,7 +261,7 @@ export const osmosisSwapTools = async t => {
       contractAddress,
       queryMsg,
     );
-    
+
     return result;
   };
 
@@ -324,11 +324,11 @@ export const osmosisSwapTools = async t => {
     const storeEncodeObjects: Array<
       import('@cosmjs/proto-signing').EncodeObject
     > = [
-        {
-          typeUrl: MsgStoreCode.typeUrl,
-          value: storeMessage,
-        },
-      ];
+      {
+        typeUrl: MsgStoreCode.typeUrl,
+        value: storeMessage,
+      },
+    ];
 
     const storeResult = await osmosisClient.signAndBroadcast(
       osmosisAddress,
@@ -355,11 +355,11 @@ export const osmosisSwapTools = async t => {
     const instantiateEncodeObjects: Array<
       import('@cosmjs/proto-signing').EncodeObject
     > = [
-        {
-          typeUrl: MsgInstantiateContract.typeUrl,
-          value: instantiateMessage,
-        },
-      ];
+      {
+        typeUrl: MsgInstantiateContract.typeUrl,
+        value: instantiateMessage,
+      },
+    ];
 
     const instantiateResult = await osmosisClient.signAndBroadcast(
       osmosisAddress,
@@ -479,9 +479,11 @@ export const osmosisSwapTools = async t => {
 
   const isXcsStateSet = async (channelList: Channel[]) => {
     try {
-      for (const channel of channelList) {     
+      for (const channel of channelList) {
         await getXcsState(channel);
-        t.log(`Xcs State verified for ${channel.primary} ${channel.counterParty}`);
+        t.log(
+          `Xcs State verified for ${channel.primary} ${channel.counterParty}`,
+        );
       }
       return true;
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -644,7 +646,7 @@ export const osmosisSwapTools = async t => {
       throw new Error('crosschain_registry contract address not found');
     }
 
-    const { primary, counterParty } = channel
+    const { primary, counterParty } = channel;
 
     const channelQuery = {
       get_channel_from_chain_pair: {
@@ -652,7 +654,7 @@ export const osmosisSwapTools = async t => {
         destination_chain: counterParty,
       },
     };
-    
+
     const channelId = await queryOsmosisContract(registryAddress, channelQuery);
 
     const prefixQuery = {
@@ -671,7 +673,7 @@ export const osmosisSwapTools = async t => {
       throw new Error('swaprouter contract address not found');
     }
 
-    const { issuingChain, issuingDenom } = pool
+    const { issuingChain, issuingDenom } = pool;
 
     const hash = await getDenomHash('osmosis', issuingChain, issuingDenom);
     const queryMsg = {
@@ -757,8 +759,7 @@ export const osmosisSwapTools = async t => {
 
   const setupOsmosisPools = async (osmosisPoolList: OsmosisPool[]) => {
     for (const pool of osmosisPoolList) {
-
-      const { issuingChain, issuingDenom } = pool
+      const { issuingChain, issuingDenom } = pool;
       console.log(`Setting Osmosis pool for uosmo, ${issuingDenom} ...`);
 
       if (!(await isRouteSet(pool))) {
