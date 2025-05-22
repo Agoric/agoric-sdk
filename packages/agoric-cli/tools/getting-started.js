@@ -108,12 +108,30 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
     });
   }
 
-  function yarn(args) {
-    return pspawnStdout('yarn', args, {
+  /**
+   * @param {string[]} args
+   * @returns {{childProcess?: import('child_process').ChildProcess} & Promise<void>}
+   */
+  function yarn(...args) {
+    const ps = pspawnStdout('yarn', args, {
       stdio: ['ignore', 'pipe', 'inherit'],
       env: { ...process.env },
       detached: true,
     });
+    /** @type {{childProcess?: import('child_process').ChildProcess} & Promise<void>} */
+    const p = new Promise((resolve, reject) => {
+      ps.then(code => {
+        if (code !== 0) {
+          reject(
+            new Error(`yarn ${args.join(' ')} failed with exit code ${code}`),
+          );
+        } else {
+          resolve();
+        }
+      }).catch(reject);
+    });
+    p.childProcess = ps.childProcess;
+    return p;
   }
 
   const olddir = process.cwd();
@@ -170,12 +188,12 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
     } else {
       // ==============
       // yarn install
-      t.is(await yarn(['install', ...installOptions]), 0, 'yarn install works');
+      await yarn('install', ...installOptions);
     }
 
     // ==============
     // yarn start:docker
-    t.is(await yarn(['start:docker']), 0, 'yarn start:docker works');
+    await yarn('start:docker');
 
     // ==============
     // wait for the chain to start
@@ -205,11 +223,11 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
 
     // ==============
     // yarn start:contract
-    t.is(await yarn(['start:contract']), 0, 'yarn start:contract works');
+    await yarn('start:contract');
 
     // ==============
     // yarn start:ui
-    const startUiP = yarn(['start:ui']);
+    const startUiP = yarn('start:ui');
     finalizers.push(() => pkill(startUiP.childProcess, 'SIGINT'));
     const uiListening = makePromiseKit();
     let retries = 0;

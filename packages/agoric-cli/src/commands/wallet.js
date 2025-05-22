@@ -278,15 +278,13 @@ export const makeWalletCommand = async command => {
     .action(async function ({ from }) {
       const spec = `:published.wallet.${from}`;
 
-      const leaderOptions = makeLeaderOptions({
-        sleep: SLEEP_SECONDS,
-        jitter: 0,
-        log: () => undefined,
-      });
-
       const leader = makeLeaderFromRpcAddresses(
         networkConfig.rpcAddrs,
-        leaderOptions,
+        makeLeaderOptions({
+          sleep: SLEEP_SECONDS,
+          jitter: 0,
+          log: console.warn,
+        }),
       );
 
       console.warn('Following', spec);

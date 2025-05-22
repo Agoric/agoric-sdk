@@ -1,7 +1,7 @@
-diff --git a/node_modules/@endo/import-bundle/src/index.d.ts b/node_modules/@endo/import-bundle/src/index.d.ts
+diff --git a/src/index.d.ts b/src/index.d.ts
 index 1263928..59a9afc 100644
---- a/node_modules/@endo/import-bundle/src/index.d.ts
-+++ b/node_modules/@endo/import-bundle/src/index.d.ts
+--- a/src/index.d.ts
++++ b/src/index.d.ts
 @@ -22,7 +22,7 @@ export function importBundle(bundle: any, options?: {}, powers?: {}): Promise<an
  export function typedImportBundle(bundle: any, options?: {}, powers?: {}): Promise<any>;
  export function bundleTestExports(exports: Record<PropertyKey, unknown>): {
@@ -11,10 +11,10 @@ index 1263928..59a9afc 100644
  };
  /**
   * The bundle importer is designed for (serializable) source modules but can
-diff --git a/node_modules/@endo/import-bundle/src/index.js b/node_modules/@endo/import-bundle/src/index.js
+diff --git a/src/index.js b/src/index.js
 index a12e0ae..d03a11b 100644
---- a/node_modules/@endo/import-bundle/src/index.js
-+++ b/node_modules/@endo/import-bundle/src/index.js
+--- a/src/index.js
++++ b/src/index.js
 @@ -206,6 +206,7 @@ export const typedImportBundle = importBundle;
   * A utility function for producing test bundles, which are not serializable
   * as JSON or passable.
