@@ -1,14 +1,14 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { AmountMath } from '@agoric/ertp';
-import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import { Far } from '@endo/far';
 import { parseArgs } from 'node:util';
-import { getManifestForReimburseOpCo } from './reimburse-opco.core.js';
+import { assertBech32Address } from '@agoric/orchestration/src/utils/address.js';
+import { getManifestForReimburseManualIntervention } from './reimburse-manual-intervention.core.js';
 import { toExternalConfig } from './utils/config-marshal.js';
 
 /**
  * @import {CoreEvalBuilder, DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js'
- * @import {ReimbursementTerms} from './reimburse-opco.core.js'
+ * @import {ReimbursementTerms} from './reimburse-manual-intervention.core.js'
  */
 
 const usage = 'Use: --destinationAddress <address> --principal <amount>';
@@ -18,20 +18,18 @@ const xVatCtx = /** @type {const} */ ({
   USDC: Far('USDC Brand'),
 });
 const { USDC } = xVatCtx;
-const USDC_DECIMALS = 6n;
-const unit = AmountMath.make(USDC, 10n ** USDC_DECIMALS);
 
 /**
  * @param {unknown} _utils
  * @param {ReimbursementTerms} terms
  * @satisfies {CoreEvalBuilder}
  */
-const reimbursementProposalBuilder = async (_utils, terms) => {
+const manualInterventionProposalBuilder = async (_utils, terms) => {
   return harden({
-    sourceSpec: './reimburse-opco.core.js',
-    /** @type {[string, Parameters<typeof getManifestForReimburseOpCo>[1]]} */
+    sourceSpec: './reimburse-manual-intervention.core.js',
+    /** @type {[string, Parameters<typeof getManifestForReimburseManualIntervention>[1]]} */
     getManifestCall: [
-      getManifestForReimburseOpCo.name,
+      getManifestForReimburseManualIntervention.name,
       { options: toExternalConfig(harden({ terms }), xVatCtx) },
     ],
   });
@@ -46,18 +44,24 @@ export default async (homeP, endowments) => {
     args: endowments.scriptArgs,
     options: {
       destinationAddress: { type: 'string' },
+      /** in uusdc */
       principal: { type: 'string' },
     },
   });
   assert(destinationAddress && principal, usage);
+  assert.equal(
+    principal,
+    String(BigInt(principal)),
+    'principal must be an integer',
+  );
+  assertBech32Address(destinationAddress);
 
   /** @type {ReimbursementTerms} */
   const feeTerms = {
-    // @ts-expect-error Bech32Address expected
     destinationAddress,
-    principal: multiplyBy(unit, parseRatio(principal, USDC)),
+    principal: AmountMath.make(USDC, BigInt(principal)),
   };
-  await writeCoreEval('eval-reimburse-opco', utils =>
-    reimbursementProposalBuilder(utils, feeTerms),
+  await writeCoreEval('eval-reimburse-manual-intervention', utils =>
+    manualInterventionProposalBuilder(utils, feeTerms),
   );
 };

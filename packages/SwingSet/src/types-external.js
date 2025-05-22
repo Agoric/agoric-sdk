@@ -32,7 +32,7 @@ export {};
  * @typedef {'getExport' | 'nestedEvaluate' | 'endoZipBase64'} BundleFormat
  * @typedef { { moduleFormat: 'getExport', source: string, sourceMap?: string } } GetExportBundle
  * @typedef { { moduleFormat: 'nestedEvaluate', source: string, sourceMap?: string } } NestedEvaluateBundle
- * @typedef { { moduleFormat: 'test' } } TestBundle
+ * @typedef { { moduleFormat: 'test', [x: symbol]: Record<PropertyKey, unknown> } } TestBundle
  * @typedef { EndoZipBase64Bundle | GetExportBundle | NestedEvaluateBundle | TestBundle} Bundle
  */
 

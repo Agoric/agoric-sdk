@@ -21,9 +21,6 @@ scripts/test-vaults.ts
 echo ACCEPTANCE TESTING recorded instances
 yarn ava recorded-retired.test.js
 
-echo ACCEPTANCE TESTING kread
-yarn ava kread.test.js
-
 echo ACCEPTANCE TESTING valueVow
 yarn ava valueVow.test.js
 

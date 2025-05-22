@@ -93,7 +93,9 @@
     "@agoric/xsnap": "portal:../packages/xsnap",
     "@agoric/xsnap-lockdown": "portal:../packages/xsnap-lockdown",
     "@agoric/zoe": "portal:../packages/zoe",
-    "@agoric/zone": "portal:../packages/zone"
+    "@agoric/zone": "portal:../packages/zone",
+    "@cosmjs/proto-signing@npm:0.32.3": "npm:@cosmjs/proto-signing@0.33.0",
+    "@cosmjs/stargate@npm:0.32.3": "npm:@cosmjs/stargate@0.33.0"
   },
   "license": "Apache-2.0"
 }
