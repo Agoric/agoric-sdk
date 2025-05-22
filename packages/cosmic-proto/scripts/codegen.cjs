@@ -141,10 +141,15 @@ telescope({
     fixTypeImport('./src/codegen', gnuSed);
     console.log('🔧 type keyword added');
 
-    const prettierResult = spawnSync('yarn', ['prettier', '--write', 'src'], {
-      cwd: path.join(__dirname, '..'),
-      stdio: 'inherit',
-    });
+    // top-level to get the root prettier config
+    const prettierResult = spawnSync(
+      'yarn',
+      ['run', '--top-level', 'prettier', '--write', 'src'],
+      {
+        cwd: path.join(__dirname, '..'),
+        stdio: 'inherit',
+      },
+    );
     assert.equal(prettierResult.status, 0);
     console.log('💅 code formatted by Prettier');
 
