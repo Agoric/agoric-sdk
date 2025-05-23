@@ -8,7 +8,7 @@ start*
 eval-*
 # ci logs for archive upload
 logs/
-# osmosis contracts info
-/test/xcs-swap-anything/xcs-contracts-info.json
-# osmosis contracts artifacts
-/test/xcs-swap-anything/wasm-artifacts/*
+# osmosis xcs configuration
+*-pool-config.json
+wasm-artifacts/
+xcs-contracts-info.json

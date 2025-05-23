@@ -1,7 +1,6 @@
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
 import { AmountMath } from '@agoric/ertp';
-import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { makeBlockTool, makeDoOffer } from '../../tools/e2e-tools.js';
 import { commonSetup } from '../support.js';
 import { makeQueryClient } from '../../tools/query.js';
@@ -18,6 +17,7 @@ import {
   type SetupOsmosisContextWithCommon,
   type OsmosisPool,
 } from './helpers.js';
+import type { Pool } from 'osmojs/osmosis/gamm/v1beta1/balancerPool.js';
 
 const test = anyTest as TestFn<SetupOsmosisContextWithCommon>;
 
@@ -99,6 +99,104 @@ test.serial('test osmosis xcs state', async t => {
   // TODO: fix this assertion
   const pools = await getPools();
   t.assert(pools, 'No Osmosis Pool found');
+});
+
+test.only('create non-native pool', async t => {
+  const {
+    setupNonNativePool,
+    getPools,
+    getPoolRouteNew,
+    getPool,
+    getDenomHash,
+  } = t.context;
+
+  const poolNumberBefore = await getPools();
+
+  const chainA = { chain: 'cosmoshub', denom: 'uatom', amount: '100000' };
+  const chainB = { chain: 'agoric', denom: 'ubld', amount: '100000' };
+
+  await setupNonNativePool(chainA, chainB);
+
+  const poolNumberAfter = await getPools();
+
+  t.is(poolNumberBefore.numPools + 1n, poolNumberAfter.numPools);
+
+  const route = await getPoolRouteNew(
+    { chain: 'cosmoshub', denom: 'uatom' },
+    { chain: 'agoric', denom: 'ubld' },
+  );
+
+  t.log(route);
+
+  const [pool, chainADenomHash, chainBDenomHash] = await Promise.all([
+    getPool(BigInt(route[0].pool_id)),
+    getDenomHash('osmosis', chainA.chain, chainA.denom),
+    getDenomHash('osmosis', chainB.chain, chainB.denom),
+  ]);
+  t.log(pool);
+
+  t.is(route[0].token_out_denom, `ibc/${chainBDenomHash}`);
+
+  const myPool = pool.pool as Pool;
+  t.truthy(
+    myPool.poolAssets.find(
+      ({ token }) => token.denom === `ibc/${chainADenomHash}`,
+    ),
+  );
+  t.truthy(
+    myPool.poolAssets.find(
+      ({ token }) => token.denom === `ibc/${chainBDenomHash}`,
+    ),
+  );
+});
+
+test.only('create non-native pool', async t => {
+  const {
+    setupNonNativePool,
+    getPools,
+    getPoolRouteNew,
+    getPool,
+    getDenomHash,
+  } = t.context;
+
+  const poolNumberBefore = await getPools();
+
+  const chainA = { chain: 'cosmoshub', denom: 'uatom', amount: '100000' };
+  const chainB = { chain: 'agoric', denom: 'ubld', amount: '100000' };
+
+  await setupNonNativePool(chainA, chainB);
+
+  const poolNumberAfter = await getPools();
+
+  t.is(poolNumberBefore.numPools + 1n, poolNumberAfter.numPools);
+
+  const route = await getPoolRouteNew(
+    { chain: 'cosmoshub', denom: 'uatom' },
+    { chain: 'agoric', denom: 'ubld' },
+  );
+
+  t.log(route);
+
+  const [pool, chainADenomHash, chainBDenomHash] = await Promise.all([
+    getPool(BigInt(route[0].pool_id)),
+    getDenomHash('osmosis', chainA.chain, chainA.denom),
+    getDenomHash('osmosis', chainB.chain, chainB.denom),
+  ]);
+  t.log(pool);
+
+  t.is(route[0].token_out_denom, `ibc/${chainBDenomHash}`);
+
+  const myPool = pool.pool as Pool;
+  t.truthy(
+    myPool.poolAssets.find(
+      ({ token }) => token.denom === `ibc/${chainADenomHash}`,
+    ),
+  );
+  t.truthy(
+    myPool.poolAssets.find(
+      ({ token }) => token.denom === `ibc/${chainBDenomHash}`,
+    ),
+  );
 });
 
 test.serial('BLD for OSMO, receiver on Agoric', async t => {
