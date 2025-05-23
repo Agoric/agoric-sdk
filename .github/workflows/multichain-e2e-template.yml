@@ -108,12 +108,18 @@ jobs:
 
       - name: Setup Starship Infrastructure
         id: starship-infra
-        uses: hyperweb-io/starship-action@1.0.0
+        # `inputs.name` is fixed in this commit (hyperweb-io/starship-action#43).
+        # TODO: Adopt an official tag of `starship-action` when it is released
+        uses: hyperweb-io/starship-action@d854f77ccefe7fc3dfe05b0500931ff2563d1406
         with:
           config: ./agoric-sdk/multichain-testing/${{ inputs.config }}
           timeout: 20m # Usually 13min
           kubeconfig: ${{ env.KUBECONFIG }}
           namespace: ${{ env.NAMESPACE }}
+          #`chain.scripts.chainRpcReady` is added in this PR: hyperweb-io/starship#688
+          # TODO: Use the official `hyperweb-io` when a new version is released
+          #repo: https://agoric-labs.github.io/starship
+          repo: https://agoric-labs.github.io/starship
 
       - name: Fund Provision Pool
         run: |

@@ -26,8 +26,10 @@ TIMEOUT=""
 NAMESPACE=""
 HELM_REPO="starship"
 HELM_CHART="starship/devnet"
-HELM_REPO_URL="https://hyperweb-io.github.io/starship/"
-HELM_CHART_VERSION="v0.2.6"
+#HELM_REPO_URL="https://hyperweb-io.github.io/starship/"
+HELM_REPO_URL="https://agoric-labs.github.io/starship/"
+HELM_CHART_VERSION=
+DEFAULT_HELM_CHART_VERSION="v0.2.6"
 HELM_NAME="agoric-multichain-testing"
 
 # check_helm function verifies the helm binary is installed
@@ -43,6 +45,12 @@ function setup_helm() {
   if [ -d "$HELM_CHART" ]; then
     echo "using local helm chart"
     return
+  fi
+  if [ -z "$HELM_CHART_VERSION" ]; then
+    HELM_CHART_VERSION=$(yq -r ".version" ${CONFIGFILE})
+  fi
+  if [ -z "$HELM_CHART_VERSION" ]; then
+    HELM_CHART_VERSION=$DEFAULT_HELM_CHART_VERSION
   fi
   helm repo add ${HELM_REPO} ${HELM_REPO_URL}
   helm repo update
