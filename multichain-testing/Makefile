@@ -3,18 +3,29 @@
 NAME = agoric-multichain-testing
 FILE = config.yaml
 
+HELM_REPO_URL = https://agoric-labs.github.io/starship
 HELM_REPO = starship
 HELM_CHART = devnet
+
+SS = yarn starship
+SSOPTS = --config $(FILE) --name $(NAME) --repoUrl $(HELM_REPO_URL) \
+	--repo $(HELM_REPO) --chart $(HELM_REPO)/$(HELM_CHART)
+STARSHIP = $(SS) $(SSOPTS)
 
 ###############################################################################
 ###                              All commands                               ###
 ###############################################################################
 
 .PHONY: setup
-setup: setup-deps setup-kind
+setup: setup-kind
+	$(STARSHIP) setup
 
 .PHONY: stop
-stop: stop-forward delete
+stop: sstop delete
+
+.PHONY: sstop
+sstop:
+	$(STARSHIP) stop
 
 .PHONY: clean
 clean: stop clean-kind
@@ -30,20 +41,22 @@ rebuild:
 ###                          Dependency check                               ###
 ###############################################################################
 
-.PHONY: check
+.PHONY: setup-deps
 setup-deps:
-	$(CURDIR)/scripts/dev-setup.sh
+	$(STARSHIP) install
 
 ###############################################################################
 ###                              Helm Charts                                ###
 ###############################################################################
 
+.PHONY: install
 install:
-	$(CURDIR)/scripts/install.sh --config $(FILE) --name $(NAME)
+	$(STARSHIP) deploy
 
+.PHONY: delete
 delete:
 	-helm repo remove $(HELM_REPO)
-	-helm delete $(NAME)
+	-$(STARSHIP) delete || helm delete $(NAME)
 
 ###############################################################################
 ###                                 Port forward                            ###
@@ -51,11 +64,11 @@ delete:
 
 .PHONY: port-forward
 port-forward:
-	$(CURDIR)/scripts/port-forward.sh --config=$(FILE)
+	$(STARSHIP) start-ports
 
 .PHONY: stop-forward
 stop-forward:
-	-pkill -f "port-forward"
+	$(STARSHIP) stop-ports
 
 ###############################################################################
 ###                          Local Kind Setup                               ###
@@ -105,8 +118,11 @@ tail-slog:
 
 .PHONY: wait-for-pods
 wait-for-pods:
-	scripts/pod-readiness.ts
+	$(STARSHIP) wait-for-pods
 
 .PHONY: start
-start: install wait-for-pods port-forward fund-provision-pool register-bank-assets
+start: sstart fund-provision-pool register-bank-assets
 
+.PHONY: sstart
+sstart:
+	$(STARSHIP) start
