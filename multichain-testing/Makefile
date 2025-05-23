@@ -5,7 +5,6 @@ FILE = config.yaml
 
 HELM_REPO = starship
 HELM_CHART = devnet
-HELM_VERSION = v1.7.0
 
 ###############################################################################
 ###                              All commands                               ###
@@ -40,7 +39,7 @@ setup-deps:
 ###############################################################################
 
 install:
-	$(CURDIR)/scripts/install.sh --config $(FILE) --name $(NAME) --version $(HELM_VERSION)
+	$(CURDIR)/scripts/install.sh --config $(FILE) --name $(NAME)
 
 delete:
 	-helm repo remove $(HELM_REPO)

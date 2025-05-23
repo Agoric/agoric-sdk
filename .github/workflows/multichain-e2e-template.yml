@@ -108,12 +108,15 @@ jobs:
 
       - name: Setup Starship Infrastructure
         id: starship-infra
-        uses: hyperweb-io/starship-action@1.0.0
+        # uses: hyperweb-io/starship-action@1.0.1
+        uses: agoric-labs/starship-action@1.0.1
         with:
           config: ./agoric-sdk/multichain-testing/${{ inputs.config }}
           timeout: 20m # Usually 13min
           kubeconfig: ${{ env.KUBECONFIG }}
           namespace: ${{ env.NAMESPACE }}
+          #repo: https://hyperweb-io.github.io/starship
+          repo: https://agoric-labs.github.io/starship
 
       - name: Fund Provision Pool
         run: |
