@@ -503,135 +503,7 @@ export const osmosisSwapTools = async t => {
     }
   };
 
-  const createPoolAgainstOsmo = async (
-    issuingChain: string,
-    issuingDenom: string,
-    tokensAmount: string = '1000000',
-  ) => {
-    const clientRegistry = osmosisClient.registry;
-    osmosis.gamm.poolmodels.balancer.v1beta1.load(clientRegistry);
-
-    const MsgCreateBalancerPool =
-      osmosis.gamm.poolmodels.balancer.v1beta1.MsgCreateBalancerPool;
-    const MsgCreateBalancerPoolResponse =
-      osmosis.gamm.poolmodels.balancer.v1beta1.MsgCreateBalancerPoolResponse;
-
-    const fee = {
-      amount: [{ denom: 'uosmo', amount: '10000' }],
-      gas: '1000000',
-    };
-
-    const hash = await getDenomHash('osmosis', issuingChain, issuingDenom);
-
-    const message = MsgCreateBalancerPool.fromPartial({
-      sender: osmosisAddress,
-      poolParams: { swapFee: '0.01', exitFee: '0.00' },
-      poolAssets: [
-        { token: { denom: 'uosmo', amount: tokensAmount }, weight: '1' },
-        {
-          token: {
-            denom: `ibc/${hash}`,
-            amount: tokensAmount,
-          },
-          weight: '1',
-        },
-      ],
-      futurePoolGovernor: '',
-    });
-    /** @type {Array<import('@cosmjs/proto-signing').EncodeObject>} */
-    const encodeObjects = [
-      {
-        typeUrl:
-          '/osmosis.gamm.poolmodels.balancer.v1beta1.MsgCreateBalancerPool',
-        value: message,
-      },
-    ];
-
-    const response = await osmosisClient.signAndBroadcast(
-      osmosisAddress,
-      encodeObjects,
-      fee,
-    );
-
-    console.log("createPoolAgainstOsmo DeliverTxResponse: ", response);
-
-
-    const { msgResponses, code } = response
-
-    if (msgResponses[0] && code !== 0) {
-      throw Error(`Failed to create pool with uosmo and ${issuingDenom}`);
-    }
-
-    const poolId = MsgCreateBalancerPoolResponse.decode(
-      result.msgResponses[0].value,
-    ).poolId;
-
-    return { poolId, hash };
-  };
-
-  const createNonNativePool = async (chainA: SwapParty, chainB: SwapParty) => {
-    const clientRegistry = osmosisClient.registry;
-    osmosis.gamm.poolmodels.balancer.v1beta1.load(clientRegistry);
-
-    const MsgCreateBalancerPool =
-      osmosis.gamm.poolmodels.balancer.v1beta1.MsgCreateBalancerPool;
-    const MsgCreateBalancerPoolResponse =
-      osmosis.gamm.poolmodels.balancer.v1beta1.MsgCreateBalancerPoolResponse;
-
-    const fee = {
-      amount: [{ denom: 'uosmo', amount: '10000' }],
-      gas: '1000000',
-    };
-
-    const inDenom = await getFinalDenom('osmosis', chainA);
-    const outDenom = await getFinalDenom('osmosis', chainB);
-
-    const message = MsgCreateBalancerPool.fromPartial({
-      sender: osmosisAddress,
-      poolParams: { swapFee: '0.01', exitFee: '0.00' },
-      poolAssets: [
-        { token: { denom: inDenom, amount: chainA.amount || '' }, weight: '1' },
-        {
-          token: {
-            denom: outDenom,
-            amount: chainB.amount || '',
-          },
-          weight: '1',
-        },
-      ],
-      futurePoolGovernor: '',
-    });
-    /** @type {Array<import('@cosmjs/proto-signing').EncodeObject>} */
-    const encodeObjects = [
-      {
-        typeUrl:
-          '/osmosis.gamm.poolmodels.balancer.v1beta1.MsgCreateBalancerPool',
-        value: message,
-      },
-    ];
-
-    const response = await osmosisClient.signAndBroadcast(
-      osmosisAddress,
-      encodeObjects,
-      fee,
-    );
-
-    console.log("createPoolAgainstOsmo DeliverTxResponse: ", response);
-
-
-    const { msgResponses, code } = response
-
-    if (msgResponses[0] && code !== 0) {
-      throw Error(`Failed to create pool with uosmo and ${issuingDenom}`);
-    }
-
-    const poolId = MsgCreateBalancerPoolResponse.decode(
-      msgResponses[0].value,
-    ).poolId;
-    return { poolId, hash };
-  };
-
-  const createNonNativePool = async (chainA: SwapParty, chainB: SwapParty) => {
+  const createPool = async (chainA: SwapParty, chainB: SwapParty) => {
     const clientRegistry = osmosisClient.registry;
     osmosis.gamm.poolmodels.balancer.v1beta1.load(clientRegistry);
 
@@ -708,16 +580,6 @@ export const osmosisSwapTools = async t => {
     };
 
     await invokeOsmosisContract(swaprouterAddress, txMsg);
-  };
-
-  const isRouteSet = async (pool: OsmosisPool) => {
-    try {
-      await getPoolRoute(pool);
-      return true;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
-      return false;
-    }
   };
 
   const queryContractsInfo = async () => {
@@ -822,31 +684,7 @@ export const osmosisSwapTools = async t => {
     return { channelId, prefix };
   };
 
-  const getPoolRoute = async (pool: OsmosisPool) => {
-    const swaprouterAddress = xcsContracts.swaprouter.address;
-    if (!swaprouterAddress) {
-      throw new Error('swaprouter contract address not found');
-    }
-
-    const { issuingChain, issuingDenom } = pool;
-
-    const hash = await getDenomHash('osmosis', issuingChain, issuingDenom);
-    const queryMsg = {
-      get_route: {
-        input_denom: `ibc/${hash}`,
-        output_denom: 'uosmo',
-      },
-    };
-
-    const { pool_route } = await queryOsmosisContract(
-      swaprouterAddress,
-      queryMsg,
-    );
-
-    return pool_route;
-  };
-
-  const getPoolRouteNew = async (chainA: SwapParty, chainB: SwapParty) => {
+  const getPoolRoute = async (chainA: SwapParty, chainB: SwapParty) => {
     const swaprouterAddress = xcsContracts.swaprouter.address;
     const [inDenom, outDenom] = await Promise.all([
       getFinalDenom('osmosis', chainA),
@@ -929,9 +767,9 @@ export const osmosisSwapTools = async t => {
         );
         await setupXcsChannelLink(primary, counterParty);
       }
+    } else {
+      console.log('XCS contracts alrady set');
     }
-
-    console.log('XCS state updated!');
   };
 
   const setupNewPool = async (originChain = 'agoric', originDenom = 'ubld') => {
@@ -969,7 +807,11 @@ export const osmosisSwapTools = async t => {
       }
     };
 
-    if (!(await isRouteSetNew(chainA, chainB))) {
+  const setupNewPool = async (
+    chainA: SwapParty = { chain: 'agoric', denom: 'ubld', amount: '1000000' },
+    chainB: SwapParty = { chain: 'osmosis', denom: 'uosmo', amount: '1000000' },
+  ) => {
+    if (!(await isRouteSet(chainA, chainB))) {
       console.log(
         `Pool being created with assets ${chainA.denom} and ${chainB.denom}`,
       );
@@ -977,10 +819,7 @@ export const osmosisSwapTools = async t => {
         fundRemoteIfNecessary(chainA),
         fundRemoteIfNecessary(chainB),
       ]);
-      const { poolId, inDenom, outDenom } = await createNonNativePool(
-        chainA,
-        chainB,
-      );
+      const { poolId, inDenom, outDenom } = await createPool(chainA, chainB);
       // Don't Promise.all here to avoid sequence number mismatch
       await setPoolRoute(inDenom, outDenom, poolId.toString());
       await setPoolRoute(outDenom, inDenom, poolId.toString());
@@ -989,6 +828,11 @@ export const osmosisSwapTools = async t => {
         `Pool with assets ${chainA.denom} and ${chainB.denom} already exists`,
       );
     }
+  };
+
+  const fundRemoteIfNecessary = async ({ chain, denom }: SwapParty) => {
+    if (chain === 'osmosis') return;
+    await fundRemote(chain, denom);
   };
 
   return {
@@ -1002,14 +846,11 @@ export const osmosisSwapTools = async t => {
     getPools,
     getXcsState,
     getPoolRoute,
-    getPoolRouteNew,
     getPool,
     getDenomHash,
     setupXcsContracts,
     setupXcsState,
     setupNewPool,
-    setupNonNativePool,
-    createNonNativePool,
     setPoolRoute,
   };
 };
