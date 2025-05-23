@@ -22,6 +22,8 @@ import {
 import starshipChainInfo from '../../starship-chain-info.js';
 import { makeQueryClient } from '../../tools/query.js';
 import type { SetupContextWithWallets } from '../support.js';
+import { makeBlockTool } from '../../tools/e2e-tools.js';
+import { makeHttpClient } from '../../tools/makeHttpClient.js';
 
 export type SetupOsmosisContext = Awaited<ReturnType<typeof osmosisSwapTools>>;
 export type SetupOsmosisContextWithCommon = SetupOsmosisContext &
@@ -67,6 +69,11 @@ type Contracts = {
 
 export const osmosisSwapTools = async t => {
   const { useChain, retryUntilCondition } = t.context;
+
+  const { waitForBlock } = makeBlockTool({
+    rpc: makeHttpClient('http://localhost:26657', fetch),
+    delay: ms => new Promise(resolve => setTimeout(resolve, ms)),
+  });
 
   const osmosisBranch = 'main';
   const scriptLocalPath = './test/xcs-swap-anything/download-wasm-artifacts.sh';
@@ -547,7 +554,7 @@ export const osmosisSwapTools = async t => {
     );
 
     console.log("createPoolAgainstOsmo DeliverTxResponse: ", response);
-    
+
 
     const { msgResponses, code } = response
 
@@ -783,6 +790,7 @@ export const osmosisSwapTools = async t => {
         console.log(`Setting pool routes ...`);
         const denomHash = `ibc/${hash}`;
         await setPoolRoute('uosmo', denomHash, poolId.toString());
+        await waitForBlock(5);
         await setPoolRoute(denomHash, 'uosmo', poolId.toString());
       }
 
