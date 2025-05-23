@@ -60,7 +60,7 @@ test.before(async t => {
   t.context = { ...t.context, ...swapTools };
 });
 
-test.serial('test osmosis xcs state', async t => {
+test.only('test osmosis xcs state', async t => {
   const { useChain, getContractsInfo, getXcsState, getPoolRoute, getPools } =
     t.context;
 
@@ -89,34 +89,32 @@ test.serial('test osmosis xcs state', async t => {
   t.is(channel, channelId);
 
   // Verify if Pool was succefuly created
-  const pool_route = await getPoolRoute('agoric', 'ubld');
+  const pool_route = await getPoolRoute(
+    { chain: 'agoric', denom: 'ubld' },
+    { chain: 'osmosis', denom: 'uosmo' },
+  );
   t.is(pool_route[0].token_out_denom, 'uosmo');
 
   const { numPools } = await getPools();
   t.assert(numPools > 0n, 'No Osmosis Pool found');
 });
 
-test.only('create non-native pool', async t => {
-  const {
-    setupNonNativePool,
-    getPools,
-    getPoolRouteNew,
-    getPool,
-    getDenomHash,
-  } = t.context;
+test.serial('create non-native pool', async t => {
+  const { setupNewPool, getPools, getPoolRoute, getPool, getDenomHash } =
+    t.context;
 
   const poolNumberBefore = await getPools();
 
   const chainA = { chain: 'cosmoshub', denom: 'uatom', amount: '100000' };
   const chainB = { chain: 'agoric', denom: 'ubld', amount: '100000' };
 
-  await setupNonNativePool(chainA, chainB);
+  await setupNewPool(chainA, chainB);
 
   const poolNumberAfter = await getPools();
 
   t.is(poolNumberBefore.numPools + 1n, poolNumberAfter.numPools);
 
-  const route = await getPoolRouteNew(
+  const route = await getPoolRoute(
     { chain: 'cosmoshub', denom: 'uatom' },
     { chain: 'agoric', denom: 'ubld' },
   );
