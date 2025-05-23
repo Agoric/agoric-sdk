@@ -1,13 +1,16 @@
-import { decodeBase64 } from '@endo/base64';
-import { encodeHex } from '@agoric/internal/src/hex.js';
-import { StreamCellShape } from '@agoric/internal/src/lib-chainStorage.js';
-import { mustMatch } from '@agoric/internal';
 import {
   QueryChildrenRequest,
   QueryChildrenResponse,
   QueryDataRequest,
   QueryDataResponse,
 } from '@agoric/cosmic-proto/agoric/vstorage/query.js';
+import { mustMatch } from '@agoric/internal';
+import { encodeHex } from '@agoric/internal/src/hex.js';
+import { StreamCellShape } from '@agoric/internal/src/lib-chainStorage.js';
+import { Tendermint34Client } from '@cosmjs/tendermint-rpc';
+import { decodeBase64 } from '@endo/base64';
+import { makeTendermintRpcClient } from '@agoric/casting';
+import { pickEndpoint } from './rpc.js';
 
 /**
  * @import {AbciQueryResponse} from '@cosmjs/tendermint-rpc';
@@ -22,7 +25,8 @@ const kindToRpc = /** @type {const} */ ({
   data: '/agoric.vstorage.Query/Data',
 });
 
-// TODO move down to cosmic-proto, probably generated with Telescope
+// XXX more of a cosmic-proto concern but the Telescope codegen clients
+// don't support specifying height
 const codecs = {
   __proto__: null,
   '/agoric.vstorage.Query/Children': {
@@ -36,6 +40,8 @@ const codecs = {
 };
 
 /**
+ * @deprecated use Tendermint34Client or similar
+ *
  * @template {'data' | 'children'} T
  * @param {string} [path]
  * @param {object} [opts]
@@ -61,22 +67,25 @@ export const makeAbciQuery = (
  * @param {MinimalNetworkConfig} config
  */
 export const makeVStorage = ({ fetch }, config) => {
+  const rpcClient = makeTendermintRpcClient(pickEndpoint(config), fetch);
+  const tmClientP = Tendermint34Client.create(rpcClient);
+
   /**
    * @template {'data' | 'children'} T
    * @param {string} vstoragePath
    * @param {object} [opts]
    * @param {T} [opts.kind]
    * @param {number | bigint} [opts.height] 0 is the same as omitting height and implies the highest block
-   * @returns {Promise<{result: {response: JsonSafe<AbciQueryResponse>}}>}
+   * @returns {Promise<AbciQueryResponse>}
    */
   const getVstorageJson = async (
     vstoragePath,
     { kind = /** @type {T} */ ('children'), height = 0 } = {},
   ) => {
-    const url =
-      config.rpcAddrs[0] + makeAbciQuery(vstoragePath, { kind, height });
-    const res = await fetch(url, { keepalive: true });
-    return res.json();
+    const tmClient = await tmClientP;
+    const path = kindToRpc[kind];
+    const data = codecs[path].request.toProto({ path: vstoragePath });
+    return tmClient.abciQuery({ path, data, height: Number(height) });
   };
 
   /**
@@ -93,9 +102,9 @@ export const makeVStorage = ({ fetch }, config) => {
   ) => {
     await null;
 
-    const rpc = kindToRpc[kind];
-    const codec = codecs[rpc];
+    const codec = codecs[kindToRpc[kind]];
 
+    /** @type {AbciQueryResponse} */
     let data;
     try {
       data = await getVstorageJson(path, { kind, height });
@@ -103,20 +112,7 @@ export const makeVStorage = ({ fetch }, config) => {
       throw Error(`cannot read ${kind} of ${path}: ${err.message}`);
     }
 
-    const {
-      result: { response },
-    } = data;
-    if (response?.code !== 0) {
-      /** @type {any} */
-      const err = Error(
-        `error code ${response?.code} reading ${kind} of ${path}: ${response.log}`,
-      );
-      err.code = response?.code;
-      err.codespace = response?.codespace;
-      throw err;
-    }
-
-    const { value: b64Value } = response;
+    const { value: b64Value } = data;
     // @ts-expect-error cast
     return codec.response.decode(decodeBase64(b64Value));
   };
