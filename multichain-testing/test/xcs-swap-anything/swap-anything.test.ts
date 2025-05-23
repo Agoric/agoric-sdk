@@ -40,8 +40,8 @@ const channelList: Channel[] = [
 ];
 
 const osmosisPoolList: OsmosisPool[] = [
-  { issuingChain: 'agoric', issuingDenom: 'ubld' },
   { issuingChain: 'cosmoshub', issuingDenom: 'uatom' },
+    { issuingChain: 'agoric', issuingDenom: 'ubld' }
 ];
 
 test.before(async t => {
@@ -123,6 +123,9 @@ test.serial('BLD for OSMO, receiver on Agoric', async t => {
   });
 
   // Verify deposit
+
+  // TODO: check if agoricSender is sending the tx
+  // check localTransfer method as well
   await retryUntilCondition(
     () => queryClient.queryBalances(agoricAddr),
     ({ balances }) => {
