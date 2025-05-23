@@ -22,8 +22,6 @@ import {
 import starshipChainInfo from '../../starship-chain-info.js';
 import { makeQueryClient } from '../../tools/query.js';
 import type { SetupContextWithWallets } from '../support.js';
-import { makeBlockTool } from '../../tools/e2e-tools.js';
-import { makeHttpClient } from '../../tools/makeHttpClient.js';
 
 export type SetupOsmosisContext = Awaited<ReturnType<typeof osmosisSwapTools>>;
 export type SetupOsmosisContextWithCommon = SetupOsmosisContext &
@@ -39,10 +37,8 @@ export type Channel = {
   counterParty: string;
 };
 
-export type OsmosisPool = {
-  issuingChain: string;
-  issuingDenom: string;
-};
+export type SwapParty = { chain: string; denom: string; amount?: string };
+export type Pair = { tokenA: SwapParty; tokenB: SwapParty };
 
 type ContractInfoBase<TArgs> = {
   codeId: number | null;
@@ -69,11 +65,6 @@ type Contracts = {
 
 export const osmosisSwapTools = async t => {
   const { useChain, retryUntilCondition } = t.context;
-
-  const { waitForBlock } = makeBlockTool({
-    rpc: makeHttpClient('http://localhost:26657', fetch),
-    delay: ms => new Promise(resolve => setTimeout(resolve, ms)),
-  });
 
   const osmosisBranch = 'main';
   const scriptLocalPath = './test/xcs-swap-anything/download-wasm-artifacts.sh';
@@ -254,10 +245,9 @@ export const osmosisSwapTools = async t => {
       encodeObjects,
       fee,
     );
-    console.log("invokeOsmosisContract DeliverTxResponse: ", response);
+    console.log('invokeOsmosisContract DeliverTxResponse: ', response);
 
-
-    const { msgResponses, code } = response
+    const { msgResponses, code } = response;
 
     if (code !== 0) {
       throw Error(`Failed to execute osmosis contract with message ${message}`);
@@ -335,11 +325,11 @@ export const osmosisSwapTools = async t => {
     const storeEncodeObjects: Array<
       import('@cosmjs/proto-signing').EncodeObject
     > = [
-        {
-          typeUrl: MsgStoreCode.typeUrl,
-          value: storeMessage,
-        },
-      ];
+      {
+        typeUrl: MsgStoreCode.typeUrl,
+        value: storeMessage,
+      },
+    ];
 
     const storeResult = await osmosisClient.signAndBroadcast(
       osmosisAddress,
@@ -366,11 +356,11 @@ export const osmosisSwapTools = async t => {
     const instantiateEncodeObjects: Array<
       import('@cosmjs/proto-signing').EncodeObject
     > = [
-        {
-          typeUrl: MsgInstantiateContract.typeUrl,
-          value: instantiateMessage,
-        },
-      ];
+      {
+        typeUrl: MsgInstantiateContract.typeUrl,
+        value: instantiateMessage,
+      },
+    ];
 
     const instantiateResult = await osmosisClient.signAndBroadcast(
       osmosisAddress,
@@ -685,7 +675,7 @@ export const osmosisSwapTools = async t => {
   };
 
   const getPoolRoute = async (chainA: SwapParty, chainB: SwapParty) => {
-    const swaprouterAddress = xcsContracts.swaprouter.address;
+    const swaprouterAddress = xcsContracts.swaprouter.address as string;
     const [inDenom, outDenom] = await Promise.all([
       getFinalDenom('osmosis', chainA),
       getFinalDenom('osmosis', chainB),
@@ -772,40 +762,23 @@ export const osmosisSwapTools = async t => {
     }
   };
 
-  const setupNewPool = async (originChain = 'agoric', originDenom = 'ubld') => {
-    if (!(await isRouteSet(originChain, originDenom))) {
-      console.log(`Pool being created with assets uosmo and ${originDenom}`);
-      await fundRemote(originChain, originDenom);
-      const { poolId, hash } = await createPoolAgainstOsmo(
-        originChain,
-        originDenom,
-      );
-      const denomHash = `ibc/${hash}`;
-      await setPoolRoute('uosmo', denomHash, poolId.toString());
-      await setPoolRoute(denomHash, 'uosmo', poolId.toString());
-    } else {
-      console.log(`Pool with assets uosmo and ${originDenom} already exisits`);
-    }
-  };
-
   const fundRemoteIfNecessary = async ({ chain, denom }: SwapParty) => {
     if (chain === 'osmosis') return;
     await fundRemote(chain, denom);
   };
 
-  const setupNonNativePool = async (chainA: SwapParty, chainB: SwapParty) => {
-    const isRouteSetNew = async (chainA: SwapParty, chainB: SwapParty) => {
-      try {
-        await getPoolRouteNew(chainA, chainB);
-        return true;
-      } catch (error) {
-        console.error(
-          `Pool Route is not set for ${chainA.chain}.${chainA.denom} <> ${chainB.chain}.${chainB.denom}`,
-          error,
-        );
-        return false;
-      }
-    };
+  const isRouteSet = async (chainA: SwapParty, chainB: SwapParty) => {
+    try {
+      await getPoolRoute(chainA, chainB);
+      return true;
+    } catch (error) {
+      console.error(
+        `Pool Route is not set for ${chainA.chain}.${chainA.denom} <> ${chainB.chain}.${chainB.denom}`,
+        error,
+      );
+      return false;
+    }
+  };
 
   const setupNewPool = async (
     chainA: SwapParty = { chain: 'agoric', denom: 'ubld', amount: '1000000' },
@@ -830,15 +803,15 @@ export const osmosisSwapTools = async t => {
     }
   };
 
-  const fundRemoteIfNecessary = async ({ chain, denom }: SwapParty) => {
-    if (chain === 'osmosis') return;
-    await fundRemote(chain, denom);
+  const setupPoolsInBatch = async (pools: Pair[]) => {
+    for await (const { tokenA, tokenB } of pools) {
+      await setupNewPool(tokenA, tokenB);
+    }
   };
 
   return {
     setupXcsContracts,
     setupXcsState,
-    setupOsmosisPools,
     fundRemote,
     getDenomHash,
     getContractsInfo,
@@ -847,15 +820,8 @@ export const osmosisSwapTools = async t => {
     getXcsState,
     getPoolRoute,
     getPool,
-    getDenomHash,
-    setupXcsContracts,
-    setupXcsState,
     setupNewPool,
     setPoolRoute,
+    setupPoolsInBatch,
   };
 };
-
-export type SetupOsmosisContext = Awaited<ReturnType<typeof osmosisSwapTools>>;
-export type SetupOsmosisContextWithCommon = SetupOsmosisContext &
-  SetupContextWithWallets;
-export type SwapParty = { chain: string; denom: string; amount?: string };
