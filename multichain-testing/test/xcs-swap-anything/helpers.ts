@@ -24,6 +24,8 @@ import { makeQueryClient } from '../../tools/query.js';
 import type { SetupContextWithWallets } from '../support.js';
 import { makeBlockTool } from '../../tools/e2e-tools.js';
 import { makeHttpClient } from '../../tools/makeHttpClient.js';
+import { makeTracer } from '@agoric/internal';
+import type { RetryOptions } from '../../tools/sleep.js';
 
 export type SetupOsmosisContext = Awaited<ReturnType<typeof osmosisSwapTools>>;
 export type SetupOsmosisContextWithCommon = SetupOsmosisContext &
@@ -67,13 +69,17 @@ type Contracts = {
   crosschain_swaps: ContractInfoBase<CrosschainSwapsArgs>;
 };
 
+const trace = makeTracer('XCS Swap');
+
+const TIMEOUT: RetryOptions = {
+  retryIntervalMs: 5000,
+  maxRetries: 18,
+};
+
 export const osmosisSwapTools = async t => {
   const { useChain, retryUntilCondition } = t.context;
 
-  const { waitForBlock } = makeBlockTool({
-    rpc: makeHttpClient('http://localhost:26657', fetch),
-    delay: ms => new Promise(resolve => setTimeout(resolve, ms)),
-  });
+  
 
   const osmosisBranch = 'main';
   const scriptLocalPath = './test/xcs-swap-anything/download-wasm-artifacts.sh';
@@ -97,6 +103,7 @@ export const osmosisSwapTools = async t => {
     () => osmosisClient.getAllBalances(osmosisAddress),
     (coins: Coin[]) => !!coins?.length,
     `Faucet balances found for ${osmosisAddress}`,
+    TIMEOUT
   );
 
   const { getRpcEndpoint } = useChain('osmosis');
@@ -140,6 +147,7 @@ export const osmosisSwapTools = async t => {
       () => issuingClient.getAllBalances(issuingAddress),
       (coins: Coin[]) => !!coins?.length,
       `Faucet balances not found for issuing address: ${issuingAddress}`,
+      TIMEOUT
     );
 
     let destinationClient: SigningStargateClient;
@@ -157,6 +165,7 @@ export const osmosisSwapTools = async t => {
         () => client.getAllBalances(address),
         (coins: Coin[]) => !!coins?.length,
         `Faucet balances not found for destination address: ${address}`,
+        TIMEOUT
       );
 
       destinationClient = client;
@@ -171,7 +180,7 @@ export const osmosisSwapTools = async t => {
 
     const destinationBalanceBefore =
       await destinationClient.getAllBalances(destinationAddress);
-    t.log(
+    trace(
       'destination wallet balances before transfer: ',
       destinationBalanceBefore,
     );
@@ -192,7 +201,7 @@ export const osmosisSwapTools = async t => {
       throw Error(`failed to ibc transfer funds to ${destinationAddress}`);
     }
     t.is(txRes.code, 0, `Transaction succeeded`);
-    console.log('sendIbcTokens TxResponse: ', txRes);
+    trace('sendIbcTokens TxResponse: ', txRes);
 
     const denom = await getDenomHash(
       destinationChain,
@@ -214,8 +223,9 @@ export const osmosisSwapTools = async t => {
         return current > before;
       },
       `Transferred tokens not found on destination address: ${destinationAddress}`,
+      TIMEOUT
     );
-    console.log(
+    trace(
       `Transferred tokens found on destination address: ${destinationAddress}`,
     );
 
@@ -231,8 +241,8 @@ export const osmosisSwapTools = async t => {
     clientRegistry.register(MsgExecuteContract.typeUrl, MsgExecuteContract);
 
     const fee = {
-      amount: [{ denom: 'uosmo', amount: '1000' }],
-      gas: '200000',
+      amount: [{ denom: 'uosmo', amount: '10000' }],
+      gas: '2000000',
     };
 
     const message = MsgExecuteContract.fromPartial({
@@ -254,7 +264,7 @@ export const osmosisSwapTools = async t => {
       encodeObjects,
       fee,
     );
-    console.log("invokeOsmosisContract DeliverTxResponse: ", response);
+    trace("invokeOsmosisContract DeliverTxResponse: ", response);
 
 
     const { msgResponses, code } = response
@@ -492,7 +502,7 @@ export const osmosisSwapTools = async t => {
     try {
       for (const channel of channelList) {
         await getXcsState(channel);
-        t.log(
+        trace(
           `Xcs State verified for ${channel.primary} ${channel.counterParty}`,
         );
       }
@@ -517,8 +527,8 @@ export const osmosisSwapTools = async t => {
       osmosis.gamm.poolmodels.balancer.v1beta1.MsgCreateBalancerPoolResponse;
 
     const fee = {
-      amount: [{ denom: 'uosmo', amount: '10000' }],
-      gas: '1000000',
+      amount: [{ denom: 'uosmo', amount: '100000' }],
+      gas: '10000000',
     };
 
     const hash = await getDenomHash('osmosis', issuingChain, issuingDenom);
@@ -554,7 +564,7 @@ export const osmosisSwapTools = async t => {
       fee,
     );
 
-    console.log("createPoolAgainstOsmo DeliverTxResponse: ", response);
+    trace("createPoolAgainstOsmo DeliverTxResponse: ", response);
 
 
     const { msgResponses, code } = response
@@ -781,19 +791,16 @@ export const osmosisSwapTools = async t => {
       if (!(await isRouteSet(pool))) {
         console.log(`Funding osmosis wallet with ${issuingDenom} ...`);
         await fundRemote(issuingChain, issuingDenom);
-        await waitForBlock(5);
 
         console.log(`Creating new pool ...`);
         const { poolId, hash } = await createPoolAgainstOsmo(
           issuingChain,
           issuingDenom,
         );
-        await waitForBlock(5);
-        
+
         console.log(`Setting pool routes ...`);
         const denomHash = `ibc/${hash}`;
         await setPoolRoute('uosmo', denomHash, poolId.toString());
-        await waitForBlock(5);
         await setPoolRoute(denomHash, 'uosmo', poolId.toString());
       }
 

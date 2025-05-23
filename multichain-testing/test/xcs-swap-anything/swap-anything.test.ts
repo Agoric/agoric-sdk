@@ -40,8 +40,8 @@ const channelList: Channel[] = [
 ];
 
 const osmosisPoolList: OsmosisPool[] = [
+  { issuingChain: 'agoric', issuingDenom: 'ubld' },
   { issuingChain: 'cosmoshub', issuingDenom: 'uatom' },
-    { issuingChain: 'agoric', issuingDenom: 'ubld' }
 ];
 
 test.before(async t => {
