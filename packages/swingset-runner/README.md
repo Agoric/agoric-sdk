@@ -1,3 +1,4 @@
+<pre>
 Command line:
   runner [FLAGS...] CMD [{BASEDIR|--} [ARGS...]]
 
@@ -56,3 +57,4 @@ BASEDIR is the base directory for locating the swingset's vat definitions and
 
 Any remaining command line args are passed to the swingset's bootstrap vat in
 the 'argv' vat parameter.
+</pre>
