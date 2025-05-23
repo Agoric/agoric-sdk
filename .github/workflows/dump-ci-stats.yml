@@ -30,7 +30,7 @@ jobs:
         run: corepack enable
 
       - name: Install GCP Monitoring/Metrics Client
-        run: yarn add @google-cloud/monitoring --ignore-workspace-root-check
+        run: yarn add @google-cloud/monitoring
 
       - name: Run Final Job and Send Logs to GCP
         env:
