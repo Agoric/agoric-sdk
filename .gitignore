@@ -81,6 +81,9 @@ _testoutput.txt
 
 junit.xml
 endo-sha.txt
+
+# Coding agent config
 .aider*
 !.aiderignore
+.claude
 
