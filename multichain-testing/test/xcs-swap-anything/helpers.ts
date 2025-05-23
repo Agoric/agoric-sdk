@@ -185,7 +185,7 @@ export const osmosisSwapTools = async t => {
       throw Error(`failed to ibc transfer funds to ${destinationAddress}`);
     }
     t.is(txRes.code, 0, `Transaction succeeded`);
-    t.log('sendIbcTokens TxResponse: ', txRes);
+    console.log('sendIbcTokens TxResponse: ', txRes);
 
     const denom = await getDenomHash(
       destinationChain,
@@ -208,7 +208,7 @@ export const osmosisSwapTools = async t => {
       },
       `Transferred tokens not found on destination address: ${destinationAddress}`,
     );
-    t.log(
+    console.log(
       `Transferred tokens found on destination address: ${destinationAddress}`,
     );
 
@@ -242,11 +242,15 @@ export const osmosisSwapTools = async t => {
       },
     ];
 
-    const { msgResponses, code } = await osmosisClient.signAndBroadcast(
+    const response = await osmosisClient.signAndBroadcast(
       osmosisAddress,
       encodeObjects,
       fee,
     );
+    console.log("invokeOsmosisContract DeliverTxResponse: ", response);
+
+
+    const { msgResponses, code } = response
 
     if (code !== 0) {
       throw Error(`Failed to execute osmosis contract with message ${message}`);
@@ -324,11 +328,11 @@ export const osmosisSwapTools = async t => {
     const storeEncodeObjects: Array<
       import('@cosmjs/proto-signing').EncodeObject
     > = [
-      {
-        typeUrl: MsgStoreCode.typeUrl,
-        value: storeMessage,
-      },
-    ];
+        {
+          typeUrl: MsgStoreCode.typeUrl,
+          value: storeMessage,
+        },
+      ];
 
     const storeResult = await osmosisClient.signAndBroadcast(
       osmosisAddress,
@@ -355,11 +359,11 @@ export const osmosisSwapTools = async t => {
     const instantiateEncodeObjects: Array<
       import('@cosmjs/proto-signing').EncodeObject
     > = [
-      {
-        typeUrl: MsgInstantiateContract.typeUrl,
-        value: instantiateMessage,
-      },
-    ];
+        {
+          typeUrl: MsgInstantiateContract.typeUrl,
+          value: instantiateMessage,
+        },
+      ];
 
     const instantiateResult = await osmosisClient.signAndBroadcast(
       osmosisAddress,
@@ -536,11 +540,16 @@ export const osmosisSwapTools = async t => {
       },
     ];
 
-    const { msgResponses, code } = await osmosisClient.signAndBroadcast(
+    const response = await osmosisClient.signAndBroadcast(
       osmosisAddress,
       encodeObjects,
       fee,
     );
+
+    console.log("createPoolAgainstOsmo DeliverTxResponse: ", response);
+    
+
+    const { msgResponses, code } = response
 
     if (msgResponses[0] && code !== 0) {
       throw Error(`Failed to create pool with uosmo and ${issuingDenom}`);
