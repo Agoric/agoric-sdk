@@ -64,6 +64,19 @@ export const boardSlottingMarshaller = (slotToVal = undefined) => {
   );
 };
 
+const ifaceAllegedPrefix = 'Alleged: ';
+const ifaceInaccessiblePrefix = 'SEVERED: ';
+/**
+ * @param {string | undefined} iface
+ * @returns {any}
+ */
+export const makeInaccessibleVal = iface => {
+  if (typeof iface === 'string' && iface.startsWith(ifaceAllegedPrefix)) {
+    iface = iface.slice(ifaceAllegedPrefix.length);
+  }
+  return Far(`${ifaceInaccessiblePrefix}${iface}`, {});
+};
+
 // TODO move CapDataShape to Endo
 /**
  * @type {TypedPattern<CapData<any>>}

@@ -10,10 +10,13 @@ import {
   defineRecorderKit,
   prepareRecorder,
 } from '@agoric/zoe/src/contractSupport/recorder.js';
-import { E, Far } from '@endo/far';
+import { E } from '@endo/far';
 import { isRemotable, makeMarshal } from '@endo/marshal';
 
-import { CapDataShape } from '@agoric/internal/src/marshal.js';
+import {
+  CapDataShape,
+  makeInaccessibleVal,
+} from '@agoric/internal/src/marshal.js';
 import { crc6 } from './crc.js';
 
 /**
@@ -181,9 +184,6 @@ const getValue = (id, { prefix, crcDigits, idToVal }) => {
 
 /** @param {BoardState} state */
 const makeSlotToVal = state => {
-  const ifaceAllegedPrefix = 'Alleged: ';
-  const ifaceInaccessiblePrefix = 'SEVERED: ';
-
   /**
    * @param {BoardId} slot
    * @param {string} iface
@@ -195,10 +195,7 @@ const makeSlotToVal = state => {
     }
 
     // Private object.
-    if (typeof iface === 'string' && iface.startsWith(ifaceAllegedPrefix)) {
-      iface = iface.slice(ifaceAllegedPrefix.length);
-    }
-    return Far(`${ifaceInaccessiblePrefix}${iface}`, {});
+    return makeInaccessibleVal(iface);
   };
   return slotToVal;
 };
