@@ -117,6 +117,10 @@ jobs:
           timeout: 20m # Usually 13min
           kubeconfig: ${{ env.KUBECONFIG }}
           namespace: ${{ env.NAMESPACE }}
+          #`chain.scripts.chainRpcReady` is added in this PR: hyperweb-io/starship#688
+          # TODO: Use the official `hyperweb-io` when a new version is released
+          #repo: https://agoric-labs.github.io/starship
+          repo: https://agoric-labs.github.io/starship
 
       - name: Fund Provision Pool
         run: |
