@@ -227,7 +227,7 @@ export async function main() {
   let logDisk = false;
   let logStats = false;
   let logTag = 'runner';
-  let slogFile = null;
+  let slogFile;
   let teleslog = false;
   let forceGC = false;
   let verbose = false;
@@ -241,7 +241,7 @@ export async function main() {
   let benchmarkRounds = 0;
   let configPath = null;
   let statsFile = null;
-  let dbDir = null;
+  let dbDir;
   let initOnly = false;
   let useXS = false;
   let useBundleCache = false;
@@ -256,8 +256,8 @@ export async function main() {
   let heapSamplingInterval = 1024;
   /** @type {import('inspector').Session | undefined} */
   let inspectorSession;
-  /** @type {number | undefined} */
-  let samplingInterval;
+  /** @type {string | undefined} */
+  let nextArg;
 
   const initializeInspectorSession = () =>
     import('inspector').then(({ Session }) => {
@@ -303,7 +303,8 @@ export async function main() {
         logStats = true;
         break;
       case '--logtag':
-        logTag = argv.shift();
+        nextArg = argv.shift();
+        nextArg && (logTag = nextArg);
         break;
       case '--slog':
         slogFile = argv.shift();
@@ -333,11 +334,13 @@ export async function main() {
         doDumps = true;
         break;
       case '--dumpdir':
-        dumpDir = argv.shift();
+        nextArg = argv.shift();
+        nextArg && (dumpDir = nextArg);
         doDumps = true;
         break;
       case '--dumptag':
-        dumpTag = argv.shift();
+        nextArg = argv.shift();
+        nextArg && (dumpTag = nextArg);
         doDumps = true;
         break;
       case '--dbdir':
@@ -378,54 +381,42 @@ export async function main() {
         swingsetBenchmarkDriverPath = argv.shift();
         break;
       case '--cpu-profile-output':
-        cpuProfileFilePath = path.resolve(String(argv.shift()));
-        await new Promise(resolve => {
-          const parentDirectory = path.dirname(String(cpuProfileFilePath));
-          fs.access(parentDirectory, fs.constants.F_OK, err => {
-            if (err) {
-              console.warn(
-                `Directory "${parentDirectory}" does not exist, not initiating cpu profiling`,
-              );
-              cpuProfileFilePath = undefined;
-            }
-            resolve(null);
-          });
-        });
+        nextArg = argv.shift();
+        if (!nextArg) throw Error('Need a file path for cpu profile');
 
-        if (cpuProfileFilePath && !inspectorSession)
-          await initializeInspectorSession().catch(err => {
-            console.error('Inspector initializtion failed due to error: ', err);
-            cpuProfileFilePath = undefined;
+        cpuProfileFilePath = path.resolve(nextArg);
+        try {
+          await fs.promises.access(path.dirname(cpuProfileFilePath));
+        } catch (cause) {
+          throw Error(`Can't record CPU profile at ${cpuProfileFilePath}`, {
+            cause,
           });
+        }
+
+        if (!inspectorSession) await initializeInspectorSession();
         break;
       case '--heap-profile-output':
-        heapProfileFilePath = path.resolve(String(argv.shift()));
-        await new Promise(resolve => {
-          const parentDirectory = path.dirname(String(heapProfileFilePath));
-          fs.access(parentDirectory, fs.constants.F_OK, err => {
-            if (err) {
-              console.warn(
-                `Directory "${parentDirectory}" does not exist, not initiating heap profiling`,
-              );
-              heapProfileFilePath = undefined;
-            }
-            resolve(null);
-          });
-        });
+        nextArg = argv.shift();
+        if (!nextArg) throw Error('Need a file path for heap profile');
 
-        if (heapProfileFilePath && !inspectorSession)
-          await initializeInspectorSession().catch(err => {
-            console.error('Inspector initializtion failed due to error: ', err);
-            heapProfileFilePath = undefined;
+        heapProfileFilePath = path.resolve(nextArg);
+        try {
+          await fs.promises.access(path.dirname(heapProfileFilePath));
+        } catch (cause) {
+          throw Error(`Can't record heap profile at ${heapProfileFilePath}`, {
+            cause,
           });
+        }
+
+        if (!inspectorSession) await initializeInspectorSession();
         break;
       case '--heap-sampling-interval':
-        samplingInterval = Number(argv.shift());
-        if (Number.isNaN(samplingInterval) || samplingInterval < 1)
-          console.warn(
-            `'${samplingInterval}' is not a valid value, using the fallback value '${heapSamplingInterval}'`,
+        nextArg = argv.shift();
+        heapSamplingInterval = Number(nextArg);
+        if (Number.isNaN(heapSamplingInterval) || heapSamplingInterval < 1)
+          throw Error(
+            `'${nextArg}' is not a valid value for sampling interval`,
           );
-        else heapSamplingInterval = samplingInterval;
         break;
       case '-v':
       case '--verbose':
@@ -463,11 +454,11 @@ export async function main() {
   const bootstrapArgv = argv[0] === '--' ? argv.slice(1) : argv;
 
   let config;
-  await null;
+
   if (configPath) {
     config = await loadSwingsetConfigFile(configPath);
-    if (config === null) {
-      fail(`config file ${configPath} not found`);
+    if (!config) {
+      return fail(`config file ${configPath} not found`);
     }
     if (!basedir) {
       basedir = swingsetBenchmarkDriverPath
@@ -548,7 +539,7 @@ export async function main() {
       break;
     }
     default:
-      fail(`invalid database mode ${dbMode}`, true);
+      return fail(`invalid database mode ${dbMode}`, true);
   }
   const { kernelStorage, hostStorage } = swingStore;
   const runtimeOptions = {};
@@ -569,6 +560,7 @@ export async function main() {
   }
   let slogSender;
   if (teleslog || slogFile) {
+    /** @type {typeof process.env} */
     const slogEnv = { ...process.env, SLOGFILE: slogFile };
     const slogOpts = { stateDir: dbDir, env: slogEnv };
     if (slogFile) {
@@ -669,9 +661,7 @@ export async function main() {
         prompt: 'runner> ',
         replMode: repl.REPL_MODE_STRICT,
       });
-      cli.on('exit', () => {
-        hostStorage.close();
-      });
+      cli.on('exit', hostStorage.close);
       cli.context.dump2 = () => controller.dump();
       cli.defineCommand('commit', {
         help: 'Commit current kernel state to persistent storage',
@@ -907,7 +897,8 @@ export async function main() {
         ]);
       }
       if (logDisk) {
-        const diskUsage = dbMode === '--sqlite' ? hostStorage.diskUsage() : 0;
+        const diskUsage =
+          (dbMode === '--sqlite' && hostStorage.diskUsage?.()) || 0;
         data.push(diskUsage);
       }
       if (logStats) {
