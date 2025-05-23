@@ -77,8 +77,6 @@ const TIMEOUT: RetryOptions = {
 export const osmosisSwapTools = async t => {
   const { useChain, retryUntilCondition } = t.context;
 
-  
-
   const osmosisBranch = 'main';
   const scriptLocalPath = './test/xcs-swap-anything/download-wasm-artifacts.sh';
   const xcsArtifactsPath = './test/xcs-swap-anything/wasm-artifacts';
@@ -101,7 +99,7 @@ export const osmosisSwapTools = async t => {
     () => osmosisClient.getAllBalances(osmosisAddress),
     (coins: Coin[]) => !!coins?.length,
     `Faucet balances found for ${osmosisAddress}`,
-    TIMEOUT
+    TIMEOUT,
   );
 
   const { getRpcEndpoint } = useChain('osmosis');
@@ -145,7 +143,7 @@ export const osmosisSwapTools = async t => {
       () => issuingClient.getAllBalances(issuingAddress),
       (coins: Coin[]) => !!coins?.length,
       `Faucet balances not found for issuing address: ${issuingAddress}`,
-      TIMEOUT
+      TIMEOUT,
     );
 
     let destinationClient: SigningStargateClient;
@@ -163,7 +161,7 @@ export const osmosisSwapTools = async t => {
         () => client.getAllBalances(address),
         (coins: Coin[]) => !!coins?.length,
         `Faucet balances not found for destination address: ${address}`,
-        TIMEOUT
+        TIMEOUT,
       );
 
       destinationClient = client;
@@ -221,7 +219,7 @@ export const osmosisSwapTools = async t => {
         return current > before;
       },
       `Transferred tokens not found on destination address: ${destinationAddress}`,
-      TIMEOUT
+      TIMEOUT,
     );
     trace(
       `Transferred tokens found on destination address: ${destinationAddress}`,
@@ -262,10 +260,9 @@ export const osmosisSwapTools = async t => {
       encodeObjects,
       fee,
     );
-    trace("invokeOsmosisContract DeliverTxResponse: ", response);
+    trace('invokeOsmosisContract DeliverTxResponse: ', response);
 
-
-    const { msgResponses, code } = response
+    const { msgResponses, code } = response;
 
     if (code !== 0) {
       throw Error(`Failed to execute osmosis contract with message ${message}`);
@@ -343,11 +340,11 @@ export const osmosisSwapTools = async t => {
     const storeEncodeObjects: Array<
       import('@cosmjs/proto-signing').EncodeObject
     > = [
-        {
-          typeUrl: MsgStoreCode.typeUrl,
-          value: storeMessage,
-        },
-      ];
+      {
+        typeUrl: MsgStoreCode.typeUrl,
+        value: storeMessage,
+      },
+    ];
 
     const storeResult = await osmosisClient.signAndBroadcast(
       osmosisAddress,
@@ -374,11 +371,11 @@ export const osmosisSwapTools = async t => {
     const instantiateEncodeObjects: Array<
       import('@cosmjs/proto-signing').EncodeObject
     > = [
-        {
-          typeUrl: MsgInstantiateContract.typeUrl,
-          value: instantiateMessage,
-        },
-      ];
+      {
+        typeUrl: MsgInstantiateContract.typeUrl,
+        value: instantiateMessage,
+      },
+    ];
 
     const instantiateResult = await osmosisClient.signAndBroadcast(
       osmosisAddress,
@@ -562,10 +559,9 @@ export const osmosisSwapTools = async t => {
       fee,
     );
 
-    trace("createPoolAgainstOsmo DeliverTxResponse: ", response);
+    trace('createPoolAgainstOsmo DeliverTxResponse: ', response);
 
-
-    const { msgResponses, code } = response
+    const { msgResponses, code } = response;
 
     if (msgResponses[0] && code !== 0) {
       throw Error(`Failed to create pool with uosmo and ${issuingDenom}`);
@@ -788,18 +784,31 @@ export const osmosisSwapTools = async t => {
 
       if (!(await isRouteSet(pool))) {
         console.log(`Funding osmosis wallet with ${issuingDenom} ...`);
-        await fundRemote(issuingChain, issuingDenom);
+        await fundRemote(issuingChain, issuingDenom).catch(err => {
+          console.error('fundRemote failed, trying again', err);
+          return fundRemote(issuingChain, issuingDenom);
+        });
 
         console.log(`Creating new pool ...`);
         const { poolId, hash } = await createPoolAgainstOsmo(
           issuingChain,
           issuingDenom,
-        );
+        ).catch(err => {
+          console.error('createPoolAgainstOsmo failed, trying again', err);
+          return createPoolAgainstOsmo(issuingChain, issuingDenom);
+        });
 
         console.log(`Setting pool routes ...`);
         const denomHash = `ibc/${hash}`;
-        await setPoolRoute('uosmo', denomHash, poolId.toString());
-        await setPoolRoute(denomHash, 'uosmo', poolId.toString());
+        await setPoolRoute('uosmo', denomHash, poolId.toString()).catch(err => {
+          console.error('setPoolRoute failed, trying again', err);
+          return setPoolRoute('uosmo', denomHash, poolId.toString());
+        });
+
+        await setPoolRoute(denomHash, 'uosmo', poolId.toString()).catch(err => {
+          console.error('setPoolRoute failed, trying again', err);
+          return setPoolRoute(denomHash, 'uosmo', poolId.toString());
+        });
       }
 
       console.log(`Osmosis pool for uosmo, ${issuingDenom} available!`);
