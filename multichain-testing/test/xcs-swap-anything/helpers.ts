@@ -538,6 +538,7 @@ export const osmosisSwapTools = async t => {
       ],
       futurePoolGovernor: '',
     });
+    // ToDo
     /** @type {Array<import('@cosmjs/proto-signing').EncodeObject>} */
     const encodeObjects = [
       {
@@ -780,13 +781,15 @@ export const osmosisSwapTools = async t => {
       if (!(await isRouteSet(pool))) {
         console.log(`Funding osmosis wallet with ${issuingDenom} ...`);
         await fundRemote(issuingChain, issuingDenom);
+        await waitForBlock(5);
 
         console.log(`Creating new pool ...`);
         const { poolId, hash } = await createPoolAgainstOsmo(
           issuingChain,
           issuingDenom,
         );
-
+        await waitForBlock(5);
+        
         console.log(`Setting pool routes ...`);
         const denomHash = `ibc/${hash}`;
         await setPoolRoute('uosmo', denomHash, poolId.toString());
