@@ -24,6 +24,8 @@ import { makeQueryClient } from '../../tools/query.js';
 import type { SetupContextWithWallets } from '../support.js';
 import { makeTracer } from '@agoric/internal';
 import type { RetryOptions } from '../../tools/sleep.js';
+import { makeHttpClient } from '../../tools/makeHttpClient.js';
+import { makeBlockTool } from '../../tools/e2e-tools.js';
 
 export type SetupOsmosisContext = Awaited<ReturnType<typeof osmosisSwapTools>>;
 export type SetupOsmosisContextWithCommon = SetupOsmosisContext &
@@ -73,6 +75,22 @@ const TIMEOUT: RetryOptions = {
   retryIntervalMs: 5000,
   maxRetries: 18,
 };
+
+const { waitForBlock } = (() => {
+  const delay = (ms: number): Promise<void> =>
+    new Promise(resolve => setTimeout(resolve, ms));
+  const explainDelay = (ms, info) => {
+    if (typeof info === 'object' && Object.keys(info).length > 0) {
+      console.log('delay', { ...info, delay: ms / 1000 }, '...');
+    }
+    return delay(ms);
+  };
+  const rpc = makeHttpClient('http://localhost:26657', fetch);
+  return makeBlockTool({
+    rpc,
+    delay: explainDelay,
+  });
+})();
 
 export const osmosisSwapTools = async t => {
   const { useChain, retryUntilCondition } = t.context;
@@ -189,6 +207,7 @@ export const osmosisSwapTools = async t => {
       useChain,
     );
 
+    await waitForBlock(2);
     // TODO #9200 `sendIbcTokens` does not support `memo`
     // @ts-expect-error spread argument for concise code
     const txRes = await issuingClient.sendIbcTokens(...transferArgs);
@@ -255,13 +274,13 @@ export const osmosisSwapTools = async t => {
       },
     ];
 
+    await waitForBlock(1);
     const response = await osmosisClient.signAndBroadcast(
       osmosisAddress,
       encodeObjects,
       fee,
     );
     trace('invokeOsmosisContract DeliverTxResponse: ', response);
-
     const { msgResponses, code } = response;
 
     if (code !== 0) {
@@ -340,12 +359,13 @@ export const osmosisSwapTools = async t => {
     const storeEncodeObjects: Array<
       import('@cosmjs/proto-signing').EncodeObject
     > = [
-      {
-        typeUrl: MsgStoreCode.typeUrl,
-        value: storeMessage,
-      },
-    ];
+        {
+          typeUrl: MsgStoreCode.typeUrl,
+          value: storeMessage,
+        },
+      ];
 
+    await waitForBlock(1);
     const storeResult = await osmosisClient.signAndBroadcast(
       osmosisAddress,
       storeEncodeObjects,
@@ -371,17 +391,19 @@ export const osmosisSwapTools = async t => {
     const instantiateEncodeObjects: Array<
       import('@cosmjs/proto-signing').EncodeObject
     > = [
-      {
-        typeUrl: MsgInstantiateContract.typeUrl,
-        value: instantiateMessage,
-      },
-    ];
+        {
+          typeUrl: MsgInstantiateContract.typeUrl,
+          value: instantiateMessage,
+        },
+      ];
 
+    await waitForBlock(1);
     const instantiateResult = await osmosisClient.signAndBroadcast(
       osmosisAddress,
       instantiateEncodeObjects,
       fee,
     );
+
 
     if (instantiateResult.msgResponses[0] && instantiateResult.code !== 0) {
       throw Error(`Failed to instantiate ${contractLabel} contract`);
@@ -553,14 +575,13 @@ export const osmosisSwapTools = async t => {
       },
     ];
 
+    await waitForBlock(1);
     const response = await osmosisClient.signAndBroadcast(
       osmosisAddress,
       encodeObjects,
       fee,
     );
-
     trace('createPoolAgainstOsmo DeliverTxResponse: ', response);
-
     const { msgResponses, code } = response;
 
     if (msgResponses[0] && code !== 0) {
