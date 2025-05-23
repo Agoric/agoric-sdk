@@ -22,8 +22,6 @@ import {
 import starshipChainInfo from '../../starship-chain-info.js';
 import { makeQueryClient } from '../../tools/query.js';
 import type { SetupContextWithWallets } from '../support.js';
-import { makeBlockTool } from '../../tools/e2e-tools.js';
-import { makeHttpClient } from '../../tools/makeHttpClient.js';
 import { makeTracer } from '@agoric/internal';
 import type { RetryOptions } from '../../tools/sleep.js';
 
