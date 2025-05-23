@@ -1,21 +1,18 @@
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
 import { AmountMath } from '@agoric/ertp';
-import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { makeBlockTool, makeDoOffer } from '../../tools/e2e-tools.js';
 import { commonSetup } from '../support.js';
 import { makeQueryClient } from '../../tools/query.js';
 import starshipChainInfo from '../../starship-chain-info.js';
-import {
-  createFundedWalletAndClient,
-  makeIBCTransferMsg,
-} from '../../tools/ibc-transfer.js';
+import { createFundedWalletAndClient } from '../../tools/ibc-transfer.js';
 import { makeHttpClient } from '../../tools/makeHttpClient.js';
 import type { OfferStatus } from '@agoric/smart-wallet/src/offers.js';
 import {
   osmosisSwapTools,
   type SetupOsmosisContextWithCommon,
 } from './helpers.js';
+import type { Pool } from 'osmojs/osmosis/gamm/v1beta1/balancerPool.js';
 
 const test = anyTest as TestFn<SetupOsmosisContextWithCommon>;
 
@@ -97,6 +94,55 @@ test.serial('test osmosis xcs state', async t => {
 
   const { numPools } = await getPools();
   t.assert(numPools > 0n, 'No Osmosis Pool found');
+});
+
+test.only('create non-native pool', async t => {
+  const {
+    setupNonNativePool,
+    getPools,
+    getPoolRouteNew,
+    getPool,
+    getDenomHash,
+  } = t.context;
+
+  const poolNumberBefore = await getPools();
+
+  const chainA = { chain: 'cosmoshub', denom: 'uatom', amount: '100000' };
+  const chainB = { chain: 'agoric', denom: 'ubld', amount: '100000' };
+
+  await setupNonNativePool(chainA, chainB);
+
+  const poolNumberAfter = await getPools();
+
+  t.is(poolNumberBefore.numPools + 1n, poolNumberAfter.numPools);
+
+  const route = await getPoolRouteNew(
+    { chain: 'cosmoshub', denom: 'uatom' },
+    { chain: 'agoric', denom: 'ubld' },
+  );
+
+  t.log(route);
+
+  const [pool, chainADenomHash, chainBDenomHash] = await Promise.all([
+    getPool(BigInt(route[0].pool_id)),
+    getDenomHash('osmosis', chainA.chain, chainA.denom),
+    getDenomHash('osmosis', chainB.chain, chainB.denom),
+  ]);
+  t.log(pool);
+
+  t.is(route[0].token_out_denom, `ibc/${chainBDenomHash}`);
+
+  const myPool = pool.pool as Pool;
+  t.truthy(
+    myPool.poolAssets.find(
+      ({ token }) => token.denom === `ibc/${chainADenomHash}`,
+    ),
+  );
+  t.truthy(
+    myPool.poolAssets.find(
+      ({ token }) => token.denom === `ibc/${chainBDenomHash}`,
+    ),
+  );
 });
 
 test.serial('BLD for OSMO, receiver on Agoric', async t => {
@@ -445,104 +491,6 @@ test.serial(
     t.regex(errorMsg, /^Error: IBC Transfer failed/);
   },
 );
-
-/**
- * UNTIL https://github.com/Agoric/BytePitchPartnerEng/issues/51, we are skipping this
- * until the ticket above is done
- */
-test.skip('address hook - BLD for OSMO, receiver on Agoric', async t => {
-  const { wallets, vstorageClient, retryUntilCondition, useChain } = t.context;
-  const { getRestEndpoint, chain: cosmosChain } = useChain('cosmoshub');
-
-  const { address: cosmosHubAddr, client: cosmosHubClient } = await fundRemote(
-    t,
-    'cosmoshub',
-  );
-
-  const cosmosHubApiUrl = await getRestEndpoint();
-  const cosmosHubQueryClient = makeQueryClient(cosmosHubApiUrl);
-
-  const {
-    transferChannel: { counterPartyChannelId },
-  } = starshipChainInfo.agoric.connections[cosmosChain.chain_id];
-
-  const apiUrl = await useChain('agoric').getRestEndpoint();
-  const queryClient = makeQueryClient(apiUrl);
-
-  const { balances: balancesBefore } = await queryClient.queryBalances(
-    wallets.agoricReceiver,
-  );
-
-  const { hash: bldDenomOnHub } = await cosmosHubQueryClient.queryDenom(
-    `transfer/${counterPartyChannelId}`,
-    'ubld',
-  );
-  t.log({ bldDenomOnHub, counterPartyChannelId });
-
-  const {
-    sharedLocalAccount: { value: baseAddress },
-  } = await vstorageClient.queryData('published.swap-anything');
-  t.log(baseAddress);
-
-  const { swapAddress } = await getXcsContractsAddress();
-
-  const orcContractReceiverAddress = encodeAddressHook(baseAddress, {
-    destAddr: swapAddress,
-    receiverAddr: wallets.agoricReceiver,
-    outDenom: 'uosmo',
-  });
-
-  const transferArgs = makeIBCTransferMsg(
-    { denom: `ibc/${bldDenomOnHub}`, value: 125n },
-    { address: orcContractReceiverAddress, chainName: 'agoric' },
-    { address: cosmosHubAddr, chainName: 'cosmoshub' },
-    Date.now(),
-    useChain,
-  );
-  console.log('Transfer Args:', transferArgs);
-  // TODO #9200 `sendIbcTokens` does not support `memo`
-  // @ts-expect-error spread argument for concise code
-  const txRes = await cosmosHubClient.sendIbcTokens(...transferArgs);
-  if (txRes && txRes.code !== 0) {
-    console.error(txRes);
-    throw Error(`failed to ibc transfer funds to ibc/${bldDenomOnHub}`);
-  }
-  const { events: _events, ...txRest } = txRes;
-  console.log(txRest);
-  t.is(txRes.code, 0, `Transaction succeeded`);
-  t.log(`Funds transferred to ${orcContractReceiverAddress}`);
-
-  const osmosisChainId = useChain('osmosis').chain.chain_id;
-
-  const {
-    transferChannel: { channelId },
-  } = starshipChainInfo.agoric.connections[osmosisChainId];
-
-  const { balances: agoricReceiverBalances } = await retryUntilCondition(
-    () => queryClient.queryBalances(wallets.agoricReceiver),
-    ({ balances }) => {
-      const balancesBeforeAmount = BigInt(balancesBefore[0]?.amount || 0);
-      const currentBalanceAmount = BigInt(balances[0]?.amount || 0);
-      return currentBalanceAmount > balancesBeforeAmount;
-    },
-    'Deposit reflected in localOrchAccount balance',
-  );
-  t.log(agoricReceiverBalances);
-
-  const { hash: expectedHash } = await queryClient.queryDenom(
-    `transfer/${channelId}`,
-    'uosmo',
-  );
-
-  t.log('Expected denom hash:', expectedHash);
-
-  t.regex(agoricReceiverBalances[0]?.denom, /^ibc/);
-  t.is(
-    agoricReceiverBalances[0]?.denom.split('ibc/')[1],
-    expectedHash,
-    'got expected ibc denom hash',
-  );
-});
 
 test.after(async t => {
   const { deleteTestKeys } = t.context;
