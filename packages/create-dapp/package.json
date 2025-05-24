@@ -39,8 +39,7 @@
     "files": [
       "test/**/*.test.*"
     ],
-    "timeout": "2m",
-    "workerThreads": false
+    "timeout": "2m"
   },
   "publishConfig": {
     "access": "public"
