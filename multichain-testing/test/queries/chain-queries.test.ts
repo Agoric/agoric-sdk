@@ -125,7 +125,7 @@ const queryICQChain = test.macro({
 
     t.is(balanceQueryResult.code, 0, 'balance query was successful');
     const balanceQueryResultDecoded = QueryBalanceResponse.decode(
-      decodeBase64(balanceQueryResult.key),
+      decodeBase64(balanceQueryResult.key || balanceQueryResult.value),
     );
     t.log('balanceQueryResult', balanceQueryResultDecoded);
     t.deepEqual(balanceQueryResultDecoded, {
@@ -137,7 +137,7 @@ const queryICQChain = test.macro({
 
     t.is(allBalanceQueryResult.code, 0, 'allBalances query was successful');
     const allBalanceQueryResultDecoded = QueryAllBalancesResponse.decode(
-      decodeBase64(allBalanceQueryResult.key),
+      decodeBase64(allBalanceQueryResult.key || allBalanceQueryResult.value),
     );
     t.log('allBalanceQueryResult', allBalanceQueryResultDecoded);
     t.like(allBalanceQueryResultDecoded, {
