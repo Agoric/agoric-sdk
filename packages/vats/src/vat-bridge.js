@@ -1,7 +1,7 @@
 import { Fail } from '@endo/errors';
 import { Far } from '@endo/far';
 import { makeDurableZone } from '@agoric/zone/durable.js';
-import * as cb from '@agoric/internal/src/callback.js';
+import { makeMethodCallback } from '@agoric/internal/src/callback.js';
 import { prepareChainStorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import { prepareBridgeManager } from './bridge.js';
 
@@ -34,7 +34,7 @@ export function buildRootObject(vatPowers, _args, baggage) {
 
     const storageBridgeManager = await storageBridgeManagerP;
     const rootNode = makeChainStorageNode(
-      cb.makeMethodCallback(storageBridgeManager, 'toBridge'),
+      makeMethodCallback(storageBridgeManager, 'toBridge'),
       rootPath,
       options,
     );
