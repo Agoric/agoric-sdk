@@ -15,7 +15,7 @@ test('dump: the @erights challenge', t => {
     undefined,
     'undefined',
     URIError('wut?'),
-    [33n, Symbol('foo'), Symbol.for('bar'), Symbol.asyncIterator],
+    [33n, unpassableSymbolForName('foo'), passableSymbolForName('bar'), Symbol.asyncIterator],
     {
       NaN,
       Infinity,
@@ -27,7 +27,7 @@ test('dump: the @erights challenge', t => {
   ];
   t.is(
     dump(challenges),
-    '[[Promise],[Function foo],"[hilbert]",undefined,"undefined",[URIError: wut?],[33n,Symbol(foo),Symbol(bar),Symbol(Symbol.asyncIterator)],{"NaN":NaN,"Infinity":Infinity,"neg":-Infinity},18014398509481984,{"superTagged":[Object Tagged]{[Symbol(Symbol.toStringTag)]:"Tagged"},"subTagged":[Object Tagged]{},"subTaggedNonEmpty":[Object Tagged]{"foo":"x"}},{}]',
+    '[[Promise],[Function foo],"[hilbert]",undefined,"undefined",[URIError: wut?],[33n,unpassableSymbolForName(foo),unpassableSymbolForName(bar),unpassableSymbolForName(Symbol.asyncIterator)],{"NaN":NaN,"Infinity":Infinity,"neg":-Infinity},18014398509481984,{"superTagged":[Object Tagged]{[unpassableSymbolForName(Symbol.toStringTag)]:"Tagged"},"subTagged":[Object Tagged]{},"subTaggedNonEmpty":[Object Tagged]{"foo":"x"}},{}]',
   );
   t.is(
     dump(challenges, 2),
@@ -41,9 +41,9 @@ test('dump: the @erights challenge', t => {
   [URIError: wut?],
   [
     33n,
-    Symbol(foo),
-    Symbol(bar),
-    Symbol(Symbol.asyncIterator)
+    unpassableSymbolForName(foo),
+    unpassableSymbolForName(bar),
+    unpassableSymbolForName(Symbol.asyncIterator)
   ],
   {
     "NaN": NaN,
@@ -53,7 +53,7 @@ test('dump: the @erights challenge', t => {
   18014398509481984,
   {
     "superTagged": [Object Tagged] {
-      [Symbol(Symbol.toStringTag)]: "Tagged"
+      [unpassableSymbolForName(Symbol.toStringTag)]: "Tagged"
     },
     "subTagged": [Object Tagged] {},
     "subTaggedNonEmpty": [Object Tagged] {
