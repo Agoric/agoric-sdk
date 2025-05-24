@@ -101,6 +101,9 @@ proto-gen:
 	@echo "Generating Protobuf files"
 	@$(protoImage) sh ./scripts/protocgen.sh
 
+proto-format:
+	@$(protoImage) find ./proto -name "*.proto" -exec clang-format -i {} \;
+
 proto-lint:
 	@$(protoImage) buf lint --error-format=json ./proto
 
@@ -174,7 +177,7 @@ proto-update-deps:
 	mkdir -p $(COSMOS_SDK_AMINO_TYPES) && \
 	curl -sSL $$url/amino.proto > $(COSMOS_SDK_AMINO_TYPES)/amino.proto
 
-.PHONY: proto-all proto-gen proto-swagger-gen proto-format proto-lint proto-check-breaking proto-update-deps
+.PHONY: proto-all proto-format proto-lint proto-gen proto-check-breaking proto-update-deps
 
 lint:
 	golangci-lint run
