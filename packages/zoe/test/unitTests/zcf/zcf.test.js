@@ -675,6 +675,7 @@ test(`zcfSeat.getProposal from zcf.makeEmptySeatKit`, async t => {
     },
     give: {},
     want: {},
+    multiples: 1n,
   });
 });
 
@@ -825,6 +826,7 @@ test(`userSeat.getProposal from zcf.makeEmptySeatKit`, async t => {
     },
     give: {},
     want: {},
+    multiples: 1n,
   });
 });
 
