@@ -12,7 +12,6 @@ const (
 
 var (
 	NewKeeper   = keeper.NewKeeper
-	NewQuerier  = keeper.NewQuerier
 	NewStorage  = types.NewData
 	NewChildren = types.NewChildren
 )

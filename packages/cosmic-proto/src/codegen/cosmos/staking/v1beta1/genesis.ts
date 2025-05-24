@@ -18,7 +18,7 @@ import { encodeBase64 as base64FromBytes } from '@endo/base64';
 import { type JsonSafe } from '../../../json-safe.js';
 /** GenesisState defines the staking module's genesis state. */
 export interface GenesisState {
-  /** params defines all the paramaters of related to deposit. */
+  /** params defines all the parameters of related to deposit. */
   params: Params;
   /**
    * last_total_power tracks the total amounts of bonded tokens recorded during

@@ -9,6 +9,28 @@ import {
   Duration,
   type DurationSDKType,
 } from '../../../google/protobuf/duration.js';
+import {
+  CommunityPoolSpendProposal,
+  type CommunityPoolSpendProposalSDKType,
+  CommunityPoolSpendProposalWithDeposit,
+  type CommunityPoolSpendProposalWithDepositSDKType,
+} from '../../distribution/v1beta1/distribution.js';
+import {
+  ParameterChangeProposal,
+  type ParameterChangeProposalSDKType,
+} from '../../params/v1beta1/params.js';
+import {
+  SoftwareUpgradeProposal,
+  type SoftwareUpgradeProposalSDKType,
+  CancelSoftwareUpgradeProposal,
+  type CancelSoftwareUpgradeProposalSDKType,
+} from '../../upgrade/v1beta1/upgrade.js';
+import {
+  ClientUpdateProposal,
+  type ClientUpdateProposalSDKType,
+  UpgradeProposal,
+  type UpgradeProposalSDKType,
+} from '../../../ibc/core/client/v1/client.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { Decimal } from '../../../decimals.js';
 import { isSet, fromJsonTimestamp, fromTimestamp } from '../../../helpers.js';
@@ -153,7 +175,9 @@ export function proposalStatusToJSON(object: ProposalStatus): string {
  * Since: cosmos-sdk 0.43
  */
 export interface WeightedVoteOption {
+  /** option defines the valid vote options, it must not contain duplicate vote options. */
   option: VoteOption;
+  /** weight is the vote weight associated with the vote option. */
   weight: string;
 }
 export interface WeightedVoteOptionProtoMsg {
@@ -175,7 +199,9 @@ export interface WeightedVoteOptionSDKType {
  */
 export interface TextProposal {
   $typeUrl?: '/cosmos.gov.v1beta1.TextProposal';
+  /** title of the proposal. */
   title: string;
+  /** description associated with the proposal. */
   description: string;
 }
 export interface TextProposalProtoMsg {
@@ -196,8 +222,11 @@ export interface TextProposalSDKType {
  * proposal.
  */
 export interface Deposit {
+  /** proposal_id defines the unique id of the proposal. */
   proposalId: bigint;
+  /** depositor defines the deposit addresses from the proposals. */
   depositor: string;
+  /** amount to be deposited by depositor. */
   amount: Coin[];
 }
 export interface DepositProtoMsg {
@@ -215,8 +244,21 @@ export interface DepositSDKType {
 }
 /** Proposal defines the core field members of a governance proposal. */
 export interface Proposal {
+  /** proposal_id defines the unique id of the proposal. */
   proposalId: bigint;
-  content?: (TextProposal & Any) | undefined;
+  /** content is the proposal's content. */
+  content?:
+    | (TextProposal &
+        CommunityPoolSpendProposal &
+        CommunityPoolSpendProposalWithDeposit &
+        ParameterChangeProposal &
+        SoftwareUpgradeProposal &
+        CancelSoftwareUpgradeProposal &
+        ClientUpdateProposal &
+        UpgradeProposal &
+        Any)
+    | undefined;
+  /** status defines the proposal status. */
   status: ProposalStatus;
   /**
    * final_tally_result is the final tally result of the proposal. When
@@ -224,10 +266,15 @@ export interface Proposal {
    * proposal's voting period has ended.
    */
   finalTallyResult: TallyResult;
+  /** submit_time is the time of proposal submission. */
   submitTime: Timestamp;
+  /** deposit_end_time is the end time for deposition. */
   depositEndTime: Timestamp;
+  /** total_deposit is the total deposit on the proposal. */
   totalDeposit: Coin[];
+  /** voting_start_time is the starting time to vote on a proposal. */
   votingStartTime: Timestamp;
+  /** voting_end_time is the end time of voting on a proposal. */
   votingEndTime: Timestamp;
 }
 export interface ProposalProtoMsg {
@@ -237,7 +284,17 @@ export interface ProposalProtoMsg {
 /** Proposal defines the core field members of a governance proposal. */
 export interface ProposalSDKType {
   proposal_id: bigint;
-  content?: TextProposalSDKType | AnySDKType | undefined;
+  content?:
+    | TextProposalSDKType
+    | CommunityPoolSpendProposalSDKType
+    | CommunityPoolSpendProposalWithDepositSDKType
+    | ParameterChangeProposalSDKType
+    | SoftwareUpgradeProposalSDKType
+    | CancelSoftwareUpgradeProposalSDKType
+    | ClientUpdateProposalSDKType
+    | UpgradeProposalSDKType
+    | AnySDKType
+    | undefined;
   status: ProposalStatus;
   final_tally_result: TallyResultSDKType;
   submit_time: TimestampSDKType;
@@ -248,9 +305,13 @@ export interface ProposalSDKType {
 }
 /** TallyResult defines a standard tally for a governance proposal. */
 export interface TallyResult {
+  /** yes is the number of yes votes on a proposal. */
   yes: string;
+  /** abstain is the number of abstain votes on a proposal. */
   abstain: string;
+  /** no is the number of no votes on a proposal. */
   no: string;
+  /** no_with_veto is the number of no with veto votes on a proposal. */
   noWithVeto: string;
 }
 export interface TallyResultProtoMsg {
@@ -269,7 +330,9 @@ export interface TallyResultSDKType {
  * A Vote consists of a proposal ID, the voter, and the vote option.
  */
 export interface Vote {
+  /** proposal_id defines the unique id of the proposal. */
   proposalId: bigint;
+  /** voter is the voter address of the proposal. */
   voter: string;
   /**
    * Deprecated: Prefer to use `options` instead. This field is set in queries
@@ -278,7 +341,11 @@ export interface Vote {
    */
   /** @deprecated */
   option: VoteOption;
-  /** Since: cosmos-sdk 0.43 */
+  /**
+   * options is the weighted vote options.
+   *
+   * Since: cosmos-sdk 0.43
+   */
   options: WeightedVoteOption[];
 }
 export interface VoteProtoMsg {
@@ -302,7 +369,7 @@ export interface DepositParams {
   minDeposit: Coin[];
   /**
    * Maximum period for Atom holders to deposit on a proposal. Initial value: 2
-   *  months.
+   * months.
    */
   maxDepositPeriod: Duration;
 }
@@ -317,7 +384,7 @@ export interface DepositParamsSDKType {
 }
 /** VotingParams defines the params for voting on governance proposals. */
 export interface VotingParams {
-  /** Length of the voting period. */
+  /** Duration of the voting period. */
   votingPeriod: Duration;
 }
 export interface VotingParamsProtoMsg {
@@ -332,14 +399,14 @@ export interface VotingParamsSDKType {
 export interface TallyParams {
   /**
    * Minimum percentage of total stake needed to vote for a result to be
-   *  considered valid.
+   * considered valid.
    */
   quorum: Uint8Array;
   /** Minimum proportion of Yes votes for proposal to pass. Default value: 0.5. */
   threshold: Uint8Array;
   /**
    * Minimum value of Veto votes to Total votes ratio for proposal to be
-   *  vetoed. Default value: 1/3.
+   * vetoed. Default value: 1/3.
    */
   vetoThreshold: Uint8Array;
 }
@@ -671,7 +738,9 @@ export const Proposal = {
           message.proposalId = reader.uint64();
           break;
         case 2:
-          message.content = Content_InterfaceDecoder(reader) as Any;
+          message.content = Cosmos_govv1beta1Content_InterfaceDecoder(
+            reader,
+          ) as Any;
           break;
         case 3:
           message.status = reader.int32() as any;
@@ -1274,15 +1343,38 @@ export const TallyParams = {
     };
   },
 };
-export const Content_InterfaceDecoder = (
+export const Cosmos_govv1beta1Content_InterfaceDecoder = (
   input: BinaryReader | Uint8Array,
-): TextProposal | Any => {
+):
+  | CommunityPoolSpendProposal
+  | CommunityPoolSpendProposalWithDeposit
+  | TextProposal
+  | ParameterChangeProposal
+  | SoftwareUpgradeProposal
+  | CancelSoftwareUpgradeProposal
+  | ClientUpdateProposal
+  | UpgradeProposal
+  | Any => {
   const reader =
     input instanceof BinaryReader ? input : new BinaryReader(input);
   const data = Any.decode(reader, reader.uint32());
   switch (data.typeUrl) {
+    case '/cosmos.distribution.v1beta1.CommunityPoolSpendProposal':
+      return CommunityPoolSpendProposal.decode(data.value);
+    case '/cosmos.distribution.v1beta1.CommunityPoolSpendProposalWithDeposit':
+      return CommunityPoolSpendProposalWithDeposit.decode(data.value);
     case '/cosmos.gov.v1beta1.TextProposal':
       return TextProposal.decode(data.value);
+    case '/cosmos.params.v1beta1.ParameterChangeProposal':
+      return ParameterChangeProposal.decode(data.value);
+    case '/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal':
+      return SoftwareUpgradeProposal.decode(data.value);
+    case '/cosmos.upgrade.v1beta1.CancelSoftwareUpgradeProposal':
+      return CancelSoftwareUpgradeProposal.decode(data.value);
+    case '/ibc.core.client.v1.ClientUpdateProposal':
+      return ClientUpdateProposal.decode(data.value);
+    case '/ibc.core.client.v1.UpgradeProposal':
+      return UpgradeProposal.decode(data.value);
     default:
       return data;
   }

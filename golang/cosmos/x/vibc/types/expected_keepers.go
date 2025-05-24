@@ -3,10 +3,9 @@ package types
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
-	clienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
-	connection "github.com/cosmos/ibc-go/v6/modules/core/03-connection/types"
-	channel "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
-	ibcexported "github.com/cosmos/ibc-go/v6/modules/core/exported"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	channel "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 )
 
 type BankKeeper interface {
@@ -40,12 +39,8 @@ type ChannelKeeper interface {
 
 // ClientKeeper defines the expected IBC client keeper
 type ClientKeeper interface {
-	GetClientConsensusState(ctx sdk.Context, clientID string) (connection ibcexported.ConsensusState, found bool)
-}
-
-// ConnectionKeeper defines the expected IBC connection keeper
-type ConnectionKeeper interface {
-	GetConnection(ctx sdk.Context, connectionID string) (connection connection.ConnectionEnd, found bool)
+	GetParams(ctx sdk.Context) clienttypes.Params
+	SetParams(ctx sdk.Context, params clienttypes.Params)
 }
 
 // PortKeeper defines the expected IBC port keeper
