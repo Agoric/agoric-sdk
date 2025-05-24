@@ -127,7 +127,8 @@ export const createFundedWalletAndClient = async (
   log: (...args: unknown[]) => void,
   chainName: string,
   useChain: MultichainRegistry['useChain'],
-  mnemonic?: string,
+  mnemonic?: string, // XXX #10038: injection optional, for now
+  connectWithSigner = SigningStargateClient.connectWithSigner, // XXX #10038: injection optional, for now
 ) => {
   const { chain, creditFromFaucet, getRpcEndpoint } = useChain(chainName);
   const wallet = await createWallet(chain.bech32_prefix, mnemonic);
@@ -138,7 +139,7 @@ export const createFundedWalletAndClient = async (
   await creditFromFaucet(address);
   // TODO use telescope generated rpc client from @agoric/cosmic-proto
   // https://github.com/Agoric/agoric-sdk/issues/9200
-  const client = await SigningStargateClient.connectWithSigner(
+  const client = await connectWithSigner(
     await getRpcEndpoint(),
     wallet,
   );

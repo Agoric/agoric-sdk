@@ -2,9 +2,12 @@ import {
   createFundedWalletAndClient,
   makeIBCTransferMsg,
 } from '../../tools/ibc-transfer.js';
+import { Random } from '@cosmjs/crypto';
 import { execa } from 'execa';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { generateMnemonic } from '../../tools/wallet.js';
+import { SigningStargateClient } from '@cosmjs/stargate';
 
 export const fundRemote = async (
   t,
@@ -13,11 +16,21 @@ export const fundRemote = async (
   amount = 100000000n,
 ) => {
   const { retryUntilCondition, useChain } = t.context;
-
+  const {
+    now = Date.now, // XXX #10038: injection optional, for now; TODO: add to t.context
+    getBytes = Random.getBytes,
+    connectWithSigner = SigningStargateClient.connectWithSigner,
+  }: {
+    now?: () => number;
+    getBytes?: (n: number) => Uint8Array;
+    connectWithSigner?: typeof import('@cosmjs/stargate').SigningStargateClient.connectWithSigner;
+  } = t.context;
   const { client, address, wallet } = await createFundedWalletAndClient(
     t.log,
     destinationChain,
     useChain,
+    generateMnemonic(getBytes),
+    connectWithSigner,
   );
   const balancesResult = await retryUntilCondition(
     () => client.getAllBalances(address),
@@ -27,7 +40,13 @@ export const fundRemote = async (
   console.log('Balances:', balancesResult);
 
   const { client: agoricClient, address: agoricAddress } =
-    await createFundedWalletAndClient(t.log, 'agoric', useChain);
+    await createFundedWalletAndClient(
+      t.log,
+      'agoric',
+      useChain,
+      generateMnemonic(getBytes),
+      connectWithSigner,
+    );
 
   const balancesResultAg = await retryUntilCondition(
     () => agoricClient.getAllBalances(agoricAddress),
@@ -40,7 +59,7 @@ export const fundRemote = async (
     { denom: denomToTransfer, value: amount },
     { address, chainName: destinationChain },
     { address: agoricAddress, chainName: 'agoric' },
-    Date.now(),
+    now(),
     useChain,
   );
   console.log('Transfer Args:', transferArgs);
