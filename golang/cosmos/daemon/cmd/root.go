@@ -174,7 +174,7 @@ func initRootCmd(sender vm.Sender, rootCmd *cobra.Command, encodingConfig params
 	)
 	rootCmd.AddCommand(
 		tmcli.NewCompletionCmd(rootCmd, true),
-		testnetCmd(gaia.ModuleBasics, banktypes.GenesisBalancesIterator{}),
+		NewTestnetCmd(gaia.ModuleBasics, banktypes.GenesisBalancesIterator{}, AppName),
 		debug.Cmd(),
 		config.Cmd(),
 		pruning.Cmd(ac.newSnapshotsApp, gaia.DefaultNodeHome),
