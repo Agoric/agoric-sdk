@@ -3,6 +3,7 @@ import { test } from './prepare-test-env-ava.js';
 
 import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
+import { testFullOrderEQ } from '@agoric/internal/tools/ava-full-order-eq.js';
 import {
   makePublishKit,
   makeStoredPublishKit,
@@ -48,7 +49,8 @@ test('stored subscription', async t => {
     );
     const storedDecoded = JSON.parse(storedEncoded);
     const storedValue = await E(unserializer).fromCapData(storedDecoded);
-    t.deepEqual(
+    testFullOrderEQ(
+      t,
       storedValue,
       origValue,
       `check stored value against original ${description}`,
@@ -111,7 +113,8 @@ test('stored subscriber', async t => {
     );
     const storedDecoded = JSON.parse(storedEncoded);
     const storedValue = await E(unserializer).fromCapData(storedDecoded);
-    t.deepEqual(
+    testFullOrderEQ(
+      t,
       storedValue,
       origValue,
       `check stored value against original ${description}`,

@@ -1,7 +1,9 @@
 // @ts-nocheck
+// eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
+import { passableSymbolForName } from '@agoric/internal';
+import { testFullOrderEQ } from '@agoric/internal/tools/ava-full-order-eq.js';
 import { kser, kslot, kunser } from '@agoric/kmarshal';
 import {
   buildVatController,
@@ -259,7 +261,7 @@ test('local promises are rejected by vat upgrade', async t => {
     return awaitRun(kpid);
   };
 
-  const S = Symbol.for('passable');
+  const S = passableSymbolForName('passable');
   const watcher = await messageToVat('bootstrap', 'createVat', {
     name: 'watcher',
     bundleCapName: 'watcher',
@@ -268,7 +270,7 @@ test('local promises are rejected by vat upgrade', async t => {
   await messageToObject(watcher, 'watchLocalPromise', 'fulfilled', S);
   await messageToObject(watcher, 'watchLocalPromise', 'rejected', undefined, S);
   const v1Settlements = await messageToObject(watcher, 'getSettlements');
-  t.deepEqual(v1Settlements, {
+  testFullOrderEQ(t, v1Settlements, {
     fulfilled: { status: 'fulfilled', value: S },
     rejected: { status: 'rejected', reason: S },
   });
@@ -277,7 +279,7 @@ test('local promises are rejected by vat upgrade', async t => {
     bundleCapName: 'watcher',
   });
   const v2Settlements = await messageToObject(watcher, 'getSettlements');
-  t.deepEqual(v2Settlements, {
+  testFullOrderEQ(t, v2Settlements, {
     fulfilled: { status: 'fulfilled', value: S },
     rejected: { status: 'rejected', reason: S },
     orphaned: {
