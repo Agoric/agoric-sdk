@@ -20,7 +20,7 @@
     "lint:types": "yarn run -T tsc"
   },
   "dependencies": {
-    "@agoric/base-zone": "^0.1.0",
+    "@agoric/base-zone": "workspace:*",
     "@endo/common": "^1.2.10",
     "@endo/compartment-mapper": "^1.6.0",
     "@endo/errors": "^1.2.10",
@@ -37,7 +37,7 @@
     "jessie.js": "^0.3.4"
   },
   "devDependencies": {
-    "@agoric/cosmic-proto": "^0.4.0",
+    "@agoric/cosmic-proto": "workspace:*",
     "@endo/exo": "^1.5.9",
     "@endo/init": "^1.1.9",
     "@fast-check/ava": "^2.0.1",

@@ -164,7 +164,7 @@
     "access": "public"
   },
   "devDependencies": {
-    "@agoric/cosmos": "^0.34.1",
+    "@agoric/cosmos": "workspace:*",
     "@ava/typescript": "^5.0.0",
     "@cosmology/telescope": "^1.12.8",
     "@endo/bundle-source": "^4.0.0",

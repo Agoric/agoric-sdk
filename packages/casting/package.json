@@ -22,9 +22,9 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/internal": "^0.3.2",
-    "@agoric/notifier": "^0.6.2",
-    "@agoric/store": "^0.9.2",
+    "@agoric/internal": "workspace:*",
+    "@agoric/notifier": "workspace:*",
+    "@agoric/store": "workspace:*",
     "@cosmjs/encoding": "^0.33.0",
     "@cosmjs/proto-signing": "^0.33.0",
     "@cosmjs/stargate": "^0.33.0",
@@ -37,7 +37,7 @@
     "@endo/promise-kit": "^1.1.10"
   },
   "devDependencies": {
-    "@agoric/cosmic-proto": "^0.4.0",
+    "@agoric/cosmic-proto": "workspace:*",
     "@endo/ses-ava": "^1.2.10",
     "ava": "^5.3.0",
     "c8": "^10.1.3",
