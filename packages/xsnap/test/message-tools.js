@@ -55,3 +55,24 @@ export function options({ spawn, os, fs, tmpName }) {
     messages,
   });
 }
+
+/** @param {any} logs */
+export const filterRepairLogs = logs => {
+  // This flag and the filter below remove the SES Removing unpermitted
+  // intrinsics warnings that sometimes occur when we upgrade XS ahead
+  // of updating the SES intrinsics permits.
+  let inGroup = false;
+  return logs.filter(parts => {
+    if (!Array.isArray(parts)) return true;
+    if (parts.length < 1) return true;
+    if (parts[0] === 'SES Removing unpermitted intrinsics') {
+      inGroup = true;
+      return false;
+    }
+    if (parts[0] === ' ' && inGroup) {
+      return false;
+    }
+    inGroup = false;
+    return true;
+  });
+};
