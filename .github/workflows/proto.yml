@@ -6,6 +6,7 @@ name: Protobuf
 on:
   pull_request:
   merge_group:
+  workflow_dispatch:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -64,3 +65,16 @@ jobs:
           echo "Please run (cd packages/cosmic-proto && ./update-protos.sh)"
           echo "and commit the result."
           exit 1
+
+  post-proto:
+    uses: ./.github/workflows/result.yml
+    if: (success() || failure())
+    secrets:
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+    with:
+      dry-run: ${{ github.event_name == 'pull_request' }}
+      needs-json: ${{ toJson(needs) }}
+    needs:
+      - up-to-date
+      - lint
+      - breakage

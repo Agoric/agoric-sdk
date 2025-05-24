@@ -9,6 +9,7 @@ env:
 
 on:
   pull_request:
+  workflow_dispatch:
   push:
     branches:
       - master
@@ -16,6 +17,10 @@ on:
       - 'dev-*'
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   flake-check:
@@ -63,3 +68,14 @@ jobs:
             # Build cosmic-swingset
             cd packages/cosmic-swingset && make
           '
+
+  post-nix-check:
+    uses: ./.github/workflows/result.yml
+    if: (success() || failure())
+    secrets:
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+    with:
+      dry-run: ${{ github.event_name == 'pull_request' }}
+      needs-json: ${{ toJSON(needs) }}
+    needs:
+      - flake-check

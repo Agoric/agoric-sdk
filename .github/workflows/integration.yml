@@ -40,6 +40,27 @@ jobs:
   pre_check:
     uses: ./.github/workflows/pre-check-integration.yml
 
+  # Convert GETTING_STARTED_MATRIX_CLI into a matrix for the getting started
+  # tests.
+  getting-started-matrix:
+    needs: pre_check
+    if: needs.pre_check.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.generate.outputs.result }}
+    steps:
+      - name: Generate matrix for getting started tests
+        id: generate
+        uses: actions/github-script@v7
+        with:
+          result-encoding: string
+          script: |
+            const matrix = {
+              cli: JSON.parse(process.env.GETTING_STARTED_MATRIX_CLI || '[]'),
+            };
+            console.log('matrix:', matrix);
+            return JSON.stringify(matrix);
+
   # This job is meant to emulate what developers working with the Agoric
   # platform will experience.
   # It should be kept in sync with the "getting started" workflow at
@@ -415,3 +436,14 @@ jobs:
             if (conclusion === 'failure') {
               core.setFailed('Integration tests failed')
             }
+
+  post-integration:
+    uses: ./.github/workflows/result.yml
+    if: (success() || failure())
+    secrets:
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+    with:
+      dry-run: ${{ github.event_name == 'pull_request' }}
+      needs-json: ${{ toJSON(needs) }}
+    needs:
+      - finalize-integration-result

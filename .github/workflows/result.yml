@@ -1,0 +1,155 @@
+name: Workflow result post-processing
+on:
+  workflow_call:
+    inputs:
+      dry-run:
+        description: Whether this is a dry run (no notifications).
+        required: false
+        type: boolean
+        default: false
+      needs-json:
+        description: The JSONified needs context of the job calling this workflow.
+        required: true
+        type: string
+      to:
+        description: The name of recipient to send the message to.
+        required: false
+        type: string
+        default: ops-engineering
+      from:
+        description: The name of the user to send the message as.
+        required: false
+        type: string
+        default: Agoric SDK CI
+      message:
+        description: Message to be sent ({0} will be replaced with "failing" or "passing again").
+        required: false
+        type: string
+        default: Workflow result is {0}
+    secrets:
+      SLACK_WEBHOOK:
+        description: The Slack webhook URL to send the message to.
+        required: false
+
+jobs:
+  result:
+    runs-on: ubuntu-latest
+    outputs:
+      result-jobs-json: ${{ steps.extract.outputs.result-jobs-json }}
+    steps:
+      - name: Extract context outputs
+        id: extract
+        uses: actions/github-script@v7
+        env:
+          NEEDS_JSON: ${{ inputs.needs-json }}
+        with:
+          result-encoding: string
+          script: |
+            // Set the result of the context job based on the needs input.
+            // This is used to determine if the workflow should proceed to success or failure.
+            const extractResult = needs => {
+              const resultJobs = {};
+
+              let someSuccess = false;
+              let someSkipped = false;
+              for (const name of Object.keys(needs).sort()) {
+                const jobResult = needs[name].result;
+                core.info(`${name}: ${jobResult}`);
+
+                resultJobs[jobResult] ||= [];
+                resultJobs[jobResult].push(name);
+                switch (jobResult) {
+                  case 'success':
+                    someSuccess = true;
+                    break;
+                  case 'skipped':
+                    someSkipped = true;
+                    break;
+                  case 'failure':
+                    return 'failure';
+                  case 'cancelled':
+                    return 'cancelled';
+                  default:
+                    return 'unknown';
+                }
+              }
+
+              if (someSkipped && !someSuccess) {
+                // If no jobs succeeded, it's a skip.
+                return 'skipped';
+              }
+              return { result: 'success', resultJobs };
+            };
+
+            core.info(`needs: ${process.env.NEEDS_JSON}`);
+            const needs = JSON.parse(process.env.NEEDS_JSON);
+            const { result, resultJobs } = extractResult(needs);
+            core.info(`Extracted result: ${result}`);
+
+            const resultJobsJson = JSON.stringify(resultJobs);
+
+            core.info(`resultJobs: ${resultJobsJson}`);
+            core.setOutput('result-jobs-json', resultJobsJson);
+
+            return result;
+
+      - name: Checkout .github/actions for last-workflow-status
+        if: ${{ steps.extract.outputs.result == 'success' }}
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github/actions
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Get previous workflow status
+        if: ${{ steps.extract.outputs.result == 'success' }}
+        uses: ./.github/actions/last-workflow-status
+        id: last_status
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build success after failure message
+        if: ${{ steps.extract.outputs.result == 'success' && steps.last_status.outputs.last_status == 'failure' }}
+        shell: bash
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        run: |
+          set -x
+          # Build the success message to be sent to Slack.
+          echo "JOB_STATUS_MESSAGE=passing again" >> $GITHUB_ENV
+          echo "SLACK_ICON_EMOJI=:white_check_mark:" >> $GITHUB_ENV
+          echo "SLACK_COLOR=good" >> $GITHUB_ENV
+
+          # Trigger the notify action.
+          echo "SLACK_WEBHOOK=$SLACK_WEBHOOK" >> $GITHUB_ENV
+
+      - name: Build failure message
+        if: ${{ failure() || steps.extract.outputs.result == 'failure' }}
+        shell: bash
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        run: |
+          set -x
+          # Build the failure message to be sent to Slack.
+          echo "JOB_STATUS_MESSAGE=failing" >> $GITHUB_ENV
+          echo "SLACK_ICON_EMOJI=:skull:" >> $GITHUB_ENV
+          echo "SLACK_COLOR=danger" >> $GITHUB_ENV
+
+          # Trigger the notify action.
+          echo "SLACK_WEBHOOK=$SLACK_WEBHOOK" >> $GITHUB_ENV
+
+      - name: Notify Slack
+        if: ${{ env.SLACK_WEBHOOK && !inputs.dry-run }}
+        uses: rtCamp/action-slack-notify@v2.2.0
+        env:
+          # We inherit all the variables set in the previous steps.
+          SLACK_CHANNEL: ${{ inputs.to }}
+          SLACK_USERNAME: ${{ inputs.from }}
+          SLACK_MESSAGE: ${{ format(inputs.message, env.JOB_STATUS_MESSAGE) }}
+          SLACK_FOOTER: ''
+
+      - name: Propagate failure
+        if: ${{ steps.extract.outputs.result == 'failure' }}
+        shell: bash
+        run: exit 1
