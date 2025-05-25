@@ -8,7 +8,7 @@ if [ "$#" -ne 1 ]; then
 fi
 
 # for better compatibility
-BSD_SED="$(sed --help 2>&1 | sed 2q | grep -qe '-i ' && echo 1 || true)"
+BSD_SED="$({ sed --help; true; } 2>&1 | sed -n 's/.*-i .*/BSD/p; 2q')"
 function sedi() {
   if [ -n "$BSD_SED" ]; then
     sed -i '' "$@"
