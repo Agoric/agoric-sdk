@@ -51,6 +51,7 @@ func RunWithController(sendToController vm.Sender) {
 			os.Exit(e.Code)
 
 		default:
+			fmt.Fprintf(os.Stderr, "Error: %v\n", e)
 			os.Exit(1)
 		}
 	}

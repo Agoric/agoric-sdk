@@ -27,6 +27,7 @@
     "@endo/errors": "^1.2.10",
     "@endo/init": "^1.1.9",
     "@endo/marshal": "^1.6.4",
+    "@endo/promise-kit": "^1.1.10",
     "@endo/stream": "^1.2.10",
     "@opentelemetry/api": "~1.9.0",
     "@opentelemetry/api-logs": "0.57.1",

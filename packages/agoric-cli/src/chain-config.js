@@ -255,8 +255,14 @@ export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
 
   // Set the denomination for different modules.
   genesis.app_state.mint.params.mint_denom = MINT_DENOM;
-  genesis.app_state.gov.deposit_params.min_deposit = GOV_DEPOSIT_COINS;
-  genesis.app_state.gov.voting_params.voting_period = GOV_VOTING_PERIOD;
+
+  {
+    const gov = genesis.app_state.gov;
+    const depositParams = gov.params ?? gov.deposit_params;
+    const votingParams = gov.params ?? gov.voting_params;
+    depositParams.min_deposit = GOV_DEPOSIT_COINS;
+    votingParams.voting_period = GOV_VOTING_PERIOD;
+  }
 
   // Reduce the cost of a transaction.
   genesis.app_state.auth.params.tx_size_cost_per_byte = '1';
