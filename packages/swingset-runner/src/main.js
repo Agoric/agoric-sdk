@@ -304,7 +304,8 @@ export async function main() {
         break;
       case '--logtag':
         nextArg = argv.shift();
-        nextArg && (logTag = nextArg);
+        if (nextArg) logTag = nextArg;
+        else throw Error('Missing value for --logtag');
         break;
       case '--slog':
         slogFile = argv.shift();
@@ -335,12 +336,14 @@ export async function main() {
         break;
       case '--dumpdir':
         nextArg = argv.shift();
-        nextArg && (dumpDir = nextArg);
+        if (nextArg) dumpDir = nextArg;
+        else throw Error('Missing value for --dumpdir');
         doDumps = true;
         break;
       case '--dumptag':
         nextArg = argv.shift();
-        nextArg && (dumpTag = nextArg);
+        if (nextArg) dumpTag = nextArg;
+        else throw Error('Missing value for --dumptag');
         doDumps = true;
         break;
       case '--dbdir':
