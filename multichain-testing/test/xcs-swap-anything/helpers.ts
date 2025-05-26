@@ -267,7 +267,7 @@ export const osmosisSwapTools = async t => {
   };
 
   const downloadXcsContracts = async (
-    xcsContracts,
+    xcsContracts: Contracts,
     branch: string = osmosisBranch,
     scriptPath: string = scriptLocalPath,
     artifactsPath: string = xcsArtifactsPath,
@@ -691,7 +691,6 @@ export const osmosisSwapTools = async t => {
       swaprouterAddress,
       queryMsg,
     );
-    console.log('LOG: ', pool_route);
 
     return pool_route;
   };

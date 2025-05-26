@@ -667,13 +667,17 @@ test.serial('bad swapOut receiver, via addressHooks', async t => {
 });
 
 test.serial('native ATOM for Osmo using PFM, receiver on Agoric', async t => {
-  const { wallets, vstorageClient, retryUntilCondition, useChain, getContractsInfo, getDenomHash } = t.context;
-
-  const { client: cosmosHubClient, address: cosmosHubAddr } = await createFundedWalletAndClient(
-    t.log,
-    'cosmoshub',
+  const {
+    wallets,
+    vstorageClient,
+    retryUntilCondition,
     useChain,
-  );
+    getContractsInfo,
+    getDenomHash,
+  } = t.context;
+
+  const { client: cosmosHubClient, address: cosmosHubAddr } =
+    await createFundedWalletAndClient(t.log, 'cosmoshub', useChain);
 
   const cosmosBalanceResult = await retryUntilCondition(
     () => cosmosHubClient.getAllBalances(cosmosHubAddr),
@@ -681,7 +685,7 @@ test.serial('native ATOM for Osmo using PFM, receiver on Agoric', async t => {
     `Faucet balances found for ${cosmosHubAddr}`,
   );
   t.log(cosmosHubAddr, cosmosBalanceResult);
-  t.pass()
+  t.pass();
 
   const apiUrl = await useChain('agoric').getRestEndpoint();
   const queryClient = makeQueryClient(apiUrl);
@@ -716,7 +720,9 @@ test.serial('native ATOM for Osmo using PFM, receiver on Agoric', async t => {
   const txRes = await cosmosHubClient.sendIbcTokens(...transferArgs);
   if (txRes && txRes.code !== 0) {
     console.error(txRes);
-    throw Error(`failed to ibc transfer funds to ${orcContractReceiverAddress}`);
+    throw Error(
+      `failed to ibc transfer funds to ${orcContractReceiverAddress}`,
+    );
   }
   const { events: _events, ...txRest } = txRes;
   console.log(txRest);

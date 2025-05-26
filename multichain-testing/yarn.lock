@@ -642,21 +642,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@chain-registry/types@npm:^0.50.136":
-  version: 0.50.136
-  resolution: "@chain-registry/types@npm:0.50.136"
-  checksum: 10c0/bd5406cdba8b057c6055a538ba50bdd95c8291fef8abbfaf75673f826718064e22e8d2a74c462070bd162dfc5c80a9c7ff94a0f555bddee61cee3cdf9d27e135
+"@chain-registry/types@npm:^0.50.138":
+  version: 0.50.138
+  resolution: "@chain-registry/types@npm:0.50.138"
+  checksum: 10c0/c17ffcc9fb8d464192fe9906312af3b39f08a11e826e56896e443da839afe438d3e983f26143dc2035ee40560ce13319f9b502cf1b09f02bbf294606777b3e15
   languageName: node
   linkType: hard
 
 "@chain-registry/utils@npm:^1.17.0":
-  version: 1.51.136
-  resolution: "@chain-registry/utils@npm:1.51.136"
+  version: 1.51.138
+  resolution: "@chain-registry/utils@npm:1.51.138"
   dependencies:
-    "@chain-registry/types": "npm:^0.50.136"
+    "@chain-registry/types": "npm:^0.50.138"
     bignumber.js: "npm:9.1.2"
     sha.js: "npm:^2.4.11"
-  checksum: 10c0/c28e5ab6ce893108600cab5d7a758c40cf9cbfe68359d6eb93f3ebf201336c5eca13746df8700952021e44547f88679964e98ea664ee6330939c14eb78dafd85
+  checksum: 10c0/e0d89ba0fbf6e86e394674dd77e60b10363bc3b4f0ba75a855c50c999416d7dfeb3dc1a072b67ad7cbb31e9323ab7f059b4a1047add7aaf61be187ae6893705b
   languageName: node
   linkType: hard
 
@@ -684,7 +684,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cosmjs/amino@npm:^0.33.0, @cosmjs/amino@npm:^0.33.1":
+"@cosmjs/amino@npm:^0.33.1":
   version: 0.33.1
   resolution: "@cosmjs/amino@npm:0.33.1"
   dependencies:
@@ -815,7 +815,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cosmjs/math@npm:^0.33.0, @cosmjs/math@npm:^0.33.1":
+"@cosmjs/math@npm:^0.33.1":
   version: 0.33.1
   resolution: "@cosmjs/math@npm:0.33.1"
   dependencies:
@@ -824,17 +824,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cosmjs/proto-signing@npm:0.33.0":
-  version: 0.33.0
-  resolution: "@cosmjs/proto-signing@npm:0.33.0"
+"@cosmjs/proto-signing@npm:0.33.1":
+  version: 0.33.1
+  resolution: "@cosmjs/proto-signing@npm:0.33.1"
   dependencies:
-    "@cosmjs/amino": "npm:^0.33.0"
-    "@cosmjs/crypto": "npm:^0.33.0"
-    "@cosmjs/encoding": "npm:^0.33.0"
-    "@cosmjs/math": "npm:^0.33.0"
-    "@cosmjs/utils": "npm:^0.33.0"
+    "@cosmjs/amino": "npm:^0.33.1"
+    "@cosmjs/crypto": "npm:^0.33.1"
+    "@cosmjs/encoding": "npm:^0.33.1"
+    "@cosmjs/math": "npm:^0.33.1"
+    "@cosmjs/utils": "npm:^0.33.1"
     cosmjs-types: "npm:^0.9.0"
-  checksum: 10c0/7f9ebc676249db180191bd3ffc84481341482c7c6d03c82a6cbd0350bdd17862e2058882044ec68e8d01aa11c600c79c9c11ef5dbdc0bc6382c708cf1d1a12b8
+  checksum: 10c0/d8516fccad54264e9893623fdf7d4a04927fce1ac5a0c799eab422a7be000e7f055e5ded44172a7cb97ad991bffba4f9fefa786074070bc4151ee1faacd7070d
   languageName: node
   linkType: hard
 
@@ -862,7 +862,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cosmjs/stargate@npm:^0.33.0":
+"@cosmjs/stargate@npm:0.33.1":
   version: 0.33.1
   resolution: "@cosmjs/stargate@npm:0.33.1"
   dependencies:
@@ -939,7 +939,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cosmjs/utils@npm:^0.33.0, @cosmjs/utils@npm:^0.33.1":
+"@cosmjs/utils@npm:^0.33.1":
   version: 0.33.1
   resolution: "@cosmjs/utils@npm:0.33.1"
   checksum: 10c0/fe675de1caa1028ece747ea6a96a8a4f5475084982adf5f200abfdf0c2bb5173668ea6437c03cd03bf5639c8540363ac934cf4868686f6577f2640c9d468b8d1
@@ -1481,9 +1481,9 @@ __metadata:
   linkType: hard
 
 "@noble/hashes@npm:^1, @noble/hashes@npm:^1.2.0, @noble/hashes@npm:^1.5.0":
-  version: 1.6.1
-  resolution: "@noble/hashes@npm:1.6.1"
-  checksum: 10c0/27643cd8b551bc933b57cc29aa8c8763d586552fc4c3e06ecf7897f55be3463c0c9dff7f6ebacd88e5ce6d0cdb5415ca4874d0cf4359b5ea4a85be21ada03aab
+  version: 1.8.0
+  resolution: "@noble/hashes@npm:1.8.0"
+  checksum: 10c0/06a0b52c81a6fa7f04d67762e08b2c476a00285858150caeaaff4037356dd5e119f45b2a530f638b77a5eeca013168ec1b655db41bae3236cb2e9d511484fc77
   languageName: node
   linkType: hard
 
@@ -1624,8 +1624,8 @@ __metadata:
   linkType: hard
 
 "@types/node@npm:*, @types/node@npm:^22.0.0":
-  version: 22.7.8
-  resolution: "@types/node@npm:22.7.8"
+  version: 22.15.21
+  resolution: "@types/node@npm:22.15.21"
   dependencies:
     undici-types: "npm:~6.21.0"
   checksum: 10c0/f092bbccda2131c2b2c8f720338080aa0ef1d928f5f1062c03954a4f7dafa7ee3ed29bc3e51bd4e2584473b3d943c637a2b39ad7174898970818270187cf10c1
@@ -4730,14 +4730,14 @@ __metadata:
   linkType: hard
 
 "tar-fs@npm:^2.0.0":
-  version: 2.1.2
-  resolution: "tar-fs@npm:2.1.2"
+  version: 2.1.3
+  resolution: "tar-fs@npm:2.1.3"
   dependencies:
     chownr: "npm:^1.1.1"
     mkdirp-classic: "npm:^0.5.2"
     pump: "npm:^3.0.0"
     tar-stream: "npm:^2.1.4"
-  checksum: 10c0/9c704bd4a53be7565caf34ed001d1428532457fe3546d8fc1233f0f0882c3d2403f8602e8046e0b0adeb31fe95336572a69fb28851a391523126b697537670fc
+  checksum: 10c0/472ee0c3c862605165163113ab6924f411c07506a1fb24c51a1a80085f0d4d381d86d2fd6b189236c8d932d1cd97b69cce35016767ceb658a35f7584fe77f305
   languageName: node
   linkType: hard
 
@@ -4783,12 +4783,12 @@ __metadata:
   linkType: hard
 
 "tinyglobby@npm:^0.2.12":
-  version: 0.2.13
-  resolution: "tinyglobby@npm:0.2.13"
+  version: 0.2.14
+  resolution: "tinyglobby@npm:0.2.14"
   dependencies:
     fdir: "npm:^6.4.4"
     picomatch: "npm:^4.0.2"
-  checksum: 10c0/ef07dfaa7b26936601d3f6d999f7928a4d1c6234c5eb36896bb88681947c0d459b7ebe797022400e555fe4b894db06e922b95d0ce60cb05fd827a0a66326b18c
+  checksum: 10c0/f789ed6c924287a9b7d3612056ed0cda67306cd2c80c249fd280cf1504742b12583a2089b61f4abbd24605f390809017240e250241f09938054c9b363e51c0a6
   languageName: node
   linkType: hard
 
