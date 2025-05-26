@@ -1,5 +1,4 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
-/* eslint-disable @jessie.js/safe-await-separator */
 
 import {
   agoric,
