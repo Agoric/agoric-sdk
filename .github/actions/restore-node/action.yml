@@ -49,7 +49,7 @@ runs:
         else
           if test "$VERSION_IDENTIFIER" == "node-old" || test "$VERSION_IDENTIFIER" == "xs"
           then
-            OUTPUT_NODE_VERSION="18"
+            OUTPUT_NODE_VERSION="20"
           fi
         fi
 

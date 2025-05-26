@@ -11,6 +11,10 @@ import {
   Params,
   type ParamsSDKType,
 } from './transfer.js';
+import {
+  Coin,
+  type CoinSDKType,
+} from '../../../../cosmos/base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
@@ -180,6 +184,30 @@ export interface QueryEscrowAddressResponseProtoMsg {
 /** QueryEscrowAddressResponse is the response type of the EscrowAddress RPC method. */
 export interface QueryEscrowAddressResponseSDKType {
   escrow_address: string;
+}
+/** QueryTotalEscrowForDenomRequest is the request type for TotalEscrowForDenom RPC method. */
+export interface QueryTotalEscrowForDenomRequest {
+  denom: string;
+}
+export interface QueryTotalEscrowForDenomRequestProtoMsg {
+  typeUrl: '/ibc.applications.transfer.v1.QueryTotalEscrowForDenomRequest';
+  value: Uint8Array;
+}
+/** QueryTotalEscrowForDenomRequest is the request type for TotalEscrowForDenom RPC method. */
+export interface QueryTotalEscrowForDenomRequestSDKType {
+  denom: string;
+}
+/** QueryTotalEscrowForDenomResponse is the response type for TotalEscrowForDenom RPC method. */
+export interface QueryTotalEscrowForDenomResponse {
+  amount: Coin;
+}
+export interface QueryTotalEscrowForDenomResponseProtoMsg {
+  typeUrl: '/ibc.applications.transfer.v1.QueryTotalEscrowForDenomResponse';
+  value: Uint8Array;
+}
+/** QueryTotalEscrowForDenomResponse is the response type for TotalEscrowForDenom RPC method. */
+export interface QueryTotalEscrowForDenomResponseSDKType {
+  amount: CoinSDKType;
 }
 function createBaseQueryDenomTraceRequest(): QueryDenomTraceRequest {
   return {
@@ -919,6 +947,156 @@ export const QueryEscrowAddressResponse = {
     return {
       typeUrl: '/ibc.applications.transfer.v1.QueryEscrowAddressResponse',
       value: QueryEscrowAddressResponse.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryTotalEscrowForDenomRequest(): QueryTotalEscrowForDenomRequest {
+  return {
+    denom: '',
+  };
+}
+export const QueryTotalEscrowForDenomRequest = {
+  typeUrl: '/ibc.applications.transfer.v1.QueryTotalEscrowForDenomRequest',
+  encode(
+    message: QueryTotalEscrowForDenomRequest,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.denom !== '') {
+      writer.uint32(10).string(message.denom);
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryTotalEscrowForDenomRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryTotalEscrowForDenomRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.denom = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryTotalEscrowForDenomRequest {
+    return {
+      denom: isSet(object.denom) ? String(object.denom) : '',
+    };
+  },
+  toJSON(
+    message: QueryTotalEscrowForDenomRequest,
+  ): JsonSafe<QueryTotalEscrowForDenomRequest> {
+    const obj: any = {};
+    message.denom !== undefined && (obj.denom = message.denom);
+    return obj;
+  },
+  fromPartial(
+    object: Partial<QueryTotalEscrowForDenomRequest>,
+  ): QueryTotalEscrowForDenomRequest {
+    const message = createBaseQueryTotalEscrowForDenomRequest();
+    message.denom = object.denom ?? '';
+    return message;
+  },
+  fromProtoMsg(
+    message: QueryTotalEscrowForDenomRequestProtoMsg,
+  ): QueryTotalEscrowForDenomRequest {
+    return QueryTotalEscrowForDenomRequest.decode(message.value);
+  },
+  toProto(message: QueryTotalEscrowForDenomRequest): Uint8Array {
+    return QueryTotalEscrowForDenomRequest.encode(message).finish();
+  },
+  toProtoMsg(
+    message: QueryTotalEscrowForDenomRequest,
+  ): QueryTotalEscrowForDenomRequestProtoMsg {
+    return {
+      typeUrl: '/ibc.applications.transfer.v1.QueryTotalEscrowForDenomRequest',
+      value: QueryTotalEscrowForDenomRequest.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryTotalEscrowForDenomResponse(): QueryTotalEscrowForDenomResponse {
+  return {
+    amount: Coin.fromPartial({}),
+  };
+}
+export const QueryTotalEscrowForDenomResponse = {
+  typeUrl: '/ibc.applications.transfer.v1.QueryTotalEscrowForDenomResponse',
+  encode(
+    message: QueryTotalEscrowForDenomResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.amount !== undefined) {
+      Coin.encode(message.amount, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryTotalEscrowForDenomResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryTotalEscrowForDenomResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.amount = Coin.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryTotalEscrowForDenomResponse {
+    return {
+      amount: isSet(object.amount) ? Coin.fromJSON(object.amount) : undefined,
+    };
+  },
+  toJSON(
+    message: QueryTotalEscrowForDenomResponse,
+  ): JsonSafe<QueryTotalEscrowForDenomResponse> {
+    const obj: any = {};
+    message.amount !== undefined &&
+      (obj.amount = message.amount ? Coin.toJSON(message.amount) : undefined);
+    return obj;
+  },
+  fromPartial(
+    object: Partial<QueryTotalEscrowForDenomResponse>,
+  ): QueryTotalEscrowForDenomResponse {
+    const message = createBaseQueryTotalEscrowForDenomResponse();
+    message.amount =
+      object.amount !== undefined && object.amount !== null
+        ? Coin.fromPartial(object.amount)
+        : undefined;
+    return message;
+  },
+  fromProtoMsg(
+    message: QueryTotalEscrowForDenomResponseProtoMsg,
+  ): QueryTotalEscrowForDenomResponse {
+    return QueryTotalEscrowForDenomResponse.decode(message.value);
+  },
+  toProto(message: QueryTotalEscrowForDenomResponse): Uint8Array {
+    return QueryTotalEscrowForDenomResponse.encode(message).finish();
+  },
+  toProtoMsg(
+    message: QueryTotalEscrowForDenomResponse,
+  ): QueryTotalEscrowForDenomResponseProtoMsg {
+    return {
+      typeUrl: '/ibc.applications.transfer.v1.QueryTotalEscrowForDenomResponse',
+      value: QueryTotalEscrowForDenomResponse.encode(message).finish(),
     };
   },
 };

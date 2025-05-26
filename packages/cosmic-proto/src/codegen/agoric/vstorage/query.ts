@@ -52,8 +52,10 @@ export interface QueryCapDataRequest {
   /**
    * remotableValueFormat indicates how to transform references to opaque but
    * distinguishable Remotables into readable embedded representations.
-   * * "object" represents each Remotable as an `{ id, allegedName }` object, e.g. `{ "id": "board007", "allegedName": "IST brand" }`.
-   * * "string" represents each Remotable as a string with bracket-wrapped contents including its alleged name and id, e.g. "[Alleged: IST brand <board007>]".
+   * * "object" represents each Remotable as an `{ id, allegedName }` object, e.g. `{ "id": "board007", "allegedName":
+   * "IST brand" }`.
+   * * "string" represents each Remotable as a string with bracket-wrapped contents including its alleged name and id,
+   * e.g. "[Alleged: IST brand <board007>]".
    */
   remotableValueFormat: string;
 }

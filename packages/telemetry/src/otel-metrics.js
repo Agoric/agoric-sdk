@@ -10,7 +10,8 @@ import {
 } from '@agoric/internal/src/metrics.js';
 
 /**
- * @import {MeterProvider, MetricOptions, ObservableCounter, ObservableUpDownCounter} from '@opentelemetry/api';
+ * @import {MetricOptions, ObservableCounter, ObservableUpDownCounter} from '@opentelemetry/api';
+ * @import {MeterProvider} from '@opentelemetry/sdk-metrics';
  * @import {TotalMap} from '@agoric/internal';
  */
 
@@ -21,6 +22,10 @@ export const makeSlogSender = async (opts = /** @type {any} */ ({})) => {
   const { otelMeterName, otelMeterProvider } = opts;
   if (!otelMeterName) throw Fail`OTel meter name is required`;
   if (!otelMeterProvider) return;
+
+  const shutdown = async () => {
+    await otelMeterProvider.shutdown();
+  };
 
   const otelMeter = otelMeterProvider.getMeter(otelMeterName);
 
@@ -218,6 +223,7 @@ export const makeSlogSender = async (opts = /** @type {any} */ ({})) => {
     }
   };
   return Object.assign(slogSender, {
+    shutdown,
     usesJsonObject: false,
   });
 };

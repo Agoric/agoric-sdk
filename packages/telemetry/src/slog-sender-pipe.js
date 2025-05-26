@@ -12,6 +12,7 @@ import { promisify } from 'util';
 import anylogger from 'anylogger';
 
 import { q, Fail } from '@endo/errors';
+import { makePromiseKit } from '@endo/promise-kit';
 import { makeQueue } from '@endo/stream';
 
 import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
@@ -72,6 +73,16 @@ export const makeSlogSender = async options => {
     env,
   });
   // logger.log('done fork');
+
+  const exitKit = makePromiseKit();
+  cp.on('error', error => {
+    // An exit event *might* be coming, so wait a tick.
+    setImmediate(() => exitKit.resolve({ error }));
+  });
+  cp.on('exit', (exitCode, signal) => {
+    exitKit.resolve({ exitCode, signal });
+  });
+
   /** @type {(msg: Record<string, unknown> & {type: string}) => Promise<void>} */
   const rawSend = promisify(cp.send.bind(cp));
   const pipeSend = withMutex(rawSend);
@@ -132,6 +143,7 @@ export const makeSlogSender = async options => {
 
     await flush();
     cp.disconnect();
+    await exitKit.promise;
   };
   registerShutdown(shutdown);
 

@@ -5,7 +5,7 @@
   "type": "module",
   "main": "./src/importManager.js",
   "engines": {
-    "node": "^18.12 || ^20.9 || ^22.11"
+    "node": "^20.9 || ^22.11"
   },
   "scripts": {
     "build": "exit 0",

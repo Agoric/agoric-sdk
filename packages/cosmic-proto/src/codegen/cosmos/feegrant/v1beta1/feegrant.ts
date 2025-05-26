@@ -397,7 +397,8 @@ export const AllowedMsgAllowance = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.allowance = FeeAllowanceI_InterfaceDecoder(reader) as Any;
+          message.allowance =
+            Cosmos_feegrantv1beta1FeeAllowanceI_InterfaceDecoder(reader) as Any;
           break;
         case 2:
           message.allowedMessages.push(reader.string());
@@ -493,7 +494,8 @@ export const Grant = {
           message.grantee = reader.string();
           break;
         case 3:
-          message.allowance = FeeAllowanceI_InterfaceDecoder(reader) as Any;
+          message.allowance =
+            Cosmos_feegrantv1beta1FeeAllowanceI_InterfaceDecoder(reader) as Any;
           break;
         default:
           reader.skipType(tag & 7);
@@ -544,7 +546,7 @@ export const Grant = {
     };
   },
 };
-export const FeeAllowanceI_InterfaceDecoder = (
+export const Cosmos_feegrantv1beta1FeeAllowanceI_InterfaceDecoder = (
   input: BinaryReader | Uint8Array,
 ): BasicAllowance | PeriodicAllowance | AllowedMsgAllowance | Any => {
   const reader =

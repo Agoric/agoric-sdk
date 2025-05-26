@@ -14,7 +14,6 @@ export * from './gogoproto/bundle.js';
 export * from './google/bundle.js';
 export * from './ibc/bundle.js';
 export * from './icq/bundle.js';
-export * from './ics23/bundle.js';
 export * from './stride/bundle.js';
 export * from './tendermint/bundle.js';
 export * from './decimals.js';
