@@ -759,13 +759,13 @@ const main = async (argv, options = {}, powers = {}) => {
   const testKit = await makeCosmicSwingsetTestKit(receiveBridgeSend, config);
 
   const {
-    EV,
     controller,
-    shutdown,
     getLastBlockInfo,
+    shutdown,
     pushQueueRecord,
     pushCoreEval,
     runNextBlock,
+    runUtils: { EV },
   } = testKit;
   const helpers = makeHelpers({ db, EV });
   const endowments = {

@@ -10,13 +10,11 @@ import {
 } from '@agoric/cosmic-swingset/tools/test-kit.js';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import type { ParamChangesOfferArgs } from '@agoric/inter-protocol/src/econCommitteeCharter.js';
-import { SECONDS_PER_DAY } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import { NonNullish } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
-import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import {
   makeAgoricNamesRemotesFromFakeStorage,
   slotToBoardRemote,
@@ -54,10 +52,11 @@ const makeDefaultTestContext = async () => {
     },
   );
 
-  const { controller, EV, runNextBlock } = swingsetTestKit;
+  const { runNextBlock, runUtils } = swingsetTestKit;
 
   await runNextBlock();
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
+  const { EV } = runUtils;
 
   // Wait for ATOM to make it into agoricNames
   await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
@@ -69,7 +68,7 @@ const makeDefaultTestContext = async () => {
   console.timeLog('DefaultTestContext', 'agoricNamesRemotes');
 
   const walletFactoryDriver = await makeWalletFactoryDriver(
-    makeRunUtils(controller),
+    runUtils,
     storage,
     agoricNamesRemotes,
   );
@@ -93,7 +92,7 @@ test.before(async t => (t.context = await makeDefaultTestContext()));
 test.after.always(t => t.context.shutdown());
 
 test.serial('metrics path', async t => {
-  const { EV } = t.context;
+  const { EV } = t.context.runUtils;
   const vaultFactoryKit =
     await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
   const vfTopics = await EV(vaultFactoryKit.publicFacet).getPublicTopics();
@@ -388,7 +387,7 @@ test.serial('open vault day later', async t => {
 
   const wd = await walletFactoryDriver.provideSmartWallet('agoric1later');
 
-  await advanceTimeBy(SECONDS_PER_DAY);
+  await advanceTimeBy(1, 'days');
 
   await wd.executeOfferMaker(Offers.vaults.OpenVault, {
     offerId: 'open-vault',

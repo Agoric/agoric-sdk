@@ -60,7 +60,7 @@ test.before(async t => (t.context = await makeTestContext()));
 test.after.always(t => t.context.shutdown?.());
 
 test.serial('bootstrap produces provisioning vat', async t => {
-  const { EV } = t.context;
+  const { EV } = t.context.runUtils;
   const provisioning = await EV.vat('bootstrap').consumeItem('provisioning');
   console.timeLog('DefaultTestContext', 'provisioning');
   t.log('provisioning', provisioning);
@@ -68,7 +68,7 @@ test.serial('bootstrap produces provisioning vat', async t => {
 });
 
 test.serial('bootstrap launches network, ibc vats', async t => {
-  const { EV } = t.context;
+  const { EV } = t.context.runUtils;
 
   t.log('network proposal executed');
   const vatStore = await EV.vat('bootstrap').consumeItem('vatStore');
@@ -77,7 +77,8 @@ test.serial('bootstrap launches network, ibc vats', async t => {
 });
 
 test.serial('test contracts are installed', async t => {
-  const { bundleCache, EV } = t.context;
+  const { bundleCache } = t.context;
+  const { EV } = t.context.runUtils;
   const zoe: ZoeService = await EV.vat('bootstrap').consumeItem('zoe');
   for (const [name, path] of entries(asset)) {
     const bundle = await bundleCache.load(path, name);
@@ -109,7 +110,8 @@ const upgradeVats = async (
 };
 
 test.serial('upgrade at many points in network API flow', async t => {
-  const { EV, installation } = t.context;
+  const { installation } = t.context;
+  const { EV } = t.context.runUtils;
   const portAllocator = await EV.vat('bootstrap').consumeItem('portAllocator');
   const zoe: ZoeService = await EV.vat('bootstrap').consumeItem('zoe');
 

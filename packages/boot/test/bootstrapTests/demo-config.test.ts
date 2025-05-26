@@ -74,7 +74,7 @@ test('sim/demo config provides home with .myAddressNameAdmin', async t => {
     ...devToolKeys,
   ].sort();
 
-  const { EV } = t.context;
+  const { EV } = t.context.runUtils;
 
   await t.notThrowsAsync(EV.vat('bootstrap').consumeItem('provisioning'));
   t.log('bootstrap produced provisioning vat');
@@ -86,7 +86,7 @@ test('sim/demo config provides home with .myAddressNameAdmin', async t => {
 });
 
 test('namesByAddress contains provisioned account', async t => {
-  const { EV } = t.context;
+  const { EV } = t.context.runUtils;
   const addr = 'agoric1234new';
   const home = await makeHomeFor(addr, EV);
   t.truthy(home);
@@ -96,7 +96,7 @@ test('namesByAddress contains provisioned account', async t => {
 });
 
 test('sim/demo config launches Vaults as expected by loadgen', async t => {
-  const { EV } = t.context;
+  const { EV } = t.context.runUtils;
   const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
   const vaultsInstance = await EV(agoricNames).lookup(
     'instance',
@@ -116,7 +116,7 @@ test('sim/demo config launches Vaults as expected by loadgen', async t => {
  * loadgen.
  */
 test('demo config meets loadgen constraint: no USDC', async t => {
-  const { EV } = t.context;
+  const { EV } = t.context.runUtils;
   const home = await makeHomeFor('addr123', EV);
   const pmtInfo = await EV(home.faucet).tapFaucet();
   const found = pmtInfo.find(p => p.issuerPetname === 'USDC');

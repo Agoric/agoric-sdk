@@ -20,7 +20,6 @@ import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 import { initSwingStore } from '@agoric/swing-store';
-import { TimeMath } from '@agoric/time';
 import {
   extractPortNums,
   makeLaunchChain,
@@ -445,7 +444,6 @@ export const makeCosmicSwingsetTestKit = async (
     await cleanupDB();
   };
   const { controller, bridgeInbound, timer } = internals;
-  const { queueAndRun, EV } = makeRunUtils(controller);
 
   // Remember information about the current block, starting with the init
   // message.
@@ -458,13 +456,21 @@ export const makeCosmicSwingsetTestKit = async (
   let lastBlockWalltime = Date.now();
   await blockingSend(initMessage);
 
+  const timeUnitMultiplier = {
+    seconds: 1,
+    minutes: 60,
+    hours: 60 * 60,
+    days: 60 * 60 * 24,
+  };
+
   /**
-   * @param {import('@agoric/time').TimestampValue} shift
+   * @param {number} shift
+   * @param {keyof typeof timeUnitMultiplier} unit
    */
-  const advanceTimeBy = async shift => {
+  const advanceTimeBy = (shift, unit) => {
     const { blockTime } = getLastBlockInfo();
-    shift = TimeMath.absValue(shift);
-    await runNextBlock({ blockTime: blockTime + Number(shift) });
+    const targetTime = blockTime + timeUnitMultiplier[unit] * shift;
+    return runNextBlock({ blockTime: targetTime });
   };
 
   /**
@@ -613,12 +619,11 @@ export const makeCosmicSwingsetTestKit = async (
     // Controller-oriented helpers.
     bridgeInbound,
     controller,
-    EV,
     /**
      * @param {string} bridgeId
      */
     getOutboundMessages: bridgeId => [...outboundMessages.get(bridgeId)],
-    queueAndRun,
+    runUtils: makeRunUtils(controller),
     timer,
 
     // Functions specific to this kit.

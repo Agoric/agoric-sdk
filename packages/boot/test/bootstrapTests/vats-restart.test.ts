@@ -13,7 +13,6 @@ import { NonNullish } from '@agoric/internal';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
-import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import type { ScopedBridgeManager } from '@agoric/vats';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
@@ -36,11 +35,12 @@ export const makeTestContext = async () => {
     },
   );
 
-  const { controller, EV, runNextBlock } = swingsetTestKit;
+  const { runNextBlock, runUtils } = swingsetTestKit;
 
   await runNextBlock();
 
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
+  const { EV } = runUtils;
 
   // Wait for ATOM to make it into agoricNames
   await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
@@ -54,7 +54,7 @@ export const makeTestContext = async () => {
   console.timeLog('DefaultTestContext', 'agoricNamesRemotes');
 
   const walletFactoryDriver = await makeWalletFactoryDriver(
-    makeRunUtils(controller),
+    runUtils,
     storage,
     agoricNamesRemotes,
   );
@@ -103,7 +103,7 @@ test.serial('open vault', async t => {
 });
 
 test.serial('make IBC callbacks before upgrade', async t => {
-  const { EV } = t.context;
+  const { EV } = t.context.runUtils;
   const vatStore = await EV.vat('bootstrap').consumeItem('vatStore');
   const { root: ibc } = await EV(vatStore).get('ibc');
   t.log('E(ibc).makeCallbacks(m1)');
@@ -125,7 +125,7 @@ test.serial('run restart-vats proposal', async t => {
 });
 
 test.serial('use IBC callbacks after upgrade', async t => {
-  const { EV } = t.context;
+  const { EV } = t.context.runUtils;
   const { ibcCallbacks } = t.context.shared;
 
   const vatStore = await EV.vat('bootstrap').consumeItem('vatStore');
@@ -139,7 +139,7 @@ test.serial('use IBC callbacks after upgrade', async t => {
 });
 
 test.serial('read metrics', async t => {
-  const { EV } = t.context;
+  const { EV } = t.context.runUtils;
 
   const vaultFactoryKit =
     await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
