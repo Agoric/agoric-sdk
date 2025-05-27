@@ -539,9 +539,7 @@ test.serial('address hook - BLD for OSMO, receiver on Agoric', async t => {
     useChain,
   );
   console.log('Transfer Args:', transferArgs);
-  // TODO #9200 `sendIbcTokens` does not support `memo`
-  // @ts-expect-error spread argument for concise code
-  const txRes = await cosmosHubClient.sendIbcTokens(...transferArgs);
+  const txRes = await cosmosHubClient.signAndBroadcast(...transferArgs);
   if (txRes && txRes.code !== 0) {
     console.error(txRes);
     throw Error(`failed to ibc transfer funds to ibc/${bldDenomOnHub}`);
@@ -625,9 +623,7 @@ test.serial('bad swapOut receiver, via addressHooks', async t => {
     useChain,
   );
   console.log('Transfer Args:', transferArgs);
-  // TODO #9200 `sendIbcTokens` does not support `memo`
-  // @ts-expect-error spread argument for concise code
-  const txRes = await cosmosHubClient.sendIbcTokens(...transferArgs);
+  const txRes = await cosmosHubClient.signAndBroadcast(...transferArgs);
   if (txRes && txRes.code !== 0) {
     console.error(txRes);
     throw Error(`failed to ibc transfer funds to ibc/${bldDenomOnHub}`);
@@ -720,9 +716,7 @@ test.serial('native ATOM for Osmo using PFM, receiver on Agoric', async t => {
     useChain,
   );
   console.log('Transfer Args:', transferArgs);
-  // TODO #9200 `sendIbcTokens` does not support `memo`
-  // @ts-expect-error spread argument for concise code
-  const txRes = await cosmosHubClient.sendIbcTokens(...transferArgs);
+  const txRes = await cosmosHubClient.signAndBroadcast(...transferArgs);
   if (txRes && txRes.code !== 0) {
     console.error(txRes);
     throw Error(

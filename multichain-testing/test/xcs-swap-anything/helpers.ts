@@ -175,9 +175,7 @@ export const osmosisSwapTools = async t => {
       useChain,
     );
 
-    // TODO #9200 `sendIbcTokens` does not support `memo`
-    // @ts-expect-error spread argument for concise code
-    const txRes = await issuingClient.sendIbcTokens(...transferArgs);
+    const txRes = await issuingClient.signAndBroadcast(...transferArgs);
     if (txRes && txRes.code !== 0) {
       console.error(txRes);
       throw Error(`failed to ibc transfer funds to ${destinationAddress}`);
