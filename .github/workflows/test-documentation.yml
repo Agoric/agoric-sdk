@@ -71,11 +71,13 @@ jobs:
         run: yarn test
         working-directory: ./dapp
 
-      - name: notify on failure
-        if: failure() && github.event_name != 'pull_request'
-        uses: ./agoric-sdk/.github/actions/notify-status
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
+  post-test-documentation:
+    uses: ./.github/workflows/result.yml
+    if: (success() || failure())
+    secrets:
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+    with:
+      dry-run: ${{ github.event_name == 'pull_request' }}
+      needs-json: ${{ toJson(needs) }}
+    needs:
+      - test-dapp
