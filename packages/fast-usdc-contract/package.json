@@ -30,6 +30,7 @@
     "ts-blank-space": "^0.6.1"
   },
   "dependencies": {
+    "@agoric/base-zone": "^0.1.0",
     "@agoric/client-utils": "^0.1.0",
     "@agoric/cosmic-proto": "^0.4.0",
     "@agoric/ertp": "^0.16.2",

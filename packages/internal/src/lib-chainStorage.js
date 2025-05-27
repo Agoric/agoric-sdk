@@ -4,7 +4,7 @@ import { Fail } from '@endo/errors';
 import { E, Far } from '@endo/far';
 import { M } from '@endo/patterns';
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
-import * as cb from './callback.js';
+import { callE, makeFunctionCallback } from './callback.js';
 
 /**
  * @import {ERef} from '@endo/far';
@@ -188,7 +188,7 @@ export const prepareChainStorageNode = zone => {
        */
       async getStoreKey() {
         const { path, messenger } = this.state;
-        return cb.callE(messenger, {
+        return callE(messenger, {
           method: 'getStoreKey',
           args: [path],
         });
@@ -220,7 +220,7 @@ export const prepareChainStorageNode = zone => {
         } else {
           entry = [path, value];
         }
-        await cb.callE(messenger, {
+        await callE(messenger, {
           method: sequence ? 'append' : 'set',
           args: [entry],
         });
@@ -257,7 +257,7 @@ export function makeChainStorageRoot(
   rootPath,
   rootOptions = {},
 ) {
-  const messenger = cb.makeFunctionCallback(handleStorageMessage);
+  const messenger = makeFunctionCallback(handleStorageMessage);
 
   // Use the heapZone directly.
   const rootNode = makeHeapChainStorageNode(messenger, rootPath, rootOptions);

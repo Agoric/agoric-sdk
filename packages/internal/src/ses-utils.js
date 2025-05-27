@@ -185,7 +185,10 @@ export const assertAllDefined = obj => {
 };
 
 /**
- * Attenuate `specimen` to only properties allowed by `permit`.
+ * Deeply pick from `specimen` only properties allowed by `permit`.
+ *
+ * If you want to attenuate authority at a defensible boundary for POLA
+ * purposes, see `attenuateOne`.
  *
  * @template T
  * @template {Permit<T>} P
@@ -195,7 +198,7 @@ export const assertAllDefined = obj => {
  *   used to replace the results of recursive picks (but not blanket permits)
  * @returns {Attenuated<T, P>}
  */
-export const attenuate = (specimen, permit, transform = x => x) => {
+export const deepPick = (specimen, permit, transform = x => x) => {
   // Fast-path for no attenuation.
   if (permit === true || typeof permit === 'string') {
     return /** @type {Attenuated<T, P>} */ (specimen);
@@ -238,6 +241,29 @@ export const attenuate = (specimen, permit, transform = x => x) => {
   // @ts-expect-error cast
   return extract(specimen, permit);
 };
+
+/**
+ * Deeply pick from `specimen` only properties allowed by `permit`.
+ *
+ * If you want to attenuate authority at a defensible boundary for POLA
+ * purposes, see `attenuateOne`.
+ *
+ * @deprecated Use `attenuateOne` if applicable; `deepPick` otherwise.
+ * @template T
+ * @template {Permit<T>} P
+ * @param {T} specimen
+ * @param {P} permit
+ * @param {<U, SubP extends Permit<U>>(attenuation: U, permit: SubP) => U} [transform]
+ *   used to replace the results of recursive picks (but not blanket permits)
+ * @returns {Attenuated<T, P>}
+ */
+export const attenuate = (specimen, permit, transform = undefined) =>
+  deepPick(
+    specimen,
+    permit,
+    // @ts-expect-error I don't get it.
+    transform,
+  );
 
 /** @type {IteratorResult<undefined, never>} */
 const notDone = harden({ done: false, value: undefined });

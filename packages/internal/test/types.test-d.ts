@@ -1,6 +1,7 @@
 import { expectNotType, expectType } from 'tsd';
 import { E, type ERef } from '@endo/far';
-import { attenuate } from '../src/ses-utils.js';
+import { attenuateOne } from '@agoric/base-zone/zone-helpers.js';
+import { deepPick } from '../src/ses-utils.js';
 import type { Permit, Remote } from '../src/types.js';
 import type { StorageNode } from '../src/lib-chainStorage.js';
 
@@ -16,16 +17,16 @@ import type { StorageNode } from '../src/lib-chainStorage.js';
       realCount: 0,
     },
   };
-  expectType<{ m1: () => void }>(attenuate(obj, { m1: true }));
-  expectType<{ m2: () => void }>(attenuate(obj, { m2: 'pick' }));
+  expectType<{ m1?: () => void }>(attenuateOne(obj, ['m1']));
+  expectType<{ m2?: () => void }>(attenuateOne(obj, ['m2']));
   expectType<{ data: { log: string[]; counter: number } }>(
-    attenuate(obj, { data: 'pick' }),
+    deepPick(obj, { data: 'pick' }),
   );
   expectType<{ m1: () => void; data: { log: string[] } }>(
-    attenuate(obj, { m1: 'pick', data: { log: true } }),
+    deepPick(obj, { m1: 'pick', data: { log: true } }),
   );
   expectNotType<{ m1: () => void; m2: () => void; data: { log: string[] } }>(
-    attenuate(obj, { m1: 'pick', data: { log: true } }),
+    deepPick(obj, { m1: 'pick', data: { log: true } }),
   );
 }
 

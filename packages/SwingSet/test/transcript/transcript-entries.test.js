@@ -32,7 +32,7 @@ test('transcript of new vats', async t => {
   };
   const kernelStorage = initSwingStore().kernelStorage;
   const { kvStore, transcriptStore } = kernelStorage;
-  const { readSpan } = transcriptStore;
+  const readSpan = transcriptStore.readSpan.bind(transcriptStore);
   await initializeSwingset(config, [], kernelStorage);
   const c = await makeSwingsetController(kernelStorage);
   t.teardown(c.shutdown);
