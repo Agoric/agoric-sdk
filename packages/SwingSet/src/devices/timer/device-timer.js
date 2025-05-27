@@ -147,8 +147,8 @@ function makeTimerMap(state = undefined) {
   // We don't expect this to be called often, so we don't optimize for it.
   /**
    *
-   * @param {Waker} target
-   * @returns {bigint[]}
+   * @param {Waker} targetHandler
+   * @returns {bigint[]} times that have been removed (may contain duplicates)
    */
   function remove(targetHandler) {
     /** @type {bigint[]} */
@@ -164,6 +164,7 @@ function makeTimerMap(state = undefined) {
         }
       }
       if (handlers.length === 0) {
+        // Splice out this element, preserving `i` so we visit any successor.
         schedule.splice(i, 1);
       } else {
         i += 1;
@@ -285,7 +286,10 @@ export function buildRootDeviceNode(tools) {
       saveState();
       return baseTime;
     },
-    /** @param {Waker} handler */
+    /**
+     * @param {Waker} handler
+     * @returns {bigint[]} times that have been removed (may contain duplicates)
+     */
     removeWakeup(handler) {
       const times = deadlines.remove(handler);
       saveState();
