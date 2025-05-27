@@ -68,13 +68,18 @@ test.before(async t => {
   t.context = { ...common, wallets };
 
   const swapTools = await osmosisSwapTools(t);
-  const { setupXcsContracts, setupXcsState, setupPoolsInBatch } = swapTools;
+
+  t.context = { ...t.context, ...swapTools };
+});
+
+test.serial('setup XCS', async t => {
+  const { setupXcsContracts, setupXcsState, setupPoolsInBatch } = t.context;
 
   await setupXcsContracts();
   await setupXcsState(prefixList, channelList);
   await setupPoolsInBatch(osmosisPoolList);
 
-  t.context = { ...t.context, ...swapTools };
+  t.pass();
 });
 
 test.serial('test osmosis xcs state', async t => {
