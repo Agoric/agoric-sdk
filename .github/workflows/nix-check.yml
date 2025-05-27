@@ -1,4 +1,11 @@
 name: Nix Flake Check
+env:
+  # Use the magic cache with Actions cache@v2 (current active version).
+  # Set to '' to disable the cache, or 'true' to enable.
+  #
+  # TODO: This feature currently causes long delays if enabled:
+  # TODO(https://github.com/jashandeep-sohi/action-cache-api-shim/issues/19)
+  USE_MAGIC_NIX_CACHE: ''
 
 on:
   pull_request:
@@ -12,16 +19,25 @@ permissions:
 
 jobs:
   flake-check:
+    timeout-minutes: 25
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@v9
+      - name: Provide cache@v1 proxy for magic-nix-cache's benefit
+        if: ${{ env.USE_MAGIC_NIX_CACHE }}
+        uses: jashandeep-sohi/action-cache-api-shim@master
 
-      - name: Enable flakes
-        uses: DeterminateSystems/magic-nix-cache-action@v2
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Enable Nix cache via GitHub's cache@v1
+        if: ${{ env.USE_MAGIC_NIX_CACHE }}
+        uses: DeterminateSystems/magic-nix-cache-action@v8
+        with:
+          use-flakehub: false
+          diagnostic-endpoint: ''
 
       - name: Check Nix flake inputs
         run: nix flake check
