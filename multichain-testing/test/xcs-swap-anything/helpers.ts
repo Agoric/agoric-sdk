@@ -11,7 +11,7 @@ import type { Coin } from 'cosmjs-types/cosmos/base/v1beta1/coin.js';
 import type { SigningStargateClient } from '@cosmjs/stargate';
 import { CosmWasmClient } from '@cosmjs/cosmwasm-stargate';
 import { toUtf8 } from '@cosmjs/encoding';
-import { execa } from 'execa';
+import { $ } from 'execa';
 import { writeFileSync } from 'fs';
 import fs from 'fs/promises';
 import path from 'path';
@@ -23,7 +23,9 @@ import starshipChainInfo from '../../starship-chain-info.js';
 import { makeQueryClient } from '../../tools/query.js';
 import type { SetupContextWithWallets } from '../support.js';
 
-export type SetupOsmosisContext = Awaited<ReturnType<typeof osmosisSwapTools>>;
+export type SetupOsmosisContext = Awaited<
+  ReturnType<typeof makeOsmosisSwapTools>
+>;
 export type SetupOsmosisContextWithCommon = SetupOsmosisContext &
   SetupContextWithWallets;
 
@@ -63,7 +65,7 @@ type Contracts = {
   crosschain_swaps: ContractInfoBase<CrosschainSwapsArgs>;
 };
 
-export const osmosisSwapTools = async t => {
+export const makeOsmosisSwapTools = async t => {
   const { useChain, retryUntilCondition } = t.context;
 
   const osmosisBranch = 'main';
@@ -117,6 +119,8 @@ export const osmosisSwapTools = async t => {
       },
     },
   };
+
+  const bigintReplacer = (_, v) => (typeof v === 'bigint' ? Number(v) : v);
 
   const fundRemote = async (
     issuingChain: string,
@@ -233,16 +237,9 @@ export const osmosisSwapTools = async t => {
       funds: [],
     });
 
-    const encodeObjects: Array<import('@cosmjs/proto-signing').EncodeObject> = [
-      {
-        typeUrl: '/cosmwasm.wasm.v1.MsgExecuteContract',
-        value: message,
-      },
-    ];
-
     const response = await osmosisClient.signAndBroadcast(
       osmosisAddress,
-      encodeObjects,
+      [{ typeUrl: MsgExecuteContract.typeUrl, value: message }],
       fee,
     );
     console.log('invokeOsmosisContract DeliverTxResponse: ', response);
@@ -273,25 +270,14 @@ export const osmosisSwapTools = async t => {
     artifactsPath: string = xcsArtifactsPath,
   ) => {
     const wasmFiles: string[] = [];
-    for (const contract in xcsContracts) {
-      if (Object.prototype.hasOwnProperty.call(xcsContracts, contract)) {
-        const { label } = xcsContracts[contract];
-        wasmFiles.push(`${label}.wasm`);
-      }
+    for (const [label, _contractInfo] of Object.entries(xcsContracts)) {
+      wasmFiles.push(`${label}.wasm`);
     }
 
     try {
-      await execa('bash', [
-        scriptPath,
-        'osmosis-labs',
-        'osmosis',
-        branch,
-        'tests/ibc-hooks/bytecode',
-        artifactsPath,
-        ...wasmFiles,
-      ]);
+      await $`${scriptPath} osmosis-labs osmosis ${branch} tests/ibc-hooks/bytecode ${artifactsPath} ${wasmFiles}`;
     } catch (error) {
-      throw Error(`Failed to download XCS artifacts: ${error}`);
+      throw Error(`Failed to download XCS artifacts`, { cause: error });
     }
   };
 
@@ -322,18 +308,14 @@ export const osmosisSwapTools = async t => {
       wasmByteCode,
     });
 
-    const storeEncodeObjects: Array<
-      import('@cosmjs/proto-signing').EncodeObject
-    > = [
-      {
-        typeUrl: MsgStoreCode.typeUrl,
-        value: storeMessage,
-      },
-    ];
-
     const storeResult = await osmosisClient.signAndBroadcast(
       osmosisAddress,
-      storeEncodeObjects,
+      [
+        {
+          typeUrl: MsgStoreCode.typeUrl,
+          value: storeMessage,
+        },
+      ],
       fee,
     );
 
@@ -341,9 +323,9 @@ export const osmosisSwapTools = async t => {
       throw Error(`Failed to store ${contractLabel} contract`);
     }
 
-    const codeId = MsgStoreCodeResponse.decode(
+    const { codeId } = MsgStoreCodeResponse.decode(
       storeResult.msgResponses[0].value,
-    ).codeId;
+    );
 
     const instantiateMessage = MsgInstantiateContract.fromPartial({
       sender: osmosisAddress,
@@ -353,18 +335,14 @@ export const osmosisSwapTools = async t => {
       msg: toUtf8(JSON.stringify(instantiateArgs)),
     });
 
-    const instantiateEncodeObjects: Array<
-      import('@cosmjs/proto-signing').EncodeObject
-    > = [
-      {
-        typeUrl: MsgInstantiateContract.typeUrl,
-        value: instantiateMessage,
-      },
-    ];
-
     const instantiateResult = await osmosisClient.signAndBroadcast(
       osmosisAddress,
-      instantiateEncodeObjects,
+      [
+        {
+          typeUrl: MsgInstantiateContract.typeUrl,
+          value: instantiateMessage,
+        },
+      ],
       fee,
     );
 
@@ -372,9 +350,9 @@ export const osmosisSwapTools = async t => {
       throw Error(`Failed to instantiate ${contractLabel} contract`);
     }
 
-    const address = MsgInstantiateContractResponse.decode(
+    const { address } = MsgInstantiateContractResponse.decode(
       instantiateResult.msgResponses[0].value,
-    ).address;
+    );
 
     return { codeId, address };
   };
@@ -382,50 +360,46 @@ export const osmosisSwapTools = async t => {
   const persistXcsInfo = async () => {
     try {
       const sanitizedContracts = JSON.parse(
-        JSON.stringify(xcsContracts, (_, v) =>
-          typeof v === 'bigint' ? Number(v) : v,
-        ),
+        JSON.stringify(xcsContracts, bigintReplacer),
       );
       writeFileSync(
         './test/xcs-swap-anything/xcs-contracts-info.json',
         JSON.stringify(sanitizedContracts),
       );
 
-      await execa('kubectl', [
-        'cp',
-        './test/xcs-swap-anything/xcs-contracts-info.json',
-        'osmosislocal-genesis-0:/',
-      ]);
+      await $`kubectl cp ./test/xcs-swap-anything/xcs-contracts-info.json osmosislocal-genesis-0:/`;
     } catch (error) {
-      throw Error(`Failed to store XCS info: ${error}`);
+      throw Error(`Failed to store XCS info`, { cause: error });
     }
   };
 
   const areContractsInstantiated = async () => {
-    let contractInfo;
     try {
-      contractInfo = await queryContractsInfo();
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
+      await queryContractsInfo();
+      return true;
+    } catch {
       return false;
     }
+  };
+
+  const updateLocalXcsContracts = async () => {
+    const contractInfo = await queryContractsInfo();
 
     const sanitizedContracts = JSON.parse(
-      JSON.stringify(xcsContracts, (_, v) =>
-        typeof v === 'bigint' ? Number(v) : v,
-      ),
+      JSON.stringify(xcsContracts, bigintReplacer),
     );
-    if (JSON.stringify(contractInfo) != JSON.stringify(sanitizedContracts)) {
+    if (JSON.stringify(contractInfo) !== JSON.stringify(sanitizedContracts)) {
       xcsContracts = contractInfo;
     }
-    return true;
   };
 
   const setupXcsChannelLink = async (
     primaryChain: string,
     counterPartyChain: string,
   ) => {
-    const chainId = useChain(counterPartyChain).chain.chain_id;
+    const {
+      chain: { chain_id },
+    } = useChain(counterPartyChain);
     const registryAddress = xcsContracts.crosschain_registry.address;
     if (!registryAddress) {
       throw new Error('crosschain_registry contract address not found');
@@ -433,7 +407,7 @@ export const osmosisSwapTools = async t => {
 
     const {
       transferChannel: { channelId, counterPartyChannelId },
-    } = starshipChainInfo[primaryChain].connections[chainId];
+    } = starshipChainInfo[primaryChain].connections[chain_id];
 
     const txMsg = {
       modify_chain_channel_links: {
@@ -487,8 +461,7 @@ export const osmosisSwapTools = async t => {
         );
       }
       return true;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
+    } catch {
       return false;
     }
   };
@@ -525,24 +498,21 @@ export const osmosisSwapTools = async t => {
       ],
       futurePoolGovernor: '',
     });
-    /** @type {Array<import('@cosmjs/proto-signing').EncodeObject>} */
-    const encodeObjects = [
-      {
-        typeUrl:
-          '/osmosis.gamm.poolmodels.balancer.v1beta1.MsgCreateBalancerPool',
-        value: message,
-      },
-    ];
 
     const result = await osmosisClient.signAndBroadcast(
       osmosisAddress,
-      encodeObjects,
+      [
+        {
+          typeUrl: MsgCreateBalancerPool.typeUrl,
+          value: message,
+        },
+      ],
       fee,
     );
 
-    const poolId = MsgCreateBalancerPoolResponse.decode(
+    const { poolId } = MsgCreateBalancerPoolResponse.decode(
       result.msgResponses[0].value,
-    ).poolId;
+    );
     return { poolId, inDenom, outDenom };
   };
 
@@ -573,15 +543,8 @@ export const osmosisSwapTools = async t => {
   };
 
   const queryContractsInfo = async () => {
-    const osmosisCLI =
-      'kubectl exec -i osmosislocal-genesis-0 -c validator -- /bin/bash -c';
-
-    const info = `${osmosisCLI} "jq . /xcs-contracts-info.json"`;
-
-    const { stdout } = await execa(info, {
-      shell: true,
-    });
-
+    const { stdout } =
+      await $`kubectl exec -i osmosislocal-genesis-0 -c validator -- cat /xcs-contracts-info.json`;
     return JSON.parse(stdout);
   };
 
@@ -596,11 +559,13 @@ export const osmosisSwapTools = async t => {
     issuingChain: string,
     issuingDenom: string,
   ) => {
-    const chainId = useChain(issuingChain).chain.chain_id;
+    const {
+      chain: { chain_id },
+    } = useChain(issuingChain);
 
     const {
       transferChannel: { channelId },
-    } = starshipChainInfo[currentChain].connections[chainId];
+    } = starshipChainInfo[currentChain].connections[chain_id];
 
     const apiUrl = await useChain(currentChain).getRestEndpoint();
     const queryClient = makeQueryClient(apiUrl);
@@ -609,6 +574,10 @@ export const osmosisSwapTools = async t => {
       `transfer/${channelId}`,
       issuingDenom,
     );
+
+    if (!hash) {
+      throw Error(`Hash not found for ${issuingDenom} on ${currentChain}`);
+    }
 
     return hash;
   };
@@ -706,7 +675,7 @@ export const osmosisSwapTools = async t => {
   };
 
   const setupXcsContracts = async (forceInstall = false) => {
-    console.log('Seeting XCS contracts ...');
+    console.log('Setting XCS contracts ...');
     if (!(await areContractsInstantiated()) || forceInstall) {
       console.log(`XCS contracts being downloaded ...`);
       await downloadXcsContracts(xcsContracts);
@@ -733,6 +702,8 @@ export const osmosisSwapTools = async t => {
       await persistXcsInfo();
     }
 
+    await updateLocalXcsContracts();
+
     console.log('XCS contracts instantiation completed!');
 
     return xcsContracts;
@@ -742,22 +713,22 @@ export const osmosisSwapTools = async t => {
     prefixList: Prefix[],
     channelList: Channel[],
   ) => {
-    console.log('Seeting XCS state ...');
+    console.log('Setting XCS state ...');
 
     if (!(await isXcsStateSet(channelList))) {
       for (const { chain, prefix } of prefixList) {
-        console.log(`Seeting Prefix for ${chain} ...`);
+        console.log(`Setting Prefix for ${chain} ...`);
         await setupXcsPrefix(chain, prefix);
       }
 
       for (const { primary, counterParty } of channelList) {
         console.log(
-          `Seeting Channel Link for ${primary} and ${counterParty} ...`,
+          `Setting Channel Link for ${primary} and ${counterParty} ...`,
         );
         await setupXcsChannelLink(primary, counterParty);
       }
     } else {
-      console.log('XCS contracts alrady set');
+      console.log('XCS contracts already set');
     }
   };
 
