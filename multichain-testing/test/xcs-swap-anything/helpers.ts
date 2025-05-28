@@ -118,6 +118,8 @@ export const osmosisSwapTools = async t => {
     },
   };
 
+  const bigintReplacer = (_, v) => (typeof v === 'bigint' ? Number(v) : v);
+
   const fundRemote = async (
     issuingChain: string,
     issuingDenom: string = 'ubld',
@@ -276,7 +278,7 @@ export const osmosisSwapTools = async t => {
     try {
       await $`${scriptPath} osmosis-labs osmosis ${branch} tests/ibc-hooks/bytecode ${artifactsPath} ${wasmFiles}`;
     } catch (error) {
-      throw Error(`Failed to download XCS artifacts: ${error}`);
+      throw Error(`Failed to download XCS artifacts`, { cause: error });
     }
   };
 
@@ -322,9 +324,9 @@ export const osmosisSwapTools = async t => {
       throw Error(`Failed to store ${contractLabel} contract`);
     }
 
-    const codeId = MsgStoreCodeResponse.decode(
+    const { codeId } = MsgStoreCodeResponse.decode(
       storeResult.msgResponses[0].value,
-    ).codeId;
+    );
 
     const instantiateMessage = MsgInstantiateContract.fromPartial({
       sender: osmosisAddress,
@@ -349,9 +351,9 @@ export const osmosisSwapTools = async t => {
       throw Error(`Failed to instantiate ${contractLabel} contract`);
     }
 
-    const address = MsgInstantiateContractResponse.decode(
+    const { address } = MsgInstantiateContractResponse.decode(
       instantiateResult.msgResponses[0].value,
-    ).address;
+    );
 
     return { codeId, address };
   };
@@ -359,9 +361,7 @@ export const osmosisSwapTools = async t => {
   const persistXcsInfo = async () => {
     try {
       const sanitizedContracts = JSON.parse(
-        JSON.stringify(xcsContracts, (_, v) =>
-          typeof v === 'bigint' ? Number(v) : v,
-        ),
+        JSON.stringify(xcsContracts, bigintReplacer),
       );
       writeFileSync(
         './test/xcs-swap-anything/xcs-contracts-info.json',
@@ -370,7 +370,7 @@ export const osmosisSwapTools = async t => {
 
       await $`kubectl cp ./test/xcs-swap-anything/xcs-contracts-info.json osmosislocal-genesis-0:/`;
     } catch (error) {
-      throw Error(`Failed to store XCS info: ${error}`);
+      throw Error(`Failed to store XCS info`, { cause: error });
     }
   };
 
@@ -378,27 +378,26 @@ export const osmosisSwapTools = async t => {
     let contractInfo;
     try {
       contractInfo = await queryContractsInfo();
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
+
+    } catch {
       return false;
     }
 
     const sanitizedContracts = JSON.parse(
-      JSON.stringify(xcsContracts, (_, v) =>
-        typeof v === 'bigint' ? Number(v) : v,
-      ),
+      JSON.stringify(xcsContracts, bigintReplacer),
     );
-    if (JSON.stringify(contractInfo) != JSON.stringify(sanitizedContracts)) {
+    if (JSON.stringify(contractInfo) !== JSON.stringify(sanitizedContracts)) {
       xcsContracts = contractInfo;
     }
-    return true;
   };
 
   const setupXcsChannelLink = async (
     primaryChain: string,
     counterPartyChain: string,
   ) => {
-    const chainId = useChain(counterPartyChain).chain.chain_id;
+    const {
+      chain: { chain_id },
+    } = useChain(counterPartyChain);
     const registryAddress = xcsContracts.crosschain_registry.address;
     if (!registryAddress) {
       throw new Error('crosschain_registry contract address not found');
@@ -406,7 +405,7 @@ export const osmosisSwapTools = async t => {
 
     const {
       transferChannel: { channelId, counterPartyChannelId },
-    } = starshipChainInfo[primaryChain].connections[chainId];
+    } = starshipChainInfo[primaryChain].connections[chain_id];
 
     const txMsg = {
       modify_chain_channel_links: {
@@ -460,8 +459,7 @@ export const osmosisSwapTools = async t => {
         );
       }
       return true;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
+    } catch {
       return false;
     }
   };
@@ -510,9 +508,9 @@ export const osmosisSwapTools = async t => {
       fee,
     );
 
-    const poolId = MsgCreateBalancerPoolResponse.decode(
+    const { poolId } = MsgCreateBalancerPoolResponse.decode(
       result.msgResponses[0].value,
-    ).poolId;
+    );
     return { poolId, inDenom, outDenom };
   };
 
@@ -558,11 +556,13 @@ export const osmosisSwapTools = async t => {
     issuingChain: string,
     issuingDenom: string,
   ) => {
-    const chainId = useChain(issuingChain).chain.chain_id;
+    const {
+      chain: { chain_id },
+    } = useChain(issuingChain);
 
     const {
       transferChannel: { channelId },
-    } = starshipChainInfo[currentChain].connections[chainId];
+    } = starshipChainInfo[currentChain].connections[chain_id];
 
     const apiUrl = await useChain(currentChain).getRestEndpoint();
     const queryClient = makeQueryClient(apiUrl);
@@ -571,6 +571,10 @@ export const osmosisSwapTools = async t => {
       `transfer/${channelId}`,
       issuingDenom,
     );
+
+    if (!hash) {
+      throw Error(`Hash not found for ${issuingDenom} on ${currentChain}`);
+    }
 
     return hash;
   };
