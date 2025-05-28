@@ -8,7 +8,7 @@ import { buildRootObject } from '../src/vats/timer/vat-timer.js';
 /**
  * @import {Timestamp} from '@agoric/time'
  * @import {TimerService} from '@agoric/time'
- * @import {Waker} from '../src/devices/timer/device-timer.js'
+ * @import {TimerDevice, Waker} from '../src/devices/timer/device-timer.js'
  *
  * @typedef {object} ManualTimerCallbacks
  * @property {(newTime: bigint, msg?: string) => void} [advanceTo]
@@ -34,8 +34,7 @@ const setup = callbacks => {
     currentWakeup: undefined,
     currentHandler: undefined,
   };
-  /** @type {any} */
-  const deviceMarker = harden({});
+  const deviceMarker = /** @type {TimerDevice} */ (harden({}));
   const timerDeviceFuncs = harden({
     getLastPolled: () => state.now,
     setWakeup: (when, handler) => {
