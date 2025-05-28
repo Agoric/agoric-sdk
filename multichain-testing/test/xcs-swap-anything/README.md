@@ -1,18 +1,21 @@
-## Spin up Environment
-```sh
-cd agoric-sdk/multichain-testing
-make start FILE=config.xcs-swap-anything.yaml
-make osmosis-xcs-setup
-make create-osmosis-pool
+## Start Chains
 
-## Configure the osmosis registries
-cd agoric-sdk/multichain-testing/test/xcs-swap-anything
-make tx-chain-channel-links
-make tx-bec32-prefixes    
+Runs agoric, cosmoshub, and osmosis with hermes relayers.
+
+```sh
+# start starship with xcs-swap-anything configuration
+make clean setup
+make start FILE=config.xcs-swap-anything.yaml
 ```
 
-## Run tests
+## Run Tests
+
 ```sh
-cd agoric-sdk/multichain-testing
-yarn ava test/xcs-swap-anything/swap-anything.test.ts
+yarn test:xcs
+```
+
+## Stop Chains
+
+```sh
+make stop
 ```
