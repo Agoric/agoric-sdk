@@ -11,7 +11,7 @@ import type { Coin } from 'cosmjs-types/cosmos/base/v1beta1/coin.js';
 import type { SigningStargateClient } from '@cosmjs/stargate';
 import { CosmWasmClient } from '@cosmjs/cosmwasm-stargate';
 import { toUtf8 } from '@cosmjs/encoding';
-import { execa } from 'execa';
+import { $ } from 'execa';
 import { writeFileSync } from 'fs';
 import fs from 'fs/promises';
 import path from 'path';
@@ -233,16 +233,9 @@ export const osmosisSwapTools = async t => {
       funds: [],
     });
 
-    const encodeObjects: Array<import('@cosmjs/proto-signing').EncodeObject> = [
-      {
-        typeUrl: '/cosmwasm.wasm.v1.MsgExecuteContract',
-        value: message,
-      },
-    ];
-
     const response = await osmosisClient.signAndBroadcast(
       osmosisAddress,
-      encodeObjects,
+      [{ typeUrl: MsgExecuteContract.typeUrl, value: message }],
       fee,
     );
     console.log('invokeOsmosisContract DeliverTxResponse: ', response);
@@ -281,15 +274,7 @@ export const osmosisSwapTools = async t => {
     }
 
     try {
-      await execa('bash', [
-        scriptPath,
-        'osmosis-labs',
-        'osmosis',
-        branch,
-        'tests/ibc-hooks/bytecode',
-        artifactsPath,
-        ...wasmFiles,
-      ]);
+      await $`${scriptPath} osmosis-labs osmosis ${branch} tests/ibc-hooks/bytecode ${artifactsPath} ${wasmFiles}`;
     } catch (error) {
       throw Error(`Failed to download XCS artifacts: ${error}`);
     }
@@ -322,18 +307,14 @@ export const osmosisSwapTools = async t => {
       wasmByteCode,
     });
 
-    const storeEncodeObjects: Array<
-      import('@cosmjs/proto-signing').EncodeObject
-    > = [
-      {
-        typeUrl: MsgStoreCode.typeUrl,
-        value: storeMessage,
-      },
-    ];
-
     const storeResult = await osmosisClient.signAndBroadcast(
       osmosisAddress,
-      storeEncodeObjects,
+      [
+        {
+          typeUrl: MsgStoreCode.typeUrl,
+          value: storeMessage,
+        },
+      ],
       fee,
     );
 
@@ -353,18 +334,14 @@ export const osmosisSwapTools = async t => {
       msg: toUtf8(JSON.stringify(instantiateArgs)),
     });
 
-    const instantiateEncodeObjects: Array<
-      import('@cosmjs/proto-signing').EncodeObject
-    > = [
-      {
-        typeUrl: MsgInstantiateContract.typeUrl,
-        value: instantiateMessage,
-      },
-    ];
-
     const instantiateResult = await osmosisClient.signAndBroadcast(
       osmosisAddress,
-      instantiateEncodeObjects,
+      [
+        {
+          typeUrl: MsgInstantiateContract.typeUrl,
+          value: instantiateMessage,
+        },
+      ],
       fee,
     );
 
@@ -391,11 +368,7 @@ export const osmosisSwapTools = async t => {
         JSON.stringify(sanitizedContracts),
       );
 
-      await execa('kubectl', [
-        'cp',
-        './test/xcs-swap-anything/xcs-contracts-info.json',
-        'osmosislocal-genesis-0:/',
-      ]);
+      await $`kubectl cp ./test/xcs-swap-anything/xcs-contracts-info.json osmosislocal-genesis-0:/`;
     } catch (error) {
       throw Error(`Failed to store XCS info: ${error}`);
     }
@@ -525,18 +498,15 @@ export const osmosisSwapTools = async t => {
       ],
       futurePoolGovernor: '',
     });
-    /** @type {Array<import('@cosmjs/proto-signing').EncodeObject>} */
-    const encodeObjects = [
-      {
-        typeUrl:
-          '/osmosis.gamm.poolmodels.balancer.v1beta1.MsgCreateBalancerPool',
-        value: message,
-      },
-    ];
 
     const result = await osmosisClient.signAndBroadcast(
       osmosisAddress,
-      encodeObjects,
+      [
+        {
+          typeUrl: MsgCreateBalancerPool.typeUrl,
+          value: message,
+        },
+      ],
       fee,
     );
 
@@ -573,15 +543,7 @@ export const osmosisSwapTools = async t => {
   };
 
   const queryContractsInfo = async () => {
-    const osmosisCLI =
-      'kubectl exec -i osmosislocal-genesis-0 -c validator -- /bin/bash -c';
-
-    const info = `${osmosisCLI} "jq . /xcs-contracts-info.json"`;
-
-    const { stdout } = await execa(info, {
-      shell: true,
-    });
-
+    const { stdout } = await $`kubectl exec -i osmosislocal-genesis-0 -c validator -- cat /xcs-contracts-info.json`;
     return JSON.parse(stdout);
   };
 
