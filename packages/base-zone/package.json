@@ -27,7 +27,7 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/store": "^0.9.2",
+    "@agoric/store": "workspace:*",
     "@endo/common": "^1.2.10",
     "@endo/errors": "^1.2.10",
     "@endo/exo": "^1.5.9",

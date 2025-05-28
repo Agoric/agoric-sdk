@@ -23,7 +23,7 @@
     "test:xs": "exit 0"
   },
   "peerDependencies": {
-    "@agoric/swingset-liveslots": "^0.10.2",
+    "@agoric/swingset-liveslots": "workspace:*",
     "@endo/errors": "^1.2.10",
     "@endo/import-bundle": "^1.4.0",
     "@endo/promise-kit": "^1.1.10"
