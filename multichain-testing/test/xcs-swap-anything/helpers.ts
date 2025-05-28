@@ -268,11 +268,8 @@ export const osmosisSwapTools = async t => {
     artifactsPath: string = xcsArtifactsPath,
   ) => {
     const wasmFiles: string[] = [];
-    for (const contract in xcsContracts) {
-      if (Object.prototype.hasOwnProperty.call(xcsContracts, contract)) {
-        const { label } = xcsContracts[contract];
-        wasmFiles.push(`${label}.wasm`);
-      }
+    for (const [label, _contractInfo] of Object.entries(xcsContracts)) {
+      wasmFiles.push(`${label}.wasm`);
     }
 
     try {
@@ -375,13 +372,16 @@ export const osmosisSwapTools = async t => {
   };
 
   const areContractsInstantiated = async () => {
-    let contractInfo;
     try {
-      contractInfo = await queryContractsInfo();
-
+      await queryContractsInfo();
+      return true;
     } catch {
       return false;
     }
+  };
+
+  const updateLocalXcsContracts = async () => {
+    const contractInfo = await queryContractsInfo();
 
     const sanitizedContracts = JSON.parse(
       JSON.stringify(xcsContracts, bigintReplacer),
@@ -698,6 +698,8 @@ export const osmosisSwapTools = async t => {
       console.log(`XCS contracts being persisted ...`);
       await persistXcsInfo();
     }
+
+    await updateLocalXcsContracts();
 
     console.log('XCS contracts instantiation completed!');
 
