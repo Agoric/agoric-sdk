@@ -1,4 +1,9 @@
 #!/bin/bash
+# This script customizes chain configuration files for local testing, based on the default settings from:
+# https://github.com/hyperweb-io/starship/blob/main/starship/charts/devnet/scripts/default/update-config.sh
+#
+# In addition to the standard configuration, it sets the log_level in config.toml to "debug" (instead of "info").
+# This enables detailed logging of contract calls and IBC transfer messages, aiding in debugging and observability.
 
 CHAIN_ID="${CHAIN_ID:=osmosis}"
 CHAIN_DIR="${CHAIN_DIR:=$HOME/.osmosisd}"
