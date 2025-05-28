@@ -23,7 +23,9 @@ import starshipChainInfo from '../../starship-chain-info.js';
 import { makeQueryClient } from '../../tools/query.js';
 import type { SetupContextWithWallets } from '../support.js';
 
-export type SetupOsmosisContext = Awaited<ReturnType<typeof osmosisSwapTools>>;
+export type SetupOsmosisContext = Awaited<
+  ReturnType<typeof makeOsmosisSwapTools>
+>;
 export type SetupOsmosisContextWithCommon = SetupOsmosisContext &
   SetupContextWithWallets;
 
@@ -63,7 +65,7 @@ type Contracts = {
   crosschain_swaps: ContractInfoBase<CrosschainSwapsArgs>;
 };
 
-export const osmosisSwapTools = async t => {
+export const makeOsmosisSwapTools = async t => {
   const { useChain, retryUntilCondition } = t.context;
 
   const osmosisBranch = 'main';
@@ -541,7 +543,8 @@ export const osmosisSwapTools = async t => {
   };
 
   const queryContractsInfo = async () => {
-    const { stdout } = await $`kubectl exec -i osmosislocal-genesis-0 -c validator -- cat /xcs-contracts-info.json`;
+    const { stdout } =
+      await $`kubectl exec -i osmosislocal-genesis-0 -c validator -- cat /xcs-contracts-info.json`;
     return JSON.parse(stdout);
   };
 
@@ -672,7 +675,7 @@ export const osmosisSwapTools = async t => {
   };
 
   const setupXcsContracts = async (forceInstall = false) => {
-    console.log('Seeting XCS contracts ...');
+    console.log('Setting XCS contracts ...');
     if (!(await areContractsInstantiated()) || forceInstall) {
       console.log(`XCS contracts being downloaded ...`);
       await downloadXcsContracts(xcsContracts);
@@ -710,22 +713,22 @@ export const osmosisSwapTools = async t => {
     prefixList: Prefix[],
     channelList: Channel[],
   ) => {
-    console.log('Seeting XCS state ...');
+    console.log('Setting XCS state ...');
 
     if (!(await isXcsStateSet(channelList))) {
       for (const { chain, prefix } of prefixList) {
-        console.log(`Seeting Prefix for ${chain} ...`);
+        console.log(`Setting Prefix for ${chain} ...`);
         await setupXcsPrefix(chain, prefix);
       }
 
       for (const { primary, counterParty } of channelList) {
         console.log(
-          `Seeting Channel Link for ${primary} and ${counterParty} ...`,
+          `Setting Channel Link for ${primary} and ${counterParty} ...`,
         );
         await setupXcsChannelLink(primary, counterParty);
       }
     } else {
-      console.log('XCS contracts alrady set');
+      console.log('XCS contracts already set');
     }
   };
 

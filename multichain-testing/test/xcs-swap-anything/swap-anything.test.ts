@@ -11,7 +11,7 @@ import {
 } from '../../tools/ibc-transfer.js';
 import type { OfferStatus } from '@agoric/smart-wallet/src/offers.js';
 import {
-  osmosisSwapTools,
+  makeOsmosisSwapTools,
   type Prefix,
   type Channel,
   type SetupOsmosisContextWithCommon,
@@ -67,7 +67,7 @@ test.before(async t => {
   //@ts-expect-error missing swap tools
   t.context = { ...common, wallets };
 
-  const swapTools = await osmosisSwapTools(t);
+  const swapTools = await makeOsmosisSwapTools(t);
 
   t.context = { ...t.context, ...swapTools };
 });
