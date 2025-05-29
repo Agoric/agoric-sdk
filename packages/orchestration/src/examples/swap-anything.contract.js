@@ -66,6 +66,13 @@ export const contract = async (
     sharedFlows.makeLocalAccount,
   );
 
+  registerChainsAndAssets(
+    chainHub,
+    zcf.getTerms().brands,
+    privateArgs.chainInfo,
+    privateArgs.assetInfo,
+  );
+
   /**
    * @type {any} sharedLocalAccountP expects a Promise but this is a vow UNTIL
    *   https://github.com/Agoric/agoric-sdk/issues/9822
@@ -170,13 +177,6 @@ export const contract = async (
         );
       },
     },
-  );
-
-  registerChainsAndAssets(
-    chainHub,
-    zcf.getTerms().brands,
-    privateArgs.chainInfo,
-    privateArgs.assetInfo,
   );
 
   return { publicFacet, creatorFacet };
