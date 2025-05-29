@@ -25,7 +25,13 @@ const bootstrapOrchestration = async t => {
     bootstrap,
     commonPrivateArgs,
     brands: { bld },
-    utils: { inspectLocalBridge, pourPayment, transmitTransferAck },
+    utils: {
+      inspectLocalBridge,
+      inspectBankBridge,
+      pourPayment,
+      transmitTransferAck,
+      transmitVTransferEvent,
+    },
     mocks: { transferBridge },
   } = await commonSetup(t);
   const vt = bootstrap.vowTools;
@@ -53,8 +59,10 @@ const bootstrapOrchestration = async t => {
     commonPrivateArgs,
     bld,
     inspectLocalBridge,
+    inspectBankBridge,
     pourPayment,
     transmitTransferAck,
+    transmitVTransferEvent,
     vt,
     zoe,
     installation,
@@ -144,11 +152,7 @@ test('swap BLD for Osmo, receiver on Agoric', async t => {
   );
 });
 
-/**
- * UNTIL https://github.com/Agoric/BytePitchPartnerEng/issues/51, we are skipping this
- * until the ticket above is done
- */
-test.skip('trigger osmosis swap from an address hook', async t => {
+test('trigger osmosis swap from an address hook', async t => {
   const {
     bootstrap: { storage },
     transferBridge,
@@ -171,7 +175,7 @@ test.skip('trigger osmosis swap from an address hook', async t => {
   await E(transferBridge).fromBridge(
     buildVTransferEvent({
       event: 'writeAcknowledgement',
-      denom: 'ubld',
+      denom: 'transfer/channel-9/ubld',
       receiver: encodeAddressHook(
         'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht',
         {
@@ -180,6 +184,7 @@ test.skip('trigger osmosis swap from an address hook', async t => {
           outDenom: memoArgs.outDenom,
         },
       ),
+      sourceChannel: 'channel-9',
     }),
   );
   await eventLoopIteration();
@@ -196,6 +201,169 @@ test.skip('trigger osmosis swap from an address hook', async t => {
       memo: config.xcsInformation.rawMsgNoNextMemo,
     },
     'crosschain swap sent',
+  );
+});
+
+test('should not execute transfer if query is malformed', async t => {
+  const { transferBridge, inspectLocalBridge } =
+    await bootstrapOrchestration(t);
+  await eventLoopIteration();
+
+  const memoArgs = buildOfferArgs(config.xcsInformation.rawMsgNoNextMemo);
+  t.log(memoArgs);
+
+  await E(transferBridge).fromBridge(
+    buildVTransferEvent({
+      event: 'writeAcknowledgement',
+      denom: 'transfer/channel-9/ubld',
+      receiver: encodeAddressHook(
+        'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht',
+        {
+          // destAddr: memoArgs.destAddr,
+          receiverAddr: memoArgs.receiverAddr,
+          outDenom: memoArgs.outDenom,
+        },
+      ),
+      sourceChannel: 'channel-9',
+    }),
+  );
+  await eventLoopIteration();
+
+  t.like(
+    inspectLocalBridge(),
+    [{ type: 'VLOCALCHAIN_ALLOCATE_ADDRESS' }],
+    'crosschain swap not executed',
+  );
+
+  await E(transferBridge).fromBridge(
+    buildVTransferEvent({
+      event: 'writeAcknowledgement',
+      denom: 'transfer/channel-9/ubld',
+      receiver: encodeAddressHook(
+        'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht',
+        {
+          destAddr: memoArgs.destAddr,
+          // receiverAddr: memoArgs.receiverAddr,
+          outDenom: memoArgs.outDenom,
+        },
+      ),
+      sourceChannel: 'channel-9',
+    }),
+  );
+  await eventLoopIteration();
+
+  t.like(
+    inspectLocalBridge(),
+    [{ type: 'VLOCALCHAIN_ALLOCATE_ADDRESS' }],
+    'crosschain swap not executed',
+  );
+
+  await E(transferBridge).fromBridge(
+    buildVTransferEvent({
+      event: 'writeAcknowledgement',
+      denom: 'transfer/channel-9/ubld',
+      receiver: encodeAddressHook(
+        'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht',
+        {
+          destAddr: memoArgs.destAddr,
+          receiverAddr: memoArgs.receiverAddr,
+          // outDenom: memoArgs.outDenom,
+        },
+      ),
+      sourceChannel: 'channel-9',
+    }),
+  );
+  await eventLoopIteration();
+
+  t.like(
+    inspectLocalBridge(),
+    [{ type: 'VLOCALCHAIN_ALLOCATE_ADDRESS' }],
+    'crosschain swap not executed',
+  );
+});
+
+test('should recover failed transfer', async t => {
+  const {
+    vt,
+    swapKit,
+    zoe,
+    pourPayment,
+    bld,
+    transmitVTransferEvent,
+    inspectLocalBridge,
+    inspectBankBridge,
+  } = await bootstrapOrchestration(t);
+
+  const publicFacet = await E(zoe).getPublicFacet(swapKit.instance);
+  const inv = E(publicFacet).makeSwapInvitation();
+  const amt = await E(zoe).getInvitationDetails(inv);
+  t.is(amt.description, 'swap');
+
+  const anAmt = bld.units(3.5);
+  const Send = await pourPayment(anAmt);
+  const offerArgs = buildOfferArgs(config.xcsInformation.rawMsgNoNextMemo);
+
+  const userSeat = await E(zoe).offer(
+    inv,
+    { give: { Send: anAmt } },
+    { Send },
+    offerArgs,
+  );
+
+  await transmitVTransferEvent('timeoutPacket');
+  await E(userSeat).hasExited();
+
+  const payouts = await E(userSeat).getPayouts();
+  t.log('Failed offer payouts', payouts);
+  const amountReturned = await bld.issuer.getAmountOf(payouts.Send);
+  t.log('Failed offer Send amount', amountReturned);
+  t.deepEqual(anAmt, amountReturned, 'give is returned');
+
+  await t.throwsAsync(vt.when(E(userSeat).getOfferResult()), {
+    message:
+      'IBC Transfer failed "[Error: transfer operation received timeout packet]"',
+  });
+
+  t.log('ibc MsgTransfer was attempted from a local chain account');
+  const history = inspectLocalBridge();
+  t.like(history, [
+    { type: 'VLOCALCHAIN_ALLOCATE_ADDRESS' },
+    { type: 'VLOCALCHAIN_EXECUTE_TX' },
+  ]);
+
+  const [_alloc, { messages, address: execAddr }] = history;
+  t.is(messages.length, 1);
+  const [txfr] = messages;
+  t.log('local bridge', txfr);
+  t.like(txfr, {
+    '@type': '/ibc.applications.transfer.v1.MsgTransfer',
+    sender: execAddr,
+    sourcePort: 'transfer',
+    token: { amount: '3500000', denom: 'ubld' },
+  });
+
+  t.log('deposit to and withdrawal from LCA is observed in bank bridge');
+  const bankHistory = inspectBankBridge();
+  t.log('bank bridge', bankHistory);
+  t.deepEqual(
+    bankHistory[bankHistory.length - 2],
+    {
+      type: 'VBANK_GIVE',
+      recipient: 'agoric1fakeLCAAddress',
+      denom: 'ubld',
+      amount: '3500000',
+    },
+    'funds sent to LCA',
+  );
+  t.deepEqual(
+    bankHistory[bankHistory.length - 1],
+    {
+      type: 'VBANK_GRAB',
+      sender: 'agoric1fakeLCAAddress',
+      denom: 'ubld',
+      amount: '3500000',
+    },
+    'funds withdrawn from LCA in catch block',
   );
 });
 

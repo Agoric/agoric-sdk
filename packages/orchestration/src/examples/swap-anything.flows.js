@@ -222,7 +222,5 @@ export const swapAnythingViaHook = async (
     { denom, value },
     { memo },
   );
-
-  return 'Done';
 };
 harden(swapAnythingViaHook);
