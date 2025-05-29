@@ -148,7 +148,7 @@
     "!CHANGELOG.md"
   ],
   "scripts": {
-    "build": "tsc --project tsconfig.build.json && scripts/minify.cjs",
+    "build": "esbuild --platform=neutral --format=esm --outdir=dist src/*.ts src/codegen/**/*.ts",
     "clean": "rimraf dist",
     "codegen": "./update-protos.sh && scripts/codegen.cjs",
     "prepare": "npm run build",
