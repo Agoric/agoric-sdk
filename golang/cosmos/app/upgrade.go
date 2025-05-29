@@ -227,11 +227,6 @@ func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string, baseAppLeg
 			// Each CoreProposalStep runs sequentially, and can be constructed from
 			// one or more modules executing in parallel within the step.
 			CoreProposalSteps = append(CoreProposalSteps,
-				// Orchestration vats: Fix memory leak in vow tools
-				// vat-ibc (included in orchestration): Accommodate string sequence numbers.
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/upgrade-orchestration.js",
-				),
 				// Register a new ZCF to be used for all future contract instances and upgrades
 				vm.CoreProposalStepForModules(
 					"@agoric/builders/scripts/vats/upgrade-zcf.js",
@@ -240,11 +235,6 @@ func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string, baseAppLeg
 				// the walletFactory on every software upgrade
 				vm.CoreProposalStepForModules(
 					"@agoric/builders/scripts/smart-wallet/build-wallet-factory2-upgrade.js",
-				),
-				// vat-bank is slowly leaking, possibly because of the liveslots resolved promise leak
-				// (https://github.com/Agoric/agoric-sdk/issues/11118). Restart to pick up the fix.
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/upgrade-bank.js",
 				),
 			)
 
