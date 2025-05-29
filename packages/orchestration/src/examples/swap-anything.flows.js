@@ -1,5 +1,5 @@
 import { NonNullish, makeTracer } from '@agoric/internal';
-import { Fail, makeError, q } from '@endo/errors';
+import { makeError, q } from '@endo/errors';
 import { M, mustMatch } from '@endo/patterns';
 
 const trace = makeTracer('SwapAnything.Flow');
@@ -129,10 +129,8 @@ export const swapIt = async (
     throw makeError(errorMsg);
   };
 
-  const [_a, osmosisChainInfo, connection] =
+  const [_a, osmosisChainInfo, _connection] =
     await chainHub.getChainsAndConnection('agoric', 'osmosis');
-
-  connection.counterparty || Fail`No IBC connection to Osmosis`;
 
   trace(`got info for chain: osmosis ${osmosisChainInfo}`);
   trace(osmosisChainInfo);
@@ -203,10 +201,8 @@ export const swapAnythingViaHook = async (
    */
   const sharedLocalAccount = await sharedLocalAccountP;
 
-  const [_a, osmosisChainInfo, connection] =
+  const [_a, osmosisChainInfo, _connection] =
     await chainHub.getChainsAndConnection('agoric', 'osmosis');
-
-  connection.counterparty || Fail`No IBC connection to Osmosis`;
 
   trace(`got info for chain: osmosis ${osmosisChainInfo}`);
   trace(osmosisChainInfo);
@@ -222,7 +218,5 @@ export const swapAnythingViaHook = async (
     { denom, value },
     { memo },
   );
-
-  return 'Done';
 };
 harden(swapAnythingViaHook);
