@@ -11,6 +11,9 @@
 
 set -euo pipefail
 
+rmfiles=()
+trap 'rm -f "${rmfiles[@]}"' EXIT
+
 # read config file from args into variable
 CONFIGFILE="config.yaml"
 
@@ -50,7 +53,12 @@ function set_helm_args() {
       pwd -P
     )"
     for script in $(yq -r ".chains[$i].scripts | keys | .[]" ${CONFIGFILE}); do
-      args="$args --set-file chains[$i].scripts.$script.data=$datadir/$(yq -r ".chains[$i].scripts.$script.file" ${CONFIGFILE})"
+      # Expand occurrences of @CONFIGFILE@ in the script file.
+      rawdatafile=$(yq -r ".chains[$i].scripts.$script.file" ${CONFIGFILE})
+      datafile=$(mktemp -t starship-helm-XXXXXX)
+      rmfiles+=("$datafile")
+      sed -e "s#@CONFIGFILE@#$CONFIGFILE#g" "$datadir/$rawdatafile" > "$datafile"
+      args="$args --set-file chains[$i].scripts.$script.data=$datafile"
     done
   done
 }

@@ -54,7 +54,7 @@ chains:
               - /cosmos.bank.v1beta1.Query/AllBalances
     scripts:
       updateConfig:
-        file: scripts/update-config-logs.sh
+        file: scripts/update-config.sh
     faucet:
       enabled: true
       type: starship
