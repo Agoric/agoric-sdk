@@ -41,6 +41,11 @@ import { makeTestAddress } from './make-test-address.js';
 
 export const ROOT_STORAGE_PATH = 'orchtest'; // Orchetration Contract Test
 
+export interface BridgeObject {
+  type: string;
+  messages: any[];
+}
+
 /**
  * Common setup for contract tests, without any specific asset configuration.
  */
@@ -89,10 +94,10 @@ export const setupOrchestrationTest = async ({
   finisher.useRegistry(bridgeTargetKit.targetRegistry);
   await E(transferBridge).initHandler(bridgeTargetKit.bridgeHandler);
 
-  const localBridgeLog: { obj: any; result: any }[] = [];
+  const localBridgeLog: { obj: BridgeObject; result: any }[] = [];
   const localchainBridge = makeFakeLocalchainBridge(
     rootZone,
-    (obj, result) => localBridgeLog.push({ obj, result }),
+    (obj: BridgeObject, result) => localBridgeLog.push({ obj, result }),
     makeTestAddress,
   );
   /** @returns {ReadonlyArray<any>} the input messages sent to the localchain bridge */
