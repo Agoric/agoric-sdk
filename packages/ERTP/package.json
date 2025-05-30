@@ -12,7 +12,7 @@
     "prepack": "yarn run -T tsc --build tsconfig.build.json",
     "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
     "test": "ava",
-    "test:c8": "c8 --all $C8_OPTIONS ava",
+    "test:c8": "c8 --all ${C8_OPTIONS:-} ava",
     "test:xs": "yarn test:xs-worker",
     "test:xs-unit": "exit 0",
     "test:xs-worker": "SWINGSET_WORKER_TYPE=xs-worker ava -c 2 test/swingsetTests",
