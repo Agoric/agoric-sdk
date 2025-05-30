@@ -84,10 +84,14 @@ export const setupOrchestrationTest = async ({
   finisher.useRegistry(bridgeTargetKit.targetRegistry);
   await E(transferBridge).initHandler(bridgeTargetKit.bridgeHandler);
 
-  const localBridgeLog: { obj: any; result: any }[] = [];
+  interface BridgeObject {
+    type: string;
+    messages: any[];
+  }
+  const localBridgeLog: { obj: BridgeObject; result: any }[] = [];
   const localchainBridge = makeFakeLocalchainBridge(
     rootZone,
-    (obj, result) => localBridgeLog.push({ obj, result }),
+    (obj: BridgeObject, result) => localBridgeLog.push({ obj, result }),
     makeTestAddress,
   );
   /** @returns {ReadonlyArray<any>} the input messages sent to the localchain bridge */
