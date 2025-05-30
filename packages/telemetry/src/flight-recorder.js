@@ -233,11 +233,13 @@ export const makeSimpleCircularBuffer = async ({
     assert.equal(bytesRead, firstReadLength, 'Too few bytes read');
 
     if (bytesRead < outbuf.byteLength) {
-      await file.read(outbuf, {
+      const length = outbuf.byteLength - firstReadLength;
+      const { bytesRead: bytesRead2 } = await file.read(outbuf, {
         offset: firstReadLength,
-        length: outbuf.byteLength - firstReadLength,
+        length,
         position: I_ARENA_START,
       });
+      assert.equal(bytesRead2, length, 'Too few bytes read');
     }
   };
 
