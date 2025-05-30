@@ -294,6 +294,7 @@ export const makeSlogSenderFromBuffer = ({ fileHandle, writeCircBuf }) => {
   return Object.assign(writeJSON, {
     forceFlush: async () => {
       await toWrite;
+      await fileHandle.datasync();
     },
     shutdown: async () => {
       const lastWritten = toWrite;

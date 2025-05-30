@@ -1,5 +1,4 @@
 import fs from 'node:fs';
-import { promisify } from 'node:util';
 import tmp from 'tmp';
 import { test } from './prepare-test-env-ava.js';
 
@@ -13,21 +12,16 @@ const bufferTests = test.macro(
   /**
    *
    * @param {*} t
-   * @param {{makeBuffer: Function}} input
+   * @param {{makeBuffer: typeof makeSimpleCircularBuffer}} input
    */
   async (t, input) => {
     const BUFFER_SIZE = 512;
 
-    const {
-      name: tmpFile,
-      fd,
-      removeCallback,
-    } = tmp.fileSync({ detachDescriptor: true });
-    t.teardown(removeCallback);
-    const fileHandle = /** @type {import('fs/promises').FileHandle} */ ({
-      close: promisify(fs.close.bind(fs, fd)),
+    const { name: tmpFile, removeCallback } = tmp.fileSync({
+      discardDescriptor: true,
     });
-    const { readCircBuf, writeCircBuf } = await input.makeBuffer({
+    t.teardown(removeCallback);
+    const { fileHandle, readCircBuf, writeCircBuf } = await input.makeBuffer({
       circularBufferSize: BUFFER_SIZE,
       circularBufferFilename: tmpFile,
     });
