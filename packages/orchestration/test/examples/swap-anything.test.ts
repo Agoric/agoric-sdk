@@ -7,6 +7,9 @@ import { NonNullish } from '@agoric/internal';
 import * as contractExports from '../../src/examples/swap-anything.contract.js';
 import { commonSetup } from '../supports.js';
 import { buildVTransferEvent } from '../../tools/ibc-mocks.js';
+import { withChainCapabilities } from '../../src/chain-capabilities.js';
+import fetchedChainInfo from '../../src/fetched-chain-info.js';
+import { connectionKey, HubName } from '../../src/exos/chain-hub.js';
 
 const contractName = 'swap-anything';
 type StartFn = typeof contractExports.start;
@@ -19,7 +22,7 @@ const config = {
   },
 };
 
-const bootstrapOrchestration = async t => {
+const bootstrapOrchestration = async (t, deleteOsmosis?) => {
   t.log('bootstrap, orchestration core-eval');
   const {
     bootstrap,
@@ -34,6 +37,7 @@ const bootstrapOrchestration = async t => {
     },
     mocks: { transferBridge },
   } = await commonSetup(t);
+
   const vt = bootstrap.vowTools;
 
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
@@ -47,11 +51,66 @@ const bootstrapOrchestration = async t => {
     contractName,
   );
 
+  const getPrivateArgsWithoutOsmosis = async () => {
+    const { osmosis: _, ...remainingChains } = fetchedChainInfo;
+
+    switch (deleteOsmosis) {
+      case 'chain': {
+        const { nameAdmin } = await E(bootstrap.agoricNamesAdmin).provideChild(
+          HubName.Chain,
+        );
+        await E(nameAdmin).delete('osmosis');
+        break;
+      }
+      case 'connection': {
+        const { nameAdmin: connAdmin } = await E(
+          bootstrap.agoricNamesAdmin,
+        ).provideChild(HubName.ChainConnection);
+        const key = connectionKey(remainingChains.agoric.chainId, 'osmosis-1');
+        await E(connAdmin).delete(key);
+        break;
+      }
+      default:
+        break;
+    }
+
+    const agoric = {
+      ...remainingChains.agoric,
+      connections: { ...remainingChains.agoric.connections },
+    };
+
+    if (
+      agoric.connections &&
+      Object.prototype.hasOwnProperty.call(agoric.connections, 'osmosis-1')
+    ) {
+      delete (agoric.connections as Partial<typeof agoric.connections>)[
+        'osmosis-1'
+      ];
+    }
+
+    const updatedChainInfo = {
+      ...remainingChains,
+      agoric,
+    };
+
+    return {
+      ...commonPrivateArgs,
+      chainInfo: withChainCapabilities(updatedChainInfo),
+    };
+  };
+
+  let privateArgs;
+  if (deleteOsmosis) {
+    privateArgs = await getPrivateArgsWithoutOsmosis();
+  } else {
+    privateArgs = commonPrivateArgs;
+  }
+
   const swapKit = await E(zoe).startInstance(
     installation,
     { BLD: bld.issuer },
     {},
-    { ...commonPrivateArgs, storageNode },
+    { ...privateArgs, storageNode },
   );
 
   return {
@@ -367,4 +426,56 @@ test('should recover failed transfer', async t => {
   );
 });
 
-test.todo('should throw when Osmosis not connected');
+test('should throw when Osmosis chain is not registered', async t => {
+  const { vt, swapKit, zoe, pourPayment, bld } = await bootstrapOrchestration(
+    t,
+    'chain',
+  );
+
+  const publicFacet = await E(zoe).getPublicFacet(swapKit.instance);
+  const inv = E(publicFacet).makeSwapInvitation();
+  const amt = await E(zoe).getInvitationDetails(inv);
+  t.is(amt.description, 'swap');
+
+  const anAmt = bld.units(3.5);
+  const Send = await pourPayment(anAmt);
+  const offerArgs = buildOfferArgs(config.xcsInformation.rawMsgNoNextMemo);
+
+  const userSeat = await E(zoe).offer(
+    inv,
+    { give: { Send: anAmt } },
+    { Send },
+    offerArgs,
+  );
+
+  await t.throwsAsync(vt.when(E(userSeat).getOfferResult()), {
+    message: 'chain not found:osmosis',
+  });
+});
+
+test('should throw when Agoric <-> Osmosis connection is not registered', async t => {
+  const { vt, swapKit, zoe, pourPayment, bld } = await bootstrapOrchestration(
+    t,
+    'connection',
+  );
+
+  const publicFacet = await E(zoe).getPublicFacet(swapKit.instance);
+  const inv = E(publicFacet).makeSwapInvitation();
+  const amt = await E(zoe).getInvitationDetails(inv);
+  t.is(amt.description, 'swap');
+
+  const anAmt = bld.units(3.5);
+  const Send = await pourPayment(anAmt);
+  const offerArgs = buildOfferArgs(config.xcsInformation.rawMsgNoNextMemo);
+
+  const userSeat = await E(zoe).offer(
+    inv,
+    { give: { Send: anAmt } },
+    { Send },
+    offerArgs,
+  );
+
+  await t.throwsAsync(vt.when(E(userSeat).getOfferResult()), {
+    message: 'connection not found: agoric-3<->osmosis-1',
+  });
+});
