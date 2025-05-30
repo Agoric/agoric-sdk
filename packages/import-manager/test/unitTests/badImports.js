@@ -6,7 +6,7 @@ import { listIsEmpty, numIsEmpty } from './valueOps.js';
 function makeBadImportManager() {
   const mgr = importManager();
   const obj = { numIsEmpty };
-  const fooSym = Symbol('foo');
+  const fooSym = unpassableSymbolForName('foo');
   obj[fooSym] = listIsEmpty;
   return mgr.addExports(obj);
 }
