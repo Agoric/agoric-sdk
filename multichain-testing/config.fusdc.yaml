@@ -1,5 +1,5 @@
 name: agoric-multichain-testing-fusdc
-version: 0.2.20
+version: v1.7
 
 chains:
   - id: agoriclocal
@@ -61,6 +61,7 @@ chains:
       memory: 1Gi
   - id: osmosislocal
     name: osmosis
+    image: ghcr.io/cosmology-tech/starship/osmosis:v28.0.0
     numValidators: 1
     genesis:
       app_state:
