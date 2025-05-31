@@ -13,5 +13,6 @@ export default {
     '!test/fast-usdc/**/*.test.*',
     '!test/queries/**/*.test.*',
     '!test/staking/**/*.test.*',
+    '!test/xcs-swap-anything/**/*.test.*',
   ],
 };
