@@ -435,7 +435,7 @@ func (msg MsgInstallBundle) ValidateBasic() error {
 		// must enforce a limit to avoid overflow when computing its successor in Uncompress()
 		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Uncompressed size out of range")
 	}
-	// We don't check the accuracy of the uncompressed size here, since it could comsume significant CPU.
+	// We don't check the accuracy of the uncompressed size here, since it could consume significant CPU.
 	return nil
 }
 
