@@ -166,7 +166,7 @@ export const makeOsmosisSwapTools = async t => {
 
     const destinationBalanceBefore =
       await destinationClient.getAllBalances(destinationAddress);
-    t.log(
+    console.log(
       'destination wallet balances before transfer: ',
       destinationBalanceBefore,
     );
@@ -185,7 +185,6 @@ export const makeOsmosisSwapTools = async t => {
       throw Error(`failed to ibc transfer funds to ${destinationAddress}`);
     }
     t.is(txRes.code, 0, `Transaction succeeded`);
-    console.log('sendIbcTokens TxResponse: ', txRes);
 
     const denom = await getDenomHash(
       destinationChain,
@@ -239,22 +238,21 @@ export const makeOsmosisSwapTools = async t => {
       funds,
     });
 
-    const response = await osmosisClient.signAndBroadcast(
+    const txRes = await osmosisClient.signAndBroadcast(
       osmosisAddress,
       [{ typeUrl: MsgExecuteContract.typeUrl, value: message }],
       fee,
     );
-    console.log('invokeOsmosisContract DeliverTxResponse: ', response);
 
-    const { msgResponses, code } = response;
-
-    if (code !== 0) {
+    if (txRes && txRes.code !== 0) {
+      console.error(txRes);
       throw Error(
         `Failed to execute osmosis contract with message ${JSON.stringify(message)}`,
       );
     }
+    t.is(txRes.code, 0, `Transaction succeeded`);
 
-    return msgResponses;
+    return txRes.msgResponses;
   };
 
   const queryOsmosisContract = async (contractAddress: string, queryMsg) => {
@@ -324,8 +322,10 @@ export const makeOsmosisSwapTools = async t => {
     );
 
     if (storeResult.msgResponses[0] && storeResult.code !== 0) {
+      console.error(storeResult);
       throw Error(`Failed to store ${contractLabel} contract`);
     }
+    t.is(storeResult.code, 0, `Transaction succeeded`);
 
     const { codeId } = MsgStoreCodeResponse.decode(
       storeResult.msgResponses[0].value,
@@ -351,8 +351,10 @@ export const makeOsmosisSwapTools = async t => {
     );
 
     if (instantiateResult.msgResponses[0] && instantiateResult.code !== 0) {
+      console.error(instantiateResult);
       throw Error(`Failed to instantiate ${contractLabel} contract`);
     }
+    t.is(instantiateResult.code, 0, `Transaction succeeded`);
 
     const { address } = MsgInstantiateContractResponse.decode(
       instantiateResult.msgResponses[0].value,
@@ -467,7 +469,7 @@ export const makeOsmosisSwapTools = async t => {
       osmosisAddress,
       denom,
     );
-    console.log('OsmosisClient BALANCE', { proposeBalance });
+    console.log('OsmosisClient balance', { proposeBalance });
     t.true(BigInt(proposeBalance.amount) >= BigInt(amount as string));
 
     const txMsg = {
@@ -508,7 +510,7 @@ export const makeOsmosisSwapTools = async t => {
     try {
       for (const channel of channelList) {
         await getXcsState(channel);
-        t.log(
+        console.log(
           `Xcs State verified for ${channel.primary} ${channel.counterParty}`,
         );
       }
@@ -561,6 +563,11 @@ export const makeOsmosisSwapTools = async t => {
       ],
       fee,
     );
+    if (result && result.code !== 0) {
+      console.error(result);
+      throw Error(`Failed to create new pool`);
+    }
+    t.is(result.code, 0, `Transaction succeeded`);
 
     const { poolId } = MsgCreateBalancerPoolResponse.decode(
       result.msgResponses[0].value,
@@ -906,7 +913,10 @@ export const makeWaitUntilIbcTransfer =
         const targetBalanceNow = currentBalances.find(
           ({ denom }) => denom === targetDenom,
         );
-        console.log({ targetBalanceBefore, targetBalanceNow });
+        console.log('Balance change: ', {
+          targetBalanceBefore,
+          targetBalanceNow,
+        });
 
         // If expected denom not found in both before and after balances then return false
         if (!targetBalanceBefore && !targetBalanceNow) return false;
