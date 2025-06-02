@@ -8,7 +8,7 @@ import {
   fromLegible,
   makeMarshalFromRecord,
   toLegible,
-} from '../../src/utils/config-marshal.js';
+} from '../src/config-marshal.js';
 
 /**
  * @import {Amount, Brand, DepositFacet, NatValue, Payment} from '@agoric/ertp';
@@ -19,7 +19,6 @@ const testMatches = (t, specimen, pattern) => {
 };
 
 test('cross-vat configuration of Fast USDC FeeConfig', t => {
-  t.log('TODO: move to... deploy-script-utils?');
   const context = /** @type {const} */ ({
     /** @type {Brand<'nat'>} */
     USDC: Far('USDC Brand'),
