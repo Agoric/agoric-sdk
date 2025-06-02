@@ -193,6 +193,7 @@ __metadata:
     "@endo/errors": "npm:^1.2.10"
     "@endo/far": "npm:^1.1.11"
     "@endo/init": "npm:^1.1.9"
+    "@endo/marshal": "npm:^1.6.4"
     "@endo/nat": "npm:^5.1.0"
     "@endo/pass-style": "npm:^1.5.0"
     "@endo/patterns": "npm:^1.5.0"
