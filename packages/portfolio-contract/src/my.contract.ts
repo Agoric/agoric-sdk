@@ -1,24 +1,16 @@
 import {
-  OrchestrationPowersShape,
   withOrchestration,
   type OrchestrationTools,
 } from '@agoric/orchestration';
 import { type VTransferIBCEvent } from '@agoric/vats';
 import type { Zone } from '@agoric/zone';
 import { E } from '@endo/far';
-import { M } from '@endo/patterns';
+import { meta } from './my.contract.meta.js';
 import * as flows from './my.flows.ts';
 
 const interfaceTODO = undefined;
 
-export const meta = M.splitRecord({
-  privateArgsShape: {
-    // @ts-expect-error TypedPattern not recognized as record
-    ...OrchestrationPowersShape,
-    marshaller: M.remotable('marshaller'),
-  },
-});
-harden(meta);
+export { meta };
 
 export const contract = async (
   _zcf,
@@ -58,3 +50,5 @@ export const contract = async (
 
 export const start = withOrchestration(contract);
 harden(start);
+
+export type StartMy = typeof start;
