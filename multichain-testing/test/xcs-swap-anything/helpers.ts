@@ -219,20 +219,24 @@ export const makeOsmosisSwapTools = async t => {
     };
   };
 
-  const invokeOsmosisContract = async (contractAddress: string, txMsg) => {
+  const invokeOsmosisContract = async (
+    contractAddress: string,
+    txMsg: object,
+    funds: Coin[] = [],
+  ) => {
     const clientRegistry = osmosisClient.registry;
     clientRegistry.register(MsgExecuteContract.typeUrl, MsgExecuteContract);
 
     const fee = {
-      amount: [{ denom: 'uosmo', amount: '1000' }],
-      gas: '200000',
+      amount: [{ denom: 'uosmo', amount: '20000000' }],
+      gas: '59000000',
     };
 
     const message = MsgExecuteContract.fromPartial({
       sender: osmosisAddress,
       contract: contractAddress,
       msg: toUtf8(JSON.stringify(txMsg)),
-      funds: [],
+      funds,
     });
 
     const response = await osmosisClient.signAndBroadcast(
@@ -245,7 +249,9 @@ export const makeOsmosisSwapTools = async t => {
     const { msgResponses, code } = response;
 
     if (code !== 0) {
-      throw Error(`Failed to execute osmosis contract with message ${message}`);
+      throw Error(
+        `Failed to execute osmosis contract with message ${JSON.stringify(message)}`,
+      );
     }
 
     return msgResponses;
@@ -448,6 +454,54 @@ export const makeOsmosisSwapTools = async t => {
     };
 
     await invokeOsmosisContract(registryAddress, txMsg);
+  };
+
+  /**
+   * TODO: Consider funding if insufficient balance
+   */
+  const setupPfmEnabled = async ({ chain, denom, amount }: SwapParty) => {
+    const registryAddress = xcsContracts.crosschain_registry.address;
+    t.truthy(registryAddress, 'crosschain_registry contract address not found');
+
+    const proposeBalance = await osmosisClient.getBalance(
+      osmosisAddress,
+      denom,
+    );
+    console.log('OsmosisClient BALANCE', { proposeBalance });
+    t.true(BigInt(proposeBalance.amount) >= BigInt(amount as string));
+
+    const txMsg = {
+      propose_pfm: {
+        chain,
+      },
+    };
+
+    await invokeOsmosisContract(registryAddress as string, txMsg, [
+      { denom, amount: amount as string },
+    ]);
+
+    await retryUntilCondition(
+      () => hasPacketForwarding(chain),
+      (result: boolean) => result,
+      `PFM not enabled for ${chain}`,
+      {
+        // pfm proposition takes longer than our default timeout
+        maxRetries: 20,
+        retryIntervalMs: 5000,
+      },
+    );
+  };
+
+  const enablePfmInBatch = async (chains: SwapParty[]) => {
+    for await (const { chain, denom } of chains) {
+      console.log('Proposing PFM for', chain);
+      const chainHashOnOsmosis = await getDenomHash('osmosis', chain, denom);
+      await setupPfmEnabled({
+        chain,
+        denom: `ibc/${chainHashOnOsmosis}`,
+        amount: '3', // amount is arbitrary
+      });
+    }
   };
 
   const isXcsStateSet = async (channelList: Channel[]) => {
@@ -662,6 +716,26 @@ export const makeOsmosisSwapTools = async t => {
     return pool_route;
   };
 
+  const hasPacketForwarding = async (chain: string) => {
+    const crosschainRegistryAddress = xcsContracts.crosschain_registry
+      .address as string;
+
+    t.truthy(crosschainRegistryAddress, 'crosschainRegistryAddress not found');
+
+    const queryMsg = {
+      has_packet_forwarding: {
+        chain,
+      },
+    };
+
+    const isPfmEnabled = await queryOsmosisContract(
+      crosschainRegistryAddress,
+      queryMsg,
+    );
+
+    return isPfmEnabled;
+  };
+
   const getContractsInfo = () => xcsContracts;
 
   const getOsmosisAccount = () => {
@@ -714,12 +788,12 @@ export const makeOsmosisSwapTools = async t => {
     console.log('Setting XCS state ...');
 
     if (!(await isXcsStateSet(channelList))) {
-      for (const { chain, prefix } of prefixList) {
+      for await (const { chain, prefix } of prefixList) {
         console.log(`Setting Prefix for ${chain} ...`);
         await setupXcsPrefix(chain, prefix);
       }
 
-      for (const { primary, counterParty } of channelList) {
+      for await (const { primary, counterParty } of channelList) {
         console.log(
           `Setting Channel Link for ${primary} and ${counterParty} ...`,
         );
@@ -780,6 +854,7 @@ export const makeOsmosisSwapTools = async t => {
   return {
     setupXcsContracts,
     setupXcsState,
+    setupPfmEnabled,
     fundRemote,
     getDenomHash,
     getContractsInfo,
@@ -791,5 +866,59 @@ export const makeOsmosisSwapTools = async t => {
     setupNewPool,
     setPoolRoute,
     setupPoolsInBatch,
+    hasPacketForwarding,
+    enablePfmInBatch,
   };
 };
+
+export const makeWaitUntilIbcTransfer =
+  (client, getDenomHash, retryUntilCondition) =>
+  (
+    address,
+    balancesBefore,
+    { currentChain, issuerChain, denom },
+    retryOptions = undefined,
+  ) =>
+    retryUntilCondition(
+      async () => {
+        let targetDenomHash;
+        const balanceResult = await client.queryBalances(address);
+        try {
+          targetDenomHash = await getDenomHash(
+            currentChain,
+            issuerChain,
+            denom,
+          );
+        } catch {
+          targetDenomHash = 'not-found-yet';
+        }
+
+        return {
+          currentBalances: balanceResult.balances,
+          targetDenom: `ibc/${targetDenomHash}`,
+        };
+      },
+      ({ currentBalances, targetDenom }) => {
+        // undefined if not received yet
+        const targetBalanceBefore = balancesBefore.find(
+          ({ denom }) => denom === targetDenom,
+        );
+        const targetBalanceNow = currentBalances.find(
+          ({ denom }) => denom === targetDenom,
+        );
+        console.log({ targetBalanceBefore, targetBalanceNow });
+
+        // If expected denom not found in both before and after balances then return false
+        if (!targetBalanceBefore && !targetBalanceNow) return false;
+        // If expected denom not found in before but present in current then return true
+        if (!targetBalanceBefore && targetBalanceNow) return true;
+        // If the denom is present in both balances then latter should be greater than the previous one
+        if (targetBalanceBefore && targetBalanceNow)
+          return (
+            BigInt(targetBalanceNow.amount) > BigInt(targetBalanceBefore.amount)
+          );
+        else return false;
+      },
+      'Deposit reflected in receiver balance',
+      retryOptions,
+    );

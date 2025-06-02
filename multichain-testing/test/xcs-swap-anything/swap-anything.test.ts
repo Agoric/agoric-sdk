@@ -16,6 +16,8 @@ import {
   type Channel,
   type SetupOsmosisContextWithCommon,
   type Pair,
+  type SwapParty,
+  makeWaitUntilIbcTransfer,
 } from './helpers.js';
 import type { Pool } from 'osmojs/osmosis/gamm/v1beta1/balancerPool.js';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
@@ -55,6 +57,11 @@ const osmosisPoolList: Pair[] = [
   },
 ];
 
+const pfmEnabledChains: SwapParty[] = [
+  { chain: 'cosmoshub', denom: 'uatom' },
+  { chain: 'agoric', denom: 'ubld' },
+];
+
 test.before(async t => {
   const { setupTestKeys, ...common } = await commonSetup(t);
   const { commonBuilderOpts, deleteTestKeys, startContract } = common;
@@ -72,13 +79,19 @@ test.before(async t => {
   t.context = { ...t.context, ...swapTools };
 });
 
-test.serial('setup XCS', async t => {
-  const { setupXcsContracts, setupXcsState, setupPoolsInBatch } = t.context;
+test.only('setup XCS', async t => {
+  const {
+    setupXcsContracts,
+    setupXcsState,
+    setupPoolsInBatch,
+    enablePfmInBatch,
+  } = t.context;
 
   await setupXcsContracts();
   await setupXcsState(prefixList, channelList);
   await setupPoolsInBatch(osmosisPoolList);
 
+  await enablePfmInBatch(pfmEnabledChains);
   t.pass();
 });
 
@@ -91,6 +104,7 @@ test.serial('test osmosis xcs state', async t => {
     getPools,
     getPool,
     getDenomHash,
+    hasPacketForwarding,
   } = t.context;
 
   // verify if Osmosis XCS contracts were instantiated
@@ -150,6 +164,10 @@ test.serial('test osmosis xcs state', async t => {
       ({ token }) => token.denom === `ibc/${chainBDenomHash}`,
     ),
   );
+  // good for debugging
+  const cosmoshubPfm = await hasPacketForwarding('cosmoshub');
+  const agoricPfm = await hasPacketForwarding('agoric');
+  t.log('PFM Proposed', { cosmoshubPfm, agoricPfm });
 });
 
 test.serial('BLD for OSMO, receiver on Agoric', async t => {
@@ -749,6 +767,85 @@ test.serial('native ATOM for Osmo using PFM, receiver on Agoric', async t => {
     osmoOnAgoricHash,
     'got expected ibc denom hash',
   );
+});
+
+test.serial('BLD for ATOM on Osmosis, receiver on Agoric', async t => {
+  const {
+    wallets,
+    provisionSmartWallet,
+    getDenomHash,
+    retryUntilCondition,
+    useChain,
+    vstorageClient,
+    getContractsInfo,
+  } = t.context;
+
+  const apiUrl = await useChain('agoric').getRestEndpoint();
+  const queryClient = makeQueryClient(apiUrl);
+
+  const atomHashOnOsmosis = await getDenomHash('osmosis', 'cosmoshub', 'uatom');
+  t.log({ atomHashOnOsmosis });
+
+  const agoricAddr = wallets.agoricSender;
+  const wdUser = await provisionSmartWallet(agoricAddr, {
+    BLD: 1000n,
+    IST: 1000n,
+  });
+
+  // Verify deposit
+  await retryUntilCondition(
+    () => queryClient.queryBalances(agoricAddr),
+    ({ balances }) => {
+      const balance = BigInt(balances[0]?.amount || 0);
+      return balance > 125n;
+    },
+    'agoricSender wallet not provisioned',
+  );
+  t.log(`Provisioned Agoric smart wallet for ${agoricAddr}`);
+
+  // Send swap offer
+  const brands = await vstorageClient.queryData('published.agoricNames.brand');
+  const bldBrand = Object.fromEntries(brands).BLD;
+  const swapInAmount = AmountMath.make(bldBrand, 125n);
+  const { balances: balancesBefore } = await queryClient.queryBalances(
+    wallets.agoricReceiver,
+  );
+  t.log(`agoric Receiver balances before: `, balancesBefore);
+
+  // Send swap offer
+  const doOffer = makeDoOffer(wdUser);
+
+  const { crosschain_swaps } = getContractsInfo();
+
+  const makeAccountOfferId = `swap-ubld-uosmo-${Date.now()}`;
+  await doOffer({
+    id: makeAccountOfferId,
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: [contractName],
+      callPipe: [['makeSwapInvitation']],
+    },
+    offerArgs: {
+      destAddr: crosschain_swaps.address,
+      receiverAddr: wallets.agoricReceiver,
+      outDenom: `ibc/${atomHashOnOsmosis}`,
+      slippage: { slippagePercentage: '20', windowSeconds: 10 },
+      onFailedDelivery: 'do_nothing',
+    },
+    proposal: { give: { Send: swapInAmount } },
+  });
+
+  const waitUntilIbcTransfer = makeWaitUntilIbcTransfer(
+    queryClient,
+    getDenomHash,
+    retryUntilCondition,
+  );
+  await waitUntilIbcTransfer(wallets.agoricReceiver, balancesBefore, {
+    currentChain: 'agoric',
+    issuerChain: 'cosmoshub',
+    denom: 'uatom',
+  });
+  t.pass();
 });
 
 test.after(async t => {
