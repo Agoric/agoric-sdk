@@ -24,7 +24,7 @@ import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 
 const test = anyTest as TestFn<SetupOsmosisContextWithCommon>;
 
-const accounts = ['agoricSender', 'agoricReceiver'];
+const accounts = ['agoricSender', 'agoricReceiver', 'otherReceiver'];
 
 const contractName = 'swapAnything';
 const contractBuilder =
@@ -79,7 +79,7 @@ test.before(async t => {
   t.context = { ...t.context, ...swapTools };
 });
 
-test.only('setup XCS', async t => {
+test.serial('setup XCS', async t => {
   const {
     setupXcsContracts,
     setupXcsState,
@@ -226,7 +226,6 @@ test.serial('BLD for OSMO, receiver on Agoric', async t => {
       callPipe: [['makeSwapInvitation']],
     },
     offerArgs: {
-      // TODO: get the contract address dynamically
       destAddr: crosschain_swaps.address,
       receiverAddr: wallets.agoricReceiver,
       outDenom: 'uosmo',
@@ -236,26 +235,17 @@ test.serial('BLD for OSMO, receiver on Agoric', async t => {
     proposal: { give: { Send: swapInAmount } },
   });
 
-  const { balances: agoricReceiverBalances } = await retryUntilCondition(
-    () => queryClient.queryBalances(wallets.agoricReceiver),
-    ({ balances }) => {
-      const balancesBeforeAmount = BigInt(balancesBefore[0]?.amount || 0);
-      const currentBalanceAmount = BigInt(balances[0]?.amount || 0);
-      return currentBalanceAmount > balancesBeforeAmount;
-    },
-    'Deposit reflected in localOrchAccount balance',
+  const waitUntilIbcTransfer = makeWaitUntilIbcTransfer(
+    queryClient,
+    getDenomHash,
+    retryUntilCondition,
   );
-  t.log(agoricReceiverBalances);
-
-  const expectedHash = await getDenomHash('agoric', 'osmosis', 'uosmo');
-  t.log('Expected denom hash:', expectedHash);
-
-  t.regex(agoricReceiverBalances[0]?.denom, /^ibc/);
-  t.is(
-    agoricReceiverBalances[0]?.denom.split('ibc/')[1],
-    expectedHash,
-    'got expected ibc denom hash',
-  );
+  await waitUntilIbcTransfer(wallets.agoricReceiver, balancesBefore, {
+    currentChain: 'agoric',
+    issuerChain: 'osmosis',
+    denom: 'uosmo',
+  });
+  t.pass();
 });
 
 // FLAKE: fails when run in isolation (.only)
@@ -288,7 +278,7 @@ test.serial('OSMO for BLD, receiver on Agoric', async t => {
   const bldBrand = Object.fromEntries(brands).OSMO;
   const swapInAmount = AmountMath.make(bldBrand, 75n);
   const { balances: balancesBefore } = await queryClient.queryBalances(
-    wallets.agoricReceiver,
+    wallets.otherReceiver,
   );
 
   const outDenomHash = await getDenomHash('osmosis', 'agoric', 'ubld');
@@ -305,9 +295,8 @@ test.serial('OSMO for BLD, receiver on Agoric', async t => {
       callPipe: [['makeSwapInvitation']],
     },
     offerArgs: {
-      // TODO: get the contract address dynamically
       destAddr: crosschain_swaps.address,
-      receiverAddr: wallets.agoricReceiver,
+      receiverAddr: wallets.otherReceiver,
       outDenom: `ibc/${outDenomHash}`,
       slippage: { slippagePercentage: '20', windowSeconds: 10 },
       onFailedDelivery: 'do_nothing',
@@ -315,23 +304,22 @@ test.serial('OSMO for BLD, receiver on Agoric', async t => {
     proposal: { give: { Send: swapInAmount } },
   });
 
-  const { balances: agoricReceiverBalances } = await retryUntilCondition(
-    () => queryClient.queryBalances(wallets.agoricReceiver),
-    ({ balances }) => {
-      const balancesBeforeAmount = BigInt(balancesBefore[0]?.amount || 0);
-      const currentBalanceAmount = BigInt(balances[0]?.amount || 0);
-      return currentBalanceAmount < balancesBeforeAmount;
-    },
-    'Deposit reflected in localOrchAccount balance',
-  );
-  t.log(agoricReceiverBalances);
+  await retryUntilCondition(
+    async () => queryClient.queryBalance(wallets.otherReceiver, 'ubld'),
+    bldBalance => {
+      console.log('BLD BALANCE RECEIVER', bldBalance);
+      const bldBalanceBefore = balancesBefore.find(
+        ({ denom }) => denom === 'ubld',
+      );
+      const bldAmount = BigInt(bldBalance.balance?.amount as string);
 
-  t.assert(
-    BigInt(balancesBefore[0].amount) > BigInt(agoricReceiverBalances[0].amount),
+      if (!bldBalanceBefore && bldAmount > 0) return true;
+      if (bldBalanceBefore) return bldAmount > BigInt(bldBalanceBefore.amount);
+      else return false;
+    },
+    'BLD not received by the receiver',
   );
-  t.assert(
-    BigInt(balancesBefore[1].amount) < BigInt(agoricReceiverBalances[1].amount),
-  );
+  t.pass();
 });
 
 test.serial('BLD for OSMO, receiver on CosmosHub', async t => {
@@ -342,6 +330,7 @@ test.serial('BLD for OSMO, receiver on CosmosHub', async t => {
     retryUntilCondition,
     useChain,
     getContractsInfo,
+    getDenomHash,
   } = t.context;
 
   const { client, address: cosmosAddress } = await createFundedWalletAndClient(
@@ -393,34 +382,20 @@ test.serial('BLD for OSMO, receiver on CosmosHub', async t => {
     proposal: { give: { Send: swapInAmount } },
   });
 
-  const balancesResultAfter = await retryUntilCondition(
-    () => client.getAllBalances(cosmosAddress),
-    coins => coins?.length > 1,
-    `Faucet balances found for ${cosmosAddress}`,
-  );
-  console.log('Balances:', balancesResultAfter);
-
-  const cosmosChainId = useChain('cosmoshub').chain.chain_id;
-  const {
-    transferChannel: { channelId },
-  } = starshipChainInfo.osmosis.connections[cosmosChainId];
-
   const apiUrl = await useChain('cosmoshub').getRestEndpoint();
   const queryClient = makeQueryClient(apiUrl);
 
-  const { hash: expectedHash } = await queryClient.queryDenom(
-    `transfer/${channelId}`,
-    'uosmo',
+  const waitUntilIbcTransfer = makeWaitUntilIbcTransfer(
+    queryClient,
+    getDenomHash,
+    retryUntilCondition,
   );
-
-  t.log('Expected denom hash:', expectedHash);
-
-  t.regex(balancesResultAfter[0]?.denom, /^ibc/);
-  t.is(
-    balancesResultAfter[0]?.denom.split('ibc/')[1],
-    expectedHash,
-    'got expected ibc denom hash',
-  );
+  await waitUntilIbcTransfer(cosmosAddress, balancesResult, {
+    currentChain: 'cosmoshub',
+    issuerChain: 'osmosis',
+    denom: 'uosmo',
+  });
+  t.pass();
 });
 
 test.serial(
@@ -567,26 +542,17 @@ test.serial('address hook - BLD for OSMO, receiver on Agoric', async t => {
   t.is(txRes.code, 0, `Transaction succeeded`);
   t.log(`Funds transferred to ${orcContractReceiverAddress}`);
 
-  const { balances: agoricReceiverBalances } = await retryUntilCondition(
-    () => queryClient.queryBalances(wallets.agoricReceiver),
-    ({ balances }) => {
-      const balancesBeforeAmount = BigInt(balancesBefore[0]?.amount || 0);
-      const currentBalanceAmount = BigInt(balances[0]?.amount || 0);
-      return currentBalanceAmount > balancesBeforeAmount;
-    },
-    'Osmosis swap output reflected on Agoric receiver balance',
+  const waitUntilIbcTransfer = makeWaitUntilIbcTransfer(
+    queryClient,
+    getDenomHash,
+    retryUntilCondition,
   );
-  t.log(agoricReceiverBalances);
-
-  const expectedHash = await getDenomHash('agoric', 'osmosis', 'uosmo');
-  t.log('Expected denom hash:', expectedHash);
-
-  t.regex(agoricReceiverBalances[0]?.denom, /^ibc/);
-  t.is(
-    agoricReceiverBalances[0]?.denom.split('ibc/')[1],
-    expectedHash,
-    'got expected ibc denom hash',
-  );
+  await waitUntilIbcTransfer(wallets.agoricReceiver, balancesBefore, {
+    currentChain: 'agoric',
+    issuerChain: 'osmosis',
+    denom: 'uosmo',
+  });
+  t.pass();
 });
 
 test.serial('bad swapOut receiver, via addressHooks', async t => {
@@ -746,27 +712,17 @@ test.serial('native ATOM for Osmo using PFM, receiver on Agoric', async t => {
   t.is(txRes.code, 0, `Transaction succeeded`);
   t.log(`Funds transferred to ${orcContractReceiverAddress}`);
 
-  const { balances: agoricReceiverBalances } = await retryUntilCondition(
-    () => queryClient.queryBalances(wallets.agoricReceiver),
-    ({ balances }) => {
-      const balancesBeforeAmount = BigInt(balancesBefore[0]?.amount || 0);
-      const currentBalanceAmount = BigInt(balances[0]?.amount || 0);
-      return currentBalanceAmount > balancesBeforeAmount;
-    },
-    'Osmosis swap output reflected on Agoric receiver balance',
+  const waitUntilIbcTransfer = makeWaitUntilIbcTransfer(
+    queryClient,
+    getDenomHash,
+    retryUntilCondition,
   );
-  t.log(agoricReceiverBalances);
-
-  const osmoOnAgoricHash = await getDenomHash('agoric', 'osmosis', 'uosmo');
-
-  t.log('Expected denom hash:', osmoOnAgoricHash);
-
-  t.regex(agoricReceiverBalances[0]?.denom, /^ibc/);
-  t.is(
-    agoricReceiverBalances[0]?.denom.split('ibc/')[1],
-    osmoOnAgoricHash,
-    'got expected ibc denom hash',
-  );
+  await waitUntilIbcTransfer(wallets.agoricReceiver, balancesBefore, {
+    currentChain: 'agoric',
+    issuerChain: 'osmosis',
+    denom: 'uosmo',
+  });
+  t.pass();
 });
 
 test.serial('BLD for ATOM on Osmosis, receiver on Agoric', async t => {
