@@ -9,9 +9,9 @@ import type { ZCF } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
-import * as flows from './portfolio.flows.ts';
-import { makeNatAmountShape } from './type-guards.ts';
 import { preparePortfolioKit } from './portfolio.exo.ts';
+import * as flows from './portfolio.flows.ts';
+import { makeProposalShapes } from './type-guards.ts';
 
 const trace = makeTracer('PortC');
 
@@ -35,11 +35,8 @@ export const contract = async (
   const { orchestrateAll, zoeTools } = tools;
 
   assert(brands.USDC, 'USDC missing from brands in terms');
-  const proposalShapes = {
-    openPortfolio: M.splitRecord({
-      give: { In: makeNatAmountShape(brands.USDC) },
-    }),
-  };
+
+  const proposalShapes = makeProposalShapes(brands.USDC);
 
   const makePortfolioKit = preparePortfolioKit(zone);
   const { makeLocalAccount, openPortfolio } = orchestrateAll(flows, {

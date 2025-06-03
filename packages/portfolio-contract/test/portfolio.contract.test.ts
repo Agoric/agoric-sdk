@@ -7,7 +7,7 @@ import { E, passStyleOf } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
 import { createRequire } from 'module';
 import { commonSetup } from './supports.js';
-import { executeOffer } from './wallet-offer-tools.ts';
+import { makeWallet, type WalletTool } from './wallet-offer-tools.ts';
 
 const nodeRequire = createRequire(import.meta.url);
 
@@ -15,7 +15,7 @@ const contractName = 'ymax0';
 const contractFile = nodeRequire.resolve('../src/portfolio.contract.ts');
 type StartFn = typeof import('../src/portfolio.contract.ts').start;
 
-test('start portfolio contract', async t => {
+test('start portfolio contract; open portfolio', async t => {
   const common = await commonSetup(t);
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
 
@@ -51,29 +51,26 @@ test('start portfolio contract', async t => {
   const { when } = common.utils.vowTools;
   const openPortfolio = async (
     instance: Instance<StartFn>,
+    wallet: WalletTool,
     funds: Payment<'nat'>,
   ) => {
-    const toOpen = await E(myKit.publicFacet).makeOpenPortfolioInvitation();
-    t.is(passStyleOf(toOpen), 'remotable');
-
-    const myPurse = await E(usdc.issuer).makeEmptyPurse();
-    const In = await E(myPurse).deposit(funds);
-    const proposal = { give: { In } };
-    const offerSpec = {
-      id: 'open123',
-      invitationSpec: {
-        source: 'contract' as const,
-        instance,
-        publicInvitationMaker: 'makeOpenPortfolioInvitation',
-      },
-      proposal,
+    const USDN = await E(wallet).deposit(funds);
+    const proposal = { give: { USDN } };
+    const invitationSpec = {
+      source: 'contract' as const,
+      instance,
+      publicInvitationMaker: 'makeOpenPortfolioInvitation' as const,
     };
-    const providePurse = _ => myPurse;
-    return executeOffer(zoe, when, offerSpec, providePurse);
+    return wallet.executeOffer({ id: 'open123', invitationSpec, proposal });
   };
 
   const funds = await common.utils.pourPayment(usdc.units(10_000));
-  const done = await await openPortfolio(myKit.instance, funds);
+  const wallet = makeWallet({ USDC: usdc }, zoe, when);
+  const done = await await openPortfolio(myKit.instance, wallet, funds);
   t.log('result', done.result);
   t.log('payouts', await deeplyFulfilledObject(done.payouts));
+  t.is(passStyleOf(done.result.invitationMakers), 'remotable');
+  t.like(done.result.publicTopics, [
+    { description: 'USDN ICA', storagePath: 'cosmos:noble-1:cosmos1test' },
+  ]);
 });
