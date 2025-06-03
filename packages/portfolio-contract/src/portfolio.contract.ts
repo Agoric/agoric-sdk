@@ -7,7 +7,7 @@ import { type VTransferIBCEvent } from '@agoric/vats';
 import type { Zone } from '@agoric/zone';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import * as flows from './my.flows.ts';
+import * as flows from './portfolio.flows.ts';
 
 const interfaceTODO = undefined;
 

@@ -16,8 +16,8 @@ import { commonSetup } from './supports.js';
 const nodeRequire = createRequire(import.meta.url);
 
 const contractName = 'myOrchContract';
-const contractFile = nodeRequire.resolve('../src/my.contract.ts');
-type StartFn = typeof import('../src/my.contract.ts').start;
+const contractFile = nodeRequire.resolve('../src/portfolio.contract.ts');
+type StartFn = typeof import('../src/portfolio.contract.ts').start;
 
 test('start my orch contract', async t => {
   const common = await commonSetup(t);
