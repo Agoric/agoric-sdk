@@ -57,11 +57,17 @@ jobs:
         with:
           result-encoding: string
           script: |
-            const matrix = {
-              cli: JSON.parse(process.env.GETTING_STARTED_MATRIX_CLI || '[]'),
+            let should_run = "true";
+            const matrix = JSON.parse(process.env.GETTING_STARTED_MATRIX_CLI || '[]');
+            if (matrix.length === 0) {
+              should_run = "false";
+            }
+            const output = {
+              cli: matrix,
+              should_run,
             };
-            console.log('matrix:', matrix);
-            return JSON.stringify(matrix);
+            console.log('output:', output);
+            return JSON.stringify(output);
 
   # This job is meant to emulate what developers working with the Agoric
   # platform will experience.  It should be kept in sync with the "getting
@@ -74,7 +80,7 @@ jobs:
     needs:
       - pre_check
       - getting-started-matrix
-    if: needs.pre_check.outputs.should_run == 'true'
+    if: needs.pre_check.outputs.should_run == 'true' && ${{ fromJSON(needs.getting-started-matrix.outputs.matrix).should_run }} == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -409,7 +415,6 @@ jobs:
   finalize-integration-result:
     needs:
       - pre_check
-      - getting-started-matrix
       - getting-started
       - deployment-test
       - test-docker-build
@@ -433,9 +438,10 @@ jobs:
         with:
           script: |
             const previousSuccess = ${{ needs.pre_check.outputs.previous_success }};
+            const gettingStartedTestSuccess = "${{ needs.getting-started.result }}" === "success";
             const deploymentTestSuccess = "${{ needs.deployment-test.result }}" === "success";
             const testDockerBuildSuccess = "${{ needs.test-docker-build.result }}" === "success";
-            const conclusion = previousSuccess || (deploymentTestSuccess && testDockerBuildSuccess) ?
+            const conclusion = previousSuccess || (gettingStartedTestSuccess && deploymentTestSuccess && testDockerBuildSuccess) ?
               'success' : 'failure';
             console.log(`Finishing with ${conclusion}`)
             if (conclusion === 'failure') {
