@@ -1,16 +1,13 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { deeplyFulfilledObject } from '@agoric/internal';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, passStyleOf } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
 import { createRequire } from 'module';
 import { commonSetup } from './supports.js';
-import { deeplyFulfilledObject } from '@agoric/internal';
-import { AmountMath } from '@agoric/ertp';
 import { executeOffer } from './wallet-offer-tools.ts';
-import type { VowTools } from '@agoric/vow';
-import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 
 const nodeRequire = createRequire(import.meta.url);
 
@@ -51,7 +48,7 @@ test('start portfolio contract', async t => {
   );
 
   const { usdc } = common.brands;
-  const mockWhen = (x => x) as VowTools['when'];
+  const { when } = common.utils.vowTools;
   const openPortfolio = async (
     instance: Instance<StartFn>,
     funds: Payment<'nat'>,
@@ -71,17 +68,12 @@ test('start portfolio contract', async t => {
       },
       proposal,
     };
-    const { result, payouts: payoutsP } = await executeOffer(
-      zoe,
-      mockWhen,
-      offerSpec,
-      _ => myPurse,
-    );
-    const payouts = await deeplyFulfilledObject(payoutsP);
-    t.log({ result });
-    t.log({ payouts });
+    const providePurse = _ => myPurse;
+    return executeOffer(zoe, when, offerSpec, providePurse);
   };
 
   const funds = await common.utils.pourPayment(usdc.units(10_000));
-  await openPortfolio(myKit.instance, funds);
+  const done = await await openPortfolio(myKit.instance, funds);
+  t.log('result', done.result);
+  t.log('payouts', await deeplyFulfilledObject(done.payouts));
 });
