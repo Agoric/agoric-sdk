@@ -2,6 +2,7 @@ import { makeTracer } from '@agoric/internal';
 import {
   OrchestrationPowersShape,
   withOrchestration,
+  type OrchestrationAccount,
   type OrchestrationTools,
 } from '@agoric/orchestration';
 import type { ZCF } from '@agoric/zoe';
@@ -30,8 +31,7 @@ export const contract = async (
   tools: OrchestrationTools,
 ) => {
   const { brands } = zcf.getTerms();
-  const { orchestrateAll } = tools;
-  const { openPortfolio } = orchestrateAll(flows, {});
+  const { orchestrateAll, zoeTools } = tools;
 
   assert(brands.USDC, 'USDC missing from brands in terms');
   const proposalShapes = {
@@ -40,11 +40,25 @@ export const contract = async (
     }),
   };
 
+  const { makeLocalAccount, openPortfolio } = orchestrateAll(flows, {
+    zoeTools,
+  });
+
+  trace('TODO: baggage test');
+  const localV = zone.makeOnce('localV', _ => makeLocalAccount());
+
   const publicFacet = zone.exo('PortfolioPub', interfaceTODO, {
     makeOpenPortfolioInvitation() {
       trace('makeOpenPortfolioInvitation');
       return zcf.makeInvitation(
-        openPortfolio,
+        (seat, offerArgs) =>
+          openPortfolio(
+            seat,
+            offerArgs,
+            localV as unknown as Promise<
+              OrchestrationAccount<{ chainId: 'agoric-any' }>
+            >,
+          ),
         'openPortfolio',
         undefined,
         proposalShapes.openPortfolio,
