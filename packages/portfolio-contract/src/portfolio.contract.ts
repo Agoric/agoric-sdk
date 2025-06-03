@@ -4,11 +4,12 @@ import {
   withOrchestration,
   type OrchestrationTools,
 } from '@agoric/orchestration';
-import { type VTransferIBCEvent } from '@agoric/vats';
+import type { ZCF } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
-import { E } from '@endo/far';
+import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import * as flows from './portfolio.flows.ts';
+import { makeNatAmountShape } from './type-guards.ts';
 
 const trace = makeTracer('PortC');
 
@@ -16,47 +17,42 @@ const interfaceTODO = undefined;
 
 export const meta = M.splitRecord({
   privateArgsShape: {
-    // @ts-expect-error TypedPattern not recognized as record
-    ...OrchestrationPowersShape,
+    ...(OrchestrationPowersShape as CopyRecord),
     marshaller: M.remotable('marshaller'),
   },
 });
 harden(meta);
 
 export const contract = async (
-  _zcf,
+  zcf: ZCF,
   _privateArgs,
   zone: Zone,
   tools: OrchestrationTools,
 ) => {
+  const { brands } = zcf.getTerms();
   const { orchestrateAll } = tools;
-  const { makeHookAccount, makePosition } = orchestrateAll(flows, {});
+  const { openPortfolio } = orchestrateAll(flows, {});
 
-  const { when } = tools.vowTools;
+  assert(brands.USDC, 'USDC missing from brands in terms');
+  const proposalShapes = {
+    openPortfolio: M.splitRecord({
+      give: { In: makeNatAmountShape(brands.USDC) },
+    }),
+  };
 
-  const tap = zone.makeOnce('tapPosition', _key => {
-    trace('making tap');
-    return zone.exo('tap', interfaceTODO, {
-      async receiveUpcall(event: VTransferIBCEvent) {
-        trace('receiveUpcall', event);
-        // TODO: use watch() rather than when for resumability
-        await when(makePosition()).catch(error => {
-          trace('receiveUpcall: flow failed:', error);
-        });
-      },
-    });
+  const publicFacet = zone.exo('PortfolioPub', interfaceTODO, {
+    makeOpenPortfolioInvitation() {
+      trace('makeOpenPortfolioInvitation');
+      return zcf.makeInvitation(
+        openPortfolio,
+        'openPortfolio',
+        undefined,
+        proposalShapes.openPortfolio,
+      );
+    },
   });
 
-  const hookAccountV = zone.makeOnce('hookAccount', _key =>
-    makeHookAccount(tap),
-  );
-
-  return {
-    publicFacet: zone.exo('MyPub', interfaceTODO, {
-      getHookAddress: () => E(when(hookAccountV)).getAddress(),
-    }),
-    creatorFacet: zone.exo('MyCreator', undefined, {}),
-  };
+  return { publicFacet };
 };
 harden(contract);
 

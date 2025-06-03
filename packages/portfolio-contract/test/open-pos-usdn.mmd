@@ -5,7 +5,9 @@ sequenceDiagram
     actor trader as trader<br >webUI<br >wallet
 
     box rgb(255,153,153) Agoric
-    participant portfolio
+    participant ymax
+    participant portfolio as portfolio<br/>for trader
+    participant LCA
     end
 
     box rgb(166,184,233) Noble
@@ -15,12 +17,20 @@ sequenceDiagram
 
     %% Notation: ->> for initial message, -->> for consequences
 
-    trader ->> portfolio: open(50K,<br/>Aave, Compound,<br/>dYdX MegaVault, Noble USDN)
-    portfolio -->> ICAn: 10k USDC
+    trader ->> ymax: open(50K,<br/>Aave, Compound,<br/>dYdX MegaVault, Noble USDN)
+    ymax -->> portfolio: make
+    ymax -->> portfolio: open(USDN, 10K USDC)
+    portfolio -->> LCA: deposit(10K USDC)
+    portfolio -->> LCA: transfer(10K USDC, ICAn)
+    LCA -->> ICAn: 10k USDC
     ICAn -->> portfolio: ack
 
-    portfolio -->> ICAn: USDN(???)
-    ICAn -->> USDN: openPosition(???)
+    LCA -->> ICAn: MsgSwap(10K)
+    ICAn -->> USDN: MsgSwap(10K)
+    USDN -->> ICAn: ack
+    ICAn -->> portfolio: ack
+    LCA -->> ICAn: MsgLock(10K)
+    ICAn -->> USDN: MsgLock(10K)
     USDN -->> ICAn: ack
     ICAn -->> portfolio: ack
     portfolio -->> trader: ack
