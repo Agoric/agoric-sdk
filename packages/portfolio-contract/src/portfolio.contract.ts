@@ -1,3 +1,4 @@
+import { makeTracer } from '@agoric/internal';
 import {
   OrchestrationPowersShape,
   withOrchestration,
@@ -8,6 +9,8 @@ import type { Zone } from '@agoric/zone';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import * as flows from './portfolio.flows.ts';
+
+const trace = makeTracer('PortC');
 
 const interfaceTODO = undefined;
 
@@ -32,13 +35,13 @@ export const contract = async (
   const { when } = tools.vowTools;
 
   const tap = zone.makeOnce('tapPosition', _key => {
-    console.log('making tap');
+    trace('making tap');
     return zone.exo('tap', interfaceTODO, {
       async receiveUpcall(event: VTransferIBCEvent) {
-        console.log('receiveUpcall', event);
+        trace('receiveUpcall', event);
         // TODO: use watch() rather than when for resumability
         await when(makePosition()).catch(error => {
-          console.log('receiveUpcall: flow failed:', error);
+          trace('receiveUpcall: flow failed:', error);
         });
       },
     });

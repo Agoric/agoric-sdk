@@ -22,7 +22,6 @@
     "@agoric/cosmic-proto": "workspace:*",
     "@agoric/ertp": "workspace:*",
     "@agoric/fast-usdc": "workspace:*",
-    "@agoric/internal": "workspace:*",
     "@agoric/swingset-liveslots": "workspace:*",
     "@agoric/vow": "workspace:*",
     "@agoric/zoe": "workspace:*",
@@ -36,6 +35,7 @@
     "ts-blank-space": "^0.6.1"
   },
   "dependencies": {
+    "@agoric/internal": "workspace:*",
     "@agoric/orchestration": "workspace:*",
     "@agoric/vats": "workspace:*",
     "@endo/errors": "^1.2.10",
