@@ -1,4 +1,4 @@
 # Portfolio Contract
 
-Working title of a new product to manage a portfolio of stablecoins.
+Working title of a new product to manage a portfolio of stabletokens.
 
