@@ -58,6 +58,7 @@ export const contract = async (
     creatorFacet: zone.exo('MyCreator', undefined, {}),
   };
 };
+harden(contract);
 
 export const start = withOrchestration(contract);
 harden(start);
