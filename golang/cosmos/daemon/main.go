@@ -45,13 +45,7 @@ func RunWithController(sendToController vm.Sender) {
 
 	rootCmd, _ := cmd.NewRootCmd(sendToController)
 	if err := svrcmd.Execute(rootCmd, "", app.DefaultNodeHome); err != nil {
-		switch e := err.(type) {
-		case svrcmd.ErrorCode:
-			os.Exit(e.Code)
-
-		default:
-			fmt.Fprintf(os.Stderr, "Error: %v\n", e)
-			os.Exit(1)
-		}
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
 	}
 }

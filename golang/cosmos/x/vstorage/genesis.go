@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
-	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 

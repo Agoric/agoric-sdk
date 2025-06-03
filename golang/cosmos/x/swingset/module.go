@@ -3,8 +3,8 @@ package swingset
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
+	"cosmossdk.io/core/appmodule"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
@@ -22,8 +22,10 @@ import (
 
 // type check to ensure the interface is properly implemented
 var (
-	_ module.AppModule      = AppModule{}
-	_ module.AppModuleBasic = AppModuleBasic{}
+	_ module.AppModule          = AppModule{}
+	_ module.AppModuleBasic     = AppModuleBasic{}
+	_ appmodule.HasBeginBlocker = AppModule{}
+	_ appmodule.HasEndBlocker   = AppModule{}
 )
 
 // app module Basics object
@@ -134,26 +136,17 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 
 func (AppModule) ConsensusVersion() uint64 { return 2 }
 
-func (am AppModule) BeginBlock(ctx sdk.Context) {
+func (am AppModule) BeginBlock(goCtx context.Context) error {
+	ctx := sdk.UnwrapSDKContext(goCtx)
 	am.ensureControllerInited(ctx)
 
-	err := BeginBlock(ctx, am.keeper)
-	if err != nil {
-		fmt.Println("BeginBlock error:", err)
-	}
+	return BeginBlock(ctx, am.keeper)
 }
 
-func (am AppModule) EndBlock(ctx sdk.Context) []abci.ValidatorUpdate {
-	valUpdate, err := EndBlock(ctx, am.keeper)
-	if err != nil {
-		fmt.Println("EndBlock error:", err)
-	}
-	if valUpdate != nil {
-		return valUpdate
-	}
-
-	// Prevent Cosmos SDK internal errors.
-	return []abci.ValidatorUpdate{}
+func (am AppModule) EndBlock(goCtx context.Context) error {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	_, err := EndBlock(ctx, am.keeper)
+	return err
 }
 
 func (am *AppModule) checkSwingStoreExportSetup() {

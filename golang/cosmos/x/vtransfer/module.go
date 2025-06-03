@@ -96,14 +96,6 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 
 func (AppModule) ConsensusVersion() uint64 { return 1 }
 
-func (am AppModule) BeginBlock(ctx sdk.Context) {
-}
-
-func (am AppModule) EndBlock(ctx sdk.Context) []abci.ValidatorUpdate {
-	// Prevent Cosmos SDK internal errors.
-	return []abci.ValidatorUpdate{}
-}
-
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
 	var genesisState types.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
