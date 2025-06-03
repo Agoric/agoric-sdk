@@ -17,9 +17,9 @@ sequenceDiagram
 
     %% Notation: ->> for initial message, -->> for consequences
 
-    trader ->> ymax: open(50K,<br/>Aave, Compound,<br/>dYdX MegaVault, Noble USDN)
-    ymax -->> portfolio: make
-    ymax -->> portfolio: open(USDN, 10K USDC)
+    trader ->> ymax: open({give:<br/>{Aave: 3k, Compound: 2k,<br/>USDN: 10K}})
+    ymax -->> portfolio: make({ give: ... })
+    portfolio -->> portfolio: open(USDN, 10K USDC)
     portfolio -->> LCA: deposit(10K USDC)
     portfolio -->> LCA: transfer(10K USDC, ICAn)
     LCA -->> ICAn: 10k USDC
