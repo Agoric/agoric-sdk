@@ -1,39 +1,43 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import type { CoinSDKType } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { heapVowE as VE } from '@agoric/vow/vat.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, passStyleOf } from '@endo/far';
-import { Nat } from '@endo/nat';
 import { M, mustMatch } from '@endo/patterns';
 import { createRequire } from 'module';
-import { ChainAddressShape } from '@agoric/orchestration';
-import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { commonSetup } from './supports.js';
+import { deeplyFulfilledObject } from '@agoric/internal';
+import { AmountMath } from '@agoric/ertp';
+import { executeOffer } from './wallet-offer-tools.ts';
+import type { VowTools } from '@agoric/vow';
+import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 
 const nodeRequire = createRequire(import.meta.url);
 
-const contractName = 'myOrchContract';
+const contractName = 'ymax0';
 const contractFile = nodeRequire.resolve('../src/portfolio.contract.ts');
 type StartFn = typeof import('../src/portfolio.contract.ts').start;
 
-test('start my orch contract', async t => {
+test('start portfolio contract', async t => {
   const common = await commonSetup(t);
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
-  t.log('contract deployment', contractName);
 
-  const installation: Installation<StartFn> =
-    await bundleAndInstall(contractFile);
-  t.is(passStyleOf(installation), 'remotable');
+  const deploy = async () => {
+    t.log('contract deployment', contractName);
 
-  const myKit = await E(zoe).startInstance(
-    installation,
-    {}, // issuers
-    {}, // terms
-    common.commonPrivateArgs,
-  );
+    const installation: Installation<StartFn> =
+      await bundleAndInstall(contractFile);
+    t.is(passStyleOf(installation), 'remotable');
+
+    const { usdc } = common.brands;
+    return E(zoe).startInstance(
+      installation,
+      { USDC: usdc.issuer },
+      {}, // terms
+      common.commonPrivateArgs,
+    );
+  };
+  const myKit = await deploy();
   t.notThrows(() =>
     mustMatch(
       myKit,
@@ -46,25 +50,38 @@ test('start my orch contract', async t => {
     ),
   );
 
-  const hookAddress = await E(myKit.publicFacet).getHookAddress();
-  t.log('hookAddress', hookAddress);
-  t.notThrows(() => mustMatch(hookAddress, ChainAddressShape));
+  const { usdc } = common.brands;
+  const mockWhen = (x => x) as VowTools['when'];
+  const openPortfolio = async (
+    instance: Instance<StartFn>,
+    funds: Payment<'nat'>,
+  ) => {
+    const toOpen = await E(myKit.publicFacet).makeOpenPortfolioInvitation();
+    t.is(passStyleOf(toOpen), 'remotable');
 
-  const { transferBridge } = common.mocks;
-  const deposit = async (coins: CoinSDKType) => {
-    const target = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht'; // TODO: where does this come from?
-    await VE(transferBridge).fromBridge(
-      buildVTransferEvent({
-        receiver: 'rx1...TODO',
-        target,
-        sourceChannel: 'channel-1', // TODO: hubToAg.transferChannel.counterPartyChannelId,
-        denom: coins.denom,
-        amount: Nat(BigInt(coins.amount)),
-        sender: 'cosmos1xyz',
-      }),
+    const myPurse = await E(usdc.issuer).makeEmptyPurse();
+    const In = await E(myPurse).deposit(funds);
+    const proposal = { give: { In } };
+    const offerSpec = {
+      id: 'open123',
+      invitationSpec: {
+        source: 'contract' as const,
+        instance,
+        publicInvitationMaker: 'makeOpenPortfolioInvitation',
+      },
+      proposal,
+    };
+    const { result, payouts: payoutsP } = await executeOffer(
+      zoe,
+      mockWhen,
+      offerSpec,
+      _ => myPurse,
     );
-    await eventLoopIteration(); // let contract do work
+    const payouts = await deeplyFulfilledObject(payoutsP);
+    t.log({ result });
+    t.log({ payouts });
   };
 
-  await t.notThrowsAsync(deposit({ amount: '10000000', denom: 'uatom' }));
+  const funds = await common.utils.pourPayment(usdc.units(10_000));
+  await openPortfolio(myKit.instance, funds);
 });
