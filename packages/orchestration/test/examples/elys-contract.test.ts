@@ -53,11 +53,11 @@ export const createFeeTestConfig = (feeCollector): FeeConfigShape => {
   const feeConfig = {
     feeCollector,
     onBoardRate: {
-      nominator: BigInt(20),
+      numerator: BigInt(20),
       denominator: BigInt(100),
     }, // 20%
     offBoardRate: {
-      nominator: BigInt(10),
+      numerator: BigInt(10),
       denominator: BigInt(100),
     }, // 10%
   };
@@ -85,7 +85,7 @@ test('Failing case: Wrong fee config', async t => {
     'agoric1euw2t0lxgeerlpj0tcy77f9syrmgx26ehdx3sq',
   );
   feeConfig.onBoardRate.denominator = BigInt(123);
-  feeConfig.onBoardRate.nominator = BigInt(124);
+  feeConfig.onBoardRate.numerator = BigInt(124);
 
   await t.throwsAsync(
     async () => {

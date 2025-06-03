@@ -37,11 +37,11 @@ export const createFeeTestConfig = (feeCollector) => {
   const feeConfig = {
     feeCollector,
     onBoardRate: {
-      nominator: BigInt(20),
+      numerator: BigInt(20),
       denominator: BigInt(100),
     }, // 20%
     offBoardRate: {
-      nominator: BigInt(10),
+      numerator: BigInt(10),
       denominator: BigInt(100),
     }, // 10%
   };

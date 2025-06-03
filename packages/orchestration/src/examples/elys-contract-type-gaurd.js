@@ -2,13 +2,13 @@ import { M } from '@endo/patterns';
 
 /**
  * @typedef {{
- *   nominator: bigint;
+ *   numerator: bigint;
  *   denominator: bigint;
  * }} RatioShape
  */
 /** @type {import('@agoric/internal').TypedPattern<RatioShape>} */
 export const RatioShape = {
-  nominator: M.bigint(),
+  numerator: M.bigint(),
   denominator: M.bigint(),
 };
 harden(RatioShape);
@@ -30,11 +30,11 @@ harden(FeeConfigShape);
 
 export function validateFeeConfigShape(feeConfigShape) {
   const { onBoardRate, offBoardRate } = feeConfigShape;
-  const isValidRatio = ({ nominator, denominator }) => {
+  const isValidRatio = ({ numerator, denominator }) => {
     if (denominator === 0n) {
       return false;
     }
-    return nominator >= 0n && nominator <= denominator;
+    return numerator >= 0n && numerator <= denominator;
   };
 
   return isValidRatio(onBoardRate) && isValidRatio(offBoardRate);

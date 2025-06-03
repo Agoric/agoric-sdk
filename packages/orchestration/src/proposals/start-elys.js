@@ -57,11 +57,11 @@ export const startElys = async (
   const feeConfig = {
     feeCollector: 'agoric1euw2t0lxgeerlpj0tcy77f9syrmgx26ehdx3sq',
     onBoardRate: {
-      nominator: BigInt(20),
+      numerator: BigInt(20),
       denominator: BigInt(100),
     }, // 20%
     offBoardRate: {
-      nominator: BigInt(10),
+      numerator: BigInt(10),
       denominator: BigInt(100),
     }, // 10%
   };

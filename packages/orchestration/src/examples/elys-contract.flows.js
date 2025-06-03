@@ -656,11 +656,11 @@ const deductedFeeAmount = async (
   let feeAmount;
   if (onBoard) {
     feeAmount =
-      (amount * feeConfig.onBoardRate.nominator) /
+      (amount * feeConfig.onBoardRate.numerator) /
       feeConfig.onBoardRate.denominator;
   } else {
     feeAmount =
-      (amount * feeConfig.offBoardRate.nominator) /
+      (amount * feeConfig.offBoardRate.numerator) /
       feeConfig.offBoardRate.denominator;
   }
 

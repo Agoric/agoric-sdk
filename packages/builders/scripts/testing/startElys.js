@@ -415,11 +415,11 @@ const getManifestCall = harden([
         feeCollector: "agoric1a659t9fem9vpux6anq8877jh0dz6dtzj7g06r7",
         offBoardRate: {
           denominator: "100",
-          nominator: "10",
+          numerator: "10",
         },
         onBoardRate: {
           denominator: "100",
-          nominator: "20",
+          numerator: "20",
         },
       },
     },
