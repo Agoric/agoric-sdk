@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"cosmossdk.io/core/appmodule"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
@@ -15,14 +16,16 @@ import (
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 
-	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // type check to ensure the interface is properly implemented
 var (
-	_ module.AppModule      = AppModule{}
-	_ module.AppModuleBasic = AppModuleBasic{}
+	_ module.AppModule          = AppModule{}
+	_ module.HasGenesis         = AppModule{}
+	_ module.AppModuleBasic     = AppModuleBasic{}
+	_ appmodule.HasBeginBlocker = AppModule{}
+	_ appmodule.HasEndBlocker   = AppModule{}
 )
 
 // app module Basics object
@@ -103,23 +106,28 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 
 func (AppModule) ConsensusVersion() uint64 { return 1 }
 
-func (am AppModule) BeginBlock(ctx sdk.Context) {
-	am.keeper.NewChangeBatch(ctx)
+func (am AppModule) BeginBlock(ctx context.Context) error {
+	return am.keeper.NewChangeBatch(sdk.UnwrapSDKContext(ctx))
 }
 
-func (am AppModule) EndBlock(ctx sdk.Context) []abci.ValidatorUpdate {
-	am.keeper.FlushChangeEvents(ctx)
-	// Prevent Cosmos SDK internal errors.
-	return []abci.ValidatorUpdate{}
+func (am AppModule) EndBlock(ctx context.Context) error {
+	return am.keeper.FlushChangeEvents(sdk.UnwrapSDKContext(ctx))
 }
 
-func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
+func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) {
 	var genesisState types.GenesisState
-	cdc.MustUnmarshalJSON(data, &genesisState)
-	return InitGenesis(ctx, am.keeper, &genesisState)
+	if err := cdc.UnmarshalJSON(data, &genesisState); err != nil {
+		panic(err)
+	}
+	if err := InitGenesis(ctx, am.keeper, &genesisState); err != nil {
+		panic(err)
+	}
 }
 
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
-	gs := ExportGenesis(ctx, am.keeper)
+	gs, err := ExportGenesis(ctx, am.keeper)
+	if err != nil {
+		panic(err)
+	}
 	return cdc.MustMarshalJSON(gs)
 }

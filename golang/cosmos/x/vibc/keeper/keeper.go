@@ -3,7 +3,7 @@ package keeper
 import (
 	"fmt"
 
-	storetypes "cosmossdk.io/store/types"
+	corestore "cosmossdk.io/core/store"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -35,7 +35,7 @@ type Keeper struct {
 
 	// Filled out by `WithScope`
 	scopedKeeper types.ScopedKeeper
-	storeKey     storetypes.StoreKey
+	storeService corestore.KVStoreService
 	pushAction   vm.ActionPusher
 }
 
@@ -57,8 +57,8 @@ func NewKeeper(
 
 // WithScope returns a new Keeper copied from the receiver, but with the given
 // store key, scoped keeper, and push action.
-func (k Keeper) WithScope(storeKey storetypes.StoreKey, scopedKeeper types.ScopedKeeper, pushAction vm.ActionPusher) Keeper {
-	k.storeKey = storeKey
+func (k Keeper) WithScope(storeService corestore.KVStoreService, scopedKeeper types.ScopedKeeper, pushAction vm.ActionPusher) Keeper {
+	k.storeService = storeService
 	k.scopedKeeper = scopedKeeper
 	k.pushAction = pushAction
 	return k

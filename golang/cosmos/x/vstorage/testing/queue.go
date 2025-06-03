@@ -30,7 +30,7 @@ func GetQueueItems(ctx sdk.Context, vstorageKeeper keeper.Keeper, queuePath stri
 }
 
 func ResetQueue(ctx sdk.Context, vstorageKeeper keeper.Keeper, queuePath string) error {
-	unlimitedCtx := ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
+	unlimitedCtx := ctx.WithGasMeter(storetypes.NewInfiniteGasMeter())
 	vstorageKeeper.RemoveEntriesWithPrefix(unlimitedCtx, queuePath)
 	return nil
 }

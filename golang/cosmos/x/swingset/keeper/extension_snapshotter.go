@@ -11,7 +11,6 @@ import (
 	snapshots "cosmossdk.io/store/snapshots/types"
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
-	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 )
 
@@ -78,10 +77,19 @@ func NewExtensionSnapshotter(
 	swingStoreExportsHandler *SwingStoreExportsHandler,
 	getSwingStoreExportDataShadowCopyReader func(height int64) agoric.KVEntryReader,
 ) *ExtensionSnapshotter {
+	isConfigured := func() bool {
+		return app.SnapshotManager() != nil
+	}
+	takeAppSnapshot := func(height int64) {
+		if isConfigured() {
+			app.SnapshotManager().Snapshot(height)
+		}
+	}
+	logger := app.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName), "submodule", "extension snapshotter")
 	return &ExtensionSnapshotter{
-		isConfigured:                            func() bool { return app.SnapshotManager() != nil },
-		takeAppSnapshot:                         app.Snapshot,
-		logger:                                  app.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName), "submodule", "extension snapshotter"),
+		isConfigured:                            isConfigured,
+		takeAppSnapshot:                         takeAppSnapshot,
+		logger:                                  logger,
 		swingStoreExportsHandler:                swingStoreExportsHandler,
 		getSwingStoreExportDataShadowCopyReader: getSwingStoreExportDataShadowCopyReader,
 		activeSnapshot:                          nil,

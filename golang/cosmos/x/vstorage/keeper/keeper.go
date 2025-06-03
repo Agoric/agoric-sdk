@@ -10,12 +10,14 @@ import (
 	"strconv"
 	"strings"
 
+	corestore "cosmossdk.io/core/store"
 	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
-	metrics "github.com/armon/go-metrics"
 	db "github.com/cometbft/cometbft-db"
+	"github.com/cosmos/cosmos-sdk/runtime"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	metrics "github.com/hashicorp/go-metrics"
 
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
@@ -39,9 +41,9 @@ type ProposedChange struct {
 }
 
 type ChangeManager interface {
-	Track(ctx sdk.Context, k Keeper, entry agoric.KVEntry, isLegacy bool)
-	EmitEvents(ctx sdk.Context, k Keeper)
-	Rollback(ctx sdk.Context)
+	Track(ctx sdk.Context, k Keeper, entry agoric.KVEntry, isLegacy bool) error
+	EmitEvents(ctx sdk.Context, k Keeper) error
+	Rollback(ctx sdk.Context) error
 }
 
 type BatchingChangeManager struct {
@@ -57,11 +59,12 @@ var MaxSDKInt = sdkmath.NewIntFromBigInt(new(big.Int).Sub(new(big.Int).Exp(big.N
 // Keeper maintains the link to data storage and exposes getter/setter methods
 // for the various parts of the state machine
 type Keeper struct {
+	storeName     string // The name of the store, used for telemetry.
+	storeService  corestore.KVStoreService
 	changeManager ChangeManager
-	storeKey      storetypes.StoreKey
 }
 
-func (bcm *BatchingChangeManager) Track(ctx sdk.Context, k Keeper, entry agoric.KVEntry, isLegacy bool) {
+func (bcm *BatchingChangeManager) Track(ctx sdk.Context, k Keeper, entry agoric.KVEntry, isLegacy bool) error {
 	path := entry.Key()
 	// TODO: differentiate between deletion and setting empty string?
 	// Using empty string for deletion for backwards compatibility
@@ -71,7 +74,7 @@ func (bcm *BatchingChangeManager) Track(ctx sdk.Context, k Keeper, entry agoric.
 		if isLegacy {
 			change.LegacyEvents = true
 		}
-		return
+		return nil
 	}
 	bcm.changes[path] = &ProposedChange{
 		Path:               path,
@@ -79,18 +82,20 @@ func (bcm *BatchingChangeManager) Track(ctx sdk.Context, k Keeper, entry agoric.
 		ValueFromLastBlock: k.GetEntry(ctx, path).StringValue(),
 		LegacyEvents:       isLegacy,
 	}
+	return nil
 }
 
-func (bcm *BatchingChangeManager) Rollback(ctx sdk.Context) {
+func (bcm *BatchingChangeManager) Rollback(ctx sdk.Context) error {
 	bcm.changes = make(map[string]*ProposedChange)
+	return nil
 }
 
 // EmitEvents emits events for all actual changes.
 // This does not clear the cache, so the caller must call Rollback() to do so.
-func (bcm *BatchingChangeManager) EmitEvents(ctx sdk.Context, k Keeper) {
+func (bcm *BatchingChangeManager) EmitEvents(ctx sdk.Context, k Keeper) error {
 	changes := bcm.changes
 	if len(changes) == 0 {
-		return
+		return nil
 	}
 
 	// Deterministic order.
@@ -104,6 +109,8 @@ func (bcm *BatchingChangeManager) EmitEvents(ctx sdk.Context, k Keeper) {
 		change := bcm.changes[path]
 		k.EmitChange(ctx, change)
 	}
+
+	return nil
 }
 
 // The BatchingChangeManager needs to be a pointer because its state is mutated.
@@ -112,14 +119,15 @@ func NewBatchingChangeManager() *BatchingChangeManager {
 	return &bcm
 }
 
-func NewKeeper(storeKey storetypes.StoreKey) Keeper {
+func NewKeeper(storeName string, storeService corestore.KVStoreService) Keeper {
 	return Keeper{
-		storeKey:      storeKey,
+		storeName:     storeName,
+		storeService:  storeService,
 		changeManager: NewBatchingChangeManager(),
 	}
 }
 
-// size_increase and size_decrease metrics represent total writes and deletes *issued*
+// size_increase and size_decπrease metrics represent total writes and deletes *issued*
 // respectively, which may differ from the total number of bytes committed/freed
 // to/from the store due to the store's internal implementation.
 var MetricKeyStoreSizeIncrease = []string{"store", "size_increase"}
@@ -131,7 +139,7 @@ const MetricLabelStoreKey = "storeKey"
 // when Cosmos telemetry is enabled.
 func (k Keeper) reportStoreSizeMetrics(increase int, decrease int) {
 	metricsLabel := []metrics.Label{
-		telemetry.NewLabel(MetricLabelStoreKey, k.storeKey.Name()),
+		telemetry.NewLabel(MetricLabelStoreKey, k.GetStoreName()),
 	}
 	if increase > 0 {
 		telemetry.IncrCounterWithLabels(MetricKeyStoreSizeIncrease, float32(increase), metricsLabel)
@@ -142,17 +150,17 @@ func (k Keeper) reportStoreSizeMetrics(increase int, decrease int) {
 }
 
 // ExportStorage fetches all storage
-func (k Keeper) ExportStorage(ctx sdk.Context) []*types.DataEntry {
+func (k Keeper) ExportStorage(ctx sdk.Context) ([]*types.DataEntry, error) {
 	return k.ExportStorageFromPrefix(ctx, "")
 }
 
 // ExportStorageFromPrefix fetches storage only under the supplied pathPrefix.
-func (k Keeper) ExportStorageFromPrefix(ctx sdk.Context, pathPrefix string) []*types.DataEntry {
-	store := ctx.KVStore(k.storeKey)
+func (k Keeper) ExportStorageFromPrefix(ctx sdk.Context, pathPrefix string) ([]*types.DataEntry, error) {
+	store := k.storeService.OpenKVStore(ctx)
 
 	if len(pathPrefix) > 0 {
 		if err := types.ValidatePath(pathPrefix); err != nil {
-			panic(err)
+			return nil, err
 		}
 		pathPrefix = pathPrefix + types.PathSeparator
 	}
@@ -164,10 +172,11 @@ func (k Keeper) ExportStorageFromPrefix(ctx sdk.Context, pathPrefix string) []*t
 	// entries will be exported. An alternative implementation would be to
 	// recursively list all children under the pathPrefix, and export them.
 
-	iterator := storetypes.KVStorePrefixIterator(store, nil)
+	kvstore := runtime.KVStoreAdapter(store)
+	iterator := storetypes.KVStorePrefixIterator(kvstore, nil)
+	defer iterator.Close()
 
 	exported := []*types.DataEntry{}
-	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		rawValue := iterator.Value()
 		if len(rawValue) == 0 {
@@ -182,26 +191,28 @@ func (k Keeper) ExportStorageFromPrefix(ctx sdk.Context, pathPrefix string) []*t
 		}
 		value, hasPrefix := bytes.CutPrefix(rawValue, types.EncodedDataPrefix)
 		if !hasPrefix {
-			panic(fmt.Errorf("value at path %q starts with unexpected prefix", path))
+			return nil, fmt.Errorf("value at path %q starts with unexpected prefix", path)
 		}
 		path = path[len(pathPrefix):]
 		entry := types.DataEntry{Path: path, Value: string(value)}
 		exported = append(exported, &entry)
 	}
-	return exported
+	return exported, nil
 }
 
-func (k Keeper) ImportStorage(ctx sdk.Context, entries []*types.DataEntry) {
+func (k Keeper) ImportStorage(ctx sdk.Context, entries []*types.DataEntry) error {
 	for _, entry := range entries {
 		// This set does the bookkeeping for us in case the entries aren't a
 		// complete tree.
 		k.SetStorage(ctx, agoric.NewKVEntry(entry.Path, entry.Value))
 	}
+	return nil
 }
 
 func getEncodedKeysWithPrefixFromIterator(iterator storetypes.Iterator, prefix string) [][]byte {
-	keys := make([][]byte, 0)
 	defer iterator.Close()
+
+	keys := make([][]byte, 0)
 	for ; iterator.Valid(); iterator.Next() {
 		key := iterator.Key()
 		path := types.EncodedKeyToPath(key)
@@ -217,7 +228,8 @@ func getEncodedKeysWithPrefixFromIterator(iterator storetypes.Iterator, prefix s
 // It has the same effect as listing children of the prefix and removing each
 // descendant recursively.
 func (k Keeper) RemoveEntriesWithPrefix(ctx sdk.Context, pathPrefix string) {
-	store := ctx.KVStore(k.storeKey)
+	kvstore := k.storeService.OpenKVStore(ctx)
+	store := runtime.KVStoreAdapter(kvstore)
 
 	if len(pathPrefix) == 0 {
 		panic("cannot remove all content")
@@ -275,7 +287,9 @@ func (k Keeper) EmitChange(ctx sdk.Context, change *ProposedChange) {
 // GetEntry gets generic storage.  The default value is an empty string.
 func (k Keeper) GetEntry(ctx sdk.Context, path string) agoric.KVEntry {
 	//fmt.Printf("GetEntry(%s)\n", path);
-	store := ctx.KVStore(k.storeKey)
+	kvstore := k.storeService.OpenKVStore(ctx)
+	store := runtime.KVStoreAdapter(kvstore)
+
 	encodedKey := types.PathToEncodedKey(path)
 	rawValue := store.Get(encodedKey)
 	if len(rawValue) == 0 {
@@ -292,7 +306,8 @@ func (k Keeper) GetEntry(ctx sdk.Context, path string) agoric.KVEntry {
 }
 
 func (k Keeper) getKeyIterator(ctx sdk.Context, path string) db.Iterator {
-	store := ctx.KVStore(k.storeKey)
+	kvstore := k.storeService.OpenKVStore(ctx)
+	store := runtime.KVStoreAdapter(kvstore)
 	keyPrefix := types.PathToChildrenPrefix(path)
 
 	return storetypes.KVStorePrefixIterator(store, keyPrefix)
@@ -301,10 +316,10 @@ func (k Keeper) getKeyIterator(ctx sdk.Context, path string) db.Iterator {
 // GetChildren gets all vstorage child children at a given path
 func (k Keeper) GetChildren(ctx sdk.Context, path string) *types.Children {
 	iterator := k.getKeyIterator(ctx, path)
+	defer iterator.Close()
 
 	var children types.Children
 	children.Children = []string{}
-	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		parts := strings.Split(types.EncodedKeyToPath(iterator.Key()), types.PathSeparator)
 		childrentr := parts[len(parts)-1]
@@ -322,14 +337,16 @@ func (k Keeper) HasStorage(ctx sdk.Context, path string) bool {
 
 // HasEntry tells if a given path has either subnodes or data.
 func (k Keeper) HasEntry(ctx sdk.Context, path string) bool {
-	store := ctx.KVStore(k.storeKey)
+	kvstore := k.storeService.OpenKVStore(ctx)
+	store := runtime.KVStoreAdapter(kvstore)
+
 	encodedKey := types.PathToEncodedKey(path)
 
 	// Check if we have a path entry.
 	return store.Has(encodedKey)
 }
 
-// HasChildren tells if a given path has child children.
+// HasChildren tells if a given path has child nodes.
 func (k Keeper) HasChildren(ctx sdk.Context, path string) bool {
 	// Check if we have children.
 	iterator := k.getKeyIterator(ctx, path)
@@ -337,13 +354,16 @@ func (k Keeper) HasChildren(ctx sdk.Context, path string) bool {
 	return iterator.Valid()
 }
 
-func (k Keeper) NewChangeBatch(ctx sdk.Context) {
-	k.changeManager.Rollback(ctx)
+func (k Keeper) NewChangeBatch(ctx sdk.Context) error {
+	return k.changeManager.Rollback(ctx)
 }
 
-func (k Keeper) FlushChangeEvents(ctx sdk.Context) {
-	k.changeManager.EmitEvents(ctx, k)
-	k.changeManager.Rollback(ctx)
+func (k Keeper) FlushChangeEvents(ctx sdk.Context) error {
+	if err := k.changeManager.EmitEvents(ctx, k); err != nil {
+		return err
+	}
+
+	return k.changeManager.Rollback(ctx)
 }
 
 func (k Keeper) SetStorageAndNotify(ctx sdk.Context, entry agoric.KVEntry) {
@@ -389,7 +409,9 @@ func componentsToPath(components []string) string {
 // Maintains the invariant: path entries exist if and only if self or some
 // descendant has non-empty storage
 func (k Keeper) SetStorage(ctx sdk.Context, entry agoric.KVEntry) {
-	store := ctx.KVStore(k.storeKey)
+	kvstore := k.storeService.OpenKVStore(ctx)
+	store := runtime.KVStoreAdapter(kvstore)
+
 	path := entry.Key()
 	encodedKey := types.PathToEncodedKey(path)
 	oldRawValue := store.Get(encodedKey)
@@ -445,7 +467,7 @@ func (k Keeper) PathToEncodedKey(path string) []byte {
 }
 
 func (k Keeper) GetStoreName() string {
-	return k.storeKey.Name()
+	return k.storeName
 }
 
 func (k Keeper) GetDataPrefix() []byte {

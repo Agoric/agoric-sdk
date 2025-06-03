@@ -8,7 +8,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	sdkioerrors "cosmossdk.io/errors"
 	sdktypeserrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 

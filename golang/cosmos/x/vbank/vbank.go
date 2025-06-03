@@ -77,13 +77,16 @@ type VbankBalanceUpdate struct {
 // getBalanceUpdate returns a bridge message containing the current bank balance
 // for the given addresses each for the specified denominations. Coins are used
 // only to track the set of denoms, not for the particular nonzero amounts.
-func getBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToUpdate map[string]sdk.Coins) vm.Action {
+func getBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToUpdate map[string]sdk.Coins) (vm.Action, error) {
 	nentries := len(addressToUpdate)
 	if nentries == 0 {
-		return nil
+		return nil, nil
 	}
 
-	nonce := keeper.GetNextSequence(ctx)
+	nonce, err := keeper.GetNextSequence(ctx)
+	if err != nil {
+		return nil, err
+	}
 	event := VbankBalanceUpdate{
 		Nonce:   nonce,
 		Updated: make([]VbankSingleBalanceUpdate, 0, nentries),
@@ -113,7 +116,7 @@ func getBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToUpdate map[string
 	sort.Sort(event.Updated)
 
 	// Populate the event default fields (even though event does not embed vm.ActionHeader)
-	return vm.PopulateAction(ctx, event)
+	return vm.PopulateAction(ctx, event), nil
 }
 
 func marshal(event vm.Jsonable) ([]byte, error) {
@@ -168,7 +171,11 @@ func (ch portHandler) Receive(cctx context.Context, str string) (ret string, err
 		}
 		addressToBalances := make(map[string]sdk.Coins, 1)
 		addressToBalances[msg.Sender] = sdk.NewCoins(sdk.NewInt64Coin(msg.Denom, 1))
-		bz, err := marshal(getBalanceUpdate(ctx, keeper, addressToBalances))
+		action, err := getBalanceUpdate(ctx, keeper, addressToBalances)
+		if err != nil {
+			return "", err
+		}
+		bz, err := marshal(action)
 		if err != nil {
 			return "", err
 		}
@@ -196,7 +203,11 @@ func (ch portHandler) Receive(cctx context.Context, str string) (ret string, err
 		}
 		addressToBalances := make(map[string]sdk.Coins, 1)
 		addressToBalances[msg.Recipient] = sdk.NewCoins(sdk.NewInt64Coin(msg.Denom, 1))
-		bz, err := marshal(getBalanceUpdate(ctx, keeper, addressToBalances))
+		action, err := getBalanceUpdate(ctx, keeper, addressToBalances)
+		if err != nil {
+			return "", err
+		}
+		bz, err := marshal(action)
 		if err != nil {
 			return "", err
 		}
@@ -215,7 +226,10 @@ func (ch portHandler) Receive(cctx context.Context, str string) (ret string, err
 		if err := keeper.StoreRewardCoins(ctx, coins); err != nil {
 			return "", fmt.Errorf("cannot store reward %s coins: %s", coins.Sort().String(), err)
 		}
-		state := keeper.GetState(ctx)
+		state, err := keeper.GetState(ctx)
+		if err != nil {
+			return "", err
+		}
 		state.RewardPool = state.RewardPool.Add(coins...)
 		keeper.SetState(ctx, state)
 		// We don't supply the module balance, since the controller shouldn't know.

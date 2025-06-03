@@ -14,7 +14,6 @@ import (
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 
-	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -91,15 +90,6 @@ func (AppModule) Name() string {
 
 func (AppModule) ConsensusVersion() uint64 { return 2 }
 
-// BeginBlock implements the AppModule interface
-func (am AppModule) BeginBlock(ctx sdk.Context) {
-}
-
-// EndBlock implements the AppModule interface
-func (am AppModule) EndBlock(ctx sdk.Context) []abci.ValidatorUpdate {
-	return []abci.ValidatorUpdate{}
-}
-
 // RegisterInvariants implements the AppModule interface
 func (AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
 	// TODO
@@ -115,16 +105,4 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	if err != nil {
 		panic(err)
 	}
-}
-
-// InitGenesis performs genesis initialization for the ibc-transfer module. It returns
-// no validator updates.
-func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
-	return []abci.ValidatorUpdate{}
-}
-
-// ExportGenesis returns the exported genesis state as raw bytes for the ibc-transfer
-// module.
-func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
-	return nil
 }

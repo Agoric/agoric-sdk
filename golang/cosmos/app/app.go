@@ -23,7 +23,6 @@ import (
 	feegrantkeeper "cosmossdk.io/x/feegrant/keeper"
 	feegrantmodule "cosmossdk.io/x/feegrant/module"
 	"cosmossdk.io/x/upgrade"
-	upgradeclient "cosmossdk.io/x/upgrade/client/cli"
 	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -32,6 +31,7 @@ import (
 	cmtservice "github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	runtimeservices "github.com/cosmos/cosmos-sdk/runtime/services"
@@ -44,6 +44,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
+	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authsims "github.com/cosmos/cosmos-sdk/x/auth/simulation"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
@@ -89,11 +90,11 @@ import (
 	ica "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts"
 
 	"cosmossdk.io/log"
-	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmjson "github.com/cometbft/cometbft/libs/json"
 	tmos "github.com/cometbft/cometbft/libs/os"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	dbm "github.com/cosmos/cosmos-db"
 	icahost "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/host"
 	icahostkeeper "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/host/keeper"
 	icahosttypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/host/types"
@@ -173,8 +174,6 @@ var (
 		distr.AppModuleBasic{},
 		gov.NewAppModuleBasic([]govclient.ProposalHandler{
 			paramsclient.ProposalHandler,
-			upgradeclient.LegacyProposalHandler,
-			upgradeclient.LegacyCancelProposalHandler,
 			swingsetclient.CoreEvalProposalHandler,
 		}),
 		params.AppModuleBasic{},
@@ -361,7 +360,7 @@ func NewAgoricApp(
 		swingset.StoreKey, vstorage.StoreKey, vibc.StoreKey,
 		vlocalchain.StoreKey, vtransfer.StoreKey, vbank.StoreKey, consensusparamstypes.StoreKey,
 	)
-	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey)
+	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey, vbanktypes.TStoreKey)
 	memKeys := storetypes.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
 
 	app := &GaiaApp{
@@ -386,12 +385,13 @@ func NewAgoricApp(
 
 	app.ConsensusParamsKeeper = consensusparamskeeper.NewKeeper(
 		appCodec,
-		keys[consensusparamstypes.StoreKey],
+		runtime.NewKVStoreService(keys[consensusparamstypes.StoreKey]),
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		runtime.EventService{},
 	)
 
 	// set the BaseApp's parameter store
-	bApp.SetParamStore(&app.ConsensusParamsKeeper)
+	bApp.SetParamStore(app.ConsensusParamsKeeper.ParamsStore)
 
 	// add capability keeper and ScopeToModule for ibc module
 	app.CapabilityKeeper = capabilitykeeper.NewKeeper(appCodec, keys[capabilitytypes.StoreKey], memKeys[capabilitytypes.MemStoreKey])
@@ -408,8 +408,8 @@ func NewAgoricApp(
 		runtime.NewKVStoreService(keys[authtypes.StoreKey]),
 		authtypes.ProtoBaseAccount,
 		maccPerms,
-		addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
-		AccountAddressPrefix,
+		authcodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
+		sdk.GetConfig().GetBech32AccountAddrPrefix(),
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
@@ -417,7 +417,7 @@ func NewAgoricApp(
 		appCodec,
 		runtime.NewKVStoreService(keys[banktypes.StoreKey]),
 		app.AccountKeeper,
-		app.BlockedAddrs(),
+		BlockedAddresses(),
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		bApp.Logger(),
 	)
@@ -431,20 +431,22 @@ func NewAgoricApp(
 
 	app.FeeGrantKeeper = feegrantkeeper.NewKeeper(
 		appCodec,
-		keys[feegrant.StoreKey],
+		runtime.NewKVStoreService(keys[feegrant.StoreKey]),
 		app.AccountKeeper,
 	)
 	app.StakingKeeper = *stakingkeeper.NewKeeper(
 		appCodec,
-		keys[stakingtypes.StoreKey],
+		runtime.NewKVStoreService(keys[stakingtypes.StoreKey]),
 		app.AccountKeeper,
 		app.BankKeeper,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		address.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
+		address.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
 	)
 
 	app.MintKeeper = mintkeeper.NewKeeper(
 		appCodec,
-		keys[minttypes.StoreKey],
+		runtime.NewKVStoreService(keys[minttypes.StoreKey]),
 		app.StakingKeeper,
 		app.AccountKeeper,
 		app.BankKeeper,
@@ -454,7 +456,7 @@ func NewAgoricApp(
 
 	distrKeeper := distrkeeper.NewKeeper(
 		appCodec,
-		keys[distrtypes.StoreKey],
+		runtime.NewKVStoreService(keys[distrtypes.StoreKey]),
 		app.AccountKeeper,
 		app.BankKeeper,
 		app.StakingKeeper,
@@ -466,7 +468,7 @@ func NewAgoricApp(
 	app.SlashingKeeper = slashingkeeper.NewKeeper(
 		appCodec,
 		legacyAmino,
-		keys[slashingtypes.StoreKey],
+		runtime.NewKVStoreService(keys[slashingtypes.StoreKey]),
 		app.StakingKeeper,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
@@ -479,7 +481,7 @@ func NewAgoricApp(
 
 	app.UpgradeKeeper = upgradekeeper.NewKeeper(
 		skipUpgradeHeights,
-		keys[upgradetypes.StoreKey],
+		runtime.NewKVStoreService(keys[upgradetypes.StoreKey]),
 		appCodec,
 		homePath,
 		app.BaseApp,
@@ -497,6 +499,7 @@ func NewAgoricApp(
 		app.StakingKeeper,
 		app.UpgradeKeeper,
 		scopedIBCKeeper,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
 	// This function is tricky to get right, so we build it ourselves.
@@ -512,13 +515,15 @@ func NewAgoricApp(
 	}
 
 	app.VstorageKeeper = vstorage.NewKeeper(
-		keys[vstorage.StoreKey],
+		vstorage.StoreKey,
+		runtime.NewKVStoreService(keys[vstorage.StoreKey]),
 	)
 	app.vstoragePort = app.AgdServer.MustRegisterPortHandler("vstorage", vstorage.NewStorageHandler(app.VstorageKeeper))
 
 	// The SwingSetKeeper is the Keeper from the SwingSet module
 	app.SwingSetKeeper = swingset.NewKeeper(
-		appCodec, keys[swingset.StoreKey], app.GetSubspace(swingset.ModuleName),
+		appCodec, runtime.NewKVStoreService(keys[swingset.StoreKey]),
+		app.GetSubspace(swingset.ModuleName),
 		app.AccountKeeper, app.BankKeeper,
 		app.VstorageKeeper, vbanktypes.ReservePoolName,
 		callToController,
@@ -558,9 +563,13 @@ func NewAgoricApp(
 	app.VibcKeeper = vibc.NewKeeper(
 		appCodec,
 		app.IBCKeeper.ChannelKeeper,
-		&app.IBCKeeper.PortKeeper,
+		app.IBCKeeper.PortKeeper,
 		app.IBCKeeper.ClientKeeper,
-	).WithScope(keys[vibc.StoreKey], scopedVibcKeeper, app.SwingSetKeeper.PushAction)
+	).WithScope(
+		runtime.NewKVStoreService(keys[vibc.StoreKey]),
+		scopedVibcKeeper,
+		app.SwingSetKeeper.PushAction,
+	)
 
 	vibcModule := vibc.NewAppModule(app.VibcKeeper, app.BankKeeper)
 	vibcIBCModule := vibc.NewIBCModule(app.VibcKeeper)
@@ -568,7 +577,7 @@ func NewAgoricApp(
 
 	app.VtransferKeeper = vtransferkeeper.NewKeeper(
 		appCodec,
-		keys[vtransfer.StoreKey],
+		runtime.NewKVStoreService(keys[vtransfer.StoreKey]),
 		app.VibcKeeper,
 		scopedTransferKeeper,
 		app.SwingSetKeeper.PushAction,
@@ -580,7 +589,10 @@ func NewAgoricApp(
 	)
 
 	app.VbankKeeper = vbank.NewKeeper(
-		appCodec, keys[vbank.StoreKey], app.GetSubspace(vbank.ModuleName),
+		appCodec,
+		runtime.NewKVStoreService(keys[vbank.StoreKey]),
+		runtime.NewTransientStoreService(tkeys[vbanktypes.TStoreKey]),
+		app.GetSubspace(vbank.ModuleName),
 		app.AccountKeeper, app.BankKeeper, authtypes.FeeCollectorName,
 		app.SwingSetKeeper.PushAction,
 	)
@@ -592,17 +604,17 @@ func NewAgoricApp(
 	govRouter.
 		AddRoute(govtypes.RouterKey, govv1beta1.ProposalHandler).
 		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
-		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
 		AddRoute(swingsettypes.RouterKey, swingset.NewSwingSetProposalHandler(app.SwingSetKeeper))
 	govConfig := govtypes.DefaultConfig()
 
 	app.GovKeeper = govkeeper.NewKeeper(
 		appCodec,
-		keys[govtypes.StoreKey],
+		runtime.NewKVStoreService(keys[govtypes.StoreKey]),
 		app.AccountKeeper,
 		app.BankKeeper,
 		app.StakingKeeper,
+		app.DistrKeeper,
 		app.MsgServiceRouter(),
 		govConfig,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
@@ -634,10 +646,11 @@ func NewAgoricApp(
 		app.GetSubspace(ibctransfertypes.ModuleName),
 		app.PacketForwardKeeper, // Wire in the middleware ICS4Wrapper.
 		app.IBCKeeper.ChannelKeeper,
-		&app.IBCKeeper.PortKeeper,
+		app.IBCKeeper.PortKeeper,
 		app.AccountKeeper,
 		app.BankKeeper,
 		scopedTransferKeeper,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
 	app.PacketForwardKeeper.SetTransferKeeper(app.TransferKeeper)
@@ -650,10 +663,11 @@ func NewAgoricApp(
 		app.GetSubspace(icahosttypes.SubModuleName),
 		app.IBCKeeper.ChannelKeeper, // This is where middleware binding would happen.
 		app.IBCKeeper.ChannelKeeper,
-		&app.IBCKeeper.PortKeeper,
+		app.IBCKeeper.PortKeeper,
 		app.AccountKeeper,
 		scopedICAHostKeeper,
 		app.MsgServiceRouter(),
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 	app.ICAHostKeeper.WithQueryRouter(app.GRPCQueryRouter())
 
@@ -679,7 +693,6 @@ func NewAgoricApp(
 		app.PacketForwardKeeper,
 		0, // retries on timeout
 		packetforwardkeeper.DefaultForwardTransferPacketTimeoutTimestamp, // forward timeout
-		packetforwardkeeper.DefaultRefundTransferPacketTimeoutTimestamp,  // refund timeout
 	)
 	ics20TransferIBCModule = vtransfer.NewIBCMiddleware(ics20TransferIBCModule, app.VtransferKeeper)
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, ics20TransferIBCModule)
@@ -704,11 +717,13 @@ func NewAgoricApp(
 	// create evidence keeper with router
 	evidenceKeeper := evidencekeeper.NewKeeper(
 		appCodec,
-		keys[evidencetypes.StoreKey],
+		runtime.NewKVStoreService(keys[evidencetypes.StoreKey]),
 		app.StakingKeeper,
 		app.SlashingKeeper,
+		app.AccountKeeper.AddressCodec(),
+		runtime.ProvideCometInfoService(),
 	)
-
+	// If evidence needs to be handled for the app, set routes in router here and seal
 	app.EvidenceKeeper = *evidenceKeeper
 
 	swingStoreExportDir := cast.ToString(appOpts.Get(FlagSwingStoreExportDir))
@@ -720,7 +735,7 @@ func NewAgoricApp(
 		genutil.NewAppModule(
 			app.AccountKeeper,
 			app.StakingKeeper,
-			app.BaseApp.DeliverTx,
+			app,
 			encodingConfig.TxConfig,
 		),
 		auth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts, app.GetSubspace(authtypes.ModuleName)),
@@ -729,10 +744,10 @@ func NewAgoricApp(
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
 		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
 		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper, nil, app.GetSubspace(minttypes.ModuleName)),
-		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(slashingtypes.ModuleName)),
+		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(slashingtypes.ModuleName), app.interfaceRegistry),
 		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(distrtypes.ModuleName)),
 		staking.NewAppModule(appCodec, &app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
-		upgrade.NewAppModule(app.UpgradeKeeper),
+		upgrade.NewAppModule(app.UpgradeKeeper, app.AccountKeeper.AddressCodec()),
 		evidence.NewAppModule(app.EvidenceKeeper),
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
@@ -759,7 +774,7 @@ func NewAgoricApp(
 	//upgrade types need to be added to the pre-blocker. While this part has been implemented, the guide also states
 	//that these types should be removed from begin blocker. If we need to actually remove them, we would need to modify
 	// the SetOrderBeginBlockers logic. However, it's unclear whether this removal is strictly required or optional.
-	app.mm.SetOrderPreBlockers(upgradetypes.ModuleName)
+	app.ModuleManager.SetOrderPreBlockers(upgradetypes.ModuleName)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
 	// there is nothing left over in the validator fee pool, so as to keep the
@@ -769,7 +784,6 @@ func NewAgoricApp(
 	app.ModuleManager.SetOrderBeginBlockers(
 		// Cosmos-SDK modules appear roughly in the order used by simapp and gaiad.
 		// upgrades should be run first
-		upgradetypes.ModuleName,
 		capabilitytypes.ModuleName,
 		// params influence many other modules, so it should be near the top.
 		paramstypes.ModuleName,
@@ -1014,8 +1028,7 @@ func (app *GaiaApp) PreBlocker(ctx sdk.Context, _ *abci.RequestFinalizeBlock) (*
 	// Note that we don't need to reset the gas meter after the pre-blocker
 	// because Go is pass by value.
 	ctx = ctx.WithGasMeter(storetypes.NewInfiniteGasMeter())
-	mm := app.ModuleManager()
-	return mm.PreBlock(ctx)
+	return app.ModuleManager.PreBlock(ctx)
 }
 
 // CheckControllerInited exits if the controller initialization state does not match `expected`.
@@ -1104,20 +1117,20 @@ func (app *GaiaApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 }
 
 // InitChainer application update at chain initialization
-func (app *GaiaApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci.ResponseInitChain {
+func (app *GaiaApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
 	var genesisState GenesisState
 	if err := tmjson.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	app.UpgradeKeeper.SetModuleVersionMap(ctx, app.ModuleManager.GetVersionMap())
 	res, err := app.ModuleManager.InitGenesis(ctx, app.appCodec, genesisState)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	// initialize the provision and reserve module accounts, to avoid their implicit creation
-	// as a default account upon receiving a transfer. See BlockedAddrs().
+	// as a default account upon receiving a transfer. See BlockedAddresses().
 	normalizeModuleAccount(ctx, app.AccountKeeper, vbanktypes.ProvisionPoolName)
 	normalizeModuleAccount(ctx, app.AccountKeeper, vbanktypes.ReservePoolName)
 
@@ -1133,28 +1146,29 @@ func (app *GaiaApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci
 		stdlog.Printf("Genesis time %s is in %s\n", genTime, d)
 	}
 
-	return *res
+	return res, nil
 }
 
 // Commit tells the controller that the block is commited
-func (app *GaiaApp) Commit() abci.ResponseCommit {
+func (app *GaiaApp) Commit() (*abci.ResponseCommit, error) {
 	err := swingsetkeeper.WaitUntilSwingStoreExportStarted()
 
 	if err != nil {
 		app.Logger().Error("swing-store export failed to start", "err", err)
+		return nil, err
 	}
 
 	// Frontrun the BaseApp's Commit method
 	err = swingset.CommitBlock(app.SwingSetKeeper)
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
 
-	res, snapshotHeight := app.BaseApp.CommitWithoutSnapshot()
+	res, snapshotHeight, err := app.BaseApp.CommitWithoutSnapshot()
 
 	err = swingset.AfterCommitBlock(app.SwingSetKeeper)
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
 
 	if snapshotHeight > 0 {
@@ -1162,10 +1176,11 @@ func (app *GaiaApp) Commit() abci.ResponseCommit {
 
 		if err != nil {
 			app.Logger().Error("failed to initiate swingset snapshot", "err", err)
+			return nil, err
 		}
 	}
 
-	return res
+	return res, nil
 }
 
 // LoadHeight loads a particular height
@@ -1221,11 +1236,6 @@ func (app *GaiaApp) AppCodec() codec.Codec {
 // InterfaceRegistry returns Gaia's InterfaceRegistry
 func (app *GaiaApp) InterfaceRegistry() types.InterfaceRegistry {
 	return app.interfaceRegistry
-}
-
-// ModuleManager returns the module manager instance associated with the GaiaApp.
-func (app *GaiaApp) ModuleManager() module.Manager {
-	return *app.mm
 }
 
 // GetKey returns the KVStoreKey for the provided store key.
@@ -1326,7 +1336,6 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(slashingtypes.ModuleName)
 	paramsKeeper.Subspace(govtypes.ModuleName).WithKeyTable(govtypesv1.ParamKeyTable())
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
-	paramsKeeper.Subspace(packetforwardtypes.ModuleName).WithKeyTable(packetforwardtypes.ParamKeyTable())
 	paramsKeeper.Subspace(ibcexported.ModuleName)
 	paramsKeeper.Subspace(icahosttypes.SubModuleName)
 	paramsKeeper.Subspace(swingset.ModuleName)
@@ -1369,6 +1378,6 @@ func (app *GaiaApp) SetSwingStoreExportDir(dir string) {
 }
 
 // RegisterTxService allows query minimum-gas-prices in app.toml
-func (app *GaiaApp) RegisterNodeService(clientCtx client.Context) {
-	nodeservice.RegisterNodeService(clientCtx, app.GRPCQueryRouter())
+func (app *GaiaApp) RegisterNodeService(clientCtx client.Context, cfg config.Config) {
+	nodeservice.RegisterNodeService(clientCtx, app.GRPCQueryRouter(), cfg)
 }

@@ -10,7 +10,7 @@ import (
 
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 
-	rosettaCmd "cosmossdk.io/tools/rosetta/cmd"
+	rosettaCmd "github.com/cosmos/rosetta/cmd"
 
 	"cosmossdk.io/log"
 	dbm "github.com/cometbft/cometbft-db"
@@ -226,7 +226,9 @@ func initRootCmd(sender vm.Sender, rootCmd *cobra.Command, encodingConfig params
 		keys.Commands(gaia.DefaultNodeHome),
 	)
 	// add rosetta
-	rootCmd.AddCommand(rosettaCmd.RosettaCommand(encodingConfig.InterfaceRegistry, encodingConfig.Marshaler))
+	rootCmd.AddCommand(
+		rosettaCmd.RosettaCommand(encodingConfig.InterfaceRegistry, encodingConfig.Marshaler),
+	)
 }
 
 const (

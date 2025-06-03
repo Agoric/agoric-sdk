@@ -1,10 +1,10 @@
 package gaia
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
-	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	swingsetkeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -85,7 +85,7 @@ func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
 	for _, name := range upgradeNamesOfThisVersion {
 		height, err := app.UpgradeKeeper.GetDoneHeight(ctx, name)
 		if err != nil {
-			panic(fmt.Errorf("Error getting done height:", err))
+			panic(fmt.Errorf("error getting done height: %s", err))
 		}
 		if height != 0 {
 			return false
@@ -203,9 +203,10 @@ func (app *GaiaApp) RegisterUpgradeHandlers() {
 }
 
 // makeUnreleasedUpgradeHandler performs standard upgrade actions plus custom actions for the unreleased upgrade.
-func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string, baseAppLegacySS paramstypes.Subspace) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
+func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string, baseAppLegacySS paramstypes.Subspace) upgradetypes.UpgradeHandler {
 	_ = targetUpgrade
-	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
+	return func(goCtx context.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
+		ctx := sdk.UnwrapSDKContext(goCtx)
 		app.CheckControllerInited(false)
 
 		// prune expired tendermint consensus states to save storage space
@@ -215,7 +216,7 @@ func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string, baseAppLeg
 		}
 
 		// Migrate Tendermint consensus parameters from x/params module to a dedicated x/consensus module.
-		baseapp.MigrateParams(ctx, baseAppLegacySS, &app.ConsensusParamsKeeper)
+		baseapp.MigrateParams(ctx, baseAppLegacySS, app.ConsensusParamsKeeper.ParamsStore)
 
 		CoreProposalSteps := []vm.CoreProposalStep{}
 
