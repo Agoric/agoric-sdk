@@ -86,15 +86,43 @@ const { slotToWrapper, wrapperToSlot } = (() => {
  */
 
 /**
+ * A cache uses the WeakMap interface subset but holds keys strongly.
+ *
+ * @template K
+ * @template V
+ * @typedef {Pick<Map<K, V>, Exclude<keyof WeakMap<WeakKey, any>, 'set'>> & {
+ *   set: (key: K, value: V) => WeakMapAPI<K, V>;
+ * }} WeakMapAPI
+ */
+
+// TODO(https://github.com/Agoric/agoric-sdk/issues/12111)
+// Check cost of using virtual-aware WeakMap in liveslots
+/**
+ * @template K
+ * @template V
+ * @param {boolean} [weakKey]
+ * @todo Replace with an evicting cache map
+ */
+const makeDefaultCacheMap = weakKey =>
+  /** @type {WeakMapAPI<K, V>} */ (weakKey ? new WeakMap() : new Map());
+
+/**
  * Wraps a marshaller, either sync or async, local or remote, into a local async
  * marshaller which only sends slots for resolution to the wrapped marshaller.
+ * Optionally and by default, caches the resolution of slots.
  *
  * Assumes that a null-ish slot value is a severed presence that can be resolved
- * locally.
+ * locally. By default if a presence is mapped to a null-ish slot by the wrapped
+ * marshaller, that mapping is not cached, allowing the wrapped marshaller to
+ * create a mapping in the future.
  *
  * @template [Slot=unknown]
  * @param {ERemote<Pick<EMarshaller<Slot>, 'fromCapData' | 'toCapData'>>} marshaller
  * @param {MakeMarshalOptions} [marshalOptions]
+ * @param {object} [caches]
+ * @param {WeakMapAPI<object, Slot> | null} [caches.valToSlot]
+ * @param {WeakMapAPI<Slot, object> | null} [caches.slotToVal]
+ * @param {boolean} [caches.cacheSeveredVal]
  * @returns {ReturnType<typeof Far<EMarshaller<Slot>>>}
  */
 export const wrapRemoteMarshallerSendSlotsOnly = (
@@ -103,6 +131,11 @@ export const wrapRemoteMarshallerSendSlotsOnly = (
     serializeBodyFormat = 'smallcaps',
     errorTagging = 'off', // Disable error tagging by default
     ...otherMarshalOptions
+  } = {},
+  {
+    valToSlot = makeDefaultCacheMap(true),
+    slotToVal = makeDefaultCacheMap(false),
+    cacheSeveredVal = false,
   } = {},
 ) => {
   const marshalOptions = harden({
@@ -174,20 +207,58 @@ export const wrapRemoteMarshallerSendSlotsOnly = (
    * @returns {Promise<(object | null)[]>}
    */
   const mapSlotsToCaps = async (slots, getWrapper) => {
-    let hasCap = false;
-    const slotWrapperMappedSlots = harden(
-      slots.map((slot, index) => {
-        if (slot == null) return null;
-        hasCap = true;
-        return getWrapper(index);
-      }),
-    );
-    if (!hasCap) return slotWrapperMappedSlots;
+    let hasRemoteCap = false;
+    const { length } = slots;
+    /** @type {(SlotWrapper<NonNullable<Slot>> | null | undefined)[]} */
+    const slotWrapperMappedSlots = Array.from({ length });
+    /** @type {(object | null | undefined)[]} */
+    const locallyResolvedCapSlots = Array.from({ length });
 
-    const slotsOnlyCapData = slotWrapperMarshaller.toCapData(
-      slotWrapperMappedSlots,
-    );
-    return E(marshaller).fromCapData(slotsOnlyCapData);
+    for (const [index, slot] of slots.entries()) {
+      if (slot === null) {
+        const nullSlot = /** @type {null} */ (slot);
+        slotWrapperMappedSlots[index] = nullSlot;
+        locallyResolvedCapSlots[index] = nullSlot;
+      } else if (slot !== undefined) {
+        const cachedCap = slotToVal?.get(slot);
+        if (cachedCap !== undefined) {
+          valToSlot?.set(cachedCap, slot);
+          locallyResolvedCapSlots[index] = cachedCap;
+        } else {
+          hasRemoteCap = true;
+          slotWrapperMappedSlots[index] = getWrapper(index);
+        }
+      }
+    }
+
+    await null;
+    if (hasRemoteCap) {
+      harden(slotWrapperMappedSlots);
+      const slotsOnlyCapData = slotWrapperMarshaller.toCapData(
+        slotWrapperMappedSlots,
+      );
+
+      /** @type {(object | null | undefined)[]} */
+      const remotelyResolvedCapSlots =
+        await E(marshaller).fromCapData(slotsOnlyCapData);
+
+      for (const [index, val] of remotelyResolvedCapSlots.entries()) {
+        if (val != null) {
+          const slot = slots[index];
+          slotToVal?.set(slot, val);
+          valToSlot?.set(val, slot);
+          locallyResolvedCapSlots[index] = val;
+        } else if (locallyResolvedCapSlots[index] === undefined) {
+          const slot = slots[index];
+          console.warn('⚠️ Unresolved local slot in wrapped marshaller', {
+            index,
+            slot,
+          });
+        }
+      }
+    }
+
+    return harden(locallyResolvedCapSlots);
   };
 
   /**
@@ -204,18 +275,69 @@ export const wrapRemoteMarshallerSendSlotsOnly = (
     if (caps.length === 0) {
       return caps;
     }
-    const mappedSlotsCapData = await E(marshaller).toCapData(caps);
-    try {
-      /** @type {SlotWrapper<Slot>[]} */
-      const slotWrapperMappedSlots =
-        slotWrapperMarshaller.fromCapData(mappedSlotsCapData);
-      return slotWrapperMappedSlots.map(slotWrapper =>
-        convertWrapperToSlot(slotWrapper),
-      );
-    } finally {
-      // We're done with the slotWrapperMarshaller, clear its state
-      currentSlotToWrapper.clear();
+    let hasRemoteCap = false;
+    const { length } = caps;
+    /** @type {(Slot | null | undefined)[]} */
+    const locallyResolvedSlots = Array.from({ length });
+    /** @type {(object | null | undefined)[]} */
+    const remoteCapsToResolve = Array.from({ length });
+
+    for (const [index, cap] of caps.entries()) {
+      if (cap === null) {
+        // We shouldn't get null caps here, but we mirror handle them anyway
+        const nullCap = /** @type {null} */ (cap);
+        remoteCapsToResolve[index] = nullCap;
+        locallyResolvedSlots[index] = nullCap;
+      } else if (cap !== undefined) {
+        const cachedSlot = valToSlot?.get(cap);
+        if (cachedSlot !== undefined) {
+          if (cachedSlot !== null) {
+            slotToVal?.set(cachedSlot, cap);
+          }
+          locallyResolvedSlots[index] = cachedSlot;
+        } else {
+          hasRemoteCap = true;
+          remoteCapsToResolve[index] = cap;
+        }
+      }
     }
+
+    await null;
+    if (hasRemoteCap) {
+      const remotelyResolvedSlotsCapData =
+        await E(marshaller).toCapData(remoteCapsToResolve);
+      try {
+        /** @type {(SlotWrapper<Slot> | null | undefined)[]} */
+        const slotWrapperMappedSlots = slotWrapperMarshaller.fromCapData(
+          remotelyResolvedSlotsCapData,
+        );
+        for (const [index, slotWrapper] of slotWrapperMappedSlots.entries()) {
+          if (slotWrapper != null) {
+            const slot = convertWrapperToSlot(slotWrapper);
+            const val = caps[index];
+            locallyResolvedSlots[index] = slot;
+            if (slot != null) {
+              slotToVal?.set(slot, val);
+            }
+            if (slot != null || cacheSeveredVal) {
+              valToSlot?.set(val, slot);
+            }
+          } else if (locallyResolvedSlots[index] === undefined) {
+            const cap = caps[index];
+            console.warn('⚠️ Unresolved local slot in wrapped marshaller', {
+              index,
+              cap,
+            });
+          }
+        }
+      } finally {
+        // We're done with the slotWrapperMarshaller, clear its state
+        currentSlotToWrapper.clear();
+      }
+    }
+
+    // All slots should have been resolved by now (or warned about)
+    return /** @type {Slot[]} */ (harden(locallyResolvedSlots));
   };
 
   /**
