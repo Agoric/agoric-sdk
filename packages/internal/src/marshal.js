@@ -180,9 +180,34 @@ export const pureDataMarshaller = makeMarshal(rejectOCap, rejectOCap, {
 harden(pureDataMarshaller);
 
 /**
+ * A cache uses the WeakMap interface subset but holds keys strongly.
+ *
+ * @template K
+ * @template V
+ * @typedef {Pick<Map<K, V>, Exclude<keyof WeakMap<WeakKey, any>, 'set'>> & {
+ *   set: (key: K, value: V) => WeakMapAPI<K, V>;
+ * }} WeakMapAPI
+ */
+
+/**
+ * @template K
+ * @template V
+ * @param {boolean} [weakKey]
+ * @todo Replace with an evicting cache map
+ *
+ * @todo Check cost of using virtual-aware WeakMap in liveslots
+ */
+const makeCacheMap = weakKey =>
+  /** @type {WeakMapAPI<K, V>} */ (weakKey ? new WeakMap() : new Map());
+
+/**
  * @template [Slot=unknown]
  * @param {ERemote<Pick<EMarshaller<Slot>, 'fromCapData' | 'toCapData'>>} marshaller
  * @param {MakeMarshalOptions} [marshalOptions]
+ * @param {object} [caches]
+ * @param {WeakMapAPI<object, Slot> | null} [caches.valToSlot]
+ * @param {WeakMapAPI<Slot, object> | null} [caches.slotToVal]
+ * @param {boolean} [caches.cacheSeveredVal]
  * @returns {ReturnType<typeof Far<EMarshaller<Slot>>>}
  */
 export const wrapRemoteMarshallerSendSlotsOnly = (
@@ -191,6 +216,11 @@ export const wrapRemoteMarshallerSendSlotsOnly = (
     serializeBodyFormat = 'smallcaps',
     errorTagging = 'off', // Disable error tagging by default
     ...otherMarshalOptions
+  } = {},
+  {
+    valToSlot = makeCacheMap(true),
+    slotToVal = makeCacheMap(false),
+    cacheSeveredVal = false,
   } = {},
 ) => {
   const marshalOptions = harden({
@@ -228,24 +258,62 @@ export const wrapRemoteMarshallerSendSlotsOnly = (
    * @returns {Promise<(object | null)[]>}
    */
   const mapSlotsToCaps = async (slots, getIface) => {
-    let hasCap = false;
-    const boardRemoteMappedSlots = harden(
-      slots.map((slot, index) => {
-        if (slot == null) return null;
-        hasCap = true;
-        return makeBoardRemote({
-          boardId: slot,
-          iface: getIface(index),
-          prefix: '',
-        });
-      }),
-    );
-    if (!hasCap) return boardRemoteMappedSlots;
+    let hasRemoteCap = false;
+    const { length } = slots;
+    /** @type {(BoardRemote<NonNullable<Slot>> | null | undefined)[]} */
+    const boardRemoteMappedSlots = Array.from({ length });
+    /** @type {(object | null | undefined)[]} */
+    const locallyResolvedCapSlots = Array.from({ length });
 
-    const slotsOnlyCapData = boardRemoteMarshaller.toCapData(
-      boardRemoteMappedSlots,
-    );
-    return E(marshaller).fromCapData(slotsOnlyCapData);
+    for (const [index, slot] of slots.entries()) {
+      if (slot === null) {
+        const nullSlot = /** @type {null} */ (slot);
+        boardRemoteMappedSlots[index] = nullSlot;
+        locallyResolvedCapSlots[index] = nullSlot;
+      } else if (slot !== undefined) {
+        const cachedCap = slotToVal?.get(slot);
+        if (cachedCap !== undefined) {
+          valToSlot?.set(cachedCap, slot);
+          locallyResolvedCapSlots[index] = cachedCap;
+        } else {
+          hasRemoteCap = true;
+          boardRemoteMappedSlots[index] = makeBoardRemote({
+            boardId: slot,
+            iface: getIface(index),
+            prefix: '',
+          });
+        }
+      }
+    }
+
+    await null;
+    if (hasRemoteCap) {
+      harden(boardRemoteMappedSlots);
+      const slotsOnlyCapData = boardRemoteMarshaller.toCapData(
+        boardRemoteMappedSlots,
+      );
+
+      /** @type {(object | null | undefined)[]} */
+      const remotelyResolvedCapSlots =
+        await E(marshaller).fromCapData(slotsOnlyCapData);
+
+      for (const [index, val] of remotelyResolvedCapSlots.entries()) {
+        if (val != null) {
+          const slot = slots[index];
+          slotToVal?.set(slot, val);
+          valToSlot?.set(val, slot);
+          locallyResolvedCapSlots[index] = val;
+        } else if (locallyResolvedCapSlots[index] === undefined) {
+          const slot = slots[index];
+          console.warn('⚠️ Unresolved local slot in wrapped marshaller', {
+            index,
+            slot,
+          });
+        }
+      }
+    }
+
+    return harden(locallyResolvedCapSlots);
   };
 
   /**
@@ -256,14 +324,67 @@ export const wrapRemoteMarshallerSendSlotsOnly = (
     if (caps.length === 0) {
       return caps;
     }
-    const mappedSlotsCapData = await E(marshaller).toCapData(caps);
-    /** @type {BoardRemote<Slot>[]} */
-    const boardRemoteMappedSlots =
-      boardRemoteMarshaller.fromCapData(mappedSlotsCapData);
+    let hasRemoteCap = false;
+    const { length } = caps;
+    /** @type {(Slot | null | undefined)[]} */
+    const locallyResolvedSlots = Array.from({ length });
+    /** @type {(object | null | undefined)[]} */
+    const remoteCapsToResolve = Array.from({ length });
 
-    // We don't care about the remote iface and rely on the one extracted by the local marshaller
-    remoteSlotToIface.clear();
-    return boardRemoteMappedSlots.map(boardRemote => boardRemote.getBoardId());
+    for (const [index, cap] of caps.entries()) {
+      if (cap === null) {
+        // We shouldn't get null caps here, but we mirror handle them anyway
+        const nullCap = /** @type {null} */ (cap);
+        remoteCapsToResolve[index] = nullCap;
+        locallyResolvedSlots[index] = nullCap;
+      } else if (cap !== undefined) {
+        const cachedSlot = valToSlot?.get(cap);
+        if (cachedSlot !== undefined) {
+          if (cachedSlot !== null) {
+            slotToVal?.set(cachedSlot, cap);
+          }
+          locallyResolvedSlots[index] = cachedSlot;
+        } else {
+          hasRemoteCap = true;
+          remoteCapsToResolve[index] = cap;
+        }
+      }
+    }
+
+    await null;
+    if (hasRemoteCap) {
+      const remotelyResolvedSlotsCapData =
+        await E(marshaller).toCapData(remoteCapsToResolve);
+      /** @type {(BoardRemote<Slot> | null | undefined)[]} */
+      const boardRemoteMappedSlots = boardRemoteMarshaller.fromCapData(
+        remotelyResolvedSlotsCapData,
+      );
+      // We don't care about the remote iface and rely on the one extracted by the local marshaller
+      remoteSlotToIface.clear();
+
+      for (const [index, boardRemote] of boardRemoteMappedSlots.entries()) {
+        if (boardRemote != null) {
+          const slot = boardRemote.getBoardId();
+          const val = caps[index];
+          locallyResolvedSlots[index] = slot;
+          if (slot != null) {
+            slotToVal?.set(slot, val);
+          }
+          if (slot != null || cacheSeveredVal) {
+            valToSlot?.set(val, slot);
+          }
+        } else if (locallyResolvedSlots[index] === undefined) {
+          const cap = caps[index];
+          console.warn('⚠️ Unresolved local slot in wrapped marshaller', {
+            index,
+            cap,
+          });
+        }
+      }
+    }
+
+    // All slots should have been resolved by now (or warned about)
+    return /** @type {Slot[]} */ (harden(locallyResolvedSlots));
   };
 
   /** @param {CapData<Slot>} data */

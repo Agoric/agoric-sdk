@@ -74,9 +74,15 @@ const checkRemoteMarshallerValueInvariants = (t, val) => {
   let hasCap = false;
   for (const elem of val) {
     const passStyle = passStyleOf(elem);
-    if (passStyle !== 'null') {
-      t.is(passStyle, 'remotable');
-      hasCap = true;
+    switch (passStyle) {
+      case 'null':
+      case 'undefined':
+        break;
+      case 'remotable':
+        hasCap = true;
+        break;
+      default:
+        t.fail(`Unexpected pass-style: ${passStyle}`);
     }
   }
   t.true(hasCap);
@@ -104,20 +110,70 @@ test('wrapRemoteMarshaller - empty slots', async t => {
   t.deepEqual(clone, specimen);
 });
 
-test('wrapRemoteMarshaller - with slots', async t => {
+const withSlots = test.macro(async (t, { withCache } = {}) => {
+  let valueHookCalled = false;
   const marshaller = makeMockMarshaller({
     valueHook: val => {
-      checkRemoteMarshallerValueInvariants(t, val);
+      if (valueHookCalled && withCache) {
+        unexpectedMarshallerInvocation(t, val);
+      } else {
+        valueHookCalled = true;
+        checkRemoteMarshallerValueInvariants(t, val);
+      }
     },
   });
-  const wrappedMarshaller = wrapRemoteMarshaller(marshaller);
+  const wrappedMarshaller = wrapRemoteMarshaller(
+    marshaller,
+    {},
+    withCache
+      ? {} // default caches
+      : {
+          slotToVal: null,
+          valToSlot: null,
+        },
+  );
 
   const specimen = harden({ foo: 42, bar: Far('bar', { sentinel() {} }) });
 
+  // Will populate the cache
   const capData = await wrappedMarshaller.toCapData(specimen);
+  // Will hit the cache
   const clone = await wrappedMarshaller.fromCapData(capData);
 
   t.deepEqual(clone, specimen);
+
+  // Will hit the cache
+  const capData2 = await wrappedMarshaller.toCapData(specimen);
+
+  const caches = {
+    slotToVal: withCache ? new Map() : null,
+    valToSlot: withCache ? new Map() : null,
+  };
+  const wrappedMarshaller2 = wrapRemoteMarshaller(marshaller, {}, caches);
+  valueHookCalled = false;
+
+  // Populate the cache
+  const clone2 = await wrappedMarshaller2.fromCapData(capData2);
+  t.true(valueHookCalled);
+  t.deepEqual(clone2, specimen);
+
+  if (withCache) {
+    const cap = specimen.bar;
+    const slot = capData2.slots[0];
+    t.is(caches.slotToVal?.get(slot), cap);
+    t.is(caches.valToSlot?.get(cap), slot);
+  }
+
+  // Hit the cache
+  const clone3 = await wrappedMarshaller2.fromCapData(capData2);
+  t.deepEqual(clone3, specimen);
+});
+
+test('wrapRemoteMarshaller - with slots - without cache', withSlots, {
+  withCache: false,
+});
+test('wrapRemoteMarshaller - with slots - with cache', withSlots, {
+  withCache: true,
 });
 
 test('wrapRemoteMarshaller - read-only marshaller', async t => {
@@ -141,25 +197,39 @@ test('wrapRemoteMarshaller - read-only marshaller', async t => {
   t.deepEqual(clone, { ...specimen, bar: makeInaccessibleVal('bar') });
 });
 
-test('wrapRemoteMarshaller - null and non-null slots', async t => {
+const withNullAndNonNullSlots = test.macro(async (t, { withCache }) => {
   const sharedCap = Far('shared', { sentinel() {} });
 
   const slotToVal = new Map();
   const valToSlot = new WeakMap();
 
+  let valueHookCalled = false;
   const writeMarshaller = makeMockMarshaller({ slotToVal, valToSlot });
   const marshaller = makeMockMarshaller({
     slotToVal,
     valToSlot,
     valueHook: val => {
-      checkRemoteMarshallerValueInvariants(t, val);
+      if (valueHookCalled && withCache) {
+        unexpectedMarshallerInvocation(t, val);
+      } else {
+        valueHookCalled = true;
+        checkRemoteMarshallerValueInvariants(t, val);
+      }
     },
     readOnly: true,
   });
 
-  const wrappedMarshaller = wrapRemoteMarshaller(marshaller);
+  const cacheSeveredVal = withCache === 'includeSevered';
+  const caches = {
+    slotToVal: withCache ? new Map() : null,
+    valToSlot: withCache ? new Map() : null,
+    cacheSeveredVal,
+  };
+  const wrappedMarshaller = wrapRemoteMarshaller(marshaller, {}, caches);
 
-  writeMarshaller.toCapData(sharedCap);
+  const {
+    slots: [sharedSlot],
+  } = writeMarshaller.toCapData(sharedCap);
 
   const specimen = harden({
     foo: 42,
@@ -168,7 +238,51 @@ test('wrapRemoteMarshaller - null and non-null slots', async t => {
   });
 
   const capData = await wrappedMarshaller.toCapData(specimen);
-  const clone = await wrappedMarshaller.fromCapData(capData);
+  if (withCache) {
+    t.is(caches.slotToVal?.get(sharedSlot), sharedCap);
+    t.is(caches.valToSlot?.get(sharedCap), sharedSlot);
 
+    if (cacheSeveredVal) {
+      t.is(caches.valToSlot?.get(specimen.bar), null);
+      t.is(caches.valToSlot?.size, 2);
+    } else {
+      t.false(caches.valToSlot?.has(specimen.bar));
+      t.is(caches.valToSlot?.size, 1);
+    }
+
+    // Must never cache a null slot
+    t.false(caches.slotToVal?.has(null));
+    t.is(caches.slotToVal?.size, 1);
+  }
+  const clone = await wrappedMarshaller.fromCapData(capData);
   t.deepEqual(clone, { ...specimen, bar: makeInaccessibleVal('bar') });
+
+  if (!cacheSeveredVal) {
+    // Without caching of severed val, toCapData will have to invoke the marshaller again
+    // That invocation will have an `undefined` value for the cached sharedCap.
+    valueHookCalled = false;
+  }
+  const capData2 = await wrappedMarshaller.toCapData(specimen);
+  if (withCache) {
+    // Must not have updated slot cache for the (maybe cached) severed value
+    t.false(caches.slotToVal?.has(null));
+    t.is(caches.slotToVal?.size, 1);
+  }
+  t.deepEqual(capData2, capData);
 });
+
+test(
+  'wrapRemoteMarshaller - null and non-null slots - without cache',
+  withNullAndNonNullSlots,
+  { withCache: false },
+);
+test(
+  'wrapRemoteMarshaller - null and non-null slots - with cache',
+  withNullAndNonNullSlots,
+  { withCache: true },
+);
+test(
+  'wrapRemoteMarshaller - null and non-null slots - with cache of severed values',
+  withNullAndNonNullSlots,
+  { withCache: 'includeSevered' },
+);
