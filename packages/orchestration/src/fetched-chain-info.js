@@ -12,6 +12,24 @@ export default /** @type {const} } */ ({
       },
     ],
     connections: {
+      'mocha-4': {
+        id: 'connection-18',
+        client_id: '07-tendermint-21',
+        counterparty: {
+          client_id: '07-tendermint-21',
+          connection_id: 'connection-662',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-129',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-399',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
       'elysicstestnet-1': {
         id: 'connection-16',
         client_id: '07-tendermint-16',
@@ -30,7 +48,7 @@ export default /** @type {const} } */ ({
           version: 'ics20-1',
         },
       },
-      'provider': {
+      provider: {
         id: 'connection-17',
         client_id: '07-tendermint-18',
         counterparty: {
@@ -216,7 +234,7 @@ export default /** @type {const} } */ ({
           version: 'ics20-1',
         },
       },
-      'provider': {
+      provider: {
         id: 'connection-48',
         client_id: '07-tendermint-70',
         counterparty: {
@@ -228,6 +246,74 @@ export default /** @type {const} } */ ({
           channelId: 'channel-62',
           portId: 'transfer',
           counterPartyChannelId: 'channel-389',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+      'mocha-4': {
+        id: 'connection-281',
+        client_id: '07-tendermint-367',
+        counterparty: {
+          client_id: '07-tendermint-367',
+          connection_id: 'connection-26',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-38',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-78',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+    },
+  },
+  celestia: {
+    bech32Prefix: 'celestia',
+    chainId: 'mocha-4',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'mocha-4',
+    stakingTokens: [
+      {
+        denom: 'utia',
+      },
+    ],
+    connections: {
+      'agoricdev-25': {
+        id: 'connection-18',
+        client_id: '07-tendermint-21',
+        counterparty: {
+          client_id: '07-tendermint-21',
+          connection_id: 'connection-662',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-399',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-129',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+      'stride-internal-1': {
+        id: 'connection-26',
+        client_id: '07-tendermint-367',
+        counterparty: {
+          client_id: '07-tendermint-367',
+          connection_id: 'connection-281',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-78',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-38',
           counterPartyPortId: 'transfer',
           ordering: 0,
           state: 3,

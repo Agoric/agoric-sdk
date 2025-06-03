@@ -65,7 +65,7 @@ export const startElys = async (
       denominator: BigInt(100),
     }, // 10%
   };
-  const allowedChains = ['cosmoshub'];
+  const allowedChains = ['cosmoshub','celestia'];
 
   /** @type {StartUpgradableOpts<ElysContract>} */
   const startOpts = {
@@ -90,8 +90,11 @@ export const startElys = async (
   };
 
   const { instance, creatorFacet } = await E(startUpgradable)(startOpts);
+  trace('elys instance created');
   const addressNode = await E(storageNode).makeChildNode('address');
+  trace('elys address node created');
   const address = await E(creatorFacet).getLocalAddress();
+  trace('elys address fetched', address);
   await E(addressNode).setValue( JSON.stringify(address) );
 
   produceInstance.resolve(instance);

@@ -9,10 +9,6 @@ import {
   getManifest,
   startElys,
 } from '@agoric/orchestration/src/proposals/start-elys.js';
-// import { minimalChainInfos } from '../tools/chainInfo.js';
-// import { minimalChainInfos } from '../../../boot/test/tools/chainInfo.js';
-// import { assetOn } from '@agoric/orchestration/src/utils/asset.js';
-// import { parseArgs } from 'node:util';
 
 /**
  * @import {ParseArgsConfig} from 'node:util'
@@ -34,6 +30,7 @@ export const minimalChainInfos = {
   cosmoshub: fetchedChainInfo.cosmoshub,
   stride: fetchedChainInfo.stride,
   elys: fetchedChainInfo.elys,
+  celestia: fetchedChainInfo.celestia,
 };
 
 export const createFeeTestConfig = (feeCollector) => {
@@ -131,10 +128,34 @@ export default async (homeP, endowments) => {
       },
     ],
     [
-      'ibc/89BB00177EBDF554BF8382094D770DC3EA1C7F5945A48D61C07A867C6ED6709B',
+      'utia',
       {
-        baseDenom: 'ibc/EF3BDB6C8222A465BF8EC6B02EBE350E82DC0AC4FDB75286A92B8433A3B026EC',
+        baseDenom: 'utia',
+        baseName: 'celestia',
+        chainName: 'celestia',
+      },
+    ],
+    [
+      'ibc/627650D6C650F179DDBD708591E613345910985F5549DB1F6991020B101EE8E0',
+      {
+        baseDenom: 'ibc/D02B2CC73ABD49D2746AF67980F7CDD93A54B0AFF8C75EFA095B0423B8950653',
         baseName: 'elys',
+        chainName: 'agoric',
+      },
+    ],
+    [
+      'ibc/F00782820450D9F76025F7FC25BF026EC11309069CE89C1CD326311033E17E3E',
+      {
+        baseDenom: 'uatom',
+        baseName: 'cosmoshub',
+        chainName: 'agoric',
+      },
+    ],
+    [
+      'ibc/510D1969E876B0DCE9EE450CEC7BF987164CF9E4E42516FF972EDDBA9B64BE09',
+      {
+        baseDenom: 'utia',
+        baseName: 'celestia',
         chainName: 'agoric',
       },
     ],

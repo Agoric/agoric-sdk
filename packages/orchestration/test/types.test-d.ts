@@ -362,10 +362,10 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   expectType<boolean>(agoricChainInfo.icqEnabled);
   expectType<boolean>(agoricChainInfo.icaEnabled);
   // fetched info is preserved
-  expectType<'agoric-3'>(fetchedAgoricInfo.chainId);
+  expectType<'agoricdev-25'>(fetchedAgoricInfo.chainId);
   expectType<'agoric'>(fetchedAgoricInfo.bech32Prefix);
   expectType<'cosmos'>(fetchedAgoricInfo.namespace);
-  expectType<'agoric-3'>(fetchedAgoricInfo.reference);
+  expectType<'agoricdev-25'>(fetchedAgoricInfo.reference);
   expectType<string>(fetchedAgoricInfo.stakingTokens[0].denom);
 }
 
