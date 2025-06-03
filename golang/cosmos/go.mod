@@ -10,7 +10,9 @@ require (
 	cosmossdk.io/errors v1.0.1
 	cosmossdk.io/log v1.4.1
 	cosmossdk.io/math v1.4.0
+	cosmossdk.io/simapp v0.0.0-00010101000000-000000000000
 	cosmossdk.io/store v1.1.1
+	cosmossdk.io/tools/confix v0.1.2
 	cosmossdk.io/x/evidence v0.1.1
 	cosmossdk.io/x/feegrant v0.1.1
 	cosmossdk.io/x/upgrade v0.1.4
@@ -41,21 +43,17 @@ require (
 )
 
 require (
-	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/prometheus/client_golang v1.20.5 // indirect
-)
-
-require (
 	cloud.google.com/go v0.115.0 // indirect
 	cloud.google.com/go/auth v0.6.0 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.2 // indirect
 	cloud.google.com/go/compute/metadata v0.5.2 // indirect
 	cloud.google.com/go/iam v1.1.9 // indirect
 	cloud.google.com/go/storage v1.41.0 // indirect
-	cosmossdk.io/client/v2 v2.0.0-beta.3 // indirect
+	cosmossdk.io/client/v2 v2.0.0-beta.5.0.20241121152743-3dad36d9a29e // indirect
 	cosmossdk.io/collections v0.4.0 // indirect
 	cosmossdk.io/depinject v1.1.0 // indirect
 	cosmossdk.io/x/circuit v0.1.1 // indirect
+	cosmossdk.io/x/nft v0.1.1 // indirect
 	cosmossdk.io/x/tx v0.13.8 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
@@ -88,6 +86,8 @@ require (
 	github.com/cosmos/ics23/go v0.11.0 // indirect
 	github.com/cosmos/ledger-cosmos-go v0.14.0 // indirect
 	github.com/cosmos/rosetta-sdk-go v0.10.0 // indirect
+	github.com/creachadair/atomicfile v0.3.1 // indirect
+	github.com/creachadair/tomledit v0.0.24 // indirect
 	github.com/danieljoos/wincred v1.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0 // indirect
@@ -109,6 +109,7 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v1.2.3 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/mock v1.6.0 // indirect
@@ -127,7 +128,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
-	github.com/hashicorp/go-getter v1.7.4 // indirect
+	github.com/hashicorp/go-getter v1.7.5 // indirect
 	github.com/hashicorp/go-hclog v1.5.0 // indirect
 	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect
 	github.com/hashicorp/go-plugin v1.5.2 // indirect
@@ -164,6 +165,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
 	github.com/petermattis/goid v0.0.0-20240813172612-4fcff4a6cae7 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
+	github.com/prometheus/client_golang v1.20.5 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.62.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
@@ -232,21 +234,25 @@ replace (
 
 // Agoric-specific replacements:
 replace (
-	// Ensure specific packages use your fork
-	// FIXME: cosmos-sdk v0.50.13's api package conflicts with cosmos-sdk/runtime.
+	// The following replacements cannot be used because, due to backporting,
+	// parts of cosmos-sdk depend on APIs from future cosmos-sdk modules published
+	// only on cosmossdk.io.  To work around this, we have to rely on published modules,
+	// rather than from sources within the same cosmos-sdk.
+	//
+	// TODO: Check if this is still true past v0.50.13.
+	//
 	// cosmossdk.io/api => github.com/agoric-labs/cosmos-sdk/api v0.0.0-20250529211112-dc46e191dfdf
+	// cosmossdk.io/depinject => github.com/agoric-labs/cosmos-sdk/depinject dc46e191dfdffe2ca409f0311e7baa1e8df27bd4
+	// cosmossdk.io/log => github.com/agoric-labs/cosmos-sdk/log v0.0.0-20250529211112-dc46e191dfdf
+	//
+	// Ensure specific packages use our fork
 	cosmossdk.io/client/v2 => github.com/agoric-labs/cosmos-sdk/client/v2 v2.0.0-20250514210843-02865ffff5d9
 	cosmossdk.io/core => github.com/agoric-labs/cosmos-sdk/core v0.0.0-20250529211112-dc46e191dfdf
-	// FIXME: broken dependency from core/appmodule to cosmossdk.io/depinject/appconfig
-	// cosmossdk.io/depinject => github.com/agoric-labs/cosmos-sdk/depinject dc46e191dfdffe2ca409f0311e7baa1e8df27bd4
 	cosmossdk.io/errors => github.com/agoric-labs/cosmos-sdk/errors v0.0.0-20250529211112-dc46e191dfdf
-	// FIXME: cosmos-sdk v0.50.13's log package doesn't have an interface cosmos-sdk can use.
-	// cosmossdk.io/log => github.com/agoric-labs/cosmos-sdk/log v0.0.0-20250529211112-dc46e191dfdf
 	cosmossdk.io/math => github.com/agoric-labs/cosmos-sdk/math v0.0.0-20250529211112-dc46e191dfdf
-	// TODO: Use parts of our fork of cosmos-sdk.
 	cosmossdk.io/simapp => github.com/agoric-labs/cosmos-sdk/simapp v0.0.0-20250529211112-dc46e191dfdf
 	cosmossdk.io/store => github.com/agoric-labs/cosmos-sdk/store v0.0.0-20250529211112-dc46e191dfdf
-	// cosmossdk.io/tools/rosetta not provided in cosmos-sdk v0.50.
+	cosmossdk.io/tools/confix => github.com/agoric-labs/cosmos-sdk/tools/confix v0.0.0-20250529211112-dc46e191dfdf
 	cosmossdk.io/x/circuit => github.com/agoric-labs/cosmos-sdk/x/circuit v0.0.0-20250529211112-dc46e191dfdf
 	cosmossdk.io/x/evidence => github.com/agoric-labs/cosmos-sdk/x/evidence v0.0.0-20250529211112-dc46e191dfdf
 	cosmossdk.io/x/feegrant => github.com/agoric-labs/cosmos-sdk/x/feegrant v0.0.0-20250529211112-dc46e191dfdf
@@ -260,9 +266,4 @@ replace (
 	// We need a fork of cosmos-sdk until all of the differences are merged.
 	// github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.50.13-alpha.agoric.2
 	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.50.13-alpha.agoric.2.0.20250603035538-4c78c2055a59
-
-// github.com/cosmos/cosmos-sdk/x/gov => github.com/agoric-labs/cosmos-sdk/x/gov b1770bfdd568b0783c6065d4fb3bd86a48d0549e
-// github.com/cosmos/cosmos-sdk/x/auth => github.com/agoric-labs/cosmos-sdk/x/auth 86e44a02f6bff69aa20977a70f088abaaaa0bf9f
-// github.com/cosmos/cosmos-sdk/x/bank => github.com/agoric-labs/cosmos-sdk/x/bank 86e44a02f6bff69aa20977a70f088abaaaa0bf9f
-// github.com/cosmos/cosmos-sdk/x/staking => github.com/agoric-labs/cosmos-sdk/x/staking 86e44a02f6bff69aa20977a70f088abaaaa0bf9f
 )

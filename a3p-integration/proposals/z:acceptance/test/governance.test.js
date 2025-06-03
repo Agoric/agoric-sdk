@@ -2,7 +2,7 @@
 
 import test from 'ava';
 
-import { GOV1ADDR, GOV2ADDR } from '@agoric/synthetic-chain';
+import { bankSend, GOV1ADDR, GOV2ADDR } from '@agoric/synthetic-chain';
 import {
   makeGovernanceDriver,
   runCommitteeElectionParamChange,
@@ -22,6 +22,14 @@ const governanceDriver = await makeGovernanceDriver(fetch, networkConfig);
  *   current: { ChargingPeriod: Amount },
  *  }} ChargingPeriodRecord
  */
+
+test.before(async t => {
+  t.log('funding economic committee transactions');
+  await null;
+  for (const address of governanceAddresses) {
+    await bankSend(address, `${BigInt(100e6)}ubld`);
+  }
+});
 
 test.serial(
   'economic committee can make governance proposal and vote on it',

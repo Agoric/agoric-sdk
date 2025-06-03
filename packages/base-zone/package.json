@@ -7,15 +7,15 @@
   "main": "./src/index.js",
   "scripts": {
     "build": "exit 0",
-    "prepack": "tsc --build tsconfig.build.json",
+    "prepack": "yarn run -T tsc --build tsconfig.build.json",
     "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
     "test": "ava",
     "test:c8": "c8 --all $C8_OPTIONS ava",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
-    "lint": "run-s --continue-on-error lint:*",
-    "lint:types": "tsc",
-    "lint:eslint": "eslint ."
+    "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
+    "lint:types": "yarn run -T tsc",
+    "lint:eslint": "yarn run -T eslint ."
   },
   "exports": {
     ".": "./src/index.js",
@@ -27,7 +27,7 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/store": "^0.9.2",
+    "@agoric/store": "workspace:*",
     "@endo/common": "^1.2.10",
     "@endo/errors": "^1.2.10",
     "@endo/exo": "^1.5.9",
@@ -44,7 +44,7 @@
     "access": "public"
   },
   "engines": {
-    "node": "^18.12 || ^20.9"
+    "node": "^20.9 || ^22.11"
   },
   "ava": {
     "files": [

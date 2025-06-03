@@ -28,7 +28,7 @@ import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
 import { objectMap } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
-import { withChainCapabilities, type Bech32Address } from '../index.js';
+import { withChainCapabilities } from '../index.js';
 import cctpChainInfo from '../src/cctp-chain-info.js';
 import { registerKnownChains } from '../src/chain-info.js';
 import { makeChainHub } from '../src/exos/chain-hub.js';
@@ -193,9 +193,9 @@ export const setupOrchestrationTest = async ({
     const { message: msg, sequence } = transferInfo;
 
     const base = {
-      receiver: msg.receiver as Bech32Address,
-      sender: msg.sender as Bech32Address,
-      target: msg.sender as Bech32Address, // target is usually the sender for outgoing transfers
+      receiver: msg.receiver,
+      sender: msg.sender,
+      target: msg.sender, // target is usually the sender for outgoing transfers
       sourceChannel: msg.sourceChannel as IBCChannelID,
       sequence, // Use sequence from transferInfo
       amount: BigInt(msg.token.amount),

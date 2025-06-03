@@ -1,15 +1,15 @@
-diff --git a/node_modules/ava/index.js b/node_modules/ava/index.js
+diff --git a/index.js b/index.js
 new file mode 100644
-index 0000000..bee62d8
+index 0000000000000000000000000000000000000000..bee62d84afa43a1a68e1b6ac74ebdea6831fefcb
 --- /dev/null
-+++ b/node_modules/ava/index.js
++++ b/index.js
 @@ -0,0 +1,2 @@
 +// XXX work around https://github.com/import-js/eslint-plugin-import/issues/1810
 +export {default} from './lib/worker/main.cjs';
-diff --git a/node_modules/ava/lib/cli.js b/node_modules/ava/lib/cli.js
-index b613666..fbed443 100644
---- a/node_modules/ava/lib/cli.js
-+++ b/node_modules/ava/lib/cli.js
+diff --git a/lib/cli.js b/lib/cli.js
+index b613666c8946f7bdd61e3ef84347e13cf50fff95..fbed44368e394454bf146a8b5bd35ad87f4d9087 100644
+--- a/lib/cli.js
++++ b/lib/cli.js
 @@ -448,6 +448,10 @@ export default async function loadCli() { // eslint-disable-line complexity
  		workerArgv: argv['--'],
  	});
@@ -21,10 +21,10 @@ index b613666..fbed443 100644
  	const reporter = combined.tap && !combined.watch && debug === null ? new TapReporter({
  		extensions: globs.extensions,
  		projectDir,
-diff --git a/node_modules/ava/lib/fork.js b/node_modules/ava/lib/fork.js
-index 7630baa..78ced77 100644
---- a/node_modules/ava/lib/fork.js
-+++ b/node_modules/ava/lib/fork.js
+diff --git a/lib/fork.js b/lib/fork.js
+index 7630baa396ee8c515a82ea98ece67e4d8daa5491..78ced7746c904fc7976ab2f17da65fc9eaf036d1 100644
+--- a/lib/fork.js
++++ b/lib/fork.js
 @@ -7,6 +7,7 @@ import Emittery from 'emittery';
  import {pEvent} from 'p-event';
  
@@ -94,10 +94,10 @@ index 7630baa..78ced77 100644
  
  		notifyOfPeerFailure() {
  			send({type: 'peer-failed'});
-diff --git a/node_modules/ava/lib/reporters/default.js b/node_modules/ava/lib/reporters/default.js
-index 804e285..8daf5ee 100644
---- a/node_modules/ava/lib/reporters/default.js
-+++ b/node_modules/ava/lib/reporters/default.js
+diff --git a/lib/reporters/default.js b/lib/reporters/default.js
+index 804e285cc3322fab0e8fa17851800546d42b499f..8daf5ee5b141c70fcebadb4d0a4f06be1cb75120 100644
+--- a/lib/reporters/default.js
++++ b/lib/reporters/default.js
 @@ -678,8 +678,11 @@ export default class Reporter {
  			this.lineWriter.writeLine(colors.todo(`${this.stats.todoTests} ${plur('test', this.stats.todoTests)} todo`));
  		}
@@ -112,10 +112,10 @@ index 804e285..8daf5ee 100644
  		}
  
  		if (this.stats.uncaughtExceptions > 0) {
-diff --git a/node_modules/ava/lib/reporters/tap.js b/node_modules/ava/lib/reporters/tap.js
-index b1989a4..fa1617f 100644
---- a/node_modules/ava/lib/reporters/tap.js
-+++ b/node_modules/ava/lib/reporters/tap.js
+diff --git a/lib/reporters/tap.js b/lib/reporters/tap.js
+index b1989a4d60b4f224c01e9fb285e9f789848593f0..fa1617f7000f760e781741c31d30101a5361baa0 100644
+--- a/lib/reporters/tap.js
++++ b/lib/reporters/tap.js
 @@ -45,6 +45,10 @@ function dumpError(error) {
  	return object;
  }
@@ -144,10 +144,10 @@ index b1989a4..fa1617f 100644
  			comment: evt.logs,
  			error: evt.err ? dumpError(evt.err) : null,
  			index: ++this.i,
-diff --git a/node_modules/ava/lib/run-status.js b/node_modules/ava/lib/run-status.js
-index 8471345..7433712 100644
---- a/node_modules/ava/lib/run-status.js
-+++ b/node_modules/ava/lib/run-status.js
+diff --git a/lib/run-status.js b/lib/run-status.js
+index 84713456a0b9c4c77ca8a6cced38406d43eb4829..74337125494f638841249351c62f59202b85f681 100644
+--- a/lib/run-status.js
++++ b/lib/run-status.js
 @@ -228,7 +228,7 @@ export default class RunStatus extends Emittery {
  			|| this.stats.sharedWorkerErrors > 0
  			|| this.stats.timeouts > 0
@@ -172,10 +172,10 @@ index 8471345..7433712 100644
  		return 0;
  	}
  
-diff --git a/node_modules/ava/lib/worker/base.js b/node_modules/ava/lib/worker/base.js
-index cdd3c4a..4302a4a 100644
---- a/node_modules/ava/lib/worker/base.js
-+++ b/node_modules/ava/lib/worker/base.js
+diff --git a/lib/worker/base.js b/lib/worker/base.js
+index cdd3c4a1a254964102f042244f3aa0a8b4b9a68f..4302a4ad0ed66571f15f7df73c549155a8d294ee 100644
+--- a/lib/worker/base.js
++++ b/lib/worker/base.js
 @@ -1,5 +1,6 @@
  import {createRequire} from 'node:module';
  import process from 'node:process';

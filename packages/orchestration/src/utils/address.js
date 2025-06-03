@@ -1,4 +1,4 @@
-import { fromHex } from '@cosmjs/encoding';
+import { fromBech32, fromHex } from '@cosmjs/encoding';
 import { Fail, q } from '@endo/errors';
 import bs58 from 'bs58';
 
@@ -107,6 +107,24 @@ export const getBech32Prefix = address => {
 };
 
 /**
+ * Coerce an AccountIdArg into a plain AccountId. The latter is now preferred so
+ * this utility can be used to adapt legacy calls, in particular from vows
+ * outstanding from previous incarnations.
+ *
+ * @param {AccountIdArg} idArg CAIP-10 account ID or an unscoped on-chain
+ *   address
+ * @returns {AccountId} - The parsed account details.
+ */
+export const coerceAccountId = idArg => {
+  if (typeof idArg === 'string') {
+    return idArg;
+  }
+
+  return `cosmos:${idArg.chainId}:${idArg.value}`;
+};
+harden(coerceAccountId);
+
+/**
  * Parse an account ID into a structured format following CAIP-10 standards.
  *
  * @param {AccountIdArg} idArg CAIP-10 account ID or an unscoped on-chain
@@ -158,6 +176,45 @@ export const chainOfAccount = accountIdArg => {
   const { namespace, reference } = parseAccountIdArg(accountIdArg);
   return `${namespace}:${reference}`;
 };
+
+/**
+ * Validates if a string is a valid Cosmos Bech32 address.
+ *
+ * @param {string} address - The address to validate
+ * @returns {boolean} - True if the address is a valid Bech32 address, false
+ *   otherwise
+ */
+export const isBech32Address = address => {
+  if (typeof address !== 'string') {
+    return false;
+  }
+
+  try {
+    // Attempt to decode the Bech32 address
+    const decoded = fromBech32(address);
+
+    // Ensure the decoded data exists and has a valid data part
+    return !!decoded && decoded.data.length > 0;
+  } catch (error) {
+    // If decoding fails, it's not a valid Bech32 address
+    return false;
+  }
+};
+harden(isBech32Address);
+
+/**
+ * Asserts that a value is a valid Bech32 address. Throws an error if the value
+ * is not a valid Bech32 address. Acts as a type guard for TypeScript.
+ *
+ * @param {string} address - The value to check
+ * @returns {asserts address is Bech32Address} - TypeScript assertion
+ */
+export const assertBech32Address = address => {
+  if (!isBech32Address(address)) {
+    Fail`Expected a valid Bech32 address, got ${q(address)}`;
+  }
+};
+harden(assertBech32Address);
 
 /**
  * Left pad the mint recipient address with 0's to 32 bytes. standard ETH

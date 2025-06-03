@@ -153,9 +153,9 @@
     "codegen": "./update-protos.sh && scripts/codegen.cjs",
     "prepare": "npm run build",
     "lint-fix": "yarn lint:eslint --fix",
-    "lint": "run-s --continue-on-error lint:*",
-    "lint:types": "tsc",
-    "lint:eslint": "eslint .",
+    "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
+    "lint:eslint": "yarn run -T eslint .",
+    "lint:types": "yarn run -T tsc",
     "test": "ava",
     "test:xs": "exit 0",
     "test:live": "yarn build && scripts/test-live.js"
@@ -164,13 +164,12 @@
     "access": "public"
   },
   "devDependencies": {
-    "@agoric/cosmos": "^0.34.1",
-    "@ava/typescript": "^4.1.0",
+    "@agoric/cosmos": "workspace:*",
+    "@ava/typescript": "^5.0.0",
     "@cosmology/telescope": "^1.12.8",
     "@endo/bundle-source": "^4.0.0",
     "@endo/import-bundle": "^1.4.0",
-    "@endo/ses-ava": "^1.2.10",
-    "ava": "^5.3.1",
+    "ava": "^6.3.0",
     "glob": "^4.5.3",
     "rimraf": "^5.0.0",
     "terser": "^5.39.0",
@@ -182,10 +181,6 @@
     "@endo/init": "^1.1.9",
     "bech32": "^2.0.0",
     "query-string": "^9.1.1"
-  },
-  "resolutions": {
-    "**/axios": "^1.6.7",
-    "**/protobufjs": "^7.2.4"
   },
   "ava": {
     "typescript": {

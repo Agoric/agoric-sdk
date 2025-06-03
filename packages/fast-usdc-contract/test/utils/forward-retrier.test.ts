@@ -2,20 +2,20 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import type { AccountId, CaipChainId } from '@agoric/orchestration';
-import sinon from 'sinon';
+import { spy, spyOn } from 'tinyspy';
 
 import type { EvmHash } from '@agoric/fast-usdc/src/types.ts';
+import type { ExecutionContext } from 'ava';
 import type { StatusManager } from '../../src/exos/status-manager.js';
 import { startForwardRetrier } from '../../src/utils/forward-retrier.js';
 import { makeRouteHealth } from '../../src/utils/route-health.js';
 
 const { brand: USDC } = makeIssuerKit('USDC');
 
-const setup = t => {
-  const sandbox = sinon.createSandbox();
-  const log = sandbox.spy(t.log); // Use t.log for test output
+const setup = (t: ExecutionContext) => {
+  const log = spy(t.log); // Use t.log for test output
   const routeHealth = makeRouteHealth(2); // Derelict after 2 failures
-  const forwardFunds = sandbox.stub();
+  const forwardFunds = spy<any, any>();
   const failedForwardsMap = new Map<
     CaipChainId,
     ReturnType<StatusManager['getForwardsToRetry']>
@@ -28,7 +28,7 @@ const setup = t => {
   let routeHealthHandlers:
     | Parameters<typeof routeHealth.setEventHandlers>[0]
     | null = null;
-  sandbox.stub(routeHealth, 'setEventHandlers').callsFake(handlers => {
+  spyOn(routeHealth, 'setEventHandlers').willCall(handlers => {
     routeHealthHandlers = handlers;
   });
 
@@ -40,12 +40,14 @@ const setup = t => {
     USDC,
   });
 
-  t.teardown(() => sandbox.restore());
+  t.teardown(() => {
+    log.reset();
+    forwardFunds.reset();
+  });
 
   return {
     log,
     routeHealth,
-    sandbox,
     forwardFunds,
     failedForwardsMap,
     getForwardsToRetry,
@@ -87,7 +89,7 @@ test('retries failed forwards when route becomes working', t => {
 
   t.is(forwardFunds.callCount, 2, 'forwardFunds should be called twice');
   t.deepEqual(
-    forwardFunds.getCall(0).args[0],
+    forwardFunds.calls[0][0],
     {
       txHash: failed1.txHash,
       amount: AmountMath.make(USDC, failed1.amount),
@@ -96,7 +98,7 @@ test('retries failed forwards when route becomes working', t => {
     'First failed forward should be retried',
   );
   t.deepEqual(
-    forwardFunds.getCall(1).args[0],
+    forwardFunds.calls[1][0],
     {
       txHash: failed2.txHash,
       amount: AmountMath.make(USDC, failed2.amount),
@@ -107,13 +109,8 @@ test('retries failed forwards when route becomes working', t => {
 });
 
 test('stops retrying if route becomes derelict during clearing', t => {
-  const {
-    routeHealth,
-    forwardFunds,
-    failedForwardsMap,
-    sandbox,
-    triggerRouteEvent,
-  } = setup(t);
+  const { routeHealth, forwardFunds, failedForwardsMap, triggerRouteEvent } =
+    setup(t);
   const route: CaipChainId = 'cosmos:osmosis-1';
   const failed1 = {
     txHash: 'txA' as EvmHash,
@@ -128,19 +125,16 @@ test('stops retrying if route becomes derelict during clearing', t => {
   failedForwardsMap.set(route, [failed1, failed2]);
 
   // Make routeHealth return false for isWorking after the first check
-  sandbox
-    .stub(routeHealth, 'isWorking')
-    .onFirstCall()
-    .returns(true) // Allow first retry
-    .onSecondCall()
-    .returns(false); // Stop after first retry
+  const isWorkingStub = spyOn(routeHealth, 'isWorking');
+  isWorkingStub.nextResult(true); // First call returns true
+  isWorkingStub.nextResult(false); // Second call returns false
 
   // Simulate route becoming working (or failure event triggering attempt)
   triggerRouteEvent('onWorking', route); // Could also be onEachFailure
 
   t.is(forwardFunds.callCount, 1, 'forwardFunds should be called only once');
   t.deepEqual(
-    forwardFunds.getCall(0).args[0],
+    forwardFunds.calls[0][0],
     {
       txHash: failed1.txHash,
       amount: AmountMath.make(USDC, failed1.amount),
@@ -180,7 +174,7 @@ test('retries on onEachFailure if route is still working', t => {
 
   t.is(forwardFunds.callCount, 1, 'forwardFunds should be called once');
   t.deepEqual(
-    forwardFunds.getCall(0).args[0],
+    forwardFunds.calls[0][0],
     {
       txHash: failed1.txHash,
       amount: AmountMath.make(USDC, failed1.amount),

@@ -101,6 +101,9 @@ proto-gen:
 	@echo "Generating Protobuf files"
 	@$(protoImage) sh ./scripts/protocgen.sh
 
+proto-format:
+	@$(protoImage) find ./proto -name "*.proto" -exec clang-format -i {} \;
+
 proto-lint:
 	@$(protoImage) buf lint --error-format=json ./proto
 

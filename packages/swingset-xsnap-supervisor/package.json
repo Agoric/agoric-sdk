@@ -14,16 +14,16 @@
     "build:bundle": "node scripts/build-bundle.js",
     "build": "yarn build:bundle",
     "clean": "rm -rf dist",
-    "lint": "run-s --continue-on-error lint:*",
+    "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
     "lint:js": "eslint 'lib/**/*.js' 'src/**/*.js' 'scripts/**/*.js' 'test/**/*.js'",
-    "lint:types": "tsc",
+    "lint:types": "yarn run -T tsc",
     "lint-fix": "eslint --fix 'lib/**/*.js' 'src/**/*.js' 'scripts/**/*.js' 'test/**/*.js'",
     "test": "ava",
     "test:c8": "c8 --all $C8_OPTIONS ava",
     "test:xs": "exit 0"
   },
   "peerDependencies": {
-    "@agoric/swingset-liveslots": "^0.10.2",
+    "@agoric/swingset-liveslots": "workspace:*",
     "@endo/errors": "^1.2.10",
     "@endo/import-bundle": "^1.4.0",
     "@endo/promise-kit": "^1.1.10"

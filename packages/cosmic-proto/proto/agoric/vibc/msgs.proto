@@ -14,18 +14,15 @@ service Msg {
 
 // MsgSendPacket is an SDK message for sending an outgoing IBC packet
 message MsgSendPacket {
-    option (gogoproto.equal) = false;
+  option (gogoproto.equal) = false;
 
-    ibc.core.channel.v1.Packet packet = 1 [
-        (gogoproto.nullable)   = false,
-        (gogoproto.jsontag)    = "packet",
-        (gogoproto.moretags)   = "yaml:\"packet\""
-    ];
-    bytes sender = 2 [
-        (gogoproto.casttype)   = "github.com/cosmos/cosmos-sdk/types.AccAddress",
-        (gogoproto.jsontag)    = "submitter",
-        (gogoproto.moretags)   = "yaml:\"submitter\""
-    ];
+  ibc.core.channel.v1.Packet packet = 1
+      [(gogoproto.nullable) = false, (gogoproto.jsontag) = "packet", (gogoproto.moretags) = "yaml:\"packet\""];
+  bytes sender = 2 [
+    (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+    (gogoproto.jsontag)  = "submitter",
+    (gogoproto.moretags) = "yaml:\"submitter\""
+  ];
 }
 
 // Empty response for SendPacket.

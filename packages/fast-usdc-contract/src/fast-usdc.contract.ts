@@ -12,8 +12,12 @@ import {
   OrchestrationPowersShape,
   registerChainsAndAssets,
   withOrchestration,
+  type AmountArg,
+  type Bech32Address,
+  type ChainInfo,
   type CosmosChainAddress,
   type Denom,
+  type DenomAmount,
   type DenomDetail,
   type IBCConnectionInfo,
   type OrchestrationAccount,
@@ -24,7 +28,7 @@ import type { HostForGuest } from '@agoric/orchestration/src/facade.js';
 import { makeZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
-import { Fail } from '@endo/errors';
+import { Fail, quote } from '@endo/errors';
 import { E, type ERef } from '@endo/far';
 import { M } from '@endo/patterns';
 
@@ -315,12 +319,52 @@ export const contract = async (
     deleteCompletedTxs() {
       return statusManager.deleteCompletedTxs();
     },
-    /** @type {typeof chainHub.updateChain} */
-    updateChain(chainName, chainInfo) {
+    remediateUndetectedBatches(minUusdc: bigint): void {
+      return settlerKit.creator.remediateMintedEarly(minUusdc);
+    },
+    /**
+     * contract creator (e.g. chain governance) may send from the settlement
+     * account to, for example, reimburse manual intervention for FORWARD_FAILED
+     *
+     * @param agoricRecipient - The Bech32 of the recipient (must be Agoric).
+     * @param amount - The amount to send, in the USDC brand.
+     */
+    async sendFromSettlementAccount(
+      agoricRecipient: Bech32Address,
+      amount: AmountArg,
+    ): Promise<{ before: DenomAmount[]; after: DenomAmount[] }> {
+      trace(
+        `Sending ${quote(amount)} to ${agoricRecipient} from settlementAccount`,
+      );
+      const recipient = chainHub.resolveAccountId(agoricRecipient);
+      // when: .send() on a local account such as the settlement account is prompt
+      const before = await vowTools.when(E(settlementAccount).getBalances());
+
+      return vowTools.when(
+        E(settlementAccount).send(recipient, amount),
+        async () => {
+          poolKit.external.publishPoolMetrics();
+          // when: likewise .getBalances() on a local account
+          const after = await vowTools.when(E(settlementAccount).getBalances());
+          trace(
+            `Sent ${quote(amount)} to ${agoricRecipient}. settlementAccount:`,
+            {
+              before,
+              after,
+            },
+          );
+          return { before, after };
+        },
+        err => {
+          trace(`Failed to send ${amount} to ${agoricRecipient}:`, err);
+          throw Fail`Send failed: ${err}`;
+        },
+      );
+    },
+    updateChain(chainName: string, chainInfo: ChainInfo): void {
       return chainHub.updateChain(chainName, chainInfo);
     },
-    /** @type {typeof chainHub.registerChain} */
-    registerChain(chainName, chainInfo) {
+    registerChain(chainName: string, chainInfo: ChainInfo): void {
       return chainHub.registerChain(chainName, chainInfo);
     },
   });

@@ -32,12 +32,17 @@ export {};
  * @typedef {'getExport' | 'nestedEvaluate' | 'endoZipBase64'} BundleFormat
  * @typedef { { moduleFormat: 'getExport', source: string, sourceMap?: string } } GetExportBundle
  * @typedef { { moduleFormat: 'nestedEvaluate', source: string, sourceMap?: string } } NestedEvaluateBundle
- * @typedef { { moduleFormat: 'test' } } TestBundle
+ * @typedef { { moduleFormat: 'test', [x: symbol]: Record<PropertyKey, unknown> } } TestBundle
  * @typedef { EndoZipBase64Bundle | GetExportBundle | NestedEvaluateBundle | TestBundle} Bundle
  */
 
 /**
  * @typedef { 'local' | 'node-subprocess' | 'xsnap' | 'xs-worker' } ManagerType
+ *   The type of worker for hosting a vat.
+ *   - **local**: a Compartment in the SwingSet Node.js process
+ *   - **node-subprocess**: a child process using the same Node.js executable
+ *      (`process.execPath`)
+ *   - **xsnap** or **xs-worker**: an {@link @agoric/xsnap! @agoric/xsnap} worker
  */
 
 /**

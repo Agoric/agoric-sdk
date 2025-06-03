@@ -126,16 +126,17 @@ export default async function followerMain(progname, rawArgs, powers, opts) {
     });
   }
 
-  const leaderOptions = makeLeaderOptions({
-    sleep,
-    jitter,
-    log: verbose ? console.warn : () => undefined,
-  });
-
   const [_cmd, ...specs] = rawArgs;
 
   verbose && console.warn('Creating leader for', bootstrap);
-  const leader = makeLeader(bootstrap, leaderOptions);
+  const leader = makeLeader(
+    bootstrap,
+    makeLeaderOptions({
+      sleep,
+      jitter,
+      log: verbose ? console.warn : () => undefined,
+    }),
+  );
   const iterate = opts.lossy ? iterateLatest : iterateEach;
   await Promise.all(
     specs.map(async spec => {

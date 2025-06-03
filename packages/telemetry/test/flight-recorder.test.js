@@ -1,5 +1,4 @@
 import fs from 'node:fs';
-import { promisify } from 'node:util';
 import tmp from 'tmp';
 import { test } from './prepare-test-env-ava.js';
 
@@ -13,21 +12,16 @@ const bufferTests = test.macro(
   /**
    *
    * @param {*} t
-   * @param {{makeBuffer: Function}} input
+   * @param {{makeBuffer: typeof makeSimpleCircularBuffer}} input
    */
   async (t, input) => {
     const BUFFER_SIZE = 512;
 
-    const {
-      name: tmpFile,
-      fd,
-      removeCallback,
-    } = tmp.fileSync({ detachDescriptor: true });
-    t.teardown(removeCallback);
-    const fileHandle = /** @type {import('fs/promises').FileHandle} */ ({
-      close: promisify(fs.close.bind(fs, fd)),
+    const { name: tmpFile, removeCallback } = tmp.fileSync({
+      discardDescriptor: true,
     });
-    const { readCircBuf, writeCircBuf } = await input.makeBuffer({
+    t.teardown(removeCallback);
+    const { fileHandle, readCircBuf, writeCircBuf } = await input.makeBuffer({
       circularBufferSize: BUFFER_SIZE,
       circularBufferFilename: tmpFile,
     });
@@ -55,11 +49,11 @@ const bufferTests = test.macro(
     t.is(fs.readFileSync(tmpFile, { encoding: 'utf8' }).length, BUFFER_SIZE);
 
     const len0 = new Uint8Array(BigUint64Array.BYTES_PER_ELEMENT);
-    const { done: done0 } = readCircBuf(len0);
+    const { done: done0 } = await readCircBuf(len0);
     t.false(done0, 'readCircBuf should not be done');
     const dv0 = new DataView(len0.buffer);
     const buf0 = new Uint8Array(Number(dv0.getBigUint64(0)));
-    const { done: done0b } = readCircBuf(buf0, len0.byteLength);
+    const { done: done0b } = await readCircBuf(buf0, len0.byteLength);
     t.false(done0b, 'readCircBuf should not be done');
     const buf0Str = new TextDecoder().decode(buf0);
     t.is(buf0Str, `\n{"type":"start"}`, `start compare failed`);
@@ -78,12 +72,12 @@ const bufferTests = test.macro(
     let offset = 0;
     const len1 = new Uint8Array(BigUint64Array.BYTES_PER_ELEMENT);
     for (let i = 490; i < last; i += 1) {
-      const { done: done1 } = readCircBuf(len1, offset);
+      const { done: done1 } = await readCircBuf(len1, offset);
       offset += len1.byteLength;
       t.false(done1, `readCircBuf ${i} should not be done`);
       const dv1 = new DataView(len1.buffer);
       const buf1 = new Uint8Array(Number(dv1.getBigUint64(0)));
-      const { done: done1b } = readCircBuf(buf1, offset);
+      const { done: done1b } = await readCircBuf(buf1, offset);
       offset += buf1.byteLength;
       t.false(done1b, `readCircBuf ${i} should not be done`);
       const buf1Str = new TextDecoder().decode(buf1);
@@ -94,7 +88,7 @@ const bufferTests = test.macro(
       );
     }
 
-    const { done: done2 } = readCircBuf(len1, offset);
+    const { done: done2 } = await readCircBuf(len1, offset);
     t.assert(done2, `readCircBuf ${last} should be done`);
 
     slogSender(null, 'PRE-SERIALIZED');

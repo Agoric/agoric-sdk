@@ -13,9 +13,11 @@ import (
 	rosettaCmd "github.com/cosmos/rosetta/cmd"
 
 	"cosmossdk.io/log"
-	dbm "github.com/cometbft/cometbft-db"
+	simdcmd "cosmossdk.io/simapp/simd/cmd"
+	confixcmd "cosmossdk.io/tools/confix/cmd"
 	tmcfg "github.com/cometbft/cometbft/config"
 	tmcli "github.com/cometbft/cometbft/libs/cli"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/debug"
@@ -24,6 +26,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/pruning"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/client/snapshot"
+	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/server"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -133,7 +136,7 @@ func initAppConfig() (string, interface{}) {
 	// FIXME: We may want a non-zero min gas price.
 	// For now, we set it to zero to reduce friction (the default "" fails
 	// startup, forcing each validator to set their own value).
-	srvCfg.MinGasPrices = "0uist"
+	srvCfg.MinGasPrices = "0ubld"
 
 	customAppConfig := CustomAppConfig{
 		Config:   *srvCfg,
@@ -174,9 +177,9 @@ func initRootCmd(sender vm.Sender, rootCmd *cobra.Command, encodingConfig params
 	)
 	rootCmd.AddCommand(
 		tmcli.NewCompletionCmd(rootCmd, true),
-		testnetCmd(gaia.ModuleBasics, banktypes.GenesisBalancesIterator{}),
+		simdcmd.NewTestnetCmd(gaia.ModuleBasics, banktypes.GenesisBalancesIterator{}, AppName),
 		debug.Cmd(),
-		config.Cmd(),
+		confixcmd.ConfigCommand(),
 		pruning.Cmd(ac.newSnapshotsApp, gaia.DefaultNodeHome),
 		snapshot.Cmd(ac.newSnapshotsApp),
 	)
@@ -220,10 +223,10 @@ func initRootCmd(sender vm.Sender, rootCmd *cobra.Command, encodingConfig params
 
 	// add keybase, auxiliary RPC, query, and tx child commands
 	rootCmd.AddCommand(
-		rpc.StatusCommand(),
+		server.StatusCommand(),
 		queryCommand(),
 		txCommand(),
-		keys.Commands(gaia.DefaultNodeHome),
+		keys.Commands(),
 	)
 	// add rosetta
 	rootCmd.AddCommand(
@@ -268,10 +271,11 @@ func queryCommand() *cobra.Command {
 	}
 
 	cmd.AddCommand(
-		authcmd.GetAccountCmd(),
+		rpc.WaitTxCmd(),
 		rpc.ValidatorCommand(),
-		rpc.BlockCommand(),
+		server.QueryBlockCmd(),
 		authcmd.QueryTxsByEventsCmd(),
+		server.QueryBlocksCmd(),
 		authcmd.QueryTxCmd(),
 	)
 
@@ -300,9 +304,8 @@ func txCommand() *cobra.Command {
 		authcmd.GetBroadcastCommand(),
 		authcmd.GetEncodeCommand(),
 		authcmd.GetDecodeCommand(),
-		authcmd.GetAuxToFeeCommand(),
 		flags.LineBreak,
-		vestingcli.GetTxCmd(),
+		vestingcli.GetTxCmd(address.NewBech32Codec(sdk.Bech32PrefixAccAddr)),
 	)
 
 	gaia.ModuleBasics.AddTxCommands(cmd)

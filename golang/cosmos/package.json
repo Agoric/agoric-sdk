@@ -7,7 +7,7 @@
   },
   "main": "index.cjs",
   "engines": {
-    "node": "^18.12 || ^20.9"
+    "node": "^20.9 || ^22.11"
   },
   "scripts": {
     "test": "exit 0",
@@ -25,6 +25,9 @@
     "bindings": "^1.2.1",
     "napi-thread-safe-callback": "0.0.6",
     "node-addon-api": "^1.7.1"
+  },
+  "devDependencies": {
+    "node-gyp": "^10.2.0"
   },
   "author": "Agoric",
   "license": "Apache-2.0",

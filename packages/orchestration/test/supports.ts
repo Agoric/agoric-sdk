@@ -12,6 +12,7 @@ import { prepareBridgeTargetModule } from '@agoric/vats/src/bridge-target.js';
 import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
 import { prepareLocalChainTools } from '@agoric/vats/src/localchain.js';
 import { prepareTransferTools } from '@agoric/vats/src/transfer.js';
+import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import {
@@ -26,7 +27,6 @@ import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
 import { withChainCapabilities } from '../src/chain-capabilities.js';
 import { registerKnownChains } from '../src/chain-info.js';
-import type { Bech32Address } from '../src/cosmos-api.js';
 import { makeChainHub } from '../src/exos/chain-hub.js';
 import { prepareCosmosInterchainService } from '../src/exos/cosmos-interchain-service.js';
 import fetchedChainInfo from '../src/fetched-chain-info.js';
@@ -72,25 +72,25 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
   await makeWellKnownSpaces(agoricNamesAdmin, t.log, ['vbankAsset']);
   await E(E(agoricNamesAdmin).lookupAdmin('vbankAsset')).update(
     'uist',
-    /** @type {AssetInfo} */ harden({
+    harden({
       brand: ist.brand,
       issuer: ist.issuer,
       issuerName: 'IST',
       denom: 'uist',
       proposedName: 'IST',
-      displayInfo: { IOU: true },
-    }),
+      displayInfo: { assetKind: 'nat', IOU: true },
+    }) as AssetInfo,
   );
   await E(E(agoricNamesAdmin).lookupAdmin('vbankAsset')).update(
     'ubld',
-    /** @type {AssetInfo} */ harden({
+    harden({
       brand: bld.brand,
       issuer: bld.issuer,
       issuerName: 'BLD',
       denom: 'ubld',
       proposedName: 'BLD',
-      displayInfo: { IOU: true },
-    }),
+      displayInfo: { assetKind: 'nat', IOU: true },
+    }) as AssetInfo,
   );
 
   const vowTools = prepareSwingsetVowTools(rootZone.subZone('vows'));
@@ -187,9 +187,9 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
 
     const lastMsgTransfer = b1.messages[0] as MsgTransfer;
     const base = {
-      receiver: lastMsgTransfer.receiver as Bech32Address,
-      sender: lastMsgTransfer.sender as Bech32Address,
-      target: lastMsgTransfer.sender as Bech32Address,
+      receiver: lastMsgTransfer.receiver,
+      sender: lastMsgTransfer.sender,
+      target: lastMsgTransfer.sender,
       sourceChannel: lastMsgTransfer.sourceChannel as IBCChannelID,
       sequence: ibcSequenceNonce,
       amount: BigInt(lastMsgTransfer.token.amount),

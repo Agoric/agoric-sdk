@@ -220,8 +220,7 @@ test.serial('iterate simulation several times', async t => {
   harness.resetRunPolicy(); // never mind computrons from bootstrap
   const snapStore = swingStore.internal.snapStore as unknown as SnapStoreDebug;
 
-  /** @type {Record<string, number>} */
-  let previousReapPos = harden({});
+  let previousReapPos = harden({}) as Record<string, number>;
 
   async function doCleanupAndSnapshot(id) {
     slogSender?.({ type: 'cleanup-begin', id });
