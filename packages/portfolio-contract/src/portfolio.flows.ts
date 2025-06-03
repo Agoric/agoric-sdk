@@ -5,8 +5,10 @@ import type {
   OrchestrationFlow,
   Orchestrator,
 } from '@agoric/orchestration';
+import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import type { ZCFSeat } from '@agoric/zoe';
+import type { PortfolioKit } from './portfolio.exo.ts';
 
 const trace = makeTracer('PortF');
 
@@ -24,6 +26,7 @@ export const openPortfolio = (async (
   orch: Orchestrator,
   ctx: {
     zoeTools: GuestInterface<Pick<ZoeTools, 'localTransfer'>>;
+    makePortfolioKit: () => PortfolioKit;
   },
   seat: ZCFSeat,
   _offerArgs: unknown,
@@ -31,22 +34,25 @@ export const openPortfolio = (async (
 ) => {
   const { give } = seat.getProposal();
 
-  trace('TODO: make portfolio exo');
+  const kit = ctx.makePortfolioKit();
 
-  // TODO: move this to a portfolio exo method
   const openUSDNPosition = async () => {
     const nobleChain = await orch.getChain('noble');
     const myNobleAccout = await nobleChain.makeAccount();
-    trace('TODO: save noble ICA in portfolio', `${myNobleAccout}`);
+    kit.keeper.init('USDN', myNobleAccout);
     trace('withdraw', give.In, 'to local; transfer to', `${myNobleAccout}`);
     await ctx.zoeTools.localTransfer(seat, await localP, give);
     trace('TODO: MsgSwap');
     trace('TODO: MsgLock');
+    // XXX abuse of storagePath
+    const storagePath = coerceAccountId(myNobleAccout.getAddress());
+    const topic = { description: 'USDN ICA', subscriber: 'TODO!', storagePath };
+    return topic;
   };
 
   trace('TODO: only open USDN position if offerArgs says so');
-  await openUSDNPosition();
+  const topic = await openUSDNPosition();
 
   seat.exit();
-  return 'TODO: continuing invitation';
+  return { invitationMakers: kit.invitationMakers, publicTopics: [topic] };
 }) satisfies OrchestrationFlow;

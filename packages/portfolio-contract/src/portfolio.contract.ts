@@ -11,6 +11,7 @@ import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import * as flows from './portfolio.flows.ts';
 import { makeNatAmountShape } from './type-guards.ts';
+import { preparePortfolioKit } from './portfolio.exo.ts';
 
 const trace = makeTracer('PortC');
 
@@ -40,8 +41,10 @@ export const contract = async (
     }),
   };
 
+  const makePortfolioKit = preparePortfolioKit(zone);
   const { makeLocalAccount, openPortfolio } = orchestrateAll(flows, {
     zoeTools,
+    makePortfolioKit,
   });
 
   trace('TODO: baggage test');
