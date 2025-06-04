@@ -1,7 +1,17 @@
+import type { Amount, Brand, NatValue } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
+import type { ChainInfo, Denom, DenomDetail } from '@agoric/orchestration';
+import {
+  ChainInfoShape,
+  DenomDetailShape,
+  DenomShape,
+} from '@agoric/orchestration/src/typeGuards.js';
+import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
-import type { YieldProtocol as YieldProtocolT } from './constants.js';
-import { YieldProtocol } from './constants.js';
+import {
+  YieldProtocol,
+  type YieldProtocol as YieldProtocolT,
+} from './constants.js';
 
 const { keys } = Object;
 
@@ -23,3 +33,13 @@ export const makeProposalShapes = (usdcBrand: Brand<'nat'>) => {
     }) as TypedPattern<ProposalShapes['openPortfolio']>,
   };
 };
+
+export type PortfolioConfig = {
+  chainInfo: Record<string, ChainInfo>;
+  assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
+} & CopyRecord;
+
+export const PortfolioConfigShape = M.splitRecord({
+  chainInfo: M.recordOf(M.string(), ChainInfoShape),
+  assetInfo: M.arrayOf([DenomShape, DenomDetailShape]),
+}) as TypedPattern<PortfolioConfig>;
