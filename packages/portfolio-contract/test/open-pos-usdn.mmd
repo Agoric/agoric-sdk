@@ -1,0 +1,26 @@
+sequenceDiagram
+    title 3 way yield - 3. USDN
+    autonumber
+
+    actor trader as trader<br >webUI<br >wallet
+
+    box rgb(255,153,153) Agoric
+    participant portfolio
+    end
+
+    box rgb(166,184,233) Noble
+    participant ICAn
+    participant USDN
+    end
+
+    %% Notation: ->> for initial message, -->> for consequences
+
+    trader ->> portfolio: open(50K,<br/>Aave, Compound,<br/>dYdX MegaVault, Noble USDN)
+    portfolio -->> ICAn: 10k USDC
+    ICAn -->> portfolio: ack
+
+    portfolio -->> ICAn: USDN(???)
+    ICAn -->> USDN: openPosition(???)
+    USDN -->> ICAn: ack
+    ICAn -->> portfolio: ack
+    portfolio -->> trader: ack
