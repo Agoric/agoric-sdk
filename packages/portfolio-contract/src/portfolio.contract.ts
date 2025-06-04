@@ -1,6 +1,5 @@
 import { makeTracer } from '@agoric/internal';
 import {
-  OrchestrationPowersShape,
   registerChainsAndAssets,
   withOrchestration,
   type OrchestrationAccount,
@@ -9,8 +8,7 @@ import {
 import type { ZCF } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Zone } from '@agoric/zone';
-import type { CopyRecord } from '@endo/pass-style';
-import { M } from '@endo/patterns';
+import { meta } from './portfolio.contract.meta.ts';
 import { preparePortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import { makeProposalShapes } from './type-guards.ts';
@@ -19,13 +17,7 @@ const trace = makeTracer('PortC');
 
 const interfaceTODO = undefined;
 
-export const meta = M.splitRecord({
-  privateArgsShape: {
-    ...(OrchestrationPowersShape as CopyRecord),
-    marshaller: M.remotable('marshaller'),
-  },
-});
-harden(meta);
+export { meta };
 
 export const contract = async (
   zcf: ZCF,
