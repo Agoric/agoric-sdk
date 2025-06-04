@@ -2,8 +2,7 @@ env:
   GOLANG_VERSION: '1.22'
   LOADGEN_REPO_NAME: 'testnet-load-generator'
   ORG_NAME: 'Agoric'
-  # Known issues with getting started tests, so disable them.
-  ENABLE_GETTING_STARTED: ''
+  ENABLE_GETTING_STARTED: '' # Known issues with getting started tests, so disable them.
 
 name: Integration tests
 
@@ -52,7 +51,7 @@ jobs:
   getting-started:
     needs:
       - pre_check
-    if: ${{ env.ENABLE_GETTING_STARTED && needs.pre_check.outputs.should_run == 'true' }}
+    if: env.ENABLE_GETTING_STARTED && needs.pre_check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     continue-on-error: true # know failures of getting-started job
     strategy:
