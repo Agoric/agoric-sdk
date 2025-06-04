@@ -1,6 +1,10 @@
 import type { GuestInterface } from '@agoric/async-flow';
+import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
+import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
+import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import { makeTracer } from '@agoric/internal';
 import type {
+  CosmosChainAddress,
   OrchestrationAccount,
   OrchestrationFlow,
   Orchestrator,
@@ -24,6 +28,29 @@ export const makeLocalAccount = (async (orch: Orchestrator, _ctx: unknown) => {
 }) satisfies OrchestrationFlow;
 harden(makeLocalAccount);
 
+// TODO: push down to NobleMethods
+const makeSwapLockMessages = (
+  nobleAddr: CosmosChainAddress,
+  amount: Amount<'nat'>,
+) => {
+  const [poolId, denom, denomTo] = [0n, 'uusdc', 'uusdn'];
+  const msgSwap: MsgSwap = {
+    signer: nobleAddr.value,
+    amount: { denom, amount: `${amount.value}` },
+    routes: [{ poolId, denomTo }],
+    // TODO: swap min multiplier?
+    min: { denom: denomTo, amount: `${amount.value}` },
+  };
+  const STAKED = 1;
+  const msgLock: MsgLock = {
+    signer: nobleAddr.value,
+    vault: STAKED,
+    // TODO: swap multiplier
+    amount: `${amount.value}`,
+  };
+  return { msgSwap, msgLock };
+};
+
 export const openPortfolio = (async (
   orch: Orchestrator,
   ctx: {
@@ -40,6 +67,7 @@ export const openPortfolio = (async (
   const openUSDNPosition = async (amount: Amount<'nat'>) => {
     const nobleChain = await orch.getChain('noble');
     const myNobleAccout = await nobleChain.makeAccount();
+    const nobleAddr = myNobleAccout.getAddress();
     // COMMIT
     // TODO: only make noble account once, even if something below fails
     kit.keeper.init('USDN', myNobleAccout);
@@ -49,10 +77,20 @@ export const openPortfolio = (async (
       await localP,
       harden({ USDN: amount }),
     );
-    trace('TODO: MsgSwap');
-    trace('TODO: MsgLock');
+
+    // NOTE: proposalShape guarantees that amount.brand is USDC
+    const { msgSwap, msgLock } = makeSwapLockMessages(nobleAddr, amount);
+
+    trace('executing', [msgSwap, msgLock]);
+    const result = await myNobleAccout.executeEncodedTx([
+      Any.toJSON(MsgSwap.toProtoMsg(msgSwap)),
+      Any.toJSON(MsgLock.toProtoMsg(msgLock)),
+    ]);
+    trace('Swap, Lock result', result);
+    trace('TODO: decode result; detect errors');
+
     // XXX abuse of storagePath
-    const storagePath = coerceAccountId(myNobleAccout.getAddress());
+    const storagePath = coerceAccountId(nobleAddr);
     const topic: ResolvedPublicTopic<unknown> = {
       description: 'USDN ICA',
       subscriber: 'TODO!' as any,
