@@ -6,6 +6,8 @@
  * @enum {(typeof YieldProtocol)[keyof typeof YieldProtocol]}
  */
 export const YieldProtocol = /** @type {const} */ ({
+  Aave: 'Aave',
+  Compound: 'Compound',
   USDN: 'USDN',
 });
 harden(YieldProtocol);
