@@ -21,6 +21,7 @@ import { createRequire } from 'module';
 import type { YieldProtocol } from '../src/constants.js';
 import { commonSetup } from './supports.js';
 import { makeWallet, type WalletTool } from './wallet-offer-tools.ts';
+import { makeTrader } from './portfolio-actors.ts';
 
 const nodeRequire = createRequire(import.meta.url);
 
@@ -123,6 +124,7 @@ test('open portfolio with USDN position', async t => {
   const funds = await common.utils.pourPayment(myBalance);
   const myWallet = makeWallet({ USDC: usdc }, zoe, when);
   await E(myWallet).deposit(funds);
+  const trader1 = makeTrader(myWallet, started.instance);
   t.log('I am a power user with', myBalance, 'on Agoric');
 
   const { ibcBridge } = common.mocks;
@@ -130,27 +132,11 @@ test('open portfolio with USDN position', async t => {
     ibcBridge.addMockAck(msg, ack);
   }
 
-  const openPortfolio = async (
-    instance: Instance<StartFn>,
-    wallet: WalletTool,
-    give: Partial<Record<YieldProtocol, Amount<'nat'>>>,
-  ) => {
-    const invitationSpec = {
-      source: 'contract' as const,
-      instance,
-      publicInvitationMaker: 'makeOpenPortfolioInvitation' as const,
-    };
-    t.log('I ask the portfolio manager to allocate', give);
-    const proposal = { give };
-    return wallet.executeOffer({ id: 'open123', invitationSpec, proposal });
-  };
-
-  const give = {
+  const done = await trader1.openPortfolio(t, {
     USDN: usdc.units(3_333),
     Aave: usdc.units(3_333),
     Compound: usdc.units(3_333),
-  };
-  const done = await openPortfolio(started.instance, myWallet, give);
+  });
   const result = done.result as any;
   t.is(passStyleOf(result.invitationMakers), 'remotable');
   t.like(result.publicTopics, [
