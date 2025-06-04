@@ -1,26 +1,18 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import {
-  MsgLock,
-  MsgLockResponse,
-} from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
-import {
-  MsgSwap,
-  MsgSwapResponse,
-} from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
-import {
-  buildMsgResponseString,
-  buildTxPacketString,
-} from '@agoric/orchestration/tools/ibc-mocks.ts';
+import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
+import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
+import type { Installation } from '@agoric/zoe';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, passStyleOf } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
 import { createRequire } from 'module';
-import type { YieldProtocol } from '../src/constants.js';
+import { makeUSDNIBCTraffic } from './mocks.ts';
+import { makeTrader } from './portfolio-actors.ts';
 import { commonSetup } from './supports.js';
-import { makeWallet, type WalletTool } from './wallet-offer-tools.ts';
+import { makeWallet } from './wallet-offer-tools.ts';
 
 const nodeRequire = createRequire(import.meta.url);
 
@@ -56,33 +48,6 @@ const explored = [
   },
 ];
 harden(explored);
-
-const [signer, money] = ['cosmos1test', `${3_333 * 1_000_000}`];
-
-const protoMsgMocks = {
-  swap: {
-    msg: buildTxPacketString([
-      MsgSwap.toProtoMsg({
-        signer,
-        amount: { denom: 'uusdc', amount: money },
-        routes: [{ poolId: 0n, denomTo: 'uusdn' }],
-        min: { denom: 'uusdn', amount: money },
-      }),
-    ]),
-    ack: buildMsgResponseString(MsgSwapResponse, {}),
-  },
-  lock: {
-    msg: buildTxPacketString([
-      MsgLock.toProtoMsg({ signer, vault: 1, amount: money }),
-    ]),
-    ack: buildMsgResponseString(MsgLockResponse, {}),
-  },
-  lockWorkaround: {
-    // XXX { ..., vault: 1n } ???
-    msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ2xvS0ZpOXViMkpzWlM1emQyRndMbll4TGsxeloxTjNZWEFTUUFvTFkyOXpiVzl6TVhSbGMzUVNFd29GZFhWelpHTVNDak16TXpNd01EQXdNREFhQnhJRmRYVnpaRzRpRXdvRmRYVnpaRzRTQ2pNek16TXdNREF3TURBS1Bnb2ZMMjV2WW14bExtUnZiR3hoY2k1MllYVnNkSE11ZGpFdVRYTm5URzlqYXhJYkNndGpiM050YjNNeGRHVnpkQkFCR2dvek16TXpNREF3TURBdyIsIm1lbW8iOiIifQ==',
-    ack: buildMsgResponseString(MsgLockResponse, {}),
-  },
-};
 
 const deploy = async (t: ExecutionContext) => {
   const common = await commonSetup(t);
@@ -123,34 +88,19 @@ test('open portfolio with USDN position', async t => {
   const funds = await common.utils.pourPayment(myBalance);
   const myWallet = makeWallet({ USDC: usdc }, zoe, when);
   await E(myWallet).deposit(funds);
+  const trader1 = makeTrader(myWallet, started.instance);
   t.log('I am a power user with', myBalance, 'on Agoric');
 
   const { ibcBridge } = common.mocks;
-  for (const { msg, ack } of Object.values(protoMsgMocks)) {
+  for (const { msg, ack } of Object.values(makeUSDNIBCTraffic())) {
     ibcBridge.addMockAck(msg, ack);
   }
 
-  const openPortfolio = async (
-    instance: Instance<StartFn>,
-    wallet: WalletTool,
-    give: Partial<Record<YieldProtocol, Amount<'nat'>>>,
-  ) => {
-    const invitationSpec = {
-      source: 'contract' as const,
-      instance,
-      publicInvitationMaker: 'makeOpenPortfolioInvitation' as const,
-    };
-    t.log('I ask the portfolio manager to allocate', give);
-    const proposal = { give };
-    return wallet.executeOffer({ id: 'open123', invitationSpec, proposal });
-  };
-
-  const give = {
+  const done = await trader1.openPortfolio(t, {
     USDN: usdc.units(3_333),
     Aave: usdc.units(3_333),
     Compound: usdc.units(3_333),
-  };
-  const done = await openPortfolio(started.instance, myWallet, give);
+  });
   const result = done.result as any;
   t.is(passStyleOf(result.invitationMakers), 'remotable');
   t.like(result.publicTopics, [
