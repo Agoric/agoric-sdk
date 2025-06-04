@@ -41,6 +41,21 @@ jobs:
   pre_check:
     uses: ./.github/workflows/pre-check-integration.yml
 
+  getting-started-flag:
+      needs: pre_check
+    if: needs.pre_check.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+    steps:
+      - id: check
+        run: |
+          if [ -n "${{ env.ENABLE_GETTING_STARTED }}" ]; then
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_run=false" >> $GITHUB_OUTPUT
+          fi
+
   # This job is meant to emulate what developers working with the Agoric
   # platform will experience.  It should be kept in sync with the "getting
   # started" workflow at https://docs.agoric.com/guides/getting-started/
@@ -51,7 +66,8 @@ jobs:
   getting-started:
     needs:
       - pre_check
-    if: env.ENABLE_GETTING_STARTED && needs.pre_check.outputs.should_run == 'true'
+      - getting-started-flag
+    if: needs.getting-started-flag.outputs.should_run == 'true' && needs.pre_check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     continue-on-error: true # know failures of getting-started job
     strategy:
