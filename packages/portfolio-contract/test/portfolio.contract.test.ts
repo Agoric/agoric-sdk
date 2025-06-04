@@ -145,14 +145,20 @@ test('open portfolio with USDN position', async t => {
     return wallet.executeOffer({ id: 'open123', invitationSpec, proposal });
   };
 
-  const give = { USDN: usdc.units(3_333) };
+  const give = {
+    USDN: usdc.units(3_333),
+    Aave: usdc.units(3_333),
+    Compound: usdc.units(3_333),
+  };
   const done = await openPortfolio(started.instance, myWallet, give);
-  t.is(passStyleOf(done.result.invitationMakers), 'remotable');
-  t.like(done.result.publicTopics, [
+  const result = done.result as any;
+  t.is(passStyleOf(result.invitationMakers), 'remotable');
+  t.like(result.publicTopics, [
     { description: 'USDN ICA', storagePath: 'cosmos:noble-1:cosmos1test' },
   ]);
-  const [{ storagePath: myUSDNAddress }] = done.result.publicTopics;
+  const [{ storagePath: myUSDNAddress }] = result.publicTopics;
   t.log('I can see where my money is:', myUSDNAddress);
+  t.log('refund', done.payouts);
 });
 
 test.todo('User can see transfer in progress');
