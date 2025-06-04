@@ -7,9 +7,9 @@ import type { ContinuingInvitationSpec } from '@agoric/smart-wallet/src/invitati
 import type { ExecutionContext, TestFn } from 'ava';
 import { makeWalletFactoryContext } from '@aglocal/fast-usdc-deploy/test/walletFactory.js';
 import { buildGMPPayload } from '@aglocal/axelar-gmp/utils/gmp.js';
-import { makeReceiveUpCallPayload } from './utils.js';
 import { encodeAbiParameters } from 'viem';
 import { makeWalletFactoryDriver } from '@aglocal/boot/tools/drivers.js';
+import { makeReceiveUpCallPayload } from './utils.js';
 
 export type WalletFactoryDriver = Awaited<
   ReturnType<typeof makeWalletFactoryDriver>
@@ -137,7 +137,7 @@ test.serial('makeAccount via axelarGmp', async t => {
       callPipe: [['createAndMonitorLCA']],
     },
     proposal: {
-      // @ts-ignore
+      // @ts-expect-error
       give: { BLD: { brand: BLD, value: 1n } },
     },
   });

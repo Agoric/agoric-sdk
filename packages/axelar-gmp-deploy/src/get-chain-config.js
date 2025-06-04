@@ -11,11 +11,11 @@ import { chainInfo } from './static-config.js';
  */
 
 /** @param {string[]} strs */
-const parsePeers = (strs) => {
+const parsePeers = strs => {
   /** @type {[name: string, conn: IBCConnectionID, chan: IBCChannelID, denom:string][]} */
   // @ts-expect-error XXX ID syntax should be dynamically checked
-  const peerParts = strs.map((s) => s.split(':'));
-  const badPeers = peerParts.filter((d) => d.length !== 4);
+  const peerParts = strs.map(s => s.split(':'));
+  const badPeers = peerParts.filter(d => d.length !== 4);
   if (badPeers.length) {
     throw Error(
       `peers must be name:connection-X:channel-Y:denom, not ${badPeers.join(', ')}`,
@@ -27,7 +27,7 @@ const parsePeers = (strs) => {
 /**
  * Get the IBC chain configuration based on the provided network and peer inputs.
  *
- * @param {Object} args - The arguments object.
+ * @param {object} args - The arguments object.
  * @param {string} args.net - The network name (e.g., 'emerynet').
  * @param {string[]} args.peer - The peers to connect .
  * @returns {Promise<Record<string, CosmosChainInfo>>} A promise that resolves to the chain configuration details keyed by chain name.
@@ -50,13 +50,14 @@ export const getChainConfig = async ({ net, peer }) => {
 
   for (const [peerName, myConn, myChan, denom] of parsePeers(peer)) {
     console.debug(peerName, { denom });
+    // eslint-disable-next-line @jessie.js/safe-await-separator
     const connInfo = await agd
       .query(['ibc', 'connection', 'end', myConn])
-      .then((x) => x.connection);
-    const { client_id } = connInfo;
+      .then(x => x.connection);
+    const { client_id: clientId } = connInfo;
     const clientState = await agd
-      .query(['ibc', 'client', 'state', client_id])
-      .then((x) => x.client_state);
+      .query(['ibc', 'client', 'state', clientId])
+      .then(x => x.client_state);
     const { chain_id: peerId } = clientState;
     console.debug(peerName, { chainId: peerId, denom });
     chainDetails[peerName] = {
@@ -69,11 +70,11 @@ export const getChainConfig = async ({ net, peer }) => {
 
     const chan = await agd
       .query(['ibc', 'channel', 'end', portId, myChan])
-      .then((r) => r.channel);
+      .then(r => r.channel);
 
     /** @type {IBCConnectionInfo} */
     const info = harden({
-      client_id,
+      client_id: clientId,
       counterparty: {
         client_id: connInfo.counterparty.client_id,
         connection_id: connInfo.counterparty.connection_id,
@@ -94,7 +95,7 @@ export const getChainConfig = async ({ net, peer }) => {
     connections[peerId] = info;
   }
 
-  chainDetails['agoric'] = {
+  chainDetails.agoric = {
     namespace: 'cosmos',
     reference: chainId,
     chainId,

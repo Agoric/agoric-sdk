@@ -8,7 +8,7 @@ const agdBinary = 'agd';
  * @param {Record<string, unknown>} record - e.g. { color: 'blue' }
  * @returns {string[]} - e.g. ['--color', 'blue']
  */
-export const flags = (record) => {
+export const flags = record => {
   // TODO? support --yes with boolean?
 
   /** @type {[string, string][]} */
@@ -65,7 +65,7 @@ export const makeAgd = ({ execFileSync, log = console.log }) => {
        *         | [mod: 'ibc', ...rest: string[]]
        * } qArgs
        */
-      query: async (qArgs) => {
+      query: async qArgs => {
         const out = exec(['query', ...qArgs, ...nodeArgs, ...outJson], {
           encoding: 'utf-8',
           stdio: ['ignore', 'pipe', 'ignore'],
@@ -150,14 +150,14 @@ export const makeAgd = ({ execFileSync, log = console.log }) => {
         },
         showAddress: nameHub.lookup,
         /** @param {string} name */
-        delete: (name) => {
+        delete: name => {
           return exec([...keyringArgs, 'keys', 'delete', name, '-y']);
         },
       },
       /**
        * @param {Record<string, unknown>} opts
        */
-      withOpts: (opts) => make({ home, keyringBackend, rpcAddrs, ...opts }),
+      withOpts: opts => make({ home, keyringBackend, rpcAddrs, ...opts }),
     });
     return rw;
   };

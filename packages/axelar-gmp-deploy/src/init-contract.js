@@ -1,19 +1,16 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
+import { parseArgs } from 'node:util';
 import { getManifest, startAxelarGmp } from './start-contract.js';
 import { assetInfo } from './static-config.js';
 import { getChainConfig } from './get-chain-config.js';
-import { parseArgs } from 'node:util';
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
 /** @typedef {{ net?: string, peer?: string[] }} PeerChainOpts */
-/** @type {import('node:util').ParseArgsConfig['options']} */
-const options = {
-  net: {
-    type: 'string',
-  },
-  peer: { type: 'string', multiple: true },
-};
 
+/**
+ * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ */
+
+/** @type {CoreEvalBuilder} */
 export const defaultProposalBuilder = async (
   { publishRef, install },
   options,
@@ -34,6 +31,15 @@ export const defaultProposalBuilder = async (
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { scriptArgs } = endowments;
+
+  /** @type {import('node:util').ParseArgsConfig['options']} */
+  const options = {
+    net: {
+      type: 'string',
+    },
+    peer: { type: 'string', multiple: true },
+  };
+
   /** @type {{ values: PeerChainOpts }} */
   const { values: flags } = parseArgs({ args: scriptArgs, options });
 
@@ -57,7 +63,7 @@ export default async (homeP, endowments) => {
 
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
 
-  await writeCoreEval(startAxelarGmp.name, (utils) =>
+  await writeCoreEval(startAxelarGmp.name, utils =>
     defaultProposalBuilder(utils, opts),
   );
 };

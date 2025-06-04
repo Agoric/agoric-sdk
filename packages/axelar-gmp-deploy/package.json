@@ -8,8 +8,8 @@
     "tools"
   ],
   "devDependencies": {
-    "@agoric/deploy-script-support": "workspace:*",
     "agoric": "workspace:*",
+    "@aglocal/axelar-gmp": "workspace:*",
     "esbuild": "^0.25.2",
     "execa": "^9.5.2",
     "typescript": "~5.8.2"
@@ -45,6 +45,7 @@
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
   "dependencies": {
+    "@agoric/deploy-script-support": "workspace:*",
     "@agoric/cosmic-swingset": "workspace:*",
     "@agoric/internal": "workspace:*",
     "@agoric/orchestration": "workspace:*",
@@ -55,6 +56,8 @@
     "@agoric/zoe": "workspace:*",
     "@endo/errors": "^1.2.10",
     "@endo/far": "^1.1.11",
+    "@endo/patterns": "^1.5.0",
+    "@endo/base64": "^1.0.9",
     "ava": "^5.3.0",
     "node-fetch-cache": "^5.0.2",
     "viem": "^2.28.1"

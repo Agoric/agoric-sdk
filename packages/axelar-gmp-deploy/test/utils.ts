@@ -13,8 +13,10 @@ export type AgoricResponse = {
 
 /**
  * Encodes a payload according to Agoric's response structure
- * @param response - The response object matching AgoricResponse struct
- * @returns Base64-encoded payload string
+ * @param {object} response - The response object matching AgoricResponse struct
+ * @param {boolean} response.isContractCallResult
+ * @param {Array<CallResult>} response.data
+ * @returns {string} Base64-encoded payload string
  */
 export const makeReceiveUpCallPayload = ({
   isContractCallResult,
