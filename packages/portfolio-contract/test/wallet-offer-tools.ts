@@ -1,7 +1,7 @@
 import { deeplyFulfilledObject, NonNullish, objectMap } from '@agoric/internal';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import type { VowTools } from '@agoric/vow';
-import type { PaymentKeywordRecord } from '@agoric/zoe';
+import type { AmountKeywordRecord, PaymentKeywordRecord } from '@agoric/zoe';
 import type { ContractStartFunction } from '@agoric/zoe/src/zoeService/utils';
 import type { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { Fail } from '@endo/errors';
@@ -17,7 +17,7 @@ const { keys } = Object;
  * @param spec note: only source: 'contract' is supported
  * @param providePurse where to get payments?
  */
-export const executeOffer = async (
+export const executeOffer = async <R = any>(
   zoe: ZoeService,
   when: VowTools['when'],
   spec: OfferSpec & { invitationSpec: { source: 'contract' } },
@@ -26,7 +26,7 @@ export const executeOffer = async (
   const { invitationSpec, proposal, offerArgs } = spec;
   assert.equal(invitationSpec.source, 'contract', 'not supported');
   const { instance, publicInvitationMaker, invitationArgs } = invitationSpec;
-  const invitation: Invitation = await E(E(zoe).getPublicFacet(instance))[
+  const invitation: Invitation<R> = await E(E(zoe).getPublicFacet(instance))[
     publicInvitationMaker
   ](...(invitationArgs || []));
 
@@ -63,7 +63,7 @@ export interface WalletTool {
     M extends keyof StartedInstanceKit<SF>['publicFacet'],
   >(
     spec: InvitationMakerSpec<SF, M>,
-  );
+  ): Promise<{ result: any; payouts: AmountKeywordRecord }>;
   deposit(p: Payment<'nat'>): Promise<Amount<'nat'>>;
 }
 
@@ -83,7 +83,16 @@ export const makeWallet = (
     ];
   const wallet: WalletTool = harden({
     async executeOffer(spec) {
-      return executeOffer(zoe, when, spec, providePurse);
+      const { result, payouts } = await executeOffer(
+        zoe,
+        when,
+        spec,
+        providePurse,
+      );
+      const refund: AmountKeywordRecord = await deeplyFulfilledObject(
+        objectMap(payouts, async pmt => wallet.deposit(await pmt)),
+      );
+      return { result, payouts: refund };
     },
     async deposit(pmt) {
       const brand = await E(pmt).getAllegedBrand();
