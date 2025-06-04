@@ -9,7 +9,6 @@ import {
   MsgSwap,
   MsgSwapResponse,
 } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
-import { deeplyFulfilledObject } from '@agoric/internal';
 import {
   buildMsgResponseString,
   buildTxPacketString,
@@ -17,7 +16,9 @@ import {
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, passStyleOf } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
+import type { ExecutionContext } from 'ava';
 import { createRequire } from 'module';
+import type { YieldProtocol } from '../src/constants.js';
 import { commonSetup } from './supports.js';
 import { makeWallet, type WalletTool } from './wallet-offer-tools.ts';
 
@@ -56,56 +57,52 @@ const explored = [
 ];
 harden(explored);
 
-const [signer, tenk] = ['cosmos1test', `${10_000 * 1_000_000}`];
+const [signer, money] = ['cosmos1test', `${3_333 * 1_000_000}`];
 
 const protoMsgMocks = {
   swap: {
     msg: buildTxPacketString([
       MsgSwap.toProtoMsg({
         signer,
-        amount: { denom: 'uusdc', amount: tenk },
+        amount: { denom: 'uusdc', amount: money },
         routes: [{ poolId: 0n, denomTo: 'uusdn' }],
-        min: { denom: 'uusdn', amount: tenk },
+        min: { denom: 'uusdn', amount: money },
       }),
     ]),
     ack: buildMsgResponseString(MsgSwapResponse, {}),
   },
   lock: {
     msg: buildTxPacketString([
-      MsgLock.toProtoMsg({ signer, vault: 1, amount: tenk }),
+      MsgLock.toProtoMsg({ signer, vault: 1, amount: money }),
     ]),
     ack: buildMsgResponseString(MsgLockResponse, {}),
   },
   lockWorkaround: {
-    // vault: 1n???
-    msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ2x3S0ZpOXViMkpzWlM1emQyRndMbll4TGsxeloxTjNZWEFTUWdvTFkyOXpiVzl6TVhSbGMzUVNGQW9GZFhWelpHTVNDekV3TURBd01EQXdNREF3R2djU0JYVjFjMlJ1SWhRS0JYVjFjMlJ1RWdzeE1EQXdNREF3TURBd01Bby9DaDh2Ym05aWJHVXVaRzlzYkdGeUxuWmhkV3gwY3k1Mk1TNU5jMmRNYjJOckVod0tDMk52YzIxdmN6RjBaWE4wRUFFYUN6RXdNREF3TURBd01EQXciLCJtZW1vIjoiIn0=',
+    // XXX { ..., vault: 1n } ???
+    msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ2xvS0ZpOXViMkpzWlM1emQyRndMbll4TGsxeloxTjNZWEFTUUFvTFkyOXpiVzl6TVhSbGMzUVNFd29GZFhWelpHTVNDak16TXpNd01EQXdNREFhQnhJRmRYVnpaRzRpRXdvRmRYVnpaRzRTQ2pNek16TXdNREF3TURBS1Bnb2ZMMjV2WW14bExtUnZiR3hoY2k1MllYVnNkSE11ZGpFdVRYTm5URzlqYXhJYkNndGpiM050YjNNeGRHVnpkQkFCR2dvek16TXpNREF3TURBdyIsIm1lbW8iOiIifQ==',
     ack: buildMsgResponseString(MsgLockResponse, {}),
   },
 };
 
-test('start portfolio contract; open portfolio', async t => {
+const deploy = async (t: ExecutionContext) => {
   const common = await commonSetup(t);
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
+  t.log('contract deployment', contractName);
 
-  const deploy = async () => {
-    t.log('contract deployment', contractName);
+  const installation: Installation<StartFn> =
+    await bundleAndInstall(contractFile);
+  t.is(passStyleOf(installation), 'remotable');
 
-    const installation: Installation<StartFn> =
-      await bundleAndInstall(contractFile);
-    t.is(passStyleOf(installation), 'remotable');
-
-    const { usdc } = common.brands;
-    return E(zoe).startInstance(
-      installation,
-      { USDC: usdc.issuer },
-      {}, // terms
-      common.commonPrivateArgs,
-    );
-  };
-  const myKit = await deploy();
+  const { usdc } = common.brands;
+  const started = await E(zoe).startInstance(
+    installation,
+    { USDC: usdc.issuer },
+    {}, // terms
+    common.commonPrivateArgs,
+  );
   t.notThrows(() =>
     mustMatch(
-      myKit,
+      started,
       M.splitRecord({
         instance: M.remotable(),
         publicFacet: M.remotable(),
@@ -114,36 +111,50 @@ test('start portfolio contract; open portfolio', async t => {
       }),
     ),
   );
+  return { common, zoe, started };
+};
+
+test('open portfolio with USDN position', async t => {
+  const { common, zoe, started } = await deploy(t);
+  const { usdc } = common.brands;
+  const { when } = common.utils.vowTools;
+
+  const myBalance = usdc.units(10_000);
+  const funds = await common.utils.pourPayment(myBalance);
+  const myWallet = makeWallet({ USDC: usdc }, zoe, when);
+  await E(myWallet).deposit(funds);
+  t.log('I am a power user with', myBalance, 'on Agoric');
 
   const { ibcBridge } = common.mocks;
   for (const { msg, ack } of Object.values(protoMsgMocks)) {
     ibcBridge.addMockAck(msg, ack);
   }
 
-  const { usdc } = common.brands;
-  const { when } = common.utils.vowTools;
   const openPortfolio = async (
     instance: Instance<StartFn>,
     wallet: WalletTool,
-    funds: Payment<'nat'>,
+    give: Partial<Record<YieldProtocol, Amount<'nat'>>>,
   ) => {
-    const USDN = await E(wallet).deposit(funds);
-    const proposal = { give: { USDN } };
     const invitationSpec = {
       source: 'contract' as const,
       instance,
       publicInvitationMaker: 'makeOpenPortfolioInvitation' as const,
     };
+    t.log('I ask the portfolio manager to allocate', give);
+    const proposal = { give };
     return wallet.executeOffer({ id: 'open123', invitationSpec, proposal });
   };
 
-  const funds = await common.utils.pourPayment(usdc.units(10_000));
-  const wallet = makeWallet({ USDC: usdc }, zoe, when);
-  const done = await await openPortfolio(myKit.instance, wallet, funds);
-  t.log('result', done.result);
-  t.log('payouts', await deeplyFulfilledObject(done.payouts));
+  const give = { USDN: usdc.units(3_333) };
+  const done = await openPortfolio(started.instance, myWallet, give);
   t.is(passStyleOf(done.result.invitationMakers), 'remotable');
   t.like(done.result.publicTopics, [
     { description: 'USDN ICA', storagePath: 'cosmos:noble-1:cosmos1test' },
   ]);
+  const [{ storagePath: myUSDNAddress }] = done.result.publicTopics;
+  t.log('I can see where my money is:', myUSDNAddress);
 });
+
+test.todo('User can see transfer in progress');
+test.todo('Pools SHOULD include Aave');
+test.todo('Pools SHOULD include Compound');
