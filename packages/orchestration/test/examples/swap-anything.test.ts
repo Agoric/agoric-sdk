@@ -74,24 +74,24 @@ const bootstrapOrchestration = async (t, deleteOsmosis?) => {
         break;
     }
 
-    const agoric = {
-      ...remainingChains.agoric,
-      connections: { ...remainingChains.agoric.connections },
-    };
+    let updatedChainInfo;
 
-    if (
-      agoric.connections &&
-      Object.prototype.hasOwnProperty.call(agoric.connections, 'osmosis-1')
-    ) {
-      delete (agoric.connections as Partial<typeof agoric.connections>)[
-        'osmosis-1'
-      ];
+    if ('osmosis-1' in remainingChains.agoric.connections) {
+      const { 'osmosis-1': _osmosis1, ...rest } =
+        remainingChains.agoric.connections;
+
+      updatedChainInfo = {
+        ...remainingChains,
+        agoric: {
+          ...remainingChains.agoric,
+          connections: { ...rest },
+        },
+      };
+    } else {
+      updatedChainInfo = {
+        ...remainingChains,
+      };
     }
-
-    const updatedChainInfo = {
-      ...remainingChains,
-      agoric,
-    };
 
     return {
       ...commonPrivateArgs,
@@ -99,12 +99,9 @@ const bootstrapOrchestration = async (t, deleteOsmosis?) => {
     };
   };
 
-  let privateArgs;
-  if (deleteOsmosis) {
-    privateArgs = await getPrivateArgsWithoutOsmosis();
-  } else {
-    privateArgs = commonPrivateArgs;
-  }
+  const privateArgs = await (deleteOsmosis
+    ? getPrivateArgsWithoutOsmosis()
+    : commonPrivateArgs);
 
   const swapKit = await E(zoe).startInstance(
     installation,
