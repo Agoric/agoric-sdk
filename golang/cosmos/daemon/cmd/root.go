@@ -13,6 +13,7 @@ import (
 	rosettaCmd "github.com/cosmos/rosetta/cmd"
 
 	"cosmossdk.io/log"
+	"cosmossdk.io/simapp/params"
 	simdcmd "cosmossdk.io/simapp/simd/cmd"
 	confixcmd "cosmossdk.io/tools/confix/cmd"
 	tmcfg "github.com/cometbft/cometbft/config"
@@ -29,21 +30,28 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/server"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/module"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	vestingcli "github.com/cosmos/cosmos-sdk/x/auth/vesting/client/cli"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/cosmos/cosmos-sdk/types/tx/signing"
+	"github.com/cosmos/cosmos-sdk/x/auth/tx"
+	authtxconfig "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
+
 	gaia "github.com/Agoric/agoric-sdk/golang/cosmos/app"
-	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	swingset "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
 	swingsetkeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
+	rosetta "github.com/cosmos/rosetta"
 )
 
 var AppName = "agd"
@@ -56,6 +64,7 @@ type CustomAppConfig struct {
 	// Swingset must be named as expected by swingset.DefaultConfigTemplate
 	// and must use a mapstructure key matching swingset.ConfigPrefix.
 	Swingset swingset.SwingsetConfig `mapstructure:"swingset"`
+	Rosetta  rosetta.Config          `mapstructure:"rosetta"`
 }
 
 type cobraRunE func(cmd *cobra.Command, args []string) error
@@ -78,9 +87,27 @@ func appendToPreRunE(cmd *cobra.Command, fn cobraRunE) {
 // NewRootCmd creates a new root command for simd. It is called once in the
 // main function.
 func NewRootCmd(sender vm.Sender) (*cobra.Command, params.EncodingConfig) {
-	encodingConfig := gaia.MakeEncodingConfig()
+	// we "pre"-instantiate the application for getting the injected/configured encoding configuration
+	// note, this is not necessary when using app wiring, as depinject can be directly used (see root_v2.go)
+
+	appOpts := make(simtestutil.AppOptionsMap, 0)
+	tempApp := gaia.NewSimApp(
+		log.NewNopLogger(),
+		dbm.NewMemDB(),
+		nil,
+		false, // we don't want to run the app, just get the encoding config
+		appOpts,
+	)
+
+	encodingConfig := params.EncodingConfig{
+		Codec:             tempApp.AppCodec(),
+		InterfaceRegistry: tempApp.InterfaceRegistry(),
+		TxConfig:          tempApp.GetTxConfig(),
+		Amino:             tempApp.LegacyAmino(),
+	}
+
 	initClientCtx := client.Context{}.
-		WithCodec(encodingConfig.Marshaler).
+		WithCodec(encodingConfig.Codec).
 		WithInterfaceRegistry(encodingConfig.InterfaceRegistry).
 		WithTxConfig(encodingConfig.TxConfig).
 		WithLegacyAmino(encodingConfig.Amino).
@@ -97,6 +124,7 @@ func NewRootCmd(sender vm.Sender) (*cobra.Command, params.EncodingConfig) {
 			cmd.SetOut(cmd.OutOrStdout())
 			cmd.SetErr(cmd.ErrOrStderr())
 
+			initClientCtx = initClientCtx.WithCmdContext(cmd.Context())
 			initClientCtx, err := client.ReadPersistentCommandFlags(initClientCtx, cmd.Flags())
 			if err != nil {
 				return err
@@ -107,22 +135,51 @@ func NewRootCmd(sender vm.Sender) (*cobra.Command, params.EncodingConfig) {
 				return err
 			}
 
+			// This needs to go after ReadFromClientConfig, as that function
+			// sets the RPC client needed for SIGN_MODE_TEXTUAL. This sign mode
+			// is only available if the client is online.
+			if !initClientCtx.Offline {
+				enabledSignModes := append(tx.DefaultSignModes, signing.SignMode_SIGN_MODE_TEXTUAL)
+				txConfigOpts := tx.ConfigOptions{
+					EnabledSignModes:           enabledSignModes,
+					TextualCoinMetadataQueryFn: authtxconfig.NewGRPCCoinMetadataQueryFn(initClientCtx),
+				}
+				txConfig, err := tx.NewTxConfigWithOptions(
+					initClientCtx.Codec,
+					txConfigOpts,
+				)
+				if err != nil {
+					return err
+				}
+
+				initClientCtx = initClientCtx.WithTxConfig(txConfig)
+			}
+
 			if err := client.SetCmdClientContextHandler(initClientCtx, cmd); err != nil {
 				return err
 			}
 
 			customAppTemplate, customAppConfig := initAppConfig()
-			customTMConfig := initTendermintConfig()
-			return server.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig, customTMConfig)
+			customCMTConfig := initCometBFTConfig()
+
+			return server.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig, customCMTConfig)
 		},
 	}
 
-	initRootCmd(sender, rootCmd, encodingConfig)
+	initRootCmd(sender, rootCmd, encodingConfig, tempApp.BasicModuleManager)
+
+	// add keyring to autocli opts
+	autoCliOpts := tempApp.AutoCliOpts()
+	autoCliOpts.ClientCtx = initClientCtx
+
+	if err := autoCliOpts.EnhanceRootCommand(rootCmd); err != nil {
+		panic(err)
+	}
 
 	return rootCmd, encodingConfig
 }
 
-func initTendermintConfig() *tmcfg.Config {
+func initCometBFTConfig() *tmcfg.Config {
 	cfg := tmcfg.DefaultConfig()
 	// customize config here
 	return cfg
@@ -152,7 +209,7 @@ func initAppConfig() (string, interface{}) {
 	return customAppTemplate, customAppConfig
 }
 
-func initRootCmd(sender vm.Sender, rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
+func initRootCmd(sender vm.Sender, rootCmd *cobra.Command, encodingConfig params.EncodingConfig, basicManager module.BasicManager) {
 	cfg := sdk.GetConfig()
 	cfg.Seal()
 
@@ -163,12 +220,12 @@ func initRootCmd(sender vm.Sender, rootCmd *cobra.Command, encodingConfig params
 
 	genesisCmd := genutilcli.GenesisCoreCommand(
 		encodingConfig.TxConfig,
-		gaia.ModuleBasics,
+		basicManager,
 		gaia.DefaultNodeHome,
 	)
 
 	rootCmd.AddCommand(
-		genutilcli.InitCmd(gaia.ModuleBasics, gaia.DefaultNodeHome),
+		genutilcli.InitCmd(basicManager, gaia.DefaultNodeHome),
 		genesisCmd,
 	)
 	// Alias all the genesis commands to the top level as well.
@@ -177,14 +234,19 @@ func initRootCmd(sender vm.Sender, rootCmd *cobra.Command, encodingConfig params
 	)
 	rootCmd.AddCommand(
 		tmcli.NewCompletionCmd(rootCmd, true),
-		simdcmd.NewTestnetCmd(gaia.ModuleBasics, banktypes.GenesisBalancesIterator{}, AppName),
+		simdcmd.NewTestnetCmd(basicManager, banktypes.GenesisBalancesIterator{}, AppName),
 		debug.Cmd(),
 		confixcmd.ConfigCommand(),
 		pruning.Cmd(ac.newSnapshotsApp, gaia.DefaultNodeHome),
 		snapshot.Cmd(ac.newSnapshotsApp),
 	)
 
-	server.AddCommands(rootCmd, gaia.DefaultNodeHome, ac.newApp, ac.appExport, addStartFlags)
+	server.AddCommandsWithStartCmdOptions(rootCmd, gaia.DefaultNodeHome, ac.newApp, ac.appExport, server.StartCmdOptions{
+		AddFlags: func(startCmd *cobra.Command) {
+			addStartFlags(startCmd)
+			crisis.AddModuleInitFlags(startCmd)
+		},
+	})
 
 	for _, command := range rootCmd.Commands() {
 		switch command.Name() {
@@ -222,15 +284,20 @@ func initRootCmd(sender vm.Sender, rootCmd *cobra.Command, encodingConfig params
 	}
 
 	// add keybase, auxiliary RPC, query, and tx child commands
+	qcmd := queryCommand()
+	tcmd := txCommand()
+
+	basicManager.AddQueryCommands(qcmd)
+	basicManager.AddTxCommands(tcmd)
 	rootCmd.AddCommand(
 		server.StatusCommand(),
-		queryCommand(),
-		txCommand(),
+		qcmd,
+		tcmd,
 		keys.Commands(),
 	)
 	// add rosetta
 	rootCmd.AddCommand(
-		rosettaCmd.RosettaCommand(encodingConfig.InterfaceRegistry, encodingConfig.Marshaler),
+		rosettaCmd.RosettaCommand(encodingConfig.InterfaceRegistry, encodingConfig.Codec),
 	)
 }
 
@@ -279,9 +346,6 @@ func queryCommand() *cobra.Command {
 		authcmd.QueryTxCmd(),
 	)
 
-	gaia.ModuleBasics.AddQueryCommands(cmd)
-	cmd.PersistentFlags().String(flags.FlagChainID, "", "The network chain ID")
-
 	return cmd
 }
 
@@ -308,7 +372,6 @@ func txCommand() *cobra.Command {
 		vestingcli.GetTxCmd(address.NewBech32Codec(sdk.Bech32PrefixAccAddr)),
 	)
 
-	gaia.ModuleBasics.AddTxCommands(cmd)
 	cmd.PersistentFlags().String(flags.FlagChainID, "", "The network chain ID")
 
 	return cmd
