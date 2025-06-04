@@ -44,7 +44,6 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 import { objectMap } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
-import { makeTestFeeConfig } from './mocks.js';
 
 export {
   makeFakeLocalchainBridge,
@@ -261,10 +260,8 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       localchain,
       orchestrationService: cosmosInterchainService,
       storageNode: storage.rootNode,
-      poolMetricsNode: storage.rootNode.makeChildNode('poolMetrics'),
       marshaller,
       timerService: timer,
-      feeConfig: makeTestFeeConfig(usdc),
       chainInfo,
       assetInfo,
     },
