@@ -2,6 +2,7 @@ name: Test Golang
 
 on:
   pull_request:
+  workflow_dispatch:
   merge_group:
   push:
     branches: [master]
@@ -27,3 +28,14 @@ jobs:
         timeout-minutes: 4
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
+
+  post-test-golang:
+    uses: ./.github/workflows/result.yml
+    if: (success() || failure())
+    secrets:
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+    with:
+      dry-run: ${{ github.event_name == 'pull_request' }}
+      needs-json: ${{ toJson(needs) }}
+    needs:
+      - gotest
