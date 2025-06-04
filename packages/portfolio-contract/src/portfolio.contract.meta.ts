@@ -1,11 +1,18 @@
-import { OrchestrationPowersShape } from '@agoric/orchestration';
+import {
+  ChainInfoShape,
+  DenomDetailShape,
+  DenomShape,
+  OrchestrationPowersShape,
+} from '@agoric/orchestration';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 
-export const meta = M.splitRecord({
+export const meta = {
   privateArgsShape: {
     ...(OrchestrationPowersShape as CopyRecord),
     marshaller: M.remotable('marshaller'),
+    assetInfo: M.arrayOf([DenomShape, DenomDetailShape]),
+    chainInfo: M.recordOf(M.string(), ChainInfoShape),
   },
-});
+};
 harden(meta);
