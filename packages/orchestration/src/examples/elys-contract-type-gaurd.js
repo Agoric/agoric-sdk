@@ -39,10 +39,3 @@ export function validateFeeConfigShape(feeConfigShape) {
 
   return isValidRatio(onBoardRate) && isValidRatio(offBoardRate);
 }
-
-export const RedeemType = Object.freeze({
-  TIA: 'tia',
-  DEFAULT: 'default',
-});
-
-harden(RedeemType);
