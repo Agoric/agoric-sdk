@@ -1,16 +1,16 @@
 import { M } from '@endo/patterns';
 import { E } from '@endo/far';
-import { prepareChainHubAdmin } from '@agoric/orchestration/src/exos/chain-hub-admin.js';
-import { withOrchestration } from '@agoric/orchestration/src/utils/start-helper.js';
-import { registerChainsAndAssets } from '@agoric/orchestration/src/utils/chain-hub-helper.js';
 import { makeTracer } from '@agoric/internal';
-import * as evmFlows from './evm.flows.js';
-import { prepareEvmAccountKit } from './evm-account-kit.js';
+import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
+import { withOrchestration } from '../utils/start-helper.js';
+import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
+import * as evmFlows from './axelar-gmp.flows.js';
+import { prepareEvmAccountKit } from './axelar-gmp-account-kit.js';
 
 /**
  * @import {Remote, Vow} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
- * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration/src/utils/start-helper.js';
+ * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {Marshaller, StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {ZCF} from '@agoric/zoe';

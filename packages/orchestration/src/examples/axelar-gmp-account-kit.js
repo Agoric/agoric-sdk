@@ -4,10 +4,10 @@
  * @import {Zone} from '@agoric/zone';
  * @import {TypedPattern} from '@agoric/internal';
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
- * @import {ZoeTools} from '@agoric/orchestration/src/utils/zoe-tools.js';
- * @import {AxelarGmpIncomingMemo, EvmTapState, ContractCall} from '../types';
+ * @import {ZoeTools} from '../utils/zoe-tools.js';
+ * @import {AxelarGmpIncomingMemo, EvmTapState, ContractCall, SupportedDestinationChains} from '../axelar-types.js';
  * @import {ZCF, ZCFSeat} from '@agoric/zoe';
- * @import {AxelarGmpOutgoingMemo} from '../types'
+ * @import {AxelarGmpOutgoingMemo, GMPMessageType} from '../axelar-types.js'
  */
 
 /** @typedef {ContractCall} ContractCall */
@@ -18,7 +18,7 @@ import { makeTracer, NonNullish } from '@agoric/internal';
 import { atob, decodeBase64 } from '@endo/base64';
 import { decodeAbiParameters } from 'viem';
 import { Fail } from '@endo/errors';
-import { CosmosChainAddressShape } from '@agoric/orchestration';
+import { CosmosChainAddressShape } from '../typeGuards.js';
 import { gmpAddresses, buildGMPPayload } from '../utils/gmp.js';
 
 const trace = makeTracer('EvmAccountKit');
@@ -26,7 +26,10 @@ const { entries } = Object;
 
 const EVMI = M.interface('holder', {
   getLocalAddress: M.call().returns(M.any()),
-  getAddress: M.call().returns(M.any()),
+  getRemoteAddress: M.call().returns(M.any()),
+  // TODO: This is currently a placeholder.
+  // Replace with a proper message tracking mechanism that can correlate
+  // incoming messages with outgoing `sendGmp` calls, possibly using vows/promises.
   getLatestMessage: M.call().returns(M.any()),
   send: M.call(M.any(), M.any()).returns(M.any()),
   sendGmp: M.call(M.any(), M.any()).returns(M.any()),
@@ -45,7 +48,7 @@ const EvmKitStateShape = {
   sourceChannel: M.string(),
   remoteDenom: M.string(),
   localDenom: M.string(),
-  localAccount: M.remotable('OrchestrationAccount<{chainId:"agoric-3"}>'),
+  localAccount: M.remotable('LocalAccount'),
   assets: M.any(),
   remoteChainInfo: M.any(),
 };
@@ -84,17 +87,18 @@ export const prepareEvmAccountKit = (
      * @param {EvmTapState} initialState
      * @returns {{
      *   evmAccountAddress: string | undefined;
-     *   latestMessage: { success: boolean; result: `0x${string}` }[] | undefined;
+     *   latestMessage:
+     *     | { success: boolean; result: `0x${string}` }[]
+     *     | undefined;
      * } & EvmTapState}
      */
     initialState => {
       mustMatch(initialState, EvmKitStateShape);
       return harden({
         evmAccountAddress: /** @type {string | undefined} */ (undefined),
-        latestMessage:
-          /** @type {{ success: boolean; result: `0x${string}` }[] | undefined} */ (
-            undefined
-          ),
+        latestMessage: /**
+         * @type {{ success: boolean; result: `0x${string}` }[] | undefined}
+         */ (undefined),
         ...initialState,
       });
     },
@@ -179,7 +183,7 @@ export const prepareEvmAccountKit = (
         getLocalAddress() {
           return this.state.localAccount.getAddress().value;
         },
-        async getAddress() {
+        async getRemoteAddress() {
           return this.state.evmAccountAddress;
         },
         async getLatestMessage() {
@@ -202,10 +206,10 @@ export const prepareEvmAccountKit = (
          * @param {ZCFSeat} seat
          * @param {{
          *   destinationAddress: string;
-         *   type: number;
-         *   destinationEVMChain: string;
+         *   type: GMPMessageType;
+         *   destinationEVMChain: SupportedDestinationChains;
          *   gasAmount: number;
-         *   contractInvocationData: Array<ContractCall>;
+         *   contractInvocationData: ContractCall[];
          * }} offerArgs
          */
         async sendGmp(seat, offerArgs) {
@@ -227,7 +231,8 @@ export const prepareEvmAccountKit = (
 
           const isContractInvocation = [1, 2].includes(type);
           if (isContractInvocation) {
-            gasAmount != null || Fail`gasAmount must be defined`;
+            gasAmount != null ||
+              Fail`gasAmount must be defined for type ${type}`;
             contractInvocationData != null ||
               Fail`contractInvocationData is not defined`;
 
@@ -310,11 +315,11 @@ export const prepareEvmAccountKit = (
         // "method" and "args" can be used to invoke methods of localAccount obj
         makeEVMTransactionInvitation(method, args) {
           const continuingEVMTransactionHandler = async seat => {
+            await null;
             const { holder } = this.facets;
             switch (method) {
               case 'sendGmp': {
                 const { give } = seat.getProposal();
-                // eslint-disable-next-line @jessie.js/safe-await-separator
                 await vowTools.when(holder.fundLCA(seat, give));
                 return holder.sendGmp(seat, args[0]);
               }
@@ -325,8 +330,8 @@ export const prepareEvmAccountKit = (
                   return res;
                 });
               }
-              case 'getAddress': {
-                const vow = holder.getAddress();
+              case 'getRemoteAddress': {
+                const vow = holder.getRemoteAddress();
                 return vowTools.when(vow, res => {
                   seat.exit();
                   return res;

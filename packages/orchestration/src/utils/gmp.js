@@ -1,7 +1,7 @@
 import { encodeFunctionData, encodeAbiParameters, hexToBytes } from 'viem';
 
 /**
- * @import {ContractCall, AbiEncodedContractCall} from '../types';
+ * @import {ContractCall, AbiEncodedContractCall} from '../axelar-types.js';
  * @import {Bech32Address} from '@agoric/orchestration';
  */
 
@@ -11,7 +11,13 @@ export const GMPMessageType = {
   TOKEN_ONLY: 3,
 };
 
-/** @type {{ AXELAR_GMP: Bech32Address, AXELAR_GAS: Bech32Address, OSMOSIS_RECEIVER: Bech32Address }} */
+/**
+ * @type {{
+ *   AXELAR_GMP: Bech32Address;
+ *   AXELAR_GAS: Bech32Address;
+ *   OSMOSIS_RECEIVER: Bech32Address;
+ * }}
+ */
 export const gmpAddresses = {
   AXELAR_GMP:
     'axelar1dv4u5k73pzqrxlzujxg3qp8kvc3pje7jtdvu72npnt5zhq05ejcsn5qme5',
@@ -21,6 +27,7 @@ export const gmpAddresses = {
 
 /**
  * Constructs a contract call object with ABI encoding.
+ *
  * @param {ContractCall} data - The data for the contract call.
  * @returns {AbiEncodedContractCall} The encoded contract call object.
  */
@@ -47,8 +54,8 @@ export const constructContractCall = ({ target, functionSignature, args }) => {
 /**
  * Builds a GMP payload from an array of contract calls.
  *
- * @param {Array<ContractCall>} contractCalls - Array of contract call objects.
- * @returns {Array<number>} The GMP payload object.
+ * @param {ContractCall[]} contractCalls - Array of contract call objects.
+ * @returns {number[]} The GMP payload object.
  */
 export const buildGMPPayload = contractCalls => {
   const abiEncodedContractCalls = [];
@@ -73,4 +80,34 @@ export const buildGMPPayload = contractCalls => {
   );
 
   return Array.from(hexToBytes(abiEncodedData));
+};
+
+export const networkConfigs = {
+  devnet: {
+    label: 'Agoric Devnet',
+    url: 'https://devnet.agoric.net/network-config',
+    rpc: 'https://devnet.rpc.agoric.net',
+    api: 'https://devnet.api.agoric.net',
+    chainId: 'agoricdev-25',
+  },
+  emerynet: {
+    label: 'Agoric Emerynet',
+    url: 'https://emerynet.agoric.net/network-config',
+    rpc: 'https://emerynet.rpc.agoric.net',
+    api: 'https://emerynet.api.agoric.net',
+    chainId: 'agoric-emerynet-9',
+  },
+  localhost: {
+    label: 'Local Network',
+    url: 'https://local.agoric.net/network-config',
+    rpc: 'http://localhost:26657',
+    api: 'http://localhost:1317',
+    chainId: 'agoriclocal',
+  },
+};
+
+export const EVM_CHAINS = {
+  Avalanche: 'Avalanche',
+  Base: 'base-sepolia',
+  Ethereum: 'ethereum-sepolia',
 };

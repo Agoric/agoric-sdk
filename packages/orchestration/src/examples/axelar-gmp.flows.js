@@ -1,17 +1,29 @@
+/**
+ * @file Implements the orchestration flow which does the following:
+ *
+ *   - Creates an EVM account on the target chain.
+ *   - Sets up and monitors the Local Chain Account (LCA).
+ *   - Coordinates IBC-related logic through `createAndMonitorLCA()`.
+ *
+ *   For more details, see: docs/axelar-gmp/create-and-use-wallet.mmd in
+ *   orchestration package.
+ */
+
 import { Fail, makeError, q } from '@endo/errors';
 import { makeTracer, NonNullish } from '@agoric/internal';
-import { denomHash } from '@agoric/orchestration/src/utils/denomHash.js';
-import { gmpAddresses, GMPMessageType } from '../utils/gmp.js';
+import { denomHash } from '../utils/denomHash.js';
+import { gmpAddresses } from '../utils/gmp.js';
+import { AxelarGMPMessageType } from '../axelar-types.js';
 
 /**
  * @import {GuestInterface, GuestOf} from '@agoric/async-flow';
  * @import {Orchestrator, OrchestrationFlow} from '@agoric/orchestration';
- * @import {MakeEvmAccountKit} from './evm-account-kit.js';
+ * @import {MakeEvmAccountKit} from './axelar-gmp-account-kit.js';
  * @import {ChainHub} from '@agoric/orchestration/src/exos/chain-hub.js';
  * @import {Vow} from '@agoric/vow';
  * @import {ZCFSeat, AmountKeywordRecord} from '@agoric/zoe';
  * @import {LocalAccountMethods} from '@agoric/orchestration';
- * @import {AxelarGmpOutgoingMemo} from '../types'
+ * @import {AxelarGmpOutgoingMemo} from '../axelar-types.js'
  */
 
 const trace = makeTracer('EvmFlow');
@@ -22,21 +34,19 @@ const trace = makeTracer('EvmFlow');
  * @param {{
  *   makeEvmAccountKit: MakeEvmAccountKit;
  *   chainHub: GuestInterface<ChainHub>;
- *   log: GuestOf<
- *     (msg: string) => Vow<void>
- *   >;
+ *   log: GuestOf<(msg: string) => Vow<void>>;
  *   localTransfer: GuestOf<
  *     (
  *       srcSeat: ZCFSeat,
  *       localAccount: LocalAccountMethods,
- *       amounts: AmountKeywordRecord
+ *       amounts: AmountKeywordRecord,
  *     ) => Vow<void>
  *   >;
  *   withdrawToSeat: GuestOf<
  *     (
  *       localAccount: LocalAccountMethods,
  *       destSeat: ZCFSeat,
- *       amounts: AmountKeywordRecord
+ *       amounts: AmountKeywordRecord,
  *     ) => Vow<void>
  *   >;
  * }} ctx
@@ -100,6 +110,8 @@ export const createAndMonitorLCA = async (
 
   await localTransfer(seat, localAccount, give);
 
+  // Factory contract address when using local dev environment
+  // TODO: pass it via terms?
   const factoryContractAddress = '0xef8651dD30cF990A1e831224f2E0996023163A81';
 
   /** @type {AxelarGmpOutgoingMemo} */
@@ -107,7 +119,7 @@ export const createAndMonitorLCA = async (
     destination_chain: 'Ethereum',
     destination_address: factoryContractAddress,
     payload: [],
-    type: GMPMessageType.MESSAGE_ONLY,
+    type: AxelarGMPMessageType.ContractCall,
     fee: {
       amount: '1', // TODO: Get fee amount from api
       recipient: gmpAddresses.AXELAR_GAS,
@@ -138,6 +150,8 @@ export const createAndMonitorLCA = async (
   }
 
   seat.exit();
+  // TODO: When used from the portfolio contract, expose the `holder` facet directly
+  // to bypass Zoe and walletFactory, since smart wallet constraints don't apply there.
   return harden({ invitationMakers: evmAccountKit.invitationMakers });
 };
 harden(createAndMonitorLCA);

@@ -6,6 +6,9 @@ Cosmos-based blockchains can send tokens and do contract calls to EVM-based bloc
 
 Here’s what the `memo` looks like in code:
 
+> **Note:** The following types mirror JSDoc `@typedef`s from [`axelar-types.js`](../../src/axelar-types.js).
+> Keep this snippet in sync with the actual source to avoid drift.
+
 ```js
 export enum GMPMessageType {
   ContractCall = 1,            // Call a contract
@@ -28,6 +31,7 @@ export type AxelarGmpOutgoingMemo = {
 
 ```
 
+
 ### Fee Rules
 
 - TokenTransfer(`type: 3`)
@@ -36,7 +40,7 @@ export type AxelarGmpOutgoingMemo = {
 - ContractCall or ContractCallWithToken(`type: 1 | 2`)
   For `ContractCall` or `ContractCallWithToken`, a `fee` must be included. This `fee` pays for Axelar to process, forward and execute the message on the destination chain. It must be estimated and added in advance.
 
-Read more about how transaction fees work in Axelar [over here](https://docs.axelar.dev/dev/gas-service/pricing/#transaction-pricing).
+See also: [how transaction fees work in Axelar](https://docs.axelar.dev/dev/gas-service/pricing/#transaction-pricing).
 
 ---
 
@@ -96,7 +100,7 @@ function _executeWithToken(
 
 The `AxelarGateway` invokes the `_execute()` method when performing a **ContractCall**, and it invokes `_executeWithToken()` when performing a **ContractCallWithToken**. These functions are where you define the behavior your contract should carry out upon receiving the cross-chain message.
 
-Read more about it [over here](https://docs.axelar.dev/dev/general-message-passing/overview/#general-message-passing).
+Read more in the [Axelar GMP documentation](https://docs.axelar.dev/dev/general-message-passing/overview/#general-message-passing).
 
 ---
 
@@ -141,7 +145,7 @@ A single `ContractCall` tells the system:
 
 ### 2. AbiEncodedContractCall
 
-Before sending to the EVM, each `ContractCall` is converted into an ABI-encoded version something Solidity understands:
+Before sending to the EVM, each `ContractCall` is converted into an ABI–encoded version (`AbiEncodedContractCall`) using the `buildGMPPayload` function defined in [`gmp.js`](../../src/utils/gmp.js):
 
 ```ts
 export type AbiEncodedContractCall = {

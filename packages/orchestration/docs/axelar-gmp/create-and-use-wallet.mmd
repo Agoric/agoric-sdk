@@ -1,0 +1,40 @@
+%% TODO:
+%% - Convert block comments like "%% Wallet creation flow" into visible `note over` annotations in the diagram.
+%% - Indicate in the diagram (using style, color, or note) that the `ArbitraryContract` is just a placeholder and the actual contract is arbitrary.
+%% - Clarify in the message order that `makeEvmAccountKit()` may be more accurate than `prepareEvmAccountKit()` at that point, as `prepareX()` only happens in the first crank.
+
+%% Notation: ->> for initial message, -->> for consequences
+
+sequenceDiagram
+box Agoric Chain
+participant AgoricUser as Agoric Account
+participant IBCRelayer as IBC Relayer (Agoric to Axelar)
+end
+
+box Axelar Network
+participant AxelarGMPContract as Axelar GMP Contract
+participant Axelar as Axelar Network
+end
+
+box EVM Chain
+participant EvmRelayer as EVM Relayer
+participant EVMAccountKit as EVM Account Kit
+participant Factory as Wallet Factory Contract
+participant Wallet as Wallet Contract Instance
+participant ArbitraryContract as Arbitrary Contract
+end
+
+%% Wallet creation flow
+AgoricUser->>AxelarGMPContract: createAndMonitorLCA()
+AxelarGMPContract->>EVMAccountKit: prepareEvmAccountKit()
+EVMAccountKit-->>AgoricUser: Return EvmAccountKit object with address agoric1XXX
+EVMAccountKit-->>Axelar: Send message to create remote EVM wallet
+Axelar-->>Factory: Call to create new wallet for agoric1XXX
+Factory-->>Wallet: Instantiate new wallet
+Wallet-->>EVMAccountKit: Return wallet address 0x123...
+
+%% Wallet user flow
+AgoricUser->>EVMAccountKit: Request to invoke arbitrary contract
+EVMAccountKit-->>Axelar: Send message to Wallet (0x123...)
+Axelar-->>Wallet: Forward message to Wallet
+Wallet-->>ArbitraryContract: Execute Arbitrary Contract
