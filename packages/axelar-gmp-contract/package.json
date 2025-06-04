@@ -1,0 +1,32 @@
+{
+  "name": "axelar-gmp-contract",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "devDependencies": {
+    "@agoric/async-flow": "workspace:*",
+    "@agoric/zoe": "workspace:*",
+    "@agoric/zone": "workspace:*",
+    "typescript": "~5.8.2"
+  },
+  "scripts": {
+    "lint:eslint": "yarn run -T eslint .",
+    "lint:types": "tsc",
+    "test:c8": "c8 --all $C8_OPTIONS ava",
+    "test:xs": "exit 0",
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint": "yarn run -T run-s --continue-on-error 'lint:*'"
+  },
+  "dependencies": {
+    "@agoric/internal": "workspace:*",
+    "@agoric/orchestration": "workspace:*",
+    "@agoric/vow": "workspace:*",
+    "@agoric/vats": "workspace:*",
+    "@endo/base64": "^1.0.9",
+    "@endo/errors": "^1.2.10",
+    "@endo/far": "^1.1.11",
+    "@endo/patterns": "^1.5.0",
+    "viem": "^2.28.1"
+  },
+  "packageManager": "yarn@4.9.1"
+}
