@@ -1,7 +1,19 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import {
+  MsgLock,
+  MsgLockResponse,
+} from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
+import {
+  MsgSwap,
+  MsgSwapResponse,
+} from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import { deeplyFulfilledObject } from '@agoric/internal';
+import {
+  buildMsgResponseString,
+  buildTxPacketString,
+} from '@agoric/orchestration/tools/ibc-mocks.ts';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, passStyleOf } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
@@ -44,6 +56,33 @@ const explored = [
 ];
 harden(explored);
 
+const [signer, tenk] = ['cosmos1test', `${10_000 * 1_000_000}`];
+
+const protoMsgMocks = {
+  swap: {
+    msg: buildTxPacketString([
+      MsgSwap.toProtoMsg({
+        signer,
+        amount: { denom: 'uusdc', amount: tenk },
+        routes: [{ poolId: 0n, denomTo: 'uusdn' }],
+        min: { denom: 'uusdn', amount: tenk },
+      }),
+    ]),
+    ack: buildMsgResponseString(MsgSwapResponse, {}),
+  },
+  lock: {
+    msg: buildTxPacketString([
+      MsgLock.toProtoMsg({ signer, vault: 1, amount: tenk }),
+    ]),
+    ack: buildMsgResponseString(MsgLockResponse, {}),
+  },
+  lockWorkaround: {
+    // vault: 1n???
+    msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ2x3S0ZpOXViMkpzWlM1emQyRndMbll4TGsxeloxTjNZWEFTUWdvTFkyOXpiVzl6TVhSbGMzUVNGQW9GZFhWelpHTVNDekV3TURBd01EQXdNREF3R2djU0JYVjFjMlJ1SWhRS0JYVjFjMlJ1RWdzeE1EQXdNREF3TURBd01Bby9DaDh2Ym05aWJHVXVaRzlzYkdGeUxuWmhkV3gwY3k1Mk1TNU5jMmRNYjJOckVod0tDMk52YzIxdmN6RjBaWE4wRUFFYUN6RXdNREF3TURBd01EQXciLCJtZW1vIjoiIn0=',
+    ack: buildMsgResponseString(MsgLockResponse, {}),
+  },
+};
+
 test('start portfolio contract; open portfolio', async t => {
   const common = await commonSetup(t);
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
@@ -75,6 +114,11 @@ test('start portfolio contract; open portfolio', async t => {
       }),
     ),
   );
+
+  const { ibcBridge } = common.mocks;
+  for (const { msg, ack } of Object.values(protoMsgMocks)) {
+    ibcBridge.addMockAck(msg, ack);
+  }
 
   const { usdc } = common.brands;
   const { when } = common.utils.vowTools;
