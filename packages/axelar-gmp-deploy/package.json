@@ -1,0 +1,62 @@
+{
+  "name": "@aglocal/axelar-gmp-deploy",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "files": [
+    "src",
+    "tools"
+  ],
+  "devDependencies": {
+    "@agoric/deploy-script-support": "workspace:*",
+    "agoric": "workspace:*",
+    "esbuild": "^0.25.2",
+    "execa": "^9.5.2",
+    "typescript": "~5.8.2"
+  },
+  "scripts": {
+    "esbuild:contract": "esbuild ../axelar-gmp-contract/src/axelar-gmp.contract.js --platform=node --format=esm --bundle --outfile=dist/axelar-gmp.contract.bundle.js",
+    "build:contract": "yarn esbuild:contract && yarn bundles:local-env",
+    "test": "yarn esbuild:contract && ava",
+    "lint:eslint": "yarn run -T eslint .",
+    "lint:types": "tsc",
+    "test:c8": "c8 --all $C8_OPTIONS ava",
+    "test:xs": "exit 0",
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint": "yarn run -T run-s --continue-on-error 'lint:*'"
+  },
+  "ava": {
+    "extensions": {
+      "js": true,
+      "ts": "module"
+    },
+    "files": [
+      "test/**/*.test.*"
+    ],
+    "nodeArguments": [
+      "--loader=ts-blank-space/register",
+      "--no-warnings"
+    ],
+    "require": [
+      "@endo/init/debug.js"
+    ],
+    "timeout": "20m",
+    "workerThreads": false
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
+  "dependencies": {
+    "@agoric/cosmic-swingset": "workspace:*",
+    "@agoric/internal": "workspace:*",
+    "@agoric/orchestration": "workspace:*",
+    "@agoric/swingset-vat": "workspace:*",
+    "@agoric/telemetry": "workspace:*",
+    "@agoric/vats": "workspace:*",
+    "@agoric/xsnap": "workspace:*",
+    "@agoric/zoe": "workspace:*",
+    "@endo/errors": "^1.2.10",
+    "@endo/far": "^1.1.11",
+    "ava": "^5.3.0",
+    "node-fetch-cache": "^5.0.2",
+    "viem": "^2.28.1"
+  }
+}
