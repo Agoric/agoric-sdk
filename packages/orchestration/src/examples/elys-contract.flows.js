@@ -9,19 +9,28 @@ import {
   MsgLiquidStake,
   MsgLiquidStakeResponse,
   MsgRedeemStake,
+  MsgRedeemStakeResponse,
 } from '@agoric/cosmic-proto/stride/stakeibc/tx.js';
+import {
+  MsgLiquidStake as MsgLiquidStakeDym,
+  MsgLiquidStakeResponse as MsgLiquidStakeDymResponse,
+} from '@agoric/cosmic-proto/stride/stakedym/tx.js';
+import {
+  MsgRedeemStake as MsgRedeemStakeTia,
+  MsgRedeemStakeResponse as MsgRedeemStakeResponseTia,
+} from '@agoric/cosmic-proto/stride/staketia/tx.js';
 import { tryDecodeResponse } from '../utils/cosmos.js';
-import { denomHash } from '../utils/denomHash.js';
+import { denomHash, denomHashFromPath } from '../utils/denomHash.js';
 
 /**
  * @import {GuestInterface} from '@agoric/async-flow';
- * @import {Orchestrator, OrchestrationFlow} from '@agoric/orchestration';
+ * @import {Orchestrator, OrchestrationFlow, Bech32Address} from '@agoric/orchestration';
  * @import {SupportedHostChainShape, StrideStakingTapState} from './elys.contract.js';
  * @import {ChainHub} from '../exos/chain-hub.js';
  * @import {Passable} from '@endo/pass-style';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  * @import {VTransferIBCEvent} from '@agoric/vats';
- * @import {ChainAddress, OrchestrationAccount} from '@agoric/orchestration';
+ * @import {CosmosChainAddress, OrchestrationAccount} from '@agoric/orchestration';
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
  * @import {Guarded} from '@endo/exo';
  * @import {FeeConfigShape} from './elys-contract-type-gaurd.js';
@@ -54,28 +63,35 @@ export const makeICAHookAccounts = async (
     feeConfig,
   },
 ) => {
+  trace('Fetching all chains...');
   const allRemoteChains = await Promise.all(
     chainNames.map(n => orch.getChain(n)),
   );
-
+  trace('Fetching Agoric chainInfo...');
   // Agoric local account
   const agoric = await orch.getChain('agoric');
   const { chainId: agoricChainId, bech32Prefix: agoricBech32Prefix } =
     await agoric.getChainInfo();
+  trace('Creating local Agoric account...');
   const localAccount = await agoric.makeAccount();
   const localAccountAddress = localAccount.getAddress();
 
+  trace('Fetching Stride chainInfo...');
   // stride ICA account
   const stride = await orch.getChain('stride');
   const { chainId: strideChainId, bech32Prefix: strideBech32Prefix } =
     await stride.getChainInfo();
+  trace('Creating stride ICA account...');
   const strideICAAccount = await stride.makeAccount();
   const strideICAAddress = strideICAAccount.getAddress();
 
+  trace('Fetching Elys chainInfo...');
   // Elys ICA account
   const elys = await orch.getChain('elys');
   const { chainId: elysChainId, bech32Prefix: elysBech32Prefix } =
     await elys.getChainInfo();
+  trace('Creating Elys ICA account...');
+
   const elysICAAccount = await elys.makeAccount();
   const elysICAAddress = elysICAAccount.getAddress();
 
@@ -84,10 +100,12 @@ export const makeICAHookAccounts = async (
   const { transferChannel: transferChannelStrideElys } =
     await chainHub.getConnectionInfo(strideChainId, elysChainId);
 
+  trace('Connecting with all supported chanins...');
   // ICA account on all the supported host chains
   for (const [_index, remoteChain] of allRemoteChains.entries()) {
     const chainInfo = await remoteChain.getChainInfo();
     const { chainId, stakingTokens, bech32Prefix } = chainInfo;
+    trace(`Updating data for ${chainId}...`);
     stakingTokens || Fail`${chainId} does not have stakingTokens in config`;
 
     const nativeDenom = stakingTokens[0].denom;
@@ -107,12 +125,16 @@ export const makeICAHookAccounts = async (
       await chainHub.getConnectionInfo(chainId, strideChainId);
 
     const ibcDenomOnAgoric = `ibc/${denomHash({ denom: nativeDenom, channelId: transferChannel.channelId })}`;
-    const ibcDenomOnStride = `ibc/${denomHash({ denom: nativeDenom, channelId: transferChannelhostStride.channelId })}`;
+    const ibcDenomOnStride = `ibc/${denomHash({ denom: nativeDenom, channelId: transferChannelhostStride.counterPartyChannelId })}`;
 
     // Required in retrieving native token back from stTokens on elys chain
-    const stTokenDenomOnElys = `ibc/${denomHash({ denom: `st${nativeDenom}`, channelId: transferChannelStrideElys.channelId })}`;
+    const stTokenDenomShownOnAgoricFromElys = `transfer/${transferChannelStrideElys.counterPartyChannelId}/st${nativeDenom}`;
+    trace(
+      'stToken denom on elys chain stTokenDenomShownOnAgoricFromElys: ',
+      stTokenDenomShownOnAgoricFromElys,
+    );
     stDenomOnElysTohostToAgoricChannelMap.init(
-      stTokenDenomOnElys,
+      stTokenDenomShownOnAgoricFromElys,
       transferChannel.counterPartyChannelId,
     );
 
@@ -165,11 +187,11 @@ harden(makeICAHookAccounts);
  * @param {object} ctx
  * @param {VTransferIBCEvent & Passable} incomingIbcTransferEvent
  * @param {OrchestrationAccount<{ chainId: string }> & Passable} localAccount
- * @param {ChainAddress} localAccountAddress
+ * @param {CosmosChainAddress} localAccountAddress
  * @param {OrchestrationAccount<{ chainId: string }> & Passable} strideICAAccount
- * @param {ChainAddress} strideICAAddress
+ * @param {CosmosChainAddress} strideICAAddress
  * @param {OrchestrationAccount<{ chainId: string }> & Passable} elysICAAccount
- * @param {ChainAddress} elysICAAddress
+ * @param {CosmosChainAddress} elysICAAddress
  * @param {MapStore<string, SupportedHostChainShape>} supportedHostChains
  * @param {string} elysToAgoricChannel
  * @param {string} AgoricToElysChannel
@@ -199,6 +221,7 @@ export const tokenMovementAndStrideLSDFlow = async (
   elysBech32Prefix,
   feeConfig,
 ) => {
+  trace("Calling tokenMovementAndStrideLSDFlow ");
   // Look for interested incoming tokens
   // Either supported chains Staking denoms or stTokens from elys chain
   const stakeToStride = supportedHostChains.has(
@@ -280,6 +303,7 @@ export const tokenMovementAndStrideLSDFlow = async (
 
     // Move to host chain ICA account
     try {
+      trace('Moving tokens to host-chain from agoric chain');
       await moveToHostChain(
         localAccount,
         hostChainInfo.hostICAAccountAddress,
@@ -296,11 +320,12 @@ export const tokenMovementAndStrideLSDFlow = async (
       );
       return;
     }
+
     // Move to stride ICA from host ICA account
     const senderHostChainAddress = {
       chainId: hostChainInfo.hostICAAccountAddress.chainId,
       encoding: hostChainInfo.hostICAAccountAddress.encoding,
-      value: tx.sender,
+      value: convertToBech32Address(tx.sender),
     };
     try {
       trace('Moving tokens to stride from host-chain');
@@ -318,15 +343,20 @@ export const tokenMovementAndStrideLSDFlow = async (
       );
       return;
     }
+
+    const liquidStakeDym = hostChainInfo.nativeDenom === 'adym';
+
     // Liquid stake on stride chain
     /** @type {MsgLiquidStakeResponse} */
     let stakingResponse;
     try {
+      trace('Calling Liquid stake on stride');
       stakingResponse = await liquidStakeOnStride(
         strideICAAccount,
         strideICAAddress,
         amountAfterFeeDeduction,
         tx.denom,
+        liquidStakeDym,
       );
     } catch (error) {
       await handleTransferFailure(
@@ -369,7 +399,7 @@ export const tokenMovementAndStrideLSDFlow = async (
       return;
     }
 
-    const ibcDenomOnAgoricFromElys = `ibc/${denomHash({ denom: `${tx.denom}`, channelId: AgoricToElysChannel })}`;
+    const ibcDenomOnAgoricFromElys = `ibc/${denomHash({ denom: tx.denom, channelId: AgoricToElysChannel })}`;
     trace(`LiquidStakeRedeem: Received ${tx.denom}`);
     trace(`LiquidStakeRedeem: Moving ${ibcDenomOnAgoricFromElys} to elys ICA`);
 
@@ -408,7 +438,7 @@ export const tokenMovementAndStrideLSDFlow = async (
     // Transfer to stride from elys ICA
     try {
       await elysICAAccount.transfer(strideICAAddress, {
-        denom: tx.denom,
+        denom: `ibc/${denomHashFromPath(tx.denom)}`,
         value: amountAfterFeeDeduction,
       });
     } catch (error) {
@@ -431,10 +461,10 @@ export const tokenMovementAndStrideLSDFlow = async (
         `Derived Native address from elys address ${tx.sender} is ${senderNativeAddress}`,
       );
 
-      await redeemOnStride(
+      const _ = await redeemOnStride(
         strideICAAccount,
         strideICAAddress,
-        tx.amount,
+        `${amountAfterFeeDeduction}`,
         hostChain.hostICAAccountAddress.chainId,
         senderNativeAddress,
       );
@@ -460,7 +490,7 @@ harden(deriveAddress);
 
 /**
  * @param {OrchestrationAccount<any>} account
- * @param {ChainAddress} address
+ * @param {CosmosChainAddress} address
  * @param {string} denom
  * @param {bigint} amount
  * @param {string} traceMessage
@@ -489,7 +519,7 @@ const handleTransferFailure = async (
 harden(handleTransferFailure);
 /**
  * @param {OrchestrationAccount<{ chainId: string }>} localAccount
- * @param {ChainAddress} hostICAAccountAddress
+ * @param {CosmosChainAddress} hostICAAccountAddress
  * @param {string} ibcDenomOnAgoric
  * @param {bigint} amount
  */
@@ -513,7 +543,7 @@ const moveToHostChain = async (
 harden(moveToHostChain);
 /**
  * @param {OrchestrationAccount<{ chainId: string }>} strideICAAccount
- * @param {ChainAddress} strideICAAddress
+ * @param {CosmosChainAddress} strideICAAddress
  * @param {bigint} amount
  * @param {string} denom
  * @returns {Promise<MsgLiquidStakeResponse>}
@@ -523,8 +553,9 @@ const liquidStakeOnStride = async (
   strideICAAddress,
   amount,
   denom,
+  stakeDym,
 ) => {
-  const strideLiquidStakeMsg = Any.toJSON(
+  let strideLiquidStakeMsg = Any.toJSON(
     MsgLiquidStake.toProtoMsg({
       creator: strideICAAddress.value,
       amount: amount.toString(),
@@ -532,19 +563,32 @@ const liquidStakeOnStride = async (
     }),
   );
 
+  if (stakeDym) {
+    trace('Liquid staking Dym token');
+    strideLiquidStakeMsg = Any.toJSON(
+      MsgLiquidStakeDym.toProtoMsg({
+        staker: strideICAAddress.value,
+        nativeAmount: amount.toString(),
+      }),
+    );
+  }
+
   trace('Calling liquid stake');
   const stakingResponse = await strideICAAccount.executeEncodedTx([
     strideLiquidStakeMsg,
   ]);
-  return harden(
-    tryDecodeResponse(stakingResponse, MsgLiquidStakeResponse.fromProtoMsg),
-  );
+
+  const responseDecoder = stakeDym
+    ? MsgLiquidStakeDymResponse.fromProtoMsg
+    : MsgLiquidStakeResponse.fromProtoMsg;
+
+  return harden(tryDecodeResponse(stakingResponse, responseDecoder));
 };
 harden(liquidStakeOnStride);
 
 /**
  * @param {OrchestrationAccount<{ chainId: string }>} strideICAAccount
- * @param {ChainAddress} senderElysChainAddress
+ * @param {CosmosChainAddress} senderElysChainAddress
  * @param {Coin} stToken
  */
 const moveStTokensToElys = async (
@@ -562,7 +606,7 @@ harden(moveStTokensToElys);
 
 /**
  * @param {OrchestrationAccount<{ chainId: string }>} strideICAAccount
- * @param {ChainAddress} strideICAAddress
+ * @param {CosmosChainAddress} strideICAAddress
  * @param {string} amount
  * @param {string} hostZone
  * @param {string} receiver
@@ -575,7 +619,7 @@ const redeemOnStride = async (
   hostZone,
   receiver,
 ) => {
-  const strideRedeemStakeMsg = Any.toJSON(
+  let strideRedeemStakeMsg = Any.toJSON(
     MsgRedeemStake.toProtoMsg({
       creator: strideICAAddress.value,
       amount,
@@ -587,7 +631,10 @@ const redeemOnStride = async (
   // https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
   await null;
 
-  await strideICAAccount.executeEncodedTx([strideRedeemStakeMsg]);
+  const redeemResponse = await strideICAAccount.executeEncodedTx([
+    strideRedeemStakeMsg,
+  ]);
+  trace('Redeem response: ', redeemResponse);
 };
 harden(redeemOnStride);
 
@@ -609,11 +656,11 @@ const deductedFeeAmount = async (
   let feeAmount;
   if (onBoard) {
     feeAmount =
-      (amount * feeConfig.onBoardRate.nominator) /
+      (amount * feeConfig.onBoardRate.numerator) /
       feeConfig.onBoardRate.denominator;
   } else {
     feeAmount =
-      (amount * feeConfig.offBoardRate.nominator) /
+      (amount * feeConfig.offBoardRate.numerator) /
       feeConfig.offBoardRate.denominator;
   }
 
@@ -625,7 +672,7 @@ const deductedFeeAmount = async (
   const feeReceiverChainAddress = {
     chainId: account.getAddress().chainId,
     encoding: account.getAddress().encoding,
-    value: feeConfig.feeCollector,
+    value: convertToBech32Address(feeConfig.feeCollector),
   };
 
   trace(`sending fee amount ${feeAmount} to ${feeConfig.feeCollector}`);
@@ -636,3 +683,15 @@ const deductedFeeAmount = async (
   trace('fee sent to fee collector');
   return harden(finalAmount);
 };
+
+/**
+ * Splits a string into two halves at the first occurrence of '1'.
+ *
+ * @param {string} input
+ * @returns {Bech32Address}
+ */
+const convertToBech32Address = input => {
+  const index = input.indexOf('1');
+  return `${input.slice(0, index)}1${input.slice(index + 1)}`;
+};
+harden(convertToBech32Address);

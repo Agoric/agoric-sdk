@@ -30,7 +30,7 @@ const interfaceTODO = undefined;
  * @import {IBCChannelID, VTransferIBCEvent} from '@agoric/vats';
  * @import {Zone} from '@agoric/zone';
  * @import {TargetApp} from '@agoric/vats/src/bridge-target.js';
- * @import {ChainAddress, OrchestrationAccount, Orchestrator} from '@agoric/orchestration';
+ * @import {CosmosChainAddress, OrchestrationAccount, Orchestrator} from '@agoric/orchestration';
  * @import {TypedPattern} from '@agoric/internal';
  * @import {OrchestrationTools, OrchestrationPowers} from '../utils/start-helper.js';
  * @import {Passable} from '@endo/pass-style'
@@ -43,7 +43,7 @@ const interfaceTODO = undefined;
  *   ibcDenomOnAgoric: string;
  *   ibcDenomOnStride: string;
  *   hostICAAccount: OrchestrationAccount<any>;
- *   hostICAAccountAddress: ChainAddress;
+ *   hostICAAccountAddress: CosmosChainAddress;
  *   bech32Prefix: string;
  * }} SupportedHostChainShape
  */
@@ -61,11 +61,11 @@ harden(SupportedHostChainShape);
 /**
  * @typedef {{
  *   localAccount: OrchestrationAccount<{ chainId: string }>;
- *   localAccountAddress: ChainAddress;
+ *   localAccountAddress: CosmosChainAddress;
  *   strideICAAccount: OrchestrationAccount<{ chainId: string }>;
- *   strideICAAddress: ChainAddress;
+ *   strideICAAddress: CosmosChainAddress;
  *   elysICAAccount: OrchestrationAccount<{ chainId: string }>;
- *   elysICAAddress: ChainAddress;
+ *   elysICAAddress: CosmosChainAddress;
  *   supportedHostChains: MapStore<string, SupportedHostChainShape>;
  *   elysToAgoricChannel: IBCChannelID;
  *   AgoricToElysChannel: IBCChannelID;
@@ -116,16 +116,18 @@ const contract = async (
   zone,
   tools, // orchestration tools
 ) => {
+  trace('Instantiating ElysContract');
   const isValid = validateFeeConfigShape(privateArgs.feeConfig);
   if (!isValid) {
     throw Fail`Invalid fee config`;
   }
-
+  trace('Fee is valid moving further...');
+  
   const { chainHub, orchestrateAll, vowTools } = tools;
-
+  
   /**
    * Provides a {@link TargetApp} that reacts to an incoming IBC transfer.
-   */
+  */
   const makeStrideStakingTap = zone.exoClass(
     'StrideStakingTapKit',
     // Taps ibc transfer and start the stake/unstake to/from stride
@@ -185,19 +187,20 @@ const contract = async (
   });
 
   
-
+  trace('Registering Chains and assets...');
   registerChainsAndAssets(
     chainHub,
     zcf.getTerms().brands,
     privateArgs.chainInfo,
     privateArgs.assetInfo,
   );
-
+  trace('Chains and assets are registered, moving further...');
   const passablesupportedHostChains = zone.mapStore('supportedHostChains');
   const stDenomOnElysTohostToAgoricChannelMap = zone.mapStore(
     'stDenomOnElysToHostChannelMap',
   );
 
+  trace('Creating ICA account...');
   const icaAndLocalAccount = zone.makeOnce('icaAndLocalAccount', _key =>
     orchFns.makeICAHookAccounts({
       chainNames: privateArgs.allowedChains,
@@ -206,6 +209,7 @@ const contract = async (
       feeConfig: privateArgs.feeConfig,
     }),
   );
+  trace('ICA accounts created...');
 
   // set local account address in storage node
   const { when } = vowTools;

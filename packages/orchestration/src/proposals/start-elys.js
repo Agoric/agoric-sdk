@@ -57,15 +57,15 @@ export const startElys = async (
   const feeConfig = {
     feeCollector: 'agoric1euw2t0lxgeerlpj0tcy77f9syrmgx26ehdx3sq',
     onBoardRate: {
-      nominator: BigInt(20),
+      numerator: BigInt(20),
       denominator: BigInt(100),
     }, // 20%
     offBoardRate: {
-      nominator: BigInt(10),
+      numerator: BigInt(10),
       denominator: BigInt(100),
     }, // 10%
   };
-  const allowedChains = ['cosmoshub'];
+  const allowedChains = ['cosmoshub','celestia'];
 
   /** @type {StartUpgradableOpts<ElysContract>} */
   const startOpts = {
@@ -90,8 +90,11 @@ export const startElys = async (
   };
 
   const { instance, creatorFacet } = await E(startUpgradable)(startOpts);
+  trace('elys instance created');
   const addressNode = await E(storageNode).makeChildNode('address');
+  trace('elys address node created');
   const address = await E(creatorFacet).getLocalAddress();
+  trace('elys address fetched', address);
   await E(addressNode).setValue( JSON.stringify(address) );
 
   produceInstance.resolve(instance);
