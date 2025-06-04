@@ -413,7 +413,7 @@ jobs:
           script: |
             const previousSuccess = ${{ needs.pre_check.outputs.previous_success }};
             let gettingStartedTestSuccess = "${{ needs.getting-started.result }}" === "success";
-            if (!env.ENABLE_GETTING_STARTED && !gettingStartedTestSuccess) {
+            if (!process.env.ENABLE_GETTING_STARTED && !gettingStartedTestSuccess) {
               // Accept skipped getting-started as success.
               gettingStartedTestSuccess = "${{ needs.getting-started.result }}" === "skipped";
             }
