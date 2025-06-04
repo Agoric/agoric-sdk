@@ -42,7 +42,7 @@ jobs:
     uses: ./.github/workflows/pre-check-integration.yml
 
   getting-started-flag:
-      needs: pre_check
+    needs: pre_check
     if: needs.pre_check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     outputs:
