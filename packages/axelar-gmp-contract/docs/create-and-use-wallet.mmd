@@ -1,0 +1,30 @@
+sequenceDiagram
+  participant AgoricUser as Agoric Account
+  participant AxelarGMPContract as Axelar GMP Contract
+  participant EVMAccountKit as EVM Account Kit
+
+  participant Axelar as Axelar Network
+
+
+  %% participant IBCRelayer as IBC Relayer (Agoric to Axelar)
+  %% participant EvmRelayer as EVM Relayer
+
+  participant Factory as Wallet Factory Contract
+  participant Wallet as Wallet Contract Instance
+  participant ArbitraryContract as Arbitrary Contract
+
+
+  %% Wallet creation flow
+  AgoricUser->>AxelarGMPContract: createAndMonitorLCA()<br>Create a new EVMAccountKit
+  AxelarGMPContract->>EVMAccountKit: prepareEvmAccountKit()<br>Instantiates EVMAccountKit
+  EVMAccountKit->>AgoricUser: Return EvmAccountKit object with address agoric1XXX
+  EVMAccountKit-->>Axelar: Send Message to create remote EVM wallet
+  Axelar-->>Factory: Make call to create a new wallet for agoric1XXX
+  Factory-->>Wallet: Instantiate new wallet
+  Wallet-->>EVMAccountKit: Return wallet address 0x123...
+  
+  %% Wallet user flow
+  AgoricUser->>EVMAccountKit: Make request to invoke an arbitrary contract on EVM
+  EVMAccountKit->>Axelar: Send Message to Wallet instance with address 0x123...
+  Axelar->>Wallet: Send message to execute an arbitrary contract
+  Wallet->>ArbitraryContract: Execute Arbitrary Contract

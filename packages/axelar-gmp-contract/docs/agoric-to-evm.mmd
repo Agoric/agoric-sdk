@@ -1,0 +1,22 @@
+sequenceDiagram
+    participant AgoricUser as Agoric Local Chain Account(LCA)
+    participant IBCRelayer as IBC Relayer (Agoric to Axelar)
+    participant Axelar as Axelar Network
+    participant EvmRelayer as EVM Relayer
+    participant AxelarGatewayEth as Axelar Gateway (Ethereum)
+    participant TargetContract as Target Ethereum Contract
+
+    note left of IBCRelayer: IBC Memo:<br>{ destinationChain, destinationAddress, type, payload, fee }
+
+    %% Flow starts
+    AgoricUser->>IBCRelayer: Execute IBC Transaction
+    IBCRelayer->>Axelar: Sends transaction
+    Axelar->>EvmRelayer: Emits Event
+    EvmRelayer->>AxelarGatewayEth: Exceutes callContract function
+    AxelarGatewayEth->>TargetContract: execute(sourceChain, sourceAddress, payload)
+
+    TargetContract->>AxelarGatewayEth: gateway.callContract(destinationChain, destinationAddress, payload)
+    AxelarGatewayEth->>EvmRelayer: Emits a CallContract event
+    EvmRelayer->>Axelar: Passes the message to Axelar
+    Axelar->>IBCRelayer: Approves message <br>and sends an IBC transaction
+    IBCRelayer->>AgoricUser: Sends transaction
