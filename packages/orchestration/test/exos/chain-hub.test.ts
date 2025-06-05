@@ -7,10 +7,8 @@ import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { E } from '@endo/far';
 import cctpChainInfo from '../../src/cctp-chain-info.js';
-import {
-  registerChainAssets,
-  registerKnownChains,
-} from '../../src/chain-info.js';
+import { registerKnownChains } from '../../src/chain-info.js';
+import { registerChainAssets } from '../../src/chain-name-service.js';
 import type {
   Bech32Address,
   CosmosChainInfo,

@@ -6,7 +6,7 @@ import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { E } from '@endo/far';
 import { mustMatch } from '@endo/patterns';
-import { registerChain } from '../../src/chain-info.js';
+import { registerChain } from '../../src/chain-name-service.js';
 import type {
   CosmosChainInfo,
   IBCConnectionInfo,
