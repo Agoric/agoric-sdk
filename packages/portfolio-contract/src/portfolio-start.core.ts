@@ -56,6 +56,9 @@ export const startPortfolio = async (
   });
 };
 
+// XXX grr... esbuild is garbling to '$c͏_startPortfolio'
+const startName = 'startPortfolio';
+
 // XXX hm... we need to preserve the function name.
 export const getManifestForPortfolio = (u, d) =>
-  makeGetManifest(startPortfolio, permit, meta.name)(u, d);
+  makeGetManifest({ name: startName }, permit, meta.name)(u, d);
