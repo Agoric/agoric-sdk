@@ -8,6 +8,7 @@
     "test": "echo 'Run specific test suites: `main`, `queries`, `staking`, `fast-usdc`\nyarn test:main (needs `make start`)\nyarn test:fast-usdc (needs `make start FILE=config.fusdc.yaml`)'",
     "test:main": "ava --config ava.rest.config.js",
     "test:fast-usdc": "ava --config ava.fusdc.config.js",
+    "test:portfolio": "ava --config ava.portfolio.config.js",
     "test:queries": "ava --config ava.queries.config.js",
     "test:staking": "ava --config ava.staking.config.js",
     "test:xcs": "ava --config ava.xcs.config.js"
