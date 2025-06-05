@@ -138,6 +138,8 @@ export const createAndMonitorLCA = async (
   }
 
   seat.exit();
+  // TODO: When used from the portfolio contract, expose the `holder` facet directly
+  // to bypass Zoe and walletFactory, since smart wallet constraints don't apply there.
   return harden({ invitationMakers: evmAccountKit.invitationMakers });
 };
 harden(createAndMonitorLCA);
