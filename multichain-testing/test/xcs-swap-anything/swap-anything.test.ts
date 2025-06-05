@@ -214,16 +214,6 @@ test.serial('BLD for OSMO, receiver on Agoric', async t => {
 
   const makeAccountOfferId = `swap-ubld-uosmo-${Date.now()}`;
 
-  /* This log message is intended to inform the developer of the behavior described
-   * on issue: https://github.com/Agoric/BytePitchPartnerEng/issues/54.
-   * XXX This log should be removed once the underlying issue is resolved.
-   */
-  console.log(
-    "The following error ('Error: One or more withdrawals failed...') can be safely ignored.",
-    '\n',
-    'See issue: https://github.com/Agoric/BytePitchPartnerEng/issues/54 for more details',
-  );
-
   await doOffer({
     id: makeAccountOfferId,
     invitationSpec: {
@@ -251,7 +241,17 @@ test.serial('BLD for OSMO, receiver on Agoric', async t => {
     issuerChain: 'osmosis',
     denom: 'uosmo',
   });
-  t.pass();
+
+  const offerResult = await retryUntilCondition(
+    () => vstorageClient.queryData(`published.wallet.${agoricAddr}`),
+    ({ status }) =>
+      status.id === makeAccountOfferId &&
+      status.result &&
+      status.error === undefined,
+    `${makeAccountOfferId} offer result is in vstorage`,
+  );
+
+  t.is(offerResult.status.result, 'transfer complete, seat exited');
 });
 
 // FLAKE: fails when run in isolation (.only)
@@ -292,16 +292,6 @@ test.serial('OSMO for BLD, receiver on Agoric', async t => {
 
   const { crosschain_swaps } = getContractsInfo();
 
-  /* This log message is intended to inform the developer of the behavior described
-   * on issue: https://github.com/Agoric/BytePitchPartnerEng/issues/54.
-   * XXX This log should be removed once the underlying issue is resolved.
-   */
-  console.log(
-    "The following error ('Error: One or more withdrawals failed...') can be safely ignored.",
-    '\n',
-    'See issue: https://github.com/Agoric/BytePitchPartnerEng/issues/54 for more details',
-  );
-
   // Send swap offer
   const makeAccountOfferId = `swap-ubld-uosmo-${Date.now()}`;
   await doOffer({
@@ -335,7 +325,17 @@ test.serial('OSMO for BLD, receiver on Agoric', async t => {
     },
     'BLD not received by the receiver',
   );
-  t.pass();
+
+  const offerResult = await retryUntilCondition(
+    () => vstorageClient.queryData(`published.wallet.${agoricAddr}`),
+    ({ status }) =>
+      status.id === makeAccountOfferId &&
+      status.result &&
+      status.error === undefined,
+    `${makeAccountOfferId} offer result is in vstorage`,
+  );
+
+  t.is(offerResult.status.result, 'transfer complete, seat exited');
 });
 
 test.serial('BLD for OSMO, receiver on CosmosHub', async t => {
@@ -377,16 +377,6 @@ test.serial('BLD for OSMO, receiver on CosmosHub', async t => {
   const bldBrand = Object.fromEntries(brands).BLD;
   const swapInAmount = AmountMath.make(bldBrand, 125n);
 
-  /* This log message is intended to inform the developer of the behavior described
-   * on issue: https://github.com/Agoric/BytePitchPartnerEng/issues/54.
-   * XXX This log should be removed once the underlying issue is resolved.
-   */
-  console.log(
-    "The following error ('Error: One or more withdrawals failed...') can be safely ignored.",
-    '\n',
-    'See issue: https://github.com/Agoric/BytePitchPartnerEng/issues/54 for more details',
-  );
-
   // Send swap offer
   const makeAccountOfferId = `swap-ubld-uosmo-${Date.now()}`;
   await doOffer({
@@ -420,8 +410,16 @@ test.serial('BLD for OSMO, receiver on CosmosHub', async t => {
     denom: 'uosmo',
   });
 
-  // test will fail if waitUntilIbcTransfer does not observe a balance increase
-  t.pass();
+  const offerResult = await retryUntilCondition(
+    () => vstorageClient.queryData(`published.wallet.${agoricAddr}`),
+    ({ status }) =>
+      status.id === makeAccountOfferId &&
+      status.result &&
+      status.error === undefined,
+    `${makeAccountOfferId} offer result is in vstorage`,
+  );
+
+  t.is(offerResult.status.result, 'transfer complete, seat exited');
 });
 
 test.serial(
@@ -458,16 +456,6 @@ test.serial(
     );
 
     const { crosschain_swaps } = getContractsInfo();
-
-    /* This log message is intended to inform the developer of the behavior described
-     * on issue: https://github.com/Agoric/BytePitchPartnerEng/issues/54.
-     * XXX This log should be removed once the underlying issue is resolved.
-     */
-    console.log(
-      "The following error ('Error: One or more withdrawals failed...') can be safely ignored.",
-      '\n',
-      'See issue: https://github.com/Agoric/BytePitchPartnerEng/issues/54 for more details',
-    );
 
     // Send swap offer
     const makeAccountOfferId = `swap-ubld-uosmo-${Date.now()}`;
@@ -796,16 +784,6 @@ test.serial('BLD for ATOM on Osmosis, receiver on Agoric', async t => {
 
   const { crosschain_swaps } = getContractsInfo();
 
-  /* This log message is intended to inform the developer of the behavior described
-   * on issue: https://github.com/Agoric/BytePitchPartnerEng/issues/54.
-   * XXX This log should be removed once the underlying issue is resolved.
-   */
-  console.log(
-    "The following error ('Error: One or more withdrawals failed...') can be safely ignored.",
-    '\n',
-    'See issue: https://github.com/Agoric/BytePitchPartnerEng/issues/54 for more details',
-  );
-
   const makeAccountOfferId = `swap-ubld-uosmo-${Date.now()}`;
   await doOffer({
     id: makeAccountOfferId,
@@ -835,8 +813,16 @@ test.serial('BLD for ATOM on Osmosis, receiver on Agoric', async t => {
     denom: 'uatom',
   });
 
-  // test will fail if waitUntilIbcTransfer does not observe a balance increase
-  t.pass();
+  const offerResult = await retryUntilCondition(
+    () => vstorageClient.queryData(`published.wallet.${agoricAddr}`),
+    ({ status }) =>
+      status.id === makeAccountOfferId &&
+      status.result &&
+      status.error === undefined,
+    `${makeAccountOfferId} offer result is in vstorage`,
+  );
+
+  t.is(offerResult.status.result, 'transfer complete, seat exited');
 });
 
 test.after(async t => {
