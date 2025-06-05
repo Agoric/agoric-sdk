@@ -23,11 +23,11 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@aglocal/boot": "^0.1.0",
-    "@agoric/cosmic-swingset": "^0.41.3",
-    "@agoric/inter-protocol": "^0.16.1",
-    "@agoric/internal": "^0.3.2",
-    "@agoric/vats": "^0.15.1",
-    "@agoric/zoe": "^0.26.2",
+    "@agoric/cosmic-swingset": "workspace:*",
+    "@agoric/inter-protocol": "workspace:*",
+    "@agoric/internal": "workspace:*",
+    "@agoric/vats": "workspace:*",
+    "@agoric/zoe": "workspace:*",
     "@endo/errors": "^1.2.10",
     "@endo/init": "^1.1.9"
   },

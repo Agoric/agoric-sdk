@@ -13,6 +13,7 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
+    "test:c8": "c8 --all $C8_OPTIONS ava",
     "test:xs": "SWINGSET_WORKER_TYPE=xs-worker ava",
     "test:xs-worker": "ava test/workers -m 'xsnap vat manager'",
     "lint-fix": "yarn lint:eslint --fix",
@@ -28,15 +29,15 @@
     "ava": "^5.3.0"
   },
   "dependencies": {
-    "@agoric/internal": "^0.3.2",
-    "@agoric/kmarshal": "^0.1.0",
-    "@agoric/store": "^0.9.2",
-    "@agoric/swing-store": "^0.9.1",
-    "@agoric/swingset-liveslots": "^0.10.2",
-    "@agoric/swingset-xsnap-supervisor": "^0.10.2",
-    "@agoric/time": "^0.3.2",
-    "@agoric/vat-data": "^0.5.2",
-    "@agoric/xsnap-lockdown": "^0.14.0",
+    "@agoric/internal": "workspace:*",
+    "@agoric/kmarshal": "workspace:*",
+    "@agoric/store": "workspace:*",
+    "@agoric/swing-store": "workspace:*",
+    "@agoric/swingset-liveslots": "workspace:*",
+    "@agoric/swingset-xsnap-supervisor": "workspace:*",
+    "@agoric/time": "workspace:*",
+    "@agoric/vat-data": "workspace:*",
+    "@agoric/xsnap-lockdown": "workspace:*",
     "@endo/base64": "^1.0.9",
     "@endo/bundle-source": "^4.0.0",
     "@endo/captp": "^4.4.5",
@@ -65,7 +66,7 @@
     "yargs-parser": "^21.1.1"
   },
   "peerDependencies": {
-    "@agoric/xsnap": "^0.14.2",
+    "@agoric/xsnap": "workspace:*",
     "ava": "^5.3.0"
   },
   "files": [

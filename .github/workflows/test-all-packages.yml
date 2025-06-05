@@ -99,6 +99,7 @@ jobs:
   # A second job for what's not covered in primary
   lint-rest:
     runs-on: ubuntu-latest
+    needs: build
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
@@ -126,6 +127,29 @@ jobs:
         run: yarn docs
       - name: build API docs in markdown
         run: yarn docs:markdown-for-agoric-documentation-repo
+
+  # Build the package lockfiles, and check that they are clean.
+  check-lockfiles:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: 'node-new'
+
+      - name: Update package lockfiles
+        run: scripts/update-package-locks.sh || exit 0
+
+      - name: Check if lockfiles are changed
+        run: |
+          if bash ./.github/actions/restore-node/check-git-status.sh . false; then
+            echo "No changes to lockfiles detected."
+          else
+            echo "Changes to lockfiles detected!"
+            echo "Please run 'yarn build-lockfiles', commit the results, and push"
+            exit 1
+          fi
 
   ##################
   # Fast-running tests run as a group:
@@ -179,6 +203,9 @@ jobs:
       - name: yarn test (orchestration)
         if: (success() || failure())
         run: cd packages/orchestration && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (portfolio-contract)
+        if: (success() || failure())
+        run: cd packages/portfolio-contract && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (sparse-ints)
         if: (success() || failure())
         run: cd packages/sparse-ints && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT

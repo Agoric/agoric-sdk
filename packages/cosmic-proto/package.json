@@ -100,6 +100,14 @@
       "types": "./dist/codegen/icq/v1/packet.d.ts",
       "default": "./dist/codegen/icq/v1/packet.js"
     },
+    "./noble/dollar/vaults/v1/tx.js": {
+      "types": "./dist/codegen/noble/dollar/vaults/v1/tx.d.ts",
+      "default": "./dist/codegen/noble/dollar/vaults/v1/tx.js"
+    },
+    "./noble/swap/v1/tx.js": {
+      "types": "./dist/codegen/noble/swap/v1/tx.d.ts",
+      "default": "./dist/codegen/noble/swap/v1/tx.js"
+    },
     "./stride/stakedym/tx.js": {
       "types": "./dist/codegen/stride/stakedym/tx.d.ts",
       "default": "./dist/codegen/stride/stakedym/tx.js"
@@ -164,7 +172,7 @@
     "access": "public"
   },
   "devDependencies": {
-    "@agoric/cosmos": "^0.34.1",
+    "@agoric/cosmos": "workspace:*",
     "@ava/typescript": "^5.0.0",
     "@cosmology/telescope": "^1.12.8",
     "@endo/bundle-source": "^4.0.0",

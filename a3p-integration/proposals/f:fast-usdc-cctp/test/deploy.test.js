@@ -25,8 +25,8 @@ test('accounts', async t => {
 });
 
 test(`fastUsdc incarnation reflects cctp`, async t => {
-  const history = { beta: 0, rc1: 1, gtm: 2, cctp: 3 };
-  t.is(await getIncarnation('fastUsdc'), history.cctp);
+  const history = { beta: 0, rc1: 1, gtm: 2, cctpBeta: 3, cctpGtm: 4 };
+  t.is(await getIncarnation('fastUsdc'), history.cctpGtm);
 });
 
 test('feedPolicy updated for GTM', async t => {
