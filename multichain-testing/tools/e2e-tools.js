@@ -662,6 +662,11 @@ export const seatLike = updates => {
       // XXX an error here is somehow and unhandled rejection
       for await (const update of updates) {
         if (update.updated !== 'offerStatus') continue;
+        if ('error' in update.status) {
+          sync.result.reject(update.status.error);
+          sync.payouts.reject(update.status.error);
+          return;
+        }
         const { result, payouts } = update.status;
         if ('result' in update.status) sync.result.resolve(result);
         if ('payouts' in update.status && payouts) {
