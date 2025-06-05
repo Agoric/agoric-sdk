@@ -25,6 +25,8 @@ export type AxelarFeeObject = {
   recipient: Bech32Address;
 };
 
+// NOTE: If you make any changes to this type, or to AxelarFeeObject and GMPMessageType,
+// be sure to update the corresponding section in the README to keep them in sync.
 export type AxelarGmpOutgoingMemo = {
   destination_chain: string;
   destination_address: string;
