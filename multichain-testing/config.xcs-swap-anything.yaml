@@ -9,6 +9,9 @@ chains:
     env:
       - name: DEBUG
         value: SwingSet:vat,SwingSet:ls
+      # CONFIG_FILE env is for scripts/update-config.sh
+      - name: CONFIG_FILE
+        value: 'config.xcs-swap-anything.yaml'
     genesis:
       app_state:
         staking:
