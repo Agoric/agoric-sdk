@@ -177,12 +177,21 @@ export const startOrchContract = async <
 };
 harden(startOrchContract);
 
-export const makeGetManifest = <CFG extends CopyRecord, P extends PermitG>(
+const DBG = (label, x) => {
+  console.log(label, x);
+  return x;
+};
+
+export const makeGetManifest = <
+  CFG extends CopyRecord,
+  P extends PermitG,
+  CN extends string,
+>(
   startFn: { name: string },
   permit: P,
-  contractName: string,
+  contractName: CN,
 ) => {
-  const getManifestForFastOrch = (
+  const getManifestForOrch = (
     {
       restoreRef,
     }: {
@@ -192,19 +201,20 @@ export const makeGetManifest = <CFG extends CopyRecord, P extends PermitG>(
       installKeys,
       options,
     }: {
-      installKeys: { fastUsdc: ERef<ManifestBundleRef> };
+      installKeys: Record<CN, ERef<ManifestBundleRef>>;
       options: LegibleCapData<CFG>;
     },
   ) => {
-    return {
+    DBG('@@@installKeys', installKeys);
+    return DBG('@@@getManifestForOrch returns', {
       manifest: { [startFn.name]: permit } satisfies BootstrapManifest,
       installations: { [contractName]: restoreRef(installKeys[contractName]) },
       options,
-    };
+    });
   };
-  harden(getManifestForFastOrch);
+  harden(getManifestForOrch);
 
-  return getManifestForFastOrch;
+  return getManifestForOrch;
 };
 
 export const orchPermit = {
