@@ -1,5 +1,7 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 
+console.warn('DEPRECATED in favor of chain-info.build.js');
+
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
 export const defaultProposalBuilder = async () =>
   harden({
