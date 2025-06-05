@@ -3,10 +3,7 @@ import { createRequire } from 'node:module';
 import type { TestFn } from 'ava';
 
 import { keyArrayEqual } from '@aglocal/boot/tools/supports.js';
-import {
-  makeCosmicSwingsetTestKit,
-  makeDefaultReceiveBridgeSend,
-} from '@agoric/cosmic-swingset/tools/test-kit.js';
+import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
 import { NonNullish } from '@agoric/internal';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { PowerFlags } from '@agoric/vats/src/walletFlags.js';
@@ -16,16 +13,13 @@ const { keys } = Object;
 const { resolve: resolvePath } = createRequire(import.meta.url);
 
 const makeDefaultTestContext = async () => {
-  const testkit = await makeCosmicSwingsetTestKit(
-    makeDefaultReceiveBridgeSend(),
-    {
-      configOverrides: NonNullish(
-        await loadSwingsetConfigFile(
-          resolvePath('@agoric/vm-config/decentral-demo-config.json'),
-        ),
+  const testkit = await makeCosmicSwingsetTestKit({
+    configOverrides: NonNullish(
+      await loadSwingsetConfigFile(
+        resolvePath('@agoric/vm-config/decentral-demo-config.json'),
       ),
-    },
-  );
+    ),
+  });
   await testkit.runNextBlock();
 
   return testkit;

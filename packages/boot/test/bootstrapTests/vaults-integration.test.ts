@@ -6,7 +6,7 @@ import type { TestFn } from 'ava';
 import { makeWalletFactoryDriver } from '@aglocal/boot/tools/drivers.js';
 import {
   makeCosmicSwingsetTestKit,
-  makeDefaultReceiveBridgeSend,
+  makeMockBridgeKit,
 } from '@agoric/cosmic-swingset/tools/test-kit.js';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import type { ParamChangesOfferArgs } from '@agoric/inter-protocol/src/econCommitteeCharter.js';
@@ -29,28 +29,22 @@ const { resolve: resolvePath } = createRequire(import.meta.url);
 const collateralBrandKey = 'ATOM';
 
 const likePayouts = (collateral: number, minted: number) => ({
-  Collateral: {
-    value: BigInt(collateral * 1_000_000),
-  },
-  Minted: {
-    value: BigInt(minted * 1_000_000),
-  },
+  Collateral: { value: BigInt(collateral * 1_000_000) },
+  Minted: { value: BigInt(minted * 1_000_000) },
 });
 
 const makeDefaultTestContext = async () => {
   console.time('DefaultTestContext');
 
   const storage = makeFakeStorageKit('bootstrapTests');
-  const swingsetTestKit = await makeCosmicSwingsetTestKit(
-    makeDefaultReceiveBridgeSend(storage),
-    {
-      configOverrides: NonNullish(
-        await loadSwingsetConfigFile(
-          resolvePath('@agoric/vm-config/decentral-itest-vaults-config.json'),
-        ),
+  const swingsetTestKit = await makeCosmicSwingsetTestKit({
+    configOverrides: NonNullish(
+      await loadSwingsetConfigFile(
+        resolvePath('@agoric/vm-config/decentral-itest-vaults-config.json'),
       ),
-    },
-  );
+    ),
+    mockBridgeReceiver: makeMockBridgeKit({ storageKit: storage }),
+  });
 
   const { runNextBlock, runUtils } = swingsetTestKit;
 
@@ -141,23 +135,14 @@ test.serial('adjust balances', async t => {
   t.log('adjust');
   await wd.executeOfferMaker(
     Offers.vaults.AdjustBalances,
-    {
-      offerId: 'adjust',
-      collateralBrandKey,
-      giveMinted: 0.0005,
-    },
+    { offerId: 'adjust', collateralBrandKey, giveMinted: 0.0005 },
     'adjust-open',
   );
   t.like(wd.getLatestUpdateRecord(), {
     updated: 'offerStatus',
-    status: {
-      id: 'adjust',
-      numWantsSatisfied: 1,
-    },
+    status: { id: 'adjust', numWantsSatisfied: 1 },
   });
 });
-
-// This test isn't marked .serial, but it depends on previous tests.
 
 test.serial('close vault', async t => {
   const { walletFactoryDriver } = t.context;
@@ -188,9 +173,7 @@ test.serial('close vault', async t => {
       },
       'open-vault',
     ),
-    {
-      message: /^Withdrawal .* failed because the purse only contained .*/,
-    },
+    { message: /^Withdrawal .* failed because the purse only contained .*/ },
   );
 
   const message =
@@ -221,11 +204,7 @@ test.serial('close vault', async t => {
   t.log('close correctly');
   await wd.executeOfferMaker(
     Offers.vaults.CloseVault,
-    {
-      offerId: 'close-well',
-      collateralBrandKey,
-      giveMinted: 5.025,
-    },
+    { offerId: 'close-well', collateralBrandKey, giveMinted: 5.025 },
     'open-vault',
   );
 
@@ -344,9 +323,7 @@ test.serial('propose change to auction governance param', async t => {
 
   t.log('propose param change');
   /* XXX @type {Partial<AuctionParams>} */
-  const params = {
-    StartFrequency: { timerBrand, relValue: 5n * 60n },
-  };
+  const params = { StartFrequency: { timerBrand, relValue: 5n * 60n } };
 
   const offerArgs: ParamChangesOfferArgs = {
     deadline: 1000n,

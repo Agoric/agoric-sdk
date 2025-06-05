@@ -1,9 +1,7 @@
 /* eslint-env node */
 
-import childProcessAmbient from 'node:child_process';
 import fs from 'node:fs';
 import * as fsPromises from 'node:fs/promises';
-import { createRequire } from 'node:module';
 import nativePath from 'node:path';
 
 import tmp from 'tmp';
@@ -34,8 +32,6 @@ import { makeQueue } from '../src/helpers/make-queue.js';
 /** @import { InboundQueue } from '../src/launch-chain.js'; */
 
 const tmpDir = makeTempDirFactory(tmp);
-
-const outboundMessages = new Map();
 
 /**
  * @template T
@@ -103,36 +99,33 @@ const baseConfig = harden({
   vats: {
     bootstrap: {
       sourceSpec: '@agoric/vats/tools/bootstrap-chain-reflective.js',
-      creationOptions: {
-        critical: true,
-      },
-      parameters: {
-        baseManifest: 'MINIMAL',
-      },
+      creationOptions: { critical: true },
+      parameters: { baseManifest: 'MINIMAL' },
     },
   },
   bundles: {
-    agoricNames: {
-      sourceSpec: '@agoric/vats/src/vat-agoricNames.js',
-    },
-    bridge: {
-      sourceSpec: '@agoric/vats/src/vat-bridge.js',
-    },
+    agoricNames: { sourceSpec: '@agoric/vats/src/vat-agoricNames.js' },
+    bridge: { sourceSpec: '@agoric/vats/src/vat-bridge.js' },
   },
 });
 
 /**
- * @param {ReturnType<makeFakeStorageKit>} storageKit
- * @returns {(bridgeId: BridgeId, obj: any) => any}
+ * @param {Partial<{outboundMessages: Map; storageKit: ReturnType<makeFakeStorageKit>}>} [params]
  */
-export const makeDefaultReceiveBridgeSend =
-  (storageKit = makeFakeStorageKit('')) =>
-  (bridgeId, obj) => {
+export const makeMockBridgeKit = (params = {}) => {
+  const { outboundMessages = new Map(), storageKit = makeFakeStorageKit('') } =
+    params;
+  let lastBankNonce = 0n;
+
+  /**
+   * @param {BridgeId} bridgeId
+   * @param {any} obj
+   */
+  const mockBridgeReceiver = (bridgeId, obj) => {
     if (!outboundMessages.has(bridgeId)) outboundMessages.set(bridgeId, []);
     outboundMessages.get(bridgeId).push(obj);
 
     const bridgeType = `${bridgeId}:${obj.type}`;
-    let lastBankNonce = 0n;
     const { toStorage } = storageKit;
 
     switch (bridgeId) {
@@ -168,115 +161,8 @@ export const makeDefaultReceiveBridgeSend =
     return String(undefined);
   };
 
-/**
- * Creates a function that can build and extract proposal data from package scripts.
- *
- * @param {object} powers
- * @param {Pick<typeof import('node:child_process'), 'execFileSync'>} powers.childProcess
- * @param {typeof import('node:fs/promises')} powers.fs
- * @param {typeof import('node:path')} powers.path
- * @param {string} resolveBase
- */
-export const makeProposalExtractor = (
-  { childProcess, fs: { readFile }, path: { join } },
-  resolveBase = import.meta.url,
-) => {
-  const importSpec = createRequire(resolveBase).resolve;
-
-  /**
-   * @param {string} agoricRunOutput
-   */
-  const parseProposalParts = agoricRunOutput => {
-    const evals = [
-      ...agoricRunOutput.matchAll(
-        /swingset-core-eval (?<permit>\S+) (?<script>\S+)/g,
-      ),
-    ].map(m => {
-      if (!m.groups) throw Fail`Invalid proposal output ${m[0]}`;
-      const { permit, script } = m.groups;
-      return { permit, script };
-    });
-    evals.length ||
-      Fail`No swingset-core-eval found in proposal output: ${agoricRunOutput}`;
-
-    const bundles = [
-      ...agoricRunOutput.matchAll(/swingset install-bundle @([^\n]+)/g),
-    ].map(([, bundle]) => bundle);
-    bundles.length ||
-      Fail`No bundles found in proposal output: ${agoricRunOutput}`;
-
-    return { evals, bundles };
-  };
-
-  /**
-   * @param {string} filePath
-   */
-  const readJSONFile = filePath =>
-    readFile(filePath, 'utf8').then(file => harden(JSON.parse(file)));
-
-  /**
-   * @param {string} builderPath
-   * @param {Array<string>} [args]
-   */
-  const buildAndExtract = async (builderPath, args = []) => {
-    const [builtDir, cleanup] = tmpDir('agoric-proposal');
-
-    /**
-     * @param {string} fileName
-     */
-    const readPkgFile = fileName => readFile(join(builtDir, fileName), 'utf8');
-
-    await null;
-    try {
-      const scriptPath = importSpec(builderPath);
-
-      console.info('running package script:', scriptPath);
-      const agoricRunOutput = childProcess.execFileSync(
-        importSpec('agoric/src/entrypoint.js'),
-        ['run', scriptPath, ...args],
-        { cwd: builtDir },
-      );
-      const built = parseProposalParts(agoricRunOutput.toString());
-
-      const evalsP = Promise.all(
-        built.evals.map(async ({ permit, script }) => {
-          const [permits, code] = await Promise.all(
-            [permit, script].map(path => readPkgFile(path)),
-          );
-          return /** @type {import('@agoric/cosmic-proto/swingset/swingset.js').CoreEvalSDKType} */ ({
-            json_permits: permits,
-            js_code: code,
-          });
-        }),
-      );
-
-      const bundlesP = Promise.all(
-        built.bundles.map(
-          async path =>
-            /** @type {Promise<EndoZipBase64Bundle>} */ (readJSONFile(path)),
-        ),
-      );
-
-      const [evals, bundles] = await Promise.all([evalsP, bundlesP]);
-      return { evals, bundles };
-    } finally {
-      // Defer `cleanup` and ignore any exception; spurious test failures would
-      // be worse than the minor inconvenience of manual temp dir removal.
-      const cleanupP = Promise.resolve().then(cleanup);
-      cleanupP.catch(err => {
-        console.error(err);
-        throw err; // unhandled rejection
-      });
-    }
-  };
-  return buildAndExtract;
+  return mockBridgeReceiver;
 };
-
-const buildProposal = makeProposalExtractor({
-  childProcess: childProcessAmbient,
-  fs: fsPromises,
-  path: nativePath,
-});
 
 /**
  * Start a SwingSet kernel to be used by tests and benchmarks, returning objects
@@ -292,7 +178,6 @@ const buildProposal = makeProposalExtractor({
  * t.after.always(shutdown), because the normal t.after() hooks are not run if a
  * test fails.
  *
- * @param {((destPort: string, msg: unknown) => unknown)} receiveBridgeSend
  * @param {object} [options]
  * @param {string | null} [options.bundleDir] relative to working directory
  * @param {SwingSetConfig['bundles']} [options.bundles] extra bundles configuration
@@ -308,6 +193,7 @@ const buildProposal = makeProposalExtractor({
  *   any changes
  * @param {Replacer<SwingSetConfig>} [options.fixupConfig] a final opportunity
  *   to make any changes
+ * @param {((destPort: string, msg: unknown) => unknown)} [options.mockBridgeReceiver]
  * @param {import('@agoric/telemetry').SlogSender} [options.slogSender]
  * @param {import('../src/chain-main.js').CosmosSwingsetConfig} [options.swingsetConfig]
  * @param {import('@agoric/swing-store').SwingStore} [options.swingStore]
@@ -327,7 +213,6 @@ const buildProposal = makeProposalExtractor({
  * @param {typeof import('node:path').resolve} [powers.resolvePath]
  */
 export const makeCosmicSwingsetTestKit = async (
-  receiveBridgeSend = makeDefaultReceiveBridgeSend(),
   {
     // Options for the SwingSet controller/kernel.
     bundleDir = 'bundles',
@@ -338,6 +223,7 @@ export const makeCosmicSwingsetTestKit = async (
     env = process.env,
     fixupInitMessage,
     fixupConfig,
+    mockBridgeReceiver = makeMockBridgeKit(),
     slogSender,
     swingsetConfig,
     swingStore,
@@ -399,7 +285,7 @@ export const makeCosmicSwingsetTestKit = async (
       const portName =
         knownPorts.get(destPort) || Fail`unknown cosmos port ${destPort}`;
       const msg = JSON.parse(msgJson);
-      const result = receiveBridgeSend(portName, msg);
+      const result = mockBridgeReceiver(portName, msg);
       return JSON.stringify(result);
     },
   };
@@ -566,29 +452,20 @@ export const makeCosmicSwingsetTestKit = async (
     // eslint-disable-next-line no-unused-vars
     const permit = JSON.parse(jsonPermits);
     /** @type {import('@agoric/cosmic-proto/swingset/swingset.js').CoreEvalSDKType} */
-    const coreEvalDesc = {
-      json_permits: jsonPermits,
-      js_code: fnText,
-    };
-    const action = {
-      type: QueuedActionType.CORE_EVAL,
-      evals: [coreEvalDesc],
-    };
+    const coreEvalDesc = { json_permits: jsonPermits, js_code: fnText };
+    const action = { type: QueuedActionType.CORE_EVAL, evals: [coreEvalDesc] };
     pushQueueRecord(action, queue);
   };
 
   /**
-   * @param {Awaited<ReturnType<typeof buildProposal>>} proposal
+   * @param {Awaited<ReturnType<import('./test-proposal-utils.ts')['buildProposal']>>} proposal
    */
   const evaluateProposal = async ({ bundles: proposalBundles, evals }) => {
     await Promise.resolve();
 
     for (const bundle of proposalBundles) await installBundle(bundle);
     pushQueueRecord(
-      {
-        evals,
-        type: QueuedActionType.CORE_EVAL,
-      },
+      { evals, type: QueuedActionType.CORE_EVAL },
       highPriorityQueue,
     );
 
@@ -600,10 +477,7 @@ export const makeCosmicSwingsetTestKit = async (
    */
   const installBundle = bundle => {
     pushQueueRecord(
-      {
-        bundle: JSON.stringify(bundle),
-        type: QueuedActionType.INSTALL_BUNDLE,
-      },
+      { bundle: JSON.stringify(bundle), type: QueuedActionType.INSTALL_BUNDLE },
       highPriorityQueue,
     );
     return runNextBlock();
@@ -619,16 +493,11 @@ export const makeCosmicSwingsetTestKit = async (
     // Controller-oriented helpers.
     bridgeInbound,
     controller,
-    /**
-     * @param {string} bridgeId
-     */
-    getOutboundMessages: bridgeId => [...outboundMessages.get(bridgeId)],
     runUtils: makeRunUtils(controller),
     timer,
 
     // Functions specific to this kit.
     advanceTimeBy,
-    buildProposal,
     evaluateProposal,
     getLastBlockInfo,
     installBundle,

@@ -6,8 +6,9 @@ import type { TestFn } from 'ava';
 import { makeWalletFactoryDriver } from '@aglocal/boot/tools/drivers.js';
 import {
   makeCosmicSwingsetTestKit,
-  makeDefaultReceiveBridgeSend,
+  makeMockBridgeKit,
 } from '@agoric/cosmic-swingset/tools/test-kit.js';
+import { buildProposal } from '@agoric/cosmic-swingset/tools/test-proposal-utils.ts';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { NonNullish } from '@agoric/internal';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
@@ -26,14 +27,12 @@ const PLATFORM_CONFIG = '@agoric/vm-config/decentral-itest-vaults-config.json';
 export const makeTestContext = async () => {
   console.time('DefaultTestContext');
   const storage = makeFakeStorageKit('bootstrapTests');
-  const swingsetTestKit = await makeCosmicSwingsetTestKit(
-    makeDefaultReceiveBridgeSend(storage),
-    {
-      configOverrides: NonNullish(
-        await loadSwingsetConfigFile(resolvePath(PLATFORM_CONFIG)),
-      ),
-    },
-  );
+  const swingsetTestKit = await makeCosmicSwingsetTestKit({
+    configOverrides: NonNullish(
+      await loadSwingsetConfigFile(resolvePath(PLATFORM_CONFIG)),
+    ),
+    mockBridgeReceiver: makeMockBridgeKit({ storageKit: storage }),
+  });
 
   const { runNextBlock, runUtils } = swingsetTestKit;
 
@@ -114,7 +113,7 @@ test.serial('make IBC callbacks before upgrade', async t => {
 });
 
 test.serial('run restart-vats proposal', async t => {
-  const { buildProposal, evaluateProposal } = t.context;
+  const { evaluateProposal } = t.context;
 
   t.log('building proposal');
   await evaluateProposal(

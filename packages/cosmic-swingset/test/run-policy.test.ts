@@ -74,8 +74,9 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
       ...defaultBootstrapMessage,
       params: makeCleanupBudgetParams({ Default: 0 }),
     }),
+    mockBridgeReceiver: receiveBridgeSend,
   };
-  const testKit = await makeCosmicSwingsetTestKit(receiveBridgeSend, options);
+  const testKit = await makeCosmicSwingsetTestKit(options);
   const { pushCoreEval, runNextBlock, shutdown, swingStore } = testKit;
   finish = shutdown;
   await runNextBlock();
@@ -241,7 +242,7 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
     };
 
     const { runNextBlock: runNextBlock2, shutdown: shutdown2 } =
-      await makeCosmicSwingsetTestKit(receiveBridgeSend, newOptions);
+      await makeCosmicSwingsetTestKit(newOptions);
     finish = shutdown2;
 
     await runNextBlock2();

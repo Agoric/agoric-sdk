@@ -4,10 +4,7 @@ import type { ExecutionContext, TestFn } from 'ava';
 
 import { createRequire } from 'node:module';
 
-import {
-  makeCosmicSwingsetTestKit,
-  makeDefaultReceiveBridgeSend,
-} from '@agoric/cosmic-swingset/tools/test-kit.js';
+import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
 import { NonNullish } from '@agoric/internal';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
@@ -38,12 +35,9 @@ export const makeTestContext = async () => {
   );
   config.bundleCachePath = bundleDir;
 
-  const swingsetTestKit = await makeCosmicSwingsetTestKit(
-    makeDefaultReceiveBridgeSend(),
-    {
-      configOverrides: config,
-    },
-  );
+  const swingsetTestKit = await makeCosmicSwingsetTestKit({
+    configOverrides: config,
+  });
   await swingsetTestKit.runNextBlock();
 
   console.timeLog('DefaultTestContext', 'swingsetTestKit');

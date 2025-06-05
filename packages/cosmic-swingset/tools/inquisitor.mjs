@@ -734,8 +734,6 @@ const main = async (argv, options = {}, powers = {}) => {
     }
   };
   const config = {
-    swingsetConfig: { maxVatsOnline },
-    swingStore,
     /** @type {Partial<SwingSetConfig>} */
     configOverrides: {
       // Default to XS workers with no GC or snapshots.
@@ -755,8 +753,11 @@ const main = async (argv, options = {}, powers = {}) => {
         vat_cleanup_budget: makeVatCleanupBudgetFromKeywords({ Default: 0 }),
       },
     }),
+    mockBridgeReceiver: receiveBridgeSend,
+    swingsetConfig: { maxVatsOnline },
+    swingStore,
   };
-  const testKit = await makeCosmicSwingsetTestKit(receiveBridgeSend, config);
+  const testKit = await makeCosmicSwingsetTestKit(config);
 
   const {
     controller,
