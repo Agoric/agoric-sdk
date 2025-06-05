@@ -96,7 +96,7 @@ function _executeWithToken(
 
 The `AxelarGateway` invokes the `_execute()` method when performing a **ContractCall**, and it invokes `_executeWithToken()` when performing a **ContractCallWithToken**. These functions are where you define the behavior your contract should carry out upon receiving the cross-chain message.
 
-Read more about it [over here](https://docs.axelar.dev/dev/general-message-passing/overview/#general-message-passing).
+Read more in the [Axelar GMP documentation](https://docs.axelar.dev/dev/general-message-passing/overview/#general-message-passing).
 
 ---
 
