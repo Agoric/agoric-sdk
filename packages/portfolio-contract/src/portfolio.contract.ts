@@ -1,11 +1,13 @@
 import { makeTracer } from '@agoric/internal';
 import {
   OrchestrationPowersShape,
+  registerChainsAndAssets,
   withOrchestration,
   type OrchestrationAccount,
   type OrchestrationTools,
 } from '@agoric/orchestration';
 import type { ZCF } from '@agoric/zoe';
+import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Zone } from '@agoric/zone';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
@@ -27,21 +29,40 @@ harden(meta);
 
 export const contract = async (
   zcf: ZCF,
-  _privateArgs,
+  privateArgs,
   zone: Zone,
   tools: OrchestrationTools,
 ) => {
   const { brands } = zcf.getTerms();
-  const { orchestrateAll, zoeTools } = tools;
+  const { orchestrateAll, zoeTools, chainHub } = tools;
 
   assert(brands.USDC, 'USDC missing from brands in terms');
 
+  // TODO: only on 1st incarnation
+  registerChainsAndAssets(
+    chainHub,
+    brands,
+    privateArgs.chainInfo,
+    privateArgs.assetInfo,
+    { log: trace },
+  );
+
   const proposalShapes = makeProposalShapes(brands.USDC);
+
+  const inertSubscriber: ResolvedPublicTopic<never>['subscriber'] = {
+    getUpdateSince() {
+      assert.fail('use off-chain queries');
+    },
+    subscribeAfter() {
+      assert.fail('use off-chain queries');
+    },
+  };
 
   const makePortfolioKit = preparePortfolioKit(zone);
   const { makeLocalAccount, openPortfolio } = orchestrateAll(flows, {
     zoeTools,
     makePortfolioKit,
+    inertSubscriber,
   });
 
   trace('TODO: baggage test');

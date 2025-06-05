@@ -1,36 +1,42 @@
 import { makeTracer } from '@agoric/internal';
 import type { OrchestrationAccount } from '@agoric/orchestration';
 import type { Zone } from '@agoric/zone';
-import { M } from '@endo/patterns';
-import type { YieldProtocol } from './constants.js';
+import { Fail, q } from '@endo/errors';
+import { YieldProtocol } from './constants.js';
 
 const interfaceTODO = undefined;
 
 const trace = makeTracer('PortExo');
 
+type Accounts = {
+  Aave: never; // TODO
+  Compound: never; // TODO
+  USDN: OrchestrationAccount<{ chainId: 'noble-any' }>;
+};
+
 export const preparePortfolioKit = (zone: Zone) =>
   zone.exoClassKit(
     'Portfolio',
     interfaceTODO,
-    (initial: Iterable<[YieldProtocol, OrchestrationAccount<any>]> = []) => {
-      const accounts = zone
-        .detached()
-        .mapStore<
-          YieldProtocol,
-          OrchestrationAccount<any>
-        >('accounts', { keyShape: M.string() });
-      accounts.addAll(initial);
-      return { accounts };
-    },
+    () =>
+      ({
+        USDN: undefined,
+      }) as Partial<Accounts>,
     {
       keeper: {
-        init(key: YieldProtocol, account: OrchestrationAccount<any>) {
-          const { accounts } = this.state;
-          accounts.init(key, account);
+        init<P extends YieldProtocol>(key: P, account: Accounts[P]) {
+          this.state[key] = account;
           trace('stored', key, '=>', `${account}`);
         },
+        getAccount<P extends YieldProtocol>(key: P) {
+          const { [key]: account } = this.state;
+          if (!account) throw Fail`not set: ${q(key)}`;
+          return account;
+        },
       },
-      invitationMakers: {},
+      invitationMakers: {
+        // TODO: withdraw etc.
+      },
     },
   );
 
