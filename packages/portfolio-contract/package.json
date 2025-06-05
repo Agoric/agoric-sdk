@@ -19,6 +19,7 @@
     "lint:types": "yarn run -T tsc"
   },
   "devDependencies": {
+    "@agoric/deploy-script-support": "workspace:*",
     "@agoric/ertp": "workspace:*",
     "@agoric/fast-usdc": "workspace:*",
     "@agoric/swingset-liveslots": "workspace:*",
