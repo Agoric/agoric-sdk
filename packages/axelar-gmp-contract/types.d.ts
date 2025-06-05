@@ -5,6 +5,7 @@ import type {
   Bech32Address,
 } from '@agoric/orchestration';
 import { IBCChannelID } from '@agoric/vats';
+import { EVM_CHAINS } from '@aglocal/axelar-gmp-deploy/src/config';
 
 export enum GMPMessageType {
   ContractCall = 1,
@@ -52,3 +53,5 @@ export type AbiEncodedContractCall = {
   target: `0x${string}`;
   data: `0x${string}`;
 };
+
+export type SupportedDestinationChains = keyof typeof EVM_CHAINS;
