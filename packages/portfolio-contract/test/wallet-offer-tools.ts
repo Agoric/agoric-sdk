@@ -1,8 +1,15 @@
+import type { Amount, Brand, Payment, Purse } from '@agoric/ertp';
 import { deeplyFulfilledObject, NonNullish, objectMap } from '@agoric/internal';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import type { VowTools } from '@agoric/vow';
-import type { AmountKeywordRecord, PaymentKeywordRecord } from '@agoric/zoe';
-import type { ContractStartFunction } from '@agoric/zoe/src/zoeService/utils';
+import type {
+  AmountKeywordRecord,
+  Instance,
+  Invitation,
+  PaymentKeywordRecord,
+  ZoeService,
+} from '@agoric/zoe';
+import type { ContractStartFunction } from '@agoric/zoe/src/zoeService/utils.js';
 import type { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
