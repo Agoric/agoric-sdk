@@ -2,6 +2,7 @@
 
 ## see https://github.com/cosmology-tech/starship/blob/1d60f55c631b4d0f92a43ad92e9a935298aa3aa5/starship/charts/devnet/scripts/default/update-config.sh
 
+CONFIGFILE="@CONFIGFILE@"
 CHAIN_ID="${CHAIN_ID:=osmosis}"
 CHAIN_DIR="${CHAIN_DIR:=$HOME/.osmosisd}"
 KEYS_CONFIG="${KEYS_CONFIG:=configs/keys.json}"
@@ -68,3 +69,10 @@ sed -i -e "s#timeout_commit = \".*\"#timeout_commit = \"$TIMEOUT_COMMIT\"#g" $CH
 if [ "$METRICS" == "true" ]; then
   sed -i -e "s/prometheus = false/prometheus = true/g" $CHAIN_DIR/config/config.toml
 fi
+
+case "$CONFIGFILE" in
+  *.xcs-swap-anything.*)
+    echo "Update config.toml file log level to 'debug' for xcs-swap-anything"
+    sed -i -E 's/^(log_level\s*=\s*)".*"/\1"debug"/' $CHAIN_DIR/config/config.toml
+    ;;
+esac
