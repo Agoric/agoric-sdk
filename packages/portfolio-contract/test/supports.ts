@@ -30,6 +30,7 @@ import { prepareBridgeTargetModule } from '@agoric/vats/src/bridge-target.js';
 import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
 import { prepareLocalChainTools } from '@agoric/vats/src/localchain.js';
 import { prepareTransferTools } from '@agoric/vats/src/transfer.js';
+import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import {
@@ -110,14 +111,14 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
   await makeWellKnownSpaces(agoricNamesAdmin, t.log, ['vbankAsset']);
   await E(E(agoricNamesAdmin).lookupAdmin('vbankAsset')).update(
     uusdcOnAgoric,
-    /** @type {AssetInfo} */ harden({
+    harden({
       brand: usdc.brand,
       issuer: usdc.issuer,
       issuerName: 'USDC',
       denom: 'uusdc',
       proposedName: 'USDC',
-      displayInfo: { IOU: true },
-    }),
+      displayInfo: { TODO: true } as any,
+    }) as AssetInfo,
   );
 
   const vowTools = prepareSwingsetVowTools(rootZone.subZone('vows'));
@@ -156,7 +157,8 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     transfer: transferMiddleware,
   });
   const timer = buildZoeManualTimer(t.log);
-  const marshaller = makeFakeBoard().getPublishingMarshaller();
+  const board = makeFakeBoard();
+  const marshaller = board.getPublishingMarshaller();
   const storage = makeFakeStorageKit(
     'fun', // Fast USDC Node
   );
@@ -243,6 +245,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       agoricNames,
       agoricNamesAdmin,
       bankManager,
+      board,
       timer,
       localchain,
       cosmosInterchainService,
