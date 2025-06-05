@@ -2,7 +2,11 @@ import { makeTracer } from '@agoric/internal';
 import {
   registerChainsAndAssets,
   withOrchestration,
+  type ChainInfo,
+  type Denom,
+  type DenomDetail,
   type OrchestrationAccount,
+  type OrchestrationPowers,
   type OrchestrationTools,
 } from '@agoric/orchestration';
 import type { ZCF } from '@agoric/zoe';
@@ -21,7 +25,11 @@ export { meta };
 
 export const contract = async (
   zcf: ZCF,
-  privateArgs,
+  privateArgs: OrchestrationPowers & {
+    assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
+    chainInfo: Record<string, ChainInfo>;
+    marshaller: Marshaller;
+  },
   zone: Zone,
   tools: OrchestrationTools,
 ) => {
