@@ -19,6 +19,51 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@aglocal/axelar-gmp-deploy@workspace:packages/axelar-gmp-deploy":
+  version: 0.0.0-use.local
+  resolution: "@aglocal/axelar-gmp-deploy@workspace:packages/axelar-gmp-deploy"
+  dependencies:
+    "@agoric/cosmic-swingset": "workspace:*"
+    "@agoric/deploy-script-support": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/orchestration": "workspace:*"
+    "@agoric/swingset-vat": "workspace:*"
+    "@agoric/telemetry": "workspace:*"
+    "@agoric/vats": "workspace:*"
+    "@agoric/xsnap": "workspace:*"
+    "@agoric/zoe": "workspace:*"
+    "@endo/errors": "npm:^1.2.10"
+    "@endo/far": "npm:^1.1.11"
+    agoric: "workspace:*"
+    ava: "npm:^5.3.0"
+    esbuild: "npm:^0.25.2"
+    execa: "npm:^9.5.2"
+    node-fetch-cache: "npm:^5.0.2"
+    typescript: "npm:~5.8.2"
+    viem: "npm:^2.28.1"
+  languageName: unknown
+  linkType: soft
+
+"@aglocal/axelar-gmp@workspace:packages/axelar-gmp-contract":
+  version: 0.0.0-use.local
+  resolution: "@aglocal/axelar-gmp@workspace:packages/axelar-gmp-contract"
+  dependencies:
+    "@agoric/async-flow": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/orchestration": "workspace:*"
+    "@agoric/vats": "workspace:*"
+    "@agoric/vow": "workspace:*"
+    "@agoric/zoe": "workspace:*"
+    "@agoric/zone": "workspace:*"
+    "@endo/base64": "npm:^1.0.9"
+    "@endo/errors": "npm:^1.2.10"
+    "@endo/far": "npm:^1.1.11"
+    "@endo/patterns": "npm:^1.5.0"
+    typescript: "npm:~5.8.2"
+    viem: "npm:^2.28.1"
+  languageName: unknown
+  linkType: soft
+
 "@aglocal/benchmark@workspace:packages/benchmark":
   version: 0.0.0-use.local
   resolution: "@aglocal/benchmark@workspace:packages/benchmark"
@@ -6927,7 +6972,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"agoric@npm:^0.21.1, agoric@workspace:packages/agoric-cli":
+"agoric@npm:^0.21.1, agoric@workspace:*, agoric@workspace:packages/agoric-cli":
   version: 0.0.0-use.local
   resolution: "agoric@workspace:packages/agoric-cli"
   dependencies:
@@ -7548,26 +7593,6 @@ __metadata:
   checksum: 10c0/0e20169077de96946a547fce0df39d9aeebe0077f9d3eeff4896518b96fde857f80b98f0d4279274a7178791744dd5a54bb4f322de45b4f561ffa2586ff9a09d
   languageName: node
   linkType: hard
-
-"axelar-gmp-contract@workspace:packages/axelar-gmp-contract":
-  version: 0.0.0-use.local
-  resolution: "axelar-gmp-contract@workspace:packages/axelar-gmp-contract"
-  dependencies:
-    "@agoric/async-flow": "workspace:*"
-    "@agoric/internal": "workspace:*"
-    "@agoric/orchestration": "workspace:*"
-    "@agoric/vats": "workspace:*"
-    "@agoric/vow": "workspace:*"
-    "@agoric/zoe": "workspace:*"
-    "@agoric/zone": "workspace:*"
-    "@endo/base64": "npm:^1.0.9"
-    "@endo/errors": "npm:^1.2.10"
-    "@endo/far": "npm:^1.1.11"
-    "@endo/patterns": "npm:^1.5.0"
-    typescript: "npm:~5.8.2"
-    viem: "npm:^2.28.1"
-  languageName: unknown
-  linkType: soft
 
 "axios@npm:1.6.7":
   version: 1.6.7
