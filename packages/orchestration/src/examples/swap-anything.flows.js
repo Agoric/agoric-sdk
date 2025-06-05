@@ -159,7 +159,7 @@ export const swapIt = async (
   }
 
   seat.exit();
-  trace(`transfer complete, seat exited`);
+  return 'transfer complete, seat exited';
 };
 harden(swapIt);
 
