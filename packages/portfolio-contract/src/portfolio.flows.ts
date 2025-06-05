@@ -2,6 +2,7 @@ import type { GuestInterface } from '@agoric/async-flow';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
+import type { Amount } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import type {
   CosmosChainAddress,
