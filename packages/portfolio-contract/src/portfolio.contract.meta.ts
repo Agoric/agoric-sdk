@@ -9,6 +9,8 @@ import { M } from '@endo/patterns';
 import { PortfolioConfigShape } from './type-guards.ts';
 
 export const meta = {
+  // TODO: having the contract announce its name here is backwards.
+  // move this to the core eval powers type
   name: 'ymax0',
   privateArgsShape: {
     ...(OrchestrationPowersShape as CopyRecord),
