@@ -26,7 +26,7 @@ const { entries } = Object;
 
 const EVMI = M.interface('holder', {
   getLocalAddress: M.call().returns(M.any()),
-  getAddress: M.call().returns(M.any()),
+  getRemoteAddress: M.call().returns(M.any()),
   getLatestMessage: M.call().returns(M.any()),
   send: M.call(M.any(), M.any()).returns(M.any()),
   sendGmp: M.call(M.any(), M.any()).returns(M.any()),
@@ -45,7 +45,7 @@ const EvmKitStateShape = {
   sourceChannel: M.string(),
   remoteDenom: M.string(),
   localDenom: M.string(),
-  localAccount: M.remotable('OrchestrationAccount<{chainId:"agoric-3"}>'),
+  localAccount: M.remotable('LocalAccount'),
   assets: M.any(),
   remoteChainInfo: M.any(),
 };
@@ -179,7 +179,7 @@ export const prepareEvmAccountKit = (
         getLocalAddress() {
           return this.state.localAccount.getAddress().value;
         },
-        async getAddress() {
+        async getRemoteAddress() {
           return this.state.evmAccountAddress;
         },
         async getLatestMessage() {
@@ -227,7 +227,8 @@ export const prepareEvmAccountKit = (
 
           const isContractInvocation = [1, 2].includes(type);
           if (isContractInvocation) {
-            gasAmount != null || Fail`gasAmount must be defined`;
+            gasAmount != null ||
+              Fail`gasAmount must be defined for type ${type}`;
             contractInvocationData != null ||
               Fail`contractInvocationData is not defined`;
 
@@ -310,11 +311,11 @@ export const prepareEvmAccountKit = (
         // "method" and "args" can be used to invoke methods of localAccount obj
         makeEVMTransactionInvitation(method, args) {
           const continuingEVMTransactionHandler = async seat => {
+            await null;
             const { holder } = this.facets;
             switch (method) {
               case 'sendGmp': {
                 const { give } = seat.getProposal();
-                // eslint-disable-next-line @jessie.js/safe-await-separator
                 await vowTools.when(holder.fundLCA(seat, give));
                 return holder.sendGmp(seat, args[0]);
               }
@@ -325,8 +326,8 @@ export const prepareEvmAccountKit = (
                   return res;
                 });
               }
-              case 'getAddress': {
-                const vow = holder.getAddress();
+              case 'getRemoteAddress': {
+                const vow = holder.getRemoteAddress();
                 return vowTools.when(vow, res => {
                   seat.exit();
                   return res;

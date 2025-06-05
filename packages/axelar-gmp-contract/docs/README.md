@@ -36,7 +36,7 @@ export type AxelarGmpOutgoingMemo = {
 - ContractCall or ContractCallWithToken(`type: 1 | 2`)
   For `ContractCall` or `ContractCallWithToken`, a `fee` must be included. This `fee` pays for Axelar to process, forward and execute the message on the destination chain. It must be estimated and added in advance.
 
-Read more about how transaction fees work in Axelar [over here](https://docs.axelar.dev/dev/gas-service/pricing/#transaction-pricing).
+See also: [how transaction fees work in Axelar](https://docs.axelar.dev/dev/gas-service/pricing/#transaction-pricing).
 
 ---
 
