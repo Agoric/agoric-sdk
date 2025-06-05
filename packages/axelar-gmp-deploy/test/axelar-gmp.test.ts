@@ -244,7 +244,7 @@ test.serial('receiveUpCall test', async t => {
   await makeEVMTransaction({
     wallet,
     previousOffer,
-    methodName: 'getAddress',
+    methodName: 'getRemoteAddress',
     offerArgs: [],
     proposal: {},
   });
