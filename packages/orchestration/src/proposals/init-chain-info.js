@@ -3,7 +3,7 @@ import { E, Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { makeTracer } from '@agoric/internal';
 import { registerKnownChains } from '../chain-info.js';
-import { HubName } from '../exos/chain-hub.js';
+import { HubName } from '../constants.js';
 
 const trace = makeTracer('InitChainInfo', true);
 
