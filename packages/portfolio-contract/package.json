@@ -10,8 +10,8 @@
   ],
   "scripts": {
     "build": "yarn run -T run-s --continue-on-error 'build:*'",
-    "build:contract-bundle": "esbuild ./src/portfolio.contract.ts --bundle --platform=neutral --main-fields=main --outfile=dist/portfolio.contract.bundle.js --metafile=dist/portfolio.contract.meta.json",
-    "build:deploy-bundle": "esbuild ./src/portfolio-start.core.ts --bundle --platform=neutral --main-fields=main --outfile=dist/portfolio-start.core.bundle.js --metafile=dist/portfolio-start.core.meta.json",
+    "build:contract-bundle": "npx --no-install esbuild ./src/portfolio.contract.ts --bundle --platform=neutral --main-fields=main --outfile=dist/portfolio.contract.bundle.js --metafile=dist/portfolio.contract.meta.json",
+    "build:deploy-bundle": "npx --no-install esbuild ./src/portfolio-start.core.ts --bundle --platform=neutral --main-fields=main --outfile=dist/portfolio-start.core.bundle.js --metafile=dist/portfolio-start.core.meta.json",
     "build:bundles": "cd dist; HOME=../dist/ agoric run ../scripts/portfolio.build.js",
     "test": "ava",
     "test:c8": "c8 --all $C8_OPTIONS ava",
