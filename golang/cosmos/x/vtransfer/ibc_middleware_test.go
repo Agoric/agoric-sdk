@@ -10,12 +10,12 @@ import (
 	"testing"
 	"text/template"
 
+	"cosmossdk.io/log"
+	"cosmossdk.io/store"
 	app "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
-	dbm "github.com/cometbft/cometbft-db"
-	"github.com/cometbft/cometbft/libs/log"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/store"
 	"github.com/cosmos/cosmos-sdk/testutil/sims"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	"github.com/iancoleman/orderedmap"
@@ -26,16 +26,17 @@ import (
 	swingsettypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	vibctypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/types"
 
+	sdkmath "cosmossdk.io/math"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7/packetforward/types"
-	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
-	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
+	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 )
 
 const (
@@ -122,7 +123,7 @@ func SetupAgoricTestingApp(instance int) TestingAppMaker {
 			jsonReply = `true`
 			return jsonReply, nil
 		}
-		appd := app.NewAgoricApp(mockController, vm.NewAgdServer(), log.TestingLogger(), db, nil,
+		appd := app.NewAgoricApp(mockController, vm.NewAgdServer(), log.NewTestLogger(t), db, nil,
 			true, sims.EmptyAppOptions{}, interBlockCacheOpt())
 		genesisState := app.NewDefaultGenesisState()
 
@@ -191,7 +192,7 @@ func (s *IntegrationTestSuite) SetupTest() {
 
 		balance := banktypes.Balance{
 			Address: chain.SenderAccount.GetAddress().String(),
-			Coins:   sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100000000000000))),
+			Coins:   sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdkmath.NewInt(100000000000000))),
 		}
 
 		// create application and override files in the IBC test chain
@@ -416,11 +417,11 @@ func (s *IntegrationTestSuite) overrideSendPacketData(cdc codec.Codec, data []by
 
 func (s *IntegrationTestSuite) mintToAddress(chain *ibctesting.TestChain, addr sdk.AccAddress, denom, amount string) {
 	app := s.GetApp(chain)
-	tokenAmt, ok := sdk.NewIntFromString(amount)
+	tokenAmt, ok := sdkmath.NewIntFromString(amount)
 	s.Require().True(ok)
 	intAmt, err := strconv.ParseInt(amount, 10, 64)
 	s.Require().NoError(err)
-	coins := sdk.NewCoins(sdk.NewCoin(denom, tokenAmt.Mul(sdk.NewInt(intAmt))))
+	coins := sdk.NewCoins(sdk.NewCoin(denom, tokenAmt.Mul(sdkmath.NewInt(intAmt))))
 	err = app.BankKeeper.MintCoins(chain.GetContext(), ibctransfertypes.ModuleName, coins)
 	s.Require().NoError(err)
 	err = app.BankKeeper.SendCoinsFromModuleToAccount(chain.GetContext(), ibctransfertypes.ModuleName, addr, coins)

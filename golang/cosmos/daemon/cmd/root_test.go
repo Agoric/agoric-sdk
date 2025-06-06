@@ -10,8 +10,8 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/cometbft/cometbft-db"
-	"github.com/cometbft/cometbft/libs/log"
+	"cosmossdk.io/log"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
