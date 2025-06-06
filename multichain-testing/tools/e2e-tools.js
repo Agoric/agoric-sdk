@@ -429,6 +429,69 @@ const voteLatestProposalAndWait = async ({
 };
 
 /**
+ * @param {bigint} period
+ * @param {{
+ *   agd: import('./chaind-lib.js').Agd;
+ *   blockTool: BlockTool;
+ *   copyFiles: ReturnType<typeof makeCopyFiles>;
+ *   proposer?: string;
+ *   deposit?: string;
+ *   chainId?: string;
+ *   title?: string;
+ *   summary?: string;
+ * }} opts
+ */
+const changeVotingPeriod = async (
+  period,
+  {
+    agd,
+    blockTool,
+    copyFiles,
+    chainId = 'agoriclocal',
+    proposer = 'genesis',
+    deposit = `1${BLD}`,
+    title = `change voting period to ${period}s`,
+    summary = title,
+  },
+) => {
+  const { params } = await agd.query(['gov', 'params']);
+  const proposal = {
+    messages: [
+      {
+        '@type': '/cosmos.gov.v1.MsgUpdateParams',
+        authority: 'agoric10d07y265gmmuvt4z0w9aw880jnsr700jgl36x9', // gov module acct
+        params: {
+          ...params,
+          voting_period: `${period}s`,
+          // XXX odd... multichain-testing genesis has 0 values???
+          veto_threshold: '0.334',
+          threshold: '0.667',
+        },
+      },
+    ],
+    deposit,
+    title,
+    summary,
+  };
+
+  const from = await agd.lookup(proposer);
+
+  const destDir = '/tmp/contracts'; // XXX peek at makeCopyFiles
+  const fname = 'proposal.json';
+  await copyFiles([], { [fname]: JSON.stringify(proposal) });
+  await agd.tx(['gov', 'submit-proposal', `${destDir}/${fname}`], {
+    from,
+    chainId,
+    yes: true,
+  });
+  trace('voteLatestProposalAndWait', title);
+  const detail = await voteLatestProposalAndWait({ agd, blockTool });
+  trace(detail.proposal_id, detail.voting_end_time, detail.status);
+  assert(detail.status, 'PROPOSAL_STATUS_PASSED');
+  return detail;
+};
+
+/**
  * @param {typeof console.log} log
  * @param {{
  *   evals: { permit: string; code: string }[];
@@ -642,6 +705,9 @@ export const makeE2ETools = async (
     deleteKey: async name => agd.keys.delete(name),
     copyFiles,
     agd,
+    /** @param {bigint} secs */
+    changeVotingPeriod: secs =>
+      changeVotingPeriod(secs, { agd, blockTool, copyFiles }),
   };
 };
 

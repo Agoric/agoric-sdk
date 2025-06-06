@@ -186,6 +186,7 @@ export const commonSetup = async (
     relayer,
     nobleTools,
     startContract,
+    changeVotingPeriod: tools.changeVotingPeriod,
     assetInfo,
     chainInfo,
     commonBuilderOpts,
