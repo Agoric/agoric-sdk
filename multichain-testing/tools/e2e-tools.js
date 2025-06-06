@@ -5,12 +5,12 @@ import { assert } from '@endo/errors';
 import { E, Far } from '@endo/far';
 import { Nat } from '@endo/nat';
 import { makePromiseKit } from '@endo/promise-kit';
+import { makeTracer } from '@agoric/internal';
 import { flags, makeAgd, makeCopyFiles } from './agd-lib.js';
 import { makeHttpClient, makeAPI } from './makeHttpClient.js';
 import { dedup, makeQueryKit, poll } from './queryKit.js';
 import { makeVStorage } from './batchQuery.js';
 import { makeRetryUntilCondition } from './sleep.js';
-import { makeTracer } from '@agoric/internal';
 
 /**
  * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
@@ -277,7 +277,6 @@ const provisionSmartWalletAndMakeDriver = async (
 
   /** @param {import('@agoric/smart-wallet/src/smartWallet.js').BridgeAction} bridgeAction */
   const sendAction = async bridgeAction => {
-    // eslint-disable-next-line no-undef
     const capData = q.toCapData(harden(bridgeAction));
     const offerBody = JSON.stringify(capData);
     const txInfo = await agd.tx(
@@ -334,7 +333,6 @@ const provisionSmartWalletAndMakeDriver = async (
     for await (const { balances: haystack } of cosmosBalanceUpdates()) {
       for (const candidate of haystack) {
         if (candidate.denom === denom) {
-          // eslint-disable-next-line no-undef
           const amt = harden({ brand, value: BigInt(candidate.amount) });
           yield amt;
         }
@@ -567,6 +565,7 @@ const runCoreEval = async (
  * @param {string} [io.bundleDir]
  * @param {string} [io.rpcAddress]
  * @param {string} [io.apiAddress]
+ * @param io.retryUntilCondition
  * @param {(...parts: string[]) => string} [io.join]
  * * @param {RetryUntilCondition} [io.retryUntilCondition]
  */
@@ -627,7 +626,7 @@ export const makeE2ETools = async (
         installed: confirm.installed,
       });
     }
-    // eslint-disable-next-line no-undef
+
     return harden(bundles);
   };
 
@@ -747,7 +746,7 @@ export const seatLike = updates => {
       throw reason;
     }
   })();
-  // eslint-disable-next-line no-undef
+
   return harden({
     getOfferResult: () => sync.result.promise,
     getPayoutAmounts: () => sync.payouts.promise,
