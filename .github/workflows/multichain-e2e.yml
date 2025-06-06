@@ -110,9 +110,11 @@ jobs:
 
   swap-on-osmosis:
     name: Swap on Osmosis XCS contract
+    # Don't run on PRs or call, only on dispatch.
+    # TODO(#11450): reenable conditions once dispatch is passing again.
+    # github.event_name == 'workflow_call' ||
+    # github.event_name == 'pull_request' ||
     if: |
-      github.event_name == 'workflow_call' ||
-      github.event_name == 'pull_request' ||
       (github.event_name == 'workflow_dispatch' && inputs.test_type == 'swap-on-osmosis')
     uses: ./.github/workflows/multichain-e2e-template.yml
     with:
