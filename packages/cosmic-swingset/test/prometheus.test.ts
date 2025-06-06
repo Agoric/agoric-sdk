@@ -92,7 +92,10 @@ const testPrometheusMetrics = async t => {
     SLOGSENDER_AGENT: 'process',
     CHAIN_BOOTSTRAP_VAT_CONFIG: '@agoric/vm-config/decentral-core-config.json',
   };
-  const testKit = await makeCosmicSwingsetTestKit(receiveBridgeSend, { env });
+  const testKit = await makeCosmicSwingsetTestKit({
+    env,
+    mockBridgeReceiver: receiveBridgeSend,
+  });
   const { pushCoreEval, runNextBlock, shutdown } = testKit;
   t.teardown(shutdown);
 

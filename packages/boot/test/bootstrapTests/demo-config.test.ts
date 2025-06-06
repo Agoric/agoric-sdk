@@ -1,24 +1,34 @@
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-
-import { PowerFlags } from '@agoric/vats/src/walletFlags.js';
+import { createRequire } from 'node:module';
 
 import type { TestFn } from 'ava';
 
-import { keyArrayEqual, makeSwingsetTestKit } from '../../tools/supports.js';
+import { keyArrayEqual } from '@aglocal/boot/tools/supports.js';
+import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
+import { NonNullish } from '@agoric/internal';
+import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
+import { PowerFlags } from '@agoric/vats/src/walletFlags.js';
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 const { keys } = Object;
+const { resolve: resolvePath } = createRequire(import.meta.url);
 
-const makeDefaultTestContext = async t => {
-  const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
-    configSpecifier: '@agoric/vm-config/decentral-demo-config.json',
+const makeDefaultTestContext = async () => {
+  const testkit = await makeCosmicSwingsetTestKit({
+    configOverrides: NonNullish(
+      await loadSwingsetConfigFile(
+        resolvePath('@agoric/vm-config/decentral-demo-config.json'),
+      ),
+    ),
   });
-  return swingsetTestKit;
+  await testkit.runNextBlock();
+
+  return testkit;
 };
 type DefaultTestContext = Awaited<ReturnType<typeof makeDefaultTestContext>>;
 
 const test: TestFn<DefaultTestContext> = anyTest;
 
-test.before(async t => (t.context = await makeDefaultTestContext(t)));
+test.before(async t => (t.context = await makeDefaultTestContext()));
 test.after.always(t => t.context.shutdown?.());
 
 // Goal: test that prod config does not expose mailbox access.
@@ -59,6 +69,7 @@ test('sim/demo config provides home with .myAddressNameAdmin', async t => {
   ].sort();
 
   const { EV } = t.context.runUtils;
+
   await t.notThrowsAsync(EV.vat('bootstrap').consumeItem('provisioning'));
   t.log('bootstrap produced provisioning vat');
   const addr = 'agoric123';
