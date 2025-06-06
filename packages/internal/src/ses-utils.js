@@ -20,7 +20,7 @@ import { logLevels } from './js-utils.js';
 /** @import {LimitedConsole} from './js-utils.js'; */
 
 /** @import {ERef} from '@endo/far'; */
-/** @import {Primitive} from '@endo/pass-style'; */
+/** @import {Atom} from '@endo/pass-style'; */
 /** @import {Permit, Attenuated} from './types.js'; */
 
 export { objectMap, objectMetaMap, fromUniqueEntries };
@@ -205,7 +205,7 @@ export const attenuate = (specimen, permit, transform = x => x) => {
   const path = [];
   /**
    * @template SubT
-   * @template {Exclude<Permit<SubT>, Primitive>} SubP
+   * @template {Exclude<Permit<SubT>, Atom>} SubP
    * @type {(specimen: SubT, permit: SubP) => Attenuated<SubT, SubP>}
    */
   const extract = (subSpecimen, subPermit) => {
