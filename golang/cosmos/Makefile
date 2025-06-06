@@ -8,6 +8,10 @@ PR_TARGET_REPO = https://github.com/Agoric/agoric-sdk.git
 PR_TARGET_BRANCH = master
 DOCKER := $(shell which docker)
 
+COSM_WASM_PKG = github.com/CosmWasm/wasmvm
+COSM_WASM_VM_VERSION = $(shell go list -m -f '{{ .Replace.Version }}' $(COSM_WASM_PKG))
+COSM_WASM_VM_RELEASE_URL = https://$(COSM_WASM_PKG)/releases/download/$(COSM_WASM_VM_VERSION)
+
 default: all
 
 MOD_READONLY = -mod=readonly
@@ -19,11 +23,14 @@ include Makefile.ledger
 whitespace :=
 whitespace := $(whitespace) $(whitespace)
 comma := ,
-build_tags_comma_sep := $(subst $(whitespace),$(comma),$(build_tags))
+build_tags_comma_sep := $(subst $(whitespace),$(comma),$(all_build_tags))
 
 # Note that the version.Name must be alphanumeric only.
 # Otherwise, generated "os" keyrings on Ubuntu 20.04 can't be read.
 VersionName := $(shell echo "$(NAME)" | sed -e 's/[^A-Za-z0-9]//g')
+
+# Declare that we want a static libwasmvm, based on muslc (not glibc)
+all_build_tags = $(build_tags) static_wasm muslc
 
 # process linker flags
 ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=$(VersionName) \
@@ -32,7 +39,12 @@ ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=$(VersionName) \
 		-X github.com/cosmos/cosmos-sdk/version.Commit=$(GIT_COMMIT) \
 		-X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)"
 
+# We copy the static libwasmvm into the ./build directory, so link it from there.
+# libwasmvm_muslc.x86_64.a needs an explicit libm (-lm).
+ldflags += -linkmode=external -extldflags "-Wl,-L,$(PWD)/build,-lm"
+
 gcflags =
+
 shared_ldflags = $(ldflags)
 
 ifneq ($(GO_DEBUG),)
@@ -43,8 +55,8 @@ else ifeq ($(shell uname -s 2>/dev/null),Darwin)
 shared_ldflags += -w
 endif
 
-BUILD_FLAGS := -tags "$(build_tags)" -gcflags '$(gcflags)' -ldflags '$(ldflags)'
-SHARED_BUILD_FLAGS := -tags "$(build_tags)" -gcflags '$(gcflags)' -ldflags '$(shared_ldflags)'
+BUILD_FLAGS := -tags "$(all_build_tags)" -gcflags '$(gcflags)' -ldflags '$(ldflags)'
+SHARED_BUILD_FLAGS := -tags "$(all_build_tags)" -gcflags '$(gcflags)' -ldflags '$(shared_ldflags)'
 
 all: compile-chain
 
@@ -62,19 +74,19 @@ node-compile-gyp:
 		npm run build:gyp; \
 	fi
 
-compile-agd: go.sum
+compile-agd: go.sum copy-cosmwasm-vm
 	go build -v $(MOD_READONLY) $(BUILD_FLAGS) -buildmode=exe -o build/agd ./cmd/agd
 
-install-agd: go.sum
+install-agd: go.sum copy-cosmwasm-vm
 	go install -v $(MOD_READONLY) $(BUILD_FLAGS) -buildmode=exe ./cmd/agd
 
 # Only run from the package.json build:gyp script.
-compile-gyp:
+compile-gyp: copy-cosmwasm-vm
 	cp binding.gyp.in binding.gyp
 	node-gyp configure build $(GYP_DEBUG) || { status=$$?; rm -f binding.gyp; exit $$status; }
 	rm -f binding.gyp
 
-compile-libdaemon: go.sum
+compile-libdaemon: go.sum copy-cosmwasm-vm
 	go build -v $(MOD_READONLY) $(SHARED_BUILD_FLAGS) -buildmode=c-shared \
 		-o build/libagcosmosdaemon.so ./cmd/libdaemon/main.go
 
@@ -86,6 +98,27 @@ endif
 	GO111MODULE=on go mod tidy
 	@echo "--> Download go modules to local cache"
 	go mod download
+
+# We need to resolve build/libwasmvm_muslc.a for our architecture.
+copy-cosmwasm-vm: build/libwasmvm-checksums.txt
+	case $$(uname -m) in \
+		x86_64 | amd64) \
+			ln -sf libwasmvm_muslc.x86_64.a build/libwasmvm_muslc.a; \
+			;; \
+		aarch64 | arm64) \
+			ln -sf libwasmvm_muslc.aarch64.a build/libwasmvm_muslc.a; \
+			;; \
+	esac
+
+build/libwasmvm-checksums.txt:
+	mkdir -p build
+	set -e; \
+	cd build; \
+	curl -sSL $(COSM_WASM_VM_RELEASE_URL)/checksums.txt | grep -E '\.a$$' | tee libwasmvm-checksums.txt | \
+	while read sum file; do \
+		curl -sSL "$(COSM_WASM_VM_RELEASE_URL)/$$file" -o "$$file"; \
+	done
+	(cd build && shasum -c libwasmvm-checksums.txt)
 
 ###############################################################################
 ###                           Protobuf                                    ###
