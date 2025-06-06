@@ -12,6 +12,24 @@ export default /** @type {const} } */ ({
       },
     ],
     connections: {
+      axelar: {
+        id: 'connection-0',
+        client_id: '07-tendermint-0',
+        counterparty: {
+          client_id: '07-tendermint-0',
+          connection_id: 'connection-0',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-0',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-0',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
       'core-1': {
         id: 'connection-91',
         client_id: '07-tendermint-93',
@@ -380,6 +398,37 @@ export default /** @type {const} } */ ({
           channelId: 'channel-146',
           portId: 'transfer',
           counterPartyChannelId: 'channel-13',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+    },
+  },
+  axelar: {
+    bech32Prefix: 'axelar',
+    chainId: 'axelar',
+    namespace: 'cosmos',
+    reference: 'axelar',
+    stakingTokens: [
+      {
+        denom: 'uaxl',
+      },
+    ],
+    connections: {
+      'agoric-3': {
+        id: 'connection-0',
+        client_id: '07-tendermint-0',
+        counterparty: {
+          client_id: '07-tendermint-0',
+          connection_id: 'connection-0',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-0',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-0',
           counterPartyPortId: 'transfer',
           ordering: 0,
           state: 3,
