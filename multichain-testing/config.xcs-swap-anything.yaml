@@ -1,4 +1,4 @@
-name: agoric-multichain-testing-go-relayer
+name: agoric-multichain-testing
 version: v1.7
 
 chains:
@@ -9,6 +9,9 @@ chains:
     env:
       - name: DEBUG
         value: SwingSet:vat,SwingSet:ls
+      # CONFIG_FILE env is for scripts/update-config.sh
+      - name: CONFIG_FILE
+        value: 'config.xcs-swap-anything.yaml'
     genesis:
       app_state:
         staking:
@@ -38,6 +41,16 @@ chains:
     numValidators: 1
     genesis:
       app_state:
+        feemarket:
+          params:
+            min_base_gas_price: '0.000000000000000000'
+            enabled: true
+            fee_denom: 'uosmo'
+        globalfee:
+          params:
+            minimum_gas_prices:
+              - denom: 'uosmo'
+                amount: '0'
         staking:
           params:
             unbonding_time: '2m'
@@ -66,10 +79,20 @@ chains:
       memory: 1Gi
   - id: cosmoshublocal
     name: cosmoshub
-    image: ghcr.io/cosmology-tech/starship/gaia:v21.0.1
+    image: ghcr.io/hyperweb-io/starship/gaia:v21.0.1
     numValidators: 1
     genesis:
       app_state:
+        feemarket:
+          params:
+            min_base_gas_price: '0.000000000000000000'
+            enabled: true
+            fee_denom: 'uatom'
+        globalfee:
+          params:
+            minimum_gas_prices:
+              - denom: 'uatom'
+                amount: '0'
         staking:
           params:
             unbonding_time: '2m'
@@ -92,19 +115,27 @@ chains:
 
 relayers:
   - name: osmosis-cosmoshub
-    type: go-relayer
+    type: hermes
+    # image: ghcr.io/cosmology-tech/starship/hermes:1.10.5
     replicas: 1
     chains:
       - osmosislocal
       - cosmoshublocal
   - name: agoric-osmosis
-    type: go-relayer
+    type: hermes
+    # image: ghcr.io/cosmology-tech/starship/hermes:1.10.5
     replicas: 1
     chains:
       - agoriclocal
       - osmosislocal
+    config:
+      global:
+        log_level: 'debug'
+      telemetry:
+        enabled: true
   - name: agoric-cosmoshub
-    type: go-relayer
+    type: hermes
+    # image: ghcr.io/cosmology-tech/starship/hermes:1.10.5
     replicas: 1
     chains:
       - agoriclocal
