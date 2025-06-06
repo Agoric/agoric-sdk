@@ -15,6 +15,7 @@ import type { TestFn } from 'ava';
 import { meta } from '../../../packages/portfolio-contract/src/portfolio.contract.meta.ts';
 import starshipChainInfo from '../../starship-chain-info.js';
 import { seatLike } from '../../tools/e2e-tools.js';
+import { getStarshipChainInfo } from '../../tools/chain-info-registry.ts';
 
 const trace = makeTracer('MCYMX');
 
@@ -43,7 +44,26 @@ const makeTestContext = async (t: ExecutionContext) => {
   )) as Record<keyof typeof keyMaterial, string>;
   t.log('setupTestKeys:', accounts);
 
-  const { chainInfo, assetInfo } = common.commonBuilderOpts;
+  const chainInfoNeeded = async () => {
+    const { vstorageClient: vsc } = common;
+    try {
+      const { namespace, reference } = await vsc.queryData(
+        'published.agoricNames.chain.agoric',
+      );
+      t.log('agoric', { namespace, reference });
+      return !(namespace === 'cosmos' && reference === 'agoriclocal');
+    } catch {
+      return true;
+    }
+  };
+  if (await chainInfoNeeded()) {
+    const chainInfo = await getStarshipChainInfo({ fetch: globalThis.fetch });
+    await common.deployBuilder(
+      '../packages/builders/scripts/orchestration/chain-info.build.js',
+      { chainInfo: JSON.stringify(chainInfo) },
+    );
+  }
+
   await startContract(
     meta.name,
     '../packages/portfolio-contract/scripts/portfolio.build.js',
