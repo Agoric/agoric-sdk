@@ -44,6 +44,8 @@ const makeTestContext = async (t: ExecutionContext) => {
   )) as Record<keyof typeof keyMaterial, string>;
   t.log('setupTestKeys:', accounts);
 
+  await common.changeVotingPeriod(5n); // TODO: skip if done already
+
   const chainInfoNeeded = async () => {
     const { vstorageClient: vsc } = common;
     try {
