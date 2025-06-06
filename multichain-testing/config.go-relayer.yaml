@@ -1,5 +1,5 @@
 name: agoric-multichain-testing-go-relayer
-version: 0.2.20
+version: v1.7
 
 chains:
   - id: agoriclocal
@@ -34,6 +34,7 @@ chains:
       memory: 4Gi
   - id: osmosislocal
     name: osmosis
+    image: ghcr.io/cosmology-tech/starship/osmosis:v28.0.0
     numValidators: 1
     genesis:
       app_state:
@@ -65,6 +66,7 @@ chains:
       memory: 1Gi
   - id: cosmoshublocal
     name: cosmoshub
+    image: ghcr.io/cosmology-tech/starship/gaia:v21.0.1
     numValidators: 1
     genesis:
       app_state:

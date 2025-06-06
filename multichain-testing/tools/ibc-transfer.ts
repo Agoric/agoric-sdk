@@ -106,7 +106,7 @@ export const makeIBCTransferMsg = (
   if (!high_gas_price) throw Error('no high gas price in chain config');
   const fee = makeFeeObject({
     denom: denom,
-    gas: 150000,
+    gas: 197000,
     gasPrice: high_gas_price,
   });
 
