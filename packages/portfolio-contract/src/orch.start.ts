@@ -3,13 +3,20 @@ import type { Brand, Issuer } from '@agoric/ertp';
 import {
   deeplyFulfilledObject,
   makeTracer,
+  objectMap,
+  type Remote,
   type TypedPattern,
 } from '@agoric/internal';
 import type {
   Marshaller,
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
-import type { OrchestrationPowers } from '@agoric/orchestration';
+import type {
+  ChainInfo,
+  IBCConnectionInfo,
+  OrchestrationPowers,
+} from '@agoric/orchestration';
+import { makeAssetInfo } from '@agoric/orchestration/src/chain-name-service.js';
 import type { Board, NameHub } from '@agoric/vats';
 import type {
   BootstrapManifest,
@@ -21,7 +28,7 @@ import { E, type ERef } from '@endo/far';
 import type { CopyRecord } from '@endo/pass-style';
 import { fromExternalConfig, type LegibleCapData } from './config-marshal.js';
 
-const { fromEntries, keys } = Object;
+const { entries, fromEntries, keys } = Object;
 
 const trace = makeTracer(`ORCH-Start`, true);
 
@@ -215,6 +222,88 @@ export const makeGetManifest = <
   harden(getManifestForOrch);
 
   return getManifestForOrch;
+};
+
+// XXX copied from chain-hub.js
+/**
+ * Utility to reverse connection info perspective.
+ */
+const reverseConnInfo = (connInfo: IBCConnectionInfo): IBCConnectionInfo => {
+  const { transferChannel } = connInfo;
+  return harden({
+    id: connInfo.counterparty.connection_id,
+    client_id: connInfo.counterparty.client_id,
+    counterparty: {
+      client_id: connInfo.client_id,
+      connection_id: connInfo.id,
+    },
+    state: connInfo.state,
+    transferChannel: {
+      ...transferChannel,
+      channelId: transferChannel.counterPartyChannelId,
+      counterPartyChannelId: transferChannel.channelId,
+      portId: transferChannel.counterPartyPortId,
+      counterPartyPortId: transferChannel.portId,
+    },
+  });
+};
+
+export const mixConnections = (
+  plainInfo: Record<string, ChainInfo>,
+  connInfos: Record<string, IBCConnectionInfo>,
+) => {
+  const chainInfos = { ...plainInfo };
+  for (const [connKey, directed] of entries(connInfos)) {
+    const [p, c] = connKey.split('_'); // XXX named function to do this?
+    const [pn, cn] = [p, c].map(cid =>
+      keys(chainInfos).find(
+        k =>
+          chainInfos[k].namespace === 'cosmos' && chainInfos[k].chainId === cid,
+      ),
+    );
+    if (!(pn && cn)) {
+      trace(
+        'cannot find chains for connection',
+        connKey,
+        objectMap(chainInfos, info => 'chainId' in info && info.chainId),
+      );
+      continue;
+    }
+    for (const { name, id, connInfo } of [
+      { name: pn, id: c, connInfo: directed },
+      { name: cn, id: p, connInfo: reverseConnInfo(directed) },
+    ]) {
+      const cInfo = chainInfos[name];
+      if (cInfo.namespace !== 'cosmos') {
+        trace(connKey, 'connects non-cosmos chain', name, cInfo);
+        continue;
+      }
+      chainInfos[name] = {
+        ...cInfo,
+        connections: { ...cInfo.connections, [id]: connInfo },
+      };
+    }
+  }
+  return harden(chainInfos);
+};
+
+export const lookupInterchainInfo = async (
+  agoricNames: Remote<NameHub>,
+  tokenMap = { agoric: ['ubld'], noble: ['uusdc'] },
+) => {
+  const plainInfos = fromEntries(
+    await E(E(agoricNames).lookup('chain')).entries(),
+  ) as Record<string, ChainInfo>;
+  const connInfos = fromEntries(
+    await E(E(agoricNames).lookup('chainConnection')).entries(),
+  ) as Record<string, IBCConnectionInfo>;
+
+  const chainInfos = mixConnections(plainInfos, connInfos);
+
+  return harden({
+    chainInfo: chainInfos,
+    assetInfo: makeAssetInfo(chainInfos, tokenMap),
+  });
 };
 
 export const orchPermit = {
