@@ -88,15 +88,40 @@ const main = async ({
     '--gas=auto',
     '--gas-adjustment=1.3',
   ];
-  const actual = await $({
-    verbose: 'short',
-  })`nobled --node ${rpc} tx swap swap ${toTrade.toString()}${denom} ${route} ${((toTrade * 99n) / 100n).toString()}${denomTo} ${signArgs} -o json`;
-  //   console.log(actual);
-  const { code, raw_log, txhash } = JSON.parse(actual.stdout);
-  if (code !== 0) {
-    throw Error(raw_log);
+
+  const $v = $({ verbose: 'short' });
+  if (env.SWAP) {
+    const { balances: before } = await queryClient.queryBalances(address);
+    console.log('balances before', before);
+    const actual =
+      await $v`nobled --node ${rpc} tx swap swap ${toTrade.toString()}${denom} ${route} ${((toTrade * 99n) / 100n).toString()}${denomTo} ${signArgs} -o json`;
+    //   console.log(actual);
+    const { code, raw_log, txhash } = JSON.parse(actual.stdout);
+    if (code !== 0) {
+      throw Error(raw_log);
+    }
+    const { balances: after } = await queryClient.queryBalances(address);
+    console.log('balances after (TODO: wait until this changes)', after);
+    console.log({ txhash, url: `${explorer}/tx/${txhash}` });
   }
-  console.log({ txhash, url: `${explorer}/tx/${txhash}` });
+
+  if (env.LOCK) {
+    // NOTE: must lock at least 1000000uusdn
+    const { balances: before } = await queryClient.queryBalances(address);
+    console.log('balances before', before);
+    const STAKED = 'staked';
+    const actual =
+      await $v`nobled --node ${rpc} tx dollar vaults lock ${STAKED} ${env.LOCK} ${signArgs} -o json`;
+    //   console.log(actual);
+    const { code, raw_log, txhash } = JSON.parse(actual.stdout);
+    if (code !== 0) {
+      throw Error(raw_log);
+    }
+    await $v`sleep 6`;
+    const { balances: after } = await queryClient.queryBalances(address);
+    console.log('balances after (TODO: wait until this changes)', after);
+    console.log({ txhash, url: `${explorer}/tx/${txhash}` });
+  }
 };
 
 main().catch(err => {
