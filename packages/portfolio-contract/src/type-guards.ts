@@ -34,12 +34,8 @@ export const makeProposalShapes = (usdcBrand: Brand<'nat'>) => {
   };
 };
 
-export type PortfolioConfig = {
-  chainInfo: Record<string, ChainInfo>;
-  assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
-} & CopyRecord;
+export type PortfolioConfig = {} & CopyRecord;
 
-export const PortfolioConfigShape = M.splitRecord({
-  chainInfo: M.recordOf(M.string(), ChainInfoShape),
-  assetInfo: M.arrayOf([DenomShape, DenomDetailShape]),
-}) as TypedPattern<PortfolioConfig>;
+export const PortfolioConfigShape = M.splitRecord(
+  {},
+) as TypedPattern<PortfolioConfig>;
