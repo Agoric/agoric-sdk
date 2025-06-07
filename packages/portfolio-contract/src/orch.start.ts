@@ -124,7 +124,7 @@ export const startOrchContract = async <
 ) => {
   trace('startOrchContract');
 
-  const { agoricNames } = consume;
+  const { agoricNames, zoe } = consume;
   const issuerKeywordRecord = await permittedIssuers(agoricNames, permitG);
 
   const brandHub: Promise<NameHub> = E(agoricNames).lookup('brand');
@@ -163,6 +163,11 @@ export const startOrchContract = async <
     config,
   );
 
+  trace(
+    '@@@',
+    metaG.name,
+    await E(zoe).getBundleIDFromInstallation(await installation),
+  );
   const { startUpgradable } = consume;
   const kit = await E(startUpgradable)({
     label: metaG.name,
@@ -172,6 +177,7 @@ export const startOrchContract = async <
     privateArgs,
   });
   const { instance } = kit;
+  trace('started terms', await E(zoe).getTerms(instance));
   const fullKit = harden({ ...kit, privateArgs }) as UpgradeKit<SF>;
   // @ts-expect-error XXX tsc gets confused?
   produce[`${metaG.name}Kit`].resolve(fullKit);
