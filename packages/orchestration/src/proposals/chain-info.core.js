@@ -12,6 +12,7 @@ import {
 
 /**
  * @import {ChainInfo, CosmosChainInfo, Denom} from '@agoric/orchestration';
+ * @import {NameHub, NameAdmin} from '@agoric/vats';
  */
 
 const trace = makeTracer('ChainInfoCore', true);
@@ -25,14 +26,19 @@ const marshalData = makeMarshal(_val => Fail`data only`);
  */
 
 /**
- * @param {ERef<import('@agoric/vats').NameHubKit['nameAdmin']>} agoricNamesAdmin
+ * For each HubName, provide a NameHubKit reflected into vstorage unless there's
+ * already an agorcNames key by that name.
+ *
+ * @param {ERef<NameAdmin>} agoricNamesAdmin
  * @param {ERef<StorageNode>} chainStorageP
+ * @param {ERef<NameHub>} agoricNames
  */
 const publishChainInfoToChainStorage = async (
   agoricNamesAdmin,
   chainStorageP,
+  agoricNames,
 ) => {
-  const agoricNamesNode = await E(chainStorageP).makeChildNode('agoricNames');
+  const agoricNamesNode = E(chainStorageP).makeChildNode('agoricNames');
 
   /**
    * @param {string} subpath
@@ -71,7 +77,12 @@ const publishChainInfoToChainStorage = async (
       }),
     );
   };
-  await Promise.all(Object.values(HubName).map(echoNameUpdates));
+  const existingKeys = await E(agoricNames).keys();
+  await Promise.all(
+    Object.values(HubName)
+      .filter(k => !existingKeys.includes(k))
+      .map(echoNameUpdates),
+  );
 };
 
 /**
@@ -81,6 +92,8 @@ const publishChainInfoToChainStorage = async (
  */
 
 /**
+ * WARNING: prunes any data that was previously published
+ *
  * @param {BootstrapPowers & ChainStoragePresent} powers
  * @param {{
  *   options?: {
@@ -104,20 +117,26 @@ export const publishChainInfo = async (
   trace('publishChainInfo', keys(chainInfo), tokenMap);
 
   // Ensure updates go to vstorage
-  await null;
-  try {
-    await E(agoricNames).lookup(HubName.Chain);
-  } catch {
-    await publishChainInfoToChainStorage(agoricNamesAdmin, chainStorage);
-  }
+  await publishChainInfoToChainStorage(
+    agoricNamesAdmin,
+    chainStorage,
+    agoricNames,
+  );
 
-  // NOTE: deletes aren't reflected in vstorage like adds and updates are
   for (const kind of Object.values(HubName)) {
     const hub = E(agoricNames).lookup(kind);
+    /** @type {string[]} */
     const oldKeys = await E(hub).keys();
     trace('clearing old', kind, oldKeys);
+    if (!oldKeys.length) continue;
+
     const admin = E(agoricNamesAdmin).lookupAdmin(kind);
     await Promise.all(oldKeys.map(k => E(admin).delete(k)));
+    const node = E(chainStorage).makeChildNode(kind);
+    // XXX setValue('') deletes a vstorage key (right?)
+    await Promise.all(
+      oldKeys.map(k => E(E(node).makeChildNode(k)).setValue('')),
+    );
   }
 
   const assetInfo = makeAssetInfo(cosmosChainInfo, tokenMap);
