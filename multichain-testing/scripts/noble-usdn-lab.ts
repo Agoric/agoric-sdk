@@ -4,10 +4,17 @@
  */
 import '@endo/init';
 
+import { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import type { StdFee } from '@cosmjs/amino';
+import {
+  DirectSecp256k1HdWallet,
+  type EncodeObject,
+} from '@cosmjs/proto-signing';
+import { SigningStargateClient } from '@cosmjs/stargate';
 import { $ } from 'execa';
-import { useRegistry, useChain, ConfigContext } from 'starshipjs';
+import { ConfigContext, useRegistry } from 'starshipjs';
+import { DEFAULT_TIMEOUT_NS } from '../tools/ibc-transfer.ts';
 import { makeQueryClient } from '../tools/query.ts';
-import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing';
 
 const configs = {
   starship: {
@@ -23,8 +30,31 @@ const configs = {
       chainId: 'grand-1',
       explorer: 'https://www.mintscan.io/noble-testnet',
     },
+    agoric: {
+      connections: {
+        'grand-1': {
+          client_id: '07-tendermint-13',
+          counterparty: {
+            client_id: '07-tendermint-432',
+            connection_id: 'connection-396',
+          },
+          id: 'connection-13',
+          state: 'STATE_OPEN',
+          transferChannel: {
+            channelId: 'channel-11',
+            counterPartyChannelId: 'channel-337',
+            counterPartyPortId: 'transfer',
+            ordering: 'ORDER_UNORDERED',
+            portId: 'transfer',
+            state: 'STATE_OPEN',
+            version: 'ics20-1',
+          },
+        },
+      },
+    },
   },
-};
+} as const;
+harden(configs);
 
 const keyMaterial = {
   trader1:
@@ -57,7 +87,7 @@ const main = async ({
 
   //   const nobleChain = useChain('noble');
   //   const apiUrl = await nobleChain.getRestEndpoint();
-  const { api: apiUrl } = configs.testnet.noble;
+  const { api: apiUrl, rpc: rpcEndpoint } = configs.testnet.noble;
   const queryClient = makeQueryClient(apiUrl); // XXX pass fetch
 
   const fundsWanted = 4_000_000n;
@@ -90,6 +120,45 @@ const main = async ({
   ];
 
   const $v = $({ verbose: 'short' });
+  if (env.TXFR) {
+    const token = { denom, amount: String(BigInt(env.TXFR)) };
+    const ag = await DirectSecp256k1HdWallet.fromMnemonic(keyMaterial.trader1, {
+      prefix: 'agoric',
+    });
+    const [{ address: receiver }] = await ag.getAccounts();
+
+    const { counterPartyChannelId, counterPartyPortId } =
+      configs.testnet.agoric.connections['grand-1'].transferChannel;
+    const msgTransfer = MsgTransfer.fromPartial({
+      sender: address,
+      receiver,
+      token,
+      sourcePort: counterPartyPortId,
+      sourceChannel: counterPartyChannelId,
+      timeoutHeight: undefined,
+      timeoutTimestamp: DEFAULT_TIMEOUT_NS,
+      memo: 'noble-usdn-lab',
+    });
+
+    const fee: StdFee = { amount: [{ denom, amount: '30000' }], gas: '197000' };
+
+    const clientN = await SigningStargateClient.connectWithSigner(
+      rpcEndpoint,
+      wallet,
+    );
+    console.log('transfer from', address, msgTransfer, fee);
+    const actual = await clientN.signAndBroadcast(
+      address,
+      [
+        {
+          typeUrl: MsgTransfer.typeUrl,
+          value: msgTransfer,
+        } as EncodeObject,
+      ],
+      fee,
+    );
+    console.log(actual);
+  }
   if (env.SWAP) {
     const { balances: before } = await queryClient.queryBalances(address);
     console.log('balances before', before);
