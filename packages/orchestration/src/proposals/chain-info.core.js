@@ -98,7 +98,6 @@ const publishChainInfoToChainStorage = async (
  * @param {{
  *   options?: {
  *     chainInfo?: Record<string, ChainInfo>;
- *     tokenMap?: Record<string, Denom[]>;
  *   };
  * }} [config]
  */
@@ -106,15 +105,9 @@ export const publishChainInfo = async (
   { consume: { agoricNames, agoricNamesAdmin, chainStorage } },
   config = {},
 ) => {
-  const { fromEntries, keys } = Object;
+  const { keys } = Object;
   const { chainInfo = {} } = config?.options || {};
-  const cosmosChainInfo = selectCosmosChainInfo(chainInfo);
-  const {
-    tokenMap = objectMap(cosmosChainInfo, info =>
-      ((info || {})?.stakingTokens || []).map(t => t.denom),
-    ),
-  } = config?.options || {};
-  trace('publishChainInfo', keys(chainInfo), tokenMap);
+  trace('publishChainInfo', keys(chainInfo));
 
   // Ensure updates go to vstorage
   await publishChainInfoToChainStorage(
@@ -123,6 +116,7 @@ export const publishChainInfo = async (
     agoricNames,
   );
 
+  const agoricNamesNode = E(chainStorage).makeChildNode('agoricNames');
   for (const kind of Object.values(HubName)) {
     const hub = E(agoricNames).lookup(kind);
     /** @type {string[]} */
@@ -132,23 +126,12 @@ export const publishChainInfo = async (
 
     const admin = E(agoricNamesAdmin).lookupAdmin(kind);
     await Promise.all(oldKeys.map(k => E(admin).delete(k)));
-    const node = E(chainStorage).makeChildNode(kind);
+    const node = E(agoricNamesNode).makeChildNode(kind);
     // XXX setValue('') deletes a vstorage key (right?)
     await Promise.all(
       oldKeys.map(k => E(E(node).makeChildNode(k)).setValue('')),
     );
   }
-
-  const assetInfo = makeAssetInfo(cosmosChainInfo, tokenMap);
-  const assetsByChain = harden(
-    fromEntries(
-      keys(chainInfo).map(n => [
-        n,
-        assetInfo.filter(([_d, detail]) => detail.chainName === n),
-      ]),
-    ),
-  );
-  trace('@@@assetsByChain', JSON.stringify(assetsByChain, null, 2));
 
   const handledConnections = new Set();
   for await (const [name, info] of Object.entries(chainInfo)) {
@@ -160,11 +143,6 @@ export const publishChainInfo = async (
       handledConnections,
     );
     trace('@@@registered', name, info);
-    const assets = assetsByChain[name];
-    if (assets && assets.length) {
-      await registerChainAssets(agoricNamesAdmin, name, assets);
-      trace('@@@registered', name, assets);
-    }
   }
   trace('@@@conn', ...handledConnections);
   trace('publishChainInfo done');
