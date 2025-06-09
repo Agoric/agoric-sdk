@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/rpc"
+	"sync"
 )
 
 // ReceiveMessageMethod is the name of the method we call in order to have the
@@ -34,12 +35,21 @@ var _ rpc.ClientCodec = (*ClientCodec)(nil)
 // having the WriteRequest() method fabricate a Receive() call to clear the rpc
 // state.
 type ClientCodec struct {
-	ctx         context.Context
-	send        func(port, rPort int, msg string)
-	outbound    map[int]rpc.Request
-	inbound     chan *rpc.Response
-	replies     map[uint64]string
+	ctx     context.Context
+	send    func(port, rPort int, msg string)
+	inbound chan *rpc.Response
+
+	// reqMutex protects outbound requests.
+	reqMutex sync.Mutex
+	outbound map[int]rpc.Request
+
+	// Scratch space to communicate between ReadResponseHeader and
+	// ReadResponseBody (protected by mutex in "net/rpc" implementation).
 	replyToRead uint64
+
+	// mutex protects replies map
+	mutex   sync.Mutex
+	replies map[uint64]string
 }
 
 // NewClientCodec creates a new ClientCodec.
@@ -64,7 +74,11 @@ func (cc *ClientCodec) WriteRequest(r *rpc.Request, body interface{}) error {
 		return fmt.Errorf("body %T is not a Message", body)
 	}
 	rPort := int(r.Seq + 1) // rPort is 1-indexed to indicate it's required
+
+	cc.reqMutex.Lock()
 	cc.outbound[rPort] = *r
+	cc.reqMutex.Unlock()
+
 	var senderReplyPort int
 	if msg.NeedsReply {
 		senderReplyPort = rPort
@@ -85,18 +99,27 @@ func (cc *ClientCodec) ReadResponseHeader(r *rpc.Response) error {
 }
 
 // ReadResponseBody decodes a response body (currently just string) from the VM.
+// and will always be called immediately after ReadResponseHeader (cf.
+// https://pkg.go.dev/net/rpc#ClientCodec ).
 func (cc *ClientCodec) ReadResponseBody(body interface{}) error {
-	if body != nil {
-		*body.(*string) = cc.replies[cc.replyToRead]
-	}
+	cc.mutex.Lock()
+	reply := cc.replies[cc.replyToRead]
 	delete(cc.replies, cc.replyToRead)
+	cc.mutex.Unlock()
+
+	if body != nil {
+		*body.(*string) = reply
+	}
 	return nil
 }
 
 // Receive is called by the VM to send a response to the client.
 func (cc *ClientCodec) Receive(rPort int, isError bool, data string) error {
+	cc.reqMutex.Lock()
 	outb := cc.outbound[rPort]
 	delete(cc.outbound, rPort)
+	cc.reqMutex.Unlock()
+
 	resp := &rpc.Response{
 		ServiceMethod: outb.ServiceMethod,
 		Seq:           outb.Seq,
@@ -104,7 +127,9 @@ func (cc *ClientCodec) Receive(rPort int, isError bool, data string) error {
 	if isError {
 		resp.Error = data
 	} else {
+		cc.mutex.Lock()
 		cc.replies[resp.Seq] = data
+		cc.mutex.Unlock()
 	}
 	cc.inbound <- resp
 	return nil
