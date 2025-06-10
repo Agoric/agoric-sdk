@@ -1,14 +1,19 @@
 import { makeTracer } from '@agoric/internal';
 import {
   OrchestrationPowersShape,
+  registerChainsAndAssets,
   withOrchestration,
+  type OrchestrationAccount,
   type OrchestrationTools,
 } from '@agoric/orchestration';
-import { type VTransferIBCEvent } from '@agoric/vats';
+import type { ZCF } from '@agoric/zoe';
+import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Zone } from '@agoric/zone';
-import { E } from '@endo/far';
+import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
+import { preparePortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
+import { makeProposalShapes } from './type-guards.ts';
 
 const trace = makeTracer('PortC');
 
@@ -16,47 +21,73 @@ const interfaceTODO = undefined;
 
 export const meta = M.splitRecord({
   privateArgsShape: {
-    // @ts-expect-error TypedPattern not recognized as record
-    ...OrchestrationPowersShape,
+    ...(OrchestrationPowersShape as CopyRecord),
     marshaller: M.remotable('marshaller'),
   },
 });
 harden(meta);
 
 export const contract = async (
-  _zcf,
-  _privateArgs,
+  zcf: ZCF,
+  privateArgs,
   zone: Zone,
   tools: OrchestrationTools,
 ) => {
-  const { orchestrateAll } = tools;
-  const { makeHookAccount, makePosition } = orchestrateAll(flows, {});
+  const { brands } = zcf.getTerms();
+  const { orchestrateAll, zoeTools, chainHub } = tools;
 
-  const { when } = tools.vowTools;
+  assert(brands.USDC, 'USDC missing from brands in terms');
 
-  const tap = zone.makeOnce('tapPosition', _key => {
-    trace('making tap');
-    return zone.exo('tap', interfaceTODO, {
-      async receiveUpcall(event: VTransferIBCEvent) {
-        trace('receiveUpcall', event);
-        // TODO: use watch() rather than when for resumability
-        await when(makePosition()).catch(error => {
-          trace('receiveUpcall: flow failed:', error);
-        });
-      },
-    });
-  });
-
-  const hookAccountV = zone.makeOnce('hookAccount', _key =>
-    makeHookAccount(tap),
+  // TODO: only on 1st incarnation
+  registerChainsAndAssets(
+    chainHub,
+    brands,
+    privateArgs.chainInfo,
+    privateArgs.assetInfo,
+    { log: trace },
   );
 
-  return {
-    publicFacet: zone.exo('MyPub', interfaceTODO, {
-      getHookAddress: () => E(when(hookAccountV)).getAddress(),
-    }),
-    creatorFacet: zone.exo('MyCreator', undefined, {}),
+  const proposalShapes = makeProposalShapes(brands.USDC);
+
+  const inertSubscriber: ResolvedPublicTopic<never>['subscriber'] = {
+    getUpdateSince() {
+      assert.fail('use off-chain queries');
+    },
+    subscribeAfter() {
+      assert.fail('use off-chain queries');
+    },
   };
+
+  const makePortfolioKit = preparePortfolioKit(zone);
+  const { makeLocalAccount, openPortfolio } = orchestrateAll(flows, {
+    zoeTools,
+    makePortfolioKit,
+    inertSubscriber,
+  });
+
+  trace('TODO: baggage test');
+  const localV = zone.makeOnce('localV', _ => makeLocalAccount());
+
+  const publicFacet = zone.exo('PortfolioPub', interfaceTODO, {
+    makeOpenPortfolioInvitation() {
+      trace('makeOpenPortfolioInvitation');
+      return zcf.makeInvitation(
+        (seat, offerArgs) =>
+          openPortfolio(
+            seat,
+            offerArgs,
+            localV as unknown as Promise<
+              OrchestrationAccount<{ chainId: 'agoric-any' }>
+            >,
+          ),
+        'openPortfolio',
+        undefined,
+        proposalShapes.openPortfolio,
+      );
+    },
+  });
+
+  return { publicFacet };
 };
 harden(contract);
 
