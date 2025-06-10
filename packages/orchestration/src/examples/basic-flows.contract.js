@@ -10,6 +10,7 @@ import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
 import * as flows from './basic-flows.flows.js';
 
 /**
+ * @import {Remote} from '@agoric/internal';
  * @import {Zone} from '@agoric/zone';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {ZCF} from '@agoric/zoe';
@@ -19,7 +20,7 @@ import * as flows from './basic-flows.flows.js';
 /**
  * @param {ZCF} zcf
  * @param {OrchestrationPowers & {
- *   marshaller: Marshaller;
+ *   marshaller: Remote<Marshaller>;
  *   chainInfo?: Record<string, CosmosChainInfo>;
  *   assetInfo?: [Denom, DenomDetail & { brandKey?: string }][];
  * }} privateArgs

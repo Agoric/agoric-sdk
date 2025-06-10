@@ -7,7 +7,7 @@ import { makeMarshal } from '@endo/marshal';
 // TODO: refactor overlap with init-chain-info.js in orch pkg
 
 /**
- * @import {ERemote} from '@agoric/internal';
+ * @import {Remote, ERemote} from '@agoric/internal';
  * @import {ChainInfo} from '@agoric/orchestration';
  * @import {NameHub, NameAdmin} from '@agoric/vats';
  */
@@ -90,7 +90,7 @@ const publishChainInfoToChainStorage = async (
 /**
  * null chainStorage case is vestigial
  *
- * @typedef {{ consume: { chainStorage: Promise<StorageNode> } }} ChainStoragePresent
+ * @typedef {{ consume: { chainStorage: Promise<Remote<StorageNode>> } }} ChainStoragePresent
  */
 
 /**

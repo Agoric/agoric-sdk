@@ -21,7 +21,7 @@ import * as flows from './unbond.flows.js';
  *   localchain: Remote<LocalChain>;
  *   orchestrationService: Remote<CosmosInterchainService>;
  *   storageNode: Remote<StorageNode>;
- *   marshaller: Marshaller;
+ *   marshaller: Remote<Marshaller>;
  *   timerService: Remote<TimerService>;
  * }} privateArgs
  * @param {Zone} zone

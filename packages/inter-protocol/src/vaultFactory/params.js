@@ -16,7 +16,7 @@ import { makeTracer } from '@agoric/internal/src/index.js';
 import { amountPattern, ratioPattern } from '../contractSupport.js';
 
 /**
- * @import {ERemote} from '@agoric/internal';
+ * @import {ERemote, Remote} from '@agoric/internal';
  * @import {MapStore} from '@agoric/store';
  * @import {PriceAuthority} from '@agoric/zoe/tools/types.js';
  */
@@ -197,7 +197,10 @@ export const provideVaultParamManagers = (
   /**
    * @type {MapStore<
    *   Brand,
-   *   { storageNode: StorageNode; initialParamValues: VaultManagerParamValues }
+   *   {
+   *     storageNode: Remote<StorageNode>;
+   *     initialParamValues: VaultManagerParamValues;
+   *   }
    * >}
    */
   const managerArgs = provideDurableMapStore(
@@ -205,6 +208,12 @@ export const provideVaultParamManagers = (
     'vault param manager parts',
   );
 
+  /**
+   * @param {Brand} brand
+   * @param {object} args
+   * @param {Remote<StorageNode>} args.storageNode
+   * @param {VaultManagerParamValues} args.initialParamValues
+   */
   const makeManager = (brand, { storageNode, initialParamValues }) => {
     const manager = makeVaultParamManager(
       makeStoredPublisherKit(storageNode, marshaller, 'governance'),
@@ -232,7 +241,7 @@ export const provideVaultParamManagers = (
   return {
     /**
      * @param {Brand} brand
-     * @param {StorageNode} storageNode
+     * @param {Remote<StorageNode>} storageNode
      * @param {VaultManagerParamValues} initialParamValues
      */
     addParamManager(brand, storageNode, initialParamValues) {
