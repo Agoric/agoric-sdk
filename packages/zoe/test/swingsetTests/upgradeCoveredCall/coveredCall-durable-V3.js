@@ -1,4 +1,4 @@
-import { X } from '@endo/errors';
+import { Fail } from '@endo/errors';
 import { M, mustMatch } from '@agoric/store';
 import { prepareExoClass, prepareExo } from '@agoric/vat-data';
 import { swapExact } from '../../../src/contractSupport/index.js';
@@ -71,9 +71,7 @@ export const start = async (zcf, _privateArgs, instanceBaggage) => {
     if (!isAfterDeadlineExitRule(sellSeatExitRule)) {
       // TypeScript confused about `||` control flow so use `if` instead
       // https://github.com/microsoft/TypeScript/issues/50739
-      assert.fail(
-        X`the seller must have an afterDeadline exitRule, but instead had ${sellSeatExitRule}`,
-      );
+      Fail`the seller must have an afterDeadline exitRule, but instead had ${sellSeatExitRule}`;
     }
     const exerciseOption = makeExerciser(sellSeat);
     const customDetails = harden({
