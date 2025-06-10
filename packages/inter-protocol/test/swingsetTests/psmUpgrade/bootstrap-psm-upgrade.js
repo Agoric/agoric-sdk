@@ -223,7 +223,6 @@ export const buildRootObject = async () => {
       governorFacets = await E(zoeService).startInstance(
         NonNullish(installations.puppetContractGovernor),
         undefined,
-        // @ts-expect-error XXX timer
         governorTerms,
         {
           governed: {
