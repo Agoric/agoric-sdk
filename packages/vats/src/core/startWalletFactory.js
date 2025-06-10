@@ -13,6 +13,7 @@ import {
 } from '../../tools/board-utils.js';
 
 /**
+ * @import {ERemote} from '@agoric/internal';
  * @import {EReturn} from '@endo/far';
  * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
  */
@@ -38,8 +39,8 @@ const StableUnit = BigInt(10 ** Stable.displayInfo.decimalPlaces);
  * been provisioned.
  *
  * @param {string[]} oldAddresses
- * @param {Marshaller} marshaller
- * @param {StorageNode} walletStorageNode
+ * @param {ERemote<Marshaller>} marshaller
+ * @param {ERemote<StorageNode>} walletStorageNode
  */
 const publishRevivableWalletState = async (
   oldAddresses,

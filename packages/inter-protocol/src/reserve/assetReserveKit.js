@@ -21,7 +21,7 @@ const trace = makeTracer('ReserveKit', true);
 
 /**
  * @import {EReturn} from '@endo/far';
- * @import {TypedPattern} from '@agoric/internal';
+ * @import {TypedPattern, ERemote} from '@agoric/internal';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {Amount, Brand, Issuer} from '@agoric/ertp';
  * @import {MapStore, SetStore} from '@agoric/store';
@@ -43,7 +43,7 @@ const trace = makeTracer('ReserveKit', true);
  * @param {{
  *   feeMint: ZCFMint<'nat'>;
  *   makeRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit;
- *   storageNode: StorageNode;
+ *   storageNode: ERemote<StorageNode>;
  *   zcf: ZCF;
  * }} powers
  */

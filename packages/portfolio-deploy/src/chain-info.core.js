@@ -7,6 +7,7 @@ import { makeMarshal } from '@endo/marshal';
 // TODO: refactor overlap with init-chain-info.js in orch pkg
 
 /**
+ * @import {ERemote} from '@agoric/internal';
  * @import {ChainInfo} from '@agoric/orchestration';
  * @import {NameHub, NameAdmin} from '@agoric/vats';
  */
@@ -33,7 +34,7 @@ export const HubName = {
  * already an agorcNames key by that name.
  *
  * @param {ERef<NameAdmin>} agoricNamesAdmin
- * @param {ERef<StorageNode>} agoricNamesNode
+ * @param {ERemote<StorageNode>} agoricNamesNode
  * @param {ERef<NameHub>} agoricNames
  */
 const publishChainInfoToChainStorage = async (
