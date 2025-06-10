@@ -1,3 +1,8 @@
+/**
+ * @file openPortfolio flow tests; especially failure modes.
+ *
+ * @see {@link snapshots/portfolio-open.test.ts.md} for expected call logs.
+ */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { GuestInterface } from '@agoric/async-flow';
@@ -97,7 +102,14 @@ test('open portfolio', async t => {
     undefined,
     localP,
   );
-  t.snapshot(log, 'call log');
+  t.log(log.map(msg => msg._method).join(', '));
+  t.like(log, [
+    { _method: 'localTransfer', sourceSeat: seat },
+    { _method: 'transfer', address: { chainId: 'noble-3' } },
+    { _method: 'executeEncodedTx', _cap: 'noble11028' },
+    { _method: 'exit' },
+  ]);
+  t.snapshot(log, 'call log'); // see snapshot for remaining arg details
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
   t.like(actual.publicTopics, [
     { description: 'USDN ICA', storagePath: 'cosmos:noble-3:noble11028' },
@@ -116,13 +128,14 @@ test('handle failure in localTransfer from seat to local account', async t => {
     undefined,
     localP,
   );
-  t.snapshot(log, 'call log');
-  t.is(passStyleOf(actual.invitationMakers), 'remotable');
-  t.like(actual.publicTopics, [
-    { description: 'USDN ICA', storagePath: 'cosmos:noble-3:noble11028' },
+  t.log(log.map(msg => msg._method).join(', '));
+  t.like(log, [
+    { _method: 'localTransfer', sourceSeat: seat },
+    { _method: 'fail' },
   ]);
   const [{ storagePath: ICAAddr }] = actual.publicTopics;
-  t.log('we still get the ICA address', ICAAddr);
+  t.log('we still get the invitationMakers and ICA address', ICAAddr);
+  t.is(passStyleOf(actual.invitationMakers), 'remotable');
 });
 
 test('handle failure in IBC transfer', async t => {
@@ -137,11 +150,17 @@ test('handle failure in IBC transfer', async t => {
     undefined,
     localP,
   );
-  t.snapshot(log, 'call log');
-  t.is(passStyleOf(actual.invitationMakers), 'remotable');
-  t.like(actual.publicTopics, [
-    { description: 'USDN ICA', storagePath: 'cosmos:noble-3:noble11028' },
+  t.log(log.map(msg => msg._method).join(', '));
+  t.like(log, [
+    { _method: 'localTransfer', sourceSeat: seat },
+    { _method: 'transfer', address: { chainId: 'noble-3' } }, // failed
+    { _method: 'withdrawToSeat' }, // unwind
+    { _method: 'fail' },
   ]);
+  t.snapshot(log, 'call log');
+  const [{ storagePath: ICAAddr }] = actual.publicTopics;
+  t.log('we still get the invitationMakers and ICA address', ICAAddr);
+  t.is(passStyleOf(actual.invitationMakers), 'remotable');
 });
 
 test('handle failure in executeEncodedTx', async t => {
@@ -156,9 +175,17 @@ test('handle failure in executeEncodedTx', async t => {
     undefined,
     localP,
   );
-  t.snapshot(log, 'call log');
-  t.is(passStyleOf(actual.invitationMakers), 'remotable');
-  t.like(actual.publicTopics, [
-    { description: 'USDN ICA', storagePath: 'cosmos:noble-3:noble11028' },
+  t.log(log.map(msg => msg._method).join(', '));
+  t.like(log, [
+    { _method: 'localTransfer', sourceSeat: seat },
+    { _method: 'transfer', address: { chainId: 'noble-3' } },
+    { _method: 'executeEncodedTx', _cap: 'noble11028' }, // fail
+    { _method: 'transfer', address: { chainId: 'agoric-1' } }, // unwind
+    { _method: 'withdrawToSeat' }, // unwind
+    { _method: 'fail' },
   ]);
+  t.snapshot(log, 'call log');
+  const [{ storagePath: ICAAddr }] = actual.publicTopics;
+  t.log('we still get the invitationMakers and ICA address', ICAAddr);
+  t.is(passStyleOf(actual.invitationMakers), 'remotable');
 });
