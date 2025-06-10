@@ -1,47 +1,55 @@
-import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import { createRequire } from 'node:module';
+
 import type { TestFn } from 'ava';
-import { makeSwingsetTestKit } from '../../tools/supports.js';
+
+import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
+import { buildProposal } from '@agoric/cosmic-swingset/tools/test-proposal-utils.ts';
+import { NonNullish } from '@agoric/internal';
+import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+const { resolve: resolvePath } = createRequire(import.meta.url);
 
 // A more minimal set would be better. We need governance, but not econ vats.
 const PLATFORM_CONFIG = '@agoric/vm-config/decentral-main-vaults-config.json';
 
-const makeDefaultTestContext = async t => {
-  const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
-    configSpecifier: PLATFORM_CONFIG,
+const makeDefaultTestContext = async () => {
+  const swingsetTestKit = await makeCosmicSwingsetTestKit({
+    configOverrides: NonNullish(
+      await loadSwingsetConfigFile(resolvePath(PLATFORM_CONFIG)),
+    ),
   });
-  const { runUtils } = swingsetTestKit;
+
+  const { runNextBlock, runUtils } = swingsetTestKit;
+  await runNextBlock();
+
   const { EV } = runUtils;
 
   // We need to poke at bootstrap vat and wait for results to allow
   // SwingSet to finish its boot process before we start the test
   const zoe: ZoeService = await EV.vat('bootstrap').consumeItem('zoe');
 
-  return { zoe, ...swingsetTestKit };
+  return { ...swingsetTestKit, zoe };
 };
 
 const test = anyTest as TestFn<
   Awaited<ReturnType<typeof makeDefaultTestContext>>
 >;
 
-test.before(async t => {
-  t.context = await makeDefaultTestContext(t);
-});
-
-test.after.always(t => {
-  return t.context.shutdown && t.context.shutdown();
-});
+test.before(async t => (t.context = await makeDefaultTestContext()));
+test.after.always(t => t.context.shutdown?.());
 
 test(`Create a contract via core-eval and kill it via core-eval by boardID `, async t => {
   const TEST_CONTRACT_LABEL = 'testContractLabel';
-  const { runUtils, buildProposal, evalProposal, zoe } = t.context;
+  const { evaluateProposal, runNextBlock, runUtils, zoe } = t.context;
   const { EV } = runUtils;
 
   // Create a contract via core-eval.
-  const creatorProposal = buildProposal(
+  const creatorProposal = await buildProposal(
     '@agoric/governance/test/swingsetTests/contractGovernor/add-governedContract.js',
     [TEST_CONTRACT_LABEL],
   );
-  await evalProposal(creatorProposal);
+  await evaluateProposal(creatorProposal);
 
   const { boardID, governor, instance, publicFacet } = (await EV.vat(
     'bootstrap',
@@ -61,11 +69,13 @@ test(`Create a contract via core-eval and kill it via core-eval by boardID `, as
   t.is(governedInstance.getKref(), instance.getKref());
 
   // Terminate the pair via proposal.
-  const terminatorProposal = buildProposal(
+  const terminatorProposal = await buildProposal(
     '@agoric/vats/src/proposals/terminate-governed-instance.js',
     [`${boardID}:${TEST_CONTRACT_LABEL}`],
   );
-  await evalProposal(terminatorProposal);
+  await evaluateProposal(terminatorProposal);
+
+  await runNextBlock();
 
   // Confirm termination.
   const expectTerminationError = p =>
