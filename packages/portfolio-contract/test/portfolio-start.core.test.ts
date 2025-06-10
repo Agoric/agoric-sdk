@@ -15,7 +15,7 @@ import * as contractExports from '../src/portfolio.contract.ts';
 import { PortfolioConfigShape } from '../src/type-guards.ts';
 import { makeUSDNIBCTraffic } from './mocks.ts';
 import { makeTrader } from './portfolio-actors.ts';
-import { commonSetup } from './supports.ts';
+import { setupPortfolioTest } from './supports.ts';
 import { makeWallet } from './wallet-offer-tools.ts';
 
 const { meta } = contractExports;
@@ -30,7 +30,7 @@ type PortfolioBootPowers = CorePowersG<
 const { entries, keys } = Object;
 
 test('coreEval code without swingset', async t => {
-  const common = await commonSetup(t);
+  const common = await setupPortfolioTest(t);
   const { bootstrap, utils } = common;
   const { agoricNamesAdmin } = bootstrap;
   const wk = await makeWellKnownSpaces(agoricNamesAdmin);
