@@ -284,7 +284,7 @@ const makeNullStorageNode = () => {
  *
  * @param {ERef<Remote<StorageNode> | null>} storageNodeRef
  * @param {string} childName
- * @returns {Promise<StorageNode>}
+ * @returns {Promise<Remote<StorageNode>>}
  */
 export async function makeStorageNodeChild(storageNodeRef, childName) {
   const existingStorageNode = await storageNodeRef;

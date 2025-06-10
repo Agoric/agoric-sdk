@@ -152,7 +152,7 @@ export const createPoCAsset = async (
 
   // publish brand info / boardAux for offer legibility
   await publishBrandInfo(
-    // @ts-expect-error 'Promise<StorageNode | null>' is not assignable to
+    // @ts-expect-error 'Promise<Remote<StorageNode> | null>' is not assignable to
     // parameter of type 'ERemote<StorageNode>'
     chainStorage,
     board,

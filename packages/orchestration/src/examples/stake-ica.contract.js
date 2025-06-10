@@ -16,7 +16,7 @@ import { makeChainHub } from '../exos/chain-hub.js';
 const trace = makeTracer('StakeIca');
 /**
  * @import {Baggage} from '@agoric/vat-data';
- * @import {Remote} from '@agoric/internal';
+ * @import {ERemote, Remote} from '@agoric/internal';
  * @import {CosmosChainInfo, CosmosInterchainService, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {ContractMeta, Invitation, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {IBCConnectionID, NameHub} from '@agoric/vats';
@@ -58,8 +58,8 @@ harden(privateArgsShape);
  * @param {{
  *   agoricNames: Remote<NameHub>;
  *   cosmosInterchainService: CosmosInterchainService;
- *   storageNode: StorageNode;
- *   marshaller: Marshaller;
+ *   storageNode: Remote<StorageNode>;
+ *   marshaller: Remote<Marshaller>;
  *   timer: TimerService;
  * }} privateArgs
  * @param {Baggage} baggage
@@ -78,7 +78,10 @@ export const start = async (zcf, privateArgs, baggage) => {
   const zone = makeDurableZone(baggage);
 
   const { accountsStorageNode } = await provideAll(baggage, {
-    accountsStorageNode: () => E(storageNode).makeChildNode('accounts'),
+    accountsStorageNode: () =>
+      /** @type {ERemote<StorageNode>} */ (
+        E(storageNode).makeChildNode('accounts')
+      ),
   });
 
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
@@ -119,6 +122,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       E(account).getRemoteAddress(),
     ]);
     trace('account address', chainAddress);
+    /** @type {Remote<StorageNode>} */
     const accountNode = await E(accountsStorageNode).makeChildNode(
       chainAddress.value,
     );

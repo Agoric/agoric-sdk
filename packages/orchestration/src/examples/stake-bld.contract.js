@@ -29,8 +29,8 @@ const trace = makeTracer('StakeBld');
  * @param {{
  *   agoricNames: Remote<NameHub>;
  *   localchain: Remote<LocalChain>;
- *   marshaller: Marshaller;
- *   storageNode: StorageNode;
+ *   marshaller: Remote<Marshaller>;
+ *   storageNode: Remote<StorageNode>;
  *   timerService: TimerService;
  * }} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage

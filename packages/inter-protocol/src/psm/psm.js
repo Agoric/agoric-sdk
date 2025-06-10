@@ -64,7 +64,7 @@ import { makeNatAmountShape } from '../contractSupport.js';
  */
 
 /**
- * @import {TypedPattern} from '@agoric/internal';
+ * @import {TypedPattern, Remote} from '@agoric/internal';
  * @import {Baggage} from '@agoric/vat-data'
  */
 
@@ -119,8 +119,8 @@ harden(meta);
  * @param {{
  *   feeMintAccess: FeeMintAccess;
  *   initialPoserInvitation: Invitation;
- *   storageNode: StorageNode;
- *   marshaller: Marshaller;
+ *   storageNode: Remote<StorageNode>;
+ *   marshaller: Remote<Marshaller>;
  * }} privateArgs
  * @param {Baggage} baggage
  */

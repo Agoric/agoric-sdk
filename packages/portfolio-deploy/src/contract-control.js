@@ -15,6 +15,7 @@ const trace = makeTracer('CCtrl');
  * @import {ContractStartFunction, StartResult} from '@agoric/zoe/src/zoeService/utils';
  * @import {IssuerKeywordRecord} from '@agoric/zoe';
  * @import {Remote} from '@agoric/internal';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage';
  * @import {Board, NameHubKit} from '@agoric/vats';
  * @import {CopyRecord} from '@endo/pass-style';
  */
@@ -273,8 +274,7 @@ export const prepareContractControl = (zone, svcs) => {
 
         /** @param {string[]} path */
         const makePathNode = path => {
-          /** @type {Promise<StorageNode>} */
-          // @ts-expect-error Remote/E integration incomplete
+          /** @type {Promise<Remote<StorageNode>>} */
           let node = Promise.resolve(storageNode);
           for (const segment of path) {
             node = E(node).makeChildNode(segment);
