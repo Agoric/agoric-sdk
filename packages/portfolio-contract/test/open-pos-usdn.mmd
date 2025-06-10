@@ -6,6 +6,7 @@ sequenceDiagram
 
     box rgb(255,153,153) Agoric
     participant ymax
+    participant flow as flows.openPortfolio
     participant portfolio as portfolio<br/>for trader
     participant LCA
     end
@@ -17,20 +18,31 @@ sequenceDiagram
 
     %% Notation: ->> for initial message, -->> for consequences
 
-    trader ->> ymax: open({give:<br/>{Aave: 3k, Compound: 2k,<br/>USDN: 10K}})
-    ymax -->> portfolio: make({ give: ... })
-    portfolio -->> portfolio: open(USDN, 10K USDC)
-    portfolio -->> LCA: deposit(10K USDC)
-    portfolio -->> LCA: transfer(10K USDC, ICAn)
-    LCA -->> ICAn: 10k USDC
+    trader ->> ymax: openPortfolio({give:<br/>{Aave: 3k, Compound: 2k,<br/>USDN: 3K}})
+    note left of flow: *TODO(11456):<br/>USDN/USDC ratio
+
+    ymax -->> flow: (seat, ...*)
+
+    flow -->> portfolio: make
+    activate portfolio
+
+    flow -->> ICAn: makeAccount
+    activate ICAn
+    ICAn -->> flow: ack
+
+    flow -->> portfolio: add(ICAn)
+
+    flow -->> LCA: localTransfer(3K)
+    flow -->> LCA: transfer(3K USDC, ICAn)
+    LCA -->> ICAn: 3k USDC
     ICAn -->> portfolio: ack
 
-    LCA -->> ICAn: MsgSwap(10K)
-    ICAn -->> USDN: MsgSwap(10K)
+    flow -->> ICAn: executeEncodedTx(<br/>[MsgSwap(3K),MsgLock(3K*)])
+    note left of ICAn: *TODO(11456):<br/>USDN/USDC ratio
+    ICAn -->> USDN: [MsgSwap(3K),MsgLock(3K*)]
     USDN -->> ICAn: ack
-    ICAn -->> portfolio: ack
-    LCA -->> ICAn: MsgLock(10K)
-    ICAn -->> USDN: MsgLock(10K)
-    USDN -->> ICAn: ack
-    ICAn -->> portfolio: ack
-    portfolio -->> trader: ack
+    ICAn -->> flow: ack
+    flow -->> trader: { invitationMakers,<br/>topics: ... noble1xyz }
+
+    deactivate ICAn
+    deactivate portfolio
