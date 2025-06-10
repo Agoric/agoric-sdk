@@ -148,6 +148,7 @@ const prepareVaultDirector = (
     managerParams,
   );
 
+  // @ts-expect-error Need @endo/eventual-send type update
   const metricsNode = E(storageNode).makeChildNode('metrics');
 
   const metricsKit = makeERecorderKit(
@@ -155,6 +156,7 @@ const prepareVaultDirector = (
     /** @type {TypedPattern<MetricsNotification>} */ (M.any()),
   );
 
+  // @ts-expect-error Need @endo/eventual-send type update
   const managersNode = E(storageNode).makeChildNode('managers');
 
   /** @returns {MetricsNotification} */

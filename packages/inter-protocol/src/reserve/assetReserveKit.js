@@ -285,6 +285,7 @@ export const prepareAssetReserveKit = async (
   );
 
   const makeAssetReserveKit = async () => {
+    // @ts-expect-error Need @endo/eventual-send type update
     const metricsNode = await E(storageNode).makeChildNode('metrics');
     return makeAssetReserveKitInternal(metricsNode);
   };

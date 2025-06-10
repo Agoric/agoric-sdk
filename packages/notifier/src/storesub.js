@@ -65,7 +65,9 @@ export const makeStoredSubscriber = (subscriber, storageNode, marshaller) => {
 
   /** @type {Unserializer} */
   const unserializer = Far('unserializer', {
+    // @ts-expect-error Need @endo/eventual-send type update
     fromCapData: data => E(marshaller).fromCapData(data),
+    // @ts-expect-error Need @endo/eventual-send type update
     unserialize: data => E(marshaller).fromCapData(data),
   });
 
@@ -73,7 +75,9 @@ export const makeStoredSubscriber = (subscriber, storageNode, marshaller) => {
   const storesub = Far('StoredSubscriber', {
     subscribeAfter: publishCount => subscriber.subscribeAfter(publishCount),
     getUpdateSince: updateCount => subscriber.getUpdateSince(updateCount),
+    // @ts-expect-error Need @endo/eventual-send type update
     getPath: () => E(storageNode).getPath(),
+    // @ts-expect-error Need @endo/eventual-send type update
     getStoreKey: () => E(storageNode).getStoreKey(),
     getUnserializer: () => unserializer,
   });
@@ -106,7 +110,9 @@ export const makeStoredSubscription = (
 ) => {
   /** @type {Unserializer} */
   const unserializer = Far('unserializer', {
+    // @ts-expect-error Need @endo/eventual-send type update
     fromCapData: data => E(marshaller).fromCapData(data),
+    // @ts-expect-error Need @endo/eventual-send type update
     unserialize: data => E(marshaller).fromCapData(data),
   });
 
@@ -130,9 +136,11 @@ export const makeStoredSubscription = (
 
     // Publish the value, capturing any error.
     E(marshaller)
+      // @ts-expect-error Need @endo/eventual-send type update
       .toCapData(obj)
       .then(serialized => {
         const encoded = JSON.stringify(serialized);
+        // @ts-expect-error Need @endo/eventual-send type update
         return E(storageNode).setValue(encoded);
       })
       .catch(fail);
@@ -153,7 +161,10 @@ export const makeStoredSubscription = (
       if (!storageNode) {
         return harden({ subscription });
       }
-      const storeKey = await E(storageNode).getStoreKey();
+      /** @type {import('@agoric/internal/src/lib-chainStorage.js').VStorageKey} */
+      const storeKey =
+        // @ts-expect-error Need @endo/eventual-send type update
+        await E(storageNode).getStoreKey();
       return harden({ ...storeKey, subscription });
     },
     getUnserializer: () => unserializer,
@@ -187,6 +198,7 @@ export const makeStoredPublisherKit = (storageNode, marshaller, childPath) => {
   const { publication, subscription } = makeSubscriptionKit();
 
   if (storageNode && childPath) {
+    // @ts-expect-error Need @endo/eventual-send type update
     storageNode = E(storageNode).makeChildNode(childPath);
   }
 

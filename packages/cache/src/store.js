@@ -120,6 +120,7 @@ const stringifyStateStore = async (stateStore, marshaller) => {
   /** @type {Passable} */
   const obj = {};
   for (const [key, value] of stateStore.entries()) {
+    // @ts-expect-error Need @endo/eventual-send type update
     obj[key] = E(marshaller).toCapData(value);
   }
   return deeplyFulfilled(harden(obj)).then(fulfilledObj =>
@@ -196,6 +197,7 @@ const makeLastWinsUpdater = (stateStore, marshaller, storageNode) => {
       // skip setValue() so we don't regress the store state
       return storedValue;
     }
+    // @ts-expect-error Need @endo/eventual-send type update
     await E(storageNode).setValue(serializedStore);
     lastCommitTicket = marshallTicket;
     return storedValue;

@@ -41,6 +41,7 @@ const contractName = 'fastUsdc';
  * }} io
  */
 const makePublishingStorageKit = async (path, { chainStorage, board }) => {
+  // @ts-expect-error Need @endo/eventual-send type update
   const storageNode = await E(chainStorage).makeChildNode(path);
 
   const marshaller = await E(board).getPublishingMarshaller();

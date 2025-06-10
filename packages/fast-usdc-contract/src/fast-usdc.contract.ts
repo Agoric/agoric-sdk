@@ -87,7 +87,9 @@ const publishFeeConfig = (
   marshaller: ERemote<Marshaller>,
   feeConfig: FeeConfig,
 ) => {
+  // @ts-expect-error Need @endo/eventual-send type update
   const feeNode = E(node).makeChildNode(FEE_NODE);
+  // @ts-expect-error Need @endo/eventual-send type update
   void E.when(E(marshaller).toCapData(feeConfig), value =>
     E(feeNode).setValue(JSON.stringify(value)),
   );
@@ -96,7 +98,8 @@ const publishFeeConfig = (
 const publishAddresses = (
   contractNode: ERemote<StorageNode>,
   addresses: ContractRecord,
-) => {
+): Promise<void> => {
+  // @ts-expect-error Need @endo/eventual-send type update
   return E(contractNode).setValue(JSON.stringify(addresses));
 };
 

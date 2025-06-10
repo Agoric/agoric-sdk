@@ -105,6 +105,7 @@ export const prepareRecorder = (baggage, marshaller) => {
         const { closed, publisher, storageNode, valueShape } = this.state;
         !closed || Fail`cannot write to closed recorder`;
         mustMatch(value, valueShape);
+        // @ts-expect-error Need @endo/eventual-send type update
         const encoded = await E(marshaller).toCapData(value);
         const serialized = JSON.stringify(encoded);
         await E(storageNode).setValue(serialized);
@@ -122,6 +123,7 @@ export const prepareRecorder = (baggage, marshaller) => {
         const { closed, publisher, storageNode, valueShape } = this.state;
         !closed || Fail`cannot write to closed recorder`;
         mustMatch(value, valueShape);
+        // @ts-expect-error Need @endo/eventual-send type update
         const encoded = await E(marshaller).toCapData(value);
         const serialized = JSON.stringify(encoded);
         await E(storageNode).setValue(serialized);

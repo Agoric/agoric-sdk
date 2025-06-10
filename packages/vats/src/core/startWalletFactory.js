@@ -48,13 +48,16 @@ const publishRevivableWalletState = async (
   walletStorageNode,
 ) => {
   const arbData = harden({});
+  // @ts-expect-error Need @endo/eventual-send type update
   const arbMarshalled = await E(marshaller).serialize(arbData);
   const arbJSON = JSON.stringify(arbMarshalled);
   const publishArbitraryWalletState = async address => {
     const walletUpdateNode = makeStorageNodeChild(walletStorageNode, address);
     const walletCurrentNode = makeStorageNodeChild(walletUpdateNode, 'current');
     await Promise.all([
+      // @ts-expect-error Need @endo/eventual-send type update
       E(walletUpdateNode).setValue(arbJSON),
+      // @ts-expect-error Need @endo/eventual-send type update
       E(walletCurrentNode).setValue(arbJSON),
     ]);
   };

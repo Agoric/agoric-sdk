@@ -1134,6 +1134,7 @@ export const prepareSmartWallet = (baggage, shared) => {
   const makeSmartWallet = async uniqueWithoutChildNodes => {
     const [walletStorageNode, currentStorageNode] = await Promise.all([
       uniqueWithoutChildNodes.walletStorageNode,
+      // @ts-expect-error Need @endo/eventual-send type update
       E(uniqueWithoutChildNodes.walletStorageNode).makeChildNode('current'),
     ]);
 
