@@ -483,16 +483,29 @@ export const makeCosmicSwingsetTestKit = async (
     return runNextBlock();
   };
 
+  const runUntilQueuesEmpty = async () => {
+    await Promise.resolve();
+
+    let stats = controller.getStats();
+
+    while (stats.runQueueLength + stats.acceptanceQueueLength > 0) {
+      await runNextBlock();
+      stats = controller.getStats();
+    }
+  };
+
   return {
     // SwingSet-oriented references.
     actionQueue,
     highPriorityQueue,
+    lastBlockTime,
     shutdown,
     swingStore,
 
     // Controller-oriented helpers.
     bridgeInbound,
     controller,
+    runUntilQueuesEmpty,
     runUtils: makeRunUtils(controller),
     timer,
 

@@ -1,21 +1,28 @@
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { createRequire } from 'node:module';
 
 import type { TestFn } from 'ava';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import {
-  makeAgoricNamesRemotesFromFakeStorage,
-  slotToBoardRemote,
-  unmarshalFromVstorage,
-} from '@agoric/vats/tools/board-utils.js';
-import { makeMarshal, passStyleOf } from '@endo/marshal';
-import { NonNullish } from '@agoric/internal';
 
-import { makeSwingsetTestKit } from '../../tools/supports.js';
+import { makeLiquidationTestKit } from '@aglocal/boot/tools/liquidation.js';
 import {
   makeGovernanceDriver,
   makeWalletFactoryDriver,
-} from '../../tools/drivers.js';
-import { makeLiquidationTestKit } from '../../tools/liquidation.js';
+} from '@aglocal/boot/tools/drivers.js';
+import {
+  makeCosmicSwingsetTestKit,
+  makeMockBridgeKit,
+} from '@agoric/cosmic-swingset/tools/test-kit.js';
+import { buildProposal } from '@agoric/cosmic-swingset/tools/test-proposal-utils.ts';
+import { NonNullish } from '@agoric/internal';
+import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
+import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { TimeMath } from '@agoric/time';
+import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
+import {
+  makeAgoricNamesRemotesFromFakeStorage,
+  slotToBoardRemote,
+} from '@agoric/vats/tools/board-utils.js';
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { makeMarshal, passStyleOf } from '@endo/marshal';
 
 const wallets = [
   'agoric1gx9uu7y6c90rqruhesae2t7c2vlw4uyyxlqxrx',
@@ -31,6 +38,7 @@ const managerGovernanceKey =
 const auctioneerParamsKey = 'published.auction.governance';
 const provisionPoolParamsKey = 'published.provisionPool.governance';
 const reserveParamsKey = 'published.reserve.metrics';
+const { resolve: resolvePath } = createRequire(import.meta.url);
 const getPsmKey = brand => `published.psm.IST.${brand}.governance`;
 
 const highPrioritySenderKey = 'highPrioritySenders';
@@ -45,15 +53,38 @@ const getVoteId = id => `vote-${id}`;
 
 export const makeZoeTestContext = async t => {
   console.time('ZoeTestContext');
-  const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
-    configSpecifier: '@agoric/vm-config/decentral-main-vaults-config.json',
+
+  const storage = makeFakeStorageKit('bootstrapTests');
+  const swingsetTestKit = await makeCosmicSwingsetTestKit({
+    configOverrides: NonNullish(
+      await loadSwingsetConfigFile(
+        resolvePath('@agoric/vm-config/decentral-main-vaults-config.json'),
+      ),
+    ),
+    mockBridgeReceiver: makeMockBridgeKit({ storageKit: storage }),
   });
 
-  const { runUtils, storage } = swingsetTestKit;
+  const { runNextBlock, runUtils } = swingsetTestKit;
+  await runNextBlock();
+
+  const readLatestEntryFromStorage = (path: string) => {
+    let data;
+    try {
+      data = unmarshalFromVstorage(storage.data, path, fromCapData, -1);
+    } catch {
+      // fall back to regular JSON
+      const raw = storage.getValues(path).at(-1);
+      assert(raw, `No data found for ${path}`);
+      data = JSON.parse(raw);
+    }
+    return data;
+  };
+
+  const readPublished = (subPath: string) =>
+    readLatestEntryFromStorage(`published.${subPath}`);
+
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
   const { EV } = runUtils;
-
-  await eventLoopIteration();
 
   // We don't need vaults, but this gets the brand, which is checked somewhere
   // Wait for ATOM to make it into agoricNames
@@ -96,14 +127,22 @@ export const makeZoeTestContext = async t => {
   };
 
   const governanceDriver = await makeGovernanceDriver(
-    swingsetTestKit,
+    // @ts-expect-error
+    {
+      ...swingsetTestKit,
+      readPublished,
+    },
     agoricNamesRemotes,
     walletFactoryDriver,
     wallets,
   );
 
   const liquidationTestKit = await makeLiquidationTestKit({
-    swingsetTestKit,
+    // @ts-expect-error
+    swingsetTestKit: {
+      ...swingsetTestKit,
+      readPublished,
+    },
     agoricNamesRemotes,
     walletFactoryDriver,
     governanceDriver,
@@ -113,16 +152,16 @@ export const makeZoeTestContext = async t => {
   return {
     ...swingsetTestKit,
     ...liquidationTestKit,
-    storage,
     getVstorageData,
     governanceDriver,
+    readPublished,
+    storage,
   };
 };
 const test = anyTest as TestFn<Awaited<ReturnType<typeof makeZoeTestContext>>>;
 
-test.before(async t => {
-  t.context = await makeZoeTestContext(t);
-});
+test.before(async t => (t.context = await makeZoeTestContext(t)));
+test.after.always(t => t.context.shutdown?.());
 
 test.serial('normal running of committee', async t => {
   const { advanceTimeBy, storage, getVstorageData, governanceDriver } =
@@ -197,8 +236,13 @@ test.serial(
 
 test.serial('Update reserve metrics', async t => {
   // Need to update metrics before membership upgrade for tests related to vault params later
-  const { advanceTimeTo, setupVaults, priceFeedDrivers, readPublished } =
-    t.context;
+  const {
+    advanceTimeBy,
+    lastBlockTime,
+    priceFeedDrivers,
+    readPublished,
+    setupVaults,
+  } = t.context;
   const setup = {
     vaults: [
       {
@@ -227,21 +271,26 @@ test.serial('Update reserve metrics', async t => {
   await setupVaults('ATOM', 0, setup);
   await priceFeedDrivers.ATOM.setPrice(setup.price.trigger);
   const liveSchedule = readPublished('auction.schedule');
-  await advanceTimeTo(NonNullish(liveSchedule.nextDescendingStepTime));
+  await advanceTimeBy(
+    Number(TimeMath.absValue(NonNullish(liveSchedule.nextDescendingStepTime))) -
+      lastBlockTime,
+    'seconds',
+  );
   t.pass();
 });
 
 test.serial('replace committee', async t => {
-  const { buildProposal, evalProposal, storage } = t.context;
+  const { evaluateProposal, runUntilQueuesEmpty, storage } = t.context;
 
   const preEvalAgoricNames = makeAgoricNamesRemotesFromFakeStorage(storage);
-  await evalProposal(
-    buildProposal(
+  await evaluateProposal(
+    await buildProposal(
       '@agoric/builders/scripts/inter-protocol/replace-electorate-core.js',
       ['BOOTSTRAP_TEST'],
     ),
   );
-  await eventLoopIteration();
+
+  await runUntilQueuesEmpty();
 
   const postEvalAgoricNames = makeAgoricNamesRemotesFromFakeStorage(storage);
 
