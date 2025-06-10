@@ -300,10 +300,8 @@ harden(makeStorageNodeChild);
  */
 export const makeSerializeToStorage = (storageNode, marshaller) => {
   return async value => {
-    // @ts-expect-error Need @endo/eventual-send type update
     const marshalled = await E(marshaller).toCapData(value);
     const serialized = JSON.stringify(marshalled);
-    // @ts-expect-error Need @endo/eventual-send type update
     return E(storageNode).setValue(serialized);
   };
 };

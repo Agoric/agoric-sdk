@@ -55,16 +55,13 @@ export const makeStoredNotifier = (notifier, storageNode, marshaller) => {
 
   /** @type {Unserializer} */
   const unserializer = Far('unserializer', {
-    // @ts-expect-error Need @endo/eventual-send type update
     fromCapData: data => E(marshaller).fromCapData(data),
-    // @ts-expect-error Need @endo/eventual-send type update
     unserialize: data => E(marshaller).fromCapData(data),
   });
 
   /** @type {StoredNotifier<T>} */
   const storedNotifier = Far('StoredNotifier', {
     getUpdateSince: updateCount => E(notifier).getUpdateSince(updateCount),
-    // @ts-expect-error Need @endo/eventual-send type update
     getPath: () => E(storageNode).getPath(),
     getUnserializer: () => unserializer,
   });

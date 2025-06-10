@@ -548,7 +548,6 @@ export const prepareProvisionPoolKit = (
   const makeProvisionPoolKit = async ({ poolBrand, storageNode }) => {
     const fundPurse = await E(poolBank).getPurse(poolBrand);
     /** @type {Remote<StorageNode>} */
-    // @ts-expect-error Need @endo/eventual-send type update
     const metricsNode = await E(storageNode).makeChildNode('metrics');
 
     return makeProvisionPoolKitInternal({

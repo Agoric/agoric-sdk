@@ -159,7 +159,6 @@ export const prepareStatusManager = (
   };
 
   const publishTxnRecord = (txId: EvmHash, record: TransactionRecord): void => {
-    // @ts-expect-error Need @endo/eventual-send type update
     const txNode = E(txnsNode).makeChildNode(txId, {
       sequence: true, // avoid overwriting other output in the block
     });
@@ -174,7 +173,6 @@ export const prepareStatusManager = (
     }
 
     // Don't await, just writing to vstorage.
-    // @ts-expect-error Need @endo/eventual-send type update
     void E.when(E(marshaller).toCapData(record), capData =>
       E(txNode).setValue(JSON.stringify(capData)),
     );
@@ -388,7 +386,6 @@ export const prepareStatusManager = (
       deleteCompletedTxs(): void {
         for (const txHash of storedCompletedTxs.values()) {
           // As of now, setValue('') on a non-sequence node will delete it
-          // @ts-expect-error Need @endo/eventual-send type update
           const txNode = E(txnsNode).makeChildNode(txHash, {
             sequence: false,
           });
