@@ -43,7 +43,7 @@ import {
  * @import {MapStore} from '@agoric/store';
  * @import {TransferPart, ZCF, ZCFMint, ZCFSeat} from '@agoric/zoe';
  * @import {EReturn} from '@endo/far';
- * @import {TypedPattern, ERemote} from '@agoric/internal';
+ * @import {TypedPattern, ERemote, Remote} from '@agoric/internal';
  */
 
 const trace = makeTracer('VD', true);
@@ -403,6 +403,7 @@ const prepareVaultDirector = (
           // zero-based index of the manager being made
           const managerIndex = vaultManagers.length();
           const managerId = `manager${managerIndex}`;
+          /** @type {Remote<StorageNode>} */
           const managerStorageNode =
             await E(managersNode).makeChildNode(managerId);
 

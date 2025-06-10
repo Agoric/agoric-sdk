@@ -37,7 +37,7 @@ harden(SingleNatAmountRecord);
  * @param {OrchestrationPowers & {
  *   assetInfo?: [Denom, DenomDetail & { brandKey?: string }][];
  *   chainInfo?: Record<string, CosmosChainInfo>;
- *   marshaller: Marshaller;
+ *   marshaller: Remote<Marshaller>;
  *   storageNode: Remote<StorageNode>;
  * }} privateArgs
  * @param {Zone} zone

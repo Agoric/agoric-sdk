@@ -10,6 +10,7 @@ import * as flows from './query-flows.flows.js';
 /**
  * @import {ZCF} from '@agoric/zoe';
  * @import {Zone} from '@agoric/zone';
+ * @import {Remote} from '@agoric/internal';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {OrchestrationPowers} from '..//utils/start-helper.js';
  * @import {OrchestrationTools} from '../utils/start-helper.js';
@@ -18,7 +19,7 @@ import * as flows from './query-flows.flows.js';
 /**
  * @param {ZCF} zcf
  * @param {OrchestrationPowers & {
- *   marshaller: Marshaller;
+ *   marshaller: Remote<Marshaller>;
  *   chainInfo?: Record<string, CosmosChainInfo>;
  *   assetInfo?: [Denom, DenomDetail & { brandKey?: string }][];
  * }} privateArgs

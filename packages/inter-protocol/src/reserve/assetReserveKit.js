@@ -15,7 +15,7 @@ const trace = makeTracer('ReserveKit', true);
 
 /**
  * @import {EReturn} from '@endo/far';
- * @import {TypedPattern, ERemote} from '@agoric/internal';
+ * @import {TypedPattern, ERemote, Remote} from '@agoric/internal';
  * @import {MapStore} from '@agoric/store';
  * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
  */
@@ -68,7 +68,7 @@ export const prepareAssetReserveKit = async (
         reduceLiquidationShortfall: M.call(AmountShape).returns(),
       }),
     },
-    /** @param {StorageNode} metricsNode */
+    /** @param {Remote<StorageNode>} metricsNode */
     metricsNode => {
       /**
        * Used to look up the unique keyword for each brand, including Fee brand.

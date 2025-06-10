@@ -8,6 +8,7 @@ import { prepareVaultHolder } from './vaultHolder.js';
 const trace = makeTracer('VK', true);
 
 /**
+ * @import {Remote} from '@agoric/internal';
  * @import {EReturn} from '@endo/far';
  */
 
@@ -26,7 +27,7 @@ export const prepareVaultKit = (baggage, makeRecorderKit) => {
    * Create a kit of utilities for use of the vault.
    *
    * @param {Vault} vault
-   * @param {StorageNode} storageNode
+   * @param {Remote<StorageNode>} storageNode
    */
   const makeVaultKit = (vault, storageNode) => {
     trace('prepareVaultKit makeVaultKit');

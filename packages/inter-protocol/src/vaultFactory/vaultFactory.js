@@ -30,6 +30,7 @@ import { SHORTFALL_INVITATION_KEY, vaultDirectorParamTypes } from './params.js';
 import { provideDirector } from './vaultDirector.js';
 
 /**
+ * @import {Remote} from '@agoric/internal';
  * @import {ContractMeta, FeeMintAccess, HandleOffer, Invitation, OfferHandler, TransferPart, ZCF, ZCFMint, ZCFSeat} from '@agoric/zoe';
  * @import {ContractOf} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
@@ -71,8 +72,8 @@ harden(meta);
  *   feeMintAccess: FeeMintAccess;
  *   initialPoserInvitation: Invitation;
  *   initialShortfallInvitation: Invitation;
- *   storageNode: ERef<StorageNode>;
- *   marshaller: ERef<Marshaller>;
+ *   storageNode: Remote<StorageNode>;
+ *   marshaller: Remote<Marshaller>;
  *   auctioneerInstance: Instance<import('../auction/auctioneer.js').start>;
  *   managerParams: Record<
  *     string,

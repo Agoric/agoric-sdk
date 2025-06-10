@@ -6,6 +6,7 @@ import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 
 /**
+ * @import {Remote} from '@agoric/internal';
  * @import {Key, Pattern} from '@endo/patterns';
  */
 
@@ -50,7 +51,7 @@ export const prepareVaultHolder = (baggage, makeRecorderKit) => {
     },
     /**
      * @param {Vault} vault
-     * @param {StorageNode} storageNode
+     * @param {Remote<StorageNode>} storageNode
      * @returns {State}
      */
     (vault, storageNode) => {

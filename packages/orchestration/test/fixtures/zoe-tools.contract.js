@@ -38,7 +38,7 @@ const { values } = Object;
 /**
  * @param {ZCF} zcf
  * @param {OrchestrationPowers & {
- *   marshaller: Marshaller;
+ *   marshaller: Remote<Marshaller>;
  * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools

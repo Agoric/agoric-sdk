@@ -52,7 +52,7 @@ harden(makeNatAmountShape);
  *   orchestrationService: Remote<CosmosInterchainService>;
  *   storageNode: Remote<StorageNode>;
  *   timerService: Remote<TimerService>;
- *   marshaller: Marshaller;
+ *   marshaller: Remote<Marshaller>;
  *   chainInfo: Record<string, CosmosChainInfo>;
  *   assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
  * }} privateArgs

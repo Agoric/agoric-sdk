@@ -66,7 +66,7 @@ import { calculateDistributionPlan } from './proceeds.js';
 import { AuctionPFShape } from '../auction/auctioneer.js';
 
 /**
- * @import {ERemote} from '@agoric/internal';
+ * @import {ERemote, Remote} from '@agoric/internal';
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {EReturn} from '@endo/far';
  * @import {ZCFMint} from '@agoric/zoe';
@@ -170,7 +170,7 @@ export const watchQuoteNotifier = async (notifierP, watcher, ...args) => {
  *   collateralUnit: Amount<'nat'>;
  *   descriptionScope: string;
  *   startTimeStamp: Timestamp;
- *   storageNode: StorageNode;
+ *   storageNode: Remote<StorageNode>;
  * }>} HeldParams
  */
 
@@ -235,7 +235,7 @@ export const prepareVaultManagerKit = (
   const makeVault = prepareVault(baggage, makeRecorderKit, zcf);
 
   /**
-   * @param {HeldParams & { metricsStorageNode: StorageNode }} params
+   * @param {HeldParams & { metricsStorageNode: Remote<StorageNode> }} params
    * @returns {HeldParams & ImmutableState & MutableState}
    */
   const initState = params => {
@@ -1042,6 +1042,7 @@ export const prepareVaultManagerKit = (
           const vaultId = String(state.vaultCounter);
 
           // must be a presence to be stored in vault state
+          /** @type {Remote<StorageNode>} */
           const vaultStorageNode = await E(
             E(storageNode).makeChildNode(`vaults`),
           ).makeChildNode(`vault${vaultId}`);
@@ -1298,6 +1299,7 @@ export const prepareVaultManagerKit = (
    * >} externalParams
    */
   const makeVaultManagerKit = async externalParams => {
+    /** @type {Remote<StorageNode>} */
     const metricsStorageNode = await E(
       externalParams.storageNode,
     ).makeChildNode('metrics');

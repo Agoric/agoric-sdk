@@ -109,8 +109,8 @@ export const contract = async (
     assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
     chainInfo: Record<string, ChainHubChainInfo>;
     feeConfig: FeeConfig;
-    marshaller: Marshaller;
-    storageNode: StorageNode;
+    marshaller: Remote<Marshaller>;
+    storageNode: Remote<StorageNode>;
     poolMetricsNode: Remote<StorageNode>;
   },
   zone: Zone,

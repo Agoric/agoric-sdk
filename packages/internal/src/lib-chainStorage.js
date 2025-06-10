@@ -9,7 +9,7 @@ import * as cb from './callback.js';
 /**
  * @import {ERef} from '@endo/far';
  * @import {Passable} from '@endo/marshal';
- * @import {ERemote, TypedPattern} from './types.js';
+ * @import {Remote, ERemote, TypedPattern} from './types.js';
  */
 
 /** @typedef {ReturnType<typeof import('@endo/marshal').makeMarshal>} Marshaller */
@@ -283,7 +283,7 @@ const makeNullStorageNode = () => {
  *
  * @param {ERemote<StorageNode> | ERef<StorageNode | null>} storageNodeRef
  * @param {string} childName
- * @returns {Promise<StorageNode>}
+ * @returns {Promise<Remote<StorageNode>>}
  */
 export async function makeStorageNodeChild(storageNodeRef, childName) {
   const existingStorageNode = await storageNodeRef;
