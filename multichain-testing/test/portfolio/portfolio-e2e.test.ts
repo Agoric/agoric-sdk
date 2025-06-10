@@ -69,8 +69,8 @@ const makeTestContext = async (t: ExecutionContext) => {
   await startContract(
     meta.name,
     '../packages/portfolio-contract/scripts/portfolio.build.js',
-    { chainInfo, assetInfo },
     // { skipInstanceCheck: true }, // XXX
+    {},
   );
 
   return { ...common, accounts };
