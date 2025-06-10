@@ -20,7 +20,8 @@ import { logLevels } from './js-utils.js';
 /** @import {LimitedConsole} from './js-utils.js'; */
 
 /** @import {ERef} from '@endo/far'; */
-/** @import {Primitive} from '@endo/pass-style'; */
+/** @import {RemotableBrand} from '@endo/eventual-send'; */
+/** @import {Primitive, RemotableObject} from '@endo/pass-style'; */
 /** @import {Permit, Attenuated} from './types.js'; */
 
 export { objectMap, objectMetaMap, fromUniqueEntries };
@@ -58,9 +59,11 @@ harden(makeLimitedConsole);
  * @template T
  * @typedef {T extends PromiseLike<any>
  *     ? Awaited<T>
- *     : T extends {}
- *       ? Simplify<DeeplyAwaitedObject<T>>
- *       : Awaited<T>} DeeplyAwaited
+ *     : T extends RemotableBrand<any, any> | RemotableObject
+ *       ? T
+ *       : T extends {}
+ *         ? Simplify<DeeplyAwaitedObject<T>>
+ *         : Awaited<T>} DeeplyAwaited
  */
 
 /**
@@ -72,6 +75,7 @@ harden(makeLimitedConsole);
  */
 export const deeplyFulfilledObject = async obj => {
   isObject(obj) || Fail`param must be an object`;
+  // @ts-expect-error Until the upstream endo type is also fixed to handle remotable objects
   return deeplyFulfilled(obj);
 };
 
