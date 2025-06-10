@@ -5,7 +5,7 @@ import { fromExternalConfig } from './config-marshal.js';
 /**
  * @import { Issuer } from '@agoric/ertp';
  * @import { ManifestBundleRef } from '@agoric/deploy-script-support/src/externalTypes.js';
- * @import { Remote } from '@agoric/internal';
+ * @import { Remote, ERemote } from '@agoric/internal';
  * @import { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
  * @import { ChainInfo, IBCConnectionInfo } from '@agoric/orchestration';
  * @import { Board, NameHub } from '@agoric/vats';
@@ -27,8 +27,8 @@ const trace = makeTracer(`ORCH-Start`, true);
  *
  * @param {string} path
  * @param {{
- *   chainStorage: ERef<StorageNode>;
- *   board: ERef<Board>;
+ *   chainStorage: ERemote<StorageNode>;
+ *   board: ERemote<Board>;
  * }} powers
  */
 const makePublishingStorageKit = async (path, { chainStorage, board }) => {

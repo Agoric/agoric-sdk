@@ -16,6 +16,7 @@ const { Fail } = assert;
 const trace = makeTracer('PoC-CE', true);
 
 /**
+ * @import {ERemote} from '@agoric/internal';
  * @import {Board} from '@agoric/vats';
  * @import {AttenuatedDepositPowers} from './attenuated-deposit.core.js';
  */
@@ -35,7 +36,7 @@ const marshalData = makeMarshal(_val => Fail`data only`);
 /**
  * Make a storage node for auxiliary data for a value on the board.
  *
- * @param {ERef<StorageNode>} chainStorage
+ * @param {ERemote<StorageNode>} chainStorage
  * @param {string} boardId
  */
 const makeBoardAuxNode = async (chainStorage, boardId) => {
@@ -46,8 +47,8 @@ const makeBoardAuxNode = async (chainStorage, boardId) => {
 /**
  * see `publishAgoricBrandsDisplayInfo` {@link @agoric/smart-wallet/proposals/upgrade-walletFactory-proposal.js}
  *
- * @param {ERef<StorageNode>} chainStorage
- * @param {ERef<Board>} board
+ * @param {ERemote<StorageNode>} chainStorage
+ * @param {ERemote<Board>} board
  * @param {Brand<'nat'>} brand
  */
 const publishBrandInfo = async (chainStorage, board, brand) => {
@@ -152,7 +153,7 @@ export const createPoCAsset = async (
   // publish brand info / boardAux for offer legibility
   await publishBrandInfo(
     // @ts-expect-error 'Promise<StorageNode | null>' is not assignable to
-    // parameter of type 'ERef<StorageNode>'
+    // parameter of type 'ERemote<StorageNode>'
     chainStorage,
     board,
     brand,
