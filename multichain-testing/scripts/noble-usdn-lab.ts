@@ -15,6 +15,7 @@ import { $ } from 'execa';
 import { ConfigContext, useRegistry } from 'starshipjs';
 import { DEFAULT_TIMEOUT_NS } from '../tools/ibc-transfer.ts';
 import { makeQueryClient } from '../tools/query.ts';
+import { stringToPath } from '@cosmjs/crypto';
 
 const configs = {
   starship: {
@@ -124,6 +125,7 @@ const main = async ({
     const token = { denom, amount: String(BigInt(env.TXFR)) };
     const ag = await DirectSecp256k1HdWallet.fromMnemonic(keyMaterial.trader1, {
       prefix: 'agoric',
+      hdPaths: [stringToPath(`m/44'/564'/0'/0/0`)],
     });
     const [{ address: receiver }] = await ag.getAccounts();
 
