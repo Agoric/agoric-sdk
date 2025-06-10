@@ -26,6 +26,8 @@ export const makePrivateArgs = async (
     agoric: ['ubld'],
     noble: ['uusdc'],
   });
+  trace('@@@@assetInfo', JSON.stringify(assetInfo, null, 2));
+  trace('@@@@config', JSON.stringify(config, null, 2));
   return harden({
     ...orchestrationPowers,
     marshaller,
