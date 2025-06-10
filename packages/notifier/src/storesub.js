@@ -8,9 +8,10 @@ import { makeSubscriptionKit } from './subscriber.js';
 import { subscribeEach } from './subscribe.js';
 
 /**
+ * @import {ERemote} from '@agoric/internal';
  * @import {ERef} from '@endo/far';
  * @import {IterationObserver, LatestTopic, Notifier, NotifierRecord, PublicationRecord, Publisher, PublishKit, StoredPublishKit, StoredSubscription, StoredSubscriber, Subscriber, Subscription, UpdateRecord} from '../src/types.js';
- * @import {Marshaller, StorageNode, Unserializer} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {StorageNode, Unserializer} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /**
@@ -46,8 +47,8 @@ export const forEachPublicationRecord = async (subscriber, consumeValue) => {
  *
  * @template {import('@endo/marshal').PassableCap} T
  * @param {Subscriber<T>} subscriber
- * @param {ERef<StorageNode>} storageNode
- * @param {ERef<ReturnType<typeof makeMarshal>>} marshaller
+ * @param {ERemote<StorageNode>} storageNode
+ * @param {ERemote<Marshaller>} marshaller
  * @returns {StoredSubscriber<T>}
  */
 export const makeStoredSubscriber = (subscriber, storageNode, marshaller) => {
@@ -91,8 +92,8 @@ export const makeStoredSubscriber = (subscriber, storageNode, marshaller) => {
  *
  * @template T
  * @param {Subscription<T>} subscription
- * @param {ERef<StorageNode>} [storageNode]
- * @param {ERef<ReturnType<typeof makeMarshal>>} [marshaller]
+ * @param {ERemote<StorageNode> | null} [storageNode]
+ * @param {ERemote<Marshaller>} [marshaller]
  * @returns {StoredSubscription<T>}
  */
 export const makeStoredSubscription = (
@@ -103,7 +104,7 @@ export const makeStoredSubscription = (
     serializeBodyFormat: 'smallcaps',
   }),
 ) => {
-  /** @type {import('@agoric/internal/src/lib-chainStorage.js').Unserializer} */
+  /** @type {Unserializer} */
   const unserializer = Far('unserializer', {
     fromCapData: data => E(marshaller).fromCapData(data),
     unserialize: data => E(marshaller).fromCapData(data),
@@ -177,8 +178,8 @@ harden(makeStoredSubscription);
  * @deprecated incompatible with durability; instead handle vstorage ephemerally on a durable PublishKit
  *
  * @template [T=unknown]
- * @param {ERef<StorageNode>} [storageNode]
- * @param {ERef<Marshaller>} [marshaller]
+ * @param {ERemote<StorageNode> | null} [storageNode]
+ * @param {ERemote<Marshaller>} [marshaller]
  * @param {string} [childPath]
  * @returns {StoredPublisherKit<T>}
  */
@@ -212,8 +213,8 @@ export const makeStoredPublisherKit = (storageNode, marshaller, childPath) => {
  * What's different is `subscriber` tees records, writing out to storageNode.
  *
  * @template [T=unknown]
- * @param {ERef<StorageNode>} storageNode
- * @param {ERef<Marshaller>} marshaller
+ * @param {ERemote<StorageNode>} storageNode
+ * @param {ERemote<Marshaller>} marshaller
  * @returns {StoredPublishKit<T>}
  */
 export const makeStoredPublishKit = (storageNode, marshaller) => {

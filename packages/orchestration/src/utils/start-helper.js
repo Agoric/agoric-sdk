@@ -13,6 +13,8 @@ import { makeZoeTools } from './zoe-tools.js';
 import { makeZcfTools } from './zcf-tools.js';
 
 /**
+ * @import {ERemote} from '@agoric/internal';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {TimerService} from '@agoric/time';
  * @import {Baggage} from '@agoric/vat-data';
@@ -52,7 +54,7 @@ import { makeZcfTools } from './zcf-tools.js';
  * @param {ZCF} zcf
  * @param {Baggage} baggage
  * @param {OrchestrationPowers} remotePowers
- * @param {Marshaller} marshaller
+ * @param {ERemote<Marshaller>} marshaller
  * @param {object} [opts]
  * @param {WithOrchestrationOpts['chainInfoValueShape']} [opts.chainInfoValueShape]
  * @internal
@@ -205,7 +207,7 @@ harden(provideOrchestration);
  *
  * @template {Record<string, unknown>} CT
  * @template {OrchestrationPowers & {
- *   marshaller: Marshaller;
+ *   marshaller: Remote<Marshaller>;
  * }} PA
  * @template R
  * @param {(

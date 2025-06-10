@@ -10,6 +10,7 @@ import {
 
 /**
  * @import {Brand, Issuer} from '@agoric/ertp';
+ * @import {ERemote} from '@agoric/internal';
  * @import {Instance, StartParams} from '@agoric/zoe/src/zoeService/utils.js'
  * @import {Board} from '@agoric/vats'
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js'
@@ -35,8 +36,8 @@ const contractName = 'fastUsdc';
  *
  * @param {string} path
  * @param {{
- *   chainStorage: ERef<StorageNode>;
- *   board: ERef<Board>;
+ *   chainStorage: ERemote<StorageNode>;
+ *   board: ERemote<Board>;
  * }} io
  */
 const makePublishingStorageKit = async (path, { chainStorage, board }) => {

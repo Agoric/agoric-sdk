@@ -8,8 +8,8 @@ import * as cb from './callback.js';
 
 /**
  * @import {ERef} from '@endo/far';
- * @import {PassableCap} from '@endo/marshal';
- * @import {TypedPattern} from './types.js';
+ * @import {Passable} from '@endo/marshal';
+ * @import {ERemote, TypedPattern} from './types.js';
  */
 
 /** @typedef {ReturnType<typeof import('@endo/marshal').makeMarshal>} Marshaller */
@@ -281,7 +281,7 @@ const makeNullStorageNode = () => {
  * falling back to an inert object with the correct interface (but incomplete
  * behavior) when that is unavailable.
  *
- * @param {ERef<StorageNode?>} storageNodeRef
+ * @param {ERemote<StorageNode> | ERef<StorageNode | null>} storageNodeRef
  * @param {string} childName
  * @returns {Promise<StorageNode>}
  */
@@ -294,9 +294,9 @@ harden(makeStorageNodeChild);
 
 // TODO find a better module for this
 /**
- * @param {ERef<StorageNode>} storageNode
- * @param {ERef<Marshaller>} marshaller
- * @returns {(value: PassableCap) => Promise<void>}
+ * @param {ERemote<StorageNode>} storageNode
+ * @param {ERemote<Marshaller>} marshaller
+ * @returns {(value: Passable) => Promise<void>}
  */
 export const makeSerializeToStorage = (storageNode, marshaller) => {
   return async value => {

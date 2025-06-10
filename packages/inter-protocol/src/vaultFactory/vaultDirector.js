@@ -43,7 +43,7 @@ import {
  * @import {MapStore} from '@agoric/store';
  * @import {TransferPart, ZCF, ZCFMint, ZCFSeat} from '@agoric/zoe';
  * @import {EReturn} from '@endo/far';
- * @import {TypedPattern} from '@agoric/internal';
+ * @import {TypedPattern, ERemote} from '@agoric/internal';
  */
 
 const trace = makeTracer('VD', true);
@@ -106,8 +106,8 @@ export const makeAllManagersDo = (collateralManagers, vaultManagers) => {
  * @param {ZCFMint<'nat'>} debtMint
  * @param {ERef<import('@agoric/time').TimerService>} timer
  * @param {ERef<import('../auction/auctioneer.js').AuctioneerPublicFacet>} auctioneer
- * @param {ERef<StorageNode>} storageNode
- * @param {ERef<Marshaller>} marshaller
+ * @param {ERemote<StorageNode>} storageNode
+ * @param {ERemote<Marshaller>} marshaller
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeERecorderKit} makeERecorderKit
  * @param {Record<string, import('./params.js').VaultManagerParamOverrides>} managerParams

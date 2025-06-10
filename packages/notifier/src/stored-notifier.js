@@ -8,8 +8,9 @@ import { observeNotifier } from './asyncIterableAdaptor.js';
 /**
  * @import {ERef} from '@endo/far';
  * @import {BaseNotifier, Notifier} from './types.js';
+ * @import {ERemote} from '@agoric/internal';
  * @import {Marshaller, StoredFacet, StorageNode, Unserializer} from '@agoric/internal/src/lib-chainStorage.js';
- * @import {PassableCap, RemotableObject} from '@endo/pass-style';
+ * @import {PassableCap} from '@endo/pass-style';
  */
 
 /**
@@ -28,12 +29,14 @@ import { observeNotifier } from './asyncIterableAdaptor.js';
  *
  * @template {PassableCap} T
  * @param {ERef<Notifier<T>>} notifier
- * @param {ERef<StorageNode>} storageNode
- * @param {ERef<Marshaller>} marshaller
+ * @param {ERemote<StorageNode>} storageNode
+ * @param {ERemote<Marshaller>} marshaller
  * @returns {StoredNotifier<T>}
  */
 export const makeStoredNotifier = (notifier, storageNode, marshaller) => {
   assertAllDefined({ notifier, storageNode, marshaller });
+
+  // Wrap marshaller with local caching one? Or do it upstream?
 
   const marshallToStorage = makeSerializeToStorage(storageNode, marshaller);
 
