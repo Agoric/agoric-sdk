@@ -30,16 +30,14 @@ const marshalData = makeMarshal(_val => Fail`data only`);
  * already an agorcNames key by that name.
  *
  * @param {ERef<NameAdmin>} agoricNamesAdmin
- * @param {ERef<StorageNode>} chainStorageP
+ * @param {ERef<StorageNode>} agoricNamesNode
  * @param {ERef<NameHub>} agoricNames
  */
 const publishChainInfoToChainStorage = async (
   agoricNamesAdmin,
-  chainStorageP,
+  agoricNamesNode,
   agoricNames,
 ) => {
-  const agoricNamesNode = E(chainStorageP).makeChildNode('agoricNames');
-
   /**
    * @param {string} subpath
    */
@@ -109,14 +107,15 @@ export const publishChainInfo = async (
   const { chainInfo = {} } = config?.options || {};
   trace('publishChainInfo', keys(chainInfo));
 
+  const agoricNamesNode = E(chainStorage).makeChildNode('agoricNames');
+
   // Ensure updates go to vstorage
   await publishChainInfoToChainStorage(
     agoricNamesAdmin,
-    chainStorage,
+    agoricNamesNode,
     agoricNames,
   );
 
-  const agoricNamesNode = E(chainStorage).makeChildNode('agoricNames');
   for (const kind of Object.values(HubName)) {
     const hub = E(agoricNames).lookup(kind);
     /** @type {string[]} */
