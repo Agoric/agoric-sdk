@@ -11,7 +11,7 @@ import type { ExecutionContext } from 'ava';
 import { createRequire } from 'module';
 import { makeUSDNIBCTraffic } from './mocks.ts';
 import { makeTrader } from './portfolio-actors.ts';
-import { commonSetup } from './supports.js';
+import { setupPortfolioTest } from './supports.ts';
 import { makeWallet } from './wallet-offer-tools.ts';
 
 const nodeRequire = createRequire(import.meta.url);
@@ -50,7 +50,7 @@ const explored = [
 harden(explored);
 
 const deploy = async (t: ExecutionContext) => {
-  const common = await commonSetup(t);
+  const common = await setupPortfolioTest(t);
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
   t.log('contract deployment', contractName);
 
@@ -96,11 +96,16 @@ test('open portfolio with USDN position', async t => {
     ibcBridge.addMockAck(msg, ack);
   }
 
-  const done = await trader1.openPortfolio(t, {
+  const doneP = trader1.openPortfolio(t, {
     USDN: usdc.units(3_333),
     Aave: usdc.units(3_333),
     Compound: usdc.units(3_333),
   });
+
+  // ack IBC transfer for forward
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+
+  const done = await doneP;
   const result = done.result as any;
   t.is(passStyleOf(result.invitationMakers), 'remotable');
   t.like(result.publicTopics, [
