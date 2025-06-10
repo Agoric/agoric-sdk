@@ -78,6 +78,7 @@ export const setUpZoeForTest = async ({
       );
       // Copy all the properties so this object can be hardened.
       const exports = { ...pathOrExports };
+      // @ts-expect-error Not assignable to `TestBundle`
       return bundleTestExports(exports);
     }
   };
