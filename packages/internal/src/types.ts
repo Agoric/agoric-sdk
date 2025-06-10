@@ -90,11 +90,12 @@ export type Remote<Primary, Local = DataOnly<Primary>> =
   | Primary
   | RemotableBrand<Local, Primary>;
 
-// TODO: Add type tests for FarRef and Remote.
+// TODO: Add type tests for Remote and ERemote.
 /**
- * Potentially remote promises or settled references.
+ * A type that accepts either resolved or promised references that may be either
+ * near or marshalled. @see {ERef} and @see {Remote}.
  */
-export type FarRef<Primary, Local = DataOnly<Primary>> = ERef<
+export type ERemote<Primary, Local = DataOnly<Primary>> = ERef<
   Remote<Primary, Local>
 >;
 
