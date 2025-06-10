@@ -19,7 +19,6 @@
     "lint:types": "yarn run -T tsc"
   },
   "devDependencies": {
-    "@agoric/cosmic-proto": "workspace:*",
     "@agoric/ertp": "workspace:*",
     "@agoric/fast-usdc": "workspace:*",
     "@agoric/swingset-liveslots": "workspace:*",
@@ -35,6 +34,7 @@
     "ts-blank-space": "^0.6.1"
   },
   "dependencies": {
+    "@agoric/cosmic-proto": "workspace:*",
     "@agoric/internal": "workspace:*",
     "@agoric/orchestration": "workspace:*",
     "@agoric/vats": "workspace:*",
