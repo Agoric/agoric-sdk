@@ -662,16 +662,20 @@ test.serial('bad swapOut receiver, via addressHooks', async t => {
   );
   t.log('sender balance after transfer: ', senderBalancesAfter);
 
-    const waitUntilIbcTransferCosmos = makeWaitUntilIbcTransfer(
+  const waitUntilIbcTransferCosmos = makeWaitUntilIbcTransfer(
     cosmosHubQueryClient,
     getDenomHash,
     retryUntilCondition,
   );
-    await waitUntilIbcTransferCosmos(cosmosHubAddr, senderBalancesAfter.balances, {
-    currentChain: 'cosmoshub',
-    issuerChain: 'agoric',
-    denom: 'ubld',
-  });
+  await waitUntilIbcTransferCosmos(
+    cosmosHubAddr,
+    senderBalancesAfter.balances,
+    {
+      currentChain: 'cosmoshub',
+      issuerChain: 'agoric',
+      denom: 'ubld',
+    },
+  );
 
   const localOrchAccountBalancesRecovery =
     await queryClient.queryBalances(baseAddress);
