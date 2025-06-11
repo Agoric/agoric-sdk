@@ -651,10 +651,8 @@ test.serial('bad swapOut receiver, via addressHooks', async t => {
     'swap-anything balance reflected transferred tokens',
   );
 
-  // local account balances
   const localOrchAccountBalancesAfter =
     await queryClient.queryBalances(baseAddress);
-  // sender balances
   const senderBalancesAfter =
     await cosmosHubQueryClient.queryBalances(cosmosHubAddr);
 
@@ -663,6 +661,28 @@ test.serial('bad swapOut receiver, via addressHooks', async t => {
     localOrchAccountBalancesAfter,
   );
   t.log('sender balance after transfer: ', senderBalancesAfter);
+
+    const waitUntilIbcTransferCosmos = makeWaitUntilIbcTransfer(
+    cosmosHubQueryClient,
+    getDenomHash,
+    retryUntilCondition,
+  );
+    await waitUntilIbcTransferCosmos(cosmosHubAddr, senderBalancesAfter.balances, {
+    currentChain: 'cosmoshub',
+    issuerChain: 'agoric',
+    denom: 'ubld',
+  });
+
+  const localOrchAccountBalancesRecovery =
+    await queryClient.queryBalances(baseAddress);
+  const senderBalancesRecovery =
+    await cosmosHubQueryClient.queryBalances(cosmosHubAddr);
+
+  t.log(
+    'local account balance after recovery: ',
+    localOrchAccountBalancesRecovery,
+  );
+  t.log('sender balance after recovery: ', senderBalancesRecovery);
 });
 
 test.serial('native ATOM for Osmo using PFM, receiver on Agoric', async t => {
