@@ -89,7 +89,6 @@ export const createAndMonitorLCA = async (
     localAccount,
     localChainAddress,
     sourceChannel: transferChannel.counterPartyChannelId,
-    remoteDenom,
     localDenom,
     assets,
     remoteChainInfo: info,

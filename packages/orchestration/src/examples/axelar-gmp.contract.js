@@ -24,7 +24,7 @@ const trace = makeTracer('AxelarGmp');
  * @param {ZCF} zcf
  * @param {OrchestrationPowers & {
  *   marshaller: Marshaller;
- *   chainInfo: Record<string, CosmosChainInfo>;
+ *   chainInfo?: Record<string, CosmosChainInfo>;
  *   assetInfo?: [Denom, DenomDetail & { brandKey?: string }][];
  *   storageNode: Remote<StorageNode>;
  * }} privateArgs
@@ -39,10 +39,6 @@ export const contract = async (
 ) => {
   trace('Inside Contract');
 
-  trace('Channel Info Agoric:');
-  trace(privateArgs.chainInfo.agoric.connections);
-
-  trace('Registering Chain and Assets....');
   registerChainsAndAssets(
     chainHub,
     zcf.getTerms().brands,

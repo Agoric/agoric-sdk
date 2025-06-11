@@ -52,7 +52,6 @@ export const AxelarGMPMessageType = {
  * @property {OrchestrationAccount<{ chainId: 'agoric' }>} localAccount
  * @property {CosmosChainAddress} localChainAddress
  * @property {IBCChannelID} sourceChannel
- * @property {Denom} remoteDenom
  * @property {Denom} localDenom
  * @property {any} assets
  * @property {any} remoteChainInfo

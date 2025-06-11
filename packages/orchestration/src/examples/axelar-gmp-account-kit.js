@@ -46,7 +46,6 @@ harden(InvitationMakerI);
 const EvmKitStateShape = {
   localChainAddress: CosmosChainAddressShape,
   sourceChannel: M.string(),
-  remoteDenom: M.string(),
   localDenom: M.string(),
   localAccount: M.remotable('LocalAccount'),
   assets: M.any(),
@@ -74,11 +73,6 @@ export const prepareEvmAccountKit = (
         receiveUpcall: M.call(M.record()).returns(
           M.or(VowShape, M.undefined()),
         ),
-      }),
-      transferWatcher: M.interface('TransferWatcher', {
-        onFulfilled: M.call(M.undefined())
-          .optional(M.bigint())
-          .returns(VowShape),
       }),
       holder: EVMI,
       invitationMakers: InvitationMakerI,
@@ -166,17 +160,6 @@ export const prepareEvmAccountKit = (
           }
 
           trace('receiveUpcall completed');
-        },
-      },
-      transferWatcher: {
-        /**
-         * @param {void} _result
-         * @param {bigint} value the qty of uatom to delegate
-         */
-        onFulfilled(_result, value) {
-          trace('onFulfilled _result:', JSON.stringify(_result));
-          trace('onFulfilled value:', JSON.stringify(value));
-          trace('onFulfilled state:', JSON.stringify(this.state));
         },
       },
       holder: {

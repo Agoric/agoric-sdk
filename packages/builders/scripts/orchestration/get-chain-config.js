@@ -1,9 +1,9 @@
 import { IBCConnectionInfoShape } from '@agoric/orchestration/src/typeGuards.js';
 import { mustMatch } from '@endo/patterns';
-import { execFileSync } from 'node:child_process';
 import { makeAgd } from '@agoric/orchestration/src/utils/agd-lib.js';
 import { networkConfigs } from '@agoric/orchestration/src/utils/gmp.js';
-import { chainInfo } from '@agoric/orchestration/src/utils/axelar-static-config.js';
+import * as childProcess from 'node:child_process';
+import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 
 /**
  * @import {IBCChannelID, IBCConnectionID} from '@agoric/vats';
@@ -29,13 +29,23 @@ const parsePeers = strs => {
  *
  * @param {object} args - The arguments object.
  * @param {string} args.net - The network name (e.g., 'emerynet').
- * @param {string[]} args.peer - The peers to connect .
+ * @param {string[]} args.peers - The peers to connect .
+ * @param {childProcess.execFileSync} [args.execFileSync] - Optional execFileSync function.
  * @returns {Promise<Record<string, CosmosChainInfo>>} A promise that resolves to the chain configuration details keyed by chain name.
  */
 
-export const getChainConfig = async ({ net, peer }) => {
+export const getChainConfig = async ({
+  net,
+  peers,
+  execFileSync = childProcess.execFileSync,
+}) => {
+  await null;
+
   if (net === 'bootstrap') {
-    return chainInfo;
+    return {
+      agoric: fetchedChainInfo.agoric,
+      axelar: fetchedChainInfo.axelar,
+    };
   }
 
   /** @type {Record<string, CosmosChainInfo>} */
@@ -48,9 +58,8 @@ export const getChainConfig = async ({ net, peer }) => {
   const { chainId, rpc } = networkConfigs[net];
   const agd = makeAgd({ execFileSync }).withOpts({ rpcAddrs: [rpc] });
 
-  for (const [peerName, myConn, myChan, denom] of parsePeers(peer)) {
+  for (const [peerName, myConn, myChan, denom] of parsePeers(peers)) {
     console.debug(peerName, { denom });
-    // eslint-disable-next-line @jessie.js/safe-await-separator
     const connInfo = await agd
       .query(['ibc', 'connection', 'end', myConn])
       .then(x => x.connection);

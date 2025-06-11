@@ -9,7 +9,7 @@ import { makeWalletFactoryContext } from '@aglocal/fast-usdc-deploy/test/walletF
 import { buildGMPPayload } from '@agoric/orchestration/src/utils/gmp.js';
 import { encodeAbiParameters } from 'viem';
 import { makeWalletFactoryDriver } from '../../tools/drivers.js';
-import { makeReceiveUpCallPayload } from '../../tools/utils.js';
+import { makeReceiveUpCallPayload } from '../../tools/axelar-supports.js';
 
 export type WalletFactoryDriver = Awaited<
   ReturnType<typeof makeWalletFactoryDriver>
@@ -53,6 +53,8 @@ const makeTestContext = async (t: ExecutionContext) => {
   return fullCtx;
 };
 
+const agoricToAxelarChannel = 'channel-9';
+const axelarToAgoricChannel = 'channel-41';
 let evmTransactionCounter = 0;
 let previousOffer = '';
 let lcaAddress = '';
@@ -106,12 +108,10 @@ test.before(async t => {
   );
 
   await evalProposal(
-    buildProposal('@agoric/builders/scripts/orchestration/init-axelar-gmp.js', [
-      '--net',
-      'bootstrap',
-      '--peer',
-      'axelar:connection-0:channel-0:uaxl',
-    ]),
+    buildProposal(
+      '@agoric/builders/scripts/orchestration/axelar-gmp.build.js',
+      ['--net', 'bootstrap', '--peer', 'axelar:connection-0:channel-41:uaxl'],
+    ),
   );
 });
 
@@ -158,7 +158,7 @@ test.serial('makeAccount via axelarGmp', async t => {
     buildVTransferEvent({
       sender: makeTestAddress(),
       target: makeTestAddress(),
-      sourceChannel: 'channel-0',
+      sourceChannel: agoricToAxelarChannel,
       sequence: '1',
       memo: '{}',
     }),
@@ -204,9 +204,6 @@ test.serial('receiveUpCall test', async t => {
     wallet,
     bridgeUtils: { runInbound },
   } = t.context;
-
-  const agoricToAxelarChannel = 'channel-0';
-  const axelarToAgoricChannel = 'channel-0';
 
   const encodedAddress = encodeAbiParameters(
     [{ type: 'address' }],
@@ -451,4 +448,87 @@ test.serial('make contract calls using lca', async t => {
       message: /gasAmount must be defined/,
     },
   );
+});
+
+test.serial('restart axelarGmp', async t => {
+  t.log('restart axelar-gmp');
+
+  const { evalProposal, buildProposal, wallet } = t.context;
+  await evalProposal(
+    buildProposal('@agoric/builders/scripts/testing/restart-axelar-gmp.js'),
+  );
+
+  t.log(
+    'check if the LCA address remains durable after restarting the contract',
+  );
+  await makeEVMTransaction({
+    wallet,
+    previousOffer,
+    methodName: 'getLocalAddress',
+    offerArgs: [],
+    proposal: {},
+  });
+
+  // @ts-expect-error
+  lcaAddress = wallet.getLatestUpdateRecord().status.result;
+  t.truthy(lcaAddress);
+  t.like(wallet.getLatestUpdateRecord(), {
+    status: {
+      id: `evmTransaction${evmTransactionCounter - 1}`,
+      numWantsSatisfied: 1,
+      result: lcaAddress,
+    },
+  });
+});
+
+test.serial('make contract calls after contract restart', async t => {
+  const { wallet, storage } = t.context;
+  const { BLD } = t.context.agoricNamesRemotes.brand;
+
+  const factoryContractAddress: `0x${string}` =
+    '0xef8651dD30cF990A1e831224f2E0996023163A81';
+  const contractInvocationData = [
+    {
+      functionSignature: 'createVendor(string)',
+      args: ['ownerAddress'],
+      target: factoryContractAddress,
+    },
+  ];
+
+  await makeEVMTransaction({
+    wallet,
+    previousOffer,
+    methodName: 'sendGmp',
+    offerArgs: [
+      {
+        destinationAddress: factoryContractAddress,
+        type: 1,
+        gasAmount: 50000,
+        destinationEVMChain: 'Ethereum',
+        contractInvocationData,
+      },
+    ],
+    proposal: {
+      give: { BLD: { brand: BLD, value: 1n } },
+    },
+  });
+
+  const getLogged = () =>
+    JSON.parse(storage.data.get('published.axelarGmp.log')!).values;
+
+  t.deepEqual(getLogged(), [
+    'Inside sendGmp',
+    `Payload: ${JSON.stringify(buildGMPPayload(contractInvocationData))}`,
+    'Fee object {"amount":"50000","recipient":"axelar1zl3rxpp70lmte2xr6c4lgske2fyuj3hupcsvcd"}',
+    'Initiating IBC Transfer...',
+    'DENOM of token:ubld',
+    'sendGmp successful',
+  ]);
+
+  t.like(wallet.getLatestUpdateRecord(), {
+    status: {
+      id: `evmTransaction${evmTransactionCounter - 1}`,
+      result: 'sendGmp successful',
+    },
+  });
 });

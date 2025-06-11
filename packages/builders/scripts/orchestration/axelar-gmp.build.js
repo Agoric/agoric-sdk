@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { parseArgs } from 'node:util';
 import {
@@ -51,12 +52,13 @@ export default async (homeP, endowments) => {
     return JSON.parse(assetInfo);
   };
 
-  if (!flags.net) throw Error('--peer required');
-  if (!flags.peer) throw Error('--net required');
+  if (!flags.net) throw Error('--net required');
+  if (!flags.peer) throw Error('--peer required');
 
   const chainDetails = await getChainConfig({
     net: flags.net,
-    peer: flags.peer,
+    peers: flags.peer,
+    execFileSync,
   });
 
   const opts = harden({
