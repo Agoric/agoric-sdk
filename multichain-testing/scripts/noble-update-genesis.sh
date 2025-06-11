@@ -100,8 +100,7 @@ jq --arg owner "$FIATTF_OWNER_ADDR" \
     },
     "pauser": {
         "address": $pauser
-    },
-    "params": {}
+    }
 }' $CHAIN_DIR/config/genesis.json > /tmp/genesis.json && mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
 
 echo "Configure tokenfactory module..."
@@ -150,8 +149,7 @@ jq --arg owner "$TF_OWNER_ADDR" \
     },
     "pauser": {
         "address": $pauser
-    },
-    "params": {}
+    }
 }' $CHAIN_DIR/config/genesis.json > /tmp/genesis.json && mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
 
 # Add denomination metadata
@@ -207,6 +205,14 @@ jq --arg addr "$GENESIS_ADDR" '
   .app_state.params.params.authority = $addr |
   .app_state.upgrade.params.authority = $addr
 ' $CHAIN_DIR/config/genesis.json > /tmp/genesis.json && mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
+
+echo "Configure authority module…"
+jq --arg addr "$GENESIS_ADDR" '
+  .app_state.authority = {
+    "owner": $addr
+  }
+' $CHAIN_DIR/config/genesis.json \
+  > /tmp/genesis.json && mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
 
 # Configure CCTP module
 echo "Configure CCTP module..."

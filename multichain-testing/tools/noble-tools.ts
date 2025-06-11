@@ -54,7 +54,7 @@ export const makeNobleTools = (
         '-y',
         // FIXME removed in cosmos-sdk https://github.com/Agoric/agoric-sdk/issues/9016
         '--broadcast-mode',
-        'block',
+        'sync',
       ]),
     );
   };
@@ -77,15 +77,28 @@ export const makeNobleTools = (
         '-y',
         // FIXME removed in cosmos-sdk https://github.com/Agoric/agoric-sdk/issues/9016
         '--broadcast-mode',
-        'block',
+        'sync',
       ]),
     );
   };
 
+  /**
+ * Blocks synchronously for the given number of milliseconds.
+ * @param {number} ms  Milliseconds to sleep
+ */
+function sleepSync(ms) {
+  const end = Date.now() + ms;
+  while (Date.now() < end) {
+    // spin
+  }
+}
   const queryForwardingAddress = (
     channelId: IBCChannelID,
     address: CosmosChainAddress['value'],
   ): { address: NobleAddress; exists: boolean } => {
+    // want to sleep for 10 seconds
+    log('sleeping for 10 seconds before querying forwarding address');
+    sleepSync(10000);
     log('querying forwarding address', address, channelId);
     return JSON.parse(
       exec([

@@ -1,0 +1,15 @@
+# Start from the published Noble image
+FROM ghcr.io/noble-assets/noble:v9.0.4
+
+# Switch to root so we can install packages
+USER root
+
+# Install bash (this image is Alpine-based)
+RUN apk add --no-cache bash
+
+# (Optional) switch back to the non-root user if needed
+# USER nobled
+
+# Ensure the default entrypoint/command are preserved:
+# you don’t need to set ENTRYPOINT or CMD here,
+# it’ll inherit whatever the noble image has.

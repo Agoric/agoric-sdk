@@ -454,6 +454,7 @@ test.serial('Ethereum destination', async t => {
     recipientAddress,
   );
 
+  await sleep(10000, { log: t.log, setTimeout });
   const { encumberedBalance: balanceBeforeBurn } =
     await fastLPQ(vstorageClient).metrics();
 
@@ -463,6 +464,7 @@ test.serial('Ethereum destination', async t => {
   await assertTxStatus(evidence.txHash, 'ADVANCED');
   trace('Advance completed, waiting for mint...');
 
+  await sleep(10000, { log: t.log, setTimeout });
   t.true(
     AmountMath.isGTE(
       (await fastLPQ(vstorageClient).metrics()).encumberedBalance,
@@ -488,6 +490,7 @@ test.serial('Ethereum destination', async t => {
 
   // Verify disbursement succeeds
   nobleTools.mockCctpMint(mintAmt, userForwardingAddr);
+  await sleep(10000, { log: t.log, setTimeout });
   await retryUntilCondition(
     () => fastLPQ(vstorageClient).metrics(),
     ({ encumberedBalance }) =>
@@ -624,7 +627,9 @@ test.serial('distribute FastUSDC contract fees', async t => {
   t.truthy(balance?.amount);
 });
 
-test.serial('insufficient LP funds; forward path', async t => {
+test.serial.only('insufficient LP funds; forward path', async t => {
+  await sleep(10000, { log: t.log, setTimeout });
+
   const eudChain = 'osmosis';
   const mintAmt = LP_DEPOSIT_AMOUNT * 2n;
   const {
@@ -651,16 +656,22 @@ test.serial('insufficient LP funds; forward path', async t => {
   );
 
   t.log('User initiates EVM burn:', evidence.txHash);
+  // await sleep(5000, { log: t.log, setTimeout });
   // submit evidences
+  await sleep(10000, { log: t.log, setTimeout });
   await attest(evidence, eudChain);
 
   const queryClient = makeQueryClient(
     await useChain(eudChain).getRestEndpoint(),
   );
 
+  
+  await sleep(10000, { log: t.log, setTimeout });
   await assertTxStatus(evidence.txHash, 'ADVANCE_SKIPPED');
 
   nobleTools.mockCctpMint(mintAmt, userForwardingAddr);
+
+  await sleep(10000, { log: t.log, setTimeout });
 
   await assertTxStatus(evidence.txHash, 'FORWARDED');
   await assertAmtForwarded(queryClient, EUD, eudChain, mintAmt);

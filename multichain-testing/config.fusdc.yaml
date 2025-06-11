@@ -34,6 +34,7 @@ chains:
       memory: 4Gi
   - id: noblelocal
     name: noble
+    image: michaelfig/noble:v9.0.4
     numValidators: 1
     genesis:
       app_state:
