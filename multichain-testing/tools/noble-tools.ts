@@ -43,7 +43,7 @@ export const makeNobleTools = (
     address: CosmosChainAddress['value'],
   ): { txhash: string; code: number; data: string; height: string } => {
     log('creating forwarding address', address, channelId);
-    return JSON.parse(
+    const response = JSON.parse(
       exec([
         'tx',
         'forwarding',
@@ -57,6 +57,9 @@ export const makeNobleTools = (
         'sync',
       ]),
     );
+    log('sleeping for 10 seconds after registerForwardingAcct');
+    sleepSync(15000);
+    return response;
   };
 
   const mockCctpMint = (
@@ -65,7 +68,7 @@ export const makeNobleTools = (
   ) => {
     const denomAmount = `${Number(amount)}uusdc`;
     log('mock cctp mint', destination, denomAmount);
-    return JSON.parse(
+    const response = JSON.parse(
       exec([
         'tx',
         'bank',
@@ -80,6 +83,10 @@ export const makeNobleTools = (
         'sync',
       ]),
     );
+    
+    log('sleeping for 10 seconds after mockCctpMint');
+    sleepSync(15000);
+    return response
   };
 
   /**
@@ -97,8 +104,7 @@ function sleepSync(ms) {
     address: CosmosChainAddress['value'],
   ): { address: NobleAddress; exists: boolean } => {
     // want to sleep for 10 seconds
-    log('sleeping for 10 seconds before querying forwarding address');
-    sleepSync(10000);
+    
     log('querying forwarding address', address, channelId);
     return JSON.parse(
       exec([
