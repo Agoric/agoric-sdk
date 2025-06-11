@@ -69,9 +69,9 @@ export const start = async (zcf, _privateArgs, instanceBaggage) => {
     );
     const sellSeatExitRule = sellSeat.getProposal().exit;
     if (!isAfterDeadlineExitRule(sellSeatExitRule)) {
-      // TypeScript confused about `||` control flow so use `if` instead
+      // TypeScript confused about `||` control flow so use `if/throw` instead
       // https://github.com/microsoft/TypeScript/issues/50739
-      Fail`the seller must have an afterDeadline exitRule, but instead had ${sellSeatExitRule}`;
+      throw Fail`the seller must have an afterDeadline exitRule, but instead had ${sellSeatExitRule}`;
     }
     const exerciseOption = makeExerciser(sellSeat);
     const customDetails = harden({
