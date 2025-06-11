@@ -352,6 +352,11 @@ to pass and for reviewer approval.
   with the proposal directory's **package.json** `agoricProposal` updated to include `releaseNotes`
   and `upgradeInfo` matching the mainnet proposal.
 
+- [ ] Open a [cosmos/chain-registry](https://github.com/cosmos/chain-registry) PR to document the
+  new version in both
+  [agoric/chain.json](https://github.com/cosmos/chain-registry/blob/master/agoric/chain.json) and
+  [agoric/versions.json](https://github.com/cosmos/chain-registry/blob/master/agoric/versions.json).
+
 ## More subtlety
 
 To get help for the command-line options that will affect these commands, use:
