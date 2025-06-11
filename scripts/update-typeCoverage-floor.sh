@@ -11,6 +11,6 @@ for package in packages/*/package.json; do
     # This can raise or lower the amount. "--update-if-higher" will only raise it,
     # but this gives us more flexibility. Reviewers should evaluate whether
     # lowering is warranted.
-    yarn --silent type-coverage --update
+    yarn run --top-level --silent type-coverage --update
   fi
 done
