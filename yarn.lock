@@ -638,6 +638,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/inter-protocol@workspace:packages/inter-protocol"
   dependencies:
+    "@agoric/base-zone": "workspace:*"
     "@agoric/ertp": "workspace:*"
     "@agoric/governance": "workspace:*"
     "@agoric/internal": "workspace:*"
