@@ -7,10 +7,8 @@ import {
   makeGovernanceDriver,
   makeWalletFactoryDriver,
 } from '@aglocal/boot/tools/drivers.js';
-import {
-  makeCosmicSwingsetTestKit,
-  makeMockBridgeKit,
-} from '@agoric/cosmic-swingset/tools/test-kit.js';
+import { makeMockBridgeKit } from '@agoric/cosmic-swingset/tools/test-bridge-utils';
+import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { MALLEABLE_NUMBER } from '@agoric/governance/test/swingsetTests/contractGovernor/governedContract.js';
 import { NonNullish } from '@agoric/internal';

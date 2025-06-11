@@ -2,10 +2,8 @@ import { createRequire } from 'node:module';
 
 import type { TestFn } from 'ava';
 
-import {
-  makeCosmicSwingsetTestKit,
-  makeMockBridgeKit,
-} from '@agoric/cosmic-swingset/tools/test-kit.js';
+import { makeMockBridgeKit } from '@agoric/cosmic-swingset/tools/test-bridge-utils';
+import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
 import { buildProposal } from '@agoric/cosmic-swingset/tools/test-proposal-utils.ts';
 import { BridgeId, NonNullish } from '@agoric/internal';
 import {

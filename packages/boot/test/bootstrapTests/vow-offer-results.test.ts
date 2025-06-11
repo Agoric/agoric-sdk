@@ -1,32 +1,36 @@
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-
 import type { TestFn } from 'ava';
+
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
-} from './walletFactory.js';
+} from '@aglocal/boot/test/bootstrapTests/walletFactory.js';
+import { buildProposal } from '@agoric/cosmic-swingset/tools/test-proposal-utils.ts';
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
 
-test.before(async t => {
-  t.context = await makeWalletFactoryContext(
-    t,
-    '@agoric/vm-config/decentral-itest-orchestration-config.json',
-  );
-});
+test.before(
+  async t =>
+    (t.context = await makeWalletFactoryContext({
+      configSpecifier:
+        '@agoric/vm-config/decentral-itest-orchestration-config.json',
+    })),
+);
 test.after.always(t => t.context.shutdown?.());
 
 test('resolves', async t => {
-  const { walletFactoryDriver, buildProposal, evalProposal } = t.context;
+  const { evaluateProposal, runUntilQueuesEmpty, walletFactoryDriver } =
+    t.context;
 
   t.log('start valueVow');
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/testing/start-valueVow.js'),
+  await evaluateProposal(
+    await buildProposal('@agoric/builders/scripts/testing/start-valueVow.js'),
   );
 
   t.log('use wallet to get a vow');
   const getter = await walletFactoryDriver.provideSmartWallet('agoric1getter');
-  console.log('executing offer');
+
+  t.log('executing offer');
   // *send* b/c execution doesn't resolve until even the vow resolves and that won't happen until the set-value
   await getter.sendOffer({
     id: 'get-value',
@@ -37,11 +41,10 @@ test('resolves', async t => {
     },
     proposal: {},
   });
+
   // Ensure the offer has executed. Without this there's work in the
   // crank when the contract is restarted below.
-  await new Promise(resolve => {
-    setTimeout(resolve, 1000);
-  });
+  await runUntilQueuesEmpty();
 
   t.log('confirm the value is not in offer results');
   {
@@ -59,8 +62,8 @@ test('resolves', async t => {
   }
 
   t.log('restart valueVow');
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/testing/restart-valueVow.js'),
+  await evaluateProposal(
+    await buildProposal('@agoric/builders/scripts/testing/restart-valueVow.js'),
   );
 
   t.log('use wallet to set value');
@@ -85,21 +88,19 @@ test('resolves', async t => {
   });
 
   t.log('confirm the value is now in offer results');
+
   // Ensure the getter vow has had time to resolved.
-  await new Promise(resolve => {
-    setTimeout(resolve, 1000);
+  await runUntilQueuesEmpty();
+
+  const statusRecord = getter.getLatestUpdateRecord();
+  // narrow the type
+  assert(statusRecord.updated === 'offerStatus');
+  t.true('result' in statusRecord.status, 'got result');
+  t.like(statusRecord, {
+    status: {
+      id: 'get-value',
+      result: offerArgs.value,
+    },
+    updated: 'offerStatus',
   });
-  {
-    const statusRecord = getter.getLatestUpdateRecord();
-    // narrow the type
-    assert(statusRecord.updated === 'offerStatus');
-    t.true('result' in statusRecord.status, 'got result');
-    t.like(statusRecord, {
-      status: {
-        id: 'get-value',
-        result: offerArgs.value,
-      },
-      updated: 'offerStatus',
-    });
-  }
 });

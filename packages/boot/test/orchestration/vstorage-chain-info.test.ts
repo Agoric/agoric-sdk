@@ -3,21 +3,24 @@
  *
  * Not currently planned for mainnet.
  */
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import type { TestFn } from 'ava';
+
+import {
+  makeWalletFactoryContext,
+  type WalletFactoryTestContext,
+} from '@aglocal/boot/test/bootstrapTests/walletFactory.js';
+import {
+  insistManagerType,
+  makeSwingsetHarness,
+} from '@aglocal/boot/tools/supports.js';
+import { buildProposal } from '@agoric/cosmic-swingset/tools/test-proposal-utils.ts';
 import {
   defaultMarshaller,
   documentStorageSchema,
 } from '@agoric/internal/src/storage-test-utils.js';
-import type { TestFn } from 'ava';
-import {
-  insistManagerType,
-  makeSwingsetHarness,
-} from '../../tools/supports.js';
-import {
-  makeWalletFactoryContext,
-  type WalletFactoryTestContext,
-} from '../bootstrapTests/walletFactory.js';
+import { makeSlogSender } from '@agoric/telemetry';
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 const test: TestFn<
   WalletFactoryTestContext & {
@@ -34,14 +37,32 @@ const {
 
 test.before(async t => {
   insistManagerType(defaultManagerType);
+
   const harness =
     defaultManagerType === 'xsnap' ? makeSwingsetHarness() : undefined;
-  const ctx = await makeWalletFactoryContext(
-    t,
-    '@agoric/vm-config/decentral-itest-orchestration-chains-config.json',
-    { slogFile, defaultManagerType, harness },
-  );
-  t.context = { ...ctx, harness };
+  const slogSender = slogFile
+    ? makeSlogSender({
+        env: {
+          ...process.env,
+          SLOGFILE: slogFile,
+          SLOGSENDER: '',
+        },
+        stateDir: '.',
+      })
+    : undefined;
+
+  const context = await makeWalletFactoryContext({
+    configSpecifier:
+      '@agoric/vm-config/decentral-itest-orchestration-chains-config.json',
+    fixupConfig: config => ({
+      ...config,
+      defaultManagerType: defaultManagerType as ManagerType,
+    }),
+    harness,
+    slogSender,
+  });
+
+  t.context = { ...context, harness };
 });
 test.after.always(t => t.context.shutdown?.());
 
@@ -50,73 +71,67 @@ test.after.always(t => t.context.shutdown?.());
  */
 test.serial('config', async t => {
   const {
-    storage,
     readPublished,
     runUtils: { EV },
+    storage,
   } = t.context;
 
   const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
 
-  {
-    const cosmosChainInfo = await EV(agoricNames).lookup('chain', 'cosmoshub');
-    t.like(cosmosChainInfo, {
-      chainId: 'cosmoshub-4',
-      stakingTokens: [{ denom: ATOM_DENOM }],
-    });
-    t.deepEqual(readPublished(`agoricNames.chain.cosmoshub`), cosmosChainInfo);
-    await documentStorageSchema(t, storage, {
-      note: 'Chain info for Orchestration',
-      node: 'agoricNames.chain',
-      showValue: v => defaultMarshaller.fromCapData(JSON.parse(v)),
-    });
-  }
+  const cosmosChainInfo = await EV(agoricNames).lookup('chain', 'cosmoshub');
+  t.like(cosmosChainInfo, {
+    chainId: 'cosmoshub-4',
+    stakingTokens: [{ denom: ATOM_DENOM }],
+  });
+  t.deepEqual(readPublished(`agoricNames.chain.cosmoshub`), cosmosChainInfo);
+  await documentStorageSchema(t, storage, {
+    note: 'Chain info for Orchestration',
+    node: 'agoricNames.chain',
+    showValue: v => defaultMarshaller.fromCapData(JSON.parse(v)),
+  });
 
-  {
-    const connection = await EV(agoricNames).lookup(
-      'chainConnection',
-      'cosmoshub-4_juno-1',
-    );
-    t.like(connection, {
-      state: 3,
-      transferChannel: { portId: 'transfer', state: 3 },
-    });
+  const cosmosAndJunnoConnection = await EV(agoricNames).lookup(
+    'chainConnection',
+    'cosmoshub-4_juno-1',
+  );
+  t.like(cosmosAndJunnoConnection, {
+    state: 3,
+    transferChannel: { portId: 'transfer', state: 3 },
+  });
 
-    t.deepEqual(
-      readPublished(`agoricNames.chainConnection.cosmoshub-4_juno-1`),
-      connection,
-    );
+  t.deepEqual(
+    readPublished(`agoricNames.chainConnection.cosmoshub-4_juno-1`),
+    cosmosAndJunnoConnection,
+  );
 
-    await documentStorageSchema(t, storage, {
-      note: 'Chain connections for Orchestration',
-      node: 'agoricNames.chainConnection',
-      showValue: v => defaultMarshaller.fromCapData(JSON.parse(v)),
-    });
-  }
-  {
-    const connection = await EV(agoricNames).lookup(
-      'chainConnection',
-      'agoric-3_osmosis-1',
-    );
-    t.like(connection, {
-      id: 'connection-1',
-      client_id: '07-tendermint-1',
-      counterparty: {
-        client_id: '07-tendermint-2109',
-        connection_id: 'connection-1649',
-      },
-      transferChannel: {
-        counterPartyChannelId: 'channel-320',
-        channelId: 'channel-1',
-      },
-    });
-  }
+  await documentStorageSchema(t, storage, {
+    note: 'Chain connections for Orchestration',
+    node: 'agoricNames.chainConnection',
+    showValue: v => defaultMarshaller.fromCapData(JSON.parse(v)),
+  });
+
+  const agoricAndOsmosisConnection = await EV(agoricNames).lookup(
+    'chainConnection',
+    'agoric-3_osmosis-1',
+  );
+  t.like(agoricAndOsmosisConnection, {
+    id: 'connection-1',
+    client_id: '07-tendermint-1',
+    counterparty: {
+      client_id: '07-tendermint-2109',
+      connection_id: 'connection-1649',
+    },
+    transferChannel: {
+      counterPartyChannelId: 'channel-320',
+      channelId: 'channel-1',
+    },
+  });
 });
 
 // XXX rely on .serial to be in sequence, and keep this one last
 test.serial('revise chain info', async t => {
   const {
-    buildProposal,
-    evalProposal,
+    evaluateProposal,
     runUtils: { EV },
   } = t.context;
 
@@ -127,8 +142,10 @@ test.serial('revise chain info', async t => {
   });
 
   // Revise chain info in agoricNames with the fixture in this script
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/testing/append-chain-info.js'),
+  await evaluateProposal(
+    await buildProposal(
+      '@agoric/builders/scripts/testing/append-chain-info.js',
+    ),
   );
 
   const hotchain = await EV(agoricNames).lookup('chain', 'hot');

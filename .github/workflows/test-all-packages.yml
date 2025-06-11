@@ -543,15 +543,15 @@ jobs:
 
   test-boot:
     # BEGIN-TEST-BOILERPLATE
-    timeout-minutes: 40
+    timeout-minutes: 60
     needs: build
     runs-on: ubuntu-latest
     strategy:
       matrix:
         engine: ['node-new', 'node-old', 'xs']
         # Run parallel testing jobs, each executing a subset.
-        node_index: [0, 1, 2, 3]
-        total_nodes: [4] # the total number of nodes
+        node_index: [0, 1, 2, 3, 5, 6]
+        total_nodes: [6] # the total number of nodes
     steps:
       - name: set vars
         id: vars

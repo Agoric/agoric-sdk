@@ -11,10 +11,8 @@ import { createRequire } from 'node:module';
 import type { ExecutionContext, TestFn } from 'ava';
 
 import { makeWalletFactoryDriver } from '@aglocal/boot/tools/drivers.js';
-import {
-  makeCosmicSwingsetTestKit,
-  makeMockBridgeKit,
-} from '@agoric/cosmic-swingset/tools/test-kit.js';
+import { makeMockBridgeKit } from '@agoric/cosmic-swingset/tools/test-bridge-utils';
+import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
 import { NonNullish } from '@agoric/internal';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { SECONDS_PER_YEAR } from '@agoric/inter-protocol/src/interest.js';

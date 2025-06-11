@@ -1,24 +1,28 @@
 /** @file Bootstrap test of restarting contracts using orchestration */
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
 import type { TestFn } from 'ava';
 
-import { BridgeId } from '@agoric/internal';
-import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
-import { withChainCapabilities } from '@agoric/orchestration';
-import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
-} from '../bootstrapTests/walletFactory.js';
-import { minimalChainInfos } from '../tools/chainInfo.js';
+} from '@aglocal/boot/test/bootstrapTests/walletFactory.js';
+import { minimalChainInfos } from '@aglocal/boot/test/tools/chainInfo.js';
+import { buildProposal } from '@agoric/cosmic-swingset/tools/test-proposal-utils.ts';
+import { BridgeId } from '@agoric/internal';
+import { withChainCapabilities } from '@agoric/orchestration';
+import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
+import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
-test.before(async t => {
-  t.context = await makeWalletFactoryContext(
-    t,
-    '@agoric/vm-config/decentral-itest-orchestration-config.json',
-  );
-});
+
+test.before(
+  async t =>
+    (t.context = await makeWalletFactoryContext({
+      configSpecifier:
+        '@agoric/vm-config/decentral-itest-orchestration-config.json',
+    })),
+);
 test.after.always(t => t.context.shutdown?.());
 
 /**
@@ -32,37 +36,41 @@ test.after.always(t => t.context.shutdown?.());
  */
 test('resume', async t => {
   const {
-    walletFactoryDriver,
-    bridgeUtils: { runInbound },
-    buildProposal,
-    evalProposal,
+    bridgeInbound,
+    evaluateProposal,
+    runUntilQueuesEmpty,
     storage,
+    walletFactoryDriver,
   } = t.context;
 
   const { IST } = t.context.agoricNamesRemotes.brand;
 
   t.log('start sendAnywhere');
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/testing/init-send-anywhere.js', [
-      '--chainInfo',
-      JSON.stringify(withChainCapabilities(minimalChainInfos)),
-      '--assetInfo',
-      JSON.stringify([
-        [
-          'uist',
-          {
-            baseDenom: 'uist',
-            brandKey: 'IST',
-            baseName: 'agoric',
-            chainName: 'agoric',
-          },
-        ],
-      ]),
-    ]),
+  await evaluateProposal(
+    await buildProposal(
+      '@agoric/builders/scripts/testing/init-send-anywhere.js',
+      [
+        '--chainInfo',
+        JSON.stringify(withChainCapabilities(minimalChainInfos)),
+        '--assetInfo',
+        JSON.stringify([
+          [
+            'uist',
+            {
+              baseDenom: 'uist',
+              brandKey: 'IST',
+              baseName: 'agoric',
+              chainName: 'agoric',
+            },
+          ],
+        ]),
+      ],
+    ),
   );
 
   t.log('making offer');
   const wallet = await walletFactoryDriver.provideSmartWallet('agoric1test');
+
   // no money in wallet to actually send
   const zero = { brand: IST, value: 0n };
   // send because it won't resolve
@@ -79,6 +87,7 @@ test('resume', async t => {
     },
     offerArgs: { destAddr: 'cosmos1whatever', chainName: 'cosmoshub' },
   });
+  await runUntilQueuesEmpty();
 
   // XXX golden test
   const getLogged = () =>
@@ -92,13 +101,15 @@ test('resume', async t => {
   ]);
 
   t.log('null upgrading sendAnywhere');
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/testing/upgrade-send-anywhere.js'),
+  await evaluateProposal(
+    await buildProposal(
+      '@agoric/builders/scripts/testing/upgrade-send-anywhere.js',
+    ),
   );
 
   // simulate ibc/MsgTransfer ack from remote chain, enabling `.transfer()` promise
   // to resolve
-  await runInbound(
+  bridgeInbound(
     BridgeId.VTRANSFER,
     buildVTransferEvent({
       sender: makeTestAddress(),
@@ -107,6 +118,7 @@ test('resume', async t => {
       sequence: '1',
     }),
   );
+  await runUntilQueuesEmpty();
 
   t.deepEqual(getLogged(), [
     'sending {0} from cosmoshub to cosmos1whatever',

@@ -5,26 +5,25 @@ import * as fsPromises from 'node:fs/promises';
 import nativePath from 'node:path';
 
 import tmp from 'tmp';
-import { Fail } from '@endo/errors';
 
-import { BridgeId, VBankAccount } from '@agoric/internal';
+import {
+  extractPortNums,
+  makeLaunchChain,
+  makeQueueStorage,
+} from '@agoric/cosmic-swingset/src/chain-main.js';
+import { makeQueue } from '@agoric/cosmic-swingset/src/helpers/make-queue.js';
+import { DEFAULT_SIM_SWINGSET_PARAMS } from '@agoric/cosmic-swingset/src/sim-params.js';
+import { makeMockBridgeKit } from '@agoric/cosmic-swingset/tools/test-bridge-utils';
 import {
   SwingsetMessageType,
   QueuedActionType,
 } from '@agoric/internal/src/action-types.js';
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import { deepCopyJsonable } from '@agoric/internal/src/js-utils.js';
-import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 import { initSwingStore } from '@agoric/swing-store';
-import {
-  extractPortNums,
-  makeLaunchChain,
-  makeQueueStorage,
-} from '../src/chain-main.js';
-import { DEFAULT_SIM_SWINGSET_PARAMS } from '../src/sim-params.js';
-import { makeQueue } from '../src/helpers/make-queue.js';
+import { Fail } from '@endo/errors';
 
 /** @import {EReturn} from '@endo/far'; */
 /** @import { BlockInfo, InitMsg } from '@agoric/internal/src/chain-utils.js' */
@@ -61,6 +60,7 @@ export const defaultInitMessage = harden({
       storagePort: 0,
       swingsetPort: 0,
       vbankPort: 0,
+      vlocalchainPort: 0,
       vibcPort: 0,
       vtransferPort: 0,
     })
@@ -110,61 +110,6 @@ const baseConfig = harden({
 });
 
 /**
- * @param {Partial<{outboundMessages: Map; storageKit: ReturnType<makeFakeStorageKit>}>} [params]
- */
-export const makeMockBridgeKit = (params = {}) => {
-  const { outboundMessages = new Map(), storageKit = makeFakeStorageKit('') } =
-    params;
-  let lastBankNonce = 0n;
-
-  /**
-   * @param {BridgeId} bridgeId
-   * @param {any} obj
-   */
-  const mockBridgeReceiver = (bridgeId, obj) => {
-    if (!outboundMessages.has(bridgeId)) outboundMessages.set(bridgeId, []);
-    outboundMessages.get(bridgeId).push(obj);
-
-    const bridgeType = `${bridgeId}:${obj.type}`;
-    const { toStorage } = storageKit;
-
-    switch (bridgeId) {
-      case BridgeId.STORAGE:
-        return toStorage(obj);
-      default:
-        break;
-    }
-
-    switch (bridgeType) {
-      case `${BridgeId.BANK}:VBANK_GET_BALANCE`:
-        return '0';
-      case `${BridgeId.BANK}:VBANK_GET_MODULE_ACCOUNT_ADDRESS`: {
-        const { moduleName } = obj;
-        const moduleDescriptor = Object.values(VBankAccount).find(
-          ({ module }) => module === moduleName,
-        );
-        return !moduleDescriptor ? String(undefined) : moduleDescriptor.address;
-      }
-      case `${BridgeId.BANK}:VBANK_GIVE`:
-      case `${BridgeId.BANK}:VBANK_GRAB`: {
-        lastBankNonce += 1n;
-        return harden({
-          nonce: `${lastBankNonce}`,
-          type: 'VBANK_BALANCE_UPDATE',
-          updated: [],
-        });
-      }
-      default:
-        break;
-    }
-
-    return String(undefined);
-  };
-
-  return mockBridgeReceiver;
-};
-
-/**
  * Start a SwingSet kernel to be used by tests and benchmarks, returning objects
  * and functions for representing a (mock) blockchain to which it is connected.
  *
@@ -179,6 +124,15 @@ export const makeMockBridgeKit = (params = {}) => {
  * test fails.
  *
  * @param {object} [options]
+ * @param {string[]} [options.addBootstrapBehaviors] additional specific
+ *   behavior functions to augment the selected manifest (see
+ *   {@link ../../vats/src/core})
+ * @param {string} [options.baseBootstrapManifest] identifies the colletion of
+ *   "behaviors" to run at bootstrap for creating and configuring the initial
+ *   population of vats (see
+ *   {@link ../../vats/tools/bootstrap-chain-reflective.js})
+ * @param {string[]} [options.bootstrapCoreEvals] code defining functions to be
+ *   called with a set of powers, each in their own isolated compartment
  * @param {string | null} [options.bundleDir] relative to working directory
  * @param {SwingSetConfig['bundles']} [options.bundles] extra bundles configuration
  * @param {Partial<SwingSetConfig>} [options.configOverrides] extensions to the
@@ -193,21 +147,13 @@ export const makeMockBridgeKit = (params = {}) => {
  *   any changes
  * @param {Replacer<SwingSetConfig>} [options.fixupConfig] a final opportunity
  *   to make any changes
+ * @param {import('@agoric/swingset-vat/tools/run-utils.js').RunHarness} [options.harness] - Optional run harness
  * @param {((destPort: string, msg: unknown) => unknown)} [options.mockBridgeReceiver]
  * @param {import('@agoric/telemetry').SlogSender} [options.slogSender]
  * @param {import('../src/chain-main.js').CosmosSwingsetConfig} [options.swingsetConfig]
  * @param {import('@agoric/swing-store').SwingStore} [options.swingStore]
  *   defaults to a new in-memory store
  * @param {SwingSetConfig['vats']} [options.vats] extra static vat configuration
- * @param {string} [options.baseBootstrapManifest] identifies the colletion of
- *   "behaviors" to run at bootstrap for creating and configuring the initial
- *   population of vats (see
- *   {@link ../../vats/tools/bootstrap-chain-reflective.js})
- * @param {string[]} [options.addBootstrapBehaviors] additional specific
- *   behavior functions to augment the selected manifest (see
- *   {@link ../../vats/src/core})
- * @param {string[]} [options.bootstrapCoreEvals] code defining functions to be
- *   called with a set of powers, each in their own isolated compartment
  * @param {object} [powers]
  * @param {Pick<import('node:fs/promises'), 'mkdir'>} [powers.fsp]
  * @param {typeof import('node:path').resolve} [powers.resolvePath]
@@ -218,11 +164,12 @@ export const makeCosmicSwingsetTestKit = async (
     bundleDir = 'bundles',
     bundles,
     configOverrides,
-    defaultManagerType,
     debugName,
+    defaultManagerType,
     env = process.env,
     fixupInitMessage,
     fixupConfig,
+    harness,
     mockBridgeReceiver = makeMockBridgeKit(),
     slogSender,
     swingsetConfig,
@@ -230,8 +177,8 @@ export const makeCosmicSwingsetTestKit = async (
     vats,
 
     // Options for vats (particularly the reflective bootstrap vat).
-    baseBootstrapManifest,
     addBootstrapBehaviors,
+    baseBootstrapManifest,
     bootstrapCoreEvals,
   } = {},
   { fsp = fsPromises, resolvePath = nativePath.resolve } = {},
@@ -506,7 +453,7 @@ export const makeCosmicSwingsetTestKit = async (
     bridgeInbound,
     controller,
     runUntilQueuesEmpty,
-    runUtils: makeRunUtils(controller),
+    runUtils: makeRunUtils(controller, harness),
     timer,
 
     // Functions specific to this kit.
