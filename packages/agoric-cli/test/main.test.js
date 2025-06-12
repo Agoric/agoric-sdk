@@ -1,6 +1,4 @@
 /* global globalThis */
-import '@endo/init/pre.js';
-import 'esm';
 import '@endo/init/debug.js';
 import test from 'ava';
 import fs from 'fs';

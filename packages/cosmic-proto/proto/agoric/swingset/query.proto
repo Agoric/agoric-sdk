@@ -37,9 +37,9 @@ message QueryParamsResponse {
 // QueryEgressRequest is the request type for the Query/Egress RPC method
 message QueryEgressRequest {
   bytes peer = 1 [
-    (gogoproto.casttype)   = "github.com/cosmos/cosmos-sdk/types.AccAddress",
-    (gogoproto.jsontag)    = "peer",
-    (gogoproto.moretags)   = "yaml:\"peer\""
+    (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+    (gogoproto.jsontag)  = "peer",
+    (gogoproto.moretags) = "yaml:\"peer\""
   ];
 }
 
@@ -51,16 +51,13 @@ message QueryEgressResponse {
 // QueryMailboxRequest is the mailbox query.
 message QueryMailboxRequest {
   bytes peer = 1 [
-    (gogoproto.casttype)   = "github.com/cosmos/cosmos-sdk/types.AccAddress",
-    (gogoproto.jsontag)    = "peer",
-    (gogoproto.moretags)   = "yaml:\"peer\""
+    (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+    (gogoproto.jsontag)  = "peer",
+    (gogoproto.moretags) = "yaml:\"peer\""
   ];
 }
 
 // QueryMailboxResponse is the mailbox response.
 message QueryMailboxResponse {
-  string value = 1 [
-    (gogoproto.jsontag)    = "value",
-    (gogoproto.moretags)   = "yaml:\"value\""
-  ];
+  string value = 1 [(gogoproto.jsontag) = "value", (gogoproto.moretags) = "yaml:\"value\""];
 }

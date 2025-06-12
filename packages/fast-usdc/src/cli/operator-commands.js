@@ -3,7 +3,6 @@
  * @import {Command} from 'commander';
  * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
  * @import {ExecuteOfferAction} from '@agoric/smart-wallet/src/smartWallet.js';
- * @import {OperatorKit} from '../exos/operator-kit.js';
  */
 
 import {
@@ -13,7 +12,7 @@ import {
 import { mustMatch } from '@agoric/internal';
 import { Nat } from '@endo/nat';
 import { InvalidArgumentError } from 'commander';
-import { INVITATION_MAKERS_DESC } from '../exos/transaction-feed.js';
+import { INVITATION_MAKERS_DESC } from '../operator-kit-interface.js';
 import { CctpTxEvidenceShape } from '../type-guards.js';
 import { outputActionAndHint } from './bridge-action.js';
 
@@ -128,9 +127,7 @@ export const addOperatorCommands = (
         invitationSpec: {
           source: 'continuing',
           previousOffer: previousOfferId,
-          /** @type {string & keyof OperatorKit['invitationMakers'] } */
           invitationMakerName: 'SubmitEvidence',
-          /** @type {Parameters<OperatorKit['invitationMakers']['SubmitEvidence']> } */
           invitationArgs: [evidence],
         },
         proposal: {},

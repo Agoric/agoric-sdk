@@ -70,34 +70,28 @@ test('initial vatstore contents', async t => {
   t.deepEqual(kunser(JSON.parse(get(`vc.1.|schemata`))), stringSchema);
 
   // then three tables for the promise watcher (one virtual, two durable)
-  t.is(getLabel(`vc.3.|schemata`), 'promiseWatcherByKind'); // durable
-  t.is(getLabel(`vc.4.|schemata`), 'watchedPromises'); // durable
-  // the promiseRegistrations table is not durable, and only gets vc.2
-  // on the first incarnation: it will get a new ID on subsequent
-  // incarnations
-  t.is(getLabel(`vc.2.|schemata`), `promiseRegistrations`); // virtual
+  t.is(getLabel(`vc.2.|schemata`), 'promiseWatcherByKind'); // durable
+  t.is(getLabel(`vc.3.|schemata`), 'watchedPromises'); // durable
 
   const watcherTableVref = get('watcherTableID');
   const watchedPromiseTableVref = get('watchedPromiseTableID');
-  t.is(watcherTableVref, `${dmsBase}/3`);
-  t.is(watchedPromiseTableVref, `${dmsBase}/4`);
+  t.is(watcherTableVref, `${dmsBase}/2`);
+  t.is(watchedPromiseTableVref, `${dmsBase}/3`);
 
   // baggage and the two durable promise-watcher tables are pinned
   t.is(get(`vom.rc.${baggageVref}`), '1');
   t.is(get(`vom.rc.${watcherTableVref}`), '1');
   t.is(get(`vom.rc.${watchedPromiseTableVref}`), '1');
 
-  // promiseRegistrations and promiseWatcherByKind arbitrary scalars as keys
-  const scalarSchema2 = { label: 'promiseRegistrations', keyShape: M.scalar() };
+  // promiseWatcherByKind arbitrary scalars as keys
   const scalarSchema3 = { label: 'promiseWatcherByKind', keyShape: M.scalar() };
-  t.deepEqual(kunser(JSON.parse(get(`vc.2.|schemata`))), scalarSchema2);
-  t.deepEqual(kunser(JSON.parse(get(`vc.3.|schemata`))), scalarSchema3);
+  t.deepEqual(kunser(JSON.parse(get(`vc.2.|schemata`))), scalarSchema3);
   // watchedPromises uses vref (string) keys
   const scalarStringSchema = {
     label: 'watchedPromises',
     keyShape: M.and(M.scalar(), M.string()),
   };
-  t.deepEqual(kunser(JSON.parse(get(`vc.4.|schemata`))), scalarStringSchema);
+  t.deepEqual(kunser(JSON.parse(get(`vc.3.|schemata`))), scalarStringSchema);
 });
 
 test('vrefs', async t => {
@@ -141,11 +135,11 @@ test('vrefs', async t => {
   const dh2Vref = (await run('getDinstance2')).slots[0];
   t.is(dh2Vref, expectedDH2Vref);
 
-  // the liveslots-created collections consume vc.1 through vc.4,
-  // leaving vc.5 for the first user-created collection
-  t.is(getLabel('vc.5.|schemata'), 'store1');
-  const expectedStore1Vref = `o+v${initialKindIDs.scalarMapStore}/5`;
+  // the liveslots-created collections consume vc.1 through vc.3,
+  // leaving vc.4 for the first user-created collection
+  t.is(getLabel('vc.4.|schemata'), 'store1');
+  const expectedStore1Vref = `o+v${initialKindIDs.scalarMapStore}/4`;
   const store1Vref = (await run('getStore1')).slots[0];
   t.is(store1Vref, expectedStore1Vref);
-  t.is(kunser(JSON.parse(fakestore.get(`vc.5.s${'key'}`))), 'value');
+  t.is(kunser(JSON.parse(fakestore.get(`vc.4.s${'key'}`))), 'value');
 });

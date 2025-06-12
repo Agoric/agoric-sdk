@@ -16,6 +16,7 @@ const trace = makeTracer('ReserveKit', true);
 /**
  * @import {EReturn} from '@endo/far';
  * @import {TypedPattern} from '@agoric/internal';
+ * @import {MapStore} from '@agoric/store';
  * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
  */
 

@@ -1,6 +1,8 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from '../../binary.js';
-import { isSet, bytesFromBase64, base64FromBytes } from '../../helpers.js';
+import { isSet } from '../../helpers.js';
+import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
+import { encodeBase64 as base64FromBytes } from '@endo/base64';
 import { type JsonSafe } from '../../json-safe.js';
 /**
  * `Any` contains an arbitrary serialized protocol buffer message along with a
@@ -41,10 +43,13 @@ import { type JsonSafe } from '../../json-safe.js';
  *  Example 4: Pack and unpack a message in Go
  *
  *      foo := &pb.Foo{...}
- *      any, err := ptypes.MarshalAny(foo)
+ *      any, err := anypb.New(foo)
+ *      if err != nil {
+ *        ...
+ *      }
  *      ...
  *      foo := &pb.Foo{}
- *      if err := ptypes.UnmarshalAny(any, foo); err != nil {
+ *      if err := any.UnmarshalTo(foo); err != nil {
  *        ...
  *      }
  *
@@ -161,10 +166,13 @@ export interface AnyProtoMsg {
  *  Example 4: Pack and unpack a message in Go
  *
  *      foo := &pb.Foo{...}
- *      any, err := ptypes.MarshalAny(foo)
+ *      any, err := anypb.New(foo)
+ *      if err != nil {
+ *        ...
+ *      }
  *      ...
  *      foo := &pb.Foo{}
- *      if err := ptypes.UnmarshalAny(any, foo); err != nil {
+ *      if err := any.UnmarshalTo(foo); err != nil {
  *        ...
  *      }
  *

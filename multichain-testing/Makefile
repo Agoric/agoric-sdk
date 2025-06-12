@@ -3,41 +3,60 @@
 NAME = agoric-multichain-testing
 FILE = config.yaml
 
+HELM_REPO_URL = https://agoric-labs.github.io/starship
 HELM_REPO = starship
 HELM_CHART = devnet
-HELM_VERSION = v0.2.20
+
+SS = yarn starship
+SSOPTS = --config $(FILE) --name $(NAME) --repoUrl $(HELM_REPO_URL) \
+	--repo $(HELM_REPO) --chart $(HELM_REPO)/$(HELM_CHART)
+STARSHIP = $(SS) $(SSOPTS)
 
 ###############################################################################
 ###                              All commands                               ###
 ###############################################################################
 
 .PHONY: setup
-setup: setup-deps setup-kind
+setup: setup-kind
+	$(STARSHIP) setup
 
 .PHONY: stop
-stop: stop-forward delete
+stop: sstop delete
+
+.PHONY: sstop
+sstop:
+	$(STARSHIP) stop
 
 .PHONY: clean
 clean: stop clean-kind
+
+# To support a debug cycle like:
+#  make stop rebuild start && yarn test:main test/ibc-transfers.ts
+.PHONY: rebuild
+rebuild:
+	$(MAKE) -C ../packages/deployment docker-build-sdk TAG=dev
+	kind load docker-image ghcr.io/agoric/agoric-sdk:dev --name $(KIND_CLUSTER)
 
 ###############################################################################
 ###                          Dependency check                               ###
 ###############################################################################
 
-.PHONY: check
+.PHONY: setup-deps
 setup-deps:
-	$(CURDIR)/scripts/dev-setup.sh
+	$(STARSHIP) install
 
 ###############################################################################
 ###                              Helm Charts                                ###
 ###############################################################################
 
+.PHONY: install
 install:
-	$(CURDIR)/scripts/install.sh --config $(FILE) --name $(NAME) --version $(HELM_VERSION)
+	$(STARSHIP) deploy
 
+.PHONY: delete
 delete:
 	-helm repo remove $(HELM_REPO)
-	-helm delete $(NAME)
+	-$(STARSHIP) delete || helm delete $(NAME)
 
 ###############################################################################
 ###                                 Port forward                            ###
@@ -45,11 +64,11 @@ delete:
 
 .PHONY: port-forward
 port-forward:
-	$(CURDIR)/scripts/port-forward.sh --config=$(FILE)
+	$(STARSHIP) start-ports
 
 .PHONY: stop-forward
 stop-forward:
-	-pkill -f "port-forward"
+	$(STARSHIP) stop-ports
 
 ###############################################################################
 ###                          Local Kind Setup                               ###
@@ -67,18 +86,13 @@ clean-kind:
 ###############################################################################
 ###                          Agoric Setup                                   ###
 ###############################################################################
-PROVISION_POOL_ADDR=agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346
 
 # add address
 add-address:
 	kubectl exec -i agoriclocal-genesis-0 -c validator -- agd keys add user1
 
 fund-provision-pool:
-	kubectl exec -i agoriclocal-genesis-0 -c validator -- agd tx bank send faucet $(PROVISION_POOL_ADDR) 1000000000uist -y -b block
-
-override-chain-registry:
-	scripts/fetch-starship-chain-info.ts && \
-	scripts/deploy-cli.ts src/revise-chain-info.builder.js
+	scripts/fund-provision-pool.ts
 
 register-bank-assets:
 	scripts/fetch-starship-chain-info.ts && \
@@ -104,8 +118,11 @@ tail-slog:
 
 .PHONY: wait-for-pods
 wait-for-pods:
-	scripts/pod-readiness.ts
+	$(STARSHIP) wait-for-pods
 
 .PHONY: start
-start: install wait-for-pods port-forward fund-provision-pool override-chain-registry register-bank-assets
+start: sstart fund-provision-pool register-bank-assets
 
+.PHONY: sstart
+sstart:
+	$(STARSHIP) start

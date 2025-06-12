@@ -1,7 +1,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { M, mustMatch } from '@endo/patterns';
-import { TxStatus, PendingTxStatus } from '../src/constants.js';
+import { mustMatch } from '@endo/patterns';
+import { PendingTxStatus, TxStatus } from '../src/constants.js';
 import {
   CctpTxEvidenceShape,
   ChainPolicyShape,
@@ -9,8 +9,7 @@ import {
 } from '../src/type-guards.js';
 import type { CctpTxEvidence, ChainPolicy } from '../src/types.js';
 
-import { MockCctpTxEvidences } from './fixtures.js';
-import { ChainPolicies } from '../src/utils/chain-policies.js';
+import { MockCctpTxEvidences } from '../tools/mock-evidence.js';
 
 test('CctpTxEvidenceShape', t => {
   const specimen: CctpTxEvidence = harden(
@@ -23,7 +22,7 @@ test('CctpTxEvidenceShape', t => {
 test('PendingTxShape', t => {
   const specimen: CctpTxEvidence & { status: TxStatus } = harden({
     ...MockCctpTxEvidences.AGORIC_PLUS_OSMO(),
-    status: PendingTxStatus.Observed,
+    status: PendingTxStatus.Advancing,
   });
 
   t.notThrows(() => mustMatch(specimen, PendingTxShape));
@@ -71,13 +70,6 @@ test('ChainPolicyShape', t => {
     attenuatedCttpBridgeAddresses: [a, a, a],
   });
   t.notThrows(() => mustMatch(threeAddrs, ChainPolicyShape));
-
-  t.notThrows(() =>
-    mustMatch(
-      harden(Object.values(ChainPolicies.MAINNET)),
-      M.arrayOf(ChainPolicyShape),
-    ),
-  );
 
   const noAddrs = harden({
     ...policy,

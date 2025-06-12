@@ -5,9 +5,6 @@ import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
 import type { TestFn } from 'ava';
 import { createRequire } from 'module';
 
-import type { Baggage } from '@agoric/swingset-liveslots';
-import { M, makeScalarBigMapStore } from '@agoric/vat-data';
-import { makeDurableZone } from '@agoric/zone/durable.js';
 import { makeSwingsetTestKit } from '../../tools/supports.js';
 
 const { entries, assign } = Object;
@@ -22,12 +19,6 @@ const asset = {
 
 export const makeTestContext = async t => {
   console.time('DefaultTestContext');
-
-  const baggage = makeScalarBigMapStore('baggage', {
-    keyShape: M.string(),
-    durable: true,
-  }) as Baggage;
-  const zone = makeDurableZone(baggage);
 
   const bundleDir = 'bundles';
   const bundleCache = await makeNodeBundleCache(
@@ -163,7 +154,7 @@ test.serial('upgrade at many points in network API flow', async t => {
       t.is(ack, `got ${label}`, `${label} expected echo`);
       return [label, { ...opts, ack }];
     },
-    closeConnection: async ([label, opts]) => {
+    closeConnection: async ([_label, opts]) => {
       await EV(opts.client).close();
     },
   });

@@ -23,8 +23,8 @@ to use.
 Prerequisites are enforced in various places that should be kept synchronized with this section (e.g., [repoconfig.sh](./repoconfig.sh) defines `golang_version_check` and `nodejs_version_check` shell functions).
 
 * Git
-* Go ^1.20.2
-* Node.js ^18.12 or ^20.9
+* Go ^1.22.12
+* Node.js ^20.9 or ^22.11
   * we generally support the latest LTS release: use [nvm](https://github.com/nvm-sh/nvm) to keep your local system up-to-date
 * Yarn (`npm install -g yarn`)
 * gcc >=10, clang >=10, or another compiler with `__has_builtin()`

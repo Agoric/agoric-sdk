@@ -2,7 +2,6 @@
 /* eslint-env node */
 /// <reference types="ses" />
 
-import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { Fail } from '@endo/errors';
@@ -39,6 +38,9 @@ const initializeCircularBuffer = async (bufferFile, circularBufferSize) => {
     }
     throw e;
   });
+
+  // Use the default size if not provided and file doesn't exist.
+  circularBufferSize = circularBufferSize || stbuf?.size || DEFAULT_CBUF_SIZE;
   const arenaSize = BigInt(circularBufferSize - I_ARENA_START);
 
   if (stbuf && stbuf.size >= I_ARENA_START) {
@@ -77,7 +79,7 @@ const initializeCircularBuffer = async (bufferFile, circularBufferSize) => {
  * @param {(record: Uint8Array, firstWriteLength: number, circEnd: bigint) => Promise<void>} writeRecord
  */
 function makeCircBufMethods(arenaSize, header, readRecord, writeRecord) {
-  const readCircBuf = (outbuf, offset = 0) => {
+  const readCircBuf = async (outbuf, offset = 0) => {
     offset + outbuf.byteLength <= arenaSize ||
       Fail`Reading past end of circular buffer`;
 
@@ -99,7 +101,7 @@ function makeCircBufMethods(arenaSize, header, readRecord, writeRecord) {
       // The data is contiguous, like ---AAABBB---
       return { done: true, value: undefined };
     }
-    readRecord(outbuf, readStart, firstReadLength);
+    await readRecord(outbuf, readStart, firstReadLength);
     return { done: false, value: outbuf };
   };
 
@@ -143,9 +145,10 @@ function makeCircBufMethods(arenaSize, header, readRecord, writeRecord) {
 
     // Advance the start pointer until we have space to write the record.
     let overlap = BigInt(record.byteLength) - capacity;
+    await null;
     while (overlap > 0n) {
       const startRecordLength = new Uint8Array(RECORD_HEADER_SIZE);
-      const { done } = readCircBuf(startRecordLength);
+      const { done } = await readCircBuf(startRecordLength);
       if (done) {
         break;
       }
@@ -221,20 +224,22 @@ export const makeSimpleCircularBuffer = async ({
   arenaSize === hdrArenaSize ||
     Fail`${filename} arena size mismatch; wanted ${arenaSize}, got ${hdrArenaSize}`;
 
-  /** @type {(outbuf: Uint8Array, readStart: number, firstReadLength: number) => void} */
-  const readRecord = (outbuf, readStart, firstReadLength) => {
-    const bytesRead = fs.readSync(file.fd, outbuf, {
+  /** @type {(outbuf: Uint8Array, readStart: number, firstReadLength: number) => Promise<void>} */
+  const readRecord = async (outbuf, readStart, firstReadLength) => {
+    const { bytesRead } = await file.read(outbuf, {
       length: firstReadLength,
       position: Number(readStart) + I_ARENA_START,
     });
     assert.equal(bytesRead, firstReadLength, 'Too few bytes read');
 
     if (bytesRead < outbuf.byteLength) {
-      fs.readSync(file.fd, outbuf, {
+      const length = outbuf.byteLength - firstReadLength;
+      const { bytesRead: bytesRead2 } = await file.read(outbuf, {
         offset: firstReadLength,
-        length: outbuf.byteLength - firstReadLength,
+        length,
         position: I_ARENA_START,
       });
+      assert.equal(bytesRead2, length, 'Too few bytes read');
     }
   };
 
@@ -280,20 +285,23 @@ export const makeSimpleCircularBuffer = async ({
  * @param {Pick<CircularBuffer, 'fileHandle' | 'writeCircBuf'>} circBuf
  */
 export const makeSlogSenderFromBuffer = ({ fileHandle, writeCircBuf }) => {
-  /** @type {Promise<void>} */
+  /** @type {Promise<void> | undefined} */
   let toWrite = Promise.resolve();
   const writeJSON = (obj, serialized = serializeSlogObj(obj)) => {
     // Prepend a newline so that the file can be more easily manipulated.
     const data = new TextEncoder().encode(`\n${serialized}`);
     // console.log('have obj', obj, data);
-    toWrite = toWrite.then(() => writeCircBuf(data));
+    toWrite = toWrite?.then(() => writeCircBuf(data));
   };
   return Object.assign(writeJSON, {
     forceFlush: async () => {
       await toWrite;
+      await fileHandle.datasync();
     },
     shutdown: async () => {
-      await toWrite;
+      const lastWritten = toWrite;
+      toWrite = undefined;
+      await lastWritten;
       await fileHandle.close();
     },
     usesJsonObject: true,

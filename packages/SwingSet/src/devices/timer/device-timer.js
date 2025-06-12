@@ -86,6 +86,7 @@ function makeTimerMap(state = undefined) {
     return copyState(schedule);
   }
 
+  /** @param {bigint} time */
   function eventsFor(time) {
     assert.typeof(time, 'bigint');
     for (let i = 0; i < schedule.length && schedule[i].time <= time; i += 1) {
@@ -101,17 +102,29 @@ function makeTimerMap(state = undefined) {
   // There's some question as to whether it's important to invoke the handlers
   // in the order of their deadlines. If so, we should probably ensure that the
   // recorded deadlines don't have finer granularity than the turns.
-  function add(time, handler, repeater = undefined) {
+  /**
+   *
+   * @param {bigint} time
+   * @param {Waker} handler
+   * @param {number} [index]
+   * @returns {bigint}
+   */
+  function add(time, handler, index = undefined) {
     assert.typeof(time, 'bigint');
+    /** @type {IndexedHandler} */
     const handlerRecord =
-      typeof repeater === 'number' ? { handler, index: repeater } : { handler };
+      typeof index === 'number' ? { handler, index } : { handler };
     const { handlers: records } = eventsFor(time);
     records.push(handlerRecord);
     schedule.sort((a, b) => Number(a.time - b.time));
     return time;
   }
 
-  // Remove and return all pairs indexed by numbers up to target
+  /**
+   * Remove and return all pairs indexed by numbers up to target
+   *
+   * @param {bigint} target
+   */
   function removeEventsThrough(target) {
     assert.typeof(target, 'bigint');
     const returnValues = [];
@@ -132,33 +145,29 @@ function makeTimerMap(state = undefined) {
   }
 
   // We don't expect this to be called often, so we don't optimize for it.
+  /**
+   *
+   * @param {Waker} targetHandler
+   * @returns {bigint[]} times that have been removed (may contain duplicates)
+   */
   function remove(targetHandler) {
+    /** @type {bigint[]} */
     const droppedTimes = [];
     let i = 0;
     while (i < schedule.length) {
       const { time, handlers } = schedule[i];
-      if (handlers.length === 1) {
-        if (handlers[0].handler === targetHandler) {
-          schedule.splice(i, 1);
+      // Nothing prevents a particular handler from appearing more than once
+      for (let j = handlers.length - 1; j >= 0; j -= 1) {
+        if (handlers[j].handler === targetHandler) {
+          handlers.splice(j, 1);
           droppedTimes.push(time);
-        } else {
-          i += 1;
         }
+      }
+      if (handlers.length === 0) {
+        // Splice out this element, preserving `i` so we visit any successor.
+        schedule.splice(i, 1);
       } else {
-        // Nothing prevents a particular handler from appearing more than once
-        for (const { handler } of handlers) {
-          // @ts-expect-error xxx Waker vs IndexedHandler
-          if (handler === targetHandler && handlers.indexOf(handler) !== -1) {
-            // @ts-expect-error xxx Waker vs IndexedHandler
-            handlers.splice(handlers.indexOf(handler), 1);
-            droppedTimes.push(time);
-          }
-        }
-        if (handlers.length === 0) {
-          schedule.splice(i, 1);
-        } else {
-          i += 1;
-        }
+        i += 1;
       }
     }
     return droppedTimes;
@@ -223,6 +232,7 @@ export function buildRootDeviceNode(tools) {
   // The latest time poll() was called. This might be a block height or it
   // might be a time from Date.now(). The current time is not reflected back
   // to the user.
+  /** @type {bigint} */
   let lastPolled = restart ? restart.lastPolled : 0n;
   let nextRepeater = restart ? restart.nextRepeater : 0;
 
@@ -276,6 +286,10 @@ export function buildRootDeviceNode(tools) {
       saveState();
       return baseTime;
     },
+    /**
+     * @param {Waker} handler
+     * @returns {bigint[]} times that have been removed (may contain duplicates)
+     */
     removeWakeup(handler) {
       const times = deadlines.remove(handler);
       saveState();
@@ -303,6 +317,10 @@ export function buildRootDeviceNode(tools) {
       saveState();
       return index;
     },
+    /**
+     * @param {number} index
+     * @param {Waker} handler
+     */
     schedule(index, handler) {
       const nextTime = nextScheduleTime(index, repeaters, lastPolled);
       deadlines.add(nextTime, handler, index);
@@ -311,6 +329,7 @@ export function buildRootDeviceNode(tools) {
     },
   });
 }
+/** @typedef {import('../../types-external.js').Device<ReturnType<typeof buildRootDeviceNode>>} TimerDevice */
 
 // exported for testing. Only buildRootDeviceNode is intended for production
 // use.

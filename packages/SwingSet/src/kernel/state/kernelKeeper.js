@@ -1,5 +1,6 @@
 import { Nat, isNat } from '@endo/nat';
 import { assert, Fail } from '@endo/errors';
+import { KERNEL_STATS_METRICS } from '@agoric/internal/src/metrics.js';
 import { naturalCompare } from '@agoric/internal/src/natural-sort.js';
 import { makeDummySlogger, noopConsole } from '../slogger.js';
 import {
@@ -25,7 +26,6 @@ import {
   makeUpgradeID,
 } from '../../lib/id.js';
 import { kdebug } from '../../lib/kdebug.js';
-import { KERNEL_STATS_METRICS } from '../metrics.js';
 import { makeKernelStats } from './stats.js';
 import {
   enumeratePrefixedKeys,
@@ -212,9 +212,8 @@ function insistMeterID(m) {
 export const getAllStaticVats = kvStore => {
   const result = [];
   const prefix = 'vat.name.';
-  for (const k of enumeratePrefixedKeys(kvStore, prefix)) {
-    const vatID = kvStore.get(k) || Fail`getNextKey ensures get`;
-    const name = k.slice(prefix.length);
+  for (const { key, suffix: name } of enumeratePrefixedKeys(kvStore, prefix)) {
+    const vatID = kvStore.get(key) || Fail`getNextKey ensures get`;
     result.push([name, vatID]);
   }
   return result;
@@ -718,17 +717,22 @@ export default function makeKernelKeeper(
     // We iterate through all ephemeral and virtual entries so the kernel
     // can ensure that they are abandoned by a vat being upgraded.
     const prefix = `${vatID}.c.`;
-    const ephStart = `${prefix}o+`;
-    const durStart = `${prefix}o+d`;
-    const virStart = `${prefix}o+v`;
+    const ephStart = `o+`;
+    const durStart = `o+d`;
+    const virStart = `o+v`;
     /** @type {[string, string?][]} */
     const ranges = [[ephStart, durStart], [virStart]];
     for (const range of ranges) {
-      for (const k of enumeratePrefixedKeys(kvStore, ...range)) {
-        const vref = k.slice(prefix.length);
+      const rangeSuffix = range[0];
+      const args = /** @type {typeof ranges[0]} */ (
+        /** @type {unknown} */ (range.map(s => `${prefix}${s}`))
+      );
+      const prefixedKeys = enumeratePrefixedKeys(kvStore, ...args);
+      for (const { key, suffix } of prefixedKeys) {
+        const vref = `${rangeSuffix}${suffix}`;
         // exclude the root object, which is replaced by upgrade
         if (vref !== 'o+0') {
-          const kref = kvStore.get(k);
+          const kref = kvStore.get(key);
           assert.typeof(kref, 'string');
           yield { kref, vref };
         }
@@ -1072,7 +1076,7 @@ export default function makeKernelKeeper(
 
     // first, scan for exported objects, which must be orphaned
     remaining = budget.exports ?? budget.default;
-    for (const k of enumeratePrefixedKeys(kvStore, exportPrefix)) {
+    for (const { key } of enumeratePrefixedKeys(kvStore, exportPrefix)) {
       // The void for an object exported by a vat will always be of the form
       // `o+NN`.  The '+' means that the vat exported the object (rather than
       // importing it) and therefore the object is owned by (i.e., within) the
@@ -1080,9 +1084,7 @@ export default function makeKernelKeeper(
       // begin with `vMM.c.o+`.  In addition to deleting the c-list entry, we
       // must also delete the corresponding kernel owner entry for the object,
       // since the object will no longer be accessible.
-      const vref = stripPrefix(clistPrefix, k);
-      assert(vref.startsWith('o+'), vref);
-      const kref = kvStore.get(k);
+      const kref = kvStore.get(key);
       // note: adds to maybeFreeKrefs, deletes c-list and .owner
       orphanKernelObject(kref, vatID);
       work.exports += 1;
@@ -1094,11 +1096,14 @@ export default function makeKernelKeeper(
 
     // then scan for imported objects, which must be decrefed
     remaining = budget.imports ?? budget.default;
-    for (const k of enumeratePrefixedKeys(kvStore, importPrefix)) {
+    for (const { key, suffix } of enumeratePrefixedKeys(
+      kvStore,
+      importPrefix,
+    )) {
       // abandoned imports: delete the clist entry as if the vat did a
       // drop+retire
-      const kref = kvStore.get(k) || Fail`getNextKey ensures get`;
-      const vref = stripPrefix(clistPrefix, k);
+      const kref = kvStore.get(key) || Fail`getNextKey ensures get`;
+      const vref = `o-${suffix}`;
       undertaker.deleteCListEntry(kref, vref);
       // that will also delete both db keys
       work.imports += 1;
@@ -1113,9 +1118,12 @@ export default function makeKernelKeeper(
     // kpids are still present in the dead vat's c-list. Clean those
     // up now.
     remaining = budget.promises ?? budget.default;
-    for (const k of enumeratePrefixedKeys(kvStore, promisePrefix)) {
-      const kref = kvStore.get(k) || Fail`getNextKey ensures get`;
-      const vref = stripPrefix(clistPrefix, k);
+    for (const { key, suffix } of enumeratePrefixedKeys(
+      kvStore,
+      promisePrefix,
+    )) {
+      const kref = kvStore.get(key) || Fail`getNextKey ensures get`;
+      const vref = `p${suffix}`;
       undertaker.deleteCListEntry(kref, vref);
       // that will also delete both db keys
       work.promises += 1;
@@ -1127,8 +1135,8 @@ export default function makeKernelKeeper(
 
     // now loop back through everything and delete it all
     remaining = budget.kv ?? budget.default;
-    for (const k of enumeratePrefixedKeys(kvStore, `${vatID}.`)) {
-      kvStore.delete(k);
+    for (const { key } of enumeratePrefixedKeys(kvStore, `${vatID}.`)) {
+      kvStore.delete(key);
       work.kv += 1;
       remaining -= 1;
       if (remaining <= 0) {
@@ -1167,11 +1175,11 @@ export default function makeKernelKeeper(
       kvStore.set(DYNAMIC_IDS_KEY, JSON.stringify(newDynamicVatIDs));
     } else {
       kdebug(`removing static vat ${vatID}`);
-      for (const k of enumeratePrefixedKeys(kvStore, 'vat.name.')) {
-        if (kvStore.get(k) === vatID) {
-          kvStore.delete(k);
+      const prefixedKeys = enumeratePrefixedKeys(kvStore, 'vat.name.');
+      for (const { key, suffix: name } of prefixedKeys) {
+        if (kvStore.get(key) === vatID) {
+          kvStore.delete(key);
           const VAT_NAMES_KEY = 'vat.names';
-          const name = k.slice('vat.name.'.length);
           const oldStaticVatNames = JSON.parse(getRequired(VAT_NAMES_KEY));
           const newStaticVatNames = oldStaticVatNames.filter(v => v !== name);
           kvStore.set(VAT_NAMES_KEY, JSON.stringify(newStaticVatNames));
@@ -1240,7 +1248,7 @@ export default function makeKernelKeeper(
   function* enumeratePromisesByDecider(vatID) {
     insistVatID(vatID);
     const promisePrefix = `${vatID}.c.p`;
-    for (const k of enumeratePrefixedKeys(kvStore, promisePrefix)) {
+    for (const { key } of enumeratePrefixedKeys(kvStore, promisePrefix)) {
       // The vpid for a promise imported or exported by a vat (and thus
       // potentially a promise for which the vat *might* be the decider) will
       // always be of the form `p+NN` or `p-NN`.  The corresponding vpid->kpid
@@ -1250,7 +1258,7 @@ export default function makeKernelKeeper(
       // whether the vat is the decider or not.  If it is, we add the promise
       // to the list of promises that must be rejected because the dead vat
       // will never be able to act upon them.
-      const kpid = getRequired(k);
+      const kpid = getRequired(key);
       const p = getKernelPromise(kpid);
       if (p.state === 'unresolved' && p.decider === vatID) {
         yield [kpid, p];
@@ -1449,9 +1457,9 @@ export default function makeKernelKeeper(
 
   function getDevices() {
     const result = [];
-    for (const k of enumeratePrefixedKeys(kvStore, 'device.name.')) {
-      const name = k.slice(12);
-      const deviceID = kvStore.get(k) || Fail`getNextKey ensures get`;
+    const prefixedKeys = enumeratePrefixedKeys(kvStore, 'device.name.');
+    for (const { key, suffix: name } of prefixedKeys) {
+      const deviceID = kvStore.get(key) || Fail`getNextKey ensures get`;
       result.push([name, deviceID]);
     }
     return result;

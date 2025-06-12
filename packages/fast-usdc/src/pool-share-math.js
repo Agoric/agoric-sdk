@@ -4,16 +4,17 @@ import {
   makeRatio,
   makeRatioFromAmounts,
   multiplyBy,
-} from '@agoric/zoe/src/contractSupport/ratio.js';
+} from '@agoric/ertp/src/ratio.js';
 import { Fail, q } from '@endo/errors';
 
 const { keys } = Object;
 const { add, isEmpty, isEqual, isGTE, make, makeEmpty, subtract } = AmountMath;
 
 /**
- * @import {Amount, Brand, DepositFacet, NatValue, Payment} from '@agoric/ertp';
- * @import {PoolStats} from './types';
- * @import {RepayAmountKWR} from './exos/liquidity-pool';
+ * @import {Amount, Brand, DepositFacet, NatValue, Payment, Ratio} from '@agoric/ertp';
+ * @import {Allocation} from '@agoric/zoe';
+ * @import {PoolStats} from './types.js';
+ * @import {RepayAmountKWR} from './utils/fees.js';
  */
 
 /**
@@ -217,7 +218,10 @@ export const repayCalc = (shareWorth, split, encumberedBalance, poolStats) => {
       ...poolStats,
       totalRepays: add(poolStats.totalRepays, split.Principal),
       totalPoolFees: add(poolStats.totalPoolFees, split.PoolFee),
-      totalContractFees: add(poolStats.totalContractFees, split.ContractFee),
+      totalContractFees: add(
+        add(poolStats.totalContractFees, split.ContractFee),
+        split.RelayFee,
+      ),
     },
   });
 };

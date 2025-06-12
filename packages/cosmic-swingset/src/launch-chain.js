@@ -1,4 +1,3 @@
-// @ts-check
 /* eslint-env node */
 
 // XXX the JSON configs specify that launching the chain requires @agoric/builders,
@@ -7,9 +6,10 @@ import '@agoric/builders';
 
 import anylogger from 'anylogger';
 
+import bundleSource from '@endo/bundle-source';
 import { assert, Fail } from '@endo/errors';
 import { E } from '@endo/far';
-import bundleSource from '@endo/bundle-source';
+import { makePromiseKit } from '@endo/promise-kit';
 
 import {
   buildMailbox,
@@ -24,19 +24,19 @@ import {
   normalizeConfig,
   upgradeSwingset,
 } from '@agoric/swingset-vat';
-import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 import { openSwingStore } from '@agoric/swing-store';
 import { attenuate, BridgeId as BRIDGE_ID } from '@agoric/internal';
-import { objectMapMutable, TRUE } from '@agoric/internal/src/js-utils.js';
-import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import * as ActionType from '@agoric/internal/src/action-types.js';
+import { objectMapMutable, TRUE } from '@agoric/internal/src/js-utils.js';
+import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
+import { BLOCK_HISTOGRAM_METRICS } from '@agoric/internal/src/metrics.js';
+import { makeWithQueue } from '@agoric/internal/src/queue.js';
 
 import {
   extractCoreProposalBundles,
   mergeCoreProposals,
 } from '@agoric/deploy-script-support/src/extract-proposal.js';
 import { fileURLToPath } from 'url';
-import { ValueType } from '@opentelemetry/api';
 
 import {
   makeDefaultMeterProvider,
@@ -50,9 +50,12 @@ import { exportStorage } from './export-storage.js';
 import { parseLocatedJson } from './helpers/json.js';
 import { computronCounter } from './computron-counter.js';
 
-/** @import { BlockInfo } from '@agoric/internal/src/chain-utils.js' */
-/** @import { Mailbox, RunPolicy, SwingSetConfig } from '@agoric/swingset-vat' */
-/** @import { KVStore, BufferedKVStore } from './helpers/bufferedStorage.js' */
+/**
+ * @import {BlockInfo} from '@agoric/internal/src/chain-utils.js';
+ * @import {SwingStoreKernelStorage} from '@agoric/swing-store';
+ * @import {Mailbox, RunPolicy, SwingSetConfig} from '@agoric/swingset-vat';
+ * @import {KVStore, BufferedKVStore} from './helpers/bufferedStorage.js';
+ */
 
 /** @typedef {ReturnType<typeof makeQueue<{context: any, action: any}>>} InboundQueue */
 
@@ -73,61 +76,6 @@ const toPosix = nowMilliseconds => {
 
 const console = anylogger('launch-chain');
 const blockManagerConsole = anylogger('block-manager');
-
-const blockHistogramMetricDesc = {
-  valueType: ValueType.DOUBLE,
-  unit: 's',
-  advice: {
-    explicitBucketBoundaries: [
-      0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 4, 5, 6, 7, 10, 15, 30,
-    ],
-  },
-};
-const BLOCK_HISTOGRAM_METRICS = /** @type {const} */ ({
-  swingsetRunSeconds: {
-    description: 'Per-block time spent executing SwingSet',
-    ...blockHistogramMetricDesc,
-  },
-  swingsetChainSaveSeconds: {
-    description: 'Per-block time spent propagating SwingSet state into cosmos',
-    ...blockHistogramMetricDesc,
-  },
-  swingsetCommitSeconds: {
-    description:
-      'Per-block time spent committing SwingSet state to host storage',
-    ...blockHistogramMetricDesc,
-  },
-  cosmosCommitSeconds: {
-    description: 'Per-block time spent committing cosmos state',
-    ...blockHistogramMetricDesc,
-  },
-  fullCommitSeconds: {
-    description:
-      'Per-block time spent committing state, inclusive of COMMIT_BLOCK processing plus time spent [outside of cosmic-swingset] before and after it',
-    ...blockHistogramMetricDesc,
-  },
-  interBlockSeconds: {
-    description: 'Time spent idle between blocks',
-    ...blockHistogramMetricDesc,
-  },
-  afterCommitHangoverSeconds: {
-    description:
-      'Per-block time spent waiting for previous-block afterCommit work',
-    ...blockHistogramMetricDesc,
-  },
-  blockLagSeconds: {
-    description: 'The delay of each block from its expected begin time',
-    ...blockHistogramMetricDesc,
-    // Add buckets for excessively long delays.
-    advice: {
-      ...blockHistogramMetricDesc.advice,
-      explicitBucketBoundaries: /** @type {number[]} */ ([
-        ...blockHistogramMetricDesc.advice.explicitBucketBoundaries,
-        ...[60, 120, 180, 240, 300, 600, 3600],
-      ]),
-    },
-  },
-});
 
 /**
  * @param {{ info: string } | null | undefined} upgradePlan
@@ -511,7 +459,7 @@ export async function launchAndShareInternals({
   );
 
   /** @type {(actionType: ActionType.QueuedActionType) => void} */
-  const countInboundAction = actionType => {
+  const incrementInboundActionCounter = actionType => {
     if (!knownActionTypes.has(actionType)) {
       console.warn(`unknown inbound action type ${JSON.stringify(actionType)}`);
     }
@@ -555,17 +503,18 @@ export async function launchAndShareInternals({
     ? parseInt(env.END_BLOCK_SPIN_MS, 10)
     : 0;
 
-  const initialQueueLengths = /** @type {Record<InboundQueueName, number>} */ ({
-    [InboundQueueName.Forced]: runThisBlock.size(),
-    [InboundQueueName.Priority]: highPriorityQueue.size(),
-    [InboundQueueName.Inbound]: actionQueue.size(),
-  });
+  const inboundQueueInitialLengths =
+    /** @type {Record<InboundQueueName, number>} */ ({
+      [InboundQueueName.Forced]: runThisBlock.size(),
+      [InboundQueueName.Priority]: highPriorityQueue.size(),
+      [InboundQueueName.Inbound]: actionQueue.size(),
+    });
   const { crankScheduler, inboundQueueMetrics } = exportKernelStats({
     controller,
     metricMeter,
     // @ts-expect-error Type 'Logger<BaseLevels>' is not assignable to type 'Console'.
     log: console,
-    initialQueueLengths,
+    initialQueueLengths: inboundQueueInitialLengths,
   });
 
   const blockMetrics = objectMapMutable(BLOCK_HISTOGRAM_METRICS, (desc, name) =>
@@ -585,33 +534,36 @@ export async function launchAndShareInternals({
         if (!allowCleanup) return false;
       }
       const startBeans = runPolicy.totalBeans();
-      controller.writeSlogObject({
-        type: 'cosmic-swingset-run-start',
-        blockHeight,
-        runNum,
-        phase,
-        startBeans,
-        remainingBeans: runPolicy.remainingBeans(),
-      });
-      // TODO: crankScheduler does a schedulerBlockTimeHistogram thing
-      // that needs to be revisited, it used to be called once per
-      // block, now it's once per processed inbound queue item
-      await crankScheduler(runPolicy);
-      const finishBeans = runPolicy.totalBeans();
-      controller.writeSlogObject({
-        type: 'kernel-stats',
-        stats: controller.getStats(),
-      });
-      controller.writeSlogObject({
-        type: 'cosmic-swingset-run-finish',
-        blockHeight,
-        runNum,
-        phase,
-        startBeans,
-        finishBeans,
-        usedBeans: finishBeans - startBeans,
-        remainingBeans: runPolicy.remainingBeans(),
-      });
+      await controller.slogDuration(
+        ['cosmic-swingset-run-start', 'cosmic-swingset-run-finish'],
+        {
+          blockHeight,
+          runNum,
+          phase,
+          startBeans,
+          remainingBeans: runPolicy.remainingBeans(),
+        },
+        async finish => {
+          // DEPRECATED: swingset_block_processing_seconds measurements produced
+          // by `crankScheduler` should be equivalent to the "seconds" data of
+          // "cosmic-swingset-run-finish" slog entries (and note that the former
+          // name is inaccurate because each measurement is per action rather
+          // than per block). swingset_crank_processing_time measurements
+          // produced by its `crankComplete` callback should be equivalent to
+          // the "seconds" data of "crank-finish" slog entries.
+          await crankScheduler(runPolicy);
+          const finishBeans = runPolicy.totalBeans();
+          controller.writeSlogObject({
+            type: 'kernel-stats',
+            stats: controller.getStats(),
+          });
+          finish({
+            finishBeans,
+            usedBeans: finishBeans - startBeans,
+            remainingBeans: runPolicy.remainingBeans(),
+          });
+        },
+      );
       runNum += 1;
       return runPolicy.shouldRun();
     }
@@ -744,6 +696,8 @@ export async function launchAndShareInternals({
   let swingsetCommitDuration = NaN;
   let blockParams;
   let decohered;
+  /** @type {undefined | import('@endo/promise-kit').PromiseKit<Record<string, unknown>>} */
+  let pendingCommitKit;
   /** @type {undefined | Promise<void>} */
   let afterCommitWorkDone;
   /** Timestamps that are relevant across block lifecycle events. */
@@ -836,14 +790,19 @@ export async function launchAndShareInternals({
    *
    * @param {InboundQueue} inboundQueue
    * @param {Cranker} runSwingset
+   * @param {(action: {type: string}, phase: InboundQueueName) => void} countInboundAction
    * @param {InboundQueueName} phase
    */
-  async function processActions(inboundQueue, runSwingset, phase) {
+  async function processActions(
+    inboundQueue,
+    runSwingset,
+    countInboundAction,
+    phase,
+  ) {
     let keepGoing = true;
     for await (const { action, context } of inboundQueue.consumeAll()) {
       const inboundNum = `${context.blockHeight}-${context.txHash}-${context.msgIdx}`;
-      inboundQueueMetrics.decStat(phase);
-      countInboundAction(action.type);
+      countInboundAction(action, phase);
       await performAction(action, inboundNum);
       keepGoing = await runSwingset(phase);
       if (!keepGoing) {
@@ -864,24 +823,46 @@ export async function launchAndShareInternals({
    * @param {BlockInfo['blockTime']} blockTime
    */
   async function processBlockActions(runSwingset, blockHeight, blockTime) {
+    /** @type {Array<{count: number, phase: InboundQueueName, type: string}>} */
+    const processedActionCounts = [];
+    const countInboundAction = (action, phase) => {
+      const { type } = action;
+      inboundQueueMetrics.decStat(phase);
+      incrementInboundActionCounter(type);
+      const isMatch = r => r.phase === phase && r.type === type;
+      const countRecord = processedActionCounts.findLast(isMatch);
+      if (countRecord) {
+        countRecord.count += 1;
+        return;
+      }
+      const newCountRecord = { count: 1, phase, type };
+      processedActionCounts.push(newCountRecord);
+    };
+
     // First, complete leftover work, if any
     let keepGoing = await runSwingset(CrankerPhase.Leftover);
-    if (!keepGoing) return;
+    if (!keepGoing) return harden(processedActionCounts);
 
     // Then, if we have anything in the special runThisBlock queue, process
     // it and do no further work.
     if (runThisBlock.size()) {
-      await processActions(runThisBlock, runSwingset, CrankerPhase.Forced);
-      return;
+      await processActions(
+        runThisBlock,
+        runSwingset,
+        countInboundAction,
+        CrankerPhase.Forced,
+      );
+      return harden(processedActionCounts);
     }
 
     // Then, process as much as we can from the priorityQueue.
     keepGoing = await processActions(
       highPriorityQueue,
       runSwingset,
+      countInboundAction,
       CrankerPhase.Priority,
     );
-    if (!keepGoing) return;
+    if (!keepGoing) return harden(processedActionCounts);
 
     // Then, update the timer device with the new external time, which might
     // push work onto the kernel run-queue (if any timers were ready to wake).
@@ -900,13 +881,20 @@ export async function launchAndShareInternals({
     // only notes state exports and updates consistency hashes when attempting
     // to perform a crank.
     keepGoing = await runSwingset(CrankerPhase.Timer);
-    if (!keepGoing) return;
+    if (!keepGoing) return harden(processedActionCounts);
 
     // Finally, process as much as we can from the actionQueue.
-    await processActions(actionQueue, runSwingset, CrankerPhase.Inbound);
+    await processActions(
+      actionQueue,
+      runSwingset,
+      countInboundAction,
+      CrankerPhase.Inbound,
+    );
 
     // Cleanup after terminated vats as allowed.
     await runSwingset(CrankerPhase.Cleanup);
+
+    return harden(processedActionCounts);
   }
 
   async function endBlock(blockHeight, blockTime, params) {
@@ -916,12 +904,13 @@ export async function launchAndShareInternals({
 
     // First, record new actions (bridge/mailbox/etc events that cosmos
     // added up for delivery to swingset) into our inboundQueue metrics
-    const newLengths = /** @type {Record<InboundQueueName, number>} */ ({
-      [InboundQueueName.Forced]: runThisBlock.size(),
-      [InboundQueueName.Priority]: highPriorityQueue.size(),
-      [InboundQueueName.Inbound]: actionQueue.size(),
-    });
-    inboundQueueMetrics.updateLengths(newLengths);
+    const inboundQueueStartLengths =
+      /** @type {Record<InboundQueueName, number>} */ harden({
+        [InboundQueueName.Forced]: runThisBlock.size(),
+        [InboundQueueName.Priority]: highPriorityQueue.size(),
+        [InboundQueueName.Inbound]: actionQueue.size(),
+      });
+    inboundQueueMetrics.updateLengths(inboundQueueStartLengths);
 
     // If we have work to complete this block, it needs to run to completion.
     // It will also run to completion any work that swingset still had pending.
@@ -931,13 +920,19 @@ export async function launchAndShareInternals({
     // run policy.
     const runPolicy = computronCounter(params, neverStop);
     const runSwingset = makeRunSwingset(blockHeight, runPolicy);
-    await processBlockActions(runSwingset, blockHeight, blockTime);
+    const processedActionCounts = await processBlockActions(
+      runSwingset,
+      blockHeight,
+      blockTime,
+    );
 
     if (END_BLOCK_SPIN_MS) {
       // Introduce a busy-wait to artificially put load on the chain.
       const startTime = now();
       while (now() - startTime < END_BLOCK_SPIN_MS);
     }
+
+    return harden({ inboundQueueStartLengths, processedActionCounts });
   }
 
   /**
@@ -1008,122 +1003,130 @@ export async function launchAndShareInternals({
 
   const doBootstrap = async action => {
     const { blockTime, blockHeight, params } = action;
-    controller.writeSlogObject({
-      type: 'cosmic-swingset-bootstrap-block-start',
-      blockTime,
-    });
+    await controller.slogDuration(
+      [
+        'cosmic-swingset-bootstrap-block-start',
+        'cosmic-swingset-bootstrap-block-finish',
+      ],
+      { blockTime },
+      async finish => {
+        await null;
+        try {
+          verboseBlocks && blockManagerConsole.info('block bootstrap');
+          (savedHeight === 0 && savedBeginHeight === 0) ||
+            Fail`Cannot run a bootstrap block at height ${savedHeight}`;
+          const bootstrapBlockParams = parseParams(params);
 
-    await null;
-    try {
-      verboseBlocks && blockManagerConsole.info('block bootstrap');
-      (savedHeight === 0 && savedBeginHeight === 0) ||
-        Fail`Cannot run a bootstrap block at height ${savedHeight}`;
-      const bootstrapBlockParams = parseParams(params);
-
-      // Start a block transaction, but without changing state
-      // for the upcoming begin block check
-      saveBeginHeight(savedBeginHeight);
-      const start = now();
-      await withErrorLogging(
-        action.type,
-        () => bootstrapBlock(blockHeight, blockTime, bootstrapBlockParams),
-        () => {
-          runDuration += now() - start;
-        },
-      );
-    } finally {
-      controller.writeSlogObject({
-        type: 'cosmic-swingset-bootstrap-block-finish',
-        blockTime,
-      });
-    }
+          // Start a block transaction, but without changing state
+          // for the upcoming begin block check
+          saveBeginHeight(savedBeginHeight);
+          const start = now();
+          await withErrorLogging(
+            action.type,
+            () => bootstrapBlock(blockHeight, blockTime, bootstrapBlockParams),
+            () => {
+              runDuration += now() - start;
+            },
+          );
+        } finally {
+          finish();
+        }
+      },
+    );
   };
 
   const doCoreProposals = async ({ blockHeight, blockTime }, coreProposals) => {
-    controller.writeSlogObject({
-      type: 'cosmic-swingset-upgrade-start',
-      blockHeight,
-      blockTime,
-      coreProposals,
-    });
-
-    await null;
-    try {
-      // Start a block transaction, but without changing state
-      // for the upcoming begin block check
-      saveBeginHeight(savedBeginHeight);
-
-      // Find scripts relative to our location.
-      const myFilename = fileURLToPath(import.meta.url);
-      const { bundles, codeSteps: coreEvalCodeSteps } =
-        await extractCoreProposalBundles(coreProposals, myFilename, {
-          handleToBundleSpec: async (handle, source, _sequence, _piece) => {
-            const bundle = await bundleSource(source);
-            const { endoZipBase64Sha512: hash } = bundle;
-            const bundleID = `b1-${hash}`;
-            handle.bundleID = bundleID;
-            harden(handle);
-            return harden([`${bundleID}: ${source}`, bundle]);
-          },
-        });
-
-      for (const [meta, bundle] of Object.entries(bundles)) {
-        await controller
-          .validateAndInstallBundle(bundle)
-          .catch(e => Fail`Cannot validate and install ${meta}: ${e}`);
-      }
-
-      // Now queue each step's code for evaluation.
-      for (const [key, coreEvalCode] of Object.entries(coreEvalCodeSteps)) {
-        const coreEvalAction = {
-          type: ActionType.CORE_EVAL,
-          blockHeight,
-          blockTime,
-          evals: [
-            {
-              json_permits: 'true',
-              js_code: coreEvalCode,
-            },
-          ],
-        };
-        runThisBlock.push({
-          context: {
-            blockHeight,
-            txHash: 'x/upgrade',
-            msgIdx: key,
-          },
-          action: coreEvalAction,
-        });
-      }
-    } finally {
-      controller.writeSlogObject({
-        type: 'cosmic-swingset-upgrade-finish',
+    await controller.slogDuration(
+      ['cosmic-swingset-upgrade-start', 'cosmic-swingset-upgrade-finish'],
+      {
         blockHeight,
         blockTime,
-      });
-    }
+        coreProposals,
+      },
+      async finish => {
+        await null;
+        try {
+          // Start a block transaction, but without changing state
+          // for the upcoming begin block check
+          saveBeginHeight(savedBeginHeight);
+
+          // Find scripts relative to our location.
+          const myFilename = fileURLToPath(import.meta.url);
+          const { bundles, codeSteps: coreEvalCodeSteps } =
+            await extractCoreProposalBundles(coreProposals, myFilename, {
+              handleToBundleSpec: async (handle, source, _sequence, _piece) => {
+                const bundle = await bundleSource(source);
+                const { endoZipBase64Sha512: hash } = bundle;
+                const bundleID = `b1-${hash}`;
+                handle.bundleID = bundleID;
+                harden(handle);
+                return harden([`${bundleID}: ${source}`, bundle]);
+              },
+            });
+
+          for (const [meta, bundle] of Object.entries(bundles)) {
+            await controller
+              .validateAndInstallBundle(bundle)
+              .catch(e => Fail`Cannot validate and install ${meta}: ${e}`);
+          }
+
+          // Now queue each step's code for evaluation.
+          for (const [key, coreEvalCode] of Object.entries(coreEvalCodeSteps)) {
+            const coreEval = {
+              json_permits: 'true',
+              js_code: coreEvalCode,
+            };
+            const coreEvalAction = {
+              type: ActionType.CORE_EVAL,
+              blockHeight,
+              blockTime,
+              evals: [coreEval],
+            };
+            const context = {
+              blockHeight,
+              txHash: 'x/upgrade',
+              msgIdx: key,
+            };
+            runThisBlock.push({ context, action: coreEvalAction });
+          }
+        } finally {
+          finish({ coreProposals: undefined });
+        }
+      },
+    );
   };
 
-  // Handle block related actions
-  // Some actions that are integration specific may be handled by the caller
-  // For example SWING_STORE_EXPORT is handled in chain-main.js
+  // Handle actions related to ABCI block methods: BeginBlock, EndBlock, Commit
+  // https://docs.cometbft.com/v0.34/spec/abci/abci#block-execution
+  // We also have a once-per-process-lifetime AG_COSMOS_INIT message, and split
+  // Commit into two phases (see `Commit` at
+  // {@link ../../../golang/cosmos/app/app.go}).
+  //
+  // Note that other actions relating to integration (e.g., SWING_STORE_EXPORT)
+  // may be handled higher up in chain-main.js.
   async function doBlockingSend(action) {
     await null;
-    // blockManagerConsole.warn(
-    //   'FIGME: blockHeight',
-    //   action.blockHeight,
-    //   'received',
-    //   action.type,
-    // );
     switch (action.type) {
       case ActionType.AG_COSMOS_INIT: {
         allowExportCallback = true; // cleared by saveOutsideState in COMMIT_BLOCK
-        const { blockHeight, isBootstrap, upgradeDetails } = action;
-        // TODO: parseParams(action.params), for validation?
+        const { blockHeight, isBootstrap, params, upgradeDetails } = action;
+        const needsExecution = blockNeedsExecution(blockHeight);
 
-        if (!blockNeedsExecution(blockHeight)) {
-          return true;
-        }
+        controller.writeSlogObject({
+          type: 'cosmic-swingset-init',
+          blockHeight,
+          isBootstrap,
+          needsExecution,
+          params,
+          upgradeDetails,
+          savedHeight,
+          savedBeginHeight,
+          inboundQueueInitialLengths,
+        });
+
+        // TODO: parseParams(params), for validation?
+
+        if (!needsExecution) return true;
 
         const softwareUpgradeCoreProposals = upgradeDetails?.coreProposals;
 
@@ -1165,89 +1168,6 @@ export async function launchAndShareInternals({
           await doCoreProposals(action, coreProposals);
         }
         return true;
-      }
-
-      case ActionType.COMMIT_BLOCK: {
-        const { blockHeight, blockTime } = action;
-        verboseBlocks &&
-          blockManagerConsole.info('block', blockHeight, 'commit');
-        if (blockHeight !== savedHeight) {
-          throw Error(
-            `Committed height ${blockHeight} does not match saved height ${savedHeight}`,
-          );
-        }
-
-        runThisBlock.size() === 0 ||
-          Fail`We didn't process all "run this block" actions`;
-
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-commit-block-start',
-          blockHeight,
-          blockTime,
-        });
-
-        // Save the kernel's computed state just before the chain commits.
-        const start = now();
-        await saveOutsideState(savedHeight);
-        swingsetCommitDuration = now() - start;
-
-        blockParams = undefined;
-
-        blockManagerConsole.debug(
-          `wrote SwingSet checkpoint [run=${runDuration}ms, chainSave=${chainSaveDuration}ms, kernelSave=${swingsetCommitDuration}ms]`,
-        );
-
-        times.commitBlockDone = now();
-
-        return undefined;
-      }
-
-      case ActionType.AFTER_COMMIT_BLOCK: {
-        const { blockHeight, blockTime } = action;
-
-        const afterCommitStart = now();
-        // Time spent since the end of COMMIT_BLOCK (which itself is dominated
-        // by swingsetCommitDuration).
-        const cosmosCommitDuration = afterCommitStart - times.commitBlockDone;
-        // Time spent since the end of END_BLOCK (inclusive of COMMIT_BLOCK).
-        const fullCommitDuration = afterCommitStart - times.endBlockDone;
-
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-commit-block-finish',
-          blockHeight,
-          blockTime,
-          runSeconds: runDuration / 1000,
-          // TODO: After preparing all known consumers, rename
-          // {chain,save,fullSave}Time to
-          // {chainSave,swingsetCommit,cosmosCommit}Seconds
-          chainTime: chainSaveDuration / 1000,
-          saveTime: swingsetCommitDuration / 1000,
-          cosmosCommitSeconds: cosmosCommitDuration / 1000,
-          fullSaveTime: fullCommitDuration / 1000,
-        });
-
-        blockMetrics.swingsetRunSeconds.record(runDuration / 1000);
-        blockMetrics.swingsetChainSaveSeconds.record(chainSaveDuration / 1000);
-        blockMetrics.swingsetCommitSeconds.record(
-          swingsetCommitDuration / 1000,
-        );
-        blockMetrics.cosmosCommitSeconds.record(cosmosCommitDuration / 1000);
-        blockMetrics.fullCommitSeconds.record(fullCommitDuration / 1000);
-
-        afterCommitWorkDone = afterCommit(blockHeight, blockTime);
-
-        // In the expected case where afterCommit work finishes before the next
-        // block starts, don't incorrectly attribute `await` time to it.
-        const latestAfterCommitP = afterCommitWorkDone;
-        void afterCommitWorkDone.then(() => {
-          afterCommitWorkDone === latestAfterCommitP ||
-            Fail`Unexpected afterCommit overlap`;
-          afterCommitWorkDone = undefined;
-        });
-
-        times.afterCommitBlockDone = now();
-
-        return undefined;
       }
 
       case ActionType.BEGIN_BLOCK: {
@@ -1310,71 +1230,185 @@ export async function launchAndShareInternals({
 
       case ActionType.END_BLOCK: {
         const { blockHeight, blockTime } = action;
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-end-block-start',
-          blockHeight,
-          blockTime,
-        });
+        await controller.slogDuration(
+          [
+            'cosmic-swingset-end-block-start',
+            'cosmic-swingset-end-block-finish',
+          ],
+          { blockHeight, blockTime },
+          async finish => {
+            blockParams || Fail`blockParams missing`;
 
-        blockParams || Fail`blockParams missing`;
+            await null;
+            let slogProps;
+            if (!blockNeedsExecution(blockHeight)) {
+              // We are reevaluating, so do not do any work, and send exactly the
+              // same downcalls to the chain.
+              //
+              // This is necessary only after a restart when Tendermint is reevaluating the
+              // block that was interrupted and not committed.
+              //
+              // We assert that the return values are identical, which allows us to silently
+              // clear the queue.
+              try {
+                replayChainSends();
+              } catch (e) {
+                // Very bad!
+                decohered = e;
+                throw e;
+              }
+            } else {
+              if (blockHeight !== savedBeginHeight) {
+                decohered = Error(
+                  `Inconsistent committed state. Trying to end block ${blockHeight}, expected began block ${savedBeginHeight}`,
+                );
+                throw decohered;
+              }
 
-        if (!blockNeedsExecution(blockHeight)) {
-          // We are reevaluating, so do not do any work, and send exactly the
-          // same downcalls to the chain.
-          //
-          // This is necessary only after a restart when Tendermint is reevaluating the
-          // block that was interrupted and not committed.
-          //
-          // We assert that the return values are identical, which allows us to silently
-          // clear the queue.
-          try {
-            replayChainSends();
-          } catch (e) {
-            // Very bad!
-            decohered = e;
-            throw e;
-          }
-        } else {
-          if (blockHeight !== savedBeginHeight) {
-            decohered = Error(
-              `Inconsistent committed state. Trying to end block ${blockHeight}, expected began block ${savedBeginHeight}`,
-            );
-            throw decohered;
-          }
+              // And now we actually process the queued actions down here, during
+              // END_BLOCK, but still reentrancy-protected.
 
-          // And now we actually process the queued actions down here, during
-          // END_BLOCK, but still reentrancy-protected.
+              provideInstallationPublisher();
 
-          provideInstallationPublisher();
+              const start = now();
+              slogProps = await withErrorLogging(
+                action.type,
+                () => endBlock(blockHeight, blockTime, blockParams),
+                () => {
+                  runDuration += now() - start;
+                },
+              );
 
-          const start = now();
-          await withErrorLogging(
-            action.type,
-            () => endBlock(blockHeight, blockTime, blockParams),
-            () => {
-              runDuration += now() - start;
-            },
+              // We write out our on-chain state as a number of chainSends.
+              const start2 = now();
+              await saveChainState();
+              // Not strictly necessary for correctness (the caller ensures this is
+              // done before returning), but account for time taken to flush.
+              await pendingSwingStoreExport;
+              chainSaveDuration = now() - start2;
+
+              // Advance our saved state variables.
+              savedHeight = blockHeight;
+            }
+            finish({
+              ...slogProps,
+              // TODO: Remove inboundQueueMetrics once all slog consumers have
+              // been updated to use inboundQueueStartLengths and/or
+              // processedActionCounts.
+              inboundQueueStats: inboundQueueMetrics.getStats(),
+            });
+
+            times.endBlockDone = now();
+          },
+        );
+
+        return undefined;
+      }
+
+      case ActionType.COMMIT_BLOCK: {
+        const { blockHeight, blockTime } = action;
+        verboseBlocks &&
+          blockManagerConsole.info('block', blockHeight, 'commit');
+        if (blockHeight !== savedHeight) {
+          throw Error(
+            `Committed height ${blockHeight} does not match saved height ${savedHeight}`,
           );
-
-          // We write out our on-chain state as a number of chainSends.
-          const start2 = now();
-          await saveChainState();
-          // Not strictly necessary for correctness (the caller ensures this is
-          // done before returning), but account for time taken to flush.
-          await pendingSwingStoreExport;
-          chainSaveDuration = now() - start2;
-
-          // Advance our saved state variables.
-          savedHeight = blockHeight;
         }
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-end-block-finish',
+
+        runThisBlock.size() === 0 ||
+          Fail`We didn't process all "run this block" actions`;
+
+        // Commit spans two actions.
+        pendingCommitKit = makePromiseKit();
+        const doneKit = makePromiseKit();
+        void controller.slogDuration(
+          [
+            'cosmic-swingset-commit-block-start',
+            'cosmic-swingset-commit-block-finish',
+          ],
+          { blockHeight, blockTime },
+          async finish => {
+            await null;
+            try {
+              // Save the kernel's computed state just before the chain commits.
+              const start = now();
+              await saveOutsideState(savedHeight);
+              swingsetCommitDuration = now() - start;
+
+              blockParams = undefined;
+
+              blockManagerConsole.debug(
+                `wrote SwingSet checkpoint [run=${runDuration}ms, chainSave=${chainSaveDuration}ms, kernelSave=${swingsetCommitDuration}ms]`,
+              );
+
+              // We're done with COMMIT_BLOCK, but can't write a
+              // cosmic-swingset-commit-block-finish slog entry until
+              // AFTER_COMMIT_BLOCK.
+              times.commitBlockDone = now();
+              doneKit.resolve(undefined);
+
+              // @ts-expect-error pendingCommitKit is not undefined here
+              finish(await pendingCommitKit.promise);
+            } catch (err) {
+              doneKit.reject(err);
+            } finally {
+              pendingCommitKit = undefined;
+            }
+          },
+        );
+        await doneKit.promise;
+
+        return undefined;
+      }
+
+      case ActionType.AFTER_COMMIT_BLOCK: {
+        const { blockHeight, blockTime } = action;
+
+        const afterCommitStart = now();
+        // Time spent since the end of COMMIT_BLOCK (which itself is dominated
+        // by swingsetCommitDuration).
+        const cosmosCommitDuration = afterCommitStart - times.commitBlockDone;
+        // Time spent since the end of END_BLOCK (inclusive of COMMIT_BLOCK).
+        const fullCommitDuration = afterCommitStart - times.endBlockDone;
+
+        // Close the "cosmic-swingset-commit-block" span and assert its
+        // completion as observed by `pendingCommitKit` being cleared.
+        if (!pendingCommitKit) throw Fail`no pendingCommitKit`;
+        pendingCommitKit.resolve({
           blockHeight,
           blockTime,
-          inboundQueueStats: inboundQueueMetrics.getStats(),
+          runSeconds: runDuration / 1000,
+          // TODO: After preparing all known consumers, rename
+          // {chain,save,fullSave}Time to
+          // {chainSave,swingsetCommit,cosmosCommit}Seconds
+          chainTime: chainSaveDuration / 1000,
+          saveTime: swingsetCommitDuration / 1000,
+          cosmosCommitSeconds: cosmosCommitDuration / 1000,
+          fullSaveTime: fullCommitDuration / 1000,
+        });
+        await pendingCommitKit.promise;
+        !pendingCommitKit || Fail`pendingCommitKit was not cleared!`;
+
+        blockMetrics.swingsetRunSeconds.record(runDuration / 1000);
+        blockMetrics.swingsetChainSaveSeconds.record(chainSaveDuration / 1000);
+        blockMetrics.swingsetCommitSeconds.record(
+          swingsetCommitDuration / 1000,
+        );
+        blockMetrics.cosmosCommitSeconds.record(cosmosCommitDuration / 1000);
+        blockMetrics.fullCommitSeconds.record(fullCommitDuration / 1000);
+
+        afterCommitWorkDone = afterCommit(blockHeight, blockTime);
+
+        // In the expected case where afterCommit work finishes before the next
+        // block starts, don't incorrectly attribute `await` time to it.
+        const latestAfterCommitP = afterCommitWorkDone;
+        void afterCommitWorkDone.then(() => {
+          afterCommitWorkDone === latestAfterCommitP ||
+            Fail`Unexpected afterCommit overlap`;
+          afterCommitWorkDone = undefined;
         });
 
-        times.endBlockDone = now();
+        times.afterCommitBlockDone = now();
 
         return undefined;
       }

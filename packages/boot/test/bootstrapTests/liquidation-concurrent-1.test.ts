@@ -117,7 +117,7 @@ const setups = {
   STARS: starsSetup,
 };
 
-const atomOutcome = /** @type {const} */ {
+const atomOutcome = {
   bids: [
     {
       payouts: {
@@ -168,7 +168,7 @@ const atomOutcome = /** @type {const} */ {
   ],
 };
 
-const starsOutcome = /** @type {const} */ {
+const starsOutcome = {
   bids: [
     {
       payouts: {
@@ -310,7 +310,6 @@ test('concurrent flow 1', async t => {
 
   for (const { collateralBrandKey, managerIndex } of cases) {
     // check nothing liquidating yet
-    /** @type {import('@agoric/inter-protocol/src/auction/scheduler.js').ScheduleNotification} */
     t.is(liveSchedule.activeStartTime, null);
     t.like(readLatest(metricsPaths[managerIndex]), {
       numActiveVaults: setups[collateralBrandKey].vaults.length,
@@ -396,6 +395,7 @@ test('concurrent flow 1', async t => {
   {
     const { nextDescendingStepTime, nextStartTime } =
       readPublished('auction.schedule');
+    // @ts-expect-error could be null or a different shape
     t.is(nextDescendingStepTime.absValue, nextStartTime.absValue);
   }
 

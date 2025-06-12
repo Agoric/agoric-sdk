@@ -2,35 +2,29 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { makeExpectUnhandledRejection } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
 import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
 import {
   LOCALCHAIN_QUERY_ALL_BALANCES_RESPONSE,
+  LOCALCHAIN_QUERY_DENOM_HASH_DEFAULT_VALUE,
   SIMULATED_ERRORS,
 } from '@agoric/vats/tools/fake-bridge.js';
 import { heapVowE as VE } from '@agoric/vow/vat.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import type { IBCChannelID } from '@agoric/vats';
+import type { IBCMsgTransferOptions } from '../../src/cosmos-api.js';
+import { PFM_RECEIVER } from '../../src/exos/chain-hub.js';
+import fetchedChainInfo from '../../src/fetched-chain-info.js';
 import type {
-  CosmosChainAddress,
   AmountArg,
+  CosmosChainAddress,
   DenomAmount,
 } from '../../src/orchestration-api.js';
+import { assetOn } from '../../src/utils/asset.js';
 import { maxClockSkew } from '../../src/utils/cosmos.js';
 import { NANOSECONDS_PER_SECOND } from '../../src/utils/time.js';
 import { buildVTransferEvent } from '../../tools/ibc-mocks.js';
 import { UNBOND_PERIOD_SECONDS } from '../ibc-mocks.js';
 import { commonSetup } from '../supports.js';
 import { prepareMakeTestLOAKit } from './make-test-loa-kit.js';
-import fetchedChainInfo from '../../src/fetched-chain-info.js';
-import type { IBCMsgTransferOptions } from '../../src/cosmos-api.js';
-import { PFM_RECEIVER } from '../../src/exos/chain-hub.js';
-import { assetOn } from '../../src/utils/asset.js';
-
-const expectUnhandled = makeExpectUnhandledRejection({
-  test,
-  importMetaUrl: import.meta.url,
-});
 
 test('deposit, withdraw', async t => {
   const common = await commonSetup(t);
@@ -115,20 +109,15 @@ test('delegate, undelegate', async t => {
   );
 });
 
-// TODO(#11026): This use of expectUnhandled should not be necessary.
-test(expectUnhandled(1), 'transfer', async t => {
+test('transfer', async t => {
   const common = await commonSetup(t);
+  const {
+    brands: { bld: stake },
+    utils: { inspectLocalBridge, pourPayment, transmitVTransferEvent },
+  } = common;
   common.utils.populateChainHub();
   const makeTestLOAKit = prepareMakeTestLOAKit(t, common);
   const account = await makeTestLOAKit();
-
-  const { value: sender } = await VE(account).getAddress();
-
-  const {
-    brands: { bld: stake },
-    mocks: { transferBridge },
-    utils: { inspectLocalBridge, pourPayment },
-  } = common;
 
   t.truthy(account, 'account is returned');
 
@@ -147,8 +136,6 @@ test(expectUnhandled(1), 'transfer', async t => {
     encoding: 'bech32',
   };
 
-  /** The running tally of transfer messages that were sent over the bridge */
-  let lastSequence = 0n;
   /**
    * Helper to start the transfer without awaiting the result. It await the
    * event loop so the promise starts and increments sequence for use in the
@@ -163,7 +150,6 @@ test(expectUnhandled(1), 'transfer', async t => {
     opts: IBCMsgTransferOptions = {},
   ) => {
     const transferP = VE(account).transfer(dest, amount, opts);
-    lastSequence += 1n;
     // Ensure the toBridge of the transferP happens before the fromBridge is awaited after this function returns
     await eventLoopIteration();
     return { transferP };
@@ -175,34 +161,22 @@ test(expectUnhandled(1), 'transfer', async t => {
     destination,
   );
   t.is(await Promise.race([transferP, 'not yet']), 'not yet');
-
   // simulate incoming message so that the transfer promise resolves
-  await VE(transferBridge).fromBridge(
-    buildVTransferEvent({
-      receiver: destination.value,
-      sender,
-      sourceChannel:
-        fetchedChainInfo.agoric.connections[destination.chainId].transferChannel
-          .channelId,
-      sequence: lastSequence,
-    }),
-  );
-
+  await transmitVTransferEvent('acknowledgementPacket');
   const transferRes = await transferP;
   t.true(transferRes === undefined, 'Successful transfer returns Vow<void>.');
 
-  await t.throwsAsync(
-    (
-      await startTransfer(
-        { denom: 'ubld', value: SIMULATED_ERRORS.TIMEOUT },
-        destination,
-      )
-    ).transferP,
-    {
-      message: 'simulated unexpected MsgTransfer packet timeout',
-    },
+  t.log('testing timeout packet scenario...');
+  const { transferP: timeoutTransferP } = await startTransfer(
+    { denom: 'ubld', value: 504n },
+    destination,
   );
+  await transmitVTransferEvent('timeoutPacket');
+  await t.throwsAsync(timeoutTransferP, {
+    message: 'transfer operation received timeout packet',
+  });
 
+  t.log('testing unknown destination scenario...');
   const unknownDestination: CosmosChainAddress = {
     chainId: 'fakenet',
     value: 'fakenet1pleab',
@@ -217,34 +191,18 @@ test(expectUnhandled(1), 'transfer', async t => {
 
   /**
    * Helper to start the transfer AND send the ack packet so this promise can be awaited
-   * @param amount
-   * @param dest
-   * @param opts
-   * @param sourceChannel
    */
   const doTransfer = async (
     amount: AmountArg,
     dest: CosmosChainAddress,
     opts: IBCMsgTransferOptions = {},
-    sourceChannel?: IBCChannelID,
   ) => {
     const { transferP: promise } = await startTransfer(amount, dest, opts);
-    // simulate incoming message so that promise resolves
-    await VE(transferBridge).fromBridge(
-      buildVTransferEvent({
-        receiver: dest.value,
-        sender,
-        sourceChannel:
-          sourceChannel ||
-          fetchedChainInfo.agoric.connections[dest.chainId].transferChannel
-            .channelId,
-        sequence: lastSequence,
-      }),
-    );
+    await transmitVTransferEvent('acknowledgementPacket');
     return promise;
   };
 
-  const lastestTxMsg = () => {
+  const latestTxMsg = () => {
     const tx = inspectLocalBridge().at(-1);
     if (tx.type !== 'VLOCALCHAIN_EXECUTE_TX') {
       throw new Error('last message was not VLOCALCHAIN_EXECUTE_TX');
@@ -258,7 +216,7 @@ test(expectUnhandled(1), 'transfer', async t => {
     }),
     'can create transfer msg with memo',
   );
-  t.like(lastestTxMsg(), {
+  t.like(latestTxMsg(), {
     memo: 'hello',
   });
 
@@ -295,37 +253,79 @@ test(expectUnhandled(1), 'transfer', async t => {
   };
 
   t.log('Transfer handles multi-hop transfers');
-  await t.notThrowsAsync(
-    doTransfer(
-      aDenomAmount,
-      dydxDest,
-      {},
-      fetchedChainInfo.agoric.connections['noble-1'].transferChannel.channelId,
-    ),
-  );
+  await t.notThrowsAsync(doTransfer(aDenomAmount, dydxDest));
 
-  t.like(lastestTxMsg(), {
-    receiver: PFM_RECEIVER,
-    memo: '{"forward":{"receiver":"dydx1test","port":"transfer","channel":"channel-33","retries":3,"timeout":"10m"}}',
+  t.is(latestTxMsg().receiver, PFM_RECEIVER, 'defaults to "pfm" receiver');
+  t.deepEqual(JSON.parse(latestTxMsg().memo), {
+    forward: {
+      receiver: 'dydx1test',
+      port: 'transfer',
+      channel: 'channel-33',
+      retries: 3,
+      timeout: '10m',
+    },
   });
 
   t.log('accepts pfm `forwardOpts`');
+  const intermediateRecipient: CosmosChainAddress = {
+    chainId: 'noble-1',
+    value: 'noble1testintermediaterecipient',
+    encoding: 'bech32',
+  };
   await t.notThrowsAsync(
-    doTransfer(
-      aDenomAmount,
-      dydxDest,
-      {
-        forwardOpts: {
-          timeout: '999m',
-        },
+    doTransfer(aDenomAmount, dydxDest, {
+      forwardOpts: {
+        timeout: '999m',
+        intermediateRecipient,
       },
-      fetchedChainInfo.agoric.connections['noble-1'].transferChannel.channelId,
-    ),
+    }),
   );
 
-  t.like(JSON.parse(lastestTxMsg().memo), {
+  t.is(latestTxMsg().receiver, intermediateRecipient.value);
+  t.deepEqual(JSON.parse(latestTxMsg().memo), {
     forward: {
       timeout: '999m',
+      channel: 'channel-33',
+      port: 'transfer',
+      receiver: 'dydx1test',
+      retries: 3,
+    },
+  });
+
+  t.log('testing pfm ack error scenario...');
+  const { transferP: pfmTimeoutTransferP } = await startTransfer(
+    {
+      denom: uusdcOnAgoric,
+      value: 500_000n,
+    },
+    dydxDest,
+  );
+  const ackErrorMsg =
+    'packet-forward-middleware error: giving up on packet on channel (channel-33) port (transfer) after max retries';
+  await transmitVTransferEvent('acknowledgementPacket', ackErrorMsg);
+  await t.throwsAsync(pfmTimeoutTransferP, {
+    message: `ICS20-1 transfer error "${ackErrorMsg}"`,
+  });
+
+  t.log('Transfer handles multi-hop transfers with memo for the destination');
+  await t.notThrowsAsync(
+    doTransfer(aDenomAmount, dydxDest, {
+      memo: JSON.stringify({
+        wasm: { contract: 'osmosis4829219', msg: { osmosis_swap: 'XCS' } },
+      }),
+    }),
+  );
+  t.is(latestTxMsg().receiver, PFM_RECEIVER, 'defaults to "pfm" receiver');
+  t.deepEqual(JSON.parse(latestTxMsg().memo), {
+    forward: {
+      receiver: 'dydx1test',
+      port: 'transfer',
+      channel: 'channel-33',
+      retries: 3,
+      timeout: '10m',
+      next: JSON.stringify({
+        wasm: { contract: 'osmosis4829219', msg: { osmosis_swap: 'XCS' } },
+      }),
     },
   });
 });
@@ -396,8 +396,8 @@ test('send', async t => {
   const toAddress = {
     value: 'agoric1EOAAccAddress',
     chainId: 'agoric-3',
-    encoding: 'bech32' as const,
-  };
+    encoding: 'bech32',
+  } as const;
 
   t.log(`send 10 bld to ${toAddress.value}`);
   await VE(account).send(toAddress, stake.units(10));
@@ -423,7 +423,7 @@ test('send', async t => {
     { denom: 'uist', value: 10_000_000n },
   ]);
 
-  const messages = await inspectLocalBridge();
+  const messages = inspectLocalBridge();
   const executedBankSends = messages.filter(
     m =>
       m.type === 'VLOCALCHAIN_EXECUTE_TX' &&
@@ -431,8 +431,42 @@ test('send', async t => {
   );
   t.is(
     executedBankSends.length,
-    4,
+    3,
     'sent 2 successful txs and 1 failed. 1 rejected before sending',
+  );
+
+  const toAccountId = `cosmos:${toAddress.chainId}:${toAddress.value}` as const;
+  t.log(`send 10 bld to ${toAccountId}`);
+  await VE(account).send(toAccountId, stake.units(10));
+
+  t.deepEqual(inspectLocalBridge().slice(messages.length), [
+    {
+      address: 'agoric1fakeLCAAddress',
+      messages: [
+        {
+          '@type': '/cosmos.bank.v1beta1.MsgSend',
+          amount: [
+            {
+              amount: '10000000',
+              denom: 'ubld',
+            },
+          ],
+          fromAddress: 'agoric1fakeLCAAddress',
+          toAddress: 'agoric1EOAAccAddress',
+        },
+      ],
+      type: 'VLOCALCHAIN_EXECUTE_TX',
+    },
+  ]);
+
+  await t.throwsAsync(
+    VE(account).send(
+      { ...toAddress, chainId: 'some-other-chain' },
+      stake.units(101),
+    ),
+    {
+      message: 'bank/send cannot send to a different chain "some-other-chain"',
+    },
   );
 });
 
@@ -512,4 +546,83 @@ test('getBalances', async t => {
     x => x.type === 'VLOCALCHAIN_QUERY_MANY',
   );
   t.is(queryMessages.length, 1, 'getBalances sends query to cosmos golang');
+});
+
+test('parseInboundTransfer', async t => {
+  const common = await commonSetup(t);
+  common.utils.populateChainHub();
+  const makeTestLOAKit = prepareMakeTestLOAKit(t, common);
+  const account = await makeTestLOAKit();
+
+  const { value: target } = await VE(account).getAddress();
+
+  /**
+   * Here we assume an account on CosmosHub that has BLD (funded by an Agoric account)
+   * sends some 'ibc/hash('transfer/channel-1/' + ubld)' back to Agoric. Where "transfer"
+   * is source port and "channel-1" is source channel for CosmosHub.
+   *
+   * parseInboundTransfer should be able to handle incoming denom 'transfer/channel-1/ubld'
+   * as a local denom.
+   *
+   * Here's an example IBC packet we scraped from multichain:
+   * @example
+   *   { event: 'writeAcknowledgement',
+   *      packet: { data: 'eyJhbW91bnQiOiIxMjUiLCJkZW5vbSI6InRyYW5zZmVyL2NoYW5uZWwtMS91YmxkIiwicmVjZWl2ZXIiOiJhZ29yaWMxMHJjaHBjNmFyZjVlNHhmMDYzODh5M21kdzc2M2pnZTZobng0Y3hxcWptend3dzRmMmQ4cnBxZjk4YW54N21lYXZmc2h5cXBxNHo2c2VhIiwic2VuZGVyIjoiY29zbW9zMXJzamR2aHpydDl0NnQwZnl5cnVseGpneHFlcHNtdnJmeXltNWh6In0=', destination_channel: 'channel-1', destination_port: 'transfer', sequence: '1', source_channel: 'channel-1', source_port: 'transfer', timeout_height: { revision_height: '0', revision_number: '0' }, timeout_timestamp: '14933241973593604096' }, relayer: '', target: 'agoric1udw356v6nyhagnnjgakh0dgeyvaten2urqqfd3888254xn3ssyjsmlny72', type: 'VTRANSFER_IBC_EVENT' }
+   *   And packet.data decodes to: '{"amount":"125","denom":"transfer/channel-1/ubld","receiver":"agoric10rchpc6arf5e4xf06388y3mdw763jge6hnx4cxqqjmzwww4f2d8rpqf98anx7meavfshyqpq4z6sea","sender":"cosmos1rsjdvhzrt9t6t0fyyrulxjgxqepsmvrfyym5hz"}'
+   */
+  const bldResult = await VE(account).parseInboundTransfer(
+    buildVTransferEvent({
+      receiver: target,
+      denom: 'transfer/channel-1/ubld',
+      amount: 33n,
+      destinationChannel: 'channel-0',
+      sequence: '6',
+      sourceChannel: 'channel-1',
+    }).packet,
+  );
+
+  t.log(bldResult);
+  t.like(bldResult, {
+    amount: {
+      denom: 'ubld',
+      value: 33n,
+    },
+    extra: {
+      denom: 'transfer/channel-1/ubld',
+      amount: '33',
+    },
+  });
+
+  /**
+   * And here we send uatom from CosmosHub to Agoric. The expectation is that parseInboundTransfer returns
+   * a hash as amount.denom instead of 'transfer/channel-0/uatom'.
+   *
+   * Here's an example IBC packet we scraped from multichain:
+   * @example
+   *  { event: 'writeAcknowledgement',
+   *     packet: { data: 'eyJhbW91bnQiOiI5OSIsImRlbm9tIjoidWF0b20iLCJyZWNlaXZlciI6ImFnb3JpYzEwcmNocDJreHhxMmVlcThrc2RjeDQ3bjI0bHZteWQ5am1zeXRmZGY2NWxncG5qN2dnbDd0cTZrbThhbng3bWVhdmZzaHlxcHEycmZ1YWQiLCJzZW5kZXIiOiJjb3Ntb3Mxbnhsd3h2OXN3NG55ejVkM2E0c2d0NTNlMHNxOHFzeGNsbHB1NmsifQ==', destination_channel: 'channel-0', destination_port: 'transfer', sequence: '1', source_channel: 'channel-1', source_port: 'transfer', timeout_height: { revision_height: '0', revision_number: '0' }, timeout_timestamp: '14933241973593604096' }, relayer: '', target: 'agoric14trrq9vusrmgxur2lf42lkdjxjedcz95k5a205qee0yy0l9sdtdstw3zja', type: 'VTRANSFER_IBC_EVENT' }
+   *   And packet.data decodes to: '{"amount":"99","denom":"uatom","receiver":"agoric10rchp2kxxq2eeq8ksdcx47n24lvmyd9jmsytfdf65lgpnj7ggl7tq6km8anx7meavfshyqpq2rfuad","sender":"cosmos1nxlwxv9sw4nyz5d3a4sgt53e0sq8qsxcllpu6k"}'
+   */
+  const atomResult = await VE(account).parseInboundTransfer(
+    buildVTransferEvent({
+      receiver: target,
+      denom: 'uatom',
+      amount: 35n,
+      destinationChannel: 'channel-0',
+      sequence: '6',
+      sourceChannel: 'channel-1',
+    }).packet,
+  );
+
+  t.log(atomResult);
+  t.like(atomResult, {
+    amount: {
+      denom: `ibc/${LOCALCHAIN_QUERY_DENOM_HASH_DEFAULT_VALUE}`,
+      value: 35n,
+    },
+    extra: {
+      denom: 'uatom',
+      amount: '35',
+    },
+  });
 });

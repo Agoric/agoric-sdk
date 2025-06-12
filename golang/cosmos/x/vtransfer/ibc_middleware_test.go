@@ -12,31 +12,30 @@ import (
 
 	app "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
+	dbm "github.com/cometbft/cometbft-db"
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store"
+	"github.com/cosmos/cosmos-sdk/testutil/sims"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	"github.com/iancoleman/orderedmap"
 	"github.com/stretchr/testify/suite"
-	"github.com/tendermint/tendermint/libs/log"
-	dbm "github.com/tendermint/tm-db"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	swingsettesting "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/testing"
 	swingsettypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
-	vibckeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/keeper"
 	vibctypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/types"
 
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v6/packetforward/types"
-	ibctransfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
-	ibcexported "github.com/cosmos/ibc-go/v6/modules/core/exported"
-	ibctesting "github.com/cosmos/ibc-go/v6/testing"
-	"github.com/cosmos/ibc-go/v6/testing/simapp"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7/packetforward/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
+	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 )
 
 const (
@@ -110,7 +109,6 @@ func (s *IntegrationTestSuite) nextChannelOffset(instance int) int {
 func SetupAgoricTestingApp(instance int) TestingAppMaker {
 	return func() (ibctesting.TestingApp, map[string]json.RawMessage) {
 		db := dbm.NewMemDB()
-		encCdc := app.MakeEncodingConfig()
 		mockController := func(ctx context.Context, needReply bool, jsonRequest string) (jsonReply string, err error) {
 			// fmt.Printf("controller %d got: %s\n", instance, jsonRequest)
 
@@ -125,7 +123,7 @@ func SetupAgoricTestingApp(instance int) TestingAppMaker {
 			return jsonReply, nil
 		}
 		appd := app.NewAgoricApp(mockController, vm.NewAgdServer(), log.TestingLogger(), db, nil,
-			true, map[int64]bool{}, app.DefaultNodeHome, simapp.FlagPeriodValue, encCdc, simapp.EmptyAppOptions{}, interBlockCacheOpt())
+			true, sims.EmptyAppOptions{}, interBlockCacheOpt())
 		genesisState := app.NewDefaultGenesisState()
 
 		t := template.Must(template.New("").Parse(`
@@ -653,7 +651,7 @@ func (s *IntegrationTestSuite) TestHops() {
 					expectedRecords := []swingsettypes.InboundQueueRecord{}
 					if tc.receiverIsTarget {
 						expectedRecords = append(expectedRecords, swingsettypes.InboundQueueRecord{
-							Action: &vibckeeper.WriteAcknowledgementEvent{
+							Action: &vibctypes.WriteAcknowledgementEvent{
 								ActionHeader: &vm.ActionHeader{
 									Type:        "VTRANSFER_IBC_EVENT",
 									BlockHeight: writeAcknowledgementHeight,
@@ -661,7 +659,7 @@ func (s *IntegrationTestSuite) TestHops() {
 								},
 								Event:           "writeAcknowledgement",
 								Target:          baseReceiver,
-								Packet:          sendPacket,
+								Packet:          types.CopyToIBCPacket(sendPacket),
 								Acknowledgement: expectedAck.Acknowledgement(),
 							},
 							Context: swingsettypes.ActionContext{
@@ -765,7 +763,7 @@ func (s *IntegrationTestSuite) TestHops() {
 					expectedRecords := []swingsettypes.InboundQueueRecord{}
 					if tc.senderIsTarget {
 						expectedRecords = append(expectedRecords, swingsettypes.InboundQueueRecord{
-							Action: &vibckeeper.WriteAcknowledgementEvent{
+							Action: &vibctypes.AcknowledgementPacketEvent{
 								ActionHeader: &vm.ActionHeader{
 									Type:        "VTRANSFER_IBC_EVENT",
 									BlockHeight: acknowledgementHeight,
@@ -773,7 +771,7 @@ func (s *IntegrationTestSuite) TestHops() {
 								},
 								Event:           "acknowledgementPacket",
 								Target:          baseSender,
-								Packet:          expectedPacket,
+								Packet:          types.CopyToIBCPacket(expectedPacket),
 								Acknowledgement: ack.Acknowledgement(),
 								Relayer:         s.chainA.SenderAccount.GetAddress(),
 							},

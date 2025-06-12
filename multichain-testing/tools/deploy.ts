@@ -2,7 +2,7 @@
 import { createRequire } from 'module';
 import type { AgdTools } from './agd-tools.js';
 import type { CoreEvalPlan } from '@agoric/deploy-script-support/src/writeCoreEvalParts.js';
-import { flags } from './agd-lib.js';
+import { flags } from './chaind-lib.js';
 import { makeTracer } from '@agoric/internal';
 
 const nodeRequire = createRequire(import.meta.url);
@@ -23,7 +23,9 @@ export const makeDeployBuilder = (
     if (builderOpts) {
       args.push(...flags(builderOpts));
     }
-    const { stdout } = await execa('agoric', args);
+    const npx = (file: string, args: string[]) =>
+      execa('npx', ['--no-install', file, ...args]);
+    const { stdout } = await npx('agoric', args);
     const match = stdout.match(/ (?<name>[-\w]+)-permit.json/);
     if (!(match && match.groups)) {
       throw Error('no permit found');

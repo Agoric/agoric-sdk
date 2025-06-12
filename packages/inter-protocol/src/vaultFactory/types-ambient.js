@@ -46,7 +46,7 @@
 /**
  * @typedef {object} VaultFactoryCreatorFacet
  * @property {AddVaultType} addVaultType
- * @property {() => Allocation} getRewardAllocation
+ * @property {() => import('@agoric/zoe').Allocation} getRewardAllocation
  * @property {() => Promise<Invitation<string, never>>} makeCollectFeesInvitation
  * @property {() => import('@agoric/time').TimerWaker} makeLiquidationWaker
  * @property {() => import('@agoric/time').TimerWaker} makePriceLockWaker

@@ -14,10 +14,12 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
 env:
   AGORIC_AVA_USE_TAP: true
-  TEST_COLLECT: 'tee -a _testoutput.txt'
   NODE_V8_COVERAGE: coverage
+  TEST_COLLECT: 'tee -a _testoutput.txt'
+
 # this is required, since explicitly setting bash as shell enables pipefail, which is not
 # on by default.  This is required to fail correctly when teeing output to a file to collect
 # test instrumentation
@@ -31,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ['18.x', '20.x']
+        node-version: ['node-new', 'node-old']
     steps:
       - uses: actions/checkout@v4
         with:
@@ -55,6 +57,8 @@ jobs:
 
       # install node_modules
       - uses: ./.github/actions/restore-node
+        with:
+          node-version: 'node-new'
 
       # Releasing SDK builds all packages in this order during `lerna publish`.
       # Due to ambient types, certain build orders (from the dependency graph)
@@ -78,32 +82,34 @@ jobs:
 
   ##################
   # Lint tests
-  # We run per package bc of https://github.com/typescript-eslint/typescript-eslint/issues/1192
-  # We split the package tests into two jobs because type linting
-  # is inefficient and slow https://github.com/typescript-eslint/typescript-eslint/issues/2094
   lint-primary:
-    timeout-minutes: 20
+    timeout-minutes: 25 # Since Node 22, it's sometimes longer than 20min
     needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: '18.x'
+          node-version: 'node-new'
 
-      - name: lint repo format
-        run: yarn lint:format
       # eslint and tsc
+      # XXX running tsc in every package is slow and redundant.
       - run: yarn lint:packages
 
   # A second job for what's not covered in primary
   lint-rest:
     runs-on: ubuntu-latest
+    needs: build
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: '18.x'
+          node-version: 'node-new'
+
+      - name: lint repo format
+        run: yarn lint:format
+
+      - run: yarn lint:package-names
 
       # Check some of a3p-integration in this job that runs on PRs instead of
       # waiting for the slow integration test that by default only runs in the
@@ -122,6 +128,29 @@ jobs:
       - name: build API docs in markdown
         run: yarn docs:markdown-for-agoric-documentation-repo
 
+  # Build the package lockfiles, and check that they are clean.
+  check-lockfiles:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: 'node-new'
+
+      - name: Update package lockfiles
+        run: scripts/update-package-locks.sh || exit 0
+
+      - name: Check if lockfiles are changed
+        run: |
+          if bash ./.github/actions/restore-node/check-git-status.sh . false; then
+            echo "No changes to lockfiles detected."
+          else
+            echo "Changes to lockfiles detected!"
+            echo "Please run 'yarn build-lockfiles', commit the results, and push"
+            exit 1
+          fi
+
   ##################
   # Fast-running tests run as a group:
   test-quick:
@@ -131,19 +160,18 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['18.x', '20.x', 'xs']
+        engine: ['node-new', 'node-old', 'xs']
     steps:
       - name: set vars
         id: vars
         run: |
-          echo "node-version=${{ matrix.engine == 'xs' && '18.x' || matrix.engine }}" >> $GITHUB_OUTPUT
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
 
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ steps.vars.outputs.node-version }}
+          node-version: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
 
       # We run separate steps for each package, to make it easier to drill down
@@ -175,6 +203,9 @@ jobs:
       - name: yarn test (orchestration)
         if: (success() || failure())
         run: cd packages/orchestration && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (portfolio-contract)
+        if: (success() || failure())
+        run: cd packages/portfolio-contract && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (sparse-ints)
         if: (success() || failure())
         run: cd packages/sparse-ints && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -225,18 +256,17 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['18.x', '20.x', 'xs']
+        engine: ['node-new', 'node-old', 'xs']
     steps:
       - name: set vars
         id: vars
         run: |
-          echo "node-version=${{ matrix.engine == 'xs' && '18.x' || matrix.engine }}" >> $GITHUB_OUTPUT
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ steps.vars.outputs.node-version }}
+          node-version: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
       - name: yarn test (agoric-cli)
         if: (success() || failure())
@@ -267,6 +297,12 @@ jobs:
       - name: yarn test (fast-usdc)
         if: (success() || failure())
         run: cd packages/fast-usdc && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (fast-usdc-contract)
+        if: (success() || failure())
+        run: cd packages/fast-usdc-contract && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (fast-usdc-deploy)
+        if: (success() || failure())
+        run: cd packages/fast-usdc-deploy && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (internal)
         if: (success() || failure())
         run: cd packages/internal && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -353,19 +389,17 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in governance/package.json
-        engine: ['18.x', '20.x']
+        engine: ['node-new', 'node-old']
     steps:
       - name: set vars
         id: vars
         run: |
-          echo "node-version=${{ matrix.engine == 'xs' && '18.x' || matrix.engine }}" >> $GITHUB_OUTPUT
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
-
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ steps.vars.outputs.node-version }}
+          node-version: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
       - name: yarn test (governance)
         if: (success() || failure())
@@ -394,19 +428,17 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in solo/package.json
-        engine: ['18.x', '20.x']
+        engine: ['node-new', 'node-old']
     steps:
       - name: set vars
         id: vars
         run: |
-          echo "node-version=${{ matrix.engine == 'xs' && '18.x' || matrix.engine }}" >> $GITHUB_OUTPUT
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
-
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ steps.vars.outputs.node-version }}
+          node-version: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
       - name: yarn test (solo)
         if: (success() || failure())
@@ -435,19 +467,18 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in cosmic-swingset/package.json
-        engine: ['18.x', '20.x', 'xs']
+        engine: ['node-new', 'node-old', 'xs']
     steps:
       - name: set vars
         id: vars
         run: |
-          echo "node-version=${{ matrix.engine == 'xs' && '18.x' || matrix.engine }}" >> $GITHUB_OUTPUT
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
 
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ steps.vars.outputs.node-version }}
+          node-version: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
       - uses: ./.github/actions/restore-golang
         with:
@@ -479,19 +510,17 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in inter-protocol/package.json
-        engine: ['18.x', '20.x']
+        engine: ['node-new', 'node-old']
     steps:
       - name: set vars
         id: vars
         run: |
-          echo "node-version=${{ matrix.engine == 'xs' && '18.x' || matrix.engine }}" >> $GITHUB_OUTPUT
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
-
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ steps.vars.outputs.node-version }}
+          node-version: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
       - name: yarn test (inter-protocol)
         if: (success() || failure())
@@ -519,7 +548,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['18.x', '20.x', 'xs']
+        engine: ['node-new', 'node-old', 'xs']
         # Run parallel testing jobs, each executing a subset.
         node_index: [0, 1, 2, 3]
         total_nodes: [4] # the total number of nodes
@@ -527,7 +556,6 @@ jobs:
       - name: set vars
         id: vars
         run: |
-          echo "node-version=${{ matrix.engine == 'xs' && '18.x' || matrix.engine }}" >> $GITHUB_OUTPUT
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
           echo "CI_NODE_INDEX=${{ matrix.node_index }}" >> $GITHUB_ENV
@@ -536,7 +564,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ steps.vars.outputs.node-version }}
+          node-version: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
       - name: yarn test (boot)
         if: (success() || failure())
@@ -564,7 +592,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['18.x', '20.x', 'xs']
+        engine: ['node-new', 'node-old', 'xs']
         # Run parallel testing jobs, each executing a subset.
         node_index: [0, 1, 2, 3, 4]
         total_nodes: [5] # the total number of nodes
@@ -572,7 +600,6 @@ jobs:
       - name: set vars
         id: vars
         run: |
-          echo "node-version=${{ matrix.engine == 'xs' && '18.x' || matrix.engine }}" >> $GITHUB_OUTPUT
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
           echo "CI_NODE_INDEX=${{ matrix.node_index }}" >> $GITHUB_ENV
@@ -581,7 +608,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ steps.vars.outputs.node-version }}
+          node-version: ${{ matrix.engine }}
         id: restore-node
       - run: echo "ENDO_BRANCH=${{ steps.restore-node.outputs.endo-branch }}" >> $GITHUB_ENV
       # END-TEST-BOILERPLATE
@@ -615,21 +642,20 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['18.x', '20.x', 'xs']
+        engine: ['node-new', 'node-old', 'xs']
     steps:
       - name: set vars
         id: vars
         # END-TEST-BOILERPLATE
         # XXX test:xs-unit is deprecated branch protection still expects it
         run: |
-          echo "node-version=${{ matrix.engine == 'xs' && '18.x' || matrix.engine }}" >> $GITHUB_OUTPUT
           echo "test=${{ matrix.engine == 'xs' && 'test:xs-unit' || 'test:unit' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
         # BEGIN-TEST-BOILERPLATE
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ steps.vars.outputs.node-version }}
+          node-version: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
       - name: yarn test (zoe)
         if: (success() || failure())
@@ -658,20 +684,19 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['18.x', '20.x', 'xs']
+        engine: ['node-new', 'node-old', 'xs']
     steps:
       - name: set vars
         id: vars
         # END-TEST-BOILERPLATE
         run: |
-          echo "node-version=${{ matrix.engine == 'xs' && '18.x' || matrix.engine }}" >> $GITHUB_OUTPUT
           echo "test=${{ matrix.engine == 'xs' && 'test:xs-worker' || 'test:swingset' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
         # BEGIN-TEST-BOILERPLATE
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ steps.vars.outputs.node-version }}
+          node-version: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
       - name: yarn test (zoe)
         if: (success() || failure())

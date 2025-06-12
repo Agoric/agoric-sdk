@@ -7,6 +7,7 @@ import { coerceToByteSource, byteSourceToBase64 } from '@agoric/network';
 import { TargetAppI, AppTransformerI } from './bridge-target.js';
 
 /**
+ * @import {ERef} from '@endo/far';
  * @import {TargetApp, TargetHost} from './bridge-target.js'
  * @import {VTransferIBCEvent} from './types.js';
  */
@@ -195,13 +196,13 @@ const prepareTransferMiddlewareKit = (zone, makeTransferInterceptor) =>
       transferMiddleware: TransferMiddlewareI,
     },
     () => ({
-      /** @type {import('./bridge-target').TargetRegistry | undefined} */
+      /** @type {import('./bridge-target.js').TargetRegistry | undefined} */
       targetRegistry: undefined,
     }),
     {
       finisher: {
         /**
-         * @param {import('./bridge-target').TargetRegistry} registry
+         * @param {import('./bridge-target.js').TargetRegistry} registry
          */
         useRegistry(registry) {
           this.state.targetRegistry = registry;

@@ -25,6 +25,11 @@ const Shape1 = /** @type {const} */ ({
   ProtocolImpl: M.remotable('ProtocolImpl'),
 });
 
+export const SendOptionsShape = M.splitRecord(
+  {},
+  { relativeTimeoutNs: M.bigint() },
+);
+
 const Shape2 = /** @type {const} */ ({
   ...Shape1,
   Vow$: shape => M.or(shape, Shape1.Vow),
@@ -32,7 +37,7 @@ const Shape2 = /** @type {const} */ ({
     { handler: Shape1.ConnectionHandler },
     { remoteAddress: Shape1.Endpoint, localAddress: Shape1.Endpoint },
   ),
-  Opts: M.recordOf(M.string(), M.any()),
+  Opts: SendOptionsShape,
 });
 
 export const Shape = /** @type {const} */ harden({

@@ -4,6 +4,7 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 import { createHash } from 'crypto';
+import { KERNEL_STATS_METRICS } from '@agoric/internal/src/metrics.js';
 import { kser, kslot } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import { makeDummySlogger } from '../src/kernel/slogger.js';
@@ -12,7 +13,6 @@ import makeKernelKeeper, {
 } from '../src/kernel/state/kernelKeeper.js';
 import { upgradeSwingset } from '../src/controller/upgradeSwingset.js';
 import { makeKernelStats } from '../src/kernel/state/stats.js';
-import { KERNEL_STATS_METRICS } from '../src/kernel/metrics.js';
 import {
   enumeratePrefixedKeys,
   getPrefixedValues,
@@ -125,26 +125,27 @@ test('storage helpers', t => {
   kv.set('bar.5', 'b5');
   kv.set('cab.2', 'c');
 
-  t.deepEqual(Array.from(enumeratePrefixedKeys(kv, 'bar')), [
-    'bar.1',
-    'bar.3',
-    'bar.5',
-  ]);
+  t.deepEqual(
+    Array.from(enumeratePrefixedKeys(kv, 'bar'), ({ key }) => key),
+    ['bar.1', 'bar.3', 'bar.5'],
+  );
 
-  t.deepEqual(Array.from(enumeratePrefixedKeys(kv, 'bar', 'bar.1')), []);
-  t.deepEqual(Array.from(enumeratePrefixedKeys(kv, 'bar', 'bar.4')), [
-    'bar.1',
-    'bar.3',
-  ]);
-  t.deepEqual(Array.from(enumeratePrefixedKeys(kv, 'bar', 'bar.5')), [
-    'bar.1',
-    'bar.3',
-  ]);
-  t.deepEqual(Array.from(enumeratePrefixedKeys(kv, 'bar', 'bar.6')), [
-    'bar.1',
-    'bar.3',
-    'bar.5',
-  ]);
+  t.deepEqual(
+    Array.from(enumeratePrefixedKeys(kv, 'bar', 'bar.1'), ({ key }) => key),
+    [],
+  );
+  t.deepEqual(
+    Array.from(enumeratePrefixedKeys(kv, 'bar', 'bar.4'), ({ key }) => key),
+    ['bar.1', 'bar.3'],
+  );
+  t.deepEqual(
+    Array.from(enumeratePrefixedKeys(kv, 'bar', 'bar.5'), ({ key }) => key),
+    ['bar.1', 'bar.3'],
+  );
+  t.deepEqual(
+    Array.from(enumeratePrefixedKeys(kv, 'bar', 'bar.6'), ({ key }) => key),
+    ['bar.1', 'bar.3', 'bar.5'],
+  );
 });
 
 function buildKeeperStorageInMemory() {

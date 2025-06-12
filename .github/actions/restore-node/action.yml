@@ -3,7 +3,7 @@ description: 'Set up Node.js environment and restore cached built files'
 
 inputs:
   node-version:
-    description: 'The version of Node.js to use'
+    description: 'The version or semantic name (node-old, node-new and xs supported) of Node.js to use'
     required: true
   path:
     description: 'The relative path to the agoric-sdk directory'
@@ -33,6 +33,27 @@ runs:
     - name: set default environment variables
       shell: bash
       run: echo ESM_DISABLE_CACHE=true >> $GITHUB_ENV
+
+    - id: set-node-version
+      name: Set correct node version
+      shell: bash
+      env:
+        VERSION_IDENTIFIER: ${{ inputs.node-version }}
+      run: |
+        set -o xtrace
+
+        # By default, treat the version identifier as a semantic version.
+        OUTPUT_NODE_VERSION="$VERSION_IDENTIFIER"
+        case $VERSION_IDENTIFIER in
+          node-old | xs)
+            OUTPUT_NODE_VERSION="20"
+            ;;
+          node-new)
+            OUTPUT_NODE_VERSION="22"
+            ;;
+        esac
+
+        echo "NODE_VERSION=$OUTPUT_NODE_VERSION" >> "$GITHUB_OUTPUT"
 
     - uses: actions/checkout@v4
       with:
@@ -118,7 +139,7 @@ runs:
 
     - uses: actions/setup-node@v4
       with:
-        node-version: ${{ inputs.node-version }}
+        node-version: ${{ steps.set-node-version.outputs.NODE_VERSION }}
         cache: yarn
         cache-dependency-path: |
           ${{ inputs.path }}/yarn.lock
@@ -132,7 +153,7 @@ runs:
       uses: actions/cache@v4
       with:
         path: ${{ inputs.path }}
-        key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-node-${{ inputs.node-version }}-built-${{ inputs.xsnap-random-init }}-${{ github.sha }}-${{ steps.endo-sha.outputs.sha }}
+        key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-node-${{ steps.set-node-version.outputs.NODE_VERSION }}-built-${{ inputs.xsnap-random-init }}-${{ github.sha }}-${{ steps.endo-sha.outputs.sha }}
 
     # This and the git diff below are to detect if `yarn install` results in a
     # change to the lock file.
@@ -156,14 +177,6 @@ runs:
           scripts/get-packed-versions.sh ~/endo | scripts/resolve-versions.sh
         fi
         yarn install
-
-        # Verify there are no warnings about the applied patches.
-        # This isn't strictly necessary but it avoids distracting messages for developers.
-        if yarn patch-package 2>&1 | tee /dev/stderr | grep -qi "warning"; then
-          echo "Error: 'warning' detected applying patches. Please address the warnings before proceeding."
-          echo "If the patch applied cleanly and all tests pass, you can forward a patch with 'yarn patch-package'."
-          exit 1
-        fi
 
         # In the event that the package.json has been modified by Endo
         # replacements, we need to have a yarn-installed timestamp that

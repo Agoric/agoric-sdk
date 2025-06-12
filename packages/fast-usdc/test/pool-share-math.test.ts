@@ -5,7 +5,7 @@ import {
   makeRatioFromAmounts,
   multiplyBy,
   parseRatio,
-} from '@agoric/zoe/src/contractSupport/ratio.js';
+} from '@agoric/ertp/src/ratio.js';
 import { mustMatch } from '@endo/patterns';
 import {
   borrowCalc,
@@ -16,6 +16,7 @@ import {
   withFees,
 } from '../src/pool-share-math.js';
 import { makeProposalShapes } from '../src/type-guards.js';
+import type { PoolStats } from '../src/types.js';
 
 const { add, make, isEmpty, makeEmpty, subtract } = AmountMath;
 
@@ -182,7 +183,6 @@ test('withdrawal offer overestimates value of share', t => {
 test('withdrawal during advance can fail', t => {
   const { PoolShares, USDC } = brands;
   const state0 = makeParity(USDC, PoolShares);
-  const emptyShares = makeEmpty(PoolShares);
 
   const pDep = {
     give: { USDC: make(USDC, 100n) },
@@ -208,13 +208,8 @@ const scaleAmount = (frac: number, amount: Amount<'nat'>) => {
   return multiplyBy(amount, asRatio);
 };
 
-// ack: https://stackoverflow.com/a/2901298/7963
-const numberWithCommas = x =>
-  x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-
 const logAmt = amt => [
   Number(amt.value),
-  //   numberWithCommas(Number(amt.value)),
   amt.brand
     .toString()
     .replace(/^\[object Alleged:/, '')
@@ -350,7 +345,7 @@ testProp(
   },
 );
 
-const makeInitialPoolStats = () => ({
+const makeInitialPoolStats = (): PoolStats => ({
   totalBorrows: makeEmpty(brands.USDC),
   totalRepays: makeEmpty(brands.USDC),
   totalPoolFees: makeEmpty(brands.USDC),
@@ -421,6 +416,7 @@ test('basic repay calculation', t => {
     Principal: make(USDC, 100n),
     PoolFee: make(USDC, 10n),
     ContractFee: make(USDC, 5n),
+    RelayFee: make(USDC, 0n),
   };
   const encumberedBalance = make(USDC, 200n);
   const poolStats = makeInitialPoolStats();
@@ -472,14 +468,13 @@ test('repay fails when principal exceeds encumbered balance', t => {
     Principal: make(USDC, 200n),
     PoolFee: make(USDC, 10n),
     ContractFee: make(USDC, 5n),
+    RelayFee: make(USDC, 9n),
   };
   const encumberedBalance = make(USDC, 100n);
   const poolStats = {
     ...makeInitialPoolStats(),
     totalBorrows: make(USDC, 100n),
   };
-
-  const fromSeatAllocation = amounts;
 
   t.throws(() => repayCalc(shareWorth, amounts, encumberedBalance, poolStats), {
     message: /Cannot repay. Principal .* exceeds encumberedBalance/,
@@ -503,6 +498,7 @@ test('repay fails when seat allocation does not equal amounts', t => {
     Principal: make(USDC, 200n),
     PoolFee: make(USDC, 10n),
     ContractFee: make(USDC, 5n),
+    RelayFee: make(USDC, 0n),
   };
   const encumberedBalance = make(USDC, 100n);
   const poolStats = {
@@ -515,7 +511,7 @@ test('repay fails when seat allocation does not equal amounts', t => {
   });
 });
 
-test('repay succeeds with no Pool or Contract Fee', t => {
+test('repay succeeds with no Pool, Contract, or Relay Fees', t => {
   const { USDC } = brands;
   const encumberedBalance = make(USDC, 100n);
   const shareWorth = makeParity(USDC, brands.PoolShares);
@@ -524,12 +520,13 @@ test('repay succeeds with no Pool or Contract Fee', t => {
     Principal: make(USDC, 25n),
     ContractFee: make(USDC, 0n),
     PoolFee: make(USDC, 0n),
+    RelayFee: make(USDC, 0n),
   };
   const poolStats = {
     ...makeInitialPoolStats(),
     totalBorrows: make(USDC, 100n),
   };
-  const fromSeatAllocation = amounts;
+
   const actual = repayCalc(shareWorth, amounts, encumberedBalance, poolStats);
   t.like(actual, {
     shareWorth,
@@ -537,4 +534,60 @@ test('repay succeeds with no Pool or Contract Fee', t => {
       value: 75n,
     },
   });
+});
+
+test('RelayFee is included in `totalContractFees`', t => {
+  const { USDC } = brands;
+  const shareWorth = makeParity(USDC, brands.PoolShares);
+
+  const encumberedBalance = make(USDC, 200n);
+  const poolStats = makeInitialPoolStats();
+
+  const firstResult = repayCalc(
+    shareWorth,
+    {
+      Principal: make(USDC, 100n),
+      PoolFee: make(USDC, 10n),
+      ContractFee: make(USDC, 5n),
+      RelayFee: make(USDC, 0n),
+    },
+    encumberedBalance,
+    poolStats,
+  );
+
+  t.deepEqual(
+    firstResult.poolStats.totalContractFees,
+    make(USDC, 5n),
+    'Only contract fee',
+  );
+
+  t.deepEqual(
+    firstResult.encumberedBalance,
+    make(USDC, 100n),
+    'Outstanding lends should decrease by principal',
+  );
+
+  const secondResult = repayCalc(
+    shareWorth,
+    {
+      Principal: make(USDC, 100n),
+      PoolFee: make(USDC, 10n),
+      ContractFee: make(USDC, 5n),
+      RelayFee: make(USDC, 5n),
+    },
+    firstResult.encumberedBalance,
+    firstResult.poolStats,
+  );
+
+  t.deepEqual(
+    secondResult.poolStats.totalContractFees,
+    make(USDC, 15n),
+    '5n relay and 5n contract fees added to existing 5n',
+  );
+
+  t.deepEqual(
+    secondResult.encumberedBalance,
+    make(USDC, 0n),
+    'Outstanding lends should decrease by principal',
+  );
 });

@@ -3,17 +3,13 @@
 import { Fail } from '@endo/errors';
 import { AmountMath } from '@agoric/ertp';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
-import {
-  makeRatio,
-  multiplyRatios,
-  quantize,
-} from '@agoric/zoe/src/contractSupport/ratio.js';
+import { makeRatio, multiplyRatios, quantize } from '@agoric/ertp/src/ratio.js';
 import { TimeMath } from '@agoric/time';
 
 /**
  * @import {Timestamp} from '@agoric/time'
  * @import {RelativeTime} from '@agoric/time'
- * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
+ * @import {AdminFacet, InvitationAmount, ZCFMint} from '@agoric/zoe';
  */
 
 export const SECONDS_PER_YEAR = 60n * 60n * 24n * 365n;

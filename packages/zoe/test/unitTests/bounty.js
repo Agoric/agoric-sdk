@@ -1,10 +1,10 @@
-import { assert, X } from '@endo/errors';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 
 /**
- * @import {ContractMeta, ContractStartFn, Invitation, OfferHandler, TransferPart, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {ContractStartFn, Invitation, ZCF, ZCFSeat} from '@agoric/zoe';
  */
 
 /**
@@ -56,7 +56,7 @@ const start = async zcf => {
       assertProposalShape(bountySeat, feeProposal);
       const feeAmount = bountySeat.getCurrentAllocation().Fee;
       AmountMath.isGTE(feeAmount, fee) ||
-        assert.fail(X`Fee was required to be at least ${fee}`);
+        Fail`Fee was required to be at least ${fee}`;
 
       // The funder gets the fee regardless of the outcome.
       atomicTransfer(zcf, bountySeat, funderSeat, {

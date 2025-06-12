@@ -37,6 +37,7 @@ import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 import { makeInitMsg } from '@agoric/internal/src/chain-utils.js';
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import * as ActionType from '@agoric/internal/src/action-types.js';
+import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 import { BridgeId, CosmosInitKeyToBridgeId } from '@agoric/internal';
 import {
   makeArchiveSnapshot,
@@ -63,6 +64,8 @@ import {
  */
 
 const ignore = () => {};
+
+const tmpDir = makeTempDirFactory(tmp);
 
 // eslint-disable-next-line no-unused-vars
 let whenHellFreezesOver = null;
@@ -449,6 +452,7 @@ export const makeLaunchChain = (
         stateDir: stateDBDir,
         env,
         serviceName: TELEMETRY_SERVICE_NAME,
+        otelMeterName: 'ag-chain-cosmos',
       }));
 
     const swingStoreTraceFile = processValue.getPath({
@@ -700,38 +704,24 @@ export default async function main(
           });
         stateSyncExport = exportData;
 
-        await new Promise((resolve, reject) => {
-          tmp.dir(
-            {
-              prefix: `agd-state-sync-${blockHeight}-`,
-              unsafeCleanup: true,
-            },
-            (err, exportDir, cleanup) => {
-              if (err) {
-                reject(err);
-                return;
-              }
-              exportData.exportDir = exportDir;
-              /** @type {Promise<void> | undefined} */
-              let cleanupResult;
-              exportData.cleanup = async () => {
-                cleanupResult ||= new Promise(cleanupDone => {
-                  // If the exporter is still the same, then the retriever
-                  // is in charge of cleanups
-                  if (stateSyncExport !== exportData) {
-                    // @ts-expect-error wrong type definitions
-                    cleanup(cleanupDone);
-                  } else {
-                    console.warn('unexpected call of state-sync cleanup');
-                    cleanupDone();
-                  }
-                });
-                await cleanupResult;
-              };
-              resolve(null);
-            },
-          );
-        });
+        const [exportDir, cleanup] = tmpDir(`agd-state-sync-${blockHeight}-`);
+        exportData.exportDir = exportDir;
+        /** @type {Promise<void> | undefined} */
+        let cleanupResult;
+        exportData.cleanup = async () => {
+          cleanupResult ||= new Promise(cleanupDone => {
+            // If the exporter is still the same, then the retriever
+            // is in charge of cleanups
+            if (stateSyncExport !== exportData) {
+              // @ts-expect-error wrong type definitions
+              cleanup(cleanupDone);
+            } else {
+              console.warn('unexpected call of state-sync cleanup');
+              cleanupDone();
+            }
+          });
+          await cleanupResult;
+        };
 
         console.warn(
           'Initiating SwingSet state snapshot at block height',

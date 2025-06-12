@@ -62,8 +62,11 @@ import {
 } from '../src/sim-params.js';
 import { makeCosmicSwingsetTestKit } from './test-kit.js';
 
-/** @import { ManagerType, SwingSetConfig } from '@agoric/swingset-vat' */
-/** @import { KVStore } from '../src/helpers/bufferedStorage.js' */
+/**
+ * @import {Database} from 'better-sqlite3';
+ * @import {ManagerType, SwingSetConfig} from '@agoric/swingset-vat';
+ * @import {KVStore} from '../src/helpers/bufferedStorage.js';
+ */
 
 const useColors = process.stdout?.hasColors?.();
 const inspectDepth = 6;
@@ -76,14 +79,29 @@ const parseNumber = input => (input.match(/[0-9]/) ? Number(input) : NaN);
 // cf. packages/swing-store/src/exporter.js
 const storeExportAPI = ['getExportRecords', 'getArtifactNames'];
 
-// TODO: getVatAdminNode('v112') # scan the vatAdmin vom v2.vs.vom.* vrefs for value matching /\b${vatID}\b/
+/**
+ * Partial definition based on log output.
+ * @typedef VatInfo
+ * @property {`v${string}`} vatID
+ * @property {string} name
+ * @property {boolean} isStatic
+ * @property {{bundleID: string}} source
+ * @property {{name: string, critical: boolean}} options
+ */
+
+/**
+ * @param {object} opt
+ * @param {Database} opt.db
+ * @param {any} opt.EV
+ */
 export const makeHelpers = ({ db, EV }) => {
   const sqlKVGet = db
     .prepare('SELECT value FROM kvStore WHERE key = ?')
     .pluck();
   const kvGet = key => sqlKVGet.get(key);
-  const kvGetJSON = key => JSON.parse(kvGet(key));
+  const kvGetJSON = key => JSON.parse(/** @type {string} */ (kvGet(key)));
 
+  /** @typedef {{key: string, value: string}} KVEntry */
   const sqlKVByRange = db.prepare(
     `SELECT key, value FROM kvStore WHERE key >= :a AND key < :b AND ${[
       '(:keySuffix IS NULL OR substr(key, -length(:keySuffix)) = :keySuffix)',
@@ -98,9 +116,26 @@ export const makeHelpers = ({ db, EV }) => {
       '(:valueGlob IS NULL OR value GLOB :valueGlob)',
     ].join(' AND ')}`,
   );
-  const kvGlob = (keyGlob, valueGlob = undefined, lazy = false) => {
+  /**
+   * @template {boolean} Lazy
+   * @param {string} keyGlob
+   * @param {string} [valueGlob]
+   * @param {Lazy} [lazy]
+   * @returns {Lazy extends true ? Iterable<KVEntry> : Array<KVEntry>}
+   */
+  const kvGlob = (
+    keyGlob,
+    valueGlob = undefined,
+    lazy = /** @type {Lazy} */ (false),
+  ) => {
+    // Glob metasyntax is `*` (any substring), `?` (any one character), and
+    // `[$chars]`/`[]$chars]` (any one character from inside the brackets, with
+    // a requirement that `]` for matching is only valid immediately after the
+    // opening bracket).
     const [_keyPattern, keyPrefix, keyTail, keySuffix] =
-      /** @type {string[]} */ (/^([^*?]*)((?:[*?]([^*?]*))*)$/.exec(keyGlob));
+      /** @type {string[]} */ (
+        /^([^*?[]*)((?:(?:[*?]|\[\]?[^\]]*\])([^*?[]*))*)$/.exec(keyGlob)
+      );
     let sql = sqlKVByHalfRange;
     /** @type {Record<'a' | 'b' | 'keySuffix' | 'keyGlob' | 'valueGlob', string | null>} */
     const args = {
@@ -119,10 +154,70 @@ export const makeHelpers = ({ db, EV }) => {
     } else {
       console.warn('Warning: Unprefixed searches can be slow');
     }
-    return lazy ? sql.iterate(args) : sql.all(args);
+    return /** @type {any} */ (lazy ? sql.iterate(args) : sql.all(args));
   };
 
+  // We need a RegExp.escape polyfill at least until our minimum supported
+  // Node.js includes it natively, however this is harmless to keep even then.
+  // It leaves leading ASCII alphanumerics untouched for readability and uses
+  // `\u00##` rather than `\x##` for simplicity, neither of which impact
+  // `scanVatStore`.
+  const needsEscape =
+    /([\^$\\.*+?()[\]{}|/])|[-,=<>#&!%:;@~''``""\s\uD800-\uDFFF]/gu;
+  const controlEscapes = {
+    '\t': '\\t',
+    '\n': '\\n',
+    '\v': '\\v',
+    '\f': '\\f',
+    '\r': '\\r',
+  };
+  const escapeChar = (ch, simple) => {
+    if (simple) return `\\${simple}`;
+    if (Object.hasOwn(controlEscapes, ch)) return controlEscapes[ch];
+    return ch
+      .split('')
+      .map(cu => `\\u${cu.charCodeAt(0).toString(16).padStart(4, '0')}`)
+      .join('');
+  };
+  const RegExpEscape = str => str.replace(needsEscape, escapeChar);
+
+  /**
+   * Return entries of a vat's KV store that mention `ref` as a distinct word.
+   * `ref` may be a vref such as "o-123", but may also be a value such as "123"
+   * or "v123" (that last case being particularly useful for finding a vat admin
+   * node in vatAdmin's KV store).
+   *
+   * @param {string} vatID
+   * @param {string} ref
+   */
+  const scanVatStore = (vatID, ref) => {
+    // Use a glob match to find candidates, then a regular expression to select
+    // only those with word boundaries around the ref (e.g., we don't want to
+    // consider "o-1234" a match for "o-123").
+    const candidates = kvGlob(
+      `${vatID}.vs.*`,
+      `*${ref.replace(/[*?[]/g, '[$&]')}*`,
+      true,
+    );
+    // The non-capturing group serves no functional purpose; it just improves
+    // readability in the event that a debugging session finds itself here.
+    const re = RegExp(String.raw`\b(?:${RegExpEscape(ref)})\b`);
+    const matches = [];
+    for (const entry of candidates) {
+      if (entry.value.match(re)) matches.push(entry);
+    }
+    return matches;
+  };
+
+  /**
+   * NB: snapshot never refreshed
+   * @type {Map<`v${string}`, VatInfo>}
+   */
   let vatsByID = new Map();
+  /**
+   * NB: snapshot never refreshed
+   * @type {Map<string, VatInfo | VatInfo[]>}
+   */
   let vatsByName = new Map();
   try {
     // @see {@link ../../SwingSet/src/kernel/state/kernelKeeper.js}
@@ -155,6 +250,7 @@ export const makeHelpers = ({ db, EV }) => {
       ORDER BY vat.rank, vat.idx
     `);
     for (const dbRecord of vatQuery.iterate()) {
+      // @ts-expect-error extract from unknown
       const { vatID, rank, sourceText, optionsText } = dbRecord;
       const isStatic = rank === 1;
       const source = sourceText ? JSON.parse(sourceText) : undefined;
@@ -193,6 +289,7 @@ export const makeHelpers = ({ db, EV }) => {
     const kindMetaJSON =
       kvGet(`${vatID}.vs.vom.dkind.${kindID}.descriptor`) ||
       kvGet(`${vatID}.vs.vom.vkind.${kindID}.descriptor`);
+    assert.typeof(kindMetaJSON, 'string');
     return JSON.parse(kindMetaJSON);
   };
 
@@ -236,6 +333,7 @@ export const makeHelpers = ({ db, EV }) => {
         const value = kvGet(`${vatID}.c.${kref}`);
         if (!value) continue;
         const [_value, _reachabilityFlag, vref] =
+          // @ts-expect-error may not be string
           value.match(krefToVrefValuePatt) ||
           Fail`unexpected c-list value ${value}`;
         const result = { vatID, kref, vref };
@@ -286,9 +384,19 @@ export const makeHelpers = ({ db, EV }) => {
 
   return harden({
     runCoreEval,
-    stable: { db, getRefs, kvGet, kvGetJSON, kvGlob, vatsByID, vatsByName },
+    stable: {
+      db,
+      getRefs,
+      kvGet,
+      kvGetJSON,
+      kvGlob,
+      scanVatStore,
+      vatsByID,
+      vatsByName,
+    },
   });
 };
+/** @typedef {ReturnType<typeof makeHelpers>} Helpers */
 
 /**
  * Wrap a swing-store sub-store (kvStore/transcriptStore/etc.) with a
@@ -790,7 +898,7 @@ May be used interactively, or as a recipient of piped commands, or as a module.
 Example commands:
 * stable.db.prepare("SELECT name FROM sqlite_schema WHERE type='table'").pluck().all();
 * stable.db.pragma("table_info(transcriptSpans)");
-* [vatAdminNodeRow] = stable.db.kvGlob('v2.vs.*', '*v100*');
+* [vatAdminNodeEntry] = stable.scanVatStore('v2', 'v100');
 * stable.getRefs('o+10', 'v1');
 * board = await EV.vat('bootstrap').consumeItem('board');
 * obj = await EV(board).getValue('board02963');

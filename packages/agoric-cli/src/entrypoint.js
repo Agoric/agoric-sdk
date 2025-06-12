@@ -2,8 +2,6 @@
 /* eslint-env node */
 // @jessie-check
 
-import '@endo/init/pre.js';
-import 'esm';
 import '@endo/init/legacy.js';
 
 import path from 'path';

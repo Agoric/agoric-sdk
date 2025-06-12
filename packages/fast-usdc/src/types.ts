@@ -1,17 +1,25 @@
+import type { Amount } from '@agoric/ertp';
 import type {
   AccountId,
-  CosmosChainAddress,
+  BaseChainInfo,
   Bech32Address,
+  CaipChainId,
+  CosmosChainAddress,
   CosmosChainInfo,
   Denom,
   DenomDetail,
+  KnownNamespace,
 } from '@agoric/orchestration';
 import type { IBCChannelID } from '@agoric/vats';
-import type { Amount } from '@agoric/ertp';
-import type { CopyRecord, Passable } from '@endo/pass-style';
+import type { CopyRecord } from '@endo/pass-style';
 import type { PendingTxStatus, TxStatus } from './constants.js';
-import type { FastUsdcTerms } from './fast-usdc.contract.js';
-import type { RepayAmountKWR } from './exos/liquidity-pool.js';
+import type { RepayAmountKWR } from './utils/fees.js';
+
+// XXX duped with Zoe contractSupport ambient types
+type Ratio = {
+  numerator: Amount<'nat'>;
+  denominator: Amount<'nat'>;
+};
 
 /**
  * Block hash is calculated using the keccak256 algorithm that always results
@@ -35,7 +43,7 @@ export interface CctpTxEvidence {
   /** from Noble RPC */
   aux: {
     forwardingChannel: IBCChannelID;
-    recipientAddress: CosmosChainAddress['value'];
+    recipientAddress: CosmosChainAddress['value'] | AccountId;
   };
   /** on the source chain (e.g. L1 Ethereum and L2s Arbitrum, Base) */
   blockHash: EvmHash;
@@ -62,7 +70,7 @@ export interface CctpTxEvidence {
   txHash: EvmHash;
 }
 
-export interface EvidenceWithRisk {
+export interface EvidenceWithRisk extends CopyRecord {
   evidence: CctpTxEvidence;
   risk: RiskAssessment;
 }
@@ -80,6 +88,7 @@ export interface TransactionRecord extends CopyRecord {
 
 /** the record in vstorage at the path of the contract's node */
 export interface ContractRecord extends CopyRecord {
+  nobleICA?: CosmosChainAddress['value'];
   poolAccount: CosmosChainAddress['value'];
   settlementAccount: CosmosChainAddress['value'];
 }
@@ -91,12 +100,22 @@ export interface PendingTx extends CctpTxEvidence {
 }
 
 export type FeeConfig = {
-  /** flat fee charged for every advance */
+  /** flat fee charged for every advance, eligible for LP disbursement */
   flat: Amount<'nat'>;
-  /** proportion of advance kept as a fee */
+  /** proportion of advance kept as a fee, eligible for LP disbursement */
   variableRate: Ratio;
-  /** proportion of fees that goes to the contract (remaining goes to LPs) */
+  /** proportion of `flat` and `variableRate` fees that goes to the contract (remaining goes to LPs) */
   contractRate: Ratio;
+  /**
+   * if present, a fee required to relay (e.g. CCTP to EVM/Solana). Not
+   * considered for LP disbursement - goes to `contractSeat`.
+   */
+  relay?: Amount<'nat'>;
+  /** Optional destination-specific overrides. If present, must supersede base values. */
+  destinationOverrides?: Record<
+    CaipChainId,
+    Partial<Omit<FeeConfig, 'destinationOverrides'>>
+  >;
 };
 
 export interface PoolStats {
@@ -137,13 +156,17 @@ export type FeedPolicy = {
   eventFilter?: string;
 } & CopyRecord;
 
+export type FastUsdcTerms = {
+  usdcDenom: Denom;
+};
+
 export type FastUSDCConfig = {
   terms: FastUsdcTerms;
   oracles: Record<string, string>;
   feeConfig: FeeConfig;
   feedPolicy: FeedPolicy;
   noNoble: boolean; // support a3p-integration, which has no noble chain
-  chainInfo: Record<string, CosmosChainInfo & Passable>;
+  chainInfo: Record<string, ChainHubChainInfo>;
   assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
 } & CopyRecord;
 
@@ -156,5 +179,18 @@ export type AddressHook = {
   };
 };
 
+/**
+ * The shape of ChainInfo ChainHub is expecting for FUSDC.
+ *
+ * Note: this diverges from `CosmosChainInfo` and `BaseChainInfo` in that:
+ * - BaseChainInfo includes chainId for backwards compatibility with `CosmosChainInfoShapeV1`
+ */
+export type ChainHubChainInfo<N extends KnownNamespace = KnownNamespace> =
+  N extends 'cosmos' ? CosmosChainInfo : BaseChainInfoWithChainId<N>;
+
+interface BaseChainInfoWithChainId<N extends KnownNamespace = KnownNamespace>
+  extends BaseChainInfo<N> {
+  chainId: string;
+}
+
 export type * from './constants.js';
-export type { LiquidityPoolKit } from './exos/liquidity-pool.js';

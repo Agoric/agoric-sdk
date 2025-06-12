@@ -28,8 +28,11 @@ import { TransferRouteShape } from './chain-hub.js';
 /**
  * @import {HostOf} from '@agoric/async-flow';
  * @import {LocalChain, LocalChainAccount} from '@agoric/vats/src/localchain.js';
- * @import {AmountArg, CosmosChainAddress, DenomAmount, IBCMsgTransferOptions, IBCConnectionInfo, OrchestrationAccountCommon, LocalAccountMethods, TransferRoute, AccountId, AccountIdArg} from '@agoric/orchestration';
- * @import {ContractMeta, Invitation, OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {AmountArg, CosmosChainAddress, DenomAmount, IBCMsgTransferOptions, OrchestrationAccountCommon, LocalAccountMethods, TransferRoute, AccountIdArg, Denom, Bech32Address} from '@agoric/orchestration';
+ * @import {OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {IBCEvent} from '@agoric/vats';
+ * @import {QueryDenomHashResponse} from '@agoric/cosmic-proto/ibc/applications/transfer/v1/query.js';
+ * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Zone} from '@agoric/zone';
  * @import {Remote} from '@agoric/internal';
@@ -78,6 +81,14 @@ const HolderI = M.interface('holder', {
     .returns(EVow$(M.string())),
   matchFirstPacket: M.call(M.any()).returns(EVow$(M.any())),
   monitorTransfers: M.call(M.remotable('TargetApp')).returns(EVow$(M.any())),
+  parseInboundTransfer: M.call(M.recordOf(M.string(), M.any())).returns(
+    Vow$({
+      amount: DenomAmountShape,
+      fromAccount: M.string(),
+      toAccount: M.string(),
+      extra: M.recordOf(M.string(), M.any()),
+    }),
+  ),
 });
 
 /** @type {{ [name: string]: [description: string, valueShape: Matcher] }} */
@@ -166,6 +177,10 @@ export const prepareLocalOrchestrationAccountKit = (
         onFulfilled: M.call(TypedJsonShape).returns(
           M.arrayOf(DenomAmountShape),
         ),
+      }),
+      parseInboundTransferWatcher: M.interface('parseInboundTransferWatcher', {
+        onFulfilled: M.call(M.record(), M.record()).returns(M.record()),
+        onRejected: M.call(M.any(), M.record()).returns(M.record()),
       }),
       invitationMakers: M.interface('invitationMakers', {
         CloseAccount: M.call().returns(M.promise()),
@@ -266,7 +281,7 @@ export const prepareLocalOrchestrationAccountKit = (
           /**
            * @type {OfferHandler<
            *   Vow<void>,
-           *   { toAccount: CosmosChainAddress; amount: AmountArg }
+           *   { toAccount: AccountIdArg; amount: AmountArg }
            * >}
            */
           const offerHandler = (seat, { toAccount, amount }) => {
@@ -294,7 +309,7 @@ export const prepareLocalOrchestrationAccountKit = (
            *   Vow<void>,
            *   {
            *     amount: AmountArg;
-           *     destination: CosmosChainAddress;
+           *     destination: AccountIdArg;
            *     opts?: IBCMsgTransferOptions;
            *   }
            * >}
@@ -364,8 +379,13 @@ export const prepareLocalOrchestrationAccountKit = (
             memo = opts.memo;
           }
           if (forwardInfo) {
-            // forward memo takes precedence
-            memo = JSON.stringify(forwardInfo);
+            // pass opts.memo as forward.next, if present
+            memo = JSON.stringify({
+              forward: {
+                ...forwardInfo.forward,
+                next: memo,
+              },
+            });
           }
           const transferMsg = typedJson(
             '/ibc.applications.transfer.v1.MsgTransfer',
@@ -479,6 +499,40 @@ export const prepareLocalOrchestrationAccountKit = (
             throw Fail`Expected balances ${q(result)};`;
           }
           return harden(balances.map(toDenomAmount));
+        },
+      },
+      parseInboundTransferWatcher: {
+        /**
+         * @param {QueryDenomHashResponse} localDenomHash
+         * @param {Awaited<
+         *   ReturnType<LocalAccountMethods['parseInboundTransfer']>
+         * >} naiveResult
+         */
+        onFulfilled(localDenomHash, naiveResult) {
+          const localDenom = `ibc/${localDenomHash.hash}`;
+          const { amount, ...rest } = naiveResult;
+          const { denom: _, ...amountRest } = amount;
+          return harden({
+            ...rest,
+            amount: { ...amountRest, denom: localDenom },
+          });
+        },
+        /**
+         * @param {unknown} reason
+         * @param {Awaited<
+         *   ReturnType<LocalAccountMethods['parseInboundTransfer']>
+         * >} naiveResult
+         */
+        onRejected(reason, naiveResult) {
+          if (
+            reason instanceof Error &&
+            String(reason.message).includes('denomination trace not found')
+          ) {
+            // Looks like the trace was not found; The naive result is good enough.
+            return naiveResult;
+          }
+          // Propagate other errors upwards.
+          throw reason;
         },
       },
       holder: {
@@ -637,12 +691,15 @@ export const prepareLocalOrchestrationAccountKit = (
         send(toAccount, amount) {
           return asVow(() => {
             trace('send', toAccount, amount);
+            const cosmosDest = chainHub.coerceCosmosAddress(toAccount);
+            cosmosDest.chainId === this.state.address.chainId ||
+              Fail`bank/send cannot send to a different chain ${q(cosmosDest.chainId)}`;
             const { helper } = this.facets;
             return watch(
               E(this.state.account).executeTx([
                 typedJson('/cosmos.bank.v1beta1.MsgSend', {
                   amount: [helper.amountToCoin(amount)],
-                  toAddress: toAccount.value,
+                  toAddress: cosmosDest.value,
                   fromAddress: this.state.address.value,
                 }),
               ]),
@@ -700,18 +757,10 @@ export const prepareLocalOrchestrationAccountKit = (
             );
             trace('got transfer route', route);
 
-            // set a `timeoutTimestamp` if caller does not supply either `timeoutHeight` or `timeoutTimestamp`
-            // TODO #9324 what's a reasonable default? currently 5 minutes
-            const timeoutTimestampVowOrValue =
-              opts?.timeoutTimestamp ??
-              (opts?.timeoutHeight
-                ? 0n
-                : asVow(() => E(timestampHelper).getTimeoutTimestampNS()));
-
             // don't resolve the vow until the transfer is confirmed on remote
             // and reject vow if the transfer fails for any reason
             const resultV = watch(
-              timeoutTimestampVowOrValue,
+              timestampHelper.vowOrValueFromOpts(opts),
               this.facets.transferWatcher,
               {
                 opts: rest,
@@ -719,6 +768,78 @@ export const prepareLocalOrchestrationAccountKit = (
               },
             );
             return resultV;
+          });
+        },
+        /**
+         * @type {HostOf<LocalAccountMethods['parseInboundTransfer']>}
+         */
+        parseInboundTransfer(record) {
+          trace('parseInboundTransfer', record);
+          return asVow(() => {
+            const packet =
+              /** @type {IBCEvent<'writeAcknowledgement'>['packet']} */ (
+                record
+              );
+
+            /** @type {FungibleTokenPacketData} */
+            const ftPacketData = JSON.parse(atob(packet.data));
+            const {
+              denom: transferDenom,
+              sender,
+              receiver,
+              amount,
+            } = ftPacketData;
+
+            // XXX don't verify it's a real Bech32 because that makes our tests
+            // less legible (preventing readable words on the address string)
+            /**
+             * @param {string} address
+             */
+            const resolveBech32Address = address =>
+              chainHub.resolveAccountId(/** @type {Bech32Address} */ (address));
+
+            /**
+             * @param {Denom} localDenom
+             */
+            const buildReturnValue = localDenom =>
+              harden({
+                amount: /** @type {DenomAmount} */ ({
+                  value: BigInt(amount),
+                  denom: localDenom,
+                }),
+                fromAccount: resolveBech32Address(sender),
+                toAccount: resolveBech32Address(receiver),
+                extra: {
+                  ...ftPacketData,
+                },
+              });
+
+            /**
+             * @type {Denom}
+             */
+            let denomOrTrace;
+
+            const prefix = `${packet.source_port}/${packet.source_channel}/`;
+            trace({ transferDenom, prefix });
+            if (transferDenom.startsWith(prefix)) {
+              // Unwind, which may end up as a local denom.
+              denomOrTrace = transferDenom.slice(prefix.length);
+            } else {
+              // If the denom is not local, attach its source.
+              denomOrTrace = `${packet.destination_port}/${packet.destination_channel}/${transferDenom}`;
+            }
+
+            // Find the local denom hash for the transferDenom, if there is one.
+            return watch(
+              E(localchain).query(
+                typedJson(
+                  '/ibc.applications.transfer.v1.QueryDenomHashRequest',
+                  { trace: denomOrTrace },
+                ),
+              ),
+              this.facets.parseInboundTransferWatcher,
+              buildReturnValue(denomOrTrace),
+            );
           });
         },
         /** @type {HostOf<OrchestrationAccountCommon['transferSteps']>} */

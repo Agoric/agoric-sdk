@@ -3,15 +3,26 @@ package gaia
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
-	"strings"
-	"text/template"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	swingsetkeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
+	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+
+	ibctmmigrations "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint/migrations"
 )
 
 var upgradeNamesOfThisVersion = []string{
@@ -78,45 +89,30 @@ func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
 	return true
 }
 
-func buildProposalStepWithArgs(moduleName string, entrypoint string, extra any) (vm.CoreProposalStep, error) {
-	t := template.Must(template.New("").Parse(`{
-  "module": "{{.moduleName}}",
-  "entrypoint": "{{.entrypoint}}",
-  "args": {{.args}}
-}`))
-
-	var args []byte
-	var err error
-	if extra == nil {
-		// The specified entrypoint will be called with no extra arguments after powers.
-		args = []byte(`[]`)
-	} else if reflect.TypeOf(extra).Kind() == reflect.Map && reflect.TypeOf(extra).Key().Kind() == reflect.String {
-		// The specified entrypoint will be called with this options argument after powers.
-		args, err = json.Marshal([]any{extra})
-	} else if reflect.TypeOf(extra).Kind() == reflect.Slice {
-		// The specified entrypoint will be called with each of these arguments after powers.
-		args, err = json.Marshal(extra)
-	} else {
-		return nil, fmt.Errorf("proposal extra must be nil, array, or string map, not %v", extra)
-	}
+// buildProposalStepWithArgs returns a CoreProposal representing invocation of
+// the specified module-specific entry point with arbitrary Jsonable arguments
+// provided after core-eval powers.
+func buildProposalStepWithArgs(moduleName string, entrypoint string, args ...vm.Jsonable) (vm.CoreProposalStep, error) {
+	argsBz, err := json.Marshal(args)
 	if err != nil {
 		return nil, err
 	}
 
-	var result strings.Builder
-	err = t.Execute(&result, map[string]any{
-		"moduleName": moduleName,
-		"entrypoint": entrypoint,
-		"args":       string(args),
-	})
+	mea := struct {
+		Module     string          `json:"module"`
+		Entrypoint string          `json:"entrypoint"`
+		Args       json.RawMessage `json:"args"`
+	}{
+		Module:     moduleName,
+		Entrypoint: entrypoint,
+		Args:       argsBz,
+	}
+
+	jsonBz, err := json.Marshal(mea)
 	if err != nil {
 		return nil, err
 	}
-	jsonStr := result.String()
-	jsonBz := []byte(jsonStr)
-	if !json.Valid(jsonBz) {
-		return nil, fmt.Errorf("invalid JSON: %s", jsonStr)
-	}
+
 	proposal := vm.ArbitraryCoreProposal{Json: jsonBz}
 	return vm.CoreProposalStepForModules(proposal), nil
 }
@@ -139,14 +135,6 @@ func getVariantFromUpgradeName(upgradeName string) string {
 	}
 }
 
-func upgradeMintHolderCoreProposal(targetUpgrade string) (vm.CoreProposalStep, error) {
-	return buildProposalStepFromScript(targetUpgrade, "@agoric/builders/scripts/vats/upgrade-mintHolder.js")
-}
-
-func restartFeeDistributorCoreProposal(targetUpgrade string) (vm.CoreProposalStep, error) {
-	return buildProposalStepFromScript(targetUpgrade, "@agoric/builders/scripts/inter-protocol/replace-feeDistributor-combo.js")
-}
-
 func buildProposalStepFromScript(targetUpgrade string, builderScript string) (vm.CoreProposalStep, error) {
 	variant := getVariantFromUpgradeName(targetUpgrade)
 
@@ -157,16 +145,72 @@ func buildProposalStepFromScript(targetUpgrade string, builderScript string) (vm
 	return buildProposalStepWithArgs(
 		builderScript,
 		"defaultProposalBuilder",
-		map[string]any{
-			"variant": variant,
+		// Map iteration is randomised; use an anonymous struct instead.
+		struct {
+			Variant string `json:"variant"`
+		}{
+			Variant: variant,
 		},
 	)
 }
 
-// unreleasedUpgradeHandler performs standard upgrade actions plus custom actions for the unreleased upgrade.
-func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
+// RegisterUpgradeHandlers registers the upgrade handlers for all upgradeNames.
+func (app *GaiaApp) RegisterUpgradeHandlers() {
+	// Set param key table for params module migration
+	for _, subspace := range app.ParamsKeeper.GetSubspaces() {
+		subspace := subspace
+
+		var keyTable paramstypes.KeyTable
+		switch subspace.Name() {
+		case authtypes.ModuleName:
+			keyTable = authtypes.ParamKeyTable() //nolint:staticcheck
+		case banktypes.ModuleName:
+			keyTable = banktypes.ParamKeyTable() //nolint:staticcheck
+		case stakingtypes.ModuleName:
+			keyTable = stakingtypes.ParamKeyTable() //nolint:staticcheck
+		case minttypes.ModuleName:
+			keyTable = minttypes.ParamKeyTable() //nolint:staticcheck
+		case distrtypes.ModuleName:
+			keyTable = distrtypes.ParamKeyTable() //nolint:staticcheck
+		case slashingtypes.ModuleName:
+			keyTable = slashingtypes.ParamKeyTable() //nolint:staticcheck
+		case govtypes.ModuleName:
+			keyTable = govv1.ParamKeyTable() //nolint:staticcheck
+		case crisistypes.ModuleName:
+			keyTable = crisistypes.ParamKeyTable() //nolint:staticcheck
+		default:
+			continue
+		}
+
+		if !subspace.HasKeyTable() {
+			subspace.WithKeyTable(keyTable)
+		}
+	}
+
+	baseAppLegacySS := app.ParamsKeeper.Subspace(baseapp.Paramspace).WithKeyTable(paramstypes.ConsensusParamsKeyTable())
+
+	for _, name := range upgradeNamesOfThisVersion {
+		app.UpgradeKeeper.SetUpgradeHandler(
+			name,
+			makeUnreleasedUpgradeHandler(app, name, baseAppLegacySS),
+		)
+	}
+}
+
+// makeUnreleasedUpgradeHandler performs standard upgrade actions plus custom actions for the unreleased upgrade.
+func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string, baseAppLegacySS paramstypes.Subspace) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
+	_ = targetUpgrade
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
 		app.CheckControllerInited(false)
+
+		// prune expired tendermint consensus states to save storage space
+		_, err := ibctmmigrations.PruneExpiredConsensusStates(ctx, app.AppCodec(), app.IBCKeeper.ClientKeeper)
+		if err != nil {
+			return nil, err
+		}
+
+		// Migrate Tendermint consensus parameters from x/params module to a dedicated x/consensus module.
+		baseapp.MigrateParams(ctx, baseAppLegacySS, &app.ConsensusParamsKeeper)
 
 		CoreProposalSteps := []vm.CoreProposalStep{}
 
@@ -194,39 +238,28 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 				),
 			)
 
-			upgradeMintHolderStep, err := upgradeMintHolderCoreProposal(targetUpgrade)
-			if err != nil {
-				return nil, err
-			} else if upgradeMintHolderStep != nil {
-				CoreProposalSteps = append(CoreProposalSteps, upgradeMintHolderStep)
+			// terminationTargets is a slice of "$boardID:$instanceKitLabel" strings.
+			var terminationTargets []string
+			switch getVariantFromUpgradeName(targetUpgrade) {
+			case "MAINNET":
+				// v111 "zcf-b1-4522b-stkATOM-USD_price_feed"
+				terminationTargets = []string{"board052184:stkATOM-USD_price_feed"}
+			case "A3P_INTEGRATION":
+				terminationTargets = []string{"board04091:stATOM-USD_price_feed"}
 			}
-			restartFeeDistributorStep, err := restartFeeDistributorCoreProposal(targetUpgrade)
-			if err != nil {
-				return nil, err
-			} else if restartFeeDistributorStep != nil {
-				CoreProposalSteps = append(CoreProposalSteps, restartFeeDistributorStep)
+			if len(terminationTargets) > 0 {
+				args := []vm.Jsonable{terminationTargets}
+				terminationStep, err := buildProposalStepWithArgs(
+					"@agoric/vats/src/proposals/terminate-governed-instance.js",
+					// defaultProposalBuilder(powers, targets)
+					"defaultProposalBuilder",
+					args...,
+				)
+				if err != nil {
+					return module.VersionMap{}, err
+				}
+				CoreProposalSteps = append(CoreProposalSteps, terminationStep)
 			}
-
-			CoreProposalSteps = append(CoreProposalSteps,
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/upgrade-paRegistry.js",
-				),
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/upgrade-provisionPool.js",
-				),
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/upgrade-bank.js",
-				),
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/upgrade-agoricNames.js",
-				),
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/upgrade-asset-reserve.js",
-				),
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/upgrade-psm.js",
-				),
-			)
 		}
 
 		app.upgradeDetails = &upgradeDetails{
@@ -239,7 +272,7 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 		}
 
 		// Always run module migrations
-		mvm, err := app.mm.RunMigrations(ctx, app.configurator, fromVm)
+		mvm, err := app.ModuleManager.RunMigrations(ctx, app.configurator, fromVm)
 		if err != nil {
 			return mvm, err
 		}

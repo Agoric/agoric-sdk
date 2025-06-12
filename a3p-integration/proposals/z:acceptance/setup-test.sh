@@ -1,6 +1,5 @@
 #!/bin/bash
-
-set -o errexit -o pipefail
+set -euo pipefail
 
 # shellcheck disable=SC1091
 source /usr/src/upgrade-test-scripts/env_setup.sh
@@ -13,9 +12,15 @@ CHAIN_ID="$(jq --raw-output '.chain_id' < "$AGORIC_HOME/config/genesis.json")"
 IP_ADDRESS="$(hostname --ip-address)"
 NODE_ID="$(agd tendermint show-node-id)"
 
-echo -n "{\"chainName\": \"$CHAIN_ID\", \"rpcAddrs\": [\"$IP_ADDRESS:26657\"], \"gci\": \"$IP_ADDRESS:26657/genesis\", \"peers\":[\"$NODE_ID@$IP_ADDRESS:26656\"], \"seeds\":[]}" > "$MESSAGE_FILE_PATH"
+LATEST_BLOCK_HEIGHT="$(jq --raw-output '.SyncInfo.latest_block_height' < "$STATUS_FILE")"
+LATEST_BLOCK_HASH="$(jq --raw-output '.SyncInfo.latest_block_hash' < "$STATUS_FILE")"
 
-SNAPSHOT_INTERVAL="$(($(jq --raw-output '.SyncInfo.latest_block_height' < "$STATUS_FILE") + 2))"
+echo -n "{\"chainName\": \"$CHAIN_ID\", \"rpcAddrs\": [\"$IP_ADDRESS:26657\"], \"gci\": \"$IP_ADDRESS:26657/genesis\", \"peers\":[\"$NODE_ID@$IP_ADDRESS:26656\"], \"seeds\":[], \"trustedBlockInfo\": {\"height\": \"$LATEST_BLOCK_HEIGHT\", \"hash\": \"$LATEST_BLOCK_HASH\"}}" > "$MESSAGE_FILE_PATH"
+
+SNAPSHOT_INTERVAL="$(($LATEST_BLOCK_HEIGHT + 1))"
 sed "s/^snapshot-interval\s*=.*/snapshot-interval = $SNAPSHOT_INTERVAL/" \
   "$AGORIC_HOME/config/app.toml" \
   --in-place
+
+# Nuke old snapshots to prevent them from interfering
+rm -rf "$AGORIC_HOME/data/snapshots/"

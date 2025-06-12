@@ -1,6 +1,10 @@
 /** @file Use-object for the owner of a staking account */
 import { toRequestQueryJson } from '@agoric/cosmic-proto';
 import {
+  MsgDepositForBurn,
+  MsgDepositForBurnWithCaller,
+} from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
+import {
   QueryAllBalancesRequest,
   QueryAllBalancesResponse,
   QueryBalanceRequest,
@@ -51,7 +55,7 @@ import {
   DenomAmountShape,
   IBCTransferOptionsShape,
   Proto3Shape,
-  TxBodyOptsShape,
+  ExecuteICATxOptsShape,
 } from '../typeGuards.js';
 import { coerceCoin, coerceDenom } from '../utils/amounts.js';
 import {
@@ -64,10 +68,11 @@ import {
 } from '../utils/cosmos.js';
 import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
 import { makeTimestampHelper } from '../utils/time.js';
+import { accountIdTo32Bytes, parseAccountId } from '../utils/address.js';
 
 /**
  * @import {HostOf} from '@agoric/async-flow';
- * @import {AmountArg, IcaAccount, CosmosChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, StakingAccountQueries, OrchestrationAccountCommon, CosmosRewardsResponse, IBCConnectionInfo, IBCMsgTransferOptions, ChainHub, CosmosDelegationResponse} from '../types.js';
+ * @import {AmountArg, IcaAccount, CosmosChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, StakingAccountQueries, NobleMethods, OrchestrationAccountCommon, CosmosRewardsResponse, IBCConnectionInfo, IBCMsgTransferOptions, ChainHub, CosmosDelegationResponse, CaipChainId, AccountIdArg} from '../types.js';
  * @import {ContractMeta, Invitation, OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
@@ -91,6 +96,31 @@ const { Vow$ } = NetworkShape; // TODO #9611
  * @typedef {object} CosmosOrchestrationAccountNotification
  * @property {CosmosChainAddress} chainAddress
  */
+
+/**
+ * Decodes the reply from the result of an InterChainQuery.
+ *
+ * @template R - response type returned by `codec.decode()`
+ * @param {{
+ *   typeUrl: string;
+ *   decode(input: Uint8Array, length?: number): R;
+ * }} codec
+ * @param {JsonSafe<ResponseQuery>} result
+ * @returns {R} returned by `codec.decode(...)`
+ */
+const decodeIcqResult = (codec, result) => {
+  try {
+    // We prefer the key over the value, for backwards compatibility.
+    const bytes = decodeBase64(result.key || result.value);
+    return codec.decode(bytes);
+  } catch (cause) {
+    throw makeError(
+      `Failed to parse ${codec.typeUrl} from result ${q(result)}`,
+      undefined,
+      { cause },
+    );
+  }
+};
 
 /**
  * @private
@@ -139,15 +169,23 @@ const stakingAccountQueriesMethods = {
   getRewards: M.call().returns(VowShape),
 };
 
+/** @see {NobleMethods} */
+const nobleMethods = {
+  depositForBurn: M.call(M.string(), AmountArgShape)
+    .optional(M.string())
+    .returns(VowShape),
+};
+
 /** @see {OrchestrationAccountCommon} */
 export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
+  ...nobleMethods,
   ...orchestrationAccountMethods,
   ...stakingAccountActionsMethods,
   ...stakingAccountQueriesMethods,
   deactivate: M.call().returns(VowShape),
   reactivate: M.call().returns(VowShape),
   executeEncodedTx: M.call(M.arrayOf(Proto3Shape))
-    .optional(TxBodyOptsShape)
+    .optional(ExecuteICATxOptsShape)
     .returns(VowShape),
 });
 
@@ -208,7 +246,7 @@ export const prepareCosmosOrchestrationAccountKit = (
         amountToCoin: M.call(AmountArgShape).returns(M.record()),
       }),
       returnVoidWatcher: M.interface('returnVoidWatcher', {
-        onFulfilled: M.call(M.or(M.string(), M.record()))
+        onFulfilled: M.call(M.any())
           .optional(M.arrayOf(M.undefined()))
           .returns(M.undefined()),
       }),
@@ -362,10 +400,7 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @param {JsonSafe<ResponseQuery>[]} results
          */
         onFulfilled([result]) {
-          if (!result?.key) throw Fail`Error parsing result ${result}`;
-          const { balance } = QueryBalanceResponse.decode(
-            decodeBase64(result.key),
-          );
+          const { balance } = decodeIcqResult(QueryBalanceResponse, result);
           if (!balance) throw Fail`Result lacked balance key: ${result}`;
           return harden(toDenomAmount(balance));
         },
@@ -376,9 +411,9 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @returns {CosmosDelegationResponse}
          */
         onFulfilled([result]) {
-          if (!result?.key) throw Fail`Error parsing result ${result}`;
-          const { delegationResponse } = QueryDelegationResponse.decode(
-            decodeBase64(result.key),
+          const { delegationResponse } = decodeIcqResult(
+            QueryDelegationResponse,
+            result,
           );
           if (!delegationResponse)
             throw Fail`Result lacked delegationResponse key: ${result}`;
@@ -394,9 +429,10 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @returns {CosmosDelegationResponse[]}
          */
         onFulfilled([result]) {
-          if (!result?.key) throw Fail`Error parsing result ${result}`;
-          const { delegationResponses } =
-            QueryDelegatorDelegationsResponse.decode(decodeBase64(result.key));
+          const { delegationResponses } = decodeIcqResult(
+            QueryDelegatorDelegationsResponse,
+            result,
+          );
           if (!delegationResponses)
             throw Fail`Result lacked delegationResponses key: ${result}`;
           const { chainAddress } = this.state;
@@ -412,9 +448,9 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @param {JsonSafe<ResponseQuery>[]} results
          */
         onFulfilled([result]) {
-          if (!result?.key) throw Fail`Error parsing result ${result}`;
-          const { unbond } = QueryUnbondingDelegationResponse.decode(
-            decodeBase64(result.key),
+          const { unbond } = decodeIcqResult(
+            QueryUnbondingDelegationResponse,
+            result,
           );
           if (!unbond) throw Fail`Result lacked unbond key: ${result}`;
           return harden(unbond);
@@ -425,11 +461,10 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @param {JsonSafe<ResponseQuery>[]} results
          */
         onFulfilled([result]) {
-          if (!result?.key) throw Fail`Error parsing result ${result}`;
-          const { unbondingResponses } =
-            QueryDelegatorUnbondingDelegationsResponse.decode(
-              decodeBase64(result.key),
-            );
+          const { unbondingResponses } = decodeIcqResult(
+            QueryDelegatorUnbondingDelegationsResponse,
+            result,
+          );
           if (!unbondingResponses)
             throw Fail`Result lacked unbondingResponses key: ${result}`;
           return harden(unbondingResponses);
@@ -440,9 +475,9 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @param {JsonSafe<ResponseQuery>[]} results
          */
         onFulfilled([result]) {
-          if (!result?.key) throw Fail`Error parsing result ${result}`;
-          const { redelegationResponses } = QueryRedelegationsResponse.decode(
-            decodeBase64(result.key),
+          const { redelegationResponses } = decodeIcqResult(
+            QueryRedelegationsResponse,
+            result,
           );
           if (!redelegationResponses)
             throw Fail`Result lacked redelegationResponses key: ${result}`;
@@ -454,9 +489,9 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @param {JsonSafe<ResponseQuery>[]} results
          */
         onFulfilled([result]) {
-          if (!result?.key) throw Fail`Error parsing result ${result}`;
-          const { redelegationResponses } = QueryRedelegationsResponse.decode(
-            decodeBase64(result.key),
+          const { redelegationResponses } = decodeIcqResult(
+            QueryRedelegationsResponse,
+            result,
           );
           if (!redelegationResponses)
             throw Fail`Result lacked redelegationResponses key: ${result}`;
@@ -468,9 +503,9 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @param {JsonSafe<ResponseQuery>[]} results
          */
         onFulfilled([result]) {
-          if (!result?.key) throw Fail`Error parsing result ${result}`;
-          const { rewards } = QueryDelegationRewardsResponse.decode(
-            decodeBase64(result.key),
+          const { rewards } = decodeIcqResult(
+            QueryDelegationRewardsResponse,
+            result,
           );
           if (!rewards) throw Fail`Result lacked rewards key: ${result}`;
           return harden(rewards.map(toTruncatedDenomAmount));
@@ -482,9 +517,9 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @returns {CosmosRewardsResponse}
          */
         onFulfilled([result]) {
-          if (!result?.key) throw Fail`Error parsing result ${result}`;
-          const { rewards, total } = QueryDelegationTotalRewardsResponse.decode(
-            decodeBase64(result.key),
+          const { rewards, total } = decodeIcqResult(
+            QueryDelegationTotalRewardsResponse,
+            result,
           );
           if (!rewards || !total)
             throw Fail`Result lacked rewards or total key: ${result}`;
@@ -503,20 +538,10 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @param {JsonSafe<ResponseQuery>[]} results
          */
         onFulfilled([result]) {
-          let response;
-          try {
-            response = QueryAllBalancesResponse.decode(
-              // note: an empty string for result.key is a valid result
-              decodeBase64(result.key),
-            );
-          } catch (cause) {
-            throw makeError(
-              `Error parsing QueryAllBalances result ${q(result)}`,
-              undefined,
-              { cause },
-            );
-          }
-          const { balances } = response;
+          const { balances } = decodeIcqResult(
+            QueryAllBalancesResponse,
+            result,
+          );
           if (!balances) throw Fail`Result lacked balances key: ${q(result)}`;
           return harden(balances.map(coin => toDenomAmount(coin)));
         },
@@ -663,7 +688,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           /**
            * @type {OfferHandler<
            *   Vow<void>,
-           *   { toAccount: CosmosChainAddress; amount: AmountArg }
+           *   { toAccount: AccountIdArg; amount: AmountArg }
            * >}
            */
           const offerHandler = (seat, { toAccount, amount }) => {
@@ -699,7 +724,7 @@ export const prepareCosmosOrchestrationAccountKit = (
            *   Vow<void>,
            *   {
            *     amount: AmountArg;
-           *     destination: CosmosChainAddress;
+           *     destination: AccountIdArg;
            *     opts?: IBCMsgTransferOptions;
            *   }
            * >}
@@ -862,14 +887,17 @@ export const prepareCosmosOrchestrationAccountKit = (
         send(toAccount, amount) {
           return asVow(() => {
             trace('send', toAccount, amount);
-            const { helper } = this.facets;
+            const cosmosDest = chainHub.coerceCosmosAddress(toAccount);
             const { chainAddress } = this.state;
+            cosmosDest.chainId === chainAddress.chainId ||
+              Fail`bank/send cannot send to a different chain ${q(cosmosDest.chainId)}`;
+            const { helper } = this.facets;
             return watch(
               E(helper.owned()).executeEncodedTx([
                 Any.toJSON(
                   MsgSend.toProtoMsg({
                     fromAddress: chainAddress.value,
-                    toAddress: toAccount.value,
+                    toAddress: cosmosDest.value,
                     amount: [helper.amountToCoin(amount)],
                   }),
                 ),
@@ -906,12 +934,9 @@ export const prepareCosmosOrchestrationAccountKit = (
           return asVow(() => {
             // `destination` arg can be non-Cosmos per the common `.transfer` method signature
             // but this implementation only supports transferring to another Cosmos chain.
-            // It relies on `makeChainAddress` to throw if `destination` has another namespace.
-            destination =
-              typeof destination === 'string'
-                ? // If `destination` is not actually CAIP-10 then this will throw
-                  chainHub.makeChainAddress(destination)
-                : destination;
+            // It relies on `coerceCosmosChainAddress` to throw if `destination` has another namespace.
+
+            const cosmosDest = chainHub.coerceCosmosAddress(destination);
 
             const { helper } = this.facets;
             const token = helper.amountToCoin(amount);
@@ -919,26 +944,21 @@ export const prepareCosmosOrchestrationAccountKit = (
             const connectionInfoV = watch(
               chainHub.getConnectionInfo(
                 this.state.chainAddress.chainId,
-                destination.chainId,
+                cosmosDest.chainId,
               ),
             );
-
-            // set a `timeoutTimestamp` if caller does not supply either `timeoutHeight` or `timeoutTimestamp`
-            // TODO #9324 what's a reasonable default? currently 5 minutes
-            const timeoutTimestampVowOrValue =
-              opts?.timeoutTimestamp ??
-              (opts?.timeoutHeight
-                ? 0n
-                : E(timestampHelper).getTimeoutTimestampNS());
 
             // Resolves when host chain successfully submits, but not when
             // the receiving chain acknowledges.
             // See https://github.com/Agoric/agoric-sdk/issues/9784 for a
             // solution that tracks the acknowledgement on the receiving chain.
             return watch(
-              allVows([connectionInfoV, timeoutTimestampVowOrValue]),
+              allVows([
+                connectionInfoV,
+                timestampHelper.vowOrValueFromOpts(opts),
+              ]),
               this.facets.transferWatcher,
-              { opts, token, destination },
+              { opts, token, destination: cosmosDest },
             );
           });
         },
@@ -992,6 +1012,7 @@ export const prepareCosmosOrchestrationAccountKit = (
         },
         /** @type {HostOf<StakingAccountQueries['getDelegation']>} */
         getDelegation(validator) {
+          // @ts-expect-error XXX string template with generics
           return asVow(() => {
             trace('getDelegation', validator);
             const { chainAddress, icqConnection } = this.state;
@@ -1011,6 +1032,7 @@ export const prepareCosmosOrchestrationAccountKit = (
         },
         /** @type {HostOf<StakingAccountQueries['getDelegations']>} */
         getDelegations() {
+          // @ts-expect-error XXX string template with generics
           return asVow(() => {
             trace('getDelegations');
             const { chainAddress, icqConnection } = this.state;
@@ -1106,6 +1128,7 @@ export const prepareCosmosOrchestrationAccountKit = (
         },
         /** @type {HostOf<StakingAccountQueries['getRewards']>} */
         getRewards() {
+          // @ts-expect-error XXX string template with generics
           return asVow(() => {
             trace('getRewards');
             const { chainAddress, icqConnection } = this.state;
@@ -1127,6 +1150,58 @@ export const prepareCosmosOrchestrationAccountKit = (
           return asVow(() =>
             watch(E(this.facets.helper.owned()).executeEncodedTx(msgs, opts)),
           );
+        },
+        /**
+         * @type {HostOf<NobleMethods['depositForBurn']>}
+         */
+        depositForBurn(destination, amount, caller) {
+          return asVow(() => {
+            trace('depositForBurn', { destination, amount });
+            const { helper } = this.facets;
+            const { chainAddress } = this.state;
+
+            const destParts = parseAccountId(destination);
+            /** @type {CaipChainId} */
+            const chainId = `${destParts.namespace}:${destParts.reference}`;
+
+            const { cctpDestinationDomain } =
+              chainHub.getChainInfoByChainId(chainId);
+            if (typeof cctpDestinationDomain !== 'number') {
+              throw Fail`${q(chainId)} does not have "cctpDestinationDomain" set in ChainInfo`;
+            }
+
+            /** @satisfies {MsgDepositForBurn} */
+            const depositForBurn = {
+              amount: helper.amountToCoin(amount)?.amount,
+              from: chainAddress.value,
+              destinationDomain: cctpDestinationDomain,
+              mintRecipient: accountIdTo32Bytes(destination),
+              // safe to hardcode since `uusdc` is the only asset supported by CCTP
+              burnToken: 'uusdc',
+            };
+
+            const destinationCaller = (() => {
+              if (!caller) return undefined;
+              const callerParts = parseAccountId(caller);
+              callerParts.namespace === destParts.namespace ||
+                Fail`caller ${q(caller)} must be in same namespace as destination ${q(destination)}`;
+              return accountIdTo32Bytes(caller);
+            })();
+
+            return watch(
+              E(helper.owned()).executeEncodedTx([
+                Any.toJSON(
+                  destinationCaller
+                    ? MsgDepositForBurnWithCaller.toProtoMsg({
+                        ...depositForBurn,
+                        destinationCaller,
+                      })
+                    : MsgDepositForBurn.toProtoMsg(depositForBurn),
+                ),
+              ]),
+              this.facets.returnVoidWatcher,
+            );
+          });
         },
       },
     },

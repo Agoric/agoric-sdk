@@ -9,28 +9,20 @@
  * Scripts are exempt because they are all entrypoints.
  */
 
-// When this was run on 2023-12-30, the output was:
-import execa from 'execa';
+import { execaSync } from 'execa';
 import fs from 'node:fs';
 
+// When this was run on 2025-04-03, the output was:
 const lastRun = {
-  big: 2,
-  Buffer: 65,
-  clearInterval: 5,
-  clearTimeout: 6,
-  document: 22,
-  E: 15,
-  fetch: 21,
-  globalThis: 50,
-  localStorage: 3,
-  process: 134,
-  setImmediate: 19,
-  setInterval: 4,
-  setTimeout: 25,
+  globalThis: 58,
+  E: 16,
   startPSM: 2,
-  VatData: 18,
-  walletFrame: 2,
   window: 10,
+  localStorage: 3,
+  document: 22,
+  walletFrame: 2,
+  VatData: 18,
+  big: 2,
 };
 
 // exempt files with shebangs bc they are entrypoints
@@ -42,7 +34,7 @@ const SHEBANG = '#!';
  */
 const disableLintDirective = (str: 'global' | 'eslint-env') => {
   const cmd = `git grep --extended-regexp --files-with-matches  '\\/\\* ${str} ' packages | xargs grep -L '${SHEBANG}' |xargs sed -i '' "s/\\/\\* ${str} /\\/\\* ~${str} /"`;
-  execa.sync(cmd, { shell: true });
+  execaSync(cmd, { shell: true });
 };
 
 const runEslint = () => {
@@ -50,7 +42,7 @@ const runEslint = () => {
   disableLintDirective('global');
   disableLintDirective('eslint-env');
 
-  execa.sync(
+  execaSync(
     // true to succeed despite eslint failures
     'npm run --silent lint:eslint --if-present --workspaces > eslintOutput.txt || true',
     { shell: true },

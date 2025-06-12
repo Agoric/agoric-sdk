@@ -13,6 +13,9 @@ import { makeDoOffer, type WalletDriver } from '../../tools/e2e-tools.js';
 import type { createWallet } from '../../tools/wallet.js';
 import type { commonSetup, SetupContextWithWallets } from '../support.js';
 import type { InvitationDetails } from '@agoric/zoe';
+import { makeTracer } from '@agoric/internal';
+
+const trace = makeTracer('FUActors');
 
 const { fromEntries } = Object;
 
@@ -85,6 +88,11 @@ export const makeTxOracle = (
     getName: () => name,
     getAddress: () => address,
     acceptInvitation: async () => {
+      if ((await self.checkInvitation()).usedInvitation) {
+        trace('Invitation already accepted in ', acceptOfferId);
+        return;
+      }
+
       const instance = await instanceP;
       await doOffer({
         id: acceptOfferId,
@@ -95,7 +103,7 @@ export const makeTxOracle = (
       for await (const block of blockIter) {
         const check = await self.checkInvitation();
         if (check.usedInvitation) break;
-        console.log(block.height, `${name} invitation used`);
+        trace(block.height, `${name} invitation used`);
       }
     },
     checkInvitation: async () => {
@@ -129,10 +137,10 @@ export const makeTxOracle = (
           if (update.status.error) {
             throw Error(update.status.error);
           }
-          console.log(block.height, name, 'seated', id);
+          trace(block.height, name, 'seated', id);
           return { txhash: tx?.txhash, block };
         }
-        console.log(block.height, name, 'not seated', id);
+        trace(block.height, name, 'not seated', id);
       }
       throw Error('no more blocks');
     },
@@ -194,7 +202,7 @@ export const makeUserAgent = (
         chainId,
       });
 
-      console.log('User initiates evm mint:', tx.txHash);
+      trace('User initiates evm mint:', tx.txHash);
 
       return tx;
     },

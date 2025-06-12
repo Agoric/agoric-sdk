@@ -13,9 +13,10 @@ import { Shape as NetworkShape } from '@agoric/network';
 const { Vow$ } = NetworkShape;
 
 /**
- * @import {EReturn} from '@endo/far';
+ * @import {ERef, EReturn} from '@endo/far';
  * @import {Key, Pattern} from '@endo/patterns';
  * @import {TypedJson, ResponseTo, JsonSafe} from '@agoric/cosmic-proto';
+ * @import {Amount, Brand, Payment} from '@agoric/ertp';
  * @import {PromiseVow, VowTools} from '@agoric/vow';
  * @import {TargetApp, TargetRegistration} from './bridge-target.js';
  * @import {BankManager, Bank} from './vat-bank.js';
@@ -101,7 +102,7 @@ export const prepareLocalChainAccountKit = (zone, { watch }) =>
       }),
     },
     /**
-     * @param {string} address
+     * @param {import('@agoric/orchestration').Bech32Address} address
      * @param {AccountPowers} powers
      */
     (address, powers) => ({

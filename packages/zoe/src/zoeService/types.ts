@@ -10,10 +10,18 @@ import type { Subscriber } from '@agoric/notifier';
 import type { ERef, EReturn } from '@endo/eventual-send';
 import type { Bundle, BundleID } from '@agoric/swingset-vat';
 import type { ContractStartFunction, StartParams } from './utils.js';
+import type {
+  Keyword,
+  InvitationHandle,
+  BrandKeywordRecord,
+  Handle,
+  IssuerKeywordRecord,
+} from '../types.js';
+import type { Allocation } from '../types-index.js';
 
-export type IssuerKeywordRecord = Record<Keyword, Issuer<any>>;
-
-/** @see {@link https://github.com/sindresorhus/type-fest/blob/main/source/is-any.d.ts} */
+/**
+ * @see {@link https://github.com/sindresorhus/type-fest/blob/main/source/is-any.d.ts}
+ */
 type IsAny<T> = 0 extends 1 & NoInfer<T> ? true : false;
 
 /**

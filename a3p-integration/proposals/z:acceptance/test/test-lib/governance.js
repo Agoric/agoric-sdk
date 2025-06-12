@@ -72,7 +72,7 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
         address,
       ));
 
-    return executeOffer(address, generateVoteOffer(offerId));
+    return executeOffer(address, generateVoteOffer(offerId), { verbose: true });
   };
 
   /**
@@ -164,6 +164,7 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
     return executeOffer(
       address,
       generateParamChange(offerId, votingDuration, params, path, instanceName),
+      { verbose: true },
     );
   };
 

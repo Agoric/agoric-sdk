@@ -15,7 +15,7 @@ import { TimestampShape } from '@agoric/time';
 
 /**
  * @import {TypedPattern} from '@agoric/internal';
- * @import {AfterDeadlineExitRule} from '@agoric/zoe';
+ * @import {AfterDeadlineExitRule, ZoeIssuerRecord} from '@agoric/zoe';
  */
 
 // keywords have an initial cap
@@ -46,6 +46,7 @@ export const IssuerPKeywordRecordShape = M.recordOf(
 );
 export const BrandKeywordRecordShape = M.recordOf(KeywordShape, BrandShape);
 
+/** @type {TypedPattern<ZoeIssuerRecord>} */
 export const IssuerRecordShape = M.splitRecord(
   {
     brand: BrandShape,
@@ -279,7 +280,7 @@ export const ZoeStorageManagerIKit = {
     getBundleIDFromInstallation: M.call(InstallationShape).returns(
       M.eref(M.string()),
     ),
-    installBundle: M.call(M.or(InstanceHandleShape, BundleShape))
+    installBundle: M.call(BundleShape)
       .optional(M.string())
       .returns(M.promise()),
     installBundleID: M.call(M.string())
@@ -312,7 +313,7 @@ export const ZoeStorageManagerIKit = {
       InstallationShape,
       M.any(),
       IssuerPKeywordRecordShape,
-      M.or(InstanceHandleShape, BundleShape),
+      InstanceHandleShape,
       M.or(BundleCapShape, BundleShape),
       M.string(),
     ).returns(M.promise()),
