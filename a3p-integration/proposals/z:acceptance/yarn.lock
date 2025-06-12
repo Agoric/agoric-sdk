@@ -367,7 +367,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@agoric/synthetic-chain@patch:@agoric/synthetic-chain@npm%3A0.5.6#~/.yarn/patches/@agoric-synthetic-chain-npm-0.5.6-c322148be2.patch::version=0.5.6&hash=c8d8bf":
+"@agoric/synthetic-chain@patch:@agoric/synthetic-chain@npm%3A0.5.6#~/.yarn/patches/@agoric-synthetic-chain-npm-0.5.6-c322148be2.patch":
   version: 0.5.6
   resolution: "@agoric/synthetic-chain@patch:@agoric/synthetic-chain@npm%3A0.5.6#~/.yarn/patches/@agoric-synthetic-chain-npm-0.5.6-c322148be2.patch::version=0.5.6&hash=c8d8bf"
   dependencies:
@@ -381,23 +381,6 @@ __metadata:
   bin:
     synthetic-chain: dist/cli/cli.js
   checksum: 10c0/c8ea1e51dfa073676f7d9b25a4b4a9df8e30d52abf834583deb3de394aa9d8859b22894c1c5ee5dfe1468d223fe1141223e197487a65c6b83013aaa006022c7e
-  languageName: node
-  linkType: hard
-
-"@agoric/synthetic-chain@patch:@agoric/synthetic-chain@patch%3A@agoric/synthetic-chain@npm%253A0.5.6%23~/.yarn/patches/@agoric-synthetic-chain-npm-0.5.6-c322148be2.patch%3A%3Aversion=0.5.6&hash=c8d8bf#~/.yarn/patches/@agoric-synthetic-chain-patch-a143ff898e.patch":
-  version: 0.5.6
-  resolution: "@agoric/synthetic-chain@patch:@agoric/synthetic-chain@patch%3A@agoric/synthetic-chain@npm%253A0.5.6%23~/.yarn/patches/@agoric-synthetic-chain-npm-0.5.6-c322148be2.patch%3A%3Aversion=0.5.6&hash=c8d8bf#~/.yarn/patches/@agoric-synthetic-chain-patch-a143ff898e.patch::version=0.5.6&hash=5bdf2b"
-  dependencies:
-    "@endo/zip": "npm:^1.0.9"
-    better-sqlite3: "npm:^11.8.1"
-    chalk: "npm:^5.4.1"
-    cosmjs-types: "npm:^0.9.0"
-    execa: "npm:^9.5.2"
-    glob: "npm:^11.0.1"
-    tmp: "npm:0.2.3"
-  bin:
-    synthetic-chain: dist/cli/cli.js
-  checksum: 10c0/134b1fb7eed3433b6eaed922baa20103fc78b35a29a76a56bc45f623b985aad4e244137f83df81f17764233d9c58bd5cb48c53704024bb2598379e01fec22a65
   languageName: node
   linkType: hard
 
@@ -5024,7 +5007,7 @@ __metadata:
     "@agoric/inter-protocol": "npm:dev"
     "@agoric/internal": "npm:dev"
     "@agoric/store": "npm:dev"
-    "@agoric/synthetic-chain": "patch:@agoric/synthetic-chain@patch%3A@agoric/synthetic-chain@npm%253A0.5.6%23~/.yarn/patches/@agoric-synthetic-chain-npm-0.5.6-c322148be2.patch%3A%3Aversion=0.5.6&hash=c8d8bf#~/.yarn/patches/@agoric-synthetic-chain-patch-a143ff898e.patch"
+    "@agoric/synthetic-chain": "patch:@agoric/synthetic-chain@npm%3A0.5.6#~/.yarn/patches/@agoric-synthetic-chain-npm-0.5.6-c322148be2.patch"
     "@agoric/zoe": "npm:dev"
     "@cosmjs/stargate": "npm:^0.33.0"
     "@cosmjs/tendermint-rpc": "npm:^0.33.0"
