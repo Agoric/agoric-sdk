@@ -1,72 +1,105 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
 import '@endo/init/debug.js';
-
-import { execa } from 'execa';
-import fse from 'fs-extra';
 import childProcess from 'node:child_process';
+import fsp from 'node:fs/promises';
+import path from 'node:path';
+import {
+  flags,
+  installBundles,
+  makeCmdRunner,
+  makeFileRd,
+  runBuilder,
+  submitCoreEval,
+  txFlags,
+} from '@agoric/deploy-script-support/src/runner.js';
+import { parseArgs, promisify, type ParseArgsConfig } from 'node:util';
+import { fetchNetworkConfig } from '@agoric/client-utils';
+import url from 'node:url';
 
-import { makeAgdTools } from '../../../multichain-testing/tools/agd-tools.js';
-import { makeDeployBuilder } from '../../../multichain-testing/tools/deploy.js';
+const TITLE = 'ymax0 w/Noble Dollar';
 
-/**
- * @param {string} net
- * @returns {Promise<{chainName: string, rpcAddrs: string[]}>}
- */
-const getNetConfig = async (net) => {
-  const response = await fetch(`https://${net}.agoric.net/network-config`);
-  const text = await response.text();
-  return JSON.parse(text);
+const USAGE = 'deploy-cli <builder> <key=val>... [--net N] [--from K]';
+
+const { fromEntries } = Object;
+
+const options = /** @type {const} */ {
+  net: { type: 'string', default: 'devnet' },
+  from: { type: 'string', default: 'genesis' },
+  title: { type: 'string', default: TITLE },
+  description: { type: 'string' },
+} as const satisfies ParseArgsConfig['options'];
+type ParsedArgs = {
+  net: string;
+  from: string;
+  title: string;
+  description?: string;
 };
 
-async function main() {
-  const [builder, ...rawArgs] = process.argv.slice(2);
+const DBG = (l, x) => {
+  console.log('@@@', l, x);
+  return x;
+};
 
-  // Parse builder options from command line arguments
-  const builderOpts: Record<string, string> = {};
-  let net = null;
-  
-  for (const arg of rawArgs) {
-    const [key, value] = arg.split('=');
-    if (key && value) {
-      builderOpts[key] = value;
-      if (key === 'net') {
-        net = value;
-      }
-    }
+const main = async (
+  argv = process.argv,
+  { execFile = promisify(childProcess.execFile) } = {},
+  fetch = globalThis.fetch,
+) => {
+  const getVersion = () =>
+    makeCmdRunner('git', { execFile })
+      .exec('describe --tags --dirty --always'.split(' '))
+      .then(it => it.stdout.trim());
+
+  const {
+    values: { from, net, title, description = await getVersion() },
+    positionals: [builder, ...bindings],
+  } = parseArgs({ args: argv.slice(2), options, allowPositionals: true }) as {
+    positionals: string[];
+    values: ParsedArgs;
+  };
+  if (!builder) throw Error(USAGE);
+
+  // XXX ugh. what a pain.
+  const pkg = path.join(url.fileURLToPath(import.meta.url), '../../');
+  process.chdir(pkg);
+
+  // 1. build
+  const pkgRd = makeFileRd(pkg, { fsp, path });
+  const agoric = makeCmdRunner('npx', { execFile }).subCommand('agoric');
+  const opts = fromEntries(bindings.map(b => b.split('=', 2)));
+  console.log('running', builder);
+  const plan = await runBuilder(agoric, pkgRd.join(builder), opts, {
+    cwd: pkgRd,
+  });
+  console.log(`${plan.name}.js`, 'etc.');
+
+  // 2. install bundles
+  const {
+    chainName: chainId,
+    rpcAddrs: [node],
+  } = await fetchNetworkConfig(net, { fetch });
+  const agdTx = makeCmdRunner('agd', { execFile }).withFlags(
+    ...flags(txFlags({ node, from, chainId })),
+    '--yes',
+  );
+  for (const b of plan.bundles) {
+    const shortID = b.bundleID.slice(0, 8);
+    console.log('installing', shortID, '...');
+    const [{ txhash }] = await installBundles(agdTx, [b], pkgRd);
+    console.log('installed', shortID, txhash);
   }
 
-  if (!builder) {
-    console.error(
-      'USAGE: deploy-cli.ts <builder script> [key1=value1] [key2=value2]',
-    );
-    process.exit(1);
-  }
+  const timeShort = new Date().toISOString().substring(11, 16); // XXX ambient
+  const info = await submitCoreEval(agdTx, [plan], {
+    title: `${title} ${timeShort}`,
+    description,
+  });
+  console.log(title, info);
 
-  try {
-    let agdTools;
-    
-    if (net) {
-      console.log(`Connecting to ${net} network...`);
-      const { rpcAddrs } = await getNetConfig(net);
-      console.log(`Using RPC addresses: ${rpcAddrs.join(', ')}`);
-      agdTools = await makeAgdTools(console.log, childProcess, { rpcAddrs });
-    } else {
-      console.log('Using localhost network...');
-      agdTools = await makeAgdTools(console.log, childProcess);
-    }
-    
-    const deployBuilder = makeDeployBuilder(agdTools, fse.readJSON, execa);
-    
-    // XXX this has been flaky so try a second time
-    // see https://github.com/Agoric/agoric-sdk/issues/9934
-    await deployBuilder(builder, builderOpts).catch(err => {
-      console.error('deploy failed, trying again', err);
-      return deployBuilder(builder, builderOpts);
-    });
-  } catch (err) {
-    console.error(err);
-    process.exit(1);
-  }
-}
+  throw Error('TODO: wait for tx? wait for voting end?');
+};
 
-main();
+main().catch(err => {
+  console.log(err);
+  process.exit(1);
+});
