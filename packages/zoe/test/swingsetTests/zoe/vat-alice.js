@@ -1,4 +1,4 @@
-import { assert, X } from '@endo/errors';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
@@ -605,7 +605,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
           return doShutdownAutoswap();
         }
         default: {
-          assert.fail(X`testName ${testName} not recognized`);
+          Fail`testName ${testName} not recognized`;
         }
       }
     },

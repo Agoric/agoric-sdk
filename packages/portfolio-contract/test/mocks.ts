@@ -11,6 +11,18 @@ import type { AmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import type { Zone } from '@agoric/zone';
 import type { FeeConfig, LogFn } from '@agoric/fast-usdc/src/types.js';
 import { makePromiseKit } from '@endo/promise-kit';
+import {
+  MsgLock,
+  MsgLockResponse,
+} from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
+import {
+  MsgSwap,
+  MsgSwapResponse,
+} from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
+import {
+  buildTxPacketString,
+  buildMsgResponseString,
+} from '@agoric/orchestration/tools/ibc-mocks.ts';
 
 export const prepareMockOrchAccounts = (
   zone: Zone,
@@ -130,3 +142,31 @@ export const makeTestFeeConfig = (usdc: Omit<AmountUtils, 'mint'>): FeeConfig =>
     variableRate: makeRatio(2n, usdc.brand),
     contractRate: makeRatio(20n, usdc.brand),
   });
+
+export const makeUSDNIBCTraffic = (
+  signer = 'cosmos1test',
+  money = `${3333 * 1000000}`,
+) => ({
+  swap: {
+    msg: buildTxPacketString([
+      MsgSwap.toProtoMsg({
+        signer,
+        amount: { denom: 'uusdc', amount: money },
+        routes: [{ poolId: 0n, denomTo: 'uusdn' }],
+        min: { denom: 'uusdn', amount: money },
+      }),
+    ]),
+    ack: buildMsgResponseString(MsgSwapResponse, {}),
+  },
+  lock: {
+    msg: buildTxPacketString([
+      MsgLock.toProtoMsg({ signer, vault: 1, amount: money }),
+    ]),
+    ack: buildMsgResponseString(MsgLockResponse, {}),
+  },
+  lockWorkaround: {
+    // XXX { ..., vault: 1n } ???
+    msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ2xvS0ZpOXViMkpzWlM1emQyRndMbll4TGsxeloxTjNZWEFTUUFvTFkyOXpiVzl6TVhSbGMzUVNFd29GZFhWelpHTVNDak16TXpNd01EQXdNREFhQnhJRmRYVnpaRzRpRXdvRmRYVnpaRzRTQ2pNek16TXdNREF3TURBS1Bnb2ZMMjV2WW14bExtUnZiR3hoY2k1MllYVnNkSE11ZGpFdVRYTm5URzlqYXhJYkNndGpiM050YjNNeGRHVnpkQkFCR2dvek16TXpNREF3TURBdyIsIm1lbW8iOiIifQ==',
+    ack: buildMsgResponseString(MsgLockResponse, {}),
+  },
+});

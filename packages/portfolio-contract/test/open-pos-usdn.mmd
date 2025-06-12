@@ -2,25 +2,48 @@ sequenceDiagram
     title 3 way yield - 3. USDN
     autonumber
 
-    actor trader as trader<br >webUI<br >wallet
+    actor trader as trader<br >webUI<br >wallet<br/>[1..*]
 
     box rgb(255,153,153) Agoric
-    participant portfolio
+    participant ymax as ymax<br/>[1]
+    participant flow as flows.openPortfolio<br/>[1]
+    participant portfolio as portfolio<br/>[1..*]
+    participant LCA as LCA<br/>[1]
     end
 
     box rgb(166,184,233) Noble
-    participant ICAn
-    participant USDN
+    participant ICAn as ICAn<br/>[1..*]
+    participant USDN as USDN<br/>[1]
     end
 
     %% Notation: ->> for initial message, -->> for consequences
 
-    trader ->> portfolio: open(50K,<br/>Aave, Compound,<br/>dYdX MegaVault, Noble USDN)
-    portfolio -->> ICAn: 10k USDC
+    trader ->> ymax: openPortfolio({give:<br/>{Aave: 3k, Compound: 2k,<br/>USDN: 3K}})
+    note left of flow: *TODO(11456):<br/>USDN/USDC ratio
+
+    ymax -->> flow: (seat, ...*)
+
+    flow -> portfolio: make
+    activate portfolio
+
+    flow -->> ICAn: makeAccount
+    activate ICAn
+    ICAn -->> flow: ack
+
+    flow -> portfolio: add(ICAn)
+
+    flow -->> LCA: localTransfer(3K)
+    LCA -->> flow: ack
+    flow -->> LCA: transfer(3K USDC, ICAn)
+    LCA -->> ICAn: 3k USDC
     ICAn -->> portfolio: ack
 
-    portfolio -->> ICAn: USDN(???)
-    ICAn -->> USDN: openPosition(???)
+    flow -->> ICAn: executeEncodedTx(<br/>[MsgSwap(3K),MsgLock(3K*)])
+    note left of ICAn: *TODO(11456):<br/>USDN/USDC ratio
+    ICAn -->> USDN: [MsgSwap(3K),MsgLock(3K*)]
     USDN -->> ICAn: ack
-    ICAn -->> portfolio: ack
-    portfolio -->> trader: ack
+    ICAn -->> flow: ack
+    flow -->> trader: { invitationMakers,<br/>topics: ... noble1xyz }
+
+    deactivate ICAn
+    deactivate portfolio
