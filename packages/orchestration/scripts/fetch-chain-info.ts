@@ -15,6 +15,7 @@ const outputFile = 'src/fetched-chain-info.js';
 export const chainNames = [
   'agoric',
   'archway',
+  'axelar',
   'beezee',
   'carbon',
   'celestia',
