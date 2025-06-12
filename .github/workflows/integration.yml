@@ -2,6 +2,7 @@ env:
   GOLANG_VERSION: '1.22'
   LOADGEN_REPO_NAME: 'testnet-load-generator'
   ORG_NAME: 'Agoric'
+  ENABLE_GETTING_STARTED: '' # Known issues with getting started tests, so disable them.
 
 name: Integration tests
 
@@ -40,34 +41,33 @@ jobs:
   pre_check:
     uses: ./.github/workflows/pre-check-integration.yml
 
-  # Convert GETTING_STARTED_MATRIX_CLI into a matrix for the getting started
-  # tests.
-  getting-started-matrix:
+  getting-started-flag:
     needs: pre_check
     if: needs.pre_check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.generate.outputs.result }}
+      should_run: ${{ steps.check.outputs.should_run }}
     steps:
-      - name: Generate matrix for getting started tests
-        id: generate
-        uses: actions/github-script@v7
-        with:
-          result-encoding: string
-          script: |
-            const matrix = {
-              cli: JSON.parse(process.env.GETTING_STARTED_MATRIX_CLI || '[]'),
-            };
-            console.log('matrix:', matrix);
-            return JSON.stringify(matrix);
+      - id: check
+        run: |
+          if [ -n "${{ env.ENABLE_GETTING_STARTED }}" ]; then
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_run=false" >> $GITHUB_OUTPUT
+          fi
 
   # This job is meant to emulate what developers working with the Agoric
-  # platform will experience.
-  # It should be kept in sync with the "getting started" workflow at
-  # https://docs.agoric.com/guides/getting-started/
+  # platform will experience.  It should be kept in sync with the "getting
+  # started" workflow at https://docs.agoric.com/guides/getting-started/
+  #
+  # TODO: This job is currently disabled (see ENABLE_GETTING_STARTED at the
+  # top of this file).  It would be good to reenable when we have actual working
+  # tests.
   getting-started:
-    needs: pre_check
-    if: needs.pre_check.outputs.should_run == 'true'
+    needs:
+      - pre_check
+      - getting-started-flag
+    if: needs.getting-started-flag.outputs.should_run == 'true' && needs.pre_check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     continue-on-error: true # know failures of getting-started job
     strategy:
@@ -398,7 +398,11 @@ jobs:
         with:
           script: |
             const previousSuccess = ${{ needs.pre_check.outputs.previous_success }};
-            const gettingStartedTestSuccess = "${{ needs.getting-started.result }}" === "success";
+            let gettingStartedTestSuccess = "${{ needs.getting-started.result }}" === "success";
+            if (!process.env.ENABLE_GETTING_STARTED && !gettingStartedTestSuccess) {
+              // Accept skipped getting-started as success.
+              gettingStartedTestSuccess = "${{ needs.getting-started.result }}" === "skipped";
+            }
             const deploymentTestSuccess = "${{ needs.deployment-test.result }}" === "success";
             const testDockerBuildSuccess = "${{ needs.test-docker-build.result }}" === "success";
             const conclusion = previousSuccess || (gettingStartedTestSuccess && deploymentTestSuccess && testDockerBuildSuccess) ?

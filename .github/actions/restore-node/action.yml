@@ -37,21 +37,21 @@ runs:
     - id: set-node-version
       name: Set correct node version
       shell: bash
+      env:
+        VERSION_IDENTIFIER: ${{ inputs.node-version }}
       run: |
         set -o xtrace
 
-        VERSION_IDENTIFIER="${{ inputs.node-version }}"
+        # By default, treat the version identifier as a semantic version.
         OUTPUT_NODE_VERSION="$VERSION_IDENTIFIER"
-
-        if test "$VERSION_IDENTIFIER" == "node-new"
-        then
-          OUTPUT_NODE_VERSION="22"
-        else
-          if test "$VERSION_IDENTIFIER" == "node-old" || test "$VERSION_IDENTIFIER" == "xs"
-          then
+        case $VERSION_IDENTIFIER in
+          node-old | xs)
             OUTPUT_NODE_VERSION="20"
-          fi
-        fi
+            ;;
+          node-new)
+            OUTPUT_NODE_VERSION="22"
+            ;;
+        esac
 
         echo "NODE_VERSION=$OUTPUT_NODE_VERSION" >> "$GITHUB_OUTPUT"
 

@@ -1,6 +1,6 @@
 // @ts-nocheck
 
-import { X, q } from '@endo/errors';
+import { Fail, q } from '@endo/errors';
 import { Far } from '@endo/marshal';
 import { makeScalarMapStore } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
@@ -39,7 +39,7 @@ const start = zcf => {
   const assertResponse = response => {
     response === 'NO' ||
       response === 'YES' ||
-      assert.fail(X`the answer ${q(response)} was not 'YES' or 'NO'`);
+      Fail`the answer ${q(response)} was not 'YES' or 'NO'`;
     // Throw an error if the response is not valid, but do not
     // exit the seat. We should allow the voter to recast their vote.
   };

@@ -6,13 +6,13 @@ import { arrayIsLike } from '../test-lib/ava-assertions.js';
 import { getGovernedVatDetails } from '../test-lib/vats.js';
 
 const expectedVatDetails = {
-  bank: { incarnation: 1 },
-  network: { incarnation: 2 },
-  ibc: { incarnation: 2 },
-  localchain: { incarnation: 2 },
-  orchestration: { incarnation: 1 },
-  transfer: { incarnation: 2 },
-  walletFactory: { incarnation: 6 },
+  bank: { incarnation: 2 },
+  network: { incarnation: 3 },
+  ibc: { incarnation: 3 },
+  localchain: { incarnation: 3 },
+  orchestration: { incarnation: 2 },
+  transfer: { incarnation: 3 },
+  walletFactory: { incarnation: 7 },
   zoe: { incarnation: 3 },
 };
 

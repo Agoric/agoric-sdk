@@ -1,4 +1,4 @@
-import { assert, X } from '@endo/errors';
+import { assert, X, Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { keyEQ } from '@agoric/store';
@@ -29,11 +29,11 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 
       // Bob ensures it's the contract he expects
       installations.automaticRefund === installation ||
-        assert.fail(X`should be the expected automaticRefund`);
+        Fail`should be the expected automaticRefund`;
       issuerKeywordRecord.Contribution1 === moolaIssuer ||
-        assert.fail(X`The first issuer should be the moola issuer`);
+        Fail`The first issuer should be the moola issuer`;
       issuerKeywordRecord.Contribution2 === simoleanIssuer ||
-        assert.fail(X`The second issuer should be the simolean issuer`);
+        Fail`The second issuer should be the simolean issuer`;
 
       // 1. Bob escrows his offer
       const bobProposal = harden({
@@ -85,8 +85,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       assert(typeof customDetails === 'object');
 
       assert(installation === installations.coveredCall, X`wrong installation`);
-      optionValue[0].description === 'exerciseOption' ||
-        assert.fail(X`wrong invitation`);
+      optionValue[0].description === 'exerciseOption' || Fail`wrong invitation`;
       assert(
         AmountMath.isEqual(
           customDetails.underlyingAssets.UnderlyingAsset,
@@ -103,9 +102,9 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       assert(customDetails.timeAuthority === timer, 'wrong timer');
       const { UnderlyingAsset, StrikePrice } = issuerKeywordRecord;
       UnderlyingAsset === moolaIssuer ||
-        assert.fail(X`The underlying asset issuer should be the moola issuer`);
+        Fail`The underlying asset issuer should be the moola issuer`;
       StrikePrice === simoleanIssuer ||
-        assert.fail(X`The strike price issuer should be the simolean issuer`);
+        Fail`The strike price issuer should be the simolean issuer`;
 
       const bobPayments = { StrikePrice: simoleanPayment };
       // Bob escrows
@@ -147,8 +146,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       assert(typeof customDetails === 'object');
 
       assert(installation === installations.coveredCall, X`wrong installation`);
-      optionValue[0].description === 'exerciseOption' ||
-        assert.fail(X`wrong invitation`);
+      optionValue[0].description === 'exerciseOption' || Fail`wrong invitation`;
       assert(
         AmountMath.isEqual(
           customDetails.underlyingAssets.UnderlyingAsset,
@@ -166,9 +164,9 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       assert(customDetails.expirationDate === 100n, X`wrong expiration date`);
       assert(customDetails.timeAuthority === timer, X`wrong timer`);
       UnderlyingAsset === moolaIssuer ||
-        assert.fail(X`The underlyingAsset issuer should be the moola issuer`);
+        Fail`The underlyingAsset issuer should be the moola issuer`;
       StrikePrice === simoleanIssuer ||
-        assert.fail(X`The strikePrice issuer should be the simolean issuer`);
+        Fail`The strikePrice issuer should be the simolean issuer`;
 
       // Let's imagine that Bob wants to create a swap to trade this
       // invitation for bucks. He wants to invitation Dave as the
@@ -221,7 +219,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const { value: invitationValue } =
         await E(invitationIssuer).getAmountOf(exclInvitation);
       installation === installations.secondPriceAuction ||
-        assert.fail(X`wrong installation`);
+        Fail`wrong installation`;
       assert(
         keyEQ(
           harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),
@@ -279,9 +277,9 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         X`issuers were not as expected`,
       );
       keyEQ(invitationValue[0].customDetails?.asset, moola(3n)) ||
-        assert.fail(X`Alice made a different offer than expected`);
+        Fail`Alice made a different offer than expected`;
       keyEQ(invitationValue[0].customDetails?.price, simoleans(7n)) ||
-        assert.fail(X`Alice made a different offer than expected`);
+        Fail`Alice made a different offer than expected`;
 
       const proposal = harden({
         want: { Asset: moola(3n) },
@@ -315,12 +313,11 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         invitation,
       );
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
-      installation === installations.simpleExchange ||
-        assert.fail(X`wrong installation`);
+      installation === installations.simpleExchange || Fail`wrong installation`;
       issuerKeywordRecord.Asset === moolaIssuer ||
-        assert.fail(X`The first issuer should be the moola issuer`);
+        Fail`The first issuer should be the moola issuer`;
       issuerKeywordRecord.Price === simoleanIssuer ||
-        assert.fail(X`The second issuer should be the simolean issuer`);
+        Fail`The second issuer should be the simolean issuer`;
 
       const bobBuyOrderProposal = harden({
         want: { Asset: moola(3n) },
@@ -354,12 +351,11 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
-      installation === installations.simpleExchange ||
-        assert.fail(X`wrong installation`);
+      installation === installations.simpleExchange || Fail`wrong installation`;
       issuerKeywordRecord.Asset === moolaIssuer ||
-        assert.fail(X`The first issuer should be the moola issuer`);
+        Fail`The first issuer should be the moola issuer`;
       issuerKeywordRecord.Price === simoleanIssuer ||
-        assert.fail(X`The second issuer should be the simolean issuer`);
+        Fail`The second issuer should be the simolean issuer`;
       const bobBuyOrderProposal = harden({
         want: { Asset: moola(m) },
         give: { Price: simoleans(s) },

@@ -42,9 +42,28 @@ jobs:
             **/**.proto
             **/buf*.yaml
       - name: check-breakage
-        run: make proto-check-breaking PR_TARGET_REPO=https://github.com/${{ github.repository }}.git PR_TARGET_BRANCH=${{ github.base_ref }}
-        working-directory: golang/cosmos
         if: env.GIT_DIFF
+        run: |
+          make proto-check-breaking PR_TARGET_REPO="$REPO" PR_TARGET_BRANCH="$BRANCH"
+          status=$?
+          if [ $status -eq 0 ]; then
+            if [ "$EXPECT_BREAKAGE" = "true" ]; then
+              echo "Expected breakage, but got no breakage."
+              exit 1
+            fi
+            echo "As expected, no breakage was detected."
+          elif [ "$EXPECT_BREAKAGE" == "true" ]; then
+            echo "Expected breakage, and got it."
+            exit 0
+          else
+            echo "Unexpected breakage detected."
+          fi
+          exit $status
+        working-directory: golang/cosmos
+        env:
+          REPO: https://github.com/${{ github.repository }}.git
+          BRANCH: ${{ github.base_ref}}
+          EXPECT_BREAKAGE: ${{ contains( github.event.pull_request.labels.*.name, 'proto:expect-breakage') }}
   up-to-date:
     runs-on: ubuntu-latest
     steps:

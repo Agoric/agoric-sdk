@@ -27,7 +27,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const { value: invitationValue } =
         await E(invitationIssuer).getAmountOf(exclInvitation);
       installation === installations.secondPriceAuction ||
-        assert.fail(X`wrong installation`);
+        Fail`wrong installation`;
       assert(
         keyEQ(
           harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),
