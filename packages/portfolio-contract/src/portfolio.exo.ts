@@ -1,6 +1,7 @@
 import { makeTracer } from '@agoric/internal';
 import type { OrchestrationAccount } from '@agoric/orchestration';
 import type { Zone } from '@agoric/zone';
+import type { ZCF } from '@agoric/zoe';
 import { Fail, q } from '@endo/errors';
 import { YieldProtocol } from './constants.js';
 
@@ -14,7 +15,7 @@ type Accounts = {
   USDN: OrchestrationAccount<{ chainId: 'noble-any' }>;
 };
 
-export const preparePortfolioKit = (zone: Zone) =>
+export const preparePortfolioKit = (zone: Zone, zcf: ZCF ) =>
   zone.exoClassKit(
     'Portfolio',
     interfaceTODO,
@@ -35,7 +36,13 @@ export const preparePortfolioKit = (zone: Zone) =>
         },
       },
       invitationMakers: {
-        // TODO: withdraw etc.
+        // TODO: withdrawInvitation / offerHandler
+        makeWithdrawInvitation(args) {
+          return zcf.makeInvitation(
+            async (seat, offerArgs) => {},
+            'withdraw from USDN position',
+          );
+        },
       },
     },
   );
