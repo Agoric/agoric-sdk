@@ -126,9 +126,9 @@ test('reserve withdraw collateral', async t => {
     makeWithdrawInvitationMakers().then(im => E(im).Withdraw());
   const cachedRepeatedWithdrawal = () => E(cachedMakers).Withdraw();
 
-  const revokedRegExp =
-    /Withdraw Collateral Invitation has been cancelled|WithdrawalFacet.* revoked/;
+  const revokedRegExp = /(WithdrawalFacet|WithdrawalHandler).* revoked/;
 
+  // XXX: We could use an AVA macro to make these simpler independent tests.
   const withdrawMakers = {
     cachedRepeatedWithdrawal,
     freshRepeatedWithdrawal,
@@ -137,41 +137,41 @@ test('reserve withdraw collateral', async t => {
   for (const [withdrawLabel, invitationMaker] of Object.entries(
     withdrawMakers,
   )) {
-    const wants = {
-      'single collateral': { Collateral: atom(101n) },
-      'single atom': { MyATOM: atom(103n) },
-      'multiple atom': { MyATOM: atom(10001n), OtherStuff: atom(507n) },
-    };
-    for (const [wantLabel, want] of Object.entries(wants)) {
-      const prefix = `${withdrawLabel} ${wantLabel}:`;
-      t.log(prefix, 'wants', want);
-      const withdrawInvitation = await invitationMaker();
+    const prefix = `${withdrawLabel}:`;
+    const want = { ATOM: atom(101n) };
 
-      t.log(prefix, 'getting seat');
-      const seat = await E(zoe).offer(withdrawInvitation, { want });
-      t.log(prefix, 'getting payouts');
-      const payouts = await E(seat).getPayouts();
+    t.log(prefix, 'wants', want);
+    const withdrawInvitation = await invitationMaker();
 
-      t.log(prefix, 'comparing payouts');
-      const wantAmounts = new Map(Object.entries(want));
-      for (const [key, payout] of Object.entries(payouts)) {
-        const wantAmount = wantAmounts.get(key);
-        t.truthy(wantAmount, `${prefix} wanted ${key} amount`);
-        wantAmounts.delete(key);
-        const gotAmount = await E(atomKit.issuer).getAmountOf(payout);
-        t.deepEqual(
-          gotAmount,
-          wantAmount,
-          `${prefix} ${key} amount matches want`,
-        );
-      }
+    t.log(prefix, 'getting seat');
+    const seat = await E(zoe).offer(withdrawInvitation, { want });
+    await t.notThrowsAsync(
+      () => E(seat).getOfferResult(),
+      `${prefix} should fulfill offer result`,
+    );
+    t.log(prefix, 'getting payouts');
+    const payouts = await E(seat).getPayouts();
 
+    t.log(prefix, 'comparing payouts');
+
+    const wantAmounts = new Map(Object.entries(want));
+    for (const [key, payout] of Object.entries(payouts)) {
+      const wantAmount = wantAmounts.get(key);
+      t.truthy(wantAmount, `${prefix} wanted ${key} amount`);
+      wantAmounts.delete(key);
+      const gotAmount = await E(atomKit.issuer).getAmountOf(payout);
       t.deepEqual(
-        [...wantAmounts.keys()].sort(),
-        [],
-        `${prefix} no extra payouts`,
+        gotAmount,
+        wantAmount,
+        `${prefix} ${key} amount matches want`,
       );
     }
+
+    t.deepEqual(
+      [...wantAmounts.keys()].sort(),
+      [],
+      `${prefix} no extra payouts`,
+    );
   }
 
   const outstandingInvitations = Object.entries(withdrawMakers).map(
