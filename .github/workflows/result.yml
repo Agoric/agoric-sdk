@@ -52,6 +52,7 @@ jobs:
 
               let someSuccess = false;
               let someSkipped = false;
+              let status = '';
               for (const name of Object.keys(needs).sort()) {
                 const jobResult = needs[name].result;
                 core.info(`${name}: ${jobResult}`);
@@ -66,17 +67,22 @@ jobs:
                     someSkipped = true;
                     break;
                   case 'failure':
-                    return 'failure';
+                    status = 'failure';
+                    break;
                   case 'cancelled':
-                    return 'cancelled';
+                    status = 'cancelled';
+                    break;
                   default:
-                    return 'unknown';
+                    status = 'unknown';
                 }
               }
 
               if (someSkipped && !someSuccess) {
                 // If no jobs succeeded, it's a skip.
-                return 'skipped';
+                status = 'skipped';
+              }
+              if (['failure', 'cancelled', 'unknown', 'skipped'].includes(status)) {
+                  return { result: status, resultJobs };
               }
               return { result: 'success', resultJobs };
             };
