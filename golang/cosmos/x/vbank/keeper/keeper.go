@@ -85,7 +85,7 @@ func (k Keeper) monitorSend(
 	return toAddr, nil
 }
 
-// records that we want to emit an balance update for the address
+// records that we want to emit a balance update for the address
 // for the given denoms. We use the Coins only to track the set of
 // denoms, not for the amounts.
 func (k Keeper) ensureAddressUpdate(adStore prefix.Store, address sdk.AccAddress, denoms sdk.Coins) error {
