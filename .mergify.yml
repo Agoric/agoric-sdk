@@ -10,7 +10,13 @@ shared:
           - check-pending=integration-test-result
           - check-success=integration-test-result
           - label=bypass:integration
-      - check-success=breakage
+      - or:
+          - and: # breakage succeeds like we thought
+              - check-success=breakage
+              - -label=proto:expect-breakage
+          - and: # breakage fails like we thought
+              - check-failure=breakage
+              - label=proto:expect-breakage
     merge_conditions: &merge-conditions
       - base=master
       # Rebase PRs with fixup commits are allowed to enter the merge queue but 
