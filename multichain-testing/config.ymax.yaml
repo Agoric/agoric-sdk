@@ -34,7 +34,7 @@ chains:
       memory: 4Gi
   - id: noblelocal
     name: noble
-    image: michaelfig/noble:v9.0.4
+    image: ghcr.io/agoric/noble:v9.0.4
     numValidators: 1
     genesis:
       app_state:
@@ -61,52 +61,8 @@ chains:
     resources:
       cpu: 1
       memory: 1Gi
-  - id: osmosislocal
-    name: osmosis
-    image: ghcr.io/cosmology-tech/starship/osmosis:v28.0.0
-    numValidators: 1
-    genesis:
-      app_state:
-        staking:
-          params:
-            unbonding_time: '2m'
-        interchainaccounts:
-          host_genesis_state:
-            params:
-              host_enabled: true
-              allow_messages: ['*']
-        interchainquery:
-          host_port: 'icqhost'
-          params:
-            host_enabled: true
-            allow_queries:
-              - /cosmos.bank.v1beta1.Query/Balance
-              - /cosmos.bank.v1beta1.Query/AllBalances
-    faucet:
-      enabled: true
-      type: starship
-    ports:
-      rest: 1315
-      rpc: 26655
-      grpc: 9093
-      faucet: 8084
-    resources:
-      cpu: 1
-      memory: 1Gi
 
 relayers:
-  - name: osmosis-noble
-    type: hermes
-    replicas: 1
-    chains:
-      - osmosislocal
-      - noblelocal
-  - name: agoric-osmosis
-    type: hermes
-    replicas: 1
-    chains:
-      - agoriclocal
-      - osmosislocal
   - name: agoric-noble
     type: hermes
     replicas: 1

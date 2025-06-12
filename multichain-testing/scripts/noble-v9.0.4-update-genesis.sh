@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# This file is replica of scripts/noble-update-genesis but with the added genesisState fix for noble-v9.0.4
+# Diff: https://github.com/Agoric/agoric-sdk/compare/test-noble-v9?expand=1#diff-a104780a601d583f772ed0c6319d049ff8bc7e45703b15a9bbb2491306fd0435
+
 DENOM="${DENOM:=uusdc}"
 CHAIN_BIN="${CHAIN_BIN:=nobled}"
 CHAIN_DIR="${CHAIN_DIR:=$HOME/.nobled}"
