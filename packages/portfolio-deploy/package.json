@@ -12,7 +12,7 @@
   "scripts": {
     "build": "esbuild ../portfolio-contract/src/portfolio.contract.ts --bundle --platform=neutral --main-fields=main --outfile=dist/portfolio.contract.bundle.js --metafile=dist/portfolio.contract.meta.json",
     "build:core": "esbuild ./src/portfolio-start.core.ts --bundle --platform=neutral --main-fields=main --outfile=dist/portfolio-start.core.bundle.js --metafile=dist/portfolio-start.core.meta.json",
-    "deploy:devnet": "src/deploy-cli.ts src/portfolio-start.build.ts --net devnet",
+    "deploy:devnet": "scripts/deploy-cli.ts src/portfolio.build.js net=devnet",
     "test": "yarn build && ava",
     "test:c8": "c8 --all $C8_OPTIONS ava",
     "test:xs": "exit 0",
