@@ -7,6 +7,11 @@ import { fromUniqueEntries } from '@agoric/internal';
 import { satisfiesWant } from '../contractFacet/offerSafety.js';
 import { atomicTransfer, fromOnly, toOnly } from './atomicTransfer.js';
 
+/**
+ * @import {Pattern} from '@endo/patterns';
+ * @import {ContractMeta, Invitation, Proposal, ZCF, ZCFSeat} from '@agoric/zoe';
+ */
+
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
 
 const getKeysSorted = obj => harden(Reflect.ownKeys(obj || {}).sort());
@@ -36,12 +41,12 @@ export const assertIssuerKeywords = (zcf, expected) => {
  * false and 1 for true. When multiples are introduced, any
  * positive return value will mean true.
  *
- * @param {ZCF} zcf
+ * @param {any} _ignored no longer used.
  * @param {ZcfSeatPartial} seat
  * @param {AmountKeywordRecord} update
  * @returns {0|1}
  */
-export const satisfies = (zcf, seat, update) => {
+export const satisfies = (_ignored, seat, update) => {
   const currentAllocation = seat.getCurrentAllocation();
   const newAllocation = { ...currentAllocation, ...update };
   const proposal = seat.getProposal();

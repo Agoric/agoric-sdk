@@ -17,7 +17,9 @@ import {
 import { ClosingRuleShape, ParamChangesSpecShape } from './typeGuards.js';
 
 /**
- * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn, ClosingRule, GovernableStartFn, LimitedCF, PoserFacet, VoteOnApiInvocation, VoteOnOfferFilter, VoteOnParamChanges} from './types.js';
+ * @import {EReturn} from '@endo/far';
+ * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
+ * @import {ClosingRule, GovernableStartFn, LimitedCF, PoserFacet, VoteOnApiInvocation, VoteOnOfferFilter, VoteOnParamChanges} from './types.js';
  */
 
 const trace = makeTracer('CGK', false);
@@ -72,7 +74,7 @@ export const prepareContractGovernorKit = (baggage, powers) => {
   let filterGovernance;
   /** @type {ReturnType<typeof setupParamGovernance>} */
   let paramGovernance;
-  /** @type {Awaited<ReturnType<typeof setupApiGovernance>>} */
+  /** @type {EReturn<typeof setupApiGovernance>} */
   let apiGovernance;
 
   /** @type {any} */
@@ -123,15 +125,14 @@ export const prepareContractGovernorKit = (baggage, powers) => {
           await null;
           if (!apiGovernance) {
             trace('awaiting governed API dependencies');
-            const [governedApis, governedNames] = await Promise.all([
-              E(creatorFacet).getGovernedApis(),
-              E(creatorFacet).getGovernedApiNames(),
-            ]);
+            const governedNames = await E(creatorFacet).getGovernedApiNames();
             trace('setupApiGovernance');
             apiGovernance = governedNames.length
-              ? // @ts-expect-error FIXME
-                setupApiGovernance(governedApis, governedNames, timer, () =>
-                  this.facets.helper.getUpdatedPoserFacet(),
+              ? setupApiGovernance(
+                  () => E(creatorFacet).getGovernedApis(),
+                  () => E(creatorFacet).getGovernedApiNames(),
+                  timer,
+                  () => this.facets.helper.getUpdatedPoserFacet(),
                 )
               : {
                   // if we aren't governing APIs, voteOnApiInvocation shouldn't be called
@@ -278,4 +279,4 @@ export const prepareContractGovernorKit = (baggage, powers) => {
   return makeContractGovernorKit;
 };
 
-/** @typedef {ReturnType<ReturnType<typeof prepareContractGovernorKit>>} ContractGovernorKit */
+/** @typedef {EReturn<EReturn<typeof prepareContractGovernorKit>>} ContractGovernorKit */

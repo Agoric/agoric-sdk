@@ -1,5 +1,5 @@
 /* eslint-env node */
-import { KERNEL_STATS_METRICS } from '@agoric/swingset-vat/src/kernel/metrics.js';
+import { KERNEL_STATS_METRICS } from '@agoric/internal/src/metrics.js';
 import { spawnSync } from 'child_process';
 import fs from 'fs';
 

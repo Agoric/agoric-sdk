@@ -18,9 +18,10 @@ import {
   floorDivideBy,
   multiplyBy,
   parseRatio,
-} from '@agoric/zoe/src/contractSupport/ratio.js';
+} from '@agoric/ertp/src/ratio.js';
 import { InvalidArgumentError } from 'commander';
 import { outputActionAndHint } from './bridge-action.js';
+import { Offers } from '../clientSupport.js';
 
 export const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -37,7 +38,7 @@ const parseDecimal = arg => {
 
 /**
  * @param {string} amountString
- * @param {Brand} usdc
+ * @param {Brand<'nat'>} usdc
  */
 const parseUSDCAmount = (amountString, usdc) => {
   const USDC_DECIMALS = 6;
@@ -96,31 +97,14 @@ export const addLPCommands = (
 
       const usdcAmount = parseUSDCAmount(opts.amount, usdc);
 
-      /** @type {import('../types.js').PoolMetrics} */
-      // @ts-expect-error it treats this as "unknown"
       const metrics = await swk.readPublished('fastUsdc.poolMetrics');
       const fastLPAmount = floorDivideBy(usdcAmount, metrics.shareWorth);
 
-      /** @type {USDCProposalShapes['deposit']} */
-      const proposal = {
-        give: {
-          USDC: usdcAmount,
-        },
-        want: {
-          PoolShare: fastLPAmount,
-        },
-      };
-
-      /** @type {OfferSpec} */
-      const offer = {
-        id: opts.offerId,
-        invitationSpec: {
-          source: 'agoricContract',
-          instancePath: ['fastUsdc'],
-          callPipe: [['makeDepositInvitation', []]],
-        },
-        proposal,
-      };
+      const offer = Offers.fastUsdc.Deposit(swk.agoricNames, {
+        offerId: opts.offerId,
+        fastLPAmount: fastLPAmount.value,
+        usdcAmount: usdcAmount.value,
+      });
 
       /** @type {ExecuteOfferAction} */
       const bridgeAction = {
@@ -156,31 +140,14 @@ export const addLPCommands = (
 
       const usdcAmount = parseUSDCAmount(opts.amount, usdc);
 
-      /** @type {import('../types.js').PoolMetrics} */
-      // @ts-expect-error it treats this as "unknown"
       const metrics = await swk.readPublished('fastUsdc.poolMetrics');
       const fastLPAmount = ceilDivideBy(usdcAmount, metrics.shareWorth);
 
-      /** @type {USDCProposalShapes['withdraw']} */
-      const proposal = {
-        give: {
-          PoolShare: fastLPAmount,
-        },
-        want: {
-          USDC: usdcAmount,
-        },
-      };
-
-      /** @type {OfferSpec} */
-      const offer = {
-        id: opts.offerId,
-        invitationSpec: {
-          source: 'agoricContract',
-          instancePath: ['fastUsdc'],
-          callPipe: [['makeWithdrawInvitation', []]],
-        },
-        proposal,
-      };
+      const offer = Offers.fastUsdc.Withdraw(swk.agoricNames, {
+        offerId: opts.offerId,
+        fastLPAmount: fastLPAmount.value,
+        usdcAmount: usdcAmount.value,
+      });
 
       outputActionAndHint(
         { method: 'executeOffer', offer },

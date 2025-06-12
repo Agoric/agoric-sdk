@@ -44,6 +44,11 @@ import { makeNatAmountShape } from '../contractSupport.js';
  */
 
 /**
+ * @import {EReturn} from '@endo/far';
+ * @import {ContractMeta, FeeMintAccess, Installation} from '@agoric/zoe';
+ */
+
+/**
  * @typedef {object} MetricsNotification Metrics naming scheme is that nouns are
  *   present values and past-participles are accumulative.
  * @property {Amount<'nat'>} anchorPoolBalance amount of Anchor token available
@@ -442,4 +447,4 @@ export const start = async (zcf, privateArgs, baggage) => {
 };
 harden(start);
 
-/** @typedef {Awaited<ReturnType<typeof start>>['publicFacet']} PsmPublicFacet */
+/** @typedef {EReturn<typeof start>['publicFacet']} PsmPublicFacet */

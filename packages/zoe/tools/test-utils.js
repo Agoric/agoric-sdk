@@ -1,11 +1,11 @@
 import { AmountMath } from '@agoric/ertp';
-import { makeRatio } from '../src/contractSupport/ratio.js';
+import { makeRatio } from '../src/contractSupport/index.js';
 
 /**
  * @import {Amount, Brand, DepositFacet, Issuer, IssuerKit, NatValue} from '@agoric/ertp';
  */
 
-/** @param {Pick<IssuerKit<'nat'>, 'brand' | 'issuer' | 'mint'>} kit */
+/** @param {Pick<IssuerKit<'nat', any>, 'brand' | 'issuer' | 'mint'>} kit */
 export const withAmountUtils = kit => {
   const decimalPlaces = kit.issuer.getDisplayInfo?.()?.decimalPlaces ?? 6;
   return {

@@ -8,8 +8,7 @@ import type { ExecutionContext } from 'ava';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { AmountMath, type Brand } from '@agoric/ertp';
 import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.js';
-import type { PoolMetrics } from '@agoric/fast-usdc/src/types.js';
-import { divideBy } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { divideBy } from '@agoric/ertp/src/ratio.js';
 import { makeDenomTools } from '../tools/asset-info.js';
 import { makeDoOffer } from '../tools/e2e-tools.js';
 import { commonSetup } from '../test/support.js';
@@ -17,6 +16,7 @@ import {
   makeFeedPolicyPartial,
   oracleMnemonics,
 } from '../test/fast-usdc/config.js';
+import { agoricNamesQ, fastLPQ } from '../test/fast-usdc/fu-actors.js';
 
 const USAGE = `
 Usage:
@@ -41,7 +41,7 @@ Examples:
 
 const contractName = 'fastUsdc';
 const contractBuilder =
-  '../packages/builders/scripts/fast-usdc/start-fast-usdc.build.js';
+  '../packages/fast-usdc-deploy/src/start-fast-usdc.build.js';
 
 /** ava test context partial, to appease dependencies expecting this */
 const runT = {
@@ -54,27 +54,6 @@ const runT = {
     }
   },
 } as ExecutionContext;
-
-// from ../test/fast-usdc/fast-usdc.test.ts
-type VStorageClient = Awaited<ReturnType<typeof commonSetup>>['vstorageClient'];
-const agoricNamesQ = (vsc: VStorageClient) =>
-  harden({
-    brands: <K extends AssetKind>(_assetKind: K) =>
-      vsc
-        .queryData('published.agoricNames.brand')
-        .then(pairs => Object.fromEntries(pairs) as Record<string, Brand<K>>),
-  });
-
-const fastLPQ = (vsc: VStorageClient) =>
-  harden({
-    metrics: () =>
-      vsc.queryData(`published.fastUsdc.poolMetrics`) as Promise<PoolMetrics>,
-    info: () =>
-      vsc.queryData(`published.${contractName}`) as Promise<{
-        poolAccount: string;
-        settlementAccount: string;
-      }>,
-  });
 
 const parseCommandLine = () => {
   const { values, positionals } = parseArgs({
@@ -129,7 +108,7 @@ const main = async () => {
     vstorageClient,
   } = await commonSetup(runT, { config: '../config.fusdc.yaml' });
 
-  const assertProvisioned = async address => {
+  const assertProvisioned = async (address: string) => {
     try {
       await vstorageClient.queryData(`published.wallet.${address}.current`);
     } catch {
@@ -205,7 +184,6 @@ const main = async () => {
         instancePath: [contractName],
         callPipe: [['makeDepositInvitation']],
       },
-      // @ts-expect-error 'NatAmount' vs 'AnyAmount'
       proposal,
     });
   };

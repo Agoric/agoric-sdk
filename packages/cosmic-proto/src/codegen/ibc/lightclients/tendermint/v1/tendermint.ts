@@ -4,7 +4,10 @@ import {
   type DurationSDKType,
 } from '../../../../google/protobuf/duration.js';
 import { Height, type HeightSDKType } from '../../../core/client/v1/client.js';
-import { ProofSpec, type ProofSpecSDKType } from '../../../../proofs.js';
+import {
+  ProofSpec,
+  type ProofSpecSDKType,
+} from '../../../../cosmos/ics23/v1/proofs.js';
 import {
   Timestamp,
   type TimestampSDKType,
@@ -25,11 +28,11 @@ import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import {
   isSet,
   fromJsonTimestamp,
-  bytesFromBase64,
   fromTimestamp,
-  base64FromBytes,
 } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
+import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
+import { encodeBase64 as base64FromBytes } from '@endo/base64';
 /**
  * ClientState from Tendermint tracks the current validator set, latest height,
  * and a possible frozen height.
@@ -118,6 +121,8 @@ export interface ConsensusStateSDKType {
  * that implements Misbehaviour interface expected by ICS-02
  */
 export interface Misbehaviour {
+  /** ClientID is deprecated */
+  /** @deprecated */
   clientId: string;
   header1?: Header;
   header2?: Header;
@@ -131,6 +136,7 @@ export interface MisbehaviourProtoMsg {
  * that implements Misbehaviour interface expected by ICS-02
  */
 export interface MisbehaviourSDKType {
+  /** @deprecated */
   client_id: string;
   header_1?: HeaderSDKType;
   header_2?: HeaderSDKType;

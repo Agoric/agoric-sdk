@@ -128,11 +128,3 @@ $ curl -sS 'https://main.api.agoric.net/agoric/vstorage/children/published.commi
   "pagination": null
 }
 ```
-
-## Arbitrary-response HTTP interface
-
-This depends upon appModule `LegacyQuerierHandler` functionality that is [removed from cosmos-sdk as of v0.47](https://github.com/cosmos/cosmos-sdk/blob/fa4d87ef7e6d87aaccc94c337ffd2fe90fcb7a9d/CHANGELOG.md#api-breaking-changes-3)
-
-[legacy querier](./keeper/querier.go)
-* /custom/vstorage/children/$path
-* /custom/vstorage/data/$path

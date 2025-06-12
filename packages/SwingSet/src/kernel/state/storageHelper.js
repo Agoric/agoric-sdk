@@ -3,13 +3,18 @@
 import { Fail } from '@endo/errors';
 
 /**
+ * @import {KVStore} from '@agoric/swing-store';
+ */
+
+/**
  * Iterate over keys with a given prefix, in lexicographic order,
  * excluding an exact match of the prefix.
  *
  * @param {KVStore} kvStore
  * @param {string} prefix
  * @param {string} [exclusiveEnd]
- * @yields {string} the next key with the prefix that is not >= exclusiveEnd
+ * @yields {{key: string; suffix: string}} the next `key` with the prefix that is not >= exclusiveEnd
+ * and the `suffix` which is obtained by stripping the supplied prefix from the key
  */
 export function* enumeratePrefixedKeys(kvStore, prefix, exclusiveEnd) {
   /** @type {string | undefined} */
@@ -22,7 +27,7 @@ export function* enumeratePrefixedKeys(kvStore, prefix, exclusiveEnd) {
     if (exclusiveEnd && key >= exclusiveEnd) {
       break;
     }
-    yield key;
+    yield { key, suffix: key.slice(prefix.length) };
   }
 }
 harden(enumeratePrefixedKeys);

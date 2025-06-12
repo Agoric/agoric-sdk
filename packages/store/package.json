@@ -5,16 +5,18 @@
   "type": "module",
   "main": "src/index.js",
   "engines": {
-    "node": "^18.12 || ^20.9"
+    "node": "^20.9 || ^22.11"
   },
   "scripts": {
     "build": "exit 0",
     "test": "ava",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
-    "lint": "run-s --continue-on-error lint:*",
-    "lint:types": "tsc",
-    "lint:eslint": "eslint ."
+    "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
+    "lint:types": "yarn run -T tsc",
+    "lint:eslint": "yarn run -T eslint .",
+    "prepack": "yarn run -T tsc --build tsconfig.build.json",
+    "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'"
   },
   "repository": {
     "type": "git",
@@ -30,15 +32,15 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@endo/errors": "^1.2.8",
-    "@endo/exo": "^1.5.7",
-    "@endo/marshal": "^1.6.2",
-    "@endo/pass-style": "^1.4.7",
-    "@endo/patterns": "^1.4.7"
+    "@endo/errors": "^1.2.10",
+    "@endo/exo": "^1.5.9",
+    "@endo/marshal": "^1.6.4",
+    "@endo/pass-style": "^1.5.0",
+    "@endo/patterns": "^1.5.0"
   },
   "devDependencies": {
-    "@endo/init": "^1.1.7",
-    "@endo/ses-ava": "^1.2.8",
+    "@endo/init": "^1.1.9",
+    "@endo/ses-ava": "^1.2.10",
     "ava": "^5.3.0"
   },
   "files": [
@@ -59,6 +61,6 @@
     "timeout": "2m"
   },
   "typeCoverage": {
-    "atLeast": 89.53
+    "atLeast": 89.62
   }
 }

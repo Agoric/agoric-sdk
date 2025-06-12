@@ -7,9 +7,11 @@ import path from 'path';
 import { makeMockTestSpace } from './supports.js';
 
 /**
- * @type {import('ava').TestFn<
- *   Awaited<ReturnType<typeof makeTestContext>>
- * >}
+ * @import {EReturn} from '@endo/far';
+ */
+
+/**
+ * @type {import('ava').TestFn<EReturn<typeof makeTestContext>>}
  */
 const test = anyTest;
 

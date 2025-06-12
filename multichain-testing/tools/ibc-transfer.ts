@@ -1,6 +1,6 @@
 import type { ExecutionContext } from 'ava';
 import type { StdFee } from '@cosmjs/amino';
-import { coins } from '@cosmjs/proto-signing';
+import { coins, type EncodeObject } from '@cosmjs/proto-signing';
 import { SigningStargateClient } from '@cosmjs/stargate';
 import type {
   CosmosChainInfo,
@@ -64,7 +64,7 @@ export const makeIBCTransferMsg = (
   currentTime: number,
   useChain: MultichainRegistry['useChain'],
   opts: IBCMsgTransferOptions = {},
-) => {
+): Parameters<SigningStargateClient['signAndBroadcast']> => {
   const { timeoutHeight, timeoutTimestamp, memo = '' } = opts;
 
   const destChainInfo = (chainInfo as Record<string, CosmosChainInfo>)[
@@ -97,25 +97,24 @@ export const makeIBCTransferMsg = (
   if (!fee_tokens || !fee_tokens.length) {
     throw Error('no fee tokens in chain config for' + sender.chainName);
   }
+  if (fee_tokens.length > 1) {
+    console.warn(
+      `Multiple fee tokens found for ${sender.chainName}, using the first one`,
+    );
+  }
   const { high_gas_price, denom } = fee_tokens[0];
   if (!high_gas_price) throw Error('no high gas price in chain config');
   const fee = makeFeeObject({
     denom: denom,
-    gas: 150000,
+    gas: 197000,
     gasPrice: high_gas_price,
   });
 
-  return [
-    msgTransfer.sender,
-    msgTransfer.receiver,
-    msgTransfer.token,
-    msgTransfer.sourcePort,
-    msgTransfer.sourceChannel,
-    msgTransfer.timeoutHeight,
-    Number(msgTransfer.timeoutTimestamp),
-    fee,
-    msgTransfer.memo,
-  ];
+  const message0 = {
+    typeUrl: MsgTransfer.typeUrl,
+    value: msgTransfer,
+  } as EncodeObject;
+  return [sender.address, [message0], fee];
 };
 
 export const createFundedWalletAndClient = async (
@@ -126,7 +125,9 @@ export const createFundedWalletAndClient = async (
 ) => {
   const { chain, creditFromFaucet, getRpcEndpoint } = useChain(chainName);
   const wallet = await createWallet(chain.bech32_prefix, mnemonic);
-  const address = (await wallet.getAccounts())[0].address;
+  const accounts = await wallet.getAccounts();
+  assert.equal(accounts.length, 1, `expected one account on ${chainName}`);
+  const { address } = accounts[0];
   log(`Requesting faucet funds for ${address}`);
   await creditFromFaucet(address);
   // TODO use telescope generated rpc client from @agoric/cosmic-proto
@@ -173,9 +174,7 @@ export const makeFundAndTransfer = (
       useChain,
     );
     console.log('Transfer Args:', transferArgs);
-    // TODO #9200 `sendIbcTokens` does not support `memo`
-    // @ts-expect-error spread argument for concise code
-    const txRes = await client.sendIbcTokens(...transferArgs);
+    const txRes = await client.signAndBroadcast(...transferArgs);
     if (txRes && txRes.code !== 0) {
       console.error(txRes);
       throw Error(`failed to ibc transfer funds to ${chainName}`);

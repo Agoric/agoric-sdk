@@ -10,6 +10,12 @@ import (
 
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 
+	rosettaCmd "cosmossdk.io/tools/rosetta/cmd"
+
+	dbm "github.com/cometbft/cometbft-db"
+	tmcfg "github.com/cometbft/cometbft/config"
+	tmcli "github.com/cometbft/cometbft/libs/cli"
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/debug"
@@ -29,10 +35,6 @@ import (
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	tmcfg "github.com/tendermint/tendermint/config"
-	tmcli "github.com/tendermint/tendermint/libs/cli"
-	"github.com/tendermint/tendermint/libs/log"
-	dbm "github.com/tendermint/tm-db"
 
 	gaia "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
@@ -131,7 +133,7 @@ func initAppConfig() (string, interface{}) {
 	// FIXME: We may want a non-zero min gas price.
 	// For now, we set it to zero to reduce friction (the default "" fails
 	// startup, forcing each validator to set their own value).
-	srvCfg.MinGasPrices = "0uist"
+	srvCfg.MinGasPrices = "0ubld"
 
 	customAppConfig := CustomAppConfig{
 		Config:   *srvCfg,
@@ -152,20 +154,27 @@ func initRootCmd(sender vm.Sender, rootCmd *cobra.Command, encodingConfig params
 	cfg.Seal()
 
 	ac := appCreator{
-		encCfg:    encodingConfig,
 		sender:    sender,
 		agdServer: vm.NewAgdServer(),
 	}
 
+	genesisCmd := genutilcli.GenesisCoreCommand(
+		encodingConfig.TxConfig,
+		gaia.ModuleBasics,
+		gaia.DefaultNodeHome,
+	)
+
 	rootCmd.AddCommand(
 		genutilcli.InitCmd(gaia.ModuleBasics, gaia.DefaultNodeHome),
-		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, gaia.DefaultNodeHome),
-		genutilcli.MigrateGenesisCmd(),
-		genutilcli.GenTxCmd(gaia.ModuleBasics, encodingConfig.TxConfig, banktypes.GenesisBalancesIterator{}, gaia.DefaultNodeHome),
-		genutilcli.ValidateGenesisCmd(gaia.ModuleBasics),
-		AddGenesisAccountCmd(encodingConfig.Marshaler, gaia.DefaultNodeHome),
+		genesisCmd,
+	)
+	// Alias all the genesis commands to the top level as well.
+	rootCmd.AddCommand(
+		genesisCmd.Commands()...,
+	)
+	rootCmd.AddCommand(
 		tmcli.NewCompletionCmd(rootCmd, true),
-		testnetCmd(gaia.ModuleBasics, banktypes.GenesisBalancesIterator{}),
+		NewTestnetCmd(gaia.ModuleBasics, banktypes.GenesisBalancesIterator{}, AppName),
 		debug.Cmd(),
 		config.Cmd(),
 		pruning.Cmd(ac.newSnapshotsApp, gaia.DefaultNodeHome),
@@ -217,7 +226,7 @@ func initRootCmd(sender vm.Sender, rootCmd *cobra.Command, encodingConfig params
 		keys.Commands(gaia.DefaultNodeHome),
 	)
 	// add rosetta
-	rootCmd.AddCommand(server.RosettaCommand(encodingConfig.InterfaceRegistry, encodingConfig.Marshaler))
+	rootCmd.AddCommand(rosettaCmd.RosettaCommand(encodingConfig.InterfaceRegistry, encodingConfig.Marshaler))
 }
 
 const (
@@ -301,7 +310,6 @@ func txCommand() *cobra.Command {
 }
 
 type appCreator struct {
-	encCfg    params.EncodingConfig
 	sender    vm.Sender
 	agdServer *vm.AgdServer
 }
@@ -319,12 +327,6 @@ func (ac appCreator) newApp(
 	}
 
 	baseappOptions := server.DefaultBaseappOptions(appOpts)
-
-	skipUpgradeHeights := make(map[int64]bool)
-	for _, h := range cast.ToIntSlice(appOpts.Get(server.FlagUnsafeSkipUpgrades)) {
-		skipUpgradeHeights[int64(h)] = true
-	}
-
 	homePath := cast.ToString(appOpts.Get(flags.FlagHome))
 
 	// Set a default value for FlagSwingStoreExportDir based on homePath
@@ -337,10 +339,7 @@ func (ac appCreator) newApp(
 
 	return gaia.NewAgoricApp(
 		ac.sender, ac.agdServer,
-		logger, db, traceStore, true, skipUpgradeHeights,
-		homePath,
-		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
-		ac.encCfg,
+		logger, db, traceStore, true,
 		appOpts,
 		baseappOptions...,
 	)
@@ -360,14 +359,9 @@ func (ac appCreator) newSnapshotsApp(
 
 	baseappOptions := server.DefaultBaseappOptions(appOpts)
 
-	homePath := cast.ToString(appOpts.Get(flags.FlagHome))
-
 	return gaia.NewAgoricApp(
 		ac.sender, ac.agdServer,
-		logger, db, traceStore, true, map[int64]bool{},
-		homePath,
-		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
-		ac.encCfg,
+		logger, db, traceStore, true,
 		appOpts,
 		baseappOptions...,
 	)
@@ -479,6 +473,7 @@ func (ac appCreator) appExport(
 	forZeroHeight bool,
 	jailAllowedAddrs []string,
 	appOpts servertypes.AppOptions,
+	modulesToExport []string,
 ) (servertypes.ExportedApp, error) {
 	swingStoreExportMode, ok := appOpts.Get(gaia.FlagSwingStoreExportMode).(string)
 	if !(ok && allowedSwingSetExportModes[swingStoreExportMode]) {
@@ -508,10 +503,6 @@ func (ac appCreator) appExport(
 		db,
 		traceStore,
 		loadLatest,
-		map[int64]bool{},
-		homePath,
-		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
-		ac.encCfg,
 		appOpts,
 	)
 
@@ -521,7 +512,7 @@ func (ac appCreator) appExport(
 		}
 	}
 
-	return gaiaApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs)
+	return gaiaApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs, modulesToExport)
 }
 
 // replaceCosmosSnapshotExportCommand monkey-patches the "snapshots export" command

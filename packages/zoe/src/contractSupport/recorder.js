@@ -262,3 +262,9 @@ export const prepareMockRecorderKitMakers = () => {
     storageNode: makeFakeStorage('mock recorder storage'),
   };
 };
+
+export const RecorderKitShape = {
+  recorder: M.remotable(),
+  subscriber: M.remotable(),
+};
+harden(RecorderKitShape);

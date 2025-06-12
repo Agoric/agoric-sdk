@@ -7,12 +7,10 @@ import {
 } from './channel.js';
 import { Height, type HeightSDKType } from '../../client/v1/client.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
-import {
-  isSet,
-  bytesFromBase64,
-  base64FromBytes,
-} from '../../../../helpers.js';
+import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
+import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
+import { encodeBase64 as base64FromBytes } from '@endo/base64';
 /** ResponseResultType defines the possible outcomes of the execution of a message */
 export enum ResponseResultType {
   /** RESPONSE_RESULT_TYPE_UNSPECIFIED - Default zero value enumeration */
@@ -129,6 +127,7 @@ export interface MsgChannelOpenTrySDKType {
 /** MsgChannelOpenTryResponse defines the Msg/ChannelOpenTry response type. */
 export interface MsgChannelOpenTryResponse {
   version: string;
+  channelId: string;
 }
 export interface MsgChannelOpenTryResponseProtoMsg {
   typeUrl: '/ibc.core.channel.v1.MsgChannelOpenTryResponse';
@@ -137,6 +136,7 @@ export interface MsgChannelOpenTryResponseProtoMsg {
 /** MsgChannelOpenTryResponse defines the Msg/ChannelOpenTry response type. */
 export interface MsgChannelOpenTryResponseSDKType {
   version: string;
+  channel_id: string;
 }
 /**
  * MsgChannelOpenAck defines a msg sent by a Relayer to Chain A to acknowledge
@@ -742,6 +742,7 @@ export const MsgChannelOpenTry = {
 function createBaseMsgChannelOpenTryResponse(): MsgChannelOpenTryResponse {
   return {
     version: '',
+    channelId: '',
   };
 }
 export const MsgChannelOpenTryResponse = {
@@ -752,6 +753,9 @@ export const MsgChannelOpenTryResponse = {
   ): BinaryWriter {
     if (message.version !== '') {
       writer.uint32(10).string(message.version);
+    }
+    if (message.channelId !== '') {
+      writer.uint32(18).string(message.channelId);
     }
     return writer;
   },
@@ -769,6 +773,9 @@ export const MsgChannelOpenTryResponse = {
         case 1:
           message.version = reader.string();
           break;
+        case 2:
+          message.channelId = reader.string();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -779,6 +786,7 @@ export const MsgChannelOpenTryResponse = {
   fromJSON(object: any): MsgChannelOpenTryResponse {
     return {
       version: isSet(object.version) ? String(object.version) : '',
+      channelId: isSet(object.channelId) ? String(object.channelId) : '',
     };
   },
   toJSON(
@@ -786,6 +794,7 @@ export const MsgChannelOpenTryResponse = {
   ): JsonSafe<MsgChannelOpenTryResponse> {
     const obj: any = {};
     message.version !== undefined && (obj.version = message.version);
+    message.channelId !== undefined && (obj.channelId = message.channelId);
     return obj;
   },
   fromPartial(
@@ -793,6 +802,7 @@ export const MsgChannelOpenTryResponse = {
   ): MsgChannelOpenTryResponse {
     const message = createBaseMsgChannelOpenTryResponse();
     message.version = object.version ?? '';
+    message.channelId = object.channelId ?? '';
     return message;
   },
   fromProtoMsg(

@@ -1,29 +1,27 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
-import path from 'path';
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { makeIssuerKit } from '@agoric/ertp';
-import {
-  type AmountUtils,
-  withAmountUtils,
-} from '@agoric/zoe/tools/test-utils.js';
 import type { Issuer } from '@agoric/ertp/src/types.js';
-import { E } from '@endo/far';
 import {
   LOCALCHAIN_DEFAULT_ADDRESS,
   SIMULATED_ERRORS,
 } from '@agoric/vats/tools/fake-bridge.js';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
+import {
+  type AmountUtils,
+  withAmountUtils,
+} from '@agoric/zoe/tools/test-utils.js';
+import { E, type EReturn } from '@endo/far';
 import { commonSetup } from '../supports.js';
 
-const dirname = path.dirname(new URL(import.meta.url).pathname);
+import * as contractExports from '../fixtures/zoe-tools.contract.js';
 
 const contractName = 'zoeTools';
-const contractFile = `${dirname}/../../test/fixtures/zoe-tools.contract.js`;
-type StartFn = typeof import('../../test/fixtures/zoe-tools.contract.js').start;
+type StartFn = typeof contractExports.start;
 
-type TestContext = Awaited<ReturnType<typeof commonSetup>> & {
-  brands: Awaited<ReturnType<typeof commonSetup>>['brands'] & {
+type TestContext = EReturn<typeof commonSetup> & {
+  brands: EReturn<typeof commonSetup>['brands'] & {
     moolah: AmountUtils;
   };
   zoe: ZoeService;
@@ -48,7 +46,7 @@ test.beforeEach(async t => {
   t.log('contract coreEval', contractName);
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
   const installation: Installation<StartFn> =
-    await bundleAndInstall(contractFile);
+    await bundleAndInstall(contractExports);
 
   const issuerKeywordRecord = harden({
     IST: ist.issuer,
@@ -330,9 +328,22 @@ test('withdraw (withdrawToSeat) from LCA with insufficient balance', async t => 
     brands: { ist, bld },
     contractKit,
     zoe,
+    utils: { pourPayment },
   } = t.context;
   const publicFacet = await E(zoe).getPublicFacet(contractKit.instance);
   const vt = bootstrap.vowTools;
+
+  {
+    // put some money in account, less than we will request
+    const fiveStake = bld.make(5n);
+    const BLD = await pourPayment(fiveStake);
+    const depositSeat = await E(zoe).offer(
+      E(publicFacet).makeDepositInvitation(),
+      { give: { BLD: fiveStake } },
+      { BLD },
+    );
+    await vt.when(E(depositSeat).getOfferResult());
+  }
 
   const tenStable = ist.make(10n);
   const tenStake = bld.make(10n);
@@ -343,7 +354,7 @@ test('withdraw (withdrawToSeat) from LCA with insufficient balance', async t => 
 
   await t.throwsAsync(vt.when(E(userSeat).getOfferResult()), {
     message:
-      'One or more withdrawals failed ["[RangeError: -10 is negative]","[RangeError: -10 is negative]"]',
+      /^One or more withdrawals failed \["\[Error: cannot grab 10ubld coins: spendable balance 5ubld is smaller than 10ubld: insufficient funds\]","\[Error: cannot grab 10uist coins: spendable balance (0uist)? is smaller than 10uist: insufficient funds\]"\]$/,
   });
 });
 

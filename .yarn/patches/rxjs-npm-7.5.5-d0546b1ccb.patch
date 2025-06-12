@@ -1,0 +1,25 @@
+diff --git a/dist/cjs/internal/util/createErrorClass.js b/dist/cjs/internal/util/createErrorClass.js
+index 98a6e524761d34e2de07c4b0a4c44ceaf878938c..815dd259c0df118754179f2be0cba7c3b814fdbb 100644
+--- a/dist/cjs/internal/util/createErrorClass.js
++++ b/dist/cjs/internal/util/createErrorClass.js
+@@ -7,8 +7,18 @@ function createErrorClass(createImpl) {
+         instance.stack = new Error().stack;
+     };
+     var ctorFunc = createImpl(_super);
+-    ctorFunc.prototype = Object.create(Error.prototype);
+-    ctorFunc.prototype.constructor = ctorFunc;
++    ctorFunc.prototype = Object.create(Error.prototype, {
++        constructor: {
++            value: ctorFunc,
++            writable: true,
++            // enumerable: true would accurately preserve the behavior of the
++            // original assignment, but I'm guessing that was not intentional.
++            // For an actual error subclass, this property would not
++            // be enumerable.
++            enumerable: false,
++            configurable: true,
++        }
++    });
+     return ctorFunc;
+ }
+ exports.createErrorClass = createErrorClass;

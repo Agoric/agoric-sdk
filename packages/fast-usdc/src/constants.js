@@ -1,5 +1,5 @@
 /**
- * Status values for FastUSDC.
+ * Status values for FastUSDC. Includes states for advancing and settling.
  *
  * @enum {(typeof TxStatus)[keyof typeof TxStatus]}
  */
@@ -16,6 +16,8 @@ export const TxStatus = /** @type {const} */ ({
   AdvanceSkipped: 'ADVANCE_SKIPPED',
   /** settlement for matching advance received and funds disbursed */
   Disbursed: 'DISBURSED',
+  /** No route, forward not attempted */
+  ForwardedSkipped: 'FORWARD_SKIPPED',
   /** fallback: do not collect fees */
   Forwarded: 'FORWARDED',
   /** failed to forward to EUD */
@@ -31,13 +33,11 @@ export const TerminalTxStatus = {
 };
 
 /**
- * Status values for the StatusManager.
+ * Status values for the StatusManager while an advance is being processed.
  *
  * @enum {(typeof PendingTxStatus)[keyof typeof PendingTxStatus]}
  */
 export const PendingTxStatus = /** @type {const} */ ({
-  /** tx was observed but not advanced */
-  Observed: 'OBSERVED',
   /** IBC transfer is initiated */
   Advancing: 'ADVANCING',
   /** IBC transfer failed (timed out) */

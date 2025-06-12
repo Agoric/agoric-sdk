@@ -1,66 +1,24 @@
 // @ts-check
-import { isObject } from '@endo/marshal';
+import { getMethodNames as realGetMethodNames } from '@endo/eventual-send/utils.js';
 
 /**
  * @file method-tools use dynamic property lookup, which is not
  *   Jessie-compatible
  */
 
-const { getPrototypeOf, create, fromEntries, getOwnPropertyDescriptors } =
-  Object;
-const { ownKeys, apply } = Reflect;
-
-/**
- * Prioritize symbols as earlier than strings.
- *
- * @param {string | symbol} a
- * @param {string | symbol} b
- * @returns {-1 | 0 | 1}
- */
-const compareStringified = (a, b) => {
-  if (typeof a === typeof b) {
-    const left = String(a);
-    const right = String(b);
-    // eslint-disable-next-line no-nested-ternary
-    return left < right ? -1 : left > right ? 1 : 0;
-  }
-  if (typeof a === 'symbol') {
-    assert(typeof b === 'string');
-    return -1;
-  }
-  assert(typeof a === 'string');
-  assert(typeof b === 'symbol');
-  return 1;
-};
+const { create, fromEntries } = Object;
+const { apply } = Reflect;
 
 /**
  * TODO Consolidate with the `getMethodNames` in `@endo/eventual-send`
  *
+ * @deprecated Use `getMethodNames` from `@endo/eventual-send/utils.js` instead.
  * @template {PropertyKey} K
  * @param {Record<K, any>} val
  * @returns {K[]}
  */
-export const getMethodNames = val => {
-  let layer = val;
-  const names = new Set(); // Set to deduplicate
-  while (layer !== null && layer !== Object.prototype) {
-    // be tolerant of non-objects
-    const descs = getOwnPropertyDescriptors(layer);
-    const ownNames = /** @type {K[]} */ (ownKeys(descs));
-    for (const name of ownNames) {
-      // In case a method is overridden by a non-method,
-      // test `val[name]` rather than `layer[name]`
-      if (typeof val[name] === 'function') {
-        names.add(name);
-      }
-    }
-    if (!isObject(val)) {
-      break;
-    }
-    layer = getPrototypeOf(layer);
-  }
-  return harden([...names].sort(compareStringified));
-};
+export const getMethodNames = val =>
+  /** @type {K[]} */ (realGetMethodNames(val));
 harden(getMethodNames);
 
 /**
@@ -72,7 +30,7 @@ harden(getMethodNames);
  */
 export const getStringMethodNames = val =>
   /** @type {string[]} */ (
-    getMethodNames(val).filter(name => typeof name === 'string')
+    realGetMethodNames(val).filter(name => typeof name === 'string')
   );
 
 /**
@@ -109,7 +67,7 @@ export const bindAllMethods = obj =>
     create(
       obj,
       fromEntries(
-        getMethodNames(obj).map(name => [
+        realGetMethodNames(obj).map(name => [
           name,
           {
             value: (/** @type {unknown[]} */ ...args) =>

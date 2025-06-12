@@ -26,10 +26,7 @@ export interface Plan {
    */
   /** @deprecated */
   time: Timestamp;
-  /**
-   * The height at which the upgrade must be performed.
-   * Only used if Time is not set.
-   */
+  /** The height at which the upgrade must be performed. */
   height: bigint;
   /**
    * Any application specific upgrade info to be included on-chain
@@ -67,8 +64,11 @@ export interface PlanSDKType {
 /** @deprecated */
 export interface SoftwareUpgradeProposal {
   $typeUrl?: '/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal';
+  /** title of the proposal */
   title: string;
+  /** description of the proposal */
   description: string;
+  /** plan of the proposal */
   plan: Plan;
 }
 export interface SoftwareUpgradeProposalProtoMsg {
@@ -97,7 +97,9 @@ export interface SoftwareUpgradeProposalSDKType {
 /** @deprecated */
 export interface CancelSoftwareUpgradeProposal {
   $typeUrl?: '/cosmos.upgrade.v1beta1.CancelSoftwareUpgradeProposal';
+  /** title of the proposal */
   title: string;
+  /** description of the proposal */
   description: string;
 }
 export interface CancelSoftwareUpgradeProposalProtoMsg {

@@ -15,6 +15,7 @@ import { TimestampShape } from '@agoric/time';
 
 /**
  * @import {TypedPattern} from '@agoric/internal';
+ * @import {AfterDeadlineExitRule, ZoeIssuerRecord} from '@agoric/zoe';
  */
 
 // keywords have an initial cap
@@ -45,6 +46,7 @@ export const IssuerPKeywordRecordShape = M.recordOf(
 );
 export const BrandKeywordRecordShape = M.recordOf(KeywordShape, BrandShape);
 
+/** @type {TypedPattern<ZoeIssuerRecord>} */
 export const IssuerRecordShape = M.splitRecord(
   {
     brand: BrandShape,
@@ -114,7 +116,7 @@ export const isOnDemandExitRule = exit => {
 harden(isOnDemandExitRule);
 
 /**
- * @param {ExitRule} exit
+ * @param {import('./types-index').ExitRule} exit
  * @returns {exit is WaivedExitRule}
  */
 export const isWaivedExitRule = exit => {
@@ -124,7 +126,7 @@ export const isWaivedExitRule = exit => {
 harden(isWaivedExitRule);
 
 /**
- * @param {ExitRule} exit
+ * @param {import('./types-index').ExitRule} exit
  * @returns {exit is AfterDeadlineExitRule}
  */
 export const isAfterDeadlineExitRule = exit => {
@@ -133,6 +135,7 @@ export const isAfterDeadlineExitRule = exit => {
 };
 harden(isAfterDeadlineExitRule);
 
+/** @type {TypedPattern<import('./types-index').InvitationDetails>} */
 export const InvitationElementShape = M.splitRecord({
   description: M.string(),
   handle: InvitationHandleShape,
@@ -277,7 +280,7 @@ export const ZoeStorageManagerIKit = {
     getBundleIDFromInstallation: M.call(InstallationShape).returns(
       M.eref(M.string()),
     ),
-    installBundle: M.call(M.or(InstanceHandleShape, BundleShape))
+    installBundle: M.call(BundleShape)
       .optional(M.string())
       .returns(M.promise()),
     installBundleID: M.call(M.string())
@@ -310,7 +313,7 @@ export const ZoeStorageManagerIKit = {
       InstallationShape,
       M.any(),
       IssuerPKeywordRecordShape,
-      M.or(InstanceHandleShape, BundleShape),
+      InstanceHandleShape,
       M.or(BundleCapShape, BundleShape),
       M.string(),
     ).returns(M.promise()),

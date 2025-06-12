@@ -38,6 +38,7 @@ import {
 import { defaultParamValues } from './vaultFactoryUtils.js';
 
 /**
+ * @import {EReturn} from '@endo/far';
  * @import {VaultFactoryContract as VFC} from '../../src/vaultFactory/vaultFactory.js';
  * @import {AmountUtils} from '@agoric/zoe/tools/test-utils.js';
  */
@@ -46,7 +47,7 @@ import { defaultParamValues } from './vaultFactoryUtils.js';
  * @typedef {Record<string, any> & {
  *   aeth: IssuerKit & AmountUtils;
  *   run: IssuerKit & AmountUtils;
- *   bundleCache: Awaited<ReturnType<typeof unsafeMakeBundleCache>>;
+ *   bundleCache: EReturn<typeof unsafeMakeBundleCache>;
  *   rates: VaultManagerParamValues;
  *   interestTiming: InterestTiming;
  *   zoe: ZoeService;
@@ -162,7 +163,6 @@ export const setupElectorateReserveAndAuction = async (
 
   await startEconomicCommittee(space, electorateTerms);
   await setupReserve(space);
-  // const quoteIssuerKit = makeIssuerKit('quote', AssetKind.SET);
 
   /** @type {import('@agoric/vat-data').Baggage} */
   const paBaggage = makeScalarMapStore();

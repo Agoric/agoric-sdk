@@ -9,11 +9,11 @@ import (
 
 	sdkioerrors "cosmossdk.io/errors"
 	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
-	clienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v6/modules/core/05-port/types"
-	host "github.com/cosmos/ibc-go/v6/modules/core/24-host"
-	ibcexported "github.com/cosmos/ibc-go/v6/modules/core/exported"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
+	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/types"
@@ -31,6 +31,7 @@ type Keeper struct {
 
 	channelKeeper types.ChannelKeeper
 	portKeeper    types.PortKeeper
+	clientKeeper  types.ClientKeeper
 
 	// Filled out by `WithScope`
 	scopedKeeper types.ScopedKeeper
@@ -43,12 +44,14 @@ func NewKeeper(
 	cdc codec.Codec,
 	channelKeeper types.ChannelKeeper,
 	portKeeper types.PortKeeper,
+	clientKeeper types.ClientKeeper,
 ) Keeper {
 
 	return Keeper{
 		cdc:           cdc,
 		channelKeeper: channelKeeper,
 		portKeeper:    portKeeper,
+		clientKeeper:  clientKeeper,
 	}
 }
 
@@ -113,10 +116,7 @@ func (k Keeper) ReceiveChanOpenInit(ctx sdk.Context, order channeltypes.Order, c
 func (k Keeper) ReceiveSendPacket(ctx sdk.Context, packet ibcexported.PacketI) (uint64, error) {
 	sourcePort := packet.GetSourcePort()
 	sourceChannel := packet.GetSourceChannel()
-	timeoutHeight := packet.GetTimeoutHeight()
-	timeoutRevisionNumber := timeoutHeight.GetRevisionNumber()
-	timeoutRevisionHeight := timeoutHeight.GetRevisionHeight()
-	clientTimeoutHeight := clienttypes.NewHeight(timeoutRevisionNumber, timeoutRevisionHeight)
+	timeoutHeight := clienttypes.MustParseHeight(packet.GetTimeoutHeight().String())
 	timeoutTimestamp := packet.GetTimeoutTimestamp()
 	data := packet.GetData()
 
@@ -125,7 +125,7 @@ func (k Keeper) ReceiveSendPacket(ctx sdk.Context, packet ibcexported.PacketI) (
 	if !ok {
 		return 0, sdkioerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 	}
-	return k.SendPacket(ctx, chanCap, sourcePort, sourceChannel, clientTimeoutHeight, timeoutTimestamp, data)
+	return k.SendPacket(ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
 }
 
 // SendPacket defines a wrapper function for the channel Keeper's function

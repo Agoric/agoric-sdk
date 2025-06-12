@@ -1,28 +1,35 @@
 /* eslint-env node */
 
+import fs from 'node:fs';
 import * as fsPromises from 'node:fs/promises';
-import * as pathNamespace from 'node:path';
+import nativePath from 'node:path';
+
+import tmp from 'tmp';
 import { Fail } from '@endo/errors';
+
 import {
   SwingsetMessageType,
   QueuedActionType,
 } from '@agoric/internal/src/action-types.js';
-import { makeInitMsg } from '@agoric/internal/src/chain-utils.js';
+import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import { deepCopyJsonable } from '@agoric/internal/src/js-utils.js';
+import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
+import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import { initSwingStore } from '@agoric/swing-store';
-import { makeSlogSender } from '@agoric/telemetry';
-import { launch } from '../src/launch-chain.js';
-import { DEFAULT_SIM_SWINGSET_PARAMS } from '../src/sim-params.js';
 import {
-  makeBufferedStorage,
-  makeKVStoreFromMap,
-} from '../src/helpers/bufferedStorage.js';
-import { makeQueue, makeQueueStorageMock } from '../src/helpers/make-queue.js';
+  extractPortNums,
+  makeLaunchChain,
+  makeQueueStorage,
+} from '../src/chain-main.js';
+import { DEFAULT_SIM_SWINGSET_PARAMS } from '../src/sim-params.js';
+import { makeQueue } from '../src/helpers/make-queue.js';
 
+/** @import {EReturn} from '@endo/far'; */
 /** @import { BlockInfo, InitMsg } from '@agoric/internal/src/chain-utils.js' */
-/** @import { Mailbox, ManagerType, SwingSetConfig } from '@agoric/swingset-vat' */
-/** @import { KVStore } from '../src/helpers/bufferedStorage.js' */
+/** @import { ManagerType, SwingSetConfig } from '@agoric/swingset-vat' */
 /** @import { InboundQueue } from '../src/launch-chain.js'; */
+
+const tmpDir = makeTempDirFactory(tmp);
 
 /**
  * @template T
@@ -36,30 +43,28 @@ const stripUndefined = obj =>
   );
 
 /** @type {InitMsg} */
-export const defaultInitMessage = harden(
-  makeInitMsg({
-    type: SwingsetMessageType.AG_COSMOS_INIT,
-    blockHeight: 100,
-    blockTime: Math.floor(Date.parse('2020-01-01T00:00Z') / 1000),
-    chainID: 'localtest',
-    params: DEFAULT_SIM_SWINGSET_PARAMS,
-    supplyCoins: [],
+export const defaultInitMessage = harden({
+  type: SwingsetMessageType.AG_COSMOS_INIT,
+  blockHeight: 100,
+  blockTime: Math.floor(Date.parse('2020-01-01T00:00Z') / 1000),
+  chainID: 'localtest',
+  params: DEFAULT_SIM_SWINGSET_PARAMS,
+  supplyCoins: [],
 
-    // cosmos-sdk module port mappings are generally ignored in testing, but
-    // relevant in live blockchains.
-    // Include them with unpredictable values.
-    ...Object.fromEntries(
-      Object.entries({
-        storagePort: 0,
-        swingsetPort: 0,
-        vbankPort: 0,
-        vibcPort: 0,
-      })
-        .sort(() => Math.random() - 0.5)
-        .map(([name, _zero], i) => [name, i + 1]),
-    ),
-  }),
-);
+  // cosmos-sdk module port mappings are generally ignored in testing, but
+  // relevant in live blockchains.
+  // Include them with unpredictable values.
+  ...Object.fromEntries(
+    Object.entries({
+      storagePort: 0,
+      swingsetPort: 0,
+      vbankPort: 0,
+      vibcPort: 0,
+    })
+      .sort(() => Math.random() - 0.5)
+      .map(([name, _zero], i) => [name, i + 1]),
+  ),
+});
 /** @type {InitMsg} */
 export const defaultBootstrapMessage = harden({
   ...deepCopyJsonable(defaultInitMessage),
@@ -170,7 +175,7 @@ export const makeCosmicSwingsetTestKit = async (
     fixupInitMessage,
     fixupConfig,
     slogSender,
-    swingsetConfig = {},
+    swingsetConfig,
     swingStore,
     vats,
 
@@ -179,7 +184,7 @@ export const makeCosmicSwingsetTestKit = async (
     addBootstrapBehaviors,
     bootstrapCoreEvals,
   } = {},
-  { fsp = fsPromises, resolvePath = pathNamespace.resolve } = {},
+  { fsp = fsPromises, resolvePath = nativePath.resolve } = {},
 ) => {
   await null;
   /** @type {SwingSetConfig} */
@@ -216,50 +221,66 @@ export const makeCosmicSwingsetTestKit = async (
   if (initMessage.isBootstrap === undefined && !swingStore) {
     initMessage.isBootstrap = true;
   }
+  const portNums = extractPortNums(initMessage);
+  const knownPorts = new Map(
+    Object.entries(portNums).map(([name, value]) => [value, name]),
+  );
 
   if (!swingStore) swingStore = initSwingStore(); // in-memory
   const { hostStorage } = swingStore;
 
-  const actionQueueStorage = makeQueueStorageMock().storage;
-  const highPriorityQueueStorage = makeQueueStorageMock().storage;
-  const { kvStore: mailboxKVStore, ...mailboxBufferMethods } =
-    makeBufferedStorage(
-      /** @type {KVStore<Mailbox>} */ (makeKVStoreFromMap(new Map())),
-    );
-  const mailboxStorage = { ...mailboxKVStore, ...mailboxBufferMethods };
-
-  const savedChainSends = [];
-  const clearChainSends = async () => savedChainSends.splice(0);
-  const replayChainSends = (..._args) => {
-    throw Error('not implemented');
+  const fakeAgcc = {
+    /** @type {(destPort: unknown, msgJson: string) => string} */
+    send: (destPort, msgJson) => {
+      const portName =
+        knownPorts.get(destPort) || Fail`unknown cosmos port ${destPort}`;
+      const msg = JSON.parse(msgJson);
+      const result = receiveBridgeSend(portName, msg);
+      return JSON.stringify(result);
+    },
   };
+  const actionQueueStorage = makeQueueStorage(
+    msg => fakeAgcc.send(portNums.storage, msg),
+    STORAGE_PATH.ACTION_QUEUE,
+  );
+  const highPriorityQueueStorage = makeQueueStorage(
+    msg => fakeAgcc.send(portNums.storage, msg),
+    STORAGE_PATH.HIGH_PRIORITY_QUEUE,
+  );
 
-  if (!slogSender && (env.SLOGFILE || env.SLOGSENDER)) {
-    slogSender = await makeSlogSender({ env });
-  }
-
-  const launchResult = await launch({
-    swingStore,
-    actionQueueStorage,
-    highPriorityQueueStorage,
-    mailboxStorage,
-    clearChainSends,
-    replayChainSends,
-    bridgeOutbound: receiveBridgeSend,
-    vatconfig: config,
-    argv: { bootMsg: initMessage },
+  const [dbDir, cleanupDB] = tmpDir(debugName || 'testdb');
+  const launchChain = makeLaunchChain(fakeAgcc, dbDir, {
     env,
-    debugName,
-    slogSender,
-    swingsetConfig,
+    fs,
+    path: nativePath,
+    testingOverrides: {
+      debugName,
+      slogSender,
+      swingStore,
+      vatconfig: config,
+      withInternals: true,
+    },
   });
-  const { blockingSend, shutdown: shutdownKernel } = launchResult;
+  const launchResult = await launchChain({
+    ...initMessage,
+    resolvedConfig: swingsetConfig,
+  });
+  const {
+    blockingSend,
+    shutdown: shutdownKernel,
+    internals,
+  } = /** @type {EReturn<import('../src/launch-chain.js').launchAndShareInternals>} */ (
+    launchResult
+  );
   /** @type {(options?: { kernelOnly?: boolean }) => Promise<void>} */
   const shutdown = async ({ kernelOnly = false } = {}) => {
     await shutdownKernel();
     if (kernelOnly) return;
     await hostStorage.close();
+    await cleanupDB();
   };
+  const { controller, bridgeInbound, timer } = internals;
+  const { queueAndRun, EV } = makeRunUtils(controller);
 
   // Remember information about the current block, starting with the init
   // message.
@@ -379,9 +400,15 @@ export const makeCosmicSwingsetTestKit = async (
     // SwingSet-oriented references.
     actionQueue,
     highPriorityQueue,
-    mailboxStorage,
     shutdown,
     swingStore,
+
+    // Controller-oriented helpers.
+    controller,
+    bridgeInbound,
+    timer,
+    queueAndRun,
+    EV,
 
     // Functions specific to this kit.
     getLastBlockInfo,

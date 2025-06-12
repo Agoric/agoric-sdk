@@ -19,7 +19,7 @@ import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
 import { E } from '@endo/eventual-send';
 import { TimeMath } from '@agoric/time';
 import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
-import { multiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { multiplyBy } from '@agoric/ertp/src/ratio.js';
 
 import {
   SECONDS_PER_DAY as ONE_DAY,
@@ -45,13 +45,14 @@ import {
 /**
  * @import {VaultFactoryContract as VFC} from '../../src/vaultFactory/vaultFactory.js';
  * @import {AmountUtils} from '@agoric/zoe/tools/test-utils.js';
+ * @import {EReturn} from '@endo/far';
  */
 
 /**
  * @typedef {Record<string, any> & {
  *   aeth: IssuerKit & AmountUtils;
  *   run: IssuerKit & AmountUtils;
- *   bundleCache: Awaited<ReturnType<typeof unsafeMakeBundleCache>>;
+ *   bundleCache: EReturn<typeof unsafeMakeBundleCache>;
  *   rates: VaultManagerParamValues;
  *   interestTiming: InterestTiming;
  *   zoe: ZoeService;

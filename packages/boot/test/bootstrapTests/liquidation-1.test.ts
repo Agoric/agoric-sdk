@@ -2,16 +2,15 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { NonNullish } from '@agoric/internal';
-import process from 'process';
 import type { ExecutionContext, TestFn } from 'ava';
-import type { ScheduleNotification } from '@agoric/inter-protocol/src/auction/scheduler.js';
+import process from 'process';
 import {
   ensureVaultCollateral,
-  type LiquidationTestContext,
   likePayouts,
   makeLiquidationTestContext,
   scale6,
   type LiquidationSetup,
+  type LiquidationTestContext,
 } from '../../tools/liquidation.js';
 
 const test = anyTest as TestFn<LiquidationTestContext>;
@@ -145,7 +144,6 @@ const checkFlow1 = async (
     advanceTimeTo,
     check,
     priceFeedDrivers,
-    readLatest,
     readPublished,
     walletFactoryDriver,
     setupVaults,
@@ -256,6 +254,7 @@ const checkFlow1 = async (
     {
       const { nextDescendingStepTime, nextStartTime } =
         readPublished('auction.schedule');
+      // @ts-expect-error could be null or a different shape
       t.is(nextDescendingStepTime.absValue, nextStartTime.absValue);
     }
 

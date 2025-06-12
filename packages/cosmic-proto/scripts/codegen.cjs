@@ -1,7 +1,9 @@
 #!/usr/bin/env node
+
 /* eslint-env node */
 const { exec, execSync, spawnSync } = require('child_process');
 const path = require('path');
+const assert = require('node:assert/strict');
 const process = require('process');
 const telescope = require('@cosmology/telescope').default;
 const rimraf = require('rimraf').rimrafSync;
@@ -110,6 +112,10 @@ telescope({
         // customTypes: {
         //   useCosmosSDKDec: true,
         // },
+        customTypes: {
+          base64Lib: '@endo/base64',
+          useEnhancedDecimal: true,
+        },
       },
     },
     aminoEncoding: {
@@ -135,9 +141,16 @@ telescope({
     fixTypeImport('./src/codegen', gnuSed);
     console.log('🔧 type keyword added');
 
-    spawnSync('yarn', ['prettier', '--write', 'src'], {
-      cwd: path.join(__dirname, '..'),
-    });
+    // top-level to get the root prettier config
+    const prettierResult = spawnSync(
+      'yarn',
+      ['run', '--top-level', 'prettier', '--write', 'src'],
+      {
+        cwd: path.join(__dirname, '..'),
+        stdio: 'inherit',
+      },
+    );
+    assert.equal(prettierResult.status, 0);
     console.log('💅 code formatted by Prettier');
 
     console.log('ℹ️ `yarn build && yarn test` to test it.');

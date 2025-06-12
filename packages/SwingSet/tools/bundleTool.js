@@ -1,6 +1,10 @@
 import { makeNodeBundleCache as wrappedMaker } from '@endo/bundle-source/cache.js';
 import styles from 'ansi-styles'; // less authority than 'chalk'
 
+/**
+ * @import {EReturn} from '@endo/far';
+ */
+
 /** @type {typeof wrappedMaker} */
 export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
   const log = (...args) => {
@@ -17,7 +21,7 @@ export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
   };
   return wrappedMaker(dest, { log, ...options }, loadModule, pid);
 };
-/** @typedef {Awaited<ReturnType<typeof makeNodeBundleCache>>} BundleCache */
+/** @typedef {EReturn<typeof makeNodeBundleCache>} BundleCache */
 
 /** @type {Map<string, Promise<BundleCache>>} */
 const providedCaches = new Map();

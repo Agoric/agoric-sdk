@@ -4,10 +4,10 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vtransfer/keeper"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	clienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v6/modules/core/05-port/types"
-	"github.com/cosmos/ibc-go/v6/modules/core/exported"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
+	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 )
 
 // IBCMiddleware (https://ibc.cosmos.network/main/ibc/apps/ibcmodule) forwards
@@ -160,7 +160,11 @@ func (im IBCMiddleware) WriteAcknowledgement(
 	packet exported.PacketI,
 	ack exported.Acknowledgement,
 ) error {
-	return im.vtransferKeeper.InterceptWriteAcknowledgement(ctx, chanCap, packet, ack)
+	syncAck, origPacket := im.vtransferKeeper.InterceptWriteAcknowledgement(ctx, chanCap, packet, ack)
+	if syncAck != nil {
+		return im.vtransferKeeper.WriteAcknowledgement(ctx, chanCap, origPacket, syncAck)
+	}
+	return nil
 }
 
 ///////////////////////////////////

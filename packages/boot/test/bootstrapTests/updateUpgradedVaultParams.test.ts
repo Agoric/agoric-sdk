@@ -3,7 +3,7 @@
  * We change a parameter so that provideParamGovernance() is called once, and
  * paramGoverance has been set. Then upgrade vaultFactory, so any ephemeral
  * objects from the contract held by the governor are gone, then try to change
- * param again, to show that the bug is fixedd.
+ * param again, to show that the bug is fixed.
  */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
@@ -70,10 +70,6 @@ test.before(async t => {
 test.after.always(t => {
   return t.context.shutdown && t.context.shutdown();
 });
-
-const outcome = {
-  bids: [{ payouts: { Bid: 0, Collateral: 1.800828 } }],
-};
 
 test('restart vaultFactory, change params', async t => {
   const { runUtils, gd, agoricNamesRemotes } = t.context;

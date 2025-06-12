@@ -2,7 +2,7 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
-import { assert, X } from '@endo/errors';
+import { Fail } from '@endo/errors';
 import bundleSource from '@endo/bundle-source';
 import { Far } from '@endo/marshal';
 import { E } from '@endo/eventual-send';
@@ -11,6 +11,10 @@ import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import { makeZoeForTest } from '../../../tools/setup-zoe.js';
+
+/**
+ * @import {ZoeService} from '@agoric/zoe';
+ */
 
 /**
  * @typedef {object} TestContext
@@ -61,7 +65,7 @@ test.before(
           if (query.kind === 'Paid') {
             requiredFee = feeAmount;
             AmountMath.isGTE(fee, requiredFee) ||
-              assert.fail(X`Minimum fee of ${feeAmount} not met; have ${fee}`);
+              Fail`Minimum fee of ${feeAmount} not met; have ${fee}`;
           }
           const reply = { pong: query };
           return harden({ reply, requiredFee });

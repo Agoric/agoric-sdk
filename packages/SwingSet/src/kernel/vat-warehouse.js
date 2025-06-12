@@ -299,7 +299,10 @@ export function makeVatWarehouse({
    */
   async function replayTranscript(vatID, vatKeeper, manager) {
     const total = vatKeeper.transcriptSize();
-    kernelSlog.write({ type: 'start-replay', vatID, deliveries: total });
+    const finish = kernelSlog.startDuration(['start-replay', 'finish-replay'], {
+      vatID,
+      deliveries: total,
+    });
     let first = true;
     for await (const [deliveryNum, te] of vatKeeper.getTranscript()) {
       // if (deliveryNum % 100 === 0) {
@@ -326,7 +329,7 @@ export function makeVatWarehouse({
       finishSlog(status);
       sim.finishSimulation(); // will throw if syscalls did not match
     }
-    kernelSlog.write({ type: 'finish-replay', vatID });
+    finish({ deliveries: undefined });
   }
 
   /**
@@ -563,18 +566,20 @@ export function makeVatWarehouse({
 
   /**
    * Save a heap snapshot for the given vatID, if the snapshotInterval
-   * is satisified
+   * is satisfied or a lower explicit delivery count has been reached.
    *
    * @param {VatID} vatID
+   * @param {number} [minDeliveryCount]
    */
-  async function maybeSaveSnapshot(vatID) {
-    const recreate = true; // PANIC in the failure case
-    const { manager } = await ensureVatOnline(vatID, recreate);
-    if (!manager.makeSnapshot) {
-      return false; // worker cannot make snapshots
+  async function maybeSaveSnapshot(vatID, minDeliveryCount = snapshotInterval) {
+    kernelKeeper.vatIsAlive(vatID) || Fail`${q(vatID)}: not alive`;
+    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+    const vatOptions = vatKeeper.getOptions();
+
+    if (!vatOptions.useTranscript) {
+      return false;
     }
 
-    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     let reason;
 
     const hasSnapshot = !!vatKeeper.getSnapshotInfo();
@@ -583,13 +588,19 @@ export function makeVatWarehouse({
     if (!hasSnapshot && deliveriesInSpan >= snapshotInitial) {
       // begin snapshot after 'snapshotInitial' deliveries in an incarnation
       reason = { snapshotInitial };
-    } else if (deliveriesInSpan >= snapshotInterval) {
+    } else if (deliveriesInSpan >= minDeliveryCount) {
       // begin snapshot after 'snapshotInterval' deliveries in a span
-      reason = { snapshotInterval };
+      reason = { snapshotInterval: minDeliveryCount };
     }
     // console.log('maybeSaveSnapshot: reason:', reason);
     if (!reason) {
       return false; // not time to make a snapshot
+    }
+
+    const recreate = true; // PANIC in the failure case
+    const { manager } = await ensureVatOnline(vatID, recreate);
+    if (!manager.makeSnapshot) {
+      return false; // worker cannot make snapshots
     }
 
     // always do a bringOutYourDead just before a snapshot, to shake

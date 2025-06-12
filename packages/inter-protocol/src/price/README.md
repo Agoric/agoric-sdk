@@ -25,7 +25,7 @@ Oracle operates can make PushPrice offers in the CLI. There is no GUI.
 
 ### CLI
 
-See [oracle.js command file](/packages/agoric-cli/src/commands/oracle.js) and its [integration test script](/packages/agoric-cli/test/agops-oracle-smoketest.sh).
+See [oracle.js command file](/packages/agoric-cli/src/commands/oracle.js)
 
 ```mermaid
 sequenceDiagram

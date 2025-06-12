@@ -1,7 +1,6 @@
 // @ts-nocheck
 /* global WeakRef, FinalizationRegistry */
 
-import anylogger from 'anylogger';
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
@@ -18,6 +17,7 @@ import {
   makeSwingsetController,
 } from '../src/index.js';
 import {
+  makeConsole,
   makeMessage,
   makeResolutions,
   makeDropExports,
@@ -25,15 +25,7 @@ import {
   makeRetireImports,
 } from './util.js';
 
-function makeConsole(tag) {
-  const log = anylogger(tag);
-  const cons = {};
-  for (const level of ['debug', 'log', 'info', 'warn', 'error']) {
-    cons[level] = log[level];
-  }
-  return harden(cons);
-}
-
+// eslint-disable-next-line no-unused-vars
 function writeSlogObject(o) {
   function bigintReplacer(_, arg) {
     if (typeof arg === 'bigint') {
@@ -41,7 +33,7 @@ function writeSlogObject(o) {
     }
     return arg;
   }
-  0 && console.log(JSON.stringify(o, bigintReplacer));
+  console.log(JSON.stringify(o, bigintReplacer));
 }
 
 function makeEndowments() {
@@ -50,7 +42,7 @@ function makeEndowments() {
     kernelStorage: initSwingStore().kernelStorage,
     runEndOfCrank: () => {},
     makeConsole,
-    writeSlogObject,
+    // writeSlogObject,
     WeakRef,
     FinalizationRegistry,
   };

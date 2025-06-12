@@ -2,11 +2,14 @@
 /* eslint-env node */
 /// <reference types="ses" />
 
-import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { Fail } from '@endo/errors';
 import { serializeSlogObj } from './serialize-slog-obj.js';
+
+/**
+ * @import {EReturn} from '@endo/far';
+ */
 
 export const DEFAULT_CBUF_SIZE = 100 * 1024 * 1024;
 export const DEFAULT_CBUF_FILE = 'flight-recorder.bin';
@@ -35,6 +38,9 @@ const initializeCircularBuffer = async (bufferFile, circularBufferSize) => {
     }
     throw e;
   });
+
+  // Use the default size if not provided and file doesn't exist.
+  circularBufferSize = circularBufferSize || stbuf?.size || DEFAULT_CBUF_SIZE;
   const arenaSize = BigInt(circularBufferSize - I_ARENA_START);
 
   if (stbuf && stbuf.size >= I_ARENA_START) {
@@ -63,7 +69,7 @@ const initializeCircularBuffer = async (bufferFile, circularBufferSize) => {
   return arenaSize;
 };
 
-/** @typedef {Awaited<ReturnType<typeof makeSimpleCircularBuffer>>} CircularBuffer */
+/** @typedef {EReturn<typeof makeSimpleCircularBuffer>} CircularBuffer */
 
 /**
  *
@@ -72,8 +78,8 @@ const initializeCircularBuffer = async (bufferFile, circularBufferSize) => {
  * @param {(outbuf: Uint8Array, readStart: number, firstReadLength: number) => void} readRecord
  * @param {(record: Uint8Array, firstWriteLength: number, circEnd: bigint) => Promise<void>} writeRecord
  */
-function finishCircularBuffer(arenaSize, header, readRecord, writeRecord) {
-  const readCircBuf = (outbuf, offset = 0) => {
+function makeCircBufMethods(arenaSize, header, readRecord, writeRecord) {
+  const readCircBuf = async (outbuf, offset = 0) => {
     offset + outbuf.byteLength <= arenaSize ||
       Fail`Reading past end of circular buffer`;
 
@@ -95,7 +101,7 @@ function finishCircularBuffer(arenaSize, header, readRecord, writeRecord) {
       // The data is contiguous, like ---AAABBB---
       return { done: true, value: undefined };
     }
-    readRecord(outbuf, readStart, firstReadLength);
+    await readRecord(outbuf, readStart, firstReadLength);
     return { done: false, value: outbuf };
   };
 
@@ -139,9 +145,10 @@ function finishCircularBuffer(arenaSize, header, readRecord, writeRecord) {
 
     // Advance the start pointer until we have space to write the record.
     let overlap = BigInt(record.byteLength) - capacity;
+    await null;
     while (overlap > 0n) {
       const startRecordLength = new Uint8Array(RECORD_HEADER_SIZE);
-      const { done } = readCircBuf(startRecordLength);
+      const { done } = await readCircBuf(startRecordLength);
       if (done) {
         break;
       }
@@ -217,20 +224,22 @@ export const makeSimpleCircularBuffer = async ({
   arenaSize === hdrArenaSize ||
     Fail`${filename} arena size mismatch; wanted ${arenaSize}, got ${hdrArenaSize}`;
 
-  /** @type {(outbuf: Uint8Array, readStart: number, firstReadLength: number) => void} */
-  const readRecord = (outbuf, readStart, firstReadLength) => {
-    const bytesRead = fs.readSync(file.fd, outbuf, {
+  /** @type {(outbuf: Uint8Array, readStart: number, firstReadLength: number) => Promise<void>} */
+  const readRecord = async (outbuf, readStart, firstReadLength) => {
+    const { bytesRead } = await file.read(outbuf, {
       length: firstReadLength,
       position: Number(readStart) + I_ARENA_START,
     });
     assert.equal(bytesRead, firstReadLength, 'Too few bytes read');
 
     if (bytesRead < outbuf.byteLength) {
-      fs.readSync(file.fd, outbuf, {
+      const length = outbuf.byteLength - firstReadLength;
+      const { bytesRead: bytesRead2 } = await file.read(outbuf, {
         offset: firstReadLength,
-        length: outbuf.byteLength - firstReadLength,
+        length,
         position: I_ARENA_START,
       });
+      assert.equal(bytesRead2, length, 'Too few bytes read');
     }
   };
 
@@ -265,25 +274,35 @@ export const makeSimpleCircularBuffer = async ({
     await file.write(headerBuffer, undefined, undefined, 0);
   };
 
-  return finishCircularBuffer(arenaSize, header, readRecord, writeRecord);
+  return {
+    fileHandle: file,
+    ...makeCircBufMethods(arenaSize, header, readRecord, writeRecord),
+  };
 };
 
 /**
  *
- * @param {Pick<Awaited<ReturnType<typeof makeSimpleCircularBuffer>>, 'writeCircBuf'>} circBuf
+ * @param {Pick<CircularBuffer, 'fileHandle' | 'writeCircBuf'>} circBuf
  */
-export const makeSlogSenderFromBuffer = ({ writeCircBuf }) => {
-  /** @type {Promise<void>} */
+export const makeSlogSenderFromBuffer = ({ fileHandle, writeCircBuf }) => {
+  /** @type {Promise<void> | undefined} */
   let toWrite = Promise.resolve();
   const writeJSON = (obj, serialized = serializeSlogObj(obj)) => {
     // Prepend a newline so that the file can be more easily manipulated.
     const data = new TextEncoder().encode(`\n${serialized}`);
     // console.log('have obj', obj, data);
-    toWrite = toWrite.then(() => writeCircBuf(data));
+    toWrite = toWrite?.then(() => writeCircBuf(data));
   };
   return Object.assign(writeJSON, {
     forceFlush: async () => {
       await toWrite;
+      await fileHandle.datasync();
+    },
+    shutdown: async () => {
+      const lastWritten = toWrite;
+      toWrite = undefined;
+      await lastWritten;
+      await fileHandle.close();
     },
     usesJsonObject: true,
   });
@@ -295,6 +314,6 @@ export const makeSlogSenderFromBuffer = ({ writeCircBuf }) => {
  * @type {import('./index.js').MakeSlogSender}
  */
 export const makeSlogSender = async opts => {
-  const { writeCircBuf } = await makeSimpleCircularBuffer(opts);
-  return makeSlogSenderFromBuffer({ writeCircBuf });
+  const { fileHandle, writeCircBuf } = await makeSimpleCircularBuffer(opts);
+  return makeSlogSenderFromBuffer({ fileHandle, writeCircBuf });
 };

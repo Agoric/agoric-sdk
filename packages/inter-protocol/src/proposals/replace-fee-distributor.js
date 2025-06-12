@@ -159,8 +159,8 @@ harden(replaceFeeDistributor);
 
 const t = 'replaceFeeDistributor';
 export const getManifestForReplaceFeeDistributor = async (
-  _,
-  feeDistributorOptions,
+  { restoreRef },
+  { feeDistributorRef, ...feeDistributorOptions },
 ) => ({
   manifest: {
     [replaceFeeDistributor.name]: {
@@ -190,6 +190,9 @@ export const getManifestForReplaceFeeDistributor = async (
         consume: { [Stable.symbol]: t },
       },
     },
+  },
+  installations: {
+    feeDistributor: restoreRef(feeDistributorRef),
   },
   options: { ...feeDistributorOptions },
 });

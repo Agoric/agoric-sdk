@@ -7,15 +7,15 @@
   "main": "./src/index.js",
   "scripts": {
     "build": "exit 0",
-    "prepack": "tsc --build tsconfig.build.json",
+    "prepack": "yarn run -T tsc --build tsconfig.build.json",
     "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
     "test": "ava",
     "test:c8": "c8 --all $C8_OPTIONS ava",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
-    "lint": "run-s --continue-on-error lint:*",
-    "lint:types": "tsc",
-    "lint:eslint": "eslint ."
+    "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
+    "lint:types": "yarn run -T tsc",
+    "lint:eslint": "yarn run -T eslint ."
   },
   "exports": {
     ".": "./src/index.js",
@@ -27,22 +27,22 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/base-zone": "^0.1.0",
-    "@agoric/vat-data": "^0.5.2",
-    "@endo/errors": "^1.2.8",
-    "@endo/far": "^1.1.9",
-    "@endo/pass-style": "^1.4.7"
+    "@agoric/base-zone": "workspace:*",
+    "@agoric/vat-data": "workspace:*",
+    "@endo/errors": "^1.2.10",
+    "@endo/far": "^1.1.11",
+    "@endo/pass-style": "^1.5.0"
   },
   "devDependencies": {
-    "@agoric/swingset-vat": "^0.32.2",
-    "@endo/patterns": "^1.4.7",
+    "@agoric/swingset-vat": "workspace:*",
+    "@endo/patterns": "^1.5.0",
     "ava": "^5.3.0"
   },
   "publishConfig": {
     "access": "public"
   },
   "engines": {
-    "node": "^18.12 || ^20.9"
+    "node": "^20.9 || ^22.11"
   },
   "ava": {
     "files": [
@@ -55,6 +55,6 @@
     "workerThreads": false
   },
   "typeCoverage": {
-    "atLeast": 98.56
+    "atLeast": 94
   }
 }

@@ -8,6 +8,7 @@ import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import makeNextLog from '../make-nextlog.js';
 
 test('weakMap in vat', async t => {
+  /** @type {SwingSetConfig} */
   const config = {
     includeDevDependencies: true, // for vat-data
     bootstrap: 'bootstrap',

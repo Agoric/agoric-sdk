@@ -55,6 +55,7 @@ export const makeWalletCommand = async command => {
     'wallet commands',
   );
 
+  /** @param {string} literalOrName */
   const normalizeAddress = literalOrName =>
     normalizeAddressWithOptions(literalOrName, wallet.opts());
 
@@ -112,9 +113,9 @@ export const makeWalletCommand = async command => {
     .action(async function (opts) {
       const offerStr = fs.readFileSync(opts.file).toString();
 
-      const { unserializer } = await makeVstorageKit({ fetch }, networkConfig);
+      const { marshaller } = makeVstorageKit({ fetch }, networkConfig);
 
-      const offerObj = unserializer.fromCapData(JSON.parse(offerStr));
+      const offerObj = marshaller.fromCapData(JSON.parse(offerStr));
       console.log(offerObj);
     });
 
@@ -127,9 +128,9 @@ export const makeWalletCommand = async command => {
     .action(async function (opts) {
       const offerStr = fs.readFileSync(opts.offer).toString();
 
-      const { unserializer } = await makeVstorageKit({ fetch }, networkConfig);
+      const { marshaller } = makeVstorageKit({ fetch }, networkConfig);
 
-      const offerObj = unserializer.fromCapData(JSON.parse(offerStr));
+      const offerObj = marshaller.fromCapData(JSON.parse(offerStr));
       console.log(offerObj.offer.id);
     });
 
@@ -204,7 +205,7 @@ export const makeWalletCommand = async command => {
     .command('list')
     .description('list all wallets in vstorage')
     .action(async function () {
-      const { vstorage } = await makeVstorageKit({ fetch }, networkConfig);
+      const { vstorage } = makeVstorageKit({ fetch }, networkConfig);
       const wallets = await vstorage.keys('published.wallet');
       process.stdout.write(wallets.join('\n'));
     });
@@ -218,10 +219,11 @@ export const makeWalletCommand = async command => {
       normalizeAddress,
     )
     .action(async function (opts) {
-      const { readPublished, unserializer, ...vsk } = makeVstorageKit(
-        { fetch },
-        networkConfig,
-      );
+      const {
+        readPublished,
+        marshaller: unserializer,
+        ...vsk
+      } = makeVstorageKit({ fetch }, networkConfig);
       const agoricNames = await makeAgoricNames(vsk.fromBoard, vsk.vstorage);
 
       const leader = makeLeader(networkConfig.rpcAddrs[0]);
@@ -229,6 +231,7 @@ export const makeWalletCommand = async command => {
         `:published.wallet.${opts.from}`,
         leader,
         {
+          // @ts-expect-error xxx follower/marshaller types
           unserializer,
         },
       );
@@ -275,15 +278,13 @@ export const makeWalletCommand = async command => {
     .action(async function ({ from }) {
       const spec = `:published.wallet.${from}`;
 
-      const leaderOptions = makeLeaderOptions({
-        sleep: SLEEP_SECONDS,
-        jitter: 0,
-        log: () => undefined,
-      });
-
       const leader = makeLeaderFromRpcAddresses(
         networkConfig.rpcAddrs,
-        leaderOptions,
+        makeLeaderOptions({
+          sleep: SLEEP_SECONDS,
+          jitter: 0,
+          log: console.warn,
+        }),
       );
 
       console.warn('Following', spec);

@@ -1,8 +1,59 @@
-/* global Buffer */
+import { decodeBase64 } from '@endo/base64';
+import { encodeHex } from '@agoric/internal/src/hex.js';
+import { StreamCellShape } from '@agoric/internal/src/lib-chainStorage.js';
+import { mustMatch } from '@agoric/internal';
+import {
+  QueryChildrenRequest,
+  QueryChildrenResponse,
+  QueryDataRequest,
+  QueryDataResponse,
+} from '@agoric/cosmic-proto/agoric/vstorage/query.js';
 
 /**
+ * @import {AbciQueryResponse} from '@cosmjs/tendermint-rpc';
+ * @import {JsonSafe} from '@agoric/cosmic-proto';
+ * @import {StreamCell} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {MinimalNetworkConfig} from './network-config.js';
  */
+
+const kindToRpc = /** @type {const} */ ({
+  __proto__: null,
+  children: '/agoric.vstorage.Query/Children',
+  data: '/agoric.vstorage.Query/Data',
+});
+
+// TODO move down to cosmic-proto, probably generated with Telescope
+const codecs = {
+  __proto__: null,
+  '/agoric.vstorage.Query/Children': {
+    request: QueryChildrenRequest,
+    response: QueryChildrenResponse,
+  },
+  '/agoric.vstorage.Query/Data': {
+    request: QueryDataRequest,
+    response: QueryDataResponse,
+  },
+};
+
+/**
+ * @template {'data' | 'children'} T
+ * @param {string} [path]
+ * @param {object} [opts]
+ * @param {T} [opts.kind]
+ * @param {number | bigint} [opts.height] 0 is the same as omitting height and implies the highest block
+ * @returns {`/abci_query?${string}`}
+ */
+export const makeAbciQuery = (
+  path = 'published',
+  { kind = /** @type {T} */ ('children'), height = 0 } = {},
+) => {
+  const rpc = kindToRpc[kind];
+  const { request } = codecs[rpc];
+  const buf = request.toProto({ path });
+
+  const hexData = encodeHex(buf);
+  return `/abci_query?path=%22${rpc}%22&data=0x${hexData}&height=${height}`;
+};
 
 /**
  * @param {object} powers
@@ -10,71 +61,97 @@
  * @param {MinimalNetworkConfig} config
  */
 export const makeVStorage = ({ fetch }, config) => {
-  /** @param {string} path */
-  const getJSON = path => {
-    const url = config.rpcAddrs[0] + path;
-    // console.warn('fetching', url);
-    return fetch(url, { keepalive: true }).then(res => res.json());
+  /**
+   * @template {'data' | 'children'} T
+   * @param {string} vstoragePath
+   * @param {object} [opts]
+   * @param {T} [opts.kind]
+   * @param {number | bigint} [opts.height] 0 is the same as omitting height and implies the highest block
+   * @returns {Promise<{result: {response: JsonSafe<AbciQueryResponse>}}>}
+   */
+  const getVstorageJson = async (
+    vstoragePath,
+    { kind = /** @type {T} */ ('children'), height = 0 } = {},
+  ) => {
+    const url =
+      config.rpcAddrs[0] + makeAbciQuery(vstoragePath, { kind, height });
+    const res = await fetch(url, { keepalive: true });
+    return res.json();
   };
-  // height=0 is the same as omitting height and implies the highest block
-  const url = (path = 'published', { kind = 'children', height = 0 } = {}) =>
-    `/abci_query?path=%22/custom/vstorage/${kind}/${path}%22&height=${height}`;
 
-  const readStorage = (path = 'published', { kind = 'children', height = 0 }) =>
-    getJSON(url(path, { kind, height }))
-      .catch(err => {
-        throw Error(`cannot read ${kind} of ${path}: ${err.message}`);
-      })
-      .then(data => {
-        const {
-          result: { response },
-        } = data;
-        if (response?.code !== 0) {
-          /** @type {any} */
-          const err = Error(
-            `error code ${response?.code} reading ${kind} of ${path}: ${response.log}`,
-          );
-          err.code = response?.code;
-          err.codespace = response?.codespace;
-          throw err;
-        }
-        return data;
-      });
+  /**
+   * @template {'children' | 'data'} T
+   * @param {string} [path]
+   * @param {object} [opts]
+   * @param {T} [opts.kind]
+   * @param {number | bigint} [opts.height] 0 is the same as omitting height and implies the highest block
+   * @returns {Promise<T extends 'children' ? QueryChildrenResponse :QueryDataResponse >}
+   */
+  const readStorage = async (
+    path = 'published',
+    { kind = /** @type {T} */ ('children'), height = 0 } = {},
+  ) => {
+    await null;
+
+    const rpc = kindToRpc[kind];
+    const codec = codecs[rpc];
+
+    let data;
+    try {
+      data = await getVstorageJson(path, { kind, height });
+    } catch (err) {
+      throw Error(`cannot read ${kind} of ${path}: ${err.message}`);
+    }
+
+    const {
+      result: { response },
+    } = data;
+    if (response?.code !== 0) {
+      /** @type {any} */
+      const err = Error(
+        `error code ${response?.code} reading ${kind} of ${path}: ${response.log}`,
+      );
+      err.code = response?.code;
+      err.codespace = response?.codespace;
+      throw err;
+    }
+
+    const { value: b64Value } = response;
+    // @ts-expect-error cast
+    return codec.response.decode(decodeBase64(b64Value));
+  };
 
   const vstorage = {
-    url,
-    decode({ result: { response } }) {
-      const { code } = response;
-      if (code !== 0) {
-        throw response;
-      }
-      const { value } = response;
-      return Buffer.from(value, 'base64').toString();
-    },
+    readStorage,
     /**
      *
      * @param {string} path
-     * @returns {Promise<string>} latest vstorage value at path
+     * @returns {Promise<QueryDataResponse>} latest vstorage value at path
      */
     async readLatest(path = 'published') {
-      const raw = await readStorage(path, { kind: 'data' });
-      return vstorage.decode(raw);
+      return readStorage(path, { kind: 'data' });
     },
+    /**
+     * Keys of children at the path
+     *
+     * @param {string} path
+     * @returns {Promise<string[]>}
+     */
     async keys(path = 'published') {
-      const raw = await readStorage(path, { kind: 'children' });
-      return JSON.parse(vstorage.decode(raw)).children;
+      const response = await readStorage(path, { kind: 'children' });
+      return response.children;
     },
     /**
      * @param {string} path
      * @param {number} [height] default is highest
-     * @returns {Promise<{blockHeight: number, values: string[]}>}
+     * @returns {Promise<StreamCell<unknown>>}
      */
     async readAt(path, height = undefined) {
-      const raw = await readStorage(path, { kind: 'data', height });
-      const txt = vstorage.decode(raw);
-      /** @type {{ value: string }} */
-      const { value } = JSON.parse(txt);
-      return JSON.parse(value);
+      const response = await readStorage(path, { kind: 'data', height });
+      /** @type {unknown} */
+      const cell = harden(JSON.parse(response.value));
+      mustMatch(cell, StreamCellShape);
+      return cell;
     },
     /**
      * Read values going back as far as available
@@ -86,6 +163,7 @@ export const makeVStorage = ({ fetch }, config) => {
     async readFully(path, minHeight = undefined) {
       const parts = [];
       // undefined the first iteration, to query at the highest
+      /** @type {string | undefined} */
       let blockHeight;
       await null;
       do {
@@ -94,7 +172,7 @@ export const makeVStorage = ({ fetch }, config) => {
         try {
           ({ blockHeight, values } = await vstorage.readAt(
             path,
-            blockHeight && Number(blockHeight) - 1,
+            blockHeight === undefined ? undefined : Number(blockHeight) - 1,
           ));
           // console.debug('readAt returned', { blockHeight });
         } catch (err) {
@@ -116,8 +194,8 @@ export const makeVStorage = ({ fetch }, config) => {
         // console.debug('PUSHED', values);
         // console.debug('NEW', { blockHeight, minHeight });
         if (minHeight && Number(blockHeight) <= Number(minHeight)) break;
-      } while (blockHeight > 0);
-      return parts.flat();
+      } while (Number(blockHeight) > 0);
+      return /** @type {string[]} */ (parts.flat());
     },
   };
   return vstorage;

@@ -200,7 +200,9 @@ test(`mint and sell opera tickets`, async t => {
     const {
       value: [{ instance }],
     } = await E(invitationIssuer).getAmountOf(invitation);
+    /** @type {any} */
     const ticketSalesPublicFacet = await E(zoe).getPublicFacet(instance);
+    /** @type {any} */
     const terms = await E(zoe).getTerms(instance);
     const ticketIssuer = await E(ticketSalesPublicFacet).getItemsIssuer();
     const ticketBrand = await E(ticketIssuer).getBrand();
@@ -289,6 +291,7 @@ test(`mint and sell opera tickets`, async t => {
     const {
       value: [{ instance: ticketSalesInstance }],
     } = await E(invitationIssuer).getAmountOf(invitation);
+    /** @type {any} */
     const ticketSalesPublicFacet =
       await E(zoe).getPublicFacet(ticketSalesInstance);
     const ticketIssuer = await E(ticketSalesPublicFacet).getItemsIssuer();
@@ -297,6 +300,7 @@ test(`mint and sell opera tickets`, async t => {
     const jokerPurse = await E(moolaIssuer).makeEmptyPurse();
     await E(jokerPurse).deposit(moola100Payment);
 
+    /** @type {any} */
     const { pricePerItem } = await E(zoe).getTerms(ticketSalesInstance);
 
     // Joker does NOT check available tickets and tries to buy the ticket
@@ -364,6 +368,7 @@ test(`mint and sell opera tickets`, async t => {
     const {
       value: [{ instance: ticketSalesInstance }],
     } = await E(invitationIssuer).getAmountOf(invitation);
+    /** @type {any} */
     const ticketSalesPublicFacet =
       await E(zoe).getPublicFacet(ticketSalesInstance);
     const ticketIssuer = await E(ticketSalesPublicFacet).getItemsIssuer();
@@ -433,8 +438,10 @@ test(`mint and sell opera tickets`, async t => {
     const {
       value: [{ instance: ticketSalesInstance }],
     } = await E(invitationIssuer).getAmountOf(invitation);
+    /** @type {any} */
     const ticketSalesPublicFacet =
       await E(zoe).getPublicFacet(ticketSalesInstance);
+    /** @type {any} */
     const terms = await E(zoe).getTerms(ticketSalesInstance);
     const ticketIssuer = await E(ticketSalesPublicFacet).getItemsIssuer();
     const ticketBrand = await E(ticketIssuer).getBrand();

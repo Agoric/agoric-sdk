@@ -40,6 +40,9 @@ import {
 } from './vaultManager.js';
 
 /**
+ * @import {MapStore} from '@agoric/store';
+ * @import {TransferPart, ZCF, ZCFMint, ZCFSeat} from '@agoric/zoe';
+ * @import {EReturn} from '@endo/far';
  * @import {TypedPattern} from '@agoric/internal';
  */
 
@@ -545,13 +548,14 @@ const prepareVaultDirector = (
   return makeVaultDirector;
 };
 harden(prepareVaultDirector);
+/** @typedef {EReturn<EReturn<typeof prepareVaultDirector>>} VaultDirector */
 
 /**
  * Prepare the VaultDirector kind, get or make the singleton
  *
  * @type {(
  *   ...pvdArgs: Parameters<typeof prepareVaultDirector>
- * ) => ReturnType<ReturnType<typeof prepareVaultDirector>>}
+ * ) => VaultDirector}
  */
 export const provideDirector = (...args) => {
   const makeVaultDirector = prepareVaultDirector(...args);

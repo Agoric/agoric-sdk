@@ -2,11 +2,12 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit } from '@agoric/ertp';
 import { prepareSwingsetVowTools } from '@agoric/vow';
+import type { ZCF } from '@agoric/zoe';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeZoeKitForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { makeHeapZone } from '@agoric/zone';
 import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
-import { E, Far } from '@endo/far';
+import { E, Far, type EReturn } from '@endo/far';
 import type { TestFn } from 'ava';
 import { createRequire } from 'node:module';
 import { makeZcfTools } from '../../src/utils/zcf-tools.js';
@@ -18,9 +19,7 @@ const makeTestContext = async () => {
   let testJig;
   const setJig = jig => (testJig = jig);
   const fakeVatAdmin = makeFakeVatAdmin(setJig);
-  const { zoeService: zoe, feeMintAccess } = makeZoeKitForTest(
-    fakeVatAdmin.admin,
-  );
+  const { zoeService: zoe } = makeZoeKitForTest(fakeVatAdmin.admin);
 
   const bundleCache = await makeNodeBundleCache('bundles', {}, s => import(s));
   const contractBundle = await bundleCache.load(contractEntry);
@@ -40,7 +39,7 @@ const makeTestContext = async () => {
   return { zoe, zcf, zcfTools, vt };
 };
 
-type TestContext = Awaited<ReturnType<typeof makeTestContext>>;
+type TestContext = EReturn<typeof makeTestContext>;
 
 const test = anyTest as TestFn<TestContext>;
 
@@ -58,7 +57,7 @@ test('unchanged: atomicRearrange(), assertUniqueKeyword()', async t => {
 test('changed: makeInvitation: watch promise', async t => {
   const { zoe, zcfTools, vt } = t.context;
 
-  const handler = Far('Trade', { handle: seat => {} });
+  const handler = Far('Trade', { handle: _seat => {} });
   const toTradeVow = zcfTools.makeInvitation(handler, 'trade');
 
   const toTrade = await vt.when(toTradeVow);

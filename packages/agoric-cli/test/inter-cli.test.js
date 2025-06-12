@@ -4,10 +4,16 @@ import '@endo/init';
 import test from 'ava';
 import { CommanderError, createCommand } from 'commander';
 
+import { encodeBase64 } from '@endo/base64';
+import {
+  QueryDataRequest,
+  QueryDataResponse,
+} from '@agoric/cosmic-proto/agoric/vstorage/query.js';
 import { makeParseAmount } from '@agoric/inter-protocol/src/clientSupport.js';
 import { Far } from '@endo/far';
 import { boardSlottingMarshaller, makeFromBoard } from '@agoric/client-utils';
 
+import { decodeHex } from '@agoric/internal/src/hex.js';
 import { fmtBid, makeInterCommand } from '../src/commands/inter.js';
 
 const { entries } = Object;
@@ -77,8 +83,8 @@ const publishedNames = {
 };
 
 const makeNet = published => {
-  const encode = txt => {
-    const value = Buffer.from(txt).toString('base64');
+  const encode = buf => {
+    const value = encodeBase64(buf);
     return { result: { response: { code: 0, value } } };
   };
   const ctx = makeFromBoard();
@@ -86,23 +92,29 @@ const makeNet = published => {
   const fmt = obj => {
     const capData = m.toCapData(harden(obj));
     const values = [JSON.stringify(capData)];
-    const specimen = { blockHeight: undefined, values };
-    const txt = JSON.stringify({
-      value: JSON.stringify(specimen),
-    });
-    return encode(txt);
+    const specimen = { blockHeight: 'bogus', values };
+    const value = JSON.stringify(specimen);
+    const buf = QueryDataResponse.toProto({ value });
+    return encode(buf);
   };
 
   /** @type {typeof fetch} */
   // @ts-expect-error mock
   const fetch = async (url, _opts) => {
     const matched = url.match(
-      /abci_query\?path=%22\/custom\/vstorage\/data\/published.(?<path>[^%]+)%22/,
+      /abci_query\?path=%22\/agoric\.vstorage\.Query\/Data%22&data=0x(?<reqHex>[0-9a-f]+)&/,
     );
     if (!matched) throw Error(`fetch what?? ${url}`);
-    const { path } = matched.groups;
+
+    const { reqHex } = matched.groups;
+    const reqBuf = decodeHex(reqHex);
+    const reqObj = QueryDataRequest.decode(reqBuf);
+    const { path } = reqObj;
+    if (!path) throw Error(`no path in ${reqHex}`);
+
+    if (!path.startsWith('published.')) throw Error(`not published ${path}`);
     let node = published;
-    for (const key of path.split('.')) {
+    for (const key of path.split('.').slice(1)) {
       node = node[key];
       if (!node) throw Error(`query what?? ${path}`);
     }

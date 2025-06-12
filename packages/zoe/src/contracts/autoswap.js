@@ -14,6 +14,10 @@ import {
 } from '../contractSupport/index.js';
 
 /**
+ * @import {OfferHandler, ZCF} from '@agoric/zoe';
+ */
+
+/**
  * Autoswap is a rewrite of Uniswap. Please see the documentation for
  * more https://agoric.com/documentation/zoe/guide/contracts/autoswap.html
  *

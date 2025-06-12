@@ -15,10 +15,6 @@ import { validateArtifactMode } from './internal.js';
  * @template T
  * @typedef  { Iterable<T> | AsyncIterable<T> } AnyIterable
  */
-/**
- * @template T
- * @typedef  { IterableIterator<T> | AsyncIterableIterator<T> } AnyIterableIterator
- */
 
 /**
  *
@@ -41,7 +37,7 @@ import { validateArtifactMode } from './internal.js';
  * Retrieve a value from the "host" portion of the kvStore, just like
  * hostStorage.hostKVStore.get() would do.
  *
- * @property {() => AnyIterableIterator<KVPair>} getExportData
+ * @property {() => AnyIterable<KVPair>} getExportData
  *
  * Get a full copy of the first-stage export data (key-value pairs) from the
  * swingStore. This represents both the contents of the KVStore (excluding host
@@ -56,7 +52,7 @@ import { validateArtifactMode } from './internal.js';
  * - transcript.${vatID}.${startPos} = ${{ vatID, startPos, endPos, hash }}
  * - transcript.${vatID}.current = ${{ vatID, startPos, endPos, hash }}
  *
- * @property {() => AnyIterableIterator<string>} getArtifactNames
+ * @property {() => AnyIterable<string>} getArtifactNames
  *
  * Get a list of name of artifacts available from the swingStore.  A name
  * returned by this method guarantees that a call to `getArtifact` on the same
@@ -69,7 +65,7 @@ import { validateArtifactMode } from './internal.js';
  * - snapshot.${vatID}.${snapPos}
  * - bundle.${bundleID}
  *
- * @property {(name: string) => AnyIterableIterator<Uint8Array>} getArtifact
+ * @property {(name: string) => AnyIterable<Uint8Array>} getArtifact
  *
  * Retrieve an artifact by name as a sequence of binary chunks.  May throw if
  * the artifact is not available, which can occur if the artifact is historical

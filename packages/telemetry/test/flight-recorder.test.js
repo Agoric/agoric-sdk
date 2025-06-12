@@ -12,27 +12,48 @@ const bufferTests = test.macro(
   /**
    *
    * @param {*} t
-   * @param {{makeBuffer: Function}} input
+   * @param {{makeBuffer: typeof makeSimpleCircularBuffer}} input
    */
   async (t, input) => {
     const BUFFER_SIZE = 512;
 
-    const { name: tmpFile, removeCallback } = tmp.fileSync();
-    const { readCircBuf, writeCircBuf } = await input.makeBuffer({
+    const { name: tmpFile, removeCallback } = tmp.fileSync({
+      discardDescriptor: true,
+    });
+    t.teardown(removeCallback);
+    const { fileHandle, readCircBuf, writeCircBuf } = await input.makeBuffer({
       circularBufferSize: BUFFER_SIZE,
       circularBufferFilename: tmpFile,
     });
-    const slogSender = makeSlogSenderFromBuffer({ writeCircBuf });
+    const realSlogSender = makeSlogSenderFromBuffer({
+      fileHandle,
+      writeCircBuf,
+    });
+    let wasShutdown = false;
+    const shutdown = () => {
+      if (wasShutdown) return;
+      wasShutdown = true;
+
+      return realSlogSender.shutdown();
+    };
+    t.teardown(shutdown);
+    // To verify lack of attempted mutation by the consumer, send only hardened
+    // entries.
+    /** @type {typeof realSlogSender} */
+    const slogSender = Object.assign(
+      (obj, serialized) => realSlogSender(harden(obj), serialized),
+      realSlogSender,
+    );
     slogSender({ type: 'start' });
     await slogSender.forceFlush();
     t.is(fs.readFileSync(tmpFile, { encoding: 'utf8' }).length, BUFFER_SIZE);
 
     const len0 = new Uint8Array(BigUint64Array.BYTES_PER_ELEMENT);
-    const { done: done0 } = readCircBuf(len0);
+    const { done: done0 } = await readCircBuf(len0);
     t.false(done0, 'readCircBuf should not be done');
     const dv0 = new DataView(len0.buffer);
     const buf0 = new Uint8Array(Number(dv0.getBigUint64(0)));
-    const { done: done0b } = readCircBuf(buf0, len0.byteLength);
+    const { done: done0b } = await readCircBuf(buf0, len0.byteLength);
     t.false(done0b, 'readCircBuf should not be done');
     const buf0Str = new TextDecoder().decode(buf0);
     t.is(buf0Str, `\n{"type":"start"}`, `start compare failed`);
@@ -51,12 +72,12 @@ const bufferTests = test.macro(
     let offset = 0;
     const len1 = new Uint8Array(BigUint64Array.BYTES_PER_ELEMENT);
     for (let i = 490; i < last; i += 1) {
-      const { done: done1 } = readCircBuf(len1, offset);
+      const { done: done1 } = await readCircBuf(len1, offset);
       offset += len1.byteLength;
       t.false(done1, `readCircBuf ${i} should not be done`);
       const dv1 = new DataView(len1.buffer);
       const buf1 = new Uint8Array(Number(dv1.getBigUint64(0)));
-      const { done: done1b } = readCircBuf(buf1, offset);
+      const { done: done1b } = await readCircBuf(buf1, offset);
       offset += buf1.byteLength;
       t.false(done1b, `readCircBuf ${i} should not be done`);
       const buf1Str = new TextDecoder().decode(buf1);
@@ -67,14 +88,24 @@ const bufferTests = test.macro(
       );
     }
 
-    const { done: done2 } = readCircBuf(len1, offset);
+    const { done: done2 } = await readCircBuf(len1, offset);
     t.assert(done2, `readCircBuf ${last} should be done`);
 
     slogSender(null, 'PRE-SERIALIZED');
     await slogSender.forceFlush();
     t.truthy(fs.readFileSync(tmpFile).includes('PRE-SERIALIZED'));
-    // console.log({ tmpFile });
-    removeCallback();
+
+    slogSender(null, 'PRE_SHUTDOWN');
+    const shutdownP = shutdown();
+    slogSender(null, 'POST_SHUTDOWN');
+    await shutdownP;
+    slogSender(null, 'SHUTDOWN_COMPLETED');
+
+    const finalContent = fs.readFileSync(tmpFile);
+
+    t.truthy(finalContent.includes('PRE_SHUTDOWN'));
+    t.falsy(finalContent.includes('POST_SHUTDOWN'));
+    t.falsy(finalContent.includes('SHUTDOWN_COMPLETED'));
   },
 );
 

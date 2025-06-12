@@ -15,8 +15,10 @@ import {
   type ModuleAccountSDKType,
 } from './auth.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
-import { isSet, bytesFromBase64, base64FromBytes } from '../../../helpers.js';
+import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
+import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
+import { encodeBase64 as base64FromBytes } from '@endo/base64';
 /**
  * QueryAccountsRequest is the request type for the Query/Accounts RPC method.
  *
@@ -292,11 +294,20 @@ export interface AddressStringToBytesResponseSDKType {
  */
 export interface QueryAccountAddressByIDRequest {
   /**
+   * Deprecated, use account_id instead
+   *
    * id is the account number of the address to be queried. This field
    * should have been an uint64 (like all account numbers), and will be
    * updated to uint64 in a future version of the auth query.
    */
+  /** @deprecated */
   id: bigint;
+  /**
+   * account_id is the account number of the address to be queried.
+   *
+   * Since: cosmos-sdk 0.47
+   */
+  accountId: bigint;
 }
 export interface QueryAccountAddressByIDRequestProtoMsg {
   typeUrl: '/cosmos.auth.v1beta1.QueryAccountAddressByIDRequest';
@@ -308,7 +319,9 @@ export interface QueryAccountAddressByIDRequestProtoMsg {
  * Since: cosmos-sdk 0.46.2
  */
 export interface QueryAccountAddressByIDRequestSDKType {
+  /** @deprecated */
   id: bigint;
+  account_id: bigint;
 }
 /**
  * QueryAccountAddressByIDResponse is the response type for AccountAddressByID rpc method
@@ -329,6 +342,48 @@ export interface QueryAccountAddressByIDResponseProtoMsg {
  */
 export interface QueryAccountAddressByIDResponseSDKType {
   account_address: string;
+}
+/**
+ * QueryAccountInfoRequest is the Query/AccountInfo request type.
+ *
+ * Since: cosmos-sdk 0.47
+ */
+export interface QueryAccountInfoRequest {
+  /** address is the account address string. */
+  address: string;
+}
+export interface QueryAccountInfoRequestProtoMsg {
+  typeUrl: '/cosmos.auth.v1beta1.QueryAccountInfoRequest';
+  value: Uint8Array;
+}
+/**
+ * QueryAccountInfoRequest is the Query/AccountInfo request type.
+ *
+ * Since: cosmos-sdk 0.47
+ */
+export interface QueryAccountInfoRequestSDKType {
+  address: string;
+}
+/**
+ * QueryAccountInfoResponse is the Query/AccountInfo response type.
+ *
+ * Since: cosmos-sdk 0.47
+ */
+export interface QueryAccountInfoResponse {
+  /** info is the account info which is represented by BaseAccount. */
+  info?: BaseAccount;
+}
+export interface QueryAccountInfoResponseProtoMsg {
+  typeUrl: '/cosmos.auth.v1beta1.QueryAccountInfoResponse';
+  value: Uint8Array;
+}
+/**
+ * QueryAccountInfoResponse is the Query/AccountInfo response type.
+ *
+ * Since: cosmos-sdk 0.47
+ */
+export interface QueryAccountInfoResponseSDKType {
+  info?: BaseAccountSDKType;
 }
 function createBaseQueryAccountsRequest(): QueryAccountsRequest {
   return {
@@ -588,7 +643,9 @@ export const QueryAccountResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.account = AccountI_InterfaceDecoder(reader) as Any;
+          message.account = Cosmos_authv1beta1AccountI_InterfaceDecoder(
+            reader,
+          ) as Any;
           break;
         default:
           reader.skipType(tag & 7);
@@ -990,7 +1047,9 @@ export const QueryModuleAccountByNameResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.account = ModuleAccountI_InterfaceDecoder(reader) as Any;
+          message.account = Cosmos_authv1beta1ModuleAccountI_InterfaceDecoder(
+            reader,
+          ) as Any;
           break;
         default:
           reader.skipType(tag & 7);
@@ -1475,6 +1534,7 @@ export const AddressStringToBytesResponse = {
 function createBaseQueryAccountAddressByIDRequest(): QueryAccountAddressByIDRequest {
   return {
     id: BigInt(0),
+    accountId: BigInt(0),
   };
 }
 export const QueryAccountAddressByIDRequest = {
@@ -1485,6 +1545,9 @@ export const QueryAccountAddressByIDRequest = {
   ): BinaryWriter {
     if (message.id !== BigInt(0)) {
       writer.uint32(8).int64(message.id);
+    }
+    if (message.accountId !== BigInt(0)) {
+      writer.uint32(16).uint64(message.accountId);
     }
     return writer;
   },
@@ -1502,6 +1565,9 @@ export const QueryAccountAddressByIDRequest = {
         case 1:
           message.id = reader.int64();
           break;
+        case 2:
+          message.accountId = reader.uint64();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -1512,6 +1578,9 @@ export const QueryAccountAddressByIDRequest = {
   fromJSON(object: any): QueryAccountAddressByIDRequest {
     return {
       id: isSet(object.id) ? BigInt(object.id.toString()) : BigInt(0),
+      accountId: isSet(object.accountId)
+        ? BigInt(object.accountId.toString())
+        : BigInt(0),
     };
   },
   toJSON(
@@ -1519,6 +1588,8 @@ export const QueryAccountAddressByIDRequest = {
   ): JsonSafe<QueryAccountAddressByIDRequest> {
     const obj: any = {};
     message.id !== undefined && (obj.id = (message.id || BigInt(0)).toString());
+    message.accountId !== undefined &&
+      (obj.accountId = (message.accountId || BigInt(0)).toString());
     return obj;
   },
   fromPartial(
@@ -1528,6 +1599,10 @@ export const QueryAccountAddressByIDRequest = {
     message.id =
       object.id !== undefined && object.id !== null
         ? BigInt(object.id.toString())
+        : BigInt(0);
+    message.accountId =
+      object.accountId !== undefined && object.accountId !== null
+        ? BigInt(object.accountId.toString())
         : BigInt(0);
     return message;
   },
@@ -1624,7 +1699,155 @@ export const QueryAccountAddressByIDResponse = {
     };
   },
 };
-export const AccountI_InterfaceDecoder = (
+function createBaseQueryAccountInfoRequest(): QueryAccountInfoRequest {
+  return {
+    address: '',
+  };
+}
+export const QueryAccountInfoRequest = {
+  typeUrl: '/cosmos.auth.v1beta1.QueryAccountInfoRequest',
+  encode(
+    message: QueryAccountInfoRequest,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.address !== '') {
+      writer.uint32(10).string(message.address);
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryAccountInfoRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryAccountInfoRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.address = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryAccountInfoRequest {
+    return {
+      address: isSet(object.address) ? String(object.address) : '',
+    };
+  },
+  toJSON(message: QueryAccountInfoRequest): JsonSafe<QueryAccountInfoRequest> {
+    const obj: any = {};
+    message.address !== undefined && (obj.address = message.address);
+    return obj;
+  },
+  fromPartial(
+    object: Partial<QueryAccountInfoRequest>,
+  ): QueryAccountInfoRequest {
+    const message = createBaseQueryAccountInfoRequest();
+    message.address = object.address ?? '';
+    return message;
+  },
+  fromProtoMsg(
+    message: QueryAccountInfoRequestProtoMsg,
+  ): QueryAccountInfoRequest {
+    return QueryAccountInfoRequest.decode(message.value);
+  },
+  toProto(message: QueryAccountInfoRequest): Uint8Array {
+    return QueryAccountInfoRequest.encode(message).finish();
+  },
+  toProtoMsg(
+    message: QueryAccountInfoRequest,
+  ): QueryAccountInfoRequestProtoMsg {
+    return {
+      typeUrl: '/cosmos.auth.v1beta1.QueryAccountInfoRequest',
+      value: QueryAccountInfoRequest.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryAccountInfoResponse(): QueryAccountInfoResponse {
+  return {
+    info: undefined,
+  };
+}
+export const QueryAccountInfoResponse = {
+  typeUrl: '/cosmos.auth.v1beta1.QueryAccountInfoResponse',
+  encode(
+    message: QueryAccountInfoResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.info !== undefined) {
+      BaseAccount.encode(message.info, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryAccountInfoResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryAccountInfoResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.info = BaseAccount.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryAccountInfoResponse {
+    return {
+      info: isSet(object.info) ? BaseAccount.fromJSON(object.info) : undefined,
+    };
+  },
+  toJSON(
+    message: QueryAccountInfoResponse,
+  ): JsonSafe<QueryAccountInfoResponse> {
+    const obj: any = {};
+    message.info !== undefined &&
+      (obj.info = message.info ? BaseAccount.toJSON(message.info) : undefined);
+    return obj;
+  },
+  fromPartial(
+    object: Partial<QueryAccountInfoResponse>,
+  ): QueryAccountInfoResponse {
+    const message = createBaseQueryAccountInfoResponse();
+    message.info =
+      object.info !== undefined && object.info !== null
+        ? BaseAccount.fromPartial(object.info)
+        : undefined;
+    return message;
+  },
+  fromProtoMsg(
+    message: QueryAccountInfoResponseProtoMsg,
+  ): QueryAccountInfoResponse {
+    return QueryAccountInfoResponse.decode(message.value);
+  },
+  toProto(message: QueryAccountInfoResponse): Uint8Array {
+    return QueryAccountInfoResponse.encode(message).finish();
+  },
+  toProtoMsg(
+    message: QueryAccountInfoResponse,
+  ): QueryAccountInfoResponseProtoMsg {
+    return {
+      typeUrl: '/cosmos.auth.v1beta1.QueryAccountInfoResponse',
+      value: QueryAccountInfoResponse.encode(message).finish(),
+    };
+  },
+};
+export const Cosmos_authv1beta1AccountI_InterfaceDecoder = (
   input: BinaryReader | Uint8Array,
 ): BaseAccount | Any => {
   const reader =
@@ -1637,7 +1860,7 @@ export const AccountI_InterfaceDecoder = (
       return data;
   }
 };
-export const ModuleAccountI_InterfaceDecoder = (
+export const Cosmos_authv1beta1ModuleAccountI_InterfaceDecoder = (
   input: BinaryReader | Uint8Array,
 ): ModuleAccount | Any => {
   const reader =

@@ -107,7 +107,7 @@ export const makeLiquidationTestKit = async ({
     price: number;
   }) => {
     const managerPath = `vaultFactory.managers.manager${managerIndex}`;
-    const { advanceTimeBy, readLatest, readPublished } = swingsetTestKit;
+    const { advanceTimeBy, readPublished } = swingsetTestKit;
 
     await null;
     if (!priceFeedDrivers[collateralBrandKey]) {
@@ -416,7 +416,6 @@ const addSTARsCollateral = async (
   t.log({ bridgeMessage });
 
   const { EV } = t.context.runUtils;
-  /** @type {ERef<import('@agoric/vats/src/types.js').BridgeHandler>} */
   const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(
     'coreEvalBridgeHandler',
   );

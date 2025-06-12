@@ -7,13 +7,15 @@ import {
 } from '@agoric/vat-data';
 import {
   InstallationShape,
-  InstanceHandleShape,
   UnwrappedInstallationShape,
 } from '../typeGuards.js';
 
-/** @typedef { import('@agoric/swingset-vat').BundleCap} BundleCap */
-/** @typedef { import('@agoric/swingset-vat').BundleID} BundleID */
-/** @import {Baggage} from '@agoric/vat-data' */
+/**
+ * @import {Baggage} from '@agoric/swingset-liveslots';
+ * @import {WeakMapStore} from '@agoric/store';
+ * @import {BundleID, BundleCap} from '@agoric/swingset-vat';
+ * @import {SourceBundle} from '@agoric/zoe';
+ */
 
 /**
  * @param {GetBundleCapForID} getBundleCapForID
@@ -77,10 +79,7 @@ export const makeInstallationStorage = (getBundleCapForID, zoeBaggage) => {
 
   const InstallationStorageI = M.interface('InstallationStorage', {
     installBundle: M.call(
-      M.or(
-        InstanceHandleShape,
-        M.recordOf(M.string(), M.string({ stringLengthLimit: Infinity })),
-      ),
+      M.recordOf(M.string(), M.string({ stringLengthLimit: Infinity })),
     )
       .optional(M.string())
       .returns(M.promise()),
