@@ -2,21 +2,21 @@
 // see also https://github.com/endojs/endo/issues/1467
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { makePromiseSpace } from '@agoric/vats';
-import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
-import type { ZoeService, Instance } from '@agoric/zoe';
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E, passStyleOf } from '@endo/far';
-import { toExternalConfig } from '@aglocal/portfolio-contract/src/config-marshal.js';
-import type { CorePowersG } from '@aglocal/portfolio-contract/src/orch.start.ts';
-import { startPortfolio } from '../src/portfolio-start.core.ts';
-import type { permit } from '@aglocal/portfolio-contract/src/portfolio.contract.permit.ts';
 import * as contractExports from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
 import { PortfolioConfigShape } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import { makeUSDNIBCTraffic } from '@aglocal/portfolio-contract/test/mocks.ts';
 import { makeTrader } from '@aglocal/portfolio-contract/test/portfolio-actors.ts';
 import { setupPortfolioTest } from '@aglocal/portfolio-contract/test/supports.ts';
 import { makeWallet } from '@aglocal/portfolio-contract/test/wallet-offer-tools.ts';
+import { makePromiseSpace } from '@agoric/vats';
+import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
+import type { Instance, ZoeService } from '@agoric/zoe';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
+import { E, passStyleOf } from '@endo/far';
+import { toExternalConfig } from '../src/config-marshal.js';
+import type { CorePowersG } from '../src/orch.start.ts';
+import { startPortfolio } from '../src/portfolio-start.core.ts';
+import type { permit } from '../src/portfolio.contract.permit.ts';
 
 const { meta } = contractExports;
 

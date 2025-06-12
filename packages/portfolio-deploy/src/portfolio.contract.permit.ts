@@ -1,6 +1,7 @@
 import type { BootstrapManifestPermit } from '@agoric/vats/src/core/lib-boot.js';
 import { orchPermit } from './orch.start.ts';
-import { meta } from './portfolio.contract.meta.ts';
+// TODO: move meta.name
+import { meta } from '@aglocal/portfolio-contract/src/portfolio.contract.meta.ts';
 
 export const permit = {
   produce: { [`${meta.name}Kit` as const]: true },
