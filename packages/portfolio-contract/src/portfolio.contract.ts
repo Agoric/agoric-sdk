@@ -14,6 +14,8 @@ import { M } from '@endo/patterns';
 import { preparePortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import { makeProposalShapes } from './type-guards.ts';
+import { prepareEvmAccountKit } from '@agoric/orchestration/src/examples/axelar-gmp-account-kit.js';
+import { E } from '@endo/far';
 
 const trace = makeTracer('PortC');
 
@@ -23,6 +25,11 @@ export const meta = M.splitRecord({
   privateArgsShape: {
     ...(OrchestrationPowersShape as CopyRecord),
     marshaller: M.remotable('marshaller'),
+    contractAddresses: M.splitRecord({
+      aavePoolAddress: M.string(),
+      compoundAddress: M.string(),
+      factoryAddress: M.string(),
+    }),
   },
 });
 harden(meta);
@@ -34,9 +41,22 @@ export const contract = async (
   tools: OrchestrationTools,
 ) => {
   const { brands } = zcf.getTerms();
-  const { orchestrateAll, zoeTools, chainHub } = tools;
+  const { contractAddresses, storageNode } = privateArgs;
+  const { orchestrateAll, zoeTools, chainHub, vowTools } = tools;
 
   assert(brands.USDC, 'USDC missing from brands in terms');
+  assert(
+    contractAddresses.aavePoolAddress,
+    'aavePoolAddress missing from contractAddresses',
+  );
+  assert(
+    contractAddresses.compoundAddress,
+    'compoundAddress missing from contractAddresses',
+  );
+  assert(
+    contractAddresses.factoryAddress,
+    'factoryAddress missing from contractAddresses',
+  );
 
   // TODO: only on 1st incarnation
   registerChainsAndAssets(
@@ -58,10 +78,24 @@ export const contract = async (
     },
   };
 
+  // TODO: maybe remove log as a param for evmAccountKit.
+  const logNode = E(storageNode).makeChildNode('log');
+  /** @type {(msg: string) => Vow<void>} */
+  const log = msg => vowTools.watch(E(logNode).setValue(msg));
+
+  const makeEvmAccountKit = prepareEvmAccountKit(zone.subZone('evmTap'), {
+    zcf,
+    vowTools,
+    log,
+    zoeTools,
+  });
+
   const makePortfolioKit = preparePortfolioKit(zone);
   const { makeLocalAccount, openPortfolio } = orchestrateAll(flows, {
     zoeTools,
     makePortfolioKit,
+    makeEvmAccountKit,
+    contractAddresses,
     inertSubscriber,
   });
 
