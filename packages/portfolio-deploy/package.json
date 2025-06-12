@@ -21,7 +21,7 @@
     "lint:types": "yarn run -T tsc"
   },
   "dependencies": {
-    "@agoric/portfolio-contract": "workspace:*",
+    "@aglocal/portfolio-contract": "workspace:*",
     "@agoric/client-utils": "workspace:*",
     "@agoric/cosmic-proto": "workspace:*",
     "@agoric/deploy-script-support": "workspace:*",
