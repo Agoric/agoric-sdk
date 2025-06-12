@@ -1,12 +1,12 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { M } from '@endo/patterns';
-import { toExternalConfig } from '../src/config-marshal.js';
+import { toExternalConfig } from './config-marshal.js';
 
 // TODO: import { PortfolioConfigShape } from '../src/type-guards.js';
 const PortfolioConfigShape = M.splitRecord({});
 
 /**
- * @import {PortfolioConfig} from '../src/type-guards.js';
+ * @import {PortfolioConfig} from '@aglocal/portfolio-contract/src/type-guards.js';
  * @import { CoreEvalBuilder, DeployScriptFunction } from '@agoric/deploy-script-support/src/externalTypes.js';
  */
 

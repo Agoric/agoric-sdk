@@ -1,10 +1,10 @@
 {
   "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "outDir": "dist"
-  },
+  "compilerOptions": {},
   "include": [
-    "src/**/*",
-    "test/**/*"
-  ]
+    "scripts",
+    "src",
+    "test"
+  ],
+  "exclude": ["test/bundles/"],
 }
