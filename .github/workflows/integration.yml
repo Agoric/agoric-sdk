@@ -2,8 +2,7 @@ env:
   GOLANG_VERSION: '1.22'
   LOADGEN_REPO_NAME: 'testnet-load-generator'
   ORG_NAME: 'Agoric'
-  # Known issues with getting started tests, so disable them.
-  # GETTING_STARTED_MATRIX_CLI: '["link-cli/yarn", "registry/npm", "registry/npx"]'
+
 name: Integration tests
 
 on:
@@ -63,21 +62,18 @@ jobs:
             return JSON.stringify(matrix);
 
   # This job is meant to emulate what developers working with the Agoric
-  # platform will experience.  It should be kept in sync with the "getting
-  # started" workflow at https://docs.agoric.com/guides/getting-started/
-  #
-  # TODO: This job is currently disabled (see GETTING_STARTED_MATRIX_CLI at the
-  # top of this file).  It would be good to reenable when we have actual working
-  # tests.
+  # platform will experience.
+  # It should be kept in sync with the "getting started" workflow at
+  # https://docs.agoric.com/guides/getting-started/
   getting-started:
-    needs:
-      - pre_check
-      - getting-started-matrix
+    needs: pre_check
     if: needs.pre_check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
+    continue-on-error: true # know failures of getting-started job
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.getting-started-matrix.outputs.matrix) }}
+      matrix:
+        cli: [link-cli/yarn, registry/npm, registry/npx]
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
