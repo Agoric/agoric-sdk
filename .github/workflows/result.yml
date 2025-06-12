@@ -34,8 +34,6 @@ on:
 jobs:
   result:
     runs-on: ubuntu-latest
-    outputs:
-      result-jobs-json: ${{ steps.extract.outputs.result-jobs-json }}
     steps:
       - name: Extract context outputs
         id: extract
