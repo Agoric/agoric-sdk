@@ -39,7 +39,7 @@ export const randomBackoff = (range, cap = range) => {
 /**
  * @param {number} [attempt]
  * @param {number} [base]
- * @param {number} [cap]
+ * @param {number} [cap=DEFAULT_MAX_BACKOFF]
  */
 export const exponentialBackoff = (
   attempt = 0,
