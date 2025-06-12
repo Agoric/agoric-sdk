@@ -4,6 +4,7 @@ import {
   type CosmosChainInfo,
   type Denom,
 } from '@agoric/orchestration';
+import { registerKnownChains } from '@agoric/orchestration/src/chain-info.js';
 import { type DenomDetail } from '@agoric/orchestration/src/exos/chain-hub.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { setupOrchestrationTest } from '@agoric/orchestration/tools/contract-tests.ts';
@@ -77,6 +78,8 @@ export const setupPortfolioTest = async ({
       displayInfo: { assetKind: 'nat', IOU: true },
     }) as AssetInfo,
   );
+
+  await registerKnownChains(agoricNamesAdmin, () => {});
 
   const assetInfo: [Denom, DenomDetail & { brandKey?: string }][] = harden([
     assetOn('uusdc', 'noble'),

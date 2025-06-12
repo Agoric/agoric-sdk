@@ -163,7 +163,7 @@ export const makeAssetInfo = (
     osmosis: ['uosmo', 'uion'],
   },
 ) => {
-  const { toDenomHash } = makeDenomTools(chainInfo);
+  const { getTransferChannelId, toDenomHash } = makeDenomTools(chainInfo);
 
   // only include chains present in `chainInfo`
   const tokens = Object.entries(tokenMap)
@@ -197,6 +197,18 @@ export const makeAssetInfo = (
     const issuingChainId = chainInfo[chain].chainId;
     for (const holdingChain of Object.keys(chainInfo)) {
       if (holdingChain === chain) continue;
+      if (chainInfo[holdingChain].namespace !== 'cosmos') continue;
+      if (!chainInfo[chain]?.connections?.[chainInfo[holdingChain].chainId]) {
+        console.debug(
+          'Cannot register',
+          denom,
+          'on',
+          holdingChain,
+          '; no connection from',
+          chain,
+        );
+        continue;
+      }
       assetInfo.push([
         toDenomHash(denom, issuingChainId, holdingChain),
         {

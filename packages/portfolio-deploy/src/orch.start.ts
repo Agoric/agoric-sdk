@@ -254,13 +254,34 @@ const reverseConnInfo = (connInfo: IBCConnectionInfo): IBCConnectionInfo => {
   });
 };
 
+/**
+ * Parse a connection key to extract the two chain IDs
+ *
+ * @param {string} connKey - Connection key like "agoric-3_evmos__9001-2"
+ * @returns {[string, string]} - [chainId1, chainId2] tuple
+ */
+function parseConnectionKey(connKey) {
+  // Split on single underscore that's not followed by another underscore
+  const parts = connKey.split(/(?<!_)_(?!_)/);
+
+  if (parts.length !== 2) {
+    throw new Error(`Invalid connection key format: ${connKey}`);
+  }
+
+  // Unescape doubled underscores
+  const c1 = parts[0].replace(/__/g, '_');
+  const c2 = parts[1].replace(/__/g, '_');
+
+  return [c1, c2];
+}
+
 export const mixConnections = (
   plainInfo: Record<string, ChainInfo>,
   connInfos: Record<string, IBCConnectionInfo>,
 ) => {
   const chainInfos = { ...plainInfo };
   for (const [connKey, directed] of entries(connInfos)) {
-    const [p, c] = connKey.split('_'); // XXX named function to do this?
+    const [p, c] = parseConnectionKey(connKey);
     const [pn, cn] = [p, c].map(cid =>
       keys(chainInfos).find(
         k =>
@@ -297,6 +318,7 @@ export const lookupInterchainInfo = async (
   agoricNames: Remote<NameHub>,
   tokenMap = { agoric: ['ubld'], noble: ['uusdc'] },
 ) => {
+  await null;
   const plainInfos = fromEntries(
     await E(E(agoricNames).lookup('chain')).entries(),
   ) as Record<string, ChainInfo>;

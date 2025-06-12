@@ -65,11 +65,6 @@ test('coreEval code without swingset', async t => {
       wk.issuer.produce[name].resolve(issuer);
     }
 
-    t.log('produce installation using test bundle');
-    powers.installation.produce.ymax0.resolve(
-      bundleAndInstall(contractExports),
-    );
-
     t.log('produce startUpgradable');
     produce.startUpgradable.resolve(
       ({ label, installation, issuerKeywordRecord, privateArgs, terms }) =>
@@ -81,7 +76,14 @@ test('coreEval code without swingset', async t => {
           label,
         ),
     );
+    produce.zoe.resolve(zoe);
   }
+
+  // script from agoric run does this step
+  t.log('produce installation using test bundle');
+  powers.installation.produce.ymax0.resolve(
+    await bundleAndInstall(contractExports),
+  );
 
   const options = toExternalConfig(
     harden({ assetInfo: [], chainInfo: {} }),
@@ -108,7 +110,10 @@ test('coreEval code without swingset', async t => {
   const wallet = makeWallet({ USDC: usdc }, zoe, vowTools.when);
   await wallet.deposit(await pourPayment(usdc.units(10_000)));
   const silvia = makeTrader(wallet, instance);
-  const actual = await silvia.openPortfolio(t, { USDN: usdc.units(3_333) });
+  const actualP = silvia.openPortfolio(t, { USDN: usdc.units(3_333) });
+  // ack IBC transfer for forward
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  const actual = await actualP;
   t.like(actual, {
     payouts: { USDN: { value: 0n } },
     result: {

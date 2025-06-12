@@ -19,7 +19,7 @@ const trace = makeTracer(`YMX-Start`, true);
 export const makePrivateArgs = async (
   orchestrationPowers: OrchestrationPowers,
   marshaller: Marshaller,
-  config: PortfolioConfig,
+  _config: PortfolioConfig,
 ): Promise<Parameters<typeof start>[1]> => {
   const { agoricNames } = orchestrationPowers;
   const { chainInfo, assetInfo } = await lookupInterchainInfo(agoricNames, {
@@ -27,13 +27,11 @@ export const makePrivateArgs = async (
     noble: ['uusdc'],
   });
   trace('@@@@assetInfo', JSON.stringify(assetInfo, null, 2));
-  trace('@@@@config', JSON.stringify(config, null, 2));
   return harden({
     ...orchestrationPowers,
     marshaller,
     chainInfo,
     assetInfo,
-    ...config,
   });
 };
 harden(makePrivateArgs);
