@@ -1,5 +1,5 @@
 import { E } from '@endo/eventual-send';
-import { assert, X } from '@endo/errors';
+import { Fail } from '@endo/errors';
 import { Far } from '@endo/marshal';
 import { makeIssuerKit, AmountMath } from '../../../src/index.js';
 
@@ -23,7 +23,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           return testSplitPayments(aliceMaker);
         }
         default: {
-          assert.fail(X`unrecognized argument value ${arg0}`);
+          Fail`unrecognized argument value ${arg0}`;
         }
       }
     },

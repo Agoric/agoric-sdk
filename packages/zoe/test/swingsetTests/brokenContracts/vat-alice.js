@@ -1,6 +1,6 @@
 // @ts-nocheck
 
-import { assert, X } from '@endo/errors';
+import { assert, Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { showPurseBalance, setupIssuers } from '../helpers.js';
@@ -78,7 +78,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
       .getOfferResult()
       .then(
         o => log(`Successful refund: ${o}`),
-        e => assert(false, X`Expected swap outcome to succeed ${e}`),
+        e => Fail`Expected swap outcome to succeed ${e}`,
       );
     const newPurse = await E(moolaIssuer).makeEmptyPurse();
     const swapMoolaPayout = await E(secondSeat).getPayout('Asset');
@@ -130,7 +130,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
               return log(`Swap outcome is an invitation (${val}).`);
             });
         },
-        e => assert(false, X`expected outcome not to resolve yet ${e}`),
+        e => Fail`expected outcome not to resolve yet ${e}`,
       );
     await logCounter(log, publicFacet);
 
@@ -183,7 +183,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
       .getOfferResult()
       .then(
         o => log(`outcome correctly resolves: "${o}"`),
-        e => assert(false, X`expected outcome to succeed ${e}`),
+        e => Fail`expected outcome to succeed ${e}`,
       );
     const moolaSwapTwoPayout = await E(swapSeatTwo).getPayout('Asset');
     const simoleanSwapTwoPayout = await E(swapSeatTwo).getPayout('Price');
@@ -399,7 +399,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
           return doSadTermination();
         }
         default: {
-          assert.fail(X`testName ${testName} not recognized`);
+          Fail`testName ${testName} not recognized`;
         }
       }
     },
