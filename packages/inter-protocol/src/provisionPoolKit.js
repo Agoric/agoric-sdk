@@ -180,7 +180,7 @@ export const prepareProvisionPoolKit = (
     },
     /**
      * @param {object} opts
-     * @param {Purse<'nat'>} opts.fundPurse
+     * @param {ERef<Purse<'nat'>>} opts.fundPurse
      * @param {Brand<'nat'>} opts.poolBrand
      * @param {StorageNode} opts.metricsNode
      */
@@ -336,34 +336,42 @@ export const prepareProvisionPoolKit = (
           facets.helper.publishMetrics();
         },
         /**
+         * @param {Amount} amount
+         * @param {ERef<Purse>} srcPurse
+         */
+        async onPoolDeposit(amount, srcPurse) {
+          const { helper } = this.facets;
+          const { brandToPSM, poolBrand } = this.state;
+
+          const { brand } = amount;
+          if (AmountMath.isEmpty(amount) || brand === poolBrand) {
+            return;
+          }
+
+          // `amount` doesn't match the current `poolBrand`, so we need to swap
+          // it.
+          if (!brandToPSM.has(brand)) {
+            console.error('funds arrived but no PSM instance', brand);
+            return;
+          }
+          const instance = brandToPSM.get(brand);
+          const payment = E(srcPurse).withdraw(amount);
+          await helper.swap(payment, amount, instance).catch(async reason => {
+            console.error(X`swap failed: ${reason}`);
+            const resolvedPayment = await payment;
+            return E(srcPurse).deposit(resolvedPayment);
+          });
+        },
+        /**
          * @param {ERef<Purse>} exchangePurse
          * @param {ERef<Brand>} brand
          */
         watchCurrentAmount(exchangePurse, brand) {
-          const {
-            state: { brandToPSM, poolBrand },
-            facets: { helper },
-          } = this;
-
+          const { helper } = this.facets;
           void observeNotifier(E(exchangePurse).getCurrentAmountNotifier(), {
             updateState: async amount => {
               trace('provisionPool balance update', amount);
-              if (AmountMath.isEmpty(amount) || amount.brand === poolBrand) {
-                return;
-              }
-              if (!brandToPSM.has(brand)) {
-                console.error('funds arrived but no PSM instance', brand);
-                return;
-              }
-              const instance = brandToPSM.get(brand);
-              const payment = E(exchangePurse).withdraw(amount);
-              await helper
-                .swap(payment, amount, instance)
-                .catch(async reason => {
-                  console.error(X`swap failed: ${reason}`);
-                  const resolvedPayment = await payment;
-                  return E(exchangePurse).deposit(resolvedPayment);
-                });
+              await helper.onPoolDeposit(amount, exchangePurse);
             },
             fail: reason => {
               if (isUpgradeDisconnection(reason)) {
@@ -429,40 +437,51 @@ export const prepareProvisionPoolKit = (
           );
         },
         /**
+         * @param {Brand<'nat'>} poolBrand
          * @param {object} [options]
          * @param {MetricsNotification} [options.metrics]
          */
-        start({ metrics } = {}) {
-          const {
-            state: { poolBrand },
-            facets: { helper },
-          } = this;
+        start(poolBrand, { metrics } = {}) {
+          const { facets, state } = this;
+          const { helper } = facets;
+          const lastPoolBrand = state.poolBrand;
 
-          // Must match. poolBrand is from durable state and the param is from
-          // the contract, so it technically can change between incarnations.
-          // That would be a severe bug.
+          // The PerAccountInitialAmount param must use the correct brand for
+          // this incarnation.
           AmountMath.coerce(poolBrand, params.getPerAccountInitialAmount());
 
-          void helper.watchAssetSubscription();
-
+          // Restore old metrics.
           if (metrics) {
-            // Restore state.
-            // we publishMetrics() below
             const {
               walletsProvisioned,
               totalMintedProvided,
               totalMintedConverted,
             } = metrics;
             assert.typeof(walletsProvisioned, 'bigint');
-            AmountMath.coerce(poolBrand, totalMintedProvided);
-            AmountMath.coerce(poolBrand, totalMintedConverted);
-            Object.assign(this.state, {
+            AmountMath.coerce(lastPoolBrand, totalMintedProvided);
+            AmountMath.coerce(lastPoolBrand, totalMintedConverted);
+            Object.assign(state, {
               walletsProvisioned,
               totalMintedProvided,
               totalMintedConverted,
             });
             helper.publishMetrics();
           }
+
+          // Update as needed when `poolBrand` changes.
+          if (poolBrand !== lastPoolBrand) {
+            state.poolBrand = poolBrand;
+            const fundPurseP = E(poolBank).getPurse(poolBrand);
+            state.fundPurse = fundPurseP;
+            void fundPurseP.catch(err =>
+              trace(`🚨 could not get purse for brand ${poolBrand}`, err),
+            );
+            state.totalMintedProvided = AmountMath.makeEmpty(poolBrand);
+            state.totalMintedConverted = AmountMath.makeEmpty(poolBrand);
+            helper.publishMetrics();
+          }
+
+          void helper.watchAssetSubscription();
         },
         /**
          * @param {ERef<Payment>} payIn

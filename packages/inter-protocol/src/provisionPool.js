@@ -93,19 +93,19 @@ export const start = async (zcf, privateArgs, baggage) => {
     makeBridgeProvisionTool,
   });
 
+  const poolBrand = /** @type {Brand<'nat'>} */ (
+    params.getPerAccountInitialAmount().brand
+  );
   const provisionPoolKit = await provideSingleton(
     baggage,
     'provisionPoolKit',
     () =>
       makeProvisionPoolKit({
-        // XXX governance can change the brand of the amount but should only be able to change the value
-        // NB: changing the brand will break this pool
-        // @ts-expect-error XXX Brand AssetKind
-        poolBrand: params.getPerAccountInitialAmount().brand,
+        poolBrand,
         storageNode: privateArgs.storageNode,
       }),
-    kit => kit.helper.start({ metrics: metricsOverride }),
   );
+  provisionPoolKit.helper.start(poolBrand, { metrics: metricsOverride });
 
   const publicFacet = prepareExo(
     baggage,
