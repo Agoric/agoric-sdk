@@ -8,13 +8,13 @@ import {
   makeRecorderTopic,
   TopicsRecordShape,
 } from '@agoric/zoe/src/contractSupport/topics.js';
-import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
+import {
+  AmountKeywordRecordShape,
+  OfferHandlerI,
+} from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
 import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
-import {
-  prepareCancelKit,
-  prepareInternalRevocableMakerKit,
-} from '@agoric/base-zone/zone-helpers.js';
+import { prepareInternalRevocableMakerKit } from '@agoric/base-zone/zone-helpers.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
 const trace = makeTracer('ReserveKit', true);
@@ -26,7 +26,7 @@ const trace = makeTracer('ReserveKit', true);
  * @import {Amount, Brand, Issuer} from '@agoric/ertp';
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {AmountKeywordRecord} from '@agoric/zoe/src/zoeService/types.js';
- * @import {ZCF, OfferHandler, Keyword, ZCFMint} from '@agoric/zoe';
+ * @import {ZCF, OfferHandler, Keyword, ZCFMint, ZCFSeat} from '@agoric/zoe';
  */
 
 /**
@@ -66,11 +66,11 @@ export const prepareAssetReserveKit = async (
     'WithdrawalFacet',
     ['Withdraw'],
   );
-  const makeCancelKit = prepareCancelKit(zone, canceller => {
-    if (outstandingRevokers.has(canceller)) {
-      outstandingRevokers.delete(canceller);
-    }
-  });
+  const makeRevocableWithdrawalHandler = prepareInternalRevocableMakerKit(
+    zone,
+    'WithdrawalHandler',
+    ['handle'],
+  );
 
   const makeAssetReserveKitInternal = prepareExoClassKit(
     baggage,
@@ -83,6 +83,8 @@ export const prepareAssetReserveKit = async (
       withdrawalFacet: M.interface('AssetReserve withdrawalFacet', {
         Withdraw: M.call().returns(M.promise()),
       }),
+      withdrawalHandler: OfferHandlerI,
+      repeatableWithdrawalHandler: OfferHandlerI,
       machine: M.interface('AssetReserve machine', {
         addIssuer: M.call(IssuerShape, M.string()).returns(M.promise()),
         getAllocations: M.call().returns(AmountKeywordRecordShape),
@@ -198,65 +200,45 @@ export const prepareAssetReserveKit = async (
           facets.helper.writeMetrics();
         },
       },
+      withdrawalHandler: {
+        /**
+         * @param {ZCFSeat} seat
+         */
+        async handle(seat) {
+          const { collateralSeat } = this.state;
+          const { helper } = this.facets;
+          const { want } = seat.getProposal();
+
+          // COMMIT POINT
+          // UNTIL #10684: ability to terminate an incarnation w/o terminating the contract
+          zcf.atomicRearrange(harden([[collateralSeat, seat, want]]));
+
+          helper.writeMetrics();
+          seat.exit();
+
+          trace('withdrew collateral', want);
+          return 'withdrew Collateral from the Reserve';
+        },
+      },
       withdrawalFacet: {
         Withdraw() {
-          /** @type {OfferHandler<Promise<string>>} */
-          const handler = async seat => {
-            try {
-              guard.assert();
-              const { state } = this;
-              const { helper } = this.facets;
-              const { want } = seat.getProposal();
-              const withdrawMap = new Map();
-              const depositMap = new Map();
-
-              const wantEntries = Object.entries(want);
-              for (const [keyword, amount] of wantEntries) {
-                const amountOut = AmountMath.coerce(amount.brand, amount);
-                const collateralKeyword = helper.getKeywordForBrand(
-                  amountOut.brand,
-                );
-                let collateralOut = amountOut;
-                const collateralSoFar = withdrawMap.get(collateralKeyword);
-                if (collateralSoFar) {
-                  collateralOut = AmountMath.add(collateralSoFar, amountOut);
-                }
-                withdrawMap.set(collateralKeyword, collateralOut);
-                depositMap.set(keyword, amountOut);
-              }
-
-              const withdrawRecord = Object.fromEntries(withdrawMap.entries());
-              const depositRecord = Object.fromEntries(depositMap.entries());
-              atomicTransfer(
-                zcf,
-                state.collateralSeat,
-                seat,
-                withdrawRecord,
-                depositRecord,
-              );
-
-              guard.assert();
-              helper.writeMetrics();
-
-              seat.exit();
-
-              trace('withdrew collateral', withdrawRecord, 'as', depositRecord);
-              return 'withdrew Collateral from the Reserve';
-            } catch (err) {
-              trace('Withdraw failed', err);
-              seat.fail(err);
-              throw err; // rethrow to ensure the seat is exited
-            } finally {
-              canceller.release();
-            }
-          };
-          const invitation = zcf.makeInvitation(handler, 'Withdraw Collateral');
-
-          const { canceller, guard } = makeCancelKit(
-            'Withdraw Collateral Invitation',
-          );
-          outstandingRevokers.add(canceller);
-          return invitation;
+          const { revoker, revocable: handler } =
+            makeRevocableWithdrawalHandler(this.facets.withdrawalHandler);
+          outstandingRevokers.add(revoker);
+          // @ts-expect-error Argument of type Guarded<
+          return zcf.makeInvitation(handler, 'Withdraw Collateral');
+        },
+      },
+      repeatableWithdrawalHandler: {
+        /**
+         * @param {ZCFSeat} seat
+         */
+        handle(seat) {
+          seat.exit();
+          const { revoker, revocable: invitationMakers } =
+            makeRevocableWithdrawalFacet(this.facets.withdrawalFacet);
+          outstandingRevokers.add(revoker);
+          return harden({ invitationMakers });
         },
       },
       machine: {
@@ -304,13 +286,7 @@ export const prepareAssetReserveKit = async (
         },
 
         makeRepeatableWithdrawalInvitation() {
-          const handler = seat => {
-            seat.exit();
-            const { revoker, revocable: invitationMakers } =
-              makeRevocableWithdrawalFacet(this.facets.withdrawalFacet);
-            outstandingRevokers.add(revoker);
-            return harden({ invitationMakers });
-          };
+          const handler = this.facets.repeatableWithdrawalHandler;
           return zcf.makeInvitation(handler, 'Repeatable Withdraw Collateral');
         },
 
