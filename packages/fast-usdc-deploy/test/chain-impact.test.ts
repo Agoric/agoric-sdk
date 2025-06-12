@@ -21,12 +21,12 @@ import {
   type WalletFactoryTestContext,
 } from '@aglocal/boot/test/bootstrapTests/walletFactory.js';
 import { makeSwingsetHarness } from '@aglocal/boot/tools/supports.js';
-import { makeSimulation } from '@aglocal/fast-usdc-deploy/test/fu-sim-iter.js';
 import type { SnapStoreDebug } from '@agoric/swing-store';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
 import { makeSlogSender } from '@agoric/telemetry';
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { keyEQ } from '@endo/patterns';
+import { makeSimulation } from './fu-sim-iter.js';
 
 const { resolve: resolvePath } = createRequire(import.meta.url);
 
@@ -66,7 +66,6 @@ test.before(async t => {
     SLOGFILE: slogFile,
     SNAPSHOT_DIR: snapshotDir,
     STATS_FILE,
-    SWINGSET_WORKER_TYPE: defaultManagerType = 'xs-worker', // or 'local',
   } = env;
   const harness = makeSwingsetHarness({
     // let the largest step in the simulation fit in a block
@@ -86,7 +85,6 @@ test.before(async t => {
     configSpecifier: config,
     fixupConfig: _config => ({
       ..._config,
-      defaultManagerType: defaultManagerType as ManagerType,
       defaultReapGCKrefs: 'never',
       defaultReapInterval: 'never',
       snapshotInterval: Number.MAX_SAFE_INTEGER,

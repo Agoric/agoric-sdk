@@ -1,29 +1,18 @@
-import { createRequire } from 'node:module';
-
 import type { TestFn } from 'ava';
 
 import { keyArrayEqual } from '@aglocal/boot/tools/supports.js';
 import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
-import { NonNullish } from '@agoric/internal';
-import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
+import type { RunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import { PowerFlags } from '@agoric/vats/src/walletFlags.js';
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 const { keys } = Object;
-const { resolve: resolvePath } = createRequire(import.meta.url);
 
-const makeDefaultTestContext = async () => {
-  const testkit = await makeCosmicSwingsetTestKit({
-    configOverrides: NonNullish(
-      await loadSwingsetConfigFile(
-        resolvePath('@agoric/vm-config/decentral-demo-config.json'),
-      ),
-    ),
+const makeDefaultTestContext = () =>
+  makeCosmicSwingsetTestKit({
+    configSpecifier: '@agoric/vm-config/decentral-demo-config.json',
   });
-  await testkit.runNextBlock();
 
-  return testkit;
-};
 type DefaultTestContext = Awaited<ReturnType<typeof makeDefaultTestContext>>;
 
 const test: TestFn<DefaultTestContext> = anyTest;
@@ -35,7 +24,7 @@ test.after.always(t => t.context.shutdown?.());
 // But on the JS side, aside from vattp, prod config exposes mailbox access
 // just as much as dev, so we can't test that here.
 
-const makeHomeFor = async (addr, EV) => {
+const makeHomeFor = async (addr: string, EV: RunUtils['EV']) => {
   const clientCreator = await EV.vat('bootstrap').consumeItem('clientCreator');
   const clientFacet = await EV(clientCreator).createClientFacet(
     'user1',
@@ -68,10 +57,10 @@ test('sim/demo config provides home with .myAddressNameAdmin', async t => {
     ...devToolKeys,
   ].sort();
 
-  const { EV } = t.context.runUtils;
+  const { EV } = t.context;
 
   await t.notThrowsAsync(EV.vat('bootstrap').consumeItem('provisioning'));
-  t.log('bootstrap produced provisioning vat');
+  console.log('bootstrap produced provisioning vat');
   const addr = 'agoric123';
   const home = await makeHomeFor(addr, EV);
   const actual = await EV(home.myAddressNameAdmin).getMyAddress();
@@ -80,7 +69,7 @@ test('sim/demo config provides home with .myAddressNameAdmin', async t => {
 });
 
 test('namesByAddress contains provisioned account', async t => {
-  const { EV } = t.context.runUtils;
+  const { EV } = t.context;
   const addr = 'agoric1234new';
   const home = await makeHomeFor(addr, EV);
   t.truthy(home);
@@ -90,7 +79,7 @@ test('namesByAddress contains provisioned account', async t => {
 });
 
 test('sim/demo config launches Vaults as expected by loadgen', async t => {
-  const { EV } = t.context.runUtils;
+  const { EV } = t.context;
   const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
   const vaultsInstance = await EV(agoricNames).lookup(
     'instance',
@@ -110,7 +99,7 @@ test('sim/demo config launches Vaults as expected by loadgen', async t => {
  * loadgen.
  */
 test('demo config meets loadgen constraint: no USDC', async t => {
-  const { EV } = t.context.runUtils;
+  const { EV } = t.context;
   const home = await makeHomeFor('addr123', EV);
   const pmtInfo = await EV(home.faucet).tapFaucet();
   const found = pmtInfo.find(p => p.issuerPetname === 'USDC');

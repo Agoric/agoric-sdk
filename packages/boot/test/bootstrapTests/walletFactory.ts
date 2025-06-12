@@ -1,5 +1,3 @@
-import { createRequire } from 'node:module';
-
 import { fetchCoreEvalRelease } from '@aglocal/boot/tools/supports.js';
 import { makeWalletFactoryDriver } from '@aglocal/boot/tools/drivers.js';
 import type { TypedPublished } from '@agoric/client-utils';
@@ -9,10 +7,9 @@ import {
   makeMockBridgeKit,
 } from '@agoric/cosmic-swingset/tools/test-bridge-utils.ts';
 import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
-import { BridgeId, NonNullish } from '@agoric/internal';
+import { BridgeId } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import type { IBCDowncallMethod } from '@agoric/vats';
 import {
   boardSlottingMarshaller,
@@ -24,7 +21,6 @@ import {
 } from '@agoric/vats/tools/board-utils.js';
 import { Fail } from '@endo/errors';
 
-const { resolve: resolvePath } = createRequire(import.meta.url);
 const { fromCapData } = boardSlottingMarshaller(slotToBoardRemote);
 
 export const makeWalletFactoryContext = async ({
@@ -51,20 +47,15 @@ export const makeWalletFactoryContext = async ({
   };
 
   const swingsetTestKit = await makeCosmicSwingsetTestKit({
-    configOverrides: NonNullish(
-      await loadSwingsetConfigFile(resolvePath(configSpecifier)),
-    ),
+    configSpecifier,
     mockBridgeReceiver: makeMockBridgeKit(bridgeReceiverOpts),
     ...testkitOpts,
   });
 
-  const { bridgeInbound, evaluateProposal, runNextBlock, runUtils } =
-    swingsetTestKit;
+  const { bridgeInbound, EV, evaluateProposal, queueAndRun } = swingsetTestKit;
   bridgeReceiverOpts.inbound = bridgeInbound;
-  await runNextBlock();
 
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
-  const { EV } = runUtils;
 
   // Wait for ATOM to make it into agoricNames
   await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
@@ -109,7 +100,7 @@ export const makeWalletFactoryContext = async ({
   };
 
   const walletFactoryDriver = await makeWalletFactoryDriver(
-    runUtils,
+    { EV, queueAndRun },
     storage,
     agoricNamesRemotes,
   );
@@ -127,7 +118,7 @@ export const makeWalletFactoryContext = async ({
           const args = inboundQueue.shift();
           if (!args) break;
 
-          await runUtils.queueAndRun(() => bridgeInbound(...args), true);
+          await queueAndRun(() => bridgeInbound(...args), true);
         }
 
         return i;

@@ -23,7 +23,6 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/builders": "workspace:*",
-    "@agoric/cosmic-swingset": "workspace:*",
     "@agoric/cosmos": "workspace:*",
     "@agoric/deploy-script-support": "workspace:*",
     "@agoric/internal": "workspace:*",

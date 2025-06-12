@@ -139,11 +139,10 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@aglocal/fast-usdc-deploy@npm:^0.1.0, @aglocal/fast-usdc-deploy@workspace:*, @aglocal/fast-usdc-deploy@workspace:packages/fast-usdc-deploy":
+"@aglocal/fast-usdc-deploy@npm:^0.1.0, @aglocal/fast-usdc-deploy@workspace:packages/fast-usdc-deploy":
   version: 0.0.0-use.local
   resolution: "@aglocal/fast-usdc-deploy@workspace:packages/fast-usdc-deploy"
   dependencies:
-    "@aglocal/fast-usdc-deploy": "workspace:*"
     "@agoric/client-utils": "workspace:*"
     "@agoric/cosmic-proto": "workspace:*"
     "@agoric/cosmic-swingset": "workspace:*"
@@ -423,7 +422,6 @@ __metadata:
   resolution: "@agoric/cosmic-swingset@workspace:packages/cosmic-swingset"
   dependencies:
     "@agoric/builders": "workspace:*"
-    "@agoric/cosmic-swingset": "workspace:*"
     "@agoric/cosmos": "workspace:*"
     "@agoric/deploy-script-support": "workspace:*"
     "@agoric/internal": "workspace:*"

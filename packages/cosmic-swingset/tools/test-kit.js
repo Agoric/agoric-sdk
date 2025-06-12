@@ -2,29 +2,31 @@
 
 import fs from 'node:fs';
 import * as fsPromises from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import nativePath from 'node:path';
 
 import tmp from 'tmp';
 
+import { NonNullish } from '@agoric/internal';
+import {
+  QueuedActionType,
+  SwingsetMessageType,
+} from '@agoric/internal/src/action-types.js';
+import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
+import { deepCopyJsonable } from '@agoric/internal/src/js-utils.js';
+import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
+import { initSwingStore } from '@agoric/swing-store';
+import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
+import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
+import { Fail } from '@endo/errors';
 import {
   extractPortNums,
   makeLaunchChain,
   makeQueueStorage,
-} from '@agoric/cosmic-swingset/src/chain-main.js';
-import { makeQueue } from '@agoric/cosmic-swingset/src/helpers/make-queue.js';
-import { DEFAULT_SIM_SWINGSET_PARAMS } from '@agoric/cosmic-swingset/src/sim-params.js';
-// @ts-expect-error
-import { makeMockBridgeKit } from '@agoric/cosmic-swingset/tools/test-bridge-utils.ts';
-import {
-  SwingsetMessageType,
-  QueuedActionType,
-} from '@agoric/internal/src/action-types.js';
-import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
-import { deepCopyJsonable } from '@agoric/internal/src/js-utils.js';
-import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
-import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
-import { initSwingStore } from '@agoric/swing-store';
-import { Fail } from '@endo/errors';
+} from '../src/chain-main.js';
+import { makeQueue } from '../src/helpers/make-queue.js';
+import { DEFAULT_SIM_SWINGSET_PARAMS } from '../src/sim-params.js';
+import { makeMockBridgeKit } from './test-bridge-utils.ts';
 
 /** @import {EReturn} from '@endo/far'; */
 /** @import { BlockInfo, InitMsg } from '@agoric/internal/src/chain-utils.js' */
@@ -32,6 +34,7 @@ import { Fail } from '@endo/errors';
 /** @import { InboundQueue } from '../src/launch-chain.js'; */
 
 const tmpDir = makeTempDirFactory(tmp);
+const { resolve: importLoader } = createRequire(import.meta.url);
 
 /**
  * @template T
@@ -139,6 +142,7 @@ const baseConfig = harden({
  * @param {Partial<SwingSetConfig>} [options.configOverrides] extensions to the
  *   default SwingSet configuration (may be overridden by more specific options
  *   such as `defaultManagerType`)
+ * @param {string} [options.configSpecifier] config path
  * @param {string} [options.debugName]
  * @param {ManagerType} [options.defaultManagerType] As documented at
  *   {@link ../../../docs/env.md#swingset_worker_type}, the implicit default of
@@ -165,6 +169,7 @@ export const makeCosmicSwingsetTestKit = async (
     bundleDir = 'bundles',
     bundles,
     configOverrides,
+    configSpecifier,
     debugName,
     defaultManagerType,
     env = process.env,
@@ -184,10 +189,25 @@ export const makeCosmicSwingsetTestKit = async (
   } = {},
   { fsp = fsPromises, resolvePath = nativePath.resolve } = {},
 ) => {
-  await null;
+  await Promise.resolve();
+
+  if (!defaultManagerType)
+    defaultManagerType =
+      /** @type {ManagerType | undefined} */ (
+        process.env.SWINGSET_WORKER_TYPE
+      ) || 'local';
+
   /** @type {SwingSetConfig} */
-  let config = {
+  let config = {};
+
+  if (configSpecifier)
+    config = NonNullish(
+      await loadSwingsetConfigFile(importLoader(configSpecifier)),
+    );
+
+  config = {
     ...deepCopyJsonable(baseConfig),
+    ...config,
     ...configOverrides,
     ...stripUndefined({ defaultManagerType }),
   };
@@ -288,7 +308,7 @@ export const makeCosmicSwingsetTestKit = async (
     params: lastBlockParams,
   } = initMessage;
   let lastBlockWalltime = Date.now();
-  await blockingSend(initMessage);
+  const runUtils = makeRunUtils(controller, harness);
 
   const timeUnitMultiplier = {
     seconds: 1,
@@ -385,24 +405,15 @@ export const makeCosmicSwingsetTestKit = async (
    *   a core eval compartment with a "powers" argument as attenuated by
    *   `jsonPermits` (with no attenuation by default).
    * @param {string} [jsonPermits] must deserialize into a BootstrapManifestPermit
-   * @param {InboundQueue} [queue]
    */
-  const pushCoreEval = (
-    fnText,
-    jsonPermits = 'true',
-    queue = highPriorityQueue,
-  ) => {
+  const pushCoreEval = (fnText, jsonPermits = 'true') => {
     // Fail noisily if fnText does not evaluate to a function.
     // This must be refactored if there is ever a need for such input.
     const fn = new Compartment().evaluate(fnText);
     typeof fn === 'function' || Fail`text must evaluate to a function`;
-    /** @type {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifestPermit} */
-    // eslint-disable-next-line no-unused-vars
-    const permit = JSON.parse(jsonPermits);
     /** @type {import('@agoric/cosmic-proto/swingset/swingset.js').CoreEvalSDKType} */
     const coreEvalDesc = { json_permits: jsonPermits, js_code: fnText };
-    const action = { type: QueuedActionType.CORE_EVAL, evals: [coreEvalDesc] };
-    pushQueueRecord(action, queue);
+    return evaluateProposal({ bundles: [], evals: [coreEvalDesc] });
   };
 
   /**
@@ -448,6 +459,9 @@ export const makeCosmicSwingsetTestKit = async (
     }
   };
 
+  await blockingSend(initMessage);
+  await runNextBlock();
+
   return {
     // SwingSet-oriented references.
     actionQueue,
@@ -460,7 +474,8 @@ export const makeCosmicSwingsetTestKit = async (
     bridgeInbound,
     controller,
     runUntilQueuesEmpty,
-    runUtils: makeRunUtils(controller, harness),
+    runUtils, // TODO: remove this
+    ...runUtils,
     timer,
 
     // Functions specific to this kit.

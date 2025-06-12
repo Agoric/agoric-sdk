@@ -1,13 +1,13 @@
 /* eslint-env node */
+
+import anyTest, { type TestFn } from 'ava';
+
 import type { ParamsSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
-import { BridgeId, deepCopyJsonable, objectMap } from '@agoric/internal';
+import { deepCopyJsonable, objectMap } from '@agoric/internal';
 import type { BlockInfo } from '@agoric/internal/src/chain-utils.js';
-import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import type { SwingSetConfigDescriptor } from '@agoric/swingset-vat';
-import { assert, Fail, q } from '@endo/errors';
+import { assert } from '@endo/errors';
 import { E } from '@endo/far';
-import type { TestFn } from 'ava';
-import anyTest from 'ava';
 import type { KVStore } from '../src/helpers/bufferedStorage.js';
 import { provideEnhancedKVStore } from '../src/helpers/bufferedStorage.js';
 import {
@@ -46,18 +46,6 @@ const makeCleanupBudgetParams = (
 test('cleanup work must be limited by vat_cleanup_budget', async t => {
   let finish: (() => Promise<void>) | undefined;
   t.teardown(() => finish?.());
-  // Make a test kit.
-  const fakeStorageKit = makeFakeStorageKit('');
-  const { toStorage: handleVstorage } = fakeStorageKit;
-  const receiveBridgeSend = (destPortName: string, msg: any) => {
-    switch (destPortName) {
-      case BridgeId.STORAGE: {
-        return handleVstorage(msg);
-      }
-      default:
-        Fail`port ${q(destPortName)} not implemented for message ${msg}`;
-    }
-  };
   const options = {
     bundles: makeSourceDescriptors({
       puppet: '@agoric/swingset-vat/tools/vat-puppet.js',
@@ -74,12 +62,10 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
       ...defaultBootstrapMessage,
       params: makeCleanupBudgetParams({ Default: 0 }),
     }),
-    mockBridgeReceiver: receiveBridgeSend,
   };
   const testKit = await makeCosmicSwingsetTestKit(options);
   const { pushCoreEval, runNextBlock, shutdown, swingStore } = testKit;
   finish = shutdown;
-  await runNextBlock();
 
   // Define helper functions for interacting with its swing store.
   const mapStore = provideEnhancedKVStore(
@@ -92,13 +78,13 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
   };
 
   // Launch the new vat and capture its ID.
-  pushCoreEval(
+  await pushCoreEval(
     `${async powers => {
       const { bootstrap } = powers.vats;
       await E(bootstrap).createVat('doomed', 'puppet');
     }}`,
   );
-  await runNextBlock();
+
   const vatIDs: string[] = JSON.parse(mustGet('vat.dynamicIDs'));
   const vatID = vatIDs.at(-1);
   t.is(
@@ -122,7 +108,7 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
   t.not(initialEntries.size, 0, 'initial kvStore entries must exist');
 
   // Give the vat a big footprint.
-  pushCoreEval(
+  await pushCoreEval(
     `${async powers => {
       const { bootstrap } = powers.vats;
       const doomed = await E(bootstrap).getVatRoot('doomed');
@@ -168,7 +154,7 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
       await E(doomed).holdInBaggage(...makeArray(20, (_, i) => i));
     }}`,
   );
-  await runNextBlock();
+
   t.false(
     JSON.parse(mustGet('vats.terminated')).includes(vatID),
     'must not be terminated',
@@ -185,14 +171,14 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
   );
 
   // Terminate the vat and verify lack of cleanup.
-  pushCoreEval(
+  await pushCoreEval(
     `${async powers => {
       const { bootstrap } = powers.vats;
       const adminNode = await E(bootstrap).getVatAdminNode('doomed');
       await E(adminNode).terminateWithFailure();
     }}`,
   );
-  await runNextBlock();
+
   t.true(
     JSON.parse(mustGet('vats.terminated')).includes(vatID),
     'must be terminated',
@@ -241,11 +227,9 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
       }),
     };
 
-    const { runNextBlock: runNextBlock2, shutdown: shutdown2 } =
-      await makeCosmicSwingsetTestKit(newOptions);
+    const { shutdown: shutdown2 } = await makeCosmicSwingsetTestKit(newOptions);
     finish = shutdown2;
 
-    await runNextBlock2();
     t.is(getKV().length, 0, 'cleanup complete');
   }
 });

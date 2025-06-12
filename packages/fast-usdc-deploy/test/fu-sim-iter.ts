@@ -3,7 +3,6 @@ import type { ExecutionContext } from 'ava';
 
 import { type WalletFactoryTestContext } from '@aglocal/boot/test/bootstrapTests/walletFactory.js';
 import { AckBehavior } from '@aglocal/boot/tools/supports.js';
-import { configurations } from '@aglocal/fast-usdc-deploy/src/utils/deploy-config.js';
 import {
   encodeAddressHook,
   encodeBech32,
@@ -25,6 +24,7 @@ import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import type { IBCChannelID } from '@agoric/vats';
 import { makePromiseKit } from '@endo/promise-kit';
+import { configurations } from '../src/utils/deploy-config.js';
 
 type SmartWallet = Awaited<
   ReturnType<
