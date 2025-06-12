@@ -1,11 +1,14 @@
 /** @file exercise Fast USDC contract in iterations; see chain-impact.test.ts */
 import type { ExecutionContext } from 'ava';
 
+import { type WalletFactoryTestContext } from '@aglocal/boot/test/bootstrapTests/walletFactory.js';
 import { AckBehavior } from '@aglocal/boot/tools/supports.js';
+import { configurations } from '@aglocal/fast-usdc-deploy/src/utils/deploy-config.js';
 import {
   encodeAddressHook,
   encodeBech32,
 } from '@agoric/cosmic-proto/address-hooks.js';
+import { buildProposal } from '@agoric/cosmic-swingset/tools/test-proposal-utils.ts';
 import type {
   CctpTxEvidence,
   ContractRecord,
@@ -22,8 +25,6 @@ import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import type { IBCChannelID } from '@agoric/vats';
 import { makePromiseKit } from '@endo/promise-kit';
-import { configurations } from '../src/utils/deploy-config.js';
-import { type WalletFactoryTestContext } from './walletFactory.js';
 
 type SmartWallet = Awaited<
   ReturnType<
@@ -38,11 +39,11 @@ const prefixedRange = (n: number, pfx: string) =>
 const nobleAgoricChannelId = 'channel-21';
 
 const makeTxOracle = (
-  ctx: WalletFactoryTestContext,
+  context: WalletFactoryTestContext,
   name: string,
   addr: string,
 ) => {
-  const { agoricNamesRemotes, walletFactoryDriver: wfd } = ctx;
+  const { agoricNamesRemotes, walletFactoryDriver: wfd } = context;
   const walletPK = makePromiseKit<SmartWallet>();
 
   return harden({
@@ -81,8 +82,8 @@ const makeTxOracle = (
 };
 type TxOracle = ReturnType<typeof makeTxOracle>;
 
-const makeFastUsdcQuery = (ctx: WalletFactoryTestContext) => {
-  const { storage } = ctx;
+const makeFastUsdcQuery = (context: WalletFactoryTestContext) => {
+  const { storage } = context;
   return harden({
     metrics: () => {
       const metrics: PoolMetrics = defaultMarshaller.fromCapData(
@@ -102,8 +103,8 @@ const makeFastUsdcQuery = (ctx: WalletFactoryTestContext) => {
   });
 };
 
-const makeLP = (ctx: WalletFactoryTestContext, addr: string) => {
-  const { agoricNamesRemotes, walletFactoryDriver: wfd } = ctx;
+const makeLP = (context: WalletFactoryTestContext, addr: string) => {
+  const { agoricNamesRemotes, walletFactoryDriver: wfd } = context;
   const lpP = wfd.provideSmartWallet(addr);
 
   const pollOffer = async (lp: SmartWallet, id: string) => {
@@ -146,11 +147,11 @@ const makeLP = (ctx: WalletFactoryTestContext, addr: string) => {
 };
 
 const makeCctp = (
-  ctx: WalletFactoryTestContext,
+  context: WalletFactoryTestContext,
   forwardingChannel: IBCChannelID,
   destinationChannel: IBCChannelID,
 ) => {
-  const { runInbound } = ctx.bridgeUtils;
+  const { bridgeInbound } = context;
 
   const modern = new Date('2020-01-01');
 
@@ -173,16 +174,15 @@ const makeCctp = (
       });
       return txInfo;
     },
-    async mint(
+    mint: async (
       amount: bigint,
       sender: CosmosChainAddress['value'],
       target: CosmosChainAddress['value'],
       receiver: CosmosChainAddress['value'],
-    ) {
+    ) =>
       // in due course, minted USDC arrives
-      await runInbound(
+      bridgeInbound(
         BridgeId.VTRANSFER,
-
         buildVTransferEvent({
           sequence: '1', // arbitrary; not used
           amount,
@@ -193,8 +193,7 @@ const makeCctp = (
           sourceChannel: forwardingChannel,
           destinationChannel,
         }),
-      );
-    },
+      ),
   });
 };
 
@@ -260,14 +259,14 @@ const makeUA = (
 };
 
 const makeIBCChannel = (
-  bridgeUtils: WalletFactoryTestContext['bridgeUtils'],
+  context: WalletFactoryTestContext,
   sourceChannel: IBCChannelID,
 ) => {
-  const { runInbound } = bridgeUtils;
+  const { bridgeInbound } = context;
   let sequence = 0;
   return harden({
-    async ack(sender: CosmosChainAddress['value']) {
-      await runInbound(
+    ack: (sender: CosmosChainAddress['value']) =>
+      bridgeInbound(
         BridgeId.VTRANSFER,
         buildVTransferEvent({
           sender,
@@ -275,21 +274,20 @@ const makeIBCChannel = (
           sourceChannel,
           sequence: `${(sequence += 1)}`,
         }),
-      );
-    },
+      ),
   });
 };
 
-export const makeSimulation = (ctx: WalletFactoryTestContext) => {
-  const cctp = makeCctp(ctx, nobleAgoricChannelId, 'channel-62');
-  const toNoble = makeIBCChannel(ctx.bridgeUtils, 'channel-62');
+export const makeSimulation = (context: WalletFactoryTestContext) => {
+  const cctp = makeCctp(context, nobleAgoricChannelId, 'channel-62');
+  const toNoble = makeIBCChannel(context, 'channel-62');
   const oracles = Object.entries(configurations.MAINNET.oracles).map(
-    ([name, addr]) => makeTxOracle(ctx, name, addr),
+    ([name, addr]) => makeTxOracle(context, name, addr),
   );
 
-  const fastQ = makeFastUsdcQuery(ctx);
+  const fastQ = makeFastUsdcQuery(context);
   const lps = range(3).map(ix =>
-    makeLP(ctx, encodeBech32('agoric', [100, ix])),
+    makeLP(context, encodeBech32('agoric', [100, ix])),
   );
   const users = prefixedRange(5, `0xFEED`).map(addr =>
     makeUA(addr as EvmAddress, fastQ, cctp, oracles),
@@ -305,14 +303,13 @@ export const makeSimulation = (ctx: WalletFactoryTestContext) => {
       await Promise.all(oracles.map(o => o.provision()));
     },
 
-    async deployContract(context: WalletFactoryTestContext) {
+    async deployContract(_context: WalletFactoryTestContext) {
       const {
         agoricNamesRemotes,
         bridgeUtils,
-        buildProposal,
-        evalProposal,
+        evaluateProposal,
         refreshAgoricNamesRemotes,
-      } = context;
+      } = _context;
 
       // inbound `startChannelOpenInit` responses immediately.
       // needed since the Fusdc StartFn relies on an ICA being created
@@ -323,11 +320,11 @@ export const makeSimulation = (ctx: WalletFactoryTestContext) => {
       );
       bridgeUtils.setBech32Prefix('noble');
 
-      const materials = buildProposal(
+      const materials = await buildProposal(
         '@aglocal/fast-usdc-deploy/src/start-fast-usdc.build.js',
         ['--net', 'MAINNET'],
       );
-      await evalProposal(materials);
+      await evaluateProposal(materials);
       refreshAgoricNamesRemotes();
       return agoricNamesRemotes.instance.fastUsdc;
     },
@@ -337,7 +334,10 @@ export const makeSimulation = (ctx: WalletFactoryTestContext) => {
       await Promise.all(oracles.map(o => o.claim()));
     },
 
-    async iteration(t: ExecutionContext, iter: number) {
+    async iteration(
+      t: ExecutionContext<WalletFactoryTestContext>,
+      iter: number,
+    ) {
       const lpIx = iter % lps.length;
       const lp = lps[lpIx];
       await lp.deposit(BigInt((lpIx + 1) * 2000) * 1_000_000n, iter);
@@ -346,7 +346,7 @@ export const makeSimulation = (ctx: WalletFactoryTestContext) => {
 
       const {
         shareWorth: { numerator: poolBeforeAdvance },
-      } = await fastQ.metrics();
+      } = fastQ.metrics();
       const part = Number(poolBeforeAdvance.value) / users.length;
 
       const who = iter % users.length;
@@ -357,8 +357,8 @@ export const makeSimulation = (ctx: WalletFactoryTestContext) => {
       const { recipientAddress, forwardingAddress, evidence } =
         await webUI.advance(t, amount, destAddr, iter * users.length + who);
 
-      await toNoble.ack(poolAccount);
-      await eventLoopIteration();
+      toNoble.ack(poolAccount);
+      await t.context.runUntilQueuesEmpty();
 
       // in due course, minted USDC arrives
       await cctp.mint(
@@ -367,7 +367,8 @@ export const makeSimulation = (ctx: WalletFactoryTestContext) => {
         settlementAccount,
         recipientAddress,
       );
-      await eventLoopIteration();
+      await t.context.runUntilQueuesEmpty();
+
       t.like(fastQ.txStatus(evidence.txHash), [
         { status: 'OBSERVED' },
         { status: 'ADVANCING' },
@@ -375,9 +376,7 @@ export const makeSimulation = (ctx: WalletFactoryTestContext) => {
         { status: 'DISBURSED' },
       ]);
 
-      await eventLoopIteration();
-
-      const beforeWithdraw = await fastQ.metrics();
+      const beforeWithdraw = fastQ.metrics();
       if (beforeWithdraw.encumberedBalance.value > 0n) {
         throw t.fail(`still encumbered: ${beforeWithdraw.encumberedBalance}`);
       }

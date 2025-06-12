@@ -13,7 +13,8 @@ import {
 } from '@agoric/cosmic-swingset/src/chain-main.js';
 import { makeQueue } from '@agoric/cosmic-swingset/src/helpers/make-queue.js';
 import { DEFAULT_SIM_SWINGSET_PARAMS } from '@agoric/cosmic-swingset/src/sim-params.js';
-import { makeMockBridgeKit } from '@agoric/cosmic-swingset/tools/test-bridge-utils';
+// @ts-expect-error
+import { makeMockBridgeKit } from '@agoric/cosmic-swingset/tools/test-bridge-utils.ts';
 import {
   SwingsetMessageType,
   QueuedActionType,
@@ -416,7 +417,7 @@ export const makeCosmicSwingsetTestKit = async (
       highPriorityQueue,
     );
 
-    return runNextBlock();
+    return runUntilQueuesEmpty();
   };
 
   /**
@@ -435,7 +436,13 @@ export const makeCosmicSwingsetTestKit = async (
 
     let stats = controller.getStats();
 
-    while (stats.runQueueLength + stats.acceptanceQueueLength > 0) {
+    while (
+      actionQueue.size() +
+        highPriorityQueue.size() +
+        stats.acceptanceQueueLength +
+        stats.runQueueLength >
+      0
+    ) {
       await runNextBlock();
       stats = controller.getStats();
     }

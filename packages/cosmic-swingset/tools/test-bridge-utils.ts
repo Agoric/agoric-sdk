@@ -19,13 +19,10 @@ export const AckBehavior = {
 } as const;
 
 export type AckBehaviors = Partial<
-  Record<
-    BridgeId,
-    Partial<
-      Record<IBCDowncallMethod, (typeof AckBehavior)[keyof typeof AckBehavior]>
-    >
-  >
+  Record<BridgeId, Partial<Record<IBCDowncallMethod, AckBehaviorType>>>
 >;
+
+export type AckBehaviorType = (typeof AckBehavior)[keyof typeof AckBehavior];
 
 export const makeMockBridgeKit = (
   params: Partial<{
@@ -47,13 +44,8 @@ export const makeMockBridgeKit = (
     storageKit: import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit;
   }> = {},
 ) => {
-  const {
-    ackBehaviors,
-    bech32Prefix,
-    outboundMessages = new Map(),
-    pushInbound,
-    storageKit = makeFakeStorageKit(''),
-  } = params;
+  if (!params.outboundMessages) params.outboundMessages = new Map();
+  if (!params.storageKit) params.storageKit = makeFakeStorageKit('');
 
   let ibcSequenceNonce = 0;
   let lastBankNonce = 0n;
@@ -70,24 +62,24 @@ export const makeMockBridgeKit = (
   const ackLater = (obj: IBCMethod<'sendPacket'>, ack: string) => {
     ibcSequenceNonce += 1;
     const msg = icaMocks.ackPacketEvent(obj, ibcSequenceNonce, ack);
-    pushInbound?.(BridgeId.DIBC, msg);
+    params.pushInbound?.(BridgeId.DIBC, msg);
   };
 
   const shouldAckImmediately = (
     bridgeId: BridgeId,
     method: IBCDowncallMethod,
-  ) => ackBehaviors?.[bridgeId]?.[method] === AckBehavior.Immediate;
+  ) => params.ackBehaviors?.[bridgeId]?.[method] === AckBehavior.Immediate;
 
   const mockBridgeReceiver = (bridgeId: BridgeId, obj: any) => {
-    if (!outboundMessages.has(bridgeId)) outboundMessages.set(bridgeId, []);
-    outboundMessages.get(bridgeId).push(obj);
+    if (!params.outboundMessages!.has(bridgeId))
+      params.outboundMessages!.set(bridgeId, []);
+    params.outboundMessages!.get(bridgeId).push(obj);
 
     const bridgeType = `${bridgeId}:${obj.type}`;
-    const { toStorage } = storageKit;
 
     switch (bridgeId) {
       case BridgeId.STORAGE:
-        return toStorage(obj);
+        return params.storageKit!.toStorage(obj);
       default:
         break;
     }
@@ -119,16 +111,16 @@ export const makeMockBridgeKit = (
       case `${BridgeId.VTRANSFER}:IBC_METHOD`: {
         switch (obj.method) {
           case 'startChannelOpenInit': {
-            const message = icaMocks.channelOpenAck(obj, bech32Prefix);
+            const message = icaMocks.channelOpenAck(obj, params.bech32Prefix);
             if (
-              ackBehaviors?.[bridgeId]?.startChannelOpenInit ===
+              params.ackBehaviors?.[bridgeId]?.startChannelOpenInit ===
               AckBehavior.Never
             )
               break;
 
             const handle = shouldAckImmediately(bridgeId, obj.method)
               ? params.inbound
-              : pushInbound;
+              : params.pushInbound;
 
             handle?.(BridgeId.DIBC, message);
             break;

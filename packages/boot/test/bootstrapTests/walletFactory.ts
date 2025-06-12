@@ -5,6 +5,7 @@ import { makeWalletFactoryDriver } from '@aglocal/boot/tools/drivers.js';
 import type { TypedPublished } from '@agoric/client-utils';
 import {
   AckBehavior,
+  type AckBehaviorType,
   makeMockBridgeKit,
 } from '@agoric/cosmic-swingset/tools/test-bridge-utils.ts';
 import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
@@ -12,6 +13,7 @@ import { BridgeId, NonNullish } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
+import type { IBCDowncallMethod } from '@agoric/vats';
 import {
   boardSlottingMarshaller,
   slotToBoardRemote,
@@ -130,8 +132,21 @@ export const makeWalletFactoryContext = async ({
 
         return i;
       },
+      setAckBehavior: (
+        bridgeId: BridgeId,
+        method: IBCDowncallMethod,
+        behavior: AckBehaviorType,
+      ) => {
+        if (!bridgeReceiverOpts.ackBehaviors?.[bridgeId]?.[method])
+          throw Fail`ack behavior not yet configurable for ${bridgeId} ${method}`;
+        console.log('setting', bridgeId, method, 'ack behavior to', behavior);
+        bridgeReceiverOpts.ackBehaviors[bridgeId][method] = behavior;
+      },
+      setBech32Prefix: (_bech32Prefix: string) =>
+        (bridgeReceiverOpts.bech32Prefix = _bech32Prefix),
     },
     evalReleasedProposal,
+    readLatestEntryFromStorage,
     readPublished: <T extends string>(subpath: T) =>
       readLatestEntryFromStorage(`published.${subpath}`) as TypedPublished<T>,
     refreshAgoricNamesRemotes,
