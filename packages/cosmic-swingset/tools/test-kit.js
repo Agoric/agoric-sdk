@@ -193,9 +193,11 @@ export const makeCosmicSwingsetTestKit = async (
 
   if (!defaultManagerType)
     defaultManagerType =
+      configOverrides?.defaultManagerType ||
       /** @type {ManagerType | undefined} */ (
         process.env.SWINGSET_WORKER_TYPE
-      ) || 'local';
+      ) ||
+      'local';
 
   /** @type {SwingSetConfig} */
   let config = {};
@@ -209,7 +211,7 @@ export const makeCosmicSwingsetTestKit = async (
     ...deepCopyJsonable(baseConfig),
     ...config,
     ...configOverrides,
-    ...stripUndefined({ defaultManagerType }),
+    defaultManagerType,
   };
   if (bundleDir) {
     bundleDir = resolvePath(bundleDir);

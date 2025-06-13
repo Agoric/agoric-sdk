@@ -54,7 +54,7 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
       // Aggressive GC.
       defaultReapInterval: 1,
       // Ensure multiple spans and snapshots.
-      defaultManagerType: 'xsnap' as const,
+      defaultManagerType: 'xsnap' as const, // FIXME: Doesn't work with local worker
       snapshotInitial: 2,
       snapshotInterval: 4,
     },
