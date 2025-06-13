@@ -6,8 +6,6 @@
  * param again, to show that the bug is fixed.
  */
 
-import { createRequire } from 'node:module';
-
 import type { TestFn } from 'ava';
 
 import { updateVaultManagerParams } from '@aglocal/boot/test/tools/changeVaultParams.js';
@@ -15,12 +13,10 @@ import {
   makeGovernanceDriver,
   makeWalletFactoryDriver,
 } from '@aglocal/boot/tools/drivers.js';
-import { makeMockBridgeKit } from '@agoric/cosmic-swingset/tools/test-bridge-utils';
+import { makeMockBridgeKit } from '@agoric/cosmic-swingset/tools/test-bridge-utils.ts';
 import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
-import { NonNullish } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import {
   boardSlottingMarshaller,
   makeAgoricNamesRemotesFromFakeStorage,
@@ -30,23 +26,17 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { Fail } from '@endo/errors';
 
 const { fromCapData } = boardSlottingMarshaller(slotToBoardRemote);
-const { resolve: resolvePath } = createRequire(import.meta.url);
 
 const makeDefaultTestContext = async () => {
   console.time('DefaultTestContext');
 
   const storage = makeFakeStorageKit('bootstrapTests');
   const swingsetTestKit = await makeCosmicSwingsetTestKit({
-    configOverrides: NonNullish(
-      await loadSwingsetConfigFile(
-        resolvePath('@agoric/vm-config/decentral-itest-vaults-config.json'),
-      ),
-    ),
+    configSpecifier: '@agoric/vm-config/decentral-itest-vaults-config.json',
     mockBridgeReceiver: makeMockBridgeKit({ storageKit: storage }),
   });
 
-  const { runNextBlock, runUtils } = swingsetTestKit;
-  await runNextBlock();
+  const { EV, queueAndRun } = swingsetTestKit;
 
   const readLatestEntryFromStorage = (path: string) => {
     let data;
@@ -62,7 +52,6 @@ const makeDefaultTestContext = async () => {
   };
 
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
-  const { EV } = runUtils;
 
   // Wait for ATOM to make it into agoricNames
   await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
@@ -74,7 +63,7 @@ const makeDefaultTestContext = async () => {
   console.timeLog('DefaultTestContext', 'agoricNamesRemotes');
 
   const walletFactoryDriver = await makeWalletFactoryDriver(
-    runUtils,
+    { EV, queueAndRun },
     storage,
     agoricNamesRemotes,
   );
@@ -109,8 +98,7 @@ test.before(async t => (t.context = await makeDefaultTestContext()));
 test.after.always(t => t.context.shutdown?.());
 
 test('restart vaultFactory, change params', async t => {
-  const { runUtils, gd, agoricNamesRemotes } = t.context;
-  const { EV } = runUtils;
+  const { agoricNamesRemotes, EV, gd } = t.context;
   const vaultFactoryKit =
     await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
 
@@ -154,7 +142,7 @@ test('restart vaultFactory, change params', async t => {
     vaultFactoryKit.governorCreatorFacet,
   ).getAdminFacet();
 
-  t.log('awaiting VaultFactory restartContract');
+  console.log('awaiting VaultFactory restartContract');
   const upgradeResult = await EV(vfAdminFacet).restartContract(privateArgs);
   t.deepEqual(upgradeResult, { incarnationNumber: 1 });
 

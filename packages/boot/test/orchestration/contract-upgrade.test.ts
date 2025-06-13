@@ -36,6 +36,7 @@ test.after.always(t => t.context.shutdown?.());
  */
 test('resume', async t => {
   const {
+    agoricNamesRemotes,
     bridgeInbound,
     evaluateProposal,
     runUntilQueuesEmpty,
@@ -43,9 +44,9 @@ test('resume', async t => {
     walletFactoryDriver,
   } = t.context;
 
-  const { IST } = t.context.agoricNamesRemotes.brand;
+  const { IST } = agoricNamesRemotes.brand;
 
-  t.log('start sendAnywhere');
+  console.log('start sendAnywhere');
   await evaluateProposal(
     await buildProposal(
       '@agoric/builders/scripts/testing/init-send-anywhere.js',
@@ -68,7 +69,7 @@ test('resume', async t => {
     ),
   );
 
-  t.log('making offer');
+  console.log('making offer');
   const wallet = await walletFactoryDriver.provideSmartWallet('agoric1test');
 
   // no money in wallet to actually send
@@ -100,7 +101,7 @@ test('resume', async t => {
     'completed transfer to localAccount',
   ]);
 
-  t.log('null upgrading sendAnywhere');
+  console.log('null upgrading sendAnywhere');
   await evaluateProposal(
     await buildProposal(
       '@agoric/builders/scripts/testing/upgrade-send-anywhere.js',

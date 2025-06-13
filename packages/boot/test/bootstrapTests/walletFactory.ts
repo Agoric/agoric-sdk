@@ -48,8 +48,8 @@ export const makeWalletFactoryContext = async ({
 
   const swingsetTestKit = await makeCosmicSwingsetTestKit({
     configSpecifier,
-    mockBridgeReceiver: makeMockBridgeKit(bridgeReceiverOpts),
     ...testkitOpts,
+    mockBridgeReceiver: makeMockBridgeKit(bridgeReceiverOpts),
   });
 
   const { bridgeInbound, EV, evaluateProposal, queueAndRun } = swingsetTestKit;

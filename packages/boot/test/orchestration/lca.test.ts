@@ -27,7 +27,6 @@ test('stakeBld', async t => {
     agoricNamesRemotes,
     evaluateProposal,
     refreshAgoricNamesRemotes,
-    runUntilQueuesEmpty,
     walletFactoryDriver,
   } = t.context;
 
@@ -40,7 +39,6 @@ test('stakeBld', async t => {
       '@agoric/builders/scripts/orchestration/init-stakeBld.js',
     ),
   );
-  await runUntilQueuesEmpty();
 
   // update now that stakeBld is instantiated
   refreshAgoricNamesRemotes();

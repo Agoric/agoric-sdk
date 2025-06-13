@@ -1,30 +1,24 @@
 /** @file Bootstrap test integration vaults with smart-wallet */
-import { createRequire } from 'node:module';
-
 import type { TestFn } from 'ava';
 
 import { makeWalletFactoryDriver } from '@aglocal/boot/tools/drivers.js';
-import { makeMockBridgeKit } from '@agoric/cosmic-swingset/tools/test-bridge-utils';
+import { makeMockBridgeKit } from '@agoric/cosmic-swingset/tools/test-bridge-utils.ts';
 import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import type { ParamChangesOfferArgs } from '@agoric/inter-protocol/src/econCommitteeCharter.js';
-import { NonNullish } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import {
+  boardSlottingMarshaller,
   makeAgoricNamesRemotesFromFakeStorage,
   slotToBoardRemote,
 } from '@agoric/vats/tools/board-utils.js';
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { Fail } from '@endo/errors';
-import { makeMarshal } from '@endo/marshal';
-
-const { resolve: resolvePath } = createRequire(import.meta.url);
 
 // presently all these tests use one collateral manager
 const collateralBrandKey = 'ATOM';
+const { fromCapData } = boardSlottingMarshaller(slotToBoardRemote);
 
 const likePayouts = (collateral: number, minted: number) => ({
   Collateral: { value: BigInt(collateral * 1_000_000) },
@@ -36,19 +30,26 @@ const makeDefaultTestContext = async () => {
 
   const storage = makeFakeStorageKit('bootstrapTests');
   const swingsetTestKit = await makeCosmicSwingsetTestKit({
-    configOverrides: NonNullish(
-      await loadSwingsetConfigFile(
-        resolvePath('@agoric/vm-config/decentral-itest-vaults-config.json'),
-      ),
-    ),
+    configSpecifier: '@agoric/vm-config/decentral-itest-vaults-config.json',
     mockBridgeReceiver: makeMockBridgeKit({ storageKit: storage }),
   });
 
-  const { runNextBlock, runUtils } = swingsetTestKit;
+  const { EV, queueAndRun } = swingsetTestKit;
 
-  await runNextBlock();
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
-  const { EV } = runUtils;
+
+  const readLatestEntryFromStorage = (path: string) => {
+    let data;
+    try {
+      data = unmarshalFromVstorage(storage.data, path, fromCapData, -1);
+    } catch {
+      // fall back to regular JSON
+      const raw = storage.getValues(path).at(-1);
+      assert(raw, `No data found for ${path}`);
+      data = JSON.parse(raw);
+    }
+    return data;
+  };
 
   // Wait for ATOM to make it into agoricNames
   await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
@@ -60,7 +61,7 @@ const makeDefaultTestContext = async () => {
   console.timeLog('DefaultTestContext', 'agoricNamesRemotes');
 
   const walletFactoryDriver = await makeWalletFactoryDriver(
-    runUtils,
+    { EV, queueAndRun },
     storage,
     agoricNamesRemotes,
   );
@@ -71,7 +72,7 @@ const makeDefaultTestContext = async () => {
   return {
     ...swingsetTestKit,
     agoricNamesRemotes,
-    storage,
+    readLatestEntryFromStorage,
     walletFactoryDriver,
   };
 };
@@ -84,7 +85,7 @@ test.before(async t => (t.context = await makeDefaultTestContext()));
 test.after.always(t => t.context.shutdown());
 
 test.serial('metrics path', async t => {
-  const { EV } = t.context.runUtils;
+  const { EV } = t.context;
   const vaultFactoryKit =
     await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
   const vfTopics = await EV(vaultFactoryKit.publicFacet).getPublicTopics();
@@ -130,7 +131,7 @@ test.serial('adjust balances', async t => {
     status: { id: 'adjust-open', numWantsSatisfied: 1 },
   });
 
-  t.log('adjust');
+  console.log('adjust');
   await wd.executeOfferMaker(
     Offers.vaults.AdjustBalances,
     { offerId: 'adjust', collateralBrandKey, giveMinted: 0.0005 },
@@ -160,7 +161,7 @@ test.serial('close vault', async t => {
     status: { id: 'open-vault', result: 'UNPUBLISHED', numWantsSatisfied: 1 },
     error: undefined,
   });
-  t.log('try giving more than is available in the purse/vbank');
+  console.log('try giving more than is available in the purse/vbank');
   await t.throwsAsync(
     wd.executeOfferMaker(
       Offers.vaults.CloseVault,
@@ -199,7 +200,7 @@ test.serial('close vault', async t => {
     },
   });
 
-  t.log('close correctly');
+  console.log('close correctly');
   await wd.executeOfferMaker(
     Offers.vaults.CloseVault,
     { offerId: 'close-well', collateralBrandKey, giveMinted: 5.025 },
@@ -277,7 +278,6 @@ test.serial('exit bid', async t => {
   });
 
   await wd.tryExitOffer('bid');
-  await eventLoopIteration();
 
   t.like(wd.getLatestUpdateRecord(), {
     updated: 'offerStatus',
@@ -294,12 +294,16 @@ test.serial('exit bid', async t => {
 });
 
 test.serial('propose change to auction governance param', async t => {
-  const { walletFactoryDriver, agoricNamesRemotes, storage } = t.context;
+  const {
+    walletFactoryDriver,
+    agoricNamesRemotes,
+    readLatestEntryFromStorage,
+  } = t.context;
 
   const gov1 = 'agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce';
   const wd = await walletFactoryDriver.provideSmartWallet(gov1);
 
-  t.log('accept charter invitation');
+  console.log('accept charter invitation');
   const charter = agoricNamesRemotes.instance.econCommitteeCharter;
 
   await wd.executeOffer({
@@ -312,14 +316,13 @@ test.serial('propose change to auction governance param', async t => {
     proposal: {},
   });
 
-  await eventLoopIteration();
   t.like(wd.getLatestUpdateRecord(), { status: { numWantsSatisfied: 1 } });
 
   const auctioneer = agoricNamesRemotes.instance.auctioneer;
   const timerBrand = agoricNamesRemotes.brand.timer;
   assert(timerBrand);
 
-  t.log('propose param change');
+  console.log('propose param change');
   /* XXX @type {Partial<AuctionParams>} */
   const params = { StartFrequency: { timerBrand, relValue: 5n * 60n } };
 
@@ -341,19 +344,13 @@ test.serial('propose change to auction governance param', async t => {
     proposal: {},
   });
 
-  await eventLoopIteration();
   t.like(wd.getLatestUpdateRecord(), { status: { numWantsSatisfied: 1 } });
 
-  const { fromCapData } = makeMarshal(undefined, slotToBoardRemote);
-  const key = `published.committees.Economic_Committee.latestQuestion`;
-  const lastQuestion = unmarshalFromVstorage(
-    storage.data,
-    key,
-    fromCapData,
-    -1,
+  const lastQuestion = readLatestEntryFromStorage(
+    'published.committees.Economic_Committee.latestQuestion',
   );
   const changes = lastQuestion?.issue?.spec?.changes;
-  t.log('check Economic_Committee.latestQuestion against proposal');
+  console.log('check Economic_Committee.latestQuestion against proposal');
   t.like(changes, { StartFrequency: { relValue: 300n } });
 });
 

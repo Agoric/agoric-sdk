@@ -21,12 +21,12 @@ import {
   type WalletFactoryTestContext,
 } from '@aglocal/boot/test/bootstrapTests/walletFactory.js';
 import { makeSwingsetHarness } from '@aglocal/boot/tools/supports.js';
+import { makeSimulation } from '@aglocal/fast-usdc-deploy/test/fu-sim-iter.js';
 import type { SnapStoreDebug } from '@agoric/swing-store';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
 import { makeSlogSender } from '@agoric/telemetry';
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { keyEQ } from '@endo/patterns';
-import { makeSimulation } from './fu-sim-iter.js';
 
 const { resolve: resolvePath } = createRequire(import.meta.url);
 
@@ -195,10 +195,8 @@ test.serial('deploy contract', async t => {
 });
 
 test.serial('post-deploy / pre iteration', async t => {
-  const { sim } = t.context;
+  const { controller, observations, sim, storage } = t.context;
   await t.notThrowsAsync(sim.beforeIterations(t));
-
-  const { controller, observations, storage } = t.context;
   observations.push({
     id: 'post-deploy',
     ...getResourceUsageStats(controller, storage.data),
@@ -208,8 +206,16 @@ test.serial('post-deploy / pre iteration', async t => {
 const range = (n: number) => Array.from(Array(n).keys());
 
 test.serial('iterate simulation several times', async t => {
-  const { controller, observations, storage, sim } = t.context;
-  const { harness, swingStore, slogSender, writeStats } = t.context;
+  const {
+    controller,
+    observations,
+    harness,
+    sim,
+    slogSender,
+    storage,
+    swingStore,
+    writeStats,
+  } = t.context;
   const { updateNewCellBlockHeight } = storage;
 
   if (writeStats)

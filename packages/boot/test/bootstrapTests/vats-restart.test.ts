@@ -1,49 +1,33 @@
 /** @file Bootstrap test of restarting (almost) all vats */
-import { createRequire } from 'node:module';
-
 import type { TestFn } from 'ava';
 
 import { makeWalletFactoryDriver } from '@aglocal/boot/tools/drivers.js';
-import { makeMockBridgeKit } from '@agoric/cosmic-swingset/tools/test-bridge-utils';
+import { makeMockBridgeKit } from '@agoric/cosmic-swingset/tools/test-bridge-utils.ts';
 import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
 import { buildProposal } from '@agoric/cosmic-swingset/tools/test-proposal-utils.ts';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
-import { NonNullish } from '@agoric/internal';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import type { ScopedBridgeManager } from '@agoric/vats';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { Fail } from '@endo/errors';
 
-const { resolve: resolvePath } = createRequire(import.meta.url);
-
-// main/production config doesn't have initialPrice, upon which 'open vaults' depends
-const PLATFORM_CONFIG = '@agoric/vm-config/decentral-itest-vaults-config.json';
-
 export const makeTestContext = async () => {
   console.time('DefaultTestContext');
   const storage = makeFakeStorageKit('bootstrapTests');
   const swingsetTestKit = await makeCosmicSwingsetTestKit({
-    configOverrides: NonNullish(
-      await loadSwingsetConfigFile(resolvePath(PLATFORM_CONFIG)),
-    ),
+    // main/production config doesn't have initialPrice, upon which 'open vaults' depends
+    configSpecifier: '@agoric/vm-config/decentral-itest-vaults-config.json',
     mockBridgeReceiver: makeMockBridgeKit({ storageKit: storage }),
   });
 
-  const { runNextBlock, runUtils } = swingsetTestKit;
-
-  await runNextBlock();
+  const { EV, queueAndRun } = swingsetTestKit;
 
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
-  const { EV } = runUtils;
 
   // Wait for ATOM to make it into agoricNames
   await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
   console.timeLog('DefaultTestContext', 'vaultFactoryKit');
-
-  await eventLoopIteration();
 
   // has to be late enough for agoricNames data to have been published
   const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(storage);
@@ -51,7 +35,7 @@ export const makeTestContext = async () => {
   console.timeLog('DefaultTestContext', 'agoricNamesRemotes');
 
   const walletFactoryDriver = await makeWalletFactoryDriver(
-    runUtils,
+    { EV, queueAndRun },
     storage,
     agoricNamesRemotes,
   );
@@ -100,10 +84,10 @@ test.serial('open vault', async t => {
 });
 
 test.serial('make IBC callbacks before upgrade', async t => {
-  const { EV } = t.context.runUtils;
+  const { EV } = t.context;
   const vatStore = await EV.vat('bootstrap').consumeItem('vatStore');
   const { root: ibc } = await EV(vatStore).get('ibc');
-  t.log('E(ibc).makeCallbacks(m1)');
+  console.log('E(ibc).makeCallbacks(m1)');
   const dummyBridgeManager = null as unknown as ScopedBridgeManager<any>;
   const callbacks = await EV(ibc).makeCallbacks(dummyBridgeManager);
   t.truthy(callbacks);
@@ -113,7 +97,7 @@ test.serial('make IBC callbacks before upgrade', async t => {
 test.serial('run restart-vats proposal', async t => {
   const { evaluateProposal } = t.context;
 
-  t.log('building proposal');
+  console.log('building proposal');
   await evaluateProposal(
     await buildProposal('@agoric/builders/scripts/vats/restart-vats.js'),
   );
@@ -122,21 +106,23 @@ test.serial('run restart-vats proposal', async t => {
 });
 
 test.serial('use IBC callbacks after upgrade', async t => {
-  const { EV } = t.context.runUtils;
-  const { ibcCallbacks } = t.context.shared;
+  const {
+    EV,
+    shared: { ibcCallbacks },
+  } = t.context;
 
   const vatStore = await EV.vat('bootstrap').consumeItem('vatStore');
   const { root: ibc } = await EV(vatStore).get('ibc');
-  t.log('E(ibc).createHandlers(...)');
+  console.log('E(ibc).createHandlers(...)');
 
   const h = await EV(ibc).createHandlers(ibcCallbacks);
-  t.log(h);
+  console.log(h);
   t.truthy(h.protocolHandler, 'protocolHandler');
   t.truthy(h.bridgeHandler, 'bridgeHandler');
 });
 
 test.serial('read metrics', async t => {
-  const { EV } = t.context.runUtils;
+  const { EV } = t.context;
 
   const vaultFactoryKit =
     await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
@@ -146,12 +132,11 @@ test.serial('read metrics', async t => {
   const vfMetricsPath = await EV.get(vfTopics.metrics).storagePath;
   t.is(vfMetricsPath, 'published.vaultFactory.metrics');
 
-  // TODO: fixme
-  // await t.throwsAsync(
-  //   EV(vfTopics.metrics.subscriber).getUpdateSince(),
-  //   undefined,
-  //   'reconnecting subscriber not expected to work',
-  // );
+  await t.throwsAsync(
+    EV(vfTopics.metrics.subscriber).getUpdateSince(),
+    undefined,
+    'reconnecting subscriber not expected to work',
+  );
 });
 
 test.serial('open second vault', async t => {

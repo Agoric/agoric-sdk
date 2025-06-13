@@ -22,15 +22,15 @@ test('resolves', async t => {
   const { evaluateProposal, runUntilQueuesEmpty, walletFactoryDriver } =
     t.context;
 
-  t.log('start valueVow');
+  console.log('start valueVow');
   await evaluateProposal(
     await buildProposal('@agoric/builders/scripts/testing/start-valueVow.js'),
   );
 
-  t.log('use wallet to get a vow');
+  console.log('use wallet to get a vow');
   const getter = await walletFactoryDriver.provideSmartWallet('agoric1getter');
 
-  t.log('executing offer');
+  console.log('executing offer');
   // *send* b/c execution doesn't resolve until even the vow resolves and that won't happen until the set-value
   await getter.sendOffer({
     id: 'get-value',
@@ -46,27 +46,25 @@ test('resolves', async t => {
   // crank when the contract is restarted below.
   await runUntilQueuesEmpty();
 
-  t.log('confirm the value is not in offer results');
-  {
-    const statusRecord = getter.getLatestUpdateRecord();
-    t.like(statusRecord, {
-      status: {
-        id: 'get-value',
-        numWantsSatisfied: 1,
-      },
-      updated: 'offerStatus',
-    });
-    // narrow the type
-    assert(statusRecord.updated === 'offerStatus');
-    t.false('result' in statusRecord.status, 'no result yet');
-  }
+  console.log('confirm the value is not in offer results');
+  let statusRecord = getter.getLatestUpdateRecord();
+  t.like(statusRecord, {
+    status: {
+      id: 'get-value',
+      numWantsSatisfied: 1,
+    },
+    updated: 'offerStatus',
+  });
+  // narrow the type
+  assert(statusRecord.updated === 'offerStatus');
+  t.false('result' in statusRecord.status, 'no result yet');
 
-  t.log('restart valueVow');
+  console.log('restart valueVow');
   await evaluateProposal(
     await buildProposal('@agoric/builders/scripts/testing/restart-valueVow.js'),
   );
 
-  t.log('use wallet to set value');
+  console.log('use wallet to set value');
   const offerArgs = { value: 'Ciao, mondo!' };
   const setter = await walletFactoryDriver.provideSmartWallet('agoric1setter');
   await setter.executeOffer({
@@ -87,12 +85,12 @@ test('resolves', async t => {
     },
   });
 
-  t.log('confirm the value is now in offer results');
+  console.log('confirm the value is now in offer results');
 
   // Ensure the getter vow has had time to resolved.
   await runUntilQueuesEmpty();
 
-  const statusRecord = getter.getLatestUpdateRecord();
+  statusRecord = getter.getLatestUpdateRecord();
   // narrow the type
   assert(statusRecord.updated === 'offerStatus');
   t.true('result' in statusRecord.status, 'got result');

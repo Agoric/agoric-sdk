@@ -7,6 +7,16 @@ import nativePath from 'node:path';
 
 import tmp from 'tmp';
 
+// eslint-disable-next-line import/no-extraneous-dependencies
+import {
+  extractPortNums,
+  makeLaunchChain,
+  makeQueueStorage,
+} from '@agoric/cosmic-swingset/src/chain-main.js';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { makeQueue } from '@agoric/cosmic-swingset/src/helpers/make-queue.js';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { DEFAULT_SIM_SWINGSET_PARAMS } from '@agoric/cosmic-swingset/src/sim-params.js';
 import { NonNullish } from '@agoric/internal';
 import {
   QueuedActionType,
@@ -19,13 +29,7 @@ import { initSwingStore } from '@agoric/swing-store';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import { Fail } from '@endo/errors';
-import {
-  extractPortNums,
-  makeLaunchChain,
-  makeQueueStorage,
-} from '../src/chain-main.js';
-import { makeQueue } from '../src/helpers/make-queue.js';
-import { DEFAULT_SIM_SWINGSET_PARAMS } from '../src/sim-params.js';
+
 import { makeMockBridgeKit } from './test-bridge-utils.ts';
 
 /** @import {EReturn} from '@endo/far'; */
@@ -139,9 +143,6 @@ const baseConfig = harden({
  *   called with a set of powers, each in their own isolated compartment
  * @param {string | null} [options.bundleDir] relative to working directory
  * @param {SwingSetConfig['bundles']} [options.bundles] extra bundles configuration
- * @param {Partial<SwingSetConfig>} [options.configOverrides] extensions to the
- *   default SwingSet configuration (may be overridden by more specific options
- *   such as `defaultManagerType`)
  * @param {string} [options.configSpecifier] config path
  * @param {string} [options.debugName]
  * @param {ManagerType} [options.defaultManagerType] As documented at
@@ -168,7 +169,6 @@ export const makeCosmicSwingsetTestKit = async (
     // Options for the SwingSet controller/kernel.
     bundleDir = 'bundles',
     bundles,
-    configOverrides,
     configSpecifier,
     debugName,
     defaultManagerType,
@@ -193,11 +193,9 @@ export const makeCosmicSwingsetTestKit = async (
 
   if (!defaultManagerType)
     defaultManagerType =
-      configOverrides?.defaultManagerType ||
       /** @type {ManagerType | undefined} */ (
         process.env.SWINGSET_WORKER_TYPE
-      ) ||
-      'local';
+      ) || 'local';
 
   /** @type {SwingSetConfig} */
   let config = {};
@@ -210,7 +208,6 @@ export const makeCosmicSwingsetTestKit = async (
   config = {
     ...deepCopyJsonable(baseConfig),
     ...config,
-    ...configOverrides,
     defaultManagerType,
   };
   if (bundleDir) {
@@ -476,7 +473,6 @@ export const makeCosmicSwingsetTestKit = async (
     bridgeInbound,
     controller,
     runUntilQueuesEmpty,
-    runUtils, // TODO: remove this
     ...runUtils,
     timer,
 

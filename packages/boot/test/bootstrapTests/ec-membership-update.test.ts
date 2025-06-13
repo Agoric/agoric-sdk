@@ -1,5 +1,3 @@
-import { createRequire } from 'node:module';
-
 import type { TestFn } from 'ava';
 
 import { makeLiquidationTestKit } from '@aglocal/boot/tools/liquidation.js';
@@ -7,20 +5,20 @@ import {
   makeGovernanceDriver,
   makeWalletFactoryDriver,
 } from '@aglocal/boot/tools/drivers.js';
-import { makeMockBridgeKit } from '@agoric/cosmic-swingset/tools/test-bridge-utils';
+import { makeMockBridgeKit } from '@agoric/cosmic-swingset/tools/test-bridge-utils.ts';
 import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
 import { buildProposal } from '@agoric/cosmic-swingset/tools/test-proposal-utils.ts';
 import { NonNullish } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { TimeMath } from '@agoric/time';
-import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import {
+  boardSlottingMarshaller,
   makeAgoricNamesRemotesFromFakeStorage,
   slotToBoardRemote,
 } from '@agoric/vats/tools/board-utils.js';
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { makeMarshal, passStyleOf } from '@endo/marshal';
+import { passStyleOf } from '@endo/marshal';
 
 const wallets = [
   'agoric1gx9uu7y6c90rqruhesae2t7c2vlw4uyyxlqxrx',
@@ -31,13 +29,14 @@ const wallets = [
   'agoric1zayxg4e9vd0es9c9jlpt36qtth255txjp6a8yc',
 ];
 
+const { fromCapData } = boardSlottingMarshaller(slotToBoardRemote);
 const managerGovernanceKey =
   'published.vaultFactory.managers.manager0.governance';
 const auctioneerParamsKey = 'published.auction.governance';
 const provisionPoolParamsKey = 'published.provisionPool.governance';
 const reserveParamsKey = 'published.reserve.metrics';
-const { resolve: resolvePath } = createRequire(import.meta.url);
-const getPsmKey = brand => `published.psm.IST.${brand}.governance`;
+const getPsmKey = (brand: string | undefined) =>
+  `published.psm.IST.${brand}.governance`;
 
 const highPrioritySenderKey = 'highPrioritySenders';
 
@@ -49,26 +48,24 @@ const offerIds = {
 const getQuestionId = id => `propose-question-${id}`;
 const getVoteId = id => `vote-${id}`;
 
-export const makeZoeTestContext = async t => {
+const makeZoeTestContext = async t => {
   console.time('ZoeTestContext');
 
   const storage = makeFakeStorageKit('bootstrapTests');
   const swingsetTestKit = await makeCosmicSwingsetTestKit({
-    configOverrides: NonNullish(
-      await loadSwingsetConfigFile(
-        resolvePath('@agoric/vm-config/decentral-main-vaults-config.json'),
-      ),
-    ),
+    configSpecifier: '@agoric/vm-config/decentral-main-vaults-config.json',
     mockBridgeReceiver: makeMockBridgeKit({ storageKit: storage }),
   });
 
-  const { runNextBlock, runUtils } = swingsetTestKit;
-  await runNextBlock();
+  const { EV, queueAndRun } = swingsetTestKit;
+
+  const getVstorageData = (path: string) =>
+    unmarshalFromVstorage(storage.data, path, fromCapData, -1);
 
   const readLatestEntryFromStorage = (path: string) => {
     let data;
     try {
-      data = unmarshalFromVstorage(storage.data, path, fromCapData, -1);
+      data = getVstorageData(path);
     } catch {
       // fall back to regular JSON
       const raw = storage.getValues(path).at(-1);
@@ -82,7 +79,6 @@ export const makeZoeTestContext = async t => {
     readLatestEntryFromStorage(`published.${subPath}`);
 
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
-  const { EV } = runUtils;
 
   // We don't need vaults, but this gets the brand, which is checked somewhere
   // Wait for ATOM to make it into agoricNames
@@ -112,17 +108,10 @@ export const makeZoeTestContext = async t => {
 
   console.timeEnd('DefaultTestContext');
   const walletFactoryDriver = await makeWalletFactoryDriver(
-    runUtils,
+    { EV, queueAndRun },
     storage,
     agoricNamesRemotes,
   );
-
-  const { fromCapData } = makeMarshal(undefined, slotToBoardRemote);
-
-  const getVstorageData = key => {
-    const data = unmarshalFromVstorage(storage.data, key, fromCapData, -1);
-    return data;
-  };
 
   const governanceDriver = await makeGovernanceDriver(
     // @ts-expect-error
@@ -171,14 +160,14 @@ test.serial('normal running of committee', async t => {
 
   const committee = governanceDriver.ecMembers;
 
-  t.log('Accepting all invitations for original committee');
+  console.log('Accepting all invitations for original committee');
   await null;
   for (const member of committee) {
     await member.acceptOutstandingCharterInvitation(offerIds.propose.outgoing);
     await member.acceptOutstandingCommitteeInvitation(offerIds.vote.outgoing);
   }
 
-  t.log('Proposing a question using first wallet');
+  console.log('Proposing a question using first wallet');
   await governanceDriver.proposeParams(
     VaultFactory,
     { DebtLimit: { brand: debtBrand, value: 100_000_000n } },
@@ -188,31 +177,31 @@ test.serial('normal running of committee', async t => {
     offerIds.propose.outgoing,
   );
 
-  t.log('Checking if question proposal passed');
+  console.log('Checking if question proposal passed');
   t.like(committee[0].getLatestUpdateRecord(), {
     status: { id: getQuestionId(1), numWantsSatisfied: 1 },
   });
 
-  t.log('Voting on question using first 3 wallets');
+  console.log('Voting on question using first 3 wallets');
   await governanceDriver.enactLatestProposal(
     committee,
     getVoteId(1),
     offerIds.vote.outgoing,
   );
 
-  t.log('Checking if votes passed');
+  console.log('Checking if votes passed');
   for (const w of committee.slice(0, 3)) {
     t.like(w.getLatestUpdateRecord(), {
       status: { id: getVoteId(1), numWantsSatisfied: 1 },
     });
   }
 
-  t.log('Waiting for period to end');
+  console.log('Waiting for period to end');
   await advanceTimeBy(1, 'minutes');
 
-  t.log('Verifying outcome');
+  console.log('Verifying outcome');
 
-  const lastOutcome = await governanceDriver.getLatestOutcome();
+  const lastOutcome = governanceDriver.getLatestOutcome();
   console.log(lastOutcome);
   const managerParams = getVstorageData(managerGovernanceKey);
   t.deepEqual(managerParams.current.DebtLimit.value.value, 100_000_000n);
@@ -224,10 +213,10 @@ test.serial(
   async t => {
     const { storage } = t.context;
 
-    const data: any = storage.toStorage({
+    const data = storage.toStorage({
       method: 'children',
       args: [highPrioritySenderKey],
-    });
+    }) as Array<string>;
     t.deepEqual(data.sort(), [...wallets].sort());
   },
 );
@@ -278,7 +267,7 @@ test.serial('Update reserve metrics', async t => {
 });
 
 test.serial('replace committee', async t => {
-  const { evaluateProposal, runUntilQueuesEmpty, storage } = t.context;
+  const { evaluateProposal, storage } = t.context;
 
   const preEvalAgoricNames = makeAgoricNamesRemotesFromFakeStorage(storage);
   await evaluateProposal(
@@ -287,8 +276,6 @@ test.serial('replace committee', async t => {
       ['BOOTSTRAP_TEST'],
     ),
   );
-
-  await runUntilQueuesEmpty();
 
   const postEvalAgoricNames = makeAgoricNamesRemotesFromFakeStorage(storage);
 
@@ -303,16 +290,16 @@ test.serial(
   async t => {
     const { storage } = t.context;
 
-    const data: any = storage.toStorage({
+    const data = storage.toStorage({
       method: 'children',
       args: [highPrioritySenderKey],
-    });
+    }) as Array<string>;
     t.deepEqual(data.sort(), wallets.slice(0, 3).sort());
   },
 );
 
 test.serial('successful proposal and vote by 2 continuing members', async t => {
-  const { storage, advanceTimeBy, getVstorageData, governanceDriver } =
+  const { advanceTimeBy, getVstorageData, governanceDriver, storage } =
     t.context;
   const newCommittee = governanceDriver.ecMembers.slice(0, 3);
 
@@ -321,7 +308,7 @@ test.serial('successful proposal and vote by 2 continuing members', async t => {
     agoricNamesRemotes.instance;
   const { ATOM: collateralBrand, IST: debtBrand } = agoricNamesRemotes.brand;
 
-  t.log('Accepting all new invitations for voters');
+  console.log('Accepting all new invitations for voters');
   await null;
   for (const member of newCommittee) {
     await member.acceptOutstandingCharterInvitation(
@@ -334,7 +321,7 @@ test.serial('successful proposal and vote by 2 continuing members', async t => {
     );
   }
 
-  t.log('Proposing question using old charter invitation');
+  console.log('Proposing question using old charter invitation');
   await governanceDriver.proposeParams(
     VaultFactory,
     { DebtLimit: { brand: debtBrand, value: 200_000_000n } },
@@ -348,7 +335,7 @@ test.serial('successful proposal and vote by 2 continuing members', async t => {
     status: { id: getQuestionId(2), numWantsSatisfied: 1 },
   });
 
-  t.log('Voting on question using first 2 wallets');
+  console.log('Voting on question using first 2 wallets');
   await governanceDriver.enactLatestProposal(
     newCommittee.slice(0, 2),
     getVoteId(2),
@@ -360,18 +347,18 @@ test.serial('successful proposal and vote by 2 continuing members', async t => {
     });
   }
 
-  t.log('Waiting for period to end');
+  console.log('Waiting for period to end');
   await advanceTimeBy(1, 'minutes');
 
-  t.log('Verifying outcome');
-  const lastOutcome = await governanceDriver.getLatestOutcome();
+  console.log('Verifying outcome');
+  const lastOutcome = governanceDriver.getLatestOutcome();
   const managerParams = getVstorageData(managerGovernanceKey);
   t.deepEqual(managerParams.current.DebtLimit.value.value, 200_000_000n);
   t.assert(lastOutcome.outcome === 'win');
 });
 
 test.serial('unsuccessful vote by 2 outgoing members', async t => {
-  const { governanceDriver, storage, advanceTimeBy, getVstorageData } =
+  const { advanceTimeBy, getVstorageData, governanceDriver, storage } =
     t.context;
   const outgoingCommittee = governanceDriver.ecMembers.slice(3);
 
@@ -379,7 +366,7 @@ test.serial('unsuccessful vote by 2 outgoing members', async t => {
   const { VaultFactory } = agoricNamesRemotes.instance;
   const { ATOM: collateralBrand, IST: debtBrand } = agoricNamesRemotes.brand;
 
-  t.log('Proposing question using old charter invitation');
+  console.log('Proposing question using old charter invitation');
   await governanceDriver.proposeParams(
     VaultFactory,
     { DebtLimit: { brand: debtBrand, value: 300_000_000n } },
@@ -392,8 +379,8 @@ test.serial('unsuccessful vote by 2 outgoing members', async t => {
     status: { id: getQuestionId(3), numWantsSatisfied: 1 },
   });
 
-  t.log('Voting on question using first 2 wallets');
-  t.log('voting is done by invitations already present and should fail');
+  console.log('Voting on question using first 2 wallets');
+  console.log('voting is done by invitations already present and should fail');
   const votePromises = outgoingCommittee
     .slice(0, 2)
     .map(member =>
@@ -409,10 +396,10 @@ test.serial('unsuccessful vote by 2 outgoing members', async t => {
     });
   }
 
-  t.log('Waiting for period to end');
+  console.log('Waiting for period to end');
   await advanceTimeBy(1, 'minutes');
 
-  const lastOutcome = await governanceDriver.getLatestOutcome();
+  const lastOutcome = governanceDriver.getLatestOutcome();
   const managerParams = getVstorageData(managerGovernanceKey);
   t.notDeepEqual(managerParams.current.DebtLimit.value.value, 300_000_000n);
   t.assert(lastOutcome.outcome === 'fail');
@@ -421,7 +408,7 @@ test.serial('unsuccessful vote by 2 outgoing members', async t => {
 test.serial(
   'successful vote by 2 continuing and 1 outgoing members',
   async t => {
-    const { storage, advanceTimeBy, getVstorageData, governanceDriver } =
+    const { advanceTimeBy, getVstorageData, governanceDriver, storage } =
       t.context;
     const committee = [
       ...governanceDriver.ecMembers.slice(0, 2),
@@ -432,7 +419,7 @@ test.serial(
     const { VaultFactory } = agoricNamesRemotes.instance;
     const { ATOM: collateralBrand, IST: debtBrand } = agoricNamesRemotes.brand;
 
-    t.log('Proposing question using old charter invitation');
+    console.log('Proposing question using old charter invitation');
     await governanceDriver.proposeParams(
       VaultFactory,
       { DebtLimit: { brand: debtBrand, value: 400_000_000n } },
@@ -445,8 +432,8 @@ test.serial(
       status: { id: getQuestionId(4), numWantsSatisfied: 1 },
     });
 
-    t.log('Voting on question using first all wallets');
-    t.log('first 2 should pass, last should fail');
+    console.log('Voting on question using first all wallets');
+    console.log('first 2 should pass, last should fail');
     const votePromises = committee.map((member, index) =>
       member.voteOnLatestProposal(
         getVoteId(4),
@@ -464,10 +451,10 @@ test.serial(
       });
     }
 
-    t.log('Waiting for period to end');
+    console.log('Waiting for period to end');
     await advanceTimeBy(1, 'minutes');
 
-    const lastOutcome = await governanceDriver.getLatestOutcome();
+    const lastOutcome = governanceDriver.getLatestOutcome();
     const managerParams = getVstorageData(managerGovernanceKey);
     t.deepEqual(managerParams.current.DebtLimit.value.value, 400_000_000n);
     t.assert(lastOutcome.outcome === 'win');
@@ -477,7 +464,7 @@ test.serial(
 test.serial(
   'unsuccessful vote by 1 continuing and 2 outgoing members',
   async t => {
-    const { storage, advanceTimeBy, getVstorageData, governanceDriver } =
+    const { advanceTimeBy, getVstorageData, governanceDriver, storage } =
       t.context;
     const committee = [
       governanceDriver.ecMembers[0],
@@ -488,7 +475,7 @@ test.serial(
     const { VaultFactory } = agoricNamesRemotes.instance;
     const { ATOM: collateralBrand, IST: debtBrand } = agoricNamesRemotes.brand;
 
-    t.log('Proposing question using old charter invitation');
+    console.log('Proposing question using old charter invitation');
     await governanceDriver.proposeParams(
       VaultFactory,
       { DebtLimit: { brand: debtBrand, value: 500_000_000n } },
@@ -501,8 +488,8 @@ test.serial(
       status: { id: getQuestionId(5), numWantsSatisfied: 1 },
     });
 
-    t.log('Voting on question using first all wallets');
-    t.log('first 2 should fail, last should pass');
+    console.log('Voting on question using first all wallets');
+    console.log('first 2 should fail, last should pass');
     const votePromises = committee.map((member, index) =>
       member.voteOnLatestProposal(
         getVoteId(5),
@@ -520,10 +507,10 @@ test.serial(
       });
     }
 
-    t.log('Waiting for period to end');
+    console.log('Waiting for period to end');
     await advanceTimeBy(1, 'minutes');
 
-    const lastOutcome = await governanceDriver.getLatestOutcome();
+    const lastOutcome = governanceDriver.getLatestOutcome();
     const managerParams = getVstorageData(managerGovernanceKey);
     t.notDeepEqual(managerParams.current.DebtLimit.value.value, 500_000_000n);
     t.assert(lastOutcome.outcome === 'fail');
@@ -533,7 +520,7 @@ test.serial(
 // Will fail until https://github.com/Agoric/agoric-sdk/issues/10136 is completed
 test.failing('outgoing member should not be able to propose', async t => {
   // Ability to propose by outgoing member should still exist
-  const { storage, advanceTimeBy, getVstorageData, governanceDriver } =
+  const { advanceTimeBy, getVstorageData, governanceDriver, storage } =
     t.context;
   const newCommittee = governanceDriver.ecMembers.slice(0, 3);
   const outgoingMember = governanceDriver.ecMembers[3];
@@ -542,7 +529,7 @@ test.failing('outgoing member should not be able to propose', async t => {
   const { VaultFactory } = agoricNamesRemotes.instance;
   const { ATOM: collateralBrand, IST: debtBrand } = agoricNamesRemotes.brand;
 
-  t.log('Proposing question using old charter invitation');
+  console.log('Proposing question using old charter invitation');
   await governanceDriver.proposeParams(
     VaultFactory,
     { DebtLimit: { brand: debtBrand, value: 300_000_000n } },
@@ -556,7 +543,7 @@ test.failing('outgoing member should not be able to propose', async t => {
     status: { id: getQuestionId(3), numWantsSatisfied: 1 },
   });
 
-  t.log('Voting on question using first 2 wallets');
+  console.log('Voting on question using first 2 wallets');
   await governanceDriver.enactLatestProposal(
     newCommittee.slice(0, 2),
     getVoteId(3),
@@ -568,25 +555,25 @@ test.failing('outgoing member should not be able to propose', async t => {
     });
   }
 
-  t.log('Waiting for period to end');
+  console.log('Waiting for period to end');
   await advanceTimeBy(1, 'minutes');
 
-  t.log('Verifying outcome');
-  const lastOutcome = await governanceDriver.getLatestOutcome();
+  console.log('Verifying outcome');
+  const lastOutcome = governanceDriver.getLatestOutcome();
   const managerParams = getVstorageData(managerGovernanceKey);
   t.notDeepEqual(managerParams.current.DebtLimit.value.value, 300_000_000n);
   t.assert(lastOutcome.outcome === 'win');
 });
 
 test.serial('EC can govern auctioneer parameter', async t => {
-  const { storage, advanceTimeBy, getVstorageData, governanceDriver } =
+  const { advanceTimeBy, getVstorageData, governanceDriver, storage } =
     t.context;
   const newCommittee = governanceDriver.ecMembers.slice(0, 3);
 
   const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(storage);
   const { auctioneer } = agoricNamesRemotes.instance;
 
-  t.log('Proposing question using new charter invitation');
+  console.log('Proposing question using new charter invitation');
   await governanceDriver.proposeParams(
     auctioneer,
     { LowestRate: 100_000_000n },
@@ -600,7 +587,7 @@ test.serial('EC can govern auctioneer parameter', async t => {
     status: { id: getQuestionId(4), numWantsSatisfied: 1 },
   });
 
-  t.log('Voting on question using first 2 wallets');
+  console.log('Voting on question using first 2 wallets');
   await governanceDriver.enactLatestProposal(
     newCommittee.slice(0, 2),
     getVoteId(4),
@@ -612,18 +599,18 @@ test.serial('EC can govern auctioneer parameter', async t => {
     });
   }
 
-  t.log('Waiting for period to end');
+  console.log('Waiting for period to end');
   await advanceTimeBy(1, 'minutes');
 
-  t.log('Verifying outcome');
-  const lastOutcome = await governanceDriver.getLatestOutcome();
+  console.log('Verifying outcome');
+  const lastOutcome = governanceDriver.getLatestOutcome();
   const auctioneerParams = getVstorageData(auctioneerParamsKey);
   t.deepEqual(auctioneerParams.current.LowestRate.value, 100_000_000n);
   t.assert(lastOutcome.outcome === 'win');
 });
 
 test.serial('EC can govern provisionPool parameter', async t => {
-  const { storage, advanceTimeBy, getVstorageData, governanceDriver } =
+  const { advanceTimeBy, getVstorageData, governanceDriver, storage } =
     t.context;
   const newCommittee = governanceDriver.ecMembers.slice(0, 3);
 
@@ -631,7 +618,7 @@ test.serial('EC can govern provisionPool parameter', async t => {
   const { provisionPool } = agoricNamesRemotes.instance;
   const { IST } = agoricNamesRemotes.brand;
 
-  t.log('Proposing question using new charter invitation');
+  console.log('Proposing question using new charter invitation');
   await governanceDriver.proposeParams(
     provisionPool,
     { PerAccountInitialAmount: { brand: IST, value: 100_000_000n } },
@@ -645,7 +632,7 @@ test.serial('EC can govern provisionPool parameter', async t => {
     status: { id: getQuestionId(5), numWantsSatisfied: 1 },
   });
 
-  t.log('Voting on question using first 2 wallets');
+  console.log('Voting on question using first 2 wallets');
   await governanceDriver.enactLatestProposal(
     newCommittee.slice(0, 2),
     getVoteId(5),
@@ -657,11 +644,11 @@ test.serial('EC can govern provisionPool parameter', async t => {
     });
   }
 
-  t.log('Waiting for period to end');
+  console.log('Waiting for period to end');
   await advanceTimeBy(1, 'minutes');
 
-  t.log('Verifying outcome');
-  const lastOutcome = await governanceDriver.getLatestOutcome();
+  console.log('Verifying outcome');
+  const lastOutcome = governanceDriver.getLatestOutcome();
   const provisionPoolParams = getVstorageData(provisionPoolParamsKey);
   t.deepEqual(
     provisionPoolParams.current.PerAccountInitialAmount.value.value,
@@ -671,7 +658,7 @@ test.serial('EC can govern provisionPool parameter', async t => {
 });
 
 test.serial('EC can govern reserve parameter', async t => {
-  const { storage, advanceTimeBy, governanceDriver, getVstorageData } =
+  const { advanceTimeBy, getVstorageData, governanceDriver, storage } =
     t.context;
   const newCommittee = governanceDriver.ecMembers.slice(0, 3);
 
@@ -679,7 +666,7 @@ test.serial('EC can govern reserve parameter', async t => {
   const { reserve } = agoricNamesRemotes.instance;
   const { IST } = agoricNamesRemotes.brand;
 
-  t.log('Proposing question using new charter invitation for reserve');
+  console.log('Proposing question using new charter invitation for reserve');
   await governanceDriver.proposeApiCall(
     reserve,
     'burnFeesToReduceShortfall',
@@ -693,7 +680,7 @@ test.serial('EC can govern reserve parameter', async t => {
     status: { id: getQuestionId(6), numWantsSatisfied: 1 },
   });
 
-  t.log('Voting on question using first 2 wallets');
+  console.log('Voting on question using first 2 wallets');
   await governanceDriver.enactLatestProposal(
     newCommittee.slice(0, 2),
     getVoteId(6),
@@ -705,20 +692,20 @@ test.serial('EC can govern reserve parameter', async t => {
     });
   }
 
-  t.log('no oracle invitation should exist before vote passing');
+  console.log('no oracle invitation should exist before vote passing');
   const oracleInvitation =
     await governanceDriver.ecMembers[0].findOracleInvitation();
   t.is(oracleInvitation, undefined);
 
-  t.log('Checking params before passing proposal');
+  console.log('Checking params before passing proposal');
   const reserveParams = getVstorageData(reserveParamsKey);
   t.is(reserveParams.totalFeeBurned.value, 0n);
 
-  t.log('Waiting for period to end');
+  console.log('Waiting for period to end');
   await advanceTimeBy(1, 'minutes');
 
-  t.log('Verifying outcome');
-  const lastOutcome = await governanceDriver.getLatestOutcome();
+  console.log('Verifying outcome');
+  const lastOutcome = governanceDriver.getLatestOutcome();
   t.assert(lastOutcome.outcome === 'win');
 
   const reserveParamsPostUpdate = getVstorageData(reserveParamsKey);
@@ -726,7 +713,7 @@ test.serial('EC can govern reserve parameter', async t => {
 });
 
 test.serial('EC can govern psm parameter', async t => {
-  const { storage, advanceTimeBy, getVstorageData, governanceDriver } =
+  const { advanceTimeBy, getVstorageData, governanceDriver, storage } =
     t.context;
   const newCommittee = governanceDriver.ecMembers.slice(0, 3);
 
@@ -744,7 +731,10 @@ test.serial('EC can govern psm parameter', async t => {
   for (const instance of psmInstances) {
     const brand = instance.groups?.brand;
     const instanceName = instance[0];
-    t.log('Proposing question using new charter invitation for', instanceName);
+    console.log(
+      'Proposing question using new charter invitation for',
+      instanceName,
+    );
     await governanceDriver.proposeParams(
       agoricNamesRemotes.instance[instanceName],
       { MintLimit: { brand: IST, value: 100_000_000n } },
@@ -758,7 +748,7 @@ test.serial('EC can govern psm parameter', async t => {
       status: { id: getQuestionId(instanceName), numWantsSatisfied: 1 },
     });
 
-    t.log('Voting on question using first 2 wallets');
+    console.log('Voting on question using first 2 wallets');
     await governanceDriver.enactLatestProposal(
       newCommittee.slice(0, 2),
       getVoteId(instanceName),
@@ -770,11 +760,11 @@ test.serial('EC can govern psm parameter', async t => {
       });
     }
 
-    t.log('Waiting for period to end');
+    console.log('Waiting for period to end');
     await advanceTimeBy(1, 'minutes');
 
-    t.log('Verifying outcome');
-    const lastOutcome = await governanceDriver.getLatestOutcome();
+    console.log('Verifying outcome');
+    const lastOutcome = governanceDriver.getLatestOutcome();
     const psmParams = getVstorageData(getPsmKey(brand));
     t.deepEqual(psmParams.current.MintLimit.value.value, 100_000_000n);
     t.assert(lastOutcome.outcome === 'win');
@@ -782,7 +772,7 @@ test.serial('EC can govern psm parameter', async t => {
 });
 
 test.serial('EC can make calls to price feed governed APIs', async t => {
-  const { storage, advanceTimeBy, governanceDriver } = t.context;
+  const { advanceTimeBy, governanceDriver, storage } = t.context;
   const newCommittee = governanceDriver.ecMembers.slice(0, 3);
 
   const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(storage);
@@ -796,7 +786,10 @@ test.serial('EC can make calls to price feed governed APIs', async t => {
 
   await null;
   for (const instanceName of priceFeedInstances) {
-    t.log('Proposing question using new charter invitation for', instanceName);
+    console.log(
+      'Proposing question using new charter invitation for',
+      instanceName,
+    );
     await governanceDriver.proposeApiCall(
       agoricNamesRemotes.instance[instanceName],
       'addOracles',
@@ -810,7 +803,7 @@ test.serial('EC can make calls to price feed governed APIs', async t => {
       status: { id: getQuestionId(instanceName), numWantsSatisfied: 1 },
     });
 
-    t.log('Voting on question using first 2 wallets');
+    console.log('Voting on question using first 2 wallets');
     await governanceDriver.enactLatestProposal(
       newCommittee.slice(0, 2),
       getVoteId(instanceName),
@@ -822,16 +815,16 @@ test.serial('EC can make calls to price feed governed APIs', async t => {
       });
     }
 
-    t.log('no oracle invitation should exist before vote passing');
+    console.log('no oracle invitation should exist before vote passing');
     const oracleInvitation =
       await governanceDriver.ecMembers[0].findOracleInvitation();
     t.is(oracleInvitation, undefined);
 
-    t.log('Waiting for period to end');
+    console.log('Waiting for period to end');
     await advanceTimeBy(1, 'minutes');
 
-    t.log('Verifying outcome');
-    const lastOutcome = await governanceDriver.getLatestOutcome();
+    console.log('Verifying outcome');
+    const lastOutcome = governanceDriver.getLatestOutcome();
     t.assert(lastOutcome.outcome === 'win');
 
     const oracleInvitationAfterProposal =

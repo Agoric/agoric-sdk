@@ -54,10 +54,6 @@ test.before(async t => {
   const context = await makeWalletFactoryContext({
     configSpecifier:
       '@agoric/vm-config/decentral-itest-orchestration-chains-config.json',
-    fixupConfig: config => ({
-      ...config,
-      defaultManagerType: defaultManagerType as ManagerType,
-    }),
     harness,
     slogSender,
   });
@@ -70,11 +66,7 @@ test.after.always(t => t.context.shutdown?.());
  * Test the config itself. Part of this suite so we don't have to start up another swingset.
  */
 test.serial('config', async t => {
-  const {
-    readPublished,
-    runUtils: { EV },
-    storage,
-  } = t.context;
+  const { EV, readPublished, storage } = t.context;
 
   const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
 
@@ -130,10 +122,7 @@ test.serial('config', async t => {
 
 // XXX rely on .serial to be in sequence, and keep this one last
 test.serial('revise chain info', async t => {
-  const {
-    evaluateProposal,
-    runUtils: { EV },
-  } = t.context;
+  const { EV, evaluateProposal } = t.context;
 
   const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
 

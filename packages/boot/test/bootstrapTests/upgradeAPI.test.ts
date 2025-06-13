@@ -1,4 +1,3 @@
-import { createRequire } from 'node:module';
 import path from 'node:path';
 
 import type { TestFn } from 'ava';
@@ -7,14 +6,13 @@ import {
   makeGovernanceDriver,
   makeWalletFactoryDriver,
 } from '@aglocal/boot/tools/drivers.js';
-import { makeMockBridgeKit } from '@agoric/cosmic-swingset/tools/test-bridge-utils';
+import { makeMockBridgeKit } from '@agoric/cosmic-swingset/tools/test-bridge-utils.ts';
 import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { MALLEABLE_NUMBER } from '@agoric/governance/test/swingsetTests/contractGovernor/governedContract.js';
-import { NonNullish } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
+import { makeSwingsetController } from '@agoric/swingset-vat';
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import {
   boardSlottingMarshaller,
@@ -26,7 +24,6 @@ import { makePromiseKit } from '@endo/promise-kit';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 const { fromCapData } = boardSlottingMarshaller(slotToBoardRemote);
-const { resolve: resolvePath } = createRequire(import.meta.url);
 
 const GOVERNED_CONTRACT_SRC = './governedContract.js';
 const GOVERNED_CONTRACT2_SRC = './governedContract2.js';
@@ -40,7 +37,12 @@ const wallets = [
   'agoric1zayxg4e9vd0es9c9jlpt36qtth255txjp6a8yc',
 ];
 
-const setUpGovernedContract = async (zoe, timer, EV, controller) => {
+const setUpGovernedContract = async (
+  controller: Awaited<ReturnType<typeof makeSwingsetController>>,
+  EV: import('@agoric/swingset-vat/tools/run-utils.js').RunUtils['EV'],
+  timer: import('@agoric/time').TimerService,
+  zoe: ZoeService,
+) => {
   const installBundle = contractBundle => EV(zoe).install(contractBundle);
   const installBundleToVatAdmin = contractBundle =>
     controller.validateAndInstallBundle(contractBundle);
@@ -99,6 +101,7 @@ const setUpGovernedContract = async (zoe, timer, EV, controller) => {
   const governorFacets = await EV(zoe).startInstance(
     governorInstallation,
     {},
+    // @ts-expect-error
     governorTerms,
     {
       governed: {
@@ -116,24 +119,18 @@ const setUpGovernedContract = async (zoe, timer, EV, controller) => {
   };
 };
 
-// A more minimal set would be better. We need governance, but not econ vats.
-const PLATFORM_CONFIG = '@agoric/vm-config/decentral-main-vaults-config.json';
-
 const makeDefaultTestContext = async () => {
   console.time('DefaultTestContext');
   const storage = makeFakeStorageKit('bootstrapTests');
   const swingsetTestKit = await makeCosmicSwingsetTestKit({
-    configOverrides: NonNullish(
-      await loadSwingsetConfigFile(resolvePath(PLATFORM_CONFIG)),
-    ),
+    // A more minimal set would be better. We need governance, but not econ vats.
+    configSpecifier: '@agoric/vm-config/decentral-main-vaults-config.json',
     mockBridgeReceiver: makeMockBridgeKit({ storageKit: storage }),
   });
 
-  const { controller, runNextBlock, runUtils } = swingsetTestKit;
-  await runNextBlock();
+  const { controller, EV, queueAndRun } = swingsetTestKit;
 
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
-  const { EV } = runUtils;
   const zoe: ZoeService = await EV.vat('bootstrap').consumeItem('zoe');
   const timer = await EV.vat('bootstrap').consumeItem('chainTimerService');
 
@@ -141,7 +138,7 @@ const makeDefaultTestContext = async () => {
   const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(storage);
 
   const walletFactoryDriver = await makeWalletFactoryDriver(
-    runUtils,
+    { EV, queueAndRun },
     storage,
     agoricNamesRemotes,
   );
@@ -170,7 +167,7 @@ const makeDefaultTestContext = async () => {
     wallets,
   );
 
-  const facets = await setUpGovernedContract(zoe, timer, EV, controller);
+  const facets = await setUpGovernedContract(controller, EV, timer, zoe);
 
   const governedContract = makePromiseKit();
   return {
@@ -190,12 +187,11 @@ test.before(async t => (t.context = await makeDefaultTestContext()));
 
 test.after.always(t => t.context.shutdown?.());
 
-test.serial(`start contract; verify`, async t => {
-  const { runUtils, facets } = t.context;
+test.serial('start contract; verify', async t => {
+  const { EV, facets } = t.context;
   const {
     governorFacets: { creatorFacet },
   } = facets;
-  const { EV } = runUtils;
   const contractPublicFacet = await EV(creatorFacet).getPublicFacet();
 
   const avogadro = await EV(contractPublicFacet).getNum();
@@ -212,20 +208,18 @@ const offerIds = {
   add2: { outgoing: 'add2' },
 };
 
-test.serial(`verify API governance`, async t => {
+test.serial('verify API governance', async t => {
   const {
-    runUtils,
-    facets,
-    governanceDriver,
-    storage,
     advanceTimeBy,
+    EV,
+    facets: {
+      governorFacets: { creatorFacet, instance },
+    },
+    governanceDriver,
     governedContract,
+    storage,
   } = t.context;
-  const {
-    governorFacets: { creatorFacet, instance },
-  } = facets;
 
-  const { EV } = runUtils;
   const contractPublicFacet = await EV(creatorFacet).getPublicFacet();
 
   const committee = governanceDriver.ecMembers;
@@ -280,7 +274,7 @@ test.serial(`verify API governance`, async t => {
   }
   await advanceTimeBy(1, 'minutes');
 
-  const lastOutcome = await governanceDriver.getLatestOutcome();
+  const lastOutcome = governanceDriver.getLatestOutcome();
   t.is(lastOutcome.outcome, 'win');
 
   const calls = await EV(contractPublicFacet).getApiCalled();
@@ -288,14 +282,15 @@ test.serial(`verify API governance`, async t => {
 });
 
 test.serial(`upgrade`, async t => {
-  const { runUtils, facets } = t.context;
   const {
-    governorFacets: { creatorFacet },
-    contract2SHA,
-    poserInvitation2,
-  } = facets;
+    EV,
+    facets: {
+      governorFacets: { creatorFacet },
+      contract2SHA,
+      poserInvitation2,
+    },
+  } = t.context;
 
-  const { EV } = runUtils;
   const af = await EV(creatorFacet).getAdminFacet();
 
   await EV(af).upgradeContract(`b1-${contract2SHA}`, {
@@ -309,17 +304,14 @@ test.serial(`upgrade`, async t => {
 
 test.serial(`verify API governance post-upgrade`, async t => {
   const {
-    runUtils,
-    facets,
-    governanceDriver,
     advanceTimeBy,
+    EV,
+    facets: {
+      governorFacets: { creatorFacet },
+    },
+    governanceDriver,
     governedContract,
   } = t.context;
-  const {
-    governorFacets: { creatorFacet },
-  } = facets;
-
-  const { EV } = runUtils;
 
   const committee = governanceDriver.ecMembers;
 

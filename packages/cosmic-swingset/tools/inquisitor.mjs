@@ -41,10 +41,9 @@ import { isMainThread } from 'node:worker_threads';
 import sqlite3 from 'better-sqlite3';
 import { Fail, b, q } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
-import { objectMap, BridgeId } from '@agoric/internal';
+import { objectMap } from '@agoric/internal';
 import { QueuedActionType } from '@agoric/internal/src/action-types.js';
 import { defineName } from '@agoric/internal/src/js-utils.js';
-import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { krefOf, kser, kslot, kunser } from '@agoric/kmarshal';
 import {
@@ -721,27 +720,16 @@ const main = async (argv, options = {}, powers = {}) => {
 
   const { swingStore, mutations } = makeSwingStoreOverlay(argv[0]);
   const { db, kvStore } = swingStore.internal;
-  const fakeStorageKit = makeFakeStorageKit('');
-  const { toStorage: handleVstorage } = fakeStorageKit;
-  const receiveBridgeSend = (destPort, msg) => {
-    console.log('[bridge] received', msg);
-    switch (destPort) {
-      case BridgeId.STORAGE: {
-        return handleVstorage(msg);
-      }
-      default:
-        Fail`[inquisitor] bridge port ${q(destPort)} not implemented for message ${msg}`;
-    }
-  };
+  /** @type {Parameters<typeof makeCosmicSwingsetTestKit>[0]} */
   const config = {
-    /** @type {Partial<SwingSetConfig>} */
-    configOverrides: {
+    fixupConfig: _config => ({
+      ..._config,
       // Default to XS workers with no GC or snapshots.
       defaultManagerType: 'xsnap',
       defaultReapGCKrefs: 'never',
       defaultReapInterval: 'never',
       snapshotInterval: Number.MAX_VALUE,
-    },
+    }),
     fixupInitMessage: msg => ({
       ...msg,
       blockHeight: Number(swingStore.hostStorage.kvStore.get('host.height')),
@@ -753,7 +741,6 @@ const main = async (argv, options = {}, powers = {}) => {
         vat_cleanup_budget: makeVatCleanupBudgetFromKeywords({ Default: 0 }),
       },
     }),
-    mockBridgeReceiver: receiveBridgeSend,
     swingsetConfig: { maxVatsOnline },
     swingStore,
   };
@@ -761,12 +748,12 @@ const main = async (argv, options = {}, powers = {}) => {
 
   const {
     controller,
+    EV,
     getLastBlockInfo,
-    shutdown,
-    pushQueueRecord,
     pushCoreEval,
+    pushQueueRecord,
     runNextBlock,
-    runUtils: { EV },
+    shutdown,
   } = testKit;
   const helpers = makeHelpers({ db, EV });
   const endowments = {

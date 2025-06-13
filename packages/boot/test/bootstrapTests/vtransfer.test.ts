@@ -1,34 +1,24 @@
-import { createRequire } from 'node:module';
-
 import type { TestFn } from 'ava';
 
-import { makeMockBridgeKit } from '@agoric/cosmic-swingset/tools/test-bridge-utils';
+import { makeMockBridgeKit } from '@agoric/cosmic-swingset/tools/test-bridge-utils.ts';
 import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
 import { buildProposal } from '@agoric/cosmic-swingset/tools/test-proposal-utils.ts';
-import { BridgeId, NonNullish } from '@agoric/internal';
+import { BridgeId } from '@agoric/internal';
 import {
   QueuedActionType,
   VTRANSFER_IBC_EVENT,
 } from '@agoric/internal/src/action-types.js';
-import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import type { ScopedBridgeManager } from '@agoric/vats';
 import type { TransferMiddleware } from '@agoric/vats/src/transfer.js';
 import type { TransferVat } from '@agoric/vats/src/vat-transfer.js';
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-const { resolve: resolvePath } = createRequire(import.meta.url);
-
 const makeDefaultTestContext = async () => {
   const outboundMessages = new Map();
   const swingsetTestKit = await makeCosmicSwingsetTestKit({
-    configOverrides: NonNullish(
-      await loadSwingsetConfigFile(
-        resolvePath('@agoric/vm-config/decentral-demo-config.json'),
-      ),
-    ),
+    configSpecifier: '@agoric/vm-config/decentral-demo-config.json',
     mockBridgeReceiver: makeMockBridgeKit({ outboundMessages }),
   });
-  await swingsetTestKit.runNextBlock();
   return { ...swingsetTestKit, outboundMessages };
 };
 type DefaultTestContext = Awaited<ReturnType<typeof makeDefaultTestContext>>;
@@ -39,8 +29,7 @@ test.before(async t => (t.context = await makeDefaultTestContext()));
 test.after.always(t => t.context.shutdown?.());
 
 test('vtransfer', async t => {
-  const { evaluateProposal, outboundMessages, runUtils } = t.context;
-  const { EV } = runUtils;
+  const { EV, evaluateProposal, outboundMessages } = t.context;
 
   // Pull what transfer-proposal produced into local scope
   const transferVat = (await EV.vat('bootstrap').consumeItem(
@@ -59,7 +48,9 @@ test('vtransfer', async t => {
   // only VTRANSFER_IBC_EVENT is supported by vtransferBridgeManager
   await t.throwsAsync(
     EV(vtransferBridgeManager).fromBridge({ type: 'VTRANSFER_OTHER' }),
-    { message: `Invalid inbound event type (a string); expected (a string)` },
+    {
+      message: `Invalid inbound event type "VTRANSFER_OTHER"; expected "${VTRANSFER_IBC_EVENT}"`,
+    },
   );
 
   const target = 'agoric1vtransfertest';
@@ -74,7 +65,10 @@ test('vtransfer', async t => {
       type: VTRANSFER_IBC_EVENT,
       event: 'echo',
     }),
-    { message: 'key (a string) not found in collection "targetToApp"' },
+    {
+      message:
+        'key "agoric1vtransfertest" not found in collection "targetToApp"',
+    },
   );
 
   // 1 interceptors for target

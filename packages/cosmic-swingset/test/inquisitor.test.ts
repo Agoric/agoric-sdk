@@ -1,7 +1,9 @@
 import anyTest, { type TestFn } from 'ava';
 
-import { makeHelpers } from '../tools/inquisitor.mjs';
-import { makeCosmicSwingsetTestKit } from '../tools/test-kit.js';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { makeHelpers } from '@agoric/cosmic-swingset/tools/inquisitor.mjs';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
 
 const test = anyTest as TestFn;
 

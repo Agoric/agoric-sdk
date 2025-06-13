@@ -3,23 +3,26 @@
 import anyTest, { type TestFn } from 'ava';
 
 import type { ParamsSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { provideEnhancedKVStore } from '@agoric/cosmic-swingset/src/helpers/bufferedStorage.js';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import {
+  DEFAULT_SIM_SWINGSET_PARAMS,
+  makeVatCleanupBudgetFromKeywords,
+  type VatCleanupKeywordsRecord,
+} from '@agoric/cosmic-swingset/src/sim-params.js';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import {
+  defaultBootstrapMessage,
+  defaultInitMessage,
+  makeCosmicSwingsetTestKit,
+} from '@agoric/cosmic-swingset/tools/test-kit.js';
 import { deepCopyJsonable, objectMap } from '@agoric/internal';
 import type { BlockInfo } from '@agoric/internal/src/chain-utils.js';
 import type { SwingSetConfigDescriptor } from '@agoric/swingset-vat';
 import { assert } from '@endo/errors';
 import { E } from '@endo/far';
-import type { KVStore } from '../src/helpers/bufferedStorage.js';
-import { provideEnhancedKVStore } from '../src/helpers/bufferedStorage.js';
-import {
-  DEFAULT_SIM_SWINGSET_PARAMS,
-  makeVatCleanupBudgetFromKeywords,
-  type VatCleanupKeywordsRecord,
-} from '../src/sim-params.js';
-import {
-  defaultBootstrapMessage,
-  defaultInitMessage,
-  makeCosmicSwingsetTestKit,
-} from '../tools/test-kit.js';
+import type { KVStore } from '@agoric/cosmic-swingset/src/helpers/bufferedStorage.js';
 
 const test = anyTest as TestFn;
 
@@ -46,18 +49,19 @@ const makeCleanupBudgetParams = (
 test('cleanup work must be limited by vat_cleanup_budget', async t => {
   let finish: (() => Promise<void>) | undefined;
   t.teardown(() => finish?.());
-  const options = {
+  const options: Parameters<typeof makeCosmicSwingsetTestKit>[0] = {
     bundles: makeSourceDescriptors({
       puppet: '@agoric/swingset-vat/tools/vat-puppet.js',
     }),
-    configOverrides: {
+    fixupConfig: config => ({
+      ...config,
       // Aggressive GC.
       defaultReapInterval: 1,
       // Ensure multiple spans and snapshots.
       defaultManagerType: 'xsnap' as const, // FIXME: Doesn't work with local worker
       snapshotInitial: 2,
       snapshotInterval: 4,
-    },
+    }),
     fixupInitMessage: () => ({
       ...defaultBootstrapMessage,
       params: makeCleanupBudgetParams({ Default: 0 }),

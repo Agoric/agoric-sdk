@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * @file Bootstrap test integration vaults with smart-wallet. The tests in this
  *   file are NOT independent; a single `test.before()` handler creates shared
@@ -6,19 +5,16 @@
  *   changes from earlier tests.
  */
 
-import { createRequire } from 'node:module';
-
-import type { ExecutionContext, TestFn } from 'ava';
+import type { TestFn } from 'ava';
 
 import { makeWalletFactoryDriver } from '@aglocal/boot/tools/drivers.js';
-import { makeMockBridgeKit } from '@agoric/cosmic-swingset/tools/test-bridge-utils';
+import { makeMockBridgeKit } from '@agoric/cosmic-swingset/tools/test-bridge-utils.ts';
 import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
 import { NonNullish } from '@agoric/internal';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { SECONDS_PER_YEAR } from '@agoric/inter-protocol/src/interest.js';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import {
   boardSlottingMarshaller,
   makeAgoricNamesRemotesFromFakeStorage,
@@ -32,7 +28,6 @@ import { Far, makeMarshal } from '@endo/marshal';
 const collateralBrandKey = 'ATOM';
 
 const { fromCapData } = boardSlottingMarshaller(slotToBoardRemote);
-const { resolve: resolvePath } = createRequire(import.meta.url);
 
 const makeDefaultTestContext = async ({
   incarnation = 1,
@@ -40,21 +35,13 @@ const makeDefaultTestContext = async ({
   storage = makeFakeStorageKit('bootstrapTests'),
 } = {}) => {
   logTiming && console.time('DefaultTestContext');
-  const config = NonNullish(
-    await loadSwingsetConfigFile(
-      resolvePath('@agoric/vm-config/decentral-itest-vaults-config.json'),
-    ),
-  );
   // TODO: fix this test for xs-worker
-  config.defaultManagerType = 'local';
   const swingsetTestKit = await makeCosmicSwingsetTestKit({
-    configOverrides: config,
+    configSpecifier: '@agoric/vm-config/decentral-itest-vaults-config.json',
     mockBridgeReceiver: makeMockBridgeKit({ storageKit: storage }),
   });
 
-  const { runNextBlock, runUtils } = swingsetTestKit;
-
-  await runNextBlock();
+  const { EV, queueAndRun } = swingsetTestKit;
 
   const readLatestEntryFromStorage = (path: string) => {
     let data;
@@ -69,7 +56,6 @@ const makeDefaultTestContext = async ({
     return data;
   };
 
-  const { EV } = runUtils;
   logTiming && console.timeLog('DefaultTestContext', 'swingsetTestKit');
 
   // Wait for ATOM to make it into agoricNames
@@ -82,7 +68,7 @@ const makeDefaultTestContext = async ({
   logTiming && console.timeLog('DefaultTestContext', 'agoricNamesRemotes');
 
   const walletFactoryDriver = await makeWalletFactoryDriver(
-    runUtils,
+    { EV, queueAndRun },
     storage,
     agoricNamesRemotes,
   );
@@ -131,10 +117,8 @@ test.serial('re-bootstrap', async t => {
     await oldContext.walletFactoryDriver.provideSmartWallet('agoric1a');
   t.true(wd1.isNew);
 
-  const assertWalletCount = (walletsProvisioned, message) => {
-    const metrics = oldContext.readLatestEntryFromStorage(
-      'published.provisionPool.metrics',
-    );
+  const assertWalletCount = (_, __) => {
+    oldContext.readLatestEntryFromStorage('published.provisionPool.metrics');
     // FIXME make wallet provisioning use the provisionPool
     // disabled while wallet provisioning bypasses provisionPool
     // t.like(metrics, { walletsProvisioned }, message);
@@ -236,7 +220,7 @@ test.serial('audit bootstrap exports', async t => {
 
   const oids = new Set(myExports.map(o => o[2]));
   const oidsDurable = [...oids].filter(o => o.startsWith('o+d'));
-  t.log(
+  console.log(
     'bootstrap exports:',
     oidsDurable.length,
     'durable',
@@ -328,8 +312,7 @@ test.serial('open vault', async t => {
 });
 
 test.serial('restart vaultFactory', async t => {
-  const { runUtils, readCollateralMetrics } = t.context.shared;
-  const { EV } = runUtils;
+  const { EV, readCollateralMetrics } = t.context.shared;
   const vaultFactoryKit =
     await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
 
@@ -366,7 +349,7 @@ test.serial('restart vaultFactory', async t => {
     totalDebt: { value: 5025000n },
   };
   t.like(readCollateralMetrics(0), keyMetrics);
-  t.log('awaiting VaultFactory restartContract');
+  console.log('awaiting VaultFactory restartContract');
   const upgradeResult = await EV(vfAdminFacet).restartContract(privateArgs);
   t.deepEqual(upgradeResult, { incarnationNumber: 1 });
   t.like(readCollateralMetrics(0), keyMetrics); // unchanged
@@ -380,7 +363,7 @@ test.serial('restart vaultFactory', async t => {
 });
 
 test.serial('restart contractGovernor', async t => {
-  const { EV } = t.context.shared.runUtils;
+  const { EV } = t.context.shared;
   const vaultFactoryKit =
     await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
 
@@ -390,7 +373,7 @@ test.serial('restart contractGovernor', async t => {
   // through a restart or upgrade using the governed contract's adminFacet
   const privateArgs = undefined;
 
-  t.log('awaiting CG restartContract');
+  console.log('awaiting CG restartContract');
   const upgradeResult =
     await EV(governorAdminFacet).restartContract(privateArgs);
   t.deepEqual(upgradeResult, { incarnationNumber: 1 });
@@ -431,7 +414,7 @@ test.serial('adjust balance of vault opened before restart', async t => {
     status: { id: 'open2', numWantsSatisfied: 1 },
   });
 
-  t.log('adjust to brink of liquidation');
+  console.log('adjust to brink of liquidation');
   await wd.executeOfferMaker(
     Offers.vaults.AdjustBalances,
     {
@@ -495,15 +478,11 @@ test.serial('force liquidation', async t => {
 test.serial(
   'upgrade facet for all contracts, vats are saved durably',
   async t => {
-    const {
-      controller,
-      runUtils: { EV },
-      swingStore,
-    } = t.context.shared;
+    const { controller, EV, swingStore } = t.context.shared;
     const kState = controller.dump();
     const { kernelTable, vatTables } = kState;
 
-    t.log('find contracts, vats known to SwingSet');
+    console.log('find contracts, vats known to SwingSet');
     // see comment atop kernelKeeper.js for schema
     const vatOptions = vatID =>
       JSON.parse(
@@ -520,7 +499,7 @@ test.serial(
       assert.fail();
     const zoeVat = vatNamed('zoe');
 
-    t.log('discharge obligations by finding upgrade powers');
+    console.log('discharge obligations by finding upgrade powers');
     const todo = Object.fromEntries(Object.entries(vatNames));
     // vats created by swingset before bootstrap starts
     const swingsetVats = [

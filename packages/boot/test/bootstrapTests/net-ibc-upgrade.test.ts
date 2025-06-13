@@ -5,15 +5,11 @@ import type { ExecutionContext, TestFn } from 'ava';
 import { createRequire } from 'node:module';
 
 import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
-import { NonNullish } from '@agoric/internal';
-import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
 
 const { entries, assign } = Object;
-
-const PLATFORM_CONFIG = '@agoric/vm-config/decentral-itest-vaults-config.json';
 
 const { resolve: resolvePath } = createRequire(import.meta.url);
 const asset = {
@@ -30,15 +26,14 @@ export const makeTestContext = async () => {
     { cacheSourceMaps: false },
     s => import(s),
   );
-  const config = NonNullish(
-    await loadSwingsetConfigFile(resolvePath(PLATFORM_CONFIG)),
-  );
-  config.bundleCachePath = bundleDir;
 
   const swingsetTestKit = await makeCosmicSwingsetTestKit({
-    configOverrides: config,
+    configSpecifier: '@agoric/vm-config/decentral-itest-vaults-config.json',
+    fixupConfig: config => ({
+      ...config,
+      bundleCachePath: bundleDir,
+    }),
   });
-  await swingsetTestKit.runNextBlock();
 
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
 
@@ -54,25 +49,24 @@ test.before(async t => (t.context = await makeTestContext()));
 test.after.always(t => t.context.shutdown?.());
 
 test.serial('bootstrap produces provisioning vat', async t => {
-  const { EV } = t.context.runUtils;
+  const { EV } = t.context;
   const provisioning = await EV.vat('bootstrap').consumeItem('provisioning');
   console.timeLog('DefaultTestContext', 'provisioning');
-  t.log('provisioning', provisioning);
+  console.log('provisioning', provisioning);
   t.truthy(provisioning);
 });
 
 test.serial('bootstrap launches network, ibc vats', async t => {
-  const { EV } = t.context.runUtils;
+  const { EV } = t.context;
 
-  t.log('network proposal executed');
+  console.log('network proposal executed');
   const vatStore = await EV.vat('bootstrap').consumeItem('vatStore');
   t.true(await EV(vatStore).has('ibc'), 'ibc');
   t.true(await EV(vatStore).has('network'), 'network');
 });
 
 test.serial('test contracts are installed', async t => {
-  const { bundleCache } = t.context;
-  const { EV } = t.context.runUtils;
+  const { bundleCache, EV } = t.context;
   const zoe: ZoeService = await EV.vat('bootstrap').consumeItem('zoe');
   for (const [name, path] of entries(asset)) {
     const bundle = await bundleCache.load(path, name);
@@ -98,19 +92,18 @@ const upgradeVats = async (
       : EV(vatAdminSvc).getNamedBundleCap(bundleName));
     const { adminNode } = await EV(vatStore).get(vatName);
     const result = await EV(adminNode).upgrade(bcap);
-    t.log(vatName, result);
+    console.log(vatName, result);
     t.true(result.incarnationNumber > 0);
   }
 };
 
 test.serial('upgrade at many points in network API flow', async t => {
-  const { installation } = t.context;
-  const { EV } = t.context.runUtils;
+  const { EV, installation } = t.context;
   const portAllocator = await EV.vat('bootstrap').consumeItem('portAllocator');
   const zoe: ZoeService = await EV.vat('bootstrap').consumeItem('zoe');
 
   const flow = entries({
-    startServer: async label => {
+    startServer: async (label: string) => {
       const started = await EV(zoe).startInstance(
         installation.ibcServerMock,
         {},
@@ -141,7 +134,7 @@ test.serial('upgrade at many points in network API flow', async t => {
     getAddresses: async ([label, opts]) => {
       const serverAddress = await EV(opts.server).getLocalAddress();
       const clientAddress = await EV(opts.client).getLocalAddress();
-      t.log(`${label} server ${serverAddress} client ${clientAddress}`);
+      console.log(`${label} server ${serverAddress} client ${clientAddress}`);
       return [label, { ...opts, serverAddress }];
     },
     requestConnection: async ([label, opts]) => {
