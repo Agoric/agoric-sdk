@@ -8,11 +8,18 @@ import {
 import type { IBCChannelID } from '@agoric/vats';
 import { objectMap } from '@endo/patterns';
 
+/**
+ * @deprecated moving to @agoric/orchestration
+ */
 export const selectCosmosChainInfo = (
   chainInfo: Record<string, ChainInfo>,
 ): Record<string, CosmosChainInfo | undefined> =>
   objectMap(chainInfo, info => ('bech32Prefix' in info ? info : undefined));
 
+/**
+ * @deprecated moving to @agoric/orchestration
+ * @param chainInfo
+ */
 export const makeDenomTools = (chainInfo: Record<string, ChainInfo>) => {
   const cosmosChainInfo = selectCosmosChainInfo(chainInfo);
   const getTransferChannelId = (
@@ -41,6 +48,8 @@ export const makeDenomTools = (chainInfo: Record<string, ChainInfo>) => {
 
 /**
  * Make asset info for the current environment.
+ *
+ * @deprecated moving to @agoric/orchestration
  *
  * until #10580, the contract's `issuerKeywordRecord` must include 'ATOM',
  * 'OSMO', 'IST', etc. for the local `chainHub` to know about brands.

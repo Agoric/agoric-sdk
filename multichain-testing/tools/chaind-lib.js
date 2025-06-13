@@ -242,7 +242,10 @@ export const makeAgd = ({ execFileSync }) => {
 
 /** @typedef {ReturnType<typeof makeAgd>} Agd */
 
-/** @param {{ execFileSync: typeof import('child_process').execFileSync, log: typeof console.log }} powers */
+/**
+ * @param {{ execFileSync: typeof import('child_process').execFileSync, log: typeof console.log }} powers
+ * @param {*} [opts]
+ */
 export const makeCopyFiles = (
   { execFileSync, log },
   {
@@ -251,8 +254,11 @@ export const makeCopyFiles = (
     destDir = '/tmp/contracts',
   } = {},
 ) => {
-  /** @param {string[]} paths } */
-  return paths => {
+  /**
+   * @param {string[]} paths
+   * @param {Record<string, string>} [texts]
+   */
+  return (paths, texts = {}) => {
     // Create the destination directory if it doesn't exist
     execFileSync(
       kubectlBinary,
@@ -268,6 +274,24 @@ export const makeCopyFiles = (
         { stdio: ['ignore', 'pipe', 'pipe'] },
       );
       log(`Copied ${path} to ${destDir} in pod ${podName}`);
+    }
+    for (const [name, text] of Object.entries(texts)) {
+      execFileSync(
+        'kubectl',
+        [
+          'exec',
+          '--stdin=true',
+          '--container',
+          containerName,
+          podName,
+          '--',
+          'sh',
+          '-c',
+          `cat > "${destDir}/${name}"`,
+        ],
+        { input: text, stdio: ['pipe', 'inherit', 'inherit'] },
+      );
+      log(`Wrote '${text.slice(0, 5)}...' to ${podName}:${destDir}/${name}`);
     }
     const lsOutput = execFileSync(
       kubectlBinary,
