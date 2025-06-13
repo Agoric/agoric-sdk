@@ -1,4 +1,4 @@
-// eslint-disable-next-line import/no-extraneous-dependencies
+// @ts-nocheck
 import { makeFileRW } from '@agoric/pola-io';
 import * as fsp from 'node:fs/promises';
 
