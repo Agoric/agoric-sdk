@@ -13,8 +13,6 @@ import type { ZCF } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Zone } from '@agoric/zone';
 import { meta } from './portfolio.contract.meta.ts';
-import type { CopyRecord } from '@endo/pass-style';
-import { M } from '@endo/patterns';
 import { preparePortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import { makeProposalShapes } from './type-guards.ts';
