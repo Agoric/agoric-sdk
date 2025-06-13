@@ -9,6 +9,7 @@
     "tools"
   ],
   "scripts": {
+    "build": "exit 0",
     "test": "ava",
     "test:c8": "c8 --all $C8_OPTIONS ava",
     "test:xs": "exit 0",
