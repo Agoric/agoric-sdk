@@ -15,6 +15,7 @@ import { makeHeapZone } from '@agoric/zone';
 import { Far, passStyleOf } from '@endo/pass-style';
 import { preparePortfolioKit } from '../src/portfolio.exo.ts';
 import { makeLocalAccount, openPortfolio } from '../src/portfolio.flows.ts';
+import { contractAddresses } from './portfolio.contract.test.ts';
 
 const mocks = (errs: Record<string, Error> = {}) => {
   const buf = [] as any[];
@@ -100,9 +101,9 @@ test('open portfolio', async t => {
   const localP = makeLocalAccount(orch, {});
   const actual = await openPortfolio(
     orch,
-    { zoeTools, makePortfolioKit, inertSubscriber },
+    { zoeTools, makePortfolioKit, inertSubscriber, contractAddresses },
     seat,
-    undefined,
+    { yieldProtocol: 'USDN' },
     localP,
   );
   t.log(log.map(msg => msg._method).join(', '));
@@ -126,9 +127,9 @@ test('handle failure in localTransfer from seat to local account', async t => {
   const localP = makeLocalAccount(orch, {});
   const actual = await openPortfolio(
     orch,
-    { zoeTools, makePortfolioKit, inertSubscriber },
+    { zoeTools, makePortfolioKit, inertSubscriber, contractAddresses },
     seat,
-    undefined,
+    { yieldProtocol: 'USDN' },
     localP,
   );
   t.log(log.map(msg => msg._method).join(', '));
@@ -148,9 +149,9 @@ test('handle failure in IBC transfer', async t => {
   const localP = makeLocalAccount(orch, {});
   const actual = await openPortfolio(
     orch,
-    { zoeTools, makePortfolioKit, inertSubscriber },
+    { zoeTools, makePortfolioKit, inertSubscriber, contractAddresses },
     seat,
-    undefined,
+    { yieldProtocol: 'USDN' },
     localP,
   );
   t.log(log.map(msg => msg._method).join(', '));
@@ -173,9 +174,9 @@ test('handle failure in executeEncodedTx', async t => {
   const localP = makeLocalAccount(orch, {});
   const actual = await openPortfolio(
     orch,
-    { zoeTools, makePortfolioKit, inertSubscriber },
+    { zoeTools, makePortfolioKit, inertSubscriber, contractAddresses },
     seat,
-    undefined,
+    { yieldProtocol: 'USDN' },
     localP,
   );
   t.log(log.map(msg => msg._method).join(', '));

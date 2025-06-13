@@ -10,7 +10,6 @@ import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import type { Amount } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import {
-  type ChainHub,
   type CosmosChainAddress,
   type OrchestrationAccount,
   type OrchestrationFlow,
@@ -160,7 +159,6 @@ export const openPortfolio = (async (
   orch: Orchestrator,
   ctx: {
     zoeTools: GuestInterface<ZoeTools>;
-    chainHub: GuestInterface<ChainHub>;
     makePortfolioKit: () => PortfolioKit;
     contractAddresses: {
       aavePoolAddress: string;
@@ -171,7 +169,7 @@ export const openPortfolio = (async (
   },
   seat: ZCFSeat,
   offerArgs: {
-    evmChain: SupportedDestinationChains;
+    evmChain?: SupportedDestinationChains;
     yieldProtocol: YieldProtocol;
   }, // TODO: USDN/USDC ratio
   // passed as a promise to alleviate contract start-up sync constraints
@@ -184,6 +182,8 @@ export const openPortfolio = (async (
 
     const initRemoteEVMAccount = async () => {
       const { evmChain } = offerArgs;
+      assert(evmChain, 'evmChain is required to open a remote EVM account');
+
       const [agoric, axelar] = await Promise.all([
         orch.getChain('agoric'),
         orch.getChain('axelar'),
