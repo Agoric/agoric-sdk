@@ -8,13 +8,13 @@ import type { WalletTool } from './wallet-offer-tools.ts';
 export const makeTrader = (
   wallet: WalletTool,
   instance: Instance<typeof start>,
-  offerArgs: Record<string, unknown> = {},
 ) => {
   let nonce = 0;
   return harden({
     async openPortfolio(
       t: ExecutionContext,
       give: Partial<Record<YieldProtocol, Amount<'nat'>>>,
+      offerArgs: Record<string, unknown> = {},
     ) {
       const invitationSpec = {
         source: 'contract' as const,

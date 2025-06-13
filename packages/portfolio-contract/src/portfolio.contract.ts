@@ -1,5 +1,7 @@
 import { makeTracer } from '@agoric/internal';
 import {
+  ChainInfoShape,
+  DenomDetailShape,
   OrchestrationPowersShape,
   registerChainsAndAssets,
   withOrchestration,
@@ -10,25 +12,34 @@ import type { ZCF } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Zone } from '@agoric/zone';
 import type { CopyRecord } from '@endo/pass-style';
-import { M } from '@endo/patterns';
+import { M, mustMatch } from '@endo/patterns';
 import { preparePortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
-import { makeProposalShapes } from './type-guards.ts';
+import {
+  makeProposalShapes,
+  makeOfferArgsShapes,
+  type OfferArgsShapes,
+} from './type-guards.ts';
 
 const trace = makeTracer('PortC');
 
 const interfaceTODO = undefined;
 
+const privateArgsShape = {
+  ...(OrchestrationPowersShape as CopyRecord),
+  marshaller: M.remotable('marshaller'),
+  contract: M.splitRecord({
+    aavePool: M.string(),
+    compound: M.string(),
+    factory: M.string(),
+  }),
+  chainInfo: M.recordOf(M.string(), ChainInfoShape),
+  assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
+  poolMetricsNode: M.remotable(),
+};
+
 export const meta = M.splitRecord({
-  privateArgsShape: {
-    ...(OrchestrationPowersShape as CopyRecord),
-    marshaller: M.remotable('marshaller'),
-    contractAddresses: M.splitRecord({
-      aavePoolAddress: M.string(),
-      compoundAddress: M.string(),
-      factoryAddress: M.string(),
-    }),
-  },
+  privateArgsShape,
 });
 harden(meta);
 
@@ -39,22 +50,10 @@ export const contract = async (
   tools: OrchestrationTools,
 ) => {
   const { brands } = zcf.getTerms();
-  const { contractAddresses } = privateArgs;
   const { orchestrateAll, zoeTools, chainHub } = tools;
 
   assert(brands.USDC, 'USDC missing from brands in terms');
-  assert(
-    contractAddresses.aavePoolAddress,
-    'aavePoolAddress missing from contractAddresses',
-  );
-  assert(
-    contractAddresses.compoundAddress,
-    'compoundAddress missing from contractAddresses',
-  );
-  assert(
-    contractAddresses.factoryAddress,
-    'factoryAddress missing from contractAddresses',
-  );
+  mustMatch(privateArgs, privateArgsShape, 'privateArgs');
 
   // TODO: only on 1st incarnation
   registerChainsAndAssets(
@@ -66,6 +65,7 @@ export const contract = async (
   );
 
   const proposalShapes = makeProposalShapes(brands.USDC);
+  const offerArgsShapes = makeOfferArgsShapes();
 
   const inertSubscriber: ResolvedPublicTopic<never>['subscriber'] = {
     getUpdateSince() {
@@ -81,7 +81,7 @@ export const contract = async (
     zoeTools,
     makePortfolioKit,
     chainHub,
-    contractAddresses,
+    contract: privateArgs.contract,
     inertSubscriber,
   });
 
@@ -92,8 +92,8 @@ export const contract = async (
     makeOpenPortfolioInvitation() {
       trace('makeOpenPortfolioInvitation');
       return zcf.makeInvitation(
-        (seat, offerArgs) => {
-          assert(offerArgs, 'offerArgs missing in openPortfolio');
+        (seat, offerArgs: OfferArgsShapes) => {
+          mustMatch(offerArgs, offerArgsShapes);
           return openPortfolio(
             seat,
             offerArgs,

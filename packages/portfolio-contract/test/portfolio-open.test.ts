@@ -4,7 +4,6 @@
  * @see {@link snapshots/portfolio-open.test.ts.md} for expected call logs.
  */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-
 import type { GuestInterface } from '@agoric/async-flow';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import type { Orchestrator } from '@agoric/orchestration';
@@ -13,9 +12,9 @@ import type { Proposal, ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { makeHeapZone } from '@agoric/zone';
 import { Far, passStyleOf } from '@endo/pass-style';
+import { contract } from './mocks.ts';
 import { preparePortfolioKit } from '../src/portfolio.exo.ts';
 import { makeLocalAccount, openPortfolio } from '../src/portfolio.flows.ts';
-import { contractAddresses } from './portfolio.contract.test.ts';
 
 const mocks = (errs: Record<string, Error> = {}) => {
   const buf = [] as any[];
@@ -101,7 +100,7 @@ test('open portfolio', async t => {
   const localP = makeLocalAccount(orch, {});
   const actual = await openPortfolio(
     orch,
-    { zoeTools, makePortfolioKit, inertSubscriber, contractAddresses },
+    { zoeTools, makePortfolioKit, inertSubscriber, contract },
     seat,
     { evmChain: 'Ethereum' },
     localP,
@@ -127,7 +126,7 @@ test('handle failure in localTransfer from seat to local account', async t => {
   const localP = makeLocalAccount(orch, {});
   const actual = await openPortfolio(
     orch,
-    { zoeTools, makePortfolioKit, inertSubscriber, contractAddresses },
+    { zoeTools, makePortfolioKit, inertSubscriber, contract },
     seat,
     { evmChain: 'Ethereum' },
     localP,
@@ -149,7 +148,7 @@ test('handle failure in IBC transfer', async t => {
   const localP = makeLocalAccount(orch, {});
   const actual = await openPortfolio(
     orch,
-    { zoeTools, makePortfolioKit, inertSubscriber, contractAddresses },
+    { zoeTools, makePortfolioKit, inertSubscriber, contract },
     seat,
     { evmChain: 'Ethereum' },
     localP,
@@ -174,7 +173,7 @@ test('handle failure in executeEncodedTx', async t => {
   const localP = makeLocalAccount(orch, {});
   const actual = await openPortfolio(
     orch,
-    { zoeTools, makePortfolioKit, inertSubscriber, contractAddresses },
+    { zoeTools, makePortfolioKit, inertSubscriber, contract },
     seat,
     { evmChain: 'Ethereum' },
     localP,

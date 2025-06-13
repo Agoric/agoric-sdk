@@ -9,11 +9,11 @@ import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import type { Amount } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
-import {
-  type CosmosChainAddress,
-  type OrchestrationAccount,
-  type OrchestrationFlow,
-  type Orchestrator,
+import type {
+  CosmosChainAddress,
+  OrchestrationAccount,
+  OrchestrationFlow,
+  Orchestrator,
 } from '@agoric/orchestration';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
@@ -23,83 +23,53 @@ import {
   AxelarGMPMessageType,
   type AxelarGmpOutgoingMemo,
   type ContractCall,
-  type SupportedDestinationChains,
 } from '@agoric/orchestration/src/axelar-types.js';
 import { gmpAddresses } from '@agoric/orchestration/src/utils/gmp.js';
 import { Fail } from '@endo/errors';
 import type { PortfolioKit } from './portfolio.exo.ts';
-import type { ProposalShapes } from './type-guards.ts';
-import type { YieldProtocol } from './constants.js';
+import type { OfferArgsShapes, ProposalShapes } from './type-guards.ts';
 // TODO: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const trace = makeTracer('PortF');
 
-/**
- * Creates Aave supply contract call
- * @param {string} aavePoolAddress - The Aave pool contract address
- * @param {string} asset - The asset address to supply
- * @param {string} amount - The amount to supply
- * @param {string} onBehalfOf - The address to supply on behalf of
- * @returns {ContractCall} The contract call object
- */
 const makeAaveSupplyCall = (
   aavePoolAddress: string,
   asset: string,
-  amount: string,
+  amount: bigint,
   onBehalfOf: string,
 ): ContractCall => ({
   target: aavePoolAddress as `0x${string}`,
   functionSignature: 'supply(address,uint256,address,uint16)',
-  args: [asset, amount, onBehalfOf, 0],
+  args: [asset, String(amount), onBehalfOf, 0],
 });
 
-/**
- * Creates Aave borrow contract call
- * @param {string} aavePoolAddress - The Aave pool contract address
- * @param {string} asset - The asset address to borrow
- * @param {string} amount - The amount to borrow
- * @param {string} onBehalfOf - The address to borrow on behalf of
- * @returns {ContractCall} The contract call object
- */
 const makeAaveBorrowCall = (
   aavePoolAddress: string,
   asset: string,
-  amount: string,
+  amount: bigint,
   onBehalfOf: string,
 ): ContractCall => ({
   target: aavePoolAddress as `0x${string}`,
   functionSignature: 'borrow(address,uint256,uint256,uint16,address)',
-  args: [asset, amount, 2, 0, onBehalfOf],
+  args: [asset, String(amount), 2, 0, onBehalfOf],
 });
 
-/**
- * Creates Compound supply contract call
- * @param {string} compoundAddress - The Compound contract address
- * @param {string} amount - The amount to supply
- * @returns {ContractCall} The contract call object
- */
 const makeCompoundSupplyCall = (
   compoundAddress: string,
-  amount: string,
+  amount: bigint,
 ): ContractCall => ({
   target: compoundAddress as `0x${string}`,
   functionSignature: 'supply(uint256)',
-  args: [amount],
+  args: [String(amount)],
 });
 
-/**
- * Creates Compound borrow contract call
- * @param {string} compoundAddress - The Compound contract address
- * @param {string} amount - The amount to borrow
- * @returns {ContractCall} The contract call object
- */
 const makeCompoundBorrowCall = (
   compoundAddress: string,
-  amount: string,
+  amount: bigint,
 ): ContractCall => ({
   target: compoundAddress as `0x${string}`,
   functionSignature: 'borrow(uint256)',
-  args: [amount],
+  args: [String(amount)],
 });
 
 /**
@@ -160,23 +130,21 @@ export const openPortfolio = (async (
   ctx: {
     zoeTools: GuestInterface<ZoeTools>;
     makePortfolioKit: () => PortfolioKit;
-    contractAddresses: {
-      aavePoolAddress: string;
-      compoundAddress: string;
-      factoryAddress: string;
+    contract: {
+      aavePool: string;
+      compound: string;
+      factory: string;
     };
     inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
   },
   seat: ZCFSeat,
-  offerArgs: {
-    evmChain?: SupportedDestinationChains;
-  }, // TODO: USDN/USDC ratio
+  offerArgs: OfferArgsShapes, // TODO: USDN/USDC ratio
   // passed as a promise to alleviate contract start-up sync constraints
   localP: Promise<OrchestrationAccount<{ chainId: 'agoric-any' }>>,
 ) => {
   await null; // see https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
   try {
-    const { makePortfolioKit, contractAddresses } = ctx;
+    const { makePortfolioKit, contract } = ctx;
     const kit = makePortfolioKit();
 
     const initRemoteEVMAccount = async () => {
@@ -189,8 +157,7 @@ export const openPortfolio = (async (
       ]);
 
       const { chainId, stakingTokens } = await axelar.getChainInfo();
-      const remoteDenom = stakingTokens[0].denom;
-      remoteDenom || Fail`${chainId} does not have stakingTokens in config`;
+      assert.equal(stakingTokens.length, 1, 'axelar has 1 staking token');
 
       const localAccount = await agoric.makeAccount();
       const localChainAddress = localAccount.getAddress();
@@ -215,7 +182,7 @@ export const openPortfolio = (async (
 
         const memo: AxelarGmpOutgoingMemo = {
           destination_chain: evmChain,
-          destination_address: contractAddresses.factoryAddress,
+          destination_address: contract.factory,
           payload: [],
           type: AxelarGMPMessageType.ContractCall,
           fee: {
@@ -237,12 +204,9 @@ export const openPortfolio = (async (
           },
           { memo: JSON.stringify(memo) },
         );
-
-        seat.exit();
       } catch (err) {
         await ctx.zoeTools.withdrawToSeat(localAccount, seat, give);
         const errorMsg = `EVM account creation failed ${err}`;
-        seat.exit(errorMsg);
         throw new Error(errorMsg);
       }
     };
@@ -323,13 +287,7 @@ export const openPortfolio = (async (
       try {
         await initRemoteEVMAccount();
       } catch (err) {
-        if (!seat.hasExited()) {
-          seat.fail(err);
-        }
-        return harden({
-          invitationMakers: kit.invitationMakers,
-          publicTopics: topics,
-        });
+        seat.fail(err);
       }
     }
 

@@ -170,3 +170,9 @@ export const makeUSDNIBCTraffic = (
     ack: buildMsgResponseString(MsgLockResponse, {}),
   },
 });
+
+export const contract = {
+  aavePool: '0x87870Bca3F0fD6335C3F4ce8392D69350B4fA4E2', // Aave V3 Pool
+  compound: '0xA0b86a33E6A3E81E27Da9c18c4A77c9Cd4e08D57', // Compound USDC
+  factory: '0xef8651dD30cF990A1e831224f2E0996023163A81', // Factory contract
+};
