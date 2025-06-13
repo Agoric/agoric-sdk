@@ -15,6 +15,7 @@ import {
   makeScalarBigMapStore,
   makeScalarBigSetStore,
 } from '@agoric/vat-data';
+import { makeAtomicProvider, makeScalarMapStore } from '@agoric/store';
 import { PowerFlags } from '@agoric/vats/src/walletFlags.js';
 import {
   PublicTopicShape,
@@ -149,6 +150,20 @@ export const prepareProvisionPoolKit = (
   { makeRecorderKit, params, poolBank, zcf, makeBridgeProvisionTool },
 ) => {
   const zoe = zcf.getZoeService();
+  const ephemeralPurses = makeScalarMapStore('fundingPurseForBrand');
+  const purseProvider = makeAtomicProvider(ephemeralPurses);
+  const getFundingPurseForBrand = async poolBrand => {
+    await null;
+    try {
+      const purse = await purseProvider.provideAsync(poolBrand, brand =>
+        E(poolBank).getPurse(brand),
+      );
+      return purse;
+    } catch (err) {
+      trace(`🚨 could not get purse for brand ${poolBrand}`, err);
+      throw err;
+    }
+  };
 
   const makeProvisionPoolKitInternal = zone.exoClassKit(
     'ProvisionPoolKit',
@@ -180,7 +195,7 @@ export const prepareProvisionPoolKit = (
     },
     /**
      * @param {object} opts
-     * @param {ERef<Purse<'nat'>>} opts.fundPurse
+     * @param {Purse<'nat'>} [opts.fundPurse]
      * @param {Brand<'nat'>} opts.poolBrand
      * @param {StorageNode} opts.metricsNode
      */
@@ -471,10 +486,9 @@ export const prepareProvisionPoolKit = (
           // Update as needed when `poolBrand` changes.
           if (poolBrand !== lastPoolBrand) {
             state.poolBrand = poolBrand;
-            const fundPurseP = E(poolBank).getPurse(poolBrand);
-            state.fundPurse = fundPurseP;
-            void fundPurseP.catch(err =>
-              trace(`🚨 could not get purse for brand ${poolBrand}`, err),
+            state.fundPurse = undefined;
+            void getFundingPurseForBrand(poolBrand).then(purse =>
+              helper.updateFundPurse(purse, poolBrand),
             );
             state.totalMintedProvided = AmountMath.makeEmpty(poolBrand);
             state.totalMintedConverted = AmountMath.makeEmpty(poolBrand);
@@ -489,10 +503,13 @@ export const prepareProvisionPoolKit = (
          * @param {PsmInstance} instance
          */
         async swap(payIn, amount, instance) {
+          await null;
+          const { facets, state } = this;
+          const { helper } = facets;
           const {
-            facets: { helper },
-            state: { fundPurse },
-          } = this;
+            poolBrand,
+            fundPurse = await getFundingPurseForBrand(poolBrand),
+          } = state;
           const psmPub = E(zoe).getPublicFacet(instance);
           const proposal = harden({ give: { In: amount } });
           const invitation = E(psmPub).makeWantMintedInvitation();
@@ -502,19 +519,31 @@ export const prepareProvisionPoolKit = (
           helper.onTrade(rxd);
           return rxd;
         },
+        /**
+         * @param {Purse<'nat'>} purse
+         * @param {Brand<'nat'>} brand
+         */
+        updateFundPurse(purse, brand) {
+          const { state } = this;
+          if (brand !== state.poolBrand || state.fundPurse) return;
+          state.fundPurse = purse;
+        },
       },
       forHandler: {
         onProvisioned() {
-          const { state, facets } = this;
+          const { facets, state } = this;
           state.walletsProvisioned += 1n;
           facets.helper.publishMetrics();
         },
         /** @param {ERef<Bank>} destBank */
         async sendInitialPayment(destBank) {
+          await null;
+          const { facets, state } = this;
+          const { helper } = facets;
           const {
-            facets: { helper },
-            state: { fundPurse, poolBrand },
-          } = this;
+            poolBrand,
+            fundPurse = await getFundingPurseForBrand(poolBrand),
+          } = state;
           const perAccountInitialAmount = /** @type {Amount<'nat'>} */ (
             params.getPerAccountInitialAmount()
           );
@@ -564,7 +593,7 @@ export const prepareProvisionPoolKit = (
    * @returns {Promise<ProvisionPoolKit>}
    */
   const makeProvisionPoolKit = async ({ poolBrand, storageNode }) => {
-    const fundPurse = await E(poolBank).getPurse(poolBrand);
+    const fundPurse = await getFundingPurseForBrand(poolBrand);
     const metricsNode = await E(storageNode).makeChildNode('metrics');
 
     return makeProvisionPoolKitInternal({
