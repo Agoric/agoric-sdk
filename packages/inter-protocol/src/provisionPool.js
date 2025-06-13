@@ -111,15 +111,17 @@ export const start = async (zcf, privateArgs, baggage) => {
     baggage,
     'Provisioning Pool public',
     M.interface('ProvisionPool', {
-      getMetrics: M.call().returns(M.remotable('MetricsSubscriber')),
-      getPublicTopics: M.call().returns(TopicsRecordShape),
+      getMetrics: M.callWhen().returns(M.remotable('MetricsSubscriber')),
+      getPublicTopics: M.callWhen().returns(TopicsRecordShape),
       ...publicMixinAPI,
     }),
     {
-      getMetrics() {
+      async getMetrics() {
+        await null;
         return provisionPoolKit.public.getPublicTopics().metrics.subscriber;
       },
-      getPublicTopics() {
+      async getPublicTopics() {
+        await null;
         return provisionPoolKit.public.getPublicTopics();
       },
       ...publicMixin,
