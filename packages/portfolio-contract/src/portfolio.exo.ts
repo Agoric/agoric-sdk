@@ -5,6 +5,7 @@ import { M } from '@endo/patterns';
 import { VowShape } from '@agoric/vow';
 import { atob, decodeBase64 } from '@endo/base64';
 import { decodeAbiParameters } from 'viem';
+import { type MapStore } from '@agoric/store';
 import type {
   AxelarGmpIncomingMemo,
   SupportedDestinationChains,
@@ -44,11 +45,10 @@ type CosmosProtocolState = {
 };
 
 type PortfolioKitStateShape = {
-  protocolState: {
-    USDN: CosmosProtocolState;
-    Aave: EVMProtocolState;
-    Compound: EVMProtocolState;
-  };
+  protocolStates: MapStore<
+    YieldProtocol,
+    CosmosProtocolState | EVMProtocolState
+  >;
 };
 
 export const preparePortfolioKit = (zone: Zone) =>
@@ -68,24 +68,7 @@ export const preparePortfolioKit = (zone: Zone) =>
 
     (): PortfolioKitStateShape => {
       return harden({
-        protocolState: {
-          USDN: {
-            icaAccount: undefined,
-            isActive: false,
-          },
-          Aave: {
-            localAccount: undefined,
-            remoteAccountAddress: undefined,
-            evmChain: undefined,
-            isActive: false,
-          },
-          Compound: {
-            localAccount: undefined,
-            remoteAccountAddress: undefined,
-            evmChain: undefined,
-            isActive: false,
-          },
-        },
+        protocolStates: zone.mapStore('protocolStates'),
       });
     },
     {
@@ -145,15 +128,28 @@ export const preparePortfolioKit = (zone: Zone) =>
             | OrchestrationAccount<{ chainId: 'noble-any' }>,
         ) {
           if (key === 'USDN') {
-            this.state.protocolState[key].icaAccount =
-              account as OrchestrationAccount<{ chainId: 'noble-any' }>;
-
-            this.state.protocolState[key].isActive = true;
+            this.state.protocolStates.init(
+              key,
+              harden({
+                icaAccount: account as OrchestrationAccount<{
+                  chainId: 'noble-any';
+                }>,
+                isActive: true,
+              }),
+            );
           } else {
             // Aave or Compound
-            this.state.protocolState[key].localAccount =
-              account as OrchestrationAccount<{ chainId: 'agoric-any' }>;
-            this.state.protocolState[key].isActive = true;
+            this.state.protocolStates.init(
+              key,
+              harden({
+                localAccount: account as OrchestrationAccount<{
+                  chainId: 'agoric-any';
+                }>,
+                remoteAccountAddress: undefined,
+                evmChain: undefined,
+                isActive: true,
+              }),
+            );
           }
 
           trace('initialized account for', key, '=>', `${account}`);
@@ -165,9 +161,9 @@ export const preparePortfolioKit = (zone: Zone) =>
           | OrchestrationAccount<{ chainId: 'noble-any' }> {
           let account;
           if (key === 'USDN') {
-            account = this.state.protocolState[key].icaAccount;
+            account = this.state.protocolStates[key].icaAccount;
           } else {
-            account = this.state.protocolState[key].localAccount;
+            account = this.state.protocolStates[key].localAccount;
           }
           if (!account) throw Fail`account not initialized: ${q(key)}`;
           return account;
