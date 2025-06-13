@@ -1,7 +1,8 @@
 import type { Amount, Brand, NatValue } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
 import { M } from '@endo/patterns';
-import { YieldProtocol as YieldProtocolT } from './constants.js';
+import type { YieldProtocol as YieldProtocolT } from './constants.js';
+import { YieldProtocol } from './constants.js';
 
 const { keys } = Object;
 
