@@ -237,12 +237,9 @@ export const openPortfolio = (async (
           },
           { memo: JSON.stringify(memo) },
         );
-
-        seat.exit();
       } catch (err) {
         await ctx.zoeTools.withdrawToSeat(localAccount, seat, give);
         const errorMsg = `EVM account creation failed ${err}`;
-        seat.exit(errorMsg);
         throw new Error(errorMsg);
       }
     };
@@ -323,9 +320,7 @@ export const openPortfolio = (async (
       try {
         await initRemoteEVMAccount();
       } catch (err) {
-        if (!seat.hasExited()) {
-          seat.fail(err);
-        }
+        seat.fail(err);
         return harden({
           invitationMakers: kit.invitationMakers,
           publicTopics: topics,
