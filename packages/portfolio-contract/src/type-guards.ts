@@ -1,10 +1,7 @@
 import type { Amount, Brand, NatValue } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
 import { M } from '@endo/patterns';
-import {
-  YieldProtocol,
-  type YieldProtocol as YieldProtocolT,
-} from './constants.js';
+import { YieldProtocol } from './constants.js';
 
 const { keys } = Object;
 
@@ -15,7 +12,7 @@ export const makeNatAmountShape = (brand: Brand<'nat'>, min?: NatValue) =>
   harden({ brand, value: min ? M.gte(min) : M.nat() });
 
 export type ProposalShapes = {
-  openPortfolio: { give: Partial<Record<YieldProtocolT, Amount<'nat'>>> };
+  openPortfolio: { give: Partial<Record<YieldProtocol, Amount<'nat'>>> };
 };
 
 export const makeProposalShapes = (usdcBrand: Brand<'nat'>) => {
