@@ -9,6 +9,8 @@ import {
 } from '@aglocal/boot/tools/supports.js';
 import { makeWalletFactoryDriver } from '@aglocal/boot/tools/drivers.js';
 
+// XXX same as fast-usdc-deploy/test/walletFactory.ts and
+// XXX same as packages/boot/test/bootstrapTests/walletFactory.ts
 export const makeWalletFactoryContext = async (
   t,
   configSpecifier = '@agoric/vm-config/decentral-main-vaults-config.json',

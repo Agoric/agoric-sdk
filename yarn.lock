@@ -184,7 +184,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@aglocal/portfolio-contract@workspace:packages/portfolio-contract":
+"@aglocal/portfolio-contract@workspace:*, @aglocal/portfolio-contract@workspace:packages/portfolio-contract":
   version: 0.0.0-use.local
   resolution: "@aglocal/portfolio-contract@workspace:packages/portfolio-contract"
   dependencies:
@@ -211,6 +211,37 @@ __metadata:
     c8: "npm:^10.1.3"
     ts-blank-space: "npm:^0.6.1"
     viem: "npm:^2.31.0"
+  languageName: unknown
+  linkType: soft
+
+"@aglocal/portfolio-deploy@workspace:packages/portfolio-deploy":
+  version: 0.0.0-use.local
+  resolution: "@aglocal/portfolio-deploy@workspace:packages/portfolio-deploy"
+  dependencies:
+    "@aglocal/portfolio-contract": "workspace:*"
+    "@agoric/client-utils": "workspace:*"
+    "@agoric/cosmic-proto": "workspace:*"
+    "@agoric/deploy-script-support": "workspace:*"
+    "@agoric/ertp": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/notifier": "workspace:*"
+    "@agoric/orchestration": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/vat-data": "workspace:*"
+    "@agoric/vats": "workspace:*"
+    "@agoric/vow": "workspace:*"
+    "@agoric/zoe": "workspace:*"
+    "@endo/errors": "npm:^1.2.10"
+    "@endo/eventual-send": "npm:^1.3.1"
+    "@endo/far": "npm:^1.1.11"
+    "@endo/init": "npm:^1.1.9"
+    "@endo/marshal": "npm:^1.6.4"
+    "@endo/pass-style": "npm:^1.5.0"
+    "@endo/patterns": "npm:^1.5.0"
+    ava: "npm:^5.3.0"
+    c8: "npm:^10.1.3"
+    esbuild: "npm:^0.25.2"
+    ts-blank-space: "npm:^0.4.1"
   languageName: unknown
   linkType: soft
 
