@@ -147,6 +147,7 @@ export const preparePortfolioKit = (zone: Zone) =>
           if (key === 'USDN') {
             this.state.protocolState[key].icaAccount =
               account as OrchestrationAccount<{ chainId: 'noble-any' }>;
+
             this.state.protocolState[key].isActive = true;
           } else {
             // Aave or Compound
