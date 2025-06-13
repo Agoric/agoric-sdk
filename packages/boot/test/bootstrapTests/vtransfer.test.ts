@@ -17,6 +17,10 @@ const makeDefaultTestContext = async () => {
   const outboundMessages = new Map();
   const swingsetTestKit = await makeCosmicSwingsetTestKit({
     configSpecifier: '@agoric/vm-config/decentral-demo-config.json',
+    fixupConfig: config => ({
+      ...config,
+      defaultManagerType: 'local', // FIXME: fix for xs-worker
+    }),
     mockBridgeReceiver: makeMockBridgeKit({ outboundMessages }),
   });
   return { ...swingsetTestKit, outboundMessages };

@@ -38,6 +38,10 @@ const makeDefaultTestContext = async ({
   // TODO: fix this test for xs-worker
   const swingsetTestKit = await makeCosmicSwingsetTestKit({
     configSpecifier: '@agoric/vm-config/decentral-itest-vaults-config.json',
+    fixupConfig: config => ({
+      ...config,
+      defaultManagerType: 'local', // FIXME: fix for xs-worker
+    }),
     mockBridgeReceiver: makeMockBridgeKit({ storageKit: storage }),
   });
 
