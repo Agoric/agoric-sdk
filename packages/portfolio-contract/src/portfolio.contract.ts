@@ -2,9 +2,15 @@ import { makeTracer } from '@agoric/internal';
 import {
   ChainInfoShape,
   DenomDetailShape,
+  DenomShape,
   OrchestrationPowersShape,
   registerChainsAndAssets,
   withOrchestration,
+  type ChainInfo,
+  type Denom,
+  type DenomDetail,
+  type OrchestrationAccount,
+  type OrchestrationPowers,
   type OrchestrationTools,
 } from '@agoric/orchestration';
 import type { ZCF } from '@agoric/zoe';
@@ -38,14 +44,18 @@ const privateArgsShape = {
   poolMetricsNode: M.remotable(),
 };
 
-export const meta = M.splitRecord({
+export const meta = {
   privateArgsShape,
-});
+};
 harden(meta);
 
 export const contract = async (
   zcf: ZCF,
-  privateArgs,
+  privateArgs: OrchestrationPowers & {
+    assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
+    chainInfo: Record<string, ChainInfo>;
+    marshaller: Marshaller;
+  },
   zone: Zone,
   tools: OrchestrationTools,
 ) => {

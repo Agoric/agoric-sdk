@@ -1,3 +1,4 @@
+import type { Amount, Brand, NatValue } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
 import { M } from '@endo/patterns';
 import type { SupportedEVMChains } from '@agoric/orchestration/src/axelar-types.js';
