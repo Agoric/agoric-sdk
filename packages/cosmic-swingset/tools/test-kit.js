@@ -473,8 +473,9 @@ export const makeCosmicSwingsetTestKit = async (
     bridgeInbound,
     controller,
     runUntilQueuesEmpty,
-    ...runUtils,
+    runUtils, // TODO: remove this
     timer,
+    ...runUtils,
 
     // Functions specific to this kit.
     advanceTimeBy,
