@@ -13,12 +13,10 @@ import { makeUSDNIBCTraffic } from './mocks.ts';
 import { makeTrader } from './portfolio-actors.ts';
 import { setupPortfolioTest } from './supports.ts';
 import { makeWallet } from './wallet-offer-tools.ts';
-
-const nodeRequire = createRequire(import.meta.url);
+import * as contractExports from '../src/portfolio.contract.ts';
 
 const contractName = 'ymax0';
-const contractFile = nodeRequire.resolve('../src/portfolio.contract.ts');
-type StartFn = typeof import('../src/portfolio.contract.ts').start;
+type StartFn = typeof contractExports.start;
 
 /** from https://www.mintscan.io/noble explorer */
 const explored = [
@@ -55,7 +53,7 @@ const deploy = async (t: ExecutionContext) => {
   t.log('contract deployment', contractName);
 
   const installation: Installation<StartFn> =
-    await bundleAndInstall(contractFile);
+    await bundleAndInstall(contractExports);
   t.is(passStyleOf(installation), 'remotable');
 
   const { usdc } = common.brands;
