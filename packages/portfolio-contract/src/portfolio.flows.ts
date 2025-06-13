@@ -311,13 +311,26 @@ export const openPortfolio = (async (
         await openUSDNPosition(give.USDN);
       } catch (err) {
         seat.fail(err);
+        return harden({
+          invitationMakers: kit.invitationMakers,
+          publicTopics: topics,
+        });
       }
     }
 
-    try {
-      await initRemoteEVMAccount();
-    } catch (err) {
-      seat.fail(err);
+    // Only initialize EVM account if there are EVM protocol positions
+    if (give.Aave || give.Compound) {
+      try {
+        await initRemoteEVMAccount();
+      } catch (err) {
+        if (!seat.hasExited()) {
+          seat.fail(err);
+        }
+        return harden({
+          invitationMakers: kit.invitationMakers,
+          publicTopics: topics,
+        });
+      }
     }
 
     if (!seat.hasExited()) seat.exit();
