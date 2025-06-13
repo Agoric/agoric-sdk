@@ -1,14 +1,25 @@
+/**
+ * @file Export a `makeSlogSender` that spawns a
+ *   {@link ./slog-sender-pipe-entrypoint.js} child process to which it forwards
+ *   all slog entries via Node.js IPC with advanced (structured clone)
+ *   serialization.
+ *   https://nodejs.org/docs/latest/api/child_process.html#advanced-serialization
+ */
+
 import { fork } from 'child_process';
 import path from 'path';
+import { promisify } from 'util';
 import anylogger from 'anylogger';
 
+import { q, Fail } from '@endo/errors';
+import { makePromiseKit } from '@endo/promise-kit';
 import { makeQueue } from '@endo/stream';
 
 import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
-const logger = anylogger('slog-sender-pipe');
+const sink = () => {};
 
 /**
  * @template {any[]} T
@@ -23,168 +34,131 @@ const withMutex = operation => {
   return async (...args) => {
     await mutex.get();
     const result = operation(...args);
-    mutex.put(
-      result.then(
-        () => {},
-        () => {},
-      ),
-    );
+    mutex.put(result.then(sink, sink));
     return result;
   };
 };
 
 /**
- * @typedef {object} SlogSenderInitReply
- * @property {'initReply'} type
- * @property {boolean} hasSender
- * @property {Error} [error]
+ * @template [P=unknown]
+ * @typedef {{ type: string, error?: Error } & P} PipeReply
  */
+
 /**
- * @typedef {object} SlogSenderFlushReply
- * @property {'flushReply'} type
- * @property {Error} [error]
+ * @typedef {{
+ *   init: {
+ *     message: import('./slog-sender-pipe-entrypoint.js').InitMessage;
+ *     reply: PipeReply<{ hasSender: boolean }>;
+ *   };
+ *   flush: {
+ *     message: import('./slog-sender-pipe-entrypoint.js').FlushMessage;
+ *     reply: PipeReply<{}>;
+ *   };
+ * }} SlogSenderPipeAPI
+ *
+ * @typedef {keyof SlogSenderPipeAPI} PipeAPICommand
+ * @typedef {SlogSenderPipeAPI[PipeAPICommand]["reply"]} PipeAPIReply
  */
-/** @typedef {SlogSenderInitReply | SlogSenderFlushReply} SlogSenderPipeWaitReplies */
 
-/** @param {import('.').MakeSlogSenderOptions} opts */
-export const makeSlogSender = async opts => {
+/** @param {import('.').MakeSlogSenderOptions} options */
+export const makeSlogSender = async options => {
+  const { env = {}, console = anylogger('slog-sender-pipe') } = options;
   const { registerShutdown } = makeShutdown();
+
   const cp = fork(path.join(dirname, 'slog-sender-pipe-entrypoint.js'), [], {
-    stdio: ['inherit', 'inherit', 'inherit', 'ipc'],
+    stdio: ['ignore', 'inherit', 'inherit', 'ipc'],
     serialization: 'advanced',
+    env,
   });
-  // logger.log('done fork');
+  // console.log('done fork');
 
-  const pipeSend = withMutex(
-    /**
-     * @template {{type: string}} T
-     * @param {T} msg
-     */
-    msg =>
-      /** @type {Promise<void>} */ (
-        new Promise((resolve, reject) => {
-          cp.send(msg, err => {
-            if (err) {
-              reject(err);
-            } else {
-              resolve();
-            }
-          });
-        })
-      ),
-  );
+  const exitKit = makePromiseKit();
+  cp.on('error', error => {
+    // An exit event *might* be coming, so wait a tick.
+    setImmediate(() => exitKit.resolve({ error }));
+  });
+  cp.on('exit', (exitCode, signal) => {
+    exitKit.resolve({ exitCode, signal });
+  });
 
-  /**
-   * @typedef {{
-   *   init: {
-   *     message: import('./slog-sender-pipe-entrypoint.js').InitMessage;
-   *     reply: SlogSenderInitReply;
-   *   };
-   *   flush: {
-   *     message: import('./slog-sender-pipe-entrypoint.js').FlushMessage;
-   *     reply: SlogSenderFlushReply;
-   *   };
-   * }} SlogSenderWaitMessagesAndReplies
-   */
+  /** @type {(msg: Record<string, unknown> & {type: string}) => Promise<void>} */
+  const rawSend = promisify(cp.send.bind(cp));
+  const pipeSend = withMutex(rawSend);
 
-  /** @typedef {keyof SlogSenderWaitMessagesAndReplies} SendWaitCommands */
-  /**
-   * @template {SlogSenderPipeWaitReplies} T
-   * @typedef {Omit<T, 'type' | 'error'>} ReplyPayload
-   */
-
-  /** @type {import('@endo/stream').AsyncQueue<SlogSenderPipeWaitReplies>} */
+  /** @type {import('@endo/stream').AsyncQueue<PipeAPIReply>} */
   const sendWaitQueue = makeQueue();
-  /** @type {SendWaitCommands | undefined} */
+  /** @type {PipeAPICommand | undefined} */
   let sendWaitType;
 
   const sendWaitReply = withMutex(
     /**
-     * @template {SendWaitCommands} T
+     * @template {PipeAPICommand} T
      * @param {T} type
-     * @param {Omit<SlogSenderWaitMessagesAndReplies[T]["message"], 'type'>} payload
-     * @returns {Promise<ReplyPayload<SlogSenderWaitMessagesAndReplies[T]["reply"]>>}
+     * @param {Omit<SlogSenderPipeAPI[T]["message"], 'type'>} payload
+     * @returns {Promise<Omit<SlogSenderPipeAPI[T]["reply"], keyof PipeReply>>}
      */
     async (type, payload) => {
-      !sendWaitType || assert.fail('Invalid mutex state');
+      !sendWaitType || Fail`Invalid mutex state`;
 
       const msg = { ...payload, type };
 
       sendWaitType = type;
-      return pipeSend(msg)
-        .then(async () => sendWaitQueue.get())
-        .then(
-          /** @param {SlogSenderWaitMessagesAndReplies[T]["reply"]} reply */ ({
-            type: replyType,
-            error,
-            ...rest
-          }) => {
-            replyType === `${type}Reply` ||
-              assert.fail(`Unexpected reply ${replyType}`);
-            if (error) {
-              throw error;
-            }
-            return rest;
-          },
-        )
-        .finally(() => {
-          sendWaitType = undefined;
-        });
-    },
-  );
-
-  cp.on(
-    'message',
-    /** @param { SlogSenderPipeWaitReplies } msg */
-    msg => {
-      // logger.log('received', msg);
-      if (
-        !msg ||
-        typeof msg !== 'object' ||
-        msg.type !== `${sendWaitType}Reply`
-      ) {
-        logger.warn('Received unexpected message', msg);
-        return;
+      await null;
+      try {
+        await pipeSend(msg);
+        /** @type {SlogSenderPipeAPI[T]["reply"]} */
+        const reply = await sendWaitQueue.get();
+        const { type: replyType, error, ...rest } = reply;
+        replyType === `${type}Reply` ||
+          Fail`Unexpected reply type ${q(replyType)}`;
+        if (error) throw error;
+        return rest;
+      } finally {
+        sendWaitType = undefined;
       }
-
-      sendWaitQueue.put(msg);
     },
   );
 
-  const flush = async () => sendWaitReply('flush', {});
-  /** @param {import('./index.js').MakeSlogSenderOptions} options */
-  const init = async options => sendWaitReply('init', { options });
-
-  const send = obj => {
-    void pipeSend({ type: 'send', obj }).catch(() => {});
-  };
-
-  const shutdown = async () => {
-    // logger.log('shutdown');
-    if (!cp.connected) {
+  /** @param {PipeReply} msg */
+  const onMessage = msg => {
+    // console.log('received', msg);
+    if (!msg || msg.type !== `${sendWaitType}Reply`) {
+      console.warn('Received unexpected message', msg);
       return;
     }
 
+    sendWaitQueue.put(msg);
+  };
+  cp.on('message', onMessage);
+
+  const flush = async () => {
+    await sendWaitReply('flush', {});
+  };
+
+  const shutdown = async () => {
+    // console.log('shutdown');
+    if (!cp.connected) return;
+
     await flush();
     cp.disconnect();
+    await exitKit.promise;
   };
   registerShutdown(shutdown);
 
-  const { hasSender } = await init(opts).catch(err => {
+  const { hasSender } = await sendWaitReply('init', { options }).catch(err => {
     cp.disconnect();
     throw err;
   });
-
   if (!hasSender) {
     cp.disconnect();
     return undefined;
   }
 
-  const slogSender = send;
+  const slogSender = obj => {
+    void pipeSend({ type: 'send', obj }).catch(sink);
+  };
   return Object.assign(slogSender, {
-    forceFlush: async () => {
-      await flush();
-    },
+    forceFlush: flush,
     shutdown,
     usesJsonObject: false,
   });

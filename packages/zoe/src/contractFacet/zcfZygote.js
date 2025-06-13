@@ -29,10 +29,22 @@ import { HandleOfferI, InvitationHandleShape } from '../typeGuards.js';
 import { prepareZcMint } from './zcfMint.js';
 import { ZcfI } from './typeGuards.js';
 
-/// <reference path="../internal-types.js" />
-/// <reference path="./internal-types.js" />
+/**
+ * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {IssuerOptionsRecord} from '@agoric/ertp';
+ * @import {ZoeIssuerRecord, ZCFRegisterFeeMint, ContractStartFn, SetTestJig} from './types.js';
+ */
 
-/** @import {IssuerOptionsRecord} from '@agoric/ertp' */
+/**
+ * @typedef ZCFZygote
+ * @property {(instanceAdminFromZoe: ERef<ZoeInstanceAdmin>,
+ *     instanceRecordFromZoe: InstanceRecord,
+ *     issuerStorageFromZoe: IssuerRecords,
+ *     privateArgs?: object,
+ * ) => Promise<ExecuteContractResult>} startContract
+ * @property {(privateArgs?: object) => void} restartContract
+ */
 
 /**
  * Make the ZCF vat in zygote-usable form. First, a generic ZCF is
@@ -42,9 +54,9 @@ import { ZcfI } from './typeGuards.js';
  * @param {VatPowers} powers
  * @param {ERef<ZoeService>} zoeService
  * @param {Issuer<'set'>} invitationIssuer
- * @param {TestJigSetter} testJigSetter
+ * @param {( {zcf}: {zcf: ZCF} ) => void} testJigSetter
  * @param {BundleCap} contractBundleCap
- * @param {import('@agoric/vat-data').Baggage} zcfBaggage
+ * @param {Baggage} zcfBaggage
  * @returns {Promise<ZCFZygote>}
  */
 export const makeZCFZygote = async (
@@ -76,7 +88,7 @@ export const makeZCFZygote = async (
     instantiate: instantiateIssuerStorage,
   } = provideIssuerStorage(zcfBaggage);
 
-  /** @type {import('@agoric/swingset-vat').ShutdownWithFailure} */
+  /** @type {ShutdownWithFailure} */
   const shutdownWithFailure = reason => {
     void E(zoeInstanceAdmin).failAllSeats(reason);
     seatManager.dropAllReferences();
@@ -92,7 +104,7 @@ export const makeZCFZygote = async (
 
   /**
    * @param {string} keyword
-   * @param {IssuerRecord} issuerRecord
+   * @param {ZoeIssuerRecord} issuerRecord
    */
   const recordIssuer = (keyword, issuerRecord) => {
     getInstanceRecHolder().addIssuer(keyword, issuerRecord);
@@ -238,7 +250,7 @@ export const makeZCFZygote = async (
     } else {
       bundle = contractBundleCap;
     }
-    return evalContractBundle(bundle);
+    return /** @type {any} */ (evalContractBundle(bundle));
   };
   // evaluate the contract (either the first version, or an upgrade)
   const bundleResult = await evaluateContract();
@@ -283,7 +295,6 @@ export const makeZCFZygote = async (
   /** @type {ZCF} */
   const zcf = prepareExo(zcfBaggage, 'zcf', ZcfI, {
     atomicRearrange: transfers => seatManager.atomicRearrange(transfers),
-    reallocate: (...seats) => seatManager.reallocate(...seats),
     assertUniqueKeyword: kwd => getInstanceRecHolder().assertUniqueKeyword(kwd),
     saveIssuer: async (issuerP, keyword) => {
       // TODO: The checks of the keyword for uniqueness are
@@ -488,9 +499,16 @@ export const makeZCFZygote = async (
           publicFacet = undefined,
           creatorInvitation = undefined,
         }) => {
-          const priorCreatorFacet = zcfBaggage.get('creatorFacet');
-          const priorPublicFacet = zcfBaggage.get('publicFacet');
-          const priorCreatorInvitation = zcfBaggage.get('creatorInvitation');
+          let priorCreatorFacet;
+          let priorPublicFacet;
+          let priorCreatorInvitation;
+          try {
+            priorCreatorFacet = zcfBaggage.get('creatorFacet');
+            priorPublicFacet = zcfBaggage.get('publicFacet');
+            priorCreatorInvitation = zcfBaggage.get('creatorInvitation');
+          } catch (e) {
+            Fail`restartContract failed: original contract facets were not durable (${e})`;
+          }
 
           (priorCreatorFacet === creatorFacet &&
             priorPublicFacet === publicFacet &&

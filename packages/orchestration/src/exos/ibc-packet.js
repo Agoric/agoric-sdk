@@ -1,4 +1,4 @@
-import { assertAllDefined } from '@agoric/internal';
+import { makeTracer } from '@agoric/internal';
 import { base64ToBytes, Shape as NetworkShape } from '@agoric/network';
 import { M } from '@endo/patterns';
 import { E } from '@endo/far';
@@ -6,9 +6,13 @@ import { E } from '@endo/far';
 // As specified in ICS20, the success result is a base64-encoded '\0x1' byte.
 export const ICS20_TRANSFER_SUCCESS_RESULT = 'AQ==';
 
+const trace = makeTracer('IBCP');
+
 /**
+ * @import {Key, Pattern} from '@endo/patterns';
  * @import {JsonSafe, TypedJson, ResponseTo} from '@agoric/cosmic-proto';
  * @import {Vow, VowTools} from '@agoric/vow';
+ * @import {IBCEvent, IBCPacket} from '@agoric/vats';
  * @import {LocalChainAccount} from '@agoric/vats/src/localchain.js';
  * @import {PacketOptions} from './packet-tools.js';
  */
@@ -85,6 +89,12 @@ export const prepareIBCTransferSender = (zone, { watch, makeIBCReplyKit }) => {
     }),
     {
       public: {
+        /**
+         * @param {Vow<
+         *   IBCEvent<'acknowledgementPacket'> | IBCEvent<'timeoutPacket'>
+         * >} match
+         * @param {PacketOptions} opts
+         */
         sendPacket(match, opts) {
           const { txExecutor, transferMsg } = this.state;
           return watch(
@@ -105,11 +115,20 @@ export const prepareIBCTransferSender = (zone, { watch, makeIBCReplyKit }) => {
          *     >
          *   >,
          * ]} response
-         * @param {Record<string, any>} ctx
+         * @param {{
+         *   opts: PacketOptions;
+         *   match: Vow<
+         *     IBCEvent<'acknowledgementPacket'> | IBCEvent<'timeoutPacket'>
+         *   >;
+         * }} ctx
          */
         onFulfilled([{ sequence }], ctx) {
-          const { match } = ctx;
+          const { match, opts } = ctx;
           const { transferMsg } = this.state;
+
+          // sequence + sourceChannel uniquely identifies a transfer.
+          // trace with receiver etc. for forensics
+          trace('sequence', sequence, transferMsg);
 
           // Match the port/channel and sequence number.
           const replyPacketPattern = M.splitRecord({
@@ -121,7 +140,7 @@ export const prepareIBCTransferSender = (zone, { watch, makeIBCReplyKit }) => {
           const { resultV: ackDataV, ...rest } = makeIBCReplyKit(
             replyPacketPattern,
             match,
-            ctx,
+            { opName: 'transfer', ...opts },
           );
           const resultV = watch(ackDataV, this.facets.verifyTransferSuccess);
           return harden({ resultV, ...rest });
@@ -138,8 +157,25 @@ export const prepareIBCTransferSender = (zone, { watch, makeIBCReplyKit }) => {
           const { result, error } = obj;
           error === undefined || Fail`ICS20-1 transfer error ${error}`;
           result ?? Fail`Missing result in ICS20-1 transfer ack ${obj}`;
-          result === ICS20_TRANSFER_SUCCESS_RESULT ||
-            Fail`ICS20-1 transfer unsuccessful with ack result ${result}`;
+          if (result === ICS20_TRANSFER_SUCCESS_RESULT) {
+            return; // OK, transfer was successful, nothing to do
+          }
+
+          // Function to safely base64-decode and parse JSON
+          const decodeAndParse = b64 => {
+            try {
+              return JSON.parse(atob(b64));
+            } catch {
+              Fail`Decoding of base64-encoded ack obj object failed: ${JSON.stringify(b64)}`;
+            }
+          };
+
+          const outerDecoded = decodeAndParse(result);
+          const ibcAck =
+            outerDecoded?.ibc_ack && decodeAndParse(outerDecoded.ibc_ack);
+
+          ibcAck?.result === ICS20_TRANSFER_SUCCESS_RESULT ||
+            Fail`ICS20-1 transfer unsuccessful with ack result: ${outerDecoded}`;
         },
       },
     },
@@ -153,6 +189,12 @@ export const prepareIBCTransferSender = (zone, { watch, makeIBCReplyKit }) => {
 harden(prepareIBCTransferSender);
 
 /**
+ * `makeIBCReplyKit` creates a pattern for `acknowledgementPacket` and
+ * `timeoutPacket` {@link IBCEvent}s using the provided {@link IBCPacket}
+ * pattern.
+ *
+ * Returns a vow that settles when a match is found.
+ *
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {VowTools} vowTools
  */
@@ -161,14 +203,26 @@ export const prepareIBCReplyKit = (zone, vowTools) => {
   const ibcWatcher = zone.exo(
     'ibcResultWatcher',
     M.interface('processIBCWatcher', {
-      onFulfilled: M.call(M.record(), M.record()).returns(Vow$(M.string())),
+      onFulfilled: M.call(
+        M.splitRecord({ event: M.string() }, { acknowledgement: M.string() }),
+        M.splitRecord({}, { opName: M.string(), timeout: M.record() }),
+      ).returns(Vow$(M.string())),
     }),
     {
-      onFulfilled({ event, acknowledgement }, { opName = 'unknown' }) {
-        assertAllDefined({ event, acknowledgement });
+      /**
+       * @param {IBCEvent<'acknowledgementPacket'>
+       *   | IBCEvent<'timeoutPacket'>} ibcEvent
+       * @param {PacketOptions} ctx
+       */
+      onFulfilled(ibcEvent, { opName = 'unknown' }) {
+        const { event } = ibcEvent;
         switch (event) {
-          case 'acknowledgementPacket':
+          case 'acknowledgementPacket': {
+            const { acknowledgement } = ibcEvent;
+            acknowledgement ||
+              Fail`acknowledgementPacket missing 'acknowledgement'`;
             return base64ToBytes(acknowledgement);
+          }
           case 'timeoutPacket':
             throw Fail`${bare(opName)} operation received timeout packet`;
           default:
@@ -179,8 +233,9 @@ export const prepareIBCReplyKit = (zone, vowTools) => {
   );
 
   /**
+   * @template {IBCEvent<'acknowledgementPacket'> | IBCEvent<'timeoutPacket'>} [E=IBCEvent<'acknowledgementPacket'>| IBCEvent<'timeoutPacket'>]
    * @param {Pattern} replyPacketPattern
-   * @param {Vow<any>} matchV
+   * @param {Vow<E>} matchV
    * @param {PacketOptions} opts
    */
   const makeIBCReplyKit = (replyPacketPattern, matchV, opts) => {

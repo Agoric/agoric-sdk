@@ -7,6 +7,10 @@ import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions'
 export * from './make-slog-sender.js';
 
 /**
+ * @import { LimitedConsole } from '@agoric/internal/src/js-utils.js';
+ */
+
+/**
  * @typedef {((obj: {}, jsonObj?: string | undefined) => void) & {
  *  usesJsonObject?: boolean;
  *  forceFlush?: () => Promise<void>;
@@ -20,7 +24,7 @@ export * from './make-slog-sender.js';
  * @typedef {MakeSlogSenderCommonOptions & Record<string, unknown>} MakeSlogSenderOptions
  * @typedef {object} MakeSlogSenderCommonOptions
  * @property {Record<string, string | undefined>} [env]
- * @property {Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>} [console]
+ * @property {LimitedConsole} [console]
  * @property {string} [stateDir]
  * @property {string} [serviceName]
  */
@@ -40,7 +44,10 @@ export const tryFlushSlogSender = async (
     log = (...args) => console.warn(...args),
   } = {},
 ) => {
-  await Promise.resolve(slogSender?.forceFlush?.()).catch(err => {
+  await null;
+  try {
+    await slogSender?.forceFlush?.();
+  } catch (err) {
     log?.('Failed to flush slog sender', err);
     if (err.errors) {
       for (const error of err.errors) {
@@ -50,7 +57,7 @@ export const tryFlushSlogSender = async (
     if (env.SLOGSENDER_FAIL_ON_ERROR) {
       throw err;
     }
-  });
+  }
 };
 
 export const getResourceAttributes = ({
@@ -87,43 +94,37 @@ export const getResourceAttributes = ({
 
 /**
  * @typedef {object} Powers
- * @property {MakeSlogSenderCommonOptions['console']} console
+ * @property {Pick<Console, 'warn'>} console
  * @property {NodeJS.ProcessEnv} env
  * @property {import('@opentelemetry/sdk-metrics').View[]} views
  * @property {string} [serviceName]
  */
 
 /**
- * @param {Partial<Powers>} param0
+ * @param {Partial<Powers>} powers
  */
-const getPrometheusMeterProvider = ({
+export const getPrometheusMeterProvider = ({
   console = globalThis.console,
   env = process.env,
   views,
   ...rest
 } = {}) => {
-  const { OTEL_EXPORTER_PROMETHEUS_PORT } = env;
-  if (!OTEL_EXPORTER_PROMETHEUS_PORT) {
-    // No Prometheus config, so don't install.
-    return undefined;
-  }
+  const { OTEL_EXPORTER_PROMETHEUS_HOST, OTEL_EXPORTER_PROMETHEUS_PORT } = env;
+
+  // The opt-in signal is a non-empty OTEL_EXPORTER_PROMETHEUS_PORT.
+  if (!OTEL_EXPORTER_PROMETHEUS_PORT) return;
 
   const resource = new Resource(getResourceAttributes({ env, ...rest }));
 
-  const port =
-    parseInt(OTEL_EXPORTER_PROMETHEUS_PORT || '', 10) ||
-    PrometheusExporter.DEFAULT_OPTIONS.port;
+  const { DEFAULT_OPTIONS } = PrometheusExporter;
+  const host = OTEL_EXPORTER_PROMETHEUS_HOST || DEFAULT_OPTIONS.host;
+  const port = +OTEL_EXPORTER_PROMETHEUS_PORT || DEFAULT_OPTIONS.port;
+  const url = `http://${host || '0.0.0.0'}:${port}${DEFAULT_OPTIONS.endpoint}`;
 
-  const exporter = new PrometheusExporter(
-    {
-      port,
-    },
-    () => {
-      console.warn(
-        `Prometheus scrape endpoint: http://0.0.0.0:${port}${PrometheusExporter.DEFAULT_OPTIONS.endpoint}`,
-      );
-    },
-  );
+  const options = { host, port, appendTimestamp: true };
+  const exporter = new PrometheusExporter(options, () => {
+    console.warn(`Prometheus scrape endpoint: ${url}`);
+  });
 
   const provider = new MeterProvider({ resource, views });
   provider.addMetricReader(exporter);

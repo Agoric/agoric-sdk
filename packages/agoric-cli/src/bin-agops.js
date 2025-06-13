@@ -3,8 +3,6 @@
 // @ts-check
 // @jessie-check
 
-import '@endo/init/pre.js';
-
 import '@endo/init';
 
 import { E } from '@endo/far';
@@ -30,7 +28,6 @@ const progname = path.basename(process.argv[1]);
 const program = new Command();
 program.name(progname).version('unversioned');
 
-program.addCommand(makeOracleCommand(logger));
 program.addCommand(makeGovCommand(logger));
 program.addCommand(makePerfCommand(logger));
 program.addCommand(makePsmCommand(logger));
@@ -69,6 +66,7 @@ const procIO = {
   setTimeout,
 };
 
+program.addCommand(makeOracleCommand(procIO, logger));
 program.addCommand(makeReserveCommand(logger, procIO));
 program.addCommand(makeAuctionCommand(logger, { ...procIO, fetch }));
 program.addCommand(makeInterCommand(procIO, { fetch }));

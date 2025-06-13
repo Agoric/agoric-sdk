@@ -4,13 +4,18 @@ import {
   getEnvironmentOption,
 } from '@endo/env-options';
 import anylogger from 'anylogger';
+import { defineName } from '@agoric/internal/src/js-utils.js';
 import util from 'util';
 
+/** @import {BaseLevels} from 'anylogger'; */
+/** @typedef {keyof BaseLevels} LogLevel; */
+
+const VAT_LOGGER_PREFIXES = Object.freeze([
+  'SwingSet:vat',
+  'SwingSet:ls', // "ls" for "liveslots"
+]);
+
 //#region Golang zerolog-like output affordances
-let logFormat = 'plain';
-export const setLogFormat = format => {
-  logFormat = format;
-};
 
 let shortDateTimeFormatter;
 const plainTime = d => {
@@ -35,91 +40,126 @@ const levelToPlainLevel = {
  * @param {Date} d
  * @returns {string}
  */
-const jsonTime = d => {
+const dateToNumericOffsetString = d => {
+  // TODO: Use Temporal.ZonedDateTime
+  // `toString({ fractionalSecondDigits: 0 })`.`
   const pad2 = n => (n < 10 ? `0${n}` : `${n}`);
-  const isoDate = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
-  const isoTime = `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
-  const tzo = d.getTimezoneOffset();
-  const isoTz = `${tzo < 0 ? '+' : '-'}${pad2(Math.floor(Math.abs(tzo) / 60))}:${pad2(Math.abs(tzo) % 60)}`;
-  return `${isoDate}T${isoTime}${isoTz}`;
+  const utcOffsetMinutes = -d.getTimezoneOffset();
+  const utcOffsetAbsMinutes = Math.abs(utcOffsetMinutes);
+  const utcOffsetString = `${utcOffsetMinutes < 0 ? '-' : '+'}${pad2(Math.floor(utcOffsetAbsMinutes / 60))}:${pad2(utcOffsetAbsMinutes % 60)}`;
+  const utcDateWithSameLocalTime = new Date(
+    d.getTime() + utcOffsetMinutes * 60e3,
+  );
+  return utcDateWithSameLocalTime
+    .toISOString()
+    .replace(/[.][0-9]+Z$/, utcOffsetString);
 };
 
-//#endregion
+/**
+ * @type {Record<string,
+ *   (opts: { now: Date, label: string, level: LogLevel, args: any[] }) => any[]
+ * >}
+ */
+const logFormatterForLogFormat = {
+  legacy: ({ now, label, args }) => {
+    const timestamp = now.toISOString();
+    return [`${timestamp} ${label}:`, ...args];
+  },
+  plain: ({ now, label, level, args }) => {
+    const timestamp = plainTime(now);
+    const plainLevel = levelToPlainLevel[level];
+    return [`${timestamp} ${plainLevel} ${label}:`, ...args];
+  },
+  json: ({ now, label, level, args }) => {
+    const message = [`${label}:`, ...args]
+      .map(a => (typeof a === 'string' ? a : util.inspect(a)))
+      .join(' ');
+    return [
+      JSON.stringify({
+        level,
+        time: dateToNumericOffsetString(now),
+        message,
+      }),
+    ];
+  },
+};
 
-const isVatLogNameColon = nameColon =>
-  ['SwingSet:ls:', 'SwingSet:vat:'].some(sel => nameColon.startsWith(sel));
+/** @type {string} */
+let logFormat;
+/** @type {typeof logFormatterForLogFormat[string]} */
+let logFormatter;
+
+/** @param {string} format */
+export const setLogFormat = format => {
+  logFormat = format;
+  logFormatter =
+    logFormatterForLogFormat[logFormat] || logFormatterForLogFormat.plain;
+};
+setLogFormat('plain'); // default
+
+//#endregion
 
 // Turn on debugging output with DEBUG=agoric or DEBUG=agoric:${level}
 const DEBUG_LIST = getEnvironmentOptionsList('DEBUG');
 
-let selectedLevel =
-  DEBUG_LIST.length || getEnvironmentOption('DEBUG', 'unset') === 'unset'
+/**
+ * As documented in ../../../docs/env.md, the log level defaults to "log" when
+ * environment variable DEBUG is non-empty or unset, and to the quieter "info"
+ * when it is set to an empty string, but in either case is overridden if DEBUG
+ * is a comma-separated list that contains "agoric:none" or "agoric:${level}" or
+ * "agoric" (the last an alias for "agoric:debug").
+ *
+ * @type {string | undefined}
+ */
+let maxActiveLevel =
+  DEBUG_LIST.length > 0 || getEnvironmentOption('DEBUG', 'unset') === 'unset'
     ? 'log'
     : 'info';
 for (const selector of DEBUG_LIST) {
-  const parts = selector.split(':');
-  if (parts[0] !== 'agoric') {
-    continue;
-  }
-  if (parts.length > 1) {
-    selectedLevel = parts[1];
-  } else {
-    selectedLevel = 'debug';
+  const fullSelector = selector === 'agoric' ? 'agoric:debug' : selector;
+  const [_, detail] = fullSelector.match(/^agoric:(.*)/gs) || [];
+  if (detail) {
+    maxActiveLevel = detail === 'none' ? undefined : detail;
   }
 }
-const selectedCode = anylogger.levels[selectedLevel];
-const globalCode = selectedCode === undefined ? -Infinity : selectedCode;
+const maxActiveLevelCode = /** @type {number} */ (
+  (maxActiveLevel && anylogger.levels[maxActiveLevel]) ?? -Infinity
+);
 
 const oldExt = anylogger.ext;
 anylogger.ext = logger => {
-  const l = oldExt(logger);
-  l.enabledFor = lvl => globalCode >= anylogger.levels[lvl];
+  logger = oldExt(logger);
 
-  const prefix = l.name.replace(/:/g, ': ');
+  /** @type {(level: LogLevel) => boolean} */
+  const enabledFor = level => anylogger.levels[level] <= maxActiveLevelCode;
+  logger.enabledFor = enabledFor;
 
-  const nameColon = `${l.name}:`;
-  const logBelongsToVat = isVatLogNameColon(nameColon);
+  const nameColon = `${logger.name}:`;
+  const label = logger.name.replaceAll(':', ': ');
 
-  // If this is a vat log, then it is enabled by a selector in DEBUG_LIST.
-  const logMatchesSelector =
-    !logBelongsToVat ||
-    DEBUG_LIST.some(selector => {
-      const selectorColon = `${selector}:`;
-      return nameColon.startsWith(selectorColon);
-    });
+  // Vat logs are suppressed unless matched by a prefix in DEBUG_LIST.
+  const suppressed =
+    VAT_LOGGER_PREFIXES.some(prefix => nameColon.startsWith(`${prefix}:`)) &&
+    !DEBUG_LIST.some(prefix => nameColon.startsWith(`${prefix}:`));
 
-  for (const [level, code] of Object.entries(anylogger.levels)) {
-    if (logMatchesSelector && globalCode >= code) {
-      // Enable the printing with a prefix.
-      const doLog = l[level];
-      if (doLog) {
-        const plainLevel = levelToPlainLevel[level];
-        l[level] = (...args) => {
-          // Add a timestamp.
-          const now = new Date();
-          switch (logFormat) {
-            case 'plain': {
-              doLog(`${plainTime(now)} ${plainLevel} ${prefix}:`, ...args);
-              break;
-            }
+  const levels = /** @type {LogLevel[]} */ (Object.keys(anylogger.levels));
+  for (const level of levels) {
+    const impl = logger[level];
+    const disabled = !impl || suppressed || !enabledFor(level);
+    logger[level] = disabled
+      ? defineName(`dummy ${level}`, () => {})
+      : defineName(level, (...args) => {
+          // Format as requested.
+          const formattedArgs = logFormatter({
+            level,
+            now: new Date(),
+            label,
+            args,
+          });
 
-            case 'json':
-            default: {
-              const message = [`${prefix}:`, ...args]
-                .map(a => (typeof a === 'string' ? a : util.inspect(a)))
-                .join(' ');
-              doLog(JSON.stringify({ level, time: jsonTime(now), message }));
-              break;
-            }
-          }
-        };
-      } else {
-        l[level] = () => {};
-      }
-    } else {
-      // Disable printing.
-      l[level] = () => {};
-    }
+          // Output with the underlying writer.
+          impl(...formattedArgs);
+        });
   }
-  return l;
+  return logger;
 };

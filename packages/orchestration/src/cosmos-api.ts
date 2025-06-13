@@ -1,8 +1,7 @@
-import type { AnyJson, TypedJson, JsonSafe } from '@agoric/cosmic-proto';
+/* eslint-disable @typescript-eslint/no-unused-vars -- fails to notice the @see uses */
+import type { AnyJson, JsonSafe, TypedJson } from '@agoric/cosmic-proto';
+import type { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
 import type {
-  Delegation,
-  DelegationResponse,
-  Redelegation,
   RedelegationResponse,
   UnbondingDelegation,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
@@ -18,8 +17,9 @@ import type {
   RequestQuery,
   ResponseQuery,
 } from '@agoric/cosmic-proto/tendermint/abci/types.js';
-import type { Brand, Purse, Payment, Amount } from '@agoric/ertp/src/types.js';
-import type { Port } from '@agoric/network';
+import type { Amount, Payment } from '@agoric/ertp/src/types.js';
+import type { Port, SendOptions } from '@agoric/network';
+import type { TimerService } from '@agoric/time';
 import type {
   IBCChannelID,
   IBCConnectionID,
@@ -34,13 +34,26 @@ import type {
   LocalIbcAddress,
   RemoteIbcAddress,
 } from '@agoric/vats/tools/ibc-utils.js';
-import type { QueryDelegationTotalRewardsResponse } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/query.js';
-import type { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
-import type { AmountArg, ChainAddress, Denom, DenomAmount } from './types.js';
 import { PFM_RECEIVER } from './exos/chain-hub.js';
+import type {
+  AccountId,
+  AmountArg,
+  BaseChainInfo,
+  CosmosChainAddress,
+  Denom,
+  DenomAmount,
+} from './types.js';
+
+/**
+ * @example
+ *
+ *    agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346
+ *    cosmosvaloper1npm9gvss52mlmk
+ */
+export type Bech32Address = `${string}1${string}`;
 
 /** An address for a validator on some blockchain, e.g., cosmos, eth, etc. */
-export type CosmosValidatorAddress = ChainAddress & {
+export type CosmosValidatorAddress = CosmosChainAddress & {
   // infix for Validator Operator https://docs.cosmos.network/main/learn/beginner/accounts#addresses
   value: `${string}valoper${string}`;
   encoding: 'bech32';
@@ -92,14 +105,22 @@ export interface CosmosAssetInfo extends Record<string, unknown> {
 /**
  * Info for a Cosmos-based chain.
  */
-export type CosmosChainInfo = Readonly<{
+export interface CosmosChainInfo extends BaseChainInfo {
   /** can be used to lookup chainInfo (chainId) from an address value */
-  bech32Prefix?: string;
+  bech32Prefix: string;
+  /** Cosmos chain ID. The CAIP-2 fields (namespace, reference) are on {@link BaseChainInfo}. */
   chainId: string;
-
-  connections?: Record<string, IBCConnectionInfo>; // chainId or wellKnownName
-  // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
+  /**  IBC connections between this chain and others, keyed by chainId */
+  connections?: Record<string, IBCConnectionInfo>;
+  /** indicates the host chain supports Interchain Accounts (ICS-27). Not currently used at runtime - only for types */
+  icaEnabled?: boolean;
+  /**
+   * indicates the host chain support the async-icq IBC Application protocol. Used at runtime to permit `Chain.query()` operations.
+   *
+   * in the future (@see https://github.com/Agoric/agoric-sdk/issues/9326), querying will be supported by the ICA protocol natively and this will likely deprecate
+   */
   icqEnabled?: boolean;
+  namespace: 'cosmos';
   /**
    * Note: developers must provide this value themselves for `.transfer` to work
    * as expected. Please see examples for details.
@@ -109,7 +130,7 @@ export type CosmosChainInfo = Readonly<{
    * cf https://github.com/cosmos/chain-registry/blob/master/chain.schema.json#L117
    */
   stakingTokens?: Readonly<Array<{ denom: string }>>;
-}>;
+}
 
 // #region Orchestration views on Cosmos response types
 // Naming scheme: Cosmos for the chain system, Rewards b/c getRewards function,
@@ -123,7 +144,7 @@ export interface CosmosRewardsResponse {
 
 /** @see {DelegationResponse} */
 export interface CosmosDelegationResponse {
-  delegator: ChainAddress;
+  delegator: CosmosChainAddress;
   validator: CosmosValidatorAddress;
   amount: DenomAmount;
 }
@@ -218,7 +239,7 @@ export interface StakingAccountActions {
   undelegate: (
     delegations: {
       amount: AmountArg;
-      delegator?: ChainAddress;
+      delegator?: CosmosChainAddress;
       validator: CosmosValidatorAddress;
     }[],
   ) => Promise<void>;
@@ -245,12 +266,12 @@ export interface IcaAccountMethods {
   /**
    * Submit a transaction on behalf of the remote account for execution on the remote chain.
    * @param msgs - records for the transaction
-   * @param [opts] - optional parameters for the Tx, like `timeoutHeight` and `memo`
+   * @param [opts] - optional parameters for the Tx. use `opts.sendOpts.relativeTimeoutNs` to specify a timeout for the ICA tx packet
    * @returns acknowledgement string
    */
   executeEncodedTx: (
     msgs: AnyJson[],
-    opts?: Partial<Omit<TxBody, 'messages'>>,
+    opts?: Partial<Omit<TxBody, 'messages'>> & { sendOpts?: SendOptions },
   ) => Promise<string>;
   /**
    * Deactivates the ICA account by closing the ICA channel. The `Port` is
@@ -278,7 +299,7 @@ export interface IcaAccount extends IcaAccountMethods {
   /**
    * @returns the address of the account on the remote chain
    */
-  getAddress: () => ChainAddress;
+  getAddress: () => CosmosChainAddress;
 
   /**
    * Submit a transaction on behalf of the remote account for execution on the remote chain.
@@ -297,6 +318,20 @@ export interface IcaAccount extends IcaAccountMethods {
 /** Methods on chains that support Liquid Staking */
 export interface LiquidStakingMethods {
   liquidStake: (amount: AmountArg) => Promise<void>;
+}
+
+/**
+ * Noble is the gateway to transferring USDC among Cosmos chains. We can
+ * transfer funds from any cosmos account using depositForBurn().
+ */
+export interface NobleMethods {
+  /** burn USDC on Noble and mint on a destination chain via CCTP */
+  depositForBurn: (
+    mintRecipient: AccountId,
+    amount: AmountArg,
+    /** if specified, only this account can call MsgReceive on the destination chain */
+    caller?: AccountId,
+  ) => Promise<void>;
 }
 
 // TODO support StakingAccountQueries
@@ -322,24 +357,37 @@ export interface LocalAccountMethods extends StakingAccountActions {
    * @param tap
    */
   monitorTransfers: (tap: TargetApp) => Promise<TargetRegistration>;
+  /**
+   * Parse an incoming transfer message and return its details.
+   */
+  parseInboundTransfer: (packet: Record<string, any>) => Promise<{
+    amount: DenomAmount;
+    fromAccount: AccountId;
+    toAccount: AccountId;
+    extra: Record<string, any>;
+  }>;
 }
 
 /**
  * Options for {@link OrchestrationAccountI} `transfer` method.
  *
+ * If specifying a custom timeout, use one of `timeoutHeight`, `timeoutTimestamp`, or `timeoutRelativeSeconds`.
+ *
  * @see {@link https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#data-structures ICS 20 Data Structures}
  */
-export interface IBCMsgTransferOptions {
+export type IBCMsgTransferOptions = {
   timeoutHeight?: MsgTransfer['timeoutHeight'];
   timeoutTimestamp?: MsgTransfer['timeoutTimestamp'];
+  /** converted using {@link TimerService} to a `timeoutTimestamp` value `timeoutRelativeSeconds` in the future */
+  timeoutRelativeSeconds?: bigint;
   memo?: string;
   forwardOpts?: {
     /** The recipient address for the intermediate transfer. Defaults to 'pfm' unless specified */
-    intermediateRecipient?: ChainAddress;
+    intermediateRecipient?: CosmosChainAddress;
     timeout?: ForwardInfo['forward']['timeout'];
     retries?: ForwardInfo['forward']['retries'];
   };
-}
+};
 
 /**
  * Cosmos-specific methods to extend `OrchestrationAccountI`, parameterized
@@ -350,7 +398,7 @@ export interface IBCMsgTransferOptions {
  *
  * @see {OrchestrationAccountI}
  */
-export type CosmosChainAccountMethods<CCI extends CosmosChainInfo> =
+export type CosmosChainAccountMethods<CCI extends { chainId: string }> =
   IcaAccountMethods &
     (CCI extends {
       stakingTokens: object;
@@ -369,7 +417,7 @@ export type ICQQueryFunction = (
  */
 export interface ForwardInfo {
   forward: {
-    receiver: ChainAddress['value'];
+    receiver: CosmosChainAddress['value'];
     port: IBCPortID;
     channel: IBCChannelID;
     /** e.g. '10m' */
@@ -397,7 +445,7 @@ export type TransferRoute = {
   token: Coin;
 } & (
   | {
-      receiver: typeof PFM_RECEIVER | ChainAddress['value'];
+      receiver: typeof PFM_RECEIVER | CosmosChainAddress['value'];
       /** contains PFM forwarding info */
       forwardInfo: ForwardInfo;
     }

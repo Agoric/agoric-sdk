@@ -1,6 +1,6 @@
 /**
  * @import {Command} from 'commander';
- * @import {File} from '../util/file.js';
+ * @import {File} from './util/file.js';
  * @import * as ConfigHelpers from './config.js';
  */
 /**

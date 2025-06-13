@@ -22,8 +22,8 @@ if (ret.error) {
 if (ret.stderr) {
   process.stderr.write(ret.stderr);
 }
-if (ret.code) {
-  process.exit(ret.code);
+if (ret.status) {
+  process.exit(ret.status);
 }
 
 const output = ret.stdout.toString('utf-8');

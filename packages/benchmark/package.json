@@ -1,5 +1,5 @@
 {
-  "name": "@agoric/benchmark",
+  "name": "@aglocal/benchmark",
   "version": "0.1.0",
   "private": true,
   "description": "Benchmark support",
@@ -14,24 +14,23 @@
     "test": "exit 0",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
-    "lint": "run-s --continue-on-error lint:*",
-    "lint:types": "tsc",
-    "lint:eslint": "eslint ."
+    "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
+    "lint:types": "yarn run -T tsc",
+    "lint:eslint": "yarn run -T eslint ."
   },
   "keywords": [],
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@endo/errors": "^1.2.8",
-    "@agoric/boot": "^0.1.0",
-    "@agoric/cosmic-swingset": "^0.41.3",
-    "@agoric/internal": "^0.3.2",
-    "@agoric/inter-protocol": "^0.16.1",
-    "@agoric/vats": "^0.15.1",
-    "@agoric/zoe": "^0.26.2",
-    "@endo/init": "^1.1.7"
+    "@aglocal/boot": "^0.1.0",
+    "@agoric/cosmic-swingset": "workspace:*",
+    "@agoric/inter-protocol": "workspace:*",
+    "@agoric/internal": "workspace:*",
+    "@agoric/vats": "workspace:*",
+    "@agoric/zoe": "workspace:*",
+    "@endo/errors": "^1.2.10",
+    "@endo/init": "^1.1.9"
   },
-  "devDependencies": {},
   "files": [
     "CHANGELOG.md",
     "src/",

@@ -253,7 +253,7 @@ export interface MemberRequestSDKType {
 /**
  * ThresholdDecisionPolicy is a decision policy where a proposal passes when it
  * satisfies the two following conditions:
- * 1. The sum of all `YES` voters' weights is greater or equal than the defined
+ * 1. The sum of all `YES` voter's weights is greater or equal than the defined
  *    `threshold`.
  * 2. The voting and execution periods of the proposal respect the parameters
  *    given by `windows`.
@@ -275,7 +275,7 @@ export interface ThresholdDecisionPolicyProtoMsg {
 /**
  * ThresholdDecisionPolicy is a decision policy where a proposal passes when it
  * satisfies the two following conditions:
- * 1. The sum of all `YES` voters' weights is greater or equal than the defined
+ * 1. The sum of all `YES` voter's weights is greater or equal than the defined
  *    `threshold`.
  * 2. The voting and execution periods of the proposal respect the parameters
  *    given by `windows`.
@@ -296,7 +296,7 @@ export interface ThresholdDecisionPolicySDKType {
 export interface PercentageDecisionPolicy {
   $typeUrl?: '/cosmos.group.v1.PercentageDecisionPolicy';
   /**
-   * percentage is the minimum percentage the weighted sum of `YES` votes must
+   * percentage is the minimum percentage of the weighted sum of `YES` votes must
    * meet for a proposal to succeed.
    */
   percentage: string;
@@ -408,7 +408,11 @@ export interface GroupPolicyInfo {
   groupId: bigint;
   /** admin is the account address of the group admin. */
   admin: string;
-  /** metadata is any arbitrary metadata to attached to the group policy. */
+  /**
+   * metadata is any arbitrary metadata attached to the group policy.
+   * the recommended format of the metadata is to be found here:
+   * https://docs.cosmos.network/v0.47/modules/group#decision-policy-1
+   */
   metadata: string;
   /**
    * version is used to track changes to a group's GroupPolicyInfo structure that
@@ -416,7 +420,9 @@ export interface GroupPolicyInfo {
    */
   version: bigint;
   /** decision_policy specifies the group policy's decision policy. */
-  decisionPolicy?: Any | undefined;
+  decisionPolicy?:
+    | (ThresholdDecisionPolicy & PercentageDecisionPolicy & Any)
+    | undefined;
   /** created_at is a timestamp specifying when a group policy was created. */
   createdAt: Timestamp;
 }
@@ -431,7 +437,11 @@ export interface GroupPolicyInfoSDKType {
   admin: string;
   metadata: string;
   version: bigint;
-  decision_policy?: AnySDKType | undefined;
+  decision_policy?:
+    | ThresholdDecisionPolicySDKType
+    | PercentageDecisionPolicySDKType
+    | AnySDKType
+    | undefined;
   created_at: TimestampSDKType;
 }
 /**
@@ -445,7 +455,11 @@ export interface Proposal {
   id: bigint;
   /** group_policy_address is the account address of group policy. */
   groupPolicyAddress: string;
-  /** metadata is any arbitrary metadata to attached to the proposal. */
+  /**
+   * metadata is any arbitrary metadata attached to the proposal.
+   * the recommended format of the metadata is to be found here:
+   * https://docs.cosmos.network/v0.47/modules/group#proposal-4
+   */
   metadata: string;
   /** proposers are the account addresses of the proposers. */
   proposers: string[];
@@ -474,7 +488,7 @@ export interface Proposal {
   finalTallyResult: TallyResult;
   /**
    * voting_period_end is the timestamp before which voting must be done.
-   * Unless a successfull MsgExec is called before (to execute a proposal whose
+   * Unless a successful MsgExec is called before (to execute a proposal whose
    * tally is successful before the voting period ends), tallying will be done
    * at this point, and the `final_tally_result`and `status` fields will be
    * accordingly updated.
@@ -484,6 +498,18 @@ export interface Proposal {
   executorResult: ProposalExecutorResult;
   /** messages is a list of `sdk.Msg`s that will be executed if the proposal passes. */
   messages: Any[];
+  /**
+   * title is the title of the proposal
+   *
+   * Since: cosmos-sdk 0.47
+   */
+  title: string;
+  /**
+   * summary is a short summary of the proposal
+   *
+   * Since: cosmos-sdk 0.47
+   */
+  summary: string;
 }
 export interface ProposalProtoMsg {
   typeUrl: '/cosmos.group.v1.Proposal';
@@ -508,6 +534,8 @@ export interface ProposalSDKType {
   voting_period_end: TimestampSDKType;
   executor_result: ProposalExecutorResult;
   messages: AnySDKType[];
+  title: string;
+  summary: string;
 }
 /** TallyResult represents the sum of weighted votes for each vote option. */
 export interface TallyResult {
@@ -539,7 +567,7 @@ export interface Vote {
   voter: string;
   /** option is the voter's choice on the proposal. */
   option: VoteOption;
-  /** metadata is any arbitrary metadata to attached to the vote. */
+  /** metadata is any arbitrary metadata attached to the vote. */
   metadata: string;
   /** submit_time is the timestamp when the vote was submitted. */
   submitTime: Timestamp;
@@ -1401,6 +1429,8 @@ function createBaseProposal(): Proposal {
     votingPeriodEnd: Timestamp.fromPartial({}),
     executorResult: 0,
     messages: [],
+    title: '',
+    summary: '',
   };
 }
 export const Proposal = {
@@ -1451,6 +1481,12 @@ export const Proposal = {
     for (const v of message.messages) {
       Any.encode(v!, writer.uint32(98).fork()).ldelim();
     }
+    if (message.title !== '') {
+      writer.uint32(106).string(message.title);
+    }
+    if (message.summary !== '') {
+      writer.uint32(114).string(message.summary);
+    }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Proposal {
@@ -1500,6 +1536,12 @@ export const Proposal = {
         case 12:
           message.messages.push(Any.decode(reader, reader.uint32()));
           break;
+        case 13:
+          message.title = reader.string();
+          break;
+        case 14:
+          message.summary = reader.string();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -1539,6 +1581,8 @@ export const Proposal = {
       messages: Array.isArray(object?.messages)
         ? object.messages.map((e: any) => Any.fromJSON(e))
         : [],
+      title: isSet(object.title) ? String(object.title) : '',
+      summary: isSet(object.summary) ? String(object.summary) : '',
     };
   },
   toJSON(message: Proposal): JsonSafe<Proposal> {
@@ -1579,6 +1623,8 @@ export const Proposal = {
     } else {
       obj.messages = [];
     }
+    message.title !== undefined && (obj.title = message.title);
+    message.summary !== undefined && (obj.summary = message.summary);
     return obj;
   },
   fromPartial(object: Partial<Proposal>): Proposal {
@@ -1614,6 +1660,8 @@ export const Proposal = {
         : undefined;
     message.executorResult = object.executorResult ?? 0;
     message.messages = object.messages?.map(e => Any.fromPartial(e)) || [];
+    message.title = object.title ?? '';
+    message.summary = object.summary ?? '';
     return message;
   },
   fromProtoMsg(message: ProposalProtoMsg): Proposal {
@@ -1844,11 +1892,15 @@ export const Vote = {
 };
 export const Cosmos_groupv1DecisionPolicy_InterfaceDecoder = (
   input: BinaryReader | Uint8Array,
-): Any => {
+): ThresholdDecisionPolicy | PercentageDecisionPolicy | Any => {
   const reader =
     input instanceof BinaryReader ? input : new BinaryReader(input);
   const data = Any.decode(reader, reader.uint32());
   switch (data.typeUrl) {
+    case '/cosmos.group.v1.ThresholdDecisionPolicy':
+      return ThresholdDecisionPolicy.decode(data.value);
+    case '/cosmos.group.v1.PercentageDecisionPolicy':
+      return PercentageDecisionPolicy.decode(data.value);
     default:
       return data;
   }

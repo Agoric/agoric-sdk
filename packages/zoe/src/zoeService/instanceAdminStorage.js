@@ -19,6 +19,10 @@ import {
 import { makeZoeSeatAdminFactory } from './zoeSeat.js';
 
 /**
+ * @import {WeakMapStore} from '@agoric/store';
+ */
+
+/**
  * @file Two objects are defined here, both called InstanceAdminSomething.
  * InstanceAdminStorage is a container for individual InstanceAdmins. Each
  * InstanceAdmin is associated with a particular contract instance, and is used

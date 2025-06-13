@@ -1,15 +1,15 @@
 //@ts-nocheck
-import * as _119 from './v1/genesis.js';
-import * as _120 from './v1/icq.js';
-import * as _121 from './v1/packet.js';
-import * as _122 from './v1/query.js';
-import * as _123 from './v1/tx.js';
+import * as _165 from './v1/genesis.js';
+import * as _166 from './v1/icq.js';
+import * as _167 from './v1/packet.js';
+import * as _168 from './v1/query.js';
+import * as _169 from './v1/tx.js';
 export namespace icq {
   export const v1 = {
-    ..._119,
-    ..._120,
-    ..._121,
-    ..._122,
-    ..._123,
+    ..._165,
+    ..._166,
+    ..._167,
+    ..._168,
+    ..._169,
   };
 }

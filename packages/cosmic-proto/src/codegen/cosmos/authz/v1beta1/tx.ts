@@ -2,8 +2,10 @@
 import { Grant, type GrantSDKType } from './authz.js';
 import { Any, type AnySDKType } from '../../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
-import { isSet, bytesFromBase64, base64FromBytes } from '../../../helpers.js';
+import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
+import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
+import { encodeBase64 as base64FromBytes } from '@endo/base64';
 /**
  * MsgGrant is a request type for Grant method. It declares authorization to the grantee
  * on behalf of the granter with the provided expiration time.
@@ -46,7 +48,7 @@ export interface MsgExecResponseSDKType {
 export interface MsgExec {
   grantee: string;
   /**
-   * Authorization Msg requests to execute. Each msg must implement Authorization interface
+   * Execute Msg.
    * The x/authz will try to find a grant matching (msg.signers[0], grantee, MsgTypeURL(msg))
    * triple and validate it.
    */
@@ -519,18 +521,7 @@ export const MsgRevokeResponse = {
     };
   },
 };
-export const Sdk_Msg_InterfaceDecoder = (
-  input: BinaryReader | Uint8Array,
-): Any => {
-  const reader =
-    input instanceof BinaryReader ? input : new BinaryReader(input);
-  const data = Any.decode(reader, reader.uint32());
-  switch (data.typeUrl) {
-    default:
-      return data;
-  }
-};
-export const Authz_Authorization_InterfaceDecoder = (
+export const Cosmos_basev1beta1Msg_InterfaceDecoder = (
   input: BinaryReader | Uint8Array,
 ): Any => {
   const reader =

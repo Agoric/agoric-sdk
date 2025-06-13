@@ -10,50 +10,49 @@
     "build:add-STARS-proposal": "echo This command has been deprecated. Please run this instead: agoric run scripts/inter-protocol/add-STARS.js",
     "build:restart-vats-proposal": "echo This command has been deprecated. Please run this instead: agoric run scripts/vats/restart-vats.js",
     "build:zcf-proposal": "echo This command has been deprecated. Please run this instead: agoric run scripts/vats/replace-zoe.js",
-    "prepack": "tsc --build tsconfig.build.json",
+    "prepack": "yarn run -T tsc --build tsconfig.build.json",
     "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
     "test": "ava",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
-    "lint": "run-s --continue-on-error lint:*",
-    "lint:types": "tsc",
-    "lint:eslint": "eslint ."
+    "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
+    "lint:types": "yarn run -T tsc",
+    "lint:eslint": "yarn run -T eslint ."
   },
   "keywords": [],
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/ertp": "^0.16.2",
-    "@agoric/fast-usdc": "0.1.0",
-    "@agoric/internal": "^0.3.2",
-    "@agoric/notifier": "^0.6.2",
-    "@agoric/smart-wallet": "^0.5.3",
-    "@agoric/vat-data": "^0.5.2",
-    "@agoric/vats": "^0.15.1",
-    "@agoric/zoe": "^0.26.2",
-    "@endo/bundle-source": "^3.5.0",
-    "@endo/captp": "^4.4.3",
-    "@endo/eventual-send": "^1.2.8",
-    "@endo/far": "^1.1.9",
-    "@endo/init": "^1.1.7",
-    "@endo/marshal": "^1.6.2",
-    "@endo/patterns": "^1.4.7",
-    "@endo/promise-kit": "^1.1.8",
-    "@endo/stream": "^1.2.8",
-    "import-meta-resolve": "^2.2.1"
+    "@agoric/ertp": "workspace:*",
+    "@agoric/internal": "workspace:*",
+    "@agoric/notifier": "workspace:*",
+    "@agoric/smart-wallet": "workspace:*",
+    "@agoric/vat-data": "workspace:*",
+    "@agoric/vats": "workspace:*",
+    "@agoric/zoe": "workspace:*",
+    "@endo/bundle-source": "^4.0.0",
+    "@endo/captp": "^4.4.5",
+    "@endo/eventual-send": "^1.3.1",
+    "@endo/far": "^1.1.11",
+    "@endo/init": "^1.1.9",
+    "@endo/marshal": "^1.6.4",
+    "@endo/patterns": "^1.5.0",
+    "@endo/promise-kit": "^1.1.10",
+    "@endo/stream": "^1.2.10",
+    "import-meta-resolve": "^4.1.0"
   },
   "devDependencies": {
-    "@endo/errors": "^1.2.8",
-    "@agoric/deploy-script-support": "^0.10.3",
-    "@agoric/governance": "^0.10.3",
-    "@agoric/inter-protocol": "^0.16.1",
-    "@agoric/orchestration": "^0.1.0",
-    "@agoric/store": "^0.9.2",
-    "@agoric/swing-store": "^0.9.1",
-    "@agoric/swingset-liveslots": "^0.10.2",
-    "@agoric/time": "^0.3.2",
+    "@agoric/deploy-script-support": "workspace:*",
+    "@agoric/governance": "workspace:*",
+    "@agoric/inter-protocol": "workspace:*",
+    "@agoric/orchestration": "workspace:*",
+    "@agoric/store": "workspace:*",
+    "@agoric/swing-store": "workspace:*",
+    "@agoric/swingset-liveslots": "workspace:*",
+    "@agoric/time": "workspace:*",
+    "@endo/errors": "^1.2.10",
     "ava": "^5.3.0",
-    "c8": "^10.1.2"
+    "c8": "^10.1.3"
   },
   "files": [
     "CHANGELOG.md",
@@ -68,7 +67,7 @@
     "access": "public"
   },
   "engines": {
-    "node": "^18.12 || ^20.9"
+    "node": "^20.9 || ^22.11"
   },
   "ava": {
     "files": [
@@ -81,6 +80,6 @@
     "workerThreads": false
   },
   "typeCoverage": {
-    "atLeast": 90.93
+    "atLeast": 90.62
   }
 }

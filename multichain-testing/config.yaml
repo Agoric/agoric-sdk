@@ -1,5 +1,5 @@
 name: agoric-multichain-testing
-version: 0.2.20
+version: v1.7
 
 chains:
   - id: agoriclocal
@@ -21,24 +21,37 @@ chains:
       updateConfig:
         file: scripts/update-config.sh
     faucet:
-      enabled: false
+      enabled: true
+      type: starship
     ports:
       rest: 1317
       rpc: 26657
       exposer: 38087
       grpc: 9090
+      faucet: 8082
     resources:
       cpu: 1
       memory: 4Gi
   - id: osmosislocal
     name: osmosis
+    image: ghcr.io/cosmology-tech/starship/osmosis:v28.0.0
     numValidators: 1
     genesis:
       app_state:
+        feemarket:
+          params:
+            min_base_gas_price: '0.000000000000000000'
+            enabled: true
+            fee_denom: 'uosmo'
+        globalfee:
+          params:
+            minimum_gas_prices:
+              - denom: 'uosmo'
+                amount: '0'
         staking:
           params:
             unbonding_time: '2m'
-        interchain_accounts:
+        interchainaccounts:
           host_genesis_state:
             params:
               host_enabled: true
@@ -61,15 +74,26 @@ chains:
     resources:
       cpu: 1
       memory: 1Gi
-  - id: gaialocal
+  - id: cosmoshublocal
     name: cosmoshub
+    image: ghcr.io/hyperweb-io/starship/gaia:v21.0.1
     numValidators: 1
     genesis:
       app_state:
+        feemarket:
+          params:
+            min_base_gas_price: '0.000000000000000000'
+            enabled: true
+            fee_denom: 'uatom'
+        globalfee:
+          params:
+            minimum_gas_prices:
+              - denom: 'uatom'
+                amount: '0'
         staking:
           params:
             unbonding_time: '2m'
-        interchain_accounts:
+        interchainaccounts:
           host_genesis_state:
             params:
               host_enabled: true
@@ -87,24 +111,27 @@ chains:
       memory: 1Gi
 
 relayers:
-  - name: osmosis-gaia
+  - name: osmosis-cosmoshub
     type: hermes
+    # image: ghcr.io/cosmology-tech/starship/hermes:1.10.5
     replicas: 1
     chains:
       - osmosislocal
-      - gaialocal
+      - cosmoshublocal
   - name: agoric-osmosis
     type: hermes
+    # image: ghcr.io/cosmology-tech/starship/hermes:1.10.5
     replicas: 1
     chains:
       - agoriclocal
       - osmosislocal
-  - name: agoric-gaia
+  - name: agoric-cosmoshub
     type: hermes
+    # image: ghcr.io/cosmology-tech/starship/hermes:1.10.5
     replicas: 1
     chains:
       - agoriclocal
-      - gaialocal
+      - cosmoshublocal
 
 explorer:
   enabled: false

@@ -2,12 +2,13 @@
   "agoricProposal": {
     "type": "/agoric.swingset.CoreEvalProposal",
     "sdk-generate": [
-      "testing/start-valueVow.js start-valueVow",
-      "testing/recorded-retired-instances.js recorded-instances-submission",
-      "vats/test-localchain.js localchaintest-submission",
-      "testing/restart-valueVow.js restart-valueVow",
-      "testing/upgrade-vaultFactory.js upgrade-vaultFactory",
-      "vats/upgrade-provisionPool.js upgrade-provisionPool"
+      "testing/start-valueVow.js test/start-valueVow",
+      "testing/recorded-retired-instances.js test/recorded-instances-submission",
+      "vats/test-localchain.js test/localchaintest-submission",
+      "testing/restart-valueVow.js test/restart-valueVow",
+      "testing/upgrade-vaultFactory.js test/upgrade-vaultFactory",
+      "vats/upgrade-provisionPool.js test/upgrade-provisionPool",
+      "orchestration/init-stakeBld.js"
     ]
   },
   "type": "module",
@@ -18,17 +19,18 @@
     "@agoric/inter-protocol": "dev",
     "@agoric/internal": "dev",
     "@agoric/store": "dev",
-    "@agoric/synthetic-chain": "^0.4.3",
+    "@agoric/synthetic-chain": "patch:@agoric/synthetic-chain@npm%3A0.5.6#~/.yarn/patches/@agoric-synthetic-chain-npm-0.5.6-c322148be2.patch",
     "@agoric/zoe": "dev",
-    "@endo/errors": "^1.2.7",
-    "@endo/far": "^1.1.8",
-    "@endo/init": "^1.1.6",
-    "@endo/marshal": "^1.6.1",
+    "@cosmjs/stargate": "^0.33.0",
+    "@cosmjs/tendermint-rpc": "^0.33.0",
+    "@endo/errors": "^1.2.10",
+    "@endo/far": "^1.1.11",
+    "@endo/init": "^1.1.9",
+    "@endo/marshal": "^1.6.4",
     "agoric": "dev",
     "ava": "^6.1.2",
     "execa": "9.1.0"
   },
-  "$comment": "UNTIL https://github.com/Agoric/agoric-sdk/issues/10259",
   "resolutions": {
     "$commentXsnap": "UNTIL https://github.com/Agoric/agoric-sdk/issues/10259",
     "@agoric/xsnap": "beta",
@@ -76,7 +78,9 @@
     "@agoric/wallet-backend": "portal:../../agoric-sdk/packages/wallet/api",
     "@agoric/xsnap-lockdown": "portal:../../agoric-sdk/packages/xsnap-lockdown",
     "@agoric/zoe": "portal:../../agoric-sdk/packages/zoe",
-    "@agoric/zone": "portal:../../agoric-sdk/packages/zone"
+    "@agoric/zone": "portal:../../agoric-sdk/packages/zone",
+    "axios@npm:^1.6.0": "patch:axios@npm%3A1.7.7#~/.yarn/patches/axios-npm-1.7.7-cfbedc233d.patch",
+    "protobufjs@npm:^6.8.8": "patch:protobufjs@npm%3A6.11.4#~/.yarn/patches/protobufjs-npm-6.11.4-af11968b80.patch"
   },
   "ava": {
     "require": [
@@ -86,13 +90,14 @@
     "serial": true,
     "timeout": "2m",
     "files": [
+      "test/**/*.test.*",
       "!submission"
     ]
   },
   "scripts": {
-    "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops"
+    "agops": "yarn --cwd /usr/src/agoric-sdk/ agops"
   },
-  "packageManager": "yarn@4.5.3",
+  "packageManager": "yarn@4.9.1",
   "devDependencies": {
     "eslint": "^8.57.0",
     "npm-run-all": "^4.1.5",

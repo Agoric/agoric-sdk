@@ -21,16 +21,26 @@ export const SPAN_EXPORT_DELAY_MS = 1_000;
 export const makeOtelTracingProvider = opts => {
   const { env = process.env, console = globalThis.console } = opts || {};
 
+  // https://opentelemetry.io/docs/concepts/signals/
+  // https://opentelemetry.io/docs/specs/otel/protocol/exporter/#endpoint-urls-for-otlphttp
+  // https://github.com/open-telemetry/opentelemetry-js/blob/experimental/v0.57.1/experimental/packages/exporter-trace-otlp-http/README.md#configuration-options-as-environment-variables
   const { OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_TRACES_ENDPOINT } =
     env;
   if (!OTEL_EXPORTER_OTLP_ENDPOINT && !OTEL_EXPORTER_OTLP_TRACES_ENDPOINT) {
+    console.debug(
+      'Not enabling OTLP Traces Exporter; enable with OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=<target URL> or OTEL_EXPORTER_OTLP_ENDPOINT=<target URL prefix>',
+    );
     return undefined;
   }
 
   const resource = new Resource(getResourceAttributes(opts));
 
   const exporter = new OTLPTraceExporter();
-  console.info('Enabling OTLP Traces Exporter to', exporter.getDefaultUrl({}));
+  console.info(
+    'Enabling OTLP Traces Exporter to',
+    OTEL_EXPORTER_OTLP_TRACES_ENDPOINT ||
+      `${OTEL_EXPORTER_OTLP_ENDPOINT}/v1/traces`,
+  );
 
   const provider = new BasicTracerProvider({ resource });
   provider.addSpanProcessor(

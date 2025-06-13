@@ -1,4 +1,4 @@
-import { assert, X } from '@endo/errors';
+import { assert, X, Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { keyEQ } from '@agoric/store';
@@ -26,7 +26,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
       const { value: invitationValue } =
         await E(invitationIssuer).getAmountOf(invitation);
       installation === installations.secondPriceAuction ||
-        assert.fail(X`wrong installation`);
+        Fail`wrong installation`;
       assert(
         keyEQ(
           harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),

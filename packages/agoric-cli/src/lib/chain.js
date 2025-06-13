@@ -5,6 +5,7 @@ import { execFileSync as execFileSyncAmbient } from 'child_process';
 
 /**
  * @import {MinimalNetworkConfig} from '@agoric/client-utils';
+ * @import {ParamsSDKType} from '@agoric/cosmic-proto/agoric/swingset/swingset.js';
  */
 
 const agdBinary = 'agd';
@@ -132,6 +133,7 @@ harden(execSwingsetTransaction);
 /**
  *
  * @param {MinimalNetworkConfig} net
+ * @returns {ParamsSDKType}
  */
 // TODO fetch by HTTP instead of shelling out https://github.com/Agoric/agoric-sdk/issues/9200
 export const fetchSwingsetParams = net => {
@@ -214,7 +216,7 @@ export const pollTx = async (txhash, opts) => {
         ...nodeArgs,
         ...outJson,
       ],
-      { stdio: ['ignore', 'pipe', 'ignore'] },
+      { stdio: ['ignore', 'pipe', 'pipe'] },
     );
     // XXX this type is defined in a .proto file somewhere
     /** @type {{ height: string, txhash: string, code: number, timestamp: string }} */

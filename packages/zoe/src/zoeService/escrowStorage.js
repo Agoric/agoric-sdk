@@ -5,9 +5,12 @@ import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
 import { provideDurableWeakMapStore } from '@agoric/vat-data';
 
 /// <reference path="./types.js" />
-import './internal-types.js';
 
 import { cleanKeywords } from '../cleanProposal.js';
+
+/**
+ * @import {WeakMapStore} from '@agoric/store';
+ */
 
 /**
  * Store the pool purses whose purpose is to escrow assets, with one

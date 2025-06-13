@@ -14,12 +14,12 @@
 /// <reference types="@agoric/notifier/exported.js" />
 /// <reference path="../internal-types.js" />
 
+import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { M } from '@endo/patterns';
 import { makeScalarBigMapStore, prepareExo } from '@agoric/vat-data';
-import { M } from '@agoric/store';
 
-import { Fail } from '@endo/errors';
 import { makeZoeStorageManager } from './zoeStorageManager.js';
 import { makeStartInstance } from './startInstance.js';
 import { makeOfferMethod } from './offer/offer.js';
@@ -28,7 +28,11 @@ import { getZcfBundleCap } from './createZCFVat.js';
 import { defaultFeeIssuerConfig, prepareFeeMint } from './feeMint.js';
 import { ZoeServiceI } from '../typeGuards.js';
 
-/** @import {Baggage} from '@agoric/vat-data' */
+/**
+ * @import {VatAdminSvc, ShutdownWithFailure} from '@agoric/swingset-vat';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {FeeIssuerConfig, FeeMintAccess, ZCFSpec, ZoeService} from './types.js';
+ */
 
 /**
  * Create a durable instance of Zoe.
@@ -38,7 +42,7 @@ import { ZoeServiceI } from '../typeGuards.js';
  * @param {Promise<VatAdminSvc> | VatAdminSvc} [options.vatAdminSvc] - The vatAdmin Service, which carries the
  * power to create a new vat. If it's not available when makeZoe() is called, it
  * must be provided later using setVatAdminService().
- * @param {import('@agoric/swingset-vat').ShutdownWithFailure} [options.shutdownZoeVat] - a function to
+ * @param {ShutdownWithFailure} [options.shutdownZoeVat] - a function to
  * shutdown the Zoe Vat. This function needs to use the vatPowers
  * available to a vat.
  * @param {FeeIssuerConfig} [options.feeIssuerConfig]
@@ -268,7 +272,7 @@ const makeDurableZoeKit = ({
  * @param {Promise<VatAdminSvc> | VatAdminSvc} [vatAdminSvc] - The vatAdmin Service, which carries the
  * power to create a new vat. If it's not available when makeZoe() is called, it
  * must be provided later using setVatAdminService().
- * @param {import('@agoric/swingset-vat').ShutdownWithFailure} [shutdownZoeVat] - a function to
+ * @param {ShutdownWithFailure} [shutdownZoeVat] - a function to
  * shutdown the Zoe Vat. This function needs to use the vatPowers
  * available to a vat.
  * @param {FeeIssuerConfig} [feeIssuerConfig]
@@ -289,3 +293,6 @@ export { makeDurableZoeKit, makeZoeKit };
 /**
  * @typedef {ReturnType<typeof makeDurableZoeKit>} ZoeKit
  */
+
+// eslint-disable-next-line import/export -- no named value exports; only types
+export * from '../types-index.js';

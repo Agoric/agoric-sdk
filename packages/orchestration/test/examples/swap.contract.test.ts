@@ -3,14 +3,10 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { LOCALCHAIN_DEFAULT_ADDRESS } from '@agoric/vats/tools/fake-bridge.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
-import path from 'path';
+import * as contractExports from '../../src/examples/swap.contract.js';
 import { commonSetup } from '../supports.js';
 
-const dirname = path.dirname(new URL(import.meta.url).pathname);
-
-const contractFile = `${dirname}/../../src/examples/swap.contract.js`;
-type StartFn =
-  typeof import('@agoric/orchestration/src/examples/swap.contract.js').start;
+type StartFn = typeof contractExports.start;
 
 test('start', async t => {
   const {
@@ -22,7 +18,7 @@ test('start', async t => {
 
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
   const installation: Installation<StartFn> =
-    await bundleAndInstall(contractFile);
+    await bundleAndInstall(contractExports);
 
   const { publicFacet } = await E(zoe).startInstance(
     installation,

@@ -11,9 +11,11 @@ import (
 	"strings"
 
 	sdkmath "cosmossdk.io/math"
+	metrics "github.com/armon/go-metrics"
+	db "github.com/cometbft/cometbft-db"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	db "github.com/tendermint/tm-db"
 
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
@@ -117,6 +119,28 @@ func NewKeeper(storeKey storetypes.StoreKey) Keeper {
 	}
 }
 
+// size_increase and size_decrease metrics represent total writes and deletes *issued*
+// respectively, which may differ from the total number of bytes committed/freed
+// to/from the store due to the store's internal implementation.
+var MetricKeyStoreSizeIncrease = []string{"store", "size_increase"}
+var MetricKeyStoreSizeDecrease = []string{"store", "size_decrease"}
+
+const MetricLabelStoreKey = "storeKey"
+
+// reportStoreSizeMetrics exports store size increase/decrease metrics
+// when Cosmos telemetry is enabled.
+func (k Keeper) reportStoreSizeMetrics(increase int, decrease int) {
+	metricsLabel := []metrics.Label{
+		telemetry.NewLabel(MetricLabelStoreKey, k.storeKey.Name()),
+	}
+	if increase > 0 {
+		telemetry.IncrCounterWithLabels(MetricKeyStoreSizeIncrease, float32(increase), metricsLabel)
+	}
+	if decrease > 0 {
+		telemetry.IncrCounterWithLabels(MetricKeyStoreSizeDecrease, float32(decrease), metricsLabel)
+	}
+}
+
 // ExportStorage fetches all storage
 func (k Keeper) ExportStorage(ctx sdk.Context) []*types.DataEntry {
 	return k.ExportStorageFromPrefix(ctx, "")
@@ -215,6 +239,8 @@ func (k Keeper) RemoveEntriesWithPrefix(ctx sdk.Context, pathPrefix string) {
 	keys := getEncodedKeysWithPrefixFromIterator(iterator, descendantPrefix)
 
 	for _, key := range keys {
+		rawValue := store.Get(key)
+		k.reportStoreSizeMetrics(0, len(key)+len(rawValue))
 		store.Delete(key)
 	}
 
@@ -366,18 +392,23 @@ func (k Keeper) SetStorage(ctx sdk.Context, entry agoric.KVEntry) {
 	store := ctx.KVStore(k.storeKey)
 	path := entry.Key()
 	encodedKey := types.PathToEncodedKey(path)
+	oldRawValue := store.Get(encodedKey)
 
 	if !entry.HasValue() {
 		if !k.HasChildren(ctx, path) {
 			// We have no children, can delete.
+			k.reportStoreSizeMetrics(0, len(encodedKey)+len(oldRawValue))
 			store.Delete(encodedKey)
 		} else {
+			// We have children, mark as an empty placeholder without deleting.
+			k.reportStoreSizeMetrics(len(types.EncodedNoDataValue), len(oldRawValue))
 			store.Set(encodedKey, types.EncodedNoDataValue)
 		}
 	} else {
 		// Update the value.
-		bz := bytes.Join([][]byte{types.EncodedDataPrefix, []byte(entry.StringValue())}, []byte{})
-		store.Set(encodedKey, bz)
+		newRawValue := bytes.Join([][]byte{types.EncodedDataPrefix, []byte(entry.StringValue())}, []byte{})
+		k.reportStoreSizeMetrics(len(newRawValue), len(oldRawValue))
+		store.Set(encodedKey, newRawValue)
 	}
 
 	// Update our other parent children.
@@ -390,7 +421,9 @@ func (k Keeper) SetStorage(ctx sdk.Context, entry agoric.KVEntry) {
 				// this and further ancestors are needed, skip out
 				break
 			}
-			store.Delete(types.PathToEncodedKey(ancestor))
+			encodedAncestor := types.PathToEncodedKey(ancestor)
+			k.reportStoreSizeMetrics(0, len(encodedAncestor)+len(types.EncodedNoDataValue))
+			store.Delete(encodedAncestor)
 		}
 	} else {
 		// add placeholders as needed
@@ -400,7 +433,9 @@ func (k Keeper) SetStorage(ctx sdk.Context, entry agoric.KVEntry) {
 				// The ancestor exists, implying all further ancestors exist, so we can break.
 				break
 			}
-			store.Set(types.PathToEncodedKey(ancestor), types.EncodedNoDataValue)
+			encodedAncestor := types.PathToEncodedKey(ancestor)
+			k.reportStoreSizeMetrics(len(encodedAncestor)+len(types.EncodedNoDataValue), 0)
+			store.Set(encodedAncestor, types.EncodedNoDataValue)
 		}
 	}
 }

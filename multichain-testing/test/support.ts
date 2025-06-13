@@ -3,7 +3,10 @@ import { dirname, join } from 'path';
 import { execa } from 'execa';
 import fse from 'fs-extra';
 import childProcess from 'node:child_process';
-import { withChainCapabilities } from '@agoric/orchestration';
+import {
+  withChainCapabilities,
+  type CosmosChainInfo,
+} from '@agoric/orchestration';
 import { makeAgdTools } from '../tools/agd-tools.js';
 import { type E2ETools } from '../tools/e2e-tools.js';
 import {
@@ -14,11 +17,13 @@ import {
 import { generateMnemonic } from '../tools/wallet.js';
 import { makeRetryUntilCondition } from '../tools/sleep.js';
 import { makeDeployBuilder } from '../tools/deploy.js';
-import { makeHermes } from '../tools/hermes-tools.js';
+import { makeRelayer } from '../tools/relayer-tools.js';
 import { makeNobleTools } from '../tools/noble-tools.js';
 import { makeAssetInfo } from '../tools/asset-info.js';
 import starshipChainInfo from '../starship-chain-info.js';
+import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
 import { makeFaucetTools } from '../tools/faucet-tools.js';
+import { withCosmosChainId } from '@aglocal/fast-usdc-deploy/src/utils/deploy-config.js';
 
 export const FAUCET_POUR = 10_000n * 1_000_000n;
 
@@ -68,11 +73,17 @@ const makeKeyring = async (
   return { setupTestKeys, deleteTestKeys };
 };
 
-export const commonSetup = async (t: ExecutionContext) => {
+export const commonSetup = async (
+  t: ExecutionContext,
+  {
+    relayerType = process.env.RELAYER_TYPE,
+    config = `../config${relayerType ? '.' + relayerType : ''}.yaml`,
+  } = {},
+) => {
   let useChain: MultichainRegistry['useChain'];
   try {
     const registry = await setupRegistry({
-      config: `../${process.env.FILE || 'config.yaml'}`,
+      config,
     });
     useChain = registry.useChain;
   } catch (e) {
@@ -86,10 +97,43 @@ export const commonSetup = async (t: ExecutionContext) => {
     log: t.log,
     setTimeout: globalThis.setTimeout,
   });
-  const hermes = makeHermes(childProcess);
+  const relayer = makeRelayer(childProcess);
   const nobleTools = makeNobleTools(childProcess);
   const assetInfo = makeAssetInfo(starshipChainInfo);
-  const chainInfo = withChainCapabilities(starshipChainInfo);
+
+  const unreachableChain: CosmosChainInfo = {
+    chainId: 'unreachable-chain',
+    bech32Prefix: 'unreachable',
+    connections: {
+      noblelocal: {
+        client_id: '07-tendermint-898989',
+        counterparty: {
+          client_id: '07-tendermint-989898',
+          connection_id: 'connection-767676',
+        },
+        id: 'connection-424242',
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-242424',
+          counterPartyChannelId: 'channel-656565',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          portId: 'transfer',
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+    },
+    namespace: 'cosmos',
+    reference: 'unreachable-chain',
+  };
+
+  const chainInfo = {
+    ...withChainCapabilities(starshipChainInfo),
+    ...withChainCapabilities({ unreachableChain }),
+    ...withCosmosChainId({ ethereum: cctpChainInfo.ethereum }),
+  };
+
   const faucetTools = makeFaucetTools(
     t,
     tools.agd,
@@ -112,13 +156,17 @@ export const commonSetup = async (t: ExecutionContext) => {
     contractName: string,
     contractBuilder: string,
     builderOpts?: Record<string, string | string[]>,
+    { skipInstanceCheck = false } = {},
   ) => {
+    await null;
     const { vstorageClient } = tools;
-    const instances = Object.fromEntries(
-      await vstorageClient.queryData(`published.agoricNames.instance`),
-    );
-    if (contractName in instances) {
-      return t.log('Contract found. Skipping installation...');
+    if (!skipInstanceCheck) {
+      const instances = Object.fromEntries(
+        await vstorageClient.queryData(`published.agoricNames.instance`),
+      );
+      if (contractName in instances) {
+        return t.log('Contract found. Skipping installation...');
+      }
     }
     t.log('bundle and install contract', contractName);
     await deployBuilder(contractBuilder, builderOpts);
@@ -135,7 +183,7 @@ export const commonSetup = async (t: ExecutionContext) => {
     ...keyring,
     retryUntilCondition,
     deployBuilder,
-    hermes,
+    relayer,
     nobleTools,
     startContract,
     assetInfo,

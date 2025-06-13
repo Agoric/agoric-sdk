@@ -7,7 +7,7 @@
  * Also, update golden master test/xs-perf.test.js to reflect new meter
  * version.
  */
-export const METER_TYPE = 'xs-meter-33';
+export const METER_TYPE = 'xs-meter-35';
 
 export const ExitCode = {
   E_UNKNOWN_ERROR: -1,

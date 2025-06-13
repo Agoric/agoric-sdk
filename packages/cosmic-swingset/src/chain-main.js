@@ -22,7 +22,11 @@ import {
   exportMailbox,
 } from '@agoric/swingset-vat/src/devices/mailbox/mailbox.js';
 
-import { makeSlogSender, tryFlushSlogSender } from '@agoric/telemetry';
+import {
+  getTelemetryProviders,
+  makeSlogSender,
+  tryFlushSlogSender,
+} from '@agoric/telemetry';
 
 import {
   makeChainStorageRoot,
@@ -33,6 +37,7 @@ import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 import { makeInitMsg } from '@agoric/internal/src/chain-utils.js';
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import * as ActionType from '@agoric/internal/src/action-types.js';
+import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 import { BridgeId, CosmosInitKeyToBridgeId } from '@agoric/internal';
 import {
   makeArchiveSnapshot,
@@ -44,8 +49,7 @@ import {
   makeReadCachingStorage,
 } from './helpers/bufferedStorage.js';
 import stringify from './helpers/json-stable-stringify.js';
-import { launch } from './launch-chain.js';
-import { getTelemetryProviders } from './kernel-stats.js';
+import { launch, launchAndShareInternals } from './launch-chain.js';
 import { makeProcessValue } from './helpers/process-value.js';
 import {
   spawnSwingStoreExport,
@@ -58,9 +62,15 @@ import {
 
 import { setLogFormat } from './anylogger-agd.js';
 
+/**
+ * @import {EReturn} from '@endo/far';
+ */
+
 const console = anylogger('chain-main');
 
 const ignore = () => {};
+
+const tmpDir = makeTempDirFactory(tmp);
 
 // eslint-disable-next-line no-unused-vars
 let whenHellFreezesOver = null;
@@ -108,6 +118,28 @@ const validateSwingsetConfig = swingsetConfig => {
   maxVatsOnline === undefined ||
     (isNat(maxVatsOnline) && maxVatsOnline > 0) ||
     Fail`maxVatsOnline must be a positive integer`;
+};
+
+/**
+ * Capture "port numbers" for communicating with cosmos modules.
+ *
+ * @param {object} action
+ */
+export const extractPortNums = action => {
+  const portNums = {};
+  for (const [key, value] of Object.entries(action)) {
+    const portAlias = CosmosInitKeyToBridgeId[key];
+    if (portAlias) {
+      // Use the alias if it exists.
+      portNums[portAlias] = value;
+    } else if (key.endsWith(PORT_SUFFIX)) {
+      // Anything else that ends in the suffix is assumed to be a port
+      // number, as described in app.go/cosmosInitAction.
+      const portName = key.slice(0, key.length - PORT_SUFFIX.length);
+      portNums[portName] = value;
+    }
+  }
+  return harden(portNums);
 };
 
 /**
@@ -172,90 +204,61 @@ const makePrefixedBridgeStorage = (
   });
 };
 
-export default async function main(
-  progname,
-  args,
-  { env, homedir, path = nativePath, agcc },
-) {
-  const portNums = {};
-
-  // TODO: use the 'basedir' pattern
-
-  const processValue = makeProcessValue({ env, args });
-
-  // We try to find the actual cosmos state directory (default=~/.ag-chain-cosmos), which
-  // is better than scribbling into the current directory.
-  const cosmosHome = processValue.getFlag(
-    'home',
-    `${homedir}/.ag-chain-cosmos`,
+/**
+ * @param {(req: string) => string} call
+ * @param {string} queuePath
+ */
+export const makeQueueStorage = (call, queuePath) => {
+  const { kvStore, commit, abort } = makeBufferedStorage(
+    makePrefixedBridgeStorage(
+      call,
+      `${queuePath}.`,
+      'setWithoutNotify',
+      x => x,
+      x => x,
+    ),
   );
-  const logFormat = processValue.getFlag('log_format', 'plain');
-  setLogFormat(logFormat);
-  const stateDBDir = `${cosmosHome}/data/agoric`;
-  fs.mkdirSync(stateDBDir, { recursive: true });
+  return harden({ ...kvStore, commit, abort });
+};
 
-  // console.log('Have AG_COSMOS', agcc);
-
-  const portHandlers = {};
-  let lastPort = 0;
-  function registerPortHandler(portHandler) {
-    lastPort += 1;
-    const port = lastPort;
-    portHandlers[port] = async (...phArgs) =>
-      E.resolve(portHandler(...phArgs)).catch(e => {
-        console.error('portHandler threw', e);
-        throw e;
-      });
-    return port;
-  }
-
-  function fromGo(port, str, replier) {
-    // console.error(`inbound ${port} ${str}`);
-    const handler = portHandlers[port];
-    if (!handler) {
-      replier.reject(`invalid requested port ${port}`);
-      return;
-    }
-    const action = JSON.parse(str);
-    const p = Promise.resolve(handler(action));
-    void E.when(
-      p,
-      res => {
-        // console.error(`Replying in Node to ${str} with`, res);
-        replier.resolve(stringify(res !== undefined ? res : null));
-      },
-      rej => {
-        // console.error(`Rejecting in Node to ${str} with`, rej);
-        replier.reject(`${(rej && rej.stack) || rej}`);
-      },
-    );
-  }
-
-  // Actually run the main ag-chain-cosmos program.  Before we start the daemon,
-  // there will be a call to nodePort/AG_COSMOS_INIT, otherwise exit.
-  const nodePort = registerPortHandler(toSwingSet);
-
-  // Need to keep the process alive until Go exits.
-  whenHellFreezesOver = new Promise(() => {});
-  agcc.runAgCosmosDaemon(nodePort, fromGo, [progname, ...args]);
-
-  /**
-   * @type {undefined | {
-   *   blockHeight: number,
-   *   exporter?: import('./export-kernel-db.js').StateSyncExporter,
-   *   exportDir?: string,
-   *   cleanup?: () => Promise<void>,
-   * }}
-   */
-  let stateSyncExport;
-
-  async function discardStateSyncExport() {
-    const exportData = stateSyncExport;
-    stateSyncExport = undefined;
-    await exportData?.exporter?.stop();
-    await exportData?.cleanup?.();
-  }
-
+/**
+ * @param {any} agcc
+ * @param {string} stateDBDir
+ * @param {object} options
+ * @param {typeof process.env} [options.env]
+ * @param {Pick<import('fs'), 'createWriteStream' | 'mkdirSync' | 'renameSync'>} options.fs
+ * @param {Pick<import('path'), 'join' | 'resolve'>} options.path
+ * @param {import('tmp')} [options.tmp] required to support vatSnapshotArchiveDir/vatTranscriptArchiveDir
+ * @param {ReturnType<typeof makeProcessValue>} [options.processValue]
+ * @param {() => Promise<void>} [options.readyForCommit]
+ * @param {{
+ *   debugName?: string,
+ *   slogSender?: ERef<EReturn<typeof makeSlogSender>>,
+ *   swingStore?: import('@agoric/swing-store').SwingStore,
+ *   vatconfig?: Parameters<typeof launch>[0]['vatconfig'],
+ *   withInternals?: boolean,
+ * }} [options.testingOverrides] Exposed only for testing purposes.
+ *   `debugName`/`slogSender`/`swingStore`/`vatConfig` are pure overrides, while
+ *   `withInternals` expands the return value to expose internal objects
+ *   `controller`/`bridgeInbound`/`timer`.
+ */
+export const makeLaunchChain = (
+  agcc,
+  stateDBDir,
+  {
+    env = {},
+    // eslint-disable-next-line no-shadow
+    fs,
+    path,
+    // eslint-disable-next-line no-shadow
+    tmp,
+    processValue = makeProcessValue({ env, args: [] }),
+    readyForCommit,
+    testingOverrides = {},
+  },
+) => {
+  /** @typedef {[args: Parameters<typeof agcc.send>, ret: ReturnType<typeof agcc.send>]} SavedChainSend */
+  /** @type {SavedChainSend[]} */
   let savedChainSends = [];
 
   // Send a chain downcall, recording what we sent and received.
@@ -266,8 +269,10 @@ export default async function main(
   }
 
   const clearChainSends = async () => {
-    // Cosmos should have blocked before calling commit, but wait just in case
-    await stateSyncExport?.exporter?.onStarted().catch(ignore);
+    // TODO: Make `readyForCommit` an explicit `launch` input rather than
+    // having an overloaded async `clearChainSends` with the expectation that
+    // it is called right before `commit()`.
+    await readyForCommit?.();
 
     const chainSends = savedChainSends;
     savedChainSends = [];
@@ -282,7 +287,9 @@ export default async function main(
 
     // Just send all the things we saved.
     while (chainSends.length > 0) {
-      const [sendArgs, expectedRet] = chainSends.shift();
+      const [sendArgs, expectedRet] = /** @type {SavedChainSend} */ (
+        chainSends.shift()
+      );
       const actualRet = agcc.send(...sendArgs);
 
       // Enforce that we got back what we expected.
@@ -296,14 +303,9 @@ export default async function main(
     }
   }
 
-  /** @type {((obj: object) => void) | undefined} */
-  let writeSlogObject;
-
-  // In the past, storagePort could change with every message. It's defined out
-  // here so 'sendToChainStorage' can close over the single mutable instance,
-  // when we updated the 'portNums.storage' value each time toSwingSet was called.
-  async function launchAndInitializeSwingSet(initAction) {
-    const { XSNAP_KEEP_SNAPSHOTS, NODE_HEAP_SNAPSHOTS = -1 } = env;
+  const launchChain = async initAction => {
+    const { XSNAP_KEEP_SNAPSHOTS = '', NODE_HEAP_SNAPSHOTS = '-1' } = env;
+    const portNums = extractPortNums(initAction);
 
     /** @type {CosmosSwingsetConfig} */
     const swingsetConfig = harden(initAction.resolvedConfig || {});
@@ -342,20 +344,12 @@ export default async function main(
         val => stringify(exportMailbox(val)),
       ),
     );
-    const makeQueueStorage = queuePath => {
-      const { kvStore, commit, abort } = makeBufferedStorage(
-        makePrefixedBridgeStorage(
-          sendToChainStorage,
-          `${queuePath}.`,
-          'setWithoutNotify',
-          x => x,
-          x => x,
-        ),
-      );
-      return harden({ ...kvStore, commit, abort });
-    };
-    const actionQueueStorage = makeQueueStorage(STORAGE_PATH.ACTION_QUEUE);
+    const actionQueueStorage = makeQueueStorage(
+      sendToChainStorage,
+      STORAGE_PATH.ACTION_QUEUE,
+    );
     const highPriorityQueueStorage = makeQueueStorage(
+      sendToChainStorage,
       STORAGE_PATH.HIGH_PRIORITY_QUEUE,
     );
     /**
@@ -442,7 +436,7 @@ export default async function main(
       bootMsg: makeInitMsg(initAction),
     };
     const getVatConfig = async () => {
-      const href = await importMetaResolve(
+      const href = importMetaResolve(
         env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
           argv.bootMsg.params.bootstrap_vat_config,
         import.meta.url,
@@ -451,21 +445,21 @@ export default async function main(
       return pathname;
     };
 
-    // Delay makeShutdown to override the golang interrupts
-    const { registerShutdown } = makeShutdown();
-
     const { metricsProvider } = getTelemetryProviders({
       console,
       env,
       serviceName: TELEMETRY_SERVICE_NAME,
     });
 
-    const slogSender = await makeSlogSender({
-      stateDir: stateDBDir,
-      console: anylogger('slog-sender'),
-      env,
-      serviceName: TELEMETRY_SERVICE_NAME,
-    });
+    const providedSlogSender = await testingOverrides.slogSender;
+    const slogSender = await (providedSlogSender ||
+      makeSlogSender({
+        stateDir: stateDBDir,
+        console: anylogger('slog-sender'),
+        env,
+        serviceName: TELEMETRY_SERVICE_NAME,
+        otelMeterName: 'ag-chain-cosmos',
+      }));
 
     const swingStoreTraceFile = processValue.getPath({
       envName: 'SWING_STORE_TRACE',
@@ -544,22 +538,29 @@ export default async function main(
       ? makeArchiveTranscript(vatTranscriptArchiveDir, fsPowers)
       : undefined;
 
-    const s = await launch({
+    const launcher = testingOverrides.withInternals
+      ? launchAndShareInternals
+      : launch;
+    const s = await launcher({
       actionQueueStorage,
       highPriorityQueueStorage,
-      kernelStateDBDir: stateDBDir,
+      swingStore: testingOverrides.swingStore,
+      kernelStateDBDir: testingOverrides.swingStore ? undefined : stateDBDir,
       makeInstallationPublisher,
       mailboxStorage,
       clearChainSends,
       replayChainSends,
       bridgeOutbound: doOutboundBridge,
-      vatconfig: getVatConfig,
+      vatconfig: testingOverrides.vatconfig || getVatConfig,
       argv,
       env,
       verboseBlocks: true,
       metricsProvider,
+      debugName: testingOverrides.debugName,
       slogSender,
-      swingStoreExportCallback,
+      swingStoreExportCallback: testingOverrides.swingStore
+        ? undefined
+        : swingStoreExportCallback,
       swingStoreTraceFile,
       keepSnapshots,
       keepTranscripts,
@@ -568,29 +569,101 @@ export default async function main(
       afterCommitCallback,
       swingsetConfig,
     });
-
-    const { blockingSend, shutdown } = s;
-    ({ writeSlogObject, savedChainSends } = s);
-
-    let pendingBlockingSend = Promise.resolve();
-
-    registerShutdown(async interrupted => {
-      await Promise.all([
-        interrupted && pendingBlockingSend.then(shutdown),
-        discardStateSyncExport(),
-      ]);
-    });
-
-    const blockingSendSpy = async action => {
-      const result = blockingSend(action);
-      pendingBlockingSend = Promise.resolve(result).then(ignore, ignore);
-      return result;
+    savedChainSends = s.savedChainSends;
+    const shutdown = async () => {
+      await s.shutdown?.();
+      if (providedSlogSender) return;
+      await slogSender?.shutdown?.();
     };
-    return blockingSendSpy;
+    return { ...s, shutdown };
+  };
+
+  return launchChain;
+};
+
+export default async function main(
+  progname,
+  args,
+  { env, homedir, path = nativePath, agcc },
+) {
+  // TODO: use the 'basedir' pattern
+
+  const processValue = makeProcessValue({ env, args });
+
+  const logFormat = processValue.getFlag('log_format') || 'plain';
+  setLogFormat(logFormat);
+
+  // We try to find the actual cosmos state directory (default=~/.ag-chain-cosmos), which
+  // is better than scribbling into the current directory.
+  const cosmosHome = processValue.getFlag(
+    'home',
+    `${homedir}/.ag-chain-cosmos`,
+  );
+  const stateDBDir = `${cosmosHome}/data/agoric`;
+  fs.mkdirSync(stateDBDir, { recursive: true });
+
+  /** @type {EReturn<typeof launch>['blockingSend'] | undefined} */
+  let blockingSend;
+
+  const portHandlers = {};
+  let lastPort = 0;
+  function registerPortHandler(portHandler) {
+    lastPort += 1;
+    const port = lastPort;
+    portHandlers[port] = async (...phArgs) =>
+      E.resolve(portHandler(...phArgs)).catch(e => {
+        console.error('portHandler threw', e);
+        throw e;
+      });
+    return port;
   }
 
-  /** @type {Awaited<ReturnType<typeof launch>>['blockingSend'] | undefined} */
-  let blockingSend;
+  function fromGo(port, str, replier) {
+    // console.error(`inbound ${port} ${str}`);
+    const handler = portHandlers[port];
+    if (!handler) {
+      replier.reject(`invalid requested port ${port}`);
+      return;
+    }
+    const action = JSON.parse(str);
+    const p = Promise.resolve(handler(action));
+    void E.when(
+      p,
+      res => {
+        // console.error(`Replying in Node to ${str} with`, res);
+        replier.resolve(stringify(res !== undefined ? res : null));
+      },
+      rej => {
+        // console.error(`Rejecting in Node to ${str} with`, rej);
+        replier.reject(`${(rej && rej.stack) || rej}`);
+      },
+    );
+  }
+
+  // Actually run the main ag-chain-cosmos program.  Before we start the daemon,
+  // there will be a call to nodePort/AG_COSMOS_INIT, otherwise exit.
+  const nodePort = registerPortHandler(toSwingSet);
+
+  // Need to keep the process alive until Go exits.
+  whenHellFreezesOver = new Promise(() => {});
+  agcc.runAgCosmosDaemon(nodePort, fromGo, [progname, ...args]);
+
+  /**
+   * @type {undefined | {
+   *   blockHeight: number,
+   *   exporter?: import('./export-kernel-db.js').StateSyncExporter,
+   *   exportDir?: string,
+   *   cleanup?: () => Promise<void>,
+   * }}
+   */
+  let stateSyncExport;
+
+  async function discardStateSyncExport() {
+    const exportData = stateSyncExport;
+    stateSyncExport = undefined;
+    await exportData?.exporter?.stop();
+    await exportData?.cleanup?.();
+  }
 
   async function handleSwingStoreExport(blockHeight, request, requestArgs) {
     await null;
@@ -640,38 +713,24 @@ export default async function main(
           });
         stateSyncExport = exportData;
 
-        await new Promise((resolve, reject) => {
-          tmp.dir(
-            {
-              prefix: `agd-state-sync-${blockHeight}-`,
-              unsafeCleanup: true,
-            },
-            (err, exportDir, cleanup) => {
-              if (err) {
-                reject(err);
-                return;
-              }
-              exportData.exportDir = exportDir;
-              /** @type {Promise<void> | undefined} */
-              let cleanupResult;
-              exportData.cleanup = async () => {
-                cleanupResult ||= new Promise(cleanupDone => {
-                  // If the exporter is still the same, then the retriever
-                  // is in charge of cleanups
-                  if (stateSyncExport !== exportData) {
-                    // @ts-expect-error wrong type definitions
-                    cleanup(cleanupDone);
-                  } else {
-                    console.warn('unexpected call of state-sync cleanup');
-                    cleanupDone();
-                  }
-                });
-                await cleanupResult;
-              };
-              resolve(null);
-            },
-          );
-        });
+        const [exportDir, cleanup] = tmpDir(`agd-state-sync-${blockHeight}-`);
+        exportData.exportDir = exportDir;
+        /** @type {Promise<void> | undefined} */
+        let cleanupResult;
+        exportData.cleanup = async () => {
+          cleanupResult ||= new Promise(cleanupDone => {
+            // If the exporter is still the same, then the retriever
+            // is in charge of cleanups
+            if (stateSyncExport !== exportData) {
+              // @ts-expect-error wrong type definitions
+              cleanup(cleanupDone);
+            } else {
+              console.warn('unexpected call of state-sync cleanup');
+              cleanupDone();
+            }
+          });
+          await cleanupResult;
+        };
 
         console.warn(
           'Initiating SwingSet state snapshot at block height',
@@ -730,6 +789,19 @@ export default async function main(
     }
   }
 
+  const launchChain = makeLaunchChain(agcc, stateDBDir, {
+    env,
+    fs,
+    path,
+    tmp,
+    processValue,
+    readyForCommit: async () =>
+      stateSyncExport?.exporter?.onStarted().then(ignore, ignore),
+  });
+
+  /** @type {((obj: object) => void) | undefined} */
+  let writeSlogObject;
+
   async function toSwingSet(action, _replier) {
     // console.log(`toSwingSet`, action);
 
@@ -737,27 +809,27 @@ export default async function main(
 
     switch (action.type) {
       case ActionType.AG_COSMOS_INIT: {
-        // console.error('got AG_COSMOS_INIT', action);
-
         !blockingSend || Fail`Swingset already initialized`;
 
-        // Capture "port numbers" for communicating with cosmos modules.
-        for (const [key, value] of Object.entries(action)) {
-          const portAlias = CosmosInitKeyToBridgeId[key];
-          if (portAlias) {
-            // Use the alias if it exists.
-            portNums[portAlias] = value;
-          } else if (key.endsWith(PORT_SUFFIX)) {
-            // Anything else that ends in the suffix is assumed to be a port
-            // number, as described in app.go/cosmosInitAction.
-            const portName = key.slice(0, key.length - PORT_SUFFIX.length);
-            portNums[portName] = value;
-          }
-        }
-        harden(portNums);
+        const s = await launchChain(action);
+        const { blockingSend: sendToSwingset, shutdown } = s;
+        ({ writeSlogObject } = s);
 
-        // Ensure that initialization has completed.
-        blockingSend = await launchAndInitializeSwingSet(action);
+        // Wrap `blockingSend` with a spy for supporting clean shutdowns.
+        const { registerShutdown } = makeShutdown();
+        let pendingBlockingSend = Promise.resolve();
+        registerShutdown(async interrupted => {
+          await Promise.all([
+            interrupted && pendingBlockingSend.then(shutdown),
+            discardStateSyncExport(),
+          ]);
+        });
+        // eslint-disable-next-line no-shadow
+        blockingSend = async action => {
+          const result = sendToSwingset(action);
+          pendingBlockingSend = Promise.resolve(result).then(ignore, ignore);
+          return result;
+        };
 
         return blockingSend(action);
       }

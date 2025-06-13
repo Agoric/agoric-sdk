@@ -30,7 +30,12 @@ async function main() {
   try {
     const agdTools = await makeAgdTools(console.log, childProcess);
     const deployBuilder = makeDeployBuilder(agdTools, fse.readJSON, execa);
-    await deployBuilder(builder, builderOpts);
+    // XXX this has been flaky so try a second time
+    // see https://github.com/Agoric/agoric-sdk/issues/9934
+    await deployBuilder(builder, builderOpts).catch(err => {
+      console.error('deploy failed, trying again', err);
+      return deployBuilder(builder, builderOpts);
+    });
   } catch (err) {
     console.error(err);
     process.exit(1);

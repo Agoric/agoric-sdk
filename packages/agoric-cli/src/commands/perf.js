@@ -51,6 +51,7 @@ export const makePerfCommand = logger => {
       'address literal or name',
       normalizeAddress,
     )
+    .option('--verbose')
     .action(async function (opts) {
       const sharedOpts = perf.opts();
       logger.warn({ sharedOpts, opts });
@@ -63,15 +64,13 @@ export const makePerfCommand = logger => {
 
       const spec = `:published.wallet.${opts.from}`;
 
-      const leaderOptions = makeLeaderOptions({
-        sleep: SLEEP_SECONDS,
-        jitter: 0,
-        log: () => undefined,
-      });
-
       const leader = makeLeaderFromRpcAddresses(
         networkConfig.rpcAddrs,
-        leaderOptions,
+        makeLeaderOptions({
+          sleep: SLEEP_SECONDS,
+          jitter: 0,
+          log: console.warn,
+        }),
       );
 
       logger.warn('Following', spec);
@@ -86,9 +85,10 @@ export const makePerfCommand = logger => {
             if (status.error) {
               console.error(status.error);
               exit(1);
-            } else if (status.numWantsSatisfied)
+            } else if (status.numWantsSatisfied) {
               process.stdout.write(`satisfied: ${status.numWantsSatisfied}\n`);
-            exit(0);
+              exit(0);
+            }
           }
         }
       };
@@ -102,7 +102,11 @@ export const makePerfCommand = logger => {
       if (sharedOpts.home) {
         cmd.push(`--home=${sharedOpts.home}`);
       }
-      execSwingsetTransaction(cmd, { from: opts.from, ...networkConfig });
+      execSwingsetTransaction(cmd, {
+        from: opts.from,
+        verbose: opts.verbose,
+        ...networkConfig,
+      });
     });
 
   return perf;

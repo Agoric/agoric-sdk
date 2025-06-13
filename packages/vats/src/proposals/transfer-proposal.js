@@ -5,6 +5,10 @@ import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
 import { makeScopedBridge } from '../bridge.js';
 
 /**
+ * @import {EReturn} from '@endo/far';
+ */
+
+/**
  * @param {BootstrapPowers & {
  *   consume: {
  *     bridgeManager: import('../types').BridgeManager;
@@ -66,7 +70,7 @@ export const setupTransferMiddleware = async (
       VTRANSFER_IBC_EVENT,
       interceptorFactory,
     );
-  /** @type {Awaited<ReturnType<typeof provideBridgeTargetKit>>} */
+  /** @type {EReturn<typeof provideBridgeTargetKit>} */
   let bridgeTargetKit;
   try {
     const vtransferBridge = await makeScopedBridge(bridgeManager, vtransferID);

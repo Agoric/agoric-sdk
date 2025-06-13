@@ -4,21 +4,23 @@ import {
   makeRatio,
   makeRatioFromAmounts,
   multiplyBy,
-} from '@agoric/zoe/src/contractSupport/ratio.js';
+} from '@agoric/ertp/src/ratio.js';
 import { Fail, q } from '@endo/errors';
 
-const { getValue, add, isEmpty, isEqual, isGTE, subtract } = AmountMath;
+const { keys } = Object;
+const { add, isEmpty, isEqual, isGTE, make, makeEmpty, subtract } = AmountMath;
 
 /**
- * @import {PoolStats} from './types';
- * @import {RepayAmountKWR} from './exos/liquidity-pool';
+ * @import {Amount, Brand, DepositFacet, NatValue, Payment, Ratio} from '@agoric/ertp';
+ * @import {Allocation} from '@agoric/zoe';
+ * @import {PoolStats} from './types.js';
+ * @import {RepayAmountKWR} from './utils/fees.js';
  */
 
 /**
  * Invariant: shareWorth is the pool balance divided by shares outstanding.
  *
- * Use `makeParity(make(USDC, epsilon), PoolShares)` for an initial
- * value, for some negligible `epsilon` such as 1n.
+ * Use `makeParity(USDC, PoolShares)` for an initial value.
  *
  * @typedef {Ratio} ShareWorth
  */
@@ -26,12 +28,12 @@ const { getValue, add, isEmpty, isEqual, isGTE, subtract } = AmountMath;
 /**
  * Make a 1-to-1 ratio between amounts of 2 brands.
  *
- * @param {Amount<'nat'>} numerator
+ * @param {Brand<'nat'>} numeratorBrand
  * @param {Brand<'nat'>} denominatorBrand
  */
-export const makeParity = (numerator, denominatorBrand) => {
-  const value = getValue(numerator.brand, numerator);
-  return makeRatio(value, numerator.brand, value, denominatorBrand);
+export const makeParity = (numeratorBrand, denominatorBrand) => {
+  const dust = 1n;
+  return makeRatio(dust, numeratorBrand, dust, denominatorBrand);
 };
 
 /**
@@ -43,6 +45,9 @@ export const makeParity = (numerator, denominatorBrand) => {
  *   withdraw: {
  *     give: { PoolShare: Amount<'nat'> }
  *     want: { USDC: Amount<'nat'> },
+ *   },
+ *   withdrawFees: {
+ *     want: { USDC: Amount<'nat'> }
  *   }
  * }} USDCProposalShapes
  */
@@ -92,13 +97,53 @@ export const depositCalc = (shareWorth, { give, want }) => {
 };
 
 /**
+ * Verifies that the total pool balance (unencumbered + encumbered) matches the
+ * shareWorth numerator. The total pool balance consists of:
+ * 1. unencumbered balance - USDC available in the pool for borrowing
+ * 2. encumbered balance - USDC currently lent out
+ *
+ * A negligible `dust` amount is used to initialize shareWorth with a non-zero
+ * denominator. It must remain in the pool at all times.
+ *
+ * @param {Allocation} poolAlloc
+ * @param {ShareWorth} shareWorth
+ * @param {Amount<'nat'>} encumberedBalance
+ */
+export const checkPoolBalance = (poolAlloc, shareWorth, encumberedBalance) => {
+  const { brand: usdcBrand } = encumberedBalance;
+  const unencumberedBalance = poolAlloc.USDC || makeEmpty(usdcBrand);
+  const kwds = keys(poolAlloc);
+  kwds.length === 0 ||
+    (kwds.length === 1 && kwds[0] === 'USDC') ||
+    Fail`unexpected pool allocations: ${poolAlloc}`;
+  const dust = make(usdcBrand, 1n);
+  const grossBalance = add(add(unencumberedBalance, dust), encumberedBalance);
+  isEqual(grossBalance, shareWorth.numerator) ||
+    Fail`🚨 pool balance ${q(unencumberedBalance)} and encumbered balance ${q(encumberedBalance)} inconsistent with shareWorth ${q(shareWorth)}`;
+  return harden({ unencumberedBalance, grossBalance });
+};
+
+/**
  * Compute payout from a withdraw proposal, along with updated shareWorth
  *
  * @param {ShareWorth} shareWorth
  * @param {USDCProposalShapes['withdraw']} proposal
+ * @param {Allocation} poolAlloc
+ * @param {Amount<'nat'>} [encumberedBalance]
  * @returns {{ shareWorth: ShareWorth, payouts: { USDC: Amount<'nat'> }}}
  */
-export const withdrawCalc = (shareWorth, { give, want }) => {
+export const withdrawCalc = (
+  shareWorth,
+  { give, want },
+  poolAlloc,
+  encumberedBalance = makeEmpty(shareWorth.numerator.brand),
+) => {
+  const { unencumberedBalance } = checkPoolBalance(
+    poolAlloc,
+    shareWorth,
+    encumberedBalance,
+  );
+
   assert(!isEmpty(give.PoolShare));
   assert(!isEmpty(want.USDC));
 
@@ -108,6 +153,8 @@ export const withdrawCalc = (shareWorth, { give, want }) => {
   const { denominator: sharesOutstanding, numerator: poolBalance } = shareWorth;
   !isGTE(want.USDC, poolBalance) ||
     Fail`cannot withdraw ${q(want.USDC)}; only ${q(poolBalance)} in pool`;
+  isGTE(unencumberedBalance, want.USDC) ||
+    Fail`cannot withdraw ${q(want.USDC)}; ${q(encumberedBalance)} is in use; stand by for pool to return to ${q(poolBalance)}`;
   const balancePost = subtract(poolBalance, payout);
   // giving more shares than are outstanding is impossible,
   // so it's not worth a custom diagnostic. subtract will fail
@@ -155,35 +202,26 @@ export const borrowCalc = (
 
 /**
  * @param {ShareWorth} shareWorth
- * @param {Allocation} fromSeatAllocation
- * @param {RepayAmountKWR} amounts
+ * @param {RepayAmountKWR} split
  * @param {Amount<'nat'>} encumberedBalance aka 'outstanding borrows'
  * @param {PoolStats} poolStats
- * @throws {Error} if allocations do not match amounts or Principal exceeds encumberedBalance
+ * @throws {Error} if Principal exceeds encumberedBalance
  */
-export const repayCalc = (
-  shareWorth,
-  fromSeatAllocation,
-  amounts,
-  encumberedBalance,
-  poolStats,
-) => {
-  (isEqual(fromSeatAllocation.Principal, amounts.Principal) &&
-    isEqual(fromSeatAllocation.PoolFee, amounts.PoolFee) &&
-    isEqual(fromSeatAllocation.ContractFee, amounts.ContractFee)) ||
-    Fail`Cannot repay. From seat allocation ${q(fromSeatAllocation)} does not equal amounts ${q(amounts)}.`;
-
-  isGTE(encumberedBalance, amounts.Principal) ||
-    Fail`Cannot repay. Principal ${q(amounts.Principal)} exceeds encumberedBalance ${q(encumberedBalance)}.`;
+export const repayCalc = (shareWorth, split, encumberedBalance, poolStats) => {
+  isGTE(encumberedBalance, split.Principal) ||
+    Fail`Cannot repay. Principal ${q(split.Principal)} exceeds encumberedBalance ${q(encumberedBalance)}.`;
 
   return harden({
-    shareWorth: withFees(shareWorth, amounts.PoolFee),
-    encumberedBalance: subtract(encumberedBalance, amounts.Principal),
+    shareWorth: withFees(shareWorth, split.PoolFee),
+    encumberedBalance: subtract(encumberedBalance, split.Principal),
     poolStats: {
       ...poolStats,
-      totalRepays: add(poolStats.totalRepays, amounts.Principal),
-      totalPoolFees: add(poolStats.totalPoolFees, amounts.PoolFee),
-      totalContractFees: add(poolStats.totalContractFees, amounts.ContractFee),
+      totalRepays: add(poolStats.totalRepays, split.Principal),
+      totalPoolFees: add(poolStats.totalPoolFees, split.PoolFee),
+      totalContractFees: add(
+        add(poolStats.totalContractFees, split.ContractFee),
+        split.RelayFee,
+      ),
     },
   });
 };

@@ -5,15 +5,15 @@
   "type": "module",
   "main": "src/sparseInts.js",
   "engines": {
-    "node": "^18.12 || ^20.9"
+    "node": "^20.9 || ^22.11"
   },
   "scripts": {
     "build": "exit 0",
     "test": "exit 0",
     "test:xs": "exit 0",
-    "lint": "run-s --continue-on-error lint:*",
+    "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
     "lint-fix": "yarn lint:eslint --fix",
-    "lint:eslint": "eslint ."
+    "lint:eslint": "yarn run -T eslint ."
   },
   "repository": {
     "type": "git",

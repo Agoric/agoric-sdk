@@ -5,6 +5,7 @@ import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import { makeHeapZone } from '@agoric/zone';
 import type { TestFn } from 'ava';
+import type { ZCF } from '@agoric/zoe';
 import type { OrchestrationFlow } from '../src/orchestration-api.js';
 import { provideOrchestration } from '../src/utils/start-helper.js';
 import { commonSetup } from './supports.js';
@@ -35,7 +36,7 @@ test.beforeEach(async t => {
 });
 
 test('calls between flows', async t => {
-  const { vt, orchestrateAll, zcf } = t.context;
+  const { vt, orchestrateAll } = t.context;
 
   const flows = {
     outer(orch, ctx, ...recipients) {
@@ -46,7 +47,7 @@ test('calls between flows', async t => {
     },
   } as Record<string, OrchestrationFlow<any>>;
 
-  const { outer, outer2, inner } = orchestrateAll(flows, {
+  const { outer, inner } = orchestrateAll(flows, {
     peerFlows: flows,
   });
 
@@ -55,7 +56,7 @@ test('calls between flows', async t => {
 });
 
 test('context mapping individual flows', async t => {
-  const { vt, orchestrateAll, zcf } = t.context;
+  const { vt, orchestrateAll } = t.context;
 
   const flows = {
     outer(orch, ctx, ...recipients) {

@@ -2,13 +2,11 @@
 import {
   CommitmentProof,
   type CommitmentProofSDKType,
-} from '../../../../proofs.js';
+} from '../../../../cosmos/ics23/v1/proofs.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
-import {
-  isSet,
-  bytesFromBase64,
-  base64FromBytes,
-} from '../../../../helpers.js';
+import { isSet } from '../../../../helpers.js';
+import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
+import { encodeBase64 as base64FromBytes } from '@endo/base64';
 import { type JsonSafe } from '../../../../json-safe.js';
 /**
  * MerkleRoot defines a merkle root hash.

@@ -1,4 +1,5 @@
-import rawTest from '@endo/ses-ava/prepare-endo.js';
+import rawTest from 'ava';
+import '@endo/init/debug.js';
 
 import bundleSourceAmbient from '@endo/bundle-source';
 import { importBundle } from '@endo/import-bundle';
@@ -228,7 +229,7 @@ const lengthCheckMacro = test.macro({
  *   [
  *     baseAddress: string,
  *     query: import('../src/address-hooks.js').HookQuery,
- *     expected: string,
+ *     expected: import('../src/address-hooks.js').Bech32Address,
  *   ]
  * >}
  */

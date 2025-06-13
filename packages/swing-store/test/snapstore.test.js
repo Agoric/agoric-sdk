@@ -8,10 +8,11 @@ import zlib from 'node:zlib';
 import sqlite3 from 'better-sqlite3';
 import tmp from 'tmp';
 
-import { makeMeasureSeconds } from '@agoric/internal';
+import { makeMeasureSeconds, makeTempDirFactory } from '@agoric/internal';
 import { makeSnapStore } from '../src/snapStore.js';
 import { makeArchiveSnapshot } from '../src/archiver.js';
-import { tmpDir } from './util.js';
+
+const tmpDir = makeTempDirFactory(tmp);
 
 function makeExportLog() {
   const exportLog = [];
@@ -36,7 +37,7 @@ harden(getSnapshotStream);
 test('compress to cache file; closes snapshot stream', async t => {
   const db = sqlite3(':memory:');
   const exportLog = makeExportLog();
-  const [archiveDir, cleanupArchives] = await tmpDir('archives');
+  const [archiveDir, cleanupArchives] = tmpDir('archives');
   t.teardown(cleanupArchives);
   const fsPowers = { fs, path, tmp };
   const archiveSnapshot = makeArchiveSnapshot(archiveDir, fsPowers);
@@ -127,7 +128,7 @@ test('snapStore prepare / commit delete is robust', async t => {
     measureSeconds: makeMeasureSeconds(() => 0),
   };
   const db = sqlite3(':memory:');
-  const [archiveDir, cleanupArchives] = await tmpDir('archives');
+  const [archiveDir, cleanupArchives] = tmpDir('archives');
   t.teardown(cleanupArchives);
   const fsPowers = { fs, path, tmp };
   const archiveSnapshot = makeArchiveSnapshot(archiveDir, fsPowers);

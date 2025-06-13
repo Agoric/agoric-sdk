@@ -41,3 +41,8 @@ export const MAKE_ACCOUNT_AND_QUERY_BALANCE_TIMEOUT: RetryOptions = {
   retryIntervalMs: 5000,
   maxRetries: 24,
 };
+
+export const ICA_CHANNEL_CLOSE_TIMEOUT: RetryOptions = {
+  retryIntervalMs: 5000,
+  maxRetries: 24,
+};

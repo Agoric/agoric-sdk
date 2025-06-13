@@ -11,7 +11,7 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 )
 
 func mkcoin(denom string) func(amt int64) sdk.Coin {
@@ -62,15 +62,6 @@ func Test_calculateFees(t *testing.T) {
 			want: cns(),
 		},
 		{
-			name: "cannot pay fee to provision third party",
-			args: args{
-				submitter:  submitAddr,
-				addr:       utilAddr,
-				powerFlags: []string{"powerflag1"},
-			},
-			errMsg: "submitter is not the same as target address for fee-based provisioning",
-		},
-		{
 			name: "need powerflags for fee provisioning",
 			args: args{
 				submitter: utilAddr,
@@ -105,6 +96,21 @@ func Test_calculateFees(t *testing.T) {
 				},
 			},
 			want: cns(a(1300)),
+		},
+		{
+			name: "can pay fee to provision third party",
+			args: args{
+				submitter:  submitAddr,
+				addr:       utilAddr,
+				powerFlags: []string{"power1"},
+				powerFlagFees: []types.PowerFlagFee{
+					{
+						PowerFlag: "power1",
+						Fee:       cns(a(1000)),
+					},
+				},
+			},
+			want: cns(a(1000)),
 		},
 		{
 			name: "later menu entries do not override",
@@ -173,7 +179,7 @@ func Test_calculateFees(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := calculateFees(tt.args.balances, tt.args.submitter, tt.args.addr, tt.args.powerFlags, tt.args.powerFlagFees)
+			got, err := calculateFees(tt.args.balances, tt.args.powerFlags, tt.args.powerFlagFees)
 			var errMsg string
 			if err != nil {
 				errMsg = err.Error()

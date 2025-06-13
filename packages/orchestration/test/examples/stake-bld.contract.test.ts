@@ -5,14 +5,10 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
 import { heapVowE as E } from '@agoric/vow/vat.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import path from 'path';
+import * as contractExports from '../../src/examples/stake-bld.contract.js';
 import { commonSetup } from '../supports.js';
 
-const dirname = path.dirname(new URL(import.meta.url).pathname);
-
-const contractFile = `${dirname}/../../src/examples/stake-bld.contract.js`;
-type StartFn =
-  typeof import('@agoric/orchestration/src/examples/stake-bld.contract.js').start;
+type StartFn = typeof contractExports.start;
 
 const startContract = async ({
   agoricNames,
@@ -24,7 +20,7 @@ const startContract = async ({
 }) => {
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
   const installation: Installation<StartFn> =
-    await bundleAndInstall(contractFile);
+    await bundleAndInstall(contractExports);
 
   const { publicFacet } = await E(zoe).startInstance(
     installation,
@@ -48,7 +44,7 @@ test('makeAccount, deposit, withdraw', async t => {
     commonPrivateArgs: { marshaller },
     utils,
   } = await commonSetup(t);
-  const { publicFacet, zoe } = await startContract({
+  const { publicFacet } = await startContract({
     ...bootstrap,
     bld,
     marshaller,
@@ -59,9 +55,7 @@ test('makeAccount, deposit, withdraw', async t => {
   t.truthy(account, 'account is returned');
 
   t.log('deposit 100 bld to account');
-  const depositResp = await E(account).deposit(
-    await utils.pourPayment(bld.units(100)),
-  );
+  await E(account).deposit(await utils.pourPayment(bld.units(100)));
   t.deepEqual(await E(account).getBalance('ubld'), {
     denom: 'ubld',
     value: bld.units(100).value,
@@ -150,7 +144,6 @@ test('makeAccountInvitationMaker', async t => {
     bootstrap,
     brands: { bld },
     commonPrivateArgs: { marshaller },
-    utils,
   } = await commonSetup(t);
   const { publicFacet, zoe } = await startContract({
     ...bootstrap,

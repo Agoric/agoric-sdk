@@ -14,7 +14,7 @@ import { setupClientManager } from '@agoric/vats/src/core/chain-behaviors.js';
 import { buildRootObject as boardRoot } from '@agoric/vats/src/vat-board.js';
 import { buildRootObject as mintsRoot } from '@agoric/vats/src/vat-mints.js';
 import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, Far } from '@endo/far';
 

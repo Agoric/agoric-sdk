@@ -1,7 +1,8 @@
 import { Fail } from '@endo/errors';
 import { Far } from '@endo/marshal';
+import { getMethodNames } from '@endo/eventual-send/utils.js';
 import { makeStoredPublisherKit } from '@agoric/notifier';
-import { getMethodNames, objectMap } from '@agoric/internal';
+import { objectMap } from '@agoric/internal';
 import { ignoreContext, prepareExo } from '@agoric/vat-data';
 import { M } from '@agoric/store';
 import { AmountShape, BrandShape } from '@agoric/ertp';
@@ -12,7 +13,9 @@ import { GovernorFacetShape } from './typeGuards.js';
 import { CONTRACT_ELECTORATE } from './contractGovernance/governParam.js';
 
 /**
+ * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
  * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn, GovernanceSubscriptionState, GovernanceTerms, GovernedApis, GovernedCreatorFacet, GovernedPublicFacet} from './types.js';
+ * @import {Baggage} from '@agoric/vat-data';
  */
 
 export const GOVERNANCE_STORAGE_KEY = 'governance';
@@ -181,7 +184,7 @@ const facetHelpers = (zcf, paramManager) => {
    * @see {makeVirtualGovernorFacet}
    *
    * @template CF
-   * @param {import('@agoric/vat-data').Baggage} baggage
+   * @param {Baggage} baggage
    * @param {CF} limitedCreatorFacet
    * @param {Record<string, (...any) => unknown>} [governedApis]
    */
@@ -190,6 +193,7 @@ const facetHelpers = (zcf, paramManager) => {
     limitedCreatorFacet,
     governedApis = {},
   ) => {
+    const farGovernedApis = Far('governedAPIs', { ...governedApis });
     const governorFacet = prepareExo(
       baggage,
       'governorFacet',
@@ -202,7 +206,7 @@ const facetHelpers = (zcf, paramManager) => {
         // The contract provides a facet with the APIs that can be invoked by
         // governance
         /** @type {() => GovernedApis} */
-        getGovernedApis: () => Far('governedAPIs', governedApis),
+        getGovernedApis: () => farGovernedApis,
         // The facet returned by getGovernedApis is Far, so we can't see what
         // methods it has. There's no clean way to have contracts specify the APIs
         // without also separately providing their names.
