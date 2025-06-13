@@ -369,7 +369,7 @@ __metadata:
 
 "@agoric/synthetic-chain@patch:@agoric/synthetic-chain@npm%3A0.5.6#~/.yarn/patches/@agoric-synthetic-chain-npm-0.5.6-c322148be2.patch":
   version: 0.5.6
-  resolution: "@agoric/synthetic-chain@patch:@agoric/synthetic-chain@npm%3A0.5.6#~/.yarn/patches/@agoric-synthetic-chain-npm-0.5.6-c322148be2.patch::version=0.5.6&hash=c8d8bf"
+  resolution: "@agoric/synthetic-chain@patch:@agoric/synthetic-chain@npm%3A0.5.6#~/.yarn/patches/@agoric-synthetic-chain-npm-0.5.6-c322148be2.patch::version=0.5.6&hash=19bd43"
   dependencies:
     "@endo/zip": "npm:^1.0.9"
     better-sqlite3: "npm:^11.8.1"
@@ -380,7 +380,7 @@ __metadata:
     tmp: "npm:0.2.3"
   bin:
     synthetic-chain: dist/cli/cli.js
-  checksum: 10c0/c8ea1e51dfa073676f7d9b25a4b4a9df8e30d52abf834583deb3de394aa9d8859b22894c1c5ee5dfe1468d223fe1141223e197487a65c6b83013aaa006022c7e
+  checksum: 10c0/7a4ec5083327231103abd97397b2b819cc463c8ea211ff74c48ef88af46869be6532f234e23792cfa2a50195f17c8e821d72907f46a788ce6fbb899b99741a38
   languageName: node
   linkType: hard
 
