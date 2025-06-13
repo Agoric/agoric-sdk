@@ -22,7 +22,6 @@
     "@agoric/ertp": "workspace:*",
     "@agoric/fast-usdc": "workspace:*",
     "@agoric/swingset-liveslots": "workspace:*",
-    "@agoric/vow": "workspace:*",
     "@agoric/zoe": "workspace:*",
     "@agoric/zone": "workspace:*",
     "@endo/init": "^1.1.9",
@@ -38,10 +37,13 @@
     "@agoric/internal": "workspace:*",
     "@agoric/orchestration": "workspace:*",
     "@agoric/vats": "workspace:*",
+    "@agoric/vow": "workspace:*",
+    "@endo/base64": "1.0.9",
     "@endo/errors": "^1.2.10",
     "@endo/far": "^1.1.11",
     "@endo/pass-style": "^1.5.0",
-    "@endo/patterns": "^1.5.0"
+    "@endo/patterns": "^1.5.0",
+    "viem": "^2.31.0"
   },
   "ava": {
     "extensions": {

@@ -14,8 +14,6 @@ import { M } from '@endo/patterns';
 import { preparePortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import { makeProposalShapes } from './type-guards.ts';
-import { prepareEvmAccountKit } from '@agoric/orchestration/src/examples/axelar-gmp-account-kit.js';
-import { E } from '@endo/far';
 
 const trace = makeTracer('PortC');
 
@@ -41,8 +39,8 @@ export const contract = async (
   tools: OrchestrationTools,
 ) => {
   const { brands } = zcf.getTerms();
-  const { contractAddresses, storageNode } = privateArgs;
-  const { orchestrateAll, zoeTools, chainHub, vowTools } = tools;
+  const { contractAddresses } = privateArgs;
+  const { orchestrateAll, zoeTools, chainHub } = tools;
 
   assert(brands.USDC, 'USDC missing from brands in terms');
   assert(
@@ -78,23 +76,11 @@ export const contract = async (
     },
   };
 
-  // TODO: maybe remove log as a param for evmAccountKit.
-  const logNode = E(storageNode).makeChildNode('log');
-  /** @type {(msg: string) => Vow<void>} */
-  const log = msg => vowTools.watch(E(logNode).setValue(msg));
-
-  const makeEvmAccountKit = prepareEvmAccountKit(zone.subZone('evmTap'), {
-    zcf,
-    vowTools,
-    log,
-    zoeTools,
-  });
-
   const makePortfolioKit = preparePortfolioKit(zone);
   const { makeLocalAccount, openPortfolio } = orchestrateAll(flows, {
     zoeTools,
     makePortfolioKit,
-    makeEvmAccountKit,
+    chainHub,
     contractAddresses,
     inertSubscriber,
   });
@@ -106,14 +92,16 @@ export const contract = async (
     makeOpenPortfolioInvitation() {
       trace('makeOpenPortfolioInvitation');
       return zcf.makeInvitation(
-        (seat, offerArgs) =>
-          openPortfolio(
+        (seat, offerArgs) => {
+          assert(offerArgs, 'offerArgs missing in openPortfolio');
+          return openPortfolio(
             seat,
             offerArgs,
             localV as unknown as Promise<
               OrchestrationAccount<{ chainId: 'agoric-any' }>
             >,
-          ),
+          );
+        },
         'openPortfolio',
         undefined,
         proposalShapes.openPortfolio,
