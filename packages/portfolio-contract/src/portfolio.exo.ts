@@ -159,14 +159,23 @@ export const preparePortfolioKit = (zone: Zone) =>
         ):
           | OrchestrationAccount<{ chainId: 'agoric-any' }>
           | OrchestrationAccount<{ chainId: 'noble-any' }> {
-          let account;
-          if (key === 'USDN') {
-            account = this.state.protocolStates[key].icaAccount;
-          } else {
-            account = this.state.protocolStates[key].localAccount;
+          if (!this.state.protocolStates.has(key)) {
+            throw Fail`account not initialized: ${q(key)}`;
           }
-          if (!account) throw Fail`account not initialized: ${q(key)}`;
-          return account;
+          const protocolState = this.state.protocolStates.get(key);
+          if (key === 'USDN') {
+            const cosmosState = protocolState as CosmosProtocolState;
+            if (!cosmosState.icaAccount) {
+              throw Fail`account not initialized: ${q(key)}`;
+            }
+            return cosmosState.icaAccount;
+          } else {
+            const evmState = protocolState as EVMProtocolState;
+            if (!evmState.localAccount) {
+              throw Fail`account not initialized: ${q(key)}`;
+            }
+            return evmState.localAccount;
+          }
         },
       },
       invitationMakers: {
