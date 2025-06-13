@@ -2,18 +2,18 @@ sequenceDiagram
     title 3 way yield - 3. USDN
     autonumber
 
-    actor trader as trader<br >webUI<br >wallet
+    actor trader as trader<br >webUI<br >wallet<br/>[1..*]
 
     box rgb(255,153,153) Agoric
-    participant ymax
-    participant flow as flows.openPortfolio
-    participant portfolio as portfolio<br/>for trader
-    participant LCA
+    participant ymax as ymax<br/>[1]
+    participant flow as flows.openPortfolio<br/>[1]
+    participant portfolio as portfolio<br/>[1..*]
+    participant LCA as LCA<br/>[1]
     end
 
     box rgb(166,184,233) Noble
-    participant ICAn
-    participant USDN
+    participant ICAn as ICAn<br/>[1..*]
+    participant USDN as USDN<br/>[1]
     end
 
     %% Notation: ->> for initial message, -->> for consequences
@@ -23,16 +23,17 @@ sequenceDiagram
 
     ymax -->> flow: (seat, ...*)
 
-    flow -->> portfolio: make
+    flow -> portfolio: make
     activate portfolio
 
     flow -->> ICAn: makeAccount
     activate ICAn
     ICAn -->> flow: ack
 
-    flow -->> portfolio: add(ICAn)
+    flow -> portfolio: add(ICAn)
 
     flow -->> LCA: localTransfer(3K)
+    LCA -->> flow: ack
     flow -->> LCA: transfer(3K USDC, ICAn)
     LCA -->> ICAn: 3k USDC
     ICAn -->> portfolio: ack

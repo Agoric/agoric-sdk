@@ -90,6 +90,9 @@ const mocks = (errs: Record<string, Error> = {}) => {
   return { orch, log: buf, makePortfolioKit, zoeTools, seat, inertSubscriber };
 };
 
+/* eslint-disable no-underscore-dangle */
+/* We use _method to get it to sort before other properties. */
+
 test('open portfolio', async t => {
   const { orch, log, makePortfolioKit, zoeTools, seat, inertSubscriber } =
     mocks();
