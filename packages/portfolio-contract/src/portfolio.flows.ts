@@ -170,7 +170,6 @@ export const openPortfolio = (async (
   seat: ZCFSeat,
   offerArgs: {
     evmChain?: SupportedDestinationChains;
-    yieldProtocol: YieldProtocol;
   }, // TODO: USDN/USDC ratio
   // passed as a promise to alleviate contract start-up sync constraints
   localP: Promise<OrchestrationAccount<{ chainId: 'agoric-any' }>>,
@@ -313,12 +312,12 @@ export const openPortfolio = (async (
       } catch (err) {
         seat.fail(err);
       }
-    } else {
-      try {
-        await initRemoteEVMAccount();
-      } catch (err) {
-        seat.fail(err);
-      }
+    }
+
+    try {
+      await initRemoteEVMAccount();
+    } catch (err) {
+      seat.fail(err);
     }
 
     if (!seat.hasExited()) seat.exit();

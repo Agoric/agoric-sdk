@@ -94,7 +94,9 @@ test('open portfolio with USDN position', async t => {
   const funds = await common.utils.pourPayment(myBalance);
   const myWallet = makeWallet({ USDC: usdc }, zoe, when);
   await E(myWallet).deposit(funds);
-  const trader1 = makeTrader(myWallet, started.instance);
+  const trader1 = makeTrader(myWallet, started.instance, {
+    yieldProtocol: 'USDN',
+  });
   t.log('I am a power user with', myBalance, 'on Agoric');
 
   const { ibcBridge } = common.mocks;
