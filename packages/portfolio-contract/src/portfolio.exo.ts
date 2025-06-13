@@ -1,7 +1,6 @@
 import { makeTracer } from '@agoric/internal';
 import type { Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
-import { YieldProtocol } from './constants.js';
 import { M } from '@endo/patterns';
 import { VowShape } from '@agoric/vow';
 import { atob, decodeBase64 } from '@endo/base64';
@@ -13,6 +12,7 @@ import type {
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import type { OrchestrationAccount } from '@agoric/orchestration';
+import { YieldProtocol } from './constants.js';
 
 const trace = makeTracer('PortExo');
 
