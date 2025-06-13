@@ -18,6 +18,7 @@ import {
 } from '../typeGuards.js';
 import { getBech32Prefix } from '../utils/address.js';
 import { caipIdFromInfo } from '../utils/chain-info.js';
+import { HubName } from '../constants.js';
 
 /**
  * @import {NameHub} from '@agoric/vats';
@@ -51,19 +52,6 @@ export const PFM_RECEIVER = /** @type {const} */ ('pfm');
  * @property {Brand<'nat'>} [brand] - vbank brand, if registered
  * @see {ChainHub} `registerAsset` method
  */
-
-/**
- * @enum {(typeof HubName)[keyof typeof HubName]}
- */
-export const HubName = /** @type {const} */ ({
-  /** agoricNames key for ChainInfo hub */
-  Chain: 'chain',
-  /** namehub for assets info */
-  ChainAssets: 'chainAssets',
-  /** namehub for connection info */
-  ChainConnection: 'chainConnection',
-});
-harden(HubName);
 
 /** @deprecated use HubName.Chain */
 export const CHAIN_KEY = HubName.Chain;

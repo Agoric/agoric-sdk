@@ -5,13 +5,10 @@
  *   Includes {@link BaseChainInfo} and {@link CosmosChainInfo}
  */
 
-import { E } from '@endo/far';
-import { M, mustMatch } from '@endo/patterns';
-import { HubName, normalizeConnectionInfo } from './exos/chain-hub.js';
 import fetchedChainInfo from './fetched-chain-info.js'; // Refresh with scripts/refresh-chain-info.ts
-import { ChainInfoShape, CosmosAssetInfoShape } from './typeGuards.js';
 import cctpChainInfo from './cctp-chain-info.js';
 import { withChainCapabilities } from './chain-capabilities.js';
+import { registerChain } from './chain-name-service.js';
 
 /**
  * @import {CosmosAssetInfo, CosmosChainInfo, IBCConnectionInfo} from './types.js';
@@ -41,82 +38,6 @@ const knownChains = /** @satisfies {Record<string, ChainInfo>} */ (
  * @typedef {typeof knownChains} KnownChains
  * @internal
  */
-
-// TODO(#9966, #9967): include this in registerChain
-/**
- * Register chain assets into agoricNames
- *
- * @param {ERef<NameAdmin>} agoricNamesAdmin
- * @param {string} name
- * @param {CosmosAssetInfo[]} assets
- * @alpha
- */
-export const registerChainAssets = async (agoricNamesAdmin, name, assets) => {
-  mustMatch(assets, M.arrayOf(CosmosAssetInfoShape));
-  const { nameAdmin: assetAdmin } = await E(agoricNamesAdmin).provideChild(
-    HubName.ChainAssets,
-  );
-  return E(assetAdmin).update(name, assets);
-};
-
-/**
- * Register a chain into agoricNames
- *
- * @param {ERef<NameAdmin>} agoricNamesAdmin
- * @param {string} name
- * @param {ChainInfo} chainInfo
- * @param {(...messages: string[]) => void} [log]
- * @param {Set<string>} [handledConnections] connection keys that need not be
- *   updated
- */
-export const registerChain = async (
-  agoricNamesAdmin,
-  name,
-  chainInfo,
-  log = () => {},
-  handledConnections = new Set(),
-) => {
-  const { nameAdmin } = await E(agoricNamesAdmin).provideChild(HubName.Chain);
-  const { nameAdmin: connAdmin } = await E(agoricNamesAdmin).provideChild(
-    HubName.ChainConnection,
-  );
-
-  mustMatch(chainInfo, ChainInfoShape);
-
-  /** @type {Record<string, IBCConnectionInfo>} */
-  const connections = /** @type {any} */ (chainInfo).connections || {};
-  const { connections: _, ...vertex } = /** @type {any} */ (chainInfo);
-
-  const promises = [
-    E(nameAdmin)
-      .update(name, vertex)
-      .then(() => log(`registered agoricNames chain.${name}`)),
-  ];
-
-  const { chainId } = /** @type {import('./types').CosmosChainInfo} */ (
-    chainInfo
-  );
-  for (const [counterChainId, connInfo] of Object.entries(connections)) {
-    const [key, connectionInfo] = normalizeConnectionInfo(
-      chainId,
-      counterChainId,
-      connInfo,
-    );
-    if (handledConnections.has(key)) {
-      continue;
-    }
-
-    promises.push(
-      E(connAdmin)
-        .update(key, connectionInfo)
-        .then(() => log(`registering agoricNames chainConnection.${key}`)),
-    );
-
-    handledConnections.add(key);
-  }
-  // Bundle to pipeline IO
-  await Promise.all(promises);
-};
 
 /**
  * Register all the chains that are known statically in `agoricNames`.

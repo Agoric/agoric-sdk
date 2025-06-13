@@ -1,5 +1,5 @@
 import { makeTracer } from '@agoric/internal';
-import { registerChain } from '../chain-info.js';
+import { registerChain } from '../chain-name-service.js';
 
 const trace = makeTracer('ReviseChainInfo', true);
 

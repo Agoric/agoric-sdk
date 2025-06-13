@@ -3,9 +3,11 @@ import { E, Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { makeTracer } from '@agoric/internal';
 import { registerKnownChains } from '../chain-info.js';
-import { HubName } from '../exos/chain-hub.js';
+import { HubName } from '../constants.js';
 
 const trace = makeTracer('InitChainInfo', true);
+
+console.log('DEPRECATED in favor of chain-info.core.js');
 
 /**
  * Similar to publishAgoricNamesToChainStorage but publishes a node per chain
@@ -66,8 +68,7 @@ const publishChainInfoToChainStorage = async (
       }),
     );
   };
-  await echoNameUpdates(HubName.Chain);
-  await echoNameUpdates(HubName.ChainConnection);
+  await Promise.all(Object.values(HubName).map(echoNameUpdates));
 };
 
 /**
@@ -82,7 +83,8 @@ export const initChainInfo = async ({
   await publishChainInfoToChainStorage(agoricNamesAdmin, chainStorageP);
 
   // Now register the names
-  await registerKnownChains(agoricNamesAdmin, trace);
+  trace('SKIP: registerKnownChains');
+  // await registerKnownChains(agoricNamesAdmin, trace);
 };
 harden(initChainInfo);
 
