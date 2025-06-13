@@ -103,7 +103,7 @@ test('open portfolio', async t => {
     orch,
     { zoeTools, makePortfolioKit, inertSubscriber, contractAddresses },
     seat,
-    { yieldProtocol: 'USDN' },
+    { evmChain: 'Ethereum' },
     localP,
   );
   t.log(log.map(msg => msg._method).join(', '));
@@ -129,7 +129,7 @@ test('handle failure in localTransfer from seat to local account', async t => {
     orch,
     { zoeTools, makePortfolioKit, inertSubscriber, contractAddresses },
     seat,
-    { yieldProtocol: 'USDN' },
+    { evmChain: 'Ethereum' },
     localP,
   );
   t.log(log.map(msg => msg._method).join(', '));
@@ -151,7 +151,7 @@ test('handle failure in IBC transfer', async t => {
     orch,
     { zoeTools, makePortfolioKit, inertSubscriber, contractAddresses },
     seat,
-    { yieldProtocol: 'USDN' },
+    { evmChain: 'Ethereum' },
     localP,
   );
   t.log(log.map(msg => msg._method).join(', '));
@@ -176,7 +176,7 @@ test('handle failure in executeEncodedTx', async t => {
     orch,
     { zoeTools, makePortfolioKit, inertSubscriber, contractAddresses },
     seat,
-    { yieldProtocol: 'USDN' },
+    { evmChain: 'Ethereum' },
     localP,
   );
   t.log(log.map(msg => msg._method).join(', '));

@@ -8,6 +8,7 @@ import type { WalletTool } from './wallet-offer-tools.ts';
 export const makeTrader = (
   wallet: WalletTool,
   instance: Instance<typeof start>,
+  offerArgs: Record<string, unknown> = {},
 ) => {
   let nonce = 0;
   return harden({
@@ -26,6 +27,7 @@ export const makeTrader = (
         id: `openP-${(nonce += 1)}`,
         invitationSpec,
         proposal,
+        offerArgs,
       });
     },
   });
