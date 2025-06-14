@@ -50,6 +50,30 @@ export const supportedDestinationChains: SupportedDestinationChains[] = [
   'Ethereum',
 ];
 
+const isEvmProtocol = (protocol: YieldProtocol): boolean => {
+  return protocol === YieldProtocol.Aave || protocol === YieldProtocol.Compound;
+};
+
+const createEvmProtocolState = (
+  account: OrchestrationAccount<{ chainId: 'agoric-any' }>,
+): EVMProtocolState => {
+  return harden({
+    localAccount: account,
+    remoteAccountAddress: undefined,
+    evmChain: undefined,
+    isActive: true,
+  });
+};
+
+const createCosmosProtocolState = (
+  account: OrchestrationAccount<{ chainId: 'noble-any' }>,
+): CosmosProtocolState => {
+  return harden({
+    icaAccount: account,
+    isActive: true,
+  });
+};
+
 type EVMProtocolState = {
   localAccount?: OrchestrationAccount<{ chainId: 'agoric-any' }>;
   remoteAccountAddress?: string;
@@ -126,31 +150,15 @@ export const preparePortfolioKit = (zone: Zone) =>
             | OrchestrationAccount<{ chainId: 'agoric-any' }>
             | OrchestrationAccount<{ chainId: 'noble-any' }>,
         ) {
-          if (key === 'USDN') {
-            this.state.protocolStates.init(
-              key,
-              harden({
-                icaAccount: account as OrchestrationAccount<{
-                  chainId: 'noble-any';
-                }>,
-                isActive: true,
-              }),
-            );
-          } else {
-            // Aave or Compound
-            this.state.protocolStates.init(
-              key,
-              harden({
-                localAccount: account as OrchestrationAccount<{
-                  chainId: 'agoric-any';
-                }>,
-                remoteAccountAddress: undefined,
-                evmChain: undefined,
-                isActive: true,
-              }),
-            );
-          }
+          const protocolState = isEvmProtocol(key)
+            ? createEvmProtocolState(
+                account as OrchestrationAccount<{ chainId: 'agoric-any' }>,
+              )
+            : createCosmosProtocolState(
+                account as OrchestrationAccount<{ chainId: 'noble-any' }>,
+              );
 
+          this.state.protocolStates.init(key, protocolState);
           trace('initialized account for', key, '=>', `${account}`);
         },
         getAccount<P extends YieldProtocol>(
@@ -162,18 +170,19 @@ export const preparePortfolioKit = (zone: Zone) =>
             throw Fail`account not initialized: ${q(key)}`;
           }
           const protocolState = this.state.protocolStates.get(key);
-          if (key === 'USDN') {
-            const cosmosState = protocolState as CosmosProtocolState;
-            if (!cosmosState.icaAccount) {
-              throw Fail`account not initialized: ${q(key)}`;
-            }
-            return cosmosState.icaAccount;
-          } else {
+
+          if (isEvmProtocol(key)) {
             const evmState = protocolState as EVMProtocolState;
             if (!evmState.localAccount) {
               throw Fail`account not initialized: ${q(key)}`;
             }
             return evmState.localAccount;
+          } else {
+            const cosmosState = protocolState as CosmosProtocolState;
+            if (!cosmosState.icaAccount) {
+              throw Fail`account not initialized: ${q(key)}`;
+            }
+            return cosmosState.icaAccount;
           }
         },
       },
