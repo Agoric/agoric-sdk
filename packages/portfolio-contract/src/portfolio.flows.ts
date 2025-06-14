@@ -288,6 +288,9 @@ export const openPortfolio = (async (
     if (give.Aave || give.Compound) {
       try {
         await initRemoteEVMAccount();
+        trace('TODO: Wait for account creation to complete');
+        trace('TODO: Send USDC via CCTP to the target EVM account');
+        trace('TODO: Verify the balance after transfer');
       } catch (err) {
         seat.fail(err);
       }
