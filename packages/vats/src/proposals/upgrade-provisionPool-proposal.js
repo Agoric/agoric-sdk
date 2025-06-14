@@ -76,7 +76,7 @@ export const upgradeProvisionPool = async (
     // 10e6 ubld = 10 BLD
     PerAccountInitialAmount: { brand, value: 10_000_000n },
   });
-  trace('governedParamOverrides: ', { governedParamOverrides });
+  trace('governedParamOverrides: ', governedParamOverrides);
 
   const { metricsOverride: _, ...preservedPrivateArgs } =
     originalPrivateArgs || {};
