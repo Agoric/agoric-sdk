@@ -17,6 +17,7 @@ import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.ts';
 import { PortfolioChain, YieldProtocol } from './constants.js';
 
 const trace = makeTracer('PortExo');
+const { keys } = Object;
 
 const DECODE_CONTRACT_CALL_RESULT_ABI = [
   {
@@ -37,13 +38,14 @@ const DECODE_CONTRACT_CALL_RESULT_ABI = [
 
 const KeeperI = M.interface('keeper', {
   init: M.call(
-    M.string(),
-    M.string(),
+    M.or(...keys(YieldProtocol)),
+    M.or(...keys(PortfolioChain)),
     M.remotable('OrchestrationAccount'),
   ).returns(),
-  getAccount: M.call(M.string(), M.string()).returns(
-    M.remotable('OrchestrationAccount'),
-  ),
+  getAccount: M.call(
+    M.or(...keys(YieldProtocol)),
+    M.or(...keys(PortfolioChain)),
+  ).returns(M.remotable('OrchestrationAccount')),
 });
 
 const EvmTapI = M.interface('EvmTap', {
@@ -134,13 +136,44 @@ export const preparePortfolioKit = (zone: Zone) =>
 
           if ((supportedEVMChains as string[]).includes(memo.source_chain)) {
             const payloadBytes = decodeBase64(memo.payload);
-            const [decoded] = decodeAbiParameters(
+            const [{ isContractCallResult, data }] = decodeAbiParameters(
               DECODE_CONTRACT_CALL_RESULT_ABI,
               payloadBytes,
             ) as [AgoricResponse];
 
-            trace('receiveUpcall Decoded:', JSON.stringify(decoded));
+            trace(
+              'receiveUpcall Decoded:',
+              JSON.stringify({ isContractCallResult, data }),
+            );
 
+            if (!isContractCallResult) {
+              const [message] = data;
+              const { success, result } = message;
+
+              trace('Contract Call Status:', success);
+
+              if (success) {
+                const [address] = decodeAbiParameters(
+                  [{ type: 'address' }],
+                  result,
+                );
+
+                const sourceChain = memo.source_chain as PortfolioChain;
+                if (this.state.protocolStates.has(sourceChain)) {
+                  const protocolState =
+                    this.state.protocolStates.get(sourceChain);
+                  if ('remoteAccountAddress' in protocolState) {
+                    const evmState = protocolState as EVMProtocolState;
+                    this.state.protocolStates.set(sourceChain, {
+                      ...evmState,
+                      remoteAccountAddress: address,
+                    });
+                  }
+                }
+
+                trace('remote evm account address:', address);
+              }
+            }
             // TODO: Handle the result of the contract call
           }
 
