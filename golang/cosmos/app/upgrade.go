@@ -232,7 +232,7 @@ func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string, baseAppLeg
 					"@agoric/builders/scripts/vats/upgrade-zcf.js",
 				),
 				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/upgrade-provisionPool.js",
+					"@agoric/builders/scripts/vats/upgrade-provisionPool-to-BLD.js",
 				),
 				// because of #10794, we need to do at least a null upgrade of
 				// the walletFactory on every software upgrade

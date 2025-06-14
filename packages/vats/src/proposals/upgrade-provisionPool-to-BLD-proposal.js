@@ -1,6 +1,7 @@
 import { E } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import { makeTracer } from '@agoric/internal';
+import { Stake } from '@agoric/internal/src/tokens.js';
 
 const trace = makeTracer('UpgradeProvisionPool');
 
@@ -24,6 +25,9 @@ export const upgradeProvisionPool = async (
       walletFactoryStartResult: walletFactoryStartResultP,
       provisionWalletBridgeManager: provisionWalletBridgeManagerP,
     },
+    brand: {
+      consume: { [Stake.symbol]: brandP },
+    },
   },
   options,
 ) => {
@@ -33,6 +37,7 @@ export const upgradeProvisionPool = async (
   trace(`PROVISION POOL BUNDLE ID: `, provisionPoolRef);
 
   const [
+    brand,
     provisionPoolStartResult,
     instancePrivateArgs,
     namesByAddressAdmin,
@@ -40,6 +45,7 @@ export const upgradeProvisionPool = async (
     provisionWalletBridgeManager,
     electorateCreatorFacet,
   ] = await Promise.all([
+    brandP,
     provisionPoolStartResultP,
     instancePrivateArgsP,
     namesByAddressAdminP,
@@ -67,7 +73,8 @@ export const upgradeProvisionPool = async (
   const params = await E(ppPublicFacet).getGovernedParams();
   const governedParamOverrides = harden({
     ...params,
-    PerAccountInitialAmount: params.PerAccountInitialAmount.value,
+    // 10e6 ubld = 10 BLD
+    PerAccountInitialAmount: { brand, value: 10_000_000n },
   });
   trace('governedParamOverrides: ', governedParamOverrides);
 
@@ -129,7 +136,9 @@ export const getManifestForUpgradingProvisionPool = (
         walletFactoryStartResult: true,
         provisionWalletBridgeManager: true,
       },
-      produce: {},
+      brand: {
+        consume: { [Stake.symbol]: true },
+      },
     },
   },
   installations: { provisionPool: restoreRef(provisionPoolRef) },
