@@ -180,8 +180,12 @@ async function overflowCrank(t, explosion) {
   // let the vatAdminService get wired up before we create any new vats
   await c.run();
 
-  // create a meter with 10M remaining
-  const cmargs = [10_000_000n, 5_000_000n]; // remaining, notifyThreshold
+  // create a meter with ~10M remaining
+  // This test runs at the cusp of meter failure and is sensitive to changes to
+  // the underlying platform.
+  // 10_121_091 pass
+  // 10_117_182 fail
+  const cmargs = [10_121_091n, 5_000_000n]; // remaining, notifyThreshold
   const kp1 = c.queueToVatRoot('bootstrap', 'createMeter', cmargs);
   await c.run();
   const marg = kunser(c.kpResolution(kp1));
