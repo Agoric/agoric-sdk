@@ -478,7 +478,6 @@ export const startRewardDistributor = async ({
   const instanceKit = await E(zoe).startInstance(
     feeDistributor,
     { Fee: centralIssuer },
-    // @ts-expect-error XXX
     feeDistributorTerms,
     undefined,
     'feeDistributor',

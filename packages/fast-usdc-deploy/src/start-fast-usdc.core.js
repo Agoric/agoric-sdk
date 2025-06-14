@@ -10,6 +10,7 @@ import {
 
 /**
  * @import {Brand, Issuer} from '@agoric/ertp';
+ * @import {ERemote, Remote} from '@agoric/internal';
  * @import {Instance, StartParams} from '@agoric/zoe/src/zoeService/utils.js'
  * @import {Board} from '@agoric/vats'
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js'
@@ -35,11 +36,13 @@ const contractName = 'fastUsdc';
  *
  * @param {string} path
  * @param {{
- *   chainStorage: ERef<StorageNode>;
- *   board: ERef<Board>;
+ *   chainStorage: ERemote<StorageNode>;
+ *   board: ERemote<Board>;
  * }} io
+ * @returns {Promise<{storageNode: Remote<StorageNode>; marshaller: Remote<Marshaller>}>}
  */
 const makePublishingStorageKit = async (path, { chainStorage, board }) => {
+  // @ts-expect-error Need @endo/eventual-send type update
   const storageNode = await E(chainStorage).makeChildNode(path);
 
   const marshaller = await E(board).getPublishingMarshaller();
@@ -126,6 +129,7 @@ export const startFastUSDC = async (
       chainStorage,
     },
   );
+  /** @type {Remote<StorageNode>} */
   const poolMetricsNode = await E(storageNode).makeChildNode(POOL_METRICS);
 
   const privateArgs = await deeplyFulfilledObject(

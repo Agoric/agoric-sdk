@@ -18,6 +18,7 @@ import type {
   TransactionRecord,
 } from '@agoric/fast-usdc/src/types.js';
 import type { RepayAmountKWR } from '@agoric/fast-usdc/src/utils/fees.js';
+import type { ERemote } from '@agoric/internal';
 import type {
   Marshaller,
   StorageNode,
@@ -26,7 +27,7 @@ import type { MapStore, SetStore } from '@agoric/store';
 import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
 import type { Zone } from '@agoric/zone';
 import { Fail, makeError, q } from '@endo/errors';
-import { E, type ERef } from '@endo/far';
+import { E } from '@endo/far';
 import { Nat } from '@endo/nat';
 import { M } from '@endo/patterns';
 import { chainOfAccount } from '@agoric/orchestration/src/utils/address.js';
@@ -37,7 +38,7 @@ import { makeSettlementMatcher } from '../utils/settlement-matcher.ts';
 
 interface StatusManagerPowers {
   log?: LogFn;
-  marshaller: ERef<Marshaller>;
+  marshaller: ERemote<Marshaller>;
   routeHealth: RouteHealth;
 }
 
@@ -56,7 +57,7 @@ export const stateShape = harden({
  */
 export const prepareStatusManager = (
   zone: Zone,
-  txnsNode: ERef<StorageNode>,
+  txnsNode: ERemote<StorageNode>,
   { marshaller, routeHealth }: StatusManagerPowers,
 ) => {
   /**
@@ -158,6 +159,7 @@ export const prepareStatusManager = (
   };
 
   const publishTxnRecord = (txId: EvmHash, record: TransactionRecord): void => {
+    // @ts-expect-error Need @endo/eventual-send type update
     const txNode = E(txnsNode).makeChildNode(txId, {
       sequence: true, // avoid overwriting other output in the block
     });
@@ -172,6 +174,7 @@ export const prepareStatusManager = (
     }
 
     // Don't await, just writing to vstorage.
+    // @ts-expect-error Need @endo/eventual-send type update
     void E.when(E(marshaller).toCapData(record), capData =>
       E(txNode).setValue(JSON.stringify(capData)),
     );
@@ -385,6 +388,7 @@ export const prepareStatusManager = (
       deleteCompletedTxs(): void {
         for (const txHash of storedCompletedTxs.values()) {
           // As of now, setValue('') on a non-sequence node will delete it
+          // @ts-expect-error Need @endo/eventual-send type update
           const txNode = E(txnsNode).makeChildNode(txHash, {
             sequence: false,
           });

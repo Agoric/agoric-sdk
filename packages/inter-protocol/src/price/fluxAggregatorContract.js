@@ -15,6 +15,7 @@ const trace = makeTracer('FluxAgg', false);
 /**
  * @import {Baggage} from '@agoric/vat-data'
  * @import {TimerService} from '@agoric/time'
+ * @import {Remote} from '@agoric/internal';
  */
 
 /** @type {ContractMeta} */
@@ -56,9 +57,9 @@ harden(meta);
  * @param {{
  *   highPrioritySendersManager?: import('@agoric/internal/src/priority-senders.js').PrioritySendersManager;
  *   initialPoserInvitation: Invitation;
- *   marshaller: ERef<Marshaller>;
+ *   marshaller: Remote<Marshaller>;
  *   namesByAddressAdmin: ERef<import('@agoric/vats').NameAdmin>;
- *   storageNode: StorageNode;
+ *   storageNode: Remote<StorageNode>;
  * }} privateArgs
  * @param {Baggage} baggage
  */

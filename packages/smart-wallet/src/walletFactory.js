@@ -18,6 +18,8 @@ import { prepareSmartWallet } from './smartWallet.js';
 import { shape } from './typeGuards.js';
 
 /**
+ * @import {ERemote} from '@agoric/internal';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {NameHub} from '@agoric/vats';
  */
@@ -150,7 +152,7 @@ export const makeAssetRegistry = assetPublisher => {
 /**
  * @param {ZCF<SmartWalletContractTerms>} zcf
  * @param {{
- *   storageNode: ERef<StorageNode>;
+ *   storageNode: ERemote<StorageNode>;
  *   walletBridgeManager?: ERef<
  *     import('@agoric/vats').ScopedBridgeManager<'wallet'>
  *   >;
@@ -289,6 +291,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
          */
         const maker = async _address => {
           const invitationPurse = await E(invitationIssuer).makeEmptyPurse();
+          // @ts-expect-error Need @endo/eventual-send type update
           const walletStorageNode = E(storageNode).makeChildNode(address);
           const wallet = await makeSmartWallet(
             harden({ address, walletStorageNode, bank, invitationPurse }),

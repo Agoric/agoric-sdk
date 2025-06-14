@@ -17,6 +17,7 @@ import { prepareVaultKit } from './vaultKit.js';
 const trace = makeTracer('Vault', true);
 
 /**
+ * @import {Remote} from '@agoric/internal';
  * @import {EReturn} from '@endo/far';
  * @import {Brand} from '@agoric/ertp/src/types.js';
  * @import {NormalizedDebt} from './storeUtils.js';
@@ -109,7 +110,7 @@ const validTransitions = {
  * @typedef {Readonly<{
  *   idInManager: VaultId;
  *   manager: VaultManager;
- *   storageNode: StorageNode;
+ *   storageNode: Remote<StorageNode>;
  *   vaultSeat: ZCFSeat;
  * }>} ImmutableState
  */
@@ -171,7 +172,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
     /**
      * @param {VaultManager} manager
      * @param {VaultId} idInManager
-     * @param {StorageNode} storageNode
+     * @param {Remote<StorageNode>} storageNode
      * @returns {ImmutableState & MutableState}
      */
     (manager, idInManager, storageNode) => {
@@ -607,7 +608,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
 
         /**
          * @param {ZCFSeat} seat
-         * @param {StorageNode} storageNode
+         * @param {Remote<StorageNode>} storageNode
          */
         async initVaultKit(seat, storageNode) {
           const { state, facets } = this;

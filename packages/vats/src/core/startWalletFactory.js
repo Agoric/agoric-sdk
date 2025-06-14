@@ -13,6 +13,7 @@ import {
 } from '../../tools/board-utils.js';
 
 /**
+ * @import {ERemote} from '@agoric/internal';
  * @import {EReturn} from '@endo/far';
  * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
  */
@@ -38,8 +39,8 @@ const StableUnit = BigInt(10 ** Stable.displayInfo.decimalPlaces);
  * been provisioned.
  *
  * @param {string[]} oldAddresses
- * @param {Marshaller} marshaller
- * @param {StorageNode} walletStorageNode
+ * @param {ERemote<Marshaller>} marshaller
+ * @param {ERemote<StorageNode>} walletStorageNode
  */
 const publishRevivableWalletState = async (
   oldAddresses,
@@ -47,13 +48,16 @@ const publishRevivableWalletState = async (
   walletStorageNode,
 ) => {
   const arbData = harden({});
+  // @ts-expect-error Need @endo/eventual-send type update
   const arbMarshalled = await E(marshaller).serialize(arbData);
   const arbJSON = JSON.stringify(arbMarshalled);
   const publishArbitraryWalletState = async address => {
     const walletUpdateNode = makeStorageNodeChild(walletStorageNode, address);
     const walletCurrentNode = makeStorageNodeChild(walletUpdateNode, 'current');
     await Promise.all([
+      // @ts-expect-error Need @endo/eventual-send type update
       E(walletUpdateNode).setValue(arbJSON),
+      // @ts-expect-error Need @endo/eventual-send type update
       E(walletCurrentNode).setValue(arbJSON),
     ]);
   };

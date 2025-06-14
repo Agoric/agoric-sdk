@@ -20,7 +20,7 @@ import { prepareRoundsManagerKit } from './roundsManager.js';
 
 /**
  * @import {EReturn} from '@endo/far';
- * @import {TypedPattern} from '@agoric/internal';
+ * @import {TypedPattern, Remote} from '@agoric/internal';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  */
 
@@ -86,7 +86,7 @@ const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
  * >} zcf
  * @param {TimerService} timerPresence
  * @param {import('./roundsManager.js').QuoteKit} quoteKit
- * @param {StorageNode} storageNode
+ * @param {Remote<StorageNode>} storageNode
  * @param {() => PublishKit<any>} makeDurablePublishKit
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorder} makeRecorder
  */

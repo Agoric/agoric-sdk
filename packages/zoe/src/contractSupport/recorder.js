@@ -10,7 +10,7 @@ import { M, makeScalarBigMapStore, prepareExoClass } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
 
 /**
- * @import {TypedPattern} from '@agoric/internal';
+ * @import {TypedPattern, ERemote, Remote} from '@agoric/internal';
  */
 
 /**
@@ -27,7 +27,7 @@ import { E } from '@endo/eventual-send';
 
 /**
  * @template T
- * @typedef {{ getStorageNode(): Awaited<import('@endo/far').FarRef<StorageNode>>, getStoragePath(): Promise<string>, write(value: T): Promise<void>, writeFinal(value: T): Promise<void> }} Recorder
+ * @typedef {{ getStorageNode(): Remote<StorageNode>, getStoragePath(): Promise<string>, write(value: T): Promise<void>, writeFinal(value: T): Promise<void> }} Recorder
  */
 
 /**
@@ -44,7 +44,7 @@ import { E } from '@endo/eventual-send';
  * Wrap a Publisher to record all the values to chain storage.
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
- * @param {ERef<Marshaller>} marshaller
+ * @param {ERemote<Marshaller>} marshaller
  */
 export const prepareRecorder = (baggage, marshaller) => {
   const makeRecorder = prepareExoClass(
@@ -59,7 +59,7 @@ export const prepareRecorder = (baggage, marshaller) => {
     /**
      * @template T
      * @param {PublishKit<T>['publisher']} publisher
-     * @param {Awaited<import('@endo/far').FarRef<StorageNode>>} storageNode
+     * @param {Remote<StorageNode>} storageNode
      * @param {TypedPattern<any>} [valueShape]
      */
     (
@@ -105,6 +105,7 @@ export const prepareRecorder = (baggage, marshaller) => {
         const { closed, publisher, storageNode, valueShape } = this.state;
         !closed || Fail`cannot write to closed recorder`;
         mustMatch(value, valueShape);
+        // @ts-expect-error Need @endo/eventual-send type update
         const encoded = await E(marshaller).toCapData(value);
         const serialized = JSON.stringify(encoded);
         await E(storageNode).setValue(serialized);
@@ -122,6 +123,7 @@ export const prepareRecorder = (baggage, marshaller) => {
         const { closed, publisher, storageNode, valueShape } = this.state;
         !closed || Fail`cannot write to closed recorder`;
         mustMatch(value, valueShape);
+        // @ts-expect-error Need @endo/eventual-send type update
         const encoded = await E(marshaller).toCapData(value);
         const serialized = JSON.stringify(encoded);
         await E(storageNode).setValue(serialized);
@@ -148,19 +150,13 @@ harden(prepareRecorder);
 export const defineRecorderKit = ({ makeRecorder, makeDurablePublishKit }) => {
   /**
    * @template T
-   * @param {StorageNode | Awaited<import('@endo/far').FarRef<StorageNode>>} storageNode
+   * @param {Remote<StorageNode>} storageNode
    * @param {TypedPattern<T>} [valueShape]
    * @returns {RecorderKit<T>}
    */
   const makeRecorderKit = (storageNode, valueShape) => {
     const { subscriber, publisher } = makeDurablePublishKit();
-    const recorder = makeRecorder(
-      publisher,
-      /** @type { Awaited<import('@endo/far').FarRef<StorageNode>> } */ (
-        storageNode
-      ),
-      valueShape,
-    );
+    const recorder = makeRecorder(publisher, storageNode, valueShape);
     return harden({ subscriber, recorder });
   };
   return makeRecorderKit;
@@ -177,19 +173,14 @@ export const defineRecorderKit = ({ makeRecorder, makeDurablePublishKit }) => {
 export const defineERecorderKit = ({ makeRecorder, makeDurablePublishKit }) => {
   /**
    * @template T
-   * @param {ERef<StorageNode>} storageNodeP
+   * @param {ERemote<StorageNode>} storageNodeP
    * @param {TypedPattern<T>} [valueShape]
    * @returns {EventualRecorderKit<T>}
    */
   const makeERecorderKit = (storageNodeP, valueShape) => {
     const { publisher, subscriber } = makeDurablePublishKit();
     const recorderP = E.when(storageNodeP, storageNode =>
-      makeRecorder(
-        publisher,
-        // @ts-expect-error Casting because it's remote
-        /** @type { import('@endo/far').FarRef<StorageNode> } */ (storageNode),
-        valueShape,
-      ),
+      makeRecorder(publisher, storageNode, valueShape),
     );
     return { subscriber, recorderP };
   };
@@ -205,7 +196,7 @@ harden(defineERecorderKit);
  * When there is, prepare the kinds separately and pass to the kit definers.
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
- * @param {ERef<Marshaller>} marshaller
+ * @param {ERemote<Marshaller>} marshaller
  */
 export const prepareRecorderKit = (baggage, marshaller) => {
   const makeDurablePublishKit = prepareDurablePublishKit(
@@ -225,7 +216,7 @@ export const prepareRecorderKit = (baggage, marshaller) => {
  * `makeERecorderKit` is for closures that must return a `subscriber` synchronously but can defer the `recorder`.
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
- * @param {ERef<Marshaller>} marshaller
+ * @param {ERemote<Marshaller>} marshaller
  */
 export const prepareRecorderKitMakers = (baggage, marshaller) => {
   const makeDurablePublishKit = prepareDurablePublishKit(

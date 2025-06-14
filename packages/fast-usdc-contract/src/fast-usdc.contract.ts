@@ -29,7 +29,7 @@ import { makeZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { Fail, quote } from '@endo/errors';
-import { E, type ERef } from '@endo/far';
+import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 
 import type { HostInterface } from '@agoric/async-flow';
@@ -39,7 +39,7 @@ import type {
   FastUsdcTerms,
   FeeConfig,
 } from '@agoric/fast-usdc/src/types.js';
-import type { Remote } from '@agoric/internal';
+import type { ERemote, Remote } from '@agoric/internal';
 import type {
   Marshaller,
   StorageNode,
@@ -83,20 +83,23 @@ export const meta = {
 harden(meta);
 
 const publishFeeConfig = (
-  node: Remote<StorageNode>,
-  marshaller: ERef<Marshaller>,
+  node: ERemote<StorageNode>,
+  marshaller: ERemote<Marshaller>,
   feeConfig: FeeConfig,
 ) => {
+  // @ts-expect-error Need @endo/eventual-send type update
   const feeNode = E(node).makeChildNode(FEE_NODE);
+  // @ts-expect-error Need @endo/eventual-send type update
   void E.when(E(marshaller).toCapData(feeConfig), value =>
     E(feeNode).setValue(JSON.stringify(value)),
   );
 };
 
 const publishAddresses = (
-  contractNode: Remote<StorageNode>,
+  contractNode: ERemote<StorageNode>,
   addresses: ContractRecord,
-) => {
+): Promise<void> => {
+  // @ts-expect-error Need @endo/eventual-send type update
   return E(contractNode).setValue(JSON.stringify(addresses));
 };
 
@@ -106,8 +109,8 @@ export const contract = async (
     assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
     chainInfo: Record<string, ChainHubChainInfo>;
     feeConfig: FeeConfig;
-    marshaller: Marshaller;
-    storageNode: StorageNode;
+    marshaller: Remote<Marshaller>;
+    storageNode: Remote<StorageNode>;
     poolMetricsNode: Remote<StorageNode>;
   },
   zone: Zone,

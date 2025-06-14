@@ -35,6 +35,7 @@ import { makeScheduler } from './scheduler.js';
 import { AuctionState } from './util.js';
 
 /**
+ * @import {Remote} from '@agoric/internal';
  * @import {TypedPattern} from '@agoric/internal';
  * @import {MapStore} from '@agoric/store';
  * @import {Baggage} from '@agoric/vat-data';
@@ -396,8 +397,8 @@ export const distributeProportionalSharesWithLimits = (
  * >} zcf
  * @param {{
  *   initialPoserInvitation: Invitation;
- *   storageNode: StorageNode;
- *   marshaller: Marshaller;
+ *   storageNode: Remote<StorageNode>;
+ *   marshaller: Remote<Marshaller>;
  * }} privateArgs
  * @param {Baggage} baggage
  */
@@ -702,6 +703,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 
         const bookId = `book${bookCounter}`;
         bookCounter += 1;
+        /** @type {Remote<StorageNode>} */
         const bNode = await E(privateArgs.storageNode).makeChildNode(bookId);
 
         const newBook = await makeAuctionBook(

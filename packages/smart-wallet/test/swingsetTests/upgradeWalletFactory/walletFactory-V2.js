@@ -135,6 +135,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
          */
         const maker = async () => {
           const invitationPurse = await E(invitationIssuer).makeEmptyPurse();
+          // @ts-expect-error Need @endo/eventual-send type update
           const walletStorageNode = E(storageNode).makeChildNode(address);
           const wallet = await makeSmartWallet(
             harden({ address, walletStorageNode, bank, invitationPurse }),

@@ -6,6 +6,7 @@ import { untilTrue } from '@agoric/internal';
 import { withGroundState, makeState } from './state.js';
 
 /**
+ * @import {ERemote} from '@agoric/internal'
  * @import {Passable, RemotableObject} from '@endo/pass-style';
  * @import {Key, Pattern} from '@endo/patterns';
  */
@@ -112,13 +113,14 @@ const applyCacheTransaction = async (
 
 /**
  * @param {MapStore<string, import('./state.js').State>} stateStore
- * @param {ERef<Marshaller>} marshaller
+ * @param {ERemote<Marshaller>} marshaller
  * @returns {Promise<string>}
  */
 const stringifyStateStore = async (stateStore, marshaller) => {
   /** @type {Passable} */
   const obj = {};
   for (const [key, value] of stateStore.entries()) {
+    // @ts-expect-error Need @endo/eventual-send type update
     obj[key] = E(marshaller).toCapData(value);
   }
   return deeplyFulfilled(harden(obj)).then(fulfilledObj =>
@@ -176,8 +178,8 @@ export const makeScalarStoreCoordinator = (
  * Don't write any marshalled value that's older than what's already pushed
  *
  * @param {MapStore<string, import('./state.js').State>} stateStore
- * @param {ERef<Marshaller>} marshaller
- * @param {ERef<StorageNode>} storageNode
+ * @param {ERemote<Marshaller>} marshaller
+ * @param {ERemote<StorageNode>} storageNode
  * @returns {<T>(storedValue: T) => Promise<T>}
  */
 const makeLastWinsUpdater = (stateStore, marshaller, storageNode) => {
@@ -195,6 +197,7 @@ const makeLastWinsUpdater = (stateStore, marshaller, storageNode) => {
       // skip setValue() so we don't regress the store state
       return storedValue;
     }
+    // @ts-expect-error Need @endo/eventual-send type update
     await E(storageNode).setValue(serializedStore);
     lastCommitTicket = marshallTicket;
     return storedValue;
@@ -205,8 +208,8 @@ const makeLastWinsUpdater = (stateStore, marshaller, storageNode) => {
  * Make a cache coordinator backed by a MapStore.  This coordinator doesn't
  * currently enforce any cache eviction, but that would be a useful feature.
  *
- * @param {ERef<StorageNode>} storageNode
- * @param {ERef<Marshaller>} marshaller
+ * @param {ERemote<StorageNode>} storageNode
+ * @param {ERemote<Marshaller>} marshaller
  */
 export const makeChainStorageCoordinator = (storageNode, marshaller) => {
   const stateStore = makeScalarBigMapStore('stateKey');

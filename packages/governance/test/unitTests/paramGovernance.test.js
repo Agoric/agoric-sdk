@@ -127,7 +127,7 @@ test('governParam no votes', async t => {
       timer,
     );
 
-  /** @type {GovernedPublicFacet<{}>} */
+  /** @type {Promise<GovernedPublicFacet<{}>>} */
   const publicFacet = E(governorFacets.creatorFacet).getPublicFacet();
   const notifier = makeNotifierFromAsyncIterable(
     await E(publicFacet).getSubscription(),
@@ -297,7 +297,7 @@ test('change multiple params used invitation', async t => {
       timer,
     );
 
-  /** @type {GovernedPublicFacet<{}>} */
+  /** @type {Promise<GovernedPublicFacet<{}>>} */
   const publicFacet = E(governorFacets.creatorFacet).getPublicFacet();
   const notifier = makeNotifierFromAsyncIterable(
     await E(publicFacet).getSubscription(),
@@ -368,7 +368,7 @@ test('change param continuing invitation', async t => {
       timer,
     );
 
-  /** @type {GovernedPublicFacet<{}>} */
+  /** @type {Promise<GovernedPublicFacet<{}>>} */
   const publicFacet = E(governorFacets.creatorFacet).getPublicFacet();
   const notifier = makeNotifierFromAsyncIterable(
     await E(publicFacet).getSubscription(),
