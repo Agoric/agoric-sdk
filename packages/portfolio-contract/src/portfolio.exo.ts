@@ -63,8 +63,8 @@ export const preparePortfolioKit = (zone: Zone, zcf: ZCF) =>
       },
       invitationMakers: {
         // TODO: withdrawInvitation / offerHandler
-        makeWithdrawInvitation(args) {
-          return zcf.makeInvitation(async (seat, offerArgs) => {
+        makeWithdrawInvitation() {
+          return zcf.makeInvitation(async () => {
             const key = 'USDN';
             const amount = 333n;
             const { [key]: account } = this.state;
@@ -79,10 +79,8 @@ export const preparePortfolioKit = (zone: Zone, zcf: ZCF) =>
             try {
               let result = await account.executeEncodedTx([
                 Any.toJSON(MsgUnlock.toProtoMsg(msgUnlock)),
-                // Any.toJSON(MsgSwap.toProtoMsg(msgSwap)),
               ]);
               result = await account.executeEncodedTx([
-                // Any.toJSON(MsgUnlock.toProtoMsg(msgUnlock))
                 Any.toJSON(MsgSwap.toProtoMsg(msgSwap)),
               ]);
               trace('Unlock result:', result);
@@ -90,7 +88,7 @@ export const preparePortfolioKit = (zone: Zone, zcf: ZCF) =>
               trace('Error during unlock:', err);
               // Add recovery logic here
             }
-          }, 'withdraw from USDN position');
+          }, 'makeWithdrawInvitation');
         },
       },
     },

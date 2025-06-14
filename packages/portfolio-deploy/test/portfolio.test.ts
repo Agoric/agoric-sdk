@@ -146,8 +146,9 @@ test.serial('open a USDN position', async t => {
   >;
   const give = { USDN: make(USDC, 3_333n * 1_000_000n) };
   t.log('opening portfolio', give);
+  const firstOfferId = `open-${Date.now()}`;
   await wallet.sendOffer({
-    id: `open-${Date.now()}`, // XXX ambient
+    id: firstOfferId, // XXX ambient
     invitationSpec: {
       source: 'agoricContract',
       instancePath: ['ymax0'],
@@ -155,9 +156,24 @@ test.serial('open a USDN position', async t => {
     },
     proposal: { give },
   });
-  const update = wallet.getLatestUpdateRecord(); // XXX remote should be async
+  let update = wallet.getLatestUpdateRecord(); // XXX remote should be async
   t.log('update', update);
-  const current = wallet.getCurrentWalletRecord(); // XXX remote should be async
+  let current = wallet.getCurrentWalletRecord(); // XXX remote should be async
   t.log('trader1 current', current);
   t.truthy(current);
+
+  await wallet.sendOffer({
+    id: `close-${Date.now()}`, // XXX ambient
+    invitationSpec: {
+      source: 'continuing',      
+      previousOffer: firstOfferId,
+      invitationMakerName: 'makeWithdrawInvitation',
+    },
+    proposal: {},
+  });
+  update = wallet.getLatestUpdateRecord(); // XXX remote should be async
+  t.log('update', update);
+  current = wallet.getCurrentWalletRecord(); // XXX remote should be async
+  t.log('trader1 current', current);
+  
 });
