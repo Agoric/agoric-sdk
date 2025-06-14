@@ -8,13 +8,13 @@ import { decodeAbiParameters } from 'viem';
 import { type MapStore } from '@agoric/store';
 import type {
   AxelarGmpIncomingMemo,
-  SupportedDestinationChains,
+  SupportedEVMChains,
 } from '@agoric/orchestration/src/axelar-types.js';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import type { OrchestrationAccount } from '@agoric/orchestration';
 import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.ts';
-import { YieldProtocol } from './constants.js';
+import { PortfolioChain, YieldProtocol } from './constants.js';
 
 const trace = makeTracer('PortExo');
 
@@ -36,15 +36,21 @@ const DECODE_CONTRACT_CALL_RESULT_ABI = [
 ];
 
 const KeeperI = M.interface('keeper', {
-  init: M.call(M.string(), M.remotable('OrchestrationAccount')).returns(),
-  getAccount: M.call(M.string()).returns(M.remotable('OrchestrationAccount')),
+  init: M.call(
+    M.string(),
+    M.string(),
+    M.remotable('OrchestrationAccount'),
+  ).returns(),
+  getAccount: M.call(M.string(), M.string()).returns(
+    M.remotable('OrchestrationAccount'),
+  ),
 });
 
 const EvmTapI = M.interface('EvmTap', {
   receiveUpcall: M.call(M.record()).returns(M.or(VowShape, M.undefined())),
 });
 
-export const supportedDestinationChains: SupportedDestinationChains[] = [
+export const supportedEVMChains: SupportedEVMChains[] = [
   'Avalanche',
   'Base',
   'Ethereum',
@@ -88,7 +94,7 @@ type CosmosProtocolState = {
 
 type PortfolioKitStateShape = {
   protocolStates: MapStore<
-    YieldProtocol,
+    PortfolioChain,
     CosmosProtocolState | EVMProtocolState
   >;
 };
@@ -126,9 +132,7 @@ export const preparePortfolioKit = (zone: Zone) =>
           trace('receiveUpcall packet data', tx);
           const memo: AxelarGmpIncomingMemo = JSON.parse(tx.memo);
 
-          if (
-            (supportedDestinationChains as string[]).includes(memo.source_chain)
-          ) {
+          if ((supportedEVMChains as string[]).includes(memo.source_chain)) {
             const payloadBytes = decodeBase64(memo.payload);
             const [decoded] = decodeAbiParameters(
               DECODE_CONTRACT_CALL_RESULT_ABI,
@@ -146,6 +150,7 @@ export const preparePortfolioKit = (zone: Zone) =>
       keeper: {
         init<P extends YieldProtocol>(
           key: P,
+          portfolioChain: PortfolioChain,
           account:
             | OrchestrationAccount<{ chainId: 'agoric-any' }>
             | OrchestrationAccount<{ chainId: 'noble-any' }>,
@@ -158,18 +163,19 @@ export const preparePortfolioKit = (zone: Zone) =>
                 account as OrchestrationAccount<{ chainId: 'noble-any' }>,
               );
 
-          this.state.protocolStates.init(key, protocolState);
+          this.state.protocolStates.init(portfolioChain, protocolState);
           trace('initialized account for', key, '=>', `${account}`);
         },
         getAccount<P extends YieldProtocol>(
           key: P,
+          portfolioChain: PortfolioChain,
         ):
           | OrchestrationAccount<{ chainId: 'agoric-any' }>
           | OrchestrationAccount<{ chainId: 'noble-any' }> {
-          if (!this.state.protocolStates.has(key)) {
-            throw Fail`account not initialized: ${q(key)}`;
+          if (!this.state.protocolStates.has(portfolioChain)) {
+            throw Fail`account not initialized: ${q(portfolioChain)}`;
           }
-          const protocolState = this.state.protocolStates.get(key);
+          const protocolState = this.state.protocolStates.get(portfolioChain);
 
           if (isEvmProtocol(key)) {
             const evmState = protocolState as EVMProtocolState;

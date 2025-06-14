@@ -1,9 +1,9 @@
 import type { TypedPattern } from '@agoric/internal';
 import { M } from '@endo/patterns';
-import type { SupportedDestinationChains } from '@agoric/orchestration/src/axelar-types.js';
+import type { SupportedEVMChains } from '@agoric/orchestration/src/axelar-types.js';
 import type { YieldProtocol as YieldProtocolT } from './constants.js';
 import { YieldProtocol } from './constants.js';
-import { supportedDestinationChains } from './portfolio.exo.js';
+import { supportedEVMChains } from './portfolio.exo.js';
 
 const { keys } = Object;
 
@@ -18,7 +18,7 @@ export type ProposalShapes = {
 };
 
 export type OfferArgsShapes = {
-  evmChain?: SupportedDestinationChains;
+  evmChain?: SupportedEVMChains;
 };
 
 export const makeProposalShapes = (usdcBrand: Brand<'nat'>) => {
@@ -32,6 +32,6 @@ export const makeProposalShapes = (usdcBrand: Brand<'nat'>) => {
 
 export const makeOfferArgsShapes = () => {
   return M.splitRecord({
-    evmChain: M.opt(M.or(...supportedDestinationChains)),
+    evmChain: M.opt(M.or(...supportedEVMChains)),
   }) as TypedPattern<OfferArgsShapes>;
 };

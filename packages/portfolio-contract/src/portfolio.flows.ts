@@ -214,7 +214,7 @@ export const openPortfolio = (async (
       const nobleChain = await orch.getChain('noble');
       const myNobleAccout = await nobleChain.makeAccount();
       const nobleAddr = myNobleAccout.getAddress();
-      kit.keeper.init('USDN', myNobleAccout);
+      kit.keeper.init('USDN', 'Noble', myNobleAccout);
 
       const storagePath = coerceAccountId(nobleAddr);
       const topic: GuestInterface<ResolvedPublicTopic<unknown>> = {
@@ -226,7 +226,10 @@ export const openPortfolio = (async (
     };
 
     const openUSDNPosition = async (amount: Amount<'nat'>) => {
-      const acct = kit.keeper.getAccount('USDN') as OrchestrationAccount<{
+      const acct = kit.keeper.getAccount(
+        'USDN',
+        'Noble',
+      ) as OrchestrationAccount<{
         chainId: 'noble-any';
       }>;
       const there = acct.getAddress();
