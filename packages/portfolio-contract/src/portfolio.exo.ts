@@ -13,9 +13,27 @@ import type {
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import type { OrchestrationAccount } from '@agoric/orchestration';
+import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.ts';
 import { YieldProtocol } from './constants.js';
 
 const trace = makeTracer('PortExo');
+
+const DECODE_CONTRACT_CALL_RESULT_ABI = [
+  {
+    type: 'tuple',
+    components: [
+      { name: 'isContractCallResult', type: 'bool' },
+      {
+        name: 'data',
+        type: 'tuple[]',
+        components: [
+          { name: 'success', type: 'bool' },
+          { name: 'result', type: 'bytes' },
+        ],
+      },
+    ],
+  },
+];
 
 const KeeperI = M.interface('keeper', {
   init: M.call(M.string(), M.remotable('OrchestrationAccount')).returns(),
@@ -26,7 +44,7 @@ const EvmTapI = M.interface('EvmTap', {
   receiveUpcall: M.call(M.record()).returns(M.or(VowShape, M.undefined())),
 });
 
-const supportedDestinationChains: SupportedDestinationChains[] = [
+export const supportedDestinationChains: SupportedDestinationChains[] = [
   'Avalanche',
   'Base',
   'Ethereum',
@@ -57,6 +75,7 @@ export const preparePortfolioKit = (zone: Zone) =>
     {
       keeper: KeeperI,
       invitationMakers: M.interface('invitationMakers', {
+        // TODO
         // supplyToAave: M.call(M.record()).returns(M.promise()),
         // borrowFromAave: M.call(M.record()).returns(M.promise()),
         // supplyToCompound: M.call(M.record()).returns(M.promise()),
@@ -84,35 +103,15 @@ export const preparePortfolioKit = (zone: Zone) =>
           const memo: AxelarGmpIncomingMemo = JSON.parse(tx.memo);
 
           if (
-            supportedDestinationChains.includes(
-              memo.source_chain as SupportedDestinationChains,
-            )
+            (supportedDestinationChains as string[]).includes(memo.source_chain)
           ) {
             const payloadBytes = decodeBase64(memo.payload);
-            const [{ isContractCallResult, data }] = decodeAbiParameters(
-              [
-                {
-                  type: 'tuple',
-                  components: [
-                    { name: 'isContractCallResult', type: 'bool' },
-                    {
-                      name: 'data',
-                      type: 'tuple[]',
-                      components: [
-                        { name: 'success', type: 'bool' },
-                        { name: 'result', type: 'bytes' },
-                      ],
-                    },
-                  ],
-                },
-              ],
+            const [decoded] = decodeAbiParameters(
+              DECODE_CONTRACT_CALL_RESULT_ABI,
               payloadBytes,
-            );
+            ) as [AgoricResponse];
 
-            trace(
-              'receiveUpcall Decoded:',
-              JSON.stringify({ isContractCallResult, data }),
-            );
+            trace('receiveUpcall Decoded:', JSON.stringify(decoded));
 
             // TODO: Handle the result of the contract call
           }
@@ -121,8 +120,8 @@ export const preparePortfolioKit = (zone: Zone) =>
         },
       },
       keeper: {
-        init(
-          key: YieldProtocol,
+        init<P extends YieldProtocol>(
+          key: P,
           account:
             | OrchestrationAccount<{ chainId: 'agoric-any' }>
             | OrchestrationAccount<{ chainId: 'noble-any' }>,
@@ -154,8 +153,8 @@ export const preparePortfolioKit = (zone: Zone) =>
 
           trace('initialized account for', key, '=>', `${account}`);
         },
-        getAccount(
-          key: YieldProtocol,
+        getAccount<P extends YieldProtocol>(
+          key: P,
         ):
           | OrchestrationAccount<{ chainId: 'agoric-any' }>
           | OrchestrationAccount<{ chainId: 'noble-any' }> {
@@ -179,6 +178,7 @@ export const preparePortfolioKit = (zone: Zone) =>
         },
       },
       invitationMakers: {
+        // TODO
         // supplyToAave: M.call(M.record()).returns(M.promise()),
         // borrowFromAave: M.call(M.record()).returns(M.promise()),
         // supplyToCompound: M.call(M.record()).returns(M.promise()),

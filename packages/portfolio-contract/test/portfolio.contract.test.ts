@@ -1,6 +1,5 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-
 import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import type { Installation } from '@agoric/zoe';
@@ -9,18 +8,12 @@ import { E, passStyleOf } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
 import { createRequire } from 'module';
-import { makeUSDNIBCTraffic } from './mocks.ts';
+import { contract, makeUSDNIBCTraffic } from './mocks.ts';
 import { makeTrader } from './portfolio-actors.ts';
 import { setupPortfolioTest } from './supports.ts';
 import { makeWallet } from './wallet-offer-tools.ts';
 
 const nodeRequire = createRequire(import.meta.url);
-
-export const contractAddresses = {
-  aavePoolAddress: '0x87870Bca3F0fD6335C3F4ce8392D69350B4fA4E2', // Aave V3 Pool
-  compoundAddress: '0xA0b86a33E6A3E81E27Da9c18c4A77c9Cd4e08D57', // Compound USDC
-  factoryAddress: '0xef8651dD30cF990A1e831224f2E0996023163A81', // Factory contract
-};
 
 const contractName = 'ymax0';
 const contractFile = nodeRequire.resolve(
@@ -73,7 +66,7 @@ const deploy = async (t: ExecutionContext) => {
     {}, // terms
     {
       ...common.commonPrivateArgs,
-      contractAddresses,
+      contract,
     }, // privateArgs
   );
   t.notThrows(() =>
@@ -99,9 +92,7 @@ test('open portfolio with USDN position', async t => {
   const funds = await common.utils.pourPayment(myBalance);
   const myWallet = makeWallet({ USDC: usdc }, zoe, when);
   await E(myWallet).deposit(funds);
-  const trader1 = makeTrader(myWallet, started.instance, {
-    yieldProtocol: 'USDN',
-  });
+  const trader1 = makeTrader(myWallet, started.instance);
   t.log('I am a power user with', myBalance, 'on Agoric');
 
   const { ibcBridge } = common.mocks;
@@ -109,11 +100,15 @@ test('open portfolio with USDN position', async t => {
     ibcBridge.addMockAck(msg, ack);
   }
 
-  const doneP = trader1.openPortfolio(t, {
-    USDN: usdc.units(3_333),
-    Aave: usdc.units(3_333),
-    Compound: usdc.units(3_333),
-  });
+  const doneP = trader1.openPortfolio(
+    t,
+    {
+      USDN: usdc.units(3_333),
+      Aave: usdc.units(3_333),
+      Compound: usdc.units(3_333),
+    },
+    { evmChain: 'Ethereum' },
+  );
 
   // ack IBC transfer for forward
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
