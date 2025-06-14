@@ -1,4 +1,7 @@
 // @ts-check
+
+const { freeze } = Object;
+
 /**
  * @import {PathNode, FileRd, FileRW} from './file';
  *
@@ -20,7 +23,7 @@ const dbg = label => x => {
  * @param {(...msgs: any[]) => void} [io.log]
  * @returns {TextRd}
  */
-export const makeWebRd = Object.freeze((root, { fetch, log = console.log }) => {
+export const makeWebRd = (root, { fetch, log = console.log }) => {
   /** @param {string} there */
   const make = there => {
     /** @param {string[]} segments */
@@ -52,7 +55,8 @@ export const makeWebRd = Object.freeze((root, { fetch, log = console.log }) => {
     return self;
   };
   return make(root);
-});
+};
+freeze(makeWebRd);
 
 /**
  * @param {TextRd} src
@@ -60,7 +64,7 @@ export const makeWebRd = Object.freeze((root, { fetch, log = console.log }) => {
  *
  * @typedef {ReturnType<typeof makeWebCache>} WebCache
  */
-export const makeWebCache = Object.freeze((src, dest) => {
+export const makeWebCache = (src, dest) => {
   /** @type {Map<string, Promise<FileRd>>} */
   const saved = new Map();
 
@@ -110,4 +114,5 @@ export const makeWebCache = Object.freeze((src, dest) => {
     remove,
   };
   return self;
-});
+};
+freeze(makeWebCache);

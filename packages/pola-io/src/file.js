@@ -1,9 +1,12 @@
 // @ts-check
 
+const { freeze } = Object;
+
 // XXX: what hazards may not using endo assert.fail expose us to?
-export const fail = Object.freeze(reason => {
+export const fail = reason => {
   throw Error(reason);
-});
+};
+freeze(fail);
 
 /**
  * Dynamic access
@@ -51,7 +54,7 @@ const dyn = io => {
  * @param {Partial<typeof import('fs/promises')>} [io.fsp]
  * @param {Partial<typeof import('path')>} [io.path]
  */
-export const makeFileRd = Object.freeze((root, { fs = {}, fsp = {}, path = {} } = {}) => {
+export const makeFileRd = (root, { fs = {}, fsp = {}, path = {} } = {}) => {
   const [fsio, fspio, pathio] = [dyn(fs), dyn(fsp), dyn(path)];
 
   /** @param {string} there */
@@ -77,7 +80,8 @@ export const makeFileRd = Object.freeze((root, { fs = {}, fsp = {}, path = {} } 
     return self;
   };
   return make(root);
-});
+};
+freeze(makeFileRd);
 
 /**
  * Reify file read/write access as an object.
@@ -90,7 +94,7 @@ export const makeFileRd = Object.freeze((root, { fs = {}, fsp = {}, path = {} } 
  *
  * @typedef {ReturnType<typeof makeFileRW>} FileRW
  */
-export const makeFileRW = Object.freeze((root, { fs = {}, fsp = {}, path = {} } = {}) => {
+export const makeFileRW = (root, { fs = {}, fsp = {}, path = {} } = {}) => {
   // XXX share dyn with makeFileRd?
   const [fspio, pathio] = [dyn(fsp), dyn(path)];
 
@@ -110,4 +114,5 @@ export const makeFileRW = Object.freeze((root, { fs = {}, fsp = {}, path = {} } 
     return self;
   };
   return make(root);
-});
+};
+freeze(makeFileRW);

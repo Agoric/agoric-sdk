@@ -15,7 +15,7 @@ const { freeze } = Object;
  * @param {string} file
  * @param {{ execFile: any }} io XXX expects promisify
  */
-export const makeCmdRunner = Object.freeze((file, { execFile }) => {
+export const makeCmdRunner = (file, { execFile }) => {
   /** @param {{ preArgs?: string[], postArgs?: string[] }} [opts] */
   const make = ({ preArgs = [], postArgs = [] } = {}) => {
     return freeze({
@@ -38,14 +38,15 @@ export const makeCmdRunner = Object.freeze((file, { execFile }) => {
     });
   };
   return make();
-});
+};
+freeze(makeCmdRunner);
 /** @typedef {ReturnType<makeCmdRunner>} CmdRunner */
 
 /**
  * @param {Record<string, string | string[] | undefined>} record - e.g. { color: 'blue' }
  * @returns {string[]} - e.g. ['--color', 'blue']
  */
-export const flags = Object.freeze(record => {
+export const flags = record => {
   // TODO? support --yes with boolean?
 
   /** @type {[string, string][]} */
@@ -57,4 +58,5 @@ export const flags = Object.freeze(record => {
     }
     return [`--${key}`, value];
   });
-});
+};
+freeze(flags);
