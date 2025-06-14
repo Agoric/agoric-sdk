@@ -5,7 +5,7 @@
  * @import {TypedPattern} from '@agoric/internal';
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
  * @import {ZoeTools} from '../utils/zoe-tools.js';
- * @import {AxelarGmpIncomingMemo, EvmTapState, ContractCall, SupportedDestinationChains} from '../axelar-types.js';
+ * @import {AxelarGmpIncomingMemo, EvmTapState, ContractCall, SupportedEVMChains} from '../axelar-types.js';
  * @import {ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {AxelarGmpOutgoingMemo, GMPMessageType} from '../axelar-types.js'
  */
@@ -190,7 +190,7 @@ export const prepareEvmAccountKit = (
          * @param {{
          *   destinationAddress: string;
          *   type: GMPMessageType;
-         *   destinationEVMChain: SupportedDestinationChains;
+         *   destinationEVMChain: SupportedEVMChains;
          *   gasAmount: number;
          *   contractInvocationData: ContractCall[];
          * }} offerArgs

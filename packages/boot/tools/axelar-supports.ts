@@ -26,7 +26,7 @@ type CallResult = {
  *
  * @see https://github.com/agoric-labs/dapp-evm/blob/main/solidity/contracts/Factory.sol
  */
-type AgoricResponse = {
+export type AgoricResponse = {
   isContractCallResult: boolean;
   data: CallResult[];
 };

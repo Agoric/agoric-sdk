@@ -19,11 +19,57 @@ import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
+import {
+  AxelarGMPMessageType,
+  type AxelarGmpOutgoingMemo,
+  type ContractCall,
+} from '@agoric/orchestration/src/axelar-types.js';
+import { gmpAddresses } from '@agoric/orchestration/src/utils/gmp.js';
 import type { PortfolioKit } from './portfolio.exo.ts';
-import type { ProposalShapes } from './type-guards.ts';
+import type { OfferArgsShapes, ProposalShapes } from './type-guards.ts';
 // TODO: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const trace = makeTracer('PortF');
+
+const makeAaveSupplyCall = (
+  aavePoolAddress: string,
+  asset: string,
+  amount: bigint,
+  onBehalfOf: string,
+): ContractCall => ({
+  target: aavePoolAddress as `0x${string}`,
+  functionSignature: 'supply(address,uint256,address,uint16)',
+  args: [asset, String(amount), onBehalfOf, 0],
+});
+
+const makeAaveBorrowCall = (
+  aavePoolAddress: string,
+  asset: string,
+  amount: bigint,
+  onBehalfOf: string,
+): ContractCall => ({
+  target: aavePoolAddress as `0x${string}`,
+  functionSignature: 'borrow(address,uint256,uint256,uint16,address)',
+  args: [asset, String(amount), 2, 0, onBehalfOf],
+});
+
+const makeCompoundSupplyCall = (
+  compoundAddress: string,
+  amount: bigint,
+): ContractCall => ({
+  target: compoundAddress as `0x${string}`,
+  functionSignature: 'supply(uint256)',
+  args: [String(amount)],
+});
+
+const makeCompoundBorrowCall = (
+  compoundAddress: string,
+  amount: bigint,
+): ContractCall => ({
+  target: compoundAddress as `0x${string}`,
+  functionSignature: 'borrow(uint256)',
+  args: [String(amount)],
+});
 
 /**
  * Make an orchestration account on the agoric chain to, for example,
@@ -83,22 +129,92 @@ export const openPortfolio = (async (
   ctx: {
     zoeTools: GuestInterface<ZoeTools>;
     makePortfolioKit: () => PortfolioKit;
+    contract: {
+      aavePool: string;
+      compound: string;
+      factory: string;
+    };
     inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
   },
   seat: ZCFSeat,
-  _offerArgs: unknown, // TODO: USDN/USDC ratio
+  offerArgs: OfferArgsShapes, // TODO: USDN/USDC ratio
   // passed as a promise to alleviate contract start-up sync constraints
   localP: Promise<OrchestrationAccount<{ chainId: 'agoric-any' }>>,
 ) => {
   await null; // see https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
   try {
-    const kit = ctx.makePortfolioKit();
+    const { makePortfolioKit, contract } = ctx;
+    const kit = makePortfolioKit();
+
+    const initRemoteEVMAccount = async () => {
+      const { evmChain } = offerArgs;
+      assert(evmChain, 'evmChain is required to open a remote EVM account');
+
+      const [agoric, axelar] = await Promise.all([
+        orch.getChain('agoric'),
+        orch.getChain('axelar'),
+      ]);
+
+      const { chainId, stakingTokens } = await axelar.getChainInfo();
+      assert.equal(stakingTokens.length, 1, 'axelar has 1 staking token');
+
+      const localAccount = await agoric.makeAccount();
+      const localChainAddress = localAccount.getAddress();
+      trace('Local Chain Address:', localChainAddress);
+
+      try {
+        // @ts-expect-error
+        await localAccount.monitorTransfers(kit.tap);
+        trace('Monitoring transfers setup successfully');
+
+        const { give } = seat.getProposal();
+        const [[_kw, amt]] = Object.entries(give);
+
+        const assets = await agoric.getVBankAssetInfo();
+        const { denom } =
+          assets.find(a => a.brand === amt.brand) ||
+          (() => {
+            throw new Error(`${amt.brand} not registered in vbank`);
+          })();
+
+        await ctx.zoeTools.localTransfer(seat, localAccount, give);
+
+        const memo: AxelarGmpOutgoingMemo = {
+          destination_chain: evmChain,
+          destination_address: contract.factory,
+          payload: [],
+          type: AxelarGMPMessageType.ContractCall,
+          fee: {
+            amount: '1', // TODO: Get fee amount from api
+            recipient: gmpAddresses.AXELAR_GAS,
+          },
+        };
+
+        trace('Initiating IBC transfer');
+        await localAccount.transfer(
+          {
+            value: gmpAddresses.AXELAR_GMP,
+            encoding: 'bech32',
+            chainId,
+          },
+          {
+            denom,
+            value: amt.value,
+          },
+          { memo: JSON.stringify(memo) },
+        );
+      } catch (err) {
+        await ctx.zoeTools.withdrawToSeat(localAccount, seat, give);
+        const errorMsg = `EVM account creation failed ${err}`;
+        throw new Error(errorMsg);
+      }
+    };
 
     const initNobleAccount = async () => {
       const nobleChain = await orch.getChain('noble');
       const myNobleAccout = await nobleChain.makeAccount();
       const nobleAddr = myNobleAccout.getAddress();
-      kit.keeper.init('USDN', myNobleAccout);
+      kit.keeper.init('USDN', 'Noble', myNobleAccout);
 
       const storagePath = coerceAccountId(nobleAddr);
       const topic: GuestInterface<ResolvedPublicTopic<unknown>> = {
@@ -110,7 +226,12 @@ export const openPortfolio = (async (
     };
 
     const openUSDNPosition = async (amount: Amount<'nat'>) => {
-      const acct = kit.keeper.getAccount('USDN');
+      const acct = kit.keeper.getAccount(
+        'USDN',
+        'Noble',
+      ) as OrchestrationAccount<{
+        chainId: 'noble-any';
+      }>;
       const there = acct.getAddress();
 
       const localAcct = await localP;
@@ -156,6 +277,22 @@ export const openPortfolio = (async (
         await openUSDNPosition(give.USDN);
       } catch (err) {
         seat.fail(err);
+        return harden({
+          invitationMakers: kit.invitationMakers,
+          publicTopics: topics,
+        });
+      }
+    }
+
+    // Only initialize EVM account if there are EVM protocol positions
+    if (give.Aave || give.Compound) {
+      try {
+        await initRemoteEVMAccount();
+        trace('TODO: Wait for account creation to complete');
+        trace('TODO: Send USDC via CCTP to the target EVM account');
+        trace('TODO: Verify the balance after transfer');
+      } catch (err) {
+        seat.fail(err);
       }
     }
 
@@ -172,3 +309,4 @@ export const openPortfolio = (async (
   }
   /* c8 ignore end */
 }) satisfies OrchestrationFlow;
+harden(openPortfolio);

@@ -71,5 +71,5 @@ export const AxelarGMPMessageType = {
  */
 
 /**
- * @typedef {keyof typeof EVM_CHAINS} SupportedDestinationChains
+ * @typedef {keyof typeof EVM_CHAINS} SupportedEVMChains
  */

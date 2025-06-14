@@ -1,6 +1,5 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-
 import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import type { Installation } from '@agoric/zoe';
@@ -9,7 +8,7 @@ import { E, passStyleOf } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
 import * as contractExports from '../src/portfolio.contract.ts';
-import { makeUSDNIBCTraffic } from './mocks.ts';
+import { contract, makeUSDNIBCTraffic } from './mocks.ts';
 import { makeTrader } from './portfolio-actors.ts';
 import { setupPortfolioTest } from './supports.ts';
 import { makeWallet } from './wallet-offer-tools.ts';
@@ -60,7 +59,10 @@ const deploy = async (t: ExecutionContext) => {
     installation,
     { USDC: usdc.issuer },
     {}, // terms
-    common.commonPrivateArgs,
+    {
+      ...common.commonPrivateArgs,
+      contract,
+    }, // privateArgs
   );
   t.notThrows(() =>
     mustMatch(
@@ -93,11 +95,13 @@ test('open portfolio with USDN position', async t => {
     ibcBridge.addMockAck(msg, ack);
   }
 
-  const doneP = trader1.openPortfolio(t, {
-    USDN: usdc.units(3_333),
-    Aave: usdc.units(3_333),
-    Compound: usdc.units(3_333),
-  });
+  const doneP = trader1.openPortfolio(
+    t,
+    {
+      USDN: usdc.units(3_333),
+    },
+    { evmChain: undefined },
+  );
 
   // ack IBC transfer for forward
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
@@ -111,6 +115,46 @@ test('open portfolio with USDN position', async t => {
   const [{ storagePath: myUSDNAddress }] = result.publicTopics;
   t.log('I can see where my money is:', myUSDNAddress);
   t.log('refund', done.payouts);
+});
+
+test('make remote EVM account for AAVE and Compound', async t => {
+  const { common, zoe, started } = await deploy(t);
+  const { usdc } = common.brands;
+  const { when } = common.utils.vowTools;
+
+  const myBalance = usdc.units(10_000);
+  const funds = await common.utils.pourPayment(myBalance);
+  const myWallet = makeWallet({ USDC: usdc }, zoe, when);
+  await E(myWallet).deposit(funds);
+  const trader1 = makeTrader(myWallet, started.instance);
+  t.log('I am a power user with', myBalance, 'on Agoric');
+
+  const doneP = trader1.openPortfolio(
+    t,
+    {
+      Aave: usdc.units(3_333),
+      Compound: usdc.units(3_333),
+    },
+    { evmChain: 'Ethereum' },
+  );
+
+  // ack IBC transfer for forward
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', {
+    sequence: 1n,
+    message: {
+      memo: '',
+      receiver: 'cosmos1test',
+      sender: 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht',
+      sourceChannel: 'channel-62',
+      sourcePort: 'transfer',
+      // timeoutHeight: [Object],
+      timeoutTimestamp: 300000000000n,
+      // token: [Object],
+    },
+  });
+  console.log('rabi.......................');
+  const done = await doneP;
+  console.log('rabi2.............', done);
 });
 
 test.todo('User can see transfer in progress');

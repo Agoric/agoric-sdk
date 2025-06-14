@@ -11,3 +11,14 @@ export const YieldProtocol = /** @type {const} */ ({
   USDN: 'USDN',
 });
 harden(YieldProtocol);
+
+/**
+ * @enum {(typeof PortfolioChain)[keyof typeof PortfolioChain]}
+ */
+export const PortfolioChain = /** @type {const} */ ({
+  Ethereum: 'Ethereum',
+  Avalanche: 'Avalanche',
+  Base: 'Base',
+  Noble: 'Noble',
+});
+harden(PortfolioChain);

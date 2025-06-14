@@ -1,43 +1,240 @@
 import { makeTracer } from '@agoric/internal';
-import type { OrchestrationAccount } from '@agoric/orchestration';
 import type { Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
-import { YieldProtocol } from './constants.js';
-
-const interfaceTODO = undefined;
+import { M } from '@endo/patterns';
+import { VowShape } from '@agoric/vow';
+import { atob, decodeBase64 } from '@endo/base64';
+import { decodeAbiParameters } from 'viem';
+import { type MapStore } from '@agoric/store';
+import type {
+  AxelarGmpIncomingMemo,
+  SupportedEVMChains,
+} from '@agoric/orchestration/src/axelar-types.js';
+import type { VTransferIBCEvent } from '@agoric/vats';
+import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
+import type { OrchestrationAccount } from '@agoric/orchestration';
+import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.ts';
+import { PortfolioChain, YieldProtocol } from './constants.js';
 
 const trace = makeTracer('PortExo');
+const { keys } = Object;
 
-type Accounts = {
-  Aave: never; // TODO
-  Compound: never; // TODO
-  USDN: OrchestrationAccount<{ chainId: 'noble-any' }>;
+const DECODE_CONTRACT_CALL_RESULT_ABI = [
+  {
+    type: 'tuple',
+    components: [
+      { name: 'isContractCallResult', type: 'bool' },
+      {
+        name: 'data',
+        type: 'tuple[]',
+        components: [
+          { name: 'success', type: 'bool' },
+          { name: 'result', type: 'bytes' },
+        ],
+      },
+    ],
+  },
+];
+
+const KeeperI = M.interface('keeper', {
+  init: M.call(
+    M.or(...keys(YieldProtocol)),
+    M.or(...keys(PortfolioChain)),
+    M.remotable('OrchestrationAccount'),
+  ).returns(),
+  getAccount: M.call(
+    M.or(...keys(YieldProtocol)),
+    M.or(...keys(PortfolioChain)),
+  ).returns(M.remotable('OrchestrationAccount')),
+});
+
+const EvmTapI = M.interface('EvmTap', {
+  receiveUpcall: M.call(M.record()).returns(M.or(VowShape, M.undefined())),
+});
+
+export const supportedEVMChains: SupportedEVMChains[] = [
+  'Avalanche',
+  'Base',
+  'Ethereum',
+];
+
+const isEvmProtocol = (protocol: YieldProtocol): boolean => {
+  return protocol === YieldProtocol.Aave || protocol === YieldProtocol.Compound;
+};
+
+const createEvmProtocolState = (
+  account: OrchestrationAccount<{ chainId: 'agoric-any' }>,
+): EVMProtocolState => {
+  return harden({
+    localAccount: account,
+    remoteAccountAddress: undefined,
+    evmChain: undefined,
+    isActive: true,
+  });
+};
+
+const createCosmosProtocolState = (
+  account: OrchestrationAccount<{ chainId: 'noble-any' }>,
+): CosmosProtocolState => {
+  return harden({
+    icaAccount: account,
+    isActive: true,
+  });
+};
+
+type EVMProtocolState = {
+  localAccount?: OrchestrationAccount<{ chainId: 'agoric-any' }>;
+  remoteAccountAddress?: string;
+  evmChain?: string;
+  isActive: boolean;
+};
+
+type CosmosProtocolState = {
+  icaAccount?: OrchestrationAccount<{ chainId: 'noble-any' }>;
+  isActive: boolean;
+};
+
+type PortfolioKitStateShape = {
+  protocolStates: MapStore<
+    PortfolioChain,
+    CosmosProtocolState | EVMProtocolState
+  >;
 };
 
 export const preparePortfolioKit = (zone: Zone) =>
   zone.exoClassKit(
     'Portfolio',
-    interfaceTODO,
-    () =>
-      ({
-        USDN: undefined,
-      }) as Partial<Accounts>,
     {
-      keeper: {
-        init<P extends YieldProtocol>(key: P, account: Accounts[P]) {
-          this.state[key] = account;
-          trace('stored', key, '=>', `${account}`);
+      keeper: KeeperI,
+      invitationMakers: M.interface('invitationMakers', {
+        // TODO
+        // supplyToAave: M.call(M.record()).returns(M.promise()),
+        // borrowFromAave: M.call(M.record()).returns(M.promise()),
+        // supplyToCompound: M.call(M.record()).returns(M.promise()),
+        // borrowFromCompound: M.call(M.record()).returns(M.promise()),
+        // withdraw: M.call(M.record()).returns(M.promise()),
+      }),
+      tap: EvmTapI,
+    },
+
+    (): PortfolioKitStateShape => {
+      return harden({
+        protocolStates: zone.mapStore('protocolStates'),
+      });
+    },
+    {
+      tap: {
+        receiveUpcall(event: VTransferIBCEvent) {
+          trace('receiveUpcall', event);
+
+          const tx: FungibleTokenPacketData = JSON.parse(
+            atob(event.packet.data),
+          );
+
+          trace('receiveUpcall packet data', tx);
+          const memo: AxelarGmpIncomingMemo = JSON.parse(tx.memo);
+
+          if ((supportedEVMChains as string[]).includes(memo.source_chain)) {
+            const payloadBytes = decodeBase64(memo.payload);
+            const [{ isContractCallResult, data }] = decodeAbiParameters(
+              DECODE_CONTRACT_CALL_RESULT_ABI,
+              payloadBytes,
+            ) as [AgoricResponse];
+
+            trace(
+              'receiveUpcall Decoded:',
+              JSON.stringify({ isContractCallResult, data }),
+            );
+
+            if (!isContractCallResult) {
+              const [message] = data;
+              const { success, result } = message;
+
+              trace('Contract Call Status:', success);
+
+              if (success) {
+                const [address] = decodeAbiParameters(
+                  [{ type: 'address' }],
+                  result,
+                );
+
+                const sourceChain = memo.source_chain as PortfolioChain;
+                if (this.state.protocolStates.has(sourceChain)) {
+                  const protocolState =
+                    this.state.protocolStates.get(sourceChain);
+                  if ('remoteAccountAddress' in protocolState) {
+                    const evmState = protocolState as EVMProtocolState;
+                    this.state.protocolStates.set(sourceChain, {
+                      ...evmState,
+                      remoteAccountAddress: address,
+                    });
+                  }
+                }
+
+                trace('remote evm account address:', address);
+              }
+            }
+            // TODO: Handle the result of the contract call
+          }
+
+          trace('receiveUpcall completed');
         },
-        getAccount<P extends YieldProtocol>(key: P) {
-          const { [key]: account } = this.state;
-          if (!account) throw Fail`not set: ${q(key)}`;
-          return account;
+      },
+      keeper: {
+        init<P extends YieldProtocol>(
+          key: P,
+          portfolioChain: PortfolioChain,
+          account:
+            | OrchestrationAccount<{ chainId: 'agoric-any' }>
+            | OrchestrationAccount<{ chainId: 'noble-any' }>,
+        ) {
+          const protocolState = isEvmProtocol(key)
+            ? createEvmProtocolState(
+                account as OrchestrationAccount<{ chainId: 'agoric-any' }>,
+              )
+            : createCosmosProtocolState(
+                account as OrchestrationAccount<{ chainId: 'noble-any' }>,
+              );
+
+          this.state.protocolStates.init(portfolioChain, protocolState);
+          trace('initialized account for', key, '=>', `${account}`);
+        },
+        getAccount<P extends YieldProtocol>(
+          key: P,
+          portfolioChain: PortfolioChain,
+        ):
+          | OrchestrationAccount<{ chainId: 'agoric-any' }>
+          | OrchestrationAccount<{ chainId: 'noble-any' }> {
+          if (!this.state.protocolStates.has(portfolioChain)) {
+            throw Fail`account not initialized: ${q(portfolioChain)}`;
+          }
+          const protocolState = this.state.protocolStates.get(portfolioChain);
+
+          if (isEvmProtocol(key)) {
+            const evmState = protocolState as EVMProtocolState;
+            if (!evmState.localAccount) {
+              throw Fail`account not initialized: ${q(key)}`;
+            }
+            return evmState.localAccount;
+          } else {
+            const cosmosState = protocolState as CosmosProtocolState;
+            if (!cosmosState.icaAccount) {
+              throw Fail`account not initialized: ${q(key)}`;
+            }
+            return cosmosState.icaAccount;
+          }
         },
       },
       invitationMakers: {
-        // TODO: withdraw etc.
+        // TODO
+        // supplyToAave: M.call(M.record()).returns(M.promise()),
+        // borrowFromAave: M.call(M.record()).returns(M.promise()),
+        // supplyToCompound: M.call(M.record()).returns(M.promise()),
+        // borrowFromCompound: M.call(M.record()).returns(M.promise()),
+        // withdraw: M.call(M.record()).returns(M.promise()),
       },
     },
   );
 
 export type PortfolioKit = ReturnType<ReturnType<typeof preparePortfolioKit>>;
+harden(preparePortfolioKit);
