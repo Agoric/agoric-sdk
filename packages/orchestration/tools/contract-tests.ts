@@ -103,7 +103,8 @@ export const setupOrchestrationTest = async ({
     transfer: transferMiddleware,
   });
   const timer = buildZoeManualTimer(log);
-  const marshaller = makeFakeBoard().getPublishingMarshaller();
+  const board = makeFakeBoard();
+  const marshaller = board.getPublishingMarshaller();
   const storage = makeFakeStorageKit(ROOT_STORAGE_PATH);
 
   const { portAllocator, setupIBCProtocol, ibcBridge } = setupFakeNetwork(
@@ -242,6 +243,7 @@ export const setupOrchestrationTest = async ({
       agoricNames,
       agoricNamesAdmin,
       bankManager,
+      board,
       timer,
       localchain,
       cosmosInterchainService,

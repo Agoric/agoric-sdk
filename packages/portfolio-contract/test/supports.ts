@@ -84,11 +84,15 @@ export const setupPortfolioTest = async ({
     assetOn('uusdc', 'noble', 'osmosis', fetchedChainInfo),
   ]);
 
+  // XXX poolMetricsNode is fastUsdc-specific
+  const { poolMetricsNode: _p, ...commonPrivateArgs } =
+    common.commonPrivateArgs;
+
   return {
     ...common,
     brands: { usdc: usdcSansMint },
     commonPrivateArgs: {
-      ...common.commonPrivateArgs,
+      ...commonPrivateArgs,
       assetInfo,
     },
     utils: common.utils,

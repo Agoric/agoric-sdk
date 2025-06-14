@@ -60,6 +60,7 @@ const deploy = async (t: ExecutionContext) => {
     installation,
     { USDC: usdc.issuer },
     {}, // terms
+    // @ts-expect-error XXX what's going on here? TODO: FixMe
     common.commonPrivateArgs,
   );
   t.notThrows(() =>
