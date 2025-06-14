@@ -33,6 +33,7 @@
   "dependencies": {
     "@agoric/client-utils": "workspace:*",
     "@agoric/cosmic-proto": "workspace:*",
+    "@agoric/cosmic-swingset": "workspace:*",
     "@agoric/deploy-script-support": "workspace:*",
     "@agoric/ertp": "workspace:*",
     "@agoric/fast-usdc": "workspace:*",
@@ -40,6 +41,7 @@
     "@agoric/notifier": "workspace:*",
     "@agoric/orchestration": "workspace:*",
     "@agoric/store": "workspace:*",
+    "@agoric/telemetry": "workspace:*",
     "@agoric/vat-data": "workspace:*",
     "@agoric/vow": "workspace:*",
     "@agoric/zoe": "workspace:*",
