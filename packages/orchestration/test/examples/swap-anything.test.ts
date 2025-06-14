@@ -338,7 +338,7 @@ test('should not execute transfer if query is malformed', async t => {
   );
 });
 
-test('should recover failed transfer', async t => {
+test('should recover failed transfer from a zoe offer', async t => {
   const {
     vt,
     swapKit,
@@ -421,6 +421,80 @@ test('should recover failed transfer', async t => {
     },
     'funds withdrawn from LCA in catch block',
   );
+});
+
+test('should recover failed transfer from an address hook', async t => {
+  const {
+    bootstrap: { storage },
+    transferBridge,
+    inspectLocalBridge,
+    commonPrivateArgs,
+    transmitVTransferEvent,
+  } = await bootstrapOrchestration(t);
+  await eventLoopIteration();
+
+  const { sharedLocalAccount } = commonPrivateArgs.marshaller.fromCapData(
+    JSON.parse(
+      NonNullish(storage.data.get('mockChainStorageRoot.swap-anything')),
+    ),
+  );
+
+  t.deepEqual(sharedLocalAccount.value, 'agoric1fakeLCAAddress');
+
+  const memoArgs = buildOfferArgs(config.xcsInformation.rawMsgNoNextMemo);
+  t.log(memoArgs);
+
+  await E(transferBridge).fromBridge(
+    buildVTransferEvent({
+      event: 'writeAcknowledgement',
+      denom: 'transfer/channel-9/ubld',
+      receiver: encodeAddressHook(
+        'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht',
+        {
+          destAddr: memoArgs.destAddr,
+          receiverAddr: memoArgs.receiverAddr,
+          outDenom: memoArgs.outDenom,
+        },
+      ),
+      sourceChannel: 'channel-9',
+    }),
+  );
+  await eventLoopIteration();
+  await transmitVTransferEvent('timeoutPacket');
+
+  const history = inspectLocalBridge();
+  t.log(history);
+
+  const [_alloc, transfer, recovery] = history;
+
+  t.like(transfer, {
+    type: 'VLOCALCHAIN_EXECUTE_TX',
+    address: transfer.address,
+    messages: [
+      {
+        '@type': '/ibc.applications.transfer.v1.MsgTransfer',
+        sender: transfer.address,
+        sourcePort: 'transfer',
+        token: { amount: '10', denom: 'ubld' },
+        receiver:
+          'osmo17p9rzwnnfxcjp32un9ug7yhhzgtkhvl9jfksztgw5uh69wac2pgs5yczr8', // osmosis contract address specified on rawMsgNoNextMemo
+      },
+    ],
+  });
+
+  t.like(recovery, {
+    type: 'VLOCALCHAIN_EXECUTE_TX',
+    address: transfer.address,
+    messages: [
+      {
+        '@type': '/ibc.applications.transfer.v1.MsgTransfer',
+        sender: transfer.address,
+        sourcePort: 'transfer',
+        token: { amount: '10', denom: 'ubld' },
+        receiver: 'cosmos1AccAddress', // default address for incoming transfer IBC event
+      },
+    ],
+  });
 });
 
 test('should throw when Osmosis chain is not registered', async t => {
