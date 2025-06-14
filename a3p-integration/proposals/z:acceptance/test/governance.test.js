@@ -136,7 +136,7 @@ test.serial(
     const brands = Object.fromEntries(brand);
 
     const params = {
-      PerAccountInitialAmount: { brand: brands.IST, value: 100_000n },
+      PerAccountInitialAmount: { brand: brands.BLD, value: 100_000n },
     };
     const instanceName = 'provisionPool';
 
@@ -191,7 +191,7 @@ test.serial(
     const brands = Object.fromEntries(brand);
 
     const params = {
-      PerAccountInitialAmount: { brand: brands.IST, value: 300_000n },
+      PerAccountInitialAmount: { brand: brands.BLD, value: 300_000n },
     };
     const instanceName = 'provisionPool';
 
