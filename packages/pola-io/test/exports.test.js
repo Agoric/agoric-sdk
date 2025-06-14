@@ -3,6 +3,8 @@ import test from 'ava';
 
 import * as index from '@agoric/pola-io';
 
+const { isFrozen } = Object;
+
 test('index', t => {
   t.snapshot(Object.keys(index).sort());
 });
@@ -10,6 +12,6 @@ test('index', t => {
 test('all exports are frozen', t => {
   const exports = Object.values(index);
   for (const exportedValue of exports) {
-    t.true(Object.isFrozen(exportedValue), `Export should be frozen: ${exportedValue.name || exportedValue}`);
+    t.true(isFrozen(exportedValue), `Export should be frozen: ${exportedValue.name || exportedValue}`);
   }
 });
