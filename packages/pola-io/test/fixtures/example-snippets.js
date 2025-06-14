@@ -3,15 +3,16 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 
-/**
- * Read the actual fixture files as strings
- */
-export const cmdRunnerExample = await readFile(
-  require.resolve('./cmd-runner-example.js'),
-  'utf8',
-).then(s => s.trim());
+const paths = {
+  cmdRunner: require.resolve('./cmd-runner-example.js'),
+  readonlyFile: require.resolve('./readonly-file-example.js'),
+};
 
-export const readonlyFileExample = await readFile(
-  require.resolve('./readonly-file-example.js'),
-  'utf8',
-).then(s => s.trim());
+const loadExample = async path => {
+  const text = await readFile(path, 'utf-8');
+  return text.replace(/\/\/ eslint.*\n/, '').trim();
+};
+
+export const cmdRunnerExample = await loadExample(paths.cmdRunner);
+
+export const readonlyFileExample = await loadExample(paths.readonlyFile);

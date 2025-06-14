@@ -2,6 +2,7 @@ import test from 'ava';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import * as snip from './fixtures/example-snippets.js';
+import { main as cmdMain } from './fixtures/cmd-runner-example.js';
 
 const require = createRequire(import.meta.url);
 const readmePath = require.resolve('../README.md');
@@ -66,3 +67,15 @@ const checkExampleMatch = test.macro({
 
 test(checkExampleMatch, 'makeCmdRunner', snip.cmdRunnerExample, true);
 test(checkExampleMatch, 'makeReadOnlyFile', snip.readonlyFileExample, false);
+
+test('cmd example', async t => {
+  /** @type {any} */ // TODO
+  const execFile = (file, args, _opts) => {
+    t.is(file, 'npx');
+    t.deepEqual(args, ['agoric', 'run', 'builder.js']);
+    return { stdout: 'building...' };
+  };
+
+  const actual = await cmdMain({ execFile });
+  t.deepEqual(actual, ['building...']);
+});
