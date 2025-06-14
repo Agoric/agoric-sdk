@@ -77,7 +77,7 @@ export const makeFileRd = (root, { fs = {}, fsp = {}, path = {} } = {}) => {
           .readdir(there)
           .then(files => files.map(segment => self.join(segment))),
     };
-    return self;
+    return freeze(self);
   };
   return make(root);
 };
@@ -111,7 +111,7 @@ export const makeFileRW = (root, { fs = {}, fsp = {}, path = {} } = {}) => {
       mkdir: () => fspio.mkdir(there, { recursive: true }),
       rmdir: () => fspio.rmdir(there),
     };
-    return self;
+    return freeze(self);
   };
   return make(root);
 };
