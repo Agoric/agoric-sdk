@@ -31,7 +31,7 @@ export const makeCmdRunner = (file, { execFile }) => {
        * @param {string} name
         @param {string[]} [opts] */
       subCommand: (name, opts = []) =>
-        make({ preArgs: [name, ...opts, ...preArgs], postArgs }),
+        make({ preArgs: [...preArgs, name, ...opts], postArgs }),
       /** @param {string[]} tailFlags */
       withFlags: (...tailFlags) =>
         make({ preArgs, postArgs: [...postArgs, ...tailFlags] }),
