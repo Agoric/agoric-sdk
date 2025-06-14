@@ -66,6 +66,68 @@ import { wrapperMethods } from './prepare-attenuator.js';
  */
 
 /**
+ * Make an internal exo class kit for wrapping an underlying exo class,
+ * where the wrapper is a revocable forwarder.
+ *
+ * @template [U=any]
+ * @param {import('@agoric/base-zone').Zone} zone
+ * @param {string} uKindName
+ *   The `kindName` of the underlying exo class
+ * @param {PropertyKey[]} uMethodNames
+ *   The method names of the underlying exo class that should be represented
+ *   by transparently-forwarding methods of the revocable caretaker.
+ * @param {(amp: Amplify<any>) => void} [receiveAmplifier]
+ * @param {RevocableKitOptions<U>} [options]
+ */
+export const prepareInternalRevocableMakerKit = (
+  zone,
+  uKindName,
+  uMethodNames,
+  receiveAmplifier,
+  options = {},
+) => {
+  const {
+    uInterfaceName = uKindName,
+    extraMethodGuards = {},
+    extraMethods = {},
+  } = options;
+  const RevocableIKit = harden({
+    revoker: M.interface(`${uInterfaceName}_revoker`, {
+      revoke: M.call().returns(M.boolean()),
+    }),
+    revocable: M.interface(`${uInterfaceName}_revocable`, extraMethodGuards, {
+      defaultGuards: 'raw',
+    }),
+  });
+
+  const revocableKindName = `${uKindName}_caretaker`;
+
+  const makeInternalRevocableKit = zone.exoClassKit(
+    revocableKindName,
+    RevocableIKit,
+    underlying => ({ underlying }),
+    {
+      revoker: {
+        revoke() {
+          const { state } = this;
+          if (state.underlying === undefined) {
+            return false;
+          }
+          state.underlying = undefined;
+          return true;
+        },
+      },
+      revocable: wrapperMethods(revocableKindName, uMethodNames, extraMethods),
+    },
+    {
+      stateShape: { underlying: M.opt(M.remotable('underlying')) },
+      receiveAmplifier,
+    },
+  );
+  return makeInternalRevocableKit;
+};
+
+/**
  * Make an exo class kit for wrapping an underlying exo class,
  * where the wrapper is a revocable forwarder.
  *
@@ -85,54 +147,24 @@ export const prepareRevocableMakerKit = (
   uMethodNames,
   options = {},
 ) => {
-  const {
-    uInterfaceName = uKindName,
-    extraMethodGuards = {},
-    extraMethods = {},
-  } = options;
-  const RevocableIKit = harden({
-    revoker: M.interface(`${uInterfaceName}_revoker`, {
-      revoke: M.call().returns(M.boolean()),
-    }),
-    revocable: M.interface(`${uInterfaceName}_revocable`, extraMethodGuards, {
-      defaultGuards: 'raw',
-    }),
-  });
-
-  const revocableKindName = `${uKindName}_caretaker`;
-
   /** @type {Amplify<any>} */
   let amplifier;
 
-  const makeRevocableKit = zone.exoClassKit(
-    revocableKindName,
-    RevocableIKit,
-    underlying => ({ underlying }),
-    {
-      revoker: {
-        revoke() {
-          const { state } = this;
-          if (state.underlying === undefined) {
-            return false;
-          }
-          state.underlying = undefined;
-          return true;
-        },
-      },
-      revocable: wrapperMethods(revocableKindName, uMethodNames, extraMethods),
+  const makeInternalRevocableKit = prepareInternalRevocableMakerKit(
+    zone,
+    uKindName,
+    uMethodNames,
+    amp => {
+      amplifier = amp;
     },
-    {
-      stateShape: { underlying: M.opt(M.remotable('underlying')) },
-      receiveAmplifier: amp => {
-        amplifier = amp;
-      },
-    },
+    options,
   );
 
   /**
    * @type {MakeRevocable}
    */
-  const makeRevocable = underlying => makeRevocableKit(underlying).revocable;
+  const makeRevocable = underlying =>
+    makeInternalRevocableKit(underlying).revocable;
 
   /**
    * @param {U} revocable
