@@ -20,7 +20,7 @@ const dbg = label => x => {
  * @param {(...msgs: any[]) => void} [io.log]
  * @returns {TextRd}
  */
-export const makeWebRd = (root, { fetch, log = console.log }) => {
+export const makeWebRd = Object.freeze((root, { fetch, log = console.log }) => {
   /** @param {string} there */
   const make = there => {
     /** @param {string[]} segments */
@@ -52,7 +52,7 @@ export const makeWebRd = (root, { fetch, log = console.log }) => {
     return self;
   };
   return make(root);
-};
+});
 
 /**
  * @param {TextRd} src
@@ -60,7 +60,7 @@ export const makeWebRd = (root, { fetch, log = console.log }) => {
  *
  * @typedef {ReturnType<typeof makeWebCache>} WebCache
  */
-export const makeWebCache = (src, dest) => {
+export const makeWebCache = Object.freeze((src, dest) => {
   /** @type {Map<string, Promise<FileRd>>} */
   const saved = new Map();
 
@@ -110,4 +110,4 @@ export const makeWebCache = (src, dest) => {
     remove,
   };
   return self;
-};
+});
