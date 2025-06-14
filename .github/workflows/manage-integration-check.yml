@@ -22,10 +22,9 @@ jobs:
               ...context.repo,
               ref: head_sha,
               check_name: "integration-test-result",
-              external_id,
             })
             core.debug(`integration-test-result check runs: ${JSON.stringify(runs, null, 2)}`);
-            const filtRuns = runs.filter(run => run.external_id === external_id);
+            const filtRuns = runs.filter(run => run.status !== 'completed' && run.external_id === external_id);
             const descRuns = filtRuns.sort((a, b) => Date.parse(b.started_at) - Date.parse(a.started_at));
             const run = descRuns[0];
 
@@ -62,7 +61,6 @@ jobs:
               ...context.repo,
               ref: head_sha,
               check_name: "integration-test-result",
-              external_id,
             })
             core.debug(`integration-test-result check runs: ${JSON.stringify(runs, null, 2)}`);
             const filtRuns = runs.filter(run => run.status !== 'completed' && run.external_id === external_id);
