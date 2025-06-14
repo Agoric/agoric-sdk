@@ -1,4 +1,7 @@
 // @ts-check
+
+const { freeze } = Object;
+
 /**
  * @import {PathNode, FileRd, FileRW} from './file';
  *
@@ -49,10 +52,11 @@ export const makeWebRd = (root, { fetch, log = console.log }) => {
       readText: () => checkedFetch().then(res => res.text()),
       readJSON: () => checkedFetch().then(res => res.json()),
     };
-    return self;
+    return freeze(self);
   };
   return make(root);
 };
+freeze(makeWebRd);
 
 /**
  * @param {TextRd} src
@@ -110,5 +114,6 @@ export const makeWebCache = (src, dest) => {
     },
     remove,
   };
-  return self;
+  return freeze(self);
 };
+freeze(makeWebCache);

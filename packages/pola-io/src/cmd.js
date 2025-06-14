@@ -1,3 +1,6 @@
+// freeze() rather than harden() to stay with ZERO dependencies.
+// expected to be compatible with HardenedJS / ses.
+// XXX what hazards does this expose us to?
 const { freeze } = Object;
 
 /**
@@ -39,6 +42,7 @@ export const makeCmdRunner = (file, { execFile }) => {
   };
   return make();
 };
+freeze(makeCmdRunner);
 /** @typedef {ReturnType<makeCmdRunner>} CmdRunner */
 
 /**
@@ -58,3 +62,4 @@ export const flags = record => {
     return [`--${key}`, value];
   });
 };
+freeze(flags);

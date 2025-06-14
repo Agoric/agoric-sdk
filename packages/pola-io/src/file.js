@@ -1,9 +1,12 @@
 // @ts-check
 
+const { freeze } = Object;
+
 // XXX: what hazards may not using endo assert.fail expose us to?
 export const fail = reason => {
   throw Error(reason);
 };
+freeze(fail);
 
 /**
  * Dynamic access
@@ -74,10 +77,11 @@ export const makeFileRd = (root, { fs = {}, fsp = {}, path = {} } = {}) => {
           .readdir(there)
           .then(files => files.map(segment => self.join(segment))),
     };
-    return self;
+    return freeze(self);
   };
   return make(root);
 };
+freeze(makeFileRd);
 
 /**
  * Reify file read/write access as an object.
@@ -107,7 +111,8 @@ export const makeFileRW = (root, { fs = {}, fsp = {}, path = {} } = {}) => {
       mkdir: () => fspio.mkdir(there, { recursive: true }),
       rmdir: () => fspio.rmdir(there),
     };
-    return self;
+    return freeze(self);
   };
   return make(root);
 };
+freeze(makeFileRW);

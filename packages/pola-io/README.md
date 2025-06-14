@@ -10,36 +10,36 @@ npm install @agoric/pola-io
 
 **WIP WIP WIP - EXAMPLES BELOW ARE BROKEN**
 
-### Example: Running a Command with Minimal Authority
+### Example: `agoric run` as `npx` subcommand
 
-```
-import { makeCmdRunner } from '@agoric/pola-io/cmd.js';
-import { execFile } from 'node:child_process';
+```js
+import { makeCmdRunner } from '@agoric/pola-io';
+import { execFile as execFileNode } from 'node:child_process';
 import { promisify } from 'node:util';
 
-const runLs = makeCmdRunner('/bin/ls', { execFile: promisify(execFile) });
-await runLs(['-la']); // Only runs `/bin/ls`, nothing else
+export const main = async ({ execFile = promisify(execFileNode) }) => {
+  const npx = makeCmdRunner('npx', { execFile }); // TODO --no-install
+  return miscTask(npx);
+};
+
+const miscTask = async npx => {
+  const agoric = npx.subCommand('agoric');
+  const { stdout } = await agoric.subCommand('run').exec(['builder.js']);
+  return stdout.split('\n');
+};
 ```
 
 ### Example: Read-Only File Wrapper
 
-```
-import { makeReadOnlyFile } from '@agoric/pola-io/file.js';
+```js
+import { makeFileRW } from '@agoric/pola-io';
 import * as fsp from 'node:fs/promises';
-import * as path from 'node:path';
 
-const file = {
-  async getBytes() {
-    return fsp.readFile('/etc/hosts', 'utf8');
-  },
-  async setBytes(_bytes) {
-    throw new Error('setBytes not permitted');
-  },
-};
-
-const readonly = makeReadOnlyFile(file);
-await readonly.getBytes(); // Allowed
-await readonly.setBytes(); // Throws or is not defined
+const file = makeFileRW('/', { fsp });
+const readonly = file.readOnly();
+await readonly.readText(); // Allowed
+// @ts-expect-error static error
+await readonly.writeText();
 ```
 
 ## What This Package Offers
