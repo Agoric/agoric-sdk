@@ -11,7 +11,7 @@ import { getLockdownBundle } from '@agoric/xsnap-lockdown';
 
 import { xsnap } from '../src/xsnap.js';
 
-import { options, loader } from './message-tools.js';
+import { options, loader, filterRepairLogs } from './message-tools.js';
 
 const io = { spawn: proc.spawn, os: os.type(), fs, tmpName }; // WARNING: ambient
 const ld = loader(import.meta.url, fs.promises.readFile);
@@ -203,8 +203,9 @@ test('console - objects should include detail', async t => {
   const argStrings = args => args.map(a => a.toString());
   send(printed.filter(relevant).map(argStrings));
   `);
+
   t.deepEqual(
-    opts.messages.map(s => JSON.parse(s)),
+    opts.messages.map(s => filterRepairLogs(JSON.parse(s))),
     [
       [
         ['(Error#1)'],

@@ -236,10 +236,7 @@ const buildXsnap = async (platform, force, { fs, make }) => {
   const pjson = await fs.readFile(asset('../package.json'), 'utf-8');
   const pkg = JSON.parse(pjson);
 
-  const configEnvs = [
-    `XSNAP_VERSION=${pkg.version}`,
-    `CC=cc "-D__has_builtin(x)=1"`,
-  ];
+  const configEnvs = [`XSNAP_VERSION=${pkg.version}`, `CC=cc`];
 
   const configEnvFile = asset('../build.config.env');
   const existingConfigEnvs = fs.existsSync(configEnvFile)
