@@ -34,6 +34,8 @@ yarn lint
 
   - Reference: [safej/java/io/File.safej](https://github.com/kpreid/e-on-java/blob/master/src/safej/java/io/File.safej)
 
+- decide on package exports; e.g. `@agoric/pola-io/cmd`?
+
 - Move this package from `agoric-sdk` to `endo`
 
 ## Design Notes
