@@ -25,7 +25,6 @@ import {
   type ContractCall,
 } from '@agoric/orchestration/src/axelar-types.js';
 import { gmpAddresses } from '@agoric/orchestration/src/utils/gmp.js';
-import { Fail } from '@endo/errors';
 import type { PortfolioKit } from './portfolio.exo.ts';
 import type { OfferArgsShapes, ProposalShapes } from './type-guards.ts';
 // TODO: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
