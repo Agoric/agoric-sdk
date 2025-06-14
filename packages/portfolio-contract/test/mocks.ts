@@ -13,7 +13,9 @@ import type { FeeConfig, LogFn } from '@agoric/fast-usdc/src/types.js';
 import { makePromiseKit } from '@endo/promise-kit';
 import {
   MsgLock,
+  MsgUnlock,
   MsgLockResponse,
+  MsgUnlockResponse,
 } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import {
   MsgSwap,
@@ -151,9 +153,9 @@ export const makeUSDNIBCTraffic = (
     msg: buildTxPacketString([
       MsgSwap.toProtoMsg({
         signer,
-        amount: { denom: 'uusdc', amount: money },
-        routes: [{ poolId: 0n, denomTo: 'uusdn' }],
-        min: { denom: 'uusdn', amount: money },
+        amount: { denom: 'uusdn', amount: money },
+        routes: [{ poolId: 0n, denomTo: 'uusdc' }],
+        min: { denom: 'uusdc', amount: money },
       }),
     ]),
     ack: buildMsgResponseString(MsgSwapResponse, {}),
@@ -163,6 +165,12 @@ export const makeUSDNIBCTraffic = (
       MsgLock.toProtoMsg({ signer, vault: 1, amount: money }),
     ]),
     ack: buildMsgResponseString(MsgLockResponse, {}),
+  },
+  unlock: {
+    msg: buildTxPacketString([
+      MsgUnlock.toProtoMsg({ signer, vault: 1, amount: money }),
+    ]),
+    ack: buildMsgResponseString(MsgUnlockResponse, {}),
   },
   lockWorkaround: {
     // XXX { ..., vault: 1n } ???
