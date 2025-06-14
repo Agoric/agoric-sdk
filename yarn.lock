@@ -496,7 +496,6 @@ __metadata:
     "@agoric/import-manager": "workspace:*"
     "@agoric/internal": "workspace:*"
     "@agoric/notifier": "workspace:*"
-    "@agoric/pola-io": "workspace:*"
     "@agoric/store": "workspace:*"
     "@agoric/time": "workspace:*"
     "@agoric/vats": "workspace:*"
@@ -822,11 +821,10 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/pola-io@workspace:*, @agoric/pola-io@workspace:packages/pola-io":
+"@agoric/pola-io@workspace:packages/pola-io":
   version: 0.0.0-use.local
   resolution: "@agoric/pola-io@workspace:packages/pola-io"
   dependencies:
-    "@endo/errors": "npm:^1.2.10"
     ava: "npm:^5.3.0"
   languageName: unknown
   linkType: soft
