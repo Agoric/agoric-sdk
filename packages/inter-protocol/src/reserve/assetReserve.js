@@ -1,6 +1,6 @@
 // @jessie-check
 
-import { handleParamGovernance as reserveContractExports } from '@agoric/governance';
+import { handleParamGovernance } from '@agoric/governance';
 import { makeTracer } from '@agoric/internal';
 import {
   prepareRecorderKitMakers,
@@ -82,7 +82,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   });
 
   trace('awaiting handleParamGovernance');
-  const { makeDurableGovernorFacet } = await reserveContractExports(
+  const { makeDurableGovernorFacet } = await handleParamGovernance(
     zcf,
     privateArgs.initialPoserInvitation,
     {},

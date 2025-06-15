@@ -61,15 +61,39 @@ export const prepareAssetReserveKit = async (
   // invitations.
   /** @type {SetStore<{ revoke: () => boolean }>} */
   const outstandingRevokers = zone.setStore('outstandingRevokers');
+
   const makeRevocableWithdrawalFacet = prepareInternalRevocableMakerKit(
     zone,
     'WithdrawalFacet',
     ['Withdraw'],
   );
+
   const makeRevocableWithdrawalHandler = prepareInternalRevocableMakerKit(
     zone,
     'WithdrawalHandler',
     ['handle'],
+    {
+      extraMethods: {
+        /**
+         * Add some additional cleanup to avoid proliferation of revokers for
+         * spent invitations.
+         *
+         * @param {ZCFSeat} seat
+         * @param {never} offerArgs
+         */
+        handle(seat, offerArgs) {
+          const { revoker } = this.facets;
+          // We remove our outstanding revoker because we are consumed by Zoe
+          // and cannot be used again.
+          if (this.state.underlying === undefined) {
+            Fail`${q('WithdrawalHandler_caretaker')} revoked`;
+          }
+
+          outstandingRevokers.delete(revoker);
+          return this.state.underlying.handle(seat, offerArgs);
+        },
+      },
+    },
   );
 
   const makeAssetReserveKitInternal = prepareExoClassKit(
@@ -201,9 +225,6 @@ export const prepareAssetReserveKit = async (
         },
       },
       withdrawalHandler: {
-        /**
-         * @param {ZCFSeat} seat
-         */
         async handle(seat) {
           const { collateralSeat } = this.state;
           const { helper } = this.facets;
@@ -294,6 +315,7 @@ export const prepareAssetReserveKit = async (
           for (const revoker of outstandingRevokers.keys()) {
             revoker.revoke();
           }
+          outstandingRevokers.clear();
         },
       },
       /**
