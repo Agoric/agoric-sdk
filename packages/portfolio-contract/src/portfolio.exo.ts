@@ -1,4 +1,5 @@
 import { makeTracer } from '@agoric/internal';
+import { assert } from '@endo/errors';
 import type { Zone } from '@agoric/zone';
 import { M } from '@endo/patterns';
 import { VowShape } from '@agoric/vow';
@@ -156,10 +157,13 @@ export const preparePortfolioKit = (zone: Zone) =>
                       'remoteAccountAddress' in position
                     ) {
                       const evmState = position as EVMProtocolState;
-                      positions.set(key, {
-                        ...evmState,
-                        remoteAccountAddress: address,
-                      });
+                      positions.set(
+                        key,
+                        harden({
+                          ...evmState,
+                          remoteAccountAddress: address,
+                        }),
+                      );
                       break;
                     }
                   }
@@ -185,22 +189,26 @@ export const preparePortfolioKit = (zone: Zone) =>
           const key = 1 + positions.getSize();
           switch (type) {
             case 'Aave':
-            case 'Compound':
-              positions.init(key, {
+            case 'Compound': {
+              const evmState: EVMProtocolState = {
                 type,
                 localAccount: account as LocalAccount,
                 chain,
                 isActive,
-              });
+              };
+              positions.init(key, harden(evmState));
               break;
-            case 'USDN':
-              positions.init(key, {
+            }
+            case 'USDN': {
+              const nobleState: NobleDollarState = {
                 type,
                 chain,
                 account: account as AccountOf['USDN'],
                 isActive,
-              });
+              };
+              positions.init(key, harden(nobleState));
               break;
+            }
             default:
               throw new Error(`Unknown protocol type: ${type}`);
           }
@@ -212,7 +220,7 @@ export const preparePortfolioKit = (zone: Zone) =>
           const out: PositionInfo[] = [];
           for (const p of positions.values()) {
             if (p.type === type && chain === p.chain) {
-              out.push(p);
+              out.push(harden(p));
             }
           }
           return harden(out);
