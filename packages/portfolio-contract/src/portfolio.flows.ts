@@ -14,6 +14,7 @@ import type {
   OrchestrationAccount,
   OrchestrationFlow,
   Orchestrator,
+  CaipChainId,
 } from '@agoric/orchestration';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
@@ -214,7 +215,12 @@ export const openPortfolio = (async (
       const nobleChain = await orch.getChain('noble');
       const myNobleAccout = await nobleChain.makeAccount();
       const nobleAddr = myNobleAccout.getAddress();
-      kit.keeper.init('USDN', 'Noble', myNobleAccout);
+      const { chainId } = await nobleChain.getChainInfo();
+      const positionId = kit.keeper.add(
+        'USDN',
+        `cosmos:${chainId}` as CaipChainId,
+        myNobleAccout,
+      );
 
       const storagePath = coerceAccountId(nobleAddr);
       const topic: GuestInterface<ResolvedPublicTopic<unknown>> = {
@@ -222,13 +228,16 @@ export const openPortfolio = (async (
         subscriber: ctx.inertSubscriber,
         storagePath,
       };
-      return topic;
+      return { topic, positionId };
     };
 
-    const openUSDNPosition = async (amount: Amount<'nat'>) => {
+    const openUSDNPosition = async (
+      amount: Amount<'nat'>,
+      positionId: number,
+    ) => {
       const acct = kit.keeper.getAccount(
+        positionId,
         'USDN',
-        'Noble',
       ) as OrchestrationAccount<{
         chainId: 'noble-any';
       }>;
@@ -271,10 +280,10 @@ export const openPortfolio = (async (
     const { give } = seat.getProposal() as ProposalShapes['openPortfolio'];
     const topics: GuestInterface<ResolvedPublicTopic<never>>[] = [];
     if (give.USDN) {
-      const topic = await initNobleAccount();
+      const { topic, positionId } = await initNobleAccount();
       topics.push(topic);
       try {
-        await openUSDNPosition(give.USDN);
+        await openUSDNPosition(give.USDN, positionId);
       } catch (err) {
         seat.fail(err);
         return harden({
