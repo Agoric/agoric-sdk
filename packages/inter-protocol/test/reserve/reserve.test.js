@@ -93,127 +93,122 @@ test('reserve add collateral', async t => {
  *   unknown
  * >}
  */
-const reserveWithCollateral = test.macro({
-  title(providedTitle = '') {
-    return providedTitle;
-  },
-  async exec(t, { makeInvitationMaker }) {
-    const atomKit = makeIssuerKit('atom');
-    /** @param {NatValue} value */
-    const atom = value => AmountMath.make(atomKit.brand, value);
+const reserveWithCollateral = test.macro(async (t, { makeInvitationMaker }) => {
+  const atomKit = makeIssuerKit('atom');
+  /** @param {NatValue} value */
+  const atom = value => AmountMath.make(atomKit.brand, value);
 
-    const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
-    const timer = buildZoeManualTimer(t.log);
+  const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
+  const timer = buildZoeManualTimer(t.log);
 
-    const { zoe, reserve } = await setupReserveServices(
-      t,
-      electorateTerms,
-      timer,
+  const { zoe, reserve } = await setupReserveServices(
+    t,
+    electorateTerms,
+    timer,
+  );
+
+  await E(reserve.reserveCreatorFacet).addIssuer(atomKit.issuer, 'ATOM');
+  const invitation = await E(
+    reserve.reservePublicFacet,
+  ).makeAddCollateralInvitation();
+
+  const proposal = { give: { Collateral: atom(100_000n) } };
+  const atomPayment = atomKit.mint.mintPayment(atom(100000n));
+  const payments = { Collateral: atomPayment };
+  const collateralSeat = E(zoe).offer(invitation, proposal, payments);
+
+  t.is(
+    await E(collateralSeat).getOfferResult(),
+    'added Collateral to the Reserve',
+    `added atom to the collateral Reserve`,
+  );
+
+  t.log('making invitation maker');
+  const { makeInvitation, failsAfterRevokeAll } = makeInvitationMaker(t, {
+    zoe,
+    reserve,
+  });
+
+  const revokedRegExp = /(WithdrawalFacet|WithdrawalHandler).* revoked/;
+
+  const want = { ATOM: atom(101n) };
+
+  {
+    t.log('wants', want);
+    const withdrawInvitation = await makeInvitation();
+
+    t.log('getting seat');
+    const seat = await E(zoe).offer(withdrawInvitation, { want });
+
+    await t.notThrowsAsync(
+      () => E(seat).getOfferResult(),
+      `should fulfill offer result`,
     );
+    t.log('getting payouts');
+    const payouts = await E(seat).getPayouts();
 
-    await E(reserve.reserveCreatorFacet).addIssuer(atomKit.issuer, 'ATOM');
-    const invitation = await E(
-      reserve.reservePublicFacet,
-    ).makeAddCollateralInvitation();
+    t.log('comparing payouts');
 
-    const proposal = { give: { Collateral: atom(100_000n) } };
-    const atomPayment = atomKit.mint.mintPayment(atom(100000n));
-    const payments = { Collateral: atomPayment };
-    const collateralSeat = E(zoe).offer(invitation, proposal, payments);
-
-    t.is(
-      await E(collateralSeat).getOfferResult(),
-      'added Collateral to the Reserve',
-      `added atom to the collateral Reserve`,
-    );
-
-    t.log('making invitation maker');
-    const { makeInvitation, failsAfterRevokeAll } = makeInvitationMaker(t, {
-      zoe,
-      reserve,
-    });
-
-    const revokedRegExp = /(WithdrawalFacet|WithdrawalHandler).* revoked/;
-
-    const want = { ATOM: atom(101n) };
-
-    {
-      t.log('wants', want);
-      const withdrawInvitation = await makeInvitation();
-
-      t.log('getting seat');
-      const seat = await E(zoe).offer(withdrawInvitation, { want });
-
-      await t.notThrowsAsync(
-        () => E(seat).getOfferResult(),
-        `should fulfill offer result`,
-      );
-      t.log('getting payouts');
-      const payouts = await E(seat).getPayouts();
-
-      t.log('comparing payouts');
-
-      const wantAmounts = new Map(Object.entries(want));
-      for (const [key, payout] of Object.entries(payouts)) {
-        const wantAmount = wantAmounts.get(key);
-        t.truthy(wantAmount, `wanted ${key} amount`);
-        wantAmounts.delete(key);
-        const gotAmount = await E(atomKit.issuer).getAmountOf(payout);
-        t.deepEqual(gotAmount, wantAmount, `${key} amount matches want`);
-      }
-
-      t.deepEqual([...wantAmounts.keys()].sort(), [], `no extra payouts`);
+    const wantAmounts = new Map(Object.entries(want));
+    for (const [key, payout] of Object.entries(payouts)) {
+      const wantAmount = wantAmounts.get(key);
+      t.truthy(wantAmount, `wanted ${key} amount`);
+      wantAmounts.delete(key);
+      const gotAmount = await E(atomKit.issuer).getAmountOf(payout);
+      t.deepEqual(gotAmount, wantAmount, `${key} amount matches want`);
     }
 
-    {
-      const invP = makeInvitation();
+    t.deepEqual([...wantAmounts.keys()].sort(), [], `no extra payouts`);
+  }
 
-      t.log(`revoking outstanding withdrawal invitation`);
+  {
+    const invP = makeInvitation();
 
-      // Revocation is racy, so wait for all of the invitations to settle before
-      // revoking.
-      await Promise.allSettled([invP]);
-      await E(
-        reserve.reserveCreatorFacet,
-      ).revokeOutstandingWithdrawalInvitations();
+    t.log(`revoking outstanding withdrawal invitation`);
 
-      t.log('checking revoked invitation cannot offer');
-      await t.notThrowsAsync(invP, `should fulfill`);
-      const revokedSeat = await E(zoe).offer(await invP);
+    // Revocation is racy, so wait for all of the invitations to settle before
+    // revoking.
+    await Promise.allSettled([invP]);
+    await E(
+      reserve.reserveCreatorFacet,
+    ).revokeOutstandingWithdrawalInvitations();
+
+    t.log('checking revoked invitation cannot offer');
+    await t.notThrowsAsync(invP, `should fulfill`);
+    const revokedSeat = await E(zoe).offer(await invP);
+    await t.throwsAsync(
+      () => E(revokedSeat).getOfferResult(),
+      {
+        message: revokedRegExp,
+      },
+      `should be revoked`,
+    );
+  }
+
+  // Check that the failing makers are revoked, but fresh invitations are not.
+  {
+    const invP = makeInvitation();
+    if (failsAfterRevokeAll) {
+      t.log('checking still revoked');
       await t.throwsAsync(
-        () => E(revokedSeat).getOfferResult(),
+        invP,
         {
           message: revokedRegExp,
         },
         `should be revoked`,
       );
+      return;
     }
 
-    // Check that the failing makers are revoked, but fresh invitations are not.
-    {
-      const invP = makeInvitation();
-      if (failsAfterRevokeAll) {
-        t.log('checking still revoked');
-        await t.throwsAsync(
-          invP,
-          {
-            message: revokedRegExp,
-          },
-          `should be revoked`,
-        );
-        return;
-      }
-
-      t.log('checking viability');
-      const seat = await E(zoe).offer(await invP);
-      const result = await E(seat).getOfferResult();
-      t.is(
-        result,
-        'withdrew Collateral from the Reserve',
-        `should allow a valid offer`,
-      );
-    }
-  },
+    t.log('checking viability');
+    const seat = await E(zoe).offer(await invP);
+    const result = await E(seat).getOfferResult();
+    t.is(
+      result,
+      'withdrew Collateral from the Reserve',
+      `should allow a valid offer`,
+    );
+  }
 });
 
 test('reserve withdraw single invitation', reserveWithCollateral, {
