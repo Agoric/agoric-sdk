@@ -10,14 +10,13 @@ import { setupReserve } from '../../src/proposals/econ-behaviors.js';
 import {
   installPuppetGovernance,
   makeMockChainStorageRoot,
-  provideBundle,
 } from '../supports.js';
 import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
 
 /** @import {ZoeManualTimer} from '@agoric/zoe/tools/manualTimer.js'; */
 
-const reserveRoot = './src/reserve/assetReserve.js'; // package relative
-const faucetRoot = './test/vaultFactory/faucet.js';
+import * as reserveContractExports from '../../src/reserve/assetReserve.js'; // package relative
+import * as faucetContractExports from '../vaultFactory/faucet.js';
 
 /** @typedef {ReturnType<typeof setUpZoeForTest>} FarZoeKit */
 
@@ -88,8 +87,9 @@ export const setupReserveServices = async (
   });
 
   const { produce, consume, brand, issuer, installation, instance } = spaces;
-  const reserveBundle = await provideBundle(t, reserveRoot, 'reserve');
-  installation.produce.reserve.resolve(E(zoe).install(reserveBundle));
+  installation.produce.reserve.resolve(
+    farZoeKit.bundleAndInstall(reserveContractExports),
+  );
 
   const istIssuer = await E(zoe).getFeeIssuer();
   const istBrand = await E(istIssuer).getBrand();
@@ -99,8 +99,9 @@ export const setupReserveServices = async (
 
   await setupReserve(spaces);
 
-  const faucetBundle = await provideBundle(t, faucetRoot, 'faucet');
-  const faucetInstallation = E(zoe).install(faucetBundle);
+  const faucetInstallation = await farZoeKit.bundleAndInstall(
+    faucetContractExports,
+  );
   brand.produce.IST.resolve(stableBrand);
   issuer.produce.IST.resolve(stableIssuer);
   const feeMintAccess = await feeMintAccessP;

@@ -66,6 +66,78 @@ import { wrapperMethods } from './prepare-attenuator.js';
  */
 
 /**
+ * Make an internal exo class kit for wrapping an underlying exo class,
+ * where the wrapper is a revocable forwarder.
+ *
+ * @template [U=any]
+ * @param {import('@agoric/base-zone').Zone} zone
+ * @param {string} uKindName
+ *   The `kindName` of the underlying exo class
+ * @param {PropertyKey[]} uMethodNames
+ *   The method names of the underlying exo class that should be represented
+ *   by transparently-forwarding methods of the revocable caretaker.
+ * @param {RevocableKitOptions<U>} [options]
+ *
+ * @param {(amp: Amplify<any>) => void} [receiveAmplifier]
+ *   This parameter is implemented by the `FarClassOptions['receiveAmplifier']`
+ *   option to `exoClassKit`.
+ *
+ *   If provided by the caller, it will be called back exactly once to
+ *   expose the `Amplify` function which, when called on any of a Kit
+ *   instance's facets, will return the complete `facets` object.
+ *
+ *   `receiveAmplifier` is specified by `prepareRevocableMakerKit` to allow
+ *   `revoke(myKit.revocable)` to obtain and call `myKit.revoker.revoke()`.
+ */
+export const prepareInternalRevocableMakerKit = (
+  zone,
+  uKindName,
+  uMethodNames,
+  options = {},
+  receiveAmplifier = undefined,
+) => {
+  const {
+    uInterfaceName = uKindName,
+    extraMethodGuards = {},
+    extraMethods = {},
+  } = options;
+  const RevocableIKit = harden({
+    revoker: M.interface(`${uInterfaceName}_revoker`, {
+      revoke: M.call().returns(M.boolean()),
+    }),
+    revocable: M.interface(`${uInterfaceName}_revocable`, extraMethodGuards, {
+      defaultGuards: 'raw',
+    }),
+  });
+
+  const revocableKindName = `${uKindName}_caretaker`;
+
+  const makeInternalRevocableKit = zone.exoClassKit(
+    revocableKindName,
+    RevocableIKit,
+    underlying => ({ underlying }),
+    {
+      revoker: {
+        revoke() {
+          const { state } = this;
+          if (state.underlying === undefined) {
+            return false;
+          }
+          state.underlying = undefined;
+          return true;
+        },
+      },
+      revocable: wrapperMethods(revocableKindName, uMethodNames, extraMethods),
+    },
+    {
+      stateShape: { underlying: M.opt(M.remotable('underlying')) },
+      receiveAmplifier,
+    },
+  );
+  return makeInternalRevocableKit;
+};
+
+/**
  * Make an exo class kit for wrapping an underlying exo class,
  * where the wrapper is a revocable forwarder.
  *
@@ -85,54 +157,24 @@ export const prepareRevocableMakerKit = (
   uMethodNames,
   options = {},
 ) => {
-  const {
-    uInterfaceName = uKindName,
-    extraMethodGuards = {},
-    extraMethods = {},
-  } = options;
-  const RevocableIKit = harden({
-    revoker: M.interface(`${uInterfaceName}_revoker`, {
-      revoke: M.call().returns(M.boolean()),
-    }),
-    revocable: M.interface(`${uInterfaceName}_revocable`, extraMethodGuards, {
-      defaultGuards: 'raw',
-    }),
-  });
-
-  const revocableKindName = `${uKindName}_caretaker`;
-
   /** @type {Amplify<any>} */
   let amplifier;
 
-  const makeRevocableKit = zone.exoClassKit(
-    revocableKindName,
-    RevocableIKit,
-    underlying => ({ underlying }),
-    {
-      revoker: {
-        revoke() {
-          const { state } = this;
-          if (state.underlying === undefined) {
-            return false;
-          }
-          state.underlying = undefined;
-          return true;
-        },
-      },
-      revocable: wrapperMethods(revocableKindName, uMethodNames, extraMethods),
-    },
-    {
-      stateShape: { underlying: M.opt(M.remotable('underlying')) },
-      receiveAmplifier: amp => {
-        amplifier = amp;
-      },
+  const makeInternalRevocableKit = prepareInternalRevocableMakerKit(
+    zone,
+    uKindName,
+    uMethodNames,
+    options,
+    amp => {
+      amplifier = amp;
     },
   );
 
   /**
    * @type {MakeRevocable}
    */
-  const makeRevocable = underlying => makeRevocableKit(underlying).revocable;
+  const makeRevocable = underlying =>
+    makeInternalRevocableKit(underlying).revocable;
 
   /**
    * @param {U} revocable

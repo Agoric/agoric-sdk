@@ -241,6 +241,29 @@ func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string, baseAppLeg
 				),
 			)
 
+			// Reserve contract needs to be upgraded for IST wind-down.
+			reserveUpgradeStep, err := buildProposalStepWithArgs(
+				"@agoric/builders/scripts/vats/upgrade-vats.js",
+				"upgradeZoeContractsProposalBuilder",
+				[]struct {
+					KitLookup  []string `json:"kitLookup"`
+					BundleName string   `json:"bundleName"`
+					Entrypoint string   `json:"entrypoint"`
+				}{
+					{
+						KitLookup:  []string{"reserveKit"},
+						BundleName: "reserve",
+						Entrypoint: "@agoric/inter-protocol/src/reserve/assetReserve.js",
+					},
+				},
+			)
+			if err != nil {
+				return module.VersionMap{}, err
+			}
+			CoreProposalSteps = append(CoreProposalSteps,
+				reserveUpgradeStep,
+			)
+
 			// terminationTargets is a slice of "$boardID:$instanceKitLabel" strings.
 			var terminationTargets []string
 			switch getVariantFromUpgradeName(targetUpgrade) {

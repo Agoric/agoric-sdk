@@ -10,6 +10,7 @@ import { prepareAssetReserveKit } from './assetReserveKit.js';
 
 /**
  * @import {EReturn} from '@endo/far';
+ * @import {ContractOf} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {Allocation, ContractMeta, FeeMintAccess, Installation} from '@agoric/zoe';
  */
 
@@ -128,3 +129,5 @@ harden(start);
  * @typedef {EReturn<typeof start>['creatorFacet']} AssetReserveCreatorFacet
  *   the creator facet for the governor
  */
+
+/** @typedef {ContractOf<typeof start>} ReserveContract */

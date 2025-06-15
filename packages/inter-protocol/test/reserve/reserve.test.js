@@ -47,8 +47,8 @@ test.before(async t => {
 });
 
 test('reserve add collateral', async t => {
-  /** @param {NatValue} value */
   const moolaKit = makeIssuerKit('moola');
+  /** @param {NatValue} value */
   const moola = value => AmountMath.make(moolaKit.brand, value);
 
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
@@ -77,9 +77,187 @@ test('reserve add collateral', async t => {
   );
 });
 
-test('check allocations', async t => {
+/**
+ * @type {import('ava').Macro<
+ *   [
+ *     {
+ *       makeInvitationMaker: (
+ *         t: import('ava').Assertions,
+ *         powers: { zoe; reserve },
+ *       ) => {
+ *         makeInvitation: () => Promise<Invitation>;
+ *         failsAfterRevokeAll?: boolean;
+ *       };
+ *     },
+ *   ],
+ *   unknown
+ * >}
+ */
+const reserveWithCollateral = test.macro(async (t, { makeInvitationMaker }) => {
+  const atomKit = makeIssuerKit('atom');
   /** @param {NatValue} value */
+  const atom = value => AmountMath.make(atomKit.brand, value);
+
+  const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
+  const timer = buildZoeManualTimer(t.log);
+
+  const { zoe, reserve } = await setupReserveServices(
+    t,
+    electorateTerms,
+    timer,
+  );
+
+  await E(reserve.reserveCreatorFacet).addIssuer(atomKit.issuer, 'ATOM');
+  const invitation = await E(
+    reserve.reservePublicFacet,
+  ).makeAddCollateralInvitation();
+
+  const proposal = { give: { Collateral: atom(100_000n) } };
+  const atomPayment = atomKit.mint.mintPayment(atom(100000n));
+  const payments = { Collateral: atomPayment };
+  const collateralSeat = E(zoe).offer(invitation, proposal, payments);
+
+  t.is(
+    await E(collateralSeat).getOfferResult(),
+    'added Collateral to the Reserve',
+    `added atom to the collateral Reserve`,
+  );
+
+  t.log('making invitation maker');
+  const { makeInvitation, failsAfterRevokeAll } = makeInvitationMaker(t, {
+    zoe,
+    reserve,
+  });
+
+  const revokedRegExp = /(WithdrawalFacet|WithdrawalHandler).* revoked/;
+
+  const want = { ATOM: atom(101n) };
+
+  {
+    t.log('wants', want);
+    const withdrawInvitation = await makeInvitation();
+
+    t.log('getting seat');
+    const seat = await E(zoe).offer(withdrawInvitation, { want });
+
+    await t.notThrowsAsync(
+      () => E(seat).getOfferResult(),
+      `should fulfill offer result`,
+    );
+    t.log('getting payouts');
+    const payouts = await E(seat).getPayouts();
+
+    t.log('comparing payouts');
+
+    const wantAmounts = new Map(Object.entries(want));
+    for (const [key, payout] of Object.entries(payouts)) {
+      const wantAmount = wantAmounts.get(key);
+      t.truthy(wantAmount, `wanted ${key} amount`);
+      wantAmounts.delete(key);
+      const gotAmount = await E(atomKit.issuer).getAmountOf(payout);
+      t.deepEqual(gotAmount, wantAmount, `${key} amount matches want`);
+    }
+
+    t.deepEqual([...wantAmounts.keys()].sort(), [], `no extra payouts`);
+  }
+
+  {
+    const invP = makeInvitation();
+
+    t.log(`revoking outstanding withdrawal invitation`);
+
+    // Revocation is racy, so wait for all of the invitations to settle before
+    // revoking.
+    await Promise.allSettled([invP]);
+    await E(
+      reserve.reserveCreatorFacet,
+    ).revokeOutstandingWithdrawalInvitations();
+
+    t.log('checking revoked invitation cannot offer');
+    await t.notThrowsAsync(invP, `should fulfill`);
+    const revokedSeat = await E(zoe).offer(await invP);
+    await t.throwsAsync(
+      () => E(revokedSeat).getOfferResult(),
+      {
+        message: revokedRegExp,
+      },
+      `should be revoked`,
+    );
+  }
+
+  // Check that the failing makers are revoked, but fresh invitations are not.
+  {
+    const invP = makeInvitation();
+    if (failsAfterRevokeAll) {
+      t.log('checking still revoked');
+      await t.throwsAsync(
+        invP,
+        {
+          message: revokedRegExp,
+        },
+        `should be revoked`,
+      );
+      return;
+    }
+
+    t.log('checking viability');
+    const seat = await E(zoe).offer(await invP);
+    const result = await E(seat).getOfferResult();
+    t.is(
+      result,
+      'withdrew Collateral from the Reserve',
+      `should allow a valid offer`,
+    );
+  }
+});
+
+test('reserve withdraw single invitation', reserveWithCollateral, {
+  makeInvitationMaker(_t, { reserve }) {
+    return {
+      makeInvitation: async () => {
+        return E(reserve.reserveCreatorFacet).makeSingleWithdrawalInvitation();
+      },
+    };
+  },
+});
+
+const makeWithdrawInvitationMakers = async (_t, { zoe, reserve }) => {
+  const continuingInvitation = await E(
+    reserve.reserveCreatorFacet,
+  ).makeRepeatableWithdrawalInvitation();
+  const { invitationMakers } = await E(
+    E(zoe).offer(continuingInvitation),
+  ).getOfferResult();
+  return invitationMakers;
+};
+
+test('reserve withdraw fresh repeated invitation', reserveWithCollateral, {
+  makeInvitationMaker(t, { reserve, zoe }) {
+    return {
+      makeInvitation: async () => {
+        const invitationMakers = await makeWithdrawInvitationMakers(t, {
+          zoe,
+          reserve,
+        });
+        return E(invitationMakers).Withdraw();
+      },
+    };
+  },
+});
+
+test('reserve withdraw cached repeated invitation', reserveWithCollateral, {
+  makeInvitationMaker(t, { reserve, zoe }) {
+    const cachedMakersP = makeWithdrawInvitationMakers(t, { reserve, zoe });
+    return {
+      makeInvitation: async () => E(cachedMakersP).Withdraw(),
+      failsAfterRevokeAll: true,
+    };
+  },
+});
+
+test('check allocations', async t => {
   const moolaKit = makeIssuerKit('moola');
+  /** @param {NatValue} value */
   const moola = value => AmountMath.make(moolaKit.brand, value);
 
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 1 };
@@ -127,7 +305,6 @@ test('check allocations', async t => {
 });
 
 test('reserve track shortfall', async t => {
-  /** @param {NatValue} value */
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
   const timer = buildZoeManualTimer(t.log);
 
@@ -185,7 +362,6 @@ test('reserve track shortfall', async t => {
 });
 
 test('reserve burn IST, with snapshot', async t => {
-  /** @param {NatValue} value */
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 1 };
   const timer = buildZoeManualTimer(t.log);
 
@@ -268,7 +444,6 @@ test('reserve burn IST, with snapshot', async t => {
 });
 
 test('storage keys', async t => {
-  /** @param {NatValue} value */
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
   const timer = buildZoeManualTimer(t.log);
 
