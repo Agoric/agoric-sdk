@@ -11,3 +11,15 @@ export const YieldProtocol = /** @type {const} */ ({
   USDN: 'USDN',
 });
 harden(YieldProtocol);
+
+// TODO: pass via terms?
+/**
+ * @enum {(typeof PositionChain)[keyof typeof PositionChain]}
+ */
+export const PositionChain = /** @type {const} */ ({
+  Ethereum: 'eip155:1',
+  Avalanche: 'eip155:43114',
+  Base: 'eip155:8453',
+  Noble: 'cosmos:noble-1',
+});
+harden(PositionChain);

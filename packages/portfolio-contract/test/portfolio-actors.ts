@@ -14,6 +14,7 @@ export const makeTrader = (
     async openPortfolio(
       t: ExecutionContext,
       give: Partial<Record<YieldProtocol, Amount<'nat'>>>,
+      offerArgs: Record<string, unknown> = {},
     ) {
       const invitationSpec = {
         source: 'contract' as const,
@@ -26,6 +27,7 @@ export const makeTrader = (
         id: `openP-${(nonce += 1)}`,
         invitationSpec,
         proposal,
+        offerArgs,
       });
     },
   });
