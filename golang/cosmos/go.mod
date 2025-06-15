@@ -8,13 +8,18 @@ require (
 	cosmossdk.io/api v0.3.1
 	cosmossdk.io/errors v1.0.1
 	cosmossdk.io/math v1.4.0
+	cosmossdk.io/simapp v0.0.0-00010101000000-000000000000
 	cosmossdk.io/tools/rosetta v0.2.1
+	github.com/CosmWasm/wasmd v0.45.0
+	github.com/CosmWasm/wasmvm v1.5.6
 	github.com/armon/go-metrics v0.4.1
 	github.com/cometbft/cometbft v0.37.5
 	github.com/cometbft/cometbft-db v0.9.5
 	github.com/cosmos/cosmos-sdk v0.47.15
 	github.com/cosmos/gogoproto v1.7.0
 	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7 v7.3.0
+	// .../08-wasm v0.4.0+ibc-go-v7.4-wasmvm-v1.5
+	github.com/cosmos/ibc-go/modules/light-clients/08-wasm v0.4.1-0.20241220161524-8392c480c551
 	github.com/cosmos/ibc-go/v7 v7.10.0
 	github.com/golang/protobuf v1.5.4
 	github.com/gorilla/mux v1.8.0
@@ -32,11 +37,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 )
 
-require (
-	cosmossdk.io/simapp v0.0.0-00010101000000-000000000000
-	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/prometheus/client_golang v1.20.5 // indirect
-)
+require github.com/prometheus/client_golang v1.20.5
 
 require (
 	cloud.google.com/go v0.112.1 // indirect
@@ -86,6 +87,7 @@ require (
 	github.com/dgraph-io/badger/v2 v2.2007.4 // indirect
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
+	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/dvsekhvalnov/jose2go v1.6.0 // indirect
@@ -100,12 +102,14 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v1.2.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
+	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/orderedcode v0.0.1 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -147,6 +151,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
+	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0 // indirect
 	github.com/opencontainers/runc v1.2.0-rc.2 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
@@ -227,6 +232,9 @@ replace (
 	cosmossdk.io/math => github.com/agoric-labs/cosmos-sdk/math v0.0.0-20250326031203-e68e6747bede
 	cosmossdk.io/simapp => github.com/agoric-labs/cosmos-sdk/simapp v0.0.0-20250326031203-e68e6747bede
 	cosmossdk.io/tools/rosetta => github.com/agoric-labs/cosmos-sdk/tools/rosetta v0.0.0-20250326031203-e68e6747bede
+
+	// CosmWasm
+	github.com/CosmWasm/wasmvm => github.com/CosmWasm/wasmvm v1.5.9
 
 	// use cometbft
 	// Use our fork at least until post-v0.34.14 is released with
