@@ -274,6 +274,9 @@ jq --arg addr "$GENESIS_ADDR" '.app_state.cctp = {
     ]
 }' $CHAIN_DIR/config/genesis.json > /tmp/genesis.json && mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
 
+# Configure swap module
+./noble-v9.0.4-update-genesis.sh
+
 # Configure tariff module
 echo "Configure tariff module..."
 jq --arg addr "$GENESIS_ADDR" '.app_state.tariff.params = {
