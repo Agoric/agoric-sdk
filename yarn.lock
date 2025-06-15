@@ -821,6 +821,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@agoric/pola-io@workspace:packages/pola-io":
+  version: 0.0.0-use.local
+  resolution: "@agoric/pola-io@workspace:packages/pola-io"
+  dependencies:
+    ava: "npm:^5.3.0"
+  languageName: unknown
+  linkType: soft
+
 "@agoric/sdk@workspace:.":
   version: 0.0.0-use.local
   resolution: "@agoric/sdk@workspace:."
