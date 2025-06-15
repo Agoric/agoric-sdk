@@ -1,3 +1,10 @@
+/**
+ * @file Main contract for managing a portfolio of stablecoins
+ * 
+ * This contract allows users to open and manage portfolios across multiple yield protocols
+ * including Aave, Compound, and USDN. It orchestrates cross-chain operations to deploy
+ * funds to various DeFi protocols for yield generation.
+ */
 import { makeTracer } from '@agoric/internal';
 import {
   OrchestrationPowersShape,

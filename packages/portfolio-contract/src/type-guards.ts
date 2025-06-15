@@ -1,3 +1,11 @@
+/**
+ * @file Type validation and proposal shapes for portfolio contract
+ * 
+ * Defines TypeScript types and runtime validation patterns for:
+ * - Proposal shapes for portfolio operations
+ * - Amount validation for different yield protocols
+ * - Brand-specific type guards for USDC amounts
+ */
 import type { TypedPattern } from '@agoric/internal';
 import { M } from '@endo/patterns';
 import type { YieldProtocol as YieldProtocolT } from './constants.js';

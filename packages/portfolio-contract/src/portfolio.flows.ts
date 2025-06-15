@@ -1,7 +1,11 @@
 /**
- * OrchestrationFlow functions for {@link portfolio.contract.ts}
- * @see {makeLocalAccount}
- * @see {openPortfolio}
+ * @file Orchestration flows for portfolio operations
+ * 
+ * Contains the main orchestration flows including:
+ * - makeLocalAccount: Creates local Agoric chain accounts for IBC transfers
+ * - openPortfolio: Main flow for opening portfolio positions across yield protocols
+ * 
+ * Handles cross-chain operations, error recovery, and position management.
  */
 import type { GuestInterface } from '@agoric/async-flow';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
