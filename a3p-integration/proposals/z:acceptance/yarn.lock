@@ -141,6 +141,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/inter-protocol@portal:../../agoric-sdk/packages/inter-protocol::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
+    "@agoric/base-zone": "workspace:*"
     "@agoric/ertp": "workspace:*"
     "@agoric/governance": "workspace:*"
     "@agoric/internal": "workspace:*"
