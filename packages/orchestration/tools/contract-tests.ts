@@ -135,7 +135,6 @@ export const setupOrchestrationTest = async ({
       obj.type === 'VLOCALCHAIN_EXECUTE_TX' &&
       obj.messages &&
       Array.isArray(result);
-      console.log(localBridgeLog)
     for (const { obj, result } of localBridgeLog.filter(isRelevant)) {
       // `obj.messages` and `result` are paired arrays.
       for (let i = 0; i < obj.messages.length; i += 1) {
@@ -186,13 +185,10 @@ export const setupOrchestrationTest = async ({
     acknowledgementError?: string,
   ) => {
     // let the promise for the transfer start (if any)
-console.log("rabi 1................")
     await eventLoopIteration();
-console.log("rabi 2................")
 
     const transferInfo =
       typeof query === 'number' ? outgoingTransferAt(query) : query;
-console.log("rabi 3................")
 
     const { message: msg, sequence } = transferInfo;
 

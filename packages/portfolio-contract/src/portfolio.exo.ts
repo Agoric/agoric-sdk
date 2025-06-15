@@ -1,15 +1,11 @@
 import { makeTracer } from '@agoric/internal';
 import type { Zone } from '@agoric/zone';
-import { Fail, q } from '@endo/errors';
 import { M } from '@endo/patterns';
 import { VowShape } from '@agoric/vow';
 import { atob, decodeBase64 } from '@endo/base64';
 import { decodeAbiParameters } from 'viem';
 import { type MapStore } from '@agoric/store';
-import type {
-  AxelarGmpIncomingMemo,
-  SupportedEVMChains,
-} from '@agoric/orchestration/src/axelar-types.js';
+import type { AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import type { OrchestrationAccount, CaipChainId } from '@agoric/orchestration';
@@ -39,7 +35,7 @@ const DECODE_CONTRACT_CALL_RESULT_ABI = [
 export const supportedEVMChains: CaipChainId[] = [
   'eip155:43114', // Avalanche
   'eip155:8453', // Base
-  'eip155:1', //Ethereum
+  'eip155:1', // Ethereum
 ];
 
 const TypeShape = M.or(...keys(YieldProtocol));
@@ -47,11 +43,11 @@ const ChainShape = M.or(...supportedEVMChains);
 const PositionShape = M.splitRecord({}); // TODO
 
 const KeeperI = M.interface('keeper', {
-  init: M.call(
+  add: M.call(
     M.or(...keys(YieldProtocol)),
     M.or(...keys(PortfolioChain)),
     M.remotable('OrchestrationAccount'),
-  ).returns(),
+  ).returns(M.number()),
   getPositions: M.call(TypeShape, ChainShape).returns(M.arrayOf(PositionShape)),
   getAccount: M.call(M.number(), TypeShape).returns(
     M.remotable('OrchestrationAccount'),
@@ -61,8 +57,6 @@ const KeeperI = M.interface('keeper', {
 const EvmTapI = M.interface('EvmTap', {
   receiveUpcall: M.call(M.record()).returns(M.or(VowShape, M.undefined())),
 });
-
-const EVMProtocols = ['Aave', 'Compound'];
 
 type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
 
@@ -110,7 +104,7 @@ export const preparePortfolioKit = (zone: Zone) =>
       tap: EvmTapI,
     },
 
-    (): PortfolioKitState => ({ positions: zone.mapStore('posisions') }),
+    (): PortfolioKitState => ({ positions: zone.mapStore('positions') }),
     {
       tap: {
         receiveUpcall(event: VTransferIBCEvent) {
@@ -147,16 +141,27 @@ export const preparePortfolioKit = (zone: Zone) =>
                   result,
                 );
 
-                const sourceChain = memo.source_chain as PortfolioChain;
-                if (this.state.protocolStates.has(sourceChain)) {
-                  const protocolState =
-                    this.state.protocolStates.get(sourceChain);
-                  if ('remoteAccountAddress' in protocolState) {
-                    const evmState = protocolState as EVMProtocolState;
-                    this.state.protocolStates.set(sourceChain, {
-                      ...evmState,
-                      remoteAccountAddress: address,
-                    });
+                const sourceChain = memo.source_chain;
+                const targetChainId = PortfolioChain[sourceChain];
+                if (!targetChainId) {
+                  trace('Unknown source chain:', sourceChain);
+                } else {
+                  // Find the EVM protocol position that matches the source chain
+                  const { positions } = this.state;
+                  for (const [key, position] of positions.entries()) {
+                    if (
+                      (position.type === 'Aave' ||
+                        position.type === 'Compound') &&
+                      position.chain === targetChainId &&
+                      'remoteAccountAddress' in position
+                    ) {
+                      const evmState = position as EVMProtocolState;
+                      positions.set(key, {
+                        ...evmState,
+                        remoteAccountAddress: address,
+                      });
+                      break;
+                    }
                   }
                 }
 
@@ -170,11 +175,11 @@ export const preparePortfolioKit = (zone: Zone) =>
         },
       },
       keeper: {
-        init<P extends YieldProtocol>(
+        add<P extends YieldProtocol>(
           type: P,
           chain: CaipChainId,
           account: AccountOf[P],
-        ) {
+        ): number {
           const { positions } = this.state;
           const isActive = true;
           const key = 1 + positions.getSize();
@@ -184,7 +189,7 @@ export const preparePortfolioKit = (zone: Zone) =>
               positions.init(key, {
                 type,
                 localAccount: account as LocalAccount,
-                chain: chain,
+                chain,
                 isActive,
               });
               break;
@@ -196,8 +201,11 @@ export const preparePortfolioKit = (zone: Zone) =>
                 isActive,
               });
               break;
+            default:
+              throw new Error(`Unknown protocol type: ${type}`);
           }
           trace('initialized position', key, 'for', type, '=>', `${account}`);
+          return key;
         },
         getPositions<P extends YieldProtocol>(type: P, chain: CaipChainId) {
           const { positions } = this.state;
@@ -222,6 +230,8 @@ export const preparePortfolioKit = (zone: Zone) =>
               return (p as EVMProtocolState).localAccount as AccountOf[P];
             case 'USDN':
               return (p as NobleDollarState).account as AccountOf[P];
+            default:
+              throw new Error(`Unknown protocol type: ${type}`);
           }
         },
       },

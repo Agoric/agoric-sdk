@@ -12,13 +12,14 @@ export const YieldProtocol = /** @type {const} */ ({
 });
 harden(YieldProtocol);
 
+// TODO: pass via terms?
 /**
  * @enum {(typeof PortfolioChain)[keyof typeof PortfolioChain]}
  */
 export const PortfolioChain = /** @type {const} */ ({
-  Ethereum: 'Ethereum',
-  Avalanche: 'Avalanche',
-  Base: 'Base',
-  Noble: 'Noble',
+  Ethereum: 'eip155:1',
+  Avalanche: 'eip155:43114',
+  Base: 'eip155:8453',
+  Noble: 'cosmos:noble-1',
 });
 harden(PortfolioChain);
