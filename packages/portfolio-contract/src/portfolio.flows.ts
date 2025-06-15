@@ -8,7 +8,8 @@ import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import type { Amount } from '@agoric/ertp';
-import { makeTracer } from '@agoric/internal';
+import { makeTracer, NonNullish } from '@agoric/internal';
+import { assert } from '@endo/errors';
 import type {
   CosmosChainAddress,
   OrchestrationAccount,
@@ -27,6 +28,7 @@ import {
 import { gmpAddresses } from '@agoric/orchestration/src/utils/gmp.js';
 import type { PortfolioKit } from './portfolio.exo.ts';
 import type { OfferArgsShapes, ProposalShapes } from './type-guards.ts';
+import { PositionChain, YieldProtocol } from './constants.js';
 // TODO: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const trace = makeTracer('PortF');
@@ -47,6 +49,16 @@ export const makeLocalAccount = (async (orch: Orchestrator, _ctx: unknown) => {
   return account;
 }) satisfies OrchestrationFlow;
 harden(makeLocalAccount);
+
+const denomForBrand = async (orch, brand) => {
+  const agoric = await orch.getChain('agoric');
+  const assets = await agoric.getVBankAssetInfo();
+  const { denom } = NonNullish(
+    assets.find(a => a.brand === brand),
+    `${brand} not registered in ChainHub`,
+  );
+  return denom;
+};
 
 // XXX: push down to Orchestration API in NobleMethods, in due course
 const makeSwapLockMessages = (
@@ -106,7 +118,7 @@ export const openPortfolio = (async (
     const { makePortfolioKit, contract } = ctx;
     const kit = makePortfolioKit();
 
-    const initRemoteEVMAccount = async () => {
+    const initRemoteEVMAccount = async (protocol: YieldProtocol) => {
       const { evmChain } = offerArgs;
       assert(evmChain, 'evmChain is required to open a remote EVM account');
 
@@ -118,9 +130,9 @@ export const openPortfolio = (async (
       const { chainId, stakingTokens } = await axelar.getChainInfo();
       assert.equal(stakingTokens.length, 1, 'axelar has 1 staking token');
 
-      const localAccount = await agoric.makeAccount();
-      const localChainAddress = localAccount.getAddress();
-      trace('Local Chain Address:', localChainAddress);
+      const localAccount = await makeLocalAccount(orch, ctx);
+      const caipChainId = PositionChain[offerArgs.evmChain];
+      const positionId = kit.keeper.add(protocol, caipChainId, localAccount);
 
       try {
         // @ts-expect-error
@@ -163,9 +175,53 @@ export const openPortfolio = (async (
           },
           { memo: JSON.stringify(memo) },
         );
+
+        return positionId;
       } catch (err) {
         await ctx.zoeTools.withdrawToSeat(localAccount, seat, give);
         const errorMsg = `EVM account creation failed ${err}`;
+        throw new Error(errorMsg);
+      }
+    };
+
+    const sendTokensViaCCTP = async (
+      positionId: number,
+      amount: Amount<'nat'>,
+    ) => {
+      const nobleChain = await orch.getChain('noble');
+      const nobleAccount = await nobleChain.makeAccount();
+
+      const localAccount = await makeLocalAccount(orch, ctx);
+
+      const amounts = harden({ USDC: amount });
+      await ctx.zoeTools.localTransfer(seat, localAccount, amounts);
+
+      try {
+        trace('IBC transfer to Noble for CCTP');
+        await localAccount.transfer(nobleAccount.getAddress(), amount);
+
+        const denom = await denomForBrand(orch, amount.brand);
+        const denomAmount = {
+          denom,
+          value: amount.value,
+        };
+
+        const remoteAccountAddress =
+          kit.keeper.getRemoteAccountAddress(positionId);
+        assert(
+          remoteAccountAddress,
+          'Remote account address not found for position',
+        );
+
+        const caipChainId = PositionChain[offerArgs.evmChain];
+        const destinationAddress = `${caipChainId}:${remoteAccountAddress}`;
+        await nobleAccount.depositForBurn(
+          destinationAddress as `${string}:${string}:${string}`,
+          denomAmount,
+        );
+      } catch (err) {
+        await ctx.zoeTools.withdrawToSeat(localAccount, seat, amounts);
+        const errorMsg = `'Noble transfer failed: ${err}`;
         throw new Error(errorMsg);
       }
     };
@@ -253,12 +309,17 @@ export const openPortfolio = (async (
     }
 
     // Only initialize EVM account if there are EVM protocol positions
-    if (give.Aave || give.Compound) {
+    // TODO: Add a conditional for Compound
+    if (give.Aave) {
       try {
-        await initRemoteEVMAccount();
-        trace('TODO: Wait for account creation to complete');
-        trace('TODO: Send USDC via CCTP to the target EVM account');
-        trace('TODO: Verify the balance after transfer');
+        const positionId = await initRemoteEVMAccount(YieldProtocol.Aave);
+        trace(
+          'TODO: use makePromiseKit to delay resolving initRemoteEVMAccount until the account is ready',
+        );
+
+        await sendTokensViaCCTP(positionId, give.Aave);
+        trace('TODO: Wait for 20 seconds before deploying funds to Aave');
+        trace('TODO: Deploy funds to Aave');
       } catch (err) {
         seat.fail(err);
       }

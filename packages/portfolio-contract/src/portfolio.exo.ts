@@ -53,6 +53,9 @@ const KeeperI = M.interface('keeper', {
   getAccount: M.call(M.number(), TypeShape).returns(
     M.remotable('OrchestrationAccount'),
   ),
+  getRemoteAccountAddress: M.call(M.number()).returns(
+    M.or(M.string(), M.undefined()),
+  ),
 });
 
 const EvmTapI = M.interface('EvmTap', {
@@ -243,6 +246,14 @@ export const preparePortfolioKit = (zone: Zone) =>
             default:
               throw new Error(`Unknown protocol type: ${type}`);
           }
+        },
+        getRemoteAccountAddress(positionId: number): string | undefined {
+          const { positions } = this.state;
+          const p = positions.get(positionId);
+          if (p.type === 'Aave' || p.type === 'Compound') {
+            return (p as EVMProtocolState).remoteAccountAddress;
+          }
+          return undefined;
         },
       },
       invitationMakers: {
