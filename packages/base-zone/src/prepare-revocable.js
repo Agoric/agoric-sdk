@@ -76,15 +76,25 @@ import { wrapperMethods } from './prepare-attenuator.js';
  * @param {PropertyKey[]} uMethodNames
  *   The method names of the underlying exo class that should be represented
  *   by transparently-forwarding methods of the revocable caretaker.
- * @param {(amp: Amplify<any>) => void} [receiveAmplifier]
  * @param {RevocableKitOptions<U>} [options]
+ *
+ * @param {(amp: Amplify<any>) => void} [receiveAmplifier]
+ *   This parameter is implemented by the `FarClassOptions['receiveAmplifier']`
+ *   option to `exoClassKit`.
+ *
+ *   If provided by the caller, it will be called back exactly once to
+ *   expose the `Amplify` function which, when called on any of a Kit
+ *   instance's facets, will return the complete `facets` object.
+ *
+ *   `receiveAmplifier` is specified by `prepareRevocableMakerKit` to allow
+ *   `revoke(myKit.revocable)` to obtain and call `myKit.revoker.revoke()`.
  */
 export const prepareInternalRevocableMakerKit = (
   zone,
   uKindName,
   uMethodNames,
-  receiveAmplifier,
   options = {},
+  receiveAmplifier = undefined,
 ) => {
   const {
     uInterfaceName = uKindName,
@@ -154,10 +164,10 @@ export const prepareRevocableMakerKit = (
     zone,
     uKindName,
     uMethodNames,
+    options,
     amp => {
       amplifier = amp;
     },
-    options,
   );
 
   /**
