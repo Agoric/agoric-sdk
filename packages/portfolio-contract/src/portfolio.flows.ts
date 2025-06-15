@@ -23,7 +23,6 @@ import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics
 import {
   AxelarGMPMessageType,
   type AxelarGmpOutgoingMemo,
-  type ContractCall,
 } from '@agoric/orchestration/src/axelar-types.js';
 import { gmpAddresses } from '@agoric/orchestration/src/utils/gmp.js';
 import type { PortfolioKit } from './portfolio.exo.ts';
@@ -31,46 +30,6 @@ import type { OfferArgsShapes, ProposalShapes } from './type-guards.ts';
 // TODO: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const trace = makeTracer('PortF');
-
-const makeAaveSupplyCall = (
-  aavePoolAddress: string,
-  asset: string,
-  amount: bigint,
-  onBehalfOf: string,
-): ContractCall => ({
-  target: aavePoolAddress as `0x${string}`,
-  functionSignature: 'supply(address,uint256,address,uint16)',
-  args: [asset, String(amount), onBehalfOf, 0],
-});
-
-const makeAaveBorrowCall = (
-  aavePoolAddress: string,
-  asset: string,
-  amount: bigint,
-  onBehalfOf: string,
-): ContractCall => ({
-  target: aavePoolAddress as `0x${string}`,
-  functionSignature: 'borrow(address,uint256,uint256,uint16,address)',
-  args: [asset, String(amount), 2, 0, onBehalfOf],
-});
-
-const makeCompoundSupplyCall = (
-  compoundAddress: string,
-  amount: bigint,
-): ContractCall => ({
-  target: compoundAddress as `0x${string}`,
-  functionSignature: 'supply(uint256)',
-  args: [String(amount)],
-});
-
-const makeCompoundBorrowCall = (
-  compoundAddress: string,
-  amount: bigint,
-): ContractCall => ({
-  target: compoundAddress as `0x${string}`,
-  functionSignature: 'borrow(uint256)',
-  args: [String(amount)],
-});
 
 /**
  * Make an orchestration account on the agoric chain to, for example,

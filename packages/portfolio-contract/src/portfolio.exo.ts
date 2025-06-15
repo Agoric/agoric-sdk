@@ -1,4 +1,5 @@
 import { makeTracer } from '@agoric/internal';
+import { assert } from '@endo/errors';
 import type { Zone } from '@agoric/zone';
 import { M } from '@endo/patterns';
 import { VowShape } from '@agoric/vow';
@@ -10,7 +11,7 @@ import type { VTransferIBCEvent } from '@agoric/vats';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import type { OrchestrationAccount, CaipChainId } from '@agoric/orchestration';
 import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.ts';
-import { PortfolioChain, YieldProtocol } from './constants.js';
+import { PositionChain, YieldProtocol } from './constants.js';
 
 const trace = makeTracer('PortExo');
 const { keys, values } = Object;
@@ -39,13 +40,13 @@ export const supportedEVMChains: CaipChainId[] = [
 ];
 
 const TypeShape = M.or(...keys(YieldProtocol));
-const ChainShape = M.or(...supportedEVMChains);
+export const ChainShape = M.or(...values(PositionChain));
 const PositionShape = M.splitRecord({}); // TODO
 
 const KeeperI = M.interface('keeper', {
   add: M.call(
-    M.or(...keys(YieldProtocol)),
-    M.or(...values(PortfolioChain)),
+    TypeShape,
+    M.or(ChainShape),
     M.remotable('OrchestrationAccount'),
   ).returns(M.number()),
   getPositions: M.call(TypeShape, ChainShape).returns(M.arrayOf(PositionShape)),
@@ -58,7 +59,7 @@ const EvmTapI = M.interface('EvmTap', {
   receiveUpcall: M.call(M.record()).returns(M.or(VowShape, M.undefined())),
 });
 
-type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
+export type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
 
 type EVMProtocolState = {
   type: 'Aave' | 'Compound';
@@ -117,59 +118,64 @@ export const preparePortfolioKit = (zone: Zone) =>
           trace('receiveUpcall packet data', tx);
           const memo: AxelarGmpIncomingMemo = JSON.parse(tx.memo);
 
-          if ((supportedEVMChains as string[]).includes(memo.source_chain)) {
-            const payloadBytes = decodeBase64(memo.payload);
-            const [{ isContractCallResult, data }] = decodeAbiParameters(
-              DECODE_CONTRACT_CALL_RESULT_ABI,
-              payloadBytes,
-            ) as [AgoricResponse];
+          if (!(supportedEVMChains as string[]).includes(memo.source_chain)) {
+            return;
+          }
 
-            trace(
-              'receiveUpcall Decoded:',
-              JSON.stringify({ isContractCallResult, data }),
-            );
+          const payloadBytes = decodeBase64(memo.payload);
+          const [{ isContractCallResult, data }] = decodeAbiParameters(
+            DECODE_CONTRACT_CALL_RESULT_ABI,
+            payloadBytes,
+          ) as [AgoricResponse];
 
-            if (!isContractCallResult) {
-              const [message] = data;
-              const { success, result } = message;
+          trace(
+            'receiveUpcall Decoded:',
+            JSON.stringify({ isContractCallResult, data }),
+          );
 
-              trace('Contract Call Status:', success);
+          if (!isContractCallResult) {
+            const [message] = data;
+            const { success, result } = message;
 
-              if (success) {
-                const [address] = decodeAbiParameters(
-                  [{ type: 'address' }],
-                  result,
-                );
+            trace('Contract Call Status:', success);
 
-                const sourceChain = memo.source_chain;
-                const targetChainId = PortfolioChain[sourceChain];
-                if (!targetChainId) {
-                  trace('Unknown source chain:', sourceChain);
-                } else {
-                  // Find the EVM protocol position that matches the source chain
-                  const { positions } = this.state;
-                  for (const [key, position] of positions.entries()) {
-                    if (
-                      (position.type === 'Aave' ||
-                        position.type === 'Compound') &&
-                      position.chain === targetChainId &&
-                      'remoteAccountAddress' in position
-                    ) {
-                      const evmState = position as EVMProtocolState;
-                      positions.set(key, {
+            if (success) {
+              const [address] = decodeAbiParameters(
+                [{ type: 'address' }],
+                result,
+              );
+
+              const sourceChain = memo.source_chain;
+              const targetChainId = PositionChain[sourceChain];
+              if (!targetChainId) {
+                trace('Unknown source chain:', sourceChain);
+              } else {
+                // Find the EVM protocol position that matches the source chain
+                const { positions } = this.state;
+                for (const [key, position] of positions.entries()) {
+                  if (
+                    (position.type === 'Aave' ||
+                      position.type === 'Compound') &&
+                    position.chain === targetChainId &&
+                    'remoteAccountAddress' in position
+                  ) {
+                    const evmState = position as EVMProtocolState;
+                    positions.set(
+                      key,
+                      harden({
                         ...evmState,
                         remoteAccountAddress: address,
-                      });
-                      break;
-                    }
+                      }),
+                    );
+                    break;
                   }
                 }
-
-                trace('remote evm account address:', address);
               }
+
+              trace('remote evm account address:', address);
             }
-            // TODO: Handle the result of the contract call
           }
+          // TODO: Handle the result of the contract call
 
           trace('receiveUpcall completed');
         },
@@ -185,22 +191,26 @@ export const preparePortfolioKit = (zone: Zone) =>
           const key = 1 + positions.getSize();
           switch (type) {
             case 'Aave':
-            case 'Compound':
-              positions.init(key, {
+            case 'Compound': {
+              const evmState: EVMProtocolState = {
                 type,
                 localAccount: account as LocalAccount,
                 chain,
                 isActive,
-              });
+              };
+              positions.init(key, harden(evmState));
               break;
-            case 'USDN':
-              positions.init(key, {
+            }
+            case 'USDN': {
+              const nobleState: NobleDollarState = {
                 type,
                 chain,
                 account: account as AccountOf['USDN'],
                 isActive,
-              });
+              };
+              positions.init(key, harden(nobleState));
               break;
+            }
             default:
               throw new Error(`Unknown protocol type: ${type}`);
           }
@@ -212,7 +222,7 @@ export const preparePortfolioKit = (zone: Zone) =>
           const out: PositionInfo[] = [];
           for (const p of positions.values()) {
             if (p.type === type && chain === p.chain) {
-              out.push(p);
+              out.push(harden(p));
             }
           }
           return harden(out);

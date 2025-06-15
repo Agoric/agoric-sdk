@@ -105,6 +105,9 @@ test('open portfolio', async t => {
     orch,
     { zoeTools, makePortfolioKit, inertSubscriber, contract },
     seat,
+    // Use Axelar chain identifier instead of CAP-10 ID for cross-chain messaging
+    // Axelar docs: https://docs.axelar.dev/dev/reference/mainnet-chain-names
+    // Chain names: https://axelarscan.io/resources/chains
     { evmChain: 'Ethereum' },
     localP,
   );

@@ -5,7 +5,6 @@ import {
   OrchestrationPowersShape,
   registerChainsAndAssets,
   withOrchestration,
-  type OrchestrationAccount,
   type OrchestrationTools,
 } from '@agoric/orchestration';
 import type { ZCF } from '@agoric/zoe';
@@ -13,7 +12,7 @@ import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics
 import type { Zone } from '@agoric/zone';
 import type { CopyRecord } from '@endo/pass-style';
 import { M, mustMatch } from '@endo/patterns';
-import { preparePortfolioKit } from './portfolio.exo.ts';
+import { preparePortfolioKit, type LocalAccount } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import {
   makeProposalShapes,
@@ -35,6 +34,7 @@ const privateArgsShape = {
   }),
   chainInfo: M.recordOf(M.string(), ChainInfoShape),
   assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
+  // TODO: remove once we deploy package pr is merged
   poolMetricsNode: M.remotable(),
 };
 
@@ -53,7 +53,6 @@ export const contract = async (
   const { orchestrateAll, zoeTools, chainHub } = tools;
 
   assert(brands.USDC, 'USDC missing from brands in terms');
-  mustMatch(privateArgs, privateArgsShape, 'privateArgs');
 
   // TODO: only on 1st incarnation
   registerChainsAndAssets(
@@ -97,9 +96,7 @@ export const contract = async (
           return openPortfolio(
             seat,
             offerArgs,
-            localV as unknown as Promise<
-              OrchestrationAccount<{ chainId: 'agoric-any' }>
-            >,
+            localV as unknown as Promise<LocalAccount>,
           );
         },
         'openPortfolio',
