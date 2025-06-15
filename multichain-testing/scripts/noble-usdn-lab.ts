@@ -5,21 +5,29 @@
 import '@endo/init';
 
 import { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import {
+  runTx,
+  txFlags,
+} from '@agoric/deploy-script-support/src/permissioned-deployment.js';
+import { flags, makeCmdRunner } from '@agoric/pola-io';
 import type { StdFee } from '@cosmjs/amino';
+import { stringToPath } from '@cosmjs/crypto';
 import {
   DirectSecp256k1HdWallet,
   type EncodeObject,
 } from '@cosmjs/proto-signing';
 import { SigningStargateClient } from '@cosmjs/stargate';
 import { $ } from 'execa';
-import { ConfigContext, useRegistry } from 'starshipjs';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { ConfigContext, useChain, useRegistry } from 'starshipjs';
 import { DEFAULT_TIMEOUT_NS } from '../tools/ibc-transfer.ts';
 import { makeQueryClient } from '../tools/query.ts';
-import { stringToPath } from '@cosmjs/crypto';
 
 const configs = {
   starship: {
     noble: {
+      chainId: 'noblelocal',
       rpc: 'http://localhost:26654',
     },
   },
@@ -75,7 +83,7 @@ cause eight cattle slot course mail more aware vapor slab hobby match
 
 const main = async ({
   env = process.env,
-  configFile = 'config.fusdc.yaml',
+  configFile = 'config.ymax.yaml',
 } = {}) => {
   const fetcher = await useRegistry(configFile);
   await ConfigContext.init(configFile, fetcher);
@@ -86,10 +94,22 @@ const main = async ({
   );
   const [{ address }] = await wallet.getAccounts();
 
-  //   const nobleChain = useChain('noble');
-  //   const apiUrl = await nobleChain.getRestEndpoint();
-  const { api: apiUrl, rpc: rpcEndpoint } = configs.testnet.noble;
-  const queryClient = makeQueryClient(apiUrl); // XXX pass fetch
+  const nobleChain = useChain('noble');
+  const { apiUrl, rpcEndpoint } = await (async () => {
+    switch (env.NET) {
+      case 'devnet': {
+        const { api: apiUrl, rpc: rpcEndpoint } = configs.testnet.noble;
+        return { apiUrl, rpcEndpoint };
+      }
+      default: {
+        const rpcEndpoint = await nobleChain.getRpcEndpoint();
+        const apiUrl = await nobleChain.getRestEndpoint();
+        return { apiUrl, rpcEndpoint };
+      }
+    }
+  })();
+
+  const queryClient = makeQueryClient(apiUrl);
 
   const fundsWanted = 4_000_000n;
   for (;;) {
@@ -100,15 +120,19 @@ const main = async ({
       if (amount >= fundsWanted) break;
     }
     console.log('getting creditFromFaucet for', address);
-    throw Error(`use ${configs.testnet.noble.faucet}`);
-    // await nobleChain.creditFromFaucet(address);
+    if (env.NET === 'devnet') {
+      throw Error(`use ${configs.testnet.noble.faucet}`);
+    } else {
+      await nobleChain.creditFromFaucet(address);
+    }
   }
 
   const toTrade = fundsWanted / 15n; // 15 tries
   const [poolId, denom, denomTo] = [0, 'uusdc', 'uusdn']; // cf. .flows.ts
   //   const route = `pool_id: ${poolId} denom_to: "${denomTo}"`; // protobuf text format
   const route = JSON.stringify({ pool_id: poolId, denom_to: denomTo });
-  const { rpc, chainId, explorer } = configs.testnet.noble;
+  const { rpc, chainId, explorer } =
+    configs[env.NET === 'devnet' ? 'testnet' : 'starship'].noble;
   const signArgs = [
     `--chain-id=${chainId}`,
     // '--broadcast-mode=block',
@@ -119,8 +143,26 @@ const main = async ({
     '--gas=auto',
     '--gas-adjustment=1.3',
   ];
+  // TODO: txFlags({chainId, from:'trader1', node:rpcEndpoint})
 
   const $v = $({ verbose: 'short' });
+  if (env.POOL) {
+    const pexec = promisify(execFile);
+    const signArgs = [
+      ...flags(txFlags({ node: rpcEndpoint, from: 'authority', chainId })),
+    ];
+    const poolArgs = Object.values({
+      pair: 'uusdn/uusdc',
+      rewards_fee: '0',
+      protocol_fee: '5', // BP
+      max_fee: '1', // ????
+      initial_a: '100',
+      future_a: '100',
+      future_a_time: '0',
+      // rate_multipliers: ''
+    });
+    await $v`nobled tx swap stableswap create-pool ${poolArgs} ${signArgs}`;
+  }
   if (env.TXFR) {
     const token = { denom, amount: String(BigInt(env.TXFR)) };
     const ag = await DirectSecp256k1HdWallet.fromMnemonic(keyMaterial.trader1, {
