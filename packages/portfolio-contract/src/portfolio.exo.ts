@@ -1,3 +1,10 @@
+/**
+ * @file Exo class kit for managing portfolio state and accounts
+ * 
+ * Defines the PortfolioKit exo class that maintains state for different yield protocol
+ * accounts (Aave, Compound, USDN) and provides methods for account management and
+ * invitation creation.
+ */
 import { makeTracer } from '@agoric/internal';
 import type { OrchestrationAccount } from '@agoric/orchestration';
 import type { Zone } from '@agoric/zone';
