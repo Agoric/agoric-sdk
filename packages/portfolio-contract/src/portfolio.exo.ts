@@ -12,7 +12,7 @@ import type {
 } from '@agoric/orchestration/src/axelar-types.js';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
-import type { OrchestrationAccount } from '@agoric/orchestration';
+import type { OrchestrationAccount, CaipChainId } from '@agoric/orchestration';
 import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.ts';
 import { PortfolioChain, YieldProtocol } from './constants.js';
 
@@ -36,69 +36,62 @@ const DECODE_CONTRACT_CALL_RESULT_ABI = [
   },
 ];
 
+export const supportedEVMChains: CaipChainId[] = [
+  'eip155:43114', // Avalanche
+  'eip155:8453', // Base
+  'eip155:1', //Ethereum
+];
+
+const TypeShape = M.or(...keys(YieldProtocol));
+const ChainShape = M.or(...supportedEVMChains);
+const PositionShape = M.splitRecord({}); // TODO
+
 const KeeperI = M.interface('keeper', {
   init: M.call(
     M.or(...keys(YieldProtocol)),
     M.or(...keys(PortfolioChain)),
     M.remotable('OrchestrationAccount'),
   ).returns(),
-  getAccount: M.call(
-    M.or(...keys(YieldProtocol)),
-    M.or(...keys(PortfolioChain)),
-  ).returns(M.remotable('OrchestrationAccount')),
+  getPositions: M.call(TypeShape, ChainShape).returns(M.arrayOf(PositionShape)),
+  getAccount: M.call(M.number(), TypeShape).returns(
+    M.remotable('OrchestrationAccount'),
+  ),
 });
 
 const EvmTapI = M.interface('EvmTap', {
   receiveUpcall: M.call(M.record()).returns(M.or(VowShape, M.undefined())),
 });
 
-export const supportedEVMChains: SupportedEVMChains[] = [
-  'Avalanche',
-  'Base',
-  'Ethereum',
-];
+const EVMProtocols = ['Aave', 'Compound'];
 
-const isEvmProtocol = (protocol: YieldProtocol): boolean => {
-  return protocol === YieldProtocol.Aave || protocol === YieldProtocol.Compound;
-};
-
-const createEvmProtocolState = (
-  account: OrchestrationAccount<{ chainId: 'agoric-any' }>,
-): EVMProtocolState => {
-  return harden({
-    localAccount: account,
-    remoteAccountAddress: undefined,
-    evmChain: undefined,
-    isActive: true,
-  });
-};
-
-const createCosmosProtocolState = (
-  account: OrchestrationAccount<{ chainId: 'noble-any' }>,
-): CosmosProtocolState => {
-  return harden({
-    icaAccount: account,
-    isActive: true,
-  });
-};
+type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
 
 type EVMProtocolState = {
-  localAccount?: OrchestrationAccount<{ chainId: 'agoric-any' }>;
+  type: 'Aave' | 'Compound';
+  chain: CaipChainId;
+  localAccount: LocalAccount;
   remoteAccountAddress?: string;
-  evmChain?: string;
   isActive: boolean;
 };
 
-type CosmosProtocolState = {
-  icaAccount?: OrchestrationAccount<{ chainId: 'noble-any' }>;
+/** ICA on Noble */
+type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>;
+type NobleDollarState = {
+  type: 'USDN';
+  chain: CaipChainId; // cosmos:noble-...
+  account: NobleAccount;
   isActive: boolean;
 };
 
-type PortfolioKitStateShape = {
-  protocolStates: MapStore<
-    PortfolioChain,
-    CosmosProtocolState | EVMProtocolState
-  >;
+type AccountOf = {
+  Aave: LocalAccount;
+  Compound: LocalAccount;
+  USDN: NobleAccount;
+};
+
+type PositionInfo = EVMProtocolState | NobleDollarState;
+type PortfolioKitState = {
+  positions: MapStore<number, PositionInfo>;
 };
 
 export const preparePortfolioKit = (zone: Zone) =>
@@ -117,11 +110,7 @@ export const preparePortfolioKit = (zone: Zone) =>
       tap: EvmTapI,
     },
 
-    (): PortfolioKitStateShape => {
-      return harden({
-        protocolStates: zone.mapStore('protocolStates'),
-      });
-    },
+    (): PortfolioKitState => ({ positions: zone.mapStore('posisions') }),
     {
       tap: {
         receiveUpcall(event: VTransferIBCEvent) {
@@ -182,46 +171,57 @@ export const preparePortfolioKit = (zone: Zone) =>
       },
       keeper: {
         init<P extends YieldProtocol>(
-          key: P,
-          portfolioChain: PortfolioChain,
-          account:
-            | OrchestrationAccount<{ chainId: 'agoric-any' }>
-            | OrchestrationAccount<{ chainId: 'noble-any' }>,
+          type: P,
+          chain: CaipChainId,
+          account: AccountOf[P],
         ) {
-          const protocolState = isEvmProtocol(key)
-            ? createEvmProtocolState(
-                account as OrchestrationAccount<{ chainId: 'agoric-any' }>,
-              )
-            : createCosmosProtocolState(
-                account as OrchestrationAccount<{ chainId: 'noble-any' }>,
-              );
-
-          this.state.protocolStates.init(portfolioChain, protocolState);
-          trace('initialized account for', key, '=>', `${account}`);
+          const { positions } = this.state;
+          const isActive = true;
+          const key = 1 + positions.getSize();
+          switch (type) {
+            case 'Aave':
+            case 'Compound':
+              positions.init(key, {
+                type,
+                localAccount: account as LocalAccount,
+                chain: chain,
+                isActive,
+              });
+              break;
+            case 'USDN':
+              positions.init(key, {
+                type,
+                chain,
+                account: account as AccountOf['USDN'],
+                isActive,
+              });
+              break;
+          }
+          trace('initialized position', key, 'for', type, '=>', `${account}`);
+        },
+        getPositions<P extends YieldProtocol>(type: P, chain: CaipChainId) {
+          const { positions } = this.state;
+          const out: PositionInfo[] = [];
+          for (const p of positions.values()) {
+            if (p.type === type && chain === p.chain) {
+              out.push(p);
+            }
+          }
+          return harden(out);
         },
         getAccount<P extends YieldProtocol>(
-          key: P,
-          portfolioChain: PortfolioChain,
-        ):
-          | OrchestrationAccount<{ chainId: 'agoric-any' }>
-          | OrchestrationAccount<{ chainId: 'noble-any' }> {
-          if (!this.state.protocolStates.has(portfolioChain)) {
-            throw Fail`account not initialized: ${q(portfolioChain)}`;
-          }
-          const protocolState = this.state.protocolStates.get(portfolioChain);
-
-          if (isEvmProtocol(key)) {
-            const evmState = protocolState as EVMProtocolState;
-            if (!evmState.localAccount) {
-              throw Fail`account not initialized: ${q(key)}`;
-            }
-            return evmState.localAccount;
-          } else {
-            const cosmosState = protocolState as CosmosProtocolState;
-            if (!cosmosState.icaAccount) {
-              throw Fail`account not initialized: ${q(key)}`;
-            }
-            return cosmosState.icaAccount;
+          positionId: number,
+          type: P,
+        ): AccountOf[P] {
+          const { positions } = this.state;
+          const p = positions.get(positionId);
+          assert.equal(p.type, type);
+          switch (type) {
+            case 'Aave':
+            case 'Compound':
+              return (p as EVMProtocolState).localAccount as AccountOf[P];
+            case 'USDN':
+              return (p as NobleDollarState).account as AccountOf[P];
           }
         },
       },
