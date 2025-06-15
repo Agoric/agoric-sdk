@@ -13,7 +13,7 @@ import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.ts';
 import { PortfolioChain, YieldProtocol } from './constants.js';
 
 const trace = makeTracer('PortExo');
-const { keys } = Object;
+const { keys, values } = Object;
 
 const DECODE_CONTRACT_CALL_RESULT_ABI = [
   {
@@ -45,7 +45,7 @@ const PositionShape = M.splitRecord({}); // TODO
 const KeeperI = M.interface('keeper', {
   add: M.call(
     M.or(...keys(YieldProtocol)),
-    M.or(...keys(PortfolioChain)),
+    M.or(...values(PortfolioChain)),
     M.remotable('OrchestrationAccount'),
   ).returns(M.number()),
   getPositions: M.call(TypeShape, ChainShape).returns(M.arrayOf(PositionShape)),
