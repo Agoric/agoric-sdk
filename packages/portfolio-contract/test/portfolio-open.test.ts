@@ -26,6 +26,9 @@ const mocks = (errs: Record<string, Error> = {}) => {
     async getChain(name: string) {
       const chainId = `${name}-${(nonce += 1)}`;
       return harden({
+        getChainInfo() {
+          return harden({ chainId: 'noble-1' });
+        },
         async makeAccount() {
           const addr = harden({
             chainId,
