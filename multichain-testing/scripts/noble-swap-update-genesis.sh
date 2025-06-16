@@ -49,8 +49,10 @@ function derive_address() {
   local hex_address=${hash:0:40}
   nobled debug addr "$hex_address" | grep -o 'noble1[0-9a-z]*'
 }
-CHAIN_BIN=nobled
-CHAIN_DIR=$HOME/.nobled
+
+DENOM="${DENOM:=uusdc}"
+CHAIN_BIN="${CHAIN_BIN:=nobled}"
+CHAIN_DIR="${CHAIN_DIR:=$HOME/.nobled}"
 
 POOL_ID=0
 POOL_PREFIX="swap/pool/${POOL_ID}"
