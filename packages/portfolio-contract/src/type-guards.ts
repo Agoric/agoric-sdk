@@ -1,7 +1,7 @@
 import type { Amount, Brand, NatValue } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
-import { M } from '@endo/patterns';
 import type { SupportedEVMChains } from '@agoric/orchestration/src/axelar-types.js';
+import { M } from '@endo/patterns';
 import type { YieldProtocol as YieldProtocolT } from './constants.js';
 import { YieldProtocol } from './constants.js';
 import { ChainShape } from './portfolio.exo.js';
@@ -39,3 +39,16 @@ export const makeOfferArgsShapes = () => {
     evmChain: M.opt(ChainShape),
   }) as TypedPattern<OfferArgsShapes>;
 };
+
+export type EVMContractAddresses = {
+  aavePool: string;
+  compound: string;
+  factory: string;
+};
+
+export const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
+  M.splitRecord({
+    aavePool: M.string(),
+    compound: M.string(),
+    factory: M.string(),
+  });

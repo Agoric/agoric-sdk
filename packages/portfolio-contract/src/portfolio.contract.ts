@@ -1,15 +1,13 @@
-import { makeTracer } from '@agoric/internal';
+import { makeTracer, type TypedPattern } from '@agoric/internal';
 import {
   ChainInfoShape,
   DenomDetailShape,
-  DenomShape,
   OrchestrationPowersShape,
   registerChainsAndAssets,
   withOrchestration,
   type ChainInfo,
   type Denom,
   type DenomDetail,
-  type OrchestrationAccount,
   type OrchestrationPowers,
   type OrchestrationTools,
 } from '@agoric/orchestration';
@@ -21,8 +19,10 @@ import { M, mustMatch } from '@endo/patterns';
 import { preparePortfolioKit, type LocalAccount } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import {
-  makeProposalShapes,
+  EVMContractAddressesShape,
   makeOfferArgsShapes,
+  makeProposalShapes,
+  type EVMContractAddresses,
   type OfferArgsShapes,
 } from './type-guards.ts';
 
@@ -30,18 +30,19 @@ const trace = makeTracer('PortC');
 
 const interfaceTODO = undefined;
 
-const privateArgsShape = {
+type PortfolioPrivateArgs = OrchestrationPowers & {
+  assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
+  chainInfo: Record<string, ChainInfo>;
+  marshaller: Marshaller;
+  contract: EVMContractAddresses;
+};
+
+const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
   ...(OrchestrationPowersShape as CopyRecord),
   marshaller: M.remotable('marshaller'),
-  contract: M.splitRecord({
-    aavePool: M.string(),
-    compound: M.string(),
-    factory: M.string(),
-  }),
+  contract: EVMContractAddressesShape,
   chainInfo: M.recordOf(M.string(), ChainInfoShape),
   assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
-  // TODO: remove once we deploy package pr is merged
-  poolMetricsNode: M.remotable(),
 };
 
 export const meta = {
@@ -51,11 +52,7 @@ harden(meta);
 
 export const contract = async (
   zcf: ZCF,
-  privateArgs: OrchestrationPowers & {
-    assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
-    chainInfo: Record<string, ChainInfo>;
-    marshaller: Marshaller;
-  },
+  privateArgs: PortfolioPrivateArgs,
   zone: Zone,
   tools: OrchestrationTools,
 ) => {

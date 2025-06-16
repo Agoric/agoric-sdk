@@ -9,26 +9,30 @@ import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import type { Amount } from '@agoric/ertp';
 import { makeTracer, NonNullish } from '@agoric/internal';
-import { assert } from '@endo/errors';
 import type {
+  CaipChainId,
   CosmosChainAddress,
   OrchestrationAccount,
   OrchestrationFlow,
   Orchestrator,
-  CaipChainId,
 } from '@agoric/orchestration';
-import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
-import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import type { ZCFSeat } from '@agoric/zoe';
-import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import {
   AxelarGMPMessageType,
   type AxelarGmpOutgoingMemo,
 } from '@agoric/orchestration/src/axelar-types.js';
+import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { gmpAddresses } from '@agoric/orchestration/src/utils/gmp.js';
-import type { PortfolioKit } from './portfolio.exo.ts';
-import type { OfferArgsShapes, ProposalShapes } from './type-guards.ts';
+import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
+import type { ZCFSeat } from '@agoric/zoe';
+import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
+import { assert } from '@endo/errors';
 import { PositionChain, YieldProtocol } from './constants.js';
+import type { PortfolioKit } from './portfolio.exo.ts';
+import type {
+  EVMContractAddresses,
+  OfferArgsShapes,
+  ProposalShapes,
+} from './type-guards.ts';
 // TODO: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const trace = makeTracer('PortF');
@@ -101,11 +105,7 @@ export const openPortfolio = (async (
   ctx: {
     zoeTools: GuestInterface<ZoeTools>;
     makePortfolioKit: () => PortfolioKit;
-    contract: {
-      aavePool: string;
-      compound: string;
-      factory: string;
-    };
+    contract: EVMContractAddresses;
     inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
   },
   seat: ZCFSeat,

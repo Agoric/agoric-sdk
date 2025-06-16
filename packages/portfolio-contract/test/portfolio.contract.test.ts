@@ -1,5 +1,6 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
 import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import type { Installation } from '@agoric/zoe';
@@ -8,6 +9,7 @@ import { E, passStyleOf } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
 import * as contractExports from '../src/portfolio.contract.ts';
+import type { EVMContractAddresses } from '../src/type-guards.ts';
 import { makeUSDNIBCTraffic } from './mocks.ts';
 import { makeTrader } from './portfolio-actors.ts';
 import { setupPortfolioTest } from './supports.ts';
@@ -65,6 +67,7 @@ const deploy = async (t: ExecutionContext) => {
     installation,
     { USDC: usdc.issuer },
     {}, // terms
+    // @ts-expect-error XXX what's going on here?
     {
       ...common.commonPrivateArgs,
       contract,
