@@ -59,7 +59,7 @@ const extractLog = capdata => stupidM.unserialize(capdata);
 //
 // The `runTests` method should perform whatever checks you find suitable to
 // verify that the durable object instance is working properly and has all the
-// approriate state it needs to do its job.  `runTests` should report back to
+// appropriate state it needs to do its job.  `runTests` should report back to
 // the test driver by sending it one or more `log(whatever)` messages (where
 // `whatever` is whatever information the `runTests` method cares to report;
 // typically this will be a string but can be any serializable data object).
