@@ -275,7 +275,16 @@ jq --arg addr "$GENESIS_ADDR" '.app_state.cctp = {
 }' $CHAIN_DIR/config/genesis.json > /tmp/genesis.json && mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
 
 # Configure swap module
-./noble-v9.0.4-update-genesis.sh
+# Update the authority field used by x/swap
+jq \
+  --arg addr "$GENESIS_ADDR" \
+  '.app_state.params.params.authority = $addr' \
+  $CHAIN_DIR/config/genesis.json > /tmp/genesis.json && mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
+
+# Show the result
+jq '.app_state.params.params.authority' $CHAIN_DIR/config/genesis.json
+
+echo "✅ Set swap module authority to $GENESIS_ADDR in $CHAIN_DIR/config/genesis.json"
 
 # Configure tariff module
 echo "Configure tariff module..."
