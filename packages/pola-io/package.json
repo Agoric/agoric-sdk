@@ -14,7 +14,6 @@
     "lint:types": "yarn run -T tsc",
     "lint-fix": "eslint --fix ."
   },
-  "dependencies": {},
   "devDependencies": {
     "ava": "^5.3.0"
   },
