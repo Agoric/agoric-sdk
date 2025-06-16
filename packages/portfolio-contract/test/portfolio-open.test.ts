@@ -16,6 +16,14 @@ import { contract } from './mocks.ts';
 import { preparePortfolioKit } from '../src/portfolio.exo.ts';
 import { makeLocalAccount, openPortfolio } from '../src/portfolio.flows.ts';
 
+const theExit = harden(() => {}); // for ava comparison
+const mockZCF = Far('MockZCF', {
+  makeEmptySeatKit: () =>
+    ({
+      zcfSeat: Far('MockZCFSeat', { exit: theExit }),
+    }) as unknown as ZCF,
+});
+
 const mocks = (errs: Record<string, Error> = {}) => {
   const buf = [] as any[];
   const log = ev => {
@@ -56,7 +64,8 @@ const mocks = (errs: Record<string, Error> = {}) => {
   }) as unknown as Orchestrator;
 
   const zone = makeHeapZone();
-  const makePortfolioKit = preparePortfolioKit(zone);
+  // @ts-expect-error mocked zcf
+  const makePortfolioKit = preparePortfolioKit(zone, { zcf: mockZCF });
   const zoeTools = harden({
     async localTransfer(sourceSeat, localAccount, amounts) {
       log({ _method: 'localTransfer', sourceSeat, localAccount, amounts });

@@ -75,7 +75,7 @@ export const contract = async (
     },
   };
 
-  const makePortfolioKit = preparePortfolioKit(zone);
+  const makePortfolioKit = preparePortfolioKit(zone, { zcf });
   const { makeLocalAccount, openPortfolio } = orchestrateAll(flows, {
     zoeTools,
     makePortfolioKit,

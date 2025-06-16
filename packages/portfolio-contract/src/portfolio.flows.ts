@@ -130,7 +130,7 @@ export const openPortfolio = (async (
       const { chainId, stakingTokens } = await axelar.getChainInfo();
       assert.equal(stakingTokens.length, 1, 'axelar has 1 staking token');
 
-      const localAccount = await makeLocalAccount(orch, ctx);
+      const localAccount = await localP;
       const caipChainId = PositionChain[offerArgs.evmChain];
       const positionId = kit.keeper.add(protocol, caipChainId, localAccount);
 
@@ -316,10 +316,17 @@ export const openPortfolio = (async (
         trace(
           'TODO: use makePromiseKit to delay resolving initRemoteEVMAccount until the account is ready',
         );
-
         await sendTokensViaCCTP(positionId, give.Aave);
         trace('TODO: Wait for 20 seconds before deploying funds to Aave');
-        trace('TODO: Deploy funds to Aave');
+        assert(
+          offerArgs.evmChain,
+          'evmChain is required to open a remote EVM account',
+        );
+        await kit.holder.supplyToAave(
+          seat,
+          offerArgs.evmChain,
+          give.Aave.value,
+        );
       } catch (err) {
         seat.fail(err);
       }
