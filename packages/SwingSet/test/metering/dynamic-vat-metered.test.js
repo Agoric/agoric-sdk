@@ -185,7 +185,7 @@ async function overflowCrank(t, explosion) {
   // the underlying platform.
   // 10_121_091 pass
   // 10_117_182 fail
-  const cmargs = [10_121_091n, 5_000_000n]; // remaining, notifyThreshold
+  const cmargs = [10_000_000n, 5_000_000n]; // remaining, notifyThreshold
   const kp1 = c.queueToVatRoot('bootstrap', 'createMeter', cmargs);
   await c.run();
   const marg = kunser(c.kpResolution(kp1));
