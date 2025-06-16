@@ -2,6 +2,10 @@
 // import { makeTracer } from '@agoric/internal';
 import assert from 'node:assert';
 
+/**Add commentMore actions
+ * @typedef {{ event: string, condition?: '=', value: string }} EventQuery
+ */
+
 // const trace = makeTracer('Agd', false);
 // Was disabled in https://github.com/Agoric/agoric-sdk/commit/b6b7c2b850e4af84fb65366b5d12196e012c41e1 so commented out the usage.
 // Will un-comment with generic chainD option once we decide to enable trace again.
@@ -112,7 +116,8 @@ export const makeAgd = ({ execFileSync }) => {
           return version;
         }
 
-        // TODO: This nonsense is because some appds write version to stderr!
+        // This hack (2>&1) is because some appds write version to stderr!
+        // TODO: Instead figure out reading version from chain's RPC endpoint instead of stderr (https://github.com/Agoric/agoric-sdk/issues/11496).
         const kubectlArgs = binaryArgs(chainName);
         const appd = kubectlArgs.pop();
         const args = [

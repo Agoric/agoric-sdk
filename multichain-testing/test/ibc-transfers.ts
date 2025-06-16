@@ -138,17 +138,15 @@ const queryPackets = async (binaries: Record<string, Agd>) => {
   }
   return results;
 };
-
-type ChainPacketCounts = Record<
-  string,
-  {
-    recvs: number;
-    acks: number;
+interface ChainPacketCounts {
+  [chain: string]: {
+      recvs: number;
+      acks: number;
   }
->;
+}
 
 const recordPackets = async (
-  binaries: Record<string, Agd>,
+  binaries: {[chaindName: string]: Agd},
   iteration: `q${number}`,
 ): Promise<ChainPacketCounts> => {
   const q = await queryPackets(binaries);

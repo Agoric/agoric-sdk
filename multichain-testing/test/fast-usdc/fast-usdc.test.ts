@@ -64,6 +64,8 @@ const makeTestContext = async (t: ExecutionContext) => {
   t.log('setupTestKeys:', wallets);
 
   // provision oracle wallets first so invitation deposits don't fail
+  // NOTE: serial await to avoid races
+  // (Todo: Use runSerial utility func https://github.com/Agoric/agoric-sdk/issues/11496)
   const oracleWds: Awaited<ReturnType<typeof provisionSmartWallet>>[] = [];
   for await (const n of keys(oracleMnemonics)) {
     const wd = await provisionSmartWallet(wallets[n], {
