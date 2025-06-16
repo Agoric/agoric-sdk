@@ -41,6 +41,7 @@
     "@agoric/vow": "workspace:*",
     "@agoric/zoe": "workspace:*",
     "@agoric/zone": "workspace:*",
+    "@endo/base64": "^1.0.9",
     "@endo/bundle-source": "^4.0.0",
     "@endo/captp": "^4.4.5",
     "@endo/errors": "^1.2.10",
@@ -52,7 +53,8 @@
     "@endo/stream": "^1.2.10",
     "import-meta-resolve": "^4.1.0",
     "node-fetch-cache": "^5.0.2",
-    "tmp": "^0.2.1"
+    "tmp": "^0.2.1",
+    "viem": "^2.31.0"
   },
   "devDependencies": {
     "@aglocal/fast-usdc-deploy": "^0.1.0",
