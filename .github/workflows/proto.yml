@@ -91,7 +91,7 @@ jobs:
     secrets:
       SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
     with:
-      dry-run: ${{ github.event_name == 'pull_request' }}
+      event: ${{ github.event_name }}
       needs-json: ${{ toJson(needs) }}
     needs:
       - up-to-date

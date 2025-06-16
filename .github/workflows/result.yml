@@ -2,11 +2,11 @@ name: Workflow result post-processing
 on:
   workflow_call:
     inputs:
-      dry-run:
-        description: Whether this is a dry run (no notifications).
+      event:
+        description: The Github Actions event that triggered the caller's workflow
         required: false
-        type: boolean
-        default: false
+        type: string
+        default: ''
       needs-json:
         description: The JSONified needs context of the job calling this workflow.
         required: true
@@ -112,6 +112,7 @@ jobs:
         id: last_status
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          event: ${{ inputs.event }}
 
       - name: Build success after failure message
         if: ${{ steps.extract.outputs.result == 'success' && steps.last_status.outputs.last_status == 'failure' }}
@@ -144,7 +145,7 @@ jobs:
           echo "SLACK_WEBHOOK=$SLACK_WEBHOOK" >> $GITHUB_ENV
 
       - name: Notify Slack
-        if: ${{ env.SLACK_WEBHOOK && !inputs.dry-run }}
+        if: ${{ env.SLACK_WEBHOOK && inputs.event != 'pull_request' }}
         uses: rtCamp/action-slack-notify@v2.2.0
         env:
           # We inherit all the variables set in the previous steps.

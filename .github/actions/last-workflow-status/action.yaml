@@ -5,6 +5,11 @@ branding:
   icon: 'arrow-left'
   color: 'yellow'
 inputs:
+  event:
+    description: 'Event that triggered the workflow run.'
+    default: ''
+    type: string
+    required: false
   github_token:
     description: Secret GitHub API token to use for making API requests.
     default: ${{ github.token }}
@@ -30,7 +35,9 @@ runs:
       run: |
         last_status=$(curl --silent --header 'authorization: Bearer ${{ inputs.github_token }}' \
                                     --header 'content-type: application/json' \
-        "https://api.github.com/repos/${{ github.repository }}/actions/workflows/${{ env.WORKFLOW_ID }}/runs?per_page=1&status=completed&branch=${{ env.GITHUB_HEAD_REF }}" \
+        "https://api.github.com/repos/${{ github.repository }}/actions/workflows/${{ env.WORKFLOW_ID }}/runs?per_page=1&status=completed&branch=${{ env.GITHUB_HEAD_REF }}$EVENT_QUERY" \
         | jq -r .workflow_runs[0].conclusion)
         echo "Status of the previous build: $last_status"
         echo "last_status=${last_status}" >> $GITHUB_OUTPUT
+      env:
+        EVENT_QUERY: ${{ inputs.event != '' && format('&event={0}', inputs.event) || '' }}
