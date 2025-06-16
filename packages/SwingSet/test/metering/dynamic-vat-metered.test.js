@@ -249,15 +249,15 @@ async function overflowCrank(t, explosion) {
   kpidRejected(t, c, kp5, 'vat terminated');
 }
 
-test.failing('exceed allocate', t => {
+test('exceed allocate', t => {
   return overflowCrank(t, 'allocate');
 });
 
-test.failing('exceed per-crank compute', t => {
+test('exceed per-crank compute', t => {
   return overflowCrank(t, 'compute');
 });
 
-test.failing('exceed stack', t => {
+test('exceed stack', t => {
   return overflowCrank(t, 'stack');
 });
 
