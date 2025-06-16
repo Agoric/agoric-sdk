@@ -26,8 +26,6 @@ const PROVISIONING_POOL_ADDR = 'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346';
 
 const BLD = '000000ubld';
 
-const rpcUrl = 'http://localhost:26657';
-
 export const txAbbr = tx => {
   const { txhash, code, height, gas_used } = tx;
 
@@ -102,36 +100,32 @@ export const makeBlockTool = ({ rpc, delay }) => {
  * @param {string} [opts.chainId]
  * @param {string} [opts.installer]
  * @param {string} [opts.bundleId]
+ * @param {RetryUntilCondition} opts.retryUntilCondition
  */
 const installBundle = async (fullPath, opts) => {
-  const { id, agd, delay, progress = console.log } = opts;
-  const { chainId = 'agoriclocal', installer = 'faucet' } = opts;
-  const from = agd.lookup(installer);
+  const { id, agd, progress = console.log } = opts;
+  const {
+    chainId = 'agoriclocal',
+    installer = 'faucet',
+    retryUntilCondition,
+  } = opts;
+  const from = await agd.lookup(installer);
   // const explainDelay = (ms, info) => {
   //   progress('follow', { ...info, delay: ms / 1000 }, '...');
   //   return delay(ms);
   // };
   // const updates = follow('bundles', { delay: explainDelay });
   // await updates.next();
-  const installBundle = () =>
-    agd.tx(['swingset', 'install-bundle', `@${fullPath}`], {
-      from,
-      chainId,
-      yes: true,
-    });
-  let tx;
-  try {
-    tx = await installBundle();
-  } catch (err) {
-    console.warn('WARN: retrying failed install-bundle', err);
-    // TODO make available from client-utils
-    const { waitForBlock } = makeBlockTool({
-      rpc: makeHttpClient(rpcUrl, global.fetch),
-      delay,
-    });
-    await waitForBlock(1);
-    tx = await installBundle();
-  }
+  const tx = await retryUntilCondition(
+    () =>
+      agd.tx(['swingset', 'install-bundle', `@${fullPath}`, '--gas', 'auto'], {
+        from,
+        chainId,
+        yes: true,
+      }),
+    result => !!result?.txhash,
+    `install bundle ${fullPath}`,
+  );
   assert(tx);
 
   progress({ id, installTx: tx.txhash, height: tx.height });
@@ -505,7 +499,7 @@ const runCoreEval = async (
  * @param {string} [io.rpcAddress]
  * @param {string} [io.apiAddress]
  * @param {(...parts: string[]) => string} [io.join]
- * * @param {RetryUntilCondition} [io.retryUntilCondition]
+ * @param {RetryUntilCondition} [io.retryUntilCondition]
  */
 export const makeE2ETools = async (
   log,
@@ -556,6 +550,7 @@ export const makeE2ETools = async (
         delay,
         // bundleId: getBundleId(bundle),
         bundleId: undefined,
+        retryUntilCondition,
       });
       progress({
         // name,
