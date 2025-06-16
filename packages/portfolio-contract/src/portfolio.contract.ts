@@ -1,29 +1,45 @@
 import { makeTracer } from '@agoric/internal';
 import {
+  ChainInfoShape,
+  DenomDetailShape,
   OrchestrationPowersShape,
   registerChainsAndAssets,
   withOrchestration,
-  type OrchestrationAccount,
   type OrchestrationTools,
 } from '@agoric/orchestration';
 import type { ZCF } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Zone } from '@agoric/zone';
 import type { CopyRecord } from '@endo/pass-style';
-import { M } from '@endo/patterns';
-import { preparePortfolioKit } from './portfolio.exo.ts';
+import { M, mustMatch } from '@endo/patterns';
+import { preparePortfolioKit, type LocalAccount } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
-import { makeProposalShapes } from './type-guards.ts';
+import {
+  makeProposalShapes,
+  makeOfferArgsShapes,
+  type OfferArgsShapes,
+} from './type-guards.ts';
 
 const trace = makeTracer('PortC');
 
 const interfaceTODO = undefined;
 
+const privateArgsShape = {
+  ...(OrchestrationPowersShape as CopyRecord),
+  marshaller: M.remotable('marshaller'),
+  contract: M.splitRecord({
+    aavePool: M.string(),
+    compound: M.string(),
+    factory: M.string(),
+  }),
+  chainInfo: M.recordOf(M.string(), ChainInfoShape),
+  assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
+  // TODO: remove once we deploy package pr is merged
+  poolMetricsNode: M.remotable(),
+};
+
 export const meta = M.splitRecord({
-  privateArgsShape: {
-    ...(OrchestrationPowersShape as CopyRecord),
-    marshaller: M.remotable('marshaller'),
-  },
+  privateArgsShape,
 });
 harden(meta);
 
@@ -48,6 +64,7 @@ export const contract = async (
   );
 
   const proposalShapes = makeProposalShapes(brands.USDC);
+  const offerArgsShapes = makeOfferArgsShapes();
 
   const inertSubscriber: ResolvedPublicTopic<never>['subscriber'] = {
     getUpdateSince() {
@@ -58,10 +75,12 @@ export const contract = async (
     },
   };
 
-  const makePortfolioKit = preparePortfolioKit(zone);
+  const makePortfolioKit = preparePortfolioKit(zone, { zcf });
   const { makeLocalAccount, openPortfolio } = orchestrateAll(flows, {
     zoeTools,
     makePortfolioKit,
+    chainHub,
+    contract: privateArgs.contract,
     inertSubscriber,
   });
 
@@ -72,14 +91,14 @@ export const contract = async (
     makeOpenPortfolioInvitation() {
       trace('makeOpenPortfolioInvitation');
       return zcf.makeInvitation(
-        (seat, offerArgs) =>
-          openPortfolio(
+        (seat, offerArgs: OfferArgsShapes) => {
+          mustMatch(offerArgs, offerArgsShapes);
+          return openPortfolio(
             seat,
             offerArgs,
-            localV as unknown as Promise<
-              OrchestrationAccount<{ chainId: 'agoric-any' }>
-            >,
-          ),
+            localV as unknown as Promise<LocalAccount>,
+          );
+        },
         'openPortfolio',
         undefined,
         proposalShapes.openPortfolio,

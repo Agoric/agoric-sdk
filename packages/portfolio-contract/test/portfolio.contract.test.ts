@@ -1,6 +1,5 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-
 import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import type { Installation } from '@agoric/zoe';
@@ -16,6 +15,12 @@ import { makeWallet } from './wallet-offer-tools.ts';
 
 const contractName = 'ymax0';
 type StartFn = typeof contractExports.start;
+
+export const contract = {
+  aavePoolAddress: '0x87870Bca3F0fD6335C3F4ce8392D69350B4fA4E2', // Aave V3 Pool
+  compoundAddress: '0xA0b86a33E6A3E81E27Da9c18c4A77c9Cd4e08D57', // Compound USDC
+  factoryAddress: '0xef8651dD30cF990A1e831224f2E0996023163A81', // Factory contract
+};
 
 /** from https://www.mintscan.io/noble explorer */
 const explored = [
@@ -60,7 +65,10 @@ const deploy = async (t: ExecutionContext) => {
     installation,
     { USDC: usdc.issuer },
     {}, // terms
-    common.commonPrivateArgs,
+    {
+      ...common.commonPrivateArgs,
+      contract,
+    }, // privateArgs
   );
   t.notThrows(() =>
     mustMatch(
@@ -93,11 +101,13 @@ test('open portfolio with USDN position', async t => {
     ibcBridge.addMockAck(msg, ack);
   }
 
-  const doneP = trader1.openPortfolio(t, {
-    USDN: usdc.units(3_333),
-    Aave: usdc.units(3_333),
-    Compound: usdc.units(3_333),
-  });
+  const doneP = trader1.openPortfolio(
+    t,
+    {
+      USDN: usdc.units(3_333),
+    },
+    { evmChain: undefined },
+  );
 
   // ack IBC transfer for forward
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
