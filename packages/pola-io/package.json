@@ -8,9 +8,10 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
+    "test:xs": "exit 0",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
     "lint:eslint": "eslint .",
-    "lint:types": "tsc --build",
+    "lint:types": "yarn run -T tsc",
     "lint-fix": "eslint --fix ."
   },
   "devDependencies": {
