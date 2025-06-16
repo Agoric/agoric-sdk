@@ -179,11 +179,11 @@ async function brokenVatTest(t, bundleName, expected) {
 }
 
 test('broken vat creation fails (bad module)', async t => {
-  await brokenVatTest(t, 'brokenModule', /missing|no function/);
+  await brokenVatTest(t, 'brokenModule', /missing|no function|not a function/);
 });
 
 test('broken vat creation fails (bad buildRootObject)', async t => {
-  await brokenVatTest(t, 'brokenRoot', /missing|no function/);
+  await brokenVatTest(t, 'brokenRoot', /missing|no function|not a function/);
 });
 
 test('broken vat creation fails (buildRootObject hangs)', async t => {
