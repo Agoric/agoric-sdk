@@ -110,7 +110,7 @@ When the program is run under a debugger, it will breakpoint when the JS
 `debugger;` statement will have no effect. The `debugger;` statement
 is executed *before* the method is entered.
 
-See https://github.com/endojs/endo/blob/master/packages/pass-style/test/prepare-breakpoints.js for an example.
+See https://github.com/endojs/endo/blob/master/packages/vow/src/message-breakpoints.js for an example.
 
 ## ENDO_SEND_BREAKPOINTS
 
