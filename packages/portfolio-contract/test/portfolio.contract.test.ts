@@ -8,19 +8,18 @@ import { E, passStyleOf } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
 import * as contractExports from '../src/portfolio.contract.ts';
-import { makeUSDNIBCTraffic } from './mocks.ts';
+import {
+  axelarChainsMap,
+  contractAddresses,
+  makeUSDNIBCTraffic,
+} from './mocks.ts';
 import { makeTrader } from './portfolio-actors.ts';
 import { setupPortfolioTest } from './supports.ts';
 import { makeWallet } from './wallet-offer-tools.ts';
+import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
 const contractName = 'ymax0';
 type StartFn = typeof contractExports.start;
-
-export const contract = {
-  aavePoolAddress: '0x87870Bca3F0fD6335C3F4ce8392D69350B4fA4E2', // Aave V3 Pool
-  compoundAddress: '0xA0b86a33E6A3E81E27Da9c18c4A77c9Cd4e08D57', // Compound USDC
-  factoryAddress: '0xef8651dD30cF990A1e831224f2E0996023163A81', // Factory contract
-};
 
 /** from https://www.mintscan.io/noble explorer */
 const explored = [
@@ -61,13 +60,17 @@ const deploy = async (t: ExecutionContext) => {
   t.is(passStyleOf(installation), 'remotable');
 
   const { usdc } = common.brands;
+  const timer = buildZoeManualTimer();
+
   const started = await E(zoe).startInstance(
     installation,
     { USDC: usdc.issuer },
     {}, // terms
     {
       ...common.commonPrivateArgs,
-      contract,
+      contractAddresses,
+      axelarChainsMap,
+      timer,
     }, // privateArgs
   );
   t.notThrows(() =>
@@ -121,6 +124,33 @@ test('open portfolio with USDN position', async t => {
   const [{ storagePath: myUSDNAddress }] = result.publicTopics;
   t.log('I can see where my money is:', myUSDNAddress);
   t.log('refund', done.payouts);
+});
+
+test('open portfolio with Aave position', async t => {
+  const { common, zoe, started } = await deploy(t);
+  const { usdc } = common.brands;
+  const { when } = common.utils.vowTools;
+
+  const myBalance = usdc.units(10_000);
+  const funds = await common.utils.pourPayment(myBalance);
+  const myWallet = makeWallet({ USDC: usdc }, zoe, when);
+  await E(myWallet).deposit(funds);
+
+  const trader = makeTrader(myWallet, started.instance);
+  t.log('Trader funds:', myBalance);
+
+  const doneP = trader.openPortfolio(
+    t,
+    { Aave: usdc.units(3_333) },
+    { evmChain: 'Ethereum', axelarGasFee: 100n },
+  );
+
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+
+  const done = await doneP;
+  const result = done.result as any;
+
+  t.is(passStyleOf(result.invitationMakers), 'remotable');
 });
 
 test.todo('User can see transfer in progress');

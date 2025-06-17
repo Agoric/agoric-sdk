@@ -2,7 +2,7 @@ import { makeTracer, type Remote } from '@agoric/internal';
 import { Fail } from '@endo/errors';
 import type { Zone } from '@agoric/zone';
 import { M } from '@endo/patterns';
-import { VowShape } from '@agoric/vow';
+import { VowShape, type VowTools } from '@agoric/vow';
 import { atob, decodeBase64 } from '@endo/base64';
 import { decodeAbiParameters } from 'viem';
 import {
@@ -71,7 +71,7 @@ const HolderI = M.interface('Holder', {
     M.or(M.string(), M.undefined()),
   ),
   sendGmp: M.call(M.remotable('Seat'), M.record()).returns(M.promise()),
-  wait: M.call(M.bigint()).returns(M.promise()),
+  wait: M.call(M.bigint()).returns(VowShape),
 });
 
 const EvmTapI = M.interface('EvmTap', {
@@ -121,10 +121,12 @@ export const preparePortfolioKit = (
     timer,
     zcf,
     axelarChainsMap,
+    vowTools,
   }: {
     zcf: ZCF;
     axelarChainsMap: AxelarChainsMap;
     timer: Remote<TimerService>;
+    vowTools: VowTools;
   },
 ) =>
   zone.exoClassKit(
@@ -420,8 +422,8 @@ export const preparePortfolioKit = (
           });
         },
 
-        async wait(delay: bigint) {
-          await E(timer).delay(delay);
+        wait(val: bigint) {
+          return vowTools.watch(E(timer).delay(val));
         },
       },
       invitationMakers: {

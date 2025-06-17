@@ -62,7 +62,7 @@ export const contract = async (
   const { chainInfo, assetInfo, contractAddresses, axelarChainsMap, timer } =
     privateArgs;
   const { brands } = zcf.getTerms();
-  const { orchestrateAll, zoeTools, chainHub } = tools;
+  const { orchestrateAll, zoeTools, chainHub, vowTools } = tools;
 
   assert(brands.USDC, 'USDC missing from brands in terms');
 
@@ -86,6 +86,7 @@ export const contract = async (
     zcf,
     axelarChainsMap,
     timer,
+    vowTools,
   });
   const { makeLocalAccount, openPortfolio } = orchestrateAll(flows, {
     zoeTools,
