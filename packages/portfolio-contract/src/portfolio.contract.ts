@@ -86,6 +86,7 @@ export const contract = async (
     makePortfolioKit,
     axelarChainsMap,
     contractAddresses,
+    chainHub,
     inertSubscriber,
   });
 

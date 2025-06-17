@@ -8,7 +8,7 @@ import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import type { Amount } from '@agoric/ertp';
-import { makeTracer, mustMatch, NonNullish } from '@agoric/internal';
+import { makeTracer, mustMatch } from '@agoric/internal';
 import { assert } from '@endo/errors';
 import type {
   CosmosChainAddress,
@@ -16,6 +16,7 @@ import type {
   OrchestrationFlow,
   Orchestrator,
   CaipChainId,
+  ChainHub,
 } from '@agoric/orchestration';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
@@ -54,16 +55,6 @@ export const makeLocalAccount = (async (orch: Orchestrator, _ctx: unknown) => {
   return account;
 }) satisfies OrchestrationFlow;
 harden(makeLocalAccount);
-
-const denomForBrand = async (orch, brand) => {
-  const agoric = await orch.getChain('agoric');
-  const assets = await agoric.getVBankAssetInfo();
-  const { denom } = NonNullish(
-    assets.find(a => a.brand === brand),
-    `${brand} not registered in ChainHub`,
-  );
-  return denom;
-};
 
 // XXX: push down to Orchestration API in NobleMethods, in due course
 const makeSwapLockMessages = (
@@ -113,6 +104,7 @@ export const openPortfolio = (async (
       usdc: `0x${string}`;
     };
     axelarChainsMap: AxelarChainsMap;
+    chainHub: GuestInterface<ChainHub>;
     inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
   },
   seat: ZCFSeat,
@@ -123,7 +115,8 @@ export const openPortfolio = (async (
   mustMatch(offerArgs, makeOfferArgsShapes());
   await null; // see https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
   try {
-    const { makePortfolioKit, contractAddresses, axelarChainsMap } = ctx;
+    const { makePortfolioKit, contractAddresses, axelarChainsMap, chainHub } =
+      ctx;
     const kit = makePortfolioKit();
 
     const initRemoteEVMAccount = async (protocol: YieldProtocol) => {
@@ -139,11 +132,7 @@ export const openPortfolio = (async (
       assert.equal(stakingTokens.length, 1, 'axelar has 1 staking token');
 
       const localAccount = await localP;
-      const positionId = kit.keeper.add(
-        protocol,
-        axelarChainsMap[evmChain].caip,
-        localAccount,
-      );
+      kit.keeper.add(protocol, axelarChainsMap[evmChain].caip, localAccount);
 
       try {
         // @ts-expect-error
@@ -186,8 +175,6 @@ export const openPortfolio = (async (
           },
           { memo: JSON.stringify(memo) },
         );
-
-        return positionId;
       } catch (err) {
         await ctx.zoeTools.withdrawToSeat(localAccount, seat, give);
         const errorMsg = `EVM account creation failed ${err}`;
@@ -195,10 +182,7 @@ export const openPortfolio = (async (
       }
     };
 
-    const sendTokensViaCCTP = async (
-      positionId: number,
-      amount: Amount<'nat'>,
-    ) => {
+    const sendTokensViaCCTP = async (amount: Amount<'nat'>) => {
       const nobleChain = await orch.getChain('noble');
       const nobleAccount = await nobleChain.makeAccount();
 
@@ -210,15 +194,15 @@ export const openPortfolio = (async (
       try {
         trace('IBC transfer to Noble for CCTP');
         await localAccount.transfer(nobleAccount.getAddress(), amount);
+        const denom = await chainHub.getDenom(amount.brand);
 
-        const denom = await denomForBrand(orch, amount.brand);
+        assert(denom, 'denom must be defined');
         const denomAmount = {
           denom,
           value: amount.value,
         };
 
-        const remoteAccountAddress =
-          kit.keeper.getRemoteAccountAddress(positionId);
+        const remoteAccountAddress = kit.holder.getRemoteAccountAddress();
         assert(
           remoteAccountAddress,
           'Remote account address not found for position',
@@ -242,8 +226,7 @@ export const openPortfolio = (async (
       const myNobleAccout = await nobleChain.makeAccount();
       const nobleAddr = myNobleAccout.getAddress();
       const { chainId } = await nobleChain.getChainInfo();
-      const positionId = kit.keeper.add(
-        'USDN',
+      kit.keeper.addUSDNPosition(
         `cosmos:${chainId}` as CaipChainId,
         myNobleAccout,
       );
@@ -254,17 +237,11 @@ export const openPortfolio = (async (
         subscriber: ctx.inertSubscriber,
         storagePath,
       };
-      return { topic, positionId };
+      return { topic };
     };
 
-    const openUSDNPosition = async (
-      amount: Amount<'nat'>,
-      positionId: number,
-    ) => {
-      const acct = kit.keeper.getAccount(
-        positionId,
-        'USDN',
-      ) as OrchestrationAccount<{
+    const openUSDNPosition = async (amount: Amount<'nat'>) => {
+      const acct = kit.keeper.getAccount('USDN') as OrchestrationAccount<{
         chainId: 'noble-any';
       }>;
       const there = acct.getAddress();
@@ -306,10 +283,10 @@ export const openPortfolio = (async (
     const { give } = seat.getProposal() as ProposalShapes['openPortfolio'];
     const topics: GuestInterface<ResolvedPublicTopic<never>>[] = [];
     if (give.USDN) {
-      const { topic, positionId } = await initNobleAccount();
+      const { topic } = await initNobleAccount();
       topics.push(topic);
       try {
-        await openUSDNPosition(give.USDN, positionId);
+        await openUSDNPosition(give.USDN);
       } catch (err) {
         seat.fail(err);
         return harden({
@@ -323,11 +300,11 @@ export const openPortfolio = (async (
     // TODO: Add a conditional for Compound
     if (give.Aave) {
       try {
-        const positionId = await initRemoteEVMAccount(YieldProtocol.Aave);
+        await initRemoteEVMAccount(YieldProtocol.Aave);
         trace(
           'TODO: use makePromiseKit to delay resolving initRemoteEVMAccount until the account is ready',
         );
-        await sendTokensViaCCTP(positionId, give.Aave);
+        await sendTokensViaCCTP(give.Aave);
         trace('TODO: Wait for 20 seconds before deploying funds to Aave');
         const { evmChain, axelarGasFee } = offerArgs;
         await kit.holder.supplyToAave(

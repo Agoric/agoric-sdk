@@ -1,11 +1,10 @@
 import { makeTracer } from '@agoric/internal';
-import { assert, Fail } from '@endo/errors';
+import { Fail } from '@endo/errors';
 import type { Zone } from '@agoric/zone';
 import { M } from '@endo/patterns';
 import { VowShape } from '@agoric/vow';
 import { atob, decodeBase64 } from '@endo/base64';
 import { decodeAbiParameters } from 'viem';
-import { type MapStore } from '@agoric/store';
 import {
   type AxelarGmpIncomingMemo,
   type SupportedEVMChains,
@@ -27,7 +26,7 @@ import { YieldProtocol } from './constants.js';
 import type { AxelarChainsMap } from './type-guards.js';
 
 const trace = makeTracer('PortExo');
-const { keys, values } = Object;
+const { keys, values, entries } = Object;
 
 const DECODE_CONTRACT_CALL_RESULT_ABI = [
   {
@@ -51,24 +50,31 @@ export const ChainShape = M.string(); // TODO: remove it
 const PositionShape = M.splitRecord({}); // TODO
 
 const KeeperI = M.interface('keeper', {
-  add: M.call(
-    TypeShape,
+  addAavePosition: M.call(
     M.or(ChainShape),
     M.remotable('OrchestrationAccount'),
-  ).returns(M.number()),
+  ).returns(),
+  addCompoundPosition: M.call(
+    M.or(ChainShape),
+    M.remotable('OrchestrationAccount'),
+  ).returns(),
+  addUSDNPosition: M.call(
+    M.or(ChainShape),
+    M.remotable('OrchestrationAccount'),
+  ).returns(),
   getPositions: M.call(TypeShape, ChainShape).returns(M.arrayOf(PositionShape)),
   getAccount: M.call(M.number(), TypeShape).returns(
     M.remotable('OrchestrationAccount'),
   ),
-  getRemoteAccountAddress: M.call(M.number()).returns(
-    M.or(M.string(), M.undefined()),
-  ),
-  sendGmp: M.call(M.remotable('Seat'), M.record()).returns(M.promise()),
 });
 
 const HolderI = M.interface('Holder', {
   supplyToAave: M.call(M.remotable('Seat')).returns(M.promise()),
   withdrawFromAave: M.call(M.remotable('Seat')).returns(M.promise()),
+  getRemoteAccountAddress: M.call(M.number()).returns(
+    M.or(M.string(), M.undefined()),
+  ),
+  sendGmp: M.call(M.remotable('Seat'), M.record()).returns(M.promise()),
 });
 
 const EvmTapI = M.interface('EvmTap', {
@@ -101,8 +107,15 @@ type AccountOf = {
 };
 
 type PositionInfo = EVMProtocolState | NobleDollarState;
+
+type PortfolioPositions = {
+  Aave: EVMProtocolState;
+  Compound: EVMProtocolState;
+  USDN: NobleDollarState;
+};
+
 type PortfolioKitState = {
-  positions: MapStore<number, PositionInfo>;
+  positions: PortfolioPositions;
 };
 
 export const preparePortfolioKit = (
@@ -120,8 +133,14 @@ export const preparePortfolioKit = (
       }),
       tap: EvmTapI,
     },
-
-    (): PortfolioKitState => ({ positions: zone.mapStore('positions') }),
+    () =>
+      harden({
+        positions: {
+          Aave: undefined,
+          Compound: undefined,
+          USDN: undefined,
+        },
+      }) as unknown as PortfolioKitState,
     {
       tap: {
         receiveUpcall(event: VTransferIBCEvent) {
@@ -162,21 +181,15 @@ export const preparePortfolioKit = (
                 result,
               );
 
-              // Find the EVM protocol position that matches the source chain
               const { positions } = this.state;
-              for (const [key, position] of positions.entries()) {
-                if (
-                  (position.type === 'Aave' || position.type === 'Compound') &&
-                  'remoteAccountAddress' in position
-                ) {
+              for (const [_key, position] of entries(positions)) {
+                if (position.type === 'Aave' || position.type === 'Compound') {
                   const evmState = position as EVMProtocolState;
-                  positions.set(
-                    key,
-                    harden({
-                      ...evmState,
-                      remoteAccountAddress: address,
-                    }),
-                  );
+                  positions[position.type] = harden({
+                    ...evmState,
+                    remoteAccountAddress: address,
+                  });
+
                   break;
                 }
               }
@@ -190,59 +203,76 @@ export const preparePortfolioKit = (
         },
       },
       keeper: {
-        add<P extends YieldProtocol>(
-          type: P,
+        addAavePosition<P extends YieldProtocol>(
           chain: CaipChainId,
           account: AccountOf[P],
-        ): number {
-          const { positions } = this.state;
+        ) {
           const isActive = true;
-          const key = 1 + positions.getSize();
-          switch (type) {
-            case 'Aave':
-            case 'Compound': {
-              const evmState: EVMProtocolState = {
-                type,
-                localAccount: account as LocalAccount,
-                chain,
-                isActive,
-              };
-              positions.init(key, harden(evmState));
-              break;
-            }
-            case 'USDN': {
-              const nobleState: NobleDollarState = {
-                type,
-                chain,
-                account: account as AccountOf['USDN'],
-                isActive,
-              };
-              positions.init(key, harden(nobleState));
-              break;
-            }
-            default:
-              throw new Error(`Unknown protocol type: ${type}`);
-          }
-          trace('initialized position', key, 'for', type, '=>', `${account}`);
-          return key;
+          const evmState: EVMProtocolState = harden({
+            type: 'Aave',
+            localAccount: account as LocalAccount,
+            chain,
+            isActive,
+          });
+          this.state.positions = {
+            ...this.state.positions,
+            Aave: evmState,
+          };
+          trace('initialized position for aave =>', `${account}`);
         },
-        getPositions<P extends YieldProtocol>(type: P, chain: CaipChainId) {
+        addCompoundPosition<P extends YieldProtocol>(
+          chain: CaipChainId,
+          account: AccountOf[P],
+        ) {
+          const isActive = true;
+          const evmState: EVMProtocolState = harden({
+            type: 'Aave',
+            localAccount: account as LocalAccount,
+            chain,
+            isActive,
+          });
+          this.state.positions = {
+            ...this.state.positions,
+            Compound: evmState,
+          };
+          trace('initialized position for compound =>', `${account}`);
+        },
+        addUSDNPosition<P extends YieldProtocol>(
+          chain: CaipChainId,
+          account: AccountOf[P],
+        ) {
+          const isActive = true;
+          const nobleState: NobleDollarState = harden({
+            type: 'USDN',
+            chain,
+            account: account as AccountOf['USDN'],
+            isActive,
+          });
+          this.state.positions = {
+            ...this.state.positions,
+            USDN: nobleState,
+          };
+          trace('initialized position for', 'USDN', '=>', `${account}`);
+        },
+        getPositions<P extends YieldProtocol>(
+          type: P,
+          chain: CaipChainId,
+        ): readonly PositionInfo[] {
           const { positions } = this.state;
           const out: PositionInfo[] = [];
-          for (const p of positions.values()) {
-            if (p.type === type && chain === p.chain) {
+
+          for (const p of values(positions)) {
+            if (p.type === type && p.chain === chain) {
               out.push(harden(p));
             }
           }
+
           return harden(out);
         },
-        getAccount<P extends YieldProtocol>(
-          positionId: number,
-          type: P,
-        ): AccountOf[P] {
+        getAccount<P extends YieldProtocol>(type: P): AccountOf[P] {
           const { positions } = this.state;
-          const p = positions.get(positionId);
-          assert.equal(p.type, type);
+          const p = positions[type];
+
           switch (type) {
             case 'Aave':
             case 'Compound':
@@ -253,12 +283,26 @@ export const preparePortfolioKit = (
               throw new Error(`Unknown protocol type: ${type}`);
           }
         },
-        getRemoteAccountAddress(positionId: number): string | undefined {
+      },
+      holder: {
+        getRemoteAccountAddress(): string | undefined {
           const { positions } = this.state;
-          const p = positions.get(positionId);
-          if (p.type === 'Aave' || p.type === 'Compound') {
-            return (p as EVMProtocolState).remoteAccountAddress;
+
+          // The remote account address is shared between both Aave and Compound.
+          // If one position is missing, we fall back to the other.
+          const aavePosition = positions.Aave;
+          if (
+            aavePosition?.type === 'Compound' &&
+            aavePosition.remoteAccountAddress
+          ) {
+            return aavePosition.remoteAccountAddress;
           }
+
+          const compoundPosition = positions.Compound;
+          if (compoundPosition.type === 'Aave') {
+            return compoundPosition.remoteAccountAddress;
+          }
+
           return undefined;
         },
         async sendGmp(
@@ -330,28 +374,22 @@ export const preparePortfolioKit = (
           trace(`Initiating IBC Transfer...`);
           trace(`DENOM of token:${denom}`);
 
-          // TODO: dont hardcode positionID
-          const positionId = 2;
-          await this.facets.keeper
-            .getAccount(positionId, YieldProtocol.Aave)
-            .transfer(
-              {
-                value: gmpAddresses.AXELAR_GMP,
-                encoding: 'bech32',
-                chainId,
-              },
-              {
-                denom,
-                value: amt.value,
-              },
-              { memo: JSON.stringify(memo) },
-            );
+          await this.facets.keeper.getAccount(YieldProtocol.Aave).transfer(
+            {
+              value: gmpAddresses.AXELAR_GMP,
+              encoding: 'bech32',
+              chainId,
+            },
+            {
+              denom,
+              value: amt.value,
+            },
+            { memo: JSON.stringify(memo) },
+          );
 
           seat.exit();
           return 'sendGmp successful';
         },
-      },
-      holder: {
         async supplyToAave(
           seat: ZCFSeat,
           aavePoolAddress: `0x${string}`,
@@ -360,9 +398,11 @@ export const preparePortfolioKit = (
           amountToTransfer: bigint,
           gasAmount: bigint,
         ) {
-          // TODO: dont hardcode positionID
-          const positionId = 2;
-          await this.facets.keeper.sendGmp(seat, {
+          const remoteEVMAddress = this.facets.holder.getRemoteAccountAddress();
+          remoteEVMAddress !== undefined ||
+            Fail`remoteEVMAddress must be defined`;
+
+          await this.facets.holder.sendGmp(seat, {
             destinationAddress: gmpAddresses.AXELAR_GMP,
             destinationEVMChain: evmChain,
             type: AxelarGMPMessageType.ContractCall,
@@ -375,12 +415,7 @@ export const preparePortfolioKit = (
               },
               {
                 functionSignature: 'supply(address,uint256,address,uint16)',
-                args: [
-                  usdcTokenAddress,
-                  amountToTransfer,
-                  this.facets.keeper.getRemoteAccountAddress(positionId),
-                  0,
-                ],
+                args: [usdcTokenAddress, amountToTransfer, remoteEVMAddress, 0],
                 target: aavePoolAddress,
               },
             ],
@@ -394,9 +429,11 @@ export const preparePortfolioKit = (
           amountToWithdraw: bigint,
           gasAmount: bigint,
         ) {
-          // TODO: dont hardcode positionID
-          const positionId = 2;
-          await this.facets.keeper.sendGmp(seat, {
+          const remoteEVMAddress = this.facets.holder.getRemoteAccountAddress();
+          remoteEVMAddress !== undefined ||
+            Fail`remoteEVMAddress must be defined`;
+
+          await this.facets.holder.sendGmp(seat, {
             destinationAddress: gmpAddresses.AXELAR_GMP,
             type: AxelarGMPMessageType.ContractCall,
             destinationEVMChain: evmChain,
@@ -404,11 +441,7 @@ export const preparePortfolioKit = (
             contractInvocationData: [
               {
                 functionSignature: 'withdraw(address,uint256,address)',
-                args: [
-                  usdcTokenAddress,
-                  amountToWithdraw,
-                  this.facets.keeper.getRemoteAccountAddress(positionId),
-                ],
+                args: [usdcTokenAddress, amountToWithdraw, remoteEVMAddress],
                 target: aavePoolAddress,
               },
             ],
