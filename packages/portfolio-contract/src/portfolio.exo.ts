@@ -12,6 +12,7 @@ import {
   type ContractCall,
   AxelarGMPMessageType,
   type AxelarGmpOutgoingMemo,
+  type GMPMessageType,
 } from '@agoric/orchestration/src/axelar-types.js';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
@@ -22,7 +23,8 @@ import {
   buildGMPPayload,
 } from '@agoric/orchestration/src/utils/gmp.js';
 import type { ZCF } from '@agoric/zoe';
-import { PositionChain, YieldProtocol } from './constants.js';
+import { YieldProtocol } from './constants.js';
+import type { AxelarChainsMap } from './type-guards.js';
 
 const trace = makeTracer('PortExo');
 const { keys, values } = Object;
@@ -44,18 +46,8 @@ const DECODE_CONTRACT_CALL_RESULT_ABI = [
   },
 ];
 
-// TODO: get these from terms
-const AAVE_POOL_ADDRESS = '0xccEa5C65f6d4F465B71501418b88FBe4e7071283';
-const USDC_TOKEN_ADDRESS = '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf'; // not circle USDC
-
-export const supportedEVMChains: CaipChainId[] = [
-  'eip155:43114', // Avalanche
-  'eip155:8453', // Base
-  'eip155:1', // Ethereum
-];
-
 const TypeShape = M.or(...keys(YieldProtocol));
-export const ChainShape = M.or(...values(PositionChain));
+export const ChainShape = M.string(); // TODO: remove it
 const PositionShape = M.splitRecord({}); // TODO
 
 const KeeperI = M.interface('keeper', {
@@ -113,7 +105,10 @@ type PortfolioKitState = {
   positions: MapStore<number, PositionInfo>;
 };
 
-export const preparePortfolioKit = (zone: Zone, { zcf }: { zcf: ZCF }) =>
+export const preparePortfolioKit = (
+  zone: Zone,
+  { zcf, axelarChainsMap }: { zcf: ZCF; axelarChainsMap: AxelarChainsMap },
+) =>
   zone.exoClassKit(
     'Portfolio',
     {
@@ -139,7 +134,8 @@ export const preparePortfolioKit = (zone: Zone, { zcf }: { zcf: ZCF }) =>
           trace('receiveUpcall packet data', tx);
           const memo: AxelarGmpIncomingMemo = JSON.parse(tx.memo);
 
-          if (!(supportedEVMChains as string[]).includes(memo.source_chain)) {
+          const ids = values(axelarChainsMap).map(chain => chain.axelarId);
+          if (!ids.includes(memo.source_chain)) {
             return;
           }
 
@@ -166,30 +162,22 @@ export const preparePortfolioKit = (zone: Zone, { zcf }: { zcf: ZCF }) =>
                 result,
               );
 
-              const sourceChain = memo.source_chain;
-              const targetChainId = PositionChain[sourceChain];
-              if (!targetChainId) {
-                trace('Unknown source chain:', sourceChain);
-              } else {
-                // Find the EVM protocol position that matches the source chain
-                const { positions } = this.state;
-                for (const [key, position] of positions.entries()) {
-                  if (
-                    (position.type === 'Aave' ||
-                      position.type === 'Compound') &&
-                    position.chain === targetChainId &&
-                    'remoteAccountAddress' in position
-                  ) {
-                    const evmState = position as EVMProtocolState;
-                    positions.set(
-                      key,
-                      harden({
-                        ...evmState,
-                        remoteAccountAddress: address,
-                      }),
-                    );
-                    break;
-                  }
+              // Find the EVM protocol position that matches the source chain
+              const { positions } = this.state;
+              for (const [key, position] of positions.entries()) {
+                if (
+                  (position.type === 'Aave' || position.type === 'Compound') &&
+                  'remoteAccountAddress' in position
+                ) {
+                  const evmState = position as EVMProtocolState;
+                  positions.set(
+                    key,
+                    harden({
+                      ...evmState,
+                      remoteAccountAddress: address,
+                    }),
+                  );
+                  break;
                 }
               }
 
@@ -277,9 +265,9 @@ export const preparePortfolioKit = (zone: Zone, { zcf }: { zcf: ZCF }) =>
           seat: ZCFSeat,
           offerArgs: {
             destinationAddress: string;
-            type: number;
+            type: GMPMessageType;
             destinationEVMChain: SupportedEVMChains;
-            gasAmount: number;
+            gasAmount: bigint;
             contractInvocationData: Array<ContractCall>;
           },
         ) {
@@ -290,8 +278,6 @@ export const preparePortfolioKit = (zone: Zone, { zcf }: { zcf: ZCF }) =>
             gasAmount,
             contractInvocationData,
           } = offerArgs;
-
-          trace('Offer Args:', JSON.stringify(offerArgs));
 
           destinationAddress != null ||
             Fail`Destination address must be defined`;
@@ -312,11 +298,6 @@ export const preparePortfolioKit = (zone: Zone, { zcf }: { zcf: ZCF }) =>
 
           const [[_kw, amt]] = Object.entries(give);
           amt.value > 0n || Fail`IBC transfer amount must be greater than zero`;
-          trace('_kw, amt', _kw, amt);
-          trace(`targets: [${destinationAddress}]`);
-          trace(
-            `contractInvocationData: ${JSON.stringify(contractInvocationData)}`,
-          );
 
           const payload =
             type === 3 ? null : buildGMPPayload(contractInvocationData);
@@ -373,8 +354,11 @@ export const preparePortfolioKit = (zone: Zone, { zcf }: { zcf: ZCF }) =>
       holder: {
         async supplyToAave(
           seat: ZCFSeat,
+          aavePoolAddress: `0x${string}`,
+          usdcTokenAddress: `0x${string}`,
           evmChain: SupportedEVMChains,
-          AMOUNT_TO_TRANSFER: bigint,
+          amountToTransfer: bigint,
+          gasAmount: bigint,
         ) {
           // TODO: dont hardcode positionID
           const positionId = 2;
@@ -382,30 +366,33 @@ export const preparePortfolioKit = (zone: Zone, { zcf }: { zcf: ZCF }) =>
             destinationAddress: gmpAddresses.AXELAR_GMP,
             destinationEVMChain: evmChain,
             type: AxelarGMPMessageType.ContractCall,
-            gasAmount: 500000, // TODO: get from axelar API or some better way
+            gasAmount,
             contractInvocationData: [
               {
                 functionSignature: 'approve(address,uint256)',
-                args: [AAVE_POOL_ADDRESS, AMOUNT_TO_TRANSFER],
-                target: USDC_TOKEN_ADDRESS,
+                args: [aavePoolAddress, amountToTransfer],
+                target: usdcTokenAddress,
               },
               {
                 functionSignature: 'supply(address,uint256,address,uint16)',
                 args: [
-                  USDC_TOKEN_ADDRESS,
-                  AMOUNT_TO_TRANSFER,
+                  usdcTokenAddress,
+                  amountToTransfer,
                   this.facets.keeper.getRemoteAccountAddress(positionId),
                   0,
                 ],
-                target: AAVE_POOL_ADDRESS,
+                target: aavePoolAddress,
               },
             ],
           });
         },
         async withdrawFromAave(
           seat: ZCFSeat,
+          aavePoolAddress: `0x${string}`,
+          usdcTokenAddress: `0x${string}`,
           evmChain: SupportedEVMChains,
-          AMOUNT_TO_WITHDRAW: bigint,
+          amountToWithdraw: bigint,
+          gasAmount: bigint,
         ) {
           // TODO: dont hardcode positionID
           const positionId = 2;
@@ -413,45 +400,59 @@ export const preparePortfolioKit = (zone: Zone, { zcf }: { zcf: ZCF }) =>
             destinationAddress: gmpAddresses.AXELAR_GMP,
             type: AxelarGMPMessageType.ContractCall,
             destinationEVMChain: evmChain,
-            gasAmount: 500000, // TODO: get from axelar API or some better way
+            gasAmount,
             contractInvocationData: [
               {
                 functionSignature: 'withdraw(address,uint256,address)',
                 args: [
-                  USDC_TOKEN_ADDRESS,
-                  AMOUNT_TO_WITHDRAW,
+                  usdcTokenAddress,
+                  amountToWithdraw,
                   this.facets.keeper.getRemoteAccountAddress(positionId),
                 ],
-                target: AAVE_POOL_ADDRESS,
+                target: aavePoolAddress,
               },
             ],
           });
         },
       },
       invitationMakers: {
-        supplyToAave(evmChain: SupportedEVMChains, AMOUNT_TO_TRANSFER: bigint) {
+        supplyToAave(
+          evmChain: SupportedEVMChains,
+          aavePoolAddress: `0x${string}`,
+          usdcTokenAddress: `0x${string}`,
+          amountToTransfer: bigint,
+          gasAmount: bigint,
+        ) {
           const invitation = async seat => {
             await this.facets.holder.supplyToAave(
               seat,
+              aavePoolAddress,
+              usdcTokenAddress,
               evmChain,
-              AMOUNT_TO_TRANSFER,
+              amountToTransfer,
+              gasAmount,
             );
           };
-          return zcf.makeInvitation(invitation, 'evmTransaction');
+          return zcf.makeInvitation(invitation, 'supplyToAave');
         },
-
         withdrawFromAave(
           evmChain: SupportedEVMChains,
-          AMOUNT_TO_WITHDRAW: bigint,
+          aavePoolAddress: `0x${string}`,
+          usdcTokenAddress: `0x${string}`,
+          amountToWithdraw: bigint,
+          gasAmount: bigint,
         ) {
           const invitation = async seat => {
             await this.facets.holder.withdrawFromAave(
               seat,
+              aavePoolAddress,
+              usdcTokenAddress,
               evmChain,
-              AMOUNT_TO_WITHDRAW,
+              amountToWithdraw,
+              gasAmount,
             );
           };
-          return zcf.makeInvitation(invitation, 'evmTransaction');
+          return zcf.makeInvitation(invitation, 'withdrawFromAave');
         },
       },
     },

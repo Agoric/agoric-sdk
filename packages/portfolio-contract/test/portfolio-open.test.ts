@@ -12,7 +12,7 @@ import type { Proposal, ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { makeHeapZone } from '@agoric/zone';
 import { Far, passStyleOf } from '@endo/pass-style';
-import { contract } from './mocks.ts';
+import { axelarChainsMap, contractAddresses } from './mocks.ts';
 import { preparePortfolioKit } from '../src/portfolio.exo.ts';
 import { makeLocalAccount, openPortfolio } from '../src/portfolio.flows.ts';
 
@@ -112,12 +112,18 @@ test('open portfolio', async t => {
   const localP = makeLocalAccount(orch, {});
   const actual = await openPortfolio(
     orch,
-    { zoeTools, makePortfolioKit, inertSubscriber, contract },
+    {
+      zoeTools,
+      makePortfolioKit,
+      inertSubscriber,
+      contractAddresses,
+      axelarChainsMap,
+    },
     seat,
     // Use Axelar chain identifier instead of CAP-10 ID for cross-chain messaging
     // Axelar docs: https://docs.axelar.dev/dev/reference/mainnet-chain-names
     // Chain names: https://axelarscan.io/resources/chains
-    { evmChain: 'Ethereum' },
+    harden({ evmChain: 'Ethereum', axelarGasFee: 50n }),
     localP,
   );
   t.log(log.map(msg => msg._method).join(', '));
@@ -141,9 +147,15 @@ test('handle failure in localTransfer from seat to local account', async t => {
   const localP = makeLocalAccount(orch, {});
   const actual = await openPortfolio(
     orch,
-    { zoeTools, makePortfolioKit, inertSubscriber, contract },
+    {
+      zoeTools,
+      makePortfolioKit,
+      inertSubscriber,
+      contractAddresses,
+      axelarChainsMap,
+    },
     seat,
-    { evmChain: 'Ethereum' },
+    harden({ evmChain: 'Ethereum', axelarGasFee: 50n }),
     localP,
   );
   t.log(log.map(msg => msg._method).join(', '));
@@ -163,9 +175,15 @@ test('handle failure in IBC transfer', async t => {
   const localP = makeLocalAccount(orch, {});
   const actual = await openPortfolio(
     orch,
-    { zoeTools, makePortfolioKit, inertSubscriber, contract },
+    {
+      zoeTools,
+      makePortfolioKit,
+      inertSubscriber,
+      contractAddresses,
+      axelarChainsMap,
+    },
     seat,
-    { evmChain: 'Ethereum' },
+    harden({ evmChain: 'Ethereum', axelarGasFee: 50n }),
     localP,
   );
   t.log(log.map(msg => msg._method).join(', '));
@@ -188,9 +206,15 @@ test('handle failure in executeEncodedTx', async t => {
   const localP = makeLocalAccount(orch, {});
   const actual = await openPortfolio(
     orch,
-    { zoeTools, makePortfolioKit, inertSubscriber, contract },
+    {
+      zoeTools,
+      makePortfolioKit,
+      inertSubscriber,
+      contractAddresses,
+      axelarChainsMap,
+    },
     seat,
-    { evmChain: 'Ethereum' },
+    harden({ evmChain: 'Ethereum', axelarGasFee: 50n }),
     localP,
   );
   t.log(log.map(msg => msg._method).join(', '));

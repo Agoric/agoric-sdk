@@ -1,9 +1,10 @@
 import type { TypedPattern } from '@agoric/internal';
 import { M } from '@endo/patterns';
-import type { SupportedEVMChains } from '@agoric/orchestration/src/axelar-types.js';
-import type { YieldProtocol as YieldProtocolT } from './constants.js';
+import {
+  AxelarChains,
+  type YieldProtocol as YieldProtocolT,
+} from './constants.js';
 import { YieldProtocol } from './constants.js';
-import { ChainShape } from './portfolio.exo.js';
 
 const { keys } = Object;
 
@@ -17,8 +18,17 @@ export type ProposalShapes = {
   openPortfolio: { give: Partial<Record<YieldProtocolT, Amount<'nat'>>> };
 };
 
+export type AxelarChain = keyof typeof AxelarChains;
+export type AxelarChainsMap = {
+  [chain in AxelarChain]: {
+    caip: `${string}:${string}`;
+    axelarId: string;
+  };
+};
+
 export type OfferArgsShapes = {
-  evmChain?: SupportedEVMChains;
+  evmChain: AxelarChain;
+  axelarGasFee: bigint;
 };
 
 export const makeProposalShapes = (usdcBrand: Brand<'nat'>) => {
@@ -35,6 +45,7 @@ export const makeOfferArgsShapes = () => {
     // Use Axelar chain identifier instead of CAP-10 ID for cross-chain messaging
     // Axelar docs: https://docs.axelar.dev/dev/reference/mainnet-chain-names
     // Chain names: https://axelarscan.io/resources/chains
-    evmChain: M.opt(ChainShape),
+    evmChain: M.or(...keys(AxelarChains)),
+    axelarGasFee: M.bigint(),
   }) as TypedPattern<OfferArgsShapes>;
 };

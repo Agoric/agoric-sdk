@@ -8,7 +8,7 @@ import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import type { Amount } from '@agoric/ertp';
-import { makeTracer, NonNullish } from '@agoric/internal';
+import { makeTracer, mustMatch, NonNullish } from '@agoric/internal';
 import { assert } from '@endo/errors';
 import type {
   CosmosChainAddress,
@@ -27,8 +27,13 @@ import {
 } from '@agoric/orchestration/src/axelar-types.js';
 import { gmpAddresses } from '@agoric/orchestration/src/utils/gmp.js';
 import type { PortfolioKit } from './portfolio.exo.ts';
-import type { OfferArgsShapes, ProposalShapes } from './type-guards.ts';
-import { PositionChain, YieldProtocol } from './constants.js';
+import {
+  makeOfferArgsShapes,
+  type AxelarChainsMap,
+  type OfferArgsShapes,
+  type ProposalShapes,
+} from './type-guards.ts';
+import { YieldProtocol } from './constants.js';
 // TODO: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const trace = makeTracer('PortF');
@@ -101,11 +106,13 @@ export const openPortfolio = (async (
   ctx: {
     zoeTools: GuestInterface<ZoeTools>;
     makePortfolioKit: () => PortfolioKit;
-    contract: {
-      aavePool: string;
-      compound: string;
-      factory: string;
+    contractAddresses: {
+      aavePool: `0x${string}`;
+      compound: `0x${string}`;
+      factory: `0x${string}`;
+      usdc: `0x${string}`;
     };
+    axelarChainsMap: AxelarChainsMap;
     inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
   },
   seat: ZCFSeat,
@@ -113,13 +120,14 @@ export const openPortfolio = (async (
   // passed as a promise to alleviate contract start-up sync constraints
   localP: Promise<OrchestrationAccount<{ chainId: 'agoric-any' }>>,
 ) => {
+  mustMatch(offerArgs, makeOfferArgsShapes());
   await null; // see https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
   try {
-    const { makePortfolioKit, contract } = ctx;
+    const { makePortfolioKit, contractAddresses, axelarChainsMap } = ctx;
     const kit = makePortfolioKit();
 
     const initRemoteEVMAccount = async (protocol: YieldProtocol) => {
-      const { evmChain } = offerArgs;
+      const { evmChain, axelarGasFee } = offerArgs;
       assert(evmChain, 'evmChain is required to open a remote EVM account');
 
       const [agoric, axelar] = await Promise.all([
@@ -131,8 +139,11 @@ export const openPortfolio = (async (
       assert.equal(stakingTokens.length, 1, 'axelar has 1 staking token');
 
       const localAccount = await localP;
-      const caipChainId = PositionChain[offerArgs.evmChain];
-      const positionId = kit.keeper.add(protocol, caipChainId, localAccount);
+      const positionId = kit.keeper.add(
+        protocol,
+        axelarChainsMap[evmChain].caip,
+        localAccount,
+      );
 
       try {
         // @ts-expect-error
@@ -153,11 +164,11 @@ export const openPortfolio = (async (
 
         const memo: AxelarGmpOutgoingMemo = {
           destination_chain: evmChain,
-          destination_address: contract.factory,
+          destination_address: contractAddresses.factory,
           payload: [],
           type: AxelarGMPMessageType.ContractCall,
           fee: {
-            amount: '1', // TODO: Get fee amount from api
+            amount: String(axelarGasFee), // TODO: split the gas between makeAccount and GMP calls
             recipient: gmpAddresses.AXELAR_GAS,
           },
         };
@@ -213,7 +224,7 @@ export const openPortfolio = (async (
           'Remote account address not found for position',
         );
 
-        const caipChainId = PositionChain[offerArgs.evmChain];
+        const caipChainId = axelarChainsMap[offerArgs.evmChain].caip;
         const destinationAddress = `${caipChainId}:${remoteAccountAddress}`;
         await nobleAccount.depositForBurn(
           destinationAddress as `${string}:${string}:${string}`,
@@ -318,14 +329,14 @@ export const openPortfolio = (async (
         );
         await sendTokensViaCCTP(positionId, give.Aave);
         trace('TODO: Wait for 20 seconds before deploying funds to Aave');
-        assert(
-          offerArgs.evmChain,
-          'evmChain is required to open a remote EVM account',
-        );
+        const { evmChain, axelarGasFee } = offerArgs;
         await kit.holder.supplyToAave(
           seat,
-          offerArgs.evmChain,
+          contractAddresses.aavePool,
+          contractAddresses.usdc,
+          evmChain,
           give.Aave.value,
+          axelarGasFee,
         );
       } catch (err) {
         seat.fail(err);
