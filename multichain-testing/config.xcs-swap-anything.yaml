@@ -9,9 +9,6 @@ chains:
     env:
       - name: DEBUG
         value: SwingSet:vat,SwingSet:ls
-      # CONFIG_FILE env is for scripts/update-config.sh
-      - name: CONFIG_FILE
-        value: 'config.xcs-swap-anything.yaml'
     genesis:
       app_state:
         staking:
@@ -22,7 +19,7 @@ chains:
             bootstrap_vat_config: '@agoric/vm-config/decentral-itest-orchestration-config.json'
     scripts:
       updateConfig:
-        file: scripts/update-config.sh
+        file: scripts/update-config-xcs-swap.sh
     faucet:
       enabled: true
       type: starship

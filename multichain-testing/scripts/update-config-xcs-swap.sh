@@ -2,6 +2,8 @@
 
 ## see https://github.com/cosmology-tech/starship/blob/1d60f55c631b4d0f92a43ad92e9a935298aa3aa5/starship/charts/devnet/scripts/default/update-config.sh
 
+# This file is replica of `scripts/update-config.sh` with added code for xcs-swap config
+
 CHAIN_ID="${CHAIN_ID:=osmosis}"
 CHAIN_DIR="${CHAIN_DIR:=$HOME/.osmosisd}"
 KEYS_CONFIG="${KEYS_CONFIG:=configs/keys.json}"
@@ -15,6 +17,9 @@ sed -i -e 's#"tcp://127.0.0.1:26657"#"tcp://0.0.0.0:26657"#g' $CHAIN_DIR/config/
 sed -i -e 's/index_all_keys = false/index_all_keys = true/g' $CHAIN_DIR/config/config.toml
 sed -i -e 's/seeds = ".*"/seeds = ""/g' $CHAIN_DIR/config/config.toml
 sed -i -e 's#cors_allowed_origins = \[\]#cors_allowed_origins = \["*"\]#g' $CHAIN_DIR/config/config.toml
+
+# log_level change code for xcs-swap-anything
+sed -i -E 's/^(log_level\s*=\s*)".*"/\1"debug"/' $CHAIN_DIR/config/config.toml
 
 echo "Update client.toml file"
 sed -i -e 's#keyring-backend = "os"#keyring-backend = "test"#g' $CHAIN_DIR/config/client.toml
