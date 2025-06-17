@@ -50,14 +50,8 @@ export const ChainShape = M.string(); // TODO: remove it
 const PositionShape = M.splitRecord({}); // TODO
 
 const KeeperI = M.interface('keeper', {
-  addAavePosition: M.call(
-    M.or(ChainShape),
-    M.remotable('OrchestrationAccount'),
-  ).returns(),
-  addCompoundPosition: M.call(
-    M.or(ChainShape),
-    M.remotable('OrchestrationAccount'),
-  ).returns(),
+  addAavePosition: M.call(M.or(ChainShape)).returns(),
+  addCompoundPosition: M.call(M.or(ChainShape)).returns(),
   addUSDNPosition: M.call(
     M.or(ChainShape),
     M.remotable('OrchestrationAccount'),
@@ -71,6 +65,8 @@ const KeeperI = M.interface('keeper', {
 const HolderI = M.interface('Holder', {
   supplyToAave: M.call(M.remotable('Seat')).returns(M.promise()),
   withdrawFromAave: M.call(M.remotable('Seat')).returns(M.promise()),
+  setupGmpLCA: M.call(M.remotable('OrchestrationAccount')).returns(),
+  setupAxelarChainInfo: M.call(M.any()).returns(),
   getRemoteAccountAddress: M.call(M.number()).returns(
     M.or(M.string(), M.undefined()),
   ),
@@ -83,11 +79,15 @@ const EvmTapI = M.interface('EvmTap', {
 
 export type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
 
+type AxelarGmpManager = {
+  localAccount: LocalAccount;
+  remoteAccountAddress?: string;
+  axelarChainInfo: Record<string, unknown> & { chainId: string };
+};
+
 type EVMProtocolState = {
   type: 'Aave' | 'Compound';
   chain: CaipChainId;
-  localAccount: LocalAccount;
-  remoteAccountAddress?: string;
   isActive: boolean;
 };
 
@@ -116,11 +116,18 @@ type PortfolioPositions = {
 
 type PortfolioKitState = {
   positions: PortfolioPositions;
+  gmp: AxelarGmpManager;
 };
 
 export const preparePortfolioKit = (
   zone: Zone,
-  { zcf, axelarChainsMap }: { zcf: ZCF; axelarChainsMap: AxelarChainsMap },
+  {
+    zcf,
+    axelarChainsMap,
+  }: {
+    zcf: ZCF;
+    axelarChainsMap: AxelarChainsMap;
+  },
 ) =>
   zone.exoClassKit(
     'Portfolio',
@@ -139,6 +146,11 @@ export const preparePortfolioKit = (
           Aave: undefined,
           Compound: undefined,
           USDN: undefined,
+        },
+        gmp: {
+          localAccount: undefined,
+          remoteAccountAddress: undefined,
+          axelarChainInfo: undefined,
         },
       }) as unknown as PortfolioKitState,
     {
@@ -203,55 +215,47 @@ export const preparePortfolioKit = (
         },
       },
       keeper: {
-        addAavePosition<P extends YieldProtocol>(
-          chain: CaipChainId,
-          account: AccountOf[P],
-        ) {
+        addAavePosition(chain: CaipChainId) {
           const isActive = true;
-          const evmState: EVMProtocolState = harden({
+          const evmState: EVMProtocolState = {
             type: 'Aave',
-            localAccount: account as LocalAccount,
             chain,
             isActive,
-          });
-          this.state.positions = {
+          };
+          this.state.positions = harden({
             ...this.state.positions,
             Aave: evmState,
-          };
-          trace('initialized position for aave =>', `${account}`);
+          });
+          trace('initialized position for aave');
         },
-        addCompoundPosition<P extends YieldProtocol>(
-          chain: CaipChainId,
-          account: AccountOf[P],
-        ) {
+        addCompoundPosition(chain: CaipChainId) {
           const isActive = true;
-          const evmState: EVMProtocolState = harden({
-            type: 'Aave',
-            localAccount: account as LocalAccount,
+          const evmState: EVMProtocolState = {
+            type: 'Compound',
             chain,
             isActive,
-          });
-          this.state.positions = {
+          };
+          this.state.positions = harden({
             ...this.state.positions,
             Compound: evmState,
-          };
-          trace('initialized position for compound =>', `${account}`);
+          });
+          trace('initialized position for compound');
         },
         addUSDNPosition<P extends YieldProtocol>(
           chain: CaipChainId,
           account: AccountOf[P],
         ) {
           const isActive = true;
-          const nobleState: NobleDollarState = harden({
+          const nobleState: NobleDollarState = {
             type: 'USDN',
             chain,
             account: account as AccountOf['USDN'],
             isActive,
-          });
-          this.state.positions = {
+          };
+          this.state.positions = harden({
             ...this.state.positions,
             USDN: nobleState,
-          };
+          });
           trace('initialized position for', 'USDN', '=>', `${account}`);
         },
         getPositions<P extends YieldProtocol>(
@@ -270,37 +274,39 @@ export const preparePortfolioKit = (
           return harden(out);
         },
         getAccount<P extends YieldProtocol>(type: P): AccountOf[P] {
-          const { positions } = this.state;
-          const p = positions[type];
-
           switch (type) {
             case 'Aave':
             case 'Compound':
-              return (p as EVMProtocolState).localAccount as AccountOf[P];
-            case 'USDN':
+              return this.state.gmp.localAccount as AccountOf[P];
+            case 'USDN': {
+              const { positions } = this.state;
+              const p = positions[type];
               return (p as NobleDollarState).account as AccountOf[P];
+            }
             default:
               throw new Error(`Unknown protocol type: ${type}`);
           }
         },
       },
       holder: {
+        setupGmpLCA<P extends YieldProtocol>(account: AccountOf[P]) {
+          this.state.gmp = {
+            ...this.state.gmp,
+            // Can use Aave or Compound as both share this account
+            localAccount: account as AccountOf['Aave'],
+          };
+        },
+        setupAxelarChainInfo(info) {
+          this.state.gmp = {
+            ...this.state.gmp,
+            axelarChainInfo: info,
+          };
+        },
         getRemoteAccountAddress(): string | undefined {
-          const { positions } = this.state;
+          const { gmp } = this.state;
 
-          // The remote account address is shared between both Aave and Compound.
-          // If one position is missing, we fall back to the other.
-          const aavePosition = positions.Aave;
-          if (
-            aavePosition?.type === 'Compound' &&
-            aavePosition.remoteAccountAddress
-          ) {
-            return aavePosition.remoteAccountAddress;
-          }
-
-          const compoundPosition = positions.Compound;
-          if (compoundPosition.type === 'Aave') {
-            return compoundPosition.remoteAccountAddress;
+          if (gmp.remoteAccountAddress) {
+            return gmp.remoteAccountAddress;
           }
 
           return undefined;
@@ -353,10 +359,7 @@ export const preparePortfolioKit = (
 
           trace('amt and brand', amt.brand);
 
-          // TODO: Maintain state for Axlear Chain ID
-          // const axelar = await orch.getChain('axelar');
-          const chainId = 'axelar';
-
+          const { chainId } = this.state.gmp.axelarChainInfo;
           const memo: AxelarGmpOutgoingMemo = {
             destination_chain: destinationEVMChain,
             destination_address: destinationAddress,

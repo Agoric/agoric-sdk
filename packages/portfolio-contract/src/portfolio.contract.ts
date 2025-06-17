@@ -80,7 +80,10 @@ export const contract = async (
     },
   };
 
-  const makePortfolioKit = preparePortfolioKit(zone, { zcf, axelarChainsMap });
+  const makePortfolioKit = preparePortfolioKit(zone, {
+    zcf,
+    axelarChainsMap,
+  });
   const { makeLocalAccount, openPortfolio } = orchestrateAll(flows, {
     zoeTools,
     makePortfolioKit,

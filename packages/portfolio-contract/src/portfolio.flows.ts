@@ -8,7 +8,7 @@ import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import type { Amount } from '@agoric/ertp';
-import { makeTracer, mustMatch } from '@agoric/internal';
+import { makeTracer, mustMatch, NonNullish } from '@agoric/internal';
 import { assert } from '@endo/errors';
 import type {
   CosmosChainAddress,
@@ -16,7 +16,6 @@ import type {
   OrchestrationFlow,
   Orchestrator,
   CaipChainId,
-  ChainHub,
 } from '@agoric/orchestration';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
@@ -34,7 +33,6 @@ import {
   type OfferArgsShapes,
   type ProposalShapes,
 } from './type-guards.ts';
-import { YieldProtocol } from './constants.js';
 // TODO: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const trace = makeTracer('PortF');
@@ -55,6 +53,16 @@ export const makeLocalAccount = (async (orch: Orchestrator, _ctx: unknown) => {
   return account;
 }) satisfies OrchestrationFlow;
 harden(makeLocalAccount);
+
+const denomForBrand = async (orch, brand) => {
+  const agoric = await orch.getChain('agoric');
+  const assets = await agoric.getVBankAssetInfo();
+  const { denom } = NonNullish(
+    assets.find(a => a.brand === brand),
+    `${brand} not registered in ChainHub`,
+  );
+  return denom;
+};
 
 // XXX: push down to Orchestration API in NobleMethods, in due course
 const makeSwapLockMessages = (
@@ -104,7 +112,6 @@ export const openPortfolio = (async (
       usdc: `0x${string}`;
     };
     axelarChainsMap: AxelarChainsMap;
-    chainHub: GuestInterface<ChainHub>;
     inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
   },
   seat: ZCFSeat,
@@ -115,11 +122,10 @@ export const openPortfolio = (async (
   mustMatch(offerArgs, makeOfferArgsShapes());
   await null; // see https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
   try {
-    const { makePortfolioKit, contractAddresses, axelarChainsMap, chainHub } =
-      ctx;
+    const { makePortfolioKit, contractAddresses, axelarChainsMap } = ctx;
     const kit = makePortfolioKit();
 
-    const initRemoteEVMAccount = async (protocol: YieldProtocol) => {
+    const initRemoteEVMAccount = async () => {
       const { evmChain, axelarGasFee } = offerArgs;
       assert(evmChain, 'evmChain is required to open a remote EVM account');
 
@@ -128,11 +134,14 @@ export const openPortfolio = (async (
         orch.getChain('axelar'),
       ]);
 
-      const { chainId, stakingTokens } = await axelar.getChainInfo();
+      const axelarInfo = await axelar.getChainInfo();
+      kit.holder.setupAxelarChainInfo(axelarInfo);
+
+      const { chainId, stakingTokens } = axelarInfo;
       assert.equal(stakingTokens.length, 1, 'axelar has 1 staking token');
 
       const localAccount = await localP;
-      kit.keeper.add(protocol, axelarChainsMap[evmChain].caip, localAccount);
+      kit.holder.setupGmpLCA(localAccount);
 
       try {
         // @ts-expect-error
@@ -194,9 +203,7 @@ export const openPortfolio = (async (
       try {
         trace('IBC transfer to Noble for CCTP');
         await localAccount.transfer(nobleAccount.getAddress(), amount);
-        const denom = await chainHub.getDenom(amount.brand);
-
-        assert(denom, 'denom must be defined');
+        const denom = await denomForBrand(orch, amount.brand);
         const denomAmount = {
           denom,
           value: amount.value,
@@ -296,17 +303,18 @@ export const openPortfolio = (async (
       }
     }
 
-    // Only initialize EVM account if there are EVM protocol positions
-    // TODO: Add a conditional for Compound
+    if (give.Aave || give.Compound) {
+      await initRemoteEVMAccount();
+      trace(
+        'TODO: use makePromiseKit to delay resolving initRemoteEVMAccount until the account is ready',
+      );
+    }
+
     if (give.Aave) {
       try {
-        await initRemoteEVMAccount(YieldProtocol.Aave);
-        trace(
-          'TODO: use makePromiseKit to delay resolving initRemoteEVMAccount until the account is ready',
-        );
+        const { evmChain, axelarGasFee } = offerArgs;
         await sendTokensViaCCTP(give.Aave);
         trace('TODO: Wait for 20 seconds before deploying funds to Aave');
-        const { evmChain, axelarGasFee } = offerArgs;
         await kit.holder.supplyToAave(
           seat,
           contractAddresses.aavePool,
@@ -315,6 +323,26 @@ export const openPortfolio = (async (
           give.Aave.value,
           axelarGasFee,
         );
+        kit.keeper.addAavePosition(axelarChainsMap[evmChain].caip);
+      } catch (err) {
+        seat.fail(err);
+      }
+    }
+
+    if (give.Compound) {
+      try {
+        const { evmChain, axelarGasFee } = offerArgs;
+        await sendTokensViaCCTP(give.Compound);
+        trace('TODO: Wait for 20 seconds before deploying funds to Aave');
+        await kit.holder.supplyToAave(
+          seat,
+          contractAddresses.aavePool,
+          contractAddresses.usdc,
+          evmChain,
+          give.Compound.value,
+          axelarGasFee,
+        );
+        kit.keeper.addAavePosition(axelarChainsMap[evmChain].caip);
       } catch (err) {
         seat.fail(err);
       }
