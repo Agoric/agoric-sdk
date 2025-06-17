@@ -1,4 +1,11 @@
-import { encodeFunctionData, encodeAbiParameters, hexToBytes } from 'viem';
+import { fromHex } from '@cosmjs/encoding';
+import {
+  encodeAbiParameters,
+  encodeFunctionData,
+} from '../vendor/viem/viem-abi.js';
+
+/** @param {string} hex */
+const hexToBytes = hex => fromHex(hex.slice(2));
 
 /**
  * @import {ContractCall, AbiEncodedContractCall} from '../axelar-types.js';

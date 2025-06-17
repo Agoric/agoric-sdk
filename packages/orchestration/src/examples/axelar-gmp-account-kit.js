@@ -16,8 +16,8 @@ import { M, mustMatch } from '@endo/patterns';
 import { VowShape } from '@agoric/vow';
 import { makeTracer, NonNullish } from '@agoric/internal';
 import { atob, decodeBase64 } from '@endo/base64';
-import { decodeAbiParameters } from 'viem';
 import { Fail } from '@endo/errors';
+import { decodeAbiParameters } from '../vendor/viem/viem-abi.js';
 import { CosmosChainAddressShape } from '../typeGuards.js';
 import { gmpAddresses, buildGMPPayload } from '../utils/gmp.js';
 
