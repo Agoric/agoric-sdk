@@ -7,16 +7,16 @@ import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, passStyleOf } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
+import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import * as contractExports from '../src/portfolio.contract.ts';
 import {
   axelarChainsMap,
   contractAddresses,
   makeUSDNIBCTraffic,
 } from './mocks.ts';
+import { testChainInfo, setupPortfolioTest } from './supports.ts';
 import { makeTrader } from './portfolio-actors.ts';
-import { setupPortfolioTest } from './supports.ts';
 import { makeWallet } from './wallet-offer-tools.ts';
-import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
 const contractName = 'ymax0';
 type StartFn = typeof contractExports.start;
@@ -71,6 +71,7 @@ const deploy = async (t: ExecutionContext) => {
       contractAddresses,
       axelarChainsMap,
       timer,
+      chainInfo: testChainInfo,
     }, // privateArgs
   );
   t.notThrows(() =>
