@@ -138,11 +138,23 @@ export const preparePortfolioKit = (
       }),
       tap: EvmTapI,
     },
-    () =>
-      ({
+    () => {
+      const gmpStore = zone.mapStore<'manager', AxelarGmpManager>('manager');
+      gmpStore.init(
+        'manager',
+        harden({
+          localAccount: undefined as unknown as LocalAccount,
+          remoteAccountAddress: undefined,
+          axelarChainInfo: undefined as unknown as Record<string, unknown> & {
+            chainId: string;
+          },
+        }),
+      );
+      return {
         positions: zone.mapStore<ProtocolKey, PositionInfo>('positions'),
-        gmp: zone.mapStore<'manager', AxelarGmpManager>('gmp'),
-      }) as PortfolioKitState,
+        gmp: gmpStore,
+      } as PortfolioKitState;
+    },
     {
       tap: {
         receiveUpcall(event: VTransferIBCEvent) {
@@ -250,29 +262,21 @@ export const preparePortfolioKit = (
       },
       holder: {
         setupGmpLCA<P extends YieldProtocol>(account: AccountOf[P]) {
-          const manager = this.state.gmp.get('manager') ?? {
-            localAccount: undefined,
-            remoteAccountAddress: undefined,
-            axelarChainInfo: undefined,
-          };
+          const manager = this.state.gmp.get('manager');
           this.state.gmp.set('manager', {
             ...manager,
             localAccount: account as LocalAccount,
           });
         },
         setupAxelarChainInfo(info) {
-          const manager = this.state.gmp.get('manager') ?? {
-            localAccount: undefined,
-            remoteAccountAddress: undefined,
-            axelarChainInfo: undefined,
-          };
+          const manager = this.state.gmp.get('manager');
           this.state.gmp.set('manager', {
             ...manager,
             axelarChainInfo: info,
           });
         },
         getRemoteAccountAddress(): string | undefined {
-          return this.state.gmp.get('manager')?.remoteAccountAddress;
+          return this.state.gmp.get('manager').remoteAccountAddress;
         },
         async sendGmp(
           seat: ZCFSeat,
