@@ -1,0 +1,40 @@
+{
+  "produce": {
+    "ymax0Kit": true
+  },
+  "consume": {
+    "localchain": true,
+    "cosmosInterchainService": true,
+    "chainStorage": true,
+    "chainTimerService": true,
+    "agoricNames": true,
+    "board": true,
+    "startUpgradable": true,
+    "zoe": "makeCoreProposalBehavior",
+    "agoricNamesAdmin": "makeCoreProposalBehavior",
+    "vatAdminSvc": "makeCoreProposalBehavior"
+  },
+  "instance": {
+    "produce": {
+      "ymax0": true
+    }
+  },
+  "installation": {
+    "consume": {
+      "ymax0": true
+    },
+    "produce": "makeCoreProposalBehavior"
+  },
+  "brand": {},
+  "issuer": {
+    "consume": {
+      "USDC": true
+    }
+  },
+  "evaluateBundleCap": "makeCoreProposalBehavior",
+  "modules": {
+    "utils": {
+      "runModuleBehaviors": "makeCoreProposalBehavior"
+    }
+  }
+}

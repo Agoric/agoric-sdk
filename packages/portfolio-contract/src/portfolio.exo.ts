@@ -75,15 +75,15 @@ export const preparePortfolioKit = (zone: Zone, zcf: ZCF) =>
               there,
               amount,
             );
+            debugger;
 
             try {
               let result = await account.executeEncodedTx([
                 Any.toJSON(MsgUnlock.toProtoMsg(msgUnlock)),
-              ]);
-              result = await account.executeEncodedTx([
                 Any.toJSON(MsgSwap.toProtoMsg(msgSwap)),
               ]);
               trace('Unlock result:', result);
+
             } catch (err) {
               trace('Error during unlock:', err);
               // Add recovery logic here

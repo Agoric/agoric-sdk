@@ -297,8 +297,8 @@ export const mixConnections = (
       continue;
     }
     for (const { name, id, connInfo } of [
-      { name: pn, id: c, connInfo: directed },
-      { name: cn, id: p, connInfo: reverseConnInfo(directed) },
+      { name: p, id: c, connInfo: directed },
+      { name: c, id: p, connInfo: reverseConnInfo(directed) },
     ]) {
       const cInfo = chainInfos[name];
       if (cInfo.namespace !== 'cosmos') {

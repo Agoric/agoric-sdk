@@ -1,0 +1,17 @@
+{
+  "name": "startPortfolio",
+  "script": "startPortfolio.js",
+  "permit": "startPortfolio-permit.json",
+  "bundles": [
+    {
+      "entrypoint": "../dist/portfolio.contract.bundle.js",
+      "bundleID": "b1-edccfe7c6b257809bc803c1bc02a8986f5d92d6f1d0dfe60c4748349b3c67f57a3aa5d512aa15ca0d7326fbfb44d77cf53e9605677eebdc8ab78f5e8039060e8",
+      "fileName": "/Users/lupin/.agoric/cache/b1-edccfe7c6b257809bc803c1bc02a8986f5d92d6f1d0dfe60c4748349b3c67f57a3aa5d512aa15ca0d7326fbfb44d77cf53e9605677eebdc8ab78f5e8039060e8.json"
+    },
+    {
+      "entrypoint": "../dist/portfolio-start.core.bundle.js",
+      "bundleID": "b1-c7779530863cdf0c539cdedb31b46482435e4158f2a847799951327cf39aa728355d544cd2f658bb9a6432121ae5ec029cd95fbc745001a9dfe5d829d2a67765",
+      "fileName": "/Users/lupin/.agoric/cache/b1-c7779530863cdf0c539cdedb31b46482435e4158f2a847799951327cf39aa728355d544cd2f658bb9a6432121ae5ec029cd95fbc745001a9dfe5d829d2a67765.json"
+    }
+  ]
+}

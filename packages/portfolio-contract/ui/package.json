@@ -1,0 +1,48 @@
+{
+  "name": "ui",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "VITE_HOSTNAME=${CODESPACE_NAME:-} VITE_GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN=${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN:-} vite",
+    "build": "vite build",
+    "test": "vitest spec",
+    "test:e2e": "SKIP_EXTENSION_SETUP=true EXTENSION=keplr synpress run --configFile=test/e2e/synpress.config.cjs",
+    "lint": "tsc && eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@agoric/notifier": "^0.7.0-u16.1",
+    "@agoric/rpc": "0.10.0",
+    "@agoric/store": "^0.9.3-u16.0",
+    "@agoric/ui-components": "^0.9.0",
+    "@agoric/web-components": "^0.16.0",
+    "@testing-library/react": "^14.1.2",
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
+    "@vitejs/plugin-react": "^4.0.3",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.3",
+    "happy-dom": "^13.3.1",
+    "prettier": "^3.2.4",
+    "puppeteer": "^21.9.0",
+    "ses": "^1.8.0",
+    "typescript": "^5.0.2",
+    "typescript-eslint": "^7.13.1",
+    "vite": "^4.4.5",
+    "vitest": "^1.2.1",
+    "zustand": "^4.4.1"
+  },
+  "prettier": {
+    "trailingComma": "all",
+    "arrowParens": "avoid",
+    "singleQuote": true
+  }
+}
