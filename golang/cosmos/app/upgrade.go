@@ -26,12 +26,8 @@ import (
 )
 
 var upgradeNamesOfThisVersion = []string{
-	"UNRELEASED_BASIC", // no-frills
-	"UNRELEASED_A3P_INTEGRATION",
-	"UNRELEASED_main",
-	"UNRELEASED_devnet",
-	"UNRELEASED_emerynet",
-	"UNRELEASED_REAPPLY",
+	"agoric-upgrade-21",
+	"agoric-upgrade-21-a3p",
 }
 
 // isUpgradeNameOfThisVersion returns whether the provided plan name is a
@@ -65,14 +61,9 @@ func isPrimaryUpgradeName(name string) bool {
 		return false
 	}
 	switch name {
-	case validUpgradeName("UNRELEASED_BASIC"),
-		validUpgradeName("UNRELEASED_A3P_INTEGRATION"),
-		validUpgradeName("UNRELEASED_main"),
-		validUpgradeName("UNRELEASED_devnet"),
-		validUpgradeName("UNRELEASED_emerynet"):
+	case validUpgradeName("agoric-upgrade-21"),
+		validUpgradeName("agoric-upgrade-21-a3p"):
 		return true
-	case validUpgradeName("UNRELEASED_REAPPLY"):
-		return false
 	default:
 		panic(fmt.Errorf("unexpected upgrade name %s", validUpgradeName(name)))
 	}
@@ -119,17 +110,10 @@ func buildProposalStepWithArgs(moduleName string, entrypoint string, args ...vm.
 
 func getVariantFromUpgradeName(upgradeName string) string {
 	switch upgradeName {
-	case "UNRELEASED_A3P_INTEGRATION":
+	case "agoric-upgrade-21-a3p":
 		return "A3P_INTEGRATION"
-	case "UNRELEASED_main":
+	case "agoric-upgrade-21":
 		return "MAINNET"
-	case "UNRELEASED_devnet":
-		return "DEVNET"
-	case "UNRELEASED_emerynet":
-		return "EMERYNET"
-	case "UNRELEASED_BASIC":
-		// Noupgrade for this version.
-		return ""
 	default:
 		return ""
 	}
@@ -192,13 +176,13 @@ func (app *GaiaApp) RegisterUpgradeHandlers() {
 	for _, name := range upgradeNamesOfThisVersion {
 		app.UpgradeKeeper.SetUpgradeHandler(
 			name,
-			makeUnreleasedUpgradeHandler(app, name, baseAppLegacySS),
+			upgrade21Handler(app, name, baseAppLegacySS),
 		)
 	}
 }
 
-// makeUnreleasedUpgradeHandler performs standard upgrade actions plus custom actions for the unreleased upgrade.
-func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string, baseAppLegacySS paramstypes.Subspace) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
+// upgrade21Handler performs standard upgrade actions plus custom actions for upgrade-21.
+func upgrade21Handler(app *GaiaApp, targetUpgrade string, baseAppLegacySS paramstypes.Subspace) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	_ = targetUpgrade
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
 		app.CheckControllerInited(false)
