@@ -28,7 +28,7 @@ import { YieldProtocol } from './constants.js';
 import type { AxelarChainsMap } from './type-guards.js';
 
 const trace = makeTracer('PortExo');
-const { keys, values, entries } = Object;
+const { keys, values } = Object;
 
 const DECODE_CONTRACT_CALL_RESULT_ABI = [
   {
@@ -59,9 +59,7 @@ const KeeperI = M.interface('keeper', {
     M.remotable('OrchestrationAccount'),
   ).returns(),
   getPositions: M.call(TypeShape, ChainShape).returns(M.arrayOf(PositionShape)),
-  getAccount: M.call(M.number(), TypeShape).returns(
-    M.remotable('OrchestrationAccount'),
-  ),
+  getAccount: M.call(TypeShape).returns(M.remotable('OrchestrationAccount')),
 });
 
 const HolderI = M.interface('Holder', {
@@ -110,16 +108,11 @@ type AccountOf = {
 };
 
 type PositionInfo = EVMProtocolState | NobleDollarState;
-
-type PortfolioPositions = {
-  Aave: EVMProtocolState;
-  Compound: EVMProtocolState;
-  USDN: NobleDollarState;
-};
+type ProtocolKey = keyof typeof YieldProtocol;
 
 type PortfolioKitState = {
-  positions: PortfolioPositions;
-  gmp: AxelarGmpManager;
+  positions: MapStore<ProtocolKey, PositionInfo>;
+  gmp: MapStore<'manager', AxelarGmpManager>;
 };
 
 export const preparePortfolioKit = (
@@ -146,18 +139,10 @@ export const preparePortfolioKit = (
       tap: EvmTapI,
     },
     () =>
-      harden({
-        positions: {
-          Aave: undefined,
-          Compound: undefined,
-          USDN: undefined,
-        },
-        gmp: {
-          localAccount: undefined,
-          remoteAccountAddress: undefined,
-          axelarChainInfo: undefined,
-        },
-      }) as unknown as PortfolioKitState,
+      ({
+        positions: zone.mapStore<ProtocolKey, PositionInfo>('positions'),
+        gmp: zone.mapStore<'manager', AxelarGmpManager>('gmp'),
+      }) as PortfolioKitState,
     {
       tap: {
         receiveUpcall(event: VTransferIBCEvent) {
@@ -171,9 +156,7 @@ export const preparePortfolioKit = (
           const memo: AxelarGmpIncomingMemo = JSON.parse(tx.memo);
 
           const ids = values(axelarChainsMap).map(chain => chain.axelarId);
-          if (!ids.includes(memo.source_chain)) {
-            return;
-          }
+          if (!ids.includes(memo.source_chain)) return;
 
           const payloadBytes = decodeBase64(memo.payload);
           const [{ isContractCallResult, data }] = decodeAbiParameters(
@@ -181,37 +164,29 @@ export const preparePortfolioKit = (
             payloadBytes,
           ) as [AgoricResponse];
 
-          trace(
-            'receiveUpcall Decoded:',
-            JSON.stringify({ isContractCallResult, data }),
-          );
-
           if (!isContractCallResult) {
             const [message] = data;
-            const { success, result } = message;
-
-            trace('Contract Call Status:', success);
-
-            if (success) {
+            if (message.success) {
               const [address] = decodeAbiParameters(
                 [{ type: 'address' }],
-                result,
+                message.result,
               );
 
-              const { positions } = this.state;
-              for (const [_key, position] of entries(positions)) {
+              for (const [key, position] of this.state.positions.entries()) {
                 if (position.type === 'Aave' || position.type === 'Compound') {
-                  const evmState = position as EVMProtocolState;
-                  positions[position.type] = harden({
-                    ...evmState,
-                    remoteAccountAddress: address,
-                  });
-
+                  this.state.positions.set(
+                    key,
+                    harden({ ...position, remoteAccountAddress: address }),
+                  );
                   break;
                 }
               }
 
-              trace('remote evm account address:', address);
+              const manager = this.state.gmp.get('manager');
+              this.state.gmp.set('manager', {
+                ...manager,
+                remoteAccountAddress: address,
+              });
             }
           }
           // TODO: Handle the result of the contract call
@@ -221,100 +196,83 @@ export const preparePortfolioKit = (
       },
       keeper: {
         addAavePosition(chain: CaipChainId) {
-          const isActive = true;
-          const evmState: EVMProtocolState = {
-            type: 'Aave',
-            chain,
-            isActive,
-          };
-          this.state.positions = harden({
-            ...this.state.positions,
-            Aave: evmState,
-          });
-          trace('initialized position for aave');
+          this.state.positions.init(
+            'Aave',
+            harden({ type: 'Aave', chain, isActive: true }),
+          );
         },
         addCompoundPosition(chain: CaipChainId) {
-          const isActive = true;
-          const evmState: EVMProtocolState = {
-            type: 'Compound',
-            chain,
-            isActive,
-          };
-          this.state.positions = harden({
-            ...this.state.positions,
-            Compound: evmState,
-          });
-          trace('initialized position for compound');
+          this.state.positions.init(
+            'Compound',
+            harden({ type: 'Compound', chain, isActive: true }),
+          );
         },
         addUSDNPosition<P extends YieldProtocol>(
           chain: CaipChainId,
           account: AccountOf[P],
         ) {
-          const isActive = true;
-          const nobleState: NobleDollarState = {
-            type: 'USDN',
-            chain,
-            account: account as AccountOf['USDN'],
-            isActive,
-          };
-          this.state.positions = harden({
-            ...this.state.positions,
-            USDN: nobleState,
-          });
-          trace('initialized position for', 'USDN', '=>', `${account}`);
+          this.state.positions.init(
+            'USDN',
+            harden({
+              type: 'USDN',
+              chain,
+              account: account as NobleAccount,
+              isActive: true,
+            }),
+          );
         },
         getPositions<P extends YieldProtocol>(
           type: P,
           chain: CaipChainId,
         ): readonly PositionInfo[] {
-          const { positions } = this.state;
           const out: PositionInfo[] = [];
-
-          for (const p of values(positions)) {
+          for (const [_key, p] of this.state.positions.entries()) {
             if (p.type === type && p.chain === chain) {
               out.push(harden(p));
             }
           }
-
           return harden(out);
         },
         getAccount<P extends YieldProtocol>(type: P): AccountOf[P] {
+          const p = this.state.positions.get(type);
           switch (type) {
             case 'Aave':
-            case 'Compound':
-              return this.state.gmp.localAccount as AccountOf[P];
-            case 'USDN': {
-              const { positions } = this.state;
-              const p = positions[type];
-              return (p as NobleDollarState).account as AccountOf[P];
+            case 'Compound': {
+              const manager = this.state.gmp.get('manager');
+              return manager.localAccount as AccountOf[P];
             }
+            case 'USDN':
+              return (p as NobleDollarState).account as AccountOf[P];
             default:
-              throw new Error(`Unknown protocol type: ${type}`);
+              throw Fail`Unknown protocol type: ${type}`;
           }
         },
       },
       holder: {
         setupGmpLCA<P extends YieldProtocol>(account: AccountOf[P]) {
-          this.state.gmp = {
-            ...this.state.gmp,
-            // Can use Aave or Compound as both share this account
-            localAccount: account as AccountOf['Aave'],
+          const manager = this.state.gmp.get('manager') ?? {
+            localAccount: undefined,
+            remoteAccountAddress: undefined,
+            axelarChainInfo: undefined,
           };
+          this.state.gmp.set('manager', {
+            ...manager,
+            localAccount: account as LocalAccount,
+          });
         },
         setupAxelarChainInfo(info) {
-          this.state.gmp = {
-            ...this.state.gmp,
-            axelarChainInfo: info,
+          const manager = this.state.gmp.get('manager') ?? {
+            localAccount: undefined,
+            remoteAccountAddress: undefined,
+            axelarChainInfo: undefined,
           };
+          this.state.gmp.set('manager', {
+            ...manager,
+            axelarChainInfo: info,
+          });
         },
         getRemoteAccountAddress(): string | undefined {
-          const { gmp } = this.state;
-
-          if (gmp.remoteAccountAddress) {
-            return gmp.remoteAccountAddress;
-          }
-
-          return undefined;
+          return this.state.gmp.get('manager')?.remoteAccountAddress;
         },
         async sendGmp(
           seat: ZCFSeat,
@@ -364,7 +322,9 @@ export const preparePortfolioKit = (
 
           trace('amt and brand', amt.brand);
 
-          const { chainId } = this.state.gmp.axelarChainInfo;
+          // @ts-expect-error // TODO: temporarily using mapstore to add tests
+          const { chainId } = this.state.gmp.get('axelarChainInfo');
+
           const memo: AxelarGmpOutgoingMemo = {
             destination_chain: destinationEVMChain,
             destination_address: destinationAddress,

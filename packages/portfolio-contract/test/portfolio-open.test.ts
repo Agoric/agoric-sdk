@@ -12,10 +12,10 @@ import type { Proposal, ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { makeHeapZone } from '@agoric/zone';
 import { Far, passStyleOf } from '@endo/pass-style';
+import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { axelarChainsMap, contractAddresses } from './mocks.ts';
 import { preparePortfolioKit } from '../src/portfolio.exo.ts';
 import { makeLocalAccount, openPortfolio } from '../src/portfolio.flows.ts';
-import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
 const theExit = harden(() => {}); // for ava comparison
 const mockZCF = Far('MockZCF', {
