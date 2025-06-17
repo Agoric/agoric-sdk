@@ -132,6 +132,7 @@ export const contract = async (
 =======
     axelarChainsMap,
     timer,
+    vowTools,
   });
   const { makeLocalAccount, openPortfolio } = orchestrateAll(flows, {
     zoeTools,
