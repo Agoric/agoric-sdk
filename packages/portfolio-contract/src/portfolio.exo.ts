@@ -13,6 +13,7 @@ import {
   buildGMPPayload,
   gmpAddresses,
 } from '@agoric/orchestration/src/utils/gmp.js';
+import { decodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
 import { type MapStore } from '@agoric/store';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import { VowShape } from '@agoric/vow';
@@ -21,7 +22,6 @@ import type { Zone } from '@agoric/zone';
 import { atob, decodeBase64 } from '@endo/base64';
 import { assert, Fail } from '@endo/errors';
 import { M } from '@endo/patterns';
-import { decodeAbiParameters } from 'viem';
 import { PositionChain, YieldProtocol } from './constants.js';
 
 const trace = makeTracer('PortExo');
