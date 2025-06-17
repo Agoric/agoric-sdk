@@ -30,7 +30,7 @@ import { PositionChain, YieldProtocol } from './constants.js';
 import type { PortfolioKit } from './portfolio.exo.ts';
 import type {
   EVMContractAddresses,
-  OfferArgsShapes,
+  EVMOfferArgs,
   ProposalShapes,
 } from './type-guards.ts';
 // TODO: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
@@ -109,7 +109,7 @@ export const openPortfolio = (async (
     inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
   },
   seat: ZCFSeat,
-  offerArgs: OfferArgsShapes, // TODO: USDN/USDC ratio
+  offerArgs: EVMOfferArgs, // TODO: USDN/USDC ratio
   // passed as a promise to alleviate contract start-up sync constraints
   localP: Promise<OrchestrationAccount<{ chainId: 'agoric-any' }>>,
 ) => {

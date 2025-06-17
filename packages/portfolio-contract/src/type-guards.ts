@@ -18,10 +18,6 @@ export type ProposalShapes = {
   openPortfolio: { give: Partial<Record<YieldProtocolT, Amount<'nat'>>> };
 };
 
-export type OfferArgsShapes = {
-  evmChain?: SupportedEVMChains;
-};
-
 export const makeProposalShapes = (usdcBrand: Brand<'nat'>) => {
   const usdcAmountShape = makeNatAmountShape(usdcBrand);
   return {
@@ -31,14 +27,19 @@ export const makeProposalShapes = (usdcBrand: Brand<'nat'>) => {
   };
 };
 
-export const makeOfferArgsShapes = () => {
-  return M.splitRecord({
+export type EVMOfferArgs = {
+  evmChain?: SupportedEVMChains;
+};
+
+export const EVMOfferArgsShape: TypedPattern<EVMOfferArgs> = M.splitRecord(
+  {},
+  {
     // Use Axelar chain identifier instead of CAP-10 ID for cross-chain messaging
     // Axelar docs: https://docs.axelar.dev/dev/reference/mainnet-chain-names
     // Chain names: https://axelarscan.io/resources/chains
-    evmChain: M.opt(ChainShape),
-  }) as TypedPattern<OfferArgsShapes>;
-};
+    evmChain: ChainShape,
+  },
+);
 
 export type EVMContractAddresses = {
   aavePool: string;

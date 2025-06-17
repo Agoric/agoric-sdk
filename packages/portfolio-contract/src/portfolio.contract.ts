@@ -20,10 +20,10 @@ import { preparePortfolioKit, type LocalAccount } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import {
   EVMContractAddressesShape,
-  makeOfferArgsShapes,
   makeProposalShapes,
+  EVMOfferArgsShape,
   type EVMContractAddresses,
-  type OfferArgsShapes,
+  type EVMOfferArgs,
 } from './type-guards.ts';
 
 const trace = makeTracer('PortC');
@@ -71,7 +71,6 @@ export const contract = async (
   );
 
   const proposalShapes = makeProposalShapes(brands.USDC);
-  const offerArgsShapes = makeOfferArgsShapes();
 
   const inertSubscriber: ResolvedPublicTopic<never>['subscriber'] = {
     getUpdateSince() {
@@ -98,8 +97,8 @@ export const contract = async (
     makeOpenPortfolioInvitation() {
       trace('makeOpenPortfolioInvitation');
       return zcf.makeInvitation(
-        (seat, offerArgs: OfferArgsShapes) => {
-          mustMatch(offerArgs, offerArgsShapes);
+        (seat, offerArgs: EVMOfferArgs) => {
+          mustMatch(offerArgs, EVMOfferArgsShape);
           return openPortfolio(
             seat,
             offerArgs,
