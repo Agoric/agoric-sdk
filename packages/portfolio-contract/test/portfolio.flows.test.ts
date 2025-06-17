@@ -21,7 +21,7 @@ import {
 } from '../src/portfolio.exo.ts';
 import { openPortfolio, rebalance } from '../src/portfolio.flows.ts';
 import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
-import { contract } from './mocks.ts';
+import { axelarChainsMap, contractAddresses } from './mocks.ts';
 import { makeIncomingEvent } from './supports.ts';
 import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
 import { mustMatch } from '@agoric/internal';
@@ -147,12 +147,13 @@ const mocks = (
     // @ts-expect-error mocked zcf
     zcf: mockZCF,
     vowTools,
+    axelarChainsMap,
     // @ts-expect-error host/flow - YOLO?
     rebalance: (...args) => rebalance(orch, { zoeTools }, ...args),
     proposalShapes: makeProposalShapes(USDC),
   });
-  const makePortfolioKit = lca => {
-    const kit = makePortfolioKitHost(lca);
+  const makePortfolioKit = (ica, lca) => {
+    const kit = makePortfolioKitHost(ica, lca);
     // @ts-expect-error membrane
     const gk = kit as GuestInterface<PortfolioKit>;
     return gk;
@@ -191,6 +192,8 @@ const mocks = (
       zoeTools,
       chainHubTools,
       inertSubscriber,
+      axelarChainsMap,
+      contractAddresses,
     },
     offer: {
       log: buf,
@@ -212,12 +215,12 @@ test('open portfolio with USDN position', async t => {
 
   const actual = await openPortfolio(
     orch,
-    { ...ctx, contract },
+    { ...ctx },
     seat,
     // Use Axelar chain identifier instead of CAP-10 ID for cross-chain messaging
     // Axelar docs: https://docs.axelar.dev/dev/reference/mainnet-chain-names
     // Chain names: https://axelarscan.io/resources/chains
-    { evmChain: 'Ethereum' },
+    { destinationEVMChain: 'Ethereum' },
   );
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
@@ -243,12 +246,16 @@ test('open portfolio with USDN position', async t => {
 test('open portfolio with Aave position', async t => {
   const { orch, tapPK, ctx, offer } = mocks(
     {},
-    { Aave: AmountMath.make(USDC, 300n), GMPFee: AmountMath.make(USDC, 100n) },
+    {
+      Aave: AmountMath.make(USDC, 300n),
+      Account: AmountMath.make(USDC, 300n),
+      Gmp: AmountMath.make(USDC, 100n),
+    },
   );
 
   const [actual] = await Promise.all([
-    openPortfolio(orch, { ...ctx, contract }, offer.seat, {
-      evmChain: 'Ethereum',
+    openPortfolio(orch, { ...ctx }, offer.seat, {
+      destinationEVMChain: 'Ethereum',
     }),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) => {
       tap.receiveUpcall(
@@ -260,7 +267,7 @@ test('open portfolio with Aave position', async t => {
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
     { _method: 'monitorTransfers' },
-    { _method: 'localTransfer', amounts: { GMPFee: { value: 100n } } },
+    { _method: 'localTransfer', amounts: { Account: { value: 300n } } },
     { _method: 'transfer', address: { chainId: 'axelar-5' } },
     { _method: 'localTransfer', amounts: { Aave: { value: 300n } } },
     { _method: 'transfer', address: { chainId: 'noble-3' } },
@@ -289,8 +296,8 @@ test('handle failure in localTransfer from seat to local account', async t => {
   });
   const { log, seat } = offer;
 
-  const actual = await openPortfolio(orch, { ...ctx, contract }, seat, {
-    evmChain: 'Ethereum',
+  const actual = await openPortfolio(orch, { ...ctx }, seat, {
+    destinationEVMChain: 'Ethereum',
   });
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
@@ -309,8 +316,8 @@ test('handle failure in IBC transfer', async t => {
   });
   const { log, seat } = offer;
 
-  const actual = await openPortfolio(orch, { ...ctx, contract }, seat, {
-    evmChain: 'Ethereum',
+  const actual = await openPortfolio(orch, { ...ctx }, seat, {
+    destinationEVMChain: 'Ethereum',
   });
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
@@ -332,8 +339,8 @@ test('handle failure in executeEncodedTx', async t => {
   });
   const { log, seat } = offer;
 
-  const actual = await openPortfolio(orch, { ...ctx, contract }, seat, {
-    evmChain: 'Ethereum',
+  const actual = await openPortfolio(orch, { ...ctx }, seat, {
+    destinationEVMChain: 'Ethereum',
   });
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
