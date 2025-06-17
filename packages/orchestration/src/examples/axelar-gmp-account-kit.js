@@ -90,9 +90,11 @@ export const prepareEvmAccountKit = (
       mustMatch(initialState, EvmKitStateShape);
       return harden({
         evmAccountAddress: /** @type {string | undefined} */ (undefined),
-        latestMessage: /**
-         * @type {{ success: boolean; result: `0x${string}` }[] | undefined}
-         */ (undefined),
+        /**
+         * @type {{ success: boolean; result: `0x${string}` }[]
+         *   | undefined}
+         */
+        latestMessage: undefined,
         ...initialState,
       });
     },
