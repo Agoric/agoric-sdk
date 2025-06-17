@@ -1,7 +1,12 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 import { makeTracer } from '@agoric/internal';
 import { assert, Fail } from '@endo/errors';
+=======
+import { makeTracer, type Remote } from '@agoric/internal';
+import { Fail } from '@endo/errors';
+>>>>>>> d7daaa4b04 (chore: use timeService to add wait() in flows)
 import type { Zone } from '@agoric/zone';
 import { M } from '@endo/patterns';
 import { VowShape } from '@agoric/vow';
@@ -30,6 +35,7 @@ import type { VTransferIBCEvent } from '@agoric/vats';
 import { type Vow, type VowKit, type VowTools } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe';
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { InvitationShape, OfferHandlerI } from '@agoric/zoe/src/typeGuards.js';
 import type { Zone } from '@agoric/zone';
 import { atob } from '@endo/base64';
@@ -44,6 +50,10 @@ import {
   type OfferArgsFor,
 } from './type-guards.js';
 =======
+=======
+import type { TimerService } from '@agoric/time';
+import { E } from '@endo/far';
+>>>>>>> d7daaa4b04 (chore: use timeService to add wait() in flows)
 import { YieldProtocol } from './constants.js';
 import type { AxelarChainsMap } from './type-guards.js';
 >>>>>>> 2af2462149 (chore: create axelarChainsMap and updates types)
@@ -87,6 +97,7 @@ const PositionShape = M.splitRecord({}); // TODO
 const OrchestrationAccountShape = M.remotable('OrchestrationAccount');
 const VowStringShape = M.any(); // Vow(M.string())
 const KeeperI = M.interface('keeper', {
+<<<<<<< HEAD
   getLCA: M.call().returns(OrchestrationAccountShape),
   getPositions: M.call().returns(M.arrayOf(M.string())),
   initAave: M.call(ChainShape).returns(),
@@ -95,6 +106,30 @@ const KeeperI = M.interface('keeper', {
   getUSDNICA: M.call().returns(OrchestrationAccountShape),
   getAaveAddress: M.call().returns(VowStringShape),
   getCompoundAddress: M.call().returns(VowStringShape),
+=======
+  addAavePosition: M.call(M.or(ChainShape)).returns(),
+  addCompoundPosition: M.call(M.or(ChainShape)).returns(),
+  addUSDNPosition: M.call(
+    M.or(ChainShape),
+    M.remotable('OrchestrationAccount'),
+  ).returns(),
+  getPositions: M.call(TypeShape, ChainShape).returns(M.arrayOf(PositionShape)),
+  getAccount: M.call(M.number(), TypeShape).returns(
+    M.remotable('OrchestrationAccount'),
+  ),
+});
+
+const HolderI = M.interface('Holder', {
+  supplyToAave: M.call(M.remotable('Seat')).returns(M.promise()),
+  withdrawFromAave: M.call(M.remotable('Seat')).returns(M.promise()),
+  setupGmpLCA: M.call(M.remotable('OrchestrationAccount')).returns(),
+  setupAxelarChainInfo: M.call(M.any()).returns(),
+  getRemoteAccountAddress: M.call(M.number()).returns(
+    M.or(M.string(), M.undefined()),
+  ),
+  sendGmp: M.call(M.remotable('Seat'), M.record()).returns(M.promise()),
+  wait: M.call(M.bigint()).returns(M.promise()),
+>>>>>>> d7daaa4b04 (chore: use timeService to add wait() in flows)
 });
 
 const EvmTapI = M.interface('EvmTap', {
@@ -123,12 +158,14 @@ type PortfolioKitState = {
 export const preparePortfolioKit = (
   zone: Zone,
   {
+    timer,
     zcf,
     vowTools,
     rebalance,
     proposalShapes,
   }: {
     zcf: ZCF;
+<<<<<<< HEAD
     vowTools: VowTools;
     rebalance: (
       seat: ZCFSeat,
@@ -136,6 +173,10 @@ export const preparePortfolioKit = (
       keeper: unknown, // XXX avoid circular reference
     ) => Vow<any>; // XXX HostForGuest???
     proposalShapes: ReturnType<typeof makeProposalShapes>;
+=======
+    axelarChainsMap: AxelarChainsMap;
+    timer: Remote<TimerService>;
+>>>>>>> d7daaa4b04 (chore: use timeService to add wait() in flows)
   },
 =======
 export const preparePortfolioKit = (
@@ -499,6 +540,10 @@ export const preparePortfolioKit = (
               },
             ],
           });
+        },
+
+        async wait(delay: bigint) {
+          await E(timer).delay(delay);
         },
       },
       invitationMakers: {

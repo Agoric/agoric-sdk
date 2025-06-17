@@ -15,6 +15,7 @@ import { Far, passStyleOf } from '@endo/pass-style';
 import { axelarChainsMap, contractAddresses } from './mocks.ts';
 import { preparePortfolioKit } from '../src/portfolio.exo.ts';
 import { makeLocalAccount, openPortfolio } from '../src/portfolio.flows.ts';
+import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
 const theExit = harden(() => {}); // for ava comparison
 const mockZCF = Far('MockZCF', {
@@ -64,8 +65,13 @@ const mocks = (errs: Record<string, Error> = {}) => {
   }) as unknown as Orchestrator;
 
   const zone = makeHeapZone();
-  // @ts-expect-error mocked zcf
-  const makePortfolioKit = preparePortfolioKit(zone, { zcf: mockZCF });
+  const timer = buildZoeManualTimer();
+  const makePortfolioKit = preparePortfolioKit(zone, {
+    // @ts-expect-error mocked zcf
+    zcf: mockZCF,
+    axelarChainsMap,
+    timer,
+  });
   const zoeTools = harden({
     async localTransfer(sourceSeat, localAccount, amounts) {
       log({ _method: 'localTransfer', sourceSeat, localAccount, amounts });

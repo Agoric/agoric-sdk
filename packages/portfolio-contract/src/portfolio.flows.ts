@@ -686,6 +686,7 @@ export const openPortfolio = (async (
       evmChain in PositionChain || Fail`bad evmChain ${evmChain}`;
       try {
 <<<<<<< HEAD
+<<<<<<< HEAD
         const topic = await initRemoteEVMAccount(
           orch,
           kit.keeper,
@@ -702,6 +703,66 @@ export const openPortfolio = (async (
         await sendTokensViaCCTP(positionId, give.Aave);
         trace('TODO: Wait for 20 seconds before deploying funds to Aave');
         const { evmChain, axelarGasFee } = offerArgs;
+=======
+        trace('IBC transfer', amount, 'to', there, `${acct}`);
+        await localAcct.transfer(there, amount);
+        try {
+          // NOTE: proposalShape guarantees that amount.brand is USDC
+          const { msgSwap, msgLock } = makeSwapLockMessages(
+            there,
+            amount.value,
+          );
+
+          trace('executing', [msgSwap, msgLock]);
+          const result = await acct.executeEncodedTx([
+            Any.toJSON(MsgSwap.toProtoMsg(msgSwap)),
+            Any.toJSON(MsgLock.toProtoMsg(msgLock)),
+          ]);
+          trace('TODO: decode Swap, Lock result; detect errors', result);
+        } catch (err) {
+          console.error('⚠️ recover to local account.', amounts);
+          await acct.transfer(localAcct.getAddress(), amount);
+          // TODO: and what if this transfer fails?
+          throw err;
+        }
+      } catch (err) {
+        console.error('⚠️ recover to seat.', err);
+        await ctx.zoeTools.withdrawToSeat(localAcct, seat, amounts);
+        // TODO: and what if the withdrawToSeat fails?
+        throw err;
+      }
+    };
+
+    const { give } = seat.getProposal() as ProposalShapes['openPortfolio'];
+    const topics: GuestInterface<ResolvedPublicTopic<never>>[] = [];
+    if (give.USDN) {
+      const { topic } = await initNobleAccount();
+      topics.push(topic);
+      try {
+        await openUSDNPosition(give.USDN);
+      } catch (err) {
+        seat.fail(err);
+        return harden({
+          invitationMakers: kit.invitationMakers,
+          publicTopics: topics,
+        });
+      }
+    }
+
+    if (give.Aave || give.Compound) {
+      await initRemoteEVMAccount();
+      await kit.holder.wait(180n); // TODO: replace with promiseKit
+      trace(
+        'TODO: use makePromiseKit to delay resolving initRemoteEVMAccount until the account is ready',
+      );
+    }
+
+    if (give.Aave) {
+      try {
+        const { evmChain, axelarGasFee } = offerArgs;
+        await sendTokensViaCCTP(give.Aave);
+        await kit.holder.wait(20n);
+>>>>>>> d7daaa4b04 (chore: use timeService to add wait() in flows)
         await kit.holder.supplyToAave(
           seat,
           contractAddresses.aavePool,
@@ -711,7 +772,12 @@ export const openPortfolio = (async (
           axelarGasFee,
 >>>>>>> 2af2462149 (chore: create axelarChainsMap and updates types)
         );
+<<<<<<< HEAD
         topics.push(topic);
+=======
+        // TODO: wait for the response in receiveUpCall and then add position using the keeper?
+        kit.keeper.addAavePosition(axelarChainsMap[evmChain].caip);
+>>>>>>> d7daaa4b04 (chore: use timeService to add wait() in flows)
       } catch (err) {
         console.error('⚠️ initRemoteEVMAccount failed for Aave', err);
         seat.fail(err);
@@ -720,7 +786,23 @@ export const openPortfolio = (async (
 
     if (!seat.hasExited()) {
       try {
+<<<<<<< HEAD
         await rebalance(orch, ctx, seat, offerArgs, kit.keeper);
+=======
+        const { evmChain, axelarGasFee } = offerArgs;
+        await sendTokensViaCCTP(give.Compound);
+        await kit.holder.wait(20n);
+        // TODO: add Compound specific methods in the holder facet
+        await kit.holder.supplyToAave(
+          seat,
+          contractAddresses.aavePool,
+          contractAddresses.usdc,
+          evmChain,
+          give.Compound.value,
+          axelarGasFee,
+        );
+        kit.keeper.addAavePosition(axelarChainsMap[evmChain].caip);
+>>>>>>> d7daaa4b04 (chore: use timeService to add wait() in flows)
       } catch (err) {
         console.error('⚠️ rebalance failed', err);
         seat.fail(err);
