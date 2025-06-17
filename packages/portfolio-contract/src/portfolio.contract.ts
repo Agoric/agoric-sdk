@@ -25,6 +25,7 @@ import {
   type EVMContractAddresses,
 } from './type-guards.ts';
 
+const { keys } = Object;
 const trace = makeTracer('PortC');
 
 const interfaceTODO = undefined;
@@ -55,19 +56,17 @@ export const contract = async (
   zone: Zone,
   tools: OrchestrationTools,
 ) => {
+  const { chainInfo, assetInfo, contractAddresses, axelarChainsMap } =
+    privateArgs;
   const { brands } = zcf.getTerms();
   const { orchestrateAll, zoeTools, chainHub, vowTools } = tools;
 
   assert(brands.USDC, 'USDC missing from brands in terms');
 
   // TODO: only on 1st incarnation
-  registerChainsAndAssets(
-    chainHub,
-    brands,
-    privateArgs.chainInfo,
-    privateArgs.assetInfo,
-    { log: trace },
-  );
+  registerChainsAndAssets(chainHub, brands, chainInfo, assetInfo, {
+    log: trace,
+  });
 
   const proposalShapes = makeProposalShapes(brands.USDC);
 

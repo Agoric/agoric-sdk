@@ -6,6 +6,13 @@ import type {
   SupportedEVMChains,
 } from '@agoric/orchestration/src/axelar-types.js';
 import { M } from '@endo/patterns';
+<<<<<<< HEAD
+=======
+import {
+  AxelarChains,
+  type YieldProtocol as YieldProtocolT,
+} from './constants.js';
+>>>>>>> 2af2462149 (chore: create axelarChainsMap and updates types)
 import { YieldProtocol } from './constants.js';
 
 const { keys } = Object;
@@ -32,7 +39,22 @@ export type ProposalType = {
     | { want: Partial<Record<YieldProtocol, Amount<'nat'>>> };
 };
 
+<<<<<<< HEAD
 const YieldProtocolShape = M.or(...keys(YieldProtocol));
+=======
+export type AxelarChain = keyof typeof AxelarChains;
+export type AxelarChainsMap = {
+  [chain in AxelarChain]: {
+    caip: `${string}:${string}`;
+    axelarId: string;
+  };
+};
+
+export type OfferArgsShapes = {
+  evmChain: AxelarChain;
+  axelarGasFee: bigint;
+};
+>>>>>>> 2af2462149 (chore: create axelarChainsMap and updates types)
 
 export const makeProposalShapes = (usdcBrand: Brand<'nat'>) => {
   const usdcAmountShape = makeNatAmountShape(usdcBrand);
@@ -68,6 +90,7 @@ export const makeProposalShapes = (usdcBrand: Brand<'nat'>) => {
   };
 };
 
+<<<<<<< HEAD
 /**
  * Use Axelar chain identifier instead of CAP-10 ID for cross-chain messaging
  * @see {@link https://docs.axelar.dev/dev/reference/mainnet-chain-names|Axelar docs}
@@ -76,6 +99,16 @@ export const makeProposalShapes = (usdcBrand: Brand<'nat'>) => {
 export type OfferArgsFor = {
   openPortfolio: { evmChain?: SupportedEVMChains };
   rebalance: { evmChain?: SupportedEVMChains };
+=======
+export const makeOfferArgsShapes = () => {
+  return M.splitRecord({
+    // Use Axelar chain identifier instead of CAP-10 ID for cross-chain messaging
+    // Axelar docs: https://docs.axelar.dev/dev/reference/mainnet-chain-names
+    // Chain names: https://axelarscan.io/resources/chains
+    evmChain: M.or(...keys(AxelarChains)),
+    axelarGasFee: M.bigint(),
+  }) as TypedPattern<OfferArgsShapes>;
+>>>>>>> 2af2462149 (chore: create axelarChainsMap and updates types)
 };
 
 export const ChainShape = M.string(); // TODO: narrow?

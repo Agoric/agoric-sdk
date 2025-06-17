@@ -174,7 +174,7 @@ test('open portfolio with USDN position', async t => {
     {
       USDN: usdc.units(3_333),
     },
-    { evmChain: undefined },
+    { evmChain: 'Ethereum', axelarGasFee: 50n },
   );
 
   // ack IBC transfer for forward

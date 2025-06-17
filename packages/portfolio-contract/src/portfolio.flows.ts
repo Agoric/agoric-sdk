@@ -9,7 +9,11 @@ import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import type { Amount } from '@agoric/ertp';
 import { makeTracer, mustMatch, NonNullish } from '@agoric/internal';
+<<<<<<< HEAD
 import { assert, Fail, makeError } from '@endo/errors';
+=======
+import { assert } from '@endo/errors';
+>>>>>>> 2af2462149 (chore: create axelarChainsMap and updates types)
 import type {
   CaipChainId,
   CosmosChainAddress,
@@ -30,6 +34,7 @@ import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { PortfolioKit } from './portfolio.exo.ts';
 import {
+<<<<<<< HEAD
   buildGMPPayload,
   gmpAddresses,
 } from '@agoric/orchestration/src/utils/gmp.js';
@@ -43,6 +48,14 @@ import {
 } from './type-guards.ts';
 import { PositionChain, YieldProtocol } from './constants.js';
 import type { CopyRecord } from '@endo/pass-style';
+=======
+  makeOfferArgsShapes,
+  type AxelarChainsMap,
+  type OfferArgsShapes,
+  type ProposalShapes,
+} from './type-guards.ts';
+import { YieldProtocol } from './constants.js';
+>>>>>>> 2af2462149 (chore: create axelarChainsMap and updates types)
 // TODO: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const trace = makeTracer('PortF');
@@ -488,12 +501,29 @@ export const rebalance = async (
  */
 export const openPortfolio = (async (
   orch: Orchestrator,
+<<<<<<< HEAD
   ctx: PortfolioContext,
+=======
+  ctx: {
+    zoeTools: GuestInterface<ZoeTools>;
+    makePortfolioKit: () => PortfolioKit;
+    contractAddresses: {
+      aavePool: `0x${string}`;
+      compound: `0x${string}`;
+      factory: `0x${string}`;
+      usdc: `0x${string}`;
+    };
+    axelarChainsMap: AxelarChainsMap;
+    inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
+  },
+>>>>>>> 2af2462149 (chore: create axelarChainsMap and updates types)
   seat: ZCFSeat,
   offerArgs: OfferArgsFor['openPortfolio'], // TODO: USDN/USDC ratio
 ) => {
+  mustMatch(offerArgs, makeOfferArgsShapes());
   await null; // see https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
   try {
+<<<<<<< HEAD
     const { makePortfolioKit } = ctx;
     const agoric = await orch.getChain('agoric');
     const { chainId } = await agoric.getChainInfo();
@@ -511,6 +541,136 @@ export const openPortfolio = (async (
       {
         description: 'LCA',
         storagePath: localAccountId,
+=======
+    const { makePortfolioKit, contractAddresses, axelarChainsMap } = ctx;
+    const kit = makePortfolioKit();
+
+    const initRemoteEVMAccount = async (protocol: YieldProtocol) => {
+      const { evmChain, axelarGasFee } = offerArgs;
+      assert(evmChain, 'evmChain is required to open a remote EVM account');
+
+      const [agoric, axelar] = await Promise.all([
+        orch.getChain('agoric'),
+        orch.getChain('axelar'),
+      ]);
+
+      const { chainId, stakingTokens } = await axelar.getChainInfo();
+      assert.equal(stakingTokens.length, 1, 'axelar has 1 staking token');
+
+      const localAccount = await localP;
+      const positionId = kit.keeper.add(
+        protocol,
+        axelarChainsMap[evmChain].caip,
+        localAccount,
+      );
+
+      try {
+        // @ts-expect-error
+        await localAccount.monitorTransfers(kit.tap);
+        trace('Monitoring transfers setup successfully');
+
+        const { give } = seat.getProposal();
+        const [[_kw, amt]] = Object.entries(give);
+
+        const assets = await agoric.getVBankAssetInfo();
+        const { denom } =
+          assets.find(a => a.brand === amt.brand) ||
+          (() => {
+            throw new Error(`${amt.brand} not registered in vbank`);
+          })();
+
+        await ctx.zoeTools.localTransfer(seat, localAccount, give);
+
+        const memo: AxelarGmpOutgoingMemo = {
+          destination_chain: evmChain,
+          destination_address: contractAddresses.factory,
+          payload: [],
+          type: AxelarGMPMessageType.ContractCall,
+          fee: {
+            amount: String(axelarGasFee), // TODO: split the gas between makeAccount and GMP calls
+            recipient: gmpAddresses.AXELAR_GAS,
+          },
+        };
+
+        trace('Initiating IBC transfer');
+        await localAccount.transfer(
+          {
+            value: gmpAddresses.AXELAR_GMP,
+            encoding: 'bech32',
+            chainId,
+          },
+          {
+            denom,
+            value: amt.value,
+          },
+          { memo: JSON.stringify(memo) },
+        );
+
+        return positionId;
+      } catch (err) {
+        await ctx.zoeTools.withdrawToSeat(localAccount, seat, give);
+        const errorMsg = `EVM account creation failed ${err}`;
+        throw new Error(errorMsg);
+      }
+    };
+
+    const sendTokensViaCCTP = async (
+      positionId: number,
+      amount: Amount<'nat'>,
+    ) => {
+      const nobleChain = await orch.getChain('noble');
+      const nobleAccount = await nobleChain.makeAccount();
+
+      const localAccount = await makeLocalAccount(orch, ctx);
+
+      const amounts = harden({ USDC: amount });
+      await ctx.zoeTools.localTransfer(seat, localAccount, amounts);
+
+      try {
+        trace('IBC transfer to Noble for CCTP');
+        await localAccount.transfer(nobleAccount.getAddress(), amount);
+
+        const denom = await denomForBrand(orch, amount.brand);
+        const denomAmount = {
+          denom,
+          value: amount.value,
+        };
+
+        const remoteAccountAddress =
+          kit.keeper.getRemoteAccountAddress(positionId);
+        assert(
+          remoteAccountAddress,
+          'Remote account address not found for position',
+        );
+
+        const caipChainId = axelarChainsMap[offerArgs.evmChain].caip;
+        const destinationAddress = `${caipChainId}:${remoteAccountAddress}`;
+        await nobleAccount.depositForBurn(
+          destinationAddress as `${string}:${string}:${string}`,
+          denomAmount,
+        );
+      } catch (err) {
+        await ctx.zoeTools.withdrawToSeat(localAccount, seat, amounts);
+        const errorMsg = `'Noble transfer failed: ${err}`;
+        throw new Error(errorMsg);
+      }
+    };
+
+    const initNobleAccount = async () => {
+      const nobleChain = await orch.getChain('noble');
+      const myNobleAccout = await nobleChain.makeAccount();
+      const nobleAddr = myNobleAccout.getAddress();
+      const { chainId } = await nobleChain.getChainInfo();
+      const positionId = kit.keeper.add(
+        'USDN',
+        `cosmos:${chainId}` as CaipChainId,
+        myNobleAccout,
+      );
+
+      const storagePath = coerceAccountId(nobleAddr);
+      const topic: GuestInterface<ResolvedPublicTopic<unknown>> = {
+        description: 'USDN ICA',
+>>>>>>> 2af2462149 (chore: create axelarChainsMap and updates types)
         subscriber: ctx.inertSubscriber,
       },
       nobleTopic,
@@ -525,6 +685,7 @@ export const openPortfolio = (async (
       assert(evmChain, 'evmChain required to open Aave position');
       evmChain in PositionChain || Fail`bad evmChain ${evmChain}`;
       try {
+<<<<<<< HEAD
         const topic = await initRemoteEVMAccount(
           orch,
           kit.keeper,
@@ -533,6 +694,22 @@ export const openPortfolio = (async (
           ctx,
           'Aave',
           localAccount,
+=======
+        const positionId = await initRemoteEVMAccount(YieldProtocol.Aave);
+        trace(
+          'TODO: use makePromiseKit to delay resolving initRemoteEVMAccount until the account is ready',
+        );
+        await sendTokensViaCCTP(positionId, give.Aave);
+        trace('TODO: Wait for 20 seconds before deploying funds to Aave');
+        const { evmChain, axelarGasFee } = offerArgs;
+        await kit.holder.supplyToAave(
+          seat,
+          contractAddresses.aavePool,
+          contractAddresses.usdc,
+          evmChain,
+          give.Aave.value,
+          axelarGasFee,
+>>>>>>> 2af2462149 (chore: create axelarChainsMap and updates types)
         );
         topics.push(topic);
       } catch (err) {
