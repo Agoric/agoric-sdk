@@ -2,6 +2,7 @@ import type { HostInterface } from '@agoric/async-flow';
 import type { Brand, Issuer, Payment } from '@agoric/ertp';
 import type {
   CosmosChainAddress,
+  Denom,
   DenomAmount,
   OrchestrationAccount,
 } from '@agoric/orchestration';
@@ -23,6 +24,8 @@ import {
   buildTxPacketString,
   buildMsgResponseString,
 } from '@agoric/orchestration/tools/ibc-mocks.ts';
+import { Far } from '@endo/pass-style';
+import type { EVMContractAddresses } from '../src/type-guards';
 
 export const prepareMockOrchAccounts = (
   zone: Zone,
@@ -171,8 +174,42 @@ export const makeUSDNIBCTraffic = (
   },
 });
 
-export const contract = {
-  aavePool: '0x87870Bca3F0fD6335C3F4ce8392D69350B4fA4E2', // Aave V3 Pool
-  compound: '0xA0b86a33E6A3E81E27Da9c18c4A77c9Cd4e08D57', // Compound USDC
-  factory: '0xef8651dD30cF990A1e831224f2E0996023163A81', // Factory contract
+export const makeIBCTransferTraffic = () => ({
+  transfer: {
+    msg: `eyJ0eXBlIjoxLCJkYXRhIjoiQ2xvS0ZpOXViMkpzWlM1emQyRndMbll4TGsxeloxTjNZWEFTUUFvTFkyOXpiVzl6TVhSbGMzUVNFd29GZFhWelpHTVNDak16TXpNd01EQXdNREFhQnhJRmRYVnpaRzRpRXdvRmRYVnpaRzRTQ2pNek16TXdNREF3TURBPSIsIm1lbW8iOiIifQ==`,
+    ack: `eyJyZXN1bHQiOiJBUT09In0=`,
+  },
+});
+
+export const contractAddresses: EVMContractAddresses = {
+  aavePool: '0x1111111111111111111111111111111111111111',
+  compound: '0xA0b86a33E6A3E81E27Da9c18c4A77c9Cd4e08D57',
+  factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+  usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
+} as const;
+
+export const axelarChainsMap = {
+  Ethereum: {
+    caip: 'eip155:1',
+    axelarId: 'ethereum',
+  },
+  Avalanche: {
+    caip: 'eip155:43114',
+    axelarId: 'avalanche',
+  },
+  Base: {
+    caip: 'eip155:8453',
+    axelarId: 'base',
+  },
+} as const;
+
+export const mockChainHubTools: {
+  getDenom: (brand: Brand) => Denom | undefined;
+} = {
+  getDenom: (brand: Brand) => {
+    if (brand) {
+      return 'uusdc';
+    }
+    return undefined;
+  },
 };

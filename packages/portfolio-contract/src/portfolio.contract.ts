@@ -14,14 +14,16 @@ import {
 import type { ZCF } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Zone } from '@agoric/zone';
-import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
+import type { CopyRecord } from '@endo/pass-style';
 import { preparePortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import {
+  AxelarChainsMapShape,
   EVMContractAddressesShape,
   makeProposalShapes,
   OfferArgsShapeFor,
+  type AxelarChainsMap,
   type EVMContractAddresses,
 } from './type-guards.ts';
 
@@ -33,15 +35,17 @@ type PortfolioPrivateArgs = OrchestrationPowers & {
   assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
   chainInfo: Record<string, ChainInfo>;
   marshaller: Marshaller;
-  contract: EVMContractAddresses;
+  contractAddresses: EVMContractAddresses;
+  axelarChainsMap: AxelarChainsMap;
 };
 
 const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
   ...(OrchestrationPowersShape as CopyRecord),
   marshaller: M.remotable('marshaller'),
-  contract: EVMContractAddressesShape,
+  contractAddresses: EVMContractAddressesShape,
   chainInfo: M.recordOf(M.string(), ChainInfoShape),
   assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
+  axelarChainsMap: AxelarChainsMapShape,
 };
 
 export const meta = {
@@ -55,19 +59,22 @@ export const contract = async (
   zone: Zone,
   tools: OrchestrationTools,
 ) => {
+  const {
+    chainInfo,
+    assetInfo,
+    contractAddresses,
+    axelarChainsMap,
+    timerService,
+  } = privateArgs;
   const { brands } = zcf.getTerms();
   const { orchestrateAll, zoeTools, chainHub, vowTools } = tools;
 
   assert(brands.USDC, 'USDC missing from brands in terms');
 
   // TODO: only on 1st incarnation
-  registerChainsAndAssets(
-    chainHub,
-    brands,
-    privateArgs.chainInfo,
-    privateArgs.assetInfo,
-    { log: trace },
-  );
+  registerChainsAndAssets(chainHub, brands, chainInfo, assetInfo, {
+    log: trace,
+  });
 
   const proposalShapes = makeProposalShapes(brands.USDC);
 
@@ -89,7 +96,8 @@ export const contract = async (
     {
       zoeTools,
       chainHubTools,
-      contract: privateArgs.contract,
+      contractAddresses,
+      axelarChainsMap,
     },
   );
 
@@ -98,6 +106,8 @@ export const contract = async (
     vowTools,
     rebalance,
     proposalShapes,
+    axelarChainsMap,
+    timer: timerService,
   });
   const { openPortfolio } = orchestrateAll(
     { openPortfolio: flows.openPortfolio },
@@ -105,7 +115,8 @@ export const contract = async (
       zoeTools,
       makePortfolioKit: makePortfolioKit as any, // XXX Guest...
       chainHubTools,
-      contract: privateArgs.contract,
+      axelarChainsMap,
+      contractAddresses,
       inertSubscriber,
     },
   );

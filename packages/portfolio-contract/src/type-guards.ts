@@ -1,14 +1,21 @@
 import type { Amount, Brand, NatValue } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
-import type { OrchestrationAccount } from '@agoric/orchestration';
 import type {
-  ContractCall,
-  SupportedEVMChains,
-} from '@agoric/orchestration/src/axelar-types.js';
+  CaipChainId,
+  Denom,
+  OrchestrationAccount,
+} from '@agoric/orchestration';
 import { M } from '@endo/patterns';
-import { YieldProtocol } from './constants.js';
+import { AxelarChains, YieldProtocol } from './constants.js';
+import type { YieldProtocol as YieldProtocolT } from './constants.js';
+import { type ContractCall } from '@agoric/orchestration/src/axelar-types.js';
+import type { PortfolioKit } from './portfolio.exo.js';
+import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
+import type { GuestInterface } from '../../async-flow/src/types.js';
+import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
+import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 
-const { keys } = Object;
+const { fromEntries, keys } = Object;
 
 /**
  * @param brand must be a 'nat' brand, not checked
@@ -16,14 +23,14 @@ const { keys } = Object;
 export const makeNatAmountShape = (brand: Brand<'nat'>, min?: NatValue) =>
   harden({ brand, value: min ? M.gte(min) : M.nat() });
 
-type OpenPortfolioGive = { USDN?: Amount<'nat'> } & (
-  | {
-      GMPFee: Amount<'nat'>;
-      Aave?: Amount<'nat'>;
-      Compound?: Amount<'nat'>;
-    }
-  | {}
-);
+export const AxelarGas = {
+  Account: 'Account',
+  Gmp: 'Gmp',
+} as const;
+
+export type OpenPortfolioGive = Partial<
+  Record<YieldProtocolT | keyof typeof AxelarGas, Amount<'nat'>>
+>;
 
 export type ProposalType = {
   openPortfolio: { give: OpenPortfolioGive };
@@ -32,16 +39,28 @@ export type ProposalType = {
     | { want: Partial<Record<YieldProtocol, Amount<'nat'>>> };
 };
 
-const YieldProtocolShape = M.or(...keys(YieldProtocol));
+export type AxelarChain = keyof typeof AxelarChains;
+export type AxelarChainsMap = {
+  [chain in AxelarChain]: {
+    caip: CaipChainId;
+    /**
+     * Axelar chain IDs differ between mainnet and testnet.
+     * See [supported-chains-list.ts](https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts)
+     */
+    axelarId: string;
+  };
+};
 
+const YieldProtocolShape = M.or(...keys(YieldProtocol));
 export const makeProposalShapes = (usdcBrand: Brand<'nat'>) => {
+  // TODO: Update usdcAmountShape, to include BLD/aUSDC after discussion with Axelar team
   const usdcAmountShape = makeNatAmountShape(usdcBrand);
   const openGive = M.splitRecord(
     {},
     { USDN: usdcAmountShape },
     M.or(
       M.splitRecord(
-        { GMPFee: usdcAmountShape },
+        { Gmp: usdcAmountShape, Account: usdcAmountShape },
         {
           Aave: usdcAmountShape,
           Compound: usdcAmountShape,
@@ -68,65 +87,35 @@ export const makeProposalShapes = (usdcBrand: Brand<'nat'>) => {
   };
 };
 
-/**
- * Use Axelar chain identifier instead of CAP-10 ID for cross-chain messaging
- * @see {@link https://docs.axelar.dev/dev/reference/mainnet-chain-names|Axelar docs}
- * @see {@link https://axelarscan.io/resources/chains|Chain names}
- */
-export type OfferArgsFor = {
-  openPortfolio: { evmChain?: SupportedEVMChains };
-  rebalance: { evmChain?: SupportedEVMChains };
+export type EVMOfferArgs = {
+  destinationEVMChain: AxelarChain;
 };
 
-export const ChainShape = M.string(); // TODO: narrow?
+export const EVMOfferArgsShape: TypedPattern<EVMOfferArgs> = M.splitRecord(
+  {},
+  {
+    destinationEVMChain: M.or(...keys(AxelarChains)),
+  },
+) as TypedPattern<EVMOfferArgs>;
 
-// Use Axelar chain identifier instead of CAP-10 ID for cross-chain messaging
-// Axelar docs: https://docs.axelar.dev/dev/reference/mainnet-chain-names
-// Chain names: https://axelarscan.io/resources/chains
-const optEvmChainShape = M.splitRecord({}, { evmChain: ChainShape });
+export type OfferArgsFor = {
+  openPortfolio: EVMOfferArgs;
+  rebalance: EVMOfferArgs;
+};
 
 export const OfferArgsShapeFor = {
-  openPortfolio: optEvmChainShape as TypedPattern<
+  openPortfolio: EVMOfferArgsShape as TypedPattern<
     OfferArgsFor['openPortfolio']
   >,
-  rebalance: optEvmChainShape as TypedPattern<OfferArgsFor['rebalance']>,
+  rebalance: EVMOfferArgsShape as TypedPattern<OfferArgsFor['rebalance']>,
 };
 harden(OfferArgsShapeFor);
 
-export type GMPArgs = {
-  destinationAddress: string;
-  destinationEVMChain: SupportedEVMChains;
-} & (
-  | { type: 3 }
-  | {
-      type: 1 | 2;
-      gasAmount: number;
-      contractInvocationData: Array<ContractCall>;
-    }
-);
-
-export const ContractCallShape = harden({
-  target: M.string(),
-  functionSignature: M.string(),
-  args: M.array(),
-});
-
-export const GMPArgsShape: TypedPattern<GMPArgs> = M.and(
-  M.splitRecord({ destinationAddress: M.string() }),
-  M.or(
-    M.splitRecord({ type: 1 }),
-    M.splitRecord({
-      type: M.or(1, 2),
-      gasAmount: M.number(),
-      contractInvocationData: M.arrayOf(ContractCallShape),
-    }),
-  ),
-);
-
 export type EVMContractAddresses = {
-  aavePool: string;
-  compound: string;
-  factory: string;
+  aavePool: `0x${string}`;
+  compound: `0x${string}`;
+  factory: `0x${string}`;
+  usdc: `0x${string}`;
 };
 
 export const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
@@ -134,6 +123,81 @@ export const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
     aavePool: M.string(),
     compound: M.string(),
     factory: M.string(),
+    usdc: M.string(),
   });
 
+const AxelarChainInfoPattern = M.splitRecord({
+  caip: M.string(),
+  axelarId: M.string(),
+});
+
+export const AxelarChainsMapShape: TypedPattern<AxelarChainsMap> =
+  M.splitRecord(
+    fromEntries(
+      keys(AxelarChains).map(chain => [chain, AxelarChainInfoPattern]),
+    ) as Record<AxelarChain, typeof AxelarChainInfoPattern>,
+  );
+
+export type PortfolioBootstrapContext = {
+  axelarChainsMap: AxelarChainsMap;
+  chainHubTools: {
+    getDenom: (brand: Brand) => Denom | undefined;
+  };
+  contractAddresses: EVMContractAddresses;
+  zoeTools: GuestInterface<ZoeTools>;
+  makePortfolioKit: () => GuestInterface<PortfolioKit>;
+  inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
+};
+
+export type PortfolioInstanceContext = {
+  axelarChainsMap: AxelarChainsMap;
+  chainHubTools: {
+    getDenom: (brand: Brand) => Denom | undefined;
+  };
+  contractAddresses: EVMContractAddresses;
+  inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
+  zoeTools: GuestInterface<ZoeTools>;
+};
+
+export type BaseGmpArgs = {
+  destinationEVMChain: AxelarChain;
+  gasAmount: AmountKeywordRecord;
+};
+
+export const GmpCallType = {
+  ContractCall: 1,
+  ContractCallWithToken: 2,
+} as const;
+
+export type GmpCallType = (typeof GmpCallType)[keyof typeof GmpCallType];
+
+export type GmpArgsContractCall = BaseGmpArgs & {
+  destinationAddress: string;
+  type: GmpCallType;
+  contractInvocationData: Array<ContractCall>;
+};
+
+export type GmpArgsTransferAmount = BaseGmpArgs & {
+  transferAmount: bigint;
+};
+
+export type GmpArgsWithdrawAmount = BaseGmpArgs & {
+  withdrawAmount: bigint;
+};
+
+export const ContractCallShape = M.splitRecord({
+  target: M.string(),
+  functionSignature: M.string(),
+  args: M.arrayOf(M.any()),
+});
+
+export const GMPArgsShape: TypedPattern<GmpArgsContractCall> = M.splitRecord({
+  destinationAddress: M.string(),
+  type: M.or(1, 2),
+  destinationEVMChain: M.or(...keys(AxelarChains)),
+  gasAmount: AmountKeywordRecordShape,
+  contractInvocationData: M.arrayOf(ContractCallShape),
+});
+
 export type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
+export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>;
