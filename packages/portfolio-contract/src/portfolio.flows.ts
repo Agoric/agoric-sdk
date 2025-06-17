@@ -305,6 +305,7 @@ export const openPortfolio = (async (
 
     if (give.Aave || give.Compound) {
       await initRemoteEVMAccount();
+      await kit.holder.wait(180n); // TODO: replace with promiseKit
       trace(
         'TODO: use makePromiseKit to delay resolving initRemoteEVMAccount until the account is ready',
       );
@@ -314,7 +315,7 @@ export const openPortfolio = (async (
       try {
         const { evmChain, axelarGasFee } = offerArgs;
         await sendTokensViaCCTP(give.Aave);
-        trace('TODO: Wait for 20 seconds before deploying funds to Aave');
+        await kit.holder.wait(20n);
         await kit.holder.supplyToAave(
           seat,
           contractAddresses.aavePool,
@@ -323,6 +324,7 @@ export const openPortfolio = (async (
           give.Aave.value,
           axelarGasFee,
         );
+        // TODO: wait for the response in receiveUpCall and then add position using the keeper?
         kit.keeper.addAavePosition(axelarChainsMap[evmChain].caip);
       } catch (err) {
         seat.fail(err);
@@ -333,7 +335,8 @@ export const openPortfolio = (async (
       try {
         const { evmChain, axelarGasFee } = offerArgs;
         await sendTokensViaCCTP(give.Compound);
-        trace('TODO: Wait for 20 seconds before deploying funds to Aave');
+        await kit.holder.wait(20n);
+        // TODO: add Compound specific methods in the holder facet
         await kit.holder.supplyToAave(
           seat,
           contractAddresses.aavePool,

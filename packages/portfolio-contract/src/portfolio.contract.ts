@@ -12,6 +12,7 @@ import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics
 import type { Zone } from '@agoric/zone';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
+import { TimerServiceShape } from '@agoric/time';
 import { preparePortfolioKit, type LocalAccount } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import { makeProposalShapes, type OfferArgsShapes } from './type-guards.ts';
@@ -40,6 +41,7 @@ const privateArgsShape = {
       axelarId: M.string(),
     }),
   ),
+  timer: TimerServiceShape,
   chainInfo: M.recordOf(M.string(), ChainInfoShape),
   assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
   // TODO: remove once we deploy package pr is merged
@@ -57,7 +59,7 @@ export const contract = async (
   zone: Zone,
   tools: OrchestrationTools,
 ) => {
-  const { chainInfo, assetInfo, contractAddresses, axelarChainsMap } =
+  const { chainInfo, assetInfo, contractAddresses, axelarChainsMap, timer } =
     privateArgs;
   const { brands } = zcf.getTerms();
   const { orchestrateAll, zoeTools, chainHub } = tools;
@@ -83,6 +85,7 @@ export const contract = async (
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf,
     axelarChainsMap,
+    timer,
   });
   const { makeLocalAccount, openPortfolio } = orchestrateAll(flows, {
     zoeTools,

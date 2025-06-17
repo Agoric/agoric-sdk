@@ -1,4 +1,4 @@
-import { makeTracer } from '@agoric/internal';
+import { makeTracer, type Remote } from '@agoric/internal';
 import { Fail } from '@endo/errors';
 import type { Zone } from '@agoric/zone';
 import { M } from '@endo/patterns';
@@ -22,6 +22,8 @@ import {
   buildGMPPayload,
 } from '@agoric/orchestration/src/utils/gmp.js';
 import type { ZCF } from '@agoric/zoe';
+import type { TimerService } from '@agoric/time';
+import { E } from '@endo/far';
 import { YieldProtocol } from './constants.js';
 import type { AxelarChainsMap } from './type-guards.js';
 
@@ -71,6 +73,7 @@ const HolderI = M.interface('Holder', {
     M.or(M.string(), M.undefined()),
   ),
   sendGmp: M.call(M.remotable('Seat'), M.record()).returns(M.promise()),
+  wait: M.call(M.bigint()).returns(M.promise()),
 });
 
 const EvmTapI = M.interface('EvmTap', {
@@ -122,11 +125,13 @@ type PortfolioKitState = {
 export const preparePortfolioKit = (
   zone: Zone,
   {
+    timer,
     zcf,
     axelarChainsMap,
   }: {
     zcf: ZCF;
     axelarChainsMap: AxelarChainsMap;
+    timer: Remote<TimerService>;
   },
 ) =>
   zone.exoClassKit(
@@ -449,6 +454,10 @@ export const preparePortfolioKit = (
               },
             ],
           });
+        },
+
+        async wait(delay: bigint) {
+          await E(timer).delay(delay);
         },
       },
       invitationMakers: {

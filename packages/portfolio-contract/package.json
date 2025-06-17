@@ -38,6 +38,7 @@
     "@agoric/orchestration": "workspace:*",
     "@agoric/vats": "workspace:*",
     "@agoric/vow": "workspace:*",
+    "@agoric/time": "workspace:*",
     "@endo/base64": "1.0.9",
     "@endo/errors": "^1.2.10",
     "@endo/far": "^1.1.11",
