@@ -1,4 +1,5 @@
 import { makeIssuerKit } from '@agoric/ertp';
+import { deepCopyJsonable } from '@agoric/internal';
 import {
   denomHash,
   type CosmosChainInfo,
@@ -55,6 +56,32 @@ export {
   makeFakeTransferBridge,
 } from '@agoric/vats/tools/fake-bridge.js';
 
+// Deep clone fetchedChainInfo for test patching
+const testChainInfo = deepCopyJsonable(fetchedChainInfo);
+// Patch noble.connections to add axelar-dojo-1 for test
+testChainInfo.noble.connections['axelar-dojo-1'] = {
+  id: 'connection-mock',
+  client_id: '07-tendermint-mock',
+  counterparty: {
+    client_id: '07-tendermint-mock',
+    connection_id: 'connection-mock',
+  },
+  state: 3,
+  transferChannel: {
+    channelId: 'channel-mock',
+    portId: 'transfer',
+    counterPartyChannelId: 'channel-mock',
+    counterPartyPortId: 'transfer',
+    ordering: 0,
+    state: 3,
+    version: 'ics20-1',
+  },
+};
+
+// Enable PFM on noble for tests
+testChainInfo.noble.features = ['pfm'];
+testChainInfo.noble.pfmEnabled = true;
+
 const assetOn = (
   baseDenom: Denom,
   baseName: string,
@@ -81,7 +108,7 @@ export const [uusdcOnAgoric, agUSDCDetail] = assetOn(
   'uusdc',
   'noble',
   'agoric',
-  fetchedChainInfo,
+  testChainInfo,
   'USDC',
 );
 
@@ -119,7 +146,8 @@ export const setupPortfolioTest = async ({
   const assetInfo: [Denom, DenomDetail & { brandKey?: string }][] = harden([
     assetOn('uusdc', 'noble'),
     [uusdcOnAgoric, agUSDCDetail],
-    assetOn('uusdc', 'noble', 'osmosis', fetchedChainInfo),
+    assetOn('uusdc', 'noble', 'osmosis', testChainInfo),
+    ['uusdc', { baseName: 'noble', chainName: 'agoric', baseDenom: 'uusdc' }],
   ]);
 
   // XXX poolMetricsNode is fastUsdc-specific
@@ -136,3 +164,5 @@ export const setupPortfolioTest = async ({
     utils: common.utils,
   };
 };
+
+export { testChainInfo };
