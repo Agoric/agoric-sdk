@@ -221,7 +221,7 @@ export type IBCEvent<
   blockTime: number;
   event: E;
   /** e.g. the chain address of the LocalChainAccount */
-  target?: string;
+  target?: string | { onlyIfRegistered: string };
 } & {
   [K in keyof IBCPacketEvents[E]]: IBCPacketEvents[E][K];
 };
