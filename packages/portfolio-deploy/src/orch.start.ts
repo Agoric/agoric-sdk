@@ -125,10 +125,14 @@ export const startOrchContract = async <
   trace('startOrchContract');
 
   const { agoricNames, zoe } = consume;
+  trace('got agoricNames and zoe from consume');
   const issuerKeywordRecord = await permittedIssuers(agoricNames, permitG);
+  trace('got issuerKeywordRecord', Object.keys(issuerKeywordRecord));
 
   const brandHub: Promise<NameHub> = E(agoricNames).lookup('brand');
+  trace('looking up brand hub');
   const xVatEntries = await E(brandHub).entries();
+  trace('got brand entries', Object.keys(fromEntries(xVatEntries)));
   const config = fromExternalConfig(
     configStruct.options,
     fromEntries(xVatEntries),
@@ -138,55 +142,87 @@ export const startOrchContract = async <
   trace('using terms', terms);
 
   const { chainStorage, board } = consume;
-  const { storageNode, marshaller } = await makePublishingStorageKit(
-    metaG.name,
-    { board, chainStorage },
-  );
+  trace('creating publishing storage kit', { name: metaG.name });
+  try {
+    const { storageNode, marshaller } = await makePublishingStorageKit(
+      metaG.name,
+      { board, chainStorage },
+    );
+    trace('got storage kit', { hasStorageNode: !!storageNode, hasMarshaller: !!marshaller });
 
-  const {
-    chainTimerService: timerService,
-    localchain,
-    cosmosInterchainService,
-  } = consume;
-  const orchestrationPowers = await deeplyFulfilledObject(
-    harden({
+    const {
+      chainTimerService: timerService,
       localchain,
-      orchestrationService: cosmosInterchainService,
-      storageNode,
-      timerService,
-      agoricNames,
-    }),
-  );
-  const privateArgs = await makePrivateArgs(
-    orchestrationPowers,
-    marshaller,
-    config,
-  );
+      cosmosInterchainService,
+    } = consume;
+    trace('preparing orchestration powers', {
+      hasLocalchain: !!localchain,
+      hasCosmosService: !!cosmosInterchainService,
+      hasStorageNode: !!storageNode,
+      hasTimerService: !!timerService,
+      hasAgoricNames: !!agoricNames,
+    });
+    const orchestrationPowers = await deeplyFulfilledObject(
+      harden({
+        localchain,
+        orchestrationService: cosmosInterchainService,
+        storageNode,
+        timerService,
+        agoricNames,
+      }),
+    );
+    trace('orchestration powers fulfilled');
+    
+    trace('calling makePrivateArgs');
+    const privateArgs = await makePrivateArgs(
+      orchestrationPowers,
+      marshaller,
+      config,
+    );
+    trace('privateArgs created', Object.keys(privateArgs || {}));
 
-  trace(
-    '@@@',
-    metaG.name,
-    await E(zoe).getBundleIDFromInstallation(await installation),
-  );
-  const { startUpgradable } = consume;
-  const kit = await E(startUpgradable)({
-    label: metaG.name,
-    installation,
-    issuerKeywordRecord,
-    terms,
-    privateArgs,
-  });
-  const { instance } = kit;
-  trace('started terms', await E(zoe).getTerms(instance));
-  const fullKit = harden({ ...kit, privateArgs }) as UpgradeKit<SF>;
-  // @ts-expect-error XXX tsc gets confused?
-  produce[`${metaG.name}Kit`].resolve(fullKit);
+    trace(
+      '@@@',
+      metaG.name,
+      await E(zoe).getBundleIDFromInstallation(await installation),
+    );
+    const { startUpgradable } = consume;
+    trace('starting upgradable contract', { 
+      label: metaG.name, 
+      hasInstallation: !!installation,
+      hasIssuerKeywordRecord: !!issuerKeywordRecord,
+      hasTerms: !!terms,
+      hasPrivateArgs: !!privateArgs 
+    });
+    try {
+      const kit = await E(startUpgradable)({
+        label: metaG.name,
+        installation,
+        issuerKeywordRecord,
+        terms,
+        privateArgs,
+      });
+      trace('upgradable contract started successfully', !!kit);
+      const { instance } = kit;
+      trace('instance extracted from kit');
+      trace('started terms', await E(zoe).getTerms(instance));
+      const fullKit = harden({ ...kit, privateArgs }) as UpgradeKit<SF>;
+      // @ts-expect-error XXX tsc gets confused?
+      produce[`${metaG.name}Kit`].resolve(fullKit);
 
-  produceInstance.reset();
-  produceInstance.resolve(instance);
+      produceInstance.reset();
+      produceInstance.resolve(instance);
 
-  trace('startOrchContract done', instance);
-  return { config, kit: fullKit };
+      trace('startOrchContract done', instance);
+      return { config, kit: fullKit };
+    } catch (startUpgradableError) {
+      trace('ERROR in startUpgradable', String(startUpgradableError), startUpgradableError);
+      throw startUpgradableError;
+    }
+  } catch (storageKitError) {
+    trace('ERROR creating storage kit', String(storageKitError), storageKitError);
+    throw storageKitError;
+  }
 };
 harden(startOrchContract);
 
@@ -297,8 +333,8 @@ export const mixConnections = (
       continue;
     }
     for (const { name, id, connInfo } of [
-      { name: p, id: c, connInfo: directed },
-      { name: c, id: p, connInfo: reverseConnInfo(directed) },
+      { name: pn, id: c, connInfo: directed },
+      { name: cn, id: p, connInfo: reverseConnInfo(directed) },
     ]) {
       const cInfo = chainInfos[name];
       if (cInfo.namespace !== 'cosmos') {

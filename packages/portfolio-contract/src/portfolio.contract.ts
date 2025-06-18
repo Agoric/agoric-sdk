@@ -87,6 +87,7 @@ export const contract = async (
     },
   });
 
+  trace('Completed portfolio contract setup');
   return { publicFacet };
 };
 harden(contract);

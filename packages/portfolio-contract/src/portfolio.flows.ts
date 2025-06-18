@@ -111,19 +111,24 @@ export const openPortfolio = (async (
 
     const openUSDNPosition = async (amount: Amount<'nat'>) => {
       const acct = kit.keeper.getAccount('USDN');
-      const there = acct.getAddress();
+      const nobleICAAddress = acct.getAddress();
 
       const localAcct = await localP;
       const amounts = harden({ USDN: amount });
       trace('localTransfer', amount, 'to local', localAcct.getAddress().value);
       await ctx.zoeTools.localTransfer(seat, localAcct, amounts);
+      trace('localTransfer done', amounts);
       try {
-        trace('IBC transfer', amount, 'to', there, `${acct}`);
-        await localAcct.transfer(there, amount);
+        trace('IBC transfer', amount, 'to', nobleICAAddress, `${acct}`);
+        await localAcct.transfer(nobleICAAddress, amount);
+        trace('IBC transfer done. ', amount, 'to', nobleICAAddress);
+        
+        trace('Balances for noble ICA: ', await acct.getBalances());
+        
         try {
           // NOTE: proposalShape guarantees that amount.brand is USDC
           const { msgSwap, msgLock } = makeSwapLockMessages(
-            there,
+            nobleICAAddress,
             amount.value,
           );
 

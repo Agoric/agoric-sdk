@@ -5,13 +5,13 @@
   "bundles": [
     {
       "entrypoint": "../dist/portfolio.contract.bundle.js",
-      "bundleID": "b1-1415f596295f3095fb74304e250a7a2e89eb173d5e2b36b7d95dd7baae7fced6a727b21127b16f2e5cec438617b11a261e739eaf6009cc7e5e6268d697499a38",
-      "fileName": "/Users/lupin/.agoric/cache/b1-1415f596295f3095fb74304e250a7a2e89eb173d5e2b36b7d95dd7baae7fced6a727b21127b16f2e5cec438617b11a261e739eaf6009cc7e5e6268d697499a38.json"
+      "bundleID": "b1-8b3c4f9e279eacd7a9b439b8fda1cd9156b6ca74bc14b01fc9cd27c776aafe1f51d96955f34eac66d0dac3c7a2376c1a231524e65ee1a67b733f55d0fa5b384f",
+      "fileName": "/Users/lupin/.agoric/cache/b1-8b3c4f9e279eacd7a9b439b8fda1cd9156b6ca74bc14b01fc9cd27c776aafe1f51d96955f34eac66d0dac3c7a2376c1a231524e65ee1a67b733f55d0fa5b384f.json"
     },
     {
       "entrypoint": "../dist/portfolio-start.core.bundle.js",
-      "bundleID": "b1-c7779530863cdf0c539cdedb31b46482435e4158f2a847799951327cf39aa728355d544cd2f658bb9a6432121ae5ec029cd95fbc745001a9dfe5d829d2a67765",
-      "fileName": "/Users/lupin/.agoric/cache/b1-c7779530863cdf0c539cdedb31b46482435e4158f2a847799951327cf39aa728355d544cd2f658bb9a6432121ae5ec029cd95fbc745001a9dfe5d829d2a67765.json"
+      "bundleID": "b1-075c9326b9832cf3fa5d7903ea0357815b9ce3da5d035285394151f2b6fb517a1676b92aad5eb3368cebb0add9d9dae155f35f1f8c40d9af156e9e33d39f795a",
+      "fileName": "/Users/lupin/.agoric/cache/b1-075c9326b9832cf3fa5d7903ea0357815b9ce3da5d035285394151f2b6fb517a1676b92aad5eb3368cebb0add9d9dae155f35f1f8c40d9af156e9e33d39f795a.json"
     }
   ]
 }
