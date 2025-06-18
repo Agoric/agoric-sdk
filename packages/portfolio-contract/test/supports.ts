@@ -1,5 +1,4 @@
 import { makeIssuerKit } from '@agoric/ertp';
-import { deepCopyJsonable } from '@agoric/internal';
 import {
   denomHash,
   type CosmosChainInfo,
@@ -18,31 +17,37 @@ export {
   makeFakeTransferBridge,
 } from '@agoric/vats/tools/fake-bridge.js';
 
-// Deep clone fetchedChainInfo for test patching
-const testChainInfo = deepCopyJsonable(fetchedChainInfo);
-// Patch noble.connections to add axelar-dojo-1 for test
-testChainInfo.noble.connections['axelar-dojo-1'] = {
-  id: 'connection-mock',
-  client_id: '07-tendermint-mock',
-  counterparty: {
-    client_id: '07-tendermint-mock',
-    connection_id: 'connection-mock',
+const testChainInfo = {
+  ...fetchedChainInfo,
+  noble: {
+    ...fetchedChainInfo.noble,
+    // Enable PFM on noble for tests
+    features: ['pfm'],
+    pfmEnabled: true,
+    connections: {
+      ...fetchedChainInfo.noble.connections,
+      // Patch noble.connections to add axelar-dojo-1 for test
+      'axelar-dojo-1': {
+        id: 'connection-1' as const,
+        client_id: '07-tendermint-mock',
+        counterparty: {
+          client_id: '07-tendermint-mock',
+          connection_id: 'connection-1' as const,
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-1' as const,
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-1' as const,
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+    },
   },
-  state: 3,
-  transferChannel: {
-    channelId: 'channel-mock',
-    portId: 'transfer',
-    counterPartyChannelId: 'channel-mock',
-    counterPartyPortId: 'transfer',
-    ordering: 0,
-    state: 3,
-    version: 'ics20-1',
-  },
-};
-
-// Enable PFM on noble for tests
-testChainInfo.noble.features = ['pfm'];
-testChainInfo.noble.pfmEnabled = true;
+} as const;
 
 const assetOn = (
   baseDenom: Denom,
