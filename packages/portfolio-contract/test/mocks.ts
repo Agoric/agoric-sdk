@@ -180,7 +180,7 @@ export const makeIBCTransferTraffic = () => ({
 });
 
 export const contractAddresses = {
-  aavePool: '0x87870Bca3F0fD6335C3F4ce8392D69350B4fA4E2',
+  aavePool: '0x1111111111111111111111111111111111111111',
   compound: '0xA0b86a33E6A3E81E27Da9c18c4A77c9Cd4e08D57',
   factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
   usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',

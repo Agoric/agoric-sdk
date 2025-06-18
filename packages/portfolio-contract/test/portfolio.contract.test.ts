@@ -19,11 +19,7 @@ import {
   makeUSDNIBCTraffic,
   makeIBCTransferTraffic,
 } from './mocks.ts';
-import {
-  testChainInfo,
-  cctpChainInfo,
-  setupPortfolioTest,
-} from './supports.ts';
+import { chainInfo, setupPortfolioTest } from './supports.ts';
 import { makeTrader } from './portfolio-actors.ts';
 import { makeWallet } from './wallet-offer-tools.ts';
 import { makeReceiveUpCallPayload } from '../../boot/tools/axelar-supports.js';
@@ -82,7 +78,7 @@ const deploy = async (t: ExecutionContext) => {
       contractAddresses,
       axelarChainsMap,
       timer,
-      chainInfo: { ...testChainInfo, ...cctpChainInfo },
+      chainInfo,
     }, // privateArgs
   );
   t.notThrows(() =>
@@ -220,7 +216,7 @@ test('open portfolio with Aave position', async t => {
     'Should have invitation makers',
   );
 
-  t.log('EVM account creation completed');
+  t.log('TODO: mock incoming response from AAVE');
 });
 
 test.todo('User can see transfer in progress');

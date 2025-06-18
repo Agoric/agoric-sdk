@@ -60,7 +60,7 @@ const KeeperI = M.interface('keeper', {
   addAavePosition: M.call(M.or(ChainShape)).returns(),
   addCompoundPosition: M.call(M.or(ChainShape)).returns(),
   addUSDNPosition: M.call(
-    M.or(ChainShape),
+    M.string(),
     M.remotable('OrchestrationAccount'),
   ).returns(),
   getPositions: M.call(TypeShape, ChainShape).returns(M.arrayOf(PositionShape)),
@@ -68,8 +68,8 @@ const KeeperI = M.interface('keeper', {
 });
 
 const HolderI = M.interface('Holder', {
-  supplyToAave: M.call(M.record()).returns(M.promise()),
-  withdrawFromAave: M.call(M.record()).returns(M.promise()),
+  supplyToAave: M.call(M.record()).returns(VowShape),
+  withdrawFromAave: M.call(M.record()).returns(VowShape),
   setupGmpLCA: M.call(M.remotable('OrchestrationAccount')).returns(),
   setupAxelarChainInfo: M.call(M.any()).returns(),
   getRemoteAccountAddress: M.call().returns(M.or(M.string(), M.undefined())),
@@ -140,8 +140,8 @@ export const preparePortfolioKit = (
       keeper: KeeperI,
       holder: HolderI,
       invitationMakers: M.interface('invitationMakers', {
-        supplyToAave: M.call(M.record()).returns(M.promise()),
-        withdrawFromAave: M.call(M.record()).returns(M.promise()),
+        supplyToAave: M.call(M.record()).returns(VowShape),
+        withdrawFromAave: M.call(M.record()).returns(VowShape),
       }),
       tap: EvmTapI,
     },
@@ -172,7 +172,7 @@ export const preparePortfolioKit = (
           try {
             tx = JSON.parse(atob(event.packet.data));
           } catch (err) {
-            console.warn(
+            trace(
               'Failed to parse packet data JSON in receiveUpcall:',
               err,
               event.packet.data,
@@ -185,11 +185,7 @@ export const preparePortfolioKit = (
           try {
             memo = JSON.parse(tx.memo);
           } catch (err) {
-            console.warn(
-              'Failed to parse memo JSON in receiveUpcall:',
-              err,
-              tx.memo,
-            );
+            trace('Failed to parse memo JSON in receiveUpcall:', err, tx.memo);
             return;
           }
 
@@ -210,25 +206,17 @@ export const preparePortfolioKit = (
                 message.result,
               );
 
-              for (const [key, position] of this.state.positions.entries()) {
-                if (position.type === 'Aave' || position.type === 'Compound') {
-                  this.state.positions.set(
-                    key,
-                    harden({ ...position, remoteAccountAddress: address }),
-                  );
-                  break;
-                }
-              }
-
+              // TODO: ensure remoteAccountAddress is setup only once
               const manager = this.state.gmp.get('manager');
               this.state.gmp.set('manager', {
                 ...manager,
                 remoteAccountAddress: address,
               });
+
+              trace(`remoteAccountAddress ${address}`);
             }
           }
           // TODO: Handle the result of the contract call
-
           trace('receiveUpcall completed');
         },
       },
@@ -341,8 +329,7 @@ export const preparePortfolioKit = (
 
           trace(`Payload: ${JSON.stringify(payload)}`);
 
-          // @ts-expect-error // TODO: temporarily using mapstore to add tests
-          const { chainId } = this.state.gmp.get('axelarChainInfo');
+          const { chainId } = this.state.gmp.get('manager').axelarChainInfo;
 
           const memo: AxelarGmpOutgoingMemo = {
             destination_chain: destinationEVMChain,
@@ -377,77 +364,75 @@ export const preparePortfolioKit = (
 
           seat.exit();
         },
-        async supplyToAave({
-          seat,
-          aavePoolAddress,
-          usdcTokenAddress,
-          evmChain,
-          amountToTransfer,
-          amount,
-        }: {
-          seat: ZCFSeat;
-          aavePoolAddress: `0x${string}`;
-          usdcTokenAddress: `0x${string}`;
-          evmChain: SupportedEVMChains;
-          amountToTransfer: bigint;
-          amount: Amount<'nat'>;
-        }) {
-          const remoteEVMAddress = this.facets.holder.getRemoteAccountAddress();
-          assert(remoteEVMAddress, 'remoteEVMAddress must be defined');
+        supplyToAave(args) {
+          return vowTools.asVow(async () => {
+            const {
+              seat,
+              aavePoolAddress,
+              usdcTokenAddress,
+              evmChain,
+              amountToTransfer,
+              amount,
+            } = args;
+            const remoteEVMAddress =
+              this.facets.holder.getRemoteAccountAddress();
+            assert(remoteEVMAddress, 'remoteEVMAddress must be defined');
 
-          await this.facets.holder.sendGmp(seat, {
-            destinationAddress: gmpAddresses.AXELAR_GMP,
-            destinationEVMChain: evmChain,
-            type: AxelarGMPMessageType.ContractCall,
-            amount,
-            contractInvocationData: [
-              {
-                functionSignature: 'approve(address,uint256)',
-                args: [aavePoolAddress, amountToTransfer],
-                target: usdcTokenAddress,
-              },
-              {
-                functionSignature: 'supply(address,uint256,address,uint16)',
-                args: [usdcTokenAddress, amountToTransfer, remoteEVMAddress, 0],
-                target: aavePoolAddress,
-              },
-            ],
+            await this.facets.holder.sendGmp(seat, {
+              destinationAddress: gmpAddresses.AXELAR_GMP,
+              destinationEVMChain: evmChain,
+              type: AxelarGMPMessageType.ContractCall,
+              amount,
+              contractInvocationData: [
+                {
+                  functionSignature: 'approve(address,uint256)',
+                  args: [aavePoolAddress, amountToTransfer],
+                  target: usdcTokenAddress,
+                },
+                {
+                  functionSignature: 'supply(address,uint256,address,uint16)',
+                  args: [
+                    usdcTokenAddress,
+                    amountToTransfer,
+                    remoteEVMAddress,
+                    0,
+                  ],
+                  target: aavePoolAddress,
+                },
+              ],
+            });
           });
         },
-        async withdrawFromAave({
-          seat,
-          aavePoolAddress,
-          usdcTokenAddress,
-          evmChain,
-          amountToWithdraw,
-          amount,
-        }: {
-          seat: ZCFSeat;
-          aavePoolAddress: `0x${string}`;
-          usdcTokenAddress: `0x${string}`;
-          evmChain: SupportedEVMChains;
-          amountToWithdraw: bigint;
-          amount: Amount<'nat'>;
-        }) {
-          const remoteEVMAddress = this.facets.holder.getRemoteAccountAddress();
-          remoteEVMAddress !== undefined ||
-            Fail`remoteEVMAddress must be defined`;
+        withdrawFromAave(args) {
+          return vowTools.asVow(async () => {
+            const {
+              seat,
+              aavePoolAddress,
+              usdcTokenAddress,
+              evmChain,
+              amountToWithdraw,
+              amount,
+            } = args;
+            const remoteEVMAddress =
+              this.facets.holder.getRemoteAccountAddress();
+            remoteEVMAddress !== undefined ||
+              Fail`remoteEVMAddress must be defined`;
 
-          await this.facets.holder.sendGmp(seat, {
-            destinationAddress: gmpAddresses.AXELAR_GMP,
-            type: AxelarGMPMessageType.ContractCall,
-            destinationEVMChain: evmChain,
-            amount,
-            contractInvocationData: [
-              {
-                functionSignature: 'withdraw(address,uint256,address)',
-                args: [usdcTokenAddress, amountToWithdraw, remoteEVMAddress],
-                target: aavePoolAddress,
-              },
-            ],
+            await this.facets.holder.sendGmp(seat, {
+              destinationAddress: gmpAddresses.AXELAR_GMP,
+              type: AxelarGMPMessageType.ContractCall,
+              destinationEVMChain: evmChain,
+              amount,
+              contractInvocationData: [
+                {
+                  functionSignature: 'withdraw(address,uint256,address)',
+                  args: [usdcTokenAddress, amountToWithdraw, remoteEVMAddress],
+                  target: aavePoolAddress,
+                },
+              ],
+            });
           });
         },
-
         wait(val: bigint) {
           return vowTools.watch(E(timer).delay(val));
         },

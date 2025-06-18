@@ -301,6 +301,7 @@ export const openPortfolio = (async (
       const { evmChain } = offerArgs;
       await sendTokensViaCCTP(give.Aave);
       await kit.holder.wait(20n);
+      kit.keeper.addAavePosition(axelarChainsMap[evmChain].caip);
       await kit.holder.supplyToAave({
         seat,
         aavePoolAddress: contractAddresses.aavePool,
@@ -309,7 +310,6 @@ export const openPortfolio = (async (
         amountToTransfer: give.Aave.value,
         amount: give.Gmp,
       });
-      kit.keeper.addAavePosition(axelarChainsMap[evmChain].caip);
     }
 
     if (!seat.hasExited()) seat.exit();
