@@ -95,7 +95,7 @@ const deploy = async (t: ExecutionContext) => {
 };
 
 test('open portfolio with USDN position', async t => {
-  const { common, zoe, started, timer } = await deploy(t);
+  const { common, zoe, started } = await deploy(t);
   const { usdc } = common.brands;
   const { when } = common.utils.vowTools;
 
@@ -116,7 +116,7 @@ test('open portfolio with USDN position', async t => {
     {
       USDN: usdc.units(3_333),
     },
-    { evmChain: 'Ethereum', axelarGasFee: 50n },
+    { evmChain: 'Ethereum' },
   );
 
   // ack IBC transfer for forward
@@ -155,8 +155,12 @@ test('open portfolio with Aave position', async t => {
 
   const doneP = trader.openPortfolio(
     t,
-    { Aave: usdc.units(3_333) },
-    { evmChain: 'Ethereum', axelarGasFee: 100n },
+    {
+      Aave: usdc.units(3_333),
+      Gmp: usdc.units(100),
+      Account: usdc.units(3_333),
+    },
+    { evmChain: 'Ethereum' },
   );
 
   // Simulate IBC acknowledgement for the initRemoteEVMAccount() transfer

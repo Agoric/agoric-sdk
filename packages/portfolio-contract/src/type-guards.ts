@@ -14,8 +14,16 @@ const { keys } = Object;
 export const makeNatAmountShape = (brand: Brand<'nat'>, min?: NatValue) =>
   harden({ brand, value: min ? M.gte(min) : M.nat() });
 
+export const AxelarGas = {
+  Account: 'Account',
+  Gmp: 'Gmp',
+} as const;
 export type ProposalShapes = {
-  openPortfolio: { give: Partial<Record<YieldProtocolT, Amount<'nat'>>> };
+  openPortfolio: {
+    give: Partial<
+      Record<YieldProtocolT | keyof typeof AxelarGas, Amount<'nat'>>
+    >;
+  };
 };
 
 export type AxelarChain = keyof typeof AxelarChains;
@@ -28,14 +36,17 @@ export type AxelarChainsMap = {
 
 export type OfferArgsShapes = {
   evmChain: AxelarChain;
-  axelarGasFee: bigint;
 };
 
 export const makeProposalShapes = (usdcBrand: Brand<'nat'>) => {
+  // TODO: Update usdcAmountShape, to include BLD/aUSDC after discussion with Axelar team
   const usdcAmountShape = makeNatAmountShape(usdcBrand);
   return {
     openPortfolio: M.splitRecord({
-      give: M.recordOf(M.or(...keys(YieldProtocol)), usdcAmountShape),
+      give: M.recordOf(
+        M.or(...keys({ ...YieldProtocol, ...AxelarGas })),
+        usdcAmountShape,
+      ),
     }) as TypedPattern<ProposalShapes['openPortfolio']>,
   };
 };
@@ -46,6 +57,5 @@ export const makeOfferArgsShapes = () => {
     // Axelar docs: https://docs.axelar.dev/dev/reference/mainnet-chain-names
     // Chain names: https://axelarscan.io/resources/chains
     evmChain: M.or(...keys(AxelarChains)),
-    axelarGasFee: M.bigint(),
   }) as TypedPattern<OfferArgsShapes>;
 };

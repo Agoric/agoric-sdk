@@ -15,7 +15,11 @@ import {
 } from '@agoric/orchestration/src/axelar-types.js';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
-import type { OrchestrationAccount, CaipChainId } from '@agoric/orchestration';
+import type {
+  OrchestrationAccount,
+  CaipChainId,
+  ChainHub,
+} from '@agoric/orchestration';
 import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
 import {
   gmpAddresses,
@@ -24,6 +28,7 @@ import {
 import type { ZCF } from '@agoric/zoe';
 import type { TimerService } from '@agoric/time';
 import { E } from '@endo/far';
+import type { Amount } from '@agoric/ertp';
 import { YieldProtocol } from './constants.js';
 import type { AxelarChainsMap } from './type-guards.js';
 
@@ -63,13 +68,11 @@ const KeeperI = M.interface('keeper', {
 });
 
 const HolderI = M.interface('Holder', {
-  supplyToAave: M.call(M.remotable('Seat')).returns(M.promise()),
-  withdrawFromAave: M.call(M.remotable('Seat')).returns(M.promise()),
+  supplyToAave: M.call(M.record()).returns(M.promise()),
+  withdrawFromAave: M.call(M.record()).returns(M.promise()),
   setupGmpLCA: M.call(M.remotable('OrchestrationAccount')).returns(),
   setupAxelarChainInfo: M.call(M.any()).returns(),
-  getRemoteAccountAddress: M.call(M.number()).returns(
-    M.or(M.string(), M.undefined()),
-  ),
+  getRemoteAccountAddress: M.call().returns(M.or(M.string(), M.undefined())),
   sendGmp: M.call(M.remotable('Seat'), M.record()).returns(M.promise()),
   wait: M.call(M.bigint()).returns(VowShape),
 });
@@ -118,11 +121,13 @@ type PortfolioKitState = {
 export const preparePortfolioKit = (
   zone: Zone,
   {
+    chainHub,
     timer,
     zcf,
     axelarChainsMap,
     vowTools,
   }: {
+    chainHub: ChainHub;
     zcf: ZCF;
     axelarChainsMap: AxelarChainsMap;
     timer: Remote<TimerService>;
@@ -286,7 +291,7 @@ export const preparePortfolioKit = (
             destinationAddress: string;
             type: GMPMessageType;
             destinationEVMChain: SupportedEVMChains;
-            gasAmount: bigint;
+            amount: Amount<'nat'>;
             contractInvocationData: Array<ContractCall>;
           },
         ) {
@@ -294,7 +299,7 @@ export const preparePortfolioKit = (
             destinationAddress,
             type,
             destinationEVMChain,
-            gasAmount,
+            amount,
             contractInvocationData,
           } = offerArgs;
 
@@ -305,7 +310,6 @@ export const preparePortfolioKit = (
 
           const isContractInvocation = [1, 2].includes(type);
           if (isContractInvocation) {
-            gasAmount != null || Fail`gasAmount must be defined`;
             contractInvocationData != null ||
               Fail`contractInvocationData is not defined`;
 
@@ -313,20 +317,10 @@ export const preparePortfolioKit = (
               Fail`contractInvocationData array is empty`;
           }
 
-          const { give } = seat.getProposal();
-
-          const [[_kw, amt]] = Object.entries(give);
-          amt.value > 0n || Fail`IBC transfer amount must be greater than zero`;
-
           const payload =
             type === 3 ? null : buildGMPPayload(contractInvocationData);
 
           trace(`Payload: ${JSON.stringify(payload)}`);
-
-          // TODO: get the right denom for gas
-          const denom = 'BLD';
-
-          trace('amt and brand', amt.brand);
 
           // @ts-expect-error // TODO: temporarily using mapstore to add tests
           const { chainId } = this.state.gmp.get('axelarChainInfo');
@@ -340,13 +334,17 @@ export const preparePortfolioKit = (
 
           if (type === 1 || type === 2) {
             memo.fee = {
-              amount: String(gasAmount),
+              amount: String(amount.value),
               recipient: gmpAddresses.AXELAR_GAS,
             };
           }
 
-          trace(`Initiating IBC Transfer...`);
-          trace(`DENOM of token:${denom}`);
+          const denom = await chainHub.getDenom(amount.brand);
+          assert(denom, 'denom must be defined');
+          const denomAmount = {
+            denom,
+            value: amount.value,
+          };
 
           await this.facets.keeper.getAccount(YieldProtocol.Aave).transfer(
             {
@@ -354,33 +352,35 @@ export const preparePortfolioKit = (
               encoding: 'bech32',
               chainId,
             },
-            {
-              denom,
-              value: amt.value,
-            },
+            denomAmount,
             { memo: JSON.stringify(memo) },
           );
 
           seat.exit();
-          return 'sendGmp successful';
         },
-        async supplyToAave(
-          seat: ZCFSeat,
-          aavePoolAddress: `0x${string}`,
-          usdcTokenAddress: `0x${string}`,
-          evmChain: SupportedEVMChains,
-          amountToTransfer: bigint,
-          gasAmount: bigint,
-        ) {
+        async supplyToAave({
+          seat,
+          aavePoolAddress,
+          usdcTokenAddress,
+          evmChain,
+          amountToTransfer,
+          amount,
+        }: {
+          seat: ZCFSeat;
+          aavePoolAddress: `0x${string}`;
+          usdcTokenAddress: `0x${string}`;
+          evmChain: SupportedEVMChains;
+          amountToTransfer: bigint;
+          amount: Amount<'nat'>;
+        }) {
           const remoteEVMAddress = this.facets.holder.getRemoteAccountAddress();
-          remoteEVMAddress !== undefined ||
-            Fail`remoteEVMAddress must be defined`;
+          assert(remoteEVMAddress, 'remoteEVMAddress must be defined');
 
           await this.facets.holder.sendGmp(seat, {
             destinationAddress: gmpAddresses.AXELAR_GMP,
             destinationEVMChain: evmChain,
             type: AxelarGMPMessageType.ContractCall,
-            gasAmount,
+            amount,
             contractInvocationData: [
               {
                 functionSignature: 'approve(address,uint256)',
@@ -395,14 +395,21 @@ export const preparePortfolioKit = (
             ],
           });
         },
-        async withdrawFromAave(
-          seat: ZCFSeat,
-          aavePoolAddress: `0x${string}`,
-          usdcTokenAddress: `0x${string}`,
-          evmChain: SupportedEVMChains,
-          amountToWithdraw: bigint,
-          gasAmount: bigint,
-        ) {
+        async withdrawFromAave({
+          seat,
+          aavePoolAddress,
+          usdcTokenAddress,
+          evmChain,
+          amountToWithdraw,
+          amount,
+        }: {
+          seat: ZCFSeat;
+          aavePoolAddress: `0x${string}`;
+          usdcTokenAddress: `0x${string}`;
+          evmChain: SupportedEVMChains;
+          amountToWithdraw: bigint;
+          amount: Amount<'nat'>;
+        }) {
           const remoteEVMAddress = this.facets.holder.getRemoteAccountAddress();
           remoteEVMAddress !== undefined ||
             Fail`remoteEVMAddress must be defined`;
@@ -411,7 +418,7 @@ export const preparePortfolioKit = (
             destinationAddress: gmpAddresses.AXELAR_GMP,
             type: AxelarGMPMessageType.ContractCall,
             destinationEVMChain: evmChain,
-            gasAmount,
+            amount,
             contractInvocationData: [
               {
                 functionSignature: 'withdraw(address,uint256,address)',
@@ -432,17 +439,17 @@ export const preparePortfolioKit = (
           aavePoolAddress: `0x${string}`,
           usdcTokenAddress: `0x${string}`,
           amountToTransfer: bigint,
-          gasAmount: bigint,
+          amount: Amount<'nat'>,
         ) {
           const invitation = async seat => {
-            await this.facets.holder.supplyToAave(
+            await this.facets.holder.supplyToAave({
               seat,
               aavePoolAddress,
               usdcTokenAddress,
               evmChain,
               amountToTransfer,
-              gasAmount,
-            );
+              amount,
+            });
           };
           return zcf.makeInvitation(invitation, 'supplyToAave');
         },
@@ -451,17 +458,17 @@ export const preparePortfolioKit = (
           aavePoolAddress: `0x${string}`,
           usdcTokenAddress: `0x${string}`,
           amountToWithdraw: bigint,
-          gasAmount: bigint,
+          amount: Amount<'nat'>,
         ) {
           const invitation = async seat => {
-            await this.facets.holder.withdrawFromAave(
+            await this.facets.holder.withdrawFromAave({
               seat,
               aavePoolAddress,
               usdcTokenAddress,
               evmChain,
               amountToWithdraw,
-              gasAmount,
-            );
+              amount,
+            });
           };
           return zcf.makeInvitation(invitation, 'withdrawFromAave');
         },

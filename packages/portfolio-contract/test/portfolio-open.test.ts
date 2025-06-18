@@ -13,7 +13,7 @@ import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics
 import { makeHeapZone } from '@agoric/zone';
 import { Far, passStyleOf } from '@endo/pass-style';
 import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { axelarChainsMap, contractAddresses } from './mocks.ts';
+import { axelarChainsMap, contractAddresses, mockChainHub } from './mocks.ts';
 import { preparePortfolioKit } from '../src/portfolio.exo.ts';
 import { makeLocalAccount, openPortfolio } from '../src/portfolio.flows.ts';
 
@@ -71,6 +71,8 @@ const mocks = (errs: Record<string, Error> = {}) => {
     zcf: mockZCF,
     axelarChainsMap,
     timer,
+    // @ts-expect-error mocked chainhub
+    chainHub: mockChainHub,
   });
   const zoeTools = harden({
     async localTransfer(sourceSeat, localAccount, amounts) {
@@ -85,7 +87,9 @@ const mocks = (errs: Record<string, Error> = {}) => {
 
   const { brand: USDC } = makeIssuerKit('USDC');
   const proposal: Proposal = harden({
-    give: { USDN: AmountMath.make(USDC, 100n) },
+    give: {
+      USDN: AmountMath.make(USDC, 100n),
+    },
   });
   let hasExited = false;
   const seat = {
@@ -124,12 +128,14 @@ test('open portfolio', async t => {
       inertSubscriber,
       contractAddresses,
       axelarChainsMap,
+      // @ts-expect-error mocked chainhub
+      chainHub: mockChainHub,
     },
     seat,
     // Use Axelar chain identifier instead of CAP-10 ID for cross-chain messaging
     // Axelar docs: https://docs.axelar.dev/dev/reference/mainnet-chain-names
     // Chain names: https://axelarscan.io/resources/chains
-    harden({ evmChain: 'Ethereum', axelarGasFee: 50n }),
+    harden({ evmChain: 'Ethereum' }),
     localP,
   );
   t.log(log.map(msg => msg._method).join(', '));
@@ -159,9 +165,11 @@ test('handle failure in localTransfer from seat to local account', async t => {
       inertSubscriber,
       contractAddresses,
       axelarChainsMap,
+      // @ts-expect-error mocked chainhub
+      chainHub: mockChainHub,
     },
     seat,
-    harden({ evmChain: 'Ethereum', axelarGasFee: 50n }),
+    harden({ evmChain: 'Ethereum' }),
     localP,
   );
   t.log(log.map(msg => msg._method).join(', '));
@@ -187,9 +195,11 @@ test('handle failure in IBC transfer', async t => {
       inertSubscriber,
       contractAddresses,
       axelarChainsMap,
+      // @ts-expect-error mocked chainhub
+      chainHub: mockChainHub,
     },
     seat,
-    harden({ evmChain: 'Ethereum', axelarGasFee: 50n }),
+    harden({ evmChain: 'Ethereum' }),
     localP,
   );
   t.log(log.map(msg => msg._method).join(', '));
@@ -218,9 +228,11 @@ test('handle failure in executeEncodedTx', async t => {
       inertSubscriber,
       contractAddresses,
       axelarChainsMap,
+      // @ts-expect-error mocked chainhub
+      chainHub: mockChainHub,
     },
     seat,
-    harden({ evmChain: 'Ethereum', axelarGasFee: 50n }),
+    harden({ evmChain: 'Ethereum' }),
     localP,
   );
   t.log(log.map(msg => msg._method).join(', '));

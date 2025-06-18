@@ -85,6 +85,7 @@ export const contract = async (
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf,
     axelarChainsMap,
+    chainHub,
     timer,
     vowTools,
   });
