@@ -4,19 +4,16 @@ source ./utils.sh
 
 alias nobled=../build/nobled
 
-HOME1=.duke
+HOME1=${HOME1:-.duke}
 
-for arg in "$@"
-do
-    case $arg in
-        -r|--reset)
-        rm -rf $HOME1
-        shift
-        ;;
-    esac
+for arg in "$@"; do
+  case $arg in
+    -r | --reset)
+      rm -rf $HOME1
+      shift
+      ;;
+  esac
 done
-
-
 
 if ! [ -f $HOME1/data/priv_validator_state.json ]; then
   nobled init validator --chain-id "duke-1" --home $HOME1 &> /dev/null
