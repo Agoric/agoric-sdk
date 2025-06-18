@@ -16,7 +16,7 @@ import {
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import type { OrchestrationAccount, CaipChainId } from '@agoric/orchestration';
-import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.ts';
+import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
 import {
   gmpAddresses,
   buildGMPPayload,

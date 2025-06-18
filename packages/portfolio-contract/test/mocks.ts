@@ -171,6 +171,13 @@ export const makeUSDNIBCTraffic = (
   },
 });
 
+export const makeIBCTransferTraffic = () => ({
+  transfer: {
+    msg: `eyJ0eXBlIjoxLCJkYXRhIjoiQ2xvS0ZpOXViMkpzWlM1emQyRndMbll4TGsxeloxTjNZWEFTUUFvTFkyOXpiVzl6TVhSbGMzUVNFd29GZFhWelpHTVNDak16TXpNd01EQXdNREFhQnhJRmRYVnpaRzRpRXdvRmRYVnpaRzRTQ2pNek16TXdNREF3TURBPSIsIm1lbW8iOiIifQ==`,
+    ack: `eyJyZXN1bHQiOiJBUT09In0=`,
+  },
+});
+
 export const contractAddresses = {
   aavePool: '0x87870Bca3F0fD6335C3F4ce8392D69350B4fA4E2',
   compound: '0xA0b86a33E6A3E81E27Da9c18c4A77c9Cd4e08D57',

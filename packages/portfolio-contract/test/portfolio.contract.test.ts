@@ -8,18 +8,24 @@ import { E, passStyleOf } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
 import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
+import { encodeAbiParameters } from 'viem';
+import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import * as contractExports from '../src/portfolio.contract.ts';
 import {
   axelarChainsMap,
   contractAddresses,
   makeUSDNIBCTraffic,
+  makeIBCTransferTraffic,
 } from './mocks.ts';
 import { testChainInfo, setupPortfolioTest } from './supports.ts';
 import { makeTrader } from './portfolio-actors.ts';
 import { makeWallet } from './wallet-offer-tools.ts';
+import { makeReceiveUpCallPayload } from '../../boot/tools/axelar-supports.js';
 
 const contractName = 'ymax0';
 type StartFn = typeof contractExports.start;
+const { values } = Object;
 
 /** from https://www.mintscan.io/noble explorer */
 const explored = [
@@ -101,7 +107,7 @@ test('open portfolio with USDN position', async t => {
   t.log('I am a power user with', myBalance, 'on Agoric');
 
   const { ibcBridge } = common.mocks;
-  for (const { msg, ack } of Object.values(makeUSDNIBCTraffic())) {
+  for (const { msg, ack } of values(makeUSDNIBCTraffic())) {
     ibcBridge.addMockAck(msg, ack);
   }
 
@@ -140,18 +146,59 @@ test('open portfolio with Aave position', async t => {
   const trader = makeTrader(myWallet, started.instance);
   t.log('Trader funds:', myBalance);
 
+  const { ibcBridge } = common.mocks;
+
+  // Add IBC transfer mocks for the first transfer (initRemoteEVMAccount())
+  for (const { msg, ack } of values(makeIBCTransferTraffic())) {
+    ibcBridge.addMockAck(msg, ack);
+  }
+
   const doneP = trader.openPortfolio(
     t,
     { Aave: usdc.units(3_333) },
     { evmChain: 'Ethereum', axelarGasFee: 100n },
   );
 
+  // Simulate IBC acknowledgement for the initRemoteEVMAccount() transfer
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
 
-  const done = await doneP;
-  const result = done.result as any;
+  // Simulate an incoming response from EVM chain via Axelar
+  const encodedAddress = encodeAbiParameters(
+    [{ type: 'address' }],
+    ['0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092'],
+  );
+  const receiveUpCallEvent = buildVTransferEvent({
+    sender: makeTestAddress(0, 'axelar'),
+    memo: JSON.stringify({
+      source_chain: 'ethereum',
+      source_address: '0x19e71e7eE5c2b13eF6bd52b9E3b437bdCc7d43c8',
+      payload: makeReceiveUpCallPayload({
+        isContractCallResult: false,
+        data: [
+          {
+            success: true,
+            result: encodedAddress,
+          },
+        ],
+      }),
+      type: 1,
+    }),
+    target: 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht',
+  });
 
-  t.is(passStyleOf(result.invitationMakers), 'remotable');
+  await E(common.mocks.transferBridge).fromBridge(receiveUpCallEvent);
+
+  const result = await doneP;
+  t.log('Portfolio open result:', result);
+
+  t.truthy(result, 'Portfolio should open successfully');
+  t.is(
+    passStyleOf(result.result.invitationMakers),
+    'remotable',
+    'Should have invitation makers',
+  );
+
+  t.log('EVM account creation completed');
 });
 
 test.todo('User can see transfer in progress');
