@@ -274,18 +274,6 @@ jq --arg addr "$GENESIS_ADDR" '.app_state.cctp = {
     ]
 }' $CHAIN_DIR/config/genesis.json > /tmp/genesis.json && mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
 
-# Configure swap module
-# Update the authority field used by x/swap
-jq \
-  --arg addr "$GENESIS_ADDR" \
-  '.app_state.params.params.authority = $addr' \
-  $CHAIN_DIR/config/genesis.json > /tmp/genesis.json && mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
-
-# Show the result
-jq '.app_state.params.params.authority' $CHAIN_DIR/config/genesis.json
-
-echo "✅ Set swap module authority to $GENESIS_ADDR in $CHAIN_DIR/config/genesis.json"
-
 # Configure tariff module
 echo "Configure tariff module..."
 jq --arg addr "$GENESIS_ADDR" '.app_state.tariff.params = {
@@ -301,7 +289,10 @@ jq --arg addr "$GENESIS_ADDR" '.app_state.tariff.params = {
     "transfer_fee_denom": "uusdc"
 }' $CHAIN_DIR/config/genesis.json > /tmp/genesis.json && mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
 
-sed -i -e "s/\"stake\"/\"$DENOM\"/g" $CHAIN_DIR/config/genesis.json
+. noble-utils.sh
+update_genesis "$HOME" "$GENESIS_ADDR"
+
+# ??? sed -i -e "s/\"stake\"/\"$DENOM\"/g" $CHAIN_DIR/config/genesis.json
 sed -i "s/\"time_iota_ms\": \".*\"/\"time_iota_ms\": \"$TIME_IOTA_MS\"/" $CHAIN_DIR/config/genesis.json
 
 echo "Update max gas param"
