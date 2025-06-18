@@ -291,7 +291,6 @@ const { value: arbShallow } = fc.letrec(tie => ({
   testProp(
     'attenuate',
     /** @type {any} */ ([arbGoodCase]),
-    // @ts-expect-error TS2345 function signature
     async (t, { specimen, permit, attenuation }) => {
       const actualAttenuation = attenuate(specimen, permit);
       t.deepEqual(actualAttenuation, attenuation);
@@ -332,7 +331,6 @@ const { value: arbShallow } = fc.letrec(tie => ({
     /** @type {any} */ ([
       arbGoodCase.filter(({ specimen }) => hasObjectType(specimen)),
     ]),
-    // @ts-expect-error TS2345 function signature
     async (t, { specimen, permit }) => {
       const tag = Symbol('transformed');
 
@@ -373,7 +371,6 @@ const { value: arbShallow } = fc.letrec(tie => ({
   testProp(
     'attenuate - bad permit',
     /** @type {any} */ ([arbBadPermit]),
-    // @ts-expect-error TS2345 function signature
     async (t, { specimen, permit, problem: _problem }) => {
       // t.log({ specimen, permit, problem });
       t.throws(() => attenuate(specimen, permit), {
@@ -385,7 +382,6 @@ const { value: arbShallow } = fc.letrec(tie => ({
   testProp(
     'attenuate - bad specimen',
     /** @type {any} */ ([arbBadSpecimen]),
-    // @ts-expect-error TS2345 function signature
     async (t, { specimen, permit, problem: _problem }) => {
       // t.log({ specimen, permit, problem });
       t.throws(() => attenuate(specimen, permit), {
@@ -397,7 +393,6 @@ const { value: arbShallow } = fc.letrec(tie => ({
   testProp(
     'attenuate - specimen missing key',
     /** @type {any} */ ([arbSpecimenMissingKey]),
-    // @ts-expect-error TS2345 function signature
     async (t, { specimen, permit, problem: _problem }) => {
       // t.log({ specimen, permit, problem });
       t.throws(() => attenuate(specimen, permit), {
