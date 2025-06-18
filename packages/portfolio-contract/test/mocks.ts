@@ -23,6 +23,7 @@ import {
   buildTxPacketString,
   buildMsgResponseString,
 } from '@agoric/orchestration/tools/ibc-mocks.ts';
+import { Far } from '@endo/pass-style';
 
 export const prepareMockOrchAccounts = (
   zone: Zone,
@@ -199,3 +200,48 @@ export const axelarChainsMap = {
     axelarId: 'base',
   },
 } as const;
+
+export const mockChainHub = Far('MockChainHub', {
+  getDenom: (_brand: any) => 'uusdc',
+  registerChain: () => {},
+  updateChain: () => {},
+  getChainInfo: () => ({
+    chainId: 'noble-1',
+    namespace: 'cosmos',
+    reference: 'noble-1',
+    bech32Prefix: 'noble',
+    stakingTokens: [{ denom: 'uusdc' }],
+  }),
+  getChainInfoByChainId: () => ({
+    chainId: 'noble-1',
+    namespace: 'cosmos',
+    reference: 'noble-1',
+    bech32Prefix: 'noble',
+    stakingTokens: [{ denom: 'uusdc' }],
+  }),
+  getAllChainInfo: () => [
+    {
+      chainId: 'noble-1',
+      namespace: 'cosmos',
+      reference: 'noble-1',
+      bech32Prefix: 'noble',
+      stakingTokens: [{ denom: 'uusdc' }],
+    },
+  ],
+  getAllChainIds: () => ['noble-1'],
+  getAllChainNames: () => ['noble'],
+  getAllConnections: () => [],
+  getAllAssets: () => [],
+  getAssetInfo: () => ({}),
+  getAllAssetInfo: () => [],
+  makeTransferRoute: () => ({}),
+  registerConnection: () => {},
+  updateConnection: () => {},
+  getConnectionInfo: () => ({}),
+  getChainsAndConnection: () => [],
+  registerAsset: () => {},
+  updateAsset: () => {},
+  getAsset: () => ({}),
+  resolveAccountId: () => ({}),
+  coerceCosmosAddress: () => '',
+});

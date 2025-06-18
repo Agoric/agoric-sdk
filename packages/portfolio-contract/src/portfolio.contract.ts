@@ -131,6 +131,7 @@ export const contract = async (
     proposalShapes,
 =======
     axelarChainsMap,
+    chainHub,
     timer,
     vowTools,
   });
