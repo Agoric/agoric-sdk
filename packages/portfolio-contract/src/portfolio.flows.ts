@@ -158,7 +158,7 @@ export const openPortfolio = (async (
             throw new Error(`${amt.brand} not registered in vbank`);
           })();
 
-        await ctx.zoeTools.localTransfer(seat, localAccount, give);
+        await ctx.zoeTools.localTransfer(seat, localAccount, { USDC: amt });
 
         const memo: AxelarGmpOutgoingMemo = {
           destination_chain: evmChain,
@@ -194,13 +194,11 @@ export const openPortfolio = (async (
     const sendTokensViaCCTP = async (amount: Amount<'nat'>) => {
       const nobleChain = await orch.getChain('noble');
       const nobleAccount = await nobleChain.makeAccount();
-
-      const localAccount = await makeLocalAccount(orch, ctx);
-
-      const amounts = harden({ USDC: amount });
-      await ctx.zoeTools.localTransfer(seat, localAccount, amounts);
+      const localAccount = await localP;
+      const zoeAmounts = harden({ USDC: amount });
 
       try {
+        await ctx.zoeTools.localTransfer(seat, localAccount, zoeAmounts);
         trace('IBC transfer to Noble for CCTP');
         await localAccount.transfer(nobleAccount.getAddress(), amount);
         const denom = await denomForBrand(orch, amount.brand);
@@ -222,7 +220,7 @@ export const openPortfolio = (async (
           denomAmount,
         );
       } catch (err) {
-        await ctx.zoeTools.withdrawToSeat(localAccount, seat, amounts);
+        await ctx.zoeTools.withdrawToSeat(localAccount, seat, zoeAmounts);
         const errorMsg = `'Noble transfer failed: ${err}`;
         throw new Error(errorMsg);
       }
@@ -304,31 +302,36 @@ export const openPortfolio = (async (
     }
 
     if (give.Aave || give.Compound) {
+      trace('Starting remote EVM account initialization for Aave/Compound');
       await initRemoteEVMAccount();
+      trace('Completed remote EVM account initialization for Aave/Compound');
       await kit.holder.wait(180n); // TODO: replace with promiseKit
+      trace('Waited 180n after remote EVM account initialization');
       trace(
         'TODO: use makePromiseKit to delay resolving initRemoteEVMAccount until the account is ready',
       );
     }
 
     if (give.Aave) {
-      try {
-        const { evmChain, axelarGasFee } = offerArgs;
-        await sendTokensViaCCTP(give.Aave);
-        await kit.holder.wait(20n);
-        await kit.holder.supplyToAave(
-          seat,
-          contractAddresses.aavePool,
-          contractAddresses.usdc,
-          evmChain,
-          give.Aave.value,
-          axelarGasFee,
-        );
-        // TODO: wait for the response in receiveUpCall and then add position using the keeper?
-        kit.keeper.addAavePosition(axelarChainsMap[evmChain].caip);
-      } catch (err) {
-        seat.fail(err);
-      }
+      trace('Opening Aave position: starting sendTokensViaCCTP');
+
+      const { evmChain, axelarGasFee } = offerArgs;
+      await sendTokensViaCCTP(give.Aave);
+      trace('Opening Aave position: completed sendTokensViaCCTP');
+      await kit.holder.wait(20n);
+      trace('Opening Aave position: waited 20n after sendTokensViaCCTP');
+      await kit.holder.supplyToAave(
+        seat,
+        contractAddresses.aavePool,
+        contractAddresses.usdc,
+        evmChain,
+        give.Aave.value,
+        axelarGasFee,
+      );
+      trace('Opening Aave position: completed supplyToAave');
+      // TODO: wait for the response in receiveUpCall and then add position using the keeper?
+      kit.keeper.addAavePosition(axelarChainsMap[evmChain].caip);
+      trace('Opening Aave position: added Aave position to keeper');
     }
 
     if (give.Compound) {
