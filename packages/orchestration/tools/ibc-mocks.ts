@@ -1,6 +1,7 @@
 /** @file Tools to support making IBC mocks */
 import { type JsonSafe, toRequestQueryJson } from '@agoric/cosmic-proto';
 import { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
+import { TxMsgData } from '@agoric/cosmic-proto/cosmos/base/abci/v1beta1/abci.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import type { PacketSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
@@ -36,34 +37,47 @@ const toPacket = (obj: Record<string, any>): string =>
   btoa(JSON.stringify(obj));
 
 /**
- * Build a response "packet bytes string" we'd expect to see from a Msg
- * Response
+ * Build a response "packet bytes string" we'd expect to see from a
+ * Response to a Tx carrying a single Msg.
  *
- * XXX support multiple responses in a single message
- *
- * @param Encoder
+ * @deprecated Use `buildTxResponseString([{ encoder, message }])` instead.
+ * @param encoder
  * @param message
  */
 export function buildMsgResponseString<T>(
-  Encoder: EncoderCommon<T>,
+  encoder: EncoderCommon<T>,
   message: Partial<T>,
 ): string {
-  const encodedMsg = Encoder.encode(Encoder.fromPartial(message)).finish();
+  return buildTxResponseString([{ encoder, message }] as const);
+}
 
-  // cosmos-sdk double Any encodes
-  const encodedAny = Any.encode(
-    Any.fromPartial({
-      value: Any.encode(
-        Any.fromPartial({
-          typeUrl: Encoder.typeUrl,
-          value: encodedMsg,
-        }),
-      ).finish(),
+type EncoderMessage<T> = {
+  encoder: EncoderCommon<T>;
+  message: Partial<T>;
+};
+
+/**
+ * @param messages
+ */
+export function buildTxResponseString<T extends EncoderMessage<any>[]>(
+  messages: T,
+): string {
+  const msgResponses = messages.map(({ encoder, message }) => {
+    const encodedMsg = encoder.encode(encoder.fromPartial(message)).finish();
+    return Any.fromPartial({
+      typeUrl: encoder.typeUrl,
+      value: encodedMsg,
+    });
+  });
+
+  const txMsgData = TxMsgData.encode(
+    TxMsgData.fromPartial({
+      msgResponses,
     }),
   ).finish();
 
   return toPacket({
-    result: encodeBase64(encodedAny),
+    result: encodeBase64(txMsgData),
   });
 }
 
@@ -80,36 +94,43 @@ export function buildMsgErrorString(
 }
 
 /**
- * Build a response "packet bytes string" we'd expect to see from a Query
+ * Build a response "packet bytes string" we'd expect to see from a single Query
  * request
  *
- * XXX accept multiple queries at once
+ * @deprecated Use `buildQueriesResponseString([{ encoder, query, opts }])` instead.
  *
- * @param Encoder
+ * @param encoder
  * @param query
  * @param opts
  */
 export function buildQueryResponseString<T>(
-  Encoder: EncoderCommon<T>,
+  encoder: EncoderCommon<T>,
   query: Partial<T>,
-  opts: Omit<ResponseQuery, 'key'> = {
-    value: new Uint8Array(),
-    height: 0n,
-    index: 0n,
-    code: 0,
-    log: '',
-    info: '',
-    codespace: '',
-  },
+  opts?: Partial<Omit<ResponseQuery, 'key'>>,
 ): string {
+  return buildQueriesResponseString([{ encoder, query, opts }] as const);
+}
+
+/**
+ * Build a response "packet bytes string" we'd expect to see from
+ * the Responses corresponding to multiple Queries.
+ * @param queries
+ * @returns {string} base64 encoded string of the response packet
+ */
+export function buildQueriesResponseString<
+  T extends {
+    encoder: EncoderCommon<any>;
+    query: Partial<any>;
+    opts?: Partial<Omit<ResponseQuery, 'key'>>;
+  }[],
+>(queries: T): string {
   const encodedResp = CosmosResponse.encode(
     CosmosResponse.fromPartial({
-      responses: [
-        {
-          key: Encoder.encode(Encoder.fromPartial(query)).finish(),
-          ...opts,
-        },
-      ],
+      responses: queries.map(({ encoder, query, opts }) => {
+        const key = encoder.encode(encoder.fromPartial(query)).finish();
+        const response = ResponseQuery.fromPartial({ ...opts, key });
+        return response;
+      }),
     }),
   ).finish();
 
