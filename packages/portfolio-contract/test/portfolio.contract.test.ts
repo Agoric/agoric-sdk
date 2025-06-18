@@ -11,6 +11,7 @@ import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { encodeAbiParameters } from 'viem';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
+import { protoMsgMocks } from '@agoric/orchestration/test/ibc-mocks.ts';
 import * as contractExports from '../src/portfolio.contract.ts';
 import {
   axelarChainsMap,
@@ -18,7 +19,11 @@ import {
   makeUSDNIBCTraffic,
   makeIBCTransferTraffic,
 } from './mocks.ts';
-import { testChainInfo, setupPortfolioTest } from './supports.ts';
+import {
+  testChainInfo,
+  cctpChainInfo,
+  setupPortfolioTest,
+} from './supports.ts';
 import { makeTrader } from './portfolio-actors.ts';
 import { makeWallet } from './wallet-offer-tools.ts';
 import { makeReceiveUpCallPayload } from '../../boot/tools/axelar-supports.js';
@@ -77,7 +82,7 @@ const deploy = async (t: ExecutionContext) => {
       contractAddresses,
       axelarChainsMap,
       timer,
-      chainInfo: testChainInfo,
+      chainInfo: { ...testChainInfo, ...cctpChainInfo },
     }, // privateArgs
   );
   t.notThrows(() =>
@@ -155,6 +160,12 @@ test('open portfolio with Aave position', async t => {
     ibcBridge.addMockAck(msg, ack);
   }
 
+  // Add CCTP depositForBurn mock ack for the new dynamic packet
+  ibcBridge.addMockAck(
+    'eyJ0eXBlIjoxLCJkYXRhIjoiQ21jS0lTOWphWEpqYkdVdVkyTjBjQzUyTVM1TmMyZEVaWEJ2YzJsMFJtOXlRblZ5YmhKQ0NndGpiM050YjNNeGRHVnpkQklLTXpNek16QXdNREF3TUNJZ0FBQUFBQUFBQUFBQUFBQUFFbXp6cko2aEo1VC9VUFZuSjhmR2JpYlp3SklxQlhWMWMyUmoiLCJtZW1vIjoiIn0=',
+    protoMsgMocks.depositForBurn.ack,
+  );
+
   const doneP = trader.openPortfolio(
     t,
     {
@@ -197,7 +208,8 @@ test('open portfolio with Aave position', async t => {
   await timer.tickN(180);
   // Simulate IBC acknowledgement for localAcct.transfer() in sendTokensViaCCTP()
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-
+  // Advance the timer by 20 time units to wait for cctp transfer
+  await timer.tickN(20);
   const result = await doneP;
   t.log('Portfolio open result:', result);
 

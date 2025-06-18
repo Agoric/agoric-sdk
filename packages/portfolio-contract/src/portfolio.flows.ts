@@ -300,16 +300,16 @@ export const openPortfolio = (async (
       trace('Opening Aave position: starting remote EVM account setup');
       const { evmChain } = offerArgs;
       await sendTokensViaCCTP(give.Aave);
-      // await kit.holder.wait(20n);
-      // await kit.holder.supplyToAave({
-      //   seat,
-      //   aavePoolAddress: contractAddresses.aavePool,
-      //   usdcTokenAddress: contractAddresses.usdc,
-      //   evmChain,
-      //   amountToTransfer: give.Aave.value,
-      //   amount: give.Gmp,
-      // });
-      // kit.keeper.addAavePosition(axelarChainsMap[evmChain].caip);
+      await kit.holder.wait(20n);
+      await kit.holder.supplyToAave({
+        seat,
+        aavePoolAddress: contractAddresses.aavePool,
+        usdcTokenAddress: contractAddresses.usdc,
+        evmChain,
+        amountToTransfer: give.Aave.value,
+        amount: give.Gmp,
+      });
+      kit.keeper.addAavePosition(axelarChainsMap[evmChain].caip);
     }
 
     if (!seat.hasExited()) seat.exit();

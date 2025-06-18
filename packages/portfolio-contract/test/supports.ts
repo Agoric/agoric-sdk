@@ -49,6 +49,14 @@ const testChainInfo = {
   },
 } as const;
 
+const cctpChainInfo = {
+  ethereum: {
+    namespace: 'eip155',
+    reference: '1',
+    cctpDestinationDomain: 0,
+  },
+} as const;
+
 const assetOn = (
   baseDenom: Denom,
   baseName: string,
@@ -128,4 +136,4 @@ export const setupPortfolioTest = async ({
   };
 };
 
-export { testChainInfo };
+export { testChainInfo, cctpChainInfo };

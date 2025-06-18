@@ -167,12 +167,31 @@ export const preparePortfolioKit = (
         receiveUpcall(event: VTransferIBCEvent) {
           trace('receiveUpcall', event);
 
-          const tx: FungibleTokenPacketData = JSON.parse(
-            atob(event.packet.data),
-          );
+          // TODO: dont use the same LCA for sending transfers to noble
+          let tx: FungibleTokenPacketData;
+          try {
+            tx = JSON.parse(atob(event.packet.data));
+          } catch (err) {
+            console.warn(
+              'Failed to parse packet data JSON in receiveUpcall:',
+              err,
+              event.packet.data,
+            );
+            return;
+          }
 
           trace('receiveUpcall packet data', tx);
-          const memo: AxelarGmpIncomingMemo = JSON.parse(tx.memo);
+          let memo: AxelarGmpIncomingMemo;
+          try {
+            memo = JSON.parse(tx.memo);
+          } catch (err) {
+            console.warn(
+              'Failed to parse memo JSON in receiveUpcall:',
+              err,
+              tx.memo,
+            );
+            return;
+          }
 
           const ids = values(axelarChainsMap).map(chain => chain.axelarId);
           if (!ids.includes(memo.source_chain)) return;
