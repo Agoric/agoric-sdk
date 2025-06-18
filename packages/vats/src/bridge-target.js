@@ -189,10 +189,22 @@ export const prepareBridgeTargetKit = (zone, makeTargetRegistration) =>
       bridgeHandler: {
         fromBridge(obj) {
           const { inboundEventType, targetToApp } = this.state;
-          const { type, target } = obj;
+          const { type, target: inboundTarget } = obj;
 
           type === inboundEventType ||
             Fail`Invalid inbound event type ${type}; expected ${inboundEventType}`;
+
+          const { onlyIfRegistered } = inboundTarget || {};
+          const target = onlyIfRegistered || inboundTarget;
+
+          const hasApp = targetToApp.has(target);
+          if (onlyIfRegistered && !hasApp) {
+            // Skip without erroring if they requested the target only if
+            // registered, and the target is not registered.
+            return;
+          }
+
+          hasApp || Fail`Target ${target} is not registered`;
 
           target || Fail`Missing target property in ${obj}`;
 
