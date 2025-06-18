@@ -455,7 +455,7 @@ __metadata:
     rimraf: "npm:^5.0.0"
     terser: "npm:^5.39.0"
     tsd: "npm:^0.31.1"
-    typescript: "npm:~5.8.2"
+    typescript: "npm:5.9.0-beta"
   languageName: unknown
   linkType: soft
 
@@ -899,7 +899,7 @@ __metadata:
     type-coverage: "npm:^2.27.1"
     typedoc: "npm:^0.26.7"
     typedoc-plugin-markdown: "npm:^4.2.1"
-    typescript: "npm:~5.8.2"
+    typescript: "npm:5.9.0-beta"
     typescript-eslint: "npm:^8.31.0"
   languageName: unknown
   linkType: soft
@@ -18889,13 +18889,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:5.1.6 - 5.8.x, typescript@npm:^5.4.5, typescript@npm:~5.8.2":
+"typescript@npm:5.1.6 - 5.8.x, typescript@npm:^5.4.5":
   version: 5.8.3
   resolution: "typescript@npm:5.8.3"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: 10c0/5f8bb01196e542e64d44db3d16ee0e4063ce4f3e3966df6005f2588e86d91c03e1fb131c2581baf0fb65ee79669eea6e161cd448178986587e9f6844446dbb48
+  languageName: node
+  linkType: hard
+
+"typescript@npm:5.9.0-beta":
+  version: 5.9.0-beta
+  resolution: "typescript@npm:5.9.0-beta"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 10c0/f626b54278872569fe3d3b12a5ced752ace64dac57ef901c27b7ffb405ba1beaee6671f5e2e6870fcf0761d4eebcb50de0e09caf891768461a563619743b148e
   languageName: node
   linkType: hard
 
@@ -18929,13 +18939,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A5.1.6 - 5.8.x#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.4.5#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A~5.8.2#optional!builtin<compat/typescript>":
+"typescript@patch:typescript@npm%3A5.1.6 - 5.8.x#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.4.5#optional!builtin<compat/typescript>":
   version: 5.8.3
   resolution: "typescript@patch:typescript@npm%3A5.8.3#optional!builtin<compat/typescript>::version=5.8.3&hash=5786d5"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: 10c0/39117e346ff8ebd87ae1510b3a77d5d92dae5a89bde588c747d25da5c146603a99c8ee588c7ef80faaf123d89ed46f6dbd918d534d641083177d5fac38b8a1cb
+  languageName: node
+  linkType: hard
+
+"typescript@patch:typescript@npm%3A5.9.0-beta#optional!builtin<compat/typescript>":
+  version: 5.9.0-beta
+  resolution: "typescript@patch:typescript@npm%3A5.9.0-beta#optional!builtin<compat/typescript>::version=5.9.0-beta&hash=5786d5"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 10c0/8c8c8eb597bac24ce44b9fde50d47b3cf5b512ff3c77ac210bc251a84f3ee8d14412c6c3e98e39d11040b2f5e94797c7af13d60912aafd52560ddb4ab975b636
   languageName: node
   linkType: hard
 
