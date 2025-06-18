@@ -162,27 +162,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@agoric/client-utils@npm:0.1.1-dev-ee18609.0+ee18609":
-  version: 0.1.1-dev-ee18609.0
-  resolution: "@agoric/client-utils@npm:0.1.1-dev-ee18609.0"
-  dependencies:
-    "@agoric/casting": "npm:0.4.3-dev-ee18609.0+ee18609"
-    "@agoric/ertp": "npm:0.16.3-dev-ee18609.0+ee18609"
-    "@agoric/internal": "npm:0.3.3-dev-ee18609.0+ee18609"
-    "@agoric/smart-wallet": "npm:0.5.4-dev-ee18609.0+ee18609"
-    "@agoric/vats": "npm:0.15.2-dev-ee18609.0+ee18609"
-    "@cosmjs/stargate": "npm:^0.32.3"
-    "@cosmjs/tendermint-rpc": "npm:^0.32.3"
-    "@endo/common": "npm:^1.2.9"
-    "@endo/errors": "npm:^1.2.9"
-    "@endo/marshal": "npm:^1.6.3"
-    "@endo/pass-style": "npm:^1.4.8"
-    "@endo/patterns": "npm:^1.4.8"
-    "@endo/promise-kit": "npm:^1.1.9"
-  checksum: 10c0/998cbe3f92f92ec07382534520d0d8ddd848401660290f54c0407ffde0b91c976604f9c27af94907afa7f2db1ebf48cee91001f18bc5e4b53eef3c91b82d1348
-  languageName: node
-  linkType: hard
-
 "@agoric/cosmic-proto@npm:0.4.1-dev-bf2d699.0+bf2d699":
   version: 0.4.1-dev-bf2d699.0
   resolution: "@agoric/cosmic-proto@npm:0.4.1-dev-bf2d699.0"

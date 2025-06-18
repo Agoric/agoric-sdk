@@ -16,6 +16,9 @@
     "agoric": "dev",
     "ava": "^5.3.1"
   },
+  "resolutions": {
+    "@agoric/client-utils": "0.1.1-dev-bf2d699.0"
+  },
   "ava": {
     "concurrency": 1,
     "timeout": "2m",
