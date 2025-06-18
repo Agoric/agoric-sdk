@@ -91,11 +91,11 @@ const deploy = async (t: ExecutionContext) => {
       }),
     ),
   );
-  return { common, zoe, started };
+  return { common, zoe, started, timer };
 };
 
 test('open portfolio with USDN position', async t => {
-  const { common, zoe, started } = await deploy(t);
+  const { common, zoe, started, timer } = await deploy(t);
   const { usdc } = common.brands;
   const { when } = common.utils.vowTools;
 
@@ -134,7 +134,7 @@ test('open portfolio with USDN position', async t => {
 });
 
 test('open portfolio with Aave position', async t => {
-  const { common, zoe, started } = await deploy(t);
+  const { common, zoe, started, timer } = await deploy(t);
   const { usdc } = common.brands;
   const { when } = common.utils.vowTools;
 
@@ -187,6 +187,8 @@ test('open portfolio with Aave position', async t => {
   });
 
   await E(common.mocks.transferBridge).fromBridge(receiveUpCallEvent);
+  // Advance the timer by 180 time units to simulate the contract's wait
+  await timer.tickN(180);
 
   const result = await doneP;
   t.log('Portfolio open result:', result);
