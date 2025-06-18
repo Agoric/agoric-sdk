@@ -2,6 +2,7 @@ import type { HostInterface } from '@agoric/async-flow';
 import type { Brand, Issuer, Payment } from '@agoric/ertp';
 import type {
   CosmosChainAddress,
+  Denom,
   DenomAmount,
   OrchestrationAccount,
 } from '@agoric/orchestration';
@@ -24,6 +25,7 @@ import {
   buildMsgResponseString,
 } from '@agoric/orchestration/tools/ibc-mocks.ts';
 import { Far } from '@endo/pass-style';
+import type { EVMContractAddresses } from '../src/type-guards';
 
 export const prepareMockOrchAccounts = (
   zone: Zone,
@@ -179,8 +181,8 @@ export const makeIBCTransferTraffic = () => ({
   },
 });
 
-export const contractAddresses = {
-  aavePool: '0x87870Bca3F0fD6335C3F4ce8392D69350B4fA4E2',
+export const contractAddresses: EVMContractAddresses = {
+  aavePool: '0x1111111111111111111111111111111111111111',
   compound: '0xA0b86a33E6A3E81E27Da9c18c4A77c9Cd4e08D57',
   factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
   usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
@@ -201,47 +203,13 @@ export const axelarChainsMap = {
   },
 } as const;
 
-export const mockChainHub = Far('MockChainHub', {
-  getDenom: (_brand: any) => 'uusdc',
-  registerChain: () => {},
-  updateChain: () => {},
-  getChainInfo: () => ({
-    chainId: 'noble-1',
-    namespace: 'cosmos',
-    reference: 'noble-1',
-    bech32Prefix: 'noble',
-    stakingTokens: [{ denom: 'uusdc' }],
-  }),
-  getChainInfoByChainId: () => ({
-    chainId: 'noble-1',
-    namespace: 'cosmos',
-    reference: 'noble-1',
-    bech32Prefix: 'noble',
-    stakingTokens: [{ denom: 'uusdc' }],
-  }),
-  getAllChainInfo: () => [
-    {
-      chainId: 'noble-1',
-      namespace: 'cosmos',
-      reference: 'noble-1',
-      bech32Prefix: 'noble',
-      stakingTokens: [{ denom: 'uusdc' }],
-    },
-  ],
-  getAllChainIds: () => ['noble-1'],
-  getAllChainNames: () => ['noble'],
-  getAllConnections: () => [],
-  getAllAssets: () => [],
-  getAssetInfo: () => ({}),
-  getAllAssetInfo: () => [],
-  makeTransferRoute: () => ({}),
-  registerConnection: () => {},
-  updateConnection: () => {},
-  getConnectionInfo: () => ({}),
-  getChainsAndConnection: () => [],
-  registerAsset: () => {},
-  updateAsset: () => {},
-  getAsset: () => ({}),
-  resolveAccountId: () => ({}),
-  coerceCosmosAddress: () => '',
-});
+export const mockChainHubTools: {
+  getDenom: (brand: Brand) => Denom | undefined;
+} = {
+  getDenom: (brand: Brand) => {
+    if (brand) {
+      return 'uusdc';
+    }
+    return undefined;
+  },
+};

@@ -1,65 +1,34 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-import { makeTracer } from '@agoric/internal';
-import { assert, Fail } from '@endo/errors';
-=======
+import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import { makeTracer, type Remote } from '@agoric/internal';
-import { Fail } from '@endo/errors';
->>>>>>> d7daaa4b04 (chore: use timeService to add wait() in flows)
-import type { Zone } from '@agoric/zone';
-import { M } from '@endo/patterns';
-import { VowShape } from '@agoric/vow';
-import { atob, decodeBase64 } from '@endo/base64';
-import { decodeAbiParameters } from 'viem';
-import { type MapStore } from '@agoric/store';
-import {
-  type AxelarGmpIncomingMemo,
-  type SupportedEVMChains,
-  type ContractCall,
-  AxelarGMPMessageType,
-  type AxelarGmpOutgoingMemo,
-  type GMPMessageType,
-} from '@agoric/orchestration/src/axelar-types.js';
-import type { VTransferIBCEvent } from '@agoric/vats';
-import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
-import type { OrchestrationAccount, CaipChainId } from '@agoric/orchestration';
->>>>>>> 2af2462149 (chore: create axelarChainsMap and updates types)
-import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.ts';
-import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
-import { makeTracer } from '@agoric/internal';
-import type { CaipChainId, OrchestrationAccount } from '@agoric/orchestration';
+import { type CaipChainId } from '@agoric/orchestration';
 import { type AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
 import { decodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
+import type { TimerService } from '@agoric/time';
 import type { VTransferIBCEvent } from '@agoric/vats';
-import { type Vow, type VowKit, type VowTools } from '@agoric/vow';
-import type { ZCF } from '@agoric/zoe';
-<<<<<<< HEAD
-<<<<<<< HEAD
-import { InvitationShape, OfferHandlerI } from '@agoric/zoe/src/typeGuards.js';
+import { VowShape, type VowKit, type VowTools } from '@agoric/vow';
 import type { Zone } from '@agoric/zone';
-import { atob } from '@endo/base64';
-import { makeError, q } from '@endo/errors';
-import type { CopyRecord } from '@endo/pass-style';
-import { M } from '@endo/patterns';
-import { PositionChain, YieldProtocol } from './constants.js';
+import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
+import { atob, decodeBase64 } from '@endo/base64';
+import { E } from '@endo/far';
+import { M, mustMatch } from '@endo/patterns';
+import { YieldProtocol } from './constants.js';
+import type {
+  AxelarChainsMap,
+  EVMOfferArgs,
+  NobleAccount,
+} from './type-guards.js';
+import { type Vow } from '@agoric/vow';
+import type { ZCF } from '@agoric/zoe';
+import { InvitationShape, OfferHandlerI } from '@agoric/zoe/src/typeGuards.js';
 import {
-  ChainShape,
   type makeProposalShapes,
   type LocalAccount,
   type OfferArgsFor,
+  OfferArgsShapeFor,
 } from './type-guards.js';
-=======
-=======
-import type { TimerService } from '@agoric/time';
-import { E } from '@endo/far';
->>>>>>> d7daaa4b04 (chore: use timeService to add wait() in flows)
-import { YieldProtocol } from './constants.js';
-import type { AxelarChainsMap } from './type-guards.js';
->>>>>>> 2af2462149 (chore: create axelarChainsMap and updates types)
 
 const trace = makeTracer('PortExo');
-const { keys } = Object;
+const { keys, values } = Object;
 
 export const DECODE_CONTRACT_CALL_RESULT_ABI = [
   {
@@ -76,270 +45,187 @@ export const DECODE_CONTRACT_CALL_RESULT_ABI = [
       },
     ],
   },
-<<<<<<< HEAD
-] as const;
-harden(DECODE_CONTRACT_CALL_RESULT_ABI);
-
-export const supportedEVMChains: CaipChainId[] = [
-  'eip155:43114', // Avalanche
-  'eip155:8453', // Base
-  'eip155:1', // Ethereum
-] as const;
-harden(supportedEVMChains);
-=======
 ];
-
-const TypeShape = M.or(...keys(YieldProtocol));
-export const ChainShape = M.string(); // TODO: remove it
-const PositionShape = M.splitRecord({}); // TODO
->>>>>>> 2af2462149 (chore: create axelarChainsMap and updates types)
 
 const OrchestrationAccountShape = M.remotable('OrchestrationAccount');
 const VowStringShape = M.any(); // Vow(M.string())
 const KeeperI = M.interface('keeper', {
-<<<<<<< HEAD
   getLCA: M.call().returns(OrchestrationAccountShape),
   getPositions: M.call().returns(M.arrayOf(M.string())),
-  initAave: M.call(ChainShape).returns(),
-  initCompound: M.call().returns(),
-  initUSDN: M.call(OrchestrationAccountShape).returns(),
   getUSDNICA: M.call().returns(OrchestrationAccountShape),
-  getAaveAddress: M.call().returns(VowStringShape),
-  getCompoundAddress: M.call().returns(VowStringShape),
-=======
-  addAavePosition: M.call(M.or(ChainShape)).returns(),
-  addCompoundPosition: M.call(M.or(ChainShape)).returns(),
-  addUSDNPosition: M.call(
-    M.or(ChainShape),
-    M.remotable('OrchestrationAccount'),
-  ).returns(),
-  getPositions: M.call(TypeShape, ChainShape).returns(M.arrayOf(PositionShape)),
-  getAccount: M.call(M.number(), TypeShape).returns(
-    M.remotable('OrchestrationAccount'),
-  ),
+  initAave: M.call(M.string()).returns(),
+  initCompound: M.call(M.string()).returns(),
+  initUSDN: M.call(M.remotable('OrchestrationAccount')).returns(),
+  initGmp: M.call(M.remotable('OrchestrationAccount')).returns(),
+  getRemoteAddress: M.call().returns(VowStringShape),
+  wait: M.call(M.bigint()).returns(VowShape),
 });
 
-const HolderI = M.interface('Holder', {
-  supplyToAave: M.call(M.remotable('Seat')).returns(M.promise()),
-  withdrawFromAave: M.call(M.remotable('Seat')).returns(M.promise()),
-  setupGmpLCA: M.call(M.remotable('OrchestrationAccount')).returns(),
-  setupAxelarChainInfo: M.call(M.any()).returns(),
-  getRemoteAccountAddress: M.call(M.number()).returns(
-    M.or(M.string(), M.undefined()),
-  ),
-  sendGmp: M.call(M.remotable('Seat'), M.record()).returns(M.promise()),
-  wait: M.call(M.bigint()).returns(M.promise()),
->>>>>>> d7daaa4b04 (chore: use timeService to add wait() in flows)
-});
-
-const EvmTapI = M.interface('EvmTap', {
-  receiveUpcall: M.call(M.record()).returns(M.promise()),
-});
-
-type EVMProtocolState = {
-  chain: CaipChainId;
+type AxelarGmpManager = {
+  localAccount: LocalAccount;
   remoteAddressVK: VowKit<`0x${string}`>;
 };
 
-const EthL1: CaipChainId = 'eip155:1';
-
-/** ICA on Noble */
-type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>;
+type EVMProtocolState = {
+  chain: CaipChainId;
+};
 
 type PortfolioKitState = {
-  localAccount: LocalAccount;
   Aave: EVMProtocolState | undefined;
   Compound: EVMProtocolState | undefined;
   USDN: NobleAccount | undefined;
+  Gmp: AxelarGmpManager | undefined;
 };
 
-<<<<<<< HEAD
-// NOTE: This is host side code; can't use await.
 export const preparePortfolioKit = (
   zone: Zone,
   {
-    timer,
-    zcf,
-    vowTools,
+    axelarChainsMap,
     rebalance,
+    timer,
     proposalShapes,
+    vowTools,
+    zcf,
   }: {
-    zcf: ZCF;
-<<<<<<< HEAD
-    vowTools: VowTools;
+    axelarChainsMap: AxelarChainsMap;
     rebalance: (
       seat: ZCFSeat,
       offerArgs: OfferArgsFor['rebalance'],
       keeper: unknown, // XXX avoid circular reference
     ) => Vow<any>; // XXX HostForGuest???
-    proposalShapes: ReturnType<typeof makeProposalShapes>;
-=======
-    axelarChainsMap: AxelarChainsMap;
     timer: Remote<TimerService>;
->>>>>>> d7daaa4b04 (chore: use timeService to add wait() in flows)
+    proposalShapes: ReturnType<typeof makeProposalShapes>;
+    vowTools: VowTools;
+    zcf: ZCF;
   },
-=======
-export const preparePortfolioKit = (
-  zone: Zone,
-  { zcf, axelarChainsMap }: { zcf: ZCF; axelarChainsMap: AxelarChainsMap },
->>>>>>> 2af2462149 (chore: create axelarChainsMap and updates types)
 ) =>
   zone.exoClassKit(
     'Portfolio',
     {
+      tap: M.interface('tap', {
+        receiveUpcall: M.call(M.record()).returns(M.promise()),
+      }),
       keeper: KeeperI,
       rebalanceHandler: OfferHandlerI,
       invitationMakers: M.interface('invitationMakers', {
         Rebalance: M.callWhen().returns(InvitationShape),
       }),
-      tap: EvmTapI,
     },
-
-    (localAccount: LocalAccount): PortfolioKitState => ({
-      localAccount,
-      Aave: undefined,
-      Compound: undefined,
-      USDN: undefined,
-    }),
+    (): PortfolioKitState => {
+      return {
+        Aave: undefined,
+        Compound: undefined,
+        USDN: undefined,
+        Gmp: undefined,
+      };
+    },
     {
       tap: {
         async receiveUpcall(event: VTransferIBCEvent) {
           trace('receiveUpcall', event);
 
-          const tx: FungibleTokenPacketData = JSON.parse(
-            atob(event.packet.data),
-          );
-
-          trace('receiveUpcall packet data', tx);
-          if (!tx.memo) return;
-          const memo: AxelarGmpIncomingMemo = JSON.parse(tx.memo); // XXX unsound! use typed pattern
-
-<<<<<<< HEAD
-          if (!(memo.source_chain in PositionChain)) {
-            console.warn('unknown source_chain', memo);
-=======
-          const ids = values(axelarChainsMap).map(chain => chain.axelarId);
-          if (!ids.includes(memo.source_chain)) {
->>>>>>> 2af2462149 (chore: create axelarChainsMap and updates types)
+          // TODO: dont use the same LCA for sending transfers to noble
+          let tx: FungibleTokenPacketData;
+          try {
+            tx = JSON.parse(atob(event.packet.data));
+          } catch (err) {
+            trace(
+              'Failed to parse packet data JSON in receiveUpcall:',
+              err,
+              event.packet.data,
+            );
             return;
           }
 
-          // const payloadBytes = decodeBase64(memo.payload.replace(/^0x/, ''));
-          const [{ isContractCallResult, data }] = decodeAbiParameters(
-            DECODE_CONTRACT_CALL_RESULT_ABI,
-            memo.payload as `0x${string}`, // hm.. cast...
-          ) as [AgoricResponse];
-
-          trace(
-            'receiveUpcall Decoded:',
-            JSON.stringify({ isContractCallResult, data }),
-          );
-
-          if (isContractCallResult) {
-            console.warn('TODO: Handle the result of the contract call', data);
-          } else {
-            const [message] = data;
-            const { success, result } = message;
-            if (!success) return;
-
-            const [address] = decodeAbiParameters(
-              [{ type: 'address' }],
-              result,
-            );
-
-            const sourceChain = memo.source_chain;
-            const targetChainId = PositionChain[sourceChain];
-            trace('target', sourceChain, targetChainId);
-
-            // Find the EVM protocol position that matches the source chain
-            const { Aave, Compound } = this.state;
-            if (Aave && targetChainId === Aave.chain) {
-              Aave.remoteAddressVK.resolver.resolve(address);
-            } else if (Compound && targetChainId === Compound.chain) {
-              Compound.remoteAddressVK.resolver.resolve(address);
-            } else {
-              throw makeError(
-                `no matching chainId ${targetChainId}: ${q({ Aave: Aave?.chain, Compound: Compound?.chain })}`,
-              );
-<<<<<<< HEAD
-=======
-
-              // Find the EVM protocol position that matches the source chain
-              const { positions } = this.state;
-              for (const [key, position] of positions.entries()) {
-                if (
-                  (position.type === 'Aave' || position.type === 'Compound') &&
-                  'remoteAccountAddress' in position
-                ) {
-                  const evmState = position as EVMProtocolState;
-                  positions.set(
-                    key,
-                    harden({
-                      ...evmState,
-                      remoteAccountAddress: address,
-                    }),
-                  );
-                  break;
-                }
-              }
-
-              trace('remote evm account address:', address);
->>>>>>> 2af2462149 (chore: create axelarChainsMap and updates types)
-            }
+          trace('receiveUpcall packet data', tx);
+          if (!tx.memo) return;
+          let memo: AxelarGmpIncomingMemo;
+          try {
+            memo = JSON.parse(tx.memo); // XXX unsound! use typed pattern
+          } catch (err) {
+            trace('Failed to parse memo JSON in receiveUpcall:', err, tx.memo);
+            return;
           }
 
+          const ids = values(axelarChainsMap).map(chain => chain.axelarId);
+          if (!ids.includes(memo.source_chain)) return;
+
+          const payloadBytes = decodeBase64(memo.payload);
+          const [{ isContractCallResult, data }] = decodeAbiParameters(
+            DECODE_CONTRACT_CALL_RESULT_ABI,
+            payloadBytes,
+          ) as [AgoricResponse];
+
+          if (!isContractCallResult) {
+            const [message] = data;
+            if (message.success) {
+              const [address] = decodeAbiParameters(
+                [{ type: 'address' }],
+                message.result,
+              );
+              const { Gmp } = this.state;
+              if (Gmp) {
+                // TODO: remoteAddressVK is set only once
+                Gmp.remoteAddressVK.resolver.resolve(address);
+              }
+              trace(`remoteAccountAddress ${address}`);
+            }
+          }
+          // TODO: Handle the result of the contract call
           trace('receiveUpcall completed');
         },
       },
       keeper: {
         getLCA() {
-          const { localAccount } = this.state;
-          return localAccount;
+          const { Gmp } = this.state;
+          if (!Gmp) throw Error('Gmp not set');
+          return Gmp.localAccount;
         },
-<<<<<<< HEAD
         getPositions(): YieldProtocol[] {
           const { state } = this;
           return harden(
             (keys(YieldProtocol) as YieldProtocol[]).filter(k => !!state[k]),
           );
         },
-        initAave(chain: CaipChainId) {
-          this.state.Aave = harden({
-            chain,
-            remoteAddressVK: vowTools.makeVowKit(),
-          });
-          trace('initAave', chain);
-        },
-        initCompound() {
-          this.state.Compound = harden({
-            chain: EthL1,
-            remoteAddressVK: vowTools.makeVowKit(),
-          });
-          trace('initCompound');
-        },
-        initUSDN(account: NobleAccount) {
-          this.state.USDN = account;
-          trace('initUSDN', account);
-        },
         getUSDNICA() {
           const { USDN } = this.state;
           if (!USDN) throw Error('USDN not set');
           return USDN;
         },
-        getAaveAddress() {
-          const { Aave } = this.state;
-          if (!Aave) throw Error('Aave not set');
-          return Aave.remoteAddressVK.vow;
+        getRemoteAddress() {
+          const { Gmp } = this.state;
+          if (!Gmp) throw Error('Gmp not set');
+          return Gmp.remoteAddressVK.vow;
         },
-        getCompoundAddress() {
-          const { Compound } = this.state;
-          if (!Compound) throw Error('Compound not set');
-          return Compound.remoteAddressVK.vow;
+        initAave(chain: CaipChainId) {
+          this.state.Aave = harden({
+            chain,
+          });
+        },
+        initCompound(chain: CaipChainId) {
+          this.state.Compound = harden({
+            chain,
+          });
+        },
+        initUSDN(account: NobleAccount) {
+          this.state.USDN = account;
+        },
+
+        initGmp(account: LocalAccount) {
+          this.state.Gmp = harden({
+            localAccount: account,
+            remoteAddressVK: vowTools.makeVowKit(),
+          });
+          trace('initLCA');
+        },
+        wait(val: bigint) {
+          return vowTools.watch(E(timer).delay(val));
         },
       },
       rebalanceHandler: {
-        async handle(seat: ZCFSeat, offerArgs: CopyRecord) {
+        async handle(seat: ZCFSeat, offerArgs: EVMOfferArgs) {
           const { keeper } = this.facets;
+          mustMatch(offerArgs, OfferArgsShapeFor.rebalance);
           return rebalance(seat, offerArgs, keeper);
         },
       },
@@ -352,239 +238,6 @@ export const preparePortfolioKit = (
             undefined,
             proposalShapes.rebalance,
           );
-=======
-        getPositions<P extends YieldProtocol>(type: P, chain: CaipChainId) {
-          const { positions } = this.state;
-          const out: PositionInfo[] = [];
-          for (const p of positions.values()) {
-            if (p.type === type && chain === p.chain) {
-              out.push(harden(p));
-            }
-          }
-          return harden(out);
-        },
-        getAccount<P extends YieldProtocol>(
-          positionId: number,
-          type: P,
-        ): AccountOf[P] {
-          const { positions } = this.state;
-          const p = positions.get(positionId);
-          assert.equal(p.type, type);
-          switch (type) {
-            case 'Aave':
-            case 'Compound':
-              return (p as EVMProtocolState).localAccount as AccountOf[P];
-            case 'USDN':
-              return (p as NobleDollarState).account as AccountOf[P];
-            default:
-              throw new Error(`Unknown protocol type: ${type}`);
-          }
-        },
-        getRemoteAccountAddress(positionId: number): string | undefined {
-          const { positions } = this.state;
-          const p = positions.get(positionId);
-          if (p.type === 'Aave' || p.type === 'Compound') {
-            return (p as EVMProtocolState).remoteAccountAddress;
-          }
-          return undefined;
-        },
-        async sendGmp(
-          seat: ZCFSeat,
-          offerArgs: {
-            destinationAddress: string;
-            type: GMPMessageType;
-            destinationEVMChain: SupportedEVMChains;
-            gasAmount: bigint;
-            contractInvocationData: Array<ContractCall>;
-          },
-        ) {
-          const {
-            destinationAddress,
-            type,
-            destinationEVMChain,
-            gasAmount,
-            contractInvocationData,
-          } = offerArgs;
-
-          destinationAddress != null ||
-            Fail`Destination address must be defined`;
-          destinationEVMChain != null ||
-            Fail`Destination evm address must be defined`;
-
-          const isContractInvocation = [1, 2].includes(type);
-          if (isContractInvocation) {
-            gasAmount != null || Fail`gasAmount must be defined`;
-            contractInvocationData != null ||
-              Fail`contractInvocationData is not defined`;
-
-            contractInvocationData.length !== 0 ||
-              Fail`contractInvocationData array is empty`;
-          }
-
-          const { give } = seat.getProposal();
-
-          const [[_kw, amt]] = Object.entries(give);
-          amt.value > 0n || Fail`IBC transfer amount must be greater than zero`;
-
-          const payload =
-            type === 3 ? null : buildGMPPayload(contractInvocationData);
-
-          trace(`Payload: ${JSON.stringify(payload)}`);
-
-          // TODO: get the right denom for gas
-          const denom = 'BLD';
-
-          trace('amt and brand', amt.brand);
-
-          // TODO: Maintain state for Axlear Chain ID
-          // const axelar = await orch.getChain('axelar');
-          const chainId = 'axelar';
-
-          const memo: AxelarGmpOutgoingMemo = {
-            destination_chain: destinationEVMChain,
-            destination_address: destinationAddress,
-            payload,
-            type,
-          };
-
-          if (type === 1 || type === 2) {
-            memo.fee = {
-              amount: String(gasAmount),
-              recipient: gmpAddresses.AXELAR_GAS,
-            };
-          }
-
-          trace(`Initiating IBC Transfer...`);
-          trace(`DENOM of token:${denom}`);
-
-          // TODO: dont hardcode positionID
-          const positionId = 2;
-          await this.facets.keeper
-            .getAccount(positionId, YieldProtocol.Aave)
-            .transfer(
-              {
-                value: gmpAddresses.AXELAR_GMP,
-                encoding: 'bech32',
-                chainId,
-              },
-              {
-                denom,
-                value: amt.value,
-              },
-              { memo: JSON.stringify(memo) },
-            );
-
-          seat.exit();
-          return 'sendGmp successful';
-        },
-      },
-      holder: {
-        async supplyToAave(
-          seat: ZCFSeat,
-          aavePoolAddress: `0x${string}`,
-          usdcTokenAddress: `0x${string}`,
-          evmChain: SupportedEVMChains,
-          amountToTransfer: bigint,
-          gasAmount: bigint,
-        ) {
-          // TODO: dont hardcode positionID
-          const positionId = 2;
-          await this.facets.keeper.sendGmp(seat, {
-            destinationAddress: gmpAddresses.AXELAR_GMP,
-            destinationEVMChain: evmChain,
-            type: AxelarGMPMessageType.ContractCall,
-            gasAmount,
-            contractInvocationData: [
-              {
-                functionSignature: 'approve(address,uint256)',
-                args: [aavePoolAddress, amountToTransfer],
-                target: usdcTokenAddress,
-              },
-              {
-                functionSignature: 'supply(address,uint256,address,uint16)',
-                args: [
-                  usdcTokenAddress,
-                  amountToTransfer,
-                  this.facets.keeper.getRemoteAccountAddress(positionId),
-                  0,
-                ],
-                target: aavePoolAddress,
-              },
-            ],
-          });
-        },
-        async withdrawFromAave(
-          seat: ZCFSeat,
-          aavePoolAddress: `0x${string}`,
-          usdcTokenAddress: `0x${string}`,
-          evmChain: SupportedEVMChains,
-          amountToWithdraw: bigint,
-          gasAmount: bigint,
-        ) {
-          // TODO: dont hardcode positionID
-          const positionId = 2;
-          await this.facets.keeper.sendGmp(seat, {
-            destinationAddress: gmpAddresses.AXELAR_GMP,
-            type: AxelarGMPMessageType.ContractCall,
-            destinationEVMChain: evmChain,
-            gasAmount,
-            contractInvocationData: [
-              {
-                functionSignature: 'withdraw(address,uint256,address)',
-                args: [
-                  usdcTokenAddress,
-                  amountToWithdraw,
-                  this.facets.keeper.getRemoteAccountAddress(positionId),
-                ],
-                target: aavePoolAddress,
-              },
-            ],
-          });
-        },
-
-        async wait(delay: bigint) {
-          await E(timer).delay(delay);
-        },
-      },
-      invitationMakers: {
-        supplyToAave(
-          evmChain: SupportedEVMChains,
-          aavePoolAddress: `0x${string}`,
-          usdcTokenAddress: `0x${string}`,
-          amountToTransfer: bigint,
-          gasAmount: bigint,
-        ) {
-          const invitation = async seat => {
-            await this.facets.holder.supplyToAave(
-              seat,
-              aavePoolAddress,
-              usdcTokenAddress,
-              evmChain,
-              amountToTransfer,
-              gasAmount,
-            );
-          };
-          return zcf.makeInvitation(invitation, 'supplyToAave');
-        },
-        withdrawFromAave(
-          evmChain: SupportedEVMChains,
-          aavePoolAddress: `0x${string}`,
-          usdcTokenAddress: `0x${string}`,
-          amountToWithdraw: bigint,
-          gasAmount: bigint,
-        ) {
-          const invitation = async seat => {
-            await this.facets.holder.withdrawFromAave(
-              seat,
-              aavePoolAddress,
-              usdcTokenAddress,
-              evmChain,
-              amountToWithdraw,
-              gasAmount,
-            );
-          };
-          return zcf.makeInvitation(invitation, 'withdrawFromAave');
->>>>>>> 2af2462149 (chore: create axelarChainsMap and updates types)
         },
       },
     },

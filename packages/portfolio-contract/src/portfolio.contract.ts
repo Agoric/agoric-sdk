@@ -14,66 +14,38 @@ import {
 import type { ZCF } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Zone } from '@agoric/zone';
-import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
-<<<<<<< HEAD
+import type { CopyRecord } from '@endo/pass-style';
 import { preparePortfolioKit } from './portfolio.exo.ts';
-=======
-import { TimerServiceShape } from '@agoric/time';
-import { preparePortfolioKit, type LocalAccount } from './portfolio.exo.ts';
->>>>>>> d7daaa4b04 (chore: use timeService to add wait() in flows)
 import * as flows from './portfolio.flows.ts';
 import {
+  AxelarChainsMapShape,
   EVMContractAddressesShape,
   makeProposalShapes,
   OfferArgsShapeFor,
+  type AxelarChainsMap,
   type EVMContractAddresses,
 } from './type-guards.ts';
 
-const { keys } = Object;
 const trace = makeTracer('PortC');
 
 const interfaceTODO = undefined;
 
-<<<<<<< HEAD
 type PortfolioPrivateArgs = OrchestrationPowers & {
   assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
   chainInfo: Record<string, ChainInfo>;
   marshaller: Marshaller;
-  contract: EVMContractAddresses;
-=======
-const privateArgsShape = {
-  ...(OrchestrationPowersShape as CopyRecord),
-  marshaller: M.remotable('marshaller'),
-  contractAddresses: M.splitRecord({
-    aavePool: M.string(),
-    compound: M.string(),
-    factory: M.string(),
-    usdc: M.string(),
-  }),
-  axelarChainsMap: M.recordOf(
-    M.or(...keys(AxelarChains)),
-    M.splitRecord({
-      caip: M.string(),
-      // Axelar chain Ids differ between mainnet and testnet environments.
-      // Reference: https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts
-      axelarId: M.string(),
-    }),
-  ),
-  timer: TimerServiceShape,
-  chainInfo: M.recordOf(M.string(), ChainInfoShape),
-  assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
-  // TODO: remove once we deploy package pr is merged
-  poolMetricsNode: M.remotable(),
->>>>>>> d7daaa4b04 (chore: use timeService to add wait() in flows)
+  contractAddresses: EVMContractAddresses;
+  axelarChainsMap: AxelarChainsMap;
 };
 
 const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
   ...(OrchestrationPowersShape as CopyRecord),
   marshaller: M.remotable('marshaller'),
-  contract: EVMContractAddressesShape,
+  contractAddresses: EVMContractAddressesShape,
   chainInfo: M.recordOf(M.string(), ChainInfoShape),
   assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
+  axelarChainsMap: AxelarChainsMapShape,
 };
 
 export const meta = {
@@ -87,8 +59,13 @@ export const contract = async (
   zone: Zone,
   tools: OrchestrationTools,
 ) => {
-  const { chainInfo, assetInfo, contractAddresses, axelarChainsMap, timer } =
-    privateArgs;
+  const {
+    chainInfo,
+    assetInfo,
+    contractAddresses,
+    axelarChainsMap,
+    timerService,
+  } = privateArgs;
   const { brands } = zcf.getTerms();
   const { orchestrateAll, zoeTools, chainHub, vowTools } = tools;
 
@@ -119,30 +96,18 @@ export const contract = async (
     {
       zoeTools,
       chainHubTools,
-      contract: privateArgs.contract,
+      contractAddresses,
+      axelarChainsMap,
     },
   );
 
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf,
-<<<<<<< HEAD
     vowTools,
     rebalance,
     proposalShapes,
-=======
     axelarChainsMap,
-    chainHub,
-    timer,
-    vowTools,
-  });
-  const { makeLocalAccount, openPortfolio } = orchestrateAll(flows, {
-    zoeTools,
-    makePortfolioKit,
-    axelarChainsMap,
-    contractAddresses,
-    chainHub,
-    inertSubscriber,
->>>>>>> d7daaa4b04 (chore: use timeService to add wait() in flows)
+    timer: timerService,
   });
   const { openPortfolio } = orchestrateAll(
     { openPortfolio: flows.openPortfolio },
@@ -150,7 +115,8 @@ export const contract = async (
       zoeTools,
       makePortfolioKit: makePortfolioKit as any, // XXX Guest...
       chainHubTools,
-      contract: privateArgs.contract,
+      axelarChainsMap,
+      contractAddresses,
       inertSubscriber,
     },
   );

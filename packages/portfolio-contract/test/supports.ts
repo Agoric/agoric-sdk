@@ -1,6 +1,7 @@
 import { makeIssuerKit } from '@agoric/ertp';
 import {
   denomHash,
+  withChainCapabilities,
   type CosmosChainInfo,
   type Denom,
 } from '@agoric/orchestration';
@@ -15,6 +16,7 @@ import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
+import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
 import { encodeAbiParameters } from 'viem';
 import { DECODE_CONTRACT_CALL_RESULT_ABI } from '../src/portfolio.exo.ts';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.ts';
@@ -55,13 +57,10 @@ export {
   makeFakeTransferBridge,
 } from '@agoric/vats/tools/fake-bridge.js';
 
-const testChainInfo = {
-  ...fetchedChainInfo,
+export const chainInfo = {
+  ...withChainCapabilities(fetchedChainInfo),
   noble: {
-    ...fetchedChainInfo.noble,
-    // Enable PFM on noble for tests
-    features: ['pfm'],
-    pfmEnabled: true,
+    ...withChainCapabilities(fetchedChainInfo).noble,
     connections: {
       ...fetchedChainInfo.noble.connections,
       // Patch noble.connections to add axelar-dojo-1 for test
@@ -85,15 +84,11 @@ const testChainInfo = {
       },
     },
   },
-} as const;
-
-const cctpChainInfo = {
   ethereum: {
-    namespace: 'eip155',
-    reference: '1',
-    cctpDestinationDomain: 0,
+    chainId: 'mockId',
+    ...cctpChainInfo.ethereum,
   },
-} as const;
+};
 
 const assetOn = (
   baseDenom: Denom,
@@ -121,7 +116,7 @@ export const [uusdcOnAgoric, agUSDCDetail] = assetOn(
   'uusdc',
   'noble',
   'agoric',
-  testChainInfo,
+  fetchedChainInfo,
   'USDC',
 );
 
@@ -159,8 +154,7 @@ export const setupPortfolioTest = async ({
   const assetInfo: [Denom, DenomDetail & { brandKey?: string }][] = harden([
     assetOn('uusdc', 'noble'),
     [uusdcOnAgoric, agUSDCDetail],
-    assetOn('uusdc', 'noble', 'osmosis', testChainInfo),
-    ['uusdc', { baseName: 'noble', chainName: 'agoric', baseDenom: 'uusdc' }],
+    assetOn('uusdc', 'noble', 'osmosis', fetchedChainInfo),
   ]);
 
   // XXX poolMetricsNode is fastUsdc-specific
@@ -177,5 +171,3 @@ export const setupPortfolioTest = async ({
     utils: common.utils,
   };
 };
-
-export { testChainInfo, cctpChainInfo };
