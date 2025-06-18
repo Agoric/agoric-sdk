@@ -44,6 +44,7 @@ interface AppState {
   offerUpInstance?: unknown;
   brands?: Record<string, unknown>;
   purses?: Array<Purse>;
+  offerId?: number;
 }
 
 const useAppStore = create<AppState>(() => ({}));
@@ -106,6 +107,11 @@ const makeOffer = () => {
     give
   });
 
+  // Generate a unique offerId
+  const offerId = Date.now();
+  // Store the offerId for continuing offers
+  useAppStore.setState({ offerId });
+
   wallet?.makeOffer(
     {
       source: 'contract',
@@ -132,6 +138,59 @@ const makeOffer = () => {
         alert(`Offer rejected: ${offerDetails}`);
       }
     },
+    offerId, // Pass the offerId for future reference
+  );
+};
+
+const withdrawUSDC = () => {
+  const { wallet, offerUpInstance, offerId } = useAppStore.getState();
+  if (!offerUpInstance) {
+    alert('No contract instance found on the chain RPC: ' + ENDPOINTS.RPC);
+    throw Error('no contract instance');
+  }
+
+  if (!offerId) {
+    alert('No previous offer ID found. Please make an initial offer first.');
+    return;
+  }
+
+  console.log('Making continuing offer with:', {
+    previousOffer: offerId,
+    instance: offerUpInstance
+  });
+
+  wallet?.makeOffer(
+    {
+      source: 'continuing',
+      previousOffer: offerId,
+      instance: offerUpInstance,
+      invitationMakerName: 'makeWithdrawInvitation', 
+      publicInvitationMaker: 'makeWithdrawInvitation',
+      description: 'Withdraw USDC',
+      fee: {
+        gas: 400000,
+      },
+    },
+    {}, // No assets being exchanged in this follow-up offer
+    { amountValue: 300n}, // TODO: hardcoded for testing
+    (update: { status: string; data?: unknown }) => {
+      console.log('Withdraw offer update:', update);
+      
+      const offerDetails = JSON.stringify(update, null, 2);
+      
+      if (update.status === 'error') {
+        console.error('Withdraw error:', update.data);
+        alert(`Withdraw error: ${offerDetails}`);
+      }
+      if (update.status === 'accepted') {
+        console.log('Withdraw accepted:', update.data);
+        alert(`Withdraw accepted: ${offerDetails}`);
+      }
+      if (update.status === 'refunded') {
+        console.log('Withdraw rejected:', update.data);
+        alert(`Withdraw rejected: ${offerDetails}`);
+      }
+    },
   );
 };
 
@@ -140,12 +199,14 @@ function App() {
     setup();
   }, []);
 
-  const { wallet, purses } = useAppStore(({ wallet, purses }) => ({
+  const { wallet, purses, offerId } = useAppStore(({ wallet, purses, offerId }) => ({
     wallet,
     purses,
+    offerId,
   }));
   const istPurse = purses?.find(p => p.brandPetname === 'IST');
-  const itemsPurse = purses?.find(p => p.brandPetname === 'Item');
+  const itemsPurse = purses?.find(p => p.brandPetname === 'Items');
+  const usdcPurse = purses?.find(p => p.brandPetname === 'USDC');
 
   const tryConnectWallet = () => {
     connectWallet().catch(err => {
@@ -167,8 +228,11 @@ function App() {
       <div className="card">
         <Trade
           makeOffer={makeOffer}
+          withdrawUSDC={withdrawUSDC}
           istPurse={istPurse as Purse}
           walletConnected={!!wallet}
+          offerId={offerId}
+          usdcPurse={usdcPurse as Purse}
         />
         <hr />
         {wallet && istPurse ? (
@@ -176,6 +240,7 @@ function App() {
             address={wallet.address}
             istPurse={istPurse}
             itemsPurse={itemsPurse as Purse}
+            usdcPurse={usdcPurse as Purse}
           />
         ) : (
           <button onClick={tryConnectWallet}>Connect Wallet</button>

@@ -7,7 +7,7 @@ const getManifestCall = harden([
   {
     installKeys: {
       ymax0: {
-        bundleID: "b1-edccfe7c6b257809bc803c1bc02a8986f5d92d6f1d0dfe60c4748349b3c67f57a3aa5d512aa15ca0d7326fbfb44d77cf53e9605677eebdc8ab78f5e8039060e8",
+        bundleID: "b1-1415f596295f3095fb74304e250a7a2e89eb173d5e2b36b7d95dd7baae7fced6a727b21127b16f2e5cec438617b11a261e739eaf6009cc7e5e6268d697499a38",
       },
     },
     options: {

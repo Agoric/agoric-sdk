@@ -4,9 +4,10 @@ type InventoryProps = {
   address: string;
   istPurse: Purse;
   itemsPurse: Purse;
+  usdcPurse?: Purse;
 };
 
-const Inventory = ({ address, istPurse, itemsPurse }: InventoryProps) => (
+const Inventory = ({ address, istPurse, itemsPurse, usdcPurse }: InventoryProps) => (
   <div className="card">
     <h3>My Wallet</h3>
     <div>
@@ -25,6 +26,16 @@ const Inventory = ({ address, istPurse, itemsPurse }: InventoryProps) => (
             istPurse.displayInfo.decimalPlaces,
           )}
         </div>
+        {usdcPurse && (
+          <div>
+            <b>USDC: </b>
+            {stringifyAmountValue(
+              usdcPurse.currentAmount,
+              usdcPurse.displayInfo.assetKind,
+              usdcPurse.displayInfo.decimalPlaces,
+            )}
+          </div>
+        )}
         <div>
           <b>Items:</b>
           {itemsPurse ? (

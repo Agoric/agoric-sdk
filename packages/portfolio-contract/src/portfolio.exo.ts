@@ -62,33 +62,34 @@ export const preparePortfolioKit = (zone: Zone, zcf: ZCF) =>
         },
       },
       invitationMakers: {
-        // TODO: withdrawInvitation / offerHandler
         makeWithdrawInvitation() {
-          return zcf.makeInvitation(async () => {
-            const key = 'USDN';
-            const amount = 333n;
-            const { [key]: account } = this.state;
-            if (!account) throw Fail`not set: ${q(key)}`;
+          return zcf.makeInvitation(
+            async (_seat: ZCFSeat, offerArgs: { amountValue?: bigint } = {}) => {
+              const key = 'USDN';
+              // TODO: using 333n for testing, remove it when not needed
+              const amountValue = offerArgs.amountValue ?? 333n;
+              const { [key]: account } = this.state;
+              if (!account) throw Fail`not set: ${q(key)}`;
 
-            const there = account.getAddress();
-            const { msgSwap, msgUnlock } = makeUnlockSwapMessages(
-              there,
-              amount,
-            );
-            debugger;
+              const nobleICAAddress = account.getAddress();
+              const { msgSwap, msgUnlock } = makeUnlockSwapMessages(
+                nobleICAAddress,
+                amountValue,
+              );
 
-            try {
-              let result = await account.executeEncodedTx([
-                Any.toJSON(MsgUnlock.toProtoMsg(msgUnlock)),
-                Any.toJSON(MsgSwap.toProtoMsg(msgSwap)),
-              ]);
-              trace('Unlock result:', result);
-
-            } catch (err) {
-              trace('Error during unlock:', err);
-              // Add recovery logic here
-            }
-          }, 'makeWithdrawInvitation');
+              try {
+                const result = await account.executeEncodedTx([
+                  Any.toJSON(MsgUnlock.toProtoMsg(msgUnlock)),
+                  Any.toJSON(MsgSwap.toProtoMsg(msgSwap)),
+                ]);
+                trace('Unlock result:', result);
+              } catch (err) {
+                trace('Error during unlock:', err);
+                // Add recovery logic here
+              }
+            },
+            'makeWithdrawInvitation',
+          );
         },
       },
     },
