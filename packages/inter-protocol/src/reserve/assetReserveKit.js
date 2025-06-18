@@ -1,3 +1,4 @@
+// @ts-check
 import { Fail, q } from '@endo/errors';
 import { AmountMath, AmountShape, IssuerShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
@@ -7,17 +8,25 @@ import {
   makeRecorderTopic,
   TopicsRecordShape,
 } from '@agoric/zoe/src/contractSupport/topics.js';
-import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
+import {
+  AmountKeywordRecordShape,
+  OfferHandlerI,
+} from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
 import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
+import { prepareRevocableMakerKit } from '@agoric/base-zone/zone-helpers.js';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 
 const trace = makeTracer('ReserveKit', true);
 
 /**
  * @import {EReturn} from '@endo/far';
  * @import {TypedPattern} from '@agoric/internal';
- * @import {MapStore} from '@agoric/store';
- * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Amount, Brand, Issuer} from '@agoric/ertp';
+ * @import {MapStore, SetStore} from '@agoric/store';
+ * @import {AmountKeywordRecord} from '@agoric/zoe/src/zoeService/types.js';
+ * @import {ZCF, OfferHandler, Keyword, ZCFMint, ZCFSeat} from '@agoric/zoe';
  */
 
 /**
@@ -46,6 +55,40 @@ export const prepareAssetReserveKit = async (
   const feeKit = feeMint.getIssuerRecord();
   const emptyAmount = AmountMath.makeEmpty(feeKit.brand);
 
+  const zone = makeDurableZone(baggage);
+
+  // Durable revocation bookkeeping for the revocable single and repeatable
+  // invitations.
+  /** @type {SetStore<{ revoke: () => boolean }>} */
+  const outstandingRevokers = zone.setStore('outstandingRevokers');
+
+  const { makeRevocableKit: makeRevocableWithdrawalFacet } =
+    prepareRevocableMakerKit(zone, 'WithdrawalFacet', ['Withdraw']);
+
+  const { makeRevocableKit: makeRevocableWithdrawalHandler } =
+    prepareRevocableMakerKit(zone, 'WithdrawalHandler', ['handle'], {
+      extraMethods: {
+        /**
+         * Add some additional cleanup to avoid proliferation of revokers for
+         * spent invitations.
+         *
+         * @param {ZCFSeat} seat
+         * @param {never} offerArgs
+         */
+        handle(seat, offerArgs) {
+          const { revoker } = this.facets;
+          // We remove our outstanding revoker because we are consumed by Zoe
+          // and cannot be used again.
+          if (this.state.underlying === undefined) {
+            Fail`${q('WithdrawalHandler_caretaker')} revoked`;
+          }
+
+          outstandingRevokers.delete(revoker);
+          return this.state.underlying.handle(seat, offerArgs);
+        },
+      },
+    });
+
   const makeAssetReserveKitInternal = prepareExoClassKit(
     baggage,
     'AssetReserveKit',
@@ -54,10 +97,18 @@ export const prepareAssetReserveKit = async (
       governedApis: M.interface('AssetReserve governedApis', {
         burnFeesToReduceShortfall: M.call(AmountShape).returns(),
       }),
+      withdrawalFacet: M.interface('AssetReserve withdrawalFacet', {
+        Withdraw: M.call().returns(M.promise()),
+      }),
+      withdrawalHandler: OfferHandlerI,
+      repeatableWithdrawalHandler: OfferHandlerI,
       machine: M.interface('AssetReserve machine', {
         addIssuer: M.call(IssuerShape, M.string()).returns(M.promise()),
         getAllocations: M.call().returns(AmountKeywordRecordShape),
         makeShortfallReportingInvitation: M.call().returns(M.promise()),
+        makeSingleWithdrawalInvitation: M.call().returns(M.promise()),
+        makeRepeatableWithdrawalInvitation: M.call().returns(M.promise()),
+        revokeOutstandingWithdrawalInvitations: M.call().returns(),
       }),
       public: M.interface('AssetReserve public', {
         makeAddCollateralInvitation: M.call().returns(M.promise()),
@@ -166,6 +217,44 @@ export const prepareAssetReserveKit = async (
           facets.helper.writeMetrics();
         },
       },
+      withdrawalHandler: {
+        async handle(seat) {
+          const { collateralSeat } = this.state;
+          const { helper } = this.facets;
+          const { want } = seat.getProposal();
+
+          // COMMIT POINT
+          // UNTIL #10684: ability to terminate an incarnation w/o terminating the contract
+          zcf.atomicRearrange(harden([[collateralSeat, seat, want]]));
+
+          helper.writeMetrics();
+          seat.exit();
+
+          trace('withdrew collateral', want);
+          return 'withdrew Collateral from the Reserve';
+        },
+      },
+      withdrawalFacet: {
+        Withdraw() {
+          const { revoker, revocable: handler } =
+            makeRevocableWithdrawalHandler(this.facets.withdrawalHandler);
+          outstandingRevokers.add(revoker);
+          // @ts-expect-error Argument of type Guarded<
+          return zcf.makeInvitation(handler, 'Withdraw Collateral');
+        },
+      },
+      repeatableWithdrawalHandler: {
+        /**
+         * @param {ZCFSeat} seat
+         */
+        handle(seat) {
+          seat.exit();
+          const { revoker, revocable: invitationMakers } =
+            makeRevocableWithdrawalFacet(this.facets.withdrawalFacet);
+          outstandingRevokers.add(revoker);
+          return harden({ invitationMakers });
+        },
+      },
       machine: {
         // add makeRedeemLiquidityTokensInvitation later. For now just store them
         /**
@@ -204,6 +293,22 @@ export const prepareAssetReserveKit = async (
             handleShortfallReportingOffer,
             'getFacetForReportingShortfalls',
           );
+        },
+
+        makeSingleWithdrawalInvitation() {
+          return this.facets.withdrawalFacet.Withdraw();
+        },
+
+        makeRepeatableWithdrawalInvitation() {
+          const handler = this.facets.repeatableWithdrawalHandler;
+          return zcf.makeInvitation(handler, 'Repeatable Withdraw Collateral');
+        },
+
+        revokeOutstandingWithdrawalInvitations() {
+          for (const revoker of outstandingRevokers.keys()) {
+            revoker.revoke();
+          }
+          outstandingRevokers.clear();
         },
       },
       /**

@@ -187,8 +187,11 @@ const testPrometheusMetrics = async t => {
     ['memoryUsage_rss', [20, '%', isRetry]],
   ]) as TotalMap<string, [number, unit: string, ignorable?: boolean]>;
 
-  // blockLagSeconds isn't reliable under retry.
-  if (isRetry) fuzzinessOverrides.set('blockLagSeconds_sum', [0.5, 's', true]);
+  // Some other metrics are less reliable under retry.
+  if (isRetry) {
+    fuzzinessOverrides.set('blockLagSeconds_sum', [0.5, 's', true]);
+    fuzzinessOverrides.set('heapStats_number_of_native_contexts', [1, '']);
+  }
 
   for (const directEntry of directMetrics.comparableData.entries()) {
     const [nameAndLabels, directValue] = directEntry;

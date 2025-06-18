@@ -45,6 +45,7 @@ COPY --link .yarn/patches/* .yarn/patches/
 WORKDIR /usr/src/agoric-sdk/golang/cosmos
 COPY --from=cosmos-go --link /usr/src/agoric-sdk/golang/cosmos .
 COPY --link scripts /usr/src/agoric-sdk/scripts
+COPY package.json yarn.lock /usr/src/agoric-sdk/
 
 RUN echo unknown > git-revision.txt
 

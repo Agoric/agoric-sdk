@@ -29,7 +29,14 @@ $DAEMON gentx --name validator $STAKE --keyring-backend="test"
 $DAEMON collect-gentxs
 
 # Silly old Darwin
-alias sedi="sed -i $(sed --help 2>&1 | sed 2q | grep -qe '-i ' && echo "''")"
+BSD_SED="$({ sed --help || true; } 2>&1 | sed -n 's/.*-i .*/BSD/p; 2q')"
+function sedi() {
+  if [ -n "$BSD_SED" ]; then
+    sed -i '' "$@"
+  else
+    sed -i "$@"
+  fi
+}
 
 case $DAEMON in
   ag-chain-cosmos)

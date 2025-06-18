@@ -1,4 +1,4 @@
-import { X } from '@endo/errors';
+import { Fail } from '@endo/errors';
 import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 
@@ -44,9 +44,7 @@ const start = zcf => {
         // Ensure that the amount of pixels that we want to color is
         // covered by what is actually escrowed.
         AmountMath.isGTE(escrowedAmount, amountToColor) ||
-          assert.fail(
-            X`The pixels to color were not all escrowed. Currently escrowed: ${escrowedAmount}, amount to color: ${amountToColor}`,
-          );
+          Fail`The pixels to color were not all escrowed. Currently escrowed: ${escrowedAmount}, amount to color: ${amountToColor}`;
 
         // Pretend to color
         return `successfully colored ${amountToColor.value} pixels ${color}`;

@@ -202,6 +202,7 @@ $do_not_build || (
       echo "At least $src is newer than node_modules"
       rm -f "$STAMPS/yarn-built"
       lazy_yarn install
+      lazy_yarn postinstall
     }
 
     stamp=$STAMPS/yarn-built

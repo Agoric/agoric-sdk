@@ -157,8 +157,25 @@ export const prepareIBCTransferSender = (zone, { watch, makeIBCReplyKit }) => {
           const { result, error } = obj;
           error === undefined || Fail`ICS20-1 transfer error ${error}`;
           result ?? Fail`Missing result in ICS20-1 transfer ack ${obj}`;
-          result === ICS20_TRANSFER_SUCCESS_RESULT ||
-            Fail`ICS20-1 transfer unsuccessful with ack result ${result}`;
+          if (result === ICS20_TRANSFER_SUCCESS_RESULT) {
+            return; // OK, transfer was successful, nothing to do
+          }
+
+          // Function to safely base64-decode and parse JSON
+          const decodeAndParse = b64 => {
+            try {
+              return JSON.parse(atob(b64));
+            } catch {
+              Fail`Decoding of base64-encoded ack obj object failed: ${JSON.stringify(b64)}`;
+            }
+          };
+
+          const outerDecoded = decodeAndParse(result);
+          const ibcAck =
+            outerDecoded?.ibc_ack && decodeAndParse(outerDecoded.ibc_ack);
+
+          ibcAck?.result === ICS20_TRANSFER_SUCCESS_RESULT ||
+            Fail`ICS20-1 transfer unsuccessful with ack result: ${outerDecoded}`;
         },
       },
     },

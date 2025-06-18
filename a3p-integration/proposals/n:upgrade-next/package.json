@@ -8,7 +8,6 @@
     },
     "type": "Software Upgrade Proposal",
     "sdk-generate": [
-      "testing/add-USD-LEMONS.js test/generated/addUsdLemons",
       "../../vats/src/proposals/terminate-governed-instance.js test/generated/terminate-price-feed board02963:ATOM-USD_price_feed"
     ]
   },

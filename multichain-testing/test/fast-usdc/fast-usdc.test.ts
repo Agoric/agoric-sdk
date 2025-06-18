@@ -64,13 +64,15 @@ const makeTestContext = async (t: ExecutionContext) => {
   t.log('setupTestKeys:', wallets);
 
   // provision oracle wallets first so invitation deposits don't fail
-  const oracleWds = await Promise.all(
-    keys(oracleMnemonics).map(n =>
-      provisionSmartWallet(wallets[n], {
-        BLD: 100n,
-      }),
-    ),
-  );
+  // NOTE: serial await to avoid races
+  // (Todo: Use runSerial utility func https://github.com/Agoric/agoric-sdk/issues/11496)
+  const oracleWds: Awaited<ReturnType<typeof provisionSmartWallet>>[] = [];
+  for (const n of keys(oracleMnemonics)) {
+    const wd = await provisionSmartWallet(wallets[n], {
+      BLD: 100n,
+    });
+    oracleWds.push(wd);
+  }
 
   // calculate denomHash and channelId for privateArgs / builder opts
   const { getTransferChannelId, toDenomHash } = makeDenomTools(chainInfo);

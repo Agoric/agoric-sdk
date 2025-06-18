@@ -1,5 +1,5 @@
 diff --git a/dist/lib/index.js b/dist/lib/index.js
-index 158b72a3eaeb8becb43151740f1bcddc121014ab..085e1646b490d3433e2a250ee84af5c9dbd6fd8d 100644
+index 158b72a3eaeb8becb43151740f1bcddc121014ab..8e356dcc3c978ce17e82bd7dbad1683ae297624d 100644
 --- a/dist/lib/index.js
 +++ b/dist/lib/index.js
 @@ -35,11 +35,14 @@ var SDK_ROOT = process.env.AGORIC_SDK || "/usr/src/agoric-sdk";
@@ -41,7 +41,41 @@ index 158b72a3eaeb8becb43151740f1bcddc121014ab..085e1646b490d3433e2a250ee84af5c9
      const outJson = ["--output", "json"];
      const ro = freeze({
        status: async () => JSON.parse(exec([...nodeArgs, "status"])),
-@@ -393,18 +406,23 @@ var calculateWalletState = async (addr) => {
+@@ -337,18 +350,21 @@ var waitForBlock = async (n = 1) => {
+   }
+ };
+ var provisionSmartWallet = async (address, amount) => {
+-  console.log(`funding ${address}`);
+-  await agd.tx(
+-    "bank",
+-    "send",
+-    "validator",
+-    address,
+-    amount,
+-    "-y",
+-    "--keyring-backend=test",
+-    `--chain-id="${CHAINID}"`
+-  );
+-  await waitForBlock();
++  await null;
++  if (amount) {
++    console.log(`funding ${address}`);
++    await agd.tx(
++      "bank",
++      "send",
++      "validator",
++      address,
++      amount,
++      "-y",
++      "--keyring-backend=test",
++      `--chain-id="${CHAINID}"`
++    );
++    await waitForBlock();
++  }
+   console.log(`provisioning ${address}`);
+   await agd.tx(
+     "swingset",
+@@ -393,18 +409,23 @@ var calculateWalletState = async (addr) => {
    }
    return state;
  };
@@ -68,7 +102,7 @@ index 158b72a3eaeb8becb43151740f1bcddc121014ab..085e1646b490d3433e2a250ee84af5c9
  };
  var getUser = async (user) => {
    return agd.keys("show", user, "-a", "--keyring-backend=test");
-@@ -920,8 +938,8 @@ var flags = (record) => {
+@@ -920,8 +941,8 @@ var flags = (record) => {
    return Object.entries(record).map(([k, v]) => [`--${k}`, v]).flat();
  };
  var txAbbr = (tx) => {
@@ -79,7 +113,7 @@ index 158b72a3eaeb8becb43151740f1bcddc121014ab..085e1646b490d3433e2a250ee84af5c9
  };
  var loadedBundleIds = (swingstore) => {
    const ids = swingstore`SELECT bundleID FROM bundles`.map(
-@@ -1205,7 +1223,7 @@ var passCoreEvalProposal = async (bundleInfos, coreEvalConfig = {}) => {
+@@ -1205,7 +1226,7 @@ var passCoreEvalProposal = async (bundleInfos, coreEvalConfig = {}) => {
            ["swingset", "install-bundle", `@${bundleRd}`],
            { from, chainId, yes: true }
          );

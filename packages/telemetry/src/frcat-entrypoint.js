@@ -22,7 +22,7 @@ const main = async () => {
     let offset = 0;
     for (;;) {
       const lenBuf = new Uint8Array(BigUint64Array.BYTES_PER_ELEMENT);
-      const { done } = readCircBuf(lenBuf, offset);
+      const { done } = await readCircBuf(lenBuf, offset);
       if (done) {
         break;
       }
@@ -30,7 +30,7 @@ const main = async () => {
       const dv = new DataView(lenBuf.buffer);
       const len = Number(dv.getBigUint64(0));
 
-      const { done: done2, value: buf } = readCircBuf(
+      const { done: done2, value: buf } = await readCircBuf(
         new Uint8Array(len),
         offset,
       );
