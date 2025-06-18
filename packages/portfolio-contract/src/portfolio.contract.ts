@@ -1,10 +1,14 @@
-import { makeTracer } from '@agoric/internal';
+import { makeTracer, type TypedPattern } from '@agoric/internal';
 import {
   ChainInfoShape,
   DenomDetailShape,
   OrchestrationPowersShape,
   registerChainsAndAssets,
   withOrchestration,
+  type ChainInfo,
+  type Denom,
+  type DenomDetail,
+  type OrchestrationPowers,
   type OrchestrationTools,
 } from '@agoric/orchestration';
 import type { ZCF } from '@agoric/zoe';
@@ -15,37 +19,40 @@ import { M, mustMatch } from '@endo/patterns';
 import { preparePortfolioKit, type LocalAccount } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import {
+  EVMContractAddressesShape,
   makeProposalShapes,
-  makeOfferArgsShapes,
-  type OfferArgsShapes,
+  EVMOfferArgsShape,
+  type EVMContractAddresses,
+  type EVMOfferArgs,
 } from './type-guards.ts';
 
 const trace = makeTracer('PortC');
 
 const interfaceTODO = undefined;
 
-const privateArgsShape = {
-  ...(OrchestrationPowersShape as CopyRecord),
-  marshaller: M.remotable('marshaller'),
-  contract: M.splitRecord({
-    aavePool: M.string(),
-    compound: M.string(),
-    factory: M.string(),
-  }),
-  chainInfo: M.recordOf(M.string(), ChainInfoShape),
-  assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
-  // TODO: remove once we deploy package pr is merged
-  poolMetricsNode: M.remotable(),
+type PortfolioPrivateArgs = OrchestrationPowers & {
+  assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
+  chainInfo: Record<string, ChainInfo>;
+  marshaller: Marshaller;
+  contract: EVMContractAddresses;
 };
 
-export const meta = M.splitRecord({
+const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
+  ...(OrchestrationPowersShape as CopyRecord),
+  marshaller: M.remotable('marshaller'),
+  contract: EVMContractAddressesShape,
+  chainInfo: M.recordOf(M.string(), ChainInfoShape),
+  assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
+};
+
+export const meta = {
   privateArgsShape,
-});
+};
 harden(meta);
 
 export const contract = async (
   zcf: ZCF,
-  privateArgs,
+  privateArgs: PortfolioPrivateArgs,
   zone: Zone,
   tools: OrchestrationTools,
 ) => {
@@ -64,7 +71,6 @@ export const contract = async (
   );
 
   const proposalShapes = makeProposalShapes(brands.USDC);
-  const offerArgsShapes = makeOfferArgsShapes();
 
   const inertSubscriber: ResolvedPublicTopic<never>['subscriber'] = {
     getUpdateSince() {
@@ -91,8 +97,8 @@ export const contract = async (
     makeOpenPortfolioInvitation() {
       trace('makeOpenPortfolioInvitation');
       return zcf.makeInvitation(
-        (seat, offerArgs: OfferArgsShapes) => {
-          mustMatch(offerArgs, offerArgsShapes);
+        (seat, offerArgs: EVMOfferArgs) => {
+          mustMatch(offerArgs, EVMOfferArgsShape);
           return openPortfolio(
             seat,
             offerArgs,

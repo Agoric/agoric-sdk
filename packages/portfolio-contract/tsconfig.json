@@ -6,4 +6,7 @@
     "test",
     "testing"
   ],
+  "exclude": [
+    "src/vendor/viem/viem-abi.bundle.js",
+  ]
 }

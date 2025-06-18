@@ -206,6 +206,9 @@ jobs:
       - name: yarn test (portfolio-contract)
         if: (success() || failure())
         run: cd packages/portfolio-contract && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (portfolio-deploy)
+        if: (success() || failure())
+        run: cd packages/portfolio-deploy && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (sparse-ints)
         if: (success() || failure())
         run: cd packages/sparse-ints && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -315,6 +318,9 @@ jobs:
       - name: yarn test (pegasus)
         if: (success() || failure())
         run: cd packages/pegasus && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (pola-io)
+        if: (success() || failure())
+        run: cd packages/pola-io && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (smart-wallet)
         if: (success() || failure())
         run: cd packages/smart-wallet && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT

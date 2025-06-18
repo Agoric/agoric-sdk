@@ -1,27 +1,27 @@
-import { makeTracer } from '@agoric/internal';
-import { assert, Fail } from '@endo/errors';
-import type { Zone } from '@agoric/zone';
-import { M } from '@endo/patterns';
-import { VowShape } from '@agoric/vow';
-import { atob, decodeBase64 } from '@endo/base64';
-import { decodeAbiParameters } from 'viem';
-import { type MapStore } from '@agoric/store';
-import {
-  type AxelarGmpIncomingMemo,
-  type SupportedEVMChains,
-  type ContractCall,
-  AxelarGMPMessageType,
-  type AxelarGmpOutgoingMemo,
-} from '@agoric/orchestration/src/axelar-types.js';
-import type { VTransferIBCEvent } from '@agoric/vats';
-import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
-import type { OrchestrationAccount, CaipChainId } from '@agoric/orchestration';
 import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.ts';
+import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
+import { makeTracer } from '@agoric/internal';
+import type { CaipChainId, OrchestrationAccount } from '@agoric/orchestration';
 import {
-  gmpAddresses,
+  AxelarGMPMessageType,
+  type AxelarGmpIncomingMemo,
+  type AxelarGmpOutgoingMemo,
+  type ContractCall,
+  type SupportedEVMChains,
+} from '@agoric/orchestration/src/axelar-types.js';
+import {
   buildGMPPayload,
+  gmpAddresses,
 } from '@agoric/orchestration/src/utils/gmp.js';
+import { decodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
+import { type MapStore } from '@agoric/store';
+import type { VTransferIBCEvent } from '@agoric/vats';
+import { VowShape } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe';
+import type { Zone } from '@agoric/zone';
+import { atob, decodeBase64 } from '@endo/base64';
+import { assert, Fail } from '@endo/errors';
+import { M } from '@endo/patterns';
 import { PositionChain, YieldProtocol } from './constants.js';
 
 const trace = makeTracer('PortExo');

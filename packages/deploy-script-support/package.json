@@ -38,6 +38,7 @@
     "@agoric/import-manager": "workspace:*",
     "@agoric/internal": "workspace:*",
     "@agoric/notifier": "workspace:*",
+    "@agoric/pola-io": "workspace:*",
     "@agoric/store": "workspace:*",
     "@agoric/time": "workspace:*",
     "@agoric/zoe": "workspace:*",
