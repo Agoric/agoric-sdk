@@ -148,8 +148,10 @@ test('open portfolio with Aave position', async t => {
 
   const { ibcBridge } = common.mocks;
 
-  // Add IBC transfer mocks for the first transfer (initRemoteEVMAccount())
+  // Add IBC transfer mocks
+  // TODO: remove the loop
   for (const { msg, ack } of values(makeIBCTransferTraffic())) {
+    ibcBridge.addMockAck(msg, ack);
     ibcBridge.addMockAck(msg, ack);
   }
 
@@ -193,6 +195,8 @@ test('open portfolio with Aave position', async t => {
   await E(common.mocks.transferBridge).fromBridge(receiveUpCallEvent);
   // Advance the timer by 180 time units to simulate the contract's wait
   await timer.tickN(180);
+  // Simulate IBC acknowledgement for localAcct.transfer() in sendTokensViaCCTP()
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
 
   const result = await doneP;
   t.log('Portfolio open result:', result);
