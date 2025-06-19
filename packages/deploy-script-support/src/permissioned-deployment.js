@@ -82,10 +82,30 @@ export const txFlags = ({
 
 /**
  * @param {CmdRunner} agd
+ * @param {number} n
+ */
+export const waitForBlock = async (agd, n = 1) => {
+  const getHeight = async () => {
+    const { stdout } = await agd.exec(['status']);
+    const { latest_block_height: height } = JSON.parse(stdout).SyncInfo;
+    return height;
+  };
+  const initialHeight = await getHeight();
+  const SEC = 1000;
+  let currentHeight;
+  do {
+    await new Promise(resolve => setTimeout(resolve, 1 * SEC)); // XXX ambient
+    currentHeight = await getHeight();
+  } while (currentHeight - initialHeight < n);
+  console.log('block height:', initialHeight, currentHeight);
+};
+
+/**
+ * @param {CmdRunner} agd - agd with --from etc.
  * @param {string[]} txArgs
  */
-export const runTx = (agd, txArgs) => {
-  const { stdout } = agd.withFlags('-o', 'json').exec(['tx', ...txArgs]);
+export const runTx = async (agd, txArgs) => {
+  const { stdout } = await agd.withFlags('-o', 'json').exec(['tx', ...txArgs]);
   const result = JSON.parse(stdout);
   if (result.code !== 0) {
     throw Object.assign(Error(result.raw_log), result);
