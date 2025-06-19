@@ -61,7 +61,7 @@ const PositionShape = M.splitRecord({}); // TODO
 const KeeperI = M.interface('keeper', {
   add: M.call(
     TypeShape,
-    M.or(ChainShape),
+    ChainShape,
     M.remotable('OrchestrationAccount'),
   ).returns(M.number()),
   getPositions: M.call(TypeShape, ChainShape).returns(M.arrayOf(PositionShape)),
