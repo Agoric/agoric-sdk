@@ -13,7 +13,6 @@ Here’s what the `memo` looks like in code:
 export enum GMPMessageType {
   ContractCall = 1,            // Call a contract
   ContractCallWithToken = 2,   // Call a contract with tokens
-  TokenTransfer = 3,           // Just send tokens
 }
 
 export type AxelarFeeObject = {

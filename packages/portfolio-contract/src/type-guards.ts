@@ -4,8 +4,9 @@ import type { CaipChainId } from '@agoric/orchestration';
 import { M } from '@endo/patterns';
 import { AxelarChains, YieldProtocol } from './constants.js';
 import type { YieldProtocol as YieldProtocolT } from './constants.js';
+import { AxelarGMPMessageType } from '@agoric/orchestration/src/axelar-types.js';
 
-const { fromEntries, keys } = Object;
+const { fromEntries, keys, values } = Object;
 
 /**
  * @param brand must be a 'nat' brand, not checked
@@ -62,10 +63,10 @@ export const EVMOfferArgsShape: TypedPattern<EVMOfferArgs> = M.splitRecord(
 ) as TypedPattern<EVMOfferArgs>;
 
 export type EVMContractAddresses = {
-  aavePool: string;
-  compound: string;
-  factory: string;
-  usdc: string;
+  aavePool: `0x${string}`;
+  compound: `0x${string}`;
+  factory: `0x${string}`;
+  usdc: `0x${string}`;
 };
 
 export const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
@@ -87,3 +88,20 @@ export const AxelarChainsMapShape: TypedPattern<AxelarChainsMap> =
       keys(AxelarChains).map(chain => [chain, AxelarChainInfoPattern]),
     ) as Record<AxelarChain, typeof AxelarChainInfoPattern>,
   );
+
+export const ContractCallShape = M.splitRecord({
+  target: M.string(),
+  functionSignature: M.string(),
+  args: M.arrayOf(M.any()),
+});
+
+export const GMPArgsShape = M.splitRecord({
+  destinationAddress: M.string(),
+  type: M.or(...values(AxelarGMPMessageType)),
+  destinationEVMChain: M.or(...keys(AxelarChains)),
+  amount: M.splitRecord({
+    brand: M.remotable(),
+    value: M.nat(),
+  }),
+  contractInvocationData: M.arrayOf(ContractCallShape),
+});

@@ -92,9 +92,7 @@ export const contract = async (
     getDenom: chainHub.getDenom.bind(chainHub),
   };
   const makePortfolioKit = preparePortfolioKit(zone, {
-    zcf,
     axelarChainsMap,
-    chainHubTools,
     timer: timerService,
     vowTools,
   });

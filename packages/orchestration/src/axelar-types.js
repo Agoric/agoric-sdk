@@ -17,7 +17,12 @@
 export const AxelarGMPMessageType = {
   ContractCall: 1,
   ContractCallWithToken: 2,
-  TokenTransfer: 3,
+  /**
+   * Intentionally exclude `TokenTransfer` (3) from this list because we do not
+   * plan to perform token transfers via Axelar. Instead, all token transfers
+   * will be handled using CCTP (Circle Cross-Chain Transfer Protocol).
+   */
+  // TokenTransfer: 3,
 };
 
 /**

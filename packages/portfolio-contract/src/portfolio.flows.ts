@@ -20,9 +20,14 @@ import type {
 import {
   AxelarGMPMessageType,
   type AxelarGmpOutgoingMemo,
+  type ContractCall,
+  type GMPMessageType,
 } from '@agoric/orchestration/src/axelar-types.js';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
-import { gmpAddresses } from '@agoric/orchestration/src/utils/gmp.js';
+import {
+  buildGMPPayload,
+  gmpAddresses,
+} from '@agoric/orchestration/src/utils/gmp.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
@@ -30,14 +35,174 @@ import { assert } from '@endo/errors';
 import type { PortfolioKit } from './portfolio.exo.ts';
 import {
   EVMOfferArgsShape,
+  GMPArgsShape,
+  type AxelarChain,
   type AxelarChainsMap,
   type EVMContractAddresses,
   type EVMOfferArgs,
   type ProposalShapes,
 } from './type-guards.ts';
+import { YieldProtocol } from './constants.js';
 // TODO: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const trace = makeTracer('PortF');
+
+const sendGmp = async (
+  orch: Orchestrator,
+  seat: ZCFSeat,
+  ctx: {
+    axelarChainsMap: AxelarChainsMap;
+    chainHubTools: {
+      getDenom: (brand: Brand) => Denom | undefined;
+    };
+    kit: PortfolioKit;
+  },
+  gmpArgs: {
+    destinationAddress: string;
+    type: GMPMessageType;
+    destinationEVMChain: AxelarChain;
+    amount: Amount<'nat'>;
+    contractInvocationData: Array<ContractCall>;
+  },
+) => {
+  mustMatch(gmpArgs, GMPArgsShape);
+  const {
+    destinationAddress,
+    type,
+    destinationEVMChain,
+    amount,
+    contractInvocationData,
+  } = gmpArgs;
+  const { axelarChainsMap, chainHubTools, kit } = ctx;
+
+  const payload = buildGMPPayload(contractInvocationData);
+  trace(`Payload: ${JSON.stringify(payload)}`);
+
+  const axelar = await orch.getChain('axelar');
+  const { chainId } = await axelar.getChainInfo();
+
+  const memo: AxelarGmpOutgoingMemo = {
+    destination_chain: axelarChainsMap[destinationEVMChain].axelarId,
+    destination_address: destinationAddress,
+    payload,
+    type,
+  };
+
+  memo.fee = {
+    amount: String(amount.value),
+    recipient: gmpAddresses.AXELAR_GAS,
+  };
+
+  const denom = await chainHubTools.getDenom(amount.brand);
+  assert(denom, 'denom must be defined');
+  const denomAmount = {
+    denom,
+    value: amount.value,
+  };
+
+  await kit.keeper.getAccount(YieldProtocol.Aave).transfer(
+    {
+      value: gmpAddresses.AXELAR_GMP,
+      encoding: 'bech32',
+      chainId,
+    },
+    denomAmount,
+    { memo: JSON.stringify(memo) },
+  );
+
+  seat.exit();
+};
+
+const supplyToAave = async (
+  orch: Orchestrator,
+  seat: ZCFSeat,
+  ctx: {
+    axelarChainsMap: AxelarChainsMap;
+    chainHubTools: {
+      getDenom: (brand: Brand) => Denom | undefined;
+    };
+    contractAddresses: EVMContractAddresses;
+    kit: PortfolioKit;
+  },
+  gmpArgs: {
+    destinationEVMChain: AxelarChain;
+    gasAmount: Amount<'nat'>;
+    transferAmount: BigInt;
+  },
+) => {
+  const { destinationEVMChain, transferAmount, gasAmount } = gmpArgs;
+  const { kit, contractAddresses } = ctx;
+
+  const remoteEVMAddress = await kit.holder.getRemoteAccountAddress();
+  assert(remoteEVMAddress, 'remoteEVMAddress must be defined');
+
+  await sendGmp(
+    orch,
+    seat,
+    ctx,
+    harden({
+      destinationAddress: contractAddresses.factory,
+      destinationEVMChain,
+      type: AxelarGMPMessageType.ContractCall,
+      amount: gasAmount,
+      contractInvocationData: [
+        {
+          functionSignature: 'approve(address,uint256)',
+          args: [contractAddresses.aavePool, transferAmount],
+          target: contractAddresses.usdc,
+        },
+        {
+          functionSignature: 'supply(address,uint256,address,uint16)',
+          args: [contractAddresses.usdc, transferAmount, remoteEVMAddress, 0],
+          target: contractAddresses.aavePool,
+        },
+      ],
+    }),
+  );
+};
+
+const withdrawFromAave = async (
+  orch: Orchestrator,
+  seat: ZCFSeat,
+  ctx: {
+    axelarChainsMap: AxelarChainsMap;
+    chainHubTools: {
+      getDenom: (brand: Brand) => Denom | undefined;
+    };
+    contractAddresses: EVMContractAddresses;
+    kit: PortfolioKit;
+  },
+  gmpArgs: {
+    destinationEVMChain: AxelarChain;
+    gasAmount: Amount<'nat'>;
+    withdrawAmount: BigInt;
+  },
+) => {
+  const { destinationEVMChain, withdrawAmount, gasAmount } = gmpArgs;
+  const { kit, contractAddresses } = ctx;
+
+  const remoteEVMAddress = await kit.holder.getRemoteAccountAddress();
+  assert(remoteEVMAddress, 'remoteEVMAddress must be defined');
+
+  await sendGmp(
+    orch,
+    seat,
+    ctx,
+    harden({
+      destinationAddress: contractAddresses.factory,
+      destinationEVMChain,
+      type: AxelarGMPMessageType.ContractCall,
+      amount: gasAmount,
+      contractInvocationData: [
+        {
+          functionSignature: 'withdraw(address,uint256,address)',
+          args: [contractAddresses.usdc, withdrawAmount, remoteEVMAddress],
+          target: contractAddresses.aavePool,
+        },
+      ],
+    }),
+  );
+};
 
 /**
  * Make an orchestration account on the agoric chain to, for example,
@@ -127,7 +292,6 @@ export const openPortfolio = (async (
 
       const axelar = await orch.getChain('axelar');
       const axelarInfo = await axelar.getChainInfo();
-      kit.holder.setupAxelarChainInfo(axelarInfo);
 
       const { chainId, stakingTokens } = axelarInfo;
       assert.equal(stakingTokens.length, 1, 'axelar has 1 staking token');
@@ -306,14 +470,16 @@ export const openPortfolio = (async (
       await sendTokensViaCCTP(give.Aave);
       await kit.holder.wait(20n);
       kit.keeper.addAavePosition(axelarChainsMap[evmChain].caip);
-      await kit.holder.supplyToAave({
+      await supplyToAave(
+        orch,
         seat,
-        aavePoolAddress: contractAddresses.aavePool,
-        usdcTokenAddress: contractAddresses.usdc,
-        evmChain,
-        amountToTransfer: give.Aave.value,
-        amount: give.Gmp,
-      });
+        { axelarChainsMap, chainHubTools, contractAddresses, kit },
+        {
+          destinationEVMChain: evmChain,
+          transferAmount: give.Aave.value,
+          gasAmount: give.Gmp,
+        },
+      );
     }
 
     if (!seat.hasExited()) seat.exit();
