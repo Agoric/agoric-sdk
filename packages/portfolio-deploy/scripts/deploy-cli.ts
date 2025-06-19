@@ -10,6 +10,7 @@ import {
   runBuilder,
   submitCoreEval,
   txFlags,
+  waitForBlock,
 } from '@agoric/deploy-script-support/src/permissioned-deployment.js';
 import { flags, makeCmdRunner, makeFileRd } from '@agoric/pola-io';
 import url from 'node:url';
@@ -73,18 +74,21 @@ const main = async (
     chainName: chainId,
     rpcAddrs: [node],
   } = await fetchNetworkConfig(net, { fetch });
-  const agdTx = makeCmdRunner('agd', { execFile }).withFlags(
+  const agdq = makeCmdRunner('agd', { execFile }).withFlags('--node', node);
+  const agdTx = agdq.withFlags(
     ...flags(txFlags({ node, from, chainId })),
     '--yes',
   );
   for (const b of plan.bundles) {
     const shortID = b.bundleID.slice(0, 8);
     console.log('installing', shortID, '...');
+    await waitForBlock(agdq);
     const [{ txhash }] = await installBundles(agdTx, [b], pkgRd);
     console.log('installed', shortID, txhash);
   }
 
   const timeShort = new Date().toISOString().substring(11, 16); // XXX ambient
+  await waitForBlock(agdq);
   const info = await submitCoreEval(agdTx, [plan], {
     title: `${title} ${timeShort}`,
     description,
