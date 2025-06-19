@@ -150,18 +150,19 @@ test('open portfolio with Aave position', async t => {
 
   const { ibcBridge } = common.mocks;
 
-  // Add IBC transfer mocks
-  // TODO: remove the loop
-  for (const { msg, ack } of values(makeIBCTransferTraffic())) {
-    ibcBridge.addMockAck(msg, ack);
-    ibcBridge.addMockAck(msg, ack);
-  }
-
-  // Add CCTP depositForBurn mock ack for the new dynamic packet
+  const { transfer } = makeIBCTransferTraffic();
+  // Mock ack for initRemoteEVMAccount IBC call
+  ibcBridge.addMockAck(transfer.msg, transfer.ack);
+  // Mock ack for the IBC transfer that occurs when sending tokens
+  // from a local account to a Noble chain account inside sendTokensViaCCTP()
+  ibcBridge.addMockAck(transfer.msg, transfer.ack);
+  // Mock ack for a depositForBurn CCTP packet
   ibcBridge.addMockAck(
     'eyJ0eXBlIjoxLCJkYXRhIjoiQ21jS0lTOWphWEpqYkdVdVkyTjBjQzUyTVM1TmMyZEVaWEJ2YzJsMFJtOXlRblZ5YmhKQ0NndGpiM050YjNNeGRHVnpkQklLTXpNek16QXdNREF3TUNJZ0FBQUFBQUFBQUFBQUFBQUFFbXp6cko2aEo1VC9VUFZuSjhmR2JpYlp3SklxQlhWMWMyUmoiLCJtZW1vIjoiIn0=',
     protoMsgMocks.depositForBurn.ack,
   );
+  // Mock ack for the IBC call that supplies tokens to AAVE protocol.
+  ibcBridge.addMockAck(transfer.msg, transfer.ack);
 
   const doneP = trader.openPortfolio(
     t,
@@ -207,6 +208,8 @@ test('open portfolio with Aave position', async t => {
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   // Advance the timer by 20 time units to wait for cctp transfer
   await timerService.tickN(20);
+  // Simulate IBC acknowledgement for Aave
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   const result = await doneP;
   t.log('Portfolio open result:', result);
 
