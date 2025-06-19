@@ -17,7 +17,7 @@ func TestBuildProposalSteps(t *testing.T) {
 			"buildProposalStepFromScript",
 			func() (vm.CoreProposalStep, error) {
 				return buildProposalStepFromScript(
-					"UNRELEASED_A3P_INTEGRATION",
+					"agoric-upgrade-21-a3p",
 					"@agoric/builders/scripts/vats/upgrade-orchestration.js",
 				)
 			},

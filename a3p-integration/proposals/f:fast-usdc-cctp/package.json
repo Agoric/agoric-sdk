@@ -9,12 +9,15 @@
   "type": "module",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/client-utils": "dev",
+    "@agoric/client-utils": "0.1.1-dev-bf2d699.0",
     "@agoric/fast-usdc": "dev",
     "@agoric/synthetic-chain": "0.5.5",
     "@endo/init": "^1.1.9",
     "agoric": "dev",
     "ava": "^5.3.1"
+  },
+  "resolutions": {
+    "@agoric/client-utils": "0.1.1-dev-bf2d699.0"
   },
   "ava": {
     "concurrency": 1,
