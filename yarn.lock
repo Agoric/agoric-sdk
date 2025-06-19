@@ -23,7 +23,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aglocal/benchmark@workspace:packages/benchmark"
   dependencies:
-    "@aglocal/boot": "npm:^0.1.0"
+    "@aglocal/boot": "npm:^0.2.0-u21.0"
     "@agoric/cosmic-swingset": "workspace:*"
     "@agoric/inter-protocol": "workspace:*"
     "@agoric/internal": "workspace:*"
@@ -34,11 +34,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@aglocal/boot@npm:^0.1.0, @aglocal/boot@workspace:packages/boot":
+"@aglocal/boot@npm:^0.2.0-u21.0, @aglocal/boot@workspace:packages/boot":
   version: 0.0.0-use.local
   resolution: "@aglocal/boot@workspace:packages/boot"
   dependencies:
-    "@aglocal/fast-usdc-deploy": "npm:^0.1.0"
+    "@aglocal/fast-usdc-deploy": "npm:^0.1.1-u21.0"
     "@agoric/builders": "workspace:*"
     "@agoric/client-utils": "workspace:*"
     "@agoric/cosmic-proto": "workspace:*"
@@ -147,7 +147,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@aglocal/fast-usdc-deploy@npm:^0.1.0, @aglocal/fast-usdc-deploy@workspace:packages/fast-usdc-deploy":
+"@aglocal/fast-usdc-deploy@npm:^0.1.1-u21.0, @aglocal/fast-usdc-deploy@workspace:packages/fast-usdc-deploy":
   version: 0.0.0-use.local
   resolution: "@aglocal/fast-usdc-deploy@workspace:packages/fast-usdc-deploy"
   dependencies:
@@ -335,7 +335,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/cache@npm:^0.3.2, @agoric/cache@workspace:*, @agoric/cache@workspace:packages/cache":
+"@agoric/cache@npm:^0.3.3-u21.0, @agoric/cache@workspace:*, @agoric/cache@workspace:packages/cache":
   version: 0.0.0-use.local
   resolution: "@agoric/cache@workspace:packages/cache"
   dependencies:
@@ -482,7 +482,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/create-dapp@workspace:packages/create-dapp"
   dependencies:
-    agoric: "npm:^0.21.1"
+    agoric: "npm:^0.22.0-u21.0"
     ava: "npm:^5.3.0"
     c8: "npm:^10.1.3"
   bin:
@@ -516,7 +516,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/ertp@npm:^0.16.2, @agoric/ertp@workspace:*, @agoric/ertp@workspace:packages/ERTP":
+"@agoric/ertp@npm:^0.16.3-u21.0, @agoric/ertp@workspace:*, @agoric/ertp@workspace:packages/ERTP":
   version: 0.0.0-use.local
   resolution: "@agoric/ertp@workspace:packages/ERTP"
   dependencies:
@@ -670,7 +670,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/internal@npm:^0.3.2, @agoric/internal@workspace:*, @agoric/internal@workspace:packages/internal":
+"@agoric/internal@npm:^0.4.0-u21.0, @agoric/internal@workspace:*, @agoric/internal@workspace:packages/internal":
   version: 0.0.0-use.local
   resolution: "@agoric/internal@workspace:packages/internal"
   dependencies:
@@ -731,7 +731,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/notifier@npm:^0.6.2, @agoric/notifier@workspace:*, @agoric/notifier@workspace:packages/notifier":
+"@agoric/notifier@npm:^0.7.0-u21.0, @agoric/notifier@workspace:*, @agoric/notifier@workspace:packages/notifier":
   version: 0.0.0-use.local
   resolution: "@agoric/notifier@workspace:packages/notifier"
   dependencies:
@@ -859,7 +859,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/smart-wallet@npm:^0.5.3, @agoric/smart-wallet@workspace:*, @agoric/smart-wallet@workspace:packages/smart-wallet":
+"@agoric/smart-wallet@npm:^0.5.4-u21.0, @agoric/smart-wallet@workspace:*, @agoric/smart-wallet@workspace:packages/smart-wallet":
   version: 0.0.0-use.local
   resolution: "@agoric/smart-wallet@workspace:packages/smart-wallet"
   dependencies:
@@ -976,7 +976,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/store@npm:^0.9.2, @agoric/store@workspace:*, @agoric/store@workspace:packages/store":
+"@agoric/store@npm:^0.9.3-u21.0, @agoric/store@workspace:*, @agoric/store@workspace:packages/store":
   version: 0.0.0-use.local
   resolution: "@agoric/store@workspace:packages/store"
   dependencies:
@@ -1135,7 +1135,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/time@npm:^0.3.2, @agoric/time@workspace:*, @agoric/time@workspace:packages/time":
+"@agoric/time@npm:^0.3.3-u21.0, @agoric/time@workspace:*, @agoric/time@workspace:packages/time":
   version: 0.0.0-use.local
   resolution: "@agoric/time@workspace:packages/time"
   dependencies:
@@ -1149,7 +1149,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/vat-data@npm:^0.5.2, @agoric/vat-data@workspace:*, @agoric/vat-data@workspace:packages/vat-data":
+"@agoric/vat-data@npm:^0.5.3-u21.0, @agoric/vat-data@workspace:*, @agoric/vat-data@workspace:packages/vat-data":
   version: 0.0.0-use.local
   resolution: "@agoric/vat-data@workspace:packages/vat-data"
   dependencies:
@@ -1236,17 +1236,17 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/wallet-backend@workspace:packages/wallet/api"
   dependencies:
-    "@agoric/cache": "npm:^0.3.2"
-    "@agoric/ertp": "npm:^0.16.2"
-    "@agoric/internal": "npm:^0.3.2"
-    "@agoric/notifier": "npm:^0.6.2"
-    "@agoric/smart-wallet": "npm:^0.5.3"
-    "@agoric/store": "npm:^0.9.2"
-    "@agoric/time": "npm:^0.3.2"
-    "@agoric/vat-data": "npm:^0.5.2"
+    "@agoric/cache": "npm:^0.3.3-u21.0"
+    "@agoric/ertp": "npm:^0.16.3-u21.0"
+    "@agoric/internal": "npm:^0.4.0-u21.0"
+    "@agoric/notifier": "npm:^0.7.0-u21.0"
+    "@agoric/smart-wallet": "npm:^0.5.4-u21.0"
+    "@agoric/store": "npm:^0.9.3-u21.0"
+    "@agoric/time": "npm:^0.3.3-u21.0"
+    "@agoric/vat-data": "npm:^0.5.3-u21.0"
     "@agoric/vats": "workspace:*"
-    "@agoric/zoe": "npm:^0.26.2"
-    "@agoric/zone": "npm:^0.2.2"
+    "@agoric/zoe": "npm:^0.27.0-u21.0"
+    "@agoric/zone": "npm:^0.3.0-u21.0"
     "@endo/bundle-source": "npm:^4.0.0"
     "@endo/errors": "npm:^1.2.10"
     "@endo/eventual-send": "npm:^1.3.1"
@@ -1284,7 +1284,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/xsnap-lockdown@npm:^0.14.0, @agoric/xsnap-lockdown@workspace:*, @agoric/xsnap-lockdown@workspace:packages/xsnap-lockdown":
+"@agoric/xsnap-lockdown@npm:^0.14.1-u21.0, @agoric/xsnap-lockdown@workspace:*, @agoric/xsnap-lockdown@workspace:packages/xsnap-lockdown":
   version: 0.0.0-use.local
   resolution: "@agoric/xsnap-lockdown@workspace:packages/xsnap-lockdown"
   dependencies:
@@ -1300,8 +1300,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/xsnap@workspace:packages/xsnap"
   dependencies:
-    "@agoric/internal": "npm:^0.3.2"
-    "@agoric/xsnap-lockdown": "npm:^0.14.0"
+    "@agoric/internal": "npm:^0.4.0-u21.0"
+    "@agoric/xsnap-lockdown": "npm:^0.14.1-u21.0"
     "@endo/base64": "npm:^1.0.9"
     "@endo/bundle-source": "npm:^4.0.0"
     "@endo/errors": "npm:^1.2.10"
@@ -1324,7 +1324,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/zoe@npm:^0.26.2, @agoric/zoe@workspace:*, @agoric/zoe@workspace:packages/zoe":
+"@agoric/zoe@npm:^0.27.0-u21.0, @agoric/zoe@workspace:*, @agoric/zoe@workspace:packages/zoe":
   version: 0.0.0-use.local
   resolution: "@agoric/zoe@workspace:packages/zoe"
   dependencies:
@@ -1363,7 +1363,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/zone@npm:^0.2.2, @agoric/zone@workspace:*, @agoric/zone@workspace:packages/zone":
+"@agoric/zone@npm:^0.3.0-u21.0, @agoric/zone@workspace:*, @agoric/zone@workspace:packages/zone":
   version: 0.0.0-use.local
   resolution: "@agoric/zone@workspace:packages/zone"
   dependencies:
@@ -6933,7 +6933,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"agoric@npm:^0.21.1, agoric@workspace:packages/agoric-cli":
+"agoric@npm:^0.22.0-u21.0, agoric@workspace:packages/agoric-cli":
   version: 0.0.0-use.local
   resolution: "agoric@workspace:packages/agoric-cli"
   dependencies:

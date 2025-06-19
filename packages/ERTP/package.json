@@ -1,6 +1,6 @@
 {
   "name": "@agoric/ertp",
-  "version": "0.16.2",
+  "version": "0.16.3-u21.0",
   "description": "Electronic Rights Transfer Protocol (ERTP). A smart contract framework for exchanging electronic rights",
   "type": "module",
   "main": "src/index.js",

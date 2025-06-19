@@ -1,6 +1,6 @@
 {
   "name": "@aglocal/benchmark",
-  "version": "0.1.0",
+  "version": "0.1.1-u21.0",
   "private": true,
   "description": "Benchmark support",
   "type": "module",
@@ -22,7 +22,7 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@aglocal/boot": "^0.1.0",
+    "@aglocal/boot": "^0.2.0-u21.0",
     "@agoric/cosmic-swingset": "workspace:*",
     "@agoric/inter-protocol": "workspace:*",
     "@agoric/internal": "workspace:*",

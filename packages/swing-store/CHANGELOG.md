@@ -3,6 +3,49 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.10.0-u21.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store@0.9.1...@agoric/swing-store@0.10.0-u21.0) (2025-06-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* **swing-store:** Remove unsafe hostStorage.setExportCallback method
+
+### Features
+
+* Add consensus-independent vat snapshot archiving configuration to AG_COSMOS_INIT ([ffc594f](https://github.com/Agoric/agoric-sdk/commit/ffc594f9441a9374646c43b69d289cc560962f64)), closes [#10036](https://github.com/Agoric/agoric-sdk/issues/10036)
+* Add consensus-independent vat transcript archiving configuration to AG_COSMOS_INIT ([d2d5803](https://github.com/Agoric/agoric-sdk/commit/d2d5803baab6e6379d179723244b2e92aac6319a)), closes [#10036](https://github.com/Agoric/agoric-sdk/issues/10036)
+* add exporter.getHostKV() API ([eb564f9](https://github.com/Agoric/agoric-sdk/commit/eb564f9635397c0706e1f8255b3e125681e2d031)), closes [#8523](https://github.com/Agoric/agoric-sdk/issues/8523)
+* **cosmic-swingset:** Allow `launch` to accept an already-open swingStore ([c65e5b1](https://github.com/Agoric/agoric-sdk/commit/c65e5b1c531c08026f5f11cf5d5dcdbe238b05ee))
+* **cosmic-swingset:** Introduce inquisitor.mjs ([e6d75db](https://github.com/Agoric/agoric-sdk/commit/e6d75db529f0641e49cc893c087fa3192bf05551))
+* **internal:** Generalize single-level `pick` utility to recursive `attenuate` ([6b36d1e](https://github.com/Agoric/agoric-sdk/commit/6b36d1e5e7e10b9fe62db96294e891978b438c35))
+* **swing-store:** Add options for opening swing-stores ([036053c](https://github.com/Agoric/agoric-sdk/commit/036053c4e4df853666e25500a696804bb50a7256))
+* **swing-store:** budget-limited deletion of snapshot and transcripts ([c43bf63](https://github.com/Agoric/agoric-sdk/commit/c43bf63846aedf3493ac6e8f4bc9f2bb48401d66)), closes [#8928](https://github.com/Agoric/agoric-sdk/issues/8928)
+* **swing-store:** faster import of swing-store ([0170568](https://github.com/Agoric/agoric-sdk/commit/0170568d66748af76f0bd24a4acdaa34b9c79cca))
+* **swing-store:** Limit item deletion to the previously-current transcript span ([766c1bb](https://github.com/Agoric/agoric-sdk/commit/766c1bbb082debe9d6fa94e08466d3596c971843)), closes [#9387](https://github.com/Agoric/agoric-sdk/issues/9387)
+* **swing-store:** prevent SwingSet usage of imported swing-store ([6a833eb](https://github.com/Agoric/agoric-sdk/commit/6a833ebda2b2ff0e72040ca8186f93ae91567add))
+* **swingstore:** add repairMetadata() ([33b5c1c](https://github.com/Agoric/agoric-sdk/commit/33b5c1c1fefd5278a24cd5f06630b238439e2891)), closes [#8025](https://github.com/Agoric/agoric-sdk/issues/8025) [#8025](https://github.com/Agoric/agoric-sdk/issues/8025)
+* tool for auditing dangling kindID references ([eeadc46](https://github.com/Agoric/agoric-sdk/commit/eeadc462d8fb09449e4ea6f0118ae8654e0c8e9b)), closes [#7655](https://github.com/Agoric/agoric-sdk/issues/7655)
+
+
+### Bug Fixes
+
+* misc runtime robustness found by typecheck ([a033f26](https://github.com/Agoric/agoric-sdk/commit/a033f2638f9f11e19d94d7931e4e0614773b1f60))
+* performance.now() binding ([4a3b59b](https://github.com/Agoric/agoric-sdk/commit/4a3b59b486c0cb916e531d5de390fbf90e4421ad))
+* rewrite importSwingStore to preserve metadata properly ([38c9efc](https://github.com/Agoric/agoric-sdk/commit/38c9efce10957e0eb245e25ae5f9f45792eb58ad)), closes [#8025](https://github.com/Agoric/agoric-sdk/issues/8025)
+* **swing-store:** accept budget=Infinity to allow unlimited deletions ([c22b656](https://github.com/Agoric/agoric-sdk/commit/c22b65610007607f13373bc1dcc54007e30e2d60))
+* **swing-store:** add 'replay' artifactMode, make export more strict ([9939ea6](https://github.com/Agoric/agoric-sdk/commit/9939ea699bb1fd0b711f950679b432eef9054fda)), closes [#8105](https://github.com/Agoric/agoric-sdk/issues/8105)
+* **swing-store:** Create archive files with .tmp suffixes in their final directory ([1413af2](https://github.com/Agoric/agoric-sdk/commit/1413af2379c5f78bf8dcd5f2ce9a892b3c22494f)), closes [#10239](https://github.com/Agoric/agoric-sdk/issues/10239)
+* **swing-store:** Delete transcript spans in stopUsingTranscript as in rollover ([2d1e478](https://github.com/Agoric/agoric-sdk/commit/2d1e47844760e0534afb3fe410a9635656949dad)), closes [#10054](https://github.com/Agoric/agoric-sdk/issues/10054)
+* **swing-store:** ensure crank savepoint is wrapped in transaction ([9d2dd3f](https://github.com/Agoric/agoric-sdk/commit/9d2dd3f9966940961a4c21351d256fa3615715d7))
+* **swing-store:** explicitly harden prototypes ([86c128a](https://github.com/Agoric/agoric-sdk/commit/86c128a29b5ed61764a67644c3734b0c05df2993))
+* **swing-store:** no completeness check when creating exporter ([d4df073](https://github.com/Agoric/agoric-sdk/commit/d4df073ffcc48b0f0e62bac107ee8edf21150ad9))
+* **swing-store:** Remove unsafe hostStorage.setExportCallback method ([c24e990](https://github.com/Agoric/agoric-sdk/commit/c24e99043149d8941c487a037d3c0f40dce5a4bc)), closes [#10062](https://github.com/Agoric/agoric-sdk/issues/10062)
+* **swing-store:** Update archiveTranscript to wait for write stream conclusion ([#11294](https://github.com/Agoric/agoric-sdk/issues/11294)) ([fbea810](https://github.com/Agoric/agoric-sdk/commit/fbea810678db7e06c8409ed9c163dad88a181ad1)), closes [#11293](https://github.com/Agoric/agoric-sdk/issues/11293) [#11293](https://github.com/Agoric/agoric-sdk/issues/11293)
+* **types:** template syntax ([279b903](https://github.com/Agoric/agoric-sdk/commit/279b903a559710511d69f1614badddeab801b90d))
+* update for `[@jessie](https://github.com/jessie).js/safe-await-separator` ([94c6b3c](https://github.com/Agoric/agoric-sdk/commit/94c6b3c83a5326594f1e2886ae01d6a703a7a68f))
+
+
+
 ### [0.9.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store@0.9.0...@agoric/swing-store@0.9.1) (2023-06-02)
 
 **Note:** Version bump only for package @agoric/swing-store

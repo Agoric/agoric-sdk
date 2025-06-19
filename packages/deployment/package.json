@@ -1,6 +1,6 @@
 {
   "name": "@aglocal/deployment",
-  "version": "3.0.0",
+  "version": "4.0.0-u21.0",
   "description": "Set up Agoric public chain nodes",
   "type": "module",
   "private": true,

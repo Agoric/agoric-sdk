@@ -3,6 +3,45 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.6.3-u21.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/telemetry@0.6.2...@agoric/telemetry@0.6.3-u21.0) (2025-06-19)
+
+
+### Features
+
+* Add the Prometheus slog sender module and load it per OTEL_EXPORTER_PROMETHEUS_PORT ([1dc1827](https://github.com/Agoric/agoric-sdk/commit/1dc182783ce191f0ba2131cb1f7b3042f287737a)), closes [#11045](https://github.com/Agoric/agoric-sdk/issues/11045)
+* **cosmic-swingset:** add JS upgrade plan handler stub ([655133e](https://github.com/Agoric/agoric-sdk/commit/655133ed909b5d632dc033e992214a7b6a1b5ab1))
+* **internal:** Add helper `unprefixedProperties` for environment variable consumption ([878fecf](https://github.com/Agoric/agoric-sdk/commit/878fecf4f5153fa80f48a27a8b79e67943b2d199))
+* simple CircularBuffer with fs offsets ([8d9cb7a](https://github.com/Agoric/agoric-sdk/commit/8d9cb7abe96e8905f5aaa0927e02914ef09279c4))
+* **telemetry:** context aware slog support new triggers ([03965d9](https://github.com/Agoric/agoric-sdk/commit/03965d90b86cf75ce7f6677861e3a0aa8ac70710))
+* **telemetry:** ingest-slog explicitly supports `-` for stdin ([63367c4](https://github.com/Agoric/agoric-sdk/commit/63367c4aaf9bafbd6553a1f4cb808c96bc90845a))
+* **telemetry:** ingest-slog throttle and flush per block ([2134944](https://github.com/Agoric/agoric-sdk/commit/21349448b3b9379a9da43218a59a7e7eaf4f5a9e))
+* **telemetry:** Update slog sender JSON serialization of error instances ([5db996d](https://github.com/Agoric/agoric-sdk/commit/5db996d99830e61fad6eed373e2fb2dc810d662e))
+* use writeSync slogSender ([47a2add](https://github.com/Agoric/agoric-sdk/commit/47a2adda72a5377eda181a425130cdc5a7fd7ff5))
+
+
+### Bug Fixes
+
+* ensure script main rejections exit with error ([abdab87](https://github.com/Agoric/agoric-sdk/commit/abdab879014a5c3124ebd0e9246995ac6b1ce6e5))
+* Properly synchronize slog sender termination ([f83c01d](https://github.com/Agoric/agoric-sdk/commit/f83c01d89d80798e0922acdb498fcc7250560977))
+* **telemetry:** add missing slog type ([1aec8d0](https://github.com/Agoric/agoric-sdk/commit/1aec8d05036f6b3c3e3730339d1829da6b4a9051))
+* **telemetry:** async flight recorder read ([b7a19dd](https://github.com/Agoric/agoric-sdk/commit/b7a19dd9c106d9b31e6f9188f5d4df0bbb5132bf))
+* **telemetry:** avoid polluting stdout in ingest-slog ([d4b8dfa](https://github.com/Agoric/agoric-sdk/commit/d4b8dfa91155789f7ceda5cc3cef06019b9527e7))
+* **telemetry:** Empty context persisted when remaining beans are negative after run finish ([#10635](https://github.com/Agoric/agoric-sdk/issues/10635)) ([ad4e83e](https://github.com/Agoric/agoric-sdk/commit/ad4e83e0b6dff9716da91fd65d367d3acad1772e))
+* **telemetry:** event name typo ([9e19321](https://github.com/Agoric/agoric-sdk/commit/9e19321ea8fed32d445d44169b32f5d94a93d61e))
+* **telemetry:** Extend shutdown logic for slog-sender-pipe and otel-metrics ([7b8ccc8](https://github.com/Agoric/agoric-sdk/commit/7b8ccc82e641e5d11ccc6b8aebe524f75af829fe)), closes [#11175](https://github.com/Agoric/agoric-sdk/issues/11175)
+* **telemetry:** flight recorder flush does sync ([d270202](https://github.com/Agoric/agoric-sdk/commit/d2702028d77c06f3b4de91ca711a3c45c685a477))
+* **telemetry:** flight-recorder check second read size ([bfbacb2](https://github.com/Agoric/agoric-sdk/commit/bfbacb2b9f8de36f8f66b8cba8a88603fb7225e2))
+* **telemetry:** flight-recorder ignores write after shutdown ([3d2bcb3](https://github.com/Agoric/agoric-sdk/commit/3d2bcb3c56ac24a0f991200b223e6af8514dc5b8))
+* **telemetry:** handle new trigger slog events ([d32cb7e](https://github.com/Agoric/agoric-sdk/commit/d32cb7e9f406c25399321dc32e827b5018c38b69))
+* **telemetry:** ingest-slog avoid writing progress file for stdin ([62589ca](https://github.com/Agoric/agoric-sdk/commit/62589ca7b6d4aaa9eb7042f95ec7aec633db27f9))
+* **telemetry:** initialize empty flight-recorders ([0908258](https://github.com/Agoric/agoric-sdk/commit/0908258c159a18f2bace0f76fa25c485c0460d15))
+* **telemetry:** Launch a slog sender subprocess with the correct environment ([1a60955](https://github.com/Agoric/agoric-sdk/commit/1a60955181f4e8b02b3b0d5a2f213d4cb051d7d3))
+* **telemetry:** otel correctly pop upgrade span ([0ffdf00](https://github.com/Agoric/agoric-sdk/commit/0ffdf001bc8cbdc94081fedfeb4d2376902f4ffc)), closes [#8272](https://github.com/Agoric/agoric-sdk/issues/8272) [#9569](https://github.com/Agoric/agoric-sdk/issues/9569)
+* **telemetry:** silence slogfile write errors ([91089d7](https://github.com/Agoric/agoric-sdk/commit/91089d7273ef3d41555b34d84471120d45602497))
+* **telemetry:** timer-poll run.id ([#10672](https://github.com/Agoric/agoric-sdk/issues/10672)) ([3b478fb](https://github.com/Agoric/agoric-sdk/commit/3b478fb9e3fe7ded8dec1e83bab68760571f9071)), closes [#10357](https://github.com/Agoric/agoric-sdk/issues/10357) [#10357](https://github.com/Agoric/agoric-sdk/issues/10357)
+
+
+
 ### [0.6.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/telemetry@0.6.1...@agoric/telemetry@0.6.2) (2023-06-02)
 
 **Note:** Version bump only for package @agoric/telemetry

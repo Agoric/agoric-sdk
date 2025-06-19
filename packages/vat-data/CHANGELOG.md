@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.5.3-u21.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vat-data@0.5.2...@agoric/vat-data@0.5.3-u21.0) (2025-06-19)
+
+
+### Features
+
+* **liveslots:** virtual exo meta-ops ([#8779](https://github.com/Agoric/agoric-sdk/issues/8779)) ([af3ced9](https://github.com/Agoric/agoric-sdk/commit/af3ced91861731353e10a45e4eae63450f74a0ea))
+* **vow:** make `when` an augmentation of `E.when` ([c2a3179](https://github.com/Agoric/agoric-sdk/commit/c2a31792b7070a44b2ab6c9f95dd845b75b316e8))
+
+
+### Bug Fixes
+
+* "x" parameter in many tests is optional ([#8750](https://github.com/Agoric/agoric-sdk/issues/8750)) ([00137a3](https://github.com/Agoric/agoric-sdk/commit/00137a3dd689ca6255e11dc171c9b1cc8b8261ba))
+* **types:** board ([c73f4f9](https://github.com/Agoric/agoric-sdk/commit/c73f4f9686215a37e8c5f82ce8dbe4742886a02b))
+* **types:** problems hidden by skipLibCheck ([6a6e595](https://github.com/Agoric/agoric-sdk/commit/6a6e59549e7beeeef94bf90556ed16873c46d285))
+* **vat-data:** methods can be `PropertyKey`s ([b99f499](https://github.com/Agoric/agoric-sdk/commit/b99f4993c0f1caa651b83755f85689f123717f67))
+* **vow:** persistent resolution, settler->resolver ([4d9371c](https://github.com/Agoric/agoric-sdk/commit/4d9371cb7d450e25146787474760b4c00b11e405))
+* **vow:** use `zone.watchPromise` ([b8ddc9d](https://github.com/Agoric/agoric-sdk/commit/b8ddc9d1ddf06fed8b434f36aa86a2a70293fd56))
+
+
+
 ### [0.5.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/vat-data@0.5.1...@agoric/vat-data@0.5.2) (2023-06-02)
 
 **Note:** Version bump only for package @agoric/vat-data

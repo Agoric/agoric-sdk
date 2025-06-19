@@ -3,6 +3,31 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.15.0-u21.0](https://github.com/Agoric/agoric/compare/@agoric/wallet-backend@0.14.3...@agoric/wallet-backend@0.15.0-u21.0) (2025-06-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* **solo:** remove `sim-chain` dependency
+* **zone:** use fresh heap and virtual zones
+
+### Features
+
+* **internal:** Introduce deepCopyJsonable ([f875bb0](https://github.com/Agoric/agoric/commit/f875bb0923323d019396c605ea9bb4d1382f7f79))
+* **types:** Payment for set-like carries key type ([0765625](https://github.com/Agoric/agoric/commit/0765625bad5a377ce07049ec3b63df000de86762))
+* **zone:** use fresh heap and virtual zones ([7a1a411](https://github.com/Agoric/agoric/commit/7a1a411cf719477e29a2bedeb91794fd633989e9))
+
+
+### Bug Fixes
+
+* promise handling ([c9219ad](https://github.com/Agoric/agoric/commit/c9219adef68914e44f0daa24122086dc3cb19c16))
+* **solo:** remove `sim-chain` dependency ([da75a03](https://github.com/Agoric/agoric/commit/da75a03f95828d773fa3f662d30f0e221030c2ca))
+* **types:** board values ([4196da3](https://github.com/Agoric/agoric/commit/4196da375525fa67382a039a15973810db44ffea))
+* update for `[@jessie](https://github.com/jessie).js/safe-await-separator` ([94c6b3c](https://github.com/Agoric/agoric/commit/94c6b3c83a5326594f1e2886ae01d6a703a7a68f))
+* **wallet:** explicitly harden iteration helper prototype ([c561a12](https://github.com/Agoric/agoric/commit/c561a127523e8d5d1a58db7fe02e777bc66f885d))
+
+
+
 ### [0.14.3](https://github.com/Agoric/agoric/compare/@agoric/wallet-backend@0.14.2...@agoric/wallet-backend@0.14.3) (2023-06-09)
 
 **Note:** Version bump only for package @agoric/wallet-backend

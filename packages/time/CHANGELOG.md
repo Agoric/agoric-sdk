@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.3.3-u21.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/time@0.3.2...@agoric/time@0.3.3-u21.0) (2025-06-19)
+
+
+### Features
+
+* narrow types with mustMatch ([685ffac](https://github.com/Agoric/agoric-sdk/commit/685ffacaadb9a643bc770488416dc14a34aa7a44))
+
+
+### Bug Fixes
+
+* **orchestration:** harden exported patterns ([#10470](https://github.com/Agoric/agoric-sdk/issues/10470)) ([47bebb8](https://github.com/Agoric/agoric-sdk/commit/47bebb8357715f60a699a6f7627dac3d2cf26db7)), closes [#10456](https://github.com/Agoric/agoric-sdk/issues/10456)
+* **time:** Export top-level types ([cffa8c0](https://github.com/Agoric/agoric-sdk/commit/cffa8c0a23726dc3a99802812a461df4e131cfef))
+* **types:** problems hidden by skipLibCheck ([6a6e595](https://github.com/Agoric/agoric-sdk/commit/6a6e59549e7beeeef94bf90556ed16873c46d285))
+
+
+
 ### [0.3.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/time@0.3.1...@agoric/time@0.3.2) (2023-06-02)
 
 **Note:** Version bump only for package @agoric/time
