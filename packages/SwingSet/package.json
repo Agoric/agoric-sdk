@@ -1,6 +1,6 @@
 {
   "name": "@agoric/swingset-vat",
-  "version": "0.32.2",
+  "version": "0.33.0-u21.0",
   "description": "Vat/Container Launcher",
   "type": "module",
   "main": "src/index.js",

@@ -3,6 +3,31 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.10.4-u21.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.10.3...@agoric/deploy-script-support@0.10.4-u21.0) (2025-06-19)
+
+
+### Features
+
+* better diagnostic for bad proposal ([835cc27](https://github.com/Agoric/agoric-sdk/commit/835cc27bdf286c14ed1246ddb8d8db407c6303fa))
+* **deploy-script-support:** generalize `extractCoreProposalBundles` ([4ca9a0b](https://github.com/Agoric/agoric-sdk/commit/4ca9a0b5cb8152e0fb5ca38f755ddd93dab07e36))
+* **deploy-script-support:** Write out bundle file names in machine readable file ([68235ec](https://github.com/Agoric/agoric-sdk/commit/68235ec3fc78b9973d886e782e03048427b6f93e))
+* **extract-proposal:** organize proposals into steps ([74f17ee](https://github.com/Agoric/agoric-sdk/commit/74f17ee3d4796078829e3e348822efb27738a38b))
+* **types:** InvitationAmount ([cdf1b7a](https://github.com/Agoric/agoric-sdk/commit/cdf1b7a6ee28293ba5d606705e24a9fee175effe))
+* **types:** no package imports for ambient types ([cc182de](https://github.com/Agoric/agoric-sdk/commit/cc182de9b8b02a81210768b2602085534aa38a75))
+* **types:** Payment for set-like carries key type ([0765625](https://github.com/Agoric/agoric-sdk/commit/0765625bad5a377ce07049ec3b63df000de86762))
+* **types:** zoeService explicit exports ([ac2ddae](https://github.com/Agoric/agoric-sdk/commit/ac2ddae4bcc2a4132e118e1f3418b9723e09d757))
+* writeCoreEval returns plan ([a0115ed](https://github.com/Agoric/agoric-sdk/commit/a0115ede1432a5fd9c5435e7ef84ea5281aa07e7))
+
+
+### Bug Fixes
+
+* **deploy-scripts-support:** correct bare module resolution ([ff85a7a](https://github.com/Agoric/agoric-sdk/commit/ff85a7af22119a292d3978d2a1adecf1c75a87be))
+* **types:** problems hidden by skipLibCheck ([6a6e595](https://github.com/Agoric/agoric-sdk/commit/6a6e59549e7beeeef94bf90556ed16873c46d285))
+* upgrade for breaking changes in `@endo/bundle-source` ([e840bb2](https://github.com/Agoric/agoric-sdk/commit/e840bb2385ef38aa2a038b6f21f02cdcd2d7979b))
+* validate scriptArgs endowment ([6864614](https://github.com/Agoric/agoric-sdk/commit/68646147d3e95c68b4a90c9e37d888ef00e9d35d))
+
+
+
 ### [0.10.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.10.2...@agoric/deploy-script-support@0.10.3) (2023-06-09)
 
 **Note:** Version bump only for package @agoric/deploy-script-support

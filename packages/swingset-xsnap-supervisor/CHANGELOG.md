@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.10.3-u21.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-xsnap-supervisor@0.10.2...@agoric/swingset-xsnap-supervisor@0.10.3-u21.0) (2025-06-19)
+
+
+### Features
+
+* validate SwingSetCapData ([fbc439f](https://github.com/Agoric/agoric-sdk/commit/fbc439f4d884b04ac7970ac84a44e66a6be1b76c))
+
+
+### Bug Fixes
+
+* endow with original unstructured `assert` ([#9514](https://github.com/Agoric/agoric-sdk/issues/9514)) ([f908f89](https://github.com/Agoric/agoric-sdk/commit/f908f89186162df83b540f6aeb1f4c665c3a56b4)), closes [#9515](https://github.com/Agoric/agoric-sdk/issues/9515) [#5672](https://github.com/Agoric/agoric-sdk/issues/5672) [#8332](https://github.com/Agoric/agoric-sdk/issues/8332) [#9513](https://github.com/Agoric/agoric-sdk/issues/9513) [#5672](https://github.com/Agoric/agoric-sdk/issues/5672) [#8332](https://github.com/Agoric/agoric-sdk/issues/8332) [#9513](https://github.com/Agoric/agoric-sdk/issues/9513) [#9515](https://github.com/Agoric/agoric-sdk/issues/9515) [#5672](https://github.com/Agoric/agoric-sdk/issues/5672) [#5672](https://github.com/Agoric/agoric-sdk/issues/5672) [#9513](https://github.com/Agoric/agoric-sdk/issues/9513) [#9513](https://github.com/Agoric/agoric-sdk/issues/9513)
+* ensure script main rejections exit with error ([abdab87](https://github.com/Agoric/agoric-sdk/commit/abdab879014a5c3124ebd0e9246995ac6b1ce6e5))
+* **swingset-xsnap-supervisor:** Add missing promise-kit dependency ([9d6dbc4](https://github.com/Agoric/agoric-sdk/commit/9d6dbc41a02dfaf249c1bbf48cc14422c0777532))
+
+
+
 ### [0.10.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-xsnap-supervisor@0.10.1...@agoric/swingset-xsnap-supervisor@0.10.2) (2023-06-02)
 
 **Note:** Version bump only for package @agoric/swingset-xsnap-supervisor

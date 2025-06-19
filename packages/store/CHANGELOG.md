@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.9.3-u21.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/store@0.9.2...@agoric/store@0.9.3-u21.0) (2025-06-19)
+
+
+### Features
+
+* narrow types with mustMatch ([685ffac](https://github.com/Agoric/agoric-sdk/commit/685ffacaadb9a643bc770488416dc14a34aa7a44))
+* **types:** types as module with global export ([bf375c0](https://github.com/Agoric/agoric-sdk/commit/bf375c0ec9c50f22928d33a6a745dd5f559e0d91))
+
+
+### Bug Fixes
+
+* correct infelicities in virtual collection API implementation ([af5507b](https://github.com/Agoric/agoric-sdk/commit/af5507bfecaa8f76001c09f6a1a9c8ca2a4c58c1)), closes [#7632](https://github.com/Agoric/agoric-sdk/issues/7632)
+* kindlier error diagnostics on addAll ([656514e](https://github.com/Agoric/agoric-sdk/commit/656514e5a6bf5d186f33137b3c9a113e3a232207))
+* **types:** problems hidden by skipLibCheck ([6a6e595](https://github.com/Agoric/agoric-sdk/commit/6a6e59549e7beeeef94bf90556ed16873c46d285))
+
+
+
 ### [0.9.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/store@0.9.1...@agoric/store@0.9.2) (2023-06-02)
 
 **Note:** Version bump only for package @agoric/store
