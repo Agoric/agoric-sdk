@@ -34,7 +34,7 @@ chains:
       memory: 4Gi
   - id: noblelocal
     name: noble
-    image: ghcr.io/agoric/noble:v9.0.4
+    image: ghcr.io/agoric/noble:v10.0.0
     numValidators: 1
     genesis:
       app_state:
