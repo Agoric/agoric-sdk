@@ -1,10 +1,5 @@
 import { makeTracer, type Remote } from '@agoric/internal';
-import { Fail } from '@endo/errors';
-import type { Zone } from '@agoric/zone';
-import { M } from '@endo/patterns';
 import { VowShape, type VowTools } from '@agoric/vow';
-import { atob, decodeBase64 } from '@endo/base64';
-import { decodeAbiParameters } from 'viem';
 import {
   type AxelarGmpIncomingMemo,
   type SupportedEVMChains,
@@ -22,15 +17,21 @@ import type {
 } from '@agoric/orchestration';
 import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
 import {
-  gmpAddresses,
   buildGMPPayload,
+  gmpAddresses,
 } from '@agoric/orchestration/src/utils/gmp.js';
+import { decodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
+import { type MapStore } from '@agoric/store';
 import type { ZCF } from '@agoric/zoe';
 import type { TimerService } from '@agoric/time';
 import { E } from '@endo/far';
 import type { Amount } from '@agoric/ertp';
-import { YieldProtocol } from './constants.js';
 import type { AxelarChainsMap } from './type-guards.js';
+import type { Zone } from '@agoric/zone';
+import { atob, decodeBase64 } from '@endo/base64';
+import { assert, Fail } from '@endo/errors';
+import { M } from '@endo/patterns';
+import { YieldProtocol } from './constants.js';
 
 const trace = makeTracer('PortExo');
 const { keys, values } = Object;

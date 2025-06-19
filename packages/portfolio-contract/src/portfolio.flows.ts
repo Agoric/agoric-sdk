@@ -11,27 +11,28 @@ import type { Amount } from '@agoric/ertp';
 import { makeTracer, mustMatch } from '@agoric/internal';
 import { assert } from '@endo/errors';
 import type {
+  CaipChainId,
+  ChainHub,
   CosmosChainAddress,
   OrchestrationAccount,
   OrchestrationFlow,
   Orchestrator,
-  CaipChainId,
-  ChainHub,
 } from '@agoric/orchestration';
-import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
-import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import type { ZCFSeat } from '@agoric/zoe';
-import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import {
   AxelarGMPMessageType,
   type AxelarGmpOutgoingMemo,
 } from '@agoric/orchestration/src/axelar-types.js';
+import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { gmpAddresses } from '@agoric/orchestration/src/utils/gmp.js';
+import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
+import type { ZCFSeat } from '@agoric/zoe';
+import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { PortfolioKit } from './portfolio.exo.ts';
 import {
-  makeOfferArgsShapes,
+  EVMOfferArgsShape,
   type AxelarChainsMap,
-  type OfferArgsShapes,
+  type EVMContractAddresses,
+  type EVMOfferArgs,
   type ProposalShapes,
 } from './type-guards.ts';
 // TODO: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
@@ -97,21 +98,16 @@ export const openPortfolio = (async (
     chainHub: GuestInterface<ChainHub>;
     zoeTools: GuestInterface<ZoeTools>;
     makePortfolioKit: () => PortfolioKit;
-    contractAddresses: {
-      aavePool: `0x${string}`;
-      compound: `0x${string}`;
-      factory: `0x${string}`;
-      usdc: `0x${string}`;
-    };
     axelarChainsMap: AxelarChainsMap;
+    contractAddresses: EVMContractAddresses;
     inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
   },
   seat: ZCFSeat,
-  offerArgs: OfferArgsShapes, // TODO: USDN/USDC ratio
+  offerArgs: EVMOfferArgs, // TODO: USDN/USDC ratio
   // passed as a promise to alleviate contract start-up sync constraints
   localP: Promise<OrchestrationAccount<{ chainId: 'agoric-any' }>>,
 ) => {
-  mustMatch(offerArgs, makeOfferArgsShapes());
+  mustMatch(offerArgs, EVMOfferArgsShape);
   await null; // see https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
   try {
     const { makePortfolioKit, contractAddresses, axelarChainsMap, chainHub } =
@@ -200,6 +196,7 @@ export const openPortfolio = (async (
           'Remote account address not found for position',
         );
 
+        assert(offerArgs.evmChain, `evmChain must be defined`);
         const caipChainId = axelarChainsMap[offerArgs.evmChain].caip;
         const destinationAddress = `${caipChainId}:${remoteAccountAddress}`;
         trace(`destinationAddress: ${destinationAddress}`);
@@ -299,6 +296,7 @@ export const openPortfolio = (async (
     if (give.Aave && give.Gmp) {
       trace('Opening Aave position: starting remote EVM account setup');
       const { evmChain } = offerArgs;
+      assert(evmChain, 'evmChain must be defined');
       await sendTokensViaCCTP(give.Aave);
       await kit.holder.wait(20n);
       kit.keeper.addAavePosition(axelarChainsMap[evmChain].caip);

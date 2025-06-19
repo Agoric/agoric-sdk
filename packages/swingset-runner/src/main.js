@@ -3,7 +3,6 @@ import fs from 'fs';
 import process from 'process';
 import repl from 'repl';
 import util from 'util';
-
 import { makeStatLogger } from '@agoric/stat-logger';
 import {
   buildTimer,
@@ -45,47 +44,51 @@ Command line:
   runner [FLAGS...] CMD [{BASEDIR|--} [ARGS...]]
 
 FLAGS may be:
-  --resume         - resume execution using existing saved state
-  --initonly       - initialize the swingset but exit without running it
-  --sqlite         - runs using Sqlite3 as the data store (default)
-  --memdb          - runs using the non-persistent in-memory data store
-  --usexs          - run vats using the XS engine
-  --usebundlecache - cache bundles created by swingset loader
-  --dbdir DIR      - specify where the data store should go (default BASEDIR)
-  --blockmode      - run in block mode (checkpoint every BLOCKSIZE blocks)
-  --blocksize N    - set BLOCKSIZE to N cranks (default 200)
-  --logtimes       - log block execution time stats while running
-  --logmem         - log memory usage stats after each block
-  --logdisk        - log disk space usage stats after each block
-  --logstats       - log kernel stats after each block
-  --logall         - log kernel stats, block times, memory use, and disk space
-  --logtag STR     - tag for stats log file (default "runner")
-  --slog FILE      - write swingset slog to FILE
-  --teleslog       - transmit a slog feed to the local otel collector
-  --forcegc        - run garbage collector after each block
-  --batchsize N    - set BATCHSIZE to N cranks (default 200)
-  --verbose        - output verbose debugging messages as it runs
-  --activityhash   - print out the current activity hash after each crank
-  --audit          - audit kernel promise reference counts after each crank
-  --dump           - dump a kernel state store snapshot after each crank
-  --dumpdir DIR    - place kernel state dumps in directory DIR (default ".")
-  --dumptag STR    - prefix kernel state dump filenames with STR (default "t")
-  --raw            - perform kernel state dumps in raw mode
-  --stats          - print a performance stats report at the end of a run
-  --statsfile FILE - output performance stats to FILE as a JSON object
-  --benchmark N    - perform an N round benchmark after the initial run
-  --sbench FILE    - run a whole-swingset benchmark with the driver vat in FILE
-  --chain          - emulate the behavior of the Cosmos-based chain
-  --indirect       - launch swingset from a vat instead of launching directly
-  --config FILE    - read swingset config from FILE instead of inferring it
+  --resume                    - resume execution using existing saved state
+  --initonly                  - initialize the swingset but exit without running it
+  --sqlite                    - runs using Sqlite3 as the data store (default)
+  --memdb                     - runs using the non-persistent in-memory data store
+  --usexs                     - run vats using the XS engine
+  --usebundlecache            - cache bundles created by swingset loader
+  --dbdir DIR                 - specify where the data store should go (default BASEDIR)
+  --blockmode                 - run in block mode (checkpoint every BLOCKSIZE blocks)
+  --blocksize N               - set BLOCKSIZE to N cranks (default 200)
+  --logtimes                  - log block execution time stats while running
+  --logmem                    - log memory usage stats after each block
+  --logdisk                   - log disk space usage stats after each block
+  --logstats                  - log kernel stats after each block
+  --logall                    - log kernel stats, block times, memory use, and disk space
+  --logtag STR                - tag for stats log file (default "runner")
+  --slog FILE                 - write swingset slog to FILE
+  --teleslog                  - transmit a slog feed to the local otel collector
+  --forcegc                   - run garbage collector after each block
+  --batchsize N               - set BATCHSIZE to N cranks (default 200)
+  --verbose                   - output verbose debugging messages as it runs
+  --activityhash              - print out the current activity hash after each crank
+  --audit                     - audit kernel promise reference counts after each crank
+  --dump                      - dump a kernel state store snapshot after each crank
+  --dumpdir DIR               - place kernel state dumps in directory DIR (default ".")
+  --dumptag STR               - prefix kernel state dump filenames with STR (default "t")
+  --raw                       - perform kernel state dumps in raw mode
+  --stats                     - print a performance stats report at the end of a run
+  --statsfile FILE            - output performance stats to FILE as a JSON object
+  --benchmark N               - perform an N round benchmark after the initial run
+  --sbench FILE               - run a whole-swingset benchmark with the driver vat in FILE
+  --chain                     - emulate the behavior of the Cosmos-based chain
+  --indirect                  - launch swingset from a vat instead of launching directly
+  --config FILE               - read swingset config from FILE instead of inferring it
+  --cpu-profile-output FILE   - write an implementation-specific CPU profile to FILE
+  --heap-profile-output FILE  - write an implementation-specific heap profile to FILE
+  --heap-sampling-interval N  - set heap profiling sampling interval to N units (for Node.js, bytes)
+                                (default 1024)
 
 CMD is one of:
-  help   - print this helpful usage information
-  run    - launches or resumes the configured vats, which run to completion.
-  batch  - launch or resume, then run BATCHSIZE cranks or until completion
-  step   - steps the configured swingset one crank.
-  shell  - starts a simple CLI allowing the swingset to be run or stepped or
-           interrogated interactively.
+  help                        - print this helpful usage information
+  run                         - launches or resumes the configured vats, which run to completion.
+  batch                       - launch or resume, then run BATCHSIZE cranks or until completion
+  step                        - steps the configured swingset one crank.
+  shell                       - starts a simple CLI allowing the swingset to be run or stepped or
+                                interrogated interactively.
 
 BASEDIR is the base directory for locating the swingset's vat definitions and
   for storing the swingset's state.  If BASEDIR is omitted or '--' it defaults
@@ -138,16 +141,16 @@ function generateSwingsetBenchmarkConfig(
       `you can't have a vat named benchmarkBootstrap in a benchmark swingset`,
     );
   }
-  if (baseConfig.vats.benchmarkDriver) {
+  if (baseConfig.vats.benchmarkDriver)
     fail(`you can't have a vat named benchmarkDriver in a benchmark swingset`);
-  }
-  // eslint-disable-next-line prefer-const
-  let { benchmarkDriver, ...baseConfigOptions } = baseConfig;
-  if (!benchmarkDriver) {
-    benchmarkDriver = {
-      sourceSpec: swingsetBenchmarkDriverPath,
-    };
-  }
+
+  const {
+    benchmarkDriver = { sourceSpec: swingsetBenchmarkDriverPath },
+    bootstrap: baseBootstrap,
+    vats: baseVats,
+    ...baseConfigOptions
+  } = baseConfig;
+
   const config = {
     ...baseConfigOptions,
     bootstrap: 'benchmarkBootstrap',
@@ -156,36 +159,30 @@ function generateSwingsetBenchmarkConfig(
       benchmarkBootstrap: {
         sourceSpec: new URL('vat-benchmarkBootstrap.js', import.meta.url)
           .pathname,
-        parameters: {
-          config: {
-            bootstrap: baseConfig.bootstrap,
-          },
-        },
+        parameters: { config: { bootstrap: baseBootstrap } },
       },
       benchmarkDriver,
-      ...baseConfig.vats,
+      ...baseVats,
     },
   };
-  if (!config.vats[baseConfig.bootstrap].parameters) {
-    config.vats[baseConfig.bootstrap].parameters = {};
-  }
-  config.vats[baseConfig.bootstrap].parameters.argv = bootstrapArgv;
+
+  if (!config.vats[baseBootstrap].parameters)
+    config.vats[baseBootstrap].parameters = {};
+
+  config.vats[baseBootstrap].parameters.argv = bootstrapArgv;
   return config;
 }
 
 function generateIndirectConfig(baseConfig) {
+  const launcherConfig = { bootstrap: baseConfig.bootstrap, vats: {} };
+
   const config = {
     bootstrap: 'launcher',
     bundles: {},
     vats: {
       launcher: {
         sourceSpec: new URL('vat-launcher.js', import.meta.url).pathname,
-        parameters: {
-          config: {
-            bootstrap: baseConfig.bootstrap,
-            vats: {},
-          },
-        },
+        parameters: { config: launcherConfig },
       },
     },
   };
@@ -209,7 +206,7 @@ function generateIndirectConfig(baseConfig) {
         fail(`this can't happen`);
       }
       baseVat.bundleName = newBundleName;
-      config.vats.launcher.parameters.config.vats[vatName] = baseVat;
+      launcherConfig.vats[vatName] = baseVat;
     }
   }
   if (baseConfig.bundles) {
@@ -236,7 +233,7 @@ export async function main() {
   let logDisk = false;
   let logStats = false;
   let logTag = 'runner';
-  let slogFile = null;
+  let slogFile;
   let teleslog = false;
   let forceGC = false;
   let verbose = false;
@@ -250,13 +247,31 @@ export async function main() {
   let benchmarkRounds = 0;
   let configPath = null;
   let statsFile = null;
-  let dbDir = null;
+  let dbDir;
   let initOnly = false;
   let useXS = false;
   let useBundleCache = false;
   let activityHash = false;
   let emulateChain = false;
   let swingsetBenchmarkDriverPath = null;
+  /** @type {string | undefined} */
+  let cpuProfileFilePath;
+  /** @type {string | undefined} */
+  let heapProfileFilePath;
+  /** @type {number} */
+  let heapSamplingInterval = 1024;
+  /** @type {import('inspector').Session | undefined} */
+  let inspectorSession;
+  /** @type {string | undefined} */
+  let nextArg;
+
+  const initializeInspectorSession = () =>
+    import('inspector').then(({ Session }) => {
+      inspectorSession = new Session();
+      inspectorSession.connect();
+    });
+
+  await null;
 
   while (argv[0] && argv[0].startsWith('-')) {
     const flag = argv.shift();
@@ -294,7 +309,9 @@ export async function main() {
         logStats = true;
         break;
       case '--logtag':
-        logTag = argv.shift();
+        nextArg = argv.shift();
+        if (nextArg) logTag = nextArg;
+        else throw Error('Missing value for --logtag');
         break;
       case '--slog':
         slogFile = argv.shift();
@@ -324,11 +341,15 @@ export async function main() {
         doDumps = true;
         break;
       case '--dumpdir':
-        dumpDir = argv.shift();
+        nextArg = argv.shift();
+        if (nextArg) dumpDir = nextArg;
+        else throw Error('Missing value for --dumpdir');
         doDumps = true;
         break;
       case '--dumptag':
-        dumpTag = argv.shift();
+        nextArg = argv.shift();
+        if (nextArg) dumpTag = nextArg;
+        else throw Error('Missing value for --dumptag');
         doDumps = true;
         break;
       case '--dbdir':
@@ -368,6 +389,44 @@ export async function main() {
       case '--sbench':
         swingsetBenchmarkDriverPath = argv.shift();
         break;
+      case '--cpu-profile-output':
+        nextArg = argv.shift();
+        if (!nextArg) throw Error('Need a file path for cpu profile');
+
+        cpuProfileFilePath = path.resolve(nextArg);
+        try {
+          await fs.promises.access(path.dirname(cpuProfileFilePath));
+        } catch (cause) {
+          throw Error(`Can't record CPU profile at ${cpuProfileFilePath}`, {
+            cause,
+          });
+        }
+
+        if (!inspectorSession) await initializeInspectorSession();
+        break;
+      case '--heap-profile-output':
+        nextArg = argv.shift();
+        if (!nextArg) throw Error('Need a file path for heap profile');
+
+        heapProfileFilePath = path.resolve(nextArg);
+        try {
+          await fs.promises.access(path.dirname(heapProfileFilePath));
+        } catch (cause) {
+          throw Error(`Can't record heap profile at ${heapProfileFilePath}`, {
+            cause,
+          });
+        }
+
+        if (!inspectorSession) await initializeInspectorSession();
+        break;
+      case '--heap-sampling-interval':
+        nextArg = argv.shift();
+        heapSamplingInterval = Number(nextArg);
+        if (Number.isNaN(heapSamplingInterval) || heapSamplingInterval < 1)
+          throw Error(
+            `'${nextArg}' is not a valid value for sampling interval`,
+          );
+        break;
       case '-v':
       case '--verbose':
         verbose = true;
@@ -404,11 +463,11 @@ export async function main() {
   const bootstrapArgv = argv[0] === '--' ? argv.slice(1) : argv;
 
   let config;
-  await null;
+
   if (configPath) {
     config = await loadSwingsetConfigFile(configPath);
-    if (config === null) {
-      fail(`config file ${configPath} not found`);
+    if (!config) {
+      return fail(`config file ${configPath} not found`);
     }
     if (!basedir) {
       basedir = swingsetBenchmarkDriverPath
@@ -431,30 +490,20 @@ export async function main() {
   }
 
   const timer = buildTimer();
-  config.devices = {
-    timer: {
-      sourceSpec: timer.srcPath,
-    },
-  };
-  const deviceEndowments = {
-    timer: { ...timer.endowments },
-  };
+  config.devices = { timer: { sourceSpec: timer.srcPath } };
+  const deviceEndowments = { timer: { ...timer.endowments } };
   if (config.loopboxSenders) {
     const { loopboxSrcPath, loopboxEndowments } = buildLoopbox('immediate');
     config.devices.loopbox = {
       sourceSpec: loopboxSrcPath,
-      parameters: {
-        senders: config.loopboxSenders,
-      },
+      parameters: { senders: config.loopboxSenders },
     };
     delete config.loopboxSenders;
     deviceEndowments.loopbox = { ...loopboxEndowments };
   }
   if (emulateChain) {
     const bridge = await initEmulatedChain(config, configPath);
-    config.devices.bridge = {
-      sourceSpec: bridge.srcPath,
-    };
+    config.devices.bridge = { sourceSpec: bridge.srcPath };
     deviceEndowments.bridge = { ...bridge.endowments };
   }
   if (!config.defaultManagerType) {
@@ -499,7 +548,7 @@ export async function main() {
       break;
     }
     default:
-      fail(`invalid database mode ${dbMode}`, true);
+      return fail(`invalid database mode ${dbMode}`, true);
   }
   const { kernelStorage, hostStorage } = swingStore;
   const runtimeOptions = {};
@@ -520,14 +569,9 @@ export async function main() {
   }
   let slogSender;
   if (teleslog || slogFile) {
-    const slogEnv = {
-      ...process.env,
-      SLOGFILE: slogFile,
-    };
-    const slogOpts = {
-      stateDir: dbDir,
-      env: slogEnv,
-    };
+    /** @type {typeof process.env} */
+    const slogEnv = { ...process.env, SLOGFILE: slogFile };
+    const slogOpts = { stateDir: dbDir, env: slogEnv };
     if (slogFile) {
       slogEnv.SLOGSENDER = '';
     }
@@ -626,9 +670,7 @@ export async function main() {
         prompt: 'runner> ',
         replMode: repl.REPL_MODE_STRICT,
       });
-      cli.on('exit', () => {
-        hostStorage.close();
-      });
+      cli.on('exit', hostStorage.close);
       cli.context.dump2 = () => controller.dump();
       cli.defineCommand('commit', {
         help: 'Commit current kernel state to persistent storage',
@@ -654,7 +696,7 @@ export async function main() {
       cli.defineCommand('block', {
         help: 'Execute a block of <n> cranks, without commit',
         action: async requestedSteps => {
-          const steps = await runBlock(requestedSteps, false);
+          const steps = await runBlock(Number(requestedSteps), false);
           log(`executed ${steps} cranks in block`);
           cli.displayPrompt();
         },
@@ -662,7 +704,7 @@ export async function main() {
       cli.defineCommand('benchmark', {
         help: 'Run <n> rounds of the benchmark protocol',
         action: async rounds => {
-          const [steps, deltaT] = await runBenchmark(rounds);
+          const [steps, deltaT] = await runBenchmark(Number(rounds));
           log(`benchmark ${rounds} rounds, ${steps} cranks in ${deltaT} ns`);
           cli.displayPrompt();
         },
@@ -696,9 +738,7 @@ export async function main() {
   if (statLogger) {
     statLogger.close();
   }
-  if (slogSender) {
-    await slogSender.forceFlush();
-  }
+  if (slogSender) await slogSender.forceFlush?.();
   await controller.shutdown();
 
   function getCrankNumber() {
@@ -710,12 +750,43 @@ export async function main() {
     dumpStore(kernelStorage, dumpPath, rawMode);
   }
 
+  /**
+   * @param {string} method
+   * @param {Partial<{samplingInterval: number}>} [parameters]
+   * @returns {object}
+   */
+  function postToInspector(method, parameters = {}) {
+    return new Promise((resolve, reject) =>
+      inspectorSession?.post(method, parameters, (err, result) =>
+        err ? reject(err) : resolve(result),
+      ),
+    );
+  }
+
+  /**
+   * @param {number} rounds
+   * @returns {Promise<[number, bigint]>}
+   */
   async function runBenchmark(rounds) {
     const cranksPre = getCrankNumber();
     const rawStatsPre = controller.getStats();
     let totalSteps = 0;
     let totalDeltaT = 0n;
+
     await null;
+
+    if (cpuProfileFilePath) {
+      await postToInspector('Profiler.enable');
+      await postToInspector('Profiler.start');
+    }
+
+    if (heapProfileFilePath) {
+      await postToInspector('HeapProfiler.enable');
+      await postToInspector('HeapProfiler.startSampling', {
+        samplingInterval: heapSamplingInterval,
+      });
+    }
+
     for (let i = 0; i < rounds; i += 1) {
       const roundResult = controller.queueToVatRoot(
         config.bootstrap,
@@ -734,6 +805,19 @@ export async function main() {
       totalSteps += steps;
       totalDeltaT += deltaT;
     }
+
+    if (cpuProfileFilePath) {
+      const { profile } = await postToInspector('Profiler.stop');
+      fs.writeFileSync(cpuProfileFilePath, JSON.stringify(profile));
+      await postToInspector('Profiler.disable');
+    }
+
+    if (heapProfileFilePath) {
+      const { profile } = await postToInspector('HeapProfiler.stopSampling');
+      fs.writeFileSync(heapProfileFilePath, JSON.stringify(profile));
+      await postToInspector('HeapProfiler.disable');
+    }
+
     const cranksPost = getCrankNumber();
     const rawStatsPost = controller.getStats();
     benchmarkStats = organizeBenchmarkStats(
@@ -746,6 +830,10 @@ export async function main() {
     return [totalSteps, totalDeltaT];
   }
 
+  /**
+   * @param {number} requestedSteps
+   * @param {boolean} doCommit
+   */
   async function runBlock(requestedSteps, doCommit) {
     const blockStartTime = readClock();
     let actualSteps = 0;
@@ -802,6 +890,7 @@ export async function main() {
     }
     if (statLogger) {
       blockNumber += 1;
+      /** @type {Array<bigint | number>} */
       let data = [blockNumber, actualSteps];
       if (logTimes) {
         data.push(blockEndTime - blockStartTime);
@@ -817,7 +906,8 @@ export async function main() {
         ]);
       }
       if (logDisk) {
-        const diskUsage = dbMode === '--sqlite' ? hostStorage.diskUsage() : 0;
+        const diskUsage =
+          (dbMode === '--sqlite' && hostStorage.diskUsage?.()) || 0;
         data.push(diskUsage);
       }
       if (logStats) {
@@ -831,6 +921,11 @@ export async function main() {
     return actualSteps;
   }
 
+  /**
+   * @param {number} stepLimit
+   * @param {boolean} doCommit
+   * @returns {Promise<[number, bigint]>}
+   */
   async function runBatch(stepLimit, doCommit) {
     const startTime = readClock();
     let totalSteps = 0;
@@ -850,6 +945,10 @@ export async function main() {
     process.exit(1);
   }
 
+  /**
+   * @param {number} stepLimit
+   * @param {boolean} runInBlockMode
+   */
   async function commandRun(stepLimit, runInBlockMode) {
     if (doDumps) {
       kernelStateDump();

@@ -1,0 +1,40 @@
+{
+  "name": "@agoric/pola-io",
+  "version": "0.1.0",
+  "description": "Least Authority I/O utilities",
+  "type": "module",
+  "main": "./src/index.js",
+  "types": "./src/types.ts",
+  "scripts": {
+    "build": "exit 0",
+    "test": "ava",
+    "test:xs": "exit 0",
+    "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
+    "lint:eslint": "eslint .",
+    "lint:types": "yarn run -T tsc",
+    "lint-fix": "eslint --fix ."
+  },
+  "devDependencies": {
+    "ava": "^5.3.0"
+  },
+  "files": [
+    "src/"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "eslintConfig": {
+    "extends": [
+      "@agoric"
+    ]
+  },
+  "ava": {
+    "files": [
+      "test/**/*.test.*"
+    ],
+    "timeout": "2m"
+  },
+  "typeCoverage": {
+    "atLeast": 80
+  }
+}

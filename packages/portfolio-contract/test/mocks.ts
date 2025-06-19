@@ -24,6 +24,7 @@ import {
   buildMsgResponseString,
 } from '@agoric/orchestration/tools/ibc-mocks.ts';
 import { Far } from '@endo/pass-style';
+import type { EVMContractAddresses } from '../src/type-guards';
 
 export const prepareMockOrchAccounts = (
   zone: Zone,
@@ -179,7 +180,7 @@ export const makeIBCTransferTraffic = () => ({
   },
 });
 
-export const contractAddresses = {
+export const contractAddresses: EVMContractAddresses = {
   aavePool: '0x1111111111111111111111111111111111111111',
   compound: '0xA0b86a33E6A3E81E27Da9c18c4A77c9Cd4e08D57',
   factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',

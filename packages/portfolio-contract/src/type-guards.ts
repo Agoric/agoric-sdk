@@ -1,3 +1,4 @@
+import type { Amount, Brand, NatValue } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
 import { M } from '@endo/patterns';
 import {
@@ -6,7 +7,7 @@ import {
 } from './constants.js';
 import { YieldProtocol } from './constants.js';
 
-const { keys } = Object;
+const { fromEntries, keys } = Object;
 
 /**
  * @param brand must be a 'nat' brand, not checked
@@ -34,8 +35,8 @@ export type AxelarChainsMap = {
   };
 };
 
-export type OfferArgsShapes = {
-  evmChain: AxelarChain;
+export type EVMOfferArgs = {
+  evmChain?: AxelarChain;
 };
 
 export const makeProposalShapes = (usdcBrand: Brand<'nat'>) => {
@@ -51,11 +52,41 @@ export const makeProposalShapes = (usdcBrand: Brand<'nat'>) => {
   };
 };
 
-export const makeOfferArgsShapes = () => {
-  return M.splitRecord({
+export const EVMOfferArgsShape: TypedPattern<EVMOfferArgs> = M.splitRecord(
+  {},
+  {
     // Use Axelar chain identifier instead of CAP-10 ID for cross-chain messaging
     // Axelar docs: https://docs.axelar.dev/dev/reference/mainnet-chain-names
     // Chain names: https://axelarscan.io/resources/chains
     evmChain: M.or(...keys(AxelarChains)),
-  }) as TypedPattern<OfferArgsShapes>;
+  },
+) as TypedPattern<EVMOfferArgs>;
+
+export type EVMContractAddresses = {
+  aavePool: string;
+  compound: string;
+  factory: string;
+  usdc: string;
 };
+
+export const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
+  M.splitRecord({
+    aavePool: M.string(),
+    compound: M.string(),
+    factory: M.string(),
+    usdc: M.string(),
+  });
+
+const AxelarChainInfoPattern = M.splitRecord({
+  caip: M.string(),
+  // Axelar chain Ids differ between mainnet and testnet environments.
+  // Reference: https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts
+  axelarId: M.string(),
+});
+
+export const AxelarChainsMapShape: TypedPattern<AxelarChainsMap> =
+  M.splitRecord(
+    fromEntries(
+      keys(AxelarChains).map(chain => [chain, AxelarChainInfoPattern]),
+    ) as Record<AxelarChain, typeof AxelarChainInfoPattern>,
+  );

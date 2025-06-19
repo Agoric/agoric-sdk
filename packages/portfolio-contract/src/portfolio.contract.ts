@@ -1,66 +1,72 @@
-import { makeTracer } from '@agoric/internal';
+import { makeTracer, type TypedPattern } from '@agoric/internal';
 import {
   ChainInfoShape,
   DenomDetailShape,
   OrchestrationPowersShape,
   registerChainsAndAssets,
   withOrchestration,
+  type ChainInfo,
+  type Denom,
+  type DenomDetail,
+  type OrchestrationPowers,
   type OrchestrationTools,
 } from '@agoric/orchestration';
 import type { ZCF } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Zone } from '@agoric/zone';
 import type { CopyRecord } from '@endo/pass-style';
-import { M } from '@endo/patterns';
-import { TimerServiceShape } from '@agoric/time';
+import { M, mustMatch } from '@endo/patterns';
 import { preparePortfolioKit, type LocalAccount } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
-import { makeProposalShapes, type OfferArgsShapes } from './type-guards.ts';
-import { AxelarChains } from './constants.js';
+import {
+  EVMContractAddressesShape,
+  makeProposalShapes,
+  EVMOfferArgsShape,
+  type EVMContractAddresses,
+  type EVMOfferArgs,
+  type AxelarChainsMap,
+  AxelarChainsMapShape,
+} from './type-guards.ts';
 
-const { keys } = Object;
 const trace = makeTracer('PortC');
 
 const interfaceTODO = undefined;
 
-const privateArgsShape = {
-  ...(OrchestrationPowersShape as CopyRecord),
-  marshaller: M.remotable('marshaller'),
-  contractAddresses: M.splitRecord({
-    aavePool: M.string(),
-    compound: M.string(),
-    factory: M.string(),
-    usdc: M.string(),
-  }),
-  axelarChainsMap: M.recordOf(
-    M.or(...keys(AxelarChains)),
-    M.splitRecord({
-      caip: M.string(),
-      // Axelar chain Ids differ between mainnet and testnet environments.
-      // Reference: https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts
-      axelarId: M.string(),
-    }),
-  ),
-  timer: TimerServiceShape,
-  chainInfo: M.recordOf(M.string(), ChainInfoShape),
-  assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
-  // TODO: remove once we deploy package pr is merged
-  poolMetricsNode: M.remotable(),
+type PortfolioPrivateArgs = OrchestrationPowers & {
+  assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
+  chainInfo: Record<string, ChainInfo>;
+  marshaller: Marshaller;
+  contractAddresses: EVMContractAddresses;
+  axelarChainsMap: AxelarChainsMap;
 };
 
-export const meta = M.splitRecord({
+const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
+  ...(OrchestrationPowersShape as CopyRecord),
+  marshaller: M.remotable('marshaller'),
+  contractAddresses: EVMContractAddressesShape,
+  chainInfo: M.recordOf(M.string(), ChainInfoShape),
+  assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
+  axelarChainsMap: AxelarChainsMapShape,
+};
+
+export const meta = {
   privateArgsShape,
-});
+};
 harden(meta);
 
 export const contract = async (
   zcf: ZCF,
-  privateArgs,
+  privateArgs: PortfolioPrivateArgs,
   zone: Zone,
   tools: OrchestrationTools,
 ) => {
-  const { chainInfo, assetInfo, contractAddresses, axelarChainsMap, timer } =
-    privateArgs;
+  const {
+    chainInfo,
+    assetInfo,
+    contractAddresses,
+    axelarChainsMap,
+    timerService,
+  } = privateArgs;
   const { brands } = zcf.getTerms();
   const { orchestrateAll, zoeTools, chainHub, vowTools } = tools;
 
@@ -86,7 +92,7 @@ export const contract = async (
     zcf,
     axelarChainsMap,
     chainHub,
-    timer,
+    timer: timerService,
     vowTools,
   });
   const { makeLocalAccount, openPortfolio } = orchestrateAll(flows, {
@@ -105,7 +111,8 @@ export const contract = async (
     makeOpenPortfolioInvitation() {
       trace('makeOpenPortfolioInvitation');
       return zcf.makeInvitation(
-        (seat, offerArgs: OfferArgsShapes) => {
+        (seat, offerArgs: EVMOfferArgs) => {
+          mustMatch(offerArgs, EVMOfferArgsShape);
           return openPortfolio(
             seat,
             offerArgs,

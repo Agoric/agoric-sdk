@@ -44,8 +44,7 @@
     "@endo/errors": "^1.2.10",
     "@endo/far": "^1.1.11",
     "@endo/pass-style": "^1.5.0",
-    "@endo/patterns": "^1.5.0",
-    "viem": "^2.31.0"
+    "@endo/patterns": "^1.5.0"
   },
   "ava": {
     "extensions": {

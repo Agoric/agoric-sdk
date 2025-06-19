@@ -1,5 +1,6 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
 import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import type { Installation } from '@agoric/zoe';
@@ -67,7 +68,7 @@ const deploy = async (t: ExecutionContext) => {
   t.is(passStyleOf(installation), 'remotable');
 
   const { usdc } = common.brands;
-  const timer = buildZoeManualTimer();
+  const timerService = buildZoeManualTimer();
 
   const started = await E(zoe).startInstance(
     installation,
@@ -77,7 +78,7 @@ const deploy = async (t: ExecutionContext) => {
       ...common.commonPrivateArgs,
       contractAddresses,
       axelarChainsMap,
-      timer,
+      timerService,
       chainInfo,
     }, // privateArgs
   );
@@ -92,7 +93,7 @@ const deploy = async (t: ExecutionContext) => {
       }),
     ),
   );
-  return { common, zoe, started, timer };
+  return { common, zoe, started, timerService };
 };
 
 test('open portfolio with USDN position', async t => {
@@ -135,7 +136,7 @@ test('open portfolio with USDN position', async t => {
 });
 
 test('open portfolio with Aave position', async t => {
-  const { common, zoe, started, timer } = await deploy(t);
+  const { common, zoe, started, timerService } = await deploy(t);
   const { usdc } = common.brands;
   const { when } = common.utils.vowTools;
 
@@ -201,11 +202,11 @@ test('open portfolio with Aave position', async t => {
 
   await E(common.mocks.transferBridge).fromBridge(receiveUpCallEvent);
   // Advance the timer by 180 time units to simulate the contract's wait
-  await timer.tickN(180);
+  await timerService.tickN(180);
   // Simulate IBC acknowledgement for localAcct.transfer() in sendTokensViaCCTP()
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   // Advance the timer by 20 time units to wait for cctp transfer
-  await timer.tickN(20);
+  await timerService.tickN(20);
   const result = await doneP;
   t.log('Portfolio open result:', result);
 
