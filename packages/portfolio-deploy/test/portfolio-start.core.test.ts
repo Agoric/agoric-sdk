@@ -114,10 +114,12 @@ test('coreEval code without swingset', async t => {
   // ack IBC transfer for forward
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   const actual = await actualP;
+  const ag1 = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht';
   t.like(actual, {
     payouts: { USDN: { value: 0n } },
     result: {
       publicTopics: [
+        { description: 'LCA', storagePath: `cosmos:agoric-3:${ag1}` },
         { description: 'USDN ICA', storagePath: 'cosmos:noble-1:cosmos1test' },
       ],
     },
