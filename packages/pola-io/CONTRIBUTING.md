@@ -26,12 +26,16 @@ yarn lint
 - Consolidate overlapping I/O logic from `agoric-sdk` and `endojs/endo`:
 
   - Enhance this package to offer the relevant features
-    - FileWr
     - cache from @endo/bundle-source
+    - config file objects in fast-usdc cli
+    - makeAgd variants
+    - multichain-testing / dapp-orchestration-basics stuff:
+      - running in containers, pods
+      - copying files into containers / pods
   - Replace ad hoc copies in upstream code
 
 - Consider providing exhaustive coverage of Node.js `fs` and `path` APIs
-
+  - read / write streams
   - Reference: [safej/java/io/File.safej](https://github.com/kpreid/e-on-java/blob/master/src/safej/java/io/File.safej)
 
 - decide on package exports; e.g. `@agoric/pola-io/cmd`?
