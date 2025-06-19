@@ -1,4 +1,4 @@
-// @ts-nocheck
+// eslint-disable-next-line import/no-extraneous-dependencies
 import * as index from '@agoric/pola-io';
 
 import test from 'ava';
