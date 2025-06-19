@@ -204,6 +204,97 @@ const withdrawFromAave = async (
   );
 };
 
+const supplyToCompound = async (
+  orch: Orchestrator,
+  seat: ZCFSeat,
+  ctx: {
+    axelarChainsMap: AxelarChainsMap;
+    chainHubTools: {
+      getDenom: (brand: Brand) => Denom | undefined;
+    };
+    contractAddresses: EVMContractAddresses;
+    kit: PortfolioKit;
+  },
+  gmpArgs: {
+    destinationEVMChain: AxelarChain;
+    gasAmount: Amount<'nat'>;
+    transferAmount: BigInt;
+  },
+) => {
+  const { destinationEVMChain, transferAmount, gasAmount } = gmpArgs;
+  const { kit, contractAddresses } = ctx;
+
+  const remoteEVMAddress = await kit.holder.getRemoteAccountAddress();
+  assert(remoteEVMAddress, 'remoteEVMAddress must be defined');
+
+  await sendGmp(
+    orch,
+    seat,
+    ctx,
+    harden({
+      destinationAddress: contractAddresses.factory,
+      destinationEVMChain,
+      type: AxelarGMPMessageType.ContractCall,
+      amount: gasAmount,
+      contractInvocationData: [
+        {
+          functionSignature: 'approve(address,uint256)',
+          args: [contractAddresses.compound, transferAmount],
+          target: contractAddresses.usdc,
+        },
+        {
+          functionSignature: 'supply(address,uint256)',
+          args: [contractAddresses.usdc, transferAmount],
+          target: contractAddresses.compound,
+        },
+      ],
+    }),
+  );
+};
+
+const withdrawFromCompound = async (
+  orch: Orchestrator,
+  seat: ZCFSeat,
+  ctx: {
+    axelarChainsMap: AxelarChainsMap;
+    chainHubTools: {
+      getDenom: (brand: Brand) => Denom | undefined;
+    };
+    contractAddresses: EVMContractAddresses;
+    kit: PortfolioKit;
+  },
+  gmpArgs: {
+    destinationEVMChain: AxelarChain;
+    gasAmount: Amount<'nat'>;
+    withdrawAmount: BigInt;
+  },
+) => {
+  const { destinationEVMChain, withdrawAmount, gasAmount } = gmpArgs;
+  const { kit, contractAddresses } = ctx;
+
+  const remoteEVMAddress = await kit.holder.getRemoteAccountAddress();
+  assert(remoteEVMAddress, 'remoteEVMAddress must be defined');
+
+  await sendGmp(
+    orch,
+    seat,
+    ctx,
+    harden({
+      destinationAddress: contractAddresses.factory,
+      destinationEVMChain,
+      type: AxelarGMPMessageType.ContractCall,
+      amount: gasAmount,
+      contractInvocationData: [
+        {
+          functionSignature: 'withdraw(address,uint256)',
+          args: [contractAddresses.usdc, withdrawAmount],
+          target: contractAddresses.compound,
+        },
+      ],
+    }),
+  );
+};
+
 /**
  * Make an orchestration account on the agoric chain to, for example,
  * initiate IBC token transfers.
