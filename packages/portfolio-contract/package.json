@@ -33,7 +33,6 @@
     "ts-blank-space": "^0.6.1"
   },
   "dependencies": {
-    "@aglocal/fast-usdc-deploy": "^0.1.0",
     "@agoric/cosmic-proto": "workspace:*",
     "@agoric/internal": "workspace:*",
     "@agoric/orchestration": "workspace:*",

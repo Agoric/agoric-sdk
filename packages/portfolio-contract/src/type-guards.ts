@@ -1,11 +1,9 @@
 import type { Amount, Brand, NatValue } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
+import type { CaipChainId } from '@agoric/orchestration';
 import { M } from '@endo/patterns';
-import {
-  AxelarChains,
-  type YieldProtocol as YieldProtocolT,
-} from './constants.js';
-import { YieldProtocol } from './constants.js';
+import { AxelarChains, YieldProtocol } from './constants.js';
+import type { YieldProtocol as YieldProtocolT } from './constants.js';
 
 const { fromEntries, keys } = Object;
 
@@ -30,7 +28,11 @@ export type ProposalShapes = {
 export type AxelarChain = keyof typeof AxelarChains;
 export type AxelarChainsMap = {
   [chain in AxelarChain]: {
-    caip: `${string}:${string}`;
+    caip: CaipChainId;
+    /**
+     * Axelar chain IDs differ between mainnet and testnet.
+     * See [supported-chains-list.ts](https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts)
+     */
     axelarId: string;
   };
 };
@@ -55,9 +57,6 @@ export const makeProposalShapes = (usdcBrand: Brand<'nat'>) => {
 export const EVMOfferArgsShape: TypedPattern<EVMOfferArgs> = M.splitRecord(
   {},
   {
-    // Use Axelar chain identifier instead of CAP-10 ID for cross-chain messaging
-    // Axelar docs: https://docs.axelar.dev/dev/reference/mainnet-chain-names
-    // Chain names: https://axelarscan.io/resources/chains
     evmChain: M.or(...keys(AxelarChains)),
   },
 ) as TypedPattern<EVMOfferArgs>;
@@ -79,8 +78,6 @@ export const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
 
 const AxelarChainInfoPattern = M.splitRecord({
   caip: M.string(),
-  // Axelar chain Ids differ between mainnet and testnet environments.
-  // Reference: https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts
   axelarId: M.string(),
 });
 

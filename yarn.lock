@@ -188,7 +188,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aglocal/portfolio-contract@workspace:packages/portfolio-contract"
   dependencies:
-    "@aglocal/fast-usdc-deploy": "npm:^0.1.0"
     "@agoric/cosmic-proto": "workspace:*"
     "@agoric/ertp": "workspace:*"
     "@agoric/fast-usdc": "workspace:*"

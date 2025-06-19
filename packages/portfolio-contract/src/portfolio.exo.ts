@@ -1,37 +1,37 @@
-import { makeTracer, type Remote } from '@agoric/internal';
-import { VowShape, type VowTools } from '@agoric/vow';
-import {
-  type AxelarGmpIncomingMemo,
-  type SupportedEVMChains,
-  type ContractCall,
-  AxelarGMPMessageType,
-  type AxelarGmpOutgoingMemo,
-  type GMPMessageType,
-} from '@agoric/orchestration/src/axelar-types.js';
-import type { VTransferIBCEvent } from '@agoric/vats';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
-import type {
-  OrchestrationAccount,
-  CaipChainId,
-  ChainHub,
+import type { Amount } from '@agoric/ertp';
+import { makeTracer, type Remote } from '@agoric/internal';
+import {
+  type OrchestrationAccount,
+  type CaipChainId,
+  type Denom,
 } from '@agoric/orchestration';
-import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
+import {
+  AxelarGMPMessageType,
+  type AxelarGmpIncomingMemo,
+  type AxelarGmpOutgoingMemo,
+  type ContractCall,
+  type GMPMessageType,
+  type SupportedEVMChains,
+} from '@agoric/orchestration/src/axelar-types.js';
 import {
   buildGMPPayload,
   gmpAddresses,
 } from '@agoric/orchestration/src/utils/gmp.js';
 import { decodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
 import { type MapStore } from '@agoric/store';
-import type { ZCF } from '@agoric/zoe';
 import type { TimerService } from '@agoric/time';
-import { E } from '@endo/far';
-import type { Amount } from '@agoric/ertp';
-import type { AxelarChainsMap } from './type-guards.js';
+import type { VTransferIBCEvent } from '@agoric/vats';
+import { VowShape, type VowTools } from '@agoric/vow';
+import type { ZCF } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
+import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
 import { atob, decodeBase64 } from '@endo/base64';
 import { assert, Fail } from '@endo/errors';
+import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { YieldProtocol } from './constants.js';
+import type { AxelarChainsMap } from './type-guards.js';
 
 const trace = makeTracer('PortExo');
 const { keys, values } = Object;
@@ -54,17 +54,16 @@ const DECODE_CONTRACT_CALL_RESULT_ABI = [
 ];
 
 const TypeShape = M.or(...keys(YieldProtocol));
-export const ChainShape = M.string(); // TODO: remove it
 const PositionShape = M.splitRecord({}); // TODO
 
 const KeeperI = M.interface('keeper', {
-  addAavePosition: M.call(M.or(ChainShape)).returns(),
-  addCompoundPosition: M.call(M.or(ChainShape)).returns(),
+  addAavePosition: M.call(M.string()).returns(),
+  addCompoundPosition: M.call(M.string()).returns(),
   addUSDNPosition: M.call(
     M.string(),
     M.remotable('OrchestrationAccount'),
   ).returns(),
-  getPositions: M.call(TypeShape, ChainShape).returns(M.arrayOf(PositionShape)),
+  getPositions: M.call(TypeShape, M.string()).returns(M.arrayOf(PositionShape)),
   getAccount: M.call(TypeShape).returns(M.remotable('OrchestrationAccount')),
 });
 
@@ -122,13 +121,15 @@ type PortfolioKitState = {
 export const preparePortfolioKit = (
   zone: Zone,
   {
-    chainHub,
+    chainHubTools,
     timer,
     zcf,
     axelarChainsMap,
     vowTools,
   }: {
-    chainHub: ChainHub;
+    chainHubTools: {
+      getDenom: (brand: Brand) => Denom | undefined;
+    };
     zcf: ZCF;
     axelarChainsMap: AxelarChainsMap;
     timer: Remote<TimerService>;
@@ -333,7 +334,7 @@ export const preparePortfolioKit = (
           const { chainId } = this.state.gmp.get('manager').axelarChainInfo;
 
           const memo: AxelarGmpOutgoingMemo = {
-            destination_chain: destinationEVMChain,
+            destination_chain: axelarChainsMap[destinationEVMChain].axelarId,
             destination_address: destinationAddress,
             payload,
             type,
@@ -346,7 +347,7 @@ export const preparePortfolioKit = (
             };
           }
 
-          const denom = await chainHub.getDenom(amount.brand);
+          const denom = await chainHubTools.getDenom(amount.brand);
           assert(denom, 'denom must be defined');
           const denomAmount = {
             denom,

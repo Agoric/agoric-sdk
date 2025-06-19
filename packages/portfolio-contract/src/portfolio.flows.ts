@@ -9,11 +9,10 @@ import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import type { Amount } from '@agoric/ertp';
 import { makeTracer, mustMatch } from '@agoric/internal';
-import { assert } from '@endo/errors';
 import type {
   CaipChainId,
-  ChainHub,
   CosmosChainAddress,
+  Denom,
   OrchestrationAccount,
   OrchestrationFlow,
   Orchestrator,
@@ -27,6 +26,7 @@ import { gmpAddresses } from '@agoric/orchestration/src/utils/gmp.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
+import { assert } from '@endo/errors';
 import type { PortfolioKit } from './portfolio.exo.ts';
 import {
   EVMOfferArgsShape,
@@ -95,7 +95,9 @@ const makeSwapLockMessages = (
 export const openPortfolio = (async (
   orch: Orchestrator,
   ctx: {
-    chainHub: GuestInterface<ChainHub>;
+    chainHubTools: {
+      getDenom: (brand: Brand) => Denom | undefined;
+    };
     zoeTools: GuestInterface<ZoeTools>;
     makePortfolioKit: () => PortfolioKit;
     axelarChainsMap: AxelarChainsMap;
@@ -110,8 +112,12 @@ export const openPortfolio = (async (
   mustMatch(offerArgs, EVMOfferArgsShape);
   await null; // see https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
   try {
-    const { makePortfolioKit, contractAddresses, axelarChainsMap, chainHub } =
-      ctx;
+    const {
+      makePortfolioKit,
+      contractAddresses,
+      axelarChainsMap,
+      chainHubTools,
+    } = ctx;
     const { give } = seat.getProposal() as ProposalShapes['openPortfolio'];
     const kit = makePortfolioKit();
 
@@ -148,7 +154,7 @@ export const openPortfolio = (async (
           },
         };
 
-        const denom = await chainHub.getDenom(amount.brand);
+        const denom = await chainHubTools.getDenom(amount.brand);
         assert(denom, 'denom must be defined');
         const denomAmount = {
           denom,
@@ -183,7 +189,7 @@ export const openPortfolio = (async (
       try {
         await localAcct.transfer(nobleAccount.getAddress(), amount);
 
-        const denom = await chainHub.getDenom(amount.brand);
+        const denom = await chainHubTools.getDenom(amount.brand);
         assert(denom, 'denom must be defined');
         const denomAmount = {
           denom,

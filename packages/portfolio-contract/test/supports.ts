@@ -13,7 +13,6 @@ import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
 import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
-import { withCosmosChainId } from '@aglocal/fast-usdc-deploy/src/utils/deploy-config.js';
 
 export {
   makeFakeLocalchainBridge,
@@ -47,7 +46,10 @@ export const chainInfo = {
       },
     },
   },
-  ...withCosmosChainId({ ethereum: cctpChainInfo.ethereum }),
+  ethereum: {
+    chainId: 'mockId',
+    ...cctpChainInfo.ethereum,
+  },
 };
 
 const assetOn = (

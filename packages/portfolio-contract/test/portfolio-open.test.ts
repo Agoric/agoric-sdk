@@ -13,7 +13,11 @@ import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics
 import { makeHeapZone } from '@agoric/zone';
 import { Far, passStyleOf } from '@endo/pass-style';
 import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { axelarChainsMap, contractAddresses, mockChainHub } from './mocks.ts';
+import {
+  axelarChainsMap,
+  contractAddresses,
+  mockChainHubTools,
+} from './mocks.ts';
 import { preparePortfolioKit } from '../src/portfolio.exo.ts';
 import { makeLocalAccount, openPortfolio } from '../src/portfolio.flows.ts';
 
@@ -71,8 +75,7 @@ const mocks = (errs: Record<string, Error> = {}) => {
     zcf: mockZCF,
     axelarChainsMap,
     timer,
-    // @ts-expect-error mocked chainhub
-    chainHub: mockChainHub,
+    chainHubTools: mockChainHubTools,
   });
   const zoeTools = harden({
     async localTransfer(sourceSeat, localAccount, amounts) {
@@ -128,8 +131,7 @@ test('open portfolio', async t => {
       inertSubscriber,
       contractAddresses,
       axelarChainsMap,
-      // @ts-expect-error mocked chainhub
-      chainHub: mockChainHub,
+      chainHubTools: mockChainHubTools,
     },
     seat,
     // Use Axelar chain identifier instead of CAP-10 ID for cross-chain messaging
@@ -165,8 +167,7 @@ test('handle failure in localTransfer from seat to local account', async t => {
       inertSubscriber,
       contractAddresses,
       axelarChainsMap,
-      // @ts-expect-error mocked chainhub
-      chainHub: mockChainHub,
+      chainHubTools: mockChainHubTools,
     },
     seat,
     harden({ evmChain: 'Ethereum' }),
@@ -195,8 +196,7 @@ test('handle failure in IBC transfer', async t => {
       inertSubscriber,
       contractAddresses,
       axelarChainsMap,
-      // @ts-expect-error mocked chainhub
-      chainHub: mockChainHub,
+      chainHubTools: mockChainHubTools,
     },
     seat,
     harden({ evmChain: 'Ethereum' }),
@@ -228,8 +228,7 @@ test('handle failure in executeEncodedTx', async t => {
       inertSubscriber,
       contractAddresses,
       axelarChainsMap,
-      // @ts-expect-error mocked chainhub
-      chainHub: mockChainHub,
+      chainHubTools: mockChainHubTools,
     },
     seat,
     harden({ evmChain: 'Ethereum' }),

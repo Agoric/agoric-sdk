@@ -14,18 +14,18 @@ import {
 import type { ZCF } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Zone } from '@agoric/zone';
-import type { CopyRecord } from '@endo/pass-style';
 import { M, mustMatch } from '@endo/patterns';
+import type { CopyRecord } from '@endo/pass-style';
 import { preparePortfolioKit, type LocalAccount } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import {
+  AxelarChainsMapShape,
   EVMContractAddressesShape,
-  makeProposalShapes,
   EVMOfferArgsShape,
+  makeProposalShapes,
+  type AxelarChainsMap,
   type EVMContractAddresses,
   type EVMOfferArgs,
-  type AxelarChainsMap,
-  AxelarChainsMapShape,
 } from './type-guards.ts';
 
 const trace = makeTracer('PortC');
@@ -88,10 +88,13 @@ export const contract = async (
     },
   };
 
+  const chainHubTools = {
+    getDenom: chainHub.getDenom.bind(chainHub),
+  };
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf,
     axelarChainsMap,
-    chainHub,
+    chainHubTools,
     timer: timerService,
     vowTools,
   });
@@ -100,7 +103,7 @@ export const contract = async (
     makePortfolioKit,
     axelarChainsMap,
     contractAddresses,
-    chainHub,
+    chainHubTools,
     inertSubscriber,
   });
 
