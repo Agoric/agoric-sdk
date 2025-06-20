@@ -7,14 +7,17 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { GuestInterface } from '@agoric/async-flow';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { mustMatch } from '@agoric/internal';
 import type { Orchestrator } from '@agoric/orchestration';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
+import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
 import { type VowTools } from '@agoric/vow';
 import type { Proposal, ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { makeHeapZone } from '@agoric/zone';
 import { Far, passStyleOf } from '@endo/pass-style';
 import { makePromiseKit } from '@endo/promise-kit';
+import { inspect } from 'node:util';
 import {
   preparePortfolioKit,
   type PortfolioKit,
@@ -23,8 +26,6 @@ import { openPortfolio, rebalance } from '../src/portfolio.flows.ts';
 import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
 import { contract } from './mocks.ts';
 import { makeIncomingEvent } from './supports.ts';
-import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
-import { mustMatch } from '@agoric/internal';
 
 const theExit = harden(() => {}); // for ava comparison
 const mockZCF = Far('MockZCF', {
@@ -210,15 +211,7 @@ test('open portfolio with USDN position', async t => {
   const shapes = makeProposalShapes(USDC);
   mustMatch(seat.getProposal(), shapes.openPortfolio);
 
-  const actual = await openPortfolio(
-    orch,
-    { ...ctx, contract },
-    seat,
-    // Use Axelar chain identifier instead of CAP-10 ID for cross-chain messaging
-    // Axelar docs: https://docs.axelar.dev/dev/reference/mainnet-chain-names
-    // Chain names: https://axelarscan.io/resources/chains
-    { evmChain: 'Ethereum' },
-  );
+  const actual = await openPortfolio(orch, { ...ctx, contract }, seat, {});
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
     { _method: 'monitorTransfers' },
@@ -279,6 +272,57 @@ test('open portfolio with Aave position', async t => {
     { description: 'LCA', storagePath: 'cosmos:agoric-1:agoric11014' },
     { description: 'USDN ICA', storagePath: 'cosmos:noble-3:noble11028' },
     { description: 'Aave EVM Addr', storagePath: `eip155:1:${myAddr}` },
+  ]);
+  t.is(actual.publicTopics.length, 3);
+});
+
+test('open portfolio with Aave, USDN positions', async t => {
+  const { orch, tapPK, ctx, offer } = mocks(
+    {},
+    {
+      Aave: AmountMath.make(USDC, 300n),
+      GMPFee: AmountMath.make(USDC, 100n),
+      USDN: AmountMath.make(USDC, 200n),
+    },
+  );
+
+  const [actual] = await Promise.all([
+    openPortfolio(orch, { ...ctx, contract }, offer.seat, {
+      evmChain: 'Base',
+    }),
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) => {
+      tap.receiveUpcall(makeIncomingEvent('xyz1sdlkfjlsdkj???TODO', 'Base'));
+    }),
+  ]);
+
+  const { log } = offer;
+  t.log(log.map(msg => msg._method).join(', '));
+  const nobleICA = { chainId: 'noble-3', value: 'noble11028' };
+  // This test is overly sensitive; opening 2 positions may go in either order.
+  t.like(log, [
+    { _method: 'monitorTransfers' },
+    { _method: 'localTransfer', amounts: { GMPFee: { value: 100n } } },
+    { _method: 'transfer', address: { chainId: 'axelar-5' } },
+    { _method: 'localTransfer', amounts: { USDN: { value: 200n } } },
+    { _method: 'transfer', address: nobleICA, amount: { value: 200n } },
+    { _method: 'executeEncodedTx', _cap: 'noble11028' },
+    { _method: 'localTransfer', amounts: { Aave: { value: 300n } } },
+    { _method: 'transfer', address: nobleICA, amount: { value: 300n } },
+    { _method: 'depositForBurn', denomAmount: { value: 300n } },
+    { _method: 'transfer', address: { chainId: 'axelar' } },
+    { _method: 'exit', _cap: 'seat' },
+  ]);
+  t.snapshot(log, 'call log'); // see snapshot for remaining arg details
+  t.is(passStyleOf(actual.invitationMakers), 'remotable');
+  t.log(
+    'accounts',
+    actual.publicTopics.map(t => t.storagePath),
+  );
+  const myAddr = '0x3dA3050208a3F2e0d04b33674aAa7b1A9F9B313C';
+  t.like(actual.publicTopics, [
+    { description: 'LCA', storagePath: 'cosmos:agoric-1:agoric11014' },
+    { description: 'USDN ICA', storagePath: 'cosmos:noble-3:noble11028' },
+    { description: 'Aave EVM Addr', storagePath: `eip155:8453:${myAddr}` },
   ]);
   t.is(actual.publicTopics.length, 3);
 });
