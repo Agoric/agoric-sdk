@@ -24,7 +24,7 @@ const toAccAddress = (address: string): Uint8Array => {
 };
 
 const trace = makeTracer('YMXTool');
-const { fromEntries, values } = Object;
+const { fromEntries } = Object;
 const { make } = AmountMath;
 
 const AgoricMsgs = {
