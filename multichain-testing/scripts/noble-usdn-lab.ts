@@ -137,7 +137,7 @@ const transferFromNoble = async (
 
   const fee: StdFee = { amount: [{ denom, amount: '30000' }], gas: '197000' };
 
-  const clientN = await connectWithSigner(rpcEndpoint, nobleWallet);
+  const clientN = await connectWithSigner(config.noble.rpc, nobleWallet);
   console.log('transfer from', sender, msgTransfer, fee);
   return clientN.signAndBroadcast(
     sender,
