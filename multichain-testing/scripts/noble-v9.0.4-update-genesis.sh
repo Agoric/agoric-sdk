@@ -6,6 +6,7 @@
 DENOM="${DENOM:=uusdc}"
 CHAIN_BIN="${CHAIN_BIN:=nobled}"
 CHAIN_DIR="${CHAIN_DIR:=$HOME/.nobled}"
+INITIAL_UUSDN_AMOUNT="${INITIAL_UUSDN_AMOUNT:=1700000000000000}"
 
 set -eux
 
@@ -198,9 +199,26 @@ FRNZ_METADATA='{
   ]
 }'
 
-jq --argjson usdc "$USDC_METADATA" --argjson frnz "$FRNZ_METADATA" \
-  '.app_state.bank.denom_metadata += [$usdc, $frnz]' \
+# 3) Register uusdn in your denom metadata:
+UUSDN_METADATA='{
+  "base": "uusdn",
+  "display": "usdn",
+  "name": "noble USDn",
+  "symbol": "USDn",
+  "denom_units": [
+    { "denom": "uusdn", "exponent": "0" },
+    { "denom": "usdn",  "exponent": "6" }
+  ]
+}'
+
+jq --argjson usdc "$USDC_METADATA" --argjson frnz "$FRNZ_METADATA" --argjson usdn "$UUSDN_METADATA"  \
+  '.app_state.bank.denom_metadata += [$usdc, $frnz, $usdn]' \
   $CHAIN_DIR/config/genesis.json > /tmp/genesis.json && mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
+
+jq --arg amount "$INITIAL_UUSDN_AMOUNT" \
+   '.app_state.bank.supply += [{ "denom": "uusdn", "amount": $amount }]' \
+   $CHAIN_DIR/config/genesis.json > /tmp/genesis.json && mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
+
 
 # Configure parameter authority
 echo "Configure parameter authority..."
@@ -216,6 +234,16 @@ jq --arg addr "$GENESIS_ADDR" '
   }
 ' $CHAIN_DIR/config/genesis.json \
   > /tmp/genesis.json && mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
+
+
+jq --arg addr "$GENESIS_ADDR" \
+   --arg amount "$INITIAL_UUSDN_AMOUNT" \
+   '.app_state.bank.balances += [
+      { "address": $addr,
+        "coins": [{ "denom": "uusdn", "amount": $amount }]
+      }
+    ]' \
+   $CHAIN_DIR/config/genesis.json > /tmp/genesis.json && mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
 
 # Configure CCTP module
 echo "Configure CCTP module..."

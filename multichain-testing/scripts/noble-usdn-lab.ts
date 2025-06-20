@@ -17,7 +17,7 @@
  *   SWAP=123 [NET=testnet] noble-usdn-lab.ts
  *
  * To lock 123uusdn:
- *   LOCK=123 [NET=testnet] noble-usdn-lab.ts
+ *   LOCK=1000000uusdn [NET=starship] noble-usdn-lab.ts
  */
 import '@endo/init';
 
@@ -26,7 +26,7 @@ import type { StdFee } from '@cosmjs/amino';
 import { stringToPath } from '@cosmjs/crypto';
 import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing';
 import { SigningStargateClient } from '@cosmjs/stargate';
-import { $ } from 'execa';
+import { $, execa } from 'execa';
 import { ConfigContext, useChain, useRegistry } from 'starshipjs';
 import { DEFAULT_TIMEOUT_NS } from '../tools/ibc-transfer.ts';
 import { makeQueryClient } from '../tools/query.ts';
@@ -46,6 +46,34 @@ const configs = {
     noble: {
       chainId: 'noblelocal',
       rpc: 'http://localhost:26654',
+      api: 'http://localhost:1314',
+    },
+    // agoric: {
+    //   chainId: 'agoriclocal',
+    //   rpc: 'http://localhost:26657',
+    //   api: 'http://localhost:1317',
+    // },
+    agoric: {
+      connections: {
+        'noblelocal': {
+          client_id: '07-tendermint-0',
+          counterparty: {
+            client_id: '07-tendermint-0',
+            connection_id: 'connection-0',
+          },
+          id: 'connection-0',
+          state: 'STATE_OPEN',
+          transferChannel: {
+            channelId: 'channel-0',
+            counterPartyChannelId: 'channel-0',
+            counterPartyPortId: 'transfer',
+            ordering: 'ORDER_UNORDERED',
+            portId: 'transfer',
+            state: 'STATE_OPEN',
+            version: 'ics20-1',
+          },
+        },
+      },
     },
   },
   testnet: {
@@ -87,11 +115,11 @@ const makeTraderWallet = async opts =>
 
 const signArgsFor = (config: typeof configs.testnet.noble) =>
   [
-    ['--from', 'authority'],
-    ['--node', config.rpc],
+    ['--from', 'genesis'],
+    // ['--node', config.rpc],
     ['--chain-id', config.chainId],
     ['--keyring-backend', 'test'],
-    ['--broadcast-mode', 'block'],
+    ['--broadcast-mode', 'sync'],
     ['--gas', 'auto'],
     ['--gas-adjustment', '1.4'],
   ].flat();
@@ -117,8 +145,9 @@ const transferFromNoble = async (
       { prefix: 'agoric', hdPaths: [stringToPath(`m/44'/564'/0'/0/0`)] },
     ].map(makeTraderWallet),
   );
-  const [{ address: sender }] = await nobleWallet.getAccounts();
+  let [{ address: sender }] = await nobleWallet.getAccounts();
   const [{ address: receiver }] = await agoricWallet.getAccounts();
+  // sender = "noble1zhcv8ea0s5adpxv2kmjwm6fwtw6kky3nendx9s"
 
   const { chainId } = config.noble;
   const { counterPartyChannelId, counterPartyPortId } =
@@ -137,7 +166,7 @@ const transferFromNoble = async (
 
   const fee: StdFee = { amount: [{ denom, amount: '30000' }], gas: '197000' };
 
-  const clientN = await connectWithSigner(rpcEndpoint, nobleWallet);
+  const clientN = await connectWithSigner("http://localhost:26654", nobleWallet);
   console.log('transfer from', sender, msgTransfer, fee);
   return clientN.signAndBroadcast(
     sender,
@@ -181,8 +210,33 @@ const swapForUSDN = async (
   const route = JSON.stringify({ pool_id: poolId, denom_to: denomTo });
   const m99 = (toTrade * 99n) / 100n;
   const [amount, min] = [`${toTrade}${denom}`, `${m99}${denomTo}`];
-  const { stdout } =
-    await $v`nobled tx swap swap ${amount} ${route} ${min} ${signArgs} -o json`;
+  
+  const base = [
+    'exec',
+    'noblelocal-genesis-0',
+    '-c',
+    'validator',
+    '--',
+    'nobled',
+    'tx',
+    'swap',
+    'swap',
+    `${amount}`,
+    `${route}`,
+    `${min}`,
+    ...signArgs,
+    '-o',
+    'json',
+    '-b',
+    'sync',
+    '--yes'
+  ];
+
+  const { stdout } = await execa('kubectl', base);
+
+  // const { stdout } =
+  //   await $v`nobled tx swap swap ${amount} ${route} ${min} ${signArgs} -o json`;
+
   const txhash = parseTx(stdout);
   const { balances: after } = await queryClient.queryBalances(address);
   console.log('balances after (TODO: wait until this changes)', after);
@@ -201,11 +255,58 @@ const lockUSDN = async (
   const [{ address }] = await wallet.getAccounts();
 
   const queryClient = makeQueryClient(config.noble.api); // XXX ambient
+  console.log("address", address)
   const { balances: before } = await queryClient.queryBalances(address);
   console.log('balances before', before);
   const signArgs = signArgsFor(config.noble);
-  const { stdout } =
-    await $v`nobled tx dollar vaults lock ${vault} ${`${amount}`} ${signArgs} -o json`;
+  // const cmd = [
+  //   'kubectl',
+  //   // namespace && '-n', namespace,  // include if you need to target a specific namespace
+  //   'exec',
+  //   "noblelocal-genesis-0",
+  //   '-c',
+  //   "validator",
+  //   '--',
+  //   'nobled',
+  //   'tx',
+  //   'dollar',
+  //   'vaults',
+  //   'lock',
+  //   vault,
+  //   amount,
+  //   signArgs,
+  //   '-o',
+  //   'json',
+  // ].filter(Boolean);
+  // const { stdout } =
+  //   await execa`${cmd}`;
+  // build the kubectl arguments
+  const base = [
+    'exec',
+    'noblelocal-genesis-0',
+    '-c',
+    'validator',
+    '--',
+    'nobled',
+    'tx',
+    'dollar',
+    'vaults',
+    'lock',
+    vault,
+    `${amount}`,
+    ...signArgs,
+    '-o',
+    'json',
+    '-b',
+    'sync',
+    '--yes'
+  ];
+  // const args = namespace
+  //   ? ['-n', namespace, ...base]
+  //   : base;
+
+  // run it
+  const { stdout } = await execa('kubectl', base);
   const txhash = parseTx(stdout);
 
   await $v`sleep 6`;

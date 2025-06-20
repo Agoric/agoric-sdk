@@ -126,3 +126,10 @@ start: sstart fund-provision-pool register-bank-assets
 .PHONY: sstart
 sstart:
 	$(STARSHIP) start
+
+
+
+noble-lab:
+	# LOCK=1000000 NET=starship scripts/noble-usdn-lab.ts
+	# TXFR=1000000 NET=starship scripts/noble-usdn-lab.ts
+	# SWAP=1000000 NET=starship scripts/noble-usdn-lab.ts
