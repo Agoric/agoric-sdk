@@ -3,32 +3,44 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import type { AccountId } from '@agoric/orchestration';
 import type { AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
+import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.ts';
 import { heapVowE as VE } from '@agoric/vow';
 import type { Installation } from '@agoric/zoe';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
+import { q } from '@endo/errors';
 import { E, passStyleOf } from '@endo/far';
-import { M, matches, mustMatch } from '@endo/patterns';
+import { M, matches, mustMatch, objectMap } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
 import { encodeAbiParameters } from 'viem';
+import type { YieldProtocol } from '../src/constants.js';
 import * as contractExports from '../src/portfolio.contract.ts';
 import { DECODE_CONTRACT_CALL_RESULT_ABI } from '../src/portfolio.exo.ts';
 import {
   makeProposalShapes,
   type EVMContractAddresses,
 } from '../src/type-guards.ts';
+import {
+  grokRebalanceScenarios,
+  importCSV,
+  numeral,
+  type Dollars,
+} from '../tools/rebalance-grok.ts';
 import { makeUSDNIBCTraffic } from './mocks.ts';
 import { makeTrader } from './portfolio-actors.ts';
 import { makeIncomingEvent, setupPortfolioTest } from './supports.ts';
 import { makeWallet } from './wallet-offer-tools.ts';
-import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-import { q } from '@endo/errors';
 
 const contractName = 'ymax0';
 type StartFn = typeof contractExports.start;
+
+const { entries } = Object;
 
 export const contract: EVMContractAddresses = {
   aavePool: '0x87870Bca3F0fD6335C3F4ce8392D69350B4fA4E2', // Aave V3 Pool
@@ -138,7 +150,6 @@ test('ProposalShapes', t => {
       },
     },
   });
-  const { entries } = Object;
   for (const [desc, { pass, fail }] of entries(cases)) {
     for (const [name, proposal] of entries(pass)) {
       t.log(`${desc} ${name}: ${q(proposal)}`);
@@ -152,29 +163,38 @@ test('ProposalShapes', t => {
   }
 });
 
-test('open portfolio with USDN position', async t => {
+const setupTrader = async (t, initial = 10_000) => {
   const { common, zoe, started } = await deploy(t);
   const { usdc } = common.brands;
   const { when } = common.utils.vowTools;
-
-  const myBalance = usdc.units(10_000);
-  const funds = await common.utils.pourPayment(myBalance);
-  const myWallet = makeWallet({ USDC: usdc }, zoe, when);
-  await E(myWallet).deposit(funds);
-  const trader1 = makeTrader(myWallet, started.instance);
-  t.log('I am a power user with', myBalance, 'on Agoric');
 
   const { ibcBridge } = common.mocks;
   for (const { msg, ack } of Object.values(makeUSDNIBCTraffic())) {
     ibcBridge.addMockAck(msg, ack);
   }
 
+  const myBalance = usdc.units(initial);
+  const funds = await common.utils.pourPayment(myBalance);
+  const myWallet = makeWallet({ USDC: usdc }, zoe, when);
+  await E(myWallet).deposit(funds);
+  const trader1 = makeTrader(myWallet, started.instance);
+  return { common, zoe, started, myBalance, myWallet, trader1 };
+};
+
+test('open portfolio with USDN position', async t => {
+  const { trader1, myBalance, common } = await setupTrader(t);
+  t.log('I am a power user with', myBalance, 'on Agoric');
+
+  const { usdc } = common.brands;
   const doneP = trader1.openPortfolio(
     t,
     {
+      // GMPFee: usdc.units(1),
+      // Aave: usdc.units(3_333),
+      // Compound: usdc.units(3_333),
       USDN: usdc.units(3_333),
     },
-    { evmChain: undefined },
+    { evmChain: 'Base' },
   );
 
   // ack IBC transfer for forward
@@ -195,22 +215,10 @@ test('open portfolio with USDN position', async t => {
 
 // TODO: to deal with bridge coordination, move this to a bootstrap test
 test.skip('open portfolio with Aave position', async t => {
-  const { common, zoe, started } = await deploy(t);
-  const { usdc } = common.brands;
-  const { when } = common.utils.vowTools;
-
-  const myBalance = usdc.units(10_000);
-  const funds = await common.utils.pourPayment(myBalance);
-  const myWallet = makeWallet({ USDC: usdc }, zoe, when);
-  await E(myWallet).deposit(funds);
-  const trader1 = makeTrader(myWallet, started.instance);
+  const { trader1, myBalance, common } = await setupTrader(t);
   t.log('I am a power user with', myBalance, 'on Agoric');
 
-  const { ibcBridge } = common.mocks;
-  for (const { msg, ack } of Object.values(makeUSDNIBCTraffic())) {
-    ibcBridge.addMockAck(msg, ack);
-  }
-
+  const { usdc } = common.brands;
   const actualP = trader1.openPortfolio(
     t,
     {
@@ -264,15 +272,7 @@ test.skip('open portfolio with Aave position', async t => {
 
 // TODO: to deal with bridge coordination, move this to a bootstrap test
 test.skip('open portfolio with USDN, Aave positions', async t => {
-  const { common, zoe, started } = await deploy(t);
-  const { usdc } = common.brands;
-  const { when } = common.utils.vowTools;
-
-  const myBalance = usdc.units(10_000);
-  const funds = await common.utils.pourPayment(myBalance);
-  const myWallet = makeWallet({ USDC: usdc }, zoe, when);
-  await E(myWallet).deposit(funds);
-  const trader1 = makeTrader(myWallet, started.instance);
+  const { trader1, myBalance, common } = await setupTrader(t);
   t.log('I am a power user with', myBalance, 'on Agoric');
 
   const { ibcBridge } = common.mocks;
@@ -280,6 +280,7 @@ test.skip('open portfolio with USDN, Aave positions', async t => {
     ibcBridge.addMockAck(msg, ack);
   }
 
+  const { usdc } = common.brands;
   const doneP = trader1.openPortfolio(
     t,
     {
@@ -361,3 +362,102 @@ test.skip('open portfolio with USDN, Aave positions', async t => {
 test.todo('User can see transfer in progress');
 test.todo('Pools SHOULD include Aave');
 test.todo('Pools SHOULD include Compound');
+
+const bigintReplacer = (_p, v) => (typeof v === 'bigint' ? `${v}` : v);
+
+const rebalanceScenarioMacro = test.macro({
+  async exec(t, description: string) {
+    const { trader1, myBalance, common } = await setupTrader(t);
+    const scenario = (await scenariosP)[description];
+    if (!scenario) return t.fail(`Scenario "${description}" not found`);
+    t.log('start', description, 'with', myBalance);
+
+    const { usdc } = common.brands;
+    const $ = (amt: Dollars) =>
+      multiplyBy(usdc.units(1), parseRatio(numeral(amt), usdc.brand));
+
+    // Convert scenario amounts to ERTP amounts
+    const convertAmounts = (
+      amounts: Partial<Record<YieldProtocol, Dollars>>,
+    ): Partial<Record<YieldProtocol, Amount<'nat'>>> =>
+      objectMap(amounts, a => $(a!));
+
+    const give = convertAmounts(scenario.proposal.give);
+
+    const doneP = trader1.openPortfolio(t, give, {});
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    const {
+      result: { publicTopics },
+      payouts,
+    } = await doneP;
+
+    const positions = {
+      USDN: {
+        address: publicTopics.find(t => t.description === 'USDN ICA')
+          .storagePath as AccountId,
+        cash: $('$0'),
+        volume: $(scenario.before.USDN || '$0'),
+      },
+    };
+    t.log(positions);
+
+    const updatePositions = () => {
+      const { make, add } = AmountMath;
+
+      // uusdc on agoric. TODO: get from The Right Place
+      const denom =
+        'ibc/FE98AAD68F02F03565E9FA39A5E627946699B2B07115889ED812D8BA639576A9';
+      const toERTP = token => {
+        if (token.denom !== denom) throw Error('wrong denom');
+        return make(usdc.brand, BigInt(token.amount));
+      };
+
+      const { inspectLocalBridge, inspectDibcBridge, inspectBankBridge } =
+        common.utils;
+
+      for (const tx of inspectLocalBridge()) {
+        if (!(tx.type === 'VLOCALCHAIN_EXECUTE_TX')) continue;
+        for (const msg of tx.messages) {
+          switch (msg['@type']) {
+            case '/ibc.applications.transfer.v1.MsgTransfer':
+              const a = parseAccountId(positions.USDN.address);
+              if (msg.receiver === a.accountAddress) {
+                const pos = positions.USDN;
+                pos.cash = add(pos.cash, toERTP(msg.token));
+              }
+          }
+        }
+      }
+      const show = x => JSON.stringify(x, bigintReplacer, 2);
+      t.log('ibcBridge', show(inspectDibcBridge()));
+    };
+
+    updatePositions();
+
+    // t.log('localBridge', show(inspectLocalBridge()));
+
+    // t.log('scenario', JSON.stringify(scenario, bigintReplacer, 2));
+    // t.log('bankBridge', show(inspectBankBridge()));
+    // t.log(`Computed USDN balance: ${Number(usdnBalance.value) / 1_000_000}`);
+    // t.log(`Expected USDN balance: ${scenario.after.USDN}`);
+
+    // // Compare computed USDN balance to expected
+    // t.true(AmountMath.isEqual(usdnBalance, $(scenario.after.USDN)));
+
+    // t.is(passStyleOf(actual.invitationMakers), 'remotable');
+    // t.snapshot(log, `${description} call log`);
+  },
+  title(providedTitle = '', description: string) {
+    return `${providedTitle} ${description}`.trim();
+  },
+});
+
+test.skip(
+  'rebalance scenario:',
+  rebalanceScenarioMacro,
+  'Original USDN test case',
+);
+
+const scenariosP = importCSV('./rebalance-cases.csv', import.meta.url).then(
+  data => grokRebalanceScenarios(data),
+);
