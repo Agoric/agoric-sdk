@@ -289,7 +289,10 @@ jq --arg addr "$GENESIS_ADDR" '.app_state.tariff.params = {
     "transfer_fee_denom": "uusdc"
 }' $CHAIN_DIR/config/genesis.json > /tmp/genesis.json && mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
 
-sed -i -e "s/\"stake\"/\"$DENOM\"/g" $CHAIN_DIR/config/genesis.json
+. noble-utils.sh
+update_genesis "$HOME" "$GENESIS_ADDR"
+
+# ??? sed -i -e "s/\"stake\"/\"$DENOM\"/g" $CHAIN_DIR/config/genesis.json
 sed -i "s/\"time_iota_ms\": \".*\"/\"time_iota_ms\": \"$TIME_IOTA_MS\"/" $CHAIN_DIR/config/genesis.json
 
 echo "Update max gas param"
