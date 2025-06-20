@@ -1,0 +1,17 @@
+{
+  "name": "startPortfolio",
+  "script": "startPortfolio.js",
+  "permit": "startPortfolio-permit.json",
+  "bundles": [
+    {
+      "entrypoint": "../dist/portfolio.contract.bundle.js",
+      "bundleID": "b1-217b13484c6276f8d83117723d2b4f7d8e1086da60de86cea8d46bc73d0ec4523cbb1e0af46228512b999146443bbf27821603b15c3f2f2a378ed5e76ca8dcbe",
+      "fileName": "/Users/frazarshad/.agoric/cache/b1-217b13484c6276f8d83117723d2b4f7d8e1086da60de86cea8d46bc73d0ec4523cbb1e0af46228512b999146443bbf27821603b15c3f2f2a378ed5e76ca8dcbe.json"
+    },
+    {
+      "entrypoint": "./portfolio-start.core.js",
+      "bundleID": "b1-05448ee3333dd4f03def71521df365f3e89c108af16c1302b6ebf2a5875a30359d313d416e1a470265d973b3a797fe013b3504fc61678ce5cbd5e60a91c9692a",
+      "fileName": "/Users/frazarshad/.agoric/cache/b1-05448ee3333dd4f03def71521df365f3e89c108af16c1302b6ebf2a5875a30359d313d416e1a470265d973b3a797fe013b3504fc61678ce5cbd5e60a91c9692a.json"
+    }
+  ]
+}

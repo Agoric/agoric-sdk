@@ -102,18 +102,28 @@ export const startOrchContract = async (
   );
   const { terms } = config;
   trace('using terms', terms);
+  trace('using terms', xVatEntries);
+  trace('using terms', configStruct.options);
 
+  trace('Fetching chainStorage and board from consume');
   const { chainStorage, board } = consume;
+
+  trace('Creating publishing storage kit');
   const { storageNode, marshaller } = await makePublishingStorageKit(name, {
     board,
     chainStorage,
   });
 
+  trace(
+    'Fetching chainTimerService, localchain, and cosmosInterchainService from consume',
+  );
   const {
     chainTimerService: timerService,
     localchain,
     cosmosInterchainService,
   } = consume;
+
+  trace('Creating orchestrationPowers object');
   const orchestrationPowers = await deeplyFulfilledObject(
     harden({
       localchain,
@@ -123,6 +133,8 @@ export const startOrchContract = async (
       agoricNames,
     }),
   );
+
+  trace('Creating privateArgs using makePrivateArgs1');
   const privateArgs = await makePrivateArgs(
     orchestrationPowers,
     marshaller,
@@ -299,7 +311,7 @@ export const lookupInterchainInfo = async (
   );
 
   const chainInfos = mixConnections(plainInfos, connInfos);
-
+  console.log('fraz', chainInfos);
   return harden({
     chainInfo: chainInfos,
     assetInfo: makeAssetInfo(chainInfos, tokenMap),

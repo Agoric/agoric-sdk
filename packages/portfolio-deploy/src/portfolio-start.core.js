@@ -42,7 +42,10 @@ export const makePrivateArgs = async (
   marshaller,
   _config,
 ) => {
+  trace('fraz 1');
   const { agoricNames } = orchestrationPowers;
+  trace('fraz 3');
+  trace(agoricNames);
   const { chainInfo, assetInfo } = await lookupInterchainInfo(agoricNames, {
     agoric: ['ubld'],
     noble: ['uusdc'],

@@ -1,0 +1,12 @@
+{
+  "name": "eval-chain-info",
+  "script": "eval-chain-info.js",
+  "permit": "eval-chain-info-permit.json",
+  "bundles": [
+    {
+      "entrypoint": "@aglocal/portfolio-deploy/src/chain-info.core.js",
+      "bundleID": "b1-7f58a0b068369328bd1ee3cf01e498cb84a9147b6395da61b2dfdffd3295b79b947a6743395534cbd1ea832477a547dbdb48ada8fc9db4690c8f73899210590a",
+      "fileName": "/Users/frazarshad/.agoric/cache/b1-7f58a0b068369328bd1ee3cf01e498cb84a9147b6395da61b2dfdffd3295b79b947a6743395534cbd1ea832477a547dbdb48ada8fc9db4690c8f73899210590a.json"
+    }
+  ]
+}

@@ -15,6 +15,7 @@ import {
 import { flags, makeCmdRunner, makeFileRd } from '@agoric/pola-io';
 import url from 'node:url';
 import { parseArgs, promisify, type ParseArgsConfig } from 'node:util';
+import { execa } from 'execa';
 
 const TITLE = 'ymax0 w/Noble Dollar';
 
@@ -40,6 +41,10 @@ const main = async (
   { execFile = promisify(childProcess.execFile) } = {},
   fetch = globalThis.fetch,
 ) => {
+  const printAndExec = (cmd, args, opts) => {
+    console.log('running', cmd, ...args);
+    return execa(cmd, args, opts);
+  };
   const getVersion = () =>
     makeCmdRunner('git', { execFile })
       .exec('describe --tags --dirty --always'.split(' '))
@@ -74,7 +79,7 @@ const main = async (
     chainName: chainId,
     rpcAddrs: [node],
   } = await fetchNetworkConfig(net, { fetch });
-  const agdq = makeCmdRunner('agd', { execFile }).withFlags('--node', node);
+  const agdq = makeCmdRunner('agd', { execFile: printAndExec }).withFlags('--node', node);
   const agdTx = agdq.withFlags(
     ...flags(txFlags({ node, from, chainId })),
     '--yes',
@@ -95,7 +100,32 @@ const main = async (
   });
   console.log(title, info);
 
-  throw Error('TODO: wait for tx? wait for voting end?');
+  // throw Error('TODO: wait for tx? wait for voting end?');
+
+  const acceptProposal = async () => {
+    const CHAINID = 'agoriclocal';
+    const GAS_ADJUSTMENT = '1.2';
+    const SIGN_BROADCAST_OPTS = `--keyring-backend=test --chain-id=${CHAINID} --gas=auto --gas-adjustment=${GAS_ADJUSTMENT} --yes -b block`;
+    const execCmd = async cmd => {
+      const args = ['-c', cmd];
+      const opts1 = { stdio: 'inherit' };
+      return execa('docker', ['exec', '-i', 'agoric', 'bash', ...args], opts)
+    };
+    const queryCmd = `agd query gov proposals --output json | jq -c '[.proposals[] | if .proposal_id == null then .id else .proposal_id end | tonumber] | max'`;
+
+    const result = await execa('docker', ['exec', '-i', 'agoric', 'bash', '-c', queryCmd])
+    console.log(result);
+    const proposalId = result.stdout
+    console.log(`Voting on proposal ID ${proposalId}`);
+    await execCmd(
+      `agd tx gov vote ${proposalId} yes --from=validator ${SIGN_BROADCAST_OPTS}`,
+    );
+
+    console.log(`Fetching details for proposal ID ${proposalId}`);
+    const detailsCommand = `agd query gov proposals --output json | jq -c '.proposals[] | select(.proposal_id == "${proposalId}" or .id == "${proposalId}") | [.proposal_id or .id, .voting_end_time, .status]'`;
+    await execCmd(detailsCommand);
+  };
+  await acceptProposal();
 };
 
 main().catch(err => {

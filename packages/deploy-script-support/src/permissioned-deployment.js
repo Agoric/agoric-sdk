@@ -156,7 +156,8 @@ export const submitCoreEval = async (
   {
     title = evals[0].script,
     description = title,
-    depositOpts: { denom = 'ubld', unit = 1_000_000, qty = 1 } = {},
+    // TODO: get qty from query params
+    depositOpts: { denom = 'ubld', unit = 1_000_000, qty = 10 } = {},
     deposit = `${qty * unit}${denom}`,
   } = {},
 ) =>

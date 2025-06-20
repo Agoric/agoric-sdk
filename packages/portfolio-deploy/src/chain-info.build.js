@@ -210,7 +210,8 @@ export default async (homeP, endowments) => {
 
   await null;
   if (flags.net) {
-    if (!flags.peer) throw Error('--peer required');
+    console.log(flags);
+    if (!(flags.peer && flags.peer.length)) throw Error('--peer required');
     // only import/use net access if asked with --net
     const { execFileSync } = await import('child_process');
     const { chainName: chainId, rpcAddrs } = await getNetConfig(
