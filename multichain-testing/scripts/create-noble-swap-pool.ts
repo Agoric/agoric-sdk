@@ -9,8 +9,10 @@ import { makeHttpClient } from '../tools/makeHttpClient.js';
 const REGISTRY_API_URL = 'http://localhost:8081';
 const POD_NAME = 'noblelocal-genesis-0';
 const CONTAINER = 'validator';
+// TODO: Make it 10 once https://github.com/Agoric/agoric-sdk/pull/11510 is merged
 const REQUIRED_ATLEAST_MAJOR = 9;
 const NOBLE_CHAIN_ID = 'noblelocal';
+const NOBLE_AUTHORITY_ADDRESS = 'noble13am065qmk680w86wya4u9refhnssqwcvgs0sfk';
 
 async function checkNobleChainPresence(nobleChainId: string) {
   let resp;
@@ -140,7 +142,7 @@ async function createPool({
     NOBLE_CHAIN_ID,
     '--generate-only',
     '--from',
-    'noble13am065qmk680w86wya4u9refhnssqwcvgs0sfk',
+    NOBLE_AUTHORITY_ADDRESS,
   ]);
   await execa(
     'kubectl',
