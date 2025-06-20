@@ -7,7 +7,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/agoric"
@@ -46,13 +45,7 @@ func RunWithController(sendToController vm.Sender) {
 
 	rootCmd, _ := cmd.NewRootCmd(sendToController)
 	if err := svrcmd.Execute(rootCmd, "", app.DefaultNodeHome); err != nil {
-		switch e := err.(type) {
-		case server.ErrorCode:
-			os.Exit(e.Code)
-
-		default:
-			fmt.Fprintf(os.Stderr, "Error: %v\n", e)
-			os.Exit(1)
-		}
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
 	}
 }
