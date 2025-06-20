@@ -14,11 +14,12 @@
 // - AxelarGmpOutgoingMemo
 // If you change any of these, you must also update the README to keep it in sync.
 
-export const AxelarGMPMessageType = {
+export const AxelarGMPMessageType = /** @type {const} */ ({
   ContractCall: 1,
   ContractCallWithToken: 2,
   TokenTransfer: 3,
-};
+});
+harden(AxelarGMPMessageType);
 
 /**
  * @typedef {(typeof AxelarGMPMessageType)[keyof typeof AxelarGMPMessageType]} GMPMessageType

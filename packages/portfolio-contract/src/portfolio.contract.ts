@@ -1,4 +1,4 @@
-import { makeTracer, type TypedPattern } from '@agoric/internal';
+import { makeTracer, mustMatch, type TypedPattern } from '@agoric/internal';
 import {
   ChainInfoShape,
   DenomDetailShape,
@@ -15,15 +15,14 @@ import type { ZCF } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Zone } from '@agoric/zone';
 import type { CopyRecord } from '@endo/pass-style';
-import { M, mustMatch } from '@endo/patterns';
-import { preparePortfolioKit, type LocalAccount } from './portfolio.exo.ts';
+import { M } from '@endo/patterns';
+import { preparePortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import {
   EVMContractAddressesShape,
   makeProposalShapes,
-  EVMOfferArgsShape,
+  OfferArgsShapeFor,
   type EVMContractAddresses,
-  type EVMOfferArgs,
 } from './type-guards.ts';
 
 const trace = makeTracer('PortC');
@@ -57,7 +56,7 @@ export const contract = async (
   tools: OrchestrationTools,
 ) => {
   const { brands } = zcf.getTerms();
-  const { orchestrateAll, zoeTools, chainHub } = tools;
+  const { orchestrateAll, zoeTools, chainHub, vowTools } = tools;
 
   assert(brands.USDC, 'USDC missing from brands in terms');
 
@@ -81,29 +80,45 @@ export const contract = async (
     },
   };
 
-  const makePortfolioKit = preparePortfolioKit(zone, { zcf });
-  const { makeLocalAccount, openPortfolio } = orchestrateAll(flows, {
-    zoeTools,
-    makePortfolioKit,
-    chainHub,
-    contract: privateArgs.contract,
-    inertSubscriber,
+  // UNTIL #11309
+  const chainHubTools = {
+    getDenom: chainHub.getDenom.bind(chainHub),
+  };
+  const { rebalance } = orchestrateAll(
+    { rebalance: flows.rebalance },
+    {
+      zoeTools,
+      chainHubTools,
+      contract: privateArgs.contract,
+    },
+  );
+
+  const makePortfolioKit = preparePortfolioKit(zone, {
+    zcf,
+    vowTools,
+    rebalance,
+    proposalShapes,
   });
+  const { openPortfolio } = orchestrateAll(
+    { openPortfolio: flows.openPortfolio },
+    {
+      zoeTools,
+      makePortfolioKit: makePortfolioKit as any, // XXX Guest...
+      chainHubTools,
+      contract: privateArgs.contract,
+      inertSubscriber,
+    },
+  );
 
   trace('TODO: baggage test');
-  const localV = zone.makeOnce('localV', _ => makeLocalAccount());
 
   const publicFacet = zone.exo('PortfolioPub', interfaceTODO, {
     makeOpenPortfolioInvitation() {
       trace('makeOpenPortfolioInvitation');
       return zcf.makeInvitation(
-        (seat, offerArgs: EVMOfferArgs) => {
-          mustMatch(offerArgs, EVMOfferArgsShape);
-          return openPortfolio(
-            seat,
-            offerArgs,
-            localV as unknown as Promise<LocalAccount>,
-          );
+        (seat, offerArgs) => {
+          mustMatch(offerArgs, OfferArgsShapeFor.openPortfolio);
+          return openPortfolio(seat, offerArgs);
         },
         'openPortfolio',
         undefined,
