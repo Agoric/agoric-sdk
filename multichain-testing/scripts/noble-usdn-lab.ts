@@ -2,6 +2,9 @@
 /**
  * @file verify that `nobled tx swap swap ...` etc. work
  *
+ * Prereqisite: To create a stableswap pool in starship,
+ *   see Makefile
+ *
  * Usage:
  *
  * To add USDC to trader1's account on Noble:
@@ -9,9 +12,6 @@
  *
  * To transfer 123uusdc from Noble to Agoric:
  *   TXFR=123 [NET=testnet] noble-usdn-lab.ts
- *
- * To create a stableswap pool in starship:
- *   POOL=1 noble-usdn-lab.ts
  *
  * To swap 123uusdc for USDN:
  *   SWAP=123 [NET=testnet] noble-usdn-lab.ts
@@ -39,13 +39,17 @@ const keyring1 = {
       'cause eight cattle slot course mail more aware vapor slab hobby match',
     address: 'noble18qlqfelxhe7tszqqprm2eqdpzt9s6ry025y3j5',
   },
+  genesis: {}, // see `nobled keys --keyring-backend=test show genesis` in the pod
 } as const;
 
 const configs = {
   starship: {
     noble: {
+      // XXX should get these from starship registry
+      // meanwhile, see config.ymax.yml
       chainId: 'noblelocal',
       rpc: 'http://localhost:26654',
+      api: 'http://localhost:1314',
     },
   },
   testnet: {
@@ -85,9 +89,12 @@ harden(configs);
 const makeTraderWallet = async opts =>
   DirectSecp256k1HdWallet.fromMnemonic(keyring1.trader1.mnemonic, opts);
 
-const signArgsFor = (config: typeof configs.testnet.noble) =>
+const signArgsFor = (
+  from: keyof typeof keyring1,
+  config: typeof configs.testnet.noble,
+) =>
   [
-    ['--from', 'authority'],
+    ['--from', from],
     ['--node', config.rpc],
     ['--chain-id', config.chainId],
     ['--keyring-backend', 'test'],
@@ -150,7 +157,7 @@ const createPool = async (
   $v: typeof $,
   config: (typeof configs)['testnet'],
 ) => {
-  const signArgs = signArgsFor(config.noble);
+  const signArgs = signArgsFor('genesis', config.noble);
   const poolArgs = Object.values({
     pair: 'uusdn/uusdc',
     rewards_fee: '0',
@@ -176,7 +183,7 @@ const swapForUSDN = async (
   const { balances: before } = await queryClient.queryBalances(address);
   console.log('balances before', before);
 
-  const signArgs = signArgsFor(config.noble);
+  const signArgs = signArgsFor('trader1', config.noble);
 
   const route = JSON.stringify({ pool_id: poolId, denom_to: denomTo });
   const m99 = (toTrade * 99n) / 100n;
@@ -203,7 +210,7 @@ const lockUSDN = async (
   const queryClient = makeQueryClient(config.noble.api); // XXX ambient
   const { balances: before } = await queryClient.queryBalances(address);
   console.log('balances before', before);
-  const signArgs = signArgsFor(config.noble);
+  const signArgs = signArgsFor('trader1', config.noble);
   const { stdout } =
     await $v`nobled tx dollar vaults lock ${vault} ${`${amount}`} ${signArgs} -o json`;
   const txhash = parseTx(stdout);
@@ -224,7 +231,7 @@ const main = async ({
 
   const $v = $({ verbose: 'short' });
 
-  const config = configs[env.NET || 'testnet'];
+  const config = configs[env.NET || 'starship'];
   if (env.FAUCET) {
     if (env.NET === 'testnet') {
       throw Error(`use ${configs.testnet.noble.faucet}`);
