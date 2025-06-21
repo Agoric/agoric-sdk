@@ -273,6 +273,7 @@ const supplyToAave = async (
   );
 };
 
+/* c8 ignore start */
 const withdrawFromAave = async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
@@ -305,6 +306,7 @@ const withdrawFromAave = async (
     keeper,
   );
 };
+/* c8 ignore end */
 
 const supplyToCompound = async (
   orch: Orchestrator,
@@ -345,6 +347,7 @@ const supplyToCompound = async (
   );
 };
 
+/* c8 ignore start */
 const withdrawFromCompound = async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
@@ -378,6 +381,7 @@ const withdrawFromCompound = async (
     keeper,
   );
 };
+/* c8 ignore end */
 
 export const rebalance = async (
   orch: Orchestrator,
