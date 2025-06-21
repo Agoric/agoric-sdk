@@ -311,6 +311,54 @@ test('open portfolio with Aave position', async t => {
   t.is(actual.publicTopics.length, 3);
 });
 
+test('open portfolio with Compound position', async t => {
+  const { orch, tapPK, ctx, offer } = mocks(
+    {},
+    {
+      Compound: AmountMath.make(USDC, 300n),
+      Account: AmountMath.make(USDC, 300n),
+      Gmp: AmountMath.make(USDC, 100n),
+    },
+  );
+
+  const [actual] = await Promise.all([
+    openPortfolio(orch, { ...ctx }, offer.seat, {
+      destinationEVMChain: 'Ethereum',
+    }),
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) => {
+      tap.receiveUpcall(
+        makeIncomingEvent('xyz1sdlkfjlsdkj???TODO', 'Ethereum'),
+      );
+    }),
+  ]);
+  const { log } = offer;
+  t.log(log.map(msg => msg._method).join(', '));
+  t.like(log, [
+    { _method: 'monitorTransfers' },
+    { _method: 'localTransfer', amounts: { Account: { value: 300n } } },
+    { _method: 'transfer', address: { chainId: 'axelar-5' } },
+    { _method: 'localTransfer', amounts: { Compound: { value: 300n } } },
+    { _method: 'transfer', address: { chainId: 'noble-3' } },
+    { _method: 'depositForBurn' },
+    { _method: 'localTransfer', amounts: { Gmp: { value: 100n } } },
+    { _method: 'transfer', address: { chainId: 'axelar-6' } },
+    { _method: 'exit', _cap: 'seat' },
+  ]);
+  t.snapshot(log, 'call log'); // see snapshot for remaining arg details
+  t.is(passStyleOf(actual.invitationMakers), 'remotable');
+  t.log(
+    'accounts',
+    actual.publicTopics.map(t => t.storagePath),
+  );
+  const myAddr = '0x3dA3050208a3F2e0d04b33674aAa7b1A9F9B313C';
+  t.like(actual.publicTopics, [
+    { description: 'LCA', storagePath: 'cosmos:agoric-1:agoric11014' },
+    { description: 'USDN ICA', storagePath: 'cosmos:noble-3:noble11028' },
+    { description: 'EVM Addr', storagePath: `eip155:1:${myAddr}` },
+  ]);
+  t.is(actual.publicTopics.length, 3);
+});
+
 test('handle failure in localTransfer from seat to local account', async t => {
   const { orch, ctx, offer } = mocks({
     localTransfer: Error('localTransfer from seat failed'),

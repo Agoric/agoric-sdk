@@ -172,7 +172,7 @@ const sendTokensViaCCTP = async (
     }
   } catch (err) {
     // @ts-expect-error LocalAccountMethods vs OrchestrationAccount
-    await zoeTools.withdrawToSeat(localAcct, seat, amounts);
+    await zoeTools.withdrawToSeat(localAcct, seat, amount);
     // TODO: use X from @endo/errors
     const errorMsg = `⚠️ Noble transfer failed: ${err}`;
     throw new Error(errorMsg);
@@ -460,6 +460,7 @@ export const rebalance = async (
   if (give.USDN) {
     await addToUSDNPosition(give.USDN);
   }
+  // TODO: apply DRY for AAVE and Compound related functions
   if (give.Gmp && give.Aave) {
     trace('getGMPAddress()...');
     const evmAddr = await keeper.getGMPAddress();
@@ -491,6 +492,42 @@ export const rebalance = async (
       {
         destinationEVMChain: offerArgs.destinationEVMChain,
         transferAmount: give.Aave.value,
+        amount: harden({ Gmp: give.Gmp }),
+      },
+      keeper,
+    );
+  }
+  if (give.Gmp && give.Compound) {
+    trace('getGMPAddress()...');
+    const evmAddr = await keeper.getGMPAddress();
+    trace('evmAddr vow resolved', evmAddr);
+
+    await sendTokensViaCCTP(
+      orch,
+      ctx,
+      seat,
+      {
+        destinationEVMChain,
+        amount: harden({ Compound: give.Compound }),
+      },
+      keeper,
+    );
+    // Wait before supplying funds to aave - make sure tokens reach the remote EVM account
+    keeper.wait(20n);
+    assert(
+      destinationEVMChain,
+      'destinationEVMChain is required to open a remote EVM account',
+    );
+    trace(
+      'TODO: add unit tests for supply/withdraw functions for Aave and Compound',
+    );
+    await supplyToCompound(
+      orch,
+      ctx,
+      seat,
+      {
+        destinationEVMChain: offerArgs.destinationEVMChain,
+        transferAmount: give.Compound.value,
         amount: harden({ Gmp: give.Gmp }),
       },
       keeper,
