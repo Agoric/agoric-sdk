@@ -47,12 +47,10 @@ await readonly.writeText();
 The `@agoric/pola-io` package facilitates using the [Principle of Least Authority (POLA)](https://capnproto.org/capabilities.html#least-authority) for I/O, applying object-capability (ocap) principles to common file, network, and shell operations:
 
 - **Scoped Authority**: Interfaces are built to represent the smallest usable unit of authority—e.g., read-only file handles, command runners with fixed executable paths, or network dialers scoped to specific hosts.
-- **Composable Wrappers**: Inspired by Stiegler's PictureBook of Secure Cooperation, components like revocable forwarders, logging wrappers, and facets are encouraged as default patterns.
+- **Composable Wrappers**: revocable forwarders, logging wrappers, and facets are encouraged as default patterns.
 - **Minimize Ambient Authority**: Core interfaces require explicit authority objects. Convenience layers (e.g., `ambient/cmd.js`) exist, but are clearly labeled and should be used with care.
 
-## Background
-
-### Why Minimal Trust Enables Maximal Cooperation
+## Background: Why Minimal Trust Enables Maximal Cooperation
 
 Traditional I/O libraries often assume broad access: open any file, connect to any host, run any command. But this creates fragile systems—where one misused reference or library can do serious harm.
 
