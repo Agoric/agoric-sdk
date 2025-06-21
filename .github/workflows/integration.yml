@@ -133,17 +133,6 @@ jobs:
           command: scripts/registry.sh test ${{ matrix.cli }} ${{steps.get-branch.outputs.result}}
           on_retry_command: rm -f $HOME/bin/agoric
 
-      - name: notify on failure
-        if: >
-          failure() && github.event_name != 'pull_request' &&
-          github.repository_owner == 'agoric'
-        uses: ./.github/actions/notify-status
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
-
   deployment-test:
     needs: pre_check
     if: needs.pre_check.outputs.should_run == 'true'
@@ -208,15 +197,6 @@ jobs:
         with:
           name: deployment-test-results-${{ env.NOW }}
           path: ./networks/chaintest/results
-
-      - name: notify on failure
-        if: failure() && github.event_name != 'pull_request'
-        uses: ./agoric-sdk/.github/actions/notify-status
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
 
   test-docker-build:
     needs: pre_check
@@ -380,15 +360,6 @@ jobs:
           path: ${{ env.SLOGFILE }}
           retention-days: 10
 
-      - name: notify on failure
-        if: failure() && github.event_name != 'pull_request'
-        uses: ./.github/actions/notify-status
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
-
       - uses: ./agoric-sdk/.github/actions/post-test
         if: always()
         continue-on-error: true
@@ -440,3 +411,19 @@ jobs:
             if (conclusion === 'failure') {
               core.setFailed('Integration tests failed')
             }
+
+  post-integration:
+    uses: ./.github/workflows/result.yml
+    if: (success() || failure())
+    secrets:
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+    with:
+      event: ${{ github.event_name }}
+      needs-json: ${{ toJSON(needs) }}
+    needs:
+      - pre_check
+      - getting-started
+      - deployment-test
+      - test-docker-build
+      - test-multichain-e2e
+      - finalize-integration-result
