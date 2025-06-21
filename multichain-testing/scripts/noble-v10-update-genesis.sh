@@ -175,6 +175,24 @@ USDC_METADATA='{
   ]
 }'
 
+USDN_METADATA='{
+  "base": "uusdn",
+  "display": "usdn",
+  "name": "usdn",
+  "symbol": "USDN",
+  "denom_units": [
+    {
+      "denom": "uusdn",
+      "aliases": ["microusdn"],
+      "exponent": "0"
+    },
+    {
+      "denom": "usdn",
+      "exponent": "6"
+    }
+  ]
+}'
+
 FRNZ_METADATA='{
   "base": "ufrienzies",
   "display": "ufrienzies",
@@ -198,8 +216,8 @@ FRNZ_METADATA='{
   ]
 }'
 
-jq --argjson usdc "$USDC_METADATA" --argjson frnz "$FRNZ_METADATA" \
-  '.app_state.bank.denom_metadata += [$usdc, $frnz]' \
+jq --argjson usdc "$USDC_METADATA" --argjson usdn "$USDN_METADATA" --argjson frnz "$FRNZ_METADATA" \
+  '.app_state.bank.denom_metadata += [$usdc, $usdn, $frnz]' \
   $CHAIN_DIR/config/genesis.json > /tmp/genesis.json && mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
 
 # Configure parameter authority
