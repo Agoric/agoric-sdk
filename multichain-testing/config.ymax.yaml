@@ -36,6 +36,11 @@ chains:
     name: noble
     image: ghcr.io/agoric/noble:v10.0.0
     numValidators: 1
+    balances:
+      # USDN whale
+      # energy bar acquire twist stick uncle echo chicken track dad position unveil define addict else matrix sauce onion tornado breeze grape basket gauge soon
+      - address: noble16fskzhlguwkq35f5hmvnxg6urug46fhmn9frwu
+        amount: 100000000000000uusdn
     genesis:
       app_state:
         staking:
