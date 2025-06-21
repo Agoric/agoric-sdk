@@ -9,7 +9,6 @@ import type { GuestInterface } from '@agoric/async-flow';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import type { Orchestrator } from '@agoric/orchestration';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import { type VowTools } from '@agoric/vow';
 import type { Proposal, ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { makeHeapZone } from '@agoric/zone';
@@ -133,8 +132,7 @@ const mocks = (
     },
   }) as GuestInterface<ZoeTools>;
 
-  // @ts-expect-error simulate async flow boundary
-  const vowTools: VowTools = harden({
+  const vowTools = harden({
     makeVowKit: () => {
       const { promise, resolve, reject } = makePromiseKit();
       return harden({
@@ -142,12 +140,31 @@ const mocks = (
         vow: promise,
       });
     },
+    watch: _promise => {
+      const taggedVow = {
+        payload: {
+          vowV0: Far('VowV0', {
+            shorten: () => Promise.resolve('mock resolved value'),
+          }),
+        },
+      };
+      Object.defineProperty(taggedVow, Symbol.for('passStyle'), {
+        value: 'tagged',
+        enumerable: false,
+      });
+      Object.defineProperty(taggedVow, Symbol.toStringTag, {
+        value: 'Vow',
+        enumerable: false,
+      });
+      return harden(taggedVow);
+    },
   });
 
   const timer = buildZoeManualTimer();
   const makePortfolioKitHost = preparePortfolioKit(zone, {
     // @ts-expect-error mocked zcf
     zcf: mockZCF,
+    // @ts-expect-error mocked vowTools
     vowTools,
     axelarChainsMap,
     timer,
@@ -275,7 +292,8 @@ test('open portfolio with Aave position', async t => {
     { _method: 'localTransfer', amounts: { Aave: { value: 300n } } },
     { _method: 'transfer', address: { chainId: 'noble-3' } },
     { _method: 'depositForBurn' },
-    { _method: 'transfer', address: { chainId: 'axelar' } },
+    { _method: 'localTransfer', amounts: { Gmp: { value: 100n } } },
+    { _method: 'transfer', address: { chainId: 'axelar-6' } },
     { _method: 'exit', _cap: 'seat' },
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
@@ -288,7 +306,7 @@ test('open portfolio with Aave position', async t => {
   t.like(actual.publicTopics, [
     { description: 'LCA', storagePath: 'cosmos:agoric-1:agoric11014' },
     { description: 'USDN ICA', storagePath: 'cosmos:noble-3:noble11028' },
-    { description: 'Aave EVM Addr', storagePath: `eip155:1:${myAddr}` },
+    { description: 'EVM Addr', storagePath: `eip155:1:${myAddr}` },
   ]);
   t.is(actual.publicTopics.length, 3);
 });
