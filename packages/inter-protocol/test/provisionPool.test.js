@@ -582,9 +582,6 @@ test('provisionPool publishes metricsOverride promptly', async t => {
     },
   );
 
-  // FIXME: remove the 'await null',
-  // https://github.com/Agoric/agoric-sdk/issues/9598
-  await null;
   const metrics = E(facets.publicFacet).getMetrics();
 
   const {

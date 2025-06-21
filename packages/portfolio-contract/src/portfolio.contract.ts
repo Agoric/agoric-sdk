@@ -1,9 +1,14 @@
-import { makeTracer } from '@agoric/internal';
+import { makeTracer, mustMatch, type TypedPattern } from '@agoric/internal';
 import {
+  ChainInfoShape,
+  DenomDetailShape,
   OrchestrationPowersShape,
   registerChainsAndAssets,
   withOrchestration,
-  type OrchestrationAccount,
+  type ChainInfo,
+  type Denom,
+  type DenomDetail,
+  type OrchestrationPowers,
   type OrchestrationTools,
 } from '@agoric/orchestration';
 import type { ZCF } from '@agoric/zoe';
@@ -13,28 +18,45 @@ import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import { preparePortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
-import { makeProposalShapes } from './type-guards.ts';
+import {
+  EVMContractAddressesShape,
+  makeProposalShapes,
+  OfferArgsShapeFor,
+  type EVMContractAddresses,
+} from './type-guards.ts';
 
 const trace = makeTracer('PortC');
 
 const interfaceTODO = undefined;
 
-export const meta = M.splitRecord({
-  privateArgsShape: {
-    ...(OrchestrationPowersShape as CopyRecord),
-    marshaller: M.remotable('marshaller'),
-  },
-});
+type PortfolioPrivateArgs = OrchestrationPowers & {
+  assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
+  chainInfo: Record<string, ChainInfo>;
+  marshaller: Marshaller;
+  contract: EVMContractAddresses;
+};
+
+const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
+  ...(OrchestrationPowersShape as CopyRecord),
+  marshaller: M.remotable('marshaller'),
+  contract: EVMContractAddressesShape,
+  chainInfo: M.recordOf(M.string(), ChainInfoShape),
+  assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
+};
+
+export const meta = {
+  privateArgsShape,
+};
 harden(meta);
 
 export const contract = async (
   zcf: ZCF,
-  privateArgs,
+  privateArgs: PortfolioPrivateArgs,
   zone: Zone,
   tools: OrchestrationTools,
 ) => {
   const { brands } = zcf.getTerms();
-  const { orchestrateAll, zoeTools, chainHub } = tools;
+  const { orchestrateAll, zoeTools, chainHub, vowTools } = tools;
 
   assert(brands.USDC, 'USDC missing from brands in terms');
 
@@ -58,28 +80,46 @@ export const contract = async (
     },
   };
 
-  const makePortfolioKit = preparePortfolioKit(zone);
-  const { makeLocalAccount, openPortfolio } = orchestrateAll(flows, {
-    zoeTools,
-    makePortfolioKit,
-    inertSubscriber,
+  // UNTIL #11309
+  const chainHubTools = {
+    getDenom: chainHub.getDenom.bind(chainHub),
+  };
+  const { rebalance } = orchestrateAll(
+    { rebalance: flows.rebalance },
+    {
+      zoeTools,
+      chainHubTools,
+      contract: privateArgs.contract,
+    },
+  );
+
+  const makePortfolioKit = preparePortfolioKit(zone, {
+    zcf,
+    vowTools,
+    rebalance,
+    proposalShapes,
   });
+  const { openPortfolio } = orchestrateAll(
+    { openPortfolio: flows.openPortfolio },
+    {
+      zoeTools,
+      makePortfolioKit: makePortfolioKit as any, // XXX Guest...
+      chainHubTools,
+      contract: privateArgs.contract,
+      inertSubscriber,
+    },
+  );
 
   trace('TODO: baggage test');
-  const localV = zone.makeOnce('localV', _ => makeLocalAccount());
 
   const publicFacet = zone.exo('PortfolioPub', interfaceTODO, {
     makeOpenPortfolioInvitation() {
       trace('makeOpenPortfolioInvitation');
       return zcf.makeInvitation(
-        (seat, offerArgs) =>
-          openPortfolio(
-            seat,
-            offerArgs,
-            localV as unknown as Promise<
-              OrchestrationAccount<{ chainId: 'agoric-any' }>
-            >,
-          ),
+        (seat, offerArgs) => {
+          mustMatch(offerArgs, OfferArgsShapeFor.openPortfolio);
+          return openPortfolio(seat, offerArgs);
+        },
         'openPortfolio',
         undefined,
         proposalShapes.openPortfolio,

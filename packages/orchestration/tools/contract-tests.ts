@@ -103,7 +103,8 @@ export const setupOrchestrationTest = async ({
     transfer: transferMiddleware,
   });
   const timer = buildZoeManualTimer(log);
-  const marshaller = makeFakeBoard().getPublishingMarshaller();
+  const board = makeFakeBoard();
+  const marshaller = board.getPublishingMarshaller();
   const storage = makeFakeStorageKit(ROOT_STORAGE_PATH);
 
   const { portAllocator, setupIBCProtocol, ibcBridge } = setupFakeNetwork(
@@ -122,15 +123,18 @@ export const setupOrchestrationTest = async ({
 
   await registerKnownChains(agoricNamesAdmin, () => {});
 
+  type TransferMessageInfo = {
+    message: MsgTransfer;
+    sequence: bigint;
+  };
   /**
    * Find the Nth outgoing MsgTransfer and its sequence number from the localchain bridge log.
    * @param index 0-based index from the start, or negative index from the end.
-   * @returns The MsgTransfer message and its sequence number.
+   * @returns {TransferMessageInfo} The MsgTransfer message and its sequence number.
    * @throws If index is out of bounds or sequence is not found in the log result.
    */
   const outgoingTransferAt = (index: number) => {
-    const transferMessagesInfo: { message: MsgTransfer; sequence: bigint }[] =
-      [];
+    const transferMessagesInfo: TransferMessageInfo[] = [];
     const isRelevant = ({ obj, result }) =>
       obj.type === 'VLOCALCHAIN_EXECUTE_TX' &&
       obj.messages &&
@@ -242,6 +246,7 @@ export const setupOrchestrationTest = async ({
       agoricNames,
       agoricNamesAdmin,
       bankManager,
+      board,
       timer,
       localchain,
       cosmosInterchainService,

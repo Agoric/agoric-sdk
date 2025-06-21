@@ -34,7 +34,7 @@ chains:
       memory: 4Gi
   - id: noblelocal
     name: noble
-    image: ghcr.io/agoric/noble:v9.0.4
+    image: ghcr.io/agoric/noble:v10.0.0
     numValidators: 1
     genesis:
       app_state:
@@ -49,7 +49,7 @@ chains:
     scripts:
       updateGenesis:
         # We can modify this script as per need for ymax
-        file: scripts/noble-v9.0.4-update-genesis.sh
+        file: scripts/noble-v10-update-genesis.sh
     faucet:
       enabled: true
       type: starship

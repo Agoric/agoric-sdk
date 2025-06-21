@@ -17,6 +17,8 @@ public
 *.json
 *.md
 
+**/tsup.config.ts
+
 # selectively include instead of all .json because
 # - many (such as tsconfig.json) allow trailing commas want to preserve but Prettier will remove per JSON
 # - some have careful manual formatting such as a matrix and there's no safe way to have an ignore comment in JSON
@@ -28,3 +30,6 @@ public
 
 # copied from upstream
 /packages/xsnap/lib/object-inspect.js
+
+/packages/orchestration/src/vendor/
+/packages/orchestration/src/stubs/

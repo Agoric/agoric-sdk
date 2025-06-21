@@ -18,10 +18,18 @@ import { wrapperMethods } from './prepare-attenuator.js';
 
 /**
  * @template [U=any]
+ * @callback MakeRevocableKit
+ * @param {U} underlying
+ * @returns {RevocableKit<U>}
+ */
+
+/**
+ * @template [U=any]
  * @typedef {object} RevocableMakerKit
  * @property {(revocable: U) => boolean} revoke
- * @property {MakeRevocable} makeRevocable
+ * @property {MakeRevocable<U>} makeRevocable
  *   Forwards to the underlying exo object, until revoked
+ * @property {MakeRevocableKit<U>} makeRevocableKit
  */
 
 /**
@@ -150,6 +158,8 @@ export const prepareRevocableMakerKit = (
   return harden({
     revoke,
     makeRevocable,
+    /** @type {MakeRevocableKit} */
+    makeRevocableKit,
   });
 };
 harden(prepareRevocableMakerKit);

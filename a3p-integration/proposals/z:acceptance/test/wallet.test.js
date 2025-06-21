@@ -2,19 +2,26 @@
 
 import test from 'ava';
 
-import { retryUntilCondition } from '@agoric/client-utils';
+import { Fail } from '@endo/errors';
 import {
+  retryUntilCondition,
+  VBankAccount,
+  waitUntilAccountFunded,
+} from '@agoric/client-utils';
+import {
+  addUser,
   agoric,
   CHAINID,
   evalBundles,
   GOV1ADDR,
   GOV2ADDR,
   makeAgd,
+  provisionSmartWallet,
 } from '@agoric/synthetic-chain';
 import { execFileSync } from 'node:child_process';
 import { agdWalletUtils } from './test-lib/index.js';
 import { getBalances, replaceTemplateValuesInFile } from './test-lib/utils.js';
-import { tryISTBalances } from './test-lib/psm-lib.js';
+import { bankSend, tryISTBalances } from './test-lib/psm-lib.js';
 
 /**
  * @param {string} file
@@ -29,6 +36,50 @@ const showAndExec = (file, args, opts) => {
 // @ts-expect-error string is not assignable to Buffer
 const agd = makeAgd({ execFileSync: showAndExec }).withOpts({
   keyringBackend: 'test',
+});
+
+test.serial('manual wallet provisioning', async t => {
+  const powers = { query: (...args) => agd.query(args), setTimeout };
+  const denom = 'ubld'; // used for fees and initial funding
+  const user = await addUser('manualWallet');
+  const initialFund = [{ denom, value: 20e6 }];
+  await bankSend(
+    user,
+    initialFund.map(amount => `${amount.value}${amount.denom}`).join(','),
+  );
+  await waitUntilAccountFunded(
+    user,
+    powers,
+    initialFund[initialFund.length - 1],
+    { errorMessage: 'manualWallet not funded' },
+  );
+  const addrs = {
+    reservePool: VBankAccount.reserve.address,
+    provisionPool: VBankAccount.provision.address,
+    user,
+  };
+  const getBalancesRecord = async () => {
+    const labels = Object.keys(addrs);
+    const balances = await getBalances(Object.values(addrs), denom);
+    balances.length === labels.length ||
+      Fail`input/output mismatch between ${addrs} and ${balances}`;
+    return Object.fromEntries(labels.map((label, i) => [label, balances[i]]));
+  };
+  const balancesBefore = await getBalancesRecord();
+  t.log('balances before wallet provisioning', balancesBefore);
+  await provisionSmartWallet(user);
+  const balancesAfter = await getBalancesRecord();
+  t.log('balances after wallet provisioning', balancesAfter);
+  // 10 BLD fee goes to the reserve, but might be less than the minimum
+  // transferable fee unit.
+  t.true(balancesAfter.reservePool >= balancesBefore.reservePool);
+  t.like(balancesAfter, {
+    // 10 BLD initial funding comes from provisionPool
+    provisionPool: balancesBefore.provisionPool - BigInt(10e6),
+    // and since the initial funding equals the fee, the user balance should be
+    // unchanged
+    user: balancesBefore.user,
+  });
 });
 
 test.serial(`send invitation via namesByAddress`, async t => {

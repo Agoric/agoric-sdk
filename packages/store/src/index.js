@@ -8,7 +8,7 @@ export { makeScalarSetStore } from './stores/scalarSetStore.js';
 export { makeScalarWeakMapStore } from './stores/scalarWeakMapStore.js';
 export { makeScalarMapStore } from './stores/scalarMapStore.js';
 
-export { provideLazy } from './stores/store-utils.js';
+export { makeAtomicProvider, provideLazy } from './stores/store-utils.js';
 
 // /////////////////////// Deprecated Re-exports ///////////////////////////////
 // Importers should import directly from the packages shown below

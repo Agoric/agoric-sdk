@@ -112,6 +112,16 @@ provision-smart-wallet:
 tail-slog:
 	kubectl exec -i agoriclocal-genesis-0 -c validator -- tail -f slog.slog
 
+
+
+###############################################################################
+###                          Noble Setup                                   ###
+###############################################################################
+
+.PHONY: create-noble-swap-pool
+create-noble-swap-pool:
+	scripts/create-noble-swap-pool.ts
+
 ###############################################################################
 ###                           Start All                                     ###
 ###############################################################################
@@ -121,7 +131,7 @@ wait-for-pods:
 	$(STARSHIP) wait-for-pods
 
 .PHONY: start
-start: sstart fund-provision-pool register-bank-assets
+start: sstart fund-provision-pool register-bank-assets create-noble-swap-pool
 
 .PHONY: sstart
 sstart:

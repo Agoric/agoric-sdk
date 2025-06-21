@@ -62,15 +62,19 @@ export const upgradeProvisionPool = async (
     deeplyFulfilled(instancePrivateArgs.get(instance)),
     E(electorateCreatorFacet).getPoserInvitation(),
   ]);
+  trace('originalPrivateArgs: ', originalPrivateArgs);
 
   const params = await E(ppPublicFacet).getGovernedParams();
   const governedParamOverrides = harden({
+    ...params,
     PerAccountInitialAmount: params.PerAccountInitialAmount.value,
   });
-  trace('governedParamOverrides: ', { governedParamOverrides });
+  trace('governedParamOverrides: ', governedParamOverrides);
 
+  const { metricsOverride: _, ...preservedPrivateArgs } =
+    originalPrivateArgs || {};
   const newPrivateArgs = harden({
-    ...originalPrivateArgs,
+    ...preservedPrivateArgs,
     initialPoserInvitation: poserInvitation,
     governedParamOverrides,
   });

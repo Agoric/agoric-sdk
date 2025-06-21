@@ -5,7 +5,7 @@
  * @import {TypedPattern} from '@agoric/internal';
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
  * @import {ZoeTools} from '../utils/zoe-tools.js';
- * @import {AxelarGmpIncomingMemo, EvmTapState, ContractCall, SupportedDestinationChains} from '../axelar-types.js';
+ * @import {AxelarGmpIncomingMemo, EvmTapState, ContractCall, SupportedEVMChains} from '../axelar-types.js';
  * @import {ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {AxelarGmpOutgoingMemo, GMPMessageType} from '../axelar-types.js'
  */
@@ -16,8 +16,8 @@ import { M, mustMatch } from '@endo/patterns';
 import { VowShape } from '@agoric/vow';
 import { makeTracer, NonNullish } from '@agoric/internal';
 import { atob, decodeBase64 } from '@endo/base64';
-import { decodeAbiParameters } from 'viem';
 import { Fail } from '@endo/errors';
+import { decodeAbiParameters } from '../vendor/viem/viem-abi.js';
 import { CosmosChainAddressShape } from '../typeGuards.js';
 import { gmpAddresses, buildGMPPayload } from '../utils/gmp.js';
 
@@ -90,9 +90,11 @@ export const prepareEvmAccountKit = (
       mustMatch(initialState, EvmKitStateShape);
       return harden({
         evmAccountAddress: /** @type {string | undefined} */ (undefined),
-        latestMessage: /**
-         * @type {{ success: boolean; result: `0x${string}` }[] | undefined}
-         */ (undefined),
+        /**
+         * @type {{ success: boolean; result: `0x${string}` }[]
+         *   | undefined}
+         */
+        latestMessage: undefined,
         ...initialState,
       });
     },
@@ -190,7 +192,7 @@ export const prepareEvmAccountKit = (
          * @param {{
          *   destinationAddress: string;
          *   type: GMPMessageType;
-         *   destinationEVMChain: SupportedDestinationChains;
+         *   destinationEVMChain: SupportedEVMChains;
          *   gasAmount: number;
          *   contractInvocationData: ContractCall[];
          * }} offerArgs

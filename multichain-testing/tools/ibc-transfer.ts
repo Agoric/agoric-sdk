@@ -174,7 +174,11 @@ export const makeFundAndTransfer = (
       useChain,
     );
     console.log('Transfer Args:', transferArgs);
-    const txRes = await client.signAndBroadcast(...transferArgs);
+    const txRes = await retryUntilCondition(
+      () => client.signAndBroadcast(...transferArgs),
+      tx => tx.code === 0,
+      `Send IBC tokens to ${address}`,
+    );
     if (txRes && txRes.code !== 0) {
       console.error(txRes);
       throw Error(`failed to ibc transfer funds to ${chainName}`);
