@@ -1,13 +1,11 @@
 /** @file exercise Fast USDC contract in iterations; see chain-impact.test.ts */
 import type { ExecutionContext } from 'ava';
 
-import { type WalletFactoryTestContext } from '@aglocal/boot/test/bootstrapTests/walletFactory.js';
 import { AckBehavior } from '@aglocal/boot/tools/supports.js';
 import {
   encodeAddressHook,
   encodeBech32,
 } from '@agoric/cosmic-proto/address-hooks.js';
-import { buildProposal } from '@agoric/cosmic-swingset/tools/test-proposal-utils.ts';
 import type {
   CctpTxEvidence,
   ContractRecord,
@@ -25,6 +23,7 @@ import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import type { IBCChannelID } from '@agoric/vats';
 import { makePromiseKit } from '@endo/promise-kit';
 import { configurations } from '../src/utils/deploy-config.js';
+import { type WalletFactoryTestContext } from './walletFactory.js';
 
 type SmartWallet = Awaited<
   ReturnType<
@@ -39,11 +38,11 @@ const prefixedRange = (n: number, pfx: string) =>
 const nobleAgoricChannelId = 'channel-21';
 
 const makeTxOracle = (
-  context: WalletFactoryTestContext,
+  ctx: WalletFactoryTestContext,
   name: string,
   addr: string,
 ) => {
-  const { agoricNamesRemotes, walletFactoryDriver: wfd } = context;
+  const { agoricNamesRemotes, walletFactoryDriver: wfd } = ctx;
   const walletPK = makePromiseKit<SmartWallet>();
 
   return harden({
@@ -82,8 +81,8 @@ const makeTxOracle = (
 };
 type TxOracle = ReturnType<typeof makeTxOracle>;
 
-const makeFastUsdcQuery = (context: WalletFactoryTestContext) => {
-  const { storage } = context;
+const makeFastUsdcQuery = (ctx: WalletFactoryTestContext) => {
+  const { storage } = ctx;
   return harden({
     metrics: () => {
       const metrics: PoolMetrics = defaultMarshaller.fromCapData(
@@ -103,8 +102,8 @@ const makeFastUsdcQuery = (context: WalletFactoryTestContext) => {
   });
 };
 
-const makeLP = (context: WalletFactoryTestContext, addr: string) => {
-  const { agoricNamesRemotes, walletFactoryDriver: wfd } = context;
+const makeLP = (ctx: WalletFactoryTestContext, addr: string) => {
+  const { agoricNamesRemotes, walletFactoryDriver: wfd } = ctx;
   const lpP = wfd.provideSmartWallet(addr);
 
   const pollOffer = async (lp: SmartWallet, id: string) => {
@@ -147,11 +146,11 @@ const makeLP = (context: WalletFactoryTestContext, addr: string) => {
 };
 
 const makeCctp = (
-  context: WalletFactoryTestContext,
+  ctx: WalletFactoryTestContext,
   forwardingChannel: IBCChannelID,
   destinationChannel: IBCChannelID,
 ) => {
-  const { bridgeInbound } = context;
+  const { runInbound } = ctx.bridgeUtils;
 
   const modern = new Date('2020-01-01');
 
@@ -174,15 +173,16 @@ const makeCctp = (
       });
       return txInfo;
     },
-    mint: async (
+    async mint(
       amount: bigint,
       sender: CosmosChainAddress['value'],
       target: CosmosChainAddress['value'],
       receiver: CosmosChainAddress['value'],
-    ) =>
+    ) {
       // in due course, minted USDC arrives
-      bridgeInbound(
+      await runInbound(
         BridgeId.VTRANSFER,
+
         buildVTransferEvent({
           sequence: '1', // arbitrary; not used
           amount,
@@ -193,7 +193,8 @@ const makeCctp = (
           sourceChannel: forwardingChannel,
           destinationChannel,
         }),
-      ),
+      );
+    },
   });
 };
 
@@ -259,14 +260,14 @@ const makeUA = (
 };
 
 const makeIBCChannel = (
-  context: WalletFactoryTestContext,
+  bridgeUtils: WalletFactoryTestContext['bridgeUtils'],
   sourceChannel: IBCChannelID,
 ) => {
-  const { bridgeInbound } = context;
+  const { runInbound } = bridgeUtils;
   let sequence = 0;
   return harden({
-    ack: (sender: CosmosChainAddress['value']) =>
-      bridgeInbound(
+    async ack(sender: CosmosChainAddress['value']) {
+      await runInbound(
         BridgeId.VTRANSFER,
         buildVTransferEvent({
           sender,
@@ -274,20 +275,21 @@ const makeIBCChannel = (
           sourceChannel,
           sequence: `${(sequence += 1)}`,
         }),
-      ),
+      );
+    },
   });
 };
 
-export const makeSimulation = (context: WalletFactoryTestContext) => {
-  const cctp = makeCctp(context, nobleAgoricChannelId, 'channel-62');
-  const toNoble = makeIBCChannel(context, 'channel-62');
+export const makeSimulation = (ctx: WalletFactoryTestContext) => {
+  const cctp = makeCctp(ctx, nobleAgoricChannelId, 'channel-62');
+  const toNoble = makeIBCChannel(ctx.bridgeUtils, 'channel-62');
   const oracles = Object.entries(configurations.MAINNET.oracles).map(
-    ([name, addr]) => makeTxOracle(context, name, addr),
+    ([name, addr]) => makeTxOracle(ctx, name, addr),
   );
 
-  const fastQ = makeFastUsdcQuery(context);
+  const fastQ = makeFastUsdcQuery(ctx);
   const lps = range(3).map(ix =>
-    makeLP(context, encodeBech32('agoric', [100, ix])),
+    makeLP(ctx, encodeBech32('agoric', [100, ix])),
   );
   const users = prefixedRange(5, `0xFEED`).map(addr =>
     makeUA(addr as EvmAddress, fastQ, cctp, oracles),
@@ -303,13 +305,14 @@ export const makeSimulation = (context: WalletFactoryTestContext) => {
       await Promise.all(oracles.map(o => o.provision()));
     },
 
-    async deployContract(_context: WalletFactoryTestContext) {
+    async deployContract(context: WalletFactoryTestContext) {
       const {
         agoricNamesRemotes,
         bridgeUtils,
-        evaluateProposal,
+        buildProposal,
+        evalProposal,
         refreshAgoricNamesRemotes,
-      } = _context;
+      } = context;
 
       // inbound `startChannelOpenInit` responses immediately.
       // needed since the Fusdc StartFn relies on an ICA being created
@@ -320,11 +323,11 @@ export const makeSimulation = (context: WalletFactoryTestContext) => {
       );
       bridgeUtils.setBech32Prefix('noble');
 
-      const materials = await buildProposal(
+      const materials = buildProposal(
         '@aglocal/fast-usdc-deploy/src/start-fast-usdc.build.js',
         ['--net', 'MAINNET'],
       );
-      await evaluateProposal(materials);
+      await evalProposal(materials);
       refreshAgoricNamesRemotes();
       return agoricNamesRemotes.instance.fastUsdc;
     },
@@ -334,10 +337,7 @@ export const makeSimulation = (context: WalletFactoryTestContext) => {
       await Promise.all(oracles.map(o => o.claim()));
     },
 
-    async iteration(
-      t: ExecutionContext<WalletFactoryTestContext>,
-      iter: number,
-    ) {
+    async iteration(t: ExecutionContext, iter: number) {
       const lpIx = iter % lps.length;
       const lp = lps[lpIx];
       await lp.deposit(BigInt((lpIx + 1) * 2000) * 1_000_000n, iter);
@@ -346,7 +346,7 @@ export const makeSimulation = (context: WalletFactoryTestContext) => {
 
       const {
         shareWorth: { numerator: poolBeforeAdvance },
-      } = fastQ.metrics();
+      } = await fastQ.metrics();
       const part = Number(poolBeforeAdvance.value) / users.length;
 
       const who = iter % users.length;
@@ -357,8 +357,8 @@ export const makeSimulation = (context: WalletFactoryTestContext) => {
       const { recipientAddress, forwardingAddress, evidence } =
         await webUI.advance(t, amount, destAddr, iter * users.length + who);
 
-      toNoble.ack(poolAccount);
-      await t.context.runUntilQueuesEmpty();
+      await toNoble.ack(poolAccount);
+      await eventLoopIteration();
 
       // in due course, minted USDC arrives
       await cctp.mint(
@@ -367,8 +367,7 @@ export const makeSimulation = (context: WalletFactoryTestContext) => {
         settlementAccount,
         recipientAddress,
       );
-      await t.context.runUntilQueuesEmpty();
-
+      await eventLoopIteration();
       t.like(fastQ.txStatus(evidence.txHash), [
         { status: 'OBSERVED' },
         { status: 'ADVANCING' },
@@ -376,7 +375,9 @@ export const makeSimulation = (context: WalletFactoryTestContext) => {
         { status: 'DISBURSED' },
       ]);
 
-      const beforeWithdraw = fastQ.metrics();
+      await eventLoopIteration();
+
+      const beforeWithdraw = await fastQ.metrics();
       if (beforeWithdraw.encumberedBalance.value > 0n) {
         throw t.fail(`still encumbered: ${beforeWithdraw.encumberedBalance}`);
       }

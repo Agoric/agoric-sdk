@@ -13,7 +13,7 @@ const tmpDir = makeTempDirFactory(tmp);
 /**
  * Creates a function that can build and extract proposal data from package scripts.
  */
-const makeProposalExtractor = (
+export const makeProposalExtractor = (
   {
     childProcess: { execFileSync },
     fs: { readFile },

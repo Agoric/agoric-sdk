@@ -1,61 +1,27 @@
-import { fetchCoreEvalRelease } from '@aglocal/boot/tools/supports.js';
-import { makeWalletFactoryDriver } from '@aglocal/boot/tools/drivers.js';
-import type { TypedPublished } from '@agoric/client-utils';
-import {
-  AckBehavior,
-  type AckBehaviorType,
-  makeMockBridgeKit,
-} from '@agoric/cosmic-swingset/tools/test-bridge-utils.ts';
-import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
-import { BridgeId } from '@agoric/internal';
-import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
-import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import type { IBCDowncallMethod } from '@agoric/vats';
-import {
-  boardSlottingMarshaller,
-  slotToBoardRemote,
-} from '@agoric/vats/tools/board-utils.js';
+import { Fail } from '@endo/errors';
 import {
   type AgoricNamesRemotes,
   makeAgoricNamesRemotesFromFakeStorage,
 } from '@agoric/vats/tools/board-utils.js';
-import { Fail } from '@endo/errors';
+import {
+  fetchCoreEvalRelease,
+  makeSwingsetTestKit,
+} from '../../tools/supports.js';
+import { makeWalletFactoryDriver } from '../../tools/drivers.js';
 
-const { fromCapData } = boardSlottingMarshaller(slotToBoardRemote);
-
-export const makeWalletFactoryContext = async ({
+export const makeWalletFactoryContext = async (
+  t,
   configSpecifier = '@agoric/vm-config/decentral-main-vaults-config.json',
-  ...testkitOpts
-}: Partial<
-  Parameters<typeof makeCosmicSwingsetTestKit>[0] & {
-    configSpecifier: string;
-  }
->) => {
-  const inboundQueue: Array<[bridgeId: BridgeId, arg1: unknown]> = [];
-  const storage = makeFakeStorageKit('bootstrapTests');
-
-  const bridgeReceiverOpts: Parameters<typeof makeMockBridgeKit>[0] = {
-    ackBehaviors: {
-      [BridgeId.DIBC]: {
-        startChannelOpenInit: AckBehavior.Queued,
-      },
-    },
-    bech32Prefix: 'cosmos',
-    inbound: undefined,
-    pushInbound: (bridgeId, arg) => inboundQueue.push([bridgeId, arg]),
-    storageKit: storage,
-  };
-
-  const swingsetTestKit = await makeCosmicSwingsetTestKit({
+  opts = {},
+) => {
+  const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
     configSpecifier,
-    ...testkitOpts,
-    mockBridgeReceiver: makeMockBridgeKit(bridgeReceiverOpts),
+    ...opts,
   });
 
-  const { bridgeInbound, EV, evaluateProposal, queueAndRun } = swingsetTestKit;
-  bridgeReceiverOpts.inbound = bridgeInbound;
-
+  const { runUtils, storage } = swingsetTestKit;
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
+  const { EV } = runUtils;
 
   // Wait for ATOM to make it into agoricNames
   await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
@@ -63,11 +29,11 @@ export const makeWalletFactoryContext = async ({
 
   // has to be late enough for agoricNames data to have been published
   const agoricNamesRemotes: AgoricNamesRemotes =
-    makeAgoricNamesRemotesFromFakeStorage(storage);
+    makeAgoricNamesRemotesFromFakeStorage(swingsetTestKit.storage);
   const refreshAgoricNamesRemotes = () => {
     Object.assign(
       agoricNamesRemotes,
-      makeAgoricNamesRemotesFromFakeStorage(storage),
+      makeAgoricNamesRemotesFromFakeStorage(swingsetTestKit.storage),
     );
   };
   agoricNamesRemotes.brand.ATOM || Fail`ATOM missing from agoricNames`;
@@ -80,68 +46,23 @@ export const makeWalletFactoryContext = async ({
       name,
     });
     try {
-      await evaluateProposal(materials);
+      await swingsetTestKit.evalProposal(materials);
     } finally {
       refreshAgoricNamesRemotes();
     }
   };
 
-  const readLatestEntryFromStorage = (path: string) => {
-    let data;
-    try {
-      data = unmarshalFromVstorage(storage.data, path, fromCapData, -1);
-    } catch {
-      // fall back to regular JSON
-      const raw = storage.getValues(path).at(-1);
-      assert(raw, `No data found for ${path}`);
-      data = JSON.parse(raw);
-    }
-    return data;
-  };
-
   const walletFactoryDriver = await makeWalletFactoryDriver(
-    { EV, queueAndRun },
+    runUtils,
     storage,
     agoricNamesRemotes,
   );
-
   return {
     ...swingsetTestKit,
+    swingsetTestKit,
     agoricNamesRemotes,
-    bridgeUtils: {
-      getInboundQueueLength: () => inboundQueue.length,
-      flushInboundQueue: async (max: number = Number.POSITIVE_INFINITY) => {
-        await Promise.resolve();
-
-        let i = 0;
-        for (i = 0; i < max; i += 1) {
-          const args = inboundQueue.shift();
-          if (!args) break;
-
-          await queueAndRun(() => bridgeInbound(...args), true);
-        }
-
-        return i;
-      },
-      setAckBehavior: (
-        bridgeId: BridgeId,
-        method: IBCDowncallMethod,
-        behavior: AckBehaviorType,
-      ) => {
-        if (!bridgeReceiverOpts.ackBehaviors?.[bridgeId]?.[method])
-          throw Fail`ack behavior not yet configurable for ${bridgeId} ${method}`;
-        console.log('setting', bridgeId, method, 'ack behavior to', behavior);
-        bridgeReceiverOpts.ackBehaviors[bridgeId][method] = behavior;
-      },
-      setBech32Prefix: (_bech32Prefix: string) =>
-        (bridgeReceiverOpts.bech32Prefix = _bech32Prefix),
-    },
     evalReleasedProposal,
-    readLatestEntryFromStorage,
-    readPublished: <T extends string>(subpath: T) =>
-      readLatestEntryFromStorage(`published.${subpath}`) as TypedPublished<T>,
     refreshAgoricNamesRemotes,
-    storage,
     walletFactoryDriver,
   };
 };

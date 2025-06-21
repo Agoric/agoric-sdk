@@ -26,7 +26,7 @@ const test = anyTest as TestFn<
 test.before(async t => (t.context = await makeDefaultTestContext()));
 test.after.always(t => t.context.shutdown?.());
 
-test(`Create a contract via core-eval and kill it via core-eval by boardID `, async t => {
+test('Create a contract via core-eval and kill it via core-eval by boardID', async t => {
   const TEST_CONTRACT_LABEL = 'testContractLabel';
   const { EV, evaluateProposal, zoe } = t.context;
 

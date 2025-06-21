@@ -10,35 +10,37 @@
  *
  * Fast USDC specific aspects are relegated to fu-sim-iter.ts.
  */
-
-import { readFile, writeFile } from 'node:fs/promises';
-import { createRequire } from 'node:module';
-
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
+import { makeSwingsetHarness } from '@aglocal/boot/tools/supports.js';
+
+import type { CoreEvalSDKType } from '@agoric/cosmic-proto/agoric/swingset/swingset.js';
+import { makeArchiveSnapshot, type SnapStoreDebug } from '@agoric/swing-store';
+import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
+import type { BridgeHandler } from '@agoric/vats';
+import { keyEQ } from '@endo/patterns';
+import fs from 'node:fs';
+import { readFile, writeFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
+import path from 'node:path';
+import tmp from 'tmp';
+import { makeSimulation } from './fu-sim-iter.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
-} from '@aglocal/boot/test/bootstrapTests/walletFactory.js';
-import { makeSwingsetHarness } from '@aglocal/boot/tools/supports.js';
-import { makeSimulation } from '@aglocal/fast-usdc-deploy/test/fu-sim-iter.js';
-import type { SnapStoreDebug } from '@agoric/swing-store';
-import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
-import { makeSlogSender } from '@agoric/telemetry';
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { keyEQ } from '@endo/patterns';
+} from './walletFactory.js';
 
-const { resolve: resolvePath } = createRequire(import.meta.url);
+const nodeRequire = createRequire(import.meta.url);
 
 const test: TestFn<
   WalletFactoryTestContext & {
-    doCoreEval: (specifier: string) => Promise<void>;
     harness: ReturnType<typeof makeSwingsetHarness>;
     observations: Array<{ id: unknown } & Record<string, unknown>>;
-    sim: ReturnType<typeof makeSimulation>;
-    simulatedIterations: number;
-    slogSender?: ReturnType<typeof makeSlogSender>;
     writeStats?: (txt: string) => Promise<void>;
+    doCoreEval: (specifier: string) => Promise<void>;
+    simulatedIterations: number;
+    sim: ReturnType<typeof makeSimulation>;
   }
 > = anyTest;
 
@@ -61,65 +63,60 @@ const SUFFICIENT_ITERATIONS = REAP_PERIOD * 16 - 1;
 
 test.before(async t => {
   const { env } = globalThis.process;
+  const fsPowers = { fs, path, tmp };
   const {
-    SIM_ITERS = `${SUFFICIENT_ITERATIONS}`,
     SLOGFILE: slogFile,
-    SNAPSHOT_DIR: snapshotDir,
+    SWINGSET_WORKER_TYPE: defaultManagerType = 'xs-worker', // or 'local',
     STATS_FILE,
+    SNAPSHOT_DIR: snapshotDir,
+    SIM_ITERS = `${SUFFICIENT_ITERATIONS}`,
   } = env;
   const harness = makeSwingsetHarness({
     // let the largest step in the simulation fit in a block
     blockComputeLimit: 65_000_000n * 100n * 1000n,
   });
-  const slogSender = slogFile
-    ? makeSlogSender({
-        env: {
-          ...env,
-          SLOGFILE: slogFile,
-          SLOGSENDER: '',
-        },
-        stateDir: '.',
-      })
-    : undefined;
-  const context = await makeWalletFactoryContext({
-    configSpecifier: config,
-    fixupConfig: _config => ({
-      ..._config,
-      defaultReapGCKrefs: 'never',
-      defaultReapInterval: 'never',
-      snapshotInterval: Number.MAX_SAFE_INTEGER,
-      vatTranscriptArchiveDir: snapshotDir,
-    }),
+  const ctx = await makeWalletFactoryContext(t, config, {
+    slogFile,
+    defaultManagerType,
     harness,
-    slogSender,
+    configOverrides: {
+      defaultReapInterval: 'never',
+      defaultReapGCKrefs: 'never',
+      // we control when to snapshot; set interval to "never"
+      snapshotInterval: Number.MAX_SAFE_INTEGER,
+    },
+    ...(snapshotDir
+      ? { archiveSnapshot: makeArchiveSnapshot(snapshotDir, fsPowers) }
+      : {}),
   });
-
-  const { evaluateProposal } = context;
 
   const writeStats = STATS_FILE
     ? (txt: string) => writeFile(STATS_FILE, txt)
     : undefined;
-  const sim = makeSimulation(context);
+  const sim = await makeSimulation(ctx);
 
+  const { log } = console;
   const doCoreEval = async (specifier: string) => {
-    const script = await readFile(resolvePath(specifier), 'utf-8');
-    console.log(`executing proposal '${specifier}'`);
-    await evaluateProposal({
-      bundles: [],
-      evals: [{ js_code: script, json_permits: 'true' }],
-    });
-    console.log(`proposal '${specifier}' executed`);
+    const { EV } = ctx.runUtils;
+    const script = await readFile(nodeRequire.resolve(specifier), 'utf-8');
+    const eval0: CoreEvalSDKType = { js_code: script, json_permits: 'true' };
+    log('executing proposal');
+    const bridgeMessage = { type: 'CORE_EVAL', evals: [eval0] };
+    const coreEvalBridgeHandler: BridgeHandler = await EV.vat(
+      'bootstrap',
+    ).consumeItem('coreEvalBridgeHandler');
+    await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
+    log(`proposal executed`);
   };
 
   t.context = {
-    ...context,
-    doCoreEval,
+    ...ctx,
     harness,
     observations: [],
+    writeStats,
+    doCoreEval,
     simulatedIterations: Number(SIM_ITERS),
     sim,
-    slogSender,
-    writeStats,
   };
 });
 const stringifyBigint = (_p, v) => (typeof v === 'bigint' ? `${v}` : v);
@@ -195,8 +192,10 @@ test.serial('deploy contract', async t => {
 });
 
 test.serial('post-deploy / pre iteration', async t => {
-  const { controller, observations, sim, storage } = t.context;
+  const { sim } = t.context;
   await t.notThrowsAsync(sim.beforeIterations(t));
+
+  const { controller, observations, storage } = t.context;
   observations.push({
     id: 'post-deploy',
     ...getResourceUsageStats(controller, storage.data),
@@ -206,23 +205,16 @@ test.serial('post-deploy / pre iteration', async t => {
 const range = (n: number) => Array.from(Array(n).keys());
 
 test.serial('iterate simulation several times', async t => {
-  const {
-    controller,
-    observations,
-    harness,
-    sim,
-    slogSender,
-    storage,
-    swingStore,
-    writeStats,
-  } = t.context;
+  const { controller, observations, storage, sim } = t.context;
+  const { harness, swingStore, slogSender, writeStats } = t.context;
   const { updateNewCellBlockHeight } = storage;
 
-  if (writeStats)
+  if (writeStats) {
     await writeFile(
       'kernel-0.json',
       JSON.stringify(controller.dump(), null, 2),
     );
+  }
 
   harness.useRunPolicy(true); // start tracking computrons
   harness.resetRunPolicy(); // never mind computrons from bootstrap
@@ -263,7 +255,9 @@ test.serial('iterate simulation several times', async t => {
   const { simulatedIterations } = t.context;
   for (const ix of range(simulatedIterations)) {
     // force GC and prune vstorage at regular intervals
-    if (ix % REAP_PERIOD === 0) await doCleanupAndSnapshot(ix);
+    if (ix % REAP_PERIOD === 0) {
+      await doCleanupAndSnapshot(ix);
+    }
 
     slogSender?.({ type: 'iteration-begin', ix });
 

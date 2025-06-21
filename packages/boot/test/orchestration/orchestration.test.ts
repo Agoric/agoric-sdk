@@ -1,15 +1,5 @@
-import type { TestFn } from 'ava';
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import {
-  makeWalletFactoryContext,
-  type WalletFactoryTestContext,
-} from '@aglocal/boot/test/bootstrapTests/walletFactory.js';
-import { minimalChainInfos } from '@aglocal/boot/test/tools/chainInfo.js';
-import {
-  insistManagerType,
-  makeSwingsetHarness,
-} from '@aglocal/boot/tools/supports.js';
-import { buildProposal } from '@agoric/cosmic-swingset/tools/test-proposal-utils.ts';
 import { BridgeId } from '@agoric/internal';
 import {
   withChainCapabilities,
@@ -18,11 +8,19 @@ import {
 import type { start as startStakeIca } from '@agoric/orchestration/src/examples/stake-ica.contract.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
-import { makeSlogSender } from '@agoric/telemetry';
 import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { Fail } from '@endo/errors';
+import type { TestFn } from 'ava';
+import {
+  insistManagerType,
+  makeSwingsetHarness,
+} from '../../tools/supports.js';
+import {
+  makeWalletFactoryContext,
+  type WalletFactoryTestContext,
+} from '../bootstrapTests/walletFactory.js';
+import { minimalChainInfos } from '../tools/chainInfo.js';
 
 const test: TestFn<
   WalletFactoryTestContext & {
@@ -45,37 +43,28 @@ const {
 
 test.before(async t => {
   insistManagerType(defaultManagerType);
-
   const harness =
     defaultManagerType === 'xsnap' ? makeSwingsetHarness() : undefined;
-  const slogSender = slogFile
-    ? makeSlogSender({
-        env: {
-          ...process.env,
-          SLOGFILE: slogFile,
-          SLOGSENDER: '',
-        },
-        stateDir: '.',
-      })
-    : undefined;
-
-  const context = await makeWalletFactoryContext({
-    configSpecifier:
-      '@agoric/vm-config/decentral-itest-orchestration-config.json',
-    harness,
-    slogSender,
-  });
-  t.context = { ...context, harness };
+  const ctx = await makeWalletFactoryContext(
+    t,
+    '@agoric/vm-config/decentral-itest-orchestration-config.json',
+    { slogFile, defaultManagerType, harness },
+  );
+  t.context = { ...ctx, harness };
 });
 test.after.always(t => t.context.shutdown?.());
 
 test.skip('stakeOsmo - queries', async t => {
-  const { EV, evaluateProposal } = t.context;
-  await evaluateProposal(
-    await buildProposal(
-      '@agoric/builders/scripts/orchestration/init-stakeOsmo.js',
-      ['--chainInfo', JSON.stringify(withChainCapabilities(minimalChainInfos))],
-    ),
+  const {
+    buildProposal,
+    evalProposal,
+    runUtils: { EV },
+  } = t.context;
+  await evalProposal(
+    buildProposal('@agoric/builders/scripts/orchestration/init-stakeOsmo.js', [
+      '--chainInfo',
+      JSON.stringify(withChainCapabilities(minimalChainInfos)),
+    ]),
   );
 
   const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
@@ -106,23 +95,22 @@ test.skip('stakeOsmo - queries', async t => {
 
 test.serial('stakeAtom - smart wallet', async t => {
   const {
+    buildProposal,
+    evalProposal,
     agoricNamesRemotes,
     bridgeUtils: { flushInboundQueue },
-    evaluateProposal,
-    harness,
     readPublished,
-    runUntilQueuesEmpty,
-    walletFactoryDriver,
+    harness,
   } = t.context;
 
-  await evaluateProposal(
-    await buildProposal(
-      '@agoric/builders/scripts/orchestration/init-stakeAtom.js',
-      ['--chainInfo', JSON.stringify(withChainCapabilities(minimalChainInfos))],
-    ),
+  await evalProposal(
+    buildProposal('@agoric/builders/scripts/orchestration/init-stakeAtom.js', [
+      '--chainInfo',
+      JSON.stringify(withChainCapabilities(minimalChainInfos)),
+    ]),
   );
 
-  const wd = await walletFactoryDriver.provideSmartWallet(
+  const wd = await t.context.walletFactoryDriver.provideSmartWallet(
     'agoric1testStakAtom',
   );
 
@@ -136,8 +124,6 @@ test.serial('stakeAtom - smart wallet', async t => {
     },
     proposal: {},
   });
-  await runUntilQueuesEmpty();
-
   harness && t.log('makeAccount computrons', harness.totalComputronCount());
   harness?.useRunPolicy(false);
 
@@ -233,19 +219,16 @@ test.todo('undelegate with multiple undelegations wallet offer');
 test.todo('redelegate wallet offer');
 test.todo('withdraw reward wallet offer');
 
-// TODO: fix
-test.serial.skip('basic-flows', async t => {
+test.serial('basic-flows', async t => {
   const {
-    bridgeInbound,
-    bridgeUtils: { flushInboundQueue },
-    evaluateProposal,
+    buildProposal,
+    evalProposal,
     readPublished,
-    runUntilQueuesEmpty,
-    walletFactoryDriver,
+    bridgeUtils: { flushInboundQueue, runInbound },
   } = t.context;
 
-  await evaluateProposal(
-    await buildProposal(
+  await evalProposal(
+    buildProposal(
       '@agoric/builders/scripts/orchestration/init-basic-flows.js',
       [
         '--chainInfo',
@@ -275,7 +258,8 @@ test.serial.skip('basic-flows', async t => {
     ),
   );
 
-  const wd = await walletFactoryDriver.provideSmartWallet('agoric1test');
+  const wd =
+    await t.context.walletFactoryDriver.provideSmartWallet('agoric1test');
 
   // create a cosmos orchestration account
   await wd.sendOffer({
@@ -291,8 +275,6 @@ test.serial.skip('basic-flows', async t => {
     proposal: {},
   });
   await flushInboundQueue();
-  await runUntilQueuesEmpty();
-
   t.like(wd.getCurrentWalletRecord(), {
     offerToPublicSubscriberPaths: [
       [
@@ -326,7 +308,6 @@ test.serial.skip('basic-flows', async t => {
     },
     proposal: {},
   });
-  await runUntilQueuesEmpty();
 
   const publicSubscriberPaths = Object.fromEntries(
     wd.getCurrentWalletRecord().offerToPublicSubscriberPaths,
@@ -356,8 +337,6 @@ test.serial.skip('basic-flows', async t => {
       },
     },
   });
-  await runUntilQueuesEmpty();
-
   t.like(wd.getLatestUpdateRecord(), {
     status: {
       id: 'transfer-to-noble-from-cosmos',
@@ -408,7 +387,7 @@ test.serial.skip('basic-flows', async t => {
     },
   });
 
-  bridgeInbound(
+  await runInbound(
     BridgeId.VTRANSFER,
     buildVTransferEvent({
       sender: expectedAddress,
@@ -454,35 +433,30 @@ test.serial.skip('basic-flows', async t => {
   );
 });
 
-// TODO: fix
-test.serial.skip('auto-stake-it - proposal', async t => {
-  const { evaluateProposal } = t.context;
+test.serial('auto-stake-it - proposal', async t => {
+  const { buildProposal, evalProposal } = t.context;
 
   await t.notThrowsAsync(
-    evaluateProposal(
-      await buildProposal(
-        '@agoric/builders/scripts/testing/init-auto-stake-it.js',
-        [
-          '--chainInfo',
-          JSON.stringify(withChainCapabilities(minimalChainInfos)),
-        ],
-      ),
+    evalProposal(
+      buildProposal('@agoric/builders/scripts/testing/init-auto-stake-it.js', [
+        '--chainInfo',
+        JSON.stringify(withChainCapabilities(minimalChainInfos)),
+      ]),
     ),
   );
 });
 
-// TODO: fix
-test.serial.skip('basic-flows - portfolio holder', async t => {
+test.serial('basic-flows - portfolio holder', async t => {
   const {
+    buildProposal,
+    evalProposal,
+    readPublished,
     agoricNamesRemotes,
     bridgeUtils: { flushInboundQueue },
-    evaluateProposal,
-    readPublished,
-    walletFactoryDriver,
   } = t.context;
 
-  await evaluateProposal(
-    await buildProposal(
+  await evalProposal(
+    buildProposal(
       '@agoric/builders/scripts/orchestration/init-basic-flows.js',
       [
         '--chainInfo',
@@ -503,7 +477,8 @@ test.serial.skip('basic-flows - portfolio holder', async t => {
     ),
   );
 
-  const wd = await walletFactoryDriver.provideSmartWallet('agoric1test2');
+  const wd =
+    await t.context.walletFactoryDriver.provideSmartWallet('agoric1test2');
 
   // create a cosmos orchestration account
   await wd.sendOffer({

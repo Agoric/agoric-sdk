@@ -47,7 +47,11 @@ test.before(async t => {
   t.context = await makeWalletFactoryContext(t);
 
   async function setupDeps() {
-    const { buildProposal, EV, evalProposal } = t.context;
+    const {
+      buildProposal,
+      evalProposal,
+      runUtils: { EV },
+    } = t.context;
     /** ensure orchestration is available */
     await evalProposal(
       buildProposal('@agoric/builders/scripts/vats/init-orchestration.js'),
@@ -70,7 +74,9 @@ test.after.always(t => t.context.shutdown?.());
 
 // skipping until EV supports Vows, or this functionality is tested elsewhere #9572
 test.skip('makeAccount returns an ICA connection', async t => {
-  const { EV } = t.context;
+  const {
+    runUtils: { EV },
+  } = t.context;
 
   const orchestration = await EV.vat('bootstrap').consumeItem('orchestration');
 
@@ -104,7 +110,9 @@ test.skip('makeAccount returns an ICA connection', async t => {
 
 // skipping until EV supports Vows, or this functionality is tested elsewhere #9572
 test.skip('ICA connection can be closed', async t => {
-  const { EV } = t.context;
+  const {
+    runUtils: { EV },
+  } = t.context;
 
   const orchestration = await EV.vat('bootstrap').consumeItem('orchestration');
 
@@ -123,7 +131,9 @@ test.skip('ICA connection can be closed', async t => {
 });
 
 test.skip('ICA connection can send msg with proto3', async t => {
-  const { EV } = t.context;
+  const {
+    runUtils: { EV },
+  } = t.context;
 
   const orchestration = await EV.vat('bootstrap').consumeItem('orchestration');
 
@@ -179,7 +189,9 @@ test.skip('ICA connection can send msg with proto3', async t => {
 
 // skipping until EV supports Vows, or this functionality is tested elsewhere #9572
 test.skip('Query connection can be created', async t => {
-  const { EV } = t.context;
+  const {
+    runUtils: { EV },
+  } = t.context;
 
   const contract = async ({ orchestration }) => {
     const connection =
@@ -202,7 +214,9 @@ test.skip('Query connection can be created', async t => {
 
 // skipping until EV supports Vows, or this functionality is tested elsewhere #9572
 test.skip('Query connection can send a query', async t => {
-  const { EV } = t.context;
+  const {
+    runUtils: { EV },
+  } = t.context;
 
   const contract = async ({ orchestration }) => {
     const queryConnection =

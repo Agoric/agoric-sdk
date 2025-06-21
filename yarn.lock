@@ -153,7 +153,6 @@ __metadata:
   dependencies:
     "@agoric/client-utils": "workspace:*"
     "@agoric/cosmic-proto": "workspace:*"
-    "@agoric/cosmic-swingset": "workspace:*"
     "@agoric/deploy-script-support": "workspace:*"
     "@agoric/ertp": "workspace:*"
     "@agoric/fast-usdc": "workspace:*"
@@ -162,7 +161,6 @@ __metadata:
     "@agoric/orchestration": "workspace:*"
     "@agoric/store": "workspace:*"
     "@agoric/swing-store": "workspace:*"
-    "@agoric/telemetry": "workspace:*"
     "@agoric/vat-data": "workspace:*"
     "@agoric/vats": "workspace:*"
     "@agoric/vow": "workspace:*"

@@ -254,7 +254,7 @@ jobs:
 
   test-quick2:
     # BEGIN-TEST-BOILERPLATE
-    timeout-minutes: 40
+    timeout-minutes: 30
     needs: build
     runs-on: ubuntu-latest
     strategy:
@@ -549,7 +549,7 @@ jobs:
 
   test-boot:
     # BEGIN-TEST-BOILERPLATE
-    timeout-minutes: 40
+    timeout-minutes: 60
     needs: build
     runs-on: ubuntu-latest
     strategy:
