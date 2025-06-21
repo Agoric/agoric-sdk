@@ -270,6 +270,79 @@ test('open a portfolio with Aave position', async t => {
 });
 
 // TODO: to deal with bridge coordination, move this to a bootstrap test
+test('open a portfolio with Compound position', async t => {
+  const { common, zoe, started } = await deploy(t);
+  const { usdc } = common.brands;
+  const { when } = common.utils.vowTools;
+
+  const myBalance = usdc.units(10_000);
+  const funds = await common.utils.pourPayment(myBalance);
+  const myWallet = makeWallet({ USDC: usdc }, zoe, when);
+  await E(myWallet).deposit(funds);
+  const trader1 = makeTrader(myWallet, started.instance);
+  t.log('I am a power user with', myBalance, 'on Agoric');
+
+  const { ibcBridge } = common.mocks;
+  for (const { msg, ack } of Object.values(makeUSDNIBCTraffic())) {
+    ibcBridge.addMockAck(msg, ack);
+  }
+
+  const actualP = trader1.openPortfolio(
+    t,
+    {
+      Account: usdc.make(100n), // fee
+      Gmp: usdc.make(100n), // fee
+      Compound: usdc.units(3_333),
+    },
+    { destinationEVMChain: 'Base' },
+  );
+  await eventLoopIteration(); // let IBC message go out
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  console.log('ackd send to Axelar to create account');
+
+  const { transferBridge } = common.mocks;
+
+  // stimulate upcall back from Axelar
+  const event = makeIncomingEvent(lca0, 'Base');
+  const ackNP = VE(transferBridge)
+    .fromBridge(event)
+    .finally(() => console.log('@@@fromBridge for tap done'))
+    .then(() => eventLoopIteration())
+    .then(() => {
+      // ack CCTP
+      common.utils
+        .transmitVTransferEvent('acknowledgementPacket', -1)
+        .then(() => eventLoopIteration())
+        .finally(() => {
+          console.log('@@@ack CCTP done');
+          // ack IBC transfer to Axelar to open Aave position
+          return common.utils
+            .transmitVTransferEvent('acknowledgementPacket', -1)
+            .finally(() => {
+              console.log('@@@ack Axelar done');
+              return;
+            });
+        });
+    });
+
+  const actual = await actualP;
+  const result = actual.result as any;
+  t.is(passStyleOf(result.invitationMakers), 'remotable');
+  const addrs = result.publicTopics.map(t => t.storagePath);
+  t.log('I can see where my money is:', addrs);
+  t.is(result.publicTopics.length, 3);
+  t.like(result.publicTopics, [
+    {
+      description: 'LCA',
+      storagePath: `cosmos:${chainInfo.agoric.chainId}:${lca0}`,
+    },
+    { description: 'USDN ICA', storagePath: 'cosmos:noble-1:cosmos1test' },
+    // TODO: Aave topic
+  ]);
+  t.log('refund', actual.payouts);
+});
+
+// TODO: to deal with bridge coordination, move this to a bootstrap test
 test('open portfolio with USDN, Aave positions', async t => {
   const { common, zoe, started } = await deploy(t);
   const { usdc } = common.brands;

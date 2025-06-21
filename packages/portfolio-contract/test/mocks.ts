@@ -174,7 +174,9 @@ export const makeUSDNIBCTraffic = (
 
 export const contractAddresses: EVMContractAddresses = {
   aavePool: '0x1111111111111111111111111111111111111111',
-  compound: '0xA0b86a33E6A3E81E27Da9c18c4A77c9Cd4e08D57',
+  // cUSDCv3 from https://docs.compound.finance/
+  // for testing, any arbitrary eth addr will do, yes?
+  compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
   factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
   usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
 } as const;
