@@ -20,18 +20,11 @@ import {
   type PortfolioKit,
 } from '../src/portfolio.exo.ts';
 import { openPortfolio, rebalance } from '../src/portfolio.flows.ts';
-import {
-  makeProposalShapes,
-  type PortfolioBootstrapContext,
-  type ProposalType,
-} from '../src/type-guards.ts';
+import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
 import { axelarChainsMap, contractAddresses } from './mocks.ts';
+import { makeIncomingEvent } from './supports.ts';
 import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
 import { mustMatch } from '@agoric/internal';
-import { makeReceiveUpCallPayload } from '@aglocal/boot/tools/axelar-supports.js';
-import { encodeAbiParameters } from 'viem';
-import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.ts';
-import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 
 const theExit = harden(() => {}); // for ava comparison
 const mockZCF = Far('MockZCF', {
@@ -154,13 +147,12 @@ const mocks = (
     // @ts-expect-error mocked zcf
     zcf: mockZCF,
     vowTools,
-    axelarChainsMap,
     // @ts-expect-error host/flow - YOLO?
     rebalance: (...args) => rebalance(orch, { zoeTools }, ...args),
     proposalShapes: makeProposalShapes(USDC),
   });
-  const makePortfolioKit = () => {
-    const kit = makePortfolioKitHost();
+  const makePortfolioKit = (ica, lca) => {
+    const kit = makePortfolioKitHost(ica, lca);
     // @ts-expect-error membrane
     const gk = kit as GuestInterface<PortfolioKit>;
     return gk;
@@ -191,20 +183,17 @@ const mocks = (
       return 'ibc/TODO what is the right hash?';
     },
   });
-
-  const ctx: PortfolioBootstrapContext = {
-    makePortfolioKit,
-    zoeTools,
-    chainHubTools,
-    inertSubscriber,
-    axelarChainsMap,
-    contractAddresses,
-  };
-
   return {
     orch,
     tapPK,
-    ctx,
+    ctx: {
+      makePortfolioKit,
+      zoeTools,
+      chainHubTools,
+      inertSubscriber,
+      axelarChainsMap,
+      contractAddresses,
+    },
     offer: {
       log: buf,
       seat,
@@ -230,7 +219,7 @@ test('open portfolio with USDN position', async t => {
     // Use Axelar chain identifier instead of CAP-10 ID for cross-chain messaging
     // Axelar docs: https://docs.axelar.dev/dev/reference/mainnet-chain-names
     // Chain names: https://axelarscan.io/resources/chains
-    harden({ destinationEVMChain: 'Ethereum' }),
+    { destinationEVMChain: 'Ethereum' },
   );
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
@@ -258,46 +247,19 @@ test('open portfolio with Aave position', async t => {
     {},
     {
       Aave: AmountMath.make(USDC, 300n),
-      Gmp: AmountMath.make(USDC, 100n),
       Account: AmountMath.make(USDC, 300n),
+      Gmp: AmountMath.make(USDC, 100n),
     },
   );
 
-  // Simulate an incoming response from EVM chain via Axelar
-  const encodedAddress = encodeAbiParameters(
-    [{ type: 'address' }],
-    ['0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092'],
-  );
-  const receiveUpCallEvent = buildVTransferEvent({
-    sender: makeTestAddress(0, 'axelar'),
-    memo: JSON.stringify({
-      source_chain: 'Ethereum',
-      source_address: '0x19e71e7eE5c2b13eF6bd52b9E3b437bdCc7d43c8',
-      payload: makeReceiveUpCallPayload({
-        isContractCallResult: false,
-        data: [
-          {
-            success: true,
-            result: encodedAddress,
-          },
-        ],
-      }),
-      type: 1,
-    }),
-    target: 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht',
-  });
-
   const [actual] = await Promise.all([
-    openPortfolio(
-      orch,
-      { ...ctx },
-      offer.seat,
-      harden({
-        destinationEVMChain: 'Ethereum',
-      }),
-    ),
+    openPortfolio(orch, { ...ctx }, offer.seat, {
+      destinationEVMChain: 'Ethereum',
+    }),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) => {
-      tap.receiveUpcall(receiveUpCallEvent);
+      tap.receiveUpcall(
+        makeIncomingEvent('xyz1sdlkfjlsdkj???TODO', 'Ethereum'),
+      );
     }),
   ]);
   const { log } = offer;
@@ -333,12 +295,9 @@ test('handle failure in localTransfer from seat to local account', async t => {
   });
   const { log, seat } = offer;
 
-  const actual = await openPortfolio(
-    orch,
-    { ...ctx },
-    seat,
-    harden({ destinationEVMChain: 'Ethereum' }),
-  );
+  const actual = await openPortfolio(orch, { ...ctx }, seat, {
+    destinationEVMChain: 'Ethereum',
+  });
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
     { _method: 'monitorTransfers' },
@@ -356,12 +315,9 @@ test('handle failure in IBC transfer', async t => {
   });
   const { log, seat } = offer;
 
-  const actual = await openPortfolio(
-    orch,
-    { ...ctx },
-    seat,
-    harden({ destinationEVMChain: 'Ethereum' }),
-  );
+  const actual = await openPortfolio(orch, { ...ctx }, seat, {
+    destinationEVMChain: 'Ethereum',
+  });
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
     { _method: 'monitorTransfers' },
@@ -382,12 +338,9 @@ test('handle failure in executeEncodedTx', async t => {
   });
   const { log, seat } = offer;
 
-  const actual = await openPortfolio(
-    orch,
-    { ...ctx },
-    seat,
-    harden({ destinationEVMChain: 'Ethereum' }),
-  );
+  const actual = await openPortfolio(orch, { ...ctx }, seat, {
+    destinationEVMChain: 'Ethereum',
+  });
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
     { _method: 'monitorTransfers' },

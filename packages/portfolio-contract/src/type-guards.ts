@@ -6,14 +6,20 @@ import type {
   OrchestrationAccount,
 } from '@agoric/orchestration';
 import { M } from '@endo/patterns';
-import { AxelarChains, YieldProtocol } from './constants.js';
-import type { YieldProtocol as YieldProtocolT } from './constants.js';
 import { type ContractCall } from '@agoric/orchestration/src/axelar-types.js';
-import type { PortfolioKit } from './portfolio.exo.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import type { GuestInterface } from '../../async-flow/src/types.js';
 import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
+import {
+  AxelarChains,
+  YieldProtocol,
+  type YieldProtocol as YieldProtocolT,
+} from './constants.js';
+import type { PortfolioKit } from './portfolio.exo.js';
+import type {
+  GuestInterface,
+  HostInterface,
+} from '../../async-flow/src/types.js';
 
 const { fromEntries, keys } = Object;
 
@@ -145,7 +151,10 @@ export type PortfolioBootstrapContext = {
   };
   contractAddresses: EVMContractAddresses;
   zoeTools: GuestInterface<ZoeTools>;
-  makePortfolioKit: () => GuestInterface<PortfolioKit>;
+  makePortfolioKit: (
+    nobleAccount: NobleAccount,
+    localAccount: HostInterface<LocalAccount>,
+  ) => GuestInterface<PortfolioKit>;
   inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
 };
 

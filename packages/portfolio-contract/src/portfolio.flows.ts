@@ -92,25 +92,6 @@ const makeSwapLockMessages = (
   return { msgSwap, msgLock };
 };
 
-const initNobleAccount = async (
-  orch: Orchestrator,
-  kit: GuestInterface<PortfolioKit>,
-  subscriber,
-) => {
-  const nobleChain = await orch.getChain('noble');
-  const myNobleAccout = await nobleChain.makeAccount();
-  const nobleAddr = myNobleAccout.getAddress();
-  kit.keeper.initUSDN(myNobleAccout);
-
-  const storagePath = coerceAccountId(nobleAddr);
-  const topic: GuestInterface<ResolvedPublicTopic<unknown>> = {
-    description: 'USDN ICA',
-    subscriber,
-    storagePath,
-  };
-  return topic;
-};
-
 const initRemoteEVMAccount = async (
   orch,
   seat,
@@ -135,7 +116,7 @@ const initRemoteEVMAccount = async (
     keeper,
   );
 
-  const addr = await keeper.getRemoteAddress();
+  const addr = await keeper.getGMPAddress();
   const caipChainId = axelarChainsMap[destinationEVMChain].caip;
   const accountId: AccountId = `${caipChainId}:${addr}`;
 
@@ -165,6 +146,7 @@ const sendTokensViaCCTP = async (
   const localAcct = await keeper.getLCA();
   const amounts = harden({ Aave: amount });
   trace('localTransfer', amount, 'to local', localAcct.getAddress().value);
+  // @ts-expect-error LocalAccountMethods vs OrchestrationAccount
   await zoeTools.localTransfer(seat, localAcct, amounts);
 
   try {
@@ -178,7 +160,7 @@ const sendTokensViaCCTP = async (
     };
 
     const caipChainId = axelarChainsMap[destinationEVMChain].caip;
-    const remoteAccountAddress = await keeper.getRemoteAddress();
+    const remoteAccountAddress = await keeper.getGMPAddress();
     const destinationAddress = `${caipChainId}:${remoteAccountAddress}`;
     trace(`destinationAddress: ${destinationAddress}`);
     await nobleAccount.depositForBurn(
@@ -186,6 +168,7 @@ const sendTokensViaCCTP = async (
       denomAmount,
     );
   } catch (err) {
+    // @ts-expect-error LocalAccountMethods vs OrchestrationAccount
     await zoeTools.withdrawToSeat(localAcct, seat, amounts);
     const errorMsg = `'Noble transfer failed: ${err}`;
     throw new Error(errorMsg);
@@ -239,6 +222,7 @@ const sendGmp = async (
   };
 
   try {
+    // @ts-expect-error LocalAccountMethods vs OrchestrationAccount
     await zoeTools.localTransfer(seat, localAccount, gasAmount);
 
     await localAccount.transfer(
@@ -251,6 +235,7 @@ const sendGmp = async (
       { memo: JSON.stringify(memo, bigintReplacer) },
     );
   } catch (err) {
+    // @ts-expect-error LocalAccountMethods vs OrchestrationAccount
     await ctx.zoeTools.withdrawToSeat(localAccount, seat, gasAmount);
     throw new Error(`sendGmp failed: ${err}`);
   }
@@ -266,7 +251,7 @@ const supplyToAave = async (
   const { destinationEVMChain, transferAmount, gasAmount } = gmpArgs;
   const { contractAddresses } = ctx;
 
-  const remoteEVMAddress = await keeper.getRemoteAddress();
+  const remoteEVMAddress = await keeper.getGMPAddress();
 
   await sendGmp(
     orch,
@@ -304,7 +289,7 @@ const withdrawFromAave = async (
   const { destinationEVMChain, withdrawAmount, gasAmount } = gmpArgs;
   const { contractAddresses } = ctx;
 
-  const remoteEVMAddress = await keeper.getRemoteAddress();
+  const remoteEVMAddress = await keeper.getGMPAddress();
 
   await sendGmp(
     orch,
@@ -337,7 +322,7 @@ const supplyToCompound = async (
   const { destinationEVMChain, transferAmount, gasAmount } = gmpArgs;
   const { contractAddresses } = ctx;
 
-  const remoteEVMAddress = await keeper.getRemoteAddress();
+  const remoteEVMAddress = await keeper.getGMPAddress();
   assert(remoteEVMAddress, 'remoteEVMAddress must be defined');
 
   await sendGmp(
@@ -376,7 +361,7 @@ const withdrawFromCompound = async (
   const { destinationEVMChain, withdrawAmount, gasAmount } = gmpArgs;
   const { contractAddresses } = ctx;
 
-  const remoteEVMAddress = await keeper.getRemoteAddress();
+  const remoteEVMAddress = await keeper.getGMPAddress();
   assert(remoteEVMAddress, 'remoteEVMAddress must be defined');
 
   await sendGmp(
@@ -415,6 +400,7 @@ export const rebalance = async (
     const localAcct = keeper.getLCA();
     const amounts = harden({ USDN: amount });
     trace('localTransfer', amount, 'to local', localAcct.getAddress().value);
+    // @ts-expect-error LocalAccountMethods vs OrchestrationAccount
     await ctx.zoeTools.localTransfer(seat, localAcct, amounts);
     try {
       trace('IBC transfer', amount, 'to', there, `${ica}`);
@@ -437,6 +423,7 @@ export const rebalance = async (
       }
     } catch (err) {
       console.error('⚠️ recover to seat.', err);
+      // @ts-expect-error LocalAccountMethods vs OrchestrationAccount
       await ctx.zoeTools.withdrawToSeat(localAcct, seat, amounts);
       // TODO: and what if the withdrawToSeat fails?
       throw err;
@@ -461,8 +448,8 @@ export const rebalance = async (
     await addToUSDNPosition(give.USDN);
   }
   if (give.Gmp && give.Aave) {
-    trace('getRemoteAddress()...');
-    const evmAddr = await keeper.getRemoteAddress();
+    trace('getGMPAddress()...');
+    const evmAddr = await keeper.getGMPAddress();
     trace('evmAddr vow resolved', evmAddr);
 
     await sendTokensViaCCTP(
@@ -525,22 +512,31 @@ export const openPortfolio = (async (
     const localAccount: LocalAccount = await agoric.makeAccount();
     const localAccountId: AccountId = `cosmos:${chainId}:${localAccount.getAddress().value}`;
 
-    const kit = makePortfolioKit();
-    kit.keeper.initGmp(localAccount);
+    const nobleChain = await orch.getChain('noble');
+    // Always make a Noble ICA, since we need it for CCTP
+    const nobleAccount = await nobleChain.makeAccount();
+    const nobleAddr = nobleAccount.getAddress();
+
+    // @ts-expect-error LocalAccountMethods vs OrchestrationAccount
+    const kit = makePortfolioKit(nobleAccount, localAccount);
     kit.keeper.initAave(axelarChainsMap[destinationEVMChain].caip);
     kit.keeper.initCompound(axelarChainsMap[destinationEVMChain].caip);
     const reg = await localAccount.monitorTransfers(kit.tap);
     trace('Monitoring transfers for', localAccountId);
     // TODO: save reg somewhere???
 
-    // Always make a Noble ICA, since we need it for CCTP
-    const nobleTopic = await await initNobleAccount(orch, kit, inertSubscriber);
+    const storagePath = coerceAccountId(nobleAddr);
+    const nobleTopic: GuestInterface<ResolvedPublicTopic<unknown>> = {
+      description: 'USDN ICA',
+      subscriber: inertSubscriber,
+      storagePath,
+    };
 
     const topics: GuestInterface<ResolvedPublicTopic<never>>[] = [
       {
         description: 'LCA',
         storagePath: localAccountId,
-        subscriber: ctx.inertSubscriber,
+        subscriber: inertSubscriber,
       },
       nobleTopic,
     ];

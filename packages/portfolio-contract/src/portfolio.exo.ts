@@ -1,3 +1,4 @@
+import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import { makeTracer, type Remote } from '@agoric/internal';
 import { type CaipChainId } from '@agoric/orchestration';
@@ -7,16 +8,11 @@ import type { TimerService } from '@agoric/time';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import { VowShape, type VowKit, type VowTools } from '@agoric/vow';
 import type { Zone } from '@agoric/zone';
-import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
-import { atob, decodeBase64 } from '@endo/base64';
+import { atob } from '@endo/base64';
 import { E } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
 import { YieldProtocol } from './constants.js';
-import type {
-  AxelarChainsMap,
-  EVMOfferArgs,
-  NobleAccount,
-} from './type-guards.js';
+import type { AxelarChainsMap, NobleAccount } from './type-guards.js';
 import { type Vow } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe';
 import { InvitationShape, OfferHandlerI } from '@agoric/zoe/src/typeGuards.js';
@@ -26,6 +22,7 @@ import {
   type OfferArgsFor,
   OfferArgsShapeFor,
 } from './type-guards.js';
+import type { HostInterface } from '../../async-flow/src/types.js';
 
 const trace = makeTracer('PortExo');
 const { keys, values } = Object;
@@ -45,26 +42,19 @@ export const DECODE_CONTRACT_CALL_RESULT_ABI = [
       },
     ],
   },
-];
+] as const;
+harden(DECODE_CONTRACT_CALL_RESULT_ABI);
 
 const OrchestrationAccountShape = M.remotable('OrchestrationAccount');
-const VowStringShape = M.any(); // Vow(M.string())
 const KeeperI = M.interface('keeper', {
+  getGMPAddress: M.call().returns(VowShape),
   getLCA: M.call().returns(OrchestrationAccountShape),
   getPositions: M.call().returns(M.arrayOf(M.string())),
   getUSDNICA: M.call().returns(OrchestrationAccountShape),
   initAave: M.call(M.string()).returns(),
   initCompound: M.call(M.string()).returns(),
-  initUSDN: M.call(M.remotable('OrchestrationAccount')).returns(),
-  initGmp: M.call(M.remotable('OrchestrationAccount')).returns(),
-  getRemoteAddress: M.call().returns(VowStringShape),
   wait: M.call(M.bigint()).returns(VowShape),
 });
-
-type AxelarGmpManager = {
-  localAccount: LocalAccount;
-  remoteAddressVK: VowKit<`0x${string}`>;
-};
 
 type EVMProtocolState = {
   chain: CaipChainId;
@@ -73,10 +63,14 @@ type EVMProtocolState = {
 type PortfolioKitState = {
   Aave: EVMProtocolState | undefined;
   Compound: EVMProtocolState | undefined;
-  USDN: NobleAccount | undefined;
-  Gmp: AxelarGmpManager | undefined;
+  USDN: NobleAccount;
+  Gmp: {
+    localAccount: HostInterface<LocalAccount>;
+    remoteAddressVK: VowKit<`0x${string}`>;
+  };
 };
 
+// NOTE: This is host side code; can't use await.
 export const preparePortfolioKit = (
   zone: Zone,
   {
@@ -111,12 +105,18 @@ export const preparePortfolioKit = (
         Rebalance: M.callWhen().returns(InvitationShape),
       }),
     },
-    (): PortfolioKitState => {
+    (
+      nobleAcct: NobleAccount,
+      localAcct: HostInterface<LocalAccount>,
+    ): PortfolioKitState => {
       return {
         Aave: undefined,
         Compound: undefined,
-        USDN: undefined,
-        Gmp: undefined,
+        USDN: nobleAcct,
+        Gmp: {
+          localAccount: localAcct,
+          remoteAddressVK: vowTools.makeVowKit(),
+        },
       };
     },
     {
@@ -124,61 +124,61 @@ export const preparePortfolioKit = (
         async receiveUpcall(event: VTransferIBCEvent) {
           trace('receiveUpcall', event);
 
-          // TODO: dont use the same LCA for sending transfers to noble
-          let tx: FungibleTokenPacketData;
-          try {
-            tx = JSON.parse(atob(event.packet.data));
-          } catch (err) {
-            trace(
-              'Failed to parse packet data JSON in receiveUpcall:',
-              err,
-              event.packet.data,
-            );
-            return;
-          }
+          const tx: FungibleTokenPacketData = JSON.parse(
+            atob(event.packet.data),
+          );
 
           trace('receiveUpcall packet data', tx);
           if (!tx.memo) return;
-          let memo: AxelarGmpIncomingMemo;
-          try {
-            memo = JSON.parse(tx.memo); // XXX unsound! use typed pattern
-          } catch (err) {
-            trace('Failed to parse memo JSON in receiveUpcall:', err, tx.memo);
+          const memo: AxelarGmpIncomingMemo = JSON.parse(tx.memo); // XXX unsound! use typed pattern
+
+          if (
+            !(
+              memo.source_chain in
+              values(axelarChainsMap).map(chain => chain.axelarId)
+            )
+          ) {
+            console.warn('unknown source_chain', memo);
             return;
           }
 
-          const ids = values(axelarChainsMap).map(chain => chain.axelarId);
-          if (!ids.includes(memo.source_chain)) return;
-
-          const payloadBytes = decodeBase64(memo.payload);
           const [{ isContractCallResult, data }] = decodeAbiParameters(
             DECODE_CONTRACT_CALL_RESULT_ABI,
-            payloadBytes,
+            memo.payload as `0x${string}`, // hm.. cast...
           ) as [AgoricResponse];
 
-          if (!isContractCallResult) {
+          trace(
+            'receiveUpcall Decoded:',
+            JSON.stringify({ isContractCallResult, data }),
+          );
+
+          if (isContractCallResult) {
+            console.warn('TODO: Handle the result of the contract call', data);
+          } else {
             const [message] = data;
-            if (message.success) {
-              const [address] = decodeAbiParameters(
-                [{ type: 'address' }],
-                message.result,
-              );
-              const { Gmp } = this.state;
-              if (Gmp) {
-                // TODO: remoteAddressVK is set only once
-                Gmp.remoteAddressVK.resolver.resolve(address);
-              }
-              trace(`remoteAccountAddress ${address}`);
-            }
+            const { success, result } = message;
+            if (!success) return;
+
+            const [address] = decodeAbiParameters(
+              [{ type: 'address' }],
+              result,
+            );
+
+            const { Gmp } = this.state;
+            Gmp.remoteAddressVK.resolver.resolve(address);
+            trace(`remoteAddress ${address}`);
           }
-          // TODO: Handle the result of the contract call
+
           trace('receiveUpcall completed');
         },
       },
       keeper: {
+        getGMPAddress() {
+          const { Gmp } = this.state;
+          return Gmp.remoteAddressVK.vow;
+        },
         getLCA() {
           const { Gmp } = this.state;
-          if (!Gmp) throw Error('Gmp not set');
           return Gmp.localAccount;
         },
         getPositions(): YieldProtocol[] {
@@ -188,14 +188,7 @@ export const preparePortfolioKit = (
           );
         },
         getUSDNICA() {
-          const { USDN } = this.state;
-          if (!USDN) throw Error('USDN not set');
-          return USDN;
-        },
-        getRemoteAddress() {
-          const { Gmp } = this.state;
-          if (!Gmp) throw Error('Gmp not set');
-          return Gmp.remoteAddressVK.vow;
+          return this.state.USDN;
         },
         initAave(chain: CaipChainId) {
           this.state.Aave = harden({
@@ -207,25 +200,16 @@ export const preparePortfolioKit = (
             chain,
           });
         },
-        initUSDN(account: NobleAccount) {
-          this.state.USDN = account;
-        },
-
-        initGmp(account: LocalAccount) {
-          this.state.Gmp = harden({
-            localAccount: account,
-            remoteAddressVK: vowTools.makeVowKit(),
-          });
-          trace('initLCA');
-        },
+        /** KLUDGE around lack of synchronization signals for now. TODO: rethink design. */
         wait(val: bigint) {
           return vowTools.watch(E(timer).delay(val));
         },
       },
       rebalanceHandler: {
-        async handle(seat: ZCFSeat, offerArgs: EVMOfferArgs) {
+        async handle(seat: ZCFSeat, offerArgs: unknown) {
           const { keeper } = this.facets;
           mustMatch(offerArgs, OfferArgsShapeFor.rebalance);
+          // @ts-expect-error: offerArgs is validated just above and safe to use as OfferArgsFor['rebalance']
           return rebalance(seat, offerArgs, keeper);
         },
       },
