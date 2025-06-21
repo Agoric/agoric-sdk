@@ -113,10 +113,10 @@ export const preparePortfolioKit = (
         Aave: undefined,
         Compound: undefined,
         USDN: nobleAcct,
-        Gmp: {
+        Gmp: harden({
           localAccount: localAcct,
           remoteAddressVK: vowTools.makeVowKit(),
-        },
+        }),
       };
     },
     {

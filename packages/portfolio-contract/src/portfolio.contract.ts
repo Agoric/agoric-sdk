@@ -91,15 +91,13 @@ export const contract = async (
   const chainHubTools = {
     getDenom: chainHub.getDenom.bind(chainHub),
   };
-  const { rebalance } = orchestrateAll(
-    { rebalance: flows.rebalance },
-    {
-      zoeTools,
-      chainHubTools,
-      contractAddresses,
-      axelarChainsMap,
-    },
-  );
+  const ctx1 = {
+    zoeTools,
+    chainHubTools,
+    contractAddresses,
+    axelarChainsMap,
+  };
+  const { rebalance } = orchestrateAll({ rebalance: flows.rebalance }, ctx1);
 
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf,
@@ -112,11 +110,8 @@ export const contract = async (
   const { openPortfolio } = orchestrateAll(
     { openPortfolio: flows.openPortfolio },
     {
-      zoeTools,
+      ...ctx1,
       makePortfolioKit: makePortfolioKit as any, // XXX Guest...
-      chainHubTools,
-      axelarChainsMap,
-      contractAddresses,
       inertSubscriber,
     },
   );

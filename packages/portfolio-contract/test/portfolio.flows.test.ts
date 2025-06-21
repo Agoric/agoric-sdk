@@ -147,6 +147,7 @@ const mocks = (
     // @ts-expect-error mocked zcf
     zcf: mockZCF,
     vowTools,
+    axelarChainsMap,
     // @ts-expect-error host/flow - YOLO?
     rebalance: (...args) => rebalance(orch, { zoeTools }, ...args),
     proposalShapes: makeProposalShapes(USDC),

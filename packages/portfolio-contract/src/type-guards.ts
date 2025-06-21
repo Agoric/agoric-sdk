@@ -170,7 +170,7 @@ export type PortfolioInstanceContext = {
 
 export type BaseGmpArgs = {
   destinationEVMChain: AxelarChain;
-  gasAmount: AmountKeywordRecord;
+  amount: AmountKeywordRecord;
 };
 
 export const GmpCallType = {
@@ -204,7 +204,7 @@ export const GMPArgsShape: TypedPattern<GmpArgsContractCall> = M.splitRecord({
   destinationAddress: M.string(),
   type: M.or(1, 2),
   destinationEVMChain: M.or(...keys(AxelarChains)),
-  gasAmount: AmountKeywordRecordShape,
+  amount: AmountKeywordRecordShape,
   contractInvocationData: M.arrayOf(ContractCallShape),
 });
 
