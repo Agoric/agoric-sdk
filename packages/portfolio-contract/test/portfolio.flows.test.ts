@@ -25,6 +25,7 @@ import { axelarChainsMap, contractAddresses } from './mocks.ts';
 import { makeIncomingEvent } from './supports.ts';
 import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
 import { mustMatch } from '@agoric/internal';
+import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
 const theExit = harden(() => {}); // for ava comparison
 const mockZCF = Far('MockZCF', {
@@ -143,11 +144,13 @@ const mocks = (
     },
   });
 
+  const timer = buildZoeManualTimer();
   const makePortfolioKitHost = preparePortfolioKit(zone, {
     // @ts-expect-error mocked zcf
     zcf: mockZCF,
     vowTools,
     axelarChainsMap,
+    timer,
     // @ts-expect-error host/flow - YOLO?
     rebalance: (...args) => rebalance(orch, { zoeTools }, ...args),
     proposalShapes: makeProposalShapes(USDC),

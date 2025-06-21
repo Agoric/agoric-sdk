@@ -4,9 +4,6 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import type { AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
-import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
-import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.ts';
 import { heapVowE as VE } from '@agoric/vow';
 import type { Installation } from '@agoric/zoe';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
@@ -14,13 +11,10 @@ import { E, passStyleOf } from '@endo/far';
 import { M, matches, mustMatch } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
 import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
-import { protoMsgMocks } from '@agoric/orchestration/test/ibc-mocks.ts';
 import {
   axelarChainsMap,
   contractAddresses,
   makeUSDNIBCTraffic,
-  makeIBCTransferTraffic,
 } from './mocks.ts';
 import {
   chainInfo,
@@ -29,10 +23,7 @@ import {
 } from './supports.ts';
 import { makeTrader } from './portfolio-actors.ts';
 import { makeWallet } from './wallet-offer-tools.ts';
-import { makeReceiveUpCallPayload } from '../../boot/tools/axelar-supports.js';
-import { encodeAbiParameters } from 'viem';
 import * as contractExports from '../src/portfolio.contract.ts';
-import { DECODE_CONTRACT_CALL_RESULT_ABI } from '../src/portfolio.exo.ts';
 import { makeProposalShapes } from '../src/type-guards.ts';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { q } from '@endo/errors';
@@ -206,7 +197,7 @@ test('open portfolio with USDN position', async t => {
 });
 
 // TODO: to deal with bridge coordination, move this to a bootstrap test
-test.skip('open a portfolio with Aave position', async t => {
+test('open a portfolio with Aave position', async t => {
   const { common, zoe, started } = await deploy(t);
   const { usdc } = common.brands;
   const { when } = common.utils.vowTools;
@@ -268,7 +259,10 @@ test.skip('open a portfolio with Aave position', async t => {
   t.log('I can see where my money is:', addrs);
   t.is(result.publicTopics.length, 3);
   t.like(result.publicTopics, [
-    { description: 'LCA', storagePath: lca0 },
+    {
+      description: 'LCA',
+      storagePath: `cosmos:${chainInfo.agoric.chainId}:${lca0}`,
+    },
     { description: 'USDN ICA', storagePath: 'cosmos:noble-1:cosmos1test' },
     // TODO: Aave topic
   ]);
@@ -276,7 +270,7 @@ test.skip('open a portfolio with Aave position', async t => {
 });
 
 // TODO: to deal with bridge coordination, move this to a bootstrap test
-test.skip('open portfolio with USDN, Aave positions', async t => {
+test('open portfolio with USDN, Aave positions', async t => {
   const { common, zoe, started } = await deploy(t);
   const { usdc } = common.brands;
   const { when } = common.utils.vowTools;
@@ -308,33 +302,10 @@ test.skip('open portfolio with USDN, Aave positions', async t => {
   console.log('ackd send to noble');
 
   const { transferBridge } = common.mocks;
-  const agToAxelar = fetchedChainInfo.agoric.connections['axelar-dojo-1'];
-
-  const arbEth = '0x3dA3050208a3F2e0d04b33674aAa7b1A9F9B313C';
-  const p2 = encodeAbiParameters([{ type: 'address' }], [arbEth]);
-  const payload = encodeAbiParameters(DECODE_CONTRACT_CALL_RESULT_ABI, [
-    { isContractCallResult: false, data: [{ success: true, result: p2 }] },
-  ]);
-  const incoming: AxelarGmpIncomingMemo = {
-    source_address: arbEth,
-    type: 2,
-    source_chain: 'Base',
-    payload,
-  };
 
   // ack IBC transfer to Noble
   const ackNP = VE(transferBridge)
-    .fromBridge(
-      buildVTransferEvent({
-        receiver: 'TODO: receiver',
-        target: lca0,
-        sourceChannel: agToAxelar.transferChannel.counterPartyChannelId,
-        denom: 'uusdc',
-        amount: 123n,
-        sender: `axelar1TODO`,
-        memo: JSON.stringify(incoming),
-      }),
-    )
+    .fromBridge(makeIncomingEvent(lca0, 'Ethereum'))
     .finally(() => console.log('@@@fromAxelar done'))
     .then(() => eventLoopIteration())
     .then(() => {
@@ -364,98 +335,14 @@ test.skip('open portfolio with USDN, Aave positions', async t => {
   t.log('I can see where my money is:', addrs);
   t.is(result.publicTopics.length, 3);
   t.like(result.publicTopics, [
-    { description: 'LCA', storagePath: lca0 },
+    {
+      description: 'LCA',
+      storagePath: `cosmos:${chainInfo.agoric.chainId}:${lca0}`,
+    },
     { description: 'USDN ICA', storagePath: 'cosmos:noble-1:cosmos1test' },
     // TODO: Aave topic
   ]);
   t.log('refund', done.payouts);
-});
-
-// TODO: to deal with bridge coordination, move this to a bootstrap test
-test.skip('open portfolio with Aave position', async t => {
-  const { common, zoe, started, timerService } = await deploy(t);
-  const { usdc } = common.brands;
-  const { when } = common.utils.vowTools;
-
-  const myBalance = usdc.units(10_000);
-  const funds = await common.utils.pourPayment(myBalance);
-  const myWallet = makeWallet({ USDC: usdc }, zoe, when);
-  await E(myWallet).deposit(funds);
-
-  const trader = makeTrader(myWallet, started.instance);
-  t.log('Trader funds:', myBalance);
-
-  const { ibcBridge } = common.mocks;
-
-  const { transfer } = makeIBCTransferTraffic();
-  // Mock ack for initRemoteEVMAccount IBC call
-  ibcBridge.addMockAck(transfer.msg, transfer.ack);
-  // Mock ack for the IBC transfer that occurs when sending tokens
-  // from a local account to a Noble chain account inside sendTokensViaCCTP()
-  ibcBridge.addMockAck(transfer.msg, transfer.ack);
-  // Mock ack for a depositForBurn CCTP packet
-  ibcBridge.addMockAck(
-    'eyJ0eXBlIjoxLCJkYXRhIjoiQ21jS0lTOWphWEpqYkdVdVkyTjBjQzUyTVM1TmMyZEVaWEJ2YzJsMFJtOXlRblZ5YmhKQ0NndGpiM050YjNNeGRHVnpkQklLTXpNek16QXdNREF3TUNJZ0FBQUFBQUFBQUFBQUFBQUFFbXp6cko2aEo1VC9VUFZuSjhmR2JpYlp3SklxQlhWMWMyUmoiLCJtZW1vIjoiIn0=',
-    protoMsgMocks.depositForBurn.ack,
-  );
-  // Mock ack for the IBC call that supplies tokens to AAVE protocol.
-  ibcBridge.addMockAck(transfer.msg, transfer.ack);
-
-  const doneP = trader.openPortfolio(
-    t,
-    {
-      Aave: usdc.units(3_333),
-      Gmp: usdc.units(100),
-      Account: usdc.units(3_333),
-    },
-    { destinationEVMChain: 'Ethereum' },
-  );
-
-  // Simulate IBC acknowledgement for the initRemoteEVMAccount() transfer
-  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-
-  // Simulate an incoming response from EVM chain via Axelar
-  const encodedAddress = encodeAbiParameters(
-    [{ type: 'address' }],
-    ['0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092'],
-  );
-  const receiveUpCallEvent = buildVTransferEvent({
-    sender: makeTestAddress(0, 'axelar'),
-    memo: JSON.stringify({
-      source_chain: 'Ethereum',
-      source_address: '0x19e71e7eE5c2b13eF6bd52b9E3b437bdCc7d43c8',
-      payload: makeReceiveUpCallPayload({
-        isContractCallResult: false,
-        data: [
-          {
-            success: true,
-            result: encodedAddress,
-          },
-        ],
-      }),
-      type: 1,
-    }),
-    target: 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht',
-  });
-
-  await E(common.mocks.transferBridge).fromBridge(receiveUpCallEvent);
-  // Simulate IBC acknowledgement for localAcct.transfer() in sendTokensViaCCTP()
-  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-  // Advance the timer by 20 time units to wait for cctp transfer
-  await timerService.tickN(20);
-  // Simulate IBC acknowledgement for Aave
-  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-  const result = await doneP;
-  t.log('Portfolio open result:', result);
-
-  t.truthy(result, 'Portfolio should open successfully');
-  t.is(
-    passStyleOf(result.result.invitationMakers),
-    'remotable',
-    'Should have invitation makers',
-  );
-
-  t.log('TODO: mock incoming response from AAVE');
 });
 
 test.todo('User can see transfer in progress');

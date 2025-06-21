@@ -47,7 +47,7 @@ harden(DECODE_CONTRACT_CALL_RESULT_ABI);
 
 const OrchestrationAccountShape = M.remotable('OrchestrationAccount');
 const KeeperI = M.interface('keeper', {
-  getGMPAddress: M.call().returns(VowShape),
+  getGMPAddress: M.call().returns(M.any()),
   getLCA: M.call().returns(OrchestrationAccountShape),
   getPositions: M.call().returns(M.arrayOf(M.string())),
   getUSDNICA: M.call().returns(OrchestrationAccountShape),
@@ -133,10 +133,9 @@ export const preparePortfolioKit = (
           const memo: AxelarGmpIncomingMemo = JSON.parse(tx.memo); // XXX unsound! use typed pattern
 
           if (
-            !(
-              memo.source_chain in
-              values(axelarChainsMap).map(chain => chain.axelarId)
-            )
+            !values(axelarChainsMap)
+              .map(chain => chain.axelarId)
+              .includes(memo.source_chain)
           ) {
             console.warn('unknown source_chain', memo);
             return;
