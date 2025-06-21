@@ -426,3 +426,41 @@ test('handle failure in executeEncodedTx', async t => {
   t.log('we still get the invitationMakers and ICA address', ICAAddr);
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
 });
+
+test('handle failure in sendGmp with Aave position', async t => {
+  const { orch, tapPK, ctx, offer } = mocks(
+    {
+      transfer: Error('Axelar GMP transfer failed'),
+    },
+    {
+      Aave: AmountMath.make(USDC, 300n),
+      Account: AmountMath.make(USDC, 300n),
+      Gmp: AmountMath.make(USDC, 100n),
+    },
+  );
+
+  // Start the openPortfolio flow
+  const portfolioPromise = openPortfolio(orch, { ...ctx }, offer.seat, {
+    destinationEVMChain: 'Ethereum',
+  });
+
+  // Ensure the upcall happens to resolve getGMPAddress(), then let the transfer fail
+  // the failure is expected before offer.factoryPK resolves, so don't wait for it.
+  const tap = await tapPK.promise;
+  tap.receiveUpcall(makeIncomingEvent('xyz1sdlkfjlsdkj???TODO', 'Ethereum'));
+
+  const actual = await portfolioPromise;
+  const { log } = offer;
+  t.log(log.map(msg => msg._method).join(', '));
+  t.like(log, [
+    { _method: 'monitorTransfers' },
+    { _method: 'localTransfer', amounts: { Account: { value: 300n } } },
+    { _method: 'transfer', address: { chainId: 'axelar-5' } }, // fails
+    { _method: 'withdrawToSeat' }, // sendGmp recovery
+    { _method: 'fail' },
+  ]);
+  t.snapshot(log, 'call log');
+  const [{ storagePath: ICAAddr }] = actual.publicTopics;
+  t.log('we still get the invitationMakers and ICA address', ICAAddr);
+  t.is(passStyleOf(actual.invitationMakers), 'remotable');
+});
