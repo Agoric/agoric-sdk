@@ -2,7 +2,6 @@ import type { HostInterface } from '@agoric/async-flow';
 import type { Brand, Issuer, Payment } from '@agoric/ertp';
 import type {
   CosmosChainAddress,
-  Denom,
   DenomAmount,
   OrchestrationAccount,
 } from '@agoric/orchestration';
@@ -24,7 +23,6 @@ import {
   buildTxPacketString,
   buildMsgResponseString,
 } from '@agoric/orchestration/tools/ibc-mocks.ts';
-import { Far } from '@endo/pass-style';
 import type { EVMContractAddresses } from '../src/type-guards';
 
 export const prepareMockOrchAccounts = (
@@ -174,13 +172,6 @@ export const makeUSDNIBCTraffic = (
   },
 });
 
-export const makeIBCTransferTraffic = () => ({
-  transfer: {
-    msg: `eyJ0eXBlIjoxLCJkYXRhIjoiQ2xvS0ZpOXViMkpzWlM1emQyRndMbll4TGsxeloxTjNZWEFTUUFvTFkyOXpiVzl6TVhSbGMzUVNFd29GZFhWelpHTVNDak16TXpNd01EQXdNREFhQnhJRmRYVnpaRzRpRXdvRmRYVnpaRzRTQ2pNek16TXdNREF3TURBPSIsIm1lbW8iOiIifQ==`,
-    ack: `eyJyZXN1bHQiOiJBUT09In0=`,
-  },
-});
-
 export const contractAddresses: EVMContractAddresses = {
   aavePool: '0x1111111111111111111111111111111111111111',
   compound: '0xA0b86a33E6A3E81E27Da9c18c4A77c9Cd4e08D57',
@@ -202,14 +193,3 @@ export const axelarChainsMap = {
     axelarId: 'base',
   },
 } as const;
-
-export const mockChainHubTools: {
-  getDenom: (brand: Brand) => Denom | undefined;
-} = {
-  getDenom: (brand: Brand) => {
-    if (brand) {
-      return 'uusdc';
-    }
-    return undefined;
-  },
-};
