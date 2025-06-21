@@ -18,6 +18,10 @@ export const makeTestContext = async () => {
   const swingsetTestKit = await makeCosmicSwingsetTestKit({
     // main/production config doesn't have initialPrice, upon which 'open vaults' depends
     configSpecifier: '@agoric/vm-config/decentral-itest-vaults-config.json',
+    fixupConfig: config => ({
+      ...config,
+      defaultManagerType: 'local', // FIXME: fix for xs-worker
+    }),
     mockBridgeReceiver: makeMockBridgeKit({ storageKit: storage }),
   });
 
