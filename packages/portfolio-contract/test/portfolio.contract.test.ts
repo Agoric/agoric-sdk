@@ -4,37 +4,33 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import type { AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
-import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
-import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.ts';
 import { heapVowE as VE } from '@agoric/vow';
 import type { Installation } from '@agoric/zoe';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, passStyleOf } from '@endo/far';
 import { M, matches, mustMatch } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
-import { encodeAbiParameters } from 'viem';
-import * as contractExports from '../src/portfolio.contract.ts';
-import { DECODE_CONTRACT_CALL_RESULT_ABI } from '../src/portfolio.exo.ts';
+import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import {
-  makeProposalShapes,
-  type EVMContractAddresses,
-} from '../src/type-guards.ts';
-import { makeUSDNIBCTraffic } from './mocks.ts';
+  axelarChainsMap,
+  contractAddresses,
+  makeUSDNIBCTraffic,
+} from './mocks.ts';
+import {
+  chainInfo,
+  setupPortfolioTest,
+  makeIncomingEvent,
+} from './supports.ts';
 import { makeTrader } from './portfolio-actors.ts';
-import { makeIncomingEvent, setupPortfolioTest } from './supports.ts';
 import { makeWallet } from './wallet-offer-tools.ts';
+import * as contractExports from '../src/portfolio.contract.ts';
+import { makeProposalShapes } from '../src/type-guards.ts';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { q } from '@endo/errors';
 
 const contractName = 'ymax0';
 type StartFn = typeof contractExports.start;
-
-export const contract: EVMContractAddresses = {
-  aavePool: '0x87870Bca3F0fD6335C3F4ce8392D69350B4fA4E2', // Aave V3 Pool
-  compound: '0xA0b86a33E6A3E81E27Da9c18c4A77c9Cd4e08D57', // Compound USDC
-  factory: '0xef8651dD30cF990A1e831224f2E0996023163A81', // Factory contract
-};
+const { values } = Object;
 
 const lca0 = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht';
 
@@ -77,14 +73,18 @@ const deploy = async (t: ExecutionContext) => {
   t.is(passStyleOf(installation), 'remotable');
 
   const { usdc } = common.brands;
+  const timerService = buildZoeManualTimer();
+
   const started = await E(zoe).startInstance(
     installation,
     { USDC: usdc.issuer },
     {}, // terms
-    // @ts-expect-error XXX what's going on here?
     {
       ...common.commonPrivateArgs,
-      contract,
+      contractAddresses,
+      axelarChainsMap,
+      timerService,
+      chainInfo,
     }, // privateArgs
   );
   t.notThrows(() =>
@@ -98,7 +98,7 @@ const deploy = async (t: ExecutionContext) => {
       }),
     ),
   );
-  return { common, zoe, started };
+  return { common, zoe, started, timerService };
 };
 
 test('ProposalShapes', t => {
@@ -111,13 +111,16 @@ test('ProposalShapes', t => {
       pass: {
         noPositions: { give: {} },
         openUSDN: { give: { USDN: usdc(123n) } },
-        aaveNeedsGMPFee: { give: { GMPFee: usdc(123n), Aave: usdc(3000n) } },
+        aaveNeedsGMPFee: {
+          give: { Gmp: usdc(123n), Aave: usdc(3000n), Account: usdc(3000n) },
+        },
         open3: {
           give: {
             USDN: usdc(123n),
-            GMPFee: usdc(123n),
+            Gmp: usdc(123n),
             Aave: usdc(3000n),
             Compound: usdc(1000n),
+            Account: usdc(3000n),
           },
         },
       },
@@ -165,7 +168,7 @@ test('open portfolio with USDN position', async t => {
   t.log('I am a power user with', myBalance, 'on Agoric');
 
   const { ibcBridge } = common.mocks;
-  for (const { msg, ack } of Object.values(makeUSDNIBCTraffic())) {
+  for (const { msg, ack } of values(makeUSDNIBCTraffic())) {
     ibcBridge.addMockAck(msg, ack);
   }
 
@@ -174,7 +177,7 @@ test('open portfolio with USDN position', async t => {
     {
       USDN: usdc.units(3_333),
     },
-    { evmChain: undefined },
+    { destinationEVMChain: 'Ethereum' },
   );
 
   // ack IBC transfer for forward
@@ -194,7 +197,7 @@ test('open portfolio with USDN position', async t => {
 });
 
 // TODO: to deal with bridge coordination, move this to a bootstrap test
-test.skip('open portfolio with Aave position', async t => {
+test('open a portfolio with Aave position', async t => {
   const { common, zoe, started } = await deploy(t);
   const { usdc } = common.brands;
   const { when } = common.utils.vowTools;
@@ -214,10 +217,11 @@ test.skip('open portfolio with Aave position', async t => {
   const actualP = trader1.openPortfolio(
     t,
     {
-      GMPFee: usdc.make(100n), // fee
+      Account: usdc.make(100n), // fee
+      Gmp: usdc.make(100n), // fee
       Aave: usdc.units(3_333),
     },
-    { evmChain: 'Base' },
+    { destinationEVMChain: 'Base' },
   );
   await eventLoopIteration(); // let IBC message go out
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
@@ -255,7 +259,10 @@ test.skip('open portfolio with Aave position', async t => {
   t.log('I can see where my money is:', addrs);
   t.is(result.publicTopics.length, 3);
   t.like(result.publicTopics, [
-    { description: 'LCA', storagePath: lca0 },
+    {
+      description: 'LCA',
+      storagePath: `cosmos:${chainInfo.agoric.chainId}:${lca0}`,
+    },
     { description: 'USDN ICA', storagePath: 'cosmos:noble-1:cosmos1test' },
     // TODO: Aave topic
   ]);
@@ -263,7 +270,80 @@ test.skip('open portfolio with Aave position', async t => {
 });
 
 // TODO: to deal with bridge coordination, move this to a bootstrap test
-test.skip('open portfolio with USDN, Aave positions', async t => {
+test('open a portfolio with Compound position', async t => {
+  const { common, zoe, started } = await deploy(t);
+  const { usdc } = common.brands;
+  const { when } = common.utils.vowTools;
+
+  const myBalance = usdc.units(10_000);
+  const funds = await common.utils.pourPayment(myBalance);
+  const myWallet = makeWallet({ USDC: usdc }, zoe, when);
+  await E(myWallet).deposit(funds);
+  const trader1 = makeTrader(myWallet, started.instance);
+  t.log('I am a power user with', myBalance, 'on Agoric');
+
+  const { ibcBridge } = common.mocks;
+  for (const { msg, ack } of Object.values(makeUSDNIBCTraffic())) {
+    ibcBridge.addMockAck(msg, ack);
+  }
+
+  const actualP = trader1.openPortfolio(
+    t,
+    {
+      Account: usdc.make(100n), // fee
+      Gmp: usdc.make(100n), // fee
+      Compound: usdc.units(3_333),
+    },
+    { destinationEVMChain: 'Base' },
+  );
+  await eventLoopIteration(); // let IBC message go out
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  console.log('ackd send to Axelar to create account');
+
+  const { transferBridge } = common.mocks;
+
+  // stimulate upcall back from Axelar
+  const event = makeIncomingEvent(lca0, 'Base');
+  const ackNP = VE(transferBridge)
+    .fromBridge(event)
+    .finally(() => console.log('@@@fromBridge for tap done'))
+    .then(() => eventLoopIteration())
+    .then(() => {
+      // ack CCTP
+      common.utils
+        .transmitVTransferEvent('acknowledgementPacket', -1)
+        .then(() => eventLoopIteration())
+        .finally(() => {
+          console.log('@@@ack CCTP done');
+          // ack IBC transfer to Axelar to open Aave position
+          return common.utils
+            .transmitVTransferEvent('acknowledgementPacket', -1)
+            .finally(() => {
+              console.log('@@@ack Axelar done');
+              return;
+            });
+        });
+    });
+
+  const actual = await actualP;
+  const result = actual.result as any;
+  t.is(passStyleOf(result.invitationMakers), 'remotable');
+  const addrs = result.publicTopics.map(t => t.storagePath);
+  t.log('I can see where my money is:', addrs);
+  t.is(result.publicTopics.length, 3);
+  t.like(result.publicTopics, [
+    {
+      description: 'LCA',
+      storagePath: `cosmos:${chainInfo.agoric.chainId}:${lca0}`,
+    },
+    { description: 'USDN ICA', storagePath: 'cosmos:noble-1:cosmos1test' },
+    // TODO: Aave topic
+  ]);
+  t.log('refund', actual.payouts);
+});
+
+// TODO: to deal with bridge coordination, move this to a bootstrap test
+test('open portfolio with USDN, Aave positions', async t => {
   const { common, zoe, started } = await deploy(t);
   const { usdc } = common.brands;
   const { when } = common.utils.vowTools;
@@ -283,11 +363,11 @@ test.skip('open portfolio with USDN, Aave positions', async t => {
   const doneP = trader1.openPortfolio(
     t,
     {
-      USDN: usdc.units(3_333),
-      GMPFee: usdc.make(100n),
+      Account: usdc.make(100n), // fee
+      Gmp: usdc.make(100n), // fee
       Aave: usdc.units(3_333),
     },
-    { evmChain: 'Base' },
+    { destinationEVMChain: 'Base' },
   );
   await eventLoopIteration(); // let outgoing IBC happen
   console.log('openPortfolio, eventloop');
@@ -295,33 +375,10 @@ test.skip('open portfolio with USDN, Aave positions', async t => {
   console.log('ackd send to noble');
 
   const { transferBridge } = common.mocks;
-  const agToAxelar = fetchedChainInfo.agoric.connections['axelar-dojo-1'];
-
-  const arbEth = '0x3dA3050208a3F2e0d04b33674aAa7b1A9F9B313C';
-  const p2 = encodeAbiParameters([{ type: 'address' }], [arbEth]);
-  const payload = encodeAbiParameters(DECODE_CONTRACT_CALL_RESULT_ABI, [
-    { isContractCallResult: false, data: [{ success: true, result: p2 }] },
-  ]);
-  const incoming: AxelarGmpIncomingMemo = {
-    source_address: arbEth,
-    type: 2,
-    source_chain: 'Base',
-    payload,
-  };
 
   // ack IBC transfer to Noble
   const ackNP = VE(transferBridge)
-    .fromBridge(
-      buildVTransferEvent({
-        receiver: 'TODO: receiver',
-        target: lca0,
-        sourceChannel: agToAxelar.transferChannel.counterPartyChannelId,
-        denom: 'uusdc',
-        amount: 123n,
-        sender: `axelar1TODO`,
-        memo: JSON.stringify(incoming),
-      }),
-    )
+    .fromBridge(makeIncomingEvent(lca0, 'Ethereum'))
     .finally(() => console.log('@@@fromAxelar done'))
     .then(() => eventLoopIteration())
     .then(() => {
@@ -351,7 +408,10 @@ test.skip('open portfolio with USDN, Aave positions', async t => {
   t.log('I can see where my money is:', addrs);
   t.is(result.publicTopics.length, 3);
   t.like(result.publicTopics, [
-    { description: 'LCA', storagePath: lca0 },
+    {
+      description: 'LCA',
+      storagePath: `cosmos:${chainInfo.agoric.chainId}:${lca0}`,
+    },
     { description: 'USDN ICA', storagePath: 'cosmos:noble-1:cosmos1test' },
     // TODO: Aave topic
   ]);

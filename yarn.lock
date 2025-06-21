@@ -194,6 +194,7 @@ __metadata:
     "@agoric/internal": "workspace:*"
     "@agoric/orchestration": "workspace:*"
     "@agoric/swingset-liveslots": "workspace:*"
+    "@agoric/time": "workspace:*"
     "@agoric/vats": "workspace:*"
     "@agoric/vow": "workspace:*"
     "@agoric/zoe": "workspace:*"

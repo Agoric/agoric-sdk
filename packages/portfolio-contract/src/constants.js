@@ -12,14 +12,12 @@ export const YieldProtocol = /** @type {const} */ ({
 });
 harden(YieldProtocol);
 
-// TODO: pass via terms?
 /**
- * @enum {(typeof PositionChain)[keyof typeof PositionChain]}
+ * @enum {(typeof AxelarChains)[keyof typeof AxelarChains]}
  */
-export const PositionChain = /** @type {const} */ ({
-  Ethereum: 'eip155:1',
-  Avalanche: 'eip155:43114',
-  Base: 'eip155:8453',
-  Noble: 'cosmos:noble-1',
+export const AxelarChains = /** @type {const} */ ({
+  Ethereum: 'Ethereum',
+  Avalanche: 'Avalanche',
+  Base: 'Base',
 });
-harden(PositionChain);
+harden(AxelarChains);
