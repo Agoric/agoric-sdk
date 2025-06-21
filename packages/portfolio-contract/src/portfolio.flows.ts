@@ -48,23 +48,6 @@ import { GMPArgsShape } from './type-guards.ts';
 const trace = makeTracer('PortF');
 const { values } = Object;
 
-/**
- * Make an orchestration account on the agoric chain to, for example,
- * initiate IBC token transfers.
- *
- * XXX TODO: currently shared among all clients, since funds are only
- * held momentarily.
- */
-export const makeLocalAccount = (async (orch: Orchestrator, _ctx: unknown) => {
-  const agoricChain = await orch.getChain('agoric');
-  const account = (await agoricChain.makeAccount()) as OrchestrationAccount<{
-    chainId: 'agoric-any';
-  }>;
-
-  return account;
-}) satisfies OrchestrationFlow;
-harden(makeLocalAccount);
-
 // XXX: push down to Orchestration API in NobleMethods, in due course
 const makeSwapLockMessages = (
   nobleAddr: CosmosChainAddress,
@@ -208,8 +191,6 @@ const makeAxelarMemo = (
 
   return harden(JSON.stringify(memo));
 };
-
-const bigintReplacer = (_, v) => (typeof v === 'bigint' ? `${v}` : v);
 
 const sendGmp = async (
   orch: Orchestrator,
