@@ -138,21 +138,21 @@ const sendTokensViaCCTP = async (
 ) => {
   const { axelarChainsMap, chainHubTools, zoeTools } = ctx;
   const { amount, destinationEVMChain } = args;
+  const natAmount = values(amount)[0];
+  const denom = await chainHubTools.getDenom(natAmount.brand);
+  assert(denom, 'denom must be defined');
+  const denomAmount = {
+    denom,
+    value: natAmount.value,
+  };
+
   const nobleAccount = keeper.getUSDNICA();
-  const localAcct = await keeper.getLCA();
+  const localAcct = keeper.getLCA();
 
   trace('localTransfer', amount, 'to local', localAcct.getAddress().value);
   // @ts-expect-error LocalAccountMethods vs OrchestrationAccount
   await zoeTools.localTransfer(seat, localAcct, amount);
-
   try {
-    const natAmount = values(amount)[0];
-    const denom = await chainHubTools.getDenom(natAmount.brand);
-    assert(denom, 'denom must be defined');
-    const denomAmount = {
-      denom,
-      value: natAmount.value,
-    };
     await localAcct.transfer(nobleAccount.getAddress(), natAmount);
     const caipChainId = axelarChainsMap[destinationEVMChain].caip;
     const remoteAccountAddress = await keeper.getGMPAddress();
