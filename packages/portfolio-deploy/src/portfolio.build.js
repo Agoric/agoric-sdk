@@ -22,7 +22,7 @@ const defaultProposalBuilder = async (
       'getManifestForPortfolio', // TODO: unit test agreemnt with getManifestForPortfolio.name
       {
         options: toExternalConfig(config, {}),
-        installKeys: {
+        bundleRefs: {
           [name]: publishRef(install('../dist/portfolio.contract.bundle.js')),
         },
       },
