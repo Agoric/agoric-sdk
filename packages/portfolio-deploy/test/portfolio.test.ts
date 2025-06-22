@@ -163,6 +163,7 @@ test.serial('open a USDN position', async t => {
       callPipe: [['makeOpenPortfolioInvitation']],
     },
     proposal: { give },
+    offerArgs: {},
   });
   const update = wallet.getLatestUpdateRecord(); // XXX remote should be async
   t.log('update', update);
