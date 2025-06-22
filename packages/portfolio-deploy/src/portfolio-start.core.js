@@ -69,7 +69,7 @@ harden(makePrivateArgs);
  */
 export const startPortfolio = async (permitted, configStruct) => {
   trace('startPortfolio');
-  const { config, kit } = await startOrchContract(
+  await startOrchContract(
     name,
     deployConfigShape,
     permit,
@@ -78,10 +78,7 @@ export const startPortfolio = async (permitted, configStruct) => {
     configStruct,
   );
 
-  trace('startPortfolio done', {
-    config: objectMap(config, v => passStyleOf(v)),
-    kit: objectMap(kit, v => passStyleOf(v)),
-  });
+  trace('startPortfolio done');
 };
 
 // XXX hm... we need to preserve the function name.

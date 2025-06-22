@@ -1,5 +1,5 @@
 import { deeplyFulfilledObject, makeTracer, objectMap } from '@agoric/internal';
-import { E } from '@endo/far';
+import { E, passStyleOf } from '@endo/far';
 import { makeAssetInfo } from './chain-name-service.js';
 import { fromExternalConfig } from './config-marshal.js';
 /**
@@ -79,7 +79,7 @@ export const startOrchContract = async (
     produce,
     consume,
     installation: {
-      consume: { [name]: installation },
+      consume: { [name]: installationP },
     },
     instance: {
       produce: { [name]: produceInstance },
@@ -100,8 +100,8 @@ export const startOrchContract = async (
     fromEntries(xVatEntries),
     deployConfigShape,
   );
-  const { terms } = config;
-  trace('using terms', terms);
+  const { terms: customTerms } = config;
+  trace('using terms', customTerms);
 
   const { chainStorage, board } = consume;
   const { storageNode, marshaller } = await makePublishingStorageKit(name, {
@@ -129,21 +129,17 @@ export const startOrchContract = async (
     config,
   );
 
-  trace(
-    '@@@',
-    name,
-    await E(zoe).getBundleIDFromInstallation(await installation),
-  );
   const { startUpgradable } = consume;
+  const installation = await installationP;
   const kit = await E(startUpgradable)({
     label: name,
     installation,
     issuerKeywordRecord,
-    terms,
+    terms: customTerms,
     privateArgs,
   });
   const { instance } = kit;
-  trace('started terms', await E(zoe).getTerms(instance));
+
   /** @type {UpgradeKit<SF>} */
   const fullKit = harden({ ...kit, privateArgs });
   // @ts-expect-error XXX tsc gets confused?
@@ -152,15 +148,23 @@ export const startOrchContract = async (
   produceInstance.reset();
   produceInstance.resolve(instance);
 
-  trace('startOrchContract done', instance);
+  const [installationId, instanceId, terms, bundleId] = await Promise.all([
+    E(board).getId(instance),
+    E(board).getId(installation),
+    E(zoe).getTerms(instance),
+    E(zoe).getBundleIDFromInstallation(installation),
+  ]);
+
+  trace(
+    'startOrchContract done',
+    name,
+    { instanceId, installationId, bundleId },
+    terms,
+    objectMap(fullKit, it => passStyleOf(it)),
+  );
   return { config, kit: fullKit };
 };
 harden(startOrchContract);
-
-const DBG = (label, x) => {
-  console.log(label, x);
-  return x;
-};
 
 /**
  * @template {CopyRecord} CFG
@@ -177,13 +181,12 @@ export const makeGetManifest = (startFn, permit, contractName) => {
    * @param {{ installKeys: Record<CN, ERef<ManifestBundleRef>>, options: LegibleCapData<CFG> }} config
    */
   const getManifestForOrch = ({ restoreRef }, { installKeys, options }) => {
-    DBG('@@@installKeys', installKeys);
-    return DBG('@@@getManifestForOrch returns', {
+    return {
       /** @type {BootstrapManifest} */
       manifest: { [startFn.name]: permit },
       installations: { [contractName]: restoreRef(installKeys[contractName]) },
       options,
-    });
+    };
   };
   harden(getManifestForOrch);
 
