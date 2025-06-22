@@ -1,6 +1,6 @@
 import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
-import { makeTracer, type Remote } from '@agoric/internal';
+import { makeTracer, mustMatch, type Remote } from '@agoric/internal';
 import { type CaipChainId } from '@agoric/orchestration';
 import { type AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
 import { decodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
@@ -10,7 +10,7 @@ import { VowShape, type VowKit, type VowTools } from '@agoric/vow';
 import type { Zone } from '@agoric/zone';
 import { atob } from '@endo/base64';
 import { E } from '@endo/far';
-import { M, mustMatch } from '@endo/patterns';
+import { M } from '@endo/patterns';
 import { YieldProtocol } from './constants.js';
 import type { AxelarChainsMap, NobleAccount } from './type-guards.js';
 import { type Vow } from '@agoric/vow';
@@ -208,7 +208,6 @@ export const preparePortfolioKit = (
         async handle(seat: ZCFSeat, offerArgs: unknown) {
           const { keeper } = this.facets;
           mustMatch(offerArgs, OfferArgsShapeFor.rebalance);
-          // @ts-expect-error: offerArgs is validated just above and safe to use as OfferArgsFor['rebalance']
           return rebalance(seat, offerArgs, keeper);
         },
       },
