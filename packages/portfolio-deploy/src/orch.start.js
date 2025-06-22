@@ -173,18 +173,19 @@ harden(startOrchContract);
  * @param {{ name: string }} startFn
  * @param {P} permit
  * @param {CN} contractName
- * @returns {(powers: { restoreRef: (b: ERef<ManifestBundleRef>) => Promise<Installation<any>> }, config: { installKeys: Record<CN, ERef<ManifestBundleRef>>, options: LegibleCapData<CFG> }) => any}
+ * @returns {(powers: { restoreRef: (b: VatSourceRef) => Promise<Installation<any>> },
+ *            config: { bundleRefs: Record<CN, VatSourceRef>, options: LegibleCapData<CFG> }) => any}
  */
 export const makeGetManifest = (startFn, permit, contractName) => {
   /**
-   * @param {{ restoreRef: (b: ERef<ManifestBundleRef>) => Promise<Installation<any>> }} powers
-   * @param {{ installKeys: Record<CN, ERef<ManifestBundleRef>>, options: LegibleCapData<CFG> }} config
+   * @param {{ restoreRef: (b: VatSourceRef) => Promise<Installation<any>> }} powers
+   * @param {{ bundleRefs: Record<CN, VatSourceRef>, options: LegibleCapData<CFG> }} config
    */
-  const getManifestForOrch = ({ restoreRef }, { installKeys, options }) => {
+  const getManifestForOrch = ({ restoreRef }, { bundleRefs, options }) => {
     return {
       /** @type {BootstrapManifest} */
       manifest: { [startFn.name]: permit },
-      installations: { [contractName]: restoreRef(installKeys[contractName]) },
+      installations: { [contractName]: restoreRef(bundleRefs[contractName]) },
       options,
     };
   };
