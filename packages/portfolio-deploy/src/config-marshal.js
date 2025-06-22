@@ -37,7 +37,7 @@ export const makeMarshalFromRecord = slotToVal => {
   };
   const valToSlot = new Map(entries(slotToVal).map(([k, v]) => [v, k]));
   const convertValToSlot = v => {
-    valToSlot.has(v) || Fail`unknown value: ${v}`;
+    valToSlot.has(v) || Fail`cannot externalize unknown value: ${v}`;
     return valToSlot.get(v);
   };
   return makeMarshal(convertValToSlot, convertSlotToVal, {
