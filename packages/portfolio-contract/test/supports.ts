@@ -1,6 +1,7 @@
 import { makeIssuerKit } from '@agoric/ertp';
 import {
   denomHash,
+  withChainCapabilities,
   type CosmosChainInfo,
   type Denom,
 } from '@agoric/orchestration';
@@ -15,13 +16,16 @@ import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
+import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
 import { encodeAbiParameters } from 'viem';
 import { DECODE_CONTRACT_CALL_RESULT_ABI } from '../src/portfolio.exo.ts';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.ts';
+import type { AxelarChain } from '../src/type-guards.ts';
+import { axelarChainsMap } from './mocks.ts';
 
 export const makeIncomingEvent = (
   target: string,
-  source_chain: SupportedEVMChains,
+  source_chain: AxelarChain,
   amount = 123n,
 ) => {
   const arbEth = '0x3dA3050208a3F2e0d04b33674aAa7b1A9F9B313C';
@@ -31,8 +35,8 @@ export const makeIncomingEvent = (
   ]);
   const incoming: AxelarGmpIncomingMemo = {
     source_address: arbEth,
-    type: 2,
-    source_chain,
+    type: 1,
+    source_chain: axelarChainsMap[source_chain].axelarId,
     payload,
   };
 
@@ -54,6 +58,39 @@ export {
   makeFakeLocalchainBridge,
   makeFakeTransferBridge,
 } from '@agoric/vats/tools/fake-bridge.js';
+
+export const chainInfo = {
+  ...withChainCapabilities(fetchedChainInfo),
+  noble: {
+    ...withChainCapabilities(fetchedChainInfo).noble,
+    connections: {
+      ...fetchedChainInfo.noble.connections,
+      // Patch noble.connections to add axelar-dojo-1 for test
+      'axelar-dojo-1': {
+        id: 'connection-1' as const,
+        client_id: '07-tendermint-mock',
+        counterparty: {
+          client_id: '07-tendermint-mock',
+          connection_id: 'connection-1' as const,
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-1' as const,
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-1' as const,
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+    },
+  },
+  ethereum: {
+    chainId: 'mockId',
+    ...cctpChainInfo.ethereum,
+  },
+};
 
 const assetOn = (
   baseDenom: Denom,

@@ -4,7 +4,7 @@ import type { ExecutionContext } from 'ava';
 import type { YieldProtocol } from '../src/constants.js';
 import { type start } from '../src/portfolio.contract.ts';
 import type { WalletTool } from './wallet-offer-tools.ts';
-import type { ProposalType } from '../src/type-guards.ts';
+import type { AxelarGas, EVMOfferArgs } from '../src/type-guards.ts';
 
 export const makeTrader = (
   wallet: WalletTool,
@@ -14,8 +14,10 @@ export const makeTrader = (
   return harden({
     async openPortfolio(
       t: ExecutionContext,
-      give: ProposalType['openPortfolio']['give'],
-      offerArgs: Record<string, unknown> = {},
+      give: Partial<
+        Record<YieldProtocol | keyof typeof AxelarGas, Amount<'nat'>>
+      >,
+      offerArgs: EVMOfferArgs = harden({ destinationEVMChain: 'Ethereum' }),
     ) {
       const invitationSpec = {
         source: 'contract' as const,
