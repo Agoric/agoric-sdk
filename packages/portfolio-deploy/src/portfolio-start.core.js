@@ -11,7 +11,7 @@ import { name, permit } from './portfolio.contract.permit.js';
 
 /**
  * @import { start } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
- * @import { EVMContractAddresses } from '@aglocal/portfolio-contract/src/type-guards.js';
+ * @import {AxelarChainsMap, EVMContractAddresses } from '@aglocal/portfolio-contract/src/type-guards.js';
  * @import { Marshaller } from '@agoric/internal/src/lib-chainStorage.js';
  * @import { OrchestrationPowers } from '@agoric/orchestration';
  * @import { CopyRecord } from '@endo/pass-style';
@@ -26,10 +26,28 @@ const trace = makeTracer(`YMX-Start`, true);
 
 // TODO: where do we get these contract addresses in production? in devnet? in multichain-testing?
 /** @type {EVMContractAddresses} */
-const contract = {
-  aavePool: '0x87870Bca3F0fD6335C3F4ce8392D69350B4fA4E2', // Aave V3 Pool
-  compound: '0xA0b86a33E6A3E81E27Da9c18c4A77c9Cd4e08D57', // Compound USDC
-  factory: '0xef8651dD30cF990A1e831224f2E0996023163A81', // Factory contract
+const contractAddresses = {
+  aavePool: '0x1111111111111111111111111111111111111111',
+  compound: '0xA0b86a33E6A3E81E27Da9c18c4A77c9Cd4e08D57',
+  factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+  usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
+};
+
+// TODO: sort out the values for this map for production and testnet
+/** @type {AxelarChainsMap} */
+const axelarChainsMap = {
+  Ethereum: {
+    caip: 'eip155:1',
+    axelarId: 'ethereum',
+  },
+  Avalanche: {
+    caip: 'eip155:43114',
+    axelarId: 'avalanche',
+  },
+  Base: {
+    caip: 'eip155:8453',
+    axelarId: 'base',
+  },
 };
 
 /**
@@ -56,7 +74,8 @@ export const makePrivateArgs = async (
     marshaller,
     chainInfo,
     assetInfo,
-    contract,
+    contractAddresses,
+    axelarChainsMap,
   });
   return it;
 };

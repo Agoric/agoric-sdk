@@ -36,6 +36,7 @@
     "@agoric/cosmic-proto": "workspace:*",
     "@agoric/internal": "workspace:*",
     "@agoric/orchestration": "workspace:*",
+    "@agoric/time": "workspace:*",
     "@agoric/vats": "workspace:*",
     "@agoric/vow": "workspace:*",
     "@endo/base64": "1.0.9",
