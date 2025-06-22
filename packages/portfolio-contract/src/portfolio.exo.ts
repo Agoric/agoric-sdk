@@ -5,7 +5,7 @@ import type { CaipChainId, OrchestrationAccount } from '@agoric/orchestration';
 import { type AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
 import { decodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
 import type { VTransferIBCEvent } from '@agoric/vats';
-import { type Vow, type VowKit, type VowTools } from '@agoric/vow';
+import { VowShape, type Vow, type VowKit, type VowTools } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe';
 import { InvitationShape, OfferHandlerI } from '@agoric/zoe/src/typeGuards.js';
 import type { Zone } from '@agoric/zone';
@@ -50,7 +50,6 @@ export const supportedEVMChains: CaipChainId[] = [
 harden(supportedEVMChains);
 
 const OrchestrationAccountShape = M.remotable('OrchestrationAccount');
-const VowStringShape = M.any(); // Vow(M.string())
 const KeeperI = M.interface('keeper', {
   getLCA: M.call().returns(OrchestrationAccountShape),
   getPositions: M.call().returns(M.arrayOf(M.string())),
@@ -58,8 +57,8 @@ const KeeperI = M.interface('keeper', {
   initCompound: M.call().returns(),
   initUSDN: M.call(OrchestrationAccountShape).returns(),
   getUSDNICA: M.call().returns(OrchestrationAccountShape),
-  getAaveAddress: M.call().returns(VowStringShape),
-  getCompoundAddress: M.call().returns(VowStringShape),
+  getAaveAddress: M.call().returns(VowShape),
+  getCompoundAddress: M.call().returns(VowShape),
 });
 
 const EvmTapI = M.interface('EvmTap', {
