@@ -165,3 +165,29 @@ export const submitCoreEval = async (
     ...evals.map(e => [e.permit, e.script]).flat(),
     ...flags({ title, description, deposit }),
   ]);
+
+const max = xs => xs.reduce((hi, x) => (x > hi ? x : hi));
+
+/**
+ * @param {CmdRunner} agdq - with node opts
+ * @param {CmdRunner} agdtx - with sign opts
+ */
+const acceptProposal = async (agdq, agdtx) => {
+  const agdqj = agdq.withFlags('-o', 'json');
+
+  const { proposals } = await agdqj
+    .exec('query gov proposals'.split(' '))
+    .then(proc => JSON.parse(proc.stdout));
+  const proposalId = max(proposals.map(p => Number(p.proposal_id || p.id)));
+
+  console.log(`Voting on proposal ID ${proposalId}`);
+  await runTx(agdtx, ['gov', 'vote', `${proposalId}`, 'yes']);
+
+  console.log(`Fetching details for proposal ID ${proposalId}`);
+  const info = await agdq
+    .exec(['query', 'gov', 'proposal', `${proposalId}`])
+    .then(proc => JSON.parse(proc.stdout));
+
+  const { proposal_id: pid, id, voting_end_time: t, status } = info;
+  return { id: pid || id, voting_end_time: t, status };
+};
