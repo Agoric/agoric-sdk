@@ -3,30 +3,30 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { heapVowE as VE } from '@agoric/vow';
 import type { Installation } from '@agoric/zoe';
+import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
+import { q } from '@endo/errors';
 import { E, passStyleOf } from '@endo/far';
 import { M, matches, mustMatch } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
-import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import * as contractExports from '../src/portfolio.contract.ts';
+import { makeProposalShapes } from '../src/type-guards.ts';
 import {
   axelarChainsMap,
   contractAddresses,
   makeUSDNIBCTraffic,
 } from './mocks.ts';
+import { makeTrader } from './portfolio-actors.ts';
 import {
   chainInfo,
-  setupPortfolioTest,
   makeIncomingEvent,
+  setupPortfolioTest,
 } from './supports.ts';
-import { makeTrader } from './portfolio-actors.ts';
 import { makeWallet } from './wallet-offer-tools.ts';
-import * as contractExports from '../src/portfolio.contract.ts';
-import { makeProposalShapes } from '../src/type-guards.ts';
-import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-import { q } from '@endo/errors';
 
 const contractName = 'ymax0';
 type StartFn = typeof contractExports.start;
@@ -112,15 +112,21 @@ test('ProposalShapes', t => {
         noPositions: { give: {} },
         openUSDN: { give: { USDN: usdc(123n) } },
         aaveNeedsGMPFee: {
-          give: { Gmp: usdc(123n), Aave: usdc(3000n), Account: usdc(3000n) },
+          give: {
+            AaveGmp: usdc(123n),
+            Aave: usdc(3000n),
+            AaveAccount: usdc(3000n),
+          },
         },
         open3: {
           give: {
             USDN: usdc(123n),
-            Gmp: usdc(123n),
             Aave: usdc(3000n),
+            AaveGmp: usdc(123n),
+            AaveAccount: usdc(3000n),
             Compound: usdc(1000n),
-            Account: usdc(3000n),
+            CompoundGmp: usdc(3000n),
+            CompoundAccount: usdc(3000n),
           },
         },
       },
@@ -186,23 +192,23 @@ test('open portfolio with USDN position', async t => {
   const done = await doneP;
   const result = done.result as any;
   t.is(passStyleOf(result.invitationMakers), 'remotable');
-  t.is(result.publicTopics.length, 2);
   t.like(result.publicTopics, [
-    { description: 'LCA', storagePath: `cosmos:agoric-3:${lca0}` },
-    { description: 'USDN ICA', storagePath: 'cosmos:noble-1:cosmos1test' },
+    { description: 'Portfolio', storagePath: 'orchtest.portfolios.portfolio0' },
   ]);
+  t.is(result.publicTopics.length, 1);
+  // TODO: look in storage for address
+  // `cosmos:agoric-3:${lca0}`
   const addrs = result.publicTopics.map(t => t.storagePath);
   t.log('I can see where my money is:', addrs);
   t.log('refund', done.payouts);
 });
 
-// TODO: to deal with bridge coordination, move this to a bootstrap test
 test('open a portfolio with Aave position', async t => {
   const { common, zoe, started } = await deploy(t);
   const { usdc } = common.brands;
   const { when } = common.utils.vowTools;
 
-  const myBalance = usdc.units(10_000);
+  const myBalance = usdc.units(3 * 10_000);
   const funds = await common.utils.pourPayment(myBalance);
   const myWallet = makeWallet({ USDC: usdc }, zoe, when);
   await E(myWallet).deposit(funds);
@@ -217,8 +223,8 @@ test('open a portfolio with Aave position', async t => {
   const actualP = trader1.openPortfolio(
     t,
     {
-      Account: usdc.make(100n), // fee
-      Gmp: usdc.make(100n), // fee
+      AaveAccount: usdc.make(100n), // fee
+      AaveGmp: usdc.make(100n), // fee
       Aave: usdc.units(3_333),
     },
     { destinationEVMChain: 'Base' },
@@ -257,14 +263,11 @@ test('open a portfolio with Aave position', async t => {
   t.is(passStyleOf(result.invitationMakers), 'remotable');
   const addrs = result.publicTopics.map(t => t.storagePath);
   t.log('I can see where my money is:', addrs);
-  t.is(result.publicTopics.length, 3);
+  t.is(result.publicTopics.length, 1);
+  // TODO: get addresses from vstorage
+  // `cosmos:${chainInfo.agoric.chainId}:${lca0}`,
   t.like(result.publicTopics, [
-    {
-      description: 'LCA',
-      storagePath: `cosmos:${chainInfo.agoric.chainId}:${lca0}`,
-    },
-    { description: 'USDN ICA', storagePath: 'cosmos:noble-1:cosmos1test' },
-    // TODO: Aave topic
+    { description: 'Portfolio', storagePath: 'orchtest.portfolios.portfolio0' },
   ]);
   t.log('refund', actual.payouts);
 });
@@ -290,8 +293,8 @@ test('open a portfolio with Compound position', async t => {
   const actualP = trader1.openPortfolio(
     t,
     {
-      Account: usdc.make(100n), // fee
-      Gmp: usdc.make(100n), // fee
+      CompoundAccount: usdc.make(100n), // fee
+      CompoundGmp: usdc.make(100n), // fee
       Compound: usdc.units(3_333),
     },
     { destinationEVMChain: 'Base' },
@@ -330,14 +333,12 @@ test('open a portfolio with Compound position', async t => {
   t.is(passStyleOf(result.invitationMakers), 'remotable');
   const addrs = result.publicTopics.map(t => t.storagePath);
   t.log('I can see where my money is:', addrs);
-  t.is(result.publicTopics.length, 3);
+  // TODO: check vstorage
+  // `cosmos:${chainInfo.agoric.chainId}:${lca0}`
+  // 'cosmos:noble-1:cosmos1test'
+  t.is(result.publicTopics.length, 1);
   t.like(result.publicTopics, [
-    {
-      description: 'LCA',
-      storagePath: `cosmos:${chainInfo.agoric.chainId}:${lca0}`,
-    },
-    { description: 'USDN ICA', storagePath: 'cosmos:noble-1:cosmos1test' },
-    // TODO: Aave topic
+    { description: 'Portfolio', storagePath: 'orchtest.portfolios.portfolio0' },
   ]);
   t.log('refund', actual.payouts);
 });
@@ -363,8 +364,8 @@ test('open portfolio with USDN, Aave positions', async t => {
   const doneP = trader1.openPortfolio(
     t,
     {
-      Account: usdc.make(100n), // fee
-      Gmp: usdc.make(100n), // fee
+      AaveAccount: usdc.make(100n), // fee
+      AaveGmp: usdc.make(100n), // fee
       Aave: usdc.units(3_333),
     },
     { destinationEVMChain: 'Base' },
@@ -406,18 +407,12 @@ test('open portfolio with USDN, Aave positions', async t => {
   t.is(passStyleOf(result.invitationMakers), 'remotable');
   const addrs = result.publicTopics.map(t => t.storagePath);
   t.log('I can see where my money is:', addrs);
-  t.is(result.publicTopics.length, 3);
+  // TODO: check vstorage
+  // `cosmos:${chainInfo.agoric.chainId}:${lca0}`
+  // 'cosmos:noble-1:cosmos1test'
+  t.is(result.publicTopics.length, 1);
   t.like(result.publicTopics, [
-    {
-      description: 'LCA',
-      storagePath: `cosmos:${chainInfo.agoric.chainId}:${lca0}`,
-    },
-    { description: 'USDN ICA', storagePath: 'cosmos:noble-1:cosmos1test' },
-    // TODO: Aave topic
+    { description: 'Portfolio', storagePath: 'orchtest.portfolios.portfolio0' },
   ]);
   t.log('refund', done.payouts);
 });
-
-test.todo('User can see transfer in progress');
-test.todo('Pools SHOULD include Aave');
-test.todo('Pools SHOULD include Compound');

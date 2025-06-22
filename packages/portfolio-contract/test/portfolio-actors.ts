@@ -1,10 +1,8 @@
-import type { Amount } from '@agoric/ertp';
 import type { Instance } from '@agoric/zoe';
 import type { ExecutionContext } from 'ava';
-import type { YieldProtocol } from '../src/constants.js';
 import { type start } from '../src/portfolio.contract.ts';
+import type { EVMOfferArgs, OpenPortfolioGive } from '../src/type-guards.ts';
 import type { WalletTool } from './wallet-offer-tools.ts';
-import type { AxelarGas, EVMOfferArgs } from '../src/type-guards.ts';
 
 export const makeTrader = (
   wallet: WalletTool,
@@ -14,9 +12,7 @@ export const makeTrader = (
   return harden({
     async openPortfolio(
       t: ExecutionContext,
-      give: Partial<
-        Record<YieldProtocol | keyof typeof AxelarGas, Amount<'nat'>>
-      >,
+      give: OpenPortfolioGive,
       offerArgs: EVMOfferArgs = harden({ destinationEVMChain: 'Ethereum' }),
     ) {
       const invitationSpec = {

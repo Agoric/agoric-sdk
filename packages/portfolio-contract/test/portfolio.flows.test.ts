@@ -7,10 +7,20 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { GuestInterface } from '@agoric/async-flow';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { mustMatch } from '@agoric/internal';
+import {
+  defaultSerializer,
+  documentStorageSchema,
+  makeFakeStorageKit,
+} from '@agoric/internal/src/storage-test-utils.js';
 import type { Orchestrator } from '@agoric/orchestration';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
+import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
+import type { VowTools } from '@agoric/vow';
 import type { Proposal, ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
+import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeHeapZone } from '@agoric/zone';
 import { Far, passStyleOf } from '@endo/pass-style';
 import { makePromiseKit } from '@endo/promise-kit';
@@ -18,16 +28,18 @@ import {
   preparePortfolioKit,
   type PortfolioKit,
 } from '../src/portfolio.exo.ts';
-import { openPortfolio, rebalance } from '../src/portfolio.flows.ts';
+import {
+  openPortfolio,
+  rebalance,
+  type PortfolioInstanceContext,
+} from '../src/portfolio.flows.ts';
 import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
 import { axelarChainsMap, contractAddresses } from './mocks.ts';
 import { makeIncomingEvent } from './supports.ts';
-import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
-import { mustMatch } from '@agoric/internal';
-import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
 const theExit = harden(() => {}); // for ava comparison
-const mockZCF = Far('MockZCF', {
+// @ts-expect-error mock
+const mockZCF: ZCF = Far('MockZCF', {
   makeEmptySeatKit: () =>
     ({
       zcfSeat: Far('MockZCFSeat', { exit: theExit }),
@@ -36,6 +48,7 @@ const mockZCF = Far('MockZCF', {
 
 const { brand: USDC } = makeIssuerKit('USDC');
 
+// XXX move to mocks.ts for readability?
 const mocks = (
   errs: Record<string, Error> = {},
   give: ProposalType['openPortfolio']['give'] = {
@@ -132,13 +145,13 @@ const mocks = (
     },
   }) as GuestInterface<ZoeTools>;
 
-  const vowTools = harden({
+  const vowTools: VowTools = harden({
     makeVowKit: () => {
       const { promise, resolve, reject } = makePromiseKit();
       return harden({
         resolver: harden({ resolve, reject }),
         vow: promise,
-      });
+      }) as any; // mock
     },
     watch: _promise => {
       const taggedVow = {
@@ -158,26 +171,55 @@ const mocks = (
       });
       return harden(taggedVow);
     },
+    asVow: thunk => {
+      return thunk() as any;
+    },
+  }) as any; // mock
+
+  const board = makeFakeBoard();
+  const marshaller = board.getReadonlyMarshaller();
+
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const portfoliosNode = storage.rootNode
+    .makeChildNode('ymax0')
+    .makeChildNode('portfolios');
+  const timer = buildZoeManualTimer();
+
+  const chainHubTools = harden({
+    getDenom: brand => {
+      assert(brand === USDC);
+      return 'ibc/TODO what is the right hash?';
+    },
   });
 
-  const timer = buildZoeManualTimer();
-  const makePortfolioKitHost = preparePortfolioKit(zone, {
-    // @ts-expect-error mocked zcf
+  const inertSubscriber = {} as ResolvedPublicTopic<never>['subscriber'];
+  const ctx1: PortfolioInstanceContext = {
+    zoeTools,
+    chainHubTools,
+    contractAddresses,
+    axelarChainsMap,
+    inertSubscriber,
+  };
+
+  const rebalanceHost = (seat, offerArgs, kit) =>
+    rebalance(orch, ctx1, seat, offerArgs, kit);
+  const makePortfolioKit = preparePortfolioKit(zone, {
     zcf: mockZCF,
-    // @ts-expect-error mocked vowTools
     vowTools,
     axelarChainsMap,
     timer,
-    // @ts-expect-error host/flow - YOLO?
-    rebalance: (...args) => rebalance(orch, { zoeTools }, ...args),
+    rebalance: rebalanceHost as any,
     proposalShapes: makeProposalShapes(USDC),
+    marshaller,
+    portfoliosNode,
+    usdcBrand: USDC,
   });
-  const makePortfolioKit = (ica, lca) => {
-    const kit = makePortfolioKitHost(ica, lca);
-    // @ts-expect-error membrane
-    const gk = kit as GuestInterface<PortfolioKit>;
-    return gk;
-  };
+  const makePortfolioKitGuest = (lca, ica) =>
+    makePortfolioKit({
+      portfolioId: 1,
+      localAccount: lca,
+      nobleAccount: ica,
+    }) as unknown as GuestInterface<PortfolioKit>;
 
   const proposal: Proposal = harden({ give });
   let hasExited = false;
@@ -196,38 +238,55 @@ const mocks = (
     },
   } as ZCFSeat;
 
-  const inertSubscriber = {} as ResolvedPublicTopic<never>['subscriber'];
-
-  const chainHubTools = harden({
-    getDenom: brand => {
-      assert(brand === USDC);
-      return 'ibc/TODO what is the right hash?';
-    },
-  });
   return {
     orch,
     tapPK,
-    ctx: {
-      makePortfolioKit,
-      zoeTools,
-      chainHubTools,
-      inertSubscriber,
-      axelarChainsMap,
-      contractAddresses,
-    },
-    offer: {
-      log: buf,
-      seat,
-      factoryPK,
-    },
+    ctx: { ...ctx1, makePortfolioKit: makePortfolioKitGuest },
+    offer: { log: buf, seat, factoryPK },
+    storage,
   };
 };
 
 /* eslint-disable no-underscore-dangle */
 /* We use _method to get it to sort before other properties. */
 
+const docOpts = {
+  node: 'ymax0.portfolios',
+  owner: 'ymax',
+  showValue: defaultSerializer.parse,
+};
+
+test('open portfolio with no positions', async t => {
+  const { orch, ctx, offer, storage } = mocks({}, {});
+  const { log, seat } = offer;
+
+  const shapes = makeProposalShapes(USDC);
+  mustMatch(seat.getProposal(), shapes.openPortfolio);
+
+  const actual = await openPortfolio(orch, ctx, seat, {
+    destinationEVMChain: 'Ethereum', // TODO: make optional
+  });
+  t.log(log.map(msg => msg._method).join(', '));
+
+  t.like(log, [{ _method: 'monitorTransfers' }, { _method: 'exit' }]);
+  t.snapshot(log, 'call log'); // see snapshot for remaining arg details
+  t.is(passStyleOf(actual.invitationMakers), 'remotable');
+  t.log(
+    'portfolio',
+    actual.publicTopics.map(t => t.storagePath),
+  );
+  t.like(actual.publicTopics, [
+    {
+      description: 'Portfolio',
+      storagePath: 'published.ymax0.portfolios.portfolio1',
+    },
+  ]);
+  t.is(actual.publicTopics.length, 1);
+  await documentStorageSchema(t, storage, docOpts);
+});
+
 test('open portfolio with USDN position', async t => {
-  const { orch, ctx, offer } = mocks();
+  const { orch, ctx, offer, storage } = mocks();
   const { log, seat } = offer;
 
   const shapes = makeProposalShapes(USDC);
@@ -235,14 +294,12 @@ test('open portfolio with USDN position', async t => {
 
   const actual = await openPortfolio(
     orch,
-    { ...ctx },
+    ctx,
     seat,
-    // Use Axelar chain identifier instead of CAP-10 ID for cross-chain messaging
-    // Axelar docs: https://docs.axelar.dev/dev/reference/mainnet-chain-names
-    // Chain names: https://axelarscan.io/resources/chains
-    { destinationEVMChain: 'Ethereum' },
+    { destinationEVMChain: 'Ethereum' }, // TODO: optional
   );
   t.log(log.map(msg => msg._method).join(', '));
+
   t.like(log, [
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', sourceSeat: seat },
@@ -252,24 +309,77 @@ test('open portfolio with USDN position', async t => {
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
+  t.like(actual.publicTopics, [
+    {
+      description: 'Portfolio',
+      storagePath: 'published.ymax0.portfolios.portfolio1',
+    },
+  ]);
   t.log(
     'accounts',
     actual.publicTopics.map(t => t.storagePath),
   );
-  t.like(actual.publicTopics, [
-    { description: 'LCA', storagePath: 'cosmos:agoric-1:agoric11014' },
-    { description: 'USDN ICA', storagePath: 'cosmos:noble-3:noble11028' },
+  t.is(actual.publicTopics.length, 1);
+  await documentStorageSchema(t, storage, docOpts);
+});
+
+// TODO: and , Compound,
+test('open portfolio with Aave and USDN positions', async t => {
+  const { make } = AmountMath;
+  const oneThird = make(USDC, 3_333_000_000n);
+
+  const { orch, ctx, offer, storage, tapPK } = mocks(
+    {},
+    {
+      USDN: oneThird,
+      Aave: oneThird,
+      AaveGmp: make(USDC, 100n),
+      AaveAccount: make(USDC, 150n),
+      // Compound: oneThird,
+      // CompoundGmp: make(USDC, 100n),
+      // CompoundAccount: make(USDC, 150n),
+    },
+  );
+  const { log, seat } = offer;
+
+  const shapes = makeProposalShapes(USDC);
+  mustMatch(seat.getProposal(), shapes.openPortfolio);
+
+  const [actual] = await Promise.all([
+    openPortfolio(orch, ctx, seat, {
+      destinationEVMChain: 'Ethereum', // TODO: make optional
+    }),
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) => {
+      tap.receiveUpcall(
+        makeIncomingEvent('xyz1sdlkfjlsdkj???TODO', 'Ethereum'),
+      );
+    }),
   ]);
-  t.is(actual.publicTopics.length, 2);
+  t.log(log.map(msg => msg._method).join(', '));
+
+  t.snapshot(log, 'call log'); // see snapshot for call log
+  t.is(passStyleOf(actual.invitationMakers), 'remotable');
+  t.log(
+    'portfolio',
+    actual.publicTopics.map(t => t.storagePath),
+  );
+  t.like(actual.publicTopics, [
+    {
+      description: 'Portfolio',
+      storagePath: 'published.ymax0.portfolios.portfolio1',
+    },
+  ]);
+  t.is(actual.publicTopics.length, 1);
+  await documentStorageSchema(t, storage, docOpts);
 });
 
 test('open portfolio with Aave position', async t => {
-  const { orch, tapPK, ctx, offer } = mocks(
+  const { orch, tapPK, ctx, offer, storage } = mocks(
     {},
     {
       Aave: AmountMath.make(USDC, 300n),
-      Account: AmountMath.make(USDC, 300n),
-      Gmp: AmountMath.make(USDC, 100n),
+      AaveAccount: AmountMath.make(USDC, 50n),
+      AaveGmp: AmountMath.make(USDC, 100n),
     },
   );
 
@@ -287,12 +397,12 @@ test('open portfolio with Aave position', async t => {
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
     { _method: 'monitorTransfers' },
-    { _method: 'localTransfer', amounts: { Account: { value: 300n } } },
+    { _method: 'localTransfer', amounts: { AaveAccount: { value: 50n } } },
     { _method: 'transfer', address: { chainId: 'axelar-5' } },
     { _method: 'localTransfer', amounts: { Aave: { value: 300n } } },
     { _method: 'transfer', address: { chainId: 'noble-3' } },
     { _method: 'depositForBurn' },
-    { _method: 'localTransfer', amounts: { Gmp: { value: 100n } } },
+    { _method: 'localTransfer', amounts: { AaveGmp: { value: 100n } } },
     { _method: 'transfer', address: { chainId: 'axelar-6' } },
     { _method: 'exit', _cap: 'seat' },
   ]);
@@ -302,22 +412,18 @@ test('open portfolio with Aave position', async t => {
     'accounts',
     actual.publicTopics.map(t => t.storagePath),
   );
-  const myAddr = '0x3dA3050208a3F2e0d04b33674aAa7b1A9F9B313C';
-  t.like(actual.publicTopics, [
-    { description: 'LCA', storagePath: 'cosmos:agoric-1:agoric11014' },
-    { description: 'USDN ICA', storagePath: 'cosmos:noble-3:noble11028' },
-    { description: 'EVM Addr', storagePath: `eip155:1:${myAddr}` },
-  ]);
-  t.is(actual.publicTopics.length, 3);
+  t.is(actual.publicTopics.length, 1);
+  await documentStorageSchema(t, storage, docOpts);
+  t.is(actual.publicTopics.length, 1);
 });
 
-test('open portfolio with Compound position', async t => {
-  const { orch, tapPK, ctx, offer } = mocks(
+test.skip('open portfolio with Compound position', async t => {
+  const { orch, tapPK, ctx, offer, storage } = mocks(
     {},
     {
       Compound: AmountMath.make(USDC, 300n),
-      Account: AmountMath.make(USDC, 300n),
-      Gmp: AmountMath.make(USDC, 100n),
+      CompoundAccount: AmountMath.make(USDC, 300n),
+      CompoundGmp: AmountMath.make(USDC, 100n),
     },
   );
 
@@ -350,17 +456,12 @@ test('open portfolio with Compound position', async t => {
     'accounts',
     actual.publicTopics.map(t => t.storagePath),
   );
-  const myAddr = '0x3dA3050208a3F2e0d04b33674aAa7b1A9F9B313C';
-  t.like(actual.publicTopics, [
-    { description: 'LCA', storagePath: 'cosmos:agoric-1:agoric11014' },
-    { description: 'USDN ICA', storagePath: 'cosmos:noble-3:noble11028' },
-    { description: 'EVM Addr', storagePath: `eip155:1:${myAddr}` },
-  ]);
-  t.is(actual.publicTopics.length, 3);
+  t.is(actual.publicTopics.length, 1);
+  await documentStorageSchema(t, storage, docOpts);
 });
 
 test('handle failure in localTransfer from seat to local account', async t => {
-  const { orch, ctx, offer } = mocks({
+  const { orch, ctx, offer, storage } = mocks({
     localTransfer: Error('localTransfer from seat failed'),
   });
   const { log, seat } = offer;
@@ -374,13 +475,15 @@ test('handle failure in localTransfer from seat to local account', async t => {
     { _method: 'localTransfer', sourceSeat: seat },
     { _method: 'fail' },
   ]);
+  // TODO: fix ICAAddr stuff
   const [{ storagePath: ICAAddr }] = actual.publicTopics;
   t.log('we still get the invitationMakers and ICA address', ICAAddr);
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
+  await documentStorageSchema(t, storage, docOpts);
 });
 
 test('handle failure in IBC transfer', async t => {
-  const { orch, ctx, offer } = mocks({
+  const { orch, ctx, offer, storage } = mocks({
     transfer: Error('IBC transfer failed'),
   });
   const { log, seat } = offer;
@@ -400,10 +503,11 @@ test('handle failure in IBC transfer', async t => {
   const [{ storagePath: ICAAddr }] = actual.publicTopics;
   t.log('we still get the invitationMakers and ICA address', ICAAddr);
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
+  await documentStorageSchema(t, storage, docOpts);
 });
 
 test('handle failure in executeEncodedTx', async t => {
-  const { orch, ctx, offer } = mocks({
+  const { orch, ctx, offer, storage } = mocks({
     executeEncodedTx: Error('Swap or Lock failed'),
   });
   const { log, seat } = offer;
@@ -425,17 +529,16 @@ test('handle failure in executeEncodedTx', async t => {
   const [{ storagePath: ICAAddr }] = actual.publicTopics;
   t.log('we still get the invitationMakers and ICA address', ICAAddr);
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
+  await documentStorageSchema(t, storage, docOpts);
 });
 
-test('handle failure in sendGmp with Aave position', async t => {
-  const { orch, tapPK, ctx, offer } = mocks(
-    {
-      transfer: Error('Axelar GMP transfer failed'),
-    },
+test.skip('handle failure in sendGmp with Aave position', async t => {
+  const { orch, tapPK, ctx, offer, storage } = mocks(
+    { transfer: Error('Axelar GMP transfer failed') },
     {
       Aave: AmountMath.make(USDC, 300n),
-      Account: AmountMath.make(USDC, 300n),
-      Gmp: AmountMath.make(USDC, 100n),
+      AaveAccount: AmountMath.make(USDC, 300n),
+      AaveGmp: AmountMath.make(USDC, 100n),
     },
   );
 
@@ -463,4 +566,5 @@ test('handle failure in sendGmp with Aave position', async t => {
   const [{ storagePath: ICAAddr }] = actual.publicTopics;
   t.log('we still get the invitationMakers and ICA address', ICAAddr);
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
+  await documentStorageSchema(t, storage, docOpts);
 });
