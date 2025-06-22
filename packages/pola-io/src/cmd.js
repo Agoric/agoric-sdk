@@ -28,7 +28,7 @@ export const makeCmdRunner = (file, { execFile }) => {
        */
       exec: (
         args,
-        opts = { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] },
+        opts = { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
       ) => execFile(file, [...preArgs, ...args, ...postArgs], opts),
       /**
        * @param {string} name
