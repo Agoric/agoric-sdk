@@ -10,11 +10,11 @@ import {
   waitForBlock,
 } from '@agoric/deploy-script-support/src/permissioned-deployment.js';
 import { flags, makeCmdRunner, makeFileRd } from '@agoric/pola-io';
-import childProcess from 'node:child_process';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import url from 'node:url';
-import { parseArgs, promisify, type ParseArgsConfig } from 'node:util';
+import { parseArgs, type ParseArgsConfig } from 'node:util';
+import { execa } from 'execa';
 
 const TITLE = 'ymax0 w/Noble Dollar';
 
@@ -37,8 +37,11 @@ type ParsedArgs = {
 
 const main = async (
   argv = process.argv,
-  { execFile = promisify(childProcess.execFile) } = {},
-  fetch = globalThis.fetch,
+  {
+    fetch = globalThis.fetch,
+    execFile = (cmd, args, opts) =>
+      execa({ verbose: 'short' })(cmd, args, opts),
+  } = {},
 ) => {
   const getVersion = () =>
     makeCmdRunner('git', { execFile })
