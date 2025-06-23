@@ -22,16 +22,17 @@ import { axelarChainsMap, makeUSDNIBCTraffic } from './mocks.ts';
 import { makeTrader } from './portfolio-actors.ts';
 import {
   chainInfoFantasyTODO,
-  makeIncomingEVMEvent,
   setupPortfolioTest,
 } from './supports.ts';
+  simulateAckTransferToAxelar,
+  simulateCCTPAck,
+  simulateUpcallFromAxelar,
+} from './contract-setup.ts';
 import { makeWallet } from './wallet-offer-tools.ts';
 
 const contractName = 'ymax0';
 type StartFn = typeof contractExports.start;
 const { fromEntries, keys, values } = Object;
-
-const lca0 = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht';
 
 const deploy = async (t: ExecutionContext) => {
   const common = await setupPortfolioTest(t);
@@ -314,30 +315,11 @@ test('open a portfolio with Aave position', async t => {
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   console.log('ackd send to Axelar to create account');
 
-  const { transferBridge } = common.mocks;
-
-  // stimulate upcall back from Axelar
-  const event = makeIncomingEVMEvent();
-  const ackNP = VE(transferBridge)
-    .fromBridge(event)
-    .finally(() => console.log('@@@fromBridge for tap done'))
-    .then(() => eventLoopIteration())
-    .then(() => {
-      // ack CCTP
-      common.utils
-        .transmitVTransferEvent('acknowledgementPacket', -1)
-        .then(() => eventLoopIteration())
-        .finally(() => {
-          console.log('@@@ack CCTP done');
-          // ack IBC transfer to Axelar to open Aave position
-          return common.utils
-            .transmitVTransferEvent('acknowledgementPacket', -1)
-            .finally(() => {
-              console.log('@@@ack Axelar done');
-              return;
-            });
-        });
-    });
+  await simulateUpcallFromAxelar(common.mocks.transferBridge).then(() =>
+    simulateCCTPAck(common.utils).finally(() =>
+      simulateAckTransferToAxelar(common.utils),
+    ),
+  );
 
   const actual = await actualP;
   const result = actual.result as any;
@@ -372,30 +354,11 @@ test('open a portfolio with Compound position', async t => {
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   console.log('ackd send to Axelar to create account');
 
-  const { transferBridge } = common.mocks;
-
-  // stimulate upcall back from Axelar
-  const event = makeIncomingEVMEvent();
-  const ackNP = VE(transferBridge)
-    .fromBridge(event)
-    .finally(() => console.log('@@@fromBridge for tap done'))
-    .then(() => eventLoopIteration())
-    .then(() => {
-      // ack CCTP
-      common.utils
-        .transmitVTransferEvent('acknowledgementPacket', -1)
-        .then(() => eventLoopIteration())
-        .finally(() => {
-          console.log('@@@ack CCTP done');
-          // ack IBC transfer to Axelar to open Aave position
-          return common.utils
-            .transmitVTransferEvent('acknowledgementPacket', -1)
-            .finally(() => {
-              console.log('@@@ack Axelar done');
-              return;
-            });
-        });
-    });
+  await simulateUpcallFromAxelar(common.mocks.transferBridge).then(() =>
+    simulateCCTPAck(common.utils).finally(() =>
+      simulateAckTransferToAxelar(common.utils),
+    ),
+  );
 
   const actual = await actualP;
   const result = actual.result as any;
@@ -431,30 +394,13 @@ test('open portfolio with USDN, Aave positions', async t => {
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   console.log('ackd send to noble');
 
-  const { transferBridge } = common.mocks;
-
-  // ack IBC transfer to Noble
-  const ackNP = VE(transferBridge)
-    .fromBridge(makeIncomingEVMEvent())
-    .finally(() => console.log('@@@fromAxelar done'))
-    .then(() => eventLoopIteration())
-    .then(() => {
-      // let outgoing IBC happen
-      common.utils
-        .transmitVTransferEvent('acknowledgementPacket', -1)
-        .then(() => eventLoopIteration())
-        .finally(() => {
-          console.log('@@@ack Noble done');
-          // ack IBC transfer to Axelar to set up account
-          return common.utils
-            .transmitVTransferEvent('acknowledgementPacket', -1)
-            .finally(() => {
-              console.log('@@@ack Axelar done');
-              console.log('@@@fromBridge toTap');
-              return;
-            });
-        });
-    });
+  const ackNP = await simulateUpcallFromAxelar(
+    common.mocks.transferBridge,
+  ).then(() =>
+    simulateCCTPAck(common.utils).finally(() =>
+      simulateAckTransferToAxelar(common.utils),
+    ),
+  );
 
   await eventLoopIteration(); // let bridge I/O happen
 

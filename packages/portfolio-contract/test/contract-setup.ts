@@ -1,4 +1,7 @@
 import { mustMatch } from '@agoric/internal';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import type { ScopedBridgeManager } from '@agoric/vats';
+import { heapVowE as VE } from '@agoric/vow';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
 import { passStyleOf } from '@endo/pass-style';
@@ -11,7 +14,12 @@ import {
   makeUSDNIBCTraffic,
 } from './mocks.ts';
 import { makeTrader } from './portfolio-actors.ts';
-import { chainInfoFantasyTODO, setupPortfolioTest } from './supports.ts';
+import { localAccount0 } from './mocks.ts';
+import {
+  chainInfoFantasyTODO,
+  makeIncomingEvent,
+  setupPortfolioTest,
+} from './supports.ts';
 import { makeWallet } from './wallet-offer-tools.ts';
 
 const contractName = 'ymax0';
@@ -69,4 +77,36 @@ export const setupTrader = async (t, initial = 10_000) => {
   await E(myWallet).deposit(funds);
   const trader1 = makeTrader(myWallet, started.instance);
   return { common, zoe, started, myBalance, myWallet, trader1 };
+};
+
+export const simulateUpcallFromAxelar = async (
+  transferBridge: ScopedBridgeManager<'vtransfer'>,
+) => {
+  const event = makeIncomingEvent(localAccount0, 'Base');
+  return (
+    VE(transferBridge)
+      .fromBridge(event)
+      // .finally(() => console.debug('fromBridge for tap done'))
+      .then(() => eventLoopIteration())
+  );
+};
+
+export const simulateCCTPAck = async utils => {
+  // ack CCTP
+  return utils
+    .transmitVTransferEvent('acknowledgementPacket', -1)
+    .then(() => eventLoopIteration())
+    .finally(() => {
+      // console.debug('ack CCTP done');
+    });
+};
+
+// ack IBC transfer to Axelar to open Aave position
+export const simulateAckTransferToAxelar = async utils => {
+  return utils
+    .transmitVTransferEvent('acknowledgementPacket', -1)
+    .finally(() => {
+      // console.debug('ack Axelar done');
+      return;
+    });
 };

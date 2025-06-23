@@ -25,6 +25,8 @@ import type { Zone } from '@agoric/zone';
 import { makePromiseKit } from '@endo/promise-kit';
 import type { AxelarChainsMap } from '../src/type-guards';
 
+export const localAccount0 = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht';
+
 export const prepareMockOrchAccounts = (
   zone: Zone,
   {
