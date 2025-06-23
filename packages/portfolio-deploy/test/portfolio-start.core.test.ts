@@ -7,6 +7,10 @@ import { makeUSDNIBCTraffic } from '@aglocal/portfolio-contract/test/mocks.js';
 import { makeTrader } from '@aglocal/portfolio-contract/test/portfolio-actors.ts';
 import { setupPortfolioTest } from '@aglocal/portfolio-contract/test/supports.ts';
 import { makeWallet } from '@aglocal/portfolio-contract/test/wallet-offer-tools.ts';
+import {
+  defaultSerializer,
+  documentStorageSchema,
+} from '@agoric/internal/src/storage-test-utils.js';
 import { makePromiseSpace } from '@agoric/vats';
 import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
 import type { Instance, ZoeService } from '@agoric/zoe';
@@ -28,6 +32,16 @@ type PortfolioBootPowers = CorePowersG<
 >;
 
 const { entries, keys } = Object;
+
+const docOpts = {
+  note: 'YMax VStorage Schema',
+  // XXX TODO?
+  // node: 'orchtest.ymax0',
+  // owner: 'ymax',
+  // pattern: 'orchtest.',
+  // replacement: 'published.',
+  showValue: defaultSerializer.parse,
+};
 
 test('coreEval code without swingset', async t => {
   const common = await setupPortfolioTest(t);
@@ -114,14 +128,18 @@ test('coreEval code without swingset', async t => {
   // ack IBC transfer for forward
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   const actual = await actualP;
-  const ag1 = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht';
   t.like(actual, {
     payouts: { USDN: { value: 0n } },
     result: {
       publicTopics: [
-        { description: 'LCA', storagePath: `cosmos:agoric-3:${ag1}` },
-        { description: 'USDN ICA', storagePath: 'cosmos:noble-1:cosmos1test' },
+        {
+          description: 'Portfolio',
+          storagePath: `orchtest.ymax0.portfolios.portfolio0`,
+        },
       ],
     },
   });
+
+  const { storage } = common.bootstrap;
+  await documentStorageSchema(t, storage, docOpts);
 });

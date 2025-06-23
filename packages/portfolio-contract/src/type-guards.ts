@@ -1,25 +1,11 @@
-import type { Amount, Brand, NatValue } from '@agoric/ertp';
+import { type Amount, type Brand, type NatValue } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
-import type {
-  CaipChainId,
-  Denom,
-  OrchestrationAccount,
-} from '@agoric/orchestration';
-import { M } from '@endo/patterns';
+import type { CaipChainId, OrchestrationAccount } from '@agoric/orchestration';
 import { type ContractCall } from '@agoric/orchestration/src/axelar-types.js';
-import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
+import type { AmountKeywordRecord } from '@agoric/zoe';
 import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
-import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
-import {
-  AxelarChains,
-  YieldProtocol,
-  type YieldProtocol as YieldProtocolT,
-} from './constants.js';
-import type { PortfolioKit } from './portfolio.exo.js';
-import type {
-  GuestInterface,
-  HostInterface,
-} from '../../async-flow/src/types.js';
+import { M } from '@endo/patterns';
+import { AxelarChains, YieldProtocol } from './constants.js';
 
 const { fromEntries, keys } = Object;
 
@@ -29,14 +15,18 @@ const { fromEntries, keys } = Object;
 export const makeNatAmountShape = (brand: Brand<'nat'>, min?: NatValue) =>
   harden({ brand, value: min ? M.gte(min) : M.nat() });
 
-export const AxelarGas = {
-  Account: 'Account',
-  Gmp: 'Gmp',
-} as const;
-
-export type OpenPortfolioGive = Partial<
-  Record<YieldProtocolT | keyof typeof AxelarGas, Amount<'nat'>>
->;
+export type AaveGive = {
+  AaveGmp: Amount<'nat'>;
+  AaveAccount: Amount<'nat'>;
+  Aave: Amount<'nat'>;
+};
+export type CompoundGive = {
+  CompoundGmp: Amount<'nat'>;
+  CompoundAccount: Amount<'nat'>;
+  Compound: Amount<'nat'>;
+};
+export type GmpGive = {} | AaveGive | CompoundGive | (AaveGive & CompoundGive);
+export type OpenPortfolioGive = { USDN?: Amount<'nat'> } & ({} | GmpGive);
 
 export type ProposalType = {
   openPortfolio: { give: OpenPortfolioGive };
@@ -61,19 +51,25 @@ const YieldProtocolShape = M.or(...keys(YieldProtocol));
 export const makeProposalShapes = (usdcBrand: Brand<'nat'>) => {
   // TODO: Update usdcAmountShape, to include BLD/aUSDC after discussion with Axelar team
   const usdcAmountShape = makeNatAmountShape(usdcBrand);
+  const AaveGiveShape = harden({
+    Aave: usdcAmountShape,
+    AaveGmp: usdcAmountShape,
+    AaveAccount: usdcAmountShape,
+  });
+  const CompoundGiveShape = harden({
+    Compound: usdcAmountShape,
+    CompoundGmp: usdcAmountShape,
+    CompoundAccount: usdcAmountShape,
+  });
   const openGive = M.splitRecord(
     {},
     { USDN: usdcAmountShape },
     M.or(
-      M.splitRecord(
-        { Gmp: usdcAmountShape, Account: usdcAmountShape },
-        {
-          Aave: usdcAmountShape,
-          Compound: usdcAmountShape,
-        },
-        {},
-      ),
-      M.splitRecord({}, {}, {}),
+      harden({}),
+      AaveGiveShape,
+      CompoundGiveShape,
+      // TODO: and no others
+      M.and(M.splitRecord(AaveGiveShape), M.splitRecord(CompoundGiveShape)),
     ),
   );
   return {
@@ -144,33 +140,10 @@ export const AxelarChainsMapShape: TypedPattern<AxelarChainsMap> =
     ) as Record<AxelarChain, typeof AxelarChainInfoPattern>,
   );
 
-export type PortfolioBootstrapContext = {
-  axelarChainsMap: AxelarChainsMap;
-  chainHubTools: {
-    getDenom: (brand: Brand) => Denom | undefined;
-  };
-  contractAddresses: EVMContractAddresses;
-  zoeTools: GuestInterface<ZoeTools>;
-  makePortfolioKit: (
-    nobleAccount: NobleAccount,
-    localAccount: HostInterface<LocalAccount>,
-  ) => GuestInterface<PortfolioKit>;
-  inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
-};
-
-export type PortfolioInstanceContext = {
-  axelarChainsMap: AxelarChainsMap;
-  chainHubTools: {
-    getDenom: (brand: Brand) => Denom | undefined;
-  };
-  contractAddresses: EVMContractAddresses;
-  inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
-  zoeTools: GuestInterface<ZoeTools>;
-};
-
 export type BaseGmpArgs = {
   destinationEVMChain: AxelarChain;
-  amount: AmountKeywordRecord;
+  keyword: string;
+  amounts: AmountKeywordRecord;
 };
 
 export const GmpCallType = {
@@ -204,9 +177,23 @@ export const GMPArgsShape: TypedPattern<GmpArgsContractCall> = M.splitRecord({
   destinationAddress: M.string(),
   type: M.or(1, 2),
   destinationEVMChain: M.or(...keys(AxelarChains)),
-  amount: AmountKeywordRecordShape,
+  keyword: M.string(),
+  amounts: AmountKeywordRecordShape, // XXX brand should be exactly USDC
   contractInvocationData: M.arrayOf(ContractCallShape),
 });
 
 export type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
-export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>;
+export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>; // TODO: move to type-guards as external interface?
+
+/** vstorage path for portfolio, under published.ymax0 */
+export const makePortfolioPath = (id: number) => [`portfolio${id}`];
+export const makePositionPath = (parent: number, id: number) => [
+  `portfolio${parent}`,
+  'positions',
+  `position${id}`,
+];
+export const makeFlowPath = (parent: number, id: number) => [
+  `portfolio${parent}`,
+  'flows',
+  `flow${id}`,
+];

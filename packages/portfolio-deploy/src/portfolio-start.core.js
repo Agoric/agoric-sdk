@@ -16,7 +16,7 @@ import { name, permit } from './portfolio.contract.permit.js';
  * @import { OrchestrationPowers } from '@agoric/orchestration';
  * @import { CopyRecord } from '@endo/pass-style';
  * @import { LegibleCapData } from './config-marshal.js';
- * @import { CorePowersG } from './orch.start.types.ts';
+ * @import { CorePowersG, OrchestrationPowersWithStorage } from './orch.start.types.ts';
  */
 
 // TODO: use assetInfo, chainInfo from config too?
@@ -51,7 +51,7 @@ const axelarChainsMap = {
 };
 
 /**
- * @param {OrchestrationPowers} orchestrationPowers
+ * @param {OrchestrationPowersWithStorage} orchestrationPowers
  * @param {Marshaller} marshaller
  * @param {unknown} _config
  */
