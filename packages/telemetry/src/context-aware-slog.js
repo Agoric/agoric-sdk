@@ -36,6 +36,7 @@
  *  deliveryNum?: bigint;
  *  inboundNum?: string;
  *  monotime: number;
+ *  phase?: Parameters<import('@agoric/cosmic-swingset/src/launch-chain.js').Cranker>[0];
  *  remainingBeans?: bigint;
  *  replay?: boolean;
  *  runNum?: number;
@@ -60,8 +61,8 @@ const SLOG_TYPES = {
       START: 'cosmic-swingset-bootstrap-block-start',
     },
     COMMIT: {
-      FINISH: 'cosmic-swingset-commit-finish',
-      START: 'cosmic-swingset-commit-start',
+      FINISH: 'cosmic-swingset-commit-block-finish',
+      START: 'cosmic-swingset-commit-block-start',
     },
     END_BLOCK: {
       FINISH: 'cosmic-swingset-end-block-finish',
@@ -229,13 +230,11 @@ export const makeContextualSlogProcessor = (
       }
       // eslint-disable-next-line no-restricted-syntax
       case SLOG_TYPES.COSMIC_SWINGSET.RUN.START: {
-        if (!finalBody.runNum) {
+        if (finalBody.phase === 'leftover') {
           assert(!triggerContext);
           triggerContext = restoreContext(); // Restore persisted context if any
         } else if (!triggerContext) {
           assert(!!blockContext);
-          // TODO: add explicit slog events of both timer poll and install bundle
-          // https://github.com/Agoric/agoric-sdk/issues/10332
           triggerContext = {
             'run.num': undefined,
             'run.id': `unknown-${finalBody.blockHeight}-${finalBody.runNum}`,
