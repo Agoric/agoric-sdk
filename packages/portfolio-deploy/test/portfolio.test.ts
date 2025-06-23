@@ -170,3 +170,5 @@ test.serial('open a USDN position', async t => {
   t.log('trader1 current', current);
   t.truthy(current);
 });
+
+test.todo("won't a contract upgrade override the older positions in vstorage?");

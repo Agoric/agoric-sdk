@@ -1,3 +1,4 @@
+import type { Remote } from '@agoric/internal';
 import type { OrchestrationPowers } from '@agoric/orchestration';
 import type { BootstrapManifest } from '@agoric/vats/src/core/lib-boot.js';
 import type { ContractStartFunction } from '@agoric/zoe/src/zoeService/utils';
@@ -8,10 +9,18 @@ export type PermitG = BootstrapManifest & { issuer: BootstrapManifest } & {
   brand: BootstrapManifest;
 };
 
+export type OrchestrationPowersWithStorage = OrchestrationPowers & {
+  storageNode: Remote<StorageNode>;
+};
+
 export type MakePrivateArgs<
   SF extends ContractStartFunction,
   CFG extends CopyRecord,
-> = (op: OrchestrationPowers, m: Marshaller, cfg: CFG) => Parameters<SF>[1];
+> = (
+  op: OrchestrationPowersWithStorage,
+  m: Marshaller,
+  cfg: CFG,
+) => Parameters<SF>[1];
 
 export type UpgradeKit<SF extends ContractStartFunction> =
   StartedInstanceKit<SF> & {
