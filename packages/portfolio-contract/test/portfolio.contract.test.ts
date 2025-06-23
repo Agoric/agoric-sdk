@@ -1,8 +1,6 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
-import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { gmpAddresses } from '@agoric/orchestration/src/utils/gmp.js';
@@ -34,35 +32,6 @@ type StartFn = typeof contractExports.start;
 const { fromEntries, keys, values } = Object;
 
 const lca0 = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht';
-
-/** from https://www.mintscan.io/noble explorer */
-const explored = [
-  {
-    txhash: '50D671D1D56CF5041CBE7C3483EF461765196ECD7D7571CCEF0A612B46FC7A3B',
-    messages: [
-      {
-        '@type': '/noble.swap.v1.MsgSwap',
-        signer: 'noble1wtwydxverrrc673anqddyg3cmq3vhpu7yxy838',
-        amount: { denom: 'uusdc', amount: '111000000' },
-        // routes: [{ pool_id: '0', denom_to: 'uusdn' }],
-        routes: [{ poolId: 0n, denomTo: 'uusdn' }],
-        min: { denom: 'uusdn', amount: '110858936' },
-      } satisfies MsgSwap & { '@type': string },
-    ],
-  },
-  {
-    txhash: 'BD97D42915C9185B11B14FEDC2EF6BCE0677E6720472DC6E1B51CCD504534237',
-    messages: [
-      {
-        '@type': '/noble.dollar.vaults.v1.MsgLock',
-        signer: 'noble1wtwydxverrrc673anqddyg3cmq3vhpu7yxy838',
-        vault: 1, // 'STAKED',
-        amount: '110818936',
-      } satisfies MsgLock & { '@type': string },
-    ],
-  },
-];
-harden(explored);
 
 const deploy = async (t: ExecutionContext) => {
   const common = await setupPortfolioTest(t);
