@@ -1,6 +1,5 @@
 // import { meta } from '@aglocal/portfolio-contract/src/portfolio.contract.meta.js';
-import { makeTracer, objectMap } from '@agoric/internal';
-import { passStyleOf } from '@endo/pass-style';
+import { makeTracer } from '@agoric/internal';
 import { M } from '@endo/patterns';
 import {
   lookupInterchainInfo,
