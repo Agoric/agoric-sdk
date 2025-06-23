@@ -12,6 +12,7 @@ const CONTAINER = 'validator';
 const REQUIRED_ATLEAST_MAJOR = 10;
 const NOBLE_CHAIN_ID = 'noblelocal';
 const NOBLE_AUTHORITY_ADDRESS = 'noble13am065qmk680w86wya4u9refhnssqwcvgs0sfk';
+const GENESIS_ACCOUNT = 'genesis';
 
 async function checkNobleChainPresence(nobleChainId: string) {
   let resp;
@@ -88,6 +89,7 @@ async function getSwapPools({
 async function pollSwapPools(
   pod: string,
   container: string,
+  conditionToStopPolling: (swapPools) => boolean,
   intervalMs: number = 2000,
   timeoutMs: number = 30_000, // Wait for 30 seconds atmost
 ) {
@@ -95,7 +97,7 @@ async function pollSwapPools(
 
   while (true) {
     const swapPools = await getSwapPools({ pod, container });
-    if (Array.isArray(swapPools) && swapPools.length > 0) {
+    if (conditionToStopPolling(swapPools)) {
       return swapPools;
     }
 
@@ -158,7 +160,7 @@ async function createPool({
       'execute',
       '-',
       '--from',
-      'genesis',
+      GENESIS_ACCOUNT,
       '--chain-id',
       NOBLE_CHAIN_ID,
       '--keyring-backend',
@@ -167,6 +169,8 @@ async function createPool({
       'auto',
       '--gas-adjustment',
       '1.4',
+      '-b',
+      'sync',
       '-y',
     ],
     {
@@ -174,6 +178,51 @@ async function createPool({
       input: genJson,
     },
   );
+}
+
+async function addLiquidity({
+  pod,
+  container,
+  args,
+}: {
+  pod: string;
+  container: string;
+  args: {
+    amount: { uusdc: string; uusdn: string };
+    slippagePercentage: string;
+    poolId: string;
+  };
+}) {
+  await execa('kubectl', [
+    'exec',
+    '-i',
+    pod,
+    '-c',
+    container,
+    '--',
+    'nobled',
+    'tx',
+    'swap',
+    'stableswap',
+    'add-liquidity',
+    args.poolId,
+    args.slippagePercentage,
+    `${args.amount.uusdc}uusdc`,
+    `${args.amount.uusdn}uusdn`,
+    '--from',
+    GENESIS_ACCOUNT,
+    '--chain-id',
+    NOBLE_CHAIN_ID,
+    '--gas',
+    'auto',
+    '--gas-adjustment',
+    '1.4',
+    '-b',
+    'sync',
+    '-o',
+    'json',
+    '-y',
+  ]);
 }
 
 async function main() {
@@ -227,8 +276,25 @@ Options:
   console.log('Creating swap pool...');
   await createPool({ pod, container });
 
-  swapPools = await pollSwapPools(pod, container);
+  let conditionToStopPolling = pools =>
+    Array.isArray(pools) && pools.length > 0;
+  swapPools = await pollSwapPools(pod, container, conditionToStopPolling);
   console.log('Swap pool created successfuly...', swapPools);
+
+  // Add liquidity in pool with uusdc and uusdn
+  const args = {
+    amount: { uusdc: '1000000000', uusdn: '1000000000' },
+    slippagePercentage: '5',
+    poolId: '0',
+  };
+  console.log('Adding liquidity to Noble swap pool...');
+  await addLiquidity({ pod, container, args });
+
+  // Poll for liquidity to be added in pool
+  conditionToStopPolling = pools =>
+    pools.length > 0 && pools[0].liquidity.length > 0;
+  swapPools = await pollSwapPools(pod, container, conditionToStopPolling);
+  console.log(`Liquidity added in pool ${args.poolId}`, swapPools[0].liquidity);
 }
 
 main().catch(err => {
