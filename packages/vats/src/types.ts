@@ -103,7 +103,7 @@ export type NamesByAddressAdmin = NameAdmin & {
 /** An object that can receive messages from the bridge device */
 export type BridgeHandler = {
   /** Handle an inbound message */
-  fromBridge: (obj: any) => Promise<unknown>;
+  fromBridge: (obj: any) => Promise<unknown> | unknown;
 };
 
 export type ScopedBridgeManagerMethods<B extends BridgeId> = {
@@ -217,8 +217,10 @@ export type IBCEvent<
   T extends IBCEventType = 'IBC_EVENT',
 > = {
   type: T;
-  blockHeight: number;
-  blockTime: number;
+  /** blockHeight may be missing from synthetic packets. */
+  blockHeight?: number;
+  /** blockTime may be missing from synthetic packets. */
+  blockTime?: number;
   event: E;
   /** e.g. the chain address of the LocalChainAccount */
   target?: string | { onlyIfRegistered: string };
