@@ -9,18 +9,63 @@ import {
   PaymentShape,
 } from '@agoric/ertp';
 import { Shape as NetworkShape } from '@agoric/network';
+import { MsgSend } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
+import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 
 const { Vow$ } = NetworkShape;
 
 /**
+ * @import {MsgSendProtoMsg} from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
+ * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
+ * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  * @import {ERef, EReturn} from '@endo/far';
  * @import {Key, Pattern} from '@endo/patterns';
  * @import {TypedJson, ResponseTo, JsonSafe} from '@agoric/cosmic-proto';
  * @import {Amount, Brand, Payment} from '@agoric/ertp';
- * @import {PromiseVow, VowTools} from '@agoric/vow';
+ * @import {PromiseVow, Vow, VowTools} from '@agoric/vow';
  * @import {TargetApp, TargetRegistration} from './bridge-target.js';
  * @import {BankManager, Bank} from './vat-bank.js';
- * @import {ScopedBridgeManager} from './types.js';
+ * @import {IBCEvent, IBCPacket, ScopedBridgeManager} from './types.js';
+ */
+
+/**
+ * @template {Record<string, any>} S
+ * @template {keyof S} K
+ * @param {Pick<MapStoreWithSchema<S>, 'has' | 'get' | '_schema'>} store
+ * @param {K} key
+ * @param {Partial<S>} [defaults]
+ * @returns {S[K] | undefined}
+ */
+const ifHasThenGet = (store, key, defaults = {}) => {
+  return store.has(key) ? store.get(key) : defaults[key];
+};
+
+/**
+ * @template {Record<string, any>} S
+ * @template {keyof S} K
+ * @param {Pick<MapStoreWithSchema<S>, 'has' | 'init' | 'set' | '_schema'>} store
+ * @param {K} key
+ * @param {S[K]} value
+ */
+const ifHasThenSetElseInit = (store, key, value) => {
+  if (store.has(key)) {
+    store.set(key, value);
+  } else {
+    store.init(key, value);
+  }
+};
+
+/**
+ * @typedef {SendInfo} NotifyInfo Extend this with any additional notification
+ *   types.
+ */
+
+/**
+ * @typedef {{
+ *   msgTypeUrl: MsgSendProtoMsg['typeUrl'];
+ *   coins: Coin[];
+ *   target: string;
+ * } & Omit<FungibleTokenPacketData, 'amount' | 'denom'>} SendInfo
  */
 
 /**
@@ -53,11 +98,26 @@ const { Vow$ } = NetworkShape;
  */
 
 /**
+ * @template {TypedJson[]} MT
  * @typedef {{
- *   system: ScopedBridgeManager<'vlocalchain'>;
+ *   [K in keyof MT]: JsonSafe<ResponseTo<MT[K]>>;
+ * }} ResponseToMany
+ */
+
+/**
+ * @typedef {{
  *   bank: Bank;
- *   transfer: import('./transfer.js').TransferMiddleware;
- * }} AccountPowers
+ *   lastSequence?: string;
+ * } & Pick<LocalChainPowers, 'system' | 'transfer' | 'transferBridgeManager'>} AccountPowers
+ */
+
+/**
+ * @template {Record<string, any>} S
+ * @typedef {MapStore<keyof S, S[keyof S]> & { _schema: S }} MapStoreWithSchema
+ */
+
+/**
+ * @typedef {MapStoreWithSchema<AccountPowers>} AccountPowerStore
  */
 
 /**
@@ -65,6 +125,7 @@ const { Vow$ } = NetworkShape;
  *   system: ScopedBridgeManager<'vlocalchain'>;
  *   bankManager: BankManager;
  *   transfer: import('./transfer.js').TransferMiddleware;
+ *   transferBridgeManager?: ScopedBridgeManager<'vtransfer'>;
  * }} LocalChainPowers
  */
 
@@ -86,8 +147,13 @@ export const LocalChainAccountI = M.interface('LocalChainAccount', {
 /**
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {VowTools} vowTools
+ * @param {AccountPowerStore} overridePowers
  */
-export const prepareLocalChainAccountKit = (zone, { watch }) =>
+export const prepareLocalChainAccountKit = (
+  zone,
+  { watch, allSettled },
+  overridePowers,
+) =>
   zone.exoClassKit(
     'LocalChainAccountKit',
     {
@@ -99,6 +165,12 @@ export const prepareLocalChainAccountKit = (zone, { watch }) =>
             optAmountShape: M.or(M.undefined(), AmountShape),
           })
           .returns(M.promise()),
+      }),
+      notifyTransferVatWatcher: M.interface('NotifyTransferVatWatcher', {
+        onFulfilled: M.call(M.any(), M.arrayOf(M.any())).returns(M.any()),
+      }),
+      overrideWatcher: M.interface('OverrideWatcher', {
+        onFulfilled: M.call(M.any(), M.any()).returns(M.any()),
       }),
     },
     /**
@@ -122,6 +194,119 @@ export const prepareLocalChainAccountKit = (zone, { watch }) =>
         onFulfilled(brand, { payment, optAmountShape }) {
           const purse = E(this.state.bank).getPurse(brand);
           return E(purse).deposit(payment, optAmountShape);
+        },
+      },
+      notifyTransferVatWatcher: {
+        /**
+         * @template {TypedJson[]} MT
+         * @param {ResponseToMany<MT>} fulfilment
+         * @param {NotifyInfo[]} notifyInfos
+         */
+        onFulfilled(fulfilment, notifyInfos) {
+          if (!notifyInfos.some(notifyInfo => !!notifyInfo)) {
+            // No need to notify the transfer bridge manager, so just return.
+            return fulfilment;
+          }
+
+          const transferBridgeManager = ifHasThenGet(
+            overridePowers,
+            'transferBridgeManager',
+            this.state,
+          );
+          if (!transferBridgeManager) {
+            // No way to notify the transfer bridge manager, so just return.
+            return fulfilment;
+          }
+
+          // notify the transfer vat that assets have been sent.
+          const notifyV = allSettled(
+            notifyInfos.flatMap(info => {
+              if (!info) {
+                // If there is no info, then this is not a tx message that needs
+                // notification.
+                return [];
+              }
+
+              // If the message is not a MsgSend, then we don't do anything.
+              if (info.msgTypeUrl !== MsgSend.typeUrl) {
+                return [];
+              }
+
+              const sendInfo = /** @type {SendInfo} */ (info);
+
+              const { coins, target, memo, sender, receiver } = sendInfo;
+              /** @type {Omit<FungibleTokenPacketData, 'amount' | 'denom'>} */
+              const sharedFtpData = {
+                sender,
+                receiver,
+                memo,
+              };
+              /** @type {Omit<IBCPacket, 'data' | 'sequence'>} */
+              const sharedPacket = {
+                source_port: 'localchain-msg',
+                source_channel: 'channel-0',
+                destination_port: 'localchain-msg',
+                destination_channel: 'channel-1',
+              };
+              return coins.map(({ denom, amount }) => {
+                // MsgSends are local to this chain, so ensure the transfer packet
+                // reflects that.
+                const transferDenom = `${sharedPacket.source_port}/${sharedPacket.source_channel}/${denom}`;
+
+                /** @type {FungibleTokenPacketData} */
+                const ftpData = {
+                  ...sharedFtpData,
+                  denom: transferDenom,
+                  amount,
+                };
+
+                const lastSequence = ifHasThenGet(
+                  overridePowers,
+                  'lastSequence',
+                );
+                const sequence = String(BigInt(lastSequence ?? 0) + 1n);
+                ifHasThenSetElseInit(overridePowers, 'lastSequence', sequence);
+
+                /** @type {IBCPacket} */
+                const packet = {
+                  ...sharedPacket,
+                  data: btoa(JSON.stringify(ftpData)),
+                  sequence,
+                };
+                /** @type {IBCEvent<'receivePacket', 'VTRANSFER_IBC_EVENT'>} */
+                const obj = {
+                  type: 'VTRANSFER_IBC_EVENT',
+                  event: 'receivePacket',
+                  packet,
+                  target: { onlyIfRegistered: target },
+                };
+                return E(transferBridgeManager).fromBridge(obj);
+              });
+            }),
+          );
+
+          const overrideV = watch(
+            notifyV,
+            this.facets.overrideWatcher,
+            fulfilment,
+          );
+
+          return /** @type {Vow<typeof fulfilment>} */ (
+            /** @type {unknown} */ (overrideV)
+          );
+        },
+      },
+      overrideWatcher: {
+        /**
+         * @template T
+         * @param {unknown} _awaited
+         * @param {T} override
+         * @returns {T}
+         */
+        onFulfilled(_awaited, override) {
+          // This watcher is used to wait for fulfilment, then override the
+          // return.
+          return override;
         },
       },
       account: {
@@ -173,6 +358,7 @@ export const prepareLocalChainAccountKit = (zone, { watch }) =>
           const purse = E(bank).getPurse(amount.brand);
           return E(purse).withdraw(amount);
         },
+
         /**
          * Execute a batch of messages on the local chain. Note in particular,
          * that for IBC `MsgTransfer`, execution only queues a packet for the
@@ -186,10 +372,7 @@ export const prepareLocalChainAccountKit = (zone, { watch }) =>
          * @template {TypedJson[]} MT messages tuple (use const with multiple
          *   elements or it will be a mixed array)
          * @param {MT} messages
-         * @returns {PromiseVowOfTupleMappedToGenerics<{
-         *   [K in keyof MT]: JsonSafe<ResponseTo<MT[K]>>;
-         * }>}
-         *
+         * @returns {PromiseVowOfTupleMappedToGenerics<ResponseToMany<MT>>}
          * @see {typedJson} which can be used on arguments to get typed return
          * values.
          */
@@ -197,15 +380,81 @@ export const prepareLocalChainAccountKit = (zone, { watch }) =>
           const { address, system } = this.state;
           messages.length > 0 || Fail`need at least one message to execute`;
 
+          /** @type {NotifyInfo[]} */
+          const notifyInfos = new Array(messages.length);
+
+          const rewrittenMsgs = messages.map((msg, i) => {
+            const { '@type': typeUrl, ...value } = msg;
+            if (typeUrl !== MsgSend.typeUrl) {
+              console.info(
+                `Skipping message ${i} of type ${typeUrl} as it is not a MsgSend`,
+              );
+              return msg;
+            }
+
+            const msgTypeUrl = /** @type {MsgSendProtoMsg['typeUrl']} */ (
+              MsgSend.typeUrl
+            );
+
+            // Since the message is a `MsgSend`, then we remap the receiver
+            // to its unhooked baseAddress.
+            const rawSend = MsgSend.fromPartial(value);
+            const { baseAddress: target } = decodeAddressHook(
+              rawSend.toAddress,
+            );
+            const sendValue = MsgSend.fromPartial({
+              ...value,
+              toAddress: target,
+            });
+
+            const {
+              amount: coins,
+              fromAddress: sender,
+              toAddress: receiver,
+            } = sendValue;
+
+            /** @type {NotifyInfo} */
+            const info = {
+              msgTypeUrl,
+              coins,
+              target,
+              sender,
+              // Show the hooked address, so the the recipient can distinguish.
+              receiver: rawSend.toAddress,
+              // Don't give a memo, just in case the recipient is tempted to
+              // rely on it.
+              memo: '',
+            };
+            notifyInfos[i] = info;
+            return harden({ '@type': msgTypeUrl, ...sendValue });
+          });
+
           const obj = {
             type: 'VLOCALCHAIN_EXECUTE_TX',
             // This address is the only one that `VLOCALCHAIN_EXECUTE_TX` will
             // accept as a signer for the transaction.  If the messages have other
             // addresses in signer positions, the transaction will be aborted.
             address,
-            messages,
+            messages: rewrittenMsgs,
           };
-          return E(system).toBridge(obj);
+
+          const notifiedV =
+            /**
+             * @type {PromiseVowOfTupleMappedToGenerics<
+             *   ResponseToMany<MT>
+             * >}
+             */
+            (
+              /** @type {unknown} */ (
+                watch(
+                  E(system).toBridge(obj),
+                  this.facets.notifyTransferVatWatcher,
+                  notifyInfos,
+                )
+              )
+            );
+
+          return notifiedV;
         },
         /**
          * @param {TargetApp} tap
@@ -268,12 +517,18 @@ const prepareLocalChain = (zone, makeAccountKit, { watch }) => {
          * @returns {PromiseVow<LocalChainAccount>}
          */
         async makeAccount() {
-          const { system, bankManager, transfer } = this.state;
+          const { system, bankManager, transfer, transferBridgeManager } =
+            this.state;
           const address = await E(system).toBridge({
             type: 'VLOCALCHAIN_ALLOCATE_ADDRESS',
           });
           const bank = await E(bankManager).getBankForAddress(address);
-          return makeAccountKit(address, { system, bank, transfer }).account;
+          return makeAccountKit(address, {
+            system,
+            bank,
+            transfer,
+            transferBridgeManager,
+          }).account;
         },
         /**
          * Make a single query to the local chain. Will reject with an error if
@@ -335,10 +590,28 @@ const prepareLocalChain = (zone, makeAccountKit, { watch }) => {
  * @param {VowTools} vowTools
  */
 export const prepareLocalChainTools = (zone, vowTools) => {
-  const makeAccountKit = prepareLocalChainAccountKit(zone, vowTools);
+  const overridePowers = /** @type {AccountPowerStore} */ (
+    zone.mapStore('overridePowers')
+  );
+  const makeAccountKit = prepareLocalChainAccountKit(
+    zone,
+    vowTools,
+    overridePowers,
+  );
   const makeLocalChain = prepareLocalChain(zone, makeAccountKit, vowTools);
 
-  return harden({ makeLocalChain });
+  return harden({
+    makeLocalChain,
+    /**
+     * @param {Partial<AccountPowers>} newPowers
+     */
+    overridePowers: newPowers => {
+      for (const [key, value] of Object.entries(newPowers)) {
+        const k = /** @type {keyof AccountPowers} */ (key);
+        ifHasThenSetElseInit(overridePowers, k, value);
+      }
+    },
+  });
 };
 harden(prepareLocalChainTools);
 /** @typedef {ReturnType<typeof prepareLocalChainTools>} LocalChainTools */
