@@ -72,6 +72,10 @@ export type InvitationMakerSpec<
 };
 
 export interface WalletTool {
+  getAssets: () => Record<
+    string,
+    Omit<ReturnType<typeof withAmountUtils>, 'mint'>
+  >;
   /**
    * @param spec limited to source contract
    */
@@ -109,6 +113,7 @@ export const makeWallet = (
   const offerToInvitationMakers = new Map();
 
   const wallet: WalletTool = harden({
+    getAssets: () => assets,
     async executePublicOffer(spec) {
       const { result, payouts } = await executeOffer(
         zoe,
