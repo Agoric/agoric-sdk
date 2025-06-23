@@ -223,7 +223,7 @@ const mocks = (
       nobleAccount: ica,
     }) as unknown as GuestInterface<PortfolioKit>;
 
-  const proposal: Proposal = harden({ give });
+  const proposal: Proposal = harden({ give, want: {} });
   let hasExited = false;
   const seat = {
     getProposal: () => proposal,

@@ -584,12 +584,12 @@ export const rebalance = async (
     offerArgs,
   );
 
-  if (!('give' in proposal)) {
+  if (Object.keys(proposal.want).length > 0) {
     throw Error('TODO: withdraw');
   }
 
   const { give } = proposal;
-  if (give.USDN) {
+  if ('USDN' in give && give.USDN) {
     const { USDN, NobleFees } = give; // XXXX
     const { usdnOut } = offerArgs;
     const pos = kit.manager.provideUSDNPosition(); // TODO: get num from offerArgs?
