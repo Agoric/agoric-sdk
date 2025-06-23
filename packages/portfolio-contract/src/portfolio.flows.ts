@@ -175,10 +175,11 @@ const sendTokensViaCCTP = async (
       throw err;
     }
   } catch (err) {
-    await zoeTools.withdrawToSeat(localAcct, seat, amounts);
     // TODO: use X from @endo/errors
-    const errorMsg = `⚠️ Noble transfer failed: ${err}`;
-    throw new Error(errorMsg);
+    const errorMsg = `⚠️ Noble transfer failed`;
+    console.error(errorMsg, err);
+    await zoeTools.withdrawToSeat(localAcct, seat, amounts);
+    throw new Error(`${errorMsg}: ${err}`);
   }
 };
 
