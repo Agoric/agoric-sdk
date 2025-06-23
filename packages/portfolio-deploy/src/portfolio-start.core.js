@@ -1,6 +1,5 @@
 // import { meta } from '@aglocal/portfolio-contract/src/portfolio.contract.meta.js';
-import { makeTracer, objectMap } from '@agoric/internal';
-import { passStyleOf } from '@endo/pass-style';
+import { makeTracer } from '@agoric/internal';
 import { M } from '@endo/patterns';
 import {
   lookupInterchainInfo,
@@ -88,7 +87,7 @@ harden(makePrivateArgs);
  */
 export const startPortfolio = async (permitted, configStruct) => {
   trace('startPortfolio');
-  const { config, kit } = await startOrchContract(
+  await startOrchContract(
     name,
     deployConfigShape,
     permit,
@@ -97,10 +96,7 @@ export const startPortfolio = async (permitted, configStruct) => {
     configStruct,
   );
 
-  trace('startPortfolio done', {
-    config: objectMap(config, v => passStyleOf(v)),
-    kit: objectMap(kit, v => passStyleOf(v)),
-  });
+  trace('startPortfolio done');
 };
 
 // XXX hm... we need to preserve the function name.

@@ -41,7 +41,8 @@
     "@endo/init": "^1.1.9",
     "@endo/marshal": "^1.6.4",
     "@endo/pass-style": "^1.5.0",
-    "@endo/patterns": "^1.5.0"
+    "@endo/patterns": "^1.5.0",
+    "execa": "^9.6.0"
   },
   "devDependencies": {
     "@aglocal/boot": "workspace:*",
