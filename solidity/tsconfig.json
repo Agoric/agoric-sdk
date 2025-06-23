@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "es2020",
+    "module": "commonjs",
+    "skipLibCheck": true,
+    "allowJs": true,
+    "checkJs": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": false,
+    "downlevelIteration": true,
+    "strictNullChecks": true,
+    "noImplicitThis": true,
+    "noUncheckedSideEffectImports": true,
+    "erasableSyntaxOnly": true,
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "noEmit": true,
+    "types": ["@nomicfoundation/hardhat-chai-matchers", "mocha"]
+  },
+  "include": ["test", "ignition", "contract", "hardhat.config.ts"]
+}

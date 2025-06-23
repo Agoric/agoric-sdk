@@ -53,6 +53,7 @@ typings/
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+.yarn
 
 # dotenv environment variables file
 .env
@@ -78,7 +79,6 @@ api-docs
 chaintest
 _testoutput.txt
 
-
 junit.xml
 endo-sha.txt
 
@@ -87,3 +87,18 @@ endo-sha.txt
 !.aiderignore
 .claude
 
+# Hardhat files
+cache
+artifacts
+
+# TypeChain files
+typechain
+typechain-types
+
+# solidity-coverage files
+coverage
+coverage.json
+
+# Hardhat Ignition default folder for deployments against a local node
+deployments
+.qodo
