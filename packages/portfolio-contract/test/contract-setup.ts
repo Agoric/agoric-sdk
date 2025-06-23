@@ -11,7 +11,7 @@ import {
   makeUSDNIBCTraffic,
 } from './mocks.ts';
 import { makeTrader } from './portfolio-actors.ts';
-import { setupPortfolioTest } from './supports.ts';
+import { chainInfoFantasyTODO, setupPortfolioTest } from './supports.ts';
 import { makeWallet } from './wallet-offer-tools.ts';
 
 const contractName = 'ymax0';
@@ -27,15 +27,16 @@ export const deploy = async (t: ExecutionContext) => {
   t.is(passStyleOf(installation), 'remotable');
 
   const { usdc } = common.brands;
+  const { agoric, noble, axelar, osmosis } = chainInfoFantasyTODO;
   const started = await E(zoe).startInstance(
     installation,
     { USDC: usdc.issuer },
     {}, // terms
-    // @ts-expect-error XXX what's up with chainInfo type???
     {
       ...common.commonPrivateArgs,
       contractAddresses,
       axelarChainsMap,
+      chainInfo: { agoric, noble, axelar, osmosis },
     }, // privateArgs
   );
   t.notThrows(() =>
