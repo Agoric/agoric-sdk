@@ -182,7 +182,7 @@ const sendTokensViaCCTP = async (
   }
 };
 
-const makeAxelarMemo = (
+export const makeAxelarMemo = (
   axelarChainsMap: AxelarChainsMap,
   gmpArgs: GmpArgsContractCall,
 ) => {
@@ -208,12 +208,14 @@ const makeAxelarMemo = (
 
   memo.fee = {
     // This amount specifies the outbound gas for sending GMP message
-    amount: String(gasRatio * gasAmounts[keyword].value),
+    amount: String(gasRatio * Number(gasAmounts[keyword].value)),
     recipient: gmpAddresses.AXELAR_GAS,
   };
 
   return harden(JSON.stringify(memo));
 };
+
+harden(makeAxelarMemo);
 
 const sendGmp = async (
   orch: Orchestrator,

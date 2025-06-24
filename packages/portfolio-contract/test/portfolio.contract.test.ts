@@ -5,6 +5,7 @@ import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { gmpAddresses } from '@agoric/orchestration/src/utils/gmp.js';
 import { heapVowE as VE } from '@agoric/vow';
 import type { Installation } from '@agoric/zoe';
 import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
@@ -14,7 +15,11 @@ import { E, passStyleOf } from '@endo/far';
 import { M, matches, mustMatch } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
 import * as contractExports from '../src/portfolio.contract.ts';
-import { makeProposalShapes } from '../src/type-guards.ts';
+import { makeAxelarMemo } from '../src/portfolio.flows.ts';
+import {
+  makeProposalShapes,
+  type GmpArgsContractCall,
+} from '../src/type-guards.ts';
 import {
   axelarChainsMap,
   contractAddresses,
@@ -159,6 +164,51 @@ test('ProposalShapes', t => {
       t.false(matches(proposal, shapes[desc]), name);
     }
   }
+});
+
+test('makeAxelarMemo constructs correct memo JSON', t => {
+  const { brand } = makeIssuerKit('USDC');
+
+  const type = 2; // contract call with tokens
+  const destinationEVMChain = 'Avalanche';
+  const destinationAddress = '0x58E0bd49520364A115CeE4B03DffC1C08A2D1D09';
+  const gasRatio = 0.5;
+
+  const gmpArgs: GmpArgsContractCall = {
+    type,
+    contractInvocationData: [],
+    destinationEVMChain,
+    destinationAddress,
+    keyword: 'Gas',
+    gasRatio,
+    amounts: {
+      Gas: {
+        brand,
+        value: 2000000n,
+      },
+    },
+  };
+
+  // From a valid transaction from AxelarScan: https://testnet.axelarscan.io/tx/CA5A2E8CA6770B0FBBC1789DE5FB14F5955BD62CD0C1F975C88DE3DA657025F2
+  const expectedPayload = [
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  ];
+
+  const result = makeAxelarMemo(axelarChainsMap, gmpArgs);
+  const parsed = JSON.parse(result);
+
+  t.deepEqual(parsed, {
+    type,
+    destination_chain: destinationEVMChain,
+    destination_address: destinationAddress,
+    payload: expectedPayload,
+    fee: {
+      amount: String(gasRatio * Number(gmpArgs.amounts.Gas.value)),
+      recipient: gmpAddresses.AXELAR_GAS,
+    },
+  });
 });
 
 test('open portfolio with USDN position', async t => {
