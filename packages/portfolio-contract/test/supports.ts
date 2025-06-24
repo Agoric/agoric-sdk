@@ -1,3 +1,4 @@
+import { makeReceiveUpCallPayload } from '@aglocal/boot/tools/axelar-supports.ts';
 import { makeIssuerKit } from '@agoric/ertp';
 import {
   denomHash,
@@ -5,53 +6,55 @@ import {
   type CosmosChainInfo,
   type Denom,
 } from '@agoric/orchestration';
-import type {
-  AxelarGmpIncomingMemo,
-  SupportedEVMChains,
-} from '@agoric/orchestration/src/axelar-types.js';
+import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
 import { type DenomDetail } from '@agoric/orchestration/src/exos/chain-hub.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { setupOrchestrationTest } from '@agoric/orchestration/tools/contract-tests.ts';
+import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.ts';
+import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
-import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
 import { encodeAbiParameters } from 'viem';
-import { DECODE_CONTRACT_CALL_RESULT_ABI } from '../src/portfolio.exo.ts';
-import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.ts';
-import type { AxelarChain } from '../src/type-guards.ts';
-import { axelarChainsMap } from './mocks.ts';
 
-export const makeIncomingEvent = (
-  target: string,
-  source_chain: AxelarChain,
-  amount = 123n,
+export const makeIncomingEVMEvent = (
+  address: `0x${string}` = '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
 ) => {
-  const arbEth = '0x3dA3050208a3F2e0d04b33674aAa7b1A9F9B313C';
-  const p2 = encodeAbiParameters([{ type: 'address' }], [arbEth]);
-  const payload = encodeAbiParameters(DECODE_CONTRACT_CALL_RESULT_ABI, [
-    { isContractCallResult: false, data: [{ success: true, result: p2 }] },
-  ]);
-  const incoming: AxelarGmpIncomingMemo = {
-    source_address: arbEth,
-    type: 1,
-    source_chain: axelarChainsMap[source_chain].axelarId,
-    payload,
-  };
+  const encodedAddress = encodeAbiParameters([{ type: 'address' }], [address]);
 
-  const agToAxelar = fetchedChainInfo.agoric.connections['axelar-dojo-1'];
+  const lcaAddress = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht';
+  const axelarConnections =
+    fetchedChainInfo.agoric.connections['axelar-dojo-1'];
 
-  const event = buildVTransferEvent({
-    receiver: target, // TODO: receiver?
-    target,
-    sourceChannel: agToAxelar.transferChannel.counterPartyChannelId,
+  const axelarToAgoricChannel = axelarConnections.transferChannel.channelId;
+  const agoricToAxelarChannel =
+    axelarConnections.transferChannel.counterPartyChannelId;
+
+  return buildVTransferEvent({
+    sequence: '1',
+    amount: 1n,
     denom: 'uusdc',
-    amount,
-    sender: `axelar1TODO`,
-    memo: JSON.stringify(incoming),
+    sender: makeTestAddress(),
+    target: lcaAddress,
+    receiver: lcaAddress,
+    sourceChannel: axelarToAgoricChannel,
+    destinationChannel: agoricToAxelarChannel,
+    memo: JSON.stringify({
+      source_chain: 'Ethereum',
+      source_address: '0x19e71e7eE5c2b13eF6bd52b9E3b437bdCc7d43c8',
+      payload: makeReceiveUpCallPayload({
+        isContractCallResult: false,
+        data: [
+          {
+            success: true,
+            result: encodedAddress,
+          },
+        ],
+      }),
+      type: 1,
+    }),
   });
-  return event;
 };
 
 export {

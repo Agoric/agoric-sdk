@@ -35,7 +35,7 @@ import {
 } from '../src/portfolio.flows.ts';
 import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
 import { axelarChainsMap } from './mocks.ts';
-import { makeIncomingEvent } from './supports.ts';
+import { makeIncomingEVMEvent } from './supports.ts';
 
 const theExit = harden(() => {}); // for ava comparison
 // @ts-expect-error mock
@@ -346,9 +346,7 @@ test('open portfolio with Aave and USDN positions', async t => {
       Aave: { acctRatio: 0.5, gmpRatio: 0.5 },
     }),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) => {
-      tap.receiveUpcall(
-        makeIncomingEvent('xyz1sdlkfjlsdkj???TODO', 'Ethereum'),
-      );
+      tap.receiveUpcall(makeIncomingEVMEvent());
     }),
   ]);
   t.log(log.map(msg => msg._method).join(', '));
@@ -385,9 +383,7 @@ test('open portfolio with Aave position', async t => {
       Aave: { acctRatio: 0.5, gmpRatio: 0.5 },
     }),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) => {
-      tap.receiveUpcall(
-        makeIncomingEvent('xyz1sdlkfjlsdkj???TODO', 'Ethereum'),
-      );
+      tap.receiveUpcall(makeIncomingEVMEvent());
     }),
   ]);
   const { log } = offer;
@@ -429,9 +425,7 @@ test.skip('open portfolio with Compound position', async t => {
       destinationEVMChain: 'Ethereum',
     }),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) => {
-      tap.receiveUpcall(
-        makeIncomingEvent('xyz1sdlkfjlsdkj???TODO', 'Ethereum'),
-      );
+      tap.receiveUpcall(makeIncomingEVMEvent());
     }),
   ]);
   const { log } = offer;
@@ -547,7 +541,7 @@ test.skip('handle failure in sendGmp with Aave position', async t => {
   // Ensure the upcall happens to resolve getGMPAddress(), then let the transfer fail
   // the failure is expected before offer.factoryPK resolves, so don't wait for it.
   const tap = await tapPK.promise;
-  tap.receiveUpcall(makeIncomingEvent('xyz1sdlkfjlsdkj???TODO', 'Ethereum'));
+  tap.receiveUpcall(makeIncomingEVMEvent());
 
   const actual = await portfolioPromise;
   const { log } = offer;
