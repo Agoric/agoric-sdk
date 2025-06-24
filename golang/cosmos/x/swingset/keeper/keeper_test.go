@@ -13,7 +13,7 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	dbm "github.com/cometbft/cometbft-db"
+	dbm "github.com/cosmos/cosmos-db"
 )
 
 func mkcoin(denom string) func(amt int64) sdk.Coin {
