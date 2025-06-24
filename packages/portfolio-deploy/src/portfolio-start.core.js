@@ -37,11 +37,11 @@ const contractAddresses = {
 const axelarChainsMap = {
   Ethereum: {
     caip: 'eip155:1',
-    axelarId: 'ethereum',
+    axelarId: 'Ethereum',
   },
   Avalanche: {
     caip: 'eip155:43114',
-    axelarId: 'avalanche',
+    axelarId: 'Avalanche',
   },
   Base: {
     caip: 'eip155:8453',
