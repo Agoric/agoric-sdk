@@ -36,7 +36,6 @@ import type { PortfolioKit, Position, USDNPosition } from './portfolio.exo.ts';
 import type {
   AxelarChainsMap,
   BaseGmpArgs,
-  EVMContractAddresses,
   GmpArgsContractCall,
   GmpArgsTransferAmount,
   GmpArgsWithdrawAmount,
@@ -49,14 +48,12 @@ import { GMPArgsShape } from './type-guards.ts';
 // TODO: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const trace = makeTracer('PortF');
-const { values } = Object;
 
 type PortfolioBootstrapContext = {
   axelarChainsMap: AxelarChainsMap;
   chainHubTools: {
     getDenom: (brand: Brand) => Denom | undefined;
   };
-  contractAddresses: EVMContractAddresses;
   zoeTools: GuestInterface<ZoeTools>;
   makePortfolioKit: (
     localAccount: LocalAccount,
@@ -70,7 +67,6 @@ export type PortfolioInstanceContext = {
   chainHubTools: {
     getDenom: (brand: Brand) => Denom | undefined;
   };
-  contractAddresses: EVMContractAddresses;
   inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
   zoeTools: GuestInterface<ZoeTools>;
 };
@@ -110,8 +106,13 @@ const createRemoteEVMAccount = async (
   reader: GuestInterface<PortfolioKit['reader']>,
   protocol: YieldProtocol,
 ) => {
-  const { contractAddresses } = ctx;
-  const { destinationEVMChain, keyword, amounts: gasAmounts } = gmpArgs;
+  const {
+    destinationEVMChain,
+    keyword,
+    gasRatio,
+    amounts: gasAmounts,
+  } = gmpArgs;
+  const { contractAddresses } = ctx.axelarChainsMap[destinationEVMChain];
 
   await sendGmp(
     orch,
@@ -120,9 +121,10 @@ const createRemoteEVMAccount = async (
     harden({
       destinationAddress: contractAddresses.factory,
       destinationEVMChain,
-      type: AxelarGMPMessageType.ContractCall,
+      type: AxelarGMPMessageType.ContractCallWithToken,
       keyword,
       amounts: gasAmounts,
+      gasRatio,
       contractInvocationData: [],
     }),
     reader,
@@ -135,7 +137,7 @@ const sendTokensViaCCTP = async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
   seat: ZCFSeat,
-  args: BaseGmpArgs,
+  args: Omit<BaseGmpArgs, 'gasRatio'>,
   reader: GuestInterface<PortfolioKit>['reader'],
   protocol: YieldProtocol,
 ) => {
@@ -177,7 +179,7 @@ const sendTokensViaCCTP = async (
   }
 };
 
-const makeAxelarMemo = (
+export const makeAxelarMemo = (
   axelarChainsMap: AxelarChainsMap,
   gmpArgs: GmpArgsContractCall,
 ) => {
@@ -186,6 +188,7 @@ const makeAxelarMemo = (
     destinationEVMChain,
     destinationAddress,
     keyword,
+    gasRatio,
     amounts: gasAmounts,
     type,
   } = gmpArgs;
@@ -201,12 +204,15 @@ const makeAxelarMemo = (
   };
 
   memo.fee = {
-    amount: String(gasAmounts[keyword].value),
+    // This amount specifies the outbound gas for sending GMP message
+    amount: String(gasRatio * Number(gasAmounts[keyword].value)),
     recipient: gmpAddresses.AXELAR_GAS,
   };
 
   return harden(JSON.stringify(memo));
 };
+
+harden(makeAxelarMemo);
 
 const sendGmp = async (
   orch: Orchestrator,
@@ -260,9 +266,10 @@ const supplyToAave = async (
     destinationEVMChain,
     transferAmount,
     keyword,
+    gasRatio,
     amounts: gasAmounts,
   } = gmpArgs;
-  const { contractAddresses } = ctx;
+  const { contractAddresses } = ctx.axelarChainsMap[destinationEVMChain];
 
   const remoteEVMAddress = await kit.reader.getGMPAddress('Aave');
 
@@ -273,9 +280,10 @@ const supplyToAave = async (
     harden({
       destinationAddress: contractAddresses.factory,
       destinationEVMChain,
-      type: AxelarGMPMessageType.ContractCall,
+      type: AxelarGMPMessageType.ContractCallWithToken,
       keyword,
       amounts: gasAmounts,
+      gasRatio,
       contractInvocationData: [
         {
           functionSignature: 'approve(address,uint256)',
@@ -305,9 +313,10 @@ const withdrawFromAave = async (
     destinationEVMChain,
     withdrawAmount,
     keyword,
+    gasRatio,
     amounts: gasAmounts,
   } = gmpArgs;
-  const { contractAddresses } = ctx;
+  const { contractAddresses } = ctx.axelarChainsMap[destinationEVMChain];
 
   const remoteEVMAddress = await kit.reader.getGMPAddress('Aave');
 
@@ -318,9 +327,10 @@ const withdrawFromAave = async (
     harden({
       destinationAddress: contractAddresses.factory,
       destinationEVMChain,
-      type: AxelarGMPMessageType.ContractCall,
+      type: AxelarGMPMessageType.ContractCallWithToken,
       keyword,
       amounts: gasAmounts,
+      gasRatio,
       contractInvocationData: [
         {
           functionSignature: 'withdraw(address,uint256,address)',
@@ -345,9 +355,10 @@ const supplyToCompound = async (
     destinationEVMChain,
     transferAmount,
     keyword,
+    gasRatio,
     amounts: gasAmounts,
   } = gmpArgs;
-  const { contractAddresses } = ctx;
+  const { contractAddresses } = ctx.axelarChainsMap[destinationEVMChain];
 
   const remoteEVMAddress = await reader.getGMPAddress('Compound');
   // XXX if we're not using it, why assert it here???
@@ -360,9 +371,10 @@ const supplyToCompound = async (
     harden({
       destinationAddress: contractAddresses.factory,
       destinationEVMChain,
-      type: AxelarGMPMessageType.ContractCall,
+      type: AxelarGMPMessageType.ContractCallWithToken,
       keyword,
       amounts: gasAmounts,
+      gasRatio,
       contractInvocationData: [
         {
           functionSignature: 'approve(address,uint256)',
@@ -393,8 +405,9 @@ const withdrawFromCompound = async (
     withdrawAmount,
     keyword,
     amounts: gasAmounts,
+    gasRatio,
   } = gmpArgs;
-  const { contractAddresses } = ctx;
+  const { contractAddresses } = ctx.axelarChainsMap[destinationEVMChain];
 
   const remoteEVMAddress = await reader.getGMPAddress('Compound');
   assert(remoteEVMAddress, 'remoteEVMAddress must be defined');
@@ -406,9 +419,10 @@ const withdrawFromCompound = async (
     harden({
       destinationAddress: contractAddresses.factory,
       destinationEVMChain,
-      type: AxelarGMPMessageType.ContractCall,
+      type: AxelarGMPMessageType.ContractCallWithToken,
       keyword,
       amounts: gasAmounts,
+      gasRatio,
       contractInvocationData: [
         {
           functionSignature: 'withdraw(address,uint256)',
@@ -603,6 +617,8 @@ export const rebalance = async (
       Fail`Gmp and Account needed for ${protocol}`;
     if (!destinationEVMChain)
       throw Fail`destinationEVMChain needed for ${protocol}`;
+    if (!offerArgs[protocol]?.acctRatio)
+      throw Fail`acctRatio needed for ${protocol}`;
     const [gmpKW, accountKW] =
       protocol === 'Aave'
         ? ['AaveGmp', 'AaveAccount']
@@ -614,10 +630,14 @@ export const rebalance = async (
     );
 
     if (isNew) {
-      const gmpArgs = {
+      if (!offerArgs[protocol]?.acctRatio)
+        throw Fail`acctRatio needed for ${protocol}`;
+
+      const gmpArgs: BaseGmpArgs = {
         destinationEVMChain,
         keyword: accountKW,
         amounts: { [accountKW]: give[accountKW] },
+        gasRatio: offerArgs[protocol].acctRatio,
       };
       try {
         await createRemoteEVMAccount(
@@ -645,11 +665,15 @@ export const rebalance = async (
     kit.manager.waitKLUDGE(20n);
 
     const { value: transferAmount } = give[protocol] as Amount<'nat'>;
-    const gmpArgs = {
+    if (!offerArgs[protocol]?.gmpRatio)
+      throw Fail`gmpRatio needed for ${protocol}`;
+
+    const gmpArgs: GmpArgsTransferAmount = {
       destinationEVMChain,
       transferAmount,
       keyword: gmpKW,
       amounts: { [gmpKW]: give[gmpKW] },
+      gasRatio: offerArgs[protocol]?.gmpRatio,
     };
     switch (protocol) {
       case 'Aave':
@@ -683,10 +707,8 @@ export const openPortfolio = (async (
       zoeTools,
       axelarChainsMap,
       chainHubTools,
-      contractAddresses,
       inertSubscriber,
     } = ctx;
-    const { destinationEVMChain } = offerArgs;
     const agoric = await orch.getChain('agoric');
     const localAccount = await agoric.makeAccount();
     const nobleChain = await orch.getChain('noble');
@@ -698,11 +720,9 @@ export const openPortfolio = (async (
     trace('Monitoring transfers for', localAccount.getAddress().value);
     // TODO: save reg somewhere???
 
-    const { give } = seat.getProposal() as ProposalType['openPortfolio'];
     const portfolioCtx = {
       axelarChainsMap,
       chainHubTools,
-      contractAddresses,
       keeper: { ...kit.reader, ...kit.manager },
       zoeTools,
       inertSubscriber,

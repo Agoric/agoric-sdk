@@ -1,16 +1,4 @@
 import type { HostInterface } from '@agoric/async-flow';
-import type { Brand, Issuer, Payment } from '@agoric/ertp';
-import type {
-  CosmosChainAddress,
-  DenomAmount,
-  OrchestrationAccount,
-} from '@agoric/orchestration';
-import type { VowTools } from '@agoric/vow';
-import { makeRatio } from '@agoric/ertp/src/ratio.js';
-import type { AmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import type { Zone } from '@agoric/zone';
-import type { FeeConfig, LogFn } from '@agoric/fast-usdc/src/types.js';
-import { makePromiseKit } from '@endo/promise-kit';
 import {
   MsgLock,
   MsgLockResponse,
@@ -19,11 +7,23 @@ import {
   MsgSwap,
   MsgSwapResponse,
 } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
+import type { Brand, Issuer, Payment } from '@agoric/ertp';
+import { makeRatio } from '@agoric/ertp/src/ratio.js';
+import type { FeeConfig, LogFn } from '@agoric/fast-usdc/src/types.js';
+import type {
+  CosmosChainAddress,
+  DenomAmount,
+  OrchestrationAccount,
+} from '@agoric/orchestration';
 import {
-  buildTxPacketString,
   buildMsgResponseString,
+  buildTxPacketString,
 } from '@agoric/orchestration/tools/ibc-mocks.ts';
-import type { EVMContractAddresses } from '../src/type-guards';
+import type { VowTools } from '@agoric/vow';
+import type { AmountUtils } from '@agoric/zoe/tools/test-utils.js';
+import type { Zone } from '@agoric/zone';
+import { makePromiseKit } from '@endo/promise-kit';
+import type { AxelarChainsMap } from '../src/type-guards';
 
 export const prepareMockOrchAccounts = (
   zone: Zone,
@@ -172,26 +172,35 @@ export const makeUSDNIBCTraffic = (
   },
 });
 
-export const contractAddresses: EVMContractAddresses = {
-  aavePool: '0x1111111111111111111111111111111111111111',
-  // cUSDCv3 from https://docs.compound.finance/
-  // for testing, any arbitrary eth addr will do, yes?
-  compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
-  factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
-  usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
-} as const;
-
-export const axelarChainsMap = {
+export const axelarChainsMap: AxelarChainsMap = {
   Ethereum: {
     caip: 'eip155:1',
     axelarId: 'Ethereum',
+    contractAddresses: {
+      aavePool: '0x1111111111111111111111111111111111111111',
+      compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+      factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+      usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
+    },
   },
   Avalanche: {
     caip: 'eip155:43114',
     axelarId: 'Avalanche',
+    contractAddresses: {
+      aavePool: '0x1111111111111111111111111111111111111111',
+      compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+      factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+      usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
+    },
   },
   Base: {
     caip: 'eip155:8453',
     axelarId: 'base',
+    contractAddresses: {
+      aavePool: '0x1111111111111111111111111111111111111111',
+      compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+      factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+      usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
+    },
   },
-} as const;
+};
