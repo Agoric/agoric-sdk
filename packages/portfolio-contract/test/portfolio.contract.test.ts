@@ -20,11 +20,7 @@ import {
   makeProposalShapes,
   type GmpArgsContractCall,
 } from '../src/type-guards.ts';
-import {
-  axelarChainsMap,
-  contractAddresses,
-  makeUSDNIBCTraffic,
-} from './mocks.ts';
+import { axelarChainsMap, makeUSDNIBCTraffic } from './mocks.ts';
 import { makeTrader } from './portfolio-actors.ts';
 import {
   chainInfo,
@@ -86,7 +82,6 @@ const deploy = async (t: ExecutionContext) => {
     {}, // terms
     {
       ...common.commonPrivateArgs,
-      contractAddresses,
       axelarChainsMap,
       timerService,
       chainInfo,

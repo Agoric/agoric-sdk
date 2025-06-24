@@ -35,18 +35,6 @@ export type ProposalType = {
     | { want: Partial<Record<YieldProtocol, Amount<'nat'>>> };
 };
 
-export type AxelarChain = keyof typeof AxelarChains;
-export type AxelarChainsMap = {
-  [chain in AxelarChain]: {
-    caip: CaipChainId;
-    /**
-     * Axelar chain IDs differ between mainnet and testnet.
-     * See [supported-chains-list.ts](https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts)
-     */
-    axelarId: string;
-  };
-};
-
 const YieldProtocolShape = M.or(...keys(YieldProtocol));
 export const makeProposalShapes = (usdcBrand: Brand<'nat'>) => {
   // TODO: Update usdcAmountShape, to include BLD/aUSDC after discussion with Axelar team
@@ -124,28 +112,24 @@ type OfferArgs1 = {
   usdnOut?: NatValue;
 };
 
+const RatioShape = M.opt(
+  M.splitRecord(
+    {},
+    {
+      // TODO: use pair of big ints
+      // maybe use RatioShape from ertp package?
+      gmpRatio: M.and(M.gt(0), M.lt(1)),
+      acctRatio: M.and(M.gt(0), M.lt(1)),
+    },
+  ),
+);
+
 const offerArgsShape: TypedPattern<OfferArgs1> = M.splitRecord(
   {},
   {
     destinationEVMChain: M.or(...keys(AxelarChains)),
-    Aave: M.opt(
-      M.splitRecord(
-        {},
-        {
-          gmpRatio: M.and(M.gte(0), M.lte(1)),
-          acctRatio: M.and(M.gte(0), M.lte(1)),
-        },
-      ),
-    ),
-    Compound: M.opt(
-      M.splitRecord(
-        {},
-        {
-          gmpRatio: M.and(M.gte(0), M.lte(1)),
-          acctRatio: M.and(M.gte(0), M.lte(1)),
-        },
-      ),
-    ),
+    Aave: RatioShape,
+    Compound: RatioShape,
     usdnOut: M.nat(),
   },
 );
@@ -167,6 +151,18 @@ export type EVMContractAddresses = {
   factory: `0x${string}`;
   usdc: `0x${string}`;
 };
+export type AxelarChain = keyof typeof AxelarChains;
+export type AxelarChainsMap = {
+  [chain in AxelarChain]: {
+    caip: CaipChainId;
+    /**
+     * Axelar chain IDs differ between mainnet and testnet.
+     * See [supported-chains-list.ts](https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts)
+     */
+    axelarId: string;
+    contractAddresses: EVMContractAddresses;
+  };
+};
 
 export const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
   M.splitRecord({
@@ -178,7 +174,7 @@ export const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
 
 const AxelarChainInfoPattern = M.splitRecord({
   caip: M.string(),
-  axelarId: M.string(),
+  contractAddresses: EVMContractAddressesShape,
 });
 
 export const AxelarChainsMapShape: TypedPattern<AxelarChainsMap> =

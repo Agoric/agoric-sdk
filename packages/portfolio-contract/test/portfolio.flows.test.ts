@@ -34,7 +34,7 @@ import {
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
 import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
-import { axelarChainsMap, contractAddresses } from './mocks.ts';
+import { axelarChainsMap } from './mocks.ts';
 import { makeIncomingEvent } from './supports.ts';
 
 const theExit = harden(() => {}); // for ava comparison
@@ -199,7 +199,6 @@ const mocks = (
   const ctx1: PortfolioInstanceContext = {
     zoeTools,
     chainHubTools,
-    contractAddresses,
     axelarChainsMap,
     inertSubscriber,
   };

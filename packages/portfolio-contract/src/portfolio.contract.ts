@@ -31,11 +31,9 @@ import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import {
   AxelarChainsMapShape,
-  EVMContractAddressesShape,
   makeProposalShapes,
   OfferArgsShapeFor,
   type AxelarChainsMap,
-  type EVMContractAddresses,
   type LocalAccount,
   type NobleAccount,
 } from './type-guards.ts';
@@ -49,7 +47,6 @@ type PortfolioPrivateArgs = OrchestrationPowers & {
   chainInfo: Record<string, ChainInfo>;
   marshaller: Marshaller;
   storageNode: Remote<StorageNode>;
-  contractAddresses: EVMContractAddresses;
   axelarChainsMap: AxelarChainsMap;
 };
 
@@ -57,7 +54,6 @@ const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
   ...(OrchestrationPowersShape as CopyRecord),
   marshaller: M.remotable('marshaller'),
   storageNode: M.remotable('storageNode'),
-  contractAddresses: EVMContractAddressesShape,
   chainInfo: M.recordOf(M.string(), ChainInfoShape),
   assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
   axelarChainsMap: AxelarChainsMapShape,
@@ -77,7 +73,6 @@ export const contract = async (
   const {
     chainInfo,
     assetInfo,
-    contractAddresses,
     axelarChainsMap,
     timerService,
     marshaller,
@@ -111,7 +106,6 @@ export const contract = async (
   const ctx1 = {
     zoeTools,
     chainHubTools,
-    contractAddresses,
     axelarChainsMap,
   };
   const { rebalance } = orchestrateAll({ rebalance: flows.rebalance }, ctx1);
