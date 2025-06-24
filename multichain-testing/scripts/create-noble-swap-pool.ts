@@ -283,7 +283,10 @@ Options:
 
   // Add liquidity in pool with uusdc and uusdn
   const args = {
-    amount: { uusdc: '1000000000', uusdn: '1000000000' },
+    amount: {
+      uusdc: `${50_000n * 1_000_000n}`,
+      uusdn: `${50_000n * 1_000_000n}`,
+    },
     slippagePercentage: '5',
     poolId: '0',
   };
