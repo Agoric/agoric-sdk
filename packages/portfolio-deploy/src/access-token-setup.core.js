@@ -122,8 +122,6 @@ export const createPoCAsset = async (
   const brand = await E(issuer).getBrand();
   const amt = harden({ brand, value: BigInt(qty) });
   const supply = await E(mint).mintPayment(amt);
-  await E(depositFacet).receive(supply);
-  trace('sent', amt, 'to', beneficiary);
 
   const kit = /** @type {IssuerKit<'nat'>} */ ({ mint, issuer, brand });
 
@@ -139,6 +137,9 @@ export const createPoCAsset = async (
     // be unique' in provisionPool in testing environments
     E(bankManager).addAsset(denom, issuerName, proposedName, kit),
   ]);
+
+  await E(depositFacet).receive(supply);
+  trace('sent', amt, 'to', beneficiary);
 
   // publish brands and issuers to Bootstrap space for use in proposals
   produceBrands[issuerName].reset();
