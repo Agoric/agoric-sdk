@@ -6,6 +6,7 @@ import (
 	"cosmossdk.io/core/address"
 	storetypes "cosmossdk.io/core/store"
 	sdkerrors "cosmossdk.io/errors"
+	sdkmath "cosmossdk.io/math"
 	"cosmossdk.io/store/prefix"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/runtime"
@@ -67,7 +68,9 @@ func NewKeeper(
 		PushAction:            pushAction,
 	}
 
-	k.bankKeeper.AppendSendRestriction(k.monitorSend)
+	if k.bankKeeper != nil {
+		k.bankKeeper.AppendSendRestriction(k.monitorSend)
+	}
 	return k
 }
 
@@ -115,22 +118,37 @@ func (k Keeper) ensureAddressUpdate(adStore prefix.Store, address sdk.AccAddress
 }
 
 func (k Keeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
+	if k.bankKeeper == nil {
+		return sdk.NewCoin(denom, sdkmath.ZeroInt())
+	}
 	return k.bankKeeper.GetBalance(ctx, addr, denom)
 }
 
 func (k Keeper) GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
+	if k.bankKeeper == nil {
+		return sdk.NewCoins()
+	}
 	return k.bankKeeper.GetAllBalances(ctx, addr)
 }
 
 func (k Keeper) StoreRewardCoins(ctx sdk.Context, amt sdk.Coins) error {
+	if k.bankKeeper == nil {
+		return nil
+	}
 	return k.bankKeeper.MintCoins(ctx, types.ModuleName, amt)
 }
 
 func (k Keeper) SendCoinsToRewardDistributor(ctx sdk.Context, amt sdk.Coins) error {
+	if k.bankKeeper == nil {
+		return nil
+	}
 	return k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ModuleName, k.rewardDistributorName, amt)
 }
 
 func (k Keeper) SendCoins(ctx sdk.Context, addr sdk.AccAddress, amt sdk.Coins) error {
+	if k.bankKeeper == nil {
+		return nil
+	}
 	if err := k.bankKeeper.MintCoins(ctx, types.ModuleName, amt); err != nil {
 		return err
 	}
@@ -138,6 +156,9 @@ func (k Keeper) SendCoins(ctx sdk.Context, addr sdk.AccAddress, amt sdk.Coins) e
 }
 
 func (k Keeper) GrabCoins(ctx sdk.Context, addr sdk.AccAddress, amt sdk.Coins) error {
+	if k.bankKeeper == nil {
+		return nil
+	}
 	if err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, addr, types.ModuleName, amt); err != nil {
 		return err
 	}
@@ -145,6 +166,9 @@ func (k Keeper) GrabCoins(ctx sdk.Context, addr sdk.AccAddress, amt sdk.Coins) e
 }
 
 func (k Keeper) GetModuleAccountAddress(ctx sdk.Context, name string) sdk.AccAddress {
+	if k.accountKeeper == nil {
+		return nil
+	}
 	acct := k.accountKeeper.GetModuleAccount(ctx, name)
 	if acct == nil {
 		return nil
@@ -153,6 +177,9 @@ func (k Keeper) GetModuleAccountAddress(ctx sdk.Context, name string) sdk.AccAdd
 }
 
 func (k Keeper) AddressCodec() address.Codec {
+	if k.accountKeeper == nil {
+		return nil
+	}
 	return k.accountKeeper.AddressCodec()
 }
 
