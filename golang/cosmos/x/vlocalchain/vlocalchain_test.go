@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	address "cosmossdk.io/core/address"
 	"cosmossdk.io/log"
 	sdkmath "cosmossdk.io/math"
 	"cosmossdk.io/store"
@@ -18,6 +19,7 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vlocalchain/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
+	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -44,16 +46,20 @@ type mockAccounts struct {
 
 var _ types.AccountKeeper = (*mockAccounts)(nil)
 
-func (a *mockAccounts) NewAccountWithAddress(ctx sdk.Context, addr sdk.AccAddress) authtypes.AccountI {
+func (a *mockAccounts) NewAccountWithAddress(ctx context.Context, addr sdk.AccAddress) sdk.AccountI {
 	return authtypes.NewBaseAccountWithAddress(addr)
 }
 
-func (a *mockAccounts) HasAccount(ctx sdk.Context, addr sdk.AccAddress) bool {
+func (a *mockAccounts) AddressCodec() address.Codec {
+	return addresscodec.NewBech32Codec(sdk.Bech32MainPrefix)
+}
+
+func (a *mockAccounts) HasAccount(ctx context.Context, addr sdk.AccAddress) bool {
 	existing := a.existing[addr.String()]
 	return existing
 }
 
-func (a *mockAccounts) SetAccount(ctx sdk.Context, acc authtypes.AccountI) {
+func (a *mockAccounts) SetAccount(ctx context.Context, acc sdk.AccountI) {
 	a.existing[acc.GetAddress().String()] = true
 }
 
@@ -131,7 +137,7 @@ func (s *mockStaking) UnbondingDelegation(cctx context.Context, req *stakingtype
 // makeTestKit creates a minimal Keeper and Context for use in testing.
 func makeTestKit(bank *mockBank, transfer *mockTransfer, staking *mockStaking, accts *mockAccounts) (vm.PortHandler, context.Context) {
 	encodingConfig := params.MakeEncodingConfig()
-	cdc := encodingConfig.Marshaler
+	cdc := encodingConfig.Codec
 
 	txRouter := baseapp.NewMsgServiceRouter()
 	txRouter.SetInterfaceRegistry(encodingConfig.InterfaceRegistry)

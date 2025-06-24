@@ -42,7 +42,7 @@ func TestKeeper_ParseRequestTypeURL(t *testing.T) {
 
 func TestKeeper_DeserializeTxMessages(t *testing.T) {
 	encodingConfig := params.MakeEncodingConfig()
-	cdc := encodingConfig.Marshaler
+	cdc := encodingConfig.Codec
 
 	banktypes.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 
