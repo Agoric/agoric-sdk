@@ -10,6 +10,9 @@ import { makeScopedBridge } from '../bridge.js';
  *     localchainBridgeManager: import('../types').ScopedBridgeManager<'vlocalchain'>;
  *     bankManager: Promise<import('../vat-bank.js').BankManager>;
  *     transferMiddleware: Promise<import('../transfer.js').TransferMiddleware>;
+ *     vtransferBridgeManager: Promise<
+ *       import('../types').ScopedBridgeManager<'vtransfer'>
+ *     >;
  *   };
  *   produce: {
  *     localchain: Producer<any>;
@@ -32,6 +35,7 @@ export const setupLocalChainVat = async (
       localchainBridgeManager: localchainBridgeManagerP,
       bankManager,
       transferMiddleware,
+      vtransferBridgeManager: vtransferBridgeManagerP,
     },
     produce: { localchainVat, localchain, localchainBridgeManager },
   },
@@ -77,6 +81,7 @@ export const setupLocalChainVat = async (
     system: scopedManager,
     bankManager: await bankManager,
     transfer: await transferMiddleware,
+    transferBridgeManager: await vtransferBridgeManagerP,
   });
 
   localchain.reset();
@@ -107,6 +112,7 @@ export const getManifestForLocalChain = (_powers, { localchainRef }) => ({
         localchainBridgeManager: 'localchain',
         bankManager: 'bank',
         transferMiddleware: 'transfer',
+        vtransferBridgeManager: 'vtransfer',
       },
       produce: {
         localchain: 'localchain',

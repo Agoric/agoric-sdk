@@ -29,18 +29,24 @@ export const upgradeVatsGeneric = async (
   trace('Starting upgrade of vats');
   const { bundleRefs, vatOptions = {} } = options.options;
 
-  for await (const [name, ref] of Object.entries(bundleRefs)) {
+  await null;
+
+  /** @type {{ [name: string]: any }} */
+  const upgradeRoots = {};
+  for (const [name, ref] of Object.entries(bundleRefs)) {
     assert(ref.bundleID, `bundleID missing for ${name}`);
     trace(name, `BUNDLE ID: `, ref.bundleID);
     const bundleCap = await E(vatAdminSvc).getBundleCap(ref.bundleID);
 
-    trace(name, 'Getting admin node from vatStore');
-    const { adminNode } = await E(vatStore).get(name);
+    trace(name, 'Getting admin node and root from vatStore');
+    const { adminNode, root } = await E(vatStore).get(name);
     trace(name, 'Upgrading via adminNode');
     await E(adminNode).upgrade(bundleCap, vatOptions[name] || {});
+    upgradeRoots[name] = root;
   }
 
   trace('Done upgrading vats');
+  return upgradeRoots;
 };
 
 /**
@@ -147,7 +153,6 @@ export const getManifestForUpgradingVats = (
  *   contractKitSpecs: ContractKitSpec[];
  *   installationBundleRefs: { [bundleName: string]: VatSourceRef };
  * }} options
- * @returns
  */
 export const getManifestForUpgradingZoeContractKits = (
   { restoreRef },
