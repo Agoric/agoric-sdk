@@ -55,7 +55,7 @@ test('coreEval code without swingset', async t => {
   // XXX type of zoe from setUpZoeForTest is any???
   const { zoe: zoeAny, bundleAndInstall } = await setUpZoeForTest();
   const zoe: ZoeService = zoeAny;
-  const { usdc } = common.brands;
+  const { usdc, poc24 } = common.brands;
 
   {
     t.log('produce bootstrap entries from commonSetup()', keys(bootstrap));
@@ -121,7 +121,12 @@ test('coreEval code without swingset', async t => {
   t.is(passStyleOf(instance), 'remotable');
 
   const { vowTools, pourPayment } = utils;
-  const wallet = makeWallet({ USDC: usdc }, zoe, vowTools.when);
+  const { mint: _, ...poc24sansMint } = poc24;
+  const wallet = makeWallet(
+    { USDC: usdc, Access: poc24sansMint },
+    zoe,
+    vowTools.when,
+  );
   await wallet.deposit(await pourPayment(usdc.units(10_000)));
   const silvia = makeTrader(wallet, instance);
   const actualP = silvia.openPortfolio(t, { USDN: usdc.units(3_333) });
