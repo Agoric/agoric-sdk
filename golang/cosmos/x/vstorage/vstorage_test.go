@@ -14,6 +14,7 @@ import (
 
 	"cosmossdk.io/store"
 	storetypes "cosmossdk.io/store/types"
+	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"cosmossdk.io/log"
@@ -38,7 +39,9 @@ type testKit struct {
 }
 
 func makeTestKit() testKit {
-	keeper := NewKeeper(storeKey)
+	kvStoreService := runtime.NewKVStoreService(storeKey)
+
+	keeper := NewKeeper(storeKey.Name(), kvStoreService)
 	db := dbm.NewMemDB()
 	logger := log.NewNopLogger()
 	ms := store.NewCommitMultiStore(db, logger, storemetrics.NewNoOpMetrics())
