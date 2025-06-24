@@ -4,13 +4,14 @@ import (
 	"reflect"
 	"testing"
 
-	"cosmossdk.io/api/tendermint/abci"
 	"cosmossdk.io/store"
 	storemetrics "cosmossdk.io/store/metrics"
 	storetypes "cosmossdk.io/store/types"
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
+	abcitypes "github.com/cometbft/cometbft/abci/types"
 	dbm "github.com/cosmos/cosmos-db"
+	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"cosmossdk.io/log"
@@ -27,8 +28,6 @@ type testKit struct {
 }
 
 func makeTestKit() testKit {
-	keeper := NewKeeper(vstorageStoreKey)
-
 	db := dbm.NewMemDB()
 	logger := log.NewNopLogger()
 	ms := store.NewCommitMultiStore(db, logger, storemetrics.NewNoOpMetrics())
@@ -38,6 +37,9 @@ func makeTestKit() testKit {
 		panic(err)
 	}
 	ctx := sdk.NewContext(ms, tmproto.Header{}, false, log.NewNopLogger())
+
+	storeService := runtime.NewKVStoreService(vstorageStoreKey)
+	keeper := NewKeeper(types.StoreKey, storeService)
 
 	return testKit{ctx, keeper}
 }
@@ -172,7 +174,10 @@ func TestStorage(t *testing.T) {
 		{Path: "key2.child2.grandchild2", Value: "value2grandchild"},
 		{Path: "key2.child2.grandchild2a", Value: "value2grandchilda"},
 	}
-	gotExport := keeper.ExportStorage(ctx)
+	gotExport, err := keeper.ExportStorage(ctx)
+	if err != nil {
+		t.Errorf("ExportStorage failed: %v", err)
+	}
 	if !reflect.DeepEqual(gotExport, expectedExport) {
 		t.Errorf("got export %q, want %q", gotExport, expectedExport)
 	}
@@ -182,7 +187,11 @@ func TestStorage(t *testing.T) {
 		{Path: "child2.grandchild2", Value: "value2grandchild"},
 		{Path: "child2.grandchild2a", Value: "value2grandchilda"},
 	}
-	if got := keeper.ExportStorageFromPrefix(ctx, "key2"); !reflect.DeepEqual(got, expectedKey2Export) {
+	got, err := keeper.ExportStorageFromPrefix(ctx, "key2")
+	if err != nil {
+		t.Errorf("ExportStorageFromPrefix failed: %v", err)
+	}
+	if !reflect.DeepEqual(got, expectedKey2Export) {
 		t.Errorf("got export %q, want %q", got, expectedKey2Export)
 	}
 
@@ -195,13 +204,19 @@ func TestStorage(t *testing.T) {
 		{Path: "beta3", Value: "value3"},
 		{Path: "inited", Value: ""},
 	}
-	gotRemainingExport := keeper.ExportStorage(ctx)
+	gotRemainingExport, err := keeper.ExportStorage(ctx)
+	if err != nil {
+		t.Errorf("ExportStorage failed: %v", err)
+	}
 	if !reflect.DeepEqual(gotRemainingExport, expectedRemainingExport) {
 		t.Errorf("got remaining export %q, want %q", expectedRemainingExport, expectedRemainingExport)
 	}
 
 	keeper.ImportStorage(ctx, gotExport)
-	gotExport = keeper.ExportStorage(ctx)
+	gotExport, err = keeper.ExportStorage(ctx)
+	if err != nil {
+		t.Errorf("ExportStorage failed: %v", err)
+	}
 	if !reflect.DeepEqual(gotExport, expectedExport) {
 		t.Errorf("got export %q after import, want %q", gotExport, expectedExport)
 	}
@@ -227,14 +242,14 @@ func TestStorageNotify(t *testing.T) {
 	expectedAfterFlushEvents := sdk.Events{
 		{
 			Type: "storage",
-			Attributes: []abci.EventAttribute{
+			Attributes: []abcitypes.EventAttribute{
 				{Key: "path", Value: "notify.legacy"},
 				{Key: "value", Value: "legacyValue"},
 			},
 		},
 		{
 			Type: "state_change",
-			Attributes: []abci.EventAttribute{
+			Attributes: []abcitypes.EventAttribute{
 				{Key: "store", Value: "vstorage"},
 				{Key: "key", Value: "2\x00notify\x00legacy"},
 				{Key: "anckey", Value: "\x012\x00notify\x00legacy\x01"},
@@ -243,14 +258,14 @@ func TestStorageNotify(t *testing.T) {
 		},
 		{
 			Type: "storage",
-			Attributes: []abci.EventAttribute{
+			Attributes: []abcitypes.EventAttribute{
 				{Key: "path", Value: "notify.legacy2"},
 				{Key: "value", Value: "legacyValue2b"},
 			},
 		},
 		{
 			Type: "state_change",
-			Attributes: []abci.EventAttribute{
+			Attributes: []abcitypes.EventAttribute{
 				{Key: "store", Value: "vstorage"},
 				{Key: "key", Value: "2\x00notify\x00legacy2"},
 				{Key: "anckey", Value: "\x012\x00notify\x00legacy2\x01"},
@@ -259,7 +274,7 @@ func TestStorageNotify(t *testing.T) {
 		},
 		{
 			Type: "state_change",
-			Attributes: []abci.EventAttribute{
+			Attributes: []abcitypes.EventAttribute{
 				{Key: "store", Value: "vstorage"},
 				{Key: "key", Value: "2\x00notify\x00noLegacy"},
 				{Key: "anckey", Value: "\x012\x00notify\x00noLegacy\x01"},
@@ -268,7 +283,7 @@ func TestStorageNotify(t *testing.T) {
 		},
 		{
 			Type: "state_change",
-			Attributes: []abci.EventAttribute{
+			Attributes: []abcitypes.EventAttribute{
 				{Key: "store", Value: "vstorage"},
 				{Key: "key", Value: "2\x00notify\x00noLegacy2"},
 				{Key: "anckey", Value: "\x012\x00notify\x00noLegacy2\x01"},
