@@ -344,6 +344,7 @@ test('open portfolio with Aave and USDN positions', async t => {
   const [actual] = await Promise.all([
     openPortfolio(orch, ctx, seat, {
       destinationEVMChain: 'Ethereum',
+      Aave: { acctRatio: 0.5, gmpRatio: 0.5 },
     }),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) => {
       tap.receiveUpcall(
@@ -382,6 +383,7 @@ test('open portfolio with Aave position', async t => {
   const [actual] = await Promise.all([
     openPortfolio(orch, { ...ctx }, offer.seat, {
       destinationEVMChain: 'Ethereum',
+      Aave: { acctRatio: 0.5, gmpRatio: 0.5 },
     }),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) => {
       tap.receiveUpcall(

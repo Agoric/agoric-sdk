@@ -228,7 +228,7 @@ test('open a portfolio with Aave position', async t => {
       AaveGmp: usdc.make(100n), // fee
       Aave: usdc.units(3_333),
     },
-    { destinationEVMChain: 'Base' },
+    { destinationEVMChain: 'Base', Aave: { acctRatio: 0.5, gmpRatio: 0.5 } },
   );
   await eventLoopIteration(); // let IBC message go out
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
@@ -298,7 +298,10 @@ test('open a portfolio with Compound position', async t => {
       CompoundGmp: usdc.make(100n), // fee
       Compound: usdc.units(3_333),
     },
-    { destinationEVMChain: 'Base' },
+    {
+      destinationEVMChain: 'Base',
+      Compound: { acctRatio: 0.5, gmpRatio: 0.5 },
+    },
   );
   await eventLoopIteration(); // let IBC message go out
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
@@ -369,7 +372,7 @@ test('open portfolio with USDN, Aave positions', async t => {
       AaveGmp: usdc.make(100n), // fee
       Aave: usdc.units(3_333),
     },
-    { destinationEVMChain: 'Base' },
+    { destinationEVMChain: 'Base', Aave: { acctRatio: 0.5, gmpRatio: 0.5 } },
   );
   await eventLoopIteration(); // let outgoing IBC happen
   console.log('openPortfolio, eventloop');

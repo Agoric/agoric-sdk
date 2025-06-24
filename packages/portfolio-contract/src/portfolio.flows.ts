@@ -49,7 +49,6 @@ import { GMPArgsShape } from './type-guards.ts';
 // TODO: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const trace = makeTracer('PortF');
-const { values } = Object;
 
 type PortfolioBootstrapContext = {
   axelarChainsMap: AxelarChainsMap;
@@ -111,7 +110,12 @@ const createRemoteEVMAccount = async (
   protocol: YieldProtocol,
 ) => {
   const { contractAddresses } = ctx;
-  const { destinationEVMChain, keyword, amounts: gasAmounts } = gmpArgs;
+  const {
+    destinationEVMChain,
+    keyword,
+    gasRatio,
+    amounts: gasAmounts,
+  } = gmpArgs;
 
   await sendGmp(
     orch,
@@ -120,9 +124,10 @@ const createRemoteEVMAccount = async (
     harden({
       destinationAddress: contractAddresses.factory,
       destinationEVMChain,
-      type: AxelarGMPMessageType.ContractCall,
+      type: AxelarGMPMessageType.ContractCallWithToken,
       keyword,
       amounts: gasAmounts,
+      gasRatio,
       contractInvocationData: [],
     }),
     reader,
@@ -135,7 +140,7 @@ const sendTokensViaCCTP = async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
   seat: ZCFSeat,
-  args: BaseGmpArgs,
+  args: Omit<BaseGmpArgs, 'gasRatio'>,
   reader: GuestInterface<PortfolioKit>['reader'],
   protocol: YieldProtocol,
 ) => {
@@ -186,6 +191,7 @@ const makeAxelarMemo = (
     destinationEVMChain,
     destinationAddress,
     keyword,
+    gasRatio,
     amounts: gasAmounts,
     type,
   } = gmpArgs;
@@ -201,7 +207,8 @@ const makeAxelarMemo = (
   };
 
   memo.fee = {
-    amount: String(gasAmounts[keyword].value),
+    // This amount specifies the outbound gas for sending GMP message
+    amount: String(gasRatio * gasAmounts[keyword].value),
     recipient: gmpAddresses.AXELAR_GAS,
   };
 
@@ -260,6 +267,7 @@ const supplyToAave = async (
     destinationEVMChain,
     transferAmount,
     keyword,
+    gasRatio,
     amounts: gasAmounts,
   } = gmpArgs;
   const { contractAddresses } = ctx;
@@ -273,9 +281,10 @@ const supplyToAave = async (
     harden({
       destinationAddress: contractAddresses.factory,
       destinationEVMChain,
-      type: AxelarGMPMessageType.ContractCall,
+      type: AxelarGMPMessageType.ContractCallWithToken,
       keyword,
       amounts: gasAmounts,
+      gasRatio,
       contractInvocationData: [
         {
           functionSignature: 'approve(address,uint256)',
@@ -305,6 +314,7 @@ const withdrawFromAave = async (
     destinationEVMChain,
     withdrawAmount,
     keyword,
+    gasRatio,
     amounts: gasAmounts,
   } = gmpArgs;
   const { contractAddresses } = ctx;
@@ -318,9 +328,10 @@ const withdrawFromAave = async (
     harden({
       destinationAddress: contractAddresses.factory,
       destinationEVMChain,
-      type: AxelarGMPMessageType.ContractCall,
+      type: AxelarGMPMessageType.ContractCallWithToken,
       keyword,
       amounts: gasAmounts,
+      gasRatio,
       contractInvocationData: [
         {
           functionSignature: 'withdraw(address,uint256,address)',
@@ -345,6 +356,7 @@ const supplyToCompound = async (
     destinationEVMChain,
     transferAmount,
     keyword,
+    gasRatio,
     amounts: gasAmounts,
   } = gmpArgs;
   const { contractAddresses } = ctx;
@@ -360,9 +372,10 @@ const supplyToCompound = async (
     harden({
       destinationAddress: contractAddresses.factory,
       destinationEVMChain,
-      type: AxelarGMPMessageType.ContractCall,
+      type: AxelarGMPMessageType.ContractCallWithToken,
       keyword,
       amounts: gasAmounts,
+      gasRatio,
       contractInvocationData: [
         {
           functionSignature: 'approve(address,uint256)',
@@ -393,6 +406,7 @@ const withdrawFromCompound = async (
     withdrawAmount,
     keyword,
     amounts: gasAmounts,
+    gasRatio,
   } = gmpArgs;
   const { contractAddresses } = ctx;
 
@@ -406,9 +420,10 @@ const withdrawFromCompound = async (
     harden({
       destinationAddress: contractAddresses.factory,
       destinationEVMChain,
-      type: AxelarGMPMessageType.ContractCall,
+      type: AxelarGMPMessageType.ContractCallWithToken,
       keyword,
       amounts: gasAmounts,
+      gasRatio,
       contractInvocationData: [
         {
           functionSignature: 'withdraw(address,uint256)',
@@ -614,10 +629,14 @@ export const rebalance = async (
     );
 
     if (isNew) {
-      const gmpArgs = {
+      if (!offerArgs[protocol]?.acctRatio)
+        throw Fail`acctRatio needed for ${protocol}`;
+
+      const gmpArgs: BaseGmpArgs = {
         destinationEVMChain,
         keyword: accountKW,
         amounts: { [accountKW]: give[accountKW] },
+        gasRatio: offerArgs[protocol].acctRatio,
       };
       try {
         await createRemoteEVMAccount(
@@ -645,11 +664,15 @@ export const rebalance = async (
     kit.manager.waitKLUDGE(20n);
 
     const { value: transferAmount } = give[protocol] as Amount<'nat'>;
-    const gmpArgs = {
+    if (!offerArgs[protocol]?.gmpRatio)
+      throw Fail`gmpRatio needed for ${protocol}`;
+
+    const gmpArgs: GmpArgsTransferAmount = {
       destinationEVMChain,
       transferAmount,
       keyword: gmpKW,
       amounts: { [gmpKW]: give[gmpKW] },
+      gasRatio: offerArgs[protocol]?.gmpRatio,
     };
     switch (protocol) {
       case 'Aave':
