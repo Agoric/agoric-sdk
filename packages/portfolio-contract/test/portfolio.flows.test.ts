@@ -266,9 +266,7 @@ test('open portfolio with no positions', async t => {
   const shapes = makeProposalShapes(USDC);
   mustMatch(seat.getProposal(), shapes.openPortfolio);
 
-  const actual = await openPortfolio(orch, ctx, seat, {
-    destinationEVMChain: 'Ethereum', // TODO: make optional
-  });
+  const actual = await openPortfolio(orch, ctx, seat, {});
   t.log(log.map(msg => msg._method).join(', '));
 
   t.like(log, [{ _method: 'monitorTransfers' }, { _method: 'exit' }]);
@@ -295,12 +293,7 @@ test('open portfolio with USDN position', async t => {
   const shapes = makeProposalShapes(USDC);
   mustMatch(seat.getProposal(), shapes.openPortfolio);
 
-  const actual = await openPortfolio(
-    orch,
-    ctx,
-    seat,
-    { destinationEVMChain: 'Ethereum' }, // TODO: optional
-  );
+  const actual = await openPortfolio(orch, ctx, seat, { usdnOut: 97n });
   t.log(log.map(msg => msg._method).join(', '));
 
   t.like(log, [
@@ -350,7 +343,7 @@ test('open portfolio with Aave and USDN positions', async t => {
 
   const [actual] = await Promise.all([
     openPortfolio(orch, ctx, seat, {
-      destinationEVMChain: 'Ethereum', // TODO: make optional
+      destinationEVMChain: 'Ethereum',
     }),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) => {
       tap.receiveUpcall(

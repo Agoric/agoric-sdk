@@ -45,7 +45,7 @@ import type {
   OfferArgsFor,
   ProposalType,
 } from './type-guards.ts';
-import { GMPArgsShape, makePortfolioPath } from './type-guards.ts';
+import { GMPArgsShape } from './type-guards.ts';
 // TODO: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const trace = makeTracer('PortF');
@@ -78,27 +78,26 @@ export type PortfolioInstanceContext = {
 // XXX: push down to Orchestration API in NobleMethods, in due course
 const makeSwapLockMessages = (
   nobleAddr: CosmosChainAddress,
-  amountValue: bigint,
+  usdcIn: bigint,
   {
     poolId = 0n,
     denom = 'uusdc',
     denomTo = 'uusdn',
     vault = 1, // VaultType.STAKED,
+    usdnOut = usdcIn,
   } = {},
 ) => {
-  const amount = `${amountValue}`;
   const msgSwap: MsgSwap = {
     signer: nobleAddr.value,
-    amount: { denom, amount },
+    amount: { denom, amount: `${usdcIn}` },
     routes: [{ poolId, denomTo }],
     // TODO: swap min multiplier?
-    min: { denom: denomTo, amount },
+    min: { denom: denomTo, amount: `${usdnOut}` },
   };
   const msgLock: MsgLock = {
     signer: nobleAddr.value,
     vault,
-    // TODO: swap multiplier
-    amount,
+    amount: `${usdnOut}`,
   };
   return { msgSwap, msgLock };
 };
@@ -495,24 +494,25 @@ const addToUSDNPosition = async (
   ctx: PortfolioInstanceContext,
   seat: ZCFSeat,
   pos: USDNPosition,
-  amount: Amount<'nat'>,
   kit: GuestInterface<PortfolioKit>,
+  usdcIn: Amount<'nat'>,
+  usdnOut: bigint = usdcIn.value,
 ) => {
   // XXX HostInterface<...> ???
   const ica = kit.reader.getNobleICA() as unknown as NobleAccount;
   // XXX HostInterface<...> ???
   const localAcct = kit.reader.getLCA() as unknown as LocalAccount;
 
-  const denom = NonNullish(ctx.chainHubTools.getDenom(amount.brand));
-  const denomAmount: DenomAmount = { denom, value: amount.value };
-  const amounts = harden({ USDN: amount });
+  const amounts = harden({ USDN: usdcIn });
+  const denom = NonNullish(ctx.chainHubTools.getDenom(usdcIn.brand));
+  const denomAmount: DenomAmount = { denom, value: usdcIn.value };
   const moveAssets = trackFlow(kit.reporter);
 
   await moveAssets({
     how: 'localTransfer',
     src: { seat, keyword: 'USDN' },
     dest: { account: localAcct },
-    amount: amount,
+    amount: usdcIn,
     handle: async () => {
       await ctx.zoeTools.localTransfer(seat, localAcct, amounts);
 
@@ -521,20 +521,21 @@ const addToUSDNPosition = async (
         how: 'IBC transfer',
         src: { account: localAcct },
         dest: { account: ica },
-        amount,
+        amount: usdcIn,
         handle: async () => {
           await localAcct.transfer(there, denomAmount);
 
           await moveAssets({
             how: 'Swap, Lock',
-            amount,
+            amount: usdcIn,
             src: { account: ica },
             dest: { pos },
             handle: async () => {
               // NOTE: proposalShape guarantees that amount.brand is USDC
               const { msgSwap, msgLock } = makeSwapLockMessages(
                 there,
-                amount.value,
+                usdcIn.value,
+                { usdnOut },
               );
 
               trace('executing', [msgSwap, msgLock]);
@@ -590,7 +591,8 @@ export const rebalance = async (
   const { give } = proposal;
   if (give.USDN) {
     const pos = kit.manager.provideUSDNPosition(); // TODO: get num from offerArgs?
-    await addToUSDNPosition(ctx, seat, pos, give.USDN, kit);
+    const { usdnOut } = offerArgs;
+    await addToUSDNPosition(ctx, seat, pos, kit, give.USDN, usdnOut);
   }
 
   const { entries } = Object;
@@ -599,6 +601,8 @@ export const rebalance = async (
     const protocol = keyword as 'Aave' | 'Compound';
     (`${protocol}Gmp` in give && `${protocol}Account` in give) ||
       Fail`Gmp and Account needed for ${protocol}`;
+    if (!destinationEVMChain)
+      throw Fail`destinationEVMChain needed for ${protocol}`;
     const [gmpKW, accountKW] =
       protocol === 'Aave'
         ? ['AaveGmp', 'AaveAccount']
@@ -642,7 +646,7 @@ export const rebalance = async (
 
     const { value: transferAmount } = give[protocol] as Amount<'nat'>;
     const gmpArgs = {
-      destinationEVMChain: offerArgs.destinationEVMChain,
+      destinationEVMChain,
       transferAmount,
       keyword: gmpKW,
       amounts: { [gmpKW]: give[gmpKW] },
