@@ -26,7 +26,7 @@ const Trade = ({ makeOffer, withdrawUSDC, walletConnected, offerId, usdcPurse }:
       <div className="trade">
         <h3>Fixed Offer Details</h3>
         <div className="offer-details">
-          <p>This offer will send exactly <strong>10,000 uUSDC</strong> to the contract.</p>
+          <p>This offer will send exactly <strong>1.10 USDC</strong> to the contract.</p>
           {usdcPurse && (
             <p>
               Your current USDC balance: <strong>
@@ -47,7 +47,7 @@ const Trade = ({ makeOffer, withdrawUSDC, walletConnected, offerId, usdcPurse }:
         {walletConnected ? (
           <div className="button-group">
             <button onClick={handleMakeOffer}>
-              Make Offer (10,000 uUSDC)
+              Make Offer (at least 1.0 USDC)
             </button>
             
             {offerId && (

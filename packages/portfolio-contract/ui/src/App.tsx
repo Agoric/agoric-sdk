@@ -98,8 +98,8 @@ const makeOffer = () => {
     throw Error('USDC brand not available');
   }
 
-  // Fixed amount of 1 USDC
-  const giveValue = 10000n; // Assuming 6 decimal places for USDC
+  // Fixed amount of 1.10 USDC
+  const giveValue = 1_100_000n; // Assuming 6 decimal places for USDC
   const give = { USDN: { brand: brands.USDC, value: giveValue } };
 
   console.log('Making offer with:', {
@@ -119,11 +119,12 @@ const makeOffer = () => {
       publicInvitationMaker: 'makeOpenPortfolioInvitation',
     },
     { give },
-    undefined,
+    { usdnOut: giveValue * 99n / 100n }, // XXX should query
     (update: { status: string; data?: unknown }) => {
       console.log('Offer update:', update);
-      
-      const offerDetails = JSON.stringify(update, null, 2);
+
+      const bigintReplacer = (_k, v) => typeof v === 'bigint' ? `${v}`: v;
+      const offerDetails = JSON.stringify(update, bigintReplacer, 2);
       
       if (update.status === 'error') {
         console.error('Offer error:', update.data);
