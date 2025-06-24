@@ -13,7 +13,6 @@
     "test": "ava",
     "test:c8": "c8 --all $C8_OPTIONS ava",
     "test:xs": "exit 0",
-    "test:integration": "yarn ava ./test/portfolio.multichain.test.js",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
     "lint-fix": "yarn lint:eslint --fix",
     "lint:eslint": "yarn run -T eslint .",
