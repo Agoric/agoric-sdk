@@ -5,6 +5,7 @@ import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import { AmountMath } from '@agoric/ertp';
 import { makeTracer, mustMatch, type Remote } from '@agoric/internal';
+import { decodeBase64 } from '@endo/base64';
 import type {
   Marshaller,
   StorageNode,
@@ -338,9 +339,10 @@ export const preparePortfolioKit = (
             return;
           }
 
+          const payloadBytes = decodeBase64(memo.payload);
           const [{ isContractCallResult, data }] = decodeAbiParameters(
             DECODE_CONTRACT_CALL_RESULT_ABI,
-            memo.payload as `0x${string}`, // hm.. cast...
+            payloadBytes,
           ) as [AgoricResponse];
 
           trace(

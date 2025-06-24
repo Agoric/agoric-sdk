@@ -24,7 +24,7 @@ import { axelarChainsMap, makeUSDNIBCTraffic } from './mocks.ts';
 import { makeTrader } from './portfolio-actors.ts';
 import {
   chainInfo,
-  makeIncomingEvent,
+  makeIncomingEVMEvent,
   setupPortfolioTest,
 } from './supports.ts';
 import { makeWallet } from './wallet-offer-tools.ts';
@@ -282,7 +282,7 @@ test('open a portfolio with Aave position', async t => {
   const { transferBridge } = common.mocks;
 
   // stimulate upcall back from Axelar
-  const event = makeIncomingEvent(lca0, 'Base');
+  const event = makeIncomingEVMEvent();
   const ackNP = VE(transferBridge)
     .fromBridge(event)
     .finally(() => console.log('@@@fromBridge for tap done'))
@@ -355,7 +355,7 @@ test('open a portfolio with Compound position', async t => {
   const { transferBridge } = common.mocks;
 
   // stimulate upcall back from Axelar
-  const event = makeIncomingEvent(lca0, 'Base');
+  const event = makeIncomingEVMEvent();
   const ackNP = VE(transferBridge)
     .fromBridge(event)
     .finally(() => console.log('@@@fromBridge for tap done'))
@@ -428,7 +428,7 @@ test('open portfolio with USDN, Aave positions', async t => {
 
   // ack IBC transfer to Noble
   const ackNP = VE(transferBridge)
-    .fromBridge(makeIncomingEvent(lca0, 'Ethereum'))
+    .fromBridge(makeIncomingEVMEvent())
     .finally(() => console.log('@@@fromAxelar done'))
     .then(() => eventLoopIteration())
     .then(() => {
