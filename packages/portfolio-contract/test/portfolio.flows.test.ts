@@ -13,7 +13,7 @@ import {
   documentStorageSchema,
   makeFakeStorageKit,
 } from '@agoric/internal/src/storage-test-utils.js';
-import type { Orchestrator } from '@agoric/orchestration';
+import { denomHash, type Orchestrator } from '@agoric/orchestration';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
@@ -83,6 +83,7 @@ const mocks = (
               return addr;
             },
             async transfer(address, amount, opts) {
+              if (!('denom' in amount)) throw Error('#10449');
               log({
                 _cap: addr.value,
                 _method: 'transfer',
@@ -116,6 +117,7 @@ const mocks = (
             return Far('NobleAccount', {
               ...account,
               depositForBurn: (destinationAddress, denomAmount) => {
+                if (!('denom' in denomAmount)) throw Error('#10449');
                 log({
                   _cap: addr.value,
                   _method: 'depositForBurn',
@@ -185,10 +187,11 @@ const mocks = (
     .makeChildNode('portfolios');
   const timer = buildZoeManualTimer();
 
+  const denom = `ibc/${denomHash({ channelId: 'channel-123', denom: 'uusdc' })}`;
   const chainHubTools = harden({
     getDenom: brand => {
       assert(brand === USDC);
-      return 'ibc/TODO what is the right hash?';
+      return denom;
     },
   });
 

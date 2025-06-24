@@ -9,10 +9,11 @@ import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import type { Amount } from '@agoric/ertp';
-import { makeTracer, mustMatch } from '@agoric/internal';
+import { makeTracer, mustMatch, NonNullish } from '@agoric/internal';
 import type {
   CosmosChainAddress,
   Denom,
+  DenomAmount,
   OrchestrationAccount,
   OrchestrationFlow,
   Orchestrator,
@@ -142,12 +143,8 @@ const sendTokensViaCCTP = async (
   const { axelarChainsMap, chainHubTools, zoeTools } = ctx;
   const { keyword, amounts, destinationEVMChain } = args;
   const amount = amounts[keyword];
-  const denom = await chainHubTools.getDenom(amount.brand);
-  assert(denom, 'denom must be defined');
-  const denomAmount = {
-    denom,
-    value: amount.value,
-  };
+  const denom = NonNullish(chainHubTools.getDenom(amount.brand));
+  const denomAmount: DenomAmount = { denom, value: amount.value };
 
   const nobleAccount = reader.getNobleICA() as unknown as NobleAccount;
   const localAcct = reader.getLCA() as unknown as LocalAccount;
@@ -155,7 +152,7 @@ const sendTokensViaCCTP = async (
   trace('localTransfer', amount, 'to local', localAcct.getAddress().value);
   await zoeTools.localTransfer(seat, localAcct, amounts);
   try {
-    await localAcct.transfer(nobleAccount.getAddress(), amount);
+    await localAcct.transfer(nobleAccount.getAddress(), denomAmount);
     const caipChainId = axelarChainsMap[destinationEVMChain].caip;
     const remoteAccountAddress = await reader.getGMPAddress(protocol);
     const destinationAddress = `${caipChainId}:${remoteAccountAddress}`;
@@ -168,7 +165,8 @@ const sendTokensViaCCTP = async (
       );
     } catch (err) {
       console.error('⚠️ recover to local account.', amount);
-      await nobleAccount.transfer(localAcct.getAddress(), amount);
+      const nobleAmount: DenomAmount = { denom: 'uusdc', value: amount.value };
+      await nobleAccount.transfer(localAcct.getAddress(), nobleAmount);
       // TODO: and what if this transfer fails?
       throw err;
     }
@@ -505,6 +503,8 @@ const addToUSDNPosition = async (
   // XXX HostInterface<...> ???
   const localAcct = kit.reader.getLCA() as unknown as LocalAccount;
 
+  const denom = NonNullish(ctx.chainHubTools.getDenom(amount.brand));
+  const denomAmount: DenomAmount = { denom, value: amount.value };
   const amounts = harden({ USDN: amount });
   const moveAssets = trackFlow(kit.reporter);
 
@@ -523,7 +523,7 @@ const addToUSDNPosition = async (
         dest: { account: ica },
         amount,
         handle: async () => {
-          await localAcct.transfer(there, amount);
+          await localAcct.transfer(there, denomAmount);
 
           await moveAssets({
             how: 'Swap, Lock',
@@ -547,7 +547,8 @@ const addToUSDNPosition = async (
 
             recover: async err => {
               console.error('⚠️ recover to local account.', amounts);
-              await ica.transfer(localAcct.getAddress(), amount);
+              const nobleAmount = { ...denomAmount, denom: 'uusdc' };
+              await ica.transfer(localAcct.getAddress(), nobleAmount);
               // TODO: and what if this transfer fails?
               throw err;
             },

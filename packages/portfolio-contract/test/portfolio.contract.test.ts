@@ -203,6 +203,7 @@ test('open portfolio with USDN position', async t => {
   t.log('refund', done.payouts);
 });
 
+// TODO: depositForBurn is throwing
 test('open a portfolio with Aave position', async t => {
   const { common, zoe, started } = await deploy(t);
   const { usdc } = common.brands;
