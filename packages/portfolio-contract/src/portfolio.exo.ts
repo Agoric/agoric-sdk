@@ -342,7 +342,7 @@ export const preparePortfolioKit = (
           const payloadBytes = decodeBase64(memo.payload);
           const [{ isContractCallResult, data }] = decodeAbiParameters(
             DECODE_CONTRACT_CALL_RESULT_ABI,
-            payloadBytes, // hm.. cast...
+            payloadBytes,
           ) as [AgoricResponse];
 
           trace(

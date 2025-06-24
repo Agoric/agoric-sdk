@@ -278,7 +278,7 @@ const supplyToAave = async (
     ctx,
     seat,
     harden({
-      destinationAddress: contractAddresses.factory,
+      destinationAddress: remoteEVMAddress,
       destinationEVMChain,
       type: AxelarGMPMessageType.ContractCallWithToken,
       keyword,
@@ -325,7 +325,7 @@ const withdrawFromAave = async (
     ctx,
     seat,
     harden({
-      destinationAddress: contractAddresses.factory,
+      destinationAddress: remoteEVMAddress,
       destinationEVMChain,
       type: AxelarGMPMessageType.ContractCallWithToken,
       keyword,
@@ -361,15 +361,13 @@ const supplyToCompound = async (
   const { contractAddresses } = ctx.axelarChainsMap[destinationEVMChain];
 
   const remoteEVMAddress = await reader.getGMPAddress('Compound');
-  // XXX if we're not using it, why assert it here???
-  assert(remoteEVMAddress, 'remoteEVMAddress must be defined');
 
   await sendGmp(
     orch,
     ctx,
     seat,
     harden({
-      destinationAddress: contractAddresses.factory,
+      destinationAddress: remoteEVMAddress,
       destinationEVMChain,
       type: AxelarGMPMessageType.ContractCallWithToken,
       keyword,
@@ -410,14 +408,13 @@ const withdrawFromCompound = async (
   const { contractAddresses } = ctx.axelarChainsMap[destinationEVMChain];
 
   const remoteEVMAddress = await reader.getGMPAddress('Compound');
-  assert(remoteEVMAddress, 'remoteEVMAddress must be defined');
 
   await sendGmp(
     orch,
     ctx,
     seat,
     harden({
-      destinationAddress: contractAddresses.factory,
+      destinationAddress: remoteEVMAddress,
       destinationEVMChain,
       type: AxelarGMPMessageType.ContractCallWithToken,
       keyword,
