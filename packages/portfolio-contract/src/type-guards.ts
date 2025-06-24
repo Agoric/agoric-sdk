@@ -1,3 +1,7 @@
+/**
+ * @file Patterns (aka type guards), especially for the external interface
+ * of the contract.
+ */
 import { type Amount, type Brand, type NatValue } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
 import type { CaipChainId, OrchestrationAccount } from '@agoric/orchestration';
@@ -26,7 +30,10 @@ export type CompoundGive = {
   Compound: Amount<'nat'>;
 };
 export type GmpGive = {} | AaveGive | CompoundGive | (AaveGive & CompoundGive);
-export type OpenPortfolioGive = { USDN?: Amount<'nat'> } & ({} | GmpGive);
+export type OpenPortfolioGive = {
+  USDN?: Amount<'nat'>;
+  Access?: Amount<'nat'>;
+} & ({} | GmpGive);
 
 export type ProposalType = {
   openPortfolio: { give: OpenPortfolioGive };
@@ -36,7 +43,10 @@ export type ProposalType = {
 };
 
 const YieldProtocolShape = M.or(...keys(YieldProtocol));
-export const makeProposalShapes = (usdcBrand: Brand<'nat'>) => {
+export const makeProposalShapes = (
+  usdcBrand: Brand<'nat'>,
+  accessBrand?: Brand<'nat'>,
+) => {
   // TODO: Update usdcAmountShape, to include BLD/aUSDC after discussion with Axelar team
   const usdcAmountShape = makeNatAmountShape(usdcBrand);
   const AaveGiveShape = harden({
@@ -49,25 +59,34 @@ export const makeProposalShapes = (usdcBrand: Brand<'nat'>) => {
     CompoundGmp: usdcAmountShape,
     CompoundAccount: usdcAmountShape,
   });
-  const openGive = M.splitRecord(
-    {},
-    { USDN: usdcAmountShape },
-    M.or(
-      harden({}),
-      AaveGiveShape,
-      CompoundGiveShape,
-      // TODO: and no others
-      M.and(M.splitRecord(AaveGiveShape), M.splitRecord(CompoundGiveShape)),
-    ),
-  );
+
+  // The give for openPortfolio and rebalance differ only in required properties
+  const giveWith = x => {
+    return M.splitRecord(
+      x,
+      { USDN: usdcAmountShape },
+      M.or(
+        harden({}),
+        AaveGiveShape,
+        CompoundGiveShape,
+        // TODO: and no others
+        M.and(M.splitRecord(AaveGiveShape), M.splitRecord(CompoundGiveShape)),
+      ),
+    );
+  };
+
   return {
     openPortfolio: M.splitRecord(
-      { give: openGive },
+      {
+        give: giveWith(
+          accessBrand ? { Access: makeNatAmountShape(accessBrand, 1n) } : {},
+        ),
+      },
       { want: {}, exit: M.any() },
       {},
     ) as TypedPattern<ProposalType['openPortfolio']>,
     rebalance: M.or(
-      M.splitRecord({ give: openGive }, { want: {}, exit: M.any() }, {}),
+      M.splitRecord({ give: giveWith({}) }, { want: {}, exit: M.any() }, {}),
       M.splitRecord(
         { want: M.recordOf(YieldProtocolShape, usdcAmountShape) },
         { give: {}, exit: M.any() },

@@ -88,7 +88,7 @@ export const contract = async (
     log: trace,
   });
 
-  const proposalShapes = makeProposalShapes(brands.USDC);
+  const proposalShapes = makeProposalShapes(brands.USDC, brands.Access);
 
   const inertSubscriber: ResolvedPublicTopic<never>['subscriber'] = {
     getUpdateSince() {

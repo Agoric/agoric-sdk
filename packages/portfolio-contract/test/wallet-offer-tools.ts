@@ -75,16 +75,19 @@ export interface WalletTool {
 }
 
 export const makeWallet = (
-  assets: Record<'USDC', Omit<ReturnType<typeof withAmountUtils>, 'mint'>>,
+  assets: Record<
+    'USDC' | 'Access',
+    Omit<ReturnType<typeof withAmountUtils>, 'mint'>
+  >,
   zoe: ZoeService,
   when,
 ): WalletTool => {
   const purses = {
     USDC: assets.USDC.issuer.makeEmptyPurse(),
+    Access: assets.Access.issuer.makeEmptyPurse(),
   };
 
-  /** @param {Brand} b */
-  const providePurse = b =>
+  const providePurse = (b: Brand) =>
     purses[
       keys(assets).find(k => assets[k].brand === b) || Fail`no purse for ${b}`
     ];
