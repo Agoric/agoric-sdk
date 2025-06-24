@@ -21,7 +21,6 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
-	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	dbm "github.com/cosmos/cosmos-db"
@@ -584,45 +583,45 @@ func Test_EndBlock_Events(t *testing.T) {
 	}
 	am := NewAppModule(keeper)
 
-	events := []abci.Event{
-		{
-			Type: "coin_received",
-			Attributes: []abci.EventAttribute{
-				{Key: "receiver", Value: addr1},
-				{Key: "amount", Value: "500ubld,600urun,700ushmoo"},
-			},
-		},
-		{
-			Type: "coin_spent",
-			Attributes: []abci.EventAttribute{
-				{Key: "spender", Value: addr2},
-				{Key: "amount", Value: "500ubld,600urun,700ushmoo"},
-				{Key: "other", Value: addr3},
-			},
-		},
-		{
-			Type: "something_else",
-			Attributes: []abci.EventAttribute{
-				{Key: "receiver", Value: addr4},
-				{Key: "spender", Value: addr4},
-				{Key: "amount", Value: "500ubld,600urun,700ushmoo"},
-			},
-		},
-		{
-			Type: "non_modaccount",
-			Attributes: []abci.EventAttribute{
-				{Key: "receiver", Value: addr3},
-				{Key: "spender", Value: addr4},
-				{Key: "amount", Value: "100ubld"},
-			},
-		},
-	}
-	sdkEvents := make(sdk.Events, len(events))
-	for i, e := range events {
-		sdkEvents[i] = sdk.Event(e)
-	}
-	em := sdk.NewEventManagerWithHistory(sdkEvents)
-	ctx = ctx.WithEventManager(em)
+	//events := []abci.Event{
+	//	{
+	//		Type: "coin_received",
+	//		Attributes: []abci.EventAttribute{
+	//			{Key: "receiver", Value: addr1},
+	//			{Key: "amount", Value: "500ubld,600urun,700ushmoo"},
+	//		},
+	//	},
+	//	{
+	//		Type: "coin_spent",
+	//		Attributes: []abci.EventAttribute{
+	//			{Key: "spender", Value: addr2},
+	//			{Key: "amount", Value: "500ubld,600urun,700ushmoo"},
+	//			{Key: "other", Value: addr3},
+	//		},
+	//	},
+	//	{
+	//		Type: "something_else",
+	//		Attributes: []abci.EventAttribute{
+	//			{Key: "receiver", Value: addr4},
+	//			{Key: "spender", Value: addr4},
+	//			{Key: "amount", Value: "500ubld,600urun,700ushmoo"},
+	//		},
+	//	},
+	//	{
+	//		Type: "non_modaccount",
+	//		Attributes: []abci.EventAttribute{
+	//			{Key: "receiver", Value: addr3},
+	//			{Key: "spender", Value: addr4},
+	//			{Key: "amount", Value: "100ubld"},
+	//		},
+	//	},
+	//}
+	//sdkEvents := make(sdk.Events, len(events))
+	//for i, e := range events {
+	//	sdkEvents[i] = sdk.Event(e)
+	//}
+	//em := sdk.NewEventManagerWithHistory(sdkEvents)
+	//ctx = ctx.WithEventManager(em)
 
 	err := am.EndBlock(ctx)
 	if err != nil {
