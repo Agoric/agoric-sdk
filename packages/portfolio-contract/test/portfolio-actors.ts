@@ -1,7 +1,7 @@
 import type { Instance } from '@agoric/zoe';
 import type { ExecutionContext } from 'ava';
 import { type start } from '../src/portfolio.contract.ts';
-import type { EVMOfferArgs, OpenPortfolioGive } from '../src/type-guards.ts';
+import type { OfferArgsFor, OpenPortfolioGive } from '../src/type-guards.ts';
 import type { WalletTool } from './wallet-offer-tools.ts';
 
 export const makeTrader = (
@@ -13,7 +13,7 @@ export const makeTrader = (
     async openPortfolio(
       t: ExecutionContext,
       give: OpenPortfolioGive,
-      offerArgs: EVMOfferArgs = harden({ destinationEVMChain: 'Ethereum' }),
+      offerArgs: OfferArgsFor['openPortfolio'] = {},
     ) {
       const invitationSpec = {
         source: 'contract' as const,

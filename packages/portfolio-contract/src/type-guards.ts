@@ -89,27 +89,27 @@ export const makeProposalShapes = (usdcBrand: Brand<'nat'>) => {
   };
 };
 
-export type EVMOfferArgs = {
-  destinationEVMChain: AxelarChain;
+type OfferArgs1 = {
+  destinationEVMChain?: AxelarChain;
+  usdnOut?: NatValue;
 };
 
-export const EVMOfferArgsShape: TypedPattern<EVMOfferArgs> = M.splitRecord(
+const offerArgsShape: TypedPattern<OfferArgs1> = M.splitRecord(
   {},
   {
     destinationEVMChain: M.or(...keys(AxelarChains)),
+    usdnOut: M.nat(),
   },
-) as TypedPattern<EVMOfferArgs>;
+);
 
 export type OfferArgsFor = {
-  openPortfolio: EVMOfferArgs;
-  rebalance: EVMOfferArgs;
+  openPortfolio: OfferArgs1;
+  rebalance: OfferArgs1;
 };
 
 export const OfferArgsShapeFor = {
-  openPortfolio: EVMOfferArgsShape as TypedPattern<
-    OfferArgsFor['openPortfolio']
-  >,
-  rebalance: EVMOfferArgsShape as TypedPattern<OfferArgsFor['rebalance']>,
+  openPortfolio: offerArgsShape,
+  rebalance: offerArgsShape,
 };
 harden(OfferArgsShapeFor);
 
