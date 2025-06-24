@@ -73,7 +73,10 @@ test('coreEval code without swingset', async t => {
       }
     }
 
-    for (const [name, { brand, issuer }] of entries({ USDC: usdc })) {
+    for (const [name, { brand, issuer }] of entries({
+      USDC: usdc,
+      PoC25: poc24,
+    })) {
       t.log('produce brand, issuer for', name);
       wk.brand.produce[name].resolve(brand);
       wk.issuer.produce[name].resolve(issuer);

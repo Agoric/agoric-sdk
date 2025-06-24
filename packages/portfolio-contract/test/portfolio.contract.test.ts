@@ -23,8 +23,8 @@ import {
 import { axelarChainsMap, makeUSDNIBCTraffic } from './mocks.ts';
 import { makeTrader } from './portfolio-actors.ts';
 import {
-  makeIncomingEVMEvent,
   chainInfoFantasyTODO,
+  makeIncomingEVMEvent,
   setupPortfolioTest,
 } from './supports.ts';
 import { makeWallet } from './wallet-offer-tools.ts';
@@ -116,7 +116,7 @@ export const setupTrader = async (t, initial = 10_000) => {
   const trader1 = makeTrader(myWallet, started.instance);
 
   const { ibcBridge } = common.mocks;
-  for (const { msg, ack } of Object.values(makeUSDNIBCTraffic())) {
+  for (const { msg, ack } of values(makeUSDNIBCTraffic())) {
     ibcBridge.addMockAck(msg, ack);
   }
 
@@ -357,11 +357,6 @@ test('open a portfolio with Compound position', async t => {
   const { trader1, common } = await setupTrader(t);
   const { usdc, poc24 } = common.brands;
 
-  const { ibcBridge } = common.mocks;
-  for (const { msg, ack } of Object.values(makeUSDNIBCTraffic())) {
-    ibcBridge.addMockAck(msg, ack);
-  }
-
   const actualP = trader1.openPortfolio(
     t,
     {
@@ -423,11 +418,6 @@ test('open a portfolio with Compound position', async t => {
 test('open portfolio with USDN, Aave positions', async t => {
   const { trader1, common } = await setupTrader(t);
   const { usdc, poc24 } = common.brands;
-
-  const { ibcBridge } = common.mocks;
-  for (const { msg, ack } of Object.values(makeUSDNIBCTraffic())) {
-    ibcBridge.addMockAck(msg, ack);
-  }
 
   const doneP = trader1.openPortfolio(
     t,
