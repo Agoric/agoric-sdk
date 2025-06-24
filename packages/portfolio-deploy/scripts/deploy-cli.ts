@@ -98,6 +98,25 @@ const main = async (
   });
   console.log(title, info);
 
+  // 1. Query proposals
+  const { stdout: proposalsJson } = await agdq.exec([
+    'query',
+    'gov',
+    'proposals',
+    '--output',
+    'json',
+  ]);
+
+  // 2. Parse and find latest proposal ID
+  const proposals = JSON.parse(proposalsJson).proposals;
+  const latestProposalId = Math.max(
+    ...proposals.map(p => Number(p.proposal_id ?? p.id)),
+  );
+
+  // 3. Vote "yes" on the latest proposal
+  console.log(`Voting YES on proposal #${latestProposalId}`);
+  await agdTx.exec(['tx', 'gov', 'vote', latestProposalId.toString(), 'yes']);
+
   throw Error('TODO: wait for tx? wait for voting end?');
 };
 
