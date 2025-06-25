@@ -174,3 +174,13 @@ agoricNames.chain:
 	yarn test:main test/ymax0 -m chain-info || \
 	./scripts/deploy-cli.ts ../packages/portfolio-deploy/src/chain-info.build.js \
 		  net=local peer=noble:connection-0:channel-0:uusdc
+
+##
+# Using ymax
+open-with-usdn: deploy-ymax usdc-available ./scripts/ymax-tool.ts
+	./scripts/ymax-tool.ts 1.01
+
+usdc-available: ./scripts/noble-usdn-lab.ts
+	yarn test:main test/ymax0 -m usdc-available || \
+	(FAUCET=trader1 NET=starship ./scripts/noble-usdn-lab.ts && \
+	TXFR=9950000 NET=starship ./scripts/noble-usdn-lab.ts)
