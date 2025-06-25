@@ -14,6 +14,8 @@ import {
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
 
+const beneficiary = 'agoric126sd64qkuag2fva3vy3syavggvw44ca2zfrzyy';
+
 /**
  * To facilitate deployment to environments other than devnet,
  * ../src/chain-info.build.js fetches chainInfo dynamically
@@ -107,6 +109,24 @@ test.serial('publish chainInfo etc.', async t => {
   }
 });
 
+test.serial('access token setup', async t => {
+  const { buildProposal, evalProposal, runUtils } = t.context;
+  const materials = buildProposal(
+    '@aglocal/portfolio-deploy/src/access-token-setup.build.js',
+    ['--beneficiary', beneficiary],
+  );
+
+  const { walletFactoryDriver: wfd } = t.context;
+  await wfd.provideSmartWallet(beneficiary);
+
+  await evalProposal(materials);
+  const { EV } = runUtils;
+  const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
+  const brand = await EV(agoricNames).lookup('brand', 'PoC25');
+  t.log(brand);
+  t.truthy(brand);
+});
+
 test.serial('contract starts; appears in agoricNames', async t => {
   const {
     agoricNamesRemotes,
@@ -147,13 +167,16 @@ test.serial('open a USDN position', async t => {
   }
 
   // TODO: should have 10K USDC
-  const wallet = await wfd.provideSmartWallet('agoric1trader1');
+  const wallet = await wfd.provideSmartWallet(beneficiary);
 
-  const { USDC } = agoricNamesRemotes.brand as unknown as Record<
+  const { USDC, PoC25 } = agoricNamesRemotes.brand as unknown as Record<
     string,
     Brand<'nat'>
   >;
-  const give = { USDN: make(USDC, 3_333n * 1_000_000n) };
+  const give = {
+    USDN: make(USDC, 3_333n * 1_000_000n),
+    Access: make(PoC25, 1n),
+  };
   t.log('opening portfolio', give);
   await wallet.sendOffer({
     id: `open-${Date.now()}`, // XXX ambient

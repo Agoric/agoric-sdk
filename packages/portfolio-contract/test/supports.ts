@@ -62,7 +62,8 @@ export {
   makeFakeTransferBridge,
 } from '@agoric/vats/tools/fake-bridge.js';
 
-export const chainInfo = {
+/** TODO: how to address this in production? route thru Osmosis? */
+export const chainInfoFantasyTODO = {
   ...withChainCapabilities(fetchedChainInfo),
   noble: {
     ...withChainCapabilities(fetchedChainInfo).noble,
@@ -135,12 +136,20 @@ export const setupPortfolioTest = async ({
     bootstrap: { agoricNamesAdmin, bankManager },
   } = common;
   const usdc = withAmountUtils(makeIssuerKit('USDC'));
+  const poc24 = withAmountUtils(makeIssuerKit('Poc24'));
   await E(bankManager).addAsset(
     uusdcOnAgoric,
     'USDC',
     'USD Circle Stablecoin',
     usdc.issuerKit,
   );
+  await E(bankManager).addAsset(
+    'upoc24',
+    'Poc24',
+    'Proof of Concept Access',
+    poc24.issuerKit,
+  );
+
   // These mints no longer stay in sync with bankManager.
   // Use pourPayment() for IST.
   const { mint: _i, ...usdcSansMint } = usdc;
@@ -168,7 +177,7 @@ export const setupPortfolioTest = async ({
 
   return {
     ...common,
-    brands: { usdc: usdcSansMint },
+    brands: { usdc: usdcSansMint, poc24 },
     commonPrivateArgs: {
       ...commonPrivateArgs,
       assetInfo,
