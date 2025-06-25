@@ -24,14 +24,21 @@ import '@endo/init';
 import { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import type { StdFee } from '@cosmjs/amino';
 import { stringToPath } from '@cosmjs/crypto';
-import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing';
+import {
+  DirectSecp256k1HdWallet,
+  Registry,
+  type GeneratedType,
+} from '@cosmjs/proto-signing';
 import { SigningStargateClient } from '@cosmjs/stargate';
 import { $ } from 'execa';
 import { ConfigContext, useChain, useRegistry } from 'starshipjs';
 import { DEFAULT_TIMEOUT_NS } from '../tools/ibc-transfer.ts';
 import { makeQueryClient } from '../tools/query.ts';
+import { makeSwapLockMessages } from '@aglocal/portfolio-contract/src/portfolio.flows.ts';
+import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
+import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 
-const [poolId, denom, denomTo] = [0, 'uusdc', 'uusdn']; // cf. .flows.ts
+const [poolId, denom, denomTo] = [0, 'uusdc' as const, 'uusdn' as const]; // cf. .flows.ts
 
 const keyring1 = {
   trader1: {
@@ -245,6 +252,58 @@ const lockUSDN = async (
   console.log({ txhash, url: `${config.noble.explorer}/tx/${txhash}` });
 };
 
+const nobleRegistryTypes: [string, GeneratedType][] = [
+  [MsgSwap.typeUrl, MsgSwap as GeneratedType],
+  [MsgLock.typeUrl, MsgLock as GeneratedType],
+];
+
+const swapAndLock = async (
+  amount: bigint,
+  config: typeof configs.testnet,
+  {
+    connectWithSigner,
+  }: { connectWithSigner: typeof SigningStargateClient.connectWithSigner },
+  memo = 'noble-usdn-lab',
+) => {
+  const [nobleWallet] = await Promise.all(
+    [{ prefix: 'noble' }].map(opts => makeWallet('trader1', opts)),
+  );
+  const [{ address: signer }] = await nobleWallet.getAccounts();
+
+  const { chainId } = config.noble;
+
+  const usdnOut = (amount * 99n) / 100n; // XXX should query
+  const { msgSwap, msgLock, protoMessages } = makeSwapLockMessages(
+    { value: signer as `${string}1${string}`, chainId, encoding: 'bech32' },
+    amount,
+    {
+      usdnOut,
+    },
+  );
+
+  const defaultGas = 2_000_000n;
+  const fee: StdFee = {
+    amount: [{ denom, amount: `${2_000_000}` }],
+    gas: `${defaultGas * 10n}`,
+  };
+
+  const clientN = await connectWithSigner(config.noble.rpc, nobleWallet, {
+    registry: new Registry(nobleRegistryTypes),
+  });
+  console.log('swap, lock', signer, [msgSwap, msgLock], fee);
+  console.log(protoMessages);
+  const tx = await clientN.signAndBroadcast(
+    signer,
+    [
+      { typeUrl: MsgSwap.typeUrl, value: msgSwap },
+      { typeUrl: MsgLock.typeUrl, value: msgLock },
+    ],
+    fee,
+    memo,
+  );
+  return tx;
+};
+
 const main = async ({
   env = process.env,
   configFile = 'config.ymax.yaml',
@@ -289,6 +348,14 @@ const main = async ({
   }
   if (env.LOCK) {
     await lockUSDN(BigInt(env.LOCK), config, $v);
+  }
+  if (env.SWAPLOCK) {
+    const tx = await swapAndLock(
+      BigInt(env.SWAPLOCK),
+      configs[env.NET || 'testnet'],
+      { connectWithSigner },
+    );
+    console.log(tx);
   }
 };
 
