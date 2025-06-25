@@ -103,6 +103,7 @@ const openPosition = async (
     before.header.height,
   );
   trace('status', status);
+  if ('error' in status) throw Error(status.error);
   return status;
 };
 
@@ -138,5 +139,6 @@ const main = async (
 // TODO: use endo-exec so we can unit test the above
 main().catch(err => {
   console.error(err);
-  process.exit(1);
+  const code = '--exit-success' in process.argv ? 0 : 1;
+  process.exit(code);
 });
