@@ -1,54 +1,41 @@
-import test from 'ava';
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import type { TestFn, ExecutionContext } from 'ava';
+
 import { execCmd, checkPodsRunning } from '../scripts/shell.ts';
+import childProcess from 'node:child_process';
+import { createRequire } from 'node:module';
+import fsp from 'node:fs/promises';
+import { commonSetup, ensureAccounts } from './support.js';
+import { makeContainer } from '../tools/agd-lib.js';
+import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
+const nodeRequire = createRequire(import.meta.url);
+const configFile = nodeRequire.resolve(
+  '../../../multichain-testing/config.ymax.yaml',
+);
 
-test('Ensure multichain env is running or start it', async t => {
-  try {
-    const podsOk = await checkPodsRunning();
+const contractName = 'ymax0';
+const chainInfoBuilder = './src/chain-info.build.js';
+const portfolioBuilder = './src/portfolio.build.js';
 
-    if (!podsOk) {
-      // Navigate to multichain-testing dir and start env
-      await execCmd(`cd ../../multichain-testing && make clean setup start`);
-      const retryPodsOk = await checkPodsRunning();
-      t.true(retryPodsOk, 'Multichain pods failed to start after setup');
-    } else {
-      t.pass('Multichain pods are already running');
-    }
-  } catch (err) {
-    t.fail(`Multichain setup failed: ${(err as Error).message}`);
-  }
-});
+interface TestContext {
+  tools: {
+    deployBuilder: (...args: any[]) => Promise<any>;
+    retryUntilCondition: (...args: any[]) => Promise<any>;
+    vstorageClient: {
+      queryData: (path: string) => Promise<any>;
+    };
+    agd?: any;
+  };
+  deployBuilder: (...args: any[]) => Promise<any>;
+  retryUntilCondition: (...args: any[]) => Promise<any>;
+  wallets: any;
+}
 
-test('Ensure gov1 key exists in local agd', async t => {
-  try {
-    // Check if gov1 already exists
-    const listKeysCmd = `agd keys list --keyring-backend test`;
-    const keyList = await execCmd(listKeysCmd);
+const test: TestFn<TestContext> = anyTest;
 
-    if (keyList.includes('"name": "gov1"') || keyList.includes('name: gov1')) {
-      t.pass('gov1 key already exists');
-    } else {
-      // Add gov1 with recovery phrase
-      const mnemonic =
-        'health riot cost kitten silly tube flash wrap festival portion imitate this make question host bitter puppy wait area glide soldier knee';
-      const addKeyCmd = `agd keys add gov1 --keyring-backend test --recover`;
-
-      const result = await execCmd(addKeyCmd, {
-        input: mnemonic + '\n',
-      });
-
-      t.assert(
-        result.includes('name: gov1'),
-        'gov1 key was not added successfully',
-      );
-    }
-  } catch (err) {
-    t.fail(`Failed to ensure gov1 key: ${(err as Error).message}`);
-  }
-});
-
-test('Fund gov1 account and verify balances on Agoric', async t => {
-  const addr = 'agoric1ee9hr0jyrxhy999y755mp862ljgycmwyp4pl7q';
-
+const fundWallets = async (t: ExecutionContext, wallets: any) => {
+  const addr = wallets.agoric;
+  console.log('Funding wallet:', addr);
   try {
     console.log('\n🔄 Initiating USDC IBC transfer from Noble → Agoric...');
     const usdcTransferCmd = [
@@ -120,102 +107,90 @@ test('Fund gov1 account and verify balances on Agoric', async t => {
     console.error('❌ Error during fund and balance check:', err);
     t.fail(`Funding or balance verification failed: ${(err as Error).message}`);
   }
-});
+};
 
-test('Deploy contracts, vote on proposal, and confirm registration in vstorage', async t => {
+const makeTestContext = async (t: ExecutionContext): Promise<TestContext> => {
+  t.log('configuration for starship regisry', configFile);
+
+  const podsOk = await checkPodsRunning();
+
+  if (!podsOk) {
+    // XXX: maybe give them an option to run it for them here?
+    t.fail(
+      'Multichain-testing env is not running. Please start it before running any tests.',
+    );
+    return {} as TestContext; // Return empty context to avoid further errors
+  }
+
+  const bundleCache = await makeNodeBundleCache('bundles', {}, s => import(s));
+  const container = makeContainer({ execFileSync: childProcess.execFileSync });
+
+  const { deployBuilder, retryUntilCondition, ...tools } = commonSetup(t, {
+    execFile: childProcess.execFile,
+    container,
+    bundleCache,
+    readFile: fsp.readFile,
+    fetch,
+    setTimeout: globalThis.setTimeout,
+    log: console.log,
+  });
+  const wallets = await ensureAccounts(tools.agd.keys);
+
+  t.log('Install contract', contractName);
+  await deployBuilder(chainInfoBuilder, [
+    `net=local`,
+    `peer=noblelocal:connection-0:channel-0:uusdc`,
+  ]);
+  await deployBuilder(portfolioBuilder, [
+    `net=local`,
+    `peer=noblelocal:connection-0:channel-0:uusdc`,
+  ]);
+
+  await fundWallets(t, wallets);
+
+  return {
+    tools: {
+      ...tools,
+      deployBuilder,
+      retryUntilCondition,
+    },
+    deployBuilder,
+    retryUntilCondition,
+    wallets,
+  };
+};
+
+test.before(async t => (t.context = await makeTestContext(t)));
+
+// test.skip('Ensure multichain env is running or start it', async t => {
+//   try {
+//     const podsOk = await checkPodsRunning();
+
+//     if (!podsOk) {
+//       // Navigate to multichain-testing dir and start env
+//       await execCmd(`cd ../../multichain-testing && make clean setup start`);
+//       const retryPodsOk = await checkPodsRunning();
+//       t.true(retryPodsOk, 'Multichain pods failed to start after setup');
+//     } else {
+//       t.pass('Multichain pods are already running');
+//     }
+//   } catch (err) {
+//     t.fail(`Multichain setup failed: ${(err as Error).message}`);
+//   }
+// });
+
+test('Ymax Contract is registered in vstorage', async t => {
+  const { tools } = t.context;
+  const { retryUntilCondition, vstorageClient } = tools;
+
   try {
-    console.log('\n🔨 Building contracts...');
-    const buildOutput = await execCmd('yarn build');
-    console.log('✅ Build output:\n', buildOutput);
-
-    // 1. Deploy chain-info
-    console.log('\n🚀 Deploying `chain-info`...');
-    const deployChainInfoCmd = [
-      `scripts/deploy-cli.ts src/chain-info.build.js`,
-      `--net=local`,
-      `--from=gov1`,
-      `--net=local`,
-      `peer=noblelocal:connection-0:channel-0:uusdc`,
-    ].join(' ');
-
-    const chainInfoOutput = await execCmd(deployChainInfoCmd);
-    console.log('✅ chain-info deploy output:\n', chainInfoOutput);
-    t.false(
-      chainInfoOutput.toLowerCase().includes('error'),
-      'Deployment of chain-info failed',
+    await retryUntilCondition(
+      () => vstorageClient.queryData(`published.agoricNames.instance`),
+      res => contractName in Object.fromEntries(res),
+      `${contractName} instance is available`,
     );
-
-    // 2. Deploy portfolio
-    console.log('\n🚀 Deploying `portfolio`...');
-    const deployPortfolioCmd = [
-      `scripts/deploy-cli.ts src/portfolio.build.js`,
-      `--net=local`,
-      `--from=gov1`,
-      `-- --keyring-backend test`,
-    ].join(' ');
-
-    const portfolioOutput = await execCmd(deployPortfolioCmd);
-    console.log('✅ portfolio deploy output:\n', portfolioOutput);
-    t.false(
-      portfolioOutput.toLowerCase().includes('error'),
-      'Deployment of portfolio failed',
-    );
-
-    // 3. Query latest proposal
-    console.log('\n📜 Querying latest proposal...');
-    const queryProposalCmd = `kubectl exec -i agoriclocal-genesis-0 -- agd query gov proposals --output json`;
-    const proposalOutput = await execCmd(queryProposalCmd);
-    const parsed = JSON.parse(proposalOutput);
-    const latestProposal = parsed.proposals?.[parsed.proposals.length - 1];
-
-    if (!latestProposal) {
-      t.fail('No proposals found');
-      return;
-    }
-
-    const proposalId = latestProposal.id;
-    console.log(
-      `🗳 Submitting YES vote on proposal #${proposalId} from genesis...`,
-    );
-
-    const voteCmd = [
-      `kubectl exec -i agoriclocal-genesis-0 -- agd tx gov vote`,
-      proposalId,
-      `yes`,
-      `--from genesis`,
-      `--keyring-backend test`,
-      `--chain-id agoriclocal`,
-      `--fees 5000ubld`,
-      `--gas auto`,
-      `--gas-adjustment 1.3`,
-      `-y`,
-    ].join(' ');
-
-    const voteOutput = await execCmd(voteCmd);
-    console.log('✅ Vote output:\n', voteOutput);
-    t.false(
-      voteOutput.toLowerCase().includes('error'),
-      'Vote transaction failed',
-    );
-
-    // 4. Wait for the vote to finalize & contracts to be registered
-    console.log('\n⏳ Waiting before querying vstorage...');
-    await new Promise(r => setTimeout(r, 7000));
-
-    // 5. Query vstorage for published.agoricNames.instance
-    console.log('\n🔍 Querying vstorage for published.agoricNames.instance...');
-    const curlCmd = `curl -s http://localhost:1317/agoric/vstorage/data/published.agoricNames.instance`;
-    const vstorageOutput = await execCmd(curlCmd);
-    console.log('✅ vstorage raw output:\n', vstorageOutput);
-
-    const containsYmax = vstorageOutput.includes('ymax0');
-    t.true(containsYmax, '`ymax0` not found in published.agoricNames.instance');
-
-    console.log(
-      '\n🎯 Contract ymax0 successfully registered in agoricNames.instance',
-    );
+    t.pass(`${contractName} was found in vstorage`);
   } catch (err) {
-    console.error('❌ Error during deploy → vote → vstorage check:', err);
-    t.fail(`Test failed: ${(err as Error).message}`);
+    t.fail(`${contractName} was NOT found in vstorage`);
   }
 });
