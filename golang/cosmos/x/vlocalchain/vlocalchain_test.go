@@ -13,7 +13,6 @@ import (
 	"cosmossdk.io/store"
 	storemetrics "cosmossdk.io/store/metrics"
 	storetypes "cosmossdk.io/store/types"
-	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vlocalchain"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vlocalchain/types"
@@ -21,6 +20,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/module/testutil"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -136,21 +136,25 @@ func (s *mockStaking) UnbondingDelegation(cctx context.Context, req *stakingtype
 
 // makeTestKit creates a minimal Keeper and Context for use in testing.
 func makeTestKit(bank *mockBank, transfer *mockTransfer, staking *mockStaking, accts *mockAccounts) (vm.PortHandler, context.Context) {
-	encodingConfig := params.MakeEncodingConfig()
-	cdc := encodingConfig.Codec
+	// Configure address codec in the interface registry using testutil
+	encCfg := testutil.MakeTestEncodingConfig()
+
+	cdc := encCfg.Codec
 
 	txRouter := baseapp.NewMsgServiceRouter()
-	txRouter.SetInterfaceRegistry(encodingConfig.InterfaceRegistry)
+	txRouter.SetInterfaceRegistry(encCfg.InterfaceRegistry)
 	queryRouter := baseapp.NewGRPCQueryRouter()
-	queryRouter.SetInterfaceRegistry(encodingConfig.InterfaceRegistry)
+	queryRouter.SetInterfaceRegistry(encCfg.InterfaceRegistry)
 
-	banktypes.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	// Register all necessary module interfaces
+	authtypes.RegisterInterfaces(encCfg.InterfaceRegistry)
+	banktypes.RegisterInterfaces(encCfg.InterfaceRegistry)
 	banktypes.RegisterMsgServer(txRouter, bank)
 	banktypes.RegisterQueryServer(queryRouter, bank)
-	transfertypes.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	transfertypes.RegisterInterfaces(encCfg.InterfaceRegistry)
 	transfertypes.RegisterMsgServer(txRouter, transfer)
 	transfertypes.RegisterQueryServer(queryRouter, transfer)
-	stakingtypes.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	stakingtypes.RegisterInterfaces(encCfg.InterfaceRegistry)
 	stakingtypes.RegisterMsgServer(txRouter, staking)
 	stakingtypes.RegisterQueryServer(queryRouter, staking)
 
