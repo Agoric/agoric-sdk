@@ -21,7 +21,9 @@ const { fromEntries } = Object;
  * @param {(file: string, args: string[]) => Promise<{stdout: string}>} npx
  */
 export const makeDeployBuilder = (tools, readJSON, npx) =>
-  /** @param {string} builder */
+  /** @param {string} builder 
+   * @param {string[]} [builderArgs] - Optional array of arguments passed to the builder.
+ */
   async function deployBuilder(builder, builderArgs = ['']) {
     console.log(`building plan: ${builder}`);
     // build the plan

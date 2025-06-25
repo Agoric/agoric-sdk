@@ -1,6 +1,6 @@
+import { promisify } from 'node:util';
 import { makeRetryUntilCondition } from '../tools/sleep.js';
 import { makeDeployBuilder } from '../tools/deploy.js';
-import { promisify } from 'node:util';
 import { makeE2ETools } from '../tools/e2e-tools.js';
 
 /**
@@ -24,7 +24,7 @@ export const chainAccounts = {
 
 /**
  * @param {Agd['keys']} keyring
- * @param {{[name: string]: { mnemonic: string, address: string }}} [accounts]
+ * @param {{[name: string]: { name: string, mnemonic: string, address: string }}} [accounts]
  */
 export const ensureAccounts = async (keyring, accounts = chainAccounts) => {
   for (const [name, detail] of entries(accounts)) {
