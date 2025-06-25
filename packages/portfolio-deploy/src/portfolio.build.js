@@ -34,7 +34,7 @@ const defaultProposalBuilder = async (
 const build = async (homeP, endowments) => {
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
   // TODO: unit test agreement with startPortfolio.name
-  await writeCoreEval('startPortfolio', defaultProposalBuilder);
+  await writeCoreEval('eval-ymax0', defaultProposalBuilder);
 };
 
 export default build;
