@@ -4,12 +4,16 @@
  */
 import '@endo/init';
 
-import { fetchNetworkConfig, makeSmartWalletKit } from '@agoric/client-utils';
+import {
+  fetchEnvNetworkConfig,
+  makeSmartWalletKit,
+} from '@agoric/client-utils';
 import { MsgWalletSpendAction } from '@agoric/cosmic-proto/agoric/swingset/msgs.js';
 import { AmountMath } from '@agoric/ertp';
 import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import { makeTracer } from '@agoric/internal';
 import type { BridgeAction } from '@agoric/smart-wallet/src/smartWallet.js';
+import { stringToPath } from '@cosmjs/crypto';
 import { fromBech32 } from '@cosmjs/encoding';
 import {
   DirectSecp256k1HdWallet,
@@ -17,7 +21,6 @@ import {
   type GeneratedType,
 } from '@cosmjs/proto-signing';
 import { SigningStargateClient, type StdFee } from '@cosmjs/stargate';
-import { stringToPath } from '@cosmjs/crypto';
 
 const toAccAddress = (address: string): Uint8Array => {
   return fromBech32(address).data;
@@ -72,6 +75,7 @@ const openPosition = async (
         callPipe: [['makeOpenPortfolioInvitation']],
       },
       proposal: { give },
+      offerArgs: {}, // TODO: should be optional
     },
   });
 
@@ -118,7 +122,7 @@ const main = async (
 
   const delay = ms =>
     new Promise(resolve => setTimeout(resolve, ms)).then(_ => {});
-  const networkConfig = await fetchNetworkConfig('devnet', { fetch });
+  const networkConfig = await fetchEnvNetworkConfig({ env, fetch });
   const walletKit = await makeSmartWalletKit({ fetch, delay }, networkConfig);
   const signer = await DirectSecp256k1HdWallet.fromMnemonic(MNEMONIC, {
     prefix: 'agoric',
