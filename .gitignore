@@ -87,3 +87,10 @@ endo-sha.txt
 !.aiderignore
 .claude
 
+# ymax contract artifacts
+packages/portfolio-deploy/eval-chain-info-permit.json
+packages/portfolio-deploy/eval-chain-info-plan.json
+packages/portfolio-deploy/eval-chain-info.js
+packages/portfolio-deploy/startPortfolio-permit.json
+packages/portfolio-deploy/startPortfolio-plan.json
+packages/portfolio-deploy/startPortfolio.js
