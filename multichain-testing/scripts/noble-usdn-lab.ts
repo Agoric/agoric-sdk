@@ -37,6 +37,7 @@ import { makeQueryClient } from '../tools/query.ts';
 import { makeSwapLockMessages } from '@aglocal/portfolio-contract/src/portfolio.flows.ts';
 import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
+import starshipChainInfo from '../starship-chain-info.js';
 
 const [poolId, denom, denomTo] = [0, 'uusdc' as const, 'uusdn' as const]; // cf. .flows.ts
 
@@ -45,6 +46,7 @@ const keyring1 = {
     mnemonic:
       'cause eight cattle slot course mail more aware vapor slab hobby match',
     address: 'noble18qlqfelxhe7tszqqprm2eqdpzt9s6ry025y3j5',
+    // agoric address: agoric1yupasge4528pgkszg9v328x4faxtkldsnygwjl
   },
   whale: {
     mnemonic:
@@ -61,10 +63,9 @@ type Who = keyof typeof keyring1;
 
 const configs = {
   starship: {
+    ...starshipChainInfo,
     noble: {
-      // XXX should get these from starship registry
-      // meanwhile, see config.ymax.yml
-      chainId: 'noblelocal',
+      ...starshipChainInfo.noble,
       rpc: 'http://localhost:26654',
       api: 'http://localhost:1314',
     },
@@ -333,6 +334,7 @@ const main = async ({
       { connectWithSigner },
     );
     console.log(tx);
+    console.log('XXX check for arrival on agoric not automated');
   }
   if (env.POOL) {
     throw Error('does not work; needs to use authority exec');
