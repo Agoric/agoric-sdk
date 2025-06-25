@@ -8,7 +8,7 @@ import type { GuestInterface } from '@agoric/async-flow';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
-import type { Amount } from '@agoric/ertp';
+import type { Amount, Brand } from '@agoric/ertp';
 import { makeTracer, mustMatch, NonNullish } from '@agoric/internal';
 import type {
   CosmosChainAddress,
@@ -205,7 +205,10 @@ export const makeAxelarMemo = (
 
   memo.fee = {
     // This amount specifies the outbound gas for sending GMP message
-    amount: String(gasRatio * Number(gasAmounts[keyword].value)),
+    amount: String(
+      (Number(gasRatio[0]) / Number(gasRatio[1])) *
+        Number(gasAmounts[keyword].value),
+    ),
     recipient: gmpAddresses.AXELAR_GAS,
   };
 
@@ -670,7 +673,7 @@ export const rebalance = async (
       transferAmount,
       keyword: gmpKW,
       amounts: { [gmpKW]: give[gmpKW] },
-      gasRatio: offerArgs[protocol]?.gmpRatio,
+      gasRatio: offerArgs[protocol].gmpRatio,
     };
     switch (protocol) {
       case 'Aave':
