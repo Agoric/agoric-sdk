@@ -18,6 +18,7 @@ import * as contractExports from '../src/portfolio.contract.ts';
 import { makeAxelarMemo } from '../src/portfolio.flows.ts';
 import {
   makeProposalShapes,
+  OfferArgsShapeFor,
   type GmpArgsContractCall,
   type GmpGasRatio,
 } from '../src/type-guards.ts';
@@ -217,6 +218,39 @@ test('ProposalShapes', t => {
       t.log(`!${desc} ${name}: ${q(proposal)}`);
       t.false(matches(proposal, shapes[desc]), name);
     }
+  }
+});
+
+test('validate Ratio in OfferArgs', t => {
+  const cases = harden({
+    pass: {
+      empty: {},
+      aaveFull: { Aave: { gmpRatio: [1n, 2n], acctRatio: [3n, 4n] } },
+      compoundBoth: { Compound: { gmpRatio: [1n, 2n], acctRatio: [3n, 4n] } },
+    },
+    fail: {
+      // TODO: add a case where numerator > denominator
+      denominatorInt: { Aave: { gmpRatio: [1n, 2] } },
+      denominatorNeg: { Aave: { gmpRatio: [1n, -2n] } },
+      denominatorZero: { Compound: { gmpRatio: [1n, 0n] } },
+      numeratorInt: { Aave: { gmpRatio: [1, 2n] } },
+      numeratorNeg: { Aave: { gmpRatio: [-1n, 2n] } },
+      numeratorZero: { Compound: { gmpRatio: [0n, 2n] } },
+    },
+  });
+
+  const { pass, fail } = cases;
+  for (const [name, offerArgs] of Object.entries(pass)) {
+    t.log(`${name}: ${q(offerArgs)}`);
+    t.notThrows(
+      () => mustMatch(offerArgs, OfferArgsShapeFor.openPortfolio),
+      name,
+    );
+  }
+
+  for (const [name, offerArgs] of Object.entries(fail)) {
+    t.log(`!${name}: ${q(offerArgs)}`);
+    t.false(matches(offerArgs, OfferArgsShapeFor.openPortfolio), name);
   }
 });
 

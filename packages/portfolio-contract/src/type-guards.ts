@@ -135,8 +135,8 @@ const RatioShape = M.opt(
   M.splitRecord(
     {},
     {
-      gmpRatio: M.splitArray([M.bigint(), M.gt(0n)]),
-      acctRatio: M.splitArray([M.bigint(), M.gt(0n)]),
+      gmpRatio: M.splitArray([M.gt(0n), M.gt(0n)]),
+      acctRatio: M.splitArray([M.gt(0n), M.gt(0n)]),
     },
   ),
 );
@@ -247,7 +247,7 @@ export const GMPArgsShape: TypedPattern<GmpArgsContractCall> = M.splitRecord({
   keyword: M.string(),
   amounts: AmountKeywordRecordShape, // XXX brand should be exactly USDC
   contractInvocationData: M.arrayOf(ContractCallShape),
-  gasRatio: M.splitArray([M.bigint(), M.gt(0n)]),
+  gasRatio: M.splitArray([M.gt(0n), M.gt(0n)]),
 });
 
 export type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
