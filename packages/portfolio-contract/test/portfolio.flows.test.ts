@@ -343,7 +343,7 @@ test('open portfolio with Aave and USDN positions', async t => {
   const [actual] = await Promise.all([
     openPortfolio(orch, ctx, seat, {
       destinationEVMChain: 'Ethereum',
-      Aave: { acctRatio: 0.5, gmpRatio: 0.5 },
+      Aave: { acctRatio: [1n, 2n], gmpRatio: [1n, 2n] },
     }),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) => {
       tap.receiveUpcall(makeIncomingEVMEvent());
@@ -380,7 +380,7 @@ test('open portfolio with Aave position', async t => {
   const [actual] = await Promise.all([
     openPortfolio(orch, { ...ctx }, offer.seat, {
       destinationEVMChain: 'Ethereum',
-      Aave: { acctRatio: 0.5, gmpRatio: 0.5 },
+      Aave: { acctRatio: [1n, 2n], gmpRatio: [1n, 2n] },
     }),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) => {
       tap.receiveUpcall(makeIncomingEVMEvent());
@@ -410,7 +410,7 @@ test('open portfolio with Aave position', async t => {
   t.is(actual.publicTopics.length, 1);
 });
 
-test.skip('open portfolio with Compound position', async t => {
+test('open portfolio with Compound position', async t => {
   const { orch, tapPK, ctx, offer, storage } = mocks(
     {},
     {
@@ -423,6 +423,7 @@ test.skip('open portfolio with Compound position', async t => {
   const [actual] = await Promise.all([
     openPortfolio(orch, { ...ctx }, offer.seat, {
       destinationEVMChain: 'Ethereum',
+      Compound: { acctRatio: [1n, 2n], gmpRatio: [1n, 2n] },
     }),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) => {
       tap.receiveUpcall(makeIncomingEVMEvent());
@@ -432,12 +433,12 @@ test.skip('open portfolio with Compound position', async t => {
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
     { _method: 'monitorTransfers' },
-    { _method: 'localTransfer', amounts: { Account: { value: 300n } } },
+    { _method: 'localTransfer', amounts: { CompoundAccount: { value: 300n } } },
     { _method: 'transfer', address: { chainId: 'axelar-5' } },
     { _method: 'localTransfer', amounts: { Compound: { value: 300n } } },
     { _method: 'transfer', address: { chainId: 'noble-3' } },
     { _method: 'depositForBurn' },
-    { _method: 'localTransfer', amounts: { Gmp: { value: 100n } } },
+    { _method: 'localTransfer', amounts: { CompoundGmp: { value: 100n } } },
     { _method: 'transfer', address: { chainId: 'axelar-6' } },
     { _method: 'exit', _cap: 'seat' },
   ]);
