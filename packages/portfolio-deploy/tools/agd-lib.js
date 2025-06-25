@@ -98,7 +98,7 @@ export const makeAgd = ({ execFileSync, log = console.log }) => {
           throw Error(`path length limited to 1: ${path.length}`);
         }
         const [name] = path;
-        const txt = exec(['keys', 'show', `--address`, name, ...keyringArgs]);
+        const txt = exec(['keys', 'show', name, ...keyringArgs]);
         return txt.trim();
       },
     });
@@ -199,7 +199,6 @@ export const makeContainer = ({
        * @type {ExecSync}
        */
       execFileSync: (file, args, opts = returnString) => {
-        const execArgs = [...cmd.slice(1), container];
         log(`${pod}/${container}$`, ...[file, ...args].map(x => `${x}`));
         const exFlags = flags({ container, ...hFlags });
         const [hFile, ...hArgs] = [...cmd, pod, ...exFlags];

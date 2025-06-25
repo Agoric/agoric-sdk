@@ -1,13 +1,13 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn, ExecutionContext } from 'ava';
-
+import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
 import { execCmd, checkPodsRunning } from '../scripts/shell.ts';
 import childProcess from 'node:child_process';
 import { createRequire } from 'node:module';
 import fsp from 'node:fs/promises';
 import { commonSetup, ensureAccounts } from './support.js';
 import { makeContainer } from '../tools/agd-lib.js';
-import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
+
 const nodeRequire = createRequire(import.meta.url);
 const configFile = nodeRequire.resolve(
   '../../../multichain-testing/config.ymax.yaml',
@@ -99,8 +99,8 @@ const fundWallets = async (t: ExecutionContext, wallets: any) => {
       denom => denom.startsWith('ibc/') && balances[denom] >= 10_000_000,
     );
     t.true(hasUSDC, 'USDC balance missing or too low');
-    t.true((balances['ubld'] ?? 0) >= 500_000_000_000, 'BLD balance too low');
-    t.true((balances['uist'] ?? 0) >= 500_000_000_000, 'IST balance too low');
+    t.true((balances.ubld ?? 0) >= 500_000_000_000, 'BLD balance too low');
+    t.true((balances.uist ?? 0) >= 500_000_000_000, 'IST balance too low');
 
     console.log('✅ Balance verification passed!\n');
   } catch (err) {
@@ -134,6 +134,8 @@ const makeTestContext = async (t: ExecutionContext): Promise<TestContext> => {
     setTimeout: globalThis.setTimeout,
     log: console.log,
   });
+
+  // TODO: this is flaky - add them manually if this fails
   const wallets = await ensureAccounts(tools.agd.keys);
 
   t.log('Install contract', contractName);
@@ -191,6 +193,6 @@ test('Ymax Contract is registered in vstorage', async t => {
     );
     t.pass(`${contractName} was found in vstorage`);
   } catch (err) {
-    t.fail(`${contractName} was NOT found in vstorage`);
+    t.fail(`${contractName} was NOT found in vstorage ${err instanceof Error ? err.message : err}`);
   }
 });
