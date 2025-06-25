@@ -72,7 +72,7 @@ export type PortfolioInstanceContext = {
 };
 
 // XXX: push down to Orchestration API in NobleMethods, in due course
-const makeSwapLockMessages = (
+export const makeSwapLockMessages = (
   nobleAddr: CosmosChainAddress,
   usdcIn: bigint,
   {
@@ -83,19 +83,23 @@ const makeSwapLockMessages = (
     usdnOut = usdcIn,
   } = {},
 ) => {
-  const msgSwap: MsgSwap = {
+  const msgSwap = MsgSwap.fromPartial({
     signer: nobleAddr.value,
     amount: { denom, amount: `${usdcIn}` },
     routes: [{ poolId, denomTo }],
     // TODO: swap min multiplier?
     min: { denom: denomTo, amount: `${usdnOut}` },
-  };
-  const msgLock: MsgLock = {
+  });
+  const msgLock = MsgLock.fromPartial({
     signer: nobleAddr.value,
     vault,
     amount: `${usdnOut}`,
-  };
-  return { msgSwap, msgLock };
+  });
+  const protoMessages = [
+    Any.toJSON(MsgSwap.toProtoMsg(msgSwap)),
+    Any.toJSON(MsgLock.toProtoMsg(msgLock)),
+  ];
+  return { msgSwap, msgLock, protoMessages };
 };
 
 const createRemoteEVMAccount = async (
@@ -546,17 +550,14 @@ const addToUSDNPosition = async (
             dest: { pos },
             handle: async () => {
               // NOTE: proposalShape guarantees that amount.brand is USDC
-              const { msgSwap, msgLock } = makeSwapLockMessages(
+              const { msgSwap, msgLock, protoMessages } = makeSwapLockMessages(
                 there,
                 usdcIn.value,
                 { usdnOut },
               );
 
               trace('executing', [msgSwap, msgLock]);
-              const result = await ica.executeEncodedTx([
-                Any.toJSON(MsgSwap.toProtoMsg(msgSwap)),
-                Any.toJSON(MsgLock.toProtoMsg(msgLock)),
-              ]);
+              const result = await ica.executeEncodedTx(protoMessages);
               trace('TODO: decode Swap, Lock result; detect errors', result);
             },
 
