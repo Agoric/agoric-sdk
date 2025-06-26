@@ -111,7 +111,7 @@ const installBundle = async (fullPath, opts) => {
   // await updates.next();
   const tx = await agd.tx(
     ['swingset', 'install-bundle', `@${fullPath}`, '--gas', 'auto'],
-    { from, chainId, yes: true },
+    { from: installer, chainId, yes: true },
   );
 
   progress({ id, installTx: tx.txhash, height: tx.height });
@@ -403,7 +403,7 @@ const runCoreEval = async (
       ...evalPaths,
       ...flags({ ...info, deposit }),
     ],
-    { from, chainId, yes: true },
+    { from: proposer, chainId, yes: true },
   );
   log(txAbbr(result));
   // FIXME TypeError#1: unrecognized details 0
