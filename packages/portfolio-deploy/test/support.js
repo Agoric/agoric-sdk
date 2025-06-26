@@ -30,25 +30,25 @@ export const ensureAccounts = async (keyring, accounts = chainAccounts) => {
   for (const [name, detail] of entries(accounts)) {
     let actual = '?';
     try {
-      actual = await keyring.showAddress(name);
+      actual = await keyring.showAddress(detail.name);
     } catch (lookupErr) {
       // XXX ambient console
       console.debug('TODO: if "not found", suppress; else re-throw', lookupErr);
       actual = 'ERR';
     }
-    if (actual === detail.address) {
+    if (actual.includes(detail.address)) {
       console.debug(name, ': key already in keyring');
       continue;
     }
     if (actual !== 'ERR') {
-      console.debug(name, ': delete');
-      await keyring.delete(name);
+      console.debug(detail.name, ': delete');
+      await keyring.delete(detail.name);
     }
-    await keyring.add(name, detail.mnemonic);
-    console.debug(name, ': added', detail.address);
+    await keyring.add(detail.name, detail.mnemonic);
+    console.debug(detail.name, ': added', detail.address);
   }
   const nameToAddr = harden(
-    fromEntries(entries(accounts).map(([p, v]) => [p, v.address])),
+    fromEntries(entries(accounts).map(([p, v]) => [v.name, v.address])),
   );
   return nameToAddr;
 };

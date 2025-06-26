@@ -34,7 +34,7 @@ interface TestContext {
 const test: TestFn<TestContext> = anyTest;
 
 const fundWallets = async (t: ExecutionContext, wallets: any) => {
-  const addr = wallets.agoric;
+  const addr = wallets.gov1;
   console.log('Funding wallet:', addr);
   try {
     console.log('\n🔄 Initiating USDC IBC transfer from Noble → Agoric...');
@@ -136,17 +136,18 @@ const makeTestContext = async (t: ExecutionContext): Promise<TestContext> => {
   });
 
   // TODO: this is flaky - add them manually if this fails
+  // const wallets = [];
   const wallets = await ensureAccounts(tools.agd.keys);
 
   t.log('Install contract', contractName);
-  await deployBuilder(chainInfoBuilder, [
-    `net=local`,
-    `peer=noblelocal:connection-0:channel-0:uusdc`,
-  ]);
-  await deployBuilder(portfolioBuilder, [
-    `net=local`,
-    `peer=noblelocal:connection-0:channel-0:uusdc`,
-  ]);
+  // await deployBuilder(chainInfoBuilder, [
+  //   `net=local`,
+  //   `peer=noblelocal:connection-0:channel-0:uusdc`,
+  // ]);
+  // await deployBuilder(portfolioBuilder, [
+  //   `net=local`,
+  //   `peer=noblelocal:connection-0:channel-0:uusdc`,
+  // ]);
 
   await fundWallets(t, wallets);
 
@@ -193,6 +194,8 @@ test('Ymax Contract is registered in vstorage', async t => {
     );
     t.pass(`${contractName} was found in vstorage`);
   } catch (err) {
-    t.fail(`${contractName} was NOT found in vstorage ${err instanceof Error ? err.message : err}`);
+    t.fail(
+      `${contractName} was NOT found in vstorage ${err instanceof Error ? err.message : err}`,
+    );
   }
 });
