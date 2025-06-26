@@ -438,57 +438,80 @@ const die = err => {
   throw err;
 };
 
-const trackFlow = (reporter: GuestInterface<PortfolioKit['reporter']>) => {
-  const flowId = reporter.allocateFlowId();
-  let depth = 0;
+type AssetMovement = {
+  how: string;
+  amount: Amount<'nat'>;
+  src: AssetPlace;
+  dest: AssetPlace;
+  apply: () => Promise<void>;
+  recover: () => Promise<void>;
+};
 
-  const make = () => {
-    const moveAssets = async (info: {
-      how: string;
-      amount: Amount<'nat'>;
-      src: AssetPlace;
-      dest: AssetPlace;
-      handle: () => Promise<void>;
-      recover?: (err: any) => Promise<never>; // must re-throw
-    }) => {
-      const { how, src, dest, amount, handle, recover = die } = info;
-      depth += 1;
-      trace(how, amount, placeLabel(src), '->', placeLabel(dest));
+const trackFlow = async (
+  reporter: GuestInterface<PortfolioKit['reporter']>,
+  moves: AssetMovement[],
+) => {
+  const flowId = reporter.allocateFlowId();
+  let step = 1;
+  try {
+    for (const move of moves) {
+      const { how, amount, src, dest } = move;
+      trace(step, how, amount, placeLabel(src), '->', placeLabel(dest));
       reporter.publishFlowStatus(flowId, {
-        depth,
+        depth: step, //SDFSFASDAFA
         how,
         src: placeLabel(src),
         dest: placeLabel(dest),
         amount,
       });
-      try {
-        await handle();
-        if ('pos' in src) {
-          src.pos.recordTransferOut(amount);
-        }
-        if ('pos' in dest) {
-          dest.pos.recordTransferIn(amount);
-        }
-      } catch (err) {
-        console.error('⚠️ recover', how, err);
-        const message = 'message' in err ? err.message : `${err}`;
-        reporter.publishFlowStatus(flowId, {
-          depth,
-          how,
-          src: placeLabel(src),
-          dest: placeLabel(dest),
-          amount,
-          error: message,
-        });
-        await recover(err);
-      } finally {
-        depth -= 1;
+      await move.apply();
+      if ('pos' in src) {
+        src.pos.recordTransferOut(amount);
       }
-    };
-    return moveAssets;
-  };
-
-  return make();
+      if ('pos' in dest) {
+        dest.pos.recordTransferIn(amount);
+      }
+      step += 1;
+    }
+    // TODO: delete the flow storage node
+    // reporter.publishFlowStatus(flowId, { complete: true });
+  } catch (err) {
+    console.error('⚠️ step', step, ' failed', err);
+    ///XXXXX
+    // reporter.publishFlowStatus(flowId, {
+    //   step,
+    //   error: 'message' in err ? err.message : `${err}`,
+    // });
+    const { how, src, dest, amount, recover } = moves[step - 1];
+    reporter.publishFlowStatus(flowId, {
+      // step,
+      depth: step, //XDFASTGQGERG
+      error: 'message' in err ? err.message : `${err}`, // asdfasdfsaf
+      // how: `unwind: ${how}`,
+      how,
+      src: placeLabel(src),
+      dest: placeLabel(dest),
+      amount,
+    });
+    while (step > 1) {
+      step -= 1;
+      const { how, src, dest, amount, recover } = moves[step - 1];
+      reporter.publishFlowStatus(flowId, {
+        // step,
+        depth: step,
+        error: 'message' in err ? err.message : `${err}`, // asdfasdfsaf
+        // how: `unwind: ${how}`,
+        how,
+        src: placeLabel(src),
+        dest: placeLabel(dest),
+        amount,
+      });
+      await recover();
+      // if a recover fails, we just give up.
+      // client has to figure it out from the breadcrumbs we left
+    }
+    throw err;
+  }
 };
 
 const addToUSDNPosition = async (
@@ -507,64 +530,57 @@ const addToUSDNPosition = async (
   const amounts = harden({ USDN, ...(NobleFees ? { NobleFees } : {}) });
   const denom = NonNullish(ctx.chainHubTools.getDenom(USDN.brand));
   const volume: DenomAmount = { denom, value: USDN.value };
-  const fees = NobleFees ? { denom, value: NobleFees.value } : undefined;
-  const moveAssets = trackFlow(kit.reporter);
-
   const withFees = NobleFees ? add(USDN, NobleFees) : USDN;
-  await moveAssets({
-    how: 'localTransfer',
-    src: { seat, keyword: 'USDN' },
-    dest: { account: localAcct },
-    amount: withFees,
-    handle: async () => {
-      await ctx.zoeTools.localTransfer(seat, localAcct, amounts);
 
-      const there = ica.getAddress();
-      await moveAssets({
-        how: 'IBC transfer',
-        src: { account: localAcct },
-        dest: { account: ica },
-        amount: withFees,
-        handle: async () => {
-          await localAcct.transfer(there, volume);
-
-          await moveAssets({
-            how: 'Swap, Lock',
-            amount: USDN,
-            src: { account: ica },
-            dest: { pos },
-            handle: async () => {
-              // NOTE: proposalShape guarantees that amount.brand is USDC
-              const { msgSwap, msgLock, protoMessages } = makeSwapLockMessages(
-                there,
-                USDN.value,
-                { usdnOut },
-              );
-
-              const swapOnlyTODO = protoMessages.slice(0, 1);
-              trace('executing', [msgSwap, msgLock]);
-              const result = await ica.executeEncodedTx(swapOnlyTODO);
-              trace('TODO: decode Swap, Lock result; detect errors', result);
-            },
-
-            recover: async err => {
-              console.error('⚠️ recover to local account.', amounts);
-              const nobleAmount = { ...volume, denom: 'uusdc' };
-              await ica.transfer(localAcct.getAddress(), nobleAmount);
-              // TODO: and what if this transfer fails?
-              throw err;
-            },
-          });
-        },
-        recover: async err => {
-          console.error('⚠️ recover to seat.', err);
-          await ctx.zoeTools.withdrawToSeat(localAcct, seat, amounts);
-          // TODO: and what if the withdrawToSeat fails?
-          throw err;
-        },
-      });
+  const nobleAddr = ica.getAddress();
+  await trackFlow(kit.reporter, [
+    {
+      how: 'localTransfer',
+      src: { seat, keyword: 'USDN' },
+      dest: { account: localAcct },
+      amount: withFees,
+      apply: async () => {
+        await ctx.zoeTools.localTransfer(seat, localAcct, amounts);
+      },
+      recover: async () => {
+        await ctx.zoeTools.withdrawToSeat(localAcct, seat, amounts);
+      },
     },
-  });
+    {
+      how: 'IBC transfer',
+      src: { account: localAcct },
+      dest: { account: ica },
+      amount: withFees,
+      apply: async () => {
+        await localAcct.transfer(nobleAddr, volume);
+      },
+      recover: async () => {
+        const nobleAmount = { ...volume, denom: 'uusdc' };
+        await ica.transfer(localAcct.getAddress(), nobleAmount);
+      },
+    },
+    {
+      how: 'Swap, Lock',
+      amount: USDN,
+      src: { account: ica },
+      dest: { pos },
+      apply: async () => {
+        // NOTE: proposalShape guarantees that amount.brand is USDC
+        const { msgSwap, msgLock, protoMessages } = makeSwapLockMessages(
+          nobleAddr,
+          USDN.value,
+          { usdnOut },
+        );
+
+        const swapOnlyTODO = protoMessages.slice(0, 1);
+        trace('executing', [msgSwap, msgLock]);
+        const result = await ica.executeEncodedTx(swapOnlyTODO);
+        trace('TODO: decode Swap, Lock result; detect errors', result);
+      },
+      // XXX consider putting withdaw here
+      recover: async () => {},
+    },
+  ]);
 };
 
 export const rebalance = async (
