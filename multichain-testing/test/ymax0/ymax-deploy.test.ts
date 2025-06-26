@@ -3,13 +3,20 @@
  */
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 
-import { LOCAL_CONFIG, makeVstorageKit } from '@agoric/client-utils';
+import {
+  LOCAL_CONFIG,
+  makeSmartWalletKit,
+  makeVstorageKit,
+  type VStorage,
+} from '@agoric/client-utils';
 import {
   denomHash,
   type CosmosChainInfo,
   type IBCConnectionInfo,
 } from '@agoric/orchestration';
 import type { TestFn } from 'ava';
+
+const { fromEntries, keys, values } = Object;
 
 // cf. ymax-tool
 const trader1ag = 'agoric1yupasge4528pgkszg9v328x4faxtkldsnygwjl';
@@ -20,10 +27,24 @@ const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
 
 test.before(async t => (t.context = await makeTestContext(t)));
 
-const makeTestContext = async t => {
+const makeTestContext = async _t => {
   const vstorageClient = makeVstorageKit({ fetch }, LOCAL_CONFIG);
+  const { vstorage } = vstorageClient;
+  const delay = async (ms: number) =>
+    new Promise(resolve => setTimeout(resolve, ms)) as Promise<void>;
+  const walletKit = await makeSmartWalletKit(
+    { fetch, delay, names: false },
+    LOCAL_CONFIG,
+  );
 
-  return { fetch: globalThis.fetch, vstorageClient };
+  return {
+    setTimeout,
+    clearTimeout,
+    fetch: globalThis.fetch,
+    vstorage,
+    vstorageClient,
+    walletKit,
+  };
 };
 
 test('chain-info', async t => {
@@ -70,8 +91,6 @@ test('chain-info', async t => {
   t.is(USDC.issuerName, 'USDC');
   t.log('E(bank).getId(vbank.${denom}.brand):', id(USDC.brand));
 });
-
-const { fromEntries, keys, values } = Object;
 
 test('beneficiary-wallet', async t => {
   const { vstorage: vs } = t.context.vstorageClient;
@@ -122,4 +141,120 @@ test('usdc-available', async t => {
   t.true(denom in byDenom);
   t.log('balance', byDenom[denom]);
   t.true(byDenom[denom] >= 1_000_000n);
+});
+
+/**
+ * Read values going back as far as available
+ */
+async function* readHistory(
+  path,
+  {
+    vstorage,
+    setTimeout,
+    clearTimeout,
+    timeout = 500,
+  }: {
+    vstorage: VStorage;
+    setTimeout: Window['setTimeout'];
+    clearTimeout: Window['clearTimeout'];
+    timeout?: number;
+  },
+  minHeight = undefined,
+) {
+  // undefined the first iteration, to query at the highest
+  let blockHeight;
+  await null;
+  const timed = <T>(p: Promise<T>): Promise<T> => {
+    let id;
+    const clear = () => {
+      clearTimeout(id);
+    };
+    const fuse = new Promise(r => setTimeout(r, timeout)).then(() => {
+      throw Error('timeout');
+    });
+    // @ts-expect-error XXX not sure how to type this
+    return Promise.race([p.finally(clear), fuse.then(clear)]);
+  };
+  do {
+    // console.debug('READING', { blockHeight });
+    let values: unknown[] = [];
+    try {
+      ({ blockHeight, values } = await timed(
+        vstorage.readAt(path, blockHeight && Number(blockHeight) - 1),
+      ));
+      // console.debug('readAt returned', { blockHeight });
+    } catch (err) {
+      if (
+        err.message.match(/unknown request/) ||
+        err.message === 'Unexpected end of JSON input'
+      ) {
+        // XXX FIXME
+        // console.error(err);
+        break;
+      }
+      throw err;
+    }
+    yield { blockHeight, values };
+    // console.debug('PUSHED', values);
+    // console.debug('NEW', { blockHeight, minHeight });
+    if (minHeight && Number(blockHeight) <= Number(minHeight)) break;
+  } while (blockHeight > 0);
+}
+
+const range = (n: number) => [...Array(n).keys()];
+
+test('portfolio-opened', async t => {
+  //   t.timeout(1_000);
+  const { walletKit: wk, vstorageClient: vsc, vstorage: vs } = t.context;
+  const { setTimeout, clearTimeout } = t.context;
+
+  t.log('address', trader1ag);
+  const cur = await wk.getCurrentWalletRecord(trader1ag);
+  // t.log(cur);
+  const { offerToPublicSubscriberPaths } = cur;
+  const byOfferId = fromEntries(offerToPublicSubscriberPaths);
+  //   t.log(byOfferId);
+  const portfolioKeys = values(byOfferId)
+    .filter(sub => 'portfolio' in sub)
+    .map(sub => sub.portfolio);
+  t.log('portfolios', portfolioKeys);
+  t.true(portfolioKeys.length > 0);
+
+  const chopPub = (key: string) => key.replace(/^published./, '');
+  for (const portfolioKey of portfolioKeys) {
+    const portfolioInfo = await vsc.readPublished(chopPub(portfolioKey));
+    t.log(portfolioKey, portfolioInfo);
+    // XXX static type for vstorage schema
+    const { positionCount, flowCount } = portfolioInfo as Record<
+      string,
+      number
+    >;
+    for (const positionNum of range(positionCount).map(x => x + 1)) {
+      const positionKey = `${portfolioKey}.positions.position${positionNum}`; // XXX reuse func for this
+      const positionInfo = await vsc.readPublished(chopPub(positionKey));
+      t.log(positionKey, positionInfo);
+    }
+    for (const flowNum of range(flowCount).map(x => x + 1)) {
+      const flowKey = `${portfolioKey}.flows.flow${flowNum}`; // XXX reuse func for this
+      try {
+        for await (const { blockHeight, values } of readHistory(flowKey, {
+          vstorage: vs,
+          setTimeout,
+          clearTimeout,
+        })) {
+          try {
+            const [jsonCapData] = values as string[];
+            const info = vsc.marshaller.fromCapData(JSON.parse(jsonCapData));
+            t.log(flowKey, blockHeight, info);
+          } catch (err) {
+            t.log(blockHeight, values, err);
+          }
+        }
+      } catch (err) {
+        // ignore SyntaxError: Unexpected end of JSON input
+        console.error('readHistory', err);
+        return;
+      }
+    }
+  }
 });
