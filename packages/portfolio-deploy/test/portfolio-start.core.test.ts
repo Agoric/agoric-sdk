@@ -139,12 +139,12 @@ test('coreEval code without swingset', async t => {
   t.like(actual, {
     payouts: { USDN: { value: 0n } },
     result: {
-      publicTopics: [
-        {
+      publicSubscribers: {
+        portfolio: {
           description: 'Portfolio',
           storagePath: `orchtest.ymax0.portfolios.portfolio0`,
         },
-      ],
+      },
     },
   });
 
