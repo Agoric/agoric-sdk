@@ -50,6 +50,7 @@ import { GMPArgsShape } from './type-guards.ts';
 
 const trace = makeTracer('PortF');
 const { add } = AmountMath;
+const { keys } = Object;
 
 type PortfolioBootstrapContext = {
   axelarChainsMap: AxelarChainsMap;
@@ -434,10 +435,6 @@ const placeLabel = (place: AssetPlace) => {
   return `seat:${place.keyword}`;
 };
 
-const die = err => {
-  throw err;
-};
-
 type AssetMovement = {
   how: string;
   amount: Amount<'nat'>;
@@ -446,6 +443,13 @@ type AssetMovement = {
   apply: () => Promise<void>;
   recover: () => Promise<void>;
 };
+const moveStatus = ({ how, src, dest, amount }: AssetMovement) => ({
+  how,
+  src: placeLabel(src),
+  dest: placeLabel(dest),
+  amount,
+});
+const errmsg = (err: any) => ('message' in err ? err.message : `${err}`);
 
 const trackFlow = async (
   reporter: GuestInterface<PortfolioKit['reporter']>,
@@ -455,16 +459,10 @@ const trackFlow = async (
   let step = 1;
   try {
     for (const move of moves) {
-      const { how, amount, src, dest } = move;
-      trace(step, how, amount, placeLabel(src), '->', placeLabel(dest));
-      reporter.publishFlowStatus(flowId, {
-        depth: step, //SDFSFASDAFA
-        how,
-        src: placeLabel(src),
-        dest: placeLabel(dest),
-        amount,
-      });
+      trace(step, moveStatus(move));
+      reporter.publishFlowStatus(flowId, { step, ...moveStatus(move) });
       await move.apply();
+      const { amount, src, dest } = move;
       if ('pos' in src) {
         src.pos.recordTransferOut(amount);
       }
@@ -477,39 +475,29 @@ const trackFlow = async (
     // reporter.publishFlowStatus(flowId, { complete: true });
   } catch (err) {
     console.error('⚠️ step', step, ' failed', err);
-    ///XXXXX
-    // reporter.publishFlowStatus(flowId, {
-    //   step,
-    //   error: 'message' in err ? err.message : `${err}`,
-    // });
-    const { how, src, dest, amount, recover } = moves[step - 1];
-    reporter.publishFlowStatus(flowId, {
-      // step,
-      depth: step, //XDFASTGQGERG
-      error: 'message' in err ? err.message : `${err}`, // asdfasdfsaf
-      // how: `unwind: ${how}`,
-      how,
-      src: placeLabel(src),
-      dest: placeLabel(dest),
-      amount,
-    });
+    const failure = moves[step - 1];
+    const errStep = step;
     while (step > 1) {
       step -= 1;
-      const { how, src, dest, amount, recover } = moves[step - 1];
-      reporter.publishFlowStatus(flowId, {
-        // step,
-        depth: step,
-        error: 'message' in err ? err.message : `${err}`, // asdfasdfsaf
-        // how: `unwind: ${how}`,
-        how,
-        src: placeLabel(src),
-        dest: placeLabel(dest),
-        amount,
-      });
-      await recover();
-      // if a recover fails, we just give up.
-      // client has to figure it out from the breadcrumbs we left
+      const move = moves[step - 1];
+      const how = `unwind: ${move.how}`;
+      reporter.publishFlowStatus(flowId, { step, ...moveStatus(move), how });
+      try {
+        await move.recover();
+      } catch (err) {
+        console.error('⚠️ unwind step', step, ' failed', err);
+        // if a recover fails, we just give up and report `where` the assets are
+        const { dest: where, ...ms } = moveStatus(move);
+        const final = { step, ...ms, how, where, error: errmsg(err) };
+        reporter.publishFlowStatus(flowId, final);
+        throw err;
+      }
     }
+    reporter.publishFlowStatus(flowId, {
+      step: errStep,
+      ...moveStatus(failure),
+      error: errmsg(err),
+    });
     throw err;
   }
 };
@@ -572,9 +560,8 @@ const addToUSDNPosition = async (
           { usdnOut },
         );
 
-        const swapOnlyTODO = protoMessages.slice(0, 1);
-        trace('executing', [msgSwap, msgLock]);
-        const result = await ica.executeEncodedTx(swapOnlyTODO);
+        trace('executing', [msgSwap, msgLock].filter(Boolean));
+        const result = await ica.executeEncodedTx(protoMessages);
         trace('TODO: decode Swap, Lock result; detect errors', result);
       },
       // XXX consider putting withdaw here
@@ -601,7 +588,7 @@ export const rebalance = async (
     offerArgs,
   );
 
-  if (Object.keys(proposal.want).length > 0) {
+  if (keys(proposal.want).length > 0) {
     throw Error('TODO: withdraw');
   }
 
