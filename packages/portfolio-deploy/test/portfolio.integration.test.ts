@@ -140,14 +140,14 @@ const makeTestContext = async (t: ExecutionContext): Promise<TestContext> => {
   const wallets = await ensureAccounts(tools.agd.keys);
 
   t.log('Install contract', contractName);
-  // await deployBuilder(chainInfoBuilder, [
-  //   `net=local`,
-  //   `peer=noblelocal:connection-0:channel-0:uusdc`,
-  // ]);
-  // await deployBuilder(portfolioBuilder, [
-  //   `net=local`,
-  //   `peer=noblelocal:connection-0:channel-0:uusdc`,
-  // ]);
+  await deployBuilder(chainInfoBuilder, [
+    `net=local`,
+    `peer=noble:connection-0:channel-0:uusdc`,
+  ]);
+  await deployBuilder(portfolioBuilder, [
+    `net=local`,
+    `peer=noble:connection-0:channel-0:uusdc`,
+  ]);
 
   await fundWallets(t, wallets);
 
