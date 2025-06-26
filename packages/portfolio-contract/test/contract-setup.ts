@@ -8,24 +8,21 @@ import { passStyleOf } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
 import * as contractExports from '../src/portfolio.contract.ts';
-import {
-  axelarChainsMap,
-  contractAddresses,
-  makeUSDNIBCTraffic,
-} from './mocks.ts';
+import { axelarChainsMap, makeUSDNIBCTraffic } from './mocks.ts';
 import { makeTrader } from './portfolio-actors.ts';
-import { localAccount0 } from './mocks.ts';
 import {
   chainInfoFantasyTODO,
-  makeIncomingEvent,
+  makeIncomingEVMEvent,
   setupPortfolioTest,
 } from './supports.ts';
 import { makeWallet } from './wallet-offer-tools.ts';
+import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
 const contractName = 'ymax0';
 type StartFn = typeof contractExports.start;
+const { values } = Object;
 
-export const deploy = async (t: ExecutionContext) => {
+const deploy = async (t: ExecutionContext) => {
   const common = await setupPortfolioTest(t);
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
   t.log('contract deployment', contractName);
@@ -34,16 +31,18 @@ export const deploy = async (t: ExecutionContext) => {
     await bundleAndInstall(contractExports);
   t.is(passStyleOf(installation), 'remotable');
 
-  const { usdc } = common.brands;
+  const { usdc, poc24 } = common.brands;
+  const timerService = buildZoeManualTimer();
+
   const { agoric, noble, axelar, osmosis } = chainInfoFantasyTODO;
   const started = await E(zoe).startInstance(
     installation,
-    { USDC: usdc.issuer },
+    { USDC: usdc.issuer, Access: poc24.issuer },
     {}, // terms
     {
       ...common.commonPrivateArgs,
-      contractAddresses,
       axelarChainsMap,
+      timerService,
       chainInfo: { agoric, noble, axelar, osmosis },
     }, // privateArgs
   );
@@ -58,31 +57,34 @@ export const deploy = async (t: ExecutionContext) => {
       }),
     ),
   );
-  return { common, zoe, started };
+  return { common, zoe, started, timerService };
 };
 
 export const setupTrader = async (t, initial = 10_000) => {
   const { common, zoe, started } = await deploy(t);
-  const { usdc } = common.brands;
+  const { usdc, poc24 } = common.brands;
   const { when } = common.utils.vowTools;
-
-  const { ibcBridge } = common.mocks;
-  for (const { msg, ack } of Object.values(makeUSDNIBCTraffic())) {
-    ibcBridge.addMockAck(msg, ack);
-  }
 
   const myBalance = usdc.units(initial);
   const funds = await common.utils.pourPayment(myBalance);
-  const myWallet = makeWallet({ USDC: usdc }, zoe, when);
+  const { mint: _, ...poc24SansMint } = poc24;
+  const myWallet = makeWallet({ USDC: usdc, Access: poc24SansMint }, zoe, when);
   await E(myWallet).deposit(funds);
+  await E(myWallet).deposit(poc24.mint.mintPayment(poc24.make(1n)));
   const trader1 = makeTrader(myWallet, started.instance);
+
+  const { ibcBridge } = common.mocks;
+  for (const { msg, ack } of values(makeUSDNIBCTraffic())) {
+    ibcBridge.addMockAck(msg, ack);
+  }
+
   return { common, zoe, started, myBalance, myWallet, trader1 };
 };
 
 export const simulateUpcallFromAxelar = async (
   transferBridge: ScopedBridgeManager<'vtransfer'>,
 ) => {
-  const event = makeIncomingEvent(localAccount0, 'Base');
+  const event = makeIncomingEVMEvent();
   return (
     VE(transferBridge)
       .fromBridge(event)

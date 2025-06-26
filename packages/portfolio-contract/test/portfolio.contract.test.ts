@@ -18,12 +18,11 @@ import {
   makeProposalShapes,
   type GmpArgsContractCall,
 } from '../src/type-guards.ts';
-import { axelarChainsMap, makeUSDNIBCTraffic } from './mocks.ts';
+import { axelarChainsMap, localAccount0, makeUSDNIBCTraffic } from './mocks.ts';
 import { makeTrader } from './portfolio-actors.ts';
+import { chainInfoFantasyTODO, setupPortfolioTest } from './supports.ts';
 import {
-  chainInfoFantasyTODO,
-  setupPortfolioTest,
-} from './supports.ts';
+  setupTrader,
   simulateAckTransferToAxelar,
   simulateCCTPAck,
   simulateUpcallFromAxelar,
@@ -33,65 +32,6 @@ import { makeWallet } from './wallet-offer-tools.ts';
 const contractName = 'ymax0';
 type StartFn = typeof contractExports.start;
 const { fromEntries, keys, values } = Object;
-
-const deploy = async (t: ExecutionContext) => {
-  const common = await setupPortfolioTest(t);
-  const { zoe, bundleAndInstall } = await setUpZoeForTest();
-  t.log('contract deployment', contractName);
-
-  const installation: Installation<StartFn> =
-    await bundleAndInstall(contractExports);
-  t.is(passStyleOf(installation), 'remotable');
-
-  const { usdc, poc24 } = common.brands;
-  const timerService = buildZoeManualTimer();
-
-  const { agoric, noble, axelar, osmosis } = chainInfoFantasyTODO;
-  const started = await E(zoe).startInstance(
-    installation,
-    { USDC: usdc.issuer, Access: poc24.issuer },
-    {}, // terms
-    {
-      ...common.commonPrivateArgs,
-      axelarChainsMap,
-      timerService,
-      chainInfo: { agoric, noble, axelar, osmosis },
-    }, // privateArgs
-  );
-  t.notThrows(() =>
-    mustMatch(
-      started,
-      M.splitRecord({
-        instance: M.remotable(),
-        publicFacet: M.remotable(),
-        creatorFacet: M.remotable(),
-        // ...others are not relevant here
-      }),
-    ),
-  );
-  return { common, zoe, started, timerService };
-};
-
-export const setupTrader = async (t, initial = 10_000) => {
-  const { common, zoe, started } = await deploy(t);
-  const { usdc, poc24 } = common.brands;
-  const { when } = common.utils.vowTools;
-
-  const myBalance = usdc.units(initial);
-  const funds = await common.utils.pourPayment(myBalance);
-  const { mint: _, ...poc24SansMint } = poc24;
-  const myWallet = makeWallet({ USDC: usdc, Access: poc24SansMint }, zoe, when);
-  await E(myWallet).deposit(funds);
-  await E(myWallet).deposit(poc24.mint.mintPayment(poc24.make(1n)));
-  const trader1 = makeTrader(myWallet, started.instance);
-
-  const { ibcBridge } = common.mocks;
-  for (const { msg, ack } of values(makeUSDNIBCTraffic())) {
-    ibcBridge.addMockAck(msg, ack);
-  }
-
-  return { common, zoe, started, myBalance, myWallet, trader1 };
-};
 
 test('ProposalShapes', t => {
   const { brand: USDC } = makeIssuerKit('USDC');
@@ -290,7 +230,7 @@ test('open portfolio with USDN position', async t => {
     positionPaths.map(p => contents[p].accountId),
   );
   t.is(contents[positionPaths[0]].accountId, `cosmos:noble-1:cosmos1test`);
-  t.is(contents[storagePath].local, `cosmos:agoric-3:${lca0}`, 'LCA');
+  t.is(contents[storagePath].local, `cosmos:agoric-3:${localAccount0}`, 'LCA');
   t.snapshot(done.payouts, 'refund payouts');
 });
 

@@ -48,7 +48,7 @@ export const makeTrader = (
         offerArgs,
       });
       doneP.then(({ result }) => {
-        const [topic] = result.publicTopics;
+        const { portfolio: topic } = result.publicSubscribers;
         if (topic.description === 'Portfolio') {
           portfolioPath = topic.storagePath;
         }
