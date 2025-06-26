@@ -32,6 +32,7 @@ export type CompoundGive = {
 export type GmpGive = {} | AaveGive | CompoundGive | (AaveGive & CompoundGive);
 export type OpenPortfolioGive = {
   USDN?: Amount<'nat'>;
+  NobleFees?: Amount<'nat'>;
   Access?: Amount<'nat'>;
 } & ({} | GmpGive);
 
@@ -64,7 +65,7 @@ export const makeProposalShapes = (
   const giveWith = x => {
     return M.splitRecord(
       x,
-      { USDN: usdcAmountShape },
+      { USDN: usdcAmountShape, NobleFees: usdcAmountShape },
       M.or(
         harden({}),
         AaveGiveShape,
