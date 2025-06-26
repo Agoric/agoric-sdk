@@ -15,6 +15,7 @@ import { name, permit } from './portfolio.contract.permit.js';
  * @import { CopyRecord } from '@endo/pass-style';
  * @import { LegibleCapData } from './config-marshal.js';
  * @import { CorePowersG, OrchestrationPowersWithStorage } from './orch.start.types.ts';
+ * @import {PortfolioBootPowers} from './portfolio-start.type.ts';
  */
 
 // TODO: use assetInfo, chainInfo from config too?
@@ -88,12 +89,18 @@ export const makePrivateArgs = async (
 harden(makePrivateArgs);
 
 /**
- * @param {BootstrapPowers & CorePowersG<name, typeof start, typeof permit>} permitted
+ * @param {BootstrapPowers & PortfolioBootPowers} permitted
  * @param {{ options: LegibleCapData<CopyRecord> }} configStruct
  * @returns {Promise<void>}
  */
 export const startPortfolio = async (permitted, configStruct) => {
   trace('startPortfolio');
+  const { issuer } = permitted;
+  const [USDC, PoC25] = await Promise.all([
+    issuer.consume.USDC,
+    issuer.consume.PoC25,
+  ]);
+  const issuerKeywordRecord = { USDC, Access: PoC25 };
   await startOrchContract(
     name,
     deployConfigShape,
@@ -101,6 +108,7 @@ export const startPortfolio = async (permitted, configStruct) => {
     makePrivateArgs,
     permitted,
     configStruct,
+    issuerKeywordRecord,
   );
 
   trace('startPortfolio done');
