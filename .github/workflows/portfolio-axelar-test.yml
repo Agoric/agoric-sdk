@@ -28,5 +28,4 @@ jobs:
       - name: Run E2E tests
         run: |
           cd packages/portfolio-deploy
-          yarn buildx
-          yarn run:e2e
+          yarn test:e2e
