@@ -17,14 +17,20 @@ import { makeAgoricNames, makeVstorageKit } from './vstorage-kit.js';
  * @param {object} root0
  * @param {typeof globalThis.fetch} root0.fetch
  * @param {(ms: number) => Promise<void>} root0.delay
+ * @param {boolean} [root0.names]
  * @param {MinimalNetworkConfig} networkConfig
  */
-export const makeSmartWalletKit = async ({ fetch, delay }, networkConfig) => {
+export const makeSmartWalletKit = async (
+  { fetch, delay, names = true },
+  networkConfig,
+) => {
   const vsk = makeVstorageKit({ fetch }, networkConfig);
 
   const client = await makeStargateClient(networkConfig, { fetch });
 
-  const agoricNames = await makeAgoricNames(vsk.fromBoard, vsk.vstorage);
+  const agoricNames = await (names
+    ? makeAgoricNames(vsk.fromBoard, vsk.vstorage)
+    : /** @type {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} */ ({}));
 
   /**
    * @param {string} from
