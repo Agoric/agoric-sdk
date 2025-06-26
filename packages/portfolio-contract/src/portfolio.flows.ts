@@ -77,7 +77,7 @@ const makeSwapLockMessages = (
   usdcIn: bigint,
   {
     poolId = 0n,
-    denom = 'uusdc',
+    denom = 'ubld',
     denomTo = 'uusdn',
     vault = 1, // VaultType.STAKED,
     usdnOut = usdcIn,
@@ -711,11 +711,11 @@ export const openPortfolio = (async (
     } = ctx;
     const agoric = await orch.getChain('agoric');
     const localAccount = await agoric.makeAccount();
-    const nobleChain = await orch.getChain('noble');
+    // const nobleChain = await orch.getChain('noble');
     // Always make a Noble ICA, since we need it for CCTP
-    const nobleAccount = await nobleChain.makeAccount();
+    // const nobleAccount = await nobleChain.makeAccount();
 
-    const kit = makePortfolioKit(localAccount, nobleAccount);
+    const kit = makePortfolioKit(localAccount, localAccount as any);
     const reg = await localAccount.monitorTransfers(kit.tap);
     trace('Monitoring transfers for', localAccount.getAddress().value);
     // TODO: save reg somewhere???
