@@ -62,7 +62,6 @@ _agstate
 .next
 build
 bundles
-bundle-*.js
 compiled
 dist
 api-docs
