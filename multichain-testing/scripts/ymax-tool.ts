@@ -68,7 +68,7 @@ const openPosition = async (
   const action: BridgeAction = harden({
     method: 'executeOffer',
     offer: {
-      id: `open-${now()}`,
+      id: `open-${new Date(now()).toISOString()}`,
       invitationSpec: {
         source: 'agoricContract',
         instancePath: ['ymax0'],
