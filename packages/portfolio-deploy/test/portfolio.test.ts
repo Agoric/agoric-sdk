@@ -158,7 +158,12 @@ test.serial('contract starts; appears in agoricNames', async t => {
 const { make } = AmountMath;
 
 test.serial('open a USDN position', async t => {
-  const { walletFactoryDriver: wfd, agoricNamesRemotes } = t.context;
+  const {
+    walletFactoryDriver: wfd,
+    agoricNamesRemotes,
+    buildProposal,
+    evalProposal,
+  } = t.context;
 
   for (const { msg, ack } of Object.values(
     makeUSDNIBCTraffic('agoric1trader1', `${3_333 * 1_000_000}`),
@@ -169,10 +174,28 @@ test.serial('open a USDN position', async t => {
   // TODO: should have 10K USDC
   const wallet = await wfd.provideSmartWallet(beneficiary);
 
-  const { USDC, PoC25 } = agoricNamesRemotes.brand as unknown as Record<
+  let { USDC, PoC25 } = agoricNamesRemotes.brand as unknown as Record<
     string,
     Brand<'nat'>
   >;
+
+  if (!PoC25) {
+    const materials = buildProposal(
+      '@aglocal/portfolio-deploy/src/access-token-setup.build.js',
+      ['--beneficiary', beneficiary],
+    );
+    await evalProposal(materials);
+    if (t.context.refreshAgoricNamesRemotes) {
+      t.context.refreshAgoricNamesRemotes();
+    }
+
+    ({ USDC, PoC25 } = t.context.agoricNamesRemotes.brand as unknown as Record<
+      string,
+      Brand<'nat'>
+    >);
+    t.truthy(PoC25, 'PoC25 brand should be defined after setup');
+  }
+
   const give = {
     USDN: make(USDC, 3_333n * 1_000_000n),
     Access: make(PoC25, 1n),
