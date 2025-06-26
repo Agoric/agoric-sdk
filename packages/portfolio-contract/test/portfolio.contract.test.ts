@@ -33,7 +33,7 @@ import { makeWallet } from './wallet-offer-tools.ts';
 
 const contractName = 'ymax0';
 type StartFn = typeof contractExports.start;
-const { values } = Object;
+const { fromEntries, keys, values } = Object;
 
 const lca0 = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht';
 
@@ -302,6 +302,23 @@ test('makeAxelarMemo constructs correct memo JSON', t => {
   });
 });
 
+const range = (n: number) => [...Array(n).keys()];
+
+const getPortfolioInfo = (key, storage) => {
+  const info = storage.getDeserialized(key).at(-1);
+  const { positionCount, flowCount } = info;
+  const toPaths = (kind, count) =>
+    range(count).map(ix => `${key}.${kind}s.${kind}${ix + 1}`);
+  const positionPaths = toPaths('position', positionCount);
+  const flowPaths = toPaths('flow', flowCount);
+  const contents = fromEntries([
+    [key, info],
+    ...positionPaths.map(p => [p, storage.getDeserialized(p).at(-1)]),
+    ...flowPaths.map(p => [p, storage.getDeserialized(p)]),
+  ]);
+  return { contents, positionPaths, flowPaths };
+};
+
 test('open portfolio with USDN position', async t => {
   const { trader1, common } = await setupTrader(t);
   const { usdc, poc24 } = common.brands;
@@ -310,6 +327,7 @@ test('open portfolio with USDN position', async t => {
     t,
     {
       USDN: usdc.units(3_333),
+      NobleFees: usdc.make(100n),
       Access: poc24.make(1n),
     },
     { destinationEVMChain: 'Ethereum' },
@@ -321,15 +339,27 @@ test('open portfolio with USDN position', async t => {
   const done = await doneP;
   const result = done.result as any;
   t.is(passStyleOf(result.invitationMakers), 'remotable');
-  t.like(result.publicTopics, [
-    { description: 'Portfolio', storagePath: 'orchtest.portfolios.portfolio0' },
-  ]);
-  t.is(result.publicTopics.length, 1);
-  // TODO: look in storage for address
-  // `cosmos:agoric-3:${lca0}`
-  const addrs = result.publicTopics.map(t => t.storagePath);
-  t.log('I can see where my money is:', addrs);
-  t.log('refund', done.payouts);
+  t.like(result.publicSubscribers, {
+    portfolio: {
+      description: 'Portfolio',
+      storagePath: 'orchtest.portfolios.portfolio0',
+    },
+  });
+  t.is(keys(result.publicSubscribers).length, 1);
+  const { storagePath } = result.publicSubscribers.portfolio;
+  t.log(storagePath);
+  const { contents, positionPaths, flowPaths } = getPortfolioInfo(
+    storagePath,
+    common.bootstrap.storage,
+  );
+  t.snapshot(contents, 'vstorage');
+  t.log(
+    'I can see where my money is:',
+    positionPaths.map(p => contents[p].accountId),
+  );
+  t.is(contents[positionPaths[0]].accountId, `cosmos:noble-1:cosmos1test`);
+  t.is(contents[storagePath].local, `cosmos:agoric-3:${lca0}`, 'LCA');
+  t.snapshot(done.payouts, 'refund payouts');
 });
 
 // TODO: depositForBurn is throwing
@@ -382,15 +412,13 @@ test('open a portfolio with Aave position', async t => {
   const actual = await actualP;
   const result = actual.result as any;
   t.is(passStyleOf(result.invitationMakers), 'remotable');
-  const addrs = result.publicTopics.map(t => t.storagePath);
-  t.log('I can see where my money is:', addrs);
-  t.is(result.publicTopics.length, 1);
-  // TODO: get addresses from vstorage
-  // `cosmos:${chainInfo.agoric.chainId}:${lca0}`,
-  t.like(result.publicTopics, [
-    { description: 'Portfolio', storagePath: 'orchtest.portfolios.portfolio0' },
-  ]);
-  t.log('refund', actual.payouts);
+
+  t.is(keys(result.publicSubscribers).length, 1);
+  const { storagePath } = result.publicSubscribers.portfolio;
+  t.log(storagePath);
+  const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  t.snapshot(contents, 'vstorage');
+  t.snapshot(actual.payouts, 'refund payouts');
 });
 
 // TODO: to deal with bridge coordination, move this to a bootstrap test
@@ -443,16 +471,13 @@ test('open a portfolio with Compound position', async t => {
   const actual = await actualP;
   const result = actual.result as any;
   t.is(passStyleOf(result.invitationMakers), 'remotable');
-  const addrs = result.publicTopics.map(t => t.storagePath);
-  t.log('I can see where my money is:', addrs);
-  // TODO: check vstorage
-  // `cosmos:${chainInfo.agoric.chainId}:${lca0}`
-  // 'cosmos:noble-1:cosmos1test'
-  t.is(result.publicTopics.length, 1);
-  t.like(result.publicTopics, [
-    { description: 'Portfolio', storagePath: 'orchtest.portfolios.portfolio0' },
-  ]);
-  t.log('refund', actual.payouts);
+
+  t.is(keys(result.publicSubscribers).length, 1);
+  const { storagePath } = result.publicSubscribers.portfolio;
+  t.log(storagePath);
+  const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  t.snapshot(contents, 'vstorage');
+  t.snapshot(actual.payouts, 'refund payouts');
 });
 
 // TODO: to deal with bridge coordination, move this to a bootstrap test
@@ -508,14 +533,11 @@ test('open portfolio with USDN, Aave positions', async t => {
   const [done] = await Promise.all([doneP, ackNP]);
   const result = done.result as any;
   t.is(passStyleOf(result.invitationMakers), 'remotable');
-  const addrs = result.publicTopics.map(t => t.storagePath);
-  t.log('I can see where my money is:', addrs);
-  // TODO: check vstorage
-  // `cosmos:${chainInfo.agoric.chainId}:${lca0}`
-  // 'cosmos:noble-1:cosmos1test'
-  t.is(result.publicTopics.length, 1);
-  t.like(result.publicTopics, [
-    { description: 'Portfolio', storagePath: 'orchtest.portfolios.portfolio0' },
-  ]);
-  t.log('refund', done.payouts);
+
+  t.is(keys(result.publicSubscribers).length, 1);
+  const { storagePath } = result.publicSubscribers.portfolio;
+  t.log(storagePath);
+  const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  t.snapshot(contents, 'vstorage');
+  t.snapshot(done.payouts, 'refund payouts');
 });

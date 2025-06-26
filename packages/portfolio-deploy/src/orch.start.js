@@ -68,6 +68,7 @@ export const permittedIssuers = async (agoricNames, permitG) => {
  * @param {MakePrivateArgs<SF, CFG>} makePrivateArgs
  * @param {CorePowersG<CN, SF, P> & BootstrapPowers & ChainStoragePowers} powers
  * @param {{ options: LegibleCapData<CFG> }} configStruct
+ * @param {IssuerKeywordRecord} [issuerKeywordRecord]
  * @returns {Promise<{ config: any, kit: UpgradeKit<SF> }>}
  */
 export const startOrchContract = async (
@@ -86,11 +87,15 @@ export const startOrchContract = async (
     },
   },
   configStruct,
+  issuerKeywordRecord,
 ) => {
   trace('startOrchContract');
 
   const { agoricNames, zoe } = consume;
-  const issuerKeywordRecord = await permittedIssuers(agoricNames, permitG);
+  await null;
+  // XXX This is becoming messy. try turning startOrchContract
+  // the other way around, more like withOrchestration?
+  issuerKeywordRecord ||= await permittedIssuers(agoricNames, permitG);
 
   /** @type {Promise<NameHub>} */
   const brandHub = E(agoricNames).lookup('brand');

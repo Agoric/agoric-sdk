@@ -9,6 +9,7 @@ import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import type { Amount, Brand } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { makeTracer, mustMatch, NonNullish } from '@agoric/internal';
 import type {
   CosmosChainAddress,
@@ -28,6 +29,7 @@ import {
   gmpAddresses,
 } from '@agoric/orchestration/src/utils/gmp.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
+import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
 import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { assert, Fail } from '@endo/errors';
@@ -48,6 +50,7 @@ import { GMPArgsShape } from './type-guards.ts';
 // TODO: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const trace = makeTracer('PortF');
+const { add } = AmountMath;
 
 type PortfolioBootstrapContext = {
   axelarChainsMap: AxelarChainsMap;
@@ -59,7 +62,7 @@ type PortfolioBootstrapContext = {
     localAccount: LocalAccount,
     nobleAccount: NobleAccount,
   ) => GuestInterface<PortfolioKit>;
-  inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
+  inertSubscriber: GuestInterface<ResolvedPublicTopic<unknown>['subscriber']>;
 };
 
 export type PortfolioInstanceContext = {
@@ -72,7 +75,7 @@ export type PortfolioInstanceContext = {
 };
 
 // XXX: push down to Orchestration API in NobleMethods, in due course
-const makeSwapLockMessages = (
+export const makeSwapLockMessages = (
   nobleAddr: CosmosChainAddress,
   usdcIn: bigint,
   {
@@ -80,22 +83,29 @@ const makeSwapLockMessages = (
     denom = 'uusdc',
     denomTo = 'uusdn',
     vault = 1, // VaultType.STAKED,
-    usdnOut = usdcIn,
+    usdnOut = undefined as bigint | undefined,
   } = {},
 ) => {
-  const msgSwap: MsgSwap = {
+  const msgSwap = MsgSwap.fromPartial({
     signer: nobleAddr.value,
     amount: { denom, amount: `${usdcIn}` },
     routes: [{ poolId, denomTo }],
-    // TODO: swap min multiplier?
-    min: { denom: denomTo, amount: `${usdnOut}` },
-  };
-  const msgLock: MsgLock = {
+    min: { denom: denomTo, amount: `${usdnOut || usdcIn}` },
+  });
+  if (!usdnOut) {
+    const protoMessages = [Any.toJSON(MsgSwap.toProtoMsg(msgSwap))];
+    return { msgSwap, protoMessages };
+  }
+  const msgLock = MsgLock.fromPartial({
     signer: nobleAddr.value,
     vault,
     amount: `${usdnOut}`,
-  };
-  return { msgSwap, msgLock };
+  });
+  const protoMessages = [
+    Any.toJSON(MsgSwap.toProtoMsg(msgSwap)),
+    Any.toJSON(MsgLock.toProtoMsg(msgLock)),
+  ];
+  return { msgSwap, msgLock, protoMessages };
 };
 
 const createRemoteEVMAccount = async (
@@ -509,24 +519,26 @@ const addToUSDNPosition = async (
   seat: ZCFSeat,
   pos: USDNPosition,
   kit: GuestInterface<PortfolioKit>,
-  usdcIn: Amount<'nat'>,
-  usdnOut: bigint = usdcIn.value,
+  { USDN, NobleFees }: { USDN: Amount<'nat'>; NobleFees?: Amount<'nat'> },
+  usdnOut: bigint = USDN.value,
 ) => {
   // XXX HostInterface<...> ???
   const ica = kit.reader.getNobleICA() as unknown as NobleAccount;
   // XXX HostInterface<...> ???
   const localAcct = kit.reader.getLCA() as unknown as LocalAccount;
 
-  const amounts = harden({ USDN: usdcIn });
-  const denom = NonNullish(ctx.chainHubTools.getDenom(usdcIn.brand));
-  const denomAmount: DenomAmount = { denom, value: usdcIn.value };
+  const amounts = harden({ USDN, ...(NobleFees ? { NobleFees } : {}) });
+  const denom = NonNullish(ctx.chainHubTools.getDenom(USDN.brand));
+  const volume: DenomAmount = { denom, value: USDN.value };
+  const fees = NobleFees ? { denom, value: NobleFees.value } : undefined;
   const moveAssets = trackFlow(kit.reporter);
 
+  const withFees = NobleFees ? add(USDN, NobleFees) : USDN;
   await moveAssets({
     how: 'localTransfer',
     src: { seat, keyword: 'USDN' },
     dest: { account: localAcct },
-    amount: usdcIn,
+    amount: withFees,
     handle: async () => {
       await ctx.zoeTools.localTransfer(seat, localAcct, amounts);
 
@@ -535,34 +547,32 @@ const addToUSDNPosition = async (
         how: 'IBC transfer',
         src: { account: localAcct },
         dest: { account: ica },
-        amount: usdcIn,
+        amount: withFees,
         handle: async () => {
-          await localAcct.transfer(there, denomAmount);
+          await localAcct.transfer(there, volume);
 
           await moveAssets({
             how: 'Swap, Lock',
-            amount: usdcIn,
+            amount: USDN,
             src: { account: ica },
             dest: { pos },
             handle: async () => {
               // NOTE: proposalShape guarantees that amount.brand is USDC
-              const { msgSwap, msgLock } = makeSwapLockMessages(
+              const { msgSwap, msgLock, protoMessages } = makeSwapLockMessages(
                 there,
-                usdcIn.value,
+                USDN.value,
                 { usdnOut },
               );
 
+              const swapOnlyTODO = protoMessages.slice(0, 1);
               trace('executing', [msgSwap, msgLock]);
-              const result = await ica.executeEncodedTx([
-                Any.toJSON(MsgSwap.toProtoMsg(msgSwap)),
-                Any.toJSON(MsgLock.toProtoMsg(msgLock)),
-              ]);
+              const result = await ica.executeEncodedTx(swapOnlyTODO);
               trace('TODO: decode Swap, Lock result; detect errors', result);
             },
 
             recover: async err => {
               console.error('⚠️ recover to local account.', amounts);
-              const nobleAmount = { ...denomAmount, denom: 'uusdc' };
+              const nobleAmount = { ...volume, denom: 'uusdc' };
               await ica.transfer(localAcct.getAddress(), nobleAmount);
               // TODO: and what if this transfer fails?
               throw err;
@@ -604,9 +614,10 @@ export const rebalance = async (
 
   const { give } = proposal;
   if (give.USDN) {
-    const pos = kit.manager.provideUSDNPosition(); // TODO: get num from offerArgs?
+    const { USDN, NobleFees } = give; // XXXX
     const { usdnOut } = offerArgs;
-    await addToUSDNPosition(ctx, seat, pos, kit, give.USDN, usdnOut);
+    const pos = kit.manager.provideUSDNPosition(); // TODO: get num from offerArgs?
+    await addToUSDNPosition(ctx, seat, pos, kit, { USDN, NobleFees }, usdnOut);
   }
 
   const { entries } = Object;
@@ -692,7 +703,7 @@ export const rebalance = async (
  * ASSUME seat's proposal is guarded as per {@link makeProposalShapes}
  *
  * @returns {*} following continuing invitation pattern, with a topic
- * for each position opened, with the address in storagePath.
+ * with a topic for the portfolio.
  */
 export const openPortfolio = (async (
   orch: Orchestrator,
@@ -709,6 +720,7 @@ export const openPortfolio = (async (
       chainHubTools,
       inertSubscriber,
     } = ctx;
+    // XXX should provideAccount() per chain as needed
     const agoric = await orch.getChain('agoric');
     const localAccount = await agoric.makeAccount();
     const nobleChain = await orch.getChain('noble');
@@ -739,15 +751,16 @@ export const openPortfolio = (async (
 
     if (!seat.hasExited()) seat.exit();
 
+    const publicSubscribers: GuestInterface<PublicSubscribers> = {
+      portfolio: {
+        description: 'Portfolio',
+        storagePath: await kit.reader.getStoragePath(),
+        subscriber: inertSubscriber as any,
+      },
+    };
     return harden({
       invitationMakers: kit.invitationMakers,
-      publicTopics: [
-        {
-          description: 'Portfolio',
-          storagePath: await kit.reader.getStoragePath(),
-          subscriber: inertSubscriber, // TODO: portfolio info subscriber?
-        },
-      ] as GuestInterface<ResolvedPublicTopic<never>>[],
+      publicSubscribers,
     });
     /* c8 ignore start */
   } catch (err) {

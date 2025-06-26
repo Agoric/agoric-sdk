@@ -29,6 +29,7 @@ import {
   type PortfolioKit,
 } from '../src/portfolio.exo.ts';
 import {
+  makeSwapLockMessages,
   openPortfolio,
   rebalance,
   type PortfolioInstanceContext,
@@ -47,13 +48,12 @@ const mockZCF: ZCF = Far('MockZCF', {
 });
 
 const { brand: USDC } = makeIssuerKit('USDC');
+const { make } = AmountMath;
 
 // XXX move to mocks.ts for readability?
 const mocks = (
   errs: Record<string, Error> = {},
-  give: ProposalType['openPortfolio']['give'] = {
-    USDN: AmountMath.make(USDC, 100n),
-  },
+  give: ProposalType['openPortfolio']['give'] = {},
 ) => {
   const buf = [] as any[];
   const log = ev => {
@@ -259,7 +259,7 @@ const docOpts = {
 };
 
 test('open portfolio with no positions', async t => {
-  const { orch, ctx, offer, storage } = mocks({}, {});
+  const { orch, ctx, offer, storage } = mocks();
   const { log, seat } = offer;
 
   const shapes = makeProposalShapes(USDC);
@@ -271,28 +271,62 @@ test('open portfolio with no positions', async t => {
   t.like(log, [{ _method: 'monitorTransfers' }, { _method: 'exit' }]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
-  t.log(
-    'portfolio',
-    actual.publicTopics.map(t => t.storagePath),
-  );
-  t.like(actual.publicTopics, [
-    {
-      description: 'Portfolio',
-      storagePath: 'published.ymax0.portfolios.portfolio1',
-    },
-  ]);
-  t.is(actual.publicTopics.length, 1);
   await documentStorageSchema(t, storage, docOpts);
 });
 
+test('Noble Dollar Swap, Lock messages', t => {
+  const signer =
+    'noble1reheu4ym85k9gktyf9vzhzt0zvqym9txwejsj4vaxdrw98wm4emsddarrd' as const;
+
+  const actual = makeSwapLockMessages(
+    { value: signer, chainId: 'grand-1', encoding: 'bech32' },
+    1200000n,
+    { usdnOut: 1188000n },
+  );
+  const bigintStringifier = (_p, v) => (typeof v === 'bigint' ? `${v}` : v);
+  t.log(JSON.stringify(actual, bigintStringifier));
+  t.deepEqual(actual, {
+    msgSwap: {
+      signer:
+        'noble1reheu4ym85k9gktyf9vzhzt0zvqym9txwejsj4vaxdrw98wm4emsddarrd',
+      amount: { denom: 'uusdc', amount: '1200000' },
+      routes: [{ poolId: 0n, denomTo: 'uusdn' }],
+      min: { denom: 'uusdn', amount: '1188000' },
+    },
+    msgLock: {
+      signer:
+        'noble1reheu4ym85k9gktyf9vzhzt0zvqym9txwejsj4vaxdrw98wm4emsddarrd',
+      vault: 1,
+      amount: '1188000',
+    },
+    protoMessages: [
+      {
+        typeUrl: '/noble.swap.v1.MsgSwap',
+        value:
+          'CkBub2JsZTFyZWhldTR5bTg1azlna3R5Zjl2emh6dDB6dnF5bTl0eHdlanNqNHZheGRydzk4d200ZW1zZGRhcnJkEhAKBXV1c2RjEgcxMjAwMDAwGgcSBXV1c2RuIhAKBXV1c2RuEgcxMTg4MDAw',
+      },
+      {
+        typeUrl: '/noble.dollar.vaults.v1.MsgLock',
+        value:
+          'CkBub2JsZTFyZWhldTR5bTg1azlna3R5Zjl2emh6dDB6dnF5bTl0eHdlanNqNHZheGRydzk4d200ZW1zZGRhcnJkEAEaBzExODgwMDA=',
+      },
+    ],
+  });
+});
+
 test('open portfolio with USDN position', async t => {
-  const { orch, ctx, offer, storage } = mocks();
+  const { orch, ctx, offer, storage } = mocks(
+    {},
+    { USDN: make(USDC, 50_000_000n), NobleFees: make(USDC, 100n) },
+  );
   const { log, seat } = offer;
 
   const shapes = makeProposalShapes(USDC);
   mustMatch(seat.getProposal(), shapes.openPortfolio);
 
-  const actual = await openPortfolio(orch, ctx, seat, { usdnOut: 97n });
+  const actual = await openPortfolio(orch, ctx, seat, {
+    usdnOut: (50_000_000n * 99n) / 100n,
+  });
   t.log(log.map(msg => msg._method).join(', '));
 
   t.like(log, [
@@ -304,17 +338,6 @@ test('open portfolio with USDN position', async t => {
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
-  t.like(actual.publicTopics, [
-    {
-      description: 'Portfolio',
-      storagePath: 'published.ymax0.portfolios.portfolio1',
-    },
-  ]);
-  t.log(
-    'accounts',
-    actual.publicTopics.map(t => t.storagePath),
-  );
-  t.is(actual.publicTopics.length, 1);
   await documentStorageSchema(t, storage, docOpts);
 });
 
@@ -353,17 +376,6 @@ test('open portfolio with Aave and USDN positions', async t => {
 
   t.snapshot(log, 'call log'); // see snapshot for call log
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
-  t.log(
-    'portfolio',
-    actual.publicTopics.map(t => t.storagePath),
-  );
-  t.like(actual.publicTopics, [
-    {
-      description: 'Portfolio',
-      storagePath: 'published.ymax0.portfolios.portfolio1',
-    },
-  ]);
-  t.is(actual.publicTopics.length, 1);
   await documentStorageSchema(t, storage, docOpts);
 });
 
@@ -401,13 +413,7 @@ test('open portfolio with Aave position', async t => {
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
-  t.log(
-    'accounts',
-    actual.publicTopics.map(t => t.storagePath),
-  );
-  t.is(actual.publicTopics.length, 1);
   await documentStorageSchema(t, storage, docOpts);
-  t.is(actual.publicTopics.length, 1);
 });
 
 test('open portfolio with Compound position', async t => {
@@ -444,40 +450,36 @@ test('open portfolio with Compound position', async t => {
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
-  t.log(
-    'accounts',
-    actual.publicTopics.map(t => t.storagePath),
-  );
-  t.is(actual.publicTopics.length, 1);
   await documentStorageSchema(t, storage, docOpts);
 });
 
 test('handle failure in localTransfer from seat to local account', async t => {
-  const { orch, ctx, offer, storage } = mocks({
-    localTransfer: Error('localTransfer from seat failed'),
-  });
+  const { orch, ctx, offer, storage } = mocks(
+    { localTransfer: Error('localTransfer from seat failed') },
+    { USDN: make(USDC, 100n) },
+  );
   const { log, seat } = offer;
 
   const actual = await openPortfolio(orch, { ...ctx }, seat, {
     destinationEVMChain: 'Ethereum',
   });
   t.log(log.map(msg => msg._method).join(', '));
+  t.snapshot(log, 'call log');
   t.like(log, [
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', sourceSeat: seat },
     { _method: 'fail' },
   ]);
-  // TODO: fix ICAAddr stuff
-  const [{ storagePath: ICAAddr }] = actual.publicTopics;
-  t.log('we still get the invitationMakers and ICA address', ICAAddr);
+  t.log('we still get the invitationMakers and ICA address');
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
   await documentStorageSchema(t, storage, docOpts);
 });
 
 test('handle failure in IBC transfer', async t => {
-  const { orch, ctx, offer, storage } = mocks({
-    transfer: Error('IBC transfer failed'),
-  });
+  const { orch, ctx, offer, storage } = mocks(
+    { transfer: Error('IBC transfer failed') },
+    { USDN: make(USDC, 100n) },
+  );
   const { log, seat } = offer;
 
   const actual = await openPortfolio(orch, { ...ctx }, seat, {
@@ -492,16 +494,15 @@ test('handle failure in IBC transfer', async t => {
     { _method: 'fail' },
   ]);
   t.snapshot(log, 'call log');
-  const [{ storagePath: ICAAddr }] = actual.publicTopics;
-  t.log('we still get the invitationMakers and ICA address', ICAAddr);
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
   await documentStorageSchema(t, storage, docOpts);
 });
 
 test('handle failure in executeEncodedTx', async t => {
-  const { orch, ctx, offer, storage } = mocks({
-    executeEncodedTx: Error('Swap or Lock failed'),
-  });
+  const { orch, ctx, offer, storage } = mocks(
+    { executeEncodedTx: Error('Swap or Lock failed') },
+    { USDN: make(USDC, 100n) },
+  );
   const { log, seat } = offer;
 
   const actual = await openPortfolio(orch, { ...ctx }, seat, {
@@ -518,8 +519,6 @@ test('handle failure in executeEncodedTx', async t => {
     { _method: 'fail' },
   ]);
   t.snapshot(log, 'call log');
-  const [{ storagePath: ICAAddr }] = actual.publicTopics;
-  t.log('we still get the invitationMakers and ICA address', ICAAddr);
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
   await documentStorageSchema(t, storage, docOpts);
 });
@@ -555,8 +554,6 @@ test.skip('handle failure in sendGmp with Aave position', async t => {
     { _method: 'fail' },
   ]);
   t.snapshot(log, 'call log');
-  const [{ storagePath: ICAAddr }] = actual.publicTopics;
-  t.log('we still get the invitationMakers and ICA address', ICAAddr);
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
   await documentStorageSchema(t, storage, docOpts);
 });
