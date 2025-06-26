@@ -17,25 +17,18 @@ import type { Instance, ZoeService } from '@agoric/zoe';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, passStyleOf } from '@endo/far';
 import { toExternalConfig } from '../src/config-marshal.js';
-import type { CorePowersG } from '../src/orch.start.types.ts';
 import { startPortfolio } from '../src/portfolio-start.core.js';
-import {
-  name as contractName,
-  type permit,
-} from '../src/portfolio.contract.permit.js';
-
-type StartFn = typeof contractExports.start;
-type PortfolioBootPowers = CorePowersG<
-  typeof contractName,
+import type {
+  PortfolioBootPowers,
   StartFn,
-  typeof permit
->;
+} from '../src/portfolio-start.type.ts';
+import { name as contractName } from '../src/portfolio.contract.permit.js';
 
 const { entries, keys } = Object;
 
 const docOpts = {
   note: 'YMax VStorage Schema',
-  // XXX TODO?
+  // XXX?
   // node: 'orchtest.ymax0',
   // owner: 'ymax',
   // pattern: 'orchtest.',
@@ -131,20 +124,24 @@ test('coreEval code without swingset', async t => {
     vowTools.when,
   );
   await wallet.deposit(await pourPayment(usdc.units(10_000)));
+  await wallet.deposit(poc24.mint.mintPayment(poc24.make(100n)));
   const silvia = makeTrader(wallet, instance);
-  const actualP = silvia.openPortfolio(t, { USDN: usdc.units(3_333) });
+  const actualP = silvia.openPortfolio(t, {
+    USDN: usdc.units(3_333),
+    Access: poc24.make(1n),
+  });
   // ack IBC transfer for forward
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   const actual = await actualP;
   t.like(actual, {
     payouts: { USDN: { value: 0n } },
     result: {
-      publicTopics: [
-        {
+      publicSubscribers: {
+        portfolio: {
           description: 'Portfolio',
           storagePath: `orchtest.ymax0.portfolios.portfolio0`,
         },
-      ],
+      },
     },
   });
 
