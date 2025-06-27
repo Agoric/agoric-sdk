@@ -2,6 +2,8 @@ import type { HostInterface } from '@agoric/async-flow';
 import {
   MsgLock,
   MsgLockResponse,
+  MsgUnlock,
+  MsgUnlockResponse,
 } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import {
   MsgSwap,
@@ -148,31 +150,46 @@ export const makeTestFeeConfig = (usdc: Omit<AmountUtils, 'mint'>): FeeConfig =>
 
 export const makeUSDNIBCTraffic = (
   signer = 'cosmos1test',
-  money = `${3333 * 1000000}`,
-) => ({
-  swap: {
+  money = `${3333 * 1_000_000}`,
+) => {
+  const makeSwap = (
+    fromDenom: string,
+    toDenom: string,
+    poolId: bigint = 0n,
+  ) => ({
     msg: buildTxPacketString([
       MsgSwap.toProtoMsg({
         signer,
-        amount: { denom: 'uusdc', amount: money },
-        routes: [{ poolId: 0n, denomTo: 'uusdn' }],
-        min: { denom: 'uusdn', amount: money },
+        amount: { denom: fromDenom, amount: money },
+        routes: [{ poolId, denomTo: toDenom }],
+        min: { denom: toDenom, amount: money },
       }),
     ]),
     ack: buildMsgResponseString(MsgSwapResponse, {}),
-  },
-  lock: {
-    msg: buildTxPacketString([
-      MsgLock.toProtoMsg({ signer, vault: 1, amount: money }),
-    ]),
-    ack: buildMsgResponseString(MsgLockResponse, {}),
-  },
-  lockWorkaround: {
-    // XXX { ..., vault: 1n } ???
-    msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ2xvS0ZpOXViMkpzWlM1emQyRndMbll4TGsxeloxTjNZWEFTUUFvTFkyOXpiVzl6TVhSbGMzUVNFd29GZFhWelpHTVNDak16TXpNd01EQXdNREFhQnhJRmRYVnpaRzRpRXdvRmRYVnpaRzRTQ2pNek16TXdNREF3TURBS1Bnb2ZMMjV2WW14bExtUnZiR3hoY2k1MllYVnNkSE11ZGpFdVRYTm5URzlqYXhJYkNndGpiM050YjNNeGRHVnpkQkFCR2dvek16TXpNREF3TURBdyIsIm1lbW8iOiIifQ==',
-    ack: buildMsgResponseString(MsgLockResponse, {}),
-  },
-});
+  });
+
+  return {
+    swap: makeSwap('uusdc', 'uusdn'),
+    lock: {
+      msg: buildTxPacketString([
+        MsgLock.toProtoMsg({ signer, vault: 1, amount: money }),
+      ]),
+      ack: buildMsgResponseString(MsgLockResponse, {}),
+    },
+    lockWorkaround: {
+      msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ2xvS0ZpOXViMkpzWlM1emQyRndMbll4TGsxeloxTjNZWEFTUUFvTFkyOXpiVzl6TVhSbGMzUVNFd29GZFhWelpHTVNDak16TXpNd01EQXdNREFhQnhJRmRYVnpaRzRpRXdvRmRYVnpaRzRTQ2pNek16TXdNREF3TURBS1Bnb2ZMMjV2WW14bExtUnZiR3hoY2k1MllYVnNkSE11ZGpFdVRYTm5URzlqYXhJYkNndGpiM050YjNNeGRHVnpkQkFCR2dvek16TXpNREF3TURBdyIsIm1lbW8iOiIifQ==',
+      ack: buildMsgResponseString(MsgLockResponse, {}),
+    },
+    unlock: {
+      msg: buildTxPacketString([
+        MsgUnlock.toProtoMsg({ signer, vault: 1, amount: money }),
+      ]),
+      ack: buildMsgResponseString(MsgUnlockResponse, {}),
+    },
+    swapBack: makeSwap('uusdn', 'uusdc'), // optional convenience shortcut
+  };
+};
+
 
 export const axelarChainsMap: AxelarChainsMap = {
   Ethereum: {

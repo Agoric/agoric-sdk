@@ -30,17 +30,27 @@ export type CompoundGive = {
   Compound: Amount<'nat'>;
 };
 export type GmpGive = {} | AaveGive | CompoundGive | (AaveGive & CompoundGive);
-export type OpenPortfolioGive = {
-  USDN?: Amount<'nat'>;
-  NobleFees?: Amount<'nat'>;
-  Access?: Amount<'nat'>;
-} & ({} | GmpGive);
+type USDNGive = { NobleFees?: Amount<'nat'> } & (
+  | { USDNSwapIn: Amount<'nat'> }
+  | { USDNLock: Amount<'nat'> }
+  | { USDNSwapOut: Amount<'nat'> }
+  | { USDNUnlock: Amount<'nat'> }
+);
+
+export type OpenPortfolioGive = { Access?: Amount<'nat'> } & (
+  | USDNGive
+  | GmpGive
+  | {}
+);
+
+type USDNWant = { USDNSwapOut: Amount<'nat'> } | { USDNUnlock: Amount<'nat'> };
+type RebalanceWant = USDNWant; // TODO: add other protocols
 
 export type ProposalType = {
   openPortfolio: { give: OpenPortfolioGive };
   rebalance:
     | { give: OpenPortfolioGive; want: {} }
-    | { want: Partial<Record<YieldProtocol, Amount<'nat'>>>; give: {} };
+    | { want: RebalanceWant; give: {} };
 };
 
 const YieldProtocolShape = M.or(...keys(YieldProtocol));
@@ -61,20 +71,66 @@ export const makeProposalShapes = (
     CompoundAccount: usdcAmountShape,
   });
 
-  // The give for openPortfolio and rebalance differ only in required properties
-  const giveWith = x => {
-    return M.splitRecord(
-      x,
-      { USDN: usdcAmountShape, NobleFees: usdcAmountShape },
-      M.or(
-        harden({}),
-        AaveGiveShape,
-        CompoundGiveShape,
-        // TODO: and no others
-        M.and(M.splitRecord(AaveGiveShape), M.splitRecord(CompoundGiveShape)),
+  // A pattern that checks the types of all possible keys if they are present,
+  // and that there are no other keys.
+  const allGiveKeysShape = M.splitRecord(
+    {},
+    {
+      NobleFees: usdcAmountShape,
+      USDNSwapIn: usdcAmountShape,
+      USDNLock: usdcAmountShape,
+      USDNSwapOut: usdcAmountShape,
+      USDNUnlock: usdcAmountShape,
+      ...AaveGiveShape,
+      ...CompoundGiveShape,
+    },
+    {}, // rest must be empty
+  );
+
+  // Rule: At most one of the USDN keys can be present.
+  const usdnKeys = ['USDNSwapIn', 'USDNLock', 'USDNSwapOut', 'USDNUnlock'];
+  const usdnMutexRule = M.and(
+    ...usdnKeys
+      .flatMap((k1, i) => usdnKeys.slice(i + 1).map(k2 => [k1, k2]))
+      .map(([k1, k2]) =>
+        M.not(M.splitRecord({ [k1]: M.any(), [k2]: M.any() })),
+      ),
+  );
+
+  // Rule: All or none of a set of keys must be present.
+  const makeAllOrNoneRule = (protocolKeys: string[]) => {
+    const implications = protocolKeys.flatMap(k1 =>
+      protocolKeys.map(k2 =>
+        k1 === k2
+          ? null
+          : M.or(
+              M.not(M.splitRecord({ [k1]: M.any() })),
+              M.splitRecord({ [k2]: M.any() }),
+            ),
       ),
     );
+    return M.and(...implications.filter(Boolean));
   };
+
+  const aaveAllOrNoneRule = makeAllOrNoneRule(keys(AaveGiveShape));
+  const compoundAllOrNoneRule = makeAllOrNoneRule(keys(CompoundGiveShape));
+
+  const giveShape = M.and(
+    allGiveKeysShape,
+    usdnMutexRule,
+    aaveAllOrNoneRule,
+    compoundAllOrNoneRule,
+  );
+
+  // The give for openPortfolio and rebalance differ only in required properties
+  const giveWith = accessOpt => M.splitRecord(accessOpt, {}, giveShape);
+
+  // {USDNSwapOut: Amount<'nat'>} | { USDNUnlock: Amount<'nat'> }
+  const rebalanceWantShape = M.or(
+    //TODO: add other protocols
+    { USDNSwapOut: usdcAmountShape },
+    { USDNUnlock: usdcAmountShape },
+  );
 
   return {
     openPortfolio: M.splitRecord(
@@ -89,7 +145,7 @@ export const makeProposalShapes = (
     rebalance: M.or(
       M.splitRecord({ give: giveWith({}) }, { want: {}, exit: M.any() }, {}),
       M.splitRecord(
-        { want: M.recordOf(YieldProtocolShape, usdcAmountShape) },
+        { want: rebalanceWantShape },
         { give: {}, exit: M.any() },
         {},
       ),

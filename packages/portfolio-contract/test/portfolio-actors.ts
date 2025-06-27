@@ -1,6 +1,7 @@
 import type { InvitationSpec } from '@agoric/smart-wallet/src/invitations.js';
 import type { Instance } from '@agoric/zoe';
 import type { ExecutionContext } from 'ava';
+import { E } from '@endo/far';
 import { type start } from '../src/portfolio.contract.ts';
 import type {
   OfferArgsFor,
@@ -68,12 +69,14 @@ export const makeTrader = (
         previousOffer: openId,
       };
 
-      return wallet.executeContinuingOffer({
-        id: openId,
-        invitationSpec,
-        proposal,
+      return wallet.executeContinuingOffer(
+        {
+          id: openId,
+          invitationSpec,
+          proposal,
+        },
         offerArgs,
-      });
+      );
     },
     getPortfolioPath: () => portfolioPath,
     getPortfolioStatus: storage => {

@@ -21,6 +21,7 @@ import {
   simulateCCTPAck,
   simulateUpcallFromAxelar,
 } from './contract-setup.ts';
+import type { ProposalType } from '../src/type-guards.ts';
 
 const obArgs = { destinationEVMChain: 'Ethereum' } as const; // TODO: should be optional
 
@@ -35,10 +36,22 @@ const rebalanceScenarioMacro = test.macro({
     const $ = (amt: Dollars) =>
       multiplyBy(usdc.units(1), parseRatio(numeral(amt), usdc.brand));
 
+    const u1 = usdc.make(1n);
+    const asGive = ({
+      USDN,
+      Aave,
+      Compound,
+    }: Partial<Record<YieldProtocol, NatAmount>>) =>
+      ({
+        ...(USDN ? { USDNSwapIn: USDN } : {}),
+        ...(Aave ? { Aave, AaveGmp: u1, AaveAccount: u1 } : {}),
+        ...(Compound ? { Compound, CompoundGmp: u1, CompoundAccount: u1 } : {}),
+      }) as ProposalType['openPortfolio']['give'];
+
     const openPortfolio = async (
-      give: Partial<Record<YieldProtocol, NatAmount>>,
+      giveTo: Partial<Record<YieldProtocol, NatAmount>>,
     ) => {
-      const doneP = trader1.openPortfolio(t, give, obArgs);
+      const doneP = trader1.openPortfolio(t, asGive(giveTo), obArgs);
 
       await eventLoopIteration();
       if (Object.keys(give).length > 0) {
@@ -69,7 +82,7 @@ const rebalanceScenarioMacro = test.macro({
 
     const { result, payouts } = await (openOnly
       ? openResult
-      : trader1.rebalance(t, { give, want }, offerArgs));
+      : trader1.rebalance(t, { give: asGive(give), want }, offerArgs));
 
     const portfolioPath = trader1.getPortfolioPath();
     t.truthy(portfolioPath);
