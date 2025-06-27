@@ -33,7 +33,13 @@ import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { assert, Fail } from '@endo/errors';
 import type { YieldProtocol } from './constants.js';
-import type { PortfolioKit, Position, USDNPosition } from './portfolio.exo.ts';
+import type {
+  AccountInfoFor,
+  ChainAccountKey,
+  PortfolioKit,
+  Position,
+  USDNPosition,
+} from './portfolio.exo.ts';
 import type {
   AxelarChainsMap,
   BaseGmpArgs,
@@ -58,10 +64,7 @@ type PortfolioBootstrapContext = {
     getDenom: (brand: Brand) => Denom | undefined;
   };
   zoeTools: GuestInterface<ZoeTools>;
-  makePortfolioKit: (
-    localAccount: LocalAccount,
-    nobleAccount: NobleAccount,
-  ) => GuestInterface<PortfolioKit>;
+  makePortfolioKit: () => GuestInterface<PortfolioKit>;
   inertSubscriber: GuestInterface<ResolvedPublicTopic<unknown>['subscriber']>;
 };
 
@@ -113,7 +116,7 @@ const createRemoteEVMAccount = async (
   ctx: PortfolioInstanceContext,
   seat: ZCFSeat,
   gmpArgs: BaseGmpArgs,
-  reader: GuestInterface<PortfolioKit['reader']>,
+  kit: GuestInterface<PortfolioKit>,
   protocol: YieldProtocol,
 ) => {
   const { destinationEVMChain, keyword, amounts: gasAmounts } = gmpArgs;
@@ -131,10 +134,10 @@ const createRemoteEVMAccount = async (
       amounts: gasAmounts,
       contractInvocationData: [],
     }),
-    reader,
+    kit,
   );
 
-  return reader.getGMPAddress(protocol);
+  return kit.reader.getGMPAddress(protocol);
 };
 
 const sendTokensViaCCTP = async (
@@ -142,7 +145,7 @@ const sendTokensViaCCTP = async (
   ctx: PortfolioInstanceContext,
   seat: ZCFSeat,
   args: BaseGmpArgs,
-  reader: GuestInterface<PortfolioKit>['reader'],
+  kit: GuestInterface<PortfolioKit>,
   protocol: YieldProtocol,
 ) => {
   const { axelarChainsMap, chainHubTools, zoeTools } = ctx;
@@ -151,15 +154,15 @@ const sendTokensViaCCTP = async (
   const denom = NonNullish(chainHubTools.getDenom(amount.brand));
   const denomAmount: DenomAmount = { denom, value: amount.value };
 
-  const nobleAccount = reader.getNobleICA() as unknown as NobleAccount;
-  const localAcct = reader.getLCA() as unknown as LocalAccount;
+  const { lca: localAcct } = await provideAccountInfo(orch, 'agoric', kit);
+  const { ica: nobleAccount } = await provideAccountInfo(orch, 'noble', kit);
 
   trace('localTransfer', amount, 'to local', localAcct.getAddress().value);
   await zoeTools.localTransfer(seat, localAcct, amounts);
   try {
     await localAcct.transfer(nobleAccount.getAddress(), denomAmount);
     const caipChainId = axelarChainsMap[destinationEVMChain].caip;
-    const remoteAccountAddress = await reader.getGMPAddress(protocol);
+    const remoteAccountAddress = await kit.reader.getGMPAddress(protocol);
     const destinationAddress = `${caipChainId}:${remoteAccountAddress}`;
     trace(`CCTP destinationAddress: ${destinationAddress}`);
 
@@ -222,7 +225,7 @@ const sendGmp = async (
   ctx: PortfolioInstanceContext,
   seat: ZCFSeat,
   gmpArgs: GmpArgsContractCall,
-  reader: GuestInterface<PortfolioKit>['reader'],
+  kit: GuestInterface<PortfolioKit>,
 ) => {
   mustMatch(gmpArgs, GMPArgsShape);
   const { axelarChainsMap, chainHubTools, zoeTools } = ctx;
@@ -230,7 +233,7 @@ const sendGmp = async (
   const axelar = await orch.getChain('axelar');
   const { chainId } = await axelar.getChainInfo();
 
-  const localAccount = reader.getLCA() as unknown as LocalAccount;
+  const { lca: localAccount } = await provideAccountInfo(orch, 'agoric', kit);
   const { keyword, amounts: gasAmounts } = gmpArgs;
   const natAmount = gasAmounts[keyword];
   const denom = await chainHubTools.getDenom(natAmount.brand);
@@ -297,7 +300,7 @@ const supplyToAave = async (
         },
       ],
     }),
-    kit.reader,
+    kit,
   );
 };
 
@@ -336,7 +339,7 @@ const withdrawFromAave = async (
         },
       ],
     }),
-    kit.reader,
+    kit,
   );
 };
 /* c8 ignore end */
@@ -346,7 +349,7 @@ const supplyToCompound = async (
   ctx: PortfolioInstanceContext,
   seat: ZCFSeat,
   gmpArgs: GmpArgsTransferAmount,
-  reader: GuestInterface<PortfolioKit>['reader'],
+  kit: GuestInterface<PortfolioKit>,
 ) => {
   const {
     destinationEVMChain,
@@ -355,7 +358,7 @@ const supplyToCompound = async (
     amounts: gasAmounts,
   } = gmpArgs;
   const { contractAddresses } = ctx.axelarChainsMap[destinationEVMChain];
-  const remoteEVMAddress = await reader.getGMPAddress('Compound');
+  const remoteEVMAddress = await kit.reader.getGMPAddress('Compound');
 
   await sendGmp(
     orch,
@@ -380,7 +383,7 @@ const supplyToCompound = async (
         },
       ],
     }),
-    reader,
+    kit,
   );
 };
 
@@ -390,7 +393,7 @@ const withdrawFromCompound = async (
   ctx: PortfolioInstanceContext,
   seat: ZCFSeat,
   gmpArgs: GmpArgsWithdrawAmount,
-  reader: GuestInterface<PortfolioKit>['reader'],
+  kit: GuestInterface<PortfolioKit>,
 ) => {
   const {
     destinationEVMChain,
@@ -399,7 +402,7 @@ const withdrawFromCompound = async (
     amounts: gasAmounts,
   } = gmpArgs;
   const { contractAddresses } = ctx.axelarChainsMap[destinationEVMChain];
-  const remoteEVMAddress = await reader.getGMPAddress('Compound');
+  const remoteEVMAddress = await kit.reader.getGMPAddress('Compound');
 
   await sendGmp(
     orch,
@@ -419,7 +422,7 @@ const withdrawFromCompound = async (
         },
       ],
     }),
-    reader,
+    kit,
   );
 };
 /* c8 ignore end */
@@ -502,49 +505,81 @@ const trackFlow = async (
   }
 };
 
+const provideAccountInfo = async <C extends ChainAccountKey>(
+  orch: Orchestrator,
+  chainName: C,
+  kit: GuestInterface<PortfolioKit>, // Guest<T>?
+): Promise<AccountInfoFor[C]> => {
+  await null;
+  // TODO: async provide
+  let promiseMaybe = kit.manager.reserveAccount(chainName);
+  if (promiseMaybe) {
+    return promiseMaybe as unknown as Promise<AccountInfoFor[C]>;
+  }
+
+  // We have the map entry reserved
+  switch (chainName) {
+    case 'noble': {
+      const nobleChain = await orch.getChain('noble');
+      const ica: NobleAccount = await nobleChain.makeAccount();
+      const info: AccountInfoFor['noble'] = { type: 'noble' as const, ica };
+      kit.manager.resolveAccount(info);
+      return info as AccountInfoFor[C];
+    }
+    case 'agoric': {
+      const agoricChain = await orch.getChain('agoric');
+      const lca = await agoricChain.makeAccount();
+      const reg = await lca.monitorTransfers(kit.tap);
+      trace('Monitoring transfers for', lca.getAddress().value);
+      const info: AccountInfoFor['agoric'] = { type: chainName, lca, reg };
+      kit.manager.resolveAccount(info);
+      return info as AccountInfoFor[C];
+    }
+    default:
+      throw Error('unreachable');
+  }
+};
+
 const addToUSDNPosition = async (
   ctx: PortfolioInstanceContext,
   seat: ZCFSeat,
+  lca: LocalAccount,
+  ica: NobleAccount,
   pos: USDNPosition,
-  kit: GuestInterface<PortfolioKit>,
+  reporter: GuestInterface<PortfolioKit['reporter']>,
   { USDN, NobleFees }: { USDN: Amount<'nat'>; NobleFees?: Amount<'nat'> },
   usdnOut: bigint = USDN.value,
 ) => {
-  // XXX HostInterface<...> ???
-  const ica = kit.reader.getNobleICA() as unknown as NobleAccount;
-  // XXX HostInterface<...> ???
-  const localAcct = kit.reader.getLCA() as unknown as LocalAccount;
-
   const amounts = harden({ USDN, ...(NobleFees ? { NobleFees } : {}) });
   const denom = NonNullish(ctx.chainHubTools.getDenom(USDN.brand));
   const volume: DenomAmount = { denom, value: USDN.value };
   const withFees = NobleFees ? add(USDN, NobleFees) : USDN;
 
   const nobleAddr = ica.getAddress();
-  await trackFlow(kit.reporter, [
+  await trackFlow(reporter, [
     {
       how: 'localTransfer',
       src: { seat, keyword: 'USDN' },
-      dest: { account: localAcct },
+      dest: { account: lca },
       amount: withFees,
       apply: async () => {
-        await ctx.zoeTools.localTransfer(seat, localAcct, amounts);
+        await ctx.zoeTools.localTransfer(seat, lca, amounts);
       },
       recover: async () => {
-        await ctx.zoeTools.withdrawToSeat(localAcct, seat, amounts);
+        await ctx.zoeTools.withdrawToSeat(lca, seat, amounts);
       },
     },
     {
       how: 'IBC transfer',
-      src: { account: localAcct },
+      src: { account: lca },
       dest: { account: ica },
       amount: withFees,
       apply: async () => {
-        await localAcct.transfer(nobleAddr, volume);
+        await lca.transfer(nobleAddr, volume);
       },
       recover: async () => {
         const nobleAmount = { ...volume, denom: 'uusdc' };
-        await ica.transfer(localAcct.getAddress(), nobleAmount);
+        await ica.transfer(lca.getAddress(), nobleAmount);
       },
     },
     {
@@ -594,10 +629,14 @@ export const rebalance = async (
 
   const { give } = proposal;
   if ('USDN' in give && give.USDN) {
-    const { USDN, NobleFees } = give; // XXXX
+    const { USDN, NobleFees } = give;
+    const g = harden({ USDN, NobleFees });
     const { usdnOut } = offerArgs;
-    const pos = kit.manager.provideUSDNPosition(); // TODO: get num from offerArgs?
-    await addToUSDNPosition(ctx, seat, pos, kit, { USDN, NobleFees }, usdnOut);
+    const { lca } = await provideAccountInfo(orch, 'agoric', kit);
+    const { ica } = await provideAccountInfo(orch, 'noble', kit);
+    const accountId = coerceAccountId(ica.getAddress());
+    const pos = kit.manager.provideUSDNPosition(accountId);
+    await addToUSDNPosition(ctx, seat, lca, ica, pos, kit.reporter, g, usdnOut);
   }
 
   const { entries } = Object;
@@ -625,14 +664,7 @@ export const rebalance = async (
         amounts: { [accountKW]: give[accountKW] },
       };
       try {
-        await createRemoteEVMAccount(
-          orch,
-          ctx,
-          seat,
-          gmpArgs,
-          kit.reader,
-          protocol,
-        );
+        await createRemoteEVMAccount(orch, ctx, seat, gmpArgs, kit, protocol);
       } catch (err) {
         console.error('⚠️ initRemoteEVMAccount failed for', protocol, err);
         seat.fail(err);
@@ -644,7 +676,7 @@ export const rebalance = async (
       keyword: protocol,
       amounts: { [protocol]: give[protocol] },
     };
-    await sendTokensViaCCTP(orch, ctx, seat, args, kit.reader, protocol);
+    await sendTokensViaCCTP(orch, ctx, seat, args, kit, protocol);
 
     // Wait before supplying funds to aave - make sure tokens reach the remote EVM account
     kit.manager.waitKLUDGE(20n);
@@ -661,7 +693,7 @@ export const rebalance = async (
         await supplyToAave(orch, ctx, seat, gmpArgs, kit);
         break;
       case 'Compound':
-        await supplyToCompound(orch, ctx, seat, gmpArgs, kit.reader);
+        await supplyToCompound(orch, ctx, seat, gmpArgs, kit);
         break;
     }
   }
@@ -690,17 +722,7 @@ export const openPortfolio = (async (
       chainHubTools,
       inertSubscriber,
     } = ctx;
-    // XXX should provideAccount() per chain as needed
-    const agoric = await orch.getChain('agoric');
-    const localAccount = await agoric.makeAccount();
-    const nobleChain = await orch.getChain('noble');
-    // Always make a Noble ICA, since we need it for CCTP
-    const nobleAccount = await nobleChain.makeAccount();
-
-    const kit = makePortfolioKit(localAccount, nobleAccount);
-    const reg = await localAccount.monitorTransfers(kit.tap);
-    trace('Monitoring transfers for', localAccount.getAddress().value);
-    // TODO: save reg somewhere???
+    const kit = makePortfolioKit();
 
     const portfolioCtx = {
       axelarChainsMap,
