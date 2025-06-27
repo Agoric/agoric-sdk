@@ -397,11 +397,13 @@ test.only('open portfolio with USDN position and withdraw funds', async t => {
   t.log('Beginning withdrawal from USDN position');
   
   // Request withdrawal of 1000 USDC from USDN position
-  const withdrawalAmount = usdc.units(1000);
+  const withdrawalAmount = usdc.units(3_333);
+
+
   const rebalanceP = trader1.rebalancePortfolio(
     t,
     { want: { USDN: withdrawalAmount } },
-    { invitationMakers: result.invitationMakers }
+    { invitationMakers: result.invitationMakers, usdcOut: withdrawalAmount.value },
   );
   
   t.log('Rebalance request submitted, processing IBC transfers');
@@ -411,13 +413,7 @@ test.only('open portfolio with USDN position and withdraw funds', async t => {
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   t.log('Acknowledged unlock request to Noble');
   
-  // 2. Simulate Noble processing (unlock and swap)
-  await eventLoopIteration();
-  
-  // 3. Ack the IBC transfer back from Noble to Agoric
-  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-  t.log('Acknowledged transfer back from Noble to Agoric');
-  
+
   // Wait for the rebalance operation to complete
   const rebalanceResult = await rebalanceP;
   t.log('Rebalance operation completed');
