@@ -21,9 +21,9 @@
     "lint:eslint": "yarn run -T eslint ."
   },
   "dependencies": {
-    "@endo/errors": "^1.2.10",
-    "@endo/far": "^1.1.11",
-    "@endo/marshal": "^1.6.4"
+    "@endo/errors": "^1.2.12",
+    "@endo/far": "^1.1.13",
+    "@endo/marshal": "^1.7.1"
   },
   "devDependencies": {
     "ava": "^5.3.0"
