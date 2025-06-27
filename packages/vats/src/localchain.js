@@ -167,7 +167,7 @@ export const prepareLocalChainAccountKit = (
           .returns(M.promise()),
       }),
       notifyTransferVatWatcher: M.interface('NotifyTransferVatWatcher', {
-        onFulfilled: M.call(M.any(), M.arrayOf(M.any())).returns(M.any()),
+        onFulfilled: M.call(M.any(), M.record()).returns(M.any()),
       }),
       overrideWatcher: M.interface('OverrideWatcher', {
         onFulfilled: M.call(M.any(), M.any()).returns(M.any()),
@@ -200,10 +200,10 @@ export const prepareLocalChainAccountKit = (
         /**
          * @template {TypedJson[]} MT
          * @param {ResponseToMany<MT>} fulfilment
-         * @param {NotifyInfo[]} notifyInfos
+         * @param {Record<number, NotifyInfo>} notifyInfos
          */
         onFulfilled(fulfilment, notifyInfos) {
-          if (notifyInfos.every(notifyInfo => !notifyInfo)) {
+          if (Object.keys(notifyInfos).length === 0) {
             // No need to notify the transfer bridge manager, so just return.
             return fulfilment;
           }
@@ -220,7 +220,7 @@ export const prepareLocalChainAccountKit = (
 
           // notify the transfer vat that assets have been sent.
           const notifyV = allSettled(
-            notifyInfos.flatMap(info => {
+            Object.values(notifyInfos).flatMap(info => {
               if (!info) {
                 // If there is no info, then this is not a tx message that needs
                 // notification.
@@ -380,8 +380,8 @@ export const prepareLocalChainAccountKit = (
           const { address, system } = this.state;
           messages.length > 0 || Fail`need at least one message to execute`;
 
-          /** @type {NotifyInfo[]} */
-          const notifyInfos = new Array(messages.length);
+          /** @type {Record<number, NotifyInfo>} */
+          const notifyInfos = {};
 
           const rewrittenMsgs = messages.map((msg, i) => {
             const { '@type': typeUrl, ...value } = msg;
