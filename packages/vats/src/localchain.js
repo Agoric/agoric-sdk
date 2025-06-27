@@ -398,11 +398,11 @@ export const prepareLocalChainAccountKit = (
 
             // Since the message is a `MsgSend`, then we remap the receiver
             // to its unhooked baseAddress.
-            const rawSend = MsgSend.fromPartial(value);
+            const origSend = MsgSend.fromPartial(value);
             const { baseAddress: target } = decodeAddressHook(
-              rawSend.toAddress,
+              origSend.toAddress,
             );
-            const sendValue = MsgSend.fromPartial({
+            const newSend = MsgSend.fromPartial({
               ...value,
               toAddress: target,
             });
@@ -410,8 +410,10 @@ export const prepareLocalChainAccountKit = (
             const {
               amount: coins,
               fromAddress: sender,
+              // Propagate the original hooked address for the target
+              // distinguish.
               toAddress: receiver,
-            } = sendValue;
+            } = origSend;
 
             /** @type {NotifyInfo} */
             const info = {
@@ -419,14 +421,13 @@ export const prepareLocalChainAccountKit = (
               coins,
               target,
               sender,
-              // Show the hooked address, so the the recipient can distinguish.
-              receiver: rawSend.toAddress,
-              // Don't give a memo, just in case the recipient is tempted to
-              // rely on it.
-              memo: '',
+              receiver,
+              memo: JSON.stringify({
+                hookedTypeUrl: msgTypeUrl,
+              }),
             };
             notifyInfos[i] = info;
-            return harden({ '@type': msgTypeUrl, ...sendValue });
+            return harden({ '@type': msgTypeUrl, ...newSend });
           });
 
           const obj = {
