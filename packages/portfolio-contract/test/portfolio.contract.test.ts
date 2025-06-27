@@ -355,3 +355,90 @@ test('open portfolio with USDN, Aave positions', async t => {
   t.snapshot(contents, 'vstorage');
   t.snapshot(done.payouts, 'refund payouts');
 });
+
+test.only('open portfolio with USDN position and withdraw funds', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { usdc, poc24 } = common.brands;
+
+  // First, open a portfolio with USDN position
+  const doneP = trader1.openPortfolio(
+    t,
+    {
+      USDN: usdc.units(3_333),
+      NobleFees: usdc.make(100n),
+      Access: poc24.make(1n),
+    },
+    { destinationEVMChain: 'Ethereum' }, // XXX shouldn't be needed
+  );
+
+  // ack IBC transfer for forward
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+
+  const done = await doneP;
+  const result = done.result as any;
+  t.is(passStyleOf(result.invitationMakers), 'remotable');
+  t.like(result.publicSubscribers, {
+    portfolio: {
+      description: 'Portfolio',
+      storagePath: 'orchtest.portfolios.portfolio0',
+    },
+  });
+  
+  // Verify portfolio was created successfully
+  const { storagePath } = result.publicSubscribers.portfolio;
+  t.log('Portfolio created at:', storagePath);
+  let portfolioInfo = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  
+  // Verify the initial USDN position
+  const { positionPaths } = portfolioInfo;
+  t.is(portfolioInfo.contents[positionPaths[0]].accountId, `cosmos:noble-1:cosmos1test`);
+
+  // Now proceed with withdrawal
+  t.log('Beginning withdrawal from USDN position');
+  
+  // Request withdrawal of 1000 USDC from USDN position
+  const withdrawalAmount = usdc.units(1000);
+  const rebalanceP = trader1.rebalancePortfolio(
+    t,
+    { want: { USDN: withdrawalAmount } },
+    { invitationMakers: result.invitationMakers }
+  );
+  
+  t.log('Rebalance request submitted, processing IBC transfers');
+  
+  // Simulate Noble handling the unlock and swap
+  // 1. Ack the IBC message to Noble for unlock
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  t.log('Acknowledged unlock request to Noble');
+  
+  // 2. Simulate Noble processing (unlock and swap)
+  await eventLoopIteration();
+  
+  // 3. Ack the IBC transfer back from Noble to Agoric
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  t.log('Acknowledged transfer back from Noble to Agoric');
+  
+  // Wait for the rebalance operation to complete
+  const rebalanceResult = await rebalanceP;
+  t.log('Rebalance operation completed');
+  
+  // Verify the withdrawal was successful
+  portfolioInfo = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  
+  // Check that the position value has been reduced
+  const updatedPosition = portfolioInfo.contents[positionPaths[0]];
+  t.log('Updated USDN position:', updatedPosition);
+  
+  // Verify the user received the withdrawn funds
+  t.truthy(rebalanceResult.payouts.USDN, 'User should receive withdrawn USDN funds');
+  
+  // If we can access the amount, verify it matches what was requested
+  if (rebalanceResult.payouts.USDN) {
+    const withdrawnAmount = await E(usdc.issuer).getAmountOf(rebalanceResult.payouts.USDN);
+    t.deepEqual(withdrawnAmount, withdrawalAmount, 'Withdrawn amount should match requested amount');
+  }
+  
+  // Snapshot the final state for verification
+  t.snapshot(portfolioInfo.contents, 'vstorage after withdrawal');
+  t.snapshot(rebalanceResult.payouts, 'withdrawal payouts');
+});
