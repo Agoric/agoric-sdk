@@ -136,6 +136,14 @@ export const startOrchContract = async (
 
   const { startUpgradable } = consume;
   const installation = await installationP;
+
+  const [installationId, bundleId] = await Promise.all([
+    E(board).getId(installation),
+    E(zoe).getBundleIDFromInstallation(installation),
+  ]);
+
+  trace('startUpgradable', { installationId, bundleId });
+
   const kit = await E(startUpgradable)({
     label: name,
     installation,
@@ -153,19 +161,18 @@ export const startOrchContract = async (
   produceInstance.reset();
   produceInstance.resolve(instance);
 
-  const [installationId, instanceId, terms, bundleId] = await Promise.all([
+  const [instanceId, terms] = await Promise.all([
     E(board).getId(instance),
-    E(board).getId(installation),
     E(zoe).getTerms(instance),
-    E(zoe).getBundleIDFromInstallation(installation),
   ]);
 
   trace(
-    'startOrchContract done',
-    name,
-    { instanceId, installationId, bundleId },
-    terms,
-    objectMap(fullKit, it => passStyleOf(it)),
+    ...[
+      ['startOrchContract done', name],
+      ['getId(instance):', instanceId],
+      ['terms:', terms],
+      [objectMap(fullKit, it => passStyleOf(it))],
+    ].flat(),
   );
   return { config, kit: fullKit };
 };

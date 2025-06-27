@@ -138,6 +138,11 @@ export const createPoCAsset = async (
     E(bankManager).addAsset(denom, issuerName, proposedName, kit),
   ]);
 
+  const slots = {
+    issuer: await E(board).getId(issuer),
+    brand: await E(board).getId(brand),
+  };
+  trace(issuerName, slots, 'for', { brand, issuer });
   await E(depositFacet).receive(supply);
   trace('sent', amt, 'to', beneficiary);
 
