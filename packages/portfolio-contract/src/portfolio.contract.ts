@@ -127,16 +127,9 @@ export const contract = async (
     { openPortfolio: flows.openPortfolio },
     {
       ...ctx1,
-      makePortfolioKit: ((
-        localAccount: HostInterface<LocalAccount>,
-        nobleAccount: HostInterface<NobleAccount>,
-      ) => {
+      makePortfolioKit: (() => {
         const portfolioId = portfolios.getSize();
-        const it = makePortfolioKit({
-          portfolioId,
-          localAccount,
-          nobleAccount,
-        });
+        const it = makePortfolioKit({ portfolioId });
         portfolios.init(portfolioId, it);
         return it;
       }) as any, // XXX Guest...

@@ -2,6 +2,7 @@ import { mustMatch } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { ScopedBridgeManager } from '@agoric/vats';
 import { heapVowE as VE } from '@agoric/vow';
+import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
 import { passStyleOf } from '@endo/pass-style';
@@ -16,7 +17,6 @@ import {
   setupPortfolioTest,
 } from './supports.ts';
 import { makeWallet } from './wallet-offer-tools.ts';
-import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
 const contractName = 'ymax0';
 type StartFn = typeof contractExports.start;
