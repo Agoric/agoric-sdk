@@ -58,10 +58,12 @@ const openPosition = async (
   },
 ) => {
   const brand = fromEntries(await walletKit.readPublished('agoricNames.brand'));
-  const { USDC } = brand as Record<string, Brand<'nat'>>;
+  const { USDC, PoC25 } = brand as Record<string, Brand<'nat'>>;
 
   const give = {
     USDN: multiplyBy(make(USDC, 1_000_000n), parseRatio(volume, USDC)),
+    NobleFees: make(USDC, 20_000n),
+    Access: make(PoC25, 1n),
   };
 
   trace('opening portfolio', give);
@@ -75,7 +77,7 @@ const openPosition = async (
         callPipe: [['makeOpenPortfolioInvitation']],
       },
       proposal: { give },
-      offerArgs: {}, // TODO: should be optional
+      offerArgs: {}, // without usdnOut: swap only
     },
   });
 
