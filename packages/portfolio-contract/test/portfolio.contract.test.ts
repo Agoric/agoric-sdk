@@ -222,24 +222,24 @@ test('ProposalShapes', t => {
 test('makeAxelarMemo constructs correct memo JSON', t => {
   const { brand } = makeIssuerKit('USDC');
 
-  const type = 2; // contract call with tokens
+  const type = 1; // contract call
   const destinationEVMChain = 'Avalanche';
   const destinationAddress = '0x58E0bd49520364A115CeE4B03DffC1C08A2D1D09';
-  const gasRatio = 0.5;
+  const keyword = 'Gas';
+  const amounts = {
+    Gas: {
+      brand,
+      value: 2000000n,
+    },
+  };
 
   const gmpArgs: GmpArgsContractCall = {
     type,
     contractInvocationData: [],
     destinationEVMChain,
     destinationAddress,
-    keyword: 'Gas',
-    gasRatio,
-    amounts: {
-      Gas: {
-        brand,
-        value: 2000000n,
-      },
-    },
+    keyword,
+    amounts,
   };
 
   // From a valid transaction from AxelarScan: https://testnet.axelarscan.io/tx/CA5A2E8CA6770B0FBBC1789DE5FB14F5955BD62CD0C1F975C88DE3DA657025F2
@@ -258,7 +258,7 @@ test('makeAxelarMemo constructs correct memo JSON', t => {
     destination_address: destinationAddress,
     payload: expectedPayload,
     fee: {
-      amount: String(gasRatio * Number(gmpArgs.amounts.Gas.value)),
+      amount: String(amounts[keyword].value),
       recipient: gmpAddresses.AXELAR_GAS,
     },
   });
@@ -337,7 +337,9 @@ test('open a portfolio with Aave position', async t => {
       AaveGmp: usdc.make(100n), // fee
       Aave: usdc.units(3_333),
     },
-    { destinationEVMChain: 'Base', Aave: { acctRatio: 0.5, gmpRatio: 0.5 } },
+    {
+      destinationEVMChain: 'Base',
+    },
   );
   await eventLoopIteration(); // let IBC message go out
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
@@ -395,7 +397,6 @@ test('open a portfolio with Compound position', async t => {
     },
     {
       destinationEVMChain: 'Base',
-      Compound: { acctRatio: 0.5, gmpRatio: 0.5 },
     },
   );
   await eventLoopIteration(); // let IBC message go out
@@ -452,7 +453,9 @@ test('open portfolio with USDN, Aave positions', async t => {
       AaveGmp: usdc.make(100n), // fee
       Aave: usdc.units(3_333),
     },
-    { destinationEVMChain: 'Base', Aave: { acctRatio: 0.5, gmpRatio: 0.5 } },
+    {
+      destinationEVMChain: 'Base',
+    },
   );
   await eventLoopIteration(); // let outgoing IBC happen
   console.log('openPortfolio, eventloop');

@@ -97,59 +97,15 @@ export const makeProposalShapes = (
   };
 };
 
-/**
- * This configuration allows each protocol to specify how the total
- * available gas should be divided between:
- *
- * - `gmpRatio`: General Message Passing (GMP) transactions.
- *    These are cross-chain messages (e.g., sending messages to an EVM chain).
- *
- * - `acctRatio`: Remote account creation transactions.
- *   These are used to create or initialize user accounts on the remote chain.
- *
- * Each ratio should be a decimal between 0 and 1, representing the percentage
- * of gas to use for the outbound message. The remaining percentage is to be reserved
- * for the incoming response from the remote EVM chain.
- *
- * Example:
- * - `gmpRatio: 0.6` means:
- *    → 60% of the gas will be used for the outbound GMP transaction.
- *    → 40% of the gas is reserved for the inbound response.
- *
- * - `acctRatio: 0.3` means:
- *    → 30% of the gas is allocated to outbound account creation.
- *    → 70% is reserved for handling the response or follow-up.
- * */
-type ProtocolGasSplitConfig = {
-  gmpRatio?: number;
-  acctRatio?: number;
-};
-
 type OfferArgs1 = {
   destinationEVMChain?: AxelarChain;
-  Aave?: ProtocolGasSplitConfig;
-  Compound?: ProtocolGasSplitConfig;
   usdnOut?: NatValue;
 };
-
-const RatioShape = M.opt(
-  M.splitRecord(
-    {},
-    {
-      // TODO: use pair of big ints
-      // maybe use RatioShape from ertp package?
-      gmpRatio: M.and(M.gt(0), M.lt(1)),
-      acctRatio: M.and(M.gt(0), M.lt(1)),
-    },
-  ),
-);
 
 const offerArgsShape: TypedPattern<OfferArgs1> = M.splitRecord(
   {},
   {
     destinationEVMChain: M.or(...keys(AxelarChains)),
-    Aave: RatioShape,
-    Compound: RatioShape,
     usdnOut: M.nat(),
   },
 );
@@ -208,11 +164,6 @@ export type BaseGmpArgs = {
   destinationEVMChain: AxelarChain;
   keyword: string;
   amounts: AmountKeywordRecord;
-  /**
-   * `gasRatio` should be a decimal between 0 and 1, representing the percentage of gas to use for the outbound message.
-   * The remaining percentage is reserved for the incoming response from the remote EVM chain.
-   */
-  gasRatio: number;
 };
 
 export const GmpCallType = {
@@ -249,7 +200,6 @@ export const GMPArgsShape: TypedPattern<GmpArgsContractCall> = M.splitRecord({
   keyword: M.string(),
   amounts: AmountKeywordRecordShape, // XXX brand should be exactly USDC
   contractInvocationData: M.arrayOf(ContractCallShape),
-  gasRatio: M.and(M.gte(0), M.lte(1)),
 });
 
 export type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
