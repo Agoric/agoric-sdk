@@ -192,6 +192,7 @@ export const preparePortfolioKit = (
       positionId,
       accountId: coerceAccountId(address),
       ...emptyTransferState,
+      usdcBrand: undefined as Brand<'nat'> | undefined,
     }),
     {
       getPositionId() {
@@ -199,6 +200,10 @@ export const preparePortfolioKit = (
       },
       getYieldProtocol() {
         return 'USDN';
+      },
+      getBrand() {
+        assert(this.state.usdcBrand, 'USDC brand not yet initialized');
+        return this.state.usdcBrand;
       },
       publishStatus() {
         const {
@@ -219,6 +224,9 @@ export const preparePortfolioKit = (
         });
       },
       recordTransferIn(amount: Amount<'nat'>) {
+        if (!this.state.usdcBrand) {
+          this.state.usdcBrand = amount.brand;
+        }
         return recordTransferIn(amount, this.state, this.self);
       },
       recordTransferOut(amount: Amount<'nat'>) {
@@ -499,8 +507,8 @@ export const preparePortfolioKit = (
       },
       rebalanceHandler: {
         async handle(seat: ZCFSeat, offerArgs: unknown) {
-          const { reader, manager } = this.facets;
-          const keeper = { ...reader, ...manager };
+          const { reader, manager, reporter } = this.facets;
+          const keeper = { reader, manager, reporter };
           mustMatch(offerArgs, OfferArgsShapeFor.rebalance);
           return rebalance(seat, offerArgs, keeper);
         },
