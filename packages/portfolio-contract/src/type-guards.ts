@@ -97,32 +97,32 @@ export const makeProposalShapes = (
   };
 };
 
-export type GmpGasRatio = [numerator: bigint, denominator: bigint];
 /**
  * This configuration allows each protocol to specify how the total
  * available gas should be divided between:
  *
  * - `gmpRatio`: General Message Passing (GMP) transactions.
- *   These are cross-chain messages (e.g., sending messages to an EVM chain).
+ *    These are cross-chain messages (e.g., sending messages to an EVM chain).
  *
  * - `acctRatio`: Remote account creation transactions.
  *   These are used to create or initialize user accounts on the remote chain.
  *
- * Each ratio is expressed as a tuple of two `bigint` values: `[numerator, denominator]`.
- * This represents the fraction of total gas allocated to the outbound message.
+ * Each ratio should be a decimal between 0 and 1, representing the percentage
+ * of gas to use for the outbound message. The remaining percentage is to be reserved
+ * for the incoming response from the remote EVM chain.
  *
- * For example:
- * - `gmpRatio: [3n, 5n]` means:
- *     → 60% of the gas (3 out of 5) will be used for the outbound GMP transaction.
- *     → 40% of the gas is reserved for the inbound response.
+ * Example:
+ * - `gmpRatio: 0.6` means:
+ *    → 60% of the gas will be used for the outbound GMP transaction.
+ *    → 40% of the gas is reserved for the inbound response.
  *
- * - `acctRatio: [3n, 10n]` means:
- *     → 30% of the gas (3 out of 10) is allocated to outbound account creation.
- *     → 70% is reserved for handling the response or follow-up.
- */
+ * - `acctRatio: 0.3` means:
+ *    → 30% of the gas is allocated to outbound account creation.
+ *    → 70% is reserved for handling the response or follow-up.
+ * */
 type ProtocolGasSplitConfig = {
-  gmpRatio?: GmpGasRatio;
-  acctRatio?: GmpGasRatio;
+  gmpRatio?: number;
+  acctRatio?: number;
 };
 
 type OfferArgs1 = {
@@ -136,8 +136,10 @@ const RatioShape = M.opt(
   M.splitRecord(
     {},
     {
-      gmpRatio: M.splitArray([M.gt(0n), M.gt(0n)]),
-      acctRatio: M.splitArray([M.gt(0n), M.gt(0n)]),
+      // TODO: use pair of big ints
+      // maybe use RatioShape from ertp package?
+      gmpRatio: M.and(M.gt(0), M.lt(1)),
+      acctRatio: M.and(M.gt(0), M.lt(1)),
     },
   ),
 );
@@ -207,11 +209,10 @@ export type BaseGmpArgs = {
   keyword: string;
   amounts: AmountKeywordRecord;
   /**
-   * `gasRatio` is a tuple of two `bigint` values: `[numerator, denominator]`.
-   * This represents the fraction of gas to use for the outbound message.
-   * The remaining fraction is reserved for the incoming response from the remote EVM chain.
+   * `gasRatio` should be a decimal between 0 and 1, representing the percentage of gas to use for the outbound message.
+   * The remaining percentage is reserved for the incoming response from the remote EVM chain.
    */
-  gasRatio: GmpGasRatio;
+  gasRatio: number;
 };
 
 export const GmpCallType = {
@@ -248,7 +249,7 @@ export const GMPArgsShape: TypedPattern<GmpArgsContractCall> = M.splitRecord({
   keyword: M.string(),
   amounts: AmountKeywordRecordShape, // XXX brand should be exactly USDC
   contractInvocationData: M.arrayOf(ContractCallShape),
-  gasRatio: M.splitArray([M.gt(0n), M.gt(0n)]),
+  gasRatio: M.and(M.gte(0), M.lte(1)),
 });
 
 export type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
