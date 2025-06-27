@@ -4,12 +4,16 @@
  */
 import '@endo/init';
 
-import { fetchNetworkConfig, makeSmartWalletKit } from '@agoric/client-utils';
+import {
+  fetchEnvNetworkConfig,
+  makeSmartWalletKit,
+} from '@agoric/client-utils';
 import { MsgWalletSpendAction } from '@agoric/cosmic-proto/agoric/swingset/msgs.js';
 import { AmountMath } from '@agoric/ertp';
 import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import { makeTracer } from '@agoric/internal';
 import type { BridgeAction } from '@agoric/smart-wallet/src/smartWallet.js';
+import { stringToPath } from '@cosmjs/crypto';
 import { fromBech32 } from '@cosmjs/encoding';
 import {
   DirectSecp256k1HdWallet,
@@ -17,7 +21,6 @@ import {
   type GeneratedType,
 } from '@cosmjs/proto-signing';
 import { SigningStargateClient, type StdFee } from '@cosmjs/stargate';
-import { stringToPath } from '@cosmjs/crypto';
 
 const toAccAddress = (address: string): Uint8Array => {
   return fromBech32(address).data;
@@ -55,23 +58,26 @@ const openPosition = async (
   },
 ) => {
   const brand = fromEntries(await walletKit.readPublished('agoricNames.brand'));
-  const { USDC } = brand as Record<string, Brand<'nat'>>;
+  const { USDC, PoC25 } = brand as Record<string, Brand<'nat'>>;
 
   const give = {
     USDN: multiplyBy(make(USDC, 1_000_000n), parseRatio(volume, USDC)),
+    NobleFees: make(USDC, 20_000n),
+    Access: make(PoC25, 1n),
   };
 
   trace('opening portfolio', give);
   const action: BridgeAction = harden({
     method: 'executeOffer',
     offer: {
-      id: `open-${now()}`,
+      id: `open-${new Date(now()).toISOString()}`,
       invitationSpec: {
         source: 'agoricContract',
         instancePath: ['ymax0'],
         callPipe: [['makeOpenPortfolioInvitation']],
       },
       proposal: { give },
+      offerArgs: {}, // without usdnOut: swap only
     },
   });
 
@@ -99,6 +105,7 @@ const openPosition = async (
     before.header.height,
   );
   trace('status', status);
+  if ('error' in status) throw Error(status.error);
   return status;
 };
 
@@ -118,7 +125,7 @@ const main = async (
 
   const delay = ms =>
     new Promise(resolve => setTimeout(resolve, ms)).then(_ => {});
-  const networkConfig = await fetchNetworkConfig('devnet', { fetch });
+  const networkConfig = await fetchEnvNetworkConfig({ env, fetch });
   const walletKit = await makeSmartWalletKit({ fetch, delay }, networkConfig);
   const signer = await DirectSecp256k1HdWallet.fromMnemonic(MNEMONIC, {
     prefix: 'agoric',
@@ -134,5 +141,6 @@ const main = async (
 // TODO: use endo-exec so we can unit test the above
 main().catch(err => {
   console.error(err);
-  process.exit(1);
+  const code = '--exit-success' in process.argv ? 0 : 1;
+  process.exit(code);
 });

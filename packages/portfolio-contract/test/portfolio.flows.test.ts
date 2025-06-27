@@ -92,7 +92,7 @@ const mocks = (
                 opts,
               });
               const { transfer: err } = errs;
-              if (err) throw err;
+              if (err && !err.message.includes(address.chainId)) throw err;
               if (opts?.memo) factoryPK.resolve(opts.memo);
             },
             async executeEncodedTx(msgs) {
@@ -223,7 +223,7 @@ const mocks = (
       nobleAccount: ica,
     }) as unknown as GuestInterface<PortfolioKit>;
 
-  const proposal: Proposal = harden({ give });
+  const proposal: Proposal = harden({ give, want: {} });
   let hasExited = false;
   const seat = {
     getProposal: () => proposal,
@@ -366,7 +366,6 @@ test('open portfolio with Aave and USDN positions', async t => {
   const [actual] = await Promise.all([
     openPortfolio(orch, ctx, seat, {
       destinationEVMChain: 'Ethereum',
-      Aave: { acctRatio: [1n, 2n], gmpRatio: [1n, 2n] },
     }),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) => {
       tap.receiveUpcall(makeIncomingEVMEvent());
@@ -392,7 +391,6 @@ test('open portfolio with Aave position', async t => {
   const [actual] = await Promise.all([
     openPortfolio(orch, { ...ctx }, offer.seat, {
       destinationEVMChain: 'Ethereum',
-      Aave: { acctRatio: [1n, 2n], gmpRatio: [1n, 2n] },
     }),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) => {
       tap.receiveUpcall(makeIncomingEVMEvent());
@@ -429,7 +427,6 @@ test('open portfolio with Compound position', async t => {
   const [actual] = await Promise.all([
     openPortfolio(orch, { ...ctx }, offer.seat, {
       destinationEVMChain: 'Ethereum',
-      Compound: { acctRatio: [1n, 2n], gmpRatio: [1n, 2n] },
     }),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) => {
       tap.receiveUpcall(makeIncomingEVMEvent());
@@ -516,6 +513,33 @@ test('handle failure in executeEncodedTx', async t => {
     { _method: 'executeEncodedTx', _cap: 'noble11028' }, // fail
     { _method: 'transfer', address: { chainId: 'agoric-1' } }, // unwind
     { _method: 'withdrawToSeat' }, // unwind
+    { _method: 'fail' },
+  ]);
+  t.snapshot(log, 'call log');
+  t.is(passStyleOf(actual.invitationMakers), 'remotable');
+  await documentStorageSchema(t, storage, docOpts);
+});
+
+test('handle failure in recovery from executeEncodedTx', async t => {
+  const { orch, ctx, offer, storage } = mocks(
+    {
+      executeEncodedTx: Error('Swap or Lock failed'),
+      transfer: Error('IBC transfer from noble-3 failed'),
+    },
+    { USDN: make(USDC, 100n) },
+  );
+  const { log, seat } = offer;
+
+  const actual = await openPortfolio(orch, { ...ctx }, seat, {
+    destinationEVMChain: 'Ethereum',
+  });
+  t.log(log.map(msg => msg._method).join(', '));
+  t.like(log, [
+    { _method: 'monitorTransfers' },
+    { _method: 'localTransfer', sourceSeat: seat },
+    { _method: 'transfer', address: { chainId: 'noble-3' } },
+    { _method: 'executeEncodedTx', _cap: 'noble11028' }, // fail
+    { _method: 'transfer', address: { chainId: 'agoric-1' } }, // fail to recover
     { _method: 'fail' },
   ]);
   t.snapshot(log, 'call log');

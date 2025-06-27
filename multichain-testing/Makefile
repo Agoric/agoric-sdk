@@ -100,7 +100,7 @@ register-bank-assets:
 		assets="$$(scripts/make-bank-asset-info.ts)"
 
 ADDR=agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce
-COIN=1000000000uist
+COIN=1000000000uist,25000000ubld
 
 fund-wallet:
 	kubectl exec -i agoriclocal-genesis-0 -c validator -- agd tx bank send faucet $(ADDR) $(COIN) -y -b block
@@ -136,3 +136,51 @@ start: sstart fund-provision-pool register-bank-assets create-noble-swap-pool
 .PHONY: sstart
 sstart:
 	$(STARSHIP) start
+
+##
+# YMax testing for https://github.com/Agoric/agoric-sdk/issues/11536
+
+deploy-ymax: poc-asset agoricNames.chain
+	yarn test:main test/ymax0 -m ymax-deployed || \
+	( 	(cd ../packages/portfolio-deploy; yarn build) && \
+		./scripts/deploy-cli.ts ../packages/portfolio-deploy/src/portfolio.build.js)
+
+redeploy-ymax: poc-asset agoricNames.chain
+	date -u
+	(cd ../packages/portfolio-deploy; yarn build)
+	time ./scripts/deploy-cli.ts ../packages/portfolio-deploy/src/portfolio.build.js
+	@echo
+	@echo
+	@echo ======= DEPLOY AGAIN to address the "old code" issue
+	date -u
+	time ./scripts/deploy-cli.ts ../packages/portfolio-deploy/src/portfolio.build.js
+	date -u
+
+# cf. ymax-tool.ts
+TRADER1=noble18qlqfelxhe7tszqqprm2eqdpzt9s6ry025y3j5
+TRADER1ag=agoric1yupasge4528pgkszg9v328x4faxtkldsnygwjl
+poc-asset: beneficiary-wallet
+	yarn test:main test/ymax0 -m poc-asset || \
+	./scripts/deploy-cli.ts ../packages/portfolio-deploy/src/access-token-setup.build.js \
+		beneficiary=$(TRADER1ag)
+
+beneficiary-wallet: ./scripts/ymax-tool.ts
+	yarn test:main test/ymax0 -m beneficiary-wallet || \
+	(make ADDR=$(TRADER1ag) fund-wallet && \
+	./scripts/ymax-tool.ts 0.1 --exit-success)
+
+
+agoricNames.chain:
+	yarn test:main test/ymax0 -m chain-info || \
+	./scripts/deploy-cli.ts ../packages/portfolio-deploy/src/chain-info.build.js \
+		  net=local peer=noble:connection-0:channel-0:uusdc
+
+##
+# Using ymax
+open-with-usdn: deploy-ymax usdc-available ./scripts/ymax-tool.ts
+	./scripts/ymax-tool.ts 1.01
+
+usdc-available: ./scripts/noble-usdn-lab.ts
+	yarn test:main test/ymax0 -m usdc-available || \
+	(FAUCET=trader1 NET=starship ./scripts/noble-usdn-lab.ts && \
+	TXFR=9950000 NET=starship ./scripts/noble-usdn-lab.ts)

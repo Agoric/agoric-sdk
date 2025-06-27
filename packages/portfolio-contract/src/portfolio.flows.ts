@@ -8,8 +8,7 @@ import type { GuestInterface } from '@agoric/async-flow';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
-import type { Amount, Brand } from '@agoric/ertp';
-import { AmountMath } from '@agoric/ertp';
+import { AmountMath, type Amount } from '@agoric/ertp';
 import { makeTracer, mustMatch, NonNullish } from '@agoric/internal';
 import type {
   CosmosChainAddress,
@@ -51,6 +50,7 @@ import { GMPArgsShape } from './type-guards.ts';
 
 const trace = makeTracer('PortF');
 const { add } = AmountMath;
+const { keys } = Object;
 
 type PortfolioBootstrapContext = {
   axelarChainsMap: AxelarChainsMap;
@@ -116,12 +116,7 @@ const createRemoteEVMAccount = async (
   reader: GuestInterface<PortfolioKit['reader']>,
   protocol: YieldProtocol,
 ) => {
-  const {
-    destinationEVMChain,
-    keyword,
-    gasRatio,
-    amounts: gasAmounts,
-  } = gmpArgs;
+  const { destinationEVMChain, keyword, amounts: gasAmounts } = gmpArgs;
   const { contractAddresses } = ctx.axelarChainsMap[destinationEVMChain];
 
   await sendGmp(
@@ -131,10 +126,9 @@ const createRemoteEVMAccount = async (
     harden({
       destinationAddress: contractAddresses.factory,
       destinationEVMChain,
-      type: AxelarGMPMessageType.ContractCallWithToken,
+      type: AxelarGMPMessageType.ContractCall,
       keyword,
       amounts: gasAmounts,
-      gasRatio,
       contractInvocationData: [],
     }),
     reader,
@@ -147,7 +141,7 @@ const sendTokensViaCCTP = async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
   seat: ZCFSeat,
-  args: Omit<BaseGmpArgs, 'gasRatio'>,
+  args: BaseGmpArgs,
   reader: GuestInterface<PortfolioKit>['reader'],
   protocol: YieldProtocol,
 ) => {
@@ -182,10 +176,11 @@ const sendTokensViaCCTP = async (
       throw err;
     }
   } catch (err) {
-    await zoeTools.withdrawToSeat(localAcct, seat, amounts);
     // TODO: use X from @endo/errors
-    const errorMsg = `⚠️ Noble transfer failed: ${err}`;
-    throw new Error(errorMsg);
+    const errorMsg = `⚠️ Noble transfer failed`;
+    console.error(errorMsg, err);
+    await zoeTools.withdrawToSeat(localAcct, seat, amounts);
+    throw new Error(`${errorMsg}: ${err}`);
   }
 };
 
@@ -198,7 +193,6 @@ export const makeAxelarMemo = (
     destinationEVMChain,
     destinationAddress,
     keyword,
-    gasRatio,
     amounts: gasAmounts,
     type,
   } = gmpArgs;
@@ -214,11 +208,7 @@ export const makeAxelarMemo = (
   };
 
   memo.fee = {
-    // This amount specifies the outbound gas for sending GMP message
-    amount: String(
-      (Number(gasRatio[0]) / Number(gasRatio[1])) *
-        Number(gasAmounts[keyword].value),
-    ),
+    amount: String(gasAmounts[keyword].value),
     recipient: gmpAddresses.AXELAR_GAS,
   };
 
@@ -279,11 +269,9 @@ const supplyToAave = async (
     destinationEVMChain,
     transferAmount,
     keyword,
-    gasRatio,
     amounts: gasAmounts,
   } = gmpArgs;
   const { contractAddresses } = ctx.axelarChainsMap[destinationEVMChain];
-
   const remoteEVMAddress = await kit.reader.getGMPAddress('Aave');
 
   await sendGmp(
@@ -293,10 +281,9 @@ const supplyToAave = async (
     harden({
       destinationAddress: remoteEVMAddress,
       destinationEVMChain,
-      type: AxelarGMPMessageType.ContractCallWithToken,
+      type: AxelarGMPMessageType.ContractCall,
       keyword,
       amounts: gasAmounts,
-      gasRatio,
       contractInvocationData: [
         {
           functionSignature: 'approve(address,uint256)',
@@ -326,11 +313,9 @@ const withdrawFromAave = async (
     destinationEVMChain,
     withdrawAmount,
     keyword,
-    gasRatio,
     amounts: gasAmounts,
   } = gmpArgs;
   const { contractAddresses } = ctx.axelarChainsMap[destinationEVMChain];
-
   const remoteEVMAddress = await kit.reader.getGMPAddress('Aave');
 
   await sendGmp(
@@ -340,10 +325,9 @@ const withdrawFromAave = async (
     harden({
       destinationAddress: remoteEVMAddress,
       destinationEVMChain,
-      type: AxelarGMPMessageType.ContractCallWithToken,
+      type: AxelarGMPMessageType.ContractCall,
       keyword,
       amounts: gasAmounts,
-      gasRatio,
       contractInvocationData: [
         {
           functionSignature: 'withdraw(address,uint256,address)',
@@ -368,11 +352,9 @@ const supplyToCompound = async (
     destinationEVMChain,
     transferAmount,
     keyword,
-    gasRatio,
     amounts: gasAmounts,
   } = gmpArgs;
   const { contractAddresses } = ctx.axelarChainsMap[destinationEVMChain];
-
   const remoteEVMAddress = await reader.getGMPAddress('Compound');
 
   await sendGmp(
@@ -382,10 +364,9 @@ const supplyToCompound = async (
     harden({
       destinationAddress: remoteEVMAddress,
       destinationEVMChain,
-      type: AxelarGMPMessageType.ContractCallWithToken,
+      type: AxelarGMPMessageType.ContractCall,
       keyword,
       amounts: gasAmounts,
-      gasRatio,
       contractInvocationData: [
         {
           functionSignature: 'approve(address,uint256)',
@@ -416,10 +397,8 @@ const withdrawFromCompound = async (
     withdrawAmount,
     keyword,
     amounts: gasAmounts,
-    gasRatio,
   } = gmpArgs;
   const { contractAddresses } = ctx.axelarChainsMap[destinationEVMChain];
-
   const remoteEVMAddress = await reader.getGMPAddress('Compound');
 
   await sendGmp(
@@ -429,10 +408,9 @@ const withdrawFromCompound = async (
     harden({
       destinationAddress: remoteEVMAddress,
       destinationEVMChain,
-      type: AxelarGMPMessageType.ContractCallWithToken,
+      type: AxelarGMPMessageType.ContractCall,
       keyword,
       amounts: gasAmounts,
-      gasRatio,
       contractInvocationData: [
         {
           functionSignature: 'withdraw(address,uint256)',
@@ -457,61 +435,71 @@ const placeLabel = (place: AssetPlace) => {
   return `seat:${place.keyword}`;
 };
 
-const die = err => {
-  throw err;
+type AssetMovement = {
+  how: string;
+  amount: Amount<'nat'>;
+  src: AssetPlace;
+  dest: AssetPlace;
+  apply: () => Promise<void>;
+  recover: () => Promise<void>;
 };
+const moveStatus = ({ how, src, dest, amount }: AssetMovement) => ({
+  how,
+  src: placeLabel(src),
+  dest: placeLabel(dest),
+  amount,
+});
+const errmsg = (err: any) => ('message' in err ? err.message : `${err}`);
 
-const trackFlow = (reporter: GuestInterface<PortfolioKit['reporter']>) => {
+const trackFlow = async (
+  reporter: GuestInterface<PortfolioKit['reporter']>,
+  moves: AssetMovement[],
+) => {
   const flowId = reporter.allocateFlowId();
-  let depth = 0;
-
-  const make = () => {
-    const moveAssets = async (info: {
-      how: string;
-      amount: Amount<'nat'>;
-      src: AssetPlace;
-      dest: AssetPlace;
-      handle: () => Promise<void>;
-      recover?: (err: any) => Promise<never>; // must re-throw
-    }) => {
-      const { how, src, dest, amount, handle, recover = die } = info;
-      depth += 1;
-      trace(how, amount, placeLabel(src), '->', placeLabel(dest));
-      reporter.publishFlowStatus(flowId, {
-        depth,
-        how,
-        src: placeLabel(src),
-        dest: placeLabel(dest),
-        amount,
-      });
-      try {
-        await handle();
-        if ('pos' in src) {
-          src.pos.recordTransferOut(amount);
-        }
-        if ('pos' in dest) {
-          dest.pos.recordTransferIn(amount);
-        }
-      } catch (err) {
-        console.error('⚠️ recover', how, err);
-        const message = 'message' in err ? err.message : `${err}`;
-        reporter.publishFlowStatus(flowId, {
-          depth,
-          how,
-          src: placeLabel(src),
-          dest: placeLabel(dest),
-          amount,
-          error: message,
-        });
-        await recover(err);
-      } finally {
-        depth -= 1;
+  let step = 1;
+  try {
+    for (const move of moves) {
+      trace(step, moveStatus(move));
+      reporter.publishFlowStatus(flowId, { step, ...moveStatus(move) });
+      await move.apply();
+      const { amount, src, dest } = move;
+      if ('pos' in src) {
+        src.pos.recordTransferOut(amount);
       }
-    };
-    return moveAssets;
-  };
-
-  return make();
+      if ('pos' in dest) {
+        dest.pos.recordTransferIn(amount);
+      }
+      step += 1;
+    }
+    // TODO: delete the flow storage node
+    // reporter.publishFlowStatus(flowId, { complete: true });
+  } catch (err) {
+    console.error('⚠️ step', step, ' failed', err);
+    const failure = moves[step - 1];
+    const errStep = step;
+    while (step > 1) {
+      step -= 1;
+      const move = moves[step - 1];
+      const how = `unwind: ${move.how}`;
+      reporter.publishFlowStatus(flowId, { step, ...moveStatus(move), how });
+      try {
+        await move.recover();
+      } catch (err) {
+        console.error('⚠️ unwind step', step, ' failed', err);
+        // if a recover fails, we just give up and report `where` the assets are
+        const { dest: where, ...ms } = moveStatus(move);
+        const final = { step, ...ms, how, where, error: errmsg(err) };
+        reporter.publishFlowStatus(flowId, final);
+        throw err;
+      }
+    }
+    reporter.publishFlowStatus(flowId, {
+      step: errStep,
+      ...moveStatus(failure),
+      error: errmsg(err),
+    });
+    throw err;
+  }
 };
 
 const addToUSDNPosition = async (
@@ -530,64 +518,56 @@ const addToUSDNPosition = async (
   const amounts = harden({ USDN, ...(NobleFees ? { NobleFees } : {}) });
   const denom = NonNullish(ctx.chainHubTools.getDenom(USDN.brand));
   const volume: DenomAmount = { denom, value: USDN.value };
-  const fees = NobleFees ? { denom, value: NobleFees.value } : undefined;
-  const moveAssets = trackFlow(kit.reporter);
-
   const withFees = NobleFees ? add(USDN, NobleFees) : USDN;
-  await moveAssets({
-    how: 'localTransfer',
-    src: { seat, keyword: 'USDN' },
-    dest: { account: localAcct },
-    amount: withFees,
-    handle: async () => {
-      await ctx.zoeTools.localTransfer(seat, localAcct, amounts);
 
-      const there = ica.getAddress();
-      await moveAssets({
-        how: 'IBC transfer',
-        src: { account: localAcct },
-        dest: { account: ica },
-        amount: withFees,
-        handle: async () => {
-          await localAcct.transfer(there, volume);
-
-          await moveAssets({
-            how: 'Swap, Lock',
-            amount: USDN,
-            src: { account: ica },
-            dest: { pos },
-            handle: async () => {
-              // NOTE: proposalShape guarantees that amount.brand is USDC
-              const { msgSwap, msgLock, protoMessages } = makeSwapLockMessages(
-                there,
-                USDN.value,
-                { usdnOut },
-              );
-
-              const swapOnlyTODO = protoMessages.slice(0, 1);
-              trace('executing', [msgSwap, msgLock]);
-              const result = await ica.executeEncodedTx(swapOnlyTODO);
-              trace('TODO: decode Swap, Lock result; detect errors', result);
-            },
-
-            recover: async err => {
-              console.error('⚠️ recover to local account.', amounts);
-              const nobleAmount = { ...volume, denom: 'uusdc' };
-              await ica.transfer(localAcct.getAddress(), nobleAmount);
-              // TODO: and what if this transfer fails?
-              throw err;
-            },
-          });
-        },
-        recover: async err => {
-          console.error('⚠️ recover to seat.', err);
-          await ctx.zoeTools.withdrawToSeat(localAcct, seat, amounts);
-          // TODO: and what if the withdrawToSeat fails?
-          throw err;
-        },
-      });
+  const nobleAddr = ica.getAddress();
+  await trackFlow(kit.reporter, [
+    {
+      how: 'localTransfer',
+      src: { seat, keyword: 'USDN' },
+      dest: { account: localAcct },
+      amount: withFees,
+      apply: async () => {
+        await ctx.zoeTools.localTransfer(seat, localAcct, amounts);
+      },
+      recover: async () => {
+        await ctx.zoeTools.withdrawToSeat(localAcct, seat, amounts);
+      },
     },
-  });
+    {
+      how: 'IBC transfer',
+      src: { account: localAcct },
+      dest: { account: ica },
+      amount: withFees,
+      apply: async () => {
+        await localAcct.transfer(nobleAddr, volume);
+      },
+      recover: async () => {
+        const nobleAmount = { ...volume, denom: 'uusdc' };
+        await ica.transfer(localAcct.getAddress(), nobleAmount);
+      },
+    },
+    {
+      how: 'Swap, Lock',
+      amount: USDN,
+      src: { account: ica },
+      dest: { pos },
+      apply: async () => {
+        // NOTE: proposalShape guarantees that amount.brand is USDC
+        const { msgSwap, msgLock, protoMessages } = makeSwapLockMessages(
+          nobleAddr,
+          USDN.value,
+          { usdnOut },
+        );
+
+        trace('executing', [msgSwap, msgLock].filter(Boolean));
+        const result = await ica.executeEncodedTx(protoMessages);
+        trace('TODO: decode Swap, Lock result; detect errors', result);
+      },
+      // XXX consider putting withdaw here
+      recover: async () => {},
+    },
+  ]);
 };
 
 export const rebalance = async (
@@ -608,12 +588,12 @@ export const rebalance = async (
     offerArgs,
   );
 
-  if (!('give' in proposal)) {
+  if (keys(proposal.want).length > 0) {
     throw Error('TODO: withdraw');
   }
 
   const { give } = proposal;
-  if (give.USDN) {
+  if ('USDN' in give && give.USDN) {
     const { USDN, NobleFees } = give; // XXXX
     const { usdnOut } = offerArgs;
     const pos = kit.manager.provideUSDNPosition(); // TODO: get num from offerArgs?
@@ -628,8 +608,6 @@ export const rebalance = async (
       Fail`Gmp and Account needed for ${protocol}`;
     if (!destinationEVMChain)
       throw Fail`destinationEVMChain needed for ${protocol}`;
-    if (!offerArgs[protocol]?.acctRatio)
-      throw Fail`acctRatio needed for ${protocol}`;
     const [gmpKW, accountKW] =
       protocol === 'Aave'
         ? ['AaveGmp', 'AaveAccount']
@@ -641,14 +619,10 @@ export const rebalance = async (
     );
 
     if (isNew) {
-      if (!offerArgs[protocol]?.acctRatio)
-        throw Fail`acctRatio needed for ${protocol}`;
-
-      const gmpArgs: BaseGmpArgs = {
+      const gmpArgs = {
         destinationEVMChain,
         keyword: accountKW,
         amounts: { [accountKW]: give[accountKW] },
-        gasRatio: offerArgs[protocol].acctRatio,
       };
       try {
         await createRemoteEVMAccount(
@@ -676,15 +650,11 @@ export const rebalance = async (
     kit.manager.waitKLUDGE(20n);
 
     const { value: transferAmount } = give[protocol] as Amount<'nat'>;
-    if (!offerArgs[protocol]?.gmpRatio)
-      throw Fail`gmpRatio needed for ${protocol}`;
-
-    const gmpArgs: GmpArgsTransferAmount = {
+    const gmpArgs = {
       destinationEVMChain,
       transferAmount,
       keyword: gmpKW,
       amounts: { [gmpKW]: give[gmpKW] },
-      gasRatio: offerArgs[protocol].gmpRatio,
     };
     switch (protocol) {
       case 'Aave':

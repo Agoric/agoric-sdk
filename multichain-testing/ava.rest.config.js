@@ -14,5 +14,6 @@ export default {
     '!test/queries/**/*.test.*',
     '!test/staking/**/*.test.*',
     '!test/xcs-swap-anything/**/*.test.*',
+    '!test/ymax0/**/*.test.*',
   ],
 };

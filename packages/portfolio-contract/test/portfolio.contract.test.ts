@@ -1,8 +1,6 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
-import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { gmpAddresses } from '@agoric/orchestration/src/utils/gmp.js';
@@ -18,112 +16,22 @@ import * as contractExports from '../src/portfolio.contract.ts';
 import { makeAxelarMemo } from '../src/portfolio.flows.ts';
 import {
   makeProposalShapes,
-  OfferArgsShapeFor,
   type GmpArgsContractCall,
-  type GmpGasRatio,
 } from '../src/type-guards.ts';
-import { axelarChainsMap, makeUSDNIBCTraffic } from './mocks.ts';
+import { axelarChainsMap, localAccount0, makeUSDNIBCTraffic } from './mocks.ts';
 import { makeTrader } from './portfolio-actors.ts';
+import { chainInfoFantasyTODO, setupPortfolioTest } from './supports.ts';
 import {
-  chainInfoFantasyTODO,
-  makeIncomingEVMEvent,
-  setupPortfolioTest,
-} from './supports.ts';
+  setupTrader,
+  simulateAckTransferToAxelar,
+  simulateCCTPAck,
+  simulateUpcallFromAxelar,
+} from './contract-setup.ts';
 import { makeWallet } from './wallet-offer-tools.ts';
 
 const contractName = 'ymax0';
 type StartFn = typeof contractExports.start;
 const { fromEntries, keys, values } = Object;
-
-const lca0 = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht';
-
-/** from https://www.mintscan.io/noble explorer */
-const explored = [
-  {
-    txhash: '50D671D1D56CF5041CBE7C3483EF461765196ECD7D7571CCEF0A612B46FC7A3B',
-    messages: [
-      {
-        '@type': '/noble.swap.v1.MsgSwap',
-        signer: 'noble1wtwydxverrrc673anqddyg3cmq3vhpu7yxy838',
-        amount: { denom: 'uusdc', amount: '111000000' },
-        // routes: [{ pool_id: '0', denom_to: 'uusdn' }],
-        routes: [{ poolId: 0n, denomTo: 'uusdn' }],
-        min: { denom: 'uusdn', amount: '110858936' },
-      } satisfies MsgSwap & { '@type': string },
-    ],
-  },
-  {
-    txhash: 'BD97D42915C9185B11B14FEDC2EF6BCE0677E6720472DC6E1B51CCD504534237',
-    messages: [
-      {
-        '@type': '/noble.dollar.vaults.v1.MsgLock',
-        signer: 'noble1wtwydxverrrc673anqddyg3cmq3vhpu7yxy838',
-        vault: 1, // 'STAKED',
-        amount: '110818936',
-      } satisfies MsgLock & { '@type': string },
-    ],
-  },
-];
-harden(explored);
-
-const deploy = async (t: ExecutionContext) => {
-  const common = await setupPortfolioTest(t);
-  const { zoe, bundleAndInstall } = await setUpZoeForTest();
-  t.log('contract deployment', contractName);
-
-  const installation: Installation<StartFn> =
-    await bundleAndInstall(contractExports);
-  t.is(passStyleOf(installation), 'remotable');
-
-  const { usdc, poc24 } = common.brands;
-  const timerService = buildZoeManualTimer();
-
-  const { agoric, noble, axelar, osmosis } = chainInfoFantasyTODO;
-  const started = await E(zoe).startInstance(
-    installation,
-    { USDC: usdc.issuer, Access: poc24.issuer },
-    {}, // terms
-    {
-      ...common.commonPrivateArgs,
-      axelarChainsMap,
-      timerService,
-      chainInfo: { agoric, noble, axelar, osmosis },
-    }, // privateArgs
-  );
-  t.notThrows(() =>
-    mustMatch(
-      started,
-      M.splitRecord({
-        instance: M.remotable(),
-        publicFacet: M.remotable(),
-        creatorFacet: M.remotable(),
-        // ...others are not relevant here
-      }),
-    ),
-  );
-  return { common, zoe, started, timerService };
-};
-
-export const setupTrader = async (t, initial = 10_000) => {
-  const { common, zoe, started } = await deploy(t);
-  const { usdc, poc24 } = common.brands;
-  const { when } = common.utils.vowTools;
-
-  const myBalance = usdc.units(initial);
-  const funds = await common.utils.pourPayment(myBalance);
-  const { mint: _, ...poc24SansMint } = poc24;
-  const myWallet = makeWallet({ USDC: usdc, Access: poc24SansMint }, zoe, when);
-  await E(myWallet).deposit(funds);
-  await E(myWallet).deposit(poc24.mint.mintPayment(poc24.make(1n)));
-  const trader1 = makeTrader(myWallet, started.instance);
-
-  const { ibcBridge } = common.mocks;
-  for (const { msg, ack } of values(makeUSDNIBCTraffic())) {
-    ibcBridge.addMockAck(msg, ack);
-  }
-
-  return { common, zoe, started, myBalance, myWallet, trader1 };
-};
 
 test('ProposalShapes', t => {
   const { brand: USDC } = makeIssuerKit('USDC');
@@ -221,60 +129,27 @@ test('ProposalShapes', t => {
   }
 });
 
-test('validate Ratio in OfferArgs', t => {
-  const cases = harden({
-    pass: {
-      empty: {},
-      aaveFull: { Aave: { gmpRatio: [1n, 2n], acctRatio: [3n, 4n] } },
-      compoundBoth: { Compound: { gmpRatio: [1n, 2n], acctRatio: [3n, 4n] } },
-    },
-    fail: {
-      // TODO: add a case where numerator > denominator
-      denominatorInt: { Aave: { gmpRatio: [1n, 2] } },
-      denominatorNeg: { Aave: { gmpRatio: [1n, -2n] } },
-      denominatorZero: { Compound: { gmpRatio: [1n, 0n] } },
-      numeratorInt: { Aave: { gmpRatio: [1, 2n] } },
-      numeratorNeg: { Aave: { gmpRatio: [-1n, 2n] } },
-      numeratorZero: { Compound: { gmpRatio: [0n, 2n] } },
-    },
-  });
-
-  const { pass, fail } = cases;
-  for (const [name, offerArgs] of Object.entries(pass)) {
-    t.log(`${name}: ${q(offerArgs)}`);
-    t.notThrows(
-      () => mustMatch(offerArgs, OfferArgsShapeFor.openPortfolio),
-      name,
-    );
-  }
-
-  for (const [name, offerArgs] of Object.entries(fail)) {
-    t.log(`!${name}: ${q(offerArgs)}`);
-    t.false(matches(offerArgs, OfferArgsShapeFor.openPortfolio), name);
-  }
-});
-
 test('makeAxelarMemo constructs correct memo JSON', t => {
   const { brand } = makeIssuerKit('USDC');
 
-  const type = 2; // contract call with tokens
+  const type = 1; // contract call
   const destinationEVMChain = 'Avalanche';
   const destinationAddress = '0x58E0bd49520364A115CeE4B03DffC1C08A2D1D09';
-  const gasRatio: GmpGasRatio = [1n, 2n];
+  const keyword = 'Gas';
+  const amounts = {
+    Gas: {
+      brand,
+      value: 2000000n,
+    },
+  };
 
   const gmpArgs: GmpArgsContractCall = {
     type,
     contractInvocationData: [],
     destinationEVMChain,
     destinationAddress,
-    keyword: 'Gas',
-    gasRatio,
-    amounts: {
-      Gas: {
-        brand,
-        value: 2000000n,
-      },
-    },
+    keyword,
+    amounts,
   };
 
   // From a valid transaction from AxelarScan: https://testnet.axelarscan.io/tx/CA5A2E8CA6770B0FBBC1789DE5FB14F5955BD62CD0C1F975C88DE3DA657025F2
@@ -293,10 +168,7 @@ test('makeAxelarMemo constructs correct memo JSON', t => {
     destination_address: destinationAddress,
     payload: expectedPayload,
     fee: {
-      amount: String(
-        (Number(gasRatio[0]) / Number(gasRatio[1])) *
-          Number(gmpArgs.amounts.Gas.value),
-      ),
+      amount: String(amounts[keyword].value),
       recipient: gmpAddresses.AXELAR_GAS,
     },
   });
@@ -358,7 +230,7 @@ test('open portfolio with USDN position', async t => {
     positionPaths.map(p => contents[p].accountId),
   );
   t.is(contents[positionPaths[0]].accountId, `cosmos:noble-1:cosmos1test`);
-  t.is(contents[storagePath].local, `cosmos:agoric-3:${lca0}`, 'LCA');
+  t.is(contents[storagePath].local, `cosmos:agoric-3:${localAccount0}`, 'LCA');
   t.snapshot(done.payouts, 'refund payouts');
 });
 
@@ -377,37 +249,17 @@ test('open a portfolio with Aave position', async t => {
     },
     {
       destinationEVMChain: 'Base',
-      Aave: { acctRatio: [1n, 2n], gmpRatio: [1n, 2n] },
     },
   );
   await eventLoopIteration(); // let IBC message go out
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   console.log('ackd send to Axelar to create account');
 
-  const { transferBridge } = common.mocks;
-
-  // stimulate upcall back from Axelar
-  const event = makeIncomingEVMEvent();
-  const ackNP = VE(transferBridge)
-    .fromBridge(event)
-    .finally(() => console.log('@@@fromBridge for tap done'))
-    .then(() => eventLoopIteration())
-    .then(() => {
-      // ack CCTP
-      common.utils
-        .transmitVTransferEvent('acknowledgementPacket', -1)
-        .then(() => eventLoopIteration())
-        .finally(() => {
-          console.log('@@@ack CCTP done');
-          // ack IBC transfer to Axelar to open Aave position
-          return common.utils
-            .transmitVTransferEvent('acknowledgementPacket', -1)
-            .finally(() => {
-              console.log('@@@ack Axelar done');
-              return;
-            });
-        });
-    });
+  await simulateUpcallFromAxelar(common.mocks.transferBridge).then(() =>
+    simulateCCTPAck(common.utils).finally(() =>
+      simulateAckTransferToAxelar(common.utils),
+    ),
+  );
 
   const actual = await actualP;
   const result = actual.result as any;
@@ -436,37 +288,17 @@ test('open a portfolio with Compound position', async t => {
     },
     {
       destinationEVMChain: 'Base',
-      Compound: { acctRatio: [1n, 2n], gmpRatio: [1n, 2n] },
     },
   );
   await eventLoopIteration(); // let IBC message go out
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   console.log('ackd send to Axelar to create account');
 
-  const { transferBridge } = common.mocks;
-
-  // stimulate upcall back from Axelar
-  const event = makeIncomingEVMEvent();
-  const ackNP = VE(transferBridge)
-    .fromBridge(event)
-    .finally(() => console.log('@@@fromBridge for tap done'))
-    .then(() => eventLoopIteration())
-    .then(() => {
-      // ack CCTP
-      common.utils
-        .transmitVTransferEvent('acknowledgementPacket', -1)
-        .then(() => eventLoopIteration())
-        .finally(() => {
-          console.log('@@@ack CCTP done');
-          // ack IBC transfer to Axelar to open Aave position
-          return common.utils
-            .transmitVTransferEvent('acknowledgementPacket', -1)
-            .finally(() => {
-              console.log('@@@ack Axelar done');
-              return;
-            });
-        });
-    });
+  await simulateUpcallFromAxelar(common.mocks.transferBridge).then(() =>
+    simulateCCTPAck(common.utils).finally(() =>
+      simulateAckTransferToAxelar(common.utils),
+    ),
+  );
 
   const actual = await actualP;
   const result = actual.result as any;
@@ -495,7 +327,6 @@ test('open portfolio with USDN, Aave positions', async t => {
     },
     {
       destinationEVMChain: 'Base',
-      Aave: { acctRatio: [1n, 2n], gmpRatio: [1n, 2n] },
     },
   );
   await eventLoopIteration(); // let outgoing IBC happen
@@ -503,30 +334,13 @@ test('open portfolio with USDN, Aave positions', async t => {
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   console.log('ackd send to noble');
 
-  const { transferBridge } = common.mocks;
-
-  // ack IBC transfer to Noble
-  const ackNP = VE(transferBridge)
-    .fromBridge(makeIncomingEVMEvent())
-    .finally(() => console.log('@@@fromAxelar done'))
-    .then(() => eventLoopIteration())
-    .then(() => {
-      // let outgoing IBC happen
-      common.utils
-        .transmitVTransferEvent('acknowledgementPacket', -1)
-        .then(() => eventLoopIteration())
-        .finally(() => {
-          console.log('@@@ack Noble done');
-          // ack IBC transfer to Axelar to set up account
-          return common.utils
-            .transmitVTransferEvent('acknowledgementPacket', -1)
-            .finally(() => {
-              console.log('@@@ack Axelar done');
-              console.log('@@@fromBridge toTap');
-              return;
-            });
-        });
-    });
+  const ackNP = await simulateUpcallFromAxelar(
+    common.mocks.transferBridge,
+  ).then(() =>
+    simulateCCTPAck(common.utils).finally(() =>
+      simulateAckTransferToAxelar(common.utils),
+    ),
+  );
 
   await eventLoopIteration(); // let bridge I/O happen
 
