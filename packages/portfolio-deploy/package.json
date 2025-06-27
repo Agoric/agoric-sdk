@@ -15,6 +15,9 @@
     "test": "yarn build && ava",
     "test:c8": "c8 --all $C8_OPTIONS ava",
     "test:xs": "exit 0",
+    "test:e2e": "bash ./e2e-test.sh",
+    "e2e:relay": "concurrently --kill-others \"yarn relay\" \"yarn e2e:test\"",
+    "e2e:test": "binary=agd ATOM_DENOM=atom CHAINID=agoriclocal AGORIC_SDK=../.. yarn test test/e2e/",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
     "lint:eslint": "yarn run -T eslint .",
@@ -31,6 +34,7 @@
     "@agoric/orchestration": "workspace:*",
     "@agoric/pola-io": "workspace:*",
     "@agoric/store": "workspace:*",
+    "@agoric/synthetic-chain": "^0.5.7",
     "@agoric/vat-data": "workspace:*",
     "@agoric/vats": "workspace:*",
     "@agoric/vow": "workspace:*",
@@ -42,6 +46,7 @@
     "@endo/marshal": "^1.6.4",
     "@endo/pass-style": "^1.5.0",
     "@endo/patterns": "^1.5.0",
+    "@metamask/abi-utils": "^3.0.0",
     "execa": "^9.6.0"
   },
   "devDependencies": {
@@ -49,6 +54,7 @@
     "@agoric/client-utils": "workspace:*",
     "ava": "^5.3.0",
     "c8": "^10.1.3",
+    "concurrently": "^9.2.0",
     "esbuild": "^0.25.2",
     "ts-blank-space": "^0.4.1"
   },

@@ -30,10 +30,10 @@ const axelarChainsMap = {
     caip: 'eip155:1',
     axelarId: 'Ethereum',
     contractAddresses: {
-      aavePool: '0x1111111111111111111111111111111111111111',
+      aavePool: '0x5B34876FFB1656710fb963ecD199C6f173c29267',
       compound: '0xA0b86a33E6A3E81E27Da9c18c4A77c9Cd4e08D57',
       factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
-      usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
+      usdc: '0x7cCc8E1CD3167e2bFe0a6c55d83Ed0537d3bb139',
     },
   },
   Avalanche: {
