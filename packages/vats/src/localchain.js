@@ -203,7 +203,7 @@ export const prepareLocalChainAccountKit = (
          * @param {NotifyInfo[]} notifyInfos
          */
         onFulfilled(fulfilment, notifyInfos) {
-          if (!notifyInfos.some(notifyInfo => !!notifyInfo)) {
+          if (notifyInfos.every(notifyInfo => !notifyInfo)) {
             // No need to notify the transfer bridge manager, so just return.
             return fulfilment;
           }
