@@ -100,6 +100,7 @@ export const makeProposalShapes = (
 type OfferArgs1 = {
   destinationEVMChain?: AxelarChain;
   usdnOut?: NatValue;
+  usdcOut?: NatValue;
 };
 
 const offerArgsShape: TypedPattern<OfferArgs1> = M.splitRecord(

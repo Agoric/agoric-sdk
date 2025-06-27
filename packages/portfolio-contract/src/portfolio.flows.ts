@@ -614,7 +614,7 @@ const withdrawFromUSDNPosition = async (
 ) => {
   const ica = kit.reader.getNobleICA() as unknown as NobleAccount;
   const localAcct = kit.reader.getLCA() as unknown as LocalAccount;
-
+  // debugger
   const usdcBrand = pos.getBrand(); // Assume this gets the brand of USDC
   const denom = 'uusdc';
   const volume: DenomAmount = { denom, value: usdcOut };
@@ -628,7 +628,7 @@ const withdrawFromUSDNPosition = async (
     dest: { account: ica },
     amount,
     handle: async () => {
-      // 🔄 Use helper to generate MsgUnlock and MsgSwap
+      
       const { protoMessages, msgUnlock, msgSwap } = makeUnlockSwapMessages(
         ica.getAddress(),
         usdcOut,
@@ -636,12 +636,15 @@ const withdrawFromUSDNPosition = async (
           poolId: 0n,
           denom: 'uusdn',
           denomTo: 'uusdc',
-          vault: 1, // Ensure this matches the vault used in MsgLock
+          vault: 1, // TODO Ensure this matches the vault used in MsgLock
+          usdcOut: usdcOut,
         },
       );
 
       trace('executing unlock+swap', [msgUnlock, msgSwap]);
-      const result = await ica.executeEncodedTx(protoMessages);
+      const swapOnlyTODO = protoMessages.slice(1, 2);
+      const result = await ica.executeEncodedTx(swapOnlyTODO);
+      // const result = await ica.executeEncodedTx(protoMessages);
       trace('unlock+swap result', result);
     },
   });
@@ -688,7 +691,7 @@ export const rebalance = async (
 ) => {
   const { axelarChainsMap } = ctx;
   const { destinationEVMChain } = offerArgs;
-
+  
   const proposal = seat.getProposal() as ProposalType['rebalance'];
   trace(
     'rebalance proposal',
@@ -697,7 +700,7 @@ export const rebalance = async (
     offerArgs,
   );
 
-  if (!('give' in proposal)) {
+  if (!('give' in proposal) || Object.keys(proposal.give).length === 0) {
     // throw Error('TODO: withdraw');
     if (!('want' in proposal)) {
       throw Error('rebalance proposal must have give or want');
