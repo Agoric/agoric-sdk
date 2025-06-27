@@ -6,7 +6,7 @@
  */
 import type { GuestInterface } from '@agoric/async-flow';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
-import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
+import { MsgLock, MsgUnlock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import { AmountMath, type Amount } from '@agoric/ertp';
 import { makeTracer, mustMatch, NonNullish } from '@agoric/internal';
@@ -107,6 +107,41 @@ export const makeSwapLockMessages = (
   ];
   return { msgSwap, msgLock, protoMessages };
 };
+
+export const makeUnlockSwapMessages = (
+  nobleAddr: CosmosChainAddress,
+  usdnIn: bigint,
+  {
+    poolId = 0n,
+    denom = 'uusdn',
+    denomTo = 'uusdc',
+    vault = 1, // VaultType.STAKED
+    usdcOut = undefined as bigint | undefined,
+  } = {},
+) => {
+  // Step 1: MsgUnlock
+  const msgUnlock = MsgUnlock.fromPartial({
+    signer: nobleAddr.value,
+    vault,
+    amount: `${usdnIn}`,
+  });
+
+  // Step 2: MsgSwap (uusdn → uusdc)
+  const msgSwap = MsgSwap.fromPartial({
+    signer: nobleAddr.value,
+    amount: { denom, amount: `${usdnIn}` },
+    routes: [{ poolId, denomTo }],
+    min: { denom: denomTo, amount: `${usdcOut || usdnIn}` },
+  });
+
+  const protoMessages = [
+    Any.toJSON(MsgUnlock.toProtoMsg(msgUnlock)),
+    Any.toJSON(MsgSwap.toProtoMsg(msgSwap)),
+  ];
+
+  return { msgUnlock, msgSwap, protoMessages };
+};
+
 
 const createRemoteEVMAccount = async (
   orch: Orchestrator,
@@ -570,6 +605,80 @@ const addToUSDNPosition = async (
   ]);
 };
 
+const withdrawFromUSDNPosition = async (
+  ctx: PortfolioInstanceContext,
+  seat: ZCFSeat,
+  pos: USDNPosition,
+  kit: GuestInterface<PortfolioKit>,
+  usdcOut: bigint = 0n,
+) => {
+  const ica = kit.reader.getNobleICA() as unknown as NobleAccount;
+  const localAcct = kit.reader.getLCA() as unknown as LocalAccount;
+
+  const usdcBrand = pos.getBrand(); // Assume this gets the brand of USDC
+  const denom = 'uusdc';
+  const volume: DenomAmount = { denom, value: usdcOut };
+  const amount: Amount<'nat'> = { brand: usdcBrand, value: usdcOut };
+
+  const moveAssets = trackFlow(kit.reporter);
+
+  await moveAssets({
+    how: 'Unlock, Swap',
+    src: { pos },
+    dest: { account: ica },
+    amount,
+    handle: async () => {
+      // 🔄 Use helper to generate MsgUnlock and MsgSwap
+      const { protoMessages, msgUnlock, msgSwap } = makeUnlockSwapMessages(
+        ica.getAddress(),
+        usdcOut,
+        {
+          poolId: 0n,
+          denom: 'uusdn',
+          denomTo: 'uusdc',
+          vault: 1, // Ensure this matches the vault used in MsgLock
+        },
+      );
+
+      trace('executing unlock+swap', [msgUnlock, msgSwap]);
+      const result = await ica.executeEncodedTx(protoMessages);
+      trace('unlock+swap result', result);
+    },
+  });
+
+  await moveAssets({
+    how: 'IBC transfer',
+    src: { account: ica },
+    dest: { account: localAcct },
+    amount,
+    handle: async () => {
+      await ica.transfer(localAcct.getAddress(), volume);
+    },
+    recover: async err => {
+      console.error('⚠️ recover to position.', err);
+      await pos.recordTransferIn(amount);
+      throw err;
+    },
+  });
+
+  await moveAssets({
+    how: 'withdrawToSeat',
+    src: { account: localAcct },
+    dest: { seat, keyword: 'USDN' },
+    amount,
+    handle: async () => {
+      await ctx.zoeTools.withdrawToSeat(localAcct, seat, { USDN: amount });
+    },
+    recover: async err => {
+      console.error('⚠️ withdrawToSeat failed.', err);
+      // Optionally reverse transfer
+      await localAcct.transfer(ica.getAddress(), volume);
+      throw err;
+    },
+  });
+};
+
+
 export const rebalance = async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
@@ -588,8 +697,15 @@ export const rebalance = async (
     offerArgs,
   );
 
-  if (keys(proposal.want).length > 0) {
-    throw Error('TODO: withdraw');
+  if (!('give' in proposal)) {
+    // throw Error('TODO: withdraw');
+    if (!('want' in proposal)) {
+      throw Error('rebalance proposal must have give or want');
+    }
+    const pos = kit.manager.provideUSDNPosition(); // TODO: get num from offerArgs?
+    const { usdcOut } = offerArgs;
+    await withdrawFromUSDNPosition(ctx, seat, pos, kit, usdcOut);
+
   }
 
   const { give } = proposal;
