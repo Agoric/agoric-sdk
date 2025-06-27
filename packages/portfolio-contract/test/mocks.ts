@@ -25,6 +25,8 @@ import type { Zone } from '@agoric/zone';
 import { makePromiseKit } from '@endo/promise-kit';
 import type { AxelarChainsMap } from '../src/type-guards';
 
+export const localAccount0 = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht';
+
 export const prepareMockOrchAccounts = (
   zone: Zone,
   {
@@ -203,4 +205,33 @@ export const axelarChainsMap: AxelarChainsMap = {
       usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
     },
   },
-};
+} as const;
+
+/** from https://www.mintscan.io/noble explorer */
+export const explored = [
+  {
+    txhash: '50D671D1D56CF5041CBE7C3483EF461765196ECD7D7571CCEF0A612B46FC7A3B',
+    messages: [
+      {
+        '@type': '/noble.swap.v1.MsgSwap',
+        signer: 'noble1wtwydxverrrc673anqddyg3cmq3vhpu7yxy838',
+        amount: { denom: 'uusdc', amount: '111000000' },
+        // routes: [{ pool_id: '0', denom_to: 'uusdn' }],
+        routes: [{ poolId: 0n, denomTo: 'uusdn' }],
+        min: { denom: 'uusdn', amount: '110858936' },
+      } satisfies MsgSwap & { '@type': string },
+    ],
+  },
+  {
+    txhash: 'BD97D42915C9185B11B14FEDC2EF6BCE0677E6720472DC6E1B51CCD504534237',
+    messages: [
+      {
+        '@type': '/noble.dollar.vaults.v1.MsgLock',
+        signer: 'noble1wtwydxverrrc673anqddyg3cmq3vhpu7yxy838',
+        vault: 1, // 'STAKED',
+        amount: '110818936',
+      } satisfies MsgLock & { '@type': string },
+    ],
+  },
+];
+harden(explored);

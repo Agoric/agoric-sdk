@@ -1,0 +1,114 @@
+import { mustMatch } from '@agoric/internal';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import type { ScopedBridgeManager } from '@agoric/vats';
+import { heapVowE as VE } from '@agoric/vow';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
+import { E } from '@endo/far';
+import { passStyleOf } from '@endo/pass-style';
+import { M } from '@endo/patterns';
+import type { ExecutionContext } from 'ava';
+import * as contractExports from '../src/portfolio.contract.ts';
+import { axelarChainsMap, makeUSDNIBCTraffic } from './mocks.ts';
+import { makeTrader } from './portfolio-actors.ts';
+import {
+  chainInfoFantasyTODO,
+  makeIncomingEVMEvent,
+  setupPortfolioTest,
+} from './supports.ts';
+import { makeWallet } from './wallet-offer-tools.ts';
+import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
+
+const contractName = 'ymax0';
+type StartFn = typeof contractExports.start;
+const { values } = Object;
+
+const deploy = async (t: ExecutionContext) => {
+  const common = await setupPortfolioTest(t);
+  const { zoe, bundleAndInstall } = await setUpZoeForTest();
+  t.log('contract deployment', contractName);
+
+  const installation: Installation<StartFn> =
+    await bundleAndInstall(contractExports);
+  t.is(passStyleOf(installation), 'remotable');
+
+  const { usdc, poc24 } = common.brands;
+  const timerService = buildZoeManualTimer();
+
+  const { agoric, noble, axelar, osmosis } = chainInfoFantasyTODO;
+  const started = await E(zoe).startInstance(
+    installation,
+    { USDC: usdc.issuer, Access: poc24.issuer },
+    {}, // terms
+    {
+      ...common.commonPrivateArgs,
+      axelarChainsMap,
+      timerService,
+      chainInfo: { agoric, noble, axelar, osmosis },
+    }, // privateArgs
+  );
+  t.notThrows(() =>
+    mustMatch(
+      started,
+      M.splitRecord({
+        instance: M.remotable(),
+        publicFacet: M.remotable(),
+        creatorFacet: M.remotable(),
+        // ...others are not relevant here
+      }),
+    ),
+  );
+  return { common, zoe, started, timerService };
+};
+
+export const setupTrader = async (t, initial = 10_000) => {
+  const { common, zoe, started } = await deploy(t);
+  const { usdc, poc24 } = common.brands;
+  const { when } = common.utils.vowTools;
+
+  const myBalance = usdc.units(initial);
+  const funds = await common.utils.pourPayment(myBalance);
+  const { mint: _, ...poc24SansMint } = poc24;
+  const myWallet = makeWallet({ USDC: usdc, Access: poc24SansMint }, zoe, when);
+  await E(myWallet).deposit(funds);
+  await E(myWallet).deposit(poc24.mint.mintPayment(poc24.make(1n)));
+  const trader1 = makeTrader(myWallet, started.instance);
+
+  const { ibcBridge } = common.mocks;
+  for (const { msg, ack } of values(makeUSDNIBCTraffic())) {
+    ibcBridge.addMockAck(msg, ack);
+  }
+
+  return { common, zoe, started, myBalance, myWallet, trader1 };
+};
+
+export const simulateUpcallFromAxelar = async (
+  transferBridge: ScopedBridgeManager<'vtransfer'>,
+) => {
+  const event = makeIncomingEVMEvent();
+  return (
+    VE(transferBridge)
+      .fromBridge(event)
+      // .finally(() => console.debug('fromBridge for tap done'))
+      .then(() => eventLoopIteration())
+  );
+};
+
+export const simulateCCTPAck = async utils => {
+  // ack CCTP
+  return utils
+    .transmitVTransferEvent('acknowledgementPacket', -1)
+    .then(() => eventLoopIteration())
+    .finally(() => {
+      // console.debug('ack CCTP done');
+    });
+};
+
+// ack IBC transfer to Axelar to open Aave position
+export const simulateAckTransferToAxelar = async utils => {
+  return utils
+    .transmitVTransferEvent('acknowledgementPacket', -1)
+    .finally(() => {
+      // console.debug('ack Axelar done');
+      return;
+    });
+};

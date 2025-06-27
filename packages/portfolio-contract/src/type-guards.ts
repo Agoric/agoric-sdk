@@ -39,8 +39,8 @@ export type OpenPortfolioGive = {
 export type ProposalType = {
   openPortfolio: { give: OpenPortfolioGive };
   rebalance:
-    | { give: OpenPortfolioGive }
-    | { want: Partial<Record<YieldProtocol, Amount<'nat'>>> };
+    | { give: OpenPortfolioGive; want: {} }
+    | { want: Partial<Record<YieldProtocol, Amount<'nat'>>>; give: {} };
 };
 
 const YieldProtocolShape = M.or(...keys(YieldProtocol));

@@ -1,0 +1,79 @@
+,Aave,Compound,USDN,,,
+Description,,,,Open empty portfolio,,
+Before,no portfolio,,,,,
+Offer: Give,,,,,,
+Offer: Want,,,,,,
+offerArgs,,,,,,operation net
+After,empty portfolio,,,positions net:,$0.00,
+Payouts,,,,offer net:,$0.00,$0.00
+,,,,,,
+Description,,,,Open with 3 positions,,
+Before,no portfolio,,,,,
+Offer: Give,"$3,333.00","$3,333.00","$3,333.00",,,
+Offer: Want,,,,,,
+offerArgs,,,,,,operation net
+After,"$3,333.00","$3,333.00","$3,333.00",positions net:,"$9,999.00",
+Payouts,$0.00,$0.00,$0.00,offer net:,"-$9,999.00",$0.00
+,,,,,,
+Description,,,,Ask for 3 but get only USDN,,
+Before,no portfolio,,,,,
+Offer: Give,"$3,333.00","$3,333.00","$3,333.00",,,
+Offer: Want,,,,,,
+offerArgs,,,,,,operation net
+After,fail/TODO,fail/TODO,"$3,333.00",positions net:,"$3,333.00",
+Payouts,"$3,333.00","$3,333.00",,offer net:,"-$3,333.00",$0.00
+,,,,,,
+Description,,,,Consolidate to USDN,,
+Before,"$3,333.00","$3,333.00","$3,333.00",,,
+Offer: Give,,,,,,
+Offer: Want,,,,,,
+offerArgs,"-$3,333.00","-$3,333.00","$6,666.00",,,operation net
+After,$0.00,$0.00,"$9,999.00",positions net:,$0.00,
+Payouts,,,,offer net:,$0.00,$0.00
+,,,,,,
+Description,,,,Withdraw some from Compound,,
+Before,"$3,333.00","$3,333.00","$3,333.00",,,
+Offer: Give,,,,,,
+Offer: Want,,"$2,000.00",,,,
+offerArgs,,,,,,operation net
+After,"$3,333.00","$1,333.00","$3,333.00",positions net:,"-$2,000.00",
+Payouts,,"$2,000.00",,offer net:,"$2,000.00",$0.00
+,,,,,,
+Description,,,,Aave -> USDN,,
+Before,"$5,000.00",,,,,
+Offer: Give,,,,,,
+Offer: Want,,,,,,
+offerArgs,"-$1,500.00",,"$1,500.00",,,operation net
+After,"$3,500.00",,"$1,500.00",positions net:,$0.00,
+Payouts,,,,offer net:,$0.00,$0.00
+,,,,,,
+Description,,,,USDN -> Aave,,
+Before,,,"$5,000.00",,,
+Offer: Give,,,,,,
+Offer: Want,,,,,,
+offerArgs,$500.00,,-$500.00,,,operation net
+After,$500.00,,"$4,500.00",positions net:,$0.00,
+Payouts,,,,offer net:,$0.00,$0.00
+,,,,,,
+Description,,,,"A,C -> U",,
+Before,"$3,333.00","$3,333.00","$3,333.00",,,
+Offer: Give,,,,,,
+Offer: Want,,,,,,
+offerArgs,"-$1,000.00","-$1,000.00","$2,000.00",,,operation net
+After,"$2,333.00","$2,333.00","$5,333.00",positions net:,$0.00,
+Payouts,,,,offer net:,$0.00,$0.00
+,,,,,,
+Description,,,,Close out portfolio,,
+Before,"$3,333.00","$3,333.00","$3,333.00",,,
+Offer: Give,,,,,,
+Offer: Want,"$3,333.00","$3,333.00","$3,333.00",,,
+offerArgs,,,,,,operation net
+After,$0.00,$0.00,$0.00,positions net:,"-$9,999.00",
+Payouts,"$3,333.00","$3,333.00","$3,333.00",offer net,"$9,999.00",$0.00
+,,,,,,
+Description,,,,Deploy via hook,,
+Before,"$1,000.00","$2,000.00","$3,000.00",,,
+Strategy: %,17%,33%,50%,,,
+Amount,$100.00,$100.00,$100.00,,,operation net
+After,"$1,016.67","$2,033.33","$3,050.00",positions net:,$100.00,
+Payouts,,,,,,$0.00
