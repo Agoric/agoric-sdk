@@ -231,7 +231,7 @@ test(`localchain passes tests`, async t => {
   const expectedData = {
     sender: senderAddress,
     receiver: addressHook,
-    memo: '',
+    memo: JSON.stringify({ hookedTypeUrl: '/cosmos.bank.v1beta1.MsgSend' }),
     denom: 'localchain-msg/channel-0/ubld',
     amount: '13',
   };
