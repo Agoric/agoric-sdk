@@ -193,21 +193,21 @@ export const makeUSDNIBCTraffic = (
     swapBack: makeSwap('uusdn', 'uusdc'), // optional convenience shortcut
     transferBack: {
       msg: buildTxPacketString([
-        MsgTransfer.toProtoMsg({
-          sourcePort: 'transfer',
-          sourceChannel: 'channel-21',
-          token: { denom: 'uusdc', amount: money },
-          sender: signer,
-          receiver: localAccount0,
-          timeoutHeight: {},
-          timeoutTimestamp: 300_000_000_000n,
-        }),
+        MsgTransfer.toProtoMsg(
+          MsgTransfer.fromPartial({
+            sourcePort: 'transfer',
+            sourceChannel: 'channel-21',
+            token: { denom: 'uusdc', amount: money },
+            sender: signer,
+            receiver: localAccount0,
+            timeoutTimestamp: 300_000_000_000n,
+          }),
+        ),
       ]),
       ack: buildMsgResponseString(MsgTransferResponse, {}),
     },
   };
 };
-
 
 export const axelarChainsMap: AxelarChainsMap = {
   Ethereum: {
