@@ -18,7 +18,7 @@ import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import type { VowTools } from '@agoric/vow';
-import type { Proposal, ZCFSeat } from '@agoric/zoe';
+import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeHeapZone } from '@agoric/zone';

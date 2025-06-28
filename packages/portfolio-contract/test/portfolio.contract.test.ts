@@ -4,31 +4,22 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { gmpAddresses } from '@agoric/orchestration/src/utils/gmp.js';
-import { heapVowE as VE } from '@agoric/vow';
-import type { Installation } from '@agoric/zoe';
-import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { q } from '@endo/errors';
-import { E, passStyleOf } from '@endo/far';
-import { M, matches, mustMatch } from '@endo/patterns';
-import type { ExecutionContext } from 'ava';
+import { passStyleOf } from '@endo/far';
+import { matches, mustMatch } from '@endo/patterns';
 import * as contractExports from '../src/portfolio.contract.ts';
 import { makeAxelarMemo } from '../src/portfolio.flows.ts';
 import {
   makeProposalShapes,
   type GmpArgsContractCall,
-  type ProposalType,
 } from '../src/type-guards.ts';
-import { axelarChainsMap, localAccount0, makeUSDNIBCTraffic } from './mocks.ts';
-import { makeTrader } from './portfolio-actors.ts';
-import { chainInfoFantasyTODO, setupPortfolioTest } from './supports.ts';
 import {
   setupTrader,
   simulateAckTransferToAxelar,
   simulateCCTPAck,
   simulateUpcallFromAxelar,
 } from './contract-setup.ts';
-import { makeWallet } from './wallet-offer-tools.ts';
+import { axelarChainsMap, localAccount0 } from './mocks.ts';
 
 const contractName = 'ymax0';
 type StartFn = typeof contractExports.start;

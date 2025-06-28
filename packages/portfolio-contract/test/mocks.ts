@@ -1,5 +1,9 @@
 import type { HostInterface } from '@agoric/async-flow';
 import {
+  MsgTransfer,
+  MsgTransferResponse,
+} from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import {
   MsgLock,
   MsgLockResponse,
   MsgUnlock,
@@ -9,10 +13,6 @@ import {
   MsgSwap,
   MsgSwapResponse,
 } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
-import {
-  MsgTransfer,
-  MsgTransferResponse,
-} from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import type { Brand, Issuer, Payment } from '@agoric/ertp';
 import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import type { FeeConfig, LogFn } from '@agoric/fast-usdc/src/types.js';

@@ -1,8 +1,8 @@
 import test from 'ava';
 import {
   grokRebalanceScenarios,
-  parseCSV,
   importText,
+  parseCSV,
 } from '../tools/rebalance-grok.ts';
 
 test('parseCSV test utility', async t => {

@@ -1,7 +1,7 @@
+import { AmountMath } from '@agoric/ertp';
 import type { InvitationSpec } from '@agoric/smart-wallet/src/invitations.js';
 import type { Instance } from '@agoric/zoe';
 import type { ExecutionContext } from 'ava';
-import { E } from '@endo/far';
 import { type start } from '../src/portfolio.contract.ts';
 import type {
   OfferArgsFor,
@@ -9,7 +9,6 @@ import type {
   ProposalType,
 } from '../src/type-guards.ts';
 import type { WalletTool } from './wallet-offer-tools.ts';
-import { AmountMath } from '@agoric/ertp';
 
 const { fromEntries } = Object;
 const range = (n: number) => [...Array(n).keys()];
@@ -69,14 +68,12 @@ export const makeTrader = (
         previousOffer: openId,
       };
 
-      return wallet.executeContinuingOffer(
-        {
-          id: openId,
-          invitationSpec,
-          proposal,
-        },
+      return wallet.executeContinuingOffer({
+        id: openId,
+        invitationSpec,
+        proposal,
         offerArgs,
-      );
+      });
     },
     getPortfolioPath: () => portfolioPath,
     getPortfolioStatus: storage => {
