@@ -1,0 +1,53 @@
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#f0f8ff',
+    'primaryTextColor': '#2c3e50',
+    'primaryBorderColor': '#7fb2e6',
+    'lineColor': '#7fb2e6',
+    'secondaryColor': '#f6f8fa',
+    'tertiaryColor': '#fff5e6'
+  }
+}}%%
+sequenceDiagram
+    title Elys Orchestration Flow - Transactional Model
+    autonumber
+    actor webUA as Elys WebApp<br/>[Browser]
+    %% [Where it runs]
+    box Aqua Cosmos Chain
+    participant acctOrig as User Acct
+    end
+    box Red Agoric Chain
+    participant myOrch as Orch. Contract
+    participant orchLCA1 as agoric1orchFEED
+    end
+    box Yellow as Stride Chain
+    participant chainLS as Stride Chain
+    end
+    box Grey Elys Chain
+    participant chainMy as Elys Chain
+    participant ICA1 as ICA 145<br/>controlled by Agoric contract
+    participant acctDest as User Account<br />elsy176
+    end
+
+    %% Notation: ->> for initial message, -->> for consequences
+
+    note left of myOrch: contract starts
+    myOrch ->> myOrch: makeLocalAccount()
+    myOrch ->> orchLCA1: monitorTranfers(...)
+    myOrch ->> chainMy: makeAccount()
+    chainMy -->> myOrch: elys145...
+
+    note right of webUA: User Initiates Action
+    webUA ->> webUA: openPosition(10 ATOM)
+    webUA -->> acctOrig: send(10 ATOM, agoric1orchFEED)
+    acctOrig -->> orchLCA1: receiveUpcall(10 ATOM)
+    orchLCA1 -->> acctOrig: send(10 ATOM, stride123...,<br/> fwd: to stATOM, send to ICA 145 on Elys)
+    acctOrig -->> chainLS: deposit(10 ATOM, to stATOM, fwd: to ICA 145 on Elys)
+    chainLS -->> ICA1: deposit(10 ATOM)
+    ICA1 -->> orchLCA1: resolve(ack)
+    orchLCA1 -->> ICA1: send(9 stATOM, elsy176)
+    ICA1 -->> acctDest: deposit(9 stATOM)
+    webUA -->> acctDest: getBalances()
+    acctDest -->> webUA: resolve(9 stATOM)
+    note right of webUA: User notified that execution<br/> is complete and position is created
