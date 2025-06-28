@@ -1,5 +1,9 @@
 import test from 'ava';
 
+import {
+  passableSymbolForName,
+  unpassableSymbolForName,
+} from '@agoric/internal';
 import { dump } from '../src/repl.js';
 
 // Taken from https://github.com/endojs/endo/blob/43b796232634b54c9e7de1c0a2349d22c29fc384/packages/ses/test/error/test-assert-log.js#L414
@@ -15,7 +19,12 @@ test('dump: the @erights challenge', t => {
     undefined,
     'undefined',
     URIError('wut?'),
-    [33n, Symbol('foo'), Symbol.for('bar'), Symbol.asyncIterator],
+    [
+      33n,
+      unpassableSymbolForName('foo'),
+      passableSymbolForName('bar'),
+      Symbol.asyncIterator,
+    ],
     {
       NaN,
       Infinity,
