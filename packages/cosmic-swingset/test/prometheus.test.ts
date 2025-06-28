@@ -1,24 +1,23 @@
-import type { TestFn, Implementation } from 'ava';
-import anyTest from 'ava';
 import { fileURLToPath } from 'node:url';
 import { execa } from 'execa';
 
-import { q, Fail } from '@endo/errors';
+import anyTest, { type TestFn, type Implementation } from 'ava';
 
-import { BridgeId, VBankAccount, type TotalMap } from '@agoric/internal';
-import {
-  HISTOGRAM_METRICS,
-  BLOCK_HISTOGRAM_METRICS,
-} from '@agoric/internal/src/metrics.js';
-import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import { avaRetry } from '@agoric/internal/tools/avaRetry.js';
-
+// eslint-disable-next-line import/no-extraneous-dependencies
 import {
   leadingPrometheusNameRegExp,
   prometheusSampleRegExp,
   prometheusNumberValue,
-} from '../tools/prometheus.js';
-import { makeCosmicSwingsetTestKit } from '../tools/test-kit.js';
+} from '@agoric/cosmic-swingset/tools/prometheus.js';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
+import { type TotalMap } from '@agoric/internal';
+import {
+  HISTOGRAM_METRICS,
+  BLOCK_HISTOGRAM_METRICS,
+} from '@agoric/internal/src/metrics.js';
+import { avaRetry } from '@agoric/internal/tools/avaRetry.js';
+import { q } from '@endo/errors';
 
 const test = anyTest as TestFn;
 
@@ -63,28 +62,6 @@ const testPrometheusMetrics = async t => {
   const OTEL_EXPORTER_PROMETHEUS_PORT = '12345';
   const SLOGSENDER_AGENT_OTEL_EXPORTER_PROMETHEUS_PORT = '12346';
 
-  const fakeStorageKit = makeFakeStorageKit('');
-  const { toStorage: handleVstorage } = fakeStorageKit;
-  const receiveBridgeSend = (destPortName: string, msg: any) => {
-    switch (destPortName) {
-      case BridgeId.STORAGE: {
-        return handleVstorage(msg);
-      }
-      case BridgeId.BANK: {
-        if (msg.type === 'VBANK_GET_MODULE_ACCOUNT_ADDRESS') {
-          const matchesRequest = (desc: { module: string }) =>
-            desc.module === msg.moduleName;
-          const found = Object.values(VBankAccount).find(matchesRequest);
-          if (found) return found.address;
-          return { error: `module account ${q(msg.moduleName)} not found` };
-        }
-        break;
-      }
-      default:
-        break;
-    }
-    Fail`port ${q(destPortName)} not implemented for message ${msg}`;
-  };
   const env = {
     ...process.env,
     OTEL_EXPORTER_PROMETHEUS_PORT,
@@ -92,18 +69,15 @@ const testPrometheusMetrics = async t => {
     SLOGSENDER_AGENT: 'process',
     CHAIN_BOOTSTRAP_VAT_CONFIG: '@agoric/vm-config/decentral-core-config.json',
   };
-  const testKit = await makeCosmicSwingsetTestKit(receiveBridgeSend, { env });
-  const { pushCoreEval, runNextBlock, shutdown } = testKit;
+  const testKit = await makeCosmicSwingsetTestKit({
+    env,
+  });
+  const { pushCoreEval, shutdown } = testKit;
   t.teardown(shutdown);
 
   // To tickle some metrics events, run a couple of trivial blocks.
-  pushCoreEval(`${() => {}}`);
-  await runNextBlock();
-  pushCoreEval(`${() => {}}`);
-  await runNextBlock();
-
-  // Ensure expiration of any cached metrics.
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  await pushCoreEval(`${() => {}}`);
+  await pushCoreEval(`${() => {}}`);
 
   // Scrape both Prometheus endpoints.
   const [directMetrics, slogMetrics] = await Promise.all(
