@@ -200,6 +200,7 @@ export const makeUSDNIBCTraffic = (
             token: { denom: 'uusdc', amount: money },
             sender: signer,
             receiver: localAccount0,
+            timeoutHeight: { revisionHeight: 0n, revisionNumber: 0n },
             timeoutTimestamp: 300_000_000_000n,
           }),
         ),
