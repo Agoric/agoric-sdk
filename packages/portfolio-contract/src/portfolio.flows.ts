@@ -125,7 +125,7 @@ export const makeUnlockSwapMessages = (
   // MsgSwap (uusdn → uusdc)
   const msgSwap = MsgSwap.fromPartial({
     signer: nobleAddr.value,
-    amount: { denom, amount: `${usdcOut}` },
+    amount: { denom, amount: `${usdnOut || usdcOut}` },
     routes: [{ poolId, denomTo }],
     min: { denom: denomTo, amount: `${usdnOut || usdcOut}` },
   });
@@ -726,6 +726,7 @@ export const rebalance = async (
         break;
     }
   }
+  seat.exit();
 };
 
 /**
