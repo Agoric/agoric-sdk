@@ -69,12 +69,14 @@ export const makeTrader = (
         previousOffer: openId,
       };
 
-      return wallet.executeContinuingOffer({
-        id: openId,
-        invitationSpec,
-        proposal,
+      return wallet.executeContinuingOffer(
+        {
+          id: openId,
+          invitationSpec,
+          proposal,
+        },
         offerArgs,
-      });
+      );
     },
     getPortfolioPath: () => portfolioPath,
     getPortfolioStatus: storage => {
