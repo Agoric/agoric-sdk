@@ -5,7 +5,6 @@ import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import { AmountMath } from '@agoric/ertp';
 import { makeTracer, mustMatch, type Remote } from '@agoric/internal';
-import { decodeBase64 } from '@endo/base64';
 import type {
   Marshaller,
   StorageNode,
@@ -24,7 +23,7 @@ import type { VTransferIBCEvent } from '@agoric/vats';
 import { VowShape, type Vow, type VowTools } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
-import { atob } from '@endo/base64';
+import { atob, decodeBase64 } from '@endo/base64';
 import type { ERef } from '@endo/far';
 import { E } from '@endo/far';
 import type { CopyRecord } from '@endo/pass-style';
@@ -499,10 +498,9 @@ export const preparePortfolioKit = (
       },
       rebalanceHandler: {
         async handle(seat: ZCFSeat, offerArgs: unknown) {
-          const { reader, manager, reporter } = this.facets;
-          const keeper = { reader, manager, reporter };
           mustMatch(offerArgs, OfferArgsShapeFor.rebalance);
-          return rebalance(seat, offerArgs, keeper);
+          const { reader, manager, reporter } = this.facets;
+          return rebalance(seat, offerArgs, { reader, manager, reporter });
         },
       },
       invitationMakers: {
