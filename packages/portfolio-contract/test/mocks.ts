@@ -173,15 +173,21 @@ export const makeUSDNIBCTraffic = (
   });
 
   return {
+    // XXX work around lack of multi-message support?
+    lockWorkaround: {
+      msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ2xvS0ZpOXViMkpzWlM1emQyRndMbll4TGsxeloxTjNZWEFTUUFvTFkyOXpiVzl6TVhSbGMzUVNFd29GZFhWelpHTVNDak16TXpNd01EQXdNREFhQnhJRmRYVnpaRzRpRXdvRmRYVnpaRzRTQ2pNek16TXdNREF3TURBS1Bnb2ZMMjV2WW14bExtUnZiR3hoY2k1MllYVnNkSE11ZGpFdVRYTm5URzlqYXhJYkNndGpiM050YjNNeGRHVnpkQkFCR2dvek16TXpNREF3TURBdyIsIm1lbW8iOiIifQ==',
+      ack: buildMsgResponseString(MsgLockResponse, {}),
+    },
+    unlockWorkaround: {
+      msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ2tBS0lTOXViMkpzWlM1a2IyeHNZWEl1ZG1GMWJIUnpMbll4TGsxeloxVnViRzlqYXhJYkNndGpiM050YjNNeGRHVnpkQkFCR2dvek16TXpNREF3TURBd0Nsb0tGaTl1YjJKc1pTNXpkMkZ3TG5ZeExrMXpaMU4zWVhBU1FBb0xZMjl6Ylc5ek1YUmxjM1FTRXdvRmRYVnpaRzRTQ2pNek16TXdNREF3TURBYUJ4SUZkWFZ6WkdNaUV3b0ZkWFZ6WkdNU0NqTXpNek13TURBd01EQT0iLCJtZW1vIjoiIn0=',
+      ack: buildMsgResponseString(MsgLockResponse, {}),
+    },
+
     swap: makeSwap('uusdc', 'uusdn'),
     lock: {
       msg: buildTxPacketString([
         MsgLock.toProtoMsg({ signer, vault: 1, amount: money }),
       ]),
-      ack: buildMsgResponseString(MsgLockResponse, {}),
-    },
-    lockWorkaround: {
-      msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ2xvS0ZpOXViMkpzWlM1emQyRndMbll4TGsxeloxTjNZWEFTUUFvTFkyOXpiVzl6TVhSbGMzUVNFd29GZFhWelpHTVNDak16TXpNd01EQXdNREFhQnhJRmRYVnpaRzRpRXdvRmRYVnpaRzRTQ2pNek16TXdNREF3TURBS1Bnb2ZMMjV2WW14bExtUnZiR3hoY2k1MllYVnNkSE11ZGpFdVRYTm5URzlqYXhJYkNndGpiM050YjNNeGRHVnpkQkFCR2dvek16TXpNREF3TURBdyIsIm1lbW8iOiIifQ==',
       ack: buildMsgResponseString(MsgLockResponse, {}),
     },
     unlock: {

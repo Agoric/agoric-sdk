@@ -369,7 +369,7 @@ test.only('open portfolio with USDN position and withdraw funds', async t => {
   const doneP = trader1.openPortfolio(
     t,
     {
-      USDNSwapIn: usdc.units(3_333),
+      USDNLock: usdc.units(3_333),
       NobleFees: usdc.make(100n),
       Access: poc24.make(1n),
     },
@@ -382,31 +382,9 @@ test.only('open portfolio with USDN position and withdraw funds', async t => {
   const done = await doneP;
   const result = done.result as any;
   t.is(passStyleOf(result.invitationMakers), 'remotable');
-  t.like(result.publicSubscribers, {
-    portfolio: {
-      description: 'Portfolio',
-      storagePath: 'orchtest.portfolios.portfolio0',
-    },
-  });
 
-  // Verify portfolio was created successfully
-  const { storagePath } = result.publicSubscribers.portfolio;
-  t.log('Portfolio created at:', storagePath);
-  let portfolioInfo = getPortfolioInfo(storagePath, common.bootstrap.storage);
-
-  // Verify the initial USDN position
-  const { positionPaths } = portfolioInfo;
-  t.is(
-    portfolioInfo.contents[positionPaths[0]].accountId,
-    `cosmos:noble-1:cosmos1test`,
-  );
-
-  // Now proceed with withdrawal
   t.log('Beginning withdrawal from USDN position');
-
-  // Request withdrawal of 1000 USDC from USDN position
   const withdrawalAmount = usdc.units(3_333);
-
   const rebalanceP = trader1.rebalance(
     t,
     { want: { USDNUnlock: withdrawalAmount }, give: {} },
@@ -424,32 +402,18 @@ test.only('open portfolio with USDN position and withdraw funds', async t => {
   const rebalanceResult = await rebalanceP;
   t.log('Rebalance operation completed');
 
-  // Verify the withdrawal was successful
-  portfolioInfo = getPortfolioInfo(storagePath, common.bootstrap.storage);
-
-  // Check that the position value has been reduced
-  const updatedPosition = portfolioInfo.contents[positionPaths[0]];
-  t.log('Updated USDN position:', updatedPosition);
-
   // Verify the user received the withdrawn funds
-  t.truthy(
-    rebalanceResult.payouts.USDN,
+  t.deepEqual(
+    rebalanceResult.payouts.USDNUnlock,
+    usdc.units(3_333),
     'User should receive withdrawn USDN funds',
   );
 
-  // If we can access the amount, verify it matches what was requested
-  if (rebalanceResult.payouts.USDN) {
-    const withdrawnAmount = await E(usdc.issuer).getAmountOf(
-      rebalanceResult.payouts.USDN,
-    );
-    t.deepEqual(
-      withdrawnAmount,
-      withdrawalAmount,
-      'Withdrawn amount should match requested amount',
-    );
-  }
-
   // Snapshot the final state for verification
-  t.snapshot(portfolioInfo.contents, 'vstorage after withdrawal');
+  t.is(keys(result.publicSubscribers).length, 1);
+  const { storagePath } = result.publicSubscribers.portfolio;
+  t.log(storagePath);
+  const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  t.snapshot(contents, 'vstorage after withdrawal');
   t.snapshot(rebalanceResult.payouts, 'withdrawal payouts');
 });

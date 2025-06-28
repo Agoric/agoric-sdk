@@ -24,12 +24,14 @@ import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeHeapZone } from '@agoric/zone';
 import { Far, passStyleOf } from '@endo/pass-style';
 import { makePromiseKit } from '@endo/promise-kit';
+import { decodeToJustin, makeMarshal } from '@endo/marshal';
 import {
   preparePortfolioKit,
   type PortfolioKit,
 } from '../src/portfolio.exo.ts';
 import {
   makeSwapLockMessages,
+  makeUnlockSwapMessages,
   openPortfolio,
   rebalance,
   type PortfolioInstanceContext,
@@ -223,7 +225,7 @@ const mocks = (
       nobleAccount: ica,
     }) as unknown as GuestInterface<PortfolioKit>;
 
-  const proposal: Proposal = harden({ give, want: {} });
+  const proposal: ProposalType['openPortfolio'] = harden({ give, want: {} });
   let hasExited = false;
   const seat = {
     getProposal: () => proposal,
@@ -278,46 +280,33 @@ test('Noble Dollar Swap, Lock messages', t => {
   const signer =
     'noble1reheu4ym85k9gktyf9vzhzt0zvqym9txwejsj4vaxdrw98wm4emsddarrd' as const;
 
-  const actual = makeSwapLockMessages(
-    { value: signer, chainId: 'grand-1', encoding: 'bech32' },
-    1200000n,
-    { usdnOut: 1188000n },
+  const nobleAddr = {
+    value: signer,
+    chainId: 'grand-1',
+    encoding: 'bech32' as const,
+  };
+  const msgsByKW = {
+    USDNLock: makeSwapLockMessages(nobleAddr, 1200000n, { usdnOut: 1188000n }),
+    USDNSwapIn: makeSwapLockMessages(nobleAddr, 1200000n),
+    USDNUnlock: makeUnlockSwapMessages(nobleAddr, 1200000n, {
+      usdnOut: 1188000n,
+    }),
+    USNDSwapOut: makeUnlockSwapMessages(nobleAddr, 1200000n),
+  };
+  for (const [label, msgs] of Object.entries(msgsByKW)) {
+    t.snapshot(msgs, label);
+  }
+  t.is(
+    msgsByKW.USDNLock?.msgLock?.amount,
+    msgsByKW.USDNUnlock.msgSwap.amount.amount,
+    'amount locked should be amount swapped after unlock',
   );
-  const bigintStringifier = (_p, v) => (typeof v === 'bigint' ? `${v}` : v);
-  t.log(JSON.stringify(actual, bigintStringifier));
-  t.deepEqual(actual, {
-    msgSwap: {
-      signer:
-        'noble1reheu4ym85k9gktyf9vzhzt0zvqym9txwejsj4vaxdrw98wm4emsddarrd',
-      amount: { denom: 'uusdc', amount: '1200000' },
-      routes: [{ poolId: 0n, denomTo: 'uusdn' }],
-      min: { denom: 'uusdn', amount: '1188000' },
-    },
-    msgLock: {
-      signer:
-        'noble1reheu4ym85k9gktyf9vzhzt0zvqym9txwejsj4vaxdrw98wm4emsddarrd',
-      vault: 1,
-      amount: '1188000',
-    },
-    protoMessages: [
-      {
-        typeUrl: '/noble.swap.v1.MsgSwap',
-        value:
-          'CkBub2JsZTFyZWhldTR5bTg1azlna3R5Zjl2emh6dDB6dnF5bTl0eHdlanNqNHZheGRydzk4d200ZW1zZGRhcnJkEhAKBXV1c2RjEgcxMjAwMDAwGgcSBXV1c2RuIhAKBXV1c2RuEgcxMTg4MDAw',
-      },
-      {
-        typeUrl: '/noble.dollar.vaults.v1.MsgLock',
-        value:
-          'CkBub2JsZTFyZWhldTR5bTg1azlna3R5Zjl2emh6dDB6dnF5bTl0eHdlanNqNHZheGRydzk4d200ZW1zZGRhcnJkEAEaBzExODgwMDA=',
-      },
-    ],
-  });
 });
 
 test('open portfolio with USDN position', async t => {
   const { orch, ctx, offer, storage } = mocks(
     {},
-    { USDN: make(USDC, 50_000_000n), NobleFees: make(USDC, 100n) },
+    { USDNSwapIn: make(USDC, 50_000_000n), NobleFees: make(USDC, 100n) },
   );
   const { log, seat } = offer;
 
@@ -349,7 +338,7 @@ test('open portfolio with Aave and USDN positions', async t => {
   const { orch, ctx, offer, storage, tapPK } = mocks(
     {},
     {
-      USDN: oneThird,
+      USDNSwapIn: oneThird,
       Aave: oneThird,
       AaveGmp: make(USDC, 100n),
       AaveAccount: make(USDC, 150n),
@@ -453,7 +442,7 @@ test('open portfolio with Compound position', async t => {
 test('handle failure in localTransfer from seat to local account', async t => {
   const { orch, ctx, offer, storage } = mocks(
     { localTransfer: Error('localTransfer from seat failed') },
-    { USDN: make(USDC, 100n) },
+    { USDNSwapIn: make(USDC, 100n) },
   );
   const { log, seat } = offer;
 
@@ -475,7 +464,7 @@ test('handle failure in localTransfer from seat to local account', async t => {
 test('handle failure in IBC transfer', async t => {
   const { orch, ctx, offer, storage } = mocks(
     { transfer: Error('IBC transfer failed') },
-    { USDN: make(USDC, 100n) },
+    { USDNSwapIn: make(USDC, 100n) },
   );
   const { log, seat } = offer;
 
@@ -498,7 +487,7 @@ test('handle failure in IBC transfer', async t => {
 test('handle failure in executeEncodedTx', async t => {
   const { orch, ctx, offer, storage } = mocks(
     { executeEncodedTx: Error('Swap or Lock failed') },
-    { USDN: make(USDC, 100n) },
+    { USDNSwapIn: make(USDC, 100n) },
   );
   const { log, seat } = offer;
 
@@ -526,7 +515,7 @@ test('handle failure in recovery from executeEncodedTx', async t => {
       executeEncodedTx: Error('Swap or Lock failed'),
       transfer: Error('IBC transfer from noble-3 failed'),
     },
-    { USDN: make(USDC, 100n) },
+    { USDNSwapIn: make(USDC, 100n) },
   );
   const { log, seat } = offer;
 
