@@ -34,7 +34,7 @@ sequenceDiagram
 
     flow -->> LCA: localTransfer(3K)
     LCA -->> flow: ack
-    flow -->> LCA: transfer(3K USDC, ICAn)
+    flow -->> LCA: transfer(ICAn, 3K USDC)
     LCA -->> ICAn: 3k USDC
     ICAn -->> portfolio: ack
 
