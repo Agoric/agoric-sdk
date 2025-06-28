@@ -1,6 +1,13 @@
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'module';
-import type { YieldProtocol } from '../src/constants.js';
+import { YieldProtocol } from '../src/constants.js';
+import type {
+  AssetPlaceDef,
+  AssetPlaceRef,
+  MovementDesc,
+  SeatKeyword,
+} from '../src/type-guards.js';
+import { localAccount0 } from '../test/mocks.js';
 
 /** OCap exception: infrastructure to make up for lack of import x from 'foo.txt' */
 export const importText = (specifier: string, base): Promise<string> =>
@@ -15,13 +22,13 @@ export const numeral = (amt: Dollars) => amt.replace(/[$,]/g, '');
 export type RebalanceScenario = {
   description: string;
   before: Partial<Record<YieldProtocol, Dollars>>;
-  proposal: {
-    give: Partial<Record<YieldProtocol, Dollars>>;
-    want: Partial<Record<YieldProtocol, Dollars>>;
-  };
-  offerArgs: Partial<Record<YieldProtocol, Dollars>>;
+  proposal:
+    | { give: {}; want: {} }
+    | { give: { Deposit: Dollars }; want: {} }
+    | { want: { Cash: Dollars }; give: {} };
+  offerArgs?: { flow: (Omit<MovementDesc, 'amount'> & { amount: Dollars })[] };
   after: Partial<Record<YieldProtocol, Dollars>>;
-  payouts: Partial<Record<YieldProtocol, Dollars>>;
+  payouts: { Cash?: Dollars };
   positionsNet: Dollars;
   offerNet: Dollars;
   operationNet: Dollars;
@@ -55,14 +62,15 @@ export const parseCSV = (text: string): Array<string[]> =>
     .split('\n')
     .map(line => parseCSVRow(line));
 
-const parseCell = (prot: YieldProtocol, txt: string) => {
+const parseCell = (prot: YieldProtocol | SeatKeyword, txt: string) => {
   if (!txt.startsWith('$')) return {};
   return { [prot]: txt as Dollars };
 };
 
-const parseProtocolAmounts = ([_A, aave, compound, usdn]: string[]): Partial<
-  Record<YieldProtocol, Dollars>
-> => {
+const parseProtocolAmounts = (
+  row: string[],
+): Partial<Record<YieldProtocol, Dollars>> => {
+  const [aave, compound, usdn] = row.slice(6);
   return {
     ...parseCell('Aave', aave),
     ...parseCell('Compound', compound),
@@ -74,7 +82,17 @@ export const grokRebalanceScenarios = (data: Array<string[]>) => {
   const scenarios: Record<string, RebalanceScenario> = {};
   let currentScenario: Partial<RebalanceScenario> = {};
 
+  let hd: string[] = [];
+  let emptyHdCol = -1;
+  let rownum = 0;
+
   for (const row of data) {
+    rownum += 1;
+    if (!hd.length) {
+      hd = row;
+      emptyHdCol = hd.findLastIndex(c => c.trim().length === 0) - 2;
+      // console.debug(rownum, { emptyHdCol, hd, row });
+    }
     // Skip completely empty rows or rows with only empty strings
     if (row.length === 0 || row.every(cell => !cell.trim())) {
       if (currentScenario.description) {
@@ -85,34 +103,68 @@ export const grokRebalanceScenarios = (data: Array<string[]>) => {
       continue;
     }
 
-    const [label, aave, compound, usdn, E, F, G] = row;
+    const [label, aave, compound, usdn] = [row[0], ...row.slice(6)];
+    const [_l, Deposit, Cash, agoricLCA, nobleICA, acctEVM] = row;
+    const [T2A, T2B, T2C] = row.slice(emptyHdCol);
 
     // Skip header row
     if (label === '' && aave === 'Aave' && compound === 'Compound') {
       continue;
     }
 
-    if (label === 'Description') {
-      currentScenario.description = E || '';
-    } else if (label === 'Before') {
-      currentScenario.before = parseProtocolAmounts(row);
-    } else if (label === 'Offer: Give') {
-      currentScenario.proposal = {
-        give: parseProtocolAmounts(row),
-        want: {},
-      };
-    } else if (label === 'Offer: Want') {
-      currentScenario.proposal!.want = parseProtocolAmounts(row);
-    } else if (label === 'offerArgs') {
-      currentScenario.offerArgs = parseProtocolAmounts(row);
-    } else if (label === 'After') {
-      // console.debug('After row', row);
-      currentScenario.after = parseProtocolAmounts(row);
-      currentScenario.positionsNet = F as Dollars;
-    } else if (label === 'Payouts') {
-      currentScenario.payouts = parseProtocolAmounts(row);
-      currentScenario.offerNet = F as Dollars;
-      currentScenario.operationNet = G as Dollars;
+    switch (label) {
+      case 'Description':
+        currentScenario.description = T2A || '';
+        break;
+      case 'Before':
+        currentScenario.before = parseProtocolAmounts(row);
+        break;
+      case 'Offer: Give':
+        currentScenario.proposal ||= { give: {}, want: {} };
+        currentScenario.proposal.give = parseCell('Deposit', Deposit);
+        break;
+      case 'Offer: Want':
+        currentScenario.proposal!.want = parseProtocolAmounts(row);
+        break;
+      case 'flow move': {
+        currentScenario.offerArgs ||= { flow: [] };
+        const { flow } = currentScenario.offerArgs;
+
+        const asPlaceDef = (s: string): AssetPlaceDef => {
+          if (s.startsWith('Seat: '))
+            return s.slice('Seat: '.length) as SeatKeyword;
+          if (s.match(/^LCA/)) return `cosmos:agoric-3:${localAccount0}`;
+          if (s.match(/^ICA/)) return `cosmos:noble-1:noble1deadbeef`;
+          if (s.match(/^GMP/)) return `eip155:8453:0xe0d43135`;
+          if (Object.keys(YieldProtocol).includes(s))
+            return { open: s as YieldProtocol };
+          throw Error(s);
+        };
+
+        if (!hd.length) throw Error('missing header');
+        const [srcCol, destCol] = ['src', 'dest'].map(k =>
+          row.findIndex(s => s === k),
+        );
+        assert(srcCol >= 0, `src not found in row ${rownum}`);
+        assert(destCol >= 0, `dest not found in row ${rownum}`);
+        // console.debug({ srcCol, destCol, hd, flow });
+        const src = asPlaceDef(hd[srcCol]) as AssetPlaceRef;
+        const dest = asPlaceDef(hd[destCol]);
+
+        const { give = {} } = currentScenario.proposal || {};
+        const amount = T2B as Dollars;
+        assert(amount && amount.startsWith('$'), `bad amount in row ${rownum}`);
+
+        flow.push({ src, dest, amount });
+      }
+      case 'After':
+        // console.debug('After row', row);
+        currentScenario.after = parseProtocolAmounts(row);
+        currentScenario.positionsNet = T2B as Dollars;
+      case 'Payouts':
+        currentScenario.payouts = parseCell('Cash', Cash);
+        currentScenario.offerNet = T2B as Dollars;
+        currentScenario.operationNet = T2C as Dollars;
       // console.debug(
       //   'Payouts row',
       //   row,

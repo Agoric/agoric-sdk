@@ -2,14 +2,23 @@
  * @file Patterns (aka type guards), especially for the external interface
  * of the contract.
  */
-import { type Amount, type Brand, type NatValue } from '@agoric/ertp';
+import {
+  type Amount,
+  type Brand,
+  type NatAmount,
+  type NatValue,
+} from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
-import type { CaipChainId, OrchestrationAccount } from '@agoric/orchestration';
+import type {
+  AccountId,
+  CaipChainId,
+  OrchestrationAccount,
+} from '@agoric/orchestration';
 import { type ContractCall } from '@agoric/orchestration/src/axelar-types.js';
 import type { AmountKeywordRecord } from '@agoric/zoe';
 import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
 import { M } from '@endo/patterns';
-import { AxelarChains, YieldProtocol } from './constants.js';
+import { AxelarChains, YieldProtocol, SupportedChain } from './constants.js';
 
 const { fromEntries, keys } = Object;
 
@@ -30,115 +39,52 @@ export type CompoundGive = {
   Compound: Amount<'nat'>;
 };
 export type GmpGive = {} | AaveGive | CompoundGive | (AaveGive & CompoundGive);
-type USDNGive = { NobleFees?: Amount<'nat'> } & (
-  | { USDNSwapIn: Amount<'nat'> }
-  | { USDNLock: Amount<'nat'> }
-  | { USDNSwapOut: Amount<'nat'> }
-  | { USDNUnlock: Amount<'nat'> }
-);
 
 export type OpenPortfolioGive = { Access?: Amount<'nat'> } & (
-  | USDNGive
+  | { Deposit: NatAmount }
   | GmpGive
   | {}
 );
 
-type USDNWant = { USDNSwapOut: Amount<'nat'> } | { USDNUnlock: Amount<'nat'> };
-type RebalanceWant = USDNWant; // TODO: add other protocols
-
 export type ProposalType = {
   openPortfolio: { give: OpenPortfolioGive };
   rebalance:
-    | { give: OpenPortfolioGive; want: {} }
-    | { want: RebalanceWant; give: {} };
+    | { give: OpenPortfolioGive; want: {} } // XXX Access is incoherent here
+    | { want: { Cash: NatAmount }; give: {} };
 };
 
-const YieldProtocolShape = M.or(...keys(YieldProtocol));
 export const makeProposalShapes = (
   usdcBrand: Brand<'nat'>,
   accessBrand?: Brand<'nat'>,
 ) => {
   // TODO: Update usdcAmountShape, to include BLD/aUSDC after discussion with Axelar team
   const usdcAmountShape = makeNatAmountShape(usdcBrand);
-  const AaveGiveShape = harden({
-    Aave: usdcAmountShape,
-    AaveGmp: usdcAmountShape,
-    AaveAccount: usdcAmountShape,
-  });
-  const CompoundGiveShape = harden({
-    Compound: usdcAmountShape,
-    CompoundGmp: usdcAmountShape,
-    CompoundAccount: usdcAmountShape,
-  });
-
-  // A pattern that checks the types of all possible keys if they are present,
-  // and that there are no other keys.
-  const allGiveKeysShape = M.splitRecord(
-    {},
-    {
-      NobleFees: usdcAmountShape,
-      USDNSwapIn: usdcAmountShape,
-      USDNLock: usdcAmountShape,
-      USDNSwapOut: usdcAmountShape,
-      USDNUnlock: usdcAmountShape,
-      ...AaveGiveShape,
-      ...CompoundGiveShape,
-    },
-    {}, // rest must be empty
-  );
-
-  // Rule: At most one of the USDN keys can be present.
-  const usdnKeys = ['USDNSwapIn', 'USDNLock', 'USDNSwapOut', 'USDNUnlock'];
-  const usdnMutexRule = M.and(
-    ...usdnKeys
-      .flatMap((k1, i) => usdnKeys.slice(i + 1).map(k2 => [k1, k2]))
-      .map(([k1, k2]) =>
-        M.not(M.splitRecord({ [k1]: M.any(), [k2]: M.any() })),
-      ),
-  );
-
-  // Rule: All or none of a set of keys must be present.
-  const makeAllOrNoneRule = (protocolKeys: string[]) => {
-    const implications = protocolKeys.flatMap(k1 =>
-      protocolKeys.map(k2 =>
-        k1 === k2
-          ? null
-          : M.or(
-              M.not(M.splitRecord({ [k1]: M.any() })),
-              M.splitRecord({ [k2]: M.any() }),
-            ),
-      ),
-    );
-    return M.and(...implications.filter(Boolean));
-  };
-
-  const aaveAllOrNoneRule = makeAllOrNoneRule(keys(AaveGiveShape));
-  const compoundAllOrNoneRule = makeAllOrNoneRule(keys(CompoundGiveShape));
-
-  const giveShape = M.and(
-    allGiveKeysShape,
-    usdnMutexRule,
-    aaveAllOrNoneRule,
-    compoundAllOrNoneRule,
-  );
 
   // The give for openPortfolio and rebalance differ only in required properties
-  const giveWith = accessOpt => M.splitRecord(accessOpt, {}, giveShape);
+  const giveWith = accessOpt =>
+    M.splitRecord(accessOpt, {
+      Deposit: usdcAmountShape,
+      NobleFees: usdcAmountShape,
+      Aave: usdcAmountShape,
+      AaveGmp: usdcAmountShape,
+      AaveAccount: usdcAmountShape,
+      Compound: usdcAmountShape,
+      CompoundGmp: usdcAmountShape,
+      CompoundAccount: usdcAmountShape,
+    });
 
   // {USDNSwapOut: Amount<'nat'>} | { USDNUnlock: Amount<'nat'> }
-  const rebalanceWantShape = M.or(
-    //TODO: add other protocols
-    { USDNSwapOut: usdcAmountShape },
-    { USDNUnlock: usdcAmountShape },
+  const rebalanceWantShape = M.splitRecord(
+    { Cash: usdcAmountShape },
+    { NobleFees: usdcAmountShape },
+    {},
   );
-
+  const accessShape = accessBrand
+    ? { Access: makeNatAmountShape(accessBrand, 1n) }
+    : {};
   return {
     openPortfolio: M.splitRecord(
-      {
-        give: giveWith(
-          accessBrand ? { Access: makeNatAmountShape(accessBrand, 1n) } : {},
-        ),
-      },
+      { give: giveWith(accessShape) },
       { want: {}, exit: M.any() },
       {},
     ) as TypedPattern<ProposalType['openPortfolio']>,
@@ -153,29 +99,90 @@ export const makeProposalShapes = (
   };
 };
 
-type OfferArgs1 = {
-  destinationEVMChain?: AxelarChain;
-  usdnOut?: NatValue;
+type AxelarOfferArgs = {
+  destinationEVMChain?: AxelarChain; // TODO: let AccountId express EVM chain
 };
 
-const offerArgsShape: TypedPattern<OfferArgs1> = M.splitRecord(
-  {},
-  {
-    destinationEVMChain: M.or(...keys(AxelarChains)),
-    usdnOut: M.nat(),
-  },
+type PoolPlace = {
+  protocol: YieldProtocol;
+  // ... chain, pool #, ...
+};
+
+const PoolPlaces = {
+  usdn: { protocol: 'USDN', vault: null },
+  usdnLock: { protocol: 'USDN', vault: 1 },
+};
+harden(PoolPlaces);
+
+type PoolKey = keyof typeof PoolPlaces;
+type BasisPoints = NatValue;
+
+type AllocationStrategyInfo = {
+  type: 'target-allocation';
+  allocation: Record<PoolKey, BasisPoints>; // basis points
+  // in basis-points
+};
+
+type XXXOfferArgs = {
+  flow: MovementDesc[];
+  strategy: AllocationStrategyInfo;
+};
+
+export type SeatKeyword = 'Cash' | 'Deposit';
+export const seatKeywords: SeatKeyword[] = ['Cash', 'Deposit'];
+harden(seatKeywords);
+
+// TODO: how to ensure SeatKeyword is disjoint with SupportedChain?
+
+export type AssetPlaceRef =
+  | SeatKeyword
+  | `${SupportedChain}.makeAccount()`
+  | number;
+const PositionRefShape = M.number();
+const AssetPlaceRefShape = M.or(
+  ...seatKeywords,
+  ...keys(PoolPlaces),
+  PositionRefShape,
 );
+export type AssetPlaceDef =
+  | AssetPlaceRef
+  | { open: YieldProtocol; chainId?: CaipChainId };
+const AssetPlaceDefShap = M.or(AssetPlaceRefShape, {
+  open: M.or(...keys(PoolPlaces)),
+});
+export type MovementDesc = {
+  amount: NatAmount;
+  src: AssetPlaceRef;
+  dest: AssetPlaceDef;
+};
 
 export type OfferArgsFor = {
-  openPortfolio: OfferArgs1;
-  rebalance: OfferArgs1;
+  openPortfolio: {} | XXXOfferArgs | AxelarOfferArgs;
+  rebalance: {} | XXXOfferArgs;
 };
 
-export const OfferArgsShapeFor = {
-  openPortfolio: offerArgsShape,
-  rebalance: offerArgsShape,
+export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
+  const usdcAmountShape = makeNatAmountShape(usdcBrand, 1n);
+  const movementDescShape = harden({
+    amount: usdcAmountShape,
+    src: AssetPlaceRefShape,
+    dest: AssetPlaceDefShap,
+  });
+
+  return {
+    openPortfolio: M.splitRecord(
+      {},
+      {
+        flow: M.arrayOf(movementDescShape),
+        destinationEVMChain: M.or(...keys(AxelarChains)),
+      },
+    ) as TypedPattern<OfferArgsFor['openPortfolio']>,
+    rebalance: M.or({}, M.arrayOf(movementDescShape)) as TypedPattern<
+      OfferArgsFor['rebalance']
+    >,
+  };
 };
-harden(OfferArgsShapeFor);
+harden(makeOfferArgsShapes);
 
 export type EVMContractAddresses = {
   aavePool: `0x${string}`;
@@ -262,7 +269,7 @@ export type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
 export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>; // TODO: move to type-guards as external interface?
 
 /** vstorage path for portfolio, under published.ymax0 */
-export const makePortfolioPath = (id: number) => [`portfolio${id}`];
+export const makePortfolioPath = (id: number) => [`portfolio${id}`]; // ?portfolio=3
 export const makePositionPath = (parent: number, id: number) => [
   `portfolio${parent}`,
   'positions',

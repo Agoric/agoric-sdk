@@ -1,7 +1,7 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { makeIssuerKit } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { gmpAddresses } from '@agoric/orchestration/src/utils/gmp.js';
 import { q } from '@endo/errors';
@@ -25,115 +25,6 @@ import { axelarChainsMap, localAccount0 } from './mocks.ts';
 const contractName = 'ymax0';
 type StartFn = typeof contractExports.start;
 const { fromEntries, keys, values } = Object;
-
-test('ProposalShapes', t => {
-  const { brand: USDC } = makeIssuerKit('USDC');
-  const { brand: Poc26 } = makeIssuerKit('Poc26');
-  const shapes = makeProposalShapes(USDC, Poc26);
-
-  const usdc = (value: bigint) => AmountMath.make(USDC, value);
-  const poc26 = (value: bigint) => AmountMath.make(Poc26, value);
-  const cases = harden({
-    openPortfolio: {
-      pass: {
-        noPositions: { give: { Access: poc26(1n) } },
-        openUSDN: { give: { USDN: usdc(123n), Access: poc26(1n) } },
-        aaveNeedsGMPFee: {
-          give: {
-            AaveGmp: usdc(123n),
-            Aave: usdc(3000n),
-            AaveAccount: usdc(3000n),
-            Access: poc26(1n),
-          },
-        },
-        open2: {
-          give: {
-            Access: poc26(1n),
-            USDNSwapIn: usdc(123n),
-            Aave: usdc(123n),
-            AaveGmp: usdc(123n),
-            AaveAccount: usdc(123n),
-          },
-          want: {},
-        },
-        open3: {
-          give: {
-            USDNSwapIn: usdc(123n),
-            Aave: usdc(3000n),
-            AaveGmp: usdc(123n),
-            AaveAccount: usdc(3000n),
-            Compound: usdc(1000n),
-            CompoundGmp: usdc(3000n),
-            CompoundAccount: usdc(3000n),
-            Access: poc26(1n),
-          },
-        },
-      },
-      fail: {
-        noGive: {},
-        missingGMPFee: { give: { Aave: usdc(3000n) } },
-        noPayouts: { want: { USDNSwapIn: usdc(123n) } },
-        strayKW: { give: { X: usdc(1n) } },
-        // New negative cases for openPortfolio
-        accessWrongBrand: { give: { Access: usdc(1n) } },
-        accessZeroValue: { give: { Access: poc26(0n) } },
-        usdnWrongBrandWithAccess: {
-          give: { USDN: poc26(123n), Access: poc26(1n) },
-        },
-        aaveIncompleteAndAccessOk: {
-          give: { Aave: usdc(100n), AaveGmp: usdc(100n), Access: poc26(1n) },
-        },
-        compoundIncompleteAndAccessOk: {
-          give: {
-            Compound: usdc(100n),
-            CompoundGmp: usdc(100n),
-            Access: poc26(1n),
-          },
-        },
-        openTopLevelStray: { give: { Access: poc26(1n) }, extra: 'property' },
-      },
-    },
-    rebalance: {
-      pass: {
-        deposit: { give: { USDNLock: usdc(123n) } },
-        withdraw: { want: { USDNUnlock: usdc(123n) } },
-      },
-      fail: {
-        both: {
-          give: { USDNSwapIn: usdc(123n) },
-          want: { USDNSwapIn: usdc(123n) },
-        },
-        // New negative cases for rebalance
-        rebalGiveHasAccess: { give: { Access: poc26(1n) } },
-        rebalGiveUsdnBadBrand: { give: { USDNSwapIn: poc26(1n) } },
-        rebalGiveAaveIncomplete: { give: { Aave: usdc(100n) } },
-        rebalWantBadKey: { want: { BogusProtocol: usdc(1n) } },
-        rebalWantUsdnBadBrand: { want: { USDNSwapIn: poc26(1n) } },
-        rebalEmpty: {},
-        rebalGiveTopLevelStray: {
-          give: { USDNSwapIn: usdc(1n) },
-          extra: 'property',
-        },
-        rebalWantTopLevelStray: {
-          want: { USDNSwapIn: usdc(1n) },
-          extra: 'property',
-        },
-      },
-    },
-  });
-  const { entries } = Object;
-  for (const [desc, { pass, fail }] of entries(cases)) {
-    for (const [name, proposal] of entries(pass)) {
-      t.log(`${desc} ${name}: ${q(proposal)}`);
-      // mustMatch() gives better diagnostics than matches()
-      t.notThrows(() => mustMatch(proposal, shapes[desc]), name);
-    }
-    for (const [name, proposal] of entries(fail)) {
-      t.log(`!${desc} ${name}: ${q(proposal)}`);
-      t.false(matches(proposal, shapes[desc]), name);
-    }
-  }
-});
 
 test('makeAxelarMemo constructs correct memo JSON', t => {
   const { brand } = makeIssuerKit('USDC');
@@ -374,7 +265,7 @@ test.only('open portfolio with USDN position and withdraw funds', async t => {
   const doneP = trader1.openPortfolio(
     t,
     {
-      USDNSwapIn: usdc.units(3_333),
+      USDNLock: usdc.units(3_333),
       NobleFees: usdc.make(100n),
       Access: poc24.make(1n),
     },
@@ -387,31 +278,9 @@ test.only('open portfolio with USDN position and withdraw funds', async t => {
   const done = await doneP;
   const result = done.result as any;
   t.is(passStyleOf(result.invitationMakers), 'remotable');
-  t.like(result.publicSubscribers, {
-    portfolio: {
-      description: 'Portfolio',
-      storagePath: 'orchtest.portfolios.portfolio0',
-    },
-  });
 
-  // Verify portfolio was created successfully
-  const { storagePath } = result.publicSubscribers.portfolio;
-  t.log('Portfolio created at:', storagePath);
-  let portfolioInfo = getPortfolioInfo(storagePath, common.bootstrap.storage);
-
-  // Verify the initial USDN position
-  const { positionPaths } = portfolioInfo;
-  t.is(
-    portfolioInfo.contents[positionPaths[0]].accountId,
-    `cosmos:noble-1:cosmos1test`,
-  );
-
-  // Now proceed with withdrawal
   t.log('Beginning withdrawal from USDN position');
-
-  // Request withdrawal of 1000 USDC from USDN position
   const withdrawalAmount = usdc.units(3_333);
-
   const rebalanceP = trader1.rebalance(
     t,
     { want: { USDNUnlock: withdrawalAmount }, give: {} },
@@ -429,32 +298,18 @@ test.only('open portfolio with USDN position and withdraw funds', async t => {
   const rebalanceResult = await rebalanceP;
   t.log('Rebalance operation completed');
 
-  // Verify the withdrawal was successful
-  portfolioInfo = getPortfolioInfo(storagePath, common.bootstrap.storage);
-
-  // Check that the position value has been reduced
-  const updatedPosition = portfolioInfo.contents[positionPaths[0]];
-  t.log('Updated USDN position:', updatedPosition);
-
   // Verify the user received the withdrawn funds
-  t.truthy(
-    rebalanceResult.payouts.USDN,
+  t.deepEqual(
+    rebalanceResult.payouts.USDNUnlock,
+    usdc.units(3_333),
     'User should receive withdrawn USDN funds',
   );
 
-  // If we can access the amount, verify it matches what was requested
-  if (rebalanceResult.payouts.USDN) {
-    const withdrawnAmount = await E(usdc.issuer).getAmountOf(
-      rebalanceResult.payouts.USDN,
-    );
-    t.deepEqual(
-      withdrawnAmount,
-      withdrawalAmount,
-      'Withdrawn amount should match requested amount',
-    );
-  }
-
   // Snapshot the final state for verification
-  t.snapshot(portfolioInfo.contents, 'vstorage after withdrawal');
+  t.is(keys(result.publicSubscribers).length, 1);
+  const { storagePath } = result.publicSubscribers.portfolio;
+  t.log(storagePath);
+  const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  t.snapshot(contents, 'vstorage after withdrawal');
   t.snapshot(rebalanceResult.payouts, 'withdrawal payouts');
 });

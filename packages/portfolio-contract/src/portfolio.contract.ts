@@ -31,8 +31,8 @@ import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import {
   AxelarChainsMapShape,
+  makeOfferArgsShapes,
   makeProposalShapes,
-  OfferArgsShapeFor,
   type AxelarChainsMap,
   type LocalAccount,
   type NobleAccount,
@@ -89,6 +89,7 @@ export const contract = async (
   });
 
   const proposalShapes = makeProposalShapes(brands.USDC, brands.Access);
+  const offerArgsShapes = makeOfferArgsShapes(brands.USDC);
 
   const inertSubscriber: ResolvedPublicTopic<never>['subscriber'] = {
     getUpdateSince() {
@@ -115,6 +116,7 @@ export const contract = async (
     vowTools,
     rebalance,
     proposalShapes,
+    offerArgsShapes,
     axelarChainsMap,
     timer: timerService,
     portfoliosNode: E(storageNode).makeChildNode('portfolios'),
@@ -144,7 +146,7 @@ export const contract = async (
       trace('makeOpenPortfolioInvitation');
       return zcf.makeInvitation(
         (seat, offerArgs) => {
-          mustMatch(offerArgs, OfferArgsShapeFor.openPortfolio);
+          mustMatch(offerArgs, offerArgsShapes.openPortfolio);
           return openPortfolio(seat, offerArgs);
         },
         'openPortfolio',

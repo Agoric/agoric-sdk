@@ -13,6 +13,17 @@ export const YieldProtocol = /** @type {const} */ ({
 harden(YieldProtocol);
 
 /**
+ * @enum {(typeof SupportedChain)[keyof typeof SupportedChain]}
+ */
+export const SupportedChain = /** @type {const} */ ({
+  agoric: 'agoric',
+  noble: 'noble',
+  // ... base etc.
+  // TODO: check privateArgs for chainInfo for all of these
+});
+harden(SupportedChain);
+
+/**
  * @enum {(typeof AxelarChains)[keyof typeof AxelarChains]}
  */
 export const AxelarChains = /** @type {const} */ ({

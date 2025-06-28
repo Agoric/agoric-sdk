@@ -5,7 +5,6 @@ import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import { AmountMath } from '@agoric/ertp';
 import { makeTracer, mustMatch, type Remote } from '@agoric/internal';
-import { decodeBase64 } from '@endo/base64';
 import type {
   Marshaller,
   StorageNode,
@@ -25,7 +24,7 @@ import type { VTransferIBCEvent } from '@agoric/vats';
 import { VowShape, type Vow, type VowKit, type VowTools } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
-import { atob } from '@endo/base64';
+import { atob, decodeBase64 } from '@endo/base64';
 import type { ERef } from '@endo/far';
 import { E } from '@endo/far';
 import type { CopyRecord } from '@endo/pass-style';
@@ -34,16 +33,17 @@ import type { HostInterface } from '../../async-flow/src/types.js';
 import { YieldProtocol } from './constants.js';
 import type { AxelarChainsMap, NobleAccount } from './type-guards.js';
 import {
-  OfferArgsShapeFor,
   makeFlowPath,
   makePortfolioPath,
   makePositionPath,
   type LocalAccount,
   type OfferArgsFor,
   type makeProposalShapes,
+  type makeOfferArgsShapes,
 } from './type-guards.js';
 import { X } from '@endo/errors';
 import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
+import { Fail, q } from '@endo/errors';
 
 const trace = makeTracer('PortExo');
 const { assign, values } = Object;
@@ -177,6 +177,7 @@ export const preparePortfolioKit = (
     rebalance,
     timer,
     proposalShapes,
+    offerArgsShapes,
     vowTools,
     zcf,
     portfoliosNode,
@@ -191,6 +192,7 @@ export const preparePortfolioKit = (
     ) => Vow<any>; // XXX HostForGuest???
     timer: Remote<TimerService>;
     proposalShapes: ReturnType<typeof makeProposalShapes>;
+    offerArgsShapes: ReturnType<typeof makeOfferArgsShapes>;
     vowTools: VowTools;
     zcf: ZCF;
     portfoliosNode: ERef<StorageNode>;
@@ -201,6 +203,7 @@ export const preparePortfolioKit = (
   const makePathNode = (path: string[]) => {
     let node = portfoliosNode;
     for (const segment of path) {
+      // XXX we don't cache child nodes
       node = E(node).makeChildNode(segment);
     }
     return node;
@@ -228,7 +231,6 @@ export const preparePortfolioKit = (
       positionId,
       accountId,
       ...emptyTransferState,
-      usdcBrand: undefined as Brand<'nat'> | undefined,
     }),
     {
       getPositionId() {
@@ -236,10 +238,6 @@ export const preparePortfolioKit = (
       },
       getYieldProtocol() {
         return 'USDN';
-      },
-      getBrand() {
-        assert(this.state.usdcBrand, 'USDC brand not yet initialized');
-        return this.state.usdcBrand;
       },
       publishStatus() {
         const {
@@ -260,9 +258,6 @@ export const preparePortfolioKit = (
         });
       },
       recordTransferIn(amount: Amount<'nat'>) {
-        if (!this.state.usdcBrand) {
-          this.state.usdcBrand = amount.brand;
-        }
         return recordTransferIn(amount, this.state, this.self);
       },
       recordTransferOut(amount: Amount<'nat'>) {
@@ -425,6 +420,14 @@ export const preparePortfolioKit = (
         getPortfolioId() {
           return this.state.portfolioId;
         },
+        getAccount(id: AccountId) {
+          const { state } = this;
+          for (const acct of [state.nobleAccount, state.localAccount]) {
+            const acctId = coerceAccountId(acct.getAddress());
+            if (acctId === id) return acct;
+          }
+          throw Fail`no such account: ${q(id)}`;
+        },
         getGMPAddress(protocol: YieldProtocol) {
           const { positions } = this.state;
           for (const pos of positions.values()) {
@@ -436,6 +439,10 @@ export const preparePortfolioKit = (
             }
           }
           assert.fail(`no position for ${protocol}`);
+        },
+        getPosition(key: number) {
+          const { positions } = this.state;
+          return positions.get(key);
         },
       },
       reporter: {
@@ -547,10 +554,9 @@ export const preparePortfolioKit = (
       },
       rebalanceHandler: {
         async handle(seat: ZCFSeat, offerArgs: unknown) {
+          mustMatch(offerArgs, offerArgsShapes.rebalance);
           const { reader, manager, reporter } = this.facets;
-          const keeper = { reader, manager, reporter };
-          mustMatch(offerArgs, OfferArgsShapeFor.rebalance);
-          return rebalance(seat, offerArgs, keeper);
+          return rebalance(seat, offerArgs, { reader, manager, reporter });
         },
       },
       invitationMakers: {

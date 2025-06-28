@@ -17,7 +17,6 @@ import type {
   CosmosChainAddress,
   Denom,
   DenomAmount,
-  OrchestrationAccount,
   OrchestrationFlow,
   Orchestrator,
 } from '@agoric/orchestration';
@@ -25,7 +24,6 @@ import {
   AxelarGMPMessageType,
   type AxelarGmpOutgoingMemo,
 } from '@agoric/orchestration/src/axelar-types.js';
-import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import {
   buildGMPPayload,
   gmpAddresses,
@@ -55,9 +53,10 @@ import type {
   ProposalType,
 } from './type-guards.ts';
 import { GMPArgsShape } from './type-guards.ts';
+import { maybeFlip, type AssetMovement, trackFlow } from './run-flow.ts';
 // TODO: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
-const trace = makeTracer('PortF');
+export const trace = makeTracer('PortF');
 const { add } = AmountMath;
 const { keys } = Object;
 
@@ -98,7 +97,7 @@ export const makeSwapLockMessages = (
     routes: [{ poolId, denomTo }],
     min: { denom: denomTo, amount: `${usdnOut || usdcIn}` },
   });
-  if (!usdnOut) {
+  if (usdnOut === undefined) {
     const protoMessages = [Any.toJSON(MsgSwap.toProtoMsg(msgSwap))];
     return { msgSwap, protoMessages };
   }
@@ -116,28 +115,30 @@ export const makeSwapLockMessages = (
 
 export const makeUnlockSwapMessages = (
   nobleAddr: CosmosChainAddress,
-  usdnIn: bigint,
+  usdcOut: bigint,
   {
     poolId = 0n,
     denom = 'uusdn',
     denomTo = 'uusdc',
     vault = 1, // VaultType.STAKED
-    usdcOut = undefined as bigint | undefined,
+    usdnOut = undefined as bigint | undefined,
   } = {},
 ) => {
-  // Step 1: MsgUnlock
+  // MsgSwap (uusdn → uusdc)
+  const msgSwap = MsgSwap.fromPartial({
+    signer: nobleAddr.value,
+    amount: { denom, amount: `${usdnOut || usdcOut}` },
+    routes: [{ poolId, denomTo }],
+    min: { denom: denomTo, amount: `${usdnOut || usdcOut}` },
+  });
+  if (usdnOut === undefined) {
+    const protoMessages = [Any.toJSON(MsgSwap.toProtoMsg(msgSwap))];
+    return { msgSwap, protoMessages };
+  }
   const msgUnlock = MsgUnlock.fromPartial({
     signer: nobleAddr.value,
     vault,
-    amount: `${usdnIn}`,
-  });
-
-  // Step 2: MsgSwap (uusdn → uusdc)
-  const msgSwap = MsgSwap.fromPartial({
-    signer: nobleAddr.value,
-    amount: { denom, amount: `${usdnIn}` },
-    routes: [{ poolId, denomTo }],
-    min: { denom: denomTo, amount: `${usdcOut || usdnIn}` },
+    amount: `${usdnOut}`,
   });
 
   const protoMessages = [
@@ -577,141 +578,95 @@ const provideAccountInfo = async <C extends ChainAccountKey>(
   }
 };
 
-const addToUSDNPosition = async (
+const changeUSDNPosition = async (
   ctx: PortfolioInstanceContext,
   seat: ZCFSeat,
   lca: LocalAccount,
   ica: NobleAccount,
   pos: USDNPosition,
-  reporter: GuestInterface<PortfolioKit['reporter']>,
-  { USDN, NobleFees }: { USDN: Amount<'nat'>; NobleFees?: Amount<'nat'> },
-  usdnOut: bigint = USDN.value,
-) => {
-  const amounts = harden({ USDN, ...(NobleFees ? { NobleFees } : {}) });
-  const denom = NonNullish(ctx.chainHubTools.getDenom(USDN.brand));
-  const volume: DenomAmount = { denom, value: USDN.value };
-  const withFees = NobleFees ? add(USDN, NobleFees) : USDN;
-
-  const nobleAddr = ica.getAddress();
-  await trackFlow(reporter, [
-    {
-      how: 'localTransfer',
-      src: { seat, keyword: 'USDN' },
-      dest: { account: lca },
-      amount: withFees,
-      apply: async () => {
-        await ctx.zoeTools.localTransfer(seat, lca, amounts);
-      },
-      recover: async () => {
-        await ctx.zoeTools.withdrawToSeat(lca, seat, amounts);
-      },
-    },
-    {
-      how: 'IBC transfer',
-      src: { account: lca },
-      dest: { account: ica },
-      amount: withFees,
-      apply: async () => {
-        await lca.transfer(nobleAddr, volume);
-      },
-      recover: async () => {
-        const nobleAmount = { ...volume, denom: 'uusdc' };
-        await ica.transfer(lca.getAddress(), nobleAmount);
-      },
-    },
-    {
-      how: 'Swap, Lock',
-      amount: USDN,
-      src: { account: ica },
-      dest: { pos },
-      apply: async () => {
-        // NOTE: proposalShape guarantees that amount.brand is USDC
-        const { msgSwap, msgLock, protoMessages } = makeSwapLockMessages(
-          nobleAddr,
-          USDN.value,
-          { usdnOut },
-        );
-
-        trace('executing', [msgSwap, msgLock].filter(Boolean));
-        const result = await ica.executeEncodedTx(protoMessages);
-        trace('TODO: decode Swap, Lock result; detect errors', result);
-      },
-      // XXX consider putting withdaw here
-      recover: async () => {},
-    },
-  ]);
-};
-
-const withdrawFromUSDNPosition = async (
-  ctx: PortfolioInstanceContext,
-  seat: ZCFSeat,
-  pos: USDNPosition,
   kit: GuestInterface<PortfolioKit>,
-  usdcOut: bigint = 0n,
+  { give, want }: ProposalType['rebalance'],
+  usdnOut?: bigint,
 ) => {
-  const ica = kit.reader.getNobleICA() as unknown as NobleAccount;
-  const localAcct = kit.reader.getLCA() as unknown as LocalAccount;
+  const isDeposit = 'USDNSwapIn' in give || 'USDNLock' in give;
+  const isWithdrawal = 'USDNSwapOut' in want || 'USDNUnlock' in want;
+  assert(isDeposit || isWithdrawal);
 
-  const usdcBrand = pos.getBrand(); // Assume this gets the brand of USDC
-  const denom = 'uusdc';
-  const volume: DenomAmount = { denom, value: usdcOut };
-  const amount: Amount<'nat'> = { brand: usdcBrand, value: usdcOut };
+  const kwUSDNGive = keys(give).find(key => key.startsWith('USDN'));
+  const kwUSDNWant = keys(want).find(key => key.startsWith('USDN'));
+  const keyword = kwUSDNGive || kwUSDNWant;
+  assert(keyword);
 
-  await trackFlow(kit.reporter, [
-    {
-      how: 'Unlock, Swap',
-      src: { pos },
-      dest: { account: ica },
-      amount,
-      apply: async () => {
-        const { protoMessages, msgUnlock, msgSwap } = makeUnlockSwapMessages(
-          ica.getAddress(),
-          usdcOut,
-          {
-            poolId: 0n,
-            denom: 'uusdn',
-            denomTo: 'uusdc',
-            vault: 1, // Ensure this matches vault in MsgLock
-            usdcOut,
-          },
-        );
+  const USDNAmt = kwUSDNGive ? give[kwUSDNGive] : want[kwUSDNWant as string];
+  const { brand } = USDNAmt;
+  const denom = NonNullish(ctx.chainHubTools.getDenom(brand));
 
-        trace('executing unlock+swap', [msgUnlock, msgSwap]);
-        const swapOnlyTODO = protoMessages.slice(1, 2); // Optional: limit to swap
-        const result = await ica.executeEncodedTx(swapOnlyTODO);
-        trace('unlock+swap result', result);
-      },
-      recover: async () => {
-        trace('⚠️ unlock/swap failed.');
-      },
+  const feeAmounts = 'NobleFees' in give ? { NobleFees: give.NobleFees } : {};
+  const withFees =
+    'NobleFees' in give ? add(USDNAmt, feeAmounts.NobleFees) : USDNAmt;
+  const amounts = isDeposit ? give : want;
+
+  const toTransfer: DenomAmount = { denom, value: withFees.value };
+  const volume: DenomAmount = { denom, value: USDNAmt.value };
+
+  const seatTransfer = maybeFlip(isWithdrawal, {
+    how: 'seat transfer',
+    src: { seat, keyword },
+    dest: { account: lca },
+    amount: withFees,
+    apply: async () => ctx.zoeTools.localTransfer(seat, lca, amounts),
+    recover: async () => ctx.zoeTools.withdrawToSeat(lca, seat, amounts),
+  });
+
+  const ibcTransfer = maybeFlip(isWithdrawal, {
+    how: 'IBC transfer',
+    src: { account: lca },
+    dest: { account: ica },
+    amount: withFees,
+    apply: async () => lca.transfer(nobleAddr, toTransfer),
+    recover: async () => {
+      const nobleAmount = { ...toTransfer, denom: 'uusdc' };
+      await ica.transfer(lca.getAddress(), nobleAmount);
     },
-    {
-      how: 'IBC transfer',
-      src: { account: ica },
-      dest: { account: localAcct },
-      amount,
-      apply: async () => {
-        await ica.transfer(localAcct.getAddress(), volume);
-      },
-      recover: async () => {
-        trace('⚠️ recover to position.');
-        await pos.recordTransferIn(amount);
-      },
+  });
+
+  const isLock = ['USDNLock', 'USDNUnlock'].includes(keyword);
+  if (!isLock) {
+    usdnOut = undefined; // override offerArgs
+  }
+
+  const trade = maybeFlip(isWithdrawal, {
+    how: keyword,
+    amount: USDNAmt,
+    src: { account: ica },
+    dest: { pos },
+    apply: async () => {
+      const { msgSwap, msgLock, protoMessages } = makeSwapLockMessages(
+        nobleAddr,
+        volume.value,
+        { usdnOut },
+      );
+      trace('executing', [msgSwap, msgLock].filter(Boolean));
+      const result = await ica.executeEncodedTx(protoMessages);
+      trace('TODO: decode Swap, Lock result; detect errors', result);
     },
-    {
-      how: 'withdrawToSeat',
-      src: { account: localAcct },
-      dest: { seat, keyword: 'USDN' }, // NOTE: Consider keyword change if needed
-      amount,
-      apply: async () => {
-        await ctx.zoeTools.withdrawToSeat(localAcct, seat, { USDN: amount });
-      },
-      recover: async () => {
-        trace('⚠️ withdrawToSeat failed.');
-        await localAcct.transfer(ica.getAddress(), volume);
-      },
+    recover: async () => {
+      const { msgUnlock, msgSwap, protoMessages } = makeUnlockSwapMessages(
+        nobleAddr,
+        USDNAmt.value,
+        { usdnOut },
+      );
+      trace('executing', [msgUnlock, msgSwap].filter(Boolean));
+      const result = await ica.executeEncodedTx(protoMessages);
+      trace('TODO: decode Swap, Lock result; detect errors', result);
     },
-  ]);
+  });
+
+  const moves: AssetMovement[] = isDeposit
+    ? [seatTransfer, ibcTransfer, trade]
+    : [trade, ibcTransfer, seatTransfer];
+
+  await trackFlow(kit.reporter, moves);
 };
 
 export const rebalance = async (
@@ -725,12 +680,7 @@ export const rebalance = async (
   const { destinationEVMChain } = offerArgs;
 
   const proposal = seat.getProposal() as ProposalType['rebalance'];
-  trace(
-    'rebalance proposal',
-    (proposal as any).give,
-    (proposal as any).want,
-    offerArgs,
-  );
+  trace('rebalance proposal', proposal.give, proposal.want, offerArgs);
 
   if (!('give' in proposal) || Object.keys(proposal.give).length === 0) {
     // throw Error('TODO: withdraw');
@@ -742,16 +692,15 @@ export const rebalance = async (
     await withdrawFromUSDNPosition(ctx, seat, pos, kit, usdcOut);
   }
 
-  const { give } = proposal;
-  if ('USDN' in give && give.USDN) {
-    const { USDN, NobleFees } = give;
+  const { give, want } = proposal;
+  if ([...keys(give), ...keys(want)].some(k => k.startsWith('USDN'))) {
     const g = harden({ USDN, NobleFees });
     const { usdnOut } = offerArgs;
     const { lca } = await provideAccountInfo(orch, 'agoric', kit);
     const { ica } = await provideAccountInfo(orch, 'noble', kit);
     const accountId = coerceAccountId(ica.getAddress());
     const pos = kit.manager.provideUSDNPosition(accountId);
-    await addToUSDNPosition(ctx, seat, lca, ica, pos, kit.reporter, g, usdnOut);
+    await changeUSDNPosition(ctx, seat, pos, kit, proposal, usdnOut);
   }
 
   const { entries } = Object;
@@ -812,6 +761,7 @@ export const rebalance = async (
         break;
     }
   }
+  seat.exit();
 };
 
 /**
