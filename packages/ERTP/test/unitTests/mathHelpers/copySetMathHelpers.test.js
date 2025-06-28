@@ -210,7 +210,6 @@ test('copySet with strings add', t => {
     () =>
       m.add(
         harden({ brand: mockBrand, value: makeCopySet(['a', 'a']) }),
-        // @ts-expect-error deliberate invalid arguments for testing
         harden({ brand: mockBrand, value: makeCopySet(['b']) }),
       ),
     { message: /value has duplicate(| key)s: "a"/ },
@@ -220,7 +219,6 @@ test('copySet with strings add', t => {
     () =>
       m.add(
         harden({ brand: mockBrand, value: makeCopySet(['a']) }),
-        // @ts-expect-error deliberate invalid arguments for testing
         harden({ brand: mockBrand, value: makeCopySet(['b', 'b']) }),
       ),
     { message: /value has duplicate(| key)s: "b"/ },
