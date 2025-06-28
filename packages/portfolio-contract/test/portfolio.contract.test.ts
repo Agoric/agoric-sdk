@@ -17,6 +17,7 @@ import { makeAxelarMemo } from '../src/portfolio.flows.ts';
 import {
   makeProposalShapes,
   type GmpArgsContractCall,
+  type ProposalType,
 } from '../src/type-guards.ts';
 import { axelarChainsMap, localAccount0, makeUSDNIBCTraffic } from './mocks.ts';
 import { makeTrader } from './portfolio-actors.ts';
@@ -44,7 +45,7 @@ test('ProposalShapes', t => {
     openPortfolio: {
       pass: {
         noPositions: { give: { Access: poc24(1n) } },
-        openUSDN: { give: { USDN: usdc(123n), Access: poc24(1n) } },
+        openUSDN: { give: { USDNSwapIn: usdc(123n), Access: poc24(1n) } },
         aaveNeedsGMPFee: {
           give: {
             AaveGmp: usdc(123n),
@@ -53,9 +54,19 @@ test('ProposalShapes', t => {
             Access: poc24(1n),
           },
         },
+        open2: {
+          give: {
+            Access: poc24(1n),
+            USDNSwapIn: usdc(123n),
+            Aave: usdc(123n),
+            AaveGmp: usdc(123n),
+            AaveAccount: usdc(123n),
+          },
+          want: {},
+        },
         open3: {
           give: {
-            USDN: usdc(123n),
+            USDNSwapIn: usdc(123n),
             Aave: usdc(3000n),
             AaveGmp: usdc(123n),
             AaveAccount: usdc(3000n),
@@ -69,13 +80,13 @@ test('ProposalShapes', t => {
       fail: {
         noGive: {},
         missingGMPFee: { give: { Aave: usdc(3000n) } },
-        noPayouts: { want: { USDN: usdc(123n) } },
+        noPayouts: { want: { USDNSwapIn: usdc(123n) } },
         strayKW: { give: { X: usdc(1n) } },
         // New negative cases for openPortfolio
         accessWrongBrand: { give: { Access: usdc(1n) } },
         accessZeroValue: { give: { Access: poc24(0n) } },
         usdnWrongBrandWithAccess: {
-          give: { USDN: poc24(123n), Access: poc24(1n) },
+          give: { USDNSwapIn: poc24(123n), Access: poc24(1n) },
         },
         aaveIncompleteAndAccessOk: {
           give: { Aave: usdc(100n), AaveGmp: usdc(100n), Access: poc24(1n) },
@@ -92,24 +103,27 @@ test('ProposalShapes', t => {
     },
     rebalance: {
       pass: {
-        deposit: { give: { USDN: usdc(123n) } },
-        withdraw: { want: { USDN: usdc(123n) } },
+        deposit: { give: { USDNLock: usdc(123n) } },
+        withdraw: { want: { USDNUnlock: usdc(123n) } },
       },
       fail: {
-        both: { give: { USDN: usdc(123n) }, want: { USDN: usdc(123n) } },
+        both: {
+          give: { USDNSwapIn: usdc(123n) },
+          want: { USDNSwapIn: usdc(123n) },
+        },
         // New negative cases for rebalance
         rebalGiveHasAccess: { give: { Access: poc24(1n) } },
-        rebalGiveUsdnBadBrand: { give: { USDN: poc24(1n) } },
+        rebalGiveUsdnBadBrand: { give: { USDNSwapIn: poc24(1n) } },
         rebalGiveAaveIncomplete: { give: { Aave: usdc(100n) } },
         rebalWantBadKey: { want: { BogusProtocol: usdc(1n) } },
-        rebalWantUsdnBadBrand: { want: { USDN: poc24(1n) } },
+        rebalWantUsdnBadBrand: { want: { USDNSwapIn: poc24(1n) } },
         rebalEmpty: {},
         rebalGiveTopLevelStray: {
-          give: { USDN: usdc(1n) },
+          give: { USDNSwapIn: usdc(1n) },
           extra: 'property',
         },
         rebalWantTopLevelStray: {
-          want: { USDN: usdc(1n) },
+          want: { USDNSwapIn: usdc(1n) },
           extra: 'property',
         },
       },
@@ -198,7 +212,7 @@ test('open portfolio with USDN position', async t => {
   const doneP = trader1.openPortfolio(
     t,
     {
-      USDN: usdc.units(3_333),
+      USDNSwapIn: usdc.units(3_333),
       NobleFees: usdc.make(100n),
       Access: poc24.make(1n),
     },
@@ -364,7 +378,7 @@ test.only('open portfolio with USDN position and withdraw funds', async t => {
   const doneP = trader1.openPortfolio(
     t,
     {
-      USDN: usdc.units(3_333),
+      USDNSwapIn: usdc.units(3_333),
       NobleFees: usdc.make(100n),
       Access: poc24.make(1n),
     },
@@ -404,8 +418,8 @@ test.only('open portfolio with USDN position and withdraw funds', async t => {
 
   const rebalanceP = trader1.rebalance(
     t,
-    { want: { USDN: withdrawalAmount }, give: {} },
-    { usdcOut: withdrawalAmount.value },
+    { want: { USDNUnlock: withdrawalAmount }, give: {} },
+    { usdnOut: withdrawalAmount.value },
   );
 
   t.log('Rebalance request submitted, processing IBC transfers');
