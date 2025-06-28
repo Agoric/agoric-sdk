@@ -17,7 +17,7 @@ import (
 	"path/filepath"
 	"runtime/debug"
 
-	log "github.com/cometbft/cometbft/libs/log"
+	"cosmossdk.io/log"
 
 	gaia "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/daemon"
