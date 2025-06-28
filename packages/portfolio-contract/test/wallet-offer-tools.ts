@@ -42,54 +42,62 @@ const collectPayments = async (
 export const executeOffer = async <R = any>(
   zoe: ZoeService,
   when: VowTools['when'],
-  spec: OfferSpec & { 
-    invitationSpec: { 
+  spec: OfferSpec & {
+    invitationSpec: {
       source: 'contract' | 'continuing';
-      instance?: any; 
+      instance?: any;
       publicInvitationMaker?: string;
       previousOffer?: string;
       invitationMakerName?: string;
-      invitationArgs?: any[] 
-    }
+      invitationArgs?: any[];
+    };
   },
   providePurse?: (b: Brand) => Purse,
   invitationStore?: Map<string, any>,
 ) => {
   const { invitationSpec, proposal, offerArgs } = spec;
   let invitation: Invitation<R>;
-  
+
   if (invitationSpec.source === 'contract') {
     // Original contract source case
     const { instance, publicInvitationMaker, invitationArgs } = invitationSpec;
-    
+
     if (!instance || !publicInvitationMaker) {
-      throw new Error('Contract invitation requires instance and publicInvitationMaker');
+      throw new Error(
+        'Contract invitation requires instance and publicInvitationMaker',
+      );
     }
-    
+
     invitation = await E(E(zoe).getPublicFacet(instance))[
       publicInvitationMaker
     ](...(invitationArgs || []));
   } else if (invitationSpec.source === 'continuing') {
     // New continuing source case
     const { previousOffer, invitationMakerName } = invitationSpec;
-    
+
     if (!previousOffer || !invitationMakerName) {
-      throw new Error('Continuing invitation requires previousOffer and invitationMakerName');
+      throw new Error(
+        'Continuing invitation requires previousOffer and invitationMakerName',
+      );
     }
-    
+
     if (!invitationStore) {
       throw new Error('Continuing offers require an invitationStore');
     }
-    
+
     const invitationMakers = invitationStore.get(previousOffer);
     if (!invitationMakers) {
-      throw new Error(`No invitation makers found for offer ID: ${previousOffer}`);
+      throw new Error(
+        `No invitation makers found for offer ID: ${previousOffer}`,
+      );
     }
-    
+
     invitation = await E(invitationMakers)[invitationMakerName]();
   } else {
     // This case should never happen due to type restrictions
-    throw new Error(`Unsupported invitation source: ${(invitationSpec as any).source}`);
+    throw new Error(
+      `Unsupported invitation source: ${(invitationSpec as any).source}`,
+    );
   }
 
   const payments = await collectPayments(
@@ -105,7 +113,7 @@ export const executeOffer = async <R = any>(
 // Define separate types for contract and continuing invitation specs
 export type ContractInvitationSpec<
   SF extends ContractStartFunction,
-  M extends keyof StartedInstanceKit<SF>['publicFacet']
+  M extends keyof StartedInstanceKit<SF>['publicFacet'],
 > = {
   source: 'contract';
   instance: Instance<SF>;
@@ -160,7 +168,7 @@ export const makeWallet = (
     USDC: assets.USDC.issuer.makeEmptyPurse(),
     Access: assets.Access.issuer.makeEmptyPurse(),
   };
-  
+
   // Store invitation makers by offer id
   const invitationStore = new Map();
 
@@ -181,12 +189,12 @@ export const makeWallet = (
         providePurse,
         invitationStore,
       );
-      
+
       // Store invitation makers if present in the result for continuing offers
       if (result && result.invitationMakers && spec.id) {
         invitationStore.set(spec.id, result.invitationMakers);
       }
-      
+
       const refund: AmountKeywordRecord = await deeplyFulfilledObject(
         objectMap(payouts, async pmt => wallet.deposit(await pmt)),
       );
