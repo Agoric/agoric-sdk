@@ -9,6 +9,10 @@ import {
   MsgSwap,
   MsgSwapResponse,
 } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
+import {
+  MsgTransfer,
+  MsgTransferResponse,
+} from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import type { Brand, Issuer, Payment } from '@agoric/ertp';
 import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import type { FeeConfig, LogFn } from '@agoric/fast-usdc/src/types.js';
@@ -187,6 +191,20 @@ export const makeUSDNIBCTraffic = (
       ack: buildMsgResponseString(MsgUnlockResponse, {}),
     },
     swapBack: makeSwap('uusdn', 'uusdc'), // optional convenience shortcut
+    transferBack: {
+      msg: buildTxPacketString([
+        MsgTransfer.toProtoMsg({
+          sourcePort: 'transfer',
+          sourceChannel: 'channel-21',
+          token: { denom: 'uusdc', amount: money },
+          sender: signer,
+          receiver: localAccount0,
+          timeoutHeight: {},
+          timeoutTimestamp: 300_000_000_000n,
+        }),
+      ]),
+      ack: buildMsgResponseString(MsgTransferResponse, {}),
+    },
   };
 };
 
