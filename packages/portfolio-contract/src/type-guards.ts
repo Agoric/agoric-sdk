@@ -30,17 +30,27 @@ export type CompoundGive = {
   Compound: Amount<'nat'>;
 };
 export type GmpGive = {} | AaveGive | CompoundGive | (AaveGive & CompoundGive);
-export type OpenPortfolioGive = {
-  USDN?: Amount<'nat'>;
-  NobleFees?: Amount<'nat'>;
-  Access?: Amount<'nat'>;
-} & ({} | GmpGive);
+type USDNGive = { NobleFees?: Amount<'nat'> } & (
+  | { USDNSwapIn: Amount<'nat'> }
+  | { USDNLock: Amount<'nat'> }
+  | { USDNSwapOut: Amount<'nat'> }
+  | { USDNUnlock: Amount<'nat'> }
+);
+
+export type OpenPortfolioGive = { Access?: Amount<'nat'> } & (
+  | USDNGive
+  | GmpGive
+  | {}
+);
+
+type USDNWant = {USDNSwapOut: Amount<'nat'>} | { USDNUnlock: Amount<'nat'> };
+type RebalanceWant = USDNWant; // TODO: add other protocols
 
 export type ProposalType = {
   openPortfolio: { give: OpenPortfolioGive };
   rebalance:
     | { give: OpenPortfolioGive; want: {} }
-    | { want: Partial<Record<YieldProtocol, Amount<'nat'>>>; give: {} };
+    | { want: RebalanceWant; give: {} };
 };
 
 const YieldProtocolShape = M.or(...keys(YieldProtocol));
@@ -61,20 +71,35 @@ export const makeProposalShapes = (
     CompoundAccount: usdcAmountShape,
   });
 
+  const USDNGiveShape = M.and(
+    M.splitRecord({}, { NobleFees: usdcAmountShape }, {}),
+    M.or(
+      { USDNSwapIn: usdcAmountShape },
+      { USDNLock: usdcAmountShape },
+      { USDNSwapOut: usdcAmountShape },
+      { USDNUnlock: usdcAmountShape },
+    ),
+  );
+
+  const GmpGiveShape = M.or(
+    {},
+    AaveGiveShape,
+    CompoundGiveShape,
+    M.and(M.splitRecord(AaveGiveShape), M.splitRecord(CompoundGiveShape)),
+  );
+
   // The give for openPortfolio and rebalance differ only in required properties
-  const giveWith = x => {
-    return M.splitRecord(
-      x,
-      { USDN: usdcAmountShape, NobleFees: usdcAmountShape },
-      M.or(
-        harden({}),
-        AaveGiveShape,
-        CompoundGiveShape,
-        // TODO: and no others
-        M.and(M.splitRecord(AaveGiveShape), M.splitRecord(CompoundGiveShape)),
-      ),
-    );
+  // Mirrors type { Access?: Amount<'nat'> } & (USDNGive | GmpGive | {})
+  const giveWith = accessOpt => {
+    return M.splitRecord(accessOpt, {}, M.or(USDNGiveShape, GmpGiveShape, {}));
   };
+
+
+  // {USDNSwapOut: Amount<'nat'>} | { USDNUnlock: Amount<'nat'> }
+  const rebalanceWantShape = M.or( //TODO: add other protocols
+    { USDNSwapOut: usdcAmountShape },
+    { USDNUnlock: usdcAmountShape },
+  );
 
   return {
     openPortfolio: M.splitRecord(
@@ -89,7 +114,7 @@ export const makeProposalShapes = (
     rebalance: M.or(
       M.splitRecord({ give: giveWith({}) }, { want: {}, exit: M.any() }, {}),
       M.splitRecord(
-        { want: M.recordOf(YieldProtocolShape, usdcAmountShape) },
+        { want: rebalanceWantShape },
         { give: {}, exit: M.any() },
         {},
       ),
