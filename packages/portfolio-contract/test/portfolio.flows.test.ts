@@ -62,14 +62,16 @@ const mocks = (
   let nonce = 0;
   const tapPK = makePromiseKit<TargetApp>();
   const factoryPK = makePromiseKit();
+  const chains = new Map();
   const orch = harden({
     async getChain(name: string) {
+      if (chains.has(name)) return chains.get(name);
       const chainId = `${name}-${(nonce += 1)}`;
       const stakingTokens = {
         noble: undefined,
         axelar: [{ denom: 'uaxl' }],
       }[name];
-      return harden({
+      const it = harden({
         getChainInfo() {
           return harden({ chainId, stakingTokens });
         },
@@ -131,6 +133,8 @@ const mocks = (
           return Far('Account', account);
         },
       });
+      chains.set(name, it);
+      return it;
     },
   }) as unknown as Orchestrator;
 
@@ -151,7 +155,7 @@ const mocks = (
     makeVowKit: () => {
       const { promise, resolve, reject } = makePromiseKit();
       return harden({
-        resolver: harden({ resolve, reject }),
+        resolver: Far('FakeVow', { resolve, reject }),
         vow: promise,
       }) as any; // mock
     },
@@ -216,11 +220,9 @@ const mocks = (
     portfoliosNode,
     usdcBrand: USDC,
   });
-  const makePortfolioKitGuest = (lca, ica) =>
+  const makePortfolioKitGuest = () =>
     makePortfolioKit({
       portfolioId: 1,
-      localAccount: lca,
-      nobleAccount: ica,
     }) as unknown as GuestInterface<PortfolioKit>;
 
   const proposal: Proposal = harden({ give, want: {} });
@@ -268,7 +270,7 @@ test('open portfolio with no positions', async t => {
   const actual = await openPortfolio(orch, ctx, seat, {});
   t.log(log.map(msg => msg._method).join(', '));
 
-  t.like(log, [{ _method: 'monitorTransfers' }, { _method: 'exit' }]);
+  t.like(log, [{ _method: 'exit' }]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
   await documentStorageSchema(t, storage, docOpts);
@@ -401,12 +403,12 @@ test('open portfolio with Aave position', async t => {
   t.like(log, [
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', amounts: { AaveAccount: { value: 50n } } },
-    { _method: 'transfer', address: { chainId: 'axelar-5' } },
+    { _method: 'transfer', address: { chainId: 'axelar-1' } },
     { _method: 'localTransfer', amounts: { Aave: { value: 300n } } },
-    { _method: 'transfer', address: { chainId: 'noble-3' } },
+    { _method: 'transfer', address: { chainId: 'noble-4' } },
     { _method: 'depositForBurn' },
     { _method: 'localTransfer', amounts: { AaveGmp: { value: 100n } } },
-    { _method: 'transfer', address: { chainId: 'axelar-6' } },
+    { _method: 'transfer', address: { chainId: 'axelar-1' } },
     { _method: 'exit', _cap: 'seat' },
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
@@ -437,12 +439,12 @@ test('open portfolio with Compound position', async t => {
   t.like(log, [
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', amounts: { CompoundAccount: { value: 300n } } },
-    { _method: 'transfer', address: { chainId: 'axelar-5' } },
+    { _method: 'transfer', address: { chainId: 'axelar-1' } },
     { _method: 'localTransfer', amounts: { Compound: { value: 300n } } },
-    { _method: 'transfer', address: { chainId: 'noble-3' } },
+    { _method: 'transfer', address: { chainId: 'noble-4' } },
     { _method: 'depositForBurn' },
     { _method: 'localTransfer', amounts: { CompoundGmp: { value: 100n } } },
-    { _method: 'transfer', address: { chainId: 'axelar-6' } },
+    { _method: 'transfer', address: { chainId: 'axelar-1' } },
     { _method: 'exit', _cap: 'seat' },
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
