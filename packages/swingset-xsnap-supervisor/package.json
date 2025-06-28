@@ -24,15 +24,15 @@
   },
   "peerDependencies": {
     "@agoric/swingset-liveslots": "workspace:*",
-    "@endo/errors": "^1.2.10",
-    "@endo/import-bundle": "^1.4.0",
-    "@endo/promise-kit": "^1.1.10"
+    "@endo/errors": "^1.2.12",
+    "@endo/import-bundle": "^1.5.1",
+    "@endo/promise-kit": "^1.1.12"
   },
   "devDependencies": {
-    "@endo/bundle-source": "^4.0.0",
-    "@endo/import-bundle": "^1.4.0",
-    "@endo/init": "^1.1.9",
-    "@endo/marshal": "^1.6.4",
+    "@endo/bundle-source": "^4.1.1",
+    "@endo/import-bundle": "^1.5.1",
+    "@endo/init": "^1.1.11",
+    "@endo/marshal": "^1.7.1",
     "ava": "^5.3.0",
     "c8": "^10.1.3"
   },

@@ -16,7 +16,7 @@
     "lint:eslint": "yarn run -T eslint ."
   },
   "dependencies": {
-    "@endo/errors": "^1.2.10"
+    "@endo/errors": "^1.2.12"
   },
   "peerDependencies": {
     "canvas": "^2.6.1",

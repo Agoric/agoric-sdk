@@ -42,18 +42,18 @@
     "@agoric/store": "workspace:*",
     "@agoric/time": "workspace:*",
     "@agoric/zoe": "workspace:*",
-    "@endo/base64": "^1.0.9",
-    "@endo/bundle-source": "^4.0.0",
-    "@endo/errors": "^1.2.10",
-    "@endo/far": "^1.1.11",
-    "@endo/marshal": "^1.6.4",
-    "@endo/nat": "^5.1.0",
-    "@endo/promise-kit": "^1.1.10",
-    "@endo/zip": "^1.0.9"
+    "@endo/base64": "^1.0.11",
+    "@endo/bundle-source": "^4.1.1",
+    "@endo/errors": "^1.2.12",
+    "@endo/far": "^1.1.13",
+    "@endo/marshal": "^1.7.1",
+    "@endo/nat": "^5.1.2",
+    "@endo/promise-kit": "^1.1.12",
+    "@endo/zip": "^1.0.11"
   },
   "devDependencies": {
     "@agoric/vats": "workspace:*",
-    "@endo/init": "^1.1.9",
+    "@endo/init": "^1.1.11",
     "ava": "^5.3.0",
     "import-meta-resolve": "^4.1.0"
   },

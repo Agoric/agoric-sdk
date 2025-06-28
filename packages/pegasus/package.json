@@ -38,13 +38,13 @@
     "@agoric/vow": "workspace:*",
     "@agoric/zoe": "workspace:*",
     "@agoric/zone": "workspace:*",
-    "@endo/bundle-source": "^4.0.0",
-    "@endo/captp": "^4.4.5",
-    "@endo/errors": "^1.2.10",
-    "@endo/far": "^1.1.11",
-    "@endo/init": "^1.1.9",
-    "@endo/nat": "^5.1.0",
-    "@endo/promise-kit": "^1.1.10"
+    "@endo/bundle-source": "^4.1.1",
+    "@endo/captp": "^4.4.7",
+    "@endo/errors": "^1.2.12",
+    "@endo/far": "^1.1.13",
+    "@endo/init": "^1.1.11",
+    "@endo/nat": "^5.1.2",
+    "@endo/promise-kit": "^1.1.12"
   },
   "devDependencies": {
     "@agoric/vat-data": "workspace:*",
