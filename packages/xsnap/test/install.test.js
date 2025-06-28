@@ -12,8 +12,8 @@ import test from 'ava';
 test('pack and install xsnap', async t => {
   const tmp = await mkdtemp(join(tmpdir(), 'xsnap-'));
   t.teardown(() => rm(tmp, { recursive: true }));
-  const { stdout: npmout } = await $`npm pack --json`;
-  const [{ filename }] = JSON.parse(npmout);
+  const filename = join(tmp, 'package.tgz');
+  await $`yarn pack --out ${filename}`;
   await $({ cwd: tmp })`tar xvf ${resolve(filename)}`;
   await $({ cwd: join(tmp, 'package') })`npm install`;
   t.pass();
