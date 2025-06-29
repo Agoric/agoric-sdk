@@ -32,14 +32,15 @@ import type { HostInterface } from '../../async-flow/src/types.js';
 import { YieldProtocol } from './constants.js';
 import type { AxelarChainsMap, NobleAccount } from './type-guards.js';
 import {
-  OfferArgsShapeFor,
   makeFlowPath,
   makePortfolioPath,
   makePositionPath,
   type LocalAccount,
   type OfferArgsFor,
   type makeProposalShapes,
+  type makeOfferArgsShapes,
 } from './type-guards.js';
+import { Fail, q } from '@endo/errors';
 
 const trace = makeTracer('PortExo');
 const { assign, values } = Object;
@@ -140,6 +141,7 @@ export const preparePortfolioKit = (
     rebalance,
     timer,
     proposalShapes,
+    offerArgsShapes,
     vowTools,
     zcf,
     portfoliosNode,
@@ -154,6 +156,7 @@ export const preparePortfolioKit = (
     ) => Vow<any>; // XXX HostForGuest???
     timer: Remote<TimerService>;
     proposalShapes: ReturnType<typeof makeProposalShapes>;
+    offerArgsShapes: ReturnType<typeof makeOfferArgsShapes>;
     vowTools: VowTools;
     zcf: ZCF;
     portfoliosNode: ERef<StorageNode>;
@@ -388,6 +391,14 @@ export const preparePortfolioKit = (
         getNobleICA() {
           return this.state.nobleAccount;
         },
+        getAccount(id: AccountId) {
+          const { state } = this;
+          for (const acct of [state.nobleAccount, state.localAccount]) {
+            const acctId = coerceAccountId(acct.getAddress());
+            if (acctId === id) return acct;
+          }
+          throw Fail`no such account: ${q(id)}`;
+        },
         getGMPAddress(protocol: YieldProtocol) {
           const { positions } = this.state;
           for (const pos of positions.values()) {
@@ -399,6 +410,10 @@ export const preparePortfolioKit = (
             }
           }
           assert.fail(`no position for ${protocol}`);
+        },
+        getPosition(key: number) {
+          const { positions } = this.state;
+          return positions.get(key);
         },
       },
       reporter: {
@@ -498,7 +513,7 @@ export const preparePortfolioKit = (
       },
       rebalanceHandler: {
         async handle(seat: ZCFSeat, offerArgs: unknown) {
-          mustMatch(offerArgs, OfferArgsShapeFor.rebalance);
+          mustMatch(offerArgs, offerArgsShapes.rebalance);
           const { reader, manager, reporter } = this.facets;
           return rebalance(seat, offerArgs, { reader, manager, reporter });
         },

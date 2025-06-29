@@ -36,7 +36,11 @@ import {
   rebalance,
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
-import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
+import {
+  makeOfferArgsShapes,
+  makeProposalShapes,
+  type ProposalType,
+} from '../src/type-guards.ts';
 import { axelarChainsMap } from './mocks.ts';
 import { makeIncomingEVMEvent } from './supports.ts';
 
@@ -214,6 +218,7 @@ const mocks = (
     timer,
     rebalance: rebalanceHost as any,
     proposalShapes: makeProposalShapes(USDC),
+    offerArgsShapes: makeOfferArgsShapes(USDC),
     marshaller,
     portfoliosNode,
     usdcBrand: USDC,
