@@ -1,0 +1,19 @@
+,Seat: Deposit,Seat: Cash,LCA.Agoric,ICA.Noble,Aave,Compound,USDN,,,
+Description,,,,,,,,Open empty portfolio,,
+Before,,,,,no portfolio,,,,,
+Offer: Give,,,,,,,,,,
+offerArgs,,,,,,,,,,
+Offer: Want,,,,,,,,,,operation net
+After,,,,,empty portfolio,,,positions net:,$0.00,
+Payouts,,,,,,,,offer net:,$0.00,$0.00
+,,,,,,,,,,
+Description,,,,,,,,Open portfolio with USDN position,,
+Before,,,,,no portfolio,,,,,
+Offer: Give,"$3,333.00",,,,,,,,,
+flow move,src,,dest,,,,,,,
+flow move,,,src,dest,,,,,,
+flow move,,,,src,,,dest,,,
+Offer: Want,,,,,,,,,,operation net
+Stuck,,,,,,,,,,
+After,,,,,,,"$3,333.00",positions net:,"$3,333.00",
+Payouts,"$3,333.00",,,,$0.00,$0.00,$0.00,offer net:,$0.00,"$3,333.00"
