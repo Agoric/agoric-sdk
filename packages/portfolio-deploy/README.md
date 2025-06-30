@@ -40,6 +40,7 @@ yarn deploy:devnet
 
 - `src/portfolio-start.core.ts` - Core evaluation script for contract instantiation
 - `src/portfolio.build.js` - Build script for generating deployment bundles
+- `src/axelar-configs.js` - Environment-specific Axelar chain configurations
 - `dist/` - Generated contract bundles and deployment artifacts
 - `bundles/` - Contract bundles for deployment
 

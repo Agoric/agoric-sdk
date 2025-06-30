@@ -10,11 +10,11 @@ import {
   waitForBlock,
 } from '@agoric/deploy-script-support/src/permissioned-deployment.js';
 import { flags, makeCmdRunner, makeFileRd } from '@agoric/pola-io';
+import { execa } from 'execa';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import url from 'node:url';
 import { parseArgs, type ParseArgsConfig } from 'node:util';
-import { execa } from 'execa';
 
 const TITLE = 'ymax0 w/Noble Dollar';
 
@@ -57,6 +57,9 @@ const main = async (
     values: ParsedArgs;
   };
   if (!builder) throw Error(USAGE);
+  if (!['mainnet', 'devnet', 'local'].includes(net)) {
+    throw Error(`Invalid net: ${net}. Must be 'mainnet', 'devnet', or 'local'`);
+  }
 
   // XXX ugh. what a pain.
   const pkg = path.join(url.fileURLToPath(import.meta.url), '../../');

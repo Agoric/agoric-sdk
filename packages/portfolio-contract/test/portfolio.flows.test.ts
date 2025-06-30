@@ -35,7 +35,7 @@ import {
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
 import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
-import { axelarChainsMap } from './mocks.ts';
+import { axelarChainsMapMock } from './mocks.ts';
 import { makeIncomingEVMEvent } from './supports.ts';
 
 const theExit = harden(() => {}); // for ava comparison
@@ -203,7 +203,7 @@ const mocks = (
   const ctx1: PortfolioInstanceContext = {
     zoeTools,
     chainHubTools,
-    axelarChainsMap,
+    axelarChainsMap: axelarChainsMapMock,
     inertSubscriber,
   };
 
@@ -212,7 +212,7 @@ const mocks = (
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf: mockZCF,
     vowTools,
-    axelarChainsMap,
+    axelarChainsMap: axelarChainsMapMock,
     timer,
     rebalance: rebalanceHost as any,
     proposalShapes: makeProposalShapes(USDC),

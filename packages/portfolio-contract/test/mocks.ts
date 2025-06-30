@@ -174,7 +174,7 @@ export const makeUSDNIBCTraffic = (
   },
 });
 
-export const axelarChainsMap: AxelarChainsMap = {
+export const axelarChainsMapMock: AxelarChainsMap = {
   Ethereum: {
     caip: 'eip155:1',
     axelarId: 'Ethereum',
