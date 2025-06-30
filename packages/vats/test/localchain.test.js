@@ -71,7 +71,21 @@ const makeTestContext = async _t => {
   const makeLocalChain = async powers => {
     const zone = makeDurableZone(provideBaggage('localchain'));
     const vowTools = prepareVowTools(zone.subZone('vows'));
-    return prepareLocalChainTools(zone, vowTools).makeLocalChain(powers);
+
+    /**
+     * @type {import('../src/localchain.js').AdditionalTransferPowers}
+     */
+    const powersForTransfer = zone.weakMapStore('powersForTransfer');
+    const makeLC = prepareLocalChainTools(zone, {
+      ...vowTools,
+      powersForTransfer,
+    });
+    const localchain = makeLC(powers);
+    powersForTransfer.init(
+      transferMiddleware,
+      harden({ transferBridgeManager: bridgeTargetKit.bridgeHandler }),
+    );
+    return localchain;
   };
 
   const localchain = await makeLocalChain({
