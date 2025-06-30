@@ -145,16 +145,16 @@ test.serial('access token setup', async t => {
   await evalProposal(materials);
   const { EV } = runUtils;
   const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
-  const brand = await EV(agoricNames).lookup('brand', 'PoC25');
+  const brand = await EV(agoricNames).lookup('brand', 'PoC26');
   t.log(brand);
   t.truthy(brand);
-  const issuer = await EV(agoricNames).lookup('issuer', 'PoC25');
+  const issuer = await EV(agoricNames).lookup('issuer', 'PoC26');
   t.log(issuer);
   t.truthy(issuer);
 
   const { agoricNamesRemotes, refreshAgoricNamesRemotes } = t.context;
   refreshAgoricNamesRemotes();
-  t.truthy(agoricNamesRemotes.brand.PoC25);
+  t.truthy(agoricNamesRemotes.brand.PoC26);
 
   const { storage } = t.context;
   await documentStorageSchema(t, storage, {
@@ -169,7 +169,7 @@ test.serial('access token setup', async t => {
   });
 });
 
-// XXX USDC/PoC25 issuer promises aren't resolving somehow
+// XXX USDC/PoC26 issuer promises aren't resolving somehow
 test.skip('contract starts; appears in agoricNames', async t => {
   const {
     agoricNamesRemotes,
@@ -225,18 +225,18 @@ test.skip('open a USDN position', async t => {
   // XXX: should have 10K USDC
   const wallet = await wfd.provideSmartWallet(beneficiary, myMarshaller);
 
-  const { USDC, PoC25 } = agoricNamesRemotes.brand as unknown as Record<
+  const { USDC, PoC26 } = agoricNamesRemotes.brand as unknown as Record<
     string,
     Brand<'nat'>
   >;
-  t.log({ USDC, PoC25 });
-  t.truthy(PoC25);
+  t.log({ USDC, PoC26 });
+  t.truthy(PoC26);
   const give = harden({
     USDN: make(USDC, 3_333n * 1_000_000n),
-    Access: make(PoC25, 1n),
+    Access: make(PoC26, 1n),
   });
 
-  const ps = makeProposalShapes(USDC, PoC25);
+  const ps = makeProposalShapes(USDC, PoC26);
   mustMatch(harden({ give, want: {} }), ps.openPortfolio);
 
   t.log('opening portfolio', myMarshaller.toCapData(give));

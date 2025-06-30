@@ -48,7 +48,7 @@ test('coreEval code without swingset', async t => {
   // XXX type of zoe from setUpZoeForTest is any???
   const { zoe: zoeAny, bundleAndInstall } = await setUpZoeForTest();
   const zoe: ZoeService = zoeAny;
-  const { usdc, poc24 } = common.brands;
+  const { usdc, poc26 } = common.brands;
 
   {
     t.log('produce bootstrap entries from commonSetup()', keys(bootstrap));
@@ -68,7 +68,7 @@ test('coreEval code without swingset', async t => {
 
     for (const [name, { brand, issuer }] of entries({
       USDC: usdc,
-      PoC25: poc24,
+      PoC26: poc26,
     })) {
       t.log('produce brand, issuer for', name);
       wk.brand.produce[name].resolve(brand);
@@ -117,18 +117,18 @@ test('coreEval code without swingset', async t => {
   t.is(passStyleOf(instance), 'remotable');
 
   const { vowTools, pourPayment } = utils;
-  const { mint: _, ...poc24sansMint } = poc24;
+  const { mint: _, ...poc26sansMint } = poc26;
   const wallet = makeWallet(
-    { USDC: usdc, Access: poc24sansMint },
+    { USDC: usdc, Access: poc26sansMint },
     zoe,
     vowTools.when,
   );
   await wallet.deposit(await pourPayment(usdc.units(10_000)));
-  await wallet.deposit(poc24.mint.mintPayment(poc24.make(100n)));
+  await wallet.deposit(poc26.mint.mintPayment(poc26.make(100n)));
   const silvia = makeTrader(wallet, instance);
   const actualP = silvia.openPortfolio(t, {
     USDN: usdc.units(3_333),
-    Access: poc24.make(1n),
+    Access: poc26.make(1n),
   });
   // ack IBC transfer for forward
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);

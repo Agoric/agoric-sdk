@@ -109,12 +109,12 @@ test('poc-asset', async t => {
   const brand = fromEntries(await vsc.readPublished('agoricNames.brand'));
   t.log('brand names:', keys(brand).join(','));
   const asset = fromEntries(await vsc.readPublished('agoricNames.vbankAsset'));
-  const { upoc25 } = asset;
-  t.truthy(asset.upoc25);
-  t.log('E(bank).getId(vbank.upoc25.brand):', id(upoc25.brand));
-  t.true('PoC25' in brand);
-  t.true('PoC25' in issuer);
-  t.is(id(brand.PoC25), id(asset.upoc25.brand));
+  const { upoc26 } = asset;
+  t.truthy(asset.upoc26);
+  t.log('E(bank).getId(vbank.upoc26.brand):', id(upoc26.brand));
+  t.true('PoC26' in brand);
+  t.true('PoC26' in issuer);
+  t.is(id(brand.PoC26), id(asset.upoc26.brand));
 });
 
 test('ymax-deployed', async t => {

@@ -15,9 +15,9 @@ const trace = makeTracer('PoC-CE', true);
 /** @import {Board} from '@agoric/vats'; */
 
 const PoCInfo = /** @type {const} */ ({
-  issuerName: 'PoC25',
-  denom: 'upoc25',
-  decimalPlaces: 1,
+  issuerName: 'PoC26',
+  denom: 'upoc26',
+  decimalPlaces: 0,
 });
 harden(PoCInfo);
 
@@ -180,8 +180,8 @@ export const getManifestCall = (_powers, options) => {
           chainStorage: true,
           startUpgradable: true,
         },
-        brand: { produce: { PoC25: true } },
-        issuer: { produce: { PoC25: true } },
+        brand: { produce: { PoC26: true } },
+        issuer: { produce: { PoC26: true } },
         installation: {
           consume: { mintHolder: true },
         },
