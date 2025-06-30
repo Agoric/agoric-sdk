@@ -297,3 +297,45 @@ test(
   },
   'agoric10rchp4vc53apxn32q42c3zryml8xq3xshyzuhjk6405wtxy7tl3d7e0f8az423padaek6me38qekget2vdhx66mtvy6kg7nrw5uhsaekd4uhwufswqex6dtsv44hxv3cd4jkuqpqvduyhf',
 );
+
+test('expected failures', t => {
+  const { joinHookedAddress, decodeAddressHook, mustDecodeAddressHook } =
+    t.context.addressHooks;
+
+  const noHook = 'agoric1qqp0e5ys';
+  const atQuery = joinHookedAddress(
+    noHook,
+    Uint8Array.from(['@'.charCodeAt(0)]),
+  );
+  const shortNoHook = noHook.slice(0, noHook.length - 1);
+
+  const cases = /** @type {const} */ ([
+    [shortNoHook, { message: `Invalid checksum for ${shortNoHook}` }],
+    ['foobar', { message: 'foobar too short' }],
+    [
+      atQuery,
+      {
+        message: `Hook data for ${atQuery} does not start with '?': ${noHook}@`,
+      },
+    ],
+  ]);
+
+  for (const [badAddr, expectedErr] of cases) {
+    // Strict mustDecodeAddressHook.
+    t.throws(
+      () => mustDecodeAddressHook(badAddr),
+      expectedErr,
+      `mustDecodeAddressHook ${badAddr}`,
+    );
+
+    // Failure-tolerant decodeAddressHook.
+    t.deepEqual(
+      decodeAddressHook(badAddr),
+      {
+        baseAddress: badAddr,
+        query: {},
+      },
+      `decodeAddressHook ${badAddr}`,
+    );
+  }
+});
