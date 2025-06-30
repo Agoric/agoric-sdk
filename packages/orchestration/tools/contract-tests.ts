@@ -14,7 +14,10 @@ import {
 } from '@agoric/vats';
 import { prepareBridgeTargetModule } from '@agoric/vats/src/bridge-target.js';
 import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
-import { prepareLocalChainTools } from '@agoric/vats/src/localchain.js';
+import {
+  prepareLocalChainTools,
+  type AdditionalTransferPowers,
+} from '@agoric/vats/src/localchain.js';
 import { prepareTransferTools } from '@agoric/vats/src/transfer.js';
 import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
@@ -94,14 +97,26 @@ export const setupOrchestrationTest = async ({
   const inspectLocalBridge = () =>
     harden(localBridgeLog.map(entry => entry.obj));
 
-  const localchain = prepareLocalChainTools(
+  const powersForTransfer = rootZone.weakMapStore(
+    'powersForTransfer',
+  ) as AdditionalTransferPowers;
+  const makeLocalChain = prepareLocalChainTools(
     rootZone.subZone('localchain'),
-    vowTools,
-  ).makeLocalChain({
+    {
+      ...vowTools,
+      powersForTransfer,
+    },
+  );
+  const localchain = makeLocalChain({
     bankManager,
     system: localchainBridge,
     transfer: transferMiddleware,
   });
+  powersForTransfer.init(
+    transferMiddleware,
+    harden({ transferBridgeManager: transferBridge }),
+  );
+
   const timer = buildZoeManualTimer(log);
   const board = makeFakeBoard();
   const marshaller = board.getPublishingMarshaller();
