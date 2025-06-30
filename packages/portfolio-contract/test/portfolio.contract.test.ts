@@ -7,7 +7,6 @@ import { gmpAddresses } from '@agoric/orchestration/src/utils/gmp.js';
 import { q } from '@endo/errors';
 import { passStyleOf } from '@endo/far';
 import { matches, mustMatch } from '@endo/patterns';
-import * as contractExports from '../src/portfolio.contract.ts';
 import { makeAxelarMemo } from '../src/portfolio.flows.ts';
 import {
   makeProposalShapes,
@@ -19,11 +18,9 @@ import {
   simulateCCTPAck,
   simulateUpcallFromAxelar,
 } from './contract-setup.ts';
-import { axelarChainsMap, localAccount0 } from './mocks.ts';
+import { axelarChainsMapMock, localAccount0 } from './mocks.ts';
 
-const contractName = 'ymax0';
-type StartFn = typeof contractExports.start;
-const { fromEntries, keys, values } = Object;
+const { fromEntries, keys } = Object;
 
 test('ProposalShapes', t => {
   const { brand: USDC } = makeIssuerKit('USDC');
@@ -151,7 +148,7 @@ test('makeAxelarMemo constructs correct memo JSON', t => {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   ];
 
-  const result = makeAxelarMemo(axelarChainsMap, gmpArgs);
+  const result = makeAxelarMemo(axelarChainsMapMock, gmpArgs);
   const parsed = JSON.parse(result);
 
   t.deepEqual(parsed, {
