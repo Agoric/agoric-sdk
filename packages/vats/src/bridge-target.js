@@ -187,7 +187,7 @@ export const prepareBridgeTargetKit = (zone, makeTargetRegistration) =>
     }),
     {
       bridgeHandler: {
-        fromBridge(obj) {
+        async fromBridge(obj) {
           const { inboundEventType, targetToApp } = this.state;
           const { type, target: inboundTarget } = obj;
 
@@ -229,7 +229,7 @@ export const prepareBridgeTargetKit = (zone, makeTargetRegistration) =>
          * @returns {Promise<TargetRegistration>} power to set or delete the
          *   registration
          */
-        async register(target, app, args = []) {
+        async register(target, app, args = harden([])) {
           const { targetHost } = this.facets;
           const { appTransformer, targetToApp } = this.state;
 
