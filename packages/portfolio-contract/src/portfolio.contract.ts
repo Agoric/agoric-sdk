@@ -81,14 +81,14 @@ export const contract = async (
   const { brands } = zcf.getTerms();
   const { orchestrateAll, zoeTools, chainHub, vowTools } = tools;
 
-  assert(brands.USDC, 'USDC missing from brands in terms');
+  assert(brands.BLD, 'BLD missing from brands in terms');
 
   // TODO: only on 1st incarnation
   registerChainsAndAssets(chainHub, brands, chainInfo, assetInfo, {
     log: trace,
   });
 
-  const proposalShapes = makeProposalShapes(brands.USDC, brands.Access);
+  const proposalShapes = makeProposalShapes(brands.BLD);
 
   const inertSubscriber: ResolvedPublicTopic<never>['subscriber'] = {
     getUpdateSince() {
@@ -119,7 +119,7 @@ export const contract = async (
     timer: timerService,
     portfoliosNode: E(storageNode).makeChildNode('portfolios'),
     marshaller,
-    usdcBrand: brands.USDC,
+    usdcBrand: brands.BLD,
   });
 
   const portfolios = zone.mapStore<number, PortfolioKit>('portfolios');
