@@ -27,22 +27,22 @@ const { fromEntries, keys, values } = Object;
 
 test('ProposalShapes', t => {
   const { brand: USDC } = makeIssuerKit('USDC');
-  const { brand: Poc24 } = makeIssuerKit('Poc24');
-  const shapes = makeProposalShapes(USDC, Poc24);
+  const { brand: Poc26 } = makeIssuerKit('Poc26');
+  const shapes = makeProposalShapes(USDC, Poc26);
 
   const usdc = (value: bigint) => AmountMath.make(USDC, value);
-  const poc24 = (value: bigint) => AmountMath.make(Poc24, value);
+  const poc26 = (value: bigint) => AmountMath.make(Poc26, value);
   const cases = harden({
     openPortfolio: {
       pass: {
-        noPositions: { give: { Access: poc24(1n) } },
-        openUSDN: { give: { USDN: usdc(123n), Access: poc24(1n) } },
+        noPositions: { give: { Access: poc26(1n) } },
+        openUSDN: { give: { USDN: usdc(123n), Access: poc26(1n) } },
         aaveNeedsGMPFee: {
           give: {
             AaveGmp: usdc(123n),
             Aave: usdc(3000n),
             AaveAccount: usdc(3000n),
-            Access: poc24(1n),
+            Access: poc26(1n),
           },
         },
         open3: {
@@ -54,7 +54,7 @@ test('ProposalShapes', t => {
             Compound: usdc(1000n),
             CompoundGmp: usdc(3000n),
             CompoundAccount: usdc(3000n),
-            Access: poc24(1n),
+            Access: poc26(1n),
           },
         },
       },
@@ -65,21 +65,21 @@ test('ProposalShapes', t => {
         strayKW: { give: { X: usdc(1n) } },
         // New negative cases for openPortfolio
         accessWrongBrand: { give: { Access: usdc(1n) } },
-        accessZeroValue: { give: { Access: poc24(0n) } },
+        accessZeroValue: { give: { Access: poc26(0n) } },
         usdnWrongBrandWithAccess: {
-          give: { USDN: poc24(123n), Access: poc24(1n) },
+          give: { USDN: poc26(123n), Access: poc26(1n) },
         },
         aaveIncompleteAndAccessOk: {
-          give: { Aave: usdc(100n), AaveGmp: usdc(100n), Access: poc24(1n) },
+          give: { Aave: usdc(100n), AaveGmp: usdc(100n), Access: poc26(1n) },
         },
         compoundIncompleteAndAccessOk: {
           give: {
             Compound: usdc(100n),
             CompoundGmp: usdc(100n),
-            Access: poc24(1n),
+            Access: poc26(1n),
           },
         },
-        openTopLevelStray: { give: { Access: poc24(1n) }, extra: 'property' },
+        openTopLevelStray: { give: { Access: poc26(1n) }, extra: 'property' },
       },
     },
     rebalance: {
@@ -90,11 +90,11 @@ test('ProposalShapes', t => {
       fail: {
         both: { give: { USDN: usdc(123n) }, want: { USDN: usdc(123n) } },
         // New negative cases for rebalance
-        rebalGiveHasAccess: { give: { Access: poc24(1n) } },
-        rebalGiveUsdnBadBrand: { give: { USDN: poc24(1n) } },
+        rebalGiveHasAccess: { give: { Access: poc26(1n) } },
+        rebalGiveUsdnBadBrand: { give: { USDN: poc26(1n) } },
         rebalGiveAaveIncomplete: { give: { Aave: usdc(100n) } },
         rebalWantBadKey: { want: { BogusProtocol: usdc(1n) } },
-        rebalWantUsdnBadBrand: { want: { USDN: poc24(1n) } },
+        rebalWantUsdnBadBrand: { want: { USDN: poc26(1n) } },
         rebalEmpty: {},
         rebalGiveTopLevelStray: {
           give: { USDN: usdc(1n) },
@@ -185,14 +185,14 @@ const getPortfolioInfo = (key, storage) => {
 
 test('open portfolio with USDN position', async t => {
   const { trader1, common } = await setupTrader(t);
-  const { usdc, poc24 } = common.brands;
+  const { usdc, poc26 } = common.brands;
 
   const doneP = trader1.openPortfolio(
     t,
     {
       USDN: usdc.units(3_333),
       NobleFees: usdc.make(100n),
-      Access: poc24.make(1n),
+      Access: poc26.make(1n),
     },
     { destinationEVMChain: 'Ethereum' },
   );
@@ -233,12 +233,12 @@ test('open portfolio with USDN position', async t => {
 // TODO: depositForBurn is throwing
 test('open a portfolio with Aave position', async t => {
   const { trader1, common } = await setupTrader(t);
-  const { usdc, poc24 } = common.brands;
+  const { usdc, poc26 } = common.brands;
 
   const actualP = trader1.openPortfolio(
     t,
     {
-      Access: poc24.make(1n),
+      Access: poc26.make(1n),
       AaveAccount: usdc.make(100n), // fee
       AaveGmp: usdc.make(100n), // fee
       Aave: usdc.units(3_333),
@@ -272,12 +272,12 @@ test('open a portfolio with Aave position', async t => {
 // TODO: to deal with bridge coordination, move this to a bootstrap test
 test('open a portfolio with Compound position', async t => {
   const { trader1, common } = await setupTrader(t);
-  const { usdc, poc24 } = common.brands;
+  const { usdc, poc26 } = common.brands;
 
   const actualP = trader1.openPortfolio(
     t,
     {
-      Access: poc24.make(1n),
+      Access: poc26.make(1n),
       CompoundAccount: usdc.make(100n), // fee
       CompoundGmp: usdc.make(100n), // fee
       Compound: usdc.units(3_333),
@@ -311,12 +311,12 @@ test('open a portfolio with Compound position', async t => {
 // TODO: to deal with bridge coordination, move this to a bootstrap test
 test('open portfolio with USDN, Aave positions', async t => {
   const { trader1, common } = await setupTrader(t);
-  const { usdc, poc24 } = common.brands;
+  const { usdc, poc26 } = common.brands;
 
   const doneP = trader1.openPortfolio(
     t,
     {
-      Access: poc24.make(1n),
+      Access: poc26.make(1n),
       AaveAccount: usdc.make(100n), // fee
       AaveGmp: usdc.make(100n), // fee
       Aave: usdc.units(3_333),

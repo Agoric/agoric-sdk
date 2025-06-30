@@ -10,4 +10,4 @@ export type PortfolioBootPowers = CorePowersG<
   typeof contractName,
   StartFn,
   typeof permit
-> & { issuer: { consume: { USDC: Promise<Issuer>; PoC25: Promise<Issuer> } } };
+> & { issuer: { consume: { USDC: Promise<Issuer>; PoC26: Promise<Issuer> } } };

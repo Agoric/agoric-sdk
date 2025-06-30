@@ -31,13 +31,13 @@ const deploy = async (t: ExecutionContext) => {
     await bundleAndInstall(contractExports);
   t.is(passStyleOf(installation), 'remotable');
 
-  const { usdc, poc24 } = common.brands;
+  const { usdc, poc26 } = common.brands;
   const timerService = buildZoeManualTimer();
 
   const { agoric, noble, axelar, osmosis } = chainInfoFantasyTODO;
   const started = await E(zoe).startInstance(
     installation,
-    { USDC: usdc.issuer, Access: poc24.issuer },
+    { USDC: usdc.issuer, Access: poc26.issuer },
     {}, // terms
     {
       ...common.commonPrivateArgs,
@@ -62,15 +62,15 @@ const deploy = async (t: ExecutionContext) => {
 
 export const setupTrader = async (t, initial = 10_000) => {
   const { common, zoe, started } = await deploy(t);
-  const { usdc, poc24 } = common.brands;
+  const { usdc, poc26 } = common.brands;
   const { when } = common.utils.vowTools;
 
   const myBalance = usdc.units(initial);
   const funds = await common.utils.pourPayment(myBalance);
-  const { mint: _, ...poc24SansMint } = poc24;
-  const myWallet = makeWallet({ USDC: usdc, Access: poc24SansMint }, zoe, when);
+  const { mint: _, ...poc26SansMint } = poc26;
+  const myWallet = makeWallet({ USDC: usdc, Access: poc26SansMint }, zoe, when);
   await E(myWallet).deposit(funds);
-  await E(myWallet).deposit(poc24.mint.mintPayment(poc24.make(1n)));
+  await E(myWallet).deposit(poc26.mint.mintPayment(poc26.make(1n)));
   const trader1 = makeTrader(myWallet, started.instance);
 
   const { ibcBridge } = common.mocks;

@@ -136,7 +136,7 @@ export const setupPortfolioTest = async ({
     bootstrap: { agoricNamesAdmin, bankManager },
   } = common;
   const usdc = withAmountUtils(makeIssuerKit('USDC'));
-  const poc24 = withAmountUtils(makeIssuerKit('Poc24'));
+  const poc26 = withAmountUtils(makeIssuerKit('Poc26'));
   await E(bankManager).addAsset(
     uusdcOnAgoric,
     'USDC',
@@ -144,10 +144,10 @@ export const setupPortfolioTest = async ({
     usdc.issuerKit,
   );
   await E(bankManager).addAsset(
-    'upoc24',
-    'Poc24',
+    'upoc26',
+    'Poc26',
     'Proof of Concept Access',
-    poc24.issuerKit,
+    poc26.issuerKit,
   );
 
   // These mints no longer stay in sync with bankManager.
@@ -177,7 +177,7 @@ export const setupPortfolioTest = async ({
 
   return {
     ...common,
-    brands: { usdc: usdcSansMint, poc24 },
+    brands: { usdc: usdcSansMint, poc26 },
     commonPrivateArgs: {
       ...commonPrivateArgs,
       assetInfo,
