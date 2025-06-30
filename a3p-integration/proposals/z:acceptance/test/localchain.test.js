@@ -27,7 +27,7 @@ const readPublished = async nodeName => {
     return undefined;
   }
   const obj = JSON.parse(value);
-  return obj.values[obj.values.length - 1];
+  return obj.values.at(-1) || obj.value || obj; // handle old and new formats
 };
 
 // The testing assertions are in the submission that runs in the core-eval.
