@@ -1,0 +1,33 @@
+name: Portfolio Axelar E2E Test
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  run-e2e-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Update submodules
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+
+      - name: Set up yarn
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Run E2E tests
+        run: |
+          cd packages/portfolio-deploy
+          yarn test:e2e
