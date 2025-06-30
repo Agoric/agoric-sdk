@@ -23,6 +23,10 @@ const deployConfigShape = M.splitRecord({});
 
 const trace = makeTracer(`YMX-Start`, true);
 
+const isValidEVMAddress = address => {
+  return /^0x[a-fA-F0-9]{40}$/.test(address);
+};
+
 /**
  * @param {OrchestrationPowersWithStorage} orchestrationPowers
  * @param {Marshaller} marshaller
@@ -46,6 +50,16 @@ export const makePrivateArgs = async (
     throw new Error(
       `axelarChainsMap is undefined for environment: ${config.net}`,
     );
+  }
+
+  for (const [_chain, { contractAddresses }] of Object.entries(
+    axelarChainsMap,
+  )) {
+    for (const [_name, address] of Object.entries(contractAddresses)) {
+      if (!isValidEVMAddress(address)) {
+        throw new Error(`Invalid EVM address: ${address}`);
+      }
+    }
   }
 
   /** @type {Parameters<typeof start>[1]} */

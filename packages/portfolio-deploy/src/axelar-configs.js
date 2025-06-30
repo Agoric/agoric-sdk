@@ -9,6 +9,7 @@
  * @type {AxelarChainsMap}
  */
 export const mainnetAxelarChainsMap = {
+  // TODO: fill the missing addresses
   Ethereum: {
     caip: 'eip155:1',
     axelarId: 'Ethereum',

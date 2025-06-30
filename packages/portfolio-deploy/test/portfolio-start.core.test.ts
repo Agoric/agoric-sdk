@@ -96,7 +96,7 @@ test('coreEval code without swingset', async t => {
   );
 
   const options = toExternalConfig(
-    harden({ assetInfo: [], chainInfo: {}, net: 'devnet' }),
+    harden({ assetInfo: [], chainInfo: {}, net: 'local' }),
     {},
     // currently no config. PortfolioConfigShape,
   );

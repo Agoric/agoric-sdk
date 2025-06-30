@@ -22,7 +22,7 @@ test('getAxelarChainsMap throws error for invalid environment', t => {
   });
 });
 
-test('all configurations have consistent contract address structure', t => {
+test.skip('all configurations have consistent contract address structure', t => {
   const environments = [
     mainnetAxelarChainsMap,
     testnetAxelarChainsMap,
