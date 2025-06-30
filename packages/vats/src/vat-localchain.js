@@ -9,13 +9,14 @@ import { prepareLocalChainTools } from './localchain.js';
  * @import {LocalChainPowers} from './localchain.js';
  */
 
-export const buildRootObject = (_vatPowers, _args, baggage) => {
+export const buildRootObject = (_vatPowers, _vatParameters, baggage) => {
   const zone = makeDurableZone(baggage);
   const vowTools = prepareVowTools(zone.subZone('VowTools'));
-  const { makeLocalChain, overridePowers } = prepareLocalChainTools(
-    zone.subZone('localchain'),
-    vowTools,
-  );
+  const powersForTransfer = zone.weakMapStore('powersForTransfer');
+  const makeLocalChain = prepareLocalChainTools(zone.subZone('localchain'), {
+    ...vowTools,
+    powersForTransfer,
+  });
 
   return Far('LocalChainVat', {
     /**
@@ -29,13 +30,33 @@ export const buildRootObject = (_vatPowers, _args, baggage) => {
     },
 
     /**
-     * Override specific powers for prepareLocalChainTools. Explicitly
-     * `undefined` values disable a power.
+     * Associate a TransferMiddleware instance with its corresponding
+     * ScopedBridgeManager. This is necessary because existing LocalChain
+     * instances need the power to inject vtransfer messages when they initiate
+     * a MsgSend.
      *
-     * @param {Partial<LocalChainPowers>} partialPowers
+     * By using a WeakMap, we ensure that only possession of both the map and a
+     * TransferMiddleware ocap can be amplified into the associated manager.
+     *
+     * @param {import('./transfer.js').TransferMiddleware} transfer
+     * @param {Pick<
+     *   import('./types.js').ScopedBridgeManager<'vtransfer'>,
+     *   'fromBridge'
+     * >} transferBridgeManager
      */
-    overridePowers(partialPowers) {
-      overridePowers(partialPowers);
+    linkTransferMiddlewareToBridgeManager(transfer, transferBridgeManager) {
+      if (!powersForTransfer.has(transfer)) {
+        powersForTransfer.init(
+          transfer,
+          harden({
+            transferBridgeManager,
+          }),
+        );
+        return;
+      }
+      const existing = powersForTransfer.get(transfer);
+      const updated = harden({ ...existing, transferBridgeManager });
+      powersForTransfer.set(transfer, updated);
     },
   });
 };

@@ -29,33 +29,6 @@ const { Vow$ } = NetworkShape;
  */
 
 /**
- * @template {Record<string, any>} S
- * @template {keyof S} K
- * @param {Pick<MapStoreWithSchema<S>, 'has' | 'get' | '_schema'>} store
- * @param {K} key
- * @param {Partial<S>} [defaults]
- * @returns {S[K] | undefined}
- */
-const ifHasThenGet = (store, key, defaults = {}) => {
-  return store.has(key) ? store.get(key) : defaults[key];
-};
-
-/**
- * @template {Record<string, any>} S
- * @template {keyof S} K
- * @param {Pick<MapStoreWithSchema<S>, 'has' | 'init' | 'set' | '_schema'>} store
- * @param {K} key
- * @param {S[K]} value
- */
-const ifHasThenSetElseInit = (store, key, value) => {
-  if (store.has(key)) {
-    store.set(key, value);
-  } else {
-    store.init(key, value);
-  }
-};
-
-/**
  * @typedef {SendInfo} NotifyInfo Extend this with any additional notification
  *   types.
  */
@@ -108,16 +81,7 @@ const ifHasThenSetElseInit = (store, key, value) => {
  * @typedef {{
  *   bank: Bank;
  *   lastSequence?: string;
- * } & Pick<LocalChainPowers, 'system' | 'transfer' | 'transferBridgeManager'>} AccountPowers
- */
-
-/**
- * @template {Record<string, any>} S
- * @typedef {MapStore<keyof S, S[keyof S]> & { _schema: S }} MapStoreWithSchema
- */
-
-/**
- * @typedef {MapStoreWithSchema<AccountPowers>} AccountPowerStore
+ * } & Pick<LocalChainPowers, 'system' | 'transfer'>} AccountPowers
  */
 
 /**
@@ -125,8 +89,19 @@ const ifHasThenSetElseInit = (store, key, value) => {
  *   system: ScopedBridgeManager<'vlocalchain'>;
  *   bankManager: BankManager;
  *   transfer: import('./transfer.js').TransferMiddleware;
- *   transferBridgeManager?: ScopedBridgeManager<'vtransfer'>;
  * }} LocalChainPowers
+ */
+
+/**
+ * @typedef {WeakMapStore<
+ *   LocalChainPowers['transfer'],
+ *   {
+ *     transferBridgeManager: Pick<
+ *       ScopedBridgeManager<'vtransfer'>,
+ *       'fromBridge'
+ *     >;
+ *   }
+ * >} AdditionalTransferPowers
  */
 
 export const LocalChainAccountI = M.interface('LocalChainAccount', {
@@ -146,13 +121,13 @@ export const LocalChainAccountI = M.interface('LocalChainAccount', {
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
- * @param {VowTools} vowTools
- * @param {AccountPowerStore} overridePowers
+ * @param {VowTools & {
+ *   powersForTransfer: AdditionalTransferPowers;
+ * }} powers
  */
 export const prepareLocalChainAccountKit = (
   zone,
-  { watch, allSettled },
-  overridePowers,
+  { watch, allSettled, powersForTransfer },
 ) =>
   zone.exoClassKit(
     'LocalChainAccountKit',
@@ -175,12 +150,14 @@ export const prepareLocalChainAccountKit = (
     },
     /**
      * @param {import('@agoric/orchestration').Bech32Address} address
-     * @param {AccountPowers} powers
+     * @param {AccountPowers} accountPowers
      */
-    (address, powers) => ({
+    (address, { bank, system, transfer }) => ({
       address,
-      ...powers,
-      reserved: undefined,
+      bank,
+      system,
+      transfer,
+      lastSequence: 0n,
     }),
     {
       depositPaymentWatcher: {
@@ -208,13 +185,14 @@ export const prepareLocalChainAccountKit = (
             return fulfilment;
           }
 
-          const transferBridgeManager = ifHasThenGet(
-            overridePowers,
-            'transferBridgeManager',
-            this.state,
-          );
+          const { transfer } = this.state;
+          const transferPowers =
+            powersForTransfer.has(transfer) && powersForTransfer.get(transfer);
+          const { transferBridgeManager } = transferPowers || {};
+
           if (!transferBridgeManager) {
-            // No way to notify the transfer bridge manager, so just return.
+            // If there is no transfer bridge manager, then we can't notify it,
+            // so bail and just return the fulfilment.
             return fulfilment;
           }
 
@@ -260,12 +238,11 @@ export const prepareLocalChainAccountKit = (
                   amount,
                 };
 
-                const lastSequence = ifHasThenGet(
-                  overridePowers,
-                  'lastSequence',
-                );
-                const sequence = String(BigInt(lastSequence ?? 0) + 1n);
-                ifHasThenSetElseInit(overridePowers, 'lastSequence', sequence);
+                /** @type {bigint} */
+                const lastSequence = BigInt(this.state.lastSequence ?? 0) + 1n;
+
+                const sequence = String(lastSequence);
+                this.state.lastSequence = lastSequence;
 
                 /** @type {IBCPacket} */
                 const packet = {
@@ -518,18 +495,12 @@ const prepareLocalChain = (zone, makeAccountKit, { watch }) => {
          * @returns {PromiseVow<LocalChainAccount>}
          */
         async makeAccount() {
-          const { system, bankManager, transfer, transferBridgeManager } =
-            this.state;
+          const { system, bankManager, transfer } = this.state;
           const address = await E(system).toBridge({
             type: 'VLOCALCHAIN_ALLOCATE_ADDRESS',
           });
           const bank = await E(bankManager).getBankForAddress(address);
-          return makeAccountKit(address, {
-            system,
-            bank,
-            transfer,
-            transferBridgeManager,
-          }).account;
+          return makeAccountKit(address, { bank, system, transfer }).account;
         },
         /**
          * Make a single query to the local chain. Will reject with an error if
@@ -588,31 +559,18 @@ const prepareLocalChain = (zone, makeAccountKit, { watch }) => {
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
- * @param {VowTools} vowTools
+ * @param {VowTools & { powersForTransfer: AdditionalTransferPowers }} powers
  */
-export const prepareLocalChainTools = (zone, vowTools) => {
-  const overridePowers = /** @type {AccountPowerStore} */ (
-    zone.mapStore('overridePowers')
-  );
-  const makeAccountKit = prepareLocalChainAccountKit(
+export const prepareLocalChainTools = (zone, powers) => {
+  const { powersForTransfer: _, ...localChainPowers } = powers;
+  const makeLocalChainAccountKit = prepareLocalChainAccountKit(zone, powers);
+  const makeLocalChain = prepareLocalChain(
     zone,
-    vowTools,
-    overridePowers,
+    makeLocalChainAccountKit,
+    localChainPowers,
   );
-  const makeLocalChain = prepareLocalChain(zone, makeAccountKit, vowTools);
 
-  return harden({
-    makeLocalChain,
-    /**
-     * @param {Partial<AccountPowers>} newPowers
-     */
-    overridePowers: newPowers => {
-      for (const [key, value] of Object.entries(newPowers)) {
-        const k = /** @type {keyof AccountPowers} */ (key);
-        ifHasThenSetElseInit(overridePowers, k, value);
-      }
-    },
-  });
+  return makeLocalChain;
 };
 harden(prepareLocalChainTools);
 /** @typedef {ReturnType<typeof prepareLocalChainTools>} LocalChainTools */
