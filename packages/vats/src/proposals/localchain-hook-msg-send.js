@@ -9,6 +9,7 @@ import {
  * @param {BootstrapPowers & {
  *   consume: {
  *     vtransferBridgeManager: import('../types.js').ScopedBridgeManager<'vtransfer'>;
+ *     transferMiddleware: import('../transfer.js').TransferMiddleware;
  *     vatAdminSvc: VatAdminSvc;
  *     vatStore: MapStore<
  *       string,
@@ -20,17 +21,25 @@ import {
  */
 export const upgradeAndInterceptMsgSend = async (powers, options) => {
   const {
-    consume: { vtransferBridgeManager: transferBridgeManagerP },
+    consume: {
+      vtransferBridgeManager: vtransferBridgeManagerP,
+      transferMiddleware: transferMiddlewareP,
+    },
   } = powers;
-  const [upgradeRoots, transferBridgeManager] = await Promise.all([
-    upgradeVatsGeneric(powers, options),
-    transferBridgeManagerP,
+
+  // Go on to upgrade the vats and provide the transferBridgeManager.
+  const upgradeRoots = await upgradeVatsGeneric(powers, options);
+
+  const [transferMiddleware, transferBridgeManager] = await Promise.all([
+    transferMiddlewareP,
+    vtransferBridgeManagerP,
   ]);
 
-  // Link in the transferBridgeManager to the localchain vat.
-  await E(upgradeRoots.localchain).overridePowers({
+  // Link the transferBridgeManager with the localchain vat.
+  await E(upgradeRoots.localchain).linkTransferMiddlewareToBridgeManager(
+    transferMiddleware,
     transferBridgeManager,
-  });
+  );
 };
 
 export const getManifestForMsgSendToTransfer = (powers, arg) => {
@@ -51,6 +60,8 @@ export const getManifestForMsgSendToTransfer = (powers, arg) => {
         consume: {
           ...upgradeVatsManifest.consume,
           vtransferBridgeManager: 'hookedMsgSend',
+          transferMiddleware: 'hookedMsgSend',
+          vatStore: 'hookedMsgSend',
         },
       },
     },

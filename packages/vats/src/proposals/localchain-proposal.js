@@ -33,8 +33,8 @@ export const setupLocalChainVat = async (
       loadCriticalVat,
       bridgeManager: bridgeManagerP,
       localchainBridgeManager: localchainBridgeManagerP,
-      bankManager,
-      transferMiddleware,
+      bankManager: bankManagerP,
+      transferMiddleware: transferMiddlewareP,
       vtransferBridgeManager: vtransferBridgeManagerP,
     },
     produce: { localchainVat, localchain, localchainBridgeManager },
@@ -77,12 +77,23 @@ export const setupLocalChainVat = async (
     );
   }
 
+  const [transferBridgeManager, transfer, bankManager] = await Promise.all([
+    vtransferBridgeManagerP,
+    transferMiddlewareP,
+    bankManagerP,
+  ]);
+
   const newLocalChain = await E(vats.localchain).makeLocalChain({
     system: scopedManager,
-    bankManager: await bankManager,
-    transfer: await transferMiddleware,
-    transferBridgeManager: await vtransferBridgeManagerP,
+    bankManager,
+    transfer,
   });
+
+  // Allow the localchain to obtain the bridge manager via the middleware.
+  await E(vats.localchain).linkTransferMiddlewareToBridgeManager(
+    transfer,
+    transferBridgeManager,
+  );
 
   localchain.reset();
   localchain.resolve(newLocalChain);
