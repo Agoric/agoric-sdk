@@ -205,11 +205,13 @@ harden(encodeAddressHook);
  * @returns {{ baseAddress: string; query: HookQuery }}
  * @throws {Error} if no hook string or hook string does not start with `?`
  */
-export const decodeAddressHook = (addressHook, charLimit) => {
+export const mustDecodeAddressHook = (addressHook, charLimit) => {
   const { baseAddress, hookData } = splitHookedAddress(addressHook, charLimit);
   const hookStr = new TextDecoder().decode(hookData);
   if (hookStr && !hookStr.startsWith('?')) {
-    throw Error(`Hook data does not start with '?': ${hookStr}`);
+    throw Error(
+      `Hook data for ${addressHook} does not start with '?': ${baseAddress}${hookStr}`,
+    );
   }
 
   const parsedQuery = queryString.parse(hookStr);
@@ -219,6 +221,26 @@ export const decodeAddressHook = (addressHook, charLimit) => {
    */
   const query = harden({ ...parsedQuery });
   return harden({ baseAddress, query });
+};
+harden(mustDecodeAddressHook);
+
+/**
+ * @param {string} addressHook
+ * @param {number} [charLimit]
+ * @returns {{ baseAddress: string; query: HookQuery }}
+ */
+export const decodeAddressHook = (addressHook, charLimit) => {
+  try {
+    const result = mustDecodeAddressHook(addressHook, charLimit);
+    return harden(result);
+  } catch (e) {
+    // If the address hook is not a valid hooked address, return the base
+    // address and an empty query.
+    return harden({
+      baseAddress: addressHook,
+      query: /** @type {HookQuery} */ ({}),
+    });
+  }
 };
 harden(decodeAddressHook);
 
