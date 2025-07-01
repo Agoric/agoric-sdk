@@ -89,4 +89,3 @@ test.serial('should open a new portfolio', async t => {
   );
   t.truthy(openPortfolioInvitation, 'Open portfolio invitation should exist');
 });
-

@@ -16,7 +16,6 @@
     "test:c8": "c8 --all $C8_OPTIONS ava",
     "test:xs": "exit 0",
     "test:e2e": "bash ./e2e-test.sh",
-    "noble": "./single-val.sh -r",
     "relay": "cd test/e2e && node relay.mjs",
     "e2e:relay": "npx concurrently --kill-others \"yarn relay\" \"yarn e2e:test\"",
     "e2e:test": "binary=agd ATOM_DENOM=atom CHAINID=agoriclocal AGORIC_SDK=../.. yarn test test/e2e/",

@@ -64,12 +64,16 @@ export const relayBasic = async () => {
   const factoryBalance = await ethereumNetwork.provider.getBalance(
     factoryContract.address,
   );
-  console.log(
-    `Factory Contract ETH Balance: ${factoryBalance} ETH`,
-  );
+  console.log(`Factory Contract ETH Balance: ${factoryBalance} ETH`);
   evmRelayer.setRelayer(RelayerType.Agoric, axelarRelayer);
 
   while (true) {
+    // Predicted remote account address
+    const remoteAccountAddress = '0xd8E896691A0FCE4641D44d9E461A6d746A5c91dB';
+    const mintAmount = ethers.parseUnits('1', 6);
+    await ethereumNetwork.giveToken(remoteAccountAddress, 'aUSDC', mintAmount);
+    console.log(`Minted ${mintAmount} tokens to ${remoteAccountAddress}`);
+
     await relay({
       agoric: axelarRelayer,
       evm: evmRelayer,
