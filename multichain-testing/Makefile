@@ -178,7 +178,7 @@ agoricNames.chain:
 ##
 # Using ymax
 open-with-usdn: deploy-ymax usdc-available ./scripts/ymax-tool.ts
-	./scripts/ymax-tool.ts 1.01
+	./scripts/ymax-tool.ts 1.03
 
 usdc-available: ./scripts/noble-usdn-lab.ts
 	yarn test:ymd test/ymax0 -m usdc-available || \
