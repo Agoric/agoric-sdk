@@ -63,7 +63,7 @@ const openPosition = async (
   const give = {
     USDN: multiplyBy(make(USDC, 1_000_000n), parseRatio(volume, USDC)),
     NobleFees: make(USDC, 20_000n),
-    Access: make(PoC26, 1n),
+    ...(PoC26 ? { Access: make(PoC26, 1n) } : {}),
   };
 
   trace('opening portfolio', give);
