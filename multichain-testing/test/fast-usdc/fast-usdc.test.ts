@@ -7,6 +7,7 @@ import { AmountMath } from '@agoric/ertp';
 import { divideBy, multiplyBy } from '@agoric/ertp/src/ratio.js';
 import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.js';
 import type { CctpTxEvidence } from '@agoric/fast-usdc/src/types.js';
+import { ChainPolicies } from '@agoric/fast-usdc-deploy/src/utils/chain-policies.js';
 import { makeTracer } from '@agoric/internal';
 import type { AccountId, Denom, DenomDetail } from '@agoric/orchestration';
 import type { ExecutionContext, TestFn } from 'ava';
@@ -299,6 +300,48 @@ test.before(async t => (t.context = await makeTestContext(t)));
 test.after(async t => {
   const { deleteTestKeys } = t.context;
   deleteTestKeys(accounts);
+});
+
+test.serial('updateFastUsdcPolicy', async t => {
+  const {
+    nobleAgoricChannelId,
+
+    deployBuilder,
+    retryUntilCondition,
+    vstorageClient,
+  } = t.context;
+
+  const partialFeedPolicy = makeFeedPolicyPartial(nobleAgoricChannelId);
+  const expectedFeedPolicy = {
+    ...partialFeedPolicy,
+    chainPolicies: ChainPolicies.TESTNET,
+  };
+  const builderOpts = {
+    feedPolicy: JSON.stringify(partialFeedPolicy),
+    network: 'TESTNET',
+  };
+  t.log('build and run proposal', builderOpts);
+  await deployBuilder(
+    '../packages/fast-usdc-deploy/src/fast-usdc-update.build.js',
+    builderOpts,
+  );
+
+  const data = await retryUntilCondition(
+    () => vstorageClient.queryData(`published.${contractName}.feedPolicy`),
+    async feedPolicy => {
+      const result = await t.try(tt =>
+        tt.deepEqual(feedPolicy, expectedFeedPolicy),
+      );
+      if (!result.passed) {
+        result.discard();
+        return false;
+      }
+      result.commit();
+      return true;
+    },
+    'vstorage updated',
+  );
+  t.pass();
 });
 
 const toAmt = (
