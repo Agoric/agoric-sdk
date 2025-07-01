@@ -126,7 +126,8 @@ test('ymax-deployed', async t => {
   t.log('ymax0 instance boardId:', id(instance.ymax0));
 });
 
-test('usdc-available', async t => {
+// TODO: transfer some tokens to the trader1 wallet before running this test
+test.skip('usdc-available', async t => {
   const { fetch } = t.context;
 
   const { balances } = await fetch(
@@ -203,7 +204,8 @@ async function* readHistory(
 
 const range = (n: number) => [...Array(n).keys()];
 
-test('portfolio-opened', async t => {
+// TODO: send an offer before running this test
+test.skip('portfolio-opened', async t => {
   //   t.timeout(1_000);
   const { walletKit: wk, vstorageClient: vsc, vstorage: vs } = t.context;
   const { setTimeout, clearTimeout } = t.context;
