@@ -30,6 +30,9 @@ jobs:
       - name: Set up yarn
         run: corepack enable
 
+      - name: Add ./bin to PATH
+        run: echo "::add-path::$(pwd)/bin"
+
       - name: Install dependencies
         run: |
           yarn install
