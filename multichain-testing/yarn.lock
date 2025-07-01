@@ -97,6 +97,29 @@ __metadata:
   languageName: node
   linkType: soft
 
+"@agoric/deploy-script-support@portal:../packages/deploy-script-support::locator=root-workspace-0b6124%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@agoric/deploy-script-support@portal:../packages/deploy-script-support::locator=root-workspace-0b6124%40workspace%3A."
+  dependencies:
+    "@agoric/ertp": "workspace:*"
+    "@agoric/import-manager": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/notifier": "workspace:*"
+    "@agoric/pola-io": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/time": "workspace:*"
+    "@agoric/zoe": "workspace:*"
+    "@endo/base64": "npm:^1.0.9"
+    "@endo/bundle-source": "npm:^4.0.0"
+    "@endo/errors": "npm:^1.2.10"
+    "@endo/far": "npm:^1.1.11"
+    "@endo/marshal": "npm:^1.6.4"
+    "@endo/nat": "npm:^5.1.0"
+    "@endo/promise-kit": "npm:^1.1.10"
+    "@endo/zip": "npm:^1.0.9"
+  languageName: node
+  linkType: soft
+
 "@agoric/ertp@portal:../packages/ERTP::locator=root-workspace-0b6124%40workspace%3A.":
   version: 0.0.0-use.local
   resolution: "@agoric/ertp@portal:../packages/ERTP::locator=root-workspace-0b6124%40workspace%3A."
@@ -115,36 +138,31 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/fast-usdc-deploy@portal:../packages/fast-usdc::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/fast-usdc-deploy@portal:../packages/fast-usdc-deploy::locator=root-workspace-0b6124%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/fast-usdc-deploy@portal:../packages/fast-usdc::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/fast-usdc-deploy@portal:../packages/fast-usdc-deploy::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
     "@agoric/client-utils": "workspace:*"
     "@agoric/cosmic-proto": "workspace:*"
+    "@agoric/deploy-script-support": "workspace:*"
     "@agoric/ertp": "workspace:*"
+    "@agoric/fast-usdc": "workspace:*"
     "@agoric/internal": "workspace:*"
     "@agoric/notifier": "workspace:*"
     "@agoric/orchestration": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/vat-data": "workspace:*"
+    "@agoric/vow": "workspace:*"
     "@agoric/zoe": "workspace:*"
-    "@cosmjs/proto-signing": "npm:^0.33.0"
-    "@cosmjs/stargate": "npm:^0.33.0"
-    "@endo/base64": "npm:^1.0.9"
-    "@endo/common": "npm:^1.2.10"
     "@endo/errors": "npm:^1.2.10"
     "@endo/eventual-send": "npm:^1.3.1"
     "@endo/far": "npm:^1.1.11"
     "@endo/init": "npm:^1.1.9"
     "@endo/marshal": "npm:^1.6.4"
-    "@endo/nat": "npm:^5.1.0"
     "@endo/pass-style": "npm:^1.5.0"
     "@endo/patterns": "npm:^1.5.0"
-    "@endo/promise-kit": "npm:^1.1.10"
-    "@nick134-bit/noblejs": "npm:0.0.2"
-    bech32: "npm:^2.0.0"
     commander: "npm:^12.1.0"
     ethers: "npm:^6.13.4"
-  bin:
-    fast-usdc: ./src/cli/bin.js
   languageName: node
   linkType: soft
 
@@ -201,6 +219,12 @@ __metadata:
     "@endo/nat": "npm:^5.1.0"
     "@endo/promise-kit": "npm:^1.1.10"
     import-meta-resolve: "npm:^4.1.0"
+  languageName: node
+  linkType: soft
+
+"@agoric/import-manager@portal:../packages/import-manager::locator=root-workspace-0b6124%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@agoric/import-manager@portal:../packages/import-manager::locator=root-workspace-0b6124%40workspace%3A."
   languageName: node
   linkType: soft
 
@@ -293,6 +317,12 @@ __metadata:
     "@noble/hashes": "npm:^1.5.0"
     bs58: "npm:^6.0.0"
     esbuild: "npm:^0.25.2"
+  languageName: node
+  linkType: soft
+
+"@agoric/pola-io@portal:../packages/pola-io::locator=root-workspace-0b6124%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@agoric/pola-io@portal:../packages/pola-io::locator=root-workspace-0b6124%40workspace%3A."
   languageName: node
   linkType: soft
 

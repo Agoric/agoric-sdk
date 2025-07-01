@@ -70,7 +70,7 @@
     "@agoric/deploy-script-support": "portal:../packages/deploy-script-support",
     "@agoric/eslint-config": "portal:../packages/eslint-config",
     "@agoric/fast-usdc": "portal:../packages/fast-usdc",
-    "@agoric/fast-usdc-deploy": "portal:../packages/fast-usdc",
+    "@agoric/fast-usdc-deploy": "portal:../packages/fast-usdc-deploy",
     "@agoric/governance": "portal:../packages/governance",
     "@agoric/import-manager": "portal:../packages/import-manager",
     "@agoric/inter-protocol": "portal:../packages/inter-protocol",
@@ -102,7 +102,8 @@
     "@agoric/zoe": "portal:../packages/zoe",
     "@agoric/zone": "portal:../packages/zone",
     "@cosmjs/proto-signing": "0.33.1",
-    "@cosmjs/stargate": "0.33.1"
+    "@cosmjs/stargate": "0.33.1",
+    "@agoric/pola-io": "portal:../packages/pola-io"
   },
   "license": "Apache-2.0"
 }
