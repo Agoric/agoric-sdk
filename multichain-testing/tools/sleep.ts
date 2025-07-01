@@ -23,7 +23,7 @@ export type RetryOptions = {
 
 const retryUntilCondition = async <T>(
   operation: () => Promise<T>,
-  condition: (result: T) => boolean,
+  condition: (result: T) => boolean | Promise<boolean>,
   message: string,
   {
     maxRetries = 6,
@@ -37,7 +37,7 @@ const retryUntilCondition = async <T>(
   while (retries < maxRetries) {
     try {
       const result = await operation();
-      if (condition(result)) {
+      if (await condition(result)) {
         return result;
       }
     } catch (error: unknown) {
@@ -65,7 +65,7 @@ export const makeRetryUntilCondition = (defaultOptions: RetryOptions = {}) => {
    */
   return <T>(
     operation: () => Promise<T>,
-    condition: (result: T) => boolean,
+    condition: (result: T) => boolean | Promise<boolean>,
     message: string,
     options?: RetryOptions,
   ) =>
