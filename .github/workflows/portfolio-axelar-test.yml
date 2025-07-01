@@ -31,7 +31,9 @@ jobs:
         run: corepack enable
 
       - name: Install dependencies
-        run: yarn install
+        run: |
+          yarn install
+          yarn build
 
       - name: Run E2E tests
         run: |
