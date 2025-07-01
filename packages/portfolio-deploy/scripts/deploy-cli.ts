@@ -64,12 +64,15 @@ const acceptProposal = async () => {
   await execCmd(detailsCommand);
 };
 
+const printAndExec = (cmd, args) => {
+    return execa(cmd, args);
+};
 const main = async (
   argv = process.argv,
   {
     fetch = globalThis.fetch,
     execFile = (cmd, args, opts) =>
-      execa({ verbose: 'full' })(cmd, args, opts),
+      printAndExec(cmd, args),
   } = {},
 ) => {
   const getVersion = () =>
