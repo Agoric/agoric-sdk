@@ -4,6 +4,10 @@ import test from 'ava';
 import { Far } from '@endo/far';
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import * as cb from '../src/callback.js';
+import {
+  passableSymbolForName,
+  unpassableSymbolForName,
+} from '../src/ses-utils.js';
 
 /** @import {Callback, SyncCallback} from '../src/types.js' */
 
@@ -50,7 +54,11 @@ test('near function callbacks', t => {
 });
 
 test('near method callbacks', t => {
-  const m2 = Symbol.for('m2');
+  const m2 = passableSymbolForName('m2');
+  // TODO This currently has a symbol-named method. If it passes, it is only
+  // because `o` was not made remotable. Should this test case me deleted,
+  // or should `m2` and its uses be deleted, or should `m2` be converted to
+  // `'m2'`?
   const o = {
     /**
      * @param {number} a
@@ -121,7 +129,6 @@ test('near method callbacks', t => {
 });
 
 test('far method callbacks', async t => {
-  const m2 = Symbol.for('m2');
   const o = Far('MyObject', {
     /**
      * @param {number} a
@@ -139,7 +146,7 @@ test('far method callbacks', async t => {
      * @param {string} c
      * @returns {Promise<string>}
      */
-    [m2]: async (a, b, c) => {
+    m2: async (a, b, c) => {
       return `${a + b}${c}`;
     },
   });
@@ -153,8 +160,8 @@ test('far method callbacks', async t => {
   t.is(await p2r, '19go');
 
   /** @type {Callback<(c: string) => Promise<string>>} */
-  const cbp3 = cb.makeMethodCallback(Promise.resolve(o), m2, 9, 10);
-  t.like(cbp3, { methodName: m2, bound: [9, 10] });
+  const cbp3 = cb.makeMethodCallback(Promise.resolve(o), 'm2', 9, 10);
+  t.like(cbp3, { methodName: 'm2', bound: [9, 10] });
   t.assert(cbp3.target instanceof Promise);
   const p3r = cb.callE(cbp3, 'go');
   t.assert(p3r instanceof Promise);
@@ -236,7 +243,13 @@ test('isCallback', t => {
     'manual method',
   );
   t.true(
-    cb.isCallback({ target: {}, methodName: Symbol.for('foo'), bound: [] }),
+    cb.isCallback({
+      target: {},
+      // TODO if this passes with a symbol-named method, it is because
+      // some relevant object was not made into a remotable.
+      methodName: passableSymbolForName('foo'),
+      bound: [],
+    }),
     'manual symbol-keyed method',
   );
 
@@ -249,7 +262,11 @@ test('isCallback', t => {
     'non-object target',
   );
   t.false(
-    cb.isCallback({ target: {}, methodName: Symbol('foo'), bound: [] }),
+    cb.isCallback({
+      target: {},
+      methodName: unpassableSymbolForName('foo'),
+      bound: [],
+    }),
     'unique symbol method name',
   );
   t.false(cb.isCallback({ target: {}, bound: {} }), 'non-array bound args');

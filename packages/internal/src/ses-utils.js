@@ -9,6 +9,7 @@ import { objectMap } from '@endo/common/object-map.js';
 import { objectMetaMap } from '@endo/common/object-meta-map.js';
 import { fromUniqueEntries } from '@endo/common/from-unique-entries.js';
 import { q, Fail, makeError, annotateError, X } from '@endo/errors';
+import { passableSymbolForName as psfn } from '@endo/pass-style';
 import { deeplyFulfilled, isObject } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeQueue } from '@endo/stream';
@@ -420,3 +421,29 @@ export const synchronizedTee = (sourceStream, readerCount) => {
   void pullNext();
   return readers;
 };
+
+/**
+ * An adapter to help transition to flip which symbols are passable. In the endo
+ * release that's current as of this writing, the real `passableSymbolForName`
+ * returns `symbol|undefined`.
+ *
+ * @param {string} name
+ * @returns {symbol}
+ */
+export const passableSymbolForName = name => /** @type {symbol} */ (psfn(name));
+
+const areRegisteredSymbolsPassable =
+  // TODO Symbol should not be a restricted global for @agoric/internal
+  // eslint-disable-next-line no-restricted-globals
+  Symbol.keyFor(passableSymbolForName('x')) === 'x';
+
+/**
+ * An adapter to help transition to flip which symbols are passable.
+ *
+ * @param {string} name
+ * @returns {symbol}
+ */
+export const unpassableSymbolForName = name =>
+  // TODO Symbol should not be a restricted global for @agoric/internal
+  // eslint-disable-next-line no-restricted-globals
+  areRegisteredSymbolsPassable ? Symbol(name) : Symbol.for(name);
