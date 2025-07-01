@@ -16,6 +16,6 @@ export const permit = /** @type {const} */ ({
   instance: { produce: { [name]: true } },
   installation: { consume: { [name]: true } },
   brand: {},
-  issuer: { consume: { USDC: true, PoC25: true } },
+  issuer: { consume: { USDC: true, PoC26: true } },
 });
 harden(permit);
