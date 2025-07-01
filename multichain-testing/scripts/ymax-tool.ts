@@ -77,7 +77,7 @@ const openPosition = async (
         callPipe: [['makeOpenPortfolioInvitation']],
       },
       proposal: { give },
-      offerArgs: {}, // without usdnOut: swap only
+      offerArgs: { usdnOut: (give.USDN.value * 99n) / 100n },
     },
   });
 
