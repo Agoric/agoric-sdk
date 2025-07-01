@@ -31,8 +31,9 @@ jobs:
         run: corepack enable
 
       - name: Add ./bin to PATH
-        run: echo "$(pwd)/bin" >> $GITHUB_PATH
-
+        run: |
+          echo "$(pwd)/bin" >> $GITHUB_PATH
+          echo "such field health riot cost kitten silly tube flash wrap festival portion imitate this make question host bitter puppy wait area glide soldier knee" | agd keys add gov45 --recover --keyring-backend test
       - name: Install dependencies
         run: |
           yarn install
