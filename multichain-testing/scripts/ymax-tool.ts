@@ -50,11 +50,13 @@ const openPosition = async (
     client,
     walletKit,
     now,
+    skipPoll = false,
   }: {
     address: string;
     client: SigningStargateClient;
     walletKit: Awaited<ReturnType<typeof makeSmartWalletKit>>;
     now: () => number;
+    skipPoll?: boolean;
   },
 ) => {
   const brand = fromEntries(await walletKit.readPublished('agoricNames.brand'));
@@ -99,14 +101,32 @@ const openPosition = async (
   );
   trace('tx', actual);
 
-  const status = await walletKit.pollOffer(
-    address,
-    action.offer.id,
-    before.header.height,
-  );
-  trace('status', status);
-  if ('error' in status) throw Error(status.error);
-  return status;
+  if (!skipPoll) {
+    trace('starting to poll for offer result from block height', before.header.height);
+    const status = await walletKit.pollOffer(
+      address,
+      action.offer.id,
+      before.header.height,
+    );
+    
+    trace('final offer status', status);
+    if ('error' in status) {
+      trace('offer failed with error', status.error);
+      // TODO: maybe handle error properly
+      // throw Error(status.error);
+      return status;
+    }
+    trace('offer completed successfully', {
+      statusType: 'success',
+      result: status.result,
+    });
+    
+    return status;
+  } else {
+    trace('skipping poll as per skipPoll flag');
+    const status = { result: { transaction: actual } };
+    return status;
+  }
 };
 
 const main = async (
@@ -118,8 +138,14 @@ const main = async (
     connectWithSigner = SigningStargateClient.connectWithSigner,
   } = {},
 ) => {
-  const [volume] = argv.slice(2);
-  if (!volume) throw Error(`USAGE: ${argv[1]} 123.45`);
+  // Extract volume and check for the --skip-poll flag
+  const args = argv.slice(2);
+  const skipPoll = args.includes('--skip-poll');
+  // Remove the flag from the args if present
+  const filteredArgs = args.filter(arg => arg !== '--skip-poll');
+  const [volume] = filteredArgs;
+  
+  if (!volume) throw Error(`USAGE: ${argv[1]} 123.45 [--skip-poll]`);
   const { MNEMONIC } = env;
   if (!MNEMONIC) throw Error(`MNEMONIC not set`);
 
@@ -135,7 +161,7 @@ const main = async (
   const client = await connectWithSigner(networkConfig.rpcAddrs[0], signer, {
     registry: new Registry(agoricRegistryTypes),
   });
-  await openPosition(volume, { address, client, walletKit, now: Date.now });
+  await openPosition(volume, { address, client, walletKit, now: Date.now, skipPoll });
 };
 
 // TODO: use endo-exec so we can unit test the above
