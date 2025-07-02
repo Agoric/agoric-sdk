@@ -309,9 +309,10 @@ test('Noble Dollar Swap, Lock messages', t => {
 });
 
 test('open portfolio with USDN position', async t => {
+  // XXX NobleFees: make(USDC, 100n)?
   const { orch, ctx, offer, storage } = mocks(
     {},
-    { USDNSwapIn: make(USDC, 50_000_000n), NobleFees: make(USDC, 100n) },
+    { Deposit: make(USDC, 50_000_000n) },
   );
   const { log, seat } = offer;
 
@@ -343,7 +344,7 @@ test('open portfolio with Aave and USDN positions', async t => {
   const { orch, ctx, offer, storage, tapPK } = mocks(
     {},
     {
-      USDNSwapIn: oneThird,
+      USDN: oneThird,
       Aave: oneThird,
       AaveGmp: make(USDC, 100n),
       AaveAccount: make(USDC, 150n),
