@@ -167,6 +167,7 @@ export const preparePortfolioKit = (
   const makePathNode = (path: string[]) => {
     let node = portfoliosNode;
     for (const segment of path) {
+      // XXX we don't cache child nodes
       node = E(node).makeChildNode(segment);
     }
     return node;
