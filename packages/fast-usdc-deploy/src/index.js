@@ -1,3 +1,4 @@
+import '@endo/init';
 export * from './utils/chain-policies.js';
 export * from './utils/config-marshal.js';
 export * from './utils/core-eval.js';
