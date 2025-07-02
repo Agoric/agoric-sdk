@@ -13,4 +13,5 @@ cd $DIR/test/e2e/agoric-to-axelar-local/packages/axelar-local-dev-cosmos && npm 
 cd $DIR && yarn build && scripts/deploy-cli.ts src/chain-info.build.js --net=local --from=gov1 -- net=local peer=axelar:connection-0:channel-0:uaxl && \
 cd $DIR && yarn build && scripts/deploy-cli.ts src/portfolio.build.js --net=local --from=gov1  && \
 sleep 15 && \
+echo $DIR && \
 cd $DIR && yarn e2e:relay
