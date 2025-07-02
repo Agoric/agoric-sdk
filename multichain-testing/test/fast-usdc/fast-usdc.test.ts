@@ -314,11 +314,11 @@ test.serial('updateFastUsdcPolicy', async t => {
   const partialFeedPolicy = makeFeedPolicyPartial(nobleAgoricChannelId);
   const expectedFeedPolicy = {
     ...partialFeedPolicy,
-    chainPolicies: ChainPolicies.TESTNET,
+    chainPolicies: ChainPolicies.MAINNET,
   };
   const builderOpts = {
     feedPolicy: JSON.stringify(partialFeedPolicy),
-    network: 'TESTNET',
+    network: 'MAINNET',
   };
   t.log('build and run proposal', builderOpts);
   await deployBuilder(
