@@ -340,7 +340,7 @@ function gov_overrides_sdk_v46() {
   mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
   jq -r '.app_state.gov.deposit_params.min_deposit[0].amount |= "10"' $CHAIN_DIR/config/genesis.json > /tmp/genesis.json
   mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
-  jq -r '.app_state.gov.voting_params.voting_period |= "30s"' $CHAIN_DIR/config/genesis.json > /tmp/genesis.json
+  jq -r '.app_state.gov.voting_params.voting_period |= "6s"' $CHAIN_DIR/config/genesis.json > /tmp/genesis.json
   mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
   jq -r '.app_state.gov.tally_params.quorum |= "0.000000000000000000"' $CHAIN_DIR/config/genesis.json > /tmp/genesis.json
   mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
@@ -356,7 +356,7 @@ function gov_overrides_sdk_v47() {
   mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
   jq -r '.app_state.gov.params.min_deposit[0].amount |= "10"' $CHAIN_DIR/config/genesis.json > /tmp/genesis.json
   mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
-  jq -r '.app_state.gov.params.voting_period |= "30s"' $CHAIN_DIR/config/genesis.json > /tmp/genesis.json
+  jq -r '.app_state.gov.params.voting_period |= "6s"' $CHAIN_DIR/config/genesis.json > /tmp/genesis.json
   mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
   jq -r '.app_state.gov.params.quorum |= "0.000000000000000000"' $CHAIN_DIR/config/genesis.json > /tmp/genesis.json
   mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
