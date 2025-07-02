@@ -60,6 +60,9 @@ export default async (homeP, endowments) => {
   if (typeof feedPolicyJSON !== 'string') throw Error(feedPolicyUsage);
   const feedPolicy = JSON.parse(feedPolicyJSON);
   if (network !== undefined) {
+    if (typeof network !== 'string') {
+      throw Error('--network requires a string argument');
+    }
     if (!Object.hasOwn(ChainPolicies, network)) {
       const q = JSON.stringify;
       throw Error(
