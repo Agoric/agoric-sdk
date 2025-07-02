@@ -4,54 +4,52 @@ import {
   importText,
   parseCSV,
 } from '../tools/rebalance-grok.ts';
+import type { MovementDesc } from '../src/type-guards.ts';
 
 test('parseCSV test utility', async t => {
   const text = await importText('./move-cases.csv', import.meta.url);
   const data = parseCSV(text);
   t.log('rows:', data.length);
-  t.true(
-    data.every(row => row.length === 11),
-    'every row has cols A-K',
-  );
-  const [A, B, K] = [0, 1, 10];
+  const problems = data.filter(row => row.length !== 12);
+  t.deepEqual(problems, [], 'every row has cols A-L');
+  const [A, B, L] = [0, 1, 11];
   t.is(data[1][A], 'Description');
   t.is(data[0][B], 'Seat: Deposit');
-  t.is(data[5][K], 'operation net');
+  t.is(data[5][L], 'operation net');
 });
 
 test('grok description', async t => {
-  const text = await importText('./rebalance-cases.csv', import.meta.url);
+  const text = await importText('./move-cases.csv', import.meta.url);
   const scenarios = grokRebalanceScenarios(parseCSV(text));
-  t.log(scenarios['Ask for 3 but get only USDN']);
-  t.is(scenarios['Ask for 3 but get only USDN'].operationNet, '$0.00');
+  t.log(scenarios['Open portfolio with USDN position']);
+  t.is(scenarios['Open portfolio with USDN position'].operationNet, '$0.00');
 });
 
-test('grok moves give', async t => {
+test('grok moves proposal', async t => {
   const text = await importText('./move-cases.csv', import.meta.url);
   const scenarios = grokRebalanceScenarios(parseCSV(text));
   const { 'Open portfolio with USDN position': scenario } = scenarios;
-  t.deepEqual(scenario.proposal.give, { Deposit: '$3,333.00' });
+  t.log(scenario.proposal);
+  t.deepEqual(scenario.proposal, { give: { Deposit: '$3,333.00' }, want: {} });
 });
 
 test.skip('grok give', async t => {
-  const text = await importText('./rebalance-cases.csv', import.meta.url);
+  const text = await importText('./move-cases.csv', import.meta.url);
   const scenarios = grokRebalanceScenarios(parseCSV(text));
-  const { 'Ask for 3 but get only USDN': scenario } = scenarios;
+  const { 'Open with 3 positions': scenario } = scenarios;
   t.deepEqual(scenario.proposal.give, {
-    Aave: '$3,333.00',
-    Compound: '$3,333.00',
-    USDN: '$3,333.00',
+    Desposit: '$10,000.00',
   });
 });
 
-test('grok empty flow move', async t => {
+test('grok empty flow of moves', async t => {
   const text = await importText('./move-cases.csv', import.meta.url);
   const scenarios = grokRebalanceScenarios(parseCSV(text));
   const { 'Open empty portfolio': scenario } = scenarios;
   t.deepEqual(Object.keys(scenario.offerArgs || {}), []);
 });
 
-test('grok flow move', async t => {
+test('grok flow of 3 moves', async t => {
   const text = await importText('./move-cases.csv', import.meta.url);
   const scenarios = grokRebalanceScenarios(parseCSV(text));
   const { 'Open portfolio with USDN position': scenario } = scenarios;
@@ -70,11 +68,14 @@ test('grok flow move', async t => {
   });
 });
 
-test('grok after', async t => {
-  const text = await importText('./rebalance-cases.csv', import.meta.url);
+test('grok after, want', async t => {
+  const text = await importText('./move-cases.csv', import.meta.url);
   const scenarios = grokRebalanceScenarios(parseCSV(text));
-  const { 'Ask for 3 but get only USDN': scenario } = scenarios;
+  const { 'Withdraw some from Compound': scenario } = scenarios;
+  t.log('scenario', scenario);
   t.deepEqual(scenario.after, {
-    USDN: '$3,333.00',
+    Aave: '$3,333.33',
+    Compound: '$1,333.33',
+    USDN: '$3,333.33',
   });
 });

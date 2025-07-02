@@ -67,9 +67,10 @@ const parseCell = (prot: YieldProtocol | SeatKeyword, txt: string) => {
   return { [prot]: txt as Dollars };
 };
 
-const parseProtocolAmounts = ([_A, aave, compound, usdn]: string[]): Partial<
-  Record<YieldProtocol, Dollars>
-> => {
+const parseProtocolAmounts = (
+  row: string[],
+): Partial<Record<YieldProtocol, Dollars>> => {
+  const [aave, compound, usdn] = row.slice(6);
   return {
     ...parseCell('Aave', aave),
     ...parseCell('Compound', compound),
@@ -82,9 +83,16 @@ export const grokRebalanceScenarios = (data: Array<string[]>) => {
   let currentScenario: Partial<RebalanceScenario> = {};
 
   let hd: string[] = [];
+  let emptyHdCol = -1;
+  let rownum = 0;
 
   for (const row of data) {
-    if (!hd.length) hd = row;
+    rownum += 1;
+    if (!hd.length) {
+      hd = row;
+      emptyHdCol = hd.findLastIndex(c => c.trim().length === 0) - 2;
+      // console.debug(rownum, { emptyHdCol, hd, row });
+    }
     // Skip completely empty rows or rows with only empty strings
     if (row.length === 0 || row.every(cell => !cell.trim())) {
       if (currentScenario.description) {
@@ -95,11 +103,9 @@ export const grokRebalanceScenarios = (data: Array<string[]>) => {
       continue;
     }
 
-    const [label, aave, compound, usdn] =
-      row.length === 7 ? row : [row[0], ...row.slice(4)];
-    const [_l, Deposit, Cash, _acctAgoric, _acctNoble] =
-      row.length === 11 ? row : [row[0], '', '', '', '', ...row.slice(1)];
-    const [T2A, T2B, T2C] = row.slice(row.length === 7 ? 4 : 8);
+    const [label, aave, compound, usdn] = [row[0], ...row.slice(6)];
+    const [_l, Deposit, Cash, agoricLCA, nobleICA, acctEVM] = row;
+    const [T2A, T2B, T2C] = row.slice(emptyHdCol);
 
     // Skip header row
     if (label === '' && aave === 'Aave' && compound === 'Compound') {
@@ -129,6 +135,7 @@ export const grokRebalanceScenarios = (data: Array<string[]>) => {
             return s.slice('Seat: '.length) as SeatKeyword;
           if (s.match(/^LCA/)) return `cosmos:agoric-3:${localAccount0}`;
           if (s.match(/^ICA/)) return `cosmos:noble-1:noble1deadbeef`;
+          if (s.match(/^GMP/)) return `eip155:8453:0xe0d43135`;
           if (Object.keys(YieldProtocol).includes(s))
             return { open: s as YieldProtocol };
           throw Error(s);
@@ -138,15 +145,15 @@ export const grokRebalanceScenarios = (data: Array<string[]>) => {
         const [srcCol, destCol] = ['src', 'dest'].map(k =>
           row.findIndex(s => s === k),
         );
-        // console.debug({ srcCol, destCol, hd });
+        assert(srcCol >= 0, `src not found in row ${rownum}`);
+        assert(destCol >= 0, `dest not found in row ${rownum}`);
+        // console.debug({ srcCol, destCol, hd, flow });
         const src = asPlaceDef(hd[srcCol]) as AssetPlaceRef;
         const dest = asPlaceDef(hd[destCol]);
 
         const { give = {} } = currentScenario.proposal || {};
-        const amount =
-          src === 'Deposit' && 'Deposit' in give
-            ? (give!.Deposit as Dollars)
-            : (flow.at(-1)!.amount as Dollars);
+        const amount = T2B as Dollars;
+        assert(amount && amount.startsWith('$'), `bad amount in row ${rownum}`);
 
         flow.push({ src, dest, amount });
       }
