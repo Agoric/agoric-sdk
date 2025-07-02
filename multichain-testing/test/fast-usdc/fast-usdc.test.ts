@@ -326,7 +326,7 @@ test.serial('updateFastUsdcPolicy', async t => {
     builderOpts,
   );
 
-  const data = await retryUntilCondition(
+  await retryUntilCondition(
     () => vstorageClient.queryData(`published.${contractName}.feedPolicy`),
     async feedPolicy => {
       const result = await t.try(tt =>
