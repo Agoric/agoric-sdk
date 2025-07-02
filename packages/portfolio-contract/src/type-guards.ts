@@ -3,6 +3,7 @@
  * of the contract.
  */
 import {
+  isNatValue,
   type Amount,
   type Brand,
   type NatAmount,
@@ -104,12 +105,32 @@ export const makeProposalShapes = (
 type AxelarOfferArgs = {
   destinationEVMChain?: AxelarChain; // TODO: let AccountId express EVM chain
 };
-type FlowOfferArgs = {
+
+type PoolPlace = {
+  protocol: YieldProtocol;
+  // ... chain, pool #, ...
+};
+
+const PoolPlaces = {
+  k1: { protocol: 'USDN' },
+};
+
+type PoolKey = keyof typeof PoolPlaces;
+type BasisPoints = NatValue;
+
+type AllocationStrategyInfo = {
+  type: 'target-allocation';
+  allocation: Record<PoolKey, BasisPoints>; // basis points
+  // in basis-points
+};
+
+type XXXOfferArgs = {
   flow: MovementDesc[];
+  strategy: AllocationStrategyInfo;
 };
 
 export type SeatKeyword = 'Cash' | 'Deposit';
-export const seatKeywords = ['Cash', 'Deposit'];
+export const seatKeywords: SeatKeyword[] = ['Cash', 'Deposit'];
 harden(seatKeywords);
 
 export type AssetPlaceRef = SeatKeyword | AccountId | number;
@@ -127,8 +148,8 @@ export type MovementDesc = {
 };
 
 export type OfferArgsFor = {
-  openPortfolio: {} | FlowOfferArgs | AxelarOfferArgs;
-  rebalance: {} | FlowOfferArgs;
+  openPortfolio: {} | XXXOfferArgs | AxelarOfferArgs;
+  rebalance: {} | XXXOfferArgs;
 };
 
 export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
@@ -239,7 +260,7 @@ export type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
 export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>; // TODO: move to type-guards as external interface?
 
 /** vstorage path for portfolio, under published.ymax0 */
-export const makePortfolioPath = (id: number) => [`portfolio${id}`];
+export const makePortfolioPath = (id: number) => [`portfolio${id}`]; // ?portfolio=3
 export const makePositionPath = (parent: number, id: number) => [
   `portfolio${parent}`,
   'positions',
