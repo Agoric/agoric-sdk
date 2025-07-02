@@ -36,7 +36,11 @@ import {
   rebalance,
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
-import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
+import {
+  makeOfferArgsShapes,
+  makeProposalShapes,
+  type ProposalType,
+} from '../src/type-guards.ts';
 import { axelarChainsMap } from './mocks.ts';
 import { makeIncomingEVMEvent } from './supports.ts';
 
@@ -214,6 +218,7 @@ const mocks = (
     timer,
     rebalance: rebalanceHost as any,
     proposalShapes: makeProposalShapes(USDC),
+    offerArgsShapes: makeOfferArgsShapes(USDC),
     marshaller,
     portfoliosNode,
     usdcBrand: USDC,
@@ -304,9 +309,10 @@ test('Noble Dollar Swap, Lock messages', t => {
 });
 
 test('open portfolio with USDN position', async t => {
+  // XXX NobleFees: make(USDC, 100n)?
   const { orch, ctx, offer, storage } = mocks(
     {},
-    { USDNSwapIn: make(USDC, 50_000_000n), NobleFees: make(USDC, 100n) },
+    { Deposit: make(USDC, 50_000_000n) },
   );
   const { log, seat } = offer;
 
@@ -338,7 +344,7 @@ test('open portfolio with Aave and USDN positions', async t => {
   const { orch, ctx, offer, storage, tapPK } = mocks(
     {},
     {
-      USDNSwapIn: oneThird,
+      USDN: oneThird,
       Aave: oneThird,
       AaveGmp: make(USDC, 100n),
       AaveAccount: make(USDC, 150n),

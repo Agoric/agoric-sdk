@@ -17,7 +17,6 @@ import type {
   CosmosChainAddress,
   Denom,
   DenomAmount,
-  OrchestrationAccount,
   OrchestrationFlow,
   Orchestrator,
 } from '@agoric/orchestration';
@@ -25,7 +24,6 @@ import {
   AxelarGMPMessageType,
   type AxelarGmpOutgoingMemo,
 } from '@agoric/orchestration/src/axelar-types.js';
-import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import {
   buildGMPPayload,
   gmpAddresses,
@@ -36,7 +34,7 @@ import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { assert, Fail } from '@endo/errors';
 import type { YieldProtocol } from './constants.js';
-import type { PortfolioKit, Position, USDNPosition } from './portfolio.exo.ts';
+import type { PortfolioKit, USDNPosition } from './portfolio.exo.ts';
 import type {
   AxelarChainsMap,
   BaseGmpArgs,
@@ -49,9 +47,10 @@ import type {
   ProposalType,
 } from './type-guards.ts';
 import { GMPArgsShape } from './type-guards.ts';
+import { maybeFlip, type AssetMovement, trackFlow } from './run-flow.ts';
 // TODO: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
-const trace = makeTracer('PortF');
+export const trace = makeTracer('PortF');
 const { add } = AmountMath;
 const { keys } = Object;
 
@@ -461,93 +460,6 @@ const withdrawFromCompound = async (
     reader,
   );
 };
-/* c8 ignore end */
-
-type AssetPlace =
-  | { pos: Position }
-  | { account: OrchestrationAccount<any> }
-  | { seat: ZCFSeat; keyword: string };
-
-const placeLabel = (place: AssetPlace) => {
-  if ('pos' in place) return `position${place.pos.getPositionId()}`;
-  if ('account' in place) return coerceAccountId(place.account.getAddress());
-  return `seat:${place.keyword}`;
-};
-
-type AssetMovement = {
-  how: string;
-  amount: Amount<'nat'>;
-  src: AssetPlace;
-  dest: AssetPlace;
-  apply: () => Promise<void>;
-  recover: () => Promise<void>;
-};
-const moveStatus = ({ how, src, dest, amount }: AssetMovement) => ({
-  how,
-  src: placeLabel(src),
-  dest: placeLabel(dest),
-  amount,
-});
-const errmsg = (err: any) => ('message' in err ? err.message : `${err}`);
-
-const flip = (fwd: AssetMovement) => {
-  const { src, dest, apply, recover } = fwd;
-  return { ...fwd, src: dest, dest: src, apply: recover, recover: apply };
-};
-const maybeFlip = (needed: boolean, move: AssetMovement) =>
-  needed ? flip(move) : move;
-
-const trackFlow = async (
-  reporter: GuestInterface<PortfolioKit['reporter']>,
-  moves: AssetMovement[],
-) => {
-  const flowId = reporter.allocateFlowId();
-  let step = 1;
-  try {
-    for (const move of moves) {
-      trace(step, moveStatus(move));
-      reporter.publishFlowStatus(flowId, { step, ...moveStatus(move) });
-      await move.apply();
-      const { amount, src, dest } = move;
-      if ('pos' in src) {
-        src.pos.recordTransferOut(amount);
-      }
-      if ('pos' in dest) {
-        dest.pos.recordTransferIn(amount);
-      }
-      step += 1;
-    }
-    // TODO: delete the flow storage node
-    // reporter.publishFlowStatus(flowId, { complete: true });
-  } catch (err) {
-    console.error('⚠️ step', step, ' failed', err);
-    const failure = moves[step - 1];
-    const errStep = step;
-    while (step > 1) {
-      step -= 1;
-      const move = moves[step - 1];
-      const how = `unwind: ${move.how}`;
-      reporter.publishFlowStatus(flowId, { step, ...moveStatus(move), how });
-      try {
-        await move.recover();
-      } catch (err) {
-        console.error('⚠️ unwind step', step, ' failed', err);
-        // if a recover fails, we just give up and report `where` the assets are
-        const { dest: where, ...ms } = moveStatus(move);
-        const final = { step, ...ms, how, where, error: errmsg(err) };
-        reporter.publishFlowStatus(flowId, final);
-        throw err;
-      }
-    }
-    reporter.publishFlowStatus(flowId, {
-      step: errStep,
-      ...moveStatus(failure),
-      error: errmsg(err),
-    });
-    throw err;
-  }
-};
-
 const changeUSDNPosition = async (
   ctx: PortfolioInstanceContext,
   seat: ZCFSeat,
