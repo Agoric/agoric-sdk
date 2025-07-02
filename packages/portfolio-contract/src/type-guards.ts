@@ -3,7 +3,6 @@
  * of the contract.
  */
 import {
-  isNatValue,
   type Amount,
   type Brand,
   type NatAmount,
@@ -16,10 +15,10 @@ import type {
   OrchestrationAccount,
 } from '@agoric/orchestration';
 import { type ContractCall } from '@agoric/orchestration/src/axelar-types.js';
-import type { AmountKeywordRecord, Keyword } from '@agoric/zoe';
+import type { AmountKeywordRecord } from '@agoric/zoe';
 import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
 import { M } from '@endo/patterns';
-import { AxelarChains, YieldProtocol } from './constants.js';
+import { AxelarChains, YieldProtocol, SupportedChain } from './constants.js';
 
 const { fromEntries, keys } = Object;
 
@@ -42,18 +41,16 @@ export type CompoundGive = {
 export type GmpGive = {} | AaveGive | CompoundGive | (AaveGive & CompoundGive);
 
 export type OpenPortfolioGive = { Access?: Amount<'nat'> } & (
-  | { Deposit: NatAmount; NobleFees?: NatAmount }
+  | { Deposit: NatAmount }
   | GmpGive
   | {}
 );
 
-type RebalanceWant = { Cash: NatAmount };
-
 export type ProposalType = {
   openPortfolio: { give: OpenPortfolioGive };
   rebalance:
-    | { give: OpenPortfolioGive; want: {} }
-    | { want: RebalanceWant; give: {} };
+    | { give: OpenPortfolioGive; want: {} } // XXX Access is incoherent here
+    | { want: { Cash: NatAmount }; give: {} };
 };
 
 export const makeProposalShapes = (
@@ -112,8 +109,10 @@ type PoolPlace = {
 };
 
 const PoolPlaces = {
-  k1: { protocol: 'USDN' },
+  usdn: { protocol: 'USDN', vault: null },
+  usdnLock: { protocol: 'USDN', vault: 1 },
 };
+harden(PoolPlaces);
 
 type PoolKey = keyof typeof PoolPlaces;
 type BasisPoints = NatValue;
@@ -133,13 +132,23 @@ export type SeatKeyword = 'Cash' | 'Deposit';
 export const seatKeywords: SeatKeyword[] = ['Cash', 'Deposit'];
 harden(seatKeywords);
 
-export type AssetPlaceRef = SeatKeyword | AccountId | number;
-const AssetPlaceRefShape = M.or('Cash', 'Deposit', M.string(), M.number());
+// TODO: how to ensure SeatKeyword is disjoint with SupportedChain?
+
+export type AssetPlaceRef =
+  | SeatKeyword
+  | `${SupportedChain}.makeAccount()`
+  | number;
+const PositionRefShape = M.number();
+const AssetPlaceRefShape = M.or(
+  ...seatKeywords,
+  ...keys(PoolPlaces),
+  PositionRefShape,
+);
 export type AssetPlaceDef =
   | AssetPlaceRef
   | { open: YieldProtocol; chainId?: CaipChainId };
 const AssetPlaceDefShap = M.or(AssetPlaceRefShape, {
-  open: M.or(...keys(YieldProtocol)),
+  open: M.or(...keys(PoolPlaces)),
 });
 export type MovementDesc = {
   amount: NatAmount;
