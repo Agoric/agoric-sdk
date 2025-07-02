@@ -8,6 +8,7 @@
     "src",
     "tools"
   ],
+  "main": "src/index.js",
   "scripts": {
     "build": "esbuild ../fast-usdc-contract/src/fast-usdc.contract.ts --bundle --platform=neutral --main-fields=main --outfile=dist/fast-usdc.contract.bundle.js --metafile=dist/fast-usdc.contract.meta.json",
     "test": "yarn build && ava",
