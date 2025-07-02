@@ -420,14 +420,6 @@ export const preparePortfolioKit = (
         getPortfolioId() {
           return this.state.portfolioId;
         },
-        getAccount(id: AccountId) {
-          const { state } = this;
-          for (const acct of [state.nobleAccount, state.localAccount]) {
-            const acctId = coerceAccountId(acct.getAddress());
-            if (acctId === id) return acct;
-          }
-          throw Fail`no such account: ${q(id)}`;
-        },
         getGMPAddress(protocol: YieldProtocol) {
           const { positions } = this.state;
           for (const pos of positions.values()) {

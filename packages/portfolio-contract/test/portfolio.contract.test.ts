@@ -259,15 +259,14 @@ test('open portfolio with USDN, Aave positions', async t => {
 
 test.only('open portfolio with USDN position and withdraw funds', async t => {
   const { trader1, common } = await setupTrader(t);
-  const { usdc, poc24 } = common.brands;
+  const { usdc, poc26 } = common.brands;
 
   // First, open a portfolio with USDN position
   const doneP = trader1.openPortfolio(
     t,
     {
-      USDNLock: usdc.units(3_333),
-      NobleFees: usdc.make(100n),
-      Access: poc24.make(1n),
+      Deposit: usdc.units(3_333),
+      Access: poc26.make(1n),
     },
     { destinationEVMChain: 'Ethereum' }, // XXX shouldn't be needed
   );

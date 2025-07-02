@@ -144,6 +144,13 @@ const AssetPlaceRefShape = M.or(
   ...keys(PoolPlaces),
   PositionRefShape,
 );
+
+export const getChainNameOfPlaceRef = (ref: AssetPlaceRef) => {
+  if (typeof ref !== 'string') return undefined;
+  const m = ref.match(/^(?<chain>)\.makeAccount\(\)$/);
+  return m?.groups?.chain;
+};
+
 export type AssetPlaceDef =
   | AssetPlaceRef
   | { open: YieldProtocol; chainId?: CaipChainId };

@@ -476,14 +476,6 @@ const placeLabel = (place: AssetPlace) => {
   return `seat:${place.keyword}`;
 };
 
-type AssetMovement = {
-  how: string;
-  amount: Amount<'nat'>;
-  src: AssetPlace;
-  dest: AssetPlace;
-  apply: () => Promise<void>;
-  recover: () => Promise<void>;
-};
 const moveStatus = ({ how, src, dest, amount }: AssetMovement) => ({
   how,
   src: placeLabel(src),
@@ -491,57 +483,6 @@ const moveStatus = ({ how, src, dest, amount }: AssetMovement) => ({
   amount,
 });
 const errmsg = (err: any) => ('message' in err ? err.message : `${err}`);
-
-const trackFlow = async (
-  reporter: GuestInterface<PortfolioKit['reporter']>,
-  moves: AssetMovement[],
-) => {
-  const flowId = reporter.allocateFlowId();
-  let step = 1;
-  try {
-    for (const move of moves) {
-      trace(step, moveStatus(move));
-      reporter.publishFlowStatus(flowId, { step, ...moveStatus(move) });
-      await move.apply();
-      const { amount, src, dest } = move;
-      if ('pos' in src) {
-        src.pos.recordTransferOut(amount);
-      }
-      if ('pos' in dest) {
-        dest.pos.recordTransferIn(amount);
-      }
-      step += 1;
-    }
-    // TODO: delete the flow storage node
-    // reporter.publishFlowStatus(flowId, { complete: true });
-  } catch (err) {
-    console.error('⚠️ step', step, ' failed', err);
-    const failure = moves[step - 1];
-    const errStep = step;
-    while (step > 1) {
-      step -= 1;
-      const move = moves[step - 1];
-      const how = `unwind: ${move.how}`;
-      reporter.publishFlowStatus(flowId, { step, ...moveStatus(move), how });
-      try {
-        await move.recover();
-      } catch (err) {
-        console.error('⚠️ unwind step', step, ' failed', err);
-        // if a recover fails, we just give up and report `where` the assets are
-        const { dest: where, ...ms } = moveStatus(move);
-        const final = { step, ...ms, how, where, error: errmsg(err) };
-        reporter.publishFlowStatus(flowId, final);
-        throw err;
-      }
-    }
-    reporter.publishFlowStatus(flowId, {
-      step: errStep,
-      ...moveStatus(failure),
-      error: errmsg(err),
-    });
-    throw err;
-  }
-};
 
 const provideAccountInfo = async <C extends ChainAccountKey>(
   orch: Orchestrator,

@@ -18,6 +18,7 @@ harden(YieldProtocol);
 export const SupportedChain = /** @type {const} */ ({
   agoric: 'agoric',
   noble: 'noble',
+  base: 'base',
   // ... base etc.
   // TODO: check privateArgs for chainInfo for all of these
 });

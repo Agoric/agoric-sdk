@@ -7,12 +7,14 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { makeIssuerKit, type NatAmount } from '@agoric/ertp';
 import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { mustMatch } from '@agoric/store';
 import {
   makeFakeStorageKit,
   withAmountUtils,
 } from '@agoric/zoe/tools/test-utils.js';
 import { makeHeapZone } from '@agoric/zone';
+import { q } from '@endo/errors';
 import { makeMarshal } from '@endo/marshal';
 import { Far } from '@endo/pass-style';
 import { objectMap } from '@endo/patterns';
@@ -21,7 +23,9 @@ import { applyProRataStrategyTo, interpretFlowDesc } from '../src/run-flow.ts';
 import {
   makeOfferArgsShapes,
   makeProposalShapes,
+  type LocalAccount,
   type MovementDesc,
+  type NobleAccount,
   type OfferArgsFor,
   type ProposalType,
 } from '../src/type-guards.ts';
@@ -39,14 +43,13 @@ import {
   simulateUpcallFromAxelar,
 } from './contract-setup.ts';
 import { localAccount0 } from './mocks.ts';
-import { q } from '@endo/errors';
 
 const makeOfferArgs = (
   offerArgsShapes: ReturnType<typeof makeOfferArgsShapes>,
   scenario: RebalanceScenario,
   $: (d: Dollars) => NatAmount,
   isEVM: boolean,
-) => {
+): OfferArgsFor['rebalance'] => {
   const { flow } = scenario.offerArgs || {};
   const offerArgs = {
     flow: (flow || []).map(
@@ -75,8 +78,14 @@ test('interpretFlowDesc handles 1 scenario', async t => {
     Far(chainId, {
       getAddress: () => ({ value, chainId }),
     });
-  const lca = makeAccount(localAccount0, 'agoric-3' as const);
-  const ica = makeAccount('noble1deadbeef', 'noble-1' as const);
+  const lca = makeAccount(
+    localAccount0,
+    'agoric-3' as const,
+  ) as unknown as LocalAccount;
+  const ica = makeAccount(
+    'noble1deadbeef',
+    'noble-1' as const,
+  ) as unknown as NobleAccount;
 
   const marshaller = makeMarshal();
   const storage = makeFakeStorageKit('root');
@@ -94,13 +103,14 @@ test('interpretFlowDesc handles 1 scenario', async t => {
   });
   const kit = makePortfolioKit({
     portfolioId: 1,
-    localAccount: lca as any,
-    nobleAccount: ica as any,
   });
 
-  const actual = interpretFlowDesc(args.flow, kit, null as any);
+  assert('flow' in args);
+  const actual = interpretFlowDesc(args.flow, kit.reader);
 
-  const pos = kit.manager.provideUSDNPosition();
+  const pos = kit.manager.provideUSDNPosition(
+    coerceAccountId(ica.getAddress()),
+  );
   const seatDeposit = { keyword: 'Deposit', seat: null };
   const amount = $('$3,333');
   t.deepEqual(actual, [
@@ -209,32 +219,32 @@ test('use flow/path by reference', t => {
 
   // const scenario = (await scenariosP)['Open with 3 positions']
 
-  const agoricLCA = 'cosmos:agoric-3:agoric1sdlfj';
-  const nobleICA = 'cosmos:noble-1:noble1rgsrsdlfj';
-  const evmAcct = 'eip155:xyz:0xDEADBEEF';
+  const agoricAcct = 'agoric.makeAccount()';
+  const nobleAcct = 'noble.makeAccount()';
+  const evmAcct = 'base.makeAccount()';
 
   const prev: MovementDesc[] = [
-    { amount: $('$10,000'), src: 'Deposit', dest: agoricLCA },
-    { amount: $('$10,000'), src: agoricLCA, dest: nobleICA },
-    { amount: $('$3,333.33'), src: nobleICA, dest: { open: 'USDN' } },
-    { amount: $('$6,666.67'), src: nobleICA, dest: evmAcct },
+    { amount: $('$10,000'), src: 'Deposit', dest: agoricAcct },
+    { amount: $('$10,000'), src: agoricAcct, dest: nobleAcct },
+    { amount: $('$3,333.33'), src: nobleAcct, dest: { open: 'USDN' } },
+    { amount: $('$6,666.67'), src: nobleAcct, dest: evmAcct },
     { amount: $('$3,333.33'), src: evmAcct, dest: { open: 'Compound' } },
     { amount: $('$3,333.33'), src: evmAcct, dest: { open: 'Aave' } },
   ];
 
   t.deepEqual(
-    applyProRataStrategyTo($('$10,000'), prev, agoricLCA),
+    applyProRataStrategyTo($('$10,000'), prev, agoricAcct),
     prev.slice(1),
   );
   const actual: MovementDesc[] = applyProRataStrategyTo(
     $('$100'),
     prev,
-    agoricLCA,
+    agoricAcct,
   );
   t.deepEqual(actual, [
-    { amount: $('$100'), src: agoricLCA, dest: nobleICA },
-    { amount: $('$33.3333'), src: nobleICA, dest: { open: 'USDN' } },
-    { amount: $('$66.6667'), src: nobleICA, dest: evmAcct },
+    { amount: $('$100'), src: agoricAcct, dest: nobleAcct },
+    { amount: $('$33.3333'), src: nobleAcct, dest: { open: 'USDN' } },
+    { amount: $('$66.6667'), src: nobleAcct, dest: evmAcct },
     { amount: $('$33.3333'), src: evmAcct, dest: { open: 'Compound' } },
     { amount: $('$33.3333'), src: evmAcct, dest: { open: 'Aave' } },
   ]);
