@@ -159,15 +159,20 @@ redeploy-ymax: poc-asset agoricNames.chain
 # cf. ymax-tool.ts
 TRADER1=noble18qlqfelxhe7tszqqprm2eqdpzt9s6ry025y3j5
 TRADER1ag=agoric1yupasge4528pgkszg9v328x4faxtkldsnygwjl
+TRADER1_MNEMONIC = "cause eight cattle slot course mail more aware vapor slab hobby match"
+
 poc-asset: beneficiary-wallet
 	yarn test:ymd test/ymax0 -m poc-asset || \
 	./scripts/deploy-cli.ts ../packages/portfolio-deploy/src/access-token-setup.build.js \
 		beneficiary=$(TRADER1ag)
 
+# Calling ./scripts/ymax-tool.ts twice to create a smart wallet so that TRADER1
+# can receive the poc tokens
 beneficiary-wallet: ./scripts/ymax-tool.ts
 	yarn test:ymd test/ymax0 -m beneficiary-wallet || \
 	(make ADDR=$(TRADER1ag) fund-wallet && \
-	MNEMONIC="cause eight cattle slot course mail more aware vapor slab hobby match" ./scripts/ymax-tool.ts 0.1 --exit-success)
+	MNEMONIC=$(TRADER1_MNEMONIC) ./scripts/ymax-tool.ts 0.1 --exit-success --skip-poll && \
+	MNEMONIC=$(TRADER1_MNEMONIC) ./scripts/ymax-tool.ts 0.1 --exit-success)
 
 
 agoricNames.chain:
@@ -178,7 +183,7 @@ agoricNames.chain:
 ##
 # Using ymax
 open-with-usdn: deploy-ymax usdc-available ./scripts/ymax-tool.ts
-	./scripts/ymax-tool.ts 1.03
+	(MNEMONIC=$(TRADER1_MNEMONIC) ./scripts/ymax-tool.ts 1.03)
 
 usdc-available: ./scripts/noble-usdn-lab.ts
 	yarn test:ymd test/ymax0 -m usdc-available || \

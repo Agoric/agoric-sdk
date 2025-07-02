@@ -4,6 +4,7 @@
  */
 import '@endo/init';
 
+import { parseArgs } from 'node:util';
 import {
   fetchEnvNetworkConfig,
   makeSmartWalletKit,
@@ -21,6 +22,15 @@ import {
   type GeneratedType,
 } from '@cosmjs/proto-signing';
 import { SigningStargateClient, type StdFee } from '@cosmjs/stargate';
+
+/**
+ * Generate the usage help message for this tool
+ */
+const getUsage = (programName: string): string => `USAGE: ${programName} <volume> [options]
+Options:
+  --skip-poll       Skip polling for offer result
+  --exit-success    Exit with success code even if errors occur
+  -h, --help        Show this help message`;
 
 const toAccAddress = (address: string): Uint8Array => {
   return fromBech32(address).data;
@@ -50,11 +60,13 @@ const openPosition = async (
     client,
     walletKit,
     now,
+    skipPoll = false,
   }: {
     address: string;
     client: SigningStargateClient;
     walletKit: Awaited<ReturnType<typeof makeSmartWalletKit>>;
     now: () => number;
+    skipPoll?: boolean;
   },
 ) => {
   const brand = fromEntries(await walletKit.readPublished('agoricNames.brand'));
@@ -99,13 +111,33 @@ const openPosition = async (
   );
   trace('tx', actual);
 
+  if (skipPoll) {
+    trace('skipping poll as per skipPoll flag');
+    const status = { result: { transaction: actual } };
+    return status;
+  }
+  
+  trace(
+    'starting to poll for offer result from block height',
+    before.header.height,
+  );
   const status = await walletKit.pollOffer(
     address,
     action.offer.id,
     before.header.height,
   );
-  trace('status', status);
-  if ('error' in status) throw Error(status.error);
+
+  trace('final offer status', status);
+  if ('error' in status) {
+    trace('offer failed with error', status.error);
+    throw Error(status.error);
+
+  }
+  trace('offer completed successfully', {
+    statusType: 'success',
+    result: status.result,
+  });
+
   return status;
 };
 
@@ -118,8 +150,38 @@ const main = async (
     connectWithSigner = SigningStargateClient.connectWithSigner,
   } = {},
 ) => {
-  const [volume] = argv.slice(2);
-  if (!volume) throw Error(`USAGE: ${argv[1]} 123.45`);
+  // Parse command line arguments using node:util's parseArgs
+  const { values, positionals } = parseArgs({
+    args: argv.slice(2),
+    options: {
+      'skip-poll': {
+        type: 'boolean',
+        default: false,
+      },
+      'exit-success': {
+        type: 'boolean',
+        default: false,
+      },
+      help: {
+        type: 'boolean',
+        short: 'h',
+        default: false,
+      },
+    },
+    allowPositionals: true,
+  });
+
+  // Extract options
+  const skipPoll = values['skip-poll'];
+  const exitSuccess = values['exit-success'];
+  const [volume] = positionals;
+
+  // Show help if requested or if volume is not provided
+  if (values.help || !volume) {
+    console.log(getUsage(argv[1]));
+    process.exit(values.help ? 0 : 1);
+  }
+
   const { MNEMONIC } = env;
   if (!MNEMONIC) throw Error(`MNEMONIC not set`);
 
@@ -135,12 +197,33 @@ const main = async (
   const client = await connectWithSigner(networkConfig.rpcAddrs[0], signer, {
     registry: new Registry(agoricRegistryTypes),
   });
-  await openPosition(volume, { address, client, walletKit, now: Date.now });
+  
+  try {
+    // Pass the parsed skipPoll option to openPosition
+    await openPosition(volume, {
+      address,
+      client,
+      walletKit,
+      now: Date.now,
+      skipPoll,
+    });
+  } catch (err) {
+    // If we should exit with success code, throw a special non-error object
+    if (exitSuccess) {
+      throw { exitSuccess: true, originalError: err };
+    }
+    throw err;
+  }
 };
 
 // TODO: use endo-exec so we can unit test the above
 main().catch(err => {
+  // Check if this is our special non-error signal for exitSuccess
+  if (err && typeof err === 'object' && 'exitSuccess' in err) {
+    console.error('Error occurred but exiting with success code as requested:', err.originalError);
+    process.exit(0);
+  }
+
   console.error(err);
-  const code = '--exit-success' in process.argv ? 0 : 1;
-  process.exit(code);
+  process.exit(1);
 });
