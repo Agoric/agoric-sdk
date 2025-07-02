@@ -31,13 +31,15 @@ jobs:
         run: corepack enable
 
       - name: Add ./bin to PATH
-        run: |
-          echo "$(pwd)/bin" >> $GITHUB_PATH
-          echo "such field health riot cost kitten silly tube flash wrap festival portion imitate this make question host bitter puppy wait area glide soldier knee" | $(pwd)/bin/agd keys add gov1 --recover --keyring-backend test
+        run: echo "$(pwd)/bin" >> $GITHUB_PATH
+
       - name: Install dependencies
         run: |
           yarn install
           yarn build
+
+      - name: Add gov1 key
+        run: echo "such field health riot cost kitten silly tube flash wrap festival portion imitate this make question host bitter puppy wait area glide soldier knee" | $(pwd)/bin/agd keys add gov1 --recover --keyring-backend test
 
       - name: Run E2E tests
         run: |
