@@ -18,7 +18,7 @@
     "test:e2e": "bash ./e2e-test.sh",
     "relay": "cd test/e2e && node relay.mjs",
     "e2e:relay": "npx concurrently --kill-others \"yarn relay\" \"yarn e2e:test\"",
-    "e2e:test": "binary=agd ATOM_DENOM=atom CHAINID=agoriclocal AGORIC_SDK=../.. yarn test test/e2e/*.test.js",
+    "e2e:test": "binary=agd ATOM_DENOM=atom CHAINID=agoriclocal AGORIC_SDK=../.. yarn test $(pwd)/test/e2e/e2e.test.js",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
     "lint:eslint": "yarn run -T eslint .",
