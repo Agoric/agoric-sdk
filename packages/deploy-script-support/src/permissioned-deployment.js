@@ -34,7 +34,7 @@ import { flags } from '@agoric/pola-io';
  *
  * @param {CmdRunner} agoric
  * @param {FileRd} builder
- * @param {Record<string, string | string[]>} [builderOpts]
+ * @param {string[]} [builderOpts]
  * @param {{cwd?: FileRd}} [io]
  *
  * @returns {Promise<Plan>}
@@ -49,10 +49,10 @@ import { flags } from '@agoric/pola-io';
 export const runBuilder = async (
   agoric,
   builder,
-  builderOpts = {},
+  builderOpts = [],
   { cwd = builder.join('../../') } = {},
 ) => {
-  const cmd = agoric.withFlags(...(builderOpts ? flags(builderOpts) : []));
+  const cmd = agoric.withFlags(...builderOpts);
   const { stdout } = await cmd.exec(['run', String(builder)]);
   const match = stdout?.match(/ (?<name>[-\w]+)-permit.json/);
   if (!(match && match.groups)) {
@@ -156,6 +156,7 @@ export const submitCoreEval = async (
   {
     title = evals[0].script,
     description = title,
+    // TODO: get qty from query params
     depositOpts: { denom = 'ubld', unit = 1_000_000, qty = 10 } = {},
     deposit = `${qty * unit}${denom}`,
   } = {},

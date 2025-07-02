@@ -20,8 +20,6 @@ const TITLE = 'ymax0 w/Noble Dollar';
 
 const USAGE = 'deploy-cli <builder> <key=val>... [--net N] [--from K]';
 
-const { fromEntries } = Object;
-
 const options = /** @type {const} */ {
   net: { type: 'string', default: 'devnet' },
   from: { type: 'string', default: 'genesis' },
@@ -35,12 +33,46 @@ type ParsedArgs = {
   description?: string;
 };
 
+const acceptProposal = async () => {
+  const CHAINID = 'agoriclocal';
+  const GAS_ADJUSTMENT = '1.2';
+  const SIGN_BROADCAST_OPTS = `--keyring-backend=test --chain-id=${CHAINID} --gas=auto --gas-adjustment=${GAS_ADJUSTMENT} --yes -b block`;
+  const execCmd = async cmd => {
+    const args = ['-c', cmd];
+    const opts = { stdio: 'inherit' };
+    return execa('docker', ['exec', '-i', 'agoric', 'bash', ...args], opts);
+  };
+  const queryCmd = `agd query gov proposals --output json | jq -c '[.proposals[] | if .proposal_id == null then .id else .proposal_id end | tonumber] | max'`;
+
+  const result = await execa('docker', [
+    'exec',
+    '-i',
+    'agoric',
+    'bash',
+    '-c',
+    queryCmd,
+  ]);
+
+  const proposalId = result.stdout;
+  console.log(`Voting on proposal ID ${proposalId}`);
+  await execCmd(
+    `agd tx gov vote ${proposalId} yes --from=validator ${SIGN_BROADCAST_OPTS}`,
+  );
+
+  console.log(`Fetching details for proposal ID ${proposalId}`);
+  const detailsCommand = `agd query gov proposals --output json | jq -c '.proposals[] | select(.proposal_id == "${proposalId}" or .id == "${proposalId}") | [.proposal_id or .id, .voting_end_time, .status]'`;
+  await execCmd(detailsCommand);
+};
+
+const printAndExec = (cmd, args) => {
+    return execa(cmd, args);
+};
 const main = async (
   argv = process.argv,
   {
     fetch = globalThis.fetch,
     execFile = (cmd, args, opts) =>
-      execa({ verbose: 'short' })(cmd, args, opts),
+      printAndExec(cmd, args),
   } = {},
 ) => {
   const getVersion = () =>
@@ -65,7 +97,12 @@ const main = async (
   // 1. build
   const pkgRd = makeFileRd(pkg, { fsp, path });
   const agoric = makeCmdRunner('npx', { execFile }).subCommand('agoric');
-  const opts = fromEntries(bindings.map(b => b.split('=', 2)));
+  const opts = bindings
+    .map(b => {
+      const [n, v] = b.split('=', 2);
+      return [`--${n}`, v];
+    })
+    .flat();
   console.log('running', builder);
   const plan = await runBuilder(agoric, pkgRd.join(builder), opts, {
     cwd: pkgRd,
@@ -98,7 +135,9 @@ const main = async (
   });
   console.log(title, info);
 
-  throw Error('TODO: wait for tx? wait for voting end?');
+  // throw Error('TODO: wait for tx? wait for voting end?');
+
+  if (net === 'local') await acceptProposal();
 };
 
 main().catch(err => {

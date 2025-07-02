@@ -1,0 +1,47 @@
+name: Portfolio Axelar E2E Test
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  run-e2e-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install docker-compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install docker-compose
+
+      - name: Update submodules
+        run: git submodule update --init --recursive
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+
+      - name: Set up yarn
+        run: corepack enable
+
+      - name: Add ./bin to PATH
+        run: echo "$(pwd)/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: |
+          yarn install
+          yarn build
+
+      - name: Add gov1 key
+        run: echo "such field health riot cost kitten silly tube flash wrap festival portion imitate this make question host bitter puppy wait area glide soldier knee" | $(pwd)/bin/agd keys add gov1 --recover --keyring-backend test
+
+      - name: Run E2E tests
+        run: |
+          cd packages/portfolio-deploy
+          yarn test:e2e

@@ -83,7 +83,7 @@ export const makeSwapLockMessages = (
   usdcIn: bigint,
   {
     poolId = 0n,
-    denom = 'uusdc',
+    denom = 'ubld',
     denomTo = 'uusdn',
     vault = 1, // VaultType.STAKED,
     usdnOut = undefined as bigint | undefined,
@@ -676,10 +676,13 @@ export const rebalance = async (
       keyword: protocol,
       amounts: { [protocol]: give[protocol] },
     };
-    await sendTokensViaCCTP(orch, ctx, seat, args, kit, protocol);
+    if (false) {
 
-    // Wait before supplying funds to aave - make sure tokens reach the remote EVM account
-    kit.manager.waitKLUDGE(20n);
+      await sendTokensViaCCTP(orch, ctx, seat, args, kit, protocol);
+      
+      // Wait before supplying funds to aave - make sure tokens reach the remote EVM account
+      kit.manager.waitKLUDGE(20n);
+    }
 
     const { value: transferAmount } = give[protocol] as Amount<'nat'>;
     const gmpArgs = {

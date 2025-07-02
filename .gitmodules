@@ -4,3 +4,6 @@
 [submodule "packages/xsnap/xsnap-native"]
 	path = packages/xsnap/xsnap-native
 	url = https://github.com/agoric-labs/xsnap-pub
+[submodule "packages/portfolio-deploy/test/e2e/agoric-to-axelar-local"]
+	path = packages/portfolio-deploy/test/e2e/agoric-to-axelar-local
+	url = https://github.com/agoric-labs/agoric-to-axelar-local.git
