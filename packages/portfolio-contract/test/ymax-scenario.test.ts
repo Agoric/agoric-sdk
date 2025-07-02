@@ -4,9 +4,20 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { makeIssuerKit, type NatAmount } from '@agoric/ertp';
 import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { mustMatch } from '@agoric/store';
+import {
+  makeFakeStorageKit,
+  withAmountUtils,
+} from '@agoric/zoe/tools/test-utils.js';
+import { makeHeapZone } from '@agoric/zone';
+import { makeMarshal } from '@endo/marshal';
+import { Far } from '@endo/pass-style';
 import { objectMap } from '@endo/patterns';
+import { preparePortfolioKit } from '../src/portfolio.exo.ts';
+import { applyProRataStrategyTo, interpretFlowDesc } from '../src/run-flow.ts';
 import {
   makeOfferArgsShapes,
   makeProposalShapes,
@@ -27,20 +38,7 @@ import {
   simulateCCTPAck,
   simulateUpcallFromAxelar,
 } from './contract-setup.ts';
-import { mustMatch } from '@agoric/store';
-import { makeIssuerKit, type NatAmount } from '@agoric/ertp';
-import { makeHeapZone } from '@agoric/zone';
-import { preparePortfolioKit } from '../src/portfolio.exo.ts';
-import { interpretFlowDesc } from '../src/run-flow.ts';
-import {
-  makeFakeStorageKit,
-  withAmountUtils,
-} from '@agoric/zoe/tools/test-utils.js';
 import { localAccount0 } from './mocks.ts';
-import type { OrchestrationAccount } from '@agoric/orchestration';
-import { Far } from '@endo/pass-style';
-import { makeMarshal } from '@endo/marshal';
-import { documentStorageSchema } from '@agoric/internal/src/storage-test-utils.js';
 
 const makeOfferArgs = (
   offerArgsShapes: ReturnType<typeof makeOfferArgsShapes>,
@@ -202,3 +200,41 @@ test.skip('scenario:', rebalanceScenarioMacro, 'Aave -> USDN');
 const scenariosP = importCSV('./move-cases.csv', import.meta.url).then(data =>
   grokRebalanceScenarios(data),
 );
+
+test('use flow/path by reference', t => {
+  const usdc = withAmountUtils(makeIssuerKit('USDC'));
+  const $ = (amt: Dollars) =>
+    multiplyBy(usdc.units(1), parseRatio(numeral(amt), usdc.brand));
+
+  // const scenario = (await scenariosP)['Open with 3 positions']
+
+  const agoricLCA = 'cosmos:agoric-3:agoric1sdlfj';
+  const nobleICA = 'cosmos:noble-1:noble1rgsrsdlfj';
+  const evmAcct = 'eip155:xyz:0xDEADBEEF';
+
+  const prev: MovementDesc[] = [
+    { amount: $('$10,000'), src: 'Deposit', dest: agoricLCA },
+    { amount: $('$10,000'), src: agoricLCA, dest: nobleICA },
+    { amount: $('$3,333.33'), src: nobleICA, dest: { open: 'USDN' } },
+    { amount: $('$6,666.67'), src: nobleICA, dest: evmAcct },
+    { amount: $('$3,333.33'), src: evmAcct, dest: { open: 'Compound' } },
+    { amount: $('$3,333.33'), src: evmAcct, dest: { open: 'Aave' } },
+  ];
+
+  t.deepEqual(
+    applyProRataStrategyTo($('$10,000'), prev, agoricLCA),
+    prev.slice(1),
+  );
+  const actual: MovementDesc[] = applyProRataStrategyTo(
+    $('$100'),
+    prev,
+    agoricLCA,
+  );
+  t.deepEqual(actual, [
+    { amount: $('$100'), src: agoricLCA, dest: nobleICA },
+    { amount: $('$33.3333'), src: nobleICA, dest: { open: 'USDN' } },
+    { amount: $('$66.6667'), src: nobleICA, dest: evmAcct },
+    { amount: $('$33.3333'), src: evmAcct, dest: { open: 'Compound' } },
+    { amount: $('$33.3333'), src: evmAcct, dest: { open: 'Aave' } },
+  ]);
+});
