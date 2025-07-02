@@ -51,7 +51,8 @@ Payouts,,,,,,,,,offer net:,$0.00,$0.00
 Description,,,,,,,,,Withdraw some from Compound,,
 Before,,,,,,"$3,333.33","$3,333.33","$3,333.33",Open with 3 positions,,
 Offer: Give,,,,,dest,,src,,,"$2,000.00",
-flow move,,,dest,,src,,,,,"$2,000.00",
+flow move,,,,dest,src,,,,,"$2,000.00",
+flow move,,,dest,src,,,,,,"$2,000.00",
 flow move,,dest,src,,,,,,,"$2,000.00",
 Offer: Want,,"$2,000.00",,,,,,,,,operation net
 After,,,,,,"$3,333.33","$1,333.33","$3,333.33",positions net:,"-$2,000.00",
@@ -88,8 +89,8 @@ Description,,,,,,,,,USDN -> Aave,,
 Before,,,,,,,,"$5,000.00",,,
 Offer: Give,,,,,,,,,,,
 flow move,,,,dest,,,,src,,$500.00,
-flow move,,,,src,dest,,,,,,
-flow move,,,,,src,dest,,,,,
+flow move,,,,src,dest,,,,,$500.00,
+flow move,,,,,src,dest,,,,$500.00,
 Offer: Want,,,,,,,,,,,operation net
 After,,,,,,$500.00,,"$4,500.00",positions net:,$0.00,
 Payouts,,,,,,,,,offer net:,$0.00,$0.00
