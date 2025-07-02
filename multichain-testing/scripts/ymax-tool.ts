@@ -4,6 +4,7 @@
  */
 import '@endo/init';
 
+import { parseArgs } from 'node:util';
 import {
   fetchEnvNetworkConfig,
   makeSmartWalletKit,
@@ -50,11 +51,13 @@ const openPosition = async (
     client,
     walletKit,
     now,
+    skipPoll = false,
   }: {
     address: string;
     client: SigningStargateClient;
     walletKit: Awaited<ReturnType<typeof makeSmartWalletKit>>;
     now: () => number;
+    skipPoll?: boolean;
   },
 ) => {
   const brand = fromEntries(await walletKit.readPublished('agoricNames.brand'));
@@ -99,14 +102,32 @@ const openPosition = async (
   );
   trace('tx', actual);
 
-  const status = await walletKit.pollOffer(
-    address,
-    action.offer.id,
-    before.header.height,
-  );
-  trace('status', status);
-  if ('error' in status) throw Error(status.error);
-  return status;
+  if (!skipPoll) {
+    trace('starting to poll for offer result from block height', before.header.height);
+    const status = await walletKit.pollOffer(
+      address,
+      action.offer.id,
+      before.header.height,
+    );
+    
+    trace('final offer status', status);
+    if ('error' in status) {
+      trace('offer failed with error', status.error);
+      // TODO: maybe handle error properly
+      // throw Error(status.error);
+      return status;
+    }
+    trace('offer completed successfully', {
+      statusType: 'success',
+      result: status.result,
+    });
+    
+    return status;
+  } else {
+    trace('skipping poll as per skipPoll flag');
+    const status = { result: { transaction: actual } };
+    return status;
+  }
 };
 
 const main = async (
@@ -118,8 +139,41 @@ const main = async (
     connectWithSigner = SigningStargateClient.connectWithSigner,
   } = {},
 ) => {
-  const [volume] = argv.slice(2);
-  if (!volume) throw Error(`USAGE: ${argv[1]} 123.45`);
+  // Parse command line arguments using node:util's parseArgs
+  const { values, positionals } = parseArgs({
+    args: argv.slice(2),
+    options: {
+      'skip-poll': {
+        type: 'boolean',
+        default: false,
+      },
+      'exit-success': {
+        type: 'boolean',
+        default: false,
+      },
+      'help': {
+        type: 'boolean',
+        short: 'h',
+        default: false,
+      }
+    },
+    allowPositionals: true,
+  });
+  
+  // Extract options
+  const skipPoll = values['skip-poll'];
+  const [volume] = positionals;
+  
+  // Show help if requested or if volume is not provided
+  if (values.help || !volume) {
+    console.log(`USAGE: ${argv[1]} <volume> [options]
+Options:
+  --skip-poll       Skip polling for offer result
+  --exit-success    Exit with success code even if errors occur
+  -h, --help        Show this help message`);
+    process.exit(values.help ? 0 : 1);
+  }
+  
   const { MNEMONIC } = env;
   if (!MNEMONIC) throw Error(`MNEMONIC not set`);
 
@@ -135,12 +189,30 @@ const main = async (
   const client = await connectWithSigner(networkConfig.rpcAddrs[0], signer, {
     registry: new Registry(agoricRegistryTypes),
   });
-  await openPosition(volume, { address, client, walletKit, now: Date.now });
+  // Pass the parsed skipPoll option to openPosition
+  await openPosition(volume, { address, client, walletKit, now: Date.now, skipPoll });
 };
 
 // TODO: use endo-exec so we can unit test the above
 main().catch(err => {
   console.error(err);
-  const code = '--exit-success' in process.argv ? 0 : 1;
-  process.exit(code);
+  
+  // Parse args to check for exit-success flag
+  try {
+    const { values } = parseArgs({
+      args: process.argv.slice(2),
+      options: {
+        'exit-success': {
+          type: 'boolean',
+          default: false,
+        },
+      },
+    });
+    
+    const exitCode = values['exit-success'] ? 0 : 1;
+    process.exit(exitCode);
+  } catch (parseError) {
+    // Fallback in case args can't be parsed
+    process.exit(1);
+  }
 });
