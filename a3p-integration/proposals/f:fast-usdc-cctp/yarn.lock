@@ -978,6 +978,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@endo/base64@npm:^1.0.11":
+  version: 1.0.11
+  resolution: "@endo/base64@npm:1.0.11"
+  checksum: 10c0/842bc014d03e28471b772149272d7e9fa861044401d38ab95ffda11df089ec7569e9812ccf7e04627d63a04dd6282730da72585841c582ea75bdd5e1e1b93d60
+  languageName: node
+  linkType: hard
+
 "@endo/base64@npm:^1.0.9":
   version: 1.0.9
   resolution: "@endo/base64@npm:1.0.9"
@@ -1062,6 +1069,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@endo/env-options@npm:^1.1.10":
+  version: 1.1.10
+  resolution: "@endo/env-options@npm:1.1.10"
+  checksum: 10c0/80624b9d6e2dc8faf6b58813d0ecddf0bac1d4e94abfa0de4db3a0cd7f2a678a7632ca6837cbd90bffb87223e2c8330eb0996e22a6cbd445c90a31f9e078aaee
+  languageName: node
+  linkType: hard
+
 "@endo/env-options@npm:^1.1.8":
   version: 1.1.8
   resolution: "@endo/env-options@npm:1.1.8"
@@ -1099,6 +1113,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@endo/eventual-send@npm:^1.3.3":
+  version: 1.3.3
+  resolution: "@endo/eventual-send@npm:1.3.3"
+  dependencies:
+    "@endo/env-options": "npm:^1.1.10"
+  checksum: 10c0/db0095a7fdc15bd294d7c2f6da4e8282abc60ce9a3d6697440c5d14ad54dfd79ed2ce4fc6b92274333375f35e4e75071663e73568118783c5ca115db50aabcfc
+  languageName: node
+  linkType: hard
+
 "@endo/exo@npm:^1.5.8":
   version: 1.5.8
   resolution: "@endo/exo@npm:1.5.8"
@@ -1125,6 +1148,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@endo/immutable-arraybuffer@npm:^1.1.1":
+  version: 1.1.1
+  resolution: "@endo/immutable-arraybuffer@npm:1.1.1"
+  checksum: 10c0/7670c3dbaa3b6b996eb528ae9736fd3d3582879efdeb3483ae88ed1a04248537da35ecdf2e5937c5528ea79fe1cebfb04e130b735a45b357ad45792cc778c653
+  languageName: node
+  linkType: hard
+
 "@endo/import-bundle@npm:^1.3.3":
   version: 1.3.3
   resolution: "@endo/import-bundle@npm:1.3.3"
@@ -1138,7 +1168,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/init@npm:^1.1.8, @endo/init@npm:^1.1.9":
+"@endo/init@npm:^1.1.11":
+  version: 1.1.11
+  resolution: "@endo/init@npm:1.1.11"
+  dependencies:
+    "@endo/base64": "npm:^1.0.11"
+    "@endo/eventual-send": "npm:^1.3.3"
+    "@endo/lockdown": "npm:^1.0.17"
+    "@endo/promise-kit": "npm:^1.1.12"
+  checksum: 10c0/956909d9132a7d09ad1b0a3c853231de7373934930cd560ec74b05f0af05fb30037fce5bd71b5f5bea7dd6f52eaf935fd0db85f7ead4dd9f722a1bcee28906f2
+  languageName: node
+  linkType: hard
+
+"@endo/init@npm:^1.1.8":
   version: 1.1.9
   resolution: "@endo/init@npm:1.1.9"
   dependencies:
@@ -1156,6 +1198,15 @@ __metadata:
   dependencies:
     ses: "npm:^1.12.0"
   checksum: 10c0/913434a0cc3f907b13d6152913a1e40dc0d7d406ce383bf49a55cc50f1ee97ca7b15cf4bfb2a68c625a427cebe587034eaa38569156b21a4a8f72f0360d06874
+  languageName: node
+  linkType: hard
+
+"@endo/lockdown@npm:^1.0.17":
+  version: 1.0.17
+  resolution: "@endo/lockdown@npm:1.0.17"
+  dependencies:
+    ses: "npm:^1.13.1"
+  checksum: 10c0/8be698273f630715d6c315fe9c3366d4289edf0b5e14ebaffd91fab51d3408b224abed28828cdb3cba2fab38c2cae5b257c6160ac4248dac225155af7500f8a2
   languageName: node
   linkType: hard
 
@@ -1224,6 +1275,15 @@ __metadata:
   dependencies:
     ses: "npm:^1.12.0"
   checksum: 10c0/39d2d8073484c81a2fc02ce7d40402152953b2f4e33ae4f6429c92c06f766afab9e2af68adb393a8507997e572a0f826436844cb2b61f2f227d48340d0c4bfb2
+  languageName: node
+  linkType: hard
+
+"@endo/promise-kit@npm:^1.1.12":
+  version: 1.1.12
+  resolution: "@endo/promise-kit@npm:1.1.12"
+  dependencies:
+    ses: "npm:^1.13.1"
+  checksum: 10c0/6fa65f6c751dde345b822e6f13adeb4ebeabd810c328d520bffd03b08680097138be0a47a3bbb9b1845db1213e57482277306925a86b9fb3910c3e5d9dc04bc6
   languageName: node
   linkType: hard
 
@@ -4798,7 +4858,7 @@ __metadata:
     "@agoric/client-utils": "npm:dev"
     "@agoric/fast-usdc": "npm:dev"
     "@agoric/synthetic-chain": "npm:0.5.5"
-    "@endo/init": "npm:^1.1.9"
+    "@endo/init": "npm:^1.1.11"
     agoric: "npm:dev"
     ava: "npm:^5.3.1"
   languageName: unknown
@@ -4883,6 +4943,16 @@ __metadata:
   dependencies:
     "@endo/env-options": "npm:^1.1.8"
   checksum: 10c0/3ce5ca1161965cc4c32b249e3a89a3d349d5cabd5451de8943dc2dbbb296f64bf111e74fb8c8a5053623afe2c4372add8ff65be28ea27e3ffb843c14b1823f05
+  languageName: node
+  linkType: hard
+
+"ses@npm:^1.13.1":
+  version: 1.13.1
+  resolution: "ses@npm:1.13.1"
+  dependencies:
+    "@endo/env-options": "npm:^1.1.10"
+    "@endo/immutable-arraybuffer": "npm:^1.1.1"
+  checksum: 10c0/bc76ed5fe446ab82f77a1b4341c378126586f1d3c52bb234edc88144edb5263fc7d8a2f3e2d74b13228a418b2a4b9ebe489fba5f2a44882e38278f2f7afa6fbf
   languageName: node
   linkType: hard
 
