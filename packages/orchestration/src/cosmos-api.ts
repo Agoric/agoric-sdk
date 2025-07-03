@@ -362,8 +362,8 @@ export interface LocalAccountMethods extends StakingAccountActions {
    */
   parseInboundTransfer: (packet: Record<string, any>) => Promise<{
     amount: DenomAmount;
-    fromAccount: AccountId;
-    toAccount: AccountId;
+    fromAccount: string;
+    toAccount: string;
     extra: Record<string, any>;
   }>;
 }
