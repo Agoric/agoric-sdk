@@ -18,7 +18,11 @@ harden(YieldProtocol);
 export const AxelarChain = /** @type {const} */ ({
   Ethereum: 'Ethereum',
   Avalanche: 'Avalanche',
-  Base: 'Base',
+  Arbitrum: 'Arbitrum',
+  Optimism: 'Optimism',
+  Polygon: 'Polygon',
+  Fantom: 'Fantom',
+  BNB: 'BNB',
 });
 harden(AxelarChain);
 

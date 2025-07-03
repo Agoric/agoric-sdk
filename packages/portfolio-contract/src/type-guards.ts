@@ -31,7 +31,6 @@ import type {
   ContinuingInvitationSpec,
   ContractInvitationSpec,
 } from '@agoric/smart-wallet/src/invitations.js';
-import { Fail } from '@endo/errors';
 import { M } from '@endo/patterns';
 import { AxelarChain, YieldProtocol } from './constants.js';
 import type { EVMContractAddresses, start } from './portfolio.contract.js';
@@ -204,31 +203,11 @@ export const OfferArgsShapeFor = {
 harden(OfferArgsShapeFor);
 // #endregion
 
-// #region ymax0 vstorage keys and values
-
-/**
- * Creates vstorage path for portfolio status under published.ymax0.
- *
- * Portfolio status includes position counts, account mappings, and flow history.
- *
- * @param id - Portfolio ID number
- * @returns Path segments for vstorage
- */
-export const makePortfolioPath = (id: number) => [`portfolio${id}`];
-
-/**
- * Extracts portfolio ID from a vstorage path.
- *
- * @param path - Either a dot-separated string or array of path segments
- * @returns Portfolio ID number
- */
-export const portfolioIdOfPath = (path: string | string[]) => {
-  const segments = typeof path === 'string' ? path.split('.') : path;
-  const [_group, segment] =
-    segments[0] === 'published' ? segments.slice(1) : segments;
-  const id = Number(segment.replace(/^portfolio/, ''));
-  Number.isSafeInteger(id) || Fail`bad path: ${path}`;
-  return id;
+export type EVMContractAddresses = {
+  aavePool?: `0x${string}`;
+  compound?: `0x${string}`;
+  factory: `0x${string}`;
+  usdc: `0x${string}`;
 };
 
 // XXX refactor using AssetMoveDesc
