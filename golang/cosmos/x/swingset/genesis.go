@@ -183,6 +183,7 @@ func ExportGenesis(
 			eventHandler,
 			keeper.SwingStoreExportOptions{
 				ArtifactMode:   artifactMode,
+				Compressed:     true,
 				ExportDataMode: exportDataMode,
 			},
 		)

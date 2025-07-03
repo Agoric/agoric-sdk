@@ -82,8 +82,9 @@ const finished = promisify(finishedCallback);
  * }} io
  * @param {(key: string, value: string | undefined) => void} noteExport
  * @param {object} [options]
- * @param {boolean | undefined} [options.keepSnapshots]
  * @param {SnapshotCallback} [options.archiveSnapshot]
+ * @param {boolean} [options.compressed]
+ * @param {boolean | undefined} [options.keepSnapshots]
  * @returns {SnapStore & SnapStoreInternal & SnapStoreDebug}
  */
 export function makeSnapStore(
@@ -91,7 +92,7 @@ export function makeSnapStore(
   ensureTxn,
   { measureSeconds },
   noteExport = () => {},
-  { keepSnapshots = false, archiveSnapshot } = {},
+  { archiveSnapshot, compressed, keepSnapshots = false } = {},
 ) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS snapshots (
@@ -305,10 +306,13 @@ export function makeSnapStore(
     compressedSnapshot || Fail`artifact ${q(name)} is not available`;
     // weird construct here is because we need to be able to throw before the generator starts
     async function* exporter() {
-      const gzReader = Readable.from(compressedSnapshot);
-      const unzipper = createGunzip();
-      const snapshotReader = gzReader.pipe(unzipper);
-      yield* snapshotReader;
+      const reader = Readable.from(compressedSnapshot);
+      if (compressed) yield* reader;
+      else {
+        const unzipper = createGunzip();
+        const snapshotReader = reader.pipe(unzipper);
+        yield* snapshotReader;
+      }
     }
     harden(exporter);
     return exporter();

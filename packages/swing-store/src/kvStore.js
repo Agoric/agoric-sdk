@@ -5,6 +5,7 @@ import { Fail } from '@endo/errors';
  * @typedef {{
  *   has: (key: string) => boolean,
  *   get: (key: string) => string | undefined,
+ *   getExportData: () => IterableIterator<import('./exporter').KVPair>
  *   getNextKey: (previousKey: string) => string | undefined,
  *   set: (key: string, value: string, bypassHash?: boolean ) => void,
  *   delete: (key: string) => void,
@@ -40,6 +41,12 @@ export function makeKVStore(db, ensureTxn, trace) {
     )
   `);
 
+  const sqlKVGetAll = db.prepare(`
+    SELECT key, value
+    FROM kvStore
+    ORDER BY key
+  `);
+
   const sqlKVGet = db.prepare(`
     SELECT value
     FROM kvStore
@@ -69,6 +76,14 @@ export function makeKVStore(db, ensureTxn, trace) {
     LIMIT 1
   `);
   sqlKVGetNextKey.pluck(true);
+
+  /**
+   * @type {KVStore['getExportData']}
+   */
+  function* getExportData() {
+    for (const { key, value } of sqlKVGetAll.iterate())
+      if (getKeyType(key) === 'consensus') yield [`kv.${key}`, value];
+  }
 
   /**
    * getNextKey enables callers to iterate over all keys within a
@@ -164,6 +179,7 @@ export function makeKVStore(db, ensureTxn, trace) {
   const kvStore = {
     has,
     get,
+    getExportData,
     getNextKey,
     set,
     delete: del,

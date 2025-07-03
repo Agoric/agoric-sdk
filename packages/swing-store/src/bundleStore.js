@@ -1,7 +1,10 @@
 // @ts-check
-import { createHash } from 'crypto';
-import { Readable } from 'stream';
+import { createHash } from 'node:crypto';
+import { Readable } from 'node:stream';
+import { createGzip } from 'node:zlib';
+
 import { Buffer } from 'buffer';
+
 import { Fail, q } from '@endo/errors';
 import { encodeBase64, decodeBase64 } from '@endo/base64';
 import { checkBundle } from '@endo/check-bundle/lite.js';
@@ -59,9 +62,16 @@ harden(bundleIDFromName);
  * @param {*} db
  * @param {() => void} ensureTxn
  * @param {(key: string, value: string | undefined) => void} noteExport
+ * @param {object} [options]
+ * @param {boolean} [options.compressed]
  * @returns {BundleStore & BundleStoreInternal & BundleStoreDebug}
  */
-export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
+export function makeBundleStore(
+  db,
+  ensureTxn,
+  noteExport = () => {},
+  { compressed } = {},
+) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS bundles (
       bundleID TEXT,
@@ -266,7 +276,13 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
     const row =
       sqlGetBundle.get(bundleID) || Fail`bundle ${q(bundleID)} not found`;
     const rawBundle = row.bundle || Fail`bundle ${q(bundleID)} pruned`;
-    yield* Readable.from(Buffer.from(rawBundle));
+
+    const readableStream = Readable.from(Buffer.from(rawBundle));
+
+    if (compressed) {
+      const gzip = createGzip();
+      yield* readableStream.pipe(gzip).iterator();
+    } else yield* readableStream;
   }
   harden(exportBundle);
 

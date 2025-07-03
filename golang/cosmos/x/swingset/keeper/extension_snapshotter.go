@@ -124,10 +124,15 @@ func (snapshotter *ExtensionSnapshotter) InitiateSnapshot(height int64) error {
 
 	blockHeight := uint64(height)
 
-	return snapshotter.swingStoreExportsHandler.InitiateExport(blockHeight, snapshotter, SwingStoreExportOptions{
-		ArtifactMode:   SwingStoreArtifactModeOperational,
-		ExportDataMode: SwingStoreExportDataModeSkip,
-	})
+	return snapshotter.swingStoreExportsHandler.InitiateExport(
+		blockHeight,
+		snapshotter,
+		SwingStoreExportOptions{
+			ArtifactMode:   SwingStoreArtifactModeOperational,
+			Compressed:     false,
+			ExportDataMode: SwingStoreExportDataModeSkip,
+		},
+	)
 }
 
 // OnExportStarted performs the actual cosmos state-sync app snapshot.

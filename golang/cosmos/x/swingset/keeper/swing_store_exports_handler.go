@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	sdkioerrors "cosmossdk.io/errors"
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
@@ -123,10 +124,10 @@ const swingStoreExportActionType = "SWING_STORE_EXPORT"
 const initiateRequest = "initiate"
 
 type swingStoreInitiateExportAction struct {
-	Type        string                     `json:"type"`                  // "SWING_STORE_EXPORT"
-	Request     string                     `json:"request"`               // "initiate"
-	BlockHeight uint64                     `json:"blockHeight,omitempty"` // empty if no blockHeight requested (latest)
 	Args        [1]SwingStoreExportOptions `json:"args"`
+	BlockHeight uint64                     `json:"blockHeight,omitempty"` // empty if no blockHeight requested (latest)
+	Request     string                     `json:"request"`               // "initiate"
+	Type        string                     `json:"type"`                  // "SWING_STORE_EXPORT"
 }
 
 // retrieveRequest is the request type for retrieving an initiated export
@@ -202,6 +203,7 @@ type SwingStoreExportOptions struct {
 	// (None, Operational, Replay, Archival, Debug).
 	// See packages/cosmic-swingset/src/export-kernel-db.js initiateSwingStoreExport
 	ArtifactMode string `json:"artifactMode,omitempty"`
+	Compressed   bool   `json:"compressed"`
 	// ExportDataMode selects whether to include "export data" in the swing-store
 	// export or not. Use the value SwingStoreExportDataModeSkip or
 	// SwingStoreExportDataModeAll. If "skip", the reader returned by
@@ -239,7 +241,7 @@ var disallowedArtifactNameChar = regexp.MustCompile(`[^-_.a-zA-Z0-9]`)
 // sanitizeArtifactName searches a string for all characters
 // other than ASCII alphanumerics, hyphens, underscores, and dots,
 // and replaces each of them with a hyphen.
-func sanitizeArtifactName(name string) string {
+func sanitizeArtifactFileName(name string) string {
 	return disallowedArtifactNameChar.ReplaceAllString(name, "-")
 }
 
@@ -472,7 +474,11 @@ func NewSwingStoreExportsHandler(logger log.Logger, blockingSend func(action vm.
 // from the goroutine that initiated the export.
 //
 // Must be called by the main goroutine
-func (exportsHandler SwingStoreExportsHandler) InitiateExport(blockHeight uint64, eventHandler SwingStoreExportEventHandler, exportOptions SwingStoreExportOptions) error {
+func (exportsHandler SwingStoreExportsHandler) InitiateExport(
+	blockHeight uint64,
+	eventHandler SwingStoreExportEventHandler,
+	exportOptions SwingStoreExportOptions,
+) error {
 	err := checkNotActive()
 	if err != nil {
 		return err
@@ -523,10 +529,10 @@ func (exportsHandler SwingStoreExportsHandler) InitiateExport(blockHeight uint64
 		}()
 
 		initiateAction := &swingStoreInitiateExportAction{
-			Type:        swingStoreExportActionType,
+			Args:        [1]SwingStoreExportOptions{exportOptions},
 			BlockHeight: blockHeight,
 			Request:     initiateRequest,
-			Args:        [1]SwingStoreExportOptions{exportOptions},
+			Type:        swingStoreExportActionType,
 		}
 
 		// blockingSend for SWING_STORE_EXPORT action is safe to call from a goroutine
@@ -706,7 +712,7 @@ func OpenSwingStoreExportDirectory(exportDir string) (SwingStoreExportProvider, 
 		if artifactName == UntrustedExportDataArtifactName {
 			return artifact, fmt.Errorf("unexpected export artifact name %s", artifactName)
 		}
-		artifact.Name = artifactName
+		artifact.Name = fileName
 		artifact.Data, err = os.ReadFile(filepath.Join(exportDir, fileName))
 
 		return artifact, err
@@ -850,9 +856,13 @@ func WriteSwingStoreExportToDirectory(provider SwingStoreExportProvider, exportD
 			// any non letters-digits-hyphen-underscore-dot by a hyphen, and
 			// prefixing with an incremented id.
 			// The filename is not used for any purpose in the import logic.
-			filename := sanitizeArtifactName(artifact.Name)
+			filename := artifact.Name
+			artifactName := strings.TrimSuffix(
+				sanitizeArtifactFileName(filename),
+				filepath.Ext(filename),
+			)
 			filename = fmt.Sprintf("%d-%s", len(manifest.Artifacts), filename)
-			manifest.Artifacts = append(manifest.Artifacts, [2]string{artifact.Name, filename})
+			manifest.Artifacts = append(manifest.Artifacts, [2]string{artifactName, filename})
 			err = writeExportFile(filename, artifact.Data)
 		} else {
 			// Pseudo artifact containing untrusted export data which may have been
