@@ -14,6 +14,7 @@ import {
   type AccountId,
   type CaipChainId,
   type CosmosChainAddress,
+  type DenomAmount,
   type OrchestrationAccount,
 } from '@agoric/orchestration';
 import { type AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
@@ -44,6 +45,10 @@ import {
 } from './type-guards.js';
 import { X } from '@endo/errors';
 import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
+import {
+  decodeAddressHook,
+  type HookQuery,
+} from '@agoric/cosmic-proto/address-hooks.js';
 
 const trace = makeTracer('PortExo');
 const { assign, values } = Object;
@@ -175,6 +180,7 @@ export const preparePortfolioKit = (
   {
     axelarChainsMap,
     rebalance,
+    rebalanceFromTransfer,
     timer,
     proposalShapes,
     vowTools,
@@ -187,8 +193,12 @@ export const preparePortfolioKit = (
     rebalance: (
       seat: ZCFSeat,
       offerArgs: OfferArgsFor['rebalance'],
-      keeper: unknown, // XXX avoid circular reference
+      kit: unknown, // XXX avoid circular reference
     ) => Vow<any>; // XXX HostForGuest???
+    rebalanceFromTransfer: (
+      packet: VTransferIBCEvent['packet'],
+      kit: unknown, // XXX avoid circular reference to this.facets
+    ) => Vow<ReturnType<LocalAccount['parseInboundTransfer']> | null>;
     timer: Remote<TimerService>;
     proposalShapes: ReturnType<typeof makeProposalShapes>;
     vowTools: VowTools;
@@ -356,13 +366,17 @@ export const preparePortfolioKit = (
         async receiveUpcall(event: VTransferIBCEvent) {
           trace('receiveUpcall', event);
 
-          const tx: FungibleTokenPacketData = JSON.parse(
-            atob(event.packet.data),
+          const parsed = await vowTools.when(
+            rebalanceFromTransfer(event.packet, this.facets),
           );
+          if (!parsed) {
+            trace('receiveUpcall skipping GMP processing');
+            return;
+          }
 
-          trace('receiveUpcall packet data', tx);
-          if (!tx.memo) return;
-          const memo: AxelarGmpIncomingMemo = JSON.parse(tx.memo); // XXX unsound! use typed pattern
+          const { extra } = parsed;
+          if (!extra.memo) return;
+          const memo: AxelarGmpIncomingMemo = JSON.parse(extra.memo); // XXX unsound! use typed pattern
 
           if (
             !values(axelarChainsMap)
@@ -409,6 +423,11 @@ export const preparePortfolioKit = (
         },
       },
       reader: {
+        getLocalAccount(): LocalAccount {
+          const { accounts } = this.state;
+          const { lca } = accounts.get('agoric') as AccountInfoFor['agoric'];
+          return lca;
+        },
         getStoragePath() {
           const { portfolioId } = this.state;
           const node = makePathNode(makePortfolioPath(portfolioId));

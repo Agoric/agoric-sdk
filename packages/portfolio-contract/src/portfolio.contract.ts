@@ -108,12 +108,19 @@ export const contract = async (
     chainHubTools,
     axelarChainsMap,
   };
-  const { rebalance } = orchestrateAll({ rebalance: flows.rebalance }, ctx1);
+  const { rebalance, rebalanceFromTransfer } = orchestrateAll(
+    {
+      rebalance: flows.rebalance,
+      rebalanceFromTransfer: flows.rebalanceFromTransfer,
+    },
+    ctx1,
+  );
 
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf,
     vowTools,
     rebalance,
+    rebalanceFromTransfer,
     proposalShapes,
     axelarChainsMap,
     timer: timerService,
