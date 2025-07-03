@@ -11,9 +11,6 @@ SS = yarn starship
 SSOPTS = --config $(FILE) --name $(NAME) --repoUrl $(HELM_REPO_URL) \
 	--repo $(HELM_REPO) --chart $(HELM_REPO)/$(HELM_CHART)
 STARSHIP = $(SS) $(SSOPTS)
-# Noble CLI access inside container
-NOBLE_EXEC = kubectl exec -it noblelocal-genesis-0 -c validator -- nobled
-
 
 ###############################################################################
 ###                              All commands                               ###

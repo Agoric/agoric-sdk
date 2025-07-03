@@ -103,13 +103,16 @@ const openPosition = async (
   trace('tx', actual);
 
   if (!skipPoll) {
-    trace('starting to poll for offer result from block height', before.header.height);
+    trace(
+      'starting to poll for offer result from block height',
+      before.header.height,
+    );
     const status = await walletKit.pollOffer(
       address,
       action.offer.id,
       before.header.height,
     );
-    
+
     trace('final offer status', status);
     if ('error' in status) {
       trace('offer failed with error', status.error);
@@ -121,7 +124,7 @@ const openPosition = async (
       statusType: 'success',
       result: status.result,
     });
-    
+
     return status;
   } else {
     trace('skipping poll as per skipPoll flag');
@@ -151,19 +154,19 @@ const main = async (
         type: 'boolean',
         default: false,
       },
-      'help': {
+      help: {
         type: 'boolean',
         short: 'h',
         default: false,
-      }
+      },
     },
     allowPositionals: true,
   });
-  
+
   // Extract options
   const skipPoll = values['skip-poll'];
   const [volume] = positionals;
-  
+
   // Show help if requested or if volume is not provided
   if (values.help || !volume) {
     console.log(`USAGE: ${argv[1]} <volume> [options]
@@ -173,7 +176,7 @@ Options:
   -h, --help        Show this help message`);
     process.exit(values.help ? 0 : 1);
   }
-  
+
   const { MNEMONIC } = env;
   if (!MNEMONIC) throw Error(`MNEMONIC not set`);
 
@@ -190,13 +193,19 @@ Options:
     registry: new Registry(agoricRegistryTypes),
   });
   // Pass the parsed skipPoll option to openPosition
-  await openPosition(volume, { address, client, walletKit, now: Date.now, skipPoll });
+  await openPosition(volume, {
+    address,
+    client,
+    walletKit,
+    now: Date.now,
+    skipPoll,
+  });
 };
 
 // TODO: use endo-exec so we can unit test the above
 main().catch(err => {
   console.error(err);
-  
+
   // Parse args to check for exit-success flag
   try {
     const { values } = parseArgs({
@@ -208,7 +217,7 @@ main().catch(err => {
         },
       },
     });
-    
+
     const exitCode = values['exit-success'] ? 0 : 1;
     process.exit(exitCode);
   } catch (parseError) {
